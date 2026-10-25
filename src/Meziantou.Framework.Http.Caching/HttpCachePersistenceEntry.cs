@@ -111,7 +111,10 @@ public sealed class HttpCachePersistenceEntry
         return new HttpCachePersistenceEntry
         {
             SecondaryKeyMatchNone = SecondaryKeyMatchNone,
-            SecondaryKeyHeaders = SecondaryKeyHeaders is null ? null : new Dictionary<string, string>(SecondaryKeyHeaders, StringComparer.OrdinalIgnoreCase),
+
+            // The comparer is kept: a store that deserializes the entry gets a case-sensitive dictionary, which can hold
+            // names that only differ by case, and copying them into a case-insensitive one would throw.
+            SecondaryKeyHeaders = SecondaryKeyHeaders is null ? null : new Dictionary<string, string>(SecondaryKeyHeaders, SecondaryKeyHeaders.Comparer),
             NoVarySearch = NoVarySearch,
             NormalizedQuery = NormalizedQuery,
             RequestTime = RequestTime,
@@ -161,7 +164,9 @@ public sealed class HttpCachePersistenceEntry
         long ticks;
         try
         {
-            ticks = checked(ResponseTime.UtcDateTime.Ticks + freshnessLifetime.Ticks - correctedInitialAge.Ticks);
+            // Neither duration is negative, so their difference cannot overflow. Adding the freshness lifetime to the
+            // response time first could, while the result is in range.
+            ticks = checked(ResponseTime.UtcTicks + (freshnessLifetime.Ticks - correctedInitialAge.Ticks));
         }
         catch (OverflowException)
         {
@@ -212,6 +217,10 @@ public sealed class HttpCachePersistenceEntry
     }
 
     /// <summary>Computes a stable hash of the secondary key, suitable for use as a storage key.</summary>
+    /// <remarks>
+    /// Two entries that <see cref="HasSameSecondaryKey"/> considers the same have the same hash, whatever the comparer of
+    /// their <see cref="SecondaryKeyHeaders"/>.
+    /// </remarks>
     public string ComputeSecondaryKeyHash()
     {
         var stringBuilder = new StringBuilder();
@@ -219,7 +228,12 @@ public sealed class HttpCachePersistenceEntry
 
         if (SecondaryKeyHeaders is not null)
         {
-            foreach (var (key, value) in SecondaryKeyHeaders.OrderBy(static item => item.Key, StringComparer.OrdinalIgnoreCase))
+            // RFC 9110 Section 5.1: field names are case-insensitive
+            var headers = SecondaryKeyHeaders
+                .Select(static item => (Key: ToLowerAscii(item.Key), item.Value))
+                .OrderBy(static item => item.Key, StringComparer.Ordinal)
+                .ThenBy(static item => item.Value, StringComparer.Ordinal);
+            foreach (var (key, value) in headers)
             {
                 stringBuilder.Append('\u001f');
                 stringBuilder.Append(key);
@@ -245,6 +259,10 @@ public sealed class HttpCachePersistenceEntry
     }
 
     /// <summary>Indicates whether two entries share the same secondary key.</summary>
+    /// <remarks>
+    /// Header names are compared case-insensitively (RFC 9110 Section 5.1) whatever the comparer of the
+    /// <see cref="SecondaryKeyHeaders"/>: a store that deserializes an entry gets a case-sensitive dictionary.
+    /// </remarks>
     public static bool HasSameSecondaryKey(HttpCachePersistenceEntry left, HttpCachePersistenceEntry right)
     {
         ArgumentNullException.ThrowIfNull(left);
@@ -270,15 +288,60 @@ public sealed class HttpCachePersistenceEntry
         if (leftCount is 0)
             return true;
 
+        // A case-sensitive dictionary can hold several names that only differ by case, so the headers are compared as
+        // multisets: each header occurs as many times on both sides.
         foreach (var header in leftHeaders!)
         {
-            if (!rightHeaders!.TryGetValue(header.Key, out var value))
+            if (CountHeader(leftHeaders, header) != CountHeader(rightHeaders!, header))
                 return false;
+        }
 
-            if (!string.Equals(header.Value, value, StringComparison.Ordinal))
+        return true;
+
+        static int CountHeader(Dictionary<string, string> headers, KeyValuePair<string, string> header)
+        {
+            var count = 0;
+            foreach (var (key, value) in headers)
+            {
+                if (EqualsIgnoreAsciiCase(key, header.Key) && string.Equals(value, header.Value, StringComparison.Ordinal))
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+    }
+
+    // Field names are tokens, which are ASCII. Only the ASCII letters are folded, so that the comparison and the hash
+    // agree on any other character without depending on the casing tables of the runtime.
+    private static bool EqualsIgnoreAsciiCase(string left, string right)
+    {
+        if (left.Length != right.Length)
+            return false;
+
+        for (var i = 0; i < left.Length; i++)
+        {
+            if (ToLowerAscii(left[i]) != ToLowerAscii(right[i]))
                 return false;
         }
 
         return true;
     }
+
+    private static string ToLowerAscii(string value)
+    {
+        if (!value.AsSpan().ContainsAnyInRange('A', 'Z'))
+            return value;
+
+        return string.Create(value.Length, value, static (span, value) =>
+        {
+            for (var i = 0; i < value.Length; i++)
+            {
+                span[i] = ToLowerAscii(value[i]);
+            }
+        });
+    }
+
+    private static char ToLowerAscii(char value) => value is >= 'A' and <= 'Z' ? (char)(value + ('a' - 'A')) : value;
 }

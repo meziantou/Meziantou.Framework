@@ -29,6 +29,7 @@ public static partial class HttpCachingFuzzTargets
         new("http-caching-no-vary-search", NoVarySearch) { Seeds = GetNoVarySearchSeeds, Dictionary = [.. StructuredFieldTokens, .. QueryTokens] },
         new("http-caching-response-serializer", ResponseSerializerRoundTrip) { Seeds = GetResponseSerializerSeeds, Dictionary = SerializerTokens },
         new("http-caching-handler", Handler) { Seeds = GetHandlerSeeds, Dictionary = HandlerTokens },
+        new("http-caching-persistence-entry", PersistenceEntry) { Seeds = GetPersistenceEntrySeeds, Dictionary = [.. StructuredFieldTokens, .. QueryTokens] },
     ];
 
     /// <summary>

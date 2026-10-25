@@ -37,7 +37,10 @@ public static partial class HttpCachingFuzzTargets
     /// <summary>
     /// An <see cref="HttpCachingDelegateHandler"/> over an in-memory store and a fake origin, with a fake clock. The first
     /// byte selects the maximum response size and whether the store corrupts the payloads it returns (two bytes for the
-    /// offset, one for the value or a truncation). Then each step is a request (method, URL, headers, time elapsed since
+    /// offset, one for the value or a truncation), whether a <see cref="HttpCachingOptions.ShouldCacheResponse"/> predicate
+    /// rejects the responses (one byte, whose bit <c>n % 8</c> rejects the n-th response of the origin), and whether the
+    /// store starts with an entry whose metadata is fuzzed (as an external store could return it: see the
+    /// <c>http-caching-persistence-entry</c> target) and whose payload is valid. Then each step is a request (method, URL, headers, time elapsed since
     /// the previous step) and the response the origin gives to it (status, headers among Cache-Control, Expires, Date,
     /// Age, Vary, ETag, Last-Modified, No-Vary-Search, ..., and body); the origin can also be unreachable.
     /// Nothing throws but the origin failure itself, no store error is reported (the store never fails), and a response
@@ -45,23 +48,33 @@ public static partial class HttpCachingFuzzTargets
     /// it answers a GET or HEAD request, has an Age, and (when the store is not corrupted) has the status and the body of a
     /// response the origin sent for the same method and path, and for the same query unless that response declared a
     /// <c>No-Vary-Search</c>. That response was not marked <c>no-store</c>, nor was its request, and its status was neither
-    /// 206 nor 304.
+    /// 206 nor 304, nor did the predicate reject it. A response served from the entry the store started with answers the
+    /// method and the URL of its key (only the path for a <c>No-Vary-Search</c> key), and that entry does not have
+    /// <c>Vary: *</c>.
     /// </summary>
     private static void Handler(ReadOnlySpan<byte> data)
     {
         var reader = new InputReader(data);
         var options = reader.ReadByte();
         var corruption = (options & 4) is 0 ? null : new StoreCorruption(reader.ReadByte() | (reader.ReadByte() << 8), reader.ReadByte());
+        var rejectionMask = (options & 8) is 0 ? (byte?)null : reader.ReadByte();
+        var seeded = (options & 16) is 0 ? null : ReadSeededEntry(reader);
 
         var time = new ManualTimeProvider(StartTime);
         var store = new MemoryCacheStore(corruption);
-        using var origin = new FakeOrigin();
+        if (seeded is not null)
+        {
+            store.Seed(seeded.PrimaryKey, seeded.Entry.Clone());
+        }
+
+        using var origin = new FakeOrigin(rejectionMask);
         var storeErrors = new List<Exception>();
         var cachingOptions = new HttpCachingOptions
         {
             TimeProvider = time,
             MaximumResponseSize = MaximumResponseSizes[options & 3],
             OnStoreError = storeErrors.Add,
+            ShouldCacheResponse = rejectionMask is null ? null : origin.ShouldCache,
         };
 
         using var handler = new HttpCachingDelegateHandler(origin, store, cachingOptions);
@@ -97,7 +110,7 @@ public static partial class HttpCachingFuzzTargets
             using (response)
             {
                 CheckStoreErrors(storeErrors);
-                CheckResponse(origin, request, response, corruption is not null);
+                CheckResponse(origin, seeded, request, response, corruption is not null);
             }
         }
     }
@@ -108,7 +121,7 @@ public static partial class HttpCachingFuzzTargets
         return invoker.SendAsync(request, CancellationToken.None).GetAwaiter().GetResult();
     }
 
-    private static void CheckResponse(FakeOrigin origin, HttpRequestMessage request, HttpResponseMessage response, bool isStoreCorrupted)
+    private static void CheckResponse(FakeOrigin origin, SeededEntry? seeded, HttpRequestMessage request, HttpResponseMessage response, bool isStoreCorrupted)
     {
         if (origin.HasReturned(response))
             return;
@@ -124,8 +137,25 @@ public static partial class HttpCachingFuzzTargets
         if (isStoreCorrupted)
             return;
 
-        FuzzAssert.True(origin.TryGetResponse(body, out var stored), $"The cached response has a body the origin never sent: {FuzzAssert.Format(Encoding.UTF8.GetString(body))}");
         var uri = request.RequestUri!;
+        if (seeded is not null && body.AsSpan().SequenceEqual(seeded.Payload.Body))
+        {
+            FuzzAssert.Equal(seeded.Method, request.Method, "The seeded entry answers another method");
+            FuzzAssert.False(seeded.Entry.SecondaryKeyMatchNone, "An entry with Vary: * is served from the cache");
+            FuzzAssert.Equal(seeded.Payload.StatusCode, response.StatusCode, "The seeded entry is served with another status");
+            FuzzAssert.Equal(seeded.Uri.GetLeftPart(UriPartial.Path), uri.GetLeftPart(UriPartial.Path), "The seeded entry answers another path");
+
+            // An entry stored under the exact key of a URL with a No-Vary-Search config moves to the key of its config
+            // once it is revalidated, where its normalized query decides
+            if (!seeded.IsNoVarySearchKey && UrlVariationConfig.Parse(seeded.Entry.NoVarySearch).IsDefault)
+            {
+                FuzzAssert.Equal(seeded.Uri.GetLeftPart(UriPartial.Query), uri.GetLeftPart(UriPartial.Query), "The seeded entry answers another query");
+            }
+
+            return;
+        }
+
+        FuzzAssert.True(origin.TryGetResponse(body, out var stored), $"The cached response has a body the origin never sent: {FuzzAssert.Format(Encoding.UTF8.GetString(body))}");
         FuzzAssert.Equal(stored.Method, request.Method, "The cached response was stored for another method");
         FuzzAssert.Equal(stored.Uri.GetLeftPart(UriPartial.Path), uri.GetLeftPart(UriPartial.Path), "The cached response was stored for another path");
         if (!stored.HasNoVarySearch)
@@ -136,6 +166,23 @@ public static partial class HttpCachingFuzzTargets
         FuzzAssert.Equal(stored.StatusCode, response.StatusCode, "The cached response has another status than the stored one");
         FuzzAssert.False(stored.IsNoStore, "A response marked no-store, or the response to a no-store request, is served from the cache");
         FuzzAssert.False(stored.StatusCode is HttpStatusCode.PartialContent or HttpStatusCode.NotModified, $"A {(int)stored.StatusCode} response is served from the cache");
+        FuzzAssert.False(stored.IsRejected, "A response that ShouldCacheResponse rejected is served from the cache");
+    }
+
+    /// <summary>Reads the method and the kind of key (bits 0 and 1), the URL, the payload, and the metadata of the entry the store starts with.</summary>
+    private static SeededEntry ReadSeededEntry(InputReader reader)
+    {
+        var kind = reader.ReadByte();
+        var method = (kind & 1) is 0 ? HttpMethod.Get : HttpMethod.Head;
+        var isNoVarySearchKey = (kind & 2) is not 0;
+        var uri = new Uri(BaseUri, Urls[reader.ReadByte() % Urls.Length]);
+        var payload = FuzzInput.Pick(SeededPayloads, reader.ReadByte());
+        var entry = ReadPersistenceEntry(reader);
+        entry.SerializedResponse = payload.Payload;
+
+        // The keys of HttpCache: the method and the URL, or the method and the URL without its query for a No-Vary-Search config
+        var primaryKey = isNoVarySearchKey ? method.Method + " " + uri.GetLeftPart(UriPartial.Path) + " no-vary-search" : method.Method + " " + uri.GetLeftPart(UriPartial.Query);
+        return new SeededEntry(method, uri, isNoVarySearchKey, primaryKey, payload, entry);
     }
 
     private static void CheckStoreErrors(List<Exception> storeErrors)
@@ -236,13 +283,72 @@ public static partial class HttpCachingFuzzTargets
         yield return HandlerSeed("corrupted-store", 4, 30, 0, 0,
             0, 0, 1, 0, 0, 1, 0, "max-age=60", "hello",
             0, 1, 1, 0, 0, 0, "after corruption");
+        yield return HandlerSeed("should-cache-rejects-all", 8, 0xFF,
+            0, 0, 2, 0, 0, 2, 0, "max-age=60", 5, "\"v1\"", "hello",
+            0, 10, 2, 0, 0, 0, "from origin");
+        yield return HandlerSeed("should-cache-rejects-some", 8, 0x05,
+            0, 0, 1, 0, 0, 1, 0, "max-age=60", "rejected",
+            0, 1, 1, 0, 0, 1, 0, "max-age=60", "accepted",
+            0, 1, 1, 0, 0, 1, 0, "max-age=60", "rejected again",
+            0, 1, 1, 0, 0, 0, "unused",
+            0, 1, 2, 0, 0, 1, 0, "max-age=60", "other",
+            0, 1, 2, 0, 0, 0, "unused");
+        yield return HandlerSeed("should-cache-revalidation", 8, 0x02,
+            0, 0, 1, 0, 0, 2, 0, "max-age=1", 5, "\"v1\"", "hello",
+            0, 5, 1, 0, 0, 2, 0, "max-age=60", 5, "\"v2\"", "rejected",
+            0, 1, 1, 0, 0, 0, "unused");
+
+        // The seeded entry: kind (HEAD, No-Vary-Search key), URL index, payload, then the entry as the
+        // http-caching-persistence-entry target reads it (without its payload byte)
+        yield return HandlerSeed("seeded-fresh", 16, 0, 1, 0, 0, 0x10, 0, 0, 0, 0, 0, 5,
+            0, 1, 1, 0, 0, 0, "unused",
+            0x10, 1, 1, 0, 0, 0, "expired");
+        yield return HandlerSeed("seeded-vary", 16, 0, 1, 2, 0x06, 0x10, 0, 0, 0, 0, 0, 5, 1, 0, 0,
+            0, 1, 1, 1, 3, "en", 0, 0, "unused",
+            0, 1, 1, 1, 3, "fr", 0, 0, "fr",
+            0, 1, 1, 0, 0, 0, "absent");
+        yield return HandlerSeed("seeded-vary-case-variants", 16, 0, 1, 0, 0x02, 0x10, 0, 0, 0, 0, 0, 5, 2, 0, 0, 1, 1,
+            0, 1, 1, 1, 3, "en", 0, 0, "en");
+        yield return HandlerSeed("seeded-vary-star", 16, 0, 1, 0, 0x01, 0x10, 0, 0, 0, 0, 0, 5,
+            0, 1, 1, 0, 0, 0, "origin");
+        yield return HandlerSeed("seeded-no-vary-search", 16, 2, 2, 0, 0x18, 0x10, 0, 0, 0, 0, 0, 5, "params", "",
+            0, 1, 3, 0, 0, 0, "unused",
+            0, 1, 1, 0, 0, 0, "unused");
+        yield return HandlerSeed("seeded-head", 16, 1, 1, 3, 0, 0x10, 0, 0, 0, 0, 0, 5,
+            4, 1, 1, 0, 0, 0, "unused",
+            0, 1, 1, 0, 0, 0, "get");
+        yield return HandlerSeed("seeded-extreme-age", 16, 0, 1, 0, 0, 0x10, 0, 7, 8, 0, 9, 9,
+            0, 1, 1, 0, 0, 0, "unused",
+            0, 1, 1, 1, 0, "max-stale=60", 0, 0, "unused",
+            0, 1, 1, 1, 0, "min-fresh=60", 0, 0, "unused");
+        yield return HandlerSeed("seeded-max-response-time", 16, 0, 1, 0, 0, 0x10, 0, 10, 10, 10, 9, 9,
+            0, 1, 1, 1, 0, "min-fresh=60", 0, 0, "unused",
+            0, 1, 1, 1, 0, "max-stale", 0, 0, "unused");
+        yield return HandlerSeed("seeded-negative", 16, 0, 1, 0, 0, 0xB0, 0, 4, 0, 3, 10, 10, 10, 10,
+            0, 1, 1, 1, 0, "max-stale=60", 0, 0, "unused",
+            0, 1, 1, 0, 0xFF, 0, "",
+            0, 1, 1, 0, 20, 0, "unavailable");
+        yield return HandlerSeed("seeded-revalidation", 16, 0, 1, 2, 0, 0x10, 0x01, 0, 0, 0, 0, 0, "\"v1\"",
+            0, 1, 1, 0, 9, 1, 5, "\"v1\"", "",
+            0, 1, 1, 0, 9, 1, 5, "\"v2\"", "",
+            0, 1, 1, 0, 0, 0, "unused");
+        yield return HandlerSeed("seeded-stale-if-error", 16, 0, 1, 0, 0, 0x90, 0, 0, 0, 0, 0, 3, 9,
+            0x10, 1, 1, 0, 0xFF, 0, "",
+            0, 1, 1, 0, 20, 0, "unavailable");
+        yield return HandlerSeed("seeded-future-times", 16, 0, 1, 1, 0, 0x50, 0x02, 8, 8, 8, 0, 5, 0x67, 7,
+            0, 1, 1, 0, 0, 0, "unused");
+        yield return HandlerSeed("seeded-rejected-by-should-cache", 24, 0x01, 0, 1, 0, 0, 0x10, 0, 0, 0, 0, 0, 3,
+            0, 2, 1, 0, 0, 1, 0, "max-age=60", "rejected",
+            0, 1, 1, 0, 0, 0, "unused");
     }
 
     private static FuzzSeed HandlerSeed(string name, params object[] parts) => new(name, InputReader.Create(parts));
 
     private sealed record ResponseSpec(bool IsUnreachable, HttpStatusCode StatusCode, List<(string Name, string Value)> Headers, string Body);
 
-    private sealed record OriginResponse(HttpMethod Method, Uri Uri, HttpStatusCode StatusCode, bool HasNoVarySearch, bool IsNoStore);
+    private sealed record OriginResponse(HttpMethod Method, Uri Uri, HttpStatusCode StatusCode, bool HasNoVarySearch, bool IsNoStore, bool IsRejected);
+
+    private sealed record SeededEntry(HttpMethod Method, Uri Uri, bool IsNoVarySearchKey, string PrimaryKey, SeededPayload Payload, HttpCachePersistenceEntry Entry);
 
     /// <summary>Replaces a byte of the payloads the store returns, or truncates them when the value is 0.</summary>
     private sealed record StoreCorruption(int Offset, byte Value)
@@ -280,6 +386,8 @@ public static partial class HttpCachingFuzzTargets
     {
         private readonly Dictionary<string, List<HttpCachePersistenceEntry>> _entries = new(StringComparer.Ordinal);
 
+        public void Seed(string primaryKey, HttpCachePersistenceEntry entry) => _entries.Add(primaryKey, [entry]);
+
         public ValueTask<IReadOnlyCollection<HttpCachePersistenceEntry>> GetEntriesAsync(string primaryKey, CancellationToken cancellationToken)
         {
             if (!_entries.TryGetValue(primaryKey, out var entries))
@@ -316,13 +424,16 @@ public static partial class HttpCachingFuzzTargets
         }
     }
 
-    /// <summary>Answers each request with the response of the current step, then with a response that cannot be stored. Every body is unique.</summary>
-    private sealed class FakeOrigin : HttpMessageHandler
+    /// <summary>
+    /// Answers each request with the response of the current step, then with a response that cannot be stored. Every body
+    /// is unique. The bit <c>n % 8</c> of the rejection mask tells whether <see cref="ShouldCache"/> rejects the n-th response.
+    /// </summary>
+    private sealed class FakeOrigin(byte? rejectionMask) : HttpMessageHandler
     {
         private static readonly ResponseSpec NotStorable = new(IsUnreachable: false, HttpStatusCode.OK, [("Cache-Control", "no-store")], "not storable");
 
         private readonly Queue<ResponseSpec> _pending = new();
-        private readonly HashSet<HttpResponseMessage> _returned = new(ReferenceEqualityComparer.Instance);
+        private readonly Dictionary<HttpResponseMessage, OriginResponse> _returned = new(ReferenceEqualityComparer.Instance);
         private readonly Dictionary<string, OriginResponse> _responses = new(StringComparer.Ordinal);
         private int _counter;
 
@@ -335,7 +446,13 @@ public static partial class HttpCachingFuzzTargets
             IsUnreachable = false;
         }
 
-        public bool HasReturned(HttpResponseMessage response) => _returned.Contains(response);
+        public bool HasReturned(HttpResponseMessage response) => _returned.ContainsKey(response);
+
+        public bool ShouldCache(HttpResponseMessage response)
+        {
+            FuzzAssert.True(_returned.TryGetValue(response, out var originResponse), "ShouldCacheResponse is called with a response that does not come from the origin");
+            return !originResponse.IsRejected;
+        }
 
         public bool TryGetResponse(byte[] body, out OriginResponse response) => _responses.TryGetValue(Convert.ToHexString(body), out response!);
 
@@ -350,7 +467,8 @@ public static partial class HttpCachingFuzzTargets
                 throw new HttpRequestException("The origin is unreachable");
             }
 
-            var body = Encoding.UTF8.GetBytes(string.Create(CultureInfo.InvariantCulture, $"#{_counter++}:{spec.Body}"));
+            var index = _counter++;
+            var body = Encoding.UTF8.GetBytes(string.Create(CultureInfo.InvariantCulture, $"#{index}:{spec.Body}"));
             var response = new HttpResponseMessage(spec.StatusCode)
             {
                 Content = new ByteArrayContent(body),
@@ -366,8 +484,10 @@ public static partial class HttpCachingFuzzTargets
             }
 
             var isNoStore = response.Headers.CacheControl?.NoStore is true || request.Headers.CacheControl?.NoStore is true;
-            _responses[Convert.ToHexString(body)] = new OriginResponse(request.Method, request.RequestUri!, response.StatusCode, response.Headers.Contains("No-Vary-Search"), isNoStore);
-            _returned.Add(response);
+            var isRejected = rejectionMask is { } mask && ((mask >> (index % 8)) & 1) is not 0;
+            var originResponse = new OriginResponse(request.Method, request.RequestUri!, response.StatusCode, response.Headers.Contains("No-Vary-Search"), isNoStore, isRejected);
+            _responses[Convert.ToHexString(body)] = originResponse;
+            _returned.Add(response, originResponse);
             return Task.FromResult(response);
         }
     }

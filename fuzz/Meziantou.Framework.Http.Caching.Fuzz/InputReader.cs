@@ -17,6 +17,19 @@ internal sealed class InputReader
 
     public byte ReadByte() => _position < _data.Length ? _data[_position++] : (byte)0;
 
+    /// <summary>Reads a little-endian integer of <paramref name="size"/> bytes (at most 8), sign-extended.</summary>
+    public long ReadInt64(int size)
+    {
+        ulong value = 0;
+        for (var i = 0; i < size; i++)
+        {
+            value |= (ulong)ReadByte() << (8 * i);
+        }
+
+        var shift = 64 - (8 * size);
+        return shift is 64 ? 0 : (long)(value << shift) >> shift;
+    }
+
     /// <summary>Reads the text up to the next line feed, which is consumed.</summary>
     public string ReadLine()
     {
@@ -34,7 +47,7 @@ internal sealed class InputReader
         return result;
     }
 
-    /// <summary>Writes an input for this reader: a <see cref="byte"/> or an <see cref="int"/> is a byte, a string is a line (its line feed included).</summary>
+    /// <summary>Writes an input for this reader: a <see cref="byte"/> or an <see cref="int"/> is a byte, a <see cref="long"/> is 8 bytes (little-endian), a string is a line (its line feed included).</summary>
     public static byte[] Create(params object[] parts)
     {
         var result = new List<byte>();
@@ -48,6 +61,14 @@ internal sealed class InputReader
 
                 case int value:
                     result.Add(checked((byte)value));
+                    break;
+
+                case long value:
+                    for (var i = 0; i < 8; i++)
+                    {
+                        result.Add((byte)(value >> (8 * i)));
+                    }
+
                     break;
 
                 case string value:

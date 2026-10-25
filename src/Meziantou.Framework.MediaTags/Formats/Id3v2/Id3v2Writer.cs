@@ -32,8 +32,10 @@ internal static class Id3v2Writer
         AddTextFrame(frames, Id3v2FrameId.Album, tags.Album);
         AddTextFrame(frames, Id3v2FrameId.AlbumArtist, tags.AlbumArtist);
 
+        // A genre that starts with "(" reads as a reference to an ID3v1 genre, as in "(12)". ID3v2.3 escapes the
+        // parenthesis of a text that starts with one by doubling it, and Id3v2Reader removes the escape.
         if (tags.Genre is not null)
-            AddTextFrame(frames, Id3v2FrameId.Genre, tags.Genre);
+            AddTextFrame(frames, Id3v2FrameId.Genre, tags.Genre.StartsWith('(', StringComparison.Ordinal) ? "(" + tags.Genre : tags.Genre);
 
         if (tags.Year is not null)
             AddTextFrame(frames, Id3v2FrameId.Year, tags.Year.Value.ToString("D4", CultureInfo.InvariantCulture));
@@ -68,6 +70,14 @@ internal static class Id3v2Writer
 
         foreach (var picture in tags.Pictures)
         {
+            // The MIME type and the description end at a null character, so one inside them would end them early
+            // and shift the rest of the frame into the picture data.
+            if (picture.MimeType?.Contains('\0', StringComparison.Ordinal) is true || picture.Description?.Contains('\0', StringComparison.Ordinal) is true)
+            {
+                errorMessage = "A picture MIME type or description cannot contain a null character in an ID3v2 tag.";
+                return false;
+            }
+
             if (picture.Data.Length > MaxTagSize)
             {
                 errorMessage = $"A picture is too large for an ID3v2 frame ({picture.Data.Length} bytes, the maximum is {MaxTagSize}).";

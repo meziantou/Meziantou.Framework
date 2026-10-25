@@ -7,6 +7,28 @@ internal static class VorbisCommentWriter
 {
     private const string VendorString = "Meziantou.Framework.MediaTags";
 
+    /// <summary>
+    /// Checks that the tags can be stored as Vorbis Comments.
+    /// </summary>
+    /// <remarks>
+    /// A comment is "NAME=value", and the name ends at the first '='. A custom field name holding one would read
+    /// back as another field, with the rest of the name in its value.
+    /// </remarks>
+    public static bool TryValidate(MediaTagInfo tags, [NotNullWhen(false)] out string? errorMessage)
+    {
+        foreach (var key in tags.CustomFields.Keys)
+        {
+            if (key.Contains('=', StringComparison.Ordinal))
+            {
+                errorMessage = $"The custom field name '{key}' cannot contain '=' in a Vorbis comment.";
+                return false;
+            }
+        }
+
+        errorMessage = null;
+        return true;
+    }
+
     public static byte[] Build(MediaTagInfo tags, bool includePictures = true)
     {
         var comments = new List<string>();

@@ -684,7 +684,11 @@ internal static class Id3v2Reader
 
     private static string ParseGenre(string genre)
     {
-        // ID3v2 genre can be "(12)" for index, "(12)Rock" for index+text, or just text
+        // ID3v2 genre can be "(12)" for index, "(12)Rock" for index+text, or just text. A text that starts with
+        // a parenthesis has it doubled, as in "((12)".
+        if (genre.StartsWith("((", StringComparison.Ordinal))
+            return genre[1..];
+
         if (genre.Length >= 3 && genre[0] == '(' && genre.IndexOf(')', StringComparison.Ordinal) is var closeIdx and > 0)
         {
             var indexStr = genre.AsSpan(1, closeIdx - 1);

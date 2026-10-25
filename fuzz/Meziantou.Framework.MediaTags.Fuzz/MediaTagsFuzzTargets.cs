@@ -11,7 +11,7 @@ namespace Meziantou.Framework.MediaTags.Fuzz;
 /// back, in the same format, with the tags it was given, and writing the tags read from it again changes none of them.
 /// </summary>
 /// <remarks>An empty text field is the same as a missing one: the writers do not write it.</remarks>
-public static class MediaTagsFuzzTargets
+public static partial class MediaTagsFuzzTargets
 {
     private const string TestFilesPrefix = "TestFiles/";
 
@@ -32,10 +32,18 @@ public static class MediaTagsFuzzTargets
         "REPLAYGAIN_TRACK_GAIN=", "REPLAYGAIN_TRACK_PEAK=", "REPLAYGAIN_ALBUM_GAIN=", "REPLAYGAIN_ALBUM_PEAK=", "MUSICBRAINZ_TRACKID=", "MUSICBRAINZ_ALBUMID=", "image/png", "image/jpeg", "-->",
     ];
 
+    /// <summary>The characters the tag formats give a meaning to, and the names of the fields that a custom field can shadow.</summary>
+    private static readonly string[] ValueTokens =
+    [
+        "\0", "=", "/", ":", "(", ")", "((", "\n", "\r\n", " dB", "NaN", "Infinity", "-Infinity", "com.apple.iTunes", "com.apple.iTunes:", "org.example:", "image/png", "image/gif", "image/bmp", "image/jpeg",
+        "comment", "ISRC", "DATE", "TRACKNUMBER", "METADATA_BLOCK_PICTURE", "REPLAYGAIN_TRACK_GAIN", "MUSICBRAINZ_TRACKID", "MusicBrainz Track Id", "\uFFFD", "\u00E9", "\U0001F3B5",
+    ];
+
     public static IReadOnlyList<FuzzTarget> All { get; } =
     [
         new("mediatags-read", Read) { Seeds = GetReadSeeds, Dictionary = Tokens },
         new("mediatags-write", Write) { Seeds = GetWriteSeeds, Dictionary = Tokens },
+        new("mediatags-write-values", WriteValues) { Seeds = GetWriteValuesSeeds, Dictionary = ValueTokens },
     ];
 
     /// <summary>

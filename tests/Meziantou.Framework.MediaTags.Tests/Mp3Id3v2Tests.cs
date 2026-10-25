@@ -798,4 +798,45 @@ public sealed class Mp3Id3v2Tests
 
         return output.ToArray();
     }
+
+    [Theory]
+    [InlineData("(12)")]
+    [InlineData("(12)Rock")]
+    [InlineData("((12)")]
+    [InlineData("(")]
+    public void WriteTags_GenreStartingWithParenthesis_RoundTrips(string genre)
+    {
+        // "(12)" is how ID3v2 references the ID3v1 genre 12, so a genre text that starts with a parenthesis is escaped
+        using var output = new MemoryStream();
+        var result = MediaFile.WriteTags(new MemoryStream(File.ReadAllBytes(GetTestFilePath("basic.mp3")), writable: false), output, new MediaTagInfo { Genre = genre }, MediaFormat.Mp3);
+        Assert.True(result.IsSuccess);
+
+        output.Position = 0;
+        Assert.Equal(genre, MediaFile.ReadTags(output, MediaFormat.Mp3).Value.Genre);
+    }
+
+    [Fact]
+    public void ReadTags_GenreWithEscapedParenthesis()
+    {
+        byte[] frame = [Id3v2TextEncoding.Latin1, .. "((12)"u8];
+        using var stream = new MemoryStream(BuildId3v24Tag(("TCON", frame)));
+
+        Assert.Equal("(12)", MediaFile.ReadTags(stream, MediaFormat.Mp3).Value.Genre);
+    }
+
+    [Theory]
+    [InlineData("image/\0png", "Description")]
+    [InlineData("image/png", "Desc\0ription")]
+    public void WriteTags_PictureWithNullInMimeTypeOrDescription_IsRefused(string mimeType, string description)
+    {
+        // Both end at a null character, so one inside them would shift the rest of the frame into the picture data
+        var tags = new MediaTagInfo();
+        tags.Pictures.Add(new MediaPicture { PictureType = MediaPictureType.FrontCover, MimeType = mimeType, Description = description, Data = [1, 2, 3] });
+
+        using var output = new MemoryStream();
+        var result = MediaFile.WriteTags(new MemoryStream(File.ReadAllBytes(GetTestFilePath("basic.mp3")), writable: false), output, tags, MediaFormat.Mp3);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(MediaTagError.InvalidTagData, result.Error);
+    }
 }

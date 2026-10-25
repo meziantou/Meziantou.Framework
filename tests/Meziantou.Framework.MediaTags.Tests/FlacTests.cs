@@ -449,4 +449,21 @@ public sealed class FlacTests
             File.Delete(tempFile);
         }
     }
+
+    [Theory]
+    [InlineData("basic.flac", MediaFormat.Flac)]
+    [InlineData("basic.ogg", MediaFormat.OggVorbis)]
+    [InlineData("basic.opus", MediaFormat.OggOpus)]
+    public void WriteTags_CustomFieldNameWithEquals_IsRefused(string fileName, MediaFormat format)
+    {
+        // A Vorbis comment name ends at the first '=': "A=B" would read back as the field "A" with the value "B=C"
+        var tags = new MediaTagInfo();
+        tags.CustomFields["A=B"] = "C";
+
+        using var output = new MemoryStream();
+        var result = MediaFile.WriteTags(new MemoryStream(File.ReadAllBytes(GetTestFilePath(fileName)), writable: false), output, tags, format);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(MediaTagError.InvalidTagData, result.Error);
+    }
 }

@@ -476,6 +476,87 @@ public class PersistenceProvidersTests
     }
 
     [Fact]
+    public void PersistenceEntryWithAnExtremeAgeSaturatesInsteadOfOverflowing()
+    {
+        var now = new DateTimeOffset(2026, 03, 12, 12, 00, 00, TimeSpan.Zero);
+        var entry = CreatePersistenceEntry(now, maxAge: TimeSpan.FromHours(1), mustRevalidate: false);
+        entry.AgeValue = TimeSpan.MaxValue;
+
+        Assert.Equal(TimeSpan.MaxValue, entry.GetCurrentAge(now));
+        Assert.True(entry.IsObsolete(now));
+        Assert.Equal(DateTimeOffset.MinValue, entry.GetStaleTime());
+    }
+
+    [Fact]
+    public void PersistenceEntryStaleTimeIsExactWhenTheFreshnessLifetimeAloneWouldOverflow()
+    {
+        var responseTime = DateTimeOffset.MaxValue - TimeSpan.FromDays(1);
+        var entry = new HttpCachePersistenceEntry
+        {
+            RequestTime = responseTime,
+            ResponseTime = responseTime,
+            ResponseDate = responseTime,
+            AgeValue = TimeSpan.MaxValue - TimeSpan.FromHours(12),
+            MaxAge = TimeSpan.MaxValue,
+        };
+
+        Assert.Equal(responseTime + TimeSpan.FromHours(12), entry.GetStaleTime());
+    }
+
+    [Fact]
+    public void PersistenceEntryWithAResponseTimeInTheFutureHasNoNegativeAge()
+    {
+        // A store shared with a machine whose clock is ahead
+        var now = new DateTimeOffset(2026, 03, 12, 12, 00, 00, TimeSpan.Zero);
+        var entry = CreatePersistenceEntry(now + TimeSpan.FromHours(1), maxAge: TimeSpan.FromHours(1), mustRevalidate: false);
+
+        Assert.Equal(TimeSpan.Zero, entry.GetCurrentAge(now));
+    }
+
+    [Fact]
+    public void PersistenceEntryWithANegativeMaxAgeHasNoFreshness()
+    {
+        var now = new DateTimeOffset(2026, 03, 12, 12, 00, 00, TimeSpan.Zero);
+        var entry = CreatePersistenceEntry(now, maxAge: TimeSpan.FromSeconds(-1), mustRevalidate: false);
+
+        Assert.Equal(TimeSpan.Zero, entry.GetFreshnessLifetime());
+        Assert.True(entry.IsObsolete(now));
+    }
+
+    [Fact]
+    public void PersistenceEntryCloneKeepsHeaderNamesThatOnlyDifferByCase()
+    {
+        // The dictionary of an entry deserialized by a store is case-sensitive
+        var now = new DateTimeOffset(2026, 03, 12, 12, 00, 00, TimeSpan.Zero);
+        var entry = CreatePersistenceEntry(now, maxAge: TimeSpan.FromHours(1), mustRevalidate: false);
+        entry.SecondaryKeyHeaders = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["Accept-Language"] = "en",
+            ["accept-language"] = "fr",
+        };
+
+        var clone = entry.Clone();
+
+        Assert.HasCount(2, clone.SecondaryKeyHeaders!);
+        Assert.True(HttpCachePersistenceEntry.HasSameSecondaryKey(entry, clone));
+        Assert.Equal(entry.ComputeSecondaryKeyHash(), clone.ComputeSecondaryKeyHash());
+    }
+
+    [Fact]
+    public void PersistenceEntrySecondaryKeyIgnoresTheCaseOfHeaderNames()
+    {
+        var now = new DateTimeOffset(2026, 03, 12, 12, 00, 00, TimeSpan.Zero);
+        var stored = CreatePersistenceEntry(now, maxAge: TimeSpan.FromHours(1), mustRevalidate: false);
+        stored.SecondaryKeyHeaders = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { ["Accept-Language"] = "en" };
+        var deserialized = CreatePersistenceEntry(now, maxAge: TimeSpan.FromHours(1), mustRevalidate: false);
+        deserialized.SecondaryKeyHeaders = new Dictionary<string, string>(StringComparer.Ordinal) { ["accept-language"] = "en" };
+
+        Assert.True(HttpCachePersistenceEntry.HasSameSecondaryKey(stored, deserialized));
+        Assert.True(HttpCachePersistenceEntry.HasSameSecondaryKey(deserialized, stored));
+        Assert.Equal(stored.ComputeSecondaryKeyHash(), deserialized.ComputeSecondaryKeyHash());
+    }
+
+    [Fact]
     public async Task SqliteProviderPruneRemovesExpiredUnusableEntries()
     {
         var tempDirectory = Path.Combine(Path.GetTempPath(), "meziantou-http-cache", Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture));

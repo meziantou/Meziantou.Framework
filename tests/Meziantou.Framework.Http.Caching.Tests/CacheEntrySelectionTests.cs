@@ -84,6 +84,63 @@ public sealed class CacheEntrySelectionTests
         Assert.Equal("from-origin", await client.GetStringAsync("http://example.com/resource", CancellationToken.None));
     }
 
+    [Fact]
+    public async Task WhenAStoredEntryVariesOnNamesThatOnlyDifferByCaseThenItMatchesNoRequest()
+    {
+        // The dictionary of an entry deserialized by a store is case-sensitive, and can hold both names
+        var entry = await CreateEntryAsync("ignored", ("Accept-Language", "en"));
+        entry.SecondaryKeyHeaders = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["Accept-Language"] = "en",
+            ["accept-language"] = "fr",
+        };
+
+        var storeErrors = new List<Exception>();
+        using var innerHandler = new StubHandler();
+        using var handler = new HttpCachingDelegateHandler(innerHandler, new FixedStore(entry), new HttpCachingOptions { OnStoreError = storeErrors.Add });
+        using var client = new HttpClient(handler);
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, "http://example.com/resource");
+        request.Headers.Add("Accept-Language", "en");
+        using var response = await client.SendAsync(request, CancellationToken.None);
+
+        Assert.Equal("from-origin", await response.Content.ReadAsStringAsync(CancellationToken.None));
+        Assert.Empty(storeErrors);
+    }
+
+    [Fact]
+    public async Task WhenAStoredEntryHasAnExtremeAgeThenTheRequestGoesToTheOrigin()
+    {
+        var entry = await CreateEntryAsync("ignored");
+        entry.AgeValue = TimeSpan.MaxValue;
+        entry.RequestTime = entry.ResponseTime - TimeSpan.FromSeconds(1);
+
+        using var innerHandler = new StubHandler();
+        using var handler = new HttpCachingDelegateHandler(innerHandler, new FixedStore(entry));
+        using var client = new HttpClient(handler);
+
+        Assert.Equal("from-origin", await client.GetStringAsync("http://example.com/resource", CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task WhenAStoredEntryHasAResponseTimeInTheFutureThenItIsServedWithAZeroAge()
+    {
+        // A store shared with a machine whose clock is ahead
+        var entry = await CreateEntryAsync("cached");
+        entry.RequestTime += TimeSpan.FromHours(1);
+        entry.ResponseTime += TimeSpan.FromHours(1);
+        entry.ResponseDate += TimeSpan.FromHours(1);
+
+        using var innerHandler = new UnreachableHandler();
+        using var handler = new HttpCachingDelegateHandler(innerHandler, new FixedStore(entry));
+        using var client = new HttpClient(handler);
+
+        using var response = await client.GetAsync("http://example.com/resource", CancellationToken.None);
+
+        Assert.Equal("cached", await response.Content.ReadAsStringAsync(CancellationToken.None));
+        Assert.Equal(TimeSpan.Zero, response.Headers.Age);
+    }
+
     /// <summary>Produces a real stored entry by running one request through the handler.</summary>
     private static async Task<HttpCachePersistenceEntry> CreateEntryAsync(string body, params (string Name, string Value)[] varyHeaders)
     {

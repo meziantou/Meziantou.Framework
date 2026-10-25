@@ -55,6 +55,7 @@ public sealed class Dependency
     /// <param name="newValue">The new name value to write.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <exception cref="InvalidOperationException">Thrown when the name location is not updatable.</exception>
+    /// <exception cref="ArgumentException">The file cannot hold <paramref name="newValue"/>, such as a line break in a line of text, or a control character in an XML file.</exception>
     /// <exception cref="DependencyScannerException">The file does not hold the expected name at the location anymore.</exception>
     public Task UpdateNameAsync(string newValue, CancellationToken cancellationToken = default)
     {
@@ -72,6 +73,7 @@ public sealed class Dependency
     /// <param name="newValue">The new version value to write.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <exception cref="InvalidOperationException">Thrown when the version location is not updatable.</exception>
+    /// <exception cref="ArgumentException">The file cannot hold <paramref name="newValue"/>, such as a line break in a line of text, or a control character in an XML file.</exception>
     /// <exception cref="DependencyScannerException">The file does not hold the expected version at the location anymore.</exception>
     public Task UpdateVersionAsync(string newValue, CancellationToken cancellationToken = default)
     {

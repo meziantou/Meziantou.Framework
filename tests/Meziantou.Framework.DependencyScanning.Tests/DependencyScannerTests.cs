@@ -842,6 +842,32 @@ public sealed class DependencyScannerTests
     }
 
     [Theory]
+    [InlineData(0x0)]
+    [InlineData(0x1)]
+    [InlineData(0x1F)]
+    [InlineData(0xFFFE)]
+    [InlineData(0xD800)]
+    [InlineData(0xDC00)]
+    public async Task XmlLocation_Update_RejectsCharactersXmlCannotRepresent(int character)
+    {
+        var newValue = "a" + (char)character + "b";
+        await using var directory = TemporaryDirectory.Create();
+        var filePath = directory.GetFullPath("test.csproj");
+        const string Original = "<Project><Version A=\"1.0.0\">1.0.0</Version></Project>";
+        await File.WriteAllTextAsync(filePath, Original, XunitCancellationToken);
+
+        var element = Assert.Single((await LoadXmlDocument(filePath)).Descendants("Version"));
+        var attribute = element.Attribute("A");
+        Assert.NotNull(attribute);
+        await Assert.ThrowsAsync<ArgumentException>(nameof(newValue), () => new XmlLocation(FileSystem.Instance, filePath, element).UpdateAsync("1.0.0", newValue, XunitCancellationToken));
+        await Assert.ThrowsAsync<ArgumentException>(nameof(newValue), () => new XmlLocation(FileSystem.Instance, filePath, element, attribute).UpdateAsync("1.0.0", newValue, XunitCancellationToken));
+        Assert.Equal(Original, await File.ReadAllTextAsync(filePath, XunitCancellationToken));
+
+        await new XmlLocation(FileSystem.Instance, filePath, element).UpdateAsync("1.0.0", "\t\U0001F600", XunitCancellationToken);
+        Assert.Equal("\t\U0001F600", Assert.Single((await LoadXmlDocument(filePath)).Descendants("Version")).Value);
+    }
+
+    [Theory]
     [InlineData("<!-- comment -->1.0.0")]
     [InlineData("<![CDATA[1.0.0]]>")]
     [InlineData("<?pi data?>1.0.0")]

@@ -11,6 +11,20 @@ internal sealed class InMemoryFileSystem : IFileSystem
 
     public byte[]? GetContent(string path) => _files.GetValueOrDefault(Normalize(path));
 
+    public IReadOnlyList<string> Paths => [.. _files.Keys.Order(StringComparer.Ordinal)];
+
+    /// <summary>Gets the content of every file, to put it back with <see cref="Restore"/> after the files were updated.</summary>
+    public Dictionary<string, byte[]> Snapshot() => new(_files, StringComparer.Ordinal);
+
+    public void Restore(Dictionary<string, byte[]> snapshot)
+    {
+        _files.Clear();
+        foreach (var (path, content) in snapshot)
+        {
+            _files[path] = content;
+        }
+    }
+
     public Stream OpenRead(string path)
     {
         if (!_files.TryGetValue(Normalize(path), out var content))

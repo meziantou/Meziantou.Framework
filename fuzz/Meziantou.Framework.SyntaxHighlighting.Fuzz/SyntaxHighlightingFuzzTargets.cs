@@ -8,7 +8,8 @@ namespace Meziantou.Framework.SyntaxHighlighting.Fuzz;
 /// emitter's own <c>&lt;span class="..."&gt;</c> and <c>&lt;/span&gt;</c> tags, balanced, never between the two halves of
 /// a surrogate pair, and everything else is the input with <c>&amp; &lt; &gt; " '</c> escaped, so that removing the tags
 /// and decoding the five entities gives the input back. The match timeout is left infinite: catastrophic backtracking
-/// is a bug, which libFuzzer reports as a timeout.
+/// is a bug, which libFuzzer reports as a timeout. A large finite timeout, which compiles every regex again, gives the
+/// same output; the language names are case-insensitive; and the class prefix only changes the first class of the tags.
 /// </summary>
 public static class SyntaxHighlightingFuzzTargets
 {
@@ -16,6 +17,20 @@ public static class SyntaxHighlightingFuzzTargets
     private static readonly string[] Languages = [.. SyntaxHighlighter.GetSupportedLanguages()];
 
     private static readonly string[] ClassPrefixes = ["hljs-", "", "x_-9"];
+
+    // Far longer than any match takes, so that it never expires: the output must be the one of the infinite timeout.
+    // The library caches the grammars compiled for a timeout, so a single finite value compiles each grammar only once.
+    private static readonly HighlightOptions[] FiniteTimeoutOptions =
+    [
+        new() { IgnoreIllegals = false, MatchTimeout = TimeSpan.FromSeconds(10) },
+        new() { IgnoreIllegals = true, MatchTimeout = TimeSpan.FromSeconds(10) },
+    ];
+
+    private static readonly HighlightOptions[] DefaultOptions =
+    [
+        new() { IgnoreIllegals = false },
+        new() { IgnoreIllegals = true },
+    ];
 
     private static readonly string[] Tokens =
     [
@@ -49,11 +64,13 @@ public static class SyntaxHighlightingFuzzTargets
     public static IReadOnlyList<FuzzTarget> All { get; } =
     [
         new("highlight", Highlight) { Seeds = GetSeeds, Dictionary = Tokens },
+        new("highlight-language-name", HighlightLanguageName) { Seeds = GetLanguageNameSeeds, Dictionary = [.. Tokens, .. Languages] },
+        new("highlight-class-prefix", HighlightClassPrefix) { Seeds = GetClassPrefixSeeds, Dictionary = [.. Tokens, .. ClassPrefixes, "hljs", "language-", "\0"] },
     ];
 
     /// <summary>
-    /// The input is two bytes that select the language (little endian), a byte of options (<c>IgnoreIllegals</c> and the
-    /// class prefix), then the text.
+    /// The input is two bytes that select the language (little endian), a byte of options (<c>IgnoreIllegals</c>, the
+    /// class prefix, and in its high bit the comparison with a finite match timeout), then the text.
     /// </summary>
     private static void Highlight(ReadOnlySpan<byte> data)
     {
@@ -63,12 +80,135 @@ public static class SyntaxHighlightingFuzzTargets
         var options = new HighlightOptions
         {
             IgnoreIllegals = (flags & 1) == 0,
-            ClassPrefix = ClassPrefixes[(flags >> 1) % ClassPrefixes.Length],
+            ClassPrefix = ClassPrefixes[((flags & 0x7F) >> 1) % ClassPrefixes.Length],
         };
         var text = FuzzText.Decode(data);
 
         var html = SyntaxHighlighter.Highlight(text, language, options);
         CheckHtml(text, html, language);
+
+        if ((flags & 0x80) != 0)
+        {
+            var reference = options.ClassPrefix == "hljs-" ? html : SyntaxHighlighter.Highlight(text, language, DefaultOptions[options.IgnoreIllegals ? 1 : 0]);
+            var timed = SyntaxHighlighter.Highlight(text, language, FiniteTimeoutOptions[options.IgnoreIllegals ? 1 : 0]);
+            FuzzAssert.Equal(reference, timed, $"The output for '{language}' with a finite match timeout differs from the output with the infinite one");
+        }
+    }
+
+    /// <summary>
+    /// The input is a byte of options, then either a known language name (when the low bit is 0: two bytes that select
+    /// it, little endian, then a byte whose bits change the case of its letters) or a fuzzed name (the text up to a 0
+    /// byte), then the text to highlight. <see cref="SyntaxHighlighter.IsSupported"/>, <see cref="SyntaxHighlighter.TryHighlight"/>
+    /// and <see cref="SyntaxHighlighter.Highlight"/> agree, and a supported name highlights like the identifier it matches
+    /// ignoring the case of ASCII letters (no other character folds to an ASCII one).
+    /// </summary>
+    private static void HighlightLanguageName(ReadOnlySpan<byte> data)
+    {
+        var flags = FuzzInput.ReadByte(ref data);
+        string name;
+        if ((flags & 1) == 0)
+        {
+            var selector = FuzzInput.ReadByte(ref data) | (FuzzInput.ReadByte(ref data) << 8);
+            var caseMask = FuzzInput.ReadByte(ref data);
+            name = ChangeCase(Languages[selector % Languages.Length], caseMask);
+        }
+        else
+        {
+            name = FuzzText.Decode(FuzzInput.ReadUntil(ref data, 0));
+        }
+
+        var options = DefaultOptions[(flags >> 1) & 1];
+        var text = FuzzText.Decode(data);
+        var identifier = Array.Find(Languages, language => EqualsIgnoreAsciiCase(language, name));
+
+        var isSupported = SyntaxHighlighter.IsSupported(name);
+        FuzzAssert.Equal(identifier is not null, isSupported, $"IsSupported({FuzzAssert.Format(name)}) is wrong");
+
+        var succeeded = SyntaxHighlighter.TryHighlight(text, name, out var tryHtml, options);
+        FuzzAssert.Equal(isSupported, succeeded, $"TryHighlight with {FuzzAssert.Format(name)} disagrees with IsSupported");
+
+        string? html;
+        try
+        {
+            html = SyntaxHighlighter.Highlight(text, name, options);
+        }
+        catch (NotSupportedException)
+        {
+            html = null;
+        }
+
+        if (identifier is null)
+        {
+            FuzzAssert.True(html is null, $"Highlight with the unsupported language {FuzzAssert.Format(name)} does not throw a NotSupportedException");
+            FuzzAssert.True(tryHtml is null, $"TryHighlight with the unsupported language {FuzzAssert.Format(name)} returns some HTML");
+            return;
+        }
+
+        FuzzAssert.True(html is not null, $"Highlight with the supported language {FuzzAssert.Format(name)} throws a NotSupportedException");
+        FuzzAssert.Equal(html, tryHtml, $"TryHighlight and Highlight with {FuzzAssert.Format(name)} give different outputs");
+        FuzzAssert.Equal(SyntaxHighlighter.Highlight(text, identifier, options), html, $"The output for {FuzzAssert.Format(name)} differs from the output for '{identifier}'");
+        CheckHtml(text, html, identifier);
+    }
+
+    /// <summary>
+    /// The input is two bytes that select the language (little endian), a byte of options (<c>IgnoreIllegals</c>), a class
+    /// prefix (the text up to a 0 byte), then the text. The prefix is rejected with an <see cref="ArgumentException"/>
+    /// exactly when it contains a character other than an ASCII letter, a digit, <c>-</c> or <c>_</c>; an accepted prefix
+    /// replaces <c>hljs-</c> at the start of the class attributes and changes nothing else.
+    /// </summary>
+    private static void HighlightClassPrefix(ReadOnlySpan<byte> data)
+    {
+        var selector = FuzzInput.ReadByte(ref data) | (FuzzInput.ReadByte(ref data) << 8);
+        var flags = FuzzInput.ReadByte(ref data);
+        var language = Languages[selector % Languages.Length];
+        var prefix = FuzzText.Decode(FuzzInput.ReadUntil(ref data, 0));
+        var text = FuzzText.Decode(data);
+        var isValid = prefix.All(c => char.IsAsciiLetterOrDigit(c) || c is '-' or '_');
+
+        HighlightOptions options;
+        try
+        {
+            options = new HighlightOptions { IgnoreIllegals = (flags & 1) == 0, ClassPrefix = prefix };
+        }
+        catch (ArgumentException ex) when (ex.GetType() == typeof(ArgumentException))
+        {
+            FuzzAssert.False(isValid, $"The class prefix {FuzzAssert.Format(prefix)} is rejected: {ex.Message}");
+            return;
+        }
+
+        FuzzAssert.True(isValid, $"The class prefix {FuzzAssert.Format(prefix)} is accepted");
+        FuzzAssert.Equal(prefix, options.ClassPrefix, "The class prefix is not the one that was set");
+
+        var html = SyntaxHighlighter.Highlight(text, language, options);
+        CheckHtml(text, html, language);
+
+        const string DefaultTag = "<span class=\"hljs-";
+        var reference = SyntaxHighlighter.Highlight(text, language, DefaultOptions[options.IgnoreIllegals ? 1 : 0]);
+        FuzzAssert.Equal(reference.Replace(DefaultTag, "<span class=\"" + prefix, StringComparison.Ordinal), html, $"The class prefix {FuzzAssert.Format(prefix)} changes more than the class names of the output for '{language}'");
+    }
+
+    /// <summary>Changes the case of the ASCII letters of a name whose index (modulo 8) is set in <paramref name="mask"/>.</summary>
+    private static string ChangeCase(string name, byte mask) => string.Create(name.Length, (name, mask), static (span, state) =>
+    {
+        for (var i = 0; i < span.Length; i++)
+        {
+            var c = state.name[i];
+            span[i] = (state.mask & (1 << (i % 8))) != 0 && char.IsAsciiLetter(c) ? (char)(c ^ 0x20) : c;
+        }
+    });
+
+    private static bool EqualsIgnoreAsciiCase(string a, string b)
+    {
+        if (a.Length != b.Length)
+            return false;
+
+        for (var i = 0; i < a.Length; i++)
+        {
+            if (a[i] != b[i] && !(char.IsAsciiLetter(a[i]) && (a[i] ^ 0x20) == b[i]))
+                return false;
+        }
+
+        return true;
     }
 
     private static void CheckHtml(string input, string html, string language)
@@ -185,6 +325,34 @@ public static class SyntaxHighlightingFuzzTargets
                 // Odd flags: illegal lexemes make the result plain text
                 yield return CreateSeed(language + "-" + snippet, index, (byte)(snippet % 6), Snippets[snippet]);
             }
+
+            // High bit: compare with a finite match timeout
+            yield return CreateSeed(language + "-timeout", index, (byte)(0x80 | (index % 6)), Snippets[index % Snippets.Length]);
+        }
+    }
+
+    private static IEnumerable<FuzzSeed> GetLanguageNameSeeds()
+    {
+        for (var i = 0; i < Languages.Length; i++)
+        {
+            yield return FuzzSeed.FromText("known-" + i, [(byte)((i & 1) << 1), (byte)i, (byte)(i >> 8), (byte)(i * 37)], Snippets[i % Snippets.Length]);
+        }
+
+        // Near misses: no other character folds to an ASCII letter, and the name is not trimmed
+        string[] names = ["", "CSharp", "C#", "unknown", " c", "c ", "c\t", "\u017Fh", "\u212Ash", "\u0130ni", "\u0131ni", "\uFF43", "c\uD800", "\U0001F600", "language-c", "hljs", "js;", "c++\u0301"];
+        for (var i = 0; i < names.Length; i++)
+        {
+            yield return FuzzSeed.FromText("name-" + i, [(byte)(1 | ((i & 1) << 1)), .. FuzzText.Encode(names[i]), 0], Snippets[i % Snippets.Length]);
+        }
+    }
+
+    private static IEnumerable<FuzzSeed> GetClassPrefixSeeds()
+    {
+        string[] prefixes = ["hljs-", "", "x_-9", "my-", "A", "-", "_", "hljs-hljs-", "a b", "a\"b", "<", "&", "x>", "\u00E9", "\uD800", "\U0001F600", "a.b", "a\tb", "\uFF41"];
+        for (var i = 0; i < prefixes.Length; i++)
+        {
+            var languageIndex = Array.IndexOf(Languages, MainLanguages[i % MainLanguages.Length]);
+            yield return FuzzSeed.FromText("prefix-" + i, [(byte)languageIndex, (byte)(languageIndex >> 8), (byte)(i % 2), .. FuzzText.Encode(prefixes[i]), 0], Snippets[i % Snippets.Length]);
         }
     }
 

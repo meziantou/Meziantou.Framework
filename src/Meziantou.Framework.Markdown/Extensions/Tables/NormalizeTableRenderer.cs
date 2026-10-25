@@ -37,7 +37,12 @@ public class NormalizeTableRenderer : NormalizeObjectRenderer<Table>
                 renderer.Write(MarginSeparator);
 
                 bool previousEscapeTablePipes = renderer.EscapeTablePipes;
+                bool previousEscapeLiteralPipes = renderer.EscapeLiteralPipes;
                 renderer.EscapeTablePipes = obj.Parser is GfmPipeTableParser;
+
+                // The pipes of a literal, such as the text of a link, were not column delimiters, which the content written
+                // differently could make them
+                renderer.EscapeLiteralPipes = !renderer.EscapeTablePipes;
                 try
                 {
                     renderer.Render(tableCell);
@@ -45,6 +50,7 @@ public class NormalizeTableRenderer : NormalizeObjectRenderer<Table>
                 finally
                 {
                     renderer.EscapeTablePipes = previousEscapeTablePipes;
+                    renderer.EscapeLiteralPipes = previousEscapeLiteralPipes;
                 }
 
                 renderer.Write(MarginSeparator);

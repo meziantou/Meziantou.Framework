@@ -16,6 +16,13 @@ public class LinkReferenceDefinitionGroupRenderer : NormalizeObjectRenderer<Link
     /// </summary>
     protected override void Write(NormalizeRenderer renderer, LinkReferenceDefinitionGroup obj)
     {
+        // The definitions can already be written before a paragraph (see ParagraphRenderer). They are written again only
+        // when the next paragraph must continue them.
+        if (renderer.DefinitionsWritten && (renderer.GetNextSibling(obj) is not ParagraphBlock paragraph || !renderer.IsParagraphContinuationOnly(paragraph)))
+        {
+            return;
+        }
+
         renderer.EnsureLine();
         renderer.WriteChildren(obj);
 

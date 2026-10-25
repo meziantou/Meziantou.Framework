@@ -56,6 +56,6 @@ public class HeadingRenderer : NormalizeObjectRenderer<HeadingBlock>
             }
         }
 
-        renderer.FinishBlock(renderer.Options.EmptyLineAfterHeading);
+        renderer.FinishBlock(renderer.Options.EmptyLineAfterHeading || NormalizeRenderer.IsInLooseListItem(obj));
     }
 }

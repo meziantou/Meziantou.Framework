@@ -28,6 +28,6 @@ public class ThematicBreakRenderer : NormalizeObjectRenderer<ThematicBreakBlock>
 
         renderer.WriteLine(new string(thematicChar, obj.ThematicCharCount));
 
-        renderer.FinishBlock(renderer.Options.EmptyLineAfterThematicBreak);
+        renderer.FinishBlock(renderer.Options.EmptyLineAfterThematicBreak || NormalizeRenderer.IsInLooseListItem(obj));
     }
 }

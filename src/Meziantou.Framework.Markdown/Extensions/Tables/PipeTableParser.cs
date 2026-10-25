@@ -789,6 +789,16 @@ public class PipeTableParser : InlineParser, IPostInlineProcessor
             TableTrivia.SetFromSource(state, table, (ParagraphBlock)state.Block!, trailingParagraph);
         }
 
+        // The inlines moved to the cells can leave an empty container at the end of the paragraph, such as the one of an
+        // unclosed link
+        if (state.Block is ParagraphBlock { Inline: { } leadingInline })
+        {
+            while (leadingInline.LastChild is { } last && last.GetType() == typeof(ContainerInline) && IsEmptyInline(last))
+            {
+                last.Remove();
+            }
+        }
+
         if (state.Block is ParagraphBlock { Inline.FirstChild: not null } leadingParagraph)
         {
             // The table was preceded by a non-empty paragraph, e.g.

@@ -19,11 +19,11 @@ public class LiteralInlineRenderer : NormalizeObjectRenderer<LiteralInline>
     protected override void Write(NormalizeRenderer renderer, LiteralInline obj)
     {
         if (obj.IsFirstCharacterEscaped && obj.Content.Length > 0 && obj.Content[obj.Content.Start].IsAsciiPunctuation()
-            && !(renderer.EscapeTablePipes && obj.Content.CurrentChar is '|' or '\\'))
+            && !((renderer.EscapeTablePipes || renderer.EscapeLiteralPipes) && obj.Content.CurrentChar is '|' or '\\'))
         {
             renderer.Write('\\');
         }
-        if (renderer.EscapeTablePipes && obj.Content.AsSpan().IndexOfAny('\\', '|') >= 0)
+        if ((renderer.EscapeTablePipes || renderer.EscapeLiteralPipes) && obj.Content.AsSpan().IndexOfAny('\\', '|') >= 0)
         {
             renderer.Write(obj.Content.ToString().Replace("\\", "\\\\", StringComparison.Ordinal).Replace("|", "\\|", StringComparison.Ordinal));
         }

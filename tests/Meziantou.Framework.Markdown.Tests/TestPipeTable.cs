@@ -30,6 +30,18 @@ public sealed class TestPipeTable
     }
 
     [Theory]
+    [InlineData("|[\n-|\n|")]
+    [InlineData("|[a\n-|\n|")]
+    [InlineData("|[|\n-|-|\n|")]
+    public void UnclosedLinkInHeaderDoesNotLeaveAnEmptyParagraph(string markdown)
+    {
+        // The container of the unclosed link stayed in the paragraph, which was kept before the table
+        var document = MarkdownConverter.Parse(markdown, new MarkdownPipelineBuilder().UsePipeTables().Build());
+
+        Assert.IsType<Table>(Assert.Single(document));
+    }
+
+    [Theory]
     [InlineData("A | B\r\n---|---", new[] {50.0f, 50.0f})]
     [InlineData("A | B\r\n-|---", new[] {25.0f, 75.0f})]
     [InlineData("A | B\r\n-|---\r\nA | B\r\n---|---", new[] {25.0f, 75.0f})]

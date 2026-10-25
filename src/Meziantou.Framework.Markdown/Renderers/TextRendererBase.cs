@@ -80,10 +80,14 @@ public abstract class TextRendererBase<T> : TextRendererBase where T : TextRende
         private int _emptyLines;
         private int _remainingLines;
 
-        internal Indent(string constant)
+        internal Indent(string constant, bool spaceBeforeWhitespace = false)
         {
             _constant = constant;
+            SpaceBeforeWhitespace = spaceBeforeWhitespace;
         }
+
+        // Whether a space is written after this indent when the text after it starts with a space or a tab
+        internal bool SpaceBeforeWhitespace { get; }
 
         internal Indent(string[] lineSpecific, int[]? emptyLinesAfter = null)
         {
@@ -142,6 +146,9 @@ public abstract class TextRendererBase<T> : TextRendererBase where T : TextRende
     protected bool PreviousWasLine;
     private readonly List<Indent> _indents;
 
+    // Whether the last text of the line is an indent that needs a space before a space or a tab
+    private bool _spaceBeforeWhitespacePending;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="TextRendererBase{T}"/> class.
     /// </summary>
@@ -174,6 +181,7 @@ public abstract class TextRendererBase<T> : TextRendererBase where T : TextRende
     {
         ResetRenderingState();
         PreviousWasLine = true;
+        _spaceBeforeWhitespacePending = false;
         _indents.Clear();
     }
 
@@ -199,6 +207,13 @@ public abstract class TextRendererBase<T> : TextRendererBase where T : TextRende
     {
         ArgumentNullException.ThrowIfNull(indent);
         _indents.Add(new Indent(indent));
+    }
+
+    // A block quote marker without the space after it: the parser takes a space after the marker as part of it, so a space
+    // is written before the text of a line that starts with a space or a tab
+    internal void PushIndent(string indent, bool spaceBeforeWhitespace)
+    {
+        _indents.Add(new Indent(indent, spaceBeforeWhitespace));
     }
 
     /// <summary>
@@ -273,13 +288,47 @@ public abstract class TextRendererBase<T> : TextRendererBase where T : TextRende
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void WriteIndent(char next)
+    {
+        if (PreviousWasLine)
+        {
+            WriteIndentCore();
+        }
+
+        if (_spaceBeforeWhitespacePending)
+        {
+            WriteSpaceBeforeWhitespace(next);
+        }
+    }
+
+    private void WriteSpaceBeforeWhitespace(char next)
+    {
+        _spaceBeforeWhitespacePending = false;
+        if (next is ' ' or '\t')
+        {
+            Writer.Write(' ');
+        }
+    }
+
     private void WriteIndentCore()
     {
         PreviousWasLine = false;
+        _spaceBeforeWhitespacePending = false;
         for (int i = 0; i < _indents.Count; i++)
         {
             var indent = _indents[i];
             var indentText = indent.Next();
+            if (indentText.Length > 0)
+            {
+                if (_spaceBeforeWhitespacePending)
+                {
+                    WriteSpaceBeforeWhitespace(indentText[0]);
+                }
+
+                _spaceBeforeWhitespacePending = indent.SpaceBeforeWhitespace;
+            }
+
             Writer.Write(indentText);
         }
     }
@@ -292,7 +341,15 @@ public abstract class TextRendererBase<T> : TextRendererBase where T : TextRende
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public T Write(string? content)
     {
-        WriteIndent();
+        if (string.IsNullOrEmpty(content))
+        {
+            WriteIndent();
+        }
+        else
+        {
+            WriteIndent(content[0]);
+        }
+
         Writer.Write(content);
         return (T)this;
     }
@@ -306,7 +363,14 @@ public abstract class TextRendererBase<T> : TextRendererBase where T : TextRende
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal T Write(char c, int count)
     {
-        WriteIndent();
+        if (count > 0)
+        {
+            WriteIndent(c);
+        }
+        else
+        {
+            WriteIndent();
+        }
 
         for (int i = 0; i < count; i++)
         {
@@ -348,7 +412,7 @@ public abstract class TextRendererBase<T> : TextRendererBase where T : TextRende
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public T Write(char content)
     {
-        WriteIndent();
+        WriteIndent(content);
         if (content == '\n')
         {
             PreviousWasLine = true;
@@ -382,7 +446,7 @@ public abstract class TextRendererBase<T> : TextRendererBase where T : TextRende
     {
         if (!content.IsEmpty)
         {
-            WriteIndent();
+            WriteIndent(content[0]);
             WriteRaw(content);
             if (content[content.Length - 1] == '\n')
             {
@@ -410,7 +474,7 @@ public abstract class TextRendererBase<T> : TextRendererBase where T : TextRende
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public T WriteLine()
     {
-        WriteIndent();
+        WriteIndent('\n');
         Writer.WriteLine();
         PreviousWasLine = true;
         return (T)this;
@@ -423,7 +487,7 @@ public abstract class TextRendererBase<T> : TextRendererBase where T : TextRende
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public T WriteLine(NewLine newLine)
     {
-        WriteIndent();
+        WriteIndent('\n');
         Writer.Write(newLine.AsString());
         PreviousWasLine = true;
         return (T)this;
@@ -437,7 +501,7 @@ public abstract class TextRendererBase<T> : TextRendererBase where T : TextRende
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public T WriteLine(string content)
     {
-        WriteIndent();
+        WriteIndent(string.IsNullOrEmpty(content) ? '\n' : content[0]);
         PreviousWasLine = true;
         Writer.WriteLine(content);
         return (T)this;
@@ -451,7 +515,7 @@ public abstract class TextRendererBase<T> : TextRendererBase where T : TextRende
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public T WriteLine(char content)
     {
-        WriteIndent();
+        WriteIndent(content);
         PreviousWasLine = true;
         Writer.WriteLine(content);
         return (T)this;

@@ -4,6 +4,7 @@
 
 using System.IO;
 using System.Text;
+using Meziantou.Framework.Markdown.Extensions.Tables;
 using Meziantou.Framework.Markdown.Helpers;
 using Meziantou.Framework.Markdown.Parsers;
 using Meziantou.Framework.Markdown.Renderers.Normalize.Inlines;
@@ -50,11 +51,13 @@ public class NormalizeRenderer : TextRendererBase<NormalizeRenderer>
 
         ObjectWriteBefore += (_, obj) =>
         {
-            if (obj is MarkdownDocument)
+            if (obj is MarkdownDocument document)
             {
+                Definitions = GetDefinitions(document);
                 _childIndexes.Clear();
                 BulletCharacters.Clear();
                 LiteralDelimiterCache = null;
+                DefinitionsWritten = false;
             }
         };
     }
@@ -72,6 +75,9 @@ public class NormalizeRenderer : TextRendererBase<NormalizeRenderer>
     // Raw inline content must escape pipes when emitted inside a GFM table.
     internal bool EscapeTablePipes { get; set; }
 
+    // The pipes of the literals are escaped, so that a paragraph is not parsed back as a table
+    internal bool EscapeLiteralPipes { get; set; }
+
     // The pipeline set up with this renderer, which decides the lines that can start a block
     internal MarkdownPipeline? Pipeline { get; set; }
 
@@ -84,6 +90,25 @@ public class NormalizeRenderer : TextRendererBase<NormalizeRenderer>
 
     // The bullet, or the delimiter, written for each list of the document
     internal Dictionary<ListBlock, char> BulletCharacters { get; } = new(ReferenceEqualityComparer.Instance);
+
+    // Whether the link reference definitions of the document are written before a paragraph that must continue them
+    internal bool DefinitionsWritten { get; set; }
+
+    // The link reference definitions of the document being written
+    internal LinkReferenceDefinitionGroup? Definitions { get; private set; }
+
+    private static LinkReferenceDefinitionGroup? GetDefinitions(MarkdownDocument document)
+    {
+        foreach (var block in document)
+        {
+            if (block is LinkReferenceDefinitionGroup group)
+            {
+                return group;
+            }
+        }
+
+        return null;
+    }
 
     // Whether a literal of an inline tree contains a code span delimiter, which all the code spans of the tree need
     internal (ContainerInline Root, char Delimiter, bool Result)? LiteralDelimiterCache { get; set; }
@@ -111,12 +136,53 @@ public class NormalizeRenderer : TextRendererBase<NormalizeRenderer>
         }
     }
 
+    // The blank line after a block of an item of a loose list can be the one that makes the list loose, so the options
+    // that remove the blank line after a block do not apply there
+    internal static bool IsInLooseListItem(Block block) => block.Parent is ListItemBlock { Parent: ListBlock { IsLoose: true } };
+
     /// <summary>
     /// Writes the inlines of a paragraph line by line. A continuation line that would start a block, or turn the paragraph
     /// into a setext heading, is indented by 4 spaces: the indentation is not part of the content, and cannot start a block.
     /// The first line is escaped when it would start a block, for example with the list item markers written before it.
     /// </summary>
-    internal void WriteParagraphInline(LeafBlock leafBlock) => WriteParagraphInline(leafBlock, RenderLeafInline(leafBlock));
+    internal void WriteParagraphInline(LeafBlock leafBlock)
+    {
+        var text = RenderLeafInline(leafBlock);
+        if (!EscapeTablePipes && !EscapeLiteralPipes && text.Contains('|', StringComparison.Ordinal) && IsGfmTable(text))
+        {
+            // The lines that continue a paragraph lazily are written indented, which makes them part of a GFM table
+            EscapeLiteralPipes = true;
+            try
+            {
+                text = RenderLeafInline(leafBlock);
+            }
+            finally
+            {
+                EscapeLiteralPipes = false;
+            }
+        }
+
+        WriteParagraphInline(leafBlock, text);
+    }
+
+    private bool IsGfmTable(string text)
+    {
+        var parsers = (Pipeline ?? MarkdownConverter.DefaultPipeline).BlockParsers;
+        if (!parsers.Any(parser => parser is GfmPipeTableParser))
+        {
+            return false;
+        }
+
+        foreach (var block in ParseBlocks(text))
+        {
+            if (block is Table)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     internal void WriteParagraphInline(LeafBlock leafBlock, string text)
     {
@@ -183,6 +249,7 @@ public class NormalizeRenderer : TextRendererBase<NormalizeRenderer>
         try
         {
             renderer.EscapeTablePipes = EscapeTablePipes;
+            renderer.EscapeLiteralPipes = EscapeLiteralPipes;
             renderer.Pipeline = Pipeline;
             renderer.LiteralDelimiterCache = null;
             renderer.WriteLeafInline(leafBlock);

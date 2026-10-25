@@ -58,7 +58,7 @@ public class CodeBlockRenderer : NormalizeObjectRenderer<CodeBlock>
             renderer.WriteLeafRawLines(obj, false, true);
         }
 
-        renderer.FinishBlock(renderer.Options.EmptyLineAfterCodeBlock);
+        renderer.FinishBlock(renderer.Options.EmptyLineAfterCodeBlock || NormalizeRenderer.IsInLooseListItem(obj));
     }
 
     private static int GetFencedCharCount(FencedCodeBlock fencedCodeBlock)

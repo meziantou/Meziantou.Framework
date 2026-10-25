@@ -21,7 +21,8 @@ public class LinkInlineRenderer : NormalizeObjectRenderer<LinkInline>
     {
         if (link.IsAutoLink && !renderer.Options.ExpandAutoLinks)
         {
-            renderer.Write(link.Url);
+            // The URL of a www. link starts with the scheme that the parser adds, which would be written as the text of the link
+            renderer.Write(GetLiteralText(link) is { } literalText && literalText.StartsWith("www.", StringComparison.Ordinal) && link.Url is not null && link.Url.EndsWith(literalText, StringComparison.Ordinal) ? literalText : link.Url);
             return;
         }
 

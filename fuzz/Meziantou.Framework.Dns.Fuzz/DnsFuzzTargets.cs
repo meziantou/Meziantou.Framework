@@ -15,6 +15,7 @@ public static class DnsFuzzTargets
     [
         new("dns-server-message", DnsServerFuzzTargets.Message) { Seeds = DnsSeeds.GetMessageSeeds, Dictionary = DnsSeeds.WireTokens },
         new("dns-server-request", DnsServerFuzzTargets.Request) { Seeds = DnsSeeds.GetRequestSeeds, Dictionary = DnsSeeds.WireTokens },
+        new("dns-server-doh", DnsServerFuzzTargets.DnsOverHttps) { Seeds = DnsSeeds.GetDnsOverHttpsSeeds, Dictionary = DnsSeeds.WireTokens },
         new("dns-client-response", DnsClientFuzzTargets.Response) { Seeds = DnsSeeds.GetResponseSeeds, Dictionary = DnsSeeds.WireTokens },
         new("dns-client-dnssec", DnsClientFuzzTargets.Dnssec) { Seeds = DnsSeeds.GetDnssecSeeds, Dictionary = DnsSeeds.WireTokens },
         new("dns-client-dnssec-signed", DnsClientFuzzTargets.SignedDnssec) { Seeds = DnsSeeds.GetDnssecSeeds, Dictionary = DnsSeeds.WireTokens },

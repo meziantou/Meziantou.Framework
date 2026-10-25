@@ -902,6 +902,29 @@ public sealed class DnsServerIntegrationTests
         }
     }
 
+    [Theory]
+    [InlineData("!!!!")]
+    [InlineData("AAAA*AAA")]
+    [InlineData("A")]
+    [InlineData("q80BAAAAAA=")]
+    public async Task DoH_Get_InvalidBase64Url_ReturnsBadRequest(string parameter)
+    {
+        await using var app = await StartDohServerAsync();
+        try
+        {
+            var address = app.Urls.First(u => u.StartsWith("http://", StringComparison.Ordinal));
+            using var httpClient = new HttpClient { BaseAddress = new Uri(address) };
+
+            using var response = await httpClient.GetAsync("/dns-query?dns=" + Uri.EscapeDataString(parameter), XunitCancellationToken);
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        }
+        finally
+        {
+            await app.StopAsync();
+        }
+    }
+
     [Fact]
     public async Task DoH_OversizedBody_ReturnsPayloadTooLarge()
     {

@@ -386,6 +386,7 @@ public class EmitterTests : YamlTest
     [InlineData("%TAG !m! !m!!booly-\n--- !<!m!light> green\n", "%TAG !m! !m!!booly-\n--- !m%21light green\n...\n", "!m!light")]
     [InlineData("%TAG !! !!booly-\n--- !!light green\n", "%TAG !! !!booly-\n--- !!light green\n...\n", "!!booly-light")]
     [InlineData("%TAG !m! !other-\n--- !m!light green\n", "%TAG !m! !other-\n--- !m!light green\n...\n", "!other-light")]
+    [InlineData("%TAG ! !!booly-\n--- !light green\n", "%TAG ! !!booly-\n--- !light green\n...\n", "!!booly-light")]
     public void WriteTo_TagDirectiveWithLocalPrefixStartingWithHandle_RoundTrips(string input, string expected, string expectedTag)
     {
         var yaml = SaveAndReload(input, out var reloaded);

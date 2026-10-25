@@ -219,6 +219,48 @@ public sealed class PdfDocumentTests
     }
 
     [Fact]
+    public void AnEncryptedDocumentRepairedForItsCatalogIsWrittenWithItsKeys()
+    {
+        var document = new PdfDocument();
+        document.Pages.Add(PdfSize.A4).CreateContentBuilder().DrawText("Text", PdfFont.GetStandardFont(PdfStandardFont.Helvetica), 24, 60, 700);
+        document.Encryption = new PdfEncryption("", "owner") { Algorithm = PdfEncryptionAlgorithm.AesWith128BitKey };
+        var file = Encoding.Latin1.GetString(document.ToByteArray(new PdfSaveOptions { UseObjectStreams = false }));
+
+        // The trailer has the encryption and the identifier, but its /Root is missing: the repair finds the catalog
+        var root = file.LastIndexOf("/Root ", StringComparison.Ordinal);
+        var damaged = Encoding.Latin1.GetBytes(file[..root] + "/Root 99" + file[file.IndexOf(" ", root + 6, StringComparison.Ordinal)..]);
+        var read = PdfDocument.Open(damaged);
+        Assert.True(read.IsRepaired);
+        Assert.True(read.IsEncrypted);
+        Assert.Equal("Text", read.Pages[0].ExtractText());
+
+        var written = PdfDocument.Open(read.ToByteArray());
+        Assert.True(written.IsEncrypted);
+        Assert.Equal("Text", written.Pages[0].ExtractText());
+    }
+
+    [Fact]
+    public void AStreamInTheEncryptionDictionaryIsNotWrittenInIt()
+    {
+        var document = new PdfDocument();
+        document.Pages.Add(PdfSize.A4).CreateContentBuilder().DrawText("Text", PdfFont.GetStandardFont(PdfStandardFont.Helvetica), 24, 60, 700);
+        document.Encryption = new PdfEncryption("", "owner") { Algorithm = PdfEncryptionAlgorithm.AesWith256BitKey };
+        var file = Encoding.Latin1.GetString(document.ToByteArray(new PdfSaveOptions { UseObjectStreams = false }));
+
+        // An entry of the encryption dictionary refers to the content stream, which cannot be a direct object
+        var contents = file.IndexOf("/Contents ", StringComparison.Ordinal) + "/Contents ".Length;
+        var reference = file[contents..file.IndexOf(" R", contents, StringComparison.Ordinal)] + " R";
+        var filter = file.IndexOf("/Filter /Standard", StringComparison.Ordinal);
+        var read = PdfDocument.Open(Encoding.Latin1.GetBytes(file[..filter] + "/Extra " + reference + " " + file[filter..]));
+
+        var bytes = read.ToByteArray(new PdfSaveOptions { UseObjectStreams = false });
+        Assert.Contains("/Extra null", Encoding.Latin1.GetString(bytes), StringComparison.Ordinal);
+        var written = PdfDocument.Open(bytes);
+        Assert.True(written.IsEncrypted);
+        Assert.Single(written.Pages);
+    }
+
+    [Fact]
     public void TamperedPermissionsOfRevision6AreNotTrusted()
     {
         // /P is outside the encryption: revision 6 repeats it in /Perms, encrypted with the file key

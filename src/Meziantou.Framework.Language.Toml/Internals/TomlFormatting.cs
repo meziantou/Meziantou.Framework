@@ -140,7 +140,17 @@ internal static class TomlFormatting
         if (double.IsNegativeInfinity(value))
             return "-inf";
 
-        var text = value.ToString("R", CultureInfo.InvariantCulture);
+        var format = "R";
+#if !NET11_0_OR_GREATER
+        // .NET 10 formats 2^-25 and 2^-958 with "R" as 2.980232238769531E-08 and 4.104536801298376E-289, which read back
+        // as the previous floats. Their shortest round-tripping forms have 17 digits, as .NET 11 gives.
+        if (Math.Abs(value) is 2.9802322387695312E-08 or 4.1045368012983762E-289)
+        {
+            format = "G17";
+        }
+#endif
+
+        var text = value.ToString(format, CultureInfo.InvariantCulture);
 
         // A float needs a fraction or an exponent, or it reads back as an integer: 1 is written 1.0.
         if (!text.Contains('.', StringComparison.Ordinal) && !text.Contains('E', StringComparison.Ordinal))

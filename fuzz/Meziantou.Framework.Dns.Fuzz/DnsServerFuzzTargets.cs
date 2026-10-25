@@ -1,4 +1,6 @@
 using System.Buffers.Binary;
+using System.Buffers.Text;
+using System.Globalization;
 using System.Net;
 using Meziantou.Framework.DnsServer.Handler;
 using Meziantou.Framework.DnsServer.Hosting;
@@ -6,7 +8,12 @@ using Meziantou.Framework.DnsServer.Protocol;
 using Meziantou.Framework.DnsServer.Protocol.Records;
 using Meziantou.Framework.DnsServer.Protocol.Wire;
 using Meziantou.Framework.Fuzzing;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Primitives;
 using ClientProtocol = Meziantou.Framework.DnsClient.Protocol;
 using ClientRecords = Meziantou.Framework.DnsClient.Response.Records;
 using ClientResponse = Meziantou.Framework.DnsClient.Response;
@@ -29,6 +36,9 @@ internal static class DnsServerFuzzTargets
     private static readonly int[] ResponseSizes = [512, 1232, 4096, ushort.MaxValue];
 
     private static readonly DnsServerProtocol[] Protocols = [DnsServerProtocol.Udp, DnsServerProtocol.Tcp, DnsServerProtocol.Tls, DnsServerProtocol.Https, DnsServerProtocol.Quic];
+
+    /// <summary>The longest base64url string the DNS over HTTPS endpoint decodes: one that can hold a message of the maximum size.</summary>
+    private const int MaxEncodedQueryLength = ((DnsMessageEncoder.MaxMessageSize + 2) / 3 * 4) + 4;
 
     private static readonly IPEndPoint RemoteEndPoint = new(IPAddress.Loopback, 50000);
 
@@ -225,6 +235,122 @@ internal static class DnsServerFuzzTargets
         }
     }
 
+    /// <summary>
+    /// The first byte selects the request (bits 0-2: a POST with a DNS content type, another content type or none, a GET
+    /// with the rest encoded in base64url, with the rest as the <c>dns</c> parameter, without the parameter, or with an empty one), whether a
+    /// POST sends its Content-Length (bit 3), and the handler (bits 4-5); the rest is the message. The endpoints of
+    /// <see cref="DnsEndpointRouteBuilderExtensions.MapDnsOverHttps"/> never throw, answer 200 with exactly the response
+    /// the request processor gives for the decoded bytes, 400 when it gives none or the parameter is missing or is not
+    /// base64url, 413 for a parameter longer than a message can be, and 415 for a POST without the DNS content type.
+    /// </summary>
+    public static void DnsOverHttps(ReadOnlySpan<byte> data)
+    {
+        var flags = FuzzInput.ReadByte(ref data);
+        var mode = (DohMode)(flags & 0x07);
+        var server = FuzzInput.Pick(DohServer.All, (byte)(flags >> 4));
+
+        var context = new DefaultHttpContext { RequestServices = server.Services };
+        context.Response.Body = new MemoryStream();
+        byte[]? queryBytes = null;
+        int? expectedStatusCode = null;
+        RequestDelegate endpoint;
+        if (mode <= DohMode.PostWithoutContentType)
+        {
+            endpoint = server.Post;
+            context.Request.Method = HttpMethods.Post;
+            context.Request.ContentType = mode switch
+            {
+                DohMode.Post => "application/dns-message",
+                DohMode.PostWithParameters => "Application/DNS-Message; charset=utf-8",
+                DohMode.PostWithOtherContentType => "application/json",
+                _ => null,
+            };
+            context.Request.Body = new MemoryStream(data.ToArray());
+            if ((flags & 0x08) is not 0)
+            {
+                context.Request.ContentLength = data.Length;
+            }
+
+            if (mode is DohMode.PostWithOtherContentType or DohMode.PostWithoutContentType)
+            {
+                expectedStatusCode = StatusCodes.Status415UnsupportedMediaType;
+            }
+            else if (data.Length > DnsMessageEncoder.MaxMessageSize && context.Request.ContentLength is not null)
+            {
+                expectedStatusCode = StatusCodes.Status413PayloadTooLarge;
+            }
+            else
+            {
+                queryBytes = data.ToArray();
+            }
+        }
+        else
+        {
+            endpoint = server.Get;
+            context.Request.Method = HttpMethods.Get;
+            string? parameter = mode switch
+            {
+                DohMode.GetBase64Url => Base64Url.EncodeToString(data),
+                DohMode.GetParameter => FuzzText.Decode(data),
+                DohMode.GetEmptyParameter => "",
+                _ => null,
+            };
+
+            if (parameter is not null)
+            {
+                context.Request.Query = new QueryCollection(new Dictionary<string, StringValues>(StringComparer.Ordinal) { ["dns"] = parameter });
+            }
+
+            if (parameter is null)
+            {
+                expectedStatusCode = StatusCodes.Status400BadRequest;
+            }
+            else if (parameter.Length > MaxEncodedQueryLength)
+            {
+                expectedStatusCode = StatusCodes.Status413PayloadTooLarge;
+            }
+            else
+            {
+                try
+                {
+                    queryBytes = Base64Url.DecodeFromChars(parameter);
+                    FuzzAssert.True(mode is not DohMode.GetBase64Url || queryBytes.AsSpan().SequenceEqual(data), "Base64url decoding must give the encoded bytes back");
+                }
+                catch (FormatException)
+                {
+                    FuzzAssert.True(mode is not DohMode.GetBase64Url, "A base64url-encoded message must decode");
+                    expectedStatusCode = StatusCodes.Status400BadRequest;
+                }
+            }
+        }
+
+        try
+        {
+            endpoint(context).GetAwaiter().GetResult();
+        }
+        catch (Exception ex) when (ex is not FuzzAssertionException)
+        {
+            throw new FuzzAssertionException($"The DNS over HTTPS endpoint threw ({mode})", ex);
+        }
+
+        var body = ((MemoryStream)context.Response.Body).ToArray();
+        byte[]? expectedResponse = null;
+        if (queryBytes is not null)
+        {
+            expectedResponse = server.Processor.ProcessAsync(queryBytes, DnsServerProtocol.Https, new IPEndPoint(IPAddress.Loopback, 0), DnsMessageEncoder.MaxMessageSize, CancellationToken.None, replyWithFormatError: false).AsTask().GetAwaiter().GetResult();
+            expectedStatusCode = expectedResponse is null ? StatusCodes.Status400BadRequest : StatusCodes.Status200OK;
+        }
+
+        FuzzAssert.Equal(expectedStatusCode, context.Response.StatusCode, $"Unexpected status code ({mode})");
+        if (expectedResponse is null)
+            return;
+
+        FuzzAssert.Equal("application/dns-message", context.Response.ContentType, "A DNS response must have the DNS content type");
+        FuzzAssert.True(body.AsSpan().SequenceEqual(expectedResponse), "The endpoint must answer the response of the request processor for the decoded bytes");
+        var cacheControl = context.Response.Headers.CacheControl.ToString();
+        FuzzAssert.True(cacheControl is "no-store" || (cacheControl.StartsWith("max-age=", StringComparison.Ordinal) && uint.TryParse(cacheControl.AsSpan(8), NumberStyles.None, CultureInfo.InvariantCulture, out var maxAge) && maxAge > 0), $"Unexpected Cache-Control {FuzzAssert.Format(cacheControl)}");
+    }
+
     private static ClientResponse.DnsResponseMessage? TryDecodeWithClient(ReadOnlySpan<byte> data)
     {
         try
@@ -390,6 +516,68 @@ internal static class DnsServerFuzzTargets
     }
 
     private static bool IsEchoed(DnsResourceRecord record) => record.Data is not DnsUnknownRecordData and not DnsOptRecordData;
+
+    private enum DohMode
+    {
+        Post,
+        PostWithParameters,
+        PostWithOtherContentType,
+        PostWithoutContentType,
+        GetBase64Url,
+        GetParameter,
+        GetWithoutParameter,
+        GetEmptyParameter,
+    }
+
+    /// <summary>The endpoints <see cref="DnsEndpointRouteBuilderExtensions.MapDnsOverHttps"/> maps, called without a web server.</summary>
+    private sealed class DohServer
+    {
+        public static DohServer[] All { get; } = [new(RequestHandlerKind.Default), new(RequestHandlerKind.Answer), new(RequestHandlerKind.Large)];
+
+        private DohServer(RequestHandlerKind handlerKind)
+        {
+            var services = new ServiceCollection();
+            services.AddLogging();
+            services.AddSingleton(new DnsServerOptions());
+            services.AddSingleton<DnsRequestDelegateHolder>();
+            services.AddSingleton<DnsRequestProcessor>();
+            Services = services.BuildServiceProvider();
+            if (handlerKind is not RequestHandlerKind.Default)
+            {
+                Services.GetRequiredService<DnsRequestDelegateHolder>().SetHandler((context, _) => ValueTask.FromResult(CreateResponse(context, handlerKind)));
+            }
+
+            Processor = Services.GetRequiredService<DnsRequestProcessor>();
+
+            var endpoints = new EndpointRouteBuilder(Services);
+            endpoints.MapDnsOverHttps();
+            var routeEndpoints = endpoints.DataSources.SelectMany(source => source.Endpoints).ToArray();
+            Post = GetRequestDelegate(routeEndpoints, HttpMethods.Post);
+            Get = GetRequestDelegate(routeEndpoints, HttpMethods.Get);
+        }
+
+        public IServiceProvider Services { get; }
+
+        public DnsRequestProcessor Processor { get; }
+
+        public RequestDelegate Post { get; }
+
+        public RequestDelegate Get { get; }
+
+        private static RequestDelegate GetRequestDelegate(Endpoint[] endpoints, string method)
+        {
+            return endpoints.Single(endpoint => endpoint.Metadata.GetMetadata<HttpMethodMetadata>()?.HttpMethods.Contains(method, StringComparer.Ordinal) is true).RequestDelegate!;
+        }
+    }
+
+    private sealed class EndpointRouteBuilder(IServiceProvider serviceProvider) : IEndpointRouteBuilder
+    {
+        public IServiceProvider ServiceProvider { get; } = serviceProvider;
+
+        public ICollection<EndpointDataSource> DataSources { get; } = [];
+
+        public IApplicationBuilder CreateApplicationBuilder() => new ApplicationBuilder(ServiceProvider);
+    }
 
     private enum RequestHandlerKind
     {

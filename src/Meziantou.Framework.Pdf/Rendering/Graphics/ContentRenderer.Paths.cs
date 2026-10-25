@@ -8,6 +8,9 @@ internal sealed partial class ContentRenderer
     // The segments of a path
     private const int MaxPathSegments = 1 << 20;
 
+    // The largest magnitude of a coordinate the canvas draws
+    private const double MaxCoordinate = 1 << 24;
+
     private VectorPathBuilder? _path;
     private int _pathSegments;
     private bool _hasCurrentPoint;
@@ -19,6 +22,7 @@ internal sealed partial class ContentRenderer
 
     private void MoveTo(double x, double y)
     {
+        CheckPoint(x, y);
         _path ??= new VectorPathBuilder();
         ChargeSegment();
         _path.MoveTo(x, y);
@@ -35,6 +39,7 @@ internal sealed partial class ContentRenderer
             return;
         }
 
+        CheckPoint(x, y);
         ChargeSegment();
         _path!.LineTo(x, y);
         (_currentX, _currentY) = (x, y);
@@ -42,6 +47,9 @@ internal sealed partial class ContentRenderer
 
     private void CurveTo(double x1, double y1, double x2, double y2, double x3, double y3)
     {
+        CheckPoint(x1, y1);
+        CheckPoint(x2, y2);
+        CheckPoint(x3, y3);
         if (!_hasCurrentPoint)
         {
             MoveTo(x1, y1);
@@ -68,6 +76,23 @@ internal sealed partial class ContentRenderer
         LineTo(x + width, y + height);
         LineTo(x, y + height);
         ClosePath();
+    }
+
+    /// <summary>Creates the path of a rectangle of user space; <see langword="null"/> for a rectangle beyond the coordinates the canvas draws.</summary>
+    internal static VectorPath? CreateRectanglePath(PdfRectangle rectangle)
+    {
+        if (!(Math.Abs(rectangle.Left) <= MaxCoordinate && Math.Abs(rectangle.Right) <= MaxCoordinate && Math.Abs(rectangle.Bottom) <= MaxCoordinate && Math.Abs(rectangle.Top) <= MaxCoordinate))
+            return null;
+
+        return new VectorPathBuilder().MoveTo(rectangle.Left, rectangle.Bottom).LineTo(rectangle.Right, rectangle.Bottom).LineTo(rectangle.Right, rectangle.Top).LineTo(rectangle.Left, rectangle.Top).Close().Build();
+    }
+
+    /// <summary>Rejects a point beyond the coordinates the canvas draws: the operator that adds it is skipped.</summary>
+    private static void CheckPoint(double x, double y)
+    {
+        // Written so that a value that is not a number is rejected too
+        if (!(Math.Abs(x) <= MaxCoordinate && Math.Abs(y) <= MaxCoordinate))
+            throw new InvalidPdfContentException("A point of the path is beyond the coordinates that can be drawn");
     }
 
     private void ChargeSegment()
@@ -119,9 +144,9 @@ internal sealed partial class ContentRenderer
             }
         }
 
-        if (clip is { } clipRule && TryGetDeviceTransform(_state.Ctm, out var transform))
+        if (clip is { } clipRule && TryGetDeviceTransform(_state.Ctm, out var transform) && TransformPath(path, transform) is { } devicePath)
         {
-            AddClip(path.Transform(transform), clipRule);
+            AddClip(devicePath, clipRule);
         }
     }
 
@@ -152,13 +177,15 @@ internal sealed partial class ContentRenderer
             return;
 
         _cache.Charge(path.Bounds.Width > 0 ? 4 : 1);
-        var devicePath = path.Transform(transform);
+        if (TransformPath(path, transform) is not { } devicePath)
+            return;
+
         Paint(canvas, stroke: false, (target, brush) => target.Fill(brush, devicePath, fillRule), devicePath.Bounds);
     }
 
     private void StrokeUserPath(DrawingCanvas canvas, VectorPath path)
     {
-        if (!TryGetDeviceTransform(_state.Ctm, out var transform))
+        if (!TryGetDeviceTransform(_state.Ctm, out var transform) || TransformPath(path, transform) is not { } devicePath)
             return;
 
         var pen = CreatePen(_state.LineWidth, transform, scalesWithTransform: true);
@@ -166,7 +193,20 @@ internal sealed partial class ContentRenderer
         // The half width of the line in device space, as far as the miters of its joins and the squares of its caps go
         var width = Math.Max(_state.LineWidth * (Math.Abs(transform.M11) + Math.Abs(transform.M12) + Math.Abs(transform.M21) + Math.Abs(transform.M22)), 1);
         var margin = width / 2 * Math.Max(_state.LineJoin == LineJoin.Miter ? _state.MiterLimit : 1, 1.5);
-        Paint(canvas, stroke: true, (target, brush) => target.Transform(transform, c => c.Stroke(pen(brush), path)), path.Transform(transform).Bounds, margin);
+        Paint(canvas, stroke: true, (target, brush) => target.Transform(transform, c => c.Stroke(pen(brush), path)), devicePath.Bounds, margin);
+    }
+
+    /// <summary>Transforms a path to device space; <see langword="null"/> for a path that the transform takes beyond the coordinates the canvas draws (2^24), which is not drawn.</summary>
+    internal static VectorPath? TransformPath(VectorPath path, AffineTransform transform)
+    {
+        try
+        {
+            return path.Transform(transform);
+        }
+        catch (ArgumentException)
+        {
+            return null;
+        }
     }
 
     /// <summary>Creates the pen of the current line parameters: a width of 0 is the thinnest line the device can draw, one pixel (8.4.3.2).</summary>

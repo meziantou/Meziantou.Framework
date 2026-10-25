@@ -189,6 +189,28 @@
       "expectedLoad": "success"
     },
     {
+      "id": "heif/ftyp-large-size-brand-past-detection-prefix-min",
+      "file": "heif-ftyp-large-size-brand-past-detection-prefix.min.avif",
+      "sha256": "aa681503d84ff2b66157eddbcfa57f97a70bd6e370f027db58f79631438501a2",
+      "origin": "fuzz-minimized",
+      "license": "CC0-1.0",
+      "foundBy": "FuzzTests group heic-still, weekly campaign (run 40164893717), base seed 40164893717, 420 s, mutation 33665 of heic/alpha-mpegb-urn (reader variant 83); minimized by FuzzMinimizer from 1190 to 20 bytes",
+      "defect": "The file type box stores its size in the 64-bit field (0: up to the end of the file) and its major brand, at offset 16, starts with \"mi\" but is not a brand. DetectFormat, given the whole file, read the four characters of the brand and returned Unknown, while the reader, which detects the format from the first 18 bytes, saw \"mi\" only, read the file as AVIF and threw InvalidImageContentException (the file type box is too large). Fixed in AvifCodec.MatchesSignature and HeicCodec.MatchesSignature: the first two characters of such a brand decide whatever the length of the prefix.",
+      "expectedIdentify": "InvalidImageContentException",
+      "expectedLoad": "InvalidImageContentException"
+    },
+    {
+      "id": "heic/sequence-sample-past-end-of-file-min",
+      "file": "heic-sequence-sample-past-end-of-file.min.heics",
+      "sha256": "8d6884e0842652b94af363d68c148faa36397fe1a56af9ee519e7d4503bc41c7",
+      "origin": "fuzz-minimized",
+      "license": "CC0-1.0",
+      "foundBy": "FuzzTests group heic-sequence, weekly campaign (run 40164893717), base seed 40164893717, 420 s, mutation 301167 of heic/sequence-clap-odd-420 (reader variant 98); minimized by FuzzMinimizer from 1260 to 1254 bytes",
+      "defect": "The file ends where the last of the four samples of the track starts, and the decoder outputs the four images from the first three samples: full identification, which waits for the data of every sample, threw InvalidImageContentException (truncated) while the loads ended once the last image was written and decoded the sequence. Fixed in HeifStructureParser.TryAdvanceSequence: a decoding walk waits for the data of the samples that it did not need before it ends.",
+      "expectedIdentify": "InvalidImageContentException",
+      "expectedLoad": "InvalidImageContentException"
+    },
+    {
       "id": "cur/png-payload-illegal-color-type",
       "file": "cur-png-payload-illegal-color-type.min.cur",
       "sha256": "b189c5632d3bd1d3161ab6b15f0e1563ebefaf41e3faec9177b7dfe0af3e9a69",

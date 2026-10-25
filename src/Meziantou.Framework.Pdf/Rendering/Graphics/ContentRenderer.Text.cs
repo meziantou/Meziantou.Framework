@@ -142,20 +142,19 @@ internal sealed partial class ContentRenderer
     private void DrawGlyph(DrawingCanvas canvas, VectorPath glyph, PdfMatrix rendering, int mode)
     {
         var toUser = rendering;
-        if (mode is 0 or 2 or 4 or 6 && _optionalContent.IsVisible && TryGetDeviceTransform(toUser * _state.Ctm, out var toDevice))
+        if (mode is 0 or 2 or 4 or 6 && _optionalContent.IsVisible && TryGetDeviceTransform(toUser * _state.Ctm, out var toDevice) && TransformPath(glyph, toDevice) is { } devicePath)
         {
-            var devicePath = glyph.Transform(toDevice);
             Paint(canvas, stroke: false, (target, brush) => target.Fill(brush, devicePath, FillRule.NonZero), devicePath.Bounds);
         }
 
-        if (mode is 1 or 2 or 5 or 6 && _optionalContent.IsVisible && TryGetDeviceTransform(toUser, out var toUserTransform))
+        if (mode is 1 or 2 or 5 or 6 && _optionalContent.IsVisible && TryGetDeviceTransform(toUser, out var toUserTransform) && TransformPath(glyph, toUserTransform) is { } userPath)
         {
-            StrokeUserPath(canvas, glyph.Transform(toUserTransform));
+            StrokeUserPath(canvas, userPath);
         }
 
-        if (mode >= 4 && TryGetDeviceTransform(toUser * _state.Ctm, out var clipTransform))
+        if (mode >= 4 && TryGetDeviceTransform(toUser * _state.Ctm, out var clipTransform) && TransformPath(glyph, clipTransform) is { } clipPath)
         {
-            (_textClip ??= []).Add(glyph.Transform(clipTransform));
+            (_textClip ??= []).Add(clipPath);
         }
     }
 

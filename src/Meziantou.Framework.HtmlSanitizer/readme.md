@@ -216,9 +216,13 @@ An element is handled in one of three ways:
 - It is in `BlockedElements`, or its content is text rather than markup (`script`, `style`, `title`, `textarea`, `iframe`, `noscript`, `noembed`, `noframes`, `plaintext`, `xmp`): the element is removed **with its content**. This takes precedence over `ValidElements` — the content of most of these elements is written back exactly as it was read, so it can never be sanitized and adding such an element to `ValidElements` has no effect.
 - Otherwise, it is an HTML element in `ValidElements`: the element and its content are kept, and its attributes are sanitized. The content of a `template` element is sanitized too.
 - Otherwise the element is unwrapped: the tag is dropped but its content is kept and sanitized. SVG and MathML elements (`svg`, `math` and their descendants) are always unwrapped, even when their name is in `ValidElements`, as a browser parses them with different rules.
-- A link (`a`) inside another link with no table cell between them, or a heading (`h1`-`h6`) whose parent is a heading,
-  is unwrapped as well. The parser only builds them when an element separates them, such as `object` or `template`;
-  once that element is unwrapped (`<a><object><a>`), a browser would not read the markup back as the same elements.
+- An element is unwrapped as well when it is where the parser of a browser never puts it, as a browser would not read
+  the markup back as the same elements: a link (`a`) inside another link with no table cell between them, a heading
+  (`h1`-`h6`) whose parent is a heading, a `form` in a `form`, a `button` in a `button`, a `div` (or another element
+  whose start tag closes a `p`) in a `p`, an `li` in an `li`, an `option` in an `option`, a `tr` outside of a table
+  section, a table that would contain text, ... The parser only builds them when an element separates them, such as
+  `object` or `template`, and unwrapping that element (`<a><object><a>`) puts them together. The fragment is parsed
+  as in a page that is not in quirks mode, so a `table` closes a `p`.
 
 <!-- ref:../../tests/Meziantou.Framework.HtmlSanitizer.Tests/HtmlSanitizerTests.cs;region=HtmlSanitizer_ElementHandling;format=md-fenced-code-block;dedent=true -->
 ```csharp

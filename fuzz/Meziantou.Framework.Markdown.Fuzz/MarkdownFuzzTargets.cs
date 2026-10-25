@@ -211,7 +211,7 @@ public static class MarkdownFuzzTargets
                 index++;
             }
 
-            var name = ReadName(html, ref index);
+            var name = ReadName(html, ref index, isAttribute: false);
             FuzzAssert.True(RenderedTags.Contains(name), $"The HTML contains the tag <{(isEndTag ? "/" : "")}{name}> at {start}, which no renderer writes: {FuzzAssert.Format(Excerpt(html, start))}");
             while (!isEndTag && index < html.Length && html[index] is ' ')
             {
@@ -219,7 +219,7 @@ public static class MarkdownFuzzTargets
                 if (index < html.Length && html[index] is '/' or '>')
                     break;
 
-                var attribute = ReadName(html, ref index);
+                var attribute = ReadName(html, ref index, isAttribute: true);
                 FuzzAssert.True(RenderedAttributes.Contains(attribute) || GenericAttributesExtension.IsSafeAttributeName(attribute), $"The HTML contains the attribute '{attribute}' at {index}, which no renderer writes: {FuzzAssert.Format(Excerpt(html, start))}");
                 if (index < html.Length && html[index] is '=')
                 {
@@ -239,10 +239,11 @@ public static class MarkdownFuzzTargets
             index++;
         }
 
-        static string ReadName(string html, ref int index)
+        // The generic attributes extension parses attribute names with '_', ':' and '.', which HTML allows in attribute names
+        static string ReadName(string html, ref int index, bool isAttribute)
         {
             var start = index;
-            while (index < html.Length && (char.IsAsciiLetterOrDigit(html[index]) || html[index] is '-'))
+            while (index < html.Length && (char.IsAsciiLetterOrDigit(html[index]) || html[index] is '-' || (isAttribute && html[index] is '_' or ':' or '.')))
             {
                 index++;
             }

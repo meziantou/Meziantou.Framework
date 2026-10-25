@@ -103,10 +103,9 @@ internal sealed partial class ContentRenderer
         if (!TryGetDeviceTransform(ctm, out var groupTransform))
             return;
 
-        // The group covers its bounding box, which clips it
-        var groupBounds = bbox.Right > bbox.Left && bbox.Top > bbox.Bottom
-            ? new VectorPathBuilder().AddRectangle(new RectangleD(bbox.Left, bbox.Bottom, bbox.Right - bbox.Left, bbox.Top - bbox.Bottom)).Build().Transform(groupTransform).Bounds
-            : new RectangleD(0, 0, DeviceSize.Width, DeviceSize.Height);
+        // The group covers its bounding box, which clips it; a box beyond the coordinates of the canvas covers the page
+        var bboxPath = bbox.Right > bbox.Left && bbox.Top > bbox.Bottom ? CreateRectanglePath(bbox) : null;
+        var groupBounds = (bboxPath is null ? null : TransformPath(bboxPath, groupTransform))?.Bounds ?? new RectangleD(0, 0, DeviceSize.Width, DeviceSize.Height);
         if (ToPixelBounds(groupBounds, margin: 1) is not { } pixelBounds)
             return;
 

@@ -33,6 +33,19 @@ internal static class SchemaScalarDecoder
         return text;
     }
 
+    /// <summary>Decodes a timestamp scalar into a <see cref="DateTime"/>.</summary>
+    /// <param name="text">The scalar text, which matches the timestamp pattern.</param>
+    /// <remarks>
+    /// The pattern accepts the lowercase "t" separator, which <see cref="DateTime.Parse(string, IFormatProvider)"/> does
+    /// not, and it cannot exclude an impossible date such as "2001-02-30": such a value is decoded as its text, so that
+    /// resolving it never throws.
+    /// </remarks>
+    public static object DecodeTimestamp(string text)
+    {
+        var normalized = text.Replace('t', 'T');
+        return DateTime.TryParse(normalized, CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, out var value) ? value : text;
+    }
+
     /// <summary>Decodes an integer scalar written with an explicit base.</summary>
     /// <param name="sign">The sign the scalar was written with, which is empty, <c>+</c>, or <c>-</c>.</param>
     /// <param name="basePrefix">The base prefix to decode the digits with (<c>0b</c>, <c>0o</c>, or <c>0x</c>).</param>

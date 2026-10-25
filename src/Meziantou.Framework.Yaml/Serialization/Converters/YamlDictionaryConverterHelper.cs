@@ -130,7 +130,17 @@ internal static class YamlDictionaryConverterHelper
             return;
         }
 
-        writer.WritePropertyName(FormatNonStringKey(key));
+        // ScalarStylePreferences.PreferPlainStyle = false quotes the keys, which would read a number or a boolean key
+        // back as a string
+        var text = FormatNonStringKey(key);
+
+        // The JSON schema has no spelling for the non-finite floats, which are tagged as they are when written as values
+        if (key is double or float or Half && text is ".inf" or "-.inf" or ".nan" && writer.Options.Schema is YamlSchemaKind.Json)
+        {
+            writer.WriteTag("!!float");
+        }
+
+        writer.WritePropertyName(text, writer.ReadsAsBooleanOrNumber(text) ? ScalarStyle.Plain : ScalarStyle.Any);
     }
 
     internal static string FormatNonStringKey<T>(T key)

@@ -65,7 +65,7 @@ public static class SyntaxHighlightingFuzzTargets
     [
         new("highlight", Highlight) { Seeds = GetSeeds, Dictionary = Tokens },
         new("highlight-language-name", HighlightLanguageName) { Seeds = GetLanguageNameSeeds, Dictionary = [.. Tokens, .. Languages] },
-        new("highlight-class-prefix", HighlightClassPrefix) { Seeds = GetClassPrefixSeeds, Dictionary = [.. Tokens, .. ClassPrefixes, "hljs", "language-", "\0"] },
+        new("highlight-class-prefix", HighlightClassPrefix) { Seeds = GetClassPrefixSeeds, Dictionary = [.. Tokens, .. ClassPrefixes.Where(prefix => prefix.Length > 0), "hljs", "language-", "\0"] },
     ];
 
     /// <summary>

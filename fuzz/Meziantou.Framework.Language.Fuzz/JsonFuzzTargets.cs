@@ -325,7 +325,7 @@ internal static class JsonFuzzTargets
             FuzzAssert.Equal(nodeMatches[i].Path, matches[i].Path, $"The syntax tree and JsonNode give different paths for the match {i} of {query}");
             var value = matches[i].Value;
             FuzzAssert.True(value is not null, $"The match {i} of {query} has no syntax node");
-            FuzzAssert.True(JsonNode.DeepEquals(nodeMatches[i].Value, JsonNode.Parse(value.ToString(), documentOptions: JsonPathDocumentOptions)), $"The syntax tree and JsonNode give different values at {matches[i].Path} for {query}");
+            FuzzAssert.True(AreEqual(nodeMatches[i].Value, JsonNode.Parse(value.ToString(), documentOptions: JsonPathDocumentOptions)), $"The syntax tree and JsonNode give different values at {matches[i].Path} for {query}");
         }
 
         bool nodeStrictThrows;
@@ -340,6 +340,20 @@ internal static class JsonFuzzTargets
         }
 
         FuzzAssert.Equal(nodeStrictThrows, strictMatches is null, $"Strict mode over the syntax tree and over JsonNode disagree about reporting an error for {query}");
+    }
+
+    private static bool AreEqual(JsonNode? left, JsonNode? right)
+    {
+        try
+        {
+            return JsonNode.DeepEquals(left, right);
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            // JsonNode.DeepEquals throws for a number whose exponent does not fit in an int (0.1e01234567890123456789).
+            // Both values are read from the same text, so their compact JSON is the same when they are.
+            return string.Equals(left?.ToJsonString(), right?.ToJsonString(), StringComparison.Ordinal);
+        }
     }
 
     private static void CheckSameMatches(JsonPathResult<JsonSyntaxNode> expected, JsonPathResult<JsonSyntaxNode> actual, string message)

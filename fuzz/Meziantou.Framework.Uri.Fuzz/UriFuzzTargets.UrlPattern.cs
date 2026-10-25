@@ -420,19 +420,19 @@ public static partial class UriFuzzTargets
             string?[]? patternInit = null;
             if (flags.HasFlag(PatternFlags.PatternInit))
             {
-                patternInit = ReadInit(ref data);
+                patternInit = ReadPatternInit(ref data);
             }
             else
             {
-                patternString = ReadText(ref data);
+                patternString = ReadPatternText(ref data);
             }
 
-            var patternBaseUrl = flags.HasFlag(PatternFlags.PatternBaseUrl) ? ReadText(ref data) : null;
-            var inputBaseUrl = flags.HasFlag(PatternFlags.InputBaseUrl) ? ReadText(ref data) : null;
+            var patternBaseUrl = flags.HasFlag(PatternFlags.PatternBaseUrl) ? ReadPatternText(ref data) : null;
+            var inputBaseUrl = flags.HasFlag(PatternFlags.InputBaseUrl) ? ReadPatternText(ref data) : null;
             var inputs = new List<PatternCaseInput>();
             while (!data.IsEmpty && inputs.Count < MaxPatternInputs)
             {
-                inputs.Add(flags.HasFlag(PatternFlags.InputInit) ? new PatternCaseInput(null, ReadInit(ref data)) : new PatternCaseInput(ReadText(ref data), null));
+                inputs.Add(flags.HasFlag(PatternFlags.InputInit) ? new PatternCaseInput(null, ReadPatternInit(ref data)) : new PatternCaseInput(ReadPatternText(ref data), null));
             }
 
             return new PatternCase
@@ -444,23 +444,6 @@ public static partial class UriFuzzTargets
                 InputBaseUrl = inputBaseUrl,
                 Inputs = inputs,
             };
-
-            static string ReadText(ref ReadOnlySpan<byte> data) => FuzzText.Decode(FuzzInput.ReadUntil(ref data, Separator));
-
-            static string?[] ReadInit(ref ReadOnlySpan<byte> data)
-            {
-                var mask = FuzzInput.ReadByte(ref data);
-                var init = new string?[ComponentNames.Length];
-                for (var i = 0; i < init.Length; i++)
-                {
-                    if ((mask & (1 << i)) != 0)
-                    {
-                        init[i] = ReadText(ref data);
-                    }
-                }
-
-                return init;
-            }
         }
 
         /// <summary>Converts a test case of the WPT corpus (urlpatterntestdata.json), or returns null when it cannot be represented.</summary>
@@ -566,23 +549,23 @@ public static partial class UriFuzzTargets
             if (PatternInit is not null)
             {
                 flags |= PatternFlags.PatternInit;
-                AppendInit(bytes, PatternInit);
+                AppendPatternInit(bytes, PatternInit);
             }
             else
             {
-                AppendText(bytes, PatternString!);
+                AppendPatternText(bytes, PatternString!);
             }
 
             if (PatternBaseUrl is not null)
             {
                 flags |= PatternFlags.PatternBaseUrl;
-                AppendText(bytes, PatternBaseUrl);
+                AppendPatternText(bytes, PatternBaseUrl);
             }
 
             if (InputBaseUrl is not null)
             {
                 flags |= PatternFlags.InputBaseUrl;
-                AppendText(bytes, InputBaseUrl);
+                AppendPatternText(bytes, InputBaseUrl);
             }
 
             foreach (var input in Inputs)
@@ -590,43 +573,16 @@ public static partial class UriFuzzTargets
                 if (input.Init is not null)
                 {
                     flags |= PatternFlags.InputInit;
-                    AppendInit(bytes, input.Init);
+                    AppendPatternInit(bytes, input.Init);
                 }
                 else
                 {
-                    AppendText(bytes, input.Url!);
+                    AppendPatternText(bytes, input.Url!);
                 }
             }
 
             bytes[0] = (byte)flags;
             return [.. bytes];
-
-            static void AppendText(List<byte> bytes, string text)
-            {
-                bytes.AddRange(FuzzText.Encode(text));
-                bytes.Add(Separator);
-            }
-
-            static void AppendInit(List<byte> bytes, string?[] init)
-            {
-                var mask = 0;
-                for (var i = 0; i < init.Length; i++)
-                {
-                    if (init[i] is not null)
-                    {
-                        mask |= 1 << i;
-                    }
-                }
-
-                bytes.Add((byte)mask);
-                foreach (var component in init)
-                {
-                    if (component is not null)
-                    {
-                        AppendText(bytes, component);
-                    }
-                }
-            }
         }
 
         public PatternCase ToScalarValueStrings() => new()
@@ -726,6 +682,23 @@ public static partial class UriFuzzTargets
             }
         }
 
+        /// <summary>Adds the pattern to the collection with the overload that matches how it is written, and returns it.</summary>
+        public UrlPattern AddTo(UrlPatternCollection collection)
+        {
+            if (IgnoreCase)
+            {
+                var options = new UrlPatternOptions { IgnoreCase = true };
+                var pattern = PatternInit is not null ? UrlPattern.Create(ToInit(PatternInit, PatternBaseUrl), options) : UrlPattern.Create(PatternString!, PatternBaseUrl, options);
+                collection.Add(pattern);
+                return pattern;
+            }
+
+            if (PatternInit is not null)
+                return collection.Add(ToInit(PatternInit, PatternBaseUrl));
+
+            return PatternBaseUrl is null ? collection.Add(PatternString!) : collection.Add(PatternString!, PatternBaseUrl);
+        }
+
         public WebUrlPattern? CreateWebPattern()
         {
             var options = new WebUrlPatternOptions { IgnoreCase = IgnoreCase };
@@ -775,6 +748,51 @@ public static partial class UriFuzzTargets
             => Url is not null ? pattern.Exec(Url, baseUrl) : pattern.Exec(ToWebInit(Init!, baseUrl));
 
         public override string ToString() => Url is not null ? FuzzAssert.Format(Url) : FormatInit(Init!);
+    }
+
+    private static string ReadPatternText(ref ReadOnlySpan<byte> data) => FuzzText.Decode(FuzzInput.ReadUntil(ref data, Separator));
+
+    /// <summary>Reads an init: a byte whose bits say which components it has, followed by these components.</summary>
+    private static string?[] ReadPatternInit(ref ReadOnlySpan<byte> data)
+    {
+        var mask = FuzzInput.ReadByte(ref data);
+        var init = new string?[ComponentNames.Length];
+        for (var i = 0; i < init.Length; i++)
+        {
+            if ((mask & (1 << i)) != 0)
+            {
+                init[i] = ReadPatternText(ref data);
+            }
+        }
+
+        return init;
+    }
+
+    private static void AppendPatternText(List<byte> bytes, string text)
+    {
+        bytes.AddRange(FuzzText.Encode(text));
+        bytes.Add(Separator);
+    }
+
+    private static void AppendPatternInit(List<byte> bytes, string?[] init)
+    {
+        var mask = 0;
+        for (var i = 0; i < init.Length; i++)
+        {
+            if (init[i] is not null)
+            {
+                mask |= 1 << i;
+            }
+        }
+
+        bytes.Add((byte)mask);
+        foreach (var component in init)
+        {
+            if (component is not null)
+            {
+                AppendPatternText(bytes, component);
+            }
+        }
     }
 
     private static string?[] Init(string? protocol = null, string? hostname = null, string? pathname = null) => [protocol, null, null, hostname, null, pathname, null, null];

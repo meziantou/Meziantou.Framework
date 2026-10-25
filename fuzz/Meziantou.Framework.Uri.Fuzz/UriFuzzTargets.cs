@@ -47,6 +47,7 @@ public static partial class UriFuzzTargets
     public static IReadOnlyList<FuzzTarget> All { get; } =
     [
         new("uri-urlpattern", UrlPatternTarget) { Seeds = GetUrlPatternSeeds, Dictionary = UrlPatternTokens },
+        new("uri-urlpattern-collection", UrlPatternCollectionTarget) { Seeds = GetUrlPatternCollectionSeeds, Dictionary = UrlPatternTokens },
         new("uri-urlpattern-webplatform", UrlPatternWebPlatformTarget) { Seeds = GetUrlPatternSeeds, Dictionary = UrlPatternTokens },
         new("uri-url-parser", UrlParserTarget) { Seeds = GetUrlParserSeeds, Dictionary = UrlTokens },
         new("uri-canonicalizer", CanonicalizerTarget) { Seeds = GetCanonicalizerSeeds, Dictionary = UrlTokens },

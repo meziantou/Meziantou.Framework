@@ -113,6 +113,13 @@ public static class LinkHelper
                 }
                 else if (hasLetter)
                 {
+                    if (headingBuffer.Length == 0 && !c.IsDigit())
+                    {
+                        // With keepOpeningDigits, the first character can be a letter that is not kept, such as a non-ASCII
+                        // one: a separator is only written after a letter or a digit
+                        continue;
+                    }
+
                     if (IsReservedPunctuation(c))
                     {
                         if (previousIsSpace)

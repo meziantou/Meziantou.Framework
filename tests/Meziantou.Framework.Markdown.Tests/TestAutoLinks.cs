@@ -255,4 +255,13 @@ public class TestAutoLinks
 
         static string RemoveWhiteSpace(string value) => string.Concat(value.Where(c => !char.IsWhiteSpace(c)));
     }
+
+    [Theory]
+    [InlineData("a tel:*", "<p>a tel:*</p>\n")]
+    [InlineData(">www.example.com", "<blockquote>\n<p><a href=\"http://www.example.com\">www.example.com</a></p>\n</blockquote>\n")]
+    public void AutoLinkBoundaries(string markdown, string expectedHtml)
+    {
+        // A tel: link without a number was a link to "tel:", and the marker of a quote was the character before a link
+        Assert.Equal(expectedHtml, MarkdownConverter.ToHtml(markdown, new MarkdownPipelineBuilder().UseAutoLinks().Build()));
+    }
 }

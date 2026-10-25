@@ -9,6 +9,7 @@
   <ItemGroup>
     <!-- The examples of the specifications (CommonMark and the extensions) are the seeds -->
     <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Markdown.Tests\Specs\*.md" Exclude="..\..\tests\Meziantou.Framework.Markdown.Tests\Specs\readme.md" LogicalName="Specs.%(Filename)%(Extension)" Link="Seeds\%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Markdown.Tests\NormalizeSpecs\*.md" LogicalName="Specs.Normalize%(Filename)%(Extension)" Link="Seeds\Normalize%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>

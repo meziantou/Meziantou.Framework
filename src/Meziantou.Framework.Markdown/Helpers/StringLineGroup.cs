@@ -218,6 +218,25 @@ public struct StringLineGroup : IEnumerable
         }
     }
 
+    // Trims the spaces and tabs at the start of each line and the ASCII whitespace at its end, as cmark does for the content of
+    // a heading: a no-break space, or another Unicode space, is part of the content
+    internal void TrimAsciiWhitespace()
+    {
+        for (int i = 0; i < Count; i++)
+        {
+            ref var slice = ref Lines[i].Slice;
+            while (slice.Start <= slice.End && slice.Text[slice.Start].IsSpaceOrTab())
+            {
+                slice.Start++;
+            }
+
+            while (slice.Start <= slice.End && slice.Text[slice.End] is ' ' or '\t' or '\n' or '\v' or '\f' or '\r')
+            {
+                slice.End--;
+            }
+        }
+    }
+
     internal SourceSpan ConvertToAbsoluteSpan(SourceSpan span) => ConvertToAbsoluteSpan(span, startLine: 0);
 
     /// <summary>

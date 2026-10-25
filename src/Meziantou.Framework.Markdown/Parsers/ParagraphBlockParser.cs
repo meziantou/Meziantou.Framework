@@ -92,11 +92,28 @@ public class ParagraphBlockParser : BlockParser
 
             if (!processor.TrackTrivia)
             {
+                // As in cmark, the lines start after their spaces and tabs, and only the ASCII whitespace is trimmed at the end:
+                // a no-break space, or another Unicode space, is part of the content
                 for (int i = 0; i < lineCount; i++)
                 {
-                    lines.Lines[i].Slice.TrimStart();
+                    ref var slice = ref lines.Lines[i].Slice;
+                    while (slice.Start <= slice.End && slice.Text[slice.Start].IsSpaceOrTab())
+                    {
+                        slice.Start++;
+                    }
                 }
-                lines.Lines[lineCount - 1].Slice.TrimEnd();
+
+                ref var lastSlice = ref lines.Lines[lineCount - 1].Slice;
+                while (lastSlice.Start <= lastSlice.End && IsAsciiWhitespace(lastSlice.Text[lastSlice.End]))
+                {
+                    lastSlice.End--;
+                }
+
+                // A line of other ASCII whitespace, such as a vertical tab, is not blank, but leaves no content once trimmed
+                if (lineCount == 1 && lastSlice.IsEmpty)
+                {
+                    return false;
+                }
             }
         }
 
@@ -163,7 +180,8 @@ public class ParagraphBlockParser : BlockParser
                 }
                 else
                 {
-                    heading.Lines.Trim();
+                    // As for a paragraph, a no-break space, or another Unicode space, is part of the content
+                    heading.Lines.TrimAsciiWhitespace();
                 }
 
                 // Remove the paragraph as a pending block
@@ -177,6 +195,8 @@ public class ParagraphBlockParser : BlockParser
 
         return BlockState.Continue;
     }
+
+    private static bool IsAsciiWhitespace(char c) => c is ' ' or '\t' or '\n' or '\v' or '\f' or '\r';
 
     private static char GetHeadingChar(ref StringSlice line, ref int count)
     {

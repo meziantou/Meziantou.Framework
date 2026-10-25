@@ -90,8 +90,9 @@ public class CodeInlineRenderer : NormalizeObjectRenderer<CodeInline>
         var result = false;
         foreach (var literal in root.FindDescendants<LiteralInline>())
         {
-            // The text of an expanded autolink is written with entities for its backticks
-            if (literal.Content.AsSpan().Contains(delimiter) && !(literal.Parent is LinkInline { IsAutoLink: true } link && LinkInlineRenderer.IsExpandedAutoLink(link)))
+            // The text of an expanded autolink, or of a link, is written with entities for its backticks
+            if (literal.Content.AsSpan().Contains(delimiter) && !(literal.Parent is LinkInline { IsAutoLink: true } link && LinkInlineRenderer.IsExpandedAutoLink(link))
+                && !(delimiter == '`' && LiteralInlineRenderer.IsInLink(literal)))
             {
                 result = true;
                 break;

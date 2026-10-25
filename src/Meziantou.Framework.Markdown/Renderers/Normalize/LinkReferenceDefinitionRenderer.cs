@@ -39,7 +39,8 @@ public class LinkReferenceDefinitionRenderer : NormalizeObjectRenderer<LinkRefer
         if (linkDef.Title != null)
         {
             renderer.Write(' ');
-            LinkInlineRenderer.WriteTitle(renderer, linkDef.Title, decodedEntities: false);
+            // The lines of the title are indented, so that none of them can start a block, such as a list
+            LinkInlineRenderer.WriteTitle(renderer, linkDef.Title.Replace("\n", "\n    ", StringComparison.Ordinal), decodedEntities: false);
         }
         renderer.FinishBlock(false);
     }

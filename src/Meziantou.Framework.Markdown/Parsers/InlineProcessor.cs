@@ -39,6 +39,9 @@ public class InlineProcessor
     // The text of the block being processed
     private StringSlice _text;
 
+    // The text the inline parsers read, which starts after the markers of the containers when it is a slice of the source
+    private StringSlice _leafText;
+
     // Whether a parser ended the parse of the block before the end of its text: the rest of the text is parsed in another
     // block (e.g. the lines after a pipe table)
     internal bool IsParsingStopped { get; private set; }
@@ -122,6 +125,27 @@ public class InlineProcessor
     // Creates a paragraph with the lines of the text being processed that start at the given position, e.g. the lines after
     // a pipe table. Its inlines are processed from the same text and line offsets, so that neither the lines nor the text
     // are copied: a paragraph can end many tables, each one before a paragraph with the rest of its lines.
+    /// <summary>
+    /// Gets the character before the current position of the slice, or <c>'\0'</c> at the start of the text of the leaf block.
+    /// The text of a single line is a slice of the source, where the character before it can be the marker of a container,
+    /// such as the <c>&gt;</c> of a quote without a space after it.
+    /// </summary>
+    internal char PeekPreviousChar(in StringSlice slice)
+    {
+        return IsAtLeafTextStart(slice) ? '\0' : slice.PeekCharExtra(-1);
+    }
+
+    /// <summary>
+    /// Gets the <see cref="Rune"/> before the current position of the slice, or <see langword="default"/> at the start of the
+    /// text of the leaf block (see <see cref="PeekPreviousChar"/>).
+    /// </summary>
+    internal Rune PeekPreviousRune(in StringSlice slice)
+    {
+        return IsAtLeafTextStart(slice) ? default : slice.PeekRuneExtra(-1);
+    }
+
+    private bool IsAtLeafTextStart(in StringSlice slice) => ReferenceEquals(slice.Text, _leafText.Text) && slice.Start <= _leafText.Start;
+
     internal ParagraphBlock CreateParagraphFromText(int textStart)
     {
         var paragraph = (ParagraphBlock)Block!;
@@ -465,6 +489,7 @@ public class InlineProcessor
         _unescapedSourceOffsets = leafBlock.Parser is GfmPipeTableParser
             ? GfmPipeTableParser.UnescapePipes(ref text) : null;
         var textEnd = text.End;
+        _leafText = text;
         int previousStart = -1;
 
         // The chain of open containers is only tracked while the parsers run, even when one of them throws

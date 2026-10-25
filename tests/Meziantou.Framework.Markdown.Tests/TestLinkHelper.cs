@@ -357,6 +357,17 @@ public class TestLinkHelper
     }
 
     [Theory]
+    [InlineData("пристаням_стремятся_", "")]
+    [InlineData("Ω a", "a")]
+    [InlineData("Ω-1", "1")]
+    [InlineData("1 a", "1-a")]
+    public void TestUrilizeOnlyAscii_KeepOpeningDigitsAfterNonAsciiLetter(string input, string expectedResult)
+    {
+        // The first character is a letter that is not kept, so there is no character before the separators
+        Assert.Equal(expectedResult, LinkHelper.Urilize(input, allowOnlyAscii: true, keepOpeningDigits: true));
+    }
+
+    [Theory]
     [InlineData("bær", "baer")]
     [InlineData("bør", "boer")]
     [InlineData("bΘr", "br")]

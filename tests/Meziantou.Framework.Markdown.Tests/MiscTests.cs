@@ -1551,4 +1551,24 @@ Continued 3a</p>
 </ul>
 <p>foo</p>");
     }
+
+    [Theory]
+    [InlineData(">*>**", "<blockquote>\n<p><em>&gt;</em>*</p>\n</blockquote>\n")]
+    [InlineData("- a\n   <!--", "<ul>\n<li>a <!--\n</li>\n</ul>\n")]
+    [InlineData("b\n\u00A0\n-", "<h2>b\n\u00A0</h2>\n")]
+    [InlineData("## \u00A0", "<h2>\u00A0</h2>\n")]
+    [InlineData("a\n\n\v", "<p>a</p>\n")]
+    public void BlockAndInlineBoundaries(string markdown, string expectedHtml)
+    {
+        // The marker of a quote was the character before the emphasis, the spaces after the content column of a list item were
+        // dropped, a no-break space was trimmed from a heading, and a line of a vertical tab was an empty paragraph
+        Assert.Equal(expectedHtml, MarkdownConverter.ToHtml(markdown));
+    }
+
+    [Fact]
+    public void JiraLinkAfterQuoteMarker()
+    {
+        var pipeline = new MarkdownPipelineBuilder().UseJiraLinks(new Extensions.JiraLinks.JiraLinkOptions("http://your.company.abc")).Build();
+        Assert.Equal(MarkdownConverter.ToHtml("> C-1", pipeline), MarkdownConverter.ToHtml(">C-1", pipeline));
+    }
 }

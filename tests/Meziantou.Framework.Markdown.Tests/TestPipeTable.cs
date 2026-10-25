@@ -30,6 +30,18 @@ public sealed class TestPipeTable
     }
 
     [Theory]
+    [InlineData("|[\n-|\n|")]
+    [InlineData("|[a\n-|\n|")]
+    [InlineData("|[|\n-|-|\n|")]
+    public void UnclosedLinkInHeaderDoesNotLeaveAnEmptyParagraph(string markdown)
+    {
+        // The container of the unclosed link stayed in the paragraph, which was kept before the table
+        var document = MarkdownConverter.Parse(markdown, new MarkdownPipelineBuilder().UsePipeTables().Build());
+
+        Assert.IsType<Table>(Assert.Single(document));
+    }
+
+    [Theory]
     [InlineData("A | B\r\n---|---", new[] {50.0f, 50.0f})]
     [InlineData("A | B\r\n-|---", new[] {25.0f, 75.0f})]
     [InlineData("A | B\r\n-|---\r\nA | B\r\n---|---", new[] {25.0f, 75.0f})]
@@ -929,5 +941,30 @@ public sealed class TestPipeTable
 
         Assert.Equal("| a | b |\n| :-- | --- |\n| c | d |\n", writer.ToString());
     }
-}
 
+    [Fact]
+    public void HeaderRowWithoutCellIsNotATable()
+    {
+        // A header row made of a single pipe had no cell
+        Assert.Equal("<p>|\n-|--|\nTerm</p>\n", MarkdownConverter.ToHtml("|\n-|--|\nTerm", new MarkdownPipelineBuilder().UsePipeTables().Build()));
+    }
+
+    [Theory]
+    [InlineData("A|\t\n-|", "<table>\n<thead>\n<tr>\n<th>A</th>\n</tr>\n</thead>\n</table>\n")]
+    [InlineData("x\t\nA|\n-|", "<p>x</p>\n<table>\n<thead>\n<tr>\n<th>A</th>\n</tr>\n</thead>\n</table>\n")]
+    [InlineData("a  \n|b\n-|", "<p>a</p>\n<table>\n<thead>\n<tr>\n<th>b</th>\n</tr>\n</thead>\n</table>\n")]
+    [InlineData("e\n*[\n]()|\n-|", "<p>e</p>\n<table>\n<thead>\n<tr>\n<th>*<a href=\"\"></a></th>\n</tr>\n</thead>\n</table>\n")]
+    public void ParagraphBeforeTableEndsWithItsText(string markdown, string expectedHtml)
+    {
+        // The whitespace after the last pipe of a row, and the line breaks of the rows, were left in the paragraph before the table
+        Assert.Equal(expectedHtml, MarkdownConverter.ToHtml(markdown, new MarkdownPipelineBuilder().UsePipeTables().Build()));
+    }
+
+    [Fact]
+    public void CodeSpanAcrossRowsWithTrivia()
+    {
+        // The source of a cell was on another line than its row, which was read out of bounds
+        var pipeline = new MarkdownPipelineBuilder().UsePipeTables().EnableTrackTrivia().Build();
+        _ = MarkdownConverter.Parse(">n|\n-|\n|`\n>`\n", pipeline);
+    }
+}

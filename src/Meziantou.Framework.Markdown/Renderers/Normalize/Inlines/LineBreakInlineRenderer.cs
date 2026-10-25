@@ -22,6 +22,13 @@ public class LineBreakInlineRenderer : NormalizeObjectRenderer<LineBreakInline>
     /// </summary>
     protected override void Write(NormalizeRenderer renderer, LineBreakInline obj)
     {
+        // A block that interrupts a paragraph, such as a table, can leave the line break before it at the end of the
+        // paragraph, which is not rendered: written, it would add a blank line, or a backslash
+        if (obj.NextSibling is null && obj.Parent is { Parent: null })
+        {
+            return;
+        }
+
         if (obj.IsHard)
         {
             renderer.Write(obj.IsBackslash ? "\\" : "  ");

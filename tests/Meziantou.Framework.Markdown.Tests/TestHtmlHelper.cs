@@ -24,4 +24,14 @@ public class TestHtmlHelper
         Assert.True(HtmlHelper.TryParseHtmlTag(ref text, out string? outputTag));
         Assert.Equal(inputTag, outputTag);
     }
+
+    [Theory]
+    [InlineData("\\\\&#9;_", "\\\t_")]
+    [InlineData("\\\\\\*", "\\*")]
+    [InlineData("\\*\0", "*\0")]
+    public void UnescapeKeepsEscapedCharacters(string text, string expected)
+    {
+        // An escaped backslash escaped the next character, and a null character in the text disabled the unescaping
+        Assert.Equal(expected, HtmlHelper.Unescape(text));
+    }
 }

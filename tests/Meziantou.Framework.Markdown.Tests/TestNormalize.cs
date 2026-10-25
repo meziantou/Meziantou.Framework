@@ -577,7 +577,7 @@ This is a last line";
         AssertNormalizeNoTrim("Hello from mailto:hello@example.com", "Hello from [hello@example.com](mailto:hello@example.com)", new NormalizeOptions() { ExpandAutoLinks = true, });
 
         AssertNormalizeNoTrim("Hello from http://example.com/foo", "Hello from http://example.com/foo", new NormalizeOptions() { ExpandAutoLinks = false, });
-        AssertNormalizeNoTrim("Hello from www.example.com/foo", "Hello from http://www.example.com/foo", new NormalizeOptions() { ExpandAutoLinks = false, });
+        AssertNormalizeNoTrim("Hello from www.example.com/foo", "Hello from www.example.com/foo", new NormalizeOptions() { ExpandAutoLinks = false, });
         AssertNormalizeNoTrim("Hello from mailto:hello@example.com", "Hello from mailto:hello@example.com", new NormalizeOptions() { ExpandAutoLinks = false, });
     }
 
@@ -829,7 +829,7 @@ Text following the table.");
 
     [Theory]
     [InlineData("[a](<b c>)", "[a](<b c>)")]
-    [InlineData("[a](<b)c>)", "[a](<b)c>)")]
+    [InlineData("[a](<b)c>)", "[a](b\\)c)")]
     [InlineData("[a](b \"c\\\\\")", "[a](b \"c\\\\\")")]
     [InlineData("[a](&amp;lt;)", "[a](&amp;lt;)")]
     [InlineData("[a]\n\n[a]: <>", "[a]\n\n[a]: <>")]
@@ -1076,13 +1076,105 @@ Text following the table.");
         Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Normalizing took {stopwatch.Elapsed}");
     }
 
-    private static void AssertNormalizePreservesHtml(string markdown, string expected, MarkdownPipeline? pipeline = null)
+    [Theory]
+    [InlineData(">     code\n\n>    not code", ">     code\n\n>not code")]
+    [InlineData("> - a\n>\n>   b", ">- a\n>   \n>   b")]
+    public void QuoteWithoutSpaceKeepsTheIndentation(string markdown, string expected)
+    {
+        // The space after '>' is optional, so it is still written before a line that starts with whitespace
+        AssertNormalizePreservesHtml(markdown, expected, options: new NormalizeOptions { SpaceAfterQuoteBlock = false });
+    }
+
+    [Fact]
+    public void LooseListKeepsTheEmptyLineAfterACodeBlock()
+    {
+        AssertNormalizePreservesHtml("1. ```\n   foo\n   ```\n\n   bar", "1. ```\n   foo\n   ```\n   \n   bar", options: new NormalizeOptions { EmptyLineAfterCodeBlock = false });
+    }
+
+    [Fact]
+    public void LooseListKeepsTheEmptyLineAfterAHeading()
+    {
+        AssertNormalizePreservesHtml("- # a\n\n  b", "- # a\n  \n  b", options: new NormalizeOptions { EmptyLineAfterHeading = false });
+    }
+
+    [Fact]
+    public void WwwAutoLinkIsWrittenAsItsText()
+    {
+        var pipeline = new MarkdownPipelineBuilder().UseAutoLinks().Build();
+        AssertNormalizePreservesHtml("Visit www.commonmark.org/help for more information.", "Visit www.commonmark.org/help for more information.", pipeline, new NormalizeOptions { ExpandAutoLinks = false });
+    }
+
+    [Fact]
+    public void TableInterruptingAParagraphDoesNotAddABlankLine()
+    {
+        var pipeline = new MarkdownPipelineBuilder().UsePipeTables().Build();
+        AssertNormalizePreservesHtml("Some text\n| A |\n|---|\n| B |\nmore text", "Some text\n\n| A |\n| --- |\n| B |\n\nmore text", pipeline);
+    }
+
+    [Fact]
+    public void PipeTableEscapesThePipesOfALinkText()
+    {
+        var pipeline = new MarkdownPipelineBuilder().UsePipeTables().Build();
+        AssertNormalizePreservesHtml("[a | b\n-- | --\n[x | y](/u) | c", "| [a | b |\n| --- | --- |\n| [x \\| y](/u) | c |", pipeline);
+    }
+
+    [Fact]
+    public void LazyLinesDoNotBecomeAGfmTable()
+    {
+        var pipeline = new MarkdownPipelineBuilder().Configure("gfm-pipetables").Build();
+        AssertNormalizePreservesHtml("0. a | b\n-- | -\n0 | 1", "0. a \\| b\n   -- \\| -\n   0 \\| 1", pipeline);
+    }
+
+    [Fact]
+    public void DefinitionsAreWrittenBeforeAParagraphThatContinuesThem()
+    {
+        // The rest of the paragraph starts with an HTML tag alone on its line, which would start an HTML block
+        AssertNormalizePreservesHtml("[Foo bar]: x\n<my url>\n'title'\n\n[Foo bar]", "[Foo bar]: x\n<my url>\n'title'\n\n[Foo bar]");
+    }
+
+    [Theory]
+    [InlineData("a\n\u00A0\nb", "<p>a\n\u00A0\nb</p>\n")]
+    [InlineData("\u00A0\nb\u00A0", "<p>\u00A0\nb\u00A0</p>\n")]
+    [InlineData("\f\nb", "<p>\f\nb</p>\n")]
+    public void WhitespaceOtherThanSpacesAndTabsIsParagraphContent(string markdown, string expectedHtml)
+    {
+        // A line whose no-break space was trimmed was written as a blank line, which split the paragraph
+        Assert.Equal(expectedHtml, MarkdownConverter.ToHtml(markdown));
+        AssertNormalizePreservesHtml(markdown, markdown);
+    }
+
+    [Theory]
+    [InlineData("[]([](\\))", "[]([](\\))")]
+    [InlineData("[\\\\a]: x\n\n[\\\\a]", "[\\\\a]: x\n\n[\\\\a]")]
+    [InlineData("[o]: z \"\n    - \"\n\n[o]", "[o]: z \"\n    - \"\n\n[o]")]
+    [InlineData("-\n      --", "- \n      --")]
+    [InlineData("[foo\n-][foo]\n\n[foo]: /u", "[foo\n-][foo]\n\n[foo]: /u")]
+    [InlineData("<tps:[](<l>)>", "\\<tps:[](l)>")]
+    [InlineData("[a](<b)\n\n[a]: /u", "[a]\\(<b)\n\n[a]: /u")]
+    [InlineData("[foo]: <o()\n\n[foo]: /u", "[foo]\\: <o()\n\n[foo]: /u")]
+    [InlineData(" 1. h\n   *  e\n\n     .", "1. h\n\n* e\n\n```\n .\n```")]
+    public void InlinesAreNotChangedByTheInlinesAroundThem(string markdown, string expected)
+    {
+        // An unbalanced parenthesis in angle brackets, an unescaped backslash of a label, a title line, a code block made of
+        // dashes, a collapsed reference to a text on several lines, a '<' before a link, the text after a shortcut reference
+        // link, and an indented code block after a list that cannot be indented further changed what the source was
+        AssertNormalizePreservesHtml(markdown, expected);
+    }
+
+    [Fact]
+    public void GfmTableHeaderThatLooksLikeADelimiterRow()
+    {
+        var pipeline = new MarkdownPipelineBuilder().Configure("gfm-pipetables").Build();
+        AssertNormalizePreservesHtml("- b\n--|--\n\t-|-", "- b\n  | \\-- | -- |\n  | --- | --- |", pipeline);
+    }
+
+    private static void AssertNormalizePreservesHtml(string markdown, string expected, MarkdownPipeline? pipeline = null, NormalizeOptions? options = null)
     {
         pipeline ??= new MarkdownPipelineBuilder().Build();
-        var normalized = MarkdownConverter.Normalize(markdown, pipeline: pipeline);
+        var normalized = MarkdownConverter.Normalize(markdown, options, pipeline: pipeline);
         Assert.Equal(expected, normalized);
         Assert.Equal(MarkdownConverter.ToHtml(markdown, pipeline), MarkdownConverter.ToHtml(normalized, pipeline));
-        Assert.Equal(normalized, MarkdownConverter.Normalize(normalized, pipeline: pipeline));
+        Assert.Equal(normalized, MarkdownConverter.Normalize(normalized, options, pipeline: pipeline));
     }
 
     private static void AssertSyntax(string expected, MarkdownObject syntax)

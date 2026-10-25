@@ -40,7 +40,7 @@ public class SmartyPantsInlineParser : InlineParser, IPostInlineProcessor
         // -- 	– 	&ndash; 	'ndash'
         // --- 	— 	&mdash; 	'mdash'
 
-        var pc = slice.PeekRuneExtra(-1);
+        var pc = processor.PeekPreviousRune(slice);
         var openingChar = slice.CurrentChar;
 
         var startingPosition = slice.Start;

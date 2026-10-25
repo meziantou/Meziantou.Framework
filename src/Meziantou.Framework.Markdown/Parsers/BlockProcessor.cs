@@ -875,11 +875,14 @@ public class BlockProcessor
     // A new block takes the empty lines before it, which start with the quote lines without content of a quote that it closes
     private void GiveBackQuoteLines(Block block)
     {
+        if (block.LinesBefore is not { Count: > 0 } linesBefore)
+            return;
+
         for (int i = OpenedBlocks.Count - 1; i >= 1; i--)
         {
             if (!OpenedBlocks[i].Block.IsOpen && OpenedBlocks[i].Block is IQuoteLikeBlock quote)
             {
-                MoveQuoteLinesWithoutContent(block.LinesBefore!, quote);
+                MoveQuoteLinesWithoutContent(linesBefore, quote);
                 return;
             }
         }
@@ -904,8 +907,9 @@ public class BlockProcessor
 
         static bool IsQuoteLineWithoutContent(StringSlice line, char markerChar)
         {
+            // The space after the marker, then the whitespace that the quote line keeps as trivia when the line has no content
             var index = line.Start - 1;
-            if (index >= 0 && line.Text[index] is ' ' or '\t')
+            while (index >= 0 && line.Text[index] is ' ' or '\t')
             {
                 index--;
             }
@@ -1132,9 +1136,14 @@ public class BlockProcessor
 
             if (allowClosing)
             {
-                if (TrackTrivia && block.LinesBefore is { Count: > 0 })
+                if (TrackTrivia)
                 {
+                    // The empty lines can be taken by a block pushed before this one, such as a list item before its list
                     GiveBackQuoteLines(block);
+                    foreach (var pendingBlock in newBlocks)
+                    {
+                        GiveBackQuoteLines(pendingBlock);
+                    }
                 }
 
                 // Close any previous blocks not opened

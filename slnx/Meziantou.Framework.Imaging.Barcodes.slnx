@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.Barcodes/Meziantou.Framework.Barcodes.csproj" />
+    <Project Path="../src/Meziantou.Framework.Fonts/Meziantou.Framework.Fonts.csproj" />
+    <Project Path="../src/Meziantou.Framework.Imaging.Barcodes/Meziantou.Framework.Imaging.Barcodes.csproj" />
+    <Project Path="../src/Meziantou.Framework.Imaging/Meziantou.Framework.Imaging.csproj" />
+    <Project Path="../src/Meziantou.Framework.Unicode/Meziantou.Framework.Unicode.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../tests/Meziantou.Framework.Imaging.Barcodes.Tests/Meziantou.Framework.Imaging.Barcodes.Tests.csproj" />
+  </Folder>
+</Solution>

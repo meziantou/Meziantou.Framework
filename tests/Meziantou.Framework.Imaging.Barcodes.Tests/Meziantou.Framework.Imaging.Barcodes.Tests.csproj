@@ -1,0 +1,12 @@
+<Project Sdk="Meziantou.NET.Sdk.Test">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.Imaging.Barcodes.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Meziantou.Framework.Imaging.Barcodes/Meziantou.Framework.Imaging.Barcodes.csproj" />
+  </ItemGroup>
+
+</Project>

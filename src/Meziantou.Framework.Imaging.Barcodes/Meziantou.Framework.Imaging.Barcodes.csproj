@@ -1,0 +1,17 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.Imaging.Barcodes</RootNamespace>
+    <Version>1.0.0</Version>
+    <IsTrimmable>true</IsTrimmable>
+    <Description>Renders and draws the QR codes and barcodes of Meziantou.Framework.Barcodes with Meziantou.Framework.Imaging: images in any format, or vector drawing on a canvas</Description>
+    <PackageTags>qrcode, barcode, image, imaging, drawing, canvas, png, webp, jpeg</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Meziantou.Framework.Barcodes/Meziantou.Framework.Barcodes.csproj" />
+    <ProjectReference Include="../Meziantou.Framework.Imaging/Meziantou.Framework.Imaging.csproj" />
+  </ItemGroup>
+
+</Project>

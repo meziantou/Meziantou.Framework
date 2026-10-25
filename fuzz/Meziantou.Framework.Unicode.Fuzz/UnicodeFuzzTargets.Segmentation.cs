@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Text;
 using Meziantou.Framework.Fuzzing;
 
 namespace Meziantou.Framework.UnicodeFuzz;
@@ -7,9 +9,12 @@ public static partial class UnicodeFuzzTargets
     private static readonly UnicodeLineBreakStrictness[] Strictnesses = [UnicodeLineBreakStrictness.Strict, UnicodeLineBreakStrictness.Normal, UnicodeLineBreakStrictness.Anywhere];
     private static readonly UnicodeWordBreakBehavior[] WordBreaks = [UnicodeWordBreakBehavior.Normal, UnicodeWordBreakBehavior.BreakAll, UnicodeWordBreakBehavior.KeepAll];
 
+    // The sentence boundaries of each case of SentenceBreakTest.txt, by the text of the case
+    private static readonly Lazy<Dictionary<string, string>> SentenceBreakTestCases = new(() => GetBreakTestCases("SentenceBreakTest.txt.gz"));
+
     /// <summary>
-    /// Grapheme clusters, word segments and script runs are contiguous, non-empty and cover the text; a script run never
-    /// ends inside a grapheme cluster. The line breaks are increasing, the last one is the end of the text and is
+    /// Grapheme clusters, word segments, sentences and script runs are contiguous, non-empty and cover the text; a script
+    /// run never ends inside a grapheme cluster, and the sentences of a case of SentenceBreakTest.txt are those of the case. The line breaks are increasing, the last one is the end of the text and is
     /// mandatory, the mandatory breaks do not depend on the tailoring, and <see cref="UnicodeLineBreakStrictness.Anywhere"/>
     /// breaks at every grapheme cluster boundary. Nothing splits a surrogate pair.
     /// </summary>
@@ -25,6 +30,20 @@ public static partial class UnicodeFuzzTargets
         }
 
         FuzzAssert.Equal(text.Length, expectedStart, "The word segments do not cover the text");
+
+        expectedStart = 0;
+        var sentenceBoundaries = new List<int> { 0 };
+        foreach (var sentence in Unicode.EnumerateSentenceBoundaries(text))
+        {
+            (_, expectedStart) = CheckSegment(text, sentence, expectedStart, "sentence");
+            sentenceBoundaries.Add(expectedStart);
+        }
+
+        FuzzAssert.Equal(text.Length, expectedStart, "The sentences do not cover the text");
+        if (SentenceBreakTestCases.Value.TryGetValue(text, out var expectedSentenceBoundaries))
+        {
+            FuzzAssert.Equal(expectedSentenceBoundaries, FormatPositions(sentenceBoundaries), "The sentence boundaries are not those of SentenceBreakTest.txt");
+        }
 
         expectedStart = 0;
         foreach (var run in Unicode.EnumerateScriptRuns(text))
@@ -83,7 +102,7 @@ public static partial class UnicodeFuzzTargets
 
     private static IEnumerable<FuzzSeed> GetSegmentationSeeds()
     {
-        foreach (var file in (string[])["GraphemeBreakTest.txt.gz", "WordBreakTest.txt.gz", "LineBreakTest.txt.gz"])
+        foreach (var file in (string[])["GraphemeBreakTest.txt.gz", "WordBreakTest.txt.gz", "SentenceBreakTest.txt.gz", "LineBreakTest.txt.gz"])
         {
             foreach (var (index, line) in Sample(ReadConformanceLines(file), 120))
             {
@@ -95,6 +114,33 @@ public static partial class UnicodeFuzzTargets
         {
             yield return FuzzSeed.FromText(name, text);
         }
+    }
+
+    /// <summary>Reads the cases of a break test file (<c>÷ 0041 × 0308 ÷</c>): the text of each case and its boundaries, in UTF-16 code units, including 0 and the end of the text.</summary>
+    private static Dictionary<string, string> GetBreakTestCases(string resourceName)
+    {
+        var result = new Dictionary<string, string>(StringComparer.Ordinal);
+        var builder = new StringBuilder();
+        foreach (var line in ReadConformanceLines(resourceName))
+        {
+            builder.Clear();
+            var boundaries = new List<int>();
+            foreach (var token in line.Split([' ', '\t'], StringSplitOptions.RemoveEmptyEntries))
+            {
+                if (token == "\u00F7")
+                {
+                    boundaries.Add(builder.Length);
+                }
+                else if (int.TryParse(token, NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out var codePoint))
+                {
+                    AppendCodePoint(builder, codePoint);
+                }
+            }
+
+            result[builder.ToString()] = FormatPositions(boundaries);
+        }
+
+        return result;
     }
 
     private static readonly (string Name, string Text)[] HandWrittenTexts =

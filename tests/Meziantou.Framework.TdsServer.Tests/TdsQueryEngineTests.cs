@@ -3845,6 +3845,8 @@ public sealed class TdsQueryEngineTests
     [InlineData("SELECT Id.value() AS Value FROM customers", 50004, "xml.value requires an XQuery argument and a SQL type argument")]
     [InlineData("SELECT Region, Amount, COUNT(*) AS Count FROM orders GROUP BY Region, Amount, Amount", 50004, "Duplicate GROUP BY column 'Amount'")]
     [InlineData("SELECT ISJSON( FETCH NEXT x FROM json_docs", 50004, "Invalid SQL query")]
+    [InlineData("SELECT Id FROM customers WHERE CASE DAY(CAST('02-70' AS datetime????????????????????????????????????????????????????????????????)) = 10 AND Id = 1", 50004, "Invalid SQL query")]
+    [InlineData("SELECT Id FROM customers WHERE CASE DAY(CAST('02-70' AS datetime ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) )) = 10 AND Id = 1", 50004, "Invalid SQL query")]
     [InlineData("SELECT CAST('abc' AS int) AS X FROM customers", 50004, "Conversion failed when converting the value 'abc' to data type 'Int32'")]
     [InlineData("SELECT Id FROM customers WHERE CAST('<garbage>' AS datetime) > CAST('2020-01-01' AS datetime)", 50004, "Conversion failed when converting the value '<garbage>' to data type 'DateTime'")]
     [InlineData("SELECT Id FROM customers WHERE TAN(Name) = 0", 50004, "Conversion failed")]

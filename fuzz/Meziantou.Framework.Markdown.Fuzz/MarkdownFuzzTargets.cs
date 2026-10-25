@@ -3,7 +3,10 @@ using System.Diagnostics.CodeAnalysis;
 using Meziantou.Framework.Fuzzing;
 using Meziantou.Framework.Markdown.Extensions.GenericAttributes;
 using Meziantou.Framework.Markdown.Extensions.JiraLinks;
+using Meziantou.Framework.Markdown.Extensions.Tables;
+using Meziantou.Framework.Markdown.Helpers;
 using Meziantou.Framework.Markdown.Parsers.Inlines;
+using Meziantou.Framework.Markdown.Renderers.Normalize;
 using Meziantou.Framework.Markdown.Renderers.Roundtrip;
 using Meziantou.Framework.Markdown.Syntax;
 using Meziantou.Framework.Markdown.Syntax.Inlines;
@@ -16,7 +19,8 @@ namespace Meziantou.Framework.Markdown.Fuzz;
 /// too deeply. The syntax tree must have spans inside the text, the HTML must not depend on the thresholds above which the
 /// inline processor tracks its open containers (the tests lower them to use that path on small documents), raw HTML
 /// disabled must produce well-formed tags with the attributes the renderers write, and a document parsed with trivia must
-/// be written back exactly as it was parsed.
+/// be written back exactly as it was parsed. The normalized document must be normalized to itself and rendered as the
+/// original one, and the heading identifiers must only contain the characters they allow.
 /// </summary>
 public static class MarkdownFuzzTargets
 {
@@ -33,6 +37,27 @@ public static class MarkdownFuzzTargets
         "figures+footers+citations+advanced", "cjk-friendly-emphasis",
         "advanced+emojis+smartypants+yaml+autolinks+tasklists+diagrams+bootstrap+globalization+cjk-friendly-emphasis+nofollowlinks",
     ];
+
+    // The extensions that have a normalize renderer: the others write no Markdown for their syntax. An input of
+    // markdown-normalize is an index in this list, the flags below, a bullet character, then the Markdown.
+    private static readonly string[] NormalizeExtensions =
+    [
+        "common", "pipetables", "gfm-pipetables", "tasklists", "autolinks", "jiralinks", "pipetables+tasklists+autolinks+jiralinks",
+    ];
+
+    private static readonly char?[] ListItemCharacters = [null, '-', '+', '*'];
+
+    private const byte SpaceAfterQuoteBlockFlag = 1;
+    private const byte EmptyLineAfterCodeBlockFlag = 2;
+    private const byte EmptyLineAfterHeadingFlag = 4;
+    private const byte EmptyLineAfterThematicBreakFlag = 8;
+    private const byte ExpandAutoLinksFlag = 16;
+    private const byte NormalizeDisableHtmlFlag = 32;
+    private const byte NormalizeTrackTriviaFlag = 64;
+    private const byte NormalizePreciseSourceLocationFlag = 128;
+    private const byte DefaultNormalizeOptions = SpaceAfterQuoteBlockFlag | EmptyLineAfterCodeBlockFlag | EmptyLineAfterHeadingFlag | EmptyLineAfterThematicBreakFlag | ExpandAutoLinksFlag;
+
+    private static readonly ConcurrentDictionary<(int Extensions, byte Flags), MarkdownPipeline> NormalizePipelines = new();
 
     private const byte DisableHtmlFlag = 1;
     private const byte PreciseSourceLocationFlag = 2;
@@ -67,6 +92,8 @@ public static class MarkdownFuzzTargets
         new("markdown-parser", Parser) { Seeds = GetSeeds, Dictionary = Tokens },
         new("markdown-html", Html) { Seeds = GetSeeds, Dictionary = Tokens },
         new("markdown-roundtrip", Roundtrip) { Seeds = GetSeeds, Dictionary = Tokens },
+        new("markdown-normalize", Normalize) { Seeds = GetNormalizeSeeds, Dictionary = Tokens },
+        new("markdown-helpers", Helpers) { Seeds = GetHelperSeeds, Dictionary = Tokens },
     ];
 
     private static void Parser(ReadOnlySpan<byte> data)
@@ -114,6 +141,146 @@ public static class MarkdownFuzzTargets
         pipeline.Setup(renderer);
         renderer.Write(document);
         FuzzAssert.Equal(markdown, writer.ToString(), "The document parsed with trivia is not written back as it was parsed");
+    }
+
+    private static void Normalize(ReadOnlySpan<byte> data)
+    {
+        var extensions = FuzzInput.ReadByte(ref data) % NormalizeExtensions.Length;
+        var flags = FuzzInput.ReadByte(ref data);
+        var options = new NormalizeOptions
+        {
+            SpaceAfterQuoteBlock = (flags & SpaceAfterQuoteBlockFlag) != 0,
+            EmptyLineAfterCodeBlock = (flags & EmptyLineAfterCodeBlockFlag) != 0,
+            EmptyLineAfterHeading = (flags & EmptyLineAfterHeadingFlag) != 0,
+            EmptyLineAfterThematicBreak = (flags & EmptyLineAfterThematicBreakFlag) != 0,
+            ExpandAutoLinks = (flags & ExpandAutoLinksFlag) != 0,
+            ListItemCharacter = FuzzInput.Pick(ListItemCharacters, FuzzInput.ReadByte(ref data)),
+        };
+        var markdown = FuzzInput.ReadText(data);
+
+        var pipeline = GetNormalizePipeline(extensions, flags);
+        if (!TryNormalize(markdown, options, pipeline, out var normalized))
+            return;
+
+        // With trivia, the parser keeps the whitespace after a list marker or before a continuation line in the literals,
+        // which the renderer writes after its own separators: the trivia is for the roundtrip renderer, so only the
+        // exceptions are checked
+        if ((flags & NormalizeTrackTriviaFlag) != 0)
+            return;
+
+        FuzzAssert.True(TryNormalize(normalized, options, pipeline, out var renormalized), "The normalized document is nested too deeply");
+        FuzzAssert.Equal(normalized, renormalized, "Normalize is not idempotent");
+
+        if (TryParse(markdown, pipeline, out var document) && !HasParagraphBeforeInlineTable(markdown, document) && TryRender(markdown, pipeline, out var html))
+        {
+            FuzzAssert.True(TryRender(normalized, pipeline, out var normalizedHtml), "The normalized document is nested too deeply to be rendered");
+            FuzzAssert.Equal(html, normalizedHtml, "The normalized document is not rendered as the original one");
+        }
+    }
+
+    // The inline parser of the pipe tables (not the GFM ones) parses the lines of the paragraph before a table with the
+    // table, where the table boundaries win over the emphasis that spans lines. The normalized document separates the
+    // paragraph from the table with a blank line, so its emphasis is parsed as in any other paragraph.
+    private static bool HasParagraphBeforeInlineTable(string markdown, MarkdownDocument document)
+    {
+        foreach (var table in document.Descendants<Table>())
+        {
+            if (table.Parser is null && table.Parent is { } parent && parent.IndexOf(table) is > 0 and var index && parent[index - 1] is ParagraphBlock paragraph
+                && paragraph.Span.Start < table.Span.Start && markdown.AsSpan(Math.Min(paragraph.Span.End, table.Span.Start)..table.Span.Start).Count('\n') <= 1)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool TryNormalize(string markdown, NormalizeOptions options, MarkdownPipeline pipeline, [NotNullWhen(true)] out string? normalized)
+    {
+        try
+        {
+            normalized = MarkdownConverter.Normalize(markdown, options, pipeline);
+            return true;
+        }
+        catch (ArgumentException ex) when (IsDepthLimitExceeded(ex))
+        {
+            normalized = null;
+            return false;
+        }
+    }
+
+    private static MarkdownPipeline GetNormalizePipeline(int extensions, byte flags)
+    {
+        var key = (extensions, (byte)(flags & (NormalizeDisableHtmlFlag | NormalizeTrackTriviaFlag | NormalizePreciseSourceLocationFlag)));
+        return NormalizePipelines.GetOrAdd(key, static key =>
+        {
+            var builder = new MarkdownPipelineBuilder();
+            foreach (var extension in NormalizeExtensions[key.Extensions].Split('+'))
+            {
+                _ = extension is "jiralinks" ? builder.UseJiraLinks(new JiraLinkOptions("http://your.company.abc")) : builder.Configure(extension);
+            }
+
+            if ((key.Flags & NormalizeDisableHtmlFlag) != 0)
+            {
+                builder.DisableHtml();
+            }
+
+            if ((key.Flags & NormalizeTrackTriviaFlag) != 0)
+            {
+                builder.EnableTrackTrivia();
+            }
+
+            if ((key.Flags & NormalizePreciseSourceLocationFlag) != 0)
+            {
+                builder.UsePreciseSourceLocation();
+            }
+
+            return builder.Build();
+        });
+    }
+
+    // The heading identifiers and the unescaping of link destinations
+    private static void Helpers(ReadOnlySpan<byte> data)
+    {
+        var flags = FuzzInput.ReadByte(ref data);
+        var text = FuzzInput.ReadText(data);
+        var allowOnlyAscii = (flags & 1) != 0;
+        var keepOpeningDigits = (flags & 2) != 0;
+
+        var urilized = LinkHelper.Urilize(text, allowOnlyAscii, keepOpeningDigits);
+        FuzzAssert.Equal(urilized, LinkHelper.Urilize(text.AsSpan(), allowOnlyAscii, keepOpeningDigits), "The string and span overloads of Urilize differ");
+        FuzzAssert.Equal(urilized, LinkHelper.Urilize(urilized, allowOnlyAscii, keepOpeningDigits), "Urilize is not idempotent");
+        if (urilized.Length > 0)
+        {
+            FuzzAssert.False(urilized[^1] is '-' or '_' or '.', $"Urilize ends with a punctuation character: {FuzzAssert.Format(urilized)}");
+            FuzzAssert.True(keepOpeningDigits || char.IsLetter(urilized[0]), $"Urilize does not start with a letter: {FuzzAssert.Format(urilized)}");
+        }
+
+        foreach (var c in urilized)
+        {
+            var isAllowed = (allowOnlyAscii ? char.IsAsciiLetterLower(c) : char.IsLetter(c)) || char.IsAsciiDigit(c) || c is '-' or '_' or '.';
+            FuzzAssert.True(isAllowed, $"Urilize contains the character {FuzzAssert.Format(c)}: {FuzzAssert.Format(urilized)}");
+        }
+
+        var gfm = LinkHelper.UrilizeAsGfm(text);
+        FuzzAssert.Equal(gfm, LinkHelper.UrilizeAsGfm(text.AsSpan()), "The string and span overloads of UrilizeAsGfm differ");
+        FuzzAssert.Equal(gfm, LinkHelper.UrilizeAsGfm(gfm), "UrilizeAsGfm is not idempotent");
+        foreach (var c in gfm)
+        {
+            FuzzAssert.True(char.IsLetterOrDigit(c) || c is '-' or '_', $"UrilizeAsGfm contains the character {FuzzAssert.Format(c)}: {FuzzAssert.Format(gfm)}");
+        }
+
+        var unescaped = HtmlHelper.Unescape(text);
+        var unescapedEntities = HtmlHelper.Unescape(text, removeBackSlash: false);
+        if (!text.Contains('&', StringComparison.Ordinal))
+        {
+            FuzzAssert.Equal(text, unescapedEntities, "Unescape changes a text without entities when it keeps the backslashes");
+        }
+
+        if (!text.Contains('\\', StringComparison.Ordinal))
+        {
+            FuzzAssert.Equal(unescapedEntities, unescaped, "Unescape changes a text without backslashes depending on removeBackSlash");
+        }
     }
 
     private static (int Extensions, byte Flags, string Markdown) ReadInput(ReadOnlySpan<byte> data)
@@ -311,6 +478,59 @@ public static class MarkdownFuzzTargets
                 for (var i = 0; i < examples.Count; i++)
                 {
                     yield return FuzzSeed.FromText($"{resource}-{i + 1}-nohtml-precise", [all, DisableHtmlFlag | PreciseSourceLocationFlag], examples[i]);
+                }
+            }
+        }
+    }
+
+    private static IEnumerable<FuzzSeed> GetNormalizeSeeds()
+    {
+        foreach (var (resource, extensions) in new (string Resource, string[] Extensions)[]
+        {
+            ("CommonMark", ["common", "pipetables+tasklists+autolinks+jiralinks"]),
+            ("NormalizeHeadings", ["common"]),
+            ("PipeTableSpecs", ["pipetables"]),
+            ("PipeTableGfmSpecs", ["gfm-pipetables"]),
+            ("GfmTableSpecs", ["gfm-pipetables"]),
+            ("TaskListSpecs", ["tasklists"]),
+            ("AutoLinks", ["autolinks"]),
+            ("JiraLinks", ["jiralinks"]),
+        })
+        {
+            var examples = ReadExamples(resource);
+            foreach (var name in extensions)
+            {
+                var index = Array.IndexOf(NormalizeExtensions, name);
+                if (index < 0)
+                    throw new InvalidOperationException($"The extensions '{name}' of {resource} are not in the list");
+
+                for (var i = 0; i < examples.Count; i++)
+                {
+                    yield return FuzzSeed.FromText($"{resource}-{i + 1}-{name}", [(byte)index, DefaultNormalizeOptions, 0], examples[i]);
+                }
+            }
+
+            // The options other than the defaults, a bullet character, raw HTML disabled, trivia and precise source locations
+            if (resource is "CommonMark")
+            {
+                for (var i = 0; i < examples.Count; i++)
+                {
+                    yield return FuzzSeed.FromText($"{resource}-{i + 1}-options", [0, NormalizeDisableHtmlFlag | NormalizeTrackTriviaFlag | NormalizePreciseSourceLocationFlag, (byte)(1 + (i % 3))], examples[i]);
+                }
+            }
+        }
+    }
+
+    private static IEnumerable<FuzzSeed> GetHelperSeeds()
+    {
+        foreach (var resource in (string[])["AutoIdentifierSpecs", "GlobalizationSpecs", "CommonMark"])
+        {
+            var examples = ReadExamples(resource);
+            for (var i = 0; i < examples.Count; i++)
+            {
+                for (byte flags = 0; flags < 4; flags++)
+                {
+                    yield return FuzzSeed.FromText($"{resource}-{i + 1}-{flags}", [flags], examples[i]);
                 }
             }
         }

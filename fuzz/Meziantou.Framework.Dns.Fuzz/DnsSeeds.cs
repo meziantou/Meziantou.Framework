@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Buffers.Text;
 using System.Globalization;
 using System.Net;
 using System.Text.RegularExpressions;
@@ -50,6 +51,21 @@ internal static partial class DnsSeeds
             yield return new FuzzSeed("udp-large-" + name, (byte[])[0, 0x03, .. message]);
             yield return new FuzzSeed("https-noformerr-" + name, (byte[])[3, 0x05, .. message]);
         }
+    }
+
+    public static IEnumerable<FuzzSeed> GetDnsOverHttpsSeeds()
+    {
+        foreach (var (name, message) in GetMessages())
+        {
+            yield return new FuzzSeed("post-answer-" + name, (byte[])[0x18, .. message]);
+            yield return new FuzzSeed("post-parameters-default-" + name, (byte[])[0x01, .. message]);
+            yield return new FuzzSeed("post-json-" + name, (byte[])[0x02, .. message]);
+            yield return new FuzzSeed("get-base64url-large-" + name, (byte[])[0x24, .. message]);
+            yield return new FuzzSeed("get-parameter-answer-" + name, (byte[])[0x15, .. FuzzText.Encode(Base64Url.EncodeToString(message))]);
+        }
+
+        yield return new FuzzSeed("get-without-parameter", (byte[])[0x06]);
+        yield return new FuzzSeed("get-empty-parameter", (byte[])[0x07]);
     }
 
     public static IEnumerable<FuzzSeed> GetResponseSeeds() => WithPrefix(GetMessages(), [0], [3], [4]);

@@ -97,6 +97,8 @@ internal static class DnsFilterFuzzTargets
         reversedRuleSet.AddRange(rules.Reverse());
         var reversedEngine = new DnsFilterEngine(reversedRuleSet);
 
+        var queries = new List<(string Domain, DnsFilterQueryType QueryType, DnsClientInfo Client, DnsFilterResult Result)>();
+
         // A naive evaluation: each rule on its own, minus the rules a $badfilter rule disables
         DnsFilterEngine[]? singleRuleEngines = null;
         DnsFilterRule[]? activeRules = null;
@@ -126,6 +128,7 @@ internal static class DnsFilterFuzzTargets
             var domain = FuzzInput.ReadText(FuzzInput.ReadUntil(ref data, 0));
             var result = engine.Evaluate(domain, queryType, client);
             CheckResult(result, rules);
+            queries.Add((domain, queryType, client, result));
 
             var again = engine.Evaluate(domain, queryType, client);
             FuzzAssert.True(ReferenceEquals(result.MatchingRule, again.MatchingRule) && result.Action == again.Action, "Evaluate must be deterministic");
@@ -154,7 +157,96 @@ internal static class DnsFilterFuzzTargets
             }
 
             CheckPatternShortcuts(rules, domain);
+            CheckCreatedRules(domain, queryType);
         }
+
+        CheckReload(engine, ruleSet, rules, queries);
+    }
+
+    private static void CheckReload(DnsFilterEngine engine, DnsFilterRuleSet ruleSet, DnsFilterRule[] rules, List<(string Domain, DnsFilterQueryType QueryType, DnsClientInfo Client, DnsFilterResult Result)> queries)
+    {
+        var otherRuleSet = new DnsFilterRuleSet();
+        otherRuleSet.AddRange(rules.Where((_, index) => index % 2 is 0));
+        var otherEngine = new DnsFilterEngine(otherRuleSet);
+
+        engine.Reload(otherRuleSet);
+        foreach (var (domain, queryType, client, _) in queries)
+        {
+            FuzzAssert.True(IsSameResult(otherEngine.Evaluate(domain, queryType, client), engine.Evaluate(domain, queryType, client)), $"A reloaded engine must evaluate {FuzzAssert.Format(domain)} as an engine built from the new rule set");
+        }
+
+        engine.Reload(ruleSet);
+        foreach (var (domain, queryType, client, result) in queries)
+        {
+            FuzzAssert.True(IsSameResult(result, engine.Evaluate(domain, queryType, client)), $"Reloading the first rule set must give the first result for {FuzzAssert.Format(domain)}");
+        }
+    }
+
+    private static bool IsSameResult(DnsFilterResult expected, DnsFilterResult actual)
+    {
+        return expected.Action == actual.Action && ReferenceEquals(expected.MatchingRule, actual.MatchingRule) && ReferenceEquals(expected.Rewrite, actual.Rewrite);
+    }
+
+    /// <summary>
+    /// <see cref="DnsFilterRule.CreateBlock"/> and <see cref="DnsFilterRule.CreateAllow"/> throw <see cref="ArgumentException"/>
+    /// exactly for a name that is not a valid domain; otherwise the rule matches the name whatever its case, its subdomains
+    /// only when asked, and neither its parent nor an unrelated name.
+    /// </summary>
+    private static void CheckCreatedRules(string domain, DnsFilterQueryType queryType)
+    {
+        var isValid = DnsDomainName.TryNormalize(domain, out var normalized);
+        foreach (var action in (ReadOnlySpan<DnsFilterAction>)[DnsFilterAction.Block, DnsFilterAction.Allow])
+        {
+            foreach (var includeSubdomains in (ReadOnlySpan<bool>)[false, true])
+            {
+                DnsFilterRule rule;
+                try
+                {
+                    rule = action is DnsFilterAction.Block ? DnsFilterRule.CreateBlock(domain, includeSubdomains) : DnsFilterRule.CreateAllow(domain, includeSubdomains);
+                }
+                catch (ArgumentException)
+                {
+                    FuzzAssert.False(isValid, $"{FuzzAssert.Format(domain)} is a valid domain, the rule must be created");
+                    continue;
+                }
+
+                FuzzAssert.True(isValid, $"{FuzzAssert.Format(domain)} is not a valid domain, creating a rule must throw");
+                FuzzAssert.Equal(action, rule.Action, "The rule must have the requested action");
+                CheckRule(rule, DnsFilterListFormat.AdBlock);
+
+                var ruleSet = new DnsFilterRuleSet();
+                ruleSet.Add(rule);
+                var engine = new DnsFilterEngine(ruleSet);
+                var expectedAction = action is DnsFilterAction.Block ? DnsFilterAction.Block : DnsFilterAction.Allow;
+                CheckCreatedRuleMatch(engine, rule, domain, queryType, expectedAction);
+                CheckCreatedRuleMatch(engine, rule, normalized!.ToUpperInvariant(), queryType, expectedAction);
+
+                var subdomain = "a." + normalized;
+                if (DnsDomainName.TryNormalize(subdomain, out _))
+                {
+                    CheckCreatedRuleMatch(engine, rule, subdomain, queryType, includeSubdomains ? expectedAction : DnsFilterAction.None);
+                }
+
+                var dotIndex = normalized.IndexOf('.', StringComparison.Ordinal);
+                if (dotIndex >= 0 && DnsDomainName.TryNormalize(normalized[(dotIndex + 1)..], out var parent))
+                {
+                    CheckCreatedRuleMatch(engine, rule, parent, queryType, DnsFilterAction.None);
+                }
+
+                const string Unrelated = "unrelated.invalid";
+                if (normalized != Unrelated && !Unrelated.EndsWith("." + normalized, StringComparison.Ordinal))
+                {
+                    CheckCreatedRuleMatch(engine, rule, Unrelated, queryType, DnsFilterAction.None);
+                }
+            }
+        }
+    }
+
+    private static void CheckCreatedRuleMatch(DnsFilterEngine engine, DnsFilterRule rule, string domain, DnsFilterQueryType queryType, DnsFilterAction expectedAction)
+    {
+        var result = engine.Evaluate(domain, queryType);
+        FuzzAssert.Equal(expectedAction, result.Action, $"The rule {FuzzAssert.Format(rule.OriginalText)} must give {expectedAction} for {FuzzAssert.Format(domain)}");
+        FuzzAssert.True(ReferenceEquals(expectedAction is DnsFilterAction.None ? null : rule, result.MatchingRule), $"The rule {FuzzAssert.Format(rule.OriginalText)} must be the matching rule of {FuzzAssert.Format(domain)}");
     }
 
     private static void CheckResult(DnsFilterResult result, DnsFilterRule[] rules)

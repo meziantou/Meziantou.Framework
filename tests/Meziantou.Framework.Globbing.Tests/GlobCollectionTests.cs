@@ -273,6 +273,25 @@ important.log
         Assert.True(loadedFromStream.IsMatch("y"));
     }
 
+    [Theory]
+    [InlineData("utf-8")]
+    [InlineData("utf-16")]
+    [InlineData("utf-16BE")]
+    [InlineData("utf-32")]
+    public async Task GitIgnoreStreamSkipsOnlyTheFirstByteOrderMark(string encodingName)
+    {
+        // git skips one byte order mark, so a second one belongs to the first entry
+        var encoding = System.Text.Encoding.GetEncoding(encodingName);
+        using var stream = new MemoryStream([.. encoding.GetPreamble(), .. encoding.GetBytes("\uFEFFy\n")]);
+        var loaded = await GlobCollection.LoadGitIgnoreAsync(stream);
+        var parsed = GlobCollection.ParseGitIgnore("\uFEFF\uFEFFy\n".AsSpan());
+
+        Assert.Equal(1, loaded.Count);
+        Assert.Equal(parsed[0].ToString(), loaded[0].ToString());
+        Assert.True(loaded.IsMatch("\uFEFFy"));
+        Assert.False(loaded.IsMatch("y"));
+    }
+
     [Fact]
     public void GitIgnoreSkipsTheEntriesThatNeverMatch()
     {

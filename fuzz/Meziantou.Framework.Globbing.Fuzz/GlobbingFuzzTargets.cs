@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Unicode;
 using Meziantou.Framework.Fuzzing;
 
 namespace Meziantou.Framework.Globbing.Fuzz;
@@ -6,8 +7,11 @@ namespace Meziantou.Framework.Globbing.Fuzz;
 /// <summary>
 /// An invalid pattern must only throw <see cref="ArgumentException"/>, and matching never throws. <see cref="Glob.ToString"/>
 /// parses back into a glob that matches the same paths, ignoring the case or allowing a leading dot only adds matches, and a
-/// directory holding a match is a partial match. gitignore content never fails to load, an excluded directory excludes its
-/// content, and the line endings or a byte order mark do not change what the content matches.
+/// directory holding a match is a partial match. A collection built from globs matches a path when one of its include globs
+/// matches it and none of its exclude globs does, whatever their order, and recurses into a directory when one of its include
+/// globs does. gitignore content never fails to load, an excluded directory excludes its content, the line endings or a byte
+/// order mark do not change what the content matches, and loading it from a reader or from a stream (UTF-8, or any encoding
+/// with a byte order mark) gives the same globs as parsing the text.
 /// </summary>
 /// <remarks>
 /// <c>\</c> is a path separator on Windows only, and the seeds are replayed on every platform: the properties that depend on
@@ -22,6 +26,8 @@ public static class GlobbingFuzzTargets
     private const int MaxPaths = 8;
 
     private const byte GitIgnoreSeparator = 0;
+    private const byte CollectionSeparator = 0;
+    private const int MaxCollectionGlobs = 6;
 
     private static readonly GlobDialect[] Dialects = Enum.GetValues<GlobDialect>();
 
@@ -35,6 +41,7 @@ public static class GlobbingFuzzTargets
     [
         new("glob-parse-match", ParseAndMatch) { Seeds = GetParseAndMatchSeeds, Dictionary = Tokens },
         new("glob-gitignore", GitIgnore) { Seeds = GetGitIgnoreSeeds, Dictionary = Tokens },
+        new("glob-collection", Collection) { Seeds = GetCollectionSeeds, Dictionary = Tokens },
     ];
 
     private static void ParseAndMatch(ReadOnlySpan<byte> data)
@@ -109,12 +116,153 @@ public static class GlobbingFuzzTargets
         }
     }
 
+    // flags (dialect and options, as glob-parse-match), structure (bits 0-5: the globs moved into a nested collection, bit 6:
+    // each glob uses the next dialect), the patterns, one per line, a 0 byte, then the paths
+    private static void Collection(ReadOnlySpan<byte> data)
+    {
+        var flags = FuzzInput.ReadByte(ref data);
+        var structure = FuzzInput.ReadByte(ref data);
+        var dialectIndex = flags % Dialects.Length;
+        var options = (GlobOptions)((flags / Dialects.Length) % 4);
+        var patterns = FuzzText.Decode(FuzzInput.ReadUntil(ref data, CollectionSeparator)).Split('\n');
+        var paths = ReadPaths(data);
+
+        var globs = new List<Glob>();
+        foreach (var pattern in patterns)
+        {
+            if (globs.Count >= MaxCollectionGlobs)
+                break;
+
+            if (CountWildcards(pattern) > MaxWildcards)
+                return;
+
+            var dialect = (structure & 0x40) is 0 ? Dialects[dialectIndex] : Dialects[(dialectIndex + globs.Count) % Dialects.Length];
+            if (Glob.TryParse(pattern, dialect, options, out var glob))
+            {
+                globs.Add(glob);
+            }
+        }
+
+        var nested = new List<IGlobEvaluatable>();
+        var items = new List<IGlobEvaluatable>();
+        for (var i = 0; i < globs.Count; i++)
+        {
+            ((structure & (1 << i)) is 0 ? items : nested).Add(globs[i]);
+        }
+
+        if (nested.Count > 0)
+        {
+            items.Insert(0, new GlobCollection([.. nested]));
+        }
+
+        var collection = new GlobCollection([.. items]);
+        GlobCollection fromBuilder = [.. items];
+        GlobCollection reversed = [.. Enumerable.Reverse(items)];
+        FuzzAssert.Equal(items.Count, collection.Count, "The collection does not hold the globs it was built from");
+        for (var i = 0; i < items.Count; i++)
+        {
+            FuzzAssert.True(ReferenceEquals(items[i], collection[i]), $"The glob at index {i} is not the one the collection was built from");
+        }
+
+        FuzzAssert.True(items.SequenceEqual(collection), "Enumerating the collection does not give the globs it was built from");
+        FuzzAssert.Equal(GetExpectedMode(collection), ((IGlobEvaluatable)collection).Mode, "The mode of the collection is not the one of its globs");
+
+        foreach (var path in paths)
+        {
+            CheckCollectionMatch(collection, fromBuilder, reversed, path, "", itemType: null);
+            CheckCollectionMatch(collection, fromBuilder, reversed, path, "", PathItemType.File);
+            CheckCollectionMatch(collection, fromBuilder, reversed, path, "", PathItemType.Directory);
+
+            var isPartialMatch = collection.IsPartialMatch(path);
+            FuzzAssert.Equal(GetExpectedPartialMatch(collection, path), isPartialMatch, $"The collection is not a partial match of {FuzzAssert.Format(path)} exactly when one of its include globs is");
+            FuzzAssert.Equal(isPartialMatch, fromBuilder.IsPartialMatch(path), $"The collection expression and the constructor disagree on the partial match of {FuzzAssert.Format(path)}");
+            FuzzAssert.Equal(isPartialMatch, reversed.IsPartialMatch(path), $"The order of the globs changes the partial match of {FuzzAssert.Format(path)}");
+
+            if (!IsSimpleRelativePath(path))
+                continue;
+
+            var index = path.LastIndexOf('/', StringComparison.Ordinal);
+            if (index > 0)
+            {
+                CheckCollectionMatch(collection, fromBuilder, reversed, path[..index], path[(index + 1)..], itemType: null);
+                CheckCollectionMatch(collection, fromBuilder, reversed, path[..index], path[(index + 1)..], PathItemType.File);
+                CheckCollectionMatch(collection, fromBuilder, reversed, path[..index], path[(index + 1)..], PathItemType.Directory);
+            }
+
+            // The enumeration only recurses into the directories that are partial matches
+            if (collection.IsMatch(path))
+            {
+                for (var separator = path.IndexOf('/', StringComparison.Ordinal); separator > 0; separator = path.IndexOf('/', separator + 1, StringComparison.Ordinal))
+                {
+                    FuzzAssert.True(collection.IsPartialMatch(path[..separator]), $"{FuzzAssert.Format(path)} matches, but its directory {FuzzAssert.Format(path[..separator])} is not a partial match");
+                }
+            }
+        }
+    }
+
+    private static void CheckCollectionMatch(GlobCollection collection, GlobCollection fromBuilder, GlobCollection reversed, string directory, string filename, PathItemType? itemType)
+    {
+        var isMatch = collection.IsMatch(directory, filename, itemType);
+        var description = $"{FuzzAssert.Format(directory)} {FuzzAssert.Format(filename)} ({FuzzAssert.Format(itemType)})";
+        FuzzAssert.Equal(GetExpectedMatch(collection, directory, filename, itemType), isMatch, $"The collection does not match {description} exactly when an include glob matches it and no exclude glob does");
+        FuzzAssert.Equal(isMatch, fromBuilder.IsMatch(directory, filename, itemType), $"The collection expression and the constructor disagree on {description}");
+        FuzzAssert.Equal(isMatch, reversed.IsMatch(directory, filename, itemType), $"The order of the globs changes the match of {description}");
+    }
+
+    // The documented rule of a collection built from globs, applied to the results of its globs (and to a nested collection
+    // by the same rule): a path matches when an include glob matches it and no exclude glob does
+    private static bool GetExpectedMatch(GlobCollection collection, string directory, string filename, PathItemType? itemType)
+    {
+        var included = false;
+        var excluded = false;
+        foreach (var item in collection)
+        {
+            var isMatch = item is GlobCollection nested ? GetExpectedMatch(nested, directory, filename, itemType) : item.IsMatch(directory, filename, itemType);
+            if (!isMatch)
+                continue;
+
+            if (GetExpectedMode(item) is GlobMode.Exclude)
+            {
+                excluded = true;
+            }
+            else
+            {
+                included = true;
+            }
+        }
+
+        return included && !excluded;
+    }
+
+    private static bool GetExpectedPartialMatch(GlobCollection collection, string path)
+    {
+        foreach (var item in collection)
+        {
+            if (GetExpectedMode(item) is GlobMode.Exclude)
+                continue;
+
+            if (item is GlobCollection nested ? GetExpectedPartialMatch(nested, path) : item.IsPartialMatch(path))
+                return true;
+        }
+
+        return false;
+    }
+
+    // A collection includes unless all its globs exclude
+    private static GlobMode GetExpectedMode(IGlobEvaluatable item) => item switch
+    {
+        GlobCollection collection => collection.Count is 0 || collection.Any(glob => GetExpectedMode(glob) is GlobMode.Include) ? GlobMode.Include : GlobMode.Exclude,
+        _ => item.Mode,
+    };
+
     private static void GitIgnore(ReadOnlySpan<byte> data)
     {
-        var content = FuzzText.Decode(FuzzInput.ReadUntil(ref data, GitIgnoreSeparator));
+        var contentBytes = FuzzInput.ReadUntil(ref data, GitIgnoreSeparator);
+        var content = FuzzText.Decode(contentBytes);
         var paths = ReadPaths(data);
 
         var globs = GlobCollection.ParseGitIgnore(content);
+        CheckGitIgnoreLoaders(globs, content, contentBytes);
         if (content.Split('\n').Any(line => CountWildcards(line) > MaxWildcards))
             return;
 
@@ -155,6 +303,40 @@ public static class GlobbingFuzzTargets
                     FuzzAssert.False(globs.IsMatch(ancestor.AsSpan(), [], PathItemType.Directory), $"{FuzzAssert.Format(path)} is not ignored, but its directory {FuzzAssert.Format(ancestor)} is");
                 }
             }
+        }
+    }
+
+    private static void CheckGitIgnoreLoaders(GlobCollection globs, string content, ReadOnlySpan<byte> contentBytes)
+    {
+        AssertSameGlobs(globs, GlobCollection.LoadGitIgnoreAsync(new StringReader(content)).GetAwaiter().GetResult(), "Loading the content from a TextReader");
+        if (!Utf8.IsValid(contentBytes))
+            return;
+
+        AssertSameGlobs(globs, LoadFromStream([.. contentBytes]), "Loading the UTF-8 content from a Stream");
+
+        // The byte order mark of the encoding is the one git skips, so a U+FEFF that follows it belongs to the first entry
+        var withBom = GlobCollection.ParseGitIgnore("\uFEFF" + content);
+        foreach (var encoding in (Encoding[])[Encoding.UTF8, Encoding.Unicode, Encoding.BigEndianUnicode, Encoding.UTF32])
+        {
+            AssertSameGlobs(withBom, LoadFromStream([.. encoding.GetPreamble(), .. encoding.GetBytes(content)]), $"Loading the content from a Stream encoded as {encoding.WebName} with a byte order mark");
+        }
+
+        static GlobCollection LoadFromStream(byte[] bytes) => LoadFromStreamAsync(bytes).GetAwaiter().GetResult();
+
+        static async Task<GlobCollection> LoadFromStreamAsync(byte[] bytes)
+        {
+            await using var stream = new MemoryStream(bytes);
+            return await GlobCollection.LoadGitIgnoreAsync(stream).ConfigureAwait(false);
+        }
+    }
+
+    private static void AssertSameGlobs(GlobCollection expected, GlobCollection actual, string description)
+    {
+        FuzzAssert.Equal(expected.Count, actual.Count, $"{description} gives a different number of globs");
+        for (var i = 0; i < expected.Count; i++)
+        {
+            FuzzAssert.Equal(expected[i].ToString(), actual[i].ToString(), $"{description} gives a different glob at index {i}");
+            FuzzAssert.Equal(expected[i].Mode, actual[i].Mode, $"{description} gives a glob of a different mode at index {i}");
         }
     }
 
@@ -267,6 +449,45 @@ public static class GlobbingFuzzTargets
     {
         var flags = (byte)((int)dialect + (Dialects.Length * (int)options));
         return FuzzSeed.FromText(name, [flags], pattern + "\n" + string.Join('\n', paths.Take(MaxPaths)));
+    }
+
+    private static IEnumerable<FuzzSeed> GetCollectionSeeds()
+    {
+        string[] patterns = ["**/*.txt", "!temp/**/*", "src/**/*.cs", "!**/bin/", "*.{cs,vb}", "!*.g.cs", "a/**/", "[a-c]*.md", "!b*", "**/.git/**", ".*", "a/b/c", "**", "!**/obj/**"];
+        string[] paths = ["a.txt", "temp/a.txt", "src/a/b.cs", "src/a.g.cs", "bin/", "x/bin/a.cs", "a/b/c", "b.md"];
+        var index = 0;
+        for (var start = 0; start < patterns.Length; start++)
+        {
+            var group = Enumerable.Range(start, 2 + (start % 4)).Select(i => patterns[i % patterns.Length]);
+            foreach (var dialect in (GlobDialect[])[GlobDialect.Standard, GlobDialect.Git, GlobDialect.MSBuild, GlobDialect.PosixPath])
+            {
+                var options = (GlobOptions)(index % 4);
+
+                // No nesting, the first and third globs nested, the second glob nested with a dialect per glob
+                var structure = (index % 3) switch
+                {
+                    0 => 0,
+                    1 => 0b101,
+                    _ => 0x40 | 0b10,
+                };
+
+                var flags = (byte)((int)dialect + (Dialects.Length * (int)options));
+                var text = new StringBuilder().AppendJoin('\n', group).Append('\0').AppendJoin('\n', paths).ToString();
+                yield return FuzzSeed.FromText(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"collection-{index:D3}"), [flags, (byte)structure], text);
+                index++;
+            }
+        }
+
+        // The patterns of the MSBuild conformance cases, a few at a time
+        using var msbuild = FuzzResources.ReadJson(typeof(GlobbingFuzzTargets).Assembly, "msbuild-conformance.json");
+        var files = msbuild.RootElement.GetProperty("files").EnumerateArray().Select(file => file.GetString()!).ToArray();
+        var cases = msbuild.RootElement.GetProperty("cases").EnumerateArray().Select(testCase => testCase.GetProperty("pattern").GetString()!).ToArray();
+        var msbuildFlags = (byte)((int)GlobDialect.MSBuild + (Dialects.Length * (int)GlobOptions.IgnoreCase));
+        for (var start = 0; start < cases.Length; start += 3)
+        {
+            var text = new StringBuilder().AppendJoin('\n', cases.Skip(start).Take(3)).Append('\0').AppendJoin('\n', files.Skip(start % files.Length).Take(MaxPaths)).ToString();
+            yield return FuzzSeed.FromText(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"collection-msbuild-{start:D3}"), [msbuildFlags, (byte)(start % 8)], text);
+        }
     }
 
     private static IEnumerable<FuzzSeed> GetGitIgnoreSeeds()

@@ -1,0 +1,5 @@
+a=1; Domain=example.com; Path=/a/b
+b=2; Domain=www.example.com
+c=3; Domain=other.com
+d=4; SameSite=Lax; Path=/a
+e=5; samesite=bogus; secure; httponly; partitioned

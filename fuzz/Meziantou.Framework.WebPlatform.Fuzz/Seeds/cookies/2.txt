@@ -1,0 +1,8 @@
+a=1; Secure
+b=2; Path=/dir
+c=3; Path=/dir/page/
+d=4; Path=/di
+__Http-z=1; HttpOnly
+e=; Max-Age=999999999999999999999
+=f
+g=7; Expires=Wed, 32 Oct 2026 25:00:00 GMT; Expires=1-jan-99 0:0:0

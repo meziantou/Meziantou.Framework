@@ -52,6 +52,9 @@ public static class WebPlatformFuzzTargets
     // The cost of an expression grows with its nesting (see XPathDocumentMarkup): the longer inputs are truncated
     private const int XPathMaxLength = 256;
 
+    // The number of round trips (parse, serialize) after which the serialization of an HTML document is the same markup
+    private const int HtmlMaxRoundTrips = 4;
+
     /// <summary>The targets: the text targets receive the decoded input (<see cref="FuzzText.Decode"/>), the binary targets the bytes.</summary>
     public static IReadOnlyList<FuzzTarget> All { get; } =
     [
@@ -63,6 +66,43 @@ public static class WebPlatformFuzzTargets
         new("webplatform-url", data => Url(FuzzText.Decode(data))) { Seeds = () => GetSeeds("url") },
         new("webplatform-urlpattern", data => UrlPattern(FuzzText.Decode(data))) { Seeds = () => GetSeeds("url") },
         new("webplatform-font", data => Font(data.ToArray())) { Seeds = () => GetSeeds("font") },
+        new("webplatform-text-decoder", TextDecoding) { Seeds = () => GetSeeds("text-decoder") },
+        new("webplatform-cookies", Cookies) { Seeds = () => GetSeeds("cookies") },
+    ];
+
+    /// <summary>
+    /// The labels of the text decoder target and the name of their encoding (null when the label is not supported): a label
+    /// of every encoding, a few aliases (in any case, with the whitespace the labels are stripped of), and unsupported labels
+    /// (the replacement encoding is not supported by TextDecoder).
+    /// </summary>
+    private static readonly (string Label, string? Encoding)[] TextDecoderLabels =
+    [
+        ("utf-8", "utf-8"), ("ibm866", "ibm866"), ("iso-8859-2", "iso-8859-2"), ("iso-8859-3", "iso-8859-3"), ("iso-8859-4", "iso-8859-4"),
+        ("iso-8859-5", "iso-8859-5"), ("iso-8859-6", "iso-8859-6"), ("iso-8859-7", "iso-8859-7"), ("iso-8859-8", "iso-8859-8"),
+        ("iso-8859-8-i", "iso-8859-8-i"), ("iso-8859-10", "iso-8859-10"), ("iso-8859-13", "iso-8859-13"), ("iso-8859-14", "iso-8859-14"),
+        ("iso-8859-15", "iso-8859-15"), ("iso-8859-16", "iso-8859-16"), ("koi8-r", "koi8-r"), ("koi8-u", "koi8-u"), ("macintosh", "macintosh"),
+        ("windows-874", "windows-874"), ("windows-1250", "windows-1250"), ("windows-1251", "windows-1251"), ("windows-1252", "windows-1252"),
+        ("windows-1253", "windows-1253"), ("windows-1254", "windows-1254"), ("windows-1255", "windows-1255"), ("windows-1256", "windows-1256"),
+        ("windows-1257", "windows-1257"), ("windows-1258", "windows-1258"), ("x-mac-cyrillic", "x-mac-cyrillic"), ("gbk", "gbk"),
+        ("gb18030", "gb18030"), ("big5", "big5"), ("euc-jp", "euc-jp"), ("iso-2022-jp", "iso-2022-jp"), ("shift_jis", "shift_jis"),
+        ("euc-kr", "euc-kr"), ("utf-16be", "utf-16be"), ("utf-16le", "utf-16le"), ("x-user-defined", "x-user-defined"),
+        ("UTF8", "utf-8"), (" unicode-1-1-utf-8\t", "utf-8"), ("\nlatin1\f", "windows-1252"), ("ascii", "windows-1252"), ("utf-16", "utf-16le"),
+        ("x-sjis", "shift_jis"), ("csiso2022jp", "iso-2022-jp"), ("x-x-big5", "big5"), ("ks_c_5601-1987", "euc-kr"), ("x-gbk", "gbk"),
+        ("replacement", null), ("csiso2022kr", null), ("hz-gb-2312", null), ("iso-2022-cn", null), ("utf-7", null), ("utf-32", null), ("", null), ("utf\u00A0-8", null),
+    ];
+
+    /// <summary>The URLs of the cookie target: secure and non-secure, with paths, IP addresses, an IDN, a public suffix, and a URL without host.</summary>
+    private static readonly string[] CookieUrls =
+    [
+        "https://example.com/",
+        "http://example.com/dir/page",
+        "https://www.example.com/a/b/c?q=1#f",
+        "https://xn--lve-6lad.example.com/dir/",
+        "http://127.0.0.1:8080/x/y",
+        "https://[::1]/",
+        "http://localhost/path",
+        "https://sub.example.co.uk/",
+        "file:///C:/dir/file",
     ];
 
     /// <summary>The embedded seeds of a target (the resources <c>Seeds/&lt;directory&gt;/*</c>).</summary>
@@ -89,6 +129,30 @@ public static class WebPlatformFuzzTargets
         _ = document.ToHtml(new HtmlMinifyFormatter());
         _ = document.TextContent;
         _ = HtmlDocumentParser.ParseDocument(html).DocumentElement?.OuterHtml;
+
+        // The serialization of a document is not always parsed as the same tree: the parser fixes up the trees that the markup
+        // cannot express (e.g. the elements that it moves out of a table, or the form that a misnested end tag leaves open, so
+        // that the next form is nested in it), and fixing up a tree can create another one (the nested form is dropped, which
+        // closes its parent elements differently). The round trips reach a fixed point after a few rounds: the serialization of
+        // the parsed serialization is the same markup. Except after a plaintext element: its end tag is serialized, but the
+        // parser reads the rest of the markup as its text, so each round trip adds the end tags to the text
+        // (https://html.spec.whatwg.org/multipage/parsing.html#serialising-html-fragments). The parser only creates a
+        // plaintext element (in a template too) for a "<plaintext" start tag of the markup.
+        var markup = document.ToHtml();
+        if (!markup.Contains("<plaintext", StringComparison.OrdinalIgnoreCase))
+        {
+            var rounds = new List<string> { markup };
+            while (true)
+            {
+                var serialized = HtmlDocumentParser.ParseDocument(rounds[^1]).ToHtml();
+                if (string.Equals(serialized, rounds[^1], StringComparison.Ordinal))
+                    break;
+
+                rounds.Add(serialized);
+                if (rounds.Count > HtmlMaxRoundTrips)
+                    FuzzAssert.Fail($"The serialization does not reach a fixed point after {HtmlMaxRoundTrips} round trips:{Environment.NewLine}{string.Join(Environment.NewLine, rounds.Select(FuzzAssert.Format))}");
+            }
+        }
 
         var parser = new HtmlDocumentParser();
         foreach (var context in new[] { "body", "template", "table", "select", "svg", "textarea" })
@@ -140,6 +204,27 @@ public static class WebPlatformFuzzTargets
         reparsed.ReplaceSync(text);
         _ = Serialize(reparsed.CssRules);
 
+        // The formatters only change the whitespace and the notation of the values: their output is parsed as the same rules.
+        // The minifier removes the rules that have no effect, which changes the rules, unless RemoveEmptyRules is false. Some
+        // texts are kept as specified (the condition of @supports, the unknown media features, the values with var()), so the
+        // minifier changes their serialization: the rules are compared without the whitespace that the minifier may remove
+        var formatted = sheet.ToCss(new CssPrettyFormatter());
+        var formattedSheet = new CssStyleSheet();
+        formattedSheet.ReplaceSync(formatted);
+        FuzzAssert.Equal(text, Serialize(formattedSheet.CssRules), $"The output of the pretty formatter is parsed as different rules: {FuzzAssert.Format(formatted)}");
+
+        formatted = sheet.ToCss(new CssMinifyFormatter { RemoveEmptyRules = false });
+        formattedSheet = new CssStyleSheet();
+        formattedSheet.ReplaceSync(formatted);
+        FuzzAssert.Equal(NormalizeWhitespace(text), NormalizeWhitespace(Serialize(formattedSheet.CssRules)), $"The output of the minify formatter is parsed as different rules: {FuzzAssert.Format(formatted)}");
+
+        // The minified output is minified: minifying it again does not change it
+        var minify = new CssMinifyFormatter();
+        var minified = sheet.ToCss(minify);
+        var minifiedSheet = new CssStyleSheet();
+        minifiedSheet.ReplaceSync(minified);
+        FuzzAssert.Equal(minified, minifiedSheet.ToCss(minify), "Minifying the minified style sheet changes it");
+
         var element = CreateDocument().CreateElement<HtmlElement>("div");
         element.Style.CssText = input;
         _ = element.Style.CssText;
@@ -150,6 +235,36 @@ public static class WebPlatformFuzzTargets
         }
 
         _ = CssApi.Supports(input);
+
+        // Collapses the whitespace, and removes it where the minifier may remove it (after punctuation, and before the
+        // punctuation other than "(", ":" and "["): the whitespace between two words (identifiers, numbers, strings, the
+        // operators of calc()) is significant, and so is the whitespace before a parenthesis (a function), a colon (a
+        // pseudo-class) or a bracket (an attribute selector)
+        static string NormalizeWhitespace(string text)
+        {
+            var result = new System.Text.StringBuilder();
+            var pendingSpace = false;
+            foreach (var c in text)
+            {
+                if (c is ' ' or '\t' or '\n' or '\r' or '\f')
+                {
+                    pendingSpace = result.Length > 0;
+                    continue;
+                }
+
+                if (pendingSpace && IsWord(result[^1]) && (IsWord(c) || c is '(' or ':' or '['))
+                {
+                    result.Append(' ');
+                }
+
+                pendingSpace = false;
+                result.Append(c);
+            }
+
+            return result.ToString();
+
+            static bool IsWord(char c) => char.IsAsciiLetterOrDigit(c) || c is '-' or '_' or '.' or '%' or '#' or '\\' or '"' or '\'' or '+' or '@' or '&' || c > '\x7F';
+        }
 
         static string Serialize(CssRuleList rules)
         {
@@ -316,6 +431,187 @@ public static class WebPlatformFuzzTargets
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// Decodes bytes with TextDecoder: in one pass, and in stream mode over chunks, which returns the same text (or fails
+    /// for the same input in fatal mode). The input is the label byte (an index in <see cref="TextDecoderLabels"/>, or a
+    /// label read from the input up to a NUL byte), the option byte (fatal, ignoreBOM), the two lengths of the chunks
+    /// (alternately), then the bytes to decode.
+    /// </summary>
+    public static void TextDecoding(ReadOnlySpan<byte> data)
+    {
+        var labelByte = FuzzInput.ReadByte(ref data);
+        var options = FuzzInput.ReadByte(ref data);
+        var chunkLength1 = FuzzInput.ReadByte(ref data) % 8;
+        var chunkLength2 = FuzzInput.ReadByte(ref data) % 8;
+        if (chunkLength1 == 0 && chunkLength2 == 0)
+        {
+            chunkLength1 = 1;
+        }
+
+        var isKnownLabel = labelByte < TextDecoderLabels.Length;
+        var (label, expectedEncoding) = isKnownLabel ? TextDecoderLabels[labelByte] : (System.Text.Encoding.Latin1.GetString(FuzzInput.ReadUntil(ref data, 0)), null);
+        var decoderOptions = new TextDecoderOptions { Fatal = (options & 1) != 0, IgnoreBom = (options & 2) != 0 };
+        TextDecoder decoder;
+        try
+        {
+            decoder = new TextDecoder(label, decoderOptions);
+        }
+        catch (RangeErrorException)
+        {
+            FuzzAssert.False(expectedEncoding is not null, $"The label {FuzzAssert.Format(label)} is not supported");
+            return;
+        }
+
+        if (isKnownLabel)
+        {
+            FuzzAssert.Equal(expectedEncoding, decoder.Encoding, $"The encoding of the label {FuzzAssert.Format(label)}");
+        }
+
+        FuzzAssert.Equal(decoderOptions.Fatal, decoder.Fatal, "The fatal flag");
+        FuzzAssert.Equal(decoderOptions.IgnoreBom, decoder.IgnoreBom, "The ignoreBOM flag");
+
+        var expected = Decode(decoder, data);
+
+        // Stream mode: the decoder keeps its state (an incomplete sequence, the mode of ISO-2022-JP) between the chunks
+        var streamDecoder = new TextDecoder(label, decoderOptions);
+        var streamed = new System.Text.StringBuilder();
+        var stream = new TextDecodeOptions { Stream = true };
+        string? actual = null;
+        try
+        {
+            var remaining = data;
+            for (var i = 0; !remaining.IsEmpty; i++)
+            {
+                var length = Math.Min(remaining.Length, i % 2 == 0 ? chunkLength1 : chunkLength2);
+                streamed.Append(streamDecoder.Decode(remaining[..length], stream));
+                remaining = remaining[length..];
+            }
+
+            streamed.Append(streamDecoder.Decode());
+            actual = streamed.ToString();
+        }
+        catch (TypeErrorException) when (decoder.Fatal)
+        {
+            // Invalid data in fatal mode
+        }
+
+        FuzzAssert.Equal(expected, actual, $"The streamed decoding (chunks of {chunkLength1} and {chunkLength2} bytes) differs from the decoding in one pass ({decoder.Encoding})");
+
+        // A decode without the stream option resets the state of a decoder that was used in stream mode
+        FuzzAssert.Equal(expected, Decode(streamDecoder, data), "The decoding with a decoder that was used in stream mode");
+
+        if (decoder.Fatal)
+        {
+            // The fatal mode fails exactly when the replacement mode reports an error (with U+FFFD)
+            var replaced = new TextDecoder(label, new TextDecoderOptions { IgnoreBom = decoder.IgnoreBom }).Decode(data);
+            if (expected is null)
+            {
+                FuzzAssert.True(replaced.Contains('\uFFFD', StringComparison.Ordinal), $"The decoding fails in fatal mode, but the replacement mode does not report an error: {FuzzAssert.Format(replaced)}");
+            }
+            else
+            {
+                FuzzAssert.Equal(expected, replaced, "The decoding in fatal mode differs from the decoding in replacement mode");
+            }
+        }
+
+        if (expected is null)
+            return;
+
+        // The decoded text is made of scalar values: its UTF-8 encoding (TextEncoder) decodes to the same text
+        for (var i = 0; i < expected.Length; i++)
+        {
+            if (char.IsHighSurrogate(expected[i]) && i + 1 < expected.Length && char.IsLowSurrogate(expected[i + 1]))
+            {
+                i++;
+            }
+            else
+            {
+                FuzzAssert.False(char.IsSurrogate(expected[i]), $"The decoded text contains a lone surrogate at {i}: {FuzzAssert.Format(expected)}");
+            }
+        }
+
+        var encoder = new TextEncoder();
+        var encoded = encoder.Encode(expected);
+        FuzzAssert.Equal(expected, new TextDecoder("utf-8", new TextDecoderOptions { Fatal = true, IgnoreBom = true }).Decode(encoded), "The UTF-8 round trip of the decoded text");
+
+        var destination = new byte[encoded.Length / 2];
+        var result = encoder.EncodeInto(expected, destination);
+        FuzzAssert.True(result.Written <= (ulong)destination.Length && result.Read <= (ulong)expected.Length, $"encodeInto reads {result.Read} units and writes {result.Written} bytes");
+        FuzzAssert.True(destination.AsSpan(0, (int)result.Written).SequenceEqual(encoded.AsSpan(0, (int)result.Written)), "encodeInto writes a prefix of the result of encode");
+        FuzzAssert.Equal(expected[..(int)result.Read], System.Text.Encoding.UTF8.GetString(encoded, 0, (int)result.Written), "encodeInto writes the encoding of the units it reads");
+
+        static string? Decode(TextDecoder decoder, ReadOnlySpan<byte> data)
+        {
+            try
+            {
+                return decoder.Decode(data);
+            }
+            catch (TypeErrorException) when (decoder.Fatal)
+            {
+                return null;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Stores the cookies of Set-Cookie headers (one per line, the first byte picks the URL in <see cref="CookieUrls"/>) and
+    /// retrieves them: a cookie that is stored and not expired is returned for the URL when its path matches.
+    /// </summary>
+    public static void Cookies(ReadOnlySpan<byte> data)
+    {
+        var url = FuzzInput.Pick(CookieUrls, FuzzInput.ReadByte(ref data));
+        var path = DomUrl.Parse(url)!.Pathname;
+        var clock = new FixedTimeProvider();
+        var now = clock.GetUtcNow();
+        var jar = new CookieJar(clock);
+        foreach (var header in FuzzInput.ReadText(data).Split('\n').Take(64))
+        {
+            _ = jar.SetCookie(url, header);
+
+            // Each cookie in a jar of its own too: the cookies of the shared jar replace each other
+            var single = new CookieJar(clock);
+            var stored = single.SetCookie(url, header);
+            var cookies = single.GetCookies();
+            FuzzAssert.True(cookies.Count <= (stored ? 1 : 0), $"The jar has {cookies.Count} cookies after the header {FuzzAssert.Format(header)} (stored: {stored})");
+            if (cookies.Count == 0)
+                continue;
+
+            var cookie = cookies[0];
+            FuzzAssert.True(cookie.Expires is null || (cookie.Expires > now && cookie.Expires <= now.AddDays(400)), $"The cookie of the header {FuzzAssert.Format(header)} expires at {cookie.Expires}");
+            FuzzAssert.True(cookie.Path.StartsWith('/', StringComparison.Ordinal), $"The path of the cookie is {FuzzAssert.Format(cookie.Path)}");
+            var retrieved = single.GetCookies(url);
+            if (PathMatches(path, cookie.Path))
+            {
+                FuzzAssert.True(retrieved.Count == 1 && IsSameCookie(cookie, retrieved[0]), $"The cookie of the header {FuzzAssert.Format(header)} is not returned for {url}");
+            }
+            else
+            {
+                FuzzAssert.Equal(0, retrieved.Count, $"The cookie of the header {FuzzAssert.Format(header)} (path {FuzzAssert.Format(cookie.Path)}) is returned for {url}");
+            }
+        }
+
+        var all = jar.GetCookies();
+        foreach (var other in CookieUrls)
+        {
+            foreach (var cookie in jar.GetCookies(other))
+            {
+                FuzzAssert.True(all.Any(item => IsSameCookie(item, cookie)), $"The cookie {FuzzAssert.Format(cookie.Name)} returned for {other} is not in the jar");
+            }
+        }
+
+        static bool IsSameCookie(StoredCookie a, StoredCookie b) => a.Name == b.Name && a.Value == b.Value && a.Domain == b.Domain && a.Path == b.Path && a.HostOnly == b.HostOnly && a.Secure == b.Secure;
+
+        // https://httpwg.org/http-extensions/draft-ietf-httpbis-rfc6265bis.html#name-paths-and-path-match
+        static bool PathMatches(string requestPath, string cookiePath)
+            => requestPath == cookiePath || (requestPath.StartsWith(cookiePath, StringComparison.Ordinal) && (cookiePath.EndsWith('/', StringComparison.Ordinal) || requestPath[cookiePath.Length] == '/'));
+    }
+
+    /// <summary>A clock that does not move, so that the expiry of the cookies does not depend on the time of the run.</summary>
+    private sealed class FixedTimeProvider : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
     }
 
     private static Document CreateDocument() => QueryDocument.Value.Implementation.CreateHtmlDocument("");

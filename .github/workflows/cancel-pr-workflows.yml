@@ -1,0 +1,57 @@
+# Cancels the queued and running workflow runs of a pull request when it is merged or closed.
+# The concurrency groups in ci.yml and publish.yml only cancel a run when a newer run starts,
+# and closing a pull request does not start one.
+name: cancel-pr-workflows
+on:
+  # pull_request_target gets a write token for pull requests from forks too. This workflow never
+  # checks out or runs the pull request's code.
+  pull_request_target:
+    types:
+      - closed
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  cancel:
+    runs-on: ubuntu-slim
+    timeout-minutes: 5
+    permissions:
+      actions: write
+    steps:
+      - name: Cancel workflow runs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
+          HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          # The runs of a pull request from a fork have an empty pull_requests list, so match on the
+          # head repository and branch instead.
+          $branch = [uri]::EscapeDataString($env:HEAD_BRANCH)
+          $runs = foreach ($status in 'queued', 'in_progress', 'waiting', 'pending', 'requested') {
+            gh api --paginate "repos/$env:REPOSITORY/actions/runs?event=pull_request&status=$status&branch=$branch&per_page=100" --jq '.workflow_runs[]' | ConvertFrom-Json
+          }
+
+          $runs = @(
+            $runs
+            | Where-Object { $_.head_repository.full_name -eq $env:HEAD_REPOSITORY }
+            | Sort-Object id -Unique
+          )
+
+          if ($runs.Count -eq 0) {
+            Write-Host "No workflow runs to cancel."
+            exit 0
+          }
+
+          foreach ($run in $runs) {
+            Write-Host "Cancelling $($run.name) #$($run.run_number) ($($run.html_url))"
+            gh run cancel $run.id --repo $env:REPOSITORY
+            if ($LASTEXITCODE -ne 0) {
+              # The run can complete between the listing and the cancellation.
+              Write-Host "::warning::Could not cancel run $($run.id)"
+            }
+          }
+
+          exit 0

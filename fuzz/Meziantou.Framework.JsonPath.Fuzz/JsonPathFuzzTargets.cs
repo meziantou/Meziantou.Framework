@@ -176,7 +176,7 @@ public static class JsonPathFuzzTargets
         FuzzAssert.Equal(matches.Count, array.Count, "ToJsonArray does not hold one value per match");
         for (var i = 0; i < matches.Count; i++)
         {
-            FuzzAssert.True(JsonNode.DeepEquals(matches[i].Value, array[i]), $"ToJsonArray gives another value for {matches[i].Path}");
+            FuzzAssert.True(AreEqual(matches[i].Value, array[i]), $"ToJsonArray gives another value for {matches[i].Path}");
             FuzzAssert.True(array[i] is null || !ReferenceEquals(matches[i].Value, array[i]), $"ToJsonArray does not copy the value of {matches[i].Path}");
         }
     }
@@ -218,7 +218,7 @@ public static class JsonPathFuzzTargets
             for (var i = 0; i < laxMatches.Count; i++)
             {
                 FuzzAssert.Equal(laxMatches[i].Path, strictMatches[i].Path, $"{method} gives a different path than Lax mode for match {i}");
-                FuzzAssert.True(JsonElement.DeepEquals(laxMatches[i].Value, strictMatches[i].Value), $"{method} gives a different value than Lax mode at {laxMatches[i].Path}");
+                FuzzAssert.True(AreEqual(laxMatches[i].Value, strictMatches[i].Value), $"{method} gives a different value than Lax mode at {laxMatches[i].Path}");
             }
         }
 
@@ -232,7 +232,7 @@ public static class JsonPathFuzzTargets
             FuzzAssert.Equal(laxMatches.Count > 0, value.HasValue, $"{method} does not return the first match");
             if (value is { } element)
             {
-                FuzzAssert.True(JsonElement.DeepEquals(laxMatches[0].Value, element), $"{method} does not return the first match");
+                FuzzAssert.True(AreEqual(laxMatches[0].Value, element), $"{method} does not return the first match");
             }
         }
     }
@@ -334,7 +334,34 @@ public static class JsonPathFuzzTargets
         if (node is null)
             return element.ValueKind is JsonValueKind.Null;
 
-        return JsonNode.DeepEquals(node, JsonNode.Parse(element.GetRawText(), documentOptions: DocumentOptions));
+        return AreEqual(node, JsonNode.Parse(element.GetRawText(), documentOptions: DocumentOptions));
+    }
+
+    // JsonNode.DeepEquals and JsonElement.DeepEquals throw ArgumentOutOfRangeException for a number whose exponent does not
+    // fit in an int (0.1e01234567890123456789). The compared values are read from the same text, so their compact JSON is
+    // the same when they are.
+    private static bool AreEqual(JsonNode? left, JsonNode? right)
+    {
+        try
+        {
+            return JsonNode.DeepEquals(left, right);
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            return string.Equals(left?.ToJsonString(), right?.ToJsonString(), StringComparison.Ordinal);
+        }
+    }
+
+    private static bool AreEqual(JsonElement left, JsonElement right)
+    {
+        try
+        {
+            return JsonElement.DeepEquals(left, right);
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            return AreEqual(JsonNode.Parse(left.GetRawText(), documentOptions: DocumentOptions), JsonNode.Parse(right.GetRawText(), documentOptions: DocumentOptions));
+        }
     }
 
     private static string Format(JsonPathResult result)

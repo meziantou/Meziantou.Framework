@@ -1067,6 +1067,18 @@ key without separator
     }
 
     [Fact]
+    public void RemoveProperties_KeepsTheByteOrderMarkCharacterOfTheNextKey()
+    {
+        var root = IniSyntaxTree.ParseText("; about a\na=1\n\uFEFFb=2\n").GetRoot();
+
+        var updated = root.RemoveProperties(section: null, "a");
+
+        Assert.Equal("\uFEFF\uFEFFb=2\n", updated.ToFullString());
+        Assert.Equal("2", IniSyntaxTree.ParseText(updated.ToFullString()).GetRoot().GetValue(section: null, "\uFEFFb"));
+        AssertReadsBackTheSame(updated);
+    }
+
+    [Fact]
     public void WithValue_OnAKeyWithoutValue_DoesNotTurnTheNextLineIntoAContinuation()
     {
         var root = IniSyntaxTree.ParseText("a=1\nflag\n  c=3\n", new IniParseOptions { AllowMultilineValues = true, AllowKeysWithoutValue = true }).GetRoot();

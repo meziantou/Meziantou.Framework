@@ -20,6 +20,8 @@ namespace Meziantou.Framework.Language.Ini;
 /// </remarks>
 public sealed class IniDocumentSyntax : IniSyntaxNode
 {
+    private const string ByteOrderMark = "\uFEFF";
+
     private SyntaxNode? _entries;
     private SectionIndex? _index;
 
@@ -452,6 +454,13 @@ public sealed class IniDocumentSyntax : IniSyntaxNode
         if (carried is not null)
         {
             endOfFile = endOfFile.WithLeadingTrivia([.. carried, .. SkipBlankLines(endOfFile.LeadingTrivia, carried)]);
+        }
+
+        // A U+FEFF that starts the text is a byte order mark. One that starts a key, now that what was in front of it is
+        // gone, stays part of the key behind a byte order mark.
+        if (kept.Count > 0 && kept[0].GetLeadingTrivia().Count == 0 && kept[0].ToFullString().StartsWith(ByteOrderMark, StringComparison.Ordinal))
+        {
+            kept[0] = kept[0].WithLeadingTrivia([SyntaxFactory.Whitespace(ByteOrderMark)]);
         }
 
         return Update(SyntaxFactory.List(kept), endOfFile);

@@ -948,6 +948,13 @@ public sealed class CssSyntaxTreeTests
             SyntaxFactory.Identifier("1st"),
             SyntaxFactory.Identifier("-"),
             SyntaxFactory.Identifier("--x"),
+            SyntaxFactory.Identifier("\0nul"),
+            SyntaxFactory.Identifier("1\uDC00\uDC00x"),
+            SyntaxFactory.Identifier("x\uDC00y\uD83D\uDE00"),
+            SyntaxFactory.StringToken("\0\uD800", '"'),
+            SyntaxFactory.Hash("a\0"),
+            SyntaxFactory.AtKeyword("\uD800x"),
+            SyntaxFactory.FunctionToken("f\0"),
             SyntaxFactory.StringToken("it's \"quoted\"\n", '"'),
             SyntaxFactory.StringToken("it's", '\''),
             SyntaxFactory.Number(-1.5),
@@ -969,6 +976,9 @@ public sealed class CssSyntaxTreeTests
             Assert.Equal(token.Value, reparsed.Value);
         }
 
+        Assert.Equal("\uFFFDnul", SyntaxFactory.Identifier("\0nul").ValueText);
+        Assert.Equal("x\uFFFDy\uD83D\uDE00", SyntaxFactory.Identifier("x\uDC00y\uD83D\uDE00").ValueText);
+        Assert.Equal("1\uFFFD\uFFFDx", CssSyntaxTree.ParseText("a { b: \\31 \uDC00\uDC00x }").GetRoot().DescendantTokens().ElementAt(4).ValueText);
         Assert.Equal("e3", SyntaxFactory.Dimension(1, "e3").GetUnit());
         Assert.Throws<ArgumentOutOfRangeException>(() => SyntaxFactory.Number(double.NaN));
         Assert.Throws<ArgumentException>(() => SyntaxFactory.Comment("a */ b"));

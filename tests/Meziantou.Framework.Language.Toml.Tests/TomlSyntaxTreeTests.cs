@@ -464,6 +464,20 @@ public sealed class TomlSyntaxTreeTests
         Assert.Empty(TomlSyntaxTree.ParseText(document.ToFullString()).GetDiagnostics());
     }
 
+    [Theory]
+    [InlineData(0.1)]
+    [InlineData(-1e300)]
+    [InlineData(double.Epsilon)]
+    [InlineData(2.9802322387695312E-08)]
+    [InlineData(-4.1045368012983762E-289)]
+    public void Factory_FloatReadsBackAsItself(double value)
+    {
+        var text = "a = " + SyntaxFactory.Literal(value).Text;
+
+        var parsed = (TomlFloatSyntax)TomlSyntaxTree.ParseText(text).GetRoot().RootProperties[0].Value;
+        Assert.Equal(BitConverter.DoubleToInt64Bits(value), BitConverter.DoubleToInt64Bits(parsed.Value));
+    }
+
     [Fact]
     public void Factory_AddEntries_EndsTheLastLine()
     {

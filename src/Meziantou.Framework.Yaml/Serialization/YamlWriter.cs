@@ -448,6 +448,9 @@ public sealed class YamlWriter : YamlReaderWriterBase
             throw new InvalidOperationException("Property names can only be written inside a mapping.");
         }
 
+        // The style is selected while the tag of the key, if any, is still pending
+        style = GetKeyStyle(name, style);
+
         ref var frame = ref _frames[_depth - 1];
         if (!frame.ExpectingKey)
         {
@@ -1489,6 +1492,7 @@ public sealed class YamlWriter : YamlReaderWriterBase
     /// <param name="value">The key name.</param>
     /// <param name="style">The requested style, or <see cref="ScalarStyle.Any"/> to let the writer choose.</param>
     /// <returns><see cref="ScalarStyle.Plain"/>, <see cref="ScalarStyle.SingleQuoted"/>, or <see cref="ScalarStyle.DoubleQuoted"/>.</returns>
+    /// <remarks>An explicit tag decides how the key resolves, so only an untagged key is checked against the schema.</remarks>
     private ScalarStyle GetKeyStyle(ReadOnlySpan<char> value, ScalarStyle style)
     {
         // An empty key has no plain form that reads back as a key, so it is always written as ''.
@@ -1500,17 +1504,17 @@ public sealed class YamlWriter : YamlReaderWriterBase
         return style switch
         {
             // A plain "<<" key was read as the merge key, so it is only quoted when the writer picks the style.
-            ScalarStyle.Plain when IsPlainSafe(value, isKey: false) && IsPlainAllowedBySchema(value) => ScalarStyle.Plain,
+            ScalarStyle.Plain when IsPlainSafe(value, isKey: false) && (_pendingTag is not null || IsPlainAllowedBySchema(value)) => ScalarStyle.Plain,
             ScalarStyle.SingleQuoted when CanWriteSingleQuotedScalar(value) => ScalarStyle.SingleQuoted,
             // A plain "null" or "~" key is read back as a null key, which no dictionary accepts.
-            ScalarStyle.Any when Options.ScalarStylePreferences.PreferPlainStyle && IsPlainSafe(value, isKey: true) && !YamlScalar.IsNull(value) && IsPlainAllowedBySchema(value) => ScalarStyle.Plain,
+            ScalarStyle.Any when Options.ScalarStylePreferences.PreferPlainStyle && IsPlainSafe(value, isKey: true) && !YamlScalar.IsNull(value) && (_pendingTag is not null || IsPlainAllowedBySchema(value)) => ScalarStyle.Plain,
             _ => ScalarStyle.DoubleQuoted,
         };
     }
 
     private void WriteKeyScalar(ReadOnlySpan<char> value, ScalarStyle style)
     {
-        switch (GetKeyStyle(value, style))
+        switch (style)
         {
             case ScalarStyle.Plain:
                 Write(value);
@@ -1802,8 +1806,18 @@ public sealed class YamlWriter : YamlReaderWriterBase
             return true;
         }
 
-        return YamlScalar.IsNull(value) ||
-               YamlScalar.TryParseBool(value, out _) ||
+        return YamlScalar.IsNull(value) || ReadsAsBooleanOrNumber(value);
+    }
+
+    /// <summary>Determines whether a plain scalar with this text is read back as a boolean, a number, or another value that is neither a string nor null, such as a timestamp of the extended schema.</summary>
+    internal bool ReadsAsBooleanOrNumber(ReadOnlySpan<char> value)
+    {
+        if (YamlScalar.IsNull(value))
+        {
+            return false;
+        }
+
+        return YamlScalar.TryParseBool(value, out _) ||
                YamlScalar.TryParseInt64(value, out _) ||
                YamlScalar.TryParseDouble(value, out _) ||
                YamlScalar.ResolvesToNonString(value, Options.Schema) ||
@@ -1819,10 +1833,10 @@ public sealed class YamlWriter : YamlReaderWriterBase
         return value.Length > 0 && char.IsAsciiLetter(value[^1]) && double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out _);
     }
 
-    private bool RequiresExplicitKey(ReadOnlySpan<char> value, ScalarStyle style)
+    private static bool RequiresExplicitKey(ReadOnlySpan<char> value, ScalarStyle style)
     {
         // An implicit key may span at most 1024 characters of YAML, including quotes and escapes.
-        switch (GetKeyStyle(value, style))
+        switch (style)
         {
             case ScalarStyle.Plain:
                 return value.Length > 1024;

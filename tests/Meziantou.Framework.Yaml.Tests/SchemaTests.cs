@@ -50,6 +50,9 @@ public class SchemaTests
 
         TryParse(schema, "2002-12-14", ExtendedSchema.TimestampShortTag, new DateTime(2002, 12, 14));
         TryParse(schema, "2002-12-14 21:59:43.234", ExtendedSchema.TimestampShortTag, new DateTime(2002, 12, 14, 21, 59, 43, 234));
+        TryParse(schema, "2002-12-14t21:59:43.234", ExtendedSchema.TimestampShortTag, new DateTime(2002, 12, 14, 21, 59, 43, 234));
+        TryParse(schema, "2002-12-14t21:59:4", "!!str", "2002-12-14t21:59:4");
+        TryParse(schema, "2002-02-30", ExtendedSchema.TimestampShortTag, "2002-02-30");
     }
 
     [Fact]
@@ -264,7 +267,7 @@ public class SchemaTests
     public void Serializer_JsonSchemaNegativeZeroIsAnInteger()
     {
         var options = new YamlSerializerOptions { UseSchema = true, Schema = YamlSchemaKind.Json };
-        Assert.Equal(0, Assert.IsType<int>(YamlSerializer.Deserialize<object>("-0", options)));
+        Assert.Equal(0L, Assert.IsType<long>(YamlSerializer.Deserialize<object>("-0", options)));
         Assert.Equal(0, YamlSerializer.Deserialize<int>("-0", options));
     }
 

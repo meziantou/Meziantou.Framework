@@ -12,6 +12,19 @@ public sealed class YamlUntypedObjectTests
         Assert.Null(YamlSerializer.Deserialize<object>("~"));
     }
 
+    [Theory]
+    [InlineData("42", false)]
+    [InlineData("!!int 42", false)]
+    [InlineData("42", true)]
+    [InlineData("!!int 42", true)]
+    [InlineData("0x2A", true)]
+    public void DeserializeObject_IntegersAreLong(string yaml, bool useSchema)
+    {
+        var value = YamlSerializer.Deserialize<object>(yaml, new YamlSerializerOptions { UseSchema = useSchema });
+
+        Assert.Equal(42L, Assert.IsType<long>(value));
+    }
+
     [Fact]
     public void DeserializeObject_InfersSequenceAndMapping()
     {

@@ -480,8 +480,8 @@ public static class GlobbingFuzzTargets
 
         // The patterns of the MSBuild conformance cases, a few at a time
         using var msbuild = FuzzResources.ReadJson(typeof(GlobbingFuzzTargets).Assembly, "msbuild-conformance.json");
-        var files = msbuild.RootElement.GetProperty("files").EnumerateArray().Select(file => file.GetString()!).ToArray();
-        var cases = msbuild.RootElement.GetProperty("cases").EnumerateArray().Select(testCase => testCase.GetProperty("pattern").GetString()!).ToArray();
+        var files = msbuild.RootElement.GetProperty("files").EnumerateArray().Select(file => file.GetString()).ToArray();
+        var cases = msbuild.RootElement.GetProperty("cases").EnumerateArray().Select(testCase => testCase.GetProperty("pattern").GetString()).ToArray();
         var msbuildFlags = (byte)((int)GlobDialect.MSBuild + (Dialects.Length * (int)GlobOptions.IgnoreCase));
         for (var start = 0; start < cases.Length; start += 3)
         {

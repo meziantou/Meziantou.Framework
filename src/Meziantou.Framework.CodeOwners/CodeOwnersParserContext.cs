@@ -128,7 +128,7 @@ internal ref struct CodeOwnersParserContext
             entryOwners = [];
         }
 
-        _entries.Add(new CodeOwnersEntry(pattern, entryOwners, _currentSection));
+        _entries.Add(new CodeOwnersEntry(pattern, entryOwners, _currentSection, _dialect));
     }
 
     private bool TryParseSection([NotNullWhen(true)] out CodeOwnersSection? section)

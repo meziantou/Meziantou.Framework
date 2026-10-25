@@ -8,9 +8,9 @@ public sealed class CodeOwnersParserTests
 
     private static CodeOwner Role(string name) => CodeOwner.Role(name);
 
-    private static CodeOwnersEntry Entry(string pattern, params CodeOwner[] owners) => new(pattern, owners, section: null);
+    private static CodeOwnersEntry Entry(string pattern, params CodeOwner[] owners) => new(pattern, owners, section: null, CodeOwnersDialect.GitLab);
 
-    private static CodeOwnersEntry Entry(string pattern, CodeOwnersSection section, params CodeOwner[] owners) => new(pattern, owners, section);
+    private static CodeOwnersEntry Entry(string pattern, CodeOwnersSection section, params CodeOwner[] owners) => new(pattern, owners, section, CodeOwnersDialect.GitLab);
 
     [Fact]
     public void ReadmeExample_Parse()
@@ -760,6 +760,34 @@ public sealed class CodeOwnersParserTests
         Assert.Equal("docs@example.com", actual[0].Owners[1].ToString());
         Assert.Equal("*.js @user1 docs@example.com", actual[0].ToString());
         Assert.Equal("[Test][2] @defaultOwner", actual[0].Section?.ToString());
+    }
+
+    [Theory]
+    [InlineData(CodeOwnersDialect.GitHub, "/src/My\\ Project/ @user1", "/src/My\\ Project/ @user1")]
+    [InlineData(CodeOwnersDialect.GitHub, "\\#file.js @user1", "\\#file.js @user1")]
+    [InlineData(CodeOwnersDialect.GitHub, "foo\\\\bar\\\tbaz", "foo\\\\bar\\\tbaz")]
+    [InlineData(CodeOwnersDialect.GitHub, "a\\#b\\[c @user1", "a#b[c @user1")]
+    [InlineData(CodeOwnersDialect.GitHub, "[abc].txt @user1", "[abc].txt @user1")]
+    [InlineData(CodeOwnersDialect.GitHub, "^[abc].txt @user1", "^[abc].txt @user1")]
+    [InlineData(CodeOwnersDialect.GitLab, "\\[abc].txt @user1", "\\[abc].txt @user1")]
+    [InlineData(CodeOwnersDialect.GitLab, "\\^[abc].txt @user1", "\\^[abc].txt @user1")]
+    [InlineData(CodeOwnersDialect.GitLab, "^abc @user1", "^abc @user1")]
+    public void EntryToStringEscapesThePattern(CodeOwnersDialect dialect, string content, string expected)
+    {
+        var entry = Assert.Single(CodeOwnersFile.Parse(content, dialect).Entries);
+
+        Assert.Equal(expected, entry.ToString());
+        Assert.Equal([entry], CodeOwnersFile.Parse(entry.ToString(), dialect).Entries);
+    }
+
+    [Fact]
+    public void EntryToStringOfAnOptionalSectionIsAnEntry()
+    {
+        var entry = Assert.Single(CodeOwnersFile.Parse("^[Docs] @docs-team\ndocs/", CodeOwnersDialect.GitLab).Entries);
+
+        Assert.True(entry.IsOptional);
+        Assert.Equal("docs/ @docs-team", entry.ToString());
+        Assert.Equal([entry], CodeOwnersFile.Parse(entry.Section + "\n" + entry, CodeOwnersDialect.GitLab).Entries);
     }
 
     [Fact]

@@ -710,4 +710,47 @@ public class HtmlSanitizerTests
 
         Assert.Equal("<p data-url=\"\">test</p>", sanitizer.SanitizeHtmlFragment("<p data-url='javascript:alert(1)'>test</p>"));
     }
+
+    [Theory]
+    // The parser ignores a form start tag in a form, so a nested form is unwrapped, unless a template separates them
+    [InlineData("<form><template><form>x</form></template></form>", "<form>x</form>")]
+    [InlineData("<form><div></form><form>x</form>", "<form><div>x</div></form>")]
+    [InlineData("<form><template><b><form>x</form></b></template></form>", "<form><b>x</b></form>")]
+    [InlineData("<form><template><form>x</form></template></form><form>y</form>", "<form>x</form><form>y</form>")]
+    public void Sanitize_AllowedFormsAreNotNested(string html, string expectedResult)
+    {
+        var sanitizer = new HtmlSanitizer();
+        sanitizer.ValidElements.Add("form");
+
+        var actual = sanitizer.SanitizeHtmlFragment(html);
+        Assert.Equal(expectedResult, actual);
+        Assert.Equal(actual, sanitizer.SanitizeHtmlFragment(actual));
+    }
+
+    [Fact]
+    public void Sanitize_AllowedTemplateSeparatesForms()
+    {
+        var sanitizer = new HtmlSanitizer();
+        sanitizer.ValidElements.Add("form");
+        sanitizer.ValidElements.Add("template");
+
+        var actual = sanitizer.SanitizeHtmlFragment("<form><template><form>x</form></template></form>");
+        Assert.Equal("<form><template><form>x</form></template></form>", actual);
+        Assert.Equal(actual, sanitizer.SanitizeHtmlFragment(actual));
+    }
+
+    [Theory]
+    // The value is a safe URL (its scheme is https) but an unsafe srcset value, and the reverse
+    [InlineData("<img srcset='https://example.com/a.png 1x, javascript:alert(1) 2x'>", "<img srcset=\"\">")]
+    [InlineData("<a href='https://example.com/a.png 1x, javascript:alert(1) 2x'>x</a>", "<a href=\"\">x</a>")]
+    [InlineData("<a href='java&#115;cript:alert(1)'>x</a>", "<a href=\"\">x</a>")]
+    [InlineData("<img srcset='https://example.com/a.png 1x, https://example.com/b.png 2x'>", "<img srcset=\"https://example.com/a.png 1x, https://example.com/b.png 2x\">")]
+    public void Sanitize_AttributeInUriAndSrcsetAttributesPassesBothValidations(string html, string expectedResult)
+    {
+        var sanitizer = new HtmlSanitizer();
+        sanitizer.UriAttributes.Add("srcset");
+        sanitizer.SrcsetAttributes.Add("href");
+
+        Assert.Equal(expectedResult, sanitizer.SanitizeHtmlFragment(html));
+    }
 }

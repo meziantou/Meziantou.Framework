@@ -219,6 +219,8 @@ An element is handled in one of three ways:
 - A link (`a`) inside another link with no table cell between them, or a heading (`h1`-`h6`) whose parent is a heading,
   is unwrapped as well. The parser only builds them when an element separates them, such as `object` or `template`;
   once that element is unwrapped (`<a><object><a>`), a browser would not read the markup back as the same elements.
+  For the same reason, an allowed `form` inside another `form` is unwrapped, unless a `template` that is kept
+  separates them.
 
 <!-- ref:../../tests/Meziantou.Framework.HtmlSanitizer.Tests/HtmlSanitizerTests.cs;region=HtmlSanitizer_ElementHandling;format=md-fenced-code-block;dedent=true -->
 ```csharp

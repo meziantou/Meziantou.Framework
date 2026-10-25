@@ -114,13 +114,13 @@ public sealed class HtmlSanitizer
     // and a recursive walk would overflow the stack.
     private void Sanitize(Node root)
     {
-        var pendingNodes = new Stack<(Node Parent, bool IsInLink)>();
-        pendingNodes.Push((root, false));
+        var pendingNodes = new Stack<(Node Parent, bool IsInLink, bool IsInForm)>();
+        pendingNodes.Push((root, false, false));
         List<Element>? leadingNewLineElements = null;
 
         while (pendingNodes.TryPop(out var item))
         {
-            var (parent, isInLink) = item;
+            var (parent, isInLink, isInForm) = item;
             var node = parent.FirstChild;
             while (node is not null)
             {
@@ -141,7 +141,9 @@ public sealed class HtmlSanitizer
                     // Unwrapping an element can move its content where the parser never puts it, which a browser
                     // would read back differently: the parser allows a link in a link, or a heading in a heading, only
                     // when an element such as template or object separates them. Such an element is unwrapped too.
-                    case Element element when !IsValidElement(element) || (isInLink && IsLink(element)) || (IsHeading(element) && parent is Element parentElement && IsHeading(parentElement)):
+                    // The parser ignores a form start tag in a form, unless a template separates them, but it can
+                    // still build such a form ("<form><div></form><form>", or a template that is unwrapped).
+                    case Element element when !IsValidElement(element) || (isInLink && IsLink(element)) || (isInForm && IsForm(element)) || (IsHeading(element) && parent is Element parentElement && IsHeading(parentElement)):
                         next = Unwrap(element) ?? next;
                         break;
 
@@ -156,9 +158,10 @@ public sealed class HtmlSanitizer
                             (leadingNewLineElements ??= []).Add(element);
                         }
 
-                        // The content of a template element is not made of its children but of a separate fragment
+                        // The content of a template element is not made of its children but of a separate fragment,
+                        // so a form it contains is not in the form that contains the template
                         Node content = element is HtmlTemplateElement template ? template.Content : element;
-                        pendingNodes.Push((content, IsLink(element) || (isInLink && !IsFormattingScope(element))));
+                        pendingNodes.Push((content, IsLink(element) || (isInLink && !IsFormattingScope(element)), IsForm(element) || (isInForm && element is not HtmlTemplateElement)));
                         break;
 
                     case Text text when text.Data.Contains('\r', StringComparison.Ordinal):
@@ -199,6 +202,8 @@ public sealed class HtmlSanitizer
     private static bool IgnoresLeadingNewLine(Element element) => element.NamespaceUri == HtmlNamespace && element.LocalName is "pre" or "listing";
 
     private static bool IsLink(Element element) => element.NamespaceUri == HtmlNamespace && element.LocalName == "a";
+
+    private static bool IsForm(Element element) => element.NamespaceUri == HtmlNamespace && element.LocalName == "form";
 
     private static bool IsHeading(Element element) => element.NamespaceUri == HtmlNamespace && element.LocalName is "h1" or "h2" or "h3" or "h4" or "h5" or "h6";
 
@@ -242,19 +247,12 @@ public sealed class HtmlSanitizer
                 attribute.Value = NormalizeNewLines(attribute.Value);
             }
 
-            if (UriAttributes.Contains(attribute.Name))
+            // An attribute can be in both sets: a value that is a safe URL can still be an unsafe srcset value
+            // ("https://a 1x, javascript:alert(1) 2x"), so it must pass both validations
+            if ((UriAttributes.Contains(attribute.Name) && !UrlSanitizer.IsSafeUrl(attribute.Value)) ||
+                (SrcsetAttributes.Contains(attribute.Name) && !UrlSanitizer.IsSafeSrcset(attribute.Value)))
             {
-                if (!UrlSanitizer.IsSafeUrl(attribute.Value))
-                {
-                    attribute.Value = "";
-                }
-            }
-            else if (SrcsetAttributes.Contains(attribute.Name))
-            {
-                if (!UrlSanitizer.IsSafeSrcset(attribute.Value))
-                {
-                    attribute.Value = "";
-                }
+                attribute.Value = "";
             }
         }
 

@@ -9,6 +9,7 @@
   <ItemGroup>
     <!-- The conformance corpora of the unit tests are the seeds -->
     <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Language.Css.Tests\files\css-parsing-tests\*.json" LogicalName="css-parsing-tests.%(Filename)%(Extension)" Link="Seeds\css-parsing-tests\%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.JsonPath.Tests\cts.json" LogicalName="jsonpath.cts.json" Link="Seeds\jsonpath.cts.json" />
     <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Language.Toml.Tests\files\toml-test\cases.json" LogicalName="toml-test.cases.json" Link="Seeds\toml-test.cases.json" />
     <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Language.Regex.Tests\Corpus\NetValid.txt" LogicalName="regex.NetValid.txt" Link="Seeds\regex\NetValid.txt" />
     <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Language.Regex.Tests\Corpus\NetInvalid.txt" LogicalName="regex.NetInvalid.txt" Link="Seeds\regex\NetInvalid.txt" />

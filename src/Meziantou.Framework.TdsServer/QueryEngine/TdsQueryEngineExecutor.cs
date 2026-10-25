@@ -245,12 +245,21 @@ internal sealed class TdsQueryEngineExecutor
         };
     }
 
+    private static SqlParseResult ParseSql(string sql)
+    {
+        // Any parse error rejects the query, so the parser does not need to recover from it. Its error recovery is a
+        // best-first search that grows exponentially with the number of tokens after the error in some contexts, e.g.
+        // a CASE expression followed by 20 invalid characters takes seconds to parse.
+        var options = new SqlParserParseOptions { IsErrorRecoveryEnabled = false };
+        return SqlParser.Parse(sql, options, out _);
+    }
+
     private IQueryable TranslateQuery(string commandText, IReadOnlyDictionary<string, TdsQueryParameter> parameters, QueryExecutionContext queryExecutionContext)
     {
         SqlParseResult parseResult;
         try
         {
-            parseResult = SqlParser.Parse(commandText, new SqlParserParseOptions(), out _);
+            parseResult = ParseSql(commandText);
         }
         catch (SqlParserException)
         {
@@ -2723,7 +2732,7 @@ internal sealed class TdsQueryEngineExecutor
 
     private static SqlScalarExpression ParseScalarExpression(string expressionText)
     {
-        var parseResult = SqlParser.Parse("SELECT " + expressionText, new SqlParserParseOptions(), out _);
+        var parseResult = ParseSql("SELECT " + expressionText);
         if (parseResult.Errors.Any() || parseResult.ParseErrors.Any())
         {
             throw new TdsQueryEngineException($"Invalid scalar expression '{expressionText}'.");
@@ -2744,7 +2753,7 @@ internal sealed class TdsQueryEngineExecutor
 
     private static SqlBooleanExpression ParseBooleanExpression(string expressionText)
     {
-        var parseResult = SqlParser.Parse("SELECT 1 WHERE " + expressionText, new SqlParserParseOptions(), out _);
+        var parseResult = ParseSql("SELECT 1 WHERE " + expressionText);
         if (parseResult.Errors.Any() || parseResult.ParseErrors.Any())
         {
             throw new TdsQueryEngineException($"Invalid boolean expression '{expressionText}'.");
@@ -2816,7 +2825,7 @@ internal sealed class TdsQueryEngineExecutor
 
     private static Type ResolveSqlTypeFromText(string sqlTypeText)
     {
-        var parseResult = SqlParser.Parse("SELECT CAST(NULL AS " + sqlTypeText + ")", new SqlParserParseOptions(), out _);
+        var parseResult = ParseSql("SELECT CAST(NULL AS " + sqlTypeText + ")");
         if (parseResult.Errors.Any() || parseResult.ParseErrors.Any())
         {
             throw new TdsQueryEngineException($"xml.value SQL type '{sqlTypeText}' is invalid.");

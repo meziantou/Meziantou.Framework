@@ -344,6 +344,23 @@ public class TestQuoteBlock
     [InlineData(">\n\ny\n")]
     [InlineData(">\r\ny\r\n")]
     [InlineData(">\ry\r")]
+    [InlineData("a\n  >\n* c")]
+    [InlineData("a\n>\n* c")]
+    [InlineData(">\n* c")]
+    [InlineData("  >\n* c")]
+    [InlineData(">\n- c")]
+    [InlineData(">\n# c")]
+    [InlineData(">\n1. c")]
+    [InlineData(">\n>\n- c\n")]
+    [InlineData("> >\n>\n- c")]
+    [InlineData(">\n>\n>  \n> >  \n> ")]
+    [InlineData("> >  \n> ")]
+    [InlineData("> >\n> ")]
+    [InlineData("> > \n> ")]
+    [InlineData("> >\t \n> ")]
+    [InlineData(">   \n>")]
+    [InlineData("> >\n>")]
+    [InlineData("> >\n>\n")]
     public void TestLinesWithoutContent(string value)
     {
         RoundTrip(value);

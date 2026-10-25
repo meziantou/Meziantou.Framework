@@ -688,6 +688,19 @@ public sealed class Mp4Tests
         Assert.Equal("Test Title", result.Value.Title);
     }
 
+    [Fact]
+    public void ReadTags_DurationTooLongForATimeSpan_HasNoDuration()
+    {
+        // A version 1 mvhd atom stores a 64-bit duration, which can exceed TimeSpan.MaxValue
+        var mvhdPayload = new byte[32];
+        mvhdPayload[0] = 1;
+        BinaryPrimitives.WriteUInt32BigEndian(mvhdPayload.AsSpan(20), 1);
+        BinaryPrimitives.WriteUInt64BigEndian(mvhdPayload.AsSpan(24), ulong.MaxValue - 1);
+        var file = CreateAtom("moov", CreateAtom("mvhd", mvhdPayload));
+
+        Assert.Null(ReadMp4(file).Duration);
+    }
+
     private static MediaTagInfo ReadMp4(byte[] file)
     {
         using var stream = new MemoryStream(file);

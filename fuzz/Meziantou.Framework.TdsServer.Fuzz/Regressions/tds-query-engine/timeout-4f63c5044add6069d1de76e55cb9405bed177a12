@@ -1,0 +1,3 @@
+SELECT Id
+FROM customers
+WHERE  CASE DAY(CAST('02-70' AS datetimeÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ)) = 10 AND Id = Ï

@@ -97,6 +97,36 @@ public sealed class FormatDetectionTests
     }
 
     /// <summary>
+    /// A file type box whose size is in the 64-bit field has its major brand at offset 16: the detection prefix holds its
+    /// first two characters, which decide however many bytes follow, so that a reader that detects the format from the
+    /// prefix only agrees with a detection that sees the whole file.
+    /// </summary>
+    [Theory]
+    [InlineData("avif", ImageFormat.Avif)]
+    [InlineData("mif1", ImageFormat.Avif)]
+    [InlineData("msf1", ImageFormat.Avif)]
+    [InlineData("MA1B", ImageFormat.Avif)]
+    [InlineData("mi\0\0", ImageFormat.Avif)] // not a brand: the reader rejects the file type box
+    [InlineData("heic", ImageFormat.Heic)]
+    [InlineData("hevc", ImageFormat.Heic)]
+    [InlineData("he\0\0", ImageFormat.Heic)]
+    [InlineData("jpeg", ImageFormat.Unknown)]
+    public void LargeSizeFileTypeBoxIsDetectedFromTheDetectionPrefix(string majorBrand, ImageFormat expected)
+    {
+        var box = new byte[32];
+        BinaryPrimitives.WriteUInt32BigEndian(box, 1);
+        Encoding.ASCII.GetBytes("ftyp").CopyTo(box, 4);
+        BinaryPrimitives.WriteUInt64BigEndian(box.AsSpan(8), (ulong)box.Length);
+        Encoding.ASCII.GetBytes(majorBrand).CopyTo(box, 16);
+        Encoding.ASCII.GetBytes("mif1").CopyTo(box, 24);
+
+        for (var length = Image.FormatDetectionPrefixLength; length <= box.Length; length++)
+        {
+            Assert.Equal(expected, Image.DetectFormat(box.AsSpan(0, length)));
+        }
+    }
+
+    /// <summary>
     /// TGA has no signature: the whole 18-byte header must be legal and self-consistent, and the codec is consulted last
     ///.
     /// </summary>

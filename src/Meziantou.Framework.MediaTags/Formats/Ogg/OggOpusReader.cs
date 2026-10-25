@@ -62,6 +62,6 @@ internal sealed class OggOpusReader : IMediaTagReader
         if (lastGranulePosition <= preSkip)
             return null;
 
-        return TimeSpan.FromSeconds((lastGranulePosition - preSkip) / (double)OpusSampleRate);
+        return DurationHelpers.FromSeconds((lastGranulePosition - preSkip) / (double)OpusSampleRate);
     }
 }

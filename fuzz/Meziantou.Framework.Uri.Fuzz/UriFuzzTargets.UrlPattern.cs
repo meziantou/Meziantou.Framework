@@ -646,9 +646,13 @@ public static partial class UriFuzzTargets
             => new[] { PatternString, PatternBaseUrl }.Concat(PatternInit ?? []).Any(value => value is not null && ContainsUnassignedCodePoint(value));
 
         // Two fixed parts are written next to each other, and read back as one, when what separates them writes nothing: a
-        // fixed text that canonicalizes to nothing (a tab, "a/..") or an empty group ("{}?")
+        // fixed text that canonicalizes to nothing (a tab, "a/..") or an empty group ("{}?"). The pathname of a non-special
+        // scheme is an opaque path, which a '?' or a '#' ends, so the fixed text "#/" of ":a#/*?" canonicalizes to nothing,
+        // as in the spec, and ":a*?" does not parse. A '?' is only fixed text when escaped, and so is a '#' in a constructor
+        // string, where it starts the hash
         public bool MayHaveSilentSeparator()
-            => new[] { PatternString, PatternBaseUrl }.Concat(PatternInit ?? []).Any(value => value is not null && (value.AsSpan().IndexOfAny("\t\n\r") >= 0 || value.Contains("..", StringComparison.Ordinal) || value.Contains("%2e", StringComparison.OrdinalIgnoreCase) || value.Contains("{}", StringComparison.Ordinal)));
+            => new[] { PatternString, PatternBaseUrl }.Concat(PatternInit ?? []).Any(value => value is not null && (value.AsSpan().IndexOfAny("\t\n\r") >= 0 || value.Contains("..", StringComparison.Ordinal) || value.Contains("%2e", StringComparison.OrdinalIgnoreCase) || value.Contains("{}", StringComparison.Ordinal) || value.Contains("\\?", StringComparison.Ordinal) || value.Contains("\\#", StringComparison.Ordinal)))
+               || PatternInit?[5]?.Contains('#', StringComparison.Ordinal) is true;
 
         public bool HasUpperCaseProtocol()
         {

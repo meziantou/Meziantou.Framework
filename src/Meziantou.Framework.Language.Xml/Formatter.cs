@@ -48,6 +48,7 @@ public static class Formatter
         {
             var loadOptions = options.PreserveSingleLineElements ? LoadOptions.PreserveWhitespace | LoadOptions.SetLineInfo : LoadOptions.PreserveWhitespace;
             var source = XDocument.Parse(text, loadOptions);
+            EscapeCarriageReturns(source);
             var layout = new Layout(options, options.PreserveSingleLineElements ? FindSingleLineElements(document, text) : null);
             layout.LayOutDocument(source);
 
@@ -146,6 +147,19 @@ public static class Formatter
         }
 
         return false;
+    }
+
+    // The parser turns the line breaks of text into "\n", so a carriage return in text can only come from a character
+    // reference. NewLineHandling.None writes it as it is, and reading it back would turn it into a line feed.
+    private static void EscapeCarriageReturns(XDocument document)
+    {
+        foreach (var node in document.DescendantNodes().ToList())
+        {
+            if (node is XText text and not XCData && text.Value.Contains('\r', StringComparison.Ordinal))
+            {
+                node.ReplaceWith(new CarriageReturnText(text.Value));
+            }
+        }
     }
 
     // A tab or a line break written as it is in an attribute value can only come from a character reference, as the
@@ -337,6 +351,32 @@ public static class Formatter
         }
 
         private static bool IsWhitespace(string value) => !value.AsSpan().ContainsAnyExcept(" \t\r\n");
+    }
+
+    /// <summary>Text that writes its carriage returns as character references.</summary>
+    private sealed class CarriageReturnText(string value) : XText(value)
+    {
+        public override void WriteTo(XmlWriter writer)
+        {
+            var remaining = Value.AsSpan();
+            while (!remaining.IsEmpty)
+            {
+                var index = remaining.IndexOf('\r');
+                if (index < 0)
+                {
+                    writer.WriteString(remaining.ToString());
+                    break;
+                }
+
+                if (index > 0)
+                {
+                    writer.WriteString(remaining[..index].ToString());
+                }
+
+                writer.WriteCharEntity('\r');
+                remaining = remaining[(index + 1)..];
+            }
+        }
     }
 
     private sealed class Utf8StringWriter : StringWriter

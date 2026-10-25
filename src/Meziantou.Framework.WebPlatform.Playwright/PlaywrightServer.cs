@@ -27,9 +27,6 @@ namespace Meziantou.Framework.WebPlatform.Playwright;
 /// </remarks>
 public sealed partial class PlaywrightServer : IAsyncDisposable
 {
-    /// <summary>The version of Playwright whose protocol the server implements (the clients must have the same major and minor versions).</summary>
-    public const string PlaywrightVersion = "1.64.1";
-
     private readonly PlaywrightServerOptions _options;
     private readonly CancellationTokenSource _stopping = new();
     private readonly List<Task> _connections = [];
@@ -199,7 +196,7 @@ public sealed partial class PlaywrightServer : IAsyncDisposable
 
     /// <summary>
     /// Returns whether a client can connect, given the <c>User-Agent</c> header of its WebSocket request (e.g.
-    /// <c>Playwright/1.64.1 (arm64; macOS 26.0) csharp/10.0</c>): its major and minor versions must be the ones of
+    /// <c>Playwright/x.y.z (arm64; macOS 26.0) csharp/10.0</c>): its major and minor versions must be the ones of
     /// <see cref="PlaywrightVersion"/>. A user agent that is not the one of a Playwright client is accepted.
     /// </summary>
     /// <param name="userAgent">The value of the <c>User-Agent</c> header, or null.</param>

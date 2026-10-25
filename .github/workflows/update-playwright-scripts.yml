@@ -40,8 +40,8 @@ jobs:
           }
 
           function Get-PlaywrightVersion {
-            $server = Get-Content -Raw src/Meziantou.Framework.WebPlatform.Playwright/PlaywrightServer.cs
-            return [regex]::Match($server, 'PlaywrightVersion = "([^"]+)"').Groups[1].Value
+            $versionFile = Get-Content -Raw src/Meziantou.Framework.WebPlatform.Playwright/PlaywrightServer.Version.g.cs
+            return [regex]::Match($versionFile, 'PlaywrightVersion = "([^"]+)"').Groups[1].Value
           }
 
           $previousVersion = Get-PlaywrightVersion

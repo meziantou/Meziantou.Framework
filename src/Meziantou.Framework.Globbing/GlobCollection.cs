@@ -44,10 +44,13 @@ public sealed class GlobCollection : IReadOnlyList<IGlobEvaluatable>, IGlobEvalu
     ///     As git does, an entry that no path can match, such as one holding an unterminated bracket expression or
     ///     ending with an escape character, is ignored instead of making the whole content invalid.
     /// </remarks>
-    public static GlobCollection ParseGitIgnore(ReadOnlySpan<char> gitIgnoreContent)
+    public static GlobCollection ParseGitIgnore(ReadOnlySpan<char> gitIgnoreContent) => ParseGitIgnore(gitIgnoreContent, skipByteOrderMark: true);
+
+    private static GlobCollection ParseGitIgnore(ReadOnlySpan<char> gitIgnoreContent, bool skipByteOrderMark)
     {
-        // git skips a UTF-8 byte order mark at the start of the file
-        if (!gitIgnoreContent.IsEmpty && gitIgnoreContent[0] == '\uFEFF')
+        // git skips a UTF-8 byte order mark at the start of the file, but only one: a U+FEFF that follows it belongs to
+        // the first entry
+        if (skipByteOrderMark && !gitIgnoreContent.IsEmpty && gitIgnoreContent[0] == '\uFEFF')
         {
             gitIgnoreContent = gitIgnoreContent[1..];
         }
@@ -74,24 +77,31 @@ public sealed class GlobCollection : IReadOnlyList<IGlobEvaluatable>, IGlobEvalu
     /// <summary>Loads a gitignore file asynchronously and creates a <see cref="GlobCollection"/> from it.</summary>
     /// <param name="path">The path to the gitignore file.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
+    /// <remarks>The file is decoded as <see cref="LoadGitIgnoreAsync(Stream, CancellationToken)"/> decodes a stream.</remarks>
     public static async Task<GlobCollection> LoadGitIgnoreAsync(string path, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(path);
 
         await using var stream = File.OpenRead(path);
-        using var reader = new StreamReader(stream);
-        return await LoadGitIgnoreAsync(reader, cancellationToken).ConfigureAwait(false);
+        return await LoadGitIgnoreAsync(stream, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Loads a gitignore stream asynchronously and creates a <see cref="GlobCollection"/> from it.</summary>
     /// <param name="stream">The stream containing the gitignore content.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
+    /// <remarks>
+    ///     The content is decoded as UTF-8, unless it starts with the byte order mark of another encoding (UTF-16 or
+    ///     UTF-32). As git does, only that first byte order mark is skipped.
+    /// </remarks>
     public static async Task<GlobCollection> LoadGitIgnoreAsync(Stream stream, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(stream);
 
         using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true);
-        return await LoadGitIgnoreAsync(reader, cancellationToken).ConfigureAwait(false);
+        var content = await reader.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
+
+        // The reader already skipped the byte order mark, so a U+FEFF at the start of the text is a second one
+        return ParseGitIgnore(content.AsSpan(), skipByteOrderMark: false);
     }
 
     /// <summary>Loads a gitignore reader asynchronously and creates a <see cref="GlobCollection"/> from it.</summary>

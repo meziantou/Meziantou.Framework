@@ -20,7 +20,7 @@ public abstract class TaggedValuesAnalyzerTestBase
 
         """;
 
-    private static readonly ReferenceAssemblies Net11 = new("net11.0", new PackageIdentity("Microsoft.NETCore.App.Ref", "11.0.0-rc.2.26504.105"), Path.Combine("ref", "net11.0"));
+    private static readonly ReferenceAssemblies Net11 = new("net11.0", new PackageIdentity("Microsoft.NETCore.App.Ref", "11.0.0-rc.3.26522.148"), Path.Combine("ref", "net11.0"));
 
     protected static Task VerifyAsync(string source, bool inferTagsFromNames = false, params DiagnosticResult[] expected)
     {

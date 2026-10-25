@@ -58,6 +58,10 @@ internal class XmlLocation : Location, ILocationLineInfo
 
     protected internal override async Task UpdateCoreAsync(string? oldValue, string newValue, CancellationToken cancellationToken)
     {
+        // XML has no escape for these characters, not even a character reference: writing one would corrupt the file
+        if (!XmlUtilities.IsValidXmlText(newValue))
+            throw new ArgumentException("The new value contains a character that XML cannot represent, such as a control character or an unpaired surrogate", nameof(newValue));
+
         if (oldValue is null)
             throw new DependencyScannerException("The value expected at the location is unknown, so the file cannot be updated safely. Provide the expected value.");
 

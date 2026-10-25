@@ -75,6 +75,7 @@ public abstract class Location
     /// <param name="newValue">The new value to write.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <exception cref="InvalidOperationException">Thrown when the location is not updatable.</exception>
+    /// <exception cref="ArgumentException">The file cannot hold <paramref name="newValue"/>, such as a line break in a line of text, or a control character in an XML file.</exception>
     /// <exception cref="DependencyScannerException">The file does not hold the expected value at this location anymore.</exception>
     public async Task UpdateAsync(string? oldValue, string newValue, CancellationToken cancellationToken = default)
     {
@@ -90,6 +91,7 @@ public abstract class Location
     /// <param name="newValue">The new value to write.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <exception cref="InvalidOperationException">Thrown when the location is not updatable.</exception>
+    /// <exception cref="ArgumentException">The file cannot hold <paramref name="newValue"/>, such as a line break in a line of text, or a control character in an XML file.</exception>
     /// <exception cref="DependencyScannerException">The file does not hold the expected value at this location anymore.</exception>
     public Task UpdateAsync(string newValue, CancellationToken cancellationToken = default)
     {

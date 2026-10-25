@@ -266,6 +266,26 @@ internal static class XmlUtilities
         return value is not null;
     }
 
+    /// <summary>Gets whether every character of the value is allowed in an XML 1.0 document, escaped or not.</summary>
+    public static bool IsValidXmlText(string value)
+    {
+        for (var i = 0; i < value.Length; i++)
+        {
+            if (XmlConvert.IsXmlChar(value[i]))
+                continue;
+
+            if (i + 1 < value.Length && XmlConvert.IsXmlSurrogatePair(lowChar: value[i + 1], highChar: value[i]))
+            {
+                i++;
+                continue;
+            }
+
+            return false;
+        }
+
+        return true;
+    }
+
     private static bool IsXmlCharacter(int value) => value switch
     {
         0x9 or 0xA or 0xD => true,

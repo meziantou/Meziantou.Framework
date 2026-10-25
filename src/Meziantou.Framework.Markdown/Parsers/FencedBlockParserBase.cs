@@ -281,6 +281,9 @@ public abstract class FencedBlockParserBase<T> : FencedBlockParserBase where T :
             line.TrimStart();
         }
 
+        // Creating the block takes the pending trivia, which goes back to the processor when the line is not a fence
+        var triviaStart = processor.TriviaStart;
+        var linesBefore = processor.LinesBefore;
         var fenced = CreateFencedBlock(processor);
         {
             fenced.Column = processor.Column;
@@ -297,6 +300,8 @@ public abstract class FencedBlockParserBase<T> : FencedBlockParserBase where T :
         // If the info parser was not successful, early exit
         if (InfoParser != null && !InfoParser(processor, ref line, fenced, matchChar))
         {
+            processor.TriviaStart = triviaStart;
+            processor.LinesBefore = linesBefore;
             return BlockState.None;
         }
 

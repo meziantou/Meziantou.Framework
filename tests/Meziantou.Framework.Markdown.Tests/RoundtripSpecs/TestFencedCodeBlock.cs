@@ -76,6 +76,18 @@ public class TestFencedCodeBlock
         RoundTrip(value);
     }
 
+    // A backtick in the info string makes the line a paragraph, which keeps the trivia before it
+    [Theory]
+    [InlineData("-\n```a`")]
+    [InlineData("-\n```a`\n")]
+    [InlineData("a\n\n```a`\n")]
+    [InlineData("a\n\n\n  ```a`\n")]
+    [InlineData("> b\n\n```a`")]
+    public void TestRejectedFence(string value)
+    {
+        RoundTrip(value);
+    }
+
     [Theory]
     [InlineData("^^^\nThis is a figure\n^^^ This is a *caption*\n")]
     [InlineData("^^^ top\nx\n^^^\n")]

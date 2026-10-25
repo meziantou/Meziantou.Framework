@@ -43,6 +43,9 @@ public sealed class CssomTests
     [InlineData("width: 1px; height: 2px", "width: 1px; height: 2px;")]
     [InlineData("width: var({--x})", "width: var({--x});")]
     [InlineData("width: var(--x", "width: var(--x);")]
+    [InlineData("width: calc(var(--x)", "width: calc(var(--x));")]
+    [InlineData("width: calc(1px + (var(--x) * 2)", "width: calc(1px + (var(--x) * 2));")]
+    [InlineData("width: calc(var(--x) )", "width: calc(var(--x) );")]
     public void CssText(string style, string expected)
     {
         var element = CreateElement(style);
@@ -85,6 +88,8 @@ public sealed class CssomTests
 
     // Colors (https://drafts.csswg.org/css-color-4/#serializing-color-values, https://drafts.csswg.org/css-color-5/)
     [InlineData("color", "hwb(120 30% 50%)", "rgb(77, 128, 77)")]
+    [InlineData("color", "hsl(120deg 500% 50%)", "rgb(0, 255, 0)")]
+    [InlineData("color", "hsl(120 100 150)", "rgb(255, 255, 255)")]
     [InlineData("color", "rgb(128 none none)", "color(srgb 0.501961 none none)")]
     [InlineData("color", "hsl(120 none 50)", "hsl(120 none 50%)")]
     [InlineData("color", "color-mix(in srgb, 70% red, 50% blue)", "color-mix(in srgb, red 70%, blue 50%)")]
@@ -348,6 +353,9 @@ public sealed class CssomTests
     [InlineData("not unknown(width)", "not unknown(width)")]
     [InlineData("(unknown) or (COLOR)", "(unknown) or (color)")]
     [InlineData("(width < env(safe-area-inset-top, 1px))", "(width < env(safe-area-inset-top, 1px))")]
+    [InlineData("(a #.5)", "(a #/**/0.5)")]
+    [InlineData("(a: #0.5)", "(a: #\\30 /**/0.5)")]
+    [InlineData("(a/**/b)", "(a/**/b)")]
     [InlineData("(color]", "not all")]
     [InlineData("unknown(\"a\nb)", "not all")]
     [InlineData("(orientation) and not (orientation)", "not all")]
@@ -635,6 +643,19 @@ public sealed class CssomTests
         var sheet = new CssStyleSheet();
         sheet.ReplaceSync("@supports at-rule( @--\\31 23 ) and (color: red) { }");
         Assert.Equal("at-rule(@--123) and (color: red)", ((CssSupportsRule)sheet.CssRules[0]!).ConditionText);
+    }
+
+    // A bad string, a bad URL or an unmatched closing bracket is not an <any-value>: the condition is not a <general-enclosed>
+    [Theory]
+    [InlineData("@supports (a \"b\n) { }")]
+    [InlineData("@supports (display: grid) or (a ]) { }")]
+    [InlineData("@supports unknown(url(a b)) { }")]
+    [InlineData("@supports selector(\"a\n) { }")]
+    public void SupportsRule_InvalidGeneralEnclosed(string css)
+    {
+        var sheet = new CssStyleSheet();
+        sheet.ReplaceSync(css);
+        Assert.Equal(0u, sheet.CssRules.Length);
     }
 
     [Fact]

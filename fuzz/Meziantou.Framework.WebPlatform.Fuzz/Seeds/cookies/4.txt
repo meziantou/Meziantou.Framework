@@ -1,0 +1,2 @@
+idn=3; Domain=xn--lve-6lad.example.com
+a=1; Domain=example.com; Path=/dir/

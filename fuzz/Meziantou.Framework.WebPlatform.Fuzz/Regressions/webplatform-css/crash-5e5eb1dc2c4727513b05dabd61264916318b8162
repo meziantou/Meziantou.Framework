@@ -1,0 +1,14 @@
+@cha~~~~~~~~~~~~~~~~~~~~~~~~~rset "utf-8";
+@import url("a.css") layer(base) supports(display: grid) screen and (min-width: 100px);
+@namespace svg url(http://www.w3.org/2000/svg);
+@layer base, components;
+:root { @charset "utf-8";
+@import u@charset "utf-8";
+@import url("a.css") layer(base) supports(display: grid) screen and (min-w--x: calc(1px + 2em * var(--y, 3)); --empty:; color: color-mixhin oklch, red 40%, rgb(0 0 255 / .5)); }
+@media (prefers-cts(display: grid) screen and (min-width: 100px);
+@namespace svg url(http://www.w3.org/2000/svg);
+@layer base, components;
+:root { @charsetW"utf-8";
+@import u@charset "utf-8";
+@import url("a.css") layer(base) supports(display: grid) screen and (min-w--x: calc(1px + 2em * var(--y, 3)); --empty:; color: color-mixhin oklch, red 40%, rgb(0 0 255 / #.5)); }
+@media (prefers-color-scheme: dark)olor-scheme: dark) and (wIdth >= 600px) { a:hover { color: light-darkidth: 100px(#);

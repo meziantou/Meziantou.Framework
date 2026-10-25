@@ -346,7 +346,15 @@ internal sealed class CssColor
                 var third = channels[2].IsNone ? 0 : channels[2].Value;
                 var saturation = name == "hwb" ? second : Math.Max(0, second);
                 var (r, g, b) = name == "hwb" ? HwbToRgb(hue, second / 100, third / 100) : HslToRgb(hue, saturation / 100, third / 100);
-                return new CssColor("rgb", [r * 255, g * 255, b * 255], AlphaValue(alpha) ?? 0, legacyRgb: true, name == "hwb" ? "hwb" : "hsl", [hue, saturation, third]);
+
+                // A saturation above 100% or a lightness outside [0%, 100%] gives sRGB channels outside [0, 255]: they are
+                // clamped as the channels of rgb(), so that the serialization (rgb()) is parsed as the same color
+                if (!s_keepOutOfRangeRgb)
+                {
+                    (r, g, b) = (Math.Clamp(r, 0, 1), Math.Clamp(g, 0, 1), Math.Clamp(b, 0, 1));
+                }
+
+                return new CssColor("rgb", [r * 255, g * 255, b * 255],AlphaValue(alpha) ?? 0, legacyRgb: true, name == "hwb" ? "hwb" : "hsl", [hue, saturation, third]);
             }
 
             case "lab" or "oklab" or "lch" or "oklch":

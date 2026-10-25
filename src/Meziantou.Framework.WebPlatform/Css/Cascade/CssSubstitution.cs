@@ -220,7 +220,7 @@ internal static class CssSubstitution
     /// The kinds of tokens that must be separated by a comment when they follow each other
     /// (https://drafts.csswg.org/css-syntax-3/#serialization), e.g. two identifiers or a number followed by a percent sign.
     /// </summary>
-    private enum TokenKind
+    internal enum TokenKind
     {
         None,
         Other,
@@ -246,7 +246,7 @@ internal static class CssSubstitution
         PercentSign,
     }
 
-    private static TokenKind GetTokenKind(CssToken token) => token.Type switch
+    internal static TokenKind GetTokenKind(CssToken token) => token.Type switch
     {
         CssTokenType.Whitespace => TokenKind.Whitespace,
         CssTokenType.Ident => TokenKind.Ident,
@@ -276,7 +276,7 @@ internal static class CssSubstitution
     };
 
     /// <summary>Returns whether two consecutive tokens must be separated by a comment (https://drafts.csswg.org/css-syntax-3/#serialization).</summary>
-    private static bool RequiresComment(TokenKind first, TokenKind second)
+    internal static bool RequiresComment(TokenKind first, TokenKind second)
     {
         var identOrNumber = second is TokenKind.Ident or TokenKind.Function or TokenKind.Url or TokenKind.BadUrl or TokenKind.Number or TokenKind.Percentage or TokenKind.Dimension;
         return first switch

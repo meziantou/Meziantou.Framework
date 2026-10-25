@@ -235,6 +235,7 @@
       "html5test-com.dat#26 fragment(select)",
       "pending-spec-changes.dat#1 fragment(select)",
       "seeds/1.html fragment(select)",
+      "seeds/2.html fragment(select)",
       "template.dat#116 fragment(select)",
       "template.dat#119 fragment(select)",
       "tests19.dat#69 fragment(select)",
@@ -266,6 +267,7 @@
   {
     "reason": "Chromium, Firefox and WebKit deviation: in a fragment whose context element is template, the form element pointer is set and used as when there is no template element on the stack of open elements (the context element is not on the stack). The html5lib tests (template.dat#120) expect the rules for a template element on the stack: the form element pointer is not set, so a form start tag in a form is inserted",
     "differences": [
+      "seeds/2.html fragment(template)",
       "template.dat#120 fragment(template)",
       "template.dat#123 fragment(template)",
       "template.dat#124 fragment(template)",

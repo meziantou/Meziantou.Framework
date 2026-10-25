@@ -25,6 +25,15 @@
     <Compile Include="..\..\tests\Meziantou.Framework.Imaging.Heic.Tests\HeicTestFiles.cs" Link="Shared\HeicTestFiles.cs" />
     <!-- Images of any pixel format and their samples, shared with the drawing unit tests (DrawingFuzzTests) -->
     <Compile Include="..\..\tests\Meziantou.Framework.Imaging.Tests.Shared\Helpers\DrawingTestSupport.cs" Link="Shared\DrawingTestSupport.cs" />
+    <!-- The byte-level TIFF, ICO/CUR and ANI builders of the unit tests make the seeds of what the encoders never write (FuzzGeneratedSeeds) -->
+    <Compile Include="..\..\tests\Meziantou.Framework.Imaging.Tiff.Tests\TiffFileBuilder.cs" Link="Shared\TiffFileBuilder.cs" />
+    <Compile Include="..\..\tests\Meziantou.Framework.Imaging.Tiff.Tests\TiffPageSpec.cs" Link="Shared\TiffPageSpec.cs" />
+    <Compile Include="..\..\tests\Meziantou.Framework.Imaging.Tiff.Tests\TiffFieldSpec.cs" Link="Shared\TiffFieldSpec.cs" />
+    <Compile Include="..\..\tests\Meziantou.Framework.Imaging.Tiff.Tests\TiffResolutionSpec.cs" Link="Shared\TiffResolutionSpec.cs" />
+    <Compile Include="..\..\tests\Meziantou.Framework.Imaging.Tiff.Tests\TiffReferenceCodecs.cs" Link="Shared\TiffReferenceCodecs.cs" />
+    <Compile Include="..\..\tests\Meziantou.Framework.Imaging.Ico.Tests\IcoFileBuilder.cs" Link="Shared\IcoFileBuilder.cs" />
+    <Compile Include="..\..\tests\Meziantou.Framework.Imaging.Ico.Tests\IcoEntrySpec.cs" Link="Shared\IcoEntrySpec.cs" />
+    <Compile Include="..\..\tests\Meziantou.Framework.Imaging.Ico.Tests\AniFileBuilder.cs" Link="Shared\AniFileBuilder.cs" />
   </ItemGroup>
 
   <ItemGroup>

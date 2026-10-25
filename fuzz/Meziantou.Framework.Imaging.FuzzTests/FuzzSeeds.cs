@@ -3,10 +3,10 @@ using Hevc = Meziantou.Framework.Imaging.TestHarness.Hevc;
 
 namespace Meziantou.Framework.Imaging.FuzzTests;
 
-/// <summary>Seed groups of the fuzz tests: every corpus input (valid, invalid, unsupported and limit fixtures) of a codec variant.</summary>
+/// <summary>Seed groups of the fuzz tests: every corpus input (valid, invalid, unsupported and limit fixtures) of a codec variant, and the generated seeds of the formats the corpus has no fixture of (<see cref="FuzzGeneratedSeeds"/>).</summary>
 internal static class FuzzSeeds
 {
-    public static IReadOnlyList<string> Groups { get; } = ["png", "apng", "gif", "jpeg-baseline", "jpeg-progressive", "jpeg-lossless", "webp-lossless", "webp-lossy", "webp-animated", "qoi", "bmp", "tga", "pnm", "avif-still", "avif-sequence", "av1-intra", "av1-inter", "heic-still", "heic-sequence", "hevc-intra", "hevc-inter", "jxl-lossless", "jxl-lossy", "jxl-animated", "jp2-reversible", "jp2-irreversible", "jp2-file", "jp2-ht"];
+    public static IReadOnlyList<string> Groups { get; } = ["png", "apng", "gif", "jpeg-baseline", "jpeg-progressive", "jpeg-lossless", "webp-lossless", "webp-lossy", "webp-animated", "qoi", "bmp", "tga", "pnm", "avif-still", "avif-sequence", "av1-intra", "av1-inter", "heic-still", "heic-sequence", "hevc-intra", "hevc-inter", "jxl-lossless", "jxl-lossy", "jxl-animated", "jp2-reversible", "jp2-irreversible", "jp2-file", "jp2-ht", .. FuzzGeneratedSeeds.Groups];
 
     public static IReadOnlyList<FuzzSeed> Get(string group)
     {
@@ -14,6 +14,10 @@ internal static class FuzzSeeds
         // sequence, so that it goes through the public API
         if (group is "hevc-intra" or "hevc-inter")
             return GetHevcVectors(group);
+
+        // The corpus has no fixture of the multi-entry formats and of the animated cursors: their seeds are generated
+        if (FuzzGeneratedSeeds.Groups.Contains(group, StringComparer.Ordinal))
+            return FuzzGeneratedSeeds.Get(group);
 
         var seeds = group is "av1-intra" or "av1-inter"
             ? GoldenCorpus.Default.Av1Vectors

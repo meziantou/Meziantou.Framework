@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.WebPlatform.Imaging</RootNamespace>
-    <Version>1.0.1</Version>
+    <Version>1.0.2</Version>
     <IsTrimmable>true</IsTrimmable>
     <DisableDocumentationWarnings>false</DisableDocumentationWarnings>
     <Description>Rasterizes the documents of Meziantou.Framework.WebPlatform with the fully managed drawing API of Meziantou.Framework.Imaging (a RenderingBackend): screenshots of the pages and of the elements, 2D canvases, image decoding and encoding.</Description>

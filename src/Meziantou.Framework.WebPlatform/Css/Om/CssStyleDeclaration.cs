@@ -701,7 +701,9 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
         {
             if (value is CssFunction function)
             {
-                if (!source.EndsWith(')', StringComparison.Ordinal))
+                // The function is unclosed when its contents reach the end of the input (the ")" at the end of the input can
+                // close a nested function, e.g. "f(g(a)")
+                if (!source.EndsWith(')', StringComparison.Ordinal) || (function.Value.Count > 0 && function.Value[^1].End >= source.Length))
                 {
                     closers.Insert(0, ')');
                 }
@@ -721,7 +723,7 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
                     _ => '}',
                 };
 
-                if (!source.EndsWith(closer, StringComparison.Ordinal))
+                if (!source.EndsWith(closer, StringComparison.Ordinal) || (block.Value.Count > 0 && block.Value[^1].End >= source.Length))
                 {
                     closers.Insert(0, closer);
                 }

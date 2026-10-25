@@ -1672,6 +1672,14 @@ internal sealed partial class CssRuleParser
 
         switch (values[index])
         {
+            // A block or a function that contains a bad string, a bad URL or an unmatched closing bracket is not a
+            // <general-enclosed> (<any-value>, https://drafts.csswg.org/css-syntax-3/#typedef-any-value): it is invalid
+            case CssSimpleBlock { AssociatedToken: CssTokenType.LeftParenthesis } block when !MediaQueryEvaluator.IsAnyValue(block.Value):
+                return null;
+
+            case CssFunction function when !MediaQueryEvaluator.IsAnyValue(function.Value):
+                return null;
+
             case CssSimpleBlock { AssociatedToken: CssTokenType.LeftParenthesis } block:
             {
                 var inner = ValueMatcher.RemoveWhitespace(block.Value);

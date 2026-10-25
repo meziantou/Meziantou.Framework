@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Text;
+using Meziantou.Framework.WebPlatform.Css.Cascade;
 using Meziantou.Framework.WebPlatform.Css.Syntax;
 using Meziantou.Framework.WebPlatform.Css.Values;
 using Meziantou.Framework.WebPlatform.Dom;
@@ -314,24 +315,40 @@ internal static class MediaQueries
     /// <summary>
     /// https://drafts.csswg.org/mediaqueries-5/#typedef-general-enclosed: valid, but it evaluates to unknown. It is serialized as
     /// specified, like the browsers: the tokens are serialized (https://drafts.csswg.org/css-syntax-3/#serialization), the
-    /// whitespace is collapsed and the comments are removed.
+    /// whitespace is collapsed and the comments are removed: an empty comment separates the tokens that would otherwise be
+    /// parsed as other tokens (e.g. "#/**/.5", a # delimiter followed by a number).
     /// </summary>
     private static string SerializeGeneralEnclosed(CssComponentValue value)
     {
         var builder = new StringBuilder();
-        SerializeTokens(builder, [value]);
+        var last = CssSubstitution.TokenKind.None;
+        SerializeTokens(builder, [value], ref last);
         return builder.ToString();
     }
 
-    private static void SerializeTokens(StringBuilder builder, List<CssComponentValue> values)
+    private static void SerializeTokens(StringBuilder builder, List<CssComponentValue> values, ref CssSubstitution.TokenKind last)
     {
         foreach (var value in values)
         {
+            var (first, end) = value switch
+            {
+                CssFunction => (CssSubstitution.TokenKind.Function, CssSubstitution.TokenKind.Other),
+                CssSimpleBlock { AssociatedToken: CssTokenType.LeftParenthesis } => (CssSubstitution.TokenKind.LeftParenthesis, CssSubstitution.TokenKind.Other),
+                CssPreservedToken { Token: var preserved } => (CssSubstitution.GetTokenKind(preserved), CssSubstitution.GetTokenKind(preserved)),
+                _ => (CssSubstitution.TokenKind.Other, CssSubstitution.TokenKind.Other),
+            };
+
+            if (CssSubstitution.RequiresComment(last, first))
+            {
+                builder.Append("/**/");
+            }
+
             switch (value)
             {
                 case CssFunction function:
                     builder.Append(CssSerializer.SerializeIdentifier(function.Name)).Append('(');
-                    SerializeTokens(builder, function.Value);
+                    last = CssSubstitution.TokenKind.Other;
+                    SerializeTokens(builder, function.Value, ref last);
                     builder.Append(')');
                     break;
 
@@ -343,7 +360,8 @@ internal static class MediaQueries
                         _ => ('(', ')'),
                     };
                     builder.Append(open);
-                    SerializeTokens(builder, block.Value);
+                    last = CssSubstitution.TokenKind.Other;
+                    SerializeTokens(builder, block.Value, ref last);
                     builder.Append(close);
                     break;
 
@@ -368,6 +386,8 @@ internal static class MediaQueries
                     });
                     break;
             }
+
+            last = end;
         }
 
         // The type of the number is kept (e.g. "1.0" is not an <integer>)

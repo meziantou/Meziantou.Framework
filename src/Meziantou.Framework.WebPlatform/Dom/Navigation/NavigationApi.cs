@@ -331,7 +331,7 @@ public sealed class Navigation : EventTarget
             return EarlyErrorResult(CreateException("The document is unloading", "InvalidStateError"));
 
         var apiMethodTracker = SetUpNavigateReloadApiMethodTracker(options.Info, serializedState);
-        navigable.Reload(new NavigationApiStateValue(serializedState), apiMethodTracker);
+        navigable.ReloadNavigable(new NavigationApiStateValue(serializedState), apiMethodTracker);
         return GetApiMethodTrackerDerivedResult(apiMethodTracker);
     }
 

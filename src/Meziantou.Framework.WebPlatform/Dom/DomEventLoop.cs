@@ -129,7 +129,17 @@ public sealed partial class DomEventLoop
         {
             SignalWork();
         }
+
+        WorkSignal?.Invoke();
     }
+
+    /// <summary>
+    /// Gets or sets the callback invoked when work arrives, from any thread: a task is queued (e.g. by an asynchronous
+    /// operation that completes on another thread, such as a document loaded by <see cref="BrowsingContextOptions.DocumentLoader"/>),
+    /// a timer is queued, or an asynchronous operation ends. A host that runs the event loop on its own thread uses it to wake
+    /// up and call <see cref="RunTask"/> and <see cref="PromoteDueTimers"/>. The callback must not run the event loop itself.
+    /// </summary>
+    public Action? WorkSignal { get; set; }
 
     /// <summary>
     /// Gets or sets a function that schedules the timers of the DOM (e.g. <c>AbortSignal.timeout()</c>) in the host's own
@@ -1029,6 +1039,7 @@ public sealed partial class DomEventLoop
 
         signal?.TrySetResult();
         _workerSignal?.Set();
+        WorkSignal?.Invoke();
     }
 
     /// <summary>Gets whether there are pending tasks or microtasks.</summary>
@@ -1076,6 +1087,7 @@ public sealed partial class DomEventLoop
 
         signal?.TrySetResult();
         _workerSignal?.Set();
+        WorkSignal?.Invoke();
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/webappapis.html#perform-a-microtask-checkpoint</summary>

@@ -154,9 +154,11 @@ public sealed partial class UserInput
     /// Returns the element at a point of the viewport of the top-level browsing context, as the hit testing finds it
     /// (https://drafts.csswg.org/cssom-view/#hit-testing): not retargeted out of the shadow trees, and in the document of
     /// the nested browsing context when the point is in the content box of its container. The point of an empty area hits
-    /// the document element.
+    /// the document element. It returns null when the documents are not laid out (e.g. the document is not fully active).
     /// </summary>
-    internal Element? HitTest(double x, double y) => HitTest(x, y, out _);
+    /// <param name="x">The horizontal position, in CSS pixels, relative to the viewport of the top-level browsing context.</param>
+    /// <param name="y">The vertical position, in CSS pixels, relative to the viewport of the top-level browsing context.</param>
+    public Element? HitTest(double x, double y) => HitTest(x, y, out _);
 
     /// <summary>
     /// Returns the element at a point of the viewport of the top-level browsing context (see <see cref="HitTest(double, double)"/>),
@@ -254,8 +256,14 @@ public sealed partial class UserInput
         return true;
     }
 
-    /// <summary>Maps a point of the viewport of the top-level browsing context to the viewport of a document of a nested browsing context.</summary>
-    internal (double X, double Y) MapToDocument(Document document, double x, double y)
+    /// <summary>
+    /// Maps a point of the viewport of the top-level browsing context to the viewport of a document of a nested browsing
+    /// context (the document of an <c>iframe</c>), through the transforms and the scroll offsets of the containers.
+    /// </summary>
+    /// <param name="document">A document of the top-level browsing context or of a nested browsing context.</param>
+    /// <param name="x">The horizontal position, in CSS pixels, relative to the viewport of the top-level browsing context.</param>
+    /// <param name="y">The vertical position, in CSS pixels, relative to the viewport of the top-level browsing context.</param>
+    public (double X, double Y) MapToDocument(Document document, double x, double y)
     {
         List<Element>? containers = null;
         for (var current = document; current.BrowsingContext is { Parent: not null, Container: { } container }; current = container.NodeDocument)
@@ -277,9 +285,17 @@ public sealed partial class UserInput
         return (x, y);
     }
 
-    /// <summary>Maps a point of the viewport of a document to the viewport of the top-level browsing context.</summary>
-    internal static (double X, double Y) MapToTopLevel(Document document, double x, double y)
+    /// <summary>
+    /// Maps a point of the viewport of a document (e.g. the coordinates of <see cref="Element.GetBoundingClientRect"/> in the
+    /// document of an <c>iframe</c>) to the viewport of the top-level browsing context, through the transforms and the scroll
+    /// offsets of the containers: the coordinates of the input of the user (see <see cref="PointerInput.Move"/>).
+    /// </summary>
+    /// <param name="document">A document of the top-level browsing context or of a nested browsing context.</param>
+    /// <param name="x">The horizontal position, in CSS pixels, relative to the viewport of the document.</param>
+    /// <param name="y">The vertical position, in CSS pixels, relative to the viewport of the document.</param>
+    public static (double X, double Y) MapToTopLevel(Document document, double x, double y)
     {
+        ArgumentNullException.ThrowIfNull(document);
         var point = new PhysicalOffset(x, y);
         for (var current = document; current.BrowsingContext is { Parent: not null, Container: { } container }; current = container.NodeDocument)
         {

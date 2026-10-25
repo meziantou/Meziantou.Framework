@@ -963,7 +963,7 @@ public partial class HtmlImageElement
             return (null, 1);
 
         // The candidate whose density is the smallest one greater than or equal to the device pixel ratio, else the largest one
-        var devicePixelRatio = environmentDocument.BrowsingContext?.Top.Options.Viewport?.DevicePixelRatio ?? 1;
+        var devicePixelRatio = environmentDocument.BrowsingContext?.Top.Viewport.DevicePixelRatio ?? 1;
         ImageCandidate? best = null;
         foreach (var candidate in candidates)
         {

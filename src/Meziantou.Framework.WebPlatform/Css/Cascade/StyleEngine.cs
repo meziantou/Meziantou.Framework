@@ -2334,7 +2334,7 @@ internal sealed partial class StyleEngine
         // The viewport of a top-level browsing context is the one of the options, or the size requested by the features of
         // window.open() (the screen stays the viewport of the options)
         var top = browsingContext.Top;
-        var viewport = top.Options.Viewport ?? ViewportOptions.Default;
+        var viewport = top.Viewport;
         // While the documents are displayed fullscreen, the viewport is the one the host answered (the screen), if any
         var width = top.FullscreenViewportSize?.Width ?? top.ClientWindowViewportWidth ?? viewport.Width;
         var height = top.FullscreenViewportSize?.Height ?? top.ClientWindowViewportHeight ?? viewport.Height;

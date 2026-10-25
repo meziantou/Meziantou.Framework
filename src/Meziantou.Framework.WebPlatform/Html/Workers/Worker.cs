@@ -484,8 +484,6 @@ public sealed class WorkerLocation
 [IdlInterface("WorkerNavigator", "https://html.spec.whatwg.org/multipage/workers.html#workernavigator")]
 public sealed partial class WorkerNavigator
 {
-    private static readonly string[] DefaultLanguages = ["en-US", "en"];
-
     private readonly WorkerGlobalScope _global;
     private ServiceWorkerContainer? _serviceWorker;
     private LockManager? _locks;
@@ -559,12 +557,12 @@ public sealed partial class WorkerNavigator
     /// <summary>Gets the preferred language of the user.</summary>
     /// <seealso href="https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-language"/>
     [IdlMember("language", "https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-language")]
-    public string Language => DefaultLanguages[0];
+    public string Language => _global.Options.EffectiveLanguages[0];
 
     /// <summary>Gets the languages preferred by the user, by order of preference.</summary>
     /// <seealso href="https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-languages"/>
     [IdlMember("languages", "https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-languages")]
-    public IReadOnlyList<string> Languages => DefaultLanguages;
+    public IReadOnlyList<string> Languages => _global.Options.EffectiveLanguages;
 
     /// <summary>Gets a value indicating whether the user agent is online.</summary>
     /// <seealso href="https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-online"/>

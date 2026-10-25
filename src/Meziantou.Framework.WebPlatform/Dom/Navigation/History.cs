@@ -174,7 +174,7 @@ public sealed class History
 
         if (delta == 0)
         {
-            navigable.Reload();
+            navigable.ReloadNavigable();
             return;
         }
 

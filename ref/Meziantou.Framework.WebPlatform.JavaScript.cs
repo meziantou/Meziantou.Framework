@@ -12,17 +12,20 @@ namespace Meziantou.Framework.WebPlatform.JavaScript
         protected internal override bool SupportsModuleScripts { get => throw null; }
         public JavaScriptScriptEngine(Meziantou.Framework.WebPlatform.JavaScript.JavaScriptScriptEngineOptions? options = null) { }
         protected JavaScriptScriptEngine(Meziantou.Framework.WebPlatform.JavaScript.JavaScriptScriptEngineOptions? options, System.Threading.CancellationToken terminationToken) { }
+        public Meziantou.Framework.JavaScriptEngine.JsValue Call(Meziantou.Framework.WebPlatform.Dom.Window window, Meziantou.Framework.JavaScriptEngine.JsValue function, Meziantou.Framework.JavaScriptEngine.JsValue thisValue, params System.ReadOnlySpan<Meziantou.Framework.JavaScriptEngine.JsValue> arguments) => throw null;
         protected internal override Meziantou.Framework.WebPlatform.Scripting.EventHandlerCallback CompileEventHandler(Meziantou.Framework.WebPlatform.Scripting.EventHandlerSource source) => throw null;
         protected internal override void CreateRealm(Meziantou.Framework.WebPlatform.Dom.GlobalScope global) { }
         protected internal override Meziantou.Framework.WebPlatform.Scripting.ScriptEngine? CreateWorkerScriptEngine(System.Threading.CancellationToken terminationToken) => throw null;
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         protected internal override System.IDisposable EnterNestedMicrotaskQueue() => throw null;
+        public Meziantou.Framework.JavaScriptEngine.JsValue Evaluate(Meziantou.Framework.WebPlatform.Dom.Window window, Meziantou.Framework.JavaScriptEngine.JsPreparedScript script) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsValue Evaluate(Meziantou.Framework.WebPlatform.Dom.Window window, string code) => throw null;
         protected internal override object? ExecuteClassicScript(Meziantou.Framework.WebPlatform.Scripting.ClassicScript script) => throw null;
         protected internal override void ExecuteModuleScript(Meziantou.Framework.WebPlatform.Scripting.ModuleScript script) { }
         protected internal override Meziantou.Framework.WebPlatform.Scripting.ScriptError ExtractErrorInformation(object? exception) => throw null;
         protected internal override void FetchModuleScriptGraph(Meziantou.Framework.WebPlatform.Dom.GlobalScope global, string url, Meziantou.Framework.WebPlatform.Scripting.ModuleFetchOptions options, Meziantou.Framework.WebPlatform.Dom.Element? element, System.Action<Meziantou.Framework.WebPlatform.Scripting.ModuleScript?> onComplete) { }
+        public object? FromJsValue(Meziantou.Framework.WebPlatform.Dom.Window window, Meziantou.Framework.JavaScriptEngine.JsValue value) => throw null;
         protected internal override string? GetActiveScriptBaseUrl() => throw null;
         protected internal override Meziantou.Framework.WebPlatform.Scripting.ModuleFetchOptions? GetActiveScriptFetchOptions() => throw null;
         protected internal override Meziantou.Framework.WebPlatform.Dom.GlobalScope? GetCurrentGlobal() => throw null;
@@ -40,6 +43,7 @@ namespace Meziantou.Framework.WebPlatform.JavaScript
         protected internal override object? StructuredSerialize(Meziantou.Framework.WebPlatform.Dom.GlobalScope global, object? value, System.Collections.Generic.IReadOnlyList<object> transferList) => throw null;
         protected internal override object? StructuredSerializeForAgent(Meziantou.Framework.WebPlatform.Dom.GlobalScope global, object? value, System.Collections.Generic.IReadOnlyList<object> transferList) => throw null;
         protected internal override object? StructuredSerializeForStorage(Meziantou.Framework.WebPlatform.Dom.GlobalScope global, object? value) => throw null;
+        public Meziantou.Framework.JavaScriptEngine.JsValue ToJsValue(Meziantou.Framework.WebPlatform.Dom.Window window, object? value) => throw null;
         protected internal override void WaitForAll(Meziantou.Framework.WebPlatform.Dom.GlobalScope global, System.Collections.Generic.IReadOnlyList<object?> values, System.Action successSteps, System.Action<object?> failureSteps) { }
     }
 

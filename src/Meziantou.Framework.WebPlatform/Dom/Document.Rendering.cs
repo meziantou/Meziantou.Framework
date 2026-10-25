@@ -156,7 +156,7 @@ public partial class Document
     /// </summary>
     internal double GetPageScale()
     {
-        if (BrowsingContext is not { Container: null } browsingContext || browsingContext.Top.Options.Viewport is not { IsMobile: true } viewport || !IsFullyActive)
+        if (BrowsingContext is not { Container: null } browsingContext || browsingContext.Top.Viewport is not { IsMobile: true } viewport || !IsFullyActive)
             return 1;
 
         var engine = GetLayoutEngine();

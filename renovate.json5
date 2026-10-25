@@ -108,6 +108,16 @@
       "enabled": false
     },
     {
+      // The client must have the major and minor versions of PlaywrightServer.PlaywrightVersion: the
+      // update-playwright-scripts.yml workflow updates them together with the vendored scripts of Playwright
+      "matchPackageNames": [ "Microsoft.Playwright" ],
+      "matchFileNames": [
+        "tests/Meziantou.Framework.WebPlatform.Playwright.Tests/Meziantou.Framework.WebPlatform.Playwright.Tests.csproj",
+        "samples/Meziantou.Framework.WebPlatform.Playwright.Samples/Meziantou.Framework.WebPlatform.Playwright.Samples.csproj"
+      ],
+      "enabled": false
+    },
+    {
       // The expected results of the workloads come from Chromium: a new version of a package or of Playwright needs them
       // regenerated (see the readme of the project), which Renovate cannot do
       "matchFileNames": [

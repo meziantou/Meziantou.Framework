@@ -1486,6 +1486,204 @@ public sealed class BrowsingContextTests
         Assert.False(nested.IsDestroyed);
     }
 
+    [Fact]
+    public void Options_DocumentActivated_IsInvokedForTheNavigationsButNotForTheInitialDocuments()
+    {
+        var activated = new List<string>();
+        using var context = new BrowsingContext(new BrowsingContextOptions
+        {
+            DocumentActivated = (browsingContext, document) => activated.Add((browsingContext.Parent is null ? "top " : "frame ") + document.Url),
+        });
+
+        Assert.Empty(activated);
+        Load(context, "<iframe srcdoc='<p>x'></iframe>", "https://example.com/a");
+        Load(context, "<p>b", "https://example.com/b");
+
+        Assert.Equal(["top https://example.com/a", "frame about:srcdoc", "top https://example.com/b"], activated);
+    }
+
+    [Fact]
+    public void Options_BrowsingContextCreatedAndDestroyed_AreInvokedForTheIframes()
+    {
+        var calls = new List<string>();
+        using var context = new BrowsingContext(new BrowsingContextOptions
+        {
+            BrowsingContextCreated = browsingContext => calls.Add($"created {browsingContext.Name} {browsingContext.Document.Url} {browsingContext.Parent is not null}"),
+            BrowsingContextDestroyed = browsingContext => calls.Add($"destroyed {browsingContext.Name} {browsingContext.IsDestroyed}"),
+        });
+
+        var document = Load(context, "<iframe name=child></iframe>");
+        Assert.Equal(["created child about:blank True"], calls);
+
+        document.QuerySelector("iframe")!.Remove();
+        Assert.Equal(["created child about:blank True", "destroyed child True"], calls);
+
+        context.Dispose();
+        Assert.Equal(["created child about:blank True", "destroyed child True", "destroyed  True"], calls);
+    }
+
+    [Fact]
+    public void Options_SameDocumentNavigated_IsInvokedForTheFragmentNavigations()
+    {
+        var urls = new List<string>();
+        using var context = new BrowsingContext(new BrowsingContextOptions
+        {
+            SameDocumentNavigated = browsingContext => urls.Add(browsingContext.Document.Url),
+        });
+        var document = Load(context, "<p id=a>a", "https://example.com/page");
+
+        document.DefaultView!.Location.Hash = "a";
+        context.EventLoop.RunUntilIdle();
+
+        Assert.Equal(["https://example.com/page#a"], urls);
+    }
+
+    [Fact]
+    public void Viewport_CanBeChangedAtRuntime()
+    {
+        var clock = new FakeTimeProvider();
+        using var context = new BrowsingContext(new BrowsingContextOptions { TimeProvider = clock });
+        var document = Load(context, "<style>@media (prefers-color-scheme: dark) { p { color: white } }</style><p>x");
+        var window = document.DefaultView!;
+        var resizes = 0;
+        window.AddEventListener("resize", _ => resizes++);
+        Assert.Same(ViewportOptions.Default, context.Viewport);
+
+        context.Viewport = context.Viewport with { Width = 1024, Height = 768, PreferredColorScheme = PreferredColorScheme.Dark };
+        clock.Advance(TimeSpan.FromMilliseconds(50));
+        context.EventLoop.RunUntilIdle();
+
+        Assert.Equal((1024, 768), (window.InnerWidth, window.InnerHeight));
+        Assert.True(window.MatchMedia("(prefers-color-scheme: dark)").Matches);
+        Assert.Equal("rgb(255, 255, 255)", window.GetComputedStyle(document.QuerySelector("p")!).Color);
+        Assert.Equal(1, resizes);
+    }
+
+    [Fact]
+    public void Viewport_NestedBrowsingContext_Throws()
+    {
+        using var context = new BrowsingContext();
+        var document = Load(context, "<iframe></iframe>");
+        var nested = ((HtmlIFrameElement)document.QuerySelector("iframe")!).ContentWindow!.BrowsingContext!;
+
+        Assert.Equal(ViewportOptions.Default, nested.Viewport);
+        Assert.Throws<InvalidOperationException>(() => nested.Viewport = new ViewportOptions { Width = 10, Height = 10 });
+    }
+
+    [Fact]
+    public void IsOffline_ChangesNavigatorOnLineAndFiresTheEvents()
+    {
+        using var context = new BrowsingContext();
+        var document = Load(context, "<iframe></iframe>");
+        var window = document.DefaultView!;
+        var frameWindow = ((HtmlIFrameElement)document.QuerySelector("iframe")!).ContentWindow!;
+        var events = new List<string>();
+        window.AddEventListener("offline", e => events.Add("top " + e.Type));
+        window.AddEventListener("online", e => events.Add("top " + e.Type));
+        frameWindow.AddEventListener("offline", e => events.Add("frame " + e.Type));
+
+        context.IsOffline = true;
+        context.EventLoop.RunUntilIdle();
+        Assert.False(window.Navigator.OnLine);
+        Assert.False(frameWindow.Navigator.OnLine);
+        Assert.True(frameWindow.BrowsingContext!.IsOffline);
+
+        context.IsOffline = false;
+        context.EventLoop.RunUntilIdle();
+        Assert.True(window.Navigator.OnLine);
+        Assert.Equal(["top offline", "frame offline", "top online"], events);
+    }
+
+    [Fact]
+    public void Reload_LoadsTheDocumentAgain()
+    {
+        var count = 0;
+        var loader = new DelegateDocumentLoader((_, _) => ValueTask.FromResult<DocumentResource?>(new DocumentResource($"<p>{++count}")));
+        using var context = new BrowsingContext(new BrowsingContextOptions { DocumentLoader = loader });
+        context.Navigate("https://example.com/");
+        context.EventLoop.RunUntilIdle();
+        Assert.Equal("1", context.Document.Body!.TextContent);
+
+        context.Reload();
+        context.EventLoop.RunUntilIdle();
+
+        Assert.Equal("2", context.Document.Body!.TextContent);
+        Assert.Equal("https://example.com/", context.Document.Url);
+    }
+
+    [Fact]
+    public void IsNavigating_IsTrueUntilTheNavigationEnds()
+    {
+        var loader = new DelegateDocumentLoader((url, _) => ValueTask.FromResult<DocumentResource?>(url.EndsWith("/empty", StringComparison.Ordinal) ? new DocumentResource("") { StatusCode = 204 } : new DocumentResource("<p>x")));
+        using var context = new BrowsingContext(new BrowsingContextOptions { DocumentLoader = loader });
+        Assert.False(context.IsNavigating);
+
+        context.Navigate("https://example.com/");
+        Assert.True(context.IsNavigating);
+        context.EventLoop.RunUntilIdle();
+        Assert.False(context.IsNavigating);
+        Assert.Equal("https://example.com/", context.Document.Url);
+
+        context.Navigate("https://example.com/empty");
+        Assert.True(context.IsNavigating);
+        context.EventLoop.RunUntilIdle();
+        Assert.False(context.IsNavigating);
+        Assert.Equal("https://example.com/", context.Document.Url);
+    }
+
+    [Fact]
+    public void Languages_AreTheLanguagesOfTheNavigatorAndOfTheRequests()
+    {
+        var loader = new DelegateDocumentLoader((_, _) => ValueTask.FromResult<DocumentResource?>(new DocumentResource("<p>x")));
+        using var context = new BrowsingContext(new BrowsingContextOptions { DocumentLoader = loader, Languages = ["fr-FR", "fr", "en"] });
+        context.Navigate("https://example.com/");
+        context.EventLoop.RunUntilIdle();
+
+        var navigator = context.Window.Navigator;
+        Assert.Equal("fr-FR", navigator.Language);
+        Assert.Equal(["fr-FR", "fr", "en"], navigator.Languages);
+        Assert.Contains(new KeyValuePair<string, string>("Accept-Language", "fr-FR,fr;q=0.9,en;q=0.8"), loader.LastRequest!.Headers);
+    }
+
+    [Fact]
+    public void Languages_DefaultLanguages()
+    {
+        using var context = new BrowsingContext();
+
+        Assert.Equal("en-US", context.Window.Navigator.Language);
+        Assert.Equal(["en-US", "en"], context.Window.Navigator.Languages);
+    }
+
+    [Fact]
+    public void DocumentRequest_BrowsingContext_IsTheBrowsingContextOfTheRequest()
+    {
+        var loader = new DelegateDocumentLoader((url, _) => ValueTask.FromResult<DocumentResource?>(new DocumentResource(url.EndsWith("/child", StringComparison.Ordinal) ? "<p>child" : "<iframe src=child></iframe><img src=image.png>")));
+        using var context = new BrowsingContext(new BrowsingContextOptions { DocumentLoader = loader });
+        context.Navigate("https://example.com/");
+        context.EventLoop.RunUntilIdle();
+        var frame = context.Children[0];
+
+        var requests = loader.Requests.Select(request => (request.Url, request.Mode, request.BrowsingContext)).ToList();
+        Assert.Contains(("https://example.com/", RequestMode.Navigate, context), requests);
+        Assert.Contains(("https://example.com/child", RequestMode.Navigate, frame), requests);
+        Assert.Contains(("https://example.com/image.png", RequestMode.NoCors, context), requests);
+    }
+
+    [Fact]
+    public void IsNetworkErrorDocument_IsTrueForTheDocumentOfAFailedNavigation()
+    {
+        var loader = new DelegateDocumentLoader((url, _) => ValueTask.FromResult<DocumentResource?>(url.EndsWith("/ok", StringComparison.Ordinal) ? new DocumentResource("<p>ok") : null));
+        using var context = new BrowsingContext(new BrowsingContextOptions { DocumentLoader = loader });
+
+        context.Navigate("https://example.com/ok");
+        context.EventLoop.RunUntilIdle();
+        Assert.False(context.Document.IsNetworkErrorDocument);
+
+        context.Navigate("https://example.com/error");
+        context.EventLoop.RunUntilIdle();
+        Assert.True(context.Document.IsNetworkErrorDocument);
+    }
+
     private sealed class DelegateDocumentLoader(Func<string, CancellationToken, ValueTask<DocumentResource?>> load) : DocumentLoader
     {
         public DocumentRequest? LastRequest { get; private set; }

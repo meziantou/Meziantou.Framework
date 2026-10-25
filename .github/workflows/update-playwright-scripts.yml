@@ -1,0 +1,121 @@
+# Updates Meziantou.Framework.WebPlatform.Playwright to the latest version of Playwright (eng/update-playwright-scripts.cs):
+# the vendored scripts of Playwright, PlaywrightServer.PlaywrightVersion, and the version of Microsoft.Playwright of the tests
+# and of the samples. Renovate does not update Microsoft.Playwright in these projects (renovate.json5): the client must have
+# the major and minor versions of the server, so they change together.
+on:
+  workflow_dispatch:
+  schedule:
+  - cron: '0 0 * * 0' # once a week
+  push:
+    branches:
+      - main
+    paths:
+      - 'eng/update-playwright-scripts.cs'
+
+env:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+  DOTNET_NOLOGO: true
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  update_file:
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Setup .NET
+        uses: $/.github/actions/setup-dotnet
+      - run: |
+          # Built first and run with --no-build: `dotnet run` exits 1 for a build or restore failure, which is
+          # also how the script reports "files updated", so a broken build would otherwise be committed as
+          # an empty update.
+          dotnet build ./eng/update-playwright-scripts.cs --configuration Release
+          if ($LASTEXITCODE -ne 0) {
+            throw "The Playwright update script failed to build (exit code $LASTEXITCODE)"
+          }
+
+          function Get-PlaywrightVersion {
+            $server = Get-Content -Raw src/Meziantou.Framework.WebPlatform.Playwright/PlaywrightServer.cs
+            return [regex]::Match($server, 'PlaywrightVersion = "([^"]+)"').Groups[1].Value
+          }
+
+          $previousVersion = Get-PlaywrightVersion
+
+          # Without argument, the script moves to the latest stable version of the Microsoft.Playwright NuGet package
+          dotnet run ./eng/update-playwright-scripts.cs --configuration Release --no-build
+          # The script reports its result through the exit code: 0 when the files were already up to
+          # date, 1 when it updated them. Any other code is a failure and must not be committed.
+          if ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne 1) {
+            throw "The Playwright update script failed with exit code $LASTEXITCODE"
+          }
+          if ($LASTEXITCODE -eq 1) {
+            $version = Get-PlaywrightVersion
+            $branch = "update-playwright-scripts"
+            $title = "Update Meziantou.Framework.WebPlatform.Playwright to Playwright $version"
+
+            # PlaywrightServer.PlaywrightVersion is a public constant, so ref/Meziantou.Framework.WebPlatform.Playwright.cs
+            # must be part of the same commit: the publish workflow builds main with
+            # PublicApiGeneratorVerifyNoChangeOnBuild and fails when it is out of date.
+            # PublicApiGeneratorGenerateOnBuild defaults to false on GitHub Actions, hence the explicit value.
+            dotnet build src/Meziantou.Framework.WebPlatform.Playwright/Meziantou.Framework.WebPlatform.Playwright.csproj --configuration Release /p:IsOfficialBuild=true /p:PublicApiGeneratorGenerateOnBuild=true
+            if ($LASTEXITCODE -ne 0) {
+              throw "Failed to regenerate ref/Meziantou.Framework.WebPlatform.Playwright.cs (exit code $LASTEXITCODE)"
+            }
+
+            # Pull requests created with GITHUB_TOKEN run no workflow, so this is the only test run the new version
+            # gets before it is merged. A new version of Playwright can change the protocol: the pull request is
+            # still opened, as a draft, so that the update is not lost.
+            dotnet test --project "$PWD/tests/Meziantou.Framework.WebPlatform.Playwright.Tests/Meziantou.Framework.WebPlatform.Playwright.Tests.csproj" --configuration Release
+            $testsPassed = $LASTEXITCODE -eq 0
+
+            # The samples use Microsoft.Playwright too: CI compiles them but this pull request runs no CI
+            dotnet build samples/Meziantou.Framework.WebPlatform.Playwright.Samples/Meziantou.Framework.WebPlatform.Playwright.Samples.csproj --configuration Release
+            $testsPassed = $testsPassed -and $LASTEXITCODE -eq 0
+
+            git config --global user.email "git@meziantou.net"
+            git config --global user.name "meziantou"
+            git checkout -b $branch
+            # Staged explicitly: `git add .` would also pick up anything else the build left in the tree
+            git add `
+              src/Meziantou.Framework.WebPlatform.Playwright `
+              ref/Meziantou.Framework.WebPlatform.Playwright.cs `
+              tests/Meziantou.Framework.WebPlatform.Playwright.Tests/Meziantou.Framework.WebPlatform.Playwright.Tests.csproj `
+              samples/Meziantou.Framework.WebPlatform.Playwright.Samples/Meziantou.Framework.WebPlatform.Playwright.Samples.csproj
+            # An unchanged tree must never reach the force-push below: it would reset the shared branch and
+            # wipe the diff of a pull request that is already open, while the step still reported success.
+            git diff --cached --quiet
+            if ($LASTEXITCODE -eq 0) {
+              throw "The script reported an update but nothing changed in the tracked files"
+            }
+            git commit -m $title
+            git push origin $branch --force
+            $runUrl = "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            $review = "Review the changes of the protocol before merging: https://github.com/microsoft/playwright/compare/v$previousVersion...v$version (packages/protocol/spec). The new methods, parameters and events must be implemented by the dispatchers, as the tests only cover what they call."
+            if ($testsPassed) {
+              $body = "Update from Playwright $previousVersion to $version.`n`nThe Meziantou.Framework.WebPlatform.Playwright tests pass with the new version.`n`n$review`n`nCreated by: $runUrl"
+            } else {
+              $body = "Update from Playwright $previousVersion to $version.`n`n**The Meziantou.Framework.WebPlatform.Playwright tests or the samples fail with the new version**: the server needs an update before this can be merged. See the output of the run.`n`n$review`n`nCreated by: $runUrl"
+            }
+
+            # The branch is reused every week, so update the pull request when one is already open
+            $openPr = gh pr list --head $branch --state open --json number --jq '.[0].number // empty'
+            if ($openPr) {
+              gh pr edit $openPr --title $title --body $body
+              if ($testsPassed) {
+                gh pr ready $openPr
+              } else {
+                gh pr ready $openPr --undo
+              }
+            } elseif ($testsPassed) {
+              gh pr create --title $title --body $body --base main --head $branch
+            } else {
+              gh pr create --title $title --body $body --base main --head $branch --draft
+            }
+          }
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

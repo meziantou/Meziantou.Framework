@@ -795,10 +795,13 @@ public sealed partial class BrowsingContext
         {
             // "Because we want beforeunload events to fire before navigate events, this means we need to fire beforeunload for
             // traversable here (if applicable)"
+            // A traversal whose unloading is canceled by the user is canceled (the specification returns "canceled-by-beforeunload",
+            // which the navigation API handles as a traversal canceled by the navigate event)
             if (!ReferenceEquals(traversableTarget.Document, Document))
             {
                 isBeforeUnloadFiredAtTraversable = true;
-                FireBeforeUnload();
+                if (FireBeforeUnload())
+                    return HistoryStepResult.CanceledByNavigate;
             }
 
             if (!IsDestroyed && ReferenceEquals(traversableWindow.Document, Document) && !traversableWindow.Navigation.FireTraverseNavigateEvent(traversableTarget, userInvolvement))
@@ -809,10 +812,8 @@ public sealed partial class BrowsingContext
         // their navigables (the navigations that load the entries do not fire it again)
         foreach (var (navigable, targetEntry) in changingNavigables)
         {
-            if (!navigable.IsDestroyed && !ReferenceEquals(targetEntry.Document, navigable.Document) && !(isBeforeUnloadFiredAtTraversable && ReferenceEquals(navigable, this)))
-            {
-                navigable.FireBeforeUnload();
-            }
+            if (!navigable.IsDestroyed && !ReferenceEquals(targetEntry.Document, navigable.Document) && !(isBeforeUnloadFiredAtTraversable && ReferenceEquals(navigable, this)) && navigable.FireBeforeUnload())
+                return HistoryStepResult.CanceledByNavigate;
         }
 
         CurrentStep = targetStep;

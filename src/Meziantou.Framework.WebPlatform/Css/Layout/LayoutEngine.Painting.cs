@@ -130,7 +130,7 @@ internal sealed partial class LayoutEngine
     {
         get
         {
-            var interval = (_document.BrowsingContext?.Top.Options.Viewport ?? Dom.ViewportOptions.Default).CaretBlinkInterval;
+            var interval = (_document.BrowsingContext?.Top.Viewport ?? Dom.ViewportOptions.Default).CaretBlinkInterval;
             return interval > TimeSpan.Zero ? interval : null;
         }
     }

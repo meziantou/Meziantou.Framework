@@ -446,35 +446,74 @@ public sealed partial class Window : GlobalScope
     /// <summary>The agent cluster of the similar-origin window agent of the window (https://html.spec.whatwg.org/multipage/webappapis.html#similar-origin-window-agent).</summary>
     internal AgentCluster? AgentCluster { get; init; }
 
-    /// <summary>https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#dom-alert: simple dialogs cannot be shown, so it does nothing.</summary>
+    /// <summary>
+    /// https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#dom-alert: shows an empty message with
+    /// <see cref="BrowsingContextOptions.UserPromptHandler"/> (without handler, it does nothing).
+    /// </summary>
     /// <seealso href="https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#dom-alert"/>
     [IdlMember("alert", "https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#dom-alert")]
-    public void Alert()
+    public void Alert() => Alert("");
+
+    /// <summary>
+    /// https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#dom-alert: shows the message with
+    /// <see cref="BrowsingContextOptions.UserPromptHandler"/> (without handler, it does nothing).
+    /// </summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#dom-alert"/>
+    [IdlMember("alert", "https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#dom-alert")]
+    public void Alert(string message)
     {
+        ArgumentNullException.ThrowIfNull(message);
+        _ = ShowUserPrompt(UserPromptType.Alert, message, defaultValue: "");
     }
 
-    /// <summary>https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#dom-alert: simple dialogs cannot be shown, so it does nothing.</summary>
-    /// <seealso href="https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#dom-alert"/>
-    [IdlMember("alert", "https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#dom-alert")]
-    public void Alert(string message) => ArgumentNullException.ThrowIfNull(message);
-
-    /// <summary>https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#dom-confirm: simple dialogs cannot be shown, so it returns false.</summary>
+    /// <summary>
+    /// https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#dom-confirm: asks the question with
+    /// <see cref="BrowsingContextOptions.UserPromptHandler"/>, and returns whether the user accepted it (without handler, it returns false).
+    /// </summary>
     /// <seealso href="https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#dom-confirm"/>
     [IdlMember("confirm", "https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#dom-confirm")]
     public bool Confirm(string message = "")
     {
         ArgumentNullException.ThrowIfNull(message);
-        return false;
+        return ShowUserPrompt(UserPromptType.Confirm, message, defaultValue: "") is { Accepted: true };
     }
 
-    /// <summary>https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#dom-prompt: simple dialogs cannot be shown, so it returns null.</summary>
+    /// <summary>
+    /// https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#dom-prompt: asks the question with
+    /// <see cref="BrowsingContextOptions.UserPromptHandler"/>, and returns the text the user entered, or null when the user
+    /// dismissed the dialog (without handler, it returns null).
+    /// </summary>
     /// <seealso href="https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#dom-prompt"/>
     [IdlMember("prompt", "https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#dom-prompt")]
     public string? Prompt(string message = "", string @default = "")
     {
         ArgumentNullException.ThrowIfNull(message);
         ArgumentNullException.ThrowIfNull(@default);
-        return null;
+        return ShowUserPrompt(UserPromptType.Prompt, message, @default) is { Accepted: true } result ? result.Text ?? @default : null;
+    }
+
+    /// <summary>
+    /// Shows a simple dialog with <see cref="BrowsingContextOptions.UserPromptHandler"/>, or returns null when it cannot be
+    /// shown (https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#cannot-show-simple-dialogs): there is no handler,
+    /// the window is not the window of the active document of its browsing context, the document is sandboxed without
+    /// allow-modals, or the document is being unloaded.
+    /// </summary>
+    internal UserPromptResult? ShowUserPrompt(UserPromptType type, string message, string defaultValue)
+    {
+        if (BrowsingContext is not { Options.UserPromptHandler: { } handler } browsingContext || !ReferenceEquals(browsingContext.Document, Document))
+            return null;
+
+        if ((Document.ActiveSandboxingFlags & SandboxingFlags.Modals) != SandboxingFlags.None)
+            return null;
+
+        if (type != UserPromptType.BeforeUnload && Document.UnloadCounter > 0)
+            return null;
+
+        // "Optionally, pause while waiting for the user to acknowledge the message": the handler blocks the event loop
+        return handler(this, new UserPrompt(type, NormalizeNewlines(message), NormalizeNewlines(defaultValue)));
+
+        // "Normalize newlines" of the message (https://infra.spec.whatwg.org/#normalize-newlines)
+        static string NormalizeNewlines(string value) => value.Contains('\r', StringComparison.Ordinal) ? value.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n') : value;
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#dom-print: there is no rendering, so it does nothing.</summary>

@@ -34,6 +34,20 @@ public sealed class WebStorageTests : IDisposable
     }
 
     [Fact]
+    public void StorageShed_SetItem_IsVisibleToTheDocumentsOfTheOrigin()
+    {
+        var shed = new StorageShed(quota: 10);
+        Assert.True(shed.SetItem("https://example.com", "key", "value"));
+        Assert.False(shed.SetItem("https://example.com", "big", "a value that exceeds the quota"));
+
+        var document = Load("<script>document.title = localStorage.getItem('key') + ',' + localStorage.length;</script>", shed);
+
+        Assert.Equal("value,1", document.Title);
+        Assert.Equal([new KeyValuePair<string, string>("key", "value")], shed.GetItems("https://example.com"));
+        Assert.Empty(_errors);
+    }
+
+    [Fact]
     public void LocalStorage_MethodsAndNamedProperties()
     {
         var document = Load("""

@@ -48,6 +48,7 @@
     <Project Path="samples/Meziantou.Framework.TemporaryContainers.Samples/Meziantou.Framework.TemporaryContainers.Samples.csproj" />
     <Project Path="samples/Meziantou.Framework.Toml.Samples/Meziantou.Framework.Toml.Samples.csproj" />
     <Project Path="samples/Meziantou.Framework.Unix.ControlGroups.Samples/Meziantou.Framework.Unix.ControlGroups.Samples.csproj" />
+    <Project Path="samples/Meziantou.Framework.WebPlatform.Playwright.Samples/Meziantou.Framework.WebPlatform.Playwright.Samples.csproj" />
     <Project Path="samples/Meziantou.Framework.WebPlatform.Samples/Meziantou.Framework.WebPlatform.Samples.csproj" />
     <Project Path="samples/Meziantou.Framework.WebPlatform.ScreenshotSample/Meziantou.Framework.WebPlatform.ScreenshotSample.csproj" />
     <Project Path="samples/Meziantou.Framework.Win32.AccessTokenConsole/Meziantou.Framework.Win32.AccessTokenConsole.csproj" />
@@ -204,6 +205,8 @@
     <Project Path="src/Meziantou.Framework.WebPlatform.Imaging/Meziantou.Framework.WebPlatform.Imaging.csproj" />
     <Project Path="src/Meziantou.Framework.WebPlatform.JavaScript/Meziantou.Framework.WebPlatform.JavaScript.csproj" />
     <Project Path="src/Meziantou.Framework.WebPlatform.PdfRendering/Meziantou.Framework.WebPlatform.PdfRendering.csproj" />
+    <Project Path="src/Meziantou.Framework.WebPlatform.Playwright.Tool/Meziantou.Framework.WebPlatform.Playwright.Tool.csproj" />
+    <Project Path="src/Meziantou.Framework.WebPlatform.Playwright/Meziantou.Framework.WebPlatform.Playwright.csproj" />
     <Project Path="src/Meziantou.Framework.WebPlatform.Wasmtime/Meziantou.Framework.WebPlatform.Wasmtime.csproj" />
     <Project Path="src/Meziantou.Framework.WebPlatform/Meziantou.Framework.WebPlatform.csproj" />
     <Project Path="src/Meziantou.Framework.Win32.AccessToken/Meziantou.Framework.Win32.AccessToken.csproj" />
@@ -391,6 +394,7 @@
     <Project Path="tests/Meziantou.Framework.WebPlatform.AotTests/Meziantou.Framework.WebPlatform.AotTests.csproj" />
     <Project Path="tests/Meziantou.Framework.WebPlatform.Imaging.Tests/Meziantou.Framework.WebPlatform.Imaging.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.WebPlatform.PdfRendering.Tests/Meziantou.Framework.WebPlatform.PdfRendering.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.WebPlatform.Playwright.Tests/Meziantou.Framework.WebPlatform.Playwright.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.WebPlatform.Tests/Meziantou.Framework.WebPlatform.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.WebPlatform.Wpt/Meziantou.Framework.WebPlatform.Wpt.csproj" />
     <Project Path="tests/Meziantou.Framework.Win32.AccessToken.Tests/Meziantou.Framework.Win32.AccessToken.Tests.csproj" />

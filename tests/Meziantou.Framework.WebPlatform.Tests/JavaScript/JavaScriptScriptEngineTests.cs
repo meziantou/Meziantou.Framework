@@ -90,6 +90,140 @@ public sealed class JavaScriptScriptEngineTests : IDisposable
     }
 
     [Fact]
+    public void Evaluate_PreparedScript_RunsInEachRealm()
+    {
+        var script = JsPreparedScript.Parse("typeof marker === 'undefined' ? (globalThis.marker = location.href) : 'again'");
+        var first = Load("<p>a");
+        var second = Load("<p>b");
+
+        Assert.Equal("https://example.com/", _engine.Evaluate(first.DefaultView!, script).AsString());
+        Assert.Equal("again", _engine.Evaluate(first.DefaultView!, script).AsString());
+        Assert.Equal("https://example.com/", _engine.Evaluate(second.DefaultView!, script).AsString());
+    }
+
+    [Fact]
+    public void Evaluate_IsNotRestrictedByTheContentSecurityPolicy()
+    {
+        var document = Load("<meta http-equiv=Content-Security-Policy content=\"script-src 'unsafe-inline'\"><script>try { eval('1'); document.title = 'allowed'; } catch (e) { document.title = e.name; }</script>");
+        var function = _engine.Evaluate(document.DefaultView!, "(code) => eval(code)");
+
+        Assert.Equal("EvalError", document.Title);
+        Assert.Equal(3, _engine.Evaluate(document.DefaultView!, "eval('1 + 2')").AsNumber());
+        Assert.Equal(4, _engine.Call(document.DefaultView!, function, JsValue.Undefined, "2 + 2").AsNumber());
+        _errors.Clear();
+    }
+
+    [Fact]
+    public void ToJsValueAndFromJsValue_ConvertThePlatformObjects()
+    {
+        var document = Load("<p id=a>text</p>");
+        var window = document.DefaultView!;
+        var paragraph = document.GetElementById("a")!;
+
+        var wrapper = _engine.ToJsValue(window, paragraph);
+        var function = _engine.Evaluate(window, "(e, s) => e.textContent + ':' + s + ':' + (e === document.getElementById('a'))");
+        var result = _engine.Engine.Call(function, JsValue.Undefined, [wrapper, _engine.ToJsValue(window, "x")]);
+
+        Assert.Equal("text:x:true", result.AsString());
+        Assert.Same(paragraph, _engine.FromJsValue(window, _engine.Evaluate(window, "document.getElementById('a')")));
+        Assert.Same(window, _engine.FromJsValue(window, _engine.Evaluate(window, "window")));
+        Assert.Equal("s", _engine.FromJsValue(window, _engine.Evaluate(window, "'s'")));
+        Assert.Null(_engine.FromJsValue(window, JsValue.Undefined));
+        Assert.Null(_engine.FromJsValue(window, JsValue.Null));
+    }
+
+    [Fact]
+    public void UserPromptHandler_ShowsTheSimpleDialogs()
+    {
+        var prompts = new List<string>();
+        var context = _contexts.Create(new BrowsingContextOptions
+        {
+            ScriptEngine = _engine,
+            UnhandledScriptError = (_, error) => _errors.Add(error),
+            UserPromptHandler = (window, prompt) =>
+            {
+                prompts.Add($"{prompt.Type}:{prompt.Message}:{prompt.DefaultValue}");
+                return prompt.Type switch
+                {
+                    UserPromptType.Confirm => UserPromptResult.Accept(),
+                    UserPromptType.Prompt when prompt.Message == "name?" => UserPromptResult.Accept("Ada"),
+                    UserPromptType.Prompt when prompt.Message == "default?" => UserPromptResult.Accept(),
+                    _ => UserPromptResult.Dismiss,
+                };
+            },
+        });
+
+        var document = context.Navigate("https://example.com/", _ => """
+            <script>
+              alert('hello\r\nworld');
+              document.title = [confirm('sure?'), prompt('name?', 'x'), prompt('default?', 'd'), prompt('cancel?')].join();
+            </script>
+            """);
+        _contexts.EventLoop.RunUntilIdle();
+
+        Assert.Equal("true,Ada,d,", document.Title);
+        Assert.Equal(["Alert:hello\nworld:", "Confirm:sure?:", "Prompt:name?:x", "Prompt:default?:d", "Prompt:cancel?:"], prompts);
+        Assert.Empty(_errors);
+    }
+
+    [Fact]
+    public void UserPromptHandler_WithoutHandler_ConfirmReturnsFalseAndPromptReturnsNull()
+    {
+        var document = Load("<script>alert('a'); document.title = [confirm('b'), prompt('c') === null].join();</script>");
+
+        Assert.Equal("false,true", document.Title);
+        Assert.Empty(_errors);
+    }
+
+    [Fact]
+    public void UserPromptHandler_BeforeUnload_CancelsTheNavigationWhenDismissed()
+    {
+        const string Page = "<style>body { margin: 0 } button { width: 100px; height: 50px }</style><button>x</button><script>addEventListener('beforeunload', e => e.preventDefault());</script>";
+        var prompts = new List<UserPromptType>();
+        var accept = false;
+        var loader = new RecordingLoader();
+        loader.Resources["https://example.com/next"] = new DocumentResource("<p>next");
+        var context = _contexts.Create(new BrowsingContextOptions
+        {
+            ScriptEngine = _engine,
+            DocumentLoader = loader,
+            TimeProvider = _clock,
+            UnhandledScriptError = (_, error) => _errors.Add(error),
+            UserPromptHandler = (_, prompt) =>
+            {
+                prompts.Add(prompt.Type);
+                return accept ? UserPromptResult.Accept() : UserPromptResult.Dismiss;
+            },
+        });
+
+        // Without sticky activation, the document cannot prevent the unloading
+        context.Navigate("https://example.com/", _ => Page);
+        _contexts.EventLoop.RunUntilIdle();
+        _engine.Evaluate(context.Window, "location.href = 'next'");
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.Empty(prompts);
+        Assert.Equal("https://example.com/next", context.Document.Url);
+
+        var document = context.Navigate("https://example.com/", _ => Page);
+        _contexts.EventLoop.RunUntilIdle();
+        context.Input.Mouse.Move(10, 10);
+        context.Input.Mouse.Down();
+        context.Input.Mouse.Up();
+
+        _engine.Evaluate(context.Window, "location.href = 'next'");
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.Equal([UserPromptType.BeforeUnload], prompts);
+        Assert.Same(document, context.Document);
+
+        accept = true;
+        _engine.Evaluate(context.Window, "location.href = 'next'");
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.Equal([UserPromptType.BeforeUnload, UserPromptType.BeforeUnload], prompts);
+        Assert.Equal("https://example.com/next", context.Document.Url);
+        Assert.Empty(_errors);
+    }
+
+    [Fact]
     public void Timeout_StopsTheScript()
     {
         using var engine = new JavaScriptScriptEngine(new JavaScriptScriptEngineOptions { Timeout = TimeSpan.FromMilliseconds(100) });

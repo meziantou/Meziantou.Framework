@@ -289,7 +289,9 @@ See [docs/rendering.md](docs/rendering.md) for what is painted, and [Printing](d
   which fires the trusted pointer, mouse, touch and click events and runs the default actions (focus, activation, light
   dismiss, drag and drop, scrolling, the picker of the `select` elements: the customizable select, `appearance: base-select`,
   is rendered) and the classic scrollbars (a press on the track, a drag
-  of the thumb). The keyboard events are dispatched by the host. There is no pinch zoom.
+  of the thumb), and the keys of the keyboard (`BrowsingContext.Input.Keyboard`: the trusted keyboard events, the typing of the
+  text, the focus navigation and the shortcuts). There is no pinch zoom. The
+  [Playwright server](../Meziantou.Framework.WebPlatform.Playwright/readme.md) automates the pages with the Playwright clients.
 - **Opt-in network and scripting.** Without a `DocumentLoader`, nothing is fetched; without a script engine, the scripts
   are never fetched nor run, and the event handler attributes have no effect. A document parsed with
   `HtmlDocumentParser` has no browsing context: no window, no computed style, no event loop (the mutation observer

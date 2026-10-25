@@ -39,6 +39,17 @@ public sealed class ConsoleTests : IDisposable
     private string[] Texts => [.. _messages.Select(m => m.Text)];
 
     [Fact]
+    public void Messages_HaveTheLocationOfTheCode()
+    {
+        Run("\nconsole.log('a');");
+
+        var location = Assert.Single(_messages).Location;
+        Assert.NotNull(location);
+        Assert.Equal("https://example.com/", location.Value.Url);
+        Assert.Equal(2, location.Value.LineNumber);
+    }
+
+    [Fact]
     public void Log_FormatsTheArguments()
     {
         Run("""

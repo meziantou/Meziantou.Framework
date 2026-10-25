@@ -108,7 +108,7 @@ internal sealed class Mp4Reader : IMediaTagReader
         if (timeScale == 0 || duration == 0 || duration == uint.MaxValue)
             return null;
 
-        return TimeSpan.FromSeconds(duration / (double)timeScale);
+        return DurationHelpers.FromSeconds(duration / (double)timeScale);
     }
 
     private static TimeSpan? TryReadVersion1Duration(ReadOnlySpan<byte> data)
@@ -122,7 +122,7 @@ internal sealed class Mp4Reader : IMediaTagReader
         if (timeScale == 0 || duration == 0 || duration == ulong.MaxValue)
             return null;
 
-        return TimeSpan.FromSeconds(duration / (double)timeScale);
+        return DurationHelpers.FromSeconds(duration / (double)timeScale);
     }
 
     private static void ProcessIlstItem(Mp4Atom item, MediaTagInfo tags)

@@ -1344,6 +1344,14 @@ internal sealed class HeifStructureParser : ImageParser<ImageInfo>
             // cut short never reads as a whole one
             if (_nextFrame >= movie.SampleCount)
             {
+                // The decoder may have given every image before its last samples: they are read all the same, as a full
+                // scan reads them, so that a file that cuts them short fails both
+                foreach (var capture in _captures)
+                {
+                    if (capture is { Track: not null, IsComplete: false })
+                        return false;
+                }
+
                 // The images of a fragmented sequence come with its fragments, until the end of the file
                 if (movie.IsFragmented)
                 {

@@ -5,5 +5,5 @@ namespace Meziantou.Framework;
 public sealed partial class IcuWordDictionary
 {
     /// <summary>The release of ICU whose word lists are embedded in this package.</summary>
-    private const string EmbeddedIcuVersion = "78.3";
+    private const string EmbeddedIcuVersion = "79.1";
 }

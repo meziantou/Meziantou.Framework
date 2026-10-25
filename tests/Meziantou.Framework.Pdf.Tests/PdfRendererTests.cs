@@ -590,6 +590,30 @@ public sealed class PdfRendererTests
     }
 
     [Fact]
+    public void PathsAndGlyphsBeyondTheCoordinatesOfTheCanvasAreSkipped()
+    {
+        // A scale that takes the paths, the clips, the glyphs and the bounding boxes of forms beyond 2^24 pixels, and
+        // points beyond 2^24: they are not drawn, and the page is
+        var document = new PdfDocument();
+        var form = document.CreateForm(new PdfRectangle(0, 0, 100_000_000, 100_000_000));
+        form.CreateContentBuilder().Rectangle(0, 0, 1, 1).Fill();
+        var group = document.CreateForm(new PdfRectangle(0, 0, 100_000_000, 100_000_000), group: new PdfTransparencyGroup());
+        group.CreateContentBuilder().Rectangle(0, 0, 1, 1).Fill();
+        document.Pages.Add(Size).CreateContentBuilder()
+            .AppendRawContent("1 0 0 rg 0 0 50 100 re f q 100000000 0 0 100000000 0 0 cm 0 0 1 1 re f 0 0 1 1 re S"u8)
+            .DrawText("H", PdfFont.GetStandardFont(PdfStandardFont.Helvetica), 10, 0, 0)
+            .AppendRawContent("0 0 1 1 re W n Q 0 0 100000000 1 re f q 0.5 0 0 0.5 0 0 cm"u8)
+            .DrawForm(form)
+            .DrawForm(group)
+            .AppendRawContent("Q 0 0 1 rg 50 0 50 100 re f"u8);
+
+        using var image = Render(document);
+
+        AssertColor(Pixel(image, 25, 50), 255, 0, 0);
+        AssertColor(Pixel(image, 75, 50), 0, 0, 255);
+    }
+
+    [Fact]
     public void ColorSpacesAndFunctionsWithTooManyComponentsAreSkipped()
     {
         // A DeviceN color space of 1000 colorants, and a function of 1000 outputs: their values would not fit the stack.

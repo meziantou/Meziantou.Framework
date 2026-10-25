@@ -76,7 +76,7 @@ public sealed class InteropSettingsTests
         await Assert.Throws<Win32Exception>(() => ProcessRunner.RunAsync(path, [], XunitCancellationToken));
     }
 
-    // Not in parallel: on macOS, Process.Kill(entireProcessTree: true) of .NET 11.0.0-rc.2 never returns when another
+    // Not in parallel: on macOS, Process.Kill(entireProcessTree: true) of .NET 11.0.0-rc.3 never returns when another
     // child process of the test process exits while it runs
     [Fact(DisableParallelization = true), RunIf(TestOperatingSystems.Linux | TestOperatingSystems.MacOS)]
     public async Task ProcessRunnerKillsTheProcessAndItsChildrenOnCancellation()

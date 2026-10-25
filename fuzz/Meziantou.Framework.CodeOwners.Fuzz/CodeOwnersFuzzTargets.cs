@@ -11,7 +11,7 @@ namespace Meziantou.Framework.CodeOwners.Fuzz;
 /// that can start the construct it reports, and the lines before it parse. A valid file is made of lines: every prefix
 /// that ends a line parses into a prefix of its entries, and an entry is a non-empty pattern without a line break and
 /// well-formed owners. Both dialects read a file without sections or roles the same way. Writing the entries back
-/// (escaped patterns, <see cref="CodeOwnersSection.ToString"/>, <see cref="CodeOwner.ToString"/>) gives a file that
+/// (<see cref="CodeOwnersSection.ToString"/>, <see cref="CodeOwnersEntry.ToString"/>) gives a file that
 /// parses into equal entries whatever its line endings, and writing is a fixed point.
 /// </summary>
 public static partial class CodeOwnersFuzzTargets
@@ -185,8 +185,7 @@ public static partial class CodeOwnersFuzzTargets
             }
 
             previousSection = section;
-            _ = entry.ToString();
-            _ = section?.ToString();
+            CheckEntryToString(entry, dialect);
             FuzzAssert.True(entry.Equals(entry), $"The entry {entry} is not equal to itself");
             FuzzAssert.False(entry.Equals(null), "An entry equals null");
         }
@@ -209,6 +208,19 @@ public static partial class CodeOwnersFuzzTargets
                 }
             }
         }
+    }
+
+    /// <summary><see cref="CodeOwnersEntry.ToString"/>, after the header of its section, parses back into the entry.</summary>
+    private static void CheckEntryToString(CodeOwnersEntry entry, CodeOwnersDialect dialect)
+    {
+        var line = entry.ToString();
+        FuzzAssert.False(line.AsSpan().ContainsAny('\r', '\n'), $"The entry is written on several lines: {FuzzAssert.Format(line)}");
+        FuzzAssert.False(line[0] is ' ' or '\t', $"The entry is written with leading whitespace: {FuzzAssert.Format(line)}");
+        var text = entry.Section is { } section ? section.ToString() + "\n" + line : line;
+        FuzzAssert.True(CodeOwnersFile.TryParse(text, dialect, out var reparsed, out var error), $"The written entry does not parse ({error}): {FuzzAssert.Format(text)}");
+        FuzzAssert.Equal(Describe([entry]), Describe(reparsed.Entries), $"The written entry {FuzzAssert.Format(text)} is another entry");
+        FuzzAssert.True(entry.Equals(reparsed.Entries[0]), $"The written entry {FuzzAssert.Format(text)} is not equal to the entry");
+        FuzzAssert.Equal(line, reparsed.Entries[0].ToString(), "Writing an entry is not a fixed point");
     }
 
     private static void CheckOwner(CodeOwner owner, CodeOwnersDialect dialect)
@@ -306,7 +318,7 @@ public static partial class CodeOwnersFuzzTargets
         }
     }
 
-    /// <summary>Writes entries as a CODEOWNERS file: a section header when the section changes, then the escaped pattern and the owners.</summary>
+    /// <summary>Writes entries as a CODEOWNERS file: a section header when the section changes, then the entry.</summary>
     private static string Write(CodeOwnersFile file)
     {
         var sb = new StringBuilder();
@@ -319,23 +331,7 @@ public static partial class CodeOwnersFuzzTargets
                 section = entry.Section;
             }
 
-            for (var i = 0; i < entry.Pattern.Length; i++)
-            {
-                var c = entry.Pattern[i];
-                if (c is '\\' or ' ' or '\t' || (i is 0 && c is '#' or '[' or '^'))
-                {
-                    sb.Append('\\');
-                }
-
-                sb.Append(c);
-            }
-
-            foreach (var owner in entry.Owners)
-            {
-                sb.Append(' ').Append(owner.ToString());
-            }
-
-            sb.Append('\n');
+            sb.Append(entry.ToString()).Append('\n');
         }
 
         return sb.ToString();

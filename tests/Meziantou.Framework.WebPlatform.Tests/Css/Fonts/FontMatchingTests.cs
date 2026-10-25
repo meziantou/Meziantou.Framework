@@ -178,6 +178,13 @@ public sealed class FontMatchingTests : IDisposable
         // A generic family without bundled font and an unknown family fall back to the default font
         Assert.Equal("Tinos Regular", selector.GetFonts(Description("cursive, Unknown")).PrimaryFont.Font.FullName);
 
+        // The families that are not installed and that a bundled family is metric-compatible with use it (as fontconfig)
+        Assert.Equal("Arimo Regular", selector.GetFonts(Description("Arial")).PrimaryFont.Font.FullName);
+        Assert.Equal("Arimo Italic", selector.GetFonts(Description("helvetica", 400, FontSlope.Italic)).PrimaryFont.Font.FullName);
+        Assert.Equal("Tinos Bold", selector.GetFonts(Description("\"Times New Roman\"", 700)).PrimaryFont.Font.FullName);
+        Assert.Equal("Cousine Regular", selector.GetFonts(Description("Courier New, serif")).PrimaryFont.Font.FullName);
+        Assert.Equal("Cousine Regular", selector.GetFonts(Description("Unknown, Courier")).PrimaryFont.Font.FullName);
+
         // A quoted generic family name is a family name (there is no family named "monospace")
         Assert.Equal("Tinos Regular", selector.GetFonts(Description("\"monospace\"")).PrimaryFont.Font.FullName);
 

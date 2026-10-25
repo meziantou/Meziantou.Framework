@@ -542,6 +542,93 @@ public sealed class CssomViewTests : IDisposable
     }
 
     [Fact]
+    public void Screen_SizeOfTheOptions()
+    {
+        var document = Load("<p>a</p>", new ViewportOptions { Width = 390, Height = 664, ScreenWidth = 390, ScreenHeight = 844 });
+        var window = document.DefaultView!;
+        Assert.Equal((390, 844), (window.Screen.Width, window.Screen.Height));
+        Assert.True(window.MatchMedia("(device-height: 844px) and (height: 664px)").Matches);
+    }
+
+    [Fact]
+    public void HasTouch_CoarsePointerWithoutHover()
+    {
+        var window = Load("<p>a</p>", new ViewportOptions { HasTouch = true }).DefaultView!;
+        Assert.True(window.MatchMedia("(pointer: coarse) and (any-pointer: coarse) and (hover: none) and (any-hover: none)").Matches);
+        Assert.Equal(1, window.Navigator.MaxTouchPoints);
+
+        window = Load("<p>a</p>").DefaultView!;
+        Assert.True(window.MatchMedia("(pointer: fine) and (hover: hover)").Matches);
+        Assert.Equal(0, window.Navigator.MaxTouchPoints);
+    }
+
+    [Theory]
+    [InlineData("", 980, 1668.5128205128206, 0.3979591836734694)]
+    [InlineData("<meta name=viewport content='width=device-width, initial-scale=1'>", 390, 664, 1)]
+    [InlineData("<meta name=viewport content='width=600'>", 600, 1021.5384615384615, 0.65)]
+    [InlineData("<meta name=viewport content='width=device-width, initial-scale=2'>", 390, 664, 2)]
+    [InlineData("<meta name=viewport content='initial-scale=0.5'>", 780, 1328, 0.5)]
+    [InlineData("<meta name=viewport content='width = 500 ; maximum-scale = 0.5, unknown=1'>", 500, 851.2820512820513, 0.78)]
+    [InlineData("<meta name=viewport content='width=device-width, initial-scale=3, user-scalable=no'>", 390, 664, 3)]
+    [InlineData("<meta name=viewport content='width=device-width'><meta name=viewport content='width=800'>", 800, 1362.051282051282, 0.4875)]
+    public void IsMobile_TheViewportMetaSetsTheLayoutViewport(string meta, double width, double height, double scale)
+    {
+        // A 390x664 mobile viewport: the layout viewport and the scale of the page are set by the last viewport meta element (980px wide
+        // without one), the height keeps the aspect ratio of the device
+        var window = Load("<!DOCTYPE html>" + meta + "<p>a</p>", new ViewportOptions { Width = 390, Height = 664, IsMobile = true }).DefaultView!;
+        Assert.Equal(width, window.InnerWidth);
+        Assert.True(window.MatchMedia(FormattableString.Invariant($"(min-width: {width - 0.01}px) and (max-width: {width + 0.01}px) and (min-height: {height - 0.01}px) and (max-height: {height + 0.01}px) and (device-width: 390px)")).Matches);
+        Assert.Equal(scale, window.VisualViewport!.Scale, 1e-9);
+        Assert.Equal(390 / scale, window.VisualViewport.Width, 1e-9);
+    }
+
+    [Fact]
+    public void IsMobile_TheScaleFitsTheContents()
+    {
+        // A page wider than its layout viewport is scaled down to fit its contents
+        var window = Load("<!DOCTYPE html><meta name=viewport content='width=device-width'><style>body { margin: 0 }</style><div style='width: 780px; height: 10px'></div>", new ViewportOptions { Width = 390, Height = 664, IsMobile = true }).DefaultView!;
+        Assert.Equal(390, window.InnerWidth);
+        Assert.Equal(0.5, window.VisualViewport!.Scale, 1e-9);
+    }
+
+    [Fact]
+    public void IsMobile_IgnoredWithoutTheOption()
+    {
+        var window = Load("<!DOCTYPE html><meta name=viewport content='width=600'><p>a</p>", new ViewportOptions { Width = 390, Height = 664 }).DefaultView!;
+        Assert.Equal(390, window.InnerWidth);
+        Assert.Equal(1, window.VisualViewport!.Scale);
+    }
+
+    [Fact]
+    public void DeviceDescriptor_Example()
+    {
+        #region DeviceDescriptor_Example
+        // The values of the "iPhone 13" device of Playwright
+        var iPhone13 = new DeviceDescriptor
+        {
+            Width = 390,
+            Height = 664,
+            ScreenWidth = 390,
+            ScreenHeight = 844,
+            DevicePixelRatio = 3,
+            IsMobile = true,
+            HasTouch = true,
+            UserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Mobile/15E148 Safari/604.1",
+        };
+
+        using var context = new BrowsingContext(new BrowsingContextOptions
+        {
+            Viewport = iPhone13.CreateViewport(),
+            UserAgent = iPhone13.UserAgent,
+        });
+        var document = context.Navigate("https://example.com/", _ => "<!DOCTYPE html><p>Hello</p>");
+
+        Assert.True(document.DefaultView!.MatchMedia("(pointer: coarse) and (max-device-width: 500px)").Matches);
+        Assert.Equal(iPhone13.UserAgent, document.DefaultView.Navigator.UserAgent);
+        #endregion
+    }
+
+    [Fact]
     public void OffsetParent_IsTheNearestPositionedAncestorOrTheBody()
     {
         var document = Load("<div id=positioned style='position:relative'><table><tr><td id=cell><span id=a></span></td></tr></table></div><div id=b></div><div id=hidden style='display:none'></div>");

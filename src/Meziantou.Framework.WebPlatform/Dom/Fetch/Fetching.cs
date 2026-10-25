@@ -725,6 +725,13 @@ internal static class Fetching
         var metadataOriginRecord = metadataOrigin is not null && request.Client?.Origin is { } clientOrigin && clientOrigin.Serialize() == metadataOrigin ? clientOrigin : null;
         FetchMetadata.AppendHeaders(headers, request.Destination, request.Mode, metadataOrigin, request.UserActivation, request.RedirectChain, metadataOriginRecord);
 
+        // Step 8.15: the default User-Agent value, when the browsing contexts have one (BrowsingContextOptions.UserAgent; the
+        // loader may add its own otherwise)
+        if ((request.Navigable?.Options ?? request.Client?.EnvironmentOptions ?? request.KeepaliveBrowsingContext?.Options)?.UserAgent is { } userAgent && !FetchHeaders.Contains(headers, "User-Agent"))
+        {
+            headers.Add(new("User-Agent", userAgent));
+        }
+
         // Steps 8.16 to 8.18: the cache mode (there is no HTTP cache)
         var cacheMode = request.CacheMode;
         if (cacheMode == "default" && (FetchHeaders.Contains(headers, "If-Modified-Since") || FetchHeaders.Contains(headers, "If-None-Match") || FetchHeaders.Contains(headers, "If-Unmodified-Since") || FetchHeaders.Contains(headers, "If-Match") || FetchHeaders.Contains(headers, "If-Range")))

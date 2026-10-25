@@ -75,6 +75,12 @@ internal sealed partial class Painter
         // (in forced colors mode, the color is forced when the colors of the root element are)
         var color = DisplayColor.Parse(style.GetCanvasBackgroundColor(rootFragment.Box.Style)) ?? DisplayColor.Transparent;
         var layers = GetBackgroundLayers(style);
+        if (ForcesWhiteBackground(style) && (!color.IsTransparent || layers.Length > 0))
+        {
+            _builder.Add(new DrawPaintItem(new DisplayPaint(DisplayColor.White)) { Source = style.Element });
+            return;
+        }
+
         var blends = HasBlendModes(layers);
         if (blends)
         {
@@ -98,6 +104,31 @@ internal sealed partial class Painter
         {
             _builder.Restore();
         }
+    }
+
+    /// <summary>
+    /// Returns whether the background of a style is painted solid white: when the document is printed without its backgrounds
+    /// (<see cref="Dom.PrintOptions.PrintBackground"/>) and its <c>print-color-adjust</c> is <c>economy</c>, as in the browsers,
+    /// the backgrounds (their colors and images) are replaced by a white background (https://drafts.csswg.org/css-color-adjust-1/#print-color-adjust);
+    /// a box without background stays transparent.
+    /// </summary>
+    private bool ForcesWhiteBackground(ComputedStyle style) => _engine.PrintsWithoutBackgrounds && style.GetComputedValue("print-color-adjust") != "exact";
+
+    /// <summary>
+    /// Returns the color of the text printed without the backgrounds (see <see cref="ForcesWhiteBackground"/>): as in Chromium, a
+    /// color nearly white (whose squared distance to white is at most 255²) is darkened, so that the text stays readable on the
+    /// white backgrounds.
+    /// </summary>
+    private DisplayColor GetPrintedTextColor(ComputedStyle style, DisplayColor color)
+    {
+        if (!ForcesWhiteBackground(style) || color.IsTransparent)
+            return color;
+
+        var r = (int)Math.Round(Math.Clamp(color.R, 0, 1) * 255, MidpointRounding.AwayFromZero);
+        var g = (int)Math.Round(Math.Clamp(color.G, 0, 1) * 255, MidpointRounding.AwayFromZero);
+        var b = (int)Math.Round(Math.Clamp(color.B, 0, 1) * 255, MidpointRounding.AwayFromZero);
+        var distance = ((255 - r) * (255 - r)) + ((255 - g) * (255 - g)) + ((255 - b) * (255 - b));
+        return distance > 255 * 255 ? color : BorderPainter.Shade(color, darker: true);
     }
 
     /// <summary>
@@ -245,6 +276,13 @@ internal sealed partial class Painter
         var hasImages = style.GetComputedValue("background-image") is not ("none" or "") && !(fragment.Box.IsInlineBox && style.IsForcedColorsAdjusted);
         if (color.IsTransparent && !hasImages)
             return;
+
+        // Printed without the backgrounds: a background is solid white (see ForcesWhiteBackground)
+        if (ForcesWhiteBackground(style))
+        {
+            color = DisplayColor.White;
+            hasImages = false;
+        }
 
         var borderShape = RoundedRect.FromBorderBox(fragment, borderBox);
 

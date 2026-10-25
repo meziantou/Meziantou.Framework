@@ -470,8 +470,8 @@ internal static class BorderPainter
                     GetHalfWidth(widths.Left, devicePixelRatio, larger: true)));
                 var topLeft = side is PhysicalSide.Top or PhysicalSide.Left;
                 var outerDark = (style == BorderStyle.Groove) == topLeft;
-                builder.Add(new DrawRingItem(outer, middle, new DisplayPaint(outerDark ? Darken(color) : color)) { Source = source });
-                builder.Add(new DrawRingItem(middle, inner, new DisplayPaint(outerDark ? color : Darken(color))) { Source = source });
+                builder.Add(new DrawRingItem(outer, middle, new DisplayPaint(Shade(color, darker: outerDark))) { Source = source });
+                builder.Add(new DrawRingItem(middle, inner, new DisplayPaint(Shade(color, darker: !outerDark))) { Source = source });
                 break;
             }
 
@@ -479,7 +479,7 @@ internal static class BorderPainter
             {
                 var topLeft = side is PhysicalSide.Top or PhysicalSide.Left;
                 var dark = (style == BorderStyle.Inset) == topLeft;
-                builder.Add(new DrawRingItem(outer, inner, new DisplayPaint(dark ? Darken(color) : color)) { Source = source });
+                builder.Add(new DrawRingItem(outer, inner, new DisplayPaint(Shade(color, darker: dark))) { Source = source });
                 break;
             }
 
@@ -543,12 +543,52 @@ internal static class BorderPainter
     }
 
 
-    /// <summary>The darker shade of the 3D border styles (as in the browsers, the color multiplied by 2/3; black is lightened to a dark gray).</summary>
-    private static DisplayColor Darken(DisplayColor color)
+    /// <summary>
+    /// Returns the shade of a side of a 3D border style (https://drafts.csswg.org/css-backgrounds-3/#border-style leaves them to
+    /// the user agent), as in Chromium: the darker sides (the top and left sides of inset, the bottom and right sides of outset,
+    /// and the halves of groove and ridge) take a darker color, whose largest component is 0.33 lower, unless the color is
+    /// already as dark as #202020; the other sides take a lighter color, whose largest component is 0.33 higher, unless the
+    /// color is already as light as #EBEBEB (black is lightened to #545454). The components keep their ratios, and are
+    /// truncated to 8 bits.
+    /// </summary>
+    internal static DisplayColor Shade(DisplayColor color, bool darker)
     {
-        if (color.R <= 0 && color.G <= 0 && color.B <= 0)
-            return color with { R = 0.25f, G = 0.25f, B = 0.25f };
+        var r = Math.Clamp((double)color.R, 0, 1);
+        var g = Math.Clamp((double)color.G, 0, 1);
+        var b = Math.Clamp((double)color.B, 0, 1);
+        if (darker)
+        {
+            // (the squared distances in 8-bit components: #202020 is at 3 x 32² from black)
+            if (DistanceSquared(r, g, b, 0) <= 3 * 32 * 32)
+                return color;
 
-        return color with { R = color.R * 2 / 3, G = color.G * 2 / 3, B = color.B * 2 / 3 };
+            var v = Math.Max(r, Math.Max(g, b));
+            var multiplier = Math.Max(0, (v - 0.33) / v);
+            return color with { R = Truncate(r * multiplier), G = Truncate(g * multiplier), B = Truncate(b * multiplier) };
+        }
+        else
+        {
+            // (#EBEBEB is at 3 x 20² from white)
+            if (DistanceSquared(r, g, b, 1) <= 3 * 20 * 20)
+                return color;
+
+            var v = Math.Max(r, Math.Max(g, b));
+            if (v <= 0)
+                return color with { R = 0x54 / 255f, G = 0x54 / 255f, B = 0x54 / 255f };
+
+            var multiplier = Math.Min(1, v + 0.33) / v;
+            return color with { R = Truncate(r * multiplier), G = Truncate(g * multiplier), B = Truncate(b * multiplier) };
+        }
+
+        static int DistanceSquared(double r, double g, double b, double reference)
+        {
+            var dr = (int)Math.Round(r * 255, MidpointRounding.AwayFromZero) - (int)(reference * 255);
+            var dg = (int)Math.Round(g * 255, MidpointRounding.AwayFromZero) - (int)(reference * 255);
+            var db = (int)Math.Round(b * 255, MidpointRounding.AwayFromZero) - (int)(reference * 255);
+            return (dr * dr) + (dg * dg) + (db * db);
+        }
+
+        // (the components are scaled by a number just below 256 and truncated to 8 bits)
+        static float Truncate(double value) => (float)(Math.Min(255, Math.Floor(value * 255.99998)) / 255);
     }
 }

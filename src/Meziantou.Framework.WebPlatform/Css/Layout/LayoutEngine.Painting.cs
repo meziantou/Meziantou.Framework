@@ -73,6 +73,45 @@ internal sealed partial class LayoutEngine
         return _displayList;
     }
 
+    /// <summary>
+    /// Paints the document for a screenshot, without caching the display list: over a transparent canvas instead of the color
+    /// of the canvas of a top-level document (<paramref name="transparentCanvas"/>: the backgrounds of the document are
+    /// painted), and the whole scrolling area of the viewport from the origin of the document instead of the viewport
+    /// (<paramref name="fullPage"/>: the layout does not change, so the fixed positioned elements are painted where they are in
+    /// the document at the current scroll position, and the scrollbars of the viewport are not painted). Without option, returns
+    /// <see cref="GetDisplayList"/>. Returns null when the document is not rendered.
+    /// </summary>
+    public DisplayList? PaintScreenshot(bool transparentCanvas, bool fullPage)
+    {
+        if (!transparentCanvas && !fullPage)
+            return GetDisplayList();
+
+        if (EnsureLayout() is null)
+            return GetEmptyCanvasDisplayList(transparentCanvas ? DisplayColor.Transparent : GetCanvasBaseColor());
+
+        using var suspension = _document.GetStyleEngine().SuspendUpdates();
+        if (EnsureLayout() is not { } root)
+            return GetEmptyCanvasDisplayList(transparentCanvas ? DisplayColor.Transparent : GetCanvasBaseColor());
+
+        var baseColor = transparentCanvas ? DisplayColor.Transparent : GetCanvasBaseColor();
+        if (!fullPage)
+            return Painter.Paint(this, _document, root, ViewportScrollState.Offset, baseColor, _isCaretBlinkedOff, out _, out _);
+
+        return Painter.PaintFullPage(this, _document, root, GetFullPageSize(), baseColor, _isCaretBlinkedOff);
+    }
+
+    /// <summary>
+    /// Returns the size of the document painted by a full page screenshot: the scrolling area of the viewport from the origin of
+    /// the document, rounded to integers as <c>scrollWidth</c> and <c>scrollHeight</c> of the scrolling element (as the full page
+    /// screenshots of Playwright), at least the size of the viewport.
+    /// </summary>
+    public PhysicalSize GetFullPageSize()
+    {
+        var environment = _document.GetStyleEngine().Environment;
+        var area = ViewportScrollState.ScrollingArea;
+        return new PhysicalSize(Math.Max(environment.Width, Math.Round(area.Right, MidpointRounding.AwayFromZero)), Math.Max(environment.Height, Math.Round(area.Bottom, MidpointRounding.AwayFromZero)));
+    }
+
     // ----------------------------------------------------------------------------------------------------------------
     // The blinking of the caret (https://drafts.csswg.org/css-ui-4/#caret-animation, ViewportOptions.CaretBlinkInterval): a
     // state of the document toggled by a timer of the event loop, not a function of the time of the painting, so that what is
@@ -167,13 +206,14 @@ internal sealed partial class LayoutEngine
     /// only shows the canvas, which has no background (https://drafts.csswg.org/css-backgrounds-3/#special-backgrounds), or null
     /// when the document is not rendered.
     /// </summary>
-    private DisplayList? GetEmptyCanvasDisplayList()
+    private DisplayList? GetEmptyCanvasDisplayList() => GetEmptyCanvasDisplayList(GetCanvasBaseColor());
+
+    private DisplayList? GetEmptyCanvasDisplayList(DisplayColor baseColor)
     {
         if (_document.DocumentElement is not null || _document.BrowsingContext is null || !_document.IsFullyActive)
             return null;
 
         var builder = new DisplayListBuilder();
-        var baseColor = GetCanvasBaseColor();
         if (!baseColor.IsTransparent)
         {
             builder.Add(new DrawPaintItem(new DisplayPaint(baseColor)));

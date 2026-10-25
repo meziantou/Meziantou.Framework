@@ -48,7 +48,7 @@ internal sealed partial class Painter
             return;
 
         var line = GetTextLine(fragment, offset);
-        var fill = GetColor(style, "-webkit-text-fill-color");
+        var fill = GetPrintedTextColor(style, GetColor(style, "-webkit-text-fill-color"));
 
         // https://drafts.csswg.org/css-text-decor-3/#text-shadow-property: the shadows of the glyphs and of the decorations, the
         // first one on top

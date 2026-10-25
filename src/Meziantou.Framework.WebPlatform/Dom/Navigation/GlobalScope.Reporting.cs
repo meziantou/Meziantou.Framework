@@ -75,7 +75,7 @@ public abstract partial class GlobalScope
         {
             Body = body,
             Url = ContentSecurityPolicyViolation.StripUrlForUseInReports(EnvironmentDocument.UrlRecord),
-            UserAgent = Navigator.DefaultUserAgent,
+            UserAgent = Options.EffectiveUserAgent,
             Destination = destination,
             Type = type,
             Timestamp = EventLoop.TimeProvider.GetUtcNow(),

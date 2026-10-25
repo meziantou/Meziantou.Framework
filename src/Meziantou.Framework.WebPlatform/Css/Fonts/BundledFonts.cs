@@ -145,6 +145,25 @@ internal static class BundledFonts
     }, LazyThreadSafetyMode.ExecutionAndPublication);
 
     /// <summary>
+    /// The bundled family that is metric-compatible with a family that is not installed, or null: Arimo for Arial and Helvetica,
+    /// Tinos for Times New Roman and Times, Cousine for Courier New and Courier. As the metric aliases of fontconfig (which the
+    /// browsers use on Linux), a page that names these fonts is laid out with the same metrics.
+    /// </summary>
+    public static string? GetMetricCompatibleFamily(string family)
+    {
+        if (family.Equals("Arial", StringComparison.OrdinalIgnoreCase) || family.Equals("Helvetica", StringComparison.OrdinalIgnoreCase))
+            return SansSerifFamily;
+
+        if (family.Equals("Times New Roman", StringComparison.OrdinalIgnoreCase) || family.Equals("Times", StringComparison.OrdinalIgnoreCase))
+            return SerifFamily;
+
+        if (family.Equals("Courier New", StringComparison.OrdinalIgnoreCase) || family.Equals("Courier", StringComparison.OrdinalIgnoreCase))
+            return MonospaceFamily;
+
+        return null;
+    }
+
+    /// <summary>
     /// The bundled family of a generic font family, or null when there is none (<c>cursive</c>, <c>fantasy</c>, <c>emoji</c>,
     /// <c>fangsong</c>: the font matching falls back to the default family).
     /// </summary>

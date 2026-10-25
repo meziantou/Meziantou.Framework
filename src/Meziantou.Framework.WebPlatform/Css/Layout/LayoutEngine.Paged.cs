@@ -23,6 +23,9 @@ internal sealed partial class LayoutEngine
     /// <summary>Whether the engine paginates the document for its printing (see <see cref="PrintSession"/>).</summary>
     internal bool IsPrintLayout => _printSession is not null;
 
+    /// <summary>Whether the document is printed without its backgrounds (<see cref="Dom.PrintOptions.PrintBackground"/> is false).</summary>
+    internal bool PrintsWithoutBackgrounds => _printSession is { Options.PrintBackground: false };
+
     /// <summary>Returns the pages of the document being printed, after computing the layout when it is out of date (empty when the document is not rendered).</summary>
     internal IReadOnlyList<LayoutPage> GetPages()
     {
@@ -229,7 +232,7 @@ internal sealed partial class LayoutEngine
             // content that starts the page, the blank pages inserted before the left and right pages)
             var firstName = rootFragment is null ? "" : segment is null ? rules.GetStartPageValue(rootFragment) : FindPageStart(rules, children, stripSize, writingDirection, segmentStart).Name;
             var firstGeometry = GetPageGeometry(geometries, new PageSelection(firstName, IsFirst: segment is null, IsLeft: segment is null ? rightToLeft : !segment.Previous.IsLeft, IsBlank: false));
-            var sizes = new List<double> { writingDirection.ToLogical(firstGeometry.PageArea.Size).Block };
+            var sizes = new List<double> { writingDirection.ToLogical(firstGeometry.LayoutAreaSize).Block };
             var breaks = new List<FragmentainerBreak>();
             FlowMap map;
             List<(ContentPage Content, PageSelection Selection, bool HasContent)> sequence;
@@ -248,7 +251,7 @@ internal sealed partial class LayoutEngine
                 {
                     if (hasContent)
                     {
-                        computed.Add(writingDirection.ToLogical(GetPageGeometry(geometries, selection).PageArea.Size).Block);
+                        computed.Add(writingDirection.ToLogical(GetPageGeometry(geometries, selection).LayoutAreaSize).Block);
                     }
                 }
 
@@ -364,7 +367,7 @@ internal sealed partial class LayoutEngine
             {
                 var last = sequence[^1];
                 var selection = last.Selection with { IsFirst = false, IsLeft = !last.Selection.IsLeft, IsBlank = false };
-                var blockSize = writingDirection.ToLogical(GetPageGeometry(geometries, selection).PageArea.Size).Block;
+                var blockSize = writingDirection.ToLogical(GetPageGeometry(geometries, selection).LayoutAreaSize).Block;
                 fragmentainers.Add(new Fragmentainer(double.PositiveInfinity, double.PositiveInfinity, blockSize, 0, LogicalOffset.Zero));
                 blockSizes.Add(blockSize);
                 sequence.Add((last.Content, selection, true));
@@ -417,7 +420,7 @@ internal sealed partial class LayoutEngine
                 if (!hasContent)
                     continue;
 
-                var areaSize = GetPageGeometry(geometries, selection).PageArea.Size;
+                var areaSize = GetPageGeometry(geometries, selection).LayoutAreaSize;
                 if (contentIndex > 0 && contentIndex <= breaks.Count && Math.Abs(writingDirection.ToLogical(areaSize).Inline - icbLogical.Inline) > 0.01
                     && FindBreakAnchor(children, stripSize, writingDirection, breaks[contentIndex - 1].Position, parentTop: 0) is var (anchor, anchorOffset))
                 {
@@ -453,7 +456,7 @@ internal sealed partial class LayoutEngine
             {
                 var (_, selection, hasContent) = sequence[sequenceIndex];
                 var geometry = GetPageGeometry(geometries, selection);
-                var areaSize = geometry.PageArea.Size;
+                var areaSize = geometry.LayoutAreaSize;
                 var builder = new FragmentBuilder(writingDirection);
                 if (hasContent)
                 {
@@ -766,16 +769,20 @@ internal sealed partial class LayoutEngine
     /// padding box of the page box), then the other page-margin boxes. As in Blink, each page-margin box is painted atomically, as a stacking
     /// context, in the order of its <c>z-index</c> (<c>auto</c> is 0), then in the order of the boxes (from the top-left
     /// corner, clockwise). The display list is in the coordinates of the page box. A document whose root element generates no
-    /// box has blank pages.
+    /// box has blank pages. Without <paramref name="paper"/>, the page is painted over a transparent sheet.
     /// </summary>
-    internal DisplayList PaintPage(LayoutPage page)
+    internal DisplayList PaintPage(LayoutPage page, bool paper = true)
     {
         using var suspension = _document.GetStyleEngine().SuspendUpdates();
         var geometry = page.Geometry;
         var builder = new DisplayListBuilder();
 
         // The page sheet is white paper
-        builder.Add(new DrawPaintItem(new DisplayPaint(DisplayColor.White)));
+        if (paper)
+        {
+            builder.Add(new DrawPaintItem(new DisplayPaint(DisplayColor.White)));
+        }
+
         List<(BoxFragment Fragment, int ZIndex)>? marginBoxes = null;
         var viewport = _boxTree?.Viewport;
         // (as in Gecko, a document whose root element generates no box prints blank pages, without page boxes)
@@ -812,10 +819,16 @@ internal sealed partial class LayoutEngine
         // and the content that overflows it is clipped
         // (the document is painted at the position of the page area, which may be fractional: its painting is snapped to the
         // device pixels of the page)
+        // (the content of a scaled page is scaled from the origin of the page area, see PrintOptions.Scale)
         var area = geometry.PageArea;
         var paddingBox = geometry.PaddingBox;
         builder.Save();
         builder.Add(new ClipRectItem(paddingBox));
+        if (geometry.ContentScale != 1)
+        {
+            builder.Transform(DisplayMatrix.Translation(area.X, area.Y).PreConcat(DisplayMatrix.Scale(geometry.ContentScale, geometry.ContentScale)).PreConcat(DisplayMatrix.Translation(-area.X, -area.Y)));
+        }
+
         builder.AddList(Painter.PaintPageContent(this, _document, page.Content, new PhysicalOffset(area.X, area.Y)));
         builder.Restore();
         PaintMarginBoxes(negative: false);

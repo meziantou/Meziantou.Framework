@@ -23,7 +23,7 @@ internal sealed class LayoutContext
         // browsing context, see StyleEngine.CreateEnvironment)
         ViewportSize = new PhysicalSize(environment.Width, environment.Height);
         InitialContainingBlockSize = ViewportSize;
-        ScrollbarThickness = document.BrowsingContext is { } browsingContext ? Math.Max(0, (browsingContext.Top.Options.Viewport ?? ViewportOptions.Default).ScrollbarThickness) : 0;
+        ScrollbarThickness = document.BrowsingContext is { } browsingContext ? (browsingContext.Top.Options.Viewport ?? ViewportOptions.Default).EffectiveScrollbarThickness : 0;
     }
 
     public LayoutEngine Engine { get; }

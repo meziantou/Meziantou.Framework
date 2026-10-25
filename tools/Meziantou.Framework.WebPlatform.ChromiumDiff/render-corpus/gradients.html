@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<title>Gradients</title>
+<style>
+  body { margin: 16px; display: grid; grid-template-columns: repeat(4, 200px); gap: 16px }
+  div { height: 120px }
+  .l1 { background: linear-gradient(to right, red, blue) }
+  .l2 { background: linear-gradient(45deg, #fc0 0%, #fc0 30%, #06c 30%, #06c 60%, transparent 100%) }
+  .l3 { background: linear-gradient(to bottom, rgba(255, 0, 0, 0), rgba(255, 0, 0, 1)) }
+  .l4 { background: repeating-linear-gradient(-45deg, #222 0 10px, #eee 10px 20px) }
+  .r1 { background: radial-gradient(circle, #fff, #08f) }
+  .r2 { background: radial-gradient(ellipse at 30% 30%, yellow, green 40%, black) }
+  .r3 { background: repeating-radial-gradient(circle at center, #c33 0 8px, #fff 8px 16px) }
+  .c1 { background: conic-gradient(red, yellow, lime, aqua, blue, magenta, red) }
+  .c2 { background: conic-gradient(from 90deg at 40% 60%, #000 25%, #fff 0 50%, #000 0 75%, #fff 0) }
+  .multi { background: linear-gradient(rgba(0, 0, 255, .5), rgba(0, 0, 255, .5)), url(resources/alpha.png) 0 0 / 40px 40px }
+  .clip { font: bold 64px sans-serif; background: linear-gradient(90deg, #f06, #0cf); -webkit-background-clip: text; background-clip: text; color: transparent; height: auto }
+  .radius { border-radius: 30px; background: linear-gradient(135deg, #8e2de2, #4a00e0) }
+</style>
+<div class="l1"></div><div class="l2"></div><div class="l3"></div><div class="l4"></div>
+<div class="r1"></div><div class="r2"></div><div class="r3"></div><div class="c1"></div>
+<div class="c2"></div><div class="multi"></div><div class="clip">Clip</div><div class="radius"></div>

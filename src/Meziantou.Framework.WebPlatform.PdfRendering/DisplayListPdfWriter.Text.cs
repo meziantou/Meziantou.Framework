@@ -132,6 +132,9 @@ internal sealed partial class DisplayListPdfWriter
         var run = draw.Run;
         var sink = new PathSink(_builder);
         using var scratch = new GlyphScratch(face.Data.Environment.CreateAllocator("PdfRendering"));
+
+        // The outlines are in font units, y up: they are scaled to the size of the font
+        var scale = run.Font.Size / face.UnitsPerEm;
         for (var i = 0; i < count; i++)
         {
             var glyph = run.Glyphs[i];
@@ -139,7 +142,7 @@ internal sealed partial class DisplayListPdfWriter
             if (glyph >= face.GlyphCount || !double.IsFinite(position.X) || !double.IsFinite(position.Y))
                 continue;
 
-            sink.Transform = new DisplayMatrix(scaleX, 0, shear, -1, position.X, position.Y);
+            sink.Transform = new DisplayMatrix(scaleX * scale, 0, shear * scale, -scale, position.X, position.Y);
             try
             {
                 var budget = new GlyphBudget(face.Data.Limits);

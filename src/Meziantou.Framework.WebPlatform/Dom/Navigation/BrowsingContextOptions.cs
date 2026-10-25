@@ -252,6 +252,17 @@ public sealed partial class BrowsingContextOptions
     public ViewportOptions? Viewport { get; init; }
 
     /// <summary>
+    /// Gets or sets the user agent string of the browsing contexts, as the <c>userAgent</c> option of Playwright:
+    /// <c>navigator.userAgent</c> (and <c>appVersion</c>) of the windows and of the workers, the user agent of the reports, and
+    /// the <c>User-Agent</c> header of the requests that do not set one. The default is null: <see cref="Navigator.DefaultUserAgent"/>,
+    /// and the requests have no <c>User-Agent</c> header (the <see cref="DocumentLoader"/> may add one).
+    /// </summary>
+    public string? UserAgent { get; init; }
+
+    /// <summary>The user agent string of the browsing contexts: <see cref="UserAgent"/>, or <see cref="Navigator.DefaultUserAgent"/>.</summary>
+    internal string EffectiveUserAgent => UserAgent ?? Navigator.DefaultUserAgent;
+
+    /// <summary>
     /// Gets or sets the callback called when the documents of a top-level browsing context are about to be displayed
     /// fullscreen (https://fullscreen.spec.whatwg.org/#dom-element-requestfullscreen, "resize the viewport"), with the
     /// options of <see cref="Element.RequestFullscreen"/>. The host of a window makes it fullscreen and returns the size of

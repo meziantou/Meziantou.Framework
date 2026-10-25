@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<title>Element clip</title>
+<style>
+  body { margin: 40px; background: #f4f4f4 }
+  #target { width: 260px; padding: 20px; background: white; border: 3px solid #36c; border-radius: 16px; box-shadow: 0 4px 12px rgba(0, 0, 0, .3) }
+  .over { position: relative; top: -30px; left: 200px; width: 120px; height: 60px; background: rgba(255, 0, 0, .5) }
+  .grid { display: grid; grid-template-columns: repeat(8, 40px); gap: 4px; margin-top: 20px }
+  .grid div { height: 40px; background: hsl(calc(var(--i) * 45), 70%, 50%) }
+</style>
+<div id="target"><b>Element screenshot</b><p>The border box of this element, with what is painted over it.</p></div>
+<div class="over"></div>
+<div class="grid"><div style="--i:0"></div><div style="--i:1"></div><div style="--i:2"></div><div style="--i:3"></div><div style="--i:4"></div><div style="--i:5"></div><div style="--i:6"></div><div style="--i:7"></div></div>

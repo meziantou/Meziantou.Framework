@@ -25,6 +25,12 @@ using ChromiumDiff;
 //                [--inspect <selector>]               match the selector in both (the --properties, or a default
 //                [--properties <name,name...>]        list), to triage the differences
 //                [--report <file>] [--json <file>]
+//   ChromiumDiff --render [--filter <text>]           compares the exports of the fixtures of render-corpus by Playwright
+//                [--scenario <name>]...               (page.screenshot, page.pdf) and by the library (TakeScreenshot,
+//                [--corpus <dir>]... [--pages]        PrintToPdf, RenderPages) in the scenarios of RenderScenarios.cs (see
+//                [--record] [--out <dir>]             RenderComparison.cs); the images and report.html are written in --out
+//                [--rasterizer pdftoppm|meziantou]    (artifacts/chromium-diff/render by default), --summary writes the
+//                [--summary <file>] [--no-fail]       summary in Markdown (render-parity.md)
 var root = FindRoot();
 if (args is ["install", .. var installOptions])
     return Microsoft.Playwright.Program.Main(["install", .. installOptions, "chromium"]);
@@ -52,6 +58,12 @@ int? parallelism = null;
 var browser = "chromium";
 var minimize = false;
 var corpusDirectories = new List<string>();
+var render = false;
+HashSet<string>? scenarios = null;
+string? outputDirectory = null;
+string? rasterizer = null;
+string? summaryPath = null;
+var noFail = false;
 for (var i = 0; i < args.Length; i++)
 {
     switch (args[i])
@@ -76,6 +88,24 @@ for (var i = 0; i < args.Length; i++)
             break;
         case "--layout":
             layout = true;
+            break;
+        case "--render":
+            render = true;
+            break;
+        case "--scenario":
+            (scenarios ??= new HashSet<string>(StringComparer.Ordinal)).Add(args[++i]);
+            break;
+        case "--out":
+            outputDirectory = args[++i];
+            break;
+        case "--rasterizer":
+            rasterizer = args[++i];
+            break;
+        case "--summary":
+            summaryPath = args[++i];
+            break;
+        case "--no-fail":
+            noFail = true;
             break;
         case "--record":
             record = true;
@@ -131,6 +161,24 @@ for (var i = 0; i < args.Length; i++)
             Console.Error.WriteLine($"Unknown argument '{args[i]}'");
             return 1;
     }
+}
+
+if (render)
+{
+    var renderOptions = new RenderOptions
+    {
+        Filter = filter,
+        Scenarios = scenarios,
+        Pages = pages,
+        Record = record,
+        OutputDirectory = Path.GetFullPath(outputDirectory ?? Path.Combine(root, "artifacts", "chromium-diff", "render")),
+        Rasterizer = rasterizer,
+        SummaryPath = summaryPath is null ? null : Path.GetFullPath(summaryPath),
+        NoFail = noFail,
+    };
+
+    renderOptions.CorpusDirectories.AddRange(corpusDirectories);
+    return await RenderComparison.RunAsync(root, renderOptions);
 }
 
 if (layout)

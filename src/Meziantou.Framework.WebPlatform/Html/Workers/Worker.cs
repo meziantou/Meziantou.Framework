@@ -544,7 +544,7 @@ public sealed partial class WorkerNavigator
     /// <summary>Gets the user agent string.</summary>
     /// <seealso href="https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-useragent"/>
     [IdlMember("userAgent", "https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-useragent")]
-    public string UserAgent => Navigator.DefaultUserAgent;
+    public string UserAgent => _global.Options.EffectiveUserAgent;
 
     /// <summary>Gets the vendor of the user agent, an empty string.</summary>
     /// <seealso href="https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator-vendor"/>

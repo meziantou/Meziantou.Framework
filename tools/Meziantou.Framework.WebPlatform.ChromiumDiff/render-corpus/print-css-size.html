@@ -1,0 +1,8 @@
+<!DOCTYPE html>
+<title>Print CSS size</title>
+<style>
+  @page { size: 4in 6in; margin: 0.25in }
+  body { margin: 0 }
+  .label { border: 3px solid #000; height: 5.3in; box-sizing: border-box; padding: 0.2in; font-size: 20px }
+</style>
+<div class="label"><b>Shipping label</b><p>A 4in x 6in page set by @page size: preferCSSPageSize decides whether it wins over the paper size.</p></div>

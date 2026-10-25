@@ -25,6 +25,7 @@ internal sealed class PrintSession : IDisposable
     private MediaEnvironment? _environment;
     private LayoutEngine? _layoutEngine;
     private PhysicalSize _viewportSize;
+    private PrintHeaderFooter? _headerFooter;
     private bool _disposed;
 
     internal PrintSession(Document document, PrintOptions options, StyleEngine? screenStyleEngine, LayoutEngine? screenLayoutEngine)
@@ -39,7 +40,7 @@ internal sealed class PrintSession : IDisposable
     public PrintOptions Options { get; }
 
     /// <summary>The size of the default page box (the page size of the options).</summary>
-    private PhysicalSize PageSize => new(Options.PageWidth, Options.PageHeight);
+    private PhysicalSize PageSize => new(Options.EffectivePageWidth, Options.EffectivePageHeight);
 
     /// <summary>The margins of the pages when no @page rule sets them (top, right, bottom, left).</summary>
     internal double[] DefaultMargins => [Options.MarginTop, Options.MarginRight, Options.MarginBottom, Options.MarginLeft];
@@ -50,15 +51,15 @@ internal sealed class PrintSession : IDisposable
         _environment = screen with
         {
             MediaType = "print",
-            Width = Math.Max(0, Options.PageWidth - Options.MarginLeft - Options.MarginRight),
-            Height = Math.Max(0, Options.PageHeight - Options.MarginTop - Options.MarginBottom),
+            Width = Math.Max(0, Options.EffectivePageWidth - Options.MarginLeft - Options.MarginRight) / Options.Scale,
+            Height = Math.Max(0, Options.EffectivePageHeight - Options.MarginTop - Options.MarginBottom) / Options.Scale,
         };
 
         // The page area of the first page (an unnamed page, the actual name of the first page is known once the document is laid out)
         var probe = new StyleEngine(_document, _environment) { PrintViewportSize = new PhysicalSize(_environment.Width, _environment.Height), PrintPageSize = PageSize };
         _document.SetEngines(probe, layoutEngine: null);
         var style = probe.GetPageStyle(new PageSelection("", IsFirst: true, IsLeft: false, IsBlank: false), DefaultMargins, out var size, out var orientation, out var marginSafety);
-        Install(PageGeometry.Resolve(style, size, orientation, marginSafety, Options, probe).PageArea.Size);
+        Install(PageGeometry.Resolve(style, size, orientation, marginSafety, Options, probe).LayoutAreaSize);
     }
 
     private void Install(PhysicalSize viewportSize)
@@ -82,7 +83,7 @@ internal sealed class PrintSession : IDisposable
             if (pages.Count == 0 || attempt >= 2)
                 return pages;
 
-            var area = pages[0].Geometry.PageArea.Size;
+            var area = pages[0].Geometry.LayoutAreaSize;
             if (Math.Abs(area.Width - _viewportSize.Width) < 0.001 && Math.Abs(area.Height - _viewportSize.Height) < 0.001)
                 return pages;
 
@@ -94,16 +95,25 @@ internal sealed class PrintSession : IDisposable
     /// Paints the pages of the document (see <see cref="GetPages"/>). A page whose <c>page-orientation</c> is
     /// <c>rotate-left</c> or <c>rotate-right</c> is rotated a quarter turn counter-clockwise or clockwise for its presentation
     /// (https://drafts.csswg.org/css-page-3/#page-orientation-prop): its printed size is the size of its page box transposed.
+    /// Without <paramref name="paper"/>, the pages are painted over a transparent sheet instead of white paper.
     /// </summary>
-    public IReadOnlyList<PrintedPage> Paint()
+    public IReadOnlyList<PrintedPage> Paint(bool paper = true)
     {
         var pages = GetPages();
+        var ranges = ParsePageRanges(Options.PageRanges);
         var result = new PrintedPage[pages.Count];
         for (var i = 0; i < pages.Count; i++)
         {
             var geometry = pages[i].Geometry;
             var size = geometry.PageSize;
-            var displayList = _layoutEngine!.PaintPage(pages[i]);
+            var displayList = _layoutEngine!.PaintPage(pages[i], paper);
+
+            // The header and the footer in the page margins (PrintOptions.DisplayHeaderFooter)
+            if (Options.DisplayHeaderFooter && (Options.HeaderTemplate is { Length: > 0 } || Options.FooterTemplate is { Length: > 0 }))
+            {
+                _headerFooter ??= new PrintHeaderFooter(_document);
+                displayList = _headerFooter.Paint(displayList, size, geometry.Margin, i + 1, pages.Count, Options);
+            }
             if (geometry.Orientation is "rotate-left" or "rotate-right")
             {
                 var builder = new DisplayListBuilder();
@@ -115,10 +125,102 @@ internal sealed class PrintSession : IDisposable
                 displayList = builder.ToDisplayList(size);
             }
 
+            if (!Options.PreferCssPageSize)
+            {
+                (size, displayList) = FitOnPaper(size, displayList, paper);
+            }
+
             result[i] = new PrintedPage(size, displayList);
         }
 
-        return result;
+        if (ranges is null)
+            return result;
+
+        // The pages of the ranges, once each, in order
+        var selected = new List<PrintedPage>(result.Length);
+        for (var i = 0; i < result.Length; i++)
+        {
+            var number = i + 1;
+            if (ranges.Exists(range => number >= range.First && number <= range.Last))
+            {
+                selected.Add(result[i]);
+            }
+        }
+
+        if (selected.Count == 0)
+            throw new InvalidOperationException("The page ranges select no page of the document.");
+
+        return selected;
+    }
+
+    /// <summary>
+    /// Prints a page on the paper of the options when the size of the page box is not the size of the paper
+    /// (<see cref="PrintOptions.PreferCssPageSize"/> is false), as Chromium: the paper is in the orientation of the page box,
+    /// and the page box is centered on it, scaled down when it does not fit.
+    /// </summary>
+    private (PhysicalSize Size, DisplayList DisplayList) FitOnPaper(PhysicalSize size, DisplayList displayList, bool paper)
+    {
+        var paperWidth = Options.EffectivePageWidth;
+        var paperHeight = Options.EffectivePageHeight;
+        if ((size.Width > size.Height) != (paperWidth > paperHeight) && size.Width != size.Height)
+        {
+            (paperWidth, paperHeight) = (paperHeight, paperWidth);
+        }
+
+        if (Math.Abs(size.Width - paperWidth) < 0.01 && Math.Abs(size.Height - paperHeight) < 0.01)
+            return (size, displayList);
+
+        var scale = Math.Min(1, Math.Min(paperWidth / size.Width, paperHeight / size.Height));
+        var builder = new DisplayListBuilder();
+
+        // (the paper is white, as the page sheet)
+        if (paper)
+        {
+            builder.Add(new DrawPaintItem(new DisplayPaint(DisplayColor.White)));
+        }
+
+        builder.Save();
+        builder.Transform(DisplayMatrix.Translation((paperWidth - (size.Width * scale)) / 2, (paperHeight - (size.Height * scale)) / 2).PreConcat(DisplayMatrix.Scale(scale, scale)));
+        builder.AddList(displayList);
+        builder.Restore();
+        var paperSize = new PhysicalSize(paperWidth, paperHeight);
+        return (paperSize, builder.ToDisplayList(paperSize));
+    }
+
+    /// <summary>
+    /// Parses the page ranges of the options (<see cref="PrintOptions.PageRanges"/>, the syntax of Chromium): the 1-based numbers
+    /// of pages and the ranges separated by commas (<c>2</c>, <c>1-5</c>, <c>-3</c>, <c>11-</c>). Returns null when all the
+    /// pages are printed.
+    /// </summary>
+    /// <exception cref="ArgumentException">The syntax is invalid, a page number is 0, or a range starts after its end.</exception>
+    internal static List<(int First, int Last)>? ParsePageRanges(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return null;
+
+        var ranges = new List<(int First, int Last)>();
+        foreach (var part in value.Split(','))
+        {
+            var range = part.Trim();
+            if (range.Length == 0)
+                continue;
+
+            var dash = range.IndexOf('-', StringComparison.Ordinal);
+            var first = dash < 0 ? ParsePageNumber(range) : dash == 0 ? 1 : ParsePageNumber(range[..dash].Trim());
+            var last = dash < 0 ? first : dash == range.Length - 1 ? int.MaxValue : ParsePageNumber(range[(dash + 1)..].Trim());
+            if (first is null || last is null)
+                throw new ArgumentException($"The page ranges '{value}' are invalid.", nameof(value));
+
+            if (first > last)
+                throw new ArgumentException($"The page range '{range}' starts after its end.", nameof(value));
+
+            ranges.Add((first.Value, last.Value));
+        }
+
+        return ranges.Count == 0 ? null : ranges;
+
+        static int? ParsePageNumber(string text)
+            => text.Length > 0 && text.All(char.IsAsciiDigit) && int.TryParse(text, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var number) && number >= 1 ? number : null;
     }
 
     /// <summary>Fetches the images and the fonts used by the styles of the printing (e.g. the rules of <c>@media print</c>, the page contexts and the page-margin boxes).</summary>
@@ -150,6 +252,7 @@ internal sealed class PrintSession : IDisposable
             return;
 
         _disposed = true;
+        _headerFooter?.Dispose();
         _document.EndPrint(this, _screenStyleEngine, _screenLayoutEngine);
     }
 }

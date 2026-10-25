@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<title>Print page rules</title>
+<style>
+  @page { size: A5 landscape; margin: 20mm 15mm; @top-center { content: "Page " counter(page) " of " counter(pages); font-size: 10px; color: #555 } }
+  @page :first { margin-top: 30mm; @top-center { content: none } }
+  body { margin: 0 }
+  h1 { font-size: 24px; margin: 0 0 12px }
+  .box { height: 200px; border: 2px solid #c33; margin-bottom: 12px }
+</style>
+<h1>@page rules</h1>
+<div class="box">A5 landscape, 20mm 15mm margins, 30mm on the first page</div>
+<div class="box">Second box</div>
+<div class="box">Third box</div>

@@ -12,6 +12,9 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform\Meziantou.Framework.WebPlatform.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform.Imaging\Meziantou.Framework.WebPlatform.Imaging.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform.PdfRendering\Meziantou.Framework.WebPlatform.PdfRendering.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Pdf\Meziantou.Framework.Pdf.csproj" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="tree.js" LogicalName="tree.js" />

@@ -36,6 +36,19 @@ public partial class Document
     internal DisplayList? GetDisplayList() => GetLayoutEngine().GetDisplayList();
 
     /// <summary>
+    /// Paints the document for a screenshot (see <see cref="Css.Layout.LayoutEngine.PaintScreenshot"/>): over a transparent
+    /// canvas, and the whole document instead of its viewport. Returns null when the document is not rendered.
+    /// </summary>
+    internal DisplayList? PaintScreenshot(bool transparentCanvas, bool fullPage) => GetLayoutEngine().PaintScreenshot(transparentCanvas, fullPage);
+
+    /// <summary>Returns the size of the document painted by a full page screenshot, in CSS pixels (see <see cref="Css.Layout.LayoutEngine.GetFullPageSize"/>).</summary>
+    internal Css.Layout.PhysicalSize GetFullPageSize()
+    {
+        GetLayoutEngine().EnsureLayout();
+        return GetLayoutEngine().GetFullPageSize();
+    }
+
+    /// <summary>
     /// Creates the image the painting draws for an image resource: the encoded bytes of a raster image are kept only when the
     /// document has a rendering backend, which decodes them when the image is first drawn (without a backend, the display list
     /// draws an image without pixels, which the paint timing observes); the ones of an SVG image are always kept, as its document
@@ -102,9 +115,68 @@ public partial class Document
         }
     }
 
-    /// <summary>Called when a <c>meta</c> element is inserted in or removed from the document, or when its name or content changes.</summary>
+    private bool _mayHaveViewportMeta;
+    private bool _viewportMetaComputed;
+    private Css.Layout.ViewportDescription? _viewportMeta;
+
+    /// <summary>
+    /// The content of the last <c>meta</c> element of the document whose name is <c>viewport</c>
+    /// (https://drafts.csswg.org/css-viewport/#viewport-meta), parsed, or null. It sets the layout viewport and the scale of a
+    /// top-level document on a mobile device (see <see cref="Css.Layout.MobileViewport"/>).
+    /// </summary>
+    internal Css.Layout.ViewportDescription? ViewportMeta
+    {
+        get
+        {
+            if (!_mayHaveViewportMeta)
+                return null;
+
+            if (!_viewportMetaComputed)
+            {
+                _viewportMeta = null;
+                foreach (var node in Descendants())
+                {
+                    if (node is HtmlMetaElement meta && Infra.InfraAscii.EqualsIgnoreAsciiCase(meta.GetAttributeValue("name") ?? "", "viewport") && meta.GetAttributeValue("content") is { } content)
+                    {
+                        _viewportMeta = Css.Layout.MobileViewport.Parse(content);
+                    }
+                }
+
+                _viewportMetaComputed = true;
+            }
+
+            return _viewportMeta;
+        }
+    }
+
+    /// <summary>
+    /// Returns the scale of the page of a top-level document on a mobile device (<see cref="ViewportOptions.IsMobile"/>, see
+    /// <see cref="Css.Layout.MobileViewport.GetInitialScale"/>): the layout is computed when it is out of date. Returns 1 for
+    /// the other documents.
+    /// </summary>
+    internal double GetPageScale()
+    {
+        if (BrowsingContext is not { Container: null } browsingContext || browsingContext.Top.Options.Viewport is not { IsMobile: true } viewport || !IsFullyActive)
+            return 1;
+
+        var engine = GetLayoutEngine();
+        engine.EnsureLayout();
+        var layoutWidth = GetStyleEngine().Environment.Width;
+        return Css.Layout.MobileViewport.GetInitialScale(ViewportMeta, viewport.Width, layoutWidth, engine.GetFullPageSize().Width);
+    }
+
+    /// <summary>
+    /// Called when a <c>meta</c> element is inserted in or removed from the document, or when its name or content changes: the
+    /// page's supported color schemes and the viewport meta element are computed again.
+    /// </summary>
     internal void InvalidatePageColorSchemes(HtmlMetaElement meta, string? oldName = null)
     {
+        if (Infra.InfraAscii.EqualsIgnoreAsciiCase(meta.GetAttributeValue("name") ?? "", "viewport") || Infra.InfraAscii.EqualsIgnoreAsciiCase(oldName ?? "", "viewport"))
+        {
+            _mayHaveViewportMeta = true;
+            _viewportMetaComputed = false;
+        }
+
         if (!Infra.InfraAscii.EqualsIgnoreAsciiCase(meta.GetAttributeValue("name") ?? "", "color-scheme") && !Infra.InfraAscii.EqualsIgnoreAsciiCase(oldName ?? "", "color-scheme"))
             return;
 

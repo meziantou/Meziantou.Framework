@@ -54,6 +54,7 @@ public sealed class ClientHintsTests : IDisposable
             TimeProvider = options.TimeProvider,
             Features = options.Features,
             Viewport = options.Viewport,
+            UserAgent = options.UserAgent,
         });
     }
 
@@ -528,6 +529,34 @@ public sealed class ClientHintsTests : IDisposable
         Assert.False(data.Mobile);
         Assert.Equal(["Test \"Browser\"", "Engine"], data.Brands.Select(brand => brand.Brand));
         Assert.Equal("Linux", data.ToJson().Platform);
+    }
+
+    [Fact]
+    public void UserAgent_IsTheOneOfTheOptions()
+    {
+        AddPage(PageUrl, "<img src='https://example.com/a.png'>");
+        var document = Load(CreateContext(new BrowsingContextOptions { UserAgent = "Mozilla/5.0 (Test)" }));
+
+        Assert.Equal("Mozilla/5.0 (Test)", document.DefaultView!.Navigator.UserAgent);
+        Assert.Equal("5.0 (Test)", document.DefaultView!.Navigator.AppVersion);
+        Assert.Equal("Mozilla/5.0 (Test)", Header(Request(PageUrl), "User-Agent"));
+        Assert.Equal("Mozilla/5.0 (Test)", Header(Request("https://example.com/a.png"), "User-Agent"));
+
+        // Without the option, the user agent is the one of the library, and the requests have no User-Agent header
+        _requests.Clear();
+        document = Load(CreateContext());
+        Assert.Equal(Navigator.DefaultUserAgent, document.DefaultView!.Navigator.UserAgent);
+        Assert.Null(Header(Request(PageUrl), "User-Agent"));
+    }
+
+    [Fact]
+    public void Mobile_DefaultsToTheViewport()
+    {
+        AddPage(PageUrl, "<p>a</p>");
+        var document = Load(CreateContext(new BrowsingContextOptions { Viewport = new ViewportOptions { IsMobile = true } }));
+
+        Assert.Equal("?1", Header(Request(PageUrl), "Sec-CH-UA-Mobile"));
+        Assert.True(document.DefaultView!.Navigator.UserAgentData.Mobile);
     }
 
     private sealed class Loader(ClientHintsTests test) : DocumentLoader

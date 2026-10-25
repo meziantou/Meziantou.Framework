@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<title>Media features</title>
+<style>
+  body { margin: 16px }
+  div { display: inline-block; width: 150px; height: 40px; margin: 4px; padding: 4px; background: #ccc; font-size: 13px; vertical-align: top }
+  @media (max-width: 600px) { .narrow { background: #6c6 } }
+  @media (min-width: 1000px) { .wide { background: #6c6 } }
+  @media (pointer: coarse) { .coarse { background: #6c6 } }
+  @media (pointer: fine) { .fine { background: #6c6 } }
+  @media (hover: none) { .nohover { background: #6c6 } }
+  @media (hover: hover) { .hover { background: #6c6 } }
+  @media (any-pointer: coarse) { .anycoarse { background: #6c6 } }
+  @media (min-resolution: 2dppx) { .hidpi { background: #6c6 } }
+  @media (orientation: portrait) { .portrait { background: #6c6 } }
+  @media (orientation: landscape) { .landscape { background: #6c6 } }
+  @media (max-device-width: 500px) { .smalldevice { background: #6c6 } }
+  @media print { .print { background: #6c6 } }
+  @media screen { .screen { background: #6c6 } }
+</style>
+<div class="narrow">max-width: 600px</div><div class="wide">min-width: 1000px</div>
+<div class="coarse">pointer: coarse</div><div class="fine">pointer: fine</div>
+<div class="nohover">hover: none</div><div class="hover">hover: hover</div>
+<div class="anycoarse">any-pointer: coarse</div><div class="hidpi">resolution: 2dppx</div>
+<div class="portrait">portrait</div><div class="landscape">landscape</div>
+<div class="smalldevice">max-device-width: 500px</div>
+<div class="screen">screen</div><div class="print">print</div>

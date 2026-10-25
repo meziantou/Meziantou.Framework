@@ -23,6 +23,34 @@ public sealed record ViewportOptions
     /// <summary>Gets or sets the media type: <c>screen</c> (the default) or <c>print</c>.</summary>
     public string MediaType { get; init; } = "screen";
 
+    /// <summary>
+    /// Gets or sets the width of the screen, in CSS pixels (the <c>device-width</c> media feature and <c>screen.width</c>). The
+    /// default is null: the width of the viewport.
+    /// </summary>
+    public double? ScreenWidth { get; init; }
+
+    /// <summary>
+    /// Gets or sets the height of the screen, in CSS pixels (the <c>device-height</c> media feature and <c>screen.height</c>).
+    /// The default is null: the height of the viewport.
+    /// </summary>
+    public double? ScreenHeight { get; init; }
+
+    /// <summary>
+    /// Gets or sets whether the device has a touch screen as its primary pointing device, as the <c>hasTouch</c> option of
+    /// Playwright: the <c>pointer</c> and <c>any-pointer</c> media features are <c>coarse</c>, <c>hover</c> and
+    /// <c>any-hover</c> are <c>none</c>, and <c>navigator.maxTouchPoints</c> is 1. The default is false (a mouse: <c>fine</c>
+    /// and <c>hover</c>).
+    /// </summary>
+    public bool HasTouch { get; init; }
+
+    /// <summary>
+    /// Gets or sets whether the viewport is the one of a mobile device, as the <c>isMobile</c> option of Playwright: the
+    /// <c>viewport</c> meta element of the top-level document sets the size of its layout viewport and its scale (see
+    /// <see cref="Width"/>), the scrollbars are overlay scrollbars (<see cref="ScrollbarThickness"/> is ignored), and the client
+    /// hints default to a mobile device (<see cref="ClientHintsOptions.Mobile"/>). The default is false.
+    /// </summary>
+    public bool IsMobile { get; init; }
+
     /// <summary>Gets or sets the preferred color scheme (the <c>prefers-color-scheme</c> media feature, and the used color scheme of <c>light-dark()</c> and the system colors).</summary>
     public PreferredColorScheme PreferredColorScheme { get; init; }
 
@@ -61,6 +89,9 @@ public sealed record ViewportOptions
     /// take no space (as on macOS and the mobile devices).
     /// </summary>
     public double ScrollbarThickness { get; init; } = 15;
+
+    /// <summary>The thickness of the classic scrollbars of the layout: 0 (overlay scrollbars) on a mobile device.</summary>
+    internal double EffectiveScrollbarThickness => IsMobile ? 0 : Math.Max(0, ScrollbarThickness);
 
     /// <summary>
     /// Gets or sets whether the classic scrollbars are painted and react to the pointer (a press on the track scrolls by a

@@ -282,7 +282,7 @@ internal static class ScrollContainers
 
     /// <summary>Returns the thickness of the classic scrollbars of a box of a document (see <see cref="GetScrollbarThickness(LayoutContext, LayoutStyle?)"/>).</summary>
     public static double GetScrollbarThickness(Dom.Document document, LayoutStyle? style)
-        => GetScrollbarThickness(document.BrowsingContext is { } browsingContext ? Math.Max(0, (browsingContext.Top.Options.Viewport ?? ViewportOptions.Default).ScrollbarThickness) : 0, style);
+        => GetScrollbarThickness(document.BrowsingContext is { } browsingContext ? (browsingContext.Top.Options.Viewport ?? ViewportOptions.Default).EffectiveScrollbarThickness : 0, style);
 
     private static double GetScrollbarThickness(double thickness, LayoutStyle? style)
     {

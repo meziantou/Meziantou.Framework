@@ -3129,6 +3129,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public System.TimeProvider? TimeProvider { get => throw null; init { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.GlobalScope, Meziantou.Framework.WebPlatform.Scripting.ScriptError>? UnhandledScriptError { get => throw null; init { } }
         public bool UseSystemFonts { get => throw null; init { } }
+        public string? UserAgent { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.ViewportOptions? Viewport { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.VisitedLinkStore? VisitedLinks { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.WebAssembly.WebAssemblyRuntime? WebAssemblyRuntime { get => throw null; init { } }
@@ -3917,6 +3918,25 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public void PostMessage(object? message, Meziantou.Framework.WebPlatform.Dom.StructuredSerializeOptions? options = null) { }
         public void PostMessage(object? message, System.Collections.Generic.IReadOnlyList<object> transfer) { }
         public uint RequestAnimationFrame(Meziantou.Framework.WebPlatform.Dom.FrameRequestCallback callback) => throw null;
+    }
+
+    public sealed class DeviceDescriptor : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.DeviceDescriptor>
+    {
+        public double DevicePixelRatio { get => throw null; init { } }
+        public bool HasTouch { get => throw null; init { } }
+        public required double Height { get => throw null; init { } }
+        public bool IsMobile { get => throw null; init { } }
+        public double? ScreenHeight { get => throw null; init { } }
+        public double? ScreenWidth { get => throw null; init { } }
+        public string? UserAgent { get => throw null; init { } }
+        public required double Width { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ViewportOptions CreateViewport(Meziantou.Framework.WebPlatform.Dom.ViewportOptions? viewport = null) => throw null;
+        public bool Equals(Meziantou.Framework.WebPlatform.Dom.DeviceDescriptor? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.WebPlatform.Dom.DeviceDescriptor? left, Meziantou.Framework.WebPlatform.Dom.DeviceDescriptor? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WebPlatform.Dom.DeviceDescriptor? left, Meziantou.Framework.WebPlatform.Dom.DeviceDescriptor? right) => throw null;
     }
 
     public enum DirectionSetting
@@ -8845,13 +8865,21 @@ namespace Meziantou.Framework.WebPlatform.Dom
     public sealed class PrintOptions : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.PrintOptions>
     {
         public static Meziantou.Framework.WebPlatform.Dom.PrintOptions Default { get => throw null; }
+        public bool DisplayHeaderFooter { get => throw null; init { } }
+        public string? FooterTemplate { get => throw null; init { } }
+        public string? HeaderTemplate { get => throw null; init { } }
+        public bool Landscape { get => throw null; init { } }
         public double MarginBottom { get => throw null; init { } }
         public double MarginLeft { get => throw null; init { } }
         public double MarginRight { get => throw null; init { } }
         public double MarginTop { get => throw null; init { } }
         public double PageHeight { get => throw null; init { } }
+        public string? PageRanges { get => throw null; init { } }
         public double PageWidth { get => throw null; init { } }
+        public bool PreferCssPageSize { get => throw null; init { } }
+        public bool PrintBackground { get => throw null; init { } }
         public double SafePrintableInset { get => throw null; init { } }
+        public double Scale { get => throw null; init { } }
         public bool Equals(Meziantou.Framework.WebPlatform.Dom.PrintOptions? other) => throw null;
         public override bool Equals(object? obj) => throw null;
         public override int GetHashCode() => throw null;
@@ -11655,12 +11683,16 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public double DevicePixelRatio { get => throw null; init { } }
         public bool ForcedColors { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.ForcedColorsTheme? ForcedColorsTheme { get => throw null; init { } }
+        public bool HasTouch { get => throw null; init { } }
         public double Height { get => throw null; init { } }
+        public bool IsMobile { get => throw null; init { } }
         public string MediaType { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.PreferredColorScheme PreferredColorScheme { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.PreferredContrast PreferredContrast { get => throw null; init { } }
         public bool PrefersReducedMotion { get => throw null; init { } }
         public bool PrefersReducedTransparency { get => throw null; init { } }
+        public double? ScreenHeight { get => throw null; init { } }
+        public double? ScreenWidth { get => throw null; init { } }
         public double ScrollbarThickness { get => throw null; init { } }
         public bool ScrollbarsVisible { get => throw null; init { } }
         public bool SmoothUserScrolling { get => throw null; init { } }

@@ -79,6 +79,11 @@ public sealed class PdfPrintTests : IDisposable
         ["3d"] = """
             <div style='position: absolute; left: 50px; top: 30px; width: 100px; height: 80px; background: #3366cc; transform: perspective(200px) rotateY(40deg)'></div>
             """,
+        // The instances of a variable font (the bundled Arimo at a weight other than its default) are drawn as paths
+        ["variable-font"] = """
+            <div style='position: absolute; left: 10px; top: 10px; font: bold 24px/1 sans-serif'>Bold text</div>
+            <div style='position: absolute; left: 10px; top: 50px; font: 600 18px/1 sans-serif; font-style: italic'>Semi bold</div>
+            """,
         ["conic"] = """
             <div style='position: absolute; left: 50px; top: 25px; width: 100px; height: 100px; border-radius: 50%; background: conic-gradient(red, yellow, lime, aqua, blue, magenta, red)'></div>
             """,
@@ -211,6 +216,28 @@ public sealed class PdfPrintTests : IDisposable
         Assert.Equal(0, rect.Left, 1);
         Assert.Equal(80 * 0.75, rect.Right, 1);
         Assert.Equal(300 * 0.75, rect.Top, 1);
+    }
+
+    [Fact]
+    public void PrintToPdf_PrintOptionsOfPlaywright()
+    {
+        // Three pages: the second and the third ones are printed, in landscape, scaled; the link to the heading of the third page is
+        // kept, the one to the first page (not printed) is not
+        var context = _pages.Load("""
+            <style>@page { margin: 0 } div { height: 100px; break-after: page }</style>
+            <div><h2 id=first style='margin: 0; font-size: 10px'>First</h2></div>
+            <div><a href='#first'>first</a> <a href='#third'>third</a></div>
+            <div><h2 id=third style='margin: 0; font-size: 10px'>Third</h2></div>
+            """);
+
+        var pdf = Reopen(context.PrintToPdf(new PrintOptions { PageWidth = 200, PageHeight = 300, Landscape = true, Scale = 0.5, PageRanges = "2-3" }));
+
+        Assert.Equal(2, pdf.Pages.Count);
+        var page = pdf.Pages[0];
+        Assert.Equal(300 * 0.75, page.MediaBox.Width, 1);
+        Assert.Equal(200 * 0.75, page.MediaBox.Height, 1);
+        var link = Assert.Single(page.Annotations.OfType<PdfLinkAnnotation>());
+        Assert.Equal("third", link.Contents);
     }
 
     [Fact]

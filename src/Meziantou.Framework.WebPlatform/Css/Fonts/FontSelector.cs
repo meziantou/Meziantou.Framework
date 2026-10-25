@@ -431,7 +431,11 @@ internal sealed class FontSelector
         return new FontFallbackList.WebFamilyEntry([.. composite], description, selected, CreateInstalledEntry(family, description));
     }
 
-    /// <summary>The entry of an installed family: a bundled family, else a family installed by the host; null when the family is not installed.</summary>
+    /// <summary>
+    /// The entry of an installed family: a bundled family, else a family installed by the host, else the bundled family that is
+    /// metric-compatible with it (<see cref="BundledFonts.GetMetricCompatibleFamily"/>, e.g. Arimo for Arial); null when the
+    /// family is not installed.
+    /// </summary>
     private FontFallbackList.InstalledFamilyEntry? CreateInstalledEntry(string family, FontDescription description)
     {
         var bundled = BundledFonts.GetFamilyFonts(family);
@@ -450,6 +454,9 @@ internal sealed class FontSelector
 
         if (_document.InstalledFonts?.GetFamilyFonts(family) is { Count: > 0 } installed && CreateMatchedFont(installed, description) is { } matched)
             return new FontFallbackList.InstalledFamilyEntry(matched);
+
+        if (BundledFonts.GetMetricCompatibleFamily(family) is { } alias)
+            return CreateInstalledEntry(alias, description);
 
         return null;
     }

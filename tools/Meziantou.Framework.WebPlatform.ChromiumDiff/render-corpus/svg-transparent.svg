@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300">
+  <defs>
+    <linearGradient id="fade" x1="0" x2="1">
+      <stop offset="0" stop-color="#06f" stop-opacity="1"/>
+      <stop offset="1" stop-color="#06f" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="glow">
+      <stop offset="0" stop-color="#ff0"/>
+      <stop offset="1" stop-color="#f00" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="blur"><feGaussianBlur stdDeviation="4"/></filter>
+    <mask id="mask"><rect width="400" height="300" fill="black"/><circle cx="320" cy="220" r="50" fill="white"/></mask>
+  </defs>
+  <rect x="20" y="20" width="200" height="60" fill="url(#fade)"/>
+  <circle cx="320" cy="70" r="50" fill="url(#glow)"/>
+  <rect x="20" y="110" width="120" height="80" fill="#0a0" fill-opacity=".5"/>
+  <rect x="80" y="140" width="120" height="80" fill="#a00" opacity=".5"/>
+  <circle cx="90" cy="250" r="30" fill="#606" filter="url(#blur)"/>
+  <rect x="240" y="150" width="140" height="140" fill="#f80" mask="url(#mask)"/>
+  <text x="220" y="140" font-size="24" fill="#333">SVG text</text>
+  <path d="M230 260 Q 260 200 290 260 T 350 260" fill="none" stroke="#00f" stroke-width="4" stroke-opacity=".7" stroke-linecap="round"/>
+</svg>

@@ -2338,6 +2338,14 @@ internal sealed partial class StyleEngine
         // While the documents are displayed fullscreen, the viewport is the one the host answered (the screen), if any
         var width = top.FullscreenViewportSize?.Width ?? top.ClientWindowViewportWidth ?? viewport.Width;
         var height = top.FullscreenViewportSize?.Height ?? top.ClientWindowViewportHeight ?? viewport.Height;
+
+        // On a mobile device, the viewport of a top-level document is its layout viewport, set by its viewport meta element
+        // (https://drafts.csswg.org/css-viewport/#viewport-meta, see MobileViewport): the screen is the viewport of the options
+        if (viewport.IsMobile && browsingContext.Container is null && top.FullscreenViewportSize is null && top.ClientWindowViewportWidth is null)
+        {
+            (width, height) = Layout.MobileViewport.GetLayoutViewportSize(document.ViewportMeta, viewport.Width, viewport.Height);
+        }
+
         var devicePixelRatio = viewport.DevicePixelRatio;
         // https://drafts.csswg.org/css-color-adjust-1/#forced: the palette of the forced colors mode sets the preferred color
         // scheme when its canvas is clearly light or dark, and the preferred contrast
@@ -2380,14 +2388,20 @@ internal sealed partial class StyleEngine
             }
         }
 
+        // The primary pointing device: a touch screen (coarse, without hover) or a mouse
+        var pointer = viewport.HasTouch ? "coarse" : "fine";
+        var hover = viewport.HasTouch ? "none" : "hover";
+
         // The environment is computed by each style lookup: the previous one is reused when it is the same
         var pageColorSchemes = document.PageColorSchemes;
         var scriptingEnabled = browsingContext.Options.ScriptingEnabled;
         if (document.LastMediaEnvironment is { } last
             && last.Width == width
             && last.Height == height
-            && last.DeviceWidth == viewport.Width
-            && last.DeviceHeight == viewport.Height
+            && last.DeviceWidth == (viewport.ScreenWidth ?? viewport.Width)
+            && last.DeviceHeight == (viewport.ScreenHeight ?? viewport.Height)
+            && last.Pointer == pointer
+            && last.Hover == hover
             && last.DevicePixelRatio == devicePixelRatio
             && last.MediaType == viewport.MediaType
             && last.PrefersColorScheme == prefersColorScheme
@@ -2406,10 +2420,12 @@ internal sealed partial class StyleEngine
         {
             Width = width,
             Height = height,
-            DeviceWidth = viewport.Width,
-            DeviceHeight = viewport.Height,
+            DeviceWidth = viewport.ScreenWidth ?? viewport.Width,
+            DeviceHeight = viewport.ScreenHeight ?? viewport.Height,
             DevicePixelRatio = devicePixelRatio,
             MediaType = viewport.MediaType,
+            Pointer = pointer,
+            Hover = hover,
             PrefersColorScheme = prefersColorScheme,
             PageColorSchemes = pageColorSchemes,
             PrefersReducedMotion = viewport.PrefersReducedMotion,

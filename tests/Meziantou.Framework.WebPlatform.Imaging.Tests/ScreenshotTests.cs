@@ -1,3 +1,4 @@
+using Meziantou.Framework.WebPlatform.Dom;
 using Meziantou.Framework.WebPlatform.Html;
 using Meziantou.Framework.Imaging;
 
@@ -601,6 +602,141 @@ public sealed class ScreenshotTests : IDisposable
             Assert.Equal(Colors.White, screenshot.GetPixel(10, 10));
             Assert.Equal(Colors.Blue, screenshot.GetPixel(110, 10));
         }
+    }
+
+    [Fact]
+    public void OmitBackground_TheCanvasIsTransparent()
+    {
+        var context = _pages.Load("<div style='width: 20px; height: 20px; background: blue'></div><div style='width: 20px; height: 20px; background: rgba(255, 0, 0, 0.5)'></div>");
+
+        using var screenshot = context.TakeScreenshot(new ScreenshotOptions { OmitBackground = true });
+        Assert.Equal(new Rgba32(0, 0, 0, 0), screenshot.GetPixel(100, 50));
+        Assert.Equal(Colors.Blue, screenshot.GetPixel(10, 10));
+        Assert.Equal(new Rgba32(255, 0, 0, 128), screenshot.GetPixel(10, 30), ColorComparer(1));
+
+        // Without the option, the canvas is white
+        using var opaque = context.TakeScreenshot();
+        Assert.Equal(Colors.White, opaque.GetPixel(100, 50));
+        Assert.Equal(new Rgba32(255, 128, 128), opaque.GetPixel(10, 30), ColorComparer(1));
+    }
+
+    [Fact]
+    public void OmitBackground_TheBackgroundsOfTheDocumentArePainted()
+    {
+        // The background of the body is propagated to the canvas: it is painted (only the color below the canvas is omitted)
+        var context = _pages.Load("<style>body { background: rgba(0, 0, 255, 0.5) }</style><div style='height: 10px'></div>");
+
+        using var screenshot = context.TakeScreenshot(new ScreenshotOptions { OmitBackground = true });
+        Assert.Equal(new Rgba32(0, 0, 255, 128), screenshot.GetPixel(100, 50), ColorComparer(1));
+    }
+
+    [Fact]
+    public void OmitBackground_SvgDocument()
+    {
+        using var context = new BrowsingContext(new BrowsingContextOptions
+        {
+            Viewport = new ViewportOptions { Width = 100, Height = 50 },
+            RenderingBackend = new ImagingRenderingBackend(),
+        });
+        context.Navigate("https://example.com/image.svg", _ => new DocumentResource(System.Text.Encoding.UTF8.GetBytes("""
+            <svg xmlns="http://www.w3.org/2000/svg" width="100" height="50">
+              <rect width="20" height="20" fill="lime"/>
+              <rect x="30" width="20" height="20" fill="blue" fill-opacity="0.5"/>
+            </svg>
+            """)) { Headers = [new("Content-Type", "image/svg+xml")] });
+        context.EventLoop.RunUntilIdle();
+
+        using var screenshot = context.TakeScreenshot(new ScreenshotOptions { OmitBackground = true });
+        Assert.Equal(Colors.Lime, screenshot.GetPixel(10, 10));
+        Assert.Equal(new Rgba32(0, 0, 255, 128), screenshot.GetPixel(40, 10), ColorComparer(1));
+        Assert.Equal(new Rgba32(0, 0, 0, 0), screenshot.GetPixel(80, 40));
+    }
+
+    [Fact]
+    public void FullPage_PaintsTheScrollingArea()
+    {
+        // A 200x100 viewport, a document of 300x250 scrolled by 50px: the fixed header is painted once, where it is in the
+        // document at the current scroll position
+        var context = _pages.Load("""
+            <div style="position: fixed; top: 0; left: 0; width: 200px; height: 10px; background: red"></div>
+            <div style="width: 300px; height: 250px; background: linear-gradient(blue 0 50%, lime 50%)"></div>
+            """);
+        context.Document.DocumentElement!.ScrollTop = 50;
+
+        using var screenshot = context.TakeScreenshot(new ScreenshotOptions { FullPage = true });
+        Assert.Equal(300, screenshot.Width);
+        Assert.Equal(250, screenshot.Height);
+        Assert.Equal(Colors.Blue, screenshot.GetPixel(5, 5));
+        Assert.Equal(Colors.Red, screenshot.GetPixel(5, 55));
+        Assert.Equal(Colors.Blue, screenshot.GetPixel(250, 50));
+        Assert.Equal(Colors.Lime, screenshot.GetPixel(250, 240));
+
+        // A document smaller than the viewport is painted in the whole viewport
+        var small = _pages.Load("<div style='width: 10px; height: 10px; background: blue'></div>");
+        using var smallScreenshot = small.TakeScreenshot(new ScreenshotOptions { FullPage = true });
+        Assert.Equal((200, 100), (smallScreenshot.Width, smallScreenshot.Height));
+    }
+
+    [Fact]
+    public void Clip()
+    {
+        var context = _pages.Load("<div style='margin-left: 20px; width: 30px; height: 30px; background: blue'></div><div style='height: 200px'></div>");
+
+        using var screenshot = context.TakeScreenshot(new ScreenshotOptions { Clip = new ScreenshotClip(10, 5, 20, 10) });
+        Assert.Equal((20, 10), (screenshot.Width, screenshot.Height));
+        Assert.Equal(Colors.White, screenshot.GetPixel(5, 5));
+        Assert.Equal(Colors.Blue, screenshot.GetPixel(15, 5));
+
+        // The clip is clipped to the viewport, or to the document with FullPage
+        using var clipped = context.TakeScreenshot(new ScreenshotOptions { Clip = new ScreenshotClip(190, 90, 50, 50) });
+        Assert.Equal((10, 10), (clipped.Width, clipped.Height));
+        using var fullPage = context.TakeScreenshot(new ScreenshotOptions { FullPage = true, Clip = new ScreenshotClip(0, 150, 50, 200) });
+        Assert.Equal((50, 80), (fullPage.Width, fullPage.Height));
+
+        Assert.Throws<ArgumentException>("options", () => context.TakeScreenshot(new ScreenshotOptions { Clip = new ScreenshotClip(300, 0, 10, 10) }));
+        Assert.Throws<ArgumentException>("options", () => context.TakeScreenshot(new ScreenshotOptions { Clip = new ScreenshotClip(0, 0, 0, 10) }));
+    }
+
+    [Fact]
+    public void Jpeg()
+    {
+        var context = _pages.Load("<div style='width: 100px; height: 50px; background: blue'></div>");
+
+        var jpeg = context.TakeScreenshotAsJpeg(new ScreenshotOptions { Quality = 90, OmitBackground = true });
+        Assert.Equal((byte)0xFF, jpeg[0]);
+        Assert.Equal((byte)0xD8, jpeg[1]);
+        using var decoded = Image.Load<Rgba32>(jpeg);
+        Assert.Equal((200, 100), (decoded.Width, decoded.Height));
+
+        // The JPEG images are opaque: the canvas is white, even when its background is omitted
+        Assert.Equal(Colors.White, decoded.GetPixel(150, 80), ColorComparer(4));
+        Assert.Equal(Colors.Blue, decoded.GetPixel(50, 25), ColorComparer(8));
+
+        var element = context.Document.Body!.FirstElementChild!.TakeScreenshotAsJpeg();
+        using var decodedElement = Image.Load<Rgba32>(element);
+        Assert.Equal((100, 50), (decodedElement.Width, decodedElement.Height));
+
+        Assert.Throws<ArgumentException>("options", () => context.TakeScreenshotAsJpeg(new ScreenshotOptions { Quality = 101 }));
+    }
+
+    [Fact]
+    public void IsMobile_TheScreenshotIsTheVisualViewport()
+    {
+        // A 100x50 mobile viewport at a device pixel ratio of 2: the page without viewport meta element is laid out in a layout
+        // viewport of 980px and scaled down to fit the device; the screenshot is the viewport of the device
+        using var context = new BrowsingContext(new BrowsingContextOptions
+        {
+            Viewport = new ViewportOptions { Width = 100, Height = 50, DevicePixelRatio = 2, IsMobile = true },
+            RenderingBackend = new ImagingRenderingBackend(),
+        });
+        context.Navigate("https://example.com/", _ => "<!DOCTYPE html><style>body { margin: 0 }</style><div style='width: 490px; height: 245px; background: blue'></div>");
+        context.EventLoop.RunUntilIdle();
+
+        using var screenshot = context.TakeScreenshot();
+        Assert.Equal((200, 100), (screenshot.Width, screenshot.Height));
+        Assert.Equal(Colors.Blue, screenshot.GetPixel(10, 10));
+        Assert.Equal(Colors.Blue, screenshot.GetPixel(98, 23));
+        Assert.Equal(Colors.White, screenshot.GetPixel(102, 27));
     }
 
     private static Func<Rgba32, Rgba32, bool> ColorComparer(int tolerance) => (a, b) => Math.Abs(a.R - b.R) <= tolerance && Math.Abs(a.G - b.G) <= tolerance && Math.Abs(a.B - b.B) <= tolerance && Math.Abs(a.A - b.A) <= tolerance;

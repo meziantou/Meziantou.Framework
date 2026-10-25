@@ -181,11 +181,10 @@ internal static class TdsQueryRequestParser
         }
 
         var maxLength = payload[position++];
-        var columnType = GetIntNColumnType(maxLength);
         var valueLength = payload[position++];
         if (valueLength == 0)
         {
-            return CreateParameter(name, rawValue: null, columnType);
+            return CreateParameter(name, rawValue: null, GetIntNColumnType(maxLength));
         }
 
         if (position + valueLength > payload.Length)
@@ -203,7 +202,10 @@ internal static class TdsQueryRequestParser
         };
 
         position += valueLength;
-        return CreateParameter(name, value, columnType);
+
+        // The type describes the value, which is read from its own length: a client may send a value that is not as long
+        // as the TYPE_INFO says
+        return CreateParameter(name, value, GetIntNColumnType(valueLength));
     }
 
     private static TdsQueryParameter? ParseBitNParameter(ReadOnlySpan<byte> payload, ref int position, string name)
@@ -238,11 +240,10 @@ internal static class TdsQueryRequestParser
         }
 
         var maxLength = payload[position++];
-        var columnType = GetFloatNColumnType(maxLength);
         var valueLength = payload[position++];
         if (valueLength == 0)
         {
-            return CreateParameter(name, rawValue: null, columnType);
+            return CreateParameter(name, rawValue: null, GetFloatNColumnType(maxLength));
         }
 
         if (position + valueLength > payload.Length)
@@ -258,7 +259,7 @@ internal static class TdsQueryRequestParser
         };
 
         position += valueLength;
-        return CreateParameter(name, value, columnType);
+        return CreateParameter(name, value, GetFloatNColumnType(valueLength));
     }
 
     private static TdsQueryParameter? ParseNVarCharParameter(ReadOnlySpan<byte> payload, ref int position, string name)
@@ -541,9 +542,10 @@ internal static class TdsQueryRequestParser
             _ => (long?)null,
         };
 
+        // A 4-byte value is a smallmoney whatever the TYPE_INFO says: a smallmoney TYPE_INFO with an 8-byte value is a money
         return units is null
             ? CreateParameter(name, encoded.ToArray(), TdsColumnType.Variant)
-            : CreateParameter(name, units.Value / 10000m, columnType);
+            : CreateParameter(name, units.Value / 10000m, valueLength == 4 ? TdsColumnType.SmallMoney : TdsColumnType.Money);
     }
 
     private static TdsQueryParameter? ParseDateTimeParameter(ReadOnlySpan<byte> payload, ref int position, string name)

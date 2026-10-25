@@ -10,7 +10,7 @@ This package includes data and code derived from the following third-party compo
 - Source: <https://github.com/unicode-org/icu>
 - License: Unicode-3.0, with the additional licenses of the word lists of Chinese and Japanese, Lao and Burmese
   (reproduced below from the LICENSE file of ICU)
-- Version: 78.3 (the data release `icu4c-78.3-data.zip`)
+- Version: 79.1 (the data release `icu4c-79.1-data.zip`)
 - Used for: the word lists of Chinese and Japanese, Thai, Lao, Khmer and Burmese (`Data/*.dict`, compiled from
   `icu4c/source/data/brkitr/dictionaries/*dict.txt` by `tools/Meziantou.Framework.Unicode.Dictionaries.Generator`; the
   data has been modified: the lists are converted into a binary trie), and the dictionary break engines

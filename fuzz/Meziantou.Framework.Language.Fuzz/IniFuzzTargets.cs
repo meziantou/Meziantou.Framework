@@ -6,7 +6,9 @@ namespace Meziantou.Framework.Language.Fuzz;
 /// <summary>
 /// INI documents in every dialect the options describe: the shared invariants, the grouping of the properties under
 /// their section, the lookups against a scan of the entries, and <see cref="IniDocumentSyntax.SetValue"/>, whose value
-/// must read back from the edited document and from its text parsed again, without changing the other values.
+/// must read back from the edited document and from its text parsed again, without changing the other values. The same
+/// goes for <see cref="IniDocumentSyntax.SetValues"/>, and for <see cref="IniDocumentSyntax.RemoveProperties"/> and
+/// <see cref="IniDocumentSyntax.RemoveSections"/>, whose keys are gone from the text they write.
 /// </summary>
 internal static class IniFuzzTargets
 {
@@ -28,8 +30,9 @@ internal static class IniFuzzTargets
 
     /// <summary>
     /// Byte 0: the options (bits 0-1 inline comments, 2 keys without value, 3 multiline values, 4 no quoted values, 5 report
-    /// duplicates, 6 ordinal names). Byte 1: bit 0 sets a value, the other bits pick the property. Then the document, then
-    /// 0xFF and the value to set.
+    /// duplicates, 6 ordinal names, 7 the other edits). Byte 1: bit 0 sets a value, the other bits pick the property; with
+    /// bit 7 of byte 0, bits 0-1 pick SetValue, SetValues, RemoveProperties, or RemoveSections, and the other bits what they
+    /// edit. Then the document, then 0xFF and the value to set.
     /// </summary>
     private static void Parse(ReadOnlySpan<byte> data)
     {
@@ -70,11 +73,120 @@ internal static class IniFuzzTargets
             // Documented by the walker for a tree nested too deeply to walk
         }
 
-        if ((edit & 1) != 0)
+        if ((flags & 128) != 0)
+        {
+            switch (edit & 3)
+            {
+                case 0:
+                    SetValue(root, options, layout, pairs, edit >> 2, value);
+                    break;
+                case 1:
+                    SetValues(root, options, pairs, edit >> 2, value);
+                    break;
+                case 2:
+                    RemoveProperties(root, options, pairs, edit >> 2);
+                    break;
+                default:
+                    RemoveSections(root, options, layout, pairs, edit >> 2);
+                    break;
+            }
+        }
+        else if ((edit & 1) != 0)
         {
             SetValue(root, options, layout, pairs, edit >> 1, value);
         }
     }
+
+    /// <summary>
+    /// Sets up to three properties of the document, from the pair <paramref name="choice"/> picks on, to the value and
+    /// to the value with a suffix, and a new one: each reads back as its value, and the other values do not change.
+    /// </summary>
+    private static void SetValues(IniDocumentSyntax root, IniParseOptions options, List<(string? Section, string Key)> pairs, int choice, string value)
+    {
+        var values = new List<(string? Section, string Key, string Value)>();
+        for (var i = 0; i < Math.Min(3, pairs.Count); i++)
+        {
+            var (section, key) = pairs[(choice + i) % pairs.Count];
+            values.Add((section, key, i == 0 ? value : value + FormattableString.Invariant($"{i}")));
+        }
+
+        values.Add((null, "fuzz-new-key", "new"));
+
+        IniDocumentSyntax edited;
+        try
+        {
+            edited = root.SetValues(values);
+        }
+        catch (ArgumentException)
+        {
+            // Documented for a key, section, or value that cannot be written the way the options read it
+            return;
+        }
+
+        var editedText = edited.ToFullString();
+        var setText = $"SetValues({string.Join(", ", values.Select(item => $"{FuzzAssert.Format(item.Section)}/{FuzzAssert.Format(item.Key)} = {FuzzAssert.Format(item.Value)}"))})";
+        var reparsed = IniSyntaxTree.ParseText(editedText, options).GetRoot();
+        foreach (var (section, key, _) in values)
+        {
+            // When a property is set more than once, the last value wins
+            var expected = values.Last(item => SameSection(options.NameComparer, section, item.Section) && options.NameComparer.Equals(key, item.Key)).Value.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');
+            FuzzAssert.Equal(expected, edited.GetValue(section, key), $"The document returned by {setText} does not have the value of {FuzzAssert.Format(section)}/{FuzzAssert.Format(key)}");
+            FuzzAssert.Equal(expected, reparsed.GetValue(section, key), $"The text written by {setText} does not read back as the value of {FuzzAssert.Format(section)}/{FuzzAssert.Format(key)}: {FuzzAssert.Format(editedText)}");
+        }
+
+        AssertOtherValuesUnchanged(root, reparsed, pairs, pair => values.Exists(item => SameSection(options.NameComparer, pair.Section, item.Section) && options.NameComparer.Equals(pair.Key, item.Key)), setText, editedText);
+    }
+
+    /// <summary>Removes the properties of a pair of the document: none is left after a reparse, and the other values do not change.</summary>
+    private static void RemoveProperties(IniDocumentSyntax root, IniParseOptions options, List<(string? Section, string Key)> pairs, int choice)
+    {
+        var (section, key) = pairs[choice % pairs.Count];
+        var edited = root.RemoveProperties(section, key);
+        var editedText = edited.ToFullString();
+        var removeText = $"RemoveProperties({FuzzAssert.Format(section)}, {FuzzAssert.Format(key)})";
+        FuzzAssert.True(edited.GetValue(section, key) is null, $"The document returned by {removeText} still has the property");
+
+        var reparsed = IniSyntaxTree.ParseText(editedText, options).GetRoot();
+        FuzzAssert.True(reparsed.GetValue(section, key) is null, $"The text written by {removeText} still has the property: {FuzzAssert.Format(editedText)}");
+        AssertOtherValuesUnchanged(root, reparsed, pairs, pair => SameSection(options.NameComparer, pair.Section, section) && options.NameComparer.Equals(pair.Key, key), removeText, editedText);
+    }
+
+    /// <summary>Removes the sections of a name of the document: none of their properties is left after a reparse, and the other values do not change.</summary>
+    private static void RemoveSections(IniDocumentSyntax root, IniParseOptions options, Layout layout, List<(string? Section, string Key)> pairs, int choice)
+    {
+        var names = layout.Sections.Where(item => !item.Section.NameToken.IsMissing).Select(item => item.Section.Name).ToList();
+        var name = names.Count == 0 || choice % (names.Count + 1) == names.Count ? "fuzz-missing-section" : names[choice % (names.Count + 1)];
+        var edited = root.RemoveSections(name);
+        var editedText = edited.ToFullString();
+        var removeText = $"RemoveSections({FuzzAssert.Format(name)})";
+        FuzzAssert.True(edited.Sections.All(section => !options.NameComparer.Equals(section.Name, name)), $"The document returned by {removeText} still has the section");
+
+        var reparsed = IniSyntaxTree.ParseText(editedText, options).GetRoot();
+        FuzzAssert.True(reparsed.Sections.All(section => section.NameToken.IsMissing || !options.NameComparer.Equals(section.Name, name)), $"The text written by {removeText} still has the section: {FuzzAssert.Format(editedText)}");
+        foreach (var (section, key) in pairs)
+        {
+            if (section is not null && options.NameComparer.Equals(section, name))
+            {
+                FuzzAssert.True(reparsed.GetValue(section, key) is null, $"The text written by {removeText} still has {FuzzAssert.Format(key)}: {FuzzAssert.Format(editedText)}");
+            }
+        }
+
+        AssertOtherValuesUnchanged(root, reparsed, pairs, pair => pair.Section is not null && options.NameComparer.Equals(pair.Section, name), removeText, editedText);
+    }
+
+    private static void AssertOtherValuesUnchanged(IniDocumentSyntax root, IniDocumentSyntax reparsed, List<(string? Section, string Key)> pairs, Func<(string? Section, string Key), bool> isEdited, string editText, string editedText)
+    {
+        foreach (var pair in pairs)
+        {
+            if (isEdited(pair))
+                continue;
+
+            FuzzAssert.Equal(root.GetValue(pair.Section, pair.Key), reparsed.GetValue(pair.Section, pair.Key), $"{editText} changes the value of {FuzzAssert.Format(pair.Section)}/{FuzzAssert.Format(pair.Key)}: {FuzzAssert.Format(editedText)}");
+        }
+    }
+
+    private static bool SameSection(StringComparer comparer, string? left, string? right)
+        => left is null ? right is null : right is not null && comparer.Equals(left, right);
 
     /// <summary>Checks that the properties are grouped under the section header before them, and returns that grouping.</summary>
     private static Layout CheckLayout(IniDocumentSyntax root)
@@ -187,9 +299,6 @@ internal static class IniFuzzTargets
 
             FuzzAssert.Equal(root.GetValue(otherSection, otherKey), reparsed.GetValue(otherSection, otherKey), $"{setText} changes the value of {FuzzAssert.Format(otherSection)}/{FuzzAssert.Format(otherKey)}: {FuzzAssert.Format(editedText)}");
         }
-
-        static bool SameSection(StringComparer comparer, string? left, string? right)
-            => left is null ? right is null : right is not null && comparer.Equals(left, right);
     }
 
     private static IEnumerable<FuzzSeed> GetSeeds()
@@ -206,6 +315,16 @@ internal static class IniFuzzTargets
         yield return FuzzSeed.FromText("crlf", [16, 1], "\uFEFF[s]\r\nk=\"v\"\r\n\r\n[t]\rk2=v2\r");
         yield return Seed("set-multiline", 8, 3, "[s]\nk = a\n    b\n", "x\ny\r\nz");
         yield return Seed("set-new-section", 0, 255, "[s]\nk=v\n; trailing comment\n", " needs quotes ");
+
+        // Bit 7 of the options picks the other edits
+        const string Edited = "; header\n\nglobal=1\n; about a\n[a]\nk=1\nk=2 ; inline\nother=x\n\n; about b\n[b]\nk=3\n[A]\nk=4\n";
+        yield return Seed("set-values", 128, 1 | (1 << 2), Edited, "v");
+        yield return Seed("set-values-multiline", 128 | 8, 1 | (2 << 2), "[s]\nk = a\n    b\nother = c\n    d\n", "x\ny");
+        yield return Seed("remove-properties", 128, 2 | (1 << 2), Edited, "");
+        yield return Seed("remove-properties-multiline", 128 | 8 | 4, 2, "key\n    continued\nother=1\n  more\n[s]\nflag\n", "");
+        yield return Seed("remove-sections", 128, 3, Edited, "");
+        yield return Seed("remove-sections-ordinal", 128 | 64, 3 | (2 << 2), Edited, "");
+        yield return Seed("remove-sections-missing", 128 | 2, 3 | (63 << 2), "[s] # c\nk=v # c\n[t]\n", "");
 
         static FuzzSeed Seed(string name, byte flags, byte edit, string text, string value)
             => new(name, (byte[])[flags, edit, .. FuzzText.Encode(text), ValueSeparator, .. FuzzText.Encode(value)]);

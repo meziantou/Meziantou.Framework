@@ -11,15 +11,11 @@ namespace Meziantou.Framework.Sanitizers.Fuzz;
 /// the allowed ones, no attribute outside the allowed ones, no URL attribute and no srcset candidate whose decoded URL
 /// has a script scheme (javascript:, vbscript:, a data: URL that is not an image, a video or an audio), no comment
 /// unless they are allowed, nothing left open at the end of the output (a tag, a quoted value, a comment, a lone
-/// <c>&lt;</c>) and no <c>&lt;</c> in text. The output is also stable: sanitizing it again changes nothing, except with
-/// the elements whose end tag is optional (a known limitation, see the tests of the sanitizer).
+/// <c>&lt;</c>) and no <c>&lt;</c> in text. The output is also stable: sanitizing it again changes nothing, so a browser
+/// reads it back as the same elements.
 /// </summary>
 public static class HtmlSanitizerFuzzTargets
 {
-    // Sanitizing an output that contains one of these elements can change it: unwrapping an element can leave them where
-    // the parser never puts them (see HtmlSanitizerTests.Sanitize_IsIdempotent_Fuzz), so the stability is not checked.
-    private static readonly HashSet<string> UnstableElements = new(["colgroup", "dd", "dt", "li", "p", "tbody", "td", "tfoot", "th", "thead", "tr", "rp", "rt", "table", "caption", "col"], StringComparer.Ordinal);
-
     // The elements the configuration of html-sanitizer-config can add to ValidElements (5 bytes of mask): the ones the
     // parser handles in a special way (raw text, foreign content, template, form, select, table, the document elements)
     private static readonly string[] ConfigurableElements =
@@ -45,10 +41,6 @@ public static class HtmlSanitizerFuzzTargets
     // of one of them in the output is a failure: the tokenizer reads their content with other rules (raw text, foreign
     // content), which the checks of the output do not follow.
     private static readonly HashSet<string> NeverKeptElements = new(["iframe", "noembed", "noframes", "noscript", "plaintext", "script", "style", "textarea", "title", "xmp", "svg", "math"], StringComparer.Ordinal);
-
-    // With the configuration, more elements are only built by the parser in some places (an option in a select, a form
-    // in a form, the document elements), so unwrapping an element around them can change the structure
-    private static readonly HashSet<string> ConfiguredUnstableElements = new([.. UnstableElements, "select", "option", "optgroup"], StringComparer.Ordinal);
 
     // The HTML5 named character references that decode to ASCII, which WebUtility.HtmlDecode (HTML 4 names) does not know
     private static readonly Dictionary<string, string> AsciiCharacterReferences = new(StringComparer.Ordinal)
@@ -96,7 +88,7 @@ public static class HtmlSanitizerFuzzTargets
         var flags = FuzzInput.ReadByte(ref data);
         var html = FuzzText.Decode(data);
         var sanitizer = new HtmlSanitizer { AllowComments = (flags & 1) != 0 };
-        SanitizeAndCheck(sanitizer, html, UnstableElements);
+        SanitizeAndCheck(sanitizer, html);
     }
 
     /// <summary>
@@ -109,7 +101,7 @@ public static class HtmlSanitizerFuzzTargets
         var sanitizer = new HtmlSanitizer();
         Configure(sanitizer, ref data);
         var html = FuzzText.Decode(data);
-        SanitizeAndCheck(sanitizer, html, ConfiguredUnstableElements);
+        SanitizeAndCheck(sanitizer, html);
     }
 
     /// <summary>
@@ -183,24 +175,20 @@ public static class HtmlSanitizerFuzzTargets
         }
     }
 
-    private static void SanitizeAndCheck(HtmlSanitizer sanitizer, string html, HashSet<string> unstableElements)
+    private static void SanitizeAndCheck(HtmlSanitizer sanitizer, string html)
     {
         var sanitized = sanitizer.SanitizeHtmlFragment(html);
-        HashSet<string> elements;
         try
         {
-            elements = CheckOutput(sanitizer, sanitized);
+            CheckOutput(sanitizer, sanitized);
         }
         catch (FuzzAssertionException ex)
         {
             throw new FuzzAssertionException($"{ex.Message}{Environment.NewLine}Output: {FuzzAssert.Format(sanitized)}", ex);
         }
 
-        if (!elements.Overlaps(unstableElements))
-        {
-            var twice = sanitizer.SanitizeHtmlFragment(sanitized);
-            FuzzAssert.Equal(sanitized, twice, "Sanitizing the output again changes it");
-        }
+        var twice = sanitizer.SanitizeHtmlFragment(sanitized);
+        FuzzAssert.Equal(sanitized, twice, "Sanitizing the output again changes it");
     }
 
     /// <summary>
@@ -234,10 +222,9 @@ public static class HtmlSanitizerFuzzTargets
         }
     }
 
-    /// <summary>Tokenizes the output as a browser does, checks every tag, and returns the names of the elements.</summary>
-    private static HashSet<string> CheckOutput(HtmlSanitizer sanitizer, string html)
+    /// <summary>Tokenizes the output as a browser does and checks every tag.</summary>
+    private static void CheckOutput(HtmlSanitizer sanitizer, string html)
     {
-        var elements = new HashSet<string>(StringComparer.Ordinal);
         var index = 0;
         while (index < html.Length)
         {
@@ -253,7 +240,7 @@ public static class HtmlSanitizerFuzzTargets
             var next = html[index + 1];
             if (char.IsAsciiLetter(next))
             {
-                index = ReadTag(sanitizer, html, index + 1, isEndTag: false, elements);
+                index = ReadTag(sanitizer, html, index + 1, isEndTag: false);
                 continue;
             }
 
@@ -265,7 +252,7 @@ public static class HtmlSanitizerFuzzTargets
                 var afterSlash = html[index + 2];
                 if (char.IsAsciiLetter(afterSlash))
                 {
-                    index = ReadTag(sanitizer, html, index + 2, isEndTag: true, elements);
+                    index = ReadTag(sanitizer, html, index + 2, isEndTag: true);
                     continue;
                 }
 
@@ -292,11 +279,10 @@ public static class HtmlSanitizerFuzzTargets
             FuzzAssert.Fail($"The output has a '<' in text at {index}: {FuzzAssert.Format(Excerpt(html, index))}");
         }
 
-        return elements;
     }
 
     /// <summary>Reads a tag from its name to its '&gt;' (WHATWG tag name, attribute name and attribute value states) and checks the element and its attributes.</summary>
-    private static int ReadTag(HtmlSanitizer sanitizer, string html, int index, bool isEndTag, HashSet<string> elements)
+    private static int ReadTag(HtmlSanitizer sanitizer, string html, int index, bool isEndTag)
     {
         var nameStart = index;
         while (index < html.Length && !IsTagWhiteSpace(html[index]) && html[index] is not '/' and not '>')
@@ -308,7 +294,6 @@ public static class HtmlSanitizerFuzzTargets
             FuzzAssert.Fail("The output ends inside a tag name: the markup that follows the fragment in the page would be part of the tag");
 
         var name = ToAsciiLowercase(html[nameStart..index]);
-        elements.Add(name);
         if (!isEndTag)
         {
             FuzzAssert.True(sanitizer.ValidElements.Contains(name) && !sanitizer.BlockedElements.Contains(name), $"The output has the element <{name}>, which is not allowed");
@@ -663,6 +648,12 @@ public static class HtmlSanitizerFuzzTargets
             "<svg><foreignObject><p>x</p></foreignObject><desc><b>y</b></desc><style><img src=x onerror=alert(1)></style></svg>", "<math><mtext><mi>x</mi><table><mglyph><style><img src=x onerror=alert(1)>",
             "<custom-element><slot name='a'></slot></custom-element>", "<noscript><p title=\"</noscript><img src=x onerror=alert(1)>\">", "<p><xmp></p><img src=x onerror=alert(1)></xmp>",
             "<textarea></textarea><img src=x onerror=alert(1)>", "<title><!--</title><img src=x onerror=alert(1)>-->", "<iframe srcdoc='<script>alert(1)</script>'></iframe>",
+            "<button>a<template><b><button>b</button></b></template></button>", "<nobr>a<template><nobr>b</nobr></template></nobr>", "<p>a<template><div>b</div><hr><table><tr><td>c</td></tr></table></template></p>",
+            "<li>a<template><b><li>b</li></b></template></li>", "<dl><dd>a<template><dt>b</dt></template></dd></dl>", "<select><template><select>a</select><input></template></select>",
+            "<select><option>a<template><option>b</option><optgroup>c</optgroup><hr></template></option></select>", "<ruby>a<p><template><rt>b</rt><rp>c</rp></template></p></ruby>",
+            "<table><template><tr><td>a</td></tr></template></table>", "<table><tbody><tr><td>a</td><template><b>b</b></template></tr></tbody></table>", "<div><template><tr><td>a</td></tr><col></template></div>",
+            "<template><caption><button>a</button></caption><tbody><tr><td>b</td></tr></tbody></template>", "<template><tr><td>a</td></tr></template><template><td>b</td><col></template>",
+            "<form><div></form><form>a</form>", "<p>a<table><tr><td>b</td></tr></table></p>",
         ];
 
         var configurations = GetConfigurations();

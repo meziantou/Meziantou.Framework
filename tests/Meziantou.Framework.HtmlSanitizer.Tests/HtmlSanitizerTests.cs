@@ -422,10 +422,9 @@ public class HtmlSanitizerTests
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
     public void Sanitize_IsIdempotent_Fuzz()
     {
-        // Elements whose end tag is optional (p, li, td, tbody, …) are left out on purpose. Unwrapping an element
-        // can leave them in a place where the parser never puts them ("<li><select><li>" becomes an li nested in
-        // an li, "<template><tbody>" a tbody outside of a table), so the parser reads the output back with a
-        // different structure. The text and the attributes are the same, so this changes nothing to the safety.
+        // Unwrapping an element can leave another one where the parser never puts it ("<li><select><li>" would
+        // become an li nested in an li, "<template><tbody>" a tbody outside of a table), so such an element is
+        // unwrapped too, and the parser reads the output back with the same structure.
         string[] tokens =
         [
             "<b>", "</b>", "<script>", "</script>", "<img src=x onerror=alert(1)>",
@@ -433,6 +432,8 @@ public class HtmlSanitizerTests
             "<a href='javascript:alert(1)'>", "</a>", "a", "<", ">", "\"", "'", "=", "/", "</0", "<?x", "<!x",
             "<title>", "</title>", "<textarea>", "</textarea>", "<noscript>", "</noscript>", "<plaintext>",
             "<math>", "<div>", "</div>", "<span title=\"", "\">", "<iframe>", "</iframe>",
+            "<p>", "</p>", "<li>", "<dd>", "<dt>", "<ul>", "<table>", "</table>", "<tbody>", "<tr>", "<td>", "<caption>", "<col>",
+            "<template>", "</template>", "<object>", "</object>", "<select>", "<rt>", "<rp>", "<ruby>", "<h1>", "<hr>",
         ];
 
         var random = new Random(Seed: 20260827);
@@ -725,6 +726,77 @@ public class HtmlSanitizerTests
         var actual = sanitizer.SanitizeHtmlFragment(html);
         Assert.Equal(expectedResult, actual);
         Assert.Equal(actual, sanitizer.SanitizeHtmlFragment(actual));
+    }
+
+    [Theory]
+    // A start tag closes an open element (a button in scope, a p in button scope, the open li, ...), or the parser
+    // ignores it, so an element that unwrapping puts in such an element is unwrapped too
+    [InlineData("<button>a<template><b><button>b</button></b></template></button>", "<button>a<b>b</b></button>")]
+    [InlineData("<button>a<object><button>b</button></object></button>", "<button>a<object><button>b</button></object></button>")]
+    [InlineData("<nobr>a<template><nobr>b</nobr></template></nobr>", "<nobr>ab</nobr>")]
+    [InlineData("<p>a<template><div>b</div></template></p>", "<p>ab</p>")]
+    [InlineData("<p>a<template><ul><li>b</li></ul><hr><table><tr><td>c</td></tr></table></template></p>", "<p>abc</p>")]
+    [InlineData("<p>a<button><div>b</div></button></p>", "<p>a<button><div>b</div></button></p>")]
+    [InlineData("<li>a<template><b><li>b</li></b></template></li>", "<li>a<b>b</b></li>")]
+    [InlineData("<li>a<ul><li>b</li></ul></li>", "<li>a<ul><li>b</li></ul></li>")]
+    [InlineData("<dl><dd>a<template><dt>b</dt></template></dd></dl>", "<dl><dd>ab</dd></dl>")]
+    [InlineData("<select><template><select>a</select><input></template></select>", "<select>a</select>")]
+    [InlineData("<select><option>a<template><option>b</option></template></option></select>", "<select><option>ab</option></select>")]
+    [InlineData("<option>a<template><option>b</option></template></option>", "<option>ab</option>")]
+    [InlineData("<ruby>a<p><template><rt>b</rt></template></p></ruby>", "<ruby>a<p>b</p></ruby>")]
+    [InlineData("<div><template><tr><td>a</td></tr></template></div>", "<div>a</div>")]
+    [InlineData("<table><template><tr><td>a</td></tr></template></table>", "a")]
+    [InlineData("<table><tbody><tr><td>a</td><template><b>b</b></template></tr></tbody></table>", "a<b>b</b>")]
+    [InlineData("<table><tbody><tr><td>a</td><template> </template></tr></tbody></table>", "<table><tbody><tr><td>a</td> </tr></tbody></table>")]
+    public void Sanitize_UnwrappingDoesNotMisnestElements(string html, string expectedResult)
+    {
+        var sanitizer = new HtmlSanitizer();
+        sanitizer.ValidElements.UnionWith(["button", "nobr", "select", "option", "input", "object"]);
+
+        var actual = sanitizer.SanitizeHtmlFragment(html);
+        Assert.Equal(expectedResult, actual);
+        Assert.Equal(actual, sanitizer.SanitizeHtmlFragment(actual));
+    }
+
+    [Theory]
+    // The parser inserts a tbody between a table and a tr, and moves the text of a table before it
+    [InlineData("<table><tbody><tr><td>a</td></tr></tbody></table>", "tbody", "a")]
+    [InlineData("<table><tbody><tr><td>a</td></tr></tbody></table>", "td", "a")]
+    [InlineData("<table><tbody><tr><td> </td></tr></tbody></table>", "td", "<table><tbody><tr> </tr></tbody></table>")]
+    [InlineData("<table><colgroup><col></colgroup></table>", "colgroup", "<table></table>")]
+    public void Sanitize_DisallowedTablePartUnwrapsTheTable(string html, string disallowedElement, string expectedResult)
+    {
+        var sanitizer = new HtmlSanitizer();
+        sanitizer.ValidElements.Remove(disallowedElement);
+
+        var actual = sanitizer.SanitizeHtmlFragment(html);
+        Assert.Equal(expectedResult, actual);
+        Assert.Equal(actual, sanitizer.SanitizeHtmlFragment(actual));
+    }
+
+    [Theory]
+    // The first start tag of the content of a template decides how the parser reads the next ones
+    [InlineData("<template><caption><button>a</button></caption><tbody><tr><td>b</td></tr></tbody></template>", "<template><button>a</button>b</template>")]
+    [InlineData("<template><tr><td>a</td></tr><tr><td>b</td></tr></template>", "<template><tr><td>a</td></tr><tr><td>b</td></tr></template>")]
+    [InlineData("<template><td>a</td><td>b</td></template>", "<template><td>a</td><td>b</td></template>")]
+    public void Sanitize_AllowedTemplateWithTableParts(string html, string expectedResult)
+    {
+        var sanitizer = new HtmlSanitizer();
+        sanitizer.ValidElements.UnionWith(["template", "button"]);
+        sanitizer.ValidElements.Remove("caption");
+
+        var actual = sanitizer.SanitizeHtmlFragment(html);
+        Assert.Equal(expectedResult, actual);
+        Assert.Equal(actual, sanitizer.SanitizeHtmlFragment(actual));
+    }
+
+    [Fact]
+    public void Sanitize_TableInParagraphIsReadAsInAPageInStandardsMode()
+    {
+        // The parser closes the p element (a document in quirks mode would keep the table in it), and the end tag of
+        // the p element creates an empty one
+        var sanitizer = new HtmlSanitizer();
+        Assert.Equal("<p>a</p><table><tbody><tr><td>b</td></tr></tbody></table><p></p>", sanitizer.SanitizeHtmlFragment("<p>a<table><tr><td>b</td></tr></table></p>"));
     }
 
     [Fact]

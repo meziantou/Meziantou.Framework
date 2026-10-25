@@ -633,6 +633,40 @@ public sealed class YamlCollectionConverterTests
     }
 
     [Fact]
+    public void PreferPlainStyleDisabled_KeepsTheTypeOfNonStringKeys()
+    {
+        var options = new YamlSerializerOptions { WriteIndented = false, ScalarStylePreferences = new YamlScalarStylePreferences { PreferPlainStyle = false } };
+        var value = new Dictionary<object, object?> { [9L] = null, [true] = 1L, [1.5] = "a", ["2"] = "b", ["c"] = "d" };
+
+        var yaml = YamlSerializer.Serialize<object>(value, options);
+
+        Assert.Equal("{9: null, true: 1, 1.5: \"a\", \"2\": \"b\", \"c\": \"d\"}\n", yaml);
+        var roundTrip = Assert.IsType<Dictionary<object, object?>>(YamlSerializer.Deserialize<object>(yaml, options));
+        Assert.Null(roundTrip[9L]);
+        Assert.Equal(1L, roundTrip[true]);
+        Assert.Equal("a", roundTrip[1.5]);
+        Assert.Equal("b", roundTrip["2"]);
+        Assert.Equal("d", roundTrip["c"]);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void JsonSchema_NonFiniteFloatKeysAreTagged(bool useSchema)
+    {
+        var options = new YamlSerializerOptions { Schema = YamlSchemaKind.Json, UseSchema = useSchema };
+        var value = new Dictionary<object, object?> { [double.NegativeInfinity] = "a", [double.NaN] = "b", [1.5] = "c" };
+
+        var yaml = YamlSerializer.Serialize<object>(value, options);
+
+        Assert.Equal("!!float -.inf: \"a\"\n!!float .nan: \"b\"\n1.5: \"c\"\n", yaml);
+        var roundTrip = Assert.IsType<Dictionary<object, object?>>(YamlSerializer.Deserialize<object>(yaml, options));
+        Assert.Equal("a", roundTrip[double.NegativeInfinity]);
+        Assert.Equal("b", roundTrip[double.NaN]);
+        Assert.Equal("c", roundTrip[1.5]);
+    }
+
+    [Fact]
     public void PreferPlainStyleDisabled_IsHonoredFromTheSourceGenerationOptions()
     {
         var yaml = YamlSerializer.Serialize(new ScalarFormattingModel { Name = "text" }, QuotedStringsYamlContext.Default);

@@ -52,16 +52,9 @@ public sealed class YamlSyntaxTree
             AddTriviaTokens(yaml, tokens, GetUncoveredRanges(yaml, tokens));
         }
 
-        tokens.Sort(static (left, right) =>
-        {
-            var position = left.Span.Start.Index.CompareTo(right.Span.Start.Index);
-            if (position != 0)
-            {
-                return position;
-            }
-
-            return left.Span.End.Index.CompareTo(right.Span.End.Index);
-        });
+        // The sort must be stable: the scanner emits several empty tokens at the same position (KEY and
+        // BLOCK-MAPPING-START, BLOCK-END and STREAM-END), and their order must not depend on the trivia around them.
+        tokens = [.. tokens.OrderBy(token => token.Span.Start.Index).ThenBy(token => token.Span.End.Index)];
 
         var endMark = CreateMark(yaml, yaml.Length);
         var fullSpan = new YamlSourceSpan(new Mark(0, 0, 0), endMark);

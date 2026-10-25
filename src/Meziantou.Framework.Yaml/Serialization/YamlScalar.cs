@@ -651,7 +651,9 @@ public static class YamlScalar
         {
             if (TryResolveSchemaScalar(reader, out var tag, out var value))
             {
-                return value;
+                // The schemas decode an integer into the narrowest type, but an untyped integer is a long, as it is
+                // when the schema is not used
+                return value is int narrowInteger ? (long)narrowInteger : value;
             }
 
             // A node whose content does not match its explicit tag, such as "!!int abc", is invalid.

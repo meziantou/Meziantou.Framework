@@ -103,6 +103,22 @@ public class YamlSyntaxTreeTests
         Assert.DoesNotContain(tree.Tokens, token => token.Kind is YamlSyntaxKind.NewLineTrivia);
     }
 
+    [Theory]
+    [InlineData("---\na: 1\n? b\n&anchor c: 3\n")]
+    [InlineData("&a a: b\nc: &d d\n")]
+    public void ParseKeepsTheScannerOrderOfTokensAtTheSamePosition(string yaml)
+    {
+        static string Format(IEnumerable<YamlSyntaxToken> tokens) => string.Join('\n', tokens.Select(token => $"{token.Kind} {token.Span.Start.Index}..{token.Span.End.Index}"));
+
+        var withTrivia = YamlSyntaxTree.Parse(yaml, new YamlSyntaxOptions { IncludeTrivia = true });
+        var withoutTrivia = YamlSyntaxTree.Parse(yaml, new YamlSyntaxOptions { IncludeTrivia = false });
+
+        var expected = Format(withoutTrivia.Tokens);
+        Assert.Equal(expected, Format(withTrivia.Tokens.Where(token => token.Kind is not (YamlSyntaxKind.WhitespaceTrivia or YamlSyntaxKind.NewLineTrivia or YamlSyntaxKind.CommentTrivia))));
+        Assert.True(withoutTrivia.Tokens.ToList().FindIndex(token => token.Kind is YamlSyntaxKind.BlockMappingStart) < withoutTrivia.Tokens.ToList().FindIndex(token => token.Kind is YamlSyntaxKind.Key));
+        Assert.Equal(YamlSyntaxKind.StreamEnd, withoutTrivia.Tokens[^1].Kind);
+    }
+
     [Fact]
     public void ParseInvalidYamlThrowsWithMarks()
     {

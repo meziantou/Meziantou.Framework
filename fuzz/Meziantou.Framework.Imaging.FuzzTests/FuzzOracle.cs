@@ -23,7 +23,12 @@ namespace Meziantou.Framework.Imaging.FuzzTests;
 /// every frame alive. A reader that renders every refinement of a frame ends each frame with the same pixels;</description></item>
 /// <item><description>transcoding is exact or refused: a JPEG file that is recompressed as a JPEG XL file is rebuilt byte for
 /// byte, a refused input writes nothing, and JPEG reconstruction data that a mutation damaged never make anything else
-/// than a documented exception or a file.</description></item>
+/// than a documented exception or a file;</description></item>
+/// <item><description>a collection of pages or representations (<see cref="ImageCollection"/>) describes and decodes the same
+/// entries from a span and from a stream, rejects the formats that store one image, and its default entry (the first page,
+/// or the largest representation) is the image of the eager load;</description></item>
+/// <item><description>a lossless encoder, chosen by the variant among the encoders that have a lossless mode, gives back the
+/// pixels of a corner of the first frame of a decoded image.</description></item>
 /// </list>
 /// </summary>
 internal static class FuzzOracle
@@ -130,7 +135,15 @@ internal static class FuzzOracle
             return FuzzFailure.Property("identify-format", $"Identify reported {header.Value.Format}, DetectFormat {detected}");
         }
 
-        if (full.Exception is not null && !IsLiveAllocationLimit(full.Exception))
+        // TIFF, ICO and CUR files are random-access containers, and the steps of an ANI file are located by a table: the
+        // reader refuses them, whatever their content
+        var isReadSequentially = detected is not (ImageFormat.Tiff or ImageFormat.Ico or ImageFormat.Cur or ImageFormat.Ani);
+        if (!isReadSequentially && sequential.Exception is not UnsupportedImageFeatureException { Feature: "Sequential reading" })
+            return FuzzFailure.Property("reader-random-access", $"The reader of a {detected} file {Describe(sequential.Exception)} instead of refusing the format");
+
+        // The load of a TIFF document reads its first page, and its full identification every page
+        var loadsFirstPageOnly = detected == ImageFormat.Tiff;
+        if (full.Exception is not null && !IsLiveAllocationLimit(full.Exception) && !loadsFirstPageOnly)
         {
             foreach (var (name, succeeded) in new[] { ("load", eager.Succeeded), ("load-rgba64", typed.Succeeded) })
             {
@@ -142,12 +155,12 @@ internal static class FuzzOracle
         if (eager.Succeeded)
         {
             var info = full.Value;
-            if (info is null)
+            if (info is null && !loadsFirstPageOnly)
                 return FuzzFailure.Property("load-without-full-identify", $"Load succeeded but full identification failed: {Describe(full.Exception)}");
 
             var decoded = eager.Value!;
-            if (info.Width != decoded.Width || info.Height != decoded.Height || info.PixelFormat != decoded.PixelFormat
-                || info.FrameCount != decoded.Frames.Count || (info.HasPosterFrame == true) != (decoded.Poster is not null)
+            if ((info is not null && (info.Width != decoded.Width || info.Height != decoded.Height || info.PixelFormat != decoded.PixelFormat
+                || info.FrameCount != decoded.Frames.Count || (info.HasPosterFrame == true) != (decoded.Poster is not null)))
                 || header.Value!.Width != decoded.Width || header.Value.Height != decoded.Height || header.Value.PixelFormat != decoded.PixelFormat)
             {
                 return FuzzFailure.Property("identify-mismatch", $"Identify (header {Describe(header.Value)}, full {Describe(info)}) disagrees with the load ({decoded})");
@@ -161,7 +174,11 @@ internal static class FuzzOracle
         if (eager.Succeeded && typed.Succeeded && eager.Value!.Frames.Count != typed.Value!.Frames.Count)
             return FuzzFailure.Property("typed-untyped-frames", $"Untyped load {eager.Value}, Rgba64 load {typed.Value}");
 
-        if (typed.Succeeded && sequential.Succeeded)
+        if (!isReadSequentially)
+        {
+            // Refused above
+        }
+        else if (typed.Succeeded && sequential.Succeeded)
         {
             if (!typed.Value!.Matches(sequential.Value!))
                 return FuzzFailure.Property("eager-sequential", $"Eager Rgba64 load {typed.Value} differs from the reader {sequential.Value}");
@@ -174,6 +191,15 @@ internal static class FuzzOracle
         {
             return FuzzFailure.Property("clean-end-on-malformed-data", $"Eager Rgba64 load {Describe(typed.Exception)} but the reader ended cleanly after {sequential.Value}");
         }
+
+        // Pages and representations: the collection reads the same entries from a span and from a stream, and its default
+        // entry is the image of the eager load
+        var collection = Run(audit, "collection", () => CheckCollection(input, variant, detected, eager, full));
+        if (collection.Failure is not null)
+            return collection.Failure;
+
+        if (collection.Value is { Length: > 0 } collectionViolation)
+            return FuzzFailure.Property(collectionViolation.Split(':')[0], collectionViolation);
 
         // HEIC: a decoding that is interrupted (a cancellation while the file is read, a reader that is disposed before the
         // last image) releases what it holds: the pictures that wait for their turn in the decoded picture buffer, the
@@ -310,6 +336,10 @@ internal static class FuzzOracle
             }
         }
 
+        // A lossless encoder, chosen by the variant, gives back the pixels of a part of the first frame
+        if (CheckLosslessRoundTrip(image, variant) is { Length: > 0 } lossless)
+            return lossless;
+
         // Processing on whatever geometry and orientation the input declared
         image.AutoOrient();
         image.Resize(new ResizeOptions(Math.Max(1, image.Width / 2), Math.Max(1, (image.Height * 2) / 3)) { Mode = ResizeMode.Stretch });
@@ -338,6 +368,145 @@ internal static class FuzzOracle
         var box = image.AnalyzeAutoCrop(expand).Bounds;
         if (image.AutoCrop(expand) && image.Size == size && box.X == expand.PaddingX && box.Y == expand.PaddingY)
             return $"auto-crop-expand: the {size} canvas is reported as changed but the content box {box} and its padding are the canvas";
+
+        return string.Empty;
+    }
+
+    /// <summary>Returns an empty string, or "name: description" for a violated property; throws for exceptions.</summary>
+    private static string CheckLosslessRoundTrip(Image image, int variant)
+    {
+        // A corner of the first frame, so that the slowest encoders stay fast whatever the size of the input
+        using var still = image.CloneFrame(0);
+        still.Crop(new Rectangle(0, 0, Math.Min(still.Width, 40), Math.Min(still.Height, 40)));
+        var source = still.PixelFormat;
+        var eightBit = source switch
+        {
+            PixelFormat.Rgba64 => PixelFormat.Rgba32,
+            PixelFormat.Gray16 => PixelFormat.Gray8,
+            _ => source,
+        };
+        var option = (variant >> 4) & 3;
+        var alternative = (variant & 16) != 0;
+
+        // An icon DIB whose alpha channel is entirely zero is read through its AND mask, which the encoder leaves clear
+        // (IcoEntryDecoder: an all-transparent icon is never what the file means): such a corner is written as a PNG payload
+        var dibPayload = alternative && !IsFullyTransparent(still);
+        var (encoder, pixelFormat) = (variant % 12) switch
+        {
+            0 => ((ImageEncoder)new QoiEncoder { MetadataHandling = MetadataHandling.Strip }, eightBit),
+            1 => (new BmpEncoder { MetadataHandling = MetadataHandling.Strip, RowOrder = alternative ? BmpRowOrder.TopDown : BmpRowOrder.BottomUp }, eightBit),
+            2 => (new TgaEncoder { MetadataHandling = MetadataHandling.Strip, Compression = alternative ? TgaCompression.RunLength : TgaCompression.None }, eightBit),
+            3 => (new PnmEncoder { MetadataHandling = MetadataHandling.Strip }, source),
+            4 => (new TiffEncoder { MetadataHandling = MetadataHandling.Strip, Compression = option switch { 0 => TiffCompression.None, 1 => TiffCompression.Deflate, 2 => TiffCompression.Lzw, _ => TiffCompression.PackBits }, BigEndian = (variant & 64) != 0, BigTiff = (variant & 128) != 0, RowsPerStrip = 1 + (variant % 7) }, source),
+            5 => (new WebPEncoder { MetadataHandling = MetadataHandling.Strip, Effort = option * 3 }, eightBit),
+            6 => (new JpegXlEncoder { MetadataHandling = MetadataHandling.Strip }, source),
+            7 => (new Jpeg2000Encoder { MetadataHandling = MetadataHandling.Strip }, source),
+            8 => (new PngEncoder { MetadataHandling = MetadataHandling.Strip, Interlaced = alternative }, source),
+            9 => (new IcoEncoder { MetadataHandling = MetadataHandling.Strip, Kind = (variant & 32) != 0 ? IconKind.Cursor : IconKind.Icon, PayloadFormat = dibPayload ? IconPayloadFormat.Dib : IconPayloadFormat.Png }, dibPayload ? eightBit : source),
+            10 => (new AvifEncoder { MetadataHandling = MetadataHandling.Strip }, eightBit),
+            _ => (new HeicEncoder { MetadataHandling = MetadataHandling.Strip }, eightBit),
+        };
+
+        using var converted = pixelFormat switch
+        {
+            PixelFormat.Rgba32 => (Image)still.CloneAs<Rgba32>(Conversion),
+            PixelFormat.Bgra32 => still.CloneAs<Bgra32>(Conversion),
+            PixelFormat.Rgb24 => still.CloneAs<Rgb24>(Conversion),
+            PixelFormat.Rgba64 => still.CloneAs<Rgba64>(Conversion),
+            PixelFormat.Gray8 => still.CloneAs<Gray8>(Conversion),
+            _ => still.CloneAs<Gray16>(Conversion),
+        };
+        using var output = new MemoryStream();
+        converted.Save(output, encoder);
+        using var expected = converted.CloneAs<Rgba64>(Conversion);
+        using var reloaded = Image.Load<Rgba64>(output.ToArray(), new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion });
+        if (reloaded.Width != expected.Width || reloaded.Height != expected.Height || reloaded.Frames.Count != 1)
+            return $"lossless-round-trip-structure: the {pixelFormat} image of {expected.Width}x{expected.Height} written as {encoder.Format} decodes as {reloaded.Width}x{reloaded.Height} with {reloaded.Frames.Count} frame(s)";
+
+        if (FrameSummary.Capture(expected.Frames[0]).PixelHash != FrameSummary.Capture(reloaded.Frames[0]).PixelHash)
+            return $"lossless-round-trip-pixels: the {pixelFormat} image of {expected.Width}x{expected.Height} written as {encoder.Format} ({encoder.GetType().Name}, variant {variant}) does not decode to the same pixels";
+
+        return string.Empty;
+    }
+
+    private static bool IsFullyTransparent(Image image)
+    {
+        if (!PixelFormats.HasAlpha(image.PixelFormat))
+            return false;
+
+        using var pixels = image.CloneAs<Rgba64>(Conversion);
+        var values = new Rgba64[pixels.Width * pixels.Height];
+        pixels.Frames[0].CopyPixelDataTo(values);
+        return Array.TrueForAll(values, pixel => pixel.A == 0);
+    }
+
+    /// <summary>Returns an empty string, or "name: description" for a violated property; throws for exceptions.</summary>
+    private static string CheckCollection(byte[] input, int variant, ImageFormat detected, Outcome<DecodedSummary> eager, Outcome<ImageInfo> full)
+    {
+        var fromSpan = CollectionSummary.Load(() => ImageCollection.Load(input, Configuration), variant);
+
+        // From a stream that starts after a few unrelated bytes, read in short reads or not
+        var prefix = (variant >> 5) & 3;
+        var data = new byte[prefix + input.Length];
+        data.AsSpan(0, prefix).Fill(0xA5);
+        input.CopyTo(data, prefix);
+        using var stream = new TestInputStream(data, prefix) { MaxBytesPerRead = (variant & 1) != 0 ? 1 + ((variant >> 4) % 7) : 0 };
+        var fromStream = CollectionSummary.Load(() => ImageCollection.Load(stream, Configuration), variant);
+        if (fromSpan.ToString() != fromStream.ToString() && fromSpan.Exception is not ImageResourceLimitException { Kind: ImageResourceLimitKind.EncodedBytes })
+            return $"collection-span-stream: the collection loaded from a span is {fromSpan}, from a stream {fromStream}";
+
+        // The collection tells the formats apart from the detection prefix: the detection of a file of the HEIF family
+        // reads the brands that follow it when it has them, and reports a file type box the prefix cuts as AVIF
+        var prefixFormat = Image.DetectFormat(input.AsSpan(0, Math.Min(input.Length, Image.FormatDetectionPrefixLength)));
+        var isCollection = detected is ImageFormat.Tiff or ImageFormat.Ico or ImageFormat.Cur;
+        switch (fromSpan.Exception)
+        {
+            case null when !isCollection:
+                return $"collection-single-image: a {detected} input is loaded as a collection {fromSpan}";
+
+            case not null and not UnknownImageFormatException when prefixFormat == ImageFormat.Unknown:
+                return $"collection-unknown-signature: DetectFormat returned Unknown but the collection {Describe(fromSpan.Exception)}";
+
+            case not null and not UnsupportedImageFeatureException when prefixFormat != ImageFormat.Unknown && !isCollection:
+                return $"collection-single-image: a {prefixFormat} input is rejected with {Describe(fromSpan.Exception)} instead of UnsupportedImageFeatureException";
+
+            case not null when eager.Succeeded && isCollection && full.Succeeded:
+                return $"collection-failure-but-load: the eager load succeeded ({eager.Value}) but the collection {Describe(fromSpan.Exception)}";
+        }
+
+        // The collection and the full identification walk the same structure: every entry
+        if (isCollection && fromSpan.Succeeded != full.Succeeded && fromSpan.Exception is not ImageResourceLimitException && full.Exception is not ImageResourceLimitException)
+            return $"collection-full-identify: the full identification {Describe(full.Exception)} but the collection {Describe(fromSpan.Exception)}";
+
+        if (fromSpan.Exception is not null)
+            return string.Empty;
+
+        if (fromSpan.Format != detected)
+            return $"collection-format: the collection reports {fromSpan.Format}, DetectFormat {detected}";
+
+        if (full.Value?.CollectionEntryCount is { } count && count != fromSpan.Entries.Count)
+            return $"collection-count: the identification reports {count} entries, the collection {fromSpan}";
+
+        if (fromSpan.Entries.Count == 0)
+            return eager.Succeeded ? $"collection-empty: the eager load succeeded ({eager.Value}) but the collection has no entry" : string.Empty;
+
+        // The default entry: the first page, or the largest representation (then the deepest, which the description of
+        // an entry does not tell apart from the other representations of that size)
+        var largest = fromSpan.Entries.Max(entry => (long)entry.Width * entry.Height);
+        List<int> candidates = detected == ImageFormat.Tiff ? [0] : Enumerable.Range(0, fromSpan.Entries.Count).Where(index => (long)fromSpan.Entries[index].Width * fromSpan.Entries[index].Height == largest).ToList();
+        if (candidates.Exists(index => index >= CollectionSummary.MaxDecodedEntries))
+            return string.Empty;
+
+        if (eager.Succeeded)
+        {
+            var decoded = eager.Value!;
+            if (!candidates.Exists(index => fromSpan.Entries[index].Decoded is { } entry && entry.Width == decoded.Width && entry.Height == decoded.Height && entry.PixelFormat == decoded.PixelFormat && entry.Frame.PixelHash == decoded.Frames[0].PixelHash))
+                return $"collection-default-entry: the eager load ({decoded}) is none of the entries {string.Join(", ", candidates)} of the collection {fromSpan}";
+        }
+        else if (candidates.Count == 1 && fromSpan.Entries[candidates[0]].Decoded is not null && !IsLiveAllocationLimit(eager.Exception))
+        {
+            return $"collection-default-entry-decoded: the eager load {Describe(eager.Exception)} but the entry {candidates[0]} of the collection decodes ({fromSpan})";
+        }
 
         return string.Empty;
     }
@@ -533,6 +702,78 @@ internal static class FuzzOracle
     {
         public bool Succeeded => Exception is null;
     }
+
+    /// <summary>What a collection describes and decodes, comparable as text; throws only for undocumented exceptions.</summary>
+    private sealed class CollectionSummary
+    {
+        public const int MaxDecodedEntries = 8;
+
+        public Exception? Exception { get; private init; }
+
+        public ImageFormat Format { get; private init; }
+
+        public bool Succeeded => Exception is null;
+
+        public List<EntrySummary> Entries { get; } = [];
+
+        public static CollectionSummary Load(Func<ImageCollection> load, int variant)
+        {
+            ImageCollection collection;
+            try
+            {
+                collection = load();
+            }
+            catch (ImageException exception)
+            {
+                return new CollectionSummary { Exception = exception };
+            }
+
+            using (collection)
+            {
+                // The first entries are decoded in an order the variant chooses: each entry is also decoded after the others
+                var count = collection.Count;
+                var decodedCount = Math.Min(count, MaxDecodedEntries);
+                var outcomes = new (DecodedEntry? Decoded, string? Error)[decodedCount];
+                for (var i = 0; i < decodedCount; i++)
+                {
+                    var index = (variant & 2) != 0 ? decodedCount - 1 - i : i;
+                    try
+                    {
+                        using var image = collection[index].Decode(new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversion });
+                        if (image.Frames.Count != 1 || image.PosterFrame is not null || image.IsAnimated)
+                            throw new UnreachableException($"The entry {index} decodes as {image.Frames.Count} frame(s), animated: {image.IsAnimated}");
+
+                        outcomes[index] = (new DecodedEntry(image.Width, image.Height, image.PixelFormat, FrameSummary.Capture(image.Frames[0])), null);
+                    }
+                    catch (ImageException exception)
+                    {
+                        outcomes[index] = (null, exception.GetType().Name);
+                    }
+                }
+
+                var result = new CollectionSummary { Format = collection.Format };
+                for (var i = 0; i < count; i++)
+                {
+                    var entry = collection[i];
+                    var description = FormattableString.Invariant($"{entry.Size.Width}x{entry.Size.Height} {entry.PixelFormat} {entry.ColorModel} {entry.BitsPerComponent} {entry.MayHaveTransparency} {entry.PayloadFormat} {entry.Hotspot}");
+                    var (decoded, error) = i < decodedCount ? outcomes[i] : (null, "not decoded");
+                    result.Entries.Add(new EntrySummary(entry.Size.Width, entry.Size.Height, description, decoded, error));
+                }
+
+                return result;
+            }
+        }
+
+        public override string ToString()
+            => Exception is not null ? Exception.GetType().Name : $"{Format} [{string.Join("; ", Entries)}]";
+    }
+
+    private sealed record EntrySummary(int Width, int Height, string Description, DecodedEntry? Decoded, string? Error)
+    {
+        public override string ToString() => $"{Description} -> {(Decoded is { } decoded ? $"{decoded.Width}x{decoded.Height} {decoded.PixelFormat} {decoded.Frame.PixelHash}" : Error)}";
+    }
+
+    private sealed record DecodedEntry(int Width, int Height, PixelFormat PixelFormat, FrameSummary Frame);
 
     private sealed record FrameSummary(int Width, int Height, FrameDuration Duration, string PixelHash)
     {

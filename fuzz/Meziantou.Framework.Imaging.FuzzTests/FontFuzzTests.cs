@@ -5,6 +5,7 @@ using Meziantou.Framework.Imaging.Drawing;
 using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.TestHarness.Fixtures;
 using Meziantou.Framework.Imaging.TestHarness.Pixels;
+using Meziantou.Framework.Imaging.TestHarness.Streams;
 using Meziantou.Framework.Imaging.Tests;
 using Meziantou.Framework.Imaging.Typography;
 
@@ -30,6 +31,9 @@ public sealed class FontFuzzTests
             Limits = new ImageResourceLimits { MaxFontBytes = 16 * 1024 * 1024, MaxGlyphComplexity = 50_000, MaxLiveAllocationBytes = 64 * 1024 * 1024 },
         },
     };
+
+    // The same limits, with the outlines of the glyphs that have bitmaps without colors.
+    private static readonly FontLoadOptions OptionsWithoutBitmaps = new() { UseEmbeddedBitmaps = false, Configuration = Options.Configuration };
 
     // Characters of the fonts of the corpus (with pairs that kern, ligatures, marks to compose and to attach, a
     // fraction), a character none of them has, a line break and a variation selector.
@@ -276,26 +280,47 @@ public sealed class FontFuzzTests
         return task.Result;
     }
 
-    // Reads an AFM file and every value of it: only the documented exceptions may escape, and every number is in range.
+    // Reads an AFM file and every value of it: only the documented exceptions may escape, every number is in range, and the
+    // text and the stream of the file give what its bytes give.
     private static FuzzFailure? CheckAfm(byte[] input, out string outcome)
     {
-        AfmFontMetrics metrics;
-        try
-        {
-            metrics = AfmFontMetrics.Load(input, new FontResourceLimits { MaxEncodedBytes = 1024 * 1024 });
-        }
-        catch (Exception exception) when (exception is InvalidFontException or UnsupportedFontFeatureException or FontResourceLimitException)
-        {
-            outcome = exception.GetType().Name;
-            return null;
-        }
-        catch (Exception exception)
+        var limits = new FontResourceLimits { MaxEncodedBytes = 1024 * 1024 };
+        var (metrics, loaded, failure) = LoadAfm("load", () => AfmFontMetrics.Load(input, limits));
+        if (failure is not null)
         {
             outcome = "exception";
-            return FuzzFailure.FromException("load", exception);
+            return failure;
         }
 
-        outcome = "loaded";
+        // The bytes above 127 are ISO-8859-1 characters
+        var (_, parsed, parseFailure) = LoadAfm("parse", () => AfmFontMetrics.Parse(Encoding.Latin1.GetString(input)));
+        if (parseFailure is not null)
+        {
+            outcome = "exception";
+            return parseFailure;
+        }
+
+        var (_, streamed, streamFailure) = LoadAfm("load-stream", () =>
+        {
+            using var stream = new TestInputStream(input) { Seekable = (input.Length & 1) is 0, MaxBytesPerRead = 1 + (input.Length % 13) };
+            return AfmFontMetrics.Load(stream, limits);
+        });
+        if (streamFailure is not null)
+        {
+            outcome = "exception";
+            return streamFailure;
+        }
+
+        outcome = metrics is null ? loaded : "loaded";
+        if (parsed != loaded)
+            return FuzzFailure.Property("afm-parse-load", $"The text of the file and its bytes differ: {Difference(parsed, loaded)}.");
+
+        if (streamed != loaded)
+            return FuzzFailure.Property("afm-stream-load", $"The stream of the file and its bytes differ: {Difference(streamed, loaded)}.");
+
+        if (metrics is null)
+            return null;
+
         try
         {
             List<double> values = [metrics.CapHeight ?? 0, metrics.XHeight ?? 0, metrics.Ascender ?? 0, metrics.Descender ?? 0, metrics.StdHW ?? 0, metrics.StdVW ?? 0];
@@ -343,6 +368,62 @@ public sealed class FontFuzzTests
         }
 
         return null;
+    }
+
+    // Reads an AFM file: its metrics and a description of everything they hold, or the name of the documented exception.
+    private static (AfmFontMetrics? Metrics, string Outcome, FuzzFailure? Failure) LoadAfm(string operation, Func<AfmFontMetrics> load)
+    {
+        AfmFontMetrics metrics;
+        try
+        {
+            metrics = load();
+        }
+        catch (Exception exception) when (exception is InvalidFontException or UnsupportedFontFeatureException or FontResourceLimitException)
+        {
+            return (null, exception.GetType().Name, null);
+        }
+        catch (Exception exception)
+        {
+            return (null, "exception", FuzzFailure.FromException(operation, exception));
+        }
+
+        var description = new StringBuilder();
+        description.Append(CultureInfo.InvariantCulture, $"{metrics.FormatVersion}|{metrics.FontName}|{metrics.FullName}|{metrics.FamilyName}|{metrics.Weight}|{metrics.Version}|{metrics.Notice}|{metrics.EncodingScheme}|{metrics.CharacterSet}|{string.Join('/', metrics.Comments)}");
+        description.Append(CultureInfo.InvariantCulture, $"|{metrics.MappingScheme}|{metrics.EscChar}|{metrics.CharacterCount}|{metrics.IsBaseFont}|{metrics.IsCIDFont}|{metrics.VVector}|{metrics.IsFixedV}|{metrics.FontBBox}");
+        description.Append(CultureInfo.InvariantCulture, $"|{metrics.CapHeight}|{metrics.XHeight}|{metrics.Ascender}|{metrics.Descender}|{metrics.StdHW}|{metrics.StdVW}|{metrics.MetricsSets}");
+        foreach (var direction in (ReadOnlySpan<AfmWritingDirection?>)[metrics.Horizontal, metrics.Vertical])
+        {
+            description.Append(CultureInfo.InvariantCulture, $"|{direction?.UnderlinePosition}|{direction?.UnderlineThickness}|{direction?.ItalicAngle}|{direction?.CharWidth}|{direction?.IsFixedPitch}");
+        }
+
+        foreach (var character in metrics.CharacterMetrics)
+        {
+            description.Append(CultureInfo.InvariantCulture, $"|C {character.Code} {character.Name} {character.Width} {character.VerticalWidth} {character.VVector} {character.BoundingBox} {string.Join('/', character.Ligatures)}");
+        }
+
+        foreach (var pair in metrics.KerningPairs.Concat(metrics.VerticalKerningPairs))
+        {
+            description.Append(CultureInfo.InvariantCulture, $"|K {pair}");
+        }
+
+        foreach (var track in metrics.TrackKerning)
+        {
+            description.Append(CultureInfo.InvariantCulture, $"|T {track}");
+        }
+
+        foreach (var composite in metrics.Composites)
+        {
+            description.Append(CultureInfo.InvariantCulture, $"|CC {composite.Name} {string.Join('/', composite.Parts)}");
+        }
+
+        return (metrics, description.ToString(), null);
+    }
+
+    // Where two descriptions start to differ, with a few characters of each.
+    private static string Difference(string first, string second)
+    {
+        var index = first.AsSpan().CommonPrefixLength(second);
+        return string.Create(CultureInfo.InvariantCulture, $"at character {index}, '{first[index..Math.Min(first.Length, index + 60)]}' and '{second[index..Math.Min(second.Length, index + 60)]}'");
     }
 
     private static List<FuzzSeed> GetSeeds()
@@ -447,20 +528,46 @@ public sealed class FontFuzzTests
     private static FuzzFailure? Check(byte[] input, out CheckResult result)
     {
         result = new CheckResult("?", 0, 0);
-        FontCollection collection;
+        FontCollection? withBitmaps;
+        string? bitmapLoadFailure = null;
         try
         {
-            collection = FontCollection.Load(input, Options);
+            withBitmaps = FontCollection.Load(input, Options);
         }
         catch (Exception exception) when (exception is InvalidImageContentException or UnsupportedImageFeatureException or UnknownImageFormatException or ImageResourceLimitException)
         {
-            result = new CheckResult(exception.GetType().Name, 0, 0);
-            return null;
+            withBitmaps = null;
+            bitmapLoadFailure = exception.GetType().Name;
         }
         catch (Exception exception)
         {
             return FuzzFailure.FromException("load", exception);
         }
+
+        // Without the bitmaps without colors, the font reads fewer tables: it loads whenever it loads with them, with the
+        // same fonts, and the outlines of a font whose bitmaps are malformed are still read
+        FontCollection outlinesOnly;
+        try
+        {
+            outlinesOnly = FontCollection.Load(input, OptionsWithoutBitmaps);
+        }
+        catch (Exception exception) when (exception is InvalidImageContentException or UnsupportedImageFeatureException or UnknownImageFormatException or ImageResourceLimitException)
+        {
+            if (withBitmaps is not null)
+                return FuzzFailure.Property("embedded-bitmaps-load", $"The font loads with its bitmaps but not without them: {exception.GetType().Name}: {exception.Message}");
+
+            result = new CheckResult(bitmapLoadFailure!, 0, 0);
+            return null;
+        }
+        catch (Exception exception)
+        {
+            return FuzzFailure.FromException("load-without-bitmaps", exception);
+        }
+
+        if (withBitmaps is not null && (withBitmaps.Count != outlinesOnly.Count || !withBitmaps.Select(font => font.GlyphCount).SequenceEqual(outlinesOnly.Select(font => font.GlyphCount))))
+            return FuzzFailure.Property("embedded-bitmaps-fonts", $"The file has {withBitmaps.Count} font(s) with its bitmaps and {outlinesOnly.Count} without them, or their glyphs differ.");
+
+        var collection = withBitmaps ?? outlinesOnly;
 
         // The instances of a variable font are fonts too: the ends of the axes, and a place between them.
         var fonts = new List<Font>(collection);
@@ -559,7 +666,7 @@ public sealed class FontFuzzTests
         if (CheckShaping(fonts) is { } shapingFailure)
             return shapingFailure;
 
-        result = new CheckResult("loaded", decoded, rejected);
+        result = new CheckResult(bitmapLoadFailure ?? "loaded", decoded, rejected);
         return null;
     }
 

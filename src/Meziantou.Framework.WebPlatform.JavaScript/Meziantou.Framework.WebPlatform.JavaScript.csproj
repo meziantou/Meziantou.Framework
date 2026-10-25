@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.WebPlatform.JavaScript</RootNamespace>
-    <Version>1.0.3</Version>
+    <Version>1.0.4</Version>
     <IsAotCompatible>true</IsAotCompatible>
     <DisableDocumentationWarnings>false</DisableDocumentationWarnings>
     <Description>Runs the scripts of the documents of Meziantou.Framework.WebPlatform with Meziantou.Framework.JavaScriptEngine (a ScriptEngine with the WebIDL bindings of the DOM).</Description>

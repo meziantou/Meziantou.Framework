@@ -49,8 +49,60 @@ internal sealed class ScopeSnapshot(ScopeKind kind, ScopeSnapshot? parent, Funct
     /// <summary>Gets whether sloppy direct eval code of the parameters adds var bindings to this parameter scope.</summary>
     public bool HasParameterEvalVars { get; } = hasParameterEvalVars;
 
+    // The bindings are searched linearly when there are few of them, as in Scope
+    private const int IndexThreshold = 8;
+
+    // Created on first use, and shared by the threads (read-only once created)
+    private Dictionary<string, int>? _index;
+
     /// <summary>Gets the bindings, in declaration order.</summary>
     public VariableSnapshot[] Variables { get; } = variables;
+
+    /// <summary>Gets the indexes in <see cref="Variables"/> of the special bindings (this, new.target, super, the active function).</summary>
+    public int[] SpecialVariables { get; } = GetSpecialVariables(variables);
+
+    /// <summary>Gets the index in <see cref="Variables"/> of the binding of a name (the last declared one), or -1.</summary>
+    public int FindVariable(string name)
+    {
+        if (Variables.Length <= IndexThreshold)
+        {
+            for (var i = Variables.Length - 1; i >= 0; i--)
+            {
+                if (string.Equals(Variables[i].Name, name, StringComparison.Ordinal))
+                    return i;
+            }
+
+            return -1;
+        }
+
+        var index = Volatile.Read(ref _index) ?? CreateIndex();
+        return index.GetValueOrDefault(name, -1);
+    }
+
+    private Dictionary<string, int> CreateIndex()
+    {
+        var index = new Dictionary<string, int>(Variables.Length, StringComparer.Ordinal);
+        for (var i = 0; i < Variables.Length; i++)
+        {
+            index[Variables[i].Name] = i;
+        }
+
+        return Interlocked.CompareExchange(ref _index, index, comparand: null) ?? index;
+    }
+
+    private static int[] GetSpecialVariables(VariableSnapshot[] variables)
+    {
+        List<int>? result = null;
+        for (var i = 0; i < variables.Length; i++)
+        {
+            if (variables[i].Kind is VariableKind.This or VariableKind.NewTarget or VariableKind.HomeObject or VariableKind.ActiveFunction)
+            {
+                (result ??= []).Add(i);
+            }
+        }
+
+        return result is null ? [] : [.. result];
+    }
 
     /// <summary>Gets whether the outermost scope is the scope of a module (the source text is parsed as a module).</summary>
     public bool IsModule

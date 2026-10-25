@@ -187,6 +187,17 @@
       "foundBy": "FontFuzzTests, weekly campaign (run 39448128288), base seed 39448128288, 120 s, mutation 679 of fonts/trt-gvar-composite; not reducible by FuzzMinimizer (3592 bytes)",
       "defect": "The string of the name record of a named instance of fvar is outside the name table: FontFace.GetName threw InvalidFontException while Font was created (CreateNamedInstances), an exception Font.Load does not document. Fixed in NameTable: a record whose string is outside the table is ignored, as if the font did not have it.",
       "expectedLoad": "success"
+    },
+    {
+      "id": "cur/png-payload-illegal-color-type",
+      "file": "cur-png-payload-illegal-color-type.min.cur",
+      "sha256": "b189c5632d3bd1d3161ab6b15f0e1563ebefaf41e3faec9177b7dfe0af3e9a69",
+      "origin": "fuzz-minimized",
+      "license": "CC0-1.0",
+      "foundBy": "FuzzTests group ico, base seed 5576998306593010799 (default), 1500 iterations, mutation 1137 of cur/single-png (reader variant 58)",
+      "defect": "The IHDR chunk of the PNG payload of a cursor representation declares the color type 255: the description of the representation passed it to DefaultPixelFormats.ForPng, whose ArgumentOutOfRangeException escaped Identify, Load and ImageCollection.Load instead of InvalidImageContentException. Fixed in IcoRepresentationBuilder.ResolvePng: an illegal color type and bit depth combination is rejected as the PNG decoder rejects it.",
+      "expectedIdentify": "InvalidImageContentException",
+      "expectedLoad": "InvalidImageContentException"
     }
   ]
 }

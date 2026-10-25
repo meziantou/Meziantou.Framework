@@ -158,6 +158,22 @@ public sealed class IcoCodecTests
     }
 
     [Fact]
+    public void APngPayloadWithAnIllegalColorTypeOrBitDepthIsInvalid()
+    {
+        // IHDR: the bit depth is at offset 24 of the PNG file, the color type at offset 25 (the CRC is not read to describe the representation)
+        foreach (var (bitDepth, colorType) in new (byte, byte)[] { (8, 255), (8, 1), (4, 2), (16, 3), (3, 0) })
+        {
+            var png = SyntheticImages.Png(4, 4);
+            png[24] = bitDepth;
+            png[25] = colorType;
+            var data = new IcoFileBuilder().Add(new IcoEntrySpec { Width = 4, Height = 4, Payload = png }).Build();
+            Assert.Throws<InvalidImageContentException>(() => Image.Identify(data));
+            Assert.Throws<InvalidImageContentException>(() => Image.Load(data));
+            Assert.Throws<InvalidImageContentException>(() => ImageCollection.Load(data));
+        }
+    }
+
+    [Fact]
     public void AnAnimatedPngPayloadIsRejected()
     {
         var apng = SyntheticImages.Apng(4, 4, frames: 2);

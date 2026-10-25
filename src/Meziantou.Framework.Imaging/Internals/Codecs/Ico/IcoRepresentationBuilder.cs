@@ -48,6 +48,19 @@ internal readonly struct IcoRepresentationBuilder(
         var height = BinaryPrimitives.ReadUInt32BigEndian(data[4..]);
         var bitDepth = data[8];
         var colorType = data[9];
+
+        // The representation is described from the header alone: an illegal combination is rejected here, as the PNG
+        // decoder would reject it, instead of reaching the pixel format selection
+        var isLegal = colorType switch
+        {
+            0 => bitDepth is 1 or 2 or 4 or 8 or 16,
+            2 or 4 or 6 => bitDepth is 8 or 16,
+            3 => bitDepth is 1 or 2 or 4 or 8,
+            _ => false,
+        };
+        if (!isLegal)
+            throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The PNG payload of the icon directory entry {index} declares the color type {colorType} with the bit depth {bitDepth}, which is not a legal combination."));
+
         var size = ValidateSize(width, height);
         var (hasTransparency, isAnimated) = ProbePngChunks();
         if (isAnimated)

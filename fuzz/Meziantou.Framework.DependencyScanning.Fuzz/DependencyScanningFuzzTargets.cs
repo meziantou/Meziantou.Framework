@@ -402,7 +402,7 @@ public static partial class DependencyScanningFuzzTargets
     /// <summary>Checks that the update is refused as documented, and leaves the file as it was.</summary>
     private static void CheckRefusedUpdate(InMemoryFileSystem fileSystem, Dependency dependency, Location location, string? oldValue, string newValue, bool isMismatch)
     {
-        var content = fileSystem.GetContent(location.FilePath)!;
+        var content = fileSystem.GetContent(location.FilePath);
         var description = $"Updating {dependency} at {location} from {FuzzAssert.Format(oldValue)} to {FuzzAssert.Format(newValue)}";
         try
         {

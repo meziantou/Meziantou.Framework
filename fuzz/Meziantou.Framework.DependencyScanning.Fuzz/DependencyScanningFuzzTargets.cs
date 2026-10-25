@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -11,7 +12,9 @@ namespace Meziantou.Framework.DependencyScanning.Fuzz;
 /// (<see cref="XmlException"/>, <see cref="JsonException"/>); any other exception reported to
 /// <see cref="ScannerOptions.OnFileScanFailed"/> is a failure. A dependency with a name or a version has a location for it,
 /// the line of a location is in the file, and updating an updatable location to the value it holds succeeds and leaves
-/// the file unchanged: otherwise the reported value is not at the reported location.
+/// the file unchanged: otherwise the reported value is not at the reported location. Updating a location to another value
+/// writes this value and nothing else, the in-memory overloads, the dependency type filters, and the directory and file
+/// list scans agree with the scan of the file, and an update the file cannot take is refused as documented.
 /// </summary>
 public static partial class DependencyScanningFuzzTargets
 {
@@ -19,6 +22,20 @@ public static partial class DependencyScanningFuzzTargets
 
     // Updating a location reads and rewrites the whole file, so only the first ones are checked
     private const int MaxCheckedUpdates = 32;
+
+    // Each update to other values scans the file three times
+    private const int MaxCheckedValueChanges = 8;
+
+    // Each type is scanned twice: included, then excluded
+    private const int MaxCheckedDependencyTypes = 4;
+
+    // The characters that JSON strings and XML values escape
+    private const string EscapedCharacters = "\"'<&> \t\n\\";
+
+    private static readonly IReadOnlyList<DependencyScanner> DefaultScanners = new ScannerOptions().Scanners;
+
+    private static readonly SearchValues<char> AsciiLetters = SearchValues.Create("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
+    private static readonly SearchValues<char> NameCharacters = SearchValues.Create("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._/");
 
     // Separates the files of a scenario that reads several files
     private static readonly byte[] FileSeparator = "\0--next-file--\0"u8.ToArray();
@@ -112,29 +129,149 @@ public static partial class DependencyScanningFuzzTargets
             fileSystem.AddFile(Root + "/" + extraFile, ReadFile(ref data).ToArray());
         }
 
-        var failures = new List<Exception>();
-        var options = new ScannerOptions
-        {
-            FileSystem = fileSystem,
-            DegreeOfParallelism = 1,
-            OnFileScanFailed = (path, exception) => failures.Add(exception),
-        };
-
-        var dependencies = DependencyScanner.ScanFileAsync(Root, filePath, options).GetAwaiter().GetResult();
-        foreach (var failure in failures)
-        {
-            if (failure is not XmlException and not JsonException)
-                throw new FuzzAssertionException($"A scanner failed on {scenario.Path}", failure);
-        }
-
+        var files = fileSystem.Snapshot();
+        var dependencies = ScanFile(fileSystem, filePath, out var hasFailures);
         foreach (var dependency in dependencies)
         {
             FuzzAssert.True(dependency.Name is null || dependency.NameLocation is not null, $"The name of {dependency} has no location");
             FuzzAssert.True(dependency.Version is null || dependency.VersionLocation is not null, $"The version of {dependency} has no location");
             CheckLineInfo(fileSystem, dependency, dependency.NameLocation);
             CheckLineInfo(fileSystem, dependency, dependency.VersionLocation);
+            CheckNotUpdatable(dependency, dependency.NameLocation);
+            CheckNotUpdatable(dependency, dependency.VersionLocation);
         }
 
+        CheckInMemoryScan(scenario, fileSystem, filePath, dependencies);
+        CheckDependencyTypeFilters(fileSystem, filePath, dependencies, hasFailures);
+        CheckMultipleFileScans(fileSystem, filePath, dependencies);
+        CheckUpdatesToSameValue(fileSystem, filePath, dependencies);
+        CheckUpdatesToNewValues(fileSystem, filePath, files);
+    }
+
+    /// <summary>Scans a file with the default scanners, and checks that the scanners only failed on a document they cannot parse.</summary>
+    private static IReadOnlyCollection<Dependency> ScanFile(InMemoryFileSystem fileSystem, string filePath, out bool hasFailures, Action<ScannerOptions>? configure = null)
+    {
+        var failures = new List<(string Path, Exception Exception)>();
+        var options = CreateOptions(fileSystem, failures);
+        configure?.Invoke(options);
+        var dependencies = DependencyScanner.ScanFileAsync(Root, filePath, options).GetAwaiter().GetResult();
+        CheckFailures(failures);
+        hasFailures = failures.Count > 0;
+        return dependencies;
+    }
+
+    private static ScannerOptions CreateOptions(InMemoryFileSystem fileSystem, List<(string Path, Exception Exception)> failures)
+    {
+        return new ScannerOptions
+        {
+            FileSystem = fileSystem,
+            DegreeOfParallelism = 1,
+            OnFileScanFailed = (path, exception) =>
+            {
+                lock (failures)
+                {
+                    failures.Add((path, exception));
+                }
+            },
+        };
+    }
+
+    private static void CheckFailures(List<(string Path, Exception Exception)> failures)
+    {
+        foreach (var (path, exception) in failures)
+        {
+            if (exception is not XmlException and not JsonException)
+                throw new FuzzAssertionException($"A scanner failed on {path}", exception);
+        }
+    }
+
+    /// <summary>A location that is not updatable refuses to write, as documented, rather than failing in another way.</summary>
+    private static void CheckNotUpdatable(Dependency dependency, Location? location)
+    {
+        if (location is null || location.IsUpdatable)
+            return;
+
+        try
+        {
+            location.UpdateAsync("1.0.0").GetAwaiter().GetResult();
+        }
+        catch (InvalidOperationException)
+        {
+            return;
+        }
+        catch (Exception ex)
+        {
+            throw new FuzzAssertionException($"Updating the location {location} of {dependency}, which is not updatable, did not throw an {nameof(InvalidOperationException)}", ex);
+        }
+
+        FuzzAssert.Fail($"Updating the location {location} of {dependency}, which is not updatable, succeeded");
+    }
+
+    /// <summary>Scanning the content of the file from memory finds the same dependencies as scanning the file, and none of their locations is updatable.</summary>
+    private static void CheckInMemoryScan(Scenario scenario, InMemoryFileSystem fileSystem, string filePath, IReadOnlyCollection<Dependency> dependencies)
+    {
+        var content = fileSystem.GetContent(filePath)!;
+        var expected = dependencies;
+        if (scenario.ExtraFiles.Length > 0)
+        {
+            // The in-memory content is the only file the scanners can read
+            var singleFileSystem = new InMemoryFileSystem();
+            singleFileSystem.AddFile(filePath, content);
+            expected = ScanFile(singleFileSystem, filePath, out _);
+        }
+
+        var actual = content.Length % 2 is 0
+            ? DependencyScanner.ScanFileAsync(Root, filePath, content).GetAwaiter().GetResult()
+            : DependencyScanner.ScanFileAsync(Root, filePath, content, DefaultScanners).GetAwaiter().GetResult();
+        FuzzAssert.Equal(Describe(expected), Describe(actual), "Scanning the content from memory found other dependencies than scanning the file");
+        foreach (var dependency in actual)
+        {
+            foreach (var location in (ReadOnlySpan<Location?>)[dependency.NameLocation, dependency.VersionLocation])
+            {
+                FuzzAssert.True(location is null || !location.IsUpdatable, $"The location {location} of {dependency} scanned from memory is updatable");
+                CheckNotUpdatable(dependency, location);
+            }
+        }
+    }
+
+    /// <summary>Including or excluding a dependency type finds the dependencies of the full scan that have, or do not have, this type.</summary>
+    private static void CheckDependencyTypeFilters(InMemoryFileSystem fileSystem, string filePath, IReadOnlyCollection<Dependency> dependencies, bool hasFailures)
+    {
+        // A failure skips the scanners after the one that failed, which a filter may not even run
+        if (hasFailures)
+            return;
+
+        foreach (var type in dependencies.Select(dependency => dependency.Type).Distinct().Order().Take(MaxCheckedDependencyTypes))
+        {
+            var included = ScanFile(fileSystem, filePath, out _, options => options.IncludedDependencyTypes = [type]);
+            FuzzAssert.Equal(Describe(dependencies.Where(dependency => dependency.Type == type)), Describe(included), $"Including the {type} dependencies found other dependencies than the full scan");
+
+            var excluded = ScanFile(fileSystem, filePath, out _, options => options.ExcludedDependencyTypes = [type]);
+            FuzzAssert.Equal(Describe(dependencies.Where(dependency => dependency.Type != type)), Describe(excluded), $"Excluding the {type} dependencies found other dependencies than the full scan");
+        }
+    }
+
+    /// <summary>Scanning the directory or the list of its files finds the dependencies of each file scanned on its own.</summary>
+    private static void CheckMultipleFileScans(InMemoryFileSystem fileSystem, string filePath, IReadOnlyCollection<Dependency> dependencies)
+    {
+        var paths = fileSystem.Paths;
+        var expected = new List<Dependency>();
+        foreach (var path in paths)
+        {
+            expected.AddRange(path == filePath ? dependencies : ScanFile(fileSystem, path, out _));
+        }
+
+        var failures = new List<(string Path, Exception Exception)>();
+        var directory = DependencyScanner.ScanDirectoryAsync(Root, CreateOptions(fileSystem, failures)).GetAwaiter().GetResult();
+        var list = DependencyScanner.ScanFilesAsync(Root, paths, CreateOptions(fileSystem, failures)).GetAwaiter().GetResult();
+        CheckFailures(failures);
+        FuzzAssert.Equal(Describe(expected), Describe(directory), "Scanning the directory found other dependencies than scanning its files one at a time");
+        FuzzAssert.Equal(Describe(expected), Describe(list), "Scanning the list of files found other dependencies than scanning them one at a time");
+    }
+
+    /// <summary>Updating a location to the value it holds succeeds, and leaves the file unchanged or holding the same dependencies.</summary>
+    private static void CheckUpdatesToSameValue(InMemoryFileSystem fileSystem, string filePath, IReadOnlyCollection<Dependency> dependencies)
+    {
         var checkedUpdates = 0;
         foreach (var dependency in dependencies)
         {
@@ -167,7 +304,7 @@ public static partial class DependencyScanningFuzzTargets
                 {
                     // The value may be written with another escaping than the original text, such as '>' as "&gt;" in an
                     // XML attribute: the file must still hold the same dependencies
-                    var rescanned = DependencyScanner.ScanFileAsync(Root, filePath, options).GetAwaiter().GetResult();
+                    var rescanned = ScanFile(fileSystem, filePath, out _);
                     FuzzAssert.Equal(Describe(dependencies), Describe(rescanned), $"Updating {dependency} at {location} to the value it holds ({FuzzAssert.Format(value)}) changed the dependencies of the file: {FuzzAssert.Format(Encoding.UTF8.GetString(updated))}");
 
                     // The other locations were recorded on the original text
@@ -177,9 +314,240 @@ public static partial class DependencyScanningFuzzTargets
         }
     }
 
+    /// <summary>
+    /// Updating a location to another value writes this value: scanning the file again finds it in place of the old
+    /// one, and the other dependencies of the file are unchanged. A second update without an expected value replaces the
+    /// value written by the first one, and an update that expects a value the file does not hold, or that writes a value
+    /// the file cannot hold (an unpaired surrogate, a line break in a line of text, a control character in XML), is refused.
+    /// </summary>
+    private static void CheckUpdatesToNewValues(InMemoryFileSystem fileSystem, string filePath, Dictionary<string, byte[]> files)
+    {
+        for (var index = 0; index < MaxCheckedValueChanges; index++)
+        {
+            // An update moves the locations that follow it in the same value, so each one starts from the original files
+            // and their locations
+            fileSystem.Restore(files);
+            var dependencies = ScanFile(fileSystem, filePath, out _);
+            var change = GetValueChanges(dependencies).ElementAtOrDefault(index);
+            if (change is null)
+                break;
+
+            CheckUpdateToNewValue(fileSystem, filePath, dependencies, change);
+        }
+
+        fileSystem.Restore(files);
+    }
+
+    private static IEnumerable<ValueChange> GetValueChanges(IReadOnlyCollection<Dependency> dependencies)
+    {
+        var values = GetValues(dependencies);
+        foreach (var dependency in dependencies)
+        {
+            foreach (var (location, value) in new[] { (dependency.NameLocation, dependency.Name), (dependency.VersionLocation, dependency.Version) })
+            {
+                // A git submodule commit is updated by running git, and an assembly version is normalized when it is written
+                if (location is null || value is null || !location.IsUpdatable || location.GetType().Name is "GitSubmoduleVersionLocation" or "AssemblyVersionXmlLocation")
+                    continue;
+
+                var newValue = ChangeValue(value, values);
+                if (newValue is not null)
+                    yield return new ValueChange(dependency, location, value, newValue);
+            }
+        }
+    }
+
+    private static void CheckUpdateToNewValue(InMemoryFileSystem fileSystem, string filePath, IReadOnlyCollection<Dependency> dependencies, ValueChange change)
+    {
+        var (dependency, location, value, newValue) = change;
+
+        // An update moves the locations that follow it in the same value, so they are identified by where they were scanned
+        var keys = new Dictionary<Location, string>(ReferenceEqualityComparer.Instance);
+        foreach (var other in dependencies)
+        {
+            foreach (var otherLocation in (ReadOnlySpan<Location?>)[other.NameLocation, other.VersionLocation])
+            {
+                if (otherLocation is not null)
+                {
+                    keys.TryAdd(otherLocation, GetLocationKey(otherLocation));
+                }
+            }
+        }
+
+        if (!TryUpdate(dependency, location, value, newValue))
+            return;
+
+        CheckUpdatedDependencies(fileSystem, filePath, dependencies, keys, change, newValue);
+
+        // Without an expected value, the update expects the value written by the previous one
+        var secondValue = GetValueToEscape(location, newValue) ?? ChangeValue(newValue, GetValues(dependencies));
+        if (secondValue is null || !TryUpdate(dependency, location, oldValue: null, secondValue))
+            return;
+
+        CheckUpdatedDependencies(fileSystem, filePath, dependencies, keys, change, secondValue);
+
+        // An update that expects a value the file does not hold, or that writes a value the file cannot hold, is refused
+        CheckRefusedUpdate(fileSystem, dependency, location, "\uFFFF" + secondValue, value, isMismatch: true);
+        CheckRefusedUpdate(fileSystem, dependency, location, oldValue: null, secondValue + "\uD800", isMismatch: false);
+        switch (location.GetType().Name)
+        {
+            case "TextLocation":
+                CheckRefusedUpdate(fileSystem, dependency, location, oldValue: null, secondValue + "\n", isMismatch: false);
+                break;
+            case "XmlLocation":
+                CheckRefusedUpdate(fileSystem, dependency, location, oldValue: null, secondValue + "\u0001", isMismatch: false);
+                break;
+        }
+    }
+
+    /// <summary>Checks that the update is refused as documented, and leaves the file as it was.</summary>
+    private static void CheckRefusedUpdate(InMemoryFileSystem fileSystem, Dependency dependency, Location location, string? oldValue, string newValue, bool isMismatch)
+    {
+        var content = fileSystem.GetContent(location.FilePath)!;
+        var description = $"Updating {dependency} at {location} from {FuzzAssert.Format(oldValue)} to {FuzzAssert.Format(newValue)}";
+        try
+        {
+            location.UpdateAsync(oldValue, newValue).GetAwaiter().GetResult();
+        }
+        catch (Exception ex) when (isMismatch ? ex is DependencyScannerException : ex is ArgumentException or DependencyScannerException { InnerException: EncoderFallbackException })
+        {
+            FuzzAssert.True(content.AsSpan().SequenceEqual(fileSystem.GetContent(location.FilePath)), $"{description} was refused, but changed the file");
+            return;
+        }
+        catch (Exception ex)
+        {
+            throw new FuzzAssertionException($"{description} was not refused as documented", ex);
+        }
+
+        FuzzAssert.Fail(isMismatch ? $"{description} succeeded, but the file does not hold the old value" : $"{description} succeeded, but the file cannot hold the new value");
+    }
+
+    /// <summary>Updates the location, and returns <see langword="false"/> when it refuses to write the value, as documented.</summary>
+    private static bool TryUpdate(Dependency dependency, Location location, string? oldValue, string newValue)
+    {
+        try
+        {
+            location.UpdateAsync(oldValue, newValue).GetAwaiter().GetResult();
+            return true;
+        }
+        catch (DependencyScannerException ex) when (IsUnsupportedUpdate(ex))
+        {
+            return false;
+        }
+        catch (Exception ex)
+        {
+            throw new FuzzAssertionException($"Updating {dependency} at {location} from {FuzzAssert.Format(oldValue)} to {FuzzAssert.Format(newValue)} failed", ex);
+        }
+    }
+
+    /// <summary>Checks that the file holds the dependencies it held, with the new value in place of the old one at the updated location.</summary>
+    private static void CheckUpdatedDependencies(InMemoryFileSystem fileSystem, string filePath, IReadOnlyCollection<Dependency> dependencies, Dictionary<Location, string> keys, ValueChange change, string newValue)
+    {
+        var updatedKey = keys[change.Location];
+        var updatedFilePath = change.Location.FilePath;
+
+        // The dependencies found in another file, such as a project that references the packages of a packages.config,
+        // may depend on the updated value
+        var originalDependencies = dependencies.Where(dependency => IsInFile(dependency, updatedFilePath)).ToArray();
+        var expected = originalDependencies.Select(dependency => (dependency.Type, Name: Replace(dependency.Name, dependency.NameLocation), Version: Replace(dependency.Version, dependency.VersionLocation))).ToArray();
+        var actual = ScanFile(fileSystem, filePath, out _)
+            .Where(dependency => IsInFile(dependency, updatedFilePath))
+            .Select(dependency => (dependency.Type, dependency.Name, dependency.Version))
+            .ToArray();
+
+        // A value that contains the updated text may follow it, such as the coordinates "group:name:version" of which
+        // the version is also reported on its own
+        var remaining = actual.Select(Describe).ToList();
+        var unmatched = expected.Where(dependency => !remaining.Remove(Describe(dependency))).ToArray();
+        var mismatch = unmatched.Any(dependency => !remaining.Remove(Describe((dependency.Type, dependency.Name?.Replace(change.Value, newValue, StringComparison.Ordinal), dependency.Version?.Replace(change.Value, newValue, StringComparison.Ordinal)))));
+        if (mismatch || remaining.Count > 0)
+        {
+            var content = fileSystem.GetContent(updatedFilePath)!;
+            FuzzAssert.Equal(Describe(expected), Describe(actual), $"Updating {change.Dependency} at {change.Location} from {FuzzAssert.Format(change.Value)} to {FuzzAssert.Format(newValue)} did not only change this value: {FuzzAssert.Format(Encoding.UTF8.GetString(content))}");
+        }
+
+        // Several dependencies can share the updated location, such as two scanners reporting the same value
+        string? Replace(string? value, Location? location)
+        {
+            return location is not null && value == change.Value && keys.TryGetValue(location, out var key) && key == updatedKey ? newValue : value;
+        }
+
+        static bool IsInFile(Dependency dependency, string path)
+        {
+            return (dependency.NameLocation is null || dependency.NameLocation.FilePath == path)
+                && (dependency.VersionLocation is null || dependency.VersionLocation.FilePath == path);
+        }
+    }
+
+    /// <summary>Identifies a location by its file, its value and the part of the value it was scanned at.</summary>
+    private static string GetLocationKey(Location location)
+    {
+        // Several locations can share a JSON or an XML value, such as the name and the version of "name#version"
+        return $"{location.GetType().FullName} {location} {GetStartPosition(location)}";
+    }
+
+    private static HashSet<string> GetValues(IReadOnlyCollection<Dependency> dependencies)
+    {
+        return [.. dependencies.SelectMany(dependency => (string?[])[dependency.Name, dependency.Version]).OfType<string>()];
+    }
+
+    private static object? GetStartPosition(Location location) => location.GetType().GetProperty("StartPosition")?.GetValue(location);
+
+    /// <summary>
+    /// Changes the last digit of the value, or its last letter when it has none, to another character of the same class
+    /// (a non-zero digit, a hexadecimal letter, another letter of the same case), so that the scanners still read it as a
+    /// value of the same kind. Returns <see langword="null"/> when the value has no such character, or when the new value
+    /// is the name or the version of a dependency of the file: two dependencies with the same name may be merged.
+    /// </summary>
+    private static string? ChangeValue(string value, HashSet<string> values)
+    {
+        var index = value.AsSpan().LastIndexOfAnyInRange('0', '9');
+        if (index < 0)
+        {
+            // A letter of a value such as 'from: ""' may be part of a keyword rather than of a name
+            index = value.AsSpan().LastIndexOfAny(AsciiLetters);
+            if (index < 0 || value.AsSpan().ContainsAnyExcept(NameCharacters))
+                return null;
+        }
+
+        var replacement = value[index] switch
+        {
+            '9' => '1',
+            'f' => 'a',
+            'z' => 'g',
+            'F' => 'A',
+            'Z' => 'G',
+            var c => (char)(c + 1),
+        };
+
+        var result = string.Concat(value.AsSpan(0, index), [replacement], value.AsSpan(index + 1));
+        return values.Contains(result) ? null : result;
+    }
+
+    /// <summary>
+    /// Inserts the characters that a JSON string or an XML value escapes in a value that is a whole JSON string or XML
+    /// value, which the scanners do not split. Returns <see langword="null"/> for any other location.
+    /// </summary>
+    private static string? GetValueToEscape(Location location, string value)
+    {
+        if (location.GetType().Name is not ("XmlLocation" or "JsonLocation") || GetStartPosition(location) is not < 0)
+            return null;
+
+        return string.Concat(value.AsSpan(0, 1), EscapedCharacters, value.AsSpan(1));
+    }
+
     private static string Describe(IEnumerable<Dependency> dependencies)
     {
-        return string.Join('\n', dependencies.Select(dependency => $"{dependency.Type} {FuzzAssert.Format(dependency.Name)} {FuzzAssert.Format(dependency.Version)}").Order(StringComparer.Ordinal));
+        return Describe(dependencies.Select(dependency => (dependency.Type, dependency.Name, dependency.Version)));
+    }
+
+    private static string Describe(IEnumerable<(DependencyType Type, string? Name, string? Version)> dependencies)
+    {
+        return string.Join('\n', dependencies.Select(Describe).Order(StringComparer.Ordinal));
+    }
+
+    private static string Describe((DependencyType Type, string? Name, string? Version) dependency)
+    {
+        return $"{dependency.Type} {FuzzAssert.Format(dependency.Name)} {FuzzAssert.Format(dependency.Version)}";
     }
 
     /// <summary>The update refuses to write, as documented, rather than finding another value than the reported one.</summary>
@@ -384,4 +752,6 @@ public static partial class DependencyScanningFuzzTargets
     }
 
     private sealed record Scenario(string Path, params string[] ExtraFiles);
+
+    private sealed record ValueChange(Dependency Dependency, Location Location, string Value, string NewValue);
 }

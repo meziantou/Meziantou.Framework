@@ -69,6 +69,13 @@ Assert.Equal((BarcodeType.Ean13, 95, 1), (ean13.Type, ean13.Width, ean13.Height)
 Assert.Equal((BarcodeType.UpcA, 122, 1), (upcA.Type, upcA.Width, upcA.Height));
 Assert.Equal((BarcodeType.Codabar, 71, 1), (codabar.Type, codabar.Width, codabar.Height));
 Assert.Equal((BarcodeType.Itf, 81, 1), (itf.Type, itf.Width, itf.Height));
+
+// The human-readable text, with the characters the barcode adds (check digits, add-on, Codabar guards)
+Assert.Equal("ABC-123W", code39.Text);
+Assert.Equal("55123457", ean8.Text);
+Assert.Equal("4006381333931", ean13.Text);
+Assert.Equal("036000291452 12", upcA.Text);
+Assert.Equal("A40156B", codabar.Text);
 ```
 <!-- endref -->
 

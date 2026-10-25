@@ -52,7 +52,7 @@ internal static class CodabarEncoder
             }
         }
 
-        return BarcodeEncoderHelper.CreateBarcode(BarcodeType.Codabar, modules);
+        return BarcodeEncoderHelper.CreateBarcode(BarcodeType.Codabar, modules, symbols);
     }
 
     private static char NormalizeGuardCharacter(char character, string parameterName)

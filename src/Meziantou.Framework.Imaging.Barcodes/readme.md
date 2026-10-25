@@ -50,18 +50,54 @@ Assert.Equal((345, 100), (image.Width, image.Height));
 ```
 <!-- endref -->
 
-Drawing a QR code onto an existing image:
+## Drawing on a canvas
 
-<!-- ref:../../tests/Meziantou.Framework.Imaging.Barcodes.Tests/ImageRendererTests.cs;region=ImagingBarcodes_DrawOntoImage;format=md-fenced-code-block;dedent=true -->
+`DrawQRCode` and `DrawBarcode` draw on the `DrawingCanvas` of `Image.Draw`, as vector shapes: the transform, the clip and
+the layers of the canvas apply, and any `Brush` (solid, gradient, image, pattern) paints the modules. `MeasureQRCode` and
+`MeasureBarcode` give the size of the drawing beforehand, to lay out the page. With `SnapToPixels` (the default), the
+module sizes and the position are rounded to whole pixels, so that every module has the same size and sharp edges.
+
+<!-- ref:../../tests/Meziantou.Framework.Imaging.Barcodes.Tests/ImageRendererTests.cs;region=ImagingBarcodes_DrawQRCode;format=md-fenced-code-block;dedent=true -->
 ```csharp
 using var ticket = new Image<Rgba32>(400, 200, Colors.White); // or Image.Load<Rgba32>("ticket.png")
-using var qrCodeImage = QRCode.Create("TICKET-0042").ToImage(new QRCodeImageOptions { ModuleSize = 4 });
-ticket.Draw(canvas => canvas.DrawImage(qrCodeImage.Frames[0], new PointD(16, 16)));
-Assert.Equal(Colors.Black, ticket.Frames[0][32, 32]); // the top-left finder pattern, after the 16-pixel quiet zone
+var qrCode = QRCode.Create("TICKET-0042");
+var options = new QRCodeDrawingOptions { ModuleSize = 4, QuietZoneModules = 2 };
+
+// The size of the drawing, quiet zone included, to lay out the page before drawing
+var size = QRCodeImageRenderer.MeasureQRCode(qrCode, options);
+Assert.Equal((100, 100), (size.Width, size.Height)); // (21 modules + 2 x 2) x 4 pixels
+
+// Drawn as a vector shape: the transform and the clip of the canvas apply, any brush works
+ticket.Draw(canvas => canvas.DrawQRCode(qrCode, new PointD(400 - 16 - size.Width, 16), options));
+Assert.Equal(Colors.Black, ticket.Frames[0][284 + 8, 16 + 8]); // the top-left finder pattern, after the 8-pixel quiet zone
 
 // Save to a file (ticket.Save("ticket-with-qrcode.png")) or to a stream
 using var png = new MemoryStream();
 ticket.Save(png, new PngEncoder());
+```
+<!-- endref -->
+
+`DrawBarcode` draws the bars, and the human-readable text (`Barcode.Text`, with its check digit) under them when
+`BarcodeDrawingOptions.Font` is set:
+
+<!-- ref:../../tests/Meziantou.Framework.Imaging.Barcodes.Tests/ImageRendererTests.cs;region=ImagingBarcodes_DrawBarcode;format=md-fenced-code-block;dedent=true -->
+```csharp
+using var label = new Image<Rgba32>(300, 120, Colors.White);
+var barcode = Barcode.CreateEan13("590123412345");
+var options = new BarcodeDrawingOptions
+{
+    ModuleWidth = 2,
+    ModuleHeight = 60,
+    QuietZoneModules = 9,
+    DarkBrush = new SolidBrush(new Rgba32(0x00, 0x33, 0x66)),
+};
+
+label.Draw(canvas =>
+{
+    var bounds = canvas.DrawBarcode(barcode, new PointD(20, 20), options);
+    Assert.Equal(new RectangleD(20, 20, 226, 60), bounds); // (95 modules + 2 x 9) x 2 pixels wide
+});
+Assert.Equal(new Rgba32(0x00, 0x33, 0x66), label.Frames[0][20 + 18, 50]); // the first guard bar
 ```
 <!-- endref -->
 
@@ -81,3 +117,24 @@ ticket.Save(png, new PngEncoder());
 | `QuietZoneModules` | 10 | Number of quiet zone modules on the left and right sides |
 | `DarkColor` | `Colors.Black` | Color of dark modules |
 | `LightColor` | `Colors.White` | Color of light modules and of the quiet zone |
+
+| `QRCodeDrawingOptions` | Default | Description |
+|------------------------|---------|-------------|
+| `ModuleSize` | 10 | Size of each module, in canvas units |
+| `QuietZoneModules` | 4 | Number of quiet zone modules around the QR code |
+| `DarkBrush` | black | Brush of dark modules, in canvas coordinates |
+| `LightBrush` | white | Brush of light modules and of the quiet zone; `null` keeps the background |
+| `SnapToPixels` | `true` | Round the module size and the position to whole units |
+
+| `BarcodeDrawingOptions` | Default | Description |
+|-------------------------|---------|-------------|
+| `ModuleWidth` | 2 | Width of each module, in canvas units |
+| `ModuleHeight` | 80 | Height of the bars, in canvas units |
+| `QuietZoneModules` | 10 | Number of quiet zone modules on the left and right sides |
+| `DarkBrush` | black | Brush of the bars, in canvas coordinates |
+| `LightBrush` | white | Brush of the spaces, of the quiet zone and of the text background; `null` keeps the background |
+| `SnapToPixels` | `true` | Round the module sizes and the position to whole units |
+| `Font` | `null` | Font of the human-readable text under the bars; `null` draws no text |
+| `FontSize` | 14 | Size of the text, in units per em |
+| `TextBrush` | `null` | Brush of the text; `null` uses `DarkBrush` |
+| `TextSpacing` | 2 | Space between the bars and the text |

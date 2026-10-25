@@ -43,7 +43,7 @@ internal static class Code93Encoder
         AppendCharacter(modules, AsteriskEncoding);
         modules.Add(true);
 
-        return BarcodeEncoderHelper.CreateBarcode(BarcodeType.Code93, modules);
+        return BarcodeEncoderHelper.CreateBarcode(BarcodeType.Code93, modules, data);
     }
 
     private static int ComputeChecksumIndex(string data, int maxWeight)

@@ -6,6 +6,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Ahem: every glyph is a box, so the ink of a text is easy to locate -->
+    <EmbeddedResource Include="../../src/Meziantou.Framework.WebPlatform/Css/Fonts/Bundled/Ahem.ttf" LogicalName="Ahem.ttf" Link="Fonts/Ahem.ttf" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="../../src/Meziantou.Framework.Imaging.Barcodes/Meziantou.Framework.Imaging.Barcodes.csproj" />
   </ItemGroup>
 

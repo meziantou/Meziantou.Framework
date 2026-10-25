@@ -8,6 +8,7 @@ namespace Meziantou.Framework.Barcodes
     {
         public int Height { get => throw null; }
         public bool this[int row, int column] { get => throw null; }
+        public string Text { get => throw null; }
         public Meziantou.Framework.Barcodes.BarcodeType Type { get => throw null; }
         public int Width { get => throw null; }
         public static Meziantou.Framework.Barcodes.Barcode CreateCodabar(string data, char startCharacter = 'A', char stopCharacter = 'B') => throw null;

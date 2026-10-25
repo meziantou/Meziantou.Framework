@@ -67,7 +67,7 @@ internal static class EanUpcEncoder
         AppendPattern(modules, "101");
         AppendExtension(modules, extension);
 
-        return BarcodeEncoderHelper.CreateBarcode(BarcodeType.Ean8, modules);
+        return BarcodeEncoderHelper.CreateBarcode(BarcodeType.Ean8, modules, GetText(normalized, extension));
     }
 
     public static Barcode EncodeEan13(string data, string? extension)
@@ -96,7 +96,7 @@ internal static class EanUpcEncoder
         AppendPattern(modules, "101");
         AppendExtension(modules, extension);
 
-        return BarcodeEncoderHelper.CreateBarcode(BarcodeType.Ean13, modules);
+        return BarcodeEncoderHelper.CreateBarcode(BarcodeType.Ean13, modules, GetText(normalized, extension));
     }
 
     public static Barcode EncodeUpcA(string data, string? extension)
@@ -119,7 +119,7 @@ internal static class EanUpcEncoder
         AppendPattern(modules, "101");
         AppendExtension(modules, extension);
 
-        return BarcodeEncoderHelper.CreateBarcode(BarcodeType.UpcA, modules);
+        return BarcodeEncoderHelper.CreateBarcode(BarcodeType.UpcA, modules, GetText(normalized, extension));
     }
 
     private static string NormalizeAndValidate(string data, int lengthWithoutChecksum, int lengthWithChecksum, string symbology)
@@ -159,6 +159,11 @@ internal static class EanUpcEncoder
         }
 
         return (10 - (sum % 10)) % 10;
+    }
+
+    private static string GetText(string normalized, string? extension)
+    {
+        return string.IsNullOrEmpty(extension) ? normalized : string.Concat(normalized, " ", extension);
     }
 
     private static void AppendExtension(List<bool> modules, string? extension)

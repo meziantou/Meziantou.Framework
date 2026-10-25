@@ -63,9 +63,12 @@ internal static class Code39Encoder
             '*',
         };
         symbols.AddRange(data);
+        var text = data;
         if (includeChecksum)
         {
-            symbols.Add(GetChecksumCharacter(data));
+            var checksum = GetChecksumCharacter(data);
+            symbols.Add(checksum);
+            text = data + checksum;
         }
 
         symbols.Add('*');
@@ -80,7 +83,7 @@ internal static class Code39Encoder
             }
         }
 
-        return BarcodeEncoderHelper.CreateBarcode(BarcodeType.Code39, modules);
+        return BarcodeEncoderHelper.CreateBarcode(BarcodeType.Code39, modules, text);
     }
 
     private static void ValidateData(string data)

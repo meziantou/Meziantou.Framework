@@ -28,7 +28,7 @@ internal static class Code128Encoder
         var codewords = CreateCodewords(data);
         var modules = EncodeCodewords(codewords);
 
-        return BarcodeEncoderHelper.CreateBarcode(BarcodeType.Code128, modules);
+        return BarcodeEncoderHelper.CreateBarcode(BarcodeType.Code128, modules, data);
     }
 
     private static List<int> CreateCodewords(string data)

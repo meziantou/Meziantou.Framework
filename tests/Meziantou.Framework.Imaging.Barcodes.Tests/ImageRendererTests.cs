@@ -1,5 +1,8 @@
+using System.Runtime.CompilerServices;
 using Meziantou.Framework.Barcodes;
+using Meziantou.Framework.Imaging.Drawing;
 using Meziantou.Framework.Imaging.Formats;
+using Meziantou.Framework.Imaging.Typography;
 
 namespace Meziantou.Framework.Imaging.Barcodes.Tests;
 
@@ -48,17 +51,47 @@ public sealed class ImageRendererTests
     }
 
     [Fact]
-    public void ReadmeExample_DrawOntoImage()
+    public void ReadmeExample_DrawQRCode()
     {
-        #region ImagingBarcodes_DrawOntoImage
+        #region ImagingBarcodes_DrawQRCode
         using var ticket = new Image<Rgba32>(400, 200, Colors.White); // or Image.Load<Rgba32>("ticket.png")
-        using var qrCodeImage = QRCode.Create("TICKET-0042").ToImage(new QRCodeImageOptions { ModuleSize = 4 });
-        ticket.Draw(canvas => canvas.DrawImage(qrCodeImage.Frames[0], new PointD(16, 16)));
-        Assert.Equal(Colors.Black, ticket.Frames[0][32, 32]); // the top-left finder pattern, after the 16-pixel quiet zone
+        var qrCode = QRCode.Create("TICKET-0042");
+        var options = new QRCodeDrawingOptions { ModuleSize = 4, QuietZoneModules = 2 };
+
+        // The size of the drawing, quiet zone included, to lay out the page before drawing
+        var size = QRCodeImageRenderer.MeasureQRCode(qrCode, options);
+        Assert.Equal((100, 100), (size.Width, size.Height)); // (21 modules + 2 x 2) x 4 pixels
+
+        // Drawn as a vector shape: the transform and the clip of the canvas apply, any brush works
+        ticket.Draw(canvas => canvas.DrawQRCode(qrCode, new PointD(400 - 16 - size.Width, 16), options));
+        Assert.Equal(Colors.Black, ticket.Frames[0][284 + 8, 16 + 8]); // the top-left finder pattern, after the 8-pixel quiet zone
 
         // Save to a file (ticket.Save("ticket-with-qrcode.png")) or to a stream
         using var png = new MemoryStream();
         ticket.Save(png, new PngEncoder());
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_DrawBarcode()
+    {
+        #region ImagingBarcodes_DrawBarcode
+        using var label = new Image<Rgba32>(300, 120, Colors.White);
+        var barcode = Barcode.CreateEan13("590123412345");
+        var options = new BarcodeDrawingOptions
+        {
+            ModuleWidth = 2,
+            ModuleHeight = 60,
+            QuietZoneModules = 9,
+            DarkBrush = new SolidBrush(new Rgba32(0x00, 0x33, 0x66)),
+        };
+
+        label.Draw(canvas =>
+        {
+            var bounds = canvas.DrawBarcode(barcode, new PointD(20, 20), options);
+            Assert.Equal(new RectangleD(20, 20, 226, 60), bounds); // (95 modules + 2 x 9) x 2 pixels wide
+        });
+        Assert.Equal(new Rgba32(0x00, 0x33, 0x66), label.Frames[0][20 + 18, 50]); // the first guard bar
         #endregion
     }
 
@@ -333,6 +366,294 @@ public sealed class ImageRendererTests
 
         var exception = Assert.Throws<ArgumentOutOfRangeException>(() => barcode.ToImage(new BarcodeImageOptions { ModuleWidth = int.MaxValue }));
         Assert.Equal(nameof(BarcodeImageOptions.ModuleWidth), exception.ParamName);
+    }
+
+    [Theory]
+    [MemberData(nameof(QRCodeLayouts))]
+    public void DrawQRCode_MatchesToImage(QRCodeType type, int moduleSize, int quietZoneModules)
+    {
+        var qr = CreateSample(type);
+        using var expected = qr.ToImage(new QRCodeImageOptions { ModuleSize = moduleSize, QuietZoneModules = quietZoneModules });
+        var options = new QRCodeDrawingOptions { ModuleSize = moduleSize, QuietZoneModules = quietZoneModules };
+
+        using var actual = new Image<Rgba32>(expected.Width + 20, expected.Height + 20, Colors.Red);
+        var bounds = DrawOn(actual, (qr, options), static (canvas, state) => canvas.DrawQRCode(state.qr, new PointD(10, 10), state.options));
+
+        Assert.Equal(new RectangleD(10, 10, expected.Width, expected.Height), bounds);
+        Assert.Equal(bounds, Offset(QRCodeImageRenderer.MeasureQRCode(qr, options), 10, 10));
+        AssertDrawnAt(expected, actual, 10, 10);
+    }
+
+    [Theory]
+    [MemberData(nameof(BarcodeLayouts))]
+    public void DrawBarcode_MatchesToImage(BarcodeType type, int moduleWidth, int moduleHeight, int quietZoneModules)
+    {
+        var barcode = CreateSample(type);
+        using var expected = barcode.ToImage(new BarcodeImageOptions { ModuleWidth = moduleWidth, ModuleHeight = moduleHeight, QuietZoneModules = quietZoneModules });
+        var options = new BarcodeDrawingOptions { ModuleWidth = moduleWidth, ModuleHeight = moduleHeight, QuietZoneModules = quietZoneModules };
+
+        using var actual = new Image<Rgba32>(expected.Width + 20, expected.Height + 20, Colors.Red);
+        var bounds = DrawOn(actual, (barcode, options), static (canvas, state) => canvas.DrawBarcode(state.barcode, new PointD(10, 10), state.options));
+
+        Assert.Equal(new RectangleD(10, 10, expected.Width, expected.Height), bounds);
+        Assert.Equal(bounds, Offset(BarcodeImageRenderer.MeasureBarcode(barcode, options), 10, 10));
+        AssertDrawnAt(expected, actual, 10, 10);
+    }
+
+    [Fact]
+    public void DrawQRCode_NullLightBrush_KeepsTheBackground()
+    {
+        var qr = QRCode.Create("A", ErrorCorrectionLevel.L);
+        var options = new QRCodeDrawingOptions { ModuleSize = 2, QuietZoneModules = 1, LightBrush = null };
+
+        using var actual = new Image<Rgba32>(50, 50, Colors.Red);
+        DrawOn(actual, (qr, options), static (canvas, state) => canvas.DrawQRCode(state.qr, default, state.options));
+
+        var pixels = GetPixels(actual);
+        for (var y = 0; y < actual.Height; y++)
+        {
+            for (var x = 0; x < actual.Width; x++)
+            {
+                var row = (y / 2) - 1;
+                var column = (x / 2) - 1;
+                var isDark = row >= 0 && row < qr.Height && column >= 0 && column < qr.Width && qr[row, column];
+                Assert.Equal(isDark ? Colors.Black : Colors.Red, pixels[(y * actual.Width) + x]);
+            }
+        }
+    }
+
+    [Fact]
+    public void DrawQRCode_GradientBrush_PaintsOnlyTheDarkModules()
+    {
+        var qr = QRCode.Create("GRADIENT", ErrorCorrectionLevel.L);
+        var gradient = new LinearGradientBrush(new PointD(0, 0), new PointD(100, 0), [new GradientStop(0, Colors.Blue), new GradientStop(1, Colors.Green)]);
+        var options = new QRCodeDrawingOptions { ModuleSize = 4, QuietZoneModules = 0, DarkBrush = gradient };
+
+        using var actual = new Image<Rgba32>(qr.Width * 4, qr.Height * 4, Colors.Red);
+        DrawOn(actual, (qr, options), static (canvas, state) => canvas.DrawQRCode(state.qr, default, state.options));
+
+        var pixels = GetPixels(actual);
+        var darkColors = new HashSet<Rgba32>();
+        for (var row = 0; row < qr.Height; row++)
+        {
+            for (var column = 0; column < qr.Width; column++)
+            {
+                var pixel = pixels[(((row * 4) + 2) * actual.Width) + (column * 4) + 2];
+                if (qr[row, column])
+                {
+                    Assert.NotEqual(Colors.White, pixel);
+                    darkColors.Add(pixel);
+                }
+                else
+                {
+                    Assert.Equal(Colors.White, pixel);
+                }
+            }
+        }
+
+        Assert.HasCountGreaterThan(1, darkColors);
+    }
+
+    [Fact]
+    public void DrawQRCode_SnapToPixels_RoundsTheModuleSizeAndThePosition()
+    {
+        var qr = QRCode.Create("A", ErrorCorrectionLevel.L);
+        var options = new QRCodeDrawingOptions { ModuleSize = 2.6, QuietZoneModules = 1 };
+
+        using var actual = new Image<Rgba32>(100, 100, Colors.Red);
+        var bounds = DrawOn(actual, (qr, options), static (canvas, state) => canvas.DrawQRCode(state.qr, new PointD(10.4, 10.6), state.options));
+
+        Assert.Equal(new RectangleD(10, 11, 23 * 3, 23 * 3), bounds);
+        Assert.Equal(new RectangleD(0, 0, 23 * 3, 23 * 3), QRCodeImageRenderer.MeasureQRCode(qr, options));
+        using var expected = qr.ToImage(new QRCodeImageOptions { ModuleSize = 3, QuietZoneModules = 1 });
+        AssertDrawnAt(expected, actual, 10, 11);
+    }
+
+    [Fact]
+    public void DrawQRCode_WithoutSnapping_UsesTheExactSizeAndPosition()
+    {
+        var qr = QRCode.Create("A", ErrorCorrectionLevel.L);
+        var options = new QRCodeDrawingOptions { ModuleSize = 2.5, QuietZoneModules = 1, SnapToPixels = false };
+
+        using var actual = new Image<Rgba32>(100, 100, Colors.Red);
+        var bounds = DrawOn(actual, (qr, options), static (canvas, state) => canvas.DrawQRCode(state.qr, new PointD(10.25, 10.5), state.options));
+
+        Assert.Equal(new RectangleD(10.25, 10.5, 23 * 2.5, 23 * 2.5), bounds);
+        Assert.Equal(new RectangleD(0, 0, 23 * 2.5, 23 * 2.5), QRCodeImageRenderer.MeasureQRCode(qr, options));
+
+        // A partly covered edge pixel is a mix of the background and the quiet zone, a fully covered one is the quiet zone
+        var pixels = GetPixels(actual);
+        Assert.Equal(Colors.Red, pixels[(5 * actual.Width) + 5]);
+        Assert.NotEqual(Colors.Red, pixels[(20 * actual.Width) + 10]);
+        Assert.NotEqual(Colors.White, pixels[(20 * actual.Width) + 10]);
+        Assert.Equal(Colors.White, pixels[(20 * actual.Width) + 11]);
+    }
+
+    [Fact]
+    public void DrawQRCode_UnderATransform_IsScaled()
+    {
+        var qr = QRCode.Create("SCALE", ErrorCorrectionLevel.L);
+        using var expected = qr.ToImage(new QRCodeImageOptions { ModuleSize = 2, QuietZoneModules = 2 });
+        var options = new QRCodeDrawingOptions { ModuleSize = 1, QuietZoneModules = 2 };
+
+        using var actual = new Image<Rgba32>(expected.Width + 20, expected.Height + 20, Colors.Red);
+        DrawOn(actual, (qr, options), static (canvas, state) =>
+        {
+            canvas.Transform(AffineTransform.CreateScale(2, 2), state, static (canvas, state) => canvas.DrawQRCode(state.qr, new PointD(5, 5), state.options));
+            return default;
+        });
+
+        AssertDrawnAt(expected, actual, 10, 10);
+    }
+
+    [Fact]
+    public void DrawBarcode_WithFont_DrawsTheTextUnderTheBars()
+    {
+        var font = LoadAhem();
+        var barcode = Barcode.CreateEan8("5512345");
+        var options = new BarcodeDrawingOptions { ModuleWidth = 2, ModuleHeight = 40, QuietZoneModules = 7, Font = font, FontSize = 10, TextSpacing = 3 };
+        var text = TextLayout.Create(barcode.Text, font, 10);
+        Assert.Equal("55123457", barcode.Text);
+
+        var size = BarcodeImageRenderer.MeasureBarcode(barcode, options);
+        Assert.Equal((67 + 14) * 2, size.Width); // the text (8 boxes of 10 pixels) is narrower than the bars
+        Assert.Equal(40 + 3 + text.Height, size.Height);
+
+        using var actual = new Image<Rgba32>(200, 100, Colors.Red);
+        var bounds = DrawOn(actual, (barcode, options), static (canvas, state) => canvas.DrawBarcode(state.barcode, new PointD(4, 4), state.options));
+        Assert.Equal(Offset(size, 4, 4), bounds);
+
+        var pixels = GetPixels(actual);
+        var textTop = 4 + 43;
+        var textLeft = 4 + (int)((size.Width - text.Width) / 2);
+        Assert.Equal(Colors.White, pixels[((textTop - 1) * actual.Width) + textLeft + 2]); // the spacing
+        Assert.Equal(Colors.Black, pixels[((textTop + (int)text.Baseline - 2) * actual.Width) + textLeft + 2]); // inside the first box
+        Assert.Equal(Colors.Red, pixels[((4 + (int)size.Height + 1) * actual.Width) + 20]); // under the drawing
+    }
+
+    [Fact]
+    public void DrawBarcode_TextWiderThanTheBars_WidensTheDrawing()
+    {
+        var font = LoadAhem();
+        var barcode = Barcode.CreateCode128("WIDE");
+        var options = new BarcodeDrawingOptions { ModuleWidth = 1, ModuleHeight = 10, QuietZoneModules = 0, Font = font, FontSize = 40, TextBrush = new SolidBrush(Colors.Blue) };
+
+        var size = BarcodeImageRenderer.MeasureBarcode(barcode, options);
+        Assert.Equal(160, size.Width);
+
+        using var actual = new Image<Rgba32>(200, 100, Colors.Red);
+        DrawOn(actual, (barcode, options), static (canvas, state) => canvas.DrawBarcode(state.barcode, default, state.options));
+        var pixels = GetPixels(actual);
+        var barsLeft = (160 - barcode.Width) / 2;
+        Assert.Equal(Colors.White, pixels[5 + (barsLeft - 1)]); // left of the centered bars
+        Assert.Equal(Colors.Black, pixels[(5 * actual.Width) + barsLeft]); // Code 128 starts with a bar
+        Assert.Equal(Colors.Blue, pixels[(30 * actual.Width) + 5]); // the text brush
+    }
+
+    [Fact]
+    public void Measure_InvalidOptions_Throw()
+    {
+        var qr = QRCode.Create("A", ErrorCorrectionLevel.L);
+        var barcode = Barcode.CreateCode39("ABC");
+        var font = LoadAhem();
+
+        Assert.Throws<ArgumentNullException>(() => QRCodeImageRenderer.MeasureQRCode(qrCode: null!));
+        Assert.Throws<ArgumentNullException>(() => BarcodeImageRenderer.MeasureBarcode(barcode: null!));
+        Assert.Throws<ArgumentNullException>(() => QRCodeImageRenderer.MeasureQRCode(qr, new QRCodeDrawingOptions { DarkBrush = null! }));
+        Assert.Throws<ArgumentNullException>(() => BarcodeImageRenderer.MeasureBarcode(barcode, new BarcodeDrawingOptions { DarkBrush = null! }));
+
+        foreach (var size in new[] { 0, -1, double.NaN, double.PositiveInfinity })
+        {
+            Assert.Equal(nameof(QRCodeDrawingOptions.ModuleSize), Assert.Throws<ArgumentOutOfRangeException>(() => QRCodeImageRenderer.MeasureQRCode(qr, new QRCodeDrawingOptions { ModuleSize = size })).ParamName);
+            Assert.Equal(nameof(BarcodeDrawingOptions.ModuleWidth), Assert.Throws<ArgumentOutOfRangeException>(() => BarcodeImageRenderer.MeasureBarcode(barcode, new BarcodeDrawingOptions { ModuleWidth = size })).ParamName);
+            Assert.Equal(nameof(BarcodeDrawingOptions.ModuleHeight), Assert.Throws<ArgumentOutOfRangeException>(() => BarcodeImageRenderer.MeasureBarcode(barcode, new BarcodeDrawingOptions { ModuleHeight = size })).ParamName);
+            Assert.Equal(nameof(BarcodeDrawingOptions.FontSize), Assert.Throws<ArgumentOutOfRangeException>(() => BarcodeImageRenderer.MeasureBarcode(barcode, new BarcodeDrawingOptions { Font = font, FontSize = size })).ParamName);
+        }
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => QRCodeImageRenderer.MeasureQRCode(qr, new QRCodeDrawingOptions { QuietZoneModules = -1 }));
+        Assert.Throws<ArgumentOutOfRangeException>(() => BarcodeImageRenderer.MeasureBarcode(barcode, new BarcodeDrawingOptions { QuietZoneModules = -1 }));
+        Assert.Equal(nameof(BarcodeDrawingOptions.TextSpacing), Assert.Throws<ArgumentOutOfRangeException>(() => BarcodeImageRenderer.MeasureBarcode(barcode, new BarcodeDrawingOptions { Font = font, TextSpacing = -1 })).ParamName);
+
+        // Without a font, the text options are not used
+        _ = BarcodeImageRenderer.MeasureBarcode(barcode, new BarcodeDrawingOptions { FontSize = -1, TextSpacing = -1 });
+
+        // A module size below 0.5 rounds up to 1 when snapping
+        Assert.Equal(qr.Width + 8, QRCodeImageRenderer.MeasureQRCode(qr, new QRCodeDrawingOptions { ModuleSize = 0.1 }).Width);
+    }
+
+    [Fact]
+    public void Draw_InvalidArguments_ThrowBeforeDrawing()
+    {
+        using var image = new Image<Rgba32>(10, 10, Colors.Red);
+        var qr = QRCode.Create("A", ErrorCorrectionLevel.L);
+        var exceptions = new List<Exception>();
+
+        image.Draw((qr, exceptions), static (canvas, state) =>
+        {
+            try
+            {
+                canvas.DrawQRCode(qrCode: null!, default);
+            }
+            catch (ArgumentNullException ex)
+            {
+                state.exceptions.Add(ex);
+            }
+
+            try
+            {
+                canvas.DrawQRCode(state.qr, new PointD(double.NaN, 0), new QRCodeDrawingOptions { SnapToPixels = false });
+            }
+            catch (ArgumentException ex)
+            {
+                state.exceptions.Add(ex);
+            }
+
+            try
+            {
+                canvas.DrawBarcode(barcode: null!, default);
+            }
+            catch (ArgumentNullException ex)
+            {
+                state.exceptions.Add(ex);
+            }
+        });
+
+        Assert.HasCount(3, exceptions);
+        Assert.All(GetPixels(image), pixel => Assert.Equal(Colors.Red, pixel));
+    }
+
+    private static Font LoadAhem()
+    {
+        using var stream = typeof(ImageRendererTests).Assembly.GetManifestResourceStream("Ahem.ttf")!;
+        return Font.Load(stream);
+    }
+
+    private static RectangleD Offset(RectangleD rectangle, double dx, double dy) => new(rectangle.X + dx, rectangle.Y + dy, rectangle.Width, rectangle.Height);
+
+    private static RectangleD DrawOn<TState>(Image<Rgba32> image, TState state, Func<DrawingCanvas, TState, RectangleD> draw)
+    {
+        var result = new StrongBox<RectangleD>();
+        image.Draw((state, draw, result), static (canvas, context) => context.result.Value = context.draw(canvas, context.state));
+        return result.Value;
+    }
+
+    private static void AssertDrawnAt(Image<Rgba32> expected, Image<Rgba32> actual, int left, int top)
+    {
+        var expectedPixels = GetPixels(expected);
+        var actualPixels = GetPixels(actual);
+        for (var y = 0; y < actual.Height; y++)
+        {
+            for (var x = 0; x < actual.Width; x++)
+            {
+                var inside = x >= left && x < left + expected.Width && y >= top && y < top + expected.Height;
+                var expectedPixel = inside ? expectedPixels[((y - top) * expected.Width) + x - left] : Colors.Red;
+                var actualPixel = actualPixels[(y * actual.Width) + x];
+                if (expectedPixel != actualPixel)
+                {
+                    Assert.Fail($"Pixel ({x}, {y}) is {actualPixel}; expected {expectedPixel}.");
+                }
+            }
+        }
     }
 
     private static QRCode CreateSample(QRCodeType type)

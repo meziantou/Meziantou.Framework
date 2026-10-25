@@ -9,16 +9,25 @@ public sealed class Barcode
 {
     private readonly bool[,] _modules;
 
-    internal Barcode(bool[,] modules, BarcodeType type)
+    internal Barcode(bool[,] modules, BarcodeType type, string text)
     {
         _modules = modules;
         Type = type;
+        Text = text;
         Height = modules.GetLength(0);
         Width = modules.GetLength(1);
     }
 
     /// <summary>Gets the type of barcode.</summary>
     public BarcodeType Type { get; }
+
+    /// <summary>Gets the human-readable interpretation of the barcode: the encoded data as it is printed under the bars.</summary>
+    /// <remarks>
+    /// It includes the characters the barcode adds: the check digit of EAN-8, EAN-13 and UPC-A (followed by a space and
+    /// the add-on when there is one), the Mod 43 check character of Code 39 when it is included, and the start and stop
+    /// characters of Codabar. It does not include the Code 39 and Code 93 start and stop characters.
+    /// </remarks>
+    public string Text { get; }
 
     /// <summary>Gets the width (number of columns).</summary>
     public int Width { get; }

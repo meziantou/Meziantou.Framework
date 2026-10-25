@@ -26,7 +26,49 @@ public class BarCodeAdditionalTypesTests
         Assert.Equal((BarcodeType.UpcA, 122, 1), (upcA.Type, upcA.Width, upcA.Height));
         Assert.Equal((BarcodeType.Codabar, 71, 1), (codabar.Type, codabar.Width, codabar.Height));
         Assert.Equal((BarcodeType.Itf, 81, 1), (itf.Type, itf.Width, itf.Height));
+
+        // The human-readable text, with the characters the barcode adds (check digits, add-on, Codabar guards)
+        Assert.Equal("ABC-123W", code39.Text);
+        Assert.Equal("55123457", ean8.Text);
+        Assert.Equal("4006381333931", ean13.Text);
+        Assert.Equal("036000291452 12", upcA.Text);
+        Assert.Equal("A40156B", codabar.Text);
         #endregion
+    }
+
+    [Theory]
+    [InlineData(BarcodeType.Code39, "ABC-123", "ABC-123")]
+    [InlineData(BarcodeType.Code93, "ABC123xyz", "ABC123xyz")]
+    [InlineData(BarcodeType.Code128, "SKU-123456", "SKU-123456")]
+    [InlineData(BarcodeType.Ean8, "55123457", "55123457")]
+    [InlineData(BarcodeType.Ean13, "590123412345", "5901234123457")]
+    [InlineData(BarcodeType.UpcA, "036000291452", "036000291452")]
+    [InlineData(BarcodeType.Codabar, "40156", "A40156B")]
+    [InlineData(BarcodeType.Itf, "12345678", "12345678")]
+    public void Text_IsTheHumanReadableInterpretation(BarcodeType type, string data, string expected)
+    {
+        var barcode = type switch
+        {
+            BarcodeType.Code39 => Barcode.CreateCode39(data),
+            BarcodeType.Code93 => Barcode.CreateCode93(data),
+            BarcodeType.Code128 => Barcode.CreateCode128(data),
+            BarcodeType.Ean8 => Barcode.CreateEan8(data),
+            BarcodeType.Ean13 => Barcode.CreateEan13(data),
+            BarcodeType.UpcA => Barcode.CreateUpcA(data),
+            BarcodeType.Codabar => Barcode.CreateCodabar(data),
+            BarcodeType.Itf => Barcode.CreateItf(data),
+            _ => throw new ArgumentOutOfRangeException(nameof(type), type, message: null),
+        };
+
+        Assert.Equal(expected, barcode.Text);
+    }
+
+    [Fact]
+    public void Text_IncludesTheAddOnAndTheNormalizedCodabarGuards()
+    {
+        Assert.Equal("5901234123457 12345", Barcode.CreateEan13("590123412345", extension: "12345").Text);
+        Assert.Equal("55123457 12", Barcode.CreateEan8("5512345", extension: "12").Text);
+        Assert.Equal("C12D", Barcode.CreateCodabar("12", startCharacter: 'c', stopCharacter: 'd').Text);
     }
 
     private const string Code93SmallData = "A1";

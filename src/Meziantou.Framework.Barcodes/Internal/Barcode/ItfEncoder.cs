@@ -41,7 +41,7 @@ internal static class ItfEncoder
         }
 
         AppendPattern(modules, EndPattern, startDark: true);
-        return BarcodeEncoderHelper.CreateBarcode(BarcodeType.Itf, modules);
+        return BarcodeEncoderHelper.CreateBarcode(BarcodeType.Itf, modules, data);
     }
 
     private static void ValidateData(string data)

@@ -30,6 +30,7 @@ public sealed class WebPlatformFeaturesTests : IDisposable
           CompressionStreamsEnabled: typeof CompressionStream + typeof DecompressionStream,
           NavigationApiEnabled: typeof navigation + typeof Navigation + typeof NavigateEvent + ('navigation' in window),
           UrlPatternEnabled: typeof URLPattern,
+          ObservableEnabled: typeof Observable + typeof Subscriber + typeof EventTarget.prototype.when + ('when' in document),
           WebAssemblyEnabled: typeof WebAssembly + ('WebAssembly' in self),
           ResizeObserverEnabled: typeof ResizeObserver + typeof ResizeObserverEntry + typeof ResizeObserverSize,
           IntersectionObserverEnabled: typeof IntersectionObserver + typeof IntersectionObserverEntry,

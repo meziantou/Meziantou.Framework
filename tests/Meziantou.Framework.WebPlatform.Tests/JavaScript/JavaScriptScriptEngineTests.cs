@@ -790,6 +790,115 @@ public sealed class JavaScriptScriptEngineTests : IDisposable
     }
 
     [Fact]
+    public void Observable_OperatorsTransformTheValues()
+    {
+        var document = Load("""
+            <script>
+              const source = new Observable(subscriber => {
+                for (let i = 1; i <= 5; i++) subscriber.next(i);
+                subscriber.complete();
+              });
+              const log = [];
+              source.map((value, index) => value * 10 + index).filter(value => value > 20).take(2).subscribe({
+                next: value => log.push(value),
+                complete: () => log.push('complete'),
+              });
+              Promise.all([source.toArray(), source.reduce((a, b) => a + b), source.first(), source.last(), source.some(v => v > 4), source.every(v => v > 0)])
+                .then(results => document.title = log.join() + '|' + results.join('|'));
+            </script>
+            """);
+        Assert.Equal("21,32,complete|1,2,3,4,5|15|1|5|true|true", document.Title);
+        Assert.Empty(_errors);
+    }
+
+    [Fact]
+    public void Observable_From_ConvertsIterablesPromisesAndAsyncIterables()
+    {
+        var document = Load("""
+            <script>
+              async function* generate() { yield 'c'; yield 'd'; }
+              Promise.all([
+                Observable.from(['a', 'b']).toArray(),
+                Observable.from(generate()).toArray(),
+                Observable.from(Promise.resolve('e')).toArray(),
+                Observable.from([1, 2]).flatMap(v => [v, v]).toArray(),
+              ]).then(results => document.title = results.join('|') + '|' + Object.prototype.toString.call(Observable.from([])) + '|' + (() => { try { Observable.from(1); } catch (e) { return e.name; } })());
+            </script>
+            """);
+        Assert.Equal("a,b|c,d|e|1,1,2,2|[object Observable]|TypeError", document.Title);
+        Assert.Empty(_errors);
+    }
+
+    [Fact]
+    public void Observable_UnsubscribingRunsTheTeardownsAndAbortsTheSignal()
+    {
+        var document = Load("""
+            <script>
+              const log = [];
+              let subscriber;
+              const controller = new AbortController();
+              new Observable(s => {
+                subscriber = s;
+                s.addTeardown(() => log.push('teardown 1'));
+                s.addTeardown(() => log.push('teardown 2'));
+              }).subscribe(value => log.push(value), { signal: controller.signal });
+              subscriber.next('a');
+              controller.abort('stop');
+              subscriber.next('b');
+              document.title = log.join() + '|' + subscriber.active + '|' + subscriber.signal.reason;
+            </script>
+            """);
+        Assert.Equal("a,teardown 2,teardown 1|false|stop", document.Title);
+        Assert.Empty(_errors);
+    }
+
+    [Fact]
+    public void Observable_UnhandledErrorsAreReportedToTheGlobal()
+    {
+        var document = Load("""
+            <script>
+              window.onerror = (message, filename, lineno) => { document.title = message + '|' + filename + '|' + lineno; return true; };
+            </script>
+            <script>
+              new Observable(subscriber => subscriber.error(new Error('boom'))).subscribe();
+            </script>
+            """);
+        Assert.Equal("Error: boom|https://example.com/|5", document.Title);
+        Assert.Empty(_errors);
+    }
+
+    [Fact]
+    public void EventTarget_When_ObservesTheEventsUntilTheSubscriptionEnds()
+    {
+        var document = Load("""
+            <button>Click</button>
+            <script>
+              const button = document.querySelector('button');
+              const log = [];
+              button.when('click').map(event => event.type).take(2).subscribe({ next: type => log.push(type), complete: () => log.push('complete') });
+              for (let i = 0; i < 3; i++) button.click();
+              document.title = log.join();
+            </script>
+            """);
+        Assert.Equal("click,click,complete", document.Title);
+        Assert.Empty(_errors);
+    }
+
+    [Fact]
+    public void Observable_OfAnotherRealm_IsAnObservable()
+    {
+        var document = Load("""
+            <iframe></iframe>
+            <script>
+              const observable = frames[0].eval('new Observable(subscriber => { subscriber.next(1); subscriber.complete(); })');
+              Observable.prototype.map.call(observable, v => v + 1).toArray().then(values => document.title = (Observable.from(observable) === observable) + '|' + values);
+            </script>
+            """);
+        Assert.Equal("true|2", document.Title);
+        Assert.Empty(_errors);
+    }
+
+    [Fact]
     public void Iframes_HaveTheirOwnRealm()
     {
         var document = Load("""

@@ -31,7 +31,7 @@ internal static class AudioGraph
             var changed = false;
             foreach (var component in components)
             {
-                if (!IsCycle(nodes, index, component))
+                if (!IsCycle(nodes, component))
                     continue;
 
                 foreach (var i in component)
@@ -52,7 +52,7 @@ internal static class AudioGraph
         var splitNodes = new List<AudioNode>();
         foreach (var component in components)
         {
-            var muted = IsCycle(nodes, index, component);
+            var muted = IsCycle(nodes, component);
             foreach (var i in component)
             {
                 var node = nodes[i];
@@ -68,7 +68,7 @@ internal static class AudioGraph
         return ([.. order], [.. splitNodes]);
     }
 
-    private static bool IsCycle(IReadOnlyList<AudioNode> nodes, Dictionary<AudioNode, int> index, List<int> component)
+    private static bool IsCycle(IReadOnlyList<AudioNode> nodes, List<int> component)
     {
         if (component.Count > 1)
             return true;

@@ -173,8 +173,6 @@ public sealed class ConvolverNode : AudioNode
         var right = input.IsSilent ? default : (stereoInput ? input.GetChannelSpan(1) : left);
 
         // https://webaudio.github.io/web-audio-api/#Convolution-channel-configurations
-        var outLeft = default(Span<float>);
-        var outRight = default(Span<float>);
         if (_responseChannels == 1)
         {
             // A mono response: each channel of the input is convolved with it. The convolution is linear when the input
@@ -189,8 +187,7 @@ public sealed class ConvolverNode : AudioNode
             var stereoOutput = startFrame < _stereoUntilFrame;
             var rightInput = stereoInput || ChannelInterpretation == ChannelInterpretation.Speakers ? right : default;
             output.SetNumberOfChannels(stereoOutput ? 2 : 1);
-            outLeft = output.GetChannelSpan(0);
-            _convolvers[0].Process(left, outLeft, accumulate: false);
+            _convolvers[0].Process(left, output.GetChannelSpan(0), accumulate: false);
             if (stereoOutput)
             {
                 _convolvers[1].Process(rightInput, output.GetChannelSpan(1), accumulate: false);
@@ -205,8 +202,8 @@ public sealed class ConvolverNode : AudioNode
         }
 
         output.SetNumberOfChannels(2);
-        outLeft = output.GetChannelSpan(0);
-        outRight = output.GetChannelSpan(1);
+        var outLeft = output.GetChannelSpan(0);
+        var outRight = output.GetChannelSpan(1);
         if (_responseChannels == 2)
         {
             _convolvers[0].Process(left, outLeft, accumulate: false);

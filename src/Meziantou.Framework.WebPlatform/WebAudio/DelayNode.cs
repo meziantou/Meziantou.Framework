@@ -96,7 +96,7 @@ public sealed class DelayNode : AudioNode
     {
         var input = GetInputBus(0);
         Write(input, length);
-        Read(GetOutputBus(0), startFrame, length, minimumDelayFrames: 0);
+        Read(GetOutputBus(0), length, minimumDelayFrames: 0);
         _writeFrame += length;
     }
 
@@ -104,7 +104,7 @@ public sealed class DelayNode : AudioNode
     {
         // The input of the render quantum is not known yet: the delay is at least one render quantum
         var output = GetOutputBus(0);
-        Read(output, startFrame, length, minimumDelayFrames: length);
+        Read(output, length, minimumDelayFrames: length);
         if (startFrame < _cycleActiveUntilFrame)
             return true;
 
@@ -201,7 +201,7 @@ public sealed class DelayNode : AudioNode
     }
 
     /// <summary>Reads a render quantum from the delay line: the frame <c>_writeFrame + i</c> is delayed by the delay time.</summary>
-    private void Read(AudioBus output, long startFrame, int length, int minimumDelayFrames)
+    private void Read(AudioBus output, int length, int minimumDelayFrames)
     {
         var sampleRate = (double)Context.SampleRate;
         var maxDelayFrames = MaxDelayTime * sampleRate;

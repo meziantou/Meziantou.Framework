@@ -591,6 +591,21 @@ matrix). `Flip`, `Grayscale`, `ApplyColorMatrix` and `Convolve` also exist for o
 orientation and thumbnail. `ConvertColorProfile` converts the colors to another ICC profile
 (see [Color management](#color-management)).
 
+**Floating-point pixels**. `RgbaFloat` and `RgbaHalf` images accept every processing operation. Crops, rotations, flips,
+auto-orient and nearest-neighbor resizes move the stored bits unchanged, NaN payloads included. Resize, convolution and
+blur use the double-precision filters of the integer formats, with the sample values as working values premultiplied by
+alpha: colors are rounded to the nearest float or half but never clamped, so highlights above 1 and negative lobes
+survive (a half beyond 65,504 becomes infinite); alpha is clamped to [0, 1], and samples that are not numbers spread to
+the pixels whose filters read them. In the `LinearSrgb` working spaces, an image labeled as linear light (the label of a
+new floating-point image) is filtered as stored; with another label, every sample must be a number in [0, 1], the
+domain of its transfer function, or the operation fails before anything changes, and the filtered light is clipped to
+[0, 1] before it is encoded again, as for the integer formats (the ringing of a sharp filter beyond the range is lost).
+`Grayscale` stores the Rec. 709 luma of
+the stored values, unclamped. `ConvertColorProfile` converts the samples without reducing them to 16 bits, and rejects
+colors outside [0, 1] or not numbers, since a profile describes only that range. The auto-crop analysis compares the
+values as stored and rejects non-finite samples; the typed `BackgroundColor` of its result is exact, the `Rgba64` one is
+clipped. Image comparisons round samples in [0, 1] to 8 bits and reject any other value instead of clipping it.
+
 **Cursor hotspots**. A hotspot (`Frames[i].Metadata.Hotspot`) follows the pixel it designates:
 `Crop` and `AutoCrop` translate it, `Rotate`, `Flip` and `AutoOrient` permute it exactly, and `Resize` moves it to
 `floor(x * newWidth / width)` (and likewise vertically, through the kept region for `Cover`), which is how Windows

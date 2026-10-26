@@ -24,6 +24,9 @@ public sealed class UrlPattern
     private readonly UrlPatternComponent _search;
     private readonly UrlPatternComponent _hash;
 
+    /// <summary>Whether the pattern was created with the <c>ignoreCase</c> option (https://urlpattern.spec.whatwg.org/#dom-urlpatternoptions-ignorecase).</summary>
+    internal bool IgnoreCase { get; }
+
     /// <summary>Creates a pattern from a pattern string, relative to a base URL, or from a <see cref="UrlPatternInit"/> (then <paramref name="baseUrl"/> must not be given).</summary>
     /// <exception cref="TypeErrorException">The pattern is not valid.</exception>
     /// <seealso href="https://urlpattern.spec.whatwg.org/#dom-urlpattern-urlpattern"/>
@@ -47,6 +50,7 @@ public sealed class UrlPattern
     private UrlPattern(UrlPatternInput input, string? baseUrl, UrlPatternOptions? options, bool hasBaseUrl)
     {
         options ??= DefaultOptions;
+        IgnoreCase = options.IgnoreCase;
         UrlPatternInitRecord init;
         if (input.Value is string inputString)
         {

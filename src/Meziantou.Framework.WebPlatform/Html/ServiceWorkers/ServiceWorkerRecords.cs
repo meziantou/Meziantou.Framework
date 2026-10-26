@@ -251,6 +251,7 @@ internal sealed class ServiceWorkerRecord
         EventTypesToHandle = EventTypesToHandle is { } types ? [.. types] : [],
         Scripts = [.. ScriptResourceMap.Values],
         UsedScriptUrls = [.. UsedScripts],
+        RouterRules = [.. RouterRules.Select(ServiceWorkerRouter.ToStored)],
     };
 
     public static ServiceWorkerRecord? FromStored(ServiceWorkerRegistrationRecord registration, StoredServiceWorker stored)
@@ -275,6 +276,8 @@ internal sealed class ServiceWorkerRecord
             worker.UsedScripts.Add(url);
         }
 
+        // The rules that cannot be restored (an invalid stored rule) are all dropped: the order of the rules matters
+        worker.RouterRules = ServiceWorkerRouter.FromStored(stored.RouterRules) ?? [];
         return worker.MainScript is null ? null : worker;
     }
 }

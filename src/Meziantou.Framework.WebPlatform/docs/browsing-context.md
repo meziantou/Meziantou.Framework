@@ -3317,9 +3317,10 @@ await context.WaitUntilIdleAsync();
   `race-network-and-fetch-handler` sends a GET request to the network while the `fetch` event is dispatched, and uses the
   first of a network response whose status is an ok status and of the response of the `fetch` event (the network
   response when the event does not respond). A GET request of the service worker to the URL of a running race (e.g.
-  `fetch(event.request)`) gets the response of the network request of the race. The rules are not persisted with the
-  registration (`ServiceWorkerBackend`): a service worker restored from the backend has none. The caches of a
-  partitioned storage key (a credentialless iframe) are not looked up by the `cache` source.
+  `fetch(event.request)`) gets the response of the network request of the race. The rules are saved with the
+  registration (`StoredServiceWorker.RouterRules` of the `ServiceWorkerBackend`): a URL pattern is stored as the pattern
+  strings of its components and its `ignoreCase` option, and the rules of a stored worker are dropped when one of them
+  is not valid. The caches of a partitioned storage key (a credentialless iframe) are not looked up by the `cache` source.
 - The clients (`clients.get()`, `matchAll()`, `claim()`, `openWindow()`, `WindowClient.focus()` and `navigate()`) are the
   windows and the dedicated and shared workers of the browsing context group. `openWindow()` and `focus()` require the
   transient activation of a window of the origin. `matchAll()` lists the windows that were focused first, the most

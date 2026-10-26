@@ -9892,6 +9892,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool ClassicScriptsImported { get => throw null; init { } }
         public System.Collections.Generic.IReadOnlyList<string> EventTypesToHandle { get => throw null; init { } }
         public required string Id { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.StoredServiceWorkerRouterRule> RouterRules { get => throw null; init { } }
         public required string ScriptUrl { get => throw null; init { } }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.StoredServiceWorkerScript> Scripts { get => throw null; init { } }
         public string State { get => throw null; init { } }
@@ -9910,6 +9911,24 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.StoredServiceWorker? Waiting { get => throw null; init { } }
     }
 
+    public sealed class StoredServiceWorkerRouterCondition
+    {
+        public Meziantou.Framework.WebPlatform.Dom.StoredServiceWorkerRouterCondition? Not { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.StoredServiceWorkerRouterCondition>? Or { get => throw null; init { } }
+        public string? RequestDestination { get => throw null; init { } }
+        public string? RequestMethod { get => throw null; init { } }
+        public string? RequestMode { get => throw null; init { } }
+        public string? RunningStatus { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.StoredServiceWorkerUrlPattern? UrlPattern { get => throw null; init { } }
+    }
+
+    public sealed class StoredServiceWorkerRouterRule
+    {
+        public string? CacheName { get => throw null; init { } }
+        public required Meziantou.Framework.WebPlatform.Dom.StoredServiceWorkerRouterCondition Condition { get => throw null; init { } }
+        public required string Source { get => throw null; init { } }
+    }
+
     public sealed class StoredServiceWorkerScript
     {
         public System.ReadOnlyMemory<byte> Body { get => throw null; init { } }
@@ -9918,6 +9937,19 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public int Status { get => throw null; init { } }
         public string StatusText { get => throw null; init { } }
         public required string Url { get => throw null; init { } }
+    }
+
+    public sealed class StoredServiceWorkerUrlPattern
+    {
+        public string Hash { get => throw null; init { } }
+        public string Hostname { get => throw null; init { } }
+        public bool IgnoreCase { get => throw null; init { } }
+        public string Password { get => throw null; init { } }
+        public string Pathname { get => throw null; init { } }
+        public string Port { get => throw null; init { } }
+        public string Protocol { get => throw null; init { } }
+        public string Search { get => throw null; init { } }
+        public string Username { get => throw null; init { } }
     }
 
     public readonly struct StringOrBlob : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.StringOrBlob>

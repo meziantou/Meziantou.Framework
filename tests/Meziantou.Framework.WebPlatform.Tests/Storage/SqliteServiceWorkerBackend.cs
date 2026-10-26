@@ -117,10 +117,10 @@ internal sealed class SqliteServiceWorkerBackend : ServiceWorkerBackend, IDispos
         };
     }
 
-    private sealed record WorkerRow(string Id, string ScriptUrl, string Type, string State, bool ClassicScriptsImported, List<string> EventTypesToHandle, List<string> UsedScriptUrls)
+    private sealed record WorkerRow(string Id, string ScriptUrl, string Type, string State, bool ClassicScriptsImported, List<string> EventTypesToHandle, List<string> UsedScriptUrls, List<StoredServiceWorkerRouterRule>? RouterRules)
     {
         public static WorkerRow? From(StoredServiceWorker? worker)
-            => worker is null ? null : new(worker.Id, worker.ScriptUrl, worker.Type, worker.State, worker.ClassicScriptsImported, [.. worker.EventTypesToHandle], [.. worker.UsedScriptUrls]);
+            => worker is null ? null : new(worker.Id, worker.ScriptUrl, worker.Type, worker.State, worker.ClassicScriptsImported, [.. worker.EventTypesToHandle], [.. worker.UsedScriptUrls], [.. worker.RouterRules]);
 
         public StoredServiceWorker ToWorker(Func<string, List<StoredServiceWorkerScript>> getScripts) => new()
         {
@@ -131,6 +131,7 @@ internal sealed class SqliteServiceWorkerBackend : ServiceWorkerBackend, IDispos
             ClassicScriptsImported = ClassicScriptsImported,
             EventTypesToHandle = EventTypesToHandle,
             UsedScriptUrls = UsedScriptUrls,
+            RouterRules = RouterRules ?? [],
             Scripts = getScripts(Id),
         };
     }

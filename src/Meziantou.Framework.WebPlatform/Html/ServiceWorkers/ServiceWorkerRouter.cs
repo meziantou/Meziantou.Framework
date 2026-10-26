@@ -397,6 +397,133 @@ internal static class ServiceWorkerRouter
         return true;
     }
 
+    /// <summary>Converts a rule to the rule stored with its service worker (see <see cref="ServiceWorkerBackend"/>).</summary>
+    public static StoredServiceWorkerRouterRule ToStored(ServiceWorkerRouterRule rule) => new()
+    {
+        Condition = ToStored(rule.Condition),
+        Source = rule.SourceName,
+        CacheName = rule.CacheName,
+    };
+
+    private static StoredServiceWorkerRouterCondition ToStored(ServiceWorkerRouterCondition condition) => new()
+    {
+        UrlPattern = condition.UrlPattern is { } pattern ? new StoredServiceWorkerUrlPattern
+        {
+            Protocol = pattern.Protocol,
+            Username = pattern.Username,
+            Password = pattern.Password,
+            Hostname = pattern.Hostname,
+            Port = pattern.Port,
+            Pathname = pattern.Pathname,
+            Search = pattern.Search,
+            Hash = pattern.Hash,
+            IgnoreCase = pattern.IgnoreCase,
+        } : null,
+        RequestMethod = condition.Method,
+        RequestMode = condition.Mode,
+        RequestDestination = condition.Destination,
+        RunningStatus = condition.RunningStatus switch
+        {
+            Dom.RunningStatus.Running => "running",
+            Dom.RunningStatus.NotRunning => "not-running",
+            _ => null,
+        },
+        Or = condition.Or is { } or ? [.. or.Select(ToStored)] : null,
+        Not = condition.Not is { } not ? ToStored(not) : null,
+    };
+
+    /// <summary>Restores the rules stored with a service worker, or returns null when one of them is not valid.</summary>
+    public static List<ServiceWorkerRouterRule>? FromStored(IReadOnlyList<StoredServiceWorkerRouterRule> rules)
+    {
+        var result = new List<ServiceWorkerRouterRule>(rules.Count);
+        foreach (var rule in rules)
+        {
+            RouterSourceKind? source = rule.Source switch
+            {
+                "network" => RouterSourceKind.Network,
+                "cache" => RouterSourceKind.Cache,
+                "fetch-event" => RouterSourceKind.FetchEvent,
+                "race-network-and-fetch-handler" => RouterSourceKind.RaceNetworkAndFetchHandler,
+                _ => null,
+            };
+            if (source is null || rule.Condition is null || FromStored(rule.Condition) is not { } condition)
+                return null;
+
+            result.Add(new ServiceWorkerRouterRule(condition, source.GetValueOrDefault(), rule.CacheName));
+        }
+
+        return CheckRegistrationLimit(result) ? result : null;
+    }
+
+    private static ServiceWorkerRouterCondition? FromStored(StoredServiceWorkerRouterCondition condition)
+    {
+        UrlPattern? pattern = null;
+        if (condition.UrlPattern is { } storedPattern)
+        {
+            try
+            {
+                pattern = new UrlPattern(
+                    new UrlPatternInit
+                    {
+                        Protocol = storedPattern.Protocol,
+                        Username = storedPattern.Username,
+                        Password = storedPattern.Password,
+                        Hostname = storedPattern.Hostname,
+                        Port = storedPattern.Port,
+                        Pathname = storedPattern.Pathname,
+                        Search = storedPattern.Search,
+                        Hash = storedPattern.Hash,
+                    },
+                    new UrlPatternOptions { IgnoreCase = storedPattern.IgnoreCase });
+            }
+            catch (TypeErrorException)
+            {
+                return null;
+            }
+
+            if (pattern.HasRegExpGroups)
+                return null;
+        }
+
+        var (runningStatus, isValidRunningStatus) = condition.RunningStatus switch
+        {
+            null => ((RunningStatus?)null, true),
+            "running" => (Dom.RunningStatus.Running, true),
+            "not-running" => (Dom.RunningStatus.NotRunning, true),
+            _ => (null, false),
+        };
+        if (!isValidRunningStatus || (condition.RequestMethod is { } method && (!FetchHeaders.IsMethod(method) || FetchHeaders.IsForbiddenMethod(method))))
+            return null;
+
+        List<ServiceWorkerRouterCondition>? or = null;
+        if (condition.Or is { } orConditions)
+        {
+            or = new List<ServiceWorkerRouterCondition>(orConditions.Count);
+            foreach (var orCondition in orConditions)
+            {
+                if (orCondition is null || FromStored(orCondition) is not { } restored)
+                    return null;
+
+                or.Add(restored);
+            }
+        }
+
+        ServiceWorkerRouterCondition? not = null;
+        if (condition.Not is { } notCondition && (not = FromStored(notCondition)) is null)
+            return null;
+
+        return new ServiceWorkerRouterCondition
+        {
+            UrlPattern = pattern,
+            Method = condition.RequestMethod is { } requestMethod ? FetchHeaders.NormalizeMethod(requestMethod) : null,
+            Mode = condition.RequestMode,
+            Destination = condition.RequestDestination,
+            RunningStatus = runningStatus,
+            Or = or,
+            Not = not,
+        };
+    }
+
     /// <summary>The name of the mode of a request (https://fetch.spec.whatwg.org/#concept-request-mode).</summary>
     private static string GetModeName(RequestMode mode) => mode switch
     {

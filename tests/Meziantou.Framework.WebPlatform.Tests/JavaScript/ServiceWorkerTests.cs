@@ -436,6 +436,55 @@ public sealed class ServiceWorkerTests : IDisposable
     }
 
     [Fact]
+    public async Task AddRoutes_RulesArePersistedInTheBackend()
+    {
+        AddScript("https://example.com/dir/sw.js", """
+            self.addEventListener('install', e => e.addRoutes([
+              { condition: { urlPattern: new URLPattern({ pathname: '/**/DIRECT.TXT' }, { ignoreCase: true }) }, source: 'network' },
+              { condition: { or: [{ urlPattern: '/**/*.css' }, { urlPattern: { pathname: '/**', search: 'net' } }] }, source: 'network' },
+              { condition: { requestMethod: 'post', not: undefined }, source: { cacheName: 'missing' } },
+              { condition: { not: { urlPattern: '/**/*.txt' } }, source: 'network' },
+            ]));
+            self.addEventListener('fetch', e => e.respondWith(new Response('sw')));
+            """);
+        AddPage("https://example.com/dir/controlled.html", """
+            <script>
+              const text = (url, init) => fetch(url, init).then(r => r.text());
+              Promise.all([text('direct.txt'), text('style.css'), text('other.txt?net'), text('other.txt', { method: 'POST' }), text('other.txt')]).then(texts => {
+                const entry = performance.getEntriesByName(new URL('direct.txt', location).href)[0];
+                parent.document.title = texts.join(',') + '|' + entry.workerMatchedRouterSource;
+              });
+            </script>
+            """);
+        _loader.Resources["https://example.com/dir/direct.txt"] = new DocumentResource("direct");
+        _loader.Resources["https://example.com/dir/style.css"] = new DocumentResource("style");
+        _loader.Resources["https://example.com/dir/other.txt?net"] = new DocumentResource("net");
+        _loader.Resources["https://example.com/dir/other.txt"] = new DocumentResource("other");
+        const string Expected = "direct,style,net,other,sw|network";
+        var path = Path.Combine(Path.GetTempPath(), "service-workers-" + Guid.NewGuid().ToString("N") + ".db");
+        try
+        {
+            using (var backend = new Storage.SqliteServiceWorkerBackend(path))
+            {
+                Assert.Equal(Expected, await WaitForTitleAsync(Load(RegisterAndOpenControlledFrame, backend)));
+            }
+
+            // A new browsing context reads the registration: the install event is not dispatched again, the rules come from the backend
+            using (var backend = new Storage.SqliteServiceWorkerBackend(path))
+            {
+                var context = CreateContext(backend);
+                var document = context.Navigate("https://example.com/dir/page2.html", _ => "<iframe src='controlled.html'></iframe>");
+                Assert.Equal(Expected, await WaitForTitleAsync(document));
+            }
+        }
+        finally
+        {
+            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
     public async Task UnregisterThenRegister_HasAnInstallingWorker()
     {
         AddScript("https://example.com/dir/resources/worker.js", "self.onfetch = e => {};");

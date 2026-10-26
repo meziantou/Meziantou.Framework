@@ -321,14 +321,19 @@ sample is published with Native AOT on CI), and the same document gives the same
   whole device pixels: see [Pixel snapping](#pixel-snapping).
 - **Image decoding** (`ImagingImageDecoder`): the format is sniffed; PNG (including the animated PNG), JPEG (including the
   CMYK images, converted to sRGB with their CMYK profile), GIF, WebP (including the animated WebP), AVIF (including the
-  image sequences), BMP (including the run-length encoded ones), ICO and CUR are decoded (the other formats of
-  Meziantou.Framework.Imaging, e.g. JPEG XL or HEIC, are rejected: the browsers do not all decode them). Only the header
-  and the structure of the frames are read when an image is opened (the frames of an AVIF sequence are read once for
-  their durations); the frames are decoded on demand by a forward-only reader (an earlier frame restarts it), composited
-  by the library. The colors are converted to sRGB with the embedded ICC profile (the samples of 16 bits before they are
-  reduced; as in the browsers, the gamma and the chromaticities of a PNG image without ICC profile are ignored), the EXIF
-  orientation given by the core library is applied, and the loop count is read by the core library
-  (`ImageMetadata.GetAnimationRepetitionCount`; the number of plays of an AVIF sequence). An invalid animated PNG is
+  image sequences), JPEG XL (including the animations; not the CMYK, premultiplied alpha and floating-point images, which
+  the codec does not decode), BMP (including the run-length encoded ones), ICO and CUR are decoded (the other formats of
+  Meziantou.Framework.Imaging, e.g. HEIC, are rejected: the browsers do not all decode them). Only the header and the
+  structure of the frames are read when an image is opened (the frames of an AVIF sequence or of a JPEG XL animation are
+  read once for their durations); the frames are decoded on demand by a forward-only reader (an earlier frame restarts
+  it), composited by the library. The colors are converted to sRGB with the embedded ICC profile, or with the CICP color
+  description of an image without profile (e.g. a JPEG XL or AVIF image in Display P3, or a PNG image with a `cICP`
+  chunk; the PQ and HLG samples are tone mapped with the curve of Report ITU-R BT.2390, from the peak given by the light
+  levels of the image), the samples of 16 bits before they are reduced (as in the browsers, the gamma and the
+  chromaticities of a PNG image without ICC profile are ignored). The EXIF orientation given by the core library is
+  applied (the orientation of the codestream of a JPEG XL image, whose EXIF metadata is ignored), and the loop count is
+  read by the core library (`ImageMetadata.GetAnimationRepetitionCount`; the number of plays of an AVIF sequence or of a
+  JPEG XL animation). An invalid animated PNG is
   displayed as its default image, and the chunks of a PNG image whose type is not made of letters or whose checksum is
   wrong are ignored. An incomplete PNG, baseline JPEG or BMP image is decoded up to its last decoded row (the other rows
   are transparent); the incomplete images of the other formats are not decoded (a limitation of
@@ -351,7 +356,7 @@ their image data, and their EXIF resolution: the natural size of an image whose 
 rectangles and the image shaders, which are in natural pixels, to the decoded pixels). With a backend:
 
 - the decoder of the backend opens a raster image when it is loaded: an image it cannot read (an unsupported format such as
-  AVIF, a corrupted header) is broken (`error` event, `complete`, `naturalWidth` 0), as in a user agent that does not
+  HEIC, a corrupted header) is broken (`error` event, `complete`, `naturalWidth` 0), as in a user agent that does not
   support it; an image whose data is corrupted after a valid header is available, but its pixels cannot be decoded;
 - the pixels are decoded when they are painted, by `img.decode()` (which rejects with an `EncodingError` when they cannot
   be decoded) and by `createImageBitmap()`. `decoding="sync|async"` has no effect (the decoding is synchronous);

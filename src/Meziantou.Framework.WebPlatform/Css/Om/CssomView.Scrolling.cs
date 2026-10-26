@@ -850,7 +850,7 @@ public partial class HtmlElement
 
             var inFixedContainingBlock = position == "fixed";
             var zoom = CssomViewHelpers.GetEffectiveZoom(this);
-            for (var ancestor = CssomViewHelpers.GetFlatTreeParentElement(this); ancestor is not null; ancestor = CssomViewHelpers.GetFlatTreeParentElement(ancestor))
+            for (var ancestor = GetOffsetParentCandidate(this); ancestor is not null; ancestor = GetOffsetParentCandidate(ancestor))
             {
                 // As in the browsers, the ancestors in a shadow tree the element is not in are skipped, open or closed (the
                 // specification only skips the closed shadow trees)
@@ -890,6 +890,22 @@ public partial class HtmlElement
 
             return null;
         }
+    }
+
+    /// <summary>
+    /// Returns the parent of an element in the flat tree, or the multi-column container of a column spanner: as in the browsers
+    /// (whose box trees move a spanner under its multi-column container), the ancestors between a spanner and its multi-column
+    /// container are skipped (they are not in its containing block chain, https://drafts.csswg.org/css-multicol-1/#column-span).
+    /// </summary>
+    private static Element? GetOffsetParentCandidate(Element element)
+    {
+        if (CssomViewHelpers.GetStyle(element).GetComputedValue("column-span") == "all" && CssomViewGeometry.GetLayoutEngine(element) is { } engine
+            && engine.GetFragments(element) is [var fragment, ..] && MultiColumnFlow.GetColumnSpannerContainer(fragment.Box) is { Element: { } container })
+        {
+            return container;
+        }
+
+        return CssomViewHelpers.GetFlatTreeParentElement(element);
     }
 
     /// <summary>

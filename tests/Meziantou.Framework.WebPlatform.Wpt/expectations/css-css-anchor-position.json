@@ -366,11 +366,7 @@
     "reftest": "PASS"
   },
   "css/css-anchor-position/anchor-position-multicol-colspan-001.html": {
-    "total": 5,
-    "failures": {
-      ".target 2": "FAIL",
-      ".target 3": "FAIL"
-    }
+    "total": 5
   },
   "css/css-anchor-position/anchor-position-multicol-colspan-002.html": {
     "total": 2
@@ -1399,7 +1395,7 @@
     "reftest": "PASS"
   },
   "css/css-anchor-position/transform-005.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-anchor-position/transform-006.html": {
     "reftest": "PASS"

@@ -222,6 +222,33 @@ public sealed class EffectsPaintingTests : IDisposable
     }
 
     [Fact]
+    public void Transforms3D_PlaneWithoutDrawableContentDoesNotSplitTheOtherPlanes()
+    {
+        var document = Parse("""
+            <div style='transform-origin: 0 0; transform-style: preserve-3d; transform: rotate3d(1, 1, 1, 90deg); height: 100px'>
+              <div id=a style='transform-origin: 0 0; transform: rotate3d(1, 1, 1, -90deg); height: 50px; background: rgb(0, 128, 0)'></div>
+            </div>
+            """);
+        var dump = Dump(document);
+        Assert.Contains("[div#a]", dump, StringComparison.Ordinal);
+        Assert.DoesNotContain("clip-path", dump, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Transforms3D_EdgesCreatedBySplitsAreNotAntialiased()
+    {
+        var document = Parse("""
+            <div style='transform-style: preserve-3d; width: 100px; height: 100px'>
+              <div style='position: absolute; transform: rotateY(45deg); width: 100px; height: 100px; background: rgb(0, 128, 0)'></div>
+              <div style='position: absolute; transform: rotateY(-45deg); width: 100px; height: 100px; background: rgb(0, 0, 255)'></div>
+            </div>
+            """);
+        var clips = document.GetDisplayList()!.Items.ToArray().OfType<ClipPathItem>().ToList();
+        Assert.Equal(2, clips.Count);
+        Assert.All(clips, clip => Assert.False(clip.AntiAlias));
+    }
+
+    [Fact]
     public void Transforms3D_BackFaceHidden()
     {
         var document = Parse("<div id=a style='transform: rotateY(180deg); backface-visibility: hidden; width: 10px; height: 10px; background: rgb(255, 0, 0)'></div>");

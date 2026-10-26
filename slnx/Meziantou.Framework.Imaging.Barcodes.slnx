@@ -18,4 +18,7 @@
     <Project Path="../tests/Meziantou.Framework.Barcodes.InteropTests/Meziantou.Framework.Barcodes.InteropTests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Imaging.Barcodes.Tests/Meziantou.Framework.Imaging.Barcodes.Tests.csproj" />
   </Folder>
+  <Folder Name="/tools/">
+    <Project Path="../tools/Meziantou.Framework.Imaging.Barcodes.FontGenerator/Meziantou.Framework.Imaging.Barcodes.FontGenerator.csproj" />
+  </Folder>
 </Solution>

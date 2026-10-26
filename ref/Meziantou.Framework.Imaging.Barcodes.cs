@@ -18,6 +18,12 @@ namespace Meziantou.Framework.Imaging.Barcodes
         public double TextSpacing { get => throw null; set { } }
     }
 
+    public static class BarcodeFonts
+    {
+        public static Meziantou.Framework.Imaging.Typography.Font OcrA { get => throw null; }
+        public static Meziantou.Framework.Imaging.Typography.Font OcrB { get => throw null; }
+    }
+
     public sealed class BarcodeImageOptions
     {
         public Meziantou.Framework.Imaging.Rgba32 DarkColor { get => throw null; set { } }

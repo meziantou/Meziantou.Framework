@@ -49,12 +49,14 @@ public static class BarcodesFuzzTargets
 
     private static readonly double[] ModuleSizes = [1, 2, 3, 0.5, 1.5, 2.6, 4, 7.3, 0.1, 0, -1, double.NaN, double.PositiveInfinity, 1e7];
 
+    private static readonly double[] FontSizes = [14, 8, 30, 0.5, 200, 0, -1, double.NaN, 1e6];
+
     public static IReadOnlyList<FuzzTarget> All { get; } =
     [
         new("barcodes-qrcode", QRCodeTarget) { Seeds = () => QRSeedTexts.SelectMany((text, index) => new[] { 0, 1, 2 }.Select(type => FuzzSeed.FromText($"qrcode-{index}-{type}", [(byte)type, (byte)index], text))), Dictionary = Tokens },
         new("barcodes-linear", LinearTarget) { Seeds = () => Enumerable.Range(0, 8).SelectMany(type => BarcodeSeedTexts.Select((text, index) => FuzzSeed.FromText($"linear-{type}-{index}", [(byte)type, (byte)index], text))), Dictionary = Tokens },
         new("barcodes-payload", PayloadTarget) { Seeds = GetPayloadSeeds, Dictionary = Tokens },
-        new("barcodes-draw", DrawTarget) { Seeds = () => Enumerable.Range(0, 12).Select(kind => new FuzzSeed($"draw-{kind}", (byte[])[(byte)kind, (byte)(kind % 8), (byte)(kind * 37), (byte)(kind * 11), .. FuzzText.Encode(kind < 3 ? "HELLO" : "12345678")])), Dictionary = Tokens },
+        new("barcodes-draw", DrawTarget) { Seeds = () => Enumerable.Range(0, 12).Select(kind => new FuzzSeed($"draw-{kind}", (byte[])[(byte)kind, (byte)(kind % 8), (byte)(kind * 37), (byte)(kind * 11), (byte)(kind % 3), .. FuzzText.Encode(kind < 3 ? "HELLO" : "12345678")])), Dictionary = Tokens },
     ];
 
     private static void QRCodeTarget(ReadOnlySpan<byte> data)
@@ -210,7 +212,17 @@ public static class BarcodesFuzzTargets
         var sizeIndex = FuzzInput.ReadByte(ref data);
         var quietZone = (FuzzInput.ReadByte(ref data) % 12) - 1;
         var flags = FuzzInput.ReadByte(ref data);
+        var fontByte = FuzzInput.ReadByte(ref data);
         var text = FuzzInput.ReadText(data);
+
+        // The human-readable text of a barcode, in one of the bundled fonts
+        var font = (fontByte % 3) switch
+        {
+            1 => BarcodeFonts.OcrA,
+            2 => BarcodeFonts.OcrB,
+            _ => null,
+        };
+        var fontSize = FontSizes[(fontByte / 3) % FontSizes.Length];
 
         var moduleSize = ModuleSizes[sizeIndex % ModuleSizes.Length];
         var snap = (flags & 1) == 0;
@@ -267,7 +279,7 @@ public static class BarcodesFuzzTargets
                 return;
             }
 
-            var options = new BarcodeDrawingOptions { ModuleWidth = moduleSize, ModuleHeight = moduleSize * 3, QuietZoneModules = quietZone, DarkBrush = dark, LightBrush = light, SnapToPixels = snap };
+            var options = new BarcodeDrawingOptions { ModuleWidth = moduleSize, ModuleHeight = moduleSize * 3, QuietZoneModules = quietZone, DarkBrush = dark, LightBrush = light, SnapToPixels = snap, Font = font, FontSize = fontSize };
             (columns, rows, isDark) = (barcode.Width, 1, (row, column) => barcode[row, column]);
             measure = () => BarcodeImageRenderer.MeasureBarcode(barcode, options);
             draw = canvas => canvas.DrawBarcode(barcode, position, options);
@@ -337,8 +349,8 @@ public static class BarcodesFuzzTargets
             }
         }
 
-        // With whole sizes and solid brushes, each module is exactly its color
-        if (!snap || gradient || noLight)
+        // With whole sizes and solid brushes, each module is exactly its color (a text wider than the bars moves them)
+        if (!snap || gradient || noLight || (kind >= 3 && font is not null))
             return;
 
         var moduleWidth = Math.Max(1, Math.Round(moduleSize, MidpointRounding.AwayFromZero));

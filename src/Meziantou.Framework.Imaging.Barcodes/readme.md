@@ -78,11 +78,10 @@ ticket.Save(png, new PngEncoder());
 <!-- endref -->
 
 `DrawBarcode` draws the bars, and the human-readable text (`Barcode.Text`, with its check digit) under them when
-`BarcodeDrawingOptions.Font` is set:
+`BarcodeDrawingOptions.Font` is set, for example to the bundled OCR-B font:
 
 <!-- ref:../../tests/Meziantou.Framework.Imaging.Barcodes.Tests/ImageRendererTests.cs;region=ImagingBarcodes_DrawBarcode;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using var label = new Image<Rgba32>(300, 120, Colors.White);
 var barcode = Barcode.CreateEan13("590123412345");
 var options = new BarcodeDrawingOptions
 {
@@ -90,16 +89,35 @@ var options = new BarcodeDrawingOptions
     ModuleHeight = 60,
     QuietZoneModules = 9,
     DarkBrush = new SolidBrush(new Rgba32(0x00, 0x33, 0x66)),
+    Font = BarcodeFonts.OcrB, // prints barcode.Text, "5901234123457", under the bars
+    FontSize = 24,
 };
 
-label.Draw(canvas =>
-{
-    var bounds = canvas.DrawBarcode(barcode, new PointD(20, 20), options);
-    Assert.Equal(new RectangleD(20, 20, 226, 60), bounds); // (95 modules + 2 x 9) x 2 pixels wide
-});
+var size = BarcodeImageRenderer.MeasureBarcode(barcode, options);
+Assert.Equal(226, size.Width); // (95 modules + 2 x 9) x 2 pixels
+
+using var label = new Image<Rgba32>(300, 140, Colors.White);
+label.Draw(canvas => canvas.DrawBarcode(barcode, new PointD(20, 20), options));
 Assert.Equal(new Rgba32(0x00, 0x33, 0x66), label.Frames[0][20 + 18, 50]); // the first guard bar
 ```
 <!-- endref -->
+
+## Fonts
+
+`BarcodeFonts.OcrA` and `BarcodeFonts.OcrB` are the two fonts of optical character recognition, the ones usually
+printed under barcodes (OCR-B under EAN and UPC). They are generated from the character shapes of the standards, at their
+Size I and with their nominal stroke width, by `tools/Meziantou.Framework.Imaging.Barcodes.FontGenerator`:
+
+- OCR-A from the dimensioned drawings of ANSI X3.17-1981: the centerlines in fractions of the character height and
+  width, painted with a round pen, with the sharp corners the drawings show. The 2 degree lean of the stems of some
+  small letters is not reproduced.
+- OCR-B from the 4:1 illustrations of ANSI X3.49-1975 (the American counterpart of ECMA-11 and ISO 1073-2): the
+  centerlines are traced from the illustrations, so they follow them within a few hundredths of a millimeter.
+
+Both are monospaced (an advance of 0.6 em, the 0.1 inch pitch of the standards), map the printable ASCII characters,
+and are licensed with this package. OCR-A also maps the Hook, Chair and Fork (U+2440 to U+2442), which stand for the
+Tilde, the Grave Accent and the Underline; OCR-B also maps the letters of its extended repertoire (Ä, Å, Æ, Ö, Ø, Ü, Ñ,
+IJ, å, æ, ø, ij, ß) and §, ¤, £, ¥, ¨ and ´. The preferred shapes of the punctuation are drawn, not the alternate ones.
 
 ## Options
 

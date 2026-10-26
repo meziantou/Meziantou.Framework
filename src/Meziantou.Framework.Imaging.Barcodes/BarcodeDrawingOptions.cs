@@ -35,6 +35,7 @@ public sealed class BarcodeDrawingOptions
     public bool SnapToPixels { get; set; } = true;
 
     /// <summary>Gets or sets the font of the human-readable text (<see cref="Barcode.Text"/>) printed under the bars. Default is <see langword="null"/>: no text.</summary>
+    /// <remarks><see cref="BarcodeFonts.OcrB"/> is the font usually printed under EAN and UPC barcodes.</remarks>
     public Font? Font { get; set; }
 
     /// <summary>Gets or sets the size of the font, in units per em. Default is 14.</summary>

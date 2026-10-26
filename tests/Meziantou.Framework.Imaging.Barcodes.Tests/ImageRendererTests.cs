@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using System.Text;
 using Meziantou.Framework.Barcodes;
 using Meziantou.Framework.Imaging.Drawing;
 using Meziantou.Framework.Imaging.Formats;
@@ -76,7 +77,6 @@ public sealed class ImageRendererTests
     public void ReadmeExample_DrawBarcode()
     {
         #region ImagingBarcodes_DrawBarcode
-        using var label = new Image<Rgba32>(300, 120, Colors.White);
         var barcode = Barcode.CreateEan13("590123412345");
         var options = new BarcodeDrawingOptions
         {
@@ -84,13 +84,15 @@ public sealed class ImageRendererTests
             ModuleHeight = 60,
             QuietZoneModules = 9,
             DarkBrush = new SolidBrush(new Rgba32(0x00, 0x33, 0x66)),
+            Font = BarcodeFonts.OcrB, // prints barcode.Text, "5901234123457", under the bars
+            FontSize = 24,
         };
 
-        label.Draw(canvas =>
-        {
-            var bounds = canvas.DrawBarcode(barcode, new PointD(20, 20), options);
-            Assert.Equal(new RectangleD(20, 20, 226, 60), bounds); // (95 modules + 2 x 9) x 2 pixels wide
-        });
+        var size = BarcodeImageRenderer.MeasureBarcode(barcode, options);
+        Assert.Equal(226, size.Width); // (95 modules + 2 x 9) x 2 pixels
+
+        using var label = new Image<Rgba32>(300, 140, Colors.White);
+        label.Draw(canvas => canvas.DrawBarcode(barcode, new PointD(20, 20), options));
         Assert.Equal(new Rgba32(0x00, 0x33, 0x66), label.Frames[0][20 + 18, 50]); // the first guard bar
         #endregion
     }
@@ -620,6 +622,75 @@ public sealed class ImageRendererTests
 
         Assert.HasCount(3, exceptions);
         Assert.All(GetPixels(image), pixel => Assert.Equal(Colors.Red, pixel));
+    }
+
+    [Fact]
+    public void BarcodeFonts_MapThePrintableAsciiCharacters()
+    {
+        foreach (var font in new[] { BarcodeFonts.OcrA, BarcodeFonts.OcrB })
+        {
+            Assert.True(font.IsMonospaced);
+            for (var c = 0x21; c <= 0x7E; c++)
+            {
+                Assert.True(font.ContainsGlyph(new Rune(c)), $"{font.FamilyName} has no glyph for U+{c:X4}");
+
+                // Every glyph has the advance of the 0.1 inch pitch: 0.6 em
+                Assert.Equal(60, TextLayout.Create(((char)c).ToString(), font, 100).Width, tolerance: 0.001);
+            }
+        }
+
+        Assert.Equal("Meziantou OCR-A", BarcodeFonts.OcrA.FamilyName);
+        Assert.Equal("Meziantou OCR-B", BarcodeFonts.OcrB.FamilyName);
+        Assert.True(BarcodeFonts.OcrA.ContainsGlyph(new Rune(0x2440)));
+        Assert.True(BarcodeFonts.OcrB.ContainsGlyph(new Rune('\u00C4')));
+        Assert.Same(BarcodeFonts.OcrB, BarcodeFonts.OcrB);
+    }
+
+    [Theory]
+    [InlineData("A", 'H', 2.40 + 0.35, 1.40 + 0.35)]
+    [InlineData("A", '0', 2.40 + 0.35, 1.40 + 0.35)]
+    [InlineData("B", '8', 2.39 + 0.35, 1.40 + 0.35)]
+    [InlineData("B", '0', 2.39 + 0.35, 1.40 + 0.35)]
+    public void BarcodeFonts_HaveTheDimensionsOfTheStandards(string standard, char character, double heightMillimeters, double widthMillimeters)
+    {
+        // Size I: the 2.54 mm pitch is the advance (600 units), the ink is the centerline size plus a stroke
+        var font = standard == "A" ? BarcodeFonts.OcrA : BarcodeFonts.OcrB;
+        var bounds = TextLayout.Create(character.ToString(), font, 1000).InkBounds;
+        const double UnitsPerMillimeter = 600 / 2.54;
+        var tolerance = standard == "A" ? 2 : 0.06 * UnitsPerMillimeter; // OCR-B is traced from an illustration
+        Assert.Equal(heightMillimeters * UnitsPerMillimeter, bounds.Height, tolerance);
+        Assert.Equal(widthMillimeters * UnitsPerMillimeter, bounds.Width, tolerance);
+    }
+
+    [Fact]
+    public void BarcodeFonts_AreTheOutputOfTheGenerator()
+    {
+        // tools/Meziantou.Framework.Imaging.Barcodes.FontGenerator writes the embedded fonts: they must be up to date.
+        // The rendering is compared, not the bytes, as the rounding of the outlines can differ between math libraries.
+        foreach (var (embedded, generated) in new[] { (BarcodeFonts.OcrA, FontGenerator.OcrA.Font), (BarcodeFonts.OcrB, FontGenerator.OcrB.Font) })
+        {
+            var fresh = Font.Load(generated.Build());
+            Assert.Equal(embedded.GlyphCount, fresh.GlyphCount);
+            for (var c = 0x20; c < 0x2500; c++)
+            {
+                if (!embedded.ContainsGlyph(new Rune(c)) && !fresh.ContainsGlyph(new Rune(c)))
+                    continue;
+
+                Assert.True(embedded.ContainsGlyph(new Rune(c)) && fresh.ContainsGlyph(new Rune(c)), $"U+{c:X4} is not in both {embedded.FamilyName} fonts");
+                var differences = CountDifferentPixels(RenderGlyph(embedded, c), RenderGlyph(fresh, c));
+                Assert.True(differences <= 4, $"U+{c:X4} of {embedded.FamilyName}: {differences} pixels differ; run the generator");
+            }
+        }
+
+        static Rgba32[] RenderGlyph(Font font, int codePoint)
+        {
+            using var image = new Image<Rgba32>(120, 160, Colors.White);
+            var layout = TextLayout.Create(char.ConvertFromUtf32(codePoint), font, 160);
+            image.Draw(canvas => canvas.FillText(new SolidBrush(Colors.Black), layout, new PointD(0, 0)));
+            return GetPixels(image);
+        }
+
+        static int CountDifferentPixels(Rgba32[] a, Rgba32[] b) => a.Zip(b).Count(pair => Math.Abs(pair.First.R - pair.Second.R) > 64);
     }
 
     private static Font LoadAhem()

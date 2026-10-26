@@ -149,7 +149,8 @@ internal sealed class SsimAccumulator : IDisposable
         }
     }
 
-    private static byte Premultiply(uint value, uint alpha) => (byte)((value * alpha + 127) / 255);
+    /// <summary>Premultiplies an 8-bit sample by an 8-bit alpha, rounded to the nearest.</summary>
+    internal static byte Premultiply(uint value, uint alpha) => (byte)((value * alpha + 127) / 255);
 
     private void UpdateColumnStatistics(ReadOnlySpan<byte> expectedRow, ReadOnlySpan<byte> actualRow, int sign)
     {

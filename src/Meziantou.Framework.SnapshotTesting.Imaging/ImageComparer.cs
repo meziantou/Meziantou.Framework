@@ -9,6 +9,8 @@ namespace Meziantou.Framework.SnapshotTesting.Imaging;
 /// </summary>
 public sealed class ImageComparer(ImageComparisonSettings? settings = null) : ISnapshotComparer
 {
+    private const int Ssimulacra2MinimumSize = 8;
+
     internal static ImageComparer Instance { get; } = new();
 
     /// <inheritdoc/>
@@ -22,8 +24,8 @@ public sealed class ImageComparer(ImageComparisonSettings? settings = null) : IS
 
         mismatchReason = null;
 
-        // Identical bytes decode to identical pixels, so an exact comparison matches, SSIM is 1.0 and both hash distances
-        // are 0 - every configured threshold is satisfied. This is the case for every passing image snapshot test, and it
+        // Identical bytes decode to identical pixels, so an exact comparison matches, SSIM is 1.0, PSNR is infinite,
+        // SSIMULACRA 2 is 100, and the Butteraugli and hash distances are 0 - every configured threshold is satisfied. This is the case for every passing image snapshot test, and it
         // avoids decoding both images.
         if (expected.Data.AsSpan().SequenceEqual(actual.Data))
             return true;
@@ -55,7 +57,7 @@ public sealed class ImageComparer(ImageComparisonSettings? settings = null) : IS
             }
         }
 
-        if (settings is null || (settings.SimilarityThreshold is null && settings.DHashThreshold is null && settings.PHashThreshold is null))
+        if (settings is null || !settings.HasSimilarityThreshold)
         {
             // An 8-bit sample v is the 16-bit sample v × 257, so an 8-bit image equals a 16-bit one only when every 16-bit
             // sample is exactly that
@@ -110,6 +112,44 @@ public sealed class ImageComparer(ImageComparisonSettings? settings = null) : IS
             if (distance > pHashThreshold)
             {
                 (reasons ??= []).Add(ImageMismatchReasons.PHashAboveThreshold(distance, pHashThreshold));
+            }
+        }
+
+        if (settings.PsnrThreshold is { } psnrThreshold)
+        {
+            var psnr = ImageSimilarity.ComputePsnr(expected, actual);
+            if (psnr < psnrThreshold)
+            {
+                (reasons ??= []).Add(ImageMismatchReasons.PsnrBelowThreshold(psnr, psnrThreshold));
+            }
+        }
+
+        if (settings.Ssimulacra2Threshold is { } ssimulacra2Threshold)
+        {
+            if (expected.Width < Ssimulacra2MinimumSize || expected.Height < Ssimulacra2MinimumSize)
+            {
+                // Too small for the metric: identical premultiplied pixels and alpha are the only match
+                if (!double.IsPositiveInfinity(ImageSimilarity.ComputePsnr(expected, actual)))
+                {
+                    (reasons ??= []).Add(ImageMismatchReasons.Ssimulacra2SmallImagesDiffer);
+                }
+            }
+            else
+            {
+                var score = ImageSimilarity.ComputeSsimulacra2(expected, actual);
+                if (score < ssimulacra2Threshold)
+                {
+                    (reasons ??= []).Add(ImageMismatchReasons.Ssimulacra2BelowThreshold(score, ssimulacra2Threshold));
+                }
+            }
+        }
+
+        if (settings.ButteraugliThreshold is { } butteraugliThreshold)
+        {
+            var distance = ImageSimilarity.ComputeButteraugliDistance(expected, actual).MaxDistance;
+            if (distance > butteraugliThreshold)
+            {
+                (reasons ??= []).Add(ImageMismatchReasons.ButteraugliAboveThreshold(distance, butteraugliThreshold));
             }
         }
 

@@ -56,6 +56,22 @@ public sealed class ImageSnapshotTests
     }
 
     [Fact]
+    public void ReadmeExample_PerceptualThresholds()
+    {
+        #region SnapshotTestingImaging_PerceptualThresholds
+        var settings = new SnapshotSettings(); // SnapshotSettings.Default in the module initializer
+        settings.AddImaging(new ImageComparisonSettings
+        {
+            PsnrThreshold = 40,        // PSNR in decibels: higher is closer, infinite for identical images
+            Ssimulacra2Threshold = 90, // SSIMULACRA 2: 100 = identical, about 90 = not visible
+            ButteraugliThreshold = 1,  // Butteraugli distance: 0 = identical, below about 1 = not visible
+        });
+        #endregion
+
+        Assert.IsType<ImageComparer>(settings.Comparers.Get(SnapshotType.Png));
+    }
+
+    [Fact]
     public void AddImaging_RegistersTheComparerForEveryImageType()
     {
         var settings = new SnapshotSettings();
@@ -748,6 +764,111 @@ public sealed class ImageSnapshotTests
 
         Assert.False(new ImageComparer(new ImageComparisonSettings { DHashThreshold = 64, PHashThreshold = 0 }).Equals(expected, actual, out reason));
         Assert.Equal($"The pHash distance {pHashDistance} is above the threshold 0.", reason);
+    }
+
+    [Fact]
+    public void ImageComparer_WithPerceptualThresholds_AllowsInvisibleDifferences()
+    {
+        using var expectedImage = CreatePatternImage(32, 32, inverted: false);
+        var pixels = GetPixels(expectedImage);
+        for (var i = 0; i < pixels.Length; i += 7)
+        {
+            pixels[i] = pixels[i] with { R = (byte)(pixels[i].R ^ 1) };
+        }
+
+        var expected = new SnapshotData("png", Encode(expectedImage, new PngEncoder()));
+        var actual = CreatePng(32, 32, pixels);
+
+        Assert.False(ImageComparer.Instance.Equals(expected, actual));
+        Assert.True(new ImageComparer(new ImageComparisonSettings { PsnrThreshold = 50 }).Equals(expected, actual));
+        Assert.True(new ImageComparer(new ImageComparisonSettings { Ssimulacra2Threshold = 90 }).Equals(expected, actual));
+        Assert.True(new ImageComparer(new ImageComparisonSettings { ButteraugliThreshold = 1 }).Equals(expected, actual));
+    }
+
+    [Fact]
+    public void ImageComparer_ExplainsWhichPerceptualCheckFailed()
+    {
+        using var expectedImage = CreatePatternImage(32, 32, inverted: false);
+        using var actualImage = CreatePatternImage(32, 32, inverted: true);
+        var psnr = ImageSimilarity.ComputePsnr(expectedImage.Frames[0], actualImage.Frames[0]);
+        var score = ImageSimilarity.ComputeSsimulacra2(expectedImage.Frames[0], actualImage.Frames[0]);
+        var distance = ImageSimilarity.ComputeButteraugliDistance(expectedImage.Frames[0], actualImage.Frames[0]).MaxDistance;
+        var expected = new SnapshotData("png", Encode(expectedImage, new PngEncoder()));
+        var actual = new SnapshotData("png", Encode(actualImage, new PngEncoder()));
+        var comparer = new ImageComparer(new ImageComparisonSettings { PsnrThreshold = 30, Ssimulacra2Threshold = 90, ButteraugliThreshold = 1.5 });
+
+        Assert.False(comparer.Equals(expected, actual, out var reason));
+        Assert.Equal(string.Create(CultureInfo.InvariantCulture, $"The PSNR {Math.Floor(psnr * 1000) / 1000:0.###} dB is below the threshold 30 dB. The SSIMULACRA 2 score {Math.Floor(score * 1000) / 1000:0.###} is below the threshold 90. The Butteraugli distance {Math.Ceiling(distance * 1_000_000) / 1_000_000:0.######} is above the threshold 1.5."), reason);
+
+        Assert.True(new ImageComparer(new ImageComparisonSettings { PsnrThreshold = Math.Floor(psnr), Ssimulacra2Threshold = Math.Floor(score), ButteraugliThreshold = Math.Ceiling(distance) }).Equals(expected, actual));
+    }
+
+    [Fact]
+    public void ImageComparer_WithSsimulacra2Threshold_ComparesImagesSmallerThan8x8ByPixels()
+    {
+        var comparer = new ImageComparer(new ImageComparisonSettings { Ssimulacra2Threshold = 0 });
+
+        // Fully transparent pixels are equal whatever color they hide
+        Assert.True(comparer.Equals(CreatePng(4, 9, new Rgba32(255, 0, 0, 0)), CreatePng(4, 9, new Rgba32(0, 255, 0, 0))));
+
+        Assert.False(comparer.Equals(CreatePng(4, 9, White), CreatePng(4, 9, new Rgba32(255, 255, 254)), out var reason));
+        Assert.Equal("The images are smaller than 8x8 pixels, too small for SSIMULACRA 2, and their pixels differ.", reason);
+    }
+
+    [Fact]
+    public void ImageComparer_WithPerceptualThresholds_DetectsAlphaDifferences()
+    {
+        var expected = CreatePng(16, 16, new Rgba32(255, 0, 0));
+        var actual = CreatePng(16, 16, new Rgba32(255, 0, 0, 0));
+
+        Assert.False(new ImageComparer(new ImageComparisonSettings { PsnrThreshold = 10 }).Equals(expected, actual));
+        Assert.False(new ImageComparer(new ImageComparisonSettings { Ssimulacra2Threshold = 90 }).Equals(expected, actual));
+        Assert.False(new ImageComparer(new ImageComparisonSettings { ButteraugliThreshold = 10 }).Equals(expected, actual));
+    }
+
+    [Theory]
+    [InlineData(double.NaN)]
+    [InlineData(-0.01)]
+    [InlineData(double.NegativeInfinity)]
+    public void ImageComparisonSettings_RejectsInvalidPsnrThresholds(double threshold)
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ImageComparisonSettings { PsnrThreshold = threshold });
+    }
+
+    [Theory]
+    [InlineData(double.NaN)]
+    [InlineData(100.01)]
+    [InlineData(double.PositiveInfinity)]
+    [InlineData(double.NegativeInfinity)]
+    public void ImageComparisonSettings_RejectsInvalidSsimulacra2Thresholds(double threshold)
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ImageComparisonSettings { Ssimulacra2Threshold = threshold });
+    }
+
+    [Theory]
+    [InlineData(double.NaN)]
+    [InlineData(-0.01)]
+    [InlineData(double.PositiveInfinity)]
+    public void ImageComparisonSettings_RejectsInvalidButteraugliThresholds(double threshold)
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ImageComparisonSettings { ButteraugliThreshold = threshold });
+    }
+
+    [Fact]
+    public void ImageComparisonSettings_AcceptsValidPerceptualThresholds()
+    {
+        var settings = new ImageComparisonSettings { PsnrThreshold = double.PositiveInfinity, Ssimulacra2Threshold = -50, ButteraugliThreshold = 0 };
+
+        Assert.Equal(double.PositiveInfinity, settings.PsnrThreshold);
+        Assert.Equal(-50d, settings.Ssimulacra2Threshold);
+        Assert.Equal(0d, settings.ButteraugliThreshold);
+
+        settings.PsnrThreshold = null;
+        settings.Ssimulacra2Threshold = 100;
+        settings.ButteraugliThreshold = null;
+        Assert.Null(settings.PsnrThreshold);
+        Assert.Equal(100d, settings.Ssimulacra2Threshold);
+        Assert.Null(settings.ButteraugliThreshold);
     }
 
     [Theory]

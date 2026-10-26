@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Text;
 using Meziantou.Framework.Imaging.Drawing;
 using Meziantou.Framework.Imaging.Internals;
+using Meziantou.Framework.Imaging.TestHarness;
 using Meziantou.Framework.Imaging.TestHarness.Fixtures;
 using Meziantou.Framework.Imaging.TestHarness.Pixels;
 using Meziantou.Framework.Imaging.TestHarness.Streams;
@@ -439,6 +440,11 @@ public sealed class FontFuzzTests
                 .Order(StringComparer.Ordinal)
                 .Select(file => new FuzzSeed(suite.Id + "/" + Path.GetFileName(file), File.ReadAllBytes(file))));
         }
+
+        // The OCR-A and OCR-B fonts generated for Meziantou.Framework.Imaging.Barcodes
+        seeds.AddRange(Directory.EnumerateFiles(RepositoryPaths.Root / "src" / "Meziantou.Framework.Imaging.Barcodes" / "Fonts", "*.ttf")
+            .Order(StringComparer.Ordinal)
+            .Select(file => new FuzzSeed("barcodes/" + Path.GetFileName(file), File.ReadAllBytes(file))));
 
         if (seeds.Count < 200)
             throw new InvalidOperationException("The corpus has no font.");

@@ -46,6 +46,9 @@ internal sealed class CascadeRuleCollector
     /// <summary>The namespace prefixes declared by the style sheet whose rules are added, or null.</summary>
     private IReadOnlyDictionary<string, string>? _namespacePrefixes;
 
+    // The referrer of the resources of the style sheet whose rules are added (see CssStyleSheet.ResourceReferrer)
+    private CssResourceReferrer? _resourceReferrer;
+
     /// <param name="environment">The environment the media queries are evaluated against.</param>
     /// <param name="origin">The origin of the rules.</param>
     /// <param name="treeRoot">The root of the tree of the style sheets (the scoping root of the @scope rules without prelude of the constructed style sheets).</param>
@@ -136,8 +139,10 @@ internal sealed class CascadeRuleCollector
             _ => null,
         };
         _namespacePrefixes = GetNamespacePrefixes(sheet.RuleList);
+        _resourceReferrer = sheet.ResourceReferrer;
         AddRules(sheet.RuleList, _layers.Root, scope: null, containers: null, parentSelectors: null, ownerParent, baseUrl);
         _namespacePrefixes = null;
+        _resourceReferrer = null;
     }
 
     /// <summary>Returns the prefixes declared by the @namespace rules of a style sheet, or null when there is none.</summary>
@@ -371,9 +376,12 @@ internal sealed class CascadeRuleCollector
                             }
 
                             var namespacePrefixes = _namespacePrefixes;
+                            var resourceReferrer = _resourceReferrer;
                             _namespacePrefixes = GetNamespacePrefixes(importedSheet.RuleList);
+                            _resourceReferrer = importedSheet.ResourceReferrer;
                             AddRules(importedSheet.RuleList, importLayer, importScope, containers, importParentSelectors, ownerParent, importedSheet.BaseUrl ?? baseUrl);
                             _namespacePrefixes = namespacePrefixes;
+                            _resourceReferrer = resourceReferrer;
                         }
                     }
 
@@ -687,6 +695,7 @@ internal sealed class CascadeRuleCollector
             TreeScope = _treeRoot,
             Mixin = _currentMixin,
             NamespacePrefixes = _namespacePrefixes,
+            ResourceReferrer = _resourceReferrer,
             HasImportant = hasImportant,
             HasNormal = hasNormal,
             StartingStyle = _inStartingStyle,
@@ -728,6 +737,7 @@ internal sealed class CascadeRuleCollector
                 TreeScope = rule.TreeScope,
                 Mixin = rule.Mixin,
                 NamespacePrefixes = rule.NamespacePrefixes,
+                ResourceReferrer = rule.ResourceReferrer,
                 HasImportant = rule.HasImportant,
                 HasNormal = rule.HasNormal,
                 StartingStyle = rule.StartingStyle,

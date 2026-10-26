@@ -34,7 +34,7 @@ public partial class Element
     [Experimental(ExperimentalApis.StreamingHtmlInsertion, UrlFormat = ExperimentalApis.UrlFormat)]
     public HtmlStreamWriter StreamAppendHtml(SetHtmlOptions? options = null)
     {
-        return DynamicMarkup.StreamHtml(DynamicMarkup.GetTargetForHtmlInsertion(this), null, FragmentParserOptions.FromSafe(options), safe: true);
+        return DynamicMarkup.StreamHtml(DynamicMarkup.GetTargetForHtmlPreInsertion(this), null, FragmentParserOptions.FromSafe(options), safe: true);
     }
 
     /// <summary>Returns a writer that parses HTML and inserts the result after the last child as it is parsed, without the default sanitizer (proposed by https://github.com/whatwg/html/pull/12758).</summary>
@@ -44,7 +44,7 @@ public partial class Element
     public HtmlStreamWriter StreamAppendHtmlUnsafe(SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions? options = null)
     {
         var compliantOptions = DynamicMarkup.GetCompliantStreamingOptions(this, options, "Element streamAppendHTMLUnsafe");
-        return DynamicMarkup.StreamHtml(DynamicMarkup.GetTargetForHtmlInsertion(this), null, compliantOptions, safe: false);
+        return DynamicMarkup.StreamHtml(DynamicMarkup.GetTargetForHtmlPreInsertion(this), null, compliantOptions, safe: false);
     }
 
     /// <summary>Returns a writer that parses HTML and inserts the result before the first child as it is parsed (proposed by https://github.com/whatwg/html/pull/12758).</summary>
@@ -52,7 +52,7 @@ public partial class Element
     [Experimental(ExperimentalApis.StreamingHtmlInsertion, UrlFormat = ExperimentalApis.UrlFormat)]
     public HtmlStreamWriter StreamPrependHtml(SetHtmlOptions? options = null)
     {
-        var target = DynamicMarkup.GetTargetForHtmlInsertion(this);
+        var target = DynamicMarkup.GetTargetForHtmlPreInsertion(this);
         return DynamicMarkup.StreamHtml(target, target.FirstChild, FragmentParserOptions.FromSafe(options), safe: true);
     }
 
@@ -63,7 +63,7 @@ public partial class Element
     public HtmlStreamWriter StreamPrependHtmlUnsafe(SetHtmlUnsafeOptionsOrTrustedHtmlParserOptions? options = null)
     {
         var compliantOptions = DynamicMarkup.GetCompliantStreamingOptions(this, options, "Element streamPrependHTMLUnsafe");
-        var target = DynamicMarkup.GetTargetForHtmlInsertion(this);
+        var target = DynamicMarkup.GetTargetForHtmlPreInsertion(this);
         return DynamicMarkup.StreamHtml(target, target.FirstChild, compliantOptions, safe: false);
     }
 

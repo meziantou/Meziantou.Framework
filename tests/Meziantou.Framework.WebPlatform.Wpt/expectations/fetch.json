@@ -81,25 +81,13 @@
     }
   },
   "fetch/api/abort/request.any.js": {
-    "total": 18,
-    "failures": {
-      "Aborting a request after calling formData()": "FAIL",
-      "Calling formData() on an aborted request": "FAIL"
-    }
+    "total": 18
   },
   "fetch/api/abort/request.any.js#dedicatedworker": {
-    "total": 18,
-    "failures": {
-      "Aborting a request after calling formData()": "FAIL",
-      "Calling formData() on an aborted request": "FAIL"
-    }
+    "total": 18
   },
   "fetch/api/abort/request.any.js#sharedworker": {
-    "total": 18,
-    "failures": {
-      "Aborting a request after calling formData()": "FAIL",
-      "Calling formData() on an aborted request": "FAIL"
-    }
+    "total": 18
   },
   "fetch/api/abort/serviceworker-intercepted.https.html": {
     "harness": "TIMEOUT",
@@ -483,18 +471,10 @@
     "total": 3
   },
   "fetch/api/body/formdata.any.js": {
-    "total": 3,
-    "failures": {
-      "Consume empty request.formData() as FormData": "FAIL",
-      "Consume empty response.formData() as FormData": "FAIL"
-    }
+    "total": 3
   },
   "fetch/api/body/formdata.any.js#dedicatedworker": {
-    "total": 3,
-    "failures": {
-      "Consume empty request.formData() as FormData": "FAIL",
-      "Consume empty response.formData() as FormData": "FAIL"
-    }
+    "total": 3
   },
   "fetch/api/body/mime-type.any.js": {
     "total": 20
@@ -1217,13 +1197,22 @@
     "total": 2
   },
   "fetch/api/request/request-consume-empty.any.js": {
-    "total": 14
+    "total": 14,
+    "failures": {
+      "Consume empty FormData request body as text": "FAIL"
+    }
   },
   "fetch/api/request/request-consume-empty.any.js#dedicatedworker": {
-    "total": 14
+    "total": 14,
+    "failures": {
+      "Consume empty FormData request body as text": "FAIL"
+    }
   },
   "fetch/api/request/request-consume-empty.any.js#sharedworker": {
-    "total": 14
+    "total": 14,
+    "failures": {
+      "Consume empty FormData request body as text": "FAIL"
+    }
   },
   "fetch/api/request/request-consume.any.js": {
     "total": 45
@@ -1388,13 +1377,22 @@
     "total": 21
   },
   "fetch/api/response/response-consume-empty.any.js": {
-    "total": 14
+    "total": 14,
+    "failures": {
+      "Consume empty FormData response body as text": "FAIL"
+    }
   },
   "fetch/api/response/response-consume-empty.any.js#dedicatedworker": {
-    "total": 14
+    "total": 14,
+    "failures": {
+      "Consume empty FormData response body as text": "FAIL"
+    }
   },
   "fetch/api/response/response-consume-empty.any.js#sharedworker": {
-    "total": 14
+    "total": 14,
+    "failures": {
+      "Consume empty FormData response body as text": "FAIL"
+    }
   },
   "fetch/api/response/response-consume-stream.any.js": {
     "total": 15
@@ -1435,10 +1433,7 @@
     "total": 10
   },
   "fetch/api/response/response-form-data.html": {
-    "total": 14,
-    "failures": {
-      "Empty form data": "FAIL"
-    }
+    "total": 14
   },
   "fetch/api/response/response-from-stream.any.js": {
     "total": 3

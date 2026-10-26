@@ -219,6 +219,36 @@ public sealed class ImageElementTests : IDisposable
         Assert.Equal(["Image https://example.com/source.png", "Image https://example.com/source.png"], _requests);
     }
 
+    [Fact]
+    public void Picture_ImageOutsideTheDocumentReactsToEnvironmentChanges()
+    {
+        var clock = new Microsoft.Extensions.Time.Testing.FakeTimeProvider(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));
+        var context = _contexts.Create(new BrowsingContextOptions
+        {
+            DocumentLoader = new ImageLoader(this),
+            TimeProvider = clock,
+            Viewport = new ViewportOptions { Width = 800 },
+        });
+        var document = context.Navigate("https://example.com/", _ => "<p>");
+        var picture = document.CreateElement("picture");
+        var source = document.CreateElement("source");
+        source.SetAttribute("media", "(min-width: 600px)");
+        source.SetAttribute("srcset", "wide.png");
+        picture.AppendChild(source);
+        var image = (HtmlImageElement)document.CreateElement("img");
+        image.Src = "narrow.png";
+        picture.AppendChild(image);
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.Equal("https://example.com/wide.png", image.CurrentSrc);
+
+        // The environment is checked at the next rendering opportunity
+        context.Viewport = new ViewportOptions { Width = 400 };
+        _contexts.EventLoop.RunUntilIdle();
+        clock.Advance(TimeSpan.FromMilliseconds(17));
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.Equal("https://example.com/narrow.png", image.CurrentSrc);
+    }
+
     [Theory]
     [InlineData("<img srcset=''>")]
     [InlineData("<picture><img></picture>")]

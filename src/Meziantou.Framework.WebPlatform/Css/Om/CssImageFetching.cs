@@ -239,8 +239,8 @@ internal static class CssImageFetching
             CollectUrls(CssParser.ParseListOfComponentValues(value), urls, style.Engine.Environment.DevicePixelRatio);
 
             // https://drafts.csswg.org/css-values-4/#fetch-a-style-resource: the referrer of the resources of an external style sheet
-            // is the style sheet (its location is the base URL of its declarations)
-            var referrer = urls.Count > 0 && style.TryGetCascadedValue(property, out var cascaded) && cascaded.BaseUrl is { } sheetUrl && sheetUrl != baseUrl.Serialize() ? sheetUrl : null;
+            // is the style sheet
+            var referrer = urls.Count > 0 && style.TryGetCascadedValue(property, out var cascaded) ? cascaded.ResourceReferrer : null;
             foreach (var (url, modifiers) in urls)
             {
                 // An empty URL and a fragment (a reference to an element of the document, e.g. an SVG mask) are not fetched
@@ -253,10 +253,7 @@ internal static class CssImageFetching
                     continue;
 
                 var request = SubresourceFetching.CreateRequest(document, parsedUrl, RequestDestination.Image, cors, modifiers.ReferrerPolicy, initiator: element, useCredentials: modifiers.UsesCredentials, integrity: modifiers.IntegrityMetadata);
-                if (referrer is not null)
-                {
-                    request.Referrer = referrer;
-                }
+                referrer?.Apply(request, modifiers.ReferrerPolicy);
                 var key = parsedUrl.Serialize();
                 // https://drafts.csswg.org/css-images-3/#valdef-image-orientation-none: the orientation of the images that are not
                 // CORS-same-origin is always applied (a CORS request fails when the response is not shared)
@@ -430,6 +427,7 @@ internal static class CssImageFetching
 
             urls.Clear();
             CollectUrls(CssParser.ParseListOfComponentValues(value), urls, style.Engine.Environment.DevicePixelRatio);
+            var referrer = urls.Count > 0 && style.TryGetCascadedValue(property, out var cascaded) ? cascaded.ResourceReferrer : null;
             foreach (var (url, modifiers) in urls)
             {
                 if (url.Length == 0 || url[0] == '#' || UrlParser.Parse(url, baseUrl) is not { Fragment.Length: > 0 } parsedUrl
@@ -445,7 +443,7 @@ internal static class CssImageFetching
                 }
 
                 var cache = document.SvgResourceDocuments ??= new SvgResourceDocumentCache();
-                var started = cache.LoadForProperty(document, element, parsedUrl, modifiers, () =>
+                var started = cache.LoadForProperty(document, element, parsedUrl, modifiers, referrer, () =>
                 {
                     document.InvalidateLayout();
                     if (delaysLoadEvent)

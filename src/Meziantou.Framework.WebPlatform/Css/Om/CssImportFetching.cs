@@ -85,7 +85,8 @@ internal static class CssImportFetching
         var modifiers = rule.RequestModifiers;
         // https://drafts.csswg.org/css-values-4/#fetch-a-style-resource: the initiator type is "css" when the style sheet is
         // origin-clean; the resources of the other style sheets are not reported to the performance timeline
-        if (!TryStartFetch(environmentDocument, browsingContext, parsedUrl, ownerNode as Element, parent.OriginClean ? "css" : null, loadState.Cancellation.Token, out var fetch, modifiers))
+        // The referrer of the request is the style sheet of the rule when it is fetched
+        if (!TryStartFetch(environmentDocument, browsingContext, parsedUrl, ownerNode as Element, parent.OriginClean ? "css" : null, loadState.Cancellation.Token, out var fetch, modifiers, parent.ResourceReferrer))
             return;
 
         loadState.Pending++;
@@ -97,7 +98,10 @@ internal static class CssImportFetching
             {
                 if (resource is not null && TryGetStyleSheetText(document, url, resource, document.Encoding, out var text, out var responseUrl, out var sameOrigin))
                 {
-                    var importedSheet = new CssStyleSheet(rule, parent, text, url, responseUrl, sameOrigin);
+                    var importedSheet = new CssStyleSheet(rule, parent, text, url, responseUrl, sameOrigin)
+                    {
+                        ResourceReferrer = CssResourceReferrer.Create(responseUrl, resource),
+                    };
                     rule.StyleSheet = importedSheet;
                     Cascade.CssStyleVersion.Increment(importedSheet);
                     FetchImports(importedSheet);
@@ -128,9 +132,10 @@ internal static class CssImportFetching
     /// (https://drafts.csswg.org/css-values-5/#request-url-modifiers) set the mode, the credentials mode, the integrity
     /// metadata and the referrer policy of the request. The request has no cryptographic nonce metadata, and the timing of
     /// a request sent to the loader is reported to the performance timeline of the document by <see cref="WhenCompleted"/>,
-    /// unless <paramref name="initiatorType"/> is null.
+    /// unless <paramref name="initiatorType"/> is null. <paramref name="referrer"/> is the referrer of an @import rule of a
+    /// fetched style sheet.
     /// </summary>
-    internal static bool TryStartFetch(Document document, BrowsingContext browsingContext, UrlRecord url, Element? initiator, string? initiatorType, CancellationToken cancellationToken, [NotNullWhen(true)] out StyleSheetFetch? fetch, CssRequestModifiers? modifiers = null)
+    internal static bool TryStartFetch(Document document, BrowsingContext browsingContext, UrlRecord url, Element? initiator, string? initiatorType, CancellationToken cancellationToken, [NotNullWhen(true)] out StyleSheetFetch? fetch, CssRequestModifiers? modifiers = null, CssResourceReferrer? referrer = null)
     {
         modifiers ??= CssRequestModifiers.None;
         if (browsingContext.Options.DocumentLoader is null && url.Scheme is not ("data" or "blob"))
@@ -143,6 +148,7 @@ internal static class CssImportFetching
         // request (cross-origin()) only includes them for the same origin, unless its credentials mode is "include"
         var request = SubresourceFetching.CreateRequest(document, url, RequestDestination.Style, modifiers.IsCors(defaultCors: false), modifiers.ReferrerPolicy, initiator, useCredentials: modifiers.UsesCredentials, integrity: modifiers.IntegrityMetadata);
         request.Nonce = "";
+        referrer?.Apply(request, modifiers.ReferrerPolicy);
         var timing = initiatorType is null ? null : ResourceTiming.Start(document, request, initiatorType);
         fetch = new StyleSheetFetch(request, Fetching.StartFetch(request, cancellationToken), timing);
         return true;

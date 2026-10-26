@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 295 | 407 | 3 | 73% |
+| [Stable](#stable-tests) | 294 | 407 | 3 | 73% |
 | [Tentative](#tentative-tests) | 12 | 77 | 1 | 16% |
 | [Reftests](#reftests) | 9 | 11 | 0 | 82% |
-| **All** | **316** | **495** | **4** | **64%** |
+| **All** | **315** | **495** | **4** | **64%** |
 
 ## Stable tests
 
@@ -19,7 +19,7 @@
 | [`api/abort/destroyed-context.html`](https://wpt.fyi/results/fetch/api/abort/destroyed-context.html) | Timeout | 0 / 1 | TEST RUNNER | the never-ending response of `infinite-slow-response.py` never delivers its headers, so `fetch()` does not resolve and the abort is never observed |
 | [`api/abort/general.any.js`](https://wpt.fyi/results/fetch/api/abort/general.any.js) | Timeout | 144 / 183 | TEST RUNNER | the never-ending response of `infinite-slow-response.py` never delivers its headers, so `fetch()` does not resolve and the abort is never observed |
 | [`api/abort/keepalive.html`](https://wpt.fyi/results/fetch/api/abort/keepalive.html) | Timeout | 0 / 2 | TEST RUNNER | the never-ending response of `infinite-slow-response.py` never delivers its headers, so `fetch()` does not resolve and the abort is never observed |
-| [`api/abort/request.any.js`](https://wpt.fyi/results/fetch/api/abort/request.any.js) | Fail | 48 / 54 | BUG | an empty `FormData` body is serialized as an empty body (no `--boundary--` close delimiter) and the multipart parser rejects a body without part, so `formData()` throws |
+| [`api/abort/request.any.js`](https://wpt.fyi/results/fetch/api/abort/request.any.js) | Pass | 54 / 54 |  |  |
 | [`api/abort/serviceworker-intercepted.https.html`](https://wpt.fyi/results/fetch/api/abort/serviceworker-intercepted.https.html) | Timeout | 9 / 12 | NOT IMPLEMENTED | the bodies are not streamed: aborting a fetch intercepted by a service worker does not abort the body being read |
 | [`api/basic/accept-header.any.js`](https://wpt.fyi/results/fetch/api/basic/accept-header.any.js) | Pass | 12 / 12 |  |  |
 | [`api/basic/block-mime-as-script.html`](https://wpt.fyi/results/fetch/api/basic/block-mime-as-script.html) | Pass | 22 / 22 |  |  |
@@ -58,7 +58,7 @@
 | [`api/basic/stream-safe-creation.any.js`](https://wpt.fyi/results/fetch/api/basic/stream-safe-creation.any.js) | Pass | 189 / 189 |  |  |
 | [`api/basic/text-utf8.any.js`](https://wpt.fyi/results/fetch/api/basic/text-utf8.any.js) | Pass | 90 / 90 |  |  |
 | [`api/basic/url-parsing.sub.html`](https://wpt.fyi/results/fetch/api/basic/url-parsing.sub.html) | Pass | 9 / 9 |  |  |
-| [`api/body/formdata.any.js`](https://wpt.fyi/results/fetch/api/body/formdata.any.js) | Fail | 2 / 6 | BUG | an empty `FormData` body is serialized as an empty body (no `--boundary--` close delimiter) and the multipart parser rejects a body without part, so `formData()` throws |
+| [`api/body/formdata.any.js`](https://wpt.fyi/results/fetch/api/body/formdata.any.js) | Pass | 6 / 6 |  |  |
 | [`api/body/mime-type.any.js`](https://wpt.fyi/results/fetch/api/body/mime-type.any.js) | Pass | 40 / 40 |  |  |
 | [`api/body/textstream.any.js`](https://wpt.fyi/results/fetch/api/body/textstream.any.js) | Pass | 42 / 42 |  |  |
 | [`api/cors/cors-basic.any.js`](https://wpt.fyi/results/fetch/api/cors/cors-basic.any.js) | Pass | 30 / 30 |  |  |
@@ -153,7 +153,7 @@
 | [`api/request/request-clone-readable-stream-body.any.js`](https://wpt.fyi/results/fetch/api/request/request-clone-readable-stream-body.any.js) | Pass | 3 / 3 |  |  |
 | [`api/request/request-clone.sub.html`](https://wpt.fyi/results/fetch/api/request/request-clone.sub.html) | Pass | 2 / 2 |  |  |
 | [`api/request/request-constructor-init-body-override.any.js`](https://wpt.fyi/results/fetch/api/request/request-constructor-init-body-override.any.js) | Pass | 4 / 4 |  |  |
-| [`api/request/request-consume-empty.any.js`](https://wpt.fyi/results/fetch/api/request/request-consume-empty.any.js) | Pass | 42 / 42 |  |  |
+| [`api/request/request-consume-empty.any.js`](https://wpt.fyi/results/fetch/api/request/request-consume-empty.any.js) | Fail | 39 / 42 | TEST BUG | the FormData subtest ("Consume empty FormData request body as text") expects an empty `FormData` to be serialized as an empty body, which the test itself marks as unclear (FIXME, web-platform-tests/wpt#3950). The multipart/form-data encoding (RFC 7578) writes the close delimiter `--boundary--` even without entries, which `fetch/api/response/response-form-data.html` ("Empty form data") and the round trips of `fetch/api/body/formdata.any.js` require: the two expectations cannot both be met |
 | [`api/request/request-consume.any.js`](https://wpt.fyi/results/fetch/api/request/request-consume.any.js) | Pass | 135 / 135 |  |  |
 | [`api/request/request-disturbed.any.js`](https://wpt.fyi/results/fetch/api/request/request-disturbed.any.js) | Fail | 24 / 27 | BUG | `new Request(input, { body })` marks the body of the input request as used although the init has a new body |
 | [`api/request/request-error.any.js`](https://wpt.fyi/results/fetch/api/request/request-error.any.js) | Pass | 66 / 66 |  |  |
@@ -178,12 +178,12 @@
 | [`api/response/response-cancel-stream.any.js`](https://wpt.fyi/results/fetch/api/response/response-cancel-stream.any.js) | Pass | 21 / 21 |  |  |
 | [`api/response/response-clone-iframe.window.js`](https://wpt.fyi/results/fetch/api/response/response-clone-iframe.window.js) | Pass | 1 / 1 |  |  |
 | [`api/response/response-clone.any.js`](https://wpt.fyi/results/fetch/api/response/response-clone.any.js) | Pass | 63 / 63 |  |  |
-| [`api/response/response-consume-empty.any.js`](https://wpt.fyi/results/fetch/api/response/response-consume-empty.any.js) | Pass | 42 / 42 |  |  |
+| [`api/response/response-consume-empty.any.js`](https://wpt.fyi/results/fetch/api/response/response-consume-empty.any.js) | Fail | 39 / 42 | TEST BUG | the FormData subtest ("Consume empty FormData response body as text") expects an empty `FormData` to be serialized as an empty body, which the test itself marks as unclear (FIXME, web-platform-tests/wpt#3950). The multipart/form-data encoding (RFC 7578) writes the close delimiter `--boundary--` even without entries, which `fetch/api/response/response-form-data.html` ("Empty form data") and the round trips of `fetch/api/body/formdata.any.js` require: the two expectations cannot both be met |
 | [`api/response/response-consume-stream.any.js`](https://wpt.fyi/results/fetch/api/response/response-consume-stream.any.js) | Pass | 45 / 45 |  |  |
 | [`api/response/response-consume.html`](https://wpt.fyi/results/fetch/api/response/response-consume.html) | Fail | 34 / 40 | BUG | the multipart/form-data parser only accepts `Content-Disposition: form-data; name="..."` exactly (rejects `form-data;name=` and unquoted values); the Blob type of a FormData body lacks the space after `;` |
 | [`api/response/response-error-from-stream.any.js`](https://wpt.fyi/results/fetch/api/response/response-error-from-stream.any.js) | Pass | 42 / 42 |  |  |
 | [`api/response/response-error.any.js`](https://wpt.fyi/results/fetch/api/response/response-error.any.js) | Pass | 30 / 30 |  |  |
-| [`api/response/response-form-data.html`](https://wpt.fyi/results/fetch/api/response/response-form-data.html) | Fail | 13 / 14 | BUG | an empty `FormData` body is serialized as an empty body (no `--boundary--` close delimiter) and the multipart parser rejects a body without part, so `formData()` throws |
+| [`api/response/response-form-data.html`](https://wpt.fyi/results/fetch/api/response/response-form-data.html) | Pass | 14 / 14 |  |  |
 | [`api/response/response-from-stream.any.js`](https://wpt.fyi/results/fetch/api/response/response-from-stream.any.js) | Pass | 9 / 9 |  |  |
 | [`api/response/response-headers-guard.any.js`](https://wpt.fyi/results/fetch/api/response/response-headers-guard.any.js) | Pass | 3 / 3 |  |  |
 | [`api/response/response-init-001.any.js`](https://wpt.fyi/results/fetch/api/response/response-init-001.any.js) | Pass | 27 / 27 |  |  |
@@ -242,7 +242,7 @@
 | [`data-urls/base64.any.js`](https://wpt.fyi/results/fetch/data-urls/base64.any.js) | Pass | 243 / 243 |  |  |
 | [`data-urls/navigate.window.js`](https://wpt.fyi/results/fetch/data-urls/navigate.window.js) | Pass | 7 / 7 |  |  |
 | [`data-urls/processing.any.js`](https://wpt.fyi/results/fetch/data-urls/processing.any.js) | Pass | 219 / 219 |  |  |
-| [`fetch-later/activate-after.https.window.js`](https://wpt.fyi/results/fetch/fetch-later/activate-after.https.window.js) | Pass | 2 / 2 |  |  |
+| [`fetch-later/activate-after.https.window.js`](https://wpt.fyi/results/fetch/fetch-later/activate-after.https.window.js) | Fail | 1 / 2 | NOT IMPLEMENTED | the back/forward cache: the second subtest expects the page it navigated away from to be restored (`pageshow` with `persisted`); the document is destroyed by the navigation (its deferred request is sent then) |
 | [`fetch-later/basic.https.window.js`](https://wpt.fyi/results/fetch/fetch-later/basic.https.window.js) | Pass | 23 / 23 |  |  |
 | [`fetch-later/basic.https.worker.js`](https://wpt.fyi/results/fetch/fetch-later/basic.https.worker.js) | Pass | 1 / 1 |  |  |
 | [`fetch-later/headers/header-referrer-no-referrer-when-downgrade.https.html`](https://wpt.fyi/results/fetch/fetch-later/headers/header-referrer-no-referrer-when-downgrade.https.html) | Pass | 1 / 1 |  |  |
@@ -284,8 +284,8 @@
 | [`fetch-later/quota/same-origin-iframe/sandboxed-iframe.https.window.js`](https://wpt.fyi/results/fetch/fetch-later/quota/same-origin-iframe/sandboxed-iframe.https.window.js) | Pass | 1 / 1 |  |  |
 | [`fetch-later/quota/same-origin-iframe/small-payload.https.window.js`](https://wpt.fyi/results/fetch/fetch-later/quota/same-origin-iframe/small-payload.https.window.js) | Pass | 6 / 6 |  |  |
 | [`fetch-later/quota/small-payload.https.window.js`](https://wpt.fyi/results/fetch/fetch-later/quota/small-payload.https.window.js) | Pass | 6 / 6 |  |  |
-| [`fetch-later/send-on-deactivate-with-background-sync.https.window.js`](https://wpt.fyi/results/fetch/fetch-later/send-on-deactivate-with-background-sync.https.window.js) | Fail | 0 / 3 | NOT IMPLEMENTED, TEST RUNNER | the Background Sync API; `test_driver.set_permission()` only supports the clipboard permissions (the test grants `background-sync`) |
-| [`fetch-later/send-on-deactivate.https.window.js`](https://wpt.fyi/results/fetch/fetch-later/send-on-deactivate.https.window.js) | Pass | 5 / 5 |  |  |
+| [`fetch-later/send-on-deactivate-with-background-sync.https.window.js`](https://wpt.fyi/results/fetch/fetch-later/send-on-deactivate-with-background-sync.https.window.js) | Fail | 0 / 3 | NOT IMPLEMENTED, TEST RUNNER | the back/forward cache, and the Background Sync API; `test_driver.set_permission()` only supports the clipboard permissions (the test grants `background-sync`) |
+| [`fetch-later/send-on-deactivate.https.window.js`](https://wpt.fyi/results/fetch/fetch-later/send-on-deactivate.https.window.js) | Fail | 2 / 5 | NOT IMPLEMENTED | the back/forward cache: three subtests expect the page they navigated away from to be restored (`pageshow` with `persisted`); the deferred requests are sent when the document is destroyed by the navigation, which the two other subtests check |
 | [`fetch-later/send-on-discard/not-send-after-abort.https.window.js`](https://wpt.fyi/results/fetch/fetch-later/send-on-discard/not-send-after-abort.https.window.js) | Pass | 1 / 1 |  |  |
 | [`fetch-later/send-on-discard/send-multiple-with-activate-after.https.window.js`](https://wpt.fyi/results/fetch/fetch-later/send-on-discard/send-multiple-with-activate-after.https.window.js) | Pass | 1 / 1 |  |  |
 | [`fetch-later/send-on-discard/send-multiple.https.window.js`](https://wpt.fyi/results/fetch/fetch-later/send-on-discard/send-multiple.https.window.js) | Pass | 1 / 1 |  |  |

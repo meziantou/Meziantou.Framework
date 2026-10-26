@@ -66,6 +66,8 @@ public sealed class PerformanceContractTests
     [InlineData(PixelFormat.Rgba32)]
     [InlineData(PixelFormat.Rgba64)]
     [InlineData(PixelFormat.Gray8)]
+    [InlineData(PixelFormat.RgbaFloat)]
+    [InlineData(PixelFormat.RgbaHalf)]
     public void DrawingCallsAllocateNothingOnceTheScratchOfTheSessionIsRented(PixelFormat format)
     {
         // A session allocates a bounded number of small objects (the session, its scratch handles); the shapes drawn in
@@ -280,6 +282,83 @@ public sealed class PerformanceContractTests
         Assert.True(MeasureEagerPeak(CreateAnimation(format, frames: 40)) > 5 * MeasureEagerPeak(CreateAnimation(format, frames: 4)));
     }
 
+    [Theory]
+    [InlineData(PixelFormat.RgbaFloat)]
+    [InlineData(PixelFormat.RgbaHalf)]
+    public void FloatingPointFilteringAllocatesNothingPerPixel(PixelFormat format)
+    {
+        // A resize, a convolution and a blur allocate their plans, a few objects whatever the size of the frames; the
+        // pixels, the rows and the scratch come from the pool. Frames 63 times larger (2,976 more pixels, 10 runs) allocate
+        // less than one byte per 8 more pixels: an allocation per pixel or per row would be far more. The bytes are not
+        // compared exactly, because the parallel work of the larger frames can allocate a few bytes more on a loaded machine.
+        var (small, large) = format == PixelFormat.RgbaFloat ? (Measure<RgbaFloat>(8, 6), Measure<RgbaFloat>(64, 48)) : (Measure<RgbaHalf>(8, 6), Measure<RgbaHalf>(64, 48));
+        Assert.InRange(large - small, long.MinValue, 10 * ((64 * 48) - (8 * 6)) / 8);
+
+        static long Measure<TPixel>(int width, int height)
+            where TPixel : unmanaged
+        {
+            // Translucent pixels, so that the colors are filtered premultiplied
+            using var source = new Image<Rgba64>(width, height);
+            source.Frames[0].ProcessPixelRows(static pixels =>
+            {
+                for (var y = 0; y < pixels.Height; y++)
+                {
+                    var row = pixels.GetRowSpan(y);
+                    for (var x = 0; x < row.Length; x++)
+                    {
+                        row[x] = new Rgba64((ushort)(x * 1000), (ushort)(y * 1300), (ushort)((x + y) * 500), (ushort)(30000 + (x * 100)));
+                    }
+                }
+            });
+
+            // A pool of its own, so that the buffers that other tests return to the shared pool do not change what it keeps.
+            // Labeled as linear light: the linear working space filters the values as they are, whatever the ringing does
+            using var converted = source.CloneAs<TPixel>();
+            var pixels = new TPixel[width * height];
+            converted.Frames[0].CopyPixelDataTo(pixels);
+            using var image = new Image<TPixel>(ImageConfiguration.Default, new Size(width, height), new AllocationScope(ImageConfiguration.Default.Limits, new SlabPool()), layoutOptions: null);
+            image.Frames[0].ProcessPixelRows(pixels, static (accessor, pixels) =>
+            {
+                for (var y = 0; y < accessor.Height; y++)
+                {
+                    pixels.AsSpan(y * accessor.Width, accessor.Width).CopyTo(accessor.GetRowSpan(y));
+                }
+            });
+
+            image.Metadata.TransferFunction = Metadata.ColorTransferFunction.Linear;
+            var up = new ResizeOptions(width * 2, height + 3) { Mode = ResizeMode.Stretch, Filter = ResamplingFilter.Lanczos3, WorkingSpace = ResizeWorkingSpace.LinearSrgb };
+            var down = new ResizeOptions(width, height) { Mode = ResizeMode.Stretch, Filter = ResamplingFilter.Bicubic };
+            var sharpen = new ConvolutionOptions(new ConvolutionKernel(3, 3, [0, -1, 0, -1, 5, -1, 0, -1, 0]));
+            for (var i = 0; i < 3; i++)
+            {
+                Run(image, up, down, sharpen);
+            }
+
+            // The fewest bytes of several rounds: tiered compilation can attribute a few bytes to this thread
+            var allocated = long.MaxValue;
+            for (var round = 0; round < 10; round++)
+            {
+                var before = GC.GetAllocatedBytesForCurrentThread();
+                for (var i = 0; i < 10; i++)
+                {
+                    Run(image, up, down, sharpen);
+                }
+
+                allocated = Math.Min(allocated, GC.GetAllocatedBytesForCurrentThread() - before);
+            }
+
+            return allocated;
+        }
+
+        static void Run(Image image, ResizeOptions up, ResizeOptions down, ConvolutionOptions sharpen)
+        {
+            image.Resize(up, Ct);
+            image.Resize(down, Ct);
+            image.Convolve(sharpen, Ct);
+            image.GaussianBlur(1.5, cancellationToken: Ct);
+        }
+    }
+
     [Fact]
     public void ColorTransformsAllocateNothingPerConversion()
     {
@@ -306,6 +385,32 @@ public sealed class PerformanceContractTests
                 fromCmyk.Convert(inks, gray);
             }));
         }
+    }
+
+    [Fact]
+    public void FloatingPointConversionsAllocateNothingPerRow()
+    {
+        // Every pair with a floating-point format, with the policies that clip and tone map: nothing per pixel or per row
+        var integers = new Rgba64[512];
+        var floats = new RgbaFloat[512];
+        var halves = new RgbaHalf[512];
+        var bytes = new Rgb24[512];
+        for (var i = 0; i < floats.Length; i++)
+        {
+            floats[i] = new RgbaFloat(i / 64f, 0.5f, -0.25f, 0.75f);
+        }
+
+        var toneMapping = FloatSampleConversion.Create(new PixelConversionOptions { ToneMapping = HdrToneMappingOptions.Default, OutOfRangeSamples = OutOfRangeSampleHandling.Clip }, peak: 8);
+        var background = new Rgba64(0, 0, 0);
+        Assert.Equal(0, MeasureSteadyStateAllocations(() =>
+        {
+            PixelConverter.ConvertRow<RgbaFloat, Rgba64>(floats, integers, floats: toneMapping);
+            PixelConverter.ConvertRow<RgbaFloat, Rgb24>(floats, bytes, background, floats: FloatSampleConversion.Clipping);
+            PixelConverter.ConvertRow<RgbaFloat, RgbaHalf>(floats, halves);
+            PixelConverter.ConvertRow<RgbaHalf, RgbaFloat>(halves, floats);
+            PixelConverter.ConvertRow<Rgba64, RgbaFloat>(integers, floats);
+            PixelConverter.ConvertRow<Rgb24, RgbaHalf>(bytes, halves);
+        }));
     }
 
     private static long MeasureSteadyStateAllocations(Action action)

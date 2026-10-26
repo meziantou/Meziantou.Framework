@@ -58,8 +58,105 @@ public sealed class ProcessingTests
             case PixelFormat.Rgba64: CheckRotationsAndFlips<Rgba64>(); break;
             case PixelFormat.Gray8: CheckRotationsAndFlips<Gray8>(); break;
             case PixelFormat.Gray16: CheckRotationsAndFlips<Gray16>(); break;
+            case PixelFormat.RgbaFloat: CheckRotationsAndFlips<RgbaFloat>(); break;
+            case PixelFormat.RgbaHalf: CheckRotationsAndFlips<RgbaHalf>(); break;
             default: throw new ArgumentOutOfRangeException(nameof(format));
         }
+    }
+
+    [Theory]
+    [InlineData(PixelFormat.RgbaFloat)]
+    [InlineData(PixelFormat.RgbaHalf)]
+    public void GeometryMovesFloatingPointSamplesBitForBit(PixelFormat format)
+    {
+        if (format == PixelFormat.RgbaFloat)
+        {
+            CheckFloatingPointGeometry<RgbaFloat>(
+            [
+                new(BitConverter.Int32BitsToSingle(0x7FC0_1234), -0f, float.PositiveInfinity, 0.5f),
+                new(BitConverter.Int32BitsToSingle(unchecked((int)0xFFC0_0042)), float.NegativeInfinity, 131008f, 1f),
+                new(-1e-30f, float.MaxValue, -0.5f, BitConverter.Int32BitsToSingle(0x7FC0_0777)),
+                new(1.5f, 2f, -2f, 2f),
+                new(0.25f, 0.5f, 0.75f, -0.25f),
+                new(float.Epsilon, -float.Epsilon, 100f, 0.75f),
+            ]);
+        }
+        else
+        {
+            CheckFloatingPointGeometry<RgbaHalf>(
+            [
+                new(BitConverter.Int16BitsToHalf(0x7E12), Half.NegativeZero, Half.PositiveInfinity, (Half)0.5f),
+                new(BitConverter.Int16BitsToHalf(unchecked((short)0xFE34)), Half.NegativeInfinity, Half.MaxValue, Half.One),
+                new(Half.Epsilon, Half.MinValue, (Half)(-0.5f), BitConverter.Int16BitsToHalf(0x7E77)),
+                new((Half)1.5f, (Half)2f, (Half)(-2f), (Half)2f),
+                new((Half)0.25f, (Half)0.5f, (Half)0.75f, (Half)(-0.25f)),
+                new(-Half.Epsilon, (Half)1000f, (Half)100f, (Half)0.75f),
+            ]);
+        }
+    }
+
+    [Fact]
+    public void GrayscaleOfFloatingPointPixelsIsTheLumaOfTheStoredValues()
+    {
+        // 0.2126 * 2 + 0.7152 * -1 + 0.0722 * 0.5 = 0.4252 - 0.7152 + 0.0361 = -0.2539: not clamped, alpha kept;
+        // equal colors keep their value (the coefficients add up to 1), and a sample that is not a number spreads
+        using (var image = new Image<RgbaFloat>(3, 1))
+        {
+            image.Frames[0][0, 0] = new RgbaFloat(2, -1, 0.5f, 0.25f);
+            image.Frames[0][1, 0] = new RgbaFloat(10, 10, 10, 1);
+            image.Frames[0][2, 0] = new RgbaFloat(float.NaN, 0, 0, 0.5f);
+            image.Grayscale(Ct);
+            Assert.Equal(new RgbaFloat(-0.2539f, -0.2539f, -0.2539f, 0.25f), image.Frames[0][0, 0]);
+            Assert.Equal(new RgbaFloat(10, 10, 10, 1), image.Frames[0][1, 0]);
+            Assert.True(float.IsNaN(image.Frames[0][2, 0].R));
+            Assert.True(float.IsNaN(image.Frames[0][2, 0].B));
+            Assert.Equal(0.5f, image.Frames[0][2, 0].A);
+        }
+
+        // Halves get the nearest half of the same luma, computed from their exact values
+        using var half = new Image<RgbaHalf>(1, 1, new RgbaHalf((Half)2, (Half)(-1), (Half)0.5f, (Half)0.25f));
+        half.Frames[0].Grayscale(Ct);
+        Assert.Equal(new RgbaHalf((Half)(-0.2539), (Half)(-0.2539), (Half)(-0.2539), (Half)0.25f), half.Frames[0][0, 0]);
+    }
+
+    [Theory]
+    [InlineData(PixelFormat.RgbaFloat)]
+    [InlineData(PixelFormat.RgbaHalf)]
+    public void ConvertColorProfileConvertsFloatingPointSamplesWithoutQuantization(PixelFormat format)
+    {
+        if (format == PixelFormat.RgbaFloat)
+        {
+            CheckFloatingPointColorConversion<RgbaFloat>(tolerance: 0);
+        }
+        else
+        {
+            // The nearest half of a value in [0, 1] is at most 2^-12 away
+            CheckFloatingPointColorConversion<RgbaHalf>(tolerance: 1.0 / 4096);
+        }
+    }
+
+    [Fact]
+    public void ConvertColorProfileRejectsFloatingPointColorsOutsideTheUnitRangeBeforeAnythingChanges()
+    {
+        foreach (var value in new[] { 1.5f, -0.25f, float.NaN, float.PositiveInfinity })
+        {
+            // The sample is in the second frame: the first one is not converted either
+            using var image = new Image<RgbaFloat>(2, 1, new RgbaFloat(0.5f, 0.25f, 0.75f));
+            image.AppendFrame()[1, 0] = new RgbaFloat(0.5f, value, 0.5f);
+            var storage = image.Frames[0].Storage;
+            var exception = Assert.Throws<UnsupportedImageFeatureException>(() => image.ConvertColorProfile(IccProfile.Srgb, cancellationToken: Ct));
+            Assert.Equal("Color conversion of floating-point samples outside [0, 1]", exception.Feature);
+            Assert.Contains("(1, 0) of frame 1", exception.Message, StringComparison.Ordinal);
+            Assert.Same(storage, image.Frames[0].Storage);
+            Assert.Equal(new RgbaFloat(0.5f, 0.25f, 0.75f), image.Frames[0][0, 0]);
+            Assert.Null(image.Metadata.IccProfile);
+            Assert.Equal(ColorTransferFunction.Linear, image.Metadata.TransferFunction);
+        }
+
+        // Alpha is copied, whatever its value
+        using var translucent = new Image<RgbaHalf>(1, 1, new RgbaHalf((Half)0.5f, (Half)0.5f, (Half)0.5f, (Half)3));
+        translucent.ConvertColorProfile(IccProfile.Srgb, cancellationToken: Ct);
+        Assert.Equal((Half)3, translucent.Frames[0][0, 0].A);
     }
 
     [Theory]
@@ -1742,6 +1839,106 @@ public sealed class ProcessingTests
         AssertFrame(roundTrip.Frames[0], Source3X2);
     }
 
+    /// <summary>
+    /// Every geometry operation on a 3x2 image of special floating-point pixels (not-a-number payloads of both signs, signed
+    /// zeros, infinities, subnormals, the largest values, alpha outside [0, 1] or not a number): each output pixel has the bits
+    /// of the source pixel the permutation designates.
+    /// </summary>
+    private static void CheckFloatingPointGeometry<TPixel>(TPixel[] pixels)
+        where TPixel : unmanaged
+    {
+        (Action<Image> Operation, int[][] Expected)[] cases =
+        [
+            (static image => image.Rotate(RotateMode.Rotate90, Ct), Rotated90),
+            (static image => image.Rotate(RotateMode.Rotate180, Ct), Rotated180),
+            (static image => image.Rotate(RotateMode.Rotate270, Ct), Rotated270),
+            (static image => image.Flip(FlipMode.Horizontal, Ct), FlippedHorizontally),
+            (static image => image.Flip(FlipMode.Vertical, Ct), FlippedVertically),
+            (static image => image.Crop(new Rectangle(1, 0, 2, 2), Ct), [[2, 3], [5, 6]]),
+            (static image =>
+            {
+                image.Metadata.Orientation = ExifOrientation.LeftTop;
+                image.AutoOrient(Ct);
+            }, Transposed),
+
+            // Nearest neighbor copies the pixels too (none has a zero alpha, which would become transparent black)
+            (static image => image.Resize(new ResizeOptions(6, 2) { Mode = ResizeMode.Stretch, Filter = ResamplingFilter.NearestNeighbor }, Ct), [[1, 1, 2, 2, 3, 3], [4, 4, 5, 5, 6, 6]]),
+        ];
+
+        foreach (var (operation, expected) in cases)
+        {
+            using var image = Image.ImportPixelData<TPixel>(pixels, 3, 2);
+            operation(image);
+            var frame = image.Frames[0];
+            Assert.Equal(new Size(expected[0].Length, expected.Length), frame.Size);
+            for (var y = 0; y < expected.Length; y++)
+            {
+                for (var x = 0; x < expected[y].Length; x++)
+                {
+                    Assert.Equal(Bits(pixels[expected[y][x] - 1]), Bits(frame[x, y]));
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Converts sRGB samples to Display P3 and linear-light samples to sRGB: the results are the decimal reference of the
+    /// harness within the precision of the sample type (single precision: its tolerance for floats), not values of 16 bits,
+    /// and alpha (beyond 1 here) is copied.
+    /// </summary>
+    private static void CheckFloatingPointColorConversion<TPixel>(double tolerance)
+        where TPixel : unmanaged
+    {
+        var displayP3 = IccTestProfiles.Rgb(IccTestProfiles.DisplayP3Colorants, IccTestProfiles.SrgbCurve());
+        (ColorTransferFunction Label, IccProfile Source, IccProfile Destination)[] cases =
+        [
+            (ColorTransferFunction.Srgb, IccProfile.Srgb, displayP3),
+            (ColorTransferFunction.Linear, BuiltInIccProfiles.LinearSrgb, IccProfile.Srgb),
+        ];
+
+        foreach (var (label, source, destination) in cases)
+        {
+            RgbaFloat[] colors = [new(12345 / 65535f, 23456 / 65535f, 34567 / 65535f, 1.75f), new(0.2f, 0.5f, 0.9f, 0.25f), new(0, 1, 0.5f, 0)];
+            using var image = new Image<TPixel>(colors.Length, 1);
+            for (var x = 0; x < colors.Length; x++)
+            {
+                image.Frames[0][x, 0] = FloatPixel<TPixel>(colors[x].R, colors[x].G, colors[x].B, colors[x].A);
+            }
+
+            image.Metadata.TransferFunction = label;
+            var before = Enumerable.Range(0, colors.Length).Select(x => ToRgbaFloat(image.Frames[0][x, 0])).ToArray();
+            image.ConvertColorProfile(destination, cancellationToken: Ct);
+            Assert.Same(destination, image.Metadata.IccProfile);
+            Assert.Equal(ColorTransferFunction.Srgb, image.Metadata.TransferFunction);
+
+            var after = Enumerable.Range(0, colors.Length).Select(x => ToRgbaFloat(image.Frames[0][x, 0])).ToArray();
+            var reference = ReferenceIccTransform.Create(source.Data.Span, destination.Data.Span);
+            if (tolerance == 0)
+            {
+                Assert.Empty(reference.Compare(before.SelectMany(pixel => new[] { pixel.R, pixel.G, pixel.B }).ToArray(), after.SelectMany(pixel => new[] { pixel.R, pixel.G, pixel.B }).ToArray()));
+            }
+
+            for (var x = 0; x < colors.Length; x++)
+            {
+                var expected = reference.Convert([(decimal)before[x].R, (decimal)before[x].G, (decimal)before[x].B]);
+                Assert.Equal((double)expected[0], after[x].R, tolerance: Math.Max(tolerance, 1e-6));
+                Assert.Equal((double)expected[1], after[x].G, tolerance: Math.Max(tolerance, 1e-6));
+                Assert.Equal((double)expected[2], after[x].B, tolerance: Math.Max(tolerance, 1e-6));
+                Assert.Equal(before[x].A, after[x].A);
+            }
+
+            // The first color is the 16-bit literal of ConvertColorProfileConvertsUntaggedPixelsFromSrgbAndLabelsTheImage,
+            // (15033, 23185, 33666), within half a 16-bit step, but it is not rounded to 16 bits
+            if (label == ColorTransferFunction.Srgb && typeof(TPixel) == typeof(RgbaFloat))
+            {
+                Assert.Equal(15033, after[0].R * 65535d, tolerance: 0.5);
+                Assert.Equal(23185, after[0].G * 65535d, tolerance: 0.5);
+                Assert.Equal(33666, after[0].B * 65535d, tolerance: 0.5);
+                Assert.NotEqual(15033 / 65535f, after[0].R);
+            }
+        }
+    }
+
     /// <summary>A distinct pixel for each id, exercising every channel (16-bit low bits and non-trivial alpha included).</summary>
     internal static TPixel Pixel<TPixel>(int id)
         where TPixel : unmanaged
@@ -1754,11 +1951,43 @@ public sealed class ProcessingTests
             var t when t == typeof(Rgba64) => new Rgba64((ushort)((0x0101 * id) + 1), (ushort)(0x1000 + (3 * id)), (ushort)(0xFFFF - (7 * id)), (ushort)(0x8000 + id)),
             var t when t == typeof(Gray8) => new Gray8((byte)(id * 3)),
             var t when t == typeof(Gray16) => new Gray16((ushort)((id * 1000) + 1)),
+
+            // A fraction, a negative (out-of-gamut) color, a high dynamic range one and a translucent alpha, all exact as halves
+            var t when t == typeof(RgbaFloat) => new RgbaFloat(id + 0.25f, -id / 8f, 1000f + id, 1f - (id / 64f)),
+            var t when t == typeof(RgbaHalf) => new RgbaHalf((Half)(id + 0.25f), (Half)(-id / 8f), (Half)(1000f + id), (Half)(1f - (id / 64f))),
             _ => throw new NotSupportedException(),
         };
 
         return (TPixel)pixel;
     }
+
+    /// <summary>A pixel of a floating-point type (<see cref="RgbaFloat"/>, or the nearest <see cref="RgbaHalf"/>).</summary>
+    internal static TPixel FloatPixel<TPixel>(float r, float g, float b, float a = 1f)
+        where TPixel : unmanaged
+    {
+        object pixel = typeof(TPixel) == typeof(RgbaFloat) ? new RgbaFloat(r, g, b, a) : new RgbaHalf((Half)r, (Half)g, (Half)b, (Half)a);
+        return (TPixel)pixel;
+    }
+
+    /// <summary>Widens a floating-point pixel to <see cref="RgbaFloat"/>, exactly.</summary>
+    internal static RgbaFloat ToRgbaFloat<TPixel>(TPixel pixel)
+        where TPixel : unmanaged
+        => pixel switch
+        {
+            RgbaFloat value => value,
+            RgbaHalf value => new RgbaFloat((float)value.R, (float)value.G, (float)value.B, (float)value.A),
+            _ => throw new NotSupportedException(),
+        };
+
+    /// <summary>The bits of a pixel, to compare not-a-number payloads and signed zeros.</summary>
+    internal static (int R, int G, int B, int A) Bits<TPixel>(TPixel pixel)
+        where TPixel : unmanaged
+        => pixel switch
+        {
+            RgbaFloat value => (BitConverter.SingleToInt32Bits(value.R), BitConverter.SingleToInt32Bits(value.G), BitConverter.SingleToInt32Bits(value.B), BitConverter.SingleToInt32Bits(value.A)),
+            RgbaHalf value => (BitConverter.HalfToInt16Bits(value.R), BitConverter.HalfToInt16Bits(value.G), BitConverter.HalfToInt16Bits(value.B), BitConverter.HalfToInt16Bits(value.A)),
+            _ => throw new NotSupportedException(),
+        };
 
     private static Image<TPixel> Build<TPixel>(params int[][][] frames)
         where TPixel : unmanaged

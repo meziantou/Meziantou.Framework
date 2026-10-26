@@ -203,6 +203,40 @@ public sealed class ImageCollectionTests
     }
 
     [Fact]
+    public void FloatingPointEntriesAreSavedOnlyWithAReduction()
+    {
+        using var hdr = new Image<RgbaFloat>(2, 2, new RgbaFloat(0.25f, 0.5f, 2, 0.75f));
+        using var pages = ImageCollection.Create(ImageCollectionKind.Pages);
+        var entry = pages.Add(hdr);
+        Assert.Equal(PixelFormat.RgbaFloat, entry.PixelFormat);
+        Assert.Equal(32, entry.BitsPerComponent);
+
+        // Nothing is written without the policy of the encoder, nor with a policy that rejects the samples out of range
+        using (var rejected = new MemoryStream())
+        {
+            var exception = Assert.Throws<UnsupportedImageFeatureException>(() => pages.Save(rejected, new TiffEncoder()));
+            Assert.Contains("entry 0", exception.Message);
+            Assert.Equal(0, rejected.Length);
+            Assert.Throws<UnsupportedImageFeatureException>(() => pages.Save(rejected, new TiffEncoder { FloatingPointConversion = new PixelConversionOptions(), MetadataHandling = MetadataHandling.DiscardUnsupported }));
+        }
+
+        using var stream = new MemoryStream();
+        pages.Save(stream, new TiffEncoder { FloatingPointConversion = new PixelConversionOptions { OutOfRangeSamples = OutOfRangeSampleHandling.Clip }, MetadataHandling = MetadataHandling.DiscardUnsupported });
+        using var decoded = Image.Load<Rgba64>(stream.ToArray());
+        Assert.Equal(new Rgba64(16384, 32768, 65535, 49151), decoded.Frames[0][1, 1]);
+
+        // Representations too
+        using var icons = ImageCollection.Create(ImageCollectionKind.Representations);
+        using var icon = new Image<RgbaHalf>(16, 16, new RgbaHalf(Half.One, Half.Zero, Half.Zero));
+        icons.Add(icon);
+        using var output = new MemoryStream();
+        Assert.Throws<UnsupportedImageFeatureException>(() => icons.Save(output, new IcoEncoder()));
+        icons.Save(output, new IcoEncoder { FloatingPointConversion = new PixelConversionOptions(), MetadataHandling = MetadataHandling.DiscardUnsupported });
+        using var decodedIcon = Image.Load<Rgba64>(output.ToArray());
+        Assert.Equal(new Rgba64(65535, 0, 0), decodedIcon.Frames[0][3, 3]);
+    }
+
+    [Fact]
     public void ANonSeekableStreamIsRejectedWithAnActionableMessage()
     {
         using var inner = new MemoryStream(ThreePages());

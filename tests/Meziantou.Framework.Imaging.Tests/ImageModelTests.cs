@@ -1,3 +1,4 @@
+using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.Metadata;
 
@@ -425,6 +426,109 @@ public sealed class ImageModelTests
         Assert.Null(discarded.Metadata.IccProfile);
         using var kept = image.CloneAs<Rgba32>();
         Assert.Same(image.Metadata.IccProfile, kept.Metadata.IccProfile);
+    }
+
+    [Fact]
+    public void NewFloatingPointImagesAreLabeledAsLinearLight()
+    {
+        using var floats = new Image<RgbaFloat>(1, 1);
+        using var halves = new Image<RgbaHalf>(1, 1, new RgbaHalf(Half.One, Half.One, Half.One));
+        Assert.Equal(ColorTransferFunction.Linear, floats.Metadata.TransferFunction);
+        Assert.Equal(ColorTransferFunction.Linear, halves.Metadata.TransferFunction);
+        Assert.Equal(PixelFormat.RgbaFloat, floats.PixelFormat);
+        Assert.Equal(new RgbaHalf(Half.One, Half.One, Half.One), halves.Frames[0][0, 0]);
+
+        // A conversion keeps the label of its source: it never converts colors
+        using var encoded = new Image<Rgba64>(1, 1);
+        using var converted = encoded.CloneAs<RgbaFloat>();
+        Assert.Equal(ColorTransferFunction.Srgb, converted.Metadata.TransferFunction);
+        using var back = floats.CloneAs<Rgba32>();
+        Assert.Equal(ColorTransferFunction.Linear, back.Metadata.TransferFunction);
+    }
+
+    [Fact]
+    public void FloatingPointImagesNeedAPolicyForTheSamplesOutOfRange()
+    {
+        using var hdr = new Image<RgbaFloat>(2, 1);
+        hdr.Frames[0][0, 0] = new RgbaFloat(0.5f, 0.25f, 0.125f);
+        hdr.Frames[0][1, 0] = new RgbaFloat(4, 2, 1); // a highlight four times as bright as the white
+        Assert.Equal(ColorTransferFunction.Linear, hdr.Metadata.TransferFunction);
+
+        // Integer pixels cannot store the highlight: clip it, or compress the highlights with a tone mapping
+        Assert.Throws<UnsupportedImageFeatureException>(() => hdr.CloneAs<Rgba64>());
+        using var toneMapped = hdr.CloneAs<Rgba64>(new PixelConversionOptions
+        {
+            ToneMapping = new HdrToneMappingOptions { Operator = HdrToneMappingOperator.Reinhard },
+        });
+        Assert.Equal(new Rgba64(65535, 32768, 16384), toneMapped.Frames[0][1, 0]);
+
+        // Encoders store integers too: the encoder says how to reduce the samples
+        using var stream = new MemoryStream();
+        hdr.Save(stream, new PngEncoder
+        {
+            FloatingPointConversion = new PixelConversionOptions { OutOfRangeSamples = OutOfRangeSampleHandling.Clip },
+            MetadataHandling = MetadataHandling.DiscardUnsupported,
+        });
+        stream.Position = 0;
+        using var saved = Image.Load<Rgba64>(stream);
+        Assert.Equal(new Rgba64(65535, 65535, 65535), saved.Frames[0][1, 0]);
+    }
+
+    [Fact]
+    public void CloneAsRoundTripsEverySixteenBitSampleThroughFloats()
+    {
+        using var image = new Image<Rgba64>(256, 256);
+        for (var y = 0; y < 256; y++)
+        {
+            for (var x = 0; x < 256; x++)
+            {
+                var v = (ushort)((y * 256) + x);
+                image.Frames[0][x, y] = new Rgba64(v, (ushort)~v, (ushort)(v ^ 0x1234), v);
+            }
+        }
+
+        using var floats = image.CloneAs<RgbaFloat>();
+        Assert.Equal(new RgbaFloat(1 / 65535f, 65534 / 65535f, (1 ^ 0x1234) / 65535f, 1 / 65535f), floats.Frames[0][1, 0]);
+        using var back = floats.CloneAs<Rgba64>();
+        Assert.Equal(StreamPixels(image), StreamPixels(back));
+
+        static Rgba64[] StreamPixels(Image<Rgba64> image)
+        {
+            var pixels = new Rgba64[image.Width * image.Height];
+            image.Frames[0].CopyPixelDataTo(pixels);
+            return pixels;
+        }
+    }
+
+    [Fact]
+    public void CloneAsRejectsFloatingPointSamplesBeforeAllocating()
+    {
+        using var image = new Image<RgbaFloat>(2, 2, new RgbaFloat(0.5f, 0.25f, 1));
+        image.AppendFrame(image.Frames[0]);
+        image.SetPosterFrame(image.Frames[0]);
+        image.Frames[1][1, 1] = new RgbaFloat(4, 2, 1);
+        image.PosterFrame![0, 1] = new RgbaFloat(float.NaN, 0, 0);
+
+        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => image.CloneAs<Rgba64>(new PixelConversionOptions { OutOfRangeSamples = OutOfRangeSampleHandling.Clip }));
+        Assert.Equal("Not-a-number samples", exception.Feature);
+        Assert.Equal(0, image.Owner.ActiveLeaseCount);
+
+        image.PosterFrame[0, 1] = new RgbaFloat(0, 0, 0);
+        exception = Assert.Throws<UnsupportedImageFeatureException>(() => image.CloneAs<Rgba32>());
+        Assert.Equal("Out-of-range samples", exception.Feature);
+
+        // The peak of the tone mapping is the one of every frame: the pixels of the first frame are compressed too
+        var toneMapped = image.CloneAs<Rgba64>(new PixelConversionOptions { ToneMapping = new HdrToneMappingOptions { Operator = HdrToneMappingOperator.Reinhard } });
+        using (toneMapped)
+        {
+            Assert.Equal(new Rgba64(65535, 32768, 16384), toneMapped.Frames[1][1, 1]);
+            var factor = 1 * (1 + (1 / 16.0)) / 2;
+            Assert.Equal(new Rgba64((ushort)Math.Floor((0.5 * factor * 65535) + 0.5), (ushort)Math.Floor((0.25 * factor * 65535) + 0.5), (ushort)Math.Floor((factor * 65535) + 0.5)), toneMapped.Frames[0][0, 0]);
+        }
+
+        using var clipped = image.CloneAs<Rgb24>(new PixelConversionOptions { OutOfRangeSamples = OutOfRangeSampleHandling.Clip });
+        Assert.Equal(new Rgb24(255, 255, 255), clipped.Frames[1][1, 1]);
+        Assert.Equal(new Rgb24(128, 64, 255), clipped.Frames[0][0, 0]);
     }
 
     [Fact]

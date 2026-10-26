@@ -50,6 +50,8 @@ public abstract partial class Image
         if (geometry.IsIdentity)
             return;
 
+        EnsureLinearLightDomain(transfer, GetAllFrames(), "resizing", "resize");
+
         // Large frames are resized by up to MaxDegreeOfParallelism workers (row bands, bit-identical results)
         using var plan = new ResizePlan(geometry, options.Filter, workingSpace, PixelFormat, _configuration.MaxDegreeOfParallelism, transfer);
         ReplaceGeometry(geometry.OutputSize, normalizeOrientation: false, Operation, new ResizeFiller(plan, geometry), cancellationToken);
@@ -68,25 +70,28 @@ public abstract partial class Image
         ThrowIfDisposed();
         cancellationToken.ThrowIfCancellationRequested();
         var frames = GetAllFrames();
+        EnsureAutoCropDomain(frames);
         var canvas = new Rectangle(0, 0, _size.Width, _size.Height);
         var analyzer = new AutoCropAnalyzer(_size, options.ColorThreshold);
         RunAutoCropPass(frames, analyzer, cancellationToken);
         var found = analyzer.CompleteBorderPass(options.BucketThreshold);
         var background = analyzer.BackgroundColor;
+        var floatingPointBackground = analyzer.FloatingPointBackgroundColor;
         if (!found)
         {
             analyzer.BeginRetryBorderPass();
             RunAutoCropPass(frames, analyzer, cancellationToken);
             if (!analyzer.CompleteBorderPass(bucketThreshold: null))
-                return CreateAutoCropAnalysis(success: false, canvas, background, weightX: 0, weightY: 0);
+                return CreateAutoCropAnalysis(success: false, canvas, background, weightX: 0, weightY: 0, floatingPointBackground);
 
             background = analyzer.BackgroundColor;
+            floatingPointBackground = analyzer.FloatingPointBackgroundColor;
         }
 
         analyzer.BeginBoundsPass();
         RunAutoCropPass(frames, analyzer, cancellationToken);
         if (!analyzer.TryGetBounds(out var bounds))
-            return CreateAutoCropAnalysis(success: false, canvas, background, weightX: 0, weightY: 0);
+            return CreateAutoCropAnalysis(success: false, canvas, background, weightX: 0, weightY: 0, floatingPointBackground);
 
         var weights = (X: 0d, Y: 0d);
         if (options.AnalyzeWeights)
@@ -96,7 +101,28 @@ public abstract partial class Image
             weights = analyzer.GetWeights();
         }
 
-        return CreateAutoCropAnalysis(success: true, bounds, background, weights.X, weights.Y);
+        return CreateAutoCropAnalysis(success: true, bounds, background, weights.X, weights.Y, floatingPointBackground);
+    }
+
+    /// <summary>
+    /// Checks, before the analysis, that every floating-point sample is a finite number: the analysis works on the values
+    /// as they are stored, beyond [0, 1] too, but a sample that is not a number has no distance to the background.
+    /// </summary>
+    /// <exception cref="UnsupportedImageFeatureException">A sample is not a number or is infinite.</exception>
+    private void EnsureAutoCropDomain(ImageFrame[] frames)
+    {
+        if (!PixelFormats.IsFloatingPoint(PixelFormat))
+            return;
+
+        for (var i = 0; i < frames.Length; i++)
+        {
+            using var lease = frames[i].GetStorage().AcquireLease();
+            if (FloatingPointSampleRange.TryFind(lease, PixelFormat, FloatingPointSampleRequirement.Finite, out var sample))
+                throw new UnsupportedImageFeatureException(
+                    string.Create(CultureInfo.InvariantCulture, $"The auto-crop analysis compares the {PixelFormat} samples with the background, but the pixel ({sample.X}, {sample.Y}) of {DescribeFrame(i)} is {sample.Describe()}: a sample that is not a number or is infinite has no distance to it. Replace such samples first."),
+                    ImageFormat.Unknown,
+                    "Auto-crop analysis of non-finite samples");
+        }
     }
 
     /// <summary>
@@ -128,27 +154,33 @@ public abstract partial class Image
             return true;
         }
 
+        // The background of an analysis of floating-point pixels is exact in its own pixel type only: its Rgba64 is clipped
         var fill = analysis.BackgroundColor;
-        if (!PixelConverter.IsExactlyRepresentable(fill, PixelFormat))
+        var isFloatingPointAnalysis = analysis is AutoCropAnalysis<RgbaFloat> or AutoCropAnalysis<RgbaHalf>;
+        if (isFloatingPointAnalysis ? !IsAnalysisOfThisPixelType(analysis) : !PixelConverter.IsExactlyRepresentable(fill, PixelFormat))
             throw new UnsupportedImageFeatureException(
-                $"Enlarging the canvas fills it with the background color of the analysis ({fill}), which {PixelFormat} pixels cannot represent exactly. Use {nameof(AutoCropPaddingMode)}.{nameof(AutoCropPaddingMode.Contain)}, or analyze an image of the same pixel format.",
+                $"Enlarging the canvas fills it with the background color of the analysis ({(isFloatingPointAnalysis ? "an analysis of floating-point pixels" : fill)}), which {PixelFormat} pixels cannot represent exactly. Use {nameof(AutoCropPaddingMode)}.{nameof(AutoCropPaddingMode.Contain)}, or analyze an image of the same pixel format.",
                 ImageFormat.Unknown,
                 "Auto-crop background fill");
 
         // The limits bound both dimensions to 32 bits, and the origin is at most one padded canvas away
         _configuration.Limits.EnsureCanvasWithinLimits(geometry.Width, geometry.Height);
         var size = new Size((int)geometry.Width, (int)geometry.Height);
-        ReplaceGeometry(size, normalizeOrientation: false, Operation, new ExtendFiller(new Point((int)geometry.X, (int)geometry.Y), size, fill), cancellationToken);
+        ReplaceGeometry(size, normalizeOrientation: false, Operation, new ExtendFiller(new Point((int)geometry.X, (int)geometry.Y), size, analysis), cancellationToken);
         return true;
     }
+
+    /// <summary>Gets a value indicating whether an analysis is typed with the pixel type of this image (its typed background is a pixel of the image).</summary>
+    internal abstract bool IsAnalysisOfThisPixelType(AutoCropAnalysis analysis);
 
     /// <summary>Creates the analysis of this image, typed with its pixel type.</summary>
     /// <param name="success">Whether a border and a content box were found.</param>
     /// <param name="bounds">The content box, inside the canvas.</param>
-    /// <param name="backgroundColor">The background, exactly representable in the pixel format of the image.</param>
+    /// <param name="backgroundColor">The background, exactly representable in the pixel format of the image (clipped to [0, 1] for the floating-point formats).</param>
     /// <param name="weightX">The horizontal weight.</param>
     /// <param name="weightY">The vertical weight.</param>
-    internal abstract AutoCropAnalysis CreateAutoCropAnalysis(bool success, Rectangle bounds, Rgba64 backgroundColor, double weightX, double weightY);
+    /// <param name="floatingPointBackground">The exact background of an image of a floating-point format, or <see langword="null"/> to use <paramref name="backgroundColor"/>.</param>
+    internal abstract AutoCropAnalysis CreateAutoCropAnalysis(bool success, Rectangle bounds, Rgba64 backgroundColor, double weightX, double weightY, RgbaFloat? floatingPointBackground = null);
 
     private static void RunAutoCropPass(ImageFrame[] frames, AutoCropAnalyzer analyzer, CancellationToken cancellationToken)
     {
@@ -276,9 +308,11 @@ public abstract partial class Image
         Owner.EnsureCanModify("convolve the image");
         using var plan = CreateConvolutionPlan(options);
         cancellationToken.ThrowIfCancellationRequested();
+        var frames = GetAllFrames();
+        EnsureLinearLightDomain(plan.Transfer, frames, "convolution", "convolve");
         plan.Prepare(Owner.Scope);
         _metadata.RemoveStaleThumbnail();
-        foreach (var frame in GetAllFrames())
+        foreach (var frame in frames)
         {
             using var lease = frame.GetStorage().AcquireLease();
             frame.ConvolvePixels(lease, plan, cancellationToken);
@@ -296,6 +330,7 @@ public abstract partial class Image
         using var plan = CreateConvolutionPlan(options);
         cancellationToken.ThrowIfCancellationRequested();
         using var lease = storage.AcquireLease();
+        EnsureLinearLightDomain(plan.Transfer, lease, "the frame", "convolution", "convolve");
         plan.Prepare(Owner.Scope);
         _metadata.RemoveStaleThumbnail();
         frame.ConvolvePixels(lease, plan, cancellationToken);
@@ -311,9 +346,11 @@ public abstract partial class Image
         Owner.EnsureCanModify("blur the image");
         using var plan = CreateBlurPlan(weights, edgeMode, workingSpace);
         cancellationToken.ThrowIfCancellationRequested();
+        var frames = GetAllFrames();
+        EnsureLinearLightDomain(plan.Transfer, frames, "convolution", "convolve");
         plan.Prepare(Owner.Scope);
         _metadata.RemoveStaleThumbnail();
-        foreach (var frame in GetAllFrames())
+        foreach (var frame in frames)
         {
             using var lease = frame.GetStorage().AcquireLease();
             frame.ConvolvePixels(lease, plan, cancellationToken);
@@ -326,6 +363,7 @@ public abstract partial class Image
         using var plan = CreateBlurPlan(weights, edgeMode, workingSpace);
         cancellationToken.ThrowIfCancellationRequested();
         using var lease = storage.AcquireLease();
+        EnsureLinearLightDomain(plan.Transfer, lease, "the frame", "convolution", "convolve");
         plan.Prepare(Owner.Scope);
         _metadata.RemoveStaleThumbnail();
         frame.ConvolvePixels(lease, plan, cancellationToken);
@@ -378,6 +416,8 @@ public abstract partial class Image
         cancellationToken.ThrowIfCancellationRequested();
         if (!pipeline.IsIdentity)
         {
+            EnsureColorConversionDomain(GetAllFrames());
+
             // 16-bit samples read the first stage from tables when the image is large enough (the tables are rented once,
             // after the replacements are reserved, and released with the conversion)
             var colors = PixelFormat is PixelFormat.Rgba64 or PixelFormat.Gray16 ? (long)_size.Width * _size.Height * GetAllFrames().Length : 0;
@@ -564,6 +604,67 @@ public abstract partial class Image
     }
 
     /// <summary>
+    /// Checks, before anything changes, that the transfer function of linear-light filtering can decode every color of
+    /// floating-point frames: an encoded value outside [0, 1], the domain of the function, has no linear-light value, and
+    /// is not clipped silently. Samples labeled as linear light (<paramref name="transfer"/> 0) are filtered as they are,
+    /// whatever their values, and integer samples are always in the domain.
+    /// </summary>
+    /// <param name="transfer">The transfer characteristics of the filter (<see cref="GetLinearLightTransfer"/>), or 0.</param>
+    /// <param name="frames">The frames of the operation (<see cref="GetAllFrames"/>).</param>
+    /// <param name="operation">The operation, as a noun ("resizing").</param>
+    /// <param name="verb">The operation, as a verb ("resize").</param>
+    /// <exception cref="UnsupportedImageFeatureException">A color sample is outside [0, 1] or is not a number.</exception>
+    private void EnsureLinearLightDomain(byte transfer, ImageFrame[] frames, string operation, string verb)
+    {
+        if (transfer is 0 || !PixelFormats.IsFloatingPoint(PixelFormat))
+            return;
+
+        for (var i = 0; i < frames.Length; i++)
+        {
+            using var lease = frames[i].GetStorage().AcquireLease();
+            EnsureLinearLightDomain(transfer, lease, DescribeFrame(i), operation, verb);
+        }
+    }
+
+    /// <summary>Checks one leased frame (see <see cref="EnsureLinearLightDomain(byte, ImageFrame[], string, string)"/>).</summary>
+    private void EnsureLinearLightDomain(byte transfer, scoped in PixelLease lease, string frame, string operation, string verb)
+    {
+        if (transfer is 0 || !FloatingPointSampleRange.TryFind(lease, PixelFormat, FloatingPointSampleRequirement.UnitColors, out var sample))
+            return;
+
+        throw new UnsupportedImageFeatureException(
+            string.Create(CultureInfo.InvariantCulture, $"Linear-light {operation} decodes the {PixelFormat} samples with the transfer function of the image (transfer characteristics {transfer}), which is only defined on [0, 1], but the pixel ({sample.X}, {sample.Y}) of {frame} is {sample.Describe()}: an encoded value outside [0, 1] or that is not a number has no linear-light value, and it is not clipped implicitly. Set Metadata.TransferFunction to Linear if the samples are linear light, or {verb} in the encoded working space."),
+            ImageFormat.Unknown,
+            $"Linear-light {operation} of floating-point samples outside [0, 1]");
+    }
+
+    /// <summary>
+    /// Checks, before anything changes, that a color conversion can read every color of floating-point frames: an ICC
+    /// profile and a CICP color description encode values in [0, 1], and a sample outside that range is not clipped
+    /// silently. Alpha is copied unchanged, whatever its value.
+    /// </summary>
+    /// <exception cref="UnsupportedImageFeatureException">A color sample is outside [0, 1] or is not a number.</exception>
+    private void EnsureColorConversionDomain(ImageFrame[] frames)
+    {
+        if (!PixelFormats.IsFloatingPoint(PixelFormat))
+            return;
+
+        for (var i = 0; i < frames.Length; i++)
+        {
+            using var lease = frames[i].GetStorage().AcquireLease();
+            if (FloatingPointSampleRange.TryFind(lease, PixelFormat, FloatingPointSampleRequirement.UnitColors, out var sample))
+                throw new UnsupportedImageFeatureException(
+                    string.Create(CultureInfo.InvariantCulture, $"A color conversion reads the {PixelFormat} samples as values in [0, 1], the range that an ICC profile or a CICP color description encodes, but the pixel ({sample.X}, {sample.Y}) of {DescribeFrame(i)} is {sample.Describe()}: a color outside that range, or a sample that is not a number, is not clipped implicitly. Bring the samples into [0, 1] first, for example by converting the image to Rgba64 with Image.CloneAs and PixelConversionOptions.ToneMapping or PixelConversionOptions.OutOfRangeSamples."),
+                    ImageFormat.Unknown,
+                    "Color conversion of floating-point samples outside [0, 1]");
+        }
+    }
+
+    /// <summary>Names a frame of <see cref="GetAllFrames"/> for an exception message.</summary>
+    private string DescribeFrame(int index)
+        => index < _frames.Count ? string.Create(CultureInfo.InvariantCulture, $"frame {index}") : "the poster frame";
+
+    /// <summary>
     /// Gets the tone curves of the ICC profile of the image, for what combines its samples in linear light, when the
     /// profile is what says how they are encoded and is not recognized as sRGB: the samples of any other image are
     /// decoded by the function of <see cref="GetLinearLightTransfer"/>.
@@ -729,7 +830,7 @@ public abstract partial class Image
     }
 
     [StructLayout(LayoutKind.Auto)]
-    private readonly struct ExtendFiller(Point origin, Size size, Rgba64 fill) : IGeometryFiller
+    private readonly struct ExtendFiller(Point origin, Size size, AutoCropAnalysis fill) : IGeometryFiller
     {
         public bool TryMapPoint(Point source, out Point destination)
         {

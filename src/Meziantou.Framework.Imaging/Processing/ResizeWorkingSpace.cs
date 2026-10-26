@@ -15,7 +15,9 @@ public enum ResizeWorkingSpace
     /// profile that is not known to be sRGB-compatible are rejected, as no ICC transform is applied implicitly: convert
     /// them first with <see cref="ImageProcessingExtensions.ConvertColorProfile"/>. Images whose
     /// <see cref="Metadata.ImageMetadata.TransferFunction"/> is <see cref="Metadata.ColorTransferFunction.Linear"/>, or whose
-    /// transfer characteristics are linear, already store linear light: their samples are filtered directly.
+    /// transfer characteristics are linear, already store linear light: their samples are filtered directly, which is the
+    /// case of new <see cref="RgbaFloat"/> and <see cref="RgbaHalf"/> images, whatever their values. Floating-point samples
+    /// labeled with another function must be numbers in [0, 1], its domain: other values are rejected, not clipped.
     /// </summary>
     /// <remarks>The name is historical: the working space is the linear light of the image's own transfer function.</remarks>
     LinearSrgb = 1,

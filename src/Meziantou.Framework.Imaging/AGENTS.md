@@ -68,6 +68,28 @@ the library guarantees to its callers (support matrix, limitations, defaults). K
 - **Thread safety.** Immutable types and static methods are thread-safe. An image, a reader or a writer supports one
   operation at a time.
 
+## Floating-point pixels
+
+`RgbaFloat` and `RgbaHalf` are built-in formats like the others (not a custom pixel type): linear light, 1 is the
+reference white, values outside [0, 1] are meaningful (highlights, negative out-of-gamut colors), alpha is a coverage.
+
+- `PixelFormats.GetBitsPerComponent` is 16 for `RgbaHalf` too: never use `== 16` (or 8 bytes per pixel) to mean
+  "`ushort` samples"; test `PixelFormats.IsFloatingPoint` or the pixel type.
+- Conversions are in `PixelConverter.Float.cs`, in double precision on fractions of one. The default policy
+  (`FloatSampleConversion.Strict`, `floats: null`) rejects every sample that is not a number or that the destination
+  cannot store: internal code that reads floating-point pixels as `Rgba64` (`ReadRgba64`, `ReadDrawingColors`, filters)
+  therefore throws on HDR samples instead of clipping them. Keep it so: a path that cannot carry values outside [0, 1]
+  rejects them. Integer to `RgbaFloat` and back must stay exact for every sample.
+- Conversions validate every frame and the poster before allocating (`Image.PrepareConversion`), which also gives the
+  tone mapping its peak (`PixelConversionPlan.RequiresPeak`, the largest finite color of all the frames).
+- Codecs never see floating-point pixels: `ImageWriterCore` rejects them at creation unless
+  `ImageEncoder.FloatingPointConversion` is set, and reduces each frame to an `Rgba64` copy charged to the writer
+  (`EncodedPixelFormat`); `ImageCollectionWriterCore` does the same for collection entries. A codec that stores floating
+  point samples one day opts out there.
+- Drawing (`FloatDrawingKernels`): paints keep 16-bit samples (`DrawingKernels.GetPaintMax`), are composited in double
+  precision over the stored values without clipping the colors, and color matrices are applied in place. Layers,
+  patterns, groups and filter surfaces stay `Rgba64`, so what goes through them must be in [0, 1].
+
 ## Memory
 
 - Every library-controlled buffer (pixels, decoder and compositor state, input buffers, scratch, encoder state) is rented
@@ -531,7 +553,8 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
     ties upward. The rasterizer is a sweep line with lazily recorded boundaries; its row scratch is sized up front from
     the largest number of edges on one row.
   - Compositing is exact integer source-over (`ulong`), the generalization of `AnimationCompositor.BlendOver8/16` to a
-    fractional source alpha. Colors are converted to the pixel format first (`PixelConverter` rules).
+    fractional source alpha. Colors are converted to the pixel format first (`PixelConverter` rules). A floating-point frame is
+    composited by `FloatDrawingKernels` instead (the same formulas in double precision, not rounded to a grid).
   - The other operators of `CompositeMode` (a property of the brush, so that the canvas has no state) have one kernel
     for all of them, from the two factors of the operator; source-over keeps its own, unchanged. A paint without
     opacity is skipped only with the operators it changes nothing with (`IsTransparentPaintInert`): with the others it

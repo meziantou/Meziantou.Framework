@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -16,7 +17,26 @@ public sealed class PixelConversionTests
 {
     private static readonly Rgba64 Background = new(0x1234, 0xABCD, 0x0F0F);
 
+    /// <summary>Every pair of integer pixel formats: the ones <see cref="ReferenceModel"/> describes.</summary>
     public static TheoryData<PixelFormat, PixelFormat> AllPairs
+    {
+        get
+        {
+            var data = new TheoryData<PixelFormat, PixelFormat>();
+            foreach (var source in PixelFormats.All.Where(format => !PixelFormats.IsFloatingPoint(format)))
+            {
+                foreach (var destination in PixelFormats.All.Where(format => !PixelFormats.IsFloatingPoint(format)))
+                {
+                    data.Add(source, destination);
+                }
+            }
+
+            return data;
+        }
+    }
+
+    /// <summary>Every pair of pixel formats of which one is a floating-point format (<see cref="FloatReferenceModel"/>).</summary>
+    public static TheoryData<PixelFormat, PixelFormat> FloatPairs
     {
         get
         {
@@ -25,7 +45,10 @@ public sealed class PixelConversionTests
             {
                 foreach (var destination in PixelFormats.All)
                 {
-                    data.Add(source, destination);
+                    if (PixelFormats.IsFloatingPoint(source) || PixelFormats.IsFloatingPoint(destination))
+                    {
+                        data.Add(source, destination);
+                    }
                 }
             }
 
@@ -46,6 +69,8 @@ public sealed class PixelConversionTests
         AssertLayout<Rgba64>(8, ("R", 0), ("G", 2), ("B", 4), ("A", 6));
         AssertLayout<Gray8>(1, ("Value", 0));
         AssertLayout<Gray16>(2, ("Value", 0));
+        AssertLayout<RgbaFloat>(16, ("R", 0), ("G", 4), ("B", 8), ("A", 12));
+        AssertLayout<RgbaHalf>(8, ("R", 0), ("G", 2), ("B", 4), ("A", 6));
     }
 
     [Fact]
@@ -68,6 +93,20 @@ public sealed class PixelConversionTests
         Assert.Equal((10, 20, 30, 255), (bgra.R, bgra.G, bgra.B, bgra.A));
         Assert.Equal(255, new Rgba32(1, 2, 3).A);
         Assert.Equal(65535, new Rgba64(1, 2, 3).A);
+        Assert.Equal(1f, new RgbaFloat(1, 2, 3).A);
+        Assert.Equal(Half.One, new RgbaHalf((Half)1, (Half)2, (Half)3).A);
+    }
+
+    [Fact]
+    public void FloatingPointStructsCompareTheirComponents()
+    {
+        Assert.Equal(new RgbaFloat(float.NaN, 0, 0), new RgbaFloat(float.NaN, 0, 0));
+        Assert.NotEqual(new RgbaFloat(0.5f, 0, 0), new RgbaFloat(0.5f, 0, 0, 0.5f));
+        Assert.True(new RgbaHalf(Half.NaN, Half.Zero, Half.Zero) == new RgbaHalf(Half.NaN, Half.Zero, Half.Zero));
+        Assert.True(new RgbaHalf(Half.One, Half.Zero, Half.Zero) != new RgbaHalf(Half.Zero, Half.Zero, Half.Zero));
+        Assert.Equal("RgbaFloat(1.5, -2, 0, 1)", new RgbaFloat(1.5f, -2, 0).ToString());
+        Assert.Equal("RgbaHalf(0.5, 2, 0, 1)", new RgbaHalf((Half)0.5, (Half)2, Half.Zero).ToString());
+        Assert.Equal(new RgbaFloat(1, 2, 3).GetHashCode(), new RgbaFloat(1, 2, 3).GetHashCode());
     }
 
     [Fact]
@@ -89,8 +128,11 @@ public sealed class PixelConversionTests
     [InlineData(PixelFormat.Rgba64, 8, 16, 4, true, false)]
     [InlineData(PixelFormat.Gray8, 1, 8, 1, false, true)]
     [InlineData(PixelFormat.Gray16, 2, 16, 1, false, true)]
+    [InlineData(PixelFormat.RgbaFloat, 16, 32, 4, true, false)]
+    [InlineData(PixelFormat.RgbaHalf, 8, 16, 4, true, false)]
     public void PixelFormatQueries(PixelFormat format, int bytesPerPixel, int bitsPerComponent, int components, bool alpha, bool gray)
     {
+        Assert.Equal(format is PixelFormat.RgbaFloat or PixelFormat.RgbaHalf, PixelFormats.IsFloatingPoint(format));
         Assert.Equal(bytesPerPixel, PixelFormats.GetBytesPerPixel(format));
         Assert.Equal(bitsPerComponent, PixelFormats.GetBitsPerComponent(format));
         Assert.Equal(components, PixelFormats.GetComponentCount(format));
@@ -500,6 +542,242 @@ public sealed class PixelConversionTests
     }
 
     // ---------------------------------------------------------------------------------------------------------------
+    // Floating-point formats
+    // ---------------------------------------------------------------------------------------------------------------
+
+    [Fact]
+    public void IntegerSamplesBecomeTheNearestFloatOfTheirFraction()
+    {
+        var rgba64 = new Rgba64[65536];
+        for (var v = 0; v < rgba64.Length; v++)
+        {
+            rgba64[v] = new Rgba64((ushort)v, (ushort)(65535 - v), (ushort)(v ^ 0x5A5A), (ushort)v);
+        }
+
+        var floats = new RgbaFloat[rgba64.Length];
+        PixelConverter.ConvertRow<Rgba64, RgbaFloat>(rgba64, floats);
+        for (var v = 0; v < rgba64.Length; v++)
+        {
+            FloatReferenceModel.AssertNearestFloat(v, 65535, floats[v].R);
+            FloatReferenceModel.AssertNearestFloat(65535 - v, 65535, floats[v].G);
+            FloatReferenceModel.AssertNearestFloat(v ^ 0x5A5A, 65535, floats[v].B);
+        }
+
+        // And back, exactly, for every value
+        var back = new Rgba64[rgba64.Length];
+        PixelConverter.ConvertRow<RgbaFloat, Rgba64>(floats, back);
+        Assert.Equal(rgba64, back);
+
+        var gray16 = new Gray16[65536];
+        for (var v = 0; v < gray16.Length; v++)
+        {
+            gray16[v] = new Gray16((ushort)v);
+        }
+
+        PixelConverter.ConvertRow<Gray16, RgbaFloat>(gray16, floats);
+        var grayBack = new Gray16[gray16.Length];
+        PixelConverter.ConvertRow<RgbaFloat, Gray16>(floats, grayBack);
+        Assert.Equal(gray16, grayBack);
+        Assert.Equal(new RgbaFloat(0, 0, 0, 1), floats[0]);
+        Assert.Equal(new RgbaFloat(1, 1, 1, 1), floats[65535]);
+    }
+
+    [Fact]
+    public void EightBitSamplesRoundTripThroughEveryFloatingPointFormat()
+    {
+        var rgba = new Rgba32[256];
+        var gray = new Gray8[256];
+        for (var v = 0; v < 256; v++)
+        {
+            rgba[v] = new Rgba32((byte)v, (byte)(255 - v), (byte)(v ^ 0x5A), (byte)v);
+            gray[v] = new Gray8((byte)v);
+        }
+
+        var floats = new RgbaFloat[256];
+        var halves = new RgbaHalf[256];
+        PixelConverter.ConvertRow<Rgba32, RgbaFloat>(rgba, floats);
+        PixelConverter.ConvertRow<Rgba32, RgbaHalf>(rgba, halves);
+        for (var v = 0; v < 256; v++)
+        {
+            FloatReferenceModel.AssertNearestFloat(v, 255, floats[v].R);
+            FloatReferenceModel.AssertNearestHalf(v, 255, halves[v].R);
+            FloatReferenceModel.AssertNearestHalf(255 - v, 255, halves[v].G);
+        }
+
+        var fromFloat = new Rgba32[256];
+        var fromHalf = new Bgra32[256];
+        PixelConverter.ConvertRow<RgbaFloat, Rgba32>(floats, fromFloat);
+        PixelConverter.ConvertRow<RgbaHalf, Bgra32>(halves, fromHalf);
+        Assert.Equal(rgba, fromFloat);
+        Assert.Equal(rgba.Select(p => new Bgra32(p.R, p.G, p.B, p.A)), fromHalf);
+
+        PixelConverter.ConvertRow<Gray8, RgbaHalf>(gray, halves);
+        var grayBack = new Gray8[256];
+        PixelConverter.ConvertRow<RgbaHalf, Gray8>(halves, grayBack);
+        Assert.Equal(gray, grayBack);
+    }
+
+    [Fact]
+    public void SixteenBitSamplesBecomeTheNearestHalf()
+    {
+        var rgba64 = new Rgba64[65536];
+        for (var v = 0; v < rgba64.Length; v++)
+        {
+            rgba64[v] = new Rgba64((ushort)v, 0, 0);
+        }
+
+        var halves = new RgbaHalf[rgba64.Length];
+        PixelConverter.ConvertRow<Rgba64, RgbaHalf>(rgba64, halves);
+        for (var v = 0; v < rgba64.Length; v++)
+        {
+            FloatReferenceModel.AssertNearestHalf(v, 65535, halves[v].R);
+        }
+
+        // Half has 11 significant bits: 16-bit samples do not all come back
+        var back = new Rgba64[rgba64.Length];
+        PixelConverter.ConvertRow<RgbaHalf, Rgba64>(halves, back);
+        Assert.Equal(new Rgba64(65535, 0, 0), back[65535]);
+        Assert.NotEqual(rgba64[65534], back[65534]);
+        Assert.False(PixelConverter.IsExactlyRepresentable(new Rgba64(65534, 0, 0), PixelFormat.RgbaHalf));
+        Assert.False(PixelConverter.IsExactlyRepresentable(new Rgba64(257 * 100, 0, 65535, 0), PixelFormat.RgbaHalf));
+        Assert.True(PixelConverter.IsExactlyRepresentable(new Rgba64(0, 65535, 65535, 0), PixelFormat.RgbaHalf));
+        Assert.True(PixelConverter.IsExactlyRepresentable(new Rgba64(1, 2, 3, 4), PixelFormat.RgbaFloat));
+    }
+
+    [Theory]
+    [MemberData(nameof(FloatPairs))]
+    public void EveryFloatingPointPairMatchesReferenceModel(PixelFormat source, PixelFormat destination)
+    {
+        var bytes = FloatReferenceModel.CreateSampleRow(source, count: 600, seed: (int)source * 10 + (int)destination);
+        var pixels = FloatReferenceModel.ReadRow(source, bytes);
+        var output = new byte[pixels.Count * PixelFormats.GetBytesPerPixel(destination)];
+        Assert.Equal(pixels.Count, PixelConverter.ConvertRow(source, bytes, destination, output, Background));
+        var converted = FloatReferenceModel.ReadRow(destination, output);
+        for (var i = 0; i < pixels.Count; i++)
+        {
+            FloatReferenceModel.AssertConverted(source, pixels[i], destination, Background, converted[i], i);
+        }
+
+        // The typed, untyped and scalar paths agree
+        var method = typeof(PixelConversionTests).GetMethod(nameof(ConvertTyped), BindingFlags.NonPublic | BindingFlags.Static)!
+            .MakeGenericMethod(PixelFormats.GetPixelType(source), PixelFormats.GetPixelType(destination));
+        var (typed, scalar) = ((byte[], byte[]))method.Invoke(null, [bytes, pixels.Count])!;
+        Assert.Equal(output, typed);
+        Assert.Equal(output, scalar);
+    }
+
+    [Theory]
+    [InlineData(PixelFormat.Rgba32)]
+    [InlineData(PixelFormat.Bgra32)]
+    [InlineData(PixelFormat.Rgb24)]
+    [InlineData(PixelFormat.Rgba64)]
+    [InlineData(PixelFormat.Gray8)]
+    [InlineData(PixelFormat.Gray16)]
+    public void SamplesThatAreNotNumbersAreAlwaysRejected(PixelFormat destination)
+    {
+        RgbaFloat[] row = [new(0.5f, 0.5f, 0.5f), new(0.25f, float.NaN, 0)];
+        var output = new byte[2 * PixelFormats.GetBytesPerPixel(destination)];
+        Array.Fill(output, (byte)0x5A);
+        foreach (var options in new[] { null, new PixelConversionOptions { OutOfRangeSamples = OutOfRangeSampleHandling.Clip, ToneMapping = HdrToneMappingOptions.Default } })
+        {
+            var plan = PixelConversionPlan.Create(PixelFormat.RgbaFloat, destination, options);
+            var exception = Assert.Throws<UnsupportedImageFeatureException>(() => plan.ConvertRow(unsafe(MemoryMarshal.AsBytes(row.AsSpan())), output));
+            Assert.Contains("index 1", exception.Message);
+            Assert.Equal("Not-a-number samples", exception.Feature);
+            Assert.All(output, value => Assert.Equal((byte)0x5A, value));
+        }
+
+        // An alpha that is not a number too
+        Assert.Throws<UnsupportedImageFeatureException>(() => PixelConverter.ConvertRow<RgbaHalf, Rgba64>([new RgbaHalf(Half.Zero, Half.Zero, Half.Zero, Half.NaN)], new Rgba64[1]));
+    }
+
+    [Fact]
+    public void SamplesOutOfRangeAreRejectedUnlessClipped()
+    {
+        RgbaFloat[] row = [new(0, 1, 0.5f), new(1.5f, -0.25f, float.PositiveInfinity, 0.5f), new(0.5f, 0.5f, 0.5f, 2f)];
+        var output = new Rgba64[3];
+        output.AsSpan().Fill(new Rgba64(1, 2, 3, 4));
+        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => PixelConverter.ConvertRow<RgbaFloat, Rgba64>(row, output));
+        Assert.Contains("index 1", exception.Message);
+        Assert.Contains("OutOfRangeSamples", exception.Message);
+        Assert.Equal("Out-of-range samples", exception.Feature);
+        Assert.All(output, pixel => Assert.Equal(new Rgba64(1, 2, 3, 4), pixel));
+
+        var clip = PixelConversionPlan.Create<RgbaFloat, Rgba64>(new PixelConversionOptions { OutOfRangeSamples = OutOfRangeSampleHandling.Clip });
+        clip.ConvertRow<RgbaFloat, Rgba64>(row, output);
+        Assert.Equal([new Rgba64(0, 65535, 32768), new Rgba64(65535, 0, 65535, 32768), new Rgba64(32768, 32768, 32768, 65535)], output);
+
+        // The options are validated
+        Assert.Throws<ArgumentOutOfRangeException>(() => new PixelConversionOptions { OutOfRangeSamples = (OutOfRangeSampleHandling)2 });
+    }
+
+    [Fact]
+    public void FloatToHalfRoundsAndRejectsWhatOverflowsUnlessClipped()
+    {
+        RgbaFloat[] row = [new(1 / 3f, -2.5f, 65504f, 0.5f), new(float.NaN, float.PositiveInfinity, float.NegativeInfinity, 1), new(65519f, -65519f, 1e-8f, 0)];
+        var halves = new RgbaHalf[3];
+        PixelConverter.ConvertRow<RgbaFloat, RgbaHalf>(row, halves);
+        Assert.Equal(new RgbaHalf((Half)(1 / 3f), (Half)(-2.5f), Half.MaxValue, (Half)0.5f), halves[0]);
+        Assert.True(Half.IsNaN(halves[1].R));
+        Assert.Equal((Half.PositiveInfinity, Half.NegativeInfinity), (halves[1].G, halves[1].B));
+        Assert.Equal((Half.MaxValue, Half.MinValue), (halves[2].R, halves[2].G));
+
+        RgbaFloat[] overflow = [new(65520f, 0, 0)];
+        Assert.Throws<UnsupportedImageFeatureException>(() => PixelConverter.ConvertRow<RgbaFloat, RgbaHalf>(overflow, new RgbaHalf[1]));
+        var clipped = new RgbaHalf[1];
+        PixelConverter.ConvertRow<RgbaFloat, RgbaHalf>(overflow, clipped, floats: FloatSampleConversion.Clipping);
+        Assert.Equal(Half.MaxValue, clipped[0].R);
+
+        // Half to float is exact, the samples that are not numbers and the infinities included
+        var floats = new RgbaFloat[3];
+        PixelConverter.ConvertRow<RgbaHalf, RgbaFloat>(halves, floats);
+        Assert.Equal(new RgbaFloat((float)(Half)(1 / 3f), -2.5f, 65504f, 0.5f), floats[0]);
+        Assert.Equal(new RgbaFloat(float.NaN, float.PositiveInfinity, float.NegativeInfinity, 1), floats[1]);
+    }
+
+    [Fact]
+    public void ToneMappingCompressesTheHighlightsAndKeepsTheHue()
+    {
+        // Reinhard with the peak of the row (4 whites): x (1 + x / 16) / (1 + x) on the largest component
+        RgbaFloat[] row = [new(4, 2, 1), new(0.5f, 0.25f, 0), new(1, 1, 1, 0.5f)];
+        var options = new PixelConversionOptions { ToneMapping = new HdrToneMappingOptions { Operator = HdrToneMappingOperator.Reinhard } };
+        var plan = PixelConversionPlan.Create<RgbaFloat, Rgba64>(options);
+        Assert.True(plan.RequiresPeak);
+        plan.SetPeak(PixelConverter.GetLargestFiniteColor(PixelFormat.RgbaFloat, unsafe(MemoryMarshal.AsBytes(row.AsSpan()))));
+        var output = new Rgba64[3];
+        plan.ConvertRow<RgbaFloat, Rgba64>(row, output);
+        static ushort Expected(double component, double largest) => (ushort)Math.Floor((component * (largest * (1 + (largest / 16)) / (1 + largest) / largest) * 65535) + 0.5);
+        Assert.Equal(new Rgba64(65535, 32768, 16384), output[0]);
+        Assert.Equal(new Rgba64(Expected(0.5, 0.5), Expected(0.25, 0.5), 0), output[1]);
+        Assert.Equal(new Rgba64(Expected(1, 1), Expected(1, 1), Expected(1, 1), 32768), output[2]);
+
+        // A source peak luminance is given in candelas per square meter, and the white is 203 of them
+        var given = PixelConversionPlan.Create<RgbaFloat, Rgba64>(new PixelConversionOptions { ToneMapping = new HdrToneMappingOptions { Operator = HdrToneMappingOperator.Clip, SourcePeakLuminance = 812 } });
+        Assert.False(given.RequiresPeak);
+        given.ConvertRow<RgbaFloat, Rgba64>([new RgbaFloat(8, 2, 0.5f), new RgbaFloat(float.PositiveInfinity, 0.5f, 0)], output);
+        Assert.Equal(new Rgba64(65535, 16384, 4096), output[0]);
+        Assert.Equal(new Rgba64(65535, 0, 0), output[1]);
+
+        // Negative components are still out of range after the curve
+        Assert.Throws<UnsupportedImageFeatureException>(() => given.ConvertRow<RgbaFloat, Rgba64>([new RgbaFloat(2, -1, 0)], output));
+    }
+
+    [Fact]
+    public void FloatingPointPixelsAreOpaqueWhenAlphaIsExactlyOne()
+    {
+        Assert.Equal(1, PixelConverter.IndexOfNonOpaque<RgbaFloat>([new RgbaFloat(5, 0, 0), new RgbaFloat(0, 0, 0, 0.999999f)]));
+        Assert.Equal(0, PixelConverter.IndexOfNonOpaque<RgbaHalf>([new RgbaHalf(Half.Zero, Half.Zero, Half.Zero, Half.NaN)]));
+        Assert.True(PixelConverter.IsOpaque(PixelFormat.RgbaHalf, unsafe(MemoryMarshal.AsBytes(new RgbaHalf[] { new(Half.One, Half.One, Half.One) }.AsSpan()))));
+
+        // Alpha is removed after the samples are clipped: an alpha of 1.5 clipped to 1 is opaque
+        var clip = new PixelConversionOptions { OutOfRangeSamples = OutOfRangeSampleHandling.Clip };
+        var output = new Rgb24[1];
+        PixelConversionPlan.Create<RgbaFloat, Rgb24>(clip).ConvertRow<RgbaFloat, Rgb24>([new RgbaFloat(0.2f, 0.4f, 0.6f, 1.5f)], output);
+        Assert.Equal(new Rgb24(51, 102, 153), output[0]);
+        Assert.Throws<UnsupportedImageFeatureException>(() => PixelConverter.ConvertRow<RgbaFloat, Rgb24>([new RgbaFloat(0.2f, 0.4f, 0.6f, 0.5f)], output));
+    }
+
+    // ---------------------------------------------------------------------------------------------------------------
     // Unsupported pixel types
     // ---------------------------------------------------------------------------------------------------------------
 
@@ -837,6 +1115,242 @@ public sealed class PixelConversionTests
 
             return result;
         }
+    }
+
+    /// <summary>
+    /// The conversions from and to the floating-point formats, with exact rational arithmetic on the binary values of the
+    /// samples (<see cref="BigInteger"/>): it shares no code with the library converters.
+    /// </summary>
+    internal static class FloatReferenceModel
+    {
+        /// <summary>Asserts that <paramref name="actual"/> is a float nearest to <c>numerator / denominator</c>.</summary>
+        public static void AssertNearestFloat(int numerator, int denominator, float actual)
+        {
+            var exact = new Rational(numerator, denominator);
+            var distance = Rational.Abs(Rational.FromDouble(actual) - exact);
+            Assert.True(distance <= Rational.Abs(Rational.FromDouble(MathF.BitIncrement(actual)) - exact) && distance <= Rational.Abs(Rational.FromDouble(MathF.BitDecrement(actual)) - exact), $"{actual} is not the float nearest to {numerator}/{denominator}");
+        }
+
+        /// <summary>Asserts that <paramref name="actual"/> is a half nearest to <c>numerator / denominator</c>.</summary>
+        public static void AssertNearestHalf(int numerator, int denominator, Half actual)
+        {
+            var exact = new Rational(numerator, denominator);
+            var distance = Rational.Abs(Rational.FromDouble((double)actual) - exact);
+            Assert.True(distance <= Rational.Abs(Rational.FromDouble((double)Half.BitIncrement(actual)) - exact) && distance <= Rational.Abs(Rational.FromDouble((double)Half.BitDecrement(actual)) - exact), $"{actual} is not the half nearest to {numerator}/{denominator}");
+        }
+
+        /// <summary>Random samples of a format plus edge cases; floating-point samples stay in [0, 1] (the cases out of range have their own tests).</summary>
+        public static byte[] CreateSampleRow(PixelFormat format, int count, int seed)
+        {
+            if (!PixelFormats.IsFloatingPoint(format))
+                return ReferenceModel.CreateRow(format, ReferenceModel.CreateSamplePixels(format, count, seed));
+
+            var random = new DeterministicRandom(seed);
+            var pixels = new List<(double R, double G, double B, double A)>
+            {
+                (0, 0, 0, 0), (1, 1, 1, 1), (1, 0, 0, 1), (0.5, 0.25, 0.75, 0.5), (1 / 3.0, 2 / 3.0, 0.1, 1),
+                ((128.5 / 255) + 1e-7, (32767.5 / 65535) - 1e-9, 0.5 / 65535, 1), (1, 1, 1, 1 - 1e-7),
+            };
+            while (pixels.Count < count)
+            {
+                pixels.Add((random.Next(1 << 24) / (double)(1 << 24), random.Next(65536) / 65535.0, random.Next(1 << 20) / (double)(1 << 20), random.Next(4) == 0 ? 1 : random.Next(1 << 24) / (double)(1 << 24)));
+            }
+
+            var size = PixelFormats.GetBytesPerPixel(format);
+            var result = new byte[pixels.Count * size];
+            for (var i = 0; i < pixels.Count; i++)
+            {
+                var (r, g, b, a) = pixels[i];
+                if (format == PixelFormat.RgbaFloat)
+                {
+                    unsafe { MemoryMarshal.Write(result.AsSpan(i * size), new RgbaFloat((float)r, (float)g, (float)b, (float)a)); }
+                }
+                else
+                {
+                    unsafe { MemoryMarshal.Write(result.AsSpan(i * size), new RgbaHalf((Half)r, (Half)g, (Half)b, (Half)a)); }
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>Reads a row as exact rational components: an integer sample is itself (over 1), a floating-point sample its binary value.</summary>
+        public static List<(Rational R, Rational G, Rational B, Rational A)> ReadRow(PixelFormat format, byte[] bytes)
+        {
+            var size = PixelFormats.GetBytesPerPixel(format);
+            var result = new List<(Rational R, Rational G, Rational B, Rational A)>();
+            for (var offset = 0; offset < bytes.Length; offset += size)
+            {
+                var span = bytes.AsSpan(offset, size);
+                result.Add(format switch
+                {
+                    PixelFormat.RgbaFloat => FromFloats(unsafe(MemoryMarshal.Read<RgbaFloat>(span))),
+                    PixelFormat.RgbaHalf => FromHalves(unsafe(MemoryMarshal.Read<RgbaHalf>(span))),
+                    PixelFormat.Rgba32 => (span[0], span[1], span[2], span[3]),
+                    PixelFormat.Bgra32 => (span[2], span[1], span[0], span[3]),
+                    PixelFormat.Rgb24 => (span[0], span[1], span[2], 255),
+                    PixelFormat.Gray8 => (span[0], span[0], span[0], 255),
+                    PixelFormat.Rgba64 => (Read16(span, 0), Read16(span, 1), Read16(span, 2), Read16(span, 3)),
+                    _ => (Read16(span, 0), Read16(span, 0), Read16(span, 0), 65535),
+                });
+            }
+
+            return result;
+
+            static (Rational, Rational, Rational, Rational) FromFloats(RgbaFloat p) => (Rational.FromDouble(p.R), Rational.FromDouble(p.G), Rational.FromDouble(p.B), Rational.FromDouble(p.A));
+            static (Rational, Rational, Rational, Rational) FromHalves(RgbaHalf p) => (Rational.FromDouble((double)p.R), Rational.FromDouble((double)p.G), Rational.FromDouble((double)p.B), Rational.FromDouble((double)p.A));
+            static int Read16(Span<byte> span, int index) => unsafe(MemoryMarshal.Read<ushort>(span[(index * 2)..]));
+        }
+
+        /// <summary>
+        /// Asserts one converted pixel. Integer to floating point: the nearest value of the fraction. Floating point to
+        /// integer: flattening, luma and rounding on the exact values, where the library computes in double precision, so a
+        /// sample within 1e-9 of a rounding tie may round either way. Floating point to floating point: the nearest value.
+        /// </summary>
+        public static void AssertConverted(PixelFormat source, (Rational R, Rational G, Rational B, Rational A) pixel, PixelFormat destination, Rgba64 background, (Rational R, Rational G, Rational B, Rational A) actual, int index)
+        {
+            var sourceMax = PixelFormats.IsFloatingPoint(source) ? 1 : ReferenceModel.Max(source);
+            var (r, g, b, a) = (pixel.R / sourceMax, pixel.G / sourceMax, pixel.B / sourceMax, pixel.A / sourceMax);
+            if (PixelFormats.IsFloatingPoint(destination))
+            {
+                foreach (var (expected, value) in new[] { (r, actual.R), (g, actual.G), (b, actual.B), (a, actual.A) })
+                {
+                    AssertNearest(expected, value, destination, index);
+                }
+
+                return;
+            }
+
+            if (!PixelFormats.HasAlpha(destination) && a != Rational.One)
+            {
+                var (bgR, bgG, bgB) = (new Rational(background.R, 65535), new Rational(background.G, 65535), new Rational(background.B, 65535));
+                (r, g, b) = ((r * a) + (bgR * (Rational.One - a)), (g * a) + (bgG * (Rational.One - a)), (b * a) + (bgB * (Rational.One - a)));
+                a = Rational.One;
+            }
+
+            if (PixelFormats.IsGrayscale(destination))
+            {
+                var y = (new Rational(2126, 10000) * r) + (new Rational(7152, 10000) * g) + (new Rational(722, 10000) * b);
+                (r, g, b) = (y, y, y);
+            }
+
+            var max = ReferenceModel.Max(destination);
+            AssertRounded(r * max, actual.R, index);
+            AssertRounded(g * max, actual.G, index);
+            AssertRounded(b * max, actual.B, index);
+            if (PixelFormats.HasAlpha(destination))
+            {
+                AssertRounded(a * max, actual.A, index);
+            }
+        }
+
+        private static void AssertRounded(Rational exact, Rational actual, int index)
+        {
+            var nearest = Rational.Floor(exact + new Rational(1, 2));
+            if (actual == nearest)
+                return;
+
+            // The library works in double precision: only a value at a rounding tie may round to the other side
+            var tie = Rational.Abs(exact - Rational.Floor(exact) - new Rational(1, 2));
+            Assert.True(tie < new Rational(1, 1_000_000_000) && Rational.Abs(actual - nearest) == Rational.One, $"Pixel {index}: {actual} instead of {nearest} ({exact.ToDouble()})");
+        }
+
+        private static void AssertNearest(Rational exact, Rational actual, PixelFormat format, int index)
+        {
+            var value = actual.ToDouble();
+            var (up, down) = format == PixelFormat.RgbaFloat
+                ? ((double)MathF.BitIncrement((float)value), (double)MathF.BitDecrement((float)value))
+                : ((double)Half.BitIncrement((Half)value), (double)Half.BitDecrement((Half)value));
+            var distance = Rational.Abs(actual - exact);
+            Assert.True(distance <= Rational.Abs(Rational.FromDouble(up) - exact) && distance <= Rational.Abs(Rational.FromDouble(down) - exact), $"Pixel {index}: {value} is not the {format} nearest to {exact.ToDouble()}");
+        }
+    }
+
+    /// <summary>An exact fraction of big integers, enough for the reference of the floating-point conversions.</summary>
+    internal readonly struct Rational : IEquatable<Rational>
+    {
+        public Rational(BigInteger numerator, BigInteger denominator)
+        {
+            if (denominator.Sign < 0)
+            {
+                (numerator, denominator) = (-numerator, -denominator);
+            }
+
+            var divisor = BigInteger.GreatestCommonDivisor(numerator, denominator);
+            if (!divisor.IsZero && !divisor.IsOne)
+            {
+                (numerator, denominator) = (numerator / divisor, denominator / divisor);
+            }
+
+            Numerator = numerator;
+            Denominator = denominator;
+        }
+
+        public static Rational One => new(1, 1);
+
+        public BigInteger Numerator { get; }
+
+        public BigInteger Denominator { get; }
+
+        public static Rational FromDouble(double value)
+        {
+            Assert.True(double.IsFinite(value));
+            var bits = BitConverter.DoubleToInt64Bits(value);
+            var exponent = (int)((bits >> 52) & 0x7FF);
+            var mantissa = bits & 0xFFFFFFFFFFFFFL;
+            if (exponent == 0)
+            {
+                exponent = 1;
+            }
+            else
+            {
+                mantissa |= 1L << 52;
+            }
+
+            exponent -= 1075;
+            BigInteger numerator = bits < 0 ? -mantissa : mantissa;
+            return exponent >= 0 ? new Rational(numerator << exponent, 1) : new Rational(numerator, BigInteger.One << -exponent);
+        }
+
+        public static Rational Abs(Rational value) => new(BigInteger.Abs(value.Numerator), value.Denominator);
+
+        public static Rational Floor(Rational value)
+        {
+            var quotient = BigInteger.DivRem(value.Numerator, value.Denominator, out var remainder);
+            return new Rational(remainder.Sign < 0 ? quotient - 1 : quotient, 1);
+        }
+
+        public double ToDouble() => (double)Numerator / (double)Denominator;
+
+        public static implicit operator Rational(int value) => new(value, 1);
+
+        public static Rational operator +(Rational left, Rational right) => new((left.Numerator * right.Denominator) + (right.Numerator * left.Denominator), left.Denominator * right.Denominator);
+
+        public static Rational operator -(Rational left, Rational right) => new((left.Numerator * right.Denominator) - (right.Numerator * left.Denominator), left.Denominator * right.Denominator);
+
+        public static Rational operator *(Rational left, Rational right) => new(left.Numerator * right.Numerator, left.Denominator * right.Denominator);
+
+        public static Rational operator /(Rational left, int right) => new(left.Numerator, left.Denominator * right);
+
+        public static bool operator ==(Rational left, Rational right) => left.Equals(right);
+
+        public static bool operator !=(Rational left, Rational right) => !left.Equals(right);
+
+        public static bool operator <(Rational left, Rational right) => left.Numerator * right.Denominator < right.Numerator * left.Denominator;
+
+        public static bool operator >(Rational left, Rational right) => right < left;
+
+        public static bool operator <=(Rational left, Rational right) => !(right < left);
+
+        public static bool operator >=(Rational left, Rational right) => !(left < right);
+
+        public bool Equals(Rational other) => Numerator == other.Numerator && Denominator == other.Denominator;
+
+        public override bool Equals([NotNullWhen(true)] object? obj) => obj is Rational other && Equals(other);
+
+        public override int GetHashCode() => HashCode.Combine(Numerator, Denominator);
+
+        public override string ToString() => string.Create(CultureInfo.InvariantCulture, $"{Numerator}/{Denominator}");
     }
 
     /// <summary>A reproducible pseudo-random sequence (SplitMix64) for test data; not used for security.</summary>

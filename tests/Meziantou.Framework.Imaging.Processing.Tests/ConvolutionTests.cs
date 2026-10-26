@@ -33,6 +33,8 @@ public sealed class ConvolutionTests
             case PixelFormat.Rgba64: CheckIdentity<Rgba64>(); break;
             case PixelFormat.Gray8: CheckIdentity<Gray8>(); break;
             case PixelFormat.Gray16: CheckIdentity<Gray16>(); break;
+            case PixelFormat.RgbaFloat: CheckIdentity<RgbaFloat>(); break;
+            case PixelFormat.RgbaHalf: CheckIdentity<RgbaHalf>(); break;
             default: throw new ArgumentOutOfRangeException(nameof(format));
         }
     }
@@ -995,6 +997,129 @@ public sealed class ConvolutionTests
     [MemberData(nameof(IndexCases))]
     public void IndexesOutsideTheImageAreMappedByTheEdgeMode(int index, int length, ConvolutionEdgeMode mode, int expected)
         => Assert.Equal(expected, ConvolutionPlan.MapIndex(index, length, mode));
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // Floating-point samples: the working values are the samples, colors are not clamped, alpha is
+    // -----------------------------------------------------------------------------------------------------------------
+
+    public static TheoryData<PixelFormat> FloatingPointFormats => [PixelFormat.RgbaFloat, PixelFormat.RgbaHalf];
+
+    [Theory]
+    [MemberData(nameof(FloatingPointFormats))]
+    public void FloatingPointConvolutionKeepsHighDynamicRangeValuesAndNegativeSums(PixelFormat format)
+    {
+        if (format == PixelFormat.RgbaFloat)
+        {
+            CheckFloatingPointConvolution<RgbaFloat>();
+        }
+        else
+        {
+            CheckFloatingPointConvolution<RgbaHalf>();
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(FloatingPointFormats))]
+    public void FloatingPointLinearLightConvolutionRejectsEncodedValuesOutsideTheUnitRange(PixelFormat format)
+    {
+        if (format == PixelFormat.RgbaFloat)
+        {
+            CheckFloatingPointLinearLightConvolution<RgbaFloat>();
+        }
+        else
+        {
+            CheckFloatingPointLinearLightConvolution<RgbaHalf>();
+        }
+    }
+
+    private static void CheckFloatingPointConvolution<TPixel>()
+        where TPixel : unmanaged
+    {
+        // [-1, 3, -1] on (0, 4, 0), edges clamped: -0 + 0 - 4 = -4, -0 + 12 - 0 = 12, -4 + 0 - 0 = -4 (and the opposite for
+        // -4, and 1000 for the blue of the middle pixel); alpha is 1 everywhere, so the sums are the colors, unclamped
+        using (var image = new Image<TPixel>(3, 1, ProcessingTests.FloatPixel<TPixel>(0, 0, 0)))
+        {
+            image.Frames[0][1, 0] = ProcessingTests.FloatPixel<TPixel>(4, -4, 1000);
+            image.Convolve(Options(3, 1, [-1, 3, -1]), Ct);
+            AssertFloatRow(image.Frames[0], new(-4, 4, -1000, 1), new(12, -12, 3000, 1), new(-4, 4, -1000, 1));
+        }
+
+        // A weight of 2 doubles the alpha 0.75 to 1.5, clamped to 1, and the colors are unpremultiplied by 1.5: they stay;
+        // with PreserveAlpha the colors are doubled as stored and alpha is kept
+        using (var image = new Image<TPixel>(1, 1, ProcessingTests.FloatPixel<TPixel>(1.5f, -0.5f, 2, 0.75f)))
+        {
+            image.Convolve(Options(1, 1, [2]), Ct);
+            AssertFloatRow(image.Frames[0], new RgbaFloat(1.5f, -0.5f, 2, 1));
+            image.Frames[0][0, 0] = ProcessingTests.FloatPixel<TPixel>(1.5f, -0.5f, 2, 0.75f);
+            image.Convolve(new ConvolutionOptions(Kernel(1, 1, [2])) { PreserveAlpha = true }, Ct);
+            AssertFloatRow(image.Frames[0], new RgbaFloat(3, -1, 4, 0.75f));
+        }
+
+        // A blur of a high dynamic range impulse keeps its light above 1: the weights add up to 1 and the edges are clamped
+        // far from it, so the row still adds up to 100 (within the rounding of the samples)
+        using (var image = new Image<TPixel>(9, 1, ProcessingTests.FloatPixel<TPixel>(0, 0, 0)))
+        {
+            image.Frames[0][4, 0] = ProcessingTests.FloatPixel<TPixel>(100, 0, 0);
+            image.GaussianBlur(1, cancellationToken: Ct);
+            var row = CopyRow(image.Frames[0], 0).Select(ProcessingTests.ToRgbaFloat).ToArray();
+            Assert.True(row[4].R is > 1 and < 100, $"The center is {row[4].R}");
+            Assert.Equal(100d, row.Sum(pixel => (double)pixel.R), tolerance: 0.1);
+            Assert.All(row, pixel => Assert.Equal(1f, pixel.A));
+        }
+
+        // A sample that is not a number spreads to the pixels whose kernel reads it, and only to them
+        using (var image = new Image<TPixel>(5, 1, ProcessingTests.FloatPixel<TPixel>(1, 1, 1)))
+        {
+            image.Frames[0][0, 0] = ProcessingTests.FloatPixel<TPixel>(float.NaN, 1, 1);
+            image.Convolve(Options(3, 1, [0.25, 0.5, 0.25]), Ct);
+            var row = CopyRow(image.Frames[0], 0).Select(ProcessingTests.ToRgbaFloat).ToArray();
+            Assert.True(float.IsNaN(row[0].R));
+            Assert.True(float.IsNaN(row[1].R));
+            Assert.Equal(new RgbaFloat(1, 1, 1), row[2]);
+            Assert.Equal(1f, row[1].G);
+        }
+    }
+
+    private static void CheckFloatingPointLinearLightConvolution<TPixel>()
+        where TPixel : unmanaged
+    {
+        var options = new ConvolutionOptions(Kernel(3, 1, [0.25, 0.5, 0.25])) { WorkingSpace = ConvolutionWorkingSpace.LinearSrgb };
+
+        // Labeled as linear light: filtered as stored, high dynamic range values included
+        using (var linear = new Image<TPixel>(3, 1, ProcessingTests.FloatPixel<TPixel>(0, 0, 0)))
+        {
+            linear.Frames[0][1, 0] = ProcessingTests.FloatPixel<TPixel>(8, -4, 2);
+            linear.Convolve(options, Ct);
+            AssertFloatRow(linear.Frames[0], new(2, -1, 0.5f, 1), new(4, -2, 1, 1), new(2, -1, 0.5f, 1));
+            linear.GaussianBlur(1, workingSpace: ConvolutionWorkingSpace.LinearSrgb, cancellationToken: Ct);
+        }
+
+        // Labeled sRGB, with an encoded value outside [0, 1] in the second frame: nothing changes, in any frame, although
+        // convolution works in place
+        foreach (var value in new[] { 1.5f, -0.5f, float.NaN })
+        {
+            using var image = new Image<TPixel>(3, 1, ProcessingTests.FloatPixel<TPixel>(0.25f, 0.5f, 0.75f));
+            image.Metadata.TransferFunction = ColorTransferFunction.Srgb;
+            image.AppendFrame()[2, 0] = ProcessingTests.FloatPixel<TPixel>(value, 0.5f, 0.5f);
+            foreach (var operation in new Action[] { () => image.Convolve(options, Ct), () => image.GaussianBlur(1, workingSpace: ConvolutionWorkingSpace.LinearSrgb, cancellationToken: Ct), () => image.Frames[1].Convolve(options, Ct) })
+            {
+                var exception = Assert.Throws<UnsupportedImageFeatureException>(operation);
+                Assert.Equal("Linear-light convolution of floating-point samples outside [0, 1]", exception.Feature);
+                AssertFloatRow(image.Frames[0], new(0.25f, 0.5f, 0.75f, 1), new(0.25f, 0.5f, 0.75f, 1), new(0.25f, 0.5f, 0.75f, 1));
+            }
+
+            // A frame is checked on its own, and the encoded working space reads any value
+            image.Frames[0].Convolve(options, Ct);
+            image.Convolve(Options(3, 1, [0.25, 0.5, 0.25]), Ct);
+        }
+    }
+
+    private static void AssertFloatRow<TPixel>(ImageFrame<TPixel> frame, params RgbaFloat[] expected)
+        where TPixel : unmanaged
+    {
+        Assert.Equal(new Size(expected.Length, 1), frame.Size);
+        Assert.Equal(expected, CopyRow(frame, 0).Select(ProcessingTests.ToRgbaFloat).ToArray());
+    }
 
     // -----------------------------------------------------------------------------------------------------------------
     // Helpers

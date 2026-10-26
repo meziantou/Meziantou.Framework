@@ -23,7 +23,7 @@ public sealed class ImageModelGoldenTests
     public static TheoryData<string, string, bool> RoundTripCases()
     {
         var data = new TheoryData<string, string, bool>();
-        foreach (var format in PixelFormats.All)
+        foreach (var format in ReferenceFormats)
         {
             foreach (var fixture in GoldenCorpus.Default.Fixtures.Where(fixture => fixture.IsValid && HasReference(fixture, format)))
             {
@@ -37,12 +37,15 @@ public sealed class ImageModelGoldenTests
 
     public static TheoryData<string> AnimatedFixtures => [.. AnimatedFixtureIds];
 
+    // The integer formats: the references of the corpus are integer samples, and no decoder produces floating-point pixels
+    private static IEnumerable<PixelFormat> ReferenceFormats => PixelFormats.All.Where(format => !PixelFormats.IsFloatingPoint(format));
+
     private static IEnumerable<string> AnimatedFixtureIds => GoldenCorpus.Default.Fixtures.Where(fixture => fixture.IsValid && (fixture.Expected.FrameCount > 1 || fixture.Expected.Poster is not null)).Select(fixture => fixture.Id);
 
     [Fact]
     public void CorpusCoversEveryPixelTypeAnimationsAndPosters()
     {
-        foreach (var format in PixelFormats.All)
+        foreach (var format in ReferenceFormats)
         {
             Assert.Contains(GoldenCorpus.Default.Fixtures, fixture => fixture.IsValid && HasReference(fixture, format));
         }

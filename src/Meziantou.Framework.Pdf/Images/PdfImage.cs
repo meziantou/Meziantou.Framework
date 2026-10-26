@@ -79,6 +79,7 @@ public sealed class PdfImage
     /// <summary>Creates an image from the first frame of an image of <c>Meziantou.Framework.Imaging</c>.</summary>
     /// <param name="image">The image. Its pixels are copied.</param>
     /// <returns>The image: 8 or 16 bits per component, gray or RGB, with a soft mask when the image has transparent pixels.</returns>
+    /// <exception cref="ArgumentException">The image has floating-point pixels, which PDF samples cannot store: convert it to an integer pixel format first.</exception>
     public static PdfImage FromImage(Image image)
     {
         ArgumentNullException.ThrowIfNull(image);
@@ -86,6 +87,9 @@ public sealed class PdfImage
         var width = frame.Width;
         var height = frame.Height;
         var pixelFormat = frame.PixelFormat;
+        if (PixelFormats.IsFloatingPoint(pixelFormat))
+            throw new ArgumentException($"PDF image samples are integers of 8 or 16 bits: convert the {pixelFormat} pixels of the image first (Image.CloneAs<Rgba64> with the PixelConversionOptions that bring them into range).", nameof(image));
+
         var pixels = new byte[checked(width * height * PixelFormats.GetBytesPerPixel(pixelFormat))];
         frame.CopyPixelBytesTo(pixels);
 

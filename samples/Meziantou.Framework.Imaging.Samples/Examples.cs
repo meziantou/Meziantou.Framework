@@ -1114,6 +1114,26 @@ internal static class Examples
     }
     #endregion
 
+    /// <summary>Floating-point pixels: highlights above the white are compressed or clipped before integers store them.</summary>
+    #region Imaging_FloatingPoint
+    public static Image<Rgba64> ToneMapHighlights(Image<RgbaFloat> hdr, string pngPath)
+    {
+        // Integer pixels cannot store the highlights: compress them with a tone mapping, or clip them
+        var toneMapped = hdr.CloneAs<Rgba64>(new PixelConversionOptions
+        {
+            ToneMapping = new HdrToneMappingOptions { Operator = HdrToneMappingOperator.Reinhard },
+        });
+
+        // Encoders store integers too: the encoder says how to reduce the samples
+        hdr.Save(pngPath, new PngEncoder
+        {
+            FloatingPointConversion = new PixelConversionOptions { OutOfRangeSamples = OutOfRangeSampleHandling.Clip },
+            MetadataHandling = MetadataHandling.DiscardUnsupported,
+        });
+        return toneMapped;
+    }
+    #endregion
+
     /// <summary>Copies raw pixels in and out; the library never wraps caller memory.</summary>
     #region Imaging_RawPixels
     public static byte[] RoundTripRawPixels(ReadOnlySpan<byte> rgba, int width, int height)

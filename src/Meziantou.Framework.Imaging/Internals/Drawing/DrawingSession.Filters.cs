@@ -133,6 +133,21 @@ internal sealed partial class DrawingSession
             if (applyClip && _clipDepth != 0 && !ApplyClip(y, ref column, ref run, out _))
                 continue;
 
+            // A floating-point frame gets the colors of the matrix in place, unclipped
+            if (PixelFormats.IsFloatingPoint(frame.PixelFormat))
+            {
+                if (frame.PixelFormat == PixelFormat.RgbaFloat)
+                {
+                    FloatDrawingKernels.ApplyColorMatrix<RgbaFloat>(storage, y, column, matrix, run);
+                }
+                else
+                {
+                    FloatDrawingKernels.ApplyColorMatrix<RgbaHalf>(storage, y, column, matrix, run);
+                }
+
+                continue;
+            }
+
             // The colors of the pixels the clip keeps: the others are not read
             var paint = colors[..(run.Length * 4)];
             frame.ApplyColorMatrix(storage, y, column, matrix, paint);

@@ -7,7 +7,8 @@ namespace Meziantou.Framework.Imaging;
 /// <summary>An owned, disposable image whose frames store pixels of type <typeparamref name="TPixel"/>.</summary>
 /// <typeparam name="TPixel">
 /// The pixel type: <see cref="Rgba32"/>, <see cref="Bgra32"/>, <see cref="Rgb24"/>, <see cref="Rgba64"/>,
-/// <see cref="Gray8"/> or <see cref="Gray16"/>. Other unmanaged types are rejected with a <see cref="NotSupportedException"/>.
+/// <see cref="Gray8"/>, <see cref="Gray16"/>, <see cref="RgbaFloat"/> or <see cref="RgbaHalf"/>. Other unmanaged types are
+/// rejected with a <see cref="NotSupportedException"/>.
 /// </typeparam>
 /// <remarks>See <see cref="Image"/> for the ownership, frame and atomicity contract.</remarks>
 public sealed class Image<TPixel> : Image
@@ -22,9 +23,11 @@ public sealed class Image<TPixel> : Image
     /// <exception cref="NotSupportedException"><typeparamref name="TPixel"/> is not a built-in pixel struct.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="width"/> or <paramref name="height"/> is not positive.</exception>
     /// <exception cref="ImageResourceLimitException">The image exceeds a configured limit.</exception>
+    /// <remarks>An image of a floating-point pixel type is labeled as linear light (<see cref="ColorTransferFunction.Linear"/>).</remarks>
     public Image(int width, int height, ImageConfiguration? configuration = null)
         : this(ValidateCanvas(width, height, configuration), new Size(width, height), scope: null, layoutOptions: null)
     {
+        LabelNewImage();
     }
 
     /// <summary>Initializes a new single-frame still image filled with the specified pixel value.</summary>
@@ -35,9 +38,11 @@ public sealed class Image<TPixel> : Image
     /// <exception cref="NotSupportedException"><typeparamref name="TPixel"/> is not a built-in pixel struct.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="width"/> or <paramref name="height"/> is not positive.</exception>
     /// <exception cref="ImageResourceLimitException">The image exceeds a configured limit.</exception>
+    /// <remarks>An image of a floating-point pixel type is labeled as linear light (<see cref="ColorTransferFunction.Linear"/>).</remarks>
     public Image(int width, int height, TPixel fill, ImageConfiguration? configuration = null)
         : this(ValidateCanvas(width, height, configuration), new Size(width, height), scope: null, layoutOptions: null)
     {
+        LabelNewImage();
         // Storage is zeroed on allocation: only a non-zero value needs to be written
         if (unsafe(MemoryMarshal.AsBytes(new ReadOnlySpan<TPixel>(in fill))).ContainsAnyExcept((byte)0))
         {
@@ -71,6 +76,15 @@ public sealed class Image<TPixel> : Image
 
     /// <inheritdoc />
     public override PixelFormat PixelFormat => PixelFormats.GetPixelFormat<TPixel>();
+
+    // The floating-point formats hold linear light: a new image says so. Decoders and conversions set the label of their source
+    private void LabelNewImage()
+    {
+        if (PixelConverter.IsFloat<TPixel>())
+        {
+            Metadata.TransferFunction = ColorTransferFunction.Linear;
+        }
+    }
 
     /// <summary>Gets the typed view of the displayed frames. The frame objects are the same as those of the untyped <see cref="Image.Frames"/>.</summary>
     /// <exception cref="ObjectDisposedException">The image is disposed.</exception>
@@ -179,12 +193,23 @@ public sealed class Image<TPixel> : Image
 
     private protected override ImageFrame CreateFrame(PixelStorage storage, FrameMetadata metadata) => new ImageFrame<TPixel>(this, storage, metadata);
 
-    internal override AutoCropAnalysis<TPixel> CreateAutoCropAnalysis(bool success, Rectangle bounds, Rgba64 backgroundColor, double weightX, double weightY)
+    internal override AutoCropAnalysis<TPixel> CreateAutoCropAnalysis(bool success, Rectangle bounds, Rgba64 backgroundColor, double weightX, double weightY, RgbaFloat? floatingPointBackground = null)
     {
+        // A floating-point background is a pixel of the image (finite, a half when the pixels are halves): it converts exactly
         TPixel background = default;
-        PixelConverter.ConvertRow(new ReadOnlySpan<Rgba64>(in backgroundColor), new Span<TPixel>(ref background));
+        if (floatingPointBackground is { } exact && PixelConverter.IsFloat<TPixel>())
+        {
+            PixelConverter.ConvertRow(new ReadOnlySpan<RgbaFloat>(in exact), new Span<TPixel>(ref background));
+        }
+        else
+        {
+            PixelConverter.ConvertRow(new ReadOnlySpan<Rgba64>(in backgroundColor), new Span<TPixel>(ref background));
+        }
+
         return new AutoCropAnalysis<TPixel>(success, Size, bounds, backgroundColor, background, weightX, weightY);
     }
+
+    internal override bool IsAnalysisOfThisPixelType(AutoCropAnalysis analysis) => analysis is AutoCropAnalysis<TPixel>;
 
     private static ImageConfiguration ValidateCanvas(int width, int height, ImageConfiguration? configuration)
     {

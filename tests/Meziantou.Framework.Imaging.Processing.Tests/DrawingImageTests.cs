@@ -187,9 +187,9 @@ public sealed class DrawingImageTests
         // The colors of the source become 16-bit colors by the rules of pixel conversion (v * 257 from 8 bits, a gray
         // level for the three colors, an opaque alpha when there is none), then a paint like any brush color
         var random = new Random(4242);
-        foreach (var sourceFormat in PixelFormats.All)
+        foreach (var sourceFormat in DrawingTestSupport.IntegerPixelFormats)
         {
-            foreach (var format in PixelFormats.All)
+            foreach (var format in DrawingTestSupport.IntegerPixelFormats)
             {
                 var layout = ReferencePixelLayout.FromPixelFormat(format);
                 using var source = DrawingTestSupport.CreateRandom(sourceFormat, 3, 3, random.Next);

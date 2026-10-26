@@ -16,6 +16,12 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// The luma weights are the Rec. 709 integers of <see cref="PixelConverter.Luma(uint, uint, uint, uint)"/>.
 /// </para>
 /// <para>
+/// Floating-point samples (<see cref="RgbaFloat"/>, <see cref="RgbaHalf"/>) are analyzed as they are stored, in double
+/// precision, without clipping: the color of a border pixel is the nearest point of the 8-bit grid (<c>floor(255 v + 1/2)</c>
+/// per sample, beyond [0, 1] too), the thresholds are fractions of 1 (<c>threshold / 255</c>), and the weights are
+/// sums of doubles. The image checks that every sample is finite first (<see cref="FloatingPointSampleRange"/>).
+/// </para>
+/// <para>
 /// The kernels are scalar and sequential; cancellation is observed between row bands. The only allocations are the border
 /// color table (at most 255 entries) and the 11 luma buckets, whatever the image size.
 /// </para>
@@ -53,6 +59,15 @@ internal sealed class AutoCropAnalyzer
     private long _weighedFrames;
     private uint _max;
 
+    // The floating-point formats: the border colors are keyed by their point of the 8-bit grid, which can be outside
+    // [0, 255], and the background is kept as it is stored (allocated by the first floating-point frame only)
+    private bool _isFloatingPoint;
+    private Dictionary<FloatKey, int>? _floatIndexes;
+    private FloatKey[]? _floatKeys;
+    private RgbaFloat[]? _floatExemplars;
+    private double _floatMomentX;
+    private double _floatMomentY;
+
     /// <summary>Starts the first border pass, over the whole canvas.</summary>
     /// <param name="canvas">The canvas size.</param>
     /// <param name="colorThreshold">The color threshold, from 1 to 255.</param>
@@ -75,8 +90,14 @@ internal sealed class AutoCropAnalyzer
         Weights,
     }
 
-    /// <summary>Gets the background selected by the last completed border pass.</summary>
+    /// <summary>
+    /// Gets the background selected by the last completed border pass. The background of floating-point frames is
+    /// <see cref="FloatingPointBackgroundColor"/> clipped to [0, 1] and rounded to 16 bits.
+    /// </summary>
     public Rgba64 BackgroundColor { get; private set; }
+
+    /// <summary>Gets the background selected by the last completed border pass of floating-point frames, as stored (transparent black when fully transparent).</summary>
+    public RgbaFloat? FloatingPointBackgroundColor { get; private set; }
 
     /// <summary>
     /// Completes a border pass: the background is the most frequent tracked color (the first encountered among equals).
@@ -95,11 +116,24 @@ internal sealed class AutoCropAnalyzer
             }
         }
 
-        BackgroundColor = _exemplars[best];
+        if (_isFloatingPoint)
+        {
+            var background = _floatExemplars![best];
+            FloatingPointBackgroundColor = background;
+            BackgroundColor = new Rgba64(ToUInt16(background.R), ToUInt16(background.G), ToUInt16(background.B), ToUInt16(background.A));
+        }
+        else
+        {
+            BackgroundColor = _exemplars[best];
+        }
+
         if (_colorCount < _threshold)
             return true;
 
-        return bucketThreshold is { } threshold && (double)_buckets[GetBucket(_keys[best])] / _borderPixels >= threshold;
+        var bucket = _isFloatingPoint ? GetBucket(_floatKeys![best]) : GetBucket(_keys[best]);
+        return bucketThreshold is { } threshold && (double)_buckets[bucket] / _borderPixels >= threshold;
+
+        static ushort ToUInt16(float value) => (ushort)PixelConverter.ToIntegerSample(value <= 0 ? 0 : value >= 1 ? 1 : value, ushort.MaxValue);
     }
 
     /// <summary>
@@ -114,6 +148,7 @@ internal sealed class AutoCropAnalyzer
         var insetY = _canvas.Height / RetryInsetDivisor;
         _region = new Rectangle(insetX, insetY, _canvas.Width - (2 * insetX), _canvas.Height - (2 * insetY));
         _indexes.Clear();
+        _floatIndexes?.Clear();
         _buckets.AsSpan().Clear();
         _colorCount = 0;
         _borderPixels = 0;
@@ -156,11 +191,18 @@ internal sealed class AutoCropAnalyzer
     /// <summary>
     /// Gets the weights: the exact integer moments <c>sum(m * (2x + 1 - W))</c> and <c>sum(m * (2y + 1 - H))</c>, where
     /// <c>m = (2126 |dR| + 7152 |dG| + 722 |dB|) * alpha</c>, divided once by <c>W * 10000 * max * max * pixels</c>
-    /// (respectively <c>H</c>).
+    /// (respectively <c>H</c>). The moments of floating-point frames are sums of doubles, of masses whose samples are
+    /// fractions (<c>max</c> is 1).
     /// </summary>
     public (double X, double Y) GetWeights()
     {
         Debug.Assert(_phase == Phase.Weights && _weighedFrames > 0);
+        if (_isFloatingPoint)
+        {
+            var floatScale = 10000d * _canvas.Area * _weighedFrames;
+            return (_floatMomentX / (floatScale * _canvas.Width), _floatMomentY / (floatScale * _canvas.Height));
+        }
+
         var scale = 10000d * _max * _max * _canvas.Area * _weighedFrames;
         return ((double)_momentX / (scale * _canvas.Width), (double)_momentY / (scale * _canvas.Height));
     }
@@ -170,18 +212,48 @@ internal sealed class AutoCropAnalyzer
         where TPixel : unmanaged
     {
         Debug.Assert(lease.Width == _canvas.Width && lease.Height == _canvas.Height);
+        _isFloatingPoint = PixelConverter.IsFloat<TPixel>();
         switch (_phase)
         {
             case Phase.Border:
                 AccumulateBorder<TPixel>(lease, cancellationToken);
                 break;
+            case Phase.Bounds when _isFloatingPoint:
+                AccumulateBounds<TPixel, FloatBackgroundTest>(lease, FloatBackgroundTest.Create(FloatingPointBackgroundColor!.Value, _threshold), cancellationToken);
+                break;
             case Phase.Bounds:
-                AccumulateBounds<TPixel>(lease, cancellationToken);
+                AccumulateBounds<TPixel, BackgroundTest>(lease, BackgroundTest.Create<TPixel>(BackgroundColor, _threshold), cancellationToken);
+                break;
+            case Phase.Weights when _isFloatingPoint:
+                AccumulateFloatingPointWeights<TPixel>(lease, cancellationToken);
                 break;
             default:
                 AccumulateWeights<TPixel>(lease, cancellationToken);
                 break;
         }
+    }
+
+    /// <summary>
+    /// Gets the luma bucket of a floating-point border color, as <see cref="GetBucket(uint)"/> does for 8-bit colors: the
+    /// luma of the point of the 8-bit grid flattened onto white, in 11 equal buckets of [0, 1] (a brighter luma is in the
+    /// last bucket, a darker one in the first).
+    /// </summary>
+    private static int GetBucket(FloatKey key)
+    {
+        var r = key.R / byte.MaxValue;
+        var g = key.G / byte.MaxValue;
+        var b = key.B / byte.MaxValue;
+        var a = key.A / byte.MaxValue;
+        if (a != 1)
+        {
+            r = (r * a) + (1 - a);
+            g = (g * a) + (1 - a);
+            b = (b * a) + (1 - a);
+        }
+
+        // A luma that is not a number (infinite samples of both signs) is in the first bucket
+        var bucket = ((0.2126 * r) + (0.7152 * g) + (0.0722 * b)) * BucketCount;
+        return !(bucket >= 1) ? 0 : bucket >= BucketCount - 1 ? BucketCount - 1 : (int)bucket;
     }
 
     /// <summary>Gets the luma bucket of a border color: 11 equal buckets of the 8-bit luma of the color flattened onto white.</summary>
@@ -237,6 +309,12 @@ internal sealed class AutoCropAnalyzer
     private void Tally<TPixel>(ref TPixel pixel)
         where TPixel : unmanaged
     {
+        if (PixelConverter.IsFloat<TPixel>())
+        {
+            TallyFloatingPoint(ref pixel);
+            return;
+        }
+
         ReadPixel(ref pixel, out var r, out var g, out var b, out var a);
         var key = Is16Bit<TPixel>()
             ? PixelConverter.To8Bit(r) | ((uint)PixelConverter.To8Bit(g) << 8) | ((uint)PixelConverter.To8Bit(b) << 16) | ((uint)PixelConverter.To8Bit(a) << 24)
@@ -261,13 +339,38 @@ internal sealed class AutoCropAnalyzer
         }
     }
 
-    // Rows inside the vertical extent found so far can only move the left and right bounds: only the columns outside the
-    // horizontal extent are read. The result is the same as testing every pixel.
-    private void AccumulateBounds<TPixel>(scoped in PixelLease lease, CancellationToken cancellationToken)
+    private void TallyFloatingPoint<TPixel>(ref TPixel pixel)
         where TPixel : unmanaged
     {
+        ReadFloatingPointPixel(ref pixel, out var r, out var g, out var b, out var a);
+        var key = new FloatKey(ToGrid(r), ToGrid(g), ToGrid(b), ToGrid(a));
+        _borderPixels++;
+        _buckets[GetBucket(key)]++;
+        var indexes = _floatIndexes ??= [];
+        if (indexes.TryGetValue(key, out var index))
+        {
+            _counts[index]++;
+        }
+        else if (_colorCount < _threshold)
+        {
+            index = _colorCount++;
+            indexes.Add(key, index);
+            (_floatKeys ??= new FloatKey[_keys.Length])[index] = key;
+            _counts[index] = 1;
+            (_floatExemplars ??= new RgbaFloat[_keys.Length])[index] = new RgbaFloat((float)r, (float)g, (float)b, (float)a);
+        }
+
+        // The nearest point of the 8-bit grid, not clipped; adding 0 turns -0 into +0
+        static double ToGrid(double value) => Math.Floor((value * byte.MaxValue) + 0.5) + 0d;
+    }
+
+    // Rows inside the vertical extent found so far can only move the left and right bounds: only the columns outside the
+    // horizontal extent are read. The result is the same as testing every pixel.
+    private void AccumulateBounds<TPixel, TTest>(scoped in PixelLease lease, TTest background, CancellationToken cancellationToken)
+        where TPixel : unmanaged
+        where TTest : struct, IBackgroundTest
+    {
         var region = _region;
-        var background = BackgroundTest.Create<TPixel>(BackgroundColor, _threshold);
         for (var y = region.Top; y < region.Bottom; y++)
         {
             if ((y - region.Top) % ProcessingKernels.RowsPerCancellationCheck == 0)
@@ -359,8 +462,110 @@ internal sealed class AutoCropAnalyzer
         }
     }
 
+    // The weights of floating-point frames: the moments of AccumulateWeights, as sums of doubles
+    private void AccumulateFloatingPointWeights<TPixel>(scoped in PixelLease lease, CancellationToken cancellationToken)
+        where TPixel : unmanaged
+    {
+        var background = FloatBackgroundTest.Create(FloatingPointBackgroundColor!.Value, _threshold);
+        var width = (double)_canvas.Width;
+        var height = (double)_canvas.Height;
+        _weighedFrames++;
+        for (var y = 0; y < lease.Height; y++)
+        {
+            if (y % ProcessingKernels.RowsPerCancellationCheck == 0)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+            }
+
+            var row = lease.GetRow<TPixel>(y);
+            var rowMass = 0d;
+            var rowWeightedX = 0d;
+            for (var x = 0; x < row.Length; x++)
+            {
+                var mass = background.GetMass(ref row[x]);
+                rowMass += mass;
+                rowWeightedX += mass * x;
+            }
+
+            _floatMomentX += (2 * rowWeightedX) + ((1 - width) * rowMass);
+            _floatMomentY += rowMass * ((2d * y) + 1 - height);
+        }
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool Is16Bit<TPixel>() => typeof(TPixel) == typeof(Rgba64) || typeof(TPixel) == typeof(Gray16);
+
+    /// <summary>Reads a floating-point pixel as it is stored; a fully transparent pixel is transparent black.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void ReadFloatingPointPixel<TPixel>(ref TPixel pixel, out double r, out double g, out double b, out double a)
+        where TPixel : unmanaged
+    {
+        PixelConverter.ReadFloat(ref pixel, out r, out g, out b, out a);
+        if (a == 0)
+        {
+            r = 0;
+            g = 0;
+            b = 0;
+        }
+    }
+
+    /// <summary>The test of background pixels of a pass.</summary>
+    private interface IBackgroundTest
+    {
+        /// <summary>Gets a value indicating whether a pixel is background: color difference at most the threshold, alpha difference below it.</summary>
+        bool Matches<TPixel>(ref TPixel pixel)
+            where TPixel : unmanaged;
+    }
+
+    /// <summary>The color of a floating-point border pixel on the 8-bit grid (the key of the table of border colors).</summary>
+    [StructLayout(LayoutKind.Auto)]
+    private readonly record struct FloatKey(double R, double G, double B, double A);
+
+    /// <summary>The background and the tolerances of floating-point pixels, as fractions of 1 (<c>threshold / 255</c>).</summary>
+    [StructLayout(LayoutKind.Auto)]
+    private readonly struct FloatBackgroundTest : IBackgroundTest
+    {
+        private readonly double _r;
+        private readonly double _g;
+        private readonly double _b;
+        private readonly double _a;
+        private readonly double _colorLimit;
+        private readonly double _alphaLimit;
+
+        private FloatBackgroundTest(RgbaFloat background, int threshold)
+        {
+            _r = background.R;
+            _g = background.G;
+            _b = background.B;
+            _a = background.A;
+            _colorLimit = threshold * 10000d / byte.MaxValue;
+            _alphaLimit = threshold / (double)byte.MaxValue;
+        }
+
+        public static FloatBackgroundTest Create(RgbaFloat background, int threshold) => new(background, threshold);
+
+        /// <inheritdoc />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool Matches<TPixel>(ref TPixel pixel)
+            where TPixel : unmanaged
+        {
+            ReadFloatingPointPixel(ref pixel, out var r, out var g, out var b, out var a);
+            return GetColorDifference(r, g, b) <= _colorLimit && Math.Abs(a - _a) < _alphaLimit;
+        }
+
+        /// <summary>Gets the color difference of a pixel from the background multiplied by its alpha (at most 10000 for samples in [0, 1]).</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public double GetMass<TPixel>(ref TPixel pixel)
+            where TPixel : unmanaged
+        {
+            ReadFloatingPointPixel(ref pixel, out var r, out var g, out var b, out var a);
+            return GetColorDifference(r, g, b) * a;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private double GetColorDifference(double r, double g, double b)
+            => (2126 * Math.Abs(r - _r)) + (7152 * Math.Abs(g - _g)) + (722 * Math.Abs(b - _b));
+    }
 
     /// <summary>Reads a pixel at the storage precision; a fully transparent pixel is transparent black.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -378,7 +583,7 @@ internal sealed class AutoCropAnalyzer
 
     /// <summary>The background and the tolerances, at the storage precision of one pixel type.</summary>
     [StructLayout(LayoutKind.Auto)]
-    private readonly struct BackgroundTest
+    private readonly struct BackgroundTest : IBackgroundTest
     {
         private readonly uint _r;
         private readonly uint _g;
@@ -408,7 +613,7 @@ internal sealed class AutoCropAnalyzer
             return new(PixelConverter.To8Bit(background.R), PixelConverter.To8Bit(background.G), PixelConverter.To8Bit(background.B), PixelConverter.To8Bit(background.A), (uint)threshold * 10000, (uint)threshold);
         }
 
-        /// <summary>Gets a value indicating whether a pixel is background: color difference at most the threshold, alpha difference below it.</summary>
+        /// <inheritdoc />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Matches<TPixel>(ref TPixel pixel)
             where TPixel : unmanaged

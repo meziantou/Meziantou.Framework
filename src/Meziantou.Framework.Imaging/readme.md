@@ -29,7 +29,8 @@ color conversion, and bounded-memory streaming.
   read and written one entry at a time
 - Animation-aware model: every frame is a full-canvas displayed image with exact rational timing and, for cursors, a
   hotspot that follows its pixel through geometry operations
-- Six working pixel formats (`Rgba32`, `Bgra32`, `Rgb24`, `Rgba64`, `Gray8`, `Gray16`) with 16-bit precision preserved
+- Six integer working pixel formats (`Rgba32`, `Bgra32`, `Rgb24`, `Rgba64`, `Gray8`, `Gray16`) with 16-bit precision
+  preserved, and two floating-point ones (`RgbaFloat`, `RgbaHalf`) for scene-referred and high dynamic range data
 - Crop, auto-crop (background detection), resize (alpha-aware, Contain/Cover/Stretch), rotate, auto-orient, flip,
   grayscale, Gaussian blur and convolution matrices (sharpen, edge detection) applied to all frames
 - Antialiased vector drawing on a frame or on every frame: filled and stroked shapes and paths with Bézier curves,
@@ -132,8 +133,9 @@ frame.Save("first.jpg", new JpegEncoder { Quality = 85, BackgroundColor = new Rg
   separate `ImageCollection`, whose entries may differ in size and pixel format and never carry timing or looping.
 - **Explicit ownership.** `Image`/`Image<TPixel>` are disposable owners; frames are borrowed views; clones, extracted
   frames and reader results are independent owned images. Eager loads never retain their input.
-- **Precision and alpha.** Six working pixel formats (`Rgba32`, `Bgra32`, `Rgb24`, `Rgba64`, `Gray8`, `Gray16`), 16-bit
-  precision preserved, straight alpha, alpha-aware resampling, and no silent alpha/precision/metadata/animation loss.
+- **Precision and alpha.** Eight working pixel formats (`Rgba32`, `Bgra32`, `Rgb24`, `Rgba64`, `Gray8`, `Gray16`, and the
+  floating-point `RgbaFloat` and `RgbaHalf`), 16-bit precision preserved, straight alpha, alpha-aware resampling, and no
+  silent alpha/precision/range/metadata/animation loss.
 - **Exact timing.** Rational `FrameDuration` preserves GIF, APNG, WebP and ANI delays exactly; `TotalPlays` counts total plays.
 - **Atomic geometry.** Crop, auto-crop, resize, rotate and auto-orient apply to every frame (and the poster)
   transactionally.
@@ -469,13 +471,55 @@ split into row bands, with results identical to the sequential ones.
 
 ### Pixel formats, precision and alpha
 
-**Working formats**. Six pixel types: `Rgba32`, `Bgra32`, `Rgb24`, `Rgba64`, `Gray8`,
-`Gray16` (sequential `Pack = 1` layouts, straight alpha, 16-bit components in native endianness; `PixelFormats` describes
-them). Untyped `Load` picks the format that preserves the source: for example 16-bit PNGs load as `Gray16`/`Rgba64`,
+**Working formats**. Eight pixel types: `Rgba32`, `Bgra32`, `Rgb24`, `Rgba64`, `Gray8`,
+`Gray16`, `RgbaFloat` and `RgbaHalf` (sequential `Pack = 1` layouts, straight alpha, 16-bit components in native
+endianness; `PixelFormats` describes them, and `PixelFormats.IsFloatingPoint` tells the floating-point ones). Untyped `Load` picks the format that preserves the source: for example 16-bit PNGs load as `Gray16`/`Rgba64`,
 palettes and transparency as `Rgba32`, JPEG as `Gray8`/`Rgb24` (`Gray16`/`Rgba64` for samples that do not have 8 bits), GIF as `Rgba32` (`ImageInfo.PixelFormat` tells it before
 decoding). Typed `Load<TPixel>` and `CloneAs<TPixel>` convert explicitly between any two formats: 8 to 16 bits is exact
 (`v * 257`), 16 to 8 bits rounds to nearest, color to gray uses Rec. 709 luma on the encoded values. A 16-bit path never
 goes through 8 bits.
+
+**Floating-point formats**. `RgbaFloat` (four `float`, 16 bytes per pixel) and `RgbaHalf` (four `Half`, 8 bytes) hold
+linear light where 1 is the reference white of a standard dynamic range: a color component may be above 1 (a highlight)
+or negative (outside the gamut of the primaries), and alpha is a coverage from 0 to 1. A new image of these types is
+labeled `ColorTransferFunction.Linear`; a conversion never converts colors, so `CloneAs` and typed loads keep the label of
+their source (an sRGB `Rgba64` image becomes sRGB-encoded floats). No decoder produces them: untyped `Load` never picks
+them, and `Load<RgbaFloat>` converts the decoded samples.
+
+| Conversion | Rule |
+| --- | --- |
+| Integer to `RgbaFloat` | `v / max`, one correctly rounded `float` division: exact, and back to the same integer for every sample |
+| Integer to `RgbaHalf` | The nearest `Half` of `v / max`: exact back for 8-bit samples, not for 16-bit ones (11 significant bits) |
+| `RgbaHalf` to `RgbaFloat` | Exact, infinities and samples that are not numbers included |
+| `RgbaFloat` to `RgbaHalf` | Nearest (ties to even); infinities and samples that are not numbers are kept; a finite sample that rounds beyond ±65,504 (the largest half) is rejected unless `OutOfRangeSamples` is `Clip`, which gives it ±65,504 |
+| Floating point to integer | A sample that is not a number is always rejected. The colors are tone mapped when `PixelConversionOptions.ToneMapping` is set; a sample (alpha included) still outside [0, 1] is rejected unless `OutOfRangeSamples` is `Clip`, which clips each one (infinities included). Then alpha is removed as for integer pixels (an alpha of exactly 1 is opaque), gray gets the Rec. 709 luma `0.2126 R + 0.7152 G + 0.0722 B`, and each sample is `floor(v max + 1/2)`, in double precision |
+
+Every check runs on every frame and the poster before anything is allocated. Tone mapping treats the color components as
+linear light in units of the white: the curve of `HdrToneMappingOptions.Operator` is applied to the largest of the three
+and they are scaled together, which keeps the hue; `TargetWhiteLuminance` is the luminance of a component of 1, and the
+peak of the source is `SourcePeakLuminance` over that white, or else the largest finite color component of the image
+(at least 1). The label of the image does not change.
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_FloatingPoint;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static Image<Rgba64> ToneMapHighlights(Image<RgbaFloat> hdr, string pngPath)
+{
+    // Integer pixels cannot store the highlights: compress them with a tone mapping, or clip them
+    var toneMapped = hdr.CloneAs<Rgba64>(new PixelConversionOptions
+    {
+        ToneMapping = new HdrToneMappingOptions { Operator = HdrToneMappingOperator.Reinhard },
+    });
+
+    // Encoders store integers too: the encoder says how to reduce the samples
+    hdr.Save(pngPath, new PngEncoder
+    {
+        FloatingPointConversion = new PixelConversionOptions { OutOfRangeSamples = OutOfRangeSampleHandling.Clip },
+        MetadataHandling = MetadataHandling.DiscardUnsupported,
+    });
+    return toneMapped;
+}
+```
+<!-- endref -->
 
 **Colors**. `Colors` has the named colors of CSS as `Rgba32` values (`Colors.CornflowerBlue`, `Colors.Transparent`), and
 `Rgba32.ParseHex` / `TryParseHex` read the hexadecimal notations of CSS (`#RGB`, `#RGBA`, `#RRGGBB`, `#RRGGBBAA`, with or
@@ -495,6 +539,8 @@ without the `#`), which `ToHexString` writes back. An `Rgba32` converts implicit
 | 16-bit precision, when encoding AVIF or HEIC (at most 12 bits) | `BitDepth` (10 or 12) of `AvifEncoder` or `HeicEncoder`, or `AllowBitDepthReduction` (12 bits) |
 | 8-bit precision, when encoding 16-bit BMP (`Bgr565`, `Bgr555`: 5 or 6 bits per channel) | `BmpEncoder.AllowBitDepthReduction` |
 | 16-bit precision, when loading or converting | Request the narrower type explicitly (`Load<Rgba32>`, `CloneAs<Gray8>`) |
+| Floating-point samples outside the range of the destination (outside [0, 1] for integers, beyond ±65,504 for `RgbaHalf`) | `PixelConversionOptions.OutOfRangeSamples` (`Clip`), or `PixelConversionOptions.ToneMapping` for the highlights; samples that are not numbers are always rejected |
+| Floating-point samples, when encoding (no output format stores them) | `ImageEncoder.FloatingPointConversion`: the options of the reduction to `Rgba64`, after which the rules of the encoder apply (`AllowBitDepthReduction` for an 8-bit format) |
 | Colors beyond 256 per frame, when encoding GIF | Lossy by design: deterministic quantization (`MaxColors`), optional `Dithering` |
 | Colors beyond the palette, when encoding indexed BMP (2, 16 or 256 entries, or `MaxColors`) | `BmpEncoder.AllowColorReduction` (the same deterministic quantization, optional `Dithering`); an image whose colors fit is always stored exactly |
 | Colors beyond 256, or 16-bit samples that 8 bits cannot represent, when encoding indexed PNG (`PngPixelLayout.Indexed`) | None: the image is rejected, never quantized, dithered or rounded |
@@ -544,6 +590,21 @@ color for each pixel from its own one: brightness, contrast, saturation, a tint)
 matrix). `Flip`, `Grayscale`, `ApplyColorMatrix` and `Convolve` also exist for one frame. Geometry changes preserve 16-bit precision and alpha, and reconcile the EXIF dimensions,
 orientation and thumbnail. `ConvertColorProfile` converts the colors to another ICC profile
 (see [Color management](#color-management)).
+
+**Floating-point pixels**. `RgbaFloat` and `RgbaHalf` images accept every processing operation. Crops, rotations, flips,
+auto-orient and nearest-neighbor resizes move the stored bits unchanged, NaN payloads included. Resize, convolution and
+blur use the double-precision filters of the integer formats, with the sample values as working values premultiplied by
+alpha: colors are rounded to the nearest float or half but never clamped, so highlights above 1 and negative lobes
+survive (a half beyond 65,504 becomes infinite); alpha is clamped to [0, 1], and samples that are not numbers spread to
+the pixels whose filters read them. In the `LinearSrgb` working spaces, an image labeled as linear light (the label of a
+new floating-point image) is filtered as stored; with another label, every sample must be a number in [0, 1], the
+domain of its transfer function, or the operation fails before anything changes, and the filtered light is clipped to
+[0, 1] before it is encoded again, as for the integer formats (the ringing of a sharp filter beyond the range is lost).
+`Grayscale` stores the Rec. 709 luma of
+the stored values, unclamped. `ConvertColorProfile` converts the samples without reducing them to 16 bits, and rejects
+colors outside [0, 1] or not numbers, since a profile describes only that range. The auto-crop analysis compares the
+values as stored and rejects non-finite samples; the typed `BackgroundColor` of its result is exact, the `Rgba64` one is
+clipped. Image comparisons round samples in [0, 1] to 8 bits and reject any other value instead of clipping it.
 
 **Cursor hotspots**. A hotspot (`Frames[i].Metadata.Hotspot`) follows the pixel it designates:
 `Crop` and `AutoCrop` translate it, `Rotate`, `Flip` and `AutoOrient` permute it exactly, and `Resize` moves it to
@@ -1791,6 +1852,15 @@ public static void MarkAnimation(string inputPath, string outputPath)
   alpha. With box sampling, each pixel of the image has the weight of the length of its part inside `[u - sx / 2, u + sx / 2]`
   times the one inside `[v - sy / 2, v + sy / 2]`, in the same order. The opacity of an image multiplies the coverage,
   as a clip does.
+- **Floating-point canvases.** On an `RgbaFloat` or `RgbaHalf` frame, paints keep their 16-bit colors and are combined
+  with the stored values in double precision, with the formulas of the operators and of the blend modes on fractions of
+  one, without rounding to a grid and without clipping the colors; each result is stored to the nearest value of the
+  format, and a full coverage with an opaque paint writes `v / 65535`. `Plus` adds light: its colors are not clipped
+  (alpha still is). A color matrix (`Filter`, `FilterBackdrop`, `ApplyColorMatrix`) is applied to the values in place,
+  colors unclipped and alpha kept in [0, 1]. Linear light uses the values of an image labeled linear as they are; other
+  labels decode only samples in [0, 1], and reject the others (and the tone curves of an ICC profile). What reads the
+  pixels of a frame back as 16-bit colors (drawing an image or a layer, patterns, filter graphs, shadows, blurs, groups,
+  backdrops) rejects samples outside [0, 1] and works on their 16-bit colors.
 - **Layers.** A layer is an image with colors and alpha (`Rgba32` on an `Rgba32`, `Bgra32` or `Rgb24` canvas,
   `Rgba64` otherwise) on which the drawings follow the rules of any frame. When it ends, it is drawn as an image is on
   whole pixels: its pixels are converted to the pixel format of the canvas like brush colors, and its opacity
@@ -3080,6 +3150,14 @@ lossless by default) and `.j2k`/`.j2c`/`.jpc` (a JPEG 2000 codestream, lossless 
 `ArgumentException`, the `.jpx`, `.jpf`, `.jph` and `.jhc` extensions included (these files are read, not written). An eager save validates the whole image against the output (animation, poster,
 durations, alpha, precision, metadata) before writing anything.
 
+No output format of this version stores floating-point samples: an `RgbaFloat` or `RgbaHalf` image, writer or collection
+entry is rejected before anything is written, unless `ImageEncoder.FloatingPointConversion` gives the options of its
+reduction to `Rgba64` (`CloneAs<Rgba64>` with those options). The reduced frames are then encoded like any `Rgba64`
+frame, and the label `ColorTransferFunction.Linear` of a new floating-point image follows `MetadataHandling` (only QOI
+and JPEG XL store it). The peak of a tone mapping is the one of every frame of an eager save, and of each frame for a
+sequential writer, unless the options give it. The reduced copies are charged to the writer: an eager save holds those of
+all of its frames.
+
 Path outputs, eager or through writers, are written to a temporary file in the destination directory and published by a
 rename only after a successful `Complete`: on any failure, cancellation or uncompleted writer, an existing destination is
 left untouched and only the library's own temporary file is deleted. No crash durability (`fsync`) is claimed. Stream
@@ -3941,8 +4019,9 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | PNG/APNG | Palette output is opt-in and exact only (`PngPixelLayout.Indexed`: no color reduction or dithering, and a sequential writer cannot declare colors beyond its first image), no grayscale output below 8 bits, no RGB 16-bit or gray+alpha output layouts (16-bit color is written as RGBA 16), no APNG delta-rectangle optimization, unknown critical chunks rejected, unknown ancillary chunks not round-tripped |
 | Metadata | Profiles are preserved and labeled, never applied implicitly (colors are converted only by `ConvertColorProfile` and `IccColorTransform`); EXIF orientation is reported, applied only by `AutoOrient`; extended XMP in JPEG is not supported; per-format storage limits are listed in [Metadata, color profiles and orientation](#metadata-color-profiles-and-orientation); unsupported items follow `MetadataHandling` (`Strict` throws by default) |
 | Color management | ICC version 2 and 4 grayscale, RGB and CMYK profiles (matrix-based and table-based): no version 5 (iccMAX), device-link, abstract or named-color profile, no multi-process-element (`D2Bx`/`B2Dx`) tag, no other data color space; `ConvertColorProfile` keeps the pixel format (an RGB image cannot become grayscale or CMYK this way); no CMYK pixel format: a CMYK JPEG file or TIFF page is converted to RGB when it is loaded (`CmykConversionOptions`, RGB destination only) and CMYK cannot be written; no gamut mapping beyond per-channel clipping |
-| Drawing | Sequential; under a projective transformation of the canvas (or, for filters, one that turns or skews), shadows, blurs, filters and the glyphs a font draws with its own colors are drawn on an image of the plane at one resolution (the scale of the transformation at its origin, at most 4,194,304 pixels), curves are cut no finer than for a factor of 65536 near the horizon, and a pen that does not scale strokes the parts of a closed contour that crosses the horizon as open contours; a filter graph has no input `BackgroundImage`, `BackgroundAlpha`, `FillPaint` or `StrokePaint`, and its region defaults to the canvas (not to the box of the drawing); no mesh gradient; a marker has no hole, and a stroke on one side of its path costs a clip; linear light is the light of the transfer function the image declares (sRGB when it declares none) or of the tone curves of its ICC profile, and a profile without tone curves has none; a color matrix is applied to the encoded sample values, also in linear light; the colors of a profile (`PaintProfile`) are those of the paints only (an image that is drawn is not converted), an RGB profile only, and never on PQ or HLG samples; without antialiasing, the glyphs a font draws with its own colors stay antialiased; a clip multiplies coverages; combined and simplified paths are made of segments; coordinates are limited to ±16,777,216 (what a transformation sends beyond is cut by that range) |
-| Processing | No floating-point or scene-referred pixel format (HDR samples are 16-bit integers, converted to a standard dynamic range by an explicit tone mapping), no custom processors; `LinearSrgb` resizing and convolution accept untagged images, recognized sRGB/sGray profiles and CICP transfer characteristics that have a function; convolution matrices have odd dimensions, no bias or divisor, no ready-made matrices and no separable fast path |
+| Drawing | Sequential; under a projective transformation of the canvas (or, for filters, one that turns or skews), shadows, blurs, filters and the glyphs a font draws with its own colors are drawn on an image of the plane at one resolution (the scale of the transformation at its origin, at most 4,194,304 pixels), curves are cut no finer than for a factor of 65536 near the horizon, and a pen that does not scale strokes the parts of a closed contour that crosses the horizon as open contours; a filter graph has no input `BackgroundImage`, `BackgroundAlpha`, `FillPaint` or `StrokePaint`, and its region defaults to the canvas (not to the box of the drawing); no mesh gradient; a marker has no hole, and a stroke on one side of its path costs a clip; linear light is the light of the transfer function the image declares (sRGB when it declares none) or of the tone curves of its ICC profile, and a profile without tone curves has none; a color matrix is applied to the encoded sample values, also in linear light; the colors of a profile (`PaintProfile`) are those of the paints only (an image that is drawn is not converted), an RGB profile only, and never on PQ or HLG samples; without antialiasing, the glyphs a font draws with its own colors stay antialiased; a clip multiplies coverages; combined and simplified paths are made of segments; coordinates are limited to ±16,777,216 (what a transformation sends beyond is cut by that range); on a floating-point canvas, paints have 16-bit colors in [0, 1], and an image, a layer, a pattern, a filter, a shadow, a blur, a group or a backdrop is combined through 16-bit colors, so its samples must be in [0, 1] (others are rejected, never clipped) and are quantized to 1/65535 |
+| Floating-point pixels | `RgbaFloat` and `RgbaHalf` only (no floating-point grayscale format); no decoder produces them and no encoder stores them (`ImageEncoder.FloatingPointConversion` reduces them to `Rgba64`); HDR samples of the integer formats are 16-bit integers, converted to a standard dynamic range by an explicit tone mapping |
+| Processing | No custom processors; `LinearSrgb` resizing and convolution accept untagged images, recognized sRGB/sGray profiles and CICP transfer characteristics that have a function; convolution matrices have odd dimensions, no bias or divisor, no ready-made matrices and no separable fast path |
 | AVIF encoding | An image of a sequence is predicted from the previous image only, with one motion vector per block and the regular interpolation filter: no compound prediction (two references), global, warped or overlapped motion, or temporal motion vector prediction. Three tools were implemented, measured with the `avif-quality` report and left out because they did not make its sequences smaller: key frames at scene changes (the key frame of an image that follows a cut is 0.3 to 1.7% larger than the inter frame whose blocks are all intra, since it gives up the probabilities that the previous images adapted; `KeyFrameInterval` is how a sequence gets seek points), the split of the transform blocks of an inter block (0.01% in total: it keeps the largest transform of its size) and an interpolation filter per block (the same size at equal quality, for several times the encoding time). Intra block copy is for lossless images only (a frame that copies blocks has no in-loop filter), and its delay of five superblocks leaves small images out. The loop restoration is the Wiener filter, in units of 256x256 samples, at the efforts 0 to 2 only (it recovered nothing above them in the report), and never the self-guided filter. Not used: quantizer deltas, quantization matrices, CDEF strengths per block (one pair per frame), super-resolution and film grain. No layered (progressive) output, and no grid for an image sequence. An image sequence of one image cannot store animation settings (it is read back as a still image): a single frame with animation settings is rejected. An image sequence needs a seekable destination and its frame count. The level of the stream is the lowest one whose picture size holds the image; the other limits of a level are not checked |
 | AVIF decoding | Rejected with `UnsupportedImageFeatureException`: more than eight nested derivations, an image built from images of several color descriptions, an overlay whose sRGB fill color shows on an image that is not an sRGB one, an alpha plane of an overlay or of a grid of derived images, a derived image with more than 1,024 input images, an alpha plane that is not presented as its derived color image, movie fragments that do not follow each other, have composition time offsets, precede their `moov` box or follow their samples, an edit list that selects a part of a fragmented sequence, edit lists that do not play the media forward at its rate (empty edits, a media rate other than 1, edits out of order or overlapping), an alpha track with another edit list than its color track, image sequences whose images change size, clean apertures that do not select whole samples, grid tiles that declare other transformations than their grid, large scale tile streams, reserved matrix coefficients, and matrix coefficients without the transfer characteristics or the primaries they are defined with (constant luminance without a transfer function, ICtCp with other transfer characteristics than PQ and HLG, chromaticity-derived coefficients without chromaticities). Not read: gain maps, depth maps, thumbnails, the images that are not the primary item, a `tkhd` matrix that is not a quarter turn or a mirror (the images are returned as stored), the content color volume (`cclv`) and the light levels and the mastering display of AV1 metadata units. A layered image is returned at its full quality only: its lower layers are not exposed as a progressive rendering. HDR samples are returned as stored: tone mapping is an explicit `ConvertColorProfile` with `ToneMapping` options |
 | HEIC encoding | One slice per picture, without tiles or wavefront streams (the encoder is sequential). An image of a sequence is a P picture predicted from the previous image only: no B pictures, no second reference, no bi-prediction, no weighted prediction, no long-term reference, no scene change detection. Not used: intra coding blocks of 64x64 samples, PCM blocks, scaling lists, quantizer changes inside a picture (no adaptive quantization, no rate control: `Quality` is a quantizer, not a size), rate-distortion optimized quantization, searched deblocking offsets, and the tools of the range extensions (lossless output is the plain transform bypass of version 1, which every HEVC decoder reads: residual DPCM and cross-component prediction would make it smaller). No screen content tools: a lossless screenshot is larger than its PNG. No grid output (an image is one picture, whatever its size), no premultiplied alpha, no `pasp`, mastering display or content light level box, no orientation for an image sequence, and the decoded picture hash is not written. An image of an odd size with subsampled chroma relies on the clean aperture of the file: libheif ignores the one of a sequence and shows one more column or row, which repeats the last one, and FFmpeg reports the even size of the coded pictures (its command-line tool then crops them to an even size). The readers upsample subsampled chroma each in their own way: the edges of a 4:2:0 or 4:2:2 image differ visibly from one reader to another, as they do for the files of any HEVC encoder. FFmpeg 9 decodes 12-bit lossy output of the coarsest quantizers (`Quality` 0 to 2) to other pictures than libde265, the HM reference decoder and this library, which agree. libheif reports the edit list of a sequence that plays once as unsupported, and plays it once. An image sequence of one image cannot store animation settings. An image sequence needs a seekable destination and its frame count |

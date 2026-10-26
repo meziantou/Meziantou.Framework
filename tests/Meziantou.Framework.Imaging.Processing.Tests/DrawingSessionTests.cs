@@ -2984,7 +2984,7 @@ public sealed class DrawingSessionTests
     }
 
     [Theory]
-    [MemberData(nameof(DrawingTestSupport.AllFormats), MemberType = typeof(DrawingTestSupport))]
+    [MemberData(nameof(DrawingTestSupport.IntegerFormats), MemberType = typeof(DrawingTestSupport))]
     public void InLinearLightTheExactCasesStayExact(PixelFormat format)
     {
         var random = new Random(1357 + (int)format);

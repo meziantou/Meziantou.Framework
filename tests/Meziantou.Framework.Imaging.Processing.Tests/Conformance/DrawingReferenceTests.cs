@@ -22,7 +22,8 @@ public sealed class DrawingReferenceTests
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
-    public static TheoryData<PixelFormat> AllFormats => DrawingTestSupport.AllFormats;
+    // The exact references describe integer samples; DrawingCompositeTests checks the floating-point formats
+    public static TheoryData<PixelFormat> AllFormats => DrawingTestSupport.IntegerFormats;
 
     [Theory]
     [MemberData(nameof(AllFormats))]
@@ -143,7 +144,7 @@ public sealed class DrawingReferenceTests
     {
         // Two references written from two definitions: the operator with its factors, and source-over on its own
         var random = new Random(Seed + 8000);
-        foreach (var format in PixelFormats.All)
+        foreach (var format in DrawingTestSupport.IntegerPixelFormats)
         {
             var layout = ReferencePixelLayout.FromPixelFormat(format);
             for (var index = 0; index < 400; index++)

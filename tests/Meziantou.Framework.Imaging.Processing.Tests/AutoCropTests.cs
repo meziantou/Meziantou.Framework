@@ -56,6 +56,8 @@ public sealed class AutoCropTests
             case PixelFormat.Rgba64: CheckContentBox<Rgba64>(); break;
             case PixelFormat.Gray8: CheckContentBox<Gray8>(); break;
             case PixelFormat.Gray16: CheckContentBox<Gray16>(); break;
+            case PixelFormat.RgbaFloat: CheckContentBox<RgbaFloat>(); break;
+            case PixelFormat.RgbaHalf: CheckContentBox<RgbaHalf>(); break;
             default: throw new ArgumentOutOfRangeException(nameof(format));
         }
     }
@@ -455,6 +457,8 @@ public sealed class AutoCropTests
             case PixelFormat.Rgba64: CheckExpand<Rgba64>(); break;
             case PixelFormat.Gray8: CheckExpand<Gray8>(); break;
             case PixelFormat.Gray16: CheckExpand<Gray16>(); break;
+            case PixelFormat.RgbaFloat: CheckExpand<RgbaFloat>(); break;
+            case PixelFormat.RgbaHalf: CheckExpand<RgbaHalf>(); break;
             default: throw new ArgumentOutOfRangeException(nameof(format));
         }
     }
@@ -769,6 +773,109 @@ public sealed class AutoCropTests
         AssertRows(opaque.Frames[0], "..XXXX..", "..X,,X..", "..X,,X..", "..XXXX..");
     }
 
+    [Fact]
+    public void FloatingPointAnalysisWorksOnTheStoredValues()
+    {
+        // 8 x 8, a background of 2 (twice white) with content of 1 at x = 4..6, y = 2..4: the difference of the content is
+        // 1, as for black on white in WeightsAreTheMeanSignedPositionOfTheDifferenceFromTheBackground, so the weights are
+        // 27 / 512 and -9 / 512; the base type gives the background clipped to white
+        using var image = new Image<RgbaFloat>(8, 8, new RgbaFloat(2, 2, 2));
+        Fill(image.Frames[0], new Rectangle(4, 2, 3, 3), new RgbaFloat(1, 1, 1));
+        var analysis = image.AnalyzeAutoCrop(new AutoCropOptions { AnalyzeWeights = true }, Ct);
+        Assert.Equal(new Rectangle(4, 2, 3, 3), analysis.Bounds);
+        Assert.Equal(new RgbaFloat(2, 2, 2), analysis.BackgroundColor);
+        Assert.Equal(White64, Widened(analysis));
+        Assert.Equal(0.052734375, analysis.WeightX);
+        Assert.Equal(-0.017578125, analysis.WeightY);
+
+        // The tolerance is threshold / 255 on the values (2126 + 7152 + 722 = 10000 times the difference of a gray): with a
+        // threshold of 10, gray 2 - 9.5 / 255 is background, 2 - 10.5 / 255 is not, and neither is a negative red
+        Fill(image.Frames[0], new Rectangle(0, 0, 8, 8), new RgbaFloat(2, 2, 2));
+        Fill(image.Frames[0], new Rectangle(1, 1, 3, 3), new RgbaFloat(2 - (9.5f / 255), 2 - (9.5f / 255), 2 - (9.5f / 255)));
+        Fill(image.Frames[0], new Rectangle(4, 3, 3, 3), new RgbaFloat(2 - (10.5f / 255), 2 - (10.5f / 255), 2 - (10.5f / 255)));
+        image.Frames[0][5, 6] = new RgbaFloat(-1, 2, 2);
+        Assert.Equal(new Rectangle(4, 3, 3, 4), image.AnalyzeAutoCrop(new AutoCropOptions { ColorThreshold = 10 }, Ct).Bounds);
+    }
+
+    [Fact]
+    public void FloatingPointAnalysisAgreesWithTheSixteenBitAnalysis()
+    {
+        // The same pixels in [0, 1] analyzed as Rgba64 and as RgbaFloat (exact fractions of 65535) and RgbaHalf (within
+        // 2^-12): the same content box and nearly the same weights; the background of RgbaFloat rounds back to the same
+        // 16-bit color
+        using var integer = new Image<Rgba64>(16, 12, new Rgba64(60000, 61000, 62000));
+        Fill(integer.Frames[0], new Rectangle(3, 2, 7, 5), new Rgba64(1000, 30000, 50000, 40000));
+        Fill(integer.Frames[0], new Rectangle(5, 4, 9, 6), new Rgba64(20000, 2000, 300, 65535));
+        var options = new AutoCropOptions { AnalyzeWeights = true };
+        var expected = integer.AnalyzeAutoCrop(options, Ct);
+        Assert.True(expected.Success);
+
+        using var single = integer.CloneAs<RgbaFloat>();
+        var analysis = single.AnalyzeAutoCrop(options, Ct);
+        Assert.Equal(expected.Bounds, analysis.Bounds);
+        Assert.Equal(expected.BackgroundColor, Widened(analysis));
+        Assert.Equal(expected.WeightX, analysis.WeightX, tolerance: 1e-9);
+        Assert.Equal(expected.WeightY, analysis.WeightY, tolerance: 1e-9);
+
+        using var half = integer.CloneAs<RgbaHalf>();
+        var halfAnalysis = half.AnalyzeAutoCrop(options, Ct);
+        Assert.Equal(expected.Bounds, halfAnalysis.Bounds);
+        Assert.Equal(expected.WeightX, halfAnalysis.WeightX, tolerance: 1e-3);
+        Assert.Equal(expected.WeightY, halfAnalysis.WeightY, tolerance: 1e-3);
+    }
+
+    [Fact]
+    public void FloatingPointAnalysisRejectsSamplesThatAreNotFinite()
+    {
+        foreach (var value in new[] { float.NaN, float.PositiveInfinity })
+        {
+            using var image = Draw<RgbaFloat>(Framed);
+            image.AppendFrame()[7, 6] = new RgbaFloat(1, 1, 1, value);
+            var storage = image.Frames[0].Storage;
+            var exception = Assert.Throws<UnsupportedImageFeatureException>(() => image.AnalyzeAutoCrop(cancellationToken: Ct));
+            Assert.Equal("Auto-crop analysis of non-finite samples", exception.Feature);
+            Assert.Contains("(7, 6) of frame 1", exception.Message, StringComparison.Ordinal);
+            Assert.Throws<UnsupportedImageFeatureException>(() => image.AutoCrop(cancellationToken: Ct));
+            Assert.Same(storage, image.Frames[0].Storage);
+        }
+    }
+
+    [Fact]
+    public void FloatingPointBackgroundIsExactInItsOwnPixelTypeOnly()
+    {
+        // The background of 1.5 fills an enlarged canvas of the same pixel type exactly (ExpandFillsOutsideTheCanvas...);
+        // its Rgba64 is clipped, so the analysis cannot enlarge an image of another pixel type
+        using var source = Draw<RgbaFloat>(NearCorner);
+        var analysis = source.AnalyzeAutoCrop(cancellationToken: Ct);
+        Assert.Equal(Ink<RgbaFloat>('.'), analysis.BackgroundColor);
+        using (var half = Draw<RgbaHalf>(NearCorner))
+        {
+            CheckRejected(half, analysis);
+        }
+
+        using (var rgba64 = Draw<Rgba64>(NearCorner))
+        {
+            CheckRejected(rgba64, analysis);
+        }
+
+        // An analysis of integer pixels fills a floating-point canvas with its 16-bit background, which converts exactly
+        using var integer = Draw<Rgba64>(NearCorner);
+        using var floating = Draw<RgbaFloat>(NearCorner);
+        Assert.True(floating.AutoCrop(integer.AnalyzeAutoCrop(cancellationToken: Ct), new AutoCropOptions { PaddingX = 2, PaddingY = 2 }, Ct));
+        Assert.Equal(new RgbaFloat(0xFFFE / 65535f, 0xFFFD / 65535f, 0xFFFC / 65535f), floating.Frames[0][0, 0]);
+
+        static void CheckRejected(Image target, AutoCropAnalysis analysis)
+        {
+            var exception = Assert.Throws<UnsupportedImageFeatureException>(() => target.AutoCrop(analysis, new AutoCropOptions { PaddingX = 2, PaddingY = 2 }, Ct));
+            Assert.Equal("Auto-crop background fill", exception.Feature);
+            Assert.Equal(new Size(6, 5), target.Size);
+
+            // No fill is needed inside the canvas
+            Assert.True(target.AutoCrop(analysis, new AutoCropOptions { PaddingX = 0, PaddingY = 0 }, Ct));
+            Assert.Equal(new Size(3, 3), target.Size);
+        }
+    }
+
     [Theory]
     [InlineData(65535, 65535, 65535, 65535, true, true, true, true, true)]
     [InlineData(514, 514, 514, 65535, true, true, true, true, true)]
@@ -882,6 +989,19 @@ public sealed class AutoCropTests
         if (ink == '#')
             return Ink<TPixel>(0, 0, 0, 0, 0, 0);
 
+        // The floating-point inks are outside [0, 1]: a background brighter than white, a near-background 5/255 darker,
+        // and content with a negative color. The analysis works on the values without clipping them.
+        if (typeof(TPixel) == typeof(RgbaFloat) || typeof(TPixel) == typeof(RgbaHalf))
+        {
+            return ink switch
+            {
+                '.' => FloatInk<TPixel>(1.5f, 1.5f, 1.5f),
+                ',' => FloatInk<TPixel>(1.5f - (5f / 255), 1.5f - (5f / 255), 1.5f - (5f / 255)),
+                'X' => FloatInk<TPixel>(-0.25f, 20f / 255, 30f / 255),
+                _ => throw new ArgumentOutOfRangeException(nameof(ink)),
+            };
+        }
+
         return ink switch
         {
             '.' => Ink<TPixel>(255, 255, 255, 0xFFFE, 0xFFFD, 0xFFFC),
@@ -902,16 +1022,24 @@ public sealed class AutoCropTests
             var t when t == typeof(Rgba64) => new Rgba64(r16, g16, b16),
             var t when t == typeof(Gray8) => new Gray8(r),
             var t when t == typeof(Gray16) => new Gray16(r16),
+            var t when t == typeof(RgbaFloat) || t == typeof(RgbaHalf) => FloatInk<TPixel>(r / 255f, g / 255f, b / 255f),
             _ => throw new NotSupportedException(),
         };
 
         return (TPixel)pixel;
     }
 
+    private static TPixel FloatInk<TPixel>(float r, float g, float b)
+        where TPixel : unmanaged
+    {
+        object pixel = typeof(TPixel) == typeof(RgbaFloat) ? new RgbaFloat(r, g, b) : new RgbaHalf((Half)r, (Half)g, (Half)b);
+        return (TPixel)pixel;
+    }
+
     /// <summary>The background of an analysis as the untyped API gives it: widened to 16 bits.</summary>
     private static Rgba64 Widened(AutoCropAnalysis analysis) => analysis.BackgroundColor;
 
-    /// <summary>The '.' ink widened to 16 bits by hand.</summary>
+    /// <summary>The '.' ink widened to 16 bits by hand (the 1.5 of the floating-point inks is clipped to white).</summary>
     private static Rgba64 ExpectedBackground<TPixel>()
         where TPixel : unmanaged
     {

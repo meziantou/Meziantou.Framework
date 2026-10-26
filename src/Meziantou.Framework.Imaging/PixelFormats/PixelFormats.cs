@@ -9,7 +9,7 @@ namespace Meziantou.Framework.Imaging;
 public static class PixelFormats
 {
     /// <summary>Gets the pixel formats supported by this version, in declaration order.</summary>
-    public static IReadOnlyList<PixelFormat> All { get; } = [PixelFormat.Rgba32, PixelFormat.Bgra32, PixelFormat.Rgb24, PixelFormat.Rgba64, PixelFormat.Gray8, PixelFormat.Gray16];
+    public static IReadOnlyList<PixelFormat> All { get; } = [PixelFormat.Rgba32, PixelFormat.Bgra32, PixelFormat.Rgb24, PixelFormat.Rgba64, PixelFormat.Gray8, PixelFormat.Gray16, PixelFormat.RgbaFloat, PixelFormat.RgbaHalf];
 
     /// <summary>Determines whether <typeparamref name="TPixel"/> is one of the built-in pixel structs.</summary>
     /// <typeparam name="TPixel">The pixel type.</typeparam>
@@ -27,7 +27,7 @@ public static class PixelFormats
     {
         var format = TryGetPixelFormat<TPixel>();
         if (format == PixelFormat.Unknown)
-            throw new NotSupportedException($"Pixel type '{typeof(TPixel).FullName}' is not supported. Supported pixel types are Rgba32, Bgra32, Rgb24, Rgba64, Gray8 and Gray16.");
+            throw new NotSupportedException($"Pixel type '{typeof(TPixel).FullName}' is not supported. Supported pixel types are Rgba32, Bgra32, Rgb24, Rgba64, Gray8, Gray16, RgbaFloat and RgbaHalf.");
 
         return format;
     }
@@ -44,6 +44,8 @@ public static class PixelFormats
         PixelFormat.Rgba64 => typeof(Rgba64),
         PixelFormat.Gray8 => typeof(Gray8),
         PixelFormat.Gray16 => typeof(Gray16),
+        PixelFormat.RgbaFloat => typeof(RgbaFloat),
+        PixelFormat.RgbaHalf => typeof(RgbaHalf),
         _ => throw InvalidFormat(format),
     };
 
@@ -55,20 +57,22 @@ public static class PixelFormats
     {
         PixelFormat.Rgba32 or PixelFormat.Bgra32 => 4,
         PixelFormat.Rgb24 => 3,
-        PixelFormat.Rgba64 => 8,
+        PixelFormat.Rgba64 or PixelFormat.RgbaHalf => 8,
         PixelFormat.Gray8 => 1,
         PixelFormat.Gray16 => 2,
+        PixelFormat.RgbaFloat => 16,
         _ => throw InvalidFormat(format),
     };
 
     /// <summary>Gets the number of bits used to store each component.</summary>
     /// <param name="format">The pixel format.</param>
-    /// <returns>8 or 16.</returns>
+    /// <returns>8 or 16 for the integer formats; 32 for <see cref="PixelFormat.RgbaFloat"/> and 16 for <see cref="PixelFormat.RgbaHalf"/> (see <see cref="IsFloatingPoint"/>).</returns>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="format"/> is not a supported pixel format.</exception>
     public static int GetBitsPerComponent(PixelFormat format) => format switch
     {
         PixelFormat.Rgba32 or PixelFormat.Bgra32 or PixelFormat.Rgb24 or PixelFormat.Gray8 => 8,
-        PixelFormat.Rgba64 or PixelFormat.Gray16 => 16,
+        PixelFormat.Rgba64 or PixelFormat.Gray16 or PixelFormat.RgbaHalf => 16,
+        PixelFormat.RgbaFloat => 32,
         _ => throw InvalidFormat(format),
     };
 
@@ -78,7 +82,7 @@ public static class PixelFormats
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="format"/> is not a supported pixel format.</exception>
     public static int GetComponentCount(PixelFormat format) => format switch
     {
-        PixelFormat.Rgba32 or PixelFormat.Bgra32 or PixelFormat.Rgba64 => 4,
+        PixelFormat.Rgba32 or PixelFormat.Bgra32 or PixelFormat.Rgba64 or PixelFormat.RgbaFloat or PixelFormat.RgbaHalf => 4,
         PixelFormat.Rgb24 => 3,
         PixelFormat.Gray8 or PixelFormat.Gray16 => 1,
         _ => throw InvalidFormat(format),
@@ -90,7 +94,7 @@ public static class PixelFormats
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="format"/> is not a supported pixel format.</exception>
     public static bool HasAlpha(PixelFormat format) => format switch
     {
-        PixelFormat.Rgba32 or PixelFormat.Bgra32 or PixelFormat.Rgba64 => true,
+        PixelFormat.Rgba32 or PixelFormat.Bgra32 or PixelFormat.Rgba64 or PixelFormat.RgbaFloat or PixelFormat.RgbaHalf => true,
         PixelFormat.Rgb24 or PixelFormat.Gray8 or PixelFormat.Gray16 => false,
         _ => throw InvalidFormat(format),
     };
@@ -102,7 +106,22 @@ public static class PixelFormats
     public static bool IsGrayscale(PixelFormat format) => format switch
     {
         PixelFormat.Gray8 or PixelFormat.Gray16 => true,
-        PixelFormat.Rgba32 or PixelFormat.Bgra32 or PixelFormat.Rgb24 or PixelFormat.Rgba64 => false,
+        PixelFormat.Rgba32 or PixelFormat.Bgra32 or PixelFormat.Rgb24 or PixelFormat.Rgba64 or PixelFormat.RgbaFloat or PixelFormat.RgbaHalf => false,
+        _ => throw InvalidFormat(format),
+    };
+
+    /// <summary>Determines whether the pixel format stores floating-point components.</summary>
+    /// <param name="format">The pixel format.</param>
+    /// <returns>
+    /// <see langword="true"/> for <see cref="PixelFormat.RgbaFloat"/> and <see cref="PixelFormat.RgbaHalf"/>, whose
+    /// components are not limited to [0, 1]; <see langword="false"/> for the integer formats, whose components go from 0
+    /// to the largest value of their bits.
+    /// </returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="format"/> is not a supported pixel format.</exception>
+    public static bool IsFloatingPoint(PixelFormat format) => format switch
+    {
+        PixelFormat.RgbaFloat or PixelFormat.RgbaHalf => true,
+        PixelFormat.Rgba32 or PixelFormat.Bgra32 or PixelFormat.Rgb24 or PixelFormat.Rgba64 or PixelFormat.Gray8 or PixelFormat.Gray16 => false,
         _ => throw InvalidFormat(format),
     };
 
@@ -127,6 +146,12 @@ public static class PixelFormats
 
         if (typeof(TPixel) == typeof(Gray16))
             return PixelFormat.Gray16;
+
+        if (typeof(TPixel) == typeof(RgbaFloat))
+            return PixelFormat.RgbaFloat;
+
+        if (typeof(TPixel) == typeof(RgbaHalf))
+            return PixelFormat.RgbaHalf;
 
         return PixelFormat.Unknown;
     }

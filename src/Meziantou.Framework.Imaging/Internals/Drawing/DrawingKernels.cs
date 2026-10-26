@@ -79,14 +79,22 @@ internal static class DrawingKernels
     // The thresholds of the encoding of linear light to 8-bit samples, by code point of the transfer characteristics
     private static readonly QuantizationThresholds?[] LinearThresholds8 = new QuantizationThresholds?[19];
 
+    /// <summary>Gets the largest sample of the paints of a frame: 255 for the 8-bit formats, 65535 for the 16-bit and the floating-point formats.</summary>
+    /// <param name="format">The pixel format of the frame.</param>
+    public static int GetPaintMax(PixelFormat format) => PixelFormats.GetBitsPerComponent(format) > 8 ? ushort.MaxValue : byte.MaxValue;
+
     /// <summary>Converts a paint color to the pixel format of a frame, with the rules of pixel conversion.</summary>
     /// <remarks>
     /// The color samples are those of the opaque color converted by <see cref="PixelConverter"/> (Rec. 709 luma for
     /// grayscale formats, 16-to-8-bit rounding last); the opacity is the alpha of the color at the precision of the format.
+    /// The paints of a floating-point format keep the 16-bit color (<see cref="FloatDrawingKernels"/>).
     /// </remarks>
     public static DrawingColor ConvertColor<TPixel>(Rgba64 color)
         where TPixel : unmanaged
     {
+        if (PixelConverter.IsFloat<TPixel>())
+            return new DrawingColor(color.R, color.G, color.B, color.A);
+
         var opaque = new Rgba64(color.R, color.G, color.B);
         TPixel pixel = default;
         PixelConverter.ConvertRow(new ReadOnlySpan<Rgba64>(in opaque), new Span<TPixel>(ref pixel));
@@ -145,8 +153,15 @@ internal static class DrawingKernels
                 opaque[i] = new Rgba64(color.R, color.G, color.B);
             }
 
-            PixelConverter.ConvertRow<Rgba64, TPixel>(opaque[..count], pixels);
             var entries = destination.Slice(start * 4, count * 4);
+            if (PixelConverter.IsFloat<TPixel>())
+            {
+                // The paints of a floating-point format keep the 16-bit colors
+                unsafe { MemoryMarshal.Cast<Rgba64, ushort>(chunk).CopyTo(entries); }
+                continue;
+            }
+
+            PixelConverter.ConvertRow<Rgba64, TPixel>(opaque[..count], pixels);
             if (typeof(TPixel) == typeof(Rgba64))
             {
                 var values = unsafe(MemoryMarshal.Cast<TPixel, Rgba64>(pixels));
@@ -230,7 +245,7 @@ internal static class DrawingKernels
         }
     }
 
-    /// <summary>Reads pixels of a row as 16-bit colors, with the rules of pixel conversion.</summary>
+    /// <summary>Reads pixels of a row as 16-bit colors, with the rules of pixel conversion (a floating-point sample outside [0, 1] is rejected).</summary>
     /// <param name="storage">The storage of the frame, leased by the caller.</param>
     /// <param name="y">The row.</param>
     /// <param name="x">The first column.</param>
@@ -325,6 +340,12 @@ internal static class DrawingKernels
                 entry[3] = ushort.MaxValue;
             }
         }
+        else if (PixelConverter.IsFloat<TPixel>())
+        {
+            // The 16-bit colors of the pixels: a sample outside [0, 1] has none, and is rejected
+            var pixels = unsafe(MemoryMarshal.Cast<byte, TPixel>(row)).Slice(x, count);
+            PixelConverter.ConvertRow(pixels, unsafe(MemoryMarshal.Cast<ushort, Rgba64>(destination)));
+        }
         else
         {
             throw new NotSupportedException($"The pixel type '{typeof(TPixel).Name}' is not supported.");
@@ -363,6 +384,10 @@ internal static class DrawingKernels
         else if (typeof(TPixel) == typeof(Gray16))
         {
             Composite(unsafe(MemoryMarshal.Cast<byte, ushort>(row)).Slice(x, coverage.Length), channels: 1, coverage, source);
+        }
+        else if (PixelConverter.IsFloat<TPixel>())
+        {
+            FloatDrawingKernels.Composite<TPixel>(storage, y, x, coverage, source);
         }
         else
         {

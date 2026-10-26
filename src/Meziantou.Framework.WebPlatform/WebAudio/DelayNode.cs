@@ -78,7 +78,7 @@ public sealed class DelayNode : AudioNode
     [IdlMember("delayTime", "https://webaudio.github.io/web-audio-api/#dom-delaynode-delaytime")]
     public AudioParam DelayTime { get; }
 
-    private protected override IEnumerable<AudioParam> Parameters => [DelayTime];
+    private protected override IEnumerable<AudioParam> NodeParameters => [DelayTime];
 
     internal override bool CanBreakCycles => true;
 

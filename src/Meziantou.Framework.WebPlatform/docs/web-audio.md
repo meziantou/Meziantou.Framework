@@ -58,9 +58,28 @@ const buffer = await context.startRendering();
 | `AnalyserNode` | The last 32768 frames (down-mixed to mono), Blackman window, smoothing over time |
 | `ScriptProcessorNode` | The `audioprocess` events are fired during the rendering, and their output is played two buffers later |
 
+## Audio worklet
+
+`context.audioWorklet` (a context of a window, with a script engine that supports the module scripts) loads the modules
+that register `AudioWorkletProcessor` classes with `registerProcessor()`, and an `AudioWorkletNode` processes its audio
+with an instance of its class.
+
+- **Where the processors run**: the global scope of the worklet is a realm of the script engine of the document, so
+  `process()` is called on the thread of the event loop, during the rendering of the context. The processor is constructed
+  in a task queued by the constructor of the node: until then, the node outputs silence.
+- **The arrays of `process()`**: the inputs, the outputs and the values of the parameters are frozen arrays of
+  `Float32Array`, reused while their shape does not change (the number of channels of an input or an output, the length
+  of the values of a parameter: 1 when the value is constant during the render quantum). An input that is not actively
+  processing has no channel. The output arrays are filled with zeros before each call; a buffer transferred by the script
+  creates new arrays.
+- **The lifetime**: the node stays active while `process()` returns a truthy value, or while it has an input connection
+  when it returns a falsy value. An exception of the constructor or of `process()` fires `processorerror` at the node,
+  which then outputs silence.
+- **The ports**: `audioWorklet.port` and the global `port` of the worklet, and the `port` of a node and of its processor,
+  are entangled `MessagePort`s; `processorOptions` are structured-cloned in the global scope of the worklet.
+
 ## Not implemented
 
-- `AudioWorklet`, `AudioWorkletNode`, `AudioWorkletProcessor`.
 - `decodeAudioData()`.
 - `AudioContext` (the realtime context), `MediaElementAudioSourceNode`, the `MediaStream` nodes.
 

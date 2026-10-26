@@ -305,10 +305,10 @@
 | [`http-cache/status.any.js`](https://wpt.fyi/results/fetch/http-cache/status.any.js) | Fail | 0 / 78 | NOT IMPLEMENTED, TEST RUNNER | the HTTP cache; `fetch/http-cache/resources/http-cache.py` is not emulated (the requests get 404) |
 | [`http-cache/vary.any.js`](https://wpt.fyi/results/fetch/http-cache/vary.any.js) | Fail | 0 / 42 | NOT IMPLEMENTED, TEST RUNNER | the HTTP cache; `fetch/http-cache/resources/http-cache.py` is not emulated (the requests get 404) |
 | [`images/canvas-remote-read-remote-image-redirect.html`](https://wpt.fyi/results/fetch/images/canvas-remote-read-remote-image-redirect.html) | Pass | 1 / 1 |  |  |
-| [`metadata/audio-worklet.https.html`](https://wpt.fyi/results/fetch/metadata/audio-worklet.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Web Audio (`AudioContext`, `audioWorklet`) |
+| [`metadata/audio-worklet.https.html`](https://wpt.fyi/results/fetch/metadata/audio-worklet.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | uses `AudioContext` (not implemented yet) |
 | [`metadata/fetch-preflight.https.sub.any.js`](https://wpt.fyi/results/fetch/metadata/fetch-preflight.https.sub.any.js) | Pass | 30 / 30 |  |  |
 | [`metadata/fetch.https.sub.any.js`](https://wpt.fyi/results/fetch/metadata/fetch.https.sub.any.js) | Pass | 90 / 90 |  |  |
-| [`metadata/generated/audioworklet.https.sub.html`](https://wpt.fyi/results/fetch/metadata/generated/audioworklet.https.sub.html) | Fail | 0 / 19 | NOT IMPLEMENTED | Web Audio (`AudioContext`, `audioWorklet.addModule()`) |
+| [`metadata/generated/audioworklet.https.sub.html`](https://wpt.fyi/results/fetch/metadata/generated/audioworklet.https.sub.html) | Fail | 0 / 19 | NOT IMPLEMENTED | uses `AudioContext` (not implemented yet) |
 | [`metadata/generated/element-a.https.sub.html`](https://wpt.fyi/results/fetch/metadata/generated/element-a.https.sub.html) | Timeout | 16 / 23 | NOT IMPLEMENTED | downloads (`<a download>` does not fetch the resource, so the test waits forever) |
 | [`metadata/generated/element-a.sub.html`](https://wpt.fyi/results/fetch/metadata/generated/element-a.sub.html) | Pass | 18 / 18 |  |  |
 | [`metadata/generated/element-area.https.sub.html`](https://wpt.fyi/results/fetch/metadata/generated/element-area.https.sub.html) | Timeout | 16 / 23 | NOT IMPLEMENTED | downloads (`<area download>` does not fetch the resource, so the test waits forever) |

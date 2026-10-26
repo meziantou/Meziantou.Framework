@@ -35,7 +35,7 @@ public sealed class GainNode : AudioNode
     [IdlMember("gain", "https://webaudio.github.io/web-audio-api/#dom-gainnode-gain")]
     public AudioParam Gain { get; }
 
-    private protected override IEnumerable<AudioParam> Parameters => [Gain];
+    private protected override IEnumerable<AudioParam> NodeParameters => [Gain];
 
     private protected override void Process(long startFrame, int length)
     {

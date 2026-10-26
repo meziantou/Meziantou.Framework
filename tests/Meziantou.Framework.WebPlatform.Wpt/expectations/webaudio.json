@@ -576,13 +576,6 @@
       "AudioParam interface: new AudioBufferSourceNode(context).playbackRate must inherit property \"setValueCurveAtTime(sequence<float>, double, double)\" with the proper type": "FAIL",
       "AudioParam interface: new AudioBufferSourceNode(context).playbackRate must inherit property \"value\" with the proper type": "FAIL",
       "AudioParam must be primary interface of new AudioBufferSourceNode(context).playbackRate": "FAIL",
-      "AudioParamMap interface object length": "FAIL",
-      "AudioParamMap interface object name": "FAIL",
-      "AudioParamMap interface: existence and properties of interface object": "FAIL",
-      "AudioParamMap interface: existence and properties of interface prototype object": "FAIL",
-      "AudioParamMap interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "AudioParamMap interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "AudioParamMap interface: maplike<DOMString, AudioParam>": "FAIL",
       "AudioParamMap must be primary interface of worklet_node.parameters": "FAIL",
       "AudioPlaybackStats interface object length": "FAIL",
       "AudioPlaybackStats interface object name": "FAIL",
@@ -624,29 +617,12 @@
       "AudioSinkInfo interface: existence and properties of interface prototype object": "FAIL",
       "AudioSinkInfo interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
       "AudioSinkInfo interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "AudioWorklet interface object length": "FAIL",
-      "AudioWorklet interface object name": "FAIL",
-      "AudioWorklet interface: attribute port": "FAIL",
       "AudioWorklet interface: context.audioWorklet must inherit property \"port\" with the proper type": "FAIL",
-      "AudioWorklet interface: existence and properties of interface object": "FAIL",
-      "AudioWorklet interface: existence and properties of interface prototype object": "FAIL",
-      "AudioWorklet interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "AudioWorklet interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
       "AudioWorklet must be primary interface of context.audioWorklet": "FAIL",
-      "AudioWorkletNode interface object length": "FAIL",
-      "AudioWorkletNode interface object name": "FAIL",
-      "AudioWorkletNode interface: attribute onprocessorerror": "FAIL",
-      "AudioWorkletNode interface: attribute parameters": "FAIL",
-      "AudioWorkletNode interface: attribute port": "FAIL",
-      "AudioWorkletNode interface: existence and properties of interface object": "FAIL",
-      "AudioWorkletNode interface: existence and properties of interface prototype object": "FAIL",
-      "AudioWorkletNode interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "AudioWorkletNode interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
       "AudioWorkletNode interface: worklet_node must inherit property \"onprocessorerror\" with the proper type": "FAIL",
       "AudioWorkletNode interface: worklet_node must inherit property \"parameters\" with the proper type": "FAIL",
       "AudioWorkletNode interface: worklet_node must inherit property \"port\" with the proper type": "FAIL",
       "AudioWorkletNode must be primary interface of worklet_node": "FAIL",
-      "BaseAudioContext interface: attribute audioWorklet": "FAIL",
       "BaseAudioContext interface: calling createBuffer(unsigned long, unsigned long, float) on context with too few arguments must throw TypeError": "FAIL",
       "BaseAudioContext interface: calling createChannelMerger(optional unsigned long) on context with too few arguments must throw TypeError": "FAIL",
       "BaseAudioContext interface: calling createChannelSplitter(optional unsigned long) on context with too few arguments must throw TypeError": "FAIL",
@@ -683,7 +659,6 @@
       "BaseAudioContext interface: context must inherit property \"renderQuantumSize\" with the proper type": "FAIL",
       "BaseAudioContext interface: context must inherit property \"sampleRate\" with the proper type": "FAIL",
       "BaseAudioContext interface: context must inherit property \"state\" with the proper type": "FAIL",
-      "BaseAudioContext interface: new OfflineAudioContext(1, 1, sample_rate) must inherit property \"audioWorklet\" with the proper type": "FAIL",
       "BaseAudioContext interface: new OfflineAudioContext(1, 1, sample_rate) must inherit property \"decodeAudioData(ArrayBuffer, optional DecodeSuccessCallback?, optional DecodeErrorCallback?)\" with the proper type": "FAIL",
       "BaseAudioContext interface: operation decodeAudioData(ArrayBuffer, optional DecodeSuccessCallback?, optional DecodeErrorCallback?)": "FAIL",
       "BiquadFilterNode interface: calling getFrequencyResponse(Float32Array, Float32Array, Float32Array) on new BiquadFilterNode(context) with too few arguments must throw TypeError": "FAIL",
@@ -1211,10 +1186,7 @@
     "total": 62
   },
   "webaudio/the-audio-api/the-audiobuffersourcenode-interface/active-processing.https.html": {
-    "total": 2,
-    "failures": {
-      "Setup graph with AudioWorklet and AudioBufferSourceNode": "FAIL"
-    }
+    "total": 2
   },
   "webaudio/the-audio-api/the-audiobuffersourcenode-interface/audiobuffersource-basic.html": {
     "total": 18
@@ -1619,16 +1591,10 @@
     "total": 2
   },
   "webaudio/the-audio-api/the-audioparam-interface/k-rate-audioworklet-connections.https.html": {
-    "total": 1,
-    "failures": {
-      "AudioWorklet k-rate AudioParam": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-audioparam-interface/k-rate-audioworklet.https.html": {
-    "total": 1,
-    "failures": {
-      "AudioWorklet k-rate AudioParam": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-audioparam-interface/k-rate-biquad-connection.html": {
     "total": 100
@@ -1717,17 +1683,10 @@
     }
   },
   "webaudio/the-audio-api/the-audioworklet-interface/audioworklet-audioparam-size.https.html": {
-    "total": 8,
-    "failures": {
-      "Executing \"Initializing AudioWorklet and Context\"": "FAIL",
-      "Executing \"Verify Size of AudioParam Arrays\"": "FAIL"
-    }
+    "total": 15
   },
   "webaudio/the-audio-api/the-audioworklet-interface/audioworklet-audioparam.https.html": {
-    "total": 1,
-    "failures": {
-      "Verifying AudioParam in AudioWorkletNode": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-audioworklet-interface/audioworklet-denormals.https.window.js": {
     "total": 1,
@@ -1797,67 +1756,35 @@
     }
   },
   "webaudio/the-audio-api/the-audioworklet-interface/audioworkletglobalscope-sample-rate.https.html": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 7
   },
   "webaudio/the-audio-api/the-audioworklet-interface/audioworkletglobalscope-timing-info.https.html": {
-    "total": 1,
-    "failures": {
-      "Check the timing information from AudioWorkletProcessor": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-audioworklet-interface/audioworkletnode-automatic-pull.https.html": {
-    "total": 5,
-    "failures": {
-      "Executing \"setup-worklet\"": "FAIL"
-    }
+    "total": 8
   },
   "webaudio/the-audio-api/the-audioworklet-interface/audioworkletnode-channel-count.https.html": {
-    "total": 1,
-    "failures": {
-      "setup-buffer-and-worklet-verify-rendered-buffer": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-audioworklet-interface/audioworkletnode-construction.https.html": {
     "harness": "ERROR",
     "total": 0
   },
   "webaudio/the-audio-api/the-audioworklet-interface/audioworkletnode-constructor-no-coop-coep.https.html": {
-    "total": 1,
-    "failures": {
-      "non cross-origin isolated shared memory clone error in AudioWorkletNodeOptions processorOptions": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-audioworklet-interface/audioworkletnode-constructor-options.https.html": {
-    "total": 5,
-    "failures": {
-      "Construct AudioWorkletNode with explicit AudioNodeOptions": "FAIL",
-      "Construct AudioWorkletNode without options and check default values": "FAIL",
-      "Validate allowed and disallowed channelCountMode options": "FAIL",
-      "Validate allowed and disallowed channelInterpretation values": "FAIL",
-      "Validate channelCount boundaries for AudioWorkletNode": "FAIL"
-    }
+    "total": 5
   },
   "webaudio/the-audio-api/the-audioworklet-interface/audioworkletnode-disconnected-input.https.html": {
-    "total": 1,
-    "failures": {
-      "Input array length should be zero for disconnected input": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-audioworklet-interface/audioworkletnode-lifetime.https.html": {
-    "total": 1,
-    "failures": {
-      "Test AudioWorkletNode lifetime when process() returns false": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-audioworklet-interface/audioworkletnode-onerror.https.html": {
-    "harness": "ERROR",
-    "total": 3,
-    "failures": {
-      "Test if |onprocessorerror| is called for a transfered object that cannot be deserialized on the AudioWorkletGlobalScope.": "NOTRUN",
-      "Test if |onprocessorerror| is called for an exception thrown from the processor constructor.": "NOTRUN",
-      "Test if |onprocessorerror| is called upon failure of process() method.": "NOTRUN"
-    }
+    "total": 3
   },
   "webaudio/the-audio-api/the-audioworklet-interface/audioworkletnode-output-channel-count.https.html": {
     "total": 1,
@@ -1866,24 +1793,14 @@
     }
   },
   "webaudio/the-audio-api/the-audioworklet-interface/audioworkletprocessor-malformed-process.https.html": {
-    "total": 5,
-    "failures": {
-      "Test an AudioWorkletProcessor whose process is assigned after construction.": "FAIL",
-      "Test an AudioWorkletProcessor with a non-callable process data property.": "FAIL",
-      "Test an AudioWorkletProcessor with a process getter returning a non-callable value.": "FAIL",
-      "Test an AudioWorkletProcessor with a process getter throwing an Error.": "FAIL",
-      "Test an AudioWorkletProcessor with undefined process function.": "FAIL"
-    }
+    "total": 5
   },
   "webaudio/the-audio-api/the-audioworklet-interface/audioworkletprocessor-options.https.html": {
     "harness": "ERROR",
     "total": 0
   },
   "webaudio/the-audio-api/the-audioworklet-interface/audioworkletprocessor-param-getter-overridden.https.html": {
-    "total": 1,
-    "failures": {
-      "Test if AudioWorkletProcessor with invalid parameters array getter": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-audioworklet-interface/audioworkletprocessor-process-frozen-array.https.html": {
     "harness": "ERROR",
@@ -1911,8 +1828,10 @@
     "total": 0
   },
   "webaudio/the-audio-api/the-audioworklet-interface/extended-audioworkletnode-with-parameters.https.html": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1,
+    "failures": {
+      "Test AudioWorkletNode subclass with parameters": "FAIL"
+    }
   },
   "webaudio/the-audio-api/the-audioworklet-interface/process-getter.https.html": {
     "total": 2,
@@ -1939,16 +1858,11 @@
     }
   },
   "webaudio/the-audio-api/the-audioworklet-interface/simple-input-output.https.html": {
-    "total": 1,
-    "failures": {
-      "Simple AudioWorklet I/O": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-audioworklet-interface/suspended-context-messageport.https.html": {
     "total": 3,
     "failures": {
-      "offline before start": "FAIL",
-      "offline on complete": "FAIL",
       "realtime suspended": "FAIL"
     }
   },

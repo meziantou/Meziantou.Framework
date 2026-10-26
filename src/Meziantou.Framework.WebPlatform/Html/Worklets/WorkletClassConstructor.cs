@@ -85,6 +85,22 @@ public abstract class WorkletClassConstructor
 
     /// <summary>Reports an exception thrown by the constructor or a callback to the global scope of the class.</summary>
     internal abstract void ReportException(Exception exception);
+
+    /// <summary>
+    /// Gets the static <c>parameterDescriptors</c> property of an audio processor class converted to a
+    /// <c>sequence&lt;AudioParamDescriptor&gt;</c> (https://webaudio.github.io/web-audio-api/#dom-audioworkletglobalscope-registerprocessor),
+    /// or null when it is undefined. The exceptions of the getters and of the conversion are rethrown.
+    /// </summary>
+    internal abstract IReadOnlyList<WebAudio.AudioParamDescriptor>? GetAudioParamDescriptors();
+
+    /// <summary>
+    /// Creates an object of the script engine in the realm of the class, with properties: strings, numbers, lists of numbers
+    /// (arrays), lists of name-number pairs (objects), or values of the script engine.
+    /// </summary>
+    internal abstract object CreateObject(IReadOnlyList<KeyValuePair<string, object?>> properties);
+
+    /// <summary>Creates the call site of the <c>process()</c> method of an instance of an audio processor class.</summary>
+    internal abstract WebAudio.Rendering.AudioWorkletProcessCall CreateProcessCall(object processor);
 }
 
 /// <summary>The state of a promise returned by a callback of a worklet (see <see cref="WorkletClassConstructor.ObservePromise"/>).</summary>

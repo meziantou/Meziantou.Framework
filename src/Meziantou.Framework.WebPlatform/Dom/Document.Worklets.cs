@@ -50,10 +50,23 @@ public partial class Document
     internal AnimationWorklet? AnimationWorkletOrNull => _animationWorklet;
 
     /// <summary>Terminates the global scopes of the worklets of the document (https://html.spec.whatwg.org/multipage/worklets.html#worklets-lifetime), when it is destroyed.</summary>
+    // The audio worklets of the audio contexts of the window of the document
+    private List<Worklet>? _audioWorklets;
+
+    /// <summary>Registers the audio worklet of an audio context, terminated with the document.</summary>
+    internal void RegisterAudioWorklet(Worklet worklet) => (_audioWorklets ??= []).Add(worklet);
+
     internal void TerminateWorklets()
     {
         _paintWorklet?.Terminate();
         _layoutWorklet?.Terminate();
         _animationWorklet?.Terminate();
+        if (_audioWorklets is { } audioWorklets)
+        {
+            foreach (var worklet in audioWorklets)
+            {
+                worklet.Terminate();
+            }
+        }
     }
 }

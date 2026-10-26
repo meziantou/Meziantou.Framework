@@ -34,10 +34,15 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["AudioListener"] = Binding_AudioListener<TAdapter, TValue>.Binding,
             ["AudioNode"] = Binding_AudioNode<TAdapter, TValue>.Binding,
             ["AudioParam"] = Binding_AudioParam<TAdapter, TValue>.Binding,
+            ["AudioParamMap"] = Binding_AudioParamMap<TAdapter, TValue>.Binding,
             ["AudioProcessingEvent"] = Binding_AudioProcessingEvent<TAdapter, TValue>.Binding,
             ["AudioScheduledSourceNode"] = Binding_AudioScheduledSourceNode<TAdapter, TValue>.Binding,
             ["AudioTrack"] = Binding_AudioTrack<TAdapter, TValue>.Binding,
             ["AudioTrackList"] = Binding_AudioTrackList<TAdapter, TValue>.Binding,
+            ["AudioWorklet"] = Binding_AudioWorklet<TAdapter, TValue>.Binding,
+            ["AudioWorkletGlobalScope"] = Binding_AudioWorkletGlobalScope<TAdapter, TValue>.Binding,
+            ["AudioWorkletNode"] = Binding_AudioWorkletNode<TAdapter, TValue>.Binding,
+            ["AudioWorkletProcessor"] = Binding_AudioWorkletProcessor<TAdapter, TValue>.Binding,
             ["BarProp"] = Binding_BarProp<TAdapter, TValue>.Binding,
             ["BaseAudioContext"] = Binding_BaseAudioContext<TAdapter, TValue>.Binding,
             ["BeforeUnloadEvent"] = Binding_BeforeUnloadEvent<TAdapter, TValue>.Binding,
@@ -827,6 +832,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.WebAudio.AudioProcessingEventInit dictionaryWebAudio_AudioProcessingEventInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebAudio_AudioProcessingEventInit(r, dictionaryWebAudio_AudioProcessingEventInit);
                 return true;
+            case global::Meziantou.Framework.WebPlatform.WebAudio.AudioWorkletNodeOptions dictionaryWebAudio_AudioWorkletNodeOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebAudio_AudioWorkletNodeOptions(r, dictionaryWebAudio_AudioWorkletNodeOptions);
+                return true;
             case global::Meziantou.Framework.WebPlatform.WebAudio.BiquadFilterOptions dictionaryWebAudio_BiquadFilterOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebAudio_BiquadFilterOptions(r, dictionaryWebAudio_BiquadFilterOptions);
                 return true;
@@ -1243,6 +1251,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.WebAudio.AudioNodeOptions dictionaryWebAudio_AudioNodeOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebAudio_AudioNodeOptions(r, dictionaryWebAudio_AudioNodeOptions);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.WebAudio.AudioParamDescriptor dictionaryWebAudio_AudioParamDescriptor:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebAudio_AudioParamDescriptor(r, dictionaryWebAudio_AudioParamDescriptor);
                 return true;
             case global::Meziantou.Framework.WebPlatform.WebAudio.ConstantSourceOptions dictionaryWebAudio_ConstantSourceOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebAudio_ConstantSourceOptions(r, dictionaryWebAudio_ConstantSourceOptions);

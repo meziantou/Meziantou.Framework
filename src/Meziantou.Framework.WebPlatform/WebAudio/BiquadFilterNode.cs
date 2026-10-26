@@ -181,7 +181,7 @@ public sealed class BiquadFilterNode : AudioNode
         }
     }
 
-    private protected override IEnumerable<AudioParam> Parameters => [Frequency, Detune, Q, Gain];
+    private protected override IEnumerable<AudioParam> NodeParameters => [Frequency, Detune, Q, Gain];
 
     // The filter keeps producing output while its state is not silent
     private protected override bool IsSourceActive(long startFrame, int length)

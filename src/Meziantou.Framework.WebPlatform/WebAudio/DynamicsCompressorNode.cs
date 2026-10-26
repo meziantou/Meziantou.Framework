@@ -107,7 +107,7 @@ public sealed class DynamicsCompressorNode : AudioNode
     [IdlMember("release", "https://webaudio.github.io/web-audio-api/#dom-dynamicscompressornode-release")]
     public AudioParam Release { get; }
 
-    private protected override IEnumerable<AudioParam> Parameters => [Threshold, Knee, Ratio, Attack, Release];
+    private protected override IEnumerable<AudioParam> NodeParameters => [Threshold, Knee, Ratio, Attack, Release];
 
     private protected override long TailFrames => _delayFrames + (long)Math.Ceiling(Context.SampleRate * 0.25);
 

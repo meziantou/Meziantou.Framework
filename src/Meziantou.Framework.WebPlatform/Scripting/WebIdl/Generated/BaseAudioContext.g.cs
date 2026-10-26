@@ -25,6 +25,7 @@ internal static class Binding_BaseAudioContext<TAdapter, TValue> where TAdapter 
     private static TValue Get_listener(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.WebAudio.BaseAudioContext>(t, Binding); return r.Wrap(o.Listener); }
     private static TValue Get_state(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.WebAudio.BaseAudioContext>(t, Binding); return r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_WebAudio_AudioContextState(o.State)); }
     private static TValue Get_renderQuantumSize(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.WebAudio.BaseAudioContext>(t, Binding); return r.FromNumber((double)o.RenderQuantumSize); }
+    private static TValue Get_audioWorklet(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.WebAudio.BaseAudioContext>(t, Binding); return r.Wrap(o.AudioWorklet); }
     private static TValue Get_onstatechange(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) => r.GetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "statechange");
     private static void Set_onstatechange(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) => r.SetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "statechange", v, isOnBeforeUnloadEventHandler: false);
     private static TValue Op_createAnalyser(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
@@ -142,6 +143,7 @@ internal static class Binding_BaseAudioContext<TAdapter, TValue> where TAdapter 
         r.DefineAttribute(instanceTarget, "listener", Get_listener, null);
         r.DefineAttribute(instanceTarget, "state", Get_state, null);
         r.DefineAttribute(instanceTarget, "renderQuantumSize", Get_renderQuantumSize, null);
+        if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "audioWorklet", Get_audioWorklet, null);
         r.DefineAttribute(instanceTarget, "onstatechange", Get_onstatechange, Set_onstatechange);
         r.DefineOperation(instanceTarget, "createAnalyser", 0, Op_createAnalyser);
         r.DefineOperation(instanceTarget, "createBiquadFilter", 0, Op_createBiquadFilter);

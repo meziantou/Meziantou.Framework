@@ -147,7 +147,7 @@ public sealed class OscillatorNode : AudioScheduledSourceNode
         _type = OscillatorType.Custom;
     }
 
-    private protected override IEnumerable<AudioParam> Parameters => [Frequency, Detune];
+    private protected override IEnumerable<AudioParam> NodeParameters => [Frequency, Detune];
 
     private protected override void Process(long startFrame, int length)
     {

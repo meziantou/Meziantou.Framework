@@ -175,7 +175,7 @@ public sealed class AudioBufferSourceNode : AudioScheduledSourceNode
         }
     }
 
-    private protected override IEnumerable<AudioParam> Parameters => [PlaybackRate, Detune];
+    private protected override IEnumerable<AudioParam> NodeParameters => [PlaybackRate, Detune];
 
     // https://webaudio.github.io/web-audio-api/#playback-AudioBufferSourceNode: without buffer, the source stops at once
     private protected override bool HasFinishedPlaying => _finished || _content is null;

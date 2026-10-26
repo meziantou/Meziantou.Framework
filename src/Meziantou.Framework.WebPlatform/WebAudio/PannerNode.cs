@@ -299,7 +299,7 @@ public sealed class PannerNode : AudioNode
         OrientationZ.Value = z;
     }
 
-    private protected override IEnumerable<AudioParam> Parameters => [PositionX, PositionY, PositionZ, OrientationX, OrientationY, OrientationZ, .. Context.Listener.Parameters];
+    private protected override IEnumerable<AudioParam> NodeParameters => [PositionX, PositionY, PositionZ, OrientationX, OrientationY, OrientationZ, .. Context.Listener.Parameters];
 
     // The parameters of an HRTF panner are k-rate (https://webaudio.github.io/web-audio-api/#dom-audioparam-automationrate)
     internal override bool ForcesKRate(AudioParam parameter) => PanningModel == PanningModelType.Hrtf;

@@ -37,7 +37,7 @@ public sealed class StereoPannerNode : AudioNode
     [IdlMember("pan", "https://webaudio.github.io/web-audio-api/#dom-stereopannernode-pan")]
     public AudioParam Pan { get; }
 
-    private protected override IEnumerable<AudioParam> Parameters => [Pan];
+    private protected override IEnumerable<AudioParam> NodeParameters => [Pan];
 
     private protected override void ValidateChannelCount(uint value)
     {

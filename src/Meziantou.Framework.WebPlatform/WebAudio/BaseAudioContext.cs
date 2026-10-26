@@ -24,6 +24,7 @@ public abstract class BaseAudioContext : EventTarget
     private AudioNode[] _order = [];
     private AudioNode[] _splitNodes = [];
     private AudioContextState _state = AudioContextState.Suspended;
+    private AudioWorklet? _audioWorklet;
 
     private protected BaseAudioContext(float sampleRate, int renderQuantumSize, uint destinationChannelCount, uint maxChannelCount, bool isOffline)
     {
@@ -72,6 +73,15 @@ public abstract class BaseAudioContext : EventTarget
     /// <seealso href="https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-renderquantumsize"/>
     [IdlMember("renderQuantumSize", "https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-renderquantumsize")]
     public uint RenderQuantumSize => (uint)RenderQuantumSizeInternal;
+
+    /// <summary>Gets the worklet of the <see cref="AudioWorkletProcessor"/> classes of the context.</summary>
+    /// <exception cref="InvalidOperationException">The context was created by .NET code without window: there is no script engine.</exception>
+    /// <seealso href="https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-audioworklet"/>
+    [IdlMember("audioWorklet", "https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-audioworklet")]
+    public AudioWorklet AudioWorklet => _audioWorklet ??= new AudioWorklet(this, Window?.Document ?? throw new InvalidOperationException("The audio worklet of a context needs the document of a window"));
+
+    /// <summary>The node name to parameter descriptor map (https://webaudio.github.io/web-audio-api/#node-name-to-parameter-descriptor-map).</summary>
+    internal Dictionary<string, IReadOnlyList<AudioParamDescriptor>> ProcessorParameterDescriptors { get; } = new(StringComparer.Ordinal);
 
     /// <summary>Gets or sets the event handler of the <c>statechange</c> event.</summary>
     /// <seealso href="https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-onstatechange"/>

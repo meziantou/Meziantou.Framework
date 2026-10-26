@@ -375,7 +375,7 @@ public abstract class AudioNode : EventTarget
     // ----------------------------------------------------------------------------------------------------------------
 
     /// <summary>The parameters of the node, computed before each render quantum it processes.</summary>
-    private protected virtual IEnumerable<AudioParam> Parameters => [];
+    private protected virtual IEnumerable<AudioParam> NodeParameters => [];
 
     /// <summary>Whether the node is processed even when it has no connection (e.g. a started source, to fire its ended event).</summary>
     internal virtual bool RequiresProcessing => false;
@@ -397,7 +397,7 @@ public abstract class AudioNode : EventTarget
                     return true;
             }
 
-            foreach (var parameter in Parameters)
+            foreach (var parameter in NodeParameters)
             {
                 if (parameter.Inputs.Count > 0)
                     return true;
@@ -418,7 +418,7 @@ public abstract class AudioNode : EventTarget
             }
         }
 
-        foreach (var parameter in Parameters)
+        foreach (var parameter in NodeParameters)
         {
             foreach (var (node, _) in parameter.Inputs)
             {
@@ -448,7 +448,7 @@ public abstract class AudioNode : EventTarget
     /// <summary>The nodes connected to the parameters of this node.</summary>
     internal IEnumerable<AudioNode> GetParameterInputNodes()
     {
-        foreach (var parameter in Parameters)
+        foreach (var parameter in NodeParameters)
         {
             foreach (var (node, _) in parameter.Inputs)
             {
@@ -505,7 +505,7 @@ public abstract class AudioNode : EventTarget
 
         if (BreaksCycle)
         {
-            foreach (var parameter in Parameters)
+            foreach (var parameter in NodeParameters)
             {
                 parameter.Compute(startFrame);
             }
@@ -520,7 +520,7 @@ public abstract class AudioNode : EventTarget
             anyActiveInput |= MixInput(_inputs[i]);
         }
 
-        foreach (var parameter in Parameters)
+        foreach (var parameter in NodeParameters)
         {
             parameter.Compute(startFrame);
         }

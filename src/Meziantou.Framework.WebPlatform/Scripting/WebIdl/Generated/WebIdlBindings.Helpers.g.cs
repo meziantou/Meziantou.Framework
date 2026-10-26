@@ -147,6 +147,8 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
 
     private static readonly global::Meziantou.Framework.WebPlatform.WebAudio.AudioBufferSourceOptions Defaults_WebAudio_AudioBufferSourceOptions = new();
 
+    private static readonly global::Meziantou.Framework.WebPlatform.WebAudio.AudioWorkletNodeOptions Defaults_WebAudio_AudioWorkletNodeOptions = new();
+
     private static readonly global::Meziantou.Framework.WebPlatform.WebAudio.BiquadFilterOptions Defaults_WebAudio_BiquadFilterOptions = new();
 
     private static readonly global::Meziantou.Framework.WebPlatform.WebAudio.ChannelMergerOptions Defaults_WebAudio_ChannelMergerOptions = new();
@@ -2455,6 +2457,17 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return result;
     }
 
+    internal static TValue FromDictionary_WebAudio_AudioParamDescriptor(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.WebAudio.AudioParamDescriptor value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "automationRate", r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_WebAudio_AutomationRate(value.AutomationRate)));
+        r.SetMember(result, "defaultValue", r.FromNumber((double)value.DefaultValue));
+        r.SetMember(result, "maxValue", r.FromNumber((double)value.MaxValue));
+        r.SetMember(result, "minValue", r.FromNumber((double)value.MinValue));
+        r.SetMember(result, "name", r.FromString(value.Name));
+        return result;
+    }
+
     internal static TValue FromDictionary_WebAudio_AudioProcessingEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.WebAudio.AudioProcessingEventInit value)
     {
         var result = r.CreateObject();
@@ -2464,6 +2477,20 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         r.SetMember(result, "inputBuffer", r.Wrap(value.InputBuffer));
         r.SetMember(result, "outputBuffer", r.Wrap(value.OutputBuffer));
         r.SetMember(result, "playbackTime", r.FromNumber((double)value.PlaybackTime));
+        return result;
+    }
+
+    internal static TValue FromDictionary_WebAudio_AudioWorkletNodeOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.WebAudio.AudioWorkletNodeOptions value)
+    {
+        var result = r.CreateObject();
+        if (value.ChannelCount is not null) r.SetMember(result, "channelCount", (value.ChannelCount.HasValue ? r.FromNumber((double)value.ChannelCount.GetValueOrDefault()) : r.Adapter.Null));
+        if (value.ChannelCountMode is not null) r.SetMember(result, "channelCountMode", (value.ChannelCountMode.HasValue ? r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_WebAudio_ChannelCountMode(value.ChannelCountMode.GetValueOrDefault())) : r.Adapter.Null));
+        if (value.ChannelInterpretation is not null) r.SetMember(result, "channelInterpretation", (value.ChannelInterpretation.HasValue ? r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_WebAudio_ChannelInterpretation(value.ChannelInterpretation.GetValueOrDefault())) : r.Adapter.Null));
+        r.SetMember(result, "numberOfInputs", r.FromNumber((double)value.NumberOfInputs));
+        r.SetMember(result, "numberOfOutputs", r.FromNumber((double)value.NumberOfOutputs));
+        if (value.OutputChannelCount is not null) r.SetMember(result, "outputChannelCount", r.FromSequence(value.OutputChannelCount, static (r, e) => r.FromNumber((double)e)));
+        if (value.ParameterData is not null) r.SetMember(result, "parameterData", r.FromRecord(value.ParameterData, static (r, v) => r.FromNumber((double)v)));
+        if (value.ProcessorOptions is not null) r.SetMember(result, "processorOptions", r.ToJs((object?)value.ProcessorOptions));
         return result;
     }
 
@@ -7558,6 +7585,44 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
             InputBuffer = m3,
             OutputBuffer = m4,
             PlaybackTime = m5,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.WebAudio.AudioWorkletNodeOptions ToDictionary_WebAudio_AudioWorkletNodeOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "AudioWorkletNodeOptions");
+        var m0_value = r.GetDictionaryMember(value, "channelCount");
+        var m0_present = !r.Adapter.IsUndefined(m0_value);
+        var m0 = m0_present ? (uint?)r.ToUnsignedLong(m0_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None) : default;
+        var m1_value = r.GetDictionaryMember(value, "channelCountMode");
+        var m1_present = !r.Adapter.IsUndefined(m1_value);
+        var m1 = m1_present ? (string?)r.ToEnumerationValue(m1_value, "ChannelCountMode", WebIdlHelpers<TAdapter, TValue>.Enum_ChannelCountMode_Values) : default;
+        var m2_value = r.GetDictionaryMember(value, "channelInterpretation");
+        var m2_present = !r.Adapter.IsUndefined(m2_value);
+        var m2 = m2_present ? (string?)r.ToEnumerationValue(m2_value, "ChannelInterpretation", WebIdlHelpers<TAdapter, TValue>.Enum_ChannelInterpretation_Values) : default;
+        var m3_value = r.GetDictionaryMember(value, "numberOfInputs");
+        var m3 = r.Adapter.IsUndefined(m3_value) ? (uint)(uint)(1d) : r.ToUnsignedLong(m3_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None);
+        var m4_value = r.GetDictionaryMember(value, "numberOfOutputs");
+        var m4 = r.Adapter.IsUndefined(m4_value) ? (uint)(uint)(1d) : r.ToUnsignedLong(m4_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None);
+        var m5_value = r.GetDictionaryMember(value, "outputChannelCount");
+        var m5_present = !r.Adapter.IsUndefined(m5_value);
+        var m5 = m5_present ? (global::System.Collections.Generic.List<uint>?)r.ToSequence<uint>(m5_value, static (r, e) => r.ToUnsignedLong(e, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None)) : default;
+        var m6_value = r.GetDictionaryMember(value, "parameterData");
+        var m6_present = !r.Adapter.IsUndefined(m6_value);
+        var m6 = m6_present ? (global::System.Collections.Generic.List<global::System.Collections.Generic.KeyValuePair<string, double>>?)r.ToRecord(m6_value, static (r, k) => r.ToDomString(k), static (r, e) => r.ToDouble(e, restricted: true)) : default;
+        var m7_value = r.GetDictionaryMember(value, "processorOptions");
+        var m7_present = !r.Adapter.IsUndefined(m7_value);
+        var m7 = m7_present ? (TValue?)r.ToObject(m7_value) : default;
+        return new global::Meziantou.Framework.WebPlatform.WebAudio.AudioWorkletNodeOptions
+        {
+            ChannelCount = m0_present ? m0 : Defaults_WebAudio_AudioWorkletNodeOptions.ChannelCount,
+            ChannelCountMode = m1_present ? (m1 is { } enumValue_m1 ? WebIdlHelpers<TAdapter, TValue>.ToEnum_WebAudio_ChannelCountMode(enumValue_m1) : (global::Meziantou.Framework.WebPlatform.WebAudio.ChannelCountMode?)null) : Defaults_WebAudio_AudioWorkletNodeOptions.ChannelCountMode,
+            ChannelInterpretation = m2_present ? (m2 is { } enumValue_m2 ? WebIdlHelpers<TAdapter, TValue>.ToEnum_WebAudio_ChannelInterpretation(enumValue_m2) : (global::Meziantou.Framework.WebPlatform.WebAudio.ChannelInterpretation?)null) : Defaults_WebAudio_AudioWorkletNodeOptions.ChannelInterpretation,
+            NumberOfInputs = m3,
+            NumberOfOutputs = m4,
+            OutputChannelCount = m5_present ? m5 : Defaults_WebAudio_AudioWorkletNodeOptions.OutputChannelCount,
+            ParameterData = m6_present ? m6 : Defaults_WebAudio_AudioWorkletNodeOptions.ParameterData,
+            ProcessorOptions = m7_present ? m7 : Defaults_WebAudio_AudioWorkletNodeOptions.ProcessorOptions,
         };
     }
 

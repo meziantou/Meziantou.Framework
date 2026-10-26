@@ -34,7 +34,7 @@ public sealed class ConstantSourceNode : AudioScheduledSourceNode
     [IdlMember("offset", "https://webaudio.github.io/web-audio-api/#dom-constantsourcenode-offset")]
     public AudioParam Offset { get; }
 
-    private protected override IEnumerable<AudioParam> Parameters => [Offset];
+    private protected override IEnumerable<AudioParam> NodeParameters => [Offset];
 
     private protected override void Process(long startFrame, int length)
     {

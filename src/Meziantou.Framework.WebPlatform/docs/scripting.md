@@ -273,7 +273,8 @@ paint worklet of the CSS Painting API (`CSS.paintWorklet`, `Document.PaintWorkle
 [Paint worklet images](rendering.md#paint-worklet-images)), the layout worklet of the CSS Layout API (`CSS.layoutWorklet`,
 `Document.LayoutWorklet`; see [Layout API containers](layout.md#layout-api-containers-csslayoutlayoutapi-csslayoutapi))
 and the animation worklet of the CSS Animation Worklet API (`CSS.animationWorklet`, `Document.AnimationWorklet`; see
-[Animation worklet](animations.md#animation-worklet)). The audio worklets are not implemented (no Web Audio).
+[Animation worklet](animations.md#animation-worklet)). The audio worklet of the Web Audio API (`BaseAudioContext.audioWorklet`)
+is described in [Web Audio](web-audio.md#audio-worklet).
 
 ```js
 await CSS.paintWorklet.addModule('paint.js', { credentials: 'same-origin' });

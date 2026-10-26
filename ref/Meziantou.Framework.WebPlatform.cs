@@ -9121,6 +9121,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         Track = 19,
         PaintWorklet = 20,
         SpeculationRules = 21,
+        AudioWorklet = 22,
     }
 
     public enum RequestMode
@@ -13465,6 +13466,24 @@ namespace Meziantou.Framework.WebPlatform.WebAudio
         public Meziantou.Framework.WebPlatform.WebAudio.AudioParam SetValueCurveAtTime(System.Collections.Generic.IReadOnlyList<float> values, double startTime, double duration) => throw null;
     }
 
+    public sealed class AudioParamDescriptor
+    {
+        public Meziantou.Framework.WebPlatform.WebAudio.AutomationRate AutomationRate { get => throw null; init { } }
+        public float DefaultValue { get => throw null; init { } }
+        public float MaxValue { get => throw null; init { } }
+        public float MinValue { get => throw null; init { } }
+        public required string Name { get => throw null; init { } }
+    }
+
+    public sealed class AudioParamMap : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, Meziantou.Framework.WebPlatform.WebAudio.AudioParam>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<string, Meziantou.Framework.WebPlatform.WebAudio.AudioParam>>, System.Collections.IEnumerable
+    {
+        public int Count { get => throw null; }
+        public Meziantou.Framework.WebPlatform.WebAudio.AudioParam? Get(string name) => throw null;
+        public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, Meziantou.Framework.WebPlatform.WebAudio.AudioParam>> GetEnumerator() => throw null;
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+        public bool Has(string name) => throw null;
+    }
+
     public sealed class AudioProcessingEvent : Meziantou.Framework.WebPlatform.Dom.Event
     {
         public Meziantou.Framework.WebPlatform.WebAudio.AudioBuffer InputBuffer { get => throw null; }
@@ -13487,6 +13506,43 @@ namespace Meziantou.Framework.WebPlatform.WebAudio
         public void Stop(double when = 0d) { }
     }
 
+    public sealed class AudioWorklet : Meziantou.Framework.WebPlatform.Dom.Worklet
+    {
+        public Meziantou.Framework.WebPlatform.Dom.MessagePort Port { get => throw null; }
+    }
+
+    public sealed class AudioWorkletGlobalScope : Meziantou.Framework.WebPlatform.Dom.WorkletGlobalScope
+    {
+        public ulong CurrentFrame { get => throw null; }
+        public double CurrentTime { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.MessagePort Port { get => throw null; }
+        public uint RenderQuantumSize { get => throw null; }
+        public float SampleRate { get => throw null; }
+        public void RegisterProcessor(string name, Meziantou.Framework.WebPlatform.Dom.WorkletClassConstructor processorCtor) { }
+    }
+
+    public sealed class AudioWorkletNode : Meziantou.Framework.WebPlatform.WebAudio.AudioNode
+    {
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnProcessorError { get => throw null; set { } }
+        public Meziantou.Framework.WebPlatform.WebAudio.AudioParamMap Parameters { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.MessagePort Port { get => throw null; }
+        public AudioWorkletNode(Meziantou.Framework.WebPlatform.WebAudio.BaseAudioContext context, string name, Meziantou.Framework.WebPlatform.WebAudio.AudioWorkletNodeOptions? options = null) { }
+    }
+
+    public sealed class AudioWorkletNodeOptions : Meziantou.Framework.WebPlatform.WebAudio.AudioNodeOptions
+    {
+        public uint NumberOfInputs { get => throw null; init { } }
+        public uint NumberOfOutputs { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<uint>? OutputChannelCount { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string, double>>? ParameterData { get => throw null; init { } }
+        public object? ProcessorOptions { get => throw null; init { } }
+    }
+
+    public class AudioWorkletProcessor
+    {
+        public Meziantou.Framework.WebPlatform.Dom.MessagePort Port { get => throw null; }
+    }
+
     public enum AutomationRate
     {
         ARate = 0,
@@ -13495,6 +13551,7 @@ namespace Meziantou.Framework.WebPlatform.WebAudio
 
     public abstract class BaseAudioContext : Meziantou.Framework.WebPlatform.Dom.EventTarget
     {
+        public Meziantou.Framework.WebPlatform.WebAudio.AudioWorklet AudioWorklet { get => throw null; }
         public double CurrentTime { get => throw null; }
         public Meziantou.Framework.WebPlatform.WebAudio.AudioDestinationNode Destination { get => throw null; }
         public Meziantou.Framework.WebPlatform.WebAudio.AudioListener Listener { get => throw null; }

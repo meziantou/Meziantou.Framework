@@ -664,10 +664,7 @@
     "total": 1
   },
   "speculation-rules/prefetch/tentative/service-worker/basic.sub.https.html?origin=same-site&sw=race-fetch-handler-modify-url": {
-    "total": 1,
-    "failures": {
-      "Prefetch with ServiceWorker (race-fetch-handler-modify-url)": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/tentative/service-worker/basic.sub.https.html?origin=same-site&sw=race-fetch-handler-to-fallback": {
     "total": 1

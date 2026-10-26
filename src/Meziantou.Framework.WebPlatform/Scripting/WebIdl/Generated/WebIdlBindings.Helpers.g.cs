@@ -119,6 +119,10 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.ReportingObserverOptions Defaults_Dom_ReportingObserverOptions = new();
 
+    private static readonly global::Meziantou.Framework.WebPlatform.Dom.RouterCondition Defaults_Dom_RouterCondition = new();
+
+    private static readonly global::Meziantou.Framework.WebPlatform.Dom.RouterSourceDict Defaults_Dom_RouterSourceDict = new();
+
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.SanitizerConfig Defaults_Dom_SanitizerConfig = new();
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.SanitizerElementNamespaceWithAttributes Defaults_Dom_SanitizerElementNamespaceWithAttributes = new() { Name = default! };
@@ -297,9 +301,17 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
 
     internal static readonly string[] Enum_RequestCredentials_Values = new[] { "omit", "same-origin", "include" };
 
+    internal static readonly string[] Enum_RequestDestination_Values = new[] { "", "audio", "audioworklet", "document", "embed", "font", "frame", "iframe", "image", "json", "manifest", "object", "paintworklet", "report", "script", "sharedworker", "style", "text", "track", "video", "worker", "xslt" };
+
+    internal static readonly string[] Enum_RequestMode_Values = new[] { "navigate", "same-origin", "no-cors", "cors" };
+
     internal static readonly string[] Enum_ResizeObserverBoxOptions_Values = new[] { "border-box", "content-box", "device-pixel-content-box" };
 
     internal static readonly string[] Enum_ResizeQuality_Values = new[] { "pixelated", "low", "medium", "high" };
+
+    internal static readonly string[] Enum_RouterSourceEnum_Values = new[] { "cache", "fetch-event", "network", "race-network-and-fetch-handler" };
+
+    internal static readonly string[] Enum_RunningStatus_Values = new[] { "running", "not-running" };
 
     internal static readonly string[] Enum_SanitizerPresets_Values = new[] { "default" };
 
@@ -1879,6 +1891,34 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return result;
     }
 
+    internal static TValue FromDictionary_Dom_RouterCondition(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.RouterCondition value)
+    {
+        var result = r.CreateObject();
+        if (value.Not is not null) r.SetMember(result, "not", (value.Not is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_RouterCondition(r, dictionaryValue) : r.Adapter.Null));
+        if (value.Or is not null) r.SetMember(result, "or", r.FromSequence(value.Or, static (r, e) => (e is { } dictionaryValue2 ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_RouterCondition(r, dictionaryValue2) : r.Adapter.Null)));
+        if (value.RequestDestination is not null) r.SetMember(result, "requestDestination", r.FromString(value.RequestDestination));
+        if (value.RequestMethod is not null) r.SetMember(result, "requestMethod", r.FromString(value.RequestMethod));
+        if (value.RequestMode is not null) r.SetMember(result, "requestMode", r.FromString(value.RequestMode));
+        if (value.RunningStatus is not null) r.SetMember(result, "runningStatus", (value.RunningStatus.HasValue ? r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_RunningStatus(value.RunningStatus.GetValueOrDefault())) : r.Adapter.Null));
+        if (value.UrlPattern is not null) r.SetMember(result, "urlPattern", r.ToJs((object?)value.UrlPattern));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_RouterRule(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.RouterRule value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "condition", (value.Condition is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_RouterCondition(r, dictionaryValue) : r.Adapter.Null));
+        r.SetMember(result, "source", r.ToJs((object?)value.Source));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_RouterSourceDict(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.RouterSourceDict value)
+    {
+        var result = r.CreateObject();
+        if (value.CacheName is not null) r.SetMember(result, "cacheName", r.FromString(value.CacheName));
+        return result;
+    }
+
     internal static TValue FromDictionary_Dom_SanitizerAttributeNamespace(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.SanitizerAttributeNamespace value)
     {
         var result = r.CreateObject();
@@ -3277,6 +3317,22 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         global::Meziantou.Framework.WebPlatform.Dom.ResizeQuality.Low => "low",
         global::Meziantou.Framework.WebPlatform.Dom.ResizeQuality.Medium => "medium",
         global::Meziantou.Framework.WebPlatform.Dom.ResizeQuality.High => "high",
+        _ => value.ToString(),
+    };
+
+    internal static string FromEnum_Dom_RouterSourceKind(global::Meziantou.Framework.WebPlatform.Dom.RouterSourceKind value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.Dom.RouterSourceKind.Cache => "cache",
+        global::Meziantou.Framework.WebPlatform.Dom.RouterSourceKind.FetchEvent => "fetch-event",
+        global::Meziantou.Framework.WebPlatform.Dom.RouterSourceKind.Network => "network",
+        global::Meziantou.Framework.WebPlatform.Dom.RouterSourceKind.RaceNetworkAndFetchHandler => "race-network-and-fetch-handler",
+        _ => value.ToString(),
+    };
+
+    internal static string FromEnum_Dom_RunningStatus(global::Meziantou.Framework.WebPlatform.Dom.RunningStatus value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.Dom.RunningStatus.Running => "running",
+        global::Meziantou.Framework.WebPlatform.Dom.RunningStatus.NotRunning => "not-running",
         _ => value.ToString(),
     };
 
@@ -6491,6 +6547,70 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         };
     }
 
+    internal static global::Meziantou.Framework.WebPlatform.Dom.RouterCondition ToDictionary_Dom_RouterCondition(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "RouterCondition");
+        var m0_value = r.GetDictionaryMember(value, "not");
+        var m0_present = !r.Adapter.IsUndefined(m0_value);
+        var m0 = m0_present ? (global::Meziantou.Framework.WebPlatform.Dom.RouterCondition?)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_RouterCondition(r, m0_value) : default;
+        var m1_value = r.GetDictionaryMember(value, "or");
+        var m1_present = !r.Adapter.IsUndefined(m1_value);
+        var m1 = m1_present ? (global::System.Collections.Generic.List<global::Meziantou.Framework.WebPlatform.Dom.RouterCondition>?)r.ToSequence<global::Meziantou.Framework.WebPlatform.Dom.RouterCondition>(m1_value, static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_RouterCondition(r, e)) : default;
+        var m2_value = r.GetDictionaryMember(value, "requestDestination");
+        var m2_present = !r.Adapter.IsUndefined(m2_value);
+        var m2 = m2_present ? (string?)r.ToEnumerationValue(m2_value, "RequestDestination", WebIdlHelpers<TAdapter, TValue>.Enum_RequestDestination_Values) : default;
+        var m3_value = r.GetDictionaryMember(value, "requestMethod");
+        var m3_present = !r.Adapter.IsUndefined(m3_value);
+        var m3 = m3_present ? (string?)r.ToByteString(m3_value) : default;
+        var m4_value = r.GetDictionaryMember(value, "requestMode");
+        var m4_present = !r.Adapter.IsUndefined(m4_value);
+        var m4 = m4_present ? (string?)r.ToEnumerationValue(m4_value, "RequestMode", WebIdlHelpers<TAdapter, TValue>.Enum_RequestMode_Values) : default;
+        var m5_value = r.GetDictionaryMember(value, "runningStatus");
+        var m5_present = !r.Adapter.IsUndefined(m5_value);
+        var m5 = m5_present ? (string?)r.ToEnumerationValue(m5_value, "RunningStatus", WebIdlHelpers<TAdapter, TValue>.Enum_RunningStatus_Values) : default;
+        var m6_value = r.GetDictionaryMember(value, "urlPattern");
+        var m6_present = !r.Adapter.IsUndefined(m6_value);
+        var m6 = m6_present ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_83fe582c(r, m6_value) : default;
+        return new global::Meziantou.Framework.WebPlatform.Dom.RouterCondition
+        {
+            Not = m0_present ? m0 : Defaults_Dom_RouterCondition.Not,
+            Or = m1_present ? m1 : Defaults_Dom_RouterCondition.Or,
+            RequestDestination = m2_present ? m2 : Defaults_Dom_RouterCondition.RequestDestination,
+            RequestMethod = m3_present ? m3 : Defaults_Dom_RouterCondition.RequestMethod,
+            RequestMode = m4_present ? m4 : Defaults_Dom_RouterCondition.RequestMode,
+            RunningStatus = m5_present ? (m5 is { } enumValue_m5 ? WebIdlHelpers<TAdapter, TValue>.ToEnum_Dom_RunningStatus(enumValue_m5) : (global::Meziantou.Framework.WebPlatform.Dom.RunningStatus?)null) : Defaults_Dom_RouterCondition.RunningStatus,
+            UrlPattern = m6_present ? (m6 is null ? (global::Meziantou.Framework.WebPlatform.Dom.UrlPatternCompatible?)null : WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_UrlPatternCompatible(r, m6)) : Defaults_Dom_RouterCondition.UrlPattern,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.RouterRule ToDictionary_Dom_RouterRule(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "RouterRule");
+        var m0_value = r.GetDictionaryMember(value, "condition");
+        if (r.Adapter.IsUndefined(m0_value)) throw r.MissingRequiredDictionaryMember("RouterRule", "condition");
+        var m0 = WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_RouterCondition(r, m0_value);
+        var m1_value = r.GetDictionaryMember(value, "source");
+        if (r.Adapter.IsUndefined(m1_value)) throw r.MissingRequiredDictionaryMember("RouterRule", "source");
+        var m1 = WebIdlHelpers<TAdapter, TValue>.ToUnion_eed48ebc(r, m1_value);
+        return new global::Meziantou.Framework.WebPlatform.Dom.RouterRule
+        {
+            Condition = m0,
+            Source = WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_RouterSource(r, m1),
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.RouterSourceDict ToDictionary_Dom_RouterSourceDict(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "RouterSourceDict");
+        var m0_value = r.GetDictionaryMember(value, "cacheName");
+        var m0_present = !r.Adapter.IsUndefined(m0_value);
+        var m0 = m0_present ? (string?)r.ToDomString(m0_value) : default;
+        return new global::Meziantou.Framework.WebPlatform.Dom.RouterSourceDict
+        {
+            CacheName = m0_present ? m0 : Defaults_Dom_RouterSourceDict.CacheName,
+        };
+    }
+
     internal static global::Meziantou.Framework.WebPlatform.Dom.SanitizerAttributeNamespace ToDictionary_Dom_SanitizerAttributeNamespace(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
     {
         r.CheckDictionary(value, "SanitizerAttributeNamespace");
@@ -8584,6 +8704,22 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
     };
 
+    internal static global::Meziantou.Framework.WebPlatform.Dom.RouterSourceKind ToEnum_Dom_RouterSourceKind(string value) => value switch
+    {
+        "cache" => global::Meziantou.Framework.WebPlatform.Dom.RouterSourceKind.Cache,
+        "fetch-event" => global::Meziantou.Framework.WebPlatform.Dom.RouterSourceKind.FetchEvent,
+        "network" => global::Meziantou.Framework.WebPlatform.Dom.RouterSourceKind.Network,
+        "race-network-and-fetch-handler" => global::Meziantou.Framework.WebPlatform.Dom.RouterSourceKind.RaceNetworkAndFetchHandler,
+        _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
+    };
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.RunningStatus ToEnum_Dom_RunningStatus(string value) => value switch
+    {
+        "running" => global::Meziantou.Framework.WebPlatform.Dom.RunningStatus.Running,
+        "not-running" => global::Meziantou.Framework.WebPlatform.Dom.RunningStatus.NotRunning,
+        _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
+    };
+
     internal static global::Meziantou.Framework.WebPlatform.Dom.SanitizerPresets ToEnum_Dom_SanitizerPresets(string value) => value switch
     {
         "default" => global::Meziantou.Framework.WebPlatform.Dom.SanitizerPresets.Default,
@@ -8965,6 +9101,13 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         _ => throw new global::System.InvalidCastException("The value cannot be converted to ParseHtmlUnsafeOptionsOrTrustedHtmlParserOptions"),
     };
 
+    internal static global::Meziantou.Framework.WebPlatform.Dom.RouterSource ToUnionStruct_Dom_RouterSource(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, object? value) => value switch
+    {
+        string enumValue when WebIdlHelpers<TAdapter, TValue>.TryToEnum_Dom_RouterSourceKind(enumValue, out var enumResult) => enumResult,
+        global::Meziantou.Framework.WebPlatform.Dom.RouterSourceDict v => v,
+        _ => throw new global::System.InvalidCastException("The value cannot be converted to RouterSource"),
+    };
+
     internal static global::Meziantou.Framework.WebPlatform.Dom.SanitizerAttribute ToUnionStruct_Dom_SanitizerAttribute(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, object? value) => value switch
     {
         string v => v,
@@ -9042,6 +9185,14 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         global::Meziantou.Framework.WebPlatform.Dom.TrustedHtml v => v,
         string v => v,
         _ => throw new global::System.InvalidCastException("The value cannot be converted to TrustedHtmlOrString"),
+    };
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.UrlPatternCompatible ToUnionStruct_Dom_UrlPatternCompatible(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, object? value) => value switch
+    {
+        string v => v,
+        global::Meziantou.Framework.WebPlatform.Dom.UrlPatternInit v => v,
+        global::Meziantou.Framework.WebPlatform.Dom.UrlPattern v => v,
+        _ => throw new global::System.InvalidCastException("The value cannot be converted to UrlPatternCompatible"),
     };
 
     internal static global::Meziantou.Framework.WebPlatform.Dom.UrlPatternInput ToUnionStruct_Dom_UrlPatternInput(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, object? value) => value switch
@@ -9691,6 +9842,21 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return r.ToUsvString(value);
     }
 
+    /// <summary>(USVString or URLPatternInit or URLPattern)</summary>
+    internal static object? ToUnion_83fe582c(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.IsNullOrUndefined(value)) return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_UrlPatternInit(r, value);
+        if (r.Unwrap(value) is { } platformObject)
+        {
+            if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.UrlPattern) return platformObject;
+        }
+        if (r.Adapter.IsObject(value))
+        {
+            return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_UrlPatternInit(r, value);
+        }
+        return r.ToUsvString(value);
+    }
+
     /// <summary>(sequence&lt;sequence&lt;ByteString&gt;&gt; or record&lt;ByteString, ByteString&gt;)</summary>
     internal static object? ToUnion_8520c452(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
     {
@@ -9844,6 +10010,18 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         {
         }
         throw r.CreateTypeError("The value cannot be converted to (Element or Text)");
+    }
+
+    /// <summary>(RouterRule or sequence&lt;RouterRule&gt;)</summary>
+    internal static object? ToUnion_bcc4a375(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.IsNullOrUndefined(value)) return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_RouterRule(r, value);
+        if (r.Adapter.IsObject(value))
+        {
+            if (r.HasIterator(value)) return r.ToSequence<global::Meziantou.Framework.WebPlatform.Dom.RouterRule>(value, static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_RouterRule(r, e));
+            return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_RouterRule(r, value);
+        }
+        throw r.CreateTypeError("The value cannot be converted to (RouterRule or sequence<RouterRule>)");
     }
 
     /// <summary>(boolean or ImportNodeOptions)</summary>
@@ -10111,6 +10289,17 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return r.ToDomString(value);
     }
 
+    /// <summary>(RouterSourceDict or RouterSourceEnum)</summary>
+    internal static object? ToUnion_eed48ebc(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.IsNullOrUndefined(value)) return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_RouterSourceDict(r, value);
+        if (r.Adapter.IsObject(value))
+        {
+            return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_RouterSourceDict(r, value);
+        }
+        return r.ToEnumerationValue(value, "RouterSourceEnum", WebIdlHelpers<TAdapter, TValue>.Enum_RouterSourceEnum_Values);
+    }
+
     /// <summary>(DOMString or SanitizerElementNamespaceWithAttributes)</summary>
     internal static object? ToUnion_f09d6e44(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
     {
@@ -10214,6 +10403,20 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         try
         {
             result = WebIdlHelpers<TAdapter, TValue>.ToEnum_Dom_AutoKeyword(value);
+            return true;
+        }
+        catch (global::System.ArgumentException)
+        {
+            result = default;
+            return false;
+        }
+    }
+
+    internal static bool TryToEnum_Dom_RouterSourceKind(string value, out global::Meziantou.Framework.WebPlatform.Dom.RouterSourceKind result)
+    {
+        try
+        {
+            result = WebIdlHelpers<TAdapter, TValue>.ToEnum_Dom_RouterSourceKind(value);
             return true;
         }
         catch (global::System.ArgumentException)

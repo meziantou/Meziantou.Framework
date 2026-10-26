@@ -931,7 +931,9 @@ entry (see [Preloads](#preloads)).
 - `workerStart` is the time the request was given to a service worker (0 when no fetch event is dispatched for it), also
   when the timing allow check fails; `fetchStart` is then the time the fetch event was dispatched, once the worker is
   running and activated. The requests answered by a service worker are reported as the requests answered by the network.
-  The times of the static routing API (`workerRouterEvaluationStart`...) are 0.
+  The fields of the static routing API (`workerRouterEvaluationStart`, `workerCacheLookupStart`,
+  `workerMatchedRouterSource` and `workerFinalRouterSource`) are set when the service worker has router rules, also for
+  the `PerformanceNavigationTiming` entry of a navigation.
 
 **[Navigation Timing](https://w3c.github.io/navigation-timing/)**: each document of a browsing context has a
 `PerformanceNavigationTiming` entry (`performance.getEntriesByType("navigation")`), created with the document and queued to
@@ -3322,6 +3324,20 @@ await context.WaitUntilIdleAsync();
   (e.g. the `Content-Range` of a CORS response, which a media element needs).
 - The navigation preload (`registration.navigationPreload`) sends the preload request in parallel with the `fetch`
   event, with the `Service-Worker-Navigation-Preload` header.
+- The static routing API (`InstallEvent.addRoutes()`): the rules registered while the `install` event is dispatched are
+  evaluated, in order, before the `fetch` event of a request of the active worker. The conditions are `urlPattern`
+  (relative to the URL of the script, without regular expression groups), `requestMethod`, `requestMode`,
+  `requestDestination`, `runningStatus`, `or` and `not`, with the limits of the specification (1024 conditions, 10
+  nested levels). The `network` source sends the request to the network without `fetch` event; the `cache` source (or
+  `{ cacheName }`) answers with the first matching entry of the caches of the origin, looked up in creation order as
+  `caches.match()` (the specification stops at the first cache without entry), else sends the request to the network;
+  `race-network-and-fetch-handler` sends a GET request to the network while the `fetch` event is dispatched, and uses the
+  first of a network response whose status is an ok status and of the response of the `fetch` event (the network
+  response when the event does not respond). A GET request of the service worker to the URL of a running race (e.g.
+  `fetch(event.request)`) gets the response of the network request of the race. The rules are saved with the
+  registration (`StoredServiceWorker.RouterRules` of the `ServiceWorkerBackend`): a URL pattern is stored as the pattern
+  strings of its components and its `ignoreCase` option, and the rules of a stored worker are dropped when one of them
+  is not valid. The caches of a partitioned storage key (a credentialless iframe) are not looked up by the `cache` source.
 - The clients (`clients.get()`, `matchAll()`, `claim()`, `openWindow()`, `WindowClient.focus()` and `navigate()`) are the
   windows and the dedicated and shared workers of the browsing context group. `openWindow()` and `focus()` require the
   transient activation of a window of the origin. `matchAll()` lists the windows that were focused first, the most
@@ -3333,7 +3349,7 @@ await context.WaitUntilIdleAsync();
   `DOMContentLoaded` event of the document). `ServiceWorker.postMessage()` throws an `InvalidStateError` for the object
   of a window whose document is not fully active (e.g. a removed iframe), and `register()` is rejected with an
   `InvalidStateError` in a window that is closing.
-- Not implemented: the static routing API (`InstallEvent.addRoutes()`), the idle termination of the service workers and
+- Not implemented: the idle termination of the service workers and
   the timeouts of their events, `Clear-Site-Data` (it only clears the client hints and the speculative loads), the storage partitioning by top-level site, the `cookieStore` of the
   service workers, and the reserved clients (`clients.get(event.resultingClientId)` resolves with `undefined` until the
   document or the worker of the navigation exists, and the document that replaces the initial `about:blank` document of

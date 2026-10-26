@@ -20,8 +20,18 @@ internal static class Binding_InstallEvent<TAdapter, TValue> where TAdapter : st
         DefineMembers = DefineMembers,
     };
 
+    private static TValue Op_addRoutes(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.InstallEvent>(t, Binding);
+        if (a.Length < 1) throw r.NotEnoughArguments("addRoutes", 1, a.Length);
+        var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_bcc4a375(r, a[0]);
+        if ((a0 is null or global::Meziantou.Framework.WebPlatform.Dom.RouterRule)) { var result = o.AddRoutes((global::Meziantou.Framework.WebPlatform.Dom.RouterRule)a0!); return r.ToPromise(result); }
+        if ((a0 is null or global::System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.WebPlatform.Dom.RouterRule>)) { var result = o.AddRoutes((global::System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.WebPlatform.Dom.RouterRule>)a0!); return r.ToPromise(result); }
+        throw r.CreateTypeError("Failed to execute 'addRoutes': the arguments are not supported");
+    }
     private static void DefineMembers(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue interfaceObject, TValue prototype, TValue instanceTarget)
     {
+        r.DefineOperation(instanceTarget, "addRoutes", 1, Op_addRoutes, returnsPromise: true);
     }
 
     private static object Construct(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::System.ReadOnlySpan<TValue> a)

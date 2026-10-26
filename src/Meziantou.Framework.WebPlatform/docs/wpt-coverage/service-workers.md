@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 232 | 283 | 4 | 83% |
-| [Tentative](#tentative-tests) | 0 | 11 | 0 | 0% |
+| [Stable](#stable-tests) | 244 | 283 | 4 | 87% |
+| [Tentative](#tentative-tests) | 1 | 11 | 0 | 9% |
 | [Reftests](#reftests) | 1 | 1 | 0 | 100% |
-| **All** | **233** | **295** | **4** | **80%** |
+| **All** | **246** | **295** | **4** | **85%** |
 
 ## Stable tests
 
@@ -31,7 +31,7 @@
 | [`cache-storage/common.https.window.js`](https://wpt.fyi/results/service-workers/cache-storage/common.https.window.js) | Pass | 1 / 1 |  |  |
 | [`cache-storage/credentials.https.html`](https://wpt.fyi/results/service-workers/cache-storage/credentials.https.html) | Pass | 1 / 1 |  |  |
 | [`cache-storage/sandboxed-iframes.https.html`](https://wpt.fyi/results/service-workers/cache-storage/sandboxed-iframes.https.html) | Pass | 2 / 2 |  |  |
-| [`idlharness.https.any.js`](https://wpt.fyi/results/service-workers/idlharness.https.any.js) | Fail | 786 / 787 | NOT IMPLEMENTED | the static routing API (`InstallEvent.addRoutes()`) |
+| [`idlharness.https.any.js`](https://wpt.fyi/results/service-workers/idlharness.https.any.js) | Pass | 787 / 787 |  |  |
 | [`service-worker/Service-Worker-Allowed-header.https.html`](https://wpt.fyi/results/service-workers/service-worker/Service-Worker-Allowed-header.https.html) | Pass | 8 / 8 |  |  |
 | [`service-worker/ServiceWorkerGlobalScope/close.https.html`](https://wpt.fyi/results/service-workers/service-worker/ServiceWorkerGlobalScope/close.https.html) | Pass | 2 / 2 |  |  |
 | [`service-worker/ServiceWorkerGlobalScope/error-message-event.https.html`](https://wpt.fyi/results/service-workers/service-worker/ServiceWorkerGlobalScope/error-message-event.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `HTMLCanvasElement.captureStream()` (a `MediaStream` cannot be posted) |
@@ -50,7 +50,7 @@
 | [`service-worker/activation-after-registration.https.html`](https://wpt.fyi/results/service-workers/service-worker/activation-after-registration.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/activation.https.html`](https://wpt.fyi/results/service-workers/service-worker/activation.https.html) | Pass | 4 / 4 |  |  |
 | [`service-worker/active.https.html`](https://wpt.fyi/results/service-workers/service-worker/active.https.html) | Pass | 2 / 2 |  |  |
-| [`service-worker/add-routes.https.html`](https://wpt.fyi/results/service-workers/service-worker/add-routes.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the static routing API (`InstallEvent.addRoutes()`) |
+| [`service-worker/add-routes.https.html`](https://wpt.fyi/results/service-workers/service-worker/add-routes.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/claim-affect-other-registration.https.html`](https://wpt.fyi/results/service-workers/service-worker/claim-affect-other-registration.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/claim-fetch.https.html`](https://wpt.fyi/results/service-workers/service-worker/claim-fetch.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/claim-not-using-registration.https.html`](https://wpt.fyi/results/service-workers/service-worker/claim-not-using-registration.https.html) | Pass | 2 / 2 |  |  |
@@ -250,17 +250,17 @@
 | [`service-worker/soft-update-fetch-metadata.https.html`](https://wpt.fyi/results/service-workers/service-worker/soft-update-fetch-metadata.https.html) | Pass | 3 / 3 |  |  |
 | [`service-worker/srcdoc-iframe.https.html`](https://wpt.fyi/results/service-workers/service-worker/srcdoc-iframe.https.html) | Pass | 5 / 5 |  |  |
 | [`service-worker/state.https.html`](https://wpt.fyi/results/service-workers/service-worker/state.https.html) | Pass | 1 / 1 |  |  |
-| [`service-worker/static-router-cross-origin-navigation.https.html`](https://wpt.fyi/results/service-workers/service-worker/static-router-cross-origin-navigation.https.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | the static routing API (`InstallEvent.addRoutes()`) |
-| [`service-worker/static-router-fetch-event.https.html`](https://wpt.fyi/results/service-workers/service-worker/static-router-fetch-event.https.html) | Fail | 1 / 2 | NOT IMPLEMENTED | the static routing API (`InstallEvent.addRoutes()`) |
+| [`service-worker/static-router-cross-origin-navigation.https.html`](https://wpt.fyi/results/service-workers/service-worker/static-router-cross-origin-navigation.https.html) | Pass | 1 / 1 |  |  |
+| [`service-worker/static-router-fetch-event.https.html`](https://wpt.fyi/results/service-workers/service-worker/static-router-fetch-event.https.html) | Pass | 2 / 2 |  |  |
 | [`service-worker/static-router-invalid-rules.https.html`](https://wpt.fyi/results/service-workers/service-worker/static-router-invalid-rules.https.html) | Pass | 8 / 8 |  |  |
-| [`service-worker/static-router-main-resource.https.html`](https://wpt.fyi/results/service-workers/service-worker/static-router-main-resource.https.html) | Fail | 3 / 9 | NOT IMPLEMENTED | the static routing API (`InstallEvent.addRoutes()`) |
-| [`service-worker/static-router-multiple-router-registrations.https.html`](https://wpt.fyi/results/service-workers/service-worker/static-router-multiple-router-registrations.https.html) | Fail | 0 / 2 | NOT IMPLEMENTED | the static routing API (`InstallEvent.addRoutes()`) |
-| [`service-worker/static-router-mutiple-conditions.https.html`](https://wpt.fyi/results/service-workers/service-worker/static-router-mutiple-conditions.https.html) | Fail | 0 / 2 | NOT IMPLEMENTED | the static routing API (`InstallEvent.addRoutes()`) |
-| [`service-worker/static-router-no-fetch-handler.https.html`](https://wpt.fyi/results/service-workers/service-worker/static-router-no-fetch-handler.https.html) | Fail | 2 / 3 | NOT IMPLEMENTED | the static routing API (`InstallEvent.addRoutes()`) |
-| [`service-worker/static-router-race-network-and-fetch-handler.https.html`](https://wpt.fyi/results/service-workers/service-worker/static-router-race-network-and-fetch-handler.https.html) | Fail | 2 / 8 | NOT IMPLEMENTED | the static routing API (`InstallEvent.addRoutes()`) |
-| [`service-worker/static-router-request-destination.https.html`](https://wpt.fyi/results/service-workers/service-worker/static-router-request-destination.https.html) | Fail | 1 / 2 | NOT IMPLEMENTED | the static routing API (`InstallEvent.addRoutes()`) |
-| [`service-worker/static-router-request-method.https.html`](https://wpt.fyi/results/service-workers/service-worker/static-router-request-method.https.html) | Fail | 0 / 4 | NOT IMPLEMENTED | the static routing API (`InstallEvent.addRoutes()`) |
-| [`service-worker/static-router-subresource.https.html`](https://wpt.fyi/results/service-workers/service-worker/static-router-subresource.https.html) | Fail | 4 / 18 | NOT IMPLEMENTED | the static routing API (`InstallEvent.addRoutes()`) |
+| [`service-worker/static-router-main-resource.https.html`](https://wpt.fyi/results/service-workers/service-worker/static-router-main-resource.https.html) | Pass | 9 / 9 |  |  |
+| [`service-worker/static-router-multiple-router-registrations.https.html`](https://wpt.fyi/results/service-workers/service-worker/static-router-multiple-router-registrations.https.html) | Pass | 2 / 2 |  |  |
+| [`service-worker/static-router-mutiple-conditions.https.html`](https://wpt.fyi/results/service-workers/service-worker/static-router-mutiple-conditions.https.html) | Pass | 2 / 2 |  |  |
+| [`service-worker/static-router-no-fetch-handler.https.html`](https://wpt.fyi/results/service-workers/service-worker/static-router-no-fetch-handler.https.html) | Pass | 3 / 3 |  |  |
+| [`service-worker/static-router-race-network-and-fetch-handler.https.html`](https://wpt.fyi/results/service-workers/service-worker/static-router-race-network-and-fetch-handler.https.html) | Pass | 8 / 8 |  |  |
+| [`service-worker/static-router-request-destination.https.html`](https://wpt.fyi/results/service-workers/service-worker/static-router-request-destination.https.html) | Pass | 2 / 2 |  |  |
+| [`service-worker/static-router-request-method.https.html`](https://wpt.fyi/results/service-workers/service-worker/static-router-request-method.https.html) | Pass | 4 / 4 |  |  |
+| [`service-worker/static-router-subresource.https.html`](https://wpt.fyi/results/service-workers/service-worker/static-router-subresource.https.html) | Pass | 18 / 18 |  |  |
 | [`service-worker/synced-state.https.html`](https://wpt.fyi/results/service-workers/service-worker/synced-state.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/uncontrolled-page.https.html`](https://wpt.fyi/results/service-workers/service-worker/uncontrolled-page.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/unregister-controller.https.html`](https://wpt.fyi/results/service-workers/service-worker/unregister-controller.https.html) | Pass | 3 / 3 |  |  |
@@ -313,7 +313,7 @@
 | [`service-worker/tentative/fetch-event-download-out-of-scope.https.html`](https://wpt.fyi/results/service-workers/service-worker/tentative/fetch-event-download-out-of-scope.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the downloads (`<a download>`), and the service worker script of the test is not fetched |
 | [`service-worker/tentative/fetch-event-download-respond-with.https.html`](https://wpt.fyi/results/service-workers/service-worker/tentative/fetch-event-download-respond-with.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the downloads (`<a download>`), and the service worker script of the test is not fetched |
 | [`service-worker/tentative/fetch-event-download.https.html`](https://wpt.fyi/results/service-workers/service-worker/tentative/fetch-event-download.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the downloads (`<a download>`), and the service worker script of the test is not fetched |
-| [`service-worker/tentative/static-router/static-router-resource-timing.https.html`](https://wpt.fyi/results/service-workers/service-worker/tentative/static-router/static-router-resource-timing.https.html) | Fail | 0 / 14 | NOT IMPLEMENTED | the static routing API (`InstallEvent.addRoutes()`) |
+| [`service-worker/tentative/static-router/static-router-resource-timing.https.html`](https://wpt.fyi/results/service-workers/service-worker/tentative/static-router/static-router-resource-timing.https.html) | Pass | 14 / 14 |  |  |
 
 ## Reftests
 

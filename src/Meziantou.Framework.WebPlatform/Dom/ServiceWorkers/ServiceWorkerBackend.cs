@@ -88,6 +88,81 @@ public sealed class StoredServiceWorker
 
     /// <summary>Gets the URLs of the scripts imported by the service worker (https://w3c.github.io/ServiceWorker/#dfn-set-of-used-scripts).</summary>
     public IReadOnlyList<string> UsedScriptUrls { get; init; } = [];
+
+    /// <summary>Gets the rules registered by <c>InstallEvent.addRoutes()</c> (https://w3c.github.io/ServiceWorker/#dfn-list-of-router-rules), in order.</summary>
+    public IReadOnlyList<StoredServiceWorkerRouterRule> RouterRules { get; init; } = [];
+}
+
+/// <summary>A rule of the static routing API (https://w3c.github.io/ServiceWorker/#dictdef-routerrule) of a <see cref="StoredServiceWorker"/>.</summary>
+public sealed class StoredServiceWorkerRouterRule
+{
+    /// <summary>Gets the condition of the requests handled by the rule.</summary>
+    public required StoredServiceWorkerRouterCondition Condition { get; init; }
+
+    /// <summary>Gets the source: <c>network</c>, <c>cache</c>, <c>fetch-event</c> or <c>race-network-and-fetch-handler</c>.</summary>
+    public required string Source { get; init; }
+
+    /// <summary>Gets the name of the cache of a <c>cache</c> source, or null to look up every cache.</summary>
+    public string? CacheName { get; init; }
+}
+
+/// <summary>
+/// The condition of a <see cref="StoredServiceWorkerRouterRule"/> (https://w3c.github.io/ServiceWorker/#dictdef-routercondition).
+/// A null member is not present; <see cref="Or"/> and <see cref="Not"/> are not combined with the other members.
+/// </summary>
+public sealed class StoredServiceWorkerRouterCondition
+{
+    /// <summary>Gets the URL pattern, or null.</summary>
+    public StoredServiceWorkerUrlPattern? UrlPattern { get; init; }
+
+    /// <summary>Gets the normalized method (e.g. <c>POST</c>), or null.</summary>
+    public string? RequestMethod { get; init; }
+
+    /// <summary>Gets the mode (e.g. <c>no-cors</c>), or null.</summary>
+    public string? RequestMode { get; init; }
+
+    /// <summary>Gets the destination (e.g. <c>script</c>, or the empty string), or null.</summary>
+    public string? RequestDestination { get; init; }
+
+    /// <summary>Gets the running status: <c>running</c> or <c>not-running</c>, or null.</summary>
+    public string? RunningStatus { get; init; }
+
+    /// <summary>Gets the conditions of which one must match, or null.</summary>
+    public IReadOnlyList<StoredServiceWorkerRouterCondition>? Or { get; init; }
+
+    /// <summary>Gets the condition that must not match, or null.</summary>
+    public StoredServiceWorkerRouterCondition? Not { get; init; }
+}
+
+/// <summary>The URL pattern of a <see cref="StoredServiceWorkerRouterCondition"/>: the pattern strings of its components (https://urlpattern.spec.whatwg.org/#url-pattern-struct).</summary>
+public sealed class StoredServiceWorkerUrlPattern
+{
+    /// <summary>Gets the pattern of the protocol.</summary>
+    public string Protocol { get; init; } = "*";
+
+    /// <summary>Gets the pattern of the username.</summary>
+    public string Username { get; init; } = "*";
+
+    /// <summary>Gets the pattern of the password.</summary>
+    public string Password { get; init; } = "*";
+
+    /// <summary>Gets the pattern of the hostname.</summary>
+    public string Hostname { get; init; } = "*";
+
+    /// <summary>Gets the pattern of the port.</summary>
+    public string Port { get; init; } = "*";
+
+    /// <summary>Gets the pattern of the pathname.</summary>
+    public string Pathname { get; init; } = "*";
+
+    /// <summary>Gets the pattern of the search.</summary>
+    public string Search { get; init; } = "*";
+
+    /// <summary>Gets the pattern of the hash.</summary>
+    public string Hash { get; init; } = "*";
+
+    /// <summary>Gets whether the pattern ignores the case (https://urlpattern.spec.whatwg.org/#dom-urlpatternoptions-ignorecase).</summary>
+    public bool IgnoreCase { get; init; }
 }
 
 /// <summary>A response of the script resource map of a <see cref="StoredServiceWorker"/>.</summary>

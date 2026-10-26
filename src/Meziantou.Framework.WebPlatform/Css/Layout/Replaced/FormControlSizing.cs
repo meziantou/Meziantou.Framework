@@ -17,6 +17,18 @@ internal enum FormControlBaseline : byte
 
     /// <summary>The baseline of the first line of text at the block-start edge of the content box (a multiline text control, a list box).</summary>
     FirstLine,
+
+    /// <summary>
+    /// The block-end edge of the padding box of a checkbox or a radio button with its native appearance in a horizontal writing
+    /// mode (else the control has no baseline), as in the browsers (https://github.com/whatwg/html/issues/5065).
+    /// </summary>
+    PaddingBoxEnd,
+
+    /// <summary>
+    /// The block-end edge of the content box in a horizontal writing mode (else the control has no baseline): a color well, as
+    /// in the browsers (https://github.com/whatwg/html/issues/5065).
+    /// </summary>
+    ContentBoxEnd,
 }
 
 /// <summary>
@@ -104,13 +116,15 @@ internal static class FormControlSizing
         switch (input.InputType)
         {
             case InputType.Checkbox or InputType.Radio:
-                return new FormControlSize(FormControlContents.IsSwitch(input) ? SwitchInlineSize : CheckboxSize, CheckboxSize, FormControlBaseline.None);
+                return FormControlContents.IsSwitch(input)
+                    ? new FormControlSize(SwitchInlineSize, CheckboxSize, FormControlBaseline.None)
+                    : new FormControlSize(CheckboxSize, CheckboxSize, FormControlBaseline.PaddingBoxEnd);
 
             case InputType.Range:
                 return new FormControlSize(RangeInlineSize, RangeBlockSize, FormControlBaseline.None);
 
             case InputType.Color:
-                return new FormControlSize(ColorInlineSize, ColorBlockSize, FormControlBaseline.None);
+                return new FormControlSize(ColorInlineSize, ColorBlockSize, FormControlBaseline.ContentBoxEnd);
 
             case InputType.Submit or InputType.Reset or InputType.Button:
                 // https://html.spec.whatwg.org/multipage/rendering.html#the-input-element-as-a-button: the text of the value

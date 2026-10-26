@@ -71,10 +71,12 @@ internal static class FormControlContents
 
     /// <summary>
     /// Whether a form control is painted with its native appearance (https://drafts.csswg.org/css-ui-4/#appearance-switching):
-    /// its <c>appearance</c> is not <c>none</c>, it does not have base appearance and it is not a devolved widget.
+    /// its <c>appearance</c> is not <c>none</c>, it does not have base appearance (<c>base</c>, or <c>base-select</c> for a
+    /// <c>select</c> element) and it is not a devolved widget.
     /// </summary>
     public static bool HasNativeAppearance(Element element, ComputedStyle style)
-        => style.GetComputedValue("appearance") is not ("none" or "") && !StyleEngine.HasControlBaseAppearance(style) && !IsDevolvedWidget(element, style);
+        => style.GetComputedValue("appearance") is not ("none" or "") && !StyleEngine.HasControlBaseAppearance(style)
+            && !(element is HtmlSelectElement && StyleEngine.HasBaseAppearance(style)) && !IsDevolvedWidget(element, style);
 
     /// <summary>
     /// Whether the element is a form control with base appearance (https://drafts.csswg.org/css-forms-1/#appearance) that is
@@ -137,14 +139,20 @@ internal static class FormControlContents
     {
         // A progress bar, a meter, a text control and a select element fall back as soon as the author specifies one of the
         // properties (as in the browsers, whatever its value: WPT css/css-ui/compute-kind-widget-generated): "in an author-level
-        // rule", so that a declaration that reverts the property to the user agent origin does not count, nor an animation
-        if ((element is HtmlProgressElement or HtmlMeterElement || HasNativeFrame(element)) && style.MayHaveCascadedValueStartingWith("background", "border"))
+        // rule", so that a declaration that reverts the property to the user agent origin does not count, nor an animation or a
+        // transition: their computed values are not compared (WPT html/rendering/widgets/appearance/appearance-animation-002)
+        if (element is HtmlProgressElement or HtmlMeterElement || HasNativeFrame(element))
         {
+            if (!style.MayHaveCascadedValueStartingWith("background", "border"))
+                return false;
+
             foreach (var property in AppearanceDisablingProperties)
             {
                 if (style.HasAuthorCascadedValue(property))
                     return true;
             }
+
+            return style.HasAuthorCascadedValue("all");
         }
 
         if (style.GetComputedValue("background-image") is not ("none" or "") || style.GetComputedValue("border-image-source") is not ("none" or ""))
@@ -162,9 +170,17 @@ internal static class FormControlContents
         }
 
         var background = Rendering.DisplayColor.Parse(style.GetUsedValue("background-color")) ?? Rendering.DisplayColor.Transparent;
+        return background != GetNativeBackgroundColor(element, style);
+    }
+
+    /// <summary>
+    /// The background color of the native appearance of a widget, the one of the user agent style sheet: <c>Field</c> for the
+    /// text controls, transparent for the other ones.
+    /// </summary>
+    public static Rendering.DisplayColor GetNativeBackgroundColor(Element element, ComputedStyle style)
+    {
         var textControl = element is HtmlTextAreaElement or HtmlSelectElement or HtmlInputElement { InputType: not (InputType.Checkbox or InputType.Radio or InputType.Range or InputType.File or InputType.Image or InputType.Color) };
-        var expected = textControl ? Rendering.DisplayColor.Parse(CssValueComputer.GetSystemColor(style, "field")) ?? Rendering.DisplayColor.White : Rendering.DisplayColor.Transparent;
-        return background != expected;
+        return textControl ? Rendering.DisplayColor.Parse(CssValueComputer.GetSystemColor(style, "field")) ?? Rendering.DisplayColor.White : Rendering.DisplayColor.Transparent;
     }
 
     /// <summary>

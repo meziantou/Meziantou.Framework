@@ -4582,13 +4582,13 @@
     "reftest": "PASS"
   },
   "html/semantics/forms/the-input-element/range-tick-marks-01.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/semantics/forms/the-input-element/range-tick-marks-02.html": {
     "reftest": "PASS"
   },
   "html/semantics/forms/the-input-element/range-tick-marks-03.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/semantics/forms/the-input-element/range-tick-marks-04.html": {
     "reftest": "PASS"
@@ -4753,7 +4753,7 @@
     "reftest": "PASS"
   },
   "html/semantics/forms/the-option-element/dynamic-img-alt-change-rendering.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/semantics/forms/the-option-element/option-element-constructor.html": {
     "total": 11

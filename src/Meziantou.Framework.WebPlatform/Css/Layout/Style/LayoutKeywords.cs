@@ -454,6 +454,9 @@ internal enum AlignmentBaseline : byte
     Mathematical,
     TextTop,
     Hanging,
+
+    /// <summary><c>-webkit-baseline-middle</c>: the vertical middle of the box is aligned with the baseline of its parent (WebKit and Blink).</summary>
+    BaselineMiddle,
 }
 
 /// <summary>The keywords of baseline-shift (https://drafts.csswg.org/css-inline-3/#baseline-shift-property).</summary>
@@ -1209,6 +1212,7 @@ internal static class LayoutKeywords
         "mathematical" => AlignmentBaseline.Mathematical,
         "text-top" => AlignmentBaseline.TextTop,
         "hanging" => AlignmentBaseline.Hanging,
+        "-webkit-baseline-middle" => AlignmentBaseline.BaselineMiddle,
         _ => AlignmentBaseline.Baseline,
     };
 

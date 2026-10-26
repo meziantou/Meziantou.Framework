@@ -271,6 +271,15 @@ internal sealed partial class Painter
     {
         var color = GetColor(style, "background-color");
 
+        // A widget with its native appearance keeps its native background: its background color comes from the user agent
+        // style sheet, an animation or a transition (an author-level one devolves the widget, see FormControlContents.IsDevolvedWidget).
+        // A drop-down box with appearance: menulist-button keeps the background of CSS, as its borders (see PaintFormControl)
+        if (fragment.Box.Element is { } control && ReferenceEquals(style, fragment.Box.Style) && FormControlContents.HasNativeFrame(control)
+            && (control is not HtmlSelectElement || style.GetComputedValue("appearance") != "menulist-button") && FormControlContents.HasNativeAppearance(control, style))
+        {
+            color = FormControlContents.GetNativeBackgroundColor(control, style);
+        }
+
         // As in Chromium, the inline boxes have no background image in forced colors mode: it would be painted above the
         // backplate of the text (https://drafts.csswg.org/css-color-adjust-1/#forced, see PaintBackplates)
         var hasImages = style.GetComputedValue("background-image") is not ("none" or "") && !(fragment.Box.IsInlineBox && style.IsForcedColorsAdjusted);

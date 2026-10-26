@@ -17,7 +17,7 @@ internal static partial class CssPropertyRules
         ("pre-line", "preserve-breaks", "wrap"),
     ];
 
-    private static readonly HashSet<string> AlignmentBaselineKeywords = new(StringComparer.Ordinal) { "baseline", "text-bottom", "alphabetic", "ideographic", "middle", "central", "mathematical", "hanging", "text-top" };
+    private static readonly HashSet<string> AlignmentBaselineKeywords = new(StringComparer.Ordinal) { "baseline", "text-bottom", "alphabetic", "ideographic", "middle", "central", "mathematical", "hanging", "text-top", "-webkit-baseline-middle" };
 
     /// <summary>
     /// text-justify: distribute is a parse-time alias of inter-character (https://drafts.csswg.org/css-text-3/#valdef-text-justify-distribute).

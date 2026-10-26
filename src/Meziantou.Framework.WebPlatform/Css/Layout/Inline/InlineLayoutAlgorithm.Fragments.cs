@@ -891,7 +891,7 @@ internal sealed partial class InlineLayoutAlgorithm
             // use the baseline table from the font settings and first available font of that box, and align that baseline set to
             // the given single baseline" (the middle, text-top and text-bottom alignments use the edges of the box)
             ascent = marginOver + value;
-            if (alignment is not (AlignmentBaseline.Middle or AlignmentBaseline.TextTop or AlignmentBaseline.TextBottom))
+            if (alignment is not (AlignmentBaseline.Middle or AlignmentBaseline.BaselineMiddle or AlignmentBaseline.TextTop or AlignmentBaseline.TextBottom))
             {
                 ascent -= node.Metrics.GetBaseline(alignment);
             }
@@ -904,7 +904,7 @@ internal sealed partial class InlineLayoutAlgorithm
             // edges", the hanging baseline "at its line-over margin edge"
             ascent = alignment switch
             {
-                AlignmentBaseline.Central or AlignmentBaseline.Mathematical or AlignmentBaseline.Middle => marginBoxSize / 2,
+                AlignmentBaseline.Central or AlignmentBaseline.Mathematical or AlignmentBaseline.Middle or AlignmentBaseline.BaselineMiddle => marginBoxSize / 2,
                 AlignmentBaseline.Hanging or AlignmentBaseline.TextTop => 0,
                 _ => marginBoxSize,
             };
@@ -937,6 +937,10 @@ internal sealed partial class InlineLayoutAlgorithm
             // the parent box plus half the x-height of the parent" (the x-middle baseline of the parent). As in the browsers, the
             // midpoint of the box is aligned, not its own x-middle baseline (https://drafts.csswg.org/css-inline-3/#valdef-dominant-baseline-middle)
             AlignmentBaseline.Middle => parent.GetBaseline(AlignmentBaseline.Middle) - ((ascent - descent) / 2),
+
+            // -webkit-baseline-middle: the vertical midpoint of the box on the baseline of the parent (align=middle on the
+            // replaced elements, https://html.spec.whatwg.org/multipage/rendering.html#attributes-for-embedded-content-and-images)
+            AlignmentBaseline.BaselineMiddle => parent.GetBaseline(parent.DominantBaseline) - ((ascent - descent) / 2),
 
             // "Align the top of the box with the top of the parent's content area" (and the bottoms for text-bottom): as in the
             // browsers, the edges of the layout bounds of the box, not the ones of its content area

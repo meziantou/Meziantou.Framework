@@ -185,7 +185,8 @@
   two labels such as `www2.www`, and `not-web-platform.test` and its subdomains, on any port) serve the files of the test suite, so that the tests can create cross-origin
   iframes. The tests whose file name or variant (`?wpt_flags=https`) has the `https` flag are loaded from
   `https://web-platform.test:8443/`, the ones whose variant has the `h2` flag (`?wpt_flags=h2`) from
-  `https://web-platform.test:9000/` (the HTTP/2 server, which serves the same responses), the other ones from
+  `https://web-platform.test:9000/` (the HTTP/2 server, which serves the same responses without reason phrase: their
+  `statusText` is empty), the other ones from
   `http://web-platform.test:8000/`. The `.mjs` files are JavaScript, and a navigation to a missing file gets
   the 404 response of wptserve (a document with the origin of its URL), not a network error. The `nonexistent` subdomain (`{{domains[nonexistent]}}`) does not resolve: its requests are network errors. The responses have the headers of the `.headers` files (with the substitutions for the `.sub.headers` files) and of `pipe=header()`: the library checks the
   `Access-Control-Allow-Origin` header of the cross-origin requests in the CORS mode (a script with a `crossorigin`

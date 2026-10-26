@@ -809,7 +809,7 @@ internal sealed partial class WptTestRunner
             return (new DocumentResource(body) { Headers = headers, StatusCode = status, RemainingContentBytes = GetChunksAsync(response, repeatAfter: null) }, delay, null);
 
         if (response.Chunks.Count > 0 && !request.IsSynchronous && HeaderList.ExtractMimeType(headers)?.Essence == "text/event-stream")
-            return (new DocumentResource(body) { Headers = headers, StatusCode = status, StatusText = response.StatusText ?? WptReasonPhrase(status), RemainingContentBytes = GetChunksAsync(response, response.ChunksRepeatAfter) }, delay, null);
+            return (new DocumentResource(body) { Headers = headers, StatusCode = status, StatusText = GetStatusText(url, status, response.StatusText), RemainingContentBytes = GetChunksAsync(response, response.ChunksRepeatAfter) }, delay, null);
 
         // The body of fetch() is read as its chunks arrive
         if (response.Chunks.Count > 0 && isFetch && request.StreamsResponseBody)
@@ -838,7 +838,7 @@ internal sealed partial class WptTestRunner
         return (new DocumentResource(body)
         {
             StatusCode = status,
-            StatusText = response.StatusText ?? WptReasonPhrase(status),
+            StatusText = GetStatusText(url, status, response.StatusText),
             Headers = response.Streamed ? headers : AddContentLength(headers, body.Length),
         }, delay, null);
     }
@@ -892,7 +892,7 @@ internal sealed partial class WptTestRunner
                 // The body of a file served with a content coding is decoded (see CreateResource)
                 var fileResource = CreateResource(new DocumentResource(bytes), file, url, GetRequestHeaders(url, request));
                 bytes = fileResource.ContentBytes?.ToArray() ?? bytes;
-                resource = new DocumentResource(bytes) { StatusCode = fileResource.StatusCode, StatusText = WptReasonPhrase(fileResource.StatusCode), Headers = AddContentLength(fileResource.Headers, bytes.Length) };
+                resource = new DocumentResource(bytes) { StatusCode = fileResource.StatusCode, StatusText = GetStatusText(url, fileResource.StatusCode), Headers = AddContentLength(fileResource.Headers, bytes.Length) };
                 StoreCookies(url, request, resource.Headers);
                 delay = WptPipes.GetTrickleDelay(WptPipes.Get(url)) ?? TimeSpan.Zero;
             }
@@ -974,11 +974,11 @@ internal sealed partial class WptTestRunner
         if (!path.EndsWith('/', StringComparison.Ordinal))
         {
             var location = url.Protocol + "//" + url.Host + url.Pathname + "/" + url.Search;
-            return new DocumentResource(Array.Empty<byte>()) { StatusCode = 301, StatusText = WptReasonPhrase(301), Headers = [new("Location", location), new("Content-Length", "0")] };
+            return new DocumentResource(Array.Empty<byte>()) { StatusCode = 301, StatusText = GetStatusText(url, 301), Headers = [new("Location", location), new("Content-Length", "0")] };
         }
 
         var body = WptServer.GetDirectoryListing(path, directory);
-        return new DocumentResource(body) { StatusText = WptReasonPhrase(200), Headers = [new("Content-Type", "text/html"), new("Content-Length", body.Length.ToString(System.Globalization.CultureInfo.InvariantCulture))] };
+        return new DocumentResource(body) { StatusText = GetStatusText(url, 200), Headers = [new("Content-Type", "text/html"), new("Content-Length", body.Length.ToString(System.Globalization.CultureInfo.InvariantCulture))] };
     }
 
     private static List<KeyValuePair<string, string>> AddContentLength(IReadOnlyList<KeyValuePair<string, string>> headers, int length)
@@ -1023,6 +1023,12 @@ internal sealed partial class WptTestRunner
 
         return new DocumentResource(body) { StatusCode = status, StatusText = statusLine.Length > 2 ? statusLine[2] : "", Headers = headers };
     }
+
+    /// <summary>
+    /// The status message of a response of wptserve: the one set by the handler, else the reason phrase of the status. The
+    /// responses of the HTTP/2 server have none (HTTP/2 has no reason phrase).
+    /// </summary>
+    private static string GetStatusText(Url url, int status, string? statusText = null) => WptServer.IsHttp2(url) ? "" : statusText ?? WptReasonPhrase(status);
 
     /// <summary>The reason phrases of wptserve (the responses of Python's http.server).</summary>
     private static string WptReasonPhrase(int status) => status switch

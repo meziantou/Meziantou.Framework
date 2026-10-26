@@ -201,6 +201,51 @@ internal static partial class WptPythonHandlers
         ["/fetch/api/resources/redirect.py"] = FetchRedirect,
         ["/fetch/nosniff/resources/js.py"] = NosniffJs,
         ["/fetch/nosniff/resources/worker.py"] = NosniffWorker,
+
+        // fetch/nosniff/resources/image.py: an image (green-96x96.svg when the type parameter contains "svg", else
+        // blue96x96.png) with X-Content-Type-Options: nosniff and the type parameter as its Content-Type
+        ["/fetch/nosniff/resources/image.py"] = (request, response, _) =>
+        {
+            var type = request.Get("type");
+            response.Set("x-content-type-options", "nosniff");
+            response.Set("content-type", type);
+            response.Body = ReadWptFile(type is not null && type.Contains("svg", StringComparison.Ordinal) ? "images/green-96x96.svg" : "images/blue96x96.png");
+        },
+
+        // fetch/nosniff/resources/css.py: an empty style sheet with X-Content-Type-Options: nosniff and the type parameter as
+        // its Content-Type (a 304 response without body to a revalidation)
+        ["/fetch/nosniff/resources/css.py"] = (request, response, _) =>
+        {
+            response.Status = request.HasHeader("If-Modified-Since") ? 304 : 200;
+            response.Set("x-content-type-options", "nosniff");
+            response.Set("content-type", request.Get("type"));
+            response.Content = response.Status == 304 ? "" : "/* nothing to see here */";
+        },
+
+        // fetch/cross-origin-resource-policy/resources: the responses have the Cross-Origin-Resource-Policy header of the corp
+        // parameter (a missing parameter is a KeyError in Python, so a 500 response)
+        ["/fetch/cross-origin-resource-policy/resources/hello.py"] = (request, response, _) => CrossOriginResourcePolicyResponse(request, response, "hello"u8.ToArray()),
+        ["/fetch/cross-origin-resource-policy/resources/script.py"] = (request, response, _) => CrossOriginResourcePolicyResponse(request, response, []),
+        ["/fetch/cross-origin-resource-policy/resources/iframe.py"] = (request, response, _) =>
+        {
+            response.Set("Content-Type", "text/html");
+            response.Set("Cross-Origin-Resource-Policy", RequiredParameter(request, "corp"));
+            response.Content = "<body><h3>The iframe</h3><script>window.onmessage = () => { parent.postMessage('pong', '*'); }</script></body>";
+        },
+        ["/fetch/cross-origin-resource-policy/resources/image.py"] = (request, response, _) =>
+        {
+            // The headers are written in this order, without Content-Type when there is no type parameter
+            response.Set("cross-origin-resource-policy", request.Get("corp"));
+            response.Set("access-control-allow-origin", request.Get("acao"));
+            response.Set("content-type", request.Get("type"));
+            response.Body = ReadWptFile("fetch/cross-origin-resource-policy/resources/green.png");
+        },
+        ["/fetch/cross-origin-resource-policy/resources/redirect.py"] = (request, response, _) =>
+        {
+            response.Status = 302;
+            response.Set("Location", RequiredParameter(request, "redirectTo"));
+            response.Set("Cross-Origin-Resource-Policy", request.Get("corp"));
+        },
         ["/fetch/api/resources/inspect-headers.py"] = FetchInspectHeaders,
         ["/fetch/api/resources/status.py"] = Status,
         ["/fetch/api/resources/preflight.py"] = Preflight,
@@ -415,6 +460,15 @@ internal static partial class WptPythonHandlers
         {
             response.Set("content-type", type);
         }
+    }
+
+    // fetch/cross-origin-resource-policy/resources/hello.py and script.py: the body with the Cross-Origin-Resource-Policy header
+    // of the corp parameter, and the Origin of the request as Access-Control-Allow-Origin
+    private static void CrossOriginResourcePolicyResponse(WptHandlerRequest request, WptHandlerResponse response, byte[] body)
+    {
+        response.Set("Cross-Origin-Resource-Policy", RequiredParameter(request, "corp"));
+        response.Set("Access-Control-Allow-Origin", request.Header("Origin"));
+        response.Body = body;
     }
 
     // fetch/nosniff/resources/worker.py: a worker script with X-Content-Type-Options: nosniff and the type parameter as its Content-Type

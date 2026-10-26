@@ -87,14 +87,2758 @@
     "total": 12
   },
   "encoding/json-document-utf8.html": {
-    "harness": "ERROR",
-    "total": 4,
-    "failures": {
-      "application/json with no charset is decoded as UTF-8 under a windows-1251 parent frame": "TIMEOUT",
-      "application/json;charset=utf-8 is decoded as UTF-8": "NOTRUN",
-      "application/json;charset=windows-1251 honors the explicit charset": "NOTRUN",
-      "text/json with no charset is decoded as UTF-8": "NOTRUN"
-    }
+    "total": 4
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-decode-cseucpkdfmtjapanese.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-decode-cseucpkdfmtjapanese.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-decode-cseucpkdfmtjapanese.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-decode-cseucpkdfmtjapanese.html?11001-12000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-decode-cseucpkdfmtjapanese.html?12001-13000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-decode-cseucpkdfmtjapanese.html?13001-last": {
+    "total": 459
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-decode-cseucpkdfmtjapanese.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-decode-cseucpkdfmtjapanese.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-decode-cseucpkdfmtjapanese.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-decode-cseucpkdfmtjapanese.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-decode-cseucpkdfmtjapanese.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-decode-cseucpkdfmtjapanese.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-decode-cseucpkdfmtjapanese.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-decode-cseucpkdfmtjapanese.html?9001-10000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-decode-errors.html": {
+    "total": 11
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-decode-x-euc-jp.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-decode-x-euc-jp.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-decode-x-euc-jp.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-decode-x-euc-jp.html?11001-12000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-decode-x-euc-jp.html?12001-13000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-decode-x-euc-jp.html?13001-last": {
+    "total": 459
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-decode-x-euc-jp.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-decode-x-euc-jp.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-decode-x-euc-jp.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-decode-x-euc-jp.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-decode-x-euc-jp.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-decode-x-euc-jp.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-decode-x-euc-jp.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-decode-x-euc-jp.html?9001-10000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-decode.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-decode.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-decode.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-decode.html?11001-12000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-decode.html?12001-13000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-decode.html?13001-last": {
+    "total": 459
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-decode.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-decode.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-decode.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-decode.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-decode.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-decode.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-decode.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-decode.html?9001-10000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-cseucpkdfmtjapanese.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-cseucpkdfmtjapanese.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-cseucpkdfmtjapanese.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-cseucpkdfmtjapanese.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-cseucpkdfmtjapanese.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-cseucpkdfmtjapanese.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-cseucpkdfmtjapanese.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-cseucpkdfmtjapanese.html?7001-last": {
+    "total": 392
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-errors-han.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-errors-han.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-errors-han.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-errors-han.html?11001-12000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-errors-han.html?12001-13000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-errors-han.html?13001-14000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-errors-han.html?14001-15000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-errors-han.html?15001-16000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-errors-han.html?16001-17000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-errors-han.html?17001-18000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-errors-han.html?18001-19000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-errors-han.html?19001-20000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-errors-han.html?20001-21000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-errors-han.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-errors-han.html?21001-last": {
+    "total": 269
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-errors-han.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-errors-han.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-errors-han.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-errors-han.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-errors-han.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-errors-han.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-errors-han.html?9001-10000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-errors-hangul.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-errors-hangul.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-errors-hangul.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-errors-hangul.html?11001-last": {
+    "total": 183
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-errors-hangul.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-errors-hangul.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-errors-hangul.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-errors-hangul.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-errors-hangul.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-errors-hangul.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-errors-hangul.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-errors-hangul.html?9001-10000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-errors-misc.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-errors-misc.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-errors-misc.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-errors-misc.html?3001-last": {
+    "total": 431
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-x-euc-jp.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-x-euc-jp.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-x-euc-jp.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-x-euc-jp.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-x-euc-jp.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-x-euc-jp.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-x-euc-jp.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-x-euc-jp.html?7001-last": {
+    "total": 392
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form.html?7001-last": {
+    "total": 392
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-href-errors-han.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-href-errors-han.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-href-errors-han.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-href-errors-han.html?11001-12000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-href-errors-han.html?12001-13000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-href-errors-han.html?13001-14000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-href-errors-han.html?14001-15000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-href-errors-han.html?15001-16000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-href-errors-han.html?16001-17000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-href-errors-han.html?17001-18000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-href-errors-han.html?18001-19000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-href-errors-han.html?19001-20000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-href-errors-han.html?20001-21000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-href-errors-han.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-href-errors-han.html?21001-last": {
+    "total": 269
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-href-errors-han.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-href-errors-han.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-href-errors-han.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-href-errors-han.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-href-errors-han.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-href-errors-han.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-href-errors-han.html?9001-10000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-href-errors-hangul.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-href-errors-hangul.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-href-errors-hangul.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-href-errors-hangul.html?11001-last": {
+    "total": 183
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-href-errors-hangul.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-href-errors-hangul.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-href-errors-hangul.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-href-errors-hangul.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-href-errors-hangul.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-href-errors-hangul.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-href-errors-hangul.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-href-errors-hangul.html?9001-10000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-href-errors-misc.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-href-errors-misc.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-href-errors-misc.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-href-errors-misc.html?3001-last": {
+    "total": 431
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-href.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-href.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-href.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-href.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-href.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-href.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-href.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-href.html?7001-last": {
+    "total": 392
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-decode-csiso2022jp.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-decode-csiso2022jp.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-decode-csiso2022jp.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-decode-csiso2022jp.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-decode-csiso2022jp.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-decode-csiso2022jp.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-decode-csiso2022jp.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-decode-csiso2022jp.html?7001-last": {
+    "total": 329
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-decode-errors.html": {
+    "total": 8
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-decode.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-decode.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-decode.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-decode.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-decode.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-decode.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-decode.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-decode.html?7001-last": {
+    "total": 329
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-csiso2022jp.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-csiso2022jp.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-csiso2022jp.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-csiso2022jp.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-csiso2022jp.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-csiso2022jp.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-csiso2022jp.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-csiso2022jp.html?7001-last": {
+    "total": 329
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-errors-han.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-errors-han.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-errors-han.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-errors-han.html?11001-12000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-errors-han.html?12001-13000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-errors-han.html?13001-14000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-errors-han.html?14001-15000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-errors-han.html?15001-16000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-errors-han.html?16001-17000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-errors-han.html?17001-18000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-errors-han.html?18001-19000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-errors-han.html?19001-20000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-errors-han.html?20001-21000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-errors-han.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-errors-han.html?21001-last": {
+    "total": 269
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-errors-han.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-errors-han.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-errors-han.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-errors-han.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-errors-han.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-errors-han.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-errors-han.html?9001-10000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-errors-hangul.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-errors-hangul.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-errors-hangul.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-errors-hangul.html?11001-last": {
+    "total": 183
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-errors-hangul.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-errors-hangul.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-errors-hangul.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-errors-hangul.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-errors-hangul.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-errors-hangul.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-errors-hangul.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-errors-hangul.html?9001-10000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-errors-misc.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-errors-misc.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-errors-misc.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-errors-misc.html?3001-last": {
+    "total": 431
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-errors-stateful.html": {
+    "total": 1
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form.html?7001-last": {
+    "total": 392
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-href-errors-han.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-href-errors-han.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-href-errors-han.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-href-errors-han.html?11001-12000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-href-errors-han.html?12001-13000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-href-errors-han.html?13001-14000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-href-errors-han.html?14001-15000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-href-errors-han.html?15001-16000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-href-errors-han.html?16001-17000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-href-errors-han.html?17001-18000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-href-errors-han.html?18001-19000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-href-errors-han.html?19001-20000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-href-errors-han.html?20001-21000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-href-errors-han.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-href-errors-han.html?21001-last": {
+    "total": 269
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-href-errors-han.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-href-errors-han.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-href-errors-han.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-href-errors-han.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-href-errors-han.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-href-errors-han.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-href-errors-han.html?9001-10000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-href-errors-hangul.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-href-errors-hangul.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-href-errors-hangul.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-href-errors-hangul.html?11001-last": {
+    "total": 183
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-href-errors-hangul.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-href-errors-hangul.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-href-errors-hangul.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-href-errors-hangul.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-href-errors-hangul.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-href-errors-hangul.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-href-errors-hangul.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-href-errors-hangul.html?9001-10000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-href-errors-misc.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-href-errors-misc.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-href-errors-misc.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-href-errors-misc.html?3001-last": {
+    "total": 431
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-href.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-href.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-href.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-href.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-href.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-href.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-href.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-href.html?7001-last": {
+    "total": 392
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-csshiftjis.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-csshiftjis.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-csshiftjis.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-csshiftjis.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-csshiftjis.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-csshiftjis.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-csshiftjis.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-csshiftjis.html?7001-last": {
+    "total": 393
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-errors.html": {
+    "total": 10
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-ms932.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-ms932.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-ms932.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-ms932.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-ms932.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-ms932.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-ms932.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-ms932.html?7001-last": {
+    "total": 393
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-ms_kanji.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-ms_kanji.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-ms_kanji.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-ms_kanji.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-ms_kanji.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-ms_kanji.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-ms_kanji.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-ms_kanji.html?7001-last": {
+    "total": 393
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-shift-jis.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-shift-jis.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-shift-jis.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-shift-jis.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-shift-jis.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-shift-jis.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-shift-jis.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-shift-jis.html?7001-last": {
+    "total": 393
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-sjis.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-sjis.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-sjis.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-sjis.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-sjis.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-sjis.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-sjis.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-sjis.html?7001-last": {
+    "total": 393
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-windows-31j.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-windows-31j.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-windows-31j.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-windows-31j.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-windows-31j.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-windows-31j.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-windows-31j.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-windows-31j.html?7001-last": {
+    "total": 393
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-x-sjis.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-x-sjis.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-x-sjis.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-x-sjis.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-x-sjis.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-x-sjis.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-x-sjis.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode-x-sjis.html?7001-last": {
+    "total": 393
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-decode.html?7001-last": {
+    "total": 393
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-csshiftjis.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-csshiftjis.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-csshiftjis.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-csshiftjis.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-csshiftjis.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-csshiftjis.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-csshiftjis.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-csshiftjis.html?7001-last": {
+    "total": 393
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-errors-han.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-errors-han.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-errors-han.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-errors-han.html?11001-12000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-errors-han.html?12001-13000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-errors-han.html?13001-14000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-errors-han.html?14001-15000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-errors-han.html?15001-16000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-errors-han.html?16001-17000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-errors-han.html?17001-18000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-errors-han.html?18001-19000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-errors-han.html?19001-20000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-errors-han.html?20001-21000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-errors-han.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-errors-han.html?21001-last": {
+    "total": 269
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-errors-han.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-errors-han.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-errors-han.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-errors-han.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-errors-han.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-errors-han.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-errors-han.html?9001-10000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-errors-hangul.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-errors-hangul.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-errors-hangul.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-errors-hangul.html?11001-last": {
+    "total": 183
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-errors-hangul.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-errors-hangul.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-errors-hangul.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-errors-hangul.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-errors-hangul.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-errors-hangul.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-errors-hangul.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-errors-hangul.html?9001-10000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-errors-misc.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-errors-misc.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-errors-misc.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-errors-misc.html?3001-last": {
+    "total": 430
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-ms932.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-ms932.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-ms932.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-ms932.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-ms932.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-ms932.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-ms932.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-ms932.html?7001-last": {
+    "total": 393
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-ms_kanji.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-ms_kanji.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-ms_kanji.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-ms_kanji.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-ms_kanji.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-ms_kanji.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-ms_kanji.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-ms_kanji.html?7001-last": {
+    "total": 393
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-shift-jis.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-shift-jis.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-shift-jis.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-shift-jis.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-shift-jis.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-shift-jis.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-shift-jis.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-shift-jis.html?7001-last": {
+    "total": 393
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-sjis.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-sjis.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-sjis.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-sjis.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-sjis.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-sjis.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-sjis.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-sjis.html?7001-last": {
+    "total": 393
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-windows-31j.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-windows-31j.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-windows-31j.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-windows-31j.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-windows-31j.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-windows-31j.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-windows-31j.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-windows-31j.html?7001-last": {
+    "total": 393
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-x-sjis.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-x-sjis.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-x-sjis.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-x-sjis.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-x-sjis.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-x-sjis.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-x-sjis.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-x-sjis.html?7001-last": {
+    "total": 393
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form.html?7001-last": {
+    "total": 393
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-href-errors-han.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-href-errors-han.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-href-errors-han.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-href-errors-han.html?11001-12000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-href-errors-han.html?12001-13000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-href-errors-han.html?13001-14000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-href-errors-han.html?14001-15000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-href-errors-han.html?15001-16000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-href-errors-han.html?16001-17000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-href-errors-han.html?17001-18000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-href-errors-han.html?18001-19000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-href-errors-han.html?19001-20000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-href-errors-han.html?20001-21000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-href-errors-han.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-href-errors-han.html?21001-last": {
+    "total": 269
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-href-errors-han.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-href-errors-han.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-href-errors-han.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-href-errors-han.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-href-errors-han.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-href-errors-han.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-href-errors-han.html?9001-10000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-href-errors-hangul.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-href-errors-hangul.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-href-errors-hangul.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-href-errors-hangul.html?11001-last": {
+    "total": 183
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-href-errors-hangul.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-href-errors-hangul.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-href-errors-hangul.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-href-errors-hangul.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-href-errors-hangul.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-href-errors-hangul.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-href-errors-hangul.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-href-errors-hangul.html?9001-10000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-href-errors-misc.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-href-errors-misc.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-href-errors-misc.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-href-errors-misc.html?3001-last": {
+    "total": 430
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-href.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-href.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-href.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-href.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-href.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-href.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-href.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-japanese/shift_jis/sjis-encode-href.html?7001-last": {
+    "total": 393
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-cseuckr.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-cseuckr.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-cseuckr.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-cseuckr.html?11001-12000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-cseuckr.html?12001-13000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-cseuckr.html?13001-14000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-cseuckr.html?14001-15000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-cseuckr.html?15001-16000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-cseuckr.html?16001-17000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-cseuckr.html?17001-last": {
+    "total": 48
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-cseuckr.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-cseuckr.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-cseuckr.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-cseuckr.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-cseuckr.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-cseuckr.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-cseuckr.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-cseuckr.html?9001-10000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-csksc56011987.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-csksc56011987.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-csksc56011987.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-csksc56011987.html?11001-12000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-csksc56011987.html?12001-13000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-csksc56011987.html?13001-14000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-csksc56011987.html?14001-15000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-csksc56011987.html?15001-16000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-csksc56011987.html?16001-17000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-csksc56011987.html?17001-last": {
+    "total": 48
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-csksc56011987.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-csksc56011987.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-csksc56011987.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-csksc56011987.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-csksc56011987.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-csksc56011987.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-csksc56011987.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-csksc56011987.html?9001-10000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-errors.html": {
+    "total": 8
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-iso-ir-149.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-iso-ir-149.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-iso-ir-149.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-iso-ir-149.html?11001-12000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-iso-ir-149.html?12001-13000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-iso-ir-149.html?13001-14000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-iso-ir-149.html?14001-15000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-iso-ir-149.html?15001-16000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-iso-ir-149.html?16001-17000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-iso-ir-149.html?17001-last": {
+    "total": 48
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-iso-ir-149.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-iso-ir-149.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-iso-ir-149.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-iso-ir-149.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-iso-ir-149.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-iso-ir-149.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-iso-ir-149.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-iso-ir-149.html?9001-10000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-korean.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-korean.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-korean.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-korean.html?11001-12000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-korean.html?12001-13000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-korean.html?13001-14000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-korean.html?14001-15000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-korean.html?15001-16000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-korean.html?16001-17000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-korean.html?17001-last": {
+    "total": 48
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-korean.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-korean.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-korean.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-korean.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-korean.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-korean.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-korean.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-korean.html?9001-10000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ks_c_5601-1987.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ks_c_5601-1987.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ks_c_5601-1987.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ks_c_5601-1987.html?11001-12000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ks_c_5601-1987.html?12001-13000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ks_c_5601-1987.html?13001-14000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ks_c_5601-1987.html?14001-15000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ks_c_5601-1987.html?15001-16000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ks_c_5601-1987.html?16001-17000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ks_c_5601-1987.html?17001-last": {
+    "total": 48
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ks_c_5601-1987.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ks_c_5601-1987.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ks_c_5601-1987.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ks_c_5601-1987.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ks_c_5601-1987.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ks_c_5601-1987.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ks_c_5601-1987.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ks_c_5601-1987.html?9001-10000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ks_c_5601-1989.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ks_c_5601-1989.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ks_c_5601-1989.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ks_c_5601-1989.html?11001-12000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ks_c_5601-1989.html?12001-13000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ks_c_5601-1989.html?13001-14000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ks_c_5601-1989.html?14001-15000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ks_c_5601-1989.html?15001-16000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ks_c_5601-1989.html?16001-17000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ks_c_5601-1989.html?17001-last": {
+    "total": 48
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ks_c_5601-1989.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ks_c_5601-1989.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ks_c_5601-1989.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ks_c_5601-1989.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ks_c_5601-1989.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ks_c_5601-1989.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ks_c_5601-1989.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ks_c_5601-1989.html?9001-10000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ksc5601.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ksc5601.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ksc5601.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ksc5601.html?11001-12000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ksc5601.html?12001-13000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ksc5601.html?13001-14000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ksc5601.html?14001-15000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ksc5601.html?15001-16000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ksc5601.html?16001-17000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ksc5601.html?17001-last": {
+    "total": 48
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ksc5601.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ksc5601.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ksc5601.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ksc5601.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ksc5601.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ksc5601.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ksc5601.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ksc5601.html?9001-10000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ksc_5601.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ksc_5601.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ksc_5601.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ksc_5601.html?11001-12000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ksc_5601.html?12001-13000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ksc_5601.html?13001-14000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ksc_5601.html?14001-15000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ksc_5601.html?15001-16000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ksc_5601.html?16001-17000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ksc_5601.html?17001-last": {
+    "total": 48
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ksc_5601.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ksc_5601.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ksc_5601.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ksc_5601.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ksc_5601.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ksc_5601.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ksc_5601.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-ksc_5601.html?9001-10000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-windows-949.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-windows-949.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-windows-949.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-windows-949.html?11001-12000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-windows-949.html?12001-13000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-windows-949.html?13001-14000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-windows-949.html?14001-15000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-windows-949.html?15001-16000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-windows-949.html?16001-17000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-windows-949.html?17001-last": {
+    "total": 48
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-windows-949.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-windows-949.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-windows-949.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-windows-949.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-windows-949.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-windows-949.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-windows-949.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode-windows-949.html?9001-10000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode.html?11001-12000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode.html?12001-13000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode.html?13001-14000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode.html?14001-15000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode.html?15001-16000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode.html?16001-17000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode.html?17001-last": {
+    "total": 48
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-decode.html?9001-10000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-cseuckr.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-cseuckr.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-cseuckr.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-cseuckr.html?11001-12000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-cseuckr.html?12001-13000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-cseuckr.html?13001-14000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-cseuckr.html?14001-15000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-cseuckr.html?15001-16000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-cseuckr.html?16001-17000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-cseuckr.html?17001-last": {
+    "total": 48
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-cseuckr.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-cseuckr.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-cseuckr.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-cseuckr.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-cseuckr.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-cseuckr.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-cseuckr.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-cseuckr.html?9001-10000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-csksc56011987.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-csksc56011987.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-csksc56011987.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-csksc56011987.html?11001-12000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-csksc56011987.html?12001-13000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-csksc56011987.html?13001-14000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-csksc56011987.html?14001-15000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-csksc56011987.html?15001-16000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-csksc56011987.html?16001-17000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-csksc56011987.html?17001-last": {
+    "total": 48
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-csksc56011987.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-csksc56011987.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-csksc56011987.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-csksc56011987.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-csksc56011987.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-csksc56011987.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-csksc56011987.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-csksc56011987.html?9001-10000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-errors-han.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-errors-han.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-errors-han.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-errors-han.html?11001-12000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-errors-han.html?12001-13000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-errors-han.html?13001-14000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-errors-han.html?14001-15000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-errors-han.html?15001-16000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-errors-han.html?16001-17000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-errors-han.html?17001-18000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-errors-han.html?18001-19000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-errors-han.html?19001-20000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-errors-han.html?20001-21000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-errors-han.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-errors-han.html?21001-22000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-errors-han.html?22001-23000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-errors-han.html?23001-last": {
+    "total": 97
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-errors-han.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-errors-han.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-errors-han.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-errors-han.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-errors-han.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-errors-han.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-errors-han.html?9001-10000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-errors-misc.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-errors-misc.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-errors-misc.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-errors-misc.html?3001-last": {
+    "total": 119
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-iso-ir-149.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-iso-ir-149.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-iso-ir-149.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-iso-ir-149.html?11001-12000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-iso-ir-149.html?12001-13000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-iso-ir-149.html?13001-14000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-iso-ir-149.html?14001-15000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-iso-ir-149.html?15001-16000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-iso-ir-149.html?16001-17000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-iso-ir-149.html?17001-last": {
+    "total": 48
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-iso-ir-149.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-iso-ir-149.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-iso-ir-149.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-iso-ir-149.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-iso-ir-149.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-iso-ir-149.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-iso-ir-149.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-iso-ir-149.html?9001-10000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-korean.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-korean.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-korean.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-korean.html?11001-12000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-korean.html?12001-13000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-korean.html?13001-14000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-korean.html?14001-15000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-korean.html?15001-16000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-korean.html?16001-17000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-korean.html?17001-last": {
+    "total": 48
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-korean.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-korean.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-korean.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-korean.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-korean.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-korean.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-korean.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-korean.html?9001-10000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ks_c_5601-1987.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ks_c_5601-1987.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ks_c_5601-1987.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ks_c_5601-1987.html?11001-12000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ks_c_5601-1987.html?12001-13000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ks_c_5601-1987.html?13001-14000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ks_c_5601-1987.html?14001-15000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ks_c_5601-1987.html?15001-16000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ks_c_5601-1987.html?16001-17000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ks_c_5601-1987.html?17001-last": {
+    "total": 48
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ks_c_5601-1987.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ks_c_5601-1987.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ks_c_5601-1987.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ks_c_5601-1987.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ks_c_5601-1987.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ks_c_5601-1987.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ks_c_5601-1987.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ks_c_5601-1987.html?9001-10000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ks_c_5601-1989.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ks_c_5601-1989.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ks_c_5601-1989.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ks_c_5601-1989.html?11001-12000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ks_c_5601-1989.html?12001-13000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ks_c_5601-1989.html?13001-14000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ks_c_5601-1989.html?14001-15000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ks_c_5601-1989.html?15001-16000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ks_c_5601-1989.html?16001-17000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ks_c_5601-1989.html?17001-last": {
+    "total": 48
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ks_c_5601-1989.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ks_c_5601-1989.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ks_c_5601-1989.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ks_c_5601-1989.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ks_c_5601-1989.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ks_c_5601-1989.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ks_c_5601-1989.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ks_c_5601-1989.html?9001-10000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ksc5601.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ksc5601.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ksc5601.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ksc5601.html?11001-12000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ksc5601.html?12001-13000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ksc5601.html?13001-14000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ksc5601.html?14001-15000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ksc5601.html?15001-16000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ksc5601.html?16001-17000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ksc5601.html?17001-last": {
+    "total": 48
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ksc5601.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ksc5601.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ksc5601.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ksc5601.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ksc5601.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ksc5601.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ksc5601.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ksc5601.html?9001-10000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ksc_5601.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ksc_5601.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ksc_5601.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ksc_5601.html?11001-12000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ksc_5601.html?12001-13000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ksc_5601.html?13001-14000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ksc_5601.html?14001-15000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ksc_5601.html?15001-16000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ksc_5601.html?16001-17000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ksc_5601.html?17001-last": {
+    "total": 48
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ksc_5601.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ksc_5601.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ksc_5601.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ksc_5601.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ksc_5601.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ksc_5601.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ksc_5601.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ksc_5601.html?9001-10000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-windows-949.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-windows-949.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-windows-949.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-windows-949.html?11001-12000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-windows-949.html?12001-13000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-windows-949.html?13001-14000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-windows-949.html?14001-15000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-windows-949.html?15001-16000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-windows-949.html?16001-17000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-windows-949.html?17001-last": {
+    "total": 48
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-windows-949.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-windows-949.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-windows-949.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-windows-949.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-windows-949.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-windows-949.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-windows-949.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-windows-949.html?9001-10000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form.html?11001-12000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form.html?12001-13000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form.html?13001-14000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form.html?14001-15000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form.html?15001-16000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form.html?16001-17000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form.html?17001-last": {
+    "total": 48
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-form.html?9001-10000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-href-errors-han.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-href-errors-han.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-href-errors-han.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-href-errors-han.html?11001-12000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-href-errors-han.html?12001-13000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-href-errors-han.html?13001-14000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-href-errors-han.html?14001-15000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-href-errors-han.html?15001-16000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-href-errors-han.html?16001-17000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-href-errors-han.html?17001-18000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-href-errors-han.html?18001-19000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-href-errors-han.html?19001-20000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-href-errors-han.html?20001-21000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-href-errors-han.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-href-errors-han.html?21001-22000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-href-errors-han.html?22001-23000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-href-errors-han.html?23001-last": {
+    "total": 97
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-href-errors-han.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-href-errors-han.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-href-errors-han.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-href-errors-han.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-href-errors-han.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-href-errors-han.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-href-errors-han.html?9001-10000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-href-errors-misc.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-href-errors-misc.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-href-errors-misc.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-href-errors-misc.html?3001-last": {
+    "total": 119
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-href.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-href.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-href.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-href.html?11001-12000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-href.html?12001-13000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-href.html?13001-14000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-href.html?14001-15000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-href.html?15001-16000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-href.html?16001-17000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-href.html?17001-last": {
+    "total": 48
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-href.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-href.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-href.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-href.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-href.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-href.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-href.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-korean/euc-kr/euckr-encode-href.html?9001-10000": {
+    "total": 1000
   },
   "encoding/legacy-mb-schinese/gb18030/gb18030-decoder.any.js": {
     "total": 275
@@ -113,6 +2857,855 @@
   },
   "encoding/legacy-mb-schinese/gbk/gbk-encoder.html": {
     "total": 49
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-big5-hkscs.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-big5-hkscs.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-big5-hkscs.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-big5-hkscs.html?11001-12000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-big5-hkscs.html?12001-13000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-big5-hkscs.html?13001-14000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-big5-hkscs.html?14001-last": {
+    "total": 651
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-big5-hkscs.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-big5-hkscs.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-big5-hkscs.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-big5-hkscs.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-big5-hkscs.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-big5-hkscs.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-big5-hkscs.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-big5-hkscs.html?9001-10000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-cn-big5.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-cn-big5.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-cn-big5.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-cn-big5.html?11001-12000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-cn-big5.html?12001-13000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-cn-big5.html?13001-14000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-cn-big5.html?14001-last": {
+    "total": 651
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-cn-big5.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-cn-big5.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-cn-big5.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-cn-big5.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-cn-big5.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-cn-big5.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-cn-big5.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-cn-big5.html?9001-10000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-csbig5.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-csbig5.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-csbig5.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-csbig5.html?11001-12000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-csbig5.html?12001-13000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-csbig5.html?13001-14000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-csbig5.html?14001-last": {
+    "total": 651
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-csbig5.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-csbig5.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-csbig5.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-csbig5.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-csbig5.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-csbig5.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-csbig5.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-csbig5.html?9001-10000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-errors.html": {
+    "total": 8
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-extra.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-extra.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-extra.html?2001-last": {
+    "total": 472
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-x-x-big5.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-x-x-big5.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-x-x-big5.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-x-x-big5.html?11001-12000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-x-x-big5.html?12001-13000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-x-x-big5.html?13001-14000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-x-x-big5.html?14001-last": {
+    "total": 651
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-x-x-big5.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-x-x-big5.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-x-x-big5.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-x-x-big5.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-x-x-big5.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-x-x-big5.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-x-x-big5.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode-x-x-big5.html?9001-10000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode.html?11001-12000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode.html?12001-13000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode.html?13001-14000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode.html?14001-last": {
+    "total": 651
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-decode.html?9001-10000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-enc-ascii.html": {
+    "total": 123
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-big5-hkscs.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-big5-hkscs.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-big5-hkscs.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-big5-hkscs.html?11001-12000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-big5-hkscs.html?12001-13000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-big5-hkscs.html?13001-14000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-big5-hkscs.html?14001-last": {
+    "total": 362
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-big5-hkscs.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-big5-hkscs.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-big5-hkscs.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-big5-hkscs.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-big5-hkscs.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-big5-hkscs.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-big5-hkscs.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-big5-hkscs.html?9001-10000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-cn-big5.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-cn-big5.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-cn-big5.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-cn-big5.html?11001-12000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-cn-big5.html?12001-13000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-cn-big5.html?13001-14000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-cn-big5.html?14001-last": {
+    "total": 362
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-cn-big5.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-cn-big5.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-cn-big5.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-cn-big5.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-cn-big5.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-cn-big5.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-cn-big5.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-cn-big5.html?9001-10000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-csbig5.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-csbig5.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-csbig5.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-csbig5.html?11001-12000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-csbig5.html?12001-13000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-csbig5.html?13001-14000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-csbig5.html?14001-last": {
+    "total": 362
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-csbig5.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-csbig5.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-csbig5.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-csbig5.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-csbig5.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-csbig5.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-csbig5.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-csbig5.html?9001-10000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-extBa.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-extBa.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-extBa.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-extBa.html?11001-12000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-extBa.html?12001-13000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-extBa.html?13001-14000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-extBa.html?14001-15000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-extBa.html?15001-16000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-extBa.html?16001-17000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-extBa.html?17001-18000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-extBa.html?18001-19000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-extBa.html?19001-20000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-extBa.html?20001-21000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-extBa.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-extBa.html?21001-last": {
+    "total": 140
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-extBa.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-extBa.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-extBa.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-extBa.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-extBa.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-extBa.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-extBa.html?9001-10000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-extBb.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-extBb.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-extBb.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-extBb.html?11001-12000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-extBb.html?12001-13000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-extBb.html?13001-14000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-extBb.html?14001-15000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-extBb.html?15001-16000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-extBb.html?16001-17000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-extBb.html?17001-18000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-extBb.html?18001-19000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-extBb.html?19001-20000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-extBb.html?20001-21000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-extBb.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-extBb.html?21001-last": {
+    "total": 291
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-extBb.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-extBb.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-extBb.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-extBb.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-extBb.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-extBb.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-extBb.html?9001-10000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-han.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-han.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-han.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-han.html?11001-12000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-han.html?12001-13000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-han.html?13001-14000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-han.html?14001-last": {
+    "total": 409
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-han.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-han.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-han.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-han.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-han.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-han.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-han.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-han.html?9001-10000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-hangul.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-hangul.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-hangul.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-hangul.html?11001-last": {
+    "total": 183
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-hangul.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-hangul.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-hangul.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-hangul.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-hangul.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-hangul.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-hangul.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-hangul.html?9001-10000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-misc.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-misc.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-misc.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-misc.html?3001-last": {
+    "total": 436
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-pua.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-pua.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-pua.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-pua.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-pua.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-pua.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-pua.html?6001-last": {
+    "total": 399
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-x-x-big5.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-x-x-big5.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-x-x-big5.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-x-x-big5.html?11001-12000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-x-x-big5.html?12001-13000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-x-x-big5.html?13001-14000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-x-x-big5.html?14001-last": {
+    "total": 362
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-x-x-big5.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-x-x-big5.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-x-x-big5.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-x-x-big5.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-x-x-big5.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-x-x-big5.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-x-x-big5.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form-x-x-big5.html?9001-10000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form.html?11001-12000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form.html?12001-13000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form.html?13001-14000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form.html?14001-last": {
+    "total": 362
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-form.html?9001-10000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-href-errors-han.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-href-errors-han.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-href-errors-han.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-href-errors-han.html?11001-12000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-href-errors-han.html?12001-13000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-href-errors-han.html?13001-14000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-href-errors-han.html?14001-last": {
+    "total": 409
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-href-errors-han.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-href-errors-han.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-href-errors-han.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-href-errors-han.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-href-errors-han.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-href-errors-han.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-href-errors-han.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-href-errors-han.html?9001-10000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-href-errors-hangul.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-href-errors-hangul.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-href-errors-hangul.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-href-errors-hangul.html?11001-last": {
+    "total": 183
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-href-errors-hangul.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-href-errors-hangul.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-href-errors-hangul.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-href-errors-hangul.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-href-errors-hangul.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-href-errors-hangul.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-href-errors-hangul.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-href-errors-hangul.html?9001-10000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-href-errors-misc.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-href-errors-misc.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-href-errors-misc.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-href-errors-misc.html?3001-last": {
+    "total": 436
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-href.html?1-1000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-href.html?10001-11000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-href.html?1001-2000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-href.html?11001-12000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-href.html?12001-13000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-href.html?13001-14000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-href.html?14001-last": {
+    "total": 362
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-href.html?2001-3000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-href.html?3001-4000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-href.html?4001-5000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-href.html?5001-6000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-href.html?6001-7000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-href.html?7001-8000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-href.html?8001-9000": {
+    "total": 1000
+  },
+  "encoding/legacy-mb-tchinese/big5/big5-encode-href.html?9001-10000": {
+    "total": 1000
   },
   "encoding/remove-only-one-bom.html": {
     "total": 3

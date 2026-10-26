@@ -66,7 +66,7 @@ Assert.Equal((BarcodeType.Code93, 91, 1), (code93.Type, code93.Width, code93.Hei
 Assert.Equal((BarcodeType.Code128, 123, 1), (code128.Type, code128.Width, code128.Height));
 Assert.Equal((BarcodeType.Ean8, 67, 1), (ean8.Type, ean8.Width, ean8.Height));
 Assert.Equal((BarcodeType.Ean13, 95, 1), (ean13.Type, ean13.Width, ean13.Height));
-Assert.Equal((BarcodeType.UpcA, 122, 1), (upcA.Type, upcA.Width, upcA.Height));
+Assert.Equal((BarcodeType.UpcA, 124, 1), (upcA.Type, upcA.Width, upcA.Height));
 Assert.Equal((BarcodeType.Codabar, 71, 1), (codabar.Type, codabar.Width, codabar.Height));
 Assert.Equal((BarcodeType.Itf, 81, 1), (itf.Type, itf.Width, itf.Height));
 
@@ -168,13 +168,13 @@ var microText = microQr.ToConsoleString(new QRCodeConsoleOptions
 Assert.Equal("""
 
       ██████████████  ██  ██
-      ██          ██
-      ██  ██████  ██  ██████
+      ██          ██  ████
+      ██  ██████  ██  ██
       ██  ██████  ██
       ██  ██████  ██  ██████
       ██          ██    ████
       ██████████████  ██
-                      ██████
+                        ████
       ████    ██████    ████
         ██  ██      ████
       ████████          ████

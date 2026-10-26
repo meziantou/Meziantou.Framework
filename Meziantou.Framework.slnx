@@ -246,6 +246,7 @@
     <Project Path="tests/Meziantou.Framework.AtlassianDataFormat.Tests/Meziantou.Framework.AtlassianDataFormat.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.AtlassianDataFormat.Tool.Tests/Meziantou.Framework.AtlassianDataFormat.Tool.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Avatar.Tests/Meziantou.Framework.Avatar.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Barcodes.InteropTests/Meziantou.Framework.Barcodes.InteropTests.csproj" />
     <Project Path="tests/Meziantou.Framework.Barcodes.Tests/Meziantou.Framework.Barcodes.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Bcrypt.Tests/Meziantou.Framework.Bcrypt.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Bencode.Tests/Meziantou.Framework.Bencode.Tests.csproj" />

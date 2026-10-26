@@ -102,7 +102,7 @@ internal static class EanUpcEncoder
     public static Barcode EncodeUpcA(string data, string? extension)
     {
         var normalized = NormalizeAndValidate(data, 11, 12, "UPC-A");
-        var modules = new List<bool>(95 + GetExtensionModuleCount(extension));
+        var modules = new List<bool>(97 + GetExtensionModuleCount(extension));
 
         AppendPattern(modules, "101");
         for (var i = 0; i < 6; i++)
@@ -117,7 +117,8 @@ internal static class EanUpcEncoder
         }
 
         AppendPattern(modules, "101");
-        AppendExtension(modules, extension);
+        // The add-on of a UPC-A symbol is 9 to 12 modules away from it, 7 to 12 for EAN-13 and EAN-8 (GS1 General Specifications, 5.2.3.4)
+        AppendExtension(modules, extension, gapModules: 9);
 
         return BarcodeEncoderHelper.CreateBarcode(BarcodeType.UpcA, modules, GetText(normalized, extension));
     }
@@ -166,7 +167,7 @@ internal static class EanUpcEncoder
         return string.IsNullOrEmpty(extension) ? normalized : string.Concat(normalized, " ", extension);
     }
 
-    private static void AppendExtension(List<bool> modules, string? extension)
+    private static void AppendExtension(List<bool> modules, string? extension, int gapModules = 7)
     {
         if (string.IsNullOrEmpty(extension))
             return;
@@ -177,7 +178,7 @@ internal static class EanUpcEncoder
             throw new ArgumentException("The extension should be 2 or 5 digits long.", nameof(extension));
         }
 
-        BarcodeEncoderHelper.AppendModules(modules, isDark: false, 7);
+        BarcodeEncoderHelper.AppendModules(modules, isDark: false, gapModules);
         AppendPattern(modules, "1011");
 
         if (extension.Length == 2)

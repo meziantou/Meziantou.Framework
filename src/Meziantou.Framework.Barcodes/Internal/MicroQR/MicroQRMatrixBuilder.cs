@@ -92,7 +92,7 @@ internal sealed class MicroQRMatrixBuilder
         var hasD4mBlock = _version % 2 == 1;
         var d4mBlockIndex = _version == 1 ? 3 : (ecLevel == ErrorCorrectionLevel.L ? 11 : 9);
         var codewordIndex = 0;
-        var bitPosition = GetBitsInCodeword(codewordIndex + 1, hasD4mBlock, d4mBlockIndex) - 1;
+        var bitPosition = 7;
 
         // Zigzag pattern from bottom-right, moving upward in column pairs.
         // Column 0 is skipped (timing pattern), analogous to column 6 in regular QR.
@@ -175,27 +175,18 @@ internal sealed class MicroQRMatrixBuilder
         var symbolNumber = MicroQRVersion.GetSymbolNumber(_version, ecLevel);
         var formatInfo = MicroQRFormatInfo.GetFormatInfo(symbolNumber, maskPattern);
 
-        // 15 bits of format information
-        // Placed along row 8 (cols 1 to 8) = 8 bits (MSB to LSB: bits 14..7)
-        // and col 8 (rows 1 to 8) = 7 bits (remaining: bits 6..0) -- wait, that's only 15 total
-        // Actually: row 8, cols 1-8 = 8 modules, col 8, rows 1-8 = 8 modules = 16 total
-        // But format info is 15 bits, so the layout is:
-        // Row 8: cols 1..8 -> bits 14..7 (8 bits)
-        // Col 8: rows 1..7 -> bits 6..0 (7 bits)
-        // Total = 15 bits
-
-        // Row 8, cols 1 to 8 (bits 14 down to 7)
+        // The 15 bits run around the corner of the separator (ISO/IEC 18004, Figure 26): bits 14 to 7 along row 8 from
+        // column 1 to column 8, then bits 6 to 0 up column 8 from row 7 to row 1
         for (var i = 0; i < 8; i++)
         {
             var bit = (formatInfo >> (14 - i)) & 1;
             _modules[8, 1 + i] = bit == 1;
         }
 
-        // Col 8, rows 1 to 7 (bits 6 down to 0)
         for (var i = 0; i < 7; i++)
         {
             var bit = (formatInfo >> (6 - i)) & 1;
-            _modules[1 + i, 8] = bit == 1;
+            _modules[7 - i, 8] = bit == 1;
         }
     }
 
@@ -250,9 +241,10 @@ internal sealed class MicroQRMatrixBuilder
         _isReserved[row, col] = true;
     }
 
-    private static int GetBitsInCodeword(int codewordIndex1Based, bool hasD4mBlock, int d4mBlockIndex)
+    // The 4-bit codeword of M1 and M3 is the high nibble of its byte: its bits are 7 to 4
+    private static int GetLowestBitOfCodeword(int codewordIndex1Based, bool hasD4mBlock, int d4mBlockIndex)
     {
-        return hasD4mBlock && codewordIndex1Based == d4mBlockIndex ? 4 : 8;
+        return hasD4mBlock && codewordIndex1Based == d4mBlockIndex ? 4 : 0;
     }
 
     private static bool TryReadBit(byte[] codewords, ref int codewordIndex, ref int bitPosition, bool hasD4mBlock, int d4mBlockIndex)
@@ -264,14 +256,10 @@ internal sealed class MicroQRMatrixBuilder
 
         var bit = ((codewords[codewordIndex] >> bitPosition) & 1) != 0;
         bitPosition--;
-        if (bitPosition < 0)
+        if (bitPosition < GetLowestBitOfCodeword(codewordIndex + 1, hasD4mBlock, d4mBlockIndex))
         {
             codewordIndex++;
-            if ((uint)codewordIndex < (uint)codewords.Length)
-            {
-                var bitsInCodeword = GetBitsInCodeword(codewordIndex + 1, hasD4mBlock, d4mBlockIndex);
-                bitPosition = bitsInCodeword - 1;
-            }
+            bitPosition = 7;
         }
 
         return bit;

@@ -45,10 +45,29 @@ internal static class MicroQREncoder
         DataEncoderHelper.EncodeData(buffer, data, mode);
 
         // Add terminator and padding
-        var totalDataBits = MicroQRVersion.GetDataCodewords(version, ecLevel) * 8;
+        var dataCodewords = MicroQRVersion.GetDataCodewords(version, ecLevel);
         var terminatorMaxBits = MicroQRVersion.GetTerminatorBits(version);
-        DataEncoderHelper.AddTerminatorAndPadding(buffer, totalDataBits, terminatorMaxBits);
+        if (version % 2 == 0)
+        {
+            DataEncoderHelper.AddTerminatorAndPadding(buffer, dataCodewords * 8, terminatorMaxBits);
+            return buffer.ToByteArray();
+        }
 
+        // In M1 and M3 the last data codeword has 4 bits (ISO/IEC 18004, 7.4.10). It is stored in the high nibble of the
+        // last byte, the low nibble being 0, which is also how the error correction sees it. The pad codewords fill the
+        // full codewords only: the 4-bit codeword is padded with 0000.
+        var fullCodewordBits = (dataCodewords - 1) * 8;
+        var capacityBits = fullCodewordBits + 4;
+        if (buffer.BitCount > capacityBits)
+            throw new InvalidOperationException("The data is too long to be encoded in a Micro QR code.");
+
+        buffer.Append(0, Math.Min(terminatorMaxBits, capacityBits - buffer.BitCount));
+        if (buffer.BitCount <= fullCodewordBits)
+        {
+            DataEncoderHelper.AddTerminatorAndPadding(buffer, fullCodewordBits, terminatorMaxBits: 0);
+        }
+
+        buffer.Append(0, (dataCodewords * 8) - buffer.BitCount);
         return buffer.ToByteArray();
     }
 

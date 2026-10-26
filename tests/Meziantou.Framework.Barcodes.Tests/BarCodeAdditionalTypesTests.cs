@@ -23,7 +23,7 @@ public class BarCodeAdditionalTypesTests
         Assert.Equal((BarcodeType.Code128, 123, 1), (code128.Type, code128.Width, code128.Height));
         Assert.Equal((BarcodeType.Ean8, 67, 1), (ean8.Type, ean8.Width, ean8.Height));
         Assert.Equal((BarcodeType.Ean13, 95, 1), (ean13.Type, ean13.Width, ean13.Height));
-        Assert.Equal((BarcodeType.UpcA, 122, 1), (upcA.Type, upcA.Width, upcA.Height));
+        Assert.Equal((BarcodeType.UpcA, 124, 1), (upcA.Type, upcA.Width, upcA.Height));
         Assert.Equal((BarcodeType.Codabar, 71, 1), (codabar.Type, codabar.Width, codabar.Height));
         Assert.Equal((BarcodeType.Itf, 81, 1), (itf.Type, itf.Width, itf.Height));
 
@@ -174,7 +174,7 @@ public class BarCodeAdditionalTypesTests
         var barcode = Barcode.CreateUpcA("03600029145", extension: "12");
 
         Assert.Equal(BarcodeType.UpcA, barcode.Type);
-        Assert.Equal(122, barcode.Width);
+        Assert.Equal(124, barcode.Width); // 95 modules, a 9-module gap, a 20-module add-on
     }
 
     [Fact]

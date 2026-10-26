@@ -111,7 +111,8 @@ internal sealed class RMQRMatrixBuilder
                     continue;
                 }
 
-                var isDark = (r % 2 == 0 && c % 2 == 0) || (r % 2 == 1 && (c == 0 || c == 4));
+                // A dark 5x5 ring, a light 3x3 ring and a dark center module (ISO/IEC 23941, 6.3.7)
+                var isDark = r is 0 or 4 || c is 0 or 4 || (r == 2 && c == 2);
                 _modules[row, col] = isDark;
             }
         }
@@ -155,6 +156,10 @@ internal sealed class RMQRMatrixBuilder
             var centersForHeight7 = RMQRVersion.GetAlignmentPatternColumnPositions(_version);
             foreach (var center in centersForHeight7)
             {
+                // The alignment pattern is a 3x3 ring: its row on the edge is dark whatever the parity of the timing pattern
+                _modules[0, center] = true;
+                _modules[_height - 1, center] = true;
+
                 _modules[1, center - 1] = true;
                 _modules[1, center] = false;
                 _modules[1, center + 1] = true;
@@ -222,6 +227,10 @@ internal sealed class RMQRMatrixBuilder
         var centers = RMQRVersion.GetAlignmentPatternColumnPositions(_version);
         foreach (var center in centers)
         {
+            // The alignment pattern is a 3x3 ring: its row on the edge is dark whatever the parity of the timing pattern
+            _modules[0, center] = true;
+            _modules[_height - 1, center] = true;
+
             _modules[1, center - 1] = true;
             _modules[1, center] = false;
             _modules[1, center + 1] = true;
@@ -245,12 +254,14 @@ internal sealed class RMQRMatrixBuilder
         }
     }
 
+    // The corner finder patterns are L-shaped (ISO/IEC 23941, 6.3.8): the edge modules around the top-right and
+    // bottom-left corners are dark, the module inside the corner is light
     private void PlaceCornerFinders()
     {
-        _modules[1, _width - 2] = true;
+        _modules[1, _width - 2] = false;
         if (_height > 9)
         {
-            _modules[_height - 2, 1] = true;
+            _modules[_height - 2, 1] = false;
         }
     }
 

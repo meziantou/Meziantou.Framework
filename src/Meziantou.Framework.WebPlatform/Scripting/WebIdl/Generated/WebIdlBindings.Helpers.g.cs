@@ -143,11 +143,19 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.WheelEventInit Defaults_Dom_WheelEventInit = new();
 
+    private static readonly global::Meziantou.Framework.WebPlatform.WebAudio.AudioBufferSourceOptions Defaults_WebAudio_AudioBufferSourceOptions = new();
+
+    private static readonly global::Meziantou.Framework.WebPlatform.WebAudio.GainOptions Defaults_WebAudio_GainOptions = new();
+
     internal static readonly string[] Enum_AlignSetting_Values = new[] { "start", "center", "end", "left", "right" };
 
     internal static readonly string[] Enum_AppendMode_Values = new[] { "segments", "sequence" };
 
+    internal static readonly string[] Enum_AudioContextRenderSizeCategory_Values = new[] { "default", "hardware" };
+
     internal static readonly string[] Enum_AutoKeyword_Values = new[] { "auto" };
+
+    internal static readonly string[] Enum_AutomationRate_Values = new[] { "a-rate", "k-rate" };
 
     internal static readonly string[] Enum_BinaryType_Values = new[] { "blob", "arraybuffer" };
 
@@ -176,6 +184,10 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     internal static readonly string[] Enum_CanvasTextBaseline_Values = new[] { "top", "hanging", "middle", "alphabetic", "ideographic", "bottom" };
 
     internal static readonly string[] Enum_CanvasTextRendering_Values = new[] { "auto", "optimizeSpeed", "optimizeLegibility", "geometricPrecision" };
+
+    internal static readonly string[] Enum_ChannelCountMode_Values = new[] { "max", "clamped-max", "explicit" };
+
+    internal static readonly string[] Enum_ChannelInterpretation_Values = new[] { "speakers", "discrete" };
 
     internal static readonly string[] Enum_ClientType_Values = new[] { "window", "worker", "sharedworker", "all" };
 
@@ -2364,6 +2376,73 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return result;
     }
 
+    internal static TValue FromDictionary_WebAudio_AudioBufferOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.WebAudio.AudioBufferOptions value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "length", r.FromNumber((double)value.Length));
+        r.SetMember(result, "numberOfChannels", r.FromNumber((double)value.NumberOfChannels));
+        r.SetMember(result, "sampleRate", r.FromNumber((double)value.SampleRate));
+        return result;
+    }
+
+    internal static TValue FromDictionary_WebAudio_AudioBufferSourceOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.WebAudio.AudioBufferSourceOptions value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "buffer", r.Wrap(value.Buffer));
+        r.SetMember(result, "detune", r.FromNumber((double)value.Detune));
+        r.SetMember(result, "loop", r.FromBoolean(value.Loop));
+        r.SetMember(result, "loopEnd", r.FromNumber((double)value.LoopEnd));
+        r.SetMember(result, "loopStart", r.FromNumber((double)value.LoopStart));
+        r.SetMember(result, "playbackRate", r.FromNumber((double)value.PlaybackRate));
+        return result;
+    }
+
+    internal static TValue FromDictionary_WebAudio_AudioNodeOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.WebAudio.AudioNodeOptions value)
+    {
+        var result = r.CreateObject();
+        if (value.ChannelCount is not null) r.SetMember(result, "channelCount", (value.ChannelCount.HasValue ? r.FromNumber((double)value.ChannelCount.GetValueOrDefault()) : r.Adapter.Null));
+        if (value.ChannelCountMode is not null) r.SetMember(result, "channelCountMode", (value.ChannelCountMode.HasValue ? r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_WebAudio_ChannelCountMode(value.ChannelCountMode.GetValueOrDefault())) : r.Adapter.Null));
+        if (value.ChannelInterpretation is not null) r.SetMember(result, "channelInterpretation", (value.ChannelInterpretation.HasValue ? r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_WebAudio_ChannelInterpretation(value.ChannelInterpretation.GetValueOrDefault())) : r.Adapter.Null));
+        return result;
+    }
+
+    internal static TValue FromDictionary_WebAudio_ConstantSourceOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.WebAudio.ConstantSourceOptions value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "offset", r.FromNumber((double)value.Offset));
+        return result;
+    }
+
+    internal static TValue FromDictionary_WebAudio_GainOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.WebAudio.GainOptions value)
+    {
+        var result = r.CreateObject();
+        if (value.ChannelCount is not null) r.SetMember(result, "channelCount", (value.ChannelCount.HasValue ? r.FromNumber((double)value.ChannelCount.GetValueOrDefault()) : r.Adapter.Null));
+        if (value.ChannelCountMode is not null) r.SetMember(result, "channelCountMode", (value.ChannelCountMode.HasValue ? r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_WebAudio_ChannelCountMode(value.ChannelCountMode.GetValueOrDefault())) : r.Adapter.Null));
+        if (value.ChannelInterpretation is not null) r.SetMember(result, "channelInterpretation", (value.ChannelInterpretation.HasValue ? r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_WebAudio_ChannelInterpretation(value.ChannelInterpretation.GetValueOrDefault())) : r.Adapter.Null));
+        r.SetMember(result, "gain", r.FromNumber((double)value.Gain));
+        return result;
+    }
+
+    internal static TValue FromDictionary_WebAudio_OfflineAudioCompletionEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.WebAudio.OfflineAudioCompletionEventInit value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "bubbles", r.FromBoolean(value.Bubbles));
+        r.SetMember(result, "cancelable", r.FromBoolean(value.Cancelable));
+        r.SetMember(result, "composed", r.FromBoolean(value.Composed));
+        r.SetMember(result, "renderedBuffer", r.Wrap(value.RenderedBuffer));
+        return result;
+    }
+
+    internal static TValue FromDictionary_WebAudio_OfflineAudioContextOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.WebAudio.OfflineAudioContextOptions value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "length", (value.Length.HasValue ? r.FromNumber((double)value.Length.GetValueOrDefault()) : r.Adapter.Null));
+        r.SetMember(result, "numberOfChannels", r.FromNumber((double)value.NumberOfChannels));
+        r.SetMember(result, "renderSizeHint", r.ToJs((object?)value.RenderSizeHint));
+        r.SetMember(result, "sampleRate", r.FromNumber((double)value.SampleRate));
+        return result;
+    }
+
     internal static string FromEnum_Animations_AnimationPlayState(global::Meziantou.Framework.WebPlatform.Animations.AnimationPlayState value) => value switch
     {
         global::Meziantou.Framework.WebPlatform.Animations.AnimationPlayState.Idle => "idle",
@@ -3060,6 +3139,44 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         global::Meziantou.Framework.WebPlatform.Dom.XmlHttpRequestResponseType.Document => "document",
         global::Meziantou.Framework.WebPlatform.Dom.XmlHttpRequestResponseType.Json => "json",
         global::Meziantou.Framework.WebPlatform.Dom.XmlHttpRequestResponseType.Text => "text",
+        _ => value.ToString(),
+    };
+
+    internal static string FromEnum_WebAudio_AudioContextRenderSizeCategory(global::Meziantou.Framework.WebPlatform.WebAudio.AudioContextRenderSizeCategory value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.WebAudio.AudioContextRenderSizeCategory.Default => "default",
+        global::Meziantou.Framework.WebPlatform.WebAudio.AudioContextRenderSizeCategory.Hardware => "hardware",
+        _ => value.ToString(),
+    };
+
+    internal static string FromEnum_WebAudio_AudioContextState(global::Meziantou.Framework.WebPlatform.WebAudio.AudioContextState value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.WebAudio.AudioContextState.Suspended => "suspended",
+        global::Meziantou.Framework.WebPlatform.WebAudio.AudioContextState.Running => "running",
+        global::Meziantou.Framework.WebPlatform.WebAudio.AudioContextState.Closed => "closed",
+        global::Meziantou.Framework.WebPlatform.WebAudio.AudioContextState.Interrupted => "interrupted",
+        _ => value.ToString(),
+    };
+
+    internal static string FromEnum_WebAudio_AutomationRate(global::Meziantou.Framework.WebPlatform.WebAudio.AutomationRate value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.WebAudio.AutomationRate.ARate => "a-rate",
+        global::Meziantou.Framework.WebPlatform.WebAudio.AutomationRate.KRate => "k-rate",
+        _ => value.ToString(),
+    };
+
+    internal static string FromEnum_WebAudio_ChannelCountMode(global::Meziantou.Framework.WebPlatform.WebAudio.ChannelCountMode value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.WebAudio.ChannelCountMode.Max => "max",
+        global::Meziantou.Framework.WebPlatform.WebAudio.ChannelCountMode.ClampedMax => "clamped-max",
+        global::Meziantou.Framework.WebPlatform.WebAudio.ChannelCountMode.Explicit => "explicit",
+        _ => value.ToString(),
+    };
+
+    internal static string FromEnum_WebAudio_ChannelInterpretation(global::Meziantou.Framework.WebPlatform.WebAudio.ChannelInterpretation value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.WebAudio.ChannelInterpretation.Speakers => "speakers",
+        global::Meziantou.Framework.WebPlatform.WebAudio.ChannelInterpretation.Discrete => "discrete",
         _ => value.ToString(),
     };
 
@@ -7076,6 +7193,128 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         };
     }
 
+    internal static global::Meziantou.Framework.WebPlatform.WebAudio.AudioBufferOptions ToDictionary_WebAudio_AudioBufferOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "AudioBufferOptions");
+        var m0_value = r.GetDictionaryMember(value, "length");
+        if (r.Adapter.IsUndefined(m0_value)) throw r.MissingRequiredDictionaryMember("AudioBufferOptions", "length");
+        var m0 = r.ToUnsignedLong(m0_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None);
+        var m1_value = r.GetDictionaryMember(value, "numberOfChannels");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (uint)(uint)(1d) : r.ToUnsignedLong(m1_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None);
+        var m2_value = r.GetDictionaryMember(value, "sampleRate");
+        if (r.Adapter.IsUndefined(m2_value)) throw r.MissingRequiredDictionaryMember("AudioBufferOptions", "sampleRate");
+        var m2 = r.ToFloat(m2_value, restricted: true);
+        return new global::Meziantou.Framework.WebPlatform.WebAudio.AudioBufferOptions
+        {
+            Length = m0,
+            NumberOfChannels = m1,
+            SampleRate = m2,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.WebAudio.AudioBufferSourceOptions ToDictionary_WebAudio_AudioBufferSourceOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "AudioBufferSourceOptions");
+        var m0_value = r.GetDictionaryMember(value, "buffer");
+        var m0_present = !r.Adapter.IsUndefined(m0_value);
+        var m0 = m0_present ? (global::Meziantou.Framework.WebPlatform.WebAudio.AudioBuffer?)(r.IsNullOrUndefined(m0_value) ? (global::Meziantou.Framework.WebPlatform.WebAudio.AudioBuffer?)null : r.ToInterface<global::Meziantou.Framework.WebPlatform.WebAudio.AudioBuffer>(m0_value, "AudioBuffer")) : default;
+        var m1_value = r.GetDictionaryMember(value, "detune");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (float)(float)(0d) : r.ToFloat(m1_value, restricted: true);
+        var m2_value = r.GetDictionaryMember(value, "loop");
+        var m2 = r.Adapter.IsUndefined(m2_value) ? (bool)false : r.ToBoolean(m2_value);
+        var m3_value = r.GetDictionaryMember(value, "loopEnd");
+        var m3 = r.Adapter.IsUndefined(m3_value) ? (double)(double)(0d) : r.ToDouble(m3_value, restricted: true);
+        var m4_value = r.GetDictionaryMember(value, "loopStart");
+        var m4 = r.Adapter.IsUndefined(m4_value) ? (double)(double)(0d) : r.ToDouble(m4_value, restricted: true);
+        var m5_value = r.GetDictionaryMember(value, "playbackRate");
+        var m5 = r.Adapter.IsUndefined(m5_value) ? (float)(float)(1d) : r.ToFloat(m5_value, restricted: true);
+        return new global::Meziantou.Framework.WebPlatform.WebAudio.AudioBufferSourceOptions
+        {
+            Buffer = m0_present ? m0 : Defaults_WebAudio_AudioBufferSourceOptions.Buffer,
+            Detune = m1,
+            Loop = m2,
+            LoopEnd = m3,
+            LoopStart = m4,
+            PlaybackRate = m5,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.WebAudio.ConstantSourceOptions ToDictionary_WebAudio_ConstantSourceOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "ConstantSourceOptions");
+        var m0_value = r.GetDictionaryMember(value, "offset");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (float)(float)(1d) : r.ToFloat(m0_value, restricted: true);
+        return new global::Meziantou.Framework.WebPlatform.WebAudio.ConstantSourceOptions
+        {
+            Offset = m0,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.WebAudio.GainOptions ToDictionary_WebAudio_GainOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "GainOptions");
+        var m0_value = r.GetDictionaryMember(value, "channelCount");
+        var m0_present = !r.Adapter.IsUndefined(m0_value);
+        var m0 = m0_present ? (uint?)r.ToUnsignedLong(m0_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None) : default;
+        var m1_value = r.GetDictionaryMember(value, "channelCountMode");
+        var m1_present = !r.Adapter.IsUndefined(m1_value);
+        var m1 = m1_present ? (string?)r.ToEnumerationValue(m1_value, "ChannelCountMode", WebIdlHelpers<TAdapter, TValue>.Enum_ChannelCountMode_Values) : default;
+        var m2_value = r.GetDictionaryMember(value, "channelInterpretation");
+        var m2_present = !r.Adapter.IsUndefined(m2_value);
+        var m2 = m2_present ? (string?)r.ToEnumerationValue(m2_value, "ChannelInterpretation", WebIdlHelpers<TAdapter, TValue>.Enum_ChannelInterpretation_Values) : default;
+        var m3_value = r.GetDictionaryMember(value, "gain");
+        var m3 = r.Adapter.IsUndefined(m3_value) ? (float)(float)(1d) : r.ToFloat(m3_value, restricted: true);
+        return new global::Meziantou.Framework.WebPlatform.WebAudio.GainOptions
+        {
+            ChannelCount = m0_present ? m0 : Defaults_WebAudio_GainOptions.ChannelCount,
+            ChannelCountMode = m1_present ? (m1 is { } enumValue_m1 ? WebIdlHelpers<TAdapter, TValue>.ToEnum_WebAudio_ChannelCountMode(enumValue_m1) : (global::Meziantou.Framework.WebPlatform.WebAudio.ChannelCountMode?)null) : Defaults_WebAudio_GainOptions.ChannelCountMode,
+            ChannelInterpretation = m2_present ? (m2 is { } enumValue_m2 ? WebIdlHelpers<TAdapter, TValue>.ToEnum_WebAudio_ChannelInterpretation(enumValue_m2) : (global::Meziantou.Framework.WebPlatform.WebAudio.ChannelInterpretation?)null) : Defaults_WebAudio_GainOptions.ChannelInterpretation,
+            Gain = m3,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.WebAudio.OfflineAudioCompletionEventInit ToDictionary_WebAudio_OfflineAudioCompletionEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "OfflineAudioCompletionEventInit");
+        var m0_value = r.GetDictionaryMember(value, "bubbles");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (bool)false : r.ToBoolean(m0_value);
+        var m1_value = r.GetDictionaryMember(value, "cancelable");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (bool)false : r.ToBoolean(m1_value);
+        var m2_value = r.GetDictionaryMember(value, "composed");
+        var m2 = r.Adapter.IsUndefined(m2_value) ? (bool)false : r.ToBoolean(m2_value);
+        var m3_value = r.GetDictionaryMember(value, "renderedBuffer");
+        if (r.Adapter.IsUndefined(m3_value)) throw r.MissingRequiredDictionaryMember("OfflineAudioCompletionEventInit", "renderedBuffer");
+        var m3 = r.ToInterface<global::Meziantou.Framework.WebPlatform.WebAudio.AudioBuffer>(m3_value, "AudioBuffer");
+        return new global::Meziantou.Framework.WebPlatform.WebAudio.OfflineAudioCompletionEventInit
+        {
+            Bubbles = m0,
+            Cancelable = m1,
+            Composed = m2,
+            RenderedBuffer = m3,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.WebAudio.OfflineAudioContextOptions ToDictionary_WebAudio_OfflineAudioContextOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "OfflineAudioContextOptions");
+        var m0_value = r.GetDictionaryMember(value, "length");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (uint?)(uint?)null : (r.IsNullOrUndefined(m0_value) ? (uint?)null : r.ToUnsignedLong(m0_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None));
+        var m1_value = r.GetDictionaryMember(value, "numberOfChannels");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (uint)(uint)(1d) : r.ToUnsignedLong(m1_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None);
+        var m2_value = r.GetDictionaryMember(value, "renderSizeHint");
+        var m2 = r.Adapter.IsUndefined(m2_value) ? (object?)(object)"default" : WebIdlHelpers<TAdapter, TValue>.ToUnion_1bbc725e(r, m2_value);
+        var m3_value = r.GetDictionaryMember(value, "sampleRate");
+        if (r.Adapter.IsUndefined(m3_value)) throw r.MissingRequiredDictionaryMember("OfflineAudioContextOptions", "sampleRate");
+        var m3 = r.ToFloat(m3_value, restricted: true);
+        return new global::Meziantou.Framework.WebPlatform.WebAudio.OfflineAudioContextOptions
+        {
+            Length = m0,
+            NumberOfChannels = m1,
+            RenderSizeHint = WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_WebAudio_AudioContextRenderSizeHint(r, m2),
+            SampleRate = m3,
+        };
+    }
+
     internal static global::Meziantou.Framework.WebPlatform.Animations.CompositeOperation ToEnum_Animations_CompositeOperation(string value) => value switch
     {
         "replace" => global::Meziantou.Framework.WebPlatform.Animations.CompositeOperation.Replace,
@@ -7627,6 +7866,35 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
     };
 
+    internal static global::Meziantou.Framework.WebPlatform.WebAudio.AudioContextRenderSizeCategory ToEnum_WebAudio_AudioContextRenderSizeCategory(string value) => value switch
+    {
+        "default" => global::Meziantou.Framework.WebPlatform.WebAudio.AudioContextRenderSizeCategory.Default,
+        "hardware" => global::Meziantou.Framework.WebPlatform.WebAudio.AudioContextRenderSizeCategory.Hardware,
+        _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
+    };
+
+    internal static global::Meziantou.Framework.WebPlatform.WebAudio.AutomationRate ToEnum_WebAudio_AutomationRate(string value) => value switch
+    {
+        "a-rate" => global::Meziantou.Framework.WebPlatform.WebAudio.AutomationRate.ARate,
+        "k-rate" => global::Meziantou.Framework.WebPlatform.WebAudio.AutomationRate.KRate,
+        _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
+    };
+
+    internal static global::Meziantou.Framework.WebPlatform.WebAudio.ChannelCountMode ToEnum_WebAudio_ChannelCountMode(string value) => value switch
+    {
+        "max" => global::Meziantou.Framework.WebPlatform.WebAudio.ChannelCountMode.Max,
+        "clamped-max" => global::Meziantou.Framework.WebPlatform.WebAudio.ChannelCountMode.ClampedMax,
+        "explicit" => global::Meziantou.Framework.WebPlatform.WebAudio.ChannelCountMode.Explicit,
+        _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
+    };
+
+    internal static global::Meziantou.Framework.WebPlatform.WebAudio.ChannelInterpretation ToEnum_WebAudio_ChannelInterpretation(string value) => value switch
+    {
+        "speakers" => global::Meziantou.Framework.WebPlatform.WebAudio.ChannelInterpretation.Speakers,
+        "discrete" => global::Meziantou.Framework.WebPlatform.WebAudio.ChannelInterpretation.Discrete,
+        _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
+    };
+
     internal static global::Meziantou.Framework.WebPlatform.Animations.EffectDuration ToUnionStruct_Animations_EffectDuration(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, object? value) => value switch
     {
         double v => v,
@@ -7889,6 +8157,22 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         _ => throw new global::System.InvalidCastException("The value cannot be converted to ReadOnlySpan`1"),
     };
 
+    internal static global::Meziantou.Framework.WebPlatform.WebAudio.AudioContextRenderSizeHint ToUnionStruct_WebAudio_AudioContextRenderSizeHint(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, object? value) => value switch
+    {
+        string enumValue when WebIdlHelpers<TAdapter, TValue>.TryToEnum_WebAudio_AudioContextRenderSizeCategory(enumValue, out var enumResult) => enumResult,
+        uint v => v,
+        int v => (uint)v,
+        double v => (uint)v,
+        float v => (uint)v,
+        short v => (uint)v,
+        ushort v => (uint)v,
+        long v => (uint)v,
+        ulong v => (uint)v,
+        byte v => (uint)v,
+        sbyte v => (uint)v,
+        _ => throw new global::System.InvalidCastException("The value cannot be converted to AudioContextRenderSizeHint"),
+    };
+
     /// <summary>(DOMString or SanitizerProcessingInstruction)</summary>
     internal static object? ToUnion_00dbe749(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
     {
@@ -7995,6 +8279,16 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         }
         if (r.Adapter.IsNumber(value)) return r.ToDouble(value, restricted: true);
         return r.ToDouble(value, restricted: true);
+    }
+
+    /// <summary>(AudioContextRenderSizeCategory or unsigned long)</summary>
+    internal static object? ToUnion_1bbc725e(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.Adapter.IsObject(value))
+        {
+        }
+        if (r.Adapter.IsNumber(value)) return r.ToUnsignedLong(value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None);
+        return r.ToEnumerationValue(value, "AudioContextRenderSizeCategory", WebIdlHelpers<TAdapter, TValue>.Enum_AudioContextRenderSizeCategory_Values);
     }
 
     /// <summary>(DOMString or sequence&lt;DOMString&gt;)</summary>
@@ -9002,6 +9296,20 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         try
         {
             result = WebIdlHelpers<TAdapter, TValue>.ToEnum_Dom_TaskPriority(value);
+            return true;
+        }
+        catch (global::System.ArgumentException)
+        {
+            result = default;
+            return false;
+        }
+    }
+
+    internal static bool TryToEnum_WebAudio_AudioContextRenderSizeCategory(string value, out global::Meziantou.Framework.WebPlatform.WebAudio.AudioContextRenderSizeCategory result)
+    {
+        try
+        {
+            result = WebIdlHelpers<TAdapter, TValue>.ToEnum_WebAudio_AudioContextRenderSizeCategory(value);
             return true;
         }
         catch (global::System.ArgumentException)

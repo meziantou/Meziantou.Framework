@@ -510,6 +510,7 @@
       "subresource-integrity/style.css",
       "subresource-integrity/image.png",
       "worklets",
+      "webaudio",
       "css/css-paint-api",
       "css/css-layout-api",
       "animation-worklet",

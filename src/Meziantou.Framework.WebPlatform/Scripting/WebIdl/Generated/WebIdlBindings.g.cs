@@ -27,9 +27,17 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["AnimationTimeline"] = Binding_AnimationTimeline<TAdapter, TValue>.Binding,
             ["AnimationWorkletGlobalScope"] = Binding_AnimationWorkletGlobalScope<TAdapter, TValue>.Binding,
             ["Attr"] = Binding_Attr<TAdapter, TValue>.Binding,
+            ["AudioBuffer"] = Binding_AudioBuffer<TAdapter, TValue>.Binding,
+            ["AudioBufferSourceNode"] = Binding_AudioBufferSourceNode<TAdapter, TValue>.Binding,
+            ["AudioDestinationNode"] = Binding_AudioDestinationNode<TAdapter, TValue>.Binding,
+            ["AudioListener"] = Binding_AudioListener<TAdapter, TValue>.Binding,
+            ["AudioNode"] = Binding_AudioNode<TAdapter, TValue>.Binding,
+            ["AudioParam"] = Binding_AudioParam<TAdapter, TValue>.Binding,
+            ["AudioScheduledSourceNode"] = Binding_AudioScheduledSourceNode<TAdapter, TValue>.Binding,
             ["AudioTrack"] = Binding_AudioTrack<TAdapter, TValue>.Binding,
             ["AudioTrackList"] = Binding_AudioTrackList<TAdapter, TValue>.Binding,
             ["BarProp"] = Binding_BarProp<TAdapter, TValue>.Binding,
+            ["BaseAudioContext"] = Binding_BaseAudioContext<TAdapter, TValue>.Binding,
             ["BeforeUnloadEvent"] = Binding_BeforeUnloadEvent<TAdapter, TValue>.Binding,
             ["Blob"] = Binding_Blob<TAdapter, TValue>.Binding,
             ["BreakToken"] = Binding_BreakToken<TAdapter, TValue>.Binding,
@@ -142,6 +150,7 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["CommandEvent"] = Binding_CommandEvent<TAdapter, TValue>.Binding,
             ["Comment"] = Binding_Comment<TAdapter, TValue>.Binding,
             ["CompositionEvent"] = Binding_CompositionEvent<TAdapter, TValue>.Binding,
+            ["ConstantSourceNode"] = Binding_ConstantSourceNode<TAdapter, TValue>.Binding,
             ["ContainerQueryList"] = Binding_ContainerQueryList<TAdapter, TValue>.Binding,
             ["ContentVisibilityAutoStateChangeEvent"] = Binding_ContentVisibilityAutoStateChangeEvent<TAdapter, TValue>.Binding,
             ["CookieChangeEvent"] = Binding_CookieChangeEvent<TAdapter, TValue>.Binding,
@@ -199,6 +208,7 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["FormDataEvent"] = Binding_FormDataEvent<TAdapter, TValue>.Binding,
             ["FragmentDirective"] = Binding_FragmentDirective<TAdapter, TValue>.Binding,
             ["FragmentResult"] = Binding_FragmentResult<TAdapter, TValue>.Binding,
+            ["GainNode"] = Binding_GainNode<TAdapter, TValue>.Binding,
             ["HTMLAllCollection"] = Binding_HTMLAllCollection<TAdapter, TValue>.Binding,
             ["HTMLAnchorElement"] = Binding_HTMLAnchorElement<TAdapter, TValue>.Binding,
             ["HTMLAreaElement"] = Binding_HTMLAreaElement<TAdapter, TValue>.Binding,
@@ -346,6 +356,8 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["Node"] = Binding_Node<TAdapter, TValue>.Binding,
             ["NodeIterator"] = Binding_NodeIterator<TAdapter, TValue>.Binding,
             ["NodeList"] = Binding_NodeList<TAdapter, TValue>.Binding,
+            ["OfflineAudioCompletionEvent"] = Binding_OfflineAudioCompletionEvent<TAdapter, TValue>.Binding,
+            ["OfflineAudioContext"] = Binding_OfflineAudioContext<TAdapter, TValue>.Binding,
             ["OffscreenCanvas"] = Binding_OffscreenCanvas<TAdapter, TValue>.Binding,
             ["OffscreenCanvasRenderingContext2D"] = Binding_OffscreenCanvasRenderingContext2D<TAdapter, TValue>.Binding,
             ["Origin"] = Binding_Origin<TAdapter, TValue>.Binding,
@@ -794,6 +806,12 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.WindowPostMessageOptions dictionaryDom_WindowPostMessageOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_WindowPostMessageOptions(r, dictionaryDom_WindowPostMessageOptions);
                 return true;
+            case global::Meziantou.Framework.WebPlatform.WebAudio.GainOptions dictionaryWebAudio_GainOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebAudio_GainOptions(r, dictionaryWebAudio_GainOptions);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.WebAudio.OfflineAudioCompletionEventInit dictionaryWebAudio_OfflineAudioCompletionEventInit:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebAudio_OfflineAudioCompletionEventInit(r, dictionaryWebAudio_OfflineAudioCompletionEventInit);
+                return true;
             case global::Meziantou.Framework.WebPlatform.Animations.DocumentTimelineOptions dictionaryAnimations_DocumentTimelineOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Animations_DocumentTimelineOptions(r, dictionaryAnimations_DocumentTimelineOptions);
                 return true;
@@ -1160,6 +1178,21 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.WorkletOptions dictionaryDom_WorkletOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_WorkletOptions(r, dictionaryDom_WorkletOptions);
                 return true;
+            case global::Meziantou.Framework.WebPlatform.WebAudio.AudioBufferOptions dictionaryWebAudio_AudioBufferOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebAudio_AudioBufferOptions(r, dictionaryWebAudio_AudioBufferOptions);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.WebAudio.AudioBufferSourceOptions dictionaryWebAudio_AudioBufferSourceOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebAudio_AudioBufferSourceOptions(r, dictionaryWebAudio_AudioBufferSourceOptions);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.WebAudio.AudioNodeOptions dictionaryWebAudio_AudioNodeOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebAudio_AudioNodeOptions(r, dictionaryWebAudio_AudioNodeOptions);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.WebAudio.ConstantSourceOptions dictionaryWebAudio_ConstantSourceOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebAudio_ConstantSourceOptions(r, dictionaryWebAudio_ConstantSourceOptions);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.WebAudio.OfflineAudioContextOptions dictionaryWebAudio_OfflineAudioContextOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebAudio_OfflineAudioContextOptions(r, dictionaryWebAudio_OfflineAudioContextOptions);
+                return true;
             case global::Meziantou.Framework.WebPlatform.Animations.AnimationPlayState enumAnimations_AnimationPlayState:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Animations_AnimationPlayState(enumAnimations_AnimationPlayState));
                 return true;
@@ -1412,6 +1445,21 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.XmlHttpRequestResponseType enumDom_XmlHttpRequestResponseType:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_XmlHttpRequestResponseType(enumDom_XmlHttpRequestResponseType));
                 return true;
+            case global::Meziantou.Framework.WebPlatform.WebAudio.AudioContextRenderSizeCategory enumWebAudio_AudioContextRenderSizeCategory:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_WebAudio_AudioContextRenderSizeCategory(enumWebAudio_AudioContextRenderSizeCategory));
+                return true;
+            case global::Meziantou.Framework.WebPlatform.WebAudio.AudioContextState enumWebAudio_AudioContextState:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_WebAudio_AudioContextState(enumWebAudio_AudioContextState));
+                return true;
+            case global::Meziantou.Framework.WebPlatform.WebAudio.AutomationRate enumWebAudio_AutomationRate:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_WebAudio_AutomationRate(enumWebAudio_AutomationRate));
+                return true;
+            case global::Meziantou.Framework.WebPlatform.WebAudio.ChannelCountMode enumWebAudio_ChannelCountMode:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_WebAudio_ChannelCountMode(enumWebAudio_ChannelCountMode));
+                return true;
+            case global::Meziantou.Framework.WebPlatform.WebAudio.ChannelInterpretation enumWebAudio_ChannelInterpretation:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_WebAudio_ChannelInterpretation(enumWebAudio_ChannelInterpretation));
+                return true;
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Animations.Animation> taskSystem_Threading_Tasks_Task_Animations_Animation_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Animations_Animation_, static (r, v) => r.Wrap(v));
                 return true;
@@ -1480,6 +1528,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.WindowClient> taskSystem_Threading_Tasks_Task_Dom_WindowClient_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_WindowClient_, static (r, v) => r.Wrap(v));
+                return true;
+            case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.WebAudio.AudioBuffer> taskSystem_Threading_Tasks_Task_WebAudio_AudioBuffer_:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_WebAudio_AudioBuffer_, static (r, v) => r.Wrap(v));
                 return true;
             case global::System.Threading.Tasks.Task<bool> taskSystem_Threading_Tasks_Task_bool_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_bool_, static (r, v) => r.FromBoolean(v));

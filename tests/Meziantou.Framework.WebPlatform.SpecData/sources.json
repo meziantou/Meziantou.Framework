@@ -513,6 +513,7 @@
       "worklets",
       "webaudio",
       "css/css-paint-api",
+      "css/css-painting",
       "css/css-layout-api",
       "animation-worklet",
       "speculation-rules",

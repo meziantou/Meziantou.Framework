@@ -262,10 +262,7 @@
     "total": 1
   },
   "resource-timing/load-from-mem-cache-transfer-size.html": {
-    "total": 1,
-    "failures": {
-      "The transferSize of resource timing entries should be 0 when resource     is loaded from memory cache.": "FAIL"
-    }
+    "total": 1
   },
   "resource-timing/nested-context-navigations-embed.html": {
     "total": 9
@@ -281,6 +278,9 @@
   },
   "resource-timing/nextHopProtocol-is-tao-protected.https.html": {
     "total": 16
+  },
+  "resource-timing/no-entries-for-cached-import-of-cross-origin-css.html": {
+    "total": 3
   },
   "resource-timing/no-entries-for-cross-origin-css-fetched-memory-cache.sub.html": {
     "total": 1

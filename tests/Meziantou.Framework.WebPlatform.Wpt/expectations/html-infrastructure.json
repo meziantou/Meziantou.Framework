@@ -115,6 +115,9 @@
   "html/infrastructure/safe-passing-of-structured-data/shared-array-buffers/window-iframe-messagechannel.https.html": {
     "total": 4
   },
+  "html/infrastructure/safe-passing-of-structured-data/shared-array-buffers/window-iframe-not-cross-origin-isolated.https.html": {
+    "total": 2
+  },
   "html/infrastructure/safe-passing-of-structured-data/shared-array-buffers/window-messagechannel-success.https.html": {
     "total": 1
   },

@@ -836,6 +836,9 @@
   "css/css-flexbox/change-column-flex-width.html": {
     "total": 1
   },
+  "css/css-flexbox/checkbox-aspect-ratio-calc-height-in-flex.html": {
+    "reftest": "PASS"
+  },
   "css/css-flexbox/checkbox-percentage-width-in-flex.html": {
     "total": 4
   },
@@ -1332,6 +1335,9 @@
     "reftest": "PASS"
   },
   "css/css-flexbox/flex-item-max-width-min-content.html": {
+    "reftest": "PASS"
+  },
+  "css/css-flexbox/flex-item-min-block-size-intrinsic-max-block-size.html": {
     "reftest": "PASS"
   },
   "css/css-flexbox/flex-item-min-height-min-content-overflow.html": {
@@ -4173,6 +4179,12 @@
     "reftest": "PASS"
   },
   "css/css-flexbox/table-as-item-wide-content.html": {
+    "reftest": "PASS"
+  },
+  "css/css-flexbox/table-flex-item-borders-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-flexbox/table-flex-item-min-width-001.html": {
     "reftest": "PASS"
   },
   "css/css-flexbox/table-item-flex-percentage-min-width.html": {

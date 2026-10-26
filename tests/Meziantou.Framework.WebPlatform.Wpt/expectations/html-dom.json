@@ -1237,7 +1237,7 @@
     "total": 1
   },
   "html/dom/documents/dom-tree-accessors/document.getElementsByName/document.getElementsByName-newelements.html": {
-    "total": 27
+    "total": 18
   },
   "html/dom/documents/dom-tree-accessors/document.getElementsByName/document.getElementsByName-null-undef-xhtml.xhtml": {
     "total": 2
@@ -1336,6 +1336,9 @@
     "total": 1
   },
   "html/dom/documents/dom-tree-accessors/nameditem-img-name-removed.html": {
+    "total": 1
+  },
+  "html/dom/documents/dom-tree-accessors/nameditem-insertion-attr-mutation.html": {
     "total": 1
   },
   "html/dom/documents/dom-tree-accessors/nameditem-names.html": {
@@ -2292,6 +2295,9 @@
   "html/dom/render-blocking/element-render-blocking-041.html": {
     "total": 1
   },
+  "html/dom/render-blocking/element-render-blocking-042.html": {
+    "total": 1
+  },
   "html/dom/render-blocking/element-render-blocking-form-stack-removal.html?misnested": {
     "total": 1
   },
@@ -2311,6 +2317,9 @@
     }
   },
   "html/dom/render-blocking/element-render-blocking-top-of-document.html?top": {
+    "total": 1
+  },
+  "html/dom/render-blocking/link-rel-expect-supported.html": {
     "total": 1
   },
   "html/dom/render-blocking/non-render-blocking-scripts.optional.html": {
@@ -2372,6 +2381,9 @@
   },
   "html/dom/render-blocking/script-inserted-stylesheet-link.html": {
     "total": 2
+  },
+  "html/dom/render-blocking/stylesheet-link-href-change-keeps-blocking.html": {
+    "total": 1
   },
   "html/dom/self-origin.any.js": {
     "total": 1

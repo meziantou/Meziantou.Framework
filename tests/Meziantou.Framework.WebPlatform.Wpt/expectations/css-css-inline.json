@@ -427,6 +427,24 @@
   "css/css-inline/initial-letter/initial-letter-block-position-drop-under-ruby.html": {
     "reftest": "PASS"
   },
+  "css/css-inline/initial-letter/initial-letter-block-position-fractional-drop-vlr.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-inline/initial-letter/initial-letter-block-position-fractional-drop-vrl.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-inline/initial-letter/initial-letter-block-position-fractional-drop.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-block-position-fractional-size-vlr.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-block-position-fractional-size-vrl.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/initial-letter-block-position-fractional-size.html": {
+    "reftest": "PASS"
+  },
   "css/css-inline/initial-letter/initial-letter-block-position-margins-rtl.html": {
     "reftest": "PASS"
   },

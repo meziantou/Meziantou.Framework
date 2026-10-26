@@ -137,6 +137,9 @@
   "css/css-counter-styles/counter-style-at-rule/disclosure-closed-extends-direction-003.html": {
     "reftest": "PASS"
   },
+  "css/css-counter-styles/counter-style-at-rule/disclosure-line-height.html": {
+    "reftest": "PASS"
+  },
   "css/css-counter-styles/counter-style-at-rule/disclosure-open-vs-closed-001.html": {
     "reftest": "PASS"
   },

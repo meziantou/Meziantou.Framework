@@ -581,6 +581,9 @@
   "css/css-scroll-snap/snap-events/scrollsnapchanging/scrollsnapchanging-after-layout-change.tentative.html": {
     "total": 1
   },
+  "css/css-scroll-snap/snap-events/scrollsnapchanging/scrollsnapchanging-on-fast-scroll.tentative.html": {
+    "total": 1
+  },
   "css/css-scroll-snap/snap-events/scrollsnapchanging/scrollsnapchanging-on-programmatic-root-scroll.tentative.html": {
     "total": 3
   },

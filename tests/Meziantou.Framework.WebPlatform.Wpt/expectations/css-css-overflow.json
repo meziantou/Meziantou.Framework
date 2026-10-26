@@ -440,6 +440,9 @@
   "css/css-overflow/line-clamp/line-clamp-042.html": {
     "reftest": "PASS"
   },
+  "css/css-overflow/line-clamp/line-clamp-043.html": {
+    "reftest": "PASS"
+  },
   "css/css-overflow/line-clamp/line-clamp-auto-001.html": {
     "reftest": "PASS"
   },
@@ -720,7 +723,7 @@
     "reftest": "PASS"
   },
   "css/css-overflow/line-clamp/line-clamp-baseline-001.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-overflow/line-clamp/line-clamp-bfc.html": {
     "reftest": "PASS"
@@ -939,6 +942,9 @@
     "reftest": "PASS"
   },
   "css/css-overflow/line-clamp/line-clamp-with-floats-014.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-floats-015.html": {
     "reftest": "PASS"
   },
   "css/css-overflow/line-clamp/line-clamp-with-popover-001.html": {
@@ -1608,10 +1614,16 @@
   "css/css-overflow/scroll-axis-lock-interpolation.html": {
     "total": 42
   },
+  "css/css-overflow/scroll-axis-lock-none-touch-subframe.html": {
+    "total": 2
+  },
   "css/css-overflow/scroll-axis-lock-none-touch-viewport.html": {
     "total": 2
   },
   "css/css-overflow/scroll-axis-lock-none-touch.html": {
+    "total": 2
+  },
+  "css/css-overflow/scroll-axis-lock-none-wheel-subframe.html": {
     "total": 2
   },
   "css/css-overflow/scroll-axis-lock-none-wheel-viewport.html": {

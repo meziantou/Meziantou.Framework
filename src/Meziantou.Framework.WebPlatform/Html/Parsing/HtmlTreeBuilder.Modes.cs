@@ -261,7 +261,7 @@ internal sealed partial class HtmlTreeBuilder
                         var element = CreateElementForToken(token.Tag, Namespaces.Html, location.Parent);
 
                         // https://html.spec.whatwg.org/multipage/parsing.html#scriptTag: the Fragment scripting mode treats the scripts
-                        // as if they were not parser-inserted. The scripts parsed in the Inert scripting mode never run. When HTML
+                        // as if they were not parser-inserted (their force async stays true, so the external ones run asynchronously). The scripts parsed in the Inert scripting mode never run. When HTML
                         // is streamed, the scripts are parser-inserted until their end tag, so they are not prepared when they
                         // are inserted with a part of their text.
                         if (element is HtmlScriptElement script)
@@ -270,9 +270,9 @@ internal sealed partial class HtmlTreeBuilder
                             {
                                 script.ParserDocument = _document;
                                 script.SourceTextPosition = _tokenizer.GetCurrentLineAndColumn();
+                                script.ForceAsync = false;
                             }
 
-                            script.ForceAsync = false;
                             if (ScriptingMode == ParserScriptingMode.Inert)
                             {
                                 script.AlreadyStarted = true;

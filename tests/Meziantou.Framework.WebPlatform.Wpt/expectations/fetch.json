@@ -461,10 +461,16 @@
     "total": 2
   },
   "fetch/api/cors/cors-preflight-cache.any.js": {
-    "total": 2
+    "total": 3,
+    "failures": {
+      "CORS preflight cache entries are cleared when request has network error": "FAIL"
+    }
   },
   "fetch/api/cors/cors-preflight-cache.any.js#dedicatedworker": {
-    "total": 2
+    "total": 3,
+    "failures": {
+      "CORS preflight cache entries are cleared when request has network error": "FAIL"
+    }
   },
   "fetch/api/cors/cors-preflight-not-cors-safelisted.any.js": {
     "total": 12
@@ -3574,9 +3580,10 @@
     "total": 3
   },
   "fetch/range/sw-416.https.window.js": {
-    "total": 1,
+    "total": 2,
     "failures": {
-      "416 response not allowed following no-cors ranged request": "FAIL"
+      "416 response not allowed following no-cors ranged request": "FAIL",
+      "Cached 416 response not allowed following no-cors ranged request": "FAIL"
     }
   },
   "fetch/range/sw-intercept-range.https.window.js": {
@@ -3586,8 +3593,9 @@
     "total": 1
   },
   "fetch/range/sw.https.window.js": {
-    "total": 9,
+    "total": 10,
     "failures": {
+      "Cached ranged response not allowed following no-cors ranged request": "FAIL",
       "Include range header in network request": "FAIL",
       "Non-opaque ranged response executed": "FAIL",
       "Ranged response not allowed following no-cors ranged request": "FAIL"

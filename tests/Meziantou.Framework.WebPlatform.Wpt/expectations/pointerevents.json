@@ -441,6 +441,18 @@
   "pointerevents/pointerevent_boundary_events_before_pointerrawupdate.https.html": {
     "total": 1
   },
+  "pointerevents/pointerevent_boundary_events_cross_document_same_origin.tentative.html": {
+    "total": 4,
+    "failures": {
+      "Nested same-origin iframes: relatedTarget is exposed across documents": "FAIL",
+      "Parent to same-origin iframe: relatedTarget is exposed across documents": "FAIL",
+      "Same-origin iframe to parent: relatedTarget is exposed across documents": "FAIL",
+      "Sibling same-origin iframes: relatedTarget is exposed across documents": "FAIL"
+    }
+  },
+  "pointerevents/pointerevent_boundary_events_cross_origin.html": {
+    "total": 4
+  },
   "pointerevents/pointerevent_boundary_events_in_capturing.html?mouse": {
     "total": 1
   },

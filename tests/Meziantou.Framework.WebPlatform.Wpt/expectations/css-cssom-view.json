@@ -49,7 +49,11 @@
     "total": 1
   },
   "css/cssom-view/checkVisibility.html": {
-    "total": 17
+    "total": 21,
+    "failures": {
+      "checkVisibility on content of a closed details element.": "FAIL",
+      "checkVisibility on content of an open details element nested in a closed one.": "FAIL"
+    }
   },
   "css/cssom-view/client-props-inline-list-item.html": {
     "total": 1
@@ -280,6 +284,9 @@
   },
   "css/cssom-view/elementsFromPoint-inline-nested.html": {
     "total": 1
+  },
+  "css/cssom-view/elementsFromPoint-inline-self-painting.html": {
+    "total": 4
   },
   "css/cssom-view/elementsFromPoint-inline-vlr-ltr.html": {
     "total": 1

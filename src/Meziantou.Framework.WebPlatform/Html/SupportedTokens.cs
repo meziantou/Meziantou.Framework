@@ -29,6 +29,7 @@ internal static class SupportedTokens
         "apple-touch-icon-precomposed",
         "canonical",
         "dns-prefetch",
+        "expect",
         "icon",
         "manifest",
         "modulepreload",

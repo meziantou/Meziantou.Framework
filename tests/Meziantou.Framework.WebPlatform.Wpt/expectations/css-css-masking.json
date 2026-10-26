@@ -1194,6 +1194,9 @@
   "css/css-masking/clip-path/clip-path-transform-mutated-002.html": {
     "reftest": "PASS"
   },
+  "css/css-masking/clip-path/clip-path-union-trailing-moveto.html": {
+    "reftest": "PASS"
+  },
   "css/css-masking/clip-path/clip-path-url-reference-change-from-empty.html": {
     "reftest": "PASS"
   },
@@ -1521,6 +1524,9 @@
   "css/css-masking/mask-image/mask-image-cors-001.sub.html": {
     "reftest": "PASS"
   },
+  "css/css-masking/mask-image/mask-image-cross-site-iframe-offset.sub.html": {
+    "reftest": "PASS"
+  },
   "css/css-masking/mask-image/mask-image-data-url-image.html": {
     "reftest": "PASS"
   },
@@ -1555,6 +1561,9 @@
     "reftest": "PASS"
   },
   "css/css-masking/mask-image/mask-image-url-image.html": {
+    "reftest": "PASS"
+  },
+  "css/css-masking/mask-image/mask-image-url-local-mask-mutated.html": {
     "reftest": "PASS"
   },
   "css/css-masking/mask-image/mask-image-url-local-mask.html": {

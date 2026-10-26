@@ -183,6 +183,9 @@
   "html/cross-origin-embedder-policy/credentialless/websocket.https.window.js": {
     "total": 3
   },
+  "html/cross-origin-embedder-policy/cross-origin-iframe-navigates-to-own-blob.https.html": {
+    "total": 1
+  },
   "html/cross-origin-embedder-policy/cross-origin-isolated-permission-iframe.https.window.js": {
     "total": 8
   },
@@ -318,6 +321,22 @@
   },
   "html/cross-origin-embedder-policy/report-only-require-corp.https.html": {
     "total": 4
+  },
+  "html/cross-origin-embedder-policy/reporting-cached-and-service-worker-responses.https.html": {
+    "harness": "TIMEOUT",
+    "total": 10,
+    "failures": {
+      "Cross-Origin-Embedder-Policy reports a cross-origin response a service worker responds with": "NOTRUN",
+      "Cross-Origin-Embedder-Policy reports a redirected response a service worker responds with by its first URL": "NOTRUN",
+      "Cross-Origin-Embedder-Policy reports a response a service worker fetched from another URL by that URL": "NOTRUN",
+      "Cross-Origin-Embedder-Policy reports an image that a document of another site loaded before": "NOTRUN",
+      "Cross-Origin-Embedder-Policy reports an image that another document loaded before": "NOTRUN",
+      "Cross-Origin-Embedder-Policy-Report-Only reports an image that another document loaded before": "TIMEOUT",
+      "Cross-Origin-Embedder-Policy-Report-Only reports an image the document is still loading with CORS once": "NOTRUN",
+      "Cross-Origin-Embedder-Policy-Report-Only reports an image the document loaded with CORS before": "NOTRUN",
+      "Cross-Origin-Embedder-Policy-Report-Only reports an image the document uses twice once": "NOTRUN",
+      "Cross-Origin-Embedder-Policy-Report-Only reports an image without the fragment of its URL": "NOTRUN"
+    }
   },
   "html/cross-origin-embedder-policy/reporting-navigation.https.html": {
     "harness": "TIMEOUT",

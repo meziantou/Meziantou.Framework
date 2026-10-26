@@ -17,6 +17,75 @@
   "css/filter-effects/animation/color-interpolation-filters-no-interpolation.html": {
     "total": 42
   },
+  "css/filter-effects/animation/css-backdrop-filters-animation-blur.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/animation/css-backdrop-filters-animation-brightness.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/animation/css-backdrop-filters-animation-combined.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/animation/css-backdrop-filters-animation-contrast.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/animation/css-backdrop-filters-animation-displacement.html": {
+    "reftest": "FAIL"
+  },
+  "css/filter-effects/animation/css-backdrop-filters-animation-drop-shadow.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/animation/css-backdrop-filters-animation-grayscale.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/animation/css-backdrop-filters-animation-hue-rotate.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/animation/css-backdrop-filters-animation-invert.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/animation/css-backdrop-filters-animation-opacity.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/animation/css-backdrop-filters-animation-saturate.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/animation/css-backdrop-filters-animation-sepia.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/animation/css-filters-animation-blur.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/animation/css-filters-animation-brightness.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/animation/css-filters-animation-combined-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/animation/css-filters-animation-contrast.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/animation/css-filters-animation-drop-shadow.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/animation/css-filters-animation-grayscale.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/animation/css-filters-animation-hue-rotate.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/animation/css-filters-animation-invert.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/animation/css-filters-animation-opacity.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/animation/css-filters-animation-saturate.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/animation/css-filters-animation-sepia.html": {
+    "reftest": "PASS"
+  },
   "css/filter-effects/animation/filter-composition-001.html": {
     "total": 30
   },
@@ -210,6 +279,9 @@
     "reftest": "PASS"
   },
   "css/filter-effects/backdrop-filter-svg-blur.html": {
+    "reftest": "FAIL"
+  },
+  "css/filter-effects/backdrop-filter-svg-displacement.html": {
     "reftest": "FAIL"
   },
   "css/filter-effects/backdrop-filter-svg-foreignObject.html": {

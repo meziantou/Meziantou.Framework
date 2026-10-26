@@ -316,6 +316,9 @@
       "An intercepted navigation that is ongoing when entering the BFCache should finish after restoring": "FAIL"
     }
   },
+  "navigation-api/navigate-event/navigate-anchor-cross-origin-userInitiated.html": {
+    "total": 1
+  },
   "navigation-api/navigate-event/navigate-anchor-cross-origin.html": {
     "total": 1
   },
@@ -328,6 +331,9 @@
   "navigation-api/navigate-event/navigate-anchor-fragment.html": {
     "total": 1
   },
+  "navigation-api/navigate-event/navigate-anchor-same-origin-cross-document-userInitiated.html": {
+    "total": 1
+  },
   "navigation-api/navigate-event/navigate-anchor-same-origin-cross-document.html": {
     "total": 1
   },
@@ -335,6 +341,9 @@
     "total": 1
   },
   "navigation-api/navigate-event/navigate-anchor-userInitiated.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigate-anchor-with-target-userInitiated.html": {
     "total": 1
   },
   "navigation-api/navigate-event/navigate-anchor-with-target.html": {
@@ -475,7 +484,13 @@
   "navigation-api/navigate-event/navigation-back-cross-document-preventDefault.html": {
     "total": 1
   },
+  "navigation-api/navigate-event/navigation-back-same-document-preventDefault-then-traverseTo.html": {
+    "total": 1
+  },
   "navigation-api/navigate-event/navigation-back-same-document-preventDefault.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigation-traverseTo-in-cross-site-iframe-same-document-preventDefault.html": {
     "total": 1
   },
   "navigation-api/navigate-event/navigation-traverseTo-in-iframe-same-document-preventDefault.html": {
@@ -724,6 +739,9 @@
   "navigation-api/navigation-methods/back-forward-multiple-frames.html": {
     "total": 1
   },
+  "navigation-api/navigation-methods/back-main-frame-nearest-after-subframe-navigation.html": {
+    "total": 1
+  },
   "navigation-api/navigation-methods/disambigaute-back.html": {
     "total": 1
   },
@@ -789,6 +807,9 @@
   },
   "navigation-api/navigation-methods/navigate-replace-cross-document.html": {
     "total": 1
+  },
+  "navigation-api/navigation-methods/navigate-replace-cross-site.html": {
+    "total": 3
   },
   "navigation-api/navigation-methods/navigate-replace-same-document.html": {
     "total": 1
@@ -1057,6 +1078,9 @@
   "navigation-api/navigation-methods/traverseTo-after-data-url.html": {
     "total": 1
   },
+  "navigation-api/navigation-methods/traverseTo-and-forward-in-cross-site-iframe.html": {
+    "total": 1
+  },
   "navigation-api/navigation-methods/traverseTo-cross-document.html": {
     "total": 1
   },
@@ -1070,6 +1094,9 @@
     "total": 1
   },
   "navigation-api/navigation-methods/traverseTo-same-document.html": {
+    "total": 1
+  },
+  "navigation-api/navigation-methods/traverseTo-target-made-current-by-earlier-traversal.html": {
     "total": 1
   },
   "navigation-api/navigation-methods/traverseTo-with-cross-origin-in-history.html": {

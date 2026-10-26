@@ -588,10 +588,10 @@
     "total": 160
   },
   "xhr/json.any.js": {
-    "total": 2
+    "total": 6
   },
   "xhr/json.any.js#dedicatedworker": {
-    "total": 2
+    "total": 6
   },
   "xhr/loadstart-and-state.html": {
     "total": 2
@@ -733,6 +733,15 @@
       "44) MIME types need to be parsed and serialized: !#$%&'*+-.^_`|~0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz/!#$%&'*+-.^_`|~0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz;!#$%&'*+-.^_`|~0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz=!#$%&'*+-.^_`|~0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz": "FAIL",
       "45) MIME types need to be parsed and serialized: x/x;x=\"\t !\\\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\u0080\u0081\u0082\u0083\u0084\u0085\u0086\u0087\u0088\u0089\u008A\u008B\u008C\u008D\u008E\u008F\u0090\u0091\u0092\u0093\u0094\u0095\u0096\u0097\u0098\u0099\u009A\u009B\u009C\u009D\u009E\u009F\u00A0¡¢£¤¥¦§¨©ª«¬­®¯°±²³´µ¶·¸¹º»¼½¾¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿ\"": "FAIL",
       "53) MIME types need to be parsed and serialized: text/html;test=ÿ;charset=gbk": "FAIL"
+    }
+  },
+  "xhr/overridemimetype-chunked-response.window.js": {
+    "total": 4,
+    "failures": {
+      "Response charset is used for every chunk of a chunked response": "FAIL",
+      "Response charset is used for every chunk of a chunked response when overrideMimeType() has no charset": "FAIL",
+      "overrideMimeType() charset is used for every chunk of a chunked response": "FAIL",
+      "overrideMimeType() charset overrides the response charset for every chunk of a chunked response": "FAIL"
     }
   },
   "xhr/overridemimetype-done-state.any.js": {
@@ -1146,6 +1155,24 @@
   },
   "xhr/setrequestheader-open-setrequestheader.htm": {
     "total": 1
+  },
+  "xhr/split-byte-order-mark.any.js": {
+    "total": 4,
+    "failures": {
+      "JSON response strips a UTF-8 byte order mark split across chunks": "FAIL",
+      "responseText does not strip a UTF-8 byte order mark in a later chunk": "FAIL",
+      "responseText strips a UTF-8 byte order mark split across chunks": "FAIL",
+      "responseText uses a UTF-16LE byte order mark split across chunks": "FAIL"
+    }
+  },
+  "xhr/split-byte-order-mark.any.js#dedicatedworker": {
+    "total": 4,
+    "failures": {
+      "JSON response strips a UTF-8 byte order mark split across chunks": "FAIL",
+      "responseText does not strip a UTF-8 byte order mark in a later chunk": "FAIL",
+      "responseText strips a UTF-8 byte order mark split across chunks": "FAIL",
+      "responseText uses a UTF-16LE byte order mark split across chunks": "FAIL"
+    }
   },
   "xhr/status-async.htm": {
     "total": 27

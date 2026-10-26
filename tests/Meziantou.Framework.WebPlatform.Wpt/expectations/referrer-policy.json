@@ -983,6 +983,9 @@
   "referrer-policy/css-integration/child-css/internal-import-stylesheet.html": {
     "total": 1
   },
+  "referrer-policy/css-integration/child-css/internal-stylesheet-no-referrer.html": {
+    "total": 1
+  },
   "referrer-policy/css-integration/child-css/processing-instruction.html": {
     "total": 1
   },
@@ -993,6 +996,9 @@
     "total": 1
   },
   "referrer-policy/css-integration/font-face/internal-import-stylesheet.html": {
+    "total": 1
+  },
+  "referrer-policy/css-integration/font-face/internal-stylesheet-no-referrer.html": {
     "total": 1
   },
   "referrer-policy/css-integration/font-face/internal-stylesheet.html": {
@@ -1007,6 +1013,9 @@
   "referrer-policy/css-integration/image/external-stylesheet.html": {
     "total": 1
   },
+  "referrer-policy/css-integration/image/inline-style-with-color-scheme-no-referrer.html": {
+    "total": 1
+  },
   "referrer-policy/css-integration/image/inline-style-with-differentorigin-base-tag.tentative.html": {
     "total": 1
   },
@@ -1014,6 +1023,9 @@
     "total": 1
   },
   "referrer-policy/css-integration/image/internal-import-stylesheet.html": {
+    "total": 1
+  },
+  "referrer-policy/css-integration/image/internal-stylesheet-no-referrer.html": {
     "total": 1
   },
   "referrer-policy/css-integration/image/internal-stylesheet.html": {
@@ -1058,6 +1070,9 @@
   "referrer-policy/gen/iframe.http-rp/no-referrer-when-downgrade/img-tag.http.html": {
     "total": 12
   },
+  "referrer-policy/gen/iframe.http-rp/no-referrer-when-downgrade/mathml-a-tag.http.html": {
+    "total": 4
+  },
   "referrer-policy/gen/iframe.http-rp/no-referrer-when-downgrade/script-tag.http.html": {
     "total": 12
   },
@@ -1090,6 +1105,9 @@
   },
   "referrer-policy/gen/iframe.http-rp/no-referrer/img-tag.http.html": {
     "total": 12
+  },
+  "referrer-policy/gen/iframe.http-rp/no-referrer/mathml-a-tag.http.html": {
+    "total": 4
   },
   "referrer-policy/gen/iframe.http-rp/no-referrer/script-tag.http.html": {
     "total": 12
@@ -1124,6 +1142,9 @@
   "referrer-policy/gen/iframe.http-rp/origin-when-cross-origin/img-tag.http.html": {
     "total": 12
   },
+  "referrer-policy/gen/iframe.http-rp/origin-when-cross-origin/mathml-a-tag.http.html": {
+    "total": 4
+  },
   "referrer-policy/gen/iframe.http-rp/origin-when-cross-origin/script-tag.http.html": {
     "total": 12
   },
@@ -1156,6 +1177,9 @@
   },
   "referrer-policy/gen/iframe.http-rp/origin/img-tag.http.html": {
     "total": 12
+  },
+  "referrer-policy/gen/iframe.http-rp/origin/mathml-a-tag.http.html": {
+    "total": 4
   },
   "referrer-policy/gen/iframe.http-rp/origin/script-tag.http.html": {
     "total": 12
@@ -1190,6 +1214,9 @@
   "referrer-policy/gen/iframe.http-rp/same-origin/img-tag.http.html": {
     "total": 10
   },
+  "referrer-policy/gen/iframe.http-rp/same-origin/mathml-a-tag.http.html": {
+    "total": 3
+  },
   "referrer-policy/gen/iframe.http-rp/same-origin/script-tag.http.html": {
     "total": 10
   },
@@ -1222,6 +1249,9 @@
   },
   "referrer-policy/gen/iframe.http-rp/strict-origin-when-cross-origin/img-tag.http.html": {
     "total": 12
+  },
+  "referrer-policy/gen/iframe.http-rp/strict-origin-when-cross-origin/mathml-a-tag.http.html": {
+    "total": 4
   },
   "referrer-policy/gen/iframe.http-rp/strict-origin-when-cross-origin/script-tag.http.html": {
     "total": 12
@@ -1256,6 +1286,9 @@
   "referrer-policy/gen/iframe.http-rp/strict-origin/img-tag.http.html": {
     "total": 12
   },
+  "referrer-policy/gen/iframe.http-rp/strict-origin/mathml-a-tag.http.html": {
+    "total": 4
+  },
   "referrer-policy/gen/iframe.http-rp/strict-origin/script-tag.http.html": {
     "total": 12
   },
@@ -1288,6 +1321,9 @@
   },
   "referrer-policy/gen/iframe.http-rp/unsafe-url/img-tag.http.html": {
     "total": 12
+  },
+  "referrer-policy/gen/iframe.http-rp/unsafe-url/mathml-a-tag.http.html": {
+    "total": 4
   },
   "referrer-policy/gen/iframe.http-rp/unsafe-url/script-tag.http.html": {
     "total": 12
@@ -1322,6 +1358,9 @@
   "referrer-policy/gen/iframe.http-rp/unset/img-tag.http.html": {
     "total": 12
   },
+  "referrer-policy/gen/iframe.http-rp/unset/mathml-a-tag.http.html": {
+    "total": 4
+  },
   "referrer-policy/gen/iframe.http-rp/unset/script-tag.http.html": {
     "total": 12
   },
@@ -1354,6 +1393,9 @@
   },
   "referrer-policy/gen/iframe.meta/always/img-tag.http.html": {
     "total": 12
+  },
+  "referrer-policy/gen/iframe.meta/always/mathml-a-tag.http.html": {
+    "total": 4
   },
   "referrer-policy/gen/iframe.meta/always/script-tag.http.html": {
     "total": 12
@@ -1388,6 +1430,9 @@
   "referrer-policy/gen/iframe.meta/default/img-tag.http.html": {
     "total": 12
   },
+  "referrer-policy/gen/iframe.meta/default/mathml-a-tag.http.html": {
+    "total": 4
+  },
   "referrer-policy/gen/iframe.meta/default/script-tag.http.html": {
     "total": 12
   },
@@ -1420,6 +1465,9 @@
   },
   "referrer-policy/gen/iframe.meta/never/img-tag.http.html": {
     "total": 12
+  },
+  "referrer-policy/gen/iframe.meta/never/mathml-a-tag.http.html": {
+    "total": 4
   },
   "referrer-policy/gen/iframe.meta/never/script-tag.http.html": {
     "total": 12
@@ -1454,6 +1502,9 @@
   "referrer-policy/gen/iframe.meta/no-referrer-when-downgrade/img-tag.http.html": {
     "total": 12
   },
+  "referrer-policy/gen/iframe.meta/no-referrer-when-downgrade/mathml-a-tag.http.html": {
+    "total": 4
+  },
   "referrer-policy/gen/iframe.meta/no-referrer-when-downgrade/script-tag.http.html": {
     "total": 12
   },
@@ -1486,6 +1537,9 @@
   },
   "referrer-policy/gen/iframe.meta/no-referrer/img-tag.http.html": {
     "total": 12
+  },
+  "referrer-policy/gen/iframe.meta/no-referrer/mathml-a-tag.http.html": {
+    "total": 4
   },
   "referrer-policy/gen/iframe.meta/no-referrer/script-tag.http.html": {
     "total": 12
@@ -1520,6 +1574,9 @@
   "referrer-policy/gen/iframe.meta/origin-when-cross-origin/img-tag.http.html": {
     "total": 12
   },
+  "referrer-policy/gen/iframe.meta/origin-when-cross-origin/mathml-a-tag.http.html": {
+    "total": 4
+  },
   "referrer-policy/gen/iframe.meta/origin-when-cross-origin/script-tag.http.html": {
     "total": 12
   },
@@ -1552,6 +1609,9 @@
   },
   "referrer-policy/gen/iframe.meta/origin-when-crossorigin/img-tag.http.html": {
     "total": 12
+  },
+  "referrer-policy/gen/iframe.meta/origin-when-crossorigin/mathml-a-tag.http.html": {
+    "total": 4
   },
   "referrer-policy/gen/iframe.meta/origin-when-crossorigin/script-tag.http.html": {
     "total": 12
@@ -1586,6 +1646,9 @@
   "referrer-policy/gen/iframe.meta/origin/img-tag.http.html": {
     "total": 12
   },
+  "referrer-policy/gen/iframe.meta/origin/mathml-a-tag.http.html": {
+    "total": 4
+  },
   "referrer-policy/gen/iframe.meta/origin/script-tag.http.html": {
     "total": 12
   },
@@ -1618,6 +1681,9 @@
   },
   "referrer-policy/gen/iframe.meta/same-origin/img-tag.http.html": {
     "total": 10
+  },
+  "referrer-policy/gen/iframe.meta/same-origin/mathml-a-tag.http.html": {
+    "total": 3
   },
   "referrer-policy/gen/iframe.meta/same-origin/script-tag.http.html": {
     "total": 10
@@ -1652,6 +1718,9 @@
   "referrer-policy/gen/iframe.meta/strict-origin-when-cross-origin/img-tag.http.html": {
     "total": 12
   },
+  "referrer-policy/gen/iframe.meta/strict-origin-when-cross-origin/mathml-a-tag.http.html": {
+    "total": 4
+  },
   "referrer-policy/gen/iframe.meta/strict-origin-when-cross-origin/script-tag.http.html": {
     "total": 12
   },
@@ -1684,6 +1753,9 @@
   },
   "referrer-policy/gen/iframe.meta/strict-origin/img-tag.http.html": {
     "total": 12
+  },
+  "referrer-policy/gen/iframe.meta/strict-origin/mathml-a-tag.http.html": {
+    "total": 4
   },
   "referrer-policy/gen/iframe.meta/strict-origin/script-tag.http.html": {
     "total": 12
@@ -1718,6 +1790,9 @@
   "referrer-policy/gen/iframe.meta/unsafe-url/img-tag.http.html": {
     "total": 12
   },
+  "referrer-policy/gen/iframe.meta/unsafe-url/mathml-a-tag.http.html": {
+    "total": 4
+  },
   "referrer-policy/gen/iframe.meta/unsafe-url/script-tag.http.html": {
     "total": 12
   },
@@ -1751,6 +1826,9 @@
   "referrer-policy/gen/iframe.meta/unset/img-tag.http.html": {
     "total": 12
   },
+  "referrer-policy/gen/iframe.meta/unset/mathml-a-tag.http.html": {
+    "total": 4
+  },
   "referrer-policy/gen/iframe.meta/unset/script-tag.http.html": {
     "total": 12
   },
@@ -1781,6 +1859,9 @@
   "referrer-policy/gen/req.attr/no-referrer-when-downgrade/img-tag.http.html": {
     "total": 12
   },
+  "referrer-policy/gen/req.attr/no-referrer-when-downgrade/mathml-a-tag.http.html": {
+    "total": 4
+  },
   "referrer-policy/gen/req.attr/no-referrer-when-downgrade/script-tag-dynamic-import.http.html": {
     "total": 12
   },
@@ -1798,6 +1879,9 @@
   },
   "referrer-policy/gen/req.attr/no-referrer/img-tag.http.html": {
     "total": 12
+  },
+  "referrer-policy/gen/req.attr/no-referrer/mathml-a-tag.http.html": {
+    "total": 4
   },
   "referrer-policy/gen/req.attr/no-referrer/script-tag-dynamic-import.http.html": {
     "total": 12
@@ -1817,6 +1901,9 @@
   "referrer-policy/gen/req.attr/origin-when-cross-origin/img-tag.http.html": {
     "total": 12
   },
+  "referrer-policy/gen/req.attr/origin-when-cross-origin/mathml-a-tag.http.html": {
+    "total": 4
+  },
   "referrer-policy/gen/req.attr/origin-when-cross-origin/script-tag-dynamic-import.http.html": {
     "total": 12
   },
@@ -1834,6 +1921,9 @@
   },
   "referrer-policy/gen/req.attr/origin/img-tag.http.html": {
     "total": 12
+  },
+  "referrer-policy/gen/req.attr/origin/mathml-a-tag.http.html": {
+    "total": 4
   },
   "referrer-policy/gen/req.attr/origin/script-tag-dynamic-import.http.html": {
     "total": 12
@@ -1853,6 +1943,9 @@
   "referrer-policy/gen/req.attr/same-origin/img-tag.http.html": {
     "total": 10
   },
+  "referrer-policy/gen/req.attr/same-origin/mathml-a-tag.http.html": {
+    "total": 3
+  },
   "referrer-policy/gen/req.attr/same-origin/script-tag-dynamic-import.http.html": {
     "total": 10
   },
@@ -1870,6 +1963,9 @@
   },
   "referrer-policy/gen/req.attr/strict-origin-when-cross-origin/img-tag.http.html": {
     "total": 12
+  },
+  "referrer-policy/gen/req.attr/strict-origin-when-cross-origin/mathml-a-tag.http.html": {
+    "total": 4
   },
   "referrer-policy/gen/req.attr/strict-origin-when-cross-origin/script-tag-dynamic-import.http.html": {
     "total": 12
@@ -1889,6 +1985,9 @@
   "referrer-policy/gen/req.attr/strict-origin/img-tag.http.html": {
     "total": 12
   },
+  "referrer-policy/gen/req.attr/strict-origin/mathml-a-tag.http.html": {
+    "total": 4
+  },
   "referrer-policy/gen/req.attr/strict-origin/script-tag-dynamic-import.http.html": {
     "total": 12
   },
@@ -1906,6 +2005,9 @@
   },
   "referrer-policy/gen/req.attr/unsafe-url/img-tag.http.html": {
     "total": 12
+  },
+  "referrer-policy/gen/req.attr/unsafe-url/mathml-a-tag.http.html": {
+    "total": 4
   },
   "referrer-policy/gen/req.attr/unsafe-url/script-tag-dynamic-import.http.html": {
     "total": 12
@@ -1930,6 +2032,9 @@
   },
   "referrer-policy/gen/srcdoc-inherit.http-rp/no-referrer-when-downgrade/img-tag.http.html": {
     "total": 12
+  },
+  "referrer-policy/gen/srcdoc-inherit.http-rp/no-referrer-when-downgrade/mathml-a-tag.http.html": {
+    "total": 4
   },
   "referrer-policy/gen/srcdoc-inherit.http-rp/no-referrer-when-downgrade/script-tag.http.html": {
     "total": 12
@@ -1964,6 +2069,9 @@
   "referrer-policy/gen/srcdoc-inherit.http-rp/no-referrer/img-tag.http.html": {
     "total": 12
   },
+  "referrer-policy/gen/srcdoc-inherit.http-rp/no-referrer/mathml-a-tag.http.html": {
+    "total": 4
+  },
   "referrer-policy/gen/srcdoc-inherit.http-rp/no-referrer/script-tag.http.html": {
     "total": 12
   },
@@ -1996,6 +2104,9 @@
   },
   "referrer-policy/gen/srcdoc-inherit.http-rp/origin-when-cross-origin/img-tag.http.html": {
     "total": 12
+  },
+  "referrer-policy/gen/srcdoc-inherit.http-rp/origin-when-cross-origin/mathml-a-tag.http.html": {
+    "total": 4
   },
   "referrer-policy/gen/srcdoc-inherit.http-rp/origin-when-cross-origin/script-tag.http.html": {
     "total": 12
@@ -2030,6 +2141,9 @@
   "referrer-policy/gen/srcdoc-inherit.http-rp/origin/img-tag.http.html": {
     "total": 12
   },
+  "referrer-policy/gen/srcdoc-inherit.http-rp/origin/mathml-a-tag.http.html": {
+    "total": 4
+  },
   "referrer-policy/gen/srcdoc-inherit.http-rp/origin/script-tag.http.html": {
     "total": 12
   },
@@ -2062,6 +2176,9 @@
   },
   "referrer-policy/gen/srcdoc-inherit.http-rp/same-origin/img-tag.http.html": {
     "total": 10
+  },
+  "referrer-policy/gen/srcdoc-inherit.http-rp/same-origin/mathml-a-tag.http.html": {
+    "total": 3
   },
   "referrer-policy/gen/srcdoc-inherit.http-rp/same-origin/script-tag.http.html": {
     "total": 10
@@ -2096,6 +2213,9 @@
   "referrer-policy/gen/srcdoc-inherit.http-rp/strict-origin-when-cross-origin/img-tag.http.html": {
     "total": 12
   },
+  "referrer-policy/gen/srcdoc-inherit.http-rp/strict-origin-when-cross-origin/mathml-a-tag.http.html": {
+    "total": 4
+  },
   "referrer-policy/gen/srcdoc-inherit.http-rp/strict-origin-when-cross-origin/script-tag.http.html": {
     "total": 12
   },
@@ -2128,6 +2248,9 @@
   },
   "referrer-policy/gen/srcdoc-inherit.http-rp/strict-origin/img-tag.http.html": {
     "total": 12
+  },
+  "referrer-policy/gen/srcdoc-inherit.http-rp/strict-origin/mathml-a-tag.http.html": {
+    "total": 4
   },
   "referrer-policy/gen/srcdoc-inherit.http-rp/strict-origin/script-tag.http.html": {
     "total": 12
@@ -2162,6 +2285,9 @@
   "referrer-policy/gen/srcdoc-inherit.http-rp/unsafe-url/img-tag.http.html": {
     "total": 12
   },
+  "referrer-policy/gen/srcdoc-inherit.http-rp/unsafe-url/mathml-a-tag.http.html": {
+    "total": 4
+  },
   "referrer-policy/gen/srcdoc-inherit.http-rp/unsafe-url/script-tag.http.html": {
     "total": 12
   },
@@ -2194,6 +2320,9 @@
   },
   "referrer-policy/gen/srcdoc-inherit.http-rp/unset/img-tag.http.html": {
     "total": 12
+  },
+  "referrer-policy/gen/srcdoc-inherit.http-rp/unset/mathml-a-tag.http.html": {
+    "total": 4
   },
   "referrer-policy/gen/srcdoc-inherit.http-rp/unset/script-tag.http.html": {
     "total": 12
@@ -2228,6 +2357,9 @@
   "referrer-policy/gen/srcdoc-inherit.meta/always/img-tag.http.html": {
     "total": 12
   },
+  "referrer-policy/gen/srcdoc-inherit.meta/always/mathml-a-tag.http.html": {
+    "total": 4
+  },
   "referrer-policy/gen/srcdoc-inherit.meta/always/script-tag.http.html": {
     "total": 12
   },
@@ -2260,6 +2392,9 @@
   },
   "referrer-policy/gen/srcdoc-inherit.meta/default/img-tag.http.html": {
     "total": 12
+  },
+  "referrer-policy/gen/srcdoc-inherit.meta/default/mathml-a-tag.http.html": {
+    "total": 4
   },
   "referrer-policy/gen/srcdoc-inherit.meta/default/script-tag.http.html": {
     "total": 12
@@ -2294,6 +2429,9 @@
   "referrer-policy/gen/srcdoc-inherit.meta/never/img-tag.http.html": {
     "total": 12
   },
+  "referrer-policy/gen/srcdoc-inherit.meta/never/mathml-a-tag.http.html": {
+    "total": 4
+  },
   "referrer-policy/gen/srcdoc-inherit.meta/never/script-tag.http.html": {
     "total": 12
   },
@@ -2326,6 +2464,9 @@
   },
   "referrer-policy/gen/srcdoc-inherit.meta/no-referrer-when-downgrade/img-tag.http.html": {
     "total": 12
+  },
+  "referrer-policy/gen/srcdoc-inherit.meta/no-referrer-when-downgrade/mathml-a-tag.http.html": {
+    "total": 4
   },
   "referrer-policy/gen/srcdoc-inherit.meta/no-referrer-when-downgrade/script-tag.http.html": {
     "total": 12
@@ -2360,6 +2501,9 @@
   "referrer-policy/gen/srcdoc-inherit.meta/no-referrer/img-tag.http.html": {
     "total": 12
   },
+  "referrer-policy/gen/srcdoc-inherit.meta/no-referrer/mathml-a-tag.http.html": {
+    "total": 4
+  },
   "referrer-policy/gen/srcdoc-inherit.meta/no-referrer/script-tag.http.html": {
     "total": 12
   },
@@ -2392,6 +2536,9 @@
   },
   "referrer-policy/gen/srcdoc-inherit.meta/origin-when-cross-origin/img-tag.http.html": {
     "total": 12
+  },
+  "referrer-policy/gen/srcdoc-inherit.meta/origin-when-cross-origin/mathml-a-tag.http.html": {
+    "total": 4
   },
   "referrer-policy/gen/srcdoc-inherit.meta/origin-when-cross-origin/script-tag.http.html": {
     "total": 12
@@ -2426,6 +2573,9 @@
   "referrer-policy/gen/srcdoc-inherit.meta/origin-when-crossorigin/img-tag.http.html": {
     "total": 12
   },
+  "referrer-policy/gen/srcdoc-inherit.meta/origin-when-crossorigin/mathml-a-tag.http.html": {
+    "total": 4
+  },
   "referrer-policy/gen/srcdoc-inherit.meta/origin-when-crossorigin/script-tag.http.html": {
     "total": 12
   },
@@ -2458,6 +2608,9 @@
   },
   "referrer-policy/gen/srcdoc-inherit.meta/origin/img-tag.http.html": {
     "total": 12
+  },
+  "referrer-policy/gen/srcdoc-inherit.meta/origin/mathml-a-tag.http.html": {
+    "total": 4
   },
   "referrer-policy/gen/srcdoc-inherit.meta/origin/script-tag.http.html": {
     "total": 12
@@ -2492,6 +2645,9 @@
   "referrer-policy/gen/srcdoc-inherit.meta/same-origin/img-tag.http.html": {
     "total": 10
   },
+  "referrer-policy/gen/srcdoc-inherit.meta/same-origin/mathml-a-tag.http.html": {
+    "total": 3
+  },
   "referrer-policy/gen/srcdoc-inherit.meta/same-origin/script-tag.http.html": {
     "total": 10
   },
@@ -2524,6 +2680,9 @@
   },
   "referrer-policy/gen/srcdoc-inherit.meta/strict-origin-when-cross-origin/img-tag.http.html": {
     "total": 12
+  },
+  "referrer-policy/gen/srcdoc-inherit.meta/strict-origin-when-cross-origin/mathml-a-tag.http.html": {
+    "total": 4
   },
   "referrer-policy/gen/srcdoc-inherit.meta/strict-origin-when-cross-origin/script-tag.http.html": {
     "total": 12
@@ -2558,6 +2717,9 @@
   "referrer-policy/gen/srcdoc-inherit.meta/strict-origin/img-tag.http.html": {
     "total": 12
   },
+  "referrer-policy/gen/srcdoc-inherit.meta/strict-origin/mathml-a-tag.http.html": {
+    "total": 4
+  },
   "referrer-policy/gen/srcdoc-inherit.meta/strict-origin/script-tag.http.html": {
     "total": 12
   },
@@ -2590,6 +2752,9 @@
   },
   "referrer-policy/gen/srcdoc-inherit.meta/unsafe-url/img-tag.http.html": {
     "total": 12
+  },
+  "referrer-policy/gen/srcdoc-inherit.meta/unsafe-url/mathml-a-tag.http.html": {
+    "total": 4
   },
   "referrer-policy/gen/srcdoc-inherit.meta/unsafe-url/script-tag.http.html": {
     "total": 12
@@ -2624,6 +2789,9 @@
   "referrer-policy/gen/srcdoc-inherit.meta/unset/img-tag.http.html": {
     "total": 12
   },
+  "referrer-policy/gen/srcdoc-inherit.meta/unset/mathml-a-tag.http.html": {
+    "total": 4
+  },
   "referrer-policy/gen/srcdoc-inherit.meta/unset/script-tag.http.html": {
     "total": 12
   },
@@ -2656,6 +2824,9 @@
   },
   "referrer-policy/gen/srcdoc.meta/always/img-tag.http.html": {
     "total": 12
+  },
+  "referrer-policy/gen/srcdoc.meta/always/mathml-a-tag.http.html": {
+    "total": 4
   },
   "referrer-policy/gen/srcdoc.meta/always/script-tag.http.html": {
     "total": 12
@@ -2690,6 +2861,9 @@
   "referrer-policy/gen/srcdoc.meta/default/img-tag.http.html": {
     "total": 12
   },
+  "referrer-policy/gen/srcdoc.meta/default/mathml-a-tag.http.html": {
+    "total": 4
+  },
   "referrer-policy/gen/srcdoc.meta/default/script-tag.http.html": {
     "total": 12
   },
@@ -2722,6 +2896,9 @@
   },
   "referrer-policy/gen/srcdoc.meta/never/img-tag.http.html": {
     "total": 12
+  },
+  "referrer-policy/gen/srcdoc.meta/never/mathml-a-tag.http.html": {
+    "total": 4
   },
   "referrer-policy/gen/srcdoc.meta/never/script-tag.http.html": {
     "total": 12
@@ -2756,6 +2933,9 @@
   "referrer-policy/gen/srcdoc.meta/no-referrer-when-downgrade/img-tag.http.html": {
     "total": 12
   },
+  "referrer-policy/gen/srcdoc.meta/no-referrer-when-downgrade/mathml-a-tag.http.html": {
+    "total": 4
+  },
   "referrer-policy/gen/srcdoc.meta/no-referrer-when-downgrade/script-tag.http.html": {
     "total": 12
   },
@@ -2788,6 +2968,9 @@
   },
   "referrer-policy/gen/srcdoc.meta/no-referrer/img-tag.http.html": {
     "total": 12
+  },
+  "referrer-policy/gen/srcdoc.meta/no-referrer/mathml-a-tag.http.html": {
+    "total": 4
   },
   "referrer-policy/gen/srcdoc.meta/no-referrer/script-tag.http.html": {
     "total": 12
@@ -2822,6 +3005,9 @@
   "referrer-policy/gen/srcdoc.meta/origin-when-cross-origin/img-tag.http.html": {
     "total": 12
   },
+  "referrer-policy/gen/srcdoc.meta/origin-when-cross-origin/mathml-a-tag.http.html": {
+    "total": 4
+  },
   "referrer-policy/gen/srcdoc.meta/origin-when-cross-origin/script-tag.http.html": {
     "total": 12
   },
@@ -2854,6 +3040,9 @@
   },
   "referrer-policy/gen/srcdoc.meta/origin-when-crossorigin/img-tag.http.html": {
     "total": 12
+  },
+  "referrer-policy/gen/srcdoc.meta/origin-when-crossorigin/mathml-a-tag.http.html": {
+    "total": 4
   },
   "referrer-policy/gen/srcdoc.meta/origin-when-crossorigin/script-tag.http.html": {
     "total": 12
@@ -2888,6 +3077,9 @@
   "referrer-policy/gen/srcdoc.meta/origin/img-tag.http.html": {
     "total": 12
   },
+  "referrer-policy/gen/srcdoc.meta/origin/mathml-a-tag.http.html": {
+    "total": 4
+  },
   "referrer-policy/gen/srcdoc.meta/origin/script-tag.http.html": {
     "total": 12
   },
@@ -2920,6 +3112,9 @@
   },
   "referrer-policy/gen/srcdoc.meta/same-origin/img-tag.http.html": {
     "total": 10
+  },
+  "referrer-policy/gen/srcdoc.meta/same-origin/mathml-a-tag.http.html": {
+    "total": 3
   },
   "referrer-policy/gen/srcdoc.meta/same-origin/script-tag.http.html": {
     "total": 10
@@ -2954,6 +3149,9 @@
   "referrer-policy/gen/srcdoc.meta/strict-origin-when-cross-origin/img-tag.http.html": {
     "total": 12
   },
+  "referrer-policy/gen/srcdoc.meta/strict-origin-when-cross-origin/mathml-a-tag.http.html": {
+    "total": 4
+  },
   "referrer-policy/gen/srcdoc.meta/strict-origin-when-cross-origin/script-tag.http.html": {
     "total": 12
   },
@@ -2986,6 +3184,9 @@
   },
   "referrer-policy/gen/srcdoc.meta/strict-origin/img-tag.http.html": {
     "total": 12
+  },
+  "referrer-policy/gen/srcdoc.meta/strict-origin/mathml-a-tag.http.html": {
+    "total": 4
   },
   "referrer-policy/gen/srcdoc.meta/strict-origin/script-tag.http.html": {
     "total": 12
@@ -3020,6 +3221,9 @@
   "referrer-policy/gen/srcdoc.meta/unsafe-url/img-tag.http.html": {
     "total": 12
   },
+  "referrer-policy/gen/srcdoc.meta/unsafe-url/mathml-a-tag.http.html": {
+    "total": 4
+  },
   "referrer-policy/gen/srcdoc.meta/unsafe-url/script-tag.http.html": {
     "total": 12
   },
@@ -3052,6 +3256,9 @@
   },
   "referrer-policy/gen/top.http-rp/no-referrer-when-downgrade/img-tag.http.html": {
     "total": 12
+  },
+  "referrer-policy/gen/top.http-rp/no-referrer-when-downgrade/mathml-a-tag.http.html": {
+    "total": 4
   },
   "referrer-policy/gen/top.http-rp/no-referrer-when-downgrade/script-tag-dynamic-import.http.html": {
     "total": 12
@@ -3089,6 +3296,9 @@
   "referrer-policy/gen/top.http-rp/no-referrer/img-tag.http.html": {
     "total": 12
   },
+  "referrer-policy/gen/top.http-rp/no-referrer/mathml-a-tag.http.html": {
+    "total": 4
+  },
   "referrer-policy/gen/top.http-rp/no-referrer/script-tag-dynamic-import.http.html": {
     "total": 12
   },
@@ -3124,6 +3334,9 @@
   },
   "referrer-policy/gen/top.http-rp/origin-when-cross-origin/img-tag.http.html": {
     "total": 12
+  },
+  "referrer-policy/gen/top.http-rp/origin-when-cross-origin/mathml-a-tag.http.html": {
+    "total": 4
   },
   "referrer-policy/gen/top.http-rp/origin-when-cross-origin/script-tag-dynamic-import.http.html": {
     "total": 12
@@ -3161,6 +3374,9 @@
   "referrer-policy/gen/top.http-rp/origin/img-tag.http.html": {
     "total": 12
   },
+  "referrer-policy/gen/top.http-rp/origin/mathml-a-tag.http.html": {
+    "total": 4
+  },
   "referrer-policy/gen/top.http-rp/origin/script-tag-dynamic-import.http.html": {
     "total": 12
   },
@@ -3196,6 +3412,9 @@
   },
   "referrer-policy/gen/top.http-rp/same-origin/img-tag.http.html": {
     "total": 10
+  },
+  "referrer-policy/gen/top.http-rp/same-origin/mathml-a-tag.http.html": {
+    "total": 3
   },
   "referrer-policy/gen/top.http-rp/same-origin/script-tag-dynamic-import.http.html": {
     "total": 10
@@ -3233,6 +3452,9 @@
   "referrer-policy/gen/top.http-rp/strict-origin-when-cross-origin/img-tag.http.html": {
     "total": 12
   },
+  "referrer-policy/gen/top.http-rp/strict-origin-when-cross-origin/mathml-a-tag.http.html": {
+    "total": 4
+  },
   "referrer-policy/gen/top.http-rp/strict-origin-when-cross-origin/script-tag-dynamic-import.http.html": {
     "total": 12
   },
@@ -3268,6 +3490,9 @@
   },
   "referrer-policy/gen/top.http-rp/strict-origin/img-tag.http.html": {
     "total": 12
+  },
+  "referrer-policy/gen/top.http-rp/strict-origin/mathml-a-tag.http.html": {
+    "total": 4
   },
   "referrer-policy/gen/top.http-rp/strict-origin/script-tag-dynamic-import.http.html": {
     "total": 12
@@ -3305,6 +3530,9 @@
   "referrer-policy/gen/top.http-rp/unsafe-url/img-tag.http.html": {
     "total": 12
   },
+  "referrer-policy/gen/top.http-rp/unsafe-url/mathml-a-tag.http.html": {
+    "total": 4
+  },
   "referrer-policy/gen/top.http-rp/unsafe-url/script-tag-dynamic-import.http.html": {
     "total": 12
   },
@@ -3340,6 +3568,9 @@
   },
   "referrer-policy/gen/top.http-rp/unset/img-tag.http.html": {
     "total": 12
+  },
+  "referrer-policy/gen/top.http-rp/unset/mathml-a-tag.http.html": {
+    "total": 4
   },
   "referrer-policy/gen/top.http-rp/unset/script-tag-dynamic-import.http.html": {
     "total": 12
@@ -3377,6 +3608,9 @@
   "referrer-policy/gen/top.meta/always/img-tag.http.html": {
     "total": 12
   },
+  "referrer-policy/gen/top.meta/always/mathml-a-tag.http.html": {
+    "total": 4
+  },
   "referrer-policy/gen/top.meta/always/script-tag-dynamic-import.http.html": {
     "total": 12
   },
@@ -3412,6 +3646,9 @@
   },
   "referrer-policy/gen/top.meta/default/img-tag.http.html": {
     "total": 12
+  },
+  "referrer-policy/gen/top.meta/default/mathml-a-tag.http.html": {
+    "total": 4
   },
   "referrer-policy/gen/top.meta/default/script-tag-dynamic-import.http.html": {
     "total": 12
@@ -3449,6 +3686,9 @@
   "referrer-policy/gen/top.meta/never/img-tag.http.html": {
     "total": 12
   },
+  "referrer-policy/gen/top.meta/never/mathml-a-tag.http.html": {
+    "total": 4
+  },
   "referrer-policy/gen/top.meta/never/script-tag-dynamic-import.http.html": {
     "total": 12
   },
@@ -3484,6 +3724,9 @@
   },
   "referrer-policy/gen/top.meta/no-referrer-when-downgrade/img-tag.http.html": {
     "total": 12
+  },
+  "referrer-policy/gen/top.meta/no-referrer-when-downgrade/mathml-a-tag.http.html": {
+    "total": 4
   },
   "referrer-policy/gen/top.meta/no-referrer-when-downgrade/script-tag-dynamic-import.http.html": {
     "total": 12
@@ -3521,6 +3764,9 @@
   "referrer-policy/gen/top.meta/no-referrer/img-tag.http.html": {
     "total": 12
   },
+  "referrer-policy/gen/top.meta/no-referrer/mathml-a-tag.http.html": {
+    "total": 4
+  },
   "referrer-policy/gen/top.meta/no-referrer/script-tag-dynamic-import.http.html": {
     "total": 12
   },
@@ -3556,6 +3802,9 @@
   },
   "referrer-policy/gen/top.meta/origin-when-cross-origin/img-tag.http.html": {
     "total": 12
+  },
+  "referrer-policy/gen/top.meta/origin-when-cross-origin/mathml-a-tag.http.html": {
+    "total": 4
   },
   "referrer-policy/gen/top.meta/origin-when-cross-origin/script-tag-dynamic-import.http.html": {
     "total": 12
@@ -3593,6 +3842,9 @@
   "referrer-policy/gen/top.meta/origin-when-crossorigin/img-tag.http.html": {
     "total": 12
   },
+  "referrer-policy/gen/top.meta/origin-when-crossorigin/mathml-a-tag.http.html": {
+    "total": 4
+  },
   "referrer-policy/gen/top.meta/origin-when-crossorigin/script-tag-dynamic-import.http.html": {
     "total": 12
   },
@@ -3628,6 +3880,9 @@
   },
   "referrer-policy/gen/top.meta/origin/img-tag.http.html": {
     "total": 12
+  },
+  "referrer-policy/gen/top.meta/origin/mathml-a-tag.http.html": {
+    "total": 4
   },
   "referrer-policy/gen/top.meta/origin/script-tag-dynamic-import.http.html": {
     "total": 12
@@ -3665,6 +3920,9 @@
   "referrer-policy/gen/top.meta/same-origin/img-tag.http.html": {
     "total": 10
   },
+  "referrer-policy/gen/top.meta/same-origin/mathml-a-tag.http.html": {
+    "total": 3
+  },
   "referrer-policy/gen/top.meta/same-origin/script-tag-dynamic-import.http.html": {
     "total": 10
   },
@@ -3700,6 +3958,9 @@
   },
   "referrer-policy/gen/top.meta/strict-origin-when-cross-origin/img-tag.http.html": {
     "total": 12
+  },
+  "referrer-policy/gen/top.meta/strict-origin-when-cross-origin/mathml-a-tag.http.html": {
+    "total": 4
   },
   "referrer-policy/gen/top.meta/strict-origin-when-cross-origin/script-tag-dynamic-import.http.html": {
     "total": 12
@@ -3737,6 +3998,9 @@
   "referrer-policy/gen/top.meta/strict-origin/img-tag.http.html": {
     "total": 12
   },
+  "referrer-policy/gen/top.meta/strict-origin/mathml-a-tag.http.html": {
+    "total": 4
+  },
   "referrer-policy/gen/top.meta/strict-origin/script-tag-dynamic-import.http.html": {
     "total": 12
   },
@@ -3773,6 +4037,9 @@
   "referrer-policy/gen/top.meta/unsafe-url/img-tag.http.html": {
     "total": 12
   },
+  "referrer-policy/gen/top.meta/unsafe-url/mathml-a-tag.http.html": {
+    "total": 4
+  },
   "referrer-policy/gen/top.meta/unsafe-url/script-tag-dynamic-import.http.html": {
     "total": 12
   },
@@ -3808,6 +4075,9 @@
   },
   "referrer-policy/gen/top.meta/unset/img-tag.http.html": {
     "total": 12
+  },
+  "referrer-policy/gen/top.meta/unset/mathml-a-tag.http.html": {
+    "total": 4
   },
   "referrer-policy/gen/top.meta/unset/script-tag-dynamic-import.http.html": {
     "total": 12
@@ -4186,5 +4456,8 @@
   },
   "referrer-policy/generic/unsupported-csp-referrer-directive.html": {
     "total": 1
+  },
+  "referrer-policy/generic/unsupported-elements.html": {
+    "total": 3
   }
 }

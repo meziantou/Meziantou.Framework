@@ -128,6 +128,9 @@
   "css/cssom/CSSStyleSheet-constructable-replace-thenable.html": {
     "total": 1
   },
+  "css/cssom/CSSStyleSheet-constructable-replaceSync-detached.html": {
+    "total": 5
+  },
   "css/cssom/CSSStyleSheet-constructable.html": {
     "total": 32
   },
@@ -746,6 +749,9 @@
   "css/cssom/set-selector-text-attachment.html": {
     "total": 1
   },
+  "css/cssom/setproperty-custom-property-override-important.html": {
+    "total": 5
+  },
   "css/cssom/setproperty-null-undefined.html": {
     "total": 4
   },
@@ -756,10 +762,7 @@
     "total": 7
   },
   "css/cssom/shorthand-values.html": {
-    "total": 21,
-    "failures": {
-      "The serialization of outline-width: 2px; outline-style: dotted; outline-color: blue; should be canonical.": "FAIL"
-    }
+    "total": 21
   },
   "css/cssom/style-attr-clone.html": {
     "reftest": "PASS"

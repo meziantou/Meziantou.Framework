@@ -101,6 +101,9 @@
   "css/css-multicol/baseline-008.html": {
     "reftest": "PASS"
   },
+  "css/css-multicol/block-in-inline-after-column-break-001.html": {
+    "total": 1
+  },
   "css/css-multicol/broken-column-rule-1.html": {
     "reftest": "PASS"
   },
@@ -1515,10 +1518,10 @@
     "total": 2
   },
   "css/css-multicol/parsing/column-span-invalid.html": {
-    "total": 2
+    "total": 1
   },
   "css/css-multicol/parsing/column-span-valid.html": {
-    "total": 2
+    "total": 3
   },
   "css/css-multicol/parsing/column-width-computed.html": {
     "total": 3

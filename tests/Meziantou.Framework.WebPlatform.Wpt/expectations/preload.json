@@ -35,6 +35,9 @@
   "preload/dynamic-adding-preload.html": {
     "total": 1
   },
+  "preload/link-blob-url-revoked.window.js": {
+    "total": 4
+  },
   "preload/link-header-modulepreload.html": {
     "total": 1
   },

@@ -288,7 +288,7 @@
     "reftest": "PASS"
   },
   "css/css-ui/caret-color-block-shape-text-color-004.html": {
-    "reftest": "PASS"
+    "reftest": "FAIL"
   },
   "css/css-ui/caret-color-block-shape-text-color-005.html": {
     "reftest": "PASS"
@@ -3040,13 +3040,13 @@
     }
   },
   "css/css-ui/parsing/caret-color-computed.html": {
-    "total": 12
+    "total": 9
   },
   "css/css-ui/parsing/caret-color-invalid.html": {
-    "total": 12
+    "total": 17
   },
   "css/css-ui/parsing/caret-color-valid.html": {
-    "total": 15
+    "total": 12
   },
   "css/css-ui/parsing/cursor-computed.html": {
     "total": 39,
@@ -3111,11 +3111,7 @@
     "total": 10
   },
   "css/css-ui/parsing/outline-valid.html": {
-    "total": 20,
-    "failures": {
-      "e.style['outline'] = \"3px ridge rgba(10, 20, 30, 0.4)\" should set the property value": "FAIL",
-      "e.style['outline'] = \"dashed thin\" should set the property value": "FAIL"
-    }
+    "total": 20
   },
   "css/css-ui/parsing/outline-width-computed.html": {
     "total": 9

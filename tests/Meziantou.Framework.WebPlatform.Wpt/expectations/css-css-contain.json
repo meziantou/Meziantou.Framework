@@ -1346,6 +1346,9 @@
   "css/css-contain/content-visibility/content-visibility-hidden-and-innertext.html": {
     "reftest": "PASS"
   },
+  "css/css-contain/content-visibility/content-visibility-hidden-backdrop.html": {
+    "reftest": "PASS"
+  },
   "css/css-contain/content-visibility/content-visibility-hidden-boundingbox-query.html": {
     "total": 1
   },

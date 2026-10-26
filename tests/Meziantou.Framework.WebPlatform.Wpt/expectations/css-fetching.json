@@ -1,4 +1,7 @@
 {
+  "css/fetching/fetch-resources.https.sub.html": {
+    "total": 4
+  },
   "css/fetching/fetch-resources.sub.html": {
     "total": 4,
     "failures": {

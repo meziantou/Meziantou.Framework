@@ -71,6 +71,9 @@
   "css/css-view-transitions/class-specificity.html": {
     "reftest": "PASS"
   },
+  "css/css-view-transitions/clear-pseudo-elements-nested-style-update.html": {
+    "total": 1
+  },
   "css/css-view-transitions/clip-path-larger-than-border-box-on-child-of-named-element.html": {
     "reftest": "PASS"
   },
@@ -374,6 +377,12 @@
   "css/css-view-transitions/names-are-tree-scoped.html": {
     "reftest": "FAIL"
   },
+  "css/css-view-transitions/navigation/aborted-navigation-no-stale-state-cross-origin.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/navigation/aborted-navigation-no-stale-state.html": {
+    "total": 1
+  },
   "css/css-view-transitions/navigation/at-rule-cssom.html": {
     "total": 9
   },
@@ -479,7 +488,13 @@
   "css/css-view-transitions/navigation/pageswap-fired-before-old-state-capture.html": {
     "total": 1
   },
+  "css/css-view-transitions/navigation/pageswap-history-change-during-traverse.html": {
+    "total": 1
+  },
   "css/css-view-transitions/navigation/pageswap-long-delay.html": {
+    "total": 1
+  },
+  "css/css-view-transitions/navigation/pageswap-opt-in-added-before-navigation.html": {
     "total": 1
   },
   "css/css-view-transitions/navigation/pageswap-push-from-click.html": {
@@ -505,6 +520,18 @@
   },
   "css/css-view-transitions/navigation/prerender-removed-during-navigation.html": {
     "total": 1
+  },
+  "css/css-view-transitions/navigation/raf-before-outbound-capture-subframe.html": {
+    "total": 1,
+    "failures": {
+      "requestAnimationFrame callbacks run before the outbound cross-document view transition capture (subframe)": "FAIL"
+    }
+  },
+  "css/css-view-transitions/navigation/raf-before-outbound-capture.html": {
+    "total": 1,
+    "failures": {
+      "requestAnimationFrame callbacks run before the outbound cross-document view transition capture": "FAIL"
+    }
   },
   "css/css-view-transitions/navigation/reveal-after-aborted-navigation.html": {
     "total": 1
@@ -1151,6 +1178,9 @@
   "css/css-view-transitions/scoped/from-scale-zero.html": {
     "reftest": "FAIL"
   },
+  "css/css-view-transitions/scoped/hit-test-captured-scope.html": {
+    "total": 4
+  },
   "css/css-view-transitions/scoped/hit-test-vt-overlay.html": {
     "total": 1
   },
@@ -1195,6 +1225,9 @@
   },
   "css/css-view-transitions/scoped/pause-rendering.html": {
     "reftest": "PASS"
+  },
+  "css/css-view-transitions/scoped/remove-child-in-callback.html": {
+    "total": 2
   },
   "css/css-view-transitions/scoped/rotation-on-scoped-element.html": {
     "reftest": "PASS"

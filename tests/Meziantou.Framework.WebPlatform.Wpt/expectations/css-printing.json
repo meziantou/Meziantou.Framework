@@ -29,6 +29,9 @@
   "css/printing/fixed-container-query-removal-crash-print.html": {
     "reftest": "PASS"
   },
+  "css/printing/fixed-generated-content-reconstruct-crash-print.html": {
+    "reftest": "PASS"
+  },
   "css/printing/fixed-generated-content-whitespace-crash-print.html": {
     "reftest": "PASS"
   },

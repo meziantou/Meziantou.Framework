@@ -972,6 +972,9 @@ internal static class Fetching
         response.UrlList = [.. request.UrlList];
         response.RequestIncludesCredentials = includeCredentials;
         request.LoaderFailed = false;
+
+        // A response of the HTTP cache has a resource timing, as one of the network (e.g. a cached @import child)
+        request.IsSentToLoader = true;
         return response;
     }
 

@@ -444,9 +444,10 @@
     "reftest": "PASS"
   },
   "css/css-color/light-dark-image.html": {
-    "total": 32,
+    "total": 35,
     "failures": {
-      "background-image: nested image-set() / -webkit-cross-fade() resolve light-dark() at any depth": "FAIL"
+      "background-image: light-dark() inside -webkit-cross-fade()": "FAIL",
+      "background-image: light-dark() inside -webkit-cross-fade() inside image-set()": "FAIL"
     }
   },
   "css/css-color/light-dark-inheritance.html": {
@@ -564,7 +565,7 @@
     "total": 468
   },
   "css/css-color/parsing/color-computed-color-mix-function.html": {
-    "total": 973
+    "total": 977
   },
   "css/css-color/parsing/color-computed-contrast-color-function.html": {
     "total": 17
@@ -595,7 +596,7 @@
     }
   },
   "css/css-color/parsing/color-computed-relative-color.html": {
-    "total": 1169,
+    "total": 1187,
     "failures": {
       "Property color value 'color(from color(rec2020 0.25 0.5 0.75) srgb r g b)'": "FAIL",
       "Property color value 'color(from color(srgb 0.25 0.5 0.75) rec2020 r g b)'": "FAIL"

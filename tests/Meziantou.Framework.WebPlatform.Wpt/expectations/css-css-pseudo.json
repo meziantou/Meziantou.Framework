@@ -409,6 +409,12 @@
   "css/css-pseudo/highlight-cascade/highlight-cascade-011.html": {
     "total": 2
   },
+  "css/css-pseudo/highlight-cascade/highlight-cascade-currentcolor-color-mix.html": {
+    "total": 2,
+    "failures": {
+      "currentcolor in a color-mix() resolves against the inheriting element's own color": "FAIL"
+    }
+  },
   "css/css-pseudo/highlight-cascade/highlight-cascade-parent-style-change.html": {
     "total": 1
   },

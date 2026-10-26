@@ -2643,6 +2643,9 @@
   "css/css-text/parsing/word-wrap-valid.html": {
     "total": 3
   },
+  "css/css-text/shaping/monospace-contextual-forms-incremental.html": {
+    "reftest": "PASS"
+  },
   "css/css-text/shaping/reference/shaping-000-ref.html": {
     "reftest": "PASS"
   },

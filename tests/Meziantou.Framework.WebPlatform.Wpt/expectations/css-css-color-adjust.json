@@ -95,6 +95,9 @@
   "css/css-color-adjust/rendering/dark-color-scheme/color-scheme-rule-cache.html": {
     "reftest": "PASS"
   },
+  "css/css-color-adjust/rendering/dark-color-scheme/color-scheme-should-apply-to-root.html": {
+    "reftest": "PASS"
+  },
   "css/css-color-adjust/rendering/dark-color-scheme/color-scheme-system-colors.html": {
     "total": 1
   },

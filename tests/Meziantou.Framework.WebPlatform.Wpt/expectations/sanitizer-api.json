@@ -103,13 +103,7 @@
     "total": 10
   },
   "sanitizer-api/sethtml-custom-element-reactions.html": {
-    "total": 8,
-    "failures": {
-      "Element.setHTML with a sanitizer runs disconnectedCallback for the replaced children before returning": "FAIL",
-      "Element.setHTMLUnsafe with a sanitizer runs disconnectedCallback for the replaced children before returning": "FAIL",
-      "ShadowRoot.setHTML with a sanitizer runs disconnectedCallback for the replaced children before returning": "FAIL",
-      "ShadowRoot.setHTMLUnsafe with a sanitizer runs disconnectedCallback for the replaced children before returning": "FAIL"
-    }
+    "total": 8
   },
   "sanitizer-api/sethtml-form-owner.html": {
     "total": 4
@@ -126,6 +120,9 @@
   },
   "sanitizer-api/sethtml-safety.html": {
     "total": 33
+  },
+  "sanitizer-api/sethtml-scoped-custom-element-registry.html": {
+    "total": 9
   },
   "sanitizer-api/sethtml-tree-construction.html": {
     "total": 126,

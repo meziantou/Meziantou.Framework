@@ -96,9 +96,6 @@ internal static partial class CssPropertyRegistry
         // shorthand of box-shadow-color, box-shadow-offset...)
         ["box-shadow"] = "none | <spread-shadow>#",
 
-        // https://drafts.csswg.org/css-ui-4/#caret-color: one or two values (the color of the caret, then of the character under a block caret)
-        ["caret-color"] = "auto | <color> | [ auto | <color> ] [ auto | <color> ]",
-
         // https://drafts.csswg.org/css-text-3/#valdef-text-justify-distribute: distribute is a legacy alias of inter-character
         ["text-justify"] = "[ auto | none | inter-word | inter-character | ruby | distribute ] || no-compress",
 
@@ -106,11 +103,9 @@ internal static partial class CssPropertyRegistry
         // ruby-overhang property, as a legacy value alias of spaces" (see CssPropertyRules.CanonicalizeRubyOverhang)
         ["ruby-overhang"] = "auto | spaces | none",
 
-        // The grammars of the browsers, which differ from the specifications: column-span has no auto (css-multicol-2 adds it,
-        // WPT css/css-multicol/parsing/column-span-invalid.html), column-width accepts no percentage (css-multicol-2 makes it a
-        // <box-size>, WPT css/css-multicol/parsing/column-width-invalid.html), and a text shadow has no spread nor inset (the
-        // <shadow> of css-borders-4, WPT css/css-text-decor/text-shadow/parsing/text-shadow-invalid.html)
-        ["column-span"] = "none | <integer [1,\u221E]> | all",
+        // The grammars of the browsers, which differ from the specifications: column-width accepts no percentage (css-multicol-2
+        // makes it a <box-size>, WPT css/css-multicol/parsing/column-width-invalid.html), and a text shadow has no spread nor
+        // inset (the <shadow> of css-borders-4, WPT css/css-text-decor/text-shadow/parsing/text-shadow-invalid.html)
         ["column-width"] = "auto | <length [0,\u221E]> | min-content | max-content | fit-content( <length-percentage [0,\u221E]> )",
         ["text-shadow"] = "none | [ <color>? && [ <length>{2} <length [0,\u221E]>? ] ]#",
 

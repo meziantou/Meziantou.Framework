@@ -463,7 +463,7 @@ public sealed class DrawingCompositeTests
     }
 
     [Theory]
-    [MemberData(nameof(DrawingTestSupport.AllFormats), MemberType = typeof(DrawingTestSupport))]
+    [MemberData(nameof(DrawingTestSupport.IntegerFormats), MemberType = typeof(DrawingTestSupport))]
     public void EveryBlendModeFollowsItsDefinitionInEveryPixelFormat(PixelFormat format)
     {
         // The definition written again with decimal arithmetic, on random pixels, paints and coverages; a sample may
@@ -911,6 +911,182 @@ public sealed class DrawingCompositeTests
                 }
             },
             Ct);
+    }
+
+    [Fact]
+    public void AFloatingPointCanvasCompositesInDoublePrecisionAndKeepsItsHighlights()
+    {
+        // Source-over with k the coverage, the paint (s, sa) as 16-bit fractions and the pixel (d, da) as stored:
+        // S = k sa, D = (1 - k) da + k (1 - sa) da, A = S + D and c = (s S + d D) / A
+        RgbaFloat[] pixels = [new(2.5f, -0.5f, 0.25f), new(0.5f, 0.5f, 0.5f, 0.5f), new(8, 8, 8), new(0, 0, 0, 0)];
+        var paint = new Rgba64(65535, 0, 32768, 32768);
+        using var image = new Image<RgbaFloat>(4, 1);
+        for (var x = 0; x < pixels.Length; x++)
+        {
+            image.Frames[0][x, 0] = pixels[x];
+        }
+
+        image.Draw(canvas => canvas.FillRectangle(paint, new RectangleD(0, 0, 2.5, 1)), Ct);
+        var (s, sa) = ((1.0, 0.0, 32768 / 65535.0), 32768 / 65535.0);
+        for (var x = 0; x < 3; x++)
+        {
+            var k = x == 2 ? 0.5 : 1;
+            var d = pixels[x];
+            var sourceWeight = k * 1 * sa;
+            var destinationWeight = ((1 - k) * d.A) + (k * (1 - sa) * d.A);
+            var total = sourceWeight + destinationWeight;
+            var expected = new RgbaFloat((float)(((s.Item1 * sourceWeight) + (d.R * destinationWeight)) / total), (float)(((s.Item2 * sourceWeight) + (d.G * destinationWeight)) / total), (float)(((s.Item3 * sourceWeight) + (d.B * destinationWeight)) / total), (float)total);
+            Assert.Equal(expected, image.Frames[0][x, 0]);
+        }
+
+        // The highlight stays above the white (half covered by a paint of half opacity: 8 * 3/4), and the pixel the shape
+        // does not reach is not written
+        Assert.Equal(6f, image.Frames[0][2, 0].G, 1e-3f);
+        Assert.Equal(new RgbaFloat(0, 0, 0, 0), image.Frames[0][3, 0]);
+
+        // An opaque paint replaces a pixel covered entirely with its fractions, exactly
+        image.Draw(canvas => canvas.FillRectangle(new Rgba64(1, 32768, 65535), new RectangleD(0, 0, 1, 1)), Ct);
+        Assert.Equal(new RgbaFloat(1 / 65535f, 32768 / 65535f, 1), image.Frames[0][0, 0]);
+    }
+
+    [Fact]
+    public void AHalfPrecisionCanvasStoresTheNearestHalf()
+    {
+        using var image = new Image<RgbaHalf>(2, 1, new RgbaHalf((Half)3, (Half)0.25, Half.Zero));
+        image.Draw(canvas => canvas.FillRectangle(new Rgba64(0, 65535, 0, 16384), new RectangleD(0, 0, 1, 1)), Ct);
+        var sa = 16384 / 65535.0;
+        Assert.Equal(new RgbaHalf((Half)(3 * (1 - sa)), (Half)((sa + (0.25 * (1 - sa))) / 1), Half.Zero, Half.One), image.Frames[0][0, 0]);
+        Assert.Equal(new RgbaHalf((Half)3, (Half)0.25, Half.Zero), image.Frames[0][1, 0]);
+    }
+
+    [Theory]
+    [MemberData(nameof(DrawingTestSupport.FloatFormats), MemberType = typeof(DrawingTestSupport))]
+    public void OnStandardRangePixelsAFloatingPointCanvasDrawsWhatASixteenBitCanvasDraws(PixelFormat format)
+    {
+        // Opaque pixels: the 16-bit canvas rounds each result, the floating-point one keeps it; both are within one unit
+        var random = new Random(97 + (int)format);
+        using var wide = new Image<Rgba64>(24, 16);
+        for (var y = 0; y < 16; y++)
+        {
+            for (var x = 0; x < 24; x++)
+            {
+                wide.Frames[0][x, y] = new Rgba64((ushort)random.Next(65536), (ushort)random.Next(65536), (ushort)random.Next(65536));
+            }
+        }
+
+        using var floats = format == PixelFormat.RgbaFloat ? (Image)wide.CloneAs<RgbaFloat>() : wide.CloneAs<RgbaHalf>();
+        using var reference = floats.CloneAs<Rgba64>();
+        var path = new VectorPathBuilder().MoveTo(1.25, 2.5).CubicBezierTo(9, -4, 18, 20, 22.75, 3.5).LineTo(12, 15.5).Close().AddCircle(new PointD(8, 9), 5.3).Build();
+        var gradient = new LinearGradientBrush(new PointD(0, 0), new PointD(24, 16), [new GradientStop(0, new Rgba32(255, 40, 0, 200)), new GradientStop(1, new Rgba32(0, 90, 255, 120))]);
+        void Draw(DrawingCanvas canvas)
+        {
+            canvas.Fill(gradient, path);
+            canvas.FillEllipse(new Rgba64(12345, 54321, 999, 40000), new PointD(14, 6), 7.5, 4.25);
+            canvas.Fill(new SolidBrush(new Rgba32(10, 200, 30, 90)) { CompositeMode = CompositeMode.SourceAtop, BlendMode = BlendMode.Multiply }, new VectorPathBuilder().AddCircle(new PointD(5, 5), 4.5).Build());
+            canvas.StrokeLine(new Pen(new Rgba32(250, 250, 10, 180), 2.5), new PointD(0, 15), new PointD(23, 0.5));
+        }
+
+        reference.Draw(Draw, Ct);
+        floats.Draw(Draw, Ct);
+        using var result = format == PixelFormat.RgbaFloat ? ((Image<RgbaFloat>)floats).CloneAs<Rgba64>() : ((Image<RgbaHalf>)floats).CloneAs<Rgba64>();
+        var tolerance = format == PixelFormat.RgbaFloat ? 1 : 32; // A half keeps 11 significant bits: 32 units of 65535 at the white
+        for (var y = 0; y < 16; y++)
+        {
+            for (var x = 0; x < 24; x++)
+            {
+                var (expected, actual) = (reference.Frames[0][x, y], result.Frames[0][x, y]);
+                Assert.True(Math.Abs(expected.R - actual.R) <= tolerance && Math.Abs(expected.G - actual.G) <= tolerance && Math.Abs(expected.B - actual.B) <= tolerance && expected.A == actual.A, $"({x}, {y}): {expected} on the 16-bit canvas, {actual} on the {format} canvas");
+            }
+        }
+    }
+
+    [Fact]
+    public void OnAFloatingPointCanvasTheOperatorsWorkOnTheValuesAndPlusAddsLight()
+    {
+        static RgbaFloat Paint(RgbaFloat pixel, Rgba64 color, CompositeMode mode, double width = 1)
+        {
+            using var image = new Image<RgbaFloat>(1, 1, pixel);
+            var brush = new SolidBrush(color) { CompositeMode = mode };
+            image.Draw(canvas => canvas.FillRectangle(brush, new RectangleD(0, 0, width, 1)), Ct);
+            return image.Frames[0][0, 0];
+        }
+
+        // Plus adds the light without clipping it; the alpha is at most 1
+        Assert.Equal(new RgbaFloat(2.75f, 1, 0.5f), Paint(new RgbaFloat(1.75f, 0, 0.5f), new Rgba64(65535, 65535, 0), CompositeMode.Plus));
+
+        // The other operators: the factors of Porter and Duff, on the values as they are
+        Assert.Equal(new RgbaFloat(0, 0, 0, 0), Paint(new RgbaFloat(5, 5, 5), new Rgba64(1, 2, 3), CompositeMode.Clear));
+        Assert.Equal(new RgbaFloat(5, 4, 3), Paint(new RgbaFloat(5, 4, 3), new Rgba64(0, 0, 65535), CompositeMode.DestinationOver));
+        Assert.Equal(new RgbaFloat(5, 4, 3, 0.5f), Paint(new RgbaFloat(5, 4, 3), new Rgba64(0, 0, 0, 32768), CompositeMode.DestinationIn), new FloatPixelComparer(1e-4f));
+        Assert.Equal(new RgbaFloat(5, 4, 3, 0.5f), Paint(new RgbaFloat(5, 4, 3), new Rgba64(0, 0, 0, 65535), CompositeMode.DestinationOut, width: 0.5));
+
+        // A transparent paint with source erases what it covers entirely
+        Assert.Equal(new RgbaFloat(0, 0, 0, 0), Paint(new RgbaFloat(5, 4, 3), new Rgba64(0, 0, 0, 0), CompositeMode.Source));
+    }
+
+    [Fact]
+    public void AColorMatrixOnAFloatingPointCanvasKeepsTheHighlights()
+    {
+        using var image = new Image<RgbaFloat>(3, 1, new RgbaFloat(4, -1, 0.5f, 0.75f));
+        image.ApplyColorMatrix(new ColorMatrix([0.5, 0, 0, 0, 0, 0, 1, 0, 0, 0.25, 0, 0, 2, 0, 0, 0, 0, 0, 2, 0]), Ct);
+        Assert.Equal(new RgbaFloat(2, -0.75f, 1, 1), image.Frames[0][0, 0]);
+
+        // The identity changes nothing, bit for bit, values out of range included
+        var before = DrawingTestSupport.ReadSamples(image.Frames[0]);
+        image.ApplyColorMatrix(ColorMatrix.Identity, Ct);
+        Assert.Equal(before, DrawingTestSupport.ReadSamples(image.Frames[0]));
+
+        // A pixel the clip covers in part is replaced in part, as with the source operator
+        using var clipped = new Image<RgbaFloat>(1, 1, new RgbaFloat(4, 2, 0, 1));
+        clipped.Draw(canvas => canvas.Clip(new RectangleD(0, 0, 0.5, 1), inner => inner.FilterBackdrop(new ColorMatrix([0.5, 0, 0, 0, 0, 0, 0.5, 0, 0, 0, 0, 0, 0.5, 0, 0, 0, 0, 0, 1, 0]))), Ct);
+        Assert.Equal(new RgbaFloat(3, 1.5f, 0, 1), clipped.Frames[0][0, 0]);
+    }
+
+    [Fact]
+    public void LinearLightOnAFloatingPointCanvasDecodesOnlyEncodedSamples()
+    {
+        // An image labeled as linear light is combined as it is stored, whatever the range of its samples
+        using var linear = new Image<RgbaFloat>(1, 1, new RgbaFloat(3, 0, 0));
+        using var plain = linear.Clone();
+        void Half(DrawingCanvas canvas) => canvas.FillRectangle(new Rgba64(0, 65535, 0), new RectangleD(0, 0, 0.5, 1));
+        linear.Draw(canvas => canvas.Compositing(CompositingSpace.LinearSrgb, Half), Ct);
+        plain.Draw(Half, Ct);
+        Assert.Equal(new RgbaFloat(1.5f, 0.5f, 0), linear.Frames[0][0, 0]);
+        Assert.Equal(plain.Frames[0][0, 0], linear.Frames[0][0, 0]);
+
+        // Encoded sRGB samples are decoded and encoded again: half of white over black is the sRGB value of 0.5
+        using var encoded = new Image<RgbaFloat>(1, 1, new RgbaFloat(0, 0, 0));
+        encoded.Metadata.TransferFunction = Metadata.ColorTransferFunction.Srgb;
+        encoded.Draw(canvas => canvas.Compositing(CompositingSpace.LinearSrgb, inner => inner.FillRectangle(new Rgba64(65535, 65535, 65535), new RectangleD(0, 0, 0.5, 1))), Ct);
+        Assert.Equal(0.735357, encoded.Frames[0][0, 0].R, 1e-5);
+
+        // An encoded sample outside [0, 1] has no linear value
+        encoded.Frames[0][0, 0] = new RgbaFloat(2, 0, 0);
+        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => encoded.Draw(canvas => canvas.Compositing(CompositingSpace.LinearSrgb, inner => inner.FillRectangle(new Rgba64(65535, 0, 0, 32768), new RectangleD(0, 0, 1, 1))), Ct));
+        Assert.Contains("linear-light", exception.Message);
+    }
+
+    [Fact]
+    public void AFloatingPointImageIsDrawnThroughSixteenBitColors()
+    {
+        // In [0, 1], its samples are 16-bit colors like those of any image
+        using var source = new Image<RgbaFloat>(1, 1, new RgbaFloat(1, 0.5f, 0));
+        using var canvas = new Image<Rgba32>(1, 1);
+        canvas.Draw(c => c.DrawImage(source.Frames[0], new Point(0, 0)), Ct);
+        Assert.Equal(new Rgba32(255, 128, 0), canvas.Frames[0][0, 0]);
+
+        // Beyond, they have none: they are rejected, never clipped
+        source.Frames[0][0, 0] = new RgbaFloat(1.5f, 0.5f, 0);
+        Assert.Throws<UnsupportedImageFeatureException>(() => canvas.Draw(c => c.DrawImage(source.Frames[0], new Point(0, 0)), Ct));
+        using var floats = new Image<RgbaFloat>(1, 1);
+        Assert.Throws<UnsupportedImageFeatureException>(() => floats.Draw(c => c.DrawImage(source.Frames[0], new Point(0, 0)), Ct));
+    }
+
+    private sealed class FloatPixelComparer(float tolerance) : IEqualityComparer<RgbaFloat>
+    {
+        public bool Equals(RgbaFloat x, RgbaFloat y) => Math.Abs(x.R - y.R) <= tolerance && Math.Abs(x.G - y.G) <= tolerance && Math.Abs(x.B - y.B) <= tolerance && Math.Abs(x.A - y.A) <= tolerance;
+
+        public int GetHashCode(RgbaFloat obj) => 0;
     }
 
     private static void AssertNear(Rgba32 actual, int r, int g, int b, int a)

@@ -10,6 +10,15 @@ internal static class DrawingTestSupport
 {
     public static TheoryData<PixelFormat> AllFormats => [.. PixelFormats.All];
 
+    /// <summary>Gets the integer pixel formats: the ones the exact references of the test harness describe (<see cref="ReferencePixelLayout"/>).</summary>
+    public static TheoryData<PixelFormat> IntegerFormats => [.. IntegerPixelFormats];
+
+    /// <summary>Gets the integer pixel formats, as a list.</summary>
+    public static IReadOnlyList<PixelFormat> IntegerPixelFormats { get; } = [.. PixelFormats.All.Where(format => !PixelFormats.IsFloatingPoint(format))];
+
+    /// <summary>Gets the floating-point pixel formats.</summary>
+    public static TheoryData<PixelFormat> FloatFormats => [PixelFormat.RgbaFloat, PixelFormat.RgbaHalf];
+
     /// <summary>Creates an image whose pixels are zero (transparent black, or black).</summary>
     public static Image Create(PixelFormat format, int width, int height, ImageConfiguration? configuration = null) => format switch
     {
@@ -19,6 +28,8 @@ internal static class DrawingTestSupport
         PixelFormat.Rgba64 => new Image<Rgba64>(width, height, configuration),
         PixelFormat.Gray8 => new Image<Gray8>(width, height, configuration),
         PixelFormat.Gray16 => new Image<Gray16>(width, height, configuration),
+        PixelFormat.RgbaFloat => new Image<RgbaFloat>(width, height, configuration),
+        PixelFormat.RgbaHalf => new Image<RgbaHalf>(width, height, configuration),
         _ => throw new ArgumentOutOfRangeException(nameof(format)),
     };
 
@@ -27,9 +38,33 @@ internal static class DrawingTestSupport
     /// <param name="width">The width.</param>
     /// <param name="height">The height.</param>
     /// <param name="next">Returns a random integer from 0 to its argument (excluded).</param>
+    /// <remarks>The samples of a floating-point format are the nearest values of random 16-bit fractions, in [0, 1].</remarks>
     public static Image CreateRandom(PixelFormat format, int width, int height, Func<int, int> next)
     {
         var image = Create(format, width, height);
+        if (PixelFormats.IsFloatingPoint(format))
+        {
+            var values = new int[width * height * 4];
+            for (var i = 0; i < values.Length; i++)
+            {
+                var sample = next(65536);
+                if (i % 4 == 3)
+                {
+                    sample = next(4) switch
+                    {
+                        0 => 0,
+                        1 => 65535,
+                        _ => sample,
+                    };
+                }
+
+                values[i] = format == PixelFormat.RgbaFloat ? BitConverter.SingleToInt32Bits(sample / 65535f) : BitConverter.HalfToUInt16Bits((Half)(sample / 65535.0));
+            }
+
+            WriteSamples(image.Frames[0], values);
+            return image;
+        }
+
         var layout = ReferencePixelLayout.FromPixelFormat(format);
         var samples = new int[width * height * layout.ChannelCount];
         for (var i = 0; i < samples.Length; i++)
@@ -55,8 +90,37 @@ internal static class DrawingTestSupport
     }
 
     /// <summary>Reads every sample of a frame, row by row, in storage order.</summary>
+    /// <remarks>A floating-point sample is read as its bits (<see cref="BitConverter.SingleToInt32Bits(float)"/>, <see cref="BitConverter.HalfToUInt16Bits(Half)"/>): two drawings are equal when their bits are.</remarks>
     public static int[] ReadSamples(ImageFrame frame)
     {
+        if (PixelFormats.IsFloatingPoint(frame.PixelFormat))
+        {
+            var bits = new int[frame.Width * frame.Height * 4];
+            frame.ProcessPixelBytes(bits, static (pixels, bits) =>
+            {
+                var index = 0;
+                for (var y = 0; y < pixels.Height; y++)
+                {
+                    var row = pixels.GetRowSpan(y);
+                    if (pixels.PixelFormat == PixelFormat.RgbaFloat)
+                    {
+                        foreach (var value in unsafe(MemoryMarshal.Cast<byte, int>(row)))
+                        {
+                            bits[index++] = value;
+                        }
+                    }
+                    else
+                    {
+                        foreach (var value in unsafe(MemoryMarshal.Cast<byte, ushort>(row)))
+                        {
+                            bits[index++] = value;
+                        }
+                    }
+                }
+            });
+            return bits;
+        }
+
         var layout = ReferencePixelLayout.FromPixelFormat(frame.PixelFormat);
         var samples = new int[frame.Width * frame.Height * layout.ChannelCount];
         frame.ProcessPixelBytes((samples, layout), static (pixels, state) =>
@@ -84,9 +148,38 @@ internal static class DrawingTestSupport
         return samples;
     }
 
-    /// <summary>Writes every sample of a frame, row by row, in storage order.</summary>
+    /// <summary>Writes every sample of a frame, row by row, in storage order (the bits of a floating-point sample, see <see cref="ReadSamples"/>).</summary>
     public static void WriteSamples(ImageFrame frame, int[] samples)
     {
+        if (PixelFormats.IsFloatingPoint(frame.PixelFormat))
+        {
+            frame.ProcessPixelBytes(samples, static (pixels, samples) =>
+            {
+                var index = 0;
+                for (var y = 0; y < pixels.Height; y++)
+                {
+                    var row = pixels.GetRowSpan(y);
+                    if (pixels.PixelFormat == PixelFormat.RgbaFloat)
+                    {
+                        var values = unsafe(MemoryMarshal.Cast<byte, int>(row));
+                        for (var i = 0; i < values.Length; i++)
+                        {
+                            values[i] = samples[index++];
+                        }
+                    }
+                    else
+                    {
+                        var values = unsafe(MemoryMarshal.Cast<byte, ushort>(row));
+                        for (var i = 0; i < values.Length; i++)
+                        {
+                            values[i] = (ushort)samples[index++];
+                        }
+                    }
+                }
+            });
+            return;
+        }
+
         var layout = ReferencePixelLayout.FromPixelFormat(frame.PixelFormat);
         frame.ProcessPixelBytes((samples, layout), static (pixels, state) =>
         {

@@ -115,7 +115,7 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
     public void Prepare(GradientBrush brush, AffineTransform transform, ImageFrame frame, int width, IccPipeline? paintPipeline = null)
     {
         _paintPipeline = paintPipeline;
-        Prepare(brush, transform, frame, width, (1 << PixelFormats.GetBitsPerComponent(frame.PixelFormat)) - 1);
+        Prepare(brush, transform, frame, width, DrawingKernels.GetPaintMax(frame.PixelFormat));
     }
 
     /// <summary>Converts the stops of a brush placed by a projective transformation, and rents the row of colors.</summary>
@@ -134,7 +134,7 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
         }
 
         _paintPipeline = paintPipeline;
-        Prepare(brush, AffineTransform.Identity, frame, width, (1 << PixelFormats.GetBitsPerComponent(frame.PixelFormat)) - 1);
+        Prepare(brush, AffineTransform.Identity, frame, width, DrawingKernels.GetPaintMax(frame.PixelFormat));
         _isProjective = true;
         if (!transform.TryInvert(out _projectiveInverse))
         {

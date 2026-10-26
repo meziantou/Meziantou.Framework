@@ -663,4 +663,37 @@ public sealed class AnchorPositioningTests : IDisposable
         target.ClassName = "anim";
         Assert.Equal(250, target.OffsetLeft);
     }
+
+    [Fact]
+    public void RememberedScrollOffsets_OfANewBoxAreTheScrollOffsetsOfTheNextRenderingUpdate()
+    {
+        var document = Parse("""
+            <style>
+              #scroller1 { position: relative; width: 200px; height: 200px; overflow: scroll; scrollbar-width: none; }
+              #scroller2 { width: 100px; height: 100px; overflow: scroll; scrollbar-width: none; }
+              #anchor { anchor-name: --a; height: 20px; }
+              #anchored { position: absolute; position-anchor: --a; left: anchor(left); top: anchor(bottom); width: 100px; height: 100px; }
+            </style>
+            <div id=scroller1>
+              <div style="height: 100px"></div>
+              <div id=scroller2><div style="height: 230px"></div><div id=anchor></div><div style="height: 230px"></div></div>
+              <div style="height: 100px"></div>
+              <div id=anchored></div>
+            </div>
+            """);
+        var scroller1 = Get(document, "scroller1");
+        Assert.Equal(450, scroller1.ScrollHeight);
+
+        // The default scroll shift does not change the scrollable overflow until the next rendering update takes the snapshot of the
+        // scroll offsets: the box is then laid out where it is displayed
+        Get(document, "scroller2").ScrollTop = 200;
+        Assert.Equal(450, scroller1.ScrollHeight);
+        RunFrames();
+        Assert.Equal(300, scroller1.ScrollHeight);
+
+        // The next scrolls move the box by its default scroll shift, after the layout
+        Get(document, "scroller2").ScrollTop = 0;
+        RunFrames();
+        Assert.Equal(300, scroller1.ScrollHeight);
+    }
 }

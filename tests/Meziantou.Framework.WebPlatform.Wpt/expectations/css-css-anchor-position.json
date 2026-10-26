@@ -492,13 +492,13 @@
     "reftest": "PASS"
   },
   "css/css-anchor-position/anchor-scroll-chained-002.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-anchor-position/anchor-scroll-chained-003.html": {
     "reftest": "PASS"
   },
   "css/css-anchor-position/anchor-scroll-chained-004.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-anchor-position/anchor-scroll-chained-fallback.html": {
     "reftest": "PASS"
@@ -729,10 +729,10 @@
     "total": 1
   },
   "css/css-anchor-position/anchored-transition-display-none-001.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "PASS"
   },
   "css/css-anchor-position/anchored-transition-display-none-002.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-anchor-position/at-position-try-allowed-declarations.html": {
     "total": 56

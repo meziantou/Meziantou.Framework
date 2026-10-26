@@ -69,6 +69,19 @@ public sealed class CssTransitionsTests : IDisposable
     }
 
     [Fact]
+    public void LoadEventHandler_StartsTransitionFromTheStylesComputedOnceTheDocumentIsParsed()
+    {
+        var context = _contexts.Create(new BrowsingContextOptions { TimeProvider = _clock });
+        var document = context.Navigate("https://example.com/", _ => "<div id=target style='width: 0px; transition: width 100s linear'></div>");
+        var target = (HtmlElement)document.GetElementById("target")!;
+        document.DefaultView!.AddEventListener("load", _ => target.Style.SetProperty("width", "100px"));
+        _contexts.EventLoop.RunUntilIdle();
+
+        var transition = Assert.IsType<CssTransition>(Assert.Single(target.GetAnimations()));
+        Assert.Equal("width", transition.TransitionProperty);
+    }
+
+    [Fact]
     public void CompletedTransition_LeavesTheEffectStackOfItsTarget()
     {
         var document = Load("<div id=target style='width: 0px; transition: width 100ms linear'></div>");

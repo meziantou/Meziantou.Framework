@@ -602,6 +602,12 @@ public partial class Document
             }
 
             PendingTextDirectives = null;
+
+            // As in the browsers (Document::FinishedParsing in Blink and WebKit), the styles are computed once the document is
+            // parsed, before the load event: they are the before-change styles of the transitions started by the changes of the
+            // load event handlers (https://drafts.csswg.org/css-transitions-1/#before-change-style), and the CSS animations are
+            // created (they start with the next rendering update)
+            FlushAnimationStyles();
         });
 
         // As in the browsers, the load event is queued once the parsing is finished: the specification spins the event loop

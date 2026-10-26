@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 309 | 337 | 1 | 92% |
+| [Stable](#stable-tests) | 310 | 337 | 1 | 92% |
 | [Tentative](#tentative-tests) | 2 | 6 | 0 | 33% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **311** | **343** | **1** | **91%** |
+| **All** | **312** | **343** | **1** | **91%** |
 
 ## Stable tests
 
@@ -289,8 +289,8 @@
 | [`scripting/processing-model-2/runtime-error-same-origin-with-hash.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/runtime-error-same-origin-with-hash.html) | Pass | 2 / 2 |  |  |
 | [`scripting/processing-model-2/runtime-error-same-origin.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/runtime-error-same-origin.html) | Pass | 2 / 2 |  |  |
 | [`scripting/processing-model-2/runtime-error.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/runtime-error.html) | Pass | 2 / 2 |  |  |
-| [`scripting/processing-model-2/unhandled-promise-rejections/allow-crossorigin.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/unhandled-promise-rejections/allow-crossorigin.html) | Timeout | 0 / 1 | TEST RUNNER | the `support/promise-access-control.py` handler is not emulated |
-| [`scripting/processing-model-2/unhandled-promise-rejections/disallow-crossorigin.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/unhandled-promise-rejections/disallow-crossorigin.html) | Timeout | 0 / 3 | TEST RUNNER | the `support/promise-access-control.py` handler is not emulated |
+| [`scripting/processing-model-2/unhandled-promise-rejections/allow-crossorigin.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/unhandled-promise-rejections/allow-crossorigin.html) | Pass | 1 / 1 |  |  |
+| [`scripting/processing-model-2/unhandled-promise-rejections/disallow-crossorigin.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/unhandled-promise-rejections/disallow-crossorigin.html) | Fail | 2 / 3 | BUG | the `unhandledrejection` event fires for a promise rejected by a cross-origin classic script fetched without CORS: the rejections of a script whose errors are muted must not be reported |
 | [`scripting/processing-model-2/unhandled-promise-rejections/promise-rejection-event-constructor.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/unhandled-promise-rejections/promise-rejection-event-constructor.html) | Pass | 1 / 1 |  |  |
 | [`scripting/processing-model-2/unhandled-promise-rejections/promise-rejection-event-during-parse.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/unhandled-promise-rejections/promise-rejection-event-during-parse.html) | Pass | 1 / 1 |  |  |
 | [`scripting/processing-model-2/unhandled-promise-rejections/promise-rejection-events-attached-in-event.html`](https://wpt.fyi/results/html/webappapis/scripting/processing-model-2/unhandled-promise-rejections/promise-rejection-events-attached-in-event.html) | Pass | 1 / 1 |  |  |

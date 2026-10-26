@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 316 | 328 | 0 | 96% |
+| [Stable](#stable-tests) | 317 | 328 | 0 | 97% |
 | [Tentative](#tentative-tests) | 2 | 2 | 0 | 100% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **318** | **330** | **0** | **96%** |
+| **All** | **319** | **330** | **0** | **97%** |
 
 ## Stable tests
 
@@ -310,7 +310,7 @@
 | [`status-async.htm`](https://wpt.fyi/results/xhr/status-async.htm) | Pass | 27 / 27 |  |  |
 | [`status-basic.htm`](https://wpt.fyi/results/xhr/status-basic.htm) | Pass | 27 / 27 |  |  |
 | [`status-error.htm`](https://wpt.fyi/results/xhr/status-error.htm) | Pass | 21 / 21 |  |  |
-| [`status.h2.window.js`](https://wpt.fyi/results/xhr/status.h2.window.js) | Fail | 0 / 7 | TEST RUNNER | the `.h2.` tests are served by the HTTP/1.1 emulation, so `statusText` is the reason phrase (HTTP/2 has none) |
+| [`status.h2.window.js`](https://wpt.fyi/results/xhr/status.h2.window.js) | Pass | 7 / 7 |  |  |
 | [`sync-no-progress.any.js`](https://wpt.fyi/results/xhr/sync-no-progress.any.js) | Pass | 2 / 2 |  |  |
 | [`sync-no-timeout.any.js`](https://wpt.fyi/results/xhr/sync-no-timeout.any.js) | Pass | 3 / 3 |  |  |
 | [`sync-xhr-and-window-onload.html`](https://wpt.fyi/results/xhr/sync-xhr-and-window-onload.html) | Pass | 1 / 1 |  |  |

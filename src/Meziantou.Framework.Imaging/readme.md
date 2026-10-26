@@ -491,7 +491,7 @@ them, and `Load<RgbaFloat>` converts the decoded samples.
 | Integer to `RgbaFloat` | `v / max`, one correctly rounded `float` division: exact, and back to the same integer for every sample |
 | Integer to `RgbaHalf` | The nearest `Half` of `v / max`: exact back for 8-bit samples, not for 16-bit ones (11 significant bits) |
 | `RgbaHalf` to `RgbaFloat` | Exact, infinities and samples that are not numbers included |
-| `RgbaFloat` to `RgbaHalf` | Nearest (ties to even); infinities and samples that are not numbers are kept; a finite sample beyond ±65,504 is rejected unless `OutOfRangeSamples` is `Clip` |
+| `RgbaFloat` to `RgbaHalf` | Nearest (ties to even); infinities and samples that are not numbers are kept; a finite sample that rounds beyond ±65,504 (the largest half) is rejected unless `OutOfRangeSamples` is `Clip`, which gives it ±65,504 |
 | Floating point to integer | A sample that is not a number is always rejected. The colors are tone mapped when `PixelConversionOptions.ToneMapping` is set; a sample (alpha included) still outside [0, 1] is rejected unless `OutOfRangeSamples` is `Clip`, which clips each one (infinities included). Then alpha is removed as for integer pixels (an alpha of exactly 1 is opaque), gray gets the Rec. 709 luma `0.2126 R + 0.7152 G + 0.0722 B`, and each sample is `floor(v max + 1/2)`, in double precision |
 
 Every check runs on every frame and the poster before anything is allocated. Tone mapping treats the color components as

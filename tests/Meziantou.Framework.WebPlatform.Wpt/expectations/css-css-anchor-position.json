@@ -378,7 +378,7 @@
     "reftest": "PASS"
   },
   "css/css-anchor-position/anchor-position-multicol-nested-001.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-anchor-position/anchor-position-non-anchored-fallback.html": {
     "reftest": "PASS"

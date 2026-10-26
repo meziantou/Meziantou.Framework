@@ -375,9 +375,10 @@ internal sealed partial class LayoutEngine
 
             // The floats that do not fit are pushed to the next page, and the items of the grid lanes containers fragmented in their
             // stacking axis are placed again in the pages (see GridLanesFragmentation), by new layouts of the strip
-            if (stripRelayout.UpdateBrokenBoxes(flow, map, children, stripSize, writingDirection, blockSizes))
+            if (stripRelayout.UpdateBrokenBoxes(flow, map, children, stripSize, writingDirection, blockSizes) || stripRelayout.UpdateNestedAnchors(flow, map))
             {
-                // The broken boxes are laid out again (see StripRelayout): the floats are pushed again from the start
+                // The broken boxes (and the anchor-positioned boxes of the anchors in the nested multi-column containers) are laid
+                // out again (see StripRelayout): the floats are pushed again from the start
                 floatPushes = null;
                 lanesBreaks = null;
                 pass = -1;

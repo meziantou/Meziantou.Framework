@@ -71,6 +71,32 @@ public sealed class AnchorPositioningTests : IDisposable
     }
 
     [Fact]
+    public void AnchorSize_OfAnAnchorInANestedMultiColumnContainerIsTheOneOfItsFragmentsInTheOuterColumns()
+    {
+        // The inner columns are 84px tall in the second outer column, 100px in the third one: the anchor (150px tall from 66px)
+        // has 18px + 84px in the second outer column and 48px in the third one, its anchor box is 84px + 48px tall in the flow
+        // of the containing block
+        var document = Parse("""
+            <style>
+              .cb { position: relative; border: solid transparent; border-width: 3px 2px 4px 1px; padding: 3px 2px 4px 1px; }
+              #outer { columns: 4; column-fill: auto; column-gap: 10px; width: 630px; height: 100px; }
+              #inner { columns: 2; column-fill: auto; column-gap: 10px; width: 130px; height: 200px; }
+              #anchor { anchor-name: --a; margin-left: 10px; width: 20px; height: 150px; }
+              #target { position: absolute; left: anchor(--a left); top: anchor(--a top); width: anchor-size(--a width); height: anchor-size(--a height); }
+            </style>
+            <div style='height: 10px'></div>
+            <div id=outer>
+              <div class=cb>
+                <div style='height: 110px'></div>
+                <div id=inner><div class=cb><div style='height: 60px'></div><div id=anchor></div></div></div>
+                <div id=target><div id=corner style='position: absolute; bottom: 0; right: 0; width: 10px; height: 10px'></div></div>
+              </div>
+            </div>
+            """);
+        Assert.Equal((414d, 48d, 10d, 10d), GetRect(document, "corner"));
+    }
+
+    [Fact]
     public void AnchorFunctions_AlignTheInsetsWithTheEdgesOfTheAnchors()
     {
         var document = Parse("""

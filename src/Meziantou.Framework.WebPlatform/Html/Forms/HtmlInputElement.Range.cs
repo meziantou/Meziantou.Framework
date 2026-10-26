@@ -16,6 +16,41 @@ public partial class HtmlInputElement
     private string? _sliderDragInitialValue;
 
     /// <summary>
+    /// Returns the positions of the tick marks of a slider, from 0 (the minimum) to 1 (the maximum), or null when it has none:
+    /// "the user agent could use the suggestion values as tick marks" (the values of the options of its <c>datalist</c>
+    /// that are not disabled), as in the browsers only the valid floating-point numbers in the range that are not step
+    /// mismatches (https://html.spec.whatwg.org/multipage/input.html#range-state-(type=range)).
+    /// </summary>
+    internal List<double>? GetSliderTickMarks()
+    {
+        if (_type != InputType.Range || List is not { } list)
+            return null;
+
+        var minimum = GetMinimum() ?? 0;
+        var maximum = GetMaximum() ?? 100;
+        if (maximum <= minimum)
+            return null;
+
+        var step = GetAllowedValueStep();
+        var stepBase = GetStepBase();
+        List<double>? result = null;
+        foreach (var element in list.Options)
+        {
+            if (element is not HtmlOptionElement option || option.HasAttribute("disabled"))
+                continue;
+
+            var text = option.Value;
+            if (Microsyntaxes.IsValidFloatingPointNumber(text) && Microsyntaxes.TryParseFloat(text, out var value) && value >= minimum && value <= maximum
+                && (step is not { } allowedStep || IsIntegralMultiple(value, stepBase, allowedStep)))
+            {
+                (result ??= []).Add((value - minimum) / (maximum - minimum));
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>
     /// The default action of the trusted pointer events for a slider: <c>pointerdown</c> of the primary button on the control
     /// starts a drag and sets the value from the position of the pointer, the <c>pointermove</c> events of the pointer update
     /// it (an <c>input</c> event is fired when it changes), and <c>pointerup</c> or <c>pointercancel</c> end the drag.

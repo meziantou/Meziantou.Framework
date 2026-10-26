@@ -750,8 +750,8 @@ internal static partial class WptPythonHandlers
         },
 
         // the-iframe-element/support/download_stash.py: "verify-token" takes the token; a request without "finish-delay"
-        // (<a download>) puts it; with "finish-delay", a Content-Disposition: attachment response sent after the delay (the
-        // token is put when the request is received, not once the response is sent: a cancelled download sets it too)
+        // (<a download>) puts it; with "finish-delay", a Content-Disposition: attachment response whose body is streamed over
+        // the delay, and the token is put once the whole body was sent (a download canceled by the client does not set it)
         ["/html/semantics/embedded-content/the-iframe-element/support/download_stash.py"] = (request, response, stash) =>
         {
             var token = "download|" + request.Get("token");
@@ -766,8 +766,14 @@ internal static partial class WptPythonHandlers
             if (request.Get("finish-delay") is { } finishDelay)
             {
                 response.Add("Content-Disposition", "attachment");
-                response.Delay = Milliseconds(finishDelay, 0);
-                response.Content = new string('\n', 10);
+                var delay = Milliseconds(finishDelay, 0) / 10;
+                for (var i = 0; i < 10; i++)
+                {
+                    response.Chunks.Add((delay, "\n"u8.ToArray()));
+                }
+
+                response.Completed = () => stash.Put(token, true);
+                return;
             }
 
             stash.Put(token, true);

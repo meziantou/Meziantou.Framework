@@ -65,7 +65,7 @@ public partial class Document
     internal SandboxingFlags ActiveSandboxingFlags { get; set; }
 
     /// <summary>https://html.spec.whatwg.org/multipage/document-lifecycle.html#completely-loaded</summary>
-    internal bool CompletelyLoaded { get; private set; }
+    internal bool CompletelyLoaded { get; set; }
 
     /// <summary>https://html.spec.whatwg.org/multipage/parsing.html#ready-for-post-load-tasks</summary>
     internal bool ReadyForPostLoadTasks { get; set; }
@@ -725,14 +725,17 @@ public partial class Document
         var childNavigables = ChildNavigables is { Count: > 0 } children ? new HashSet<BrowsingContext>(children) : null;
         QueueGlobalTask(() =>
         {
-            // https://html.spec.whatwg.org/multipage/parsing.html#the-end (steps 8–9): the load event is delayed by the
-            // navigables inserted since the task was queued (e.g. an iframe inserted by a DOMContentLoaded listener): the
-            // task is queued again once they no longer delay it
+            // https://html.spec.whatwg.org/multipage/parsing.html#the-end (steps 8–9): the end spins the event loop until nothing
+            // delays the load event, so the tasks queued before the load task run first: the load event is delayed by the
+            // navigables inserted since the task was queued (e.g. an iframe inserted by a DOMContentLoaded listener), and by
+            // the navigations of the other child navigables that these tasks started (e.g. the planned navigation of a form
+            // submitted while the document was parsed; a reload does not delay the load event). The task is queued again once
+            // they no longer delay it.
             if (ChildNavigables is { Count: > 0 } currentChildren)
             {
                 foreach (var child in currentChildren)
                 {
-                    if (childNavigables?.Contains(child) != true && (child.IsDelayingLoadEvents || !child.Document.ReadyForPostLoadTasks) && child.Container is not HtmlIFrameElement { CurrentNavigationWasLazyLoaded: true })
+                    if ((child.IsDelayingLoadEvents || (childNavigables?.Contains(child) != true && !child.Document.ReadyForPostLoadTasks)) && child.Container is not HtmlIFrameElement { CurrentNavigationWasLazyLoaded: true })
                     {
                         _loadEventQueued = false;
                         return;

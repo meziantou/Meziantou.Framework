@@ -219,6 +219,15 @@ public sealed partial class Window : GlobalScope
         if (BrowsingContext is not { Parent: null, IsClosing: false } browsingContext || (!browsingContext.IsAuxiliary && browsingContext.GetSessionHistoryEntries()?.Count != 1))
             return;
 
+        // The incumbent global object's browsing context must be familiar with the traversable, and allowed by sandboxing to
+        // navigate it (with the source snapshot params of the incumbent document, whatwg/html#12960): a document sandboxed
+        // without allow-top-navigation cannot close its top-level traversable
+        if (browsingContext.Options.ScriptEngine?.GetCurrentGlobal() is Window { BrowsingContext: { } incumbentNavigable } incumbent && !ReferenceEquals(incumbent, this)
+            && (!incumbentNavigable.IsFamiliarWith(browsingContext) || !Sandboxing.IsAllowedToNavigate(incumbentNavigable, browsingContext, incumbent.Document.ActiveSandboxingFlags, incumbent.HasTransientActivation)))
+        {
+            return;
+        }
+
         browsingContext.IsClosing = true;
         browsingContext.QueueTask(browsingContext.Close);
     }

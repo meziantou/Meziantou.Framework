@@ -150,7 +150,24 @@ public sealed partial class BrowsingContext : IDisposable
         document.Mode = DocumentMode.Quirks;
         document.IsInitialAboutBlank = true;
         document.OriginDocument = creator is null ? null : Document.GetOriginDocument(creator);
-        document.ActiveSandboxingFlags = GetIframeSandboxingFlags();
+
+        // The sandboxing flags of the iframe or of the popup, and the CSP-derived sandboxing flags of the policy container
+        // inherited from the creator (https://w3c.github.io/webappsec-csp/#sandbox-init), as for the about:blank documents of a
+        // navigation: a popup that escapes the sandbox of its opener still inherits its CSP (WPT sandbox-inherit-to-blank-document-unsandboxed.html).
+        // As in Chromium, the sandbox directive of the required CSP of the iframe (its csp attribute) applies too.
+        var policyContainer = creator is null ? null : PolicyContainer.Clone(creator);
+        var sandboxingFlags = GetIframeSandboxingFlags();
+        if (policyContainer is not null)
+        {
+            sandboxingFlags |= GetContentSecurityPolicySandboxingFlags(policyContainer);
+        }
+
+        if (GetRequiredContentSecurityPolicy() is { } requiredPolicy && ContentSecurityPolicy.Parse(requiredPolicy, reportOnly: false, fromMeta: false).GetDirectiveValue("sandbox") is { } requiredSandbox)
+        {
+            sandboxingFlags |= Sandboxing.ParseSandboxingDirective(string.Join(' ', requiredSandbox));
+        }
+
+        document.ActiveSandboxingFlags = sandboxingFlags;
         document.ScriptingEnabled = options.ScriptingEnabled && (document.ActiveSandboxingFlags & SandboxingFlags.Scripts) == SandboxingFlags.None;
         if ((document.ActiveSandboxingFlags & SandboxingFlags.Origin) != SandboxingFlags.None)
         {
@@ -180,9 +197,9 @@ public sealed partial class BrowsingContext : IDisposable
 
         // https://html.spec.whatwg.org/multipage/document-sequences.html#creating-a-new-browsing-context, step 15: a clone of the
         // policy container of the creator (its CSP list applies to the initial about:blank document of an iframe or a popup)
-        if (creator is not null)
+        if (policyContainer is not null)
         {
-            document.SetPolicyContainer(PolicyContainer.Clone(creator));
+            document.SetPolicyContainer(policyContainer);
         }
 
         UpgradeInsecureRequests.Inherit(document, container?.NodeDocument);
@@ -210,6 +227,11 @@ public sealed partial class BrowsingContext : IDisposable
         var window = new Window(document, options, EventLoop) { AgentCluster = AgentClusters.Obtain(document.Origin, requestsOriginKeyed: false, group is not null && group.CrossOriginIsolationMode != CrossOriginIsolationMode.None) };
         CreateNavigationTimingEntry(document, window, DocumentLoadTimingInfo.CreateImmediate(window.TimeOriginTimestamp), bodySize: 0, status: 200, headers: []);
         Activate(document, window, NavigationHistoryBehavior.Push, srcdoc: null);
+
+        // https://html.spec.whatwg.org/multipage/document-sequences.html#creating-a-new-browsing-context: "Completely finish
+        // loading document" (the navigable has no container yet, so no load event is fired): e.g. the refresh of a meta
+        // element inserted in the initial about:blank document comes due
+        document.CompletelyLoaded = true;
     }
 
     /// <summary>Gets the options of the browsing context.</summary>
@@ -1110,6 +1132,62 @@ public sealed partial class BrowsingContext : IDisposable
         return false;
     }
 
+    /// <summary>
+    /// Whether a document of <paramref name="sourceNavigable"/> can navigate this navigable of its frame tree, beyond the
+    /// sandboxing flags. As in the browsers:
+    /// <list type="bullet">
+    /// <item>A document can navigate its top-level traversable only when it is same origin with the top-level document, or
+    /// with transient activation (the framebusting intervention, WPT <c>cross-origin-top-navigation-without-user-activation.window.js</c>).
+    /// A sandboxed document allowed to navigate it (<c>allow-top-navigation</c>) can when its parent can. As in Safari, the
+    /// navigations to a URL that is same site with the top-level document are allowed (WPT <c>location-replace-cross-site.html</c>).</item>
+    /// <item>A document can navigate another navigable of the tree only when it is same origin with the document of the
+    /// navigable or of one of its ancestors (the "familiar with" relationship, WPT <c>child-navigates-parent-cross-origin.window.js</c>).</item>
+    /// </list>
+    /// The navigables it contains, and the navigables of other trees (popups, openers), are not restricted here.
+    /// </summary>
+    private bool IsAllowedToBeNavigatedBy(BrowsingContext sourceNavigable, Document sourceDocument, bool hasTransientActivation, UrlRecord url)
+    {
+        if (!ReferenceEquals(sourceNavigable.Top, Top))
+            return true;
+
+        for (BrowsingContext? current = this; current is not null; current = current.Parent)
+        {
+            if (ReferenceEquals(current, sourceNavigable))
+                return true;
+        }
+
+        if (Parent is null)
+            return hasTransientActivation || OriginRecord.IsSameSite(OriginRecord.FromUrl(url), Document.Origin) || IsFramebustingAllowed(sourceNavigable, sourceDocument, Document.Origin);
+
+        for (BrowsingContext? current = this; current is not null; current = current.Parent)
+        {
+            if (OriginRecord.IsSameOrigin(sourceDocument.Origin, current.Document.Origin))
+                return true;
+        }
+
+        return false;
+
+        // As in Firefox: a document that is same origin with the top-level document, or a sandboxed document allowed to
+        // navigate the top-level traversable (allow-top-navigation) whose parent can, can navigate it without activation
+        static bool IsFramebustingAllowed(BrowsingContext navigable, Document document, OriginRecord topOrigin)
+        {
+            while (navigable.Parent is { } parent)
+            {
+                if (OriginRecord.IsSameOrigin(document.Origin, topOrigin))
+                    return true;
+
+                var flags = document.ActiveSandboxingFlags;
+                if (flags == SandboxingFlags.None || (flags & SandboxingFlags.TopLevelNavigationWithoutUserActivation) != SandboxingFlags.None)
+                    return false;
+
+                navigable = parent;
+                document = parent.Document;
+            }
+
+            return true;
+        }
+    }
+
     /// <summary>https://html.spec.whatwg.org/multipage/browsing-the-web.html#navigate</summary>
     /// <param name="url">The URL to navigate to.</param>
     /// <param name="sourceDocument">The document that initiates the navigation, whose URL is the referrer.</param>
@@ -1127,7 +1205,7 @@ public sealed partial class BrowsingContext : IDisposable
     /// <param name="sourceElement">The element responsible for the navigation (a hyperlink, a submit button or a form), or null.</param>
     /// <param name="formData">The entry list of the submitted form of a form submission (the navigate event gets the one of a POST navigation), or null.</param>
     /// <param name="response">The response of the navigation, already fetched by the container (the <c>embed</c> and <c>object</c> elements), or null to fetch it.</param>
-    internal void Navigate(UrlRecord url, Document? sourceDocument, NavigationHistoryBehavior historyHandling, string? srcdoc = null, bool initialInsertion = false, string referrerPolicy = "", PostResource? postResource = null, SessionHistoryEntry? traversalEntry = null, bool exceptionsEnabled = false, bool? hasTransientActivation = null, NavigationApiStateValue? navigationApiState = null, NavigationApiMethodTracker? apiMethodTracker = null, UserNavigationInvolvement userInvolvement = UserNavigationInvolvement.None, Element? sourceElement = null, FormData? formData = null, DocumentResource? response = null)
+    internal void Navigate(UrlRecord url, Document? sourceDocument, NavigationHistoryBehavior historyHandling, string? srcdoc = null, bool initialInsertion = false, string referrerPolicy = "", PostResource? postResource = null, SessionHistoryEntry? traversalEntry = null, bool exceptionsEnabled = false, bool? hasTransientActivation = null, NavigationApiStateValue? navigationApiState = null, NavigationApiMethodTracker? apiMethodTracker = null, UserNavigationInvolvement userInvolvement = UserNavigationInvolvement.None, Element? sourceElement = null, FormData? formData = null, DocumentResource? response = null, bool checkNavigationRateLimit = false)
     {
         if (IsDestroyed)
             return;
@@ -1146,6 +1224,14 @@ public sealed partial class BrowsingContext : IDisposable
         // https://html.spec.whatwg.org/multipage/browsing-the-web.html#navigate, step 5: the sandboxing flags of the source document
         if (traversalEntry is null && sourceDocument?.BrowsingContext is { } sourceNavigable
             && !Sandboxing.IsAllowedToNavigate(sourceNavigable, this, sourceDocument.ActiveSandboxingFlags, sourceHasTransientActivation))
+        {
+            if (exceptionsEnabled)
+                throw new DomException("The document is not allowed to navigate this browsing context", "SecurityError");
+
+            return;
+        }
+
+        if (traversalEntry is null && sourceDocument?.BrowsingContext is { } initiatorNavigable && !IsAllowedToBeNavigatedBy(initiatorNavigable, sourceDocument, sourceHasTransientActivation, url))
         {
             if (exceptionsEnabled)
                 throw new DomException("The document is not allowed to navigate this browsing context", "SecurityError");
@@ -1179,6 +1265,11 @@ public sealed partial class BrowsingContext : IDisposable
         {
             LazyLoading.ClearResumptionSteps(iframe);
         }
+
+        // https://html.spec.whatwg.org/multipage/browsing-the-web.html#navigate, step 14: the navigation is ignored when the
+        // navigable is not allowed to perform a navigation (the rate limit), after the lazy loading of the container is canceled
+        if (checkNavigationRateLimit && traversalEntry is null && !IsAllowedToPerformNavigationOrHistoryUpdate())
+            return;
 
         // https://html.spec.whatwg.org/multipage/browsing-the-web.html#navigate-to-a-javascript:-url (ignored without a script engine)
         if (url.Scheme == "javascript")
@@ -1650,6 +1741,18 @@ public sealed partial class BrowsingContext : IDisposable
         // https://w3c.github.io/webappsec-referrer-policy/#determine-requests-referrer: the referrer of the request is "client"
         referrerPolicy = ReferrerPolicies.GetRequestPolicy(referrerPolicy, sourceDocument);
         var referrer = sourceDocument is null ? null : ReferrerPolicies.DetermineReferrer(sourceDocument, url, referrerPolicy);
+
+        // https://html.spec.whatwg.org/multipage/browsing-the-web.html#create-navigation-params-by-fetching: a traversal that
+        // fetches a document again uses the initiator origin and the referrer of its document state, not the ones of the
+        // active document that initiates it. As in the browsers, a reload is initiated by the document it reloads (its
+        // SameSite=Strict cookies are sent, WPT cookies/samesite/*-reload.https.html).
+        OriginRecord? storedInitiatorOrigin = null;
+        if (traversalEntry?.DocumentState is { RequestInitiatorOrigin: { } initiatorOfDocumentState } documentState && !ReferenceEquals(traversalEntry, ActiveEntry) && url.Scheme is "http" or "https")
+        {
+            storedInitiatorOrigin = initiatorOfDocumentState;
+            referrer = documentState.RequestReferrer;
+        }
+
         var navigationStart = EventLoop.TimeProvider.GetTimestamp();
         var parameters = new DocumentParameters
         {
@@ -1659,9 +1762,10 @@ public sealed partial class BrowsingContext : IDisposable
             TraversalEntry = traversalEntry,
             IframeElementReferrerPolicy = iframeElementReferrerPolicy,
             TargetSandboxingFlags = targetSandboxingFlags,
+            SourceAllowsDownloading = sourceDocument is null || (sourceDocument.ActiveSandboxingFlags & SandboxingFlags.Downloads) == SandboxingFlags.None,
             FragmentDirective = fragmentDirective,
             UserInvolvement = userInvolvement,
-            InitiatorOrigin = sourceDocument?.Origin,
+            InitiatorOrigin = storedInitiatorOrigin ?? sourceDocument?.Origin,
             InitiatorTopLevelOrigin = sourceDocument?.TopLevelOrigin,
             TextDirectiveUserActivation = textDirectiveUserActivation,
             IsPostNavigation = postResource is not null,
@@ -1799,7 +1903,8 @@ public sealed partial class BrowsingContext : IDisposable
                 Body = postResource?.Body,
                 Client = sourceDocument,
                 Navigable = this,
-                Origin = sourceDocument?.SerializeOrigin() ?? "null",
+                Origin = storedInitiatorOrigin?.Serialize() ?? sourceDocument?.SerializeOrigin() ?? "null",
+                Referrer = storedInitiatorOrigin is null ? "client" : referrer is { Length: > 0 } ? referrer : "no-referrer",
                 ReferrerPolicy = referrerPolicy,
                 Destination = GetNavigationDestination(),
                 Mode = RequestMode.Navigate,
@@ -2069,9 +2174,10 @@ public sealed partial class BrowsingContext : IDisposable
         else if (HasNoDocument(resource))
         {
             // The navigation ends: the active document stays. The container reports the timing of a response without content
-            // (its load event is not fired); a download is not reported. The rest of a body that arrives over time is not read.
+            // (its load event is not fired); a download is not reported. The rest of a body that arrives over time is not read,
+            // unless the response is handled as a download.
             _isTraversalOngoing = false;
-            if (resource.RemainingContentBytes is { } remainingBytes)
+            if (!(resource.StatusCode is not (204 or 205) && TryHandleNavigationAsDownload(url, parameters, resource)) && resource.RemainingContentBytes is { } remainingBytes)
             {
                 _ = remainingBytes.GetAsyncEnumerator().DisposeAsync().AsTask();
             }
@@ -2200,6 +2306,25 @@ public sealed partial class BrowsingContext : IDisposable
         }
 
         NavigationEndedWithoutDocument?.Invoke();
+    }
+
+    /// <summary>
+    /// Handles the response of a navigation whose <c>Content-Disposition</c> is <c>attachment</c> as a download
+    /// (https://html.spec.whatwg.org/multipage/browsing-the-web.html#populating-a-session-history-entry) when the source
+    /// document, the final sandboxing flags of the navigation and the application (<see cref="BrowsingContextOptions.DownloadStarted"/>)
+    /// allow it.
+    /// </summary>
+    /// <returns>Whether the response was handed to the application, which then reads the rest of its body.</returns>
+    private bool TryHandleNavigationAsDownload(UrlRecord url, DocumentParameters parameters, DocumentResource resource)
+    {
+        if (Options.DownloadStarted is not { } downloadStarted || !parameters.SourceAllowsDownloading)
+            return false;
+
+        if ((GetFinalSandboxingFlags(resource.Headers, parameters.TargetSandboxingFlags) & SandboxingFlags.Downloads) != SandboxingFlags.None)
+            return false;
+
+        downloadStarted(this, new Download(resource.Url ?? url.Serialize(), filename: null, resource));
+        return true;
     }
 
     /// <summary>
@@ -2784,6 +2909,14 @@ public sealed partial class BrowsingContext : IDisposable
             entry.DocumentState.RequestReferrerPolicy = requestReferrerPolicy;
         }
 
+        // The initiator origin and the referrer of the navigation are stored in the document state of a new entry: a
+        // traversal that fetches the document again uses them (WPT history-traversal/document-state.https.html)
+        if (!ReferenceEquals(entry, traversalEntry) && parameters is not null)
+        {
+            entry.DocumentState.RequestInitiatorOrigin = parameters.InitiatorOrigin;
+            entry.DocumentState.RequestReferrer = parameters.Referrer;
+        }
+
         // https://html.spec.whatwg.org/multipage/browsing-the-web.html#attempt-to-populate-the-history-entry's-document: the
         // policy container of a document whose URL requires storing the policy container in history (a local URL that is not a
         // blob: URL). The document has not been parsed yet: its policies are the ones of its navigation params.
@@ -2924,8 +3057,11 @@ public sealed partial class BrowsingContext : IDisposable
         if (transition is null && !oldWindow.HasEventListener("pageswap"))
             return;
 
+        // https://html.spec.whatwg.org/multipage/browsing-the-web.html#fire-the-pageswap-event: no activation for a new document
+        // that was created via cross-origin redirects (a document restored from the session history has a latest entry)
         NavigationActivation? activation = null;
-        if (sameOrigin && Options.EffectiveFeatures.NavigationApiEnabled)
+        var createdViaCrossOriginRedirects = newDocument.LoadTimingInfo is { HasCrossOriginRedirects: true } && newDocument.LatestEntry is null;
+        if (sameOrigin && !createdViaCrossOriginRedirects && Options.EffectiveFeatures.NavigationApiEnabled)
         {
             var navigation = oldWindow.Navigation;
             var destinationEntry = navigationType switch
@@ -3669,6 +3805,9 @@ public sealed partial class BrowsingContext : IDisposable
 
         /// <summary>The sandboxing flags of the navigable when the navigation started (the target snapshot params), or null to get them when the document is created.</summary>
         public SandboxingFlags? TargetSandboxingFlags { get; init; }
+
+        /// <summary>Whether the source document allows downloading (the source snapshot params): it is not sandboxed without allow-downloads.</summary>
+        public bool SourceAllowsDownloading { get; init; } = true;
 
         public Document? OriginDocument { get; set; }
 

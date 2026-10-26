@@ -378,6 +378,21 @@ public partial class HtmlInputElement : IEditableTextControl
         NodeDocument.IncrementElementStateVersion();
     }
 
+    /// <summary>
+    /// Converts the domain of an e-mail address to ASCII (https://url.spec.whatwg.org/#concept-domain-to-ascii), as the browsers
+    /// do when they sanitize the value: the HTML Standard lets the user agents convert the IDN domains for the display and
+    /// the editing (https://html.spec.whatwg.org/multipage/input.html#email-state-(type=email)). The value is kept when the
+    /// domain is ASCII, or when it cannot be converted.
+    /// </summary>
+    private static string ConvertEmailDomainToAscii(string address)
+    {
+        var at = address.LastIndexOf('@', StringComparison.Ordinal);
+        if (at < 0 || System.Text.Ascii.IsValid(address.AsSpan(at + 1)))
+            return address;
+
+        return Urls.HostParser.ParseDomain(address[(at + 1)..], beStrict: false) is { } domain ? string.Concat(address.AsSpan(0, at + 1), domain) : address;
+    }
+
     /// <summary>The value sanitization algorithm of the type (https://html.spec.whatwg.org/multipage/input.html#value-sanitization-algorithm).</summary>
     private void SanitizeValue()
     {
@@ -394,11 +409,11 @@ public partial class HtmlInputElement : IEditableTextControl
             case InputType.Email:
                 if (HasAttributeWithLocalName("multiple"))
                 {
-                    _value = string.Join(',', _value.Split(',').Select(StripWhitespace));
+                    _value = string.Join(',', _value.Split(',').Select(address => ConvertEmailDomainToAscii(StripWhitespace(address))));
                 }
                 else
                 {
-                    _value = StripWhitespace(StripNewlines(_value));
+                    _value = ConvertEmailDomainToAscii(StripWhitespace(StripNewlines(_value)));
                 }
 
                 break;

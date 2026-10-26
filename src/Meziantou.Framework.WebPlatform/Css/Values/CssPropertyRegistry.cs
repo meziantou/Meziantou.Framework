@@ -80,13 +80,15 @@ internal static partial class CssPropertyRegistry
         // https://drafts.csswg.org/css-text-4/#white-space-property: the legacy keywords or the longhands
         ["white-space"] = "normal | pre | nowrap | pre-wrap | break-spaces | pre-line | <'white-space-collapse'> || <'text-wrap-mode'>",
 
-        // https://drafts.csswg.org/css-inline-3/#propdef-vertical-align
-        ["vertical-align"] = "[ first | last ] || [ baseline | <baseline-metric> ] || <'baseline-shift'>",
+        // https://drafts.csswg.org/css-inline-3/#propdef-vertical-align, and -webkit-baseline-middle of WebKit and Blink, which aligns
+        // the vertical middle of the box with the baseline of its parent: the value of the align attribute set to center or
+        // middle on the replaced elements (https://html.spec.whatwg.org/multipage/rendering.html#attributes-for-embedded-content-and-images)
+        ["vertical-align"] = "[ first | last ] || [ baseline | <baseline-metric> | -webkit-baseline-middle ] || <'baseline-shift'>",
 
         // https://drafts.csswg.org/css-inline-3/#valdef-alignment-baseline-text-before-edge: the SVG 1.1 values text-before-edge
         // and text-after-edge are legacy aliases of text-top and text-bottom (also of dominant-baseline, as in the browsers);
         // they are not allowed in the vertical-align shorthand
-        ["alignment-baseline"] = "baseline | <baseline-metric> | text-before-edge | text-after-edge",
+        ["alignment-baseline"] = "baseline | <baseline-metric> | text-before-edge | text-after-edge | -webkit-baseline-middle",
         ["dominant-baseline"] = "auto | <baseline-metric> | text-before-edge | text-after-edge",
 
         // https://drafts.csswg.org/css-text-decor-4/#text-emphasis-position-property

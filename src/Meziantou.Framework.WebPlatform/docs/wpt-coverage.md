@@ -48,10 +48,10 @@ The reasons come from `wpt-skip.json` and `wpt-reasons.json` (`tests/Meziantou.F
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 25,347 | 29,435 | 2,579 | 94% |
-| [Tentative](#tentative-tests) | 1,159 | 3,044 | 837 | 53% |
-| [Reftests](#reftests) | 27,489 | 28,889 | 180 | 96% |
-| **All** | **53,995** | **61,368** | **3,596** | **93%** |
+| [Stable](#stable-tests) | 25,359 | 29,435 | 2,579 | 94% |
+| [Tentative](#tentative-tests) | 1,164 | 3,044 | 837 | 53% |
+| [Reftests](#reftests) | 27,494 | 28,889 | 180 | 96% |
+| **All** | **54,017** | **61,368** | **3,596** | **94%** |
 
 ## Stable tests
 
@@ -76,7 +76,7 @@ The reasons come from `wpt-skip.json` and `wpt-reasons.json` (`tests/Meziantou.F
 | [`bluetooth`](wpt-coverage/bluetooth.md) | 0 | 154 | 154 | – |
 | [`captured-mouse-events`](wpt-coverage/captured-mouse-events.md) | 0 | 4 | 4 | – |
 | [`clear-site-data`](wpt-coverage/clear-site-data.md) | 0 | 13 | 13 | – |
-| [`client-hints`](wpt-coverage/client-hints.md) | 122 | 132 | 0 | 92% |
+| [`client-hints`](wpt-coverage/client-hints.md) | 121 | 132 | 0 | 92% |
 | [`clipboard-apis`](wpt-coverage/clipboard-apis.md) | 32 | 38 | 0 | 84% |
 | [`close-watcher`](wpt-coverage/close-watcher.md) | 49 | 49 | 0 | 100% |
 | [`compat`](wpt-coverage/compat.md) | 13 | 14 | 0 | 93% |
@@ -220,7 +220,7 @@ The reasons come from `wpt-skip.json` and `wpt-reasons.json` (`tests/Meziantou.F
 | [`hr-time`](wpt-coverage/hr-time.md) | 13 | 13 | 0 | 100% |
 | [`html-aam`](wpt-coverage/html-aam.md) | 24 | 26 | 0 | 92% |
 | [`html-media-capture`](wpt-coverage/html-media-capture.md) | 0 | 2 | 2 | – |
-| [`html/browsers`](wpt-coverage/html/browsers.md) | 681 | 743 | 0 | 92% |
+| [`html/browsers`](wpt-coverage/html/browsers.md) | 691 | 743 | 0 | 93% |
 | [`html/canvas`](wpt-coverage/html/canvas.md) | 3,034 | 3,139 | 0 | 97% |
 | [`html/cross-origin-embedder-policy`](wpt-coverage/html/cross-origin-embedder-policy.md) | 53 | 73 | 0 | 73% |
 | [`html/cross-origin-opener-policy`](wpt-coverage/html/cross-origin-opener-policy.md) | 67 | 114 | 0 | 59% |
@@ -234,7 +234,7 @@ The reasons come from `wpt-skip.json` and `wpt-reasons.json` (`tests/Meziantou.F
 | [`html/rendering`](wpt-coverage/html/rendering.md) | 143 | 150 | 0 | 95% |
 | [`html/scripting`](wpt-coverage/html/scripting.md) | 3 | 3 | 0 | 100% |
 | [`html/select`](wpt-coverage/html/select.md) | 1 | 1 | 0 | 100% |
-| [`html/semantics`](wpt-coverage/html/semantics.md) | 2,091 | 2,179 | 31 | 97% |
+| [`html/semantics`](wpt-coverage/html/semantics.md) | 2,094 | 2,179 | 31 | 97% |
 | [`html/syntax`](wpt-coverage/html/syntax.md) | 105 | 106 | 0 | 99% |
 | [`html/the-xhtml-syntax`](wpt-coverage/html/the-xhtml-syntax.md) | 13 | 13 | 0 | 100% |
 | [`html/user-activation`](wpt-coverage/html/user-activation.md) | 15 | 18 | 0 | 83% |
@@ -400,7 +400,7 @@ The reasons come from `wpt-skip.json` and `wpt-reasons.json` (`tests/Meziantou.F
 | [`x-frame-options`](wpt-coverage/x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](wpt-coverage/xhr.md) | 317 | 330 | 0 | 96% |
 | [`xml`](wpt-coverage/xml.md) | 0 | 12 | 12 | – |
-| **Total (343 sections)** | **25,347** | **29,435** | **2,579** | **94%** |
+| **Total (343 sections)** | **25,359** | **29,435** | **2,579** | **94%** |
 
 ## Tentative tests
 
@@ -493,7 +493,7 @@ The reasons come from `wpt-skip.json` and `wpt-reasons.json` (`tests/Meziantou.F
 | [`html/editing`](wpt-coverage/html/editing.md#tentative-tests) | 1 | 1 | 0 | 100% |
 | [`html/interaction`](wpt-coverage/html/interaction.md#tentative-tests) | 1 | 146 | 138 | 13% |
 | [`html/rendering`](wpt-coverage/html/rendering.md#tentative-tests) | 3 | 7 | 0 | 43% |
-| [`html/semantics`](wpt-coverage/html/semantics.md#tentative-tests) | 60 | 203 | 32 | 35% |
+| [`html/semantics`](wpt-coverage/html/semantics.md#tentative-tests) | 65 | 203 | 32 | 38% |
 | [`html/syntax`](wpt-coverage/html/syntax.md#tentative-tests) | 125 | 130 | 0 | 96% |
 | [`html/user-activation`](wpt-coverage/html/user-activation.md#tentative-tests) | 0 | 3 | 0 | 0% |
 | [`html/webappapis`](wpt-coverage/html/webappapis.md#tentative-tests) | 2 | 6 | 0 | 33% |
@@ -569,7 +569,7 @@ The reasons come from `wpt-skip.json` and `wpt-reasons.json` (`tests/Meziantou.F
 | [`workers`](wpt-coverage/workers.md#tentative-tests) | 0 | 8 | 0 | 0% |
 | [`xhr`](wpt-coverage/xhr.md#tentative-tests) | 2 | 2 | 0 | 100% |
 | [`xml`](wpt-coverage/xml.md#tentative-tests) | 0 | 2 | 2 | – |
-| **Total (163 sections)** | **1,159** | **3,044** | **837** | **53%** |
+| **Total (163 sections)** | **1,164** | **3,044** | **837** | **53%** |
 
 ## Reftests
 
@@ -678,9 +678,9 @@ The reasons come from `wpt-skip.json` and `wpt-reasons.json` (`tests/Meziantou.F
 | [`html/infrastructure`](wpt-coverage/html/infrastructure.md#reftests) | 0 | 1 | 1 | – |
 | [`html/interaction`](wpt-coverage/html/interaction.md#reftests) | 1 | 1 | 0 | 100% |
 | [`html/obsolete`](wpt-coverage/html/obsolete.md#reftests) | 2 | 2 | 0 | 100% |
-| [`html/rendering`](wpt-coverage/html/rendering.md#reftests) | 316 | 327 | 0 | 97% |
+| [`html/rendering`](wpt-coverage/html/rendering.md#reftests) | 318 | 327 | 0 | 97% |
 | [`html/select`](wpt-coverage/html/select.md#reftests) | 1 | 1 | 0 | 100% |
-| [`html/semantics`](wpt-coverage/html/semantics.md#reftests) | 323 | 430 | 66 | 89% |
+| [`html/semantics`](wpt-coverage/html/semantics.md#reftests) | 326 | 430 | 66 | 90% |
 | [`html/syntax`](wpt-coverage/html/syntax.md#reftests) | 22 | 22 | 0 | 100% |
 | [`html/the-xhtml-syntax`](wpt-coverage/html/the-xhtml-syntax.md#reftests) | 2 | 2 | 0 | 100% |
 | [`infrastructure`](wpt-coverage/infrastructure.md#reftests) | 0 | 61 | 61 | – |
@@ -705,4 +705,4 @@ The reasons come from `wpt-skip.json` and `wpt-reasons.json` (`tests/Meziantou.F
 | [`webgl`](wpt-coverage/webgl.md#reftests) | 0 | 2 | 2 | – |
 | [`webvtt`](wpt-coverage/webvtt.md#reftests) | 177 | 251 | 0 | 71% |
 | [`xml`](wpt-coverage/xml.md#reftests) | 0 | 3 | 3 | – |
-| **Total (130 sections)** | **27,489** | **28,889** | **180** | **96%** |
+| **Total (130 sections)** | **27,494** | **28,889** | **180** | **96%** |

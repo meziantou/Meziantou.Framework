@@ -936,16 +936,10 @@
     "total": 1
   },
   "dom/nodes/Document-contentType/contentType/contenttype_mimeheader_01.html": {
-    "total": 1,
-    "failures": {
-      "Custom document.contentType === 'text/xml' when explicitly set to this value": "FAIL"
-    }
+    "total": 1
   },
   "dom/nodes/Document-contentType/contentType/contenttype_mimeheader_02.html": {
-    "total": 1,
-    "failures": {
-      "Custom document.contentType === 'text/html' when explicitly set to this value and an attempt is made to override this value in an HTML meta header": "FAIL"
-    }
+    "total": 1
   },
   "dom/nodes/Document-contentType/contentType/contenttype_png.html": {
     "total": 1

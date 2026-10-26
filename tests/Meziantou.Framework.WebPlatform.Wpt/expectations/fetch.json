@@ -417,28 +417,10 @@
     "total": 16
   },
   "fetch/api/basic/status.h2.any.js": {
-    "total": 7,
-    "failures": {
-      "statusText over H2 for status 200 should be the empty string": "FAIL",
-      "statusText over H2 for status 210 should be the empty string": "FAIL",
-      "statusText over H2 for status 400 should be the empty string": "FAIL",
-      "statusText over H2 for status 404 should be the empty string": "FAIL",
-      "statusText over H2 for status 410 should be the empty string": "FAIL",
-      "statusText over H2 for status 500 should be the empty string": "FAIL",
-      "statusText over H2 for status 502 should be the empty string": "FAIL"
-    }
+    "total": 7
   },
   "fetch/api/basic/status.h2.any.js#dedicatedworker": {
-    "total": 7,
-    "failures": {
-      "statusText over H2 for status 200 should be the empty string": "FAIL",
-      "statusText over H2 for status 210 should be the empty string": "FAIL",
-      "statusText over H2 for status 400 should be the empty string": "FAIL",
-      "statusText over H2 for status 404 should be the empty string": "FAIL",
-      "statusText over H2 for status 410 should be the empty string": "FAIL",
-      "statusText over H2 for status 500 should be the empty string": "FAIL",
-      "statusText over H2 for status 502 should be the empty string": "FAIL"
-    }
+    "total": 7
   },
   "fetch/api/basic/stream-response.any.js": {
     "total": 2,
@@ -2156,27 +2138,21 @@
   "fetch/corb/img-mime-types-coverage.tentative.sub.html": {
     "total": 36,
     "failures": {
-      "CORB should allow the response if Content-Type is: ''.  ": "FAIL",
-      "CORB should allow the response if Content-Type is: 'application/blahjson'.  ": "FAIL",
-      "CORB should allow the response if Content-Type is: 'application/dash+xml'.  ": "FAIL",
-      "CORB should allow the response if Content-Type is: 'application/javascript'.  ": "FAIL",
-      "CORB should allow the response if Content-Type is: 'application/json+blah'.  ": "FAIL",
-      "CORB should allow the response if Content-Type is: 'application/jsonp'.  ": "FAIL",
-      "CORB should allow the response if Content-Type is: 'application/octet-stream'.  ": "FAIL",
-      "CORB should allow the response if Content-Type is: 'application/x-www-form-urlencoded'.  ": "FAIL",
-      "CORB should allow the response if Content-Type is: 'application/xml+blah'.  ": "FAIL",
-      "CORB should allow the response if Content-Type is: 'image/gif'.  ": "FAIL",
-      "CORB should allow the response if Content-Type is: 'image/gif;HI=THERE'.  ": "FAIL",
-      "CORB should allow the response if Content-Type is: 'image/png'.  ": "FAIL",
-      "CORB should allow the response if Content-Type is: 'image/png;blah'.  ": "FAIL",
-      "CORB should allow the response if Content-Type is: 'image/svg+xml'.  ": "FAIL",
-      "CORB should allow the response if Content-Type is: 'null'.  ": "FAIL",
-      "CORB should allow the response if Content-Type is: 'text/blahxml'.  ": "FAIL",
-      "CORB should allow the response if Content-Type is: 'text/json+blah'.  ": "FAIL",
-      "CORB should allow the response if Content-Type is: 'text/x-json'.  ": "FAIL",
-      "CORB should allow the response if Content-Type is: 'text/xml+blah'.  ": "FAIL",
-      "CORB should allow the response if Content-Type is: 'x'.  ": "FAIL",
-      "CORB should allow the response if Content-Type is: 'x/x'.  ": "FAIL"
+      "CORB should block the response if Content-Type is: 'APPLICATION/BLAH+XML'.  ": "FAIL",
+      "CORB should block the response if Content-Type is: 'TEXT/BLAH+JSON'.  ": "FAIL",
+      "CORB should block the response if Content-Type is: 'TEXT/HTML'.  ": "FAIL",
+      "CORB should block the response if Content-Type is: 'TEXT/JSON'.  ": "FAIL",
+      "CORB should block the response if Content-Type is: 'application/blah+json'.  ": "FAIL",
+      "CORB should block the response if Content-Type is: 'application/blah+xml'.  ": "FAIL",
+      "CORB should block the response if Content-Type is: 'application/json'.  ": "FAIL",
+      "CORB should block the response if Content-Type is: 'application/xml'.  ": "FAIL",
+      "CORB should block the response if Content-Type is: 'text/HTML;NO=it;does=NOT'.  ": "FAIL",
+      "CORB should block the response if Content-Type is: 'text/blah+json'.  ": "FAIL",
+      "CORB should block the response if Content-Type is: 'text/blah+xml'.  ": "FAIL",
+      "CORB should block the response if Content-Type is: 'text/html'.  ": "FAIL",
+      "CORB should block the response if Content-Type is: 'text/json'.  ": "FAIL",
+      "CORB should block the response if Content-Type is: 'text/json;does=it;matter'.  ": "FAIL",
+      "CORB should block the response if Content-Type is: 'text/xml'.  ": "FAIL"
     }
   },
   "fetch/corb/img-png-mislabeled-as-html-nosniff.tentative.sub.html": {
@@ -2257,115 +2233,40 @@
     "total": 1
   },
   "fetch/cross-origin-resource-policy/fetch-in-iframe.html": {
-    "total": 5,
-    "failures": {
-      "Cross-origin fetch in a cross origin iframe load fails if the server blocks cross-origin loads with a 'Cross-Origin-Resource-Policy: same-origin' response header.": "FAIL",
-      "Cross-origin fetch in a cross origin iframe load fails if the server blocks cross-origin loads with a 'Cross-Origin-Resource-Policy: same-site' response header.": "FAIL",
-      "Cross-origin fetch in a data: iframe load fails if the server blocks cross-origin loads with a 'Cross-Origin-Resource-Policy: same-origin' response header.": "FAIL",
-      "Cross-origin fetch in a data: iframe load fails if the server blocks cross-origin loads with a 'Cross-Origin-Resource-Policy: same-site' response header.": "FAIL"
-    }
+    "total": 5
   },
   "fetch/cross-origin-resource-policy/fetch.any.js": {
     "total": 12,
     "failures": {
-      "Cross-origin cors fetch with a 'Cross-Origin-Resource-Policy: same-origin' response header.": "FAIL",
-      "Cross-origin cors fetch with a 'Cross-Origin-Resource-Policy: same-site' response header.": "FAIL",
-      "Cross-origin no-cors fetch to a same-site URL with a 'Cross-Origin-Resource-Policy: same-origin' response header.": "FAIL",
-      "Cross-origin no-cors fetch with a 'Cross-Origin-Resource-Policy: same-origin' redirect response header.": "FAIL",
-      "Cross-origin no-cors fetch with a 'Cross-Origin-Resource-Policy: same-origin' response header after a redirection.": "FAIL",
-      "Cross-origin no-cors fetch with a 'Cross-Origin-Resource-Policy: same-origin' response header.": "FAIL",
-      "Cross-origin no-cors fetch with a 'Cross-Origin-Resource-Policy: same-site' response header.": "FAIL",
-      "Cross-scheme (HTTP to HTTPS) no-cors fetch to a same-site URL with a 'Cross-Origin-Resource-Policy: same-site' response header.": "FAIL",
-      "Same-origin fetch with a 'Cross-Origin-Resource-Policy: same-origin' response header.": "FAIL",
-      "Same-origin fetch with a 'Cross-Origin-Resource-Policy: same-site' response header.": "FAIL",
-      "Valid cross-origin no-cors fetch with a 'Cross-Origin-Resource-Policy: same-site' response header.": "FAIL"
+      "Cross-scheme (HTTP to HTTPS) no-cors fetch to a same-site URL with a 'Cross-Origin-Resource-Policy: same-site' response header.": "FAIL"
     }
   },
   "fetch/cross-origin-resource-policy/fetch.any.js#dedicatedworker": {
     "total": 12,
     "failures": {
-      "Cross-origin cors fetch with a 'Cross-Origin-Resource-Policy: same-origin' response header.": "FAIL",
-      "Cross-origin cors fetch with a 'Cross-Origin-Resource-Policy: same-site' response header.": "FAIL",
-      "Cross-origin no-cors fetch to a same-site URL with a 'Cross-Origin-Resource-Policy: same-origin' response header.": "FAIL",
-      "Cross-origin no-cors fetch with a 'Cross-Origin-Resource-Policy: same-origin' redirect response header.": "FAIL",
-      "Cross-origin no-cors fetch with a 'Cross-Origin-Resource-Policy: same-origin' response header after a redirection.": "FAIL",
-      "Cross-origin no-cors fetch with a 'Cross-Origin-Resource-Policy: same-origin' response header.": "FAIL",
-      "Cross-origin no-cors fetch with a 'Cross-Origin-Resource-Policy: same-site' response header.": "FAIL",
-      "Cross-scheme (HTTP to HTTPS) no-cors fetch to a same-site URL with a 'Cross-Origin-Resource-Policy: same-site' response header.": "FAIL",
-      "Same-origin fetch with a 'Cross-Origin-Resource-Policy: same-origin' response header.": "FAIL",
-      "Same-origin fetch with a 'Cross-Origin-Resource-Policy: same-site' response header.": "FAIL",
-      "Valid cross-origin no-cors fetch with a 'Cross-Origin-Resource-Policy: same-site' response header.": "FAIL"
+      "Cross-scheme (HTTP to HTTPS) no-cors fetch to a same-site URL with a 'Cross-Origin-Resource-Policy: same-site' response header.": "FAIL"
     }
   },
   "fetch/cross-origin-resource-policy/fetch.any.js#sharedworker": {
     "total": 12,
     "failures": {
-      "Cross-origin cors fetch with a 'Cross-Origin-Resource-Policy: same-origin' response header.": "FAIL",
-      "Cross-origin cors fetch with a 'Cross-Origin-Resource-Policy: same-site' response header.": "FAIL",
-      "Cross-origin no-cors fetch to a same-site URL with a 'Cross-Origin-Resource-Policy: same-origin' response header.": "FAIL",
-      "Cross-origin no-cors fetch with a 'Cross-Origin-Resource-Policy: same-origin' redirect response header.": "FAIL",
-      "Cross-origin no-cors fetch with a 'Cross-Origin-Resource-Policy: same-origin' response header after a redirection.": "FAIL",
-      "Cross-origin no-cors fetch with a 'Cross-Origin-Resource-Policy: same-origin' response header.": "FAIL",
-      "Cross-origin no-cors fetch with a 'Cross-Origin-Resource-Policy: same-site' response header.": "FAIL",
-      "Cross-scheme (HTTP to HTTPS) no-cors fetch to a same-site URL with a 'Cross-Origin-Resource-Policy: same-site' response header.": "FAIL",
-      "Same-origin fetch with a 'Cross-Origin-Resource-Policy: same-origin' response header.": "FAIL",
-      "Same-origin fetch with a 'Cross-Origin-Resource-Policy: same-site' response header.": "FAIL",
-      "Valid cross-origin no-cors fetch with a 'Cross-Origin-Resource-Policy: same-site' response header.": "FAIL"
+      "Cross-scheme (HTTP to HTTPS) no-cors fetch to a same-site URL with a 'Cross-Origin-Resource-Policy: same-site' response header.": "FAIL"
     }
   },
   "fetch/cross-origin-resource-policy/fetch.https.any.js": {
-    "total": 9,
-    "failures": {
-      "Cross-origin cors fetch with a 'Cross-Origin-Resource-Policy: same-origin' response header.": "FAIL",
-      "Cross-origin cors fetch with a 'Cross-Origin-Resource-Policy: same-site' response header.": "FAIL",
-      "Cross-origin no-cors fetch with a 'Cross-Origin-Resource-Policy: same-origin' redirect response header.": "FAIL",
-      "Cross-origin no-cors fetch with a 'Cross-Origin-Resource-Policy: same-origin' response header after a redirection.": "FAIL",
-      "Cross-origin no-cors fetch with a 'Cross-Origin-Resource-Policy: same-origin' response header.": "FAIL",
-      "Cross-origin no-cors fetch with a 'Cross-Origin-Resource-Policy: same-site' response header.": "FAIL",
-      "Same-origin fetch with a 'Cross-Origin-Resource-Policy: same-origin' response header.": "FAIL",
-      "Same-origin fetch with a 'Cross-Origin-Resource-Policy: same-site' response header.": "FAIL"
-    }
+    "total": 9
   },
   "fetch/cross-origin-resource-policy/fetch.https.any.js#dedicatedworker": {
-    "total": 9,
-    "failures": {
-      "Cross-origin cors fetch with a 'Cross-Origin-Resource-Policy: same-origin' response header.": "FAIL",
-      "Cross-origin cors fetch with a 'Cross-Origin-Resource-Policy: same-site' response header.": "FAIL",
-      "Cross-origin no-cors fetch with a 'Cross-Origin-Resource-Policy: same-origin' redirect response header.": "FAIL",
-      "Cross-origin no-cors fetch with a 'Cross-Origin-Resource-Policy: same-origin' response header after a redirection.": "FAIL",
-      "Cross-origin no-cors fetch with a 'Cross-Origin-Resource-Policy: same-origin' response header.": "FAIL",
-      "Cross-origin no-cors fetch with a 'Cross-Origin-Resource-Policy: same-site' response header.": "FAIL",
-      "Same-origin fetch with a 'Cross-Origin-Resource-Policy: same-origin' response header.": "FAIL",
-      "Same-origin fetch with a 'Cross-Origin-Resource-Policy: same-site' response header.": "FAIL"
-    }
+    "total": 9
   },
   "fetch/cross-origin-resource-policy/fetch.https.any.js#sharedworker": {
-    "total": 9,
-    "failures": {
-      "Cross-origin cors fetch with a 'Cross-Origin-Resource-Policy: same-origin' response header.": "FAIL",
-      "Cross-origin cors fetch with a 'Cross-Origin-Resource-Policy: same-site' response header.": "FAIL",
-      "Cross-origin no-cors fetch with a 'Cross-Origin-Resource-Policy: same-origin' redirect response header.": "FAIL",
-      "Cross-origin no-cors fetch with a 'Cross-Origin-Resource-Policy: same-origin' response header after a redirection.": "FAIL",
-      "Cross-origin no-cors fetch with a 'Cross-Origin-Resource-Policy: same-origin' response header.": "FAIL",
-      "Cross-origin no-cors fetch with a 'Cross-Origin-Resource-Policy: same-site' response header.": "FAIL",
-      "Same-origin fetch with a 'Cross-Origin-Resource-Policy: same-origin' response header.": "FAIL",
-      "Same-origin fetch with a 'Cross-Origin-Resource-Policy: same-site' response header.": "FAIL"
-    }
+    "total": 9
   },
   "fetch/cross-origin-resource-policy/iframe-loads.html": {
-    "total": 1,
-    "failures": {
-      "Load an iframe that has Cross-Origin-Resource-Policy header": "FAIL"
-    }
+    "total": 1
   },
   "fetch/cross-origin-resource-policy/image-loads.html": {
-    "total": 6,
-    "failures": {
-      "Cross-origin cors image load with a 'Cross-Origin-Resource-Policy: same-origin' response header.": "FAIL",
-      "Cross-origin cors image load with a 'Cross-Origin-Resource-Policy: same-site' response header.": "FAIL",
-      "Same-origin image load with a 'Cross-Origin-Resource-Policy: same-origin' response header.": "FAIL",
-      "Same-origin image load with a 'Cross-Origin-Resource-Policy: same-site' response header.": "FAIL"
-    }
+    "total": 6
   },
   "fetch/cross-origin-resource-policy/scheme-restriction.any.js": {
     "total": 1,
@@ -2386,13 +2287,7 @@
     }
   },
   "fetch/cross-origin-resource-policy/script-loads.html": {
-    "total": 6,
-    "failures": {
-      "Cross-origin cors script load with a 'Cross-Origin-Resource-Policy: same-origin' response header.": "FAIL",
-      "Cross-origin cors script load with a 'Cross-Origin-Resource-Policy: same-site' response header.": "FAIL",
-      "Same-origin script load with a 'Cross-Origin-Resource-Policy: same-origin' response header.": "FAIL",
-      "Same-origin script load with a 'Cross-Origin-Resource-Policy: same-site' response header.": "FAIL"
-    }
+    "total": 6
   },
   "fetch/cross-origin-resource-policy/syntax.any.js": {
     "total": 7
@@ -4018,20 +3913,7 @@
     "total": 1
   },
   "fetch/nosniff/image.html": {
-    "total": 11,
-    "failures": {
-      "URL query: ": "FAIL",
-      "URL query: application/blah+xml": "FAIL",
-      "URL query: application/xml": "FAIL",
-      "URL query: image/gif": "FAIL",
-      "URL query: image/png": "FAIL",
-      "URL query: image/png;blah": "FAIL",
-      "URL query: image/svg+xml": "FAIL",
-      "URL query: null": "FAIL",
-      "URL query: text/html": "FAIL",
-      "URL query: x": "FAIL",
-      "URL query: x/x": "FAIL"
-    }
+    "total": 11
   },
   "fetch/nosniff/importscripts.html": {
     "total": 1
@@ -4055,15 +3937,7 @@
     "total": 10
   },
   "fetch/nosniff/stylesheet.html": {
-    "total": 18,
-    "failures": {
-      "Revalidated URL query: text/css": "FAIL",
-      "Revalidated URL query: text/css;blah": "FAIL",
-      "Revalidated URL query: text/css;charset=utf-8": "FAIL",
-      "URL query: text/css": "FAIL",
-      "URL query: text/css;blah": "FAIL",
-      "URL query: text/css;charset=utf-8": "FAIL"
-    }
+    "total": 18
   },
   "fetch/nosniff/worker.html": {
     "total": 9
@@ -4090,24 +3964,52 @@
   "fetch/orb/tentative/img-mime-types-coverage.tentative.sub.html": {
     "total": 64,
     "failures": {
-      "ORB should allow the response if Content-Type is: 'application/ecmascript'.  ": "FAIL",
-      "ORB should allow the response if Content-Type is: 'application/javascript'.  ": "FAIL",
-      "ORB should allow the response if Content-Type is: 'application/x-ecmascript'.  ": "FAIL",
-      "ORB should allow the response if Content-Type is: 'application/x-javascript'.  ": "FAIL",
-      "ORB should allow the response if Content-Type is: 'image/svg+xml'.  ": "FAIL",
-      "ORB should allow the response if Content-Type is: 'text/css'.  ": "FAIL",
-      "ORB should allow the response if Content-Type is: 'text/ecmascript'.  ": "FAIL",
-      "ORB should allow the response if Content-Type is: 'text/javascript'.  ": "FAIL",
-      "ORB should allow the response if Content-Type is: 'text/javascript1.0'.  ": "FAIL",
-      "ORB should allow the response if Content-Type is: 'text/javascript1.1'.  ": "FAIL",
-      "ORB should allow the response if Content-Type is: 'text/javascript1.2'.  ": "FAIL",
-      "ORB should allow the response if Content-Type is: 'text/javascript1.3'.  ": "FAIL",
-      "ORB should allow the response if Content-Type is: 'text/javascript1.4'.  ": "FAIL",
-      "ORB should allow the response if Content-Type is: 'text/javascript1.5'.  ": "FAIL",
-      "ORB should allow the response if Content-Type is: 'text/jscript'.  ": "FAIL",
-      "ORB should allow the response if Content-Type is: 'text/livescript'.  ": "FAIL",
-      "ORB should allow the response if Content-Type is: 'text/x-ecmascript'.  ": "FAIL",
-      "ORB should allow the response if Content-Type is: 'text/x-javascript'.  ": "FAIL"
+      "ORB should block the response if Content-Type is: 'application/dash+xml'.  ": "FAIL",
+      "ORB should block the response if Content-Type is: 'application/gzip'.  ": "FAIL",
+      "ORB should block the response if Content-Type is: 'application/json'.  ": "FAIL",
+      "ORB should block the response if Content-Type is: 'application/ld+json'.  ": "FAIL",
+      "ORB should block the response if Content-Type is: 'application/msexcel'.  ": "FAIL",
+      "ORB should block the response if Content-Type is: 'application/mspowerpoint'.  ": "FAIL",
+      "ORB should block the response if Content-Type is: 'application/msword'.  ": "FAIL",
+      "ORB should block the response if Content-Type is: 'application/msword-template'.  ": "FAIL",
+      "ORB should block the response if Content-Type is: 'application/pdf'.  ": "FAIL",
+      "ORB should block the response if Content-Type is: 'application/vnd.apple.mpegurl'.  ": "FAIL",
+      "ORB should block the response if Content-Type is: 'application/vnd.ces-quickpoint'.  ": "FAIL",
+      "ORB should block the response if Content-Type is: 'application/vnd.ces-quicksheet'.  ": "FAIL",
+      "ORB should block the response if Content-Type is: 'application/vnd.ces-quickword'.  ": "FAIL",
+      "ORB should block the response if Content-Type is: 'application/vnd.ms-excel'.  ": "FAIL",
+      "ORB should block the response if Content-Type is: 'application/vnd.ms-excel.sheet.macroenabled.12'.  ": "FAIL",
+      "ORB should block the response if Content-Type is: 'application/vnd.ms-powerpoint'.  ": "FAIL",
+      "ORB should block the response if Content-Type is: 'application/vnd.ms-powerpoint.presentation.macroenabled.12'.  ": "FAIL",
+      "ORB should block the response if Content-Type is: 'application/vnd.ms-word'.  ": "FAIL",
+      "ORB should block the response if Content-Type is: 'application/vnd.ms-word.document.12'.  ": "FAIL",
+      "ORB should block the response if Content-Type is: 'application/vnd.ms-word.document.macroenabled.12'.  ": "FAIL",
+      "ORB should block the response if Content-Type is: 'application/vnd.msword'.  ": "FAIL",
+      "ORB should block the response if Content-Type is: 'application/vnd.openxmlformats-officedocument.presentationml.presentation'.  ": "FAIL",
+      "ORB should block the response if Content-Type is: 'application/vnd.openxmlformats-officedocument.presentationml.template'.  ": "FAIL",
+      "ORB should block the response if Content-Type is: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'.  ": "FAIL",
+      "ORB should block the response if Content-Type is: 'application/vnd.openxmlformats-officedocument.spreadsheetml.template'.  ": "FAIL",
+      "ORB should block the response if Content-Type is: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'.  ": "FAIL",
+      "ORB should block the response if Content-Type is: 'application/vnd.openxmlformats-officedocument.wordprocessingml.template'.  ": "FAIL",
+      "ORB should block the response if Content-Type is: 'application/vnd.presentation-openxml'.  ": "FAIL",
+      "ORB should block the response if Content-Type is: 'application/vnd.presentation-openxmlm'.  ": "FAIL",
+      "ORB should block the response if Content-Type is: 'application/vnd.spreadsheet-openxml'.  ": "FAIL",
+      "ORB should block the response if Content-Type is: 'application/vnd.wordprocessing-openxml'.  ": "FAIL",
+      "ORB should block the response if Content-Type is: 'application/x-gzip'.  ": "FAIL",
+      "ORB should block the response if Content-Type is: 'application/x-protobuf'.  ": "FAIL",
+      "ORB should block the response if Content-Type is: 'application/x-protobuffer'.  ": "FAIL",
+      "ORB should block the response if Content-Type is: 'application/xhtml+xml'.  ": "FAIL",
+      "ORB should block the response if Content-Type is: 'application/xml'.  ": "FAIL",
+      "ORB should block the response if Content-Type is: 'application/zip'.  ": "FAIL",
+      "ORB should block the response if Content-Type is: 'audio/mpegurl'.  ": "FAIL",
+      "ORB should block the response if Content-Type is: 'multipart/byteranges'.  ": "FAIL",
+      "ORB should block the response if Content-Type is: 'multipart/signed'.  ": "FAIL",
+      "ORB should block the response if Content-Type is: 'text/csv'.  ": "FAIL",
+      "ORB should block the response if Content-Type is: 'text/event-stream'.  ": "FAIL",
+      "ORB should block the response if Content-Type is: 'text/html'.  ": "FAIL",
+      "ORB should block the response if Content-Type is: 'text/json'.  ": "FAIL",
+      "ORB should block the response if Content-Type is: 'text/vtt'.  ": "FAIL",
+      "ORB should block the response if Content-Type is: 'text/xml'.  ": "FAIL"
     }
   },
   "fetch/orb/tentative/img-png-mislabeled-as-html.sub.html": {

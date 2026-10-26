@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 656 | 683 | 6 | 97% |
+| [Stable](#stable-tests) | 658 | 683 | 6 | 97% |
 | [Tentative](#tentative-tests) | 30 | 55 | 2 | 57% |
 | [Reftests](#reftests) | 4 | 4 | 0 | 100% |
-| **All** | **690** | **742** | **8** | **94%** |
+| **All** | **692** | **742** | **8** | **94%** |
 
 ## Stable tests
 
@@ -267,8 +267,8 @@
 | [`nodes/Document-contentType/contentType/contenttype_html.html`](https://wpt.fyi/results/dom/nodes/Document-contentType/contentType/contenttype_html.html) | Pass | 1 / 1 |  |  |
 | [`nodes/Document-contentType/contentType/contenttype_javascripturi.html`](https://wpt.fyi/results/dom/nodes/Document-contentType/contentType/contenttype_javascripturi.html) | Pass | 1 / 1 |  |  |
 | [`nodes/Document-contentType/contentType/contenttype_jpg.html`](https://wpt.fyi/results/dom/nodes/Document-contentType/contentType/contenttype_jpg.html) | Pass | 1 / 1 |  |  |
-| [`nodes/Document-contentType/contentType/contenttype_mimeheader_01.html`](https://wpt.fyi/results/dom/nodes/Document-contentType/contentType/contenttype_mimeheader_01.html) | Fail | 0 / 1 | TEST RUNNER | the `support/contenttype_setter.py` handler is not emulated (the iframe is not loaded, `contentDocument` is null) |
-| [`nodes/Document-contentType/contentType/contenttype_mimeheader_02.html`](https://wpt.fyi/results/dom/nodes/Document-contentType/contentType/contenttype_mimeheader_02.html) | Fail | 0 / 1 | TEST RUNNER | the `support/contenttype_setter.py` handler is not emulated (the iframe is not loaded, `contentDocument` is null) |
+| [`nodes/Document-contentType/contentType/contenttype_mimeheader_01.html`](https://wpt.fyi/results/dom/nodes/Document-contentType/contentType/contenttype_mimeheader_01.html) | Pass | 1 / 1 |  |  |
+| [`nodes/Document-contentType/contentType/contenttype_mimeheader_02.html`](https://wpt.fyi/results/dom/nodes/Document-contentType/contentType/contenttype_mimeheader_02.html) | Pass | 1 / 1 |  |  |
 | [`nodes/Document-contentType/contentType/contenttype_png.html`](https://wpt.fyi/results/dom/nodes/Document-contentType/contentType/contenttype_png.html) | Pass | 1 / 1 |  |  |
 | [`nodes/Document-contentType/contentType/contenttype_txt.html`](https://wpt.fyi/results/dom/nodes/Document-contentType/contentType/contenttype_txt.html) | Pass | 1 / 1 |  |  |
 | [`nodes/Document-contentType/contentType/contenttype_xml.html`](https://wpt.fyi/results/dom/nodes/Document-contentType/contentType/contenttype_xml.html) | Pass | 1 / 1 |  |  |

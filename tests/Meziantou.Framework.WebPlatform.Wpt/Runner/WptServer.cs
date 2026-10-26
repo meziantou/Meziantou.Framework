@@ -86,6 +86,9 @@ internal static partial class WptServer
         && !url.Hostname.StartsWith(NotSubdomain + ".", StringComparison.Ordinal)
         && url.Port is var port && (url.Protocol == "http:" ? Ports["ws"] : [.. Ports["wss"], .. Ports["h2"]]).Any(p => p.ToString(CultureInfo.InvariantCulture) == port);
 
+    /// <summary>Whether a URL is served by the HTTP/2 server of wptserve (the <c>h2</c> port): its responses have no reason phrase.</summary>
+    public static bool IsHttp2(Url url) => url.Protocol == "https:" && Ports["h2"].Any(p => p.ToString(CultureInfo.InvariantCulture) == url.Port);
+
     /// <summary>Whether the substitutions apply to a response: a <c>.sub.</c> file, or the <c>pipe=sub</c> query parameter.</summary>
     public static bool HasSubstitutions(Url url) => WptPipes.HasSubstitutions(WptPipes.Get(url));
 

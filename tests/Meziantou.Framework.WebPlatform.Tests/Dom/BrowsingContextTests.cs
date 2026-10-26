@@ -1,5 +1,6 @@
 using Meziantou.Framework.WebPlatform.Dom;
 using Meziantou.Framework.WebPlatform.Formatting;
+using Meziantou.Framework.WebPlatform.Tests.Scripting;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Meziantou.Framework.WebPlatform.Tests.Dom;
@@ -250,6 +251,60 @@ public sealed class BrowsingContextTests
         context.EventLoop.RunUntilIdle();
 
         Assert.Equal(["iframe load:about:srcdoc", "load"], events);
+    }
+
+    [Fact]
+    public void Iframe_NavigatedByAFormSubmittedWhileParsing_DelaysTheLoadEvent()
+    {
+        // https://html.spec.whatwg.org/multipage/parsing.html#the-end: the end spins the event loop until nothing delays the load
+        // event, so the planned navigation of a form submitted while the document is parsed delays the load event
+        using var engine = TestScriptEngines.CreateDisposable();
+        using var context = new BrowsingContext(new BrowsingContextOptions
+        {
+            ScriptEngine = engine,
+            DocumentLoader = new DelegateDocumentLoader((_, _) => ValueTask.FromResult<DocumentResource?>(new DocumentResource("<title>Next</title>"))),
+        });
+        context.Navigate("https://example.com/", _ => """
+            <iframe name=target></iframe>
+            <form target=target action="javascript:parent.events.push('submit')"></form>
+            <script>
+              var events = [];
+              document.forms[0].submit();
+              events.push('after script');
+              onload = () => events.push('load');
+            </script>
+            """);
+        context.EventLoop.RunUntilIdle();
+
+        Assert.Equal("after script,submit,load", TestScriptEngines.Evaluate(engine, context.Window, "events.join()"));
+    }
+
+    [Fact]
+    public void Iframe_CrossOriginFragmentNavigationThroughSrc_FiresTheLoadEvent()
+    {
+        // As in Chrome and Safari (https://crbug.com/1248444): the container document cannot tell a fragment navigation of a
+        // cross-origin document from a navigation to another document
+        using var context = new BrowsingContext(new BrowsingContextOptions
+        {
+            DocumentLoader = new DelegateDocumentLoader((_, _) => ValueTask.FromResult<DocumentResource?>(new DocumentResource("<title>Child</title>"))),
+        });
+        var document = Load(context, "<iframe id=cross src='https://other.example/child.html'></iframe><iframe id=same src='child.html'></iframe>");
+        var crossOrigin = (HtmlIFrameElement)document.GetElementById("cross")!;
+        var sameOrigin = (HtmlIFrameElement)document.GetElementById("same")!;
+        var crossOriginDocument = crossOrigin.ContentDocument;
+        var sameOriginDocument = sameOrigin.ContentDocument;
+        var events = new List<string>();
+        crossOrigin.AddEventListener("load", _ => events.Add("cross"));
+        sameOrigin.AddEventListener("load", _ => events.Add("same"));
+
+        crossOrigin.SetAttribute("src", "https://other.example/child.html#foo");
+        sameOrigin.SetAttribute("src", "child.html#foo");
+        context.EventLoop.RunUntilIdle();
+
+        Assert.Equal(["cross"], events);
+        Assert.Same(crossOriginDocument, crossOrigin.ContentDocument);
+        Assert.Same(sameOriginDocument, sameOrigin.ContentDocument);
+        Assert.Equal("https://example.com/dir/child.html#foo", sameOriginDocument!.Url);
     }
 
     [Fact]

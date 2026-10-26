@@ -2417,10 +2417,7 @@
     "total": 1
   },
   "html/semantics/embedded-content/the-iframe-element/iframe-loading-lazy-nav-meta-refresh.optional.html": {
-    "total": 1,
-    "failures": {
-      "Navigating iframe loading='lazy' before it is loaded: meta refresh": "FAIL"
-    }
+    "total": 1
   },
   "html/semantics/embedded-content/the-iframe-element/iframe-loading-lazy-nav-navigation-navigate.html": {
     "total": 1

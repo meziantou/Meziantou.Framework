@@ -210,6 +210,11 @@ public sealed partial class BrowsingContext : IDisposable
         var window = new Window(document, options, EventLoop) { AgentCluster = AgentClusters.Obtain(document.Origin, requestsOriginKeyed: false, group is not null && group.CrossOriginIsolationMode != CrossOriginIsolationMode.None) };
         CreateNavigationTimingEntry(document, window, DocumentLoadTimingInfo.CreateImmediate(window.TimeOriginTimestamp), bodySize: 0, status: 200, headers: []);
         Activate(document, window, NavigationHistoryBehavior.Push, srcdoc: null);
+
+        // https://html.spec.whatwg.org/multipage/document-sequences.html#creating-a-new-browsing-context: "Completely finish
+        // loading document" (the navigable has no container yet, so no load event is fired): e.g. the refresh of a meta
+        // element inserted in the initial about:blank document comes due
+        document.CompletelyLoaded = true;
     }
 
     /// <summary>Gets the options of the browsing context.</summary>
@@ -1127,7 +1132,7 @@ public sealed partial class BrowsingContext : IDisposable
     /// <param name="sourceElement">The element responsible for the navigation (a hyperlink, a submit button or a form), or null.</param>
     /// <param name="formData">The entry list of the submitted form of a form submission (the navigate event gets the one of a POST navigation), or null.</param>
     /// <param name="response">The response of the navigation, already fetched by the container (the <c>embed</c> and <c>object</c> elements), or null to fetch it.</param>
-    internal void Navigate(UrlRecord url, Document? sourceDocument, NavigationHistoryBehavior historyHandling, string? srcdoc = null, bool initialInsertion = false, string referrerPolicy = "", PostResource? postResource = null, SessionHistoryEntry? traversalEntry = null, bool exceptionsEnabled = false, bool? hasTransientActivation = null, NavigationApiStateValue? navigationApiState = null, NavigationApiMethodTracker? apiMethodTracker = null, UserNavigationInvolvement userInvolvement = UserNavigationInvolvement.None, Element? sourceElement = null, FormData? formData = null, DocumentResource? response = null)
+    internal void Navigate(UrlRecord url, Document? sourceDocument, NavigationHistoryBehavior historyHandling, string? srcdoc = null, bool initialInsertion = false, string referrerPolicy = "", PostResource? postResource = null, SessionHistoryEntry? traversalEntry = null, bool exceptionsEnabled = false, bool? hasTransientActivation = null, NavigationApiStateValue? navigationApiState = null, NavigationApiMethodTracker? apiMethodTracker = null, UserNavigationInvolvement userInvolvement = UserNavigationInvolvement.None, Element? sourceElement = null, FormData? formData = null, DocumentResource? response = null, bool checkNavigationRateLimit = false)
     {
         if (IsDestroyed)
             return;
@@ -1179,6 +1184,11 @@ public sealed partial class BrowsingContext : IDisposable
         {
             LazyLoading.ClearResumptionSteps(iframe);
         }
+
+        // https://html.spec.whatwg.org/multipage/browsing-the-web.html#navigate, step 14: the navigation is ignored when the
+        // navigable is not allowed to perform a navigation (the rate limit), after the lazy loading of the container is canceled
+        if (checkNavigationRateLimit && traversalEntry is null && !IsAllowedToPerformNavigationOrHistoryUpdate())
+            return;
 
         // https://html.spec.whatwg.org/multipage/browsing-the-web.html#navigate-to-a-javascript:-url (ignored without a script engine)
         if (url.Scheme == "javascript")

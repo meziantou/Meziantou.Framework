@@ -81,6 +81,26 @@ public sealed class DeclarativeRefreshTests : IDisposable
     }
 
     [Fact]
+    public void MetaRefresh_InsertedInTheInitialAboutBlankDocumentOfAnIframe_Navigates()
+    {
+        // The initial about:blank document is completely loaded when it is created
+        // (https://html.spec.whatwg.org/multipage/document-sequences.html#creating-a-new-browsing-context)
+        var context = Load("<iframe></iframe>");
+        var iframe = (HtmlIFrameElement)context.Document.QuerySelector("iframe")!;
+        var initialDocument = iframe.ContentDocument!;
+        var meta = initialDocument.CreateElement("meta");
+        meta.SetAttribute("http-equiv", "Refresh");
+        meta.SetAttribute("content", "1; url=next.html");
+        initialDocument.Head!.AppendChild(meta);
+
+        Advance(0.9);
+        Assert.Empty(_requests);
+        Advance(0.1);
+        Assert.Equal(["https://example.com/dir/next.html"], _requests);
+        Assert.Equal("https://example.com/dir/next.html", iframe.ContentDocument!.Url);
+    }
+
+    [Fact]
     public void OnlyTheFirstRefreshIsProcessed()
     {
         Load("<meta http-equiv=refresh content='1; url=a.html'><meta http-equiv=refresh content='0; url=b.html'>", [new("Refresh", "2; url=c.html")]);

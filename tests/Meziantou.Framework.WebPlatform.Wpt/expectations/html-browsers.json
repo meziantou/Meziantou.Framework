@@ -353,10 +353,7 @@
     "total": 1
   },
   "html/browsers/browsing-the-web/navigating-across-documents/014.html": {
-    "total": 1,
-    "failures": {
-      " Link with javascript onclick form submission script order ": "FAIL"
-    }
+    "total": 1
   },
   "html/browsers/browsing-the-web/navigating-across-documents/015.html": {
     "total": 1
@@ -563,11 +560,7 @@
     "total": 1
   },
   "html/browsers/browsing-the-web/navigating-across-documents/navigate-cross-origin-iframe-to-same-url-with-fragment-fire-load-event.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "Changing the URL hash of a cross-origin iframe should fire a load event": "TIMEOUT"
-    }
+    "total": 1
   },
   "html/browsers/browsing-the-web/navigating-across-documents/navigate-cross-origin-iframe-to-same-url-with-fragment.html": {
     "total": 1
@@ -582,10 +575,7 @@
     "total": 2
   },
   "html/browsers/browsing-the-web/navigating-across-documents/navigate_too_many_calls.optional.html": {
-    "total": 2,
-    "failures": {
-      "rate-limited navigations cancel pending lazy-load iframe navigations": "FAIL"
-    }
+    "total": 2
   },
   "html/browsers/browsing-the-web/navigating-across-documents/navigation-unload-cross-origin.sub.window.js": {
     "total": 1

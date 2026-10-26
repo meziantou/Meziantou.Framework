@@ -88,11 +88,30 @@ internal static class NavigableContainers
         var historyHandling = navigable.Document.CompletelyLoaded ? NavigationHistoryBehavior.Auto : NavigationHistoryBehavior.Replace;
         referrerPolicy ??= (element as HtmlIFrameElement)?.ReferrerPolicy ?? "";
 
+        // Not in the specification, but as in Chrome and Safari (https://crbug.com/1248444): a fragment navigation of a
+        // cross-origin iframe through its src attribute fires the load event of the iframe, as a navigation to another
+        // document does, so that the container document cannot tell whether the URL of the cross-origin document was the
+        // URL of the attribute without its fragment
+        var document = navigable.Document;
+        var isCrossOriginFragmentNavigation = element is HtmlIFrameElement && srcdoc is null && url.Fragment is not null
+            && !OriginRecord.IsSameOrigin(document.Origin, element.NodeDocument.Origin)
+            && BrowsingContext.UrlEquals(url, navigable.ActiveEntry.Url, excludeFragments: true);
+
         // The pending resource-timing start time of the element: the timing of the navigation is added to the performance
         // timeline of the document of the element (https://w3c.github.io/resource-timing/#resources-included-in-the-performanceresourcetiming-interface)
         navigable.StartContainerResourceTiming(element, srcdoc is null ? url : null);
         navigable.Navigate(url, element.NodeDocument, historyHandling, srcdoc, initialInsertion, referrerPolicy);
         navigable.DiscardUnstartedContainerResourceTiming();
+        if (isCrossOriginFragmentNavigation && element is HtmlIFrameElement iframe && !navigable.IsDestroyed && ReferenceEquals(navigable.Document, document) && navigable.OngoingNavigationId == 0)
+        {
+            element.NodeDocument.QueueElementTask(() =>
+            {
+                if (ReferenceEquals(iframe.ContentNavigable, navigable) && ReferenceEquals(navigable.Document, document))
+                {
+                    iframe.RunIframeLoadEventSteps();
+                }
+            });
+        }
     }
 }
 

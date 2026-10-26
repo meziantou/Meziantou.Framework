@@ -6,80 +6,80 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 12 | 12 | – |
+| [Stable](#stable-tests) | 9 | 12 | 0 | 75% |
 | Tentative | 0 | 0 | 0 | – |
-| [Reftests](#reftests) | 0 | 51 | 51 | – |
-| **All** | **0** | **63** | **63** | **–** |
+| [Reftests](#reftests) | 33 | 51 | 0 | 65% |
+| **All** | **42** | **63** | **0** | **67%** |
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`alpha-vardct.html`](https://wpt.fyi/results/jpegxl/alpha-vardct.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`canvas-decode-paths-webgpu.https.html`](https://wpt.fyi/results/jpegxl/canvas-decode-paths-webgpu.https.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`css-image-usage.html`](https://wpt.fyi/results/jpegxl/css-image-usage.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`hdr-pq-intensity-target.html`](https://wpt.fyi/results/jpegxl/hdr-pq-intensity-target.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`html-img.html`](https://wpt.fyi/results/jpegxl/html-img.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`html-input-image.html`](https://wpt.fyi/results/jpegxl/html-input-image.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`html-preload-image.html`](https://wpt.fyi/results/jpegxl/html-preload-image.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`imagedecoder-animation.https.html`](https://wpt.fyi/results/jpegxl/imagedecoder-animation.https.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`imagedecoder.https.html`](https://wpt.fyi/results/jpegxl/imagedecoder.https.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`lossless-jpeg-transcode.html`](https://wpt.fyi/results/jpegxl/lossless-jpeg-transcode.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`modular-lossy.html`](https://wpt.fyi/results/jpegxl/modular-lossy.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`svg-image-element.html`](https://wpt.fyi/results/jpegxl/svg-image-element.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
+| [`alpha-vardct.html`](https://wpt.fyi/results/jpegxl/alpha-vardct.html) | Pass | 1 / 1 |  |  |
+| [`canvas-decode-paths-webgpu.https.html`](https://wpt.fyi/results/jpegxl/canvas-decode-paths-webgpu.https.html) | Pass | 1 / 1 |  |  |
+| [`css-image-usage.html`](https://wpt.fyi/results/jpegxl/css-image-usage.html) | Pass | 1 / 1 |  |  |
+| [`hdr-pq-intensity-target.html`](https://wpt.fyi/results/jpegxl/hdr-pq-intensity-target.html) | Fail | 1 / 2 | NOT IMPLEMENTED | 1 of 2 subtests: the `intensity_target` of a PQ image as the peak of its tone mapping: Meziantou.Framework.Imaging reads it but does not report it, so the PQ images without content light level are tone mapped from the peak of PQ (10,000 cd/m2), and the image that states a peak of 600 cd/m2 is not brighter than the one that states 10,000 cd/m2 |
+| [`html-img.html`](https://wpt.fyi/results/jpegxl/html-img.html) | Pass | 2 / 2 |  |  |
+| [`html-input-image.html`](https://wpt.fyi/results/jpegxl/html-input-image.html) | Pass | 1 / 1 |  |  |
+| [`html-preload-image.html`](https://wpt.fyi/results/jpegxl/html-preload-image.html) | Pass | 1 / 1 |  |  |
+| [`imagedecoder-animation.https.html`](https://wpt.fyi/results/jpegxl/imagedecoder-animation.https.html) | Fail | 0 / 4 | NOT IMPLEMENTED | the `ImageDecoder` of WebCodecs |
+| [`imagedecoder.https.html`](https://wpt.fyi/results/jpegxl/imagedecoder.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the `ImageDecoder` of WebCodecs |
+| [`lossless-jpeg-transcode.html`](https://wpt.fyi/results/jpegxl/lossless-jpeg-transcode.html) | Pass | 1 / 1 |  |  |
+| [`modular-lossy.html`](https://wpt.fyi/results/jpegxl/modular-lossy.html) | Pass | 1 / 1 |  |  |
+| [`svg-image-element.html`](https://wpt.fyi/results/jpegxl/svg-image-element.html) | Pass | 1 / 1 |  |  |
 
 ## Reftests
 
 | Test | Result | Variants | Kind | Description |
 |---|---|--:|---|---|
-| [`3x3_jpeg_recompression.html`](https://wpt.fyi/results/jpegxl/3x3_jpeg_recompression.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`3x3_srgb_lossless.html`](https://wpt.fyi/results/jpegxl/3x3_srgb_lossless.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`3x3_srgb_lossy.html`](https://wpt.fyi/results/jpegxl/3x3_srgb_lossy.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`3x3a_srgb_lossless.html`](https://wpt.fyi/results/jpegxl/3x3a_srgb_lossless.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`3x3a_srgb_lossy.html`](https://wpt.fyi/results/jpegxl/3x3a_srgb_lossy.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`alpha-decode-reftest.html`](https://wpt.fyi/results/jpegxl/alpha-decode-reftest.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`alpha-modular-reftest.html`](https://wpt.fyi/results/jpegxl/alpha-modular-reftest.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`animated-img-timeout.html`](https://wpt.fyi/results/jpegxl/animated-img-timeout.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`basic-decode-reftest.html`](https://wpt.fyi/results/jpegxl/basic-decode-reftest.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`bitdepth-10bpc-reftest.html`](https://wpt.fyi/results/jpegxl/bitdepth-10bpc-reftest.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`bitdepth-12bpc-reftest.html`](https://wpt.fyi/results/jpegxl/bitdepth-12bpc-reftest.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`bitdepth-16bpc-reftest.html`](https://wpt.fyi/results/jpegxl/bitdepth-16bpc-reftest.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`bitdepth-8bpc-reftest.html`](https://wpt.fyi/results/jpegxl/bitdepth-8bpc-reftest.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`canvas-decode-paths.html`](https://wpt.fyi/results/jpegxl/canvas-decode-paths.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`cmyk-basic-conversion-reftest.html`](https://wpt.fyi/results/jpegxl/cmyk-basic-conversion-reftest.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`color-management-p3-cicp-reftest.html`](https://wpt.fyi/results/jpegxl/color-management-p3-cicp-reftest.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`conformance-alpha-premultiplied-reftest.html`](https://wpt.fyi/results/jpegxl/conformance-alpha-premultiplied-reftest.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`css-background-image.html`](https://wpt.fyi/results/jpegxl/css-background-image.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`css-before-content.html`](https://wpt.fyi/results/jpegxl/css-before-content.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`css-image-set.html`](https://wpt.fyi/results/jpegxl/css-image-set.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`css-list-style-image.html`](https://wpt.fyi/results/jpegxl/css-list-style-image.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`gray-decode-reftest.html`](https://wpt.fyi/results/jpegxl/gray-decode-reftest.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`gray-icc-reftest.html`](https://wpt.fyi/results/jpegxl/gray-icc-reftest.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`green-decode-reftest.html`](https://wpt.fyi/results/jpegxl/green-decode-reftest.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`hdr-alpha-reftest.html`](https://wpt.fyi/results/jpegxl/hdr-alpha-reftest.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`html-embed-object-iframe.html`](https://wpt.fyi/results/jpegxl/html-embed-object-iframe.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`html-video-poster.html`](https://wpt.fyi/results/jpegxl/html-video-poster.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`icc-uncommon-profile-reftest.html`](https://wpt.fyi/results/jpegxl/icc-uncommon-profile-reftest.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`jxl-art-basic-reftest.html`](https://wpt.fyi/results/jpegxl/jxl-art-basic-reftest.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`layers-basic-reftest.html`](https://wpt.fyi/results/jpegxl/layers-basic-reftest.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`modular-lossless-reftest.html`](https://wpt.fyi/results/jpegxl/modular-lossless-reftest.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`nonpremultiplied-alpha-grid-reftest.html`](https://wpt.fyi/results/jpegxl/nonpremultiplied-alpha-grid-reftest.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`nonpremultiplied-gray-alpha-grid-reftest.html`](https://wpt.fyi/results/jpegxl/nonpremultiplied-gray-alpha-grid-reftest.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`orientation-codestream-vs-exif-reftest.html`](https://wpt.fyi/results/jpegxl/orientation-codestream-vs-exif-reftest.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`orientation-identity-reftest.html`](https://wpt.fyi/results/jpegxl/orientation-identity-reftest.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`orientation-rotate-90-ccw-reftest.html`](https://wpt.fyi/results/jpegxl/orientation-rotate-90-ccw-reftest.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`patches-reftest.html`](https://wpt.fyi/results/jpegxl/patches-reftest.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`premultiplied-alpha-grid-reftest.html`](https://wpt.fyi/results/jpegxl/premultiplied-alpha-grid-reftest.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`premultiplied-gray-alpha-grid-reftest.html`](https://wpt.fyi/results/jpegxl/premultiplied-gray-alpha-grid-reftest.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`progressive-1.html`](https://wpt.fyi/results/jpegxl/progressive-1.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`progressive-2.html`](https://wpt.fyi/results/jpegxl/progressive-2.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`progressive-3.html`](https://wpt.fyi/results/jpegxl/progressive-3.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`progressive-dc-observable-reftest.html`](https://wpt.fyi/results/jpegxl/progressive-dc-observable-reftest.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`sdr-alpha-reftest.html`](https://wpt.fyi/results/jpegxl/sdr-alpha-reftest.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`smallest-valid-reftest.html`](https://wpt.fyi/results/jpegxl/smallest-valid-reftest.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`vardct-large-blocks-reftest.html`](https://wpt.fyi/results/jpegxl/vardct-large-blocks-reftest.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`vardct-small-blocks-reftest.html`](https://wpt.fyi/results/jpegxl/vardct-small-blocks-reftest.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`wide-gamut-adobe-rgb.html`](https://wpt.fyi/results/jpegxl/wide-gamut-adobe-rgb.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`wide-gamut-display-p3.html`](https://wpt.fyi/results/jpegxl/wide-gamut-display-p3.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`wide-gamut-prophoto-rgb.html`](https://wpt.fyi/results/jpegxl/wide-gamut-prophoto-rgb.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
-| [`wide-gamut-rec2020.html`](https://wpt.fyi/results/jpegxl/wide-gamut-rec2020.html) | Disabled | – | NOT IMPLEMENTED | image decoding (JPEG XL) |
+| [`3x3_jpeg_recompression.html`](https://wpt.fyi/results/jpegxl/3x3_jpeg_recompression.html) | Pass | 1 / 1 |  |  |
+| [`3x3_srgb_lossless.html`](https://wpt.fyi/results/jpegxl/3x3_srgb_lossless.html) | Pass | 1 / 1 |  |  |
+| [`3x3_srgb_lossy.html`](https://wpt.fyi/results/jpegxl/3x3_srgb_lossy.html) | Pass | 1 / 1 |  |  |
+| [`3x3a_srgb_lossless.html`](https://wpt.fyi/results/jpegxl/3x3a_srgb_lossless.html) | Pass | 1 / 1 |  |  |
+| [`3x3a_srgb_lossy.html`](https://wpt.fyi/results/jpegxl/3x3a_srgb_lossy.html) | Pass | 1 / 1 |  |  |
+| [`alpha-decode-reftest.html`](https://wpt.fyi/results/jpegxl/alpha-decode-reftest.html) | Pass | 1 / 1 |  |  |
+| [`alpha-modular-reftest.html`](https://wpt.fyi/results/jpegxl/alpha-modular-reftest.html) | Pass | 1 / 1 |  |  |
+| [`animated-img-timeout.html`](https://wpt.fyi/results/jpegxl/animated-img-timeout.html) | Pass | 1 / 1 |  |  |
+| [`basic-decode-reftest.html`](https://wpt.fyi/results/jpegxl/basic-decode-reftest.html) | Pass | 1 / 1 |  |  |
+| [`bitdepth-10bpc-reftest.html`](https://wpt.fyi/results/jpegxl/bitdepth-10bpc-reftest.html) | Pass | 1 / 1 |  |  |
+| [`bitdepth-12bpc-reftest.html`](https://wpt.fyi/results/jpegxl/bitdepth-12bpc-reftest.html) | Pass | 1 / 1 |  |  |
+| [`bitdepth-16bpc-reftest.html`](https://wpt.fyi/results/jpegxl/bitdepth-16bpc-reftest.html) | Pass | 1 / 1 |  |  |
+| [`bitdepth-8bpc-reftest.html`](https://wpt.fyi/results/jpegxl/bitdepth-8bpc-reftest.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the `gAMA` and `cHRM` chunks of a PNG image without ICC profile, whose colors are sRGB: the reference `3x3_srgb_lossless.png` declares a gamma of 2.2 that is not applied, while the JPEG XL image declares the same color encoding (sRGB primaries, gamma 2.2), which is converted to sRGB: their dark colors are up to 2 levels apart, and the test has no tolerance |
+| [`canvas-decode-paths.html`](https://wpt.fyi/results/jpegxl/canvas-decode-paths.html) | Pass | 1 / 1 |  |  |
+| [`cmyk-basic-conversion-reftest.html`](https://wpt.fyi/results/jpegxl/cmyk-basic-conversion-reftest.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the JPEG XL images with a black channel (CMYK): Meziantou.Framework.Imaging does not decode them, so the image is broken |
+| [`color-management-p3-cicp-reftest.html`](https://wpt.fyi/results/jpegxl/color-management-p3-cicp-reftest.html) | Pass | 1 / 1 |  |  |
+| [`conformance-alpha-premultiplied-reftest.html`](https://wpt.fyi/results/jpegxl/conformance-alpha-premultiplied-reftest.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the JPEG XL images whose alpha is premultiplied: Meziantou.Framework.Imaging does not decode them, so the image is broken |
+| [`css-background-image.html`](https://wpt.fyi/results/jpegxl/css-background-image.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the `gAMA` and `cHRM` chunks of a PNG image without ICC profile, whose colors are sRGB: the reference `3x3_srgb_lossless.png` declares a gamma of 2.2 that is not applied, while the JPEG XL image declares the same color encoding (sRGB primaries, gamma 2.2), which is converted to sRGB: their dark colors are up to 2 levels apart, and the test has no tolerance |
+| [`css-before-content.html`](https://wpt.fyi/results/jpegxl/css-before-content.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the `gAMA` and `cHRM` chunks of a PNG image without ICC profile, whose colors are sRGB: the reference `3x3_srgb_lossless.png` declares a gamma of 2.2 that is not applied, while the JPEG XL image declares the same color encoding (sRGB primaries, gamma 2.2), which is converted to sRGB: their dark colors are up to 2 levels apart, and the test has no tolerance |
+| [`css-image-set.html`](https://wpt.fyi/results/jpegxl/css-image-set.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the `gAMA` and `cHRM` chunks of a PNG image without ICC profile, whose colors are sRGB: the reference `3x3_srgb_lossless.png` declares a gamma of 2.2 that is not applied, while the JPEG XL image declares the same color encoding (sRGB primaries, gamma 2.2), which is converted to sRGB: their dark colors are up to 2 levels apart, and the test has no tolerance |
+| [`css-list-style-image.html`](https://wpt.fyi/results/jpegxl/css-list-style-image.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the `gAMA` and `cHRM` chunks of a PNG image without ICC profile, whose colors are sRGB: the reference `3x3_srgb_lossless.png` declares a gamma of 2.2 that is not applied, while the JPEG XL image declares the same color encoding (sRGB primaries, gamma 2.2), which is converted to sRGB: their dark colors are up to 2 levels apart, and the test has no tolerance |
+| [`gray-decode-reftest.html`](https://wpt.fyi/results/jpegxl/gray-decode-reftest.html) | Pass | 1 / 1 |  |  |
+| [`gray-icc-reftest.html`](https://wpt.fyi/results/jpegxl/gray-icc-reftest.html) | Pass | 1 / 1 |  |  |
+| [`green-decode-reftest.html`](https://wpt.fyi/results/jpegxl/green-decode-reftest.html) | Pass | 1 / 1 |  |  |
+| [`hdr-alpha-reftest.html`](https://wpt.fyi/results/jpegxl/hdr-alpha-reftest.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the JPEG XL images whose samples are floating-point numbers: Meziantou.Framework.Imaging does not decode them, so the image is broken |
+| [`html-embed-object-iframe.html`](https://wpt.fyi/results/jpegxl/html-embed-object-iframe.html) | Pass | 1 / 1 |  |  |
+| [`html-video-poster.html`](https://wpt.fyi/results/jpegxl/html-video-poster.html) | Pass | 1 / 1 |  |  |
+| [`icc-uncommon-profile-reftest.html`](https://wpt.fyi/results/jpegxl/icc-uncommon-profile-reftest.html) | Pass | 1 / 1 |  |  |
+| [`jxl-art-basic-reftest.html`](https://wpt.fyi/results/jpegxl/jxl-art-basic-reftest.html) | Pass | 1 / 1 |  |  |
+| [`layers-basic-reftest.html`](https://wpt.fyi/results/jpegxl/layers-basic-reftest.html) | Fail | 0 / 1 | BUG | the splines of `spline_on_first_frame.jxl` drawn by Meziantou.Framework.Imaging are up to 3 levels apart from the ones of the reference (decoded by libjxl) on 455 pixels; the test allows 1 level on 426 pixels |
+| [`modular-lossless-reftest.html`](https://wpt.fyi/results/jpegxl/modular-lossless-reftest.html) | Pass | 1 / 1 |  |  |
+| [`nonpremultiplied-alpha-grid-reftest.html`](https://wpt.fyi/results/jpegxl/nonpremultiplied-alpha-grid-reftest.html) | Pass | 1 / 1 |  |  |
+| [`nonpremultiplied-gray-alpha-grid-reftest.html`](https://wpt.fyi/results/jpegxl/nonpremultiplied-gray-alpha-grid-reftest.html) | Pass | 1 / 1 |  |  |
+| [`orientation-codestream-vs-exif-reftest.html`](https://wpt.fyi/results/jpegxl/orientation-codestream-vs-exif-reftest.html) | Pass | 1 / 1 |  |  |
+| [`orientation-identity-reftest.html`](https://wpt.fyi/results/jpegxl/orientation-identity-reftest.html) | Pass | 1 / 1 |  |  |
+| [`orientation-rotate-90-ccw-reftest.html`](https://wpt.fyi/results/jpegxl/orientation-rotate-90-ccw-reftest.html) | Pass | 1 / 1 |  |  |
+| [`patches-reftest.html`](https://wpt.fyi/results/jpegxl/patches-reftest.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the JPEG XL images stored in the XYB color space with an ICC profile that is not sRGB (`conformance_patches.jxl`): Meziantou.Framework.Imaging does not decode them (it does not convert XYB to the color space of a profile), so the image is broken |
+| [`premultiplied-alpha-grid-reftest.html`](https://wpt.fyi/results/jpegxl/premultiplied-alpha-grid-reftest.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the JPEG XL images whose alpha is premultiplied: Meziantou.Framework.Imaging does not decode them, so the image is broken |
+| [`premultiplied-gray-alpha-grid-reftest.html`](https://wpt.fyi/results/jpegxl/premultiplied-gray-alpha-grid-reftest.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the JPEG XL images whose alpha is premultiplied: Meziantou.Framework.Imaging does not decode them, so the image is broken |
+| [`progressive-1.html`](https://wpt.fyi/results/jpegxl/progressive-1.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the progressive rendering of a truncated JPEG XL image (the tests serve the first bytes of a progressive codestream and expect the image of its first passes): Meziantou.Framework.Imaging rejects a truncated codestream, so the image is broken |
+| [`progressive-2.html`](https://wpt.fyi/results/jpegxl/progressive-2.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the progressive rendering of a truncated JPEG XL image (the tests serve the first bytes of a progressive codestream and expect the image of its first passes): Meziantou.Framework.Imaging rejects a truncated codestream, so the image is broken |
+| [`progressive-3.html`](https://wpt.fyi/results/jpegxl/progressive-3.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the progressive rendering of a truncated JPEG XL image (the tests serve the first bytes of a progressive codestream and expect the image of its first passes): Meziantou.Framework.Imaging rejects a truncated codestream, so the image is broken |
+| [`progressive-dc-observable-reftest.html`](https://wpt.fyi/results/jpegxl/progressive-dc-observable-reftest.html) | Pass | 1 / 1 |  |  |
+| [`sdr-alpha-reftest.html`](https://wpt.fyi/results/jpegxl/sdr-alpha-reftest.html) | Pass | 1 / 1 |  |  |
+| [`smallest-valid-reftest.html`](https://wpt.fyi/results/jpegxl/smallest-valid-reftest.html) | Pass | 1 / 1 |  |  |
+| [`vardct-large-blocks-reftest.html`](https://wpt.fyi/results/jpegxl/vardct-large-blocks-reftest.html) | Pass | 1 / 1 |  |  |
+| [`vardct-small-blocks-reftest.html`](https://wpt.fyi/results/jpegxl/vardct-small-blocks-reftest.html) | Pass | 1 / 1 |  |  |
+| [`wide-gamut-adobe-rgb.html`](https://wpt.fyi/results/jpegxl/wide-gamut-adobe-rgb.html) | Fail | 0 / 1 | BUG | the stripe whose color is outside of the sRGB gamut: the colors of the image are converted to sRGB and clipped per channel, as in the browsers, while the CSS color of the reference is CSS gamut mapped (its OkLCh chroma is reduced), so they differ by up to 18 levels (the colors inside of the gamut match) |
+| [`wide-gamut-display-p3.html`](https://wpt.fyi/results/jpegxl/wide-gamut-display-p3.html) | Fail | 0 / 1 | BUG | the stripe whose color is outside of the sRGB gamut: the colors of the image are converted to sRGB and clipped per channel, as in the browsers, while the CSS color of the reference is CSS gamut mapped (its OkLCh chroma is reduced), so they differ by up to 18 levels (the colors inside of the gamut match) |
+| [`wide-gamut-prophoto-rgb.html`](https://wpt.fyi/results/jpegxl/wide-gamut-prophoto-rgb.html) | Pass | 1 / 1 |  |  |
+| [`wide-gamut-rec2020.html`](https://wpt.fyi/results/jpegxl/wide-gamut-rec2020.html) | Fail | 0 / 1 | BUG | the stripe whose color is outside of the sRGB gamut: the colors of the image are converted to sRGB and clipped per channel, as in the browsers, while the CSS color of the reference is CSS gamut mapped (its OkLCh chroma is reduced), so they differ by up to 18 levels (the colors inside of the gamut match) |

@@ -108,6 +108,21 @@ internal sealed class DocumentState(Document? document)
     public Document? InitiatorOriginDocument { get; set; }
 
     /// <summary>
+    /// The initiator origin of the navigation that created the document state
+    /// (https://html.spec.whatwg.org/multipage/browsing-the-web.html#document-state-initiator-origin), or null when no
+    /// document initiated it: a traversal that fetches the document again uses it as the origin of the request (its
+    /// <c>Sec-Fetch-Site</c> header), not the origin of the document that initiates the traversal.
+    /// </summary>
+    public OriginRecord? RequestInitiatorOrigin { get; set; }
+
+    /// <summary>
+    /// https://html.spec.whatwg.org/multipage/browsing-the-web.html#document-state-request-referrer: the referrer of the
+    /// navigation that created the document state (the empty string for none), the referrer of the request (and the
+    /// <c>document.referrer</c>) of a traversal that fetches the document again.
+    /// </summary>
+    public string RequestReferrer { get; set; } = "";
+
+    /// <summary>
     /// The required CSP (https://w3c.github.io/webappsec-cspee/#navigation-params-required-csp) enforced by a <c>blob:</c>
     /// document, whose policy container is not stored in the session history: a traversal enforces it again.
     /// </summary>

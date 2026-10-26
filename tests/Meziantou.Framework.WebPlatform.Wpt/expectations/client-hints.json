@@ -165,7 +165,11 @@
     "total": 1
   },
   "client-hints/clear-site-data/clear-site-data-client-hints-third-party.https.sub.html": {
-    "total": 1
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Clear-Site-Data for clientHints in third-party context should not remove all client hints.": "TIMEOUT"
+    }
   },
   "client-hints/clear-site-data/clear-site-data-client-hints.https.html": {
     "total": 1

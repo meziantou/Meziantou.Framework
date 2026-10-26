@@ -124,7 +124,6 @@
   "html/browsers/browsing-the-web/history-traversal/document-state.https.html": {
     "total": 2,
     "failures": {
-      "A navigation's initiator origin and referrer are stored in the document state and used in the document repopulation case": "FAIL",
       "A navigation's initiator origin and referrer are stored in the document state and used on location.reload()": "FAIL"
     }
   },
@@ -222,11 +221,7 @@
     "total": 1
   },
   "html/browsers/browsing-the-web/history-traversal/pageswap/pageswap-push-with-cross-origin-redirect.sub.html": {
-    "harness": "ERROR",
-    "total": 1,
-    "failures": {
-      "pageswap on navigation with same-origin redirect": "TIMEOUT"
-    }
+    "total": 1
   },
   "html/browsers/browsing-the-web/history-traversal/pageswap/pageswap-push-with-redirect.html": {
     "total": 1
@@ -238,11 +233,7 @@
     "total": 1
   },
   "html/browsers/browsing-the-web/history-traversal/pageswap/pageswap-replace-with-cross-origin-redirect.sub.html": {
-    "harness": "ERROR",
-    "total": 1,
-    "failures": {
-      "pageswap on navigation with same-origin redirect": "TIMEOUT"
-    }
+    "total": 1
   },
   "html/browsers/browsing-the-web/history-traversal/pageswap/pageswap-traverse-navigation-cross-origin-redirect-no-bfcache.https.sub.html": {
     "harness": "TIMEOUT",
@@ -386,36 +377,22 @@
     "total": 1
   },
   "html/browsers/browsing-the-web/navigating-across-documents/child-navigates-parent-cross-origin.window.js": {
-    "total": 11,
-    "failures": {
-      "Child document attempts to navigate cross-origin parent via location": "FAIL",
-      "Child document attempts to navigate cross-origin parent via location.href": "FAIL",
-      "Child document attempts to navigate cross-origin parent via location.replace()": "FAIL"
-    }
+    "total": 11
   },
   "html/browsers/browsing-the-web/navigating-across-documents/child-navigates-parent-same-origin.window.js": {
     "total": 2
   },
   "html/browsers/browsing-the-web/navigating-across-documents/cross-origin-top-navigation-with-user-activation-in-parent.window.js": {
-    "total": 1,
-    "failures": {
-      "Cross-origin top navigation is blocked without user activation, even if the parent has user activation": "FAIL"
-    }
+    "total": 1
   },
   "html/browsers/browsing-the-web/navigating-across-documents/cross-origin-top-navigation-with-user-activation.window.js": {
     "total": 1
   },
   "html/browsers/browsing-the-web/navigating-across-documents/cross-origin-top-navigation-without-user-activation-nested.window.js": {
-    "total": 1,
-    "failures": {
-      "Cross-origin top navigation is blocked without user activation, even if iframe is nested and its direct parent is same-site": "FAIL"
-    }
+    "total": 1
   },
   "html/browsers/browsing-the-web/navigating-across-documents/cross-origin-top-navigation-without-user-activation.window.js": {
-    "total": 1,
-    "failures": {
-      "Cross-origin top navigation is blocked without user activation": "FAIL"
-    }
+    "total": 1
   },
   "html/browsers/browsing-the-web/navigating-across-documents/empty-iframe-load-event.html": {
     "total": 2
@@ -2031,10 +2008,7 @@
     "total": 1
   },
   "html/browsers/sandboxing/sandbox-inherited-from-required-csp.html": {
-    "total": 7,
-    "failures": {
-      "initial empty document": "FAIL"
-    }
+    "total": 7
   },
   "html/browsers/sandboxing/sandbox-initial-empty-document-toward-same-origin.html": {
     "total": 1

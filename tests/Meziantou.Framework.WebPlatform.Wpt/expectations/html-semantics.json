@@ -2621,18 +2621,10 @@
     "total": 1
   },
   "html/semantics/embedded-content/the-iframe-element/sandbox-inherit-to-blank-document-unsandboxed.html": {
-    "total": 4,
-    "failures": {
-      "The initial empty document inherit sandbox via CSP.": "FAIL",
-      "The synchronous re-navigation to about:blank inherits sandbox via CSP": "FAIL"
-    }
+    "total": 4
   },
   "html/semantics/embedded-content/the-iframe-element/sandbox-top-close.tentative.sub.window.js": {
-    "total": 3,
-    "failures": {
-      "Cross-origin sandboxed iframe without allow-top-navigation cannot close top window": "FAIL",
-      "Sandboxed iframe without allow-top-navigation cannot close top window": "FAIL"
-    }
+    "total": 3
   },
   "html/semantics/embedded-content/the-iframe-element/sandbox-top-navigation-child-cross-origin-frame.tentative.sub.window.js": {
     "total": 1

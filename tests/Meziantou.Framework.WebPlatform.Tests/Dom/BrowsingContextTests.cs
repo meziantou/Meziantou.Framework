@@ -1,6 +1,7 @@
 using Meziantou.Framework.WebPlatform.Dom;
 using Meziantou.Framework.WebPlatform.Formatting;
 using Meziantou.Framework.WebPlatform.Tests.Scripting;
+using Meziantou.Framework.WebPlatform.Urls;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Meziantou.Framework.WebPlatform.Tests.Dom;
@@ -370,6 +371,64 @@ public sealed class BrowsingContextTests
         // The target name of a cross-origin navigable is not a supported property name, but the navigable is a named object
         Assert.Null(context.Window.GetNamedItem("a"));
         Assert.Same(iframes[1].ContentWindow, context.Window.GetNamedItem("b"));
+    }
+
+    [Fact]
+    public void Navigate_CrossOriginDocumentCannotNavigateItsParent()
+    {
+        using var context = new BrowsingContext(new BrowsingContextOptions
+        {
+            DocumentLoader = new DelegateDocumentLoader((url, _) => ValueTask.FromResult<DocumentResource?>(new DocumentResource(url.Contains("/middle.html", StringComparison.Ordinal) ? "<iframe src='https://other.example/inner.html'></iframe>" : "<p>Inner</p>"))),
+        });
+
+        var top = Load(context, "<iframe src='middle.html'></iframe>");
+        var middle = ((HtmlIFrameElement)top.QuerySelector("iframe")!).ContentNavigable!;
+        var inner = ((HtmlIFrameElement)middle.Document.QuerySelector("iframe")!).ContentNavigable!;
+        var url = UrlParser.Parse("https://example.com/dir/other.html", baseUrl: null)!;
+
+        var ex = Assert.Throws<DomException>(() => middle.Navigate(url, inner.Document, NavigationHistoryBehavior.Auto, exceptionsEnabled: true, hasTransientActivation: true));
+        Assert.Equal("SecurityError", ex.Name);
+
+        // The cross-origin document can navigate its descendants and itself
+        inner.Navigate(url, inner.Document, NavigationHistoryBehavior.Auto, exceptionsEnabled: true);
+    }
+
+    [Fact]
+    public void Navigate_CrossOriginDocumentNavigatesItsTopOnlyWithTransientActivation()
+    {
+        using var context = new BrowsingContext(new BrowsingContextOptions
+        {
+            DocumentLoader = new DelegateDocumentLoader((url, _) => ValueTask.FromResult<DocumentResource?>(new DocumentResource(url.Contains("/middle.html", StringComparison.Ordinal) ? "<iframe src='https://other.example/inner.html'></iframe><iframe src='https://example.com/inner.html'></iframe>" : "<p>Inner</p>"))),
+        });
+
+        var top = Load(context, "<iframe src='https://other.example/middle.html'></iframe>");
+        var middle = ((HtmlIFrameElement)top.QuerySelector("iframe")!).ContentNavigable!;
+        var inner = ((HtmlIFrameElement)middle.Document.QuerySelector("iframe")!).ContentNavigable!;
+        var url = UrlParser.Parse("https://third.example/", baseUrl: null)!;
+
+        var ex = Assert.Throws<DomException>(() => context.Navigate(url, inner.Document, NavigationHistoryBehavior.Auto, exceptionsEnabled: true, hasTransientActivation: false));
+        Assert.Equal("SecurityError", ex.Name);
+        ex = Assert.Throws<DomException>(() => context.Navigate(url, middle.Document, NavigationHistoryBehavior.Auto, exceptionsEnabled: true, hasTransientActivation: false));
+        Assert.Equal("SecurityError", ex.Name);
+
+        // A document that is same origin with the top-level document can navigate it, even when its parent is cross-origin
+        var sameOriginInner = ((HtmlIFrameElement)middle.Document.QuerySelectorAll("iframe")[1]).ContentNavigable!;
+        context.Navigate(url, sameOriginInner.Document, NavigationHistoryBehavior.Auto, exceptionsEnabled: true, hasTransientActivation: false);
+        context.Navigate(url, middle.Document, NavigationHistoryBehavior.Auto, exceptionsEnabled: true, hasTransientActivation: true);
+    }
+
+    [Fact]
+    public void WindowOpen_InitialDocumentInheritsTheContentSecurityPolicySandbox()
+    {
+        using var context = new BrowsingContext();
+        context.Navigate("https://example.com/", _ => new DocumentResource("") { Headers = [new("Content-Security-Policy", "sandbox allow-scripts allow-popups allow-popups-to-escape-sandbox")] });
+        context.EventLoop.RunUntilIdle();
+
+        // The popup escapes the sandboxing flags of its opener, but its initial about:blank document has the CSP of its opener
+        var popup = context.Window.Open("", "_blank")!;
+        Assert.True(popup.Document.IsInitialAboutBlank);
+        Assert.NotEqual(SandboxingFlags.None, popup.Document.ActiveSandboxingFlags);
+        Assert.Equal("null", popup.Document.Origin.Serialize());
     }
 
     [Fact]

@@ -28,6 +28,29 @@ public abstract class ImageEncoder
         }
     }
 
+    /// <summary>
+    /// Gets the conversion that reduces floating-point pixels (<see cref="RgbaFloat"/>, <see cref="RgbaHalf"/>) to 16-bit
+    /// integer ones (<see cref="Rgba64"/>) before they are encoded, or <see langword="null"/> (the default) to reject them:
+    /// no output format of this version stores floating-point samples.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The reduction is the one of <see cref="Image.CloneAs{TPixel}(PixelConversionOptions?)"/> with these options: samples
+    /// that are not numbers are rejected, and samples outside [0, 1] are rejected unless
+    /// <see cref="PixelConversionOptions.OutOfRangeSamples"/> clips them or <see cref="PixelConversionOptions.ToneMapping"/>
+    /// compresses the highlights first. The peak of the tone mapping of an eager save is the one of all its frames; a
+    /// sequential writer takes the one of each frame, unless the options give it. The reduced pixels are then encoded like
+    /// any <see cref="Rgba64"/> pixels, with the rules of the encoder (an 8-bit format also needs its
+    /// <c>AllowBitDepthReduction</c>), and the labels of the image (such as
+    /// <see cref="Metadata.ColorTransferFunction.Linear"/>) follow <see cref="MetadataHandling"/>.
+    /// </para>
+    /// <para>
+    /// Every frame is reduced before it is encoded, in memory charged to the writer: an eager save holds the reduced copy
+    /// of all of its frames.
+    /// </para>
+    /// </remarks>
+    public PixelConversionOptions? FloatingPointConversion { get; init; }
+
     /// <summary>Selects the default encoder for a file name, from its extension.</summary>
     /// <param name="path">The file path.</param>
     /// <returns>The encoder.</returns>

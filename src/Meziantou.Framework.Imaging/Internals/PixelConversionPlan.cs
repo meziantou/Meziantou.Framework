@@ -9,15 +9,21 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <list type="bullet">
 /// <item>unsupported pixel types throw <see cref="NotSupportedException"/> (generic factory) before any side effect;</item>
 /// <item>the retained ICC profile is checked against the destination format (<see cref="ColorProfileCompatibility"/>);</item>
-/// <item>alpha removal uses <see cref="PixelConversionOptions.BackgroundColor"/> to flatten, or rejects non-opaque pixels.</item>
+/// <item>alpha removal uses <see cref="PixelConversionOptions.BackgroundColor"/> to flatten, or rejects non-opaque pixels;</item>
+/// <item>floating-point samples that the destination cannot store follow <see cref="Floats"/>.</item>
 /// </list>
-/// Callers that must not partially apply a conversion check <see cref="RequiresOpaqueSource"/> and pre-scan the source
-/// with <see cref="PixelConverter.IsOpaque{TPixel}(ReadOnlySpan{TPixel})"/> before allocating the destination.
+/// Callers that must not partially apply a conversion check <see cref="RequiresValidation"/> and pre-scan the source
+/// with <see cref="ValidateRow"/> before allocating the destination, after giving the tone mapping its peak when
+/// <see cref="RequiresPeak"/> (<see cref="SetPeak"/>).
 /// </summary>
 internal sealed class PixelConversionPlan
 {
-    private PixelConversionPlan(PixelFormat sourceFormat, PixelFormat destinationFormat, Rgba64? background, IccProfile? profile, bool profileDiscarded, ImageFormat format)
+    private readonly PixelConversionOptions _options;
+
+    private PixelConversionPlan(PixelFormat sourceFormat, PixelFormat destinationFormat, PixelConversionOptions options, IccProfile? profile, bool profileDiscarded, ImageFormat format)
     {
+        var background = options.BackgroundColor;
+        _options = options;
         SourceFormat = sourceFormat;
         DestinationFormat = destinationFormat;
         RemovesAlpha = PixelFormats.HasAlpha(sourceFormat) && !PixelFormats.HasAlpha(destinationFormat);
@@ -25,6 +31,7 @@ internal sealed class PixelConversionPlan
         ColorProfile = profile;
         ColorProfileDiscarded = profileDiscarded;
         Format = format;
+        Floats = FloatSampleConversion.Create(options);
     }
 
     /// <summary>Gets the source pixel format.</summary>
@@ -41,6 +48,22 @@ internal sealed class PixelConversionPlan
 
     /// <summary>Gets a value indicating whether every source pixel must be fully opaque (alpha removed without a background).</summary>
     public bool RequiresOpaqueSource => RemovesAlpha && Background is null;
+
+    /// <summary>Gets a value indicating whether floating-point samples are converted to a format that cannot store all of them (an integer format, or <see cref="PixelFormat.RgbaFloat"/> to <see cref="PixelFormat.RgbaHalf"/>).</summary>
+    public bool ChecksFloatSamples => PixelFormats.IsFloatingPoint(SourceFormat) && (!PixelFormats.IsFloatingPoint(DestinationFormat) || (SourceFormat == PixelFormat.RgbaFloat && DestinationFormat == PixelFormat.RgbaHalf));
+
+    /// <summary>Gets a value indicating whether a source row can be rejected: <see cref="RequiresOpaqueSource"/> or <see cref="ChecksFloatSamples"/>.</summary>
+    public bool RequiresValidation => RequiresOpaqueSource || ChecksFloatSamples;
+
+    /// <summary>Gets a value indicating whether the tone mapping needs the peak of the source pixels (<see cref="SetPeak"/>) before any row is converted or validated.</summary>
+    public bool RequiresPeak => ChecksFloatSamples && !PixelFormats.IsFloatingPoint(DestinationFormat) && FloatSampleConversion.NeedsPeak(_options);
+
+    /// <summary>Gets the policy of the floating-point samples that the destination cannot store.</summary>
+    public FloatSampleConversion Floats { get; private set; }
+
+    /// <summary>Gives the tone mapping the peak of the source pixels, when <see cref="RequiresPeak"/>.</summary>
+    /// <param name="peak">The largest finite color component of the converted pixels (<see cref="PixelConverter.GetLargestFiniteColor"/>).</param>
+    public void SetPeak(double peak) => Floats = FloatSampleConversion.Create(_options, peak);
 
     /// <summary>Gets a value indicating whether the conversion changes the component precision (8 to 16 bits or 16 to 8 bits).</summary>
     public bool ChangesPrecision => PixelFormats.GetBitsPerComponent(SourceFormat) != PixelFormats.GetBitsPerComponent(DestinationFormat);
@@ -92,7 +115,7 @@ internal sealed class PixelConversionPlan
         _ = PixelFormats.GetBytesPerPixel(destinationFormat);
         options ??= PixelConversionOptions.Default;
         var profile = ColorProfileCompatibility.Resolve(sourceProfile, destinationFormat, options.DiscardIncompatibleColorProfile, format);
-        return new PixelConversionPlan(sourceFormat, destinationFormat, options.BackgroundColor, profile, profileDiscarded: sourceProfile is not null && profile is null, format);
+        return new PixelConversionPlan(sourceFormat, destinationFormat, options, profile, profileDiscarded: sourceProfile is not null && profile is null, format);
     }
 
     /// <summary>Throws if a source row would lose alpha under this plan (alpha removed, no background, non-opaque pixel).</summary>
@@ -103,23 +126,35 @@ internal sealed class PixelConversionPlan
         where TSource : unmanaged
     {
         EnsureFormat<TSource>(SourceFormat);
-        if (RequiresOpaqueSource && PixelConverter.IndexOfNonOpaque(row) is var index and >= 0)
+        if (ChecksFloatSamples)
+        {
+            PixelConverter.ValidateFloatRow(row, SourceFormat, DestinationFormat, Background, Format, Floats);
+        }
+        else if (RequiresOpaqueSource && PixelConverter.IndexOfNonOpaque(row) is var index and >= 0)
+        {
             throw PixelConverter.CreateNonOpaqueException(SourceFormat, DestinationFormat, index, Format);
+        }
     }
+
+    /// <summary>Throws if a raw source row cannot be converted under this plan (see <see cref="EnsureConvertible{TSource}(ReadOnlySpan{TSource})"/>).</summary>
+    /// <param name="row">The source bytes (a whole number of <see cref="SourceFormat"/> pixels).</param>
+    /// <exception cref="UnsupportedImageFeatureException">A pixel cannot be converted.</exception>
+    public void ValidateRow(ReadOnlySpan<byte> row)
+        => PixelConverter.ValidateRow(SourceFormat, row, DestinationFormat, Background, Format, Floats);
 
     /// <summary>Converts a row of typed pixels.</summary>
     /// <typeparam name="TSource">The source pixel type; must match <see cref="SourceFormat"/>.</typeparam>
     /// <typeparam name="TDestination">The destination pixel type; must match <see cref="DestinationFormat"/>.</typeparam>
     /// <param name="source">The source pixels.</param>
     /// <param name="destination">The destination pixels.</param>
-    /// <exception cref="UnsupportedImageFeatureException">A pixel is not fully opaque and alpha would be discarded (nothing is written).</exception>
+    /// <exception cref="UnsupportedImageFeatureException">A pixel is not fully opaque and alpha would be discarded, or a floating-point sample cannot be stored (nothing is written).</exception>
     public void ConvertRow<TSource, TDestination>(ReadOnlySpan<TSource> source, Span<TDestination> destination)
         where TSource : unmanaged
         where TDestination : unmanaged
     {
         EnsureFormat<TSource>(SourceFormat);
         EnsureFormat<TDestination>(DestinationFormat);
-        PixelConverter.ConvertRow(source, destination, Background, Format);
+        PixelConverter.ConvertRow(source, destination, Background, Format, Floats);
     }
 
     /// <summary>Converts a row of raw native-endian pixels.</summary>
@@ -128,7 +163,7 @@ internal sealed class PixelConversionPlan
     /// <returns>The number of pixels converted.</returns>
     /// <exception cref="UnsupportedImageFeatureException">A pixel is not fully opaque and alpha would be discarded (nothing is written).</exception>
     public int ConvertRow(ReadOnlySpan<byte> source, Span<byte> destination)
-        => PixelConverter.ConvertRow(SourceFormat, source, DestinationFormat, destination, Background, Format);
+        => PixelConverter.ConvertRow(SourceFormat, source, DestinationFormat, destination, Background, Format, Floats);
 
     private static void EnsureFormat<TPixel>(PixelFormat expected)
         where TPixel : unmanaged

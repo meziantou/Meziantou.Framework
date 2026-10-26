@@ -371,6 +371,8 @@ public abstract partial class Image
         PixelFormat.Rgba64 => new Image<Rgba64>(configuration, size, scope, layoutOptions: null),
         PixelFormat.Gray8 => new Image<Gray8>(configuration, size, scope, layoutOptions: null),
         PixelFormat.Gray16 => new Image<Gray16>(configuration, size, scope, layoutOptions: null),
+        PixelFormat.RgbaFloat => new Image<RgbaFloat>(configuration, size, scope, layoutOptions: null),
+        PixelFormat.RgbaHalf => new Image<RgbaHalf>(configuration, size, scope, layoutOptions: null),
         _ => throw new ArgumentOutOfRangeException(nameof(format), format, "The pixel format is not supported."),
     };
 

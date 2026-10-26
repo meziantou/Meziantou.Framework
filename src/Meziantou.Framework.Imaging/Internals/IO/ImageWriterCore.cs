@@ -43,11 +43,15 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
     private int _busy;
     private bool _posterWritten;
 
+    // The 16-bit copies of the floating-point frames of an eager save, made by PreflightFrames, kept until the writer is released
+    private List<(ImageFrame Source, Image<Rgba64> Reduced)>? _reducedFrames;
+
     private ImageWriterCore(ImageWriterOptions options, ImageOutputCapabilities capabilities, PixelFormat pixelFormat, ImageEncoderSession session, AllocationScope scope, Stream stream, bool ownsStream, AtomicFileOutput? file)
     {
         Options = options;
         Capabilities = capabilities;
         PixelFormat = pixelFormat;
+        EncodedPixelFormat = GetEncodedPixelFormat(pixelFormat);
         Scope = scope;
         _session = session;
         _stream = stream;
@@ -70,7 +74,14 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
 
     public ImageOutputCapabilities Capabilities { get; }
 
+    /// <summary>Gets the pixel format of the frames the caller writes.</summary>
     public PixelFormat PixelFormat { get; }
+
+    /// <summary>
+    /// Gets the pixel format the session encodes: <see cref="PixelFormat"/>, or <see cref="PixelFormat.Rgba64"/> for a
+    /// floating-point format, whose frames are reduced with <see cref="ImageEncoder.FloatingPointConversion"/> first.
+    /// </summary>
+    public PixelFormat EncodedPixelFormat { get; }
 
     public Size CanvasSize => Options.CanvasSize;
 
@@ -128,6 +139,11 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
     {
         ArgumentNullException.ThrowIfNull(frames);
         var session = _session ?? throw new InvalidOperationException("The writer has no active encoding session.");
+        if (EncodedPixelFormat != PixelFormat)
+        {
+            (poster, frames) = ReduceFrames(poster, frames);
+        }
+
         if (poster is not null)
         {
             Preflight(session, poster, isPoster: true);
@@ -144,13 +160,15 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
     public void WritePosterFrame(ImageFrame frame)
     {
         Enter(CancellationToken.None);
+        Image<Rgba64>? temporary = null;
         try
         {
-            ValidatePoster(frame);
+            ValidatePoster(ref frame, ref temporary);
             Run(isPoster: true, frame);
         }
         finally
         {
+            temporary?.Dispose();
             Exit();
         }
     }
@@ -166,13 +184,15 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
     public void WriteFrame(ImageFrame frame)
     {
         Enter(CancellationToken.None);
+        Image<Rgba64>? temporary = null;
         try
         {
-            ValidateFrame(frame);
+            ValidateFrame(ref frame, ref temporary);
             Run(isPoster: false, frame);
         }
         finally
         {
+            temporary?.Dispose();
             Exit();
         }
     }
@@ -321,6 +341,10 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
         if (capabilities.RequiresSeekableOutput && stream is { CanSeek: false })
             throw new ArgumentException($"{capabilities.Name} animation output requires a seekable stream: the file size is written before the frames and patched once every frame is written. Write to a seekable stream or a path, or write a still image (ImageWriterOptions.ExpectedFrameCount = 1, no animation settings).", nameof(stream));
 
+        // Floating-point pixels are reduced to 16 bits first: the session never sees them
+        EnsureEncodable(encoder, capabilities, pixelFormat);
+        pixelFormat = GetEncodedPixelFormat(pixelFormat);
+
         // A profile describes the written samples: the bilevel and palette layouts of TIFF and the palette layout of PNG do
         // not follow the pixel format
         var labeledFormat = encoder switch
@@ -341,13 +365,15 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
     private async ValueTask WritePosterFrameCoreAsync(ImageFrame frame, CancellationToken cancellationToken)
     {
         Enter(cancellationToken);
+        Image<Rgba64>? temporary = null;
         try
         {
-            ValidatePoster(frame);
+            ValidatePoster(ref frame, ref temporary);
             await RunAsync(isPoster: true, frame, cancellationToken).ConfigureAwait(false);
         }
         finally
         {
+            temporary?.Dispose();
             Exit();
         }
     }
@@ -355,13 +381,15 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
     private async ValueTask WriteFrameCoreAsync(ImageFrame frame, CancellationToken cancellationToken)
     {
         Enter(cancellationToken);
+        Image<Rgba64>? temporary = null;
         try
         {
-            ValidateFrame(frame);
+            ValidateFrame(ref frame, ref temporary);
             await RunAsync(isPoster: false, frame, cancellationToken).ConfigureAwait(false);
         }
         finally
         {
+            temporary?.Dispose();
             Exit();
         }
     }
@@ -441,7 +469,7 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
         return true;
     }
 
-    private void ValidatePoster(ImageFrame frame)
+    private void ValidatePoster(ref ImageFrame frame, ref Image<Rgba64>? temporary)
     {
         ArgumentNullException.ThrowIfNull(frame);
         if (!Capabilities.SupportsPosterFrame)
@@ -454,10 +482,11 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
             throw new InvalidOperationException("The poster frame must be written before the first displayed frame.");
 
         ValidateFrameShape(frame);
+        frame = GetEncodedFrame(frame, ref temporary);
         Preflight(_session!, frame, isPoster: true);
     }
 
-    private void ValidateFrame(ImageFrame frame)
+    private void ValidateFrame(ref ImageFrame frame, ref Image<Rgba64>? temporary)
     {
         ArgumentNullException.ThrowIfNull(frame);
         if (FramesWritten >= (Options.ExpectedFrameCount ?? Capabilities.MaxFrameCount ?? int.MaxValue))
@@ -468,7 +497,91 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
         }
 
         ValidateFrameShape(frame);
+        frame = GetEncodedFrame(frame, ref temporary);
         Preflight(_session!, frame, isPoster: false);
+    }
+
+    private static PixelFormat GetEncodedPixelFormat(PixelFormat pixelFormat) => PixelFormats.IsFloatingPoint(pixelFormat) ? PixelFormat.Rgba64 : pixelFormat;
+
+    /// <summary>Rejects floating-point pixels before anything exists, unless the encoder says how to reduce them.</summary>
+    private static void EnsureEncodable(ImageEncoder encoder, ImageOutputCapabilities capabilities, PixelFormat pixelFormat)
+    {
+        if (PixelFormats.IsFloatingPoint(pixelFormat) && encoder.FloatingPointConversion is null)
+        {
+            throw new UnsupportedImageFeatureException(
+                $"{capabilities.Name} output does not store floating-point samples, so encoding {pixelFormat} pixels would discard their range and precision. Set {encoder.GetType().Name}.FloatingPointConversion to reduce them to 16-bit integers (Rgba64), or convert the image explicitly with CloneAs.",
+                capabilities.Format,
+                "Floating-point samples");
+        }
+    }
+
+    /// <summary>
+    /// Gets the frame the session encodes: the frame itself, or its 16-bit reduction (the one made by <see cref="PreflightFrames"/>
+    /// for an eager save, else a temporary one the caller disposes once the frame is written).
+    /// </summary>
+    private ImageFrame GetEncodedFrame(ImageFrame frame, ref Image<Rgba64>? temporary)
+    {
+        if (EncodedPixelFormat == PixelFormat)
+            return frame;
+
+        if (_reducedFrames is not null)
+        {
+            foreach (var (source, reduced) in _reducedFrames)
+            {
+                if (ReferenceEquals(source, frame))
+                    return reduced.FrameCore(0);
+            }
+        }
+
+        var plan = CreateReductionPlan();
+        Image.PrepareConversion(plan, [frame]);
+        temporary = Reduce(frame, plan);
+        return temporary.FrameCore(0);
+    }
+
+    private (ImageFrame? Poster, IReadOnlyList<ImageFrame> Frames) ReduceFrames(ImageFrame? poster, IReadOnlyList<ImageFrame> frames)
+    {
+        var all = new List<ImageFrame>(frames.Count + 1);
+        if (poster is not null)
+        {
+            all.Add(poster);
+        }
+
+        all.AddRange(frames);
+        var plan = CreateReductionPlan();
+        Image.PrepareConversion(plan, all);
+        _reducedFrames ??= [];
+        foreach (var frame in all)
+        {
+            _reducedFrames.Add((frame, Reduce(frame, plan)));
+        }
+
+        var reducedPoster = poster is null ? null : _reducedFrames[^all.Count].Reduced.FrameCore(0);
+        var reducedFrames = new ImageFrame[frames.Count];
+        for (var i = 0; i < reducedFrames.Length; i++)
+        {
+            reducedFrames[i] = _reducedFrames[_reducedFrames.Count - frames.Count + i].Reduced.FrameCore(0);
+        }
+
+        return (reducedPoster, reducedFrames);
+    }
+
+    private PixelConversionPlan CreateReductionPlan()
+        => PixelConversionPlan.Create(PixelFormat, EncodedPixelFormat, Options.Encoder!.FloatingPointConversion, sourceProfile: null, Format);
+
+    private Image<Rgba64> Reduce(ImageFrame frame, PixelConversionPlan plan)
+    {
+        var image = new Image<Rgba64>(Options.Configuration, CanvasSize, Scope, layoutOptions: null);
+        try
+        {
+            Image.ConvertFramePixels(frame, image.FrameCore(0), plan);
+            return image;
+        }
+        catch
+        {
+            image.Dispose();
+            throw;
+        }
     }
 
     /// <summary>
@@ -655,5 +768,14 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
         _session?.Dispose();
         _session = null;
         _output.Dispose();
+        if (_reducedFrames is not null)
+        {
+            foreach (var (_, reduced) in _reducedFrames)
+            {
+                reduced.Dispose();
+            }
+
+            _reducedFrames = null;
+        }
     }
 }

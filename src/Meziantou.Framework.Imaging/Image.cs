@@ -184,7 +184,10 @@ public abstract partial class Image : IDisposable
     /// <returns>A new image owned by the caller.</returns>
     /// <exception cref="NotSupportedException"><typeparamref name="TPixel"/> is not a built-in pixel struct.</exception>
     /// <exception cref="UnsupportedImageFeatureException">
-    /// The conversion would drop non-opaque alpha without <see cref="PixelConversionOptions.BackgroundColor"/>, or would retain an incompatible ICC profile.
+    /// The conversion would drop non-opaque alpha without <see cref="PixelConversionOptions.BackgroundColor"/>, would retain an
+    /// incompatible ICC profile, or would have to store floating-point samples that are not numbers, or that are out of the
+    /// range of <typeparamref name="TPixel"/> without <see cref="PixelConversionOptions.OutOfRangeSamples"/> or
+    /// <see cref="PixelConversionOptions.ToneMapping"/>. Nothing is allocated.
     /// </exception>
     /// <exception cref="ObjectDisposedException">The image is disposed.</exception>
     public Image<TPixel> CloneAs<TPixel>(PixelConversionOptions? options = null)
@@ -193,19 +196,7 @@ public abstract partial class Image : IDisposable
         var destinationFormat = PixelFormats.GetPixelFormat<TPixel>();
         ThrowIfDisposed();
         var plan = PixelConversionPlan.Create(PixelFormat, destinationFormat, options, _metadata.IccProfile);
-        if (plan.RequiresOpaqueSource)
-        {
-            // Fail before allocating anything: the conversion must not be partially applied
-            foreach (var frame in _frames)
-            {
-                EnsureOpaque(frame, plan);
-            }
-
-            if (_poster is not null)
-            {
-                EnsureOpaque(_poster, plan);
-            }
-        }
+        PrepareConversion(plan, GetAllFrames());
 
         var result = new Image<TPixel>(_configuration, _size, scope: null, LayoutOptions);
         try
@@ -473,7 +464,7 @@ public abstract partial class Image : IDisposable
     }
 
     /// <summary>Gets an attached frame without validation.</summary>
-    private protected ImageFrame FrameCore(int index) => _frames[index];
+    internal ImageFrame FrameCore(int index) => _frames[index];
 
     /// <summary>Gets the number of displayed frames without validation.</summary>
     private protected int FrameCountCore => _frames.Count;
@@ -583,16 +574,48 @@ public abstract partial class Image : IDisposable
         }
     }
 
-    private static void EnsureOpaque(ImageFrame frame, PixelConversionPlan plan)
+    /// <summary>
+    /// Prepares the conversion of frames before anything is allocated, so that the conversion is never partially applied:
+    /// the peak of the tone mapping is taken from all of them, then every row is validated.
+    /// </summary>
+    /// <param name="plan">The conversion.</param>
+    /// <param name="frames">Every frame that is converted (the displayed frames and the poster of an image).</param>
+    /// <exception cref="UnsupportedImageFeatureException">A pixel cannot be converted.</exception>
+    internal static void PrepareConversion(PixelConversionPlan plan, IReadOnlyList<ImageFrame> frames)
     {
-        using var lease = frame.GetStorage().AcquireLease();
-        for (var y = 0; y < lease.Height; y++)
+        if (plan.RequiresPeak)
         {
-            var index = PixelConverter.IndexOfNonOpaque(plan.SourceFormat, lease.GetRowBytes(y));
-            if (index >= 0)
-                throw PixelConverter.CreateNonOpaqueException(plan.SourceFormat, plan.DestinationFormat, index, plan.Format);
+            var peak = 0d;
+            foreach (var frame in frames)
+            {
+                using var lease = frame.GetStorage().AcquireLease();
+                for (var y = 0; y < lease.Height; y++)
+                {
+                    peak = Math.Max(peak, PixelConverter.GetLargestFiniteColor(plan.SourceFormat, lease.GetRowBytes(y)));
+                }
+            }
+
+            plan.SetPeak(peak);
+        }
+
+        if (plan.RequiresValidation)
+        {
+            foreach (var frame in frames)
+            {
+                using var lease = frame.GetStorage().AcquireLease();
+                for (var y = 0; y < lease.Height; y++)
+                {
+                    plan.ValidateRow(lease.GetRowBytes(y));
+                }
+            }
         }
     }
+
+    /// <summary>Converts the pixels of a frame to another frame of the same size, and copies its metadata.</summary>
+    /// <param name="source">The source frame.</param>
+    /// <param name="destination">The destination frame, of the destination format of <paramref name="plan"/>.</param>
+    /// <param name="plan">The conversion, prepared (<see cref="PrepareConversion"/>).</param>
+    internal static void ConvertFramePixels(ImageFrame source, ImageFrame destination, PixelConversionPlan plan) => ConvertFrame(source, destination, plan);
 
     private static void ConvertFrame(ImageFrame source, ImageFrame destination, PixelConversionPlan plan)
     {

@@ -317,7 +317,7 @@
       "properties": {
         "width": { "type": "integer", "minimum": 1 },
         "height": { "type": "integer", "minimum": 1 },
-        "pixelFormat": { "enum": ["Rgba32", "Bgra32", "Rgb24", "Rgba64", "Gray8", "Gray16"] },
+        "pixelFormat": { "enum": ["Rgba32", "Bgra32", "Rgb24", "Rgba64", "Gray8", "Gray16", "RgbaFloat", "RgbaHalf"] },
         "colorModel": { "enum": ["Grayscale", "GrayscaleAlpha", "Rgb", "Rgba", "Indexed", "YCbCr", "Cmyk", "Ycck"] },
         "bitsPerComponent": { "type": "integer", "minimum": 1, "maximum": 16, "description": "1, 2, 4, 8 or 16; 10 and 12 are the bit depths of AVIF and JPEG XL inputs only, 12 the one of JPEG inputs with 12-bit samples, and any depth from 2 to 16 the one of a lossless JPEG input." },
         "orientation": { "type": "integer", "minimum": 1, "maximum": 8 },

@@ -136,6 +136,8 @@ public sealed class ImageCollectionEntry
             var type when type == typeof(Rgb24) => image.CloneAs<Rgb24>(options.Conversion),
             var type when type == typeof(Rgba64) => image.CloneAs<Rgba64>(options.Conversion),
             var type when type == typeof(Gray8) => image.CloneAs<Gray8>(options.Conversion),
+            var type when type == typeof(RgbaFloat) => image.CloneAs<RgbaFloat>(options.Conversion),
+            var type when type == typeof(RgbaHalf) => image.CloneAs<RgbaHalf>(options.Conversion),
             _ => image.CloneAs<Gray16>(options.Conversion),
         };
     }

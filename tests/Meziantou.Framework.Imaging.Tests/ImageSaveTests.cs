@@ -49,6 +49,73 @@ public sealed class ImageSaveTests
     }
 
     [Fact]
+    public void FloatingPointImagesAreSavedOnlyWithAReduction()
+    {
+        using var image = new Image<RgbaFloat>(3, 2, new RgbaFloat(0.25f, 0.5f, 1, 0.75f));
+        image.Frames[0][2, 1] = new RgbaFloat(1 / 3f, 0, 0.125f);
+
+        // Nothing is written: no output format stores floating-point samples
+        using (var rejected = new MemoryStream())
+        {
+            var exception = Assert.Throws<UnsupportedImageFeatureException>(() => image.Save(rejected, new PngEncoder()));
+            Assert.Contains("FloatingPointConversion", exception.Message);
+            Assert.Equal(0, rejected.Length);
+        }
+
+        // Reduced to 16 bits, then encoded like Rgba64 pixels; the linear label follows the metadata policy
+        var encoder = new PngEncoder { FloatingPointConversion = new PixelConversionOptions(), MetadataHandling = MetadataHandling.DiscardUnsupported };
+        using var stream = new MemoryStream();
+        image.Save(stream, encoder);
+        using var decoded = Image.Load<Rgba64>(stream.ToArray());
+        using var expected = image.CloneAs<Rgba64>();
+        Assert.Equal(expected.Frames[0][0, 0], decoded.Frames[0][0, 0]);
+        Assert.Equal(expected.Frames[0][2, 1], decoded.Frames[0][2, 1]);
+        Assert.Equal(new Rgba64(16384, 32768, 65535, 49151), decoded.Frames[0][0, 0]);
+
+        var strict = new PngEncoder { FloatingPointConversion = new PixelConversionOptions() };
+        Assert.Throws<UnsupportedImageFeatureException>(() => image.Save(new MemoryStream(), strict));
+
+        // Samples out of range need the policy of the encoder
+        image.Frames[0][1, 0] = new RgbaFloat(2, 0, 0);
+        using (var rejected = new MemoryStream())
+        {
+            Assert.Throws<UnsupportedImageFeatureException>(() => image.Save(rejected, encoder));
+            Assert.Equal(0, rejected.Length);
+        }
+
+        using var clipped = new MemoryStream();
+        image.Save(clipped, new PngEncoder { FloatingPointConversion = new PixelConversionOptions { OutOfRangeSamples = OutOfRangeSampleHandling.Clip }, MetadataHandling = MetadataHandling.DiscardUnsupported });
+        using var decodedClip = Image.Load<Rgba64>(clipped.ToArray());
+        Assert.Equal(new Rgba64(65535, 0, 0), decodedClip.Frames[0][1, 0]);
+    }
+
+    [Fact]
+    public async Task SequentialWritersReduceEachFloatingPointFrame()
+    {
+        var options = new ImageWriterOptions(2, 1)
+        {
+            Encoder = new PngEncoder { AnimationMode = PngAnimationMode.Animated, FloatingPointConversion = new PixelConversionOptions { ToneMapping = new HdrToneMappingOptions { Operator = HdrToneMappingOperator.Clip } } },
+            ExpectedFrameCount = 2,
+            Animation = new AnimationMetadata(),
+        };
+
+        using var first = new Image<RgbaHalf>(2, 1, new RgbaHalf((Half)0.5, Half.Zero, Half.Zero));
+        using var second = new Image<RgbaHalf>(2, 1, new RgbaHalf((Half)8, (Half)4, Half.Zero));
+        using var stream = new MemoryStream();
+        await using (var writer = Image.CreateWriter<RgbaHalf>(stream, options))
+        {
+            await writer.WriteFrameAsync(first.Frames[0], XunitCancellationToken);
+            writer.WriteFrame(second.Frames[0]);
+            await writer.CompleteAsync(XunitCancellationToken);
+        }
+
+        // Each frame has its own peak: 1 for the first one, 8 for the second one
+        using var decoded = Image.Load<Rgba64>(stream.ToArray());
+        Assert.Equal(new Rgba64(32768, 0, 0), decoded.Frames[0][0, 0]);
+        Assert.Equal(new Rgba64(65535, 32768, 0), decoded.Frames[1][1, 0]);
+    }
+
+    [Fact]
     public void StaticOutputsRejectAnimatedImagesInsteadOfSavingFrameZero()
     {
         using var codecs = TestCodecs.UseAll(out _, out var png, out var gif, out var jpeg);

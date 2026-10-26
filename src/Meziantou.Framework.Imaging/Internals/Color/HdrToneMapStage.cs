@@ -33,6 +33,7 @@ internal sealed class HdrToneMapStage : IccStage
     private readonly double _kr;
     private readonly double _kg;
     private readonly double _kb;
+    private readonly bool _isWhiteUnits;
 
     // Möbius: s (x + a) / (x + b) above the knee
     private readonly double _mobiusA;
@@ -52,20 +53,25 @@ internal sealed class HdrToneMapStage : IccStage
     /// <param name="peakLuminance">The peak of the source, in candelas per square meter.</param>
     /// <param name="whiteLuminance">The luminance that becomes white, in candelas per square meter.</param>
     public HdrToneMapStage(CicpColorSpace colorSpace, HdrToneMappingOperator toneMapping, double peakLuminance, double whiteLuminance)
+        : this(colorSpace.Transfer is CicpTransfer.Hlg, colorSpace.ChannelCount, toneMapping, peakLuminance, whiteLuminance, isWhiteUnits: false)
     {
-        _isHlg = colorSpace.Transfer is CicpTransfer.Hlg;
-        _channelCount = colorSpace.ChannelCount;
-        _operator = toneMapping;
-        _white = whiteLuminance;
-        _displayPeak = peakLuminance;
-        _gammaMinusOne = 0.2 + (0.42 * Math.Log10(peakLuminance / 1000));
-
         // The luminance of a color: the Y row of the matrix of the primaries (CIE XYZ primaries: Y itself)
         Span<double> coefficients = [0, 1, 0];
         if (colorSpace is { IsGray: false, Primaries: not 10 } && !CicpPrimaries.TryGetLuminanceCoefficients(colorSpace.Primaries, coefficients))
             throw new UnsupportedImageFeatureException($"The color primaries {colorSpace.Primaries} of the CICP color description do not define a color space.", ImageFormat.Unknown, "CICP color primaries without a color space");
 
         (_kr, _kg, _kb) = (coefficients[0], coefficients[1], coefficients[2]);
+    }
+
+    private HdrToneMapStage(bool isHlg, int channelCount, HdrToneMappingOperator toneMapping, double peakLuminance, double whiteLuminance, bool isWhiteUnits)
+    {
+        _isHlg = isHlg;
+        _isWhiteUnits = isWhiteUnits;
+        _channelCount = channelCount;
+        _operator = toneMapping;
+        _white = whiteLuminance;
+        _displayPeak = peakLuminance;
+        _gammaMinusOne = 0.2 + (0.42 * Math.Log10(peakLuminance / 1000));
 
         // A source that is not brighter than the white is not compressed, and never brightened
         var peak = Math.Max(peakLuminance / whiteLuminance, 1);
@@ -84,12 +90,30 @@ internal sealed class HdrToneMapStage : IccStage
         _kneeStart = Math.Max((1.5 * _maxLum) - 0.5, 0);
     }
 
+    /// <summary>Gets the peak of the source in units of the white (at least 1).</summary>
+    public double Peak => _peak;
+
+    /// <summary>
+    /// Creates the tone mapping of linear light that is already in units of the white: the color components of the
+    /// floating-point pixel formats. <see cref="Apply"/> then scales nothing before the curve.
+    /// </summary>
+    /// <param name="toneMapping">The curve.</param>
+    /// <param name="peak">The peak of the source in units of the white; a value below 1 is 1.</param>
+    /// <param name="whiteLuminance">The luminance of the white, in candelas per square meter (the PQ values of the curve of BT.2390 need it).</param>
+    /// <returns>The stage, for three components.</returns>
+    public static HdrToneMapStage CreateForWhiteUnits(HdrToneMappingOperator toneMapping, double peak, double whiteLuminance)
+        => new(isHlg: false, channelCount: 3, toneMapping, Math.Max(peak, 1) * whiteLuminance, whiteLuminance, isWhiteUnits: true);
+
     public override void Apply(Span<double> values)
     {
         var r = values[0];
         var (g, b) = _channelCount is 1 ? (r, r) : (values[1], values[2]);
         double scale;
-        if (_isHlg)
+        if (_isWhiteUnits)
+        {
+            scale = 1;
+        }
+        else if (_isHlg)
         {
             // The light of the display for the light of the scene; a scene without light is black
             var luminance = (_kr * r) + (_kg * g) + (_kb * b);

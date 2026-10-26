@@ -28,4 +28,13 @@ public enum PixelFormat
 
     /// <summary>16-bit grayscale without alpha in native endianness (<see cref="Imaging.Gray16"/>).</summary>
     Gray16 = 6,
+
+    /// <summary>
+    /// Single-precision floating-point red, green, blue and straight alpha components (<see cref="Imaging.RgbaFloat"/>):
+    /// linear light where 1 is the reference white, with values outside [0, 1] allowed.
+    /// </summary>
+    RgbaFloat = 7,
+
+    /// <summary>Half-precision floating-point red, green, blue and straight alpha components (<see cref="Imaging.RgbaHalf"/>), with the meaning of <see cref="RgbaFloat"/>.</summary>
+    RgbaHalf = 8,
 }

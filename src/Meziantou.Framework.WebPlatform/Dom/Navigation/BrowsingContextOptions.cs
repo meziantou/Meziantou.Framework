@@ -39,6 +39,20 @@ public sealed partial class BrowsingContextOptions
     public VisitedLinkStore? VisitedLinks { get; init; }
 
     /// <summary>
+    /// Gets or sets the maximum number of documents that a top-level browsing context keeps in its back/forward cache
+    /// (https://html.spec.whatwg.org/multipage/browsing-the-web.html#note-bfcache). A document that the browsing context
+    /// navigates away from is kept alive in its session history entry when it is eligible: the <c>pagehide</c> event is fired
+    /// with <c>persisted</c> set to true instead of the <c>unload</c> event, its tasks and timers are suspended, and a
+    /// traversal to the entry (e.g. <c>history.back()</c>) makes it the active document again, firing <c>pageshow</c> with
+    /// <c>persisted</c> set to true, instead of loading it again. As in the browsers, a document is not eligible when it has
+    /// <c>unload</c> event listeners, an open <c>WebSocket</c>, held web locks, or when its response is not a successful
+    /// HTTP(S) response to a <c>GET</c> request whose <c>Cache-Control</c> header does not contain <c>no-store</c>, or when
+    /// its browsing context group has other top-level browsing contexts (e.g. a popup opened without <c>noopener</c>). When
+    /// the cache is full, the document cached first is evicted. The default is 6 (as in Chromium); 0 disables the cache.
+    /// </summary>
+    public int BackForwardCacheSize { get; init; } = 6;
+
+    /// <summary>
     /// Gets or sets the local storage areas of the browsing contexts (<c>window.localStorage</c>), keyed by origin. The
     /// default is null: each browsing context created by the application has its own storage shed, shared by its auxiliary
     /// browsing contexts. A shed can be shared by several browsing contexts: the <c>storage</c> events are fired at the

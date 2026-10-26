@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 425 | 446 | 0 | 95% |
+| [Stable](#stable-tests) | 434 | 446 | 0 | 97% |
 | [Tentative](#tentative-tests) | 3 | 12 | 0 | 25% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **428** | **458** | **0** | **93%** |
+| **All** | **437** | **458** | **0** | **95%** |
 
 ## Stable tests
 
@@ -72,7 +72,7 @@
 | [`navigate-event/cross-window/submit-samedocument-crossorigin-sameorigindomain.sub.html`](https://wpt.fyi/results/navigation-api/navigate-event/cross-window/submit-samedocument-crossorigin-sameorigindomain.sub.html) | Pass | 1 / 1 |  |  |
 | [`navigate-event/cross-window/submit-samedocument-crossorigin.html`](https://wpt.fyi/results/navigation-api/navigate-event/cross-window/submit-samedocument-crossorigin.html) | Pass | 1 / 1 |  |  |
 | [`navigate-event/cross-window/submit-samedocument-sameorigin.html`](https://wpt.fyi/results/navigation-api/navigate-event/cross-window/submit-samedocument-sameorigin.html) | Pass | 1 / 1 |  |  |
-| [`navigate-event/dangling-navigate-event-after-bfcache-restore.html`](https://wpt.fyi/results/navigation-api/navigate-event/dangling-navigate-event-after-bfcache-restore.html) | Fail | 0 / 1 | NOT IMPLEMENTED | back/forward cache (documents are reloaded on traversal, `pageshow`'s `persisted` is never true) |
+| [`navigate-event/dangling-navigate-event-after-bfcache-restore.html`](https://wpt.fyi/results/navigation-api/navigate-event/dangling-navigate-event-after-bfcache-restore.html) | Pass | 1 / 1 |  |  |
 | [`navigate-event/defaultPrevented-navigation-preempted.html`](https://wpt.fyi/results/navigation-api/navigate-event/defaultPrevented-navigation-preempted.html) | Pass | 1 / 1 |  |  |
 | [`navigate-event/defaultPrevented-window-stop-after-dispatch.html`](https://wpt.fyi/results/navigation-api/navigate-event/defaultPrevented-window-stop-after-dispatch.html) | Pass | 1 / 1 |  |  |
 | [`navigate-event/document-open-after-replaceState.html`](https://wpt.fyi/results/navigation-api/navigate-event/document-open-after-replaceState.html) | Pass | 1 / 1 |  |  |
@@ -99,7 +99,7 @@
 | [`navigate-event/intercept-reject.html`](https://wpt.fyi/results/navigation-api/navigate-event/intercept-reject.html) | Pass | 1 / 1 |  |  |
 | [`navigate-event/intercept-resolve.html`](https://wpt.fyi/results/navigation-api/navigate-event/intercept-resolve.html) | Pass | 1 / 1 |  |  |
 | [`navigate-event/intercept-same-document-history-back.html`](https://wpt.fyi/results/navigation-api/navigate-event/intercept-same-document-history-back.html) | Pass | 1 / 1 |  |  |
-| [`navigate-event/intercepted-navigation-after-bfcache-restore.html`](https://wpt.fyi/results/navigation-api/navigate-event/intercepted-navigation-after-bfcache-restore.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the back/forward cache (PRECONDITION_FAILED: the page is not BFCached) |
+| [`navigate-event/intercepted-navigation-after-bfcache-restore.html`](https://wpt.fyi/results/navigation-api/navigate-event/intercepted-navigation-after-bfcache-restore.html) | Fail | 0 / 1 | NOT IMPLEMENTED | an intercepted same-document navigation is aborted when a cross-document navigation of its traversable starts (the navigation API is informed about the aborting navigation although no navigate event fires at the document), so `navigation.navigate()` rejects with an `AbortError` once the page is restored from the back/forward cache, instead of finishing |
 | [`navigate-event/navigate-anchor-cross-origin.html`](https://wpt.fyi/results/navigation-api/navigate-event/navigate-anchor-cross-origin.html) | Pass | 1 / 1 |  |  |
 | [`navigate-event/navigate-anchor-download-userInitiated.html`](https://wpt.fyi/results/navigation-api/navigate-event/navigate-anchor-download-userInitiated.html) | Pass | 1 / 1 |  |  |
 | [`navigate-event/navigate-anchor-download.html`](https://wpt.fyi/results/navigation-api/navigate-event/navigate-anchor-download.html) | Pass | 4 / 4 |  |  |
@@ -126,7 +126,7 @@
 | [`navigate-event/navigate-form.html`](https://wpt.fyi/results/navigation-api/navigate-event/navigate-form.html) | Pass | 1 / 1 |  |  |
 | [`navigate-event/navigate-history-back-after-fragment.html`](https://wpt.fyi/results/navigation-api/navigate-event/navigate-history-back-after-fragment.html) | Pass | 1 / 1 |  |  |
 | [`navigate-event/navigate-history-back-after-pushState.html`](https://wpt.fyi/results/navigation-api/navigate-event/navigate-history-back-after-pushState.html) | Pass | 1 / 1 |  |  |
-| [`navigate-event/navigate-history-back-bfcache.html`](https://wpt.fyi/results/navigation-api/navigate-event/navigate-history-back-bfcache.html) | Fail | 0 / 1 | NOT IMPLEMENTED | back/forward cache (documents are reloaded on traversal, `pageshow`'s `persisted` is never true) |
+| [`navigate-event/navigate-history-back-bfcache.html`](https://wpt.fyi/results/navigation-api/navigate-event/navigate-history-back-bfcache.html) | Pass | 1 / 1 |  |  |
 | [`navigate-event/navigate-history-back-cross-document.html`](https://wpt.fyi/results/navigation-api/navigate-event/navigate-history-back-cross-document.html) | Pass | 1 / 1 |  |  |
 | [`navigate-event/navigate-history-back-noop.html`](https://wpt.fyi/results/navigation-api/navigate-event/navigate-history-back-noop.html) | Pass | 1 / 1 |  |  |
 | [`navigate-event/navigate-history-go-0.html`](https://wpt.fyi/results/navigation-api/navigate-event/navigate-history-go-0.html) | Pass | 1 / 1 |  |  |
@@ -172,10 +172,10 @@
 | [`navigate-event/signal-abort-window-stop.html`](https://wpt.fyi/results/navigation-api/navigate-event/signal-abort-window-stop.html) | Pass | 1 / 1 |  |  |
 | [`navigate-event/sourceElement-cross-origin.sub.html`](https://wpt.fyi/results/navigation-api/navigate-event/sourceElement-cross-origin.sub.html) | Pass | 1 / 1 |  |  |
 | [`navigate-event/traverseTo-detach.html`](https://wpt.fyi/results/navigation-api/navigate-event/traverseTo-detach.html) | Pass | 1 / 1 |  |  |
-| [`navigation-activation/activation-after-bfcache-coop-coep.https.html`](https://wpt.fyi/results/navigation-api/navigation-activation/activation-after-bfcache-coop-coep.https.html) | Fail | 0 / 12 | NOT IMPLEMENTED | back/forward cache (documents are reloaded on traversal, `pageshow`'s `persisted` is never true) |
-| [`navigation-activation/activation-after-bfcache-cross-origin-clears-from.html`](https://wpt.fyi/results/navigation-api/navigation-activation/activation-after-bfcache-cross-origin-clears-from.html) | Fail | 0 / 1 | NOT IMPLEMENTED | back/forward cache (documents are reloaded on traversal, `pageshow`'s `persisted` is never true) |
-| [`navigation-activation/activation-after-bfcache-cross-origin.html`](https://wpt.fyi/results/navigation-api/navigation-activation/activation-after-bfcache-cross-origin.html) | Fail | 0 / 1 | NOT IMPLEMENTED | back/forward cache (documents are reloaded on traversal, `pageshow`'s `persisted` is never true) |
-| [`navigation-activation/activation-after-bfcache.html`](https://wpt.fyi/results/navigation-api/navigation-activation/activation-after-bfcache.html) | Fail | 0 / 1 | NOT IMPLEMENTED | back/forward cache (documents are reloaded on traversal, `pageshow`'s `persisted` is never true) |
+| [`navigation-activation/activation-after-bfcache-coop-coep.https.html`](https://wpt.fyi/results/navigation-api/navigation-activation/activation-after-bfcache-coop-coep.https.html) | Pass | 12 / 12 |  |  |
+| [`navigation-activation/activation-after-bfcache-cross-origin-clears-from.html`](https://wpt.fyi/results/navigation-api/navigation-activation/activation-after-bfcache-cross-origin-clears-from.html) | Pass | 1 / 1 |  |  |
+| [`navigation-activation/activation-after-bfcache-cross-origin.html`](https://wpt.fyi/results/navigation-api/navigation-activation/activation-after-bfcache-cross-origin.html) | Pass | 1 / 1 |  |  |
+| [`navigation-activation/activation-after-bfcache.html`](https://wpt.fyi/results/navigation-api/navigation-activation/activation-after-bfcache.html) | Pass | 1 / 1 |  |  |
 | [`navigation-activation/activation-history-pushState.html`](https://wpt.fyi/results/navigation-api/navigation-activation/activation-history-pushState.html) | Pass | 1 / 1 |  |  |
 | [`navigation-activation/activation-history-replaceState.html`](https://wpt.fyi/results/navigation-api/navigation-activation/activation-history-replaceState.html) | Pass | 1 / 1 |  |  |
 | [`navigation-activation/activation-initial-about-blank.html`](https://wpt.fyi/results/navigation-api/navigation-activation/activation-initial-about-blank.html) | Pass | 1 / 1 |  |  |
@@ -191,8 +191,8 @@
 | [`navigation-history-entry/after-detach.html`](https://wpt.fyi/results/navigation-api/navigation-history-entry/after-detach.html) | Pass | 1 / 1 |  |  |
 | [`navigation-history-entry/current-basic.html`](https://wpt.fyi/results/navigation-api/navigation-history-entry/current-basic.html) | Pass | 1 / 1 |  |  |
 | [`navigation-history-entry/entries-across-origins.html`](https://wpt.fyi/results/navigation-api/navigation-history-entry/entries-across-origins.html) | Pass | 1 / 1 |  |  |
-| [`navigation-history-entry/entries-after-bfcache-in-iframe.html`](https://wpt.fyi/results/navigation-api/navigation-history-entry/entries-after-bfcache-in-iframe.html) | Fail | 0 / 1 | NOT IMPLEMENTED | back/forward cache (documents are reloaded on traversal, `pageshow`'s `persisted` is never true) |
-| [`navigation-history-entry/entries-after-bfcache.html`](https://wpt.fyi/results/navigation-api/navigation-history-entry/entries-after-bfcache.html) | Fail | 0 / 1 | NOT IMPLEMENTED | back/forward cache (documents are reloaded on traversal, `pageshow`'s `persisted` is never true) |
+| [`navigation-history-entry/entries-after-bfcache-in-iframe.html`](https://wpt.fyi/results/navigation-api/navigation-history-entry/entries-after-bfcache-in-iframe.html) | Pass | 1 / 1 |  |  |
+| [`navigation-history-entry/entries-after-bfcache.html`](https://wpt.fyi/results/navigation-api/navigation-history-entry/entries-after-bfcache.html) | Pass | 1 / 1 |  |  |
 | [`navigation-history-entry/entries-after-blank-navigation-from-cross-origin.html`](https://wpt.fyi/results/navigation-api/navigation-history-entry/entries-after-blank-navigation-from-cross-origin.html) | Pass | 1 / 1 |  |  |
 | [`navigation-history-entry/entries-after-blank-navigation.html`](https://wpt.fyi/results/navigation-api/navigation-history-entry/entries-after-blank-navigation.html) | Pass | 1 / 1 |  |  |
 | [`navigation-history-entry/entries-after-blob-navigation.html`](https://wpt.fyi/results/navigation-api/navigation-history-entry/entries-after-blob-navigation.html) | Pass | 1 / 1 |  |  |
@@ -377,7 +377,7 @@
 | [`ordering-and-transition/transition-finished-mark-as-handled.html`](https://wpt.fyi/results/navigation-api/ordering-and-transition/transition-finished-mark-as-handled.html) | Pass | 1 / 1 |  |  |
 | [`ordering-and-transition/transition-realms-and-identity.html`](https://wpt.fyi/results/navigation-api/ordering-and-transition/transition-realms-and-identity.html) | Pass | 1 / 1 |  |  |
 | [`ordering-and-transition/transition-to.html`](https://wpt.fyi/results/navigation-api/ordering-and-transition/transition-to.html) | Pass | 1 / 1 |  |  |
-| [`per-entry-events/dispose-after-bfcache.html`](https://wpt.fyi/results/navigation-api/per-entry-events/dispose-after-bfcache.html) | Fail | 0 / 1 | NOT IMPLEMENTED | back/forward cache (documents are reloaded on traversal, `pageshow`'s `persisted` is never true) |
+| [`per-entry-events/dispose-after-bfcache.html`](https://wpt.fyi/results/navigation-api/per-entry-events/dispose-after-bfcache.html) | Pass | 1 / 1 |  |  |
 | [`per-entry-events/dispose-cross-document.html`](https://wpt.fyi/results/navigation-api/per-entry-events/dispose-cross-document.html) | Pass | 1 / 1 |  |  |
 | [`per-entry-events/dispose-for-navigation-in-child-entries-updated.html`](https://wpt.fyi/results/navigation-api/per-entry-events/dispose-for-navigation-in-child-entries-updated.html) | Pass | 1 / 1 |  |  |
 | [`per-entry-events/dispose-for-navigation-in-child.html`](https://wpt.fyi/results/navigation-api/per-entry-events/dispose-for-navigation-in-child.html) | Pass | 1 / 1 |  |  |
@@ -475,6 +475,6 @@
 | [`navigate-event/defer/tentative/defer-with-multiple-handlers.html`](https://wpt.fyi/results/navigation-api/navigate-event/defer/tentative/defer-with-multiple-handlers.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `NavigateEvent.deferPageSwap()` (tentative) |
 | [`navigate-event/defer/tentative/defer-with-single-handler-reject.html`](https://wpt.fyi/results/navigation-api/navigate-event/defer/tentative/defer-with-single-handler-reject.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `NavigateEvent.deferPageSwap()` (tentative) |
 | [`navigate-event/defer/tentative/defer-with-single-handler.html`](https://wpt.fyi/results/navigation-api/navigate-event/defer/tentative/defer-with-single-handler.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `NavigateEvent.deferPageSwap()` (tentative) |
-| [`navigate-event/defer/tentative/restore-after-bfcache.html`](https://wpt.fyi/results/navigation-api/navigate-event/defer/tentative/restore-after-bfcache.html) | Fail | 0 / 1 | NOT IMPLEMENTED | back/forward cache (documents are reloaded on traversal, `pageshow`'s `persisted` is never true) |
+| [`navigate-event/defer/tentative/restore-after-bfcache.html`](https://wpt.fyi/results/navigation-api/navigate-event/defer/tentative/restore-after-bfcache.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `NavigateEvent.deferPageSwap()` (tentative): the handler and the restore callback are not called, so the events of the page restored from the back/forward cache are only `pageshow` and `dispose` |
 | [`ordering-and-transition/navigate-intercept-precommitHandler-reject.tentative.html`](https://wpt.fyi/results/navigation-api/ordering-and-transition/navigate-intercept-precommitHandler-reject.tentative.html) | Pass | 2 / 2 |  |  |
 | [`per-entry-events/dispose-for-full-session-history.tentative.html`](https://wpt.fyi/results/navigation-api/per-entry-events/dispose-for-full-session-history.tentative.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | the maximum number of session history entries (tentative, not specified: 50 in Chromium, the only browser that passes): the oldest entry is never removed, so its `dispose` event is not fired |

@@ -7,16 +7,16 @@
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 22 | 23 | 0 | 96% |
-| [Tentative](#tentative-tests) | 1 | 7 | 0 | 14% |
+| [Tentative](#tentative-tests) | 6 | 7 | 0 | 86% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **23** | **30** | **0** | **77%** |
+| **All** | **28** | **30** | **0** | **93%** |
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
 | [`acquire.https.any.js`](https://wpt.fyi/results/web-locks/acquire.https.any.js) | Pass | 33 / 33 |  |  |
-| [`bfcache/contention.https.window.js`](https://wpt.fyi/results/web-locks/bfcache/contention.https.window.js) | Timeout | 11 / 12 | NOT IMPLEMENTED | the owner set of the shared workers: a shared worker lives until it calls `close()` or its browsing context group is disposed, so the shared worker of the page that was navigated away keeps its lock, and the `request()` of the next page waits forever (the `shared-worker` / `request` variant; in a browser the contention evicts the page from the back/forward cache, which ends its shared worker). The other variants pass: the page and its dedicated workers are discarded by the navigation, as there is no back/forward cache |
+| [`bfcache/contention.https.window.js`](https://wpt.fyi/results/web-locks/bfcache/contention.https.window.js) | Timeout | 11 / 12 | NOT IMPLEMENTED | the owner set of the shared workers: a shared worker lives until it calls `close()` or its browsing context group is disposed, so the shared worker of the page in the back/forward cache keeps its lock when the page is evicted, and the `request()` of the next page waits forever (the `shared-worker` / `request` variant; in a browser the eviction ends the shared worker). The other variants pass: the contention evicts the page, which releases the locks of its window and of its dedicated workers |
 | [`clientids.https.html`](https://wpt.fyi/results/web-locks/clientids.https.html) | Pass | 1 / 1 |  |  |
 | [`frames.https.html`](https://wpt.fyi/results/web-locks/frames.https.html) | Pass | 8 / 8 |  |  |
 | [`held.https.any.js`](https://wpt.fyi/results/web-locks/held.https.any.js) | Pass | 12 / 12 |  |  |
@@ -43,10 +43,10 @@
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`bfcache/abort.tentative.https.html`](https://wpt.fyi/results/web-locks/bfcache/abort.tentative.https.html) | Fail | 0 / 4 | NOT IMPLEMENTED | the back/forward cache: the page whose lock request was aborted is unloaded by the navigation, not persisted (the BFCache executor reports the failed precondition `Could have been BFCached but actually wasn't`) |
-| [`bfcache/held.tentative.https.html`](https://wpt.fyi/results/web-locks/bfcache/held.tentative.https.html) | Fail | 0 / 4 | NOT IMPLEMENTED | the back/forward cache: the page that holds the lock is unloaded by the navigation (its locks are released), not persisted (the BFCache executor reports the failed precondition `Could have been BFCached but actually wasn't`) |
-| [`bfcache/release-across-thread.tentative.https.html`](https://wpt.fyi/results/web-locks/bfcache/release-across-thread.tentative.https.html) | Fail | 0 / 3 | NOT IMPLEMENTED | the back/forward cache: the page that holds the lock is unloaded by the navigation (its locks are released), not persisted (the BFCache executor reports the failed precondition `Could have been BFCached but actually wasn't`) |
-| [`bfcache/release.tentative.https.html`](https://wpt.fyi/results/web-locks/bfcache/release.tentative.https.html) | Fail | 0 / 4 | NOT IMPLEMENTED | the back/forward cache: the page that released its lock is unloaded by the navigation, not persisted (the BFCache executor reports the failed precondition `Could have been BFCached but actually wasn't`) |
-| [`bfcache/sharedworker-multiple.tentative.https.html`](https://wpt.fyi/results/web-locks/bfcache/sharedworker-multiple.tentative.https.html) | Fail | 0 / 2 | NOT IMPLEMENTED | the back/forward cache: the pages connected to the shared worker that holds the lock are unloaded by the navigation, not persisted (the BFCache executor reports the failed precondition `Could have been BFCached but actually wasn't`) |
+| [`bfcache/abort.tentative.https.html`](https://wpt.fyi/results/web-locks/bfcache/abort.tentative.https.html) | Pass | 4 / 4 |  |  |
+| [`bfcache/held.tentative.https.html`](https://wpt.fyi/results/web-locks/bfcache/held.tentative.https.html) | Pass | 4 / 4 |  |  |
+| [`bfcache/release-across-thread.tentative.https.html`](https://wpt.fyi/results/web-locks/bfcache/release-across-thread.tentative.https.html) | Pass | 3 / 3 |  |  |
+| [`bfcache/release.tentative.https.html`](https://wpt.fyi/results/web-locks/bfcache/release.tentative.https.html) | Pass | 4 / 4 |  |  |
+| [`bfcache/sharedworker-multiple.tentative.https.html`](https://wpt.fyi/results/web-locks/bfcache/sharedworker-multiple.tentative.https.html) | Pass | 2 / 2 |  |  |
 | [`partitioned-web-locks.tentative.https.html`](https://wpt.fyi/results/web-locks/partitioned-web-locks.tentative.https.html) | Pass | 2 / 2 |  |  |
 | [`storage-buckets.tentative.https.any.js`](https://wpt.fyi/results/web-locks/storage-buckets.tentative.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Storage Buckets API (`navigator.storageBuckets`, whose buckets have their own lock managers) |

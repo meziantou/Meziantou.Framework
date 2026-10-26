@@ -639,6 +639,17 @@ internal sealed partial class ServiceWorkerRegistry
 
         RemoveRegistration(registration);
         ResolveJobPromise(job, true);
+
+        // The controlled clients whose document is in the back/forward cache are evicted ("serviceworker-unregistered"): they
+        // stop using the registration when they are destroyed
+        foreach (var client in GetClients())
+        {
+            if (client.Environment?.ActiveServiceWorker?.Registration == registration)
+            {
+                client.TryEvictFromBackForwardCache("serviceworker-unregistered");
+            }
+        }
+
         TryClearRegistration(registration);
         FinishJob(job);
     }

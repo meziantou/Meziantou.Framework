@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 311 | 407 | 3 | 77% |
+| [Stable](#stable-tests) | 313 | 407 | 3 | 77% |
 | [Tentative](#tentative-tests) | 13 | 77 | 1 | 17% |
 | [Reftests](#reftests) | 9 | 11 | 0 | 82% |
-| **All** | **333** | **495** | **4** | **68%** |
+| **All** | **335** | **495** | **4** | **68%** |
 
 ## Stable tests
 
@@ -242,7 +242,7 @@
 | [`data-urls/base64.any.js`](https://wpt.fyi/results/fetch/data-urls/base64.any.js) | Pass | 243 / 243 |  |  |
 | [`data-urls/navigate.window.js`](https://wpt.fyi/results/fetch/data-urls/navigate.window.js) | Pass | 7 / 7 |  |  |
 | [`data-urls/processing.any.js`](https://wpt.fyi/results/fetch/data-urls/processing.any.js) | Pass | 219 / 219 |  |  |
-| [`fetch-later/activate-after.https.window.js`](https://wpt.fyi/results/fetch/fetch-later/activate-after.https.window.js) | Fail | 1 / 2 | NOT IMPLEMENTED | the back/forward cache: the second subtest expects the page it navigated away from to be restored (`pageshow` with `persisted`); the document is destroyed by the navigation (its deferred request is sent then) |
+| [`fetch-later/activate-after.https.window.js`](https://wpt.fyi/results/fetch/fetch-later/activate-after.https.window.js) | Pass | 2 / 2 |  |  |
 | [`fetch-later/basic.https.window.js`](https://wpt.fyi/results/fetch/fetch-later/basic.https.window.js) | Pass | 23 / 23 |  |  |
 | [`fetch-later/basic.https.worker.js`](https://wpt.fyi/results/fetch/fetch-later/basic.https.worker.js) | Pass | 1 / 1 |  |  |
 | [`fetch-later/headers/header-referrer-no-referrer-when-downgrade.https.html`](https://wpt.fyi/results/fetch/fetch-later/headers/header-referrer-no-referrer-when-downgrade.https.html) | Pass | 1 / 1 |  |  |
@@ -284,8 +284,8 @@
 | [`fetch-later/quota/same-origin-iframe/sandboxed-iframe.https.window.js`](https://wpt.fyi/results/fetch/fetch-later/quota/same-origin-iframe/sandboxed-iframe.https.window.js) | Pass | 1 / 1 |  |  |
 | [`fetch-later/quota/same-origin-iframe/small-payload.https.window.js`](https://wpt.fyi/results/fetch/fetch-later/quota/same-origin-iframe/small-payload.https.window.js) | Pass | 6 / 6 |  |  |
 | [`fetch-later/quota/small-payload.https.window.js`](https://wpt.fyi/results/fetch/fetch-later/quota/small-payload.https.window.js) | Pass | 6 / 6 |  |  |
-| [`fetch-later/send-on-deactivate-with-background-sync.https.window.js`](https://wpt.fyi/results/fetch/fetch-later/send-on-deactivate-with-background-sync.https.window.js) | Fail | 0 / 3 | NOT IMPLEMENTED, TEST RUNNER | the back/forward cache, and the Background Sync API; `test_driver.set_permission()` only supports the clipboard permissions (the test grants `background-sync`) |
-| [`fetch-later/send-on-deactivate.https.window.js`](https://wpt.fyi/results/fetch/fetch-later/send-on-deactivate.https.window.js) | Fail | 2 / 5 | NOT IMPLEMENTED | the back/forward cache: three subtests expect the page they navigated away from to be restored (`pageshow` with `persisted`); the deferred requests are sent when the document is destroyed by the navigation, which the two other subtests check |
+| [`fetch-later/send-on-deactivate-with-background-sync.https.window.js`](https://wpt.fyi/results/fetch/fetch-later/send-on-deactivate-with-background-sync.https.window.js) | Fail | 0 / 3 | NOT IMPLEMENTED, TEST RUNNER | the Background Sync API; `test_driver.set_permission()` only supports the clipboard permissions (the test grants `background-sync`) |
+| [`fetch-later/send-on-deactivate.https.window.js`](https://wpt.fyi/results/fetch/fetch-later/send-on-deactivate.https.window.js) | Pass | 5 / 5 |  |  |
 | [`fetch-later/send-on-discard/not-send-after-abort.https.window.js`](https://wpt.fyi/results/fetch/fetch-later/send-on-discard/not-send-after-abort.https.window.js) | Pass | 1 / 1 |  |  |
 | [`fetch-later/send-on-discard/send-multiple-with-activate-after.https.window.js`](https://wpt.fyi/results/fetch/fetch-later/send-on-discard/send-multiple-with-activate-after.https.window.js) | Pass | 1 / 1 |  |  |
 | [`fetch-later/send-on-discard/send-multiple.https.window.js`](https://wpt.fyi/results/fetch/fetch-later/send-on-discard/send-multiple.https.window.js) | Pass | 1 / 1 |  |  |

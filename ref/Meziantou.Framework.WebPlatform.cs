@@ -3105,6 +3105,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
     public sealed class BrowsingContextOptions
     {
         public Meziantou.Framework.WebPlatform.Dom.AcceptCHCache? AcceptCHCache { get => throw null; init { } }
+        public int BackForwardCacheSize { get => throw null; init { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.BrowsingContext>? BrowsingContextCreated { get => throw null; init { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.BrowsingContext>? BrowsingContextDestroyed { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.CacheStorageBackend? CacheStorage { get => throw null; init { } }

@@ -9,16 +9,10 @@
     "total": 1
   },
   "IndexedDB/back-forward-cache-open-connection.window.js": {
-    "total": 1,
-    "failures": {
-      "Testing BFCache support for page with open IndexedDB connection, and eviction behavior when receiving versionchange event.": "PRECONDITION_FAILED"
-    }
+    "total": 1
   },
   "IndexedDB/back-forward-cache-open-transaction.window.js": {
-    "total": 1,
-    "failures": {
-      "BFCache support test for page with open IndexedDB transaction": "PRECONDITION_FAILED"
-    }
+    "total": 1
   },
   "IndexedDB/bindings-inject-keys-bypass.any.js": {
     "total": 1

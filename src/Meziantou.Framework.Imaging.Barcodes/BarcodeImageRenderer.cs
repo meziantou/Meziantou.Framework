@@ -10,41 +10,22 @@ namespace Meziantou.Framework.Imaging.Barcodes;
 /// </summary>
 public static class BarcodeImageRenderer
 {
-    /// <summary>Renders the barcode as an image with default options.</summary>
+    /// <summary>Renders the barcode as an image: what <see cref="DrawBarcode"/> draws on a canvas of the size <see cref="MeasureBarcode"/> gives, rounded up.</summary>
+    /// <remarks>
+    /// With the default <see cref="BarcodeDrawingOptions.SnapToPixels"/>, the modules are whole pixels and the image has two colors when
+    /// the brushes are solid. With a <see langword="null"/> <see cref="BarcodeDrawingOptions.LightBrush"/>, the background is transparent.
+    /// </remarks>
     /// <param name="barcode">The barcode to render.</param>
+    /// <param name="options">The drawing options, or <see langword="null"/> for the defaults.</param>
     /// <returns>A single-frame image. The caller owns it and must dispose it.</returns>
-    public static Image<Rgba32> ToImage(this Barcode barcode)
-    {
-        return ToImage(barcode, new BarcodeImageOptions());
-    }
-
-    /// <summary>Renders the barcode as an image with the specified options.</summary>
-    /// <param name="barcode">The barcode to render.</param>
-    /// <param name="options">The rendering options.</param>
-    /// <returns>A single-frame image. The caller owns it and must dispose it.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="barcode"/> or <see cref="BarcodeDrawingOptions.DarkBrush"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentOutOfRangeException">An option is out of range, or the image dimensions are too large.</exception>
     /// <exception cref="ImageResourceLimitException">The image exceeds a limit of <see cref="ImageConfiguration.Default"/>.</exception>
-    public static Image<Rgba32> ToImage(this Barcode barcode, BarcodeImageOptions options)
+    public static Image<Rgba32> ToImage(this Barcode barcode, BarcodeDrawingOptions? options = null)
     {
-        ArgumentNullException.ThrowIfNull(barcode);
-        ArgumentNullException.ThrowIfNull(options);
-        ArgumentOutOfRangeException.ThrowIfLessThan(options.ModuleWidth, 1);
-        ArgumentOutOfRangeException.ThrowIfLessThan(options.ModuleHeight, 1);
-        ArgumentOutOfRangeException.ThrowIfNegative(options.QuietZoneModules);
-
-        // The quiet zone is on the left and right sides only, as for the other barcode renderers
-        var width = ModuleImageRenderer.GetTotalDimension(barcode.Width, options.QuietZoneModules, options.ModuleWidth, nameof(options.ModuleWidth));
-        var height = ModuleImageRenderer.GetTotalDimension(barcode.Height, quietZoneModules: 0, options.ModuleHeight, nameof(options.ModuleHeight));
-        var grid = new ModuleGrid(
-            Columns: barcode.Width,
-            Rows: barcode.Height,
-            IsDark: (row, column) => barcode[row, column],
-            ModuleWidth: options.ModuleWidth,
-            ModuleHeight: options.ModuleHeight,
-            HorizontalQuietZoneModules: options.QuietZoneModules,
-            VerticalQuietZoneModules: 0);
-
-        return ModuleImageRenderer.Render(grid, width, height, options.LightColor, options.DarkColor);
+        options ??= new BarcodeDrawingOptions();
+        var (content, textSpacing) = GetDrawingContent(barcode, options);
+        return ModuleCanvasRenderer.Render(content, GetLayout(content, textSpacing), nameof(options.ModuleWidth));
     }
 
     /// <summary>Measures the rectangle that <see cref="DrawBarcode(DrawingCanvas, Barcode, PointD, BarcodeDrawingOptions?)"/> covers, quiet zone and text included.</summary>

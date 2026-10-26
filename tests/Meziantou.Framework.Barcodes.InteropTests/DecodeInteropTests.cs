@@ -188,7 +188,7 @@ public sealed class DecodeInteropTests
 
         if (variant is "ToImage")
         {
-            using var image = qr.ToImage(new QRCodeImageOptions { ModuleSize = 4 });
+            using var image = qr.ToImage(new QRCodeDrawingOptions { ModuleSize = 4 });
             return Encode(image);
         }
 
@@ -227,7 +227,7 @@ public sealed class DecodeInteropTests
 
         if (variant is "ToImage")
         {
-            using var image = barcode.ToImage(new BarcodeImageOptions { ModuleWidth = 2, ModuleHeight = 60 });
+            using var image = barcode.ToImage(new BarcodeDrawingOptions { ModuleWidth = 2, ModuleHeight = 60 });
             return Encode(image);
         }
 

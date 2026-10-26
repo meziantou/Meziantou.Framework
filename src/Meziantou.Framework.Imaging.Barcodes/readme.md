@@ -22,13 +22,13 @@ Assert.Equal((330, 330), (image.Width, image.Height));
 using var webp = new MemoryStream();
 image.Save(webp, new WebPEncoder());
 
-// Custom options
-using var customImage = qrCode.ToImage(new QRCodeImageOptions
+// Custom options, the same as the canvas drawing takes: any brush, and no background
+using var customImage = qrCode.ToImage(new QRCodeDrawingOptions
 {
     ModuleSize = 4,
     QuietZoneModules = 2,
-    DarkColor = new Rgba32(0x00, 0x33, 0x66),
-    LightColor = Colors.Transparent,
+    DarkBrush = new SolidBrush(new Rgba32(0x00, 0x33, 0x66)),
+    LightBrush = null,
 });
 Assert.Equal((116, 116), (customImage.Width, customImage.Height));
 Assert.Equal(Colors.Transparent, customImage.Frames[0][0, 0]);
@@ -45,7 +45,7 @@ Barcodes work the same way:
 <!-- ref:../../tests/Meziantou.Framework.Imaging.Barcodes.Tests/ImageRendererTests.cs;region=ImagingBarcodes_BarcodeToImage;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var barcode = Barcode.CreateEan13("5901234123457");
-using var image = barcode.ToImage(new BarcodeImageOptions { ModuleWidth = 3, ModuleHeight = 100 });
+using var image = barcode.ToImage(new BarcodeDrawingOptions { ModuleWidth = 3, ModuleHeight = 100 });
 Assert.Equal((345, 100), (image.Width, image.Height));
 ```
 <!-- endref -->
@@ -121,27 +121,14 @@ IJ, å, æ, ø, ij, ß) and §, ¤, £, ¥, ¨ and ´. The preferred shapes of t
 
 ## Options
 
-| `QRCodeImageOptions` | Default | Description |
-|----------------------|---------|-------------|
-| `ModuleSize` | 10 | Size of each module, in pixels |
-| `QuietZoneModules` | 4 | Number of quiet zone modules around the QR code |
-| `DarkColor` | `Colors.Black` | Color of dark modules |
-| `LightColor` | `Colors.White` | Color of light modules and of the quiet zone |
-
-| `BarcodeImageOptions` | Default | Description |
-|-----------------------|---------|-------------|
-| `ModuleWidth` | 2 | Width of each module, in pixels |
-| `ModuleHeight` | 80 | Height of each module, in pixels |
-| `QuietZoneModules` | 10 | Number of quiet zone modules on the left and right sides |
-| `DarkColor` | `Colors.Black` | Color of dark modules |
-| `LightColor` | `Colors.White` | Color of light modules and of the quiet zone |
+`ToImage` and the canvas drawing take the same options: `ToImage` renders the drawing on an image of its size.
 
 | `QRCodeDrawingOptions` | Default | Description |
 |------------------------|---------|-------------|
 | `ModuleSize` | 10 | Size of each module, in canvas units |
 | `QuietZoneModules` | 4 | Number of quiet zone modules around the QR code |
 | `DarkBrush` | black | Brush of dark modules, in canvas coordinates |
-| `LightBrush` | white | Brush of light modules and of the quiet zone; `null` keeps the background |
+| `LightBrush` | white | Brush of light modules and of the quiet zone; `null` keeps the background (transparent for `ToImage`) |
 | `SnapToPixels` | `true` | Round the module size and the position to whole units |
 
 | `BarcodeDrawingOptions` | Default | Description |

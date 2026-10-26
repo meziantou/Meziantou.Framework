@@ -24,21 +24,11 @@ namespace Meziantou.Framework.Imaging.Barcodes
         public static Meziantou.Framework.Imaging.Typography.Font OcrB { get => throw null; }
     }
 
-    public sealed class BarcodeImageOptions
-    {
-        public Meziantou.Framework.Imaging.Rgba32 DarkColor { get => throw null; set { } }
-        public Meziantou.Framework.Imaging.Rgba32 LightColor { get => throw null; set { } }
-        public int ModuleHeight { get => throw null; set { } }
-        public int ModuleWidth { get => throw null; set { } }
-        public int QuietZoneModules { get => throw null; set { } }
-    }
-
     public static class BarcodeImageRenderer
     {
         public static Meziantou.Framework.Imaging.RectangleD DrawBarcode(this Meziantou.Framework.Imaging.Drawing.DrawingCanvas canvas, Meziantou.Framework.Barcodes.Barcode barcode, Meziantou.Framework.Imaging.PointD position, Meziantou.Framework.Imaging.Barcodes.BarcodeDrawingOptions? options = null) => throw null;
         public static Meziantou.Framework.Imaging.RectangleD MeasureBarcode(Meziantou.Framework.Barcodes.Barcode barcode, Meziantou.Framework.Imaging.Barcodes.BarcodeDrawingOptions? options = null) => throw null;
-        public static Meziantou.Framework.Imaging.Image<Meziantou.Framework.Imaging.Rgba32> ToImage(this Meziantou.Framework.Barcodes.Barcode barcode) => throw null;
-        public static Meziantou.Framework.Imaging.Image<Meziantou.Framework.Imaging.Rgba32> ToImage(this Meziantou.Framework.Barcodes.Barcode barcode, Meziantou.Framework.Imaging.Barcodes.BarcodeImageOptions options) => throw null;
+        public static Meziantou.Framework.Imaging.Image<Meziantou.Framework.Imaging.Rgba32> ToImage(this Meziantou.Framework.Barcodes.Barcode barcode, Meziantou.Framework.Imaging.Barcodes.BarcodeDrawingOptions? options = null) => throw null;
     }
 
     public sealed class QRCodeDrawingOptions
@@ -50,19 +40,10 @@ namespace Meziantou.Framework.Imaging.Barcodes
         public bool SnapToPixels { get => throw null; set { } }
     }
 
-    public sealed class QRCodeImageOptions
-    {
-        public Meziantou.Framework.Imaging.Rgba32 DarkColor { get => throw null; set { } }
-        public Meziantou.Framework.Imaging.Rgba32 LightColor { get => throw null; set { } }
-        public int ModuleSize { get => throw null; set { } }
-        public int QuietZoneModules { get => throw null; set { } }
-    }
-
     public static class QRCodeImageRenderer
     {
         public static Meziantou.Framework.Imaging.RectangleD DrawQRCode(this Meziantou.Framework.Imaging.Drawing.DrawingCanvas canvas, Meziantou.Framework.Barcodes.QRCode qrCode, Meziantou.Framework.Imaging.PointD position, Meziantou.Framework.Imaging.Barcodes.QRCodeDrawingOptions? options = null) => throw null;
         public static Meziantou.Framework.Imaging.RectangleD MeasureQRCode(Meziantou.Framework.Barcodes.QRCode qrCode, Meziantou.Framework.Imaging.Barcodes.QRCodeDrawingOptions? options = null) => throw null;
-        public static Meziantou.Framework.Imaging.Image<Meziantou.Framework.Imaging.Rgba32> ToImage(this Meziantou.Framework.Barcodes.QRCode qrCode) => throw null;
-        public static Meziantou.Framework.Imaging.Image<Meziantou.Framework.Imaging.Rgba32> ToImage(this Meziantou.Framework.Barcodes.QRCode qrCode, Meziantou.Framework.Imaging.Barcodes.QRCodeImageOptions options) => throw null;
+        public static Meziantou.Framework.Imaging.Image<Meziantou.Framework.Imaging.Rgba32> ToImage(this Meziantou.Framework.Barcodes.QRCode qrCode, Meziantou.Framework.Imaging.Barcodes.QRCodeDrawingOptions? options = null) => throw null;
     }
 }

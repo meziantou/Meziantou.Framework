@@ -23,13 +23,13 @@ public sealed class ImageRendererTests
         using var webp = new MemoryStream();
         image.Save(webp, new WebPEncoder());
 
-        // Custom options
-        using var customImage = qrCode.ToImage(new QRCodeImageOptions
+        // Custom options, the same as the canvas drawing takes: any brush, and no background
+        using var customImage = qrCode.ToImage(new QRCodeDrawingOptions
         {
             ModuleSize = 4,
             QuietZoneModules = 2,
-            DarkColor = new Rgba32(0x00, 0x33, 0x66),
-            LightColor = Colors.Transparent,
+            DarkBrush = new SolidBrush(new Rgba32(0x00, 0x33, 0x66)),
+            LightBrush = null,
         });
         Assert.Equal((116, 116), (customImage.Width, customImage.Height));
         Assert.Equal(Colors.Transparent, customImage.Frames[0][0, 0]);
@@ -46,7 +46,7 @@ public sealed class ImageRendererTests
     {
         #region ImagingBarcodes_BarcodeToImage
         var barcode = Barcode.CreateEan13("5901234123457");
-        using var image = barcode.ToImage(new BarcodeImageOptions { ModuleWidth = 3, ModuleHeight = 100 });
+        using var image = barcode.ToImage(new BarcodeDrawingOptions { ModuleWidth = 3, ModuleHeight = 100 });
         Assert.Equal((345, 100), (image.Width, image.Height));
         #endregion
     }
@@ -151,7 +151,7 @@ public sealed class ImageRendererTests
         var qr = CreateSample(type);
         var expected = qr.ToPng(new QRCodePngOptions { ModuleSize = moduleSize, QuietZoneModules = quietZoneModules });
 
-        using var actual = qr.ToImage(new QRCodeImageOptions { ModuleSize = moduleSize, QuietZoneModules = quietZoneModules });
+        using var actual = qr.ToImage(new QRCodeDrawingOptions { ModuleSize = moduleSize, QuietZoneModules = quietZoneModules });
 
         AssertSamePixels(expected, actual);
     }
@@ -161,7 +161,7 @@ public sealed class ImageRendererTests
     public void QRCode_ToImage_PixelsMatchTheModuleMatrix(QRCodeType type, int moduleSize, int quietZoneModules)
     {
         var qr = CreateSample(type);
-        using var image = qr.ToImage(new QRCodeImageOptions { ModuleSize = moduleSize, QuietZoneModules = quietZoneModules });
+        using var image = qr.ToImage(new QRCodeDrawingOptions { ModuleSize = moduleSize, QuietZoneModules = quietZoneModules });
 
         Assert.Equal((qr.Width + (2 * quietZoneModules)) * moduleSize, image.Width);
         Assert.Equal((qr.Height + (2 * quietZoneModules)) * moduleSize, image.Height);
@@ -189,7 +189,7 @@ public sealed class ImageRendererTests
         var dark = new Rgba32(0x00, 0x33, 0x66, 0xC0);
         var light = Colors.Transparent;
 
-        using var image = qr.ToImage(new QRCodeImageOptions { ModuleSize = 3, QuietZoneModules = 1, DarkColor = dark, LightColor = light });
+        using var image = qr.ToImage(new QRCodeDrawingOptions { ModuleSize = 3, QuietZoneModules = 1, DarkBrush = new SolidBrush(dark), LightBrush = null });
 
         var pixels = GetPixels(image);
         Assert.Equal(light, pixels[0]);
@@ -203,7 +203,7 @@ public sealed class ImageRendererTests
         var qr = QRCode.Create("SCAN ME", ErrorCorrectionLevel.Q);
         var expected = qr.ToPng(new QRCodePngOptions { ModuleSize = 3, DarkColor = Color.FromRgb(0x00, 0x33, 0x66), LightColor = Color.Transparent });
 
-        using var actual = qr.ToImage(new QRCodeImageOptions { ModuleSize = 3, DarkColor = new Rgba32(0x00, 0x33, 0x66), LightColor = Colors.Transparent });
+        using var actual = qr.ToImage(new QRCodeDrawingOptions { ModuleSize = 3, DarkBrush = new SolidBrush(new Rgba32(0x00, 0x33, 0x66)), LightBrush = null });
 
         AssertSamePixels(expected, actual);
     }
@@ -212,7 +212,7 @@ public sealed class ImageRendererTests
     public void QRCode_ToImage_IndexedPngRoundTrip()
     {
         var qr = QRCode.CreateRMQR("https://example.com", ErrorCorrectionLevel.M);
-        using var image = qr.ToImage(new QRCodeImageOptions { ModuleSize = 2, LightColor = Colors.Transparent });
+        using var image = qr.ToImage(new QRCodeDrawingOptions { ModuleSize = 2, LightBrush = null });
 
         using var stream = new MemoryStream();
         image.Save(stream, new PngEncoder { PixelLayout = PngPixelLayout.Indexed });
@@ -224,7 +224,7 @@ public sealed class ImageRendererTests
     public void QRCode_ToImage_CanBeDrawnOntoAnotherImage()
     {
         var qr = QRCode.Create("TICKET-0042", ErrorCorrectionLevel.L);
-        using var qrImage = qr.ToImage(new QRCodeImageOptions { ModuleSize = 1, QuietZoneModules = 0 });
+        using var qrImage = qr.ToImage(new QRCodeDrawingOptions { ModuleSize = 1, QuietZoneModules = 0 });
         using var ticket = new Image<Rgba32>(qrImage.Width + 32, qrImage.Height + 32, Colors.Red);
 
         ticket.Draw(canvas => canvas.DrawImage(qrImage.Frames[0], new PointD(16, 16)));
@@ -248,11 +248,12 @@ public sealed class ImageRendererTests
     }
 
     [Fact]
-    public void QRCode_ToImage_NullOptions_Throws()
+    public void QRCode_ToImage_NullOptions_UsesTheDefaults()
     {
         var qr = QRCode.Create("A", ErrorCorrectionLevel.L);
+        using var image = qr.ToImage(options: null);
 
-        Assert.Throws<ArgumentNullException>(() => qr.ToImage(options: null!));
+        Assert.Equal((290, 290), (image.Width, image.Height));
     }
 
     [Theory]
@@ -262,7 +263,7 @@ public sealed class ImageRendererTests
     {
         var qr = QRCode.Create("A", ErrorCorrectionLevel.L);
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => qr.ToImage(new QRCodeImageOptions { ModuleSize = moduleSize }));
+        Assert.Throws<ArgumentOutOfRangeException>(() => qr.ToImage(new QRCodeDrawingOptions { ModuleSize = moduleSize }));
     }
 
     [Fact]
@@ -270,7 +271,7 @@ public sealed class ImageRendererTests
     {
         var qr = QRCode.Create("A", ErrorCorrectionLevel.L);
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => qr.ToImage(new QRCodeImageOptions { QuietZoneModules = -1 }));
+        Assert.Throws<ArgumentOutOfRangeException>(() => qr.ToImage(new QRCodeDrawingOptions { QuietZoneModules = -1 }));
     }
 
     [Fact]
@@ -278,8 +279,8 @@ public sealed class ImageRendererTests
     {
         var qr = QRCode.Create("A", ErrorCorrectionLevel.L);
 
-        var exception = Assert.Throws<ArgumentOutOfRangeException>(() => qr.ToImage(new QRCodeImageOptions { ModuleSize = int.MaxValue }));
-        Assert.Equal(nameof(QRCodeImageOptions.ModuleSize), exception.ParamName);
+        var exception = Assert.Throws<ArgumentOutOfRangeException>(() => qr.ToImage(new QRCodeDrawingOptions { ModuleSize = int.MaxValue }));
+        Assert.Equal(nameof(QRCodeDrawingOptions.ModuleSize), exception.ParamName);
     }
 
     [Fact]
@@ -303,7 +304,7 @@ public sealed class ImageRendererTests
         var barcode = CreateSample(type);
         var expected = barcode.ToPng(new BarcodePngOptions { ModuleWidth = moduleWidth, ModuleHeight = moduleHeight, QuietZoneModules = quietZoneModules });
 
-        using var actual = barcode.ToImage(new BarcodeImageOptions { ModuleWidth = moduleWidth, ModuleHeight = moduleHeight, QuietZoneModules = quietZoneModules });
+        using var actual = barcode.ToImage(new BarcodeDrawingOptions { ModuleWidth = moduleWidth, ModuleHeight = moduleHeight, QuietZoneModules = quietZoneModules });
 
         AssertSamePixels(expected, actual);
     }
@@ -315,7 +316,7 @@ public sealed class ImageRendererTests
         var dark = new Rgba32(0x10, 0x20, 0x30);
         var light = new Rgba32(0xF0, 0xE0, 0xD0, 0x80);
 
-        using var image = barcode.ToImage(new BarcodeImageOptions { DarkColor = dark, LightColor = light });
+        using var image = barcode.ToImage(new BarcodeDrawingOptions { DarkBrush = new SolidBrush(dark), LightBrush = new SolidBrush(light) });
 
         var pixels = GetPixels(image);
         Assert.Contains(dark, pixels);
@@ -330,11 +331,12 @@ public sealed class ImageRendererTests
     }
 
     [Fact]
-    public void Barcode_ToImage_NullOptions_Throws()
+    public void Barcode_ToImage_NullOptions_UsesTheDefaults()
     {
         var barcode = Barcode.CreateCode39("ABC");
+        using var image = barcode.ToImage(options: null);
 
-        Assert.Throws<ArgumentNullException>(() => barcode.ToImage(options: null!));
+        Assert.Equal(((barcode.Width + 20) * 2, 80), (image.Width, image.Height));
     }
 
     [Fact]
@@ -342,7 +344,7 @@ public sealed class ImageRendererTests
     {
         var barcode = Barcode.CreateCode39("ABC");
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => barcode.ToImage(new BarcodeImageOptions { ModuleWidth = 0 }));
+        Assert.Throws<ArgumentOutOfRangeException>(() => barcode.ToImage(new BarcodeDrawingOptions { ModuleWidth = 0 }));
     }
 
     [Fact]
@@ -350,7 +352,7 @@ public sealed class ImageRendererTests
     {
         var barcode = Barcode.CreateCode39("ABC");
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => barcode.ToImage(new BarcodeImageOptions { ModuleHeight = 0 }));
+        Assert.Throws<ArgumentOutOfRangeException>(() => barcode.ToImage(new BarcodeDrawingOptions { ModuleHeight = 0 }));
     }
 
     [Fact]
@@ -358,7 +360,7 @@ public sealed class ImageRendererTests
     {
         var barcode = Barcode.CreateCode39("ABC");
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => barcode.ToImage(new BarcodeImageOptions { QuietZoneModules = -1 }));
+        Assert.Throws<ArgumentOutOfRangeException>(() => barcode.ToImage(new BarcodeDrawingOptions { QuietZoneModules = -1 }));
     }
 
     [Fact]
@@ -366,16 +368,16 @@ public sealed class ImageRendererTests
     {
         var barcode = Barcode.CreateCode39("ABC");
 
-        var exception = Assert.Throws<ArgumentOutOfRangeException>(() => barcode.ToImage(new BarcodeImageOptions { ModuleWidth = int.MaxValue }));
-        Assert.Equal(nameof(BarcodeImageOptions.ModuleWidth), exception.ParamName);
+        var exception = Assert.Throws<ArgumentOutOfRangeException>(() => barcode.ToImage(new BarcodeDrawingOptions { ModuleWidth = int.MaxValue }));
+        Assert.Equal(nameof(BarcodeDrawingOptions.ModuleWidth), exception.ParamName);
     }
 
     [Theory]
     [MemberData(nameof(QRCodeLayouts))]
-    public void DrawQRCode_MatchesToImage(QRCodeType type, int moduleSize, int quietZoneModules)
+    public void DrawQRCode_MatchesToPng(QRCodeType type, int moduleSize, int quietZoneModules)
     {
         var qr = CreateSample(type);
-        using var expected = qr.ToImage(new QRCodeImageOptions { ModuleSize = moduleSize, QuietZoneModules = quietZoneModules });
+        using var expected = Image.Load<Rgba32>(qr.ToPng(new QRCodePngOptions { ModuleSize = moduleSize, QuietZoneModules = quietZoneModules }));
         var options = new QRCodeDrawingOptions { ModuleSize = moduleSize, QuietZoneModules = quietZoneModules };
 
         using var actual = new Image<Rgba32>(expected.Width + 20, expected.Height + 20, Colors.Red);
@@ -388,10 +390,10 @@ public sealed class ImageRendererTests
 
     [Theory]
     [MemberData(nameof(BarcodeLayouts))]
-    public void DrawBarcode_MatchesToImage(BarcodeType type, int moduleWidth, int moduleHeight, int quietZoneModules)
+    public void DrawBarcode_MatchesToPng(BarcodeType type, int moduleWidth, int moduleHeight, int quietZoneModules)
     {
         var barcode = CreateSample(type);
-        using var expected = barcode.ToImage(new BarcodeImageOptions { ModuleWidth = moduleWidth, ModuleHeight = moduleHeight, QuietZoneModules = quietZoneModules });
+        using var expected = Image.Load<Rgba32>(barcode.ToPng(new BarcodePngOptions { ModuleWidth = moduleWidth, ModuleHeight = moduleHeight, QuietZoneModules = quietZoneModules }));
         var options = new BarcodeDrawingOptions { ModuleWidth = moduleWidth, ModuleHeight = moduleHeight, QuietZoneModules = quietZoneModules };
 
         using var actual = new Image<Rgba32>(expected.Width + 20, expected.Height + 20, Colors.Red);
@@ -467,7 +469,7 @@ public sealed class ImageRendererTests
 
         Assert.Equal(new RectangleD(10, 11, 23 * 3, 23 * 3), bounds);
         Assert.Equal(new RectangleD(0, 0, 23 * 3, 23 * 3), QRCodeImageRenderer.MeasureQRCode(qr, options));
-        using var expected = qr.ToImage(new QRCodeImageOptions { ModuleSize = 3, QuietZoneModules = 1 });
+        using var expected = Image.Load<Rgba32>(qr.ToPng(new QRCodePngOptions { ModuleSize = 3, QuietZoneModules = 1 }));
         AssertDrawnAt(expected, actual, 10, 11);
     }
 
@@ -495,7 +497,7 @@ public sealed class ImageRendererTests
     public void DrawQRCode_UnderATransform_IsScaled()
     {
         var qr = QRCode.Create("SCALE", ErrorCorrectionLevel.L);
-        using var expected = qr.ToImage(new QRCodeImageOptions { ModuleSize = 2, QuietZoneModules = 2 });
+        using var expected = Image.Load<Rgba32>(qr.ToPng(new QRCodePngOptions { ModuleSize = 2, QuietZoneModules = 2 }));
         var options = new QRCodeDrawingOptions { ModuleSize = 1, QuietZoneModules = 2 };
 
         using var actual = new Image<Rgba32>(expected.Width + 20, expected.Height + 20, Colors.Red);

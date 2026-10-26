@@ -58,6 +58,32 @@ internal static class ModuleCanvasRenderer
         }
     }
 
+    /// <summary>Renders a drawing as an image of its size, rounded up.</summary>
+    /// <param name="content">What the drawing paints.</param>
+    /// <param name="layout">Where its parts go.</param>
+    /// <param name="parameterName">The option to blame when the image is too large.</param>
+    /// <exception cref="ArgumentOutOfRangeException">The size of the image does not fit in an <see cref="int"/>.</exception>
+    public static Image<Rgba32> Render(ModuleCanvasContent content, ModuleCanvasLayout layout, string parameterName)
+    {
+        var width = Math.Ceiling(layout.Width);
+        var height = Math.Ceiling(layout.Height);
+        if (width > int.MaxValue || height > int.MaxValue)
+            throw new ArgumentOutOfRangeException(parameterName, "The output image dimensions are too large.");
+
+        var image = new Image<Rgba32>((int)width, (int)height, Colors.Transparent);
+        try
+        {
+            image.Draw((content, layout), static (canvas, state) => Draw(canvas, default, state.layout, state.content));
+        }
+        catch
+        {
+            image.Dispose();
+            throw;
+        }
+
+        return image;
+    }
+
     /// <summary>Draws the modules, the quiet zone and the text at a position.</summary>
     /// <returns>The rectangle the drawing covers.</returns>
     public static RectangleD Draw(DrawingCanvas canvas, PointD position, ModuleCanvasLayout layout, ModuleCanvasContent content)

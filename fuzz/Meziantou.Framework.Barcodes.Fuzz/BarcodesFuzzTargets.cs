@@ -79,7 +79,7 @@ public static class BarcodesFuzzTargets
         // The renderers agree with the module matrix
         using var image = Image.Load<Rgba32>(qr.ToPng(new QRCodePngOptions { ModuleSize = 1, QuietZoneModules = 0 }));
         CheckPixels(image, qr.Width, qr.Height, (row, column) => qr[row, column], "ToPng");
-        using var fromImaging = qr.ToImage(new QRCodeImageOptions { ModuleSize = 1, QuietZoneModules = 0 });
+        using var fromImaging = qr.ToImage(new QRCodeDrawingOptions { ModuleSize = 1, QuietZoneModules = 0 });
         CheckPixels(fromImaging, qr.Width, qr.Height, (row, column) => qr[row, column], "ToImage");
         FuzzAssert.True(qr.ToSvg().Length > 0, "ToSvg is empty");
         var console = qr.ToConsoleString(new QRCodeConsoleOptions { QuietZoneModules = 0 });
@@ -129,7 +129,7 @@ public static class BarcodesFuzzTargets
         {
             using var image = Image.Load<Rgba32>(png);
             CheckPixels(image, barcode.Width, 1, (row, column) => barcode[row, column], "ToPng");
-            using var fromImaging = barcode.ToImage(new BarcodeImageOptions { ModuleWidth = 1, ModuleHeight = 1, QuietZoneModules = 0 });
+            using var fromImaging = barcode.ToImage(new BarcodeDrawingOptions { ModuleWidth = 1, ModuleHeight = 1, QuietZoneModules = 0 });
             CheckPixels(fromImaging, barcode.Width, 1, (row, column) => barcode[row, column], "ToImage");
         }
         catch (ImageResourceLimitException)

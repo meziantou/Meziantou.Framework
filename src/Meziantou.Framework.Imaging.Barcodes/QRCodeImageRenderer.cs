@@ -9,39 +9,22 @@ namespace Meziantou.Framework.Imaging.Barcodes;
 /// </summary>
 public static class QRCodeImageRenderer
 {
-    /// <summary>Renders the QR code as an image with default options.</summary>
+    /// <summary>Renders the QR code as an image: what <see cref="DrawQRCode"/> draws on a canvas of the size <see cref="MeasureQRCode"/> gives, rounded up.</summary>
+    /// <remarks>
+    /// With the default <see cref="QRCodeDrawingOptions.SnapToPixels"/>, the modules are whole pixels and the image has two colors when
+    /// the brushes are solid. With a <see langword="null"/> <see cref="QRCodeDrawingOptions.LightBrush"/>, the background is transparent.
+    /// </remarks>
     /// <param name="qrCode">The QR code to render.</param>
+    /// <param name="options">The drawing options, or <see langword="null"/> for the defaults.</param>
     /// <returns>A single-frame image. The caller owns it and must dispose it.</returns>
-    public static Image<Rgba32> ToImage(this QRCode qrCode)
-    {
-        return ToImage(qrCode, new QRCodeImageOptions());
-    }
-
-    /// <summary>Renders the QR code as an image with the specified options.</summary>
-    /// <param name="qrCode">The QR code to render.</param>
-    /// <param name="options">The rendering options.</param>
-    /// <returns>A single-frame image. The caller owns it and must dispose it.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="qrCode"/> or <see cref="QRCodeDrawingOptions.DarkBrush"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentOutOfRangeException">An option is out of range, or the image dimensions are too large.</exception>
     /// <exception cref="ImageResourceLimitException">The image exceeds a limit of <see cref="ImageConfiguration.Default"/>.</exception>
-    public static Image<Rgba32> ToImage(this QRCode qrCode, QRCodeImageOptions options)
+    public static Image<Rgba32> ToImage(this QRCode qrCode, QRCodeDrawingOptions? options = null)
     {
-        ArgumentNullException.ThrowIfNull(qrCode);
-        ArgumentNullException.ThrowIfNull(options);
-        ArgumentOutOfRangeException.ThrowIfLessThan(options.ModuleSize, 1);
-        ArgumentOutOfRangeException.ThrowIfNegative(options.QuietZoneModules);
-
-        var width = ModuleImageRenderer.GetTotalDimension(qrCode.Width, options.QuietZoneModules, options.ModuleSize, nameof(options.ModuleSize));
-        var height = ModuleImageRenderer.GetTotalDimension(qrCode.Height, options.QuietZoneModules, options.ModuleSize, nameof(options.ModuleSize));
-        var grid = new ModuleGrid(
-            Columns: qrCode.Width,
-            Rows: qrCode.Height,
-            IsDark: (row, column) => qrCode[row, column],
-            ModuleWidth: options.ModuleSize,
-            ModuleHeight: options.ModuleSize,
-            HorizontalQuietZoneModules: options.QuietZoneModules,
-            VerticalQuietZoneModules: options.QuietZoneModules);
-
-        return ModuleImageRenderer.Render(grid, width, height, options.LightColor, options.DarkColor);
+        options ??= new QRCodeDrawingOptions();
+        var content = GetDrawingContent(qrCode, options);
+        return ModuleCanvasRenderer.Render(content, GetLayout(content), nameof(options.ModuleSize));
     }
 
     /// <summary>Measures the rectangle that <see cref="DrawQRCode(DrawingCanvas, QRCode, PointD, QRCodeDrawingOptions?)"/> covers, quiet zone included.</summary>

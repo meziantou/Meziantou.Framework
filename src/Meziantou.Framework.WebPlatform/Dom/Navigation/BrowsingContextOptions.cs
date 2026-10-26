@@ -288,6 +288,17 @@ public sealed partial class BrowsingContextOptions
     public Action<BrowsingContext>? SameDocumentNavigated { get; init; }
 
     /// <summary>
+    /// Gets or sets the callback invoked when a browsing context that uses these options downloads a resource
+    /// (https://html.spec.whatwg.org/multipage/links.html#downloading-resources): the response of a navigation whose
+    /// <c>Content-Disposition</c> is <c>attachment</c> (the active document stays), or the resource of a hyperlink with a
+    /// <c>download</c> attribute, fetched by <see cref="DocumentLoader"/>. The downloads of the documents sandboxed without
+    /// <c>allow-downloads</c> are blocked. When null, the downloads are ignored: the hyperlinks with a <c>download</c>
+    /// attribute fetch nothing, and the rest of the body of an <c>attachment</c> response is not read. The callback is
+    /// invoked on the thread of the event loop.
+    /// </summary>
+    public Action<BrowsingContext, Download>? DownloadStarted { get; init; }
+
+    /// <summary>
     /// Gets or sets the callback that shows the simple dialogs of the windows
     /// (https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#simple-dialogs): <c>alert()</c>, <c>confirm()</c>,
     /// <c>prompt()</c>, and the prompt of a <c>beforeunload</c> event that is canceled by a document that has sticky activation

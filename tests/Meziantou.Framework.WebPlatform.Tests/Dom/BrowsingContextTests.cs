@@ -923,6 +923,32 @@ public sealed class BrowsingContextTests
     }
 
     [Fact]
+    public void Download_HyperlinkAndAttachmentAreHandedToTheApplication()
+    {
+        var downloads = new List<string>();
+        using var context = new BrowsingContext(new BrowsingContextOptions
+        {
+            DocumentLoader = new DelegateDocumentLoader((url, _) => ValueTask.FromResult<DocumentResource?>(url.Contains("attachment", StringComparison.Ordinal)
+                ? new DocumentResource("content") { Headers = [new("Content-Disposition", "attachment; filename=a.txt")] }
+                : new DocumentResource("<title>" + url + "</title>"))),
+            DownloadStarted = (_, download) => downloads.Add(download.Url + " " + (download.Filename ?? "(navigation)") + " " + download.Resource.Content),
+        });
+
+        var document = Load(context, "<a id=download href='file.txt' download=name.txt>x</a><a id=attachment href='attachment.txt'>x</a><iframe sandbox=allow-same-origin srcdoc='<a href=file.txt download>x</a>'></iframe>");
+        ((HtmlElement)document.GetElementById("download")!).Click();
+        ((HtmlElement)document.GetElementById("attachment")!).Click();
+        context.EventLoop.RunUntilIdle();
+        Assert.Same(document, context.Document);
+        Assert.Equal(["https://example.com/dir/file.txt name.txt <title>https://example.com/dir/file.txt</title>", "https://example.com/dir/attachment.txt (navigation) content"], downloads);
+
+        // The documents sandboxed without allow-downloads do not download
+        downloads.Clear();
+        ((HtmlElement)context.Children[0].Document.QuerySelector("a")!).Click();
+        context.EventLoop.RunUntilIdle();
+        Assert.Empty(downloads);
+    }
+
+    [Fact]
     public void Hyperlink_Click_EditableLinkDoesNotNavigate()
     {
         using var context = new BrowsingContext(new BrowsingContextOptions

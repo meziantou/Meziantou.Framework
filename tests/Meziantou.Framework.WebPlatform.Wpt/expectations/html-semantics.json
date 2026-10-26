@@ -2519,21 +2519,10 @@
     "total": 1
   },
   "html/semantics/embedded-content/the-iframe-element/iframe_sandbox_anchor_download_allow_downloads.tentative.html": {
-    "harness": "TIMEOUT",
-    "total": 6,
-    "failures": {
-      "<a  download> triggered download in sandbox is allowed by allow-downloads.": "TIMEOUT",
-      "<a target=\"_blank\" download> triggered download in sandbox is allowed by allow-downloads.": "TIMEOUT",
-      "<a target=\"_blank\" rel=\"noopener\" download> triggered download in sandbox is allowed by allow-downloads.": "TIMEOUT"
-    }
+    "total": 6
   },
   "html/semantics/embedded-content/the-iframe-element/iframe_sandbox_anchor_download_block_downloads.tentative.html": {
-    "total": 5,
-    "failures": {
-      "<a > triggered download in sandbox is blocked.": "FAIL",
-      "<a target=\"_blank\" > triggered download in sandbox is blocked.": "FAIL",
-      "<a target=\"_blank\" rel=\"noopener\" > triggered download in sandbox is blocked.": "FAIL"
-    }
+    "total": 5
   },
   "html/semantics/embedded-content/the-iframe-element/iframe_sandbox_block_modals-1.html": {
     "total": 1
@@ -2578,11 +2567,7 @@
     "total": 2
   },
   "html/semantics/embedded-content/the-iframe-element/iframe_sandbox_navigation_download_block_downloads.sub.tentative.html": {
-    "total": 2,
-    "failures": {
-      "Navigation resulted download in sandbox from <object> is blocked.": "FAIL",
-      "Navigation resulted download in sandbox is blocked.": "FAIL"
-    }
+    "total": 2
   },
   "html/semantics/embedded-content/the-iframe-element/iframe_sandbox_popups_escaping-1.html": {
     "total": 1
@@ -2606,12 +2591,7 @@
     "total": 3
   },
   "html/semantics/embedded-content/the-iframe-element/iframe_sandbox_window_open_download_block_downloads.tentative.html": {
-    "total": 3,
-    "failures": {
-      "window.open(download, \"_blank\") triggering download in sandbox is blocked.": "FAIL",
-      "window.open(download, \"_blank\", \"noopener\") triggering download in sandbox is blocked.": "FAIL",
-      "window.open(download, ) triggering download in sandbox is blocked.": "FAIL"
-    }
+    "total": 3
   },
   "html/semantics/embedded-content/the-iframe-element/move-node-local-root-events-still-fire.html": {
     "total": 1

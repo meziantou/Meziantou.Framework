@@ -3119,6 +3119,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool DeclarativeRefreshEnabled { get => throw null; init { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.BrowsingContext, Meziantou.Framework.WebPlatform.Dom.Document>? DocumentActivated { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.DocumentLoader? DocumentLoader { get => throw null; init { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.BrowsingContext, Meziantou.Framework.WebPlatform.Dom.Download>? DownloadStarted { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.EncodingDetector? EncodingDetector { get => throw null; init { } }
         public System.Func<Meziantou.Framework.WebPlatform.Dom.BrowsingContext, Meziantou.Framework.WebPlatform.Dom.FullscreenOptions, Meziantou.Framework.WebPlatform.Dom.FullscreenViewportSize?>? EnterFullscreen { get => throw null; init { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.BrowsingContext>? ExitFullscreen { get => throw null; init { } }
@@ -4656,6 +4657,13 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public override string ToString() => throw null;
         public bool Toggle(string token, bool? force = null) => throw null;
         string System.Collections.Generic.IReadOnlyList<System.String>.get_Item(int index) => throw null;
+    }
+
+    public sealed class Download
+    {
+        public string? Filename { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.DocumentResource Resource { get => throw null; }
+        public string Url { get => throw null; }
     }
 
     public sealed class DragAndDropOperation

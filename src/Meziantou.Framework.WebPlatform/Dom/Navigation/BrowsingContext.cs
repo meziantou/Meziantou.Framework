@@ -1659,6 +1659,7 @@ public sealed partial class BrowsingContext : IDisposable
             TraversalEntry = traversalEntry,
             IframeElementReferrerPolicy = iframeElementReferrerPolicy,
             TargetSandboxingFlags = targetSandboxingFlags,
+            SourceAllowsDownloading = sourceDocument is null || (sourceDocument.ActiveSandboxingFlags & SandboxingFlags.Downloads) == SandboxingFlags.None,
             FragmentDirective = fragmentDirective,
             UserInvolvement = userInvolvement,
             InitiatorOrigin = sourceDocument?.Origin,
@@ -2069,9 +2070,10 @@ public sealed partial class BrowsingContext : IDisposable
         else if (HasNoDocument(resource))
         {
             // The navigation ends: the active document stays. The container reports the timing of a response without content
-            // (its load event is not fired); a download is not reported. The rest of a body that arrives over time is not read.
+            // (its load event is not fired); a download is not reported. The rest of a body that arrives over time is not read,
+            // unless the response is handled as a download.
             _isTraversalOngoing = false;
-            if (resource.RemainingContentBytes is { } remainingBytes)
+            if (!(resource.StatusCode is not (204 or 205) && TryHandleNavigationAsDownload(url, parameters, resource)) && resource.RemainingContentBytes is { } remainingBytes)
             {
                 _ = remainingBytes.GetAsyncEnumerator().DisposeAsync().AsTask();
             }
@@ -2200,6 +2202,25 @@ public sealed partial class BrowsingContext : IDisposable
         }
 
         NavigationEndedWithoutDocument?.Invoke();
+    }
+
+    /// <summary>
+    /// Handles the response of a navigation whose <c>Content-Disposition</c> is <c>attachment</c> as a download
+    /// (https://html.spec.whatwg.org/multipage/browsing-the-web.html#populating-a-session-history-entry) when the source
+    /// document, the final sandboxing flags of the navigation and the application (<see cref="BrowsingContextOptions.DownloadStarted"/>)
+    /// allow it.
+    /// </summary>
+    /// <returns>Whether the response was handed to the application, which then reads the rest of its body.</returns>
+    private bool TryHandleNavigationAsDownload(UrlRecord url, DocumentParameters parameters, DocumentResource resource)
+    {
+        if (Options.DownloadStarted is not { } downloadStarted || !parameters.SourceAllowsDownloading)
+            return false;
+
+        if ((GetFinalSandboxingFlags(resource.Headers, parameters.TargetSandboxingFlags) & SandboxingFlags.Downloads) != SandboxingFlags.None)
+            return false;
+
+        downloadStarted(this, new Download(resource.Url ?? url.Serialize(), filename: null, resource));
+        return true;
     }
 
     /// <summary>
@@ -3669,6 +3690,9 @@ public sealed partial class BrowsingContext : IDisposable
 
         /// <summary>The sandboxing flags of the navigable when the navigation started (the target snapshot params), or null to get them when the document is created.</summary>
         public SandboxingFlags? TargetSandboxingFlags { get; init; }
+
+        /// <summary>Whether the source document allows downloading (the source snapshot params): it is not sandboxed without allow-downloads.</summary>
+        public bool SourceAllowsDownloading { get; init; } = true;
 
         public Document? OriginDocument { get; set; }
 

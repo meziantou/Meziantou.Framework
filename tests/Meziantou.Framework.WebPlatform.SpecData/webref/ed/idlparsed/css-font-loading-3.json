@@ -36,7 +36,7 @@
     },
     "idlNames": {
       "FontFaceDescriptors": {
-        "fragment": "dictionary FontFaceDescriptors {\n  CSSOMString style = \"normal\";\n  CSSOMString weight = \"normal\";\n  CSSOMString stretch = \"normal\";\n  CSSOMString unicodeRange = \"U+0-10FFFF\";\n  CSSOMString featureSettings = \"normal\";\n  CSSOMString variationSettings = \"normal\";\n  CSSOMString display = \"auto\";\n  CSSOMString ascentOverride = \"normal\";\n  CSSOMString descentOverride = \"normal\";\n  CSSOMString lineGapOverride = \"normal\";\n};",
+        "fragment": "dictionary FontFaceDescriptors {\n  CSSOMString style = \"normal\";\n  CSSOMString weight = \"normal\";\n  CSSOMString width;\n  CSSOMString stretch = \"normal\"; // alias for width, sets the same attribute\n  CSSOMString unicodeRange = \"U+0-10FFFF\";\n  CSSOMString featureSettings = \"normal\";\n  CSSOMString variationSettings = \"normal\";\n  CSSOMString display = \"auto\";\n  CSSOMString ascentOverride = \"normal\";\n  CSSOMString descentOverride = \"normal\";\n  CSSOMString lineGapOverride = \"normal\";\n};",
         "type": "dictionary",
         "name": "FontFaceDescriptors",
         "inheritance": null,
@@ -78,6 +78,22 @@
             },
             "required": false,
             "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontfacedescriptors-weight"
+          },
+          {
+            "type": "field",
+            "name": "width",
+            "extAttrs": [],
+            "idlType": {
+              "type": "dictionary-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "default": null,
+            "required": false,
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontfacedescriptors-width"
           },
           {
             "type": "field",
@@ -266,7 +282,7 @@
         "href": "https://drafts.csswg.org/css-font-loading-3/#enumdef-fontfaceloadstatus"
       },
       "FontFace": {
-        "fragment": "[Exposed=(Window,Worker)]\ninterface FontFace {\n  constructor(CSSOMString family, (CSSOMString or BufferSource) source,\n                optional FontFaceDescriptors descriptors = {});\n  attribute CSSOMString family;\n  attribute CSSOMString style;\n  attribute CSSOMString weight;\n  attribute CSSOMString stretch;\n  attribute CSSOMString unicodeRange;\n  attribute CSSOMString featureSettings;\n  attribute CSSOMString variationSettings;\n  attribute CSSOMString display;\n  attribute CSSOMString ascentOverride;\n  attribute CSSOMString descentOverride;\n  attribute CSSOMString lineGapOverride;\n\n  readonly attribute FontFaceLoadStatus status;\n\n  Promise<FontFace> load();\n  readonly attribute Promise<FontFace> loaded;\n};",
+        "fragment": "[Exposed=(Window,Worker)]\ninterface FontFace {\n  constructor(CSSOMString family,\n              (CSSOMString or BufferSource) source,\n              optional FontFaceDescriptors descriptors = {});\n\n  attribute CSSOMString family;\n  attribute CSSOMString style;\n  attribute CSSOMString weight;\n  attribute CSSOMString width;\n  attribute CSSOMString unicodeRange;\n  attribute CSSOMString variant;\n  attribute CSSOMString featureSettings;\n  attribute CSSOMString variationSettings;\n  attribute CSSOMString display;\n  attribute CSSOMString ascentOverride;\n  attribute CSSOMString descentOverride;\n  attribute CSSOMString lineGapOverride;\n  attribute CSSOMString sizeAdjust;\n\n  readonly attribute FontFaceLoadStatus status;\n\n  Promise<FontFace> load();\n  readonly attribute Promise<FontFace> loaded;\n};",
         "type": "interface",
         "name": "FontFace",
         "inheritance": null,
@@ -395,7 +411,7 @@
           },
           {
             "type": "attribute",
-            "name": "stretch",
+            "name": "width",
             "idlType": {
               "type": "attribute-type",
               "extAttrs": [],
@@ -407,7 +423,7 @@
             "extAttrs": [],
             "special": "",
             "readonly": false,
-            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontface-stretch"
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontface-width"
           },
           {
             "type": "attribute",
@@ -424,6 +440,22 @@
             "special": "",
             "readonly": false,
             "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontface-unicoderange"
+          },
+          {
+            "type": "attribute",
+            "name": "variant",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontface-variant"
           },
           {
             "type": "attribute",
@@ -520,6 +552,22 @@
             "special": "",
             "readonly": false,
             "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontface-linegapoverride"
+          },
+          {
+            "type": "attribute",
+            "name": "sizeAdjust",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "CSSOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://drafts.csswg.org/css-font-loading-3/#dom-fontface-sizeadjust"
           },
           {
             "type": "attribute",

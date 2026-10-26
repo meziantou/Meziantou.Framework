@@ -259,6 +259,118 @@
               "value": "add"
             }
           ]
+        },
+        {
+          "name": "@top-left-corner",
+          "href": "https://drafts.csswg.org/css-page-3/#at-ruledef-page-top-left-corner",
+          "type": "at-rule",
+          "for": "@page",
+          "value": "@top-left-corner { <declaration-list> };"
+        },
+        {
+          "name": "@top-left",
+          "href": "https://drafts.csswg.org/css-page-3/#at-ruledef-page-top-left",
+          "type": "at-rule",
+          "for": "@page",
+          "value": "@top-left { <declaration-list> };"
+        },
+        {
+          "name": "@top-center",
+          "href": "https://drafts.csswg.org/css-page-3/#at-ruledef-page-top-center",
+          "type": "at-rule",
+          "for": "@page",
+          "value": "@top-center { <declaration-list> };"
+        },
+        {
+          "name": "@top-right",
+          "href": "https://drafts.csswg.org/css-page-3/#at-ruledef-page-top-right",
+          "type": "at-rule",
+          "for": "@page",
+          "value": "@top-right { <declaration-list> };"
+        },
+        {
+          "name": "@top-right-corner",
+          "href": "https://drafts.csswg.org/css-page-3/#at-ruledef-page-top-right-corner",
+          "type": "at-rule",
+          "for": "@page",
+          "value": "@top-right-corner { <declaration-list> };"
+        },
+        {
+          "name": "@bottom-left-corner",
+          "href": "https://drafts.csswg.org/css-page-3/#at-ruledef-page-bottom-left-corner",
+          "type": "at-rule",
+          "for": "@page",
+          "value": "@bottom-left-corner { <declaration-list> };"
+        },
+        {
+          "name": "@bottom-left",
+          "href": "https://drafts.csswg.org/css-page-3/#at-ruledef-page-bottom-left",
+          "type": "at-rule",
+          "for": "@page",
+          "value": "@bottom-left { <declaration-list> };"
+        },
+        {
+          "name": "@bottom-center",
+          "href": "https://drafts.csswg.org/css-page-3/#at-ruledef-page-bottom-center",
+          "type": "at-rule",
+          "for": "@page",
+          "value": "@bottom-center { <declaration-list> };"
+        },
+        {
+          "name": "@bottom-right",
+          "href": "https://drafts.csswg.org/css-page-3/#at-ruledef-page-bottom-right",
+          "type": "at-rule",
+          "for": "@page",
+          "value": "@bottom-right { <declaration-list> };"
+        },
+        {
+          "name": "@bottom-right-corner",
+          "href": "https://drafts.csswg.org/css-page-3/#at-ruledef-page-bottom-right-corner",
+          "type": "at-rule",
+          "for": "@page",
+          "value": "@bottom-right-corner { <declaration-list> };"
+        },
+        {
+          "name": "@left-top",
+          "href": "https://drafts.csswg.org/css-page-3/#at-ruledef-page-left-top",
+          "type": "at-rule",
+          "for": "@page",
+          "value": "@left-top { <declaration-list> };"
+        },
+        {
+          "name": "@left-middle",
+          "href": "https://drafts.csswg.org/css-page-3/#at-ruledef-page-left-middle",
+          "type": "at-rule",
+          "for": "@page",
+          "value": "@left-middle { <declaration-list> };"
+        },
+        {
+          "name": "@left-bottom",
+          "href": "https://drafts.csswg.org/css-page-3/#at-ruledef-page-left-bottom",
+          "type": "at-rule",
+          "for": "@page",
+          "value": "@left-bottom { <declaration-list> };"
+        },
+        {
+          "name": "@right-top",
+          "href": "https://drafts.csswg.org/css-page-3/#at-ruledef-page-right-top",
+          "type": "at-rule",
+          "for": "@page",
+          "value": "@right-top { <declaration-list> };"
+        },
+        {
+          "name": "@right-middle",
+          "href": "https://drafts.csswg.org/css-page-3/#at-ruledef-page-right-middle",
+          "type": "at-rule",
+          "for": "@page",
+          "value": "@right-middle { <declaration-list> };"
+        },
+        {
+          "name": "@right-bottom",
+          "href": "https://drafts.csswg.org/css-page-3/#at-ruledef-page-right-bottom",
+          "type": "at-rule",
+          "for": "@page",
+          "value": "@right-bottom { <declaration-list> };"
         }
       ],
       "value": "@page <page-selector-list>? { <declaration-rule-list> }",
@@ -292,102 +404,6 @@
           "value": ":blank"
         }
       ]
-    },
-    {
-      "name": "@top-left-corner",
-      "href": "https://drafts.csswg.org/css-page-3/#at-ruledef-top-left-corner",
-      "descriptors": [],
-      "value": "@top-left-corner { <declaration-list> };"
-    },
-    {
-      "name": "@top-left",
-      "href": "https://drafts.csswg.org/css-page-3/#at-ruledef-top-left",
-      "descriptors": [],
-      "value": "@top-left { <declaration-list> };"
-    },
-    {
-      "name": "@top-center",
-      "href": "https://drafts.csswg.org/css-page-3/#at-ruledef-top-center",
-      "descriptors": [],
-      "value": "@top-center { <declaration-list> };"
-    },
-    {
-      "name": "@top-right",
-      "href": "https://drafts.csswg.org/css-page-3/#at-ruledef-top-right",
-      "descriptors": [],
-      "value": "@top-right { <declaration-list> };"
-    },
-    {
-      "name": "@top-right-corner",
-      "href": "https://drafts.csswg.org/css-page-3/#at-ruledef-top-right-corner",
-      "descriptors": [],
-      "value": "@top-right-corner { <declaration-list> };"
-    },
-    {
-      "name": "@bottom-left-corner",
-      "href": "https://drafts.csswg.org/css-page-3/#at-ruledef-bottom-left-corner",
-      "descriptors": [],
-      "value": "@bottom-left-corner { <declaration-list> };"
-    },
-    {
-      "name": "@bottom-left",
-      "href": "https://drafts.csswg.org/css-page-3/#at-ruledef-bottom-left",
-      "descriptors": [],
-      "value": "@bottom-left { <declaration-list> };"
-    },
-    {
-      "name": "@bottom-center",
-      "href": "https://drafts.csswg.org/css-page-3/#at-ruledef-bottom-center",
-      "descriptors": [],
-      "value": "@bottom-center { <declaration-list> };"
-    },
-    {
-      "name": "@bottom-right",
-      "href": "https://drafts.csswg.org/css-page-3/#at-ruledef-bottom-right",
-      "descriptors": [],
-      "value": "@bottom-right { <declaration-list> };"
-    },
-    {
-      "name": "@bottom-right-corner",
-      "href": "https://drafts.csswg.org/css-page-3/#at-ruledef-bottom-right-corner",
-      "descriptors": [],
-      "value": "@bottom-right-corner { <declaration-list> };"
-    },
-    {
-      "name": "@left-top",
-      "href": "https://drafts.csswg.org/css-page-3/#at-ruledef-left-top",
-      "descriptors": [],
-      "value": "@left-top { <declaration-list> };"
-    },
-    {
-      "name": "@left-middle",
-      "href": "https://drafts.csswg.org/css-page-3/#at-ruledef-left-middle",
-      "descriptors": [],
-      "value": "@left-middle { <declaration-list> };"
-    },
-    {
-      "name": "@left-bottom",
-      "href": "https://drafts.csswg.org/css-page-3/#at-ruledef-left-bottom",
-      "descriptors": [],
-      "value": "@left-bottom { <declaration-list> };"
-    },
-    {
-      "name": "@right-top",
-      "href": "https://drafts.csswg.org/css-page-3/#at-ruledef-right-top",
-      "descriptors": [],
-      "value": "@right-top { <declaration-list> };"
-    },
-    {
-      "name": "@right-middle",
-      "href": "https://drafts.csswg.org/css-page-3/#at-ruledef-right-middle",
-      "descriptors": [],
-      "value": "@right-middle { <declaration-list> };"
-    },
-    {
-      "name": "@right-bottom",
-      "href": "https://drafts.csswg.org/css-page-3/#at-ruledef-right-bottom",
-      "descriptors": [],
-      "value": "@right-bottom { <declaration-list> };"
     }
   ],
   "selectors": [],

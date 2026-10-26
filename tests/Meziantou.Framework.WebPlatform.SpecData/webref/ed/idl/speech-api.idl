@@ -94,6 +94,8 @@ interface SpeechRecognitionResult {
     readonly attribute unsigned long length;
     getter SpeechRecognitionAlternative? item(unsigned long index);
     readonly attribute boolean isFinal;
+    readonly attribute double speechStartTime;
+    readonly attribute double speechEndTime;
 };
 
 // A collection of responses (used in continuous mode)

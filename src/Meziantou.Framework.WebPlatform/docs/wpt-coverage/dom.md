@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 651 | 683 | 6 | 96% |
+| [Stable](#stable-tests) | 656 | 683 | 6 | 97% |
 | [Tentative](#tentative-tests) | 30 | 55 | 2 | 57% |
 | [Reftests](#reftests) | 4 | 4 | 0 | 100% |
-| **All** | **685** | **742** | **8** | **93%** |
+| **All** | **690** | **742** | **8** | **94%** |
 
 ## Stable tests
 
@@ -252,11 +252,11 @@
 | [`nodes/Document-base-url-not-live.window.js`](https://wpt.fyi/results/dom/nodes/Document-base-url-not-live.window.js) | Pass | 2 / 2 |  |  |
 | [`nodes/Document-characterSet-normalization-1.html`](https://wpt.fyi/results/dom/nodes/Document-characterSet-normalization-1.html) | Pass | 315 / 315 |  |  |
 | [`nodes/Document-characterSet-normalization-2.html`](https://wpt.fyi/results/dom/nodes/Document-characterSet-normalization-2.html) | Pass | 339 / 339 |  |  |
-| [`nodes/Document-cloneNode-about-base-url-relative.window.js`](https://wpt.fyi/results/dom/nodes/Document-cloneNode-about-base-url-relative.window.js) | Fail | 1 / 4 | BUG | a clone of a document does not keep the base URL of the source: the clone of a document with a `<base>` uses its own URL, and the clone of an `about:blank` or `about:srcdoc` document does not inherit the fallback base URL of the source |
-| [`nodes/Document-cloneNode-about-base-url.window.js`](https://wpt.fyi/results/dom/nodes/Document-cloneNode-about-base-url.window.js) | Fail | 1 / 5 | BUG | a clone of a document does not keep the base URL of the source: the clone of a document with a `<base>` uses its own URL, and the clone of an `about:blank` or `about:srcdoc` document does not inherit the fallback base URL of the source |
-| [`nodes/Document-cloneNode-base-url-xml.window.js`](https://wpt.fyi/results/dom/nodes/Document-cloneNode-base-url-xml.window.js) | Fail | 2 / 3 | BUG | a clone of a document does not keep the base URL of the source: the clone of a document with a `<base>` uses its own URL, and the clone of an `about:blank` or `about:srcdoc` document does not inherit the fallback base URL of the source |
-| [`nodes/Document-cloneNode-base-url.window.js`](https://wpt.fyi/results/dom/nodes/Document-cloneNode-base-url.window.js) | Fail | 5 / 11 | BUG | a clone of a document does not keep the base URL of the source: the clone of a document with a `<base>` uses its own URL, and the clone of an `about:blank` or `about:srcdoc` document does not inherit the fallback base URL of the source |
-| [`nodes/Document-cloneNode-srcdoc-base-url.window.js`](https://wpt.fyi/results/dom/nodes/Document-cloneNode-srcdoc-base-url.window.js) | Fail | 1 / 4 | BUG | a clone of a document does not keep the base URL of the source: the clone of a document with a `<base>` uses its own URL, and the clone of an `about:blank` or `about:srcdoc` document does not inherit the fallback base URL of the source |
+| [`nodes/Document-cloneNode-about-base-url-relative.window.js`](https://wpt.fyi/results/dom/nodes/Document-cloneNode-about-base-url-relative.window.js) | Pass | 4 / 4 |  |  |
+| [`nodes/Document-cloneNode-about-base-url.window.js`](https://wpt.fyi/results/dom/nodes/Document-cloneNode-about-base-url.window.js) | Pass | 5 / 5 |  |  |
+| [`nodes/Document-cloneNode-base-url-xml.window.js`](https://wpt.fyi/results/dom/nodes/Document-cloneNode-base-url-xml.window.js) | Pass | 3 / 3 |  |  |
+| [`nodes/Document-cloneNode-base-url.window.js`](https://wpt.fyi/results/dom/nodes/Document-cloneNode-base-url.window.js) | Pass | 11 / 11 |  |  |
+| [`nodes/Document-cloneNode-srcdoc-base-url.window.js`](https://wpt.fyi/results/dom/nodes/Document-cloneNode-srcdoc-base-url.window.js) | Pass | 4 / 4 |  |  |
 | [`nodes/Document-constructor-svg.svg`](https://wpt.fyi/results/dom/nodes/Document-constructor-svg.svg) | Pass | 4 / 4 |  |  |
 | [`nodes/Document-constructor-xml.xml`](https://wpt.fyi/results/dom/nodes/Document-constructor-xml.xml) | Pass | 4 / 4 |  |  |
 | [`nodes/Document-constructor.html`](https://wpt.fyi/results/dom/nodes/Document-constructor.html) | Pass | 5 / 5 |  |  |

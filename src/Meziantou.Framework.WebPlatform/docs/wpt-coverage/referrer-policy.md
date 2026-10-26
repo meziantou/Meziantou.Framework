@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 1,370 | 1,387 | 0 | 99% |
+| [Stable](#stable-tests) | 1,383 | 1,387 | 0 | 99.7% |
 | [Tentative](#tentative-tests) | 4 | 4 | 0 | 100% |
 | [Reftests](#reftests) | 0 | 1 | 0 | 0% |
-| **All** | **1,374** | **1,392** | **0** | **99%** |
+| **All** | **1,387** | **1,392** | **0** | **99.6%** |
 
 ## Stable tests
 
@@ -339,26 +339,26 @@
 | [`4K/gen/top.meta/unset/worker-classic.http.html`](https://wpt.fyi/results/referrer-policy/4K/gen/top.meta/unset/worker-classic.http.html) | Pass | 2 / 2 |  |  |
 | [`4K/gen/top.meta/unset/worker-module.http.html`](https://wpt.fyi/results/referrer-policy/4K/gen/top.meta/unset/worker-module.http.html) | Pass | 2 / 2 |  |  |
 | [`4K/gen/top.meta/unset/xhr.http.html`](https://wpt.fyi/results/referrer-policy/4K/gen/top.meta/unset/xhr.http.html) | Pass | 2 / 2 |  |  |
-| [`css-integration/child-css/external-import-stylesheet.html`](https://wpt.fyi/results/referrer-policy/css-integration/child-css/external-import-stylesheet.html) | Fail | 0 / 1 | BUG | nested `@import` requests use the document's referrer and policy instead of the parent style sheet's URL and its `Referrer-Policy` response header |
-| [`css-integration/child-css/internal-import-stylesheet.html`](https://wpt.fyi/results/referrer-policy/css-integration/child-css/internal-import-stylesheet.html) | Fail | 0 / 1 | BUG | nested `@import` requests use the document's referrer and policy instead of the parent style sheet's URL and its `Referrer-Policy` response header |
-| [`css-integration/child-css/processing-instruction.html`](https://wpt.fyi/results/referrer-policy/css-integration/child-css/processing-instruction.html) | Fail | 0 / 1 | BUG | nested `@import` requests use the document's referrer and policy instead of the parent style sheet's URL and its `Referrer-Policy` response header |
-| [`css-integration/font-face/external-import-stylesheet.html`](https://wpt.fyi/results/referrer-policy/css-integration/font-face/external-import-stylesheet.html) | Fail | 0 / 1 | BUG | `@font-face` `src` requests from a fetched style sheet use the document's referrer and policy instead of the style sheet's URL and `Referrer-Policy` header |
-| [`css-integration/font-face/external-stylesheet.html`](https://wpt.fyi/results/referrer-policy/css-integration/font-face/external-stylesheet.html) | Fail | 0 / 1 | BUG | `@font-face` `src` requests from a fetched style sheet use the document's referrer and policy instead of the style sheet's URL and `Referrer-Policy` header |
-| [`css-integration/font-face/internal-import-stylesheet.html`](https://wpt.fyi/results/referrer-policy/css-integration/font-face/internal-import-stylesheet.html) | Fail | 0 / 1 | BUG | `@font-face` `src` requests from a fetched style sheet use the document's referrer and policy instead of the style sheet's URL and `Referrer-Policy` header |
+| [`css-integration/child-css/external-import-stylesheet.html`](https://wpt.fyi/results/referrer-policy/css-integration/child-css/external-import-stylesheet.html) | Pass | 1 / 1 |  |  |
+| [`css-integration/child-css/internal-import-stylesheet.html`](https://wpt.fyi/results/referrer-policy/css-integration/child-css/internal-import-stylesheet.html) | Pass | 1 / 1 |  |  |
+| [`css-integration/child-css/processing-instruction.html`](https://wpt.fyi/results/referrer-policy/css-integration/child-css/processing-instruction.html) | Pass | 1 / 1 |  |  |
+| [`css-integration/font-face/external-import-stylesheet.html`](https://wpt.fyi/results/referrer-policy/css-integration/font-face/external-import-stylesheet.html) | Pass | 1 / 1 |  |  |
+| [`css-integration/font-face/external-stylesheet.html`](https://wpt.fyi/results/referrer-policy/css-integration/font-face/external-stylesheet.html) | Pass | 1 / 1 |  |  |
+| [`css-integration/font-face/internal-import-stylesheet.html`](https://wpt.fyi/results/referrer-policy/css-integration/font-face/internal-import-stylesheet.html) | Pass | 1 / 1 |  |  |
 | [`css-integration/font-face/internal-stylesheet.html`](https://wpt.fyi/results/referrer-policy/css-integration/font-face/internal-stylesheet.html) | Pass | 1 / 1 |  |  |
-| [`css-integration/font-face/processing-instruction.html`](https://wpt.fyi/results/referrer-policy/css-integration/font-face/processing-instruction.html) | Fail | 0 / 1 | BUG | `@font-face` `src` requests from a fetched style sheet use the document's referrer and policy instead of the style sheet's URL and `Referrer-Policy` header |
-| [`css-integration/image/external-import-stylesheet.html`](https://wpt.fyi/results/referrer-policy/css-integration/image/external-import-stylesheet.html) | Fail | 0 / 1 | BUG | the images of the rules of a fetched style sheet are requested with the document as referrer instead of the URL of the style sheet (https://drafts.csswg.org/css-values-4/#fetch-an-external-resource) |
-| [`css-integration/image/external-stylesheet.html`](https://wpt.fyi/results/referrer-policy/css-integration/image/external-stylesheet.html) | Fail | 0 / 1 | BUG | the images of the rules of a fetched style sheet are requested with the document as referrer instead of the URL of the style sheet (https://drafts.csswg.org/css-values-4/#fetch-an-external-resource) |
+| [`css-integration/font-face/processing-instruction.html`](https://wpt.fyi/results/referrer-policy/css-integration/font-face/processing-instruction.html) | Pass | 1 / 1 |  |  |
+| [`css-integration/image/external-import-stylesheet.html`](https://wpt.fyi/results/referrer-policy/css-integration/image/external-import-stylesheet.html) | Pass | 1 / 1 |  |  |
+| [`css-integration/image/external-stylesheet.html`](https://wpt.fyi/results/referrer-policy/css-integration/image/external-stylesheet.html) | Pass | 1 / 1 |  |  |
 | [`css-integration/image/inline-style.html`](https://wpt.fyi/results/referrer-policy/css-integration/image/inline-style.html) | Pass | 1 / 1 |  |  |
-| [`css-integration/image/internal-import-stylesheet.html`](https://wpt.fyi/results/referrer-policy/css-integration/image/internal-import-stylesheet.html) | Fail | 0 / 1 | BUG | the images of the rules of a fetched style sheet are requested with the document as referrer instead of the URL of the style sheet (https://drafts.csswg.org/css-values-4/#fetch-an-external-resource) |
+| [`css-integration/image/internal-import-stylesheet.html`](https://wpt.fyi/results/referrer-policy/css-integration/image/internal-import-stylesheet.html) | Pass | 1 / 1 |  |  |
 | [`css-integration/image/internal-stylesheet.html`](https://wpt.fyi/results/referrer-policy/css-integration/image/internal-stylesheet.html) | Pass | 1 / 1 |  |  |
 | [`css-integration/image/presentation-attribute.html`](https://wpt.fyi/results/referrer-policy/css-integration/image/presentation-attribute.html) | Pass | 1 / 1 |  |  |
-| [`css-integration/image/processing-instruction.html`](https://wpt.fyi/results/referrer-policy/css-integration/image/processing-instruction.html) | Fail | 0 / 1 | BUG | the images of the rules of a fetched style sheet are requested with the document as referrer instead of the URL of the style sheet (https://drafts.csswg.org/css-values-4/#fetch-an-external-resource) |
-| [`css-integration/svg/external-stylesheet.html`](https://wpt.fyi/results/referrer-policy/css-integration/svg/external-stylesheet.html) | Fail | 0 / 9 | BUG | the SVG documents referenced by the rules of a fetched style sheet (`fill`, `stroke`, `filter`, `clip-path`, `marker-*`, `mask`) are requested with the document as referrer and its policy instead of the URL of the style sheet and its `Referrer-Policy` header (https://drafts.csswg.org/css-values-4/#fetch-an-external-resource); the references of the inline styles, of the style elements and of the presentation attributes pass |
+| [`css-integration/image/processing-instruction.html`](https://wpt.fyi/results/referrer-policy/css-integration/image/processing-instruction.html) | Pass | 1 / 1 |  |  |
+| [`css-integration/svg/external-stylesheet.html`](https://wpt.fyi/results/referrer-policy/css-integration/svg/external-stylesheet.html) | Pass | 9 / 9 |  |  |
 | [`css-integration/svg/inline-style.html`](https://wpt.fyi/results/referrer-policy/css-integration/svg/inline-style.html) | Pass | 9 / 9 |  |  |
 | [`css-integration/svg/internal-stylesheet.html`](https://wpt.fyi/results/referrer-policy/css-integration/svg/internal-stylesheet.html) | Pass | 9 / 9 |  |  |
 | [`css-integration/svg/presentation-attribute.html`](https://wpt.fyi/results/referrer-policy/css-integration/svg/presentation-attribute.html) | Pass | 8 / 8 |  |  |
-| [`css-integration/svg/processing-instruction.html`](https://wpt.fyi/results/referrer-policy/css-integration/svg/processing-instruction.html) | Fail | 2 / 9 | BUG | the SVG documents referenced by the rules of a fetched style sheet (`fill`, `stroke`, `filter`, `clip-path`, `marker-*`, `mask`) are requested with the document as referrer and its policy instead of the URL of the style sheet and its `Referrer-Policy` header (https://drafts.csswg.org/css-values-4/#fetch-an-external-resource); the references of the inline styles, of the style elements and of the presentation attributes pass |
+| [`css-integration/svg/processing-instruction.html`](https://wpt.fyi/results/referrer-policy/css-integration/svg/processing-instruction.html) | Pass | 9 / 9 |  |  |
 | [`gen/iframe.http-rp/no-referrer-when-downgrade/a-tag.http.html`](https://wpt.fyi/results/referrer-policy/gen/iframe.http-rp/no-referrer-when-downgrade/a-tag.http.html) | Pass | 4 / 4 |  |  |
 | [`gen/iframe.http-rp/no-referrer-when-downgrade/fetch.http.html`](https://wpt.fyi/results/referrer-policy/gen/iframe.http-rp/no-referrer-when-downgrade/fetch.http.html) | Pass | 12 / 12 |  |  |
 | [`gen/iframe.http-rp/no-referrer-when-downgrade/iframe-tag.http.html`](https://wpt.fyi/results/referrer-policy/gen/iframe.http-rp/no-referrer-when-downgrade/iframe-tag.http.html) | Pass | 12 / 12 |  |  |
@@ -1416,4 +1416,4 @@
 
 | Test | Result | Variants | Kind | Description |
 |---|---|--:|---|---|
-| [`css-integration/svg/filter-no-referrer.html`](https://wpt.fyi/results/referrer-policy/css-integration/svg/filter-no-referrer.html) | Fail | 0 / 1 | BUG | the SVG document of `filter: url()` of a rule of a fetched style sheet is requested with the URL of the document as referrer instead of the URL of the style sheet (https://drafts.csswg.org/css-values-4/#fetch-an-external-resource), so `filter.py` sees the name of the test (`no-referrer`) in the referrer and returns no filter; the test also fails in every browser |
+| [`css-integration/svg/filter-no-referrer.html`](https://wpt.fyi/results/referrer-policy/css-integration/svg/filter-no-referrer.html) | Fail | 0 / 1 | TEST RUNNER | `referrer-policy/css-integration/svg/filter.py`, which returns the filter when the referrer (the URL of the style sheet) does not contain `no-referrer`, is not emulated, so `filter: url()` references no filter; the test also fails in every browser |

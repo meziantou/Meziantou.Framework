@@ -51,9 +51,19 @@ internal static class FetchBodyParsing
         boundary.CopyTo(delimiter, 4);
         while (true)
         {
-            // The close delimiter: a body without part is a failure
+            // The close delimiter, followed by the transport padding and the end of the body or a CRLF and the epilogue
+            // (https://www.rfc-editor.org/rfc/rfc2046#section-5.1.1). A body without part is the serialization of an
+            // empty FormData.
             if (StartsWith(input, position, "--"u8))
-                return entries.Count == 0 ? null : entries;
+            {
+                position += 2;
+                while (position < input.Length && input[position] is (byte)' ' or (byte)'\t')
+                {
+                    position++;
+                }
+
+                return position == input.Length || StartsWith(input, position, "\r\n"u8) ? entries : null;
+            }
 
             // The transport padding (https://www.rfc-editor.org/rfc/rfc2046#section-5.1.1)
             while (position < input.Length && input[position] is (byte)' ' or (byte)'\t')

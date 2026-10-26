@@ -177,6 +177,23 @@ public sealed class FetchTests : IDisposable
     }
 
     [Fact]
+    public void Response_EmptyFormData_RoundTrips()
+    {
+        var document = Load("""
+            <script>
+              (async () => {
+                const text = await new Response(new FormData()).text();
+                const boundary = text.slice(2, -4);
+                const formData = await new Response(text, { headers: [['Content-Type', 'multipart/form-data; boundary=' + boundary]] }).formData();
+                const invalid = await new Response('--b--b--\r\n', { headers: [['Content-Type', 'multipart/form-data; boundary=b']] }).formData().then(() => 'resolved', e => e.name);
+                document.title = [text === '--' + boundary + '--\r\n', [...formData].length, invalid].join('|');
+              })();
+            </script>
+            """);
+        Assert.Equal("true|0|TypeError", document.Title);
+    }
+
+    [Fact]
     public void XmlHttpRequest_Asynchronous()
     {
         _loader.Responses["https://example.com/text"] = new DocumentResource("hello") { Headers = [new("Content-Type", "text/plain"), new("X-Test", "1")] };

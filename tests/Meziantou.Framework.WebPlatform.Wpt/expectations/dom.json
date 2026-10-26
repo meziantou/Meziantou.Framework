@@ -891,46 +891,19 @@
     "total": 339
   },
   "dom/nodes/Document-cloneNode-about-base-url-relative.window.js": {
-    "total": 4,
-    "failures": {
-      "A data: <base> in an about:blank document and its clone falls back to the inherited base URL": "FAIL",
-      "A relative <base> inserted into a shallow clone of an about:blank document resolves against the inherited base URL": "FAIL",
-      "Clone of an about:blank document with a relative <base>": "FAIL"
-    }
+    "total": 4
   },
   "dom/nodes/Document-cloneNode-about-base-url.window.js": {
-    "total": 5,
-    "failures": {
-      "Clone of an about:blank document after detaching the source": "FAIL",
-      "Clone of an about:blank document with a <base>": "FAIL",
-      "Deep clone of an about:blank document": "FAIL",
-      "Shallow clone of an about:blank document": "FAIL"
-    }
+    "total": 5
   },
   "dom/nodes/Document-cloneNode-base-url-xml.window.js": {
-    "total": 3,
-    "failures": {
-      "Clone of an XHTML document with a <base>": "FAIL"
-    }
+    "total": 3
   },
   "dom/nodes/Document-cloneNode-base-url.window.js": {
-    "total": 11,
-    "failures": {
-      "Clone of a createHTMLDocument() document with a <base>": "FAIL",
-      "Inserting a <base> into a shallow clone overrides the copied base URL": "FAIL",
-      "Shallow clone is unaffected by later mutation of the source": "FAIL",
-      "Shallow clone of a document with a <base>": "FAIL",
-      "Shallow clone of a document with a relative <base>": "FAIL",
-      "Shallow clone's base URL survives later mutation of the clone": "FAIL"
-    }
+    "total": 11
   },
   "dom/nodes/Document-cloneNode-srcdoc-base-url.window.js": {
-    "total": 4,
-    "failures": {
-      "A data: <base> in an about:srcdoc document and its clone falls back to the inherited base URL": "FAIL",
-      "A relative <base> inserted into a shallow clone of an about:srcdoc document resolves against the inherited base URL": "FAIL",
-      "Clone of an about:srcdoc document with a relative <base>": "FAIL"
-    }
+    "total": 4
   },
   "dom/nodes/Document-constructor-svg.svg": {
     "total": 4

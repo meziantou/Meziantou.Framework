@@ -134,6 +134,12 @@ internal sealed class ServiceWorkerRecord
     public bool ClassicScriptsImported { get; set; }
 
     /// <summary>
+    /// The update via cache mode of the job that installs the worker (its scripts are imported with it, as the main script
+    /// was fetched), or null for a worker restored from the storage: the mode of the registration is used.
+    /// </summary>
+    public ServiceWorkerUpdateViaCache? InstallingUpdateViaCache { get; set; }
+
+    /// <summary>
     /// The environment of the client of the job that installs the worker (https://w3c.github.io/ServiceWorker/#update-algorithm):
     /// the fetch client of the static imports of a module script, whose content security policies apply to them, or null.
     /// </summary>

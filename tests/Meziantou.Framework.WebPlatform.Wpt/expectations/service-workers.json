@@ -906,19 +906,7 @@
     "total": 1
   },
   "service-workers/service-worker/registration-updateviacache.https.html": {
-    "total": 25,
-    "failures": {
-      "register-with-updateViaCache-all": "FAIL",
-      "register-with-updateViaCache-all-then-imports": "FAIL",
-      "register-with-updateViaCache-all-then-undefined": "FAIL",
-      "register-with-updateViaCache-imports": "FAIL",
-      "register-with-updateViaCache-imports-then-all": "FAIL",
-      "register-with-updateViaCache-none-then-all": "FAIL",
-      "register-with-updateViaCache-none-then-imports": "FAIL",
-      "register-with-updateViaCache-none-then-undefined": "FAIL",
-      "register-with-updateViaCache-undefined": "FAIL",
-      "register-with-updateViaCache-undefined-then-all": "FAIL"
-    }
+    "total": 25
   },
   "service-workers/service-worker/rejections.https.html": {
     "total": 1
@@ -1213,10 +1201,7 @@
     "total": 1
   },
   "service-workers/service-worker/update-no-cache-request-headers.https.html": {
-    "total": 1,
-    "failures": {
-      "headers in no-cache mode": "FAIL"
-    }
+    "total": 1
   },
   "service-workers/service-worker/update-not-allowed.https.html": {
     "total": 3

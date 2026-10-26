@@ -404,6 +404,12 @@ internal sealed class FetchResponse
     /// </summary>
     public Stream? Connection { get; set; }
 
+    /// <summary>
+    /// https://fetch.spec.whatwg.org/#concept-response-cache-state: <c>local</c> for a stored response of the HTTP cache,
+    /// <c>validated</c> for a stored response validated by a <c>304</c> response, else the empty string.
+    /// </summary>
+    public string CacheState { get; set; } = "";
+
     /// <summary>https://fetch.spec.whatwg.org/#response-request-includes-credentials (a property of the internal response)</summary>
     public bool RequestIncludesCredentials { get; set; } = true;
 

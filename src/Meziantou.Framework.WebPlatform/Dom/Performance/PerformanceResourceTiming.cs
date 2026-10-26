@@ -52,11 +52,12 @@ public class PerformanceResourceTiming : PerformanceEntry
 
     /// <summary>
     /// Gets the delivery type of the resource: <c>navigational-prefetch</c> for the document of a navigation that used a
-    /// navigational prefetch, else the empty string (there is no HTTP cache).
+    /// navigational prefetch, <c>cache</c> for a resource whose stored response of the HTTP cache was used (validated or
+    /// not, https://fetch.spec.whatwg.org/#fetch-finale), else the empty string.
     /// </summary>
     /// <seealso href="https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-deliverytype"/>
     [IdlMember("deliveryType", "https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-deliverytype")]
-    public string DeliveryType => (this as PerformanceNavigationTiming)?.LoadTimingInfo.DeliveryType ?? "";
+    public string DeliveryType => (this as PerformanceNavigationTiming)?.LoadTimingInfo.DeliveryType ?? (_timingInfo.CacheState.Length > 0 ? "cache" : "");
 
     /// <summary>Gets the ALPN protocol of the connection (e.g. <c>http/1.1</c>), or the empty string when it is not exposed.</summary>
     /// <seealso href="https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-nexthopprotocol"/>
@@ -153,10 +154,19 @@ public class PerformanceResourceTiming : PerformanceEntry
     [IdlMember("workerFinalRouterSource", "https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-workerfinalroutersource")]
     public string WorkerFinalRouterSource => "";
 
-    /// <summary>Gets the size of the response: the encoded size of its body plus 300 (in place of the size of the headers), or 0 when the timing allow check failed.</summary>
+    /// <summary>
+    /// Gets the size of the response: the encoded size of its body plus 300 (in place of the size of the headers), 300 for
+    /// a stored response of the HTTP cache that was validated, or 0 for a stored response used without validation or when
+    /// the timing allow check failed.
+    /// </summary>
     /// <seealso href="https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-transfersize"/>
     [IdlMember("transferSize", "https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-transfersize")]
-    public ulong TransferSize => _timingInfo.TimingAllowPassed ? EncodedBodySize + 300 : 0;
+    public ulong TransferSize => !_timingInfo.TimingAllowPassed ? 0 : _timingInfo.CacheState switch
+    {
+        "local" => 0,
+        "validated" => 300,
+        _ => EncodedBodySize + 300,
+    };
 
     /// <summary>Gets the size of the body of the response, before its content codings are removed, or 0 for a CORS-cross-origin response.</summary>
     /// <seealso href="https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-encodedbodysize"/>

@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 230 | 283 | 4 | 82% |
+| [Stable](#stable-tests) | 232 | 283 | 4 | 83% |
 | [Tentative](#tentative-tests) | 0 | 11 | 0 | 0% |
 | [Reftests](#reftests) | 1 | 1 | 0 | 100% |
-| **All** | **231** | **295** | **4** | **79%** |
+| **All** | **233** | **295** | **4** | **80%** |
 
 ## Stable tests
 
@@ -223,7 +223,7 @@
 | [`service-worker/registration-script.https.html`](https://wpt.fyi/results/service-workers/service-worker/registration-script.https.html) | Disabled | – | FLAKY | Result depends on the platform: passes on Linux and macOS, times out on Windows before its first subtest reports (the registration of a script served with an invalid chunked encoding by resources/invalid-chunked-encoding.py does not complete); to investigate |
 | [`service-worker/registration-security-error.https.html`](https://wpt.fyi/results/service-workers/service-worker/registration-security-error.https.html) | Pass | 8 / 8 |  |  |
 | [`service-worker/registration-service-worker-attributes.https.html`](https://wpt.fyi/results/service-workers/service-worker/registration-service-worker-attributes.https.html) | Pass | 1 / 1 |  |  |
-| [`service-worker/registration-updateviacache.https.html`](https://wpt.fyi/results/service-workers/service-worker/registration-updateviacache.https.html) | Fail | 15 / 25 | NOT IMPLEMENTED | the HTTP cache: the imported scripts are always fetched again, whatever the update via cache mode |
+| [`service-worker/registration-updateviacache.https.html`](https://wpt.fyi/results/service-workers/service-worker/registration-updateviacache.https.html) | Pass | 25 / 25 |  |  |
 | [`service-worker/rejections.https.html`](https://wpt.fyi/results/service-workers/service-worker/rejections.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/request-end-to-end.https.html`](https://wpt.fyi/results/service-workers/service-worker/request-end-to-end.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/resource-timing-bodySize.https.html`](https://wpt.fyi/results/service-workers/service-worker/resource-timing-bodySize.https.html) | Pass | 24 / 24 |  |  |
@@ -278,7 +278,7 @@
 | [`service-worker/update-import-scripts.https.html`](https://wpt.fyi/results/service-workers/service-worker/update-import-scripts.https.html) | Pass | 5 / 5 |  |  |
 | [`service-worker/update-missing-import-scripts.https.html`](https://wpt.fyi/results/service-workers/service-worker/update-missing-import-scripts.https.html) | Pass | 2 / 2 |  |  |
 | [`service-worker/update-module-request-mode.https.html`](https://wpt.fyi/results/service-workers/service-worker/update-module-request-mode.https.html) | Pass | 1 / 1 |  |  |
-| [`service-worker/update-no-cache-request-headers.https.html`](https://wpt.fyi/results/service-workers/service-worker/update-no-cache-request-headers.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the HTTP cache: the `If-None-Match` and `If-Modified-Since` headers of the update checks |
+| [`service-worker/update-no-cache-request-headers.https.html`](https://wpt.fyi/results/service-workers/service-worker/update-no-cache-request-headers.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/update-not-allowed.https.html`](https://wpt.fyi/results/service-workers/service-worker/update-not-allowed.https.html) | Pass | 3 / 3 |  |  |
 | [`service-worker/update-on-navigation.https.html`](https://wpt.fyi/results/service-workers/service-worker/update-on-navigation.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/update-recovery.https.html`](https://wpt.fyi/results/service-workers/service-worker/update-recovery.https.html) | Fail | 0 / 1 | TEST BUG | the test expects that the iframe of a navigation that fails with a network error (the service worker rejects the request) fires no load event; the iframe fires it for the error document, as in Chrome and Firefox, which fail the test in the same way |

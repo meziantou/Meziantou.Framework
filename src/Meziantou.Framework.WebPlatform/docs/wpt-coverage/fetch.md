@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 295 | 407 | 3 | 73% |
-| [Tentative](#tentative-tests) | 12 | 77 | 1 | 16% |
+| [Stable](#stable-tests) | 310 | 407 | 3 | 77% |
+| [Tentative](#tentative-tests) | 13 | 77 | 1 | 17% |
 | [Reftests](#reftests) | 9 | 11 | 0 | 82% |
-| **All** | **316** | **495** | **4** | **64%** |
+| **All** | **332** | **495** | **4** | **68%** |
 
 ## Stable tests
 
@@ -23,7 +23,7 @@
 | [`api/abort/serviceworker-intercepted.https.html`](https://wpt.fyi/results/fetch/api/abort/serviceworker-intercepted.https.html) | Timeout | 10 / 12 | BUG | aborting a fetch while its fetch event is handled does not abort `event.request.signal` in the service worker, so `sw-intercept-abort.js` never responds |
 | [`api/basic/accept-header.any.js`](https://wpt.fyi/results/fetch/api/basic/accept-header.any.js) | Pass | 12 / 12 |  |  |
 | [`api/basic/block-mime-as-script.html`](https://wpt.fyi/results/fetch/api/basic/block-mime-as-script.html) | Pass | 22 / 22 |  |  |
-| [`api/basic/conditional-get.any.js`](https://wpt.fyi/results/fetch/api/basic/conditional-get.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | the HTTP cache (the second request is not revalidated with `If-None-Match`) |
+| [`api/basic/conditional-get.any.js`](https://wpt.fyi/results/fetch/api/basic/conditional-get.any.js) | Pass | 3 / 3 |  |  |
 | [`api/basic/error-after-response.any.js`](https://wpt.fyi/results/fetch/api/basic/error-after-response.any.js) | Pass | 6 / 6 |  |  |
 | [`api/basic/fetch-in-popup-from-iframe.html`](https://wpt.fyi/results/fetch/api/basic/fetch-in-popup-from-iframe.html) | Pass | 1 / 1 |  |  |
 | [`api/basic/gc.any.js`](https://wpt.fyi/results/fetch/api/basic/gc.any.js) | Pass | 18 / 18 |  |  |
@@ -144,12 +144,12 @@
 | [`api/request/multi-globals/url-parsing.html`](https://wpt.fyi/results/fetch/api/request/multi-globals/url-parsing.html) | Pass | 1 / 1 |  |  |
 | [`api/request/request-bad-port.any.js`](https://wpt.fyi/results/fetch/api/request/request-bad-port.any.js) | Fail | 249 / 252 | TEST RUNNER | the proxy of the WPT server is not emulated (the request fails) |
 | [`api/request/request-cache-default-conditional.any.js`](https://wpt.fyi/results/fetch/api/request/request-cache-default-conditional.any.js) | Pass | 120 / 120 |  |  |
-| [`api/request/request-cache-default.any.js`](https://wpt.fyi/results/fetch/api/request/request-cache-default.any.js) | Fail | 18 / 24 | NOT IMPLEMENTED | the HTTP cache (the `cache` modes of `Request` never reuse a stored response) |
-| [`api/request/request-cache-force-cache.any.js`](https://wpt.fyi/results/fetch/api/request/request-cache-force-cache.any.js) | Fail | 30 / 48 | NOT IMPLEMENTED | the HTTP cache (the `cache` modes of `Request` never reuse a stored response) |
+| [`api/request/request-cache-default.any.js`](https://wpt.fyi/results/fetch/api/request/request-cache-default.any.js) | Pass | 24 / 24 |  |  |
+| [`api/request/request-cache-force-cache.any.js`](https://wpt.fyi/results/fetch/api/request/request-cache-force-cache.any.js) | Pass | 48 / 48 |  |  |
 | [`api/request/request-cache-no-cache.any.js`](https://wpt.fyi/results/fetch/api/request/request-cache-no-cache.any.js) | Pass | 12 / 12 |  |  |
 | [`api/request/request-cache-no-store.any.js`](https://wpt.fyi/results/fetch/api/request/request-cache-no-store.any.js) | Pass | 24 / 24 |  |  |
-| [`api/request/request-cache-only-if-cached.any.js`](https://wpt.fyi/results/fetch/api/request/request-cache-only-if-cached.any.js) | Fail | 18 / 42 | NOT IMPLEMENTED | the HTTP cache (`only-if-cached` always fails as nothing is cached) |
-| [`api/request/request-cache-reload.any.js`](https://wpt.fyi/results/fetch/api/request/request-cache-reload.any.js) | Fail | 24 / 36 | NOT IMPLEMENTED | the HTTP cache (the responses of `cache: 'reload'` are not stored) |
+| [`api/request/request-cache-only-if-cached.any.js`](https://wpt.fyi/results/fetch/api/request/request-cache-only-if-cached.any.js) | Pass | 42 / 42 |  |  |
+| [`api/request/request-cache-reload.any.js`](https://wpt.fyi/results/fetch/api/request/request-cache-reload.any.js) | Pass | 36 / 36 |  |  |
 | [`api/request/request-clone-readable-stream-body.any.js`](https://wpt.fyi/results/fetch/api/request/request-clone-readable-stream-body.any.js) | Pass | 3 / 3 |  |  |
 | [`api/request/request-clone.sub.html`](https://wpt.fyi/results/fetch/api/request/request-clone.sub.html) | Pass | 2 / 2 |  |  |
 | [`api/request/request-constructor-init-body-override.any.js`](https://wpt.fyi/results/fetch/api/request/request-constructor-init-body-override.any.js) | Pass | 4 / 4 |  |  |
@@ -292,18 +292,18 @@
 | [`h1-parsing/lone-cr.window.js`](https://wpt.fyi/results/fetch/h1-parsing/lone-cr.window.js) | Fail | 0 / 10 | TEST RUNNER | `fetch/h1-parsing/resources/message.py` is not emulated (the raw HTTP messages with a lone CR cannot be produced) |
 | [`h1-parsing/resources-with-0x00-in-header.window.js`](https://wpt.fyi/results/fetch/h1-parsing/resources-with-0x00-in-header.window.js) | Pass | 4 / 4 |  |  |
 | [`h1-parsing/status-code.window.js`](https://wpt.fyi/results/fetch/h1-parsing/status-code.window.js) | Fail | 0 / 16 | TEST RUNNER | `fetch/h1-parsing/resources/status-code.py` is not emulated (404) |
-| [`http-cache/304-update.any.js`](https://wpt.fyi/results/fetch/http-cache/304-update.any.js) | Fail | 0 / 15 | NOT IMPLEMENTED, TEST RUNNER | the HTTP cache; `fetch/http-cache/resources/http-cache.py` is not emulated (the requests get 404) |
-| [`http-cache/cache-mode.any.js`](https://wpt.fyi/results/fetch/http-cache/cache-mode.any.js) | Fail | 0 / 15 | NOT IMPLEMENTED, TEST RUNNER | the HTTP cache; `fetch/http-cache/resources/http-cache.py` is not emulated (the requests get 404) |
-| [`http-cache/cc-request.any.js`](https://wpt.fyi/results/fetch/http-cache/cc-request.any.js) | Fail | 0 / 36 | NOT IMPLEMENTED, TEST RUNNER | the HTTP cache; `fetch/http-cache/resources/http-cache.py` is not emulated (the requests get 404) |
-| [`http-cache/freshness.any.js`](https://wpt.fyi/results/fetch/http-cache/freshness.any.js) | Fail | 0 / 51 | NOT IMPLEMENTED, TEST RUNNER | the HTTP cache; `fetch/http-cache/resources/http-cache.py` is not emulated (the requests get 404) |
-| [`http-cache/heuristic.any.js`](https://wpt.fyi/results/fetch/http-cache/heuristic.any.js) | Fail | 0 / 51 | NOT IMPLEMENTED, TEST RUNNER | the HTTP cache; `fetch/http-cache/resources/http-cache.py` is not emulated (the requests get 404) |
-| [`http-cache/invalidate.any.js`](https://wpt.fyi/results/fetch/http-cache/invalidate.any.js) | Fail | 0 / 45 | NOT IMPLEMENTED, TEST RUNNER | the HTTP cache; `fetch/http-cache/resources/http-cache.py` is not emulated (the requests get 404) |
-| [`http-cache/partial.any.js`](https://wpt.fyi/results/fetch/http-cache/partial.any.js) | Fail | 0 / 27 | NOT IMPLEMENTED, TEST RUNNER | the HTTP cache; `fetch/http-cache/resources/http-cache.py` is not emulated (the requests get 404) |
-| [`http-cache/post-patch.any.js`](https://wpt.fyi/results/fetch/http-cache/post-patch.any.js) | Fail | 0 / 6 | NOT IMPLEMENTED, TEST RUNNER | the HTTP cache; `fetch/http-cache/resources/http-cache.py` is not emulated (the requests get 404) |
-| [`http-cache/pragma-no-cache-with-cache-control.html`](https://wpt.fyi/results/fetch/http-cache/pragma-no-cache-with-cache-control.html) | Fail | 0 / 2 | NOT IMPLEMENTED, TEST RUNNER | the HTTP cache; `cached_pragma_rand.py` and `cached_pragma_immutable_rand.py` are not emulated |
-| [`http-cache/split-cache.html`](https://wpt.fyi/results/fetch/http-cache/split-cache.html) | Fail | 0 / 4 | NOT IMPLEMENTED, TEST RUNNER | the HTTP cache; `fetch/http-cache/resources/http-cache.py` is not emulated (the requests get 404) |
-| [`http-cache/status.any.js`](https://wpt.fyi/results/fetch/http-cache/status.any.js) | Fail | 0 / 78 | NOT IMPLEMENTED, TEST RUNNER | the HTTP cache; `fetch/http-cache/resources/http-cache.py` is not emulated (the requests get 404) |
-| [`http-cache/vary.any.js`](https://wpt.fyi/results/fetch/http-cache/vary.any.js) | Fail | 0 / 42 | NOT IMPLEMENTED, TEST RUNNER | the HTTP cache; `fetch/http-cache/resources/http-cache.py` is not emulated (the requests get 404) |
+| [`http-cache/304-update.any.js`](https://wpt.fyi/results/fetch/http-cache/304-update.any.js) | Pass | 15 / 15 |  |  |
+| [`http-cache/cache-mode.any.js`](https://wpt.fyi/results/fetch/http-cache/cache-mode.any.js) | Pass | 15 / 15 |  |  |
+| [`http-cache/cc-request.any.js`](https://wpt.fyi/results/fetch/http-cache/cc-request.any.js) | Pass | 36 / 36 |  |  |
+| [`http-cache/freshness.any.js`](https://wpt.fyi/results/fetch/http-cache/freshness.any.js) | Pass | 51 / 51 |  |  |
+| [`http-cache/heuristic.any.js`](https://wpt.fyi/results/fetch/http-cache/heuristic.any.js) | Pass | 51 / 51 |  |  |
+| [`http-cache/invalidate.any.js`](https://wpt.fyi/results/fetch/http-cache/invalidate.any.js) | Pass | 45 / 45 |  |  |
+| [`http-cache/partial.any.js`](https://wpt.fyi/results/fetch/http-cache/partial.any.js) | Fail | 0 / 27 | NOT IMPLEMENTED | the partial responses (`206`) are not stored by the HTTP cache, which does not serve a range from a stored response |
+| [`http-cache/post-patch.any.js`](https://wpt.fyi/results/fetch/http-cache/post-patch.any.js) | Fail | 0 / 6 | TEST BUG | the response of the POST or PATCH request is stored and reused by the GET request, but the test expects its body to be the default body (the uuid) instead of the `abc` body of the stored response |
+| [`http-cache/pragma-no-cache-with-cache-control.html`](https://wpt.fyi/results/fetch/http-cache/pragma-no-cache-with-cache-control.html) | Pass | 2 / 2 |  |  |
+| [`http-cache/split-cache.html`](https://wpt.fyi/results/fetch/http-cache/split-cache.html) | Pass | 4 / 4 |  |  |
+| [`http-cache/status.any.js`](https://wpt.fyi/results/fetch/http-cache/status.any.js) | Pass | 78 / 78 |  |  |
+| [`http-cache/vary.any.js`](https://wpt.fyi/results/fetch/http-cache/vary.any.js) | Pass | 42 / 42 |  |  |
 | [`images/canvas-remote-read-remote-image-redirect.html`](https://wpt.fyi/results/fetch/images/canvas-remote-read-remote-image-redirect.html) | Pass | 1 / 1 |  |  |
 | [`metadata/audio-worklet.https.html`](https://wpt.fyi/results/fetch/metadata/audio-worklet.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Web Audio (`AudioContext`, `audioWorklet`) |
 | [`metadata/fetch-preflight.https.sub.any.js`](https://wpt.fyi/results/fetch/metadata/fetch-preflight.https.sub.any.js) | Pass | 30 / 30 |  |  |
@@ -395,7 +395,7 @@
 | [`nosniff/worker.html`](https://wpt.fyi/results/fetch/nosniff/worker.html) | Pass | 9 / 9 |  |  |
 | [`origin/assorted.window.js`](https://wpt.fyi/results/fetch/origin/assorted.window.js) | Error | 0 / 43 | TEST RUNNER | `fetch/origin/resources/redirect-and-stash.py` is not emulated (the stash returns the 404 page instead of JSON) |
 | [`range/blob.any.js`](https://wpt.fyi/results/fetch/range/blob.any.js) | Pass | 70 / 70 |  |  |
-| [`range/cache-revalidate-construct-range-response.html`](https://wpt.fyi/results/fetch/range/cache-revalidate-construct-range-response.html) | Fail | 0 / 1 | NOT IMPLEMENTED, TEST RUNNER | the HTTP cache; `video-with-aged-proxy-cache.py` is not emulated |
+| [`range/cache-revalidate-construct-range-response.html`](https://wpt.fyi/results/fetch/range/cache-revalidate-construct-range-response.html) | Fail | 0 / 1 | NOT IMPLEMENTED, TEST RUNNER | the partial responses (`206`) are not stored by the HTTP cache; `video-with-aged-proxy-cache.py` is not emulated |
 | [`range/data.any.js`](https://wpt.fyi/results/fetch/range/data.any.js) | Pass | 4 / 4 |  |  |
 | [`range/general.any.js`](https://wpt.fyi/results/fetch/range/general.any.js) | Fail | 15 / 21 | TEST RUNNER | `fetch/range/resources/stash-take.py` and `long-wav.py` are not emulated |
 | [`range/general.window.js`](https://wpt.fyi/results/fetch/range/general.window.js) | Timeout | 0 / 2 | TEST RUNNER | `fetch/range/resources/partial-script.py` and `stash-take.py` are not emulated |
@@ -416,12 +416,12 @@
 | [`security/dangling-markup/textarea.html`](https://wpt.fyi/results/fetch/security/dangling-markup/textarea.html) | Fail | 0 / 3 | NOT IMPLEMENTED | the dangling markup mitigation (a form `action`/navigation URL containing `\n` and `<` is not blocked) |
 | [`security/redirect-to-url-with-credentials.https.html`](https://wpt.fyi/results/fetch/security/redirect-to-url-with-credentials.https.html) | Pass | 7 / 7 |  |  |
 | [`security/stylesheet-cssrules-serviceworker-passthrough-redirect.https.html`](https://wpt.fyi/results/fetch/security/stylesheet-cssrules-serviceworker-passthrough-redirect.https.html) | Pass | 1 / 1 |  |  |
-| [`stale-while-revalidate/fetch-sw.https.html`](https://wpt.fyi/results/fetch/stale-while-revalidate/fetch-sw.https.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | the HTTP cache (stale-while-revalidate) |
-| [`stale-while-revalidate/fetch.any.js`](https://wpt.fyi/results/fetch/stale-while-revalidate/fetch.any.js) | Timeout | 0 / 3 | NOT IMPLEMENTED, TEST RUNNER | the HTTP cache (`stale-while-revalidate`); the `stale-*.py` handlers are not emulated |
-| [`stale-while-revalidate/revalidate-not-blocked-by-csp.html`](https://wpt.fyi/results/fetch/stale-while-revalidate/revalidate-not-blocked-by-csp.html) | Timeout | 0 / 1 | NOT IMPLEMENTED, TEST RUNNER | the HTTP cache (`stale-while-revalidate`); the `fetch/stale-while-revalidate/resources/stale-image.py` handler is not emulated |
-| [`stale-while-revalidate/stale-css.html`](https://wpt.fyi/results/fetch/stale-while-revalidate/stale-css.html) | Timeout | 0 / 1 | NOT IMPLEMENTED, TEST RUNNER | the HTTP cache (`stale-while-revalidate`); the `stale-*.py` handlers are not emulated |
-| [`stale-while-revalidate/stale-image.html`](https://wpt.fyi/results/fetch/stale-while-revalidate/stale-image.html) | Timeout | 0 / 1 | NOT IMPLEMENTED, TEST RUNNER | the HTTP cache (`stale-while-revalidate`); the `stale-*.py` handlers are not emulated |
-| [`stale-while-revalidate/stale-script.html`](https://wpt.fyi/results/fetch/stale-while-revalidate/stale-script.html) | Timeout | 0 / 1 | NOT IMPLEMENTED, TEST RUNNER | the HTTP cache (`stale-while-revalidate`); the `stale-*.py` handlers are not emulated |
+| [`stale-while-revalidate/fetch-sw.https.html`](https://wpt.fyi/results/fetch/stale-while-revalidate/fetch-sw.https.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | the `stale-while-revalidate` directive of the HTTP cache (a stale response is validated before it is used) |
+| [`stale-while-revalidate/fetch.any.js`](https://wpt.fyi/results/fetch/stale-while-revalidate/fetch.any.js) | Timeout | 0 / 3 | NOT IMPLEMENTED, TEST RUNNER | the `stale-while-revalidate` directive of the HTTP cache (a stale response is validated before it is used); the `stale-*.py` handlers are not emulated |
+| [`stale-while-revalidate/revalidate-not-blocked-by-csp.html`](https://wpt.fyi/results/fetch/stale-while-revalidate/revalidate-not-blocked-by-csp.html) | Timeout | 0 / 1 | NOT IMPLEMENTED, TEST RUNNER | the `stale-while-revalidate` directive of the HTTP cache (a stale response is validated before it is used); the `fetch/stale-while-revalidate/resources/stale-image.py` handler is not emulated |
+| [`stale-while-revalidate/stale-css.html`](https://wpt.fyi/results/fetch/stale-while-revalidate/stale-css.html) | Timeout | 0 / 1 | NOT IMPLEMENTED, TEST RUNNER | the `stale-while-revalidate` directive of the HTTP cache (a stale response is validated before it is used); the `stale-*.py` handlers are not emulated |
+| [`stale-while-revalidate/stale-image.html`](https://wpt.fyi/results/fetch/stale-while-revalidate/stale-image.html) | Timeout | 0 / 1 | NOT IMPLEMENTED, TEST RUNNER | the `stale-while-revalidate` directive of the HTTP cache (a stale response is validated before it is used); the `stale-*.py` handlers are not emulated |
+| [`stale-while-revalidate/stale-script.html`](https://wpt.fyi/results/fetch/stale-while-revalidate/stale-script.html) | Timeout | 0 / 1 | NOT IMPLEMENTED, TEST RUNNER | the `stale-while-revalidate` directive of the HTTP cache (a stale response is validated before it is used); the `stale-*.py` handlers are not emulated |
 
 ## Tentative tests
 
@@ -469,8 +469,8 @@
 | [`corb/script-resource-with-json-parser-breaker.tentative.sub.html`](https://wpt.fyi/results/fetch/corb/script-resource-with-json-parser-breaker.tentative.sub.html) | Pass | 27 / 27 |  |  |
 | [`corb/script-resource-with-nonsniffable-types.tentative.sub.html`](https://wpt.fyi/results/fetch/corb/script-resource-with-nonsniffable-types.tentative.sub.html) | Timeout | 0 / 1 | TEST RUNNER | `fetch/corb/resources/sniffable-resource.py` is not emulated; the test also calls `async_test()` with `setup({single_test: true})`, which testharness.js rejects |
 | [`h1-parsing/h1-parsing.tentative.html`](https://wpt.fyi/results/fetch/h1-parsing/h1-parsing.tentative.html) | Fail | 138 / 204 | TEST RUNNER | the `.asis` raw responses are parsed leniently (invalid status lines and headers containing CR/LF/NUL are not network errors, as an HTTP/1.1 client would make them) |
-| [`http-cache/credentials.tentative.any.js`](https://wpt.fyi/results/fetch/http-cache/credentials.tentative.any.js) | Fail | 0 / 6 | NOT IMPLEMENTED, TEST RUNNER | the HTTP cache; `fetch/http-cache/resources/http-cache.py` is not emulated (the requests get 404) |
-| [`http-cache/no-vary-search.tentative.any.js`](https://wpt.fyi/results/fetch/http-cache/no-vary-search.tentative.any.js) | Fail | 0 / 39 | NOT IMPLEMENTED, TEST RUNNER | the HTTP cache; `fetch/http-cache/resources/http-cache.py` is not emulated (the requests get 404) |
+| [`http-cache/credentials.tentative.any.js`](https://wpt.fyi/results/fetch/http-cache/credentials.tentative.any.js) | Pass | 6 / 6 |  |  |
+| [`http-cache/no-vary-search.tentative.any.js`](https://wpt.fyi/results/fetch/http-cache/no-vary-search.tentative.any.js) | Fail | 21 / 39 | NOT IMPLEMENTED | the `No-Vary-Search` header of the responses: the HTTP cache matches the stored responses by their complete URL |
 | [`local-network-access/dedicated-worker.tentative.https.html`](https://wpt.fyi/results/fetch/local-network-access/dedicated-worker.tentative.https.html) | Error | 0 / 0 | NOT IMPLEMENTED, TEST RUNNER | Local Network Access; the `{{ports[http-local]}}`/`{{ports[http-public]}}` substitutions of `support.sub.js` are not supported (syntax error) |
 | [`local-network-access/fetch.tentative.https.html`](https://wpt.fyi/results/fetch/local-network-access/fetch.tentative.https.html) | Error | 0 / 0 | NOT IMPLEMENTED, TEST RUNNER | Local Network Access; the `{{ports[http-local]}}`/`{{ports[http-public]}}` substitutions of `support.sub.js` are not supported (syntax error) |
 | [`local-network-access/iframe-opener.tentative.https.html`](https://wpt.fyi/results/fetch/local-network-access/iframe-opener.tentative.https.html) | Error | 0 / 0 | NOT IMPLEMENTED, TEST RUNNER | Local Network Access; the `{{ports[http-local]}}`/`{{ports[http-public]}}` substitutions of `support.sub.js` are not supported (syntax error) |

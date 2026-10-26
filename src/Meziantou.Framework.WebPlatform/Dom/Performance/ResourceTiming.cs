@@ -31,6 +31,9 @@ internal sealed class FetchTimingInfo
 
     /// <summary>Whether the timing allow check passed (https://fetch.spec.whatwg.org/#concept-response-timing-allow-passed).</summary>
     public bool TimingAllowPassed { get; init; }
+
+    /// <summary>The cache state of the response (https://fetch.spec.whatwg.org/#concept-response-cache-state): the empty string, <c>local</c> or <c>validated</c>.</summary>
+    public string CacheState { get; init; } = "";
 }
 
 /// <summary>https://fetch.spec.whatwg.org/#connection-timing-info</summary>
@@ -161,6 +164,7 @@ internal sealed class ResourceTiming
                 // A response given by a service worker has no connection: its ALPN negotiated protocol is the empty string.
                 FinalConnectionTimingInfo = new ConnectionTimingInfo(postRedirectStartTime, postRedirectStartTime, postRedirectStartTime, postRedirectStartTime, isSecure ? postRedirectStartTime : 0, _request.IsAnsweredByServiceWorker ? "" : "http/1.1") { IsSecure = isSecure },
                 TimingAllowPassed = true,
+                CacheState = internalResponse.CacheState,
             };
         }
         else

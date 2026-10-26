@@ -21,7 +21,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// The algorithm runs on the event loop: when the loader completes asynchronously, the rest of the algorithm runs in a
 /// task queued when it completes. A synchronous request (<see cref="FetchRequest.Synchronous"/>) waits for the loader.
 /// The requests whose service-workers mode is "all" are handled by the service workers (<see cref="ServiceWorkerFetchHandling"/>).
-/// There is no HTTP cache. The response is processed once its body is fully received, except the rest of the body of a
+/// The responses are stored in the HTTP cache (<see cref="HttpCache"/>). The response is processed once its body is fully received, except the rest of the body of a
 /// navigation, of an event source, of a media resource and of <c>fetch()</c> (see <see cref="FetchRequest.StreamsBody"/>
 /// and <see cref="DocumentResource.RemainingContentBytes"/>).
 /// </remarks>
@@ -741,7 +741,7 @@ internal static class Fetching
             headers.Add(new("Accept-Language", BrowsingContextOptions.GetAcceptLanguage(languages)));
         }
 
-        // Steps 8.16 to 8.18: the cache mode (there is no HTTP cache)
+        // Steps 8.16 to 8.18: the cache mode
         var cacheMode = request.CacheMode;
         if (cacheMode == "default" && (FetchHeaders.Contains(headers, "If-Modified-Since") || FetchHeaders.Contains(headers, "If-None-Match") || FetchHeaders.Contains(headers, "If-Unmodified-Since") || FetchHeaders.Contains(headers, "If-Match") || FetchHeaders.Contains(headers, "If-Range")))
         {
@@ -813,13 +813,74 @@ internal static class Fetching
         // The end of step 8: the client hints (https://wicg.github.io/client-hints-infrastructure/#fetch)
         ClientHints.AppendToRequest(request, headers);
 
-        // Step 10: there is no cache
+        // Steps 9 and 10: the stored response of the HTTP cache, used as is when it is fresh (or with the "force-cache" and
+        // "only-if-cached" modes), else validated with the validators of the stored response
+        string? cacheKey = null;
+        var cache = cacheMode == "no-store" ? null : GetHttpCache(request, out cacheKey);
+        HttpCacheEntry? storedResponse = null;
+        var revalidating = false;
+        var requestHeaders = headers;
+        var now = GetHttpCacheTime(request);
+        var requestDirectives = HttpCache.ParseCacheControl(headers);
+        if (cache is not null && cacheMode != "reload" && request.Method == "GET" && !requestDirectives.ContainsKey("no-store"))
+        {
+            storedResponse = cache.Select(cacheKey!, includeCredentials, headers);
+            if (storedResponse is not null)
+            {
+                if (cacheMode is "force-cache" or "only-if-cached" || HttpCache.IsFresh(storedResponse, headers, now))
+                    return CreateCachedResponse(request, storedResponse, includeCredentials);
+
+                // A stale response is validated with its validators (https://httpwg.org/specs/rfc9111.html#validation.sent);
+                // a response without validator is fetched again. A request whose Cache-Control has only-if-cached does not
+                // validate it.
+                var etag = HeaderList.Get(storedResponse.Headers, "ETag");
+                var lastModified = HeaderList.Get(storedResponse.Headers, "Last-Modified");
+                if (requestDirectives.ContainsKey("only-if-cached"))
+                {
+                    storedResponse = null;
+                }
+                else if (etag is not null || lastModified is not null)
+                {
+                    revalidating = true;
+                    headers = [.. headers];
+                    if (etag is not null)
+                    {
+                        headers.Add(new("If-None-Match", etag));
+                    }
+
+                    if (lastModified is not null)
+                    {
+                        headers.Add(new("If-Modified-Since", lastModified));
+                    }
+                }
+                else
+                {
+                    storedResponse = null;
+                }
+            }
+        }
+
+        // Step 10.1: a request of the "only-if-cached" mode without stored response is a network error
         if (cacheMode == "only-if-cached")
             return FetchResponse.NetworkError();
+
+        // https://httpwg.org/specs/rfc9111.html#cache-request-directive.only-if-cached: a request whose Cache-Control has
+        // only-if-cached gets a 504 response without a usable stored response
+        if (cache is not null && requestDirectives.ContainsKey("only-if-cached") && !revalidating)
+        {
+            var gatewayTimeout = FetchResponse.Create(504, "Gateway Timeout", [], []);
+            gatewayTimeout.UrlList = [.. request.UrlList];
+            return gatewayTimeout;
+        }
 
         var response = await NetworkFetchAsync(request, headers, includeCredentials, cancellationToken).ConfigureAwait(false);
         if (response.IsNetworkError)
             return response;
+
+        if (cache is not null)
+        {
+            response = UpdateHttpCache(request, response, cache, cacheKey!, requestHeaders, includeCredentials, revalidating ? storedResponse : null, now, GetHttpCacheTime(request));
+        }
 
         // https://w3c.github.io/webappsec-clear-site-data/#fetch-integration: the Clear-Site-Data header clears the client hints
         ClientHints.ProcessResponse(request, response);
@@ -844,6 +905,127 @@ internal static class Fetching
         if (isAuthenticationFetch && response.Status != 401 && request.CurrentUrl.IncludesCredentials)
         {
             caches?.SetAuthenticationEntry(request.CurrentUrl, Encoding.UTF8.GetString(PercentEncoding.PercentDecode(request.CurrentUrl.Username)), Encoding.UTF8.GetString(PercentEncoding.PercentDecode(request.CurrentUrl.Password)));
+        }
+
+        return response;
+    }
+
+    /// <summary>
+    /// The HTTP cache of a request (https://fetch.spec.whatwg.org/#determine-the-http-cache-partition), or null when it has
+    /// none (no loader, an opaque top-level origin, a URL that is not an HTTP(S) URL, or a request with isolated credentials,
+    /// e.g. a cross-site prefetch, whose network context is not the one of the user agent): the cache of the loader, and the
+    /// key of the URL in the partition of the request.
+    /// </summary>
+    private static HttpCache? GetHttpCache(FetchRequest request, out string? key)
+    {
+        key = null;
+        if (request.CurrentUrl.Scheme is not ("http" or "https") || request.Mode == RequestMode.WebSocket || request.IsSpeculative || request.UseIsolatedCredentials || GetDocumentLoader(request) is not { } loader)
+            return null;
+
+        // The top-level site of the request, and whether it comes from a cross-site frame: the ones of the cookies (a
+        // top-level navigation is its own top-level site)
+        string? topLevelOrigin;
+        string? siteForCookies;
+        if (request.CookieContext is { } cookieContext)
+        {
+            topLevelOrigin = cookieContext.TopLevelOrigin;
+            siteForCookies = cookieContext.SiteForCookies;
+        }
+        else if (request.Client is { } client && request.Mode != RequestMode.Navigate)
+        {
+            topLevelOrigin = client.TopLevelOriginForCookies;
+            siteForCookies = client.SiteForCookies;
+        }
+        else
+        {
+            topLevelOrigin = null;
+            siteForCookies = null;
+        }
+
+        key = HttpCache.GetKey(topLevelOrigin ?? request.CurrentUrl.SerializeOrigin(), crossSite: siteForCookies == "null", request.CurrentUrl);
+        return key is null ? null : HttpCache.Get(loader);
+    }
+
+    /// <summary>The current time of the HTTP cache: the time of the event loop of the request.</summary>
+    private static DateTimeOffset GetHttpCacheTime(FetchRequest request)
+        => ((request.Navigable?.EventLoop ?? request.Client?.EnvironmentEventLoop ?? request.KeepaliveBrowsingContext?.EventLoop)?.TimeProvider ?? TimeProvider.System).GetUtcNow();
+
+    /// <summary>The loader of a request: the one of its navigable, of the environment of its client, or of the browsing context of a keepalive request.</summary>
+    private static DocumentLoader? GetDocumentLoader(FetchRequest request)
+        => (request.Navigable?.Options ?? request.Client?.EnvironmentOptions ?? (request.Navigable ?? request.KeepaliveBrowsingContext)?.Options)?.DocumentLoader;
+
+    /// <summary>The response constructed from a stored response (https://httpwg.org/specs/rfc9111.html#constructing.responses.from.caches).</summary>
+    private static FetchResponse CreateCachedResponse(FetchRequest request, HttpCacheEntry entry, bool includeCredentials, string cacheState = "local")
+    {
+        var response = FetchResponse.Create(entry.Status, entry.StatusMessage, [.. entry.Headers], entry.Body);
+        response.CacheState = cacheState;
+        response.UrlList = [.. request.UrlList];
+        response.RequestIncludesCredentials = includeCredentials;
+        request.LoaderFailed = false;
+        return response;
+    }
+
+    /// <summary>
+    /// https://fetch.spec.whatwg.org/#http-network-or-cache-fetch, step 10: the response of the network updates the HTTP
+    /// cache. A successful response of an unsafe method invalidates the stored responses of the URL and of the URLs of its
+    /// <c>Location</c> and <c>Content-Location</c> headers (https://httpwg.org/specs/rfc9111.html#invalidation); a <c>304</c>
+    /// response that validates the stored response updates it, and the stored response is returned; a response that can be
+    /// stored is stored once its body is received (a body read as it arrives is stored when it is fully read).
+    /// </summary>
+    private static FetchResponse UpdateHttpCache(FetchRequest request, FetchResponse response, HttpCache cache, string key, List<KeyValuePair<string, string>> requestHeaders, bool includeCredentials, HttpCacheEntry? storedResponse, DateTimeOffset requestTime, DateTimeOffset responseTime)
+    {
+        var url = request.CurrentUrl;
+        if (request.Method is not ("GET" or "HEAD" or "OPTIONS" or "TRACE") && response.Status is >= 200 and < 400)
+        {
+            cache.Invalidate(key);
+            foreach (var name in (ReadOnlySpan<string>)["Location", "Content-Location"])
+            {
+                if (HeaderList.Get(response.HeaderList, name) is { } location && UrlParser.Parse(location, url) is { } locationUrl && locationUrl.SerializeOrigin() == url.SerializeOrigin())
+                {
+                    cache.Invalidate(HttpCache.GetKeyInPartition(key, locationUrl));
+                }
+            }
+        }
+
+        if (storedResponse is not null && response.Status == 304)
+        {
+            return CreateCachedResponse(request, cache.Freshen(key, storedResponse, response.HeaderList, requestTime, responseTime), includeCredentials, cacheState: "validated");
+        }
+
+        if (!HttpCache.IsStorable(request.Method, url, requestHeaders, response.Status, response.HeaderList))
+            return response;
+
+        // As in the browsers, whose opaque response blocking (https://github.com/annevk/orb) blocks them before they are
+        // stored, the HTML, JSON and XML responses of a cross-origin no-cors request are not stored
+        if (request.ResponseTainting == FetchResponseTainting.Opaque && HeaderList.ExtractMimeType(response.HeaderList) is { } mimeType
+            && (mimeType.Essence == "text/html" || mimeType.Essence == "application/json" || mimeType.Essence == "text/json" || mimeType.Subtype.EndsWith("+json", StringComparison.Ordinal) || mimeType.IsXml))
+        {
+            return response;
+        }
+
+        HttpCacheEntry CreateEntry(byte[] body) => new(includeCredentials, requestHeaders, response.Status, response.StatusMessage, response.HeaderList, body, requestTime, responseTime);
+        if (response.Resource is { RemainingContentBytes: { } remaining } resource)
+        {
+            // The body that arrives over time is stored once it is fully received
+            var first = resource.ContentBytes ?? ReadOnlyMemory<byte>.Empty;
+            var cachedResource = new DocumentResource(first)
+            {
+                StatusCode = resource.StatusCode,
+                StatusText = resource.StatusText,
+                Headers = resource.Headers,
+                Url = resource.Url,
+                RedirectUrls = resource.RedirectUrls,
+                RemainingContentBytes = new HttpCacheBody(first, remaining, body => cache.Store(key, CreateEntry(body))),
+            };
+            var streamedResponse = FetchResponse.Create(response.Status, response.StatusMessage, response.HeaderList, cachedResource);
+            streamedResponse.UrlList = response.UrlList;
+            return streamedResponse;
+        }
+
+        var bytes = response.Resource is { } completeResource ? completeResource.ContentBytes?.ToArray() ?? Encoding.UTF8.GetBytes(completeResource.Content ?? "") : response.Body ?? [];
+        if (bytes.Length <= HttpCache.MaxBodyLength)
+        {
+            cache.Store(key, CreateEntry(bytes));
         }
 
         return response;

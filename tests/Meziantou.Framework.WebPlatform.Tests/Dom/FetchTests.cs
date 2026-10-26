@@ -402,6 +402,137 @@ public sealed class FetchTests : IDisposable
     }
 
     [Fact]
+    public void HttpCache_ReusesAFreshResponse()
+    {
+        _loader.Responses["https://example.com/fresh"] = new DocumentResource("cached") { Headers = [new("Cache-Control", "max-age=3600")] };
+        var document = Load("""
+            <script>
+              (async () => {
+                const first = await (await fetch('fresh')).text();
+                const second = await (await fetch('fresh')).text();
+                document.title = first + '|' + second;
+              })();
+            </script>
+            """);
+
+        Assert.Equal("cached|cached", document.Title);
+        Assert.Single(_loader.Requests, request => request.Url == "https://example.com/fresh");
+    }
+
+    [Fact]
+    public void HttpCache_RevalidatesAStaleResponseWithItsValidator()
+    {
+        _loader.Handler = request => HeaderList.Get(request.Headers, "If-None-Match") == "\"v1\""
+            ? new DocumentResource("") { StatusCode = 304, Headers = [new("ETag", "\"v1\""), new("X-Version", "2")] }
+            : new DocumentResource("body") { Headers = [new("ETag", "\"v1\""), new("X-Version", "1"), new("Cache-Control", "no-cache")] };
+        var document = Load("""
+            <script>
+              (async () => {
+                const first = await fetch('stale');
+                const second = await fetch('stale');
+                document.title = [first.headers.get('x-version'), await first.text(), second.status, second.headers.get('x-version'), await second.text()].join('|');
+              })();
+            </script>
+            """);
+
+        Assert.Equal("1|body|200|2|body", document.Title);
+        var requests = _loader.Requests.FindAll(request => request.Url == "https://example.com/stale");
+        Assert.Equal(2, requests.Count);
+        Assert.Null(HeaderList.Get(requests[0].Headers, "If-None-Match"));
+        Assert.Equal("\"v1\"", HeaderList.Get(requests[1].Headers, "If-None-Match"));
+    }
+
+    [Fact]
+    public void HttpCache_CacheModes()
+    {
+        var count = 0;
+        _loader.Handler = request => request.Url == "https://example.com/modes" ? new DocumentResource((++count).ToString(System.Globalization.CultureInfo.InvariantCulture)) { Headers = [new("Cache-Control", "max-age=3600")] } : null;
+        var document = Load("""
+            <script>
+              (async () => {
+                const results = [];
+                for (const cache of ['default', 'default', 'no-store', 'force-cache', 'reload', 'default', 'no-cache', 'only-if-cached']) {
+                  const response = await fetch('modes', { cache, mode: cache === 'only-if-cached' ? 'same-origin' : 'cors' });
+                  results.push(cache + ':' + await response.text());
+                }
+
+                results.push(await fetch('missing', { cache: 'only-if-cached', mode: 'same-origin' }).then(() => 'resolved', e => e.name));
+                document.title = results.join('|');
+              })();
+            </script>
+            """);
+
+        // no-store bypasses the cache; reload and no-cache update it
+        Assert.Equal("default:1|default:1|no-store:2|force-cache:1|reload:3|default:3|no-cache:4|only-if-cached:4|TypeError", document.Title);
+    }
+
+    [Fact]
+    public void HttpCache_OnlyIfCachedDirective_GetsAGatewayTimeoutWithoutAFreshResponse()
+    {
+        _loader.Handler = request => new DocumentResource("body") { Headers = [new("Cache-Control", "max-age=0"), new("ETag", "\"v1\"")] };
+        var document = Load("""
+            <script>
+              (async () => {
+                const results = [];
+                for (const url of ['missing', 'stale', 'stale']) {
+                  const response = await fetch(url, { headers: url === 'missing' || results.length === 2 ? { 'Cache-Control': 'only-if-cached' } : {} });
+                  results.push(response.status);
+                }
+
+                document.title = results.join('|');
+              })();
+            </script>
+            """);
+
+        // The stale response is not validated: the request gets a 504 response
+        Assert.Equal("504|200|504", document.Title);
+        Assert.Single(_loader.Requests, request => request.Url == "https://example.com/stale");
+        Assert.DoesNotContain(_loader.Requests, request => request.Url == "https://example.com/missing");
+    }
+
+    [Fact]
+    public void HttpCache_VaryAndInvalidation()
+    {
+        var count = 0;
+        _loader.Handler = request => request.Url == "https://example.com/vary"
+            ? new DocumentResource(request.Method + (++count).ToString(System.Globalization.CultureInfo.InvariantCulture)) { Headers = [new("Cache-Control", "max-age=3600"), new("Vary", "X-Test")] }
+            : null;
+        var document = Load("""
+            <script>
+              (async () => {
+                const get = async (value, method = 'GET') => (await fetch('vary', { method, headers: { 'X-Test': value } })).text();
+                document.title = [await get('a'), await get('a'), await get('b'), await get('a', 'POST'), await get('a')].join('|');
+              })();
+            </script>
+            """);
+
+        // The values nominated by Vary select the stored response, and a successful POST invalidates the stored responses
+        Assert.Equal("GET1|GET1|GET2|POST3|GET4", document.Title);
+    }
+
+    [Fact]
+    public async Task HttpCache_StoresAStreamedBodyOnceItIsRead()
+    {
+        var chunks = Channel.CreateUnbounded<ReadOnlyMemory<byte>>();
+        _loader.Responses["https://example.com/stream"] = new DocumentResource("a"u8.ToArray()) { Headers = [new("Cache-Control", "max-age=3600")], RemainingContentBytes = chunks.Reader.ReadAllAsync() };
+        chunks.Writer.TryWrite("b"u8.ToArray());
+        chunks.Writer.TryComplete();
+        var document = Load("""
+            <script>
+              (async () => {
+                const first = await (await fetch('stream')).text();
+                const second = await (await fetch('stream')).text();
+                document.title = first + '|' + second;
+              })();
+            </script>
+            """);
+
+        await WaitUntilAsync(() => document.Title.Length > 0, () => document.Title);
+        Assert.Equal("ab|ab", document.Title);
+        Assert.Single(_loader.Requests, request => request.Url == "https://example.com/stream");
+    }
+
+    [Fact]
     public async Task HttpDocumentLoader_StreamsTheBodyOfFetch()
     {
         using var handler = new StubHandler(_ => new System.Net.Http.HttpResponseMessage(System.Net.HttpStatusCode.OK) { Content = new System.Net.Http.StringContent("body") });
@@ -457,10 +588,13 @@ public sealed class FetchTests : IDisposable
 
         public List<DocumentRequest> Requests { get; } = [];
 
+        /// <summary>The response of a request whose URL has no response in <see cref="Responses"/>, or null.</summary>
+        public Func<DocumentRequest, DocumentResource?>? Handler { get; set; }
+
         public override ValueTask<DocumentResource?> LoadAsync(DocumentRequest request, CancellationToken cancellationToken)
         {
             Requests.Add(request);
-            return ValueTask.FromResult(Responses.GetValueOrDefault(request.Url));
+            return ValueTask.FromResult(Responses.GetValueOrDefault(request.Url) ?? Handler?.Invoke(request));
         }
     }
 

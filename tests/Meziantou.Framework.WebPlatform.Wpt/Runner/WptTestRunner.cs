@@ -748,7 +748,7 @@ internal sealed partial class WptTestRunner
         WptHandlerResponse? response;
         try
         {
-            response = WptPythonHandlers.Handle(new WptHandlerRequest(url, request, GetRequestHeaders(url, request)) { PollingElapsed = pollingElapsed }, _stash);
+            response = WptPythonHandlers.Handle(new WptHandlerRequest(url, request, GetRequestHeaders(url, request)) { PollingElapsed = pollingElapsed, Now = Now }, _stash);
             if (response?.RetryAfter is { } retryAfter)
                 return (null, TimeSpan.Zero, retryAfter);
         }

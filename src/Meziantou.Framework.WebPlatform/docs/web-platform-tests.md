@@ -131,10 +131,15 @@
     resources are given to the library as they arrive, as for the documents. The handlers of the `cors` tests are in `WptPythonHandlers.Cors.cs`
     (`cors-makeheader.py`, which returns the headers of the request and records the preflights in the stash,
     `cors-cookie.py`, `preflight.py`, `preflight-partitioning.py`, `status.py`, `expose-headers.py`, whose raw response
-    has the header lines of the query, and the `304.py` and `cache-304.py` handlers of the revalidation tests, which need
-    an HTTP cache); `checkandremove.py`, which no test uses, is not ported. `track-element/cors/support/cors-tester.py`
+    has the header lines of the query, and the `304.py` and `cache-304.py` handlers of the revalidation tests); `checkandremove.py`, which no test uses, is not ported. `track-element/cors/support/cors-tester.py`
     serves a WebVTT file (or a redirect) and records the `Origin` header and the cookie of each request of a `track`
     element. The resources of the `track` elements are served as bytes with the status of `pipe=status()`.
+- `fetch/http-cache/resources/http-cache.py` answers each request of a test with the response described by the
+  `Test-Requests` header (the requests of the test in JSON, encoded in base64): its magic dates are relative to the
+  virtual clock (`WptHandlerRequest.Now`), its magic locations are the URL of the request with a `target` parameter, it
+  answers `304` to a request expected to be validated when the validator of the first response matches, and the
+  requests are recorded in the stash (`dispatch=state`). `cached_pragma_rand.py` and `cached_pragma_immutable_rand.py`
+  are ported too.
 - The client hints of the runner (`BrowsingContextOptions.ClientHints`) are the ones of a desktop browser on Linux
   (`x86`, 64 bits) with 8 GiB of memory and a 4g connection (a round-trip time of 50 ms, 10 Mbit/s): the library sends
   no device memory nor network hint by default, and the `client-hints` tests check their presence and their range. The

@@ -211,6 +211,9 @@ internal static partial class WptPythonHandlers
         ["/fetch/api/resources/authentication.py"] = FetchAuthentication,
         ["/fetch/api/resources/cache.py"] = FetchCache,
         ["/fetch/api/request/resources/cache.py"] = RequestCache,
+        ["/fetch/http-cache/resources/http-cache.py"] = FetchHttpCache,
+        ["/fetch/http-cache/resources/cached_pragma_rand.py"] = (_, response, _) => CachedPragmaRand(response, "max-age=2592000, public"),
+        ["/fetch/http-cache/resources/cached_pragma_immutable_rand.py"] = (_, response, _) => CachedPragmaRand(response, "max-age=2592000, immutable"),
         ["/fetch/api/resources/dump-authorization-header.py"] = DumpAuthorizationHeader,
         ["/fetch/api/resources/echo-content.py"] = EchoContent,
         ["/fetch/api/resources/method.py"] = Method,
@@ -1591,6 +1594,172 @@ internal static partial class WptPythonHandlers
             response.Set("Content-Type", "text/plain");
             response.Content = request.Get("content") ?? "";
         }
+    }
+
+    // fetch/http-cache/resources/http-cache.py: the responses described by the Test-Requests header (the JSON of the requests
+    // of the test, encoded in base64), one for each request received for the uuid; the requests are recorded in the stash
+    private static void FetchHttpCache(WptHandlerRequest request, WptHandlerResponse response, WptStash stash)
+    {
+        var uuid = request.Get("uuid");
+        response.Set("Access-Control-Allow-Credentials", "true");
+        void Fail(int status, string statusText, string body)
+        {
+            response.Status = status;
+            response.StatusText = statusText;
+            response.Set("Content-Type", "text/plain");
+            response.Content = body;
+        }
+
+        if (request.Method == "OPTIONS")
+        {
+            response.Set("Access-Control-Allow-Origin", request.Header("Origin") ?? "*");
+            response.Set("Access-Control-Allow-Methods", "GET");
+            response.Set("Access-Control-Allow-Headers", request.Header("Access-Control-Request-Headers") ?? "*");
+            response.Set("Access-Control-Max-Age", "86400");
+            response.Content = "Preflight request";
+            return;
+        }
+
+        if (uuid is null)
+        {
+            Fail(404, "Not Found", "UUID not found");
+            return;
+        }
+
+        switch (request.Get("dispatch"))
+        {
+            case "state":
+                response.Set("Content-Type", "text/plain");
+                response.Content = stash.TakeValue(uuid) is System.Text.Json.Nodes.JsonArray state ? state.ToJsonString() : "null";
+                return;
+            case "test":
+                break;
+            default:
+                Fail(404, "Not Found", "Fallthrough");
+                return;
+        }
+
+        var serverState = stash.TakeValue(uuid) as System.Text.Json.Nodes.JsonArray ?? [];
+        System.Text.Json.Nodes.JsonArray requests;
+        try
+        {
+            requests = System.Text.Json.Nodes.JsonNode.Parse(Encoding.Latin1.GetString(Convert.FromBase64String(request.Header("Test-Requests") ?? ""))) as System.Text.Json.Nodes.JsonArray ?? throw new FormatException();
+        }
+        catch (Exception ex) when (ex is FormatException or JsonException)
+        {
+            Fail(400, "Bad Request", "No or bad Test-Requests request header");
+            return;
+        }
+
+        if (serverState.Count >= requests.Count)
+            throw new InvalidOperationException("list index out of range");
+
+        if (requests[serverState.Count] is not System.Text.Json.Nodes.JsonObject config || config.Count == 0)
+        {
+            Fail(404, "Not Found", "Config not found");
+            return;
+        }
+
+        // The magic locations (the URL of the request, with the target) and the magic dates (a number of seconds from now)
+        var now = request.Now;
+        var notedHeaders = new System.Text.Json.Nodes.JsonObject();
+        foreach (var header in config["response_headers"] as System.Text.Json.Nodes.JsonArray ?? [])
+        {
+            if (header is not System.Text.Json.Nodes.JsonArray { Count: >= 2 } pair)
+                continue;
+
+            var name = pair[0]!.GetValue<string>();
+            var lowerName = name.ToLowerInvariant();
+            string value;
+            if (pair[1] is System.Text.Json.Nodes.JsonValue number && number.GetValueKind() == JsonValueKind.Number && lowerName is "date" or "expires" or "last-modified")
+            {
+                value = now.AddSeconds(number.GetValue<double>()).UtcDateTime.ToString("ddd, dd MMM yyyy HH:mm:ss 'GMT'", CultureInfo.InvariantCulture);
+            }
+            else
+            {
+                value = pair[1] is System.Text.Json.Nodes.JsonValue jsonValue && jsonValue.GetValueKind() == JsonValueKind.String ? jsonValue.GetValue<string>() : pair[1]?.ToJsonString() ?? "";
+            }
+
+            if (lowerName is "location" or "content-location")
+            {
+                value = value.Length > 0 ? request.Url.Href + "&target=" + value : request.Url.Href;
+            }
+
+            response.Set(name, value);
+            if (lowerName is "content-type" or "access-control-allow-origin" or "last-modified" or "etag")
+            {
+                notedHeaders[lowerName] = value;
+            }
+        }
+
+        var requestHeaders = new System.Text.Json.Nodes.JsonObject();
+        foreach (var (name, _) in request.Headers)
+        {
+            requestHeaders[name.ToLowerInvariant()] = request.Header(name);
+        }
+
+        serverState.Add(new System.Text.Json.Nodes.JsonObject
+        {
+            ["now"] = (now - DateTimeOffset.UnixEpoch).TotalSeconds,
+            ["request_method"] = request.Method,
+            ["request_headers"] = requestHeaders,
+            ["response_headers"] = notedHeaders,
+        });
+        stash.Put(uuid, serverState);
+
+        if (!notedHeaders.ContainsKey("access-control-allow-origin"))
+        {
+            response.Set("Access-Control-Allow-Origin", "*");
+        }
+
+        if (!notedHeaders.ContainsKey("content-type"))
+        {
+            response.Set("Content-Type", "text/plain");
+        }
+
+        response.Set("Server-Request-Count", serverState.Count.ToString(CultureInfo.InvariantCulture));
+        var (status, statusText) = config["response_status"] is System.Text.Json.Nodes.JsonArray { Count: >= 2 } statusPair
+            ? (statusPair[0]!.GetValue<int>(), statusPair[1]!.GetValue<string>())
+            : (200, "OK");
+
+        // A request expected to be validated gets a 304 response when it has the validator of the first response
+        if (config["expected_type"]?.GetValue<string>() is { } expectedType && expectedType.EndsWith("validated", StringComparison.Ordinal))
+        {
+            var referenceHeaders = serverState[0]!["response_headers"]!.AsObject();
+            if (referenceHeaders["last-modified"]?.GetValue<string>() is { } previousLastModified && request.Header("If-Modified-Since") == previousLastModified)
+            {
+                (status, statusText) = (304, "Not Modified");
+            }
+
+            if (referenceHeaders["etag"]?.GetValue<string>() is { } previousETag && request.Header("If-None-Match") == previousETag)
+            {
+                (status, statusText) = (304, "Not Modified");
+            }
+
+            if (status != 304)
+            {
+                (status, statusText) = (999, "304 Not Generated");
+            }
+        }
+
+        response.Status = status;
+        response.StatusText = statusText;
+        if (status is not (204 or 304))
+        {
+            // A null response_body is an empty body
+            response.Content = !config.TryGetPropertyValue("response_body", out var body) ? uuid : body is System.Text.Json.Nodes.JsonValue value && value.GetValueKind() == JsonValueKind.String ? value.GetValue<string>() : body?.ToJsonString() ?? "";
+        }
+    }
+
+    // fetch/http-cache/resources/cached_pragma_rand.py, cached_pragma_immutable_rand.py: a unique token, with a Cache-Control
+    // that allows caching and Pragma: no-cache
+    private static void CachedPragmaRand(WptHandlerResponse response, string cacheControl)
+    {
+        response.Set("X-XSS-Protection", "0");
+        response.Set("Content-Type", "text/html");
+        response.Set("Cache-Control", cacheControl);
+        response.Set("Pragma", "no-cache");
+        response.Content = "Token: " + Guid.NewGuid().ToString("D");
     }
 
     // fetch/api/resources/dump-authorization-header.py

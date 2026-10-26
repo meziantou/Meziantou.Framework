@@ -911,7 +911,8 @@ entry (see [Preloads](#preloads)).
   response (a cross-origin `no-cors` response). The loader returns the decoded body: `encodedBodySize` is the
   `Content-Length` of a response that has a `Content-Encoding`, else the size of the body. `contentEncoding` is the
   content coding when the browsers support it (`gzip`, `deflate`, `br`, `zstd`, `dcb`, `dcz`), `multiple` or `@unknown`.
-  There is no HTTP cache: `deliveryType` is empty and `transferSize` is `encodedBodySize + 300`.
+  A response of the HTTP cache is reported as a response of the network: `deliveryType` is empty and `transferSize` is
+  `encodedBodySize + 300`.
 - `serverTiming` is the list of the metrics of the `Server-Timing` headers ([Server Timing](https://w3c.github.io/server-timing/),
   `PerformanceServerTiming`: `name`, `duration`, `description`), in a secure context, when the timing allow check passes.
 - The navigation started by an `iframe` or `frame` element (its `src` attribute) is reported to the document of the
@@ -1078,8 +1079,8 @@ response blocked by a check included; a `404` response is not a network error, a
   (`script` by default), `json`, `style` (a CSS module) or `text`; another destination fires an `error` event. Only a
   change of `href` fetches again. Its resource timing entry has the `other` initiator type, as in the browsers.
 - **`<link rel=prefetch>`** sends a request whose destination is empty, with the `Sec-Purpose: prefetch` header and
-  the `Accept` header of a navigation. There is no HTTP cache, so the response is not used by the next request of the
-  URL. A content security policy that has a `default-src` directive blocks the prefetch unless one of its fetch
+  the `Accept` header of a navigation. The response is used by the next requests of the URL through the HTTP cache,
+  when it can be stored. A content security policy that has a `default-src` directive blocks the prefetch unless one of its fetch
   directives allows the URL (https://w3c.github.io/webappsec-csp/#does-resource-hint-violate-policy).
 - **`<link rel=prerender>`** (removed from the HTML Standard) is processed as a prefetch, as in the browsers (Chromium's
   NoState Prefetch).
@@ -1135,7 +1136,7 @@ The speculation rules of the documents ([speculative loading](https://html.spec.
   the URL, and waits for an ongoing one. The URLs match when they are equal without their fragments, or equivalent for
   the `No-Vary-Search` header of the response (the `expects_no_vary_search` hint, while the response is not received).
   A record is used once. The document has the URL of the navigation; `document.referrer` is the referrer of the prefetch.
-  A fragment link to the document itself is not prefetched. There is no HTTP cache: the other documents fetch the URL again.
+  A fragment link to the document itself is not prefetched. The other documents use the HTTP cache (see [The fetch algorithm](#the-fetch-algorithm)).
 - **Prerendering** ([Prerendering](https://wicg.github.io/nav-speculation/prerendering.html)): a prerender candidate
   loads a same-site URL in a prerendering traversable, a top-level browsing context in a new browsing context group that
   the application does not see (`Document.Prerendering`, `document.prerendering`). Its requests have
@@ -1263,7 +1264,18 @@ is read before the request is sent. A synchronous
 `XMLHttpRequest` blocks the event loop until the loader completes (`DocumentRequest.IsSynchronous` is true): the loader
 must not wait for a task of the event loop.
 
-There is no HTTP cache (`cache: "only-if-cached"` is a network error). The requests are handled by the service workers
+The responses are stored in an HTTP cache ([RFC 9111](https://httpwg.org/specs/rfc9111.html), `HttpCache`): a private
+cache shared by the browsing contexts and the workers that use the same `DocumentLoader`, partitioned by the top-level site
+of the request and whether it comes from a cross-site frame (https://fetch.spec.whatwg.org/#http-cache-partitions); the
+requests with and without credentials have their own entries. The freshness is computed with the clock of the event loop
+(`max-age`, `Expires`, and 10% of the age of `Last-Modified` for the heuristically cacheable statuses), with the request
+directives (`no-cache`, `no-store`, `max-age`, `min-fresh`, `max-stale`, `only-if-cached`, and `Pragma: no-cache`); a
+response with `Pragma: no-cache` is validated unless it is `immutable`, as in the browsers. A stale response is validated
+with `If-None-Match` and `If-Modified-Since`, and a `304` response updates its headers. `Vary` selects the stored
+response, and a successful response to an unsafe method invalidates the URL and its `Location` and `Content-Location`. The
+`cache` option of `fetch()` sets the cache mode (`default`, `no-store`, `reload`, `no-cache`, `force-cache`,
+`only-if-cached`). A body read as it arrives is stored once it is fully read. The partial responses (`206`), the
+`stale-while-revalidate` and `No-Vary-Search` headers are not supported. The requests are handled by the service workers
 (see [Service workers](#service-workers)), and checked by the `connect-src` directive of the content security policies (see [Content security policy](#content-security-policy)).
 
 The fetches of a document are aborted when it is aborted (`window.stop()`) or destroyed, except the `keepalive` requests

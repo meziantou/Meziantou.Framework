@@ -116,7 +116,7 @@ internal static class ServiceWorkerFetchHandling
         dispatchRegistry.BeginParallelOperation();
         request.Timing.ServiceWorkerStart = eventLoop.TimeProvider.GetTimestamp();
 
-        // The response of a speculative fetch is not reused by the fetch of the parser (there is no HTTP cache), which sends
+        // The response of a speculative fetch is not reused by the fetch of the parser (it is not stored in the HTTP cache), which sends
         // the request again; the browsers send one request. A service worker gets one fetch event for the two requests when
         // the speculative one is still handled: the request of the parser waits for its response.
         var speculativeKey = !isNonSubresource && request is { Method: "GET", Body: null, Client: not null } ? new SpeculativeFetchKey(request.CurrentUrl.Serialize(), request.Destination, request.Mode, request.CredentialsMode) : (SpeculativeFetchKey?)null;

@@ -998,6 +998,33 @@ public sealed class BrowsingContextTests
     }
 
     [Fact]
+    public void BaseUri_OfAClone_IsTheBaseUrlOfTheSource()
+    {
+        using var context = new BrowsingContext();
+        var document = Load(context, "<base href='https://example.org/base/'>");
+        var shallow = (Document)document.CloneNode(subtree: false);
+        var deep = (Document)document.CloneNode(subtree: true);
+        document.QuerySelector("base")!.Remove();
+        Assert.Equal("https://example.com/dir/page.html", document.BaseUri);
+        Assert.Equal("https://example.org/base/", shallow.BaseUri);
+        Assert.Equal("https://example.org/base/", deep.BaseUri);
+
+        deep.QuerySelector("base")!.SetAttribute("href", "sub/");
+        Assert.Equal("https://example.com/dir/sub/", deep.BaseUri);
+
+        var srcdoc = context.Navigate("https://example.com/", _ => "<base href='https://example.com/base/'><iframe srcdoc='x'></iframe>");
+        context.EventLoop.RunUntilIdle();
+        var frameDocument = ((HtmlIFrameElement)srcdoc.QuerySelector("iframe")!).ContentDocument!;
+        var clone = (Document)frameDocument.CloneNode(subtree: false);
+        Assert.Equal("https://example.com/base/", clone.BaseUri);
+
+        var baseElement = clone.CreateElement("base");
+        baseElement.SetAttribute("href", "sub/");
+        clone.AppendChild(baseElement);
+        Assert.Equal("https://example.com/base/sub/", clone.BaseUri);
+    }
+
+    [Fact]
     public void Navigate_DataUrl()
     {
         using var context = new BrowsingContext();

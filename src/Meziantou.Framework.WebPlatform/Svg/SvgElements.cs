@@ -1056,10 +1056,11 @@ internal sealed class SvgResourceDocumentCache
     /// Fetches the resource document of a URL referenced by a property of a rendered element (e.g. <c>fill</c>, <c>filter</c>,
     /// <c>clip-path</c>), unless it is already fetched or being fetched: a CORS request ("for a reference from a style property
     /// or presentation attribute, the anonymous state"), with the request URL modifiers of the URL
-    /// (https://drafts.csswg.org/css-values-5/#request-url-modifiers). <paramref name="onComplete"/> is called from a task when
-    /// the fetch started by this call completes. Returns false when no fetch is started.
+    /// (https://drafts.csswg.org/css-values-5/#request-url-modifiers), and the referrer of the fetched style sheet of the declaration
+    /// (<paramref name="referrer"/>). <paramref name="onComplete"/> is called from a task when the fetch started by this call
+    /// completes. Returns false when no fetch is started.
     /// </summary>
-    public bool LoadForProperty(Document host, Element initiator, Urls.UrlRecord url, Css.Values.CssRequestModifiers modifiers, Action onComplete)
+    public bool LoadForProperty(Document host, Element initiator, Urls.UrlRecord url, Css.Values.CssRequestModifiers modifiers, Css.Om.CssResourceReferrer? referrer, Action onComplete)
     {
         var key = GetPropertyKey(url, modifiers);
         if (_entries.ContainsKey(key))
@@ -1067,6 +1068,7 @@ internal sealed class SvgResourceDocumentCache
 
         var entry = new Entry();
         var request = SubresourceFetching.CreateRequest(host, url, RequestDestination.Image, cors: true, modifiers.ReferrerPolicy, initiator, useCredentials: modifiers.UsesCredentials, integrity: modifiers.IntegrityMetadata);
+        referrer?.Apply(request, modifiers.ReferrerPolicy);
         if (!SubresourceFetching.Fetch(host, request, resource => OnFetched(entry, resource), initiatorType: "css"))
             return false;
 

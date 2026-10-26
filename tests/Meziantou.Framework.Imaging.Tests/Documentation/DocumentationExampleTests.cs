@@ -1787,6 +1787,26 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void ToneMapHighlightsCompressesOrClipsWhatIsBrighterThanTheWhite()
+    {
+        using var hdr = new Image<RgbaFloat>(2, 1);
+        hdr.Frames[0][0, 0] = new RgbaFloat(0.5f, 0.25f, 0.125f);
+        hdr.Frames[0][1, 0] = new RgbaFloat(4, 2, 1); // a highlight four times as bright as the white
+        Assert.Equal(Metadata.ColorTransferFunction.Linear, hdr.Metadata.TransferFunction);
+        Assert.Throws<UnsupportedImageFeatureException>(() => hdr.CloneAs<Rgba64>());
+
+        var output = GetPath("highlights.png");
+        using var toneMapped = Examples.ToneMapHighlights(hdr, output);
+
+        // Reinhard with the peak of the image (4 whites): the highlight becomes the white, the other colors are compressed
+        Assert.Equal(new Rgba64(65535, 32768, 16384), toneMapped.Frames[0][1, 0]);
+        Assert.True(toneMapped.Frames[0][0, 0].R < 32768);
+        using var saved = Image.Load<Rgba64>(output);
+        Assert.Equal(new Rgba64(65535, 65535, 65535), saved.Frames[0][1, 0]);
+        Assert.Equal(new Rgba64(32768, 16384, 8192), saved.Frames[0][0, 0]);
+    }
+
+    [Fact]
     public void RoundTripRawPixelsCopiesTheCroppedHalf()
     {
         byte[] rgba = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];

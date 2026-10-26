@@ -500,28 +500,24 @@ and they are scaled together, which keeps the hue; `TargetWhiteLuminance` is the
 peak of the source is `SourcePeakLuminance` over that white, or else the largest finite color component of the image
 (at least 1). The label of the image does not change.
 
-<!-- ref:../../tests/Meziantou.Framework.Imaging.Tests/ImageModelTests.cs;region=Imaging_FloatingPoint;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_FloatingPoint;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using var hdr = new Image<RgbaFloat>(2, 1);
-hdr.Frames[0][0, 0] = new RgbaFloat(0.5f, 0.25f, 0.125f);
-hdr.Frames[0][1, 0] = new RgbaFloat(4, 2, 1); // a highlight four times as bright as the white
-Assert.Equal(ColorTransferFunction.Linear, hdr.Metadata.TransferFunction);
-
-// Integer pixels cannot store the highlight: clip it, or compress the highlights with a tone mapping
-Assert.Throws<UnsupportedImageFeatureException>(() => hdr.CloneAs<Rgba64>());
-using var toneMapped = hdr.CloneAs<Rgba64>(new PixelConversionOptions
+public static Image<Rgba64> ToneMapHighlights(Image<RgbaFloat> hdr, string pngPath)
 {
-    ToneMapping = new HdrToneMappingOptions { Operator = HdrToneMappingOperator.Reinhard },
-});
-Assert.Equal(new Rgba64(65535, 32768, 16384), toneMapped.Frames[0][1, 0]);
+    // Integer pixels cannot store the highlights: compress them with a tone mapping, or clip them
+    var toneMapped = hdr.CloneAs<Rgba64>(new PixelConversionOptions
+    {
+        ToneMapping = new HdrToneMappingOptions { Operator = HdrToneMappingOperator.Reinhard },
+    });
 
-// Encoders store integers too: the encoder says how to reduce the samples
-using var stream = new MemoryStream();
-hdr.Save(stream, new PngEncoder
-{
-    FloatingPointConversion = new PixelConversionOptions { OutOfRangeSamples = OutOfRangeSampleHandling.Clip },
-    MetadataHandling = MetadataHandling.DiscardUnsupported,
-});
+    // Encoders store integers too: the encoder says how to reduce the samples
+    hdr.Save(pngPath, new PngEncoder
+    {
+        FloatingPointConversion = new PixelConversionOptions { OutOfRangeSamples = OutOfRangeSampleHandling.Clip },
+        MetadataHandling = MetadataHandling.DiscardUnsupported,
+    });
+    return toneMapped;
+}
 ```
 <!-- endref -->
 

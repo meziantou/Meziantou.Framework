@@ -449,7 +449,6 @@ public sealed class ImageModelTests
     [Fact]
     public void FloatingPointImagesNeedAPolicyForTheSamplesOutOfRange()
     {
-        #region Imaging_FloatingPoint
         using var hdr = new Image<RgbaFloat>(2, 1);
         hdr.Frames[0][0, 0] = new RgbaFloat(0.5f, 0.25f, 0.125f);
         hdr.Frames[0][1, 0] = new RgbaFloat(4, 2, 1); // a highlight four times as bright as the white
@@ -470,7 +469,6 @@ public sealed class ImageModelTests
             FloatingPointConversion = new PixelConversionOptions { OutOfRangeSamples = OutOfRangeSampleHandling.Clip },
             MetadataHandling = MetadataHandling.DiscardUnsupported,
         });
-        #endregion
         stream.Position = 0;
         using var saved = Image.Load<Rgba64>(stream);
         Assert.Equal(new Rgba64(65535, 65535, 65535), saved.Frames[0][1, 0]);

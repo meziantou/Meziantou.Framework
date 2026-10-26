@@ -476,6 +476,96 @@
       "Focus navigation should skip over other menuitems in menubars.": "FAIL"
     }
   },
+  "shadow-dom/focus-navigation/reading-flow/grid-lanes-column-reading-flow-014.html": {
+    "total": 1,
+    "failures": {
+      "CSS Grid Lanes: reading-flow across columns tracks with auto-placement": "FAIL"
+    }
+  },
+  "shadow-dom/focus-navigation/reading-flow/grid-lanes-column-reading-flow-015.html": {
+    "total": 1,
+    "failures": {
+      "CSS Grid Lanes: reading-flow across column tracks with track-reverse": "FAIL"
+    }
+  },
+  "shadow-dom/focus-navigation/reading-flow/grid-lanes-column-reading-flow-016.html": {
+    "total": 1,
+    "failures": {
+      "CSS Grid Lanes: reading-flow across columns tracks with auto-placement and fill-reverse": "FAIL"
+    }
+  },
+  "shadow-dom/focus-navigation/reading-flow/grid-lanes-column-reading-flow-017.html": {
+    "total": 1,
+    "failures": {
+      "CSS Grid Lanes: reading-flow across columns tracks with auto-placement, fill-reverse, and track-reverse": "FAIL"
+    }
+  },
+  "shadow-dom/focus-navigation/reading-flow/grid-lanes-column-reading-flow-018.html": {
+    "total": 1,
+    "failures": {
+      "CSS Grid Lanes: tentative across-track dense backfill in column tracks with start alignment": "FAIL"
+    }
+  },
+  "shadow-dom/focus-navigation/reading-flow/grid-lanes-column-reading-flow-019.html": {
+    "total": 1,
+    "failures": {
+      "CSS Grid Lanes: tentative across-track reading flow in column tracks in vertical-rl with RTL": "FAIL"
+    }
+  },
+  "shadow-dom/focus-navigation/reading-flow/grid-lanes-column-reading-flow-020.html": {
+    "total": 1,
+    "failures": {
+      "CSS Grid Lanes: reading-flow across column tracks where row gaps affect the reading row": "FAIL"
+    }
+  },
+  "shadow-dom/focus-navigation/reading-flow/grid-lanes-column-reading-flow-021.html": {
+    "total": 1,
+    "failures": {
+      "Grid-rows reads across fragmented column tracks": "FAIL"
+    }
+  },
+  "shadow-dom/focus-navigation/reading-flow/grid-lanes-row-reading-flow-005.html": {
+    "total": 1,
+    "failures": {
+      "CSS Grid Lanes: reading-flow across row tracks with auto-placement": "FAIL"
+    }
+  },
+  "shadow-dom/focus-navigation/reading-flow/grid-lanes-row-reading-flow-006.html": {
+    "total": 1,
+    "failures": {
+      "CSS Grid Lanes: reading-flow across row tracks with track-reverse": "FAIL"
+    }
+  },
+  "shadow-dom/focus-navigation/reading-flow/grid-lanes-row-reading-flow-007.html": {
+    "total": 1,
+    "failures": {
+      "CSS Grid Lanes: reading-flow across row tracks with auto-placement and fill-reverse": "FAIL"
+    }
+  },
+  "shadow-dom/focus-navigation/reading-flow/grid-lanes-row-reading-flow-008.html": {
+    "total": 1,
+    "failures": {
+      "CSS Grid Lanes: reading-flow across row tracks with auto-placement, fill-reverse, and track-reverse": "FAIL"
+    }
+  },
+  "shadow-dom/focus-navigation/reading-flow/grid-lanes-row-reading-flow-009.html": {
+    "total": 1,
+    "failures": {
+      "CSS Grid Lanes: tentative across-track dense backfill in row tracks with mixed alignment": "FAIL"
+    }
+  },
+  "shadow-dom/focus-navigation/reading-flow/grid-lanes-row-reading-flow-010.html": {
+    "total": 1,
+    "failures": {
+      "CSS Grid Lanes: tentative across-track reading flow in row tracks in vertical-rl with RTL": "FAIL"
+    }
+  },
+  "shadow-dom/focus-navigation/reading-flow/grid-lanes-row-reading-flow-011.html": {
+    "total": 1,
+    "failures": {
+      "Grid-columns reads across fragmented row tracks": "FAIL"
+    }
+  },
   "shadow-dom/focus-navigation/reading-flow/tentative/carousel-grid-order.html": {
     "total": 1,
     "failures": {
@@ -491,8 +581,14 @@
   "shadow-dom/focus-navigation/reading-flow/tentative/flex-visual-order.html": {
     "total": 4
   },
+  "shadow-dom/focus-navigation/reading-flow/tentative/flex-visual-wrapped-fragmentation.html": {
+    "total": 1
+  },
   "shadow-dom/focus-navigation/reading-flow/tentative/grid-auto-flow-reading-order.html": {
     "total": 2
+  },
+  "shadow-dom/focus-navigation/reading-flow/tentative/grid-columns-fragmentation.html": {
+    "total": 1
   },
   "shadow-dom/focus-navigation/reading-flow/tentative/grid-columns.html": {
     "total": 1
@@ -538,6 +634,28 @@
       "Grid-columns reads spanning items once in visual column order": "FAIL"
     }
   },
+  "shadow-dom/focus-navigation/reading-flow/tentative/grid-lanes-column-reading-flow-010.html": {
+    "total": 1,
+    "failures": {
+      "Grid-columns reads fill-reverse columns from top-to-bottom": "FAIL"
+    }
+  },
+  "shadow-dom/focus-navigation/reading-flow/tentative/grid-lanes-column-reading-flow-011.html": {
+    "total": 2,
+    "failures": {
+      "Fill-reverse reads each complete column in reversed order across fragments": "FAIL",
+      "Grid-columns reads each complete column across fragments": "FAIL"
+    }
+  },
+  "shadow-dom/focus-navigation/reading-flow/tentative/grid-lanes-column-reading-flow-012.html": {
+    "total": 1
+  },
+  "shadow-dom/focus-navigation/reading-flow/tentative/grid-lanes-column-reading-flow-013.html": {
+    "total": 1,
+    "failures": {
+      "CSS Grid Lanes: stacking axis reading flow with densely-packed items": "FAIL"
+    }
+  },
   "shadow-dom/focus-navigation/reading-flow/tentative/grid-lanes-row-reading-flow-001.html": {
     "total": 2,
     "failures": {
@@ -556,6 +674,12 @@
     "total": 1,
     "failures": {
       "Grid-rows reads each row completely before the next": "FAIL"
+    }
+  },
+  "shadow-dom/focus-navigation/reading-flow/tentative/grid-lanes-row-reading-flow-004.html": {
+    "total": 1,
+    "failures": {
+      "Grid-rows reverses nested dense items within each row, not the rows": "FAIL"
     }
   },
   "shadow-dom/focus-navigation/reading-flow/tentative/grid-order-across-scopes.html": {

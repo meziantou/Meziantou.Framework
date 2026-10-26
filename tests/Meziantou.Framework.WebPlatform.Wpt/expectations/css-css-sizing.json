@@ -1451,6 +1451,9 @@
   "css/css-sizing/float-clearance-with-margin-collapse-and-fit-content-and-padding-percentage-004.html": {
     "reftest": "PASS"
   },
+  "css/css-sizing/float-clearance-with-margin-collapse-and-stretch-and-padding-percentage.html": {
+    "reftest": "PASS"
+  },
   "css/css-sizing/grid-item-image-percentage-min-height-computes-as-0.html": {
     "reftest": "PASS"
   },
@@ -2086,15 +2089,17 @@
     }
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-navigation.html?origin=cross": {
+    "harness": "ERROR",
     "total": 1,
     "failures": {
-      "Responsive iframe preserves size during navigation": "FAIL"
+      "Responsive iframe preserves size during navigation": "TIMEOUT"
     }
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-navigation.html?origin=same": {
+    "harness": "ERROR",
     "total": 1,
     "failures": {
-      "Responsive iframe preserves size during navigation": "FAIL"
+      "Responsive iframe preserves size during navigation": "TIMEOUT"
     }
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-no-match-element.html": {
@@ -2442,6 +2447,9 @@
   },
   "css/css-sizing/stretch/stretch-table-001.html": {
     "total": 7
+  },
+  "css/css-sizing/stretch/stretch-with-huge-padding-avoiding-float.html": {
+    "total": 1
   },
   "css/css-sizing/svg-intrinsic-size-001.html": {
     "total": 5

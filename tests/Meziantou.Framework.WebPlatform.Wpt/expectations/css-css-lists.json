@@ -446,6 +446,9 @@
   "css/css-lists/list-marker-counter-style-mutation.html": {
     "reftest": "PASS"
   },
+  "css/css-lists/list-marker-paint-order.html": {
+    "reftest": "PASS"
+  },
   "css/css-lists/list-marker-rtl-string-width.html": {
     "reftest": "PASS"
   },
@@ -548,8 +551,17 @@
   "css/css-lists/outside-marker-in-multicol-relpos-content.html": {
     "reftest": "PASS"
   },
+  "css/css-lists/outside-marker-with-align-content.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/outside-marker-with-float-in-content.html": {
+    "reftest": "FAIL"
+  },
   "css/css-lists/outside-marker-with-relpos-block-content.html": {
     "reftest": "PASS"
+  },
+  "css/css-lists/outside-marker-with-text-indent.html": {
+    "reftest": "FAIL"
   },
   "css/css-lists/parsing/content-invalid.html": {
     "total": 24

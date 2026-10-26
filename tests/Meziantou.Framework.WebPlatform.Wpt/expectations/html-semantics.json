@@ -3251,6 +3251,14 @@
       "<picture><source sizes=\"not (max-width: 0px) cover 10px 1000px, 1px\" srcset=\"/images/green-1x1.png?picture14 50w 50h, /images/green-16x16.png?picture14 51w 51h\"><img></picture>": "FAIL"
     }
   },
+  "html/semantics/embedded-content/the-img-element/sizes/sizes-auto-2d.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 13,
+    "failures": {
+      "<img loading=\"lazy\" sizes=\"auto\" style=\"object-fit: cover\" srcset=\"/images/green-1x1.png?img9 50w 1h, /images/green-16x16.png?img9 51w 2h\">": "FAIL",
+      "Changing computed object-fit on an auto-sized img updates currentSrc": "TIMEOUT"
+    }
+  },
   "html/semantics/embedded-content/the-img-element/sizes/sizes-auto-dynamic-attributes.html": {
     "total": 3
   },
@@ -3920,6 +3928,9 @@
   "html/semantics/forms/textfieldselection/selection-preserved-after-text-password-type-change.html": {
     "total": 6
   },
+  "html/semantics/forms/textfieldselection/selection-readonly-keyboard.tentative.html": {
+    "total": 5
+  },
   "html/semantics/forms/textfieldselection/selection-set-value-after-focus.html": {
     "total": 1
   },
@@ -3934,6 +3945,12 @@
   },
   "html/semantics/forms/textfieldselection/selection.html": {
     "total": 18
+  },
+  "html/semantics/forms/textfieldselection/setRangeText-repaint-input.html": {
+    "reftest": "PASS"
+  },
+  "html/semantics/forms/textfieldselection/setRangeText-repaint-textarea.html": {
+    "reftest": "PASS"
   },
   "html/semantics/forms/textfieldselection/setSelectionRange.html": {
     "total": 1
@@ -4773,6 +4790,9 @@
   "html/semantics/forms/the-meter-element/meter-min-rendering.html": {
     "reftest": "PASS"
   },
+  "html/semantics/forms/the-meter-element/meter-widget.html": {
+    "reftest": "PASS"
+  },
   "html/semantics/forms/the-meter-element/meter.html": {
     "total": 50
   },
@@ -4781,6 +4801,9 @@
   },
   "html/semantics/forms/the-option-element/dynamic-content-change-rendering.html": {
     "reftest": "PASS"
+  },
+  "html/semantics/forms/the-option-element/dynamic-img-alt-change-rendering.html": {
+    "reftest": "FAIL"
   },
   "html/semantics/forms/the-option-element/option-element-constructor.html": {
     "total": 11
@@ -4832,6 +4855,9 @@
   },
   "html/semantics/forms/the-progress-element/progress-max-setting.html": {
     "total": 1
+  },
+  "html/semantics/forms/the-progress-element/progress-widget.html": {
+    "reftest": "PASS"
   },
   "html/semantics/forms/the-progress-element/progress.html": {
     "total": 11
@@ -5009,6 +5035,9 @@
   },
   "html/semantics/forms/the-select-element/customizable-select/select-appearance-active.html": {
     "reftest": "PASS"
+  },
+  "html/semantics/forms/the-select-element/customizable-select/select-appearance-auto-button-descendant-mutation.html": {
+    "reftest": "FAIL"
   },
   "html/semantics/forms/the-select-element/customizable-select/select-appearance-auto-button-mutation.html": {
     "reftest": "FAIL"
@@ -5216,7 +5245,7 @@
     "total": 1
   },
   "html/semantics/forms/the-select-element/customizable-select/select-mouse-behavior.html": {
-    "total": 10
+    "total": 8
   },
   "html/semantics/forms/the-select-element/customizable-select/select-mousedown-slot-mutation.optional.html": {
     "total": 2
@@ -5235,6 +5264,9 @@
   },
   "html/semantics/forms/the-select-element/customizable-select/select-optgroup-arrow-keys.optional.html": {
     "total": 1
+  },
+  "html/semantics/forms/the-select-element/customizable-select/select-optgroup-legend-label-mutation.html": {
+    "reftest": "PASS"
   },
   "html/semantics/forms/the-select-element/customizable-select/select-optgroup-legend-label.html": {
     "reftest": "PASS"
@@ -5404,6 +5436,18 @@
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-option-insertion.html": {
     "total": 8
   },
+  "html/semantics/forms/the-select-element/customizable-select/selectedcontent-parser-removal-csp-strict-dynamic.tentative.html": {
+    "total": 1
+  },
+  "html/semantics/forms/the-select-element/customizable-select/selectedcontent-parser-removal-script-runs-once.tentative.html": {
+    "total": 1
+  },
+  "html/semantics/forms/the-select-element/customizable-select/selectedcontent-parser-script-csp-strict-dynamic.html": {
+    "total": 1
+  },
+  "html/semantics/forms/the-select-element/customizable-select/selectedcontent-parser-script-runs-once.html": {
+    "total": 1
+  },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-queued-update.html": {
     "total": 8
   },
@@ -5518,6 +5562,20 @@
   "html/semantics/forms/the-select-element/select-insertion-inherited-style.html": {
     "total": 3
   },
+  "html/semantics/forms/the-select-element/select-label-click.tentative.html": {
+    "total": 9,
+    "failures": {
+      "Clicking label opens select picker: appearance:auto multiple size=1 with ancestor label": "FAIL",
+      "Clicking label opens select picker: appearance:auto multiple size=1 with label[for]": "FAIL",
+      "Clicking label opens select picker: appearance:auto with ancestor label": "FAIL",
+      "Clicking label opens select picker: appearance:auto with label[for]": "FAIL",
+      "Clicking label opens select picker: appearance:base-select multiple size=1 with ancestor label": "FAIL",
+      "Clicking label opens select picker: appearance:base-select multiple size=1 with label[for]": "FAIL",
+      "Clicking label opens select picker: appearance:base-select with ancestor label": "FAIL",
+      "Clicking label opens select picker: appearance:base-select with custom button and label[for]": "FAIL",
+      "Clicking label opens select picker: appearance:base-select with label[for]": "FAIL"
+    }
+  },
   "html/semantics/forms/the-select-element/select-listbox-selected-hscroll.html": {
     "reftest": "PASS"
   },
@@ -5606,6 +5664,9 @@
     "reftest": "PASS"
   },
   "html/semantics/forms/the-select-element/select-user-selection-dirtiness.html": {
+    "total": 4
+  },
+  "html/semantics/forms/the-select-element/select-validity-option-descendants.html": {
     "total": 4
   },
   "html/semantics/forms/the-select-element/select-validity.html": {
@@ -5958,6 +6019,12 @@
   },
   "html/semantics/interactive-elements/the-dialog-element/dialog-close-event.html": {
     "total": 1
+  },
+  "html/semantics/interactive-elements/the-dialog-element/dialog-close-focus-no-previous.html": {
+    "total": 1,
+    "failures": {
+      "Closing a dialog with no previously focused element should not leave focus inside it.": "FAIL"
+    }
   },
   "html/semantics/interactive-elements/the-dialog-element/dialog-close-via-attribute.tentative.html": {
     "total": 2,
@@ -9316,6 +9383,9 @@
   },
   "html/semantics/selectors/pseudo-classes/default.html": {
     "total": 2
+  },
+  "html/semantics/selectors/pseudo-classes/dir-bdi-dynamic-ancestor.html": {
+    "total": 4
   },
   "html/semantics/selectors/pseudo-classes/dir-dynamic.html": {
     "total": 4

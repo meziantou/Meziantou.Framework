@@ -2083,8 +2083,10 @@
     "total": 2
   },
   "editing/other/mathml-html-serializtion-on-copy.html": {
-    "total": 1,
+    "total": 4,
     "failures": {
+      "Copy-pasting collapsible spaces in MathML should not break out of MathML namespace": "FAIL",
+      "Copy-pasting inside mtd with ancestor inline styles should preserve MathML namespace": "FAIL",
       "MathML elements should preserve structure and content during copy-paste": "FAIL"
     }
   },

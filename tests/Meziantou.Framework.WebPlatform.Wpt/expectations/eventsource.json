@@ -128,6 +128,26 @@
   "eventsource/format-bom-2.any.js#dedicatedworker": {
     "total": 1
   },
+  "eventsource/format-bom-split.any.js": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "EventSource: byte order mark split across chunks": "TIMEOUT"
+    }
+  },
+  "eventsource/format-bom-split.any.js#dedicatedworker": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "EventSource: byte order mark split across chunks": "TIMEOUT"
+    }
+  },
+  "eventsource/format-bom-utf-16.any.js": {
+    "total": 2
+  },
+  "eventsource/format-bom-utf-16.any.js#dedicatedworker": {
+    "total": 2
+  },
   "eventsource/format-bom.any.js": {
     "total": 1
   },

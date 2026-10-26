@@ -1298,6 +1298,12 @@
       "MathML anchor ping attribute should be settable via ping IDL attribute": "FAIL"
     }
   },
+  "mathml/relations/html5-tree/a-referrerpolicy-getter-setter.html": {
+    "total": 1,
+    "failures": {
+      "MathMLAnchorElement referrerPolicy should reflect referrerpolicy attribute": "FAIL"
+    }
+  },
   "mathml/relations/html5-tree/a-rel-getter-setter.html": {
     "total": 1,
     "failures": {

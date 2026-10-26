@@ -323,6 +323,18 @@
   "websockets/Create-asciiSep-protocol-string.any.js?wss": {
     "total": 1
   },
+  "websockets/Create-blocked-port.any.js": {
+    "total": 84,
+    "failures": {
+      "Basic check": "FAIL"
+    }
+  },
+  "websockets/Create-blocked-port.any.js#dedicatedworker": {
+    "total": 84,
+    "failures": {
+      "Basic check": "FAIL"
+    }
+  },
   "websockets/Create-blocked-port.any.js#dedicatedworker?default": {
     "total": 84
   },

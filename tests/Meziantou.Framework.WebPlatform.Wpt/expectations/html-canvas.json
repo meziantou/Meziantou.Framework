@@ -2285,6 +2285,9 @@
   "html/canvas/element/manual/draw-element-image/content-drawable-no-hit-test.tentative.html": {
     "total": 3
   },
+  "html/canvas/element/manual/draw-element-image/content-not-culled.tentative.html": {
+    "reftest": "TIMEOUT"
+  },
   "html/canvas/element/manual/draw-element-image/css-backdrop-filter-and-mask.tentative.html": {
     "reftest": "TIMEOUT"
   },
@@ -2292,6 +2295,9 @@
     "reftest": "TIMEOUT"
   },
   "html/canvas/element/manual/draw-element-image/css-backdrop-filter-on-div.tentative.html": {
+    "reftest": "TIMEOUT"
+  },
+  "html/canvas/element/manual/draw-element-image/css-backdrop-filter-with-blend-mode-over-content.tentative.html": {
     "reftest": "TIMEOUT"
   },
   "html/canvas/element/manual/draw-element-image/css-backdrop-filter-with-mix-blend-mode-and-opacity.tentative.html": {
@@ -2331,6 +2337,9 @@
     "reftest": "TIMEOUT"
   },
   "html/canvas/element/manual/draw-element-image/css-mask-on-div.tentative.html": {
+    "reftest": "TIMEOUT"
+  },
+  "html/canvas/element/manual/draw-element-image/css-object-fit-nested-canvas.tentative.html": {
     "reftest": "TIMEOUT"
   },
   "html/canvas/element/manual/draw-element-image/css-opacity-on-div.tentative.html": {
@@ -2594,6 +2603,9 @@
       "WebGL canvas moved into a content=drawable canvas after first paint should reflect subsequent updates": "FAIL"
     }
   },
+  "html/canvas/element/manual/draw-element-image/nested-canvas-filter.tentative.html": {
+    "reftest": "TIMEOUT"
+  },
   "html/canvas/element/manual/draw-element-image/nested-canvas-invalidation.tentative.html": {
     "reftest": "TIMEOUT"
   },
@@ -2618,6 +2630,9 @@
       "drawElementImage should succeed if called on a nested canvas in a div": "FAIL"
     }
   },
+  "html/canvas/element/manual/draw-element-image/nested-drawable-filter.tentative.html": {
+    "reftest": "TIMEOUT"
+  },
   "html/canvas/element/manual/draw-element-image/nested-drawable.tentative.html": {
     "reftest": "TIMEOUT"
   },
@@ -2637,8 +2652,9 @@
     }
   },
   "html/canvas/element/manual/draw-element-image/onpaint-changedElements.tentative.html": {
-    "total": 1,
+    "total": 2,
     "failures": {
+      "CanvasPaintEvent constructor and [SameObject] changedElements": "FAIL",
       "onpaint event should have a list of changed elements": "FAIL"
     }
   },
@@ -2856,6 +2872,12 @@
       "drawElementImage does not draw cross-origin embed element content": "FAIL"
     }
   },
+  "html/canvas/element/manual/draw-element-image/privacy/filtered-div-drawable-added-ignored.tentative.https.sub.html": {
+    "total": 1,
+    "failures": {
+      "drawElementImage does not use cross-origin feImage content when drawable is added to a contain:paint ancestor": "FAIL"
+    }
+  },
   "html/canvas/element/manual/draw-element-image/privacy/filtered-div-multi-filters-ignored.tentative.https.sub.html": {
     "total": 1,
     "failures": {
@@ -2884,6 +2906,12 @@
     "total": 1,
     "failures": {
       "drawElementImage does not use cross-origin SVG filter content via CSS": "FAIL"
+    }
+  },
+  "html/canvas/element/manual/draw-element-image/privacy/filtered-outside-subtree-ignored.tentative.html": {
+    "total": 1,
+    "failures": {
+      "drawElementImage does not use SVG filters outside the canvas subtree": "FAIL"
     }
   },
   "html/canvas/element/manual/draw-element-image/privacy/filtered-svg-ref-svg-feimage-ignored.tentative.https.sub.html": {

@@ -38,29 +38,56 @@
   "css/css-highlight-api/custom-highlight-escaped-star-001.html": {
     "reftest": "PASS"
   },
+  "css/css-highlight-api/custom-highlight-universal-deep-chain-001.html": {
+    "reftest": "PASS"
+  },
   "css/css-highlight-api/custom-highlight-universal-deep-chain-001.tentative.html": {
     "reftest": "PASS"
+  },
+  "css/css-highlight-api/custom-highlight-universal-escaped-star.html": {
+    "total": 1
   },
   "css/css-highlight-api/custom-highlight-universal-escaped-star.tentative.html": {
     "total": 1
   },
+  "css/css-highlight-api/custom-highlight-universal-inheritance-001.html": {
+    "reftest": "PASS"
+  },
   "css/css-highlight-api/custom-highlight-universal-inheritance-001.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-highlight-api/custom-highlight-universal-no-named-rule-001.html": {
     "reftest": "PASS"
   },
   "css/css-highlight-api/custom-highlight-universal-no-named-rule-001.tentative.html": {
     "reftest": "PASS"
   },
+  "css/css-highlight-api/custom-highlight-universal-no-named-rule-002.html": {
+    "reftest": "PASS"
+  },
   "css/css-highlight-api/custom-highlight-universal-no-named-rule-002.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-highlight-api/custom-highlight-universal-painting-001.html": {
     "reftest": "PASS"
   },
   "css/css-highlight-api/custom-highlight-universal-painting-001.tentative.html": {
     "reftest": "PASS"
   },
+  "css/css-highlight-api/custom-highlight-universal-painting-002.html": {
+    "reftest": "PASS"
+  },
   "css/css-highlight-api/custom-highlight-universal-painting-002.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-highlight-api/custom-highlight-universal-painting-003.html": {
     "reftest": "PASS"
   },
   "css/css-highlight-api/custom-highlight-universal-painting-003.tentative.html": {
     "reftest": "PASS"
+  },
+  "css/css-highlight-api/custom-highlight-universal-parsing-and-computed-style.html": {
+    "total": 10
   },
   "css/css-highlight-api/custom-highlight-universal-parsing-and-computed-style.tentative.html": {
     "total": 10
@@ -253,6 +280,9 @@
   },
   "css/css-highlight-api/painting/custom-highlight-painting-021.html": {
     "reftest": "FAIL"
+  },
+  "css/css-highlight-api/painting/custom-highlight-painting-anonymous-block-001.html": {
+    "reftest": "PASS"
   },
   "css/css-highlight-api/painting/custom-highlight-painting-below-grammar.html": {
     "reftest": "FAIL"

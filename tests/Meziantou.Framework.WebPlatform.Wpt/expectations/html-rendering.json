@@ -291,6 +291,15 @@
   "html/rendering/non-replaced-elements/tables/table-align-float.xhtml": {
     "reftest": "PASS"
   },
+  "html/rendering/non-replaced-elements/tables/table-attribute-bgcolor-dynamic.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/tables/table-attribute-border-dynamic.html": {
+    "reftest": "PASS"
+  },
+  "html/rendering/non-replaced-elements/tables/table-attribute-cellspacing-dynamic.html": {
+    "reftest": "PASS"
+  },
   "html/rendering/non-replaced-elements/tables/table-attribute.html": {
     "total": 58
   },
@@ -766,6 +775,9 @@
   "html/rendering/non-replaced-elements/the-page/body_text_00ffff.xhtml": {
     "reftest": "PASS"
   },
+  "html/rendering/non-replaced-elements/the-page/body_text_dynamic.html": {
+    "reftest": "PASS"
+  },
   "html/rendering/non-replaced-elements/the-page/iframe-body-margin-attributes.html": {
     "total": 3
   },
@@ -1005,6 +1017,9 @@
   },
   "html/rendering/replaced-elements/svg-inline-sizing/svg-inline.html": {
     "total": 648
+  },
+  "html/rendering/replaced-elements/the-input-element/input-update-while-disconnected.html": {
+    "reftest": "PASS"
   },
   "html/rendering/replaced-elements/the-option-element/option-label-whitespace-2.html": {
     "reftest": "PASS"

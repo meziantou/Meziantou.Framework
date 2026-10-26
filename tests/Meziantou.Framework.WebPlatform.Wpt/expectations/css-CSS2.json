@@ -10493,6 +10493,9 @@
   "css/CSS2/normal-flow/intrinsic-size-with-negative-margins.html": {
     "reftest": "PASS"
   },
+  "css/CSS2/normal-flow/margin-collapse-after-float-001.html": {
+    "reftest": "PASS"
+  },
   "css/CSS2/normal-flow/margin-collapse-min-height-001.html": {
     "reftest": "PASS"
   },
@@ -16926,6 +16929,9 @@
     "reftest": "PASS"
   },
   "css/CSS2/tables/table-anonymous-text-indent.xht": {
+    "reftest": "PASS"
+  },
+  "css/CSS2/tables/table-background-color-dynamic.html": {
     "reftest": "PASS"
   },
   "css/CSS2/tables/table-backgrounds-bc-cell-001.xht": {

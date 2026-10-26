@@ -694,6 +694,9 @@
   "css/selectors/invalidation/first-child-last-child.html": {
     "total": 2
   },
+  "css/selectors/invalidation/focus-pseudo-classes-when-ancestor-changes.html": {
+    "total": 5
+  },
   "css/selectors/invalidation/fullscreen-pseudo-class-in-has.html": {
     "total": 2
   },
@@ -795,6 +798,9 @@
   },
   "css/selectors/invalidation/host-pseudo-class-in-has.html": {
     "total": 4
+  },
+  "css/selectors/invalidation/hover-active-pseudo-classes-when-ancestor-changes.html": {
+    "total": 1
   },
   "css/selectors/invalidation/input-in-range-in-has-with-readonly.html": {
     "total": 4

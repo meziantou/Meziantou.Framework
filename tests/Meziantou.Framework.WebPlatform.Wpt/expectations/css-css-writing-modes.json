@@ -1835,6 +1835,12 @@
   "css/css-writing-modes/forms/meter-appearance-native-horizontal.optional.html": {
     "reftest": "PASS"
   },
+  "css/css-writing-modes/forms/meter-appearance-native-sideways-lr-rtl.optional.html": {
+    "reftest": "PASS"
+  },
+  "css/css-writing-modes/forms/meter-appearance-native-sideways-lr.optional.html": {
+    "reftest": "PASS"
+  },
   "css/css-writing-modes/forms/meter-appearance-native-vertical-rtl.optional.html": {
     "reftest": "PASS"
   },
@@ -1853,6 +1859,12 @@
   "css/css-writing-modes/forms/progress-appearance-native-horizontal.optional.html": {
     "reftest": "PASS"
   },
+  "css/css-writing-modes/forms/progress-appearance-native-sideways-lr-rtl.optional.html": {
+    "reftest": "PASS"
+  },
+  "css/css-writing-modes/forms/progress-appearance-native-sideways-lr.optional.html": {
+    "reftest": "PASS"
+  },
   "css/css-writing-modes/forms/progress-appearance-native-vertical-rtl.optional.html": {
     "reftest": "PASS"
   },
@@ -1863,6 +1875,12 @@
     "reftest": "PASS"
   },
   "css/css-writing-modes/forms/progress-appearance-none-horizontal.optional.html": {
+    "reftest": "PASS"
+  },
+  "css/css-writing-modes/forms/progress-appearance-none-sideways-lr-rtl.optional.html": {
+    "reftest": "PASS"
+  },
+  "css/css-writing-modes/forms/progress-appearance-none-sideways-lr.optional.html": {
     "reftest": "PASS"
   },
   "css/css-writing-modes/forms/progress-appearance-none-vertical-rtl.optional.html": {
@@ -1883,6 +1901,12 @@
   "css/css-writing-modes/forms/range-input-appearance-native-horizontal.optional.html": {
     "reftest": "PASS"
   },
+  "css/css-writing-modes/forms/range-input-appearance-native-sideways-lr-rtl.optional.html": {
+    "reftest": "PASS"
+  },
+  "css/css-writing-modes/forms/range-input-appearance-native-sideways-lr.optional.html": {
+    "reftest": "PASS"
+  },
   "css/css-writing-modes/forms/range-input-appearance-native-vertical-rtl.optional.html": {
     "reftest": "PASS"
   },
@@ -1893,6 +1917,12 @@
     "reftest": "PASS"
   },
   "css/css-writing-modes/forms/range-input-appearance-none-horizontal.optional.html": {
+    "reftest": "PASS"
+  },
+  "css/css-writing-modes/forms/range-input-appearance-none-sideways-lr-rtl.optional.html": {
+    "reftest": "PASS"
+  },
+  "css/css-writing-modes/forms/range-input-appearance-none-sideways-lr.optional.html": {
     "reftest": "PASS"
   },
   "css/css-writing-modes/forms/range-input-appearance-none-vertical-rtl.optional.html": {
@@ -2356,6 +2386,12 @@
   },
   "css/css-writing-modes/ortho-htb-alongside-vrl-floats-014.xht": {
     "reftest": "PASS"
+  },
+  "css/css-writing-modes/orthogonal-block-in-inline-block-axis-position-001.html": {
+    "total": 1
+  },
+  "css/css-writing-modes/orthogonal-block-in-inline-inline-size-001.html": {
+    "total": 1
   },
   "css/css-writing-modes/orthogonal-cell-001.html": {
     "reftest": "PASS"

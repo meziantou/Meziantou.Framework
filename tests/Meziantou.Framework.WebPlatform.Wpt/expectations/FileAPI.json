@@ -119,10 +119,10 @@
     "total": 6
   },
   "FileAPI/blob/Blob-text.any.js": {
-    "total": 12
+    "total": 16
   },
   "FileAPI/blob/Blob-text.any.js#dedicatedworker": {
-    "total": 12
+    "total": 16
   },
   "FileAPI/blob/Blob-textStream.any.js": {
     "total": 8

@@ -171,6 +171,9 @@
   "largest-contentful-paint/progressively-loaded-image.html": {
     "total": 1
   },
+  "largest-contentful-paint/pseudo-content-image.html": {
+    "total": 1
+  },
   "largest-contentful-paint/redirects-tao-star.html": {
     "total": 1
   },

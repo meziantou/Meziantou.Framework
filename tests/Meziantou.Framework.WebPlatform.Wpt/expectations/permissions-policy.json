@@ -573,6 +573,20 @@
       "XR Report Format": "FAIL"
     }
   },
+  "permissions-policy/shared-worker-permissions-policy-allow-option.https.tentative.html": {
+    "total": 6,
+    "failures": {
+      "SharedWorker cannot be created with disallowed feature in 'allow'": "FAIL",
+      "data: URL SharedWorker cannot be delegated a feature declared as 'self'": "FAIL"
+    }
+  },
+  "permissions-policy/shared-worker-permissions-policy-connect.https.tentative.html": {
+    "total": 4,
+    "failures": {
+      "Connecting with mismatched allow policy fires error event.": "FAIL",
+      "Connecting with stricter allow policy fires error event.": "FAIL"
+    }
+  },
   "permissions-policy/speaker-selection-allowed-by-permissions-policy.https.sub.html": {
     "total": 4,
     "failures": {

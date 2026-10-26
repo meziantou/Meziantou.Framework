@@ -310,6 +310,12 @@
   "css/css-animations/inheritance.html": {
     "total": 16
   },
+  "css/css-animations/inherited-animation-opacity.html": {
+    "reftest": "PASS"
+  },
+  "css/css-animations/inherited-animation-transform.html": {
+    "reftest": "PASS"
+  },
   "css/css-animations/jump-start-animation-before-phase.html": {
     "reftest": "PASS"
   },

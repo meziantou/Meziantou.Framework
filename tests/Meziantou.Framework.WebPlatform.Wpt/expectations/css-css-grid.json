@@ -248,6 +248,12 @@
   "css/css-grid/abspos/grid-positioned-children-writing-modes-001.html": {
     "reftest": "PASS"
   },
+  "css/css-grid/abspos/grid-positioned-descendant-auto-fill-tracks-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/abspos/grid-positioned-descendant-auto-fill-tracks-002.html": {
+    "reftest": "PASS"
+  },
   "css/css-grid/abspos/grid-positioned-item-dynamic-change-001.html": {
     "reftest": "PASS"
   },
@@ -4641,6 +4647,12 @@
   "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/row/independent-formatting-context.html": {
     "reftest": "FAIL"
   },
+  "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/column-subgrid-with-row-standalone-axis-size-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/column-subgrid-with-row-standalone-axis-size-002.html": {
+    "reftest": "PASS"
+  },
   "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/grid-lanes-subgrid-flex.html": {
     "reftest": "FAIL"
   },
@@ -4648,6 +4660,12 @@
     "reftest": "FAIL"
   },
   "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/grid-lanes-subgrid.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/row-subgrid-with-column-standalone-axis-size-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/row-subgrid-with-column-standalone-axis-size-002.html": {
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid/column/grid-lanes-subgrid-001a.html": {
@@ -7286,6 +7304,9 @@
   },
   "css/css-grid/subgrid/line-names-parent-auto-repeat-001.html": {
     "reftest": "PASS"
+  },
+  "css/css-grid/subgrid/nested-grid-subgrid-resize.html": {
+    "total": 1
   },
   "css/css-grid/subgrid/orthogonal-writing-mode-001.html": {
     "reftest": "PASS"

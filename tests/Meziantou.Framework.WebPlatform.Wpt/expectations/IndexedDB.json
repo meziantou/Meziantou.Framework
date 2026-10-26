@@ -1415,13 +1415,22 @@
     "total": 6
   },
   "IndexedDB/keypath.any.js": {
-    "total": 20
+    "total": 20,
+    "failures": {
+      "Key path conversion: a self-referential array exhausts the stack": "FAIL"
+    }
   },
   "IndexedDB/keypath.any.js#dedicatedworker": {
-    "total": 20
+    "total": 20,
+    "failures": {
+      "Key path conversion: a self-referential array exhausts the stack": "FAIL"
+    }
   },
   "IndexedDB/keypath.any.js#sharedworker": {
-    "total": 20
+    "total": 20,
+    "failures": {
+      "Key path conversion: a self-referential array exhausts the stack": "FAIL"
+    }
   },
   "IndexedDB/keypath_invalid.any.js": {
     "total": 24

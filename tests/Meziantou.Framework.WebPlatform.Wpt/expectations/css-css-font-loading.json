@@ -74,6 +74,9 @@
   "css/css-font-loading/fontfaceset-load-var.html": {
     "total": 4
   },
+  "css/css-font-loading/fontfaceset-ready-unused-face-failed-local-source.html": {
+    "total": 1
+  },
   "css/css-font-loading/fontfaceset-update-after-stylesheet-change.html": {
     "total": 1
   },

@@ -308,6 +308,18 @@
   "css/css-images/gradient/gradient-single-stop-008.html": {
     "reftest": "PASS"
   },
+  "css/css-images/gradient/gradient-single-stop-decreasing-hue-hsl.html": {
+    "reftest": "PASS"
+  },
+  "css/css-images/gradient/gradient-single-stop-decreasing-hue-oklch.html": {
+    "reftest": "PASS"
+  },
+  "css/css-images/gradient/gradient-single-stop-increasing-hue-hsl.html": {
+    "reftest": "PASS"
+  },
+  "css/css-images/gradient/gradient-single-stop-increasing-hue-oklch.html": {
+    "reftest": "PASS"
+  },
   "css/css-images/gradient/gradient-single-stop-longer-hue-hsl-002.html": {
     "reftest": "PASS"
   },
@@ -1124,6 +1136,9 @@
   "css/css-images/object-fit-none-svg-006p.html": {
     "reftest": "PASS"
   },
+  "css/css-images/object-fit-none-svg-width-only.html": {
+    "reftest": "PASS"
+  },
   "css/css-images/object-fit-scale-down-png-001c.html": {
     "reftest": "PASS"
   },
@@ -1228,6 +1243,9 @@
   },
   "css/css-images/object-fit-stale-image-while-revalidating.html": {
     "reftest": "TIMEOUT"
+  },
+  "css/css-images/object-fit-svg-no-natural-dimensions.html": {
+    "reftest": "PASS"
   },
   "css/css-images/object-position-png-001c.html": {
     "reftest": "PASS"

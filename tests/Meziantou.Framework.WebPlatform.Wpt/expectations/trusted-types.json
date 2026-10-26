@@ -316,10 +316,28 @@
   "trusted-types/eval-csp-tt-default-policy-mutate.html": {
     "total": 6
   },
+  "trusted-types/eval-csp-tt-default-policy-mutate.html?default": {
+    "total": 6
+  },
+  "trusted-types/eval-csp-tt-default-policy-mutate.html?trusted-types-eval": {
+    "total": 6
+  },
   "trusted-types/eval-csp-tt-default-policy.html": {
     "total": 24
   },
+  "trusted-types/eval-csp-tt-default-policy.html?default": {
+    "total": 24
+  },
+  "trusted-types/eval-csp-tt-default-policy.html?trusted-types-eval": {
+    "total": 24
+  },
   "trusted-types/eval-csp-tt-no-default-policy.html": {
+    "total": 13
+  },
+  "trusted-types/eval-csp-tt-no-default-policy.html?default": {
+    "total": 13
+  },
+  "trusted-types/eval-csp-tt-no-default-policy.html?trusted-types-eval": {
     "total": 13
   },
   "trusted-types/eval-function-constructor-untrusted-arguments-and-applying-default-policy.html": {
@@ -509,6 +527,18 @@
       "animation.setAttributeNS(onend, \"unsafe_handler()\") calls default policy": "FAIL",
       "animation.setAttributeNS(onrepeat, \"unsafe_handler()\") calls default policy": "FAIL"
     }
+  },
+  "trusted-types/setTimeout-setInterval-csp-tt-default-policy.html?default": {
+    "total": 8
+  },
+  "trusted-types/setTimeout-setInterval-csp-tt-default-policy.html?trusted-types-eval": {
+    "total": 8
+  },
+  "trusted-types/setTimeout-setInterval-csp-tt-no-default-policy.html?default": {
+    "total": 4
+  },
+  "trusted-types/setTimeout-setInterval-csp-tt-no-default-policy.html?trusted-types-eval": {
+    "total": 4
   },
   "trusted-types/should-sink-type-mismatch-violation-be-blocked-by-csp-001.html": {
     "total": 15,
@@ -840,6 +870,12 @@
     "total": 1
   },
   "trusted-types/tt-block-eval.html": {
+    "total": 1
+  },
+  "trusted-types/tt-block-eval.html?default": {
+    "total": 1
+  },
+  "trusted-types/tt-block-eval.html?trusted-types-eval": {
     "total": 1
   }
 }

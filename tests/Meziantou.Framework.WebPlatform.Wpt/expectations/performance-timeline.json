@@ -204,10 +204,10 @@
     "total": 1
   },
   "performance-timeline/po-disconnect.any.js": {
-    "total": 3
+    "total": 5
   },
   "performance-timeline/po-disconnect.any.js#dedicatedworker": {
-    "total": 3
+    "total": 5
   },
   "performance-timeline/po-entries-sort.any.js": {
     "total": 1

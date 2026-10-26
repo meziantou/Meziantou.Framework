@@ -70,6 +70,9 @@
   "compat/webkit-gradient-sign.html": {
     "total": 2
   },
+  "compat/webkit-input-placeholder.html": {
+    "reftest": "FAIL"
+  },
   "compat/webkit-linear-gradient-diff-unprefixed.html": {
     "reftest": "PASS"
   },

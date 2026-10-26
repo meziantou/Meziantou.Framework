@@ -3040,13 +3040,20 @@
     }
   },
   "css/css-ui/parsing/caret-color-computed.html": {
-    "total": 12
+    "total": 9
   },
   "css/css-ui/parsing/caret-color-invalid.html": {
-    "total": 12
+    "total": 17,
+    "failures": {
+      "e.style['caret-color'] = \"auto auto\" should not set the property value": "FAIL",
+      "e.style['caret-color'] = \"auto currentcolor\" should not set the property value": "FAIL",
+      "e.style['caret-color'] = \"auto rgb(0, 255, 0)\" should not set the property value": "FAIL",
+      "e.style['caret-color'] = \"auto rgba(10, 20, 30, 0.4)\" should not set the property value": "FAIL",
+      "e.style['caret-color'] = \"auto transparent\" should not set the property value": "FAIL"
+    }
   },
   "css/css-ui/parsing/caret-color-valid.html": {
-    "total": 15
+    "total": 12
   },
   "css/css-ui/parsing/cursor-computed.html": {
     "total": 39,
@@ -3111,11 +3118,7 @@
     "total": 10
   },
   "css/css-ui/parsing/outline-valid.html": {
-    "total": 20,
-    "failures": {
-      "e.style['outline'] = \"3px ridge rgba(10, 20, 30, 0.4)\" should set the property value": "FAIL",
-      "e.style['outline'] = \"dashed thin\" should set the property value": "FAIL"
-    }
+    "total": 20
   },
   "css/css-ui/parsing/outline-width-computed.html": {
     "total": 9

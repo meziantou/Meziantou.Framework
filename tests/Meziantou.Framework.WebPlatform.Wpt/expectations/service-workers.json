@@ -1197,7 +1197,13 @@
     "total": 3
   },
   "service-workers/service-worker/unregister-then-register.https.html": {
-    "total": 4
+    "harness": "ERROR",
+    "total": 4,
+    "failures": {
+      "Unregister then register does not affect existing controllee": "NOTRUN",
+      "Unregister then register does not resolve to the original value even if the registration is in use.": "NOTRUN",
+      "Unregister then register does not resurrect the registration": "NOTRUN"
+    }
   },
   "service-workers/service-worker/unregister.https.html": {
     "total": 2

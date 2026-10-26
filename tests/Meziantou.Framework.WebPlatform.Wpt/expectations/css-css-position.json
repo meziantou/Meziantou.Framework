@@ -143,6 +143,9 @@
   "css/css-position/overlay/author-overlay-top-layer-removal.html": {
     "reftest": "PASS"
   },
+  "css/css-position/overlay/backdrop-outside-top-layer.html": {
+    "reftest": "PASS"
+  },
   "css/css-position/overlay/overlay-button-appearance.html": {
     "reftest": "PASS"
   },

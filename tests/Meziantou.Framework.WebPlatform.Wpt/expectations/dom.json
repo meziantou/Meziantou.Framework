@@ -1295,10 +1295,7 @@
     "total": 2
   },
   "dom/nodes/MutationObserver-characterData.html": {
-    "total": 23,
-    "failures": {
-      "characterData ProcessingInstruction: data mutations": "FAIL"
-    }
+    "total": 23
   },
   "dom/nodes/MutationObserver-childList.html": {
     "total": 40

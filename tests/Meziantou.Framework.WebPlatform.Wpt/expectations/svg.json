@@ -443,6 +443,9 @@
   "svg/animations/onrepeat.svg": {
     "total": 1
   },
+  "svg/animations/pause-and-seek-before-begin.html": {
+    "total": 2
+  },
   "svg/animations/pruning-first-interval.html": {
     "total": 1
   },
@@ -523,6 +526,13 @@
   },
   "svg/animations/scripted/syncbase-after-removal.html": {
     "total": 1
+  },
+  "svg/animations/seek-repeat-event-condition.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "repeat(3) begins after seeking into the third repeat iteration": "TIMEOUT"
+    }
   },
   "svg/animations/seeking-events-1.html": {
     "total": 1
@@ -935,6 +945,9 @@
   "svg/animations/use-animate-display-none-symbol.html": {
     "reftest": "PASS"
   },
+  "svg/as-image/external-resource-data-url-import.sub.html": {
+    "reftest": "PASS"
+  },
   "svg/as-image/external-resource-data-url-sheet.sub.html": {
     "reftest": "PASS"
   },
@@ -973,6 +986,12 @@
   },
   "svg/coordinate-systems/outer-svg-intrinsic-size-005.html": {
     "reftest": "PASS"
+  },
+  "svg/coordinate-systems/outer-svg-resize-001e.html": {
+    "total": 3
+  },
+  "svg/coordinate-systems/outer-svg-resize-001o.html": {
+    "total": 3
   },
   "svg/coordinate-systems/svgtransformlist-replaceitem.html": {
     "total": 1
@@ -3140,11 +3159,17 @@
     "harness": "ERROR",
     "total": 1
   },
+  "svg/struct/scripted/use-composedpath-closed-shadow-tree.html": {
+    "total": 2
+  },
   "svg/struct/scripted/use-external-reload-in-iframe.html": {
     "total": 1
   },
   "svg/struct/scripted/use-iframe-onload.html": {
     "total": 1
+  },
+  "svg/struct/scripted/use-inline-event-handlers.html": {
+    "total": 2
   },
   "svg/struct/scripted/use-load-error-events.tentative.html": {
     "total": 9,
@@ -3152,6 +3177,12 @@
       "'load' and 'error' events for SVG <use>, external data: URL reference, existing, changed to local reference while loading": "FAIL",
       "'load' and 'error' events for SVG <use>, external reference, existing, changed to local reference while loading": "FAIL",
       "'load' and 'error' events for SVG <use>, external reference, non-existing, changed to local reference while loading": "FAIL"
+    }
+  },
+  "svg/struct/scripted/use-script-not-executed.html": {
+    "total": 3,
+    "failures": {
+      "Scripts cloned by a use element while being parsed don't bypass 'strict-dynamic'": "FAIL"
     }
   },
   "svg/struct/systemLanguage-matching.html": {
@@ -3681,7 +3712,7 @@
     "reftest": "PASS"
   },
   "svg/text/reftests/textLength-list-x-spacingAndGlyphs.svg": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "svg/text/reftests/textLength-list-y-spacing.svg": {
     "reftest": "PASS"
@@ -4144,6 +4175,9 @@
   },
   "svg/types/scripted/SVGLength-rlh.html": {
     "total": 2
+  },
+  "svg/types/scripted/SVGLength-value-setter-font-change.html": {
+    "total": 6
   },
   "svg/types/scripted/SVGLength-viewport.html": {
     "total": 8

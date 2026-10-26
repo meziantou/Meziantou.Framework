@@ -61,6 +61,12 @@
       "Check if the prefix of an attribute is NOT preserved in a case where neither its prefix nor its namespace URI is not already used.": "FAIL"
     }
   },
+  "domparsing/createContextualFragment-external-scripts-async.html": {
+    "total": 1,
+    "failures": {
+      "External scripts from createContextualFragment() have async=true and execute as async once connected": "FAIL"
+    }
+  },
   "domparsing/createContextualFragment-xhtml.xhtml": {
     "total": 4
   },
@@ -97,6 +103,27 @@
       "replaceWithHTML on head/body (parent is the html element) throws HierarchyRequestError": "FAIL",
       "replaceWithHTMLUnsafe on a child of a detached html element throws HierarchyRequestError": "FAIL",
       "replaceWithHTMLUnsafe on head/body (parent is the html element) throws HierarchyRequestError": "FAIL"
+    }
+  },
+  "domparsing/html-unsafe-external-scripts-async.html": {
+    "harness": "ERROR",
+    "total": 15,
+    "failures": {
+      "ShadowRoot.appendHTMLUnsafe with { runScripts: true }: external scripts execute as async": "FAIL",
+      "ShadowRoot.prependHTMLUnsafe with { runScripts: true }: external scripts execute as async": "FAIL",
+      "ShadowRoot.setHTMLUnsafe with { runScripts: true }: external scripts execute as async": "FAIL",
+      "afterHTMLUnsafe with { runScripts: true } on connected element: external scripts execute as async": "FAIL",
+      "afterHTMLUnsafe with { runScripts: true } on disconnected element: external scripts have async=true and execute as async once connected": "FAIL",
+      "appendHTMLUnsafe with { runScripts: true } on connected element: external scripts execute as async": "FAIL",
+      "appendHTMLUnsafe with { runScripts: true } on disconnected element: external scripts have async=true and execute as async once connected": "FAIL",
+      "beforeHTMLUnsafe with { runScripts: true } on connected element: external scripts execute as async": "FAIL",
+      "beforeHTMLUnsafe with { runScripts: true } on disconnected element: external scripts have async=true and execute as async once connected": "FAIL",
+      "prependHTMLUnsafe with { runScripts: true } on connected element: external scripts execute as async": "FAIL",
+      "prependHTMLUnsafe with { runScripts: true } on disconnected element: external scripts have async=true and execute as async once connected": "FAIL",
+      "replaceWithHTMLUnsafe with { runScripts: true } on connected element: external scripts execute as async": "FAIL",
+      "replaceWithHTMLUnsafe with { runScripts: true } on disconnected element: external scripts have async=true and execute as async once connected": "FAIL",
+      "setHTMLUnsafe with { runScripts: true } on connected element: external scripts execute as async": "FAIL",
+      "setHTMLUnsafe with { runScripts: true } on disconnected element: external scripts have async=true and execute as async once connected": "FAIL"
     }
   },
   "domparsing/innerhtml-01.xhtml": {
@@ -428,6 +455,23 @@
     "failures": {
       "Unclosed <script> from createContextualFragment() never runs": "FAIL",
       "Unclosed <script> from setHTMLUnsafe({runScripts: true}) never runs": "FAIL"
+    }
+  },
+  "domparsing/unsafe-and-trusted-types-external-scripts-async.html": {
+    "total": 12,
+    "failures": {
+      "afterHTMLUnsafe with Trusted Types default policy setting runScripts: true: external scripts execute as async": "FAIL",
+      "afterbegin with Trusted Types default policy setting runScripts: true: external scripts execute as async": "FAIL",
+      "afterend with Trusted Types default policy setting runScripts: true: external scripts execute as async": "FAIL",
+      "appendHTMLUnsafe with Trusted Types default policy setting runScripts: true: external scripts execute as async": "FAIL",
+      "beforeHTMLUnsafe with Trusted Types default policy setting runScripts: true: external scripts execute as async": "FAIL",
+      "beforebegin with Trusted Types default policy setting runScripts: true: external scripts execute as async": "FAIL",
+      "beforeend with Trusted Types default policy setting runScripts: true: external scripts execute as async": "FAIL",
+      "innerHTML with Trusted Types default policy setting runScripts: true: external scripts execute as async": "FAIL",
+      "outerHTML with Trusted Types default policy setting runScripts: true: external scripts execute as async": "FAIL",
+      "prependHTMLUnsafe with Trusted Types default policy setting runScripts: true: external scripts execute as async": "FAIL",
+      "replaceWithHTMLUnsafe with Trusted Types default policy setting runScripts: true: external scripts execute as async": "FAIL",
+      "setHTMLUnsafe with Trusted Types default policy setting runScripts: true: external scripts execute as async": "FAIL"
     }
   },
   "domparsing/xml-parse-serialize-roundtrip.html": {

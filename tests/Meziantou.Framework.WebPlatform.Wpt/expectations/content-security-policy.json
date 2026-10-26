@@ -235,6 +235,18 @@
   "content-security-policy/embedded-enforcement/subsumption_algorithm-strict_dynamic.html": {
     "total": 11
   },
+  "content-security-policy/embedded-enforcement/subsumption_algorithm-trusted_types.tentative.html": {
+    "total": 21,
+    "failures": {
+      "Combined requirement: require-trusted-types-for mismatches even though script-src matches.": "FAIL",
+      "require-trusted-types-for present in required, absent in returned.": "FAIL",
+      "trusted-types '*' required but returned has an explicit list only.": "FAIL",
+      "trusted-types 'allow-duplicates' required but missing in returned.": "FAIL",
+      "trusted-types intersection of several returned policies differs from required.": "FAIL",
+      "trusted-types present in required, absent from all returned policies.": "FAIL",
+      "trusted-types stricter returned subset is not an exact match.": "FAIL"
+    }
+  },
   "content-security-policy/embedded-enforcement/subsumption_algorithm-unsafe_eval.html": {
     "total": 7
   },
@@ -260,6 +272,12 @@
     "total": 1
   },
   "content-security-policy/font-src/font-stylesheet-font-blocked.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/font-src/shared-stylesheet-font-cache-bypass-strict-first.html": {
+    "total": 1
+  },
+  "content-security-policy/font-src/shared-stylesheet-font-cache-bypass.html": {
     "total": 1
   },
   "content-security-policy/form-action/form-action-self-allowed-target-blank.html": {
@@ -1399,6 +1417,9 @@
   "content-security-policy/generic/directive-name-case-insensitive.sub.html": {
     "total": 3
   },
+  "content-security-policy/generic/domparser-document-suppresses-csp-warning-for-inline-style.tentative.html": {
+    "total": 1
+  },
   "content-security-policy/generic/duplicate-directive.sub.html": {
     "total": 1
   },
@@ -1538,6 +1559,24 @@
   },
   "content-security-policy/img-src/report-blocked-data-uri.sub.html": {
     "total": 1
+  },
+  "content-security-policy/img-src/shared-stylesheet-image-cache-bypass-strict-first.html": {
+    "reftest": "PASS"
+  },
+  "content-security-policy/img-src/shared-stylesheet-image-cache-bypass.html": {
+    "reftest": "PASS"
+  },
+  "content-security-policy/img-src/shared-stylesheet-image-set-cache-bypass-strict-first.html": {
+    "reftest": "PASS"
+  },
+  "content-security-policy/img-src/shared-stylesheet-image-set-cache-bypass.html": {
+    "reftest": "PASS"
+  },
+  "content-security-policy/img-src/shared-stylesheet-mask-cache-bypass-strict-first.html": {
+    "reftest": "PASS"
+  },
+  "content-security-policy/img-src/shared-stylesheet-mask-cache-bypass.html": {
+    "reftest": "PASS"
   },
   "content-security-policy/img-src/svg-use-blocked.tentative.html": {
     "total": 1
@@ -1705,6 +1744,15 @@
     "total": 1
   },
   "content-security-policy/navigation/javascript-url-navigation-evaluated-to-string-inherits-csp.html": {
+    "total": 1
+  },
+  "content-security-policy/navigation/javascript-url-navigation-to-other-win-evaluated-to-string-inherits-csp.html": {
+    "total": 1
+  },
+  "content-security-policy/navigation/javascript-url-navigation-to-popup-evaluated-to-string-inherits-csp.html": {
+    "total": 1
+  },
+  "content-security-policy/navigation/javascript-url-navigation-to-self-evaluated-to-string-inherits-csp.html": {
     "total": 1
   },
   "content-security-policy/navigation/to-javascript-parent-initiated-check-csp-order.html": {
@@ -2291,7 +2339,7 @@
     "total": 3
   },
   "content-security-policy/script-src/script-src-trusted_types_eval_DedicatedWorker.html": {
-    "total": 3
+    "total": 9
   },
   "content-security-policy/script-src/script-src-trusted_types_eval_multiple_policies_allowed.window.js": {
     "total": 4
@@ -2309,16 +2357,16 @@
     "total": 4
   },
   "content-security-policy/script-src/script-src-trusted_types_eval_with_report_only_require_trusted_types_eval.html": {
-    "total": 4
+    "total": 5
   },
   "content-security-policy/script-src/script-src-trusted_types_eval_with_require_trusted_types_eval.html": {
-    "total": 4
+    "total": 5
   },
   "content-security-policy/script-src/script-src-trusted_types_eval_without_default_policy.window.js": {
     "total": 6
   },
   "content-security-policy/script-src/script-src-trusted_types_eval_without_require_trusted_types_eval.html": {
-    "total": 4
+    "total": 5
   },
   "content-security-policy/script-src/script-src-wildcards-disallowed.html": {
     "total": 3

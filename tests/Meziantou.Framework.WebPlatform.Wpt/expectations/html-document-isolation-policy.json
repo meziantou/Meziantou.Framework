@@ -1,8 +1,7 @@
 {
   "html/document-isolation-policy/agent-cluster.tentative.https.html": {
-    "total": 19,
+    "total": 25,
     "failures": {
-      "A cross-document navigate event in a same-origin frame without a policy does not expose a link of a document with one as its sourceElement": "FAIL",
       "A document with a policy cannot access a same-origin frame without one": "FAIL",
       "A document with a policy is in an origin-keyed agent cluster": "FAIL",
       "A document without a policy and a same-origin frame with one cannot access each other": "FAIL",
@@ -12,12 +11,49 @@
       "A frame with a policy that is cross origin with a cross-origin isolated top-level document is not in the agent cluster of same-origin documents without one": "FAIL",
       "A navigate event in a same-origin frame without a policy does not expose a link of a document with one as its sourceElement": "FAIL",
       "A popup with a policy keeps it when its response switches browsing context groups": "FAIL",
+      "A same-origin frame with a policy for a navigation from a document without one gets no cross-document navigate event (form submission)": "FAIL",
+      "A same-origin frame with a policy for a navigation from a document without one gets no cross-document navigate event (link)": "FAIL",
+      "A same-origin frame with a policy for a navigation from a document without one gets no cross-document navigate event (window.open())": "FAIL",
+      "A same-origin frame without a policy for a navigation from a document with one gets no cross-document navigate event (form submission)": "FAIL",
+      "A same-origin frame without a policy for a navigation from a document with one gets no cross-document navigate event (link)": "FAIL",
+      "A same-origin frame without a policy for a navigation from a document with one gets no cross-document navigate event (window.open())": "FAIL",
       "Navigating the initial about:blank document of a popup to a same-origin document with a policy does not reuse its Window": "FAIL",
       "Posting a WebAssembly.Module to a same-origin frame with a policy fails": "FAIL"
     }
   },
+  "html/document-isolation-policy/back-forward-cache-frames.tentative.https.html": {
+    "total": 4,
+    "failures": {
+      "A document with a policy and a cross-site child frame without one are restored after a cross-site navigation": "FAIL",
+      "A document with a policy and a same-origin child frame without one are restored after a cross-site navigation": "FAIL",
+      "A document without a policy and a cross-site child frame with one are restored after a cross-site navigation": "PRECONDITION_FAILED",
+      "A document without a policy and a same-origin child frame with one are restored after a cross-site navigation": "PRECONDITION_FAILED"
+    }
+  },
+  "html/document-isolation-policy/back-forward-cache.tentative.https.html": {
+    "total": 10,
+    "failures": {
+      "A cross-origin isolated document with COOP and COEP is restored after a cross-site navigation": "PRECONDITION_FAILED",
+      "A cross-origin isolated document with COOP and COEP is restored after a same-origin navigation to a document with a policy": "PRECONDITION_FAILED",
+      "A document with a policy is restored after a cross-site navigation": "FAIL",
+      "A document with a policy is restored after a cross-site navigation to a document with a policy": "FAIL",
+      "A document with a policy is restored after a same-origin navigation to a cross-origin isolated document with COOP and COEP": "FAIL",
+      "A document with a policy is restored after a same-origin navigation to a document with a policy": "FAIL",
+      "A document with a policy is restored after a same-origin navigation to a document without one": "FAIL",
+      "A document with a policy is restored after a same-site navigation to a document with a policy": "FAIL",
+      "A document without a policy is restored after a cross-site navigation": "PRECONDITION_FAILED",
+      "A document without a policy is restored after a same-origin navigation to a document with one": "PRECONDITION_FAILED"
+    }
+  },
   "html/document-isolation-policy/blob-document-inherits-policy.tentative.https.html": {
     "total": 2
+  },
+  "html/document-isolation-policy/broadcast-channel.tentative.https.html": {
+    "total": 3,
+    "failures": {
+      "A SharedArrayBuffer posted on a BroadcastChannel by a document with a policy arrives at same-origin documents with one in its agent cluster and shares memory with them": "FAIL",
+      "A SharedArrayBuffer posted on a BroadcastChannel by a document with a policy fires messageerror at same-origin documents without one": "FAIL"
+    }
   },
   "html/document-isolation-policy/credentialless-cache-storage-from-credentialless.https.tentative.window.js?dedicated_worker": {
     "total": 4
@@ -113,6 +149,17 @@
   "html/document-isolation-policy/credentialless-websocket.https.tentative.window.js": {
     "total": 3
   },
+  "html/document-isolation-policy/cross-origin-frame.tentative.https.html": {
+    "total": 2
+  },
+  "html/document-isolation-policy/cross-origin-isolated-permissions-policy.tentative.https.html": {
+    "total": 3,
+    "failures": {
+      "A cross-origin frame with isolate-and-require-corp and allow=\"cross-origin-isolated\" is cross-origin isolated and can serialize a SharedArrayBuffer": "FAIL",
+      "A cross-origin frame with isolate-and-require-corp without allow=\"cross-origin-isolated\" is not cross-origin isolated and cannot serialize a SharedArrayBuffer": "FAIL",
+      "A same-origin frame with isolate-and-require-corp and allow=\"cross-origin-isolated 'none'\" is not cross-origin isolated and cannot serialize a SharedArrayBuffer": "FAIL"
+    }
+  },
   "html/document-isolation-policy/cross-origin-isolated.tentative.https.html": {
     "total": 12,
     "failures": {
@@ -123,6 +170,16 @@
       "A same-origin frame with isolate-and-require-corp in a document without a policy is cross-origin isolated and exposes SharedArrayBuffer": "FAIL",
       "A srcdoc frame in a popup with isolate-and-require-corp is cross-origin isolated and exposes SharedArrayBuffer": "FAIL",
       "An about:blank popup opened by a popup with isolate-and-require-corp is cross-origin isolated and exposes SharedArrayBuffer": "FAIL"
+    }
+  },
+  "html/document-isolation-policy/dedicated-worker.tentative.https.html": {
+    "total": 9,
+    "failures": {
+      "A SharedArrayBuffer posted by a dedicated worker of a popup with isolate-and-require-corp to the popup arrives and shares memory with it": "FAIL",
+      "A SharedArrayBuffer posted by a popup with isolate-and-require-corp to its dedicated worker arrives and shares memory with it": "FAIL",
+      "A blob: URL dedicated worker of a popup with isolate-and-require-corp is cross-origin isolated and exposes SharedArrayBuffer": "FAIL",
+      "A dedicated worker of a popup with isolate-and-require-corp is cross-origin isolated and exposes SharedArrayBuffer": "FAIL",
+      "A dedicated worker started by a dedicated worker of a popup with isolate-and-require-corp is cross-origin isolated and exposes SharedArrayBuffer": "FAIL"
     }
   },
   "html/document-isolation-policy/header-parsing.tentative.https.html": {
@@ -164,6 +221,13 @@
   "html/document-isolation-policy/isolate-and-require-corp.tentative.https.html": {
     "total": 2
   },
+  "html/document-isolation-policy/message-channel.tentative.https.html": {
+    "total": 3,
+    "failures": {
+      "A SharedArrayBuffer posted over a MessageChannel by a document with a policy arrives at its same-origin frame with one and shares memory with it": "FAIL",
+      "A SharedArrayBuffer posted over a MessageChannel by a document with a policy fires messageerror at its same-origin frame without one": "FAIL"
+    }
+  },
   "html/document-isolation-policy/navigate-across-policies.tentative.https.html": {
     "total": 4
   },
@@ -172,6 +236,23 @@
   },
   "html/document-isolation-policy/no-secure-context.tentative.html": {
     "total": 2
+  },
+  "html/document-isolation-policy/origin-agent-cluster.tentative.https.html": {
+    "total": 3,
+    "failures": {
+      "A document with a policy that sends Origin-Agent-Cluster: ?0 is in an origin-keyed agent cluster": "FAIL",
+      "After a document with a policy, a same-origin document without one that sends Origin-Agent-Cluster: ?0 is in a site-keyed agent cluster": "FAIL",
+      "After a document with a policy, a same-origin document without one that sends Origin-Agent-Cluster: ?1 is in an origin-keyed agent cluster": "FAIL"
+    }
+  },
+  "html/document-isolation-policy/partial-deployment.tentative.https.html": {
+    "total": 8,
+    "failures": {
+      "A document with a policy and its same-origin frame without one can post messages to each other": "FAIL",
+      "A document with a policy and its same-origin frame without one only have the cross-origin members of each other's Window and Location objects": "FAIL",
+      "A document without a policy and its same-origin frame with one can post messages to each other": "FAIL",
+      "A document without a policy and its same-origin frame with one only have the cross-origin members of each other's Window and Location objects": "FAIL"
+    }
   },
   "html/document-isolation-policy/reporting-cache-storage-corp.tentative.https.html": {
     "harness": "TIMEOUT",
@@ -188,6 +269,20 @@
       "[shared worker] blocked due to DIP": "NOTRUN",
       "[shared worker] blocked during redirect": "NOTRUN",
       "[shared worker] same-origin": "NOTRUN"
+    }
+  },
+  "html/document-isolation-policy/reporting-cached-and-service-worker-responses.tentative.https.html": {
+    "harness": "TIMEOUT",
+    "total": 8,
+    "failures": {
+      "Document-Isolation-Policy reports a cross-origin response a service worker responds with": "NOTRUN",
+      "Document-Isolation-Policy reports a redirected response a service worker responds with by its first URL": "NOTRUN",
+      "Document-Isolation-Policy reports a response a service worker fetched from another URL by that URL": "NOTRUN",
+      "Document-Isolation-Policy reports an image that another document loaded before": "NOTRUN",
+      "Document-Isolation-Policy-Report-Only reports an image that another document loaded before": "TIMEOUT",
+      "Document-Isolation-Policy-Report-Only reports an image the document is still loading with CORS once": "NOTRUN",
+      "Document-Isolation-Policy-Report-Only reports an image the document loaded with CORS before": "NOTRUN",
+      "Document-Isolation-Policy-Report-Only reports an image the document uses twice once": "NOTRUN"
     }
   },
   "html/document-isolation-policy/reporting-subresource-corp.tentative.https.html": {
@@ -209,6 +304,17 @@
       "[shared worker] blocked due to DIP (with fragment)": "NOTRUN",
       "[shared worker] blocked during redirect": "NOTRUN",
       "[shared worker] same-origin": "NOTRUN"
+    }
+  },
+  "html/document-isolation-policy/reporting.tentative.https.html": {
+    "harness": "TIMEOUT",
+    "total": 5,
+    "failures": {
+      "A response that Cross-Origin-Embedder-Policy and Document-Isolation-Policy both block gets a report for each": "NOTRUN",
+      "Document-Isolation-Policy reports go to the report-to endpoints": "NOTRUN",
+      "Document-Isolation-Policy reports what it blocks without a report-only policy": "NOTRUN",
+      "Document-Isolation-Policy-Report-Only reports without blocking or isolating": "TIMEOUT",
+      "ReportingObserver can observe dip reports by type": "NOTRUN"
     }
   },
   "html/document-isolation-policy/service-worker-coep-credentialless-proxy.https.tentative.window.js": {
@@ -233,6 +339,14 @@
     "failures": {
       "\"isolate-and-require-corp\" (derived from owner set due to use of local scheme - blob URL)": "FAIL",
       "\"isolate-and-require-corp\" (derived from owner set due to use of local scheme - data URL)": "FAIL"
+    }
+  },
+  "html/document-isolation-policy/window-reuse.tentative.https.html": {
+    "total": 6,
+    "failures": {
+      "A frame's initial about:blank document created by a document with a policy that navigates to a same-origin document without a policy does not reuse its Window": "FAIL",
+      "A frame's initial about:blank document created by a document without a policy that navigates to a same-origin document with a policy does not reuse its Window": "FAIL",
+      "A popup's initial about:blank document created by a document with a policy that navigates to a same-origin document without a policy does not reuse its Window": "FAIL"
     }
   }
 }

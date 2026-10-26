@@ -58,7 +58,7 @@ public abstract class BaseAudioContext : EventTarget
     [IdlMember("currentTime", "https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-currenttime")]
     public double CurrentTime => CurrentFrame / (double)SampleRate;
 
-    /// <summary>Gets the listener of the spatialization of the <c>PannerNode</c> objects.</summary>
+    /// <summary>Gets the listener of the spatialization of the <see cref="PannerNode"/> objects.</summary>
     /// <seealso href="https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-listener"/>
     [IdlMember("listener", "https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-listener")]
     public AudioListener Listener { get; }
@@ -87,6 +87,16 @@ public abstract class BaseAudioContext : EventTarget
     /// <summary>Whether the document of the window of the context is fully active (always true without window).</summary>
     internal bool IsDocumentFullyActive => Window is not { } window || window.Document.IsFullyActive;
 
+    /// <summary>Creates a node that provides the time-domain and frequency-domain data of its input.</summary>
+    /// <seealso href="https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-createanalyser"/>
+    [IdlMember("createAnalyser", "https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-createanalyser")]
+    public AnalyserNode CreateAnalyser() => new(this);
+
+    /// <summary>Creates a second-order filter.</summary>
+    /// <seealso href="https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-createbiquadfilter"/>
+    [IdlMember("createBiquadFilter", "https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-createbiquadfilter")]
+    public BiquadFilterNode CreateBiquadFilter() => new(this);
+
     /// <summary>Creates a buffer of silence.</summary>
     /// <seealso href="https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-createbuffer"/>
     [IdlMember("createBuffer", "https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-createbuffer")]
@@ -97,15 +107,92 @@ public abstract class BaseAudioContext : EventTarget
     [IdlMember("createBufferSource", "https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-createbuffersource")]
     public AudioBufferSourceNode CreateBufferSource() => new(this);
 
+    /// <summary>Creates a node that combines its inputs into the channels of its output.</summary>
+    /// <seealso href="https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-createchannelmerger"/>
+    [IdlMember("createChannelMerger", "https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-createchannelmerger")]
+    public ChannelMergerNode CreateChannelMerger(uint numberOfInputs = 6) => new(this, new ChannelMergerOptions { NumberOfInputs = numberOfInputs });
+
+    /// <summary>Creates a node whose outputs are the channels of its input.</summary>
+    /// <seealso href="https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-createchannelsplitter"/>
+    [IdlMember("createChannelSplitter", "https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-createchannelsplitter")]
+    public ChannelSplitterNode CreateChannelSplitter(uint numberOfOutputs = 6) => new(this, new ChannelSplitterOptions { NumberOfOutputs = numberOfOutputs });
+
     /// <summary>Creates a node that outputs a constant value.</summary>
     /// <seealso href="https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-createconstantsource"/>
     [IdlMember("createConstantSource", "https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-createconstantsource")]
     public ConstantSourceNode CreateConstantSource() => new(this);
 
+    /// <summary>Creates a node that convolves its input with an impulse response.</summary>
+    /// <seealso href="https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-createconvolver"/>
+    [IdlMember("createConvolver", "https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-createconvolver")]
+    public ConvolverNode CreateConvolver() => new(this);
+
+    /// <summary>Creates a node that delays its input.</summary>
+    /// <seealso href="https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-createdelay"/>
+    [IdlMember("createDelay", "https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-createdelay")]
+    public DelayNode CreateDelay(double maxDelayTime = 1) => new(this, new DelayOptions { MaxDelayTime = maxDelayTime });
+
+    /// <summary>Creates a dynamics compressor.</summary>
+    /// <seealso href="https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-createdynamicscompressor"/>
+    [IdlMember("createDynamicsCompressor", "https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-createdynamicscompressor")]
+    public DynamicsCompressorNode CreateDynamicsCompressor() => new(this);
+
     /// <summary>Creates a node that multiplies its input by a gain.</summary>
     /// <seealso href="https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-creategain"/>
     [IdlMember("createGain", "https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-creategain")]
     public GainNode CreateGain() => new(this);
+
+    /// <summary>Creates a general infinite impulse response filter.</summary>
+    /// <seealso href="https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-createiirfilter"/>
+    [IdlMember("createIIRFilter", "https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-createiirfilter")]
+    public IIRFilterNode CreateIIRFilter(IReadOnlyList<double> feedforward, IReadOnlyList<double> feedback) => new(this, new IIRFilterOptions { Feedforward = feedforward, Feedback = feedback });
+
+    /// <summary>Creates a source of a periodic waveform.</summary>
+    /// <seealso href="https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-createoscillator"/>
+    [IdlMember("createOscillator", "https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-createoscillator")]
+    public OscillatorNode CreateOscillator() => new(this);
+
+    /// <summary>Creates a node that spatializes its input relative to the listener.</summary>
+    /// <seealso href="https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-createpanner"/>
+    [IdlMember("createPanner", "https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-createpanner")]
+    public PannerNode CreatePanner() => new(this);
+
+    /// <summary>Creates a periodic waveform from the coefficients of its Fourier series.</summary>
+    /// <exception cref="DomException">The arrays have different lengths, or a length less than 2 (an <c>IndexSizeError</c>).</exception>
+    /// <seealso href="https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-createperiodicwave"/>
+    [IdlMember("createPeriodicWave", "https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-createperiodicwave")]
+    public PeriodicWave CreatePeriodicWave(IReadOnlyList<float> real, IReadOnlyList<float> imag, PeriodicWaveConstraints? constraints = null)
+    {
+        ArgumentNullException.ThrowIfNull(real);
+        ArgumentNullException.ThrowIfNull(imag);
+        if (real.Count != imag.Count)
+            throw new DomException($"The real ({real.Count}) and imaginary ({imag.Count}) coefficients have different lengths", "IndexSizeError");
+
+        return new PeriodicWave(this, new PeriodicWaveOptions { Real = real, Imag = imag, DisableNormalization = constraints?.DisableNormalization ?? false });
+    }
+
+    /// <summary>Creates a node that processes its input with the <c>audioprocess</c> events (deprecated).</summary>
+    /// <param name="bufferSize">The number of frames of the buffers of the events (a power of two from 256 to 16384), or 0 to let the implementation choose.</param>
+    /// <param name="numberOfInputChannels">The number of channels of the input.</param>
+    /// <param name="numberOfOutputChannels">The number of channels of the output.</param>
+    /// <exception cref="DomException">An argument is out of its range (an <c>IndexSizeError</c>), or the buffer size is not a multiple of the render quantum size (a <c>NotSupportedError</c>).</exception>
+    /// <seealso href="https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-createscriptprocessor"/>
+    [IdlMember("createScriptProcessor", "https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-createscriptprocessor")]
+    public ScriptProcessorNode CreateScriptProcessor(uint bufferSize = 0, uint numberOfInputChannels = 2, uint numberOfOutputChannels = 2)
+    {
+        var size = ScriptProcessorNode.ValidateArguments(this, bufferSize, numberOfInputChannels, numberOfOutputChannels);
+        return new ScriptProcessorNode(this, size, (int)numberOfInputChannels, (int)numberOfOutputChannels);
+    }
+
+    /// <summary>Creates a node that pans its input in a stereo image.</summary>
+    /// <seealso href="https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-createstereopanner"/>
+    [IdlMember("createStereoPanner", "https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-createstereopanner")]
+    public StereoPannerNode CreateStereoPanner() => new(this);
+
+    /// <summary>Creates a node that applies a distortion curve to its input.</summary>
+    /// <seealso href="https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-createwaveshaper"/>
+    [IdlMember("createWaveShaper", "https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-createwaveshaper")]
+    public WaveShaperNode CreateWaveShaper() => new(this);
 
     // ----------------------------------------------------------------------------------------------------------------
     // State

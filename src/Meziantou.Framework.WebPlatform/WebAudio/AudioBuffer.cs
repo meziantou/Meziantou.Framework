@@ -221,6 +221,25 @@ public sealed class AudioBuffer
         if (_acquired is { } acquired)
             return acquired;
 
+        // https://webaudio.github.io/web-audio-api/#acquire-the-content: when the buffer of an array given to the scripts is
+        // detached, the content cannot be acquired: the nodes play silence
+        var detached = false;
+        foreach (var channel in _channels)
+        {
+            detached |= channel?.IsDetached == true;
+        }
+
+        if (detached)
+        {
+            var silence = new float[NumberOfChannels][];
+            for (var i = 0; i < silence.Length; i++)
+            {
+                silence[i] = new float[Length];
+            }
+
+            return silence;
+        }
+
         acquired = new float[NumberOfChannels][];
         for (var i = 0; i < acquired.Length; i++)
         {

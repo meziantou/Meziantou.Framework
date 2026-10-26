@@ -1596,6 +1596,8 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         if (Adapter.TryGetBufferSource(created, out _, out _, out var bytes))
         {
             source.Bind(created, bytes);
+            var length = bytes.Length;
+            source.DetachedProbe = () => !Adapter.TryGetBufferSource(created, out _, out _, out var current) || current.Length != length;
         }
 
         return created;

@@ -32,6 +32,8 @@ public sealed class WebAudioTests : IDisposable
         return document;
     }
 
+    private static Span<byte> Bytes(float[] values) => unsafe(System.Runtime.InteropServices.MemoryMarshal.AsBytes(values.AsSpan()));
+
     private static AudioBuffer Render(OfflineAudioContext context)
     {
         var task = context.StartRendering();
@@ -154,7 +156,9 @@ public sealed class WebAudioTests : IDisposable
         Assert.Equal(0f, output[10]);
         Assert.Equal(1.5f, output[11]);
         Assert.Equal(7.5f, output[17]);
-        Assert.Equal(8f, output[18]);
+
+        // After the last frame, the signal is extrapolated from the last two frames
+        Assert.Equal(8.5f, output[18]);
         Assert.Equal(0f, output[19]);
     }
 
@@ -186,6 +190,275 @@ public sealed class WebAudioTests : IDisposable
         Assert.Equal("InvalidAccessError", Assert.Throws<DomException>(() => gain.Disconnect(context1.Destination)).Name);
         Assert.Equal("NotSupportedError", Assert.Throws<DomException>(() => gain.ChannelCount = 0).Name);
         Assert.Equal("NotSupportedError", Assert.Throws<DomException>(() => context1.Destination.ChannelCount = 2).Name);
+    }
+
+    [Fact]
+    public void OscillatorNode_SineMatchesTheMathematicalSine()
+    {
+        var context = new OfflineAudioContext(1, 256, 48000);
+        var oscillator = new OscillatorNode(context, new OscillatorOptions { Frequency = 1000 });
+        oscillator.Connect(context.Destination);
+        oscillator.Start();
+
+        var samples = Render(context).GetChannelData(0);
+
+        for (var i = 0; i < samples.Length; i++)
+        {
+            Assert.True(Math.Abs(samples[i] - Math.Sin(2 * Math.PI * 1000 * i / 48000)) < 1e-6, $"Sample {i}");
+        }
+    }
+
+    [Fact]
+    public void OscillatorNode_SquareIsBandLimitedAndNormalized()
+    {
+        var context = new OfflineAudioContext(1, 4800, 48000);
+        var oscillator = new OscillatorNode(context, new OscillatorOptions { Type = OscillatorType.Square, Frequency = 100 });
+        oscillator.Connect(context.Destination);
+        oscillator.Start();
+
+        var samples = Render(context).GetChannelData(0);
+
+        var max = 0f;
+        foreach (var sample in samples)
+        {
+            max = Math.Max(max, Math.Abs(sample));
+        }
+
+        // The normalization of the full waveform applies to the band-limited one (its Gibbs oscillations are smaller)
+        Assert.True(max is > 0.95f and <= 1.0001f, $"Maximum {max}");
+        // The flat parts are below the overshoot of the Gibbs phenomenon, which is normalized to 1
+        Assert.True(samples[120] is > 0.8f and < 0.9f, $"Sample {samples[120]}");
+        Assert.True(samples[360] is < -0.8f and > -0.9f, $"Sample {samples[360]}");
+    }
+
+    [Fact]
+    public void DelayNode_DelaysTheInput()
+    {
+        // The delay time is a float: 200 frames at 8192 Hz is exact
+        var context = new OfflineAudioContext(1, 512, 8192);
+        var buffer = new AudioBuffer(new AudioBufferOptions { Length = 1, SampleRate = 8192 });
+        buffer.GetChannelData(0)[0] = 1;
+        var source = new AudioBufferSourceNode(context, new AudioBufferSourceOptions { Buffer = buffer });
+        var delay = new DelayNode(context, new DelayOptions { DelayTime = 200 / 8192.0 });
+        source.Connect(delay).Connect(context.Destination);
+        source.Start();
+
+        var samples = Render(context).GetChannelData(0);
+
+        Assert.Equal(200, samples.IndexOfAnyExcept(0f));
+        Assert.Equal(1f, samples[200]);
+        Assert.Equal(-1, samples[201..].IndexOfAnyExcept(0f));
+    }
+
+    [Fact]
+    public void DelayNode_InACycleDelaysByARenderQuantum()
+    {
+        var context = new OfflineAudioContext(1, 512, 8000);
+        var buffer = new AudioBuffer(new AudioBufferOptions { Length = 1, SampleRate = 8000 });
+        buffer.GetChannelData(0)[0] = 1;
+        var source = new AudioBufferSourceNode(context, new AudioBufferSourceOptions { Buffer = buffer });
+        var gain = new GainNode(context, new GainOptions { Gain = 0.5f });
+        var delay = new DelayNode(context, new DelayOptions { DelayTime = 0 });
+        source.Connect(gain);
+        gain.Connect(delay).Connect(gain);
+        gain.Connect(context.Destination);
+        source.Start();
+
+        var samples = Render(context).GetChannelData(0);
+
+        Assert.Equal(0.5f, samples[0]);
+        Assert.Equal(0.25f, samples[128]);
+        Assert.Equal(0.125f, samples[256]);
+    }
+
+    [Fact]
+    public void ChannelSplitterAndMerger_SwapTheChannels()
+    {
+        var context = new OfflineAudioContext(2, 128, 8000);
+        var left = new ConstantSourceNode(context, new ConstantSourceOptions { Offset = 1 });
+        var right = new ConstantSourceNode(context, new ConstantSourceOptions { Offset = 2 });
+        var merger1 = new ChannelMergerNode(context, new ChannelMergerOptions { NumberOfInputs = 2 });
+        var splitter = new ChannelSplitterNode(context, new ChannelSplitterOptions { NumberOfOutputs = 2 });
+        var merger2 = new ChannelMergerNode(context, new ChannelMergerOptions { NumberOfInputs = 2 });
+        left.Connect(merger1, 0, 0);
+        right.Connect(merger1, 0, 1);
+        merger1.Connect(splitter);
+        splitter.Connect(merger2, 0, 1);
+        splitter.Connect(merger2, 1, 0);
+        merger2.Connect(context.Destination);
+        left.Start();
+        right.Start();
+
+        var buffer = Render(context);
+
+        Assert.Equal(2f, buffer.GetChannelData(0)[0]);
+        Assert.Equal(1f, buffer.GetChannelData(1)[0]);
+        Assert.Equal("InvalidStateError", Assert.Throws<DomException>(() => merger1.ChannelCount = 2).Name);
+        Assert.Equal("IndexSizeError", Assert.Throws<DomException>(() => new ChannelSplitterNode(context, new ChannelSplitterOptions { NumberOfOutputs = 33 })).Name);
+    }
+
+    [Fact]
+    public void BiquadFilterNode_FiltersAndComputesTheFrequencyResponse()
+    {
+        var context = new OfflineAudioContext(1, 4096, 8000);
+        var filter = new BiquadFilterNode(context, new BiquadFilterOptions { Type = BiquadFilterType.Lowpass, Frequency = 500 });
+        float[] frequencies = [0, 500, 3999, 5000];
+        var magnitudes = new float[4];
+        var phases = new float[4];
+        filter.GetFrequencyResponse(Bytes(frequencies), Bytes(magnitudes), Bytes(phases));
+
+        Assert.True(Math.Abs(magnitudes[0] - 1) < 1e-6);
+        Assert.True(magnitudes[2] < 1e-3);
+        Assert.True(float.IsNaN(magnitudes[3]));
+
+        // A constant input converges to the DC gain of the filter
+        var source = new ConstantSourceNode(context);
+        source.Connect(filter).Connect(context.Destination);
+        source.Start();
+        var samples = Render(context).GetChannelData(0);
+        Assert.True(Math.Abs(samples[^1] - 1) < 1e-4);
+    }
+
+    [Fact]
+    public void IIRFilterNode_MatchesTheEquivalentBiquad()
+    {
+        var context = new OfflineAudioContext(2, 1024, 8000);
+        var coefficients = BiquadFilterNode.ComputeCoefficients(BiquadFilterType.Highpass, 1000, 0, 1, 0, 8000);
+        var iir = new IIRFilterNode(context, new IIRFilterOptions { Feedforward = [coefficients.B0, coefficients.B1, coefficients.B2], Feedback = [1, coefficients.A1, coefficients.A2] });
+        var biquad = new BiquadFilterNode(context, new BiquadFilterOptions { Type = BiquadFilterType.Highpass, Frequency = 1000 });
+        var merger = new ChannelMergerNode(context, new ChannelMergerOptions { NumberOfInputs = 2 });
+        var oscillator = new OscillatorNode(context, new OscillatorOptions { Type = OscillatorType.Sawtooth, Frequency = 300 });
+        oscillator.Connect(iir).Connect(merger, 0, 0);
+        oscillator.Connect(biquad).Connect(merger, 0, 1);
+        merger.Connect(context.Destination);
+        oscillator.Start();
+
+        var buffer = Render(context);
+
+        var iirSamples = buffer.GetChannelData(0);
+        var biquadSamples = buffer.GetChannelData(1);
+        for (var i = 0; i < iirSamples.Length; i++)
+        {
+            Assert.True(Math.Abs(iirSamples[i] - biquadSamples[i]) < 1e-5, $"Sample {i}");
+        }
+
+        Assert.Equal("InvalidStateError", Assert.Throws<DomException>(() => new IIRFilterNode(context, new IIRFilterOptions { Feedforward = [0], Feedback = [1] })).Name);
+        Assert.Equal("NotSupportedError", Assert.Throws<DomException>(() => new IIRFilterNode(context, new IIRFilterOptions { Feedforward = [1], Feedback = [] })).Name);
+    }
+
+    [Fact]
+    public void ConvolverNode_WithAnImpulseOutputsItsInput()
+    {
+        var context = new OfflineAudioContext(1, 1024, 8000);
+        var impulse = new AudioBuffer(new AudioBufferOptions { Length = 300, SampleRate = 8000 });
+        impulse.GetChannelData(0)[100] = 1;
+        var convolver = new ConvolverNode(context, new ConvolverOptions { Buffer = impulse, DisableNormalization = true });
+        var input = new AudioBuffer(new AudioBufferOptions { Length = 256, SampleRate = 8000 });
+        var inputSamples = input.GetChannelData(0);
+        for (var i = 0; i < inputSamples.Length; i++)
+        {
+            inputSamples[i] = (float)Math.Sin(i / 10.0);
+        }
+
+        var source = new AudioBufferSourceNode(context, new AudioBufferSourceOptions { Buffer = input });
+        source.Connect(convolver).Connect(context.Destination);
+        source.Start();
+
+        var output = Render(context).GetChannelData(0);
+
+        Assert.Equal(-1, output[..100].IndexOfAnyExcept(0f));
+        for (var i = 0; i < 256; i++)
+        {
+            Assert.True(Math.Abs(output[100 + i] - inputSamples[i]) < 1e-6, $"Sample {i}");
+        }
+
+        Assert.Equal(-1, output[356..].IndexOfAnyExcept(0f));
+    }
+
+    [Fact]
+    public void WaveShaperNode_MapsTheInputWithTheCurve()
+    {
+        var context = new OfflineAudioContext(1, 128, 8000);
+        var source = new ConstantSourceNode(context, new ConstantSourceOptions { Offset = 0.5f });
+        var shaper = new WaveShaperNode(context, new WaveShaperOptions { Curve = [-1, 0, 2] });
+        source.Connect(shaper).Connect(context.Destination);
+        source.Start();
+
+        Assert.Equal(1f, Render(context).GetChannelData(0)[0]);
+        Assert.Equal("InvalidStateError", Assert.Throws<DomException>(() => shaper.Curve = [0, 1]).Name);
+    }
+
+    [Fact]
+    public void Panners_PanTheInput()
+    {
+        var context = new OfflineAudioContext(2, 128, 8000);
+        var source = new ConstantSourceNode(context);
+        var stereoPanner = new StereoPannerNode(context, new StereoPannerOptions { Pan = -1 });
+        var panner = new PannerNode(context, new PannerOptions { PositionX = 1, RolloffFactor = 0 });
+        var merger = new ChannelMergerNode(context, new ChannelMergerOptions { NumberOfInputs = 2 });
+        var splitter1 = new ChannelSplitterNode(context, new ChannelSplitterOptions { NumberOfOutputs = 2 });
+        var splitter2 = new ChannelSplitterNode(context, new ChannelSplitterOptions { NumberOfOutputs = 2 });
+        source.Connect(stereoPanner).Connect(splitter1);
+        source.Connect(panner).Connect(splitter2);
+
+        // Channel 0: the right channel of the stereo panner (silent); channel 1: the right channel of the panner (the whole signal)
+        splitter1.Connect(merger, 1, 0);
+        splitter2.Connect(merger, 1, 1);
+        merger.Connect(context.Destination);
+        source.Start();
+
+        var buffer = Render(context);
+
+        Assert.True(Math.Abs(buffer.GetChannelData(0)[0]) < 1e-7);
+        Assert.True(Math.Abs(buffer.GetChannelData(1)[0] - 1) < 1e-6);
+    }
+
+    [Fact]
+    public void AnalyserNode_ProvidesTheTimeDomainAndFrequencyData()
+    {
+        var context = new OfflineAudioContext(1, 2048, 8000);
+        var oscillator = new OscillatorNode(context, new OscillatorOptions { Frequency = 1000 });
+        var analyser = new AnalyserNode(context, new AnalyserOptions { FftSize = 256, SmoothingTimeConstant = 0 });
+        oscillator.Connect(analyser).Connect(context.Destination);
+        oscillator.Start();
+
+        var output = Render(context).GetChannelData(0);
+        var timeDomain = new float[256];
+        analyser.GetFloatTimeDomainData(Bytes(timeDomain));
+        var frequencies = new float[128];
+        analyser.GetFloatFrequencyData(Bytes(frequencies));
+
+        Assert.Equal(output[^1], timeDomain[^1]);
+        Assert.Equal(output[^256], timeDomain[0]);
+
+        // The peak is the bin of 1000 Hz (128 bins from 0 to 4000 Hz)
+        var peak = 0;
+        for (var i = 1; i < frequencies.Length; i++)
+        {
+            if (frequencies[i] > frequencies[peak])
+            {
+                peak = i;
+            }
+        }
+
+        Assert.Equal(32, peak);
+        Assert.Equal("IndexSizeError", Assert.Throws<DomException>(() => analyser.FftSize = 100).Name);
+    }
+
+    [Fact]
+    public void DynamicsCompressorNode_ReducesTheGainOfALoudSignal()
+    {
+        var context = new OfflineAudioContext(1, 8192, 8000);
+        var source = new ConstantSourceNode(context);
+        var compressor = new DynamicsCompressorNode(context);
+        source.Connect(compressor).Connect(context.Destination);
+        source.Start();
+
+        var samples = Render(context).GetChannelData(0);
+
+        Assert.True(compressor.Reduction < -5, $"Reduction {compressor.Reduction}");
+        Assert.True(samples[^1] < 1);
+        Assert.Equal("InvalidStateError", Assert.Throws<DomException>(() => compressor.Ratio.AutomationRate = AutomationRate.ARate).Name);
     }
 
     [Fact]

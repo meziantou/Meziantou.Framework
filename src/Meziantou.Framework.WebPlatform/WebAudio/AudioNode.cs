@@ -457,7 +457,7 @@ public abstract class AudioNode : EventTarget
         }
     }
 
-    /// <summary>Whether the node can break a cycle of the graph (a <c>DelayNode</c>).</summary>
+    /// <summary>Whether the node can break a cycle of the graph (a <see cref="DelayNode"/>).</summary>
     internal virtual bool CanBreakCycles => false;
 
     /// <summary>
@@ -466,7 +466,7 @@ public abstract class AudioNode : EventTarget
     /// </summary>
     internal bool BreaksCycle { get; set; }
 
-    /// <summary>Whether the node is in a cycle that has no <c>DelayNode</c>: it outputs silence (https://webaudio.github.io/web-audio-api/#rendering-loop).</summary>
+    /// <summary>Whether the node is in a cycle that has no <see cref="DelayNode"/>: it outputs silence (https://webaudio.github.io/web-audio-api/#rendering-loop).</summary>
     internal bool IsMuted { get; set; }
 
     /// <summary>Whether the node was actively processing during the last render quantum (https://webaudio.github.io/web-audio-api/#actively-processing).</summary>

@@ -27,6 +27,16 @@ internal static class Binding_BaseAudioContext<TAdapter, TValue> where TAdapter 
     private static TValue Get_renderQuantumSize(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.WebAudio.BaseAudioContext>(t, Binding); return r.FromNumber((double)o.RenderQuantumSize); }
     private static TValue Get_onstatechange(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) => r.GetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "statechange");
     private static void Set_onstatechange(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) => r.SetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "statechange", v, isOnBeforeUnloadEventHandler: false);
+    private static TValue Op_createAnalyser(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.WebAudio.BaseAudioContext>(t, Binding);
+        var result = o.CreateAnalyser(); return r.Wrap(result);
+    }
+    private static TValue Op_createBiquadFilter(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.WebAudio.BaseAudioContext>(t, Binding);
+        var result = o.CreateBiquadFilter(); return r.Wrap(result);
+    }
     private static TValue Op_createBuffer(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.WebAudio.BaseAudioContext>(t, Binding);
@@ -41,15 +51,88 @@ internal static class Binding_BaseAudioContext<TAdapter, TValue> where TAdapter 
         var o = r.This<global::Meziantou.Framework.WebPlatform.WebAudio.BaseAudioContext>(t, Binding);
         var result = o.CreateBufferSource(); return r.Wrap(result);
     }
+    private static TValue Op_createChannelMerger(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.WebAudio.BaseAudioContext>(t, Binding);
+        var a0 = r.IsMissing(a, 0) ? (uint)(uint)(6d) : r.ToUnsignedLong(a[0], global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None);
+        var result = o.CreateChannelMerger(a0); return r.Wrap(result);
+    }
+    private static TValue Op_createChannelSplitter(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.WebAudio.BaseAudioContext>(t, Binding);
+        var a0 = r.IsMissing(a, 0) ? (uint)(uint)(6d) : r.ToUnsignedLong(a[0], global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None);
+        var result = o.CreateChannelSplitter(a0); return r.Wrap(result);
+    }
     private static TValue Op_createConstantSource(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.WebAudio.BaseAudioContext>(t, Binding);
         var result = o.CreateConstantSource(); return r.Wrap(result);
     }
+    private static TValue Op_createConvolver(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.WebAudio.BaseAudioContext>(t, Binding);
+        var result = o.CreateConvolver(); return r.Wrap(result);
+    }
+    private static TValue Op_createDelay(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.WebAudio.BaseAudioContext>(t, Binding);
+        var a0 = r.IsMissing(a, 0) ? (double)(double)(1d) : r.ToDouble(a[0], restricted: true);
+        var result = o.CreateDelay(a0); return r.Wrap(result);
+    }
+    private static TValue Op_createDynamicsCompressor(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.WebAudio.BaseAudioContext>(t, Binding);
+        var result = o.CreateDynamicsCompressor(); return r.Wrap(result);
+    }
     private static TValue Op_createGain(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.WebAudio.BaseAudioContext>(t, Binding);
         var result = o.CreateGain(); return r.Wrap(result);
+    }
+    private static TValue Op_createIIRFilter(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.WebAudio.BaseAudioContext>(t, Binding);
+        if (a.Length < 2) throw r.NotEnoughArguments("createIIRFilter", 2, a.Length);
+        var a0 = r.ToSequence<double>(a[0], static (r, e) => r.ToDouble(e, restricted: true));
+        var a1 = r.ToSequence<double>(a[1], static (r, e) => r.ToDouble(e, restricted: true));
+        var result = o.CreateIIRFilter(a0, a1); return r.Wrap(result);
+    }
+    private static TValue Op_createOscillator(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.WebAudio.BaseAudioContext>(t, Binding);
+        var result = o.CreateOscillator(); return r.Wrap(result);
+    }
+    private static TValue Op_createPanner(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.WebAudio.BaseAudioContext>(t, Binding);
+        var result = o.CreatePanner(); return r.Wrap(result);
+    }
+    private static TValue Op_createPeriodicWave(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.WebAudio.BaseAudioContext>(t, Binding);
+        if (a.Length < 2) throw r.NotEnoughArguments("createPeriodicWave", 2, a.Length);
+        var a0 = r.ToSequence<float>(a[0], static (r, e) => r.ToFloat(e, restricted: true));
+        var a1 = r.ToSequence<float>(a[1], static (r, e) => r.ToFloat(e, restricted: true));
+        var a2 = r.IsMissing(a, 2) ? (global::Meziantou.Framework.WebPlatform.WebAudio.PeriodicWaveConstraints)WebIdlHelpers<TAdapter, TValue>.ToDictionary_WebAudio_PeriodicWaveConstraints(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToDictionary_WebAudio_PeriodicWaveConstraints(r, a[2]);
+        var result = o.CreatePeriodicWave(a0, a1, a2); return r.Wrap(result);
+    }
+    private static TValue Op_createScriptProcessor(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.WebAudio.BaseAudioContext>(t, Binding);
+        var a0 = r.IsMissing(a, 0) ? (uint)(uint)(0d) : r.ToUnsignedLong(a[0], global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None);
+        var a1 = r.IsMissing(a, 1) ? (uint)(uint)(2d) : r.ToUnsignedLong(a[1], global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None);
+        var a2 = r.IsMissing(a, 2) ? (uint)(uint)(2d) : r.ToUnsignedLong(a[2], global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None);
+        var result = o.CreateScriptProcessor(a0, a1, a2); return r.Wrap(result);
+    }
+    private static TValue Op_createStereoPanner(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.WebAudio.BaseAudioContext>(t, Binding);
+        var result = o.CreateStereoPanner(); return r.Wrap(result);
+    }
+    private static TValue Op_createWaveShaper(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.WebAudio.BaseAudioContext>(t, Binding);
+        var result = o.CreateWaveShaper(); return r.Wrap(result);
     }
     private static void DefineMembers(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue interfaceObject, TValue prototype, TValue instanceTarget)
     {
@@ -60,9 +143,23 @@ internal static class Binding_BaseAudioContext<TAdapter, TValue> where TAdapter 
         r.DefineAttribute(instanceTarget, "state", Get_state, null);
         r.DefineAttribute(instanceTarget, "renderQuantumSize", Get_renderQuantumSize, null);
         r.DefineAttribute(instanceTarget, "onstatechange", Get_onstatechange, Set_onstatechange);
+        r.DefineOperation(instanceTarget, "createAnalyser", 0, Op_createAnalyser);
+        r.DefineOperation(instanceTarget, "createBiquadFilter", 0, Op_createBiquadFilter);
         r.DefineOperation(instanceTarget, "createBuffer", 3, Op_createBuffer);
         r.DefineOperation(instanceTarget, "createBufferSource", 0, Op_createBufferSource);
+        r.DefineOperation(instanceTarget, "createChannelMerger", 0, Op_createChannelMerger);
+        r.DefineOperation(instanceTarget, "createChannelSplitter", 0, Op_createChannelSplitter);
         r.DefineOperation(instanceTarget, "createConstantSource", 0, Op_createConstantSource);
+        r.DefineOperation(instanceTarget, "createConvolver", 0, Op_createConvolver);
+        r.DefineOperation(instanceTarget, "createDelay", 0, Op_createDelay);
+        r.DefineOperation(instanceTarget, "createDynamicsCompressor", 0, Op_createDynamicsCompressor);
         r.DefineOperation(instanceTarget, "createGain", 0, Op_createGain);
+        r.DefineOperation(instanceTarget, "createIIRFilter", 2, Op_createIIRFilter);
+        r.DefineOperation(instanceTarget, "createOscillator", 0, Op_createOscillator);
+        r.DefineOperation(instanceTarget, "createPanner", 0, Op_createPanner);
+        r.DefineOperation(instanceTarget, "createPeriodicWave", 2, Op_createPeriodicWave);
+        r.DefineOperation(instanceTarget, "createScriptProcessor", 0, Op_createScriptProcessor);
+        r.DefineOperation(instanceTarget, "createStereoPanner", 0, Op_createStereoPanner);
+        r.DefineOperation(instanceTarget, "createWaveShaper", 0, Op_createWaveShaper);
     }
 }

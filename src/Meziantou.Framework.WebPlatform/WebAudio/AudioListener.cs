@@ -1,7 +1,7 @@
 namespace Meziantou.Framework.WebPlatform.WebAudio;
 
 /// <summary>
-/// The position and the orientation of the listener of the spatialization of the <c>PannerNode</c> objects of a
+/// The position and the orientation of the listener of the spatialization of the <see cref="PannerNode"/> objects of a
 /// context (https://webaudio.github.io/web-audio-api/#AudioListener).
 /// </summary>
 /// <seealso href="https://webaudio.github.io/web-audio-api/#AudioListener"/>

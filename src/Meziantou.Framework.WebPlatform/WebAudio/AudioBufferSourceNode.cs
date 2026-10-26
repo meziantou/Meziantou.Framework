@@ -378,6 +378,14 @@ public sealed class AudioBufferSourceNode : AudioScheduledSourceNode
             return (float)(a + ((b - a) * fraction));
         }
 
-        return frame < samples.Length ? samples[frame] : samples[^1];
+        if (frame < samples.Length)
+            return samples[frame];
+
+        // After the last frame of a buffer that is not looping, the signal is extrapolated from its last two frames
+        if (samples.Length < 2)
+            return samples[^1];
+
+        var last = samples[^1];
+        return last + ((last - samples[^2]) * (frame - (samples.Length - 1)));
     }
 }

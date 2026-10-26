@@ -100,7 +100,10 @@ public abstract class AudioScheduledSourceNode : AudioNode
 
     private long FrameAtOrAfter(double time)
     {
-        var frame = Math.Ceiling(time * Context.SampleRate);
+        // A time that is a frame within the rounding error of the computation (e.g. 90 / 44100 * 44100) is that frame
+        var exact = time * Context.SampleRate;
+        var nearest = Math.Round(exact, MidpointRounding.AwayFromZero);
+        var frame = Math.Abs(exact - nearest) < 1e-6 ? nearest : Math.Ceiling(exact);
         return frame >= long.MaxValue ? long.MaxValue : (long)frame;
     }
 

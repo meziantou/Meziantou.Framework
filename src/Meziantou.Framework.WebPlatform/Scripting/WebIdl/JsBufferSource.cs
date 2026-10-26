@@ -79,6 +79,15 @@ internal sealed class JsBufferSource(JsBufferKind kind, Memory<byte> bytes)
         Bytes = bytes;
     }
 
+    /// <summary>
+    /// Returns whether the buffer of the JavaScript object is detached (e.g. transferred to a worker): the bytes are a view of
+    /// the data block it had when it was converted or bound. Set by the bindings for the sources of the scripts.
+    /// </summary>
+    public Func<bool>? DetachedProbe { get; set; }
+
+    /// <summary>Whether the buffer of the JavaScript object is detached (https://webidl.spec.whatwg.org/#buffersource-detached).</summary>
+    public bool IsDetached => DetachedProbe?.Invoke() == true;
+
     /// <summary>Gets a copy of the bytes (https://webidl.spec.whatwg.org/#dfn-get-buffer-source-copy).</summary>
     public byte[] ToArray() => Bytes.ToArray();
 

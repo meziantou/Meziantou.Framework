@@ -3,7 +3,7 @@ namespace Meziantou.Framework.WebPlatform.WebAudio.Rendering;
 /// <summary>
 /// Orders the nodes of a context for the rendering of a render quantum (https://webaudio.github.io/web-audio-api/#rendering-loop):
 /// a node is processed after the nodes whose outputs it reads (its inputs and the inputs of its parameters). A node that can
-/// break a cycle (a <c>DelayNode</c>) and is in a cycle is split: its output is produced from its delay line before the
+/// break a cycle (a <see cref="DelayNode"/>) and is in a cycle is split: its output is produced from its delay line before the
 /// other nodes, and its input is written after them. The nodes of a cycle that has no such node are muted.
 /// </summary>
 internal static class AudioGraph

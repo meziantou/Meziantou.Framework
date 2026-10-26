@@ -115,12 +115,12 @@ internal sealed class AudioParamTimeline
                 // when it has not started yet (the ramp replaces it), else at the current time
                 if (setTarget.Time >= currentTime)
                 {
-                    var startValue = GetStartValue(index - 1);
+                    var startValue = (float)GetStartValue(index - 1);
                     _events[index - 1] = new AutomationEvent { Type = AutomationEventType.SetValue, Time = setTarget.Time, Value = startValue };
                 }
                 else
                 {
-                    var value = EvaluateInterval(index - 1, currentTime);
+                    var value = (float)EvaluateInterval(index - 1, currentTime);
                     _events.Insert(index, new AutomationEvent { Type = AutomationEventType.SetValue, Time = currentTime, Value = value });
                     index++;
                 }
@@ -168,7 +168,8 @@ internal sealed class AudioParamTimeline
         if (e2Index >= 0 && _events[e2Index].IsRamp)
         {
             // The ramp is rewritten to end at tc with the value it has at tc (the same curve)
-            var value = EvaluateInterval(e1Index, cancelTime);
+            // The values of the events are single-precision floats
+            var value = (float)EvaluateInterval(e1Index, cancelTime);
             var ramp = _events[e2Index].Clone();
             ramp.Time = cancelTime;
             ramp.Value = value;
@@ -177,9 +178,14 @@ internal sealed class AudioParamTimeline
         }
         else if (e1Index >= 0 && _events[e1Index].Type == AutomationEventType.SetTarget)
         {
-            var value = EvaluateInterval(e1Index, cancelTime);
+            var value = (float)EvaluateInterval(e1Index, cancelTime);
             _events.RemoveRange(e1Index + 1, _events.Count - e1Index - 1);
             _events.Add(new AutomationEvent { Type = AutomationEventType.SetValue, Time = cancelTime, Value = value });
+        }
+        else if (e1Index >= 0 && _events[e1Index] is { Type: AutomationEventType.SetValueCurve } startingCurve && cancelTime <= startingCurve.Time)
+        {
+            // A curve that starts at the cancel time has no effect: the value before it is held
+            _events.RemoveRange(e1Index, _events.Count - e1Index);
         }
         else if (e1Index >= 0 && _events[e1Index] is { Type: AutomationEventType.SetValueCurve } curve && cancelTime <= curve.Time + curve.Duration)
         {
@@ -365,7 +371,13 @@ internal sealed class AudioParamTimeline
                 return v1;
 
             if (next.Type == AutomationEventType.LinearRamp)
-                return v0 + ((v1 - v0) * (t - t0) / (t1 - t0));
+            {
+                // In single precision, as the browsers: the value of a ramp from v0 is v0 plus the change, so that an
+                // automation and the same automation from 0 added to v0 by an input give the same values
+                var start = (float)v0;
+                var change = (float)((float)((float)v1 - start) * ((t - t0) / (t1 - t0)));
+                return start + change;
+            }
 
             // https://webaudio.github.io/web-audio-api/#dom-audioparam-exponentialramptovalueattime: when the values have
             // opposite signs or the start value is zero, the value stays at the start value

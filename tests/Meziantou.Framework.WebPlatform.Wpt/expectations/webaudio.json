@@ -1,28 +1,14 @@
 {
   "webaudio/historical.html": {
-    "total": 7,
-    "failures": {
-      "setVelocity should not exist on PannerNodes.": "FAIL"
-    }
+    "total": 7
   },
   "webaudio/idlharness.https.window.js": {
     "total": 1166,
     "failures": {
-      "AnalyserNode interface object length": "FAIL",
-      "AnalyserNode interface object name": "FAIL",
-      "AnalyserNode interface: attribute fftSize": "FAIL",
-      "AnalyserNode interface: attribute frequencyBinCount": "FAIL",
-      "AnalyserNode interface: attribute maxDecibels": "FAIL",
-      "AnalyserNode interface: attribute minDecibels": "FAIL",
-      "AnalyserNode interface: attribute smoothingTimeConstant": "FAIL",
       "AnalyserNode interface: calling getByteFrequencyData(Uint8Array) on new AnalyserNode(context) with too few arguments must throw TypeError": "FAIL",
       "AnalyserNode interface: calling getByteTimeDomainData(Uint8Array) on new AnalyserNode(context) with too few arguments must throw TypeError": "FAIL",
       "AnalyserNode interface: calling getFloatFrequencyData(Float32Array) on new AnalyserNode(context) with too few arguments must throw TypeError": "FAIL",
       "AnalyserNode interface: calling getFloatTimeDomainData(Float32Array) on new AnalyserNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AnalyserNode interface: existence and properties of interface object": "FAIL",
-      "AnalyserNode interface: existence and properties of interface prototype object": "FAIL",
-      "AnalyserNode interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "AnalyserNode interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
       "AnalyserNode interface: new AnalyserNode(context) must inherit property \"fftSize\" with the proper type": "FAIL",
       "AnalyserNode interface: new AnalyserNode(context) must inherit property \"frequencyBinCount\" with the proper type": "FAIL",
       "AnalyserNode interface: new AnalyserNode(context) must inherit property \"getByteFrequencyData(Uint8Array)\" with the proper type": "FAIL",
@@ -32,10 +18,6 @@
       "AnalyserNode interface: new AnalyserNode(context) must inherit property \"maxDecibels\" with the proper type": "FAIL",
       "AnalyserNode interface: new AnalyserNode(context) must inherit property \"minDecibels\" with the proper type": "FAIL",
       "AnalyserNode interface: new AnalyserNode(context) must inherit property \"smoothingTimeConstant\" with the proper type": "FAIL",
-      "AnalyserNode interface: operation getByteFrequencyData(Uint8Array)": "FAIL",
-      "AnalyserNode interface: operation getByteTimeDomainData(Uint8Array)": "FAIL",
-      "AnalyserNode interface: operation getFloatFrequencyData(Float32Array)": "FAIL",
-      "AnalyserNode interface: operation getFloatTimeDomainData(Float32Array)": "FAIL",
       "AnalyserNode must be primary interface of new AnalyserNode(context)": "FAIL",
       "AudioBuffer interface: buffer must inherit property \"copyFromChannel(Float32Array, unsigned long, optional unsigned long)\" with the proper type": "FAIL",
       "AudioBuffer interface: buffer must inherit property \"copyToChannel(Float32Array, unsigned long, optional unsigned long)\" with the proper type": "FAIL",
@@ -616,15 +598,6 @@
       "AudioPlaybackStats interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
       "AudioPlaybackStats interface: operation resetLatency()": "FAIL",
       "AudioPlaybackStats interface: operation toJSON()": "FAIL",
-      "AudioProcessingEvent interface object length": "FAIL",
-      "AudioProcessingEvent interface object name": "FAIL",
-      "AudioProcessingEvent interface: attribute inputBuffer": "FAIL",
-      "AudioProcessingEvent interface: attribute outputBuffer": "FAIL",
-      "AudioProcessingEvent interface: attribute playbackTime": "FAIL",
-      "AudioProcessingEvent interface: existence and properties of interface object": "FAIL",
-      "AudioProcessingEvent interface: existence and properties of interface prototype object": "FAIL",
-      "AudioProcessingEvent interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "AudioProcessingEvent interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
       "AudioProcessingEvent interface: new AudioProcessingEvent('', {\n        playbackTime: 0, inputBuffer: buffer, outputBuffer: buffer\n      }) must inherit property \"inputBuffer\" with the proper type": "FAIL",
       "AudioProcessingEvent interface: new AudioProcessingEvent('', {\n        playbackTime: 0, inputBuffer: buffer, outputBuffer: buffer\n      }) must inherit property \"outputBuffer\" with the proper type": "FAIL",
       "AudioProcessingEvent interface: new AudioProcessingEvent('', {\n        playbackTime: 0, inputBuffer: buffer, outputBuffer: buffer\n      }) must inherit property \"playbackTime\" with the proper type": "FAIL",
@@ -676,17 +649,11 @@
       "BaseAudioContext interface: attribute audioWorklet": "FAIL",
       "BaseAudioContext interface: calling createBuffer(unsigned long, unsigned long, float) on context with too few arguments must throw TypeError": "FAIL",
       "BaseAudioContext interface: calling createChannelMerger(optional unsigned long) on context with too few arguments must throw TypeError": "FAIL",
-      "BaseAudioContext interface: calling createChannelMerger(optional unsigned long) on new OfflineAudioContext(1, 1, sample_rate) with too few arguments must throw TypeError": "FAIL",
       "BaseAudioContext interface: calling createChannelSplitter(optional unsigned long) on context with too few arguments must throw TypeError": "FAIL",
-      "BaseAudioContext interface: calling createChannelSplitter(optional unsigned long) on new OfflineAudioContext(1, 1, sample_rate) with too few arguments must throw TypeError": "FAIL",
       "BaseAudioContext interface: calling createDelay(optional double) on context with too few arguments must throw TypeError": "FAIL",
-      "BaseAudioContext interface: calling createDelay(optional double) on new OfflineAudioContext(1, 1, sample_rate) with too few arguments must throw TypeError": "FAIL",
       "BaseAudioContext interface: calling createIIRFilter(sequence<double>, sequence<double>) on context with too few arguments must throw TypeError": "FAIL",
-      "BaseAudioContext interface: calling createIIRFilter(sequence<double>, sequence<double>) on new OfflineAudioContext(1, 1, sample_rate) with too few arguments must throw TypeError": "FAIL",
       "BaseAudioContext interface: calling createPeriodicWave(sequence<float>, sequence<float>, optional PeriodicWaveConstraints) on context with too few arguments must throw TypeError": "FAIL",
-      "BaseAudioContext interface: calling createPeriodicWave(sequence<float>, sequence<float>, optional PeriodicWaveConstraints) on new OfflineAudioContext(1, 1, sample_rate) with too few arguments must throw TypeError": "FAIL",
       "BaseAudioContext interface: calling createScriptProcessor(optional unsigned long, optional unsigned long, optional unsigned long) on context with too few arguments must throw TypeError": "FAIL",
-      "BaseAudioContext interface: calling createScriptProcessor(optional unsigned long, optional unsigned long, optional unsigned long) on new OfflineAudioContext(1, 1, sample_rate) with too few arguments must throw TypeError": "FAIL",
       "BaseAudioContext interface: calling decodeAudioData(ArrayBuffer, optional DecodeSuccessCallback?, optional DecodeErrorCallback?) on context with too few arguments must throw TypeError": "FAIL",
       "BaseAudioContext interface: calling decodeAudioData(ArrayBuffer, optional DecodeSuccessCallback?, optional DecodeErrorCallback?) on new OfflineAudioContext(1, 1, sample_rate) with too few arguments must throw TypeError": "FAIL",
       "BaseAudioContext interface: context must inherit property \"audioWorklet\" with the proper type": "FAIL",
@@ -717,104 +684,25 @@
       "BaseAudioContext interface: context must inherit property \"sampleRate\" with the proper type": "FAIL",
       "BaseAudioContext interface: context must inherit property \"state\" with the proper type": "FAIL",
       "BaseAudioContext interface: new OfflineAudioContext(1, 1, sample_rate) must inherit property \"audioWorklet\" with the proper type": "FAIL",
-      "BaseAudioContext interface: new OfflineAudioContext(1, 1, sample_rate) must inherit property \"createAnalyser()\" with the proper type": "FAIL",
-      "BaseAudioContext interface: new OfflineAudioContext(1, 1, sample_rate) must inherit property \"createBiquadFilter()\" with the proper type": "FAIL",
-      "BaseAudioContext interface: new OfflineAudioContext(1, 1, sample_rate) must inherit property \"createChannelMerger(optional unsigned long)\" with the proper type": "FAIL",
-      "BaseAudioContext interface: new OfflineAudioContext(1, 1, sample_rate) must inherit property \"createChannelSplitter(optional unsigned long)\" with the proper type": "FAIL",
-      "BaseAudioContext interface: new OfflineAudioContext(1, 1, sample_rate) must inherit property \"createConvolver()\" with the proper type": "FAIL",
-      "BaseAudioContext interface: new OfflineAudioContext(1, 1, sample_rate) must inherit property \"createDelay(optional double)\" with the proper type": "FAIL",
-      "BaseAudioContext interface: new OfflineAudioContext(1, 1, sample_rate) must inherit property \"createDynamicsCompressor()\" with the proper type": "FAIL",
-      "BaseAudioContext interface: new OfflineAudioContext(1, 1, sample_rate) must inherit property \"createIIRFilter(sequence<double>, sequence<double>)\" with the proper type": "FAIL",
-      "BaseAudioContext interface: new OfflineAudioContext(1, 1, sample_rate) must inherit property \"createOscillator()\" with the proper type": "FAIL",
-      "BaseAudioContext interface: new OfflineAudioContext(1, 1, sample_rate) must inherit property \"createPanner()\" with the proper type": "FAIL",
-      "BaseAudioContext interface: new OfflineAudioContext(1, 1, sample_rate) must inherit property \"createPeriodicWave(sequence<float>, sequence<float>, optional PeriodicWaveConstraints)\" with the proper type": "FAIL",
-      "BaseAudioContext interface: new OfflineAudioContext(1, 1, sample_rate) must inherit property \"createScriptProcessor(optional unsigned long, optional unsigned long, optional unsigned long)\" with the proper type": "FAIL",
-      "BaseAudioContext interface: new OfflineAudioContext(1, 1, sample_rate) must inherit property \"createStereoPanner()\" with the proper type": "FAIL",
-      "BaseAudioContext interface: new OfflineAudioContext(1, 1, sample_rate) must inherit property \"createWaveShaper()\" with the proper type": "FAIL",
       "BaseAudioContext interface: new OfflineAudioContext(1, 1, sample_rate) must inherit property \"decodeAudioData(ArrayBuffer, optional DecodeSuccessCallback?, optional DecodeErrorCallback?)\" with the proper type": "FAIL",
-      "BaseAudioContext interface: operation createAnalyser()": "FAIL",
-      "BaseAudioContext interface: operation createBiquadFilter()": "FAIL",
-      "BaseAudioContext interface: operation createChannelMerger(optional unsigned long)": "FAIL",
-      "BaseAudioContext interface: operation createChannelSplitter(optional unsigned long)": "FAIL",
-      "BaseAudioContext interface: operation createConvolver()": "FAIL",
-      "BaseAudioContext interface: operation createDelay(optional double)": "FAIL",
-      "BaseAudioContext interface: operation createDynamicsCompressor()": "FAIL",
-      "BaseAudioContext interface: operation createIIRFilter(sequence<double>, sequence<double>)": "FAIL",
-      "BaseAudioContext interface: operation createOscillator()": "FAIL",
-      "BaseAudioContext interface: operation createPanner()": "FAIL",
-      "BaseAudioContext interface: operation createPeriodicWave(sequence<float>, sequence<float>, optional PeriodicWaveConstraints)": "FAIL",
-      "BaseAudioContext interface: operation createScriptProcessor(optional unsigned long, optional unsigned long, optional unsigned long)": "FAIL",
-      "BaseAudioContext interface: operation createStereoPanner()": "FAIL",
-      "BaseAudioContext interface: operation createWaveShaper()": "FAIL",
       "BaseAudioContext interface: operation decodeAudioData(ArrayBuffer, optional DecodeSuccessCallback?, optional DecodeErrorCallback?)": "FAIL",
-      "BiquadFilterNode interface object length": "FAIL",
-      "BiquadFilterNode interface object name": "FAIL",
-      "BiquadFilterNode interface: attribute Q": "FAIL",
-      "BiquadFilterNode interface: attribute detune": "FAIL",
-      "BiquadFilterNode interface: attribute frequency": "FAIL",
-      "BiquadFilterNode interface: attribute gain": "FAIL",
-      "BiquadFilterNode interface: attribute type": "FAIL",
       "BiquadFilterNode interface: calling getFrequencyResponse(Float32Array, Float32Array, Float32Array) on new BiquadFilterNode(context) with too few arguments must throw TypeError": "FAIL",
-      "BiquadFilterNode interface: existence and properties of interface object": "FAIL",
-      "BiquadFilterNode interface: existence and properties of interface prototype object": "FAIL",
-      "BiquadFilterNode interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "BiquadFilterNode interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
       "BiquadFilterNode interface: new BiquadFilterNode(context) must inherit property \"Q\" with the proper type": "FAIL",
       "BiquadFilterNode interface: new BiquadFilterNode(context) must inherit property \"detune\" with the proper type": "FAIL",
       "BiquadFilterNode interface: new BiquadFilterNode(context) must inherit property \"frequency\" with the proper type": "FAIL",
       "BiquadFilterNode interface: new BiquadFilterNode(context) must inherit property \"gain\" with the proper type": "FAIL",
       "BiquadFilterNode interface: new BiquadFilterNode(context) must inherit property \"getFrequencyResponse(Float32Array, Float32Array, Float32Array)\" with the proper type": "FAIL",
       "BiquadFilterNode interface: new BiquadFilterNode(context) must inherit property \"type\" with the proper type": "FAIL",
-      "BiquadFilterNode interface: operation getFrequencyResponse(Float32Array, Float32Array, Float32Array)": "FAIL",
       "BiquadFilterNode must be primary interface of new BiquadFilterNode(context)": "FAIL",
-      "ChannelMergerNode interface object length": "FAIL",
-      "ChannelMergerNode interface object name": "FAIL",
-      "ChannelMergerNode interface: existence and properties of interface object": "FAIL",
-      "ChannelMergerNode interface: existence and properties of interface prototype object": "FAIL",
-      "ChannelMergerNode interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "ChannelMergerNode interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
       "ChannelMergerNode must be primary interface of new ChannelMergerNode(context)": "FAIL",
-      "ChannelSplitterNode interface object length": "FAIL",
-      "ChannelSplitterNode interface object name": "FAIL",
-      "ChannelSplitterNode interface: existence and properties of interface object": "FAIL",
-      "ChannelSplitterNode interface: existence and properties of interface prototype object": "FAIL",
-      "ChannelSplitterNode interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "ChannelSplitterNode interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
       "ChannelSplitterNode must be primary interface of new ChannelSplitterNode(context)": "FAIL",
       "ConstantSourceNode interface: new ConstantSourceNode(context) must inherit property \"offset\" with the proper type": "FAIL",
       "ConstantSourceNode must be primary interface of new ConstantSourceNode(context)": "FAIL",
-      "ConvolverNode interface object length": "FAIL",
-      "ConvolverNode interface object name": "FAIL",
-      "ConvolverNode interface: attribute buffer": "FAIL",
-      "ConvolverNode interface: attribute normalize": "FAIL",
-      "ConvolverNode interface: existence and properties of interface object": "FAIL",
-      "ConvolverNode interface: existence and properties of interface prototype object": "FAIL",
-      "ConvolverNode interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "ConvolverNode interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
       "ConvolverNode interface: new ConvolverNode(context) must inherit property \"buffer\" with the proper type": "FAIL",
       "ConvolverNode interface: new ConvolverNode(context) must inherit property \"normalize\" with the proper type": "FAIL",
       "ConvolverNode must be primary interface of new ConvolverNode(context)": "FAIL",
-      "DelayNode interface object length": "FAIL",
-      "DelayNode interface object name": "FAIL",
-      "DelayNode interface: attribute delayTime": "FAIL",
-      "DelayNode interface: existence and properties of interface object": "FAIL",
-      "DelayNode interface: existence and properties of interface prototype object": "FAIL",
-      "DelayNode interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "DelayNode interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
       "DelayNode interface: new DelayNode(context) must inherit property \"delayTime\" with the proper type": "FAIL",
       "DelayNode must be primary interface of new DelayNode(context)": "FAIL",
-      "DynamicsCompressorNode interface object length": "FAIL",
-      "DynamicsCompressorNode interface object name": "FAIL",
-      "DynamicsCompressorNode interface: attribute attack": "FAIL",
-      "DynamicsCompressorNode interface: attribute knee": "FAIL",
-      "DynamicsCompressorNode interface: attribute ratio": "FAIL",
-      "DynamicsCompressorNode interface: attribute reduction": "FAIL",
-      "DynamicsCompressorNode interface: attribute release": "FAIL",
-      "DynamicsCompressorNode interface: attribute threshold": "FAIL",
-      "DynamicsCompressorNode interface: existence and properties of interface object": "FAIL",
-      "DynamicsCompressorNode interface: existence and properties of interface prototype object": "FAIL",
-      "DynamicsCompressorNode interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "DynamicsCompressorNode interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
       "DynamicsCompressorNode interface: new DynamicsCompressorNode(context) must inherit property \"attack\" with the proper type": "FAIL",
       "DynamicsCompressorNode interface: new DynamicsCompressorNode(context) must inherit property \"knee\" with the proper type": "FAIL",
       "DynamicsCompressorNode interface: new DynamicsCompressorNode(context) must inherit property \"ratio\" with the proper type": "FAIL",
@@ -824,15 +712,8 @@
       "DynamicsCompressorNode must be primary interface of new DynamicsCompressorNode(context)": "FAIL",
       "GainNode interface: new GainNode(context) must inherit property \"gain\" with the proper type": "FAIL",
       "GainNode must be primary interface of new GainNode(context)": "FAIL",
-      "IIRFilterNode interface object length": "FAIL",
-      "IIRFilterNode interface object name": "FAIL",
       "IIRFilterNode interface: calling getFrequencyResponse(Float32Array, Float32Array, Float32Array) on new IIRFilterNode(context, {feedforward: [1], feedback: [1]}) with too few arguments must throw TypeError": "FAIL",
-      "IIRFilterNode interface: existence and properties of interface object": "FAIL",
-      "IIRFilterNode interface: existence and properties of interface prototype object": "FAIL",
-      "IIRFilterNode interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "IIRFilterNode interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
       "IIRFilterNode interface: new IIRFilterNode(context, {feedforward: [1], feedback: [1]}) must inherit property \"getFrequencyResponse(Float32Array, Float32Array, Float32Array)\" with the proper type": "FAIL",
-      "IIRFilterNode interface: operation getFrequencyResponse(Float32Array, Float32Array, Float32Array)": "FAIL",
       "IIRFilterNode must be primary interface of new IIRFilterNode(context, {feedforward: [1], feedback: [1]})": "FAIL",
       "MediaElementAudioSourceNode interface object length": "FAIL",
       "MediaElementAudioSourceNode interface object name": "FAIL",
@@ -867,44 +748,14 @@
       "MediaStreamTrackAudioSourceNode interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
       "OfflineAudioCompletionEvent interface: new OfflineAudioCompletionEvent(\"\", {renderedBuffer: buffer}) must inherit property \"renderedBuffer\" with the proper type": "FAIL",
       "OfflineAudioCompletionEvent must be primary interface of new OfflineAudioCompletionEvent(\"\", {renderedBuffer: buffer})": "FAIL",
-      "OscillatorNode interface object length": "FAIL",
-      "OscillatorNode interface object name": "FAIL",
-      "OscillatorNode interface: attribute detune": "FAIL",
-      "OscillatorNode interface: attribute frequency": "FAIL",
-      "OscillatorNode interface: attribute type": "FAIL",
       "OscillatorNode interface: calling setPeriodicWave(PeriodicWave) on new OscillatorNode(context) with too few arguments must throw TypeError": "FAIL",
-      "OscillatorNode interface: existence and properties of interface object": "FAIL",
-      "OscillatorNode interface: existence and properties of interface prototype object": "FAIL",
-      "OscillatorNode interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "OscillatorNode interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
       "OscillatorNode interface: new OscillatorNode(context) must inherit property \"detune\" with the proper type": "FAIL",
       "OscillatorNode interface: new OscillatorNode(context) must inherit property \"frequency\" with the proper type": "FAIL",
       "OscillatorNode interface: new OscillatorNode(context) must inherit property \"setPeriodicWave(PeriodicWave)\" with the proper type": "FAIL",
       "OscillatorNode interface: new OscillatorNode(context) must inherit property \"type\" with the proper type": "FAIL",
-      "OscillatorNode interface: operation setPeriodicWave(PeriodicWave)": "FAIL",
       "OscillatorNode must be primary interface of new OscillatorNode(context)": "FAIL",
-      "PannerNode interface object length": "FAIL",
-      "PannerNode interface object name": "FAIL",
-      "PannerNode interface: attribute coneInnerAngle": "FAIL",
-      "PannerNode interface: attribute coneOuterAngle": "FAIL",
-      "PannerNode interface: attribute coneOuterGain": "FAIL",
-      "PannerNode interface: attribute distanceModel": "FAIL",
-      "PannerNode interface: attribute maxDistance": "FAIL",
-      "PannerNode interface: attribute orientationX": "FAIL",
-      "PannerNode interface: attribute orientationY": "FAIL",
-      "PannerNode interface: attribute orientationZ": "FAIL",
-      "PannerNode interface: attribute panningModel": "FAIL",
-      "PannerNode interface: attribute positionX": "FAIL",
-      "PannerNode interface: attribute positionY": "FAIL",
-      "PannerNode interface: attribute positionZ": "FAIL",
-      "PannerNode interface: attribute refDistance": "FAIL",
-      "PannerNode interface: attribute rolloffFactor": "FAIL",
       "PannerNode interface: calling setOrientation(float, float, float) on new PannerNode(context) with too few arguments must throw TypeError": "FAIL",
       "PannerNode interface: calling setPosition(float, float, float) on new PannerNode(context) with too few arguments must throw TypeError": "FAIL",
-      "PannerNode interface: existence and properties of interface object": "FAIL",
-      "PannerNode interface: existence and properties of interface prototype object": "FAIL",
-      "PannerNode interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "PannerNode interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
       "PannerNode interface: new PannerNode(context) must inherit property \"coneInnerAngle\" with the proper type": "FAIL",
       "PannerNode interface: new PannerNode(context) must inherit property \"coneOuterAngle\" with the proper type": "FAIL",
       "PannerNode interface: new PannerNode(context) must inherit property \"coneOuterGain\" with the proper type": "FAIL",
@@ -921,34 +772,11 @@
       "PannerNode interface: new PannerNode(context) must inherit property \"rolloffFactor\" with the proper type": "FAIL",
       "PannerNode interface: new PannerNode(context) must inherit property \"setOrientation(float, float, float)\" with the proper type": "FAIL",
       "PannerNode interface: new PannerNode(context) must inherit property \"setPosition(float, float, float)\" with the proper type": "FAIL",
-      "PannerNode interface: operation setOrientation(float, float, float)": "FAIL",
-      "PannerNode interface: operation setPosition(float, float, float)": "FAIL",
       "PannerNode must be primary interface of new PannerNode(context)": "FAIL",
-      "PeriodicWave interface object length": "FAIL",
-      "PeriodicWave interface object name": "FAIL",
-      "PeriodicWave interface: existence and properties of interface object": "FAIL",
-      "PeriodicWave interface: existence and properties of interface prototype object": "FAIL",
-      "PeriodicWave interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "PeriodicWave interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
       "PeriodicWave must be primary interface of new PeriodicWave(context)": "FAIL",
-      "ScriptProcessorNode interface object length": "FAIL",
-      "ScriptProcessorNode interface object name": "FAIL",
-      "ScriptProcessorNode interface: attribute bufferSize": "FAIL",
-      "ScriptProcessorNode interface: attribute onaudioprocess": "FAIL",
       "ScriptProcessorNode interface: context.createScriptProcessor() must inherit property \"bufferSize\" with the proper type": "FAIL",
       "ScriptProcessorNode interface: context.createScriptProcessor() must inherit property \"onaudioprocess\" with the proper type": "FAIL",
-      "ScriptProcessorNode interface: existence and properties of interface object": "FAIL",
-      "ScriptProcessorNode interface: existence and properties of interface prototype object": "FAIL",
-      "ScriptProcessorNode interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "ScriptProcessorNode interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
       "ScriptProcessorNode must be primary interface of context.createScriptProcessor()": "FAIL",
-      "StereoPannerNode interface object length": "FAIL",
-      "StereoPannerNode interface object name": "FAIL",
-      "StereoPannerNode interface: attribute pan": "FAIL",
-      "StereoPannerNode interface: existence and properties of interface object": "FAIL",
-      "StereoPannerNode interface: existence and properties of interface prototype object": "FAIL",
-      "StereoPannerNode interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "StereoPannerNode interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
       "StereoPannerNode interface: new StereoPannerNode(context) must inherit property \"pan\" with the proper type": "FAIL",
       "StereoPannerNode must be primary interface of new StereoPannerNode(context)": "FAIL",
       "Stringification of buffer": "FAIL",
@@ -980,14 +808,6 @@
       "Stringification of new WaveShaperNode(context)": "FAIL",
       "Stringification of worklet_node": "FAIL",
       "Stringification of worklet_node.parameters": "FAIL",
-      "WaveShaperNode interface object length": "FAIL",
-      "WaveShaperNode interface object name": "FAIL",
-      "WaveShaperNode interface: attribute curve": "FAIL",
-      "WaveShaperNode interface: attribute oversample": "FAIL",
-      "WaveShaperNode interface: existence and properties of interface object": "FAIL",
-      "WaveShaperNode interface: existence and properties of interface prototype object": "FAIL",
-      "WaveShaperNode interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "WaveShaperNode interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
       "WaveShaperNode interface: new WaveShaperNode(context) must inherit property \"curve\" with the proper type": "FAIL",
       "WaveShaperNode interface: new WaveShaperNode(context) must inherit property \"oversample\" with the proper type": "FAIL",
       "WaveShaperNode must be primary interface of new WaveShaperNode(context)": "FAIL",
@@ -1307,115 +1127,22 @@
     }
   },
   "webaudio/the-audio-api/processing-model/cycle-without-delay.html": {
-    "total": 1,
-    "failures": {
-      "Test that cycles that don't contain a DelayNode are muted": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/processing-model/delay-time-clamping.html": {
-    "total": 1,
-    "failures": {
-      "Test that a DelayNode allows a feedback loop of a single rendering quantum": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/processing-model/feedback-delay-time.html": {
-    "total": 1,
-    "failures": {
-      "Test that a DelayNode allows a feedback loop of a single rendering quantum": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/rendersizehint-smoke-tests.https.html": {
-    "total": 60,
-    "failures": {
-      "AnalyserNode smoke test at 3000Hz & hint 1": "FAIL",
-      "AnalyserNode smoke test at 48000Hz & hint 100": "FAIL",
-      "AnalyserNode smoke test at 48000Hz & hint 128": "FAIL",
-      "AnalyserNode smoke test at 768000Hz & hint 256": "FAIL",
-      "BiquadFilterNode smoke test at 3000Hz & hint 1": "FAIL",
-      "BiquadFilterNode smoke test at 48000Hz & hint 100": "FAIL",
-      "BiquadFilterNode smoke test at 48000Hz & hint 128": "FAIL",
-      "BiquadFilterNode smoke test at 768000Hz & hint 256": "FAIL",
-      "ChannelMergerNode smoke test at 3000Hz & hint 1": "FAIL",
-      "ChannelMergerNode smoke test at 48000Hz & hint 100": "FAIL",
-      "ChannelMergerNode smoke test at 48000Hz & hint 128": "FAIL",
-      "ChannelMergerNode smoke test at 768000Hz & hint 256": "FAIL",
-      "ChannelSplitterNode smoke test at 3000Hz & hint 1": "FAIL",
-      "ChannelSplitterNode smoke test at 48000Hz & hint 100": "FAIL",
-      "ChannelSplitterNode smoke test at 48000Hz & hint 128": "FAIL",
-      "ChannelSplitterNode smoke test at 768000Hz & hint 256": "FAIL",
-      "ConvolverNode smoke test at 3000Hz & hint 1": "FAIL",
-      "ConvolverNode smoke test at 48000Hz & hint 100": "FAIL",
-      "ConvolverNode smoke test at 48000Hz & hint 128": "FAIL",
-      "ConvolverNode smoke test at 768000Hz & hint 256": "FAIL",
-      "DelayNode smoke test at 3000Hz & hint 1": "FAIL",
-      "DelayNode smoke test at 48000Hz & hint 100": "FAIL",
-      "DelayNode smoke test at 48000Hz & hint 128": "FAIL",
-      "DelayNode smoke test at 768000Hz & hint 256": "FAIL",
-      "DynamicsCompressorNode smoke test at 3000Hz & hint 1": "FAIL",
-      "DynamicsCompressorNode smoke test at 48000Hz & hint 100": "FAIL",
-      "DynamicsCompressorNode smoke test at 48000Hz & hint 128": "FAIL",
-      "DynamicsCompressorNode smoke test at 768000Hz & hint 256": "FAIL",
-      "IIRFilterNode smoke test at 3000Hz & hint 1": "FAIL",
-      "IIRFilterNode smoke test at 48000Hz & hint 100": "FAIL",
-      "IIRFilterNode smoke test at 48000Hz & hint 128": "FAIL",
-      "IIRFilterNode smoke test at 768000Hz & hint 256": "FAIL",
-      "OscillatorNode smoke test at 3000Hz & hint 1": "FAIL",
-      "OscillatorNode smoke test at 48000Hz & hint 100": "FAIL",
-      "OscillatorNode smoke test at 48000Hz & hint 128": "FAIL",
-      "OscillatorNode smoke test at 768000Hz & hint 256": "FAIL",
-      "PannerNode smoke test at 3000Hz & hint 1": "FAIL",
-      "PannerNode smoke test at 48000Hz & hint 100": "FAIL",
-      "PannerNode smoke test at 48000Hz & hint 128": "FAIL",
-      "PannerNode smoke test at 768000Hz & hint 256": "FAIL",
-      "StereoPannerNode smoke test at 3000Hz & hint 1": "FAIL",
-      "StereoPannerNode smoke test at 48000Hz & hint 100": "FAIL",
-      "StereoPannerNode smoke test at 48000Hz & hint 128": "FAIL",
-      "StereoPannerNode smoke test at 768000Hz & hint 256": "FAIL",
-      "WaveShaperNode smoke test at 3000Hz & hint 1": "FAIL",
-      "WaveShaperNode smoke test at 48000Hz & hint 100": "FAIL",
-      "WaveShaperNode smoke test at 48000Hz & hint 128": "FAIL",
-      "WaveShaperNode smoke test at 768000Hz & hint 256": "FAIL"
-    }
+    "total": 60
   },
   "webaudio/the-audio-api/the-analysernode-interface/analysernode-rendersizehint.https.html": {
-    "total": 10,
-    "failures": {
-      "Default fftSize processing at 11000Hz & hint 66000": "FAIL",
-      "Default fftSize processing at 192000Hz & hint 4096": "FAIL",
-      "Default fftSize processing at 3000Hz & hint 1": "FAIL",
-      "Default fftSize processing at 48000Hz & hint 100": "FAIL",
-      "Default fftSize processing at 48000Hz & hint 256": "FAIL",
-      "Stability with large fftSize 4096 at 11000Hz & hint 66000": "FAIL",
-      "Stability with large fftSize 4096 at 192000Hz & hint 4096": "FAIL",
-      "Stability with large fftSize 4096 at 3000Hz & hint 1": "FAIL",
-      "Stability with large fftSize 4096 at 48000Hz & hint 100": "FAIL",
-      "Stability with large fftSize 4096 at 48000Hz & hint 256": "FAIL"
-    }
+    "total": 10
   },
   "webaudio/the-audio-api/the-analysernode-interface/ctor-analyser.html": {
-    "total": 38,
-    "failures": {
-      "# AUDIT TASK RUNNER FINISHED: 5 out of 7 tasks were failed.": "FAIL",
-      "< [setting min/max] 6 out of 6 assertions were failed.": "FAIL",
-      "Executing \"construct invalid options\"": "FAIL",
-      "Executing \"constructor with options\"": "FAIL",
-      "Executing \"default constructor\"": "FAIL",
-      "Executing \"test AudioNodeOptions\"": "FAIL",
-      "X new AnalyserNode(c, {channelCount: 17}) incorrectly threw TypeError: \"window[nodeName] is not a constructor\".": "FAIL",
-      "X node = new AnalyserNode(c, { fftSize: 33 }) threw \"ReferenceError\" instead of IndexSizeError.": "FAIL",
-      "X node = new AnalyserNode(c, { frequencyBinCount: 33 }) incorrectly threw ReferenceError: \"AnalyserNode is not defined\".": "FAIL",
-      "X node = new AnalyserNode(c, { maxDecibels: -500 }) threw \"ReferenceError\" instead of IndexSizeError.": "FAIL",
-      "X node = new AnalyserNode(c, { minDecibels: -10 }) threw \"ReferenceError\" instead of IndexSizeError.": "FAIL",
-      "X node = new AnalyserNode(c, { smoothingTimeConstant: 2 }) threw \"ReferenceError\" instead of IndexSizeError.": "FAIL",
-      "X node = new AnalyserNode(c, {\"maxDecibels\":-150,\"minDecibels\":-10}) threw \"ReferenceError\" instead of IndexSizeError.": "FAIL",
-      "X node = new AnalyserNode(c, {\"maxDecibels\":-150,\"minDecibels\":-200}) incorrectly threw ReferenceError: \"AnalyserNode is not defined\".": "FAIL",
-      "X node = new AnalyserNode(c, {\"maxDecibels\":20,\"minDecibels\":-10}) incorrectly threw ReferenceError: \"AnalyserNode is not defined\".": "FAIL",
-      "X node = new AnalyserNode(c, {\"minDecibels\":-10,\"maxDecibels\":-150}) threw \"ReferenceError\" instead of IndexSizeError.": "FAIL",
-      "X node = new AnalyserNode(c, {\"minDecibels\":-10,\"maxDecibels\":20}) incorrectly threw ReferenceError: \"AnalyserNode is not defined\".": "FAIL",
-      "X node = new AnalyserNode(c, {\"minDecibels\":-200,\"maxDecibels\":-150}) incorrectly threw ReferenceError: \"AnalyserNode is not defined\".": "FAIL",
-      "X node0 = new AnalyserNode(context) incorrectly threw TypeError: \"window[name] is not a constructor\".": "FAIL",
-      "X node1 = new AnalyserNode(c, {\"fftSize\":32,\"maxDecibels\":1,\"minDecibels\":-13,\"smoothingTimeConstant\":0.125}) incorrectly threw ReferenceError: \"AnalyserNode is not defined\".": "FAIL"
-    }
+    "total": 78
   },
   "webaudio/the-audio-api/the-analysernode-interface/realtimeanalyser-basic.html": {
     "total": 1,
@@ -1424,22 +1151,13 @@
     }
   },
   "webaudio/the-audio-api/the-analysernode-interface/realtimeanalyser-fft-scaling.html": {
-    "total": 1,
-    "failures": {
-      "FFT scaling tests - Test Scaling of FFT in AnalyserNode": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-analysernode-interface/realtimeanalyser-fft-sizing.html": {
-    "total": 5,
-    "failures": {
-      "Executing \"FFT size test\"": "FAIL"
-    }
+    "total": 43
   },
   "webaudio/the-audio-api/the-analysernode-interface/test-analyser-gain.html": {
-    "total": 1,
-    "failures": {
-      "Test effect of AnalyserNode on GainNode output": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-analysernode-interface/test-analyser-minimum.html": {
     "total": 1,
@@ -1448,10 +1166,7 @@
     }
   },
   "webaudio/the-audio-api/the-analysernode-interface/test-analyser-output.html": {
-    "total": 1,
-    "failures": {
-      "AnalyserNode output passes through input signal unmodified": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-analysernode-interface/test-analyser-resume-after-suspended.html": {
     "total": 1,
@@ -1473,10 +1188,7 @@
     }
   },
   "webaudio/the-audio-api/the-audiobuffer-interface/acquire-the-content.html": {
-    "total": 3,
-    "failures": {
-      "ConvolverNode": "FAIL"
-    }
+    "total": 3
   },
   "webaudio/the-audio-api/the-audiobuffer-interface/audiobuffer-copy-channel.html": {
     "harness": "ERROR",
@@ -1490,10 +1202,7 @@
     }
   },
   "webaudio/the-audio-api/the-audiobuffer-interface/audiobuffer-reuse.html": {
-    "total": 1,
-    "failures": {
-      "AudioBuffer can be reused between AudioBufferSourceNodes": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-audiobuffer-interface/audiobuffer.html": {
     "total": 1
@@ -1568,23 +1277,13 @@
     "total": 1
   },
   "webaudio/the-audio-api/the-audiobuffersourcenode-interface/audiosource-onended.html": {
-    "total": 4,
-    "failures": {
-      "osc-add-listener: onended event fires for OscillatorNode when using addEventListener": "FAIL",
-      "osc-set-onended: onended event fires for OscillatorNode when set directly": "FAIL"
-    }
+    "total": 4
   },
   "webaudio/the-audio-api/the-audiobuffersourcenode-interface/audiosource-time-limits.html": {
-    "total": 2,
-    "failures": {
-      "oscillator: huge stop time": "FAIL"
-    }
+    "total": 2
   },
   "webaudio/the-audio-api/the-audiobuffersourcenode-interface/buffer-resampling.html": {
-    "total": 1,
-    "failures": {
-      "Interpolation of AudioBuffers to context sample rate": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-audiobuffersourcenode-interface/ctor-audiobuffersource.html": {
     "total": 44
@@ -1602,20 +1301,10 @@
     "total": 18
   },
   "webaudio/the-audio-api/the-audiobuffersourcenode-interface/sub-sample-buffer-stitching.html": {
-    "total": 2,
-    "failures": {
-      "buffer-stitching-1": "FAIL",
-      "buffer-stitching-2": "FAIL"
-    }
+    "total": 2
   },
   "webaudio/the-audio-api/the-audiobuffersourcenode-interface/sub-sample-scheduling.html": {
-    "total": 11,
-    "failures": {
-      "Executing \"sub-sample accurate start with playbackRate\"": "FAIL",
-      "Executing \"sub-sample accurate start\"": "FAIL",
-      "Executing \"sub-sample accurate stop\"": "FAIL",
-      "Executing \"sub-sample-grain\"": "FAIL"
-    }
+    "total": 51
   },
   "webaudio/the-audio-api/the-audiocontext-interface/audiocontext-detached-execution-context.html": {
     "total": 5,
@@ -1738,9 +1427,7 @@
   "webaudio/the-audio-api/the-audiocontext-interface/audiocontext-suspend-resume.html": {
     "total": 4,
     "failures": {
-      "Test resuming a running online context": "FAIL",
-      "Test state after context closed": "FAIL",
-      "Test suspend() for offline context": "FAIL"
+      "Test resuming a running online context": "FAIL"
     }
   },
   "webaudio/the-audio-api/the-audiocontext-interface/audiocontextoptions.html": {
@@ -1813,29 +1500,19 @@
     }
   },
   "webaudio/the-audio-api/the-audionode-interface/audionode-connect-order.html": {
-    "total": 1,
-    "failures": {
-      "Test connections: AudioNode connection order doesn't trigger assertion errors": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-audionode-interface/audionode-connect-return-value.html": {
     "total": 1
   },
   "webaudio/the-audio-api/the-audionode-interface/audionode-disconnect-audioparam.html": {
-    "total": 12,
+    "total": 17,
     "failures": {
-      "Executing \"disconnect(AudioParam, output)\"": "FAIL",
       "Executing \"exceptions\"": "FAIL"
     }
   },
   "webaudio/the-audio-api/the-audionode-interface/audionode-disconnect.html": {
-    "total": 23,
-    "failures": {
-      "Executing \"disconnect(AudioNode, output)\"": "FAIL",
-      "Executing \"disconnect(AudioNode, output, input)\"": "FAIL",
-      "Executing \"disconnect(output)\"": "FAIL",
-      "Executing \"exceptions\"": "FAIL"
-    }
+    "total": 40
   },
   "webaudio/the-audio-api/the-audionode-interface/audionode-iframe.window.js": {
     "total": 1,
@@ -1863,31 +1540,10 @@
     }
   },
   "webaudio/the-audio-api/the-audioparam-interface/adding-events.html": {
-    "total": 2,
-    "failures": {
-      "exponentialRamp: Insert exponentialRamp after running for some time": "FAIL",
-      "linearRamp: Insert linearRamp after running for some time": "FAIL"
-    }
+    "total": 2
   },
   "webaudio/the-audio-api/the-audioparam-interface/audioparam-cancel-and-hold.html": {
-    "total": 49,
-    "failures": {
-      "# AUDIT TASK RUNNER FINISHED: 1 out of 17 tasks were failed.": "FAIL",
-      "< [cancel setValueCurve now] 1 out of 1 assertions were failed.": "FAIL",
-      "Executing \"exponential\"": "FAIL",
-      "Executing \"initial setTarget\"": "FAIL",
-      "Executing \"linear\"": "FAIL",
-      "Executing \"linear, cancel, linear, cancel, linear\"": "FAIL",
-      "Executing \"post cancel: Exponential\"": "FAIL",
-      "Executing \"post cancel: Linear\"": "FAIL",
-      "Executing \"post cancel: ValueCurve\"": "FAIL",
-      "Executing \"post cancel: setTarget\"": "FAIL",
-      "Executing \"post cancel: setValue\"": "FAIL",
-      "Executing \"setTarget\"": "FAIL",
-      "Executing \"setValueCurve after end\"": "FAIL",
-      "Executing \"setValueCurve\"": "FAIL",
-      "X After cancelling current setValueCurve event starting now, output: Expected 0.5 for all values but found 12000 unexpected values: \n\tIndex\tActual\n\t[12000]\t-1\n\t[12001]\t-1\n\t[12002]\t-1\n\t[12003]\t-1\n\t...and 11996 more errors.": "FAIL"
-    }
+    "total": 106
   },
   "webaudio/the-audio-api/the-audioparam-interface/audioparam-close.html": {
     "total": 2
@@ -1913,34 +1569,20 @@
   "webaudio/the-audio-api/the-audioparam-interface/audioparam-method-chaining.html": {
     "total": 3,
     "failures": {
-      "AudioParam: Chaining with invalid operations does not apply later effects": "FAIL",
       "AudioParam: Each method returns the same object to allow chaining": "FAIL"
     }
   },
   "webaudio/the-audio-api/the-audioparam-interface/audioparam-nominal-range.html": {
-    "total": 146,
+    "total": 323,
     "failures": {
       "# AUDIT TASK RUNNER FINISHED: 2 out of 24 tasks were failed.": "FAIL",
-      "< [automation] 1 out of 1 assertions were failed.": "FAIL",
+      "< [Offline createBiquadFilter] 2 out of 33 assertions were failed.": "FAIL",
       "< [initialize] 1 out of 2 assertions were failed.": "FAIL",
-      "Executing \"Offline createAnalyser\"": "FAIL",
-      "Executing \"Offline createBiquadFilter\"": "FAIL",
-      "Executing \"Offline createChannelMerger\"": "FAIL",
-      "Executing \"Offline createChannelSplitter\"": "FAIL",
-      "Executing \"Offline createConvolver\"": "FAIL",
-      "Executing \"Offline createDelay\"": "FAIL",
-      "Executing \"Offline createDynamicsCompressor\"": "FAIL",
-      "Executing \"Offline createIIRFilter\"": "FAIL",
-      "Executing \"Offline createOscillator\"": "FAIL",
-      "Executing \"Offline createPanner\"": "FAIL",
-      "Executing \"Offline createPeriodicWave\"": "FAIL",
-      "Executing \"Offline createScriptProcessor\"": "FAIL",
-      "Executing \"Offline createStereoPanner\"": "FAIL",
-      "Executing \"Offline createWaveShaper\"": "FAIL",
       "Executing \"Online createMediaElementSource\"": "FAIL",
       "Executing \"Online createMediaStreamDestination\"": "FAIL",
+      "X BiquadFilterNode.gain.maxValue is not equal to 1541.273681640625. Got 1541.2735595703125.": "FAIL",
       "X Create online context for tests incorrectly threw ReferenceError: \"AudioContext is not defined\".": "FAIL",
-      "X Test automations (check console logs) incorrectly threw TypeError: \"offlineContext.createDelay is not a function\".": "FAIL"
+      "X Nominal ranges for AudioParam(s) of BiquadFilterNode are incorrect for: NaN Got false.": "FAIL"
     }
   },
   "webaudio/the-audio-api/the-audioparam-interface/audioparam-setTargetAtTime.html": {
@@ -1950,10 +1592,7 @@
     "total": 6
   },
   "webaudio/the-audio-api/the-audioparam-interface/audioparam-setValueCurve-exceptions.html": {
-    "total": 62,
-    "failures": {
-      "Executing \"automations\"": "FAIL"
-    }
+    "total": 66
   },
   "webaudio/the-audio-api/the-audioparam-interface/audioparam-setValueCurveAtTime.html": {
     "total": 1
@@ -1965,15 +1604,7 @@
     "total": 8
   },
   "webaudio/the-audio-api/the-audioparam-interface/automation-rate.html": {
-    "total": 10,
-    "failures": {
-      "BiquadFilterNode": "FAIL",
-      "DelayNode": "FAIL",
-      "DynamicsCompressorNode": "FAIL",
-      "OscillatorNode": "FAIL",
-      "PannerNode": "FAIL",
-      "StereoPannerNode": "FAIL"
-    }
+    "total": 10
   },
   "webaudio/the-audio-api/the-audioparam-interface/cancel-scheduled-values.html": {
     "total": 2
@@ -1985,11 +1616,7 @@
     "total": 2
   },
   "webaudio/the-audio-api/the-audioparam-interface/k-rate-audiobuffersource-connections.html": {
-    "total": 2,
-    "failures": {
-      "Verify k-rate AudioParam input works correctly for detune": "FAIL",
-      "Verify k-rate AudioParam input works correctly for playbackRate": "FAIL"
-    }
+    "total": 2
   },
   "webaudio/the-audio-api/the-audioparam-interface/k-rate-audioworklet-connections.https.html": {
     "total": 1,
@@ -2004,165 +1631,67 @@
     }
   },
   "webaudio/the-audio-api/the-audioparam-interface/k-rate-biquad-connection.html": {
-    "total": 13,
-    "failures": {
-      "Executing \"All k-rate inputs\"": "FAIL",
-      "Executing \"Detune AudioParam\"": "FAIL",
-      "Executing \"Frequency AudioParam\"": "FAIL",
-      "Executing \"Gain AudioParam\"": "FAIL",
-      "Executing \"Q AudioParam\"": "FAIL"
-    }
+    "total": 100
   },
   "webaudio/the-audio-api/the-audioparam-interface/k-rate-biquad.html": {
-    "total": 5,
-    "failures": {
-      "Biquad k-rate AudioParams (all)": "FAIL",
-      "Biquad k-rate Q": "FAIL",
-      "Biquad k-rate detune": "FAIL",
-      "Biquad k-rate frequency": "FAIL",
-      "Biquad k-rate gain": "FAIL"
-    }
+    "total": 5
   },
   "webaudio/the-audio-api/the-audioparam-interface/k-rate-connections.html": {
-    "total": 2,
-    "failures": {
-      "Gain - k-rate GainNode.gain": "FAIL",
-      "StereoPanner - k-rate StereoPannerNode.pan": "FAIL"
-    }
+    "total": 2
   },
   "webaudio/the-audio-api/the-audioparam-interface/k-rate-constant-source.html": {
-    "total": 9,
-    "failures": {
-      "Executing \"ConstantSource k-rate offset\"": "FAIL",
-      "Executing \"ConstantSource.offset\"": "FAIL",
-      "Executing \"ConstantSourceNode.offset k-rate automation\"": "FAIL"
-    }
+    "total": 40
   },
   "webaudio/the-audio-api/the-audioparam-interface/k-rate-delay-connections.html": {
-    "total": 1,
-    "failures": {
-      "k-rate DelayNode.delayTime with input matches automation behavior": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-audioparam-interface/k-rate-delay.html": {
-    "total": 5,
-    "failures": {
-      "Executing \"Test k-rate DelayNode\"": "FAIL"
-    }
+    "total": 14
   },
   "webaudio/the-audio-api/the-audioparam-interface/k-rate-dynamics-compressor-connections.html": {
-    "total": 5,
-    "failures": {
-      "Verify k-rate 'attack' with input on DynamicsCompressorNode": "FAIL",
-      "Verify k-rate 'knee' with input on DynamicsCompressorNode": "FAIL",
-      "Verify k-rate 'ratio' with input on DynamicsCompressorNode": "FAIL",
-      "Verify k-rate 'release' with input on DynamicsCompressorNode": "FAIL",
-      "Verify k-rate 'threshold' with input on DynamicsCompressorNode": "FAIL"
-    }
+    "total": 5
   },
   "webaudio/the-audio-api/the-audioparam-interface/k-rate-gain.html": {
-    "total": 5,
-    "failures": {
-      "Executing \"Test k-rate GainNode\"": "FAIL"
-    }
+    "total": 14
   },
   "webaudio/the-audio-api/the-audioparam-interface/k-rate-oscillator-connections.html": {
-    "total": 13,
-    "failures": {
-      "Executing \"Test 1\"": "FAIL",
-      "Executing \"Test 2\"": "FAIL",
-      "Executing \"Test 3\"": "FAIL",
-      "Executing \"Test 4\"": "FAIL",
-      "Executing \"Test 5\"": "FAIL"
-    }
+    "total": 73
   },
   "webaudio/the-audio-api/the-audioparam-interface/k-rate-oscillator.html": {
-    "total": 2,
-    "failures": {
-      "Oscillator k-rate detune": "FAIL",
-      "Oscillator k-rate frequency": "FAIL"
-    }
+    "total": 2
   },
   "webaudio/the-audio-api/the-audioparam-interface/k-rate-panner-connections.html": {
-    "total": 15,
-    "failures": {
-      "Executing \"Listener x\"": "FAIL",
-      "Executing \"Listener y\"": "FAIL",
-      "Executing \"Listener z\"": "FAIL",
-      "Executing \"Panner x\"": "FAIL",
-      "Executing \"Panner y\"": "FAIL",
-      "Executing \"Panner z\"": "FAIL"
-    }
+    "total": 93
   },
   "webaudio/the-audio-api/the-audioparam-interface/k-rate-panner.html": {
-    "total": 14,
-    "failures": {
-      "Listener k-rate forwardX": "FAIL",
-      "Listener k-rate forwardY": "FAIL",
-      "Listener k-rate forwardZ": "FAIL",
-      "Listener k-rate positionX": "FAIL",
-      "Listener k-rate positionY": "FAIL",
-      "Listener k-rate positionZ": "FAIL",
-      "Listener k-rate upX": "FAIL",
-      "Listener k-rate upY": "FAIL",
-      "Listener k-rate upZ": "FAIL",
-      "Panner k-rate vs a-rate - orientationX": "FAIL",
-      "Panner k-rate vs a-rate - orientationY": "FAIL",
-      "Panner k-rate vs a-rate - orientationZ": "FAIL",
-      "Panner k-rate vs a-rate - positionX": "FAIL",
-      "Panner k-rate vs a-rate - positionY": "FAIL"
-    }
+    "total": 14
   },
   "webaudio/the-audio-api/the-audioparam-interface/k-rate-stereo-panner.html": {
-    "total": 5,
-    "failures": {
-      "Executing \"Test k-rate StereoPannerNode\"": "FAIL"
-    }
+    "total": 14
   },
   "webaudio/the-audio-api/the-audioparam-interface/moderate-exponentialRamp.html": {
     "total": 1
   },
   "webaudio/the-audio-api/the-audioparam-interface/nan-param.html": {
-    "total": 1,
-    "failures": {
-      "AudioParam NaN should be flushed to default value": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-audioparam-interface/retrospective-exponentialRampToValueAtTime.html": {
-    "total": 5,
-    "failures": {
-      "Executing \"test\"": "FAIL"
-    }
+    "total": 9
   },
   "webaudio/the-audio-api/the-audioparam-interface/retrospective-linearRampToValueAtTime.html": {
-    "total": 5,
-    "failures": {
-      "Executing \"test\"": "FAIL"
-    }
+    "total": 9
   },
   "webaudio/the-audio-api/the-audioparam-interface/retrospective-setTargetAtTime.html": {
-    "total": 1,
-    "failures": {
-      "Test setTargetAtTime with start time in the past": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-audioparam-interface/retrospective-setValueAtTime.html": {
-    "total": 1,
-    "failures": {
-      "Test setValueAtTime with startTime in the past": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-audioparam-interface/retrospective-setValueCurveAtTime.html": {
-    "total": 5,
-    "failures": {
-      "Executing \"test\"": "FAIL"
-    }
+    "total": 9
   },
   "webaudio/the-audio-api/the-audioparam-interface/set-target-conv.html": {
-    "total": 1,
-    "failures": {
-      "setTargetAtTime: convergence handled correctly": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-audioparam-interface/setTargetAtTime-after-event-within-block.html": {
     "total": 2
@@ -2424,43 +1953,22 @@
     }
   },
   "webaudio/the-audio-api/the-biquadfilternode-interface/biquad-allpass.html": {
-    "total": 5,
-    "failures": {
-      "Executing \"test\"": "FAIL"
-    }
+    "total": 9
   },
   "webaudio/the-audio-api/the-biquadfilternode-interface/biquad-automation.html": {
-    "total": 15,
-    "failures": {
-      "Executing \"automate-all\"": "FAIL",
-      "Executing \"automate-detune\"": "FAIL",
-      "Executing \"automate-freq\"": "FAIL",
-      "Executing \"automate-gain\"": "FAIL",
-      "Executing \"automate-q\"": "FAIL",
-      "Executing \"modulation\"": "FAIL"
-    }
+    "total": 27
   },
   "webaudio/the-audio-api/the-biquadfilternode-interface/biquad-bandpass.html": {
-    "total": 5,
-    "failures": {
-      "Executing \"test\"": "FAIL"
-    }
+    "total": 9
   },
   "webaudio/the-audio-api/the-biquadfilternode-interface/biquad-basic.html": {
-    "total": 5,
-    "failures": {
-      "exceptions-createBiquadFilter": "FAIL",
-      "exceptions-getFrequencyData": "FAIL",
-      "existence": "FAIL",
-      "parameters": "FAIL"
-    }
+    "total": 5
   },
   "webaudio/the-audio-api/the-biquadfilternode-interface/biquad-getFrequencyResponse.html": {
-    "total": 21,
+    "total": 26,
     "failures": {
       "Executing \"allpass\"": "FAIL",
       "Executing \"bandpass\"": "FAIL",
-      "Executing \"getFrequencyResponse\"": "FAIL",
       "Executing \"highpass\"": "FAIL",
       "Executing \"highshelf\"": "FAIL",
       "Executing \"lowpass\"": "FAIL",
@@ -2470,56 +1978,28 @@
     }
   },
   "webaudio/the-audio-api/the-biquadfilternode-interface/biquad-highpass.html": {
-    "total": 5,
-    "failures": {
-      "Executing \"test\"": "FAIL"
-    }
+    "total": 9
   },
   "webaudio/the-audio-api/the-biquadfilternode-interface/biquad-highshelf.html": {
-    "total": 5,
-    "failures": {
-      "Executing \"test\"": "FAIL"
-    }
+    "total": 9
   },
   "webaudio/the-audio-api/the-biquadfilternode-interface/biquad-lowpass.html": {
-    "total": 5,
-    "failures": {
-      "Executing \"test\"": "FAIL"
-    }
+    "total": 9
   },
   "webaudio/the-audio-api/the-biquadfilternode-interface/biquad-lowshelf.html": {
-    "total": 5,
-    "failures": {
-      "Executing \"test\"": "FAIL"
-    }
+    "total": 9
   },
   "webaudio/the-audio-api/the-biquadfilternode-interface/biquad-notch.html": {
-    "total": 5,
-    "failures": {
-      "Executing \"test\"": "FAIL"
-    }
+    "total": 9
   },
   "webaudio/the-audio-api/the-biquadfilternode-interface/biquad-peaking.html": {
-    "total": 5,
-    "failures": {
-      "Executing \"test\"": "FAIL"
-    }
+    "total": 9
   },
   "webaudio/the-audio-api/the-biquadfilternode-interface/biquad-tail.html": {
-    "total": 5,
-    "failures": {
-      "Executing \"test\"": "FAIL"
-    }
+    "total": 7
   },
   "webaudio/the-audio-api/the-biquadfilternode-interface/biquadfilter-rendersizehint.https.html": {
-    "total": 5,
-    "failures": {
-      "BiquadFilter robustness at 11000Hz & hint 66000": "FAIL",
-      "BiquadFilter robustness at 192000Hz & hint 4096": "FAIL",
-      "BiquadFilter robustness at 3000Hz & hint 1": "FAIL",
-      "BiquadFilter robustness at 48000Hz & hint 100": "FAIL",
-      "BiquadFilter robustness at 48000Hz & hint 256": "FAIL"
-    }
+    "total": 5
   },
   "webaudio/the-audio-api/the-biquadfilternode-interface/biquadfilternode-basic.html": {
     "total": 5,
@@ -2528,23 +2008,10 @@
     }
   },
   "webaudio/the-audio-api/the-biquadfilternode-interface/ctor-biquadfilter.html": {
-    "total": 5,
-    "failures": {
-      "construct with options": "FAIL",
-      "default constructor": "FAIL",
-      "test AudioNodeOptions": "FAIL"
-    }
+    "total": 5
   },
   "webaudio/the-audio-api/the-biquadfilternode-interface/no-dezippering.html": {
-    "total": 15,
-    "failures": {
-      "Executing \"Test 0\"": "FAIL",
-      "Executing \"Test 1\"": "FAIL",
-      "Executing \"Test 2\"": "FAIL",
-      "Executing \"Test 3\"": "FAIL",
-      "Executing \"Test 4\"": "FAIL",
-      "Executing \"Test 5\"": "FAIL"
-    }
+    "total": 48
   },
   "webaudio/the-audio-api/the-channelmergernode-interface/active-processing.https.html": {
     "total": 2,
@@ -2554,62 +2021,25 @@
     }
   },
   "webaudio/the-audio-api/the-channelmergernode-interface/audiochannelmerger-basic.html": {
-    "total": 12,
-    "failures": {
-      "# AUDIT TASK RUNNER FINISHED: 1 out of 2 tasks were failed.": "FAIL",
-      "< [exceptions-channels] 4 out of 4 assertions were failed.": "FAIL",
-      "Executing \"exceptions-properties\"": "FAIL",
-      "X context.createChannelMerger() incorrectly threw TypeError: \"context.createChannelMerger is not a function\".": "FAIL",
-      "X context.createChannelMerger(0) threw \"TypeError\" instead of IndexSizeError.": "FAIL",
-      "X context.createChannelMerger(32) incorrectly threw TypeError: \"context.createChannelMerger is not a function\".": "FAIL",
-      "X context.createChannelMerger(33) threw \"TypeError\" instead of IndexSizeError.": "FAIL"
-    }
+    "total": 17
   },
   "webaudio/the-audio-api/the-channelmergernode-interface/audiochannelmerger-disconnect.html": {
-    "total": 1,
-    "failures": {
-      "Asynchronous disconnect() correctly silences the output": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-channelmergernode-interface/audiochannelmerger-input-non-default.html": {
-    "total": 3,
-    "failures": {
-      "silent-channel": "FAIL",
-      "stereo-down-mixing": "FAIL",
-      "undefined-channel-layout": "FAIL"
-    }
+    "total": 3
   },
   "webaudio/the-audio-api/the-channelmergernode-interface/audiochannelmerger-input.html": {
-    "total": 4,
-    "failures": {
-      "3-channel input uses discrete rule, dropping 2nd and 3rd channels": "FAIL",
-      "Merging two mono sources into stereo using ChannelMerger": "FAIL",
-      "Silent inactive inputs produce 0 in unused merger channels": "FAIL",
-      "Stereo input should down-mix properly to mono merger input": "FAIL"
-    }
+    "total": 4
   },
   "webaudio/the-audio-api/the-channelmergernode-interface/ctor-channelmerger.html": {
-    "total": 5,
-    "failures": {
-      "AudioNodeOptions behavior for ChannelMergerNode": "FAIL",
-      "Constructor options validation for ChannelMergerNode": "FAIL",
-      "Default constructor behavior for ChannelMergerNode": "FAIL"
-    }
+    "total": 5
   },
   "webaudio/the-audio-api/the-channelsplitternode-interface/audiochannelsplitter.html": {
-    "total": 2,
-    "failures": {
-      "Construction of ChannelSplitterNode": "FAIL",
-      "Functionality of ChannelSplitterNode (channel swap)": "FAIL"
-    }
+    "total": 2
   },
   "webaudio/the-audio-api/the-channelsplitternode-interface/ctor-channelsplitter.html": {
-    "total": 5,
-    "failures": {
-      "AudioNodeOptions immutability": "FAIL",
-      "constructor options": "FAIL",
-      "default constructor": "FAIL"
-    }
+    "total": 5
   },
   "webaudio/the-audio-api/the-constantsourcenode-interface/constant-source-basic.html": {
     "harness": "ERROR",
@@ -2622,10 +2052,7 @@
     "total": 1
   },
   "webaudio/the-audio-api/the-constantsourcenode-interface/constant-source-output.html": {
-    "total": 28,
-    "failures": {
-      "Executing \"connected audioparam\"": "FAIL"
-    }
+    "total": 31
   },
   "webaudio/the-audio-api/the-constantsourcenode-interface/ctor-constantsource.html": {
     "total": 24
@@ -2645,75 +2072,30 @@
     }
   },
   "webaudio/the-audio-api/the-convolvernode-interface/convolution-mono-mono.html": {
-    "total": 5,
+    "total": 10,
     "failures": {
-      "Executing \"test\"": "FAIL"
+      "# AUDIT TASK RUNNER FINISHED: 1 out of 1 tasks were failed.": "FAIL",
+      "< [test] 1 out of 4 assertions were failed.": "FAIL",
+      "X Deviation (in dB) of triangular portion of convolution is not less than or equal to -124.41. Got NaN.": "FAIL"
     }
   },
   "webaudio/the-audio-api/the-convolvernode-interface/convolver-cascade.html": {
-    "total": 5,
-    "failures": {
-      "Executing \"cascade-mono\"": "FAIL"
-    }
+    "total": 7
   },
   "webaudio/the-audio-api/the-convolvernode-interface/convolver-channels.html": {
-    "total": 5,
-    "failures": {
-      "Executing \"channel-count-test\"": "FAIL"
-    }
+    "total": 38
   },
   "webaudio/the-audio-api/the-convolvernode-interface/convolver-rendersizehint.https.html": {
-    "total": 5,
-    "failures": {
-      "ConvolverNode stability at 11000Hz with renderSizeHint 66000": "FAIL",
-      "ConvolverNode stability at 192000Hz with renderSizeHint 4096": "FAIL",
-      "ConvolverNode stability at 3000Hz with renderSizeHint 1": "FAIL",
-      "ConvolverNode stability at 48000Hz with renderSizeHint 100": "FAIL",
-      "ConvolverNode stability at 48000Hz with renderSizeHint 256": "FAIL"
-    }
+    "total": 5
   },
   "webaudio/the-audio-api/the-convolvernode-interface/convolver-response-1-chan.html": {
-    "total": 27,
-    "failures": {
-      "Executing \"1-channel input\"": "FAIL",
-      "Executing \"2-channel input\"": "FAIL",
-      "Executing \"3-channel input\"": "FAIL",
-      "Executing \"3-channel input, explicit\"": "FAIL",
-      "Executing \"4-channel input\"": "FAIL",
-      "Executing \"4-channel input, explicit\"": "FAIL",
-      "Executing \"5.1-channel input\"": "FAIL",
-      "Executing \"5.1-channel input, explicit\"": "FAIL",
-      "Executing \"mono-upmix-clamped-max\"": "FAIL",
-      "Executing \"mono-upmix-explicit\"": "FAIL"
-    }
+    "total": 59
   },
   "webaudio/the-audio-api/the-convolvernode-interface/convolver-response-2-chan.html": {
-    "total": 25,
-    "failures": {
-      "Executing \"1-channel input\"": "FAIL",
-      "Executing \"2-channel input\"": "FAIL",
-      "Executing \"2-channel input, explicit mode\"": "FAIL",
-      "Executing \"3-channel input explicit mode\"": "FAIL",
-      "Executing \"3-channel input\"": "FAIL",
-      "Executing \"4-channel input explicit mode\"": "FAIL",
-      "Executing \"4-channel input\"": "FAIL",
-      "Executing \"5.1-channel input explicit mode\"": "FAIL",
-      "Executing \"5.1-channel input\"": "FAIL"
-    }
+    "total": 52
   },
   "webaudio/the-audio-api/the-convolvernode-interface/convolver-response-4-chan.html": {
-    "total": 25,
-    "failures": {
-      "Executing \"1-channel input\"": "FAIL",
-      "Executing \"2-channel input\"": "FAIL",
-      "Executing \"3-channel input\"": "FAIL",
-      "Executing \"4-channel input\"": "FAIL",
-      "Executing \"5.1-channel input\"": "FAIL",
-      "Executing \"count 1, 2-channel in\"": "FAIL",
-      "Executing \"count 1, 4-channel in\"": "FAIL",
-      "Executing \"count 1, 5.1-channel in\"": "FAIL",
-      "Executing \"delayed buffer set\"": "FAIL"
-    }
+    "total": 51
   },
   "webaudio/the-audio-api/the-convolvernode-interface/convolver-setBuffer-already-has-value.html": {
     "total": 5,
@@ -2728,12 +2110,7 @@
     }
   },
   "webaudio/the-audio-api/the-convolvernode-interface/convolver-upmixing-1-channel-response.html": {
-    "total": 3,
-    "failures": {
-      "discrete": "FAIL",
-      "speakers, initially mono": "FAIL",
-      "speakers, initially stereo": "FAIL"
-    }
+    "total": 3
   },
   "webaudio/the-audio-api/the-convolvernode-interface/ctor-convolver.html": {
     "harness": "ERROR",
@@ -2746,91 +2123,40 @@
     }
   },
   "webaudio/the-audio-api/the-convolvernode-interface/transferred-buffer-output.html": {
-    "total": 5,
-    "failures": {
-      "Executing \"Test Convolver with transferred buffer\"": "FAIL"
-    }
+    "total": 8
   },
   "webaudio/the-audio-api/the-delaynode-interface/ctor-delay.html": {
-    "total": 22,
-    "failures": {
-      "# AUDIT TASK RUNNER FINISHED: 3 out of 5 tasks were failed.": "FAIL",
-      "Executing \"constructor options\"": "FAIL",
-      "Executing \"default constructor\"": "FAIL",
-      "Executing \"test AudioNodeOptions\"": "FAIL",
-      "X new DelayNode(c, {channelCount: 17}) incorrectly threw TypeError: \"window[nodeName] is not a constructor\".": "FAIL",
-      "X node0 = new DelayNode(context) incorrectly threw TypeError: \"window[name] is not a constructor\".": "FAIL",
-      "X node1 = new DelayNode(c, {\"delayTime\":0.5,\"maxDelayTime\":1.5}) incorrectly threw ReferenceError: \"DelayNode is not defined\".": "FAIL"
-    }
+    "total": 53
   },
   "webaudio/the-audio-api/the-delaynode-interface/delay-test.html": {
-    "total": 7,
-    "failures": {
-      "# AUDIT TASK RUNNER FINISHED: 1 out of 1 tasks were failed.": "FAIL",
-      "Executing \"test0\"": "FAIL",
-      "X Creating ConstantSourceNode(context) and DelayNode(context) incorrectly threw ReferenceError: \"DelayNode is not defined\".": "FAIL",
-      "X Setting delayTime to 3 frames incorrectly threw TypeError: \"Cannot read properties of undefined (reading 'delayTime')\".": "FAIL"
-    }
+    "total": 10
   },
   "webaudio/the-audio-api/the-delaynode-interface/delaynode-channel-count-1.html": {
-    "total": 1,
-    "failures": {
-      "Test that DelayNode output channelCount matches that of the delayed input": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-delaynode-interface/delaynode-max-default-delay.html": {
-    "total": 5,
-    "failures": {
-      "Executing \"test\"": "FAIL"
-    }
+    "total": 7
   },
   "webaudio/the-audio-api/the-delaynode-interface/delaynode-max-nondefault-delay.html": {
-    "total": 5,
-    "failures": {
-      "Executing \"test\"": "FAIL"
-    }
+    "total": 7
   },
   "webaudio/the-audio-api/the-delaynode-interface/delaynode-maxdelay.html": {
-    "total": 5,
-    "failures": {
-      "Executing \"test\"": "FAIL"
-    }
+    "total": 7
   },
   "webaudio/the-audio-api/the-delaynode-interface/delaynode-maxdelaylimit.html": {
-    "total": 9,
-    "failures": {
-      "# AUDIT TASK RUNNER FINISHED: 1 out of 1 tasks were failed.": "FAIL",
-      "Executing \"test\"": "FAIL",
-      "X Setting Delay length to 0 seconds threw \"TypeError\" instead of NotSupportedError.": "FAIL",
-      "X Setting Delay length to 180 seconds or more threw \"TypeError\" instead of NotSupportedError.": "FAIL",
-      "X Setting Delay length to negative threw \"TypeError\" instead of NotSupportedError.": "FAIL"
-    }
+    "total": 12
   },
   "webaudio/the-audio-api/the-delaynode-interface/delaynode-scheduling.html": {
-    "total": 5,
-    "failures": {
-      "Executing \"test\"": "FAIL"
-    }
+    "total": 7
   },
   "webaudio/the-audio-api/the-delaynode-interface/delaynode.html": {
-    "total": 5,
-    "failures": {
-      "Executing \"test\"": "FAIL"
-    }
+    "total": 12
   },
   "webaudio/the-audio-api/the-delaynode-interface/maxdelay-rounding.html": {
-    "total": 1,
-    "failures": {
-      "Test DelayNode when maxDelayTime requires rounding": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-delaynode-interface/no-dezippering.html": {
-    "total": 9,
-    "failures": {
-      "Executing \"test0\"": "FAIL",
-      "Executing \"test1\"": "FAIL",
-      "Executing \"test2\"": "FAIL"
-    }
+    "total": 19
   },
   "webaudio/the-audio-api/the-destinationnode-interface/destination.html": {
     "total": 1,
@@ -2859,80 +2185,25 @@
     }
   },
   "webaudio/the-audio-api/the-gainnode-interface/gain.html": {
-    "total": 1,
-    "failures": {
-      "GainNode should scale gains properly across notes": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-gainnode-interface/no-dezippering.html": {
-    "total": 3,
-    "failures": {
-      "Automation effects": "FAIL",
-      "Compare value setter and setValueAtTime": "FAIL"
-    }
+    "total": 3
   },
   "webaudio/the-audio-api/the-iirfilternode-interface/ctor-iirfilter.html": {
-    "total": 6,
-    "failures": {
-      "Default IIRFilterNode constructor with feedforward/feedback": "FAIL",
-      "Functional test of IIRFilterNode constructor vs. legacy method": "FAIL",
-      "IIRFilterNode constructor should throw with missing required options": "FAIL",
-      "Test AudioNodeOptions on IIRFilterNode": "FAIL"
-    }
+    "total": 6
   },
   "webaudio/the-audio-api/the-iirfilternode-interface/iirfilter-basic.html": {
-    "total": 32,
-    "failures": {
-      "# AUDIT TASK RUNNER FINISHED: 2 out of 5 tasks were failed.": "FAIL",
-      "< [exceptions-createIIRFilter] 8 out of 14 assertions were failed.": "FAIL",
-      "< [existence] 1 out of 1 assertions were failed.": "FAIL",
-      "Executing \"exceptions-getFrequencyData\"": "FAIL",
-      "Executing \"parameters\"": "FAIL",
-      "X context.createIIRFilter does not exist. Got undefined.": "FAIL",
-      "X createIIRFilter([1], []) threw \"TypeError\" instead of NotSupportedError.": "FAIL",
-      "X createIIRFilter([1], new Float32Array(2)) threw \"TypeError\" instead of InvalidStateError.": "FAIL",
-      "X createIIRFilter([1], new Float32Array(21)) threw \"TypeError\" instead of NotSupportedError.": "FAIL",
-      "X createIIRFilter([], [1]) threw \"TypeError\" instead of NotSupportedError.": "FAIL",
-      "X createIIRFilter([], []) threw \"TypeError\" instead of NotSupportedError.": "FAIL",
-      "X createIIRFilter(new Float32Array(10), [1]) threw \"TypeError\" instead of InvalidStateError.": "FAIL",
-      "X createIIRFilter(new Float32Array(20), new Float32Array(20)) incorrectly threw TypeError: \"context.createIIRFilter is not a function\".": "FAIL",
-      "X createIIRFilter(new Float32Array(21), [1]) threw \"TypeError\" instead of NotSupportedError.": "FAIL"
-    }
+    "total": 43
   },
   "webaudio/the-audio-api/the-iirfilternode-interface/iirfilter-getFrequencyResponse.html": {
-    "total": 3,
-    "failures": {
-      "1-pole IIR getFrequencyResponse() matches analytic response": "FAIL",
-      "IIR filter equivalent to biquad has matching frequency response": "FAIL",
-      "Out-of-range frequency values yield NaN responses": "FAIL"
-    }
+    "total": 3
   },
   "webaudio/the-audio-api/the-iirfilternode-interface/iirfilter-normalization-precision.html": {
-    "total": 1,
-    "failures": {
-      "IIR coefficient normalization stays precise when feedback[0] is not exactly representable as a float": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-iirfilternode-interface/iirfilter.html": {
-    "total": 31,
-    "failures": {
-      "# AUDIT TASK RUNNER FINISHED: 1 out of 13 tasks were failed.": "FAIL",
-      "Executing \"0: lowpass\"": "FAIL",
-      "Executing \"1: highpass\"": "FAIL",
-      "Executing \"2: bandpass\"": "FAIL",
-      "Executing \"3: notch\"": "FAIL",
-      "Executing \"4: allpass\"": "FAIL",
-      "Executing \"4th-order-iir\"": "FAIL",
-      "Executing \"5: lowshelf\"": "FAIL",
-      "Executing \"6: highshelf\"": "FAIL",
-      "Executing \"7: peaking\"": "FAIL",
-      "Executing \"coefficient-normalization\"": "FAIL",
-      "Executing \"multi-channel\"": "FAIL",
-      "Executing \"one-pole\"": "FAIL",
-      "Executing \"one-zero\"": "FAIL",
-      "X createIIRFilter with normalized coefficients incorrectly threw TypeError: \"context.createIIRFilter is not a function\".": "FAIL",
-      "X createIIRFilter with unnormalized coefficients incorrectly threw TypeError: \"context.createIIRFilter is not a function\".": "FAIL"
-    }
+    "total": 68
   },
   "webaudio/the-audio-api/the-iirfilternode-interface/test-iirfilternode.html": {
     "total": 2,
@@ -3097,10 +2368,7 @@
     }
   },
   "webaudio/the-audio-api/the-offlineaudiocontext-interface/offlineaudiocontext-incremental-rendering-data-integrity.html": {
-    "total": 1,
-    "failures": {
-      "Incremental rendering produces identical data to one-shot rendering": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-offlineaudiocontext-interface/offlineaudiocontext-incremental-rendering.html": {
     "total": 6
@@ -3115,192 +2383,70 @@
     "total": 1
   },
   "webaudio/the-audio-api/the-oscillatornode-interface/ctor-oscillator.html": {
-    "total": 22,
-    "failures": {
-      "# AUDIT TASK RUNNER FINISHED: 3 out of 5 tasks were failed.": "FAIL",
-      "Executing \"constructor options\"": "FAIL",
-      "Executing \"default constructor\"": "FAIL",
-      "Executing \"test AudioNodeOptions\"": "FAIL",
-      "X new OscillatorNode(c, {channelCount: 17}) incorrectly threw TypeError: \"window[nodeName] is not a constructor\".": "FAIL",
-      "X node0 = new OscillatorNode(context) incorrectly threw TypeError: \"window[name] is not a constructor\".": "FAIL",
-      "X node1 = new OscillatorNode(c, {\"type\":\"sawtooth\",\"detune\":7,\"frequency\":918}) incorrectly threw ReferenceError: \"OscillatorNode is not defined\".": "FAIL"
-    }
+    "total": 62
   },
   "webaudio/the-audio-api/the-oscillatornode-interface/detune-limiting.html": {
-    "total": 2,
-    "failures": {
-      "Oscillator with detune automation becomes silent above Nyquist": "FAIL",
-      "Oscillator with large detune produces 0 output at Nyquist or above": "FAIL"
-    }
+    "total": 2
   },
   "webaudio/the-audio-api/the-oscillatornode-interface/detune-overflow.html": {
-    "total": 5,
-    "failures": {
-      "Executing \"detune overflow\"": "FAIL"
-    }
+    "total": 7
   },
   "webaudio/the-audio-api/the-oscillatornode-interface/osc-basic-waveform.html": {
-    "total": 15,
-    "failures": {
-      "Executing \"Test 0\"": "FAIL",
-      "Executing \"Test 1\"": "FAIL",
-      "Executing \"Test 2\"": "FAIL",
-      "Executing \"Test 3\"": "FAIL",
-      "Executing \"Test 4\"": "FAIL",
-      "Executing \"Test 5\"": "FAIL"
-    }
+    "total": 33
   },
   "webaudio/the-audio-api/the-oscillatornode-interface/sub-sample-start.html": {
-    "total": 5,
-    "failures": {
-      "Executing \"a-rate oscillator honors sub-sample start offset\"": "FAIL"
-    }
+    "total": 10
   },
   "webaudio/the-audio-api/the-pannernode-interface/automation-changes.html": {
-    "total": 3,
-    "failures": {
-      "Listener.positionX.setValue": "FAIL",
-      "Listener.setPosition": "FAIL",
-      "Set Listener.positionX.value": "FAIL"
-    }
+    "total": 3
   },
   "webaudio/the-audio-api/the-pannernode-interface/ctor-panner.html": {
-    "total": 22,
-    "failures": {
-      "# AUDIT TASK RUNNER FINISHED: 3 out of 5 tasks were failed.": "FAIL",
-      "Executing \"constructor with options\"": "FAIL",
-      "Executing \"default constructor\"": "FAIL",
-      "Executing \"test AudioNodeOptions\"": "FAIL",
-      "X node = new PannerNode(c, {\"panningModel\":\"HRTF\",\"positionX\":1.4142135623730951,\"positionY\":2.8284271247461903,\"positionZ\":4.242640687119286,\"orientationX\":-1.4142135623730951,\"orientationY\":-2.8284271247461903,\"orientationZ\":-4.242640687119286,\"distanceModel\":\"linear\",\"refDistance\":3.141592653589793,\"maxDistance\":6.283185307179586,\"rolloffFactor\":9.42477796076938,\"coneInnerAngle\":12.566370614359172,\"coneOuterAngle\":15.707963267948966,\"coneOuterGain\":0.3141592653589793}) incorrectly threw ReferenceError: \"PannerNode is not defined\".": "FAIL",
-      "X node0 = new PannerNode(context) incorrectly threw TypeError: \"window[name] is not a constructor\".": "FAIL",
-      "X node1 = new PannerNode(c, {\"channelCount\":1}) incorrectly threw ReferenceError: \"PannerNode is not defined\".": "FAIL"
-    }
+    "total": 125
   },
   "webaudio/the-audio-api/the-pannernode-interface/distance-exponential.html": {
-    "total": 5,
-    "failures": {
-      "Executing \"test\"": "FAIL"
-    }
+    "total": 108
   },
   "webaudio/the-audio-api/the-pannernode-interface/distance-inverse.html": {
-    "total": 5,
-    "failures": {
-      "Executing \"test\"": "FAIL"
-    }
+    "total": 108
   },
   "webaudio/the-audio-api/the-pannernode-interface/distance-linear.html": {
-    "total": 5,
-    "failures": {
-      "Executing \"test\"": "FAIL"
-    }
+    "total": 108
   },
   "webaudio/the-audio-api/the-pannernode-interface/offline-hrtf-active-immediately.html": {
-    "total": 1,
-    "failures": {
-      "Test offline HRTF PannerNode is effective before rendering": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-pannernode-interface/panner-automation-basic.html": {
-    "total": 35,
-    "failures": {
-      "Executing \"Mono listener.positionX\"": "FAIL",
-      "Executing \"Mono listener.positionY\"": "FAIL",
-      "Executing \"Mono listener.positionZ\"": "FAIL",
-      "Executing \"Mono panner.positionX\"": "FAIL",
-      "Executing \"Mono panner.positionY\"": "FAIL",
-      "Executing \"Mono panner.positionZ\"": "FAIL",
-      "Executing \"Stereo listener.positionX\"": "FAIL",
-      "Executing \"Stereo listener.positionY\"": "FAIL",
-      "Executing \"Stereo listener.positionZ\"": "FAIL",
-      "Executing \"Stereo panner.positionX\"": "FAIL",
-      "Executing \"Stereo panner.positionY\"": "FAIL",
-      "Executing \"Stereo panner.positionZ\"": "FAIL",
-      "Executing \"forward setter\"": "FAIL",
-      "Executing \"orientation setter\"": "FAIL",
-      "Executing \"setPosition\"": "FAIL",
-      "Executing \"up setter\"": "FAIL"
-    }
+    "total": 147
   },
   "webaudio/the-audio-api/the-pannernode-interface/panner-automation-equalpower-stereo.html": {
-    "total": 5,
-    "failures": {
-      "Executing \"test\"": "FAIL"
-    }
+    "total": 10
   },
   "webaudio/the-audio-api/the-pannernode-interface/panner-automation-position.html": {
-    "total": 19,
-    "failures": {
-      "Executing \"0: 1-channel inverse rolloff: 1\"": "FAIL",
-      "Executing \"0: 2-channel inverse rolloff: 1\"": "FAIL",
-      "Executing \"1: 1-channel inverse rolloff: 1\"": "FAIL",
-      "Executing \"1: 2-channel inverse rolloff: 1\"": "FAIL",
-      "Executing \"2: 1-channel exponential rolloff: 1.5\"": "FAIL",
-      "Executing \"2: 2-channel exponential rolloff: 1.5\"": "FAIL",
-      "Executing \"3: 1-channel linear rolloff: 1\"": "FAIL",
-      "Executing \"3: 2-channel linear rolloff: 1\"": "FAIL"
-    }
+    "total": 43
   },
   "webaudio/the-audio-api/the-pannernode-interface/panner-azimuth.html": {
-    "total": 5,
-    "failures": {
-      "Executing \"Azimuth calculation\"": "FAIL"
-    }
+    "total": 8
   },
   "webaudio/the-audio-api/the-pannernode-interface/panner-distance-clamping.html": {
-    "total": 17,
-    "failures": {
-      "# AUDIT TASK RUNNER FINISHED: 2 out of 4 tasks were failed.": "FAIL",
-      "Executing \"max-distance\"": "FAIL",
-      "Executing \"max-distance-error\"": "FAIL",
-      "Executing \"min-distance\"": "FAIL",
-      "Executing \"ref-distance-error\"": "FAIL",
-      "X new PannerNode(c, {maxDistance: -1}) threw \"ReferenceError\" instead of EcmaScript error RangeError.": "FAIL",
-      "X new PannerNode(c, {maxDistance: 0}) threw \"ReferenceError\" instead of EcmaScript error RangeError.": "FAIL",
-      "X new PannerNode(c, {maxDistance: 5e-324}) incorrectly threw ReferenceError: \"PannerNode is not defined\".": "FAIL",
-      "X new PannerNode(c, {refDistance: -1}) threw \"ReferenceError\" instead of EcmaScript error RangeError.": "FAIL",
-      "X new PannerNode(c, {refDistance: 0}) incorrectly threw ReferenceError: \"PannerNode is not defined\".": "FAIL",
-      "X new PannerNode(c, {refDistance: 5e-324}) incorrectly threw ReferenceError: \"PannerNode is not defined\".": "FAIL"
-    }
+    "total": 51
   },
   "webaudio/the-audio-api/the-pannernode-interface/panner-equalpower-stereo.html": {
-    "total": 5,
-    "failures": {
-      "Executing \"test\"": "FAIL"
-    }
+    "total": 10
   },
   "webaudio/the-audio-api/the-pannernode-interface/panner-equalpower.html": {
-    "total": 3,
-    "failures": {
-      "Equal-power panner model of AudioPannerNode": "FAIL",
-      "Mono source and listener at the same position": "FAIL",
-      "Stereo source and listener at the same position": "FAIL"
-    }
+    "total": 3
   },
   "webaudio/the-audio-api/the-pannernode-interface/panner-hrtf-negative-elevation.html": {
-    "total": 5,
-    "failures": {
-      "Executing \"negative-elevation\"": "FAIL"
-    }
+    "total": 8
   },
   "webaudio/the-audio-api/the-pannernode-interface/panner-non-finite-distance-params.html": {
-    "total": 2,
-    "failures": {
-      "exponential distance model with refDistance == 0 must not produce NaN/Inf samples": "FAIL",
-      "linear distance model with refDistance == maxDistance must not produce NaN/Inf samples": "FAIL"
-    }
+    "total": 2
   },
   "webaudio/the-audio-api/the-pannernode-interface/panner-orientation-cone-gain-changes.html": {
-    "total": 2,
-    "failures": {
-      "Changing orientation via AudioParam.value updates the cone gain": "FAIL",
-      "Changing orientation via setOrientation() updates the cone gain": "FAIL"
-    }
+    "total": 2
   },
   "webaudio/the-audio-api/the-pannernode-interface/panner-rolloff-clamping.html": {
-    "total": 1,
-    "failures": {
-      "rolloffFactor clamping for linear distance model": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-pannernode-interface/pannernode-basic.window.js": {
     "total": 1,
@@ -3309,14 +2455,10 @@
     }
   },
   "webaudio/the-audio-api/the-pannernode-interface/pannernode-setposition-throws.html": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 15
   },
   "webaudio/the-audio-api/the-pannernode-interface/test-pannernode-automation.html": {
-    "total": 1,
-    "failures": {
-      "PannerNode AudioParam automation works properly": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-periodicwave-interface/createPeriodicWaveInfiniteValuesThrows.html": {
     "total": 2
@@ -3326,42 +2468,16 @@
     "total": 0
   },
   "webaudio/the-audio-api/the-scriptprocessornode-interface/scriptprocessor-rendersizehint.https.html": {
-    "total": 5,
-    "failures": {
-      "ScriptProcessor handles block size with renderSizeHint 1 & bufferSize 256": "FAIL",
-      "ScriptProcessor handles block size with renderSizeHint 100 & bufferSize 256": "FAIL",
-      "ScriptProcessor handles block size with renderSizeHint 256 & bufferSize 256": "FAIL",
-      "ScriptProcessor handles block size with renderSizeHint 4096 & bufferSize 4096": "FAIL",
-      "ScriptProcessor handles block size with renderSizeHint 66000 & bufferSize 16384": "FAIL"
-    }
+    "total": 5
   },
   "webaudio/the-audio-api/the-scriptprocessornode-interface/simple-input-output.html": {
-    "total": 1,
-    "failures": {
-      "ScriptProcessor with stopped input source": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-stereopanner-interface/ctor-stereopanner.html": {
-    "total": 22,
-    "failures": {
-      "# AUDIT TASK RUNNER FINISHED: 3 out of 5 tasks were failed.": "FAIL",
-      "Executing \"constructor with options\"": "FAIL",
-      "Executing \"default constructor\"": "FAIL",
-      "Executing \"test AudioNodeOptions\"": "FAIL",
-      "X new StereoPannerNode(c, {\"channelCount\":1}) incorrectly threw ReferenceError: \"StereoPannerNode is not defined\".": "FAIL",
-      "X node0 = new StereoPannerNode(context) incorrectly threw TypeError: \"window[name] is not a constructor\".": "FAIL",
-      "X node1 = new StereoPannerNode(, {\"pan\":0.75}) incorrectly threw ReferenceError: \"StereoPannerNode is not defined\".": "FAIL"
-    }
+    "total": 51
   },
   "webaudio/the-audio-api/the-stereopanner-interface/no-dezippering.html": {
-    "total": 13,
-    "failures": {
-      "Executing \"test mono input automation\"": "FAIL",
-      "Executing \"test mono input setValue\"": "FAIL",
-      "Executing \"test mono input\"": "FAIL",
-      "Executing \"test stereo input setValue\"": "FAIL",
-      "Executing \"test stereo input\"": "FAIL"
-    }
+    "total": 38
   },
   "webaudio/the-audio-api/the-stereopanner-interface/stereopannernode-basic.html": {
     "total": 5,
@@ -3370,66 +2486,27 @@
     }
   },
   "webaudio/the-audio-api/the-stereopanner-interface/stereopannernode-panning.html": {
-    "total": 7,
-    "failures": {
-      "Executing \"mono-test\"": "FAIL",
-      "Executing \"stereo-test\"": "FAIL"
-    }
+    "total": 17
   },
   "webaudio/the-audio-api/the-waveshapernode-interface/ctor-waveshaper.html": {
-    "total": 22,
-    "failures": {
-      "# AUDIT TASK RUNNER FINISHED: 3 out of 5 tasks were failed.": "FAIL",
-      "Executing \"test AudioNodeOptions\"": "FAIL",
-      "Executing \"valid default construction\"": "FAIL",
-      "Executing \"valid non-default\"": "FAIL",
-      "X new WaveShaperNode(c, {channelCount: 17}) incorrectly threw TypeError: \"window[nodeName] is not a constructor\".": "FAIL",
-      "X node0 = new WaveShaperNode(context) incorrectly threw TypeError: \"window[name] is not a constructor\".": "FAIL",
-      "X node1 = new WaveShaperNode(, {\"curve\":{\"0\":1,\"1\":2,\"2\":3},\"oversample\":\"4x\"}) incorrectly threw ReferenceError: \"WaveShaperNode is not defined\".": "FAIL"
-    }
+    "total": 54
   },
   "webaudio/the-audio-api/the-waveshapernode-interface/curve-tests.html": {
-    "total": 7,
-    "failures": {
-      "WaveShaperNode - Testing a 2-element curve (does not have a middle element)": "FAIL",
-      "WaveShaperNode - Testing a 4-element curve (does not have a middle element)": "FAIL",
-      "WaveShaperNode - Testing a huge curve": "FAIL",
-      "WaveShaperNode - Testing interpolation (where inputs don't correlate directly to curve elements)": "FAIL",
-      "WaveShaperNode - Testing null curve (should return input values)": "FAIL",
-      "WaveShaperNode - Testing out-of-range inputs (should be mapped to the first/last elements of the curve)": "FAIL",
-      "WaveShaperNode - Testing that -1, 0 and +1 map correctly to curve (with 1:1 correlation)": "FAIL"
-    }
+    "total": 7
   },
   "webaudio/the-audio-api/the-waveshapernode-interface/silent-inputs.html": {
-    "total": 3,
-    "failures": {
-      "test-0: curve output is non-zero for silent inputs": "FAIL",
-      "test-1: 2x curve output is non-zero for silent inputs": "FAIL",
-      "test-2: curve output is non-zero for no inputs": "FAIL"
-    }
+    "total": 3
   },
   "webaudio/the-audio-api/the-waveshapernode-interface/waveshaper-copy-curve.html": {
-    "total": 1,
-    "failures": {
-      "test copying: Modifying curve should not modify WaveShaper": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-waveshapernode-interface/waveshaper-limits.html": {
-    "total": 1,
-    "failures": {
-      "WaveShaperNode maps input values outside [-1,1] according to curve and clamps output correctly": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-waveshapernode-interface/waveshaper-simple.html": {
-    "total": 5,
-    "failures": {
-      "Executing \"simple\"": "FAIL"
-    }
+    "total": 18
   },
   "webaudio/the-audio-api/the-waveshapernode-interface/waveshaper.html": {
-    "total": 1,
-    "failures": {
-      "WaveShaperNode applies non-linear distortion correctly": "FAIL"
-    }
+    "total": 1
   }
 }

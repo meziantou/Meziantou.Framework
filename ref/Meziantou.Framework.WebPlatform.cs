@@ -13309,6 +13309,28 @@ namespace Meziantou.Framework.WebPlatform.WebAssembly
 }
 namespace Meziantou.Framework.WebPlatform.WebAudio
 {
+    public sealed class AnalyserNode : Meziantou.Framework.WebPlatform.WebAudio.AudioNode
+    {
+        public uint FftSize { get => throw null; set { } }
+        public uint FrequencyBinCount { get => throw null; }
+        public double MaxDecibels { get => throw null; set { } }
+        public double MinDecibels { get => throw null; set { } }
+        public double SmoothingTimeConstant { get => throw null; set { } }
+        public AnalyserNode(Meziantou.Framework.WebPlatform.WebAudio.BaseAudioContext context, Meziantou.Framework.WebPlatform.WebAudio.AnalyserOptions? options = null) { }
+        public void GetByteFrequencyData(System.Span<byte> array) { }
+        public void GetByteTimeDomainData(System.Span<byte> array) { }
+        public void GetFloatFrequencyData(System.Span<byte> array) { }
+        public void GetFloatTimeDomainData(System.Span<byte> array) { }
+    }
+
+    public sealed class AnalyserOptions : Meziantou.Framework.WebPlatform.WebAudio.AudioNodeOptions
+    {
+        public uint FftSize { get => throw null; init { } }
+        public double MaxDecibels { get => throw null; init { } }
+        public double MinDecibels { get => throw null; init { } }
+        public double SmoothingTimeConstant { get => throw null; init { } }
+    }
+
     public sealed class AudioBuffer
     {
         public double Duration { get => throw null; }
@@ -13443,6 +13465,21 @@ namespace Meziantou.Framework.WebPlatform.WebAudio
         public Meziantou.Framework.WebPlatform.WebAudio.AudioParam SetValueCurveAtTime(System.Collections.Generic.IReadOnlyList<float> values, double startTime, double duration) => throw null;
     }
 
+    public sealed class AudioProcessingEvent : Meziantou.Framework.WebPlatform.Dom.Event
+    {
+        public Meziantou.Framework.WebPlatform.WebAudio.AudioBuffer InputBuffer { get => throw null; }
+        public Meziantou.Framework.WebPlatform.WebAudio.AudioBuffer OutputBuffer { get => throw null; }
+        public double PlaybackTime { get => throw null; }
+        public AudioProcessingEvent(string type, Meziantou.Framework.WebPlatform.WebAudio.AudioProcessingEventInit eventInitDict) : base(default(string), default(Meziantou.Framework.WebPlatform.Dom.EventInit)) { }
+    }
+
+    public sealed class AudioProcessingEventInit : Meziantou.Framework.WebPlatform.Dom.EventInit
+    {
+        public required Meziantou.Framework.WebPlatform.WebAudio.AudioBuffer InputBuffer { get => throw null; init { } }
+        public required Meziantou.Framework.WebPlatform.WebAudio.AudioBuffer OutputBuffer { get => throw null; init { } }
+        public required double PlaybackTime { get => throw null; init { } }
+    }
+
     public abstract class AudioScheduledSourceNode : Meziantou.Framework.WebPlatform.WebAudio.AudioNode
     {
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnEnded { get => throw null; set { } }
@@ -13465,10 +13502,56 @@ namespace Meziantou.Framework.WebPlatform.WebAudio
         public uint RenderQuantumSize { get => throw null; }
         public float SampleRate { get => throw null; }
         public Meziantou.Framework.WebPlatform.WebAudio.AudioContextState State { get => throw null; }
+        public Meziantou.Framework.WebPlatform.WebAudio.AnalyserNode CreateAnalyser() => throw null;
+        public Meziantou.Framework.WebPlatform.WebAudio.BiquadFilterNode CreateBiquadFilter() => throw null;
         public Meziantou.Framework.WebPlatform.WebAudio.AudioBuffer CreateBuffer(uint numberOfChannels, uint length, float sampleRate) => throw null;
         public Meziantou.Framework.WebPlatform.WebAudio.AudioBufferSourceNode CreateBufferSource() => throw null;
+        public Meziantou.Framework.WebPlatform.WebAudio.ChannelMergerNode CreateChannelMerger(uint numberOfInputs = 6U) => throw null;
+        public Meziantou.Framework.WebPlatform.WebAudio.ChannelSplitterNode CreateChannelSplitter(uint numberOfOutputs = 6U) => throw null;
         public Meziantou.Framework.WebPlatform.WebAudio.ConstantSourceNode CreateConstantSource() => throw null;
+        public Meziantou.Framework.WebPlatform.WebAudio.ConvolverNode CreateConvolver() => throw null;
+        public Meziantou.Framework.WebPlatform.WebAudio.DelayNode CreateDelay(double maxDelayTime = 1d) => throw null;
+        public Meziantou.Framework.WebPlatform.WebAudio.DynamicsCompressorNode CreateDynamicsCompressor() => throw null;
         public Meziantou.Framework.WebPlatform.WebAudio.GainNode CreateGain() => throw null;
+        public Meziantou.Framework.WebPlatform.WebAudio.IIRFilterNode CreateIIRFilter(System.Collections.Generic.IReadOnlyList<double> feedforward, System.Collections.Generic.IReadOnlyList<double> feedback) => throw null;
+        public Meziantou.Framework.WebPlatform.WebAudio.OscillatorNode CreateOscillator() => throw null;
+        public Meziantou.Framework.WebPlatform.WebAudio.PannerNode CreatePanner() => throw null;
+        public Meziantou.Framework.WebPlatform.WebAudio.PeriodicWave CreatePeriodicWave(System.Collections.Generic.IReadOnlyList<float> real, System.Collections.Generic.IReadOnlyList<float> imag, Meziantou.Framework.WebPlatform.WebAudio.PeriodicWaveConstraints? constraints = null) => throw null;
+        public Meziantou.Framework.WebPlatform.WebAudio.ScriptProcessorNode CreateScriptProcessor(uint bufferSize = 0U, uint numberOfInputChannels = 2U, uint numberOfOutputChannels = 2U) => throw null;
+        public Meziantou.Framework.WebPlatform.WebAudio.StereoPannerNode CreateStereoPanner() => throw null;
+        public Meziantou.Framework.WebPlatform.WebAudio.WaveShaperNode CreateWaveShaper() => throw null;
+    }
+
+    public sealed class BiquadFilterNode : Meziantou.Framework.WebPlatform.WebAudio.AudioNode
+    {
+        public Meziantou.Framework.WebPlatform.WebAudio.AudioParam Detune { get => throw null; }
+        public Meziantou.Framework.WebPlatform.WebAudio.AudioParam Frequency { get => throw null; }
+        public Meziantou.Framework.WebPlatform.WebAudio.AudioParam Gain { get => throw null; }
+        public Meziantou.Framework.WebPlatform.WebAudio.AudioParam Q { get => throw null; }
+        public Meziantou.Framework.WebPlatform.WebAudio.BiquadFilterType Type { get => throw null; set { } }
+        public BiquadFilterNode(Meziantou.Framework.WebPlatform.WebAudio.BaseAudioContext context, Meziantou.Framework.WebPlatform.WebAudio.BiquadFilterOptions? options = null) { }
+        public void GetFrequencyResponse(System.ReadOnlySpan<byte> frequencyHz, System.Span<byte> magResponse, System.Span<byte> phaseResponse) { }
+    }
+
+    public sealed class BiquadFilterOptions : Meziantou.Framework.WebPlatform.WebAudio.AudioNodeOptions
+    {
+        public float Detune { get => throw null; init { } }
+        public float Frequency { get => throw null; init { } }
+        public float Gain { get => throw null; init { } }
+        public float Q { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.WebAudio.BiquadFilterType Type { get => throw null; init { } }
+    }
+
+    public enum BiquadFilterType
+    {
+        Lowpass = 0,
+        Highpass = 1,
+        Bandpass = 2,
+        Lowshelf = 3,
+        Highshelf = 4,
+        Peaking = 5,
+        Notch = 6,
+        Allpass = 7,
     }
 
     public enum ChannelCountMode
@@ -13484,6 +13567,26 @@ namespace Meziantou.Framework.WebPlatform.WebAudio
         Discrete = 1,
     }
 
+    public sealed class ChannelMergerNode : Meziantou.Framework.WebPlatform.WebAudio.AudioNode
+    {
+        public ChannelMergerNode(Meziantou.Framework.WebPlatform.WebAudio.BaseAudioContext context, Meziantou.Framework.WebPlatform.WebAudio.ChannelMergerOptions? options = null) { }
+    }
+
+    public sealed class ChannelMergerOptions : Meziantou.Framework.WebPlatform.WebAudio.AudioNodeOptions
+    {
+        public uint NumberOfInputs { get => throw null; init { } }
+    }
+
+    public sealed class ChannelSplitterNode : Meziantou.Framework.WebPlatform.WebAudio.AudioNode
+    {
+        public ChannelSplitterNode(Meziantou.Framework.WebPlatform.WebAudio.BaseAudioContext context, Meziantou.Framework.WebPlatform.WebAudio.ChannelSplitterOptions? options = null) { }
+    }
+
+    public sealed class ChannelSplitterOptions : Meziantou.Framework.WebPlatform.WebAudio.AudioNodeOptions
+    {
+        public uint NumberOfOutputs { get => throw null; init { } }
+    }
+
     public sealed class ConstantSourceNode : Meziantou.Framework.WebPlatform.WebAudio.AudioScheduledSourceNode
     {
         public Meziantou.Framework.WebPlatform.WebAudio.AudioParam Offset { get => throw null; }
@@ -13495,6 +13598,58 @@ namespace Meziantou.Framework.WebPlatform.WebAudio
         public float Offset { get => throw null; init { } }
     }
 
+    public sealed class ConvolverNode : Meziantou.Framework.WebPlatform.WebAudio.AudioNode
+    {
+        public Meziantou.Framework.WebPlatform.WebAudio.AudioBuffer? Buffer { get => throw null; set { } }
+        public bool Normalize { get => throw null; set { } }
+        public ConvolverNode(Meziantou.Framework.WebPlatform.WebAudio.BaseAudioContext context, Meziantou.Framework.WebPlatform.WebAudio.ConvolverOptions? options = null) { }
+    }
+
+    public sealed class ConvolverOptions : Meziantou.Framework.WebPlatform.WebAudio.AudioNodeOptions
+    {
+        public Meziantou.Framework.WebPlatform.WebAudio.AudioBuffer? Buffer { get => throw null; init { } }
+        public bool DisableNormalization { get => throw null; init { } }
+    }
+
+    public sealed class DelayNode : Meziantou.Framework.WebPlatform.WebAudio.AudioNode
+    {
+        public Meziantou.Framework.WebPlatform.WebAudio.AudioParam DelayTime { get => throw null; }
+        public DelayNode(Meziantou.Framework.WebPlatform.WebAudio.BaseAudioContext context, Meziantou.Framework.WebPlatform.WebAudio.DelayOptions? options = null) { }
+    }
+
+    public sealed class DelayOptions : Meziantou.Framework.WebPlatform.WebAudio.AudioNodeOptions
+    {
+        public double DelayTime { get => throw null; init { } }
+        public double MaxDelayTime { get => throw null; init { } }
+    }
+
+    public enum DistanceModelType
+    {
+        Linear = 0,
+        Inverse = 1,
+        Exponential = 2,
+    }
+
+    public sealed class DynamicsCompressorNode : Meziantou.Framework.WebPlatform.WebAudio.AudioNode
+    {
+        public Meziantou.Framework.WebPlatform.WebAudio.AudioParam Attack { get => throw null; }
+        public Meziantou.Framework.WebPlatform.WebAudio.AudioParam Knee { get => throw null; }
+        public Meziantou.Framework.WebPlatform.WebAudio.AudioParam Ratio { get => throw null; }
+        public float Reduction { get => throw null; }
+        public Meziantou.Framework.WebPlatform.WebAudio.AudioParam Release { get => throw null; }
+        public Meziantou.Framework.WebPlatform.WebAudio.AudioParam Threshold { get => throw null; }
+        public DynamicsCompressorNode(Meziantou.Framework.WebPlatform.WebAudio.BaseAudioContext context, Meziantou.Framework.WebPlatform.WebAudio.DynamicsCompressorOptions? options = null) { }
+    }
+
+    public sealed class DynamicsCompressorOptions : Meziantou.Framework.WebPlatform.WebAudio.AudioNodeOptions
+    {
+        public float Attack { get => throw null; init { } }
+        public float Knee { get => throw null; init { } }
+        public float Ratio { get => throw null; init { } }
+        public float Release { get => throw null; init { } }
+        public float Threshold { get => throw null; init { } }
+    }
+
     public sealed class GainNode : Meziantou.Framework.WebPlatform.WebAudio.AudioNode
     {
         public Meziantou.Framework.WebPlatform.WebAudio.AudioParam Gain { get => throw null; }
@@ -13504,6 +13659,18 @@ namespace Meziantou.Framework.WebPlatform.WebAudio
     public sealed class GainOptions : Meziantou.Framework.WebPlatform.WebAudio.AudioNodeOptions
     {
         public float Gain { get => throw null; init { } }
+    }
+
+    public sealed class IIRFilterNode : Meziantou.Framework.WebPlatform.WebAudio.AudioNode
+    {
+        public IIRFilterNode(Meziantou.Framework.WebPlatform.WebAudio.BaseAudioContext context, Meziantou.Framework.WebPlatform.WebAudio.IIRFilterOptions options) { }
+        public void GetFrequencyResponse(System.ReadOnlySpan<byte> frequencyHz, System.Span<byte> magResponse, System.Span<byte> phaseResponse) { }
+    }
+
+    public sealed class IIRFilterOptions : Meziantou.Framework.WebPlatform.WebAudio.AudioNodeOptions
+    {
+        public required System.Collections.Generic.IReadOnlyList<double> Feedback { get => throw null; init { } }
+        public required System.Collections.Generic.IReadOnlyList<double> Feedforward { get => throw null; init { } }
     }
 
     public sealed class OfflineAudioCompletionEvent : Meziantou.Framework.WebPlatform.Dom.Event
@@ -13535,5 +13702,130 @@ namespace Meziantou.Framework.WebPlatform.WebAudio
         public uint NumberOfChannels { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.WebAudio.AudioContextRenderSizeHint RenderSizeHint { get => throw null; init { } }
         public required float SampleRate { get => throw null; init { } }
+    }
+
+    public sealed class OscillatorNode : Meziantou.Framework.WebPlatform.WebAudio.AudioScheduledSourceNode
+    {
+        public Meziantou.Framework.WebPlatform.WebAudio.AudioParam Detune { get => throw null; }
+        public Meziantou.Framework.WebPlatform.WebAudio.AudioParam Frequency { get => throw null; }
+        public Meziantou.Framework.WebPlatform.WebAudio.OscillatorType Type { get => throw null; set { } }
+        public OscillatorNode(Meziantou.Framework.WebPlatform.WebAudio.BaseAudioContext context, Meziantou.Framework.WebPlatform.WebAudio.OscillatorOptions? options = null) { }
+        public void SetPeriodicWave(Meziantou.Framework.WebPlatform.WebAudio.PeriodicWave periodicWave) { }
+    }
+
+    public sealed class OscillatorOptions : Meziantou.Framework.WebPlatform.WebAudio.AudioNodeOptions
+    {
+        public float Detune { get => throw null; init { } }
+        public float Frequency { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.WebAudio.PeriodicWave? PeriodicWave { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.WebAudio.OscillatorType Type { get => throw null; init { } }
+    }
+
+    public enum OscillatorType
+    {
+        Sine = 0,
+        Square = 1,
+        Sawtooth = 2,
+        Triangle = 3,
+        Custom = 4,
+    }
+
+    public enum OverSampleType
+    {
+        None = 0,
+        TwoTimes = 1,
+        FourTimes = 2,
+    }
+
+    public sealed class PannerNode : Meziantou.Framework.WebPlatform.WebAudio.AudioNode
+    {
+        public double ConeInnerAngle { get => throw null; set { } }
+        public double ConeOuterAngle { get => throw null; set { } }
+        public double ConeOuterGain { get => throw null; set { } }
+        public Meziantou.Framework.WebPlatform.WebAudio.DistanceModelType DistanceModel { get => throw null; set { } }
+        public double MaxDistance { get => throw null; set { } }
+        public Meziantou.Framework.WebPlatform.WebAudio.AudioParam OrientationX { get => throw null; }
+        public Meziantou.Framework.WebPlatform.WebAudio.AudioParam OrientationY { get => throw null; }
+        public Meziantou.Framework.WebPlatform.WebAudio.AudioParam OrientationZ { get => throw null; }
+        public Meziantou.Framework.WebPlatform.WebAudio.PanningModelType PanningModel { get => throw null; set { } }
+        public Meziantou.Framework.WebPlatform.WebAudio.AudioParam PositionX { get => throw null; }
+        public Meziantou.Framework.WebPlatform.WebAudio.AudioParam PositionY { get => throw null; }
+        public Meziantou.Framework.WebPlatform.WebAudio.AudioParam PositionZ { get => throw null; }
+        public double RefDistance { get => throw null; set { } }
+        public double RolloffFactor { get => throw null; set { } }
+        public PannerNode(Meziantou.Framework.WebPlatform.WebAudio.BaseAudioContext context, Meziantou.Framework.WebPlatform.WebAudio.PannerOptions? options = null) { }
+        public void SetOrientation(float x, float y, float z) { }
+        public void SetPosition(float x, float y, float z) { }
+    }
+
+    public sealed class PannerOptions : Meziantou.Framework.WebPlatform.WebAudio.AudioNodeOptions
+    {
+        public double ConeInnerAngle { get => throw null; init { } }
+        public double ConeOuterAngle { get => throw null; init { } }
+        public double ConeOuterGain { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.WebAudio.DistanceModelType DistanceModel { get => throw null; init { } }
+        public double MaxDistance { get => throw null; init { } }
+        public float OrientationX { get => throw null; init { } }
+        public float OrientationY { get => throw null; init { } }
+        public float OrientationZ { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.WebAudio.PanningModelType PanningModel { get => throw null; init { } }
+        public float PositionX { get => throw null; init { } }
+        public float PositionY { get => throw null; init { } }
+        public float PositionZ { get => throw null; init { } }
+        public double RefDistance { get => throw null; init { } }
+        public double RolloffFactor { get => throw null; init { } }
+    }
+
+    public enum PanningModelType
+    {
+        EqualPower = 0,
+        Hrtf = 1,
+    }
+
+    public sealed class PeriodicWave
+    {
+        public PeriodicWave(Meziantou.Framework.WebPlatform.WebAudio.BaseAudioContext context, Meziantou.Framework.WebPlatform.WebAudio.PeriodicWaveOptions? options = null) { }
+    }
+
+    public class PeriodicWaveConstraints
+    {
+        public bool DisableNormalization { get => throw null; init { } }
+    }
+
+    public sealed class PeriodicWaveOptions : Meziantou.Framework.WebPlatform.WebAudio.PeriodicWaveConstraints
+    {
+        public System.Collections.Generic.IReadOnlyList<float>? Imag { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<float>? Real { get => throw null; init { } }
+    }
+
+    public sealed class ScriptProcessorNode : Meziantou.Framework.WebPlatform.WebAudio.AudioNode
+    {
+        public int BufferSize { get => throw null; }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnAudioProcess { get => throw null; set { } }
+    }
+
+    public sealed class StereoPannerNode : Meziantou.Framework.WebPlatform.WebAudio.AudioNode
+    {
+        public Meziantou.Framework.WebPlatform.WebAudio.AudioParam Pan { get => throw null; }
+        public StereoPannerNode(Meziantou.Framework.WebPlatform.WebAudio.BaseAudioContext context, Meziantou.Framework.WebPlatform.WebAudio.StereoPannerOptions? options = null) { }
+    }
+
+    public sealed class StereoPannerOptions : Meziantou.Framework.WebPlatform.WebAudio.AudioNodeOptions
+    {
+        public float Pan { get => throw null; init { } }
+    }
+
+    public sealed class WaveShaperNode : Meziantou.Framework.WebPlatform.WebAudio.AudioNode
+    {
+        public System.Collections.Generic.IReadOnlyList<float>? Curve { get => throw null; set { } }
+        public object? CurveArray { get => throw null; set { } }
+        public Meziantou.Framework.WebPlatform.WebAudio.OverSampleType Oversample { get => throw null; set { } }
+        public WaveShaperNode(Meziantou.Framework.WebPlatform.WebAudio.BaseAudioContext context, Meziantou.Framework.WebPlatform.WebAudio.WaveShaperOptions? options = null) { }
+    }
+
+    public sealed class WaveShaperOptions : Meziantou.Framework.WebPlatform.WebAudio.AudioNodeOptions
+    {
+        public System.Collections.Generic.IReadOnlyList<float>? Curve { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.WebAudio.OverSampleType Oversample { get => throw null; init { } }
     }
 }

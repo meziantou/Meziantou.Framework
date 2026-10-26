@@ -4234,13 +4234,7 @@
     "total": 1
   },
   "html/semantics/forms/the-input-element/email-value-idn.html": {
-    "total": 4,
-    "failures": {
-      "IDN domain in dynamically-set email value attribute is converted to ASCII": "FAIL",
-      "IDN domain in parser-created email value attribute is converted to ASCII": "FAIL",
-      "IDN domain is converted when type changes to email": "FAIL",
-      "IDN domains in multiple email value attribute are converted to ASCII": "FAIL"
-    }
+    "total": 4
   },
   "html/semantics/forms/the-input-element/email.html": {
     "total": 8

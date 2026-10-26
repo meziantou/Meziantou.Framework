@@ -294,6 +294,15 @@ public sealed class TextControlEditingTests : IDisposable
     }
 
     [Fact]
+    public void EmailInput_IdnDomainsAreConvertedToAscii()
+    {
+        var document = Load("<input type=email value='test@ex\u00E4mle.com'><input type=email multiple value='a@EXAMPLE.com, b@\u304A.com'>");
+        var inputs = document.QuerySelectorAll("input").Cast<HtmlInputElement>().ToArray();
+        Assert.Equal("test@xn--exmle-hra.com", inputs[0].Value);
+        Assert.Equal("a@EXAMPLE.com,b@xn--t8j.com", inputs[1].Value);
+    }
+
+    [Fact]
     public void EmailInput_IsEditedAtItsCaret()
     {
         var document = Load("<input type=email>");

@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 37 | 94 | 0 | 39% |
+| [Stable](#stable-tests) | 39 | 94 | 0 | 41% |
 | [Tentative](#tentative-tests) | 14 | 21 | 0 | 67% |
 | [Reftests](#reftests) | 0 | 1 | 0 | 0% |
-| **All** | **51** | **116** | **0** | **44%** |
+| **All** | **53** | **116** | **0** | **46%** |
 
 ## Stable tests
 
@@ -107,8 +107,8 @@
 | [`reporting/usb-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/usb-reporting.https.html) | Error | 0 / 1 | NOT IMPLEMENTED | WebUSB (`navigator.usb`) |
 | [`reporting/xr-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/xr-report-only.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the WebXR Device API (`navigator.xr`) |
 | [`reporting/xr-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/xr-reporting.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the WebXR Device API (`navigator.xr`) |
-| [`speaker-selection-allowed-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/permissions-policy/speaker-selection-allowed-by-permissions-policy.https.sub.html) | Fail | 1 / 4 | NOT IMPLEMENTED | the Web Audio API and Audio Output Devices (`AudioContext.setSinkId()`): only the policy of the `speaker-selection` feature is computed |
-| [`speaker-selection-disabled-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/permissions-policy/speaker-selection-disabled-by-permissions-policy.https.sub.html) | Fail | 2 / 3 | NOT IMPLEMENTED | the Web Audio API and Audio Output Devices (`AudioContext.setSinkId()`): only the policy of the `speaker-selection` feature is computed |
+| [`speaker-selection-allowed-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/permissions-policy/speaker-selection-allowed-by-permissions-policy.https.sub.html) | Pass | 4 / 4 |  |  |
+| [`speaker-selection-disabled-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/permissions-policy/speaker-selection-disabled-by-permissions-policy.https.sub.html) | Pass | 3 / 3 |  |  |
 
 ## Tentative tests
 

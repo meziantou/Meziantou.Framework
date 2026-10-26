@@ -126,7 +126,7 @@ internal sealed class NetworkRequest
             RequestDestination.Style => "stylesheet",
             RequestDestination.Image => "image",
             RequestDestination.Font => "font",
-            RequestDestination.Script or RequestDestination.Worker or RequestDestination.SharedWorker or RequestDestination.ServiceWorker or RequestDestination.PaintWorklet => "script",
+            RequestDestination.Script or RequestDestination.Worker or RequestDestination.SharedWorker or RequestDestination.ServiceWorker or RequestDestination.PaintWorklet or RequestDestination.AudioWorklet => "script",
             RequestDestination.Audio or RequestDestination.Video => "media",
             RequestDestination.Track => "texttrack",
             RequestDestination.Ping or RequestDestination.Report => "ping",

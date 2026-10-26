@@ -117,26 +117,10 @@
     "total": 6
   },
   "upgrade-insecure-requests/gen/iframe-blank-inherit.meta/upgrade/worklet-audio-import-data.https.html": {
-    "total": 6,
-    "failures": {
-      "Upgrade-Insecure-Requests: Expects allowed for worklet-audio-import-data to cross-http-downgrade origin and downgrade redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects allowed for worklet-audio-import-data to cross-http-downgrade origin and no-redirect redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects allowed for worklet-audio-import-data to cross-https origin and downgrade redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects allowed for worklet-audio-import-data to same-http-downgrade origin and downgrade redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects allowed for worklet-audio-import-data to same-http-downgrade origin and no-redirect redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects allowed for worklet-audio-import-data to same-https origin and downgrade redirection from https context.": "FAIL"
-    }
+    "total": 6
   },
   "upgrade-insecure-requests/gen/iframe-blank-inherit.meta/upgrade/worklet-audio.https.html": {
-    "total": 6,
-    "failures": {
-      "Upgrade-Insecure-Requests: Expects allowed for worklet-audio to cross-http-downgrade origin and downgrade redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects allowed for worklet-audio to cross-http-downgrade origin and no-redirect redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects allowed for worklet-audio to cross-https origin and downgrade redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects allowed for worklet-audio to same-http-downgrade origin and downgrade redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects allowed for worklet-audio to same-http-downgrade origin and no-redirect redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects allowed for worklet-audio to same-https origin and downgrade redirection from https context.": "FAIL"
-    }
+    "total": 6
   },
   "upgrade-insecure-requests/gen/iframe-blank-inherit.meta/upgrade/worklet-layout-import-data.https.html": {
     "total": 6
@@ -343,26 +327,10 @@
     "total": 6
   },
   "upgrade-insecure-requests/gen/srcdoc-inherit.meta/upgrade/worklet-audio-import-data.https.html": {
-    "total": 6,
-    "failures": {
-      "Upgrade-Insecure-Requests: Expects allowed for worklet-audio-import-data to cross-http-downgrade origin and downgrade redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects allowed for worklet-audio-import-data to cross-http-downgrade origin and no-redirect redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects allowed for worklet-audio-import-data to cross-https origin and downgrade redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects allowed for worklet-audio-import-data to same-http-downgrade origin and downgrade redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects allowed for worklet-audio-import-data to same-http-downgrade origin and no-redirect redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects allowed for worklet-audio-import-data to same-https origin and downgrade redirection from https context.": "FAIL"
-    }
+    "total": 6
   },
   "upgrade-insecure-requests/gen/srcdoc-inherit.meta/upgrade/worklet-audio.https.html": {
-    "total": 6,
-    "failures": {
-      "Upgrade-Insecure-Requests: Expects allowed for worklet-audio to cross-http-downgrade origin and downgrade redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects allowed for worklet-audio to cross-http-downgrade origin and no-redirect redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects allowed for worklet-audio to cross-https origin and downgrade redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects allowed for worklet-audio to same-http-downgrade origin and downgrade redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects allowed for worklet-audio to same-http-downgrade origin and no-redirect redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects allowed for worklet-audio to same-https origin and downgrade redirection from https context.": "FAIL"
-    }
+    "total": 6
   },
   "upgrade-insecure-requests/gen/srcdoc-inherit.meta/upgrade/worklet-layout-import-data.https.html": {
     "total": 6
@@ -422,26 +390,10 @@
     "total": 6
   },
   "upgrade-insecure-requests/gen/top.http-rp/upgrade/worklet-audio-import-data.https.html": {
-    "total": 6,
-    "failures": {
-      "Upgrade-Insecure-Requests: Expects allowed for worklet-audio-import-data to cross-http-downgrade origin and downgrade redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects allowed for worklet-audio-import-data to cross-http-downgrade origin and no-redirect redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects allowed for worklet-audio-import-data to cross-https origin and downgrade redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects allowed for worklet-audio-import-data to same-http-downgrade origin and downgrade redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects allowed for worklet-audio-import-data to same-http-downgrade origin and no-redirect redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects allowed for worklet-audio-import-data to same-https origin and downgrade redirection from https context.": "FAIL"
-    }
+    "total": 6
   },
   "upgrade-insecure-requests/gen/top.http-rp/upgrade/worklet-audio.https.html": {
-    "total": 6,
-    "failures": {
-      "Upgrade-Insecure-Requests: Expects allowed for worklet-audio to cross-http-downgrade origin and downgrade redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects allowed for worklet-audio to cross-http-downgrade origin and no-redirect redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects allowed for worklet-audio to cross-https origin and downgrade redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects allowed for worklet-audio to same-http-downgrade origin and downgrade redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects allowed for worklet-audio to same-http-downgrade origin and no-redirect redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects allowed for worklet-audio to same-https origin and downgrade redirection from https context.": "FAIL"
-    }
+    "total": 6
   },
   "upgrade-insecure-requests/gen/top.http-rp/upgrade/worklet-layout-import-data.https.html": {
     "total": 6
@@ -581,26 +533,10 @@
     "total": 6
   },
   "upgrade-insecure-requests/gen/top.meta/upgrade/worklet-audio-import-data.https.html": {
-    "total": 6,
-    "failures": {
-      "Upgrade-Insecure-Requests: Expects allowed for worklet-audio-import-data to cross-http-downgrade origin and downgrade redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects allowed for worklet-audio-import-data to cross-http-downgrade origin and no-redirect redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects allowed for worklet-audio-import-data to cross-https origin and downgrade redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects allowed for worklet-audio-import-data to same-http-downgrade origin and downgrade redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects allowed for worklet-audio-import-data to same-http-downgrade origin and no-redirect redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects allowed for worklet-audio-import-data to same-https origin and downgrade redirection from https context.": "FAIL"
-    }
+    "total": 6
   },
   "upgrade-insecure-requests/gen/top.meta/upgrade/worklet-audio.https.html": {
-    "total": 6,
-    "failures": {
-      "Upgrade-Insecure-Requests: Expects allowed for worklet-audio to cross-http-downgrade origin and downgrade redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects allowed for worklet-audio to cross-http-downgrade origin and no-redirect redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects allowed for worklet-audio to cross-https origin and downgrade redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects allowed for worklet-audio to same-http-downgrade origin and downgrade redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects allowed for worklet-audio to same-http-downgrade origin and no-redirect redirection from https context.": "FAIL",
-      "Upgrade-Insecure-Requests: Expects allowed for worklet-audio to same-https origin and downgrade redirection from https context.": "FAIL"
-    }
+    "total": 6
   },
   "upgrade-insecure-requests/gen/top.meta/upgrade/worklet-layout-import-data.https.html": {
     "total": 6

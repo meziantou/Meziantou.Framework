@@ -672,7 +672,7 @@ internal sealed partial class ContentSecurityPolicy
         RequestDestination.Image => "img-src",
         RequestDestination.Audio or RequestDestination.Video or RequestDestination.Track => "media-src",
         RequestDestination.Style => "style-src-elem",
-        RequestDestination.Script or RequestDestination.PaintWorklet => "script-src-elem",
+        RequestDestination.Script or RequestDestination.PaintWorklet or RequestDestination.AudioWorklet => "script-src-elem",
         RequestDestination.Worker or RequestDestination.SharedWorker or RequestDestination.ServiceWorker => "worker-src",
         _ => "connect-src",
     };
@@ -706,7 +706,7 @@ internal sealed partial class ContentSecurityPolicy
                 // https://w3c.github.io/webappsec-csp/#script-pre-request (the pre-request check of worker-src is also the
                 // one of the script directives): the nonce, the integrity metadata and 'strict-dynamic' apply to the
                 // script-like destinations
-                if (destination is RequestDestination.Script or RequestDestination.PaintWorklet or RequestDestination.Worker or RequestDestination.SharedWorker or RequestDestination.ServiceWorker)
+                if (destination is RequestDestination.Script or RequestDestination.PaintWorklet or RequestDestination.AudioWorklet or RequestDestination.Worker or RequestDestination.SharedWorker or RequestDestination.ServiceWorker)
                 {
                     if (DoesNonceMatchSourceList(nonce, sourceList) || DoesIntegrityMetadataMatchSourceList(integrity, sourceList))
                         return false;

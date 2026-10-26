@@ -574,17 +574,9 @@
     }
   },
   "permissions-policy/speaker-selection-allowed-by-permissions-policy.https.sub.html": {
-    "total": 4,
-    "failures": {
-      "allows setSinkId in cross-origin iframe with allow": "FAIL",
-      "allows setSinkId in same-origin iframe": "FAIL",
-      "allows setSinkId in top-level document": "FAIL"
-    }
+    "total": 4
   },
   "permissions-policy/speaker-selection-disabled-by-permissions-policy.https.sub.html": {
-    "total": 3,
-    "failures": {
-      "disallows setSinkId in top-level document": "FAIL"
-    }
+    "total": 3
   }
 }

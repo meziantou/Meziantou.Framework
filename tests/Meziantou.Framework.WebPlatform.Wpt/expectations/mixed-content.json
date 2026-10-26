@@ -204,18 +204,10 @@
     "total": 8
   },
   "mixed-content/gen/iframe-inherit.http-rp/opt-in/worklet-audio-import-data.https.html": {
-    "total": 8,
-    "failures": {
-      "Mixed-Content: Expects allowed for worklet-audio-import-data to same-https origin and keep-scheme redirection from https context.": "FAIL",
-      "Mixed-Content: Expects allowed for worklet-audio-import-data to same-https origin and no-redirect redirection from https context.": "FAIL"
-    }
+    "total": 8
   },
   "mixed-content/gen/iframe-inherit.http-rp/opt-in/worklet-audio.https.html": {
-    "total": 8,
-    "failures": {
-      "Mixed-Content: Expects allowed for worklet-audio to same-https origin and keep-scheme redirection from https context.": "FAIL",
-      "Mixed-Content: Expects allowed for worklet-audio to same-https origin and no-redirect redirection from https context.": "FAIL"
-    }
+    "total": 8
   },
   "mixed-content/gen/iframe-inherit.http-rp/opt-in/worklet-layout-import-data.https.html": {
     "total": 8
@@ -302,16 +294,10 @@
     "total": 5
   },
   "mixed-content/gen/iframe-inherit.meta/opt-in/worklet-audio-import-data.https.html": {
-    "total": 5,
-    "failures": {
-      "Mixed-Content: Expects allowed for worklet-audio-import-data to same-https origin and no-redirect redirection from https context.": "FAIL"
-    }
+    "total": 5
   },
   "mixed-content/gen/iframe-inherit.meta/opt-in/worklet-audio.https.html": {
-    "total": 5,
-    "failures": {
-      "Mixed-Content: Expects allowed for worklet-audio to same-https origin and no-redirect redirection from https context.": "FAIL"
-    }
+    "total": 5
   },
   "mixed-content/gen/iframe-inherit.meta/opt-in/worklet-layout-import-data.https.html": {
     "total": 5
@@ -398,18 +384,10 @@
     "total": 8
   },
   "mixed-content/gen/iframe-inherit.meta/unset/worklet-audio-import-data.https.html": {
-    "total": 8,
-    "failures": {
-      "Mixed-Content: Expects allowed for worklet-audio-import-data to same-https origin and keep-scheme redirection from https context.": "FAIL",
-      "Mixed-Content: Expects allowed for worklet-audio-import-data to same-https origin and no-redirect redirection from https context.": "FAIL"
-    }
+    "total": 8
   },
   "mixed-content/gen/iframe-inherit.meta/unset/worklet-audio.https.html": {
-    "total": 8,
-    "failures": {
-      "Mixed-Content: Expects allowed for worklet-audio to same-https origin and keep-scheme redirection from https context.": "FAIL",
-      "Mixed-Content: Expects allowed for worklet-audio to same-https origin and no-redirect redirection from https context.": "FAIL"
-    }
+    "total": 8
   },
   "mixed-content/gen/iframe-inherit.meta/unset/worklet-layout-import-data.https.html": {
     "total": 8
@@ -586,18 +564,10 @@
     "total": 8
   },
   "mixed-content/gen/srcdoc-inherit.http-rp/opt-in/worklet-audio-import-data.https.html": {
-    "total": 8,
-    "failures": {
-      "Mixed-Content: Expects allowed for worklet-audio-import-data to same-https origin and keep-scheme redirection from https context.": "FAIL",
-      "Mixed-Content: Expects allowed for worklet-audio-import-data to same-https origin and no-redirect redirection from https context.": "FAIL"
-    }
+    "total": 8
   },
   "mixed-content/gen/srcdoc-inherit.http-rp/opt-in/worklet-audio.https.html": {
-    "total": 8,
-    "failures": {
-      "Mixed-Content: Expects allowed for worklet-audio to same-https origin and keep-scheme redirection from https context.": "FAIL",
-      "Mixed-Content: Expects allowed for worklet-audio to same-https origin and no-redirect redirection from https context.": "FAIL"
-    }
+    "total": 8
   },
   "mixed-content/gen/srcdoc-inherit.http-rp/opt-in/worklet-layout-import-data.https.html": {
     "total": 8
@@ -684,16 +654,10 @@
     "total": 5
   },
   "mixed-content/gen/srcdoc-inherit.meta/opt-in/worklet-audio-import-data.https.html": {
-    "total": 5,
-    "failures": {
-      "Mixed-Content: Expects allowed for worklet-audio-import-data to same-https origin and no-redirect redirection from https context.": "FAIL"
-    }
+    "total": 5
   },
   "mixed-content/gen/srcdoc-inherit.meta/opt-in/worklet-audio.https.html": {
-    "total": 5,
-    "failures": {
-      "Mixed-Content: Expects allowed for worklet-audio to same-https origin and no-redirect redirection from https context.": "FAIL"
-    }
+    "total": 5
   },
   "mixed-content/gen/srcdoc-inherit.meta/opt-in/worklet-layout-import-data.https.html": {
     "total": 5
@@ -780,18 +744,10 @@
     "total": 8
   },
   "mixed-content/gen/srcdoc-inherit.meta/unset/worklet-audio-import-data.https.html": {
-    "total": 8,
-    "failures": {
-      "Mixed-Content: Expects allowed for worklet-audio-import-data to same-https origin and keep-scheme redirection from https context.": "FAIL",
-      "Mixed-Content: Expects allowed for worklet-audio-import-data to same-https origin and no-redirect redirection from https context.": "FAIL"
-    }
+    "total": 8
   },
   "mixed-content/gen/srcdoc-inherit.meta/unset/worklet-audio.https.html": {
-    "total": 8,
-    "failures": {
-      "Mixed-Content: Expects allowed for worklet-audio to same-https origin and keep-scheme redirection from https context.": "FAIL",
-      "Mixed-Content: Expects allowed for worklet-audio to same-https origin and no-redirect redirection from https context.": "FAIL"
-    }
+    "total": 8
   },
   "mixed-content/gen/srcdoc-inherit.meta/unset/worklet-layout-import-data.https.html": {
     "total": 8
@@ -878,18 +834,10 @@
     "total": 8
   },
   "mixed-content/gen/top.http-rp/opt-in/worklet-audio-import-data.https.html": {
-    "total": 8,
-    "failures": {
-      "Mixed-Content: Expects allowed for worklet-audio-import-data to same-https origin and keep-scheme redirection from https context.": "FAIL",
-      "Mixed-Content: Expects allowed for worklet-audio-import-data to same-https origin and no-redirect redirection from https context.": "FAIL"
-    }
+    "total": 8
   },
   "mixed-content/gen/top.http-rp/opt-in/worklet-audio.https.html": {
-    "total": 8,
-    "failures": {
-      "Mixed-Content: Expects allowed for worklet-audio to same-https origin and keep-scheme redirection from https context.": "FAIL",
-      "Mixed-Content: Expects allowed for worklet-audio to same-https origin and no-redirect redirection from https context.": "FAIL"
-    }
+    "total": 8
   },
   "mixed-content/gen/top.http-rp/opt-in/worklet-layout-import-data.https.html": {
     "total": 8
@@ -976,16 +924,10 @@
     "total": 5
   },
   "mixed-content/gen/top.meta/opt-in/worklet-audio-import-data.https.html": {
-    "total": 5,
-    "failures": {
-      "Mixed-Content: Expects allowed for worklet-audio-import-data to same-https origin and no-redirect redirection from https context.": "FAIL"
-    }
+    "total": 5
   },
   "mixed-content/gen/top.meta/opt-in/worklet-audio.https.html": {
-    "total": 5,
-    "failures": {
-      "Mixed-Content: Expects allowed for worklet-audio to same-https origin and no-redirect redirection from https context.": "FAIL"
-    }
+    "total": 5
   },
   "mixed-content/gen/top.meta/opt-in/worklet-layout-import-data.https.html": {
     "total": 5
@@ -1072,18 +1014,10 @@
     "total": 8
   },
   "mixed-content/gen/top.meta/unset/worklet-audio-import-data.https.html": {
-    "total": 8,
-    "failures": {
-      "Mixed-Content: Expects allowed for worklet-audio-import-data to same-https origin and keep-scheme redirection from https context.": "FAIL",
-      "Mixed-Content: Expects allowed for worklet-audio-import-data to same-https origin and no-redirect redirection from https context.": "FAIL"
-    }
+    "total": 8
   },
   "mixed-content/gen/top.meta/unset/worklet-audio.https.html": {
-    "total": 8,
-    "failures": {
-      "Mixed-Content: Expects allowed for worklet-audio to same-https origin and keep-scheme redirection from https context.": "FAIL",
-      "Mixed-Content: Expects allowed for worklet-audio to same-https origin and no-redirect redirection from https context.": "FAIL"
-    }
+    "total": 8
   },
   "mixed-content/gen/top.meta/unset/worklet-layout-import-data.https.html": {
     "total": 8

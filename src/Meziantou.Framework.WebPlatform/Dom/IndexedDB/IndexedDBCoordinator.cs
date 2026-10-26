@@ -265,12 +265,17 @@ internal abstract class IndexedDBConnectionRequest(IndexedDBDatabaseState state,
         var pending = openConnections.Count;
         foreach (var openConnection in openConnections)
         {
-            openConnection.Global.QueueGlobalTask(() =>
+            void FireVersionChange()
             {
                 try
                 {
-                    // The event is not fired at a connection closed by the previous events
-                    if (!openConnection.ClosePending)
+                    // The event is not fired at a connection closed by the previous events. As in the browsers, the document of a
+                    // connection that is in the back/forward cache is evicted instead ("idbversionchangeevent"), which closes it.
+                    if (openConnection.Global is Window { Document: { IsInBackForwardCache: true } cachedDocument })
+                    {
+                        cachedDocument.EvictFromBackForwardCache("idbversionchangeevent");
+                    }
+                    else if (!openConnection.ClosePending)
                     {
                         openConnection.FireVersionChangeEvent("versionchange", oldVersion, newVersion);
                     }
@@ -282,7 +287,17 @@ internal abstract class IndexedDBConnectionRequest(IndexedDBDatabaseState state,
                         Global.QueueGlobalTask(AfterVersionChangeEvents);
                     }
                 }
-            });
+            }
+
+            // The task of a document in the back/forward cache would be deferred until it is restored
+            if (openConnection.Global is Window { Document.IsInBackForwardCache: true } cachedWindow)
+            {
+                cachedWindow.EventLoop.QueueTask(FireVersionChange);
+            }
+            else
+            {
+                openConnection.Global.QueueGlobalTask(FireVersionChange);
+            }
         }
 
         void AfterVersionChangeEvents()

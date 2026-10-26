@@ -411,10 +411,11 @@ public sealed class SpeculationRulesTests : IDisposable
         Assert.Single(state.Held!);
         Assert.Empty(state.Pending!);
 
-        // The initiator is unloaded by the activation, which releases its lock; then the delayed operations run
+        // The initiator is kept in the back/forward cache by the activation, then the delayed operations run: the query still
+        // sees the lock of the initiator, and the request evicts it from the cache, which releases its lock
         context.Document.DefaultView!.Location.Href = "https://example.com/next.html";
         await _contexts.EventLoop.RunUntilIdleAsync(TestContext.Current.CancellationToken);
-        Assert.Equal("prerenderingchange,granted false,query false 1", context.Document.Title);
+        Assert.Equal("prerenderingchange,query false 1,granted false", context.Document.Title);
         Assert.Empty(_errors);
     }
 

@@ -42,14 +42,62 @@ public sealed class PlaywrightServerFixture : IAsyncLifetime
     {
         if (Browser is not null)
         {
-            await Browser.CloseAsync();
+            await WithTimeoutAsync(Browser.CloseAsync(), "IBrowser.CloseAsync");
         }
 
-        _playwright?.Dispose();
+        if (_playwright is not null)
+        {
+            // Dispose closes the input of the driver and waits for it to exit, without a timeout
+            await WithTimeoutAsync(Task.Run(_playwright.Dispose), "IPlaywright.Dispose");
+        }
+
         if (Server is not null)
         {
-            await Server.DisposeAsync();
+            await WithTimeoutAsync(Server.DisposeAsync().AsTask(), "PlaywrightServer.DisposeAsync");
         }
+    }
+
+    /// <summary>
+    /// Waits for a step of the cleanup. Microsoft.Playwright never notices that its driver (a node process) exited, so its
+    /// calls can wait forever: the cleanup fails with the name of the step instead of hanging the test run.
+    /// </summary>
+    private static async Task WithTimeoutAsync(Task task, string step)
+    {
+        var timeout = TimeSpan.FromMinutes(1);
+        try
+        {
+            await task.WaitAsync(timeout);
+        }
+        catch (TimeoutException ex)
+        {
+            throw new TimeoutException($"{step} did not complete within {timeout.TotalSeconds} seconds. {DescribeDrivers()}", ex);
+        }
+    }
+
+    /// <summary>Describes the Playwright drivers that are running from the output directory of the tests, to tell a driver that exited from a server that stopped responding.</summary>
+    public static string DescribeDrivers()
+    {
+        var directory = Path.Combine(AppContext.BaseDirectory, ".playwright");
+        var drivers = new List<int>();
+        foreach (var process in System.Diagnostics.Process.GetProcessesByName("node"))
+        {
+            using (process)
+            {
+                try
+                {
+                    if (process.MainModule?.FileName is { } fileName && fileName.StartsWith(directory, StringComparison.OrdinalIgnoreCase))
+                    {
+                        drivers.Add(process.Id);
+                    }
+                }
+                catch (Exception ex) when (ex is InvalidOperationException or System.ComponentModel.Win32Exception or NotSupportedException)
+                {
+                    // The process exited, or it belongs to another user
+                }
+            }
+        }
+
+        return $"Running Playwright drivers: {drivers.Count} ({string.Join(", ", drivers)}).";
     }
 
     /// <summary>Creates a context and a page; the context is closed with the returned scope.</summary>

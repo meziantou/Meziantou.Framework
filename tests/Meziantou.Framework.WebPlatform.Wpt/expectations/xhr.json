@@ -1184,16 +1184,7 @@
     "total": 21
   },
   "xhr/status.h2.window.js": {
-    "total": 7,
-    "failures": {
-      "statusText over H2 for status 200 should be the empty string": "FAIL",
-      "statusText over H2 for status 210 should be the empty string": "FAIL",
-      "statusText over H2 for status 400 should be the empty string": "FAIL",
-      "statusText over H2 for status 404 should be the empty string": "FAIL",
-      "statusText over H2 for status 410 should be the empty string": "FAIL",
-      "statusText over H2 for status 500 should be the empty string": "FAIL",
-      "statusText over H2 for status 502 should be the empty string": "FAIL"
-    }
+    "total": 7
   },
   "xhr/sync-no-progress.any.js": {
     "total": 1

@@ -1014,16 +1014,10 @@
     }
   },
   "websockets/back-forward-cache-with-closed-websocket-connection.window.js": {
-    "total": 1,
-    "failures": {
-      "Testing BFCache support for page with closed WebSocket connection.": "PRECONDITION_FAILED"
-    }
+    "total": 1
   },
   "websockets/back-forward-cache-with-open-websocket-connection-and-close-it-in-pagehide.window.js": {
-    "total": 1,
-    "failures": {
-      "Testing BFCache support for a page with an open WebSocket connection, but close it in pagehide.": "PRECONDITION_FAILED"
-    }
+    "total": 1
   },
   "websockets/back-forward-cache-with-open-websocket-connection-ccns.tentative.window.js": {
     "total": 1,

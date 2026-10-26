@@ -1,0 +1,129 @@
+# Web Audio
+
+The library implements the [Web Audio API](https://webaudio.github.io/web-audio-api/) (namespace
+`Meziantou.Framework.WebPlatform.WebAudio`): the audio routing graph, its nodes and the automation of their parameters,
+rendered without audio device. The scripts use it through the WebIDL bindings, and the .NET code can use the same
+classes directly.
+
+```js
+const context = new OfflineAudioContext({ numberOfChannels: 2, length: 44100, sampleRate: 44100 });
+const oscillator = new OscillatorNode(context, { type: 'sawtooth', frequency: 220 });
+const filter = new BiquadFilterNode(context, { frequency: 1000 });
+oscillator.connect(filter).connect(context.destination);
+oscillator.start();
+const buffer = await context.startRendering();
+```
+
+## Rendering
+
+- **Where the graph is rendered**: on the thread of the event loop of the window of the context, never concurrently with
+  its scripts. An `OfflineAudioContext` renders from tasks of the event loop, by slices of 16384 frames, so that the other
+  tasks (e.g. a call of `close()`, or the events of the nodes) run during a long rendering. A context created by .NET code
+  without window renders synchronously: the task returned by `StartRendering()` is completed when it returns.
+- **The realtime context**: an `AudioContext` renders from timer tasks of the event loop, at the pace of its clock
+  (`DomEventLoop.TimeProvider`, a fake clock in tests): each task renders the render quanta whose time has elapsed, every
+  half `baseLatency` (from 5 ms to 50 ms). The audio is discarded: there is no audio device. See
+  [The realtime context](#the-realtime-context).
+- **The render quantum**: 128 frames by default, or the size given by `renderSizeHint`. Each render quantum, the nodes are
+  processed in dependency order. The order is computed again when the connections change: the nodes without connection are
+  skipped (except the started sources, so that they fire `ended`), a `DelayNode` in a cycle is split (its output is read
+  from its delay line before the other nodes, which clamps its delay to one render quantum, and its input is written after
+  them), and the nodes of a cycle without `DelayNode` are muted.
+- **Actively processing**: a node whose inputs are not actively processing outputs a single channel of silence once its
+  tail time has elapsed (the delay of a `DelayNode`, the length of the response of a `ConvolverNode`, until the state of a
+  filter decays to silence...).
+- **Channels**: the inputs are up-mixed and down-mixed with the speaker layouts (mono, stereo, quad, 5.1) or discretely
+  ([channel mixing](https://webaudio.github.io/web-audio-api/#channel-up-mixing-and-down-mixing)).
+- **Automation**: the events of an `AudioParam` take effect at the first frame at or after their time
+  (`ceil(time × sampleRate)`), and the formulas of the specification are computed in double precision at the exact time of
+  the frames; as in the browsers, the event values are single-precision floats and a linear ramp adds its change to its
+  start value in single precision (an automation and the same automation from 0 added by an audio-rate input give the same
+  values). The values are clamped to the nominal range after the automation.
+- **Sources**: the start and stop times are sub-sample accurate (the first frame of an `AudioBufferSourceNode` or an
+  `OscillatorNode` accounts for the time elapsed since the start time); a time within 10⁻⁶ frame of a frame is that frame.
+  The `AudioBuffer` samples are linearly interpolated; after the last frame of a buffer that does not loop, the signal is
+  extrapolated from its last two frames.
+
+## Nodes
+
+| Node | Notes |
+|---|---|
+| `AudioBufferSourceNode` | Loops with sub-sample loop points, playback rate and detune (k-rate), negative rates, `duration` |
+| `ConstantSourceNode`, `GainNode` | |
+| `OscillatorNode`, `PeriodicWave` | The waveforms are band-limited to the Nyquist frequency: summed directly up to 64 partials, else interpolated from wavetables of 4096 points (one per third of an octave); the normalization of the specification |
+| `DelayNode` | Linear interpolation; the output has the channels of the delayed input |
+| `BiquadFilterNode` | The coefficients of the Audio EQ Cookbook with the edge cases of the browsers, computed per frame when a parameter is automated; `getFrequencyResponse()` |
+| `IIRFilterNode` | Up to 20 coefficients; `getFrequencyResponse()` |
+| `ConvolverNode` | Responses of 1, 2 or 4 channels (true stereo); direct convolution up to 64 frames, else a uniformly partitioned overlap-save FFT convolution; the normalization of the specification |
+| `WaveShaperNode` | The `2x` and `4x` oversampling use windowed-sinc filters (latency of 32 frames) |
+| `DynamicsCompressorNode` | The structure of the specification (look-ahead of 6 ms, envelope follower, soft knee, makeup gain); the curves are not the ones of a browser |
+| `StereoPannerNode`, `PannerNode`, `AudioListener` | Equal-power panning, distance models and cones of the specification. There is no measured HRTF database: the `HRTF` panning model is a structural model of the head (interaural delay, head shadow and pinna echoes, C. P. Brown and R. O. Duda, 1998) |
+| `ChannelSplitterNode`, `ChannelMergerNode` | |
+| `AnalyserNode` | The last 32768 frames (down-mixed to mono), Blackman window, smoothing over time |
+| `ScriptProcessorNode` | The `audioprocess` events are fired during the rendering, and their output is played two buffers later |
+
+## Audio worklet
+
+`context.audioWorklet` (a context of a window, with a script engine that supports the module scripts) loads the modules
+that register `AudioWorkletProcessor` classes with `registerProcessor()`, and an `AudioWorkletNode` processes its audio
+with an instance of its class.
+
+- **Where the processors run**: the global scope of the worklet is a realm of the script engine of the document, so
+  `process()` is called on the thread of the event loop, during the rendering of the context. The processor is constructed
+  in a task queued by the constructor of the node: until then, the node outputs silence.
+- **The arrays of `process()`**: the inputs, the outputs and the values of the parameters are frozen arrays of
+  `Float32Array`, reused while their shape does not change (the number of channels of an input or an output, the length
+  of the values of a parameter: 1 when the value is constant during the render quantum). An input that is not actively
+  processing has no channel. The output arrays are filled with zeros before each call; a buffer transferred by the script
+  creates new arrays.
+- **The lifetime**: the node stays active while `process()` returns a truthy value, or while it has an input connection
+  when it returns a falsy value. An exception of the constructor or of `process()` fires `processorerror` at the node,
+  which then outputs silence.
+- **The ports**: `audioWorklet.port` and the global `port` of the worklet, and the `port` of a node and of its processor,
+  are entangled `MessagePort`s; `processorOptions` are structured-cloned in the global scope of the worklet.
+
+## Decoding
+
+`decodeAudioData()` (and `DecodeAudioData(ReadOnlyMemory<byte>)` for the .NET code) decodes the audio files whose format is
+sniffed from their content:
+
+- **WAV**: integer PCM of 8 to 32 bits, IEEE floats of 32 and 64 bits, A-law and µ-law, also in a `WAVE_FORMAT_EXTENSIBLE`
+  header.
+- **FLAC**: the native FLAC streams (optionally after an ID3v2 tag), with every subframe type and stereo decorrelation;
+  the checksums are not verified.
+
+The other formats (MP3, AAC, Ogg Vorbis, Opus...) are rejected with an `EncodingError`, as are the files whose audio does not
+fit in an `AudioBuffer` once resampled (checked from the header, before the samples are decoded). The decoded audio is
+resampled to the sample rate of the context with a windowed-sinc interpolation (16 zero crossings, Blackman window). The
+`ArrayBuffer` is detached when the call returns (a `DataCloneError` when it is already detached), and the file is decoded in
+a task of the event loop.
+
+## The realtime context
+
+- **Starting**: a context is allowed to start (there is no autoplay policy for the audio contexts): it is `suspended` when
+  constructed, then a task sets its state to `running`. `suspend()`, `resume()` and `close()` change the state from tasks,
+  which resolve their promise before `statechange` is fired. When its document is destroyed (e.g. its iframe is removed),
+  the context is closed at once, without event.
+- **Time**: `currentTime` advances while the context is running, by render quanta. A task renders at most 0.5 s of audio:
+  when the event loop was blocked longer (e.g. a long script), the rest of the time is skipped and counted as an underrun.
+  `getOutputTimestamp()` returns the time of the last rendered frame and the time of the performance timeline at which it
+  is due.
+- **Latency**: `baseLatency` is 2 render quanta for `interactive` (the default), 8 for `balanced` and 32 for `playback`;
+  a latency in seconds is rounded up to render quanta, in this range. `outputLatency` is 0.
+- **Sample rate**: 48000 Hz by default, or the `sampleRate` option (from 3000 to 768000 Hz).
+- **Output devices**: there is only the default device (the sink identifier `""`) and the sinks without device
+  (`{ type: 'none' }`). Another identifier is an `error` event at the construction, and a `NotFoundError` for
+  `setSinkId()`, which also requires the `speaker-selection` permissions policy feature (a `NotAllowedError`).
+- **`playbackStats`**: `totalDuration` is the time during which the context ran since its first render quantum, the
+  underruns are the skipped times, and the latencies are `baseLatency + outputLatency`. The values do not change until
+  the next microtask checkpoint.
+- **Audio worklet**: the processors of a render quantum run without microtask checkpoint between them; a microtask
+  checkpoint is performed after the render quantum.
+
+## Not implemented
+
+- `MediaElementAudioSourceNode`, the `MediaStream` nodes (`MediaStreamAudioSourceNode`, `MediaStreamTrackAudioSourceNode`,
+  `MediaStreamAudioDestinationNode`) and the factories of `AudioContext` that create them.
+- The `interrupted` state (e.g. a context whose document is hidden when `media-playback-while-not-visible` is disallowed).
+
+The results of the web-platform-tests are in [docs/wpt-coverage/webaudio.md](wpt-coverage/webaudio.md).

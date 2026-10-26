@@ -90,6 +90,8 @@ Console.WriteLine(document.Body!.InnerHtml); // <ul id="list"><li>a</li><li>b</l
 - The Streams Standard (`ReadableStream`, `WritableStream`, `TransformStream`...), `TextEncoderStream`,
   `TextDecoderStream`, `CompressionStream`, `DecompressionStream`, `Blob.stream()` and `Blob.textStream()` are supported:
   see [Streams](#streams).
+- The Observable API (`Observable`, `Subscriber` and `EventTarget.prototype.when()`) is supported: see
+  [Observable](#observable).
 - `Function.prototype.toString()` returns the source text of the functions (https://tc39.es/ecma262/#sec-function.prototype.tostring):
   the compiled functions reference the source of their script, so the source of a script stays in memory as long as one
   of its functions is alive. This is not configurable. A function without source text (a built-in function, or a
@@ -159,7 +161,7 @@ are called on the thread of the worker. The global object of a realm is a `Globa
 | `ExecuteModuleScript(ModuleScript)` | A module script runs ("run a module script"): the engine links and evaluates the graph and reports the errors (including the errors of a top-level `await`). |
 | `GetActiveScriptBaseUrl()` | A string is compiled by `setTimeout()` or `setInterval()`: the base URL of the active script, used to resolve the module specifiers of `import()`. |
 | `GetCurrentScriptLocation()` | A content security policy is violated: the URL, the line and the column of the running code (`ScriptLocation`), the `sourceFile`, `lineNumber` and `columnNumber` of the violation, or null (the default). `JavaScriptScriptEngine` gives the position of the running instruction (e.g. the call of the method that found the violation), as the top frame of its stack traces. |
-| `StructuredSerialize(GlobalScope, object?)` / `StructuredDeserialize(GlobalScope, object?)` | A value is sent to another realm or cloned (e.g. `BroadcastChannel.postMessage()`, `MessagePort.postMessage()`, `structuredClone()`): the structured clone of the value (https://html.spec.whatwg.org/multipage/structured-data.html). The default implementations only support the .NET primitive values and the serializable platform objects; the WebIDL bindings implement the structured clone of the JavaScript values (primitives, wrapper objects, `Date`, `RegExp`, the buffers and views, `Map`, `Set`, the errors with their stack, arrays, ordinary objects, and the serializable platform objects: `Blob`, `File`, `FileList`, `DOMException`, `DOMPoint`, `DOMRect`, `DOMQuad`, `DOMMatrix` and their read-only variants). The other platform objects (e.g. `Request`, `Response`, the streams) throw a `DataCloneError`. A `SharedArrayBuffer` throws a `DataCloneError` unless the current global object is cross-origin isolated; it is deserialized as a new `SharedArrayBuffer` that shares the memory of the original (with `IJsAdapter.GetSharedDataBlock` and `SetSharedDataBlock`), in the realms of the same agent cluster only (another agent cluster throws a `DataCloneError`, e.g. a `messageerror` event). The windows of a cross-origin isolated browsing context group and their dedicated workers are in origin-keyed agent clusters; a shared worker has its own agent cluster. |
+| `StructuredSerialize(GlobalScope, object?)` / `StructuredDeserialize(GlobalScope, object?)` | A value is sent to another realm or cloned (e.g. `BroadcastChannel.postMessage()`, `MessagePort.postMessage()`, `structuredClone()`): the structured clone of the value (https://html.spec.whatwg.org/multipage/structured-data.html). The default implementations only support the .NET primitive values and the serializable platform objects; the WebIDL bindings implement the structured clone of the JavaScript values (primitives, wrapper objects, `Date`, `RegExp`, the buffers and views, `Map`, `Set`, the errors with their stack, arrays, ordinary objects, and the serializable platform objects: `Blob`, `File`, `FileList`, `DOMException`, `DOMPoint`, `DOMRect`, `DOMQuad`, `DOMMatrix` and their read-only variants). The other platform objects (e.g. `Request`, `Response`, the streams) throw a `DataCloneError`. A `SharedArrayBuffer` throws a `DataCloneError` unless the current global object is cross-origin isolated; it is deserialized as a new `SharedArrayBuffer` that shares the memory of the original (with `IJsAdapter.GetSharedDataBlock` and `SetSharedDataBlock`), in the realms of the same agent cluster only (another agent cluster throws a `DataCloneError`, e.g. a `messageerror` event). The windows of a cross-origin isolated browsing context group and their dedicated workers are in origin-keyed agent clusters; the worklets are in the agent cluster of their document (with its cross-origin isolated capability); a shared worker has its own agent cluster. |
 | `StructuredSerialize(GlobalScope, object?, IReadOnlyList<object>)` | `structuredClone(value, { transfer })` and `window.postMessage()`: the objects of the transfer list are transferred (https://html.spec.whatwg.org/multipage/structured-data.html#structuredserializewithtransfer). The default implementation throws a `DataCloneError` when the list is not empty; the WebIDL bindings transfer the `ArrayBuffer` objects (resizable buffers keep their maximum length, length-tracking views keep tracking) and the `MessagePort` objects. |
 | `StructuredSerializeForAgent(GlobalScope, object?, IReadOnlyList<object>)` | A message is posted to a `MessagePort`, a `BroadcastChannel` or a worker: the result is deserialized by another engine instance, on another thread, so it must not reference the values of the engine (the WebIDL bindings convert their records to .NET values). The default implementation calls `StructuredSerialize`. |
 
@@ -273,7 +275,8 @@ paint worklet of the CSS Painting API (`CSS.paintWorklet`, `Document.PaintWorkle
 [Paint worklet images](rendering.md#paint-worklet-images)), the layout worklet of the CSS Layout API (`CSS.layoutWorklet`,
 `Document.LayoutWorklet`; see [Layout API containers](layout.md#layout-api-containers-csslayoutlayoutapi-csslayoutapi))
 and the animation worklet of the CSS Animation Worklet API (`CSS.animationWorklet`, `Document.AnimationWorklet`; see
-[Animation worklet](animations.md#animation-worklet)). The audio worklets are not implemented (no Web Audio).
+[Animation worklet](animations.md#animation-worklet)). The audio worklet of the Web Audio API (`BaseAudioContext.audioWorklet`)
+is described in [Web Audio](web-audio.md#audio-worklet).
 
 ```js
 await CSS.paintWorklet.addModule('paint.js', { credentials: 'same-origin' });
@@ -354,6 +357,26 @@ microtasks are the ones of the engine:
 
 The streams cannot be transferred (`postMessage()` or `structuredClone()` with a transfer list), and the
 `ReadableStream` of type `owning` (a tentative proposal) is not supported.
+
+### Observable
+
+The Observable API (https://wicg.github.io/observable/) is implemented in JavaScript by the WebIDL bindings
+(`Scripting/WebIdl/Observable.js`, an embedded resource), as its algorithms are made of callbacks, promises, iterators
+and abort signals:
+
+- `Observable` (the constructor, `subscribe()` and `Observable.from()` for the observables, the async iterables, the
+  iterables and the promises), `Subscriber` (`next()`, `error()`, `complete()`, `addTeardown()`, `active`, `signal`), and
+  `EventTarget.prototype.when()`, whose subscriptions add an event listener removed when the subscription ends.
+- The operators that return an observable (`takeUntil()`, `map()`, `filter()`, `take()`, `drop()`, `flatMap()`,
+  `switchMap()`, `inspect()`, `catch()`, `finally()`) and those that return a promise (`toArray()`, `forEach()`,
+  `every()`, `first()`, `last()`, `find()`, `some()`, `reduce()`).
+- The subscribers and the abort signals are the ones of the DOM: an abort signal passed to `subscribe()` unsubscribes,
+  and the teardowns run in the reverse order of their addition. An error that no observer handles is reported to the
+  global object (an `error` event). Nothing happens in a window whose document is not fully active.
+- As for the streams, the script is evaluated in a realm when one of its members is first used, the algorithms use the
+  intrinsics captured at that time, and the observables of the realms of an agent can be used together.
+- `BrowsingContextOptions.Features` hides the API with `ObservableEnabled` (see
+  [Disabling features](browsing-context.md#disabling-features)).
 
 ### Fetch
 
@@ -438,7 +461,7 @@ has its own store of instances, memories, tables, globals and tags):
 - The bytes of a memory are a .NET array that its `ArrayBuffer` shares: the writes of the scripts are seen by WebAssembly,
   and the buffer is detached when the memory grows (by `grow()` or by `memory.grow`). The buffers cannot be transferred.
 - The modules are compiled on the thread of the agent, and the promises are settled by a task.
-- A `WebAssembly.Module` is serializable within its agent cluster (`postMessage()` to a window or a dedicated worker):
+- A `WebAssembly.Module` is serializable within its agent cluster (`postMessage()` to a window, a dedicated worker or a worklet):
   the compiled module is shared.
 - The running code is interrupted by the limits of the script engine (e.g. `JavaScriptScriptEngineOptions.Timeout`), and
   a stack overflow throws a `RangeError`.

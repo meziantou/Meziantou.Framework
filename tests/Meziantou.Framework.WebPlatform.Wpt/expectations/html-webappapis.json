@@ -927,19 +927,12 @@
     "total": 2
   },
   "html/webappapis/scripting/processing-model-2/unhandled-promise-rejections/allow-crossorigin.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "Promise rejection event should be received for the cross-origin CORS script": "TIMEOUT"
-    }
+    "total": 1
   },
   "html/webappapis/scripting/processing-model-2/unhandled-promise-rejections/disallow-crossorigin.html": {
-    "harness": "TIMEOUT",
     "total": 3,
     "failures": {
-      "Promise rejection event should be muted for cross-origin non-CORS script": "TIMEOUT",
-      "Promise rejection should be muted if the rejected promise is handled in cross-origin non-CORS script": "NOTRUN",
-      "Promise rejection should be muted if the rejected promise is handled in unhandledrejection event handler in cross-origin non-CORS script": "NOTRUN"
+      "Promise rejection event should be muted for cross-origin non-CORS script": "FAIL"
     }
   },
   "html/webappapis/scripting/processing-model-2/unhandled-promise-rejections/promise-rejection-event-constructor.html": {

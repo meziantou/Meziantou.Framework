@@ -120,16 +120,10 @@
     "total": 1
   },
   "preload/prefetch-cache.html": {
-    "total": 4,
-    "failures": {
-      "Prefetch should populate the HTTP cache": "FAIL"
-    }
+    "total": 4
   },
   "preload/prefetch-document.html": {
-    "total": 5,
-    "failures": {
-      "same origin document prefetch without 'as' should be consumed": "FAIL"
-    }
+    "total": 5
   },
   "preload/prefetch-events.html": {
     "total": 9

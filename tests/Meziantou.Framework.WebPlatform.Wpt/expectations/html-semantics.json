@@ -473,46 +473,22 @@
     "total": 1
   },
   "html/semantics/embedded-content/bfcache/embedded-html.html": {
-    "total": 2,
-    "failures": {
-      "Page with <embed type=text/html src=/resources/blank.html>": "PRECONDITION_FAILED",
-      "Page with <object type=text/html data=/resources/blank.html>": "PRECONDITION_FAILED"
-    }
+    "total": 2
   },
   "html/semantics/embedded-content/bfcache/embedded-img.html": {
-    "total": 2,
-    "failures": {
-      "Page with <embed type=image/png src=/images/blue.png>": "PRECONDITION_FAILED",
-      "Page with <object type=image/png data=/images/blue.png>": "PRECONDITION_FAILED"
-    }
+    "total": 2
   },
   "html/semantics/embedded-content/bfcache/embedded-js.html": {
-    "total": 2,
-    "failures": {
-      "Page with <embed type=application/javascript src=/resources/test-only-api.js>": "PRECONDITION_FAILED",
-      "Page with <object type=application/javascript data=/resources/test-only-api.js>": "PRECONDITION_FAILED"
-    }
+    "total": 2
   },
   "html/semantics/embedded-content/bfcache/embedded-mp4.html": {
-    "total": 2,
-    "failures": {
-      "Page with <embed type=undefined src=/media/white.mp4>": "PRECONDITION_FAILED",
-      "Page with <object type=undefined data=/media/white.mp4>": "PRECONDITION_FAILED"
-    }
+    "total": 2
   },
   "html/semantics/embedded-content/bfcache/embedded-not-found.html": {
-    "total": 2,
-    "failures": {
-      "Page with <embed type=image/png src=/404.png>": "PRECONDITION_FAILED",
-      "Page with <object type=image/png data=/404.png>": "PRECONDITION_FAILED"
-    }
+    "total": 2
   },
   "html/semantics/embedded-content/bfcache/embedded-type-only.html": {
-    "total": 2,
-    "failures": {
-      "Page with <embed type=text/html src=undefined>": "PRECONDITION_FAILED",
-      "Page with <object type=text/html data=undefined>": "PRECONDITION_FAILED"
-    }
+    "total": 2
   },
   "html/semantics/embedded-content/image-maps/image-map-processing-model/hash-name-reference-dynamic.html": {
     "total": 8

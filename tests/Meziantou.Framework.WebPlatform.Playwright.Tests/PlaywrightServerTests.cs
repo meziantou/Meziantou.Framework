@@ -14,26 +14,43 @@ public sealed class PlaywrightServerTests(PlaywrightServerFixture fixture) : ICl
     [Fact]
     public async Task ReadmeExample_Connect()
     {
-        #region PlaywrightServer_Connect
-        await using var server = new PlaywrightServer(); // no DocumentLoader: the pages use page.SetContentAsync() and the routes
-        await server.StartAsync();
-
-        using var playwright = await Microsoft.Playwright.Playwright.CreateAsync();
-        await using var browser = await playwright.Chromium.ConnectAsync(server.WsEndpoint.ToString());
-        var page = await browser.NewPageAsync();
-        await page.SetContentAsync("""
-            <label for=name>Name</label><input id=name>
-            <button onclick="document.querySelector('output').textContent = 'Hello ' + document.querySelector('input').value">Greet</button>
-            <output></output>
-            """);
-
-        await page.GetByLabel("Name").FillAsync("World");
-        await page.GetByRole(AriaRole.Button, new() { Name = "Greet" }).ClickAsync();
-        await Assertions.Expect(page.Locator("output")).ToHaveTextAsync("Hello World");
-        var screenshot = await page.ScreenshotAsync();
-        #endregion
+        // The test starts its own driver and server. Microsoft.Playwright does not notice when its driver exits, and then
+        // waits forever: the timeout fails the test instead of hanging the test run.
+        byte[] screenshot;
+        try
+        {
+            screenshot = await RunExampleAsync().WaitAsync(TimeSpan.FromMinutes(2), TestContext.Current.CancellationToken);
+        }
+        catch (TimeoutException ex)
+        {
+            throw new TimeoutException("The example did not complete within 2 minutes. " + PlaywrightServerFixture.DescribeDrivers(), ex);
+        }
 
         Assert.NotEmpty(screenshot);
+
+        static async Task<byte[]> RunExampleAsync()
+        {
+            #region PlaywrightServer_Connect
+            await using var server = new PlaywrightServer(); // no DocumentLoader: the pages use page.SetContentAsync() and the routes
+            await server.StartAsync();
+
+            using var playwright = await Microsoft.Playwright.Playwright.CreateAsync();
+            await using var browser = await playwright.Chromium.ConnectAsync(server.WsEndpoint.ToString());
+            var page = await browser.NewPageAsync();
+            await page.SetContentAsync("""
+                <label for=name>Name</label><input id=name>
+                <button onclick="document.querySelector('output').textContent = 'Hello ' + document.querySelector('input').value">Greet</button>
+                <output></output>
+                """);
+
+            await page.GetByLabel("Name").FillAsync("World");
+            await page.GetByRole(AriaRole.Button, new() { Name = "Greet" }).ClickAsync();
+            await Assertions.Expect(page.Locator("output")).ToHaveTextAsync("Hello World");
+            var screenshot = await page.ScreenshotAsync();
+            #endregion
+
+            return screenshot;
+        }
     }
 
     [Fact]

@@ -96,6 +96,18 @@ internal sealed class FetchTimestamps
 
     /// <summary>The time the fetch event of the request was queued on the event loop of the service worker, once it is running and activated, or 0.</summary>
     public long ServiceWorkerReady { get; set; }
+
+    /// <summary>The time the service worker started to evaluate its router rules (https://w3c.github.io/ServiceWorker/#service-worker-timing-info-worker-router-evaluation-start), or 0.</summary>
+    public long ServiceWorkerRouterEvaluationStart { get; set; }
+
+    /// <summary>The time the service worker started to look up its caches for a <c>cache</c> router source (https://w3c.github.io/ServiceWorker/#service-worker-timing-info-worker-cache-lookup-start), or 0.</summary>
+    public long ServiceWorkerCacheLookupStart { get; set; }
+
+    /// <summary>The source of the router rule that matched the request (https://w3c.github.io/ServiceWorker/#service-worker-timing-info-worker-matched-router-source), or the empty string.</summary>
+    public string ServiceWorkerMatchedRouterSource { get; set; } = "";
+
+    /// <summary>The source that gave the response of a request that matched a router rule (https://w3c.github.io/ServiceWorker/#service-worker-timing-info-worker-final-router-source), or the empty string.</summary>
+    public string ServiceWorkerFinalRouterSource { get; set; } = "";
 }
 
 internal sealed partial class FetchRequest
@@ -322,9 +334,9 @@ internal sealed partial class FetchRequest
 
     /// <summary>
     /// Whether the body of the response is interpreted as its bytes arrive (an event source, the resource of a media element
-    /// or of a track element): the response is returned when its headers are received, with the rest of its body
-    /// (<see cref="DocumentResource.RemainingContentBytes"/>). The navigations do it too; the other requests get the
-    /// complete body.
+    /// or of a track element, the <c>ReadableStream</c> of the body of <c>fetch()</c>): the response is returned when its
+    /// headers are received, with the rest of its body (<see cref="DocumentResource.RemainingContentBytes"/>, see
+    /// <see cref="FetchBodyReader"/>). The navigations do it too; the other requests get the complete body.
     /// </summary>
     public bool StreamsBody { get; set; }
 
@@ -403,6 +415,12 @@ internal sealed class FetchResponse
     /// whose status is 101, or null. It is a property of the internal response.
     /// </summary>
     public Stream? Connection { get; set; }
+
+    /// <summary>
+    /// https://fetch.spec.whatwg.org/#concept-response-cache-state: <c>local</c> for a stored response of the HTTP cache,
+    /// <c>validated</c> for a stored response validated by a <c>304</c> response, else the empty string.
+    /// </summary>
+    public string CacheState { get; set; } = "";
 
     /// <summary>https://fetch.spec.whatwg.org/#response-request-includes-credentials (a property of the internal response)</summary>
     public bool RequestIncludesCredentials { get; set; } = true;
@@ -512,6 +530,18 @@ internal sealed class FetchResponse
         }
 
         return new DocumentResource(internalResponse._body ?? []) { StatusCode = internalResponse.Status, StatusText = statusText, Headers = headers, Url = url, RedirectUrls = redirectUrls, ResponseType = Type };
+    }
+
+    /// <summary>https://fetch.spec.whatwg.org/#concept-response-clone: a copy of the response and of its internal response (the body is not copied: it is not modified).</summary>
+    public FetchResponse Clone()
+    {
+        var internalClone = ReferenceEquals(Internal, this) ? null : Internal.Clone();
+        var clone = (FetchResponse)MemberwiseClone();
+        clone.UrlList = [.. UrlList];
+        clone.HeaderList = [.. HeaderList];
+        clone.CorsExposedHeaderNames = [.. CorsExposedHeaderNames];
+        clone.Internal = internalClone ?? clone;
+        return clone;
     }
 
     /// <summary>https://fetch.spec.whatwg.org/#concept-filtered-response-basic</summary>

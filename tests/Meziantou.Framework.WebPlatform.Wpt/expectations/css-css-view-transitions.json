@@ -441,10 +441,7 @@
     }
   },
   "css/css-view-transitions/navigation/old_vt_promises_bfcache.html": {
-    "total": 1,
-    "failures": {
-      "VT object created on the old Document is skipped before persisting in BFCache": "PRECONDITION_FAILED"
-    }
+    "total": 1
   },
   "css/css-view-transitions/navigation/opt-in-removed-during-transition.html": {
     "total": 1

@@ -24,7 +24,7 @@ internal sealed class SessionHistoryEntry(UrlRecord url, DocumentState documentS
     /// <summary>https://html.spec.whatwg.org/multipage/browsing-the-web.html#she-document-state</summary>
     public DocumentState DocumentState { get; } = documentState;
 
-    /// <summary>The document of the document state, or null when it was destroyed (there is no back/forward cache).</summary>
+    /// <summary>The document of the document state, or null when it was destroyed (it was not kept in the back/forward cache).</summary>
     public Document? Document => DocumentState.Document;
 
     /// <summary>https://html.spec.whatwg.org/multipage/browsing-the-web.html#she-classic-history-api-state: the serialized state, or null for the serialization of null.</summary>
@@ -338,6 +338,9 @@ public sealed partial class BrowsingContext
 
         if (removedEntries is null)
             return;
+
+        // The documents of the removed entries are evicted from the back/forward cache
+        PruneBackForwardCache();
 
         // The navigation API entries of the other navigables whose forward entries are removed are disposed (e.g. a push in a
         // child navigable removes the forward entries of its parent). The specification only updates the History object of the
@@ -752,8 +755,8 @@ public sealed partial class BrowsingContext
     /// <summary>
     /// https://html.spec.whatwg.org/multipage/browsing-the-web.html#apply-the-history-step for a traversal (of the traversable):
     /// the navigables whose current entry changes get their target entry. A same-document entry is activated by a task (its
-    /// document fires popstate and hashchange); the document of an entry of another document is loaded again (there is no
-    /// back/forward cache), and becomes the document of the entry.
+    /// document fires popstate and hashchange); the document of an entry of another document is restored from the
+    /// back/forward cache, or loaded again when it was not kept, and becomes the document of the entry.
     /// </summary>
     /// <param name="step">The step.</param>
     /// <param name="isAllowedToNavigate">Whether the initiator of the traversal can navigate a navigable: the traversal is canceled when it would change a navigable it cannot navigate.</param>
@@ -871,6 +874,13 @@ public sealed partial class BrowsingContext
                 {
                     if (!navigable.IsDestroyed && ReferenceEquals(navigable.CurrentEntry, targetEntry))
                     {
+                        // The document of the entry is in the back/forward cache: it becomes the active document again
+                        if (navigable.IsInBackForwardCache(targetEntry))
+                        {
+                            navigable.RestoreFromBackForwardCache(targetEntry);
+                            return;
+                        }
+
                         navigable._beforeUnloadFiredForEntry = targetEntry;
                         try
                         {

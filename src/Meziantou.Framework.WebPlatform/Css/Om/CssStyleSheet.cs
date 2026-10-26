@@ -289,6 +289,12 @@ public sealed partial class CssStyleSheet : StyleSheet
     /// <summary>https://drafts.csswg.org/cssom/#concept-css-style-sheet-stylesheet-base-url</summary>
     internal string? BaseUrl { get; }
 
+    /// <summary>
+    /// The referrer and the referrer policy of the requests of the resources of a fetched style sheet, or null for the other
+    /// style sheets, whose resources are requested with the referrer and the referrer policy of the document.
+    /// </summary>
+    internal CssResourceReferrer? ResourceReferrer { get; init; }
+
     /// <summary>https://drafts.csswg.org/cssom/#concept-css-style-sheet-disallow-modification-flag</summary>
     private bool DisallowModification { get; set; }
 
@@ -636,5 +642,33 @@ public static partial class Css
         // The condition text wrapped in parentheses (e.g. "color: red")
         values = ValueMatcher.RemoveWhitespace(CssParser.ParseListOfComponentValues("(" + conditionText + ")"));
         return CssRuleParser.EvaluateSupportsCondition(values, 0, out end, quirks) is true && end == values.Count;
+    }
+}
+
+/// <summary>
+/// The referrer and the referrer policy of the requests of the resources of a fetched style sheet (its @import rules, the
+/// sources of its @font-face rules and the URLs of its declarations): the URL of the style sheet is the referrer
+/// (https://drafts.csswg.org/css-values-4/#fetch-a-style-resource), and the referrer policy is the one of the
+/// <c>Referrer-Policy</c> header of its response.
+/// </summary>
+/// <param name="Url">The URL of the response of the style sheet (its base URL), or the URL of its request when the response has none (a response created by a service worker).</param>
+/// <param name="ReferrerPolicy">The referrer policy of the response of the style sheet, or the empty string.</param>
+internal sealed record CssResourceReferrer(string Url, string ReferrerPolicy)
+{
+    /// <summary>Returns the referrer of the resources of the style sheet whose base URL is <paramref name="url"/>.</summary>
+    public static CssResourceReferrer Create(string url, DocumentResource? response)
+        => new(url, response is null ? "" : ReferrerPolicies.ParseHeader(response.Headers));
+
+    /// <summary>
+    /// Sets the referrer of a request of a resource of the style sheet, and its referrer policy unless the request has its
+    /// own (the <c>referrer-policy()</c> request URL modifier, https://drafts.csswg.org/css-values-5/#request-url-modifiers).
+    /// </summary>
+    public void Apply(FetchRequest request, string requestPolicy)
+    {
+        request.Referrer = Url;
+        if (requestPolicy.Length == 0 && ReferrerPolicy.Length > 0)
+        {
+            request.ReferrerPolicy = ReferrerPolicy;
+        }
     }
 }

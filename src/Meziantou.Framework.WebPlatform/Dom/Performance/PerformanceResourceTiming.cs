@@ -52,11 +52,12 @@ public class PerformanceResourceTiming : PerformanceEntry
 
     /// <summary>
     /// Gets the delivery type of the resource: <c>navigational-prefetch</c> for the document of a navigation that used a
-    /// navigational prefetch, else the empty string (there is no HTTP cache).
+    /// navigational prefetch, <c>cache</c> for a resource whose stored response of the HTTP cache was used (validated or
+    /// not, https://fetch.spec.whatwg.org/#fetch-finale), else the empty string.
     /// </summary>
     /// <seealso href="https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-deliverytype"/>
     [IdlMember("deliveryType", "https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-deliverytype")]
-    public string DeliveryType => (this as PerformanceNavigationTiming)?.LoadTimingInfo.DeliveryType ?? "";
+    public string DeliveryType => (this as PerformanceNavigationTiming)?.LoadTimingInfo.DeliveryType ?? (_timingInfo.CacheState.Length > 0 ? "cache" : "");
 
     /// <summary>Gets the ALPN protocol of the connection (e.g. <c>http/1.1</c>), or the empty string when it is not exposed.</summary>
     /// <seealso href="https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-nexthopprotocol"/>
@@ -133,30 +134,39 @@ public class PerformanceResourceTiming : PerformanceEntry
     [IdlMember("responseEnd", "https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-responseend")]
     public double ResponseEnd => _timingInfo.EndTime;
 
-    /// <summary>Gets the time the service worker started to evaluate its router rules: 0, as there is no service worker.</summary>
+    /// <summary>Gets the time the service worker started to evaluate its router rules, or 0 when the service worker has no router rule (or there is no service worker).</summary>
     /// <seealso href="https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-workerrouterevaluationstart"/>
     [IdlMember("workerRouterEvaluationStart", "https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-workerrouterevaluationstart")]
-    public double WorkerRouterEvaluationStart => 0;
+    public double WorkerRouterEvaluationStart => _timingInfo.WorkerRouterEvaluationStartTime;
 
-    /// <summary>Gets the time the service worker started to look up its cache: 0, as there is no service worker.</summary>
+    /// <summary>Gets the time the service worker started to look up its caches for a router rule whose source is the cache, or 0.</summary>
     /// <seealso href="https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-workercachelookupstart"/>
     [IdlMember("workerCacheLookupStart", "https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-workercachelookupstart")]
-    public double WorkerCacheLookupStart => 0;
+    public double WorkerCacheLookupStart => _timingInfo.WorkerCacheLookupStartTime;
 
-    /// <summary>Gets the source of the matched router rule of the service worker: the empty string, as there is no service worker.</summary>
+    /// <summary>Gets the source of the router rule of the service worker that matched the request (e.g. <c>network</c>, <c>cache</c>), or the empty string when no rule matched.</summary>
     /// <seealso href="https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-workermatchedroutersource"/>
     [IdlMember("workerMatchedRouterSource", "https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-workermatchedroutersource")]
-    public string WorkerMatchedRouterSource => "";
+    public string WorkerMatchedRouterSource => _timingInfo.WorkerMatchedRouterSource;
 
-    /// <summary>Gets the final source of the router of the service worker: the empty string, as there is no service worker.</summary>
+    /// <summary>Gets the source that gave the response of a request that matched a router rule (e.g. <c>network</c> after a cache miss), or the empty string when no rule matched.</summary>
     /// <seealso href="https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-workerfinalroutersource"/>
     [IdlMember("workerFinalRouterSource", "https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-workerfinalroutersource")]
-    public string WorkerFinalRouterSource => "";
+    public string WorkerFinalRouterSource => _timingInfo.WorkerFinalRouterSource;
 
-    /// <summary>Gets the size of the response: the encoded size of its body plus 300 (in place of the size of the headers), or 0 when the timing allow check failed.</summary>
+    /// <summary>
+    /// Gets the size of the response: the encoded size of its body plus 300 (in place of the size of the headers), 300 for
+    /// a stored response of the HTTP cache that was validated, or 0 for a stored response used without validation or when
+    /// the timing allow check failed.
+    /// </summary>
     /// <seealso href="https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-transfersize"/>
     [IdlMember("transferSize", "https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-transfersize")]
-    public ulong TransferSize => _timingInfo.TimingAllowPassed ? EncodedBodySize + 300 : 0;
+    public ulong TransferSize => !_timingInfo.TimingAllowPassed ? 0 : _timingInfo.CacheState switch
+    {
+        "local" => 0,
+        "validated" => 300,
+        _ => EncodedBodySize + 300,
+    };
 
     /// <summary>Gets the size of the body of the response, before its content codings are removed, or 0 for a CORS-cross-origin response.</summary>
     /// <seealso href="https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-encodedbodysize"/>

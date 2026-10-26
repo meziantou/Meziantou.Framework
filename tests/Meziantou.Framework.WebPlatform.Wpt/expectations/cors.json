@@ -1,12 +1,6 @@
 {
   "cors/304.htm": {
-    "total": 4,
-    "failures": {
-      "A 304 can change Access-Control-Allow-Origin": "FAIL",
-      "A 304 can contract Access-Control-Expose-Headers": "FAIL",
-      "A 304 can expand Access-Control-Expose-Headers": "FAIL",
-      "A 304 response with no CORS headers inherits from the stored response": "FAIL"
-    }
+    "total": 4
   },
   "cors/access-control-expose-headers-parsing.window.js": {
     "total": 16

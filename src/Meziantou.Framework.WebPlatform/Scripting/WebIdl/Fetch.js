@@ -34,6 +34,7 @@
   const typedArrayBuffer = getter(typedArrayPrototype, 'buffer');
   const typedArrayByteOffset = getter(typedArrayPrototype, 'byteOffset');
   const typedArrayByteLength = getter(typedArrayPrototype, 'byteLength');
+  const typedArraySet = typedArrayPrototype.set;
   const dataViewBuffer = getter(DataView.prototype, 'buffer');
   const dataViewByteOffset = getter(DataView.prototype, 'byteOffset');
   const dataViewByteLength = getter(DataView.prototype, 'byteLength');
@@ -264,6 +265,18 @@
 
   // A body whose source is bytes
   const bodyFromBytes = (bytes) => createBody(streams.createByteStream(bytes), bytes, bytes.length);
+
+  // The body of a response that arrives over time: its chunks are pulled from the reader of the library (read(callback)
+  // gives the next chunk, null at the end, or (undefined, true, aborted) when the body fails; cancel() stops the reading)
+  const bodyFromReader = (reader) => createBody(streams.createPullByteStream((onChunk, onError) => {
+    reader.read((chunk, failed, aborted) => {
+      if (failed) {
+        onError(aborted ? new DOMException_('The operation was aborted.', 'AbortError') : new TypeError_('Failed to fetch: the body of the response could not be read'));
+      } else {
+        onChunk(chunk);
+      }
+    });
+  }, () => reader.cancel()), null, null);
 
   const utf8Encode = (string) => hooks.utf8Encode(string);
 
@@ -756,6 +769,8 @@
     response.crossOriginResourcePolicy = null;
     // The internal response of an opaque response (its status, headers and body), kept for the fetches answered by a service worker
     response.internal = null;
+    // The state of the body of the internal response, when it arrives over time (see drainInternalBody), or null
+    response.internalBody = null;
     // The headers of the internal response of a CORS response, when the filtered response hides some of them
     response.internalHeaders = null;
     return response;
@@ -881,6 +896,49 @@
   // fetch() (https://fetch.spec.whatwg.org/#fetch-method)
   // ------------------------------------------------------------------------------------------------------------------
 
+  // The body of the internal response of an opaque response that arrives over time: the scripts cannot read it, so it is
+  // read in the background, and the body of the internal response is set at its end. The waiters are called once it is
+  // read (or failed, e.g. the fetch was aborted).
+  function drainInternalBody(reader, internal) {
+    const state = ObjectCreate(null);
+    state.done = false;
+    state.error = null;
+    state.waiters = [];
+    const chunks = [];
+    let length = 0;
+    const finish = (error) => {
+      if (error === null) {
+        const bytes = new Uint8Array_(length);
+        let offset = 0;
+        for (let i = 0; i < chunks.length; i++) {
+          apply(typedArraySet, bytes, [chunks[i], offset]);
+          offset += apply(typedArrayByteLength, chunks[i], []);
+        }
+
+        internal.body = bytes;
+      }
+
+      state.done = true;
+      state.error = error;
+      const waiters = state.waiters;
+      state.waiters = [];
+      for (let i = 0; i < waiters.length; i++) waiters[i]();
+    };
+    const readNext = () => reader.read((chunk, failed, aborted) => {
+      if (failed) {
+        finish(aborted ? new DOMException_('The operation was aborted.', 'AbortError') : new TypeError_('Failed to fetch: the body of the response could not be read'));
+      } else if (chunk === null) {
+        finish(null);
+      } else {
+        chunks[chunks.length] = chunk;
+        length += apply(typedArrayByteLength, chunk, []);
+        readNext();
+      }
+    });
+    readNext();
+    return state;
+  }
+
   // https://fetch.spec.whatwg.org/#abort-fetch
   function abortFetch(deferred, request, responseObject, error) {
     deferred.reject(error);
@@ -965,8 +1023,9 @@
           fetched.statusText = response.statusText;
           fetched.requestIncludesCredentials = response.requestIncludesCredentials;
           fetched.crossOriginResourcePolicy = response.crossOriginResourcePolicy;
-          fetched.body = response.body === null ? null : bodyFromBytes(response.body);
+          fetched.body = response.bodyReader !== null ? bodyFromReader(response.bodyReader) : response.body === null ? null : bodyFromBytes(response.body);
           fetched.internal = response.internal;
+          fetched.internalBody = response.internalBodyReader === null ? null : drainInternalBody(response.internalBodyReader, response.internal);
           fetched.internalHeaders = response.internalHeaders;
           responseObject = createResponseObject(realm, fetched, hooks.createHeaders(response.headers, 'immutable'));
           deferred.resolve(responseObject);
@@ -1122,6 +1181,20 @@
 
   // Reads the body of a request or a response (the body is disturbed): calls onBytes with the bytes, or null without body
   cacheSupport.readBody = (record, onBytes, onError) => {
+    // The body of the internal response of an opaque response is read once it is fully received
+    const internalBody = record.response.internalBody;
+    if (internalBody !== null && internalBody !== undefined) {
+      if (!internalBody.done) {
+        internalBody.waiters[internalBody.waiters.length] = () => cacheSupport.readBody(record, onBytes, onError);
+        return;
+      }
+
+      if (internalBody.error !== null) {
+        hooks.queueTask(() => onError(internalBody.error));
+        return;
+      }
+    }
+
     if (record.body === null) {
       onBytes(null);
       return;
@@ -1167,6 +1240,23 @@
     }
 
     cacheSupport.readBody(record, (bytes) => onResponse(cacheSupport.serializeResponse(record, bytes)), () => onResponse(null));
+  };
+
+  // The response of the value given to respondWith() for a client that reads the body as it arrives: onResponse is called
+  // at once with the response, then the chunks of its body are given to onChunk as they are read, until onEnd or onError.
+  // Returns the function that cancels the reading (the client stops reading the body), or null. The body of an opaque
+  // response, which the client does not read, is read before the response is given.
+  cacheSupport.readFetchEventResponseStreamed = (value, onResponse, onChunk, onEnd, onError) => {
+    const record = getRecord(value, 'Response');
+    if (record === undefined || cacheSupport.isDisturbedOrLocked(record) || record.body === null || record.response.type === 'opaque' || record.response.type === 'opaqueredirect') {
+      cacheSupport.readFetchEventResponse(value, onResponse);
+      return null;
+    }
+
+    const serialized = cacheSupport.serializeResponse(record, null);
+    serialized.streamed = true;
+    onResponse(serialized);
+    return streams.readChunks(record.body.stream, onChunk, onEnd, onError);
   };
 
   const realm = {

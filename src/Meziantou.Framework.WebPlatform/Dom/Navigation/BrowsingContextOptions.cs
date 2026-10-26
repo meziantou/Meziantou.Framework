@@ -39,6 +39,20 @@ public sealed partial class BrowsingContextOptions
     public VisitedLinkStore? VisitedLinks { get; init; }
 
     /// <summary>
+    /// Gets or sets the maximum number of documents that a top-level browsing context keeps in its back/forward cache
+    /// (https://html.spec.whatwg.org/multipage/browsing-the-web.html#note-bfcache). A document that the browsing context
+    /// navigates away from is kept alive in its session history entry when it is eligible: the <c>pagehide</c> event is fired
+    /// with <c>persisted</c> set to true instead of the <c>unload</c> event, its tasks and timers are suspended, and a
+    /// traversal to the entry (e.g. <c>history.back()</c>) makes it the active document again, firing <c>pageshow</c> with
+    /// <c>persisted</c> set to true, instead of loading it again. As in the browsers, a document is not eligible when it has
+    /// <c>unload</c> event listeners, an open <c>WebSocket</c>, held web locks, or when its response is not a successful
+    /// HTTP(S) response to a <c>GET</c> request whose <c>Cache-Control</c> header does not contain <c>no-store</c>, or when
+    /// its browsing context group has other top-level browsing contexts (e.g. a popup opened without <c>noopener</c>). When
+    /// the cache is full, the document cached first is evicted. The default is 6 (as in Chromium); 0 disables the cache.
+    /// </summary>
+    public int BackForwardCacheSize { get; init; } = 6;
+
+    /// <summary>
     /// Gets or sets the local storage areas of the browsing contexts (<c>window.localStorage</c>), keyed by origin. The
     /// default is null: each browsing context created by the application has its own storage shed, shared by its auxiliary
     /// browsing contexts. A shed can be shared by several browsing contexts: the <c>storage</c> events are fired at the
@@ -766,6 +780,14 @@ public sealed class DocumentRequest
     /// loader completes, so the loader must not wait for a task of the <see cref="DomEventLoop"/>.
     /// </summary>
     public bool IsSynchronous { get; init; }
+
+    /// <summary>
+    /// Gets whether the body of the response is read as it arrives (e.g. the response of <c>fetch()</c>, whose body is a
+    /// <c>ReadableStream</c>, or the resource of a media element): the loader should return the response once its headers
+    /// are received, with the rest of its body in <see cref="DocumentResource.RemainingContentBytes"/>. A loader that returns
+    /// the complete body is still supported.
+    /// </summary>
+    public bool StreamsResponseBody { get; init; }
 }
 
 /// <summary>The destination of a <see cref="DocumentRequest"/> (https://fetch.spec.whatwg.org/#concept-request-destination).</summary>
@@ -873,6 +895,12 @@ public enum RequestDestination
     /// (https://html.spec.whatwg.org/multipage/speculative-loading.html#the-speculation-rules-header).
     /// </summary>
     SpeculationRules,
+
+    /// <summary>
+    /// A module script of an audio worklet (<c>audioContext.audioWorklet.addModule()</c>,
+    /// https://webaudio.github.io/web-audio-api/#AudioWorklet), and the modules it imports.
+    /// </summary>
+    AudioWorklet,
 }
 
 /// <summary>The mode of a <see cref="DocumentRequest"/> (https://fetch.spec.whatwg.org/#concept-request-mode).</summary>
@@ -1073,7 +1101,7 @@ public sealed class DocumentResource
     /// <inheritdoc cref="IsBlocked(RequestDestination)"/>
     internal static bool IsBlocked(IReadOnlyList<KeyValuePair<string, string>> headers, RequestDestination destination)
     {
-        if (destination is RequestDestination.PaintWorklet)
+        if (destination is RequestDestination.PaintWorklet or RequestDestination.AudioWorklet)
         {
             destination = RequestDestination.Script;
         }

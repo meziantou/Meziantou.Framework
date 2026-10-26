@@ -6,7 +6,7 @@ namespace Meziantou.Framework.WebPlatform.Scripting;
 /// A JavaScript class registered in a worklet global scope (e.g. by <c>registerPaint()</c>): the properties of the
 /// constructor and of its prototype are read in the realm of the worklet.
 /// </summary>
-internal sealed class JsWorkletClassConstructor<TAdapter, TValue>(WebIdlRealm<TAdapter, TValue> realm, TValue function) : WorkletClassConstructor
+internal sealed partial class JsWorkletClassConstructor<TAdapter, TValue>(WebIdlRealm<TAdapter, TValue> realm, TValue function) : WorkletClassConstructor
     where TAdapter : struct, IJsAdapter<TValue>
     where TValue : class
 {

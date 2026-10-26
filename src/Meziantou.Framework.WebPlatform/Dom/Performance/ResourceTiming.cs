@@ -24,6 +24,18 @@ internal sealed class FetchTimingInfo
     /// <summary>https://fetch.spec.whatwg.org/#fetch-timing-info-final-service-worker-start-time, or 0 when no fetch event was dispatched for the request.</summary>
     public double FinalServiceWorkerStartTime { get; init; }
 
+    /// <summary>https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-workerrouterevaluationstart, or 0 when the service worker has no router rule.</summary>
+    public double WorkerRouterEvaluationStartTime { get; init; }
+
+    /// <summary>https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-workercachelookupstart, or 0 when the request was not routed to the cache.</summary>
+    public double WorkerCacheLookupStartTime { get; init; }
+
+    /// <summary>https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-workermatchedroutersource</summary>
+    public string WorkerMatchedRouterSource { get; init; } = "";
+
+    /// <summary>https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-workerfinalroutersource</summary>
+    public string WorkerFinalRouterSource { get; init; } = "";
+
     public double EndTime { get; set; }
 
     /// <summary>The timing of the connection of the final response (https://fetch.spec.whatwg.org/#connection-timing-info), or null when it is not exposed.</summary>
@@ -31,6 +43,9 @@ internal sealed class FetchTimingInfo
 
     /// <summary>Whether the timing allow check passed (https://fetch.spec.whatwg.org/#concept-response-timing-allow-passed).</summary>
     public bool TimingAllowPassed { get; init; }
+
+    /// <summary>The cache state of the response (https://fetch.spec.whatwg.org/#concept-response-cache-state): the empty string, <c>local</c> or <c>validated</c>.</summary>
+    public string CacheState { get; init; } = "";
 }
 
 /// <summary>https://fetch.spec.whatwg.org/#connection-timing-info</summary>
@@ -97,6 +112,18 @@ internal sealed class ResourceTiming
     public void Report(FetchResponse response) => Report(response, _global.EventLoop.TimeProvider.GetTimestamp());
 
     /// <summary>
+    /// Reports the timing of a fetch whose body was read as it arrived (<see cref="FetchRequest.StreamsBody"/>), at the end of
+    /// its body: <paramref name="bodyLength"/> is the length of the body that was received.
+    /// </summary>
+    public void ReportEndOfBody(FetchResponse response, long bodyLength)
+    {
+        _bodyLength = bodyLength;
+        Report(response);
+    }
+
+    private long? _bodyLength;
+
+    /// <summary>
     /// Reports the timing of a fetch whose response is processed synchronously (the loader completed synchronously): the entry
     /// is queued by a task of the global object, as the response of a network is, so that a script that starts the fetch and
     /// then observes the performance timeline sees it. The end time is the current time.
@@ -143,12 +170,17 @@ internal sealed class ResourceTiming
                 FinalNetworkRequestStartTime = requestStartTime,
                 FinalNetworkResponseStartTime = timing.FinalNetworkResponseStart == 0 ? endTime : Math.Min(endTime, ToRelativeTime(timing.FinalNetworkResponseStart)),
                 FinalServiceWorkerStartTime = workerStartTime,
+                WorkerRouterEvaluationStartTime = timing.ServiceWorkerRouterEvaluationStart == 0 ? 0 : Math.Min(endTime, Math.Max(startTime, ToRelativeTime(timing.ServiceWorkerRouterEvaluationStart))),
+                WorkerCacheLookupStartTime = timing.ServiceWorkerCacheLookupStart == 0 ? 0 : Math.Min(endTime, Math.Max(startTime, ToRelativeTime(timing.ServiceWorkerCacheLookupStart))),
+                WorkerMatchedRouterSource = timing.ServiceWorkerMatchedRouterSource,
+                WorkerFinalRouterSource = timing.ServiceWorkerFinalRouterSource,
                 EndTime = endTime,
 
                 // The connection is reused: its times are the time the fetch started (https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-connectstart).
                 // A response given by a service worker has no connection: its ALPN negotiated protocol is the empty string.
                 FinalConnectionTimingInfo = new ConnectionTimingInfo(postRedirectStartTime, postRedirectStartTime, postRedirectStartTime, postRedirectStartTime, isSecure ? postRedirectStartTime : 0, _request.IsAnsweredByServiceWorker ? "" : "http/1.1") { IsSecure = isSecure },
                 TimingAllowPassed = true,
+                CacheState = internalResponse.CacheState,
             };
         }
         else
@@ -164,7 +196,7 @@ internal sealed class ResourceTiming
         var contentEncoding = "";
         if (!isOpaque)
         {
-            var decodedBodySize = (ulong)internalResponse.BodyLength;
+            var decodedBodySize = (ulong)(_bodyLength ?? internalResponse.BodyLength);
             bodyInfo = new ResponseBodyInfo(GetEncodedBodySize(internalResponse.HeaderList, decodedBodySize), decodedBodySize, MinimizeSupportedMimeType(HeaderList.ExtractMimeType(internalResponse.HeaderList)));
             contentEncoding = GetContentEncoding(internalResponse.HeaderList);
         }

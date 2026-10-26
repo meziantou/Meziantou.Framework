@@ -26,7 +26,7 @@ internal static class ContentSecurityPolicyReportHash
         // The fallback list of the effective directive of the script-like destinations (https://w3c.github.io/webappsec-csp/#directive-fallback-list)
         var fallbackList = request.Destination switch
         {
-            RequestDestination.Script or RequestDestination.PaintWorklet => ScriptFallbackList,
+            RequestDestination.Script or RequestDestination.PaintWorklet or RequestDestination.AudioWorklet => ScriptFallbackList,
             RequestDestination.Worker or RequestDestination.SharedWorker or RequestDestination.ServiceWorker => WorkerFallbackList,
             _ => null,
         };

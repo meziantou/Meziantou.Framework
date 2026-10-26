@@ -67,10 +67,7 @@
     "total": 1
   },
   "performance-timeline/navigation-id-element-timing.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Element Timing navigation id test": "FAIL"
-    }
+    "total": 1
   },
   "performance-timeline/navigation-id-initial-load.tentative.html": {
     "total": 1
@@ -83,10 +80,7 @@
     }
   },
   "performance-timeline/navigation-id-mark-measure.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Mark/Measure navigation id test": "FAIL"
-    }
+    "total": 1
   },
   "performance-timeline/navigation-id-reset.tentative.html": {
     "total": 1,
@@ -95,10 +89,7 @@
     }
   },
   "performance-timeline/navigation-id-resource-timing.tentative.html": {
-    "total": 1,
-    "failures": {
-      "Resource Timing navigation id test": "FAIL"
-    }
+    "total": 1
   },
   "performance-timeline/navigation-id-worker-created-entries.html": {
     "total": 1
@@ -125,7 +116,7 @@
   "performance-timeline/not-restored-reasons/performance-navigation-timing-bfcache.tentative.window.js": {
     "total": 1,
     "failures": {
-      "RemoteContextHelper navigation using BFCache": "PRECONDITION_FAILED"
+      "RemoteContextHelper navigation using BFCache": "FAIL"
     }
   },
   "performance-timeline/not-restored-reasons/performance-navigation-timing-cross-origin-bfcache.tentative.window.js": {

@@ -509,6 +509,8 @@ public sealed class WptTests
 
     public static TheoryData<string> WorkletsTests => GetTests("worklets");
 
+    public static TheoryData<string> WebAudioTests => GetTests("webaudio");
+
     public static TheoryData<string> CssLayoutApiTests => GetTests("css/css-layout-api");
 
     public static TheoryData<string> AnimationWorkletTests => GetTests("animation-worklet");
@@ -1632,6 +1634,10 @@ public sealed class WptTests
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(WorkletsTests))]
     public void Worklets(string test) => Run("worklets", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(WebAudioTests))]
+    public void WebAudio(string test) => Run("webaudio", test);
 
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(CssLayoutApiTests))]

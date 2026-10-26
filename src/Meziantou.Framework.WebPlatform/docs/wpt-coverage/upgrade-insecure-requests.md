@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 183 | 197 | 0 | 93% |
+| [Stable](#stable-tests) | 191 | 197 | 0 | 97% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **183** | **197** | **0** | **93%** |
+| **All** | **191** | **197** | **0** | **97%** |
 
 ## Stable tests
 
@@ -50,8 +50,8 @@
 | [`gen/iframe-blank-inherit.meta/upgrade/worker-module.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/iframe-blank-inherit.meta/upgrade/worker-module.https.html) | Pass | 3 / 3 |  |  |
 | [`gen/iframe-blank-inherit.meta/upgrade/worklet-animation-import-data.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/iframe-blank-inherit.meta/upgrade/worklet-animation-import-data.https.html) | Pass | 6 / 6 |  |  |
 | [`gen/iframe-blank-inherit.meta/upgrade/worklet-animation.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/iframe-blank-inherit.meta/upgrade/worklet-animation.https.html) | Pass | 6 / 6 |  |  |
-| [`gen/iframe-blank-inherit.meta/upgrade/worklet-audio-import-data.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/iframe-blank-inherit.meta/upgrade/worklet-audio-import-data.https.html) | Fail | 0 / 6 | REQUIRES(media) | `OfflineAudioContext` and its `audioWorklet`, so the expected-allowed `addModule()` request rejects and is reported as blocked |
-| [`gen/iframe-blank-inherit.meta/upgrade/worklet-audio.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/iframe-blank-inherit.meta/upgrade/worklet-audio.https.html) | Fail | 0 / 6 | REQUIRES(media) | `OfflineAudioContext` and its `audioWorklet`, so the expected-allowed `addModule()` request rejects and is reported as blocked |
+| [`gen/iframe-blank-inherit.meta/upgrade/worklet-audio-import-data.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/iframe-blank-inherit.meta/upgrade/worklet-audio-import-data.https.html) | Pass | 6 / 6 |  |  |
+| [`gen/iframe-blank-inherit.meta/upgrade/worklet-audio.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/iframe-blank-inherit.meta/upgrade/worklet-audio.https.html) | Pass | 6 / 6 |  |  |
 | [`gen/iframe-blank-inherit.meta/upgrade/worklet-layout-import-data.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/iframe-blank-inherit.meta/upgrade/worklet-layout-import-data.https.html) | Pass | 6 / 6 |  |  |
 | [`gen/iframe-blank-inherit.meta/upgrade/worklet-layout.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/iframe-blank-inherit.meta/upgrade/worklet-layout.https.html) | Pass | 6 / 6 |  |  |
 | [`gen/iframe-blank-inherit.meta/upgrade/worklet-paint-import-data.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/iframe-blank-inherit.meta/upgrade/worklet-paint-import-data.https.html) | Pass | 6 / 6 |  |  |
@@ -116,8 +116,8 @@
 | [`gen/srcdoc-inherit.meta/upgrade/worker-module.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/srcdoc-inherit.meta/upgrade/worker-module.https.html) | Pass | 3 / 3 |  |  |
 | [`gen/srcdoc-inherit.meta/upgrade/worklet-animation-import-data.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/srcdoc-inherit.meta/upgrade/worklet-animation-import-data.https.html) | Pass | 6 / 6 |  |  |
 | [`gen/srcdoc-inherit.meta/upgrade/worklet-animation.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/srcdoc-inherit.meta/upgrade/worklet-animation.https.html) | Pass | 6 / 6 |  |  |
-| [`gen/srcdoc-inherit.meta/upgrade/worklet-audio-import-data.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/srcdoc-inherit.meta/upgrade/worklet-audio-import-data.https.html) | Fail | 0 / 6 | REQUIRES(media) | `OfflineAudioContext` and its `audioWorklet`, so the expected-allowed `addModule()` request rejects and is reported as blocked |
-| [`gen/srcdoc-inherit.meta/upgrade/worklet-audio.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/srcdoc-inherit.meta/upgrade/worklet-audio.https.html) | Fail | 0 / 6 | REQUIRES(media) | `OfflineAudioContext` and its `audioWorklet`, so the expected-allowed `addModule()` request rejects and is reported as blocked |
+| [`gen/srcdoc-inherit.meta/upgrade/worklet-audio-import-data.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/srcdoc-inherit.meta/upgrade/worklet-audio-import-data.https.html) | Pass | 6 / 6 |  |  |
+| [`gen/srcdoc-inherit.meta/upgrade/worklet-audio.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/srcdoc-inherit.meta/upgrade/worklet-audio.https.html) | Pass | 6 / 6 |  |  |
 | [`gen/srcdoc-inherit.meta/upgrade/worklet-layout-import-data.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/srcdoc-inherit.meta/upgrade/worklet-layout-import-data.https.html) | Pass | 6 / 6 |  |  |
 | [`gen/srcdoc-inherit.meta/upgrade/worklet-layout.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/srcdoc-inherit.meta/upgrade/worklet-layout.https.html) | Pass | 6 / 6 |  |  |
 | [`gen/srcdoc-inherit.meta/upgrade/worklet-paint-import-data.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/srcdoc-inherit.meta/upgrade/worklet-paint-import-data.https.html) | Pass | 6 / 6 |  |  |
@@ -137,8 +137,8 @@
 | [`gen/top.http-rp/upgrade/worker-module.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/top.http-rp/upgrade/worker-module.https.html) | Pass | 3 / 3 |  |  |
 | [`gen/top.http-rp/upgrade/worklet-animation-import-data.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/top.http-rp/upgrade/worklet-animation-import-data.https.html) | Pass | 6 / 6 |  |  |
 | [`gen/top.http-rp/upgrade/worklet-animation.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/top.http-rp/upgrade/worklet-animation.https.html) | Pass | 6 / 6 |  |  |
-| [`gen/top.http-rp/upgrade/worklet-audio-import-data.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/top.http-rp/upgrade/worklet-audio-import-data.https.html) | Fail | 0 / 6 | REQUIRES(media) | `OfflineAudioContext` and its `audioWorklet`, so the expected-allowed `addModule()` request rejects and is reported as blocked |
-| [`gen/top.http-rp/upgrade/worklet-audio.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/top.http-rp/upgrade/worklet-audio.https.html) | Fail | 0 / 6 | REQUIRES(media) | `OfflineAudioContext` and its `audioWorklet`, so the expected-allowed `addModule()` request rejects and is reported as blocked |
+| [`gen/top.http-rp/upgrade/worklet-audio-import-data.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/top.http-rp/upgrade/worklet-audio-import-data.https.html) | Pass | 6 / 6 |  |  |
+| [`gen/top.http-rp/upgrade/worklet-audio.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/top.http-rp/upgrade/worklet-audio.https.html) | Pass | 6 / 6 |  |  |
 | [`gen/top.http-rp/upgrade/worklet-layout-import-data.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/top.http-rp/upgrade/worklet-layout-import-data.https.html) | Pass | 6 / 6 |  |  |
 | [`gen/top.http-rp/upgrade/worklet-layout.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/top.http-rp/upgrade/worklet-layout.https.html) | Pass | 6 / 6 |  |  |
 | [`gen/top.http-rp/upgrade/worklet-paint-import-data.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/top.http-rp/upgrade/worklet-paint-import-data.https.html) | Pass | 6 / 6 |  |  |
@@ -179,8 +179,8 @@
 | [`gen/top.meta/upgrade/worker-module.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/top.meta/upgrade/worker-module.https.html) | Pass | 3 / 3 |  |  |
 | [`gen/top.meta/upgrade/worklet-animation-import-data.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/top.meta/upgrade/worklet-animation-import-data.https.html) | Pass | 6 / 6 |  |  |
 | [`gen/top.meta/upgrade/worklet-animation.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/top.meta/upgrade/worklet-animation.https.html) | Pass | 6 / 6 |  |  |
-| [`gen/top.meta/upgrade/worklet-audio-import-data.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/top.meta/upgrade/worklet-audio-import-data.https.html) | Fail | 0 / 6 | REQUIRES(media) | `OfflineAudioContext` and its `audioWorklet`, so the expected-allowed `addModule()` request rejects and is reported as blocked |
-| [`gen/top.meta/upgrade/worklet-audio.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/top.meta/upgrade/worklet-audio.https.html) | Fail | 0 / 6 | REQUIRES(media) | `OfflineAudioContext` and its `audioWorklet`, so the expected-allowed `addModule()` request rejects and is reported as blocked |
+| [`gen/top.meta/upgrade/worklet-audio-import-data.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/top.meta/upgrade/worklet-audio-import-data.https.html) | Pass | 6 / 6 |  |  |
+| [`gen/top.meta/upgrade/worklet-audio.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/top.meta/upgrade/worklet-audio.https.html) | Pass | 6 / 6 |  |  |
 | [`gen/top.meta/upgrade/worklet-layout-import-data.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/top.meta/upgrade/worklet-layout-import-data.https.html) | Pass | 6 / 6 |  |  |
 | [`gen/top.meta/upgrade/worklet-layout.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/top.meta/upgrade/worklet-layout.https.html) | Pass | 6 / 6 |  |  |
 | [`gen/top.meta/upgrade/worklet-paint-import-data.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/top.meta/upgrade/worklet-paint-import-data.https.html) | Pass | 6 / 6 |  |  |

@@ -230,9 +230,56 @@ public abstract partial class GlobalScope
 
         // https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#run-steps-after-a-timeout: the timers that
         // have the same timeout run in the order they were created
-        eventLoop.QueueTimer(TimeSpan.FromMilliseconds(timeout), () => QueueGlobalTask(Task));
+        QueueTimerTask(TimeSpan.FromMilliseconds(timeout), Task);
         _activeTimers[id] = uniqueHandle;
         return id;
+    }
+
+    /// <summary>
+    /// The time the timers of the global object were suspended (its document was in the back/forward cache), since it was
+    /// created: the timers wait until the document has been fully active for their timeout.
+    /// </summary>
+    internal virtual TimeSpan SuspendedDuration => TimeSpan.Zero;
+
+    /// <summary>Whether the timers of the global object are suspended (its document is in the back/forward cache).</summary>
+    internal virtual bool AreTimersSuspended => false;
+
+    /// <summary>
+    /// https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#run-steps-after-a-timeout: queues the task of a
+    /// timer once its timeout elapsed while the global object was not suspended. The time the document of a window spends in
+    /// the back/forward cache does not count (https://html.spec.whatwg.org/multipage/browsing-the-web.html#reactivate-a-document
+    /// increases the timeout of the suspended timers by the suspension duration).
+    /// </summary>
+    private void QueueTimerTask(TimeSpan timeout, Action task)
+    {
+        var eventLoop = EventLoop;
+        var start = eventLoop.TimeProvider.GetTimestamp();
+        var suspendedDurationAtStart = SuspendedDuration;
+        void OnTimeout()
+        {
+            // The timer elapsed while the document is in the back/forward cache: the remaining time is computed once the
+            // document is reactivated (the task is deferred until then)
+            if (AreTimersSuspended)
+            {
+                QueueGlobalTask(OnTimeout);
+                return;
+            }
+
+            var suspendedDuration = SuspendedDuration - suspendedDurationAtStart;
+            if (suspendedDuration > TimeSpan.Zero)
+            {
+                var remaining = timeout + suspendedDuration - eventLoop.TimeProvider.GetElapsedTime(start);
+                if (remaining > TimeSpan.Zero)
+                {
+                    eventLoop.QueueTimer(remaining, OnTimeout);
+                    return;
+                }
+            }
+
+            QueueGlobalTask(task);
+        }
+
+        eventLoop.QueueTimer(timeout, OnTimeout);
     }
 
     private void RunTimerHandler(TimerHandler handler, object?[] arguments, string baseUrl, ModuleFetchOptions? fetchOptions)

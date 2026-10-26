@@ -214,4 +214,80 @@ public sealed class WorkletTests : IDisposable
             new WebPlatformFeatures { PaintWorkletEnabled = false, LayoutWorkletEnabled = false, AnimationWorkletEnabled = false });
         Assert.Equal("undefined,undefined,undefined,undefined", document.Title);
     }
+
+    [Fact]
+    public void AudioWorklet_ProcessesTheAudioOfANode()
+    {
+        AddScript("https://example.com/dir/processor.js", """
+            class Doubler extends AudioWorkletProcessor {
+              static get parameterDescriptors() { return [{ name: 'gain', defaultValue: 2, minValue: 0, maxValue: 10 }]; }
+              constructor(options) {
+                super();
+                this.offset = options.processorOptions.offset;
+                this.port.postMessage([options.numberOfInputs, options.numberOfOutputs, sampleRate, currentFrame].join());
+              }
+              process(inputs, outputs, parameters) {
+                const input = inputs[0], output = outputs[0], gain = parameters.gain;
+                for (let c = 0; c < output.length; ++c) {
+                  for (let i = 0; i < output[c].length; ++i) {
+                    output[c][i] = (input.length ? input[c][i] : 0) * gain[gain.length > 1 ? i : 0] + this.offset;
+                  }
+                }
+                return Object.isFrozen(inputs) && Object.isFrozen(inputs[0]) && Object.isFrozen(parameters);
+              }
+            }
+            registerProcessor('doubler', Doubler);
+            """);
+        var document = Load("""
+            <script>
+              const context = new OfflineAudioContext(1, 256, 8000);
+              const messages = [];
+              context.audioWorklet.addModule('processor.js').then(() => {
+                const node = new AudioWorkletNode(context, 'doubler', { parameterData: { gain: 3 }, processorOptions: { offset: 0.5 } });
+                node.port.onmessage = e => messages.push(e.data);
+                const source = new ConstantSourceNode(context, { offset: 0.25 });
+                source.connect(node).connect(context.destination);
+                source.start();
+                return context.startRendering().then(buffer => {
+                  const data = buffer.getChannelData(0);
+                  document.title = [data[0], data[255], node.parameters.size, node.parameters.get('gain').defaultValue, ...messages].join(';');
+                });
+              }).catch(e => document.title = 'error ' + e);
+            </script>
+            """);
+
+        Assert.Equal("1.25;1.25;1;2;1,1,8000,0", document.Title);
+        Assert.Empty(_errors);
+    }
+
+    [Fact]
+    public void AudioWorklet_FiresProcessorErrorWhenTheProcessorThrows()
+    {
+        AddScript("https://example.com/dir/processor.js", """
+            registerProcessor('throws', class extends AudioWorkletProcessor { process() { throw new Error('boom'); } });
+            registerProcessor('fails', class extends AudioWorkletProcessor { constructor() { super(); throw new TypeError('ctor'); } });
+            try { registerProcessor('throws', class extends AudioWorkletProcessor {}); } catch (e) { console.log(e.name); }
+            try { registerProcessor('', class extends AudioWorkletProcessor {}); } catch (e) { console.log(e.name); }
+            try { new AudioWorkletProcessor(); } catch (e) { console.log(e.name); }
+            """);
+        var document = Load("""
+            <script>
+              const context = new OfflineAudioContext(1, 256, 8000);
+              const events = [];
+              context.audioWorklet.addModule('processor.js').then(() => {
+                const throws = new AudioWorkletNode(context, 'throws');
+                throws.onprocessorerror = e => events.push('process:' + (e instanceof ErrorEvent) + ':' + e.message);
+                const fails = new AudioWorkletNode(context, 'fails');
+                fails.onprocessorerror = e => events.push('constructor:' + e.message);
+                throws.connect(context.destination);
+                try { new AudioWorkletNode(context, 'unknown'); } catch (e) { events.push(e.name); }
+                return context.startRendering();
+              }).then(buffer => setTimeout(() => document.title = events.join(';') + ';' + buffer.getChannelData(0)[0], 0));
+            </script>
+            """);
+
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.Equal("InvalidStateError;constructor:ctor;process:true:boom;0", document.Title.Replace("TypeError: ", "", StringComparison.Ordinal).Replace("Error: ", "", StringComparison.Ordinal));
+        Assert.Equal(["NotSupportedError", "NotSupportedError", "TypeError"], WorkletMessages);
+    }
 }

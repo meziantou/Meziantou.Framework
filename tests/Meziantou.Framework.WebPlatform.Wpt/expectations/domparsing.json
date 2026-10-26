@@ -77,33 +77,7 @@
     "total": 2
   },
   "domparsing/html-insertion-methods-html-element.html": {
-    "total": 26,
-    "failures": {
-      "afterHTML on a child of a detached html element throws HierarchyRequestError": "FAIL",
-      "afterHTML on head/body (parent is the html element) throws HierarchyRequestError": "FAIL",
-      "afterHTMLUnsafe on a child of a detached html element throws HierarchyRequestError": "FAIL",
-      "afterHTMLUnsafe on head/body (parent is the html element) throws HierarchyRequestError": "FAIL",
-      "appendHTML on a detached html element throws HierarchyRequestError": "FAIL",
-      "appendHTML on the html element of an inert document throws HierarchyRequestError": "FAIL",
-      "appendHTML on the html element throws HierarchyRequestError": "FAIL",
-      "appendHTMLUnsafe on a detached html element throws HierarchyRequestError": "FAIL",
-      "appendHTMLUnsafe on the html element of an inert document throws HierarchyRequestError": "FAIL",
-      "appendHTMLUnsafe on the html element throws HierarchyRequestError": "FAIL",
-      "beforeHTML on a child of a detached html element throws HierarchyRequestError": "FAIL",
-      "beforeHTML on head/body (parent is the html element) throws HierarchyRequestError": "FAIL",
-      "beforeHTMLUnsafe on a child of a detached html element throws HierarchyRequestError": "FAIL",
-      "beforeHTMLUnsafe on head/body (parent is the html element) throws HierarchyRequestError": "FAIL",
-      "prependHTML on a detached html element throws HierarchyRequestError": "FAIL",
-      "prependHTML on the html element of an inert document throws HierarchyRequestError": "FAIL",
-      "prependHTML on the html element throws HierarchyRequestError": "FAIL",
-      "prependHTMLUnsafe on a detached html element throws HierarchyRequestError": "FAIL",
-      "prependHTMLUnsafe on the html element of an inert document throws HierarchyRequestError": "FAIL",
-      "prependHTMLUnsafe on the html element throws HierarchyRequestError": "FAIL",
-      "replaceWithHTML on a child of a detached html element throws HierarchyRequestError": "FAIL",
-      "replaceWithHTML on head/body (parent is the html element) throws HierarchyRequestError": "FAIL",
-      "replaceWithHTMLUnsafe on a child of a detached html element throws HierarchyRequestError": "FAIL",
-      "replaceWithHTMLUnsafe on head/body (parent is the html element) throws HierarchyRequestError": "FAIL"
-    }
+    "total": 26
   },
   "domparsing/html-unsafe-external-scripts-async.html": {
     "harness": "ERROR",
@@ -193,35 +167,10 @@
     "total": 180
   },
   "domparsing/positional-methods-with-trusted-types.html": {
-    "total": 355,
-    "failures": {
-      "Unsafe positional methods throw HierarchyRequestError when parent or target is an html element": "FAIL"
-    }
+    "total": 355
   },
   "domparsing/positional-methods.html": {
-    "total": 480,
-    "failures": {
-      "afterHTML throws HierarchyRequestError if parent is a disconnected html element": "FAIL",
-      "afterHTML throws HierarchyRequestError if parent is an html element": "FAIL",
-      "afterHTMLUnsafe throws HierarchyRequestError if parent is a disconnected html element": "FAIL",
-      "afterHTMLUnsafe throws HierarchyRequestError if parent is an html element": "FAIL",
-      "appendHTML on a disconnected html element throws HierarchyRequestError": "FAIL",
-      "appendHTML on an html element throws HierarchyRequestError": "FAIL",
-      "appendHTMLUnsafe on a disconnected html element throws HierarchyRequestError": "FAIL",
-      "appendHTMLUnsafe on an html element throws HierarchyRequestError": "FAIL",
-      "beforeHTML throws HierarchyRequestError if parent is a disconnected html element": "FAIL",
-      "beforeHTML throws HierarchyRequestError if parent is an html element": "FAIL",
-      "beforeHTMLUnsafe throws HierarchyRequestError if parent is a disconnected html element": "FAIL",
-      "beforeHTMLUnsafe throws HierarchyRequestError if parent is an html element": "FAIL",
-      "prependHTML on a disconnected html element throws HierarchyRequestError": "FAIL",
-      "prependHTML on an html element throws HierarchyRequestError": "FAIL",
-      "prependHTMLUnsafe on a disconnected html element throws HierarchyRequestError": "FAIL",
-      "prependHTMLUnsafe on an html element throws HierarchyRequestError": "FAIL",
-      "replaceWithHTML throws HierarchyRequestError if parent is a disconnected html element": "FAIL",
-      "replaceWithHTML throws HierarchyRequestError if parent is an html element": "FAIL",
-      "replaceWithHTMLUnsafe throws HierarchyRequestError if parent is a disconnected html element": "FAIL",
-      "replaceWithHTMLUnsafe throws HierarchyRequestError if parent is an html element": "FAIL"
-    }
+    "total": 480
   },
   "domparsing/positional-template-child.html": {
     "total": 6
@@ -306,33 +255,7 @@
     }
   },
   "domparsing/tentative/stream-html-element.html": {
-    "total": 28,
-    "failures": {
-      "streamAfterHTML on a child of a detached html element throws HierarchyRequestError": "FAIL",
-      "streamAfterHTML on head/body (parent is the html element) throws HierarchyRequestError": "FAIL",
-      "streamAfterHTMLUnsafe on a child of a detached html element throws HierarchyRequestError": "FAIL",
-      "streamAfterHTMLUnsafe on head/body (parent is the html element) throws HierarchyRequestError": "FAIL",
-      "streamAppendHTML on a detached html element throws HierarchyRequestError": "FAIL",
-      "streamAppendHTML on the html element of an inert document throws HierarchyRequestError": "FAIL",
-      "streamAppendHTML on the html element throws HierarchyRequestError": "FAIL",
-      "streamAppendHTMLUnsafe on a detached html element throws HierarchyRequestError": "FAIL",
-      "streamAppendHTMLUnsafe on the html element of an inert document throws HierarchyRequestError": "FAIL",
-      "streamAppendHTMLUnsafe on the html element throws HierarchyRequestError": "FAIL",
-      "streamBeforeHTML on a child of a detached html element throws HierarchyRequestError": "FAIL",
-      "streamBeforeHTML on head/body (parent is the html element) throws HierarchyRequestError": "FAIL",
-      "streamBeforeHTMLUnsafe on a child of a detached html element throws HierarchyRequestError": "FAIL",
-      "streamBeforeHTMLUnsafe on head/body (parent is the html element) throws HierarchyRequestError": "FAIL",
-      "streamPrependHTML on a detached html element throws HierarchyRequestError": "FAIL",
-      "streamPrependHTML on the html element of an inert document throws HierarchyRequestError": "FAIL",
-      "streamPrependHTML on the html element throws HierarchyRequestError": "FAIL",
-      "streamPrependHTMLUnsafe on a detached html element throws HierarchyRequestError": "FAIL",
-      "streamPrependHTMLUnsafe on the html element of an inert document throws HierarchyRequestError": "FAIL",
-      "streamPrependHTMLUnsafe on the html element throws HierarchyRequestError": "FAIL",
-      "streamReplaceWithHTML on a child of a detached html element throws HierarchyRequestError": "FAIL",
-      "streamReplaceWithHTML on head/body (parent is the html element) throws HierarchyRequestError": "FAIL",
-      "streamReplaceWithHTMLUnsafe on a child of a detached html element throws HierarchyRequestError": "FAIL",
-      "streamReplaceWithHTMLUnsafe on head/body (parent is the html element) throws HierarchyRequestError": "FAIL"
-    }
+    "total": 28
   },
   "domparsing/tentative/stream-html-parser-blocking-script.html": {
     "harness": "ERROR",

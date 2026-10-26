@@ -1,101 +1,69 @@
 {
   "html/browsers/browsing-the-web/back-forward-cache/broadcastchannel/broadcastchannel.window.js": {
-    "total": 1,
-    "failures": {
-      "Ensure that open broadcastchannel does not block bfcache.": "PRECONDITION_FAILED"
-    }
+    "total": 1
   },
   "html/browsers/browsing-the-web/back-forward-cache/broadcastchannel/dedicatedworker.tentative.window.js": {
-    "total": 1,
-    "failures": {
-      "BroadcastChannel messages dispatched to dedicated worker in bfcache should be queued.": "PRECONDITION_FAILED"
-    }
+    "total": 1
   },
   "html/browsers/browsing-the-web/back-forward-cache/broadcastchannel/evict-on-message.tentative.window.js": {
     "total": 1
   },
   "html/browsers/browsing-the-web/back-forward-cache/eligibility/broadcast-channel.html": {
-    "total": 2,
-    "failures": {
-      "Eligibility (BroadcastChannel closed in the pagehide event)": "PRECONDITION_FAILED",
-      "Eligibility (BroadcastChannel)": "PRECONDITION_FAILED"
-    }
+    "total": 2
   },
   "html/browsers/browsing-the-web/back-forward-cache/eligibility/dedicated-worker.html": {
-    "total": 1,
-    "failures": {
-      "Eligibility: dedicated workers": "PRECONDITION_FAILED"
-    }
+    "total": 1
   },
   "html/browsers/browsing-the-web/back-forward-cache/eligibility/inflight-fetch-1.html": {
     "total": 2,
     "failures": {
-      "Eligibility (in-flight fetch): Header received before BFCache and body received after BFCache": "PRECONDITION_FAILED",
-      "Eligibility (in-flight fetch): Header received before BFCache and body received when in BFCache": "PRECONDITION_FAILED"
+      "Eligibility (in-flight fetch): Header received before BFCache and body received after BFCache": "FAIL",
+      "Eligibility (in-flight fetch): Header received before BFCache and body received when in BFCache": "FAIL"
     }
   },
   "html/browsers/browsing-the-web/back-forward-cache/eligibility/inflight-fetch-2.html": {
     "total": 3,
     "failures": {
-      "Eligibility (in-flight fetch): Header and body received after BFCache": "PRECONDITION_FAILED",
-      "Eligibility (in-flight fetch): Header and body received when in BFCache": "PRECONDITION_FAILED",
-      "Eligibility (in-flight fetch): Header received when in BFCache and body received after BFCache": "PRECONDITION_FAILED"
+      "Eligibility (in-flight fetch): Header and body received after BFCache": "FAIL",
+      "Eligibility (in-flight fetch): Header and body received when in BFCache": "FAIL",
+      "Eligibility (in-flight fetch): Header received when in BFCache and body received after BFCache": "FAIL"
     }
   },
   "html/browsers/browsing-the-web/back-forward-cache/eligibility/inflight-fetch-cors.html": {
     "total": 2,
     "failures": {
-      "Eligibility (in-flight fetch): CORS failed when in BFCache": "PRECONDITION_FAILED",
-      "Eligibility (in-flight fetch): CORS succeeded when in BFCache": "PRECONDITION_FAILED"
+      "Eligibility (in-flight fetch): CORS succeeded when in BFCache": "FAIL"
     }
   },
   "html/browsers/browsing-the-web/back-forward-cache/eligibility/inflight-fetch-redirects.html": {
     "total": 4,
     "failures": {
-      "Eligibility (in-flight fetch): Cross-origin redirect header received when in BFCache": "PRECONDITION_FAILED",
-      "Eligibility (in-flight fetch): Cross-origin redirect header received when in BFCache w/ CSP failing": "PRECONDITION_FAILED",
-      "Eligibility (in-flight fetch): Redirect header received when in BFCache": "PRECONDITION_FAILED",
-      "Eligibility (in-flight fetch): Redirect header received when in BFCache w/ CSP passing": "PRECONDITION_FAILED"
+      "Eligibility (in-flight fetch): Cross-origin redirect header received when in BFCache": "FAIL",
+      "Eligibility (in-flight fetch): Redirect header received when in BFCache": "FAIL",
+      "Eligibility (in-flight fetch): Redirect header received when in BFCache w/ CSP passing": "FAIL"
     }
   },
   "html/browsers/browsing-the-web/back-forward-cache/eligibility/shared-worker-active-client.window.js": {
-    "total": 1,
-    "failures": {
-      "Eligibility: shared workers with another active client in a separate window": "PRECONDITION_FAILED"
-    }
+    "total": 1
   },
   "html/browsers/browsing-the-web/back-forward-cache/eligibility/shared-worker.html": {
-    "total": 1,
-    "failures": {
-      "Eligibility: shared workers": "PRECONDITION_FAILED"
-    }
+    "total": 1
   },
   "html/browsers/browsing-the-web/back-forward-cache/events.html": {
     "total": 5,
     "failures": {
-      "CrossSite": "PRECONDITION_FAILED",
-      "SameOrigin": "PRECONDITION_FAILED",
-      "SameSite": "PRECONDITION_FAILED",
-      "beforeunload": "PRECONDITION_FAILED",
       "unload": "PRECONDITION_FAILED"
     }
   },
   "html/browsers/browsing-the-web/back-forward-cache/focus.html": {
-    "total": 1,
-    "failures": {
-      "Focus should be kept when page gets into and out of BFCache": "PRECONDITION_FAILED"
-    }
+    "total": 1
   },
   "html/browsers/browsing-the-web/back-forward-cache/pagehide-event-handler-microtasks.window.js": {
-    "total": 1,
-    "failures": {
-      "Assure microtasks posted by pagehide event handler are dispatched": "FAIL"
-    }
+    "total": 1
   },
   "html/browsers/browsing-the-web/back-forward-cache/pushstate.https.html": {
     "total": 2,
     "failures": {
-      "back navigation to pushState()d page (in BFCache)": "PRECONDITION_FAILED",
       "back navigation to pushState()d page (not in BFCache)": "FAIL"
     }
   },
@@ -106,31 +74,19 @@
     "total": 1
   },
   "html/browsers/browsing-the-web/back-forward-cache/service-worker-clients-matchall.https.html": {
-    "total": 1,
-    "failures": {
-      "Clients.matchAll() should not list pages in BFCache": "PRECONDITION_FAILED"
-    }
+    "total": 1
   },
   "html/browsers/browsing-the-web/back-forward-cache/service-worker-controlled-after-restore.https.html": {
-    "total": 1,
-    "failures": {
-      "Pages should remain controlled after restored from BFCache": "PRECONDITION_FAILED"
-    }
+    "total": 1
   },
   "html/browsers/browsing-the-web/back-forward-cache/service-worker-unregister.https.html": {
     "total": 1
   },
   "html/browsers/browsing-the-web/back-forward-cache/storage-events.html": {
-    "total": 1,
-    "failures": {
-      "Storage events should not be fired for BFCached pages after becoming active": "PRECONDITION_FAILED"
-    }
+    "total": 1
   },
   "html/browsers/browsing-the-web/back-forward-cache/timers.html": {
-    "total": 1,
-    "failures": {
-      "Timers should be paused when the page is in BFCache": "PRECONDITION_FAILED"
-    }
+    "total": 1
   },
   "html/browsers/browsing-the-web/history-traversal/001.html": {
     "total": 1
@@ -233,16 +189,10 @@
     "total": 2
   },
   "html/browsers/browsing-the-web/history-traversal/pagereveal/order-in-bfcache-restore-iframe.html": {
-    "total": 1,
-    "failures": {
-      "pagereveal event in iframe fires and in correct order on restoration from BFCache": "PRECONDITION_FAILED"
-    }
+    "total": 1
   },
   "html/browsers/browsing-the-web/history-traversal/pagereveal/order-in-bfcache-restore.html": {
-    "total": 1,
-    "failures": {
-      "pagereveal event fires and in correct order on restoration from BFCache": "PRECONDITION_FAILED"
-    }
+    "total": 1
   },
   "html/browsers/browsing-the-web/history-traversal/pagereveal/order-in-new-document-navigation-iframe.html": {
     "total": 1
@@ -1031,10 +981,7 @@
     "total": 1
   },
   "html/browsers/browsing-the-web/remote-context-helper-tests/navigation-bfcache.window.js": {
-    "total": 1,
-    "failures": {
-      "RemoteContextHelper navigation using BFCache": "FAIL"
-    }
+    "total": 1
   },
   "html/browsers/browsing-the-web/remote-context-helper-tests/navigation-helpers.window.js": {
     "total": 1
@@ -1294,10 +1241,7 @@
     "total": 3
   },
   "html/browsers/history/the-history-interface/history-state-after-bfcache.window.js": {
-    "total": 1,
-    "failures": {
-      "Navigating back to a bfcached page does not reset history.state": "FAIL"
-    }
+    "total": 1
   },
   "html/browsers/history/the-history-interface/history_back.html": {
     "total": 1

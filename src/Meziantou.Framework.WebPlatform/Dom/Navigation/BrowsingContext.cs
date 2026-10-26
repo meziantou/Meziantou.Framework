@@ -1664,6 +1664,7 @@ public sealed partial class BrowsingContext : IDisposable
             InitiatorOrigin = sourceDocument?.Origin,
             InitiatorTopLevelOrigin = sourceDocument?.TopLevelOrigin,
             TextDirectiveUserActivation = textDirectiveUserActivation,
+            IsPostNavigation = postResource is not null,
             Timing = new DocumentLoadTimingInfo
             {
                 NavigationStart = navigationStart,
@@ -1987,6 +1988,12 @@ public sealed partial class BrowsingContext : IDisposable
                 timing.WorkerStart = request.Timing.ServiceWorkerStart;
                 timing.FetchStart = Math.Max(timing.FetchStart, Math.Max(request.Timing.ServiceWorkerStart, request.Timing.ServiceWorkerReady));
             }
+
+            // The router rules of the service worker (https://w3c.github.io/ServiceWorker/#handle-fetch, step 15)
+            timing.WorkerRouterEvaluationStart = request.Timing.ServiceWorkerRouterEvaluationStart;
+            timing.WorkerCacheLookupStart = request.Timing.ServiceWorkerCacheLookupStart;
+            timing.WorkerMatchedRouterSource = request.Timing.ServiceWorkerMatchedRouterSource;
+            timing.WorkerFinalRouterSource = request.Timing.ServiceWorkerFinalRouterSource;
 
             timing.ResponseStart = timing.PrefetchResponseStart != 0 ? timing.PrefetchResponseStart : EventLoop.TimeProvider.GetTimestamp();
             timing.HasCrossOriginRedirects = Fetching.HasRedirectTaintedOrigin(request);
@@ -2495,6 +2502,7 @@ public sealed partial class BrowsingContext : IDisposable
         document.Referrer = parameters.Referrer;
         document.ReferrerPolicy = parameters.ReferrerPolicy;
         document.ResponseStatus = parameters.Status;
+        document.ResponseBackForwardCacheBlockingReasons = GetResponseBackForwardCacheBlockingReasons(document, parameters);
         document.MediaDocumentResource = parameters.MediaDocumentResource;
 
         // The text documents have no doctype but are in no-quirks mode, as in the browsers
@@ -2629,6 +2637,10 @@ public sealed partial class BrowsingContext : IDisposable
             FinalNetworkRequestStartTime = fetchStart,
             FinalNetworkResponseStartTime = ToRelativeTime(timing.ResponseStart),
             FinalServiceWorkerStartTime = Math.Min(fetchStart, ToRelativeTime(timing.WorkerStart)),
+            WorkerRouterEvaluationStartTime = ToRelativeTime(timing.WorkerRouterEvaluationStart),
+            WorkerCacheLookupStartTime = ToRelativeTime(timing.WorkerCacheLookupStart),
+            WorkerMatchedRouterSource = timing.WorkerMatchedRouterSource,
+            WorkerFinalRouterSource = timing.WorkerFinalRouterSource,
             EndTime = ToRelativeTime(timing.ResponseEnd),
             FinalConnectionTimingInfo = new ConnectionTimingInfo(fetchStart, fetchStart, fetchStart, fetchStart, isSecure ? fetchStart : 0, isFetched ? "http/1.1" : "") { IsSecure = isSecure },
             TimingAllowPassed = true,
@@ -2683,11 +2695,20 @@ public sealed partial class BrowsingContext : IDisposable
         }
 
         // https://html.spec.whatwg.org/multipage/browsing-the-web.html#deactivate-a-document-for-a-cross-document-navigation:
-        // the previous document and its descendants are unloaded while they are still active
+        // the previous document and its descendants are unloaded while they are still active. An eligible document is kept
+        // in the back/forward cache (its pagehide event is persisted, and its unload event is not fired).
+        var keepOldDocument = false;
         if (oldDocument is not null)
         {
             FirePageSwap(oldDocument, document, historyHandling, traversalEntry);
-            UnloadDocumentAndDescendants(oldDocument, includeInitialAboutBlank: true);
+            var blockingReasons = GetBackForwardCacheBlockingReasons(oldDocument, historyHandling, traversalEntry);
+            keepOldDocument = blockingReasons.Count == 0;
+            UnloadDocumentAndDescendants(oldDocument, includeInitialAboutBlank: true, persisted: keepOldDocument);
+            if (keepOldDocument)
+            {
+                AddUnloadBlockingReasons(oldDocument, blockingReasons);
+                keepOldDocument = blockingReasons.Count == 0;
+            }
 
             // https://html.spec.whatwg.org/multipage/browsing-the-web.html#navigation-params-unload-timing: the times of the unload
             // event of the previous document are exposed to a document of the same origin, when no redirect is cross-origin. As in
@@ -2823,7 +2844,14 @@ public sealed partial class BrowsingContext : IDisposable
 
         if (oldDocument is not null)
         {
-            DestroyDocument(oldDocument);
+            if (keepOldDocument && IsDocumentInSessionHistory(oldDocument))
+            {
+                StoreInBackForwardCache(oldDocument);
+            }
+            else
+            {
+                DestroyDocument(oldDocument);
+            }
         }
 
         // https://html.spec.whatwg.org/multipage/document-lifecycle.html#initialise-the-document-object: the initial visibility
@@ -2934,8 +2962,8 @@ public sealed partial class BrowsingContext : IDisposable
     internal Action? NavigationEndedWithoutDocument { get; set; }
 
     /// <summary>
-    /// Unloads the previous active document (https://html.spec.whatwg.org/multipage/document-lifecycle.html#unload-a-document)
-    /// and destroys it, as documents are not kept in a back/forward cache.
+    /// Unloads the active document (https://html.spec.whatwg.org/multipage/document-lifecycle.html#unload-a-document) and
+    /// destroys it (the traversable is closed).
     /// </summary>
     private static void UnloadAndDestroy(Document document)
     {
@@ -2956,7 +2984,12 @@ public sealed partial class BrowsingContext : IDisposable
     /// as in the browsers (e.g. <c>visibilitychange</c> is fired at the empty frames of a removed frame). The removal of a
     /// container does not unload it (see <see cref="UnloadRemovedChildNavigables"/>).
     /// </param>
-    private static void UnloadDocumentAndDescendants(Document document, bool includeInitialAboutBlank = false)
+    /// <param name="persisted">
+    /// Whether the documents are kept in the back/forward cache ("intend to keep in bfcache", their salvageable state): the
+    /// <c>pagehide</c> event is fired with <c>persisted</c> set to true, the <c>unload</c> event is not fired, and the
+    /// unloading document cleanup steps of an unsalvageable document (e.g. closing the event sources) do not run.
+    /// </param>
+    private static void UnloadDocumentAndDescendants(Document document, bool includeInitialAboutBlank = false, bool persisted = false)
     {
         if (document.IsUnloaded)
             return;
@@ -2967,7 +3000,7 @@ public sealed partial class BrowsingContext : IDisposable
             {
                 if (!child.IsDestroyed)
                 {
-                    UnloadDocumentAndDescendants(child.Document, includeInitialAboutBlank: true);
+                    UnloadDocumentAndDescendants(child.Document, includeInitialAboutBlank: true, persisted);
                 }
             }
         }
@@ -2985,16 +3018,17 @@ public sealed partial class BrowsingContext : IDisposable
                 if (document.PageShowing || document.IsInitialAboutBlank)
                 {
                     document.PageShowing = false;
-                    oldWindow.FireLegacyTargetOverrideEvent(new PageTransitionEvent("pagehide", new PageTransitionEventInit { Persisted = false, Bubbles = true, Cancelable = true }));
+                    oldWindow.FireLegacyTargetOverrideEvent(new PageTransitionEvent("pagehide", new PageTransitionEventInit { Persisted = persisted, Bubbles = true, Cancelable = true }));
                 }
 
                 // https://html.spec.whatwg.org/multipage/document-lifecycle.html#unload-a-document, step 7
                 document.UpdateVisibilityState(visible: false);
 
                 // The "unload" policy-controlled feature (https://github.com/fergald/docs/blob/master/explainers/permissions-policy-unload.md,
-                // implemented by Chromium): the unload event is not fired at a document whose permissions policy disables it
+                // implemented by Chromium): the unload event is not fired at a document whose permissions policy disables it.
+                // The unload event of a salvageable document (kept in the back/forward cache) is not fired.
                 var unloadEventStart = oldWindow.EventLoop.TimeProvider.GetTimestamp();
-                if (PermissionsPolicyAlgorithms.IsFeatureEnabled(PolicyControlledFeature.Unload, document, document.Origin, report: oldWindow.HasEventListener("unload")))
+                if (!persisted && PermissionsPolicyAlgorithms.IsFeatureEnabled(PolicyControlledFeature.Unload, document, document.Origin, report: oldWindow.HasEventListener("unload")))
                 {
                     oldWindow.FireLegacyTargetOverrideEvent(new Event("unload"));
                 }
@@ -3014,6 +3048,9 @@ public sealed partial class BrowsingContext : IDisposable
             // released and its lock requests are aborted)
             FullscreenModel.FullyExit(document);
             PointerLockModel.OnDocumentUnloaded(document);
+            if (persisted)
+                return;
+
             WebLocks.OnEnvironmentDiscarded(oldWindow);
             oldWindow.ReleaseFileSystemResources();
             WebSocket.MakeDisappear(oldWindow);
@@ -3051,8 +3088,8 @@ public sealed partial class BrowsingContext : IDisposable
         // The navigational prefetches and the prerendering navigables of the speculation rules of the document
         Html.NavigationalPrefetch.DiscardAll(document);
 
-        // There is no back/forward cache: a traversal to an entry of the document loads it again, and restores the state of
-        // its form controls (https://html.spec.whatwg.org/multipage/browsing-the-web.html#persisted-user-state-restoration)
+        // A traversal to an entry of a destroyed document loads it again, and restores the state of its form controls
+        // (https://html.spec.whatwg.org/multipage/browsing-the-web.html#persisted-user-state-restoration)
         if (document.LatestEntry is { DocumentState: { } documentState } latestEntry && ReferenceEquals(documentState.Document, document))
         {
             documentState.Document = null;
@@ -3088,6 +3125,9 @@ public sealed partial class BrowsingContext : IDisposable
         // document are terminated
         document.TerminateWorklets();
 
+        // The realtime audio contexts of the document are closed
+        document.CloseAudioContexts();
+
         // https://w3c.github.io/FileAPI/#lifeTime: the blob URLs created by the document are revoked
         document.BrowsingContext?.BlobUrls.RemoveEntries(document);
 
@@ -3122,6 +3162,7 @@ public sealed partial class BrowsingContext : IDisposable
         IsDestroyed = true;
         CancelOngoingNavigation();
         IsDelayingLoadEvents = false;
+        ClearBackForwardCache();
         var window = Document.RelevantWindow;
         DestroyDocument(Document);
         if (window is not null)
@@ -3284,6 +3325,7 @@ public sealed partial class BrowsingContext : IDisposable
             return;
 
         var window = Document.RelevantWindow;
+        ClearBackForwardCache();
         UnloadAndDestroy(Document);
         IsDestroyed = true;
         _groupOwner?._auxiliaryBrowsingContexts?.Remove(this);
@@ -3600,6 +3642,9 @@ public sealed partial class BrowsingContext : IDisposable
 
         /// <summary>The session history entry whose document a history traversal or a reload loads again, or null.</summary>
         public SessionHistoryEntry? TraversalEntry { get; set; }
+
+        /// <summary>Whether the request of the navigation is a <c>POST</c> request (a form submission).</summary>
+        public bool IsPostNavigation { get; init; }
 
         /// <summary>The content type of a document that the HTML parser creates for another type (a text document or a media document), or null.</summary>
         public string? ContentType { get; set; }

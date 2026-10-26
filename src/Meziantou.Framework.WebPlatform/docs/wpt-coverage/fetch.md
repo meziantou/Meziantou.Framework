@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 300 | 407 | 3 | 74% |
+| [Stable](#stable-tests) | 301 | 407 | 3 | 75% |
 | [Tentative](#tentative-tests) | 12 | 77 | 1 | 16% |
 | [Reftests](#reftests) | 9 | 11 | 0 | 82% |
-| **All** | **321** | **495** | **4** | **65%** |
+| **All** | **322** | **495** | **4** | **66%** |
 
 ## Stable tests
 
@@ -53,7 +53,7 @@
 | [`api/basic/scheme-blob.sub.any.js`](https://wpt.fyi/results/fetch/api/basic/scheme-blob.sub.any.js) | Pass | 36 / 36 |  |  |
 | [`api/basic/scheme-data.any.js`](https://wpt.fyi/results/fetch/api/basic/scheme-data.any.js) | Pass | 24 / 24 |  |  |
 | [`api/basic/scheme-others.sub.any.js`](https://wpt.fyi/results/fetch/api/basic/scheme-others.sub.any.js) | Pass | 48 / 48 |  |  |
-| [`api/basic/status.h2.any.js`](https://wpt.fyi/results/fetch/api/basic/status.h2.any.js) | Fail | 0 / 14 | TEST RUNNER | the `.h2.` tests are served by the HTTP/1.1 emulation, so `statusText` is the reason phrase (HTTP/2 has none) |
+| [`api/basic/status.h2.any.js`](https://wpt.fyi/results/fetch/api/basic/status.h2.any.js) | Pass | 14 / 14 |  |  |
 | [`api/basic/stream-response.any.js`](https://wpt.fyi/results/fetch/api/basic/stream-response.any.js) | Fail | 0 / 6 | NOT IMPLEMENTED | streamed response bodies (the body of `trickle.py` is received at once, in a single chunk) |
 | [`api/basic/stream-safe-creation.any.js`](https://wpt.fyi/results/fetch/api/basic/stream-safe-creation.any.js) | Pass | 189 / 189 |  |  |
 | [`api/basic/text-utf8.any.js`](https://wpt.fyi/results/fetch/api/basic/text-utf8.any.js) | Pass | 90 / 90 |  |  |

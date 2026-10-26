@@ -1832,6 +1832,7 @@ namespace Meziantou.Framework.WebPlatform.Css.Om
         public string FeatureSettings { get => throw null; set { } }
         public string LineGapOverride { get => throw null; set { } }
         public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Css.Om.FontFace> Loaded { get => throw null; }
+        public string SizeAdjust { get => throw null; set { } }
         public Meziantou.Framework.WebPlatform.Css.Om.FontFaceLoadStatus Status { get => throw null; }
         public string Stretch { get => throw null; set { } }
         public string Style { get => throw null; set { } }
@@ -6194,6 +6195,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool FormNoValidate { get => throw null; set { } }
         public string FormTarget { get => throw null; set { } }
         public uint Height { get => throw null; set { } }
+        public uint Hspace { get => throw null; set { } }
         public bool Indeterminate { get => throw null; set { } }
         public Meziantou.Framework.WebPlatform.Dom.NodeList? Labels { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.HtmlDataListElement? List { get => throw null; }
@@ -6222,6 +6224,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public string Value { get => throw null; set { } }
         public System.DateTime? ValueAsDate { get => throw null; set { } }
         public double ValueAsNumber { get => throw null; set { } }
+        public uint Vspace { get => throw null; set { } }
         public uint Width { get => throw null; set { } }
         public bool WillValidate { get => throw null; }
         public bool CheckValidity() => throw null;

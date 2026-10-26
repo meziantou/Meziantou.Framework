@@ -107,6 +107,10 @@ internal static class Binding_HTMLInputElement<TAdapter, TValue> where TAdapter 
     private static void Set_align(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlInputElement>(t, Binding); var x = r.ToDomString(v); o.Align = x; }
     private static TValue Get_useMap(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlInputElement>(t, Binding); return r.FromString(o.UseMap); }
     private static void Set_useMap(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlInputElement>(t, Binding); var x = r.ToDomString(v); o.UseMap = x; }
+    private static TValue Get_hspace(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlInputElement>(t, Binding); return r.FromNumber((double)o.Hspace); }
+    private static void Set_hspace(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlInputElement>(t, Binding); var x = r.ToUnsignedLong(v, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None); o.Hspace = x; }
+    private static TValue Get_vspace(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlInputElement>(t, Binding); return r.FromNumber((double)o.Vspace); }
+    private static void Set_vspace(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlInputElement>(t, Binding); var x = r.ToUnsignedLong(v, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None); o.Vspace = x; }
     private static TValue Get_popoverTargetElement(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlInputElement>(t, Binding); return r.Wrap(o.PopoverTargetElement); }
     private static void Set_popoverTargetElement(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlInputElement>(t, Binding); var x = (r.IsNullOrUndefined(v) ? (global::Meziantou.Framework.WebPlatform.Dom.Element?)null : r.ToInterface<global::Meziantou.Framework.WebPlatform.Dom.Element>(v, "Element")); o.PopoverTargetElement = x; }
     private static TValue Get_popoverTargetAction(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlInputElement>(t, Binding); return r.FromString(o.PopoverTargetAction); }
@@ -233,6 +237,8 @@ internal static class Binding_HTMLInputElement<TAdapter, TValue> where TAdapter 
         r.DefineAttribute(instanceTarget, "selectionDirection", Get_selectionDirection, Set_selectionDirection);
         r.DefineAttribute(instanceTarget, "align", Get_align, Set_align);
         r.DefineAttribute(instanceTarget, "useMap", Get_useMap, Set_useMap);
+        r.DefineAttribute(instanceTarget, "hspace", Get_hspace, Set_hspace);
+        r.DefineAttribute(instanceTarget, "vspace", Get_vspace, Set_vspace);
         r.DefineAttribute(instanceTarget, "popoverTargetElement", Get_popoverTargetElement, Set_popoverTargetElement);
         r.DefineAttribute(instanceTarget, "popoverTargetAction", Get_popoverTargetAction, Set_popoverTargetAction);
         r.DefineOperation(instanceTarget, "stepUp", 0, Op_stepUp);

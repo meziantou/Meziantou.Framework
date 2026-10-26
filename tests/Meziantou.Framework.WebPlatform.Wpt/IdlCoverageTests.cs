@@ -15,7 +15,7 @@ public sealed class IdlCoverageTests
     /// <summary>The webref files (specifications) whose IDL must be fully implemented.</summary>
     private static readonly string[] Specifications = ["dom", "html", "SVG2", "filter-effects-1", "css-masking-1", "geometry-1", "mathml-core", "svg-animations", "svg-paths", "wai-aria-1.3",
         "cssom-1", "css-conditional-3", "css-nesting-1", "css-cascade-5", "css-cascade-6", "css-fonts-5", "css-counter-styles-3", "css-font-loading-3", "trusted-types", "selection-api", "cssom-view-1", "urlpattern", "xhr", "fetch", "css-highlight-api-1", "css-mixins-1", "css-shadow-1", "css-properties-values-api-1", "mediaqueries-5", "css-typed-om-1", "css-parser-api", "clipboard-apis", "cookiestore", "console", "beacon", "compat", "websockets", "IndexedDB-3", "service-workers", "resize-observer-1", "intersection-observer", "layout-instability", "scroll-animations-1", "css-scroll-snap-2", "css-anchor-position-1", "css-viewport-1", "paint-timing", "largest-contentful-paint", "element-timing",
-        "web-animations-1", "web-animations-2", "css-animations-1", "css-animations-2", "css-transitions-1", "css-transitions-2", "css-view-transitions-2", "webvtt1", "webcrypto-2", "webcrypto-secure-curves", "webcrypto-modern-algos", "css-paint-api-1", "css-layout-api-1", "css-animation-worklet-1"];
+        "web-animations-1", "web-animations-2", "css-animations-1", "css-animations-2", "css-transitions-1", "css-transitions-2", "css-view-transitions-2", "webvtt1", "webcrypto-2", "webcrypto-secure-curves", "webcrypto-modern-algos", "css-paint-api-1", "css-layout-api-1", "css-animation-worklet-1", "observable"];
 
     [Fact]
     public void AllIdlMembersAreImplementedOrExcluded()

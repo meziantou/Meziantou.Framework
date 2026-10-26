@@ -208,6 +208,12 @@ public sealed record WebPlatformFeatures
     public bool UrlPatternEnabled { get; init; } = true;
 
     /// <summary>
+    /// Gets or sets whether the Observable API is exposed (https://wicg.github.io/observable/): the <c>Observable</c> and
+    /// <c>Subscriber</c> interfaces and <c>EventTarget.prototype.when()</c>. The default is true.
+    /// </summary>
+    public bool ObservableEnabled { get; init; } = true;
+
+    /// <summary>
     /// Gets or sets whether the <c>WebAssembly</c> namespace is exposed (https://webassembly.github.io/spec/js-api/), when
     /// <see cref="BrowsingContextOptions.WebAssemblyRuntime"/> is set. The default is true.
     /// </summary>

@@ -3740,6 +3740,7 @@ using var context = new BrowsingContext(new BrowsingContextOptions
 | `CompressionStreamsEnabled` | `CompressionStream`, `DecompressionStream` |
 | `NavigationApiEnabled` | `navigation`, `Navigation`, `NavigateEvent` and the other `Navigation*` interfaces |
 | `UrlPatternEnabled` | `URLPattern` |
+| `ObservableEnabled` | `Observable`, `Subscriber`, `EventTarget.prototype.when()` |
 | `WebAssemblyEnabled` | `WebAssembly` (defined only when `WebAssemblyRuntime` is set) |
 | `ResizeObserverEnabled` | `ResizeObserver`, `ResizeObserverEntry`, `ResizeObserverSize` |
 | `IntersectionObserverEnabled` | `IntersectionObserver`, `IntersectionObserverEntry`; when disabled, the `loading="lazy"` images and iframes are loaded at once |

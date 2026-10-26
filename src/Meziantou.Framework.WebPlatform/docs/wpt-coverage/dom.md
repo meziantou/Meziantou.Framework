@@ -7,9 +7,9 @@
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 658 | 683 | 6 | 97% |
-| [Tentative](#tentative-tests) | 3 | 55 | 2 | 6% |
+| [Tentative](#tentative-tests) | 30 | 55 | 2 | 57% |
 | [Reftests](#reftests) | 4 | 4 | 0 | 100% |
-| **All** | **665** | **742** | **8** | **91%** |
+| **All** | **692** | **742** | **8** | **94%** |
 
 ## Stable tests
 
@@ -706,35 +706,35 @@
 | [`events/Event-dispatch-click.tentative.html`](https://wpt.fyi/results/dom/events/Event-dispatch-click.tentative.html) | Pass | 6 / 6 |  |  |
 | [`events/scrolling/scrollend-event-fired-after-sequence-of-scrolls.tentative.html`](https://wpt.fyi/results/dom/events/scrolling/scrollend-event-fired-after-sequence-of-scrolls.tentative.html) | Pass | 2 / 2 |  |  |
 | [`events/scrolling/scrollend-event-not-fired-after-removing-scroller.tentative.html`](https://wpt.fyi/results/dom/events/scrolling/scrollend-event-not-fired-after-removing-scroller.tentative.html) | Pass | 3 / 3 |  |  |
-| [`observable/tentative/crashtests/observable-gc.any.js`](https://wpt.fyi/results/dom/observable/tentative/crashtests/observable-gc.any.js) | Disabled | – | NOT IMPLEMENTED, TEST RUNNER | the Observable API; the `crashtests` directories are not run |
-| [`observable/tentative/crashtests/observable-takeUntil-toArray.any.js`](https://wpt.fyi/results/dom/observable/tentative/crashtests/observable-takeUntil-toArray.any.js) | Disabled | – | NOT IMPLEMENTED, TEST RUNNER | the Observable API; the `crashtests` directories are not run |
-| [`observable/tentative/idlharness.html`](https://wpt.fyi/results/dom/observable/tentative/idlharness.html) | Fail | 2 / 36 | NOT IMPLEMENTED | the Observable API (`Observable`, `Subscriber`, `EventTarget.when()`) |
-| [`observable/tentative/observable-catch.any.js`](https://wpt.fyi/results/dom/observable/tentative/observable-catch.any.js) | Fail | 0 / 18 | NOT IMPLEMENTED | the Observable API (`Observable`, `Subscriber`, `EventTarget.when()`) |
-| [`observable/tentative/observable-constructor.any.js`](https://wpt.fyi/results/dom/observable/tentative/observable-constructor.any.js) | Fail | 0 / 88 | NOT IMPLEMENTED | the Observable API (`Observable`, `Subscriber`, `EventTarget.when()`) |
-| [`observable/tentative/observable-constructor.window.js`](https://wpt.fyi/results/dom/observable/tentative/observable-constructor.window.js) | Fail | 0 / 4 | NOT IMPLEMENTED | the Observable API (`Observable`, `Subscriber`, `EventTarget.when()`) |
-| [`observable/tentative/observable-drop.any.js`](https://wpt.fyi/results/dom/observable/tentative/observable-drop.any.js) | Fail | 0 / 14 | NOT IMPLEMENTED | the Observable API (`Observable`, `Subscriber`, `EventTarget.when()`) |
-| [`observable/tentative/observable-event-target.any.js`](https://wpt.fyi/results/dom/observable/tentative/observable-event-target.any.js) | Fail | 0 / 6 | NOT IMPLEMENTED | the Observable API (`Observable`, `Subscriber`, `EventTarget.when()`) |
-| [`observable/tentative/observable-event-target.window.js`](https://wpt.fyi/results/dom/observable/tentative/observable-event-target.window.js) | Fail | 0 / 2 | NOT IMPLEMENTED | the Observable API (`Observable`, `Subscriber`, `EventTarget.when()`) |
-| [`observable/tentative/observable-every.any.js`](https://wpt.fyi/results/dom/observable/tentative/observable-every.any.js) | Fail | 0 / 20 | NOT IMPLEMENTED | the Observable API (`Observable`, `Subscriber`, `EventTarget.when()`) |
-| [`observable/tentative/observable-filter.any.js`](https://wpt.fyi/results/dom/observable/tentative/observable-filter.any.js) | Fail | 0 / 12 | NOT IMPLEMENTED | the Observable API (`Observable`, `Subscriber`, `EventTarget.when()`) |
-| [`observable/tentative/observable-finally.any.js`](https://wpt.fyi/results/dom/observable/tentative/observable-finally.any.js) | Fail | 0 / 20 | NOT IMPLEMENTED | the Observable API (`Observable`, `Subscriber`, `EventTarget.when()`) |
-| [`observable/tentative/observable-find.any.js`](https://wpt.fyi/results/dom/observable/tentative/observable-find.any.js) | Fail | 0 / 12 | NOT IMPLEMENTED | the Observable API (`Observable`, `Subscriber`, `EventTarget.when()`) |
-| [`observable/tentative/observable-first.any.js`](https://wpt.fyi/results/dom/observable/tentative/observable-first.any.js) | Fail | 0 / 10 | NOT IMPLEMENTED | the Observable API (`Observable`, `Subscriber`, `EventTarget.when()`) |
-| [`observable/tentative/observable-flatMap.any.js`](https://wpt.fyi/results/dom/observable/tentative/observable-flatMap.any.js) | Fail | 0 / 14 | NOT IMPLEMENTED | the Observable API (`Observable`, `Subscriber`, `EventTarget.when()`) |
-| [`observable/tentative/observable-forEach.any.js`](https://wpt.fyi/results/dom/observable/tentative/observable-forEach.any.js) | Fail | 0 / 12 | NOT IMPLEMENTED | the Observable API (`Observable`, `Subscriber`, `EventTarget.when()`) |
-| [`observable/tentative/observable-forEach.window.js`](https://wpt.fyi/results/dom/observable/tentative/observable-forEach.window.js) | Fail | 0 / 2 | NOT IMPLEMENTED | the Observable API (`Observable`, `Subscriber`, `EventTarget.when()`) |
-| [`observable/tentative/observable-from.any.js`](https://wpt.fyi/results/dom/observable/tentative/observable-from.any.js) | Fail | 0 / 96 | NOT IMPLEMENTED | the Observable API (`Observable`, `Subscriber`, `EventTarget.when()`) |
-| [`observable/tentative/observable-inspect.any.js`](https://wpt.fyi/results/dom/observable/tentative/observable-inspect.any.js) | Fail | 0 / 26 | NOT IMPLEMENTED | the Observable API (`Observable`, `Subscriber`, `EventTarget.when()`) |
-| [`observable/tentative/observable-last.any.js`](https://wpt.fyi/results/dom/observable/tentative/observable-last.any.js) | Fail | 0 / 10 | NOT IMPLEMENTED | the Observable API (`Observable`, `Subscriber`, `EventTarget.when()`) |
-| [`observable/tentative/observable-map.any.js`](https://wpt.fyi/results/dom/observable/tentative/observable-map.any.js) | Fail | 0 / 12 | NOT IMPLEMENTED | the Observable API (`Observable`, `Subscriber`, `EventTarget.when()`) |
-| [`observable/tentative/observable-map.window.js`](https://wpt.fyi/results/dom/observable/tentative/observable-map.window.js) | Fail | 0 / 1 | NOT IMPLEMENTED | the Observable API (`Observable`, `Subscriber`, `EventTarget.when()`) |
-| [`observable/tentative/observable-reduce.any.js`](https://wpt.fyi/results/dom/observable/tentative/observable-reduce.any.js) | Fail | 0 / 16 | NOT IMPLEMENTED | the Observable API (`Observable`, `Subscriber`, `EventTarget.when()`) |
-| [`observable/tentative/observable-some.any.js`](https://wpt.fyi/results/dom/observable/tentative/observable-some.any.js) | Fail | 0 / 14 | NOT IMPLEMENTED | the Observable API (`Observable`, `Subscriber`, `EventTarget.when()`) |
-| [`observable/tentative/observable-switchMap.any.js`](https://wpt.fyi/results/dom/observable/tentative/observable-switchMap.any.js) | Fail | 0 / 12 | NOT IMPLEMENTED | the Observable API (`Observable`, `Subscriber`, `EventTarget.when()`) |
-| [`observable/tentative/observable-take.any.js`](https://wpt.fyi/results/dom/observable/tentative/observable-take.any.js) | Fail | 0 / 12 | NOT IMPLEMENTED | the Observable API (`Observable`, `Subscriber`, `EventTarget.when()`) |
-| [`observable/tentative/observable-takeUntil.any.js`](https://wpt.fyi/results/dom/observable/tentative/observable-takeUntil.any.js) | Fail | 0 / 24 | NOT IMPLEMENTED | the Observable API (`Observable`, `Subscriber`, `EventTarget.when()`) |
-| [`observable/tentative/observable-takeUntil.window.js`](https://wpt.fyi/results/dom/observable/tentative/observable-takeUntil.window.js) | Fail | 0 / 2 | NOT IMPLEMENTED | the Observable API (`Observable`, `Subscriber`, `EventTarget.when()`) |
-| [`observable/tentative/observable-toArray.any.js`](https://wpt.fyi/results/dom/observable/tentative/observable-toArray.any.js) | Fail | 0 / 12 | NOT IMPLEMENTED | the Observable API (`Observable`, `Subscriber`, `EventTarget.when()`) |
+| [`observable/tentative/crashtests/observable-gc.any.js`](https://wpt.fyi/results/dom/observable/tentative/crashtests/observable-gc.any.js) | Disabled | – | TEST RUNNER | the `crashtests` directories are not run |
+| [`observable/tentative/crashtests/observable-takeUntil-toArray.any.js`](https://wpt.fyi/results/dom/observable/tentative/crashtests/observable-takeUntil-toArray.any.js) | Disabled | – | TEST RUNNER | the `crashtests` directories are not run |
+| [`observable/tentative/idlharness.html`](https://wpt.fyi/results/dom/observable/tentative/idlharness.html) | Pass | 36 / 36 |  |  |
+| [`observable/tentative/observable-catch.any.js`](https://wpt.fyi/results/dom/observable/tentative/observable-catch.any.js) | Pass | 18 / 18 |  |  |
+| [`observable/tentative/observable-constructor.any.js`](https://wpt.fyi/results/dom/observable/tentative/observable-constructor.any.js) | Pass | 88 / 88 |  |  |
+| [`observable/tentative/observable-constructor.window.js`](https://wpt.fyi/results/dom/observable/tentative/observable-constructor.window.js) | Pass | 4 / 4 |  |  |
+| [`observable/tentative/observable-drop.any.js`](https://wpt.fyi/results/dom/observable/tentative/observable-drop.any.js) | Pass | 14 / 14 |  |  |
+| [`observable/tentative/observable-event-target.any.js`](https://wpt.fyi/results/dom/observable/tentative/observable-event-target.any.js) | Pass | 6 / 6 |  |  |
+| [`observable/tentative/observable-event-target.window.js`](https://wpt.fyi/results/dom/observable/tentative/observable-event-target.window.js) | Pass | 2 / 2 |  |  |
+| [`observable/tentative/observable-every.any.js`](https://wpt.fyi/results/dom/observable/tentative/observable-every.any.js) | Pass | 20 / 20 |  |  |
+| [`observable/tentative/observable-filter.any.js`](https://wpt.fyi/results/dom/observable/tentative/observable-filter.any.js) | Pass | 12 / 12 |  |  |
+| [`observable/tentative/observable-finally.any.js`](https://wpt.fyi/results/dom/observable/tentative/observable-finally.any.js) | Pass | 20 / 20 |  |  |
+| [`observable/tentative/observable-find.any.js`](https://wpt.fyi/results/dom/observable/tentative/observable-find.any.js) | Pass | 12 / 12 |  |  |
+| [`observable/tentative/observable-first.any.js`](https://wpt.fyi/results/dom/observable/tentative/observable-first.any.js) | Pass | 10 / 10 |  |  |
+| [`observable/tentative/observable-flatMap.any.js`](https://wpt.fyi/results/dom/observable/tentative/observable-flatMap.any.js) | Pass | 14 / 14 |  |  |
+| [`observable/tentative/observable-forEach.any.js`](https://wpt.fyi/results/dom/observable/tentative/observable-forEach.any.js) | Pass | 12 / 12 |  |  |
+| [`observable/tentative/observable-forEach.window.js`](https://wpt.fyi/results/dom/observable/tentative/observable-forEach.window.js) | Pass | 2 / 2 |  |  |
+| [`observable/tentative/observable-from.any.js`](https://wpt.fyi/results/dom/observable/tentative/observable-from.any.js) | Pass | 96 / 96 |  |  |
+| [`observable/tentative/observable-inspect.any.js`](https://wpt.fyi/results/dom/observable/tentative/observable-inspect.any.js) | Pass | 26 / 26 |  |  |
+| [`observable/tentative/observable-last.any.js`](https://wpt.fyi/results/dom/observable/tentative/observable-last.any.js) | Pass | 10 / 10 |  |  |
+| [`observable/tentative/observable-map.any.js`](https://wpt.fyi/results/dom/observable/tentative/observable-map.any.js) | Pass | 12 / 12 |  |  |
+| [`observable/tentative/observable-map.window.js`](https://wpt.fyi/results/dom/observable/tentative/observable-map.window.js) | Pass | 1 / 1 |  |  |
+| [`observable/tentative/observable-reduce.any.js`](https://wpt.fyi/results/dom/observable/tentative/observable-reduce.any.js) | Pass | 16 / 16 |  |  |
+| [`observable/tentative/observable-some.any.js`](https://wpt.fyi/results/dom/observable/tentative/observable-some.any.js) | Pass | 14 / 14 |  |  |
+| [`observable/tentative/observable-switchMap.any.js`](https://wpt.fyi/results/dom/observable/tentative/observable-switchMap.any.js) | Pass | 12 / 12 |  |  |
+| [`observable/tentative/observable-take.any.js`](https://wpt.fyi/results/dom/observable/tentative/observable-take.any.js) | Pass | 12 / 12 |  |  |
+| [`observable/tentative/observable-takeUntil.any.js`](https://wpt.fyi/results/dom/observable/tentative/observable-takeUntil.any.js) | Pass | 24 / 24 |  |  |
+| [`observable/tentative/observable-takeUntil.window.js`](https://wpt.fyi/results/dom/observable/tentative/observable-takeUntil.window.js) | Pass | 2 / 2 |  |  |
+| [`observable/tentative/observable-toArray.any.js`](https://wpt.fyi/results/dom/observable/tentative/observable-toArray.any.js) | Pass | 12 / 12 |  |  |
 | [`ranges/Range-cloneContents-around-shadow.tentative.html`](https://wpt.fyi/results/dom/ranges/Range-cloneContents-around-shadow.tentative.html) | Fail | 4 / 5 | TEST BUG | the tentative test contradicts the Selection API, whose `getRangeAt()` throws an `IndexSizeError` when the focus is not in the document tree (a selection whose range ends in a shadow tree), as in Safari |
 | [`ranges/Range-deleteContents-around-shadow.tentative.html`](https://wpt.fyi/results/dom/ranges/Range-deleteContents-around-shadow.tentative.html) | Fail | 3 / 4 | TEST BUG | the tentative test contradicts the Selection API, whose `getRangeAt()` throws an `IndexSizeError` when the focus is not in the document tree (a selection whose range ends in a shadow tree), as in Safari |
 | [`ranges/Range-expand-shadow.tentative.html`](https://wpt.fyi/results/dom/ranges/Range-expand-shadow.tentative.html) | Fail | 0 / 13 | NOT IMPLEMENTED | `Range.expand()` (a proposal) |

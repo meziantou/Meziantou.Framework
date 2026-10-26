@@ -87,14 +87,7 @@
     "total": 12
   },
   "encoding/json-document-utf8.html": {
-    "harness": "ERROR",
-    "total": 4,
-    "failures": {
-      "application/json with no charset is decoded as UTF-8 under a windows-1251 parent frame": "TIMEOUT",
-      "application/json;charset=utf-8 is decoded as UTF-8": "NOTRUN",
-      "application/json;charset=windows-1251 honors the explicit charset": "NOTRUN",
-      "text/json with no charset is decoded as UTF-8": "NOTRUN"
-    }
+    "total": 4
   },
   "encoding/legacy-mb-japanese/euc-jp/eucjp-decode-cseucpkdfmtjapanese.html?1-1000": {
     "total": 1000

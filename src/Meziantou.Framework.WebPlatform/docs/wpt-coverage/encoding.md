@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 147 | 152 | 0 | 97% |
+| [Stable](#stable-tests) | 148 | 152 | 0 | 97% |
 | Tentative | 0 | 0 | 0 | – |
 | [Reftests](#reftests) | 4 | 4 | 0 | 100% |
-| **All** | **151** | **156** | **0** | **97%** |
+| **All** | **152** | **156** | **0** | **97%** |
 
 ## Stable tests
 
@@ -25,7 +25,7 @@
 | [`idlharness.any.js`](https://wpt.fyi/results/encoding/idlharness.any.js) | Pass | 171 / 171 |  |  |
 | [`iso-2022-jp-decoder.any.js`](https://wpt.fyi/results/encoding/iso-2022-jp-decoder.any.js) | Pass | 76 / 76 |  |  |
 | [`iso-2022-jp-encoder.html`](https://wpt.fyi/results/encoding/iso-2022-jp-encoder.html) | Pass | 12 / 12 |  |  |
-| [`json-document-utf8.html`](https://wpt.fyi/results/encoding/json-document-utf8.html) | Error | 0 / 4 | TEST RUNNER | `encoding/resources/json-charset.py` is not emulated (the iframe has no body) |
+| [`json-document-utf8.html`](https://wpt.fyi/results/encoding/json-document-utf8.html) | Pass | 4 / 4 |  |  |
 | [`legacy-mb-japanese/euc-jp/eucjp-decode-cseucpkdfmtjapanese.html`](https://wpt.fyi/results/encoding/legacy-mb-japanese/euc-jp/eucjp-decode-cseucpkdfmtjapanese.html) | Pass | 13,459 / 13,459 |  |  |
 | [`legacy-mb-japanese/euc-jp/eucjp-decode-errors.html`](https://wpt.fyi/results/encoding/legacy-mb-japanese/euc-jp/eucjp-decode-errors.html) | Pass | 11 / 11 |  |  |
 | [`legacy-mb-japanese/euc-jp/eucjp-decode-x-euc-jp.html`](https://wpt.fyi/results/encoding/legacy-mb-japanese/euc-jp/eucjp-decode-x-euc-jp.html) | Pass | 13,459 / 13,459 |  |  |

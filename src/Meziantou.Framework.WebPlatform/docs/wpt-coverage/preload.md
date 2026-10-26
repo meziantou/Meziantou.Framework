@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 60 | 68 | 0 | 88% |
+| [Stable](#stable-tests) | 62 | 68 | 0 | 91% |
 | [Tentative](#tentative-tests) | 0 | 1 | 0 | 0% |
 | [Reftests](#reftests) | 1 | 1 | 0 | 100% |
-| **All** | **61** | **70** | **0** | **87%** |
+| **All** | **63** | **70** | **0** | **90%** |
 
 ## Stable tests
 
@@ -50,8 +50,8 @@
 | [`preconnect-onerror-event.html`](https://wpt.fyi/results/preload/preconnect-onerror-event.html) | Pass | 3 / 3 |  |  |
 | [`preconnect.html`](https://wpt.fyi/results/preload/preconnect.html) | Pass | 1 / 1 |  |  |
 | [`prefetch-accept.html`](https://wpt.fyi/results/preload/prefetch-accept.html) | Pass | 1 / 1 |  |  |
-| [`prefetch-cache.html`](https://wpt.fyi/results/preload/prefetch-cache.html) | Fail | 3 / 4 | NOT IMPLEMENTED | there is no HTTP cache: the response of a `<link rel=prefetch>` is not used by the next fetch or navigation of the URL, which requests it again |
-| [`prefetch-document.html`](https://wpt.fyi/results/preload/prefetch-document.html) | Fail | 4 / 5 | NOT IMPLEMENTED | there is no HTTP cache: the response of a `<link rel=prefetch>` is not used by the next fetch or navigation of the URL, which requests it again |
+| [`prefetch-cache.html`](https://wpt.fyi/results/preload/prefetch-cache.html) | Pass | 4 / 4 |  |  |
+| [`prefetch-document.html`](https://wpt.fyi/results/preload/prefetch-document.html) | Pass | 5 / 5 |  |  |
 | [`prefetch-events.html`](https://wpt.fyi/results/preload/prefetch-events.html) | Pass | 9 / 9 |  |  |
 | [`prefetch-headers.https.html`](https://wpt.fyi/results/preload/prefetch-headers.https.html) | Pass | 3 / 3 |  |  |
 | [`prefetch-load-event.html`](https://wpt.fyi/results/preload/prefetch-load-event.html) | Pass | 1 / 1 |  |  |

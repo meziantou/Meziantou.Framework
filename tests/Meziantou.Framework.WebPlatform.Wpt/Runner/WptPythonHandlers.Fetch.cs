@@ -256,6 +256,9 @@ internal static partial class WptPythonHandlers
         ["/fetch/api/resources/authentication.py"] = FetchAuthentication,
         ["/fetch/api/resources/cache.py"] = FetchCache,
         ["/fetch/api/request/resources/cache.py"] = RequestCache,
+        ["/fetch/http-cache/resources/http-cache.py"] = FetchHttpCache,
+        ["/fetch/http-cache/resources/cached_pragma_rand.py"] = (_, response, _) => CachedPragmaRand(response, "max-age=2592000, public"),
+        ["/fetch/http-cache/resources/cached_pragma_immutable_rand.py"] = (_, response, _) => CachedPragmaRand(response, "max-age=2592000, immutable"),
         ["/fetch/api/resources/dump-authorization-header.py"] = DumpAuthorizationHeader,
         ["/fetch/api/resources/echo-content.py"] = EchoContent,
         ["/fetch/api/resources/method.py"] = Method,
@@ -280,7 +283,7 @@ internal static partial class WptPythonHandlers
             response.Delay = TimeSpan.FromSeconds(5.2);
         },
         ["/fetch/api/resources/preflight-unterminated-body.py"] = PreflightUnterminatedBody,
-        ["/fetch/api/resources/bad-chunk-encoding.py"] = (_, response, _) => response.NetworkError = true,
+        ["/fetch/api/resources/bad-chunk-encoding.py"] = FetchBadChunkEncoding,
     };
 
     // xhr/resources/content.py
@@ -419,9 +422,32 @@ internal static partial class WptPythonHandlers
             response.Set("Content-type", "text/plain");
         }
 
-        response.Content = string.Concat(Enumerable.Repeat("TEST_TRICKLE\n", count));
+        // The headers after the delay, then each chunk after the delay, and the end of the body after the last delay
         response.Streamed = true;
-        response.Delay = delay * (count + 2);
+        response.Delay = delay;
+        for (var i = 0; i < count; i++)
+        {
+            response.Chunks.Add((delay, "TEST_TRICKLE\n"u8.ToArray()));
+        }
+
+        response.Chunks.Add((delay, []));
+    }
+
+    // fetch/api/resources/bad-chunk-encoding.py: the headers after the delay, then count valid chunks (each after the delay),
+    // then an invalid chunk
+    private static void FetchBadChunkEncoding(WptHandlerRequest request, WptHandlerResponse response, WptStash stash)
+    {
+        var delay = Milliseconds(request.Get("ms"), 1000);
+        var count = ParseInt(request.Get("count"), 50);
+        response.Streamed = true;
+        response.Delay = delay;
+        for (var i = 0; i < count; i++)
+        {
+            response.Chunks.Add((delay, "TEST_CHUNK"u8.ToArray()));
+        }
+
+        response.Chunks.Add((delay, []));
+        response.ChunksError = true;
     }
 
     // fetch/nosniff/resources/js.py: a script with X-Content-Type-Options: nosniff and the type parameter as its Content-Type
@@ -1624,6 +1650,172 @@ internal static partial class WptPythonHandlers
         }
     }
 
+    // fetch/http-cache/resources/http-cache.py: the responses described by the Test-Requests header (the JSON of the requests
+    // of the test, encoded in base64), one for each request received for the uuid; the requests are recorded in the stash
+    private static void FetchHttpCache(WptHandlerRequest request, WptHandlerResponse response, WptStash stash)
+    {
+        var uuid = request.Get("uuid");
+        response.Set("Access-Control-Allow-Credentials", "true");
+        void Fail(int status, string statusText, string body)
+        {
+            response.Status = status;
+            response.StatusText = statusText;
+            response.Set("Content-Type", "text/plain");
+            response.Content = body;
+        }
+
+        if (request.Method == "OPTIONS")
+        {
+            response.Set("Access-Control-Allow-Origin", request.Header("Origin") ?? "*");
+            response.Set("Access-Control-Allow-Methods", "GET");
+            response.Set("Access-Control-Allow-Headers", request.Header("Access-Control-Request-Headers") ?? "*");
+            response.Set("Access-Control-Max-Age", "86400");
+            response.Content = "Preflight request";
+            return;
+        }
+
+        if (uuid is null)
+        {
+            Fail(404, "Not Found", "UUID not found");
+            return;
+        }
+
+        switch (request.Get("dispatch"))
+        {
+            case "state":
+                response.Set("Content-Type", "text/plain");
+                response.Content = stash.TakeValue(uuid) is System.Text.Json.Nodes.JsonArray state ? state.ToJsonString() : "null";
+                return;
+            case "test":
+                break;
+            default:
+                Fail(404, "Not Found", "Fallthrough");
+                return;
+        }
+
+        var serverState = stash.TakeValue(uuid) as System.Text.Json.Nodes.JsonArray ?? [];
+        System.Text.Json.Nodes.JsonArray requests;
+        try
+        {
+            requests = System.Text.Json.Nodes.JsonNode.Parse(Encoding.Latin1.GetString(Convert.FromBase64String(request.Header("Test-Requests") ?? ""))) as System.Text.Json.Nodes.JsonArray ?? throw new FormatException();
+        }
+        catch (Exception ex) when (ex is FormatException or JsonException)
+        {
+            Fail(400, "Bad Request", "No or bad Test-Requests request header");
+            return;
+        }
+
+        if (serverState.Count >= requests.Count)
+            throw new InvalidOperationException("list index out of range");
+
+        if (requests[serverState.Count] is not System.Text.Json.Nodes.JsonObject config || config.Count == 0)
+        {
+            Fail(404, "Not Found", "Config not found");
+            return;
+        }
+
+        // The magic locations (the URL of the request, with the target) and the magic dates (a number of seconds from now)
+        var now = request.Now;
+        var notedHeaders = new System.Text.Json.Nodes.JsonObject();
+        foreach (var header in config["response_headers"] as System.Text.Json.Nodes.JsonArray ?? [])
+        {
+            if (header is not System.Text.Json.Nodes.JsonArray { Count: >= 2 } pair)
+                continue;
+
+            var name = pair[0]!.GetValue<string>();
+            var lowerName = name.ToLowerInvariant();
+            string value;
+            if (pair[1] is System.Text.Json.Nodes.JsonValue number && number.GetValueKind() == JsonValueKind.Number && lowerName is "date" or "expires" or "last-modified")
+            {
+                value = now.AddSeconds(number.GetValue<double>()).UtcDateTime.ToString("ddd, dd MMM yyyy HH:mm:ss 'GMT'", CultureInfo.InvariantCulture);
+            }
+            else
+            {
+                value = pair[1] is System.Text.Json.Nodes.JsonValue jsonValue && jsonValue.GetValueKind() == JsonValueKind.String ? jsonValue.GetValue<string>() : pair[1]?.ToJsonString() ?? "";
+            }
+
+            if (lowerName is "location" or "content-location")
+            {
+                value = value.Length > 0 ? request.Url.Href + "&target=" + value : request.Url.Href;
+            }
+
+            response.Set(name, value);
+            if (lowerName is "content-type" or "access-control-allow-origin" or "last-modified" or "etag")
+            {
+                notedHeaders[lowerName] = value;
+            }
+        }
+
+        var requestHeaders = new System.Text.Json.Nodes.JsonObject();
+        foreach (var (name, _) in request.Headers)
+        {
+            requestHeaders[name.ToLowerInvariant()] = request.Header(name);
+        }
+
+        serverState.Add(new System.Text.Json.Nodes.JsonObject
+        {
+            ["now"] = (now - DateTimeOffset.UnixEpoch).TotalSeconds,
+            ["request_method"] = request.Method,
+            ["request_headers"] = requestHeaders,
+            ["response_headers"] = notedHeaders,
+        });
+        stash.Put(uuid, serverState);
+
+        if (!notedHeaders.ContainsKey("access-control-allow-origin"))
+        {
+            response.Set("Access-Control-Allow-Origin", "*");
+        }
+
+        if (!notedHeaders.ContainsKey("content-type"))
+        {
+            response.Set("Content-Type", "text/plain");
+        }
+
+        response.Set("Server-Request-Count", serverState.Count.ToString(CultureInfo.InvariantCulture));
+        var (status, statusText) = config["response_status"] is System.Text.Json.Nodes.JsonArray { Count: >= 2 } statusPair
+            ? (statusPair[0]!.GetValue<int>(), statusPair[1]!.GetValue<string>())
+            : (200, "OK");
+
+        // A request expected to be validated gets a 304 response when it has the validator of the first response
+        if (config["expected_type"]?.GetValue<string>() is { } expectedType && expectedType.EndsWith("validated", StringComparison.Ordinal))
+        {
+            var referenceHeaders = serverState[0]!["response_headers"]!.AsObject();
+            if (referenceHeaders["last-modified"]?.GetValue<string>() is { } previousLastModified && request.Header("If-Modified-Since") == previousLastModified)
+            {
+                (status, statusText) = (304, "Not Modified");
+            }
+
+            if (referenceHeaders["etag"]?.GetValue<string>() is { } previousETag && request.Header("If-None-Match") == previousETag)
+            {
+                (status, statusText) = (304, "Not Modified");
+            }
+
+            if (status != 304)
+            {
+                (status, statusText) = (999, "304 Not Generated");
+            }
+        }
+
+        response.Status = status;
+        response.StatusText = statusText;
+        if (status is not (204 or 304))
+        {
+            // A null response_body is an empty body
+            response.Content = !config.TryGetPropertyValue("response_body", out var body) ? uuid : body is System.Text.Json.Nodes.JsonValue value && value.GetValueKind() == JsonValueKind.String ? value.GetValue<string>() : body?.ToJsonString() ?? "";
+        }
+    }
+
+    // fetch/http-cache/resources/cached_pragma_rand.py, cached_pragma_immutable_rand.py: a unique token, with a Cache-Control
+    // that allows caching and Pragma: no-cache
+    private static void CachedPragmaRand(WptHandlerResponse response, string cacheControl)
+    {
+        response.Set("X-XSS-Protection", "0");
+        response.Set("Content-Type", "text/html");
+        response.Set("Cache-Control", cacheControl);
+        response.Set("Pragma", "no-cache");
+        response.Content = "Token: " + Guid.NewGuid().ToString("D");
+    }
+
     // fetch/api/resources/dump-authorization-header.py
     private static void DumpAuthorizationHeader(WptHandlerRequest request, WptHandlerResponse response, WptStash stash)
     {
@@ -1681,16 +1873,38 @@ internal static partial class WptPythonHandlers
         response.Body = request.Body;
     }
 
-    // fetch/api/resources/infinite-slow-response.py: the response never ends (the request is aborted by the test)
+    // fetch/api/resources/infinite-slow-response.py: the response never ends (the request is aborted by the test). A body
+    // read as it arrives (fetch()) gets 2048 bytes with the headers, then a byte every 10 ms until the client stops reading
+    // it (the stash of stateKey is then "closed") or until the stash has a value for abortKey; the other requests never get
+    // their response.
     private static void InfiniteSlowResponse(WptHandlerRequest request, WptHandlerResponse response, WptStash stash)
     {
-        if (request.Get("stateKey") is { Length: > 0 } stateKey)
+        var stateKey = request.Get("stateKey");
+        if (stateKey is { Length: > 0 })
         {
             stash.Put("stash-take|" + stateKey, "open");
         }
 
         response.Set("Content-type", "text/plain");
-        response.Pending = true;
+        if (!request.Request.StreamsResponseBody)
+        {
+            response.Pending = true;
+            return;
+        }
+
+        response.Streamed = true;
+        response.Content = new string('.', 2048);
+        response.Chunks.Add((TimeSpan.Zero, "."u8.ToArray()));
+        response.ChunksRepeatAfter = TimeSpan.FromMilliseconds(10);
+        if (request.Get("abortKey") is { Length: > 0 } abortKey)
+        {
+            response.ChunksStopCondition = () => stash.TakeValue("stash-take|" + abortKey) is not null;
+        }
+
+        if (stateKey is { Length: > 0 })
+        {
+            response.Closed = () => stash.Put("stash-take|" + stateKey, "closed");
+        }
     }
 
     // fetch/api/resources/preflight-unterminated-body.py: the body of the preflight response never ends (the headers suffice)

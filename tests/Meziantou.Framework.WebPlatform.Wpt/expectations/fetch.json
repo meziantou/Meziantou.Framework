@@ -9,76 +9,19 @@
     "total": 2
   },
   "fetch/api/abort/destroyed-context.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "aborting a fetch in a destroyed context should not crash": "TIMEOUT"
-    }
+    "total": 1
   },
   "fetch/api/abort/general.any.js": {
-    "harness": "TIMEOUT",
-    "total": 61,
-    "failures": {
-      "Fetch aborted & connection closed when aborted after calling response.arrayBuffer()": "NOTRUN",
-      "Fetch aborted & connection closed when aborted after calling response.blob()": "NOTRUN",
-      "Fetch aborted & connection closed when aborted after calling response.bytes()": "NOTRUN",
-      "Fetch aborted & connection closed when aborted after calling response.formData()": "NOTRUN",
-      "Fetch aborted & connection closed when aborted after calling response.json()": "NOTRUN",
-      "Fetch aborted & connection closed when aborted after calling response.text()": "NOTRUN",
-      "Readable stream synchronously cancels with AbortError if aborted before reading": "NOTRUN",
-      "Stream errors once aborted with abort reason. Underlying connection closed.": "NOTRUN",
-      "Stream errors once aborted, after reading. Underlying connection closed.": "NOTRUN",
-      "Stream errors once aborted. Underlying connection closed.": "NOTRUN",
-      "Stream will not error if body is empty. It's closed with an empty queue before it errors.": "NOTRUN",
-      "Underlying connection is closed when aborting after receiving response": "TIMEOUT",
-      "Underlying connection is closed when aborting after receiving response - no-cors": "NOTRUN"
-    }
+    "total": 61
   },
   "fetch/api/abort/general.any.js#dedicatedworker": {
-    "harness": "TIMEOUT",
-    "total": 61,
-    "failures": {
-      "Fetch aborted & connection closed when aborted after calling response.arrayBuffer()": "NOTRUN",
-      "Fetch aborted & connection closed when aborted after calling response.blob()": "NOTRUN",
-      "Fetch aborted & connection closed when aborted after calling response.bytes()": "NOTRUN",
-      "Fetch aborted & connection closed when aborted after calling response.formData()": "NOTRUN",
-      "Fetch aborted & connection closed when aborted after calling response.json()": "NOTRUN",
-      "Fetch aborted & connection closed when aborted after calling response.text()": "NOTRUN",
-      "Readable stream synchronously cancels with AbortError if aborted before reading": "NOTRUN",
-      "Stream errors once aborted with abort reason. Underlying connection closed.": "NOTRUN",
-      "Stream errors once aborted, after reading. Underlying connection closed.": "NOTRUN",
-      "Stream errors once aborted. Underlying connection closed.": "NOTRUN",
-      "Stream will not error if body is empty. It's closed with an empty queue before it errors.": "NOTRUN",
-      "Underlying connection is closed when aborting after receiving response": "TIMEOUT",
-      "Underlying connection is closed when aborting after receiving response - no-cors": "NOTRUN"
-    }
+    "total": 61
   },
   "fetch/api/abort/general.any.js#sharedworker": {
-    "harness": "TIMEOUT",
-    "total": 61,
-    "failures": {
-      "Fetch aborted & connection closed when aborted after calling response.arrayBuffer()": "NOTRUN",
-      "Fetch aborted & connection closed when aborted after calling response.blob()": "NOTRUN",
-      "Fetch aborted & connection closed when aborted after calling response.bytes()": "NOTRUN",
-      "Fetch aborted & connection closed when aborted after calling response.formData()": "NOTRUN",
-      "Fetch aborted & connection closed when aborted after calling response.json()": "NOTRUN",
-      "Fetch aborted & connection closed when aborted after calling response.text()": "NOTRUN",
-      "Readable stream synchronously cancels with AbortError if aborted before reading": "NOTRUN",
-      "Stream errors once aborted with abort reason. Underlying connection closed.": "NOTRUN",
-      "Stream errors once aborted, after reading. Underlying connection closed.": "NOTRUN",
-      "Stream errors once aborted. Underlying connection closed.": "NOTRUN",
-      "Stream will not error if body is empty. It's closed with an empty queue before it errors.": "NOTRUN",
-      "Underlying connection is closed when aborting after receiving response": "TIMEOUT",
-      "Underlying connection is closed when aborting after receiving response - no-cors": "NOTRUN"
-    }
+    "total": 61
   },
   "fetch/api/abort/keepalive.html": {
-    "harness": "TIMEOUT",
-    "total": 2,
-    "failures": {
-      "aborting a detached keepalive fetch should not do anything": "NOTRUN",
-      "aborting a keepalive fetch should work": "TIMEOUT"
-    }
+    "total": 2
   },
   "fetch/api/abort/request.any.js": {
     "total": 18
@@ -94,8 +37,7 @@
     "total": 12,
     "failures": {
       "Abort reason serialization happens on abort": "NOTRUN",
-      "Service Worker can observe the fetch abort and associated abort reason": "TIMEOUT",
-      "fetch() response body has abort reason": "FAIL"
+      "Service Worker can observe the fetch abort and associated abort reason": "TIMEOUT"
     }
   },
   "fetch/api/basic/accept-header.any.js": {
@@ -111,43 +53,22 @@
     "total": 22
   },
   "fetch/api/basic/conditional-get.any.js": {
-    "total": 1,
-    "failures": {
-      "Testing conditional GET with ETags": "FAIL"
-    }
+    "total": 1
   },
   "fetch/api/basic/conditional-get.any.js#dedicatedworker": {
-    "total": 1,
-    "failures": {
-      "Testing conditional GET with ETags": "FAIL"
-    }
+    "total": 1
   },
   "fetch/api/basic/conditional-get.any.js#sharedworker": {
-    "total": 1,
-    "failures": {
-      "Testing conditional GET with ETags": "FAIL"
-    }
+    "total": 1
   },
   "fetch/api/basic/error-after-response.any.js": {
-    "total": 2,
-    "failures": {
-      "Response reader closed promise should reject after a network error happening after resolving fetch promise": "FAIL",
-      "Response reader read() promise should reject after a network error happening after resolving fetch promise": "FAIL"
-    }
+    "total": 2
   },
   "fetch/api/basic/error-after-response.any.js#dedicatedworker": {
-    "total": 2,
-    "failures": {
-      "Response reader closed promise should reject after a network error happening after resolving fetch promise": "FAIL",
-      "Response reader read() promise should reject after a network error happening after resolving fetch promise": "FAIL"
-    }
+    "total": 2
   },
   "fetch/api/basic/error-after-response.any.js#sharedworker": {
-    "total": 2,
-    "failures": {
-      "Response reader closed promise should reject after a network error happening after resolving fetch promise": "FAIL",
-      "Response reader read() promise should reject after a network error happening after resolving fetch promise": "FAIL"
-    }
+    "total": 2
   },
   "fetch/api/basic/fetch-in-popup-from-iframe.html": {
     "total": 1
@@ -423,25 +344,13 @@
     "total": 7
   },
   "fetch/api/basic/stream-response.any.js": {
-    "total": 2,
-    "failures": {
-      "Stream response's body when content-type is not present": "FAIL",
-      "Stream response's body when content-type is present": "FAIL"
-    }
+    "total": 2
   },
   "fetch/api/basic/stream-response.any.js#dedicatedworker": {
-    "total": 2,
-    "failures": {
-      "Stream response's body when content-type is not present": "FAIL",
-      "Stream response's body when content-type is present": "FAIL"
-    }
+    "total": 2
   },
   "fetch/api/basic/stream-response.any.js#sharedworker": {
-    "total": 2,
-    "failures": {
-      "Stream response's body when content-type is not present": "FAIL",
-      "Stream response's body when content-type is present": "FAIL"
-    }
+    "total": 2
   },
   "fetch/api/basic/stream-safe-creation.any.js": {
     "total": 63
@@ -1041,58 +950,22 @@
     "total": 40
   },
   "fetch/api/request/request-cache-default.any.js": {
-    "total": 8,
-    "failures": {
-      "RequestCache \"default\" mode checks the cache for previously cached content and avoids going to the network if a fresh response exists with Etag and fresh response": "FAIL",
-      "RequestCache \"default\" mode checks the cache for previously cached content and avoids going to the network if a fresh response exists with Last-Modified and fresh response": "FAIL"
-    }
+    "total": 8
   },
   "fetch/api/request/request-cache-default.any.js#dedicatedworker": {
-    "total": 8,
-    "failures": {
-      "RequestCache \"default\" mode checks the cache for previously cached content and avoids going to the network if a fresh response exists with Etag and fresh response": "FAIL",
-      "RequestCache \"default\" mode checks the cache for previously cached content and avoids going to the network if a fresh response exists with Last-Modified and fresh response": "FAIL"
-    }
+    "total": 8
   },
   "fetch/api/request/request-cache-default.any.js#sharedworker": {
-    "total": 8,
-    "failures": {
-      "RequestCache \"default\" mode checks the cache for previously cached content and avoids going to the network if a fresh response exists with Etag and fresh response": "FAIL",
-      "RequestCache \"default\" mode checks the cache for previously cached content and avoids going to the network if a fresh response exists with Last-Modified and fresh response": "FAIL"
-    }
+    "total": 8
   },
   "fetch/api/request/request-cache-force-cache.any.js": {
-    "total": 16,
-    "failures": {
-      "RequestCache \"force-cache\" mode checks the cache for previously cached content and avoid revalidation for fresh responses with Etag and fresh response": "FAIL",
-      "RequestCache \"force-cache\" mode checks the cache for previously cached content and avoid revalidation for fresh responses with Last-Modified and fresh response": "FAIL",
-      "RequestCache \"force-cache\" mode checks the cache for previously cached content and avoid revalidation for stale responses with Etag and stale response": "FAIL",
-      "RequestCache \"force-cache\" mode checks the cache for previously cached content and avoid revalidation for stale responses with Last-Modified and stale response": "FAIL",
-      "RequestCache \"force-cache\" stores the response in the cache if it goes to the network with Etag and fresh response": "FAIL",
-      "RequestCache \"force-cache\" stores the response in the cache if it goes to the network with Last-Modified and fresh response": "FAIL"
-    }
+    "total": 16
   },
   "fetch/api/request/request-cache-force-cache.any.js#dedicatedworker": {
-    "total": 16,
-    "failures": {
-      "RequestCache \"force-cache\" mode checks the cache for previously cached content and avoid revalidation for fresh responses with Etag and fresh response": "FAIL",
-      "RequestCache \"force-cache\" mode checks the cache for previously cached content and avoid revalidation for fresh responses with Last-Modified and fresh response": "FAIL",
-      "RequestCache \"force-cache\" mode checks the cache for previously cached content and avoid revalidation for stale responses with Etag and stale response": "FAIL",
-      "RequestCache \"force-cache\" mode checks the cache for previously cached content and avoid revalidation for stale responses with Last-Modified and stale response": "FAIL",
-      "RequestCache \"force-cache\" stores the response in the cache if it goes to the network with Etag and fresh response": "FAIL",
-      "RequestCache \"force-cache\" stores the response in the cache if it goes to the network with Last-Modified and fresh response": "FAIL"
-    }
+    "total": 16
   },
   "fetch/api/request/request-cache-force-cache.any.js#sharedworker": {
-    "total": 16,
-    "failures": {
-      "RequestCache \"force-cache\" mode checks the cache for previously cached content and avoid revalidation for fresh responses with Etag and fresh response": "FAIL",
-      "RequestCache \"force-cache\" mode checks the cache for previously cached content and avoid revalidation for fresh responses with Last-Modified and fresh response": "FAIL",
-      "RequestCache \"force-cache\" mode checks the cache for previously cached content and avoid revalidation for stale responses with Etag and stale response": "FAIL",
-      "RequestCache \"force-cache\" mode checks the cache for previously cached content and avoid revalidation for stale responses with Last-Modified and stale response": "FAIL",
-      "RequestCache \"force-cache\" stores the response in the cache if it goes to the network with Etag and fresh response": "FAIL",
-      "RequestCache \"force-cache\" stores the response in the cache if it goes to the network with Last-Modified and fresh response": "FAIL"
-    }
+    "total": 16
   },
   "fetch/api/request/request-cache-no-cache.any.js": {
     "total": 4
@@ -1113,70 +986,22 @@
     "total": 8
   },
   "fetch/api/request/request-cache-only-if-cached.any.js": {
-    "total": 14,
-    "failures": {
-      "RequestCache \"only-if-cached\" (with \"same-origin\") uses cached same-origin redirects to same-origin content with Etag and fresh response": "FAIL",
-      "RequestCache \"only-if-cached\" (with \"same-origin\") uses cached same-origin redirects to same-origin content with Etag and stale response": "FAIL",
-      "RequestCache \"only-if-cached\" (with \"same-origin\") uses cached same-origin redirects to same-origin content with Last-Modified and fresh response": "FAIL",
-      "RequestCache \"only-if-cached\" (with \"same-origin\") uses cached same-origin redirects to same-origin content with Last-Modified and stale response": "FAIL",
-      "RequestCache \"only-if-cached\" mode checks the cache for previously cached content and avoids revalidation for fresh responses with Etag and fresh response": "FAIL",
-      "RequestCache \"only-if-cached\" mode checks the cache for previously cached content and avoids revalidation for fresh responses with Last-Modified and fresh response": "FAIL",
-      "RequestCache \"only-if-cached\" mode checks the cache for previously cached content and avoids revalidation for stale responses with Etag and stale response": "FAIL",
-      "RequestCache \"only-if-cached\" mode checks the cache for previously cached content and avoids revalidation for stale responses with Last-Modified and stale response": "FAIL"
-    }
+    "total": 14
   },
   "fetch/api/request/request-cache-only-if-cached.any.js#dedicatedworker": {
-    "total": 14,
-    "failures": {
-      "RequestCache \"only-if-cached\" (with \"same-origin\") uses cached same-origin redirects to same-origin content with Etag and fresh response": "FAIL",
-      "RequestCache \"only-if-cached\" (with \"same-origin\") uses cached same-origin redirects to same-origin content with Etag and stale response": "FAIL",
-      "RequestCache \"only-if-cached\" (with \"same-origin\") uses cached same-origin redirects to same-origin content with Last-Modified and fresh response": "FAIL",
-      "RequestCache \"only-if-cached\" (with \"same-origin\") uses cached same-origin redirects to same-origin content with Last-Modified and stale response": "FAIL",
-      "RequestCache \"only-if-cached\" mode checks the cache for previously cached content and avoids revalidation for fresh responses with Etag and fresh response": "FAIL",
-      "RequestCache \"only-if-cached\" mode checks the cache for previously cached content and avoids revalidation for fresh responses with Last-Modified and fresh response": "FAIL",
-      "RequestCache \"only-if-cached\" mode checks the cache for previously cached content and avoids revalidation for stale responses with Etag and stale response": "FAIL",
-      "RequestCache \"only-if-cached\" mode checks the cache for previously cached content and avoids revalidation for stale responses with Last-Modified and stale response": "FAIL"
-    }
+    "total": 14
   },
   "fetch/api/request/request-cache-only-if-cached.any.js#sharedworker": {
-    "total": 14,
-    "failures": {
-      "RequestCache \"only-if-cached\" (with \"same-origin\") uses cached same-origin redirects to same-origin content with Etag and fresh response": "FAIL",
-      "RequestCache \"only-if-cached\" (with \"same-origin\") uses cached same-origin redirects to same-origin content with Etag and stale response": "FAIL",
-      "RequestCache \"only-if-cached\" (with \"same-origin\") uses cached same-origin redirects to same-origin content with Last-Modified and fresh response": "FAIL",
-      "RequestCache \"only-if-cached\" (with \"same-origin\") uses cached same-origin redirects to same-origin content with Last-Modified and stale response": "FAIL",
-      "RequestCache \"only-if-cached\" mode checks the cache for previously cached content and avoids revalidation for fresh responses with Etag and fresh response": "FAIL",
-      "RequestCache \"only-if-cached\" mode checks the cache for previously cached content and avoids revalidation for fresh responses with Last-Modified and fresh response": "FAIL",
-      "RequestCache \"only-if-cached\" mode checks the cache for previously cached content and avoids revalidation for stale responses with Etag and stale response": "FAIL",
-      "RequestCache \"only-if-cached\" mode checks the cache for previously cached content and avoids revalidation for stale responses with Last-Modified and stale response": "FAIL"
-    }
+    "total": 14
   },
   "fetch/api/request/request-cache-reload.any.js": {
-    "total": 12,
-    "failures": {
-      "RequestCache \"reload\" mode does store the response in the cache even if a previous response is already stored with Etag and fresh response": "FAIL",
-      "RequestCache \"reload\" mode does store the response in the cache even if a previous response is already stored with Last-Modified and fresh response": "FAIL",
-      "RequestCache \"reload\" mode does store the response in the cache with Etag and fresh response": "FAIL",
-      "RequestCache \"reload\" mode does store the response in the cache with Last-Modified and fresh response": "FAIL"
-    }
+    "total": 12
   },
   "fetch/api/request/request-cache-reload.any.js#dedicatedworker": {
-    "total": 12,
-    "failures": {
-      "RequestCache \"reload\" mode does store the response in the cache even if a previous response is already stored with Etag and fresh response": "FAIL",
-      "RequestCache \"reload\" mode does store the response in the cache even if a previous response is already stored with Last-Modified and fresh response": "FAIL",
-      "RequestCache \"reload\" mode does store the response in the cache with Etag and fresh response": "FAIL",
-      "RequestCache \"reload\" mode does store the response in the cache with Last-Modified and fresh response": "FAIL"
-    }
+    "total": 12
   },
   "fetch/api/request/request-cache-reload.any.js#sharedworker": {
-    "total": 12,
-    "failures": {
-      "RequestCache \"reload\" mode does store the response in the cache even if a previous response is already stored with Etag and fresh response": "FAIL",
-      "RequestCache \"reload\" mode does store the response in the cache even if a previous response is already stored with Last-Modified and fresh response": "FAIL",
-      "RequestCache \"reload\" mode does store the response in the cache with Etag and fresh response": "FAIL",
-      "RequestCache \"reload\" mode does store the response in the cache with Last-Modified and fresh response": "FAIL"
-    }
+    "total": 12
   },
   "fetch/api/request/request-clone-readable-stream-body.any.js": {
     "total": 1
@@ -2654,345 +2479,77 @@
     }
   },
   "fetch/http-cache/304-update.any.js": {
-    "total": 5,
-    "failures": {
-      "Content-* header": "FAIL",
-      "HTTP cache updates returned headers from a ETag 304": "FAIL",
-      "HTTP cache updates returned headers from a Last-Modified 304": "FAIL",
-      "HTTP cache updates stored headers from a ETag 304": "FAIL",
-      "HTTP cache updates stored headers from a Last-Modified 304": "FAIL"
-    }
+    "total": 5
   },
   "fetch/http-cache/304-update.any.js#dedicatedworker": {
-    "total": 5,
-    "failures": {
-      "Content-* header": "FAIL",
-      "HTTP cache updates returned headers from a ETag 304": "FAIL",
-      "HTTP cache updates returned headers from a Last-Modified 304": "FAIL",
-      "HTTP cache updates stored headers from a ETag 304": "FAIL",
-      "HTTP cache updates stored headers from a Last-Modified 304": "FAIL"
-    }
+    "total": 5
   },
   "fetch/http-cache/304-update.any.js#sharedworker": {
-    "total": 5,
-    "failures": {
-      "Content-* header": "FAIL",
-      "HTTP cache updates returned headers from a ETag 304": "FAIL",
-      "HTTP cache updates returned headers from a Last-Modified 304": "FAIL",
-      "HTTP cache updates stored headers from a ETag 304": "FAIL",
-      "HTTP cache updates stored headers from a Last-Modified 304": "FAIL"
-    }
+    "total": 5
   },
   "fetch/http-cache/basic-auth-cache-test.html": {
     "reftest": "TIMEOUT"
   },
   "fetch/http-cache/cache-mode.any.js": {
-    "total": 5,
-    "failures": {
-      "Fetch doesn't touch Cache-Control when cache mode is no-cache and Cache-Control is already present": "FAIL",
-      "Fetch doesn't touch Cache-Control when cache mode is no-store and Cache-Control is already present": "FAIL",
-      "Fetch doesn't touch Pragma when cache mode is no-store and Pragma is already present": "FAIL",
-      "Fetch sends Cache-Control: max-age=0 when cache mode is no-cache": "FAIL",
-      "Fetch sends Cache-Control: no-cache and Pragma: no-cache when cache mode is no-store": "FAIL"
-    }
+    "total": 5
   },
   "fetch/http-cache/cache-mode.any.js#dedicatedworker": {
-    "total": 5,
-    "failures": {
-      "Fetch doesn't touch Cache-Control when cache mode is no-cache and Cache-Control is already present": "FAIL",
-      "Fetch doesn't touch Cache-Control when cache mode is no-store and Cache-Control is already present": "FAIL",
-      "Fetch doesn't touch Pragma when cache mode is no-store and Pragma is already present": "FAIL",
-      "Fetch sends Cache-Control: max-age=0 when cache mode is no-cache": "FAIL",
-      "Fetch sends Cache-Control: no-cache and Pragma: no-cache when cache mode is no-store": "FAIL"
-    }
+    "total": 5
   },
   "fetch/http-cache/cache-mode.any.js#sharedworker": {
-    "total": 5,
-    "failures": {
-      "Fetch doesn't touch Cache-Control when cache mode is no-cache and Cache-Control is already present": "FAIL",
-      "Fetch doesn't touch Cache-Control when cache mode is no-store and Cache-Control is already present": "FAIL",
-      "Fetch doesn't touch Pragma when cache mode is no-store and Pragma is already present": "FAIL",
-      "Fetch sends Cache-Control: max-age=0 when cache mode is no-cache": "FAIL",
-      "Fetch sends Cache-Control: no-cache and Pragma: no-cache when cache mode is no-store": "FAIL"
-    }
+    "total": 5
   },
   "fetch/http-cache/cc-request.any.js": {
-    "total": 12,
-    "failures": {
-      "HTTP cache does reuse stale response with Age header when request contains Cache-Control: max-stale that permits its use": "FAIL",
-      "HTTP cache does use aged stale response when request contains Cache-Control: max-stale that permits its use": "FAIL",
-      "HTTP cache doesn't reuse fresh response when request contains Cache-Control: min-fresh that wants it fresher": "FAIL",
-      "HTTP cache doesn't reuse fresh response when request contains Cache-Control: no-cache": "FAIL",
-      "HTTP cache doesn't reuse fresh response when request contains Cache-Control: no-store": "FAIL",
-      "HTTP cache doesn't reuse fresh response with Age header when request contains Cache-Control: min-fresh that wants it fresher": "FAIL",
-      "HTTP cache doesn't use aged but fresh response when request contains Cache-Control: max-age=0": "FAIL",
-      "HTTP cache doesn't use aged but fresh response when request contains Cache-Control: max-age=1": "FAIL",
-      "HTTP cache doesn't use fresh response with Age header when request contains Cache-Control: max-age that is greater than remaining freshness": "FAIL",
-      "HTTP cache generates 504 status code when nothing is in cache and request contains Cache-Control: only-if-cached": "FAIL",
-      "HTTP cache validates fresh response with ETag when request contains Cache-Control: no-cache": "FAIL",
-      "HTTP cache validates fresh response with Last-Modified when request contains Cache-Control: no-cache": "FAIL"
-    }
+    "total": 12
   },
   "fetch/http-cache/cc-request.any.js#dedicatedworker": {
-    "total": 12,
-    "failures": {
-      "HTTP cache does reuse stale response with Age header when request contains Cache-Control: max-stale that permits its use": "FAIL",
-      "HTTP cache does use aged stale response when request contains Cache-Control: max-stale that permits its use": "FAIL",
-      "HTTP cache doesn't reuse fresh response when request contains Cache-Control: min-fresh that wants it fresher": "FAIL",
-      "HTTP cache doesn't reuse fresh response when request contains Cache-Control: no-cache": "FAIL",
-      "HTTP cache doesn't reuse fresh response when request contains Cache-Control: no-store": "FAIL",
-      "HTTP cache doesn't reuse fresh response with Age header when request contains Cache-Control: min-fresh that wants it fresher": "FAIL",
-      "HTTP cache doesn't use aged but fresh response when request contains Cache-Control: max-age=0": "FAIL",
-      "HTTP cache doesn't use aged but fresh response when request contains Cache-Control: max-age=1": "FAIL",
-      "HTTP cache doesn't use fresh response with Age header when request contains Cache-Control: max-age that is greater than remaining freshness": "FAIL",
-      "HTTP cache generates 504 status code when nothing is in cache and request contains Cache-Control: only-if-cached": "FAIL",
-      "HTTP cache validates fresh response with ETag when request contains Cache-Control: no-cache": "FAIL",
-      "HTTP cache validates fresh response with Last-Modified when request contains Cache-Control: no-cache": "FAIL"
-    }
+    "total": 12
   },
   "fetch/http-cache/cc-request.any.js#sharedworker": {
-    "total": 12,
-    "failures": {
-      "HTTP cache does reuse stale response with Age header when request contains Cache-Control: max-stale that permits its use": "FAIL",
-      "HTTP cache does use aged stale response when request contains Cache-Control: max-stale that permits its use": "FAIL",
-      "HTTP cache doesn't reuse fresh response when request contains Cache-Control: min-fresh that wants it fresher": "FAIL",
-      "HTTP cache doesn't reuse fresh response when request contains Cache-Control: no-cache": "FAIL",
-      "HTTP cache doesn't reuse fresh response when request contains Cache-Control: no-store": "FAIL",
-      "HTTP cache doesn't reuse fresh response with Age header when request contains Cache-Control: min-fresh that wants it fresher": "FAIL",
-      "HTTP cache doesn't use aged but fresh response when request contains Cache-Control: max-age=0": "FAIL",
-      "HTTP cache doesn't use aged but fresh response when request contains Cache-Control: max-age=1": "FAIL",
-      "HTTP cache doesn't use fresh response with Age header when request contains Cache-Control: max-age that is greater than remaining freshness": "FAIL",
-      "HTTP cache generates 504 status code when nothing is in cache and request contains Cache-Control: only-if-cached": "FAIL",
-      "HTTP cache validates fresh response with ETag when request contains Cache-Control: no-cache": "FAIL",
-      "HTTP cache validates fresh response with Last-Modified when request contains Cache-Control: no-cache": "FAIL"
-    }
+    "total": 12
   },
   "fetch/http-cache/credentials.tentative.any.js": {
-    "total": 2,
-    "failures": {
-      "same-origin: 2xAnonymous, 2xCredentialled, 1xAnonymous": "FAIL",
-      "same-origin: 2xCredentialled, 2xAnonymous, 1xCredentialled": "FAIL"
-    }
+    "total": 2
   },
   "fetch/http-cache/credentials.tentative.any.js#dedicatedworker": {
-    "total": 2,
-    "failures": {
-      "same-origin: 2xAnonymous, 2xCredentialled, 1xAnonymous": "FAIL",
-      "same-origin: 2xCredentialled, 2xAnonymous, 1xCredentialled": "FAIL"
-    }
+    "total": 2
   },
   "fetch/http-cache/credentials.tentative.any.js#sharedworker": {
-    "total": 2,
-    "failures": {
-      "same-origin: 2xAnonymous, 2xCredentialled, 1xAnonymous": "FAIL",
-      "same-origin: 2xCredentialled, 2xAnonymous, 1xCredentialled": "FAIL"
-    }
+    "total": 2
   },
   "fetch/http-cache/freshness.any.js": {
-    "total": 17,
-    "failures": {
-      "HTTP cache does not prefer Cache-Control: s-maxage over Cache-Control: max-age": "FAIL",
-      "HTTP cache does not reuse a response when the Age header is greater than its freshness lifetime": "FAIL",
-      "HTTP cache does not reuse a response with Cache-Control: max-age=0": "FAIL",
-      "HTTP cache does not reuse a response with Cache-Control: max-age=0 and a future Expires": "FAIL",
-      "HTTP cache does not reuse a response with a past Expires": "FAIL",
-      "HTTP cache does not reuse a response with a present Expires": "FAIL",
-      "HTTP cache does not reuse a response with an invalid Expires": "FAIL",
-      "HTTP cache does not reuse a response with an invalid Expires with Last-Modified now": "FAIL",
-      "HTTP cache does not reuse a response with an invalid Expires with past Last-Modified": "FAIL",
-      "HTTP cache does not store a response with Cache-Control: no-store": "FAIL",
-      "HTTP cache does not store a response with Cache-Control: no-store, even with max-age and Expires": "FAIL",
-      "HTTP cache reuses a response with a future Expires": "FAIL",
-      "HTTP cache reuses a response with positive Cache-Control: max-age": "FAIL",
-      "HTTP cache reuses a response with positive Cache-Control: max-age and a past Expires": "FAIL",
-      "HTTP cache reuses a response with positive Cache-Control: max-age and an invalid Expires": "FAIL",
-      "HTTP cache stores a response with Cache-Control: no-cache, but revalidates upon use": "FAIL",
-      "HTTP cache stores a response with Cache-Control: no-cache, but revalidates upon use, even with max-age and Expires": "FAIL"
-    }
+    "total": 17
   },
   "fetch/http-cache/freshness.any.js#dedicatedworker": {
-    "total": 17,
-    "failures": {
-      "HTTP cache does not prefer Cache-Control: s-maxage over Cache-Control: max-age": "FAIL",
-      "HTTP cache does not reuse a response when the Age header is greater than its freshness lifetime": "FAIL",
-      "HTTP cache does not reuse a response with Cache-Control: max-age=0": "FAIL",
-      "HTTP cache does not reuse a response with Cache-Control: max-age=0 and a future Expires": "FAIL",
-      "HTTP cache does not reuse a response with a past Expires": "FAIL",
-      "HTTP cache does not reuse a response with a present Expires": "FAIL",
-      "HTTP cache does not reuse a response with an invalid Expires": "FAIL",
-      "HTTP cache does not reuse a response with an invalid Expires with Last-Modified now": "FAIL",
-      "HTTP cache does not reuse a response with an invalid Expires with past Last-Modified": "FAIL",
-      "HTTP cache does not store a response with Cache-Control: no-store": "FAIL",
-      "HTTP cache does not store a response with Cache-Control: no-store, even with max-age and Expires": "FAIL",
-      "HTTP cache reuses a response with a future Expires": "FAIL",
-      "HTTP cache reuses a response with positive Cache-Control: max-age": "FAIL",
-      "HTTP cache reuses a response with positive Cache-Control: max-age and a past Expires": "FAIL",
-      "HTTP cache reuses a response with positive Cache-Control: max-age and an invalid Expires": "FAIL",
-      "HTTP cache stores a response with Cache-Control: no-cache, but revalidates upon use": "FAIL",
-      "HTTP cache stores a response with Cache-Control: no-cache, but revalidates upon use, even with max-age and Expires": "FAIL"
-    }
+    "total": 17
   },
   "fetch/http-cache/freshness.any.js#sharedworker": {
-    "total": 17,
-    "failures": {
-      "HTTP cache does not prefer Cache-Control: s-maxage over Cache-Control: max-age": "FAIL",
-      "HTTP cache does not reuse a response when the Age header is greater than its freshness lifetime": "FAIL",
-      "HTTP cache does not reuse a response with Cache-Control: max-age=0": "FAIL",
-      "HTTP cache does not reuse a response with Cache-Control: max-age=0 and a future Expires": "FAIL",
-      "HTTP cache does not reuse a response with a past Expires": "FAIL",
-      "HTTP cache does not reuse a response with a present Expires": "FAIL",
-      "HTTP cache does not reuse a response with an invalid Expires": "FAIL",
-      "HTTP cache does not reuse a response with an invalid Expires with Last-Modified now": "FAIL",
-      "HTTP cache does not reuse a response with an invalid Expires with past Last-Modified": "FAIL",
-      "HTTP cache does not store a response with Cache-Control: no-store": "FAIL",
-      "HTTP cache does not store a response with Cache-Control: no-store, even with max-age and Expires": "FAIL",
-      "HTTP cache reuses a response with a future Expires": "FAIL",
-      "HTTP cache reuses a response with positive Cache-Control: max-age": "FAIL",
-      "HTTP cache reuses a response with positive Cache-Control: max-age and a past Expires": "FAIL",
-      "HTTP cache reuses a response with positive Cache-Control: max-age and an invalid Expires": "FAIL",
-      "HTTP cache stores a response with Cache-Control: no-cache, but revalidates upon use": "FAIL",
-      "HTTP cache stores a response with Cache-Control: no-cache, but revalidates upon use, even with max-age and Expires": "FAIL"
-    }
+    "total": 17
   },
   "fetch/http-cache/heuristic.any.js": {
-    "total": 17,
-    "failures": {
-      "HTTP cache does not reuse a redirected response with no max-age and no Last-Modified header": "FAIL",
-      "HTTP cache does not reuse an unknown response with Last-Modified based upon heuristic freshness when Cache-Control: public is not present": "FAIL",
-      "HTTP cache does not use a 201 Created response with Last-Modified based upon heuristic freshness": "FAIL",
-      "HTTP cache does not use a 202 Accepted response with Last-Modified based upon heuristic freshness": "FAIL",
-      "HTTP cache does not use a 403 Forbidden response with Last-Modified based upon heuristic freshness": "FAIL",
-      "HTTP cache does not use a 502 Bad Gateway response with Last-Modified based upon heuristic freshness": "FAIL",
-      "HTTP cache does not use a 503 Service Unavailable response with Last-Modified based upon heuristic freshness": "FAIL",
-      "HTTP cache does not use a 504 Gateway Timeout response with Last-Modified based upon heuristic freshness": "FAIL",
-      "HTTP cache reuses a 200 OK response with Last-Modified based upon heuristic freshness": "FAIL",
-      "HTTP cache reuses a 203 Non-Authoritative Information response with Last-Modified based upon heuristic freshness": "FAIL",
-      "HTTP cache reuses a 204 No Content response with Last-Modified based upon heuristic freshness": "FAIL",
-      "HTTP cache reuses a 404 Not Found response with Last-Modified based upon heuristic freshness": "FAIL",
-      "HTTP cache reuses a 405 Method Not Allowed response with Last-Modified based upon heuristic freshness": "FAIL",
-      "HTTP cache reuses a 410 Gone response with Last-Modified based upon heuristic freshness": "FAIL",
-      "HTTP cache reuses a 414 URI Too Long response with Last-Modified based upon heuristic freshness": "FAIL",
-      "HTTP cache reuses a 501 Not Implemented response with Last-Modified based upon heuristic freshness": "FAIL",
-      "HTTP cache reuses an unknown response with Last-Modified based upon heuristic freshness when Cache-Control: public is present": "FAIL"
-    }
+    "total": 17
   },
   "fetch/http-cache/heuristic.any.js#dedicatedworker": {
-    "total": 17,
-    "failures": {
-      "HTTP cache does not reuse a redirected response with no max-age and no Last-Modified header": "FAIL",
-      "HTTP cache does not reuse an unknown response with Last-Modified based upon heuristic freshness when Cache-Control: public is not present": "FAIL",
-      "HTTP cache does not use a 201 Created response with Last-Modified based upon heuristic freshness": "FAIL",
-      "HTTP cache does not use a 202 Accepted response with Last-Modified based upon heuristic freshness": "FAIL",
-      "HTTP cache does not use a 403 Forbidden response with Last-Modified based upon heuristic freshness": "FAIL",
-      "HTTP cache does not use a 502 Bad Gateway response with Last-Modified based upon heuristic freshness": "FAIL",
-      "HTTP cache does not use a 503 Service Unavailable response with Last-Modified based upon heuristic freshness": "FAIL",
-      "HTTP cache does not use a 504 Gateway Timeout response with Last-Modified based upon heuristic freshness": "FAIL",
-      "HTTP cache reuses a 200 OK response with Last-Modified based upon heuristic freshness": "FAIL",
-      "HTTP cache reuses a 203 Non-Authoritative Information response with Last-Modified based upon heuristic freshness": "FAIL",
-      "HTTP cache reuses a 204 No Content response with Last-Modified based upon heuristic freshness": "FAIL",
-      "HTTP cache reuses a 404 Not Found response with Last-Modified based upon heuristic freshness": "FAIL",
-      "HTTP cache reuses a 405 Method Not Allowed response with Last-Modified based upon heuristic freshness": "FAIL",
-      "HTTP cache reuses a 410 Gone response with Last-Modified based upon heuristic freshness": "FAIL",
-      "HTTP cache reuses a 414 URI Too Long response with Last-Modified based upon heuristic freshness": "FAIL",
-      "HTTP cache reuses a 501 Not Implemented response with Last-Modified based upon heuristic freshness": "FAIL",
-      "HTTP cache reuses an unknown response with Last-Modified based upon heuristic freshness when Cache-Control: public is present": "FAIL"
-    }
+    "total": 17
   },
   "fetch/http-cache/heuristic.any.js#sharedworker": {
-    "total": 17,
-    "failures": {
-      "HTTP cache does not reuse a redirected response with no max-age and no Last-Modified header": "FAIL",
-      "HTTP cache does not reuse an unknown response with Last-Modified based upon heuristic freshness when Cache-Control: public is not present": "FAIL",
-      "HTTP cache does not use a 201 Created response with Last-Modified based upon heuristic freshness": "FAIL",
-      "HTTP cache does not use a 202 Accepted response with Last-Modified based upon heuristic freshness": "FAIL",
-      "HTTP cache does not use a 403 Forbidden response with Last-Modified based upon heuristic freshness": "FAIL",
-      "HTTP cache does not use a 502 Bad Gateway response with Last-Modified based upon heuristic freshness": "FAIL",
-      "HTTP cache does not use a 503 Service Unavailable response with Last-Modified based upon heuristic freshness": "FAIL",
-      "HTTP cache does not use a 504 Gateway Timeout response with Last-Modified based upon heuristic freshness": "FAIL",
-      "HTTP cache reuses a 200 OK response with Last-Modified based upon heuristic freshness": "FAIL",
-      "HTTP cache reuses a 203 Non-Authoritative Information response with Last-Modified based upon heuristic freshness": "FAIL",
-      "HTTP cache reuses a 204 No Content response with Last-Modified based upon heuristic freshness": "FAIL",
-      "HTTP cache reuses a 404 Not Found response with Last-Modified based upon heuristic freshness": "FAIL",
-      "HTTP cache reuses a 405 Method Not Allowed response with Last-Modified based upon heuristic freshness": "FAIL",
-      "HTTP cache reuses a 410 Gone response with Last-Modified based upon heuristic freshness": "FAIL",
-      "HTTP cache reuses a 414 URI Too Long response with Last-Modified based upon heuristic freshness": "FAIL",
-      "HTTP cache reuses a 501 Not Implemented response with Last-Modified based upon heuristic freshness": "FAIL",
-      "HTTP cache reuses an unknown response with Last-Modified based upon heuristic freshness when Cache-Control: public is present": "FAIL"
-    }
+    "total": 17
   },
   "fetch/http-cache/invalidate.any.js": {
-    "total": 15,
-    "failures": {
-      "HTTP cache does not invalidate Content-Location URL after a failed response from an unsafe request": "FAIL",
-      "HTTP cache does not invalidate Location URL after a failed response from an unsafe request": "FAIL",
-      "HTTP cache does not invalidate after a failed response from an unsafe request": "FAIL",
-      "HTTP cache invalidates Content-Location URL after a successful response from a DELETE": "FAIL",
-      "HTTP cache invalidates Content-Location URL after a successful response from a POST": "FAIL",
-      "HTTP cache invalidates Content-Location URL after a successful response from a PUT": "FAIL",
-      "HTTP cache invalidates Content-Location URL after a successful response from an unknown method": "FAIL",
-      "HTTP cache invalidates Location URL after a successful response from a DELETE": "FAIL",
-      "HTTP cache invalidates Location URL after a successful response from a POST": "FAIL",
-      "HTTP cache invalidates Location URL after a successful response from a PUT": "FAIL",
-      "HTTP cache invalidates Location URL after a successful response from an unknown method": "FAIL",
-      "HTTP cache invalidates after a successful response from a DELETE": "FAIL",
-      "HTTP cache invalidates after a successful response from a POST": "FAIL",
-      "HTTP cache invalidates after a successful response from a PUT": "FAIL",
-      "HTTP cache invalidates after a successful response from an unknown method": "FAIL"
-    }
+    "total": 15
   },
   "fetch/http-cache/invalidate.any.js#dedicatedworker": {
-    "total": 15,
-    "failures": {
-      "HTTP cache does not invalidate Content-Location URL after a failed response from an unsafe request": "FAIL",
-      "HTTP cache does not invalidate Location URL after a failed response from an unsafe request": "FAIL",
-      "HTTP cache does not invalidate after a failed response from an unsafe request": "FAIL",
-      "HTTP cache invalidates Content-Location URL after a successful response from a DELETE": "FAIL",
-      "HTTP cache invalidates Content-Location URL after a successful response from a POST": "FAIL",
-      "HTTP cache invalidates Content-Location URL after a successful response from a PUT": "FAIL",
-      "HTTP cache invalidates Content-Location URL after a successful response from an unknown method": "FAIL",
-      "HTTP cache invalidates Location URL after a successful response from a DELETE": "FAIL",
-      "HTTP cache invalidates Location URL after a successful response from a POST": "FAIL",
-      "HTTP cache invalidates Location URL after a successful response from a PUT": "FAIL",
-      "HTTP cache invalidates Location URL after a successful response from an unknown method": "FAIL",
-      "HTTP cache invalidates after a successful response from a DELETE": "FAIL",
-      "HTTP cache invalidates after a successful response from a POST": "FAIL",
-      "HTTP cache invalidates after a successful response from a PUT": "FAIL",
-      "HTTP cache invalidates after a successful response from an unknown method": "FAIL"
-    }
+    "total": 15
   },
   "fetch/http-cache/invalidate.any.js#sharedworker": {
-    "total": 15,
-    "failures": {
-      "HTTP cache does not invalidate Content-Location URL after a failed response from an unsafe request": "FAIL",
-      "HTTP cache does not invalidate Location URL after a failed response from an unsafe request": "FAIL",
-      "HTTP cache does not invalidate after a failed response from an unsafe request": "FAIL",
-      "HTTP cache invalidates Content-Location URL after a successful response from a DELETE": "FAIL",
-      "HTTP cache invalidates Content-Location URL after a successful response from a POST": "FAIL",
-      "HTTP cache invalidates Content-Location URL after a successful response from a PUT": "FAIL",
-      "HTTP cache invalidates Content-Location URL after a successful response from an unknown method": "FAIL",
-      "HTTP cache invalidates Location URL after a successful response from a DELETE": "FAIL",
-      "HTTP cache invalidates Location URL after a successful response from a POST": "FAIL",
-      "HTTP cache invalidates Location URL after a successful response from a PUT": "FAIL",
-      "HTTP cache invalidates Location URL after a successful response from an unknown method": "FAIL",
-      "HTTP cache invalidates after a successful response from a DELETE": "FAIL",
-      "HTTP cache invalidates after a successful response from a POST": "FAIL",
-      "HTTP cache invalidates after a successful response from a PUT": "FAIL",
-      "HTTP cache invalidates after a successful response from an unknown method": "FAIL"
-    }
+    "total": 15
   },
   "fetch/http-cache/no-vary-search.tentative.any.js": {
     "total": 13,
     "failures": {
-      "Ground truth: When key-order is not set, URLs should be compared in an order-sensitive way.": "FAIL",
-      "When except is set without params, it should fall back to exact match and URLs with different parameters should be cached as different entries.": "FAIL",
       "When key-order is set , URLs should be compared in an order-insensitive way. Matched cases:": "FAIL",
-      "When key-order is set , URLs should be compared in an order-insensitive way. Not matched cases": "FAIL",
-      "When params and except are set, URLs differing in a kept parameter should be cached as different entries.": "FAIL",
-      "When params is an inner list combined with except, it should fall back to exact match and URLs with different parameters should be cached as different entries.": "FAIL",
       "When params is set to true, URL differs only by their parameters (other than `dispatch` and `uuid`) should not be cached as different entries.": "FAIL",
-      "When params names a parameter and key-order is set, URLs differing in other parameters should be cached as different entries.": "FAIL",
       "When params names a parameter and key-order is set, URLs differing only in that parameter and parameter order should be cached as the same entry.": "FAIL",
-      "When params names a specific parameter, URLs differing in other parameters should be cached as different entries.": "FAIL",
       "When params names a specific parameter, URLs differing only in that parameter should be cached as the same entry.": "FAIL",
       "When params names multiple parameters, URLs differing only in those parameters should be cached as the same entry.": "FAIL",
       "When params=?1 is set explicitly (equivalent to bare params), URLs differing only in their parameters (other than `dispatch` and `uuid`) should be cached as the same entry.": "FAIL"
@@ -3001,16 +2558,9 @@
   "fetch/http-cache/no-vary-search.tentative.any.js#dedicatedworker": {
     "total": 13,
     "failures": {
-      "Ground truth: When key-order is not set, URLs should be compared in an order-sensitive way.": "FAIL",
-      "When except is set without params, it should fall back to exact match and URLs with different parameters should be cached as different entries.": "FAIL",
       "When key-order is set , URLs should be compared in an order-insensitive way. Matched cases:": "FAIL",
-      "When key-order is set , URLs should be compared in an order-insensitive way. Not matched cases": "FAIL",
-      "When params and except are set, URLs differing in a kept parameter should be cached as different entries.": "FAIL",
-      "When params is an inner list combined with except, it should fall back to exact match and URLs with different parameters should be cached as different entries.": "FAIL",
       "When params is set to true, URL differs only by their parameters (other than `dispatch` and `uuid`) should not be cached as different entries.": "FAIL",
-      "When params names a parameter and key-order is set, URLs differing in other parameters should be cached as different entries.": "FAIL",
       "When params names a parameter and key-order is set, URLs differing only in that parameter and parameter order should be cached as the same entry.": "FAIL",
-      "When params names a specific parameter, URLs differing in other parameters should be cached as different entries.": "FAIL",
       "When params names a specific parameter, URLs differing only in that parameter should be cached as the same entry.": "FAIL",
       "When params names multiple parameters, URLs differing only in those parameters should be cached as the same entry.": "FAIL",
       "When params=?1 is set explicitly (equivalent to bare params), URLs differing only in their parameters (other than `dispatch` and `uuid`) should be cached as the same entry.": "FAIL"
@@ -3019,16 +2569,9 @@
   "fetch/http-cache/no-vary-search.tentative.any.js#sharedworker": {
     "total": 13,
     "failures": {
-      "Ground truth: When key-order is not set, URLs should be compared in an order-sensitive way.": "FAIL",
-      "When except is set without params, it should fall back to exact match and URLs with different parameters should be cached as different entries.": "FAIL",
       "When key-order is set , URLs should be compared in an order-insensitive way. Matched cases:": "FAIL",
-      "When key-order is set , URLs should be compared in an order-insensitive way. Not matched cases": "FAIL",
-      "When params and except are set, URLs differing in a kept parameter should be cached as different entries.": "FAIL",
-      "When params is an inner list combined with except, it should fall back to exact match and URLs with different parameters should be cached as different entries.": "FAIL",
       "When params is set to true, URL differs only by their parameters (other than `dispatch` and `uuid`) should not be cached as different entries.": "FAIL",
-      "When params names a parameter and key-order is set, URLs differing in other parameters should be cached as different entries.": "FAIL",
       "When params names a parameter and key-order is set, URLs differing only in that parameter and parameter order should be cached as the same entry.": "FAIL",
-      "When params names a specific parameter, URLs differing in other parameters should be cached as different entries.": "FAIL",
       "When params names a specific parameter, URLs differing only in that parameter should be cached as the same entry.": "FAIL",
       "When params names multiple parameters, URLs differing only in those parameters should be cached as the same entry.": "FAIL",
       "When params=?1 is set explicitly (equivalent to bare params), URLs differing only in their parameters (other than `dispatch` and `uuid`) should be cached as the same entry.": "FAIL"
@@ -3098,170 +2641,28 @@
     }
   },
   "fetch/http-cache/pragma-no-cache-with-cache-control.html": {
-    "total": 2,
-    "failures": {
-      "Response with Cache-Control: max-age=2592000, immutable and Pragma: no-cache should be cached": "FAIL",
-      "Response with Cache-Control: max-age=2592000, public and Pragma: no-cache should not be cached": "FAIL"
-    }
+    "total": 2
   },
   "fetch/http-cache/split-cache.html": {
-    "total": 4,
-    "failures": {
-      "HTTP cache is not shared between cross-site top-level frames": "FAIL",
-      "HTTP cache is not shared between same-site frames with cross-site top-level frames": "FAIL",
-      "HTTP cache is shared between same-site frames with same-site top-level frames": "FAIL",
-      "HTTP cache is shared between same-site top-level frames": "FAIL"
-    }
+    "total": 4
   },
   "fetch/http-cache/status.any.js": {
-    "total": 26,
-    "failures": {
-      "HTTP cache avoids going to the network if it has a fresh 200 response": "FAIL",
-      "HTTP cache avoids going to the network if it has a fresh 203 response": "FAIL",
-      "HTTP cache avoids going to the network if it has a fresh 204 response": "FAIL",
-      "HTTP cache avoids going to the network if it has a fresh 299 response": "FAIL",
-      "HTTP cache avoids going to the network if it has a fresh 400 response": "FAIL",
-      "HTTP cache avoids going to the network if it has a fresh 404 response": "FAIL",
-      "HTTP cache avoids going to the network if it has a fresh 410 response": "FAIL",
-      "HTTP cache avoids going to the network if it has a fresh 499 response": "FAIL",
-      "HTTP cache avoids going to the network if it has a fresh 500 response": "FAIL",
-      "HTTP cache avoids going to the network if it has a fresh 502 response": "FAIL",
-      "HTTP cache avoids going to the network if it has a fresh 503 response": "FAIL",
-      "HTTP cache avoids going to the network if it has a fresh 504 response": "FAIL",
-      "HTTP cache avoids going to the network if it has a fresh 599 response": "FAIL",
-      "HTTP cache goes to the network if it has a stale 200 response": "FAIL",
-      "HTTP cache goes to the network if it has a stale 203 response": "FAIL",
-      "HTTP cache goes to the network if it has a stale 204 response": "FAIL",
-      "HTTP cache goes to the network if it has a stale 299 response": "FAIL",
-      "HTTP cache goes to the network if it has a stale 400 response": "FAIL",
-      "HTTP cache goes to the network if it has a stale 404 response": "FAIL",
-      "HTTP cache goes to the network if it has a stale 410 response": "FAIL",
-      "HTTP cache goes to the network if it has a stale 499 response": "FAIL",
-      "HTTP cache goes to the network if it has a stale 500 response": "FAIL",
-      "HTTP cache goes to the network if it has a stale 502 response": "FAIL",
-      "HTTP cache goes to the network if it has a stale 503 response": "FAIL",
-      "HTTP cache goes to the network if it has a stale 504 response": "FAIL",
-      "HTTP cache goes to the network if it has a stale 599 response": "FAIL"
-    }
+    "total": 26
   },
   "fetch/http-cache/status.any.js#dedicatedworker": {
-    "total": 26,
-    "failures": {
-      "HTTP cache avoids going to the network if it has a fresh 200 response": "FAIL",
-      "HTTP cache avoids going to the network if it has a fresh 203 response": "FAIL",
-      "HTTP cache avoids going to the network if it has a fresh 204 response": "FAIL",
-      "HTTP cache avoids going to the network if it has a fresh 299 response": "FAIL",
-      "HTTP cache avoids going to the network if it has a fresh 400 response": "FAIL",
-      "HTTP cache avoids going to the network if it has a fresh 404 response": "FAIL",
-      "HTTP cache avoids going to the network if it has a fresh 410 response": "FAIL",
-      "HTTP cache avoids going to the network if it has a fresh 499 response": "FAIL",
-      "HTTP cache avoids going to the network if it has a fresh 500 response": "FAIL",
-      "HTTP cache avoids going to the network if it has a fresh 502 response": "FAIL",
-      "HTTP cache avoids going to the network if it has a fresh 503 response": "FAIL",
-      "HTTP cache avoids going to the network if it has a fresh 504 response": "FAIL",
-      "HTTP cache avoids going to the network if it has a fresh 599 response": "FAIL",
-      "HTTP cache goes to the network if it has a stale 200 response": "FAIL",
-      "HTTP cache goes to the network if it has a stale 203 response": "FAIL",
-      "HTTP cache goes to the network if it has a stale 204 response": "FAIL",
-      "HTTP cache goes to the network if it has a stale 299 response": "FAIL",
-      "HTTP cache goes to the network if it has a stale 400 response": "FAIL",
-      "HTTP cache goes to the network if it has a stale 404 response": "FAIL",
-      "HTTP cache goes to the network if it has a stale 410 response": "FAIL",
-      "HTTP cache goes to the network if it has a stale 499 response": "FAIL",
-      "HTTP cache goes to the network if it has a stale 500 response": "FAIL",
-      "HTTP cache goes to the network if it has a stale 502 response": "FAIL",
-      "HTTP cache goes to the network if it has a stale 503 response": "FAIL",
-      "HTTP cache goes to the network if it has a stale 504 response": "FAIL",
-      "HTTP cache goes to the network if it has a stale 599 response": "FAIL"
-    }
+    "total": 26
   },
   "fetch/http-cache/status.any.js#sharedworker": {
-    "total": 26,
-    "failures": {
-      "HTTP cache avoids going to the network if it has a fresh 200 response": "FAIL",
-      "HTTP cache avoids going to the network if it has a fresh 203 response": "FAIL",
-      "HTTP cache avoids going to the network if it has a fresh 204 response": "FAIL",
-      "HTTP cache avoids going to the network if it has a fresh 299 response": "FAIL",
-      "HTTP cache avoids going to the network if it has a fresh 400 response": "FAIL",
-      "HTTP cache avoids going to the network if it has a fresh 404 response": "FAIL",
-      "HTTP cache avoids going to the network if it has a fresh 410 response": "FAIL",
-      "HTTP cache avoids going to the network if it has a fresh 499 response": "FAIL",
-      "HTTP cache avoids going to the network if it has a fresh 500 response": "FAIL",
-      "HTTP cache avoids going to the network if it has a fresh 502 response": "FAIL",
-      "HTTP cache avoids going to the network if it has a fresh 503 response": "FAIL",
-      "HTTP cache avoids going to the network if it has a fresh 504 response": "FAIL",
-      "HTTP cache avoids going to the network if it has a fresh 599 response": "FAIL",
-      "HTTP cache goes to the network if it has a stale 200 response": "FAIL",
-      "HTTP cache goes to the network if it has a stale 203 response": "FAIL",
-      "HTTP cache goes to the network if it has a stale 204 response": "FAIL",
-      "HTTP cache goes to the network if it has a stale 299 response": "FAIL",
-      "HTTP cache goes to the network if it has a stale 400 response": "FAIL",
-      "HTTP cache goes to the network if it has a stale 404 response": "FAIL",
-      "HTTP cache goes to the network if it has a stale 410 response": "FAIL",
-      "HTTP cache goes to the network if it has a stale 499 response": "FAIL",
-      "HTTP cache goes to the network if it has a stale 500 response": "FAIL",
-      "HTTP cache goes to the network if it has a stale 502 response": "FAIL",
-      "HTTP cache goes to the network if it has a stale 503 response": "FAIL",
-      "HTTP cache goes to the network if it has a stale 504 response": "FAIL",
-      "HTTP cache goes to the network if it has a stale 599 response": "FAIL"
-    }
+    "total": 26
   },
   "fetch/http-cache/vary.any.js": {
-    "total": 14,
-    "failures": {
-      "HTTP cache doesn't invalidate existing Vary response": "FAIL",
-      "HTTP cache doesn't pay attention to headers not listed in Vary": "FAIL",
-      "HTTP cache doesn't use Vary response when request contains a variant header": "FAIL",
-      "HTTP cache doesn't use Vary response when request doesn't match": "FAIL",
-      "HTTP cache doesn't use Vary response when request omits variant header": "FAIL",
-      "HTTP cache doesn't use Vary response with a field value of '*'": "FAIL",
-      "HTTP cache doesn't use three-way Vary response when request doesn't match": "FAIL",
-      "HTTP cache doesn't use three-way Vary response when request doesn't match, regardless of header order": "FAIL",
-      "HTTP cache doesn't use two-way Vary response when request doesn't match": "FAIL",
-      "HTTP cache doesn't use two-way Vary response when request omits variant header": "FAIL",
-      "HTTP cache reuses Vary response when request matches": "FAIL",
-      "HTTP cache reuses three-way Vary response when request matches": "FAIL",
-      "HTTP cache reuses two-way Vary response when request matches": "FAIL",
-      "HTTP cache uses three-way Vary response when both request and the original request omited a variant header": "FAIL"
-    }
+    "total": 14
   },
   "fetch/http-cache/vary.any.js#dedicatedworker": {
-    "total": 14,
-    "failures": {
-      "HTTP cache doesn't invalidate existing Vary response": "FAIL",
-      "HTTP cache doesn't pay attention to headers not listed in Vary": "FAIL",
-      "HTTP cache doesn't use Vary response when request contains a variant header": "FAIL",
-      "HTTP cache doesn't use Vary response when request doesn't match": "FAIL",
-      "HTTP cache doesn't use Vary response when request omits variant header": "FAIL",
-      "HTTP cache doesn't use Vary response with a field value of '*'": "FAIL",
-      "HTTP cache doesn't use three-way Vary response when request doesn't match": "FAIL",
-      "HTTP cache doesn't use three-way Vary response when request doesn't match, regardless of header order": "FAIL",
-      "HTTP cache doesn't use two-way Vary response when request doesn't match": "FAIL",
-      "HTTP cache doesn't use two-way Vary response when request omits variant header": "FAIL",
-      "HTTP cache reuses Vary response when request matches": "FAIL",
-      "HTTP cache reuses three-way Vary response when request matches": "FAIL",
-      "HTTP cache reuses two-way Vary response when request matches": "FAIL",
-      "HTTP cache uses three-way Vary response when both request and the original request omited a variant header": "FAIL"
-    }
+    "total": 14
   },
   "fetch/http-cache/vary.any.js#sharedworker": {
-    "total": 14,
-    "failures": {
-      "HTTP cache doesn't invalidate existing Vary response": "FAIL",
-      "HTTP cache doesn't pay attention to headers not listed in Vary": "FAIL",
-      "HTTP cache doesn't use Vary response when request contains a variant header": "FAIL",
-      "HTTP cache doesn't use Vary response when request doesn't match": "FAIL",
-      "HTTP cache doesn't use Vary response when request omits variant header": "FAIL",
-      "HTTP cache doesn't use Vary response with a field value of '*'": "FAIL",
-      "HTTP cache doesn't use three-way Vary response when request doesn't match": "FAIL",
-      "HTTP cache doesn't use three-way Vary response when request doesn't match, regardless of header order": "FAIL",
-      "HTTP cache doesn't use two-way Vary response when request doesn't match": "FAIL",
-      "HTTP cache doesn't use two-way Vary response when request omits variant header": "FAIL",
-      "HTTP cache reuses Vary response when request matches": "FAIL",
-      "HTTP cache reuses three-way Vary response when request matches": "FAIL",
-      "HTTP cache reuses two-way Vary response when request matches": "FAIL",
-      "HTTP cache uses three-way Vary response when both request and the original request omited a variant header": "FAIL"
-    }
+    "total": 14
   },
   "fetch/images/canvas-remote-read-remote-image-redirect.html": {
     "total": 1

@@ -106,25 +106,13 @@
     }
   },
   "resource-timing/delivery-type.tentative.any.js": {
-    "total": 3,
-    "failures": {
-      "PerformanceResourceTiming deliveryType test, cross origin, TAO passes.": "FAIL",
-      "PerformanceResourceTiming deliveryType test, same origin.": "FAIL"
-    }
+    "total": 3
   },
   "resource-timing/delivery-type.tentative.any.js#dedicatedworker": {
-    "total": 3,
-    "failures": {
-      "PerformanceResourceTiming deliveryType test, cross origin, TAO passes.": "FAIL",
-      "PerformanceResourceTiming deliveryType test, same origin.": "FAIL"
-    }
+    "total": 3
   },
   "resource-timing/delivery-type.tentative.any.js#sharedworker": {
-    "total": 3,
-    "failures": {
-      "PerformanceResourceTiming deliveryType test, cross origin, TAO passes.": "FAIL",
-      "PerformanceResourceTiming deliveryType test, same origin.": "FAIL"
-    }
+    "total": 3
   },
   "resource-timing/document-domain-no-impact-opener.html": {
     "total": 1
@@ -414,22 +402,13 @@
     "total": 1
   },
   "resource-timing/sizes-cache.any.js": {
-    "total": 1,
-    "failures": {
-      "PerformanceResourceTiming sizes caching test": "FAIL"
-    }
+    "total": 1
   },
   "resource-timing/sizes-cache.any.js#dedicatedworker": {
-    "total": 1,
-    "failures": {
-      "PerformanceResourceTiming sizes caching test": "FAIL"
-    }
+    "total": 1
   },
   "resource-timing/sizes-cache.any.js#sharedworker": {
-    "total": 1,
-    "failures": {
-      "PerformanceResourceTiming sizes caching test": "FAIL"
-    }
+    "total": 1
   },
   "resource-timing/sizes-redirect-img.html": {
     "total": 5

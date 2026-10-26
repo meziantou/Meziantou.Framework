@@ -571,7 +571,7 @@ public partial class HtmlLinkElement
         if (linkResource.Kind == LinkResourceKind.Prefetch)
         {
             // https://html.spec.whatwg.org/multipage/links.html#link-type-prefetch: the initiator of the request is "prefetch".
-            // There is no HTTP cache: the response is not used by the next requests of the URL
+            // The response is used by the next requests of the URL through the HTTP cache, when it can be stored
             request.IsPrefetch = true;
             // As in the browsers, a prefetch blocked by a content security policy has a resource timing entry
             SubresourceFetching.FetchResponse(document, request, response => FireLoadOrError(!response.IsNetworkError), reportBlockedRequest: true);

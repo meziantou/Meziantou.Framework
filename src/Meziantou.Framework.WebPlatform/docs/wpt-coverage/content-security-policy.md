@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 845 | 882 | 0 | 96% |
+| [Stable](#stable-tests) | 846 | 882 | 0 | 96% |
 | [Tentative](#tentative-tests) | 7 | 13 | 0 | 54% |
 | [Reftests](#reftests) | 2 | 2 | 0 | 100% |
-| **All** | **854** | **897** | **0** | **95%** |
+| **All** | **855** | **897** | **0** | **95%** |
 
 ## Stable tests
 
@@ -416,7 +416,7 @@
 | [`gen/top.meta/worker-src-wildcard/worklet-layout.https.html`](https://wpt.fyi/results/content-security-policy/gen/top.meta/worker-src-wildcard/worklet-layout.https.html) | Pass | 12 / 12 |  |  |
 | [`gen/top.meta/worker-src-wildcard/worklet-paint-import-data.https.html`](https://wpt.fyi/results/content-security-policy/gen/top.meta/worker-src-wildcard/worklet-paint-import-data.https.html) | Pass | 12 / 12 |  |  |
 | [`gen/top.meta/worker-src-wildcard/worklet-paint.https.html`](https://wpt.fyi/results/content-security-policy/gen/top.meta/worker-src-wildcard/worklet-paint.https.html) | Pass | 12 / 12 |  |  |
-| [`generic/304-response-should-update-csp.sub.html`](https://wpt.fyi/results/content-security-policy/generic/304-response-should-update-csp.sub.html) | Fail | 2 / 4 | NOT IMPLEMENTED | the HTTP cache: the second load is not revalidated (no `If-None-Match`), so its response is not a `304` response with the policy of the second nonce |
+| [`generic/304-response-should-update-csp.sub.html`](https://wpt.fyi/results/content-security-policy/generic/304-response-should-update-csp.sub.html) | Pass | 4 / 4 |  |  |
 | [`generic/case-insensitive-scheme.sub.html`](https://wpt.fyi/results/content-security-policy/generic/case-insensitive-scheme.sub.html) | Pass | 6 / 6 |  |  |
 | [`generic/cspro-not-enforced-in-worker.html`](https://wpt.fyi/results/content-security-policy/generic/cspro-not-enforced-in-worker.html) | Pass | 2 / 2 |  |  |
 | [`generic/directive-name-case-insensitive.sub.html`](https://wpt.fyi/results/content-security-policy/generic/directive-name-case-insensitive.sub.html) | Pass | 3 / 3 |  |  |

@@ -780,6 +780,14 @@ public sealed class DocumentRequest
     /// loader completes, so the loader must not wait for a task of the <see cref="DomEventLoop"/>.
     /// </summary>
     public bool IsSynchronous { get; init; }
+
+    /// <summary>
+    /// Gets whether the body of the response is read as it arrives (e.g. the response of <c>fetch()</c>, whose body is a
+    /// <c>ReadableStream</c>, or the resource of a media element): the loader should return the response once its headers
+    /// are received, with the rest of its body in <see cref="DocumentResource.RemainingContentBytes"/>. A loader that returns
+    /// the complete body is still supported.
+    /// </summary>
+    public bool StreamsResponseBody { get; init; }
 }
 
 /// <summary>The destination of a <see cref="DocumentRequest"/> (https://fetch.spec.whatwg.org/#concept-request-destination).</summary>

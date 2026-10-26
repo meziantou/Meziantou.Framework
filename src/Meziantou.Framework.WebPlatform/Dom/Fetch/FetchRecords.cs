@@ -334,9 +334,9 @@ internal sealed partial class FetchRequest
 
     /// <summary>
     /// Whether the body of the response is interpreted as its bytes arrive (an event source, the resource of a media element
-    /// or of a track element): the response is returned when its headers are received, with the rest of its body
-    /// (<see cref="DocumentResource.RemainingContentBytes"/>). The navigations do it too; the other requests get the
-    /// complete body.
+    /// or of a track element, the <c>ReadableStream</c> of the body of <c>fetch()</c>): the response is returned when its
+    /// headers are received, with the rest of its body (<see cref="DocumentResource.RemainingContentBytes"/>, see
+    /// <see cref="FetchBodyReader"/>). The navigations do it too; the other requests get the complete body.
     /// </summary>
     public bool StreamsBody { get; set; }
 
@@ -415,6 +415,12 @@ internal sealed class FetchResponse
     /// whose status is 101, or null. It is a property of the internal response.
     /// </summary>
     public Stream? Connection { get; set; }
+
+    /// <summary>
+    /// https://fetch.spec.whatwg.org/#concept-response-cache-state: <c>local</c> for a stored response of the HTTP cache,
+    /// <c>validated</c> for a stored response validated by a <c>304</c> response, else the empty string.
+    /// </summary>
+    public string CacheState { get; set; } = "";
 
     /// <summary>https://fetch.spec.whatwg.org/#response-request-includes-credentials (a property of the internal response)</summary>
     public bool RequestIncludesCredentials { get; set; } = true;

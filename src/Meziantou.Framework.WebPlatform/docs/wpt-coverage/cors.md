@@ -6,16 +6,16 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 23 | 24 | 0 | 96% |
+| [Stable](#stable-tests) | 24 | 24 | 0 | 100% |
 | [Tentative](#tentative-tests) | 0 | 2 | 0 | 0% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **23** | **26** | **0** | **88%** |
+| **All** | **24** | **26** | **0** | **92%** |
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`304.htm`](https://wpt.fyi/results/cors/304.htm) | Fail | 0 / 4 | NOT IMPLEMENTED | the HTTP cache: the second request of each pair is not a revalidation of the stored response (no `If-None-Match`), so `304.py` answers `299` instead of `304` |
+| [`304.htm`](https://wpt.fyi/results/cors/304.htm) | Pass | 4 / 4 |  |  |
 | [`access-control-expose-headers-parsing.window.js`](https://wpt.fyi/results/cors/access-control-expose-headers-parsing.window.js) | Pass | 16 / 16 |  |  |
 | [`basic.htm`](https://wpt.fyi/results/cors/basic.htm) | Pass | 12 / 12 |  |  |
 | [`client-hint-request-headers.htm`](https://wpt.fyi/results/cors/client-hint-request-headers.htm) | Pass | 8 / 8 |  |  |

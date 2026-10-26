@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 101 | 117 | 0 | 86% |
-| [Tentative](#tentative-tests) | 0 | 33 | 0 | 0% |
+| [Stable](#stable-tests) | 102 | 117 | 0 | 87% |
+| [Tentative](#tentative-tests) | 1 | 33 | 0 | 3% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **101** | **150** | **0** | **67%** |
+| **All** | **103** | **150** | **0** | **69%** |
 
 ## Stable tests
 
@@ -48,7 +48,7 @@
 | [`cross-origin-status-codes.html`](https://wpt.fyi/results/resource-timing/cross-origin-status-codes.html) | Pass | 1 / 1 |  |  |
 | [`decoded-body-size-compressed.https.html`](https://wpt.fyi/results/resource-timing/decoded-body-size-compressed.https.html) | Fail | 6 / 8 | NOT IMPLEMENTED | Compression Dictionary Transport (the `dcb` and `dcz` content codings; `/fetch/compression-dictionary/resources/register-dictionary.py` is not emulated); the `gzip`, `br` and identity subtests pass |
 | [`document-domain-no-impact-opener.html`](https://wpt.fyi/results/resource-timing/document-domain-no-impact-opener.html) | Pass | 1 / 1 |  |  |
-| [`encoded-body-size-cached.https.html`](https://wpt.fyi/results/resource-timing/encoded-body-size-cached.https.html) | Fail | 0 / 2 | NOT IMPLEMENTED | Compression Dictionary Transport (the `dcb` and `dcz` content codings; `/fetch/compression-dictionary/resources/register-dictionary.py` is not emulated), and the HTTP cache (every request is sent to the loader) |
+| [`encoded-body-size-cached.https.html`](https://wpt.fyi/results/resource-timing/encoded-body-size-cached.https.html) | Fail | 0 / 2 | NOT IMPLEMENTED | Compression Dictionary Transport (the `dcb` and `dcz` content codings; `/fetch/compression-dictionary/resources/register-dictionary.py` is not emulated, so the dictionary is a 404 response) |
 | [`entries-for-network-errors.sub.https.html`](https://wpt.fyi/results/resource-timing/entries-for-network-errors.sub.https.html) | Pass | 9 / 9 |  |  |
 | [`entry-attributes.html`](https://wpt.fyi/results/resource-timing/entry-attributes.html) | Pass | 3 / 3 |  |  |
 | [`event-source-timing.html`](https://wpt.fyi/results/resource-timing/event-source-timing.html) | Pass | 1 / 1 |  |  |
@@ -83,7 +83,7 @@
 | [`interim-response-times.html`](https://wpt.fyi/results/resource-timing/interim-response-times.html) | Fail | 6 / 12 | NOT IMPLEMENTED | the document loader does not expose the interim responses (`1xx`): `firstInterimResponseStart` is 0 and `responseStart` is the time of the final response; the subtests without interim response pass |
 | [`internal-resources-not-counted.html`](https://wpt.fyi/results/resource-timing/internal-resources-not-counted.html) | Pass | 1 / 1 |  |  |
 | [`link-sequence-of-events.html`](https://wpt.fyi/results/resource-timing/link-sequence-of-events.html) | Pass | 1 / 1 |  |  |
-| [`load-from-mem-cache-transfer-size.html`](https://wpt.fyi/results/resource-timing/load-from-mem-cache-transfer-size.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `transferSize` is never 0 for a same-origin resource: there is no memory cache nor HTTP cache |
+| [`load-from-mem-cache-transfer-size.html`](https://wpt.fyi/results/resource-timing/load-from-mem-cache-transfer-size.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the memory cache of the scripts: the resource timing entry of the script that the test reads is missing (`transferSize` of `undefined`) |
 | [`nested-context-navigations-embed.html`](https://wpt.fyi/results/resource-timing/nested-context-navigations-embed.html) | Pass | 9 / 9 |  |  |
 | [`nested-context-navigations-iframe.html`](https://wpt.fyi/results/resource-timing/nested-context-navigations-iframe.html) | Pass | 9 / 9 |  |  |
 | [`nested-context-navigations-object.html`](https://wpt.fyi/results/resource-timing/nested-context-navigations-object.html) | Pass | 9 / 9 |  |  |
@@ -121,7 +121,7 @@
 | [`script-rt-entries.html`](https://wpt.fyi/results/resource-timing/script-rt-entries.html) | Pass | 2 / 2 |  |  |
 | [`secure-iframe-in-insecure-context.html`](https://wpt.fyi/results/resource-timing/secure-iframe-in-insecure-context.html) | Pass | 2 / 2 |  |  |
 | [`shared-worker-rt-entry.html`](https://wpt.fyi/results/resource-timing/shared-worker-rt-entry.html) | Pass | 1 / 1 |  |  |
-| [`sizes-cache.any.js`](https://wpt.fyi/results/resource-timing/sizes-cache.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | `transferSize` of a cached response: the HTTP cache (every request is sent to the loader) |
+| [`sizes-cache.any.js`](https://wpt.fyi/results/resource-timing/sizes-cache.any.js) | Pass | 3 / 3 |  |  |
 | [`sizes-redirect-img.html`](https://wpt.fyi/results/resource-timing/sizes-redirect-img.html) | Pass | 5 / 5 |  |  |
 | [`sizes-redirect.any.js`](https://wpt.fyi/results/resource-timing/sizes-redirect.any.js) | Pass | 3 / 3 |  |  |
 | [`status-codes-create-entry.html`](https://wpt.fyi/results/resource-timing/status-codes-create-entry.html) | Pass | 1 / 1 |  |  |
@@ -137,7 +137,7 @@
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`delivery-type.tentative.any.js`](https://wpt.fyi/results/resource-timing/delivery-type.tentative.any.js) | Fail | 3 / 9 | NOT IMPLEMENTED | `deliveryType` is never `cache`: the HTTP cache (every request is sent to the loader) |
+| [`delivery-type.tentative.any.js`](https://wpt.fyi/results/resource-timing/delivery-type.tentative.any.js) | Pass | 9 / 9 |  |  |
 | [`resource-timing-failed-fetch-web-bundle.tentative.html`](https://wpt.fyi/results/resource-timing/resource-timing-failed-fetch-web-bundle.tentative.html) | Error | 0 / 0 | NOT IMPLEMENTED | Web Bundles (`<script type="webbundle">`); `/web-bundle/resources/test-helpers.js` is not fetched |
 | [`tentative/initiator-url/dedicated-worker-script.html`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/dedicated-worker-script.html) | Fail | 0 / 6 | NOT IMPLEMENTED | the tentative `PerformanceResourceTiming.initiatorUrl` attribute (the URL of the script or style sheet that started the fetch) |
 | [`tentative/initiator-url/direct.any.js`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/direct.any.js) | Fail | 0 / 4 | NOT IMPLEMENTED | the tentative `PerformanceResourceTiming.initiatorUrl` attribute (the URL of the script or style sheet that started the fetch) |

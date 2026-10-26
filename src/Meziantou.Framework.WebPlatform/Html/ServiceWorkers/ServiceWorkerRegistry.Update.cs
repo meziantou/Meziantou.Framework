@@ -4,7 +4,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 
 // The Update algorithm (https://w3c.github.io/ServiceWorker/#update-algorithm): the script of the service worker is fetched,
 // compared byte for byte with the script of the newest worker (and its imported scripts), and a new worker is installed
-// when a script changed. There is no HTTP cache: the update via cache mode only sets the cache mode of the requests.
+// when a script changed. The update via cache mode sets the cache mode of the requests, which the HTTP cache uses.
 internal sealed partial class ServiceWorkerRegistry
 {
     /// <summary>https://w3c.github.io/ServiceWorker/#update-algorithm</summary>
@@ -20,13 +20,15 @@ internal sealed partial class ServiceWorkerRegistry
         var scriptUrl = job.ScriptUrl!;
         ServiceWorkerRecord? newestWorker;
         bool isStale;
-        ServiceWorkerUpdateViaCache updateViaCache;
         lock (_lock)
         {
             newestWorker = registration.NewestWorker;
             isStale = registration.IsStale(Now);
-            updateViaCache = registration.UpdateViaCache;
         }
+
+        // As in the browsers, the scripts are fetched with the update via cache mode of the job: a register() that changes
+        // the mode (e.g. to "none") fetches the scripts with the new mode
+        var updateViaCache = job.UpdateViaCache;
 
         if (job.Type == ServiceWorkerJobType.Update && newestWorker is not null && newestWorker.ScriptUrl.Serialize() != scriptUrl.Serialize())
         {
@@ -153,7 +155,7 @@ internal sealed partial class ServiceWorkerRegistry
             return;
         }
 
-        var worker = new ServiceWorkerRecord(registration, CreateWorkerId(), scriptUrl, job.WorkerType);
+        var worker = new ServiceWorkerRecord(registration, CreateWorkerId(), scriptUrl, job.WorkerType) { InstallingUpdateViaCache = updateViaCache };
         foreach (var (key, value) in updatedResourceMap)
         {
             worker.ScriptResourceMap[key] = value;

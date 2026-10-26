@@ -43,6 +43,9 @@ internal sealed class FetchTimingInfo
 
     /// <summary>Whether the timing allow check passed (https://fetch.spec.whatwg.org/#concept-response-timing-allow-passed).</summary>
     public bool TimingAllowPassed { get; init; }
+
+    /// <summary>The cache state of the response (https://fetch.spec.whatwg.org/#concept-response-cache-state): the empty string, <c>local</c> or <c>validated</c>.</summary>
+    public string CacheState { get; init; } = "";
 }
 
 /// <summary>https://fetch.spec.whatwg.org/#connection-timing-info</summary>
@@ -109,6 +112,18 @@ internal sealed class ResourceTiming
     public void Report(FetchResponse response) => Report(response, _global.EventLoop.TimeProvider.GetTimestamp());
 
     /// <summary>
+    /// Reports the timing of a fetch whose body was read as it arrived (<see cref="FetchRequest.StreamsBody"/>), at the end of
+    /// its body: <paramref name="bodyLength"/> is the length of the body that was received.
+    /// </summary>
+    public void ReportEndOfBody(FetchResponse response, long bodyLength)
+    {
+        _bodyLength = bodyLength;
+        Report(response);
+    }
+
+    private long? _bodyLength;
+
+    /// <summary>
     /// Reports the timing of a fetch whose response is processed synchronously (the loader completed synchronously): the entry
     /// is queued by a task of the global object, as the response of a network is, so that a script that starts the fetch and
     /// then observes the performance timeline sees it. The end time is the current time.
@@ -165,6 +180,7 @@ internal sealed class ResourceTiming
                 // A response given by a service worker has no connection: its ALPN negotiated protocol is the empty string.
                 FinalConnectionTimingInfo = new ConnectionTimingInfo(postRedirectStartTime, postRedirectStartTime, postRedirectStartTime, postRedirectStartTime, isSecure ? postRedirectStartTime : 0, _request.IsAnsweredByServiceWorker ? "" : "http/1.1") { IsSecure = isSecure },
                 TimingAllowPassed = true,
+                CacheState = internalResponse.CacheState,
             };
         }
         else
@@ -180,7 +196,7 @@ internal sealed class ResourceTiming
         var contentEncoding = "";
         if (!isOpaque)
         {
-            var decodedBodySize = (ulong)internalResponse.BodyLength;
+            var decodedBodySize = (ulong)(_bodyLength ?? internalResponse.BodyLength);
             bodyInfo = new ResponseBodyInfo(GetEncodedBodySize(internalResponse.HeaderList, decodedBodySize), decodedBodySize, MinimizeSupportedMimeType(HeaderList.ExtractMimeType(internalResponse.HeaderList)));
             contentEncoding = GetContentEncoding(internalResponse.HeaderList);
         }

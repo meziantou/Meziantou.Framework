@@ -24,6 +24,9 @@ internal sealed class WptHandlerRequest
 
     public Url Url { get; }
 
+    /// <summary>The time at which the request is received, measured by the virtual clock (<c>time.time()</c>).</summary>
+    public DateTimeOffset Now { get; init; }
+
     /// <summary>The time elapsed since the request was received, when the handler runs again (see <see cref="WptHandlerResponse.RetryAfter"/>), measured by the virtual clock.</summary>
     public TimeSpan PollingElapsed { get; init; }
 

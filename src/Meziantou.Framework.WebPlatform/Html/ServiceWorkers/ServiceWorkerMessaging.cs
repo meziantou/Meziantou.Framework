@@ -97,6 +97,10 @@ internal static class ServiceWorkerMessaging
         if (client.IsDiscarded || client.Global is not { } target)
             return;
 
+        // A message posted to a client whose document is in the back/forward cache evicts it ("serviceworker-postmessage")
+        if (client.TryEvictFromBackForwardCache("serviceworker-postmessage"))
+            return;
+
         var origin = source.Origin;
         var worker = source.ServiceWorkerRecord;
         target.QueueGlobalTask(() =>

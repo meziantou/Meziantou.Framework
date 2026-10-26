@@ -4,6 +4,13 @@ using Meziantou.Framework.WebPlatform.Urls;
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>
+/// The browsing context and the browsing context group of a document that another browsing context replaced in its
+/// navigable (a browsing context group switch, or the activation of a prerendered document): they are active again when the
+/// document is restored from the back/forward cache.
+/// </summary>
+internal sealed record ReplacedBrowsingContext(BrowsingContextInstance Instance, BrowsingContextGroup Group);
+
+/// <summary>
 /// A browsing context (https://html.spec.whatwg.org/multipage/document-sequences.html#browsing-context) of a navigable: the
 /// navigable keeps it until a navigation whose opener policy requires a browsing context group switch replaces it by a new
 /// one. The WindowProxy objects are the ones of a browsing context: the one of a replaced browsing context keeps its last
@@ -32,6 +39,22 @@ internal sealed class BrowsingContextInstance
     {
         IsDiscarded = true;
         _discardedWindow = window;
+        if (window is not null)
+        {
+            window.IsInDiscardedBrowsingContext = true;
+        }
+    }
+
+    /// <summary>The document of the browsing context is restored from the back/forward cache: the browsing context is active again.</summary>
+    internal void Undiscard()
+    {
+        IsDiscarded = false;
+        if (_discardedWindow is { } window)
+        {
+            window.IsInDiscardedBrowsingContext = false;
+        }
+
+        _discardedWindow = null;
     }
 }
 
@@ -52,6 +75,17 @@ public sealed partial class BrowsingContext
     /// </summary>
     private void SwitchBrowsingContextGroup(OpenerPolicy navigationCoop)
     {
+        // The document of the discarded browsing context makes it active again if it is restored from the back/forward cache.
+        // It is not kept in the cache when another top-level browsing context could script it before the switch.
+        if (Document is { } previousDocument)
+        {
+            previousDocument.ReplacedBrowsingContext = new ReplacedBrowsingContext(ActiveBrowsingContext, Group);
+            if (HasOpenerRelationship())
+            {
+                previousDocument.MakeUnsalvageable("non-trivial-browsing-context-group");
+            }
+        }
+
         ActiveBrowsingContext.Discard(Document?.RelevantWindow);
         ActiveBrowsingContext = new BrowsingContextInstance(this);
         _group = new BrowsingContextGroup

@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 142 | 152 | 0 | 93% |
+| [Stable](#stable-tests) | 143 | 152 | 0 | 94% |
 | [Tentative](#tentative-tests) | 4 | 7 | 0 | 57% |
 | [Reftests](#reftests) | 306 | 317 | 0 | 97% |
-| **All** | **452** | **476** | **0** | **95%** |
+| **All** | **453** | **476** | **0** | **95%** |
 
 ## Stable tests
 
@@ -52,7 +52,7 @@
 | [`navigation/mismatched-snapshot-containing-block-size-skips.html`](https://wpt.fyi/results/css/css-view-transitions/navigation/mismatched-snapshot-containing-block-size-skips.html) | Fail | 0 / 1 | TEST RUNNER | the `render-blocking-stylesheet.py` handler is not implemented by the test server, and the popups cannot be opened with a size (`width=…,height=…` features) |
 | [`navigation/navigation-auto-excludes-reload.html`](https://wpt.fyi/results/css/css-view-transitions/navigation/navigation-auto-excludes-reload.html) | Pass | 1 / 1 |  |  |
 | [`navigation/no-view-transition-with-cross-origin-redirect.sub.html`](https://wpt.fyi/results/css/css-view-transitions/navigation/no-view-transition-with-cross-origin-redirect.sub.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the cross-origin redirects of a navigation are not tracked ("was created via cross-origin redirects"): a same-origin navigation through a cross-origin redirect has a view transition |
-| [`navigation/old_vt_promises_bfcache.html`](https://wpt.fyi/results/css/css-view-transitions/navigation/old_vt_promises_bfcache.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the back/forward cache: the old document is unloaded, not persisted |
+| [`navigation/old_vt_promises_bfcache.html`](https://wpt.fyi/results/css/css-view-transitions/navigation/old_vt_promises_bfcache.html) | Pass | 1 / 1 |  |  |
 | [`navigation/opt-in-removed-during-transition.html`](https://wpt.fyi/results/css/css-view-transitions/navigation/opt-in-removed-during-transition.html) | Pass | 1 / 1 |  |  |
 | [`navigation/outbound-transition-ready-after-pagehide.html`](https://wpt.fyi/results/css/css-view-transitions/navigation/outbound-transition-ready-after-pagehide.html) | Pass | 1 / 1 |  |  |
 | [`navigation/pagereveal-ctor.html`](https://wpt.fyi/results/css/css-view-transitions/navigation/pagereveal-ctor.html) | Pass | 5 / 5 |  |  |

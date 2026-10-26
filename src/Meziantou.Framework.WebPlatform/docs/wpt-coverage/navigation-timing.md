@@ -19,7 +19,7 @@
 | [`content-encoding.https.html`](https://wpt.fyi/results/navigation-timing/content-encoding.https.html) | Pass | 1 / 1 |  |  |
 | [`dom-interactive-image-document.html`](https://wpt.fyi/results/navigation-timing/dom-interactive-image-document.html) | Pass | 1 / 1 |  |  |
 | [`dom-interactive-media-document.html`](https://wpt.fyi/results/navigation-timing/dom-interactive-media-document.html) | Pass | 1 / 1 |  |  |
-| [`idlharness.window.js`](https://wpt.fyi/results/navigation-timing/idlharness.window.js) | Fail | 147 / 161 | NOT IMPLEMENTED | `PerformanceNavigationTiming.notRestoredReasons` (there is no back/forward cache) and `confidence` (`PerformanceTimingConfidence`) |
+| [`idlharness.window.js`](https://wpt.fyi/results/navigation-timing/idlharness.window.js) | Fail | 147 / 161 | NOT IMPLEMENTED | `PerformanceNavigationTiming.notRestoredReasons` (the `NotRestoredReasons` and `NotRestoredReasonDetails` interfaces) and `confidence` (`PerformanceTimingConfidence`) |
 | [`nav2-test-attributes-exist.html`](https://wpt.fyi/results/navigation-timing/nav2-test-attributes-exist.html) | Pass | 1 / 1 |  |  |
 | [`nav2-test-attributes-values.html`](https://wpt.fyi/results/navigation-timing/nav2-test-attributes-values.html) | Pass | 1 / 1 |  |  |
 | [`nav2-test-document-open.html`](https://wpt.fyi/results/navigation-timing/nav2-test-document-open.html) | Pass | 1 / 1 |  |  |

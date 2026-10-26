@@ -1,6 +1,7 @@
 using Meziantou.Framework.WebPlatform.Dom;
 using Meziantou.Framework.WebPlatform.Scripting;
 using Meziantou.Framework.WebPlatform.Tests.Scripting;
+using Microsoft.Extensions.Time.Testing;
 
 namespace Meziantou.Framework.WebPlatform.Tests.JavaScript;
 
@@ -294,5 +295,182 @@ public sealed class SessionHistoryTests : IDisposable
             """);
 
         Assert.Equal("null,https://example.com null", document.Title);
+    }
+
+    private BrowsingContext CreateBackForwardCacheContext(int backForwardCacheSize = 6, TimeProvider? timeProvider = null)
+    {
+        return _contexts.Create(new BrowsingContextOptions
+        {
+            ScriptEngine = _engine,
+            DocumentLoader = _loader,
+            UnhandledScriptError = (_, error) => _errors.Add(error),
+            BackForwardCacheSize = backForwardCacheSize,
+            TimeProvider = timeProvider,
+        });
+    }
+
+    private void RunEventLoop()
+    {
+        for (var i = 0; i < 5; i++)
+        {
+            _contexts.EventLoop.RunUntilIdle();
+            Thread.Sleep(10);
+        }
+    }
+
+    private const string PageTransitionLogger = """
+        <script>
+          var log = [];
+          addEventListener('pageshow', e => { log.push('pageshow ' + e.persisted); document.title = log.join(); });
+          addEventListener('pagehide', e => { log.push('pagehide ' + e.persisted); document.title = log.join(); });
+        </script>
+        """;
+
+    [Fact]
+    public void BackForwardCache_TraversalRestoresTheDocument()
+    {
+        var context = CreateBackForwardCacheContext();
+        var a = context.Navigate("https://example.com/a.html", _ => PageTransitionLogger + "<script>window.state = 'kept'; addEventListener('pageshow', e => { if (e.persisted) document.title += ',' + window.state; });</script>");
+        RunEventLoop();
+        var b = context.Navigate("https://example.com/b.html", _ => "b");
+        RunEventLoop();
+        Assert.Equal(1, context.BackForwardCacheCount);
+
+        context.Window.History.Back();
+        RunEventLoop();
+
+        // The document is not loaded again: the pagehide and pageshow events are persisted, and the unload event is not fired
+        Assert.Empty(_errors);
+        Assert.Same(a, context.Document);
+        Assert.Equal("pageshow false,pagehide true,pageshow true,kept", a.Title);
+        Assert.Empty(_loader.Requests);
+
+        // The document of the forward entry is cached in turn
+        Assert.Equal(1, context.BackForwardCacheCount);
+        context.Window.History.Forward();
+        RunEventLoop();
+        Assert.Same(b, context.Document);
+    }
+
+    [Fact]
+    public void BackForwardCache_TasksAreDeferredUntilTheDocumentIsRestored()
+    {
+        var context = CreateBackForwardCacheContext();
+        var a = context.Navigate("https://example.com/a.html", _ => PageTransitionLogger + """
+            <script>
+              addEventListener('pagehide', e => setTimeout(() => { log.push('timeout'); document.title = log.join(); }, 0));
+            </script>
+            """);
+        RunEventLoop();
+        context.Navigate("https://example.com/b.html", _ => "b");
+        RunEventLoop();
+        Assert.Equal("pageshow false,pagehide true", a.Title);
+
+        context.Window.History.Back();
+        RunEventLoop();
+
+        Assert.Empty(_errors);
+        Assert.Equal("pageshow false,pagehide true,pageshow true,timeout", a.Title);
+    }
+
+    [Fact]
+    public void BackForwardCache_TimersAreSuspended()
+    {
+        var clock = new FakeTimeProvider(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));
+        var context = CreateBackForwardCacheContext(timeProvider: clock);
+        var a = context.Navigate("https://example.com/a.html", _ => "<script>setTimeout(() => document.title = 'fired', 1000);</script>");
+        context.EventLoop.RunUntilIdle();
+        context.Navigate("https://example.com/b.html", _ => "b");
+        context.EventLoop.RunUntilIdle();
+
+        // The time spent in the back/forward cache does not count
+        clock.Advance(TimeSpan.FromSeconds(5));
+        context.EventLoop.RunUntilIdle();
+        context.Window.History.Back();
+        context.EventLoop.RunUntilIdle();
+        Assert.Same(a, context.Document);
+        clock.Advance(TimeSpan.FromMilliseconds(900));
+        context.EventLoop.RunUntilIdle();
+        Assert.Equal("", a.Title);
+
+        clock.Advance(TimeSpan.FromMilliseconds(200));
+        context.EventLoop.RunUntilIdle();
+        Assert.Empty(_errors);
+        Assert.Equal("fired", a.Title);
+    }
+
+    [Theory]
+    [InlineData("<script>addEventListener('unload', () => {});</script>", null)]
+    [InlineData("", "no-store")]
+    [InlineData("", "max-age=0, No-Store")]
+    public void BackForwardCache_IneligibleDocumentIsLoadedAgain(string script, string? cacheControl)
+    {
+        var html = PageTransitionLogger + script;
+        _loader.Resources["https://example.com/a.html"] = new DocumentResource(html);
+        var context = CreateBackForwardCacheContext();
+        var a = context.Navigate("https://example.com/a.html", _ => new DocumentResource(html) { Headers = cacheControl is null ? [] : [new("Cache-Control", cacheControl)] });
+        RunEventLoop();
+        context.Navigate("https://example.com/b.html", _ => "b");
+        RunEventLoop();
+        Assert.Equal(0, context.BackForwardCacheCount);
+
+        context.Window.History.Back();
+        RunEventLoop();
+
+        Assert.Empty(_errors);
+        Assert.Equal("pageshow false,pagehide false", a.Title);
+        Assert.NotSame(a, context.Document);
+        Assert.Equal("https://example.com/a.html", context.Document.Url);
+        Assert.Equal("pageshow false", context.Document.Title);
+    }
+
+    [Fact]
+    public void BackForwardCache_SizeZeroDisablesTheCache()
+    {
+        _loader.Resources["https://example.com/a.html"] = new DocumentResource(PageTransitionLogger);
+        var context = CreateBackForwardCacheContext(backForwardCacheSize: 0);
+        var a = context.Navigate("https://example.com/a.html", _ => PageTransitionLogger);
+        RunEventLoop();
+        context.Navigate("https://example.com/b.html", _ => "b");
+        RunEventLoop();
+        context.Window.History.Back();
+        RunEventLoop();
+
+        Assert.Empty(_errors);
+        Assert.Equal("pageshow false,pagehide false", a.Title);
+        Assert.NotSame(a, context.Document);
+    }
+
+    [Fact]
+    public void BackForwardCache_DocumentsAreEvicted()
+    {
+        _loader.Resources["https://example.com/a.html"] = new DocumentResource("a");
+        var context = CreateBackForwardCacheContext(backForwardCacheSize: 1);
+        var a = context.Navigate("https://example.com/a.html", _ => "a");
+        context.Navigate("https://example.com/b.html", _ => "b");
+        RunEventLoop();
+        var c = context.Navigate("https://example.com/c.html", _ => "c");
+        RunEventLoop();
+
+        // The cache is full: the document cached first is evicted
+        Assert.Equal(1, context.BackForwardCacheCount);
+        Assert.Null(a.BrowsingContext);
+
+        // The navigation from b.html clears the forward entry of c.html: its document is evicted
+        context.Window.History.Back();
+        RunEventLoop();
+        Assert.Equal("https://example.com/b.html", context.Document.Url);
+        context.Navigate("https://example.com/d.html", _ => "d");
+        RunEventLoop();
+        Assert.Null(c.BrowsingContext);
+        Assert.Equal(1, context.BackForwardCacheCount);
+
+        // The traversal to the entry of an evicted document loads it again
+        context.Window.History.Go(-2);
+        RunEventLoop();
+        Assert.Empty(_errors);
+        Assert.Equal("https://example.com/a.html", context.Document.Url);
+        Assert.NotSame(a, context.Document);
+        Assert.Equal(["https://example.com/a.html"], _loader.Requests.ConvertAll(request => request.Url));
     }
 }

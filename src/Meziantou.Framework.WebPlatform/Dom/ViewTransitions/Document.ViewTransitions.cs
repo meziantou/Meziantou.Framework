@@ -190,6 +190,9 @@ public partial class Document
     /// <summary>https://html.spec.whatwg.org/multipage/dom.html#has-been-revealed: whether the <c>pagereveal</c> event was fired at the window of the document.</summary>
     internal bool HasBeenRevealed { get; private set; }
 
+    /// <summary>The document is reactivated (https://html.spec.whatwg.org/multipage/browsing-the-web.html#reactivate-a-document): the <c>pagereveal</c> event is fired again.</summary>
+    internal void ResetHasBeenRevealed() => HasBeenRevealed = false;
+
     /// <summary>
     /// https://drafts.csswg.org/css-view-transitions-2/#resolve-view-transition-rule: returns the types of the last
     /// <c>@view-transition</c> rule of the document when it opts in (<c>navigation: auto</c>) and the document is visible, else
@@ -475,6 +478,35 @@ public partial class Document
     /// active view transition, and forgets its inbound view transition params (a document hidden before it is revealed, e.g.
     /// while it is render-blocked, has no inbound view transition).
     /// </summary>
+    /// <summary>
+    /// The document enters the back/forward cache: its view transitions are skipped at once (the task of the page visibility
+    /// change steps would only run once the document is restored, when it is visible again).
+    /// </summary>
+    internal void SkipViewTransitionsForBackForwardCache()
+    {
+        if (_activeViewTransition is null && _scopedViewTransitions is not { Count: > 0 } && InboundViewTransitionParams is null)
+            return;
+
+        foreach (var transition in GetActiveViewTransitions())
+        {
+            var reason = new DomException("The document is hidden.", "InvalidStateError");
+            if (transition.IsOutbound)
+            {
+                transition.SkipOutboundForBackForwardCache(reason);
+                if (ReferenceEquals(_activeViewTransition, transition))
+                {
+                    _activeViewTransition = null;
+                }
+            }
+            else
+            {
+                transition.Skip(reason);
+            }
+        }
+
+        InboundViewTransitionParams = null;
+    }
+
     private void RunViewTransitionPageVisibilityChangeSteps()
     {
         if (_activeViewTransition is null && _scopedViewTransitions is not { Count: > 0 } && InboundViewTransitionParams is null)

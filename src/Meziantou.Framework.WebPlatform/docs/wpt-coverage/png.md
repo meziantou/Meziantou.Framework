@@ -6,16 +6,16 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 3 | 4 | 0 | 75% |
+| [Stable](#stable-tests) | 4 | 4 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
-| [Reftests](#reftests) | 59 | 61 | 0 | 97% |
-| **All** | **62** | **65** | **0** | **95%** |
+| [Reftests](#reftests) | 61 | 61 | 0 | 100% |
+| **All** | **65** | **65** | **0** | **100%** |
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`cicp-chunk.html`](https://wpt.fyi/results/png/cicp-chunk.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the cICP chunk of the PNG images (the color space it declares is ignored by the decoder) |
+| [`cicp-chunk.html`](https://wpt.fyi/results/png/cicp-chunk.html) | Pass | 1 / 1 |  |  |
 | [`errors/idat-crc-error-recovery.html`](https://wpt.fyi/results/png/errors/idat-crc-error-recovery.html) | Pass | 1 / 1 |  |  |
 | [`exif-chunk.html`](https://wpt.fyi/results/png/exif-chunk.html) | Pass | 1 / 1 |  |  |
 | [`trns-chunk.html`](https://wpt.fyi/results/png/trns-chunk.html) | Pass | 1 / 1 |  |  |
@@ -26,7 +26,7 @@
 |---|---|--:|---|---|
 | [`apng/acTL-plays-one.html`](https://wpt.fyi/results/png/apng/acTL-plays-one.html) | Pass | 1 / 1 |  |  |
 | [`apng/acTL-plays-two.html`](https://wpt.fyi/results/png/apng/acTL-plays-two.html) | Pass | 1 / 1 |  |  |
-| [`apng/fDAT-inherits-cICP.html`](https://wpt.fyi/results/png/apng/fDAT-inherits-cICP.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the `cICP` chunk (coding-independent code points): the rendering backend ignores it |
+| [`apng/fDAT-inherits-cICP.html`](https://wpt.fyi/results/png/apng/fDAT-inherits-cICP.html) | Pass | 1 / 1 |  |  |
 | [`apng/fcTL-acTL-ordering.html`](https://wpt.fyi/results/png/apng/fcTL-acTL-ordering.html) | Pass | 1 / 1 |  |  |
 | [`apng/fcTL-blend-over-repeatedly.html`](https://wpt.fyi/results/png/apng/fcTL-blend-over-repeatedly.html) | Pass | 1 / 1 |  |  |
 | [`apng/fcTL-blend-over-solid.html`](https://wpt.fyi/results/png/apng/fcTL-blend-over-solid.html) | Pass | 1 / 1 |  |  |
@@ -53,7 +53,7 @@
 | [`apng/fdAT-split-zero-length.html`](https://wpt.fyi/results/png/apng/fdAT-split-zero-length.html) | Pass | 1 / 1 |  |  |
 | [`apng/first-frame-IDAT.html`](https://wpt.fyi/results/png/apng/first-frame-IDAT.html) | Pass | 1 / 1 |  |  |
 | [`apng/first-frame-not-IDAT.html`](https://wpt.fyi/results/png/apng/first-frame-not-IDAT.html) | Pass | 1 / 1 |  |  |
-| [`cICP-wins.html`](https://wpt.fyi/results/png/cICP-wins.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the `cICP` chunk (coding-independent code points): the rendering backend ignores it |
+| [`cICP-wins.html`](https://wpt.fyi/results/png/cICP-wins.html) | Pass | 1 / 1 |  |  |
 | [`errors/unknown-ancillary-error-recovery-2.html`](https://wpt.fyi/results/png/errors/unknown-ancillary-error-recovery-2.html) | Pass | 1 / 1 |  |  |
 | [`errors/unknown-ancillary-error-recovery.html`](https://wpt.fyi/results/png/errors/unknown-ancillary-error-recovery.html) | Pass | 1 / 1 |  |  |
 | [`progressive/1bit_19x13-progressive.html`](https://wpt.fyi/results/png/progressive/1bit_19x13-progressive.html) | Pass | 1 / 1 |  |  |

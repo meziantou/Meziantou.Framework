@@ -156,6 +156,61 @@ public sealed class ImageDecodingTests : IDisposable
         Assert.Equal(Colors.Blue, screenshot.GetPixel(15, 45));
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void JpegXl_CodestreamOrientation(bool container)
+    {
+        // A 2x1 JPEG XL image (red, blue) whose image header has the orientation 6 (rotated by 90 degrees clockwise): a bare
+        // codestream, or a container (written for its XMP metadata)
+        using var source = CreateImage(2, 1, static (x, _) => x == 0 ? Colors.Red : Colors.Blue);
+        source.Metadata.Orientation = ImagingMetadata.ExifOrientation.RightTop;
+        if (container)
+        {
+            source.Metadata.XmpProfile = new ImagingMetadata.XmpProfile(new ImagingMetadata.MetadataBlob("<x:xmpmeta xmlns:x='adobe:ns:meta/'/>"u8));
+        }
+
+        var jxl = Encode(source, new ImagingFormats.JpegXlEncoder());
+        Assert.Equal(container ? 0x00 : 0xFF, jxl[0]);
+        Assert.True(ImageHeaders.HasRasterSignature(jxl));
+        Assert.Equal((2u, 1u, 6), ImageMetadata.ReadJpegXlHeader(jxl));
+        Assert.Equal(ExifOrientation.RightTop, ImageMetadata.GetExifOrientation(jxl));
+        Assert.True(ImageHeaders.TryGetImageInfo(jxl, "image/jxl", out var naturalSize));
+        Assert.Equal((1.0, 2.0), (naturalSize.Width, naturalSize.Height));
+
+        // The natural size of an img element is rotated, and so are its pixels
+        _pages.Resources["/a.jxl"] = (jxl, "image/jxl");
+        var context = _pages.Load("<img id=a src='/a.jxl' style='display: block; image-rendering: pixelated; width: 20px'>");
+        var a = (HtmlImageElement)context.Document!.GetElementById("a")!;
+        Assert.Equal(1u, a.NaturalWidth);
+        Assert.Equal(2u, a.NaturalHeight);
+        using var screenshot = context.TakeScreenshot();
+        Assert.Equal(Colors.Red, screenshot.GetPixel(10, 5));
+        Assert.Equal(Colors.Blue, screenshot.GetPixel(10, 35));
+    }
+
+    [Theory]
+    [InlineData(1, 1)]
+    [InlineData(16, 8)]
+    [InlineData(37, 5)]
+    [InlineData(1000, 750)]
+    [InlineData(640, 360)]
+    [InlineData(600, 8200)]
+    [InlineData(30000, 1)]
+    public void JpegXl_SizeHeader(int width, int height)
+    {
+        // The sizes multiple of 8 below 256, the sizes given by a ratio of the height, and the sizes of 9 to 30 bits
+        using var image = new Image<Rgba32>(width, height, Colors.Lime);
+        var jxl = Encode(image, new ImagingFormats.JpegXlEncoder());
+        Assert.Equal(((uint)width, (uint)height, 1), ImageMetadata.ReadJpegXlHeader(jxl));
+        Assert.True(ImageHeaders.TryGetImageInfo(jxl, contentType: "", out var naturalSize));
+        Assert.Equal(((double)width, (double)height), (naturalSize.Width, naturalSize.Height));
+
+        // A codestream that ends before its header has no size, and data that is not a JPEG XL image is not read
+        Assert.Null(ImageMetadata.ReadJpegXlHeader(jxl.AsSpan(0, 2)));
+        Assert.Null(ImageMetadata.ReadJpegXlHeader([0xFF, 0xD8, 0xFF, 0xE0]));
+    }
+
     [Fact]
     public void Png_ChunksOfInvalidTypeAreIgnored()
     {
@@ -280,6 +335,8 @@ public sealed class ImageDecodingTests : IDisposable
     [InlineData("webp-lossy", 12)]
     [InlineData("avif", 0)]
     [InlineData("avif-lossy", 12)]
+    [InlineData("jxl", 0)]
+    [InlineData("jxl-lossy", 12)]
     [InlineData("bmp", 0)]
     [InlineData("ico", 0)]
     [InlineData("cur", 0)]
@@ -381,6 +438,9 @@ public sealed class ImageDecodingTests : IDisposable
     [InlineData("avif", null, -1)]
     [InlineData("avif", 1, 0)]
     [InlineData("avif", 3, 2)]
+    [InlineData("jxl", null, -1)]
+    [InlineData("jxl", 1, 0)]
+    [InlineData("jxl", 3, 2)]
     public void Animation_FramesDurationsAndRepetitions(string format, int? totalPlays, int expectedRepetitions)
     {
         // 3 frames (red, blue, lime) played a number of times: the repetitions do not count the first time
@@ -521,6 +581,39 @@ public sealed class ImageDecodingTests : IDisposable
         var pixels = new byte[8 * 8 * 4];
         decodedImage.ReadPixels(pixels);
         AssertPixel(Colors.Lime, pixels, 8, 0, 0, tolerance: 3);
+    }
+
+    [Theory]
+    [InlineData("jxl", false)]
+    [InlineData("jxl", true)]
+    [InlineData("png", false)]
+    [InlineData("png", true)]
+    [InlineData("avif", false)]
+    public void ColorProfile_CicpColorDescriptionIsConvertedToSrgb(string format, bool wideSamples)
+    {
+        // A color of Display P3 (CICP primaries 12, transfer characteristics of sRGB) in an image without ICC profile: the
+        // color(display-p3 0.823529 0.313725 0.509804) of CSS, which is rgb(227 67 131) in sRGB
+        var cicp = new ImagingMetadata.CicpColorDescription(colorPrimaries: 12, transferCharacteristics: 13, matrixCoefficients: 0, fullRange: true);
+        using Image image = wideSamples ? new Image<Rgba64>(8, 8, new Rgba64(210 * 257, 80 * 257, 130 * 257, 65535)) : new Image<Rgba32>(8, 8, new Rgba32(210, 80, 130, 255));
+        image.Metadata.Cicp = cicp;
+        var data = format switch
+        {
+            "jxl" => Encode(image, new ImagingFormats.JpegXlEncoder()),
+            "png" => Encode(image, new ImagingFormats.PngEncoder()),
+            _ => Encode(image, new ImagingFormats.AvifEncoder { Compression = ImagingFormats.AvifCompression.Lossless }),
+        };
+
+        Assert.Equal(cicp, Image.Identify(data).Metadata.Cicp);
+        using var decoder = _backend.CreateImageDecoder(data, mimeType: null);
+        Assert.NotNull(decoder);
+        AssertPixel(new Rgba32(227, 67, 131, 255), DecodePixels(decoder, 0), 8, 4, 4, tolerance: 1);
+
+        // The colors are not converted when the caller does not ask for it
+        using var unconverted = decoder.DecodeFrame(0, ExifOrientation.TopLeft, convertToSrgb: false);
+        Assert.NotNull(unconverted);
+        var pixels = new byte[8 * 8 * 4];
+        unconverted.ReadPixels(pixels);
+        AssertPixel(new Rgba32(210, 80, 130, 255), pixels, 8, 4, 4);
     }
 
     [Fact]
@@ -849,6 +942,9 @@ public sealed class ImageDecodingTests : IDisposable
     [InlineData("apng-animation")]
     [InlineData("gif-animation")]
     [InlineData("webp-animation")]
+    [InlineData("jxl")]
+    [InlineData("jxl-lossy")]
+    [InlineData("jxl-animation")]
     public void Corrupted_DataNeverThrows(string format)
     {
         // Bytes of the image are replaced: the image is decoded or not, the decoder does not throw
@@ -991,6 +1087,8 @@ public sealed class ImageDecodingTests : IDisposable
             "webp-lossy" => Encode(image, new ImagingFormats.WebPEncoder { Compression = ImagingFormats.WebPCompression.Lossy, Quality = 90 }),
             "avif" => Encode(image, new ImagingFormats.AvifEncoder { Compression = ImagingFormats.AvifCompression.Lossless }),
             "avif-lossy" => Encode(image, new ImagingFormats.AvifEncoder { Compression = ImagingFormats.AvifCompression.Lossy, Quality = 90 }),
+            "jxl" => Encode(image, new ImagingFormats.JpegXlEncoder()),
+            "jxl-lossy" => Encode(image, new ImagingFormats.JpegXlEncoder { Compression = ImagingFormats.JpegXlCompression.Lossy, Quality = 100 }),
             "bmp" => Encode(image, new ImagingFormats.BmpEncoder()),
             "ico" => Encode(image, new ImagingFormats.IcoEncoder()),
             "cur" => Encode(image, new ImagingFormats.IcoEncoder { Kind = ImagingFormats.IconKind.Cursor }),
@@ -1005,9 +1103,9 @@ public sealed class ImageDecodingTests : IDisposable
 
     /// <summary>
     /// Encodes a 4x4 animation of 3 frames (red for 100ms, blue for 200ms, lime for 30ms) as a GIF, an animated PNG or an
-    /// animated WebP image, with the encoders of the codecs.
+    /// animated WebP, AVIF or JPEG XL image, with the encoders of the codecs.
     /// </summary>
-    /// <param name="format">The format: <c>gif</c>, <c>apng</c> or <c>webp</c>.</param>
+    /// <param name="format">The format: <c>gif</c>, <c>apng</c>, <c>webp</c>, <c>avif</c> or <c>jxl</c>.</param>
     /// <param name="totalPlays">The number of times the animation is played, or null when it loops forever.</param>
     /// <param name="poster">The color of the default image of an animated PNG image that is not a frame of the animation, or null.</param>
     private static byte[] CreateAnimation(string format, int? totalPlays, Rgba32? poster = null)
@@ -1029,6 +1127,7 @@ public sealed class ImageDecodingTests : IDisposable
             "apng" => Encode(animation, new ImagingFormats.PngEncoder()),
             "webp" => Encode(animation, new ImagingFormats.WebPEncoder()),
             "avif" => Encode(animation, new ImagingFormats.AvifEncoder { Compression = ImagingFormats.AvifCompression.Lossless }),
+            "jxl" => Encode(animation, new ImagingFormats.JpegXlEncoder()),
             _ => throw new ArgumentOutOfRangeException(nameof(format)),
         };
 

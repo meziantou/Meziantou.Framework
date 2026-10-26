@@ -1,0 +1,32 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <!--
+    Generates the OCR-A and OCR-B fonts of Meziantou.Framework.Imaging.Barcodes (src/Meziantou.Framework.Imaging.Barcodes/Fonts)
+    from their centerlines, transcribed from ANSI X3.17-1981 (OCR-A) and ANSI X3.49-1975 (OCR-B). See readme.md.
+    Single target framework so that `dotnet run` needs no framework argument.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>$(MinimumTargetFramework)</TargetFramework>
+    <ValidateProjectTargets>false</ValidateProjectTargets>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <!-- MA0048, MA0051: the glyph transcriptions are long methods with small records next to them; CA1814: the skeleton is a grid -->
+    <NoWarn>$(NoWarn);MA0048;MA0051;CA1814</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The tests of the library check that the embedded fonts are those the generator builds -->
+    <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Barcodes.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Strokes the centerlines and merges the strokes into outlines -->
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Imaging\Meziantou.Framework.Imaging.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.FullPath\Meziantou.Framework.FullPath.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The TrueType writer of the corpus generator -->
+    <Compile Include="..\Meziantou.Framework.Imaging.CorpusGenerator\Common\Font*.cs" Exclude="..\Meziantou.Framework.Imaging.CorpusGenerator\Common\FontSamples*.cs;..\Meziantou.Framework.Imaging.CorpusGenerator\Common\FontCff2Writer.cs;..\Meziantou.Framework.Imaging.CorpusGenerator\Common\FontCffWriter.cs;..\Meziantou.Framework.Imaging.CorpusGenerator\Common\FontCharstring.cs;..\Meziantou.Framework.Imaging.CorpusGenerator\Common\FontPng.cs;..\Meziantou.Framework.Imaging.CorpusGenerator\Common\FontWoff2Writer.cs;..\Meziantou.Framework.Imaging.CorpusGenerator\Common\FontWoff2Options.cs;..\Meziantou.Framework.Imaging.CorpusGenerator\Common\FontWoff2Table.cs" LinkBase="FontBuilder" />
+  </ItemGroup>
+</Project>

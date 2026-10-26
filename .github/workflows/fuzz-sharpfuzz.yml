@@ -16,6 +16,7 @@ on:
         default: all
         options:
           - all
+          - barcodes
           - bencode
           - codeowners
           - csv
@@ -82,6 +83,7 @@ env:
   # with the fewest, and gets an option of the component input (Meziantou.Framework.Fuzzing.Tests checks both).
   FUZZ_PROJECTS: |
     [
+      { "project": "Meziantou.Framework.Barcodes.Fuzz",            "component": "barcodes",              "day": 5 },
       { "project": "Meziantou.Framework.Bencode.Fuzz",             "component": "bencode",               "day": 2 },
       { "project": "Meziantou.Framework.CodeOwners.Fuzz",          "component": "codeowners",            "day": 1 },
       { "project": "Meziantou.Framework.Csv.Fuzz",                 "component": "csv",                   "day": 3 },

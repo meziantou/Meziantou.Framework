@@ -290,7 +290,7 @@ internal sealed class ResourceTiming
     /// </summary>
     private static bool IsSupportedMimeType(string essence) => essence
         is "text/html" or "text/plain" or "text/css" or "text/vtt" or "text/event-stream"
-        or "image/png" or "image/x-png" or "image/apng" or "image/jpeg" or "image/jpg" or "image/pjpeg" or "image/gif" or "image/webp" or "image/avif" or "image/bmp"
+        or "image/png" or "image/x-png" or "image/apng" or "image/jpeg" or "image/jpg" or "image/pjpeg" or "image/gif" or "image/webp" or "image/avif" or "image/jxl" or "image/bmp"
         or "image/x-icon" or "image/vnd.microsoft.icon"
         or "font/ttf" or "font/otf" or "font/woff" or "font/woff2" or "font/collection" or "font/truetype" or "font/opentype" or "application/font-woff" or "application/font-woff2"
         or "application/x-font-ttf" or "application/x-font-opentype" or "application/vnd.ms-fontobject"

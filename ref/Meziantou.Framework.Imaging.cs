@@ -84,6 +84,19 @@ namespace Meziantou.Framework.Imaging
         public static bool operator !=(Meziantou.Framework.Imaging.Bgra32 left, Meziantou.Framework.Imaging.Bgra32 right) => throw null;
     }
 
+    public readonly struct ButteraugliDistance : System.IEquatable<Meziantou.Framework.Imaging.ButteraugliDistance>
+    {
+        public double MaxDistance { get => throw null; }
+        public double PNorm3 { get => throw null; }
+        public ButteraugliDistance(double maxDistance, double pNorm3) { }
+        public bool Equals(Meziantou.Framework.Imaging.ButteraugliDistance other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Imaging.ButteraugliDistance left, Meziantou.Framework.Imaging.ButteraugliDistance right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Imaging.ButteraugliDistance left, Meziantou.Framework.Imaging.ButteraugliDistance right) => throw null;
+    }
+
     public sealed class CmykConversionOptions
     {
         public Meziantou.Framework.Imaging.Metadata.IccProfile? AssumedSourceProfile { get => throw null; init { } }
@@ -744,11 +757,14 @@ namespace Meziantou.Framework.Imaging
     public static class ImageSimilarity
     {
         public const int MaxHashDistance = 64;
+        public static Meziantou.Framework.Imaging.ButteraugliDistance ComputeButteraugliDistance(Meziantou.Framework.Imaging.ImageFrame expected, Meziantou.Framework.Imaging.ImageFrame actual, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static ulong ComputeDifferenceHash(Meziantou.Framework.Imaging.ImageFrame frame, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static int ComputeDifferenceHashDistance(Meziantou.Framework.Imaging.ImageFrame expected, Meziantou.Framework.Imaging.ImageFrame actual, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static ulong ComputePerceptualHash(Meziantou.Framework.Imaging.ImageFrame frame, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static int ComputePerceptualHashDistance(Meziantou.Framework.Imaging.ImageFrame expected, Meziantou.Framework.Imaging.ImageFrame actual, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static double ComputePsnr(Meziantou.Framework.Imaging.ImageFrame expected, Meziantou.Framework.Imaging.ImageFrame actual, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static double ComputeSsim(Meziantou.Framework.Imaging.ImageFrame expected, Meziantou.Framework.Imaging.ImageFrame actual, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static double ComputeSsimulacra2(Meziantou.Framework.Imaging.ImageFrame expected, Meziantou.Framework.Imaging.ImageFrame actual, System.Threading.CancellationToken cancellationToken = default) => throw null;
     }
 
     public sealed class ImageWriterOptions

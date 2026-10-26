@@ -2320,10 +2320,7 @@
     "total": 1
   },
   "html/dom/render-blocking/link-rel-expect-supported.html": {
-    "total": 1,
-    "failures": {
-      "link.relList.supports(\"expect\") is true": "FAIL"
-    }
+    "total": 1
   },
   "html/dom/render-blocking/non-render-blocking-scripts.optional.html": {
     "total": 14

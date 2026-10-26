@@ -8,11 +8,11 @@
 |---|--:|--:|--:|--:|
 | Stable | 0 | 0 | 0 | – |
 | Tentative | 0 | 0 | 0 | – |
-| [Reftests](#reftests) | 0 | 1 | 1 | – |
-| **All** | **0** | **1** | **1** | **–** |
+| [Reftests](#reftests) | 1 | 1 | 0 | 100% |
+| **All** | **1** | **1** | **0** | **100%** |
 
 ## Reftests
 
 | Test | Result | Variants | Kind | Description |
 |---|---|--:|---|---|
-| [`outline-huge-offset-not-clipped.html`](https://wpt.fyi/results/css/css-painting/outline-huge-offset-not-clipped.html) | Disabled | – |  | *No reason documented* |
+| [`outline-huge-offset-not-clipped.html`](https://wpt.fyi/results/css/css-painting/outline-huge-offset-not-clipped.html) | Pass | 1 / 1 |  |  |

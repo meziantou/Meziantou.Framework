@@ -288,7 +288,7 @@
     "reftest": "PASS"
   },
   "css/css-ui/caret-color-block-shape-text-color-004.html": {
-    "reftest": "PASS"
+    "reftest": "FAIL"
   },
   "css/css-ui/caret-color-block-shape-text-color-005.html": {
     "reftest": "PASS"
@@ -3043,14 +3043,7 @@
     "total": 9
   },
   "css/css-ui/parsing/caret-color-invalid.html": {
-    "total": 17,
-    "failures": {
-      "e.style['caret-color'] = \"auto auto\" should not set the property value": "FAIL",
-      "e.style['caret-color'] = \"auto currentcolor\" should not set the property value": "FAIL",
-      "e.style['caret-color'] = \"auto rgb(0, 255, 0)\" should not set the property value": "FAIL",
-      "e.style['caret-color'] = \"auto rgba(10, 20, 30, 0.4)\" should not set the property value": "FAIL",
-      "e.style['caret-color'] = \"auto transparent\" should not set the property value": "FAIL"
-    }
+    "total": 17
   },
   "css/css-ui/parsing/caret-color-valid.html": {
     "total": 12

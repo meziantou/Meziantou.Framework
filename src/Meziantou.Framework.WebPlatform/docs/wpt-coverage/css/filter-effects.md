@@ -61,7 +61,7 @@
 | [`animation/css-backdrop-filters-animation-brightness.html`](https://wpt.fyi/results/css/filter-effects/animation/css-backdrop-filters-animation-brightness.html) | Pass | 1 / 1 |  |  |
 | [`animation/css-backdrop-filters-animation-combined.html`](https://wpt.fyi/results/css/filter-effects/animation/css-backdrop-filters-animation-combined.html) | Pass | 1 / 1 |  |  |
 | [`animation/css-backdrop-filters-animation-contrast.html`](https://wpt.fyi/results/css/filter-effects/animation/css-backdrop-filters-animation-contrast.html) | Pass | 1 / 1 |  |  |
-| [`animation/css-backdrop-filters-animation-displacement.html`](https://wpt.fyi/results/css/filter-effects/animation/css-backdrop-filters-animation-displacement.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`animation/css-backdrop-filters-animation-displacement.html`](https://wpt.fyi/results/css/filter-effects/animation/css-backdrop-filters-animation-displacement.html) | Fail | 0 / 1 | BUG | the backdrop (the `SourceGraphic` of a `backdrop-filter`) is not tainted: an `feDisplacementMap` whose displacement map is the backdrop displaces its input instead of passing it through (https://drafts.csswg.org/filter-effects-1/#tainted-filter-primitives) |
 | [`animation/css-backdrop-filters-animation-drop-shadow.html`](https://wpt.fyi/results/css/filter-effects/animation/css-backdrop-filters-animation-drop-shadow.html) | Pass | 1 / 1 |  |  |
 | [`animation/css-backdrop-filters-animation-grayscale.html`](https://wpt.fyi/results/css/filter-effects/animation/css-backdrop-filters-animation-grayscale.html) | Pass | 1 / 1 |  |  |
 | [`animation/css-backdrop-filters-animation-hue-rotate.html`](https://wpt.fyi/results/css/filter-effects/animation/css-backdrop-filters-animation-hue-rotate.html) | Pass | 1 / 1 |  |  |
@@ -138,7 +138,7 @@
 | [`backdrop-filter-scale-transform.html`](https://wpt.fyi/results/css/filter-effects/backdrop-filter-scale-transform.html) | Pass | 1 / 1 |  |  |
 | [`backdrop-filter-svg-background-image-blur.html`](https://wpt.fyi/results/css/filter-effects/backdrop-filter-svg-background-image-blur.html) | Pass | 1 / 1 |  |  |
 | [`backdrop-filter-svg-blur.html`](https://wpt.fyi/results/css/filter-effects/backdrop-filter-svg-blur.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `backdrop-filter` on the SVG elements (`<rect style="backdrop-filter: blur(10px)">`): the backdrop of the rect is not blurred (2387 pixels differ, maximum difference 46; the test allows `maxDifference=0-20`); fails in every browser |
-| [`backdrop-filter-svg-displacement.html`](https://wpt.fyi/results/css/filter-effects/backdrop-filter-svg-displacement.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`backdrop-filter-svg-displacement.html`](https://wpt.fyi/results/css/filter-effects/backdrop-filter-svg-displacement.html) | Fail | 0 / 1 | BUG | the backdrop (the `SourceGraphic` of a `backdrop-filter`) is not tainted: an `feDisplacementMap` whose displacement map is the backdrop displaces its input instead of passing it through (https://drafts.csswg.org/filter-effects-1/#tainted-filter-primitives) |
 | [`backdrop-filter-svg-foreignObject.html`](https://wpt.fyi/results/css/filter-effects/backdrop-filter-svg-foreignObject.html) | Pass | 1 / 1 |  |  |
 | [`backdrop-filter-svg.html`](https://wpt.fyi/results/css/filter-effects/backdrop-filter-svg.html) | Pass | 1 / 1 |  |  |
 | [`backdrop-filter-transform.html`](https://wpt.fyi/results/css/filter-effects/backdrop-filter-transform.html) | Pass | 1 / 1 |  |  |

@@ -102,7 +102,7 @@
 | [`svg-image.html`](https://wpt.fyi/results/intersection-observer/svg-image.html) | Pass | 3 / 3 |  |  |
 | [`svg-intersection-with-fractional-bounds-2.html`](https://wpt.fyi/results/intersection-observer/svg-intersection-with-fractional-bounds-2.html) | Pass | 6 / 6 |  |  |
 | [`svg-intersection-with-fractional-bounds.html`](https://wpt.fyi/results/intersection-observer/svg-intersection-with-fractional-bounds.html) | Pass | 4 / 4 |  |  |
-| [`svg-overflow-clip-margin-iframe.sub.html`](https://wpt.fyi/results/intersection-observer/svg-overflow-clip-margin-iframe.sub.html) | Fail | 8 / 16 |  | *No reason documented* |
+| [`svg-overflow-clip-margin-iframe.sub.html`](https://wpt.fyi/results/intersection-observer/svg-overflow-clip-margin-iframe.sub.html) | Fail | 8 / 16 | BUG | an explicit `padding-box` in `overflow-clip-margin` on an `<svg>` (a replaced element) clips to the content box: the computed value drops the `padding-box` keyword (the default of the serialization), so the clip falls back to `content-box`, the default of the replaced elements |
 | [`svg-rect-target.html`](https://wpt.fyi/results/intersection-observer/svg-rect-target.html) | Pass | 4 / 4 |  |  |
 | [`svg-stroke-change.html`](https://wpt.fyi/results/intersection-observer/svg-stroke-change.html) | Pass | 3 / 3 |  |  |
 | [`svg-target-changes-position.html`](https://wpt.fyi/results/intersection-observer/svg-target-changes-position.html) | Pass | 3 / 3 |  |  |

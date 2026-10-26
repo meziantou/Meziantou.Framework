@@ -323,7 +323,7 @@
 | [`grid-lanes/column-gap-decorations-rule-visibility-items-empty-between.html`](https://wpt.fyi/results/css/css-gaps/grid-lanes/column-gap-decorations-rule-visibility-items-empty-between.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/column-gap-decorations-rule-visibility-items-repaint-all-to-around.html`](https://wpt.fyi/results/css/css-gaps/grid-lanes/column-gap-decorations-rule-visibility-items-repaint-all-to-around.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/column-gap-decorations-rule-visibility-items-repaint-normal-to-between.html`](https://wpt.fyi/results/css/css-gaps/grid-lanes/column-gap-decorations-rule-visibility-items-repaint-normal-to-between.html) | Pass | 1 / 1 |  |  |
-| [`grid-lanes/column-gap-decorations-spanner-after-empty-lanes.html`](https://wpt.fyi/results/css/css-gaps/grid-lanes/column-gap-decorations-spanner-after-empty-lanes.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`grid-lanes/column-gap-decorations-spanner-after-empty-lanes.html`](https://wpt.fyi/results/css/css-gaps/grid-lanes/column-gap-decorations-spanner-after-empty-lanes.html) | Fail | 0 / 1 | BUG | with `rule-break: normal` in a grid lanes container, the gap decoration between two lanes that contain no item before or after a spanner is not painted |
 | [`grid-lanes/column-subgrid-auto-placement-decorations.html`](https://wpt.fyi/results/css/css-gaps/grid-lanes/column-subgrid-auto-placement-decorations.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/column-subgrid-empty-decorations.html`](https://wpt.fyi/results/css/css-gaps/grid-lanes/column-subgrid-empty-decorations.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/column-subgrid-gap-override-decorations.html`](https://wpt.fyi/results/css/css-gaps/grid-lanes/column-subgrid-gap-override-decorations.html) | Pass | 1 / 1 |  |  |
@@ -404,7 +404,7 @@
 | [`grid-lanes/row-gap-decorations-rule-visibility-items-empty-between.html`](https://wpt.fyi/results/css/css-gaps/grid-lanes/row-gap-decorations-rule-visibility-items-empty-between.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/row-gap-decorations-rule-visibility-items-repaint-all-to-around.html`](https://wpt.fyi/results/css/css-gaps/grid-lanes/row-gap-decorations-rule-visibility-items-repaint-all-to-around.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/row-gap-decorations-rule-visibility-items-repaint-normal-to-between.html`](https://wpt.fyi/results/css/css-gaps/grid-lanes/row-gap-decorations-rule-visibility-items-repaint-normal-to-between.html) | Pass | 1 / 1 |  |  |
-| [`grid-lanes/row-gap-decorations-spanner-after-empty-lanes.html`](https://wpt.fyi/results/css/css-gaps/grid-lanes/row-gap-decorations-spanner-after-empty-lanes.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`grid-lanes/row-gap-decorations-spanner-after-empty-lanes.html`](https://wpt.fyi/results/css/css-gaps/grid-lanes/row-gap-decorations-spanner-after-empty-lanes.html) | Fail | 0 / 1 | BUG | with `rule-break: normal` in a grid lanes container, the gap decoration between two lanes that contain no item before or after a spanner is not painted |
 | [`grid-lanes/row-subgrid-auto-placement-decorations.html`](https://wpt.fyi/results/css/css-gaps/grid-lanes/row-subgrid-auto-placement-decorations.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/row-subgrid-empty-decorations.html`](https://wpt.fyi/results/css/css-gaps/grid-lanes/row-subgrid-empty-decorations.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/row-subgrid-gap-override-decorations.html`](https://wpt.fyi/results/css/css-gaps/grid-lanes/row-subgrid-gap-override-decorations.html) | Pass | 1 / 1 |  |  |

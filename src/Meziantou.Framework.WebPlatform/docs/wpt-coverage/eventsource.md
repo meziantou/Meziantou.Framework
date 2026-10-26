@@ -44,7 +44,7 @@
 | [`eventsource-request-cancellation.window.js`](https://wpt.fyi/results/eventsource/eventsource-request-cancellation.window.js) | Pass | 1 / 1 |  |  |
 | [`eventsource-url.any.js`](https://wpt.fyi/results/eventsource/eventsource-url.any.js) | Pass | 2 / 2 |  |  |
 | [`format-bom-2.any.js`](https://wpt.fyi/results/eventsource/format-bom-2.any.js) | Pass | 2 / 2 |  |  |
-| [`format-bom-split.any.js`](https://wpt.fyi/results/eventsource/format-bom-split.any.js) | Timeout | 0 / 2 |  | *No reason documented* |
+| [`format-bom-split.any.js`](https://wpt.fyi/results/eventsource/format-bom-split.any.js) | Timeout | 0 / 2 | TEST RUNNER | `xhr/resources/content-in-chunks.py` is not emulated (404), so no message is received |
 | [`format-bom-utf-16.any.js`](https://wpt.fyi/results/eventsource/format-bom-utf-16.any.js) | Pass | 4 / 4 |  |  |
 | [`format-bom.any.js`](https://wpt.fyi/results/eventsource/format-bom.any.js) | Pass | 2 / 2 |  |  |
 | [`format-comments.any.js`](https://wpt.fyi/results/eventsource/format-comments.any.js) | Pass | 2 / 2 |  |  |

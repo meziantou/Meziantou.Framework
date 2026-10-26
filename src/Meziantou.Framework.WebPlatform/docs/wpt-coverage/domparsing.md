@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 50 | 56 | 0 | 89% |
+| [Stable](#stable-tests) | 52 | 56 | 0 | 93% |
 | [Tentative](#tentative-tests) | 33 | 39 | 0 | 85% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **83** | **95** | **0** | **87%** |
+| **All** | **85** | **95** | **0** | **89%** |
 
 ## Stable tests
 
@@ -34,12 +34,12 @@
 | [`DOMParser-parseFromString-xml.html`](https://wpt.fyi/results/domparsing/DOMParser-parseFromString-xml.html) | Pass | 20 / 20 |  |  |
 | [`DOMParser-xml-character-entities.html`](https://wpt.fyi/results/domparsing/DOMParser-xml-character-entities.html) | Pass | 8 / 8 |  |  |
 | [`XMLSerializer-serializeToString.html`](https://wpt.fyi/results/domparsing/XMLSerializer-serializeToString.html) | Fail | 30 / 33 | TEST BUG | 3 subtests contradict the DOM Parsing specification, which keeps the prefix of an attribute when the local prefixes map does not contain it (instead of generating `ns1`), and ignores a default namespace declaration (`xmlns=""`) equal to the inherited namespace |
-| [`createContextualFragment-external-scripts-async.html`](https://wpt.fyi/results/domparsing/createContextualFragment-external-scripts-async.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`createContextualFragment-external-scripts-async.html`](https://wpt.fyi/results/domparsing/createContextualFragment-external-scripts-async.html) | Pass | 1 / 1 |  |  |
 | [`createContextualFragment-xhtml.xhtml`](https://wpt.fyi/results/domparsing/createContextualFragment-xhtml.xhtml) | Pass | 4 / 4 |  |  |
 | [`createContextualFragment.html`](https://wpt.fyi/results/domparsing/createContextualFragment.html) | Pass | 35 / 35 |  |  |
 | [`domparser-spurious-attributes.html`](https://wpt.fyi/results/domparsing/domparser-spurious-attributes.html) | Pass | 2 / 2 |  |  |
 | [`html-insertion-methods-html-element.html`](https://wpt.fyi/results/domparsing/html-insertion-methods-html-element.html) | Pass | 26 / 26 |  |  |
-| [`html-unsafe-external-scripts-async.html`](https://wpt.fyi/results/domparsing/html-unsafe-external-scripts-async.html) | Error | 0 / 15 |  | *No reason documented* |
+| [`html-unsafe-external-scripts-async.html`](https://wpt.fyi/results/domparsing/html-unsafe-external-scripts-async.html) | Error | 12 / 15 | TEST BUG | the `ShadowRoot.*HTMLUnsafe` subtests cannot pass: `document.currentScript` is null while a script of a shadow tree runs (https://html.spec.whatwg.org/#execute-the-script-element), so `resources/slow.js` throws reading `document.currentScript.src` and never resolves the promise the subtest waits for |
 | [`innerhtml-01.xhtml`](https://wpt.fyi/results/domparsing/innerhtml-01.xhtml) | Pass | 2 / 2 |  |  |
 | [`innerhtml-03.xhtml`](https://wpt.fyi/results/domparsing/innerhtml-03.xhtml) | Pass | 8 / 8 |  |  |
 | [`innerhtml-04.html`](https://wpt.fyi/results/domparsing/innerhtml-04.html) | Pass | 1 / 1 |  |  |
@@ -67,7 +67,7 @@
 | [`stream-html-reentrancy.html`](https://wpt.fyi/results/domparsing/stream-html-reentrancy.html) | Fail | 12 / 21 | NOT IMPLEMENTED | the parser-blocking scripts of the streaming HTML methods (the parser does not pause for an external script streamed with `runScripts`) |
 | [`style_attribute_html.html`](https://wpt.fyi/results/domparsing/style_attribute_html.html) | Pass | 4 / 4 |  |  |
 | [`svg-template.html`](https://wpt.fyi/results/domparsing/svg-template.html) | Pass | 2 / 2 |  |  |
-| [`unsafe-and-trusted-types-external-scripts-async.html`](https://wpt.fyi/results/domparsing/unsafe-and-trusted-types-external-scripts-async.html) | Fail | 0 / 12 |  | *No reason documented* |
+| [`unsafe-and-trusted-types-external-scripts-async.html`](https://wpt.fyi/results/domparsing/unsafe-and-trusted-types-external-scripts-async.html) | Pass | 12 / 12 |  |  |
 | [`xml-parse-serialize-roundtrip.html`](https://wpt.fyi/results/domparsing/xml-parse-serialize-roundtrip.html) | Pass | 2 / 2 |  |  |
 | [`xml-serialization.xhtml`](https://wpt.fyi/results/domparsing/xml-serialization.xhtml) | Pass | 17 / 17 |  |  |
 | [`xmldomparser.html`](https://wpt.fyi/results/domparsing/xmldomparser.html) | Pass | 1 / 1 |  |  |

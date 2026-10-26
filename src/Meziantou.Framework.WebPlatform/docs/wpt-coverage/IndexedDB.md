@@ -186,7 +186,7 @@
 | [`keyorder.any.js`](https://wpt.fyi/results/IndexedDB/keyorder.any.js) | Pass | 72 / 72 |  |  |
 | [`keypath-exceptions.any.js`](https://wpt.fyi/results/IndexedDB/keypath-exceptions.any.js) | Pass | 18 / 18 |  |  |
 | [`keypath-special-identifiers.any.js`](https://wpt.fyi/results/IndexedDB/keypath-special-identifiers.any.js) | Pass | 18 / 18 |  |  |
-| [`keypath.any.js`](https://wpt.fyi/results/IndexedDB/keypath.any.js) | Fail | 57 / 60 |  | *No reason documented* |
+| [`keypath.any.js`](https://wpt.fyi/results/IndexedDB/keypath.any.js) | Fail | 57 / 60 | BUG | `Array.prototype.join` has the cycle detection of the browsers (not in ECMA-262): converting a self-referential key path array to a `sequence<DOMString>` gives the key path `['']` instead of throwing `RangeError` (Chrome, Edge and Firefox fail the same subtest) |
 | [`keypath_invalid.any.js`](https://wpt.fyi/results/IndexedDB/keypath_invalid.any.js) | Pass | 72 / 72 |  |  |
 | [`keypath_maxsize.any.js`](https://wpt.fyi/results/IndexedDB/keypath_maxsize.any.js) | Pass | 9 / 9 |  |  |
 | [`large-requests-abort.any.js`](https://wpt.fyi/results/IndexedDB/large-requests-abort.any.js) | Pass | 12 / 12 |  |  |

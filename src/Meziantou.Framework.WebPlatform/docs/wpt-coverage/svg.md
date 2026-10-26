@@ -151,7 +151,7 @@
 | [`animations/scripted/paced-value-animation-overwrites-keyTimes.html`](https://wpt.fyi/results/svg/animations/scripted/paced-value-animation-overwrites-keyTimes.html) | Pass | 1 / 1 |  |  |
 | [`animations/scripted/smil-values-empty-segments.html`](https://wpt.fyi/results/svg/animations/scripted/smil-values-empty-segments.html) | Pass | 4 / 4 |  |  |
 | [`animations/scripted/syncbase-after-removal.html`](https://wpt.fyi/results/svg/animations/scripted/syncbase-after-removal.html) | Pass | 1 / 1 |  |  |
-| [`animations/seek-repeat-event-condition.html`](https://wpt.fyi/results/svg/animations/seek-repeat-event-condition.html) | Timeout | 0 / 1 |  | *No reason documented* |
+| [`animations/seek-repeat-event-condition.html`](https://wpt.fyi/results/svg/animations/seek-repeat-event-condition.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | resolving the `repeat(n)` event conditions over the iterations that a seek (`setCurrentTime()`) skips: a seek fires no events, so `source.repeat(3)` never resolves and the test times out |
 | [`animations/seeking-events-1.html`](https://wpt.fyi/results/svg/animations/seeking-events-1.html) | Pass | 1 / 1 |  |  |
 | [`animations/seeking-events-2.html`](https://wpt.fyi/results/svg/animations/seeking-events-2.html) | Pass | 1 / 1 |  |  |
 | [`animations/seeking-events-3.html`](https://wpt.fyi/results/svg/animations/seeking-events-3.html) | Pass | 1 / 1 |  |  |
@@ -589,7 +589,7 @@
 | [`struct/scripted/use-external-reload-in-iframe.html`](https://wpt.fyi/results/svg/struct/scripted/use-external-reload-in-iframe.html) | Pass | 1 / 1 |  |  |
 | [`struct/scripted/use-iframe-onload.html`](https://wpt.fyi/results/svg/struct/scripted/use-iframe-onload.html) | Pass | 1 / 1 |  |  |
 | [`struct/scripted/use-inline-event-handlers.html`](https://wpt.fyi/results/svg/struct/scripted/use-inline-event-handlers.html) | Pass | 2 / 2 |  |  |
-| [`struct/scripted/use-script-not-executed.html`](https://wpt.fyi/results/svg/struct/scripted/use-script-not-executed.html) | Fail | 2 / 3 |  | *No reason documented* |
+| [`struct/scripted/use-script-not-executed.html`](https://wpt.fyi/results/svg/struct/scripted/use-script-not-executed.html) | Fail | 2 / 3 | BUG | `'strict-dynamic'` does not block a parser-inserted external SVG `<script href>` (written by `document.write()`): the parser-inserted flag is cleared before the request is created, so the request is not marked parser-inserted |
 | [`struct/systemLanguage-matching.html`](https://wpt.fyi/results/svg/struct/systemLanguage-matching.html) | Pass | 14 / 14 |  |  |
 | [`struct/systemLanguage-parsing.html`](https://wpt.fyi/results/svg/struct/systemLanguage-parsing.html) | Pass | 13 / 13 |  |  |
 | [`struct/use-getComputedStyle.html`](https://wpt.fyi/results/svg/struct/use-getComputedStyle.html) | Pass | 1 / 1 |  |  |

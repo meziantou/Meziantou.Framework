@@ -188,7 +188,7 @@
 | [`open-user-password-non-same-origin.htm`](https://wpt.fyi/results/xhr/open-user-password-non-same-origin.htm) | Pass | 1 / 1 |  |  |
 | [`over-1-meg.any.js`](https://wpt.fyi/results/xhr/over-1-meg.any.js) | Pass | 2 / 2 |  |  |
 | [`overridemimetype-blob.html`](https://wpt.fyi/results/xhr/overridemimetype-blob.html) | Fail | 70 / 77 | BUG | the response `Blob` gets the overridden MIME type through the `Blob` constructor rules: it is ASCII-lowercased (`charset=GBK` becomes `gbk`) and emptied when it has a non-ASCII character |
-| [`overridemimetype-chunked-response.window.js`](https://wpt.fyi/results/xhr/overridemimetype-chunked-response.window.js) | Fail | 0 / 4 |  | *No reason documented* |
+| [`overridemimetype-chunked-response.window.js`](https://wpt.fyi/results/xhr/overridemimetype-chunked-response.window.js) | Fail | 0 / 4 | TEST RUNNER | `xhr/resources/content-in-chunks.py` is not emulated (404) |
 | [`overridemimetype-done-state.any.js`](https://wpt.fyi/results/xhr/overridemimetype-done-state.any.js) | Pass | 2 / 2 |  |  |
 | [`overridemimetype-edge-cases.window.js`](https://wpt.fyi/results/xhr/overridemimetype-edge-cases.window.js) | Pass | 4 / 4 |  |  |
 | [`overridemimetype-headers-received-state-force-shiftjis.htm`](https://wpt.fyi/results/xhr/overridemimetype-headers-received-state-force-shiftjis.htm) | Pass | 1 / 1 |  |  |
@@ -308,7 +308,7 @@
 | [`setrequestheader-header-allowed.htm`](https://wpt.fyi/results/xhr/setrequestheader-header-allowed.htm) | Pass | 10 / 10 |  |  |
 | [`setrequestheader-header-forbidden.htm`](https://wpt.fyi/results/xhr/setrequestheader-header-forbidden.htm) | Pass | 2 / 2 |  |  |
 | [`setrequestheader-open-setrequestheader.htm`](https://wpt.fyi/results/xhr/setrequestheader-open-setrequestheader.htm) | Pass | 1 / 1 |  |  |
-| [`split-byte-order-mark.any.js`](https://wpt.fyi/results/xhr/split-byte-order-mark.any.js) | Fail | 0 / 8 |  | *No reason documented* |
+| [`split-byte-order-mark.any.js`](https://wpt.fyi/results/xhr/split-byte-order-mark.any.js) | Fail | 0 / 8 | TEST RUNNER | `xhr/resources/content-in-chunks.py` is not emulated (404) |
 | [`status-async.htm`](https://wpt.fyi/results/xhr/status-async.htm) | Pass | 27 / 27 |  |  |
 | [`status-basic.htm`](https://wpt.fyi/results/xhr/status-basic.htm) | Pass | 27 / 27 |  |  |
 | [`status-error.htm`](https://wpt.fyi/results/xhr/status-error.htm) | Pass | 21 / 21 |  |  |

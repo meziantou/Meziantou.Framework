@@ -62,10 +62,7 @@
     }
   },
   "domparsing/createContextualFragment-external-scripts-async.html": {
-    "total": 1,
-    "failures": {
-      "External scripts from createContextualFragment() have async=true and execute as async once connected": "FAIL"
-    }
+    "total": 1
   },
   "domparsing/createContextualFragment-xhtml.xhtml": {
     "total": 4
@@ -83,21 +80,9 @@
     "harness": "ERROR",
     "total": 15,
     "failures": {
-      "ShadowRoot.appendHTMLUnsafe with { runScripts: true }: external scripts execute as async": "FAIL",
-      "ShadowRoot.prependHTMLUnsafe with { runScripts: true }: external scripts execute as async": "FAIL",
-      "ShadowRoot.setHTMLUnsafe with { runScripts: true }: external scripts execute as async": "FAIL",
-      "afterHTMLUnsafe with { runScripts: true } on connected element: external scripts execute as async": "FAIL",
-      "afterHTMLUnsafe with { runScripts: true } on disconnected element: external scripts have async=true and execute as async once connected": "FAIL",
-      "appendHTMLUnsafe with { runScripts: true } on connected element: external scripts execute as async": "FAIL",
-      "appendHTMLUnsafe with { runScripts: true } on disconnected element: external scripts have async=true and execute as async once connected": "FAIL",
-      "beforeHTMLUnsafe with { runScripts: true } on connected element: external scripts execute as async": "FAIL",
-      "beforeHTMLUnsafe with { runScripts: true } on disconnected element: external scripts have async=true and execute as async once connected": "FAIL",
-      "prependHTMLUnsafe with { runScripts: true } on connected element: external scripts execute as async": "FAIL",
-      "prependHTMLUnsafe with { runScripts: true } on disconnected element: external scripts have async=true and execute as async once connected": "FAIL",
-      "replaceWithHTMLUnsafe with { runScripts: true } on connected element: external scripts execute as async": "FAIL",
-      "replaceWithHTMLUnsafe with { runScripts: true } on disconnected element: external scripts have async=true and execute as async once connected": "FAIL",
-      "setHTMLUnsafe with { runScripts: true } on connected element: external scripts execute as async": "FAIL",
-      "setHTMLUnsafe with { runScripts: true } on disconnected element: external scripts have async=true and execute as async once connected": "FAIL"
+      "ShadowRoot.appendHTMLUnsafe with { runScripts: true }: external scripts execute as async": "NOTRUN",
+      "ShadowRoot.prependHTMLUnsafe with { runScripts: true }: external scripts execute as async": "NOTRUN",
+      "ShadowRoot.setHTMLUnsafe with { runScripts: true }: external scripts execute as async": "TIMEOUT"
     }
   },
   "domparsing/innerhtml-01.xhtml": {
@@ -381,21 +366,7 @@
     }
   },
   "domparsing/unsafe-and-trusted-types-external-scripts-async.html": {
-    "total": 12,
-    "failures": {
-      "afterHTMLUnsafe with Trusted Types default policy setting runScripts: true: external scripts execute as async": "FAIL",
-      "afterbegin with Trusted Types default policy setting runScripts: true: external scripts execute as async": "FAIL",
-      "afterend with Trusted Types default policy setting runScripts: true: external scripts execute as async": "FAIL",
-      "appendHTMLUnsafe with Trusted Types default policy setting runScripts: true: external scripts execute as async": "FAIL",
-      "beforeHTMLUnsafe with Trusted Types default policy setting runScripts: true: external scripts execute as async": "FAIL",
-      "beforebegin with Trusted Types default policy setting runScripts: true: external scripts execute as async": "FAIL",
-      "beforeend with Trusted Types default policy setting runScripts: true: external scripts execute as async": "FAIL",
-      "innerHTML with Trusted Types default policy setting runScripts: true: external scripts execute as async": "FAIL",
-      "outerHTML with Trusted Types default policy setting runScripts: true: external scripts execute as async": "FAIL",
-      "prependHTMLUnsafe with Trusted Types default policy setting runScripts: true: external scripts execute as async": "FAIL",
-      "replaceWithHTMLUnsafe with Trusted Types default policy setting runScripts: true: external scripts execute as async": "FAIL",
-      "setHTMLUnsafe with Trusted Types default policy setting runScripts: true: external scripts execute as async": "FAIL"
-    }
+    "total": 12
   },
   "domparsing/xml-parse-serialize-roundtrip.html": {
     "total": 2

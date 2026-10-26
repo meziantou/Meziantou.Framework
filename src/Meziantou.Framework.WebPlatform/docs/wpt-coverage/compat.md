@@ -45,7 +45,7 @@
 | [`webkit-box-ignores-flex-wrap.tentative.html`](https://wpt.fyi/results/compat/webkit-box-ignores-flex-wrap.tentative.html) | Pass | 1 / 1 |  |  |
 | [`webkit-box-rtl-flex.html`](https://wpt.fyi/results/compat/webkit-box-rtl-flex.html) | Fail | 0 / 1 | BUG | the antialiased glyphs of the test and of the reference differ on their edges: they are not painted the same way (another color, a group, a shadow or a compression; on macOS the coverage of the glyphs depends on the luminance of their color; not analyzed individually) |
 | [`webkit-box-z-index.html`](https://wpt.fyi/results/compat/webkit-box-z-index.html) | Pass | 1 / 1 |  |  |
-| [`webkit-input-placeholder.html`](https://wpt.fyi/results/compat/webkit-input-placeholder.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`webkit-input-placeholder.html`](https://wpt.fyi/results/compat/webkit-input-placeholder.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the legacy `::-webkit-input-placeholder` alias of `::placeholder` (https://github.com/whatwg/compat/issues/65): the selector parses, like every `-webkit-` pseudo-element, but matches nothing |
 | [`webkit-linear-gradient-diff-unprefixed.html`](https://wpt.fyi/results/compat/webkit-linear-gradient-diff-unprefixed.html) | Pass | 1 / 1 |  |  |
 | [`webkit-linear-gradient-line-bottom.html`](https://wpt.fyi/results/compat/webkit-linear-gradient-line-bottom.html) | Pass | 1 / 1 |  |  |
 | [`webkit-linear-gradient-line-left.html`](https://wpt.fyi/results/compat/webkit-linear-gradient-line-left.html) | Pass | 1 / 1 |  |  |

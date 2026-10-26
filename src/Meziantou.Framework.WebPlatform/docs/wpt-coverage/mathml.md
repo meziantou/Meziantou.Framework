@@ -181,7 +181,7 @@
 | [`relations/html5-tree/a-hreflang-setter.html`](https://wpt.fyi/results/mathml/relations/html5-tree/a-hreflang-setter.html) | Pass | 1 / 1 |  |  |
 | [`relations/html5-tree/a-keydown-enter.html`](https://wpt.fyi/results/mathml/relations/html5-tree/a-keydown-enter.html) | Pass | 1 / 1 |  |  |
 | [`relations/html5-tree/a-ping.html`](https://wpt.fyi/results/mathml/relations/html5-tree/a-ping.html) | Fail | 2 / 3 | NOT IMPLEMENTED | the `ping` IDL attribute of `MathMLAnchorElement`; the pings are sent |
-| [`relations/html5-tree/a-referrerpolicy-getter-setter.html`](https://wpt.fyi/results/mathml/relations/html5-tree/a-referrerpolicy-getter-setter.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`relations/html5-tree/a-referrerpolicy-getter-setter.html`](https://wpt.fyi/results/mathml/relations/html5-tree/a-referrerpolicy-getter-setter.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the `referrerPolicy` IDL attribute of `MathMLAnchorElement` |
 | [`relations/html5-tree/a-rel-getter-setter.html`](https://wpt.fyi/results/mathml/relations/html5-tree/a-rel-getter-setter.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the `rel`/`relList` IDL attributes of `MathMLAnchorElement` |
 | [`relations/html5-tree/a-rel-policy.html`](https://wpt.fyi/results/mathml/relations/html5-tree/a-rel-policy.html) | Pass | 8 / 8 |  |  |
 | [`relations/html5-tree/a-type-getter-001.html`](https://wpt.fyi/results/mathml/relations/html5-tree/a-type-getter-001.html) | Pass | 1 / 1 |  |  |

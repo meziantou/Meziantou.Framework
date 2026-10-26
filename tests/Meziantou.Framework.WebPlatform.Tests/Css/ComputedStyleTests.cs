@@ -1683,7 +1683,7 @@ public sealed class ComputedStyleTests : IDisposable
     [InlineData("white-space: wrap preserve", "white-space", "pre-wrap", "pre-wrap")]
     [InlineData("box-shadow: inset 4px -4px 0 green", "box-shadow", "green 4px -4px 0px inset", "rgb(0, 128, 0) 4px -4px 0px 0px inset")]
     [InlineData("border-radius: 1px 1px 1px 1px / 1px 1px 2% 1px", "border-radius", "1px / 1px 1px 2%", "1px / 1px 1px 2%")]
-    [InlineData("caret-color: auto auto", "caret-color", "auto auto", "rgb(0, 0, 0)")]
+    [InlineData("caret-color: auto auto", "caret-color", "", "rgb(0, 0, 0)")]
     [InlineData("outline: 4px", "outline", "4px", "4px none rgb(0, 0, 0)")]
     [InlineData("outline: 4px auto", "outline", "4px auto", "4px auto auto")]
     [InlineData("border-image: 1 2% 3 4% / / 2", "border-image", "1 2% 3 4% / / 2", "1 2% 3 4% / / 2")]

@@ -228,7 +228,7 @@
 | [`outside-marker-covered-by-relpos-block-link.html`](https://wpt.fyi/results/css/css-lists/outside-marker-covered-by-relpos-block-link.html) | Pass | 1 / 1 |  |  |
 | [`outside-marker-in-multicol-relpos-content.html`](https://wpt.fyi/results/css/css-lists/outside-marker-in-multicol-relpos-content.html) | Pass | 1 / 1 |  |  |
 | [`outside-marker-with-align-content.html`](https://wpt.fyi/results/css/css-lists/outside-marker-with-align-content.html) | Pass | 1 / 1 |  |  |
-| [`outside-marker-with-float-in-content.html`](https://wpt.fyi/results/css/css-lists/outside-marker-with-float-in-content.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`outside-marker-with-float-in-content.html`](https://wpt.fyi/results/css/css-lists/outside-marker-with-float-in-content.html) | Fail | 0 / 1 | BUG | a float at the start of the first line inside the list item moves the outside marker next to the float: the marker is moved by any float that shortens the line, a behavior meant for a float outside of the list item (css/CSS2/lists/list-style-applies-to-017.html) |
 | [`outside-marker-with-relpos-block-content.html`](https://wpt.fyi/results/css/css-lists/outside-marker-with-relpos-block-content.html) | Pass | 1 / 1 |  |  |
-| [`outside-marker-with-text-indent.html`](https://wpt.fyi/results/css/css-lists/outside-marker-with-text-indent.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`outside-marker-with-text-indent.html`](https://wpt.fyi/results/css/css-lists/outside-marker-with-text-indent.html) | Fail | 0 / 1 | BUG | the outside marker of a list item whose first line is in a descendant block with `text-indent` is not placed as the reference expects (the indent of the descendant block is not taken into account like its inline-start padding) |
 | [`pseudo-element-remove-update.html`](https://wpt.fyi/results/css/css-lists/pseudo-element-remove-update.html) | Pass | 1 / 1 |  |  |

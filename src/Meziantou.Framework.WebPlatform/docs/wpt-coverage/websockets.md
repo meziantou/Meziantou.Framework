@@ -33,7 +33,7 @@
 | [`Close-server-initiated-close.any.js`](https://wpt.fyi/results/websockets/Close-server-initiated-close.any.js) | Pass | 6 / 6 |  |  |
 | [`Close-undefined.any.js`](https://wpt.fyi/results/websockets/Close-undefined.any.js) | Pass | 6 / 6 |  |  |
 | [`Create-asciiSep-protocol-string.any.js`](https://wpt.fyi/results/websockets/Create-asciiSep-protocol-string.any.js) | Pass | 6 / 6 |  |  |
-| [`Create-blocked-port.any.js`](https://wpt.fyi/results/websockets/Create-blocked-port.any.js) | Fail | 670 / 672 |  | *No reason documented* |
+| [`Create-blocked-port.any.js`](https://wpt.fyi/results/websockets/Create-blocked-port.any.js) | Fail | 670 / 672 | TEST RUNNER | `META: pac` (the proxy auto-config `resources/https-proxy.sub.pac`) is not supported: `bad-port-<port>.wpt` is not routed to the WPT server, so the `Basic check` WebSocket to an allowed port fails |
 | [`Create-extensions-empty.any.js`](https://wpt.fyi/results/websockets/Create-extensions-empty.any.js) | Pass | 6 / 6 |  |  |
 | [`Create-http-urls.any.js`](https://wpt.fyi/results/websockets/Create-http-urls.any.js) | Pass | 2 / 2 |  |  |
 | [`Create-invalid-urls.any.js`](https://wpt.fyi/results/websockets/Create-invalid-urls.any.js) | Pass | 16 / 16 |  |  |

@@ -907,7 +907,7 @@
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`embedded-enforcement/subsumption_algorithm-trusted_types.tentative.html`](https://wpt.fyi/results/content-security-policy/embedded-enforcement/subsumption_algorithm-trusted_types.tentative.html) | Fail | 14 / 21 |  | *No reason documented* |
+| [`embedded-enforcement/subsumption_algorithm-trusted_types.tentative.html`](https://wpt.fyi/results/content-security-policy/embedded-enforcement/subsumption_algorithm-trusted_types.tentative.html) | Fail | 14 / 21 | NOT IMPLEMENTED | the subsumption of the Trusted Types directives (`require-trusted-types-for` and `trusted-types`, a tentative extension of https://w3c.github.io/webappsec-cspee/#subsume-policy): the subsumption only compares the source lists, the sandboxing flags and `upgrade-insecure-requests`, so a response that does not enforce the required Trusted Types directives is loaded |
 | [`generic/domparser-document-suppresses-csp-warning-for-inline-style.tentative.html`](https://wpt.fyi/results/content-security-policy/generic/domparser-document-suppresses-csp-warning-for-inline-style.tentative.html) | Pass | 1 / 1 |  |  |
 | [`img-src/css-filter-blocked.tentative.html`](https://wpt.fyi/results/content-security-policy/img-src/css-filter-blocked.tentative.html) | Pass | 1 / 1 |  |  |
 | [`img-src/svg-use-blocked.tentative.html`](https://wpt.fyi/results/content-security-policy/img-src/svg-use-blocked.tentative.html) | Pass | 1 / 1 |  |  |

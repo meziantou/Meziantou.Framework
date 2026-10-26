@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 88 | 91 | 0 | 97% |
+| [Stable](#stable-tests) | 89 | 91 | 0 | 98% |
 | [Tentative](#tentative-tests) | 0 | 1 | 0 | 0% |
 | [Reftests](#reftests) | 459 | 467 | 0 | 98% |
-| **All** | **547** | **559** | **0** | **98%** |
+| **All** | **548** | **559** | **0** | **98%** |
 
 ## Stable tests
 
@@ -94,7 +94,7 @@
 | [`parsing/column-rule-width-valid.html`](https://wpt.fyi/results/css/css-multicol/parsing/column-rule-width-valid.html) | Pass | 5 / 5 |  |  |
 | [`parsing/column-span-computed.html`](https://wpt.fyi/results/css/css-multicol/parsing/column-span-computed.html) | Pass | 2 / 2 |  |  |
 | [`parsing/column-span-invalid.html`](https://wpt.fyi/results/css/css-multicol/parsing/column-span-invalid.html) | Pass | 1 / 1 |  |  |
-| [`parsing/column-span-valid.html`](https://wpt.fyi/results/css/css-multicol/parsing/column-span-valid.html) | Fail | 2 / 3 |  | *No reason documented* |
+| [`parsing/column-span-valid.html`](https://wpt.fyi/results/css/css-multicol/parsing/column-span-valid.html) | Pass | 3 / 3 |  |  |
 | [`parsing/column-width-computed.html`](https://wpt.fyi/results/css/css-multicol/parsing/column-width-computed.html) | Pass | 3 / 3 |  |  |
 | [`parsing/column-width-invalid.html`](https://wpt.fyi/results/css/css-multicol/parsing/column-width-invalid.html) | Pass | 5 / 5 |  |  |
 | [`parsing/column-width-valid.html`](https://wpt.fyi/results/css/css-multicol/parsing/column-width-valid.html) | Pass | 3 / 3 |  |  |

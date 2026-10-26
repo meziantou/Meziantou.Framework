@@ -32,7 +32,7 @@
 | [`highlight-cascade/highlight-cascade-009.html`](https://wpt.fyi/results/css/css-pseudo/highlight-cascade/highlight-cascade-009.html) | Pass | 5 / 5 |  |  |
 | [`highlight-cascade/highlight-cascade-010.html`](https://wpt.fyi/results/css/css-pseudo/highlight-cascade/highlight-cascade-010.html) | Pass | 1 / 1 |  |  |
 | [`highlight-cascade/highlight-cascade-011.html`](https://wpt.fyi/results/css/css-pseudo/highlight-cascade/highlight-cascade-011.html) | Pass | 2 / 2 |  |  |
-| [`highlight-cascade/highlight-cascade-currentcolor-color-mix.html`](https://wpt.fyi/results/css/css-pseudo/highlight-cascade/highlight-cascade-currentcolor-color-mix.html) | Fail | 1 / 2 |  | *No reason documented* |
+| [`highlight-cascade/highlight-cascade-currentcolor-color-mix.html`](https://wpt.fyi/results/css/css-pseudo/highlight-cascade/highlight-cascade-currentcolor-color-mix.html) | Fail | 1 / 2 | BUG | a `color-mix()` that contains `currentcolor` in the `color` of a highlight pseudo-element is resolved when it is computed and inherited down the highlight chain as an absolute color; only a bare `currentcolor` is kept unresolved (https://drafts.csswg.org/css-pseudo-4/#highlight-cascade) |
 | [`highlight-cascade/highlight-cascade-parent-style-change.html`](https://wpt.fyi/results/css/css-pseudo/highlight-cascade/highlight-cascade-parent-style-change.html) | Pass | 1 / 1 |  |  |
 | [`highlight-cascade/highlight-cascade-shadow-boundary.html`](https://wpt.fyi/results/css/css-pseudo/highlight-cascade/highlight-cascade-shadow-boundary.html) | Pass | 2 / 2 |  |  |
 | [`highlight-cascade/highlight-currentcolor-computed-inheritance.html`](https://wpt.fyi/results/css/css-pseudo/highlight-cascade/highlight-currentcolor-computed-inheritance.html) | Pass | 6 / 6 |  |  |

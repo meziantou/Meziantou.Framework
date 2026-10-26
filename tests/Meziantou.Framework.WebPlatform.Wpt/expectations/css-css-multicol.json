@@ -1521,10 +1521,7 @@
     "total": 1
   },
   "css/css-multicol/parsing/column-span-valid.html": {
-    "total": 3,
-    "failures": {
-      "e.style['column-span'] = \"auto\" should set the property value": "FAIL"
-    }
+    "total": 3
   },
   "css/css-multicol/parsing/column-width-computed.html": {
     "total": 3

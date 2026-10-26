@@ -29,7 +29,7 @@
 | [`MediaQueryListEvent.html`](https://wpt.fyi/results/css/cssom-view/MediaQueryListEvent.html) | Pass | 6 / 6 |  |  |
 | [`Screen-pixelDepth-Screen-colorDepth001.html`](https://wpt.fyi/results/css/cssom-view/Screen-pixelDepth-Screen-colorDepth001.html) | Pass | 2 / 2 |  |  |
 | [`background-change-during-smooth-scroll.html`](https://wpt.fyi/results/css/cssom-view/background-change-during-smooth-scroll.html) | Pass | 1 / 1 |  |  |
-| [`checkVisibility.html`](https://wpt.fyi/results/css/cssom-view/checkVisibility.html) | Fail | 19 / 21 |  | *No reason documented* |
+| [`checkVisibility.html`](https://wpt.fyi/results/css/cssom-view/checkVisibility.html) | Fail | 19 / 21 | BUG | `checkVisibility()` returns true for the content of a closed `details` element: it walks the flat tree ancestors that are elements, so it misses the `content-visibility: hidden` of the `::details-content` pseudo-element |
 | [`client-props-inline-list-item.html`](https://wpt.fyi/results/css/cssom-view/client-props-inline-list-item.html) | Pass | 1 / 1 |  |  |
 | [`client-props-input.html`](https://wpt.fyi/results/css/cssom-view/client-props-input.html) | Pass | 1 / 1 |  |  |
 | [`client-props-root.html`](https://wpt.fyi/results/css/cssom-view/client-props-root.html) | Pass | 1 / 1 |  |  |

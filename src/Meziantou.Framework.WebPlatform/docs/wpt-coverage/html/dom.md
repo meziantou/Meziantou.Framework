@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 208 | 215 | 0 | 97% |
+| [Stable](#stable-tests) | 209 | 215 | 0 | 97% |
 | [Tentative](#tentative-tests) | 27 | 33 | 0 | 82% |
 | [Reftests](#reftests) | 127 | 127 | 0 | 100% |
-| **All** | **362** | **375** | **0** | **97%** |
+| **All** | **363** | **375** | **0** | **97%** |
 
 ## Stable tests
 
@@ -205,7 +205,7 @@
 | [`render-blocking/element-render-blocking-form-stack-removal.html`](https://wpt.fyi/results/html/dom/render-blocking/element-render-blocking-form-stack-removal.html) | Pass | 2 / 2 |  |  |
 | [`render-blocking/element-render-blocking-insert-named-anchor.html`](https://wpt.fyi/results/html/dom/render-blocking/element-render-blocking-insert-named-anchor.html) | Pass | 2 / 2 |  |  |
 | [`render-blocking/element-render-blocking-top-of-document.html`](https://wpt.fyi/results/html/dom/render-blocking/element-render-blocking-top-of-document.html) | Fail | 1 / 2 | BUG | `<link rel=expect href="#">` (the top of the document, which is not an element) does not block the rendering until the parsing finishes |
-| [`render-blocking/link-rel-expect-supported.html`](https://wpt.fyi/results/html/dom/render-blocking/link-rel-expect-supported.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`render-blocking/link-rel-expect-supported.html`](https://wpt.fyi/results/html/dom/render-blocking/link-rel-expect-supported.html) | Pass | 1 / 1 |  |  |
 | [`render-blocking/non-render-blocking-scripts.optional.html`](https://wpt.fyi/results/html/dom/render-blocking/non-render-blocking-scripts.optional.html) | Pass | 14 / 14 |  |  |
 | [`render-blocking/parser-blocking-script.html`](https://wpt.fyi/results/html/dom/render-blocking/parser-blocking-script.html) | Pass | 2 / 2 |  |  |
 | [`render-blocking/parser-inserted-async-inline-module-with-import.html`](https://wpt.fyi/results/html/dom/render-blocking/parser-inserted-async-inline-module-with-import.html) | Pass | 1 / 1 |  |  |

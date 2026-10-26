@@ -71,7 +71,7 @@
 | [`api/cors/cors-no-preflight.any.js`](https://wpt.fyi/results/fetch/api/cors/cors-no-preflight.any.js) | Pass | 30 / 30 |  |  |
 | [`api/cors/cors-origin.any.js`](https://wpt.fyi/results/fetch/api/cors/cors-origin.any.js) | Pass | 34 / 34 |  |  |
 | [`api/cors/cors-preflight-cache-tainted.any.js`](https://wpt.fyi/results/fetch/api/cors/cors-preflight-cache-tainted.any.js) | Pass | 4 / 4 |  |  |
-| [`api/cors/cors-preflight-cache.any.js`](https://wpt.fyi/results/fetch/api/cors/cors-preflight-cache.any.js) | Fail | 4 / 6 |  | *No reason documented* |
+| [`api/cors/cors-preflight-cache.any.js`](https://wpt.fyi/results/fetch/api/cors/cors-preflight-cache.any.js) | Fail | 4 / 6 | TEST RUNNER | the emulation of `fetch/api/resources/preflight.py` does not support the `options-count` and `fail-next` parameters (the OPTIONS request count is not stashed and the next request does not fail) |
 | [`api/cors/cors-preflight-not-cors-safelisted.any.js`](https://wpt.fyi/results/fetch/api/cors/cors-preflight-not-cors-safelisted.any.js) | Pass | 24 / 24 |  |  |
 | [`api/cors/cors-preflight-redirect.any.js`](https://wpt.fyi/results/fetch/api/cors/cors-preflight-redirect.any.js) | Pass | 30 / 30 |  |  |
 | [`api/cors/cors-preflight-referrer.any.js`](https://wpt.fyi/results/fetch/api/cors/cors-preflight-referrer.any.js) | Pass | 24 / 24 |  |  |

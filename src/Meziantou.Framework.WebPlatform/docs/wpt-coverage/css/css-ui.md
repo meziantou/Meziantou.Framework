@@ -6,9 +6,9 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 84 | 101 | 0 | 83% |
+| [Stable](#stable-tests) | 85 | 101 | 0 | 84% |
 | [Tentative](#tentative-tests) | 11 | 16 | 0 | 69% |
-| [Reftests](#reftests) | 956 | 960 | 0 | 99.5% |
+| [Reftests](#reftests) | 955 | 960 | 0 | 99% |
 | **All** | **1,051** | **1,077** | **0** | **98%** |
 
 ## Stable tests
@@ -68,7 +68,7 @@
 | [`parsing/box-sizing-valid.html`](https://wpt.fyi/results/css/css-ui/parsing/box-sizing-valid.html) | Pass | 2 / 2 |  |  |
 | [`parsing/canonical-order-outline-sub-properties-001.html`](https://wpt.fyi/results/css/css-ui/parsing/canonical-order-outline-sub-properties-001.html) | Fail | 11 / 26 | NOT IMPLEMENTED | the legacy `invert` value of `outline-color` (the test expects it as the initial value; the webref grammar has `auto`) |
 | [`parsing/caret-color-computed.html`](https://wpt.fyi/results/css/css-ui/parsing/caret-color-computed.html) | Pass | 9 / 9 |  |  |
-| [`parsing/caret-color-invalid.html`](https://wpt.fyi/results/css/css-ui/parsing/caret-color-invalid.html) | Fail | 12 / 17 |  | *No reason documented* |
+| [`parsing/caret-color-invalid.html`](https://wpt.fyi/results/css/css-ui/parsing/caret-color-invalid.html) | Pass | 17 / 17 |  |  |
 | [`parsing/caret-color-valid.html`](https://wpt.fyi/results/css/css-ui/parsing/caret-color-valid.html) | Pass | 12 / 12 |  |  |
 | [`parsing/cursor-computed.html`](https://wpt.fyi/results/css/css-ui/parsing/cursor-computed.html) | Fail | 36 / 39 | BUG | gradients are rejected as `cursor` images (the webref grammar only accepts `<url>`/`<url-set>`, the test expects any `<image>`) |
 | [`parsing/cursor-invalid.html`](https://wpt.fyi/results/css/css-ui/parsing/cursor-invalid.html) | Pass | 10 / 10 |  |  |
@@ -194,7 +194,7 @@
 | [`caret-color-block-shape-text-color-001.html`](https://wpt.fyi/results/css/css-ui/caret-color-block-shape-text-color-001.html) | Pass | 1 / 1 |  |  |
 | [`caret-color-block-shape-text-color-002.html`](https://wpt.fyi/results/css/css-ui/caret-color-block-shape-text-color-002.html) | Pass | 1 / 1 |  |  |
 | [`caret-color-block-shape-text-color-003.html`](https://wpt.fyi/results/css/css-ui/caret-color-block-shape-text-color-003.html) | Pass | 1 / 1 |  |  |
-| [`caret-color-block-shape-text-color-004.html`](https://wpt.fyi/results/css/css-ui/caret-color-block-shape-text-color-004.html) | Pass | 1 / 1 |  |  |
+| [`caret-color-block-shape-text-color-004.html`](https://wpt.fyi/results/css/css-ui/caret-color-block-shape-text-color-004.html) | Fail | 0 / 1 | TEST BUG | the test sets `caret-color: auto white`, which is invalid: the grammar is `auto \| <color> [auto \| <color>]?` (https://drafts.csswg.org/css-ui-4/#caret-color, css/css-ui/parsing/caret-color-invalid.html), so the first value of a pair cannot be `auto` |
 | [`caret-color-block-shape-text-color-005.html`](https://wpt.fyi/results/css/css-ui/caret-color-block-shape-text-color-005.html) | Pass | 1 / 1 |  |  |
 | [`caret-color-underscore-shape-text-color.html`](https://wpt.fyi/results/css/css-ui/caret-color-underscore-shape-text-color.html) | Pass | 1 / 1 |  |  |
 | [`caret-eol-001.html`](https://wpt.fyi/results/css/css-ui/caret-eol-001.html) | Pass | 1 / 1 |  |  |

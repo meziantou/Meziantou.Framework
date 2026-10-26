@@ -7,6 +7,7 @@ public partial class Document
     private bool _cssResourcesUpdateRequested;
     private (int Dom, int ElementState, int Style, int Cues) _cssResourcesVersion = (-1, -1, -1, 0);
     private (int Dom, int ElementState, int Style) _cssImagesVersion = (-1, -1, -1);
+    private (int Dom, int ElementState, int Style) _fontFacesBeforeLoadVersion = (-1, -1, -1);
     private int _cueRenderingVersion;
 
     /// <summary>Whether a STYLE block of the WebVTT file of a text track of the document may reference an image (a <c>data:</c> URL).</summary>
@@ -63,6 +64,33 @@ public partial class Document
 
         _cssImagesVersion = version;
         CssImageFetching.FetchUsedImages(this, _fetchedCssImages ??= []);
+        return true;
+    }
+
+    /// <summary>
+    /// Loads the font faces used by the text of the document (see <see cref="FontFaceSet.LoadUsedFontFaces"/> and
+    /// <see cref="FontFaceSet.UpdateLayoutForFonts"/>) before the load event, as the browsers do when they render the document
+    /// while it loads: their loads delay the load event (see <see cref="FontFacesDelayingTheLoadEvent"/>). Returns whether the
+    /// styles were examined.
+    /// </summary>
+    private bool LoadUsedFontFacesBeforeLoadEvent()
+    {
+        if (!IsFullyActive || BrowsingContext is not { Options.DocumentLoader: not null })
+            return false;
+
+        var version = (DomVersion, ElementStateVersion, StyleSheetsVersion);
+        if (version == _fontFacesBeforeLoadVersion)
+            return false;
+
+        _fontFacesBeforeLoadVersion = version;
+        if (_fonts is null && GetStyleEngine().GetFontFaceRules(this).Count == 0)
+            return false;
+
+        // The layout of a rendered document requests the font faces that only its font matching knows, as the rendering of the
+        // browsers does while the document loads: e.g. the next family while the first one loads (WPT css/css-fonts/font-display/font-display-failure-fallback.html)
+        var fonts = GetFontsForMatching();
+        fonts.LoadUsedFontFaces();
+        fonts.UpdateLayoutForFonts();
         return true;
     }
 

@@ -677,6 +677,14 @@ public partial class Document
     internal int CssImagesDelayingTheLoadEvent { get; set; }
 
     /// <summary>
+    /// The number of font faces of the document (<see cref="Css.Om.FontFace"/>) whose load started before the load event and is in
+    /// progress: as in the browsers, they delay the load event (the fetches of a document delay its load event,
+    /// https://html.spec.whatwg.org/multipage/parsing.html#delay-the-load-event), so that the layout at the load event uses them
+    /// (e.g. the height of a line box whose line-height is normal, WPT css/CSS2/visudet/line-height-204.html).
+    /// </summary>
+    internal int FontFacesDelayingTheLoadEvent { get; set; }
+
+    /// <summary>
     /// The number of link elements whose linked resource is being fetched: they delay the load event until the resource and
     /// its critical subresources are fetched (https://html.spec.whatwg.org/multipage/semantics.html#the-link-element).
     /// </summary>
@@ -699,8 +707,11 @@ public partial class Document
     /// </summary>
     private bool IsLoadEventDelayed()
     {
-        if (AreScriptsDelayingTheLoadEvent || StyleSheetImportsDelayingTheLoadEvent > 0 || ImagesDelayingTheLoadEvent > 0 || LinksDelayingTheLoadEvent > 0 || EmbeddedContentDelayingTheLoadEvent > 0 || CssImagesDelayingTheLoadEvent > 0)
+        if (AreScriptsDelayingTheLoadEvent || StyleSheetImportsDelayingTheLoadEvent > 0 || ImagesDelayingTheLoadEvent > 0 || LinksDelayingTheLoadEvent > 0 || EmbeddedContentDelayingTheLoadEvent > 0 || CssImagesDelayingTheLoadEvent > 0
+            || FontFacesDelayingTheLoadEvent > 0)
+        {
             return true;
+        }
 
         if (ChildNavigables is not { Count: > 0 } children)
             return false;
@@ -725,6 +736,11 @@ public partial class Document
         // The images of the computed styles are fetched when the rendering is updated: the ones of the styles that changed since
         // the last rendering opportunity are fetched now, and delay the load event
         if (FetchPendingCssImages() && IsLoadEventDelayed())
+            return;
+
+        // The font faces used by the text are loaded before the load event, which they delay (a font face that fails synchronously
+        // may have queued the load event meanwhile)
+        if (LoadUsedFontFacesBeforeLoadEvent() && (_loadEventQueued || IsLoadEventDelayed()))
             return;
 
         _loadEventQueued = true;

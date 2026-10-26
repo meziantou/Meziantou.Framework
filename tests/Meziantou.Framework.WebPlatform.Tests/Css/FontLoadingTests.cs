@@ -209,11 +209,11 @@ public sealed class FontLoadingTests : IDisposable
     [Fact]
     public void FontFaceSet_Ready_WaitsForTheFontFacesRequestedByTheLayout()
     {
-        // No text uses the font: only the layout knows that the ch unit needs the first available font. The document is
-        // loaded, but the set is not: "there are no pending layout operations which might cause the user agent to request a font"
+        // No text uses the font: only the layout knows that the ch unit needs the first available font. As in the browsers,
+        // the layout of a rendered document requests it before the load event, which the font face delays
         var document = LoadRendered("<style>@font-face { font-family: A; src: url(slow.woff) } div { font: 20px A; width: 5ch; height: 10px }</style><div id=target></div>");
         var face = Assert.Single(document.Fonts);
-        Assert.Equal(DocumentReadyState.Complete, document.ReadyState);
+        Assert.Equal(DocumentReadyState.Interactive, document.ReadyState);
         Assert.Equal(FontFaceLoadStatus.Loading, face.Status);
         Assert.Equal(FontFaceSetLoadStatus.Loading, document.Fonts.Status);
         var ready = document.Fonts.Ready;
@@ -224,12 +224,32 @@ public sealed class FontLoadingTests : IDisposable
 
         SlowFont.SetResult(new DocumentResource(FontData));
         _contexts.EventLoop.RunUntilIdle();
+        Assert.Equal(DocumentReadyState.Complete, document.ReadyState);
         Assert.Equal(FontFaceLoadStatus.Loaded, face.Status);
         Assert.Equal(FontFaceSetLoadStatus.Loaded, document.Fonts.Status);
         Assert.True(ready.IsCompletedSuccessfully);
 
         // The glyphs of Ahem are 1em wide
         Assert.Equal(100, document.GetElementById("target")!.GetBoundingClientRect().Width);
+    }
+
+    [Fact]
+    public void FontFaces_UsedByTheText_DelayTheLoadEvent()
+    {
+        // As in the browsers, the font faces used by the text are loaded before the load event, which they delay: the load event
+        // handlers see the text with its web font (WPT css/CSS2/visudet/line-height-204.html)
+        var document = Load("<style>@font-face { font-family: A; src: url(slow.woff) } @font-face { font-family: B; src: url(b.woff) } p { font-family: A }</style><p>Text</p>");
+        var faces = document.Fonts.ToList();
+        Assert.Equal(DocumentReadyState.Interactive, document.ReadyState);
+        Assert.Equal(FontFaceLoadStatus.Loading, faces[0].Status);
+        Assert.Equal(FontFaceLoadStatus.Unloaded, faces[1].Status);
+
+        SlowFont.SetResult(new DocumentResource(FontData));
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.Equal(DocumentReadyState.Complete, document.ReadyState);
+        Assert.Equal(FontFaceLoadStatus.Loaded, faces[0].Status);
+        Assert.Equal(FontFaceLoadStatus.Unloaded, faces[1].Status);
+        Assert.True(document.Fonts.Ready.IsCompletedSuccessfully);
     }
 
     [Fact]

@@ -18591,7 +18591,7 @@
     "reftest": "PASS"
   },
   "css/CSS2/visudet/line-height-204.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/CSS2/visudet/line-height-205.html": {
     "reftest": "PASS"

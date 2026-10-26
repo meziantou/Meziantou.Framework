@@ -262,10 +262,7 @@
     "total": 1
   },
   "resource-timing/load-from-mem-cache-transfer-size.html": {
-    "total": 1,
-    "failures": {
-      "The transferSize of resource timing entries should be 0 when resource     is loaded from memory cache.": "FAIL"
-    }
+    "total": 1
   },
   "resource-timing/nested-context-navigations-embed.html": {
     "total": 9

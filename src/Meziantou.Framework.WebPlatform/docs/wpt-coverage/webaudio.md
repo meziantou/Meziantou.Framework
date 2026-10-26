@@ -28,7 +28,7 @@
 | [`the-audio-api/the-analysernode-interface/realtimeanalyser-fft-sizing.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-analysernode-interface/realtimeanalyser-fft-sizing.html) | Pass | 43 / 43 |  |  |
 | [`the-audio-api/the-analysernode-interface/test-analyser-gain.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-analysernode-interface/test-analyser-gain.html) | Pass | 1 / 1 |  |  |
 | [`the-audio-api/the-analysernode-interface/test-analyser-minimum.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-analysernode-interface/test-analyser-minimum.html) | Pass | 1 / 1 |  |  |
-| [`the-audio-api/the-analysernode-interface/test-analyser-output.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-analysernode-interface/test-analyser-output.html) | Pass | 1 / 1 |  |  |
+| [`the-audio-api/the-analysernode-interface/test-analyser-output.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-analysernode-interface/test-analyser-output.html) | Pass | 2 / 2 |  |  |
 | [`the-audio-api/the-analysernode-interface/test-analyser-resume-after-suspended.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-analysernode-interface/test-analyser-resume-after-suspended.html) | Pass | 1 / 1 |  |  |
 | [`the-audio-api/the-analysernode-interface/test-analyser-scale.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-analysernode-interface/test-analyser-scale.html) | Pass | 1 / 1 |  |  |
 | [`the-audio-api/the-analysernode-interface/test-analysernode.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-analysernode-interface/test-analysernode.html) | Pass | 2 / 2 |  |  |

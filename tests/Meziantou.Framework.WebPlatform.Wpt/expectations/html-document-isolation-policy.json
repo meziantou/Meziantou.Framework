@@ -25,24 +25,18 @@
     "total": 4,
     "failures": {
       "A document with a policy and a cross-site child frame without one are restored after a cross-site navigation": "FAIL",
-      "A document with a policy and a same-origin child frame without one are restored after a cross-site navigation": "FAIL",
-      "A document without a policy and a cross-site child frame with one are restored after a cross-site navigation": "PRECONDITION_FAILED",
-      "A document without a policy and a same-origin child frame with one are restored after a cross-site navigation": "PRECONDITION_FAILED"
+      "A document with a policy and a same-origin child frame without one are restored after a cross-site navigation": "FAIL"
     }
   },
   "html/document-isolation-policy/back-forward-cache.tentative.https.html": {
     "total": 10,
     "failures": {
-      "A cross-origin isolated document with COOP and COEP is restored after a cross-site navigation": "PRECONDITION_FAILED",
-      "A cross-origin isolated document with COOP and COEP is restored after a same-origin navigation to a document with a policy": "PRECONDITION_FAILED",
       "A document with a policy is restored after a cross-site navigation": "FAIL",
       "A document with a policy is restored after a cross-site navigation to a document with a policy": "FAIL",
       "A document with a policy is restored after a same-origin navigation to a cross-origin isolated document with COOP and COEP": "FAIL",
       "A document with a policy is restored after a same-origin navigation to a document with a policy": "FAIL",
       "A document with a policy is restored after a same-origin navigation to a document without one": "FAIL",
-      "A document with a policy is restored after a same-site navigation to a document with a policy": "FAIL",
-      "A document without a policy is restored after a cross-site navigation": "PRECONDITION_FAILED",
-      "A document without a policy is restored after a same-origin navigation to a document with one": "PRECONDITION_FAILED"
+      "A document with a policy is restored after a same-site navigation to a document with a policy": "FAIL"
     }
   },
   "html/document-isolation-policy/blob-document-inherits-policy.tentative.https.html": {

@@ -16,8 +16,8 @@
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
 | [`agent-cluster.tentative.https.html`](https://wpt.fyi/results/html/document-isolation-policy/agent-cluster.tentative.https.html) | Fail | 8 / 25 | NOT IMPLEMENTED | the agent clusters and the cross-origin isolation of `Document-Isolation-Policy` (`crossOriginIsolated` is only true with COOP + COEP) |
-| [`back-forward-cache-frames.tentative.https.html`](https://wpt.fyi/results/html/document-isolation-policy/back-forward-cache-frames.tentative.https.html) | Fail | 0 / 4 |  | *No reason documented* |
-| [`back-forward-cache.tentative.https.html`](https://wpt.fyi/results/html/document-isolation-policy/back-forward-cache.tentative.https.html) | Fail | 0 / 10 |  | *No reason documented* |
+| [`back-forward-cache-frames.tentative.https.html`](https://wpt.fyi/results/html/document-isolation-policy/back-forward-cache-frames.tentative.https.html) | Fail | 2 / 4 |  | *No reason documented* |
+| [`back-forward-cache.tentative.https.html`](https://wpt.fyi/results/html/document-isolation-policy/back-forward-cache.tentative.https.html) | Fail | 4 / 10 |  | *No reason documented* |
 | [`blob-document-inherits-policy.tentative.https.html`](https://wpt.fyi/results/html/document-isolation-policy/blob-document-inherits-policy.tentative.https.html) | Pass | 2 / 2 |  |  |
 | [`broadcast-channel.tentative.https.html`](https://wpt.fyi/results/html/document-isolation-policy/broadcast-channel.tentative.https.html) | Fail | 1 / 3 |  | *No reason documented* |
 | [`credentialless-cache-storage-from-credentialless.https.tentative.window.js`](https://wpt.fyi/results/html/document-isolation-policy/credentialless-cache-storage-from-credentialless.https.tentative.window.js) | Pass | 16 / 16 |  |  |

@@ -293,7 +293,7 @@ internal sealed partial class FetchRequest
     /// </summary>
     public bool TimingAllowFailed { get; set; }
 
-    /// <summary>Whether the request was sent to the loader (once at least): a request blocked before (e.g. by a content security policy) has no resource timing.</summary>
+    /// <summary>Whether the request was sent to the loader or answered by the HTTP cache (once at least): a request blocked before (e.g. by a content security policy) has no resource timing.</summary>
     public bool IsSentToLoader { get; set; }
 
     /// <summary>Whether the last response of the request was given by a service worker (it was not received from the network).</summary>

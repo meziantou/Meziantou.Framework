@@ -46,6 +46,10 @@ public sealed class CssResourceFetchingTests : IDisposable
             Requests.Add(request);
             DocumentResource? resource = request.Url switch
             {
+                "https://other.example/policy.css" => new DocumentResource("@import 'b.css'; #target { background-image: url(a.png); font-family: A } @font-face { font-family: A; src: url(a.woff) }")
+                {
+                    Headers = [new("Content-Type", "text/css"), new("Referrer-Policy", "unsafe-url")],
+                },
                 _ when request.Url.EndsWith(".css", StringComparison.Ordinal) => DocumentResource.Create("#target { color: green }", "text/css"),
                 _ when request.Url.EndsWith(".png", StringComparison.Ordinal) => DocumentResource.Create(new byte[] { 0x89, 0x50, 0x4E, 0x47 }, "image/png"),
                 _ when request.Url.EndsWith(".woff", StringComparison.Ordinal) => new DocumentResource(FontData),
@@ -160,6 +164,24 @@ public sealed class CssResourceFetchingTests : IDisposable
         var request = GetRequest("https://example.com/dir/a.css");
         Assert.Equal(RequestMode.NoCors, request.Mode);
         Assert.Equal("https://example.com", request.Origin);
+    }
+
+    [Fact]
+    public void ResourcesOfAFetchedStyleSheet_AreRequestedWithTheReferrerAndThePolicyOfTheStyleSheet()
+    {
+        Load("<meta name=referrer content=no-referrer><link rel=stylesheet href='https://other.example/policy.css'><div id=target>text</div><img src=page.png>");
+        RenderFrame();
+
+        foreach (var url in new[] { "https://other.example/b.css", "https://other.example/a.png", "https://other.example/a.woff" })
+        {
+            var request = GetRequest(url);
+            Assert.Equal("https://other.example/policy.css", request.Referrer);
+            Assert.Equal("unsafe-url", request.ReferrerPolicy);
+        }
+
+        var documentRequest = GetRequest("https://example.com/dir/page.png");
+        Assert.Null(documentRequest.Referrer);
+        Assert.Equal("no-referrer", documentRequest.ReferrerPolicy);
     }
 
     [Fact]

@@ -147,8 +147,14 @@ public partial class Document : Node
     private int _baseUrlCacheVersion = -1;
 
     /// <summary>
+    /// The base URL of the document this document is a clone of, when it was cloned: a clone keeps the base URL of its
+    /// source while it has no base element (https://github.com/whatwg/dom/issues/454).
+    /// </summary>
+    private UrlRecord? _clonedBaseUrl;
+
+    /// <summary>
     /// https://html.spec.whatwg.org/multipage/urls-and-fetching.html#document-base-url: the frozen base URL of the first
-    /// base element with an href attribute, or the fallback base URL.
+    /// base element with an href attribute, or the fallback base URL (the base URL of the source for a clone).
     /// </summary>
     internal UrlRecord DocumentBaseUrl
     {
@@ -157,13 +163,14 @@ public partial class Document : Node
             // The cache is invalidated by every mutation of the document: looking for a base element walks the whole document
             // when there is none, so it is skipped when no base element can be in the document
             if (!HasBaseElements)
-                return FallbackBaseUrl;
+                return _clonedBaseUrl ?? FallbackBaseUrl;
 
             if (_baseUrlCache is not null && _baseUrlCacheVersion == DomVersion)
                 return _baseUrlCache;
 
+            // A base element with an href attribute replaces the base URL of the source of a clone, even when its URL is ignored
             var fallbackBaseUrl = FallbackBaseUrl;
-            var result = fallbackBaseUrl;
+            var result = _clonedBaseUrl ?? fallbackBaseUrl;
             for (var node = FirstChild; node is not null; node = node.GetNextInTreeOrder(this))
             {
                 if (node is Element element && element.IsHtml(TagId.Base) && element.GetAttributeValue("href") is { } href)
@@ -171,11 +178,7 @@ public partial class Document : Node
                     // https://html.spec.whatwg.org/multipage/semantics.html#set-the-frozen-base-url: a data: or javascript:
                     // URL is ignored, and so is a URL that the base-uri directive does not allow
                     var urlRecord = UrlParser.Parse(href, fallbackBaseUrl, Encoding);
-                    if (urlRecord is not null && urlRecord.Scheme is not ("data" or "javascript") && IsBaseAllowed(element, href, urlRecord))
-                    {
-                        result = urlRecord;
-                    }
-
+                    result = urlRecord is not null && urlRecord.Scheme is not ("data" or "javascript") && IsBaseAllowed(element, href, urlRecord) ? urlRecord : fallbackBaseUrl;
                     break;
                 }
             }
@@ -845,7 +848,10 @@ public partial class Document : Node
 
     /// <summary>
     /// Documents are cloned with the "clone a node" algorithm (https://dom.spec.whatwg.org/#concept-node-clone): the copy has
-    /// the encoding, content type, URL, origin, type, mode and allow declarative shadow roots flag of the document.
+    /// the encoding, content type, URL, origin, type, mode and allow declarative shadow roots flag of the document. It also
+    /// keeps the base URL of the document (https://github.com/whatwg/dom/issues/454): its fallback base URL is the one of
+    /// the document (the base URL inherited by an <c>about:blank</c> or <c>about:srcdoc</c> document), and its base URL is
+    /// the current base URL of the document until a base element is inserted into it.
     /// </summary>
     internal override Node CloneSingleNode(Document document)
     {
@@ -853,6 +859,8 @@ public partial class Document : Node
         {
             Encoding = Encoding,
             UrlRecord = UrlRecord,
+            AboutBaseUrl = AboutBaseUrl,
+            _clonedBaseUrl = DocumentBaseUrl,
             Mode = Mode,
             AllowDeclarativeShadowRoots = AllowDeclarativeShadowRoots,
             OriginDocument = GetOriginDocument(this),

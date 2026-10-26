@@ -14,7 +14,7 @@ public partial class Element
     public void AppendHtml(string html, SetHtmlOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(html);
-        DynamicMarkup.FilterAndPreInsertHtml(DynamicMarkup.GetTargetForHtmlInsertion(this), null, html, FragmentParserOptions.FromSafe(options), FragmentParserMode.Safe);
+        DynamicMarkup.FilterAndPreInsertHtml(DynamicMarkup.GetTargetForHtmlPreInsertion(this), null, html, FragmentParserOptions.FromSafe(options), FragmentParserMode.Safe);
     }
 
     /// <summary>Parses the HTML and inserts the result after the last child, without the default sanitizer.</summary>
@@ -25,7 +25,7 @@ public partial class Element
     {
         ArgumentNullException.ThrowIfNull(html);
         var (compliantHtml, compliantOptions) = TrustedTypesAlgorithms.GetCompliantInput(NodeDocument, html, FragmentParserOptions.FromUnsafe(options), "Element appendHTMLUnsafe");
-        DynamicMarkup.FilterAndPreInsertHtml(DynamicMarkup.GetTargetForHtmlInsertion(this), null, compliantHtml, compliantOptions, FragmentParserMode.Unsafe);
+        DynamicMarkup.FilterAndPreInsertHtml(DynamicMarkup.GetTargetForHtmlPreInsertion(this), null, compliantHtml, compliantOptions, FragmentParserMode.Unsafe);
     }
 
     /// <summary>Parses the HTML and inserts the result after the last child, without the default sanitizer.</summary>
@@ -35,7 +35,7 @@ public partial class Element
     {
         ArgumentNullException.ThrowIfNull(html);
         var (compliantHtml, compliantOptions) = TrustedTypesAlgorithms.GetCompliantInput(NodeDocument, html, FragmentParserOptions.FromUnsafe(options), "Element appendHTMLUnsafe");
-        DynamicMarkup.FilterAndPreInsertHtml(DynamicMarkup.GetTargetForHtmlInsertion(this), null, compliantHtml, compliantOptions, FragmentParserMode.Unsafe);
+        DynamicMarkup.FilterAndPreInsertHtml(DynamicMarkup.GetTargetForHtmlPreInsertion(this), null, compliantHtml, compliantOptions, FragmentParserMode.Unsafe);
     }
 
     /// <summary>Parses the HTML and inserts the result before the first child.</summary>
@@ -44,7 +44,7 @@ public partial class Element
     public void PrependHtml(string html, SetHtmlOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(html);
-        DynamicMarkup.FilterAndPrependHtml(DynamicMarkup.GetTargetForHtmlInsertion(this), html, FragmentParserOptions.FromSafe(options), FragmentParserMode.Safe);
+        DynamicMarkup.FilterAndPrependHtml(DynamicMarkup.GetTargetForHtmlPreInsertion(this), html, FragmentParserOptions.FromSafe(options), FragmentParserMode.Safe);
     }
 
     /// <summary>Parses the HTML and inserts the result before the first child, without the default sanitizer.</summary>
@@ -55,7 +55,7 @@ public partial class Element
     {
         ArgumentNullException.ThrowIfNull(html);
         var (compliantHtml, compliantOptions) = TrustedTypesAlgorithms.GetCompliantInput(NodeDocument, html, FragmentParserOptions.FromUnsafe(options), "Element prependHTMLUnsafe");
-        DynamicMarkup.FilterAndPrependHtml(DynamicMarkup.GetTargetForHtmlInsertion(this), compliantHtml, compliantOptions, FragmentParserMode.Unsafe);
+        DynamicMarkup.FilterAndPrependHtml(DynamicMarkup.GetTargetForHtmlPreInsertion(this), compliantHtml, compliantOptions, FragmentParserMode.Unsafe);
     }
 
     /// <summary>Parses the HTML and inserts the result before the first child, without the default sanitizer.</summary>
@@ -65,7 +65,7 @@ public partial class Element
     {
         ArgumentNullException.ThrowIfNull(html);
         var (compliantHtml, compliantOptions) = TrustedTypesAlgorithms.GetCompliantInput(NodeDocument, html, FragmentParserOptions.FromUnsafe(options), "Element prependHTMLUnsafe");
-        DynamicMarkup.FilterAndPrependHtml(DynamicMarkup.GetTargetForHtmlInsertion(this), compliantHtml, compliantOptions, FragmentParserMode.Unsafe);
+        DynamicMarkup.FilterAndPrependHtml(DynamicMarkup.GetTargetForHtmlPreInsertion(this), compliantHtml, compliantOptions, FragmentParserMode.Unsafe);
     }
 
     /// <summary>Parses the HTML and inserts the result before this node.</summary>

@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 259 | 288 | 0 | 90% |
+| [Stable](#stable-tests) | 277 | 288 | 0 | 96% |
 | [Tentative](#tentative-tests) | 0 | 8 | 0 | 0% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **259** | **296** | **0** | **88%** |
+| **All** | **277** | **296** | **0** | **94%** |
 
 ## Stable tests
 
@@ -101,13 +101,13 @@
 | [`Worker_script_mimetype.htm`](https://wpt.fyi/results/workers/Worker_script_mimetype.htm) | Pass | 5 / 5 |  |  |
 | [`Worker_terminate_event_queue.htm`](https://wpt.fyi/results/workers/Worker_terminate_event_queue.htm) | Pass | 1 / 1 |  |  |
 | [`abrupt-completion.html`](https://wpt.fyi/results/workers/abrupt-completion.html) | Pass | 2 / 2 |  |  |
-| [`baseurl/alpha/import-in-moduleworker.html`](https://wpt.fyi/results/workers/baseurl/alpha/import-in-moduleworker.html) | Fail | 0 / 1 | TEST RUNNER | the `workers/baseurl/beta/*.py` handler of the WPT server is not emulated |
-| [`baseurl/alpha/importScripts-in-sharedworker.html`](https://wpt.fyi/results/workers/baseurl/alpha/importScripts-in-sharedworker.html) | Timeout | 0 / 0 | TEST RUNNER | the `workers/baseurl/beta/*.py` handler of the WPT server is not emulated |
-| [`baseurl/alpha/importScripts-in-worker.html`](https://wpt.fyi/results/workers/baseurl/alpha/importScripts-in-worker.html) | Timeout | 0 / 0 | TEST RUNNER | the `workers/baseurl/beta/*.py` handler of the WPT server is not emulated |
-| [`baseurl/alpha/worker-in-worker.html`](https://wpt.fyi/results/workers/baseurl/alpha/worker-in-worker.html) | Fail | 0 / 1 | TEST RUNNER | the `workers/baseurl/beta/*.py` handler of the WPT server is not emulated |
-| [`baseurl/alpha/xhr-in-moduleworker.html`](https://wpt.fyi/results/workers/baseurl/alpha/xhr-in-moduleworker.html) | Fail | 0 / 1 | TEST RUNNER | the `workers/baseurl/beta/*.py` handler of the WPT server is not emulated |
-| [`baseurl/alpha/xhr-in-sharedworker.html`](https://wpt.fyi/results/workers/baseurl/alpha/xhr-in-sharedworker.html) | Timeout | 0 / 0 | TEST RUNNER | the `workers/baseurl/beta/*.py` handler of the WPT server is not emulated |
-| [`baseurl/alpha/xhr-in-worker.html`](https://wpt.fyi/results/workers/baseurl/alpha/xhr-in-worker.html) | Timeout | 0 / 0 | TEST RUNNER | the `workers/baseurl/beta/*.py` handler of the WPT server is not emulated |
+| [`baseurl/alpha/import-in-moduleworker.html`](https://wpt.fyi/results/workers/baseurl/alpha/import-in-moduleworker.html) | Pass | 1 / 1 |  |  |
+| [`baseurl/alpha/importScripts-in-sharedworker.html`](https://wpt.fyi/results/workers/baseurl/alpha/importScripts-in-sharedworker.html) | Pass | 1 / 1 |  |  |
+| [`baseurl/alpha/importScripts-in-worker.html`](https://wpt.fyi/results/workers/baseurl/alpha/importScripts-in-worker.html) | Pass | 1 / 1 |  |  |
+| [`baseurl/alpha/worker-in-worker.html`](https://wpt.fyi/results/workers/baseurl/alpha/worker-in-worker.html) | Pass | 1 / 1 |  |  |
+| [`baseurl/alpha/xhr-in-moduleworker.html`](https://wpt.fyi/results/workers/baseurl/alpha/xhr-in-moduleworker.html) | Pass | 1 / 1 |  |  |
+| [`baseurl/alpha/xhr-in-sharedworker.html`](https://wpt.fyi/results/workers/baseurl/alpha/xhr-in-sharedworker.html) | Pass | 1 / 1 |  |  |
+| [`baseurl/alpha/xhr-in-worker.html`](https://wpt.fyi/results/workers/baseurl/alpha/xhr-in-worker.html) | Pass | 1 / 1 |  |  |
 | [`constructors/SharedWorker/Infinity-arguments.html`](https://wpt.fyi/results/workers/constructors/SharedWorker/Infinity-arguments.html) | Pass | 1 / 1 |  |  |
 | [`constructors/SharedWorker/NaN-arguments.html`](https://wpt.fyi/results/workers/constructors/SharedWorker/NaN-arguments.html) | Pass | 1 / 1 |  |  |
 | [`constructors/SharedWorker/SharedWorker-constructor.html`](https://wpt.fyi/results/workers/constructors/SharedWorker/SharedWorker-constructor.html) | Pass | 3 / 3 |  |  |
@@ -153,7 +153,7 @@
 | [`examples/general.any.js`](https://wpt.fyi/results/workers/examples/general.any.js) | Pass | 4 / 4 |  |  |
 | [`examples/general.worker.js`](https://wpt.fyi/results/workers/examples/general.worker.js) | Pass | 2 / 2 |  |  |
 | [`examples/onconnect.any.js`](https://wpt.fyi/results/workers/examples/onconnect.any.js) | Pass | 1 / 1 |  |  |
-| [`importscripts_mime.any.js`](https://wpt.fyi/results/workers/importscripts_mime.any.js) | Fail | 36 / 48 | TEST RUNNER | the `workers/support/imported_script.py` handler of the WPT server is not emulated |
+| [`importscripts_mime.any.js`](https://wpt.fyi/results/workers/importscripts_mime.any.js) | Pass | 48 / 48 |  |  |
 | [`importscripts_mime_local.any.js`](https://wpt.fyi/results/workers/importscripts_mime_local.any.js) | Pass | 96 / 96 |  |  |
 | [`interfaces/DedicatedWorkerGlobalScope/EventTarget.worker.js`](https://wpt.fyi/results/workers/interfaces/DedicatedWorkerGlobalScope/EventTarget.worker.js) | Pass | 2 / 2 |  |  |
 | [`interfaces/DedicatedWorkerGlobalScope/onmessage.worker.js`](https://wpt.fyi/results/workers/interfaces/DedicatedWorkerGlobalScope/onmessage.worker.js) | Pass | 4 / 4 |  |  |
@@ -175,9 +175,9 @@
 | [`interfaces/WorkerGlobalScope/close/setInterval.html`](https://wpt.fyi/results/workers/interfaces/WorkerGlobalScope/close/setInterval.html) | Pass | 1 / 1 |  |  |
 | [`interfaces/WorkerGlobalScope/close/setTimeout.html`](https://wpt.fyi/results/workers/interfaces/WorkerGlobalScope/close/setTimeout.html) | Pass | 1 / 1 |  |  |
 | [`interfaces/WorkerGlobalScope/location/members.html`](https://wpt.fyi/results/workers/interfaces/WorkerGlobalScope/location/members.html) | Pass | 1 / 1 |  |  |
-| [`interfaces/WorkerGlobalScope/location/redirect-module.html`](https://wpt.fyi/results/workers/interfaces/WorkerGlobalScope/location/redirect-module.html) | Timeout | 0 / 1 | TEST RUNNER | the `workers/interfaces/WorkerGlobalScope/location/helper-redirect.py` handler of the WPT server is not emulated |
+| [`interfaces/WorkerGlobalScope/location/redirect-module.html`](https://wpt.fyi/results/workers/interfaces/WorkerGlobalScope/location/redirect-module.html) | Pass | 1 / 1 |  |  |
 | [`interfaces/WorkerGlobalScope/location/redirect-sharedworker.html`](https://wpt.fyi/results/workers/interfaces/WorkerGlobalScope/location/redirect-sharedworker.html) | Pass | 1 / 1 |  |  |
-| [`interfaces/WorkerGlobalScope/location/redirect.html`](https://wpt.fyi/results/workers/interfaces/WorkerGlobalScope/location/redirect.html) | Timeout | 0 / 1 | TEST RUNNER | the `workers/interfaces/WorkerGlobalScope/location/helper-redirect.py` handler of the WPT server is not emulated |
+| [`interfaces/WorkerGlobalScope/location/redirect.html`](https://wpt.fyi/results/workers/interfaces/WorkerGlobalScope/location/redirect.html) | Pass | 1 / 1 |  |  |
 | [`interfaces/WorkerGlobalScope/location/returns-same-object.any.js`](https://wpt.fyi/results/workers/interfaces/WorkerGlobalScope/location/returns-same-object.any.js) | Pass | 2 / 2 |  |  |
 | [`interfaces/WorkerGlobalScope/location/setting-members.html`](https://wpt.fyi/results/workers/interfaces/WorkerGlobalScope/location/setting-members.html) | Pass | 1 / 1 |  |  |
 | [`interfaces/WorkerGlobalScope/location/worker-separate-file.html`](https://wpt.fyi/results/workers/interfaces/WorkerGlobalScope/location/worker-separate-file.html) | Pass | 1 / 1 |  |  |
@@ -223,26 +223,26 @@
 | [`interfaces/WorkerUtils/navigator/007.html`](https://wpt.fyi/results/workers/interfaces/WorkerUtils/navigator/007.html) | Pass | 1 / 1 |  |  |
 | [`interfaces/WorkerUtils/navigator/008.worker.js`](https://wpt.fyi/results/workers/interfaces/WorkerUtils/navigator/008.worker.js) | Pass | 1 / 1 |  |  |
 | [`interfaces/WorkerUtils/navigator/language.html`](https://wpt.fyi/results/workers/interfaces/WorkerUtils/navigator/language.html) | Pass | 1 / 1 |  |  |
-| [`modules/dedicated-worker-import-blob-url.any.js`](https://wpt.fyi/results/workers/modules/dedicated-worker-import-blob-url.any.js) | Fail | 14 / 18 | TEST RUNNER | the `workers/modules/resources/export-on-load-script.py` handler of the WPT server is not emulated (and `redirect.py`) |
-| [`modules/dedicated-worker-import-csp.html`](https://wpt.fyi/results/workers/modules/dedicated-worker-import-csp.html) | Fail | 7 / 11 | TEST RUNNER | the `workers/modules/resources/export-on-load-script.py` handler of the WPT server is not emulated |
+| [`modules/dedicated-worker-import-blob-url.any.js`](https://wpt.fyi/results/workers/modules/dedicated-worker-import-blob-url.any.js) | Pass | 18 / 18 |  |  |
+| [`modules/dedicated-worker-import-csp.html`](https://wpt.fyi/results/workers/modules/dedicated-worker-import-csp.html) | Pass | 11 / 11 |  |  |
 | [`modules/dedicated-worker-import-data-url-cross-origin.html`](https://wpt.fyi/results/workers/modules/dedicated-worker-import-data-url-cross-origin.html) | Fail | 3 / 4 | BUG | a module script imported by a module worker created from a `data:` URL (an opaque origin) cannot be imported from another origin |
-| [`modules/dedicated-worker-import-data-url.any.js`](https://wpt.fyi/results/workers/modules/dedicated-worker-import-data-url.any.js) | Fail | 14 / 18 | TEST RUNNER | the `workers/modules/resources/export-on-load-script.py` handler of the WPT server is not emulated (and `redirect.py`) |
+| [`modules/dedicated-worker-import-data-url.any.js`](https://wpt.fyi/results/workers/modules/dedicated-worker-import-data-url.any.js) | Fail | 16 / 18 | TEST BUG | "Static import (redirect)": the module worker created from a `data:` URL has an opaque origin, so its import of `redirect.py` is a CORS request, and the redirect response has no `Access-Control-Allow-Origin` header (the `pipe=header()` parameter is only on the URL of the importing script): the CORS check of the redirect fails, as the Fetch Standard requires |
 | [`modules/dedicated-worker-import-failure.html`](https://wpt.fyi/results/workers/modules/dedicated-worker-import-failure.html) | Pass | 6 / 6 |  |  |
 | [`modules/dedicated-worker-import-meta.html`](https://wpt.fyi/results/workers/modules/dedicated-worker-import-meta.html) | Pass | 3 / 3 |  |  |
-| [`modules/dedicated-worker-import-referrer.html`](https://wpt.fyi/results/workers/modules/dedicated-worker-import-referrer.html) | Fail | 0 / 15 | TEST RUNNER | the `workers/modules/resources/postmessage-referrer-checker.py` handler of the WPT server is not emulated (and `export-referrer-checker.py`) |
-| [`modules/dedicated-worker-import.any.js`](https://wpt.fyi/results/workers/modules/dedicated-worker-import.any.js) | Fail | 14 / 18 | TEST RUNNER | the `workers/modules/resources/export-on-load-script.py` handler of the WPT server is not emulated (and `redirect.py`) |
-| [`modules/dedicated-worker-options-credentials.html`](https://wpt.fyi/results/workers/modules/dedicated-worker-options-credentials.html) | Timeout | 1 / 33 | TEST RUNNER | the `workers/modules/resources/postmessage-credentials.py` handler of the WPT server is not emulated (and `cookies/resources/set-cookie.py`) |
+| [`modules/dedicated-worker-import-referrer.html`](https://wpt.fyi/results/workers/modules/dedicated-worker-import-referrer.html) | Fail | 11 / 15 | BUG | the static imports of a module worker are fetched with the referrer policy of the worker instead of the one of the document that created it (the policy of the outside settings applies to the top-level script and its static imports; only the dynamic imports use the policy of the worker) |
+| [`modules/dedicated-worker-import.any.js`](https://wpt.fyi/results/workers/modules/dedicated-worker-import.any.js) | Pass | 18 / 18 |  |  |
+| [`modules/dedicated-worker-options-credentials.html`](https://wpt.fyi/results/workers/modules/dedicated-worker-options-credentials.html) | Fail | 31 / 33 | BUG | the `credentials: "omit"` option of a module worker is not applied to its same-origin imports (static and dynamic): they are fetched with the cookies |
 | [`modules/dedicated-worker-options-type.html`](https://wpt.fyi/results/workers/modules/dedicated-worker-options-type.html) | Pass | 5 / 5 |  |  |
 | [`modules/dedicated-worker-parse-error-failure.html`](https://wpt.fyi/results/workers/modules/dedicated-worker-parse-error-failure.html) | Pass | 2 / 2 |  |  |
-| [`modules/shared-worker-import-blob-url.window.js`](https://wpt.fyi/results/workers/modules/shared-worker-import-blob-url.window.js) | Fail | 7 / 9 | TEST RUNNER | the `workers/modules/resources/export-on-load-script.py` handler of the WPT server is not emulated (and `redirect.py`) |
-| [`modules/shared-worker-import-csp.html`](https://wpt.fyi/results/workers/modules/shared-worker-import-csp.html) | Fail | 6 / 9 | TEST RUNNER | the `workers/modules/resources/export-on-load-script.py` handler of the WPT server is not emulated |
+| [`modules/shared-worker-import-blob-url.window.js`](https://wpt.fyi/results/workers/modules/shared-worker-import-blob-url.window.js) | Pass | 9 / 9 |  |  |
+| [`modules/shared-worker-import-csp.html`](https://wpt.fyi/results/workers/modules/shared-worker-import-csp.html) | Pass | 9 / 9 |  |  |
 | [`modules/shared-worker-import-data-url-cross-origin.html`](https://wpt.fyi/results/workers/modules/shared-worker-import-data-url-cross-origin.html) | Fail | 3 / 4 | BUG | a module script imported by a module worker created from a `data:` URL (an opaque origin) cannot be imported from another origin |
-| [`modules/shared-worker-import-data-url.window.js`](https://wpt.fyi/results/workers/modules/shared-worker-import-data-url.window.js) | Fail | 7 / 9 | TEST RUNNER | the `workers/modules/resources/export-on-load-script.py` handler of the WPT server is not emulated (and `redirect.py`) |
+| [`modules/shared-worker-import-data-url.window.js`](https://wpt.fyi/results/workers/modules/shared-worker-import-data-url.window.js) | Fail | 8 / 9 | TEST BUG | "Static import (redirect)": the module worker created from a `data:` URL has an opaque origin, so its import of `redirect.py` is a CORS request, and the redirect response has no `Access-Control-Allow-Origin` header (the `pipe=header()` parameter is only on the URL of the importing script): the CORS check of the redirect fails, as the Fetch Standard requires |
 | [`modules/shared-worker-import-failure.html`](https://wpt.fyi/results/workers/modules/shared-worker-import-failure.html) | Pass | 6 / 6 |  |  |
 | [`modules/shared-worker-import-meta.html`](https://wpt.fyi/results/workers/modules/shared-worker-import-meta.html) | Pass | 3 / 3 |  |  |
-| [`modules/shared-worker-import-referrer.html`](https://wpt.fyi/results/workers/modules/shared-worker-import-referrer.html) | Fail | 0 / 15 | TEST RUNNER | the `workers/modules/resources/postmessage-referrer-checker.py` handler of the WPT server is not emulated (and `export-referrer-checker.py`) |
-| [`modules/shared-worker-import.window.js`](https://wpt.fyi/results/workers/modules/shared-worker-import.window.js) | Fail | 7 / 9 | TEST RUNNER | the `workers/modules/resources/export-on-load-script.py` handler of the WPT server is not emulated (and `redirect.py`) |
-| [`modules/shared-worker-options-credentials.html`](https://wpt.fyi/results/workers/modules/shared-worker-options-credentials.html) | Timeout | 1 / 33 | TEST RUNNER | the `workers/modules/resources/postmessage-credentials.py` handler of the WPT server is not emulated (and `cookies/resources/set-cookie.py`) |
+| [`modules/shared-worker-import-referrer.html`](https://wpt.fyi/results/workers/modules/shared-worker-import-referrer.html) | Fail | 11 / 15 | BUG | the static imports of a module worker are fetched with the referrer policy of the worker instead of the one of the document that created it (the policy of the outside settings applies to the top-level script and its static imports; only the dynamic imports use the policy of the worker) |
+| [`modules/shared-worker-import.window.js`](https://wpt.fyi/results/workers/modules/shared-worker-import.window.js) | Pass | 9 / 9 |  |  |
+| [`modules/shared-worker-options-credentials.html`](https://wpt.fyi/results/workers/modules/shared-worker-options-credentials.html) | Fail | 31 / 33 | BUG | the `credentials: "omit"` option of a module worker is not applied to its same-origin imports (static and dynamic): they are fetched with the cookies |
 | [`modules/shared-worker-options-type.html`](https://wpt.fyi/results/workers/modules/shared-worker-options-type.html) | Pass | 5 / 5 |  |  |
 | [`modules/shared-worker-parse-error-failure.html`](https://wpt.fyi/results/workers/modules/shared-worker-parse-error-failure.html) | Pass | 2 / 2 |  |  |
 | [`multi-globals/url-parsing.html`](https://wpt.fyi/results/workers/multi-globals/url-parsing.html) | Pass | 1 / 1 |  |  |
@@ -264,8 +264,8 @@
 | [`same-origin-check.sub.html`](https://wpt.fyi/results/workers/same-origin-check.sub.html) | Pass | 16 / 16 |  |  |
 | [`semantics/encodings/001.html`](https://wpt.fyi/results/workers/semantics/encodings/001.html) | Pass | 1 / 1 |  |  |
 | [`semantics/encodings/002.html`](https://wpt.fyi/results/workers/semantics/encodings/002.html) | Pass | 1 / 1 |  |  |
-| [`semantics/encodings/003.html`](https://wpt.fyi/results/workers/semantics/encodings/003.html) | Fail | 0 / 1 | TEST RUNNER | the `workers/semantics/encodings/003-1.py` handler of the WPT server is not emulated |
-| [`semantics/encodings/004.html`](https://wpt.fyi/results/workers/semantics/encodings/004.html) | Fail | 0 / 1 | TEST RUNNER | the `workers/semantics/encodings/003-1.py` handler of the WPT server is not emulated |
+| [`semantics/encodings/003.html`](https://wpt.fyi/results/workers/semantics/encodings/003.html) | Pass | 1 / 1 |  |  |
+| [`semantics/encodings/004.html`](https://wpt.fyi/results/workers/semantics/encodings/004.html) | Pass | 1 / 1 |  |  |
 | [`semantics/encodings/004.worker.js`](https://wpt.fyi/results/workers/semantics/encodings/004.worker.js) | Pass | 1 / 1 |  |  |
 | [`semantics/interface-objects/001.worker.js`](https://wpt.fyi/results/workers/semantics/interface-objects/001.worker.js) | Pass | 63 / 63 |  |  |
 | [`semantics/interface-objects/002.worker.js`](https://wpt.fyi/results/workers/semantics/interface-objects/002.worker.js) | Pass | 30 / 30 |  |  |

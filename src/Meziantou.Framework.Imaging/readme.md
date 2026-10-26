@@ -575,13 +575,6 @@ or to another image of the same size, with `AutoCrop(analysis, options)`.
 - **Weights.** `AnalyzeWeights` also measures on which side of the canvas the content is heavier (from -1 to 1 on each
   axis) and moves the padded rectangle that way by `padding * weight` pixels.
 
-When no border or no content is found (a uniform image, for instance), `AutoCrop` returns `false` and leaves the image
-untouched. It works in stored-pixel coordinates: call `AutoOrient` first. The options follow those of
-[ImageSharp.Processing.AutoCrop](https://github.com/Geta/ImageSharp.Processing.AutoCrop), with these differences: the
-padding is in pixels instead of percents, the color difference uses the Rec. 709 weights of the library, the six pixel
-formats and every frame are analyzed, the retry removes the 5% on all four sides, `ColorThreshold` is always set, and a
-uniform image reports the whole canvas as its box.
-
 <!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_AutoCrop;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static bool TrimBackground(string inputPath, string outputPath)

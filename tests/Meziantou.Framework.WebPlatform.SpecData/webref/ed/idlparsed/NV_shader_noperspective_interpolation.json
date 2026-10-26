@@ -1,0 +1,68 @@
+{
+  "spec": {
+    "title": "WebGL NV_shader_noperspective_interpolation Extension Specification",
+    "url": "https://registry.khronos.org/webgl/extensions/NV_shader_noperspective_interpolation/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "NV_shader_noperspective_interpolation"
+        ],
+        "Worker": [
+          "NV_shader_noperspective_interpolation"
+        ]
+      }
+    },
+    "idlNames": {
+      "NV_shader_noperspective_interpolation": {
+        "fragment": "[Exposed=(Window,Worker), LegacyNoInterfaceObject]\ninterface NV_shader_noperspective_interpolation {\n};",
+        "type": "interface",
+        "name": "NV_shader_noperspective_interpolation",
+        "inheritance": null,
+        "members": [],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "LegacyNoInterfaceObject",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "NV_shader_noperspective_interpolation"
+      ],
+      "Worker": [
+        "NV_shader_noperspective_interpolation"
+      ]
+    },
+    "dependencies": {
+      "NV_shader_noperspective_interpolation": []
+    },
+    "externalDependencies": [],
+    "hasObsoleteIdl": false
+  }
+}

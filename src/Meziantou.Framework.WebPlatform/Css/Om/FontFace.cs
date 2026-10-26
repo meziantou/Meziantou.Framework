@@ -122,6 +122,7 @@ public sealed class FontFace
         ("ascentOverride", "ascent-override", "normal"),
         ("descentOverride", "descent-override", "normal"),
         ("lineGapOverride", "line-gap-override", "normal"),
+        ("sizeAdjust", "size-adjust", "100%"),
     ];
 
     private readonly TaskCompletionSource<FontFace> _fontStatusPromise = new();
@@ -379,6 +380,15 @@ public sealed class FontFace
         set => SetValue("lineGapOverride", value);
     }
 
+    /// <summary>Gets or sets the <c>size-adjust</c> descriptor of the font face.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontface-sizeadjust"/>
+    [IdlMember("sizeAdjust", "https://drafts.csswg.org/css-font-loading/#dom-fontface-sizeadjust")]
+    public string SizeAdjust
+    {
+        get => GetValue("sizeAdjust");
+        set => SetValue("sizeAdjust", value);
+    }
+
     /// <summary>Gets the load status of the font face.</summary>
     /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontface-status"/>
     [IdlMember("status", "https://drafts.csswg.org/css-font-loading/#dom-fontface-status")]
@@ -420,6 +430,7 @@ public sealed class FontFace
             ("ascentOverride", descriptors.AscentOverride),
             ("descentOverride", descriptors.DescentOverride),
             ("lineGapOverride", descriptors.LineGapOverride),
+            ("sizeAdjust", "100%"),
         };
 
         _values["family"] = ParseFamily(family);

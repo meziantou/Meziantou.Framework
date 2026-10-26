@@ -10,14 +10,17 @@
         "Window": [
           "CrossOriginStorageManager"
         ],
-        "Worker": [
+        "DedicatedWorker": [
+          "CrossOriginStorageManager"
+        ],
+        "SharedWorker": [
           "CrossOriginStorageManager"
         ]
       }
     },
     "idlNames": {
       "CrossOriginStorageManager": {
-        "fragment": "[Exposed=(Window,Worker), SecureContext]\ninterface CrossOriginStorageManager {\n  Promise<FileSystemFileHandle> getFileHandle(\n      CrossOriginStorageGetFileHandleHash hash,\n      optional CrossOriginStorageGetFileHandleOptions options = {});\n};",
+        "fragment": "[Exposed=(Window,DedicatedWorker,SharedWorker), SecureContext]\ninterface CrossOriginStorageManager {\n  Promise<FileSystemFileHandle> getFileHandle(\n      CrossOriginStorageGetFileHandleHash hash,\n      optional CrossOriginStorageGetFileHandleOptions options = {});\n};",
         "type": "interface",
         "name": "CrossOriginStorageManager",
         "inheritance": null,
@@ -94,7 +97,10 @@
                   "value": "Window"
                 },
                 {
-                  "value": "Worker"
+                  "value": "DedicatedWorker"
+                },
+                {
+                  "value": "SharedWorker"
                 }
               ]
             },
@@ -226,7 +232,7 @@
         "href": "https://wicg.github.io/cross-origin-storage/#dictdef-crossoriginstoragegetfilehandleoptions"
       },
       "NavigatorCrossOriginStorage": {
-        "fragment": "interface mixin NavigatorCrossOriginStorage {\n  [SameObject, SecureContext] readonly attribute CrossOriginStorageManager crossOriginStorage;\n};",
+        "fragment": "interface mixin NavigatorCrossOriginStorage {\n  [Exposed=(Window,DedicatedWorker,SharedWorker), SameObject, SecureContext]\n  readonly attribute CrossOriginStorageManager crossOriginStorage;\n};",
         "type": "interface mixin",
         "name": "NavigatorCrossOriginStorage",
         "inheritance": null,
@@ -243,6 +249,25 @@
               "idlType": "CrossOriginStorageManager"
             },
             "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "Exposed",
+                "rhs": {
+                  "type": "identifier-list",
+                  "value": [
+                    {
+                      "value": "Window"
+                    },
+                    {
+                      "value": "DedicatedWorker"
+                    },
+                    {
+                      "value": "SharedWorker"
+                    }
+                  ]
+                },
+                "arguments": []
+              },
               {
                 "type": "extended-attribute",
                 "name": "SameObject",
@@ -291,7 +316,10 @@
       "Window": [
         "CrossOriginStorageManager"
       ],
-      "Worker": [
+      "DedicatedWorker": [
+        "CrossOriginStorageManager"
+      ],
+      "SharedWorker": [
         "CrossOriginStorageManager"
       ]
     },

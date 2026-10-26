@@ -68,7 +68,7 @@
         "href": "https://wicg.github.io/install-element/#dom-webinstallresult"
       },
       "HTMLInstallElement": {
-        "fragment": "[Exposed=Window]\ninterface HTMLInstallElement : HTMLElement {\n  [HTMLConstructor] constructor();\n\n  [CEReactions, ReflectURL] attribute USVString manifest;\n  [CEReactions, ReflectURL] attribute USVString manifestId;\n};",
+        "fragment": "[Exposed=Window]\ninterface HTMLInstallElement : HTMLElement {\n  [HTMLConstructor] constructor();\n\n  [CEReactions, ReflectURL] attribute USVString manifest;\n  [CEReactions, ReflectURL] attribute USVString manifestId;\n\n  readonly attribute boolean isValid;\n  readonly attribute DOMString invalidReason;\n  attribute EventHandler onvalidationstatuschange;\n};",
         "type": "interface",
         "name": "HTMLInstallElement",
         "inheritance": "HTMLElement",
@@ -143,6 +143,54 @@
             "special": "",
             "readonly": false,
             "href": "https://wicg.github.io/install-element/#dom-htmlinstallelement-manifestid"
+          },
+          {
+            "type": "attribute",
+            "name": "isValid",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/install-element/#dom-htmlinstallelement-isvalid"
+          },
+          {
+            "type": "attribute",
+            "name": "invalidReason",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "DOMString"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://wicg.github.io/install-element/#dom-htmlinstallelement-invalidreason"
+          },
+          {
+            "type": "attribute",
+            "name": "onvalidationstatuschange",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "EventHandler"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": false,
+            "href": "https://wicg.github.io/install-element/#dom-htmlinstallelement-onvalidationstatuschange"
           }
         ],
         "extAttrs": [
@@ -295,7 +343,7 @@
     "idlExtendedNames": {
       "Navigator": [
         {
-          "fragment": "partial interface Navigator {\n  Promise<WebInstallResult> install();\n  Promise<WebInstallResult> install(InstallParams options);\n};",
+          "fragment": "partial interface Navigator {\n  [SecureContext] Promise<WebInstallResult> install();\n  [SecureContext] Promise<WebInstallResult> install(InstallParams options);\n};",
           "type": "interface",
           "name": "Navigator",
           "inheritance": null,
@@ -321,7 +369,14 @@
                 ]
               },
               "arguments": [],
-              "extAttrs": [],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SecureContext",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
               "special": "",
               "href": "https://wicg.github.io/install-element/#dom-navigator-install"
             },
@@ -363,7 +418,14 @@
                   "variadic": false
                 }
               ],
-              "extAttrs": [],
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "SecureContext",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
               "special": "",
               "href": "https://wicg.github.io/install-element/#dom-navigator-install!overload-1"
             }
@@ -399,15 +461,6 @@
           "extAttrs": [],
           "partial": true
         }
-      ],
-      "HTMLInstallElement": [
-        {
-          "fragment": "HTMLInstallElement includes ActivationBlockersMixin;",
-          "type": "includes",
-          "extAttrs": [],
-          "target": "HTMLInstallElement",
-          "includes": "ActivationBlockersMixin"
-        }
       ]
     },
     "globals": {},
@@ -426,7 +479,7 @@
       "WebInstallResult": [],
       "HTMLInstallElement": [
         "HTMLElement",
-        "ActivationBlockersMixin"
+        "EventHandler"
       ],
       "GlobalEventHandlers": [
         "EventHandler"
@@ -444,8 +497,8 @@
     "externalDependencies": [
       "Navigator",
       "HTMLElement",
-      "GlobalEventHandlers",
       "EventHandler",
+      "GlobalEventHandlers",
       "Event",
       "EventInit"
     ],

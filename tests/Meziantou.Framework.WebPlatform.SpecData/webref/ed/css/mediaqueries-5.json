@@ -178,7 +178,7 @@
             },
             {
               "name": "browser",
-              "prose": "The browsing context is displayed using the platform-specific convention for opening hyperlinks in the user agent (e.g., in a browser tab or web browser window with controls such as an address bar). Only applicable in non-application contexts. Corresponds to the browser display mode.",
+              "prose": "The browsing context is displayed using the platform-specific convention for opening hyperlinks in the user agent (e.g., in a browser tab or web browser window with controls such as an address bar). Matches when the browser display mode is in use, and in any non-application contexts. Corresponds to the browser display mode.",
               "href": "https://drafts.csswg.org/mediaqueries-5/#valdef-media-display-mode-browser",
               "type": "value",
               "value": "browser"

@@ -3290,6 +3290,24 @@ public sealed partial class HtmlInputElement : HtmlElement
         set => Reflection.SetString(this, "usemap", value);
     }
 
+    /// <summary>Gets or sets the value of the <c>hspace</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-input-hspace"/>
+    [IdlMember("hspace", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-input-hspace")]
+    public uint Hspace
+    {
+        get => Reflection.GetUnsignedLong(this, "hspace", positive: false, defaultValue: null);
+        set => Reflection.SetUnsignedLong(this, "hspace", positive: false, positiveWithFallback: false, defaultValue: null, value);
+    }
+
+    /// <summary>Gets or sets the value of the <c>vspace</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/obsolete.html#dom-input-vspace"/>
+    [IdlMember("vspace", "https://html.spec.whatwg.org/multipage/obsolete.html#dom-input-vspace")]
+    public uint Vspace
+    {
+        get => Reflection.GetUnsignedLong(this, "vspace", positive: false, defaultValue: null);
+        set => Reflection.SetUnsignedLong(this, "vspace", positive: false, positiveWithFallback: false, defaultValue: null, value);
+    }
+
     /// <summary>Gets or sets the element whose ID is the value of the <c>popovertarget</c> content attribute.</summary>
     /// <seealso href="https://html.spec.whatwg.org/multipage/input.html#htmlinputelement"/>
     [IdlMember("popoverTargetElement", "https://html.spec.whatwg.org/multipage/input.html#htmlinputelement")]

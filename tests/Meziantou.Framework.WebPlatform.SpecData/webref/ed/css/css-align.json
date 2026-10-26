@@ -130,7 +130,7 @@
         },
         {
           "name": "stretch",
-          "prose": "When the box’s computed width/height (as appropriate to the axis) is auto and neither of its margins (in the appropriate axis) are auto, sets the box’s used size to the length necessary to make its outer size as close to filling the alignment container as possible while still respecting the constraints imposed by min-height/min-width/max-height/max-width. Unless otherwise specified, this value falls back to flex-start generally, and to self-start or self-end if the box has also specified first baseline or last baseline baseline content-alignment (respectively) in the same axis.",
+          "prose": "When the box’s computed width/height (as appropriate to the axis) is auto and neither of its margins (in the appropriate axis) are auto, sets the box’s used size to the length necessary to make its outer size as close to filling the alignment container as possible while still respecting the constraints imposed by min-height/min-width/max-height/max-width. Unless otherwise specified, this value falls back to flow-start generally, and to self-start or self-end if the box has also specified first baseline or last baseline baseline content-alignment (respectively) in the same axis.",
           "href": "https://drafts.csswg.org/css-align-3/#valdef-justify-self-stretch",
           "type": "value",
           "value": "stretch"
@@ -283,7 +283,7 @@
       "name": "<self-position>",
       "href": "https://drafts.csswg.org/css-align-3/#typedef-self-position",
       "type": "type",
-      "value": "center | start | end | self-start | self-end | flex-start | flex-end",
+      "value": "center | start | end | self-start | self-end | flow-start | flow-end | flex-start | flex-end",
       "values": [
         {
           "name": "center",
@@ -321,15 +321,29 @@
           "value": "self-end"
         },
         {
+          "name": "flow-start",
+          "prose": "Aligns the alignment subject to be flush with the edge of the alignment container corresponding to the start of placement. In a flex formatting context, this corresponds to the flex container’s main-start or cross-start side, as appropriate. [CSS-FLEXBOX-1] In grid lanes layout, this corresponds to the side of the grid lanes container from which item placement proceeds in the axis being aligned. See [CSS-GRID-3] for more details. When used outside of a flex formatting context or grid lanes layout, this value behaves as start, unless otherwise specified by the layout model.",
+          "href": "https://drafts.csswg.org/css-align-3/#valdef-self-position-flow-start",
+          "type": "value",
+          "value": "flow-start"
+        },
+        {
+          "name": "flow-end",
+          "prose": "Aligns the alignment subject to be flush with the edge of the alignment container corresponding to the end of placement. In a flex formatting context, this corresponds to the flex container’s main-end or cross-end side, as appropriate. [CSS-FLEXBOX-1] In grid lanes layout, this corresponds to the side of the grid lanes container opposite the side from which item placement proceeds in the axis being aligned. See [CSS-GRID-3] for more details. When used outside of a flex formatting context or grid lanes layout, this value behaves as end, unless otherwise specified by the layout model.",
+          "href": "https://drafts.csswg.org/css-align-3/#valdef-self-position-flow-end",
+          "type": "value",
+          "value": "flow-end"
+        },
+        {
           "name": "flex-start",
-          "prose": "Only used in flex layout. [CSS-FLEXBOX-1] Aligns the alignment subject to be flush with the edge of the alignment container corresponding to the flex container’s main-start or cross-start side, as appropriate. When used outside of a flex formatting context, this value behaves as start. That is, on boxes that are not flex items (or pretending to be flex items, such as when determining the static position of an absolutely-positioned box that is a child of a flex container), this value behaves as start when used in the self-alignment properties, and on boxes that are not flex containers, this value behaves as start when used in the content-distribution properties.",
+          "prose": "A legacy value alias for flow-start.",
           "href": "https://drafts.csswg.org/css-align-3/#valdef-self-position-flex-start",
           "type": "value",
           "value": "flex-start"
         },
         {
           "name": "flex-end",
-          "prose": "Only used in flex layout. Aligns the alignment subject to be flush with the edge of the alignment container corresponding to the flex container’s main-end or cross-end side, as appropriate. When used outside of a flex formatting context, this value behaves as end. That is, on boxes that are not flex items (or pretending to be flex items, such as when determining the static position of an absolutely-positioned box that is a child of a flex container), this value behaves as end when used in the self-alignment properties, and on boxes that are not flex containers, this value behaves as end when used in the content-distribution properties.",
+          "prose": "A legacy value alias for flow-end.",
           "href": "https://drafts.csswg.org/css-align-3/#valdef-self-position-flex-end",
           "type": "value",
           "value": "flex-end"
@@ -340,7 +354,7 @@
       "name": "<content-position>",
       "href": "https://drafts.csswg.org/css-align-3/#typedef-content-position",
       "type": "type",
-      "value": "center | start | end | flex-start | flex-end",
+      "value": "center | start | end | flow-start | flow-end | flex-start | flex-end",
       "values": [
         {
           "name": "center",
@@ -364,15 +378,29 @@
           "value": "end"
         },
         {
+          "name": "flow-start",
+          "prose": "Aligns the alignment subject to be flush with the edge of the alignment container corresponding to the start of placement. In a flex formatting context, this corresponds to the flex container’s main-start or cross-start side, as appropriate. [CSS-FLEXBOX-1] In grid lanes layout, this corresponds to the side of the grid lanes container from which item placement proceeds in the axis being aligned. See [CSS-GRID-3] for more details. When used outside of a flex formatting context or grid lanes layout, this value behaves as start, unless otherwise specified by the layout model.",
+          "href": "https://drafts.csswg.org/css-align-3/#valdef-self-position-flow-start",
+          "type": "value",
+          "value": "flow-start"
+        },
+        {
+          "name": "flow-end",
+          "prose": "Aligns the alignment subject to be flush with the edge of the alignment container corresponding to the end of placement. In a flex formatting context, this corresponds to the flex container’s main-end or cross-end side, as appropriate. [CSS-FLEXBOX-1] In grid lanes layout, this corresponds to the side of the grid lanes container opposite the side from which item placement proceeds in the axis being aligned. See [CSS-GRID-3] for more details. When used outside of a flex formatting context or grid lanes layout, this value behaves as end, unless otherwise specified by the layout model.",
+          "href": "https://drafts.csswg.org/css-align-3/#valdef-self-position-flow-end",
+          "type": "value",
+          "value": "flow-end"
+        },
+        {
           "name": "flex-start",
-          "prose": "Only used in flex layout. [CSS-FLEXBOX-1] Aligns the alignment subject to be flush with the edge of the alignment container corresponding to the flex container’s main-start or cross-start side, as appropriate. When used outside of a flex formatting context, this value behaves as start. That is, on boxes that are not flex items (or pretending to be flex items, such as when determining the static position of an absolutely-positioned box that is a child of a flex container), this value behaves as start when used in the self-alignment properties, and on boxes that are not flex containers, this value behaves as start when used in the content-distribution properties.",
+          "prose": "A legacy value alias for flow-start.",
           "href": "https://drafts.csswg.org/css-align-3/#valdef-self-position-flex-start",
           "type": "value",
           "value": "flex-start"
         },
         {
           "name": "flex-end",
-          "prose": "Only used in flex layout. Aligns the alignment subject to be flush with the edge of the alignment container corresponding to the flex container’s main-end or cross-end side, as appropriate. When used outside of a flex formatting context, this value behaves as end. That is, on boxes that are not flex items (or pretending to be flex items, such as when determining the static position of an absolutely-positioned box that is a child of a flex container), this value behaves as end when used in the self-alignment properties, and on boxes that are not flex containers, this value behaves as end when used in the content-distribution properties.",
+          "prose": "A legacy value alias for flow-end.",
           "href": "https://drafts.csswg.org/css-align-3/#valdef-self-position-flex-end",
           "type": "value",
           "value": "flex-end"
@@ -430,7 +458,7 @@
       "values": [
         {
           "name": "space-between",
-          "prose": "The alignment subjects are evenly distributed in the alignment container. The first alignment subject is placed flush with the start edge of the alignment container, the last alignment subject is placed flush with the end edge of the alignment container, and the remaining alignment subjects are distributed so that the spacing between any two adjacent alignment subjects is the same. The default fallback alignment for this value is safe flex-start. (For layout modes other than flex layout, flex-start is identical to start.)",
+          "prose": "The alignment subjects are evenly distributed in the alignment container. The first alignment subject is placed flush with the start edge of the alignment container, the last alignment subject is placed flush with the end edge of the alignment container, and the remaining alignment subjects are distributed so that the spacing between any two adjacent alignment subjects is the same. The default fallback alignment for this value is safe flow-start.",
           "href": "https://drafts.csswg.org/css-align-3/#valdef-align-content-space-between",
           "type": "value",
           "value": "space-between"
@@ -451,7 +479,7 @@
         },
         {
           "name": "stretch",
-          "prose": "If the combined size of the alignment subjects is less than the size of the alignment container, any auto-sized alignment subjects have their size increased equally (not proportionally), while still respecting the constraints imposed by max-height/max-width (or equivalent functionality), so that the combined size exactly fills the alignment container. The default fallback alignment for this value is flex-start. (For layout modes other than flex layout, flex-start is identical to start.)",
+          "prose": "If the combined size of the alignment subjects is less than the size of the alignment container, any auto-sized alignment subjects have their size increased equally (not proportionally), while still respecting the constraints imposed by max-height/max-width (or equivalent functionality), so that the combined size exactly fills the alignment container. The default fallback alignment for this value is flow-start.",
           "href": "https://drafts.csswg.org/css-align-3/#valdef-align-content-stretch",
           "type": "value",
           "value": "stretch"
@@ -466,7 +494,7 @@
       "values": [
         {
           "name": "safe",
-          "prose": "If the size of the alignment subject overflows the alignment container, the alignment subject is instead aligned as if the alignment mode were flex-start. However for absolutely positioned boxes, see § 4.4.1.2 Self-Alignment for Absolutely Positioned Boxes.",
+          "prose": "If the size of the alignment subject overflows the alignment container, the alignment subject is instead aligned as if the alignment mode were flow-start. However for absolutely positioned boxes, see § 4.4.1.2 Self-Alignment for Absolutely Positioned Boxes.",
           "href": "https://drafts.csswg.org/css-align-3/#valdef-overflow-position-safe",
           "type": "value",
           "value": "safe"

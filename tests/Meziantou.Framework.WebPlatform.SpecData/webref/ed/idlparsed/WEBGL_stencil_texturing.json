@@ -1,0 +1,103 @@
+{
+  "spec": {
+    "title": "WebGL WEBGL_stencil_texturing Extension Specification",
+    "url": "https://registry.khronos.org/webgl/extensions/WEBGL_stencil_texturing/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "WEBGL_stencil_texturing"
+        ],
+        "Worker": [
+          "WEBGL_stencil_texturing"
+        ]
+      }
+    },
+    "idlNames": {
+      "WEBGL_stencil_texturing": {
+        "fragment": "[Exposed=(Window,Worker), LegacyNoInterfaceObject]\ninterface WEBGL_stencil_texturing {\n    const GLenum DEPTH_STENCIL_TEXTURE_MODE_WEBGL = 0x90EA;\n    const GLenum STENCIL_INDEX_WEBGL              = 0x1901;\n};",
+        "type": "interface",
+        "name": "WEBGL_stencil_texturing",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "const",
+            "name": "DEPTH_STENCIL_TEXTURE_MODE_WEBGL",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x90EA"
+            }
+          },
+          {
+            "type": "const",
+            "name": "STENCIL_INDEX_WEBGL",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x1901"
+            }
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "LegacyNoInterfaceObject",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "WEBGL_stencil_texturing"
+      ],
+      "Worker": [
+        "WEBGL_stencil_texturing"
+      ]
+    },
+    "dependencies": {
+      "WEBGL_stencil_texturing": []
+    },
+    "externalDependencies": [],
+    "hasObsoleteIdl": false
+  }
+}

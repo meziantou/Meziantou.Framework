@@ -1,0 +1,86 @@
+{
+  "spec": {
+    "title": "WebGL EXT_depth_clamp Extension Specification",
+    "url": "https://registry.khronos.org/webgl/extensions/EXT_depth_clamp/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "EXT_depth_clamp"
+        ],
+        "Worker": [
+          "EXT_depth_clamp"
+        ]
+      }
+    },
+    "idlNames": {
+      "EXT_depth_clamp": {
+        "fragment": "[Exposed=(Window,Worker), LegacyNoInterfaceObject]\ninterface EXT_depth_clamp {\n    const GLenum DEPTH_CLAMP_EXT = 0x864F;\n};",
+        "type": "interface",
+        "name": "EXT_depth_clamp",
+        "inheritance": null,
+        "members": [
+          {
+            "type": "const",
+            "name": "DEPTH_CLAMP_EXT",
+            "idlType": {
+              "type": "const-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "GLenum"
+            },
+            "extAttrs": [],
+            "value": {
+              "type": "number",
+              "value": "0x864F"
+            }
+          }
+        ],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "LegacyNoInterfaceObject",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "EXT_depth_clamp"
+      ],
+      "Worker": [
+        "EXT_depth_clamp"
+      ]
+    },
+    "dependencies": {
+      "EXT_depth_clamp": []
+    },
+    "externalDependencies": [],
+    "hasObsoleteIdl": false
+  }
+}

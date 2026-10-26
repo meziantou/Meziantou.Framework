@@ -271,9 +271,6 @@ interface SVGUseElement : SVGGraphicsElement {
 
 SVGUseElement includes SVGURIReference;
 [Exposed=Window]
-interface SVGUseElementShadowRoot : ShadowRoot {
-};
-[Exposed=Window]
 interface ShadowAnimation : Animation {
   constructor(Animation source, (Element or CSSPseudoElement) newTarget);
   [SameObject] readonly attribute Animation sourceAnimation;

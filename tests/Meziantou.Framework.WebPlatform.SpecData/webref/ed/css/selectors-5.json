@@ -99,6 +99,12 @@
       "href": "https://drafts.csswg.org/selectors-5/#typedef-combinator",
       "type": "type",
       "value": "'>' | '+' | '~' | [ '|' '|' ] | [ / <wq-name> / ]"
+    },
+    {
+      "name": "<class-selector>",
+      "href": "https://drafts.csswg.org/selectors-5/#typedef-class-selector",
+      "type": "type",
+      "value": "'.' <ident-token> '*'?"
     }
   ]
 }

@@ -920,7 +920,7 @@
         "href": "https://webaudio.github.io/web-speech-api/#speechrecognitionalternative"
       },
       "SpeechRecognitionResult": {
-        "fragment": "// A complete one-shot simple response\n[SecureContext, Exposed=Window]\ninterface SpeechRecognitionResult {\n    readonly attribute unsigned long length;\n    getter SpeechRecognitionAlternative? item(unsigned long index);\n    readonly attribute boolean isFinal;\n};",
+        "fragment": "// A complete one-shot simple response\n[SecureContext, Exposed=Window]\ninterface SpeechRecognitionResult {\n    readonly attribute unsigned long length;\n    getter SpeechRecognitionAlternative? item(unsigned long index);\n    readonly attribute boolean isFinal;\n    readonly attribute double speechStartTime;\n    readonly attribute double speechEndTime;\n};",
         "type": "interface",
         "name": "SpeechRecognitionResult",
         "inheritance": null,
@@ -988,6 +988,38 @@
             "special": "",
             "readonly": true,
             "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognitionresult-isfinal"
+          },
+          {
+            "type": "attribute",
+            "name": "speechStartTime",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognitionresult-speechstarttime"
+          },
+          {
+            "type": "attribute",
+            "name": "speechEndTime",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "double"
+            },
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webaudio.github.io/web-speech-api/#dom-speechrecognitionresult-speechendtime"
           }
         ],
         "extAttrs": [

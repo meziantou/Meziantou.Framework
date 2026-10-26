@@ -1215,7 +1215,7 @@
         "href": "https://webmachinelearning.github.io/webnn/#enumdef-mlinputoperandlayout"
       },
       "MLOperandDataType": {
-        "fragment": "enum MLOperandDataType {\n  \"float32\",\n  \"float16\",\n  \"int32\",\n  \"uint32\",\n  \"int64\",\n  \"uint64\",\n  \"int8\",\n  \"uint8\"\n};",
+        "fragment": "enum MLOperandDataType {\n  \"float32\",\n  \"float16\",\n  \"int32\",\n  \"uint32\",\n  \"int64\",\n  \"uint64\",\n  \"int8\",\n  \"uint8\",\n  \"bfloat16\",\n  \"float8e4m3\"\n};",
         "type": "enum",
         "name": "MLOperandDataType",
         "values": [
@@ -1258,6 +1258,16 @@
             "type": "enum-value",
             "value": "uint8",
             "href": "https://webmachinelearning.github.io/webnn/#dom-mloperanddatatype-uint8"
+          },
+          {
+            "type": "enum-value",
+            "value": "bfloat16",
+            "href": "https://webmachinelearning.github.io/webnn/#dom-mloperanddatatype-bfloat16"
+          },
+          {
+            "type": "enum-value",
+            "value": "float8e4m3",
+            "href": "https://webmachinelearning.github.io/webnn/#dom-mloperanddatatype-float8e4m3"
           }
         ],
         "extAttrs": [],

@@ -1,0 +1,24 @@
+<Project Sdk="Meziantou.NET.Sdk.Test">
+  <!--
+    External-tool interoperability tests: the module matrices of Meziantou.Framework.Barcodes are compared with the ones of
+    zint, an independent encoder, and the images of Meziantou.Framework.Barcodes and Meziantou.Framework.Imaging.Barcodes are
+    decoded by two independent readers, ZXingReader (zxing-cpp) and zbarimg (ZBar). The tools are downloaded from the
+    meziantou/prebuilt release pinned by the Meziantou.Prebuilt package: a download failure or a version mismatch fails the tests.
+  -->
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.Barcodes.InteropTests</RootNamespace>
+    <!-- Module matrices are rectangular, as in the library -->
+    <NoWarn>$(NoWarn);CA1814</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Meziantou.Framework.Barcodes/Meziantou.Framework.Barcodes.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.Imaging.Barcodes/Meziantou.Framework.Imaging.Barcodes.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.TemporaryDirectory/Meziantou.Framework.TemporaryDirectory.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Meziantou.Prebuilt" Version="3.12.0" />
+  </ItemGroup>
+</Project>

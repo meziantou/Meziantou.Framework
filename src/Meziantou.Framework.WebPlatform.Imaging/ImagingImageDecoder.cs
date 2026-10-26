@@ -3,17 +3,20 @@ using System.IO.Hashing;
 using System.Runtime.InteropServices;
 using Meziantou.Framework.Imaging;
 using Meziantou.Framework.WebPlatform.Rendering;
+using CicpColorDescription = Meziantou.Framework.Imaging.Metadata.CicpColorDescription;
+using ContentLightLevel = Meziantou.Framework.Imaging.Metadata.ContentLightLevel;
 using IccProfile = Meziantou.Framework.Imaging.Metadata.IccProfile;
 using IccProfileColorSpace = Meziantou.Framework.Imaging.Metadata.IccProfileColorSpace;
+using MasteringDisplayColorVolume = Meziantou.Framework.Imaging.Metadata.MasteringDisplayColorVolume;
 
 namespace Meziantou.Framework.WebPlatform.Imaging;
 
 /// <summary>
 /// Decodes the raster images with the codecs of Meziantou.Framework.Imaging
 /// (https://html.spec.whatwg.org/multipage/images.html#img-decoding-process): PNG (including the animated PNG), JPEG, GIF,
-/// WebP, BMP and ICO/CUR. The format is sniffed; the other formats the codecs read (QOI, TGA, TIFF, Netpbm, ANI) are not
-/// decoded, as in the browsers. The colors are converted to sRGB (with the embedded color profile), and the EXIF orientation
-/// given by the core library is applied.
+/// WebP, AVIF, JPEG XL, BMP and ICO/CUR. The format is sniffed; the other formats the codecs read (QOI, TGA, TIFF, Netpbm,
+/// ANI) are not decoded, as in the browsers. The colors are converted to sRGB (with the embedded color profile, or the CICP
+/// color description of an image without profile), and the EXIF orientation given by the core library is applied.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -68,6 +71,10 @@ internal sealed class ImagingImageDecoder : RenderingImageDecoder
     private static readonly ImageDecodeOptions DecodeOptions = new() { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversionOptions.Default };
     private static readonly ImageReaderOptions ReaderOptions = new() { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversionOptions.Default };
 
+    // The high dynamic range samples (PQ, HLG) of a CICP color description are tone mapped to sRGB, as the browsers display
+    // them on a screen of standard dynamic range
+    private static readonly IccColorTransformOptions CicpConversion = new() { ToneMapping = HdrToneMappingOptions.Default };
+
     private readonly ImageFormat _format;
     private readonly int _width;
     private readonly int _height;
@@ -88,6 +95,12 @@ internal sealed class ImagingImageDecoder : RenderingImageDecoder
     private IccProfile? _colorProfile;
     private IccColorTransform? _colorTransform;
 
+    // The CICP color description of an image without color profile whose colors are not sRGB (e.g. a JPEG XL or AVIF image
+    // in Display P3, or with PQ samples), or null, and the light levels that give the peak of its high dynamic range samples
+    private readonly CicpColorDescription? _cicp;
+    private readonly ContentLightLevel? _contentLightLevel;
+    private readonly MasteringDisplayColorVolume? _masteringDisplay;
+
     // The reader of the frames and the index of the next frame it reads: it holds the last composited frame of an animation
     private ImageReader<Rgba32>? _reader;
     private int _nextFrame;
@@ -105,6 +118,9 @@ internal sealed class ImagingImageDecoder : RenderingImageDecoder
         _isGrayscale = info.ColorModel is ImageColorModel.Grayscale or ImageColorModel.GrayscaleAlpha;
         _hasWideSamples = info.BitsPerComponent > 8;
         _colorProfile = info.Metadata.IccProfile;
+        _cicp = _colorProfile is null && info.Metadata.Cicp is { } cicp && !IsSrgb(cicp) ? cicp : null;
+        _contentLightLevel = info.Metadata.ContentLightLevel;
+        _masteringDisplay = info.Metadata.MasteringDisplay;
     }
 
     /// <inheritdoc/>
@@ -133,7 +149,7 @@ internal sealed class ImagingImageDecoder : RenderingImageDecoder
         {
             // Only the formats of the web are decoded
             var format = Image.DetectFormat(data.Span);
-            if (format is not (ImageFormat.Png or ImageFormat.Jpeg or ImageFormat.Gif or ImageFormat.WebP or ImageFormat.Avif or ImageFormat.Bmp or ImageFormat.Ico or ImageFormat.Cur))
+            if (format is not (ImageFormat.Png or ImageFormat.Jpeg or ImageFormat.Gif or ImageFormat.WebP or ImageFormat.Avif or ImageFormat.JpegXl or ImageFormat.Bmp or ImageFormat.Ico or ImageFormat.Cur))
                 return null;
 
             var bytes = data;
@@ -188,10 +204,11 @@ internal sealed class ImagingImageDecoder : RenderingImageDecoder
                 bytes = bytes.ToArray();
             }
 
-            if (format == ImageFormat.Avif && info.FrameCount > 1)
+            if ((format == ImageFormat.Avif && info.FrameCount > 1) || (format == ImageFormat.JpegXl && info.IsAnimated is true))
             {
-                // An AVIF image sequence: the durations of its frames are read from the frames (the container gives them per
-                // sample); its loop count is the number of plays of the codec
+                // An AVIF image sequence or a JPEG XL animation (whose frames the header does not count): the durations of its
+                // frames are read from the frames (the container of an AVIF image gives them per sample, the header of each
+                // JPEG XL frame has its own); its loop count is the number of plays of the codec
                 durations = ReadFrameDurations(bytes);
                 var plays = info.Animation?.TotalPlays ?? 0;
                 repetitionCount = durations.Length <= 1 ? 0 : plays == 0 ? -1 : plays - 1;
@@ -225,7 +242,8 @@ internal sealed class ImagingImageDecoder : RenderingImageDecoder
         try
         {
             // As in the browsers, the gamma (gAMA) and the chromaticities (cHRM) of a PNG image without an ICC profile are
-            // ignored: its colors are sRGB (the codec only reports the embedded ICC profile, and never applies it)
+            // ignored: its colors are sRGB, unless its cICP chunk describes them (the codec only reports the embedded ICC
+            // profile and the CICP color description, and never applies them)
             var transform = convertToSrgb ? GetColorTransform() : null;
             byte[]? pixels = null;
             if (_format is ImageFormat.Ico or ImageFormat.Cur)
@@ -239,6 +257,13 @@ internal sealed class ImagingImageDecoder : RenderingImageDecoder
                 transform = pixels is null ? transform : null;
             }
 
+            var cicp = convertToSrgb ? _cicp : null;
+            if (pixels is null && cicp is not null && _hasWideSamples && _frameCount == 1)
+            {
+                pixels = DecodeWideCicpImage(cicp);
+                cicp = pixels is null ? cicp : null;
+            }
+
             pixels ??= DecodeSequentialFrame(index);
             if (pixels is null)
                 return null;
@@ -246,6 +271,10 @@ internal sealed class ImagingImageDecoder : RenderingImageDecoder
             if (transform is not null)
             {
                 ConvertColors(pixels, transform);
+            }
+            else if (cicp is not null)
+            {
+                ConvertCicpColors(pixels, cicp);
             }
 
             return ApplyOrientation(pixels, _width, _height, orientation);
@@ -334,9 +363,112 @@ internal sealed class ImagingImageDecoder : RenderingImageDecoder
         {
             return null;
         }
+    }
 
-        // The nearest sample of 8 bits
-        static byte ToByte(ushort sample) => (byte)(((sample * 255u) + 32767u) / 65535u);
+    /// <summary>
+    /// Decodes a still image without color profile whose samples have more than 8 bits, with its colors converted from its
+    /// CICP color description to sRGB before the samples are reduced to 8 bits (the dark colors of PQ or HLG samples would
+    /// lose their precision otherwise), or returns null when no row can be decoded, the image needs too much memory, or its
+    /// description cannot be converted: it is then decoded with samples of 8 bits. The rows of an incomplete image that
+    /// are not decoded are transparent.
+    /// </summary>
+    private byte[]? DecodeWideCicpImage(CicpColorDescription cicp)
+    {
+        try
+        {
+            using var image = new Image<Rgba64>(_width, _height, Configuration);
+            try
+            {
+                using var reader = OpenReader<Rgba64>();
+                if (!reader.ReadFrameInto(image))
+                    return null;
+            }
+            catch (InvalidImageContentException)
+            {
+                // An incomplete image whose rows the reader wrote as it decoded them. An image that the codec reads once it is
+                // repaired, or of which no row is decoded, is decoded with samples of 8 bits (which repairs it).
+                if (!_repaired && Repair(_format, _data.Span) is not null)
+                    return null;
+
+                var samples = new byte[checked(_width * _height * 8)];
+                image.Frames[0].CopyPixelBytesTo(samples);
+                if (!samples.AsSpan().ContainsAnyExcept((byte)0))
+                    return null;
+            }
+
+            ConvertCicpColors(image, cicp);
+            var pixels = new byte[checked(_width * _height * 4)];
+            image.Frames[0].ProcessPixelRows(pixels, static (accessor, pixels) =>
+            {
+                for (var y = 0; y < accessor.Height; y++)
+                {
+                    var row = accessor.GetRowSpan(y);
+                    var destination = pixels.AsSpan(y * accessor.Width * 4, accessor.Width * 4);
+                    for (var x = 0; x < row.Length; x++)
+                    {
+                        destination[x * 4] = ToByte(row[x].R);
+                        destination[(x * 4) + 1] = ToByte(row[x].G);
+                        destination[(x * 4) + 2] = ToByte(row[x].B);
+                        destination[(x * 4) + 3] = ToByte(row[x].A);
+                    }
+                }
+            });
+
+            return pixels;
+        }
+        catch (Exception ex) when (ex is ImageException or OutOfMemoryException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>The nearest sample of 8 bits of a sample of 16 bits.</summary>
+    private static byte ToByte(ushort sample) => (byte)(((sample * 255u) + 32767u) / 65535u);
+
+    /// <summary>
+    /// Returns whether a CICP color description is the one of sRGB: the primaries of BT.709 and the transfer function of
+    /// sRGB, or unspecified values (whose colors are sRGB, as the ones of an image without description).
+    /// </summary>
+    private static bool IsSrgb(CicpColorDescription cicp)
+        => cicp.ColorPrimaries is 1 or 2 && cicp.TransferCharacteristics is 13 or 2;
+
+    /// <summary>
+    /// Converts the colors of an image decoded without its metadata from a CICP color description to sRGB: the high dynamic
+    /// range samples are tone mapped from the peak given by the light levels of the image.
+    /// </summary>
+    private void ConvertCicpColors(Image image, CicpColorDescription cicp)
+    {
+        image.Metadata.Cicp = cicp;
+        image.Metadata.ContentLightLevel = _contentLightLevel;
+        image.Metadata.MasteringDisplay = _masteringDisplay;
+        image.ConvertColorProfile(IccProfile.Srgb, CicpConversion);
+    }
+
+    /// <summary>
+    /// Converts the colors of pixels of 8 bits from a CICP color description to sRGB. A description the codecs cannot
+    /// convert (reserved code points) leaves the colors as they are encoded.
+    /// </summary>
+    private void ConvertCicpColors(byte[] pixels, CicpColorDescription cicp)
+    {
+        try
+        {
+            using var image = new Image<Rgba32>(_width, _height, Configuration);
+            image.Frames[0].ProcessPixelBytes(pixels, static (accessor, pixels) =>
+            {
+                for (var y = 0; y < accessor.Height; y++)
+                {
+                    var row = accessor.GetRowSpan(y);
+                    pixels.AsSpan(y * row.Length, row.Length).CopyTo(row);
+                }
+            });
+
+            ConvertCicpColors(image, cicp);
+            image.Frames[0].CopyPixelBytesTo(pixels, _width * 4);
+        }
+        catch (ImageException)
+        {
+            // Reserved primaries or transfer characteristics: the colors stay as they are encoded
+        }
     }
 
     /// <summary>
@@ -452,12 +584,15 @@ internal sealed class ImagingImageDecoder : RenderingImageDecoder
         return CopyPixels(frame).AsSpan().ContainsAnyExcept((byte)255);
     }
 
-    private ImageReader<Rgba32> OpenReader()
+    private ImageReader<Rgba32> OpenReader() => OpenReader<Rgba32>();
+
+    private ImageReader<TPixel> OpenReader<TPixel>()
+        where TPixel : unmanaged
     {
         // The data is the one of an array (see Create); the reader disposes of the stream
         _ = unsafe(MemoryMarshal.TryGetArray(_data, out var segment));
         var stream = new MemoryStream(segment.Array ?? [], segment.Offset, segment.Count, writable: false);
-        return Image.OpenReader<Rgba32>(stream, ReaderOptions);
+        return Image.OpenReader<TPixel>(stream, ReaderOptions);
     }
 
     private void CloseReader()

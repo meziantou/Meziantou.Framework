@@ -1,0 +1,203 @@
+{
+  "jpegxl/3x3_jpeg_recompression.html": {
+    "reftest": "PASS"
+  },
+  "jpegxl/3x3_srgb_lossless.html": {
+    "reftest": "PASS"
+  },
+  "jpegxl/3x3_srgb_lossy.html": {
+    "reftest": "PASS"
+  },
+  "jpegxl/3x3a_srgb_lossless.html": {
+    "reftest": "PASS"
+  },
+  "jpegxl/3x3a_srgb_lossy.html": {
+    "reftest": "PASS"
+  },
+  "jpegxl/alpha-decode-reftest.html": {
+    "reftest": "PASS"
+  },
+  "jpegxl/alpha-modular-reftest.html": {
+    "reftest": "PASS"
+  },
+  "jpegxl/alpha-vardct.html": {
+    "total": 1
+  },
+  "jpegxl/animated-img-timeout.html": {
+    "reftest": "PASS"
+  },
+  "jpegxl/basic-decode-reftest.html": {
+    "reftest": "PASS"
+  },
+  "jpegxl/bitdepth-10bpc-reftest.html": {
+    "reftest": "PASS"
+  },
+  "jpegxl/bitdepth-12bpc-reftest.html": {
+    "reftest": "PASS"
+  },
+  "jpegxl/bitdepth-16bpc-reftest.html": {
+    "reftest": "PASS"
+  },
+  "jpegxl/bitdepth-8bpc-reftest.html": {
+    "reftest": "FAIL"
+  },
+  "jpegxl/canvas-decode-paths-webgpu.https.html": {
+    "total": 1
+  },
+  "jpegxl/canvas-decode-paths.html": {
+    "reftest": "PASS"
+  },
+  "jpegxl/cmyk-basic-conversion-reftest.html": {
+    "reftest": "FAIL"
+  },
+  "jpegxl/color-management-p3-cicp-reftest.html": {
+    "reftest": "PASS"
+  },
+  "jpegxl/conformance-alpha-premultiplied-reftest.html": {
+    "reftest": "FAIL"
+  },
+  "jpegxl/css-background-image.html": {
+    "reftest": "FAIL"
+  },
+  "jpegxl/css-before-content.html": {
+    "reftest": "FAIL"
+  },
+  "jpegxl/css-image-set.html": {
+    "reftest": "FAIL"
+  },
+  "jpegxl/css-image-usage.html": {
+    "total": 1
+  },
+  "jpegxl/css-list-style-image.html": {
+    "reftest": "FAIL"
+  },
+  "jpegxl/gray-decode-reftest.html": {
+    "reftest": "PASS"
+  },
+  "jpegxl/gray-icc-reftest.html": {
+    "reftest": "PASS"
+  },
+  "jpegxl/green-decode-reftest.html": {
+    "reftest": "PASS"
+  },
+  "jpegxl/hdr-alpha-reftest.html": {
+    "reftest": "FAIL"
+  },
+  "jpegxl/hdr-pq-intensity-target.html": {
+    "total": 2,
+    "failures": {
+      "intensity_target sets the peak luminance that a PQ image tone maps from.": "FAIL"
+    }
+  },
+  "jpegxl/html-embed-object-iframe.html": {
+    "reftest": "PASS"
+  },
+  "jpegxl/html-img.html": {
+    "total": 2
+  },
+  "jpegxl/html-input-image.html": {
+    "total": 1
+  },
+  "jpegxl/html-preload-image.html": {
+    "total": 1
+  },
+  "jpegxl/html-video-poster.html": {
+    "reftest": "PASS"
+  },
+  "jpegxl/icc-uncommon-profile-reftest.html": {
+    "reftest": "PASS"
+  },
+  "jpegxl/imagedecoder-animation.https.html": {
+    "total": 4,
+    "failures": {
+      "Animated JPEG XL reports multiple frames and decodes frame sequence.": "FAIL",
+      "Animated JXL with infinite repetition count repeats indefinitely.": "FAIL",
+      "Animated JXL with repetition count 0 plays exactly once.": "FAIL",
+      "Animated JXL with repetition count 1 plays exactly twice.": "FAIL"
+    }
+  },
+  "jpegxl/imagedecoder.https.html": {
+    "total": 1,
+    "failures": {
+      "ImageDecoder decodes JPEG XL image stream.": "FAIL"
+    }
+  },
+  "jpegxl/jxl-art-basic-reftest.html": {
+    "reftest": "PASS"
+  },
+  "jpegxl/layers-basic-reftest.html": {
+    "reftest": "FAIL"
+  },
+  "jpegxl/lossless-jpeg-transcode.html": {
+    "total": 1
+  },
+  "jpegxl/modular-lossless-reftest.html": {
+    "reftest": "PASS"
+  },
+  "jpegxl/modular-lossy.html": {
+    "total": 1
+  },
+  "jpegxl/nonpremultiplied-alpha-grid-reftest.html": {
+    "reftest": "PASS"
+  },
+  "jpegxl/nonpremultiplied-gray-alpha-grid-reftest.html": {
+    "reftest": "PASS"
+  },
+  "jpegxl/orientation-codestream-vs-exif-reftest.html": {
+    "reftest": "PASS"
+  },
+  "jpegxl/orientation-identity-reftest.html": {
+    "reftest": "PASS"
+  },
+  "jpegxl/orientation-rotate-90-ccw-reftest.html": {
+    "reftest": "PASS"
+  },
+  "jpegxl/patches-reftest.html": {
+    "reftest": "FAIL"
+  },
+  "jpegxl/premultiplied-alpha-grid-reftest.html": {
+    "reftest": "FAIL"
+  },
+  "jpegxl/premultiplied-gray-alpha-grid-reftest.html": {
+    "reftest": "FAIL"
+  },
+  "jpegxl/progressive-1.html": {
+    "reftest": "FAIL"
+  },
+  "jpegxl/progressive-2.html": {
+    "reftest": "FAIL"
+  },
+  "jpegxl/progressive-3.html": {
+    "reftest": "FAIL"
+  },
+  "jpegxl/progressive-dc-observable-reftest.html": {
+    "reftest": "PASS"
+  },
+  "jpegxl/sdr-alpha-reftest.html": {
+    "reftest": "PASS"
+  },
+  "jpegxl/smallest-valid-reftest.html": {
+    "reftest": "PASS"
+  },
+  "jpegxl/svg-image-element.html": {
+    "total": 1
+  },
+  "jpegxl/vardct-large-blocks-reftest.html": {
+    "reftest": "PASS"
+  },
+  "jpegxl/vardct-small-blocks-reftest.html": {
+    "reftest": "PASS"
+  },
+  "jpegxl/wide-gamut-adobe-rgb.html": {
+    "reftest": "FAIL"
+  },
+  "jpegxl/wide-gamut-display-p3.html": {
+    "reftest": "FAIL"
+  },
+  "jpegxl/wide-gamut-prophoto-rgb.html": {
+    "reftest": "PASS"
+  },
+  "jpegxl/wide-gamut-rec2020.html": {
+    "reftest": "FAIL"
+  }
+}

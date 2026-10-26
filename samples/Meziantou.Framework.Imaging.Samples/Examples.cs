@@ -115,6 +115,14 @@ internal static class Examples
             // 0 for the same structure and brightness, up to 64; the pHash is the most tolerant to small changes
             if (ImageSimilarity.ComputePerceptualHashDistance(expected.Frames[i], actual.Frames[i]) > 4)
                 return false;
+
+            // Perceptual metrics: 100 for identical pixels, about 90 when the difference is not visible
+            if (ImageSimilarity.ComputeSsimulacra2(expected.Frames[i], actual.Frames[i]) < 90)
+                return false;
+
+            // 0 for identical pixels, below about 1 when the difference is not visible, even in a small area
+            if (ImageSimilarity.ComputeButteraugliDistance(expected.Frames[i], actual.Frames[i]).MaxDistance > 1)
+                return false;
         }
 
         return true;

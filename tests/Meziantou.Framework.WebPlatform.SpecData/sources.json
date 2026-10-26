@@ -465,6 +465,7 @@
       "apng",
       "avif",
       "gif",
+      "jpegxl",
       "png",
       "imagebitmap-renderingcontext",
       "html/canvas/resources/canvas-tests.js",

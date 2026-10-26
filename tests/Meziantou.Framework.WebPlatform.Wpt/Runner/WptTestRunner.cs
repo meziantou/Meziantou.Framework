@@ -1191,6 +1191,7 @@ internal sealed partial class WptTestRunner
             ".bmp" => "image/bmp",
             ".ico" => "image/x-icon",
             ".avif" => "image/avif",
+            ".jxl" => "image/jxl",
             ".json" => "application/json",
             ".wasm" => "application/wasm",
             ".webm" => "video/webm",

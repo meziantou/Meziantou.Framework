@@ -5,6 +5,7 @@
     <Project Path="../src/Meziantou.AspNetCore/Meziantou.AspNetCore.csproj" />
     <Project Path="../src/Meziantou.Extensions.Logging.Xunit.v3/Meziantou.Extensions.Logging.Xunit.v3.csproj" />
     <Project Path="../src/Meziantou.Framework.AnsiFormatting/Meziantou.Framework.AnsiFormatting.csproj" />
+    <Project Path="../src/Meziantou.Framework.Barcodes/Meziantou.Framework.Barcodes.csproj" />
     <Project Path="../src/Meziantou.Framework.DiffEngine/Meziantou.Framework.DiffEngine.csproj" />
     <Project Path="../src/Meziantou.Framework.Fonts/Meziantou.Framework.Fonts.csproj" />
     <Project Path="../src/Meziantou.Framework.FullPath.Analyzer/Meziantou.Framework.FullPath.Analyzer.csproj" />
@@ -22,7 +23,6 @@
     <Project Path="../src/Meziantou.Framework.ProcessWrapper/Meziantou.Framework.ProcessWrapper.csproj" />
     <Project Path="../src/Meziantou.Framework.PublicApiGenerator.Tool/Meziantou.Framework.PublicApiGenerator.Tool.csproj" />
     <Project Path="../src/Meziantou.Framework.PublicApiGenerator/Meziantou.Framework.PublicApiGenerator.csproj" />
-    <Project Path="../src/Meziantou.Framework.QRCode/Meziantou.Framework.QRCode.csproj" />
     <Project Path="../src/Meziantou.Framework.SnapshotTesting.Imaging/Meziantou.Framework.SnapshotTesting.Imaging.csproj" />
     <Project Path="../src/Meziantou.Framework.SnapshotTesting/Meziantou.Framework.SnapshotTesting.csproj" />
     <Project Path="../src/Meziantou.Framework.TemporaryContainers/Meziantou.Framework.TemporaryContainers.csproj" />
@@ -36,10 +36,10 @@
     <Project Path="../tests/Meziantou.AspNetCore.Components.LogViewer.Tests/Meziantou.AspNetCore.Components.LogViewer.Tests.csproj" />
     <Project Path="../tests/Meziantou.AspNetCore.Components.Tests/Meziantou.AspNetCore.Components.Tests.csproj" />
     <Project Path="../tests/Meziantou.AspNetCore.Tests/Meziantou.AspNetCore.Tests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.Barcodes.Tests/Meziantou.Framework.Barcodes.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Http.Caching.Tests/Meziantou.Framework.Http.Caching.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/Meziantou.Framework.InlineSnapshotTesting.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.PublicApiGenerator.Tests/Meziantou.Framework.PublicApiGenerator.Tests.csproj" />
-    <Project Path="../tests/Meziantou.Framework.QRCode.Tests/Meziantou.Framework.QRCode.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.SnapshotTesting.Tests/Meziantou.Framework.SnapshotTesting.Tests.csproj" />
   </Folder>
 </Solution>

@@ -232,6 +232,8 @@ public sealed class WptTests
 
     public static TheoryData<string> ApngTests => GetTests("apng");
 
+    public static TheoryData<string> JpegXlTests => GetTests("jpegxl");
+
     public static TheoryData<string> PngTests => GetTests("png");
 
     public static TheoryData<string> ImageBitmapRenderingContextTests => GetTests("imagebitmap-renderingcontext");
@@ -1074,6 +1076,10 @@ public sealed class WptTests
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(ApngTests))]
     public void Apng(string test) => Run("apng", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(JpegXlTests))]
+    public void JpegXl(string test) => Run("jpegxl", test);
 
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(PngTests))]

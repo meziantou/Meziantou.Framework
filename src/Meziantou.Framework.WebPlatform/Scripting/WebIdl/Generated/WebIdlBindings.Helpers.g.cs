@@ -147,6 +147,8 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
 
     private static readonly global::Meziantou.Framework.WebPlatform.WebAudio.AudioBufferSourceOptions Defaults_WebAudio_AudioBufferSourceOptions = new();
 
+    private static readonly global::Meziantou.Framework.WebPlatform.WebAudio.AudioContextOptions Defaults_WebAudio_AudioContextOptions = new();
+
     private static readonly global::Meziantou.Framework.WebPlatform.WebAudio.AudioWorkletNodeOptions Defaults_WebAudio_AudioWorkletNodeOptions = new();
 
     private static readonly global::Meziantou.Framework.WebPlatform.WebAudio.BiquadFilterOptions Defaults_WebAudio_BiquadFilterOptions = new();
@@ -179,7 +181,11 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
 
     internal static readonly string[] Enum_AppendMode_Values = new[] { "segments", "sequence" };
 
+    internal static readonly string[] Enum_AudioContextLatencyCategory_Values = new[] { "balanced", "interactive", "playback" };
+
     internal static readonly string[] Enum_AudioContextRenderSizeCategory_Values = new[] { "default", "hardware" };
+
+    internal static readonly string[] Enum_AudioSinkType_Values = new[] { "none" };
 
     internal static readonly string[] Enum_AutoKeyword_Values = new[] { "auto" };
 
@@ -2448,6 +2454,16 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return result;
     }
 
+    internal static TValue FromDictionary_WebAudio_AudioContextOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.WebAudio.AudioContextOptions value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "latencyHint", r.ToJs((object?)value.LatencyHint));
+        r.SetMember(result, "renderSizeHint", r.ToJs((object?)value.RenderSizeHint));
+        if (value.SampleRate is not null) r.SetMember(result, "sampleRate", (value.SampleRate.HasValue ? r.FromNumber((double)value.SampleRate.GetValueOrDefault()) : r.Adapter.Null));
+        if (value.SinkId is not null) r.SetMember(result, "sinkId", r.ToJs((object?)value.SinkId));
+        return result;
+    }
+
     internal static TValue FromDictionary_WebAudio_AudioNodeOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.WebAudio.AudioNodeOptions value)
     {
         var result = r.CreateObject();
@@ -2477,6 +2493,21 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         r.SetMember(result, "inputBuffer", r.Wrap(value.InputBuffer));
         r.SetMember(result, "outputBuffer", r.Wrap(value.OutputBuffer));
         r.SetMember(result, "playbackTime", r.FromNumber((double)value.PlaybackTime));
+        return result;
+    }
+
+    internal static TValue FromDictionary_WebAudio_AudioSinkOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.WebAudio.AudioSinkOptions value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "type", r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_WebAudio_AudioSinkType(value.Type)));
+        return result;
+    }
+
+    internal static TValue FromDictionary_WebAudio_AudioTimestamp(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.WebAudio.AudioTimestamp value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "contextTime", r.FromNumber((double)value.ContextTime));
+        r.SetMember(result, "performanceTime", r.FromNumber((double)value.PerformanceTime));
         return result;
     }
 
@@ -3384,6 +3415,14 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         _ => value.ToString(),
     };
 
+    internal static string FromEnum_WebAudio_AudioContextLatencyCategory(global::Meziantou.Framework.WebPlatform.WebAudio.AudioContextLatencyCategory value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.WebAudio.AudioContextLatencyCategory.Balanced => "balanced",
+        global::Meziantou.Framework.WebPlatform.WebAudio.AudioContextLatencyCategory.Interactive => "interactive",
+        global::Meziantou.Framework.WebPlatform.WebAudio.AudioContextLatencyCategory.Playback => "playback",
+        _ => value.ToString(),
+    };
+
     internal static string FromEnum_WebAudio_AudioContextRenderSizeCategory(global::Meziantou.Framework.WebPlatform.WebAudio.AudioContextRenderSizeCategory value) => value switch
     {
         global::Meziantou.Framework.WebPlatform.WebAudio.AudioContextRenderSizeCategory.Default => "default",
@@ -3397,6 +3436,12 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         global::Meziantou.Framework.WebPlatform.WebAudio.AudioContextState.Running => "running",
         global::Meziantou.Framework.WebPlatform.WebAudio.AudioContextState.Closed => "closed",
         global::Meziantou.Framework.WebPlatform.WebAudio.AudioContextState.Interrupted => "interrupted",
+        _ => value.ToString(),
+    };
+
+    internal static string FromEnum_WebAudio_AudioSinkType(global::Meziantou.Framework.WebPlatform.WebAudio.AudioSinkType value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.WebAudio.AudioSinkType.None => "none",
         _ => value.ToString(),
     };
 
@@ -7563,6 +7608,28 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         };
     }
 
+    internal static global::Meziantou.Framework.WebPlatform.WebAudio.AudioContextOptions ToDictionary_WebAudio_AudioContextOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "AudioContextOptions");
+        var m0_value = r.GetDictionaryMember(value, "latencyHint");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (object?)(object)"interactive" : WebIdlHelpers<TAdapter, TValue>.ToUnion_cfe8aaa1(r, m0_value);
+        var m1_value = r.GetDictionaryMember(value, "renderSizeHint");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (object?)(object)"default" : WebIdlHelpers<TAdapter, TValue>.ToUnion_1bbc725e(r, m1_value);
+        var m2_value = r.GetDictionaryMember(value, "sampleRate");
+        var m2_present = !r.Adapter.IsUndefined(m2_value);
+        var m2 = m2_present ? (float?)r.ToFloat(m2_value, restricted: true) : default;
+        var m3_value = r.GetDictionaryMember(value, "sinkId");
+        var m3_present = !r.Adapter.IsUndefined(m3_value);
+        var m3 = m3_present ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_f97845cc(r, m3_value) : default;
+        return new global::Meziantou.Framework.WebPlatform.WebAudio.AudioContextOptions
+        {
+            LatencyHint = WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_WebAudio_AudioContextLatencyHint(r, m0),
+            RenderSizeHint = WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_WebAudio_AudioContextRenderSizeHint(r, m1),
+            SampleRate = m2_present ? m2 : Defaults_WebAudio_AudioContextOptions.SampleRate,
+            SinkId = m3_present ? (m3 is null ? (global::Meziantou.Framework.WebPlatform.WebAudio.StringOrAudioSinkOptions?)null : WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_WebAudio_StringOrAudioSinkOptions(r, m3)) : Defaults_WebAudio_AudioContextOptions.SinkId,
+        };
+    }
+
     internal static global::Meziantou.Framework.WebPlatform.WebAudio.AudioProcessingEventInit ToDictionary_WebAudio_AudioProcessingEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
     {
         r.CheckDictionary(value, "AudioProcessingEventInit");
@@ -7589,6 +7656,18 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
             InputBuffer = m3,
             OutputBuffer = m4,
             PlaybackTime = m5,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.WebAudio.AudioSinkOptions ToDictionary_WebAudio_AudioSinkOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "AudioSinkOptions");
+        var m0_value = r.GetDictionaryMember(value, "type");
+        if (r.Adapter.IsUndefined(m0_value)) throw r.MissingRequiredDictionaryMember("AudioSinkOptions", "type");
+        var m0 = r.ToEnumerationValue(m0_value, "AudioSinkType", WebIdlHelpers<TAdapter, TValue>.Enum_AudioSinkType_Values);
+        return new global::Meziantou.Framework.WebPlatform.WebAudio.AudioSinkOptions
+        {
+            Type = WebIdlHelpers<TAdapter, TValue>.ToEnum_WebAudio_AudioSinkType(m0),
         };
     }
 
@@ -8629,10 +8708,24 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
     };
 
+    internal static global::Meziantou.Framework.WebPlatform.WebAudio.AudioContextLatencyCategory ToEnum_WebAudio_AudioContextLatencyCategory(string value) => value switch
+    {
+        "balanced" => global::Meziantou.Framework.WebPlatform.WebAudio.AudioContextLatencyCategory.Balanced,
+        "interactive" => global::Meziantou.Framework.WebPlatform.WebAudio.AudioContextLatencyCategory.Interactive,
+        "playback" => global::Meziantou.Framework.WebPlatform.WebAudio.AudioContextLatencyCategory.Playback,
+        _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
+    };
+
     internal static global::Meziantou.Framework.WebPlatform.WebAudio.AudioContextRenderSizeCategory ToEnum_WebAudio_AudioContextRenderSizeCategory(string value) => value switch
     {
         "default" => global::Meziantou.Framework.WebPlatform.WebAudio.AudioContextRenderSizeCategory.Default,
         "hardware" => global::Meziantou.Framework.WebPlatform.WebAudio.AudioContextRenderSizeCategory.Hardware,
+        _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
+    };
+
+    internal static global::Meziantou.Framework.WebPlatform.WebAudio.AudioSinkType ToEnum_WebAudio_AudioSinkType(string value) => value switch
+    {
+        "none" => global::Meziantou.Framework.WebPlatform.WebAudio.AudioSinkType.None,
         _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
     };
 
@@ -8966,6 +9059,22 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         _ => throw new global::System.InvalidCastException("The value cannot be converted to ReadOnlySpan`1"),
     };
 
+    internal static global::Meziantou.Framework.WebPlatform.WebAudio.AudioContextLatencyHint ToUnionStruct_WebAudio_AudioContextLatencyHint(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, object? value) => value switch
+    {
+        string enumValue when WebIdlHelpers<TAdapter, TValue>.TryToEnum_WebAudio_AudioContextLatencyCategory(enumValue, out var enumResult) => enumResult,
+        double v => v,
+        int v => (double)v,
+        uint v => (double)v,
+        float v => (double)v,
+        short v => (double)v,
+        ushort v => (double)v,
+        long v => (double)v,
+        ulong v => (double)v,
+        byte v => (double)v,
+        sbyte v => (double)v,
+        _ => throw new global::System.InvalidCastException("The value cannot be converted to AudioContextLatencyHint"),
+    };
+
     internal static global::Meziantou.Framework.WebPlatform.WebAudio.AudioContextRenderSizeHint ToUnionStruct_WebAudio_AudioContextRenderSizeHint(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, object? value) => value switch
     {
         string enumValue when WebIdlHelpers<TAdapter, TValue>.TryToEnum_WebAudio_AudioContextRenderSizeCategory(enumValue, out var enumResult) => enumResult,
@@ -8980,6 +9089,13 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         byte v => (uint)v,
         sbyte v => (uint)v,
         _ => throw new global::System.InvalidCastException("The value cannot be converted to AudioContextRenderSizeHint"),
+    };
+
+    internal static global::Meziantou.Framework.WebPlatform.WebAudio.StringOrAudioSinkOptions ToUnionStruct_WebAudio_StringOrAudioSinkOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, object? value) => value switch
+    {
+        string v => v,
+        global::Meziantou.Framework.WebPlatform.WebAudio.AudioSinkOptions v => v,
+        _ => throw new global::System.InvalidCastException("The value cannot be converted to StringOrAudioSinkOptions"),
     };
 
     /// <summary>(DOMString or SanitizerProcessingInstruction)</summary>
@@ -9880,6 +9996,16 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return r.ToUsvString(value);
     }
 
+    /// <summary>(AudioContextLatencyCategory or double)</summary>
+    internal static object? ToUnion_cfe8aaa1(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.Adapter.IsObject(value))
+        {
+        }
+        if (r.Adapter.IsNumber(value)) return r.ToDouble(value, restricted: true);
+        return r.ToEnumerationValue(value, "AudioContextLatencyCategory", WebIdlHelpers<TAdapter, TValue>.Enum_AudioContextLatencyCategory_Values);
+    }
+
     /// <summary>(TrustedScript or DOMString)?</summary>
     internal static object? ToUnion_d2e387ad(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
     {
@@ -10041,6 +10167,17 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return r.ToDomString(value);
     }
 
+    /// <summary>(DOMString or AudioSinkOptions)</summary>
+    internal static object? ToUnion_f97845cc(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.IsNullOrUndefined(value)) return WebIdlHelpers<TAdapter, TValue>.ToDictionary_WebAudio_AudioSinkOptions(r, value);
+        if (r.Adapter.IsObject(value))
+        {
+            return WebIdlHelpers<TAdapter, TValue>.ToDictionary_WebAudio_AudioSinkOptions(r, value);
+        }
+        return r.ToDomString(value);
+    }
+
     /// <summary>(SanitizerConfig or SanitizerPresets)</summary>
     internal static object? ToUnion_fa5e0492(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
     {
@@ -10105,6 +10242,20 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         try
         {
             result = WebIdlHelpers<TAdapter, TValue>.ToEnum_Dom_TaskPriority(value);
+            return true;
+        }
+        catch (global::System.ArgumentException)
+        {
+            result = default;
+            return false;
+        }
+    }
+
+    internal static bool TryToEnum_WebAudio_AudioContextLatencyCategory(string value, out global::Meziantou.Framework.WebPlatform.WebAudio.AudioContextLatencyCategory result)
+    {
+        try
+        {
+            result = WebIdlHelpers<TAdapter, TValue>.ToEnum_WebAudio_AudioContextLatencyCategory(value);
             return true;
         }
         catch (global::System.ArgumentException)

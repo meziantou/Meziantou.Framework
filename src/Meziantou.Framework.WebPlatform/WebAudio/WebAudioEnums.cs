@@ -42,6 +42,38 @@ public enum AudioContextRenderSizeCategory
     Hardware,
 }
 
+/// <summary>The categories of latency of an <see cref="AudioContext"/> (https://webaudio.github.io/web-audio-api/#enumdef-audiocontextlatencycategory).</summary>
+/// <seealso href="https://webaudio.github.io/web-audio-api/#enumdef-audiocontextlatencycategory"/>
+[IdlInterface("AudioContextLatencyCategory", "https://webaudio.github.io/web-audio-api/#enumdef-audiocontextlatencycategory")]
+public enum AudioContextLatencyCategory
+{
+    /// <summary>A balance between the latency and the power consumption.</summary>
+    /// <seealso href="https://webaudio.github.io/web-audio-api/#dom-audiocontextlatencycategory-balanced"/>
+    [IdlMember("balanced", "https://webaudio.github.io/web-audio-api/#dom-audiocontextlatencycategory-balanced")]
+    Balanced,
+
+    /// <summary>The lowest latency without glitches (the default).</summary>
+    /// <seealso href="https://webaudio.github.io/web-audio-api/#dom-audiocontextlatencycategory-interactive"/>
+    [IdlMember("interactive", "https://webaudio.github.io/web-audio-api/#dom-audiocontextlatencycategory-interactive")]
+    Interactive,
+
+    /// <summary>A sustained playback without interruption rather than a low latency.</summary>
+    /// <seealso href="https://webaudio.github.io/web-audio-api/#dom-audiocontextlatencycategory-playback"/>
+    [IdlMember("playback", "https://webaudio.github.io/web-audio-api/#dom-audiocontextlatencycategory-playback")]
+    Playback,
+}
+
+/// <summary>The types of audio output devices of an <see cref="AudioSinkOptions"/> (https://webaudio.github.io/web-audio-api/#enumdef-audiosinktype).</summary>
+/// <seealso href="https://webaudio.github.io/web-audio-api/#enumdef-audiosinktype"/>
+[IdlInterface("AudioSinkType", "https://webaudio.github.io/web-audio-api/#enumdef-audiosinktype")]
+public enum AudioSinkType
+{
+    /// <summary>The audio is processed without being played by an output device.</summary>
+    /// <seealso href="https://webaudio.github.io/web-audio-api/#dom-audiosinktype-none"/>
+    [IdlMember("none", "https://webaudio.github.io/web-audio-api/#dom-audiosinktype-none")]
+    None,
+}
+
 /// <summary>How the number of channels of an input is computed (https://webaudio.github.io/web-audio-api/#enumdef-channelcountmode).</summary>
 /// <seealso href="https://webaudio.github.io/web-audio-api/#enumdef-channelcountmode"/>
 [IdlInterface("ChannelCountMode", "https://webaudio.github.io/web-audio-api/#enumdef-channelcountmode")]

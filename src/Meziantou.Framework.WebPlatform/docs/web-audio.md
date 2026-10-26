@@ -20,6 +20,10 @@ const buffer = await context.startRendering();
   its scripts. An `OfflineAudioContext` renders from tasks of the event loop, by slices of 16384 frames, so that the other
   tasks (e.g. a call of `close()`, or the events of the nodes) run during a long rendering. A context created by .NET code
   without window renders synchronously: the task returned by `StartRendering()` is completed when it returns.
+- **The realtime context**: an `AudioContext` renders from timer tasks of the event loop, at the pace of its clock
+  (`DomEventLoop.TimeProvider`, a fake clock in tests): each task renders the render quanta whose time has elapsed, every
+  half `baseLatency` (from 5 ms to 50 ms). The audio is discarded: there is no audio device. See
+  [The realtime context](#the-realtime-context).
 - **The render quantum**: 128 frames by default, or the size given by `renderSizeHint`. Each render quantum, the nodes are
   processed in dependency order. The order is computed again when the connections change: the nodes without connection are
   skipped (except the started sources, so that they fire `ended`), a `DelayNode` in a cycle is split (its output is read
@@ -94,8 +98,32 @@ resampled to the sample rate of the context with a windowed-sinc interpolation (
 `ArrayBuffer` is detached when the call returns (a `DataCloneError` when it is already detached), and the file is decoded in
 a task of the event loop.
 
+## The realtime context
+
+- **Starting**: a context is allowed to start (there is no autoplay policy for the audio contexts): it is `suspended` when
+  constructed, then a task sets its state to `running`. `suspend()`, `resume()` and `close()` change the state from tasks,
+  which resolve their promise before `statechange` is fired. When its document is destroyed (e.g. its iframe is removed),
+  the context is closed at once, without event.
+- **Time**: `currentTime` advances while the context is running, by render quanta. A task renders at most 0.5 s of audio:
+  when the event loop was blocked longer (e.g. a long script), the rest of the time is skipped and counted as an underrun.
+  `getOutputTimestamp()` returns the time of the last rendered frame and the time of the performance timeline at which it
+  is due.
+- **Latency**: `baseLatency` is 2 render quanta for `interactive` (the default), 8 for `balanced` and 32 for `playback`;
+  a latency in seconds is rounded up to render quanta, in this range. `outputLatency` is 0.
+- **Sample rate**: 48000 Hz by default, or the `sampleRate` option (from 3000 to 768000 Hz).
+- **Output devices**: there is only the default device (the sink identifier `""`) and the sinks without device
+  (`{ type: 'none' }`). Another identifier is an `error` event at the construction, and a `NotFoundError` for
+  `setSinkId()`, which also requires the `speaker-selection` permissions policy feature (a `NotAllowedError`).
+- **`playbackStats`**: `totalDuration` is the time during which the context ran since its first render quantum, the
+  underruns are the skipped times, and the latencies are `baseLatency + outputLatency`. The values do not change until
+  the next microtask checkpoint.
+- **Audio worklet**: the processors of a render quantum run without microtask checkpoint between them; a microtask
+  checkpoint is performed after the render quantum.
+
 ## Not implemented
 
-- `AudioContext` (the realtime context), `MediaElementAudioSourceNode`, the `MediaStream` nodes.
+- `MediaElementAudioSourceNode`, the `MediaStream` nodes (`MediaStreamAudioSourceNode`, `MediaStreamTrackAudioSourceNode`,
+  `MediaStreamAudioDestinationNode`) and the factories of `AudioContext` that create them.
+- The `interrupted` state (e.g. a context whose document is hidden when `media-playback-while-not-visible` is disallowed).
 
 The results of the web-platform-tests are in [docs/wpt-coverage/webaudio.md](wpt-coverage/webaudio.md).

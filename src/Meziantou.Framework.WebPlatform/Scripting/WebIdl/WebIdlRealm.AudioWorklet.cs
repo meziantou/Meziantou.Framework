@@ -57,7 +57,7 @@ internal sealed partial class JsWorkletClassConstructor<TAdapter, TValue>
             var result = adapter.CreateObject(realm.ObjectPrototype);
             foreach (var (name, value) in properties)
             {
-                adapter.Set(result, realm.Key(name), ToPropertyValue(value));
+                adapter.DefineOwnProperty(result, realm.Key(name), JsPropertyDescriptor<TValue>.Data(ToPropertyValue(value), writable: true, enumerable: true, configurable: true));
             }
 
             return result;
@@ -85,7 +85,7 @@ internal sealed partial class JsWorkletClassConstructor<TAdapter, TValue>
                 var result = adapter.CreateObject(realm.ObjectPrototype);
                 foreach (var (key, number) in record)
                 {
-                    adapter.Set(result, realm.Key(key), adapter.FromNumber(number));
+                    adapter.DefineOwnProperty(result, realm.Key(key), JsPropertyDescriptor<TValue>.Data(adapter.FromNumber(number), writable: true, enumerable: true, configurable: true));
                 }
 
                 return result;
@@ -95,6 +95,10 @@ internal sealed partial class JsWorkletClassConstructor<TAdapter, TValue>
                 return realm.TryAsValue(value, out var jsValue) ? jsValue : realm.ToJs(value);
         }
     }
+
+    internal override void EnterRenderQuantum() => realm.Agent.Host.OnCallbackInvoking();
+
+    internal override void ExitRenderQuantum(Dom.GlobalScope global) => realm.Agent.Host.OnCallbackInvoked(global);
 
     internal override AudioWorkletProcessCall CreateProcessCall(object processor) => new JsAudioWorkletProcessCall<TAdapter, TValue>(realm, (TValue)processor);
 }
@@ -245,7 +249,9 @@ internal sealed class JsAudioWorkletProcessCall<TAdapter, TValue>(WebIdlRealm<TA
             for (var i = 0; i < names.Length; i++)
             {
                 arrays[i] = realm.FromBuffer(Scripting.JsBufferKind.Float32Array, new byte[lengths[i] * sizeof(float)]);
-                realm.Adapter.Set(result, realm.Key(names[i]), arrays[i]!);
+                // https://webaudio.github.io/web-audio-api/#dom-audioworkletprocessor-process: CreateDataProperty, which ignores
+                // the setters and the read-only properties of Object.prototype
+                realm.Adapter.DefineOwnProperty(result, realm.Key(names[i]), JsPropertyDescriptor<TValue>.Data(arrays[i]!, writable: true, enumerable: true, configurable: true));
             }
 
             return (Freeze(result), arrays);

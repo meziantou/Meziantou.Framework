@@ -248,10 +248,8 @@ public sealed class AudioWorkletNode : AudioNode
                 AudioWorkletGlobalScope.SetPendingConstruction(null);
             }
 
-            // The constructor must return the object of a processor of this node
-            if (constructor.AsPlatformObject(instance) is not AudioWorkletProcessor { } processor || processor.Node != this)
-                throw new DomException("The constructor of the processor did not return the processor of the node", "InvalidStateError");
-
+            // The object returned by the constructor is the processor of the node, even when it was constructed for another
+            // node (e.g. a constructor that returns a singleton)
             _processorObject = instance;
             _processCall = constructor.CreateProcessCall(instance);
             Context.OnGraphChanged();

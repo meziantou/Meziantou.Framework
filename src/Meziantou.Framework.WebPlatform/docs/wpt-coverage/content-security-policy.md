@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 844 | 882 | 0 | 96% |
+| [Stable](#stable-tests) | 845 | 882 | 0 | 96% |
 | [Tentative](#tentative-tests) | 7 | 13 | 0 | 54% |
 | [Reftests](#reftests) | 2 | 2 | 0 | 100% |
-| **All** | **853** | **897** | **0** | **95%** |
+| **All** | **854** | **897** | **0** | **95%** |
 
 ## Stable tests
 
@@ -558,7 +558,7 @@
 | [`reporting-api/reporting-api-sends-reports-on-violation-2.https.sub.html`](https://wpt.fyi/results/content-security-policy/reporting-api/reporting-api-sends-reports-on-violation-2.https.sub.html) | Fail | 3 / 4 | BUG | the source location of the violation of a fetch started after the script ends (the image whose `src` is set by the script is fetched by a microtask): no script runs, so the report has no `sourceFile`; the browsers capture the location when the attribute is set |
 | [`reporting-api/reporting-api-sends-reports-on-violation-for-dedicated-worker-import.https.sub.html`](https://wpt.fyi/results/content-security-policy/reporting-api/reporting-api-sends-reports-on-violation-for-dedicated-worker-import.https.sub.html) | Pass | 2 / 2 |  |  |
 | [`reporting-api/reporting-api-sends-reports-on-violation-for-shared-worker-import.https.sub.html`](https://wpt.fyi/results/content-security-policy/reporting-api/reporting-api-sends-reports-on-violation-for-shared-worker-import.https.sub.html) | Pass | 2 / 2 |  |  |
-| [`reporting-api/reporting-api-sends-reports-on-violation-for-worklet-import.https.sub.html`](https://wpt.fyi/results/content-security-policy/reporting-api/reporting-api-sends-reports-on-violation-for-worklet-import.https.sub.html) | Fail | 0 / 2 | NOT IMPLEMENTED | uses `AudioContext` (not implemented yet) |
+| [`reporting-api/reporting-api-sends-reports-on-violation-for-worklet-import.https.sub.html`](https://wpt.fyi/results/content-security-policy/reporting-api/reporting-api-sends-reports-on-violation-for-worklet-import.https.sub.html) | Pass | 2 / 2 |  |  |
 | [`reporting-api/reporting-api-sends-reports-on-violation.https.sub.html`](https://wpt.fyi/results/content-security-policy/reporting-api/reporting-api-sends-reports-on-violation.https.sub.html) | Pass | 4 / 4 |  |  |
 | [`reporting-api/reporting-api-works-on-frame-ancestors.https.sub.html`](https://wpt.fyi/results/content-security-policy/reporting-api/reporting-api-works-on-frame-ancestors.https.sub.html) | Pass | 2 / 2 |  |  |
 | [`reporting-api/reporting-api-works-on-frame-src.https.sub.html`](https://wpt.fyi/results/content-security-policy/reporting-api/reporting-api-works-on-frame-src.https.sub.html) | Pass | 2 / 2 |  |  |

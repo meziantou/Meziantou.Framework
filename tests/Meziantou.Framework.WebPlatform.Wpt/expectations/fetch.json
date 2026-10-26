@@ -3453,10 +3453,7 @@
     "total": 0
   },
   "fetch/metadata/audio-worklet.https.html": {
-    "total": 1,
-    "failures": {
-      "The fetch metadata for audio worklet": "FAIL"
-    }
+    "total": 5
   },
   "fetch/metadata/embed.https.sub.tentative.html": {
     "total": 30
@@ -3480,28 +3477,7 @@
     "total": 30
   },
   "fetch/metadata/generated/audioworklet.https.sub.html": {
-    "total": 19,
-    "failures": {
-      "sec-fetch-dest": "FAIL",
-      "sec-fetch-mode": "FAIL",
-      "sec-fetch-site - Cross-Site -> Cross-Site": "FAIL",
-      "sec-fetch-site - Cross-Site -> Same Origin": "FAIL",
-      "sec-fetch-site - Cross-Site -> Same-Site": "FAIL",
-      "sec-fetch-site - Cross-site": "FAIL",
-      "sec-fetch-site - Same origin": "FAIL",
-      "sec-fetch-site - Same site": "FAIL",
-      "sec-fetch-site - Same-Origin -> Cross-Site": "FAIL",
-      "sec-fetch-site - Same-Origin -> Cross-Site -> Same-Origin redirect": "FAIL",
-      "sec-fetch-site - Same-Origin -> Same Origin": "FAIL",
-      "sec-fetch-site - Same-Origin -> Same-Site": "FAIL",
-      "sec-fetch-site - Same-Origin -> Same-Site -> Same-Origin redirect": "FAIL",
-      "sec-fetch-site - Same-Site -> Cross-Site": "FAIL",
-      "sec-fetch-site - Same-Site -> Same Origin": "FAIL",
-      "sec-fetch-site - Same-Site -> Same-Site": "FAIL",
-      "sec-fetch-storage-access - Cross-site": "FAIL",
-      "sec-fetch-storage-access - Same site": "FAIL",
-      "sec-fetch-user": "FAIL"
-    }
+    "total": 19
   },
   "fetch/metadata/generated/css-font-face.https.sub.tentative.html": {
     "total": 19

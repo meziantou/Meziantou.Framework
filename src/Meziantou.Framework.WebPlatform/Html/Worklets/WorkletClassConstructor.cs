@@ -101,6 +101,15 @@ public abstract class WorkletClassConstructor
 
     /// <summary>Creates the call site of the <c>process()</c> method of an instance of an audio processor class.</summary>
     internal abstract WebAudio.Rendering.AudioWorkletProcessCall CreateProcessCall(object processor);
+
+    /// <summary>
+    /// Starts the rendering of a render quantum that calls the processors of the realm of the class: the calls do not
+    /// perform a microtask checkpoint, <see cref="ExitRenderQuantum"/> performs it once the quantum is rendered.
+    /// </summary>
+    internal abstract void EnterRenderQuantum();
+
+    /// <summary>Ends the rendering of a render quantum, and performs a microtask checkpoint (https://webaudio.github.io/web-audio-api/#rendering-loop).</summary>
+    internal abstract void ExitRenderQuantum(GlobalScope global);
 }
 
 /// <summary>The state of a promise returned by a callback of a worklet (see <see cref="WorkletClassConstructor.ObservePromise"/>).</summary>

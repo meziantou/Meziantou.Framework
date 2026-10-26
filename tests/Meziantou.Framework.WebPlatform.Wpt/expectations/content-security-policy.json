@@ -1729,11 +1729,7 @@
     "total": 2
   },
   "content-security-policy/reporting-api/reporting-api-sends-reports-on-violation-for-worklet-import.https.sub.html": {
-    "total": 2,
-    "failures": {
-      "A blocked static import in an AudioWorklet is reported on the creator document.": "FAIL",
-      "Violation report status OK.": "FAIL"
-    }
+    "total": 2
   },
   "content-security-policy/reporting-api/reporting-api-sends-reports-on-violation.https.sub.html": {
     "total": 4

@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 39 | 46 | 2 | 89% |
+| [Stable](#stable-tests) | 40 | 46 | 2 | 91% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **39** | **46** | **2** | **89%** |
+| **All** | **40** | **46** | **2** | **91%** |
 
 ## Stable tests
 
@@ -26,7 +26,7 @@
 | [`ecmascript-binding/constructors.html`](https://wpt.fyi/results/webidl/ecmascript-binding/constructors.html) | Pass | 15 / 15 |  |  |
 | [`ecmascript-binding/default-iterator-object.html`](https://wpt.fyi/results/webidl/ecmascript-binding/default-iterator-object.html) | Pass | 3 / 3 |  |  |
 | [`ecmascript-binding/default-toJSON-cross-realm.html`](https://wpt.fyi/results/webidl/ecmascript-binding/default-toJSON-cross-realm.html) | Pass | 2 / 2 |  |  |
-| [`ecmascript-binding/es-exceptions/DOMException-audioworklet.https.html`](https://wpt.fyi/results/webidl/ecmascript-binding/es-exceptions/DOMException-audioworklet.https.html) | Error | 0 / 5 | NOT IMPLEMENTED | uses `AudioContext` (not implemented yet) |
+| [`ecmascript-binding/es-exceptions/DOMException-audioworklet.https.html`](https://wpt.fyi/results/webidl/ecmascript-binding/es-exceptions/DOMException-audioworklet.https.html) | Pass | 5 / 5 |  |  |
 | [`ecmascript-binding/es-exceptions/DOMException-constants.any.js`](https://wpt.fyi/results/webidl/ecmascript-binding/es-exceptions/DOMException-constants.any.js) | Pass | 102 / 102 |  |  |
 | [`ecmascript-binding/es-exceptions/DOMException-constructor-and-prototype.any.js`](https://wpt.fyi/results/webidl/ecmascript-binding/es-exceptions/DOMException-constructor-and-prototype.any.js) | Pass | 6 / 6 |  |  |
 | [`ecmascript-binding/es-exceptions/DOMException-constructor-behavior.any.js`](https://wpt.fyi/results/webidl/ecmascript-binding/es-exceptions/DOMException-constructor-behavior.any.js) | Pass | 92 / 92 |  |  |

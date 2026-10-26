@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 293 | 407 | 3 | 73% |
+| [Stable](#stable-tests) | 295 | 407 | 3 | 73% |
 | [Tentative](#tentative-tests) | 12 | 77 | 1 | 16% |
 | [Reftests](#reftests) | 9 | 11 | 0 | 82% |
-| **All** | **314** | **495** | **4** | **64%** |
+| **All** | **316** | **495** | **4** | **64%** |
 
 ## Stable tests
 
@@ -138,7 +138,7 @@
 | [`api/request/destination/fetch-destination-no-load-event.https.html`](https://wpt.fyi/results/fetch/api/request/destination/fetch-destination-no-load-event.https.html) | Pass | 9 / 9 |  |  |
 | [`api/request/destination/fetch-destination-prefetch.https.html`](https://wpt.fyi/results/fetch/api/request/destination/fetch-destination-prefetch.https.html) | Pass | 2 / 2 |  |  |
 | [`api/request/destination/fetch-destination-worker.https.html`](https://wpt.fyi/results/fetch/api/request/destination/fetch-destination-worker.https.html) | Pass | 3 / 3 |  |  |
-| [`api/request/destination/fetch-destination.https.html`](https://wpt.fyi/results/fetch/api/request/destination/fetch-destination.https.html) | Timeout | 17 / 30 | NOT IMPLEMENTED | `<link rel=preload as=json>`: `json` is a potential destination (`link.as` reflects it) but not a preload destination of the specification (https://html.spec.whatwg.org/multipage/links.html#preload-destination), so nothing is fetched and no event is fired: `fetch-destination.https.html` times out there, before its next subtests (the browsers preload it). Worklets (`audioWorklet.addModule()`); the external resource of the SVG `use` element is not fetched (`fetch-destination-no-load-event.https.html` times out there) |
+| [`api/request/destination/fetch-destination.https.html`](https://wpt.fyi/results/fetch/api/request/destination/fetch-destination.https.html) | Timeout | 17 / 30 | TEST BUG, NOT IMPLEMENTED | `audioWorklet.addModule('dummy?dest=audioworklet')` fetches the empty `resources/dummy` file, served as `application/octet-stream` (it has no extension): it is not a JavaScript MIME type, so the module script fails and `addModule()` rejects with an `AbortError`; `<link rel=preload as=json>`: `json` is a potential destination (`link.as` reflects it) but not a preload destination of the specification (https://html.spec.whatwg.org/multipage/links.html#preload-destination), so nothing is fetched and no event is fired: `fetch-destination.https.html` times out there, before its next subtests (the browsers preload it); the external resource of the SVG `use` element is not fetched (`fetch-destination-no-load-event.https.html` times out there) |
 | [`api/request/forbidden-method.any.js`](https://wpt.fyi/results/fetch/api/request/forbidden-method.any.js) | Pass | 18 / 18 |  |  |
 | [`api/request/multi-globals/construct-in-detached-frame.window.js`](https://wpt.fyi/results/fetch/api/request/multi-globals/construct-in-detached-frame.window.js) | Pass | 1 / 1 |  |  |
 | [`api/request/multi-globals/url-parsing.html`](https://wpt.fyi/results/fetch/api/request/multi-globals/url-parsing.html) | Pass | 1 / 1 |  |  |
@@ -305,10 +305,10 @@
 | [`http-cache/status.any.js`](https://wpt.fyi/results/fetch/http-cache/status.any.js) | Fail | 0 / 78 | NOT IMPLEMENTED, TEST RUNNER | the HTTP cache; `fetch/http-cache/resources/http-cache.py` is not emulated (the requests get 404) |
 | [`http-cache/vary.any.js`](https://wpt.fyi/results/fetch/http-cache/vary.any.js) | Fail | 0 / 42 | NOT IMPLEMENTED, TEST RUNNER | the HTTP cache; `fetch/http-cache/resources/http-cache.py` is not emulated (the requests get 404) |
 | [`images/canvas-remote-read-remote-image-redirect.html`](https://wpt.fyi/results/fetch/images/canvas-remote-read-remote-image-redirect.html) | Pass | 1 / 1 |  |  |
-| [`metadata/audio-worklet.https.html`](https://wpt.fyi/results/fetch/metadata/audio-worklet.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | uses `AudioContext` (not implemented yet) |
+| [`metadata/audio-worklet.https.html`](https://wpt.fyi/results/fetch/metadata/audio-worklet.https.html) | Pass | 5 / 5 |  |  |
 | [`metadata/fetch-preflight.https.sub.any.js`](https://wpt.fyi/results/fetch/metadata/fetch-preflight.https.sub.any.js) | Pass | 30 / 30 |  |  |
 | [`metadata/fetch.https.sub.any.js`](https://wpt.fyi/results/fetch/metadata/fetch.https.sub.any.js) | Pass | 90 / 90 |  |  |
-| [`metadata/generated/audioworklet.https.sub.html`](https://wpt.fyi/results/fetch/metadata/generated/audioworklet.https.sub.html) | Fail | 0 / 19 | NOT IMPLEMENTED | uses `AudioContext` (not implemented yet) |
+| [`metadata/generated/audioworklet.https.sub.html`](https://wpt.fyi/results/fetch/metadata/generated/audioworklet.https.sub.html) | Pass | 19 / 19 |  |  |
 | [`metadata/generated/element-a.https.sub.html`](https://wpt.fyi/results/fetch/metadata/generated/element-a.https.sub.html) | Timeout | 16 / 23 | NOT IMPLEMENTED | downloads (`<a download>` does not fetch the resource, so the test waits forever) |
 | [`metadata/generated/element-a.sub.html`](https://wpt.fyi/results/fetch/metadata/generated/element-a.sub.html) | Pass | 18 / 18 |  |  |
 | [`metadata/generated/element-area.https.sub.html`](https://wpt.fyi/results/fetch/metadata/generated/element-area.https.sub.html) | Timeout | 16 / 23 | NOT IMPLEMENTED | downloads (`<area download>` does not fetch the resource, so the test waits forever) |

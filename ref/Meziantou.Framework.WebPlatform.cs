@@ -13374,6 +13374,53 @@ namespace Meziantou.Framework.WebPlatform.WebAudio
         public float PlaybackRate { get => throw null; init { } }
     }
 
+    public sealed class AudioContext : Meziantou.Framework.WebPlatform.WebAudio.BaseAudioContext
+    {
+        public double BaseLatency { get => throw null; }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnError { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnSinkChange { get => throw null; set { } }
+        public double OutputLatency { get => throw null; }
+        public Meziantou.Framework.WebPlatform.WebAudio.AudioPlaybackStats PlaybackStats { get => throw null; }
+        public Meziantou.Framework.WebPlatform.WebAudio.StringOrAudioSinkInfo SinkId { get => throw null; }
+        public AudioContext(Meziantou.Framework.WebPlatform.WebAudio.AudioContextOptions? contextOptions = null) { }
+        public System.Threading.Tasks.Task Close() => throw null;
+        public Meziantou.Framework.WebPlatform.WebAudio.AudioTimestamp GetOutputTimestamp() => throw null;
+        public System.Threading.Tasks.Task Resume() => throw null;
+        public System.Threading.Tasks.Task SetSinkId(Meziantou.Framework.WebPlatform.WebAudio.StringOrAudioSinkOptions sinkId) => throw null;
+        public System.Threading.Tasks.Task Suspend() => throw null;
+    }
+
+    public enum AudioContextLatencyCategory
+    {
+        Balanced = 0,
+        Interactive = 1,
+        Playback = 2,
+    }
+
+    public readonly struct AudioContextLatencyHint : System.IEquatable<Meziantou.Framework.WebPlatform.WebAudio.AudioContextLatencyHint>
+    {
+        public Meziantou.Framework.WebPlatform.WebAudio.AudioContextLatencyCategory? Category { get => throw null; }
+        public double? Seconds { get => throw null; }
+        public object Value { get => throw null; }
+        public bool Equals(Meziantou.Framework.WebPlatform.WebAudio.AudioContextLatencyHint other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public static Meziantou.Framework.WebPlatform.WebAudio.AudioContextLatencyHint FromAudioContextLatencyCategory(Meziantou.Framework.WebPlatform.WebAudio.AudioContextLatencyCategory value) => throw null;
+        public static Meziantou.Framework.WebPlatform.WebAudio.AudioContextLatencyHint FromDouble(double value) => throw null;
+        public override int GetHashCode() => throw null;
+        public static bool operator ==(Meziantou.Framework.WebPlatform.WebAudio.AudioContextLatencyHint left, Meziantou.Framework.WebPlatform.WebAudio.AudioContextLatencyHint right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WebPlatform.WebAudio.AudioContextLatencyHint left, Meziantou.Framework.WebPlatform.WebAudio.AudioContextLatencyHint right) => throw null;
+        public static implicit operator Meziantou.Framework.WebPlatform.WebAudio.AudioContextLatencyHint(Meziantou.Framework.WebPlatform.WebAudio.AudioContextLatencyCategory value) => throw null;
+        public static implicit operator Meziantou.Framework.WebPlatform.WebAudio.AudioContextLatencyHint(double value) => throw null;
+    }
+
+    public sealed class AudioContextOptions
+    {
+        public Meziantou.Framework.WebPlatform.WebAudio.AudioContextLatencyHint LatencyHint { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.WebAudio.AudioContextRenderSizeHint RenderSizeHint { get => throw null; init { } }
+        public float? SampleRate { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.WebAudio.StringOrAudioSinkOptions? SinkId { get => throw null; init { } }
+    }
+
     public enum AudioContextRenderSizeCategory
     {
         Default = 0,
@@ -13484,6 +13531,17 @@ namespace Meziantou.Framework.WebPlatform.WebAudio
         public bool Has(string name) => throw null;
     }
 
+    public sealed class AudioPlaybackStats
+    {
+        public double AverageLatency { get => throw null; }
+        public double MaximumLatency { get => throw null; }
+        public double MinimumLatency { get => throw null; }
+        public double TotalDuration { get => throw null; }
+        public double UnderrunDuration { get => throw null; }
+        public uint UnderrunEvents { get => throw null; }
+        public void ResetLatency() { }
+    }
+
     public sealed class AudioProcessingEvent : Meziantou.Framework.WebPlatform.Dom.Event
     {
         public Meziantou.Framework.WebPlatform.WebAudio.AudioBuffer InputBuffer { get => throw null; }
@@ -13504,6 +13562,27 @@ namespace Meziantou.Framework.WebPlatform.WebAudio
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnEnded { get => throw null; set { } }
         public void Start(double when = 0d) { }
         public void Stop(double when = 0d) { }
+    }
+
+    public sealed class AudioSinkInfo
+    {
+        public Meziantou.Framework.WebPlatform.WebAudio.AudioSinkType Type { get => throw null; }
+    }
+
+    public sealed class AudioSinkOptions
+    {
+        public required Meziantou.Framework.WebPlatform.WebAudio.AudioSinkType Type { get => throw null; init { } }
+    }
+
+    public enum AudioSinkType
+    {
+        None = 0,
+    }
+
+    public sealed class AudioTimestamp
+    {
+        public double ContextTime { get => throw null; init { } }
+        public double PerformanceTime { get => throw null; init { } }
     }
 
     public sealed class AudioWorklet : Meziantou.Framework.WebPlatform.Dom.Worklet
@@ -13876,6 +13955,38 @@ namespace Meziantou.Framework.WebPlatform.WebAudio
     public sealed class StereoPannerOptions : Meziantou.Framework.WebPlatform.WebAudio.AudioNodeOptions
     {
         public float Pan { get => throw null; init { } }
+    }
+
+    public readonly struct StringOrAudioSinkInfo : System.IEquatable<Meziantou.Framework.WebPlatform.WebAudio.StringOrAudioSinkInfo>
+    {
+        public string? DeviceId { get => throw null; }
+        public Meziantou.Framework.WebPlatform.WebAudio.AudioSinkInfo? Info { get => throw null; }
+        public object Value { get => throw null; }
+        public bool Equals(Meziantou.Framework.WebPlatform.WebAudio.StringOrAudioSinkInfo other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public static Meziantou.Framework.WebPlatform.WebAudio.StringOrAudioSinkInfo FromAudioSinkInfo(Meziantou.Framework.WebPlatform.WebAudio.AudioSinkInfo value) => throw null;
+        public static Meziantou.Framework.WebPlatform.WebAudio.StringOrAudioSinkInfo FromString(string value) => throw null;
+        public override int GetHashCode() => throw null;
+        public static bool operator ==(Meziantou.Framework.WebPlatform.WebAudio.StringOrAudioSinkInfo left, Meziantou.Framework.WebPlatform.WebAudio.StringOrAudioSinkInfo right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WebPlatform.WebAudio.StringOrAudioSinkInfo left, Meziantou.Framework.WebPlatform.WebAudio.StringOrAudioSinkInfo right) => throw null;
+        public static implicit operator Meziantou.Framework.WebPlatform.WebAudio.StringOrAudioSinkInfo(Meziantou.Framework.WebPlatform.WebAudio.AudioSinkInfo value) => throw null;
+        public static implicit operator Meziantou.Framework.WebPlatform.WebAudio.StringOrAudioSinkInfo(string value) => throw null;
+    }
+
+    public readonly struct StringOrAudioSinkOptions : System.IEquatable<Meziantou.Framework.WebPlatform.WebAudio.StringOrAudioSinkOptions>
+    {
+        public string? DeviceId { get => throw null; }
+        public Meziantou.Framework.WebPlatform.WebAudio.AudioSinkOptions? Options { get => throw null; }
+        public object Value { get => throw null; }
+        public bool Equals(Meziantou.Framework.WebPlatform.WebAudio.StringOrAudioSinkOptions other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public static Meziantou.Framework.WebPlatform.WebAudio.StringOrAudioSinkOptions FromAudioSinkOptions(Meziantou.Framework.WebPlatform.WebAudio.AudioSinkOptions value) => throw null;
+        public static Meziantou.Framework.WebPlatform.WebAudio.StringOrAudioSinkOptions FromString(string value) => throw null;
+        public override int GetHashCode() => throw null;
+        public static bool operator ==(Meziantou.Framework.WebPlatform.WebAudio.StringOrAudioSinkOptions left, Meziantou.Framework.WebPlatform.WebAudio.StringOrAudioSinkOptions right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WebPlatform.WebAudio.StringOrAudioSinkOptions left, Meziantou.Framework.WebPlatform.WebAudio.StringOrAudioSinkOptions right) => throw null;
+        public static implicit operator Meziantou.Framework.WebPlatform.WebAudio.StringOrAudioSinkOptions(Meziantou.Framework.WebPlatform.WebAudio.AudioSinkOptions value) => throw null;
+        public static implicit operator Meziantou.Framework.WebPlatform.WebAudio.StringOrAudioSinkOptions(string value) => throw null;
     }
 
     public sealed class WaveShaperNode : Meziantou.Framework.WebPlatform.WebAudio.AudioNode

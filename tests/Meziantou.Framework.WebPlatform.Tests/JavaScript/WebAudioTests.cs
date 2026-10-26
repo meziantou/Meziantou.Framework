@@ -2,6 +2,7 @@ using Meziantou.Framework.WebPlatform.Dom;
 using Meziantou.Framework.WebPlatform.Scripting;
 using Meziantou.Framework.WebPlatform.Tests.Scripting;
 using Meziantou.Framework.WebPlatform.WebAudio;
+using Microsoft.Extensions.Time.Testing;
 
 namespace Meziantou.Framework.WebPlatform.Tests.JavaScript;
 
@@ -11,6 +12,7 @@ public sealed class WebAudioTests : IDisposable
     private readonly BrowsingContextScope _contexts = new();
     private readonly List<ScriptError> _errors = [];
     private readonly ScriptEngine _engine = TestScriptEngines.Create();
+    private readonly FakeTimeProvider _clock = new();
 
     public void Dispose()
     {
@@ -23,6 +25,7 @@ public sealed class WebAudioTests : IDisposable
         var context = _contexts.Create(new BrowsingContextOptions
         {
             ScriptEngine = _engine,
+            TimeProvider = _clock,
             UnhandledScriptError = (_, error) => _errors.Add(error),
         });
 
@@ -691,5 +694,75 @@ public sealed class WebAudioTests : IDisposable
             """);
 
         Assert.Equal("0,true,callback EncodingError,EncodingError,DataCloneError", document.Title);
+    }
+    private string Evaluate(Document document, string code) => TestScriptEngines.Evaluate(_engine, document.DefaultView!, code) ?? "";
+
+    /// <summary>Advances the clock by steps of 5 ms, running the tasks that are due.</summary>
+    private void Advance(TimeSpan duration)
+    {
+        for (var elapsed = TimeSpan.Zero; elapsed < duration; elapsed += TimeSpan.FromMilliseconds(5))
+        {
+            _clock.Advance(TimeSpan.FromMilliseconds(5));
+            _contexts.EventLoop.RunUntilIdle();
+        }
+    }
+
+    [Fact]
+    public void Script_AudioContext_RendersAtThePaceOfTheClock()
+    {
+        var document = Load("""
+            <script>
+              var context = new AudioContext({ sampleRate: 8000 });
+              var log = [context.state, context.baseLatency];
+              context.onstatechange = () => log.push(context.state);
+              var processed = 0;
+              const processor = context.createScriptProcessor(256, 1, 1);
+              processor.onaudioprocess = () => processed++;
+              processor.connect(context.destination);
+            </script>
+            """);
+
+        Advance(TimeSpan.FromMilliseconds(500));
+        Assert.Equal("suspended,0.032,running", Evaluate(document, "log.join()"));
+        var time = double.Parse(Evaluate(document, "context.currentTime"), System.Globalization.CultureInfo.InvariantCulture);
+        Assert.InRange(time, 0.5 - (128 / 8000.0), 0.5);
+        Assert.InRange(int.Parse(Evaluate(document, "processed"), System.Globalization.CultureInfo.InvariantCulture), 10, 16);
+        Assert.Equal("true", Evaluate(document, "context.getOutputTimestamp().contextTime === context.currentTime && context.getOutputTimestamp().performanceTime > 0"));
+
+        Evaluate(document, "context.suspend().then(() => log.push('suspended ' + context.state))");
+        Advance(TimeSpan.FromMilliseconds(500));
+        Assert.Equal(time, double.Parse(Evaluate(document, "context.currentTime"), System.Globalization.CultureInfo.InvariantCulture), 3);
+        Evaluate(document, "context.resume().then(() => context.close()).then(() => context.close()).catch(e => log.push(e.name))");
+        Advance(TimeSpan.FromMilliseconds(100));
+
+        Assert.Equal("suspended,0.032,running,suspended suspended,suspended,running,InvalidStateError,closed", Evaluate(document, "log.join()"));
+        Assert.Equal("closed", Evaluate(document, "context.state"));
+    }
+
+    [Fact]
+    public void Script_AudioContext_OptionsAndSinks()
+    {
+        var document = Load("""
+            <script>
+              var log = [];
+              const latencies = ['interactive', 'balanced', 'playback', 1e-6, 100].map(latencyHint => new AudioContext({ latencyHint, sampleRate: 12800 }).baseLatency);
+              log.push(latencies.join(' '));
+              try { new AudioContext({ sampleRate: 2999 }); } catch (e) { log.push(e.name); }
+              const none = new AudioContext({ sinkId: { type: 'none' } });
+              log.push(typeof none.sinkId, none.sinkId.type, none.sinkId === none.sinkId);
+              const invalid = new AudioContext({ sinkId: 'unknown' });
+              invalid.onerror = () => log.push('error ' + JSON.stringify(invalid.sinkId));
+              invalid.setSinkId('unknown').catch(e => log.push(e.name));
+              none.onsinkchange = () => log.push('sinkchange');
+              none.setSinkId('').then(() => log.push(JSON.stringify(none.sinkId)));
+              log.push(JSON.stringify(none.playbackStats));
+            </script>
+            """);
+
+        Advance(TimeSpan.FromMilliseconds(20));
+
+        Assert.Equal(
+            "0.02 0.08 0.32 0.02 0.32,NotSupportedError,object,none,true,{\"underrunDuration\":0,\"underrunEvents\":0,\"totalDuration\":0,\"averageLatency\":0,\"minimumLatency\":0,\"maximumLatency\":0},NotFoundError,error \"\",sinkchange,\"\"",
+            Evaluate(document, "log.join()"));
     }
 }

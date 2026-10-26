@@ -49,13 +49,44 @@ public partial class Document
     /// <summary>The animation worklet of the document, or null when it was not used.</summary>
     internal AnimationWorklet? AnimationWorkletOrNull => _animationWorklet;
 
-    /// <summary>Terminates the global scopes of the worklets of the document (https://html.spec.whatwg.org/multipage/worklets.html#worklets-lifetime), when it is destroyed.</summary>
     // The audio worklets of the audio contexts of the window of the document
     private List<Worklet>? _audioWorklets;
+
+    // The realtime audio contexts of the window of the document, closed with the document
+    private List<WeakReference<WebAudio.AudioContext>>? _audioContexts;
 
     /// <summary>Registers the audio worklet of an audio context, terminated with the document.</summary>
     internal void RegisterAudioWorklet(Worklet worklet) => (_audioWorklets ??= []).Add(worklet);
 
+    /// <summary>Registers a realtime audio context, closed when the document is destroyed.</summary>
+    internal void RegisterAudioContext(WebAudio.AudioContext context)
+    {
+        var contexts = _audioContexts ??= [];
+        if (contexts.Count >= 16 && (contexts.Count & (contexts.Count - 1)) == 0)
+        {
+            contexts.RemoveAll(reference => !reference.TryGetTarget(out _));
+        }
+
+        contexts.Add(new WeakReference<WebAudio.AudioContext>(context));
+    }
+
+    /// <summary>Closes the realtime audio contexts of the document, when it is destroyed.</summary>
+    internal void CloseAudioContexts()
+    {
+        if (_audioContexts is not { } contexts)
+            return;
+
+        _audioContexts = null;
+        foreach (var reference in contexts)
+        {
+            if (reference.TryGetTarget(out var context))
+            {
+                context.OnDocumentDestroyed();
+            }
+        }
+    }
+
+    /// <summary>Terminates the global scopes of the worklets of the document (https://html.spec.whatwg.org/multipage/worklets.html#worklets-lifetime), when it is destroyed.</summary>
     internal void TerminateWorklets()
     {
         _paintWorklet?.Terminate();

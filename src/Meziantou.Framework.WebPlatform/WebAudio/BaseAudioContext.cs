@@ -376,14 +376,26 @@ public abstract class BaseAudioContext : EventTarget
 
         var startFrame = CurrentFrame;
         var length = RenderQuantumSizeInternal;
-        foreach (var node in _order)
-        {
-            node.RenderQuantum(startFrame, length);
-        }
 
-        foreach (var node in _splitNodes)
+        // The calls of the processors of the audio worklet perform a microtask checkpoint after the render quantum
+        var worklet = _audioWorklet?.GlobalScope is { IsTerminated: false } scope && scope.ProcessorConstructors.Count > 0 ? scope : null;
+        var processorClass = worklet?.ProcessorConstructors.Values.First();
+        processorClass?.EnterRenderQuantum();
+        try
         {
-            node.RenderCycleInput(startFrame, length);
+            foreach (var node in _order)
+            {
+                node.RenderQuantum(startFrame, length);
+            }
+
+            foreach (var node in _splitNodes)
+            {
+                node.RenderCycleInput(startFrame, length);
+            }
+        }
+        finally
+        {
+            processorClass?.ExitRenderQuantum(worklet!);
         }
 
         CurrentFrame = startFrame + length;

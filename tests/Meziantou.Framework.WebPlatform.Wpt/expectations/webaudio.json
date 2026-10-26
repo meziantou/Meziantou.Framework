@@ -5,452 +5,33 @@
   "webaudio/idlharness.https.window.js": {
     "total": 1166,
     "failures": {
-      "AnalyserNode interface: calling getByteFrequencyData(Uint8Array) on new AnalyserNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AnalyserNode interface: calling getByteTimeDomainData(Uint8Array) on new AnalyserNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AnalyserNode interface: calling getFloatFrequencyData(Float32Array) on new AnalyserNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AnalyserNode interface: calling getFloatTimeDomainData(Float32Array) on new AnalyserNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AnalyserNode interface: new AnalyserNode(context) must inherit property \"fftSize\" with the proper type": "FAIL",
-      "AnalyserNode interface: new AnalyserNode(context) must inherit property \"frequencyBinCount\" with the proper type": "FAIL",
-      "AnalyserNode interface: new AnalyserNode(context) must inherit property \"getByteFrequencyData(Uint8Array)\" with the proper type": "FAIL",
-      "AnalyserNode interface: new AnalyserNode(context) must inherit property \"getByteTimeDomainData(Uint8Array)\" with the proper type": "FAIL",
-      "AnalyserNode interface: new AnalyserNode(context) must inherit property \"getFloatFrequencyData(Float32Array)\" with the proper type": "FAIL",
-      "AnalyserNode interface: new AnalyserNode(context) must inherit property \"getFloatTimeDomainData(Float32Array)\" with the proper type": "FAIL",
-      "AnalyserNode interface: new AnalyserNode(context) must inherit property \"maxDecibels\" with the proper type": "FAIL",
-      "AnalyserNode interface: new AnalyserNode(context) must inherit property \"minDecibels\" with the proper type": "FAIL",
-      "AnalyserNode interface: new AnalyserNode(context) must inherit property \"smoothingTimeConstant\" with the proper type": "FAIL",
-      "AnalyserNode must be primary interface of new AnalyserNode(context)": "FAIL",
-      "AudioBuffer interface: buffer must inherit property \"copyFromChannel(Float32Array, unsigned long, optional unsigned long)\" with the proper type": "FAIL",
-      "AudioBuffer interface: buffer must inherit property \"copyToChannel(Float32Array, unsigned long, optional unsigned long)\" with the proper type": "FAIL",
-      "AudioBuffer interface: buffer must inherit property \"duration\" with the proper type": "FAIL",
-      "AudioBuffer interface: buffer must inherit property \"getChannelData(unsigned long)\" with the proper type": "FAIL",
-      "AudioBuffer interface: buffer must inherit property \"length\" with the proper type": "FAIL",
-      "AudioBuffer interface: buffer must inherit property \"numberOfChannels\" with the proper type": "FAIL",
-      "AudioBuffer interface: buffer must inherit property \"sampleRate\" with the proper type": "FAIL",
-      "AudioBuffer interface: calling copyFromChannel(Float32Array, unsigned long, optional unsigned long) on buffer with too few arguments must throw TypeError": "FAIL",
-      "AudioBuffer interface: calling copyToChannel(Float32Array, unsigned long, optional unsigned long) on buffer with too few arguments must throw TypeError": "FAIL",
-      "AudioBuffer interface: calling getChannelData(unsigned long) on buffer with too few arguments must throw TypeError": "FAIL",
-      "AudioBuffer must be primary interface of buffer": "FAIL",
-      "AudioBufferSourceNode interface: calling start(optional double, optional double, optional double) on new AudioBufferSourceNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioBufferSourceNode interface: new AudioBufferSourceNode(context) must inherit property \"buffer\" with the proper type": "FAIL",
-      "AudioBufferSourceNode interface: new AudioBufferSourceNode(context) must inherit property \"detune\" with the proper type": "FAIL",
-      "AudioBufferSourceNode interface: new AudioBufferSourceNode(context) must inherit property \"loop\" with the proper type": "FAIL",
-      "AudioBufferSourceNode interface: new AudioBufferSourceNode(context) must inherit property \"loopEnd\" with the proper type": "FAIL",
-      "AudioBufferSourceNode interface: new AudioBufferSourceNode(context) must inherit property \"loopStart\" with the proper type": "FAIL",
-      "AudioBufferSourceNode interface: new AudioBufferSourceNode(context) must inherit property \"playbackRate\" with the proper type": "FAIL",
-      "AudioBufferSourceNode interface: new AudioBufferSourceNode(context) must inherit property \"start(optional double, optional double, optional double)\" with the proper type": "FAIL",
-      "AudioBufferSourceNode must be primary interface of new AudioBufferSourceNode(context)": "FAIL",
-      "AudioContext interface object length": "FAIL",
-      "AudioContext interface object name": "FAIL",
-      "AudioContext interface: attribute baseLatency": "FAIL",
-      "AudioContext interface: attribute onerror": "FAIL",
-      "AudioContext interface: attribute onsinkchange": "FAIL",
-      "AudioContext interface: attribute outputLatency": "FAIL",
-      "AudioContext interface: attribute playbackStats": "FAIL",
-      "AudioContext interface: attribute sinkId": "FAIL",
       "AudioContext interface: calling createMediaElementSource(HTMLMediaElement) on context with too few arguments must throw TypeError": "FAIL",
       "AudioContext interface: calling createMediaStreamSource(MediaStream) on context with too few arguments must throw TypeError": "FAIL",
       "AudioContext interface: calling createMediaStreamTrackSource(MediaStreamTrack) on context with too few arguments must throw TypeError": "FAIL",
-      "AudioContext interface: calling setSinkId((DOMString or AudioSinkOptions)) on context with too few arguments must throw TypeError": "FAIL",
-      "AudioContext interface: context must inherit property \"baseLatency\" with the proper type": "FAIL",
-      "AudioContext interface: context must inherit property \"close()\" with the proper type": "FAIL",
       "AudioContext interface: context must inherit property \"createMediaElementSource(HTMLMediaElement)\" with the proper type": "FAIL",
       "AudioContext interface: context must inherit property \"createMediaStreamDestination()\" with the proper type": "FAIL",
       "AudioContext interface: context must inherit property \"createMediaStreamSource(MediaStream)\" with the proper type": "FAIL",
       "AudioContext interface: context must inherit property \"createMediaStreamTrackSource(MediaStreamTrack)\" with the proper type": "FAIL",
-      "AudioContext interface: context must inherit property \"getOutputTimestamp()\" with the proper type": "FAIL",
-      "AudioContext interface: context must inherit property \"onerror\" with the proper type": "FAIL",
-      "AudioContext interface: context must inherit property \"onsinkchange\" with the proper type": "FAIL",
-      "AudioContext interface: context must inherit property \"outputLatency\" with the proper type": "FAIL",
-      "AudioContext interface: context must inherit property \"playbackStats\" with the proper type": "FAIL",
-      "AudioContext interface: context must inherit property \"resume()\" with the proper type": "FAIL",
-      "AudioContext interface: context must inherit property \"setSinkId((DOMString or AudioSinkOptions))\" with the proper type": "FAIL",
-      "AudioContext interface: context must inherit property \"sinkId\" with the proper type": "FAIL",
-      "AudioContext interface: context must inherit property \"suspend()\" with the proper type": "FAIL",
-      "AudioContext interface: existence and properties of interface object": "FAIL",
-      "AudioContext interface: existence and properties of interface prototype object": "FAIL",
-      "AudioContext interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "AudioContext interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "AudioContext interface: operation close()": "FAIL",
       "AudioContext interface: operation createMediaElementSource(HTMLMediaElement)": "FAIL",
       "AudioContext interface: operation createMediaStreamDestination()": "FAIL",
       "AudioContext interface: operation createMediaStreamSource(MediaStream)": "FAIL",
       "AudioContext interface: operation createMediaStreamTrackSource(MediaStreamTrack)": "FAIL",
-      "AudioContext interface: operation getOutputTimestamp()": "FAIL",
-      "AudioContext interface: operation resume()": "FAIL",
-      "AudioContext interface: operation setSinkId((DOMString or AudioSinkOptions))": "FAIL",
-      "AudioContext interface: operation suspend()": "FAIL",
-      "AudioContext must be primary interface of context": "FAIL",
-      "AudioDestinationNode interface: context.destination must inherit property \"maxChannelCount\" with the proper type": "FAIL",
-      "AudioDestinationNode must be primary interface of context.destination": "FAIL",
-      "AudioListener interface: calling setOrientation(float, float, float, float, float, float) on context.listener with too few arguments must throw TypeError": "FAIL",
-      "AudioListener interface: calling setPosition(float, float, float) on context.listener with too few arguments must throw TypeError": "FAIL",
-      "AudioListener interface: context.listener must inherit property \"forwardX\" with the proper type": "FAIL",
-      "AudioListener interface: context.listener must inherit property \"forwardY\" with the proper type": "FAIL",
-      "AudioListener interface: context.listener must inherit property \"forwardZ\" with the proper type": "FAIL",
-      "AudioListener interface: context.listener must inherit property \"positionX\" with the proper type": "FAIL",
-      "AudioListener interface: context.listener must inherit property \"positionY\" with the proper type": "FAIL",
-      "AudioListener interface: context.listener must inherit property \"positionZ\" with the proper type": "FAIL",
-      "AudioListener interface: context.listener must inherit property \"setOrientation(float, float, float, float, float, float)\" with the proper type": "FAIL",
-      "AudioListener interface: context.listener must inherit property \"setPosition(float, float, float)\" with the proper type": "FAIL",
-      "AudioListener interface: context.listener must inherit property \"upX\" with the proper type": "FAIL",
-      "AudioListener interface: context.listener must inherit property \"upY\" with the proper type": "FAIL",
-      "AudioListener interface: context.listener must inherit property \"upZ\" with the proper type": "FAIL",
-      "AudioListener must be primary interface of context.listener": "FAIL",
-      "AudioNode interface: calling connect(AudioNode, optional unsigned long, optional unsigned long) on context.createScriptProcessor() with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling connect(AudioNode, optional unsigned long, optional unsigned long) on context.destination with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling connect(AudioNode, optional unsigned long, optional unsigned long) on new AnalyserNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling connect(AudioNode, optional unsigned long, optional unsigned long) on new AudioBufferSourceNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling connect(AudioNode, optional unsigned long, optional unsigned long) on new BiquadFilterNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling connect(AudioNode, optional unsigned long, optional unsigned long) on new ChannelMergerNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling connect(AudioNode, optional unsigned long, optional unsigned long) on new ChannelSplitterNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling connect(AudioNode, optional unsigned long, optional unsigned long) on new ConstantSourceNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling connect(AudioNode, optional unsigned long, optional unsigned long) on new ConvolverNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling connect(AudioNode, optional unsigned long, optional unsigned long) on new DelayNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling connect(AudioNode, optional unsigned long, optional unsigned long) on new DynamicsCompressorNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling connect(AudioNode, optional unsigned long, optional unsigned long) on new GainNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling connect(AudioNode, optional unsigned long, optional unsigned long) on new IIRFilterNode(context, {feedforward: [1], feedback: [1]}) with too few arguments must throw TypeError": "FAIL",
       "AudioNode interface: calling connect(AudioNode, optional unsigned long, optional unsigned long) on new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) with too few arguments must throw TypeError": "FAIL",
       "AudioNode interface: calling connect(AudioNode, optional unsigned long, optional unsigned long) on new MediaStreamAudioDestinationNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling connect(AudioNode, optional unsigned long, optional unsigned long) on new OscillatorNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling connect(AudioNode, optional unsigned long, optional unsigned long) on new PannerNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling connect(AudioNode, optional unsigned long, optional unsigned long) on new StereoPannerNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling connect(AudioNode, optional unsigned long, optional unsigned long) on new WaveShaperNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling connect(AudioNode, optional unsigned long, optional unsigned long) on worklet_node with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling connect(AudioParam, optional unsigned long) on context.createScriptProcessor() with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling connect(AudioParam, optional unsigned long) on context.destination with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling connect(AudioParam, optional unsigned long) on new AnalyserNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling connect(AudioParam, optional unsigned long) on new AudioBufferSourceNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling connect(AudioParam, optional unsigned long) on new BiquadFilterNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling connect(AudioParam, optional unsigned long) on new ChannelMergerNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling connect(AudioParam, optional unsigned long) on new ChannelSplitterNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling connect(AudioParam, optional unsigned long) on new ConstantSourceNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling connect(AudioParam, optional unsigned long) on new ConvolverNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling connect(AudioParam, optional unsigned long) on new DelayNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling connect(AudioParam, optional unsigned long) on new DynamicsCompressorNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling connect(AudioParam, optional unsigned long) on new GainNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling connect(AudioParam, optional unsigned long) on new IIRFilterNode(context, {feedforward: [1], feedback: [1]}) with too few arguments must throw TypeError": "FAIL",
       "AudioNode interface: calling connect(AudioParam, optional unsigned long) on new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) with too few arguments must throw TypeError": "FAIL",
       "AudioNode interface: calling connect(AudioParam, optional unsigned long) on new MediaStreamAudioDestinationNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling connect(AudioParam, optional unsigned long) on new OscillatorNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling connect(AudioParam, optional unsigned long) on new PannerNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling connect(AudioParam, optional unsigned long) on new StereoPannerNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling connect(AudioParam, optional unsigned long) on new WaveShaperNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling connect(AudioParam, optional unsigned long) on worklet_node with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode) on context.createScriptProcessor() with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode) on context.destination with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode) on new AnalyserNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode) on new AudioBufferSourceNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode) on new BiquadFilterNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode) on new ChannelMergerNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode) on new ChannelSplitterNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode) on new ConstantSourceNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode) on new ConvolverNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode) on new DelayNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode) on new DynamicsCompressorNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode) on new GainNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode) on new IIRFilterNode(context, {feedforward: [1], feedback: [1]}) with too few arguments must throw TypeError": "FAIL",
       "AudioNode interface: calling disconnect(AudioNode) on new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) with too few arguments must throw TypeError": "FAIL",
       "AudioNode interface: calling disconnect(AudioNode) on new MediaStreamAudioDestinationNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode) on new OscillatorNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode) on new PannerNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode) on new StereoPannerNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode) on new WaveShaperNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode) on worklet_node with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode, unsigned long) on context.createScriptProcessor() with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode, unsigned long) on context.destination with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode, unsigned long) on new AnalyserNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode, unsigned long) on new AudioBufferSourceNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode, unsigned long) on new BiquadFilterNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode, unsigned long) on new ChannelMergerNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode, unsigned long) on new ChannelSplitterNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode, unsigned long) on new ConstantSourceNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode, unsigned long) on new ConvolverNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode, unsigned long) on new DelayNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode, unsigned long) on new DynamicsCompressorNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode, unsigned long) on new GainNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode, unsigned long) on new IIRFilterNode(context, {feedforward: [1], feedback: [1]}) with too few arguments must throw TypeError": "FAIL",
       "AudioNode interface: calling disconnect(AudioNode, unsigned long) on new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) with too few arguments must throw TypeError": "FAIL",
       "AudioNode interface: calling disconnect(AudioNode, unsigned long) on new MediaStreamAudioDestinationNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode, unsigned long) on new OscillatorNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode, unsigned long) on new PannerNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode, unsigned long) on new StereoPannerNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode, unsigned long) on new WaveShaperNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode, unsigned long) on worklet_node with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode, unsigned long, unsigned long) on context.createScriptProcessor() with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode, unsigned long, unsigned long) on context.destination with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode, unsigned long, unsigned long) on new AnalyserNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode, unsigned long, unsigned long) on new AudioBufferSourceNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode, unsigned long, unsigned long) on new BiquadFilterNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode, unsigned long, unsigned long) on new ChannelMergerNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode, unsigned long, unsigned long) on new ChannelSplitterNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode, unsigned long, unsigned long) on new ConstantSourceNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode, unsigned long, unsigned long) on new ConvolverNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode, unsigned long, unsigned long) on new DelayNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode, unsigned long, unsigned long) on new DynamicsCompressorNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode, unsigned long, unsigned long) on new GainNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode, unsigned long, unsigned long) on new IIRFilterNode(context, {feedforward: [1], feedback: [1]}) with too few arguments must throw TypeError": "FAIL",
       "AudioNode interface: calling disconnect(AudioNode, unsigned long, unsigned long) on new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) with too few arguments must throw TypeError": "FAIL",
       "AudioNode interface: calling disconnect(AudioNode, unsigned long, unsigned long) on new MediaStreamAudioDestinationNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode, unsigned long, unsigned long) on new OscillatorNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode, unsigned long, unsigned long) on new PannerNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode, unsigned long, unsigned long) on new StereoPannerNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode, unsigned long, unsigned long) on new WaveShaperNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioNode, unsigned long, unsigned long) on worklet_node with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioParam) on context.createScriptProcessor() with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioParam) on context.destination with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioParam) on new AnalyserNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioParam) on new AudioBufferSourceNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioParam) on new BiquadFilterNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioParam) on new ChannelMergerNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioParam) on new ChannelSplitterNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioParam) on new ConstantSourceNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioParam) on new ConvolverNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioParam) on new DelayNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioParam) on new DynamicsCompressorNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioParam) on new GainNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioParam) on new IIRFilterNode(context, {feedforward: [1], feedback: [1]}) with too few arguments must throw TypeError": "FAIL",
       "AudioNode interface: calling disconnect(AudioParam) on new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) with too few arguments must throw TypeError": "FAIL",
       "AudioNode interface: calling disconnect(AudioParam) on new MediaStreamAudioDestinationNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioParam) on new OscillatorNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioParam) on new PannerNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioParam) on new StereoPannerNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioParam) on new WaveShaperNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioParam) on worklet_node with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioParam, unsigned long) on context.createScriptProcessor() with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioParam, unsigned long) on context.destination with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioParam, unsigned long) on new AnalyserNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioParam, unsigned long) on new AudioBufferSourceNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioParam, unsigned long) on new BiquadFilterNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioParam, unsigned long) on new ChannelMergerNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioParam, unsigned long) on new ChannelSplitterNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioParam, unsigned long) on new ConstantSourceNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioParam, unsigned long) on new ConvolverNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioParam, unsigned long) on new DelayNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioParam, unsigned long) on new DynamicsCompressorNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioParam, unsigned long) on new GainNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioParam, unsigned long) on new IIRFilterNode(context, {feedforward: [1], feedback: [1]}) with too few arguments must throw TypeError": "FAIL",
       "AudioNode interface: calling disconnect(AudioParam, unsigned long) on new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) with too few arguments must throw TypeError": "FAIL",
       "AudioNode interface: calling disconnect(AudioParam, unsigned long) on new MediaStreamAudioDestinationNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioParam, unsigned long) on new OscillatorNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioParam, unsigned long) on new PannerNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioParam, unsigned long) on new StereoPannerNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioParam, unsigned long) on new WaveShaperNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(AudioParam, unsigned long) on worklet_node with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(unsigned long) on context.createScriptProcessor() with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(unsigned long) on context.destination with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(unsigned long) on new AnalyserNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(unsigned long) on new AudioBufferSourceNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(unsigned long) on new BiquadFilterNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(unsigned long) on new ChannelMergerNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(unsigned long) on new ChannelSplitterNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(unsigned long) on new ConstantSourceNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(unsigned long) on new ConvolverNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(unsigned long) on new DelayNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(unsigned long) on new DynamicsCompressorNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(unsigned long) on new GainNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(unsigned long) on new IIRFilterNode(context, {feedforward: [1], feedback: [1]}) with too few arguments must throw TypeError": "FAIL",
       "AudioNode interface: calling disconnect(unsigned long) on new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) with too few arguments must throw TypeError": "FAIL",
       "AudioNode interface: calling disconnect(unsigned long) on new MediaStreamAudioDestinationNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(unsigned long) on new OscillatorNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(unsigned long) on new PannerNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(unsigned long) on new StereoPannerNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(unsigned long) on new WaveShaperNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: calling disconnect(unsigned long) on worklet_node with too few arguments must throw TypeError": "FAIL",
-      "AudioNode interface: context.createScriptProcessor() must inherit property \"channelCount\" with the proper type": "FAIL",
-      "AudioNode interface: context.createScriptProcessor() must inherit property \"channelCountMode\" with the proper type": "FAIL",
-      "AudioNode interface: context.createScriptProcessor() must inherit property \"channelInterpretation\" with the proper type": "FAIL",
-      "AudioNode interface: context.createScriptProcessor() must inherit property \"connect(AudioNode, optional unsigned long, optional unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: context.createScriptProcessor() must inherit property \"connect(AudioParam, optional unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: context.createScriptProcessor() must inherit property \"context\" with the proper type": "FAIL",
-      "AudioNode interface: context.createScriptProcessor() must inherit property \"disconnect()\" with the proper type": "FAIL",
-      "AudioNode interface: context.createScriptProcessor() must inherit property \"disconnect(AudioNode)\" with the proper type": "FAIL",
-      "AudioNode interface: context.createScriptProcessor() must inherit property \"disconnect(AudioNode, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: context.createScriptProcessor() must inherit property \"disconnect(AudioNode, unsigned long, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: context.createScriptProcessor() must inherit property \"disconnect(AudioParam)\" with the proper type": "FAIL",
-      "AudioNode interface: context.createScriptProcessor() must inherit property \"disconnect(AudioParam, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: context.createScriptProcessor() must inherit property \"disconnect(unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: context.createScriptProcessor() must inherit property \"numberOfInputs\" with the proper type": "FAIL",
-      "AudioNode interface: context.createScriptProcessor() must inherit property \"numberOfOutputs\" with the proper type": "FAIL",
-      "AudioNode interface: context.destination must inherit property \"channelCount\" with the proper type": "FAIL",
-      "AudioNode interface: context.destination must inherit property \"channelCountMode\" with the proper type": "FAIL",
-      "AudioNode interface: context.destination must inherit property \"channelInterpretation\" with the proper type": "FAIL",
-      "AudioNode interface: context.destination must inherit property \"connect(AudioNode, optional unsigned long, optional unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: context.destination must inherit property \"connect(AudioParam, optional unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: context.destination must inherit property \"context\" with the proper type": "FAIL",
-      "AudioNode interface: context.destination must inherit property \"disconnect()\" with the proper type": "FAIL",
-      "AudioNode interface: context.destination must inherit property \"disconnect(AudioNode)\" with the proper type": "FAIL",
-      "AudioNode interface: context.destination must inherit property \"disconnect(AudioNode, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: context.destination must inherit property \"disconnect(AudioNode, unsigned long, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: context.destination must inherit property \"disconnect(AudioParam)\" with the proper type": "FAIL",
-      "AudioNode interface: context.destination must inherit property \"disconnect(AudioParam, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: context.destination must inherit property \"disconnect(unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: context.destination must inherit property \"numberOfInputs\" with the proper type": "FAIL",
-      "AudioNode interface: context.destination must inherit property \"numberOfOutputs\" with the proper type": "FAIL",
-      "AudioNode interface: new AnalyserNode(context) must inherit property \"channelCount\" with the proper type": "FAIL",
-      "AudioNode interface: new AnalyserNode(context) must inherit property \"channelCountMode\" with the proper type": "FAIL",
-      "AudioNode interface: new AnalyserNode(context) must inherit property \"channelInterpretation\" with the proper type": "FAIL",
-      "AudioNode interface: new AnalyserNode(context) must inherit property \"connect(AudioNode, optional unsigned long, optional unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new AnalyserNode(context) must inherit property \"connect(AudioParam, optional unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new AnalyserNode(context) must inherit property \"context\" with the proper type": "FAIL",
-      "AudioNode interface: new AnalyserNode(context) must inherit property \"disconnect()\" with the proper type": "FAIL",
-      "AudioNode interface: new AnalyserNode(context) must inherit property \"disconnect(AudioNode)\" with the proper type": "FAIL",
-      "AudioNode interface: new AnalyserNode(context) must inherit property \"disconnect(AudioNode, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new AnalyserNode(context) must inherit property \"disconnect(AudioNode, unsigned long, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new AnalyserNode(context) must inherit property \"disconnect(AudioParam)\" with the proper type": "FAIL",
-      "AudioNode interface: new AnalyserNode(context) must inherit property \"disconnect(AudioParam, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new AnalyserNode(context) must inherit property \"disconnect(unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new AnalyserNode(context) must inherit property \"numberOfInputs\" with the proper type": "FAIL",
-      "AudioNode interface: new AnalyserNode(context) must inherit property \"numberOfOutputs\" with the proper type": "FAIL",
-      "AudioNode interface: new AudioBufferSourceNode(context) must inherit property \"channelCount\" with the proper type": "FAIL",
-      "AudioNode interface: new AudioBufferSourceNode(context) must inherit property \"channelCountMode\" with the proper type": "FAIL",
-      "AudioNode interface: new AudioBufferSourceNode(context) must inherit property \"channelInterpretation\" with the proper type": "FAIL",
-      "AudioNode interface: new AudioBufferSourceNode(context) must inherit property \"connect(AudioNode, optional unsigned long, optional unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new AudioBufferSourceNode(context) must inherit property \"connect(AudioParam, optional unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new AudioBufferSourceNode(context) must inherit property \"context\" with the proper type": "FAIL",
-      "AudioNode interface: new AudioBufferSourceNode(context) must inherit property \"disconnect()\" with the proper type": "FAIL",
-      "AudioNode interface: new AudioBufferSourceNode(context) must inherit property \"disconnect(AudioNode)\" with the proper type": "FAIL",
-      "AudioNode interface: new AudioBufferSourceNode(context) must inherit property \"disconnect(AudioNode, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new AudioBufferSourceNode(context) must inherit property \"disconnect(AudioNode, unsigned long, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new AudioBufferSourceNode(context) must inherit property \"disconnect(AudioParam)\" with the proper type": "FAIL",
-      "AudioNode interface: new AudioBufferSourceNode(context) must inherit property \"disconnect(AudioParam, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new AudioBufferSourceNode(context) must inherit property \"disconnect(unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new AudioBufferSourceNode(context) must inherit property \"numberOfInputs\" with the proper type": "FAIL",
-      "AudioNode interface: new AudioBufferSourceNode(context) must inherit property \"numberOfOutputs\" with the proper type": "FAIL",
-      "AudioNode interface: new BiquadFilterNode(context) must inherit property \"channelCount\" with the proper type": "FAIL",
-      "AudioNode interface: new BiquadFilterNode(context) must inherit property \"channelCountMode\" with the proper type": "FAIL",
-      "AudioNode interface: new BiquadFilterNode(context) must inherit property \"channelInterpretation\" with the proper type": "FAIL",
-      "AudioNode interface: new BiquadFilterNode(context) must inherit property \"connect(AudioNode, optional unsigned long, optional unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new BiquadFilterNode(context) must inherit property \"connect(AudioParam, optional unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new BiquadFilterNode(context) must inherit property \"context\" with the proper type": "FAIL",
-      "AudioNode interface: new BiquadFilterNode(context) must inherit property \"disconnect()\" with the proper type": "FAIL",
-      "AudioNode interface: new BiquadFilterNode(context) must inherit property \"disconnect(AudioNode)\" with the proper type": "FAIL",
-      "AudioNode interface: new BiquadFilterNode(context) must inherit property \"disconnect(AudioNode, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new BiquadFilterNode(context) must inherit property \"disconnect(AudioNode, unsigned long, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new BiquadFilterNode(context) must inherit property \"disconnect(AudioParam)\" with the proper type": "FAIL",
-      "AudioNode interface: new BiquadFilterNode(context) must inherit property \"disconnect(AudioParam, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new BiquadFilterNode(context) must inherit property \"disconnect(unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new BiquadFilterNode(context) must inherit property \"numberOfInputs\" with the proper type": "FAIL",
-      "AudioNode interface: new BiquadFilterNode(context) must inherit property \"numberOfOutputs\" with the proper type": "FAIL",
-      "AudioNode interface: new ChannelMergerNode(context) must inherit property \"channelCount\" with the proper type": "FAIL",
-      "AudioNode interface: new ChannelMergerNode(context) must inherit property \"channelCountMode\" with the proper type": "FAIL",
-      "AudioNode interface: new ChannelMergerNode(context) must inherit property \"channelInterpretation\" with the proper type": "FAIL",
-      "AudioNode interface: new ChannelMergerNode(context) must inherit property \"connect(AudioNode, optional unsigned long, optional unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new ChannelMergerNode(context) must inherit property \"connect(AudioParam, optional unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new ChannelMergerNode(context) must inherit property \"context\" with the proper type": "FAIL",
-      "AudioNode interface: new ChannelMergerNode(context) must inherit property \"disconnect()\" with the proper type": "FAIL",
-      "AudioNode interface: new ChannelMergerNode(context) must inherit property \"disconnect(AudioNode)\" with the proper type": "FAIL",
-      "AudioNode interface: new ChannelMergerNode(context) must inherit property \"disconnect(AudioNode, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new ChannelMergerNode(context) must inherit property \"disconnect(AudioNode, unsigned long, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new ChannelMergerNode(context) must inherit property \"disconnect(AudioParam)\" with the proper type": "FAIL",
-      "AudioNode interface: new ChannelMergerNode(context) must inherit property \"disconnect(AudioParam, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new ChannelMergerNode(context) must inherit property \"disconnect(unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new ChannelMergerNode(context) must inherit property \"numberOfInputs\" with the proper type": "FAIL",
-      "AudioNode interface: new ChannelMergerNode(context) must inherit property \"numberOfOutputs\" with the proper type": "FAIL",
-      "AudioNode interface: new ChannelSplitterNode(context) must inherit property \"channelCount\" with the proper type": "FAIL",
-      "AudioNode interface: new ChannelSplitterNode(context) must inherit property \"channelCountMode\" with the proper type": "FAIL",
-      "AudioNode interface: new ChannelSplitterNode(context) must inherit property \"channelInterpretation\" with the proper type": "FAIL",
-      "AudioNode interface: new ChannelSplitterNode(context) must inherit property \"connect(AudioNode, optional unsigned long, optional unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new ChannelSplitterNode(context) must inherit property \"connect(AudioParam, optional unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new ChannelSplitterNode(context) must inherit property \"context\" with the proper type": "FAIL",
-      "AudioNode interface: new ChannelSplitterNode(context) must inherit property \"disconnect()\" with the proper type": "FAIL",
-      "AudioNode interface: new ChannelSplitterNode(context) must inherit property \"disconnect(AudioNode)\" with the proper type": "FAIL",
-      "AudioNode interface: new ChannelSplitterNode(context) must inherit property \"disconnect(AudioNode, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new ChannelSplitterNode(context) must inherit property \"disconnect(AudioNode, unsigned long, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new ChannelSplitterNode(context) must inherit property \"disconnect(AudioParam)\" with the proper type": "FAIL",
-      "AudioNode interface: new ChannelSplitterNode(context) must inherit property \"disconnect(AudioParam, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new ChannelSplitterNode(context) must inherit property \"disconnect(unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new ChannelSplitterNode(context) must inherit property \"numberOfInputs\" with the proper type": "FAIL",
-      "AudioNode interface: new ChannelSplitterNode(context) must inherit property \"numberOfOutputs\" with the proper type": "FAIL",
-      "AudioNode interface: new ConstantSourceNode(context) must inherit property \"channelCount\" with the proper type": "FAIL",
-      "AudioNode interface: new ConstantSourceNode(context) must inherit property \"channelCountMode\" with the proper type": "FAIL",
-      "AudioNode interface: new ConstantSourceNode(context) must inherit property \"channelInterpretation\" with the proper type": "FAIL",
-      "AudioNode interface: new ConstantSourceNode(context) must inherit property \"connect(AudioNode, optional unsigned long, optional unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new ConstantSourceNode(context) must inherit property \"connect(AudioParam, optional unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new ConstantSourceNode(context) must inherit property \"context\" with the proper type": "FAIL",
-      "AudioNode interface: new ConstantSourceNode(context) must inherit property \"disconnect()\" with the proper type": "FAIL",
-      "AudioNode interface: new ConstantSourceNode(context) must inherit property \"disconnect(AudioNode)\" with the proper type": "FAIL",
-      "AudioNode interface: new ConstantSourceNode(context) must inherit property \"disconnect(AudioNode, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new ConstantSourceNode(context) must inherit property \"disconnect(AudioNode, unsigned long, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new ConstantSourceNode(context) must inherit property \"disconnect(AudioParam)\" with the proper type": "FAIL",
-      "AudioNode interface: new ConstantSourceNode(context) must inherit property \"disconnect(AudioParam, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new ConstantSourceNode(context) must inherit property \"disconnect(unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new ConstantSourceNode(context) must inherit property \"numberOfInputs\" with the proper type": "FAIL",
-      "AudioNode interface: new ConstantSourceNode(context) must inherit property \"numberOfOutputs\" with the proper type": "FAIL",
-      "AudioNode interface: new ConvolverNode(context) must inherit property \"channelCount\" with the proper type": "FAIL",
-      "AudioNode interface: new ConvolverNode(context) must inherit property \"channelCountMode\" with the proper type": "FAIL",
-      "AudioNode interface: new ConvolverNode(context) must inherit property \"channelInterpretation\" with the proper type": "FAIL",
-      "AudioNode interface: new ConvolverNode(context) must inherit property \"connect(AudioNode, optional unsigned long, optional unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new ConvolverNode(context) must inherit property \"connect(AudioParam, optional unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new ConvolverNode(context) must inherit property \"context\" with the proper type": "FAIL",
-      "AudioNode interface: new ConvolverNode(context) must inherit property \"disconnect()\" with the proper type": "FAIL",
-      "AudioNode interface: new ConvolverNode(context) must inherit property \"disconnect(AudioNode)\" with the proper type": "FAIL",
-      "AudioNode interface: new ConvolverNode(context) must inherit property \"disconnect(AudioNode, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new ConvolverNode(context) must inherit property \"disconnect(AudioNode, unsigned long, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new ConvolverNode(context) must inherit property \"disconnect(AudioParam)\" with the proper type": "FAIL",
-      "AudioNode interface: new ConvolverNode(context) must inherit property \"disconnect(AudioParam, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new ConvolverNode(context) must inherit property \"disconnect(unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new ConvolverNode(context) must inherit property \"numberOfInputs\" with the proper type": "FAIL",
-      "AudioNode interface: new ConvolverNode(context) must inherit property \"numberOfOutputs\" with the proper type": "FAIL",
-      "AudioNode interface: new DelayNode(context) must inherit property \"channelCount\" with the proper type": "FAIL",
-      "AudioNode interface: new DelayNode(context) must inherit property \"channelCountMode\" with the proper type": "FAIL",
-      "AudioNode interface: new DelayNode(context) must inherit property \"channelInterpretation\" with the proper type": "FAIL",
-      "AudioNode interface: new DelayNode(context) must inherit property \"connect(AudioNode, optional unsigned long, optional unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new DelayNode(context) must inherit property \"connect(AudioParam, optional unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new DelayNode(context) must inherit property \"context\" with the proper type": "FAIL",
-      "AudioNode interface: new DelayNode(context) must inherit property \"disconnect()\" with the proper type": "FAIL",
-      "AudioNode interface: new DelayNode(context) must inherit property \"disconnect(AudioNode)\" with the proper type": "FAIL",
-      "AudioNode interface: new DelayNode(context) must inherit property \"disconnect(AudioNode, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new DelayNode(context) must inherit property \"disconnect(AudioNode, unsigned long, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new DelayNode(context) must inherit property \"disconnect(AudioParam)\" with the proper type": "FAIL",
-      "AudioNode interface: new DelayNode(context) must inherit property \"disconnect(AudioParam, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new DelayNode(context) must inherit property \"disconnect(unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new DelayNode(context) must inherit property \"numberOfInputs\" with the proper type": "FAIL",
-      "AudioNode interface: new DelayNode(context) must inherit property \"numberOfOutputs\" with the proper type": "FAIL",
-      "AudioNode interface: new DynamicsCompressorNode(context) must inherit property \"channelCount\" with the proper type": "FAIL",
-      "AudioNode interface: new DynamicsCompressorNode(context) must inherit property \"channelCountMode\" with the proper type": "FAIL",
-      "AudioNode interface: new DynamicsCompressorNode(context) must inherit property \"channelInterpretation\" with the proper type": "FAIL",
-      "AudioNode interface: new DynamicsCompressorNode(context) must inherit property \"connect(AudioNode, optional unsigned long, optional unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new DynamicsCompressorNode(context) must inherit property \"connect(AudioParam, optional unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new DynamicsCompressorNode(context) must inherit property \"context\" with the proper type": "FAIL",
-      "AudioNode interface: new DynamicsCompressorNode(context) must inherit property \"disconnect()\" with the proper type": "FAIL",
-      "AudioNode interface: new DynamicsCompressorNode(context) must inherit property \"disconnect(AudioNode)\" with the proper type": "FAIL",
-      "AudioNode interface: new DynamicsCompressorNode(context) must inherit property \"disconnect(AudioNode, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new DynamicsCompressorNode(context) must inherit property \"disconnect(AudioNode, unsigned long, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new DynamicsCompressorNode(context) must inherit property \"disconnect(AudioParam)\" with the proper type": "FAIL",
-      "AudioNode interface: new DynamicsCompressorNode(context) must inherit property \"disconnect(AudioParam, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new DynamicsCompressorNode(context) must inherit property \"disconnect(unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new DynamicsCompressorNode(context) must inherit property \"numberOfInputs\" with the proper type": "FAIL",
-      "AudioNode interface: new DynamicsCompressorNode(context) must inherit property \"numberOfOutputs\" with the proper type": "FAIL",
-      "AudioNode interface: new GainNode(context) must inherit property \"channelCount\" with the proper type": "FAIL",
-      "AudioNode interface: new GainNode(context) must inherit property \"channelCountMode\" with the proper type": "FAIL",
-      "AudioNode interface: new GainNode(context) must inherit property \"channelInterpretation\" with the proper type": "FAIL",
-      "AudioNode interface: new GainNode(context) must inherit property \"connect(AudioNode, optional unsigned long, optional unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new GainNode(context) must inherit property \"connect(AudioParam, optional unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new GainNode(context) must inherit property \"context\" with the proper type": "FAIL",
-      "AudioNode interface: new GainNode(context) must inherit property \"disconnect()\" with the proper type": "FAIL",
-      "AudioNode interface: new GainNode(context) must inherit property \"disconnect(AudioNode)\" with the proper type": "FAIL",
-      "AudioNode interface: new GainNode(context) must inherit property \"disconnect(AudioNode, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new GainNode(context) must inherit property \"disconnect(AudioNode, unsigned long, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new GainNode(context) must inherit property \"disconnect(AudioParam)\" with the proper type": "FAIL",
-      "AudioNode interface: new GainNode(context) must inherit property \"disconnect(AudioParam, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new GainNode(context) must inherit property \"disconnect(unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new GainNode(context) must inherit property \"numberOfInputs\" with the proper type": "FAIL",
-      "AudioNode interface: new GainNode(context) must inherit property \"numberOfOutputs\" with the proper type": "FAIL",
-      "AudioNode interface: new IIRFilterNode(context, {feedforward: [1], feedback: [1]}) must inherit property \"channelCount\" with the proper type": "FAIL",
-      "AudioNode interface: new IIRFilterNode(context, {feedforward: [1], feedback: [1]}) must inherit property \"channelCountMode\" with the proper type": "FAIL",
-      "AudioNode interface: new IIRFilterNode(context, {feedforward: [1], feedback: [1]}) must inherit property \"channelInterpretation\" with the proper type": "FAIL",
-      "AudioNode interface: new IIRFilterNode(context, {feedforward: [1], feedback: [1]}) must inherit property \"connect(AudioNode, optional unsigned long, optional unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new IIRFilterNode(context, {feedforward: [1], feedback: [1]}) must inherit property \"connect(AudioParam, optional unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new IIRFilterNode(context, {feedforward: [1], feedback: [1]}) must inherit property \"context\" with the proper type": "FAIL",
-      "AudioNode interface: new IIRFilterNode(context, {feedforward: [1], feedback: [1]}) must inherit property \"disconnect()\" with the proper type": "FAIL",
-      "AudioNode interface: new IIRFilterNode(context, {feedforward: [1], feedback: [1]}) must inherit property \"disconnect(AudioNode)\" with the proper type": "FAIL",
-      "AudioNode interface: new IIRFilterNode(context, {feedforward: [1], feedback: [1]}) must inherit property \"disconnect(AudioNode, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new IIRFilterNode(context, {feedforward: [1], feedback: [1]}) must inherit property \"disconnect(AudioNode, unsigned long, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new IIRFilterNode(context, {feedforward: [1], feedback: [1]}) must inherit property \"disconnect(AudioParam)\" with the proper type": "FAIL",
-      "AudioNode interface: new IIRFilterNode(context, {feedforward: [1], feedback: [1]}) must inherit property \"disconnect(AudioParam, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new IIRFilterNode(context, {feedforward: [1], feedback: [1]}) must inherit property \"disconnect(unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new IIRFilterNode(context, {feedforward: [1], feedback: [1]}) must inherit property \"numberOfInputs\" with the proper type": "FAIL",
-      "AudioNode interface: new IIRFilterNode(context, {feedforward: [1], feedback: [1]}) must inherit property \"numberOfOutputs\" with the proper type": "FAIL",
       "AudioNode interface: new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) must inherit property \"channelCount\" with the proper type": "FAIL",
       "AudioNode interface: new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) must inherit property \"channelCountMode\" with the proper type": "FAIL",
       "AudioNode interface: new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) must inherit property \"channelInterpretation\" with the proper type": "FAIL",
@@ -481,212 +62,6 @@
       "AudioNode interface: new MediaStreamAudioDestinationNode(context) must inherit property \"disconnect(unsigned long)\" with the proper type": "FAIL",
       "AudioNode interface: new MediaStreamAudioDestinationNode(context) must inherit property \"numberOfInputs\" with the proper type": "FAIL",
       "AudioNode interface: new MediaStreamAudioDestinationNode(context) must inherit property \"numberOfOutputs\" with the proper type": "FAIL",
-      "AudioNode interface: new OscillatorNode(context) must inherit property \"channelCount\" with the proper type": "FAIL",
-      "AudioNode interface: new OscillatorNode(context) must inherit property \"channelCountMode\" with the proper type": "FAIL",
-      "AudioNode interface: new OscillatorNode(context) must inherit property \"channelInterpretation\" with the proper type": "FAIL",
-      "AudioNode interface: new OscillatorNode(context) must inherit property \"connect(AudioNode, optional unsigned long, optional unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new OscillatorNode(context) must inherit property \"connect(AudioParam, optional unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new OscillatorNode(context) must inherit property \"context\" with the proper type": "FAIL",
-      "AudioNode interface: new OscillatorNode(context) must inherit property \"disconnect()\" with the proper type": "FAIL",
-      "AudioNode interface: new OscillatorNode(context) must inherit property \"disconnect(AudioNode)\" with the proper type": "FAIL",
-      "AudioNode interface: new OscillatorNode(context) must inherit property \"disconnect(AudioNode, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new OscillatorNode(context) must inherit property \"disconnect(AudioNode, unsigned long, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new OscillatorNode(context) must inherit property \"disconnect(AudioParam)\" with the proper type": "FAIL",
-      "AudioNode interface: new OscillatorNode(context) must inherit property \"disconnect(AudioParam, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new OscillatorNode(context) must inherit property \"disconnect(unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new OscillatorNode(context) must inherit property \"numberOfInputs\" with the proper type": "FAIL",
-      "AudioNode interface: new OscillatorNode(context) must inherit property \"numberOfOutputs\" with the proper type": "FAIL",
-      "AudioNode interface: new PannerNode(context) must inherit property \"channelCount\" with the proper type": "FAIL",
-      "AudioNode interface: new PannerNode(context) must inherit property \"channelCountMode\" with the proper type": "FAIL",
-      "AudioNode interface: new PannerNode(context) must inherit property \"channelInterpretation\" with the proper type": "FAIL",
-      "AudioNode interface: new PannerNode(context) must inherit property \"connect(AudioNode, optional unsigned long, optional unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new PannerNode(context) must inherit property \"connect(AudioParam, optional unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new PannerNode(context) must inherit property \"context\" with the proper type": "FAIL",
-      "AudioNode interface: new PannerNode(context) must inherit property \"disconnect()\" with the proper type": "FAIL",
-      "AudioNode interface: new PannerNode(context) must inherit property \"disconnect(AudioNode)\" with the proper type": "FAIL",
-      "AudioNode interface: new PannerNode(context) must inherit property \"disconnect(AudioNode, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new PannerNode(context) must inherit property \"disconnect(AudioNode, unsigned long, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new PannerNode(context) must inherit property \"disconnect(AudioParam)\" with the proper type": "FAIL",
-      "AudioNode interface: new PannerNode(context) must inherit property \"disconnect(AudioParam, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new PannerNode(context) must inherit property \"disconnect(unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new PannerNode(context) must inherit property \"numberOfInputs\" with the proper type": "FAIL",
-      "AudioNode interface: new PannerNode(context) must inherit property \"numberOfOutputs\" with the proper type": "FAIL",
-      "AudioNode interface: new StereoPannerNode(context) must inherit property \"channelCount\" with the proper type": "FAIL",
-      "AudioNode interface: new StereoPannerNode(context) must inherit property \"channelCountMode\" with the proper type": "FAIL",
-      "AudioNode interface: new StereoPannerNode(context) must inherit property \"channelInterpretation\" with the proper type": "FAIL",
-      "AudioNode interface: new StereoPannerNode(context) must inherit property \"connect(AudioNode, optional unsigned long, optional unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new StereoPannerNode(context) must inherit property \"connect(AudioParam, optional unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new StereoPannerNode(context) must inherit property \"context\" with the proper type": "FAIL",
-      "AudioNode interface: new StereoPannerNode(context) must inherit property \"disconnect()\" with the proper type": "FAIL",
-      "AudioNode interface: new StereoPannerNode(context) must inherit property \"disconnect(AudioNode)\" with the proper type": "FAIL",
-      "AudioNode interface: new StereoPannerNode(context) must inherit property \"disconnect(AudioNode, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new StereoPannerNode(context) must inherit property \"disconnect(AudioNode, unsigned long, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new StereoPannerNode(context) must inherit property \"disconnect(AudioParam)\" with the proper type": "FAIL",
-      "AudioNode interface: new StereoPannerNode(context) must inherit property \"disconnect(AudioParam, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new StereoPannerNode(context) must inherit property \"disconnect(unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new StereoPannerNode(context) must inherit property \"numberOfInputs\" with the proper type": "FAIL",
-      "AudioNode interface: new StereoPannerNode(context) must inherit property \"numberOfOutputs\" with the proper type": "FAIL",
-      "AudioNode interface: new WaveShaperNode(context) must inherit property \"channelCount\" with the proper type": "FAIL",
-      "AudioNode interface: new WaveShaperNode(context) must inherit property \"channelCountMode\" with the proper type": "FAIL",
-      "AudioNode interface: new WaveShaperNode(context) must inherit property \"channelInterpretation\" with the proper type": "FAIL",
-      "AudioNode interface: new WaveShaperNode(context) must inherit property \"connect(AudioNode, optional unsigned long, optional unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new WaveShaperNode(context) must inherit property \"connect(AudioParam, optional unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new WaveShaperNode(context) must inherit property \"context\" with the proper type": "FAIL",
-      "AudioNode interface: new WaveShaperNode(context) must inherit property \"disconnect()\" with the proper type": "FAIL",
-      "AudioNode interface: new WaveShaperNode(context) must inherit property \"disconnect(AudioNode)\" with the proper type": "FAIL",
-      "AudioNode interface: new WaveShaperNode(context) must inherit property \"disconnect(AudioNode, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new WaveShaperNode(context) must inherit property \"disconnect(AudioNode, unsigned long, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new WaveShaperNode(context) must inherit property \"disconnect(AudioParam)\" with the proper type": "FAIL",
-      "AudioNode interface: new WaveShaperNode(context) must inherit property \"disconnect(AudioParam, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new WaveShaperNode(context) must inherit property \"disconnect(unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: new WaveShaperNode(context) must inherit property \"numberOfInputs\" with the proper type": "FAIL",
-      "AudioNode interface: new WaveShaperNode(context) must inherit property \"numberOfOutputs\" with the proper type": "FAIL",
-      "AudioNode interface: worklet_node must inherit property \"channelCount\" with the proper type": "FAIL",
-      "AudioNode interface: worklet_node must inherit property \"channelCountMode\" with the proper type": "FAIL",
-      "AudioNode interface: worklet_node must inherit property \"channelInterpretation\" with the proper type": "FAIL",
-      "AudioNode interface: worklet_node must inherit property \"connect(AudioNode, optional unsigned long, optional unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: worklet_node must inherit property \"connect(AudioParam, optional unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: worklet_node must inherit property \"context\" with the proper type": "FAIL",
-      "AudioNode interface: worklet_node must inherit property \"disconnect()\" with the proper type": "FAIL",
-      "AudioNode interface: worklet_node must inherit property \"disconnect(AudioNode)\" with the proper type": "FAIL",
-      "AudioNode interface: worklet_node must inherit property \"disconnect(AudioNode, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: worklet_node must inherit property \"disconnect(AudioNode, unsigned long, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: worklet_node must inherit property \"disconnect(AudioParam)\" with the proper type": "FAIL",
-      "AudioNode interface: worklet_node must inherit property \"disconnect(AudioParam, unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: worklet_node must inherit property \"disconnect(unsigned long)\" with the proper type": "FAIL",
-      "AudioNode interface: worklet_node must inherit property \"numberOfInputs\" with the proper type": "FAIL",
-      "AudioNode interface: worklet_node must inherit property \"numberOfOutputs\" with the proper type": "FAIL",
-      "AudioParam interface: calling cancelAndHoldAtTime(double) on new AudioBufferSourceNode(context).playbackRate with too few arguments must throw TypeError": "FAIL",
-      "AudioParam interface: calling cancelScheduledValues(double) on new AudioBufferSourceNode(context).playbackRate with too few arguments must throw TypeError": "FAIL",
-      "AudioParam interface: calling exponentialRampToValueAtTime(float, double) on new AudioBufferSourceNode(context).playbackRate with too few arguments must throw TypeError": "FAIL",
-      "AudioParam interface: calling linearRampToValueAtTime(float, double) on new AudioBufferSourceNode(context).playbackRate with too few arguments must throw TypeError": "FAIL",
-      "AudioParam interface: calling setTargetAtTime(float, double, float) on new AudioBufferSourceNode(context).playbackRate with too few arguments must throw TypeError": "FAIL",
-      "AudioParam interface: calling setValueAtTime(float, double) on new AudioBufferSourceNode(context).playbackRate with too few arguments must throw TypeError": "FAIL",
-      "AudioParam interface: calling setValueCurveAtTime(sequence<float>, double, double) on new AudioBufferSourceNode(context).playbackRate with too few arguments must throw TypeError": "FAIL",
-      "AudioParam interface: new AudioBufferSourceNode(context).playbackRate must inherit property \"automationRate\" with the proper type": "FAIL",
-      "AudioParam interface: new AudioBufferSourceNode(context).playbackRate must inherit property \"cancelAndHoldAtTime(double)\" with the proper type": "FAIL",
-      "AudioParam interface: new AudioBufferSourceNode(context).playbackRate must inherit property \"cancelScheduledValues(double)\" with the proper type": "FAIL",
-      "AudioParam interface: new AudioBufferSourceNode(context).playbackRate must inherit property \"defaultValue\" with the proper type": "FAIL",
-      "AudioParam interface: new AudioBufferSourceNode(context).playbackRate must inherit property \"exponentialRampToValueAtTime(float, double)\" with the proper type": "FAIL",
-      "AudioParam interface: new AudioBufferSourceNode(context).playbackRate must inherit property \"linearRampToValueAtTime(float, double)\" with the proper type": "FAIL",
-      "AudioParam interface: new AudioBufferSourceNode(context).playbackRate must inherit property \"maxValue\" with the proper type": "FAIL",
-      "AudioParam interface: new AudioBufferSourceNode(context).playbackRate must inherit property \"minValue\" with the proper type": "FAIL",
-      "AudioParam interface: new AudioBufferSourceNode(context).playbackRate must inherit property \"setTargetAtTime(float, double, float)\" with the proper type": "FAIL",
-      "AudioParam interface: new AudioBufferSourceNode(context).playbackRate must inherit property \"setValueAtTime(float, double)\" with the proper type": "FAIL",
-      "AudioParam interface: new AudioBufferSourceNode(context).playbackRate must inherit property \"setValueCurveAtTime(sequence<float>, double, double)\" with the proper type": "FAIL",
-      "AudioParam interface: new AudioBufferSourceNode(context).playbackRate must inherit property \"value\" with the proper type": "FAIL",
-      "AudioParam must be primary interface of new AudioBufferSourceNode(context).playbackRate": "FAIL",
-      "AudioParamMap must be primary interface of worklet_node.parameters": "FAIL",
-      "AudioPlaybackStats interface object length": "FAIL",
-      "AudioPlaybackStats interface object name": "FAIL",
-      "AudioPlaybackStats interface: attribute averageLatency": "FAIL",
-      "AudioPlaybackStats interface: attribute maximumLatency": "FAIL",
-      "AudioPlaybackStats interface: attribute minimumLatency": "FAIL",
-      "AudioPlaybackStats interface: attribute totalDuration": "FAIL",
-      "AudioPlaybackStats interface: attribute underrunDuration": "FAIL",
-      "AudioPlaybackStats interface: attribute underrunEvents": "FAIL",
-      "AudioPlaybackStats interface: existence and properties of interface object": "FAIL",
-      "AudioPlaybackStats interface: existence and properties of interface prototype object": "FAIL",
-      "AudioPlaybackStats interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "AudioPlaybackStats interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "AudioPlaybackStats interface: operation resetLatency()": "FAIL",
-      "AudioPlaybackStats interface: operation toJSON()": "FAIL",
-      "AudioProcessingEvent interface: new AudioProcessingEvent('', {\n        playbackTime: 0, inputBuffer: buffer, outputBuffer: buffer\n      }) must inherit property \"inputBuffer\" with the proper type": "FAIL",
-      "AudioProcessingEvent interface: new AudioProcessingEvent('', {\n        playbackTime: 0, inputBuffer: buffer, outputBuffer: buffer\n      }) must inherit property \"outputBuffer\" with the proper type": "FAIL",
-      "AudioProcessingEvent interface: new AudioProcessingEvent('', {\n        playbackTime: 0, inputBuffer: buffer, outputBuffer: buffer\n      }) must inherit property \"playbackTime\" with the proper type": "FAIL",
-      "AudioProcessingEvent must be primary interface of new AudioProcessingEvent('', {\n        playbackTime: 0, inputBuffer: buffer, outputBuffer: buffer\n      })": "FAIL",
-      "AudioScheduledSourceNode interface: calling start(optional double) on new AudioBufferSourceNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioScheduledSourceNode interface: calling start(optional double) on new ConstantSourceNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioScheduledSourceNode interface: calling start(optional double) on new OscillatorNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioScheduledSourceNode interface: calling stop(optional double) on new AudioBufferSourceNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioScheduledSourceNode interface: calling stop(optional double) on new ConstantSourceNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioScheduledSourceNode interface: calling stop(optional double) on new OscillatorNode(context) with too few arguments must throw TypeError": "FAIL",
-      "AudioScheduledSourceNode interface: new AudioBufferSourceNode(context) must inherit property \"onended\" with the proper type": "FAIL",
-      "AudioScheduledSourceNode interface: new AudioBufferSourceNode(context) must inherit property \"start(optional double)\" with the proper type": "FAIL",
-      "AudioScheduledSourceNode interface: new AudioBufferSourceNode(context) must inherit property \"stop(optional double)\" with the proper type": "FAIL",
-      "AudioScheduledSourceNode interface: new ConstantSourceNode(context) must inherit property \"onended\" with the proper type": "FAIL",
-      "AudioScheduledSourceNode interface: new ConstantSourceNode(context) must inherit property \"start(optional double)\" with the proper type": "FAIL",
-      "AudioScheduledSourceNode interface: new ConstantSourceNode(context) must inherit property \"stop(optional double)\" with the proper type": "FAIL",
-      "AudioScheduledSourceNode interface: new OscillatorNode(context) must inherit property \"onended\" with the proper type": "FAIL",
-      "AudioScheduledSourceNode interface: new OscillatorNode(context) must inherit property \"start(optional double)\" with the proper type": "FAIL",
-      "AudioScheduledSourceNode interface: new OscillatorNode(context) must inherit property \"stop(optional double)\" with the proper type": "FAIL",
-      "AudioSinkInfo interface object length": "FAIL",
-      "AudioSinkInfo interface object name": "FAIL",
-      "AudioSinkInfo interface: attribute type": "FAIL",
-      "AudioSinkInfo interface: existence and properties of interface object": "FAIL",
-      "AudioSinkInfo interface: existence and properties of interface prototype object": "FAIL",
-      "AudioSinkInfo interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "AudioSinkInfo interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "AudioWorklet interface: context.audioWorklet must inherit property \"port\" with the proper type": "FAIL",
-      "AudioWorklet must be primary interface of context.audioWorklet": "FAIL",
-      "AudioWorkletNode interface: worklet_node must inherit property \"onprocessorerror\" with the proper type": "FAIL",
-      "AudioWorkletNode interface: worklet_node must inherit property \"parameters\" with the proper type": "FAIL",
-      "AudioWorkletNode interface: worklet_node must inherit property \"port\" with the proper type": "FAIL",
-      "AudioWorkletNode must be primary interface of worklet_node": "FAIL",
-      "BaseAudioContext interface: calling createBuffer(unsigned long, unsigned long, float) on context with too few arguments must throw TypeError": "FAIL",
-      "BaseAudioContext interface: calling createChannelMerger(optional unsigned long) on context with too few arguments must throw TypeError": "FAIL",
-      "BaseAudioContext interface: calling createChannelSplitter(optional unsigned long) on context with too few arguments must throw TypeError": "FAIL",
-      "BaseAudioContext interface: calling createDelay(optional double) on context with too few arguments must throw TypeError": "FAIL",
-      "BaseAudioContext interface: calling createIIRFilter(sequence<double>, sequence<double>) on context with too few arguments must throw TypeError": "FAIL",
-      "BaseAudioContext interface: calling createPeriodicWave(sequence<float>, sequence<float>, optional PeriodicWaveConstraints) on context with too few arguments must throw TypeError": "FAIL",
-      "BaseAudioContext interface: calling createScriptProcessor(optional unsigned long, optional unsigned long, optional unsigned long) on context with too few arguments must throw TypeError": "FAIL",
-      "BaseAudioContext interface: calling decodeAudioData(ArrayBuffer, optional DecodeSuccessCallback?, optional DecodeErrorCallback?) on context with too few arguments must throw TypeError": "FAIL",
-      "BaseAudioContext interface: context must inherit property \"audioWorklet\" with the proper type": "FAIL",
-      "BaseAudioContext interface: context must inherit property \"createAnalyser()\" with the proper type": "FAIL",
-      "BaseAudioContext interface: context must inherit property \"createBiquadFilter()\" with the proper type": "FAIL",
-      "BaseAudioContext interface: context must inherit property \"createBuffer(unsigned long, unsigned long, float)\" with the proper type": "FAIL",
-      "BaseAudioContext interface: context must inherit property \"createBufferSource()\" with the proper type": "FAIL",
-      "BaseAudioContext interface: context must inherit property \"createChannelMerger(optional unsigned long)\" with the proper type": "FAIL",
-      "BaseAudioContext interface: context must inherit property \"createChannelSplitter(optional unsigned long)\" with the proper type": "FAIL",
-      "BaseAudioContext interface: context must inherit property \"createConstantSource()\" with the proper type": "FAIL",
-      "BaseAudioContext interface: context must inherit property \"createConvolver()\" with the proper type": "FAIL",
-      "BaseAudioContext interface: context must inherit property \"createDelay(optional double)\" with the proper type": "FAIL",
-      "BaseAudioContext interface: context must inherit property \"createDynamicsCompressor()\" with the proper type": "FAIL",
-      "BaseAudioContext interface: context must inherit property \"createGain()\" with the proper type": "FAIL",
-      "BaseAudioContext interface: context must inherit property \"createIIRFilter(sequence<double>, sequence<double>)\" with the proper type": "FAIL",
-      "BaseAudioContext interface: context must inherit property \"createOscillator()\" with the proper type": "FAIL",
-      "BaseAudioContext interface: context must inherit property \"createPanner()\" with the proper type": "FAIL",
-      "BaseAudioContext interface: context must inherit property \"createPeriodicWave(sequence<float>, sequence<float>, optional PeriodicWaveConstraints)\" with the proper type": "FAIL",
-      "BaseAudioContext interface: context must inherit property \"createScriptProcessor(optional unsigned long, optional unsigned long, optional unsigned long)\" with the proper type": "FAIL",
-      "BaseAudioContext interface: context must inherit property \"createStereoPanner()\" with the proper type": "FAIL",
-      "BaseAudioContext interface: context must inherit property \"createWaveShaper()\" with the proper type": "FAIL",
-      "BaseAudioContext interface: context must inherit property \"currentTime\" with the proper type": "FAIL",
-      "BaseAudioContext interface: context must inherit property \"decodeAudioData(ArrayBuffer, optional DecodeSuccessCallback?, optional DecodeErrorCallback?)\" with the proper type": "FAIL",
-      "BaseAudioContext interface: context must inherit property \"destination\" with the proper type": "FAIL",
-      "BaseAudioContext interface: context must inherit property \"listener\" with the proper type": "FAIL",
-      "BaseAudioContext interface: context must inherit property \"onstatechange\" with the proper type": "FAIL",
-      "BaseAudioContext interface: context must inherit property \"renderQuantumSize\" with the proper type": "FAIL",
-      "BaseAudioContext interface: context must inherit property \"sampleRate\" with the proper type": "FAIL",
-      "BaseAudioContext interface: context must inherit property \"state\" with the proper type": "FAIL",
-      "BiquadFilterNode interface: calling getFrequencyResponse(Float32Array, Float32Array, Float32Array) on new BiquadFilterNode(context) with too few arguments must throw TypeError": "FAIL",
-      "BiquadFilterNode interface: new BiquadFilterNode(context) must inherit property \"Q\" with the proper type": "FAIL",
-      "BiquadFilterNode interface: new BiquadFilterNode(context) must inherit property \"detune\" with the proper type": "FAIL",
-      "BiquadFilterNode interface: new BiquadFilterNode(context) must inherit property \"frequency\" with the proper type": "FAIL",
-      "BiquadFilterNode interface: new BiquadFilterNode(context) must inherit property \"gain\" with the proper type": "FAIL",
-      "BiquadFilterNode interface: new BiquadFilterNode(context) must inherit property \"getFrequencyResponse(Float32Array, Float32Array, Float32Array)\" with the proper type": "FAIL",
-      "BiquadFilterNode interface: new BiquadFilterNode(context) must inherit property \"type\" with the proper type": "FAIL",
-      "BiquadFilterNode must be primary interface of new BiquadFilterNode(context)": "FAIL",
-      "ChannelMergerNode must be primary interface of new ChannelMergerNode(context)": "FAIL",
-      "ChannelSplitterNode must be primary interface of new ChannelSplitterNode(context)": "FAIL",
-      "ConstantSourceNode interface: new ConstantSourceNode(context) must inherit property \"offset\" with the proper type": "FAIL",
-      "ConstantSourceNode must be primary interface of new ConstantSourceNode(context)": "FAIL",
-      "ConvolverNode interface: new ConvolverNode(context) must inherit property \"buffer\" with the proper type": "FAIL",
-      "ConvolverNode interface: new ConvolverNode(context) must inherit property \"normalize\" with the proper type": "FAIL",
-      "ConvolverNode must be primary interface of new ConvolverNode(context)": "FAIL",
-      "DelayNode interface: new DelayNode(context) must inherit property \"delayTime\" with the proper type": "FAIL",
-      "DelayNode must be primary interface of new DelayNode(context)": "FAIL",
-      "DynamicsCompressorNode interface: new DynamicsCompressorNode(context) must inherit property \"attack\" with the proper type": "FAIL",
-      "DynamicsCompressorNode interface: new DynamicsCompressorNode(context) must inherit property \"knee\" with the proper type": "FAIL",
-      "DynamicsCompressorNode interface: new DynamicsCompressorNode(context) must inherit property \"ratio\" with the proper type": "FAIL",
-      "DynamicsCompressorNode interface: new DynamicsCompressorNode(context) must inherit property \"reduction\" with the proper type": "FAIL",
-      "DynamicsCompressorNode interface: new DynamicsCompressorNode(context) must inherit property \"release\" with the proper type": "FAIL",
-      "DynamicsCompressorNode interface: new DynamicsCompressorNode(context) must inherit property \"threshold\" with the proper type": "FAIL",
-      "DynamicsCompressorNode must be primary interface of new DynamicsCompressorNode(context)": "FAIL",
-      "GainNode interface: new GainNode(context) must inherit property \"gain\" with the proper type": "FAIL",
-      "GainNode must be primary interface of new GainNode(context)": "FAIL",
-      "IIRFilterNode interface: calling getFrequencyResponse(Float32Array, Float32Array, Float32Array) on new IIRFilterNode(context, {feedforward: [1], feedback: [1]}) with too few arguments must throw TypeError": "FAIL",
-      "IIRFilterNode interface: new IIRFilterNode(context, {feedforward: [1], feedback: [1]}) must inherit property \"getFrequencyResponse(Float32Array, Float32Array, Float32Array)\" with the proper type": "FAIL",
-      "IIRFilterNode must be primary interface of new IIRFilterNode(context, {feedforward: [1], feedback: [1]})": "FAIL",
       "MediaElementAudioSourceNode interface object length": "FAIL",
       "MediaElementAudioSourceNode interface object name": "FAIL",
       "MediaElementAudioSourceNode interface: attribute mediaElement": "FAIL",
@@ -718,156 +93,80 @@
       "MediaStreamTrackAudioSourceNode interface: existence and properties of interface prototype object": "FAIL",
       "MediaStreamTrackAudioSourceNode interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
       "MediaStreamTrackAudioSourceNode interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "OfflineAudioCompletionEvent interface: new OfflineAudioCompletionEvent(\"\", {renderedBuffer: buffer}) must inherit property \"renderedBuffer\" with the proper type": "FAIL",
-      "OfflineAudioCompletionEvent must be primary interface of new OfflineAudioCompletionEvent(\"\", {renderedBuffer: buffer})": "FAIL",
-      "OscillatorNode interface: calling setPeriodicWave(PeriodicWave) on new OscillatorNode(context) with too few arguments must throw TypeError": "FAIL",
-      "OscillatorNode interface: new OscillatorNode(context) must inherit property \"detune\" with the proper type": "FAIL",
-      "OscillatorNode interface: new OscillatorNode(context) must inherit property \"frequency\" with the proper type": "FAIL",
-      "OscillatorNode interface: new OscillatorNode(context) must inherit property \"setPeriodicWave(PeriodicWave)\" with the proper type": "FAIL",
-      "OscillatorNode interface: new OscillatorNode(context) must inherit property \"type\" with the proper type": "FAIL",
-      "OscillatorNode must be primary interface of new OscillatorNode(context)": "FAIL",
-      "PannerNode interface: calling setOrientation(float, float, float) on new PannerNode(context) with too few arguments must throw TypeError": "FAIL",
-      "PannerNode interface: calling setPosition(float, float, float) on new PannerNode(context) with too few arguments must throw TypeError": "FAIL",
-      "PannerNode interface: new PannerNode(context) must inherit property \"coneInnerAngle\" with the proper type": "FAIL",
-      "PannerNode interface: new PannerNode(context) must inherit property \"coneOuterAngle\" with the proper type": "FAIL",
-      "PannerNode interface: new PannerNode(context) must inherit property \"coneOuterGain\" with the proper type": "FAIL",
-      "PannerNode interface: new PannerNode(context) must inherit property \"distanceModel\" with the proper type": "FAIL",
-      "PannerNode interface: new PannerNode(context) must inherit property \"maxDistance\" with the proper type": "FAIL",
-      "PannerNode interface: new PannerNode(context) must inherit property \"orientationX\" with the proper type": "FAIL",
-      "PannerNode interface: new PannerNode(context) must inherit property \"orientationY\" with the proper type": "FAIL",
-      "PannerNode interface: new PannerNode(context) must inherit property \"orientationZ\" with the proper type": "FAIL",
-      "PannerNode interface: new PannerNode(context) must inherit property \"panningModel\" with the proper type": "FAIL",
-      "PannerNode interface: new PannerNode(context) must inherit property \"positionX\" with the proper type": "FAIL",
-      "PannerNode interface: new PannerNode(context) must inherit property \"positionY\" with the proper type": "FAIL",
-      "PannerNode interface: new PannerNode(context) must inherit property \"positionZ\" with the proper type": "FAIL",
-      "PannerNode interface: new PannerNode(context) must inherit property \"refDistance\" with the proper type": "FAIL",
-      "PannerNode interface: new PannerNode(context) must inherit property \"rolloffFactor\" with the proper type": "FAIL",
-      "PannerNode interface: new PannerNode(context) must inherit property \"setOrientation(float, float, float)\" with the proper type": "FAIL",
-      "PannerNode interface: new PannerNode(context) must inherit property \"setPosition(float, float, float)\" with the proper type": "FAIL",
-      "PannerNode must be primary interface of new PannerNode(context)": "FAIL",
-      "PeriodicWave must be primary interface of new PeriodicWave(context)": "FAIL",
-      "ScriptProcessorNode interface: context.createScriptProcessor() must inherit property \"bufferSize\" with the proper type": "FAIL",
-      "ScriptProcessorNode interface: context.createScriptProcessor() must inherit property \"onaudioprocess\" with the proper type": "FAIL",
-      "ScriptProcessorNode must be primary interface of context.createScriptProcessor()": "FAIL",
-      "StereoPannerNode interface: new StereoPannerNode(context) must inherit property \"pan\" with the proper type": "FAIL",
-      "StereoPannerNode must be primary interface of new StereoPannerNode(context)": "FAIL",
-      "Stringification of buffer": "FAIL",
-      "Stringification of context": "FAIL",
-      "Stringification of context.audioWorklet": "FAIL",
-      "Stringification of context.createScriptProcessor()": "FAIL",
-      "Stringification of context.destination": "FAIL",
-      "Stringification of context.listener": "FAIL",
-      "Stringification of new AnalyserNode(context)": "FAIL",
-      "Stringification of new AudioBufferSourceNode(context)": "FAIL",
-      "Stringification of new AudioBufferSourceNode(context).playbackRate": "FAIL",
-      "Stringification of new AudioProcessingEvent('', {\n        playbackTime: 0, inputBuffer: buffer, outputBuffer: buffer\n      })": "FAIL",
-      "Stringification of new BiquadFilterNode(context)": "FAIL",
-      "Stringification of new ChannelMergerNode(context)": "FAIL",
-      "Stringification of new ChannelSplitterNode(context)": "FAIL",
-      "Stringification of new ConstantSourceNode(context)": "FAIL",
-      "Stringification of new ConvolverNode(context)": "FAIL",
-      "Stringification of new DelayNode(context)": "FAIL",
-      "Stringification of new DynamicsCompressorNode(context)": "FAIL",
-      "Stringification of new GainNode(context)": "FAIL",
-      "Stringification of new IIRFilterNode(context, {feedforward: [1], feedback: [1]})": "FAIL",
       "Stringification of new MediaElementAudioSourceNode(context, {mediaElement: new Audio})": "FAIL",
-      "Stringification of new MediaStreamAudioDestinationNode(context)": "FAIL",
-      "Stringification of new OfflineAudioCompletionEvent(\"\", {renderedBuffer: buffer})": "FAIL",
-      "Stringification of new OscillatorNode(context)": "FAIL",
-      "Stringification of new PannerNode(context)": "FAIL",
-      "Stringification of new PeriodicWave(context)": "FAIL",
-      "Stringification of new StereoPannerNode(context)": "FAIL",
-      "Stringification of new WaveShaperNode(context)": "FAIL",
-      "Stringification of worklet_node": "FAIL",
-      "Stringification of worklet_node.parameters": "FAIL",
-      "WaveShaperNode interface: new WaveShaperNode(context) must inherit property \"curve\" with the proper type": "FAIL",
-      "WaveShaperNode interface: new WaveShaperNode(context) must inherit property \"oversample\" with the proper type": "FAIL",
-      "WaveShaperNode must be primary interface of new WaveShaperNode(context)": "FAIL",
-      "idl_test setup": "FAIL"
+      "Stringification of new MediaStreamAudioDestinationNode(context)": "FAIL"
     }
   },
   "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/interrupt-when-created-hidden.tentative.sub.html?origin=cross-origin&frame=direct&visibility=display": {
-    "harness": "TIMEOUT",
     "total": 1,
     "failures": {
-      "cross-origin direct: AudioContext in an iframe created hidden should be interrupted (visibility=display)": "TIMEOUT"
+      "cross-origin direct: AudioContext in an iframe created hidden should be interrupted (visibility=display)": "FAIL"
     }
   },
   "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/interrupt-when-created-hidden.tentative.sub.html?origin=cross-origin&frame=direct&visibility=visibility": {
-    "harness": "TIMEOUT",
     "total": 1,
     "failures": {
-      "cross-origin direct: AudioContext in an iframe created hidden should be interrupted (visibility=visibility)": "TIMEOUT"
+      "cross-origin direct: AudioContext in an iframe created hidden should be interrupted (visibility=visibility)": "FAIL"
     }
   },
   "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/interrupt-when-created-hidden.tentative.sub.html?origin=cross-origin&frame=direct&visibility=zero-size": {
-    "harness": "TIMEOUT",
     "total": 1,
     "failures": {
-      "cross-origin direct: AudioContext in an iframe created hidden should be interrupted (visibility=zero-size)": "TIMEOUT"
+      "cross-origin direct: AudioContext in an iframe created hidden should be interrupted (visibility=zero-size)": "FAIL"
     }
   },
   "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/interrupt-when-created-hidden.tentative.sub.html?origin=cross-origin&frame=nested&visibility=display": {
-    "harness": "TIMEOUT",
     "total": 1,
     "failures": {
-      "cross-origin nested: AudioContext in an iframe created hidden should be interrupted (visibility=display)": "TIMEOUT"
+      "cross-origin nested: AudioContext in an iframe created hidden should be interrupted (visibility=display)": "FAIL"
     }
   },
   "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/interrupt-when-created-hidden.tentative.sub.html?origin=cross-origin&frame=nested&visibility=visibility": {
-    "harness": "TIMEOUT",
     "total": 1,
     "failures": {
-      "cross-origin nested: AudioContext in an iframe created hidden should be interrupted (visibility=visibility)": "TIMEOUT"
+      "cross-origin nested: AudioContext in an iframe created hidden should be interrupted (visibility=visibility)": "FAIL"
     }
   },
   "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/interrupt-when-created-hidden.tentative.sub.html?origin=cross-origin&frame=nested&visibility=zero-size": {
-    "harness": "TIMEOUT",
     "total": 1,
     "failures": {
-      "cross-origin nested: AudioContext in an iframe created hidden should be interrupted (visibility=zero-size)": "TIMEOUT"
+      "cross-origin nested: AudioContext in an iframe created hidden should be interrupted (visibility=zero-size)": "FAIL"
     }
   },
   "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/interrupt-when-created-hidden.tentative.sub.html?origin=same-origin&frame=direct&visibility=display": {
-    "harness": "TIMEOUT",
     "total": 1,
     "failures": {
-      "same-origin direct: AudioContext in an iframe created hidden should be interrupted (visibility=display)": "TIMEOUT"
+      "same-origin direct: AudioContext in an iframe created hidden should be interrupted (visibility=display)": "FAIL"
     }
   },
   "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/interrupt-when-created-hidden.tentative.sub.html?origin=same-origin&frame=direct&visibility=visibility": {
-    "harness": "TIMEOUT",
     "total": 1,
     "failures": {
-      "same-origin direct: AudioContext in an iframe created hidden should be interrupted (visibility=visibility)": "TIMEOUT"
+      "same-origin direct: AudioContext in an iframe created hidden should be interrupted (visibility=visibility)": "FAIL"
     }
   },
   "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/interrupt-when-created-hidden.tentative.sub.html?origin=same-origin&frame=direct&visibility=zero-size": {
-    "harness": "TIMEOUT",
     "total": 1,
     "failures": {
-      "same-origin direct: AudioContext in an iframe created hidden should be interrupted (visibility=zero-size)": "TIMEOUT"
+      "same-origin direct: AudioContext in an iframe created hidden should be interrupted (visibility=zero-size)": "FAIL"
     }
   },
   "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/interrupt-when-created-hidden.tentative.sub.html?origin=same-origin&frame=nested&visibility=display": {
-    "harness": "TIMEOUT",
     "total": 1,
     "failures": {
-      "same-origin nested: AudioContext in an iframe created hidden should be interrupted (visibility=display)": "TIMEOUT"
+      "same-origin nested: AudioContext in an iframe created hidden should be interrupted (visibility=display)": "FAIL"
     }
   },
   "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/interrupt-when-created-hidden.tentative.sub.html?origin=same-origin&frame=nested&visibility=visibility": {
-    "harness": "TIMEOUT",
     "total": 1,
     "failures": {
-      "same-origin nested: AudioContext in an iframe created hidden should be interrupted (visibility=visibility)": "TIMEOUT"
+      "same-origin nested: AudioContext in an iframe created hidden should be interrupted (visibility=visibility)": "FAIL"
     }
   },
   "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/interrupt-when-created-hidden.tentative.sub.html?origin=same-origin&frame=nested&visibility=zero-size": {
-    "harness": "TIMEOUT",
     "total": 1,
     "failures": {
-      "same-origin nested: AudioContext in an iframe created hidden should be interrupted (visibility=zero-size)": "TIMEOUT"
+      "same-origin nested: AudioContext in an iframe created hidden should be interrupted (visibility=zero-size)": "FAIL"
     }
   },
   "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/interrupt-when-hidden.tentative.sub.html?origin=cross-origin&frame=direct&visibility=display": {
@@ -1015,88 +314,46 @@
     }
   },
   "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/suspended-hide-show.tentative.sub.html?origin=cross-origin&frame=direct&visibility=display": {
-    "total": 1,
-    "failures": {
-      "cross-origin direct: hide/show an iframe with a suspended AudioContext (visibility=display)": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/suspended-hide-show.tentative.sub.html?origin=cross-origin&frame=direct&visibility=visibility": {
-    "total": 1,
-    "failures": {
-      "cross-origin direct: hide/show an iframe with a suspended AudioContext (visibility=visibility)": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/suspended-hide-show.tentative.sub.html?origin=cross-origin&frame=direct&visibility=zero-size": {
-    "total": 1,
-    "failures": {
-      "cross-origin direct: hide/show an iframe with a suspended AudioContext (visibility=zero-size)": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/suspended-hide-show.tentative.sub.html?origin=cross-origin&frame=nested&visibility=display": {
-    "total": 1,
-    "failures": {
-      "cross-origin nested: hide/show an iframe with a suspended AudioContext (visibility=display)": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/suspended-hide-show.tentative.sub.html?origin=cross-origin&frame=nested&visibility=visibility": {
-    "total": 1,
-    "failures": {
-      "cross-origin nested: hide/show an iframe with a suspended AudioContext (visibility=visibility)": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/suspended-hide-show.tentative.sub.html?origin=cross-origin&frame=nested&visibility=zero-size": {
-    "total": 1,
-    "failures": {
-      "cross-origin nested: hide/show an iframe with a suspended AudioContext (visibility=zero-size)": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/suspended-hide-show.tentative.sub.html?origin=same-origin&frame=direct&visibility=display": {
-    "total": 1,
-    "failures": {
-      "same-origin direct: hide/show an iframe with a suspended AudioContext (visibility=display)": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/suspended-hide-show.tentative.sub.html?origin=same-origin&frame=direct&visibility=visibility": {
-    "total": 1,
-    "failures": {
-      "same-origin direct: hide/show an iframe with a suspended AudioContext (visibility=visibility)": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/suspended-hide-show.tentative.sub.html?origin=same-origin&frame=direct&visibility=zero-size": {
-    "total": 1,
-    "failures": {
-      "same-origin direct: hide/show an iframe with a suspended AudioContext (visibility=zero-size)": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/suspended-hide-show.tentative.sub.html?origin=same-origin&frame=nested&visibility=display": {
-    "total": 1,
-    "failures": {
-      "same-origin nested: hide/show an iframe with a suspended AudioContext (visibility=display)": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/suspended-hide-show.tentative.sub.html?origin=same-origin&frame=nested&visibility=visibility": {
-    "total": 1,
-    "failures": {
-      "same-origin nested: hide/show an iframe with a suspended AudioContext (visibility=visibility)": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/suspended-hide-show.tentative.sub.html?origin=same-origin&frame=nested&visibility=zero-size": {
-    "total": 1,
-    "failures": {
-      "same-origin nested: hide/show an iframe with a suspended AudioContext (visibility=zero-size)": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/viewport.tentative.sub.html?origin=cross-origin": {
-    "total": 1,
-    "failures": {
-      "cross-origin: AudioContext should not be interrupted when its iframe is scrolled out of view": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/viewport.tentative.sub.html?origin=same-origin": {
-    "total": 1,
-    "failures": {
-      "same-origin: AudioContext should not be interrupted when its iframe is scrolled out of view": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/processing-model/cycle-without-delay.html": {
     "total": 1
@@ -1117,10 +374,7 @@
     "total": 78
   },
   "webaudio/the-audio-api/the-analysernode-interface/realtimeanalyser-basic.html": {
-    "total": 1,
-    "failures": {
-      "Basic AnalyserNode test": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-analysernode-interface/realtimeanalyser-fft-scaling.html": {
     "total": 1
@@ -1132,46 +386,28 @@
     "total": 1
   },
   "webaudio/the-audio-api/the-analysernode-interface/test-analyser-minimum.html": {
-    "total": 1,
-    "failures": {
-      "Test AnalyserNode when the input is silent": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-analysernode-interface/test-analyser-output.html": {
     "total": 1
   },
   "webaudio/the-audio-api/the-analysernode-interface/test-analyser-resume-after-suspended.html": {
-    "total": 1,
-    "failures": {
-      "AnalyserNode resume after suspended": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-analysernode-interface/test-analyser-scale.html": {
-    "total": 1,
-    "failures": {
-      "Test AnalyserNode when the input is scaled": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-analysernode-interface/test-analysernode.html": {
-    "total": 2,
-    "failures": {
-      "Test AnalyserNode API": "FAIL",
-      "Test AnalyserNode's ctor API": "FAIL"
-    }
+    "total": 2
   },
   "webaudio/the-audio-api/the-audiobuffer-interface/acquire-the-content.html": {
     "total": 3
   },
   "webaudio/the-audio-api/the-audiobuffer-interface/audiobuffer-copy-channel.html": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 62
   },
   "webaudio/the-audio-api/the-audiobuffer-interface/audiobuffer-getChannelData.html": {
-    "total": 7,
-    "failures": {
-      "Executing \"buffer-eq\"": "FAIL",
-      "Executing \"buffer-not-eq\"": "FAIL"
-    }
+    "total": 13
   },
   "webaudio/the-audio-api/the-audiobuffer-interface/audiobuffer-reuse.html": {
     "total": 1
@@ -1189,10 +425,7 @@
     "total": 18
   },
   "webaudio/the-audio-api/the-audiobuffersourcenode-interface/audiobuffersource-channels.html": {
-    "total": 1,
-    "failures": {
-      "validate .buffer: Validation of AudioBuffer in .buffer attribute setter": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-audiobuffersourcenode-interface/audiobuffersource-duration-loop-playbackrate.html": {
     "total": 6
@@ -1273,69 +506,22 @@
     "total": 51
   },
   "webaudio/the-audio-api/the-audiocontext-interface/audiocontext-detached-execution-context.html": {
-    "total": 5,
-    "failures": {
-      "Executing \"decoding-on-detached-iframe\"": "FAIL"
-    }
+    "total": 7
   },
   "webaudio/the-audio-api/the-audiocontext-interface/audiocontext-getoutputtimestamp-cross-realm.html": {
-    "total": 5,
-    "failures": {
-      "Executing \"getoutputtimestamp-cross-realm\"": "FAIL"
-    }
+    "total": 8
   },
   "webaudio/the-audio-api/the-audiocontext-interface/audiocontext-getoutputtimestamp.html": {
-    "total": 5,
-    "failures": {
-      "Executing \"getoutputtimestamp-initial-values\"": "FAIL"
-    }
+    "total": 10
   },
   "webaudio/the-audio-api/the-audiocontext-interface/audiocontext-not-fully-active.html": {
-    "total": 10,
-    "failures": {
-      "frame in navigated frame": "FAIL",
-      "frame in navigated remote-site frame": "FAIL",
-      "frame in navigated remote-site frame in remote-site frame": "FAIL",
-      "frame in removed frame": "FAIL",
-      "frame in removed remote-site frame": "FAIL",
-      "frame in removed remote-site frame in remote-site frame": "FAIL",
-      "navigated frame": "FAIL",
-      "navigated frame in remote-site frame": "FAIL",
-      "removed frame": "FAIL",
-      "removed frame in remote-site frame": "FAIL"
-    }
+    "total": 10
   },
   "webaudio/the-audio-api/the-audiocontext-interface/audiocontext-playbackstats.html": {
-    "total": 4,
-    "failures": {
-      "Test PlaybackStats.resetLatency()": "FAIL",
-      "Test that stats are unchanged within the same execution cycle.": "FAIL",
-      "Test that the stats increase during playback": "FAIL",
-      "Test that toJSON reflects the current stats": "FAIL"
-    }
+    "total": 4
   },
   "webaudio/the-audio-api/the-audiocontext-interface/audiocontext-rendersizehint.html": {
-    "total": 18,
-    "failures": {
-      "AudioContext [Honored Exactly]: sampleRate 3000, renderSizeHint 18000": "FAIL",
-      "AudioContext [Honored Exactly]: sampleRate 44100.1, renderSizeHint 264600": "FAIL",
-      "AudioContext [Honored Exactly]: sampleRate 48000, renderSizeHint 1": "FAIL",
-      "AudioContext [Honored Exactly]: sampleRate 48000, renderSizeHint 127": "FAIL",
-      "AudioContext [Honored Exactly]: sampleRate 48000, renderSizeHint 129": "FAIL",
-      "AudioContext [Honored Exactly]: sampleRate 48000, renderSizeHint 13": "FAIL",
-      "AudioContext [Honored Exactly]: sampleRate 48000, renderSizeHint 16383": "FAIL",
-      "AudioContext [Honored Exactly]: sampleRate 48000, renderSizeHint 256": "FAIL",
-      "AudioContext [Honored Exactly]: sampleRate 48000, renderSizeHint 288000": "FAIL",
-      "AudioContext [Honored Exactly]: sampleRate 48000, renderSizeHint 500": "FAIL",
-      "AudioContext [Throws Exception]: sampleRate 3000, renderSizeHint 18001": "FAIL",
-      "AudioContext [Throws Exception]: sampleRate 48000, renderSizeHint -1": "FAIL",
-      "AudioContext [Throws Exception]: sampleRate 48000, renderSizeHint 0": "FAIL",
-      "AudioContext [Throws Exception]: sampleRate 48000, renderSizeHint 288001": "FAIL",
-      "AudioContext with \"default\" hint": "FAIL",
-      "AudioContext with \"hardware\" hint": "FAIL",
-      "AudioContext with no hint hint": "FAIL",
-      "Base latency scales with render quantum size": "FAIL"
-    }
+    "total": 18
   },
   "webaudio/the-audio-api/the-audiocontext-interface/audiocontext-sinkid-constructor.https.html": {
     "harness": "ERROR",
@@ -1372,12 +558,7 @@
     }
   },
   "webaudio/the-audio-api/the-audiocontext-interface/audiocontext-state-change-after-close.http.window.js": {
-    "total": 3,
-    "failures": {
-      "Call close on a closed AudioContext": "FAIL",
-      "Call resume on a closed AudioContext": "FAIL",
-      "Call suspend on a closed AudioContext": "FAIL"
-    }
+    "total": 3
   },
   "webaudio/the-audio-api/the-audiocontext-interface/audiocontext-suspend-resume-close.html": {
     "total": 6,
@@ -1385,44 +566,20 @@
       "testAudioContext": "FAIL",
       "testMultiContextInput": "FAIL",
       "testMultiContextOutput": "FAIL",
-      "testOfflineAudioContext": "FAIL",
-      "testResumeInStateChangeForResumeCallback": "FAIL",
-      "testSuspendResumeEventLoop": "FAIL"
+      "testOfflineAudioContext": "FAIL"
     }
   },
   "webaudio/the-audio-api/the-audiocontext-interface/audiocontext-suspend-resume.html": {
-    "total": 4,
-    "failures": {
-      "Test resuming a running online context": "FAIL"
-    }
+    "total": 4
   },
   "webaudio/the-audio-api/the-audiocontext-interface/audiocontextoptions.html": {
-    "total": 16,
-    "failures": {
-      "# AUDIT TASK RUNNER FINISHED: 3 out of 3 tasks were failed.": "FAIL",
-      "Executing \"test-audiocontextoptions-latencyHint-basic\"": "FAIL",
-      "Executing \"test-audiocontextoptions-latencyHint-double\"": "FAIL",
-      "Executing \"test-audiocontextoptions-sampleRate\"": "FAIL",
-      "X context = new AudioContext() incorrectly threw ReferenceError: \"AudioContext is not defined\".": "FAIL",
-      "X context = new AudioContext({'latencyHint': interactiveLatency/2}) incorrectly threw ReferenceError: \"AudioContext is not defined\".": "FAIL",
-      "X context = new AudioContext({sampleRate: -1}) threw \"ReferenceError\" instead of NotSupportedError.": "FAIL",
-      "X context = new AudioContext({sampleRate: 0}) threw \"ReferenceError\" instead of NotSupportedError.": "FAIL",
-      "X context = new AudioContext({sampleRate: 2999}) threw \"ReferenceError\" instead of NotSupportedError.": "FAIL",
-      "X context = new AudioContext({sampleRate: 3000}) incorrectly threw ReferenceError: \"AudioContext is not defined\".": "FAIL",
-      "X context = new AudioContext({sampleRate: 768001}) threw \"ReferenceError\" instead of NotSupportedError.": "FAIL"
-    }
+    "total": 41
   },
   "webaudio/the-audio-api/the-audiocontext-interface/callback-detached-buffer.html": {
-    "total": 1,
-    "failures": {
-      "error callback is invoked with DataCloneError": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-audiocontext-interface/constructor-allowed-to-start.html": {
-    "total": 1,
-    "failures": {
-      "AudioContext state around \"allowed to start\" in constructor": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-audiocontext-interface/context-time-monotonic-on-setsinkid.https.html": {
     "total": 1,
@@ -1431,27 +588,18 @@
     }
   },
   "webaudio/the-audio-api/the-audiocontext-interface/processing-after-resume.https.html": {
-    "total": 1,
-    "failures": {
-      "Test consistency of processing after resume()": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-audiocontext-interface/promise-methods-after-discard.html": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 3
   },
   "webaudio/the-audio-api/the-audiocontext-interface/suspend-after-construct.html": {
-    "total": 5,
-    "failures": {
-      "Iteration 1": "FAIL",
-      "Iteration 2": "FAIL",
-      "Iteration 3": "FAIL"
-    }
+    "total": 5
   },
   "webaudio/the-audio-api/the-audiocontext-interface/suspend-with-navigation.html": {
     "total": 1,
     "failures": {
-      "suspend() with navigation": "FAIL"
+      "suspend() with navigation": "PRECONDITION_FAILED"
     }
   },
   "webaudio/the-audio-api/the-audionode-interface/audionode-channel-rules.html": {
@@ -1460,9 +608,7 @@
   "webaudio/the-audio-api/the-audionode-interface/audionode-connect-method-chaining.html": {
     "total": 4,
     "failures": {
-      "Test exceptions thrown by invalid connect() chaining": "FAIL",
-      "Verify connect() method chaining for MediaElementSourceNode and MediaStreamSourceNode": "FAIL",
-      "Verify connect() method chaining for common AudioNode types returns destination": "FAIL"
+      "Verify connect() method chaining for MediaElementSourceNode and MediaStreamSourceNode": "FAIL"
     }
   },
   "webaudio/the-audio-api/the-audionode-interface/audionode-connect-order.html": {
@@ -1472,38 +618,22 @@
     "total": 1
   },
   "webaudio/the-audio-api/the-audionode-interface/audionode-disconnect-audioparam.html": {
-    "total": 17,
-    "failures": {
-      "Executing \"exceptions\"": "FAIL"
-    }
+    "total": 21
   },
   "webaudio/the-audio-api/the-audionode-interface/audionode-disconnect.html": {
     "total": 40
   },
   "webaudio/the-audio-api/the-audionode-interface/audionode-iframe.window.js": {
-    "total": 1,
-    "failures": {
-      "Call a constructor from iframe page and then destroy the iframe": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-audionode-interface/audionode.html": {
-    "total": 1,
-    "failures": {
-      "Basic tests for AudioNode API.": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-audionode-interface/channel-mode-interp-basic.html": {
     "total": 13
   },
   "webaudio/the-audio-api/the-audionode-interface/different-contexts.html": {
-    "total": 5,
-    "failures": {
-      "Test 1: Connect nodes between contexts": "FAIL",
-      "Test 2: Connect AudioParam between contexts": "FAIL",
-      "Test 3: Disconnect nodes between contexts": "FAIL",
-      "Test 4: Disconnect AudioParam between contexts": "FAIL",
-      "setup: Contexts for testing": "FAIL"
-    }
+    "total": 5
   },
   "webaudio/the-audio-api/the-audioparam-interface/adding-events.html": {
     "total": 2
@@ -1533,21 +663,16 @@
     "total": 6
   },
   "webaudio/the-audio-api/the-audioparam-interface/audioparam-method-chaining.html": {
-    "total": 3,
-    "failures": {
-      "AudioParam: Each method returns the same object to allow chaining": "FAIL"
-    }
+    "total": 3
   },
   "webaudio/the-audio-api/the-audioparam-interface/audioparam-nominal-range.html": {
     "total": 323,
     "failures": {
-      "# AUDIT TASK RUNNER FINISHED: 2 out of 24 tasks were failed.": "FAIL",
+      "# AUDIT TASK RUNNER FINISHED: 1 out of 24 tasks were failed.": "FAIL",
       "< [Offline createBiquadFilter] 2 out of 33 assertions were failed.": "FAIL",
-      "< [initialize] 1 out of 2 assertions were failed.": "FAIL",
       "Executing \"Online createMediaElementSource\"": "FAIL",
       "Executing \"Online createMediaStreamDestination\"": "FAIL",
       "X BiquadFilterNode.gain.maxValue is not equal to 1541.273681640625. Got 1541.2735595703125.": "FAIL",
-      "X Create online context for tests incorrectly threw ReferenceError: \"AudioContext is not defined\".": "FAIL",
       "X Nominal ranges for AudioParam(s) of BiquadFilterNode are incorrect for: NaN Got false.": "FAIL"
     }
   },
@@ -1660,21 +785,13 @@
     "total": 1
   },
   "webaudio/the-audio-api/the-audioworklet-interface/audioworklet-addmodule-resolution.https.html": {
-    "total": 1,
-    "failures": {
-      "Test the invocation order of AudioWorklet.addModule() and BaseAudioContext": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-audioworklet-interface/audioworklet-audioparam-iterable.https.html": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 54
   },
   "webaudio/the-audio-api/the-audioworklet-interface/audioworklet-audioparam-range.https.html": {
-    "total": 2,
-    "failures": {
-      "Invalid parameter descriptors should fail registration.": "FAIL",
-      "Valid parameter descriptors should have successful registration.": "FAIL"
-    }
+    "total": 2
   },
   "webaudio/the-audio-api/the-audioworklet-interface/audioworklet-audioparam-size.https.html": {
     "total": 15
@@ -1683,71 +800,37 @@
     "total": 1
   },
   "webaudio/the-audio-api/the-audioworklet-interface/audioworklet-denormals.https.window.js": {
-    "total": 1,
-    "failures": {
-      "Test denormal behavior in AudioWorkletGlobalScope": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-audioworklet-interface/audioworklet-messageport-wasm.https.html": {
-    "total": 2,
-    "failures": {
-      "AudioWorkletGlobalScope: global port can exchange a WebAssembly.Module": "FAIL",
-      "AudioWorkletProcessor: processor port can exchange a WebAssembly.Module": "FAIL"
-    }
+    "total": 2
   },
   "webaudio/the-audio-api/the-audioworklet-interface/audioworklet-messageport.https.html": {
-    "total": 4,
-    "failures": {
-      "AudioWorklet: shared port exists before addModule()": "FAIL",
-      "AudioWorkletGlobalScope: shared port is available at module evaluation time and supports message passing": "FAIL",
-      "AudioWorkletProcessor: initialization message": "FAIL",
-      "AudioWorkletProcessor: message via instance port": "FAIL"
-    }
+    "total": 4
   },
   "webaudio/the-audio-api/the-audioworklet-interface/audioworklet-postmessage-sharedarraybuffer.https.html": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 8
   },
   "webaudio/the-audio-api/the-audioworklet-interface/audioworklet-registerprocessor-called-on-globalthis.https.html": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 7
   },
   "webaudio/the-audio-api/the-audioworklet-interface/audioworklet-registerprocessor-constructor.https.window.js": {
-    "total": 1,
-    "failures": {
-      "Verifies two TypeError cases from registerProcessor() method.": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-audioworklet-interface/audioworklet-registerprocessor-dynamic.https.html": {
-    "harness": "ERROR",
-    "total": 1,
-    "failures": {
-      "Dynamic registration in AudioWorkletGlobalScope": "NOTRUN"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-audioworklet-interface/audioworklet-rendersizehint.https.html": {
-    "total": 2,
-    "failures": {
-      "Worklet inherits context render quantum size": "FAIL",
-      "Worklet process block size matches hint": "FAIL"
-    }
+    "total": 2
   },
   "webaudio/the-audio-api/the-audioworklet-interface/audioworklet-suspend.https.html": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 8
   },
   "webaudio/the-audio-api/the-audioworklet-interface/audioworklet-throw-onmessage.https.html": {
-    "harness": "ERROR",
-    "total": 1,
-    "failures": {
-      "Throwing in an onmessage handler in the AudioWorkletGlobalScope shouldn't stop AudioWorkletProcessor": "NOTRUN"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-audioworklet-interface/audioworkletglobalscope-creation-time.https.html": {
-    "total": 1,
-    "failures": {
-      "currentTime vs currentFrames in Audio Worklet global scope": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-audioworklet-interface/audioworkletglobalscope-sample-rate.https.html": {
     "total": 7
@@ -1762,8 +845,7 @@
     "total": 1
   },
   "webaudio/the-audio-api/the-audioworklet-interface/audioworkletnode-construction.https.html": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 12
   },
   "webaudio/the-audio-api/the-audioworklet-interface/audioworkletnode-constructor-no-coop-coep.https.html": {
     "total": 1
@@ -1781,84 +863,52 @@
     "total": 3
   },
   "webaudio/the-audio-api/the-audioworklet-interface/audioworkletnode-output-channel-count.https.html": {
-    "total": 1,
-    "failures": {
-      "AudioWorkletNode channel count: dynamic propagation and honoring outputChannelCount (single serialized test).": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-audioworklet-interface/audioworkletprocessor-malformed-process.https.html": {
     "total": 5
   },
   "webaudio/the-audio-api/the-audioworklet-interface/audioworkletprocessor-options.https.html": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 2
   },
   "webaudio/the-audio-api/the-audioworklet-interface/audioworkletprocessor-param-getter-overridden.https.html": {
-    "total": 1
+    "total": 1,
+    "failures": {
+      "Test if AudioWorkletProcessor with invalid parameters array getter": "FAIL"
+    }
   },
   "webaudio/the-audio-api/the-audioworklet-interface/audioworkletprocessor-process-frozen-array.https.html": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 13
   },
   "webaudio/the-audio-api/the-audioworklet-interface/audioworkletprocessor-process-zero-outputs.https.html": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 7
   },
   "webaudio/the-audio-api/the-audioworklet-interface/audioworkletprocessor-promises.https.html": {
-    "total": 1,
-    "failures": {
-      "test": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-audioworklet-interface/audioworkletprocessor-unconnected-outputs.https.window.js": {
-    "total": 2,
-    "failures": {
-      "Test if outputs connected to AudioParam provides a non-zero length array for channels": "FAIL",
-      "Test if unconnected outputs provides a non-zero length array for channels": "FAIL"
-    }
+    "total": 2
   },
   "webaudio/the-audio-api/the-audioworklet-interface/baseaudiocontext-audioworklet.https.html": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 7
   },
   "webaudio/the-audio-api/the-audioworklet-interface/extended-audioworkletnode-with-parameters.https.html": {
-    "total": 1,
-    "failures": {
-      "Test AudioWorkletNode subclass with parameters": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-audioworklet-interface/process-getter.https.html": {
-    "total": 2,
-    "failures": {
-      "'process' getter on instance": "FAIL",
-      "'process' getter on prototype": "FAIL"
-    }
+    "total": 2
   },
   "webaudio/the-audio-api/the-audioworklet-interface/process-parameters.https.html": {
-    "harness": "ERROR",
-    "total": 2,
-    "failures": {
-      "0 inputs; 3 outputs": "NOTRUN",
-      "3 inputs; 0 outputs": "NOTRUN"
-    }
+    "total": 2
   },
   "webaudio/the-audio-api/the-audioworklet-interface/processor-construction-port.https.html": {
-    "total": 4,
-    "failures": {
-      "Singleton AudioWorkletProcessor": "FAIL",
-      "new AudioWorkletProcessor() after new AudioWorkletProcessor()": "FAIL",
-      "new AudioWorkletProcessor() after super()": "FAIL",
-      "super() after new AudioWorkletProcessor()": "FAIL"
-    }
+    "total": 4
   },
   "webaudio/the-audio-api/the-audioworklet-interface/simple-input-output.https.html": {
     "total": 1
   },
   "webaudio/the-audio-api/the-audioworklet-interface/suspended-context-messageport.https.html": {
-    "total": 3,
-    "failures": {
-      "realtime suspended": "FAIL"
-    }
+    "total": 3
   },
   "webaudio/the-audio-api/the-biquadfilternode-interface/biquad-allpass.html": {
     "total": 9
@@ -1873,17 +923,7 @@
     "total": 5
   },
   "webaudio/the-audio-api/the-biquadfilternode-interface/biquad-getFrequencyResponse.html": {
-    "total": 26,
-    "failures": {
-      "Executing \"allpass\"": "FAIL",
-      "Executing \"bandpass\"": "FAIL",
-      "Executing \"highpass\"": "FAIL",
-      "Executing \"highshelf\"": "FAIL",
-      "Executing \"lowpass\"": "FAIL",
-      "Executing \"lowshelf\"": "FAIL",
-      "Executing \"notch\"": "FAIL",
-      "Executing \"peaking\"": "FAIL"
-    }
+    "total": 90
   },
   "webaudio/the-audio-api/the-biquadfilternode-interface/biquad-highpass.html": {
     "total": 9
@@ -1910,10 +950,7 @@
     "total": 5
   },
   "webaudio/the-audio-api/the-biquadfilternode-interface/biquadfilternode-basic.html": {
-    "total": 5,
-    "failures": {
-      "Executing \"test\"": "FAIL"
-    }
+    "total": 29
   },
   "webaudio/the-audio-api/the-biquadfilternode-interface/ctor-biquadfilter.html": {
     "total": 5
@@ -1922,11 +959,7 @@
     "total": 48
   },
   "webaudio/the-audio-api/the-channelmergernode-interface/active-processing.https.html": {
-    "total": 2,
-    "failures": {
-      "initialize: AudioWorklet module loading": "FAIL",
-      "test: Active processing emits expected channel-count changes": "FAIL"
-    }
+    "total": 2
   },
   "webaudio/the-audio-api/the-channelmergernode-interface/audiochannelmerger-basic.html": {
     "total": 17
@@ -1950,8 +983,7 @@
     "total": 5
   },
   "webaudio/the-audio-api/the-constantsourcenode-interface/constant-source-basic.html": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 4
   },
   "webaudio/the-audio-api/the-constantsourcenode-interface/constant-source-onended-not-connected.html": {
     "total": 1
@@ -1966,18 +998,10 @@
     "total": 24
   },
   "webaudio/the-audio-api/the-constantsourcenode-interface/test-constantsourcenode.html": {
-    "total": 6,
-    "failures": {
-      "ConstantSourceNode can be constructed": "FAIL",
-      "ConstantSourceNode stop and start": "FAIL"
-    }
+    "total": 6
   },
   "webaudio/the-audio-api/the-convolvernode-interface/active-processing.https.html": {
-    "total": 2,
-    "failures": {
-      "AudioWorklet module should load successfully": "FAIL",
-      "ConvolverNode should stop active processing after source stops": "FAIL"
-    }
+    "total": 2
   },
   "webaudio/the-audio-api/the-convolvernode-interface/convolution-mono-mono.html": {
     "total": 10,
@@ -2006,29 +1030,19 @@
     "total": 51
   },
   "webaudio/the-audio-api/the-convolvernode-interface/convolver-setBuffer-already-has-value.html": {
-    "total": 5,
-    "failures": {
-      "Executing \"test\"": "FAIL"
-    }
+    "total": 12
   },
   "webaudio/the-audio-api/the-convolvernode-interface/convolver-setBuffer-null.html": {
-    "total": 5,
-    "failures": {
-      "Executing \"test\"": "FAIL"
-    }
+    "total": 8
   },
   "webaudio/the-audio-api/the-convolvernode-interface/convolver-upmixing-1-channel-response.html": {
     "total": 3
   },
   "webaudio/the-audio-api/the-convolvernode-interface/ctor-convolver.html": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 6
   },
   "webaudio/the-audio-api/the-convolvernode-interface/realtime-conv.html": {
-    "total": 1,
-    "failures": {
-      "Test convolver with real-time context": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-convolvernode-interface/transferred-buffer-output.html": {
     "total": 8
@@ -2067,30 +1081,19 @@
     "total": 19
   },
   "webaudio/the-audio-api/the-destinationnode-interface/destination.html": {
-    "total": 1,
-    "failures": {
-      "\n      AudioDestinationNode\n    ": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-dynamicscompressornode-interface/ctor-dynamicscompressor.html": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 4
   },
   "webaudio/the-audio-api/the-dynamicscompressornode-interface/dynamicscompressor-basic.html": {
-    "total": 5,
-    "failures": {
-      "Executing \"test\"": "FAIL"
-    }
+    "total": 13
   },
   "webaudio/the-audio-api/the-gainnode-interface/ctor-gain.html": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 4
   },
   "webaudio/the-audio-api/the-gainnode-interface/gain-basic.html": {
-    "total": 5,
-    "failures": {
-      "Executing \"test\"": "FAIL"
-    }
+    "total": 7
   },
   "webaudio/the-audio-api/the-gainnode-interface/gain.html": {
     "total": 1
@@ -2114,15 +1117,14 @@
     "total": 68
   },
   "webaudio/the-audio-api/the-iirfilternode-interface/test-iirfilternode.html": {
-    "total": 2,
-    "failures": {
-      "IIRFilterNode coefficients are checked properly": "FAIL",
-      "IIRFilterNode getFrequencyResponse handles invalid frequencies properly": "FAIL"
-    }
+    "total": 8
   },
   "webaudio/the-audio-api/the-mediaelementaudiosourcenode-interface/cors-check.https.html": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 7,
+    "failures": {
+      "Executing \"setting-up-graph\"": "FAIL",
+      "Executing \"start-playback-and-capture\"": "FAIL"
+    }
   },
   "webaudio/the-audio-api/the-mediaelementaudiosourcenode-interface/mediaElementAudioSourceToScriptProcessorTest.html": {
     "total": 1,
@@ -2138,8 +1140,11 @@
     }
   },
   "webaudio/the-audio-api/the-mediaelementaudiosourcenode-interface/no-cors.https.html": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 7,
+    "failures": {
+      "Executing \"setting-up-graph\"": "FAIL",
+      "Executing \"start-playback-and-capture\"": "FAIL"
+    }
   },
   "webaudio/the-audio-api/the-mediaelementaudiosourcenode-interface/setSinkId-with-MediaElementAudioSourceNode.https.html": {
     "harness": "ERROR",
@@ -2159,7 +1164,6 @@
   "webaudio/the-audio-api/the-mediastreamaudiodestinationnode-interface/ctor-mediastreamaudiodestination.html": {
     "total": 4,
     "failures": {
-      "AudioContext can be created without throwing": "FAIL",
       "MediaStreamAudioDestinationNode applies channelCount from options": "FAIL",
       "MediaStreamAudioDestinationNode: default constructor behavior": "FAIL",
       "MediaStreamAudioDestinationNode: invalid constructor cases": "FAIL"
@@ -2351,10 +1355,7 @@
     "total": 1
   },
   "webaudio/the-audio-api/the-pannernode-interface/pannernode-basic.window.js": {
-    "total": 1,
-    "failures": {
-      "Test the PannerNode interface": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-pannernode-interface/pannernode-setposition-throws.html": {
     "total": 15
@@ -2366,8 +1367,7 @@
     "total": 2
   },
   "webaudio/the-audio-api/the-periodicwave-interface/periodicWave.html": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 31
   },
   "webaudio/the-audio-api/the-scriptprocessornode-interface/scriptprocessor-rendersizehint.https.html": {
     "total": 5
@@ -2382,10 +1382,7 @@
     "total": 38
   },
   "webaudio/the-audio-api/the-stereopanner-interface/stereopannernode-basic.html": {
-    "total": 5,
-    "failures": {
-      "Executing \"test\"": "FAIL"
-    }
+    "total": 15
   },
   "webaudio/the-audio-api/the-stereopanner-interface/stereopannernode-panning.html": {
     "total": 17

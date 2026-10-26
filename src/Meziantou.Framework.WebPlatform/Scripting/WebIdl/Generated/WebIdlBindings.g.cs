@@ -30,13 +30,16 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["Attr"] = Binding_Attr<TAdapter, TValue>.Binding,
             ["AudioBuffer"] = Binding_AudioBuffer<TAdapter, TValue>.Binding,
             ["AudioBufferSourceNode"] = Binding_AudioBufferSourceNode<TAdapter, TValue>.Binding,
+            ["AudioContext"] = Binding_AudioContext<TAdapter, TValue>.Binding,
             ["AudioDestinationNode"] = Binding_AudioDestinationNode<TAdapter, TValue>.Binding,
             ["AudioListener"] = Binding_AudioListener<TAdapter, TValue>.Binding,
             ["AudioNode"] = Binding_AudioNode<TAdapter, TValue>.Binding,
             ["AudioParam"] = Binding_AudioParam<TAdapter, TValue>.Binding,
             ["AudioParamMap"] = Binding_AudioParamMap<TAdapter, TValue>.Binding,
+            ["AudioPlaybackStats"] = Binding_AudioPlaybackStats<TAdapter, TValue>.Binding,
             ["AudioProcessingEvent"] = Binding_AudioProcessingEvent<TAdapter, TValue>.Binding,
             ["AudioScheduledSourceNode"] = Binding_AudioScheduledSourceNode<TAdapter, TValue>.Binding,
+            ["AudioSinkInfo"] = Binding_AudioSinkInfo<TAdapter, TValue>.Binding,
             ["AudioTrack"] = Binding_AudioTrack<TAdapter, TValue>.Binding,
             ["AudioTrackList"] = Binding_AudioTrackList<TAdapter, TValue>.Binding,
             ["AudioWorklet"] = Binding_AudioWorklet<TAdapter, TValue>.Binding,
@@ -1249,11 +1252,20 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.WebAudio.AudioBufferSourceOptions dictionaryWebAudio_AudioBufferSourceOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebAudio_AudioBufferSourceOptions(r, dictionaryWebAudio_AudioBufferSourceOptions);
                 return true;
+            case global::Meziantou.Framework.WebPlatform.WebAudio.AudioContextOptions dictionaryWebAudio_AudioContextOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebAudio_AudioContextOptions(r, dictionaryWebAudio_AudioContextOptions);
+                return true;
             case global::Meziantou.Framework.WebPlatform.WebAudio.AudioNodeOptions dictionaryWebAudio_AudioNodeOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebAudio_AudioNodeOptions(r, dictionaryWebAudio_AudioNodeOptions);
                 return true;
             case global::Meziantou.Framework.WebPlatform.WebAudio.AudioParamDescriptor dictionaryWebAudio_AudioParamDescriptor:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebAudio_AudioParamDescriptor(r, dictionaryWebAudio_AudioParamDescriptor);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.WebAudio.AudioSinkOptions dictionaryWebAudio_AudioSinkOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebAudio_AudioSinkOptions(r, dictionaryWebAudio_AudioSinkOptions);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.WebAudio.AudioTimestamp dictionaryWebAudio_AudioTimestamp:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebAudio_AudioTimestamp(r, dictionaryWebAudio_AudioTimestamp);
                 return true;
             case global::Meziantou.Framework.WebPlatform.WebAudio.ConstantSourceOptions dictionaryWebAudio_ConstantSourceOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebAudio_ConstantSourceOptions(r, dictionaryWebAudio_ConstantSourceOptions);
@@ -1516,11 +1528,17 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.XmlHttpRequestResponseType enumDom_XmlHttpRequestResponseType:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_XmlHttpRequestResponseType(enumDom_XmlHttpRequestResponseType));
                 return true;
+            case global::Meziantou.Framework.WebPlatform.WebAudio.AudioContextLatencyCategory enumWebAudio_AudioContextLatencyCategory:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_WebAudio_AudioContextLatencyCategory(enumWebAudio_AudioContextLatencyCategory));
+                return true;
             case global::Meziantou.Framework.WebPlatform.WebAudio.AudioContextRenderSizeCategory enumWebAudio_AudioContextRenderSizeCategory:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_WebAudio_AudioContextRenderSizeCategory(enumWebAudio_AudioContextRenderSizeCategory));
                 return true;
             case global::Meziantou.Framework.WebPlatform.WebAudio.AudioContextState enumWebAudio_AudioContextState:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_WebAudio_AudioContextState(enumWebAudio_AudioContextState));
+                return true;
+            case global::Meziantou.Framework.WebPlatform.WebAudio.AudioSinkType enumWebAudio_AudioSinkType:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_WebAudio_AudioSinkType(enumWebAudio_AudioSinkType));
                 return true;
             case global::Meziantou.Framework.WebPlatform.WebAudio.AutomationRate enumWebAudio_AutomationRate:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_WebAudio_AutomationRate(enumWebAudio_AutomationRate));

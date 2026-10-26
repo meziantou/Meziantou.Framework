@@ -75,11 +75,17 @@ public abstract class WorkletGlobalScope : GlobalScope
     public override bool IsSecureContext => Worklet.Document.RelevantWindow?.IsSecureContext ?? false;
 
     /// <inheritdoc/>
+    /// <remarks>
+    /// https://html.spec.whatwg.org/multipage/worklets.html#set-up-a-worklet-environment-settings-object: the cross-origin
+    /// isolated capability is the one of the document (e.g. a <c>SharedArrayBuffer</c> can be shared with the audio worklet
+    /// of a cross-origin isolated document).
+    /// </remarks>
     [NotInIdl("WorkletGlobalScope does not include WindowOrWorkerGlobalScope")]
-    public override bool CrossOriginIsolated => false;
+    public override bool CrossOriginIsolated => Worklet.Document.RelevantWindow?.CrossOriginIsolated ?? false;
 
-    // https://html.spec.whatwg.org/multipage/webappapis.html#obtain-a-worklet-agent: a worklet agent is in its own agent cluster
-    internal override object? AgentClusterKey => this;
+    // https://html.spec.whatwg.org/multipage/webappapis.html#obtain-a-worklet-agent: a worklet agent is in the agent cluster
+    // of the document, so that the shared memory and the WebAssembly modules can be sent to it
+    internal override object? AgentClusterKey => Worklet.Document.RelevantWindow?.AgentClusterKey ?? this;
 
-    internal override bool IsAgentClusterCrossOriginIsolated => false;
+    internal override bool IsAgentClusterCrossOriginIsolated => Worklet.Document.RelevantWindow?.IsAgentClusterCrossOriginIsolated ?? false;
 }

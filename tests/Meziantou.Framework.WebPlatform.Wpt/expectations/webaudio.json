@@ -1,0 +1,1408 @@
+{
+  "webaudio/historical.html": {
+    "total": 7
+  },
+  "webaudio/idlharness.https.window.js": {
+    "total": 1166,
+    "failures": {
+      "AudioContext interface: calling createMediaElementSource(HTMLMediaElement) on context with too few arguments must throw TypeError": "FAIL",
+      "AudioContext interface: calling createMediaStreamSource(MediaStream) on context with too few arguments must throw TypeError": "FAIL",
+      "AudioContext interface: calling createMediaStreamTrackSource(MediaStreamTrack) on context with too few arguments must throw TypeError": "FAIL",
+      "AudioContext interface: context must inherit property \"createMediaElementSource(HTMLMediaElement)\" with the proper type": "FAIL",
+      "AudioContext interface: context must inherit property \"createMediaStreamDestination()\" with the proper type": "FAIL",
+      "AudioContext interface: context must inherit property \"createMediaStreamSource(MediaStream)\" with the proper type": "FAIL",
+      "AudioContext interface: context must inherit property \"createMediaStreamTrackSource(MediaStreamTrack)\" with the proper type": "FAIL",
+      "AudioContext interface: operation createMediaElementSource(HTMLMediaElement)": "FAIL",
+      "AudioContext interface: operation createMediaStreamDestination()": "FAIL",
+      "AudioContext interface: operation createMediaStreamSource(MediaStream)": "FAIL",
+      "AudioContext interface: operation createMediaStreamTrackSource(MediaStreamTrack)": "FAIL",
+      "AudioNode interface: calling connect(AudioNode, optional unsigned long, optional unsigned long) on new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) with too few arguments must throw TypeError": "FAIL",
+      "AudioNode interface: calling connect(AudioNode, optional unsigned long, optional unsigned long) on new MediaStreamAudioDestinationNode(context) with too few arguments must throw TypeError": "FAIL",
+      "AudioNode interface: calling connect(AudioParam, optional unsigned long) on new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) with too few arguments must throw TypeError": "FAIL",
+      "AudioNode interface: calling connect(AudioParam, optional unsigned long) on new MediaStreamAudioDestinationNode(context) with too few arguments must throw TypeError": "FAIL",
+      "AudioNode interface: calling disconnect(AudioNode) on new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) with too few arguments must throw TypeError": "FAIL",
+      "AudioNode interface: calling disconnect(AudioNode) on new MediaStreamAudioDestinationNode(context) with too few arguments must throw TypeError": "FAIL",
+      "AudioNode interface: calling disconnect(AudioNode, unsigned long) on new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) with too few arguments must throw TypeError": "FAIL",
+      "AudioNode interface: calling disconnect(AudioNode, unsigned long) on new MediaStreamAudioDestinationNode(context) with too few arguments must throw TypeError": "FAIL",
+      "AudioNode interface: calling disconnect(AudioNode, unsigned long, unsigned long) on new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) with too few arguments must throw TypeError": "FAIL",
+      "AudioNode interface: calling disconnect(AudioNode, unsigned long, unsigned long) on new MediaStreamAudioDestinationNode(context) with too few arguments must throw TypeError": "FAIL",
+      "AudioNode interface: calling disconnect(AudioParam) on new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) with too few arguments must throw TypeError": "FAIL",
+      "AudioNode interface: calling disconnect(AudioParam) on new MediaStreamAudioDestinationNode(context) with too few arguments must throw TypeError": "FAIL",
+      "AudioNode interface: calling disconnect(AudioParam, unsigned long) on new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) with too few arguments must throw TypeError": "FAIL",
+      "AudioNode interface: calling disconnect(AudioParam, unsigned long) on new MediaStreamAudioDestinationNode(context) with too few arguments must throw TypeError": "FAIL",
+      "AudioNode interface: calling disconnect(unsigned long) on new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) with too few arguments must throw TypeError": "FAIL",
+      "AudioNode interface: calling disconnect(unsigned long) on new MediaStreamAudioDestinationNode(context) with too few arguments must throw TypeError": "FAIL",
+      "AudioNode interface: new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) must inherit property \"channelCount\" with the proper type": "FAIL",
+      "AudioNode interface: new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) must inherit property \"channelCountMode\" with the proper type": "FAIL",
+      "AudioNode interface: new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) must inherit property \"channelInterpretation\" with the proper type": "FAIL",
+      "AudioNode interface: new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) must inherit property \"connect(AudioNode, optional unsigned long, optional unsigned long)\" with the proper type": "FAIL",
+      "AudioNode interface: new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) must inherit property \"connect(AudioParam, optional unsigned long)\" with the proper type": "FAIL",
+      "AudioNode interface: new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) must inherit property \"context\" with the proper type": "FAIL",
+      "AudioNode interface: new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) must inherit property \"disconnect()\" with the proper type": "FAIL",
+      "AudioNode interface: new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) must inherit property \"disconnect(AudioNode)\" with the proper type": "FAIL",
+      "AudioNode interface: new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) must inherit property \"disconnect(AudioNode, unsigned long)\" with the proper type": "FAIL",
+      "AudioNode interface: new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) must inherit property \"disconnect(AudioNode, unsigned long, unsigned long)\" with the proper type": "FAIL",
+      "AudioNode interface: new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) must inherit property \"disconnect(AudioParam)\" with the proper type": "FAIL",
+      "AudioNode interface: new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) must inherit property \"disconnect(AudioParam, unsigned long)\" with the proper type": "FAIL",
+      "AudioNode interface: new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) must inherit property \"disconnect(unsigned long)\" with the proper type": "FAIL",
+      "AudioNode interface: new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) must inherit property \"numberOfInputs\" with the proper type": "FAIL",
+      "AudioNode interface: new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) must inherit property \"numberOfOutputs\" with the proper type": "FAIL",
+      "AudioNode interface: new MediaStreamAudioDestinationNode(context) must inherit property \"channelCount\" with the proper type": "FAIL",
+      "AudioNode interface: new MediaStreamAudioDestinationNode(context) must inherit property \"channelCountMode\" with the proper type": "FAIL",
+      "AudioNode interface: new MediaStreamAudioDestinationNode(context) must inherit property \"channelInterpretation\" with the proper type": "FAIL",
+      "AudioNode interface: new MediaStreamAudioDestinationNode(context) must inherit property \"connect(AudioNode, optional unsigned long, optional unsigned long)\" with the proper type": "FAIL",
+      "AudioNode interface: new MediaStreamAudioDestinationNode(context) must inherit property \"connect(AudioParam, optional unsigned long)\" with the proper type": "FAIL",
+      "AudioNode interface: new MediaStreamAudioDestinationNode(context) must inherit property \"context\" with the proper type": "FAIL",
+      "AudioNode interface: new MediaStreamAudioDestinationNode(context) must inherit property \"disconnect()\" with the proper type": "FAIL",
+      "AudioNode interface: new MediaStreamAudioDestinationNode(context) must inherit property \"disconnect(AudioNode)\" with the proper type": "FAIL",
+      "AudioNode interface: new MediaStreamAudioDestinationNode(context) must inherit property \"disconnect(AudioNode, unsigned long)\" with the proper type": "FAIL",
+      "AudioNode interface: new MediaStreamAudioDestinationNode(context) must inherit property \"disconnect(AudioNode, unsigned long, unsigned long)\" with the proper type": "FAIL",
+      "AudioNode interface: new MediaStreamAudioDestinationNode(context) must inherit property \"disconnect(AudioParam)\" with the proper type": "FAIL",
+      "AudioNode interface: new MediaStreamAudioDestinationNode(context) must inherit property \"disconnect(AudioParam, unsigned long)\" with the proper type": "FAIL",
+      "AudioNode interface: new MediaStreamAudioDestinationNode(context) must inherit property \"disconnect(unsigned long)\" with the proper type": "FAIL",
+      "AudioNode interface: new MediaStreamAudioDestinationNode(context) must inherit property \"numberOfInputs\" with the proper type": "FAIL",
+      "AudioNode interface: new MediaStreamAudioDestinationNode(context) must inherit property \"numberOfOutputs\" with the proper type": "FAIL",
+      "MediaElementAudioSourceNode interface object length": "FAIL",
+      "MediaElementAudioSourceNode interface object name": "FAIL",
+      "MediaElementAudioSourceNode interface: attribute mediaElement": "FAIL",
+      "MediaElementAudioSourceNode interface: existence and properties of interface object": "FAIL",
+      "MediaElementAudioSourceNode interface: existence and properties of interface prototype object": "FAIL",
+      "MediaElementAudioSourceNode interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "MediaElementAudioSourceNode interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "MediaElementAudioSourceNode interface: new MediaElementAudioSourceNode(context, {mediaElement: new Audio}) must inherit property \"mediaElement\" with the proper type": "FAIL",
+      "MediaElementAudioSourceNode must be primary interface of new MediaElementAudioSourceNode(context, {mediaElement: new Audio})": "FAIL",
+      "MediaStreamAudioDestinationNode interface object length": "FAIL",
+      "MediaStreamAudioDestinationNode interface object name": "FAIL",
+      "MediaStreamAudioDestinationNode interface: attribute stream": "FAIL",
+      "MediaStreamAudioDestinationNode interface: existence and properties of interface object": "FAIL",
+      "MediaStreamAudioDestinationNode interface: existence and properties of interface prototype object": "FAIL",
+      "MediaStreamAudioDestinationNode interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "MediaStreamAudioDestinationNode interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "MediaStreamAudioDestinationNode interface: new MediaStreamAudioDestinationNode(context) must inherit property \"stream\" with the proper type": "FAIL",
+      "MediaStreamAudioDestinationNode must be primary interface of new MediaStreamAudioDestinationNode(context)": "FAIL",
+      "MediaStreamAudioSourceNode interface object length": "FAIL",
+      "MediaStreamAudioSourceNode interface object name": "FAIL",
+      "MediaStreamAudioSourceNode interface: attribute mediaStream": "FAIL",
+      "MediaStreamAudioSourceNode interface: existence and properties of interface object": "FAIL",
+      "MediaStreamAudioSourceNode interface: existence and properties of interface prototype object": "FAIL",
+      "MediaStreamAudioSourceNode interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "MediaStreamAudioSourceNode interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "MediaStreamTrackAudioSourceNode interface object length": "FAIL",
+      "MediaStreamTrackAudioSourceNode interface object name": "FAIL",
+      "MediaStreamTrackAudioSourceNode interface: existence and properties of interface object": "FAIL",
+      "MediaStreamTrackAudioSourceNode interface: existence and properties of interface prototype object": "FAIL",
+      "MediaStreamTrackAudioSourceNode interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "MediaStreamTrackAudioSourceNode interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "Stringification of new MediaElementAudioSourceNode(context, {mediaElement: new Audio})": "FAIL",
+      "Stringification of new MediaStreamAudioDestinationNode(context)": "FAIL"
+    }
+  },
+  "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/interrupt-when-created-hidden.tentative.sub.html?origin=cross-origin&frame=direct&visibility=display": {
+    "total": 1,
+    "failures": {
+      "cross-origin direct: AudioContext in an iframe created hidden should be interrupted (visibility=display)": "FAIL"
+    }
+  },
+  "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/interrupt-when-created-hidden.tentative.sub.html?origin=cross-origin&frame=direct&visibility=visibility": {
+    "total": 1,
+    "failures": {
+      "cross-origin direct: AudioContext in an iframe created hidden should be interrupted (visibility=visibility)": "FAIL"
+    }
+  },
+  "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/interrupt-when-created-hidden.tentative.sub.html?origin=cross-origin&frame=direct&visibility=zero-size": {
+    "total": 1,
+    "failures": {
+      "cross-origin direct: AudioContext in an iframe created hidden should be interrupted (visibility=zero-size)": "FAIL"
+    }
+  },
+  "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/interrupt-when-created-hidden.tentative.sub.html?origin=cross-origin&frame=nested&visibility=display": {
+    "total": 1,
+    "failures": {
+      "cross-origin nested: AudioContext in an iframe created hidden should be interrupted (visibility=display)": "FAIL"
+    }
+  },
+  "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/interrupt-when-created-hidden.tentative.sub.html?origin=cross-origin&frame=nested&visibility=visibility": {
+    "total": 1,
+    "failures": {
+      "cross-origin nested: AudioContext in an iframe created hidden should be interrupted (visibility=visibility)": "FAIL"
+    }
+  },
+  "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/interrupt-when-created-hidden.tentative.sub.html?origin=cross-origin&frame=nested&visibility=zero-size": {
+    "total": 1,
+    "failures": {
+      "cross-origin nested: AudioContext in an iframe created hidden should be interrupted (visibility=zero-size)": "FAIL"
+    }
+  },
+  "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/interrupt-when-created-hidden.tentative.sub.html?origin=same-origin&frame=direct&visibility=display": {
+    "total": 1,
+    "failures": {
+      "same-origin direct: AudioContext in an iframe created hidden should be interrupted (visibility=display)": "FAIL"
+    }
+  },
+  "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/interrupt-when-created-hidden.tentative.sub.html?origin=same-origin&frame=direct&visibility=visibility": {
+    "total": 1,
+    "failures": {
+      "same-origin direct: AudioContext in an iframe created hidden should be interrupted (visibility=visibility)": "FAIL"
+    }
+  },
+  "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/interrupt-when-created-hidden.tentative.sub.html?origin=same-origin&frame=direct&visibility=zero-size": {
+    "total": 1,
+    "failures": {
+      "same-origin direct: AudioContext in an iframe created hidden should be interrupted (visibility=zero-size)": "FAIL"
+    }
+  },
+  "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/interrupt-when-created-hidden.tentative.sub.html?origin=same-origin&frame=nested&visibility=display": {
+    "total": 1,
+    "failures": {
+      "same-origin nested: AudioContext in an iframe created hidden should be interrupted (visibility=display)": "FAIL"
+    }
+  },
+  "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/interrupt-when-created-hidden.tentative.sub.html?origin=same-origin&frame=nested&visibility=visibility": {
+    "total": 1,
+    "failures": {
+      "same-origin nested: AudioContext in an iframe created hidden should be interrupted (visibility=visibility)": "FAIL"
+    }
+  },
+  "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/interrupt-when-created-hidden.tentative.sub.html?origin=same-origin&frame=nested&visibility=zero-size": {
+    "total": 1,
+    "failures": {
+      "same-origin nested: AudioContext in an iframe created hidden should be interrupted (visibility=zero-size)": "FAIL"
+    }
+  },
+  "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/interrupt-when-hidden.tentative.sub.html?origin=cross-origin&frame=direct&visibility=display": {
+    "total": 1,
+    "failures": {
+      "cross-origin direct: hide/show an iframe with a running AudioContext (visibility=display)": "FAIL"
+    }
+  },
+  "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/interrupt-when-hidden.tentative.sub.html?origin=cross-origin&frame=direct&visibility=visibility": {
+    "total": 1,
+    "failures": {
+      "cross-origin direct: hide/show an iframe with a running AudioContext (visibility=visibility)": "FAIL"
+    }
+  },
+  "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/interrupt-when-hidden.tentative.sub.html?origin=cross-origin&frame=direct&visibility=zero-size": {
+    "total": 1,
+    "failures": {
+      "cross-origin direct: hide/show an iframe with a running AudioContext (visibility=zero-size)": "FAIL"
+    }
+  },
+  "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/interrupt-when-hidden.tentative.sub.html?origin=cross-origin&frame=nested&visibility=display": {
+    "total": 1,
+    "failures": {
+      "cross-origin nested: hide/show an iframe with a running AudioContext (visibility=display)": "FAIL"
+    }
+  },
+  "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/interrupt-when-hidden.tentative.sub.html?origin=cross-origin&frame=nested&visibility=visibility": {
+    "total": 1,
+    "failures": {
+      "cross-origin nested: hide/show an iframe with a running AudioContext (visibility=visibility)": "FAIL"
+    }
+  },
+  "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/interrupt-when-hidden.tentative.sub.html?origin=cross-origin&frame=nested&visibility=zero-size": {
+    "total": 1,
+    "failures": {
+      "cross-origin nested: hide/show an iframe with a running AudioContext (visibility=zero-size)": "FAIL"
+    }
+  },
+  "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/interrupt-when-hidden.tentative.sub.html?origin=same-origin&frame=direct&visibility=display": {
+    "total": 1,
+    "failures": {
+      "same-origin direct: hide/show an iframe with a running AudioContext (visibility=display)": "FAIL"
+    }
+  },
+  "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/interrupt-when-hidden.tentative.sub.html?origin=same-origin&frame=direct&visibility=visibility": {
+    "total": 1,
+    "failures": {
+      "same-origin direct: hide/show an iframe with a running AudioContext (visibility=visibility)": "FAIL"
+    }
+  },
+  "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/interrupt-when-hidden.tentative.sub.html?origin=same-origin&frame=direct&visibility=zero-size": {
+    "total": 1,
+    "failures": {
+      "same-origin direct: hide/show an iframe with a running AudioContext (visibility=zero-size)": "FAIL"
+    }
+  },
+  "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/interrupt-when-hidden.tentative.sub.html?origin=same-origin&frame=nested&visibility=display": {
+    "total": 1,
+    "failures": {
+      "same-origin nested: hide/show an iframe with a running AudioContext (visibility=display)": "FAIL"
+    }
+  },
+  "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/interrupt-when-hidden.tentative.sub.html?origin=same-origin&frame=nested&visibility=visibility": {
+    "total": 1,
+    "failures": {
+      "same-origin nested: hide/show an iframe with a running AudioContext (visibility=visibility)": "FAIL"
+    }
+  },
+  "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/interrupt-when-hidden.tentative.sub.html?origin=same-origin&frame=nested&visibility=zero-size": {
+    "total": 1,
+    "failures": {
+      "same-origin nested: hide/show an iframe with a running AudioContext (visibility=zero-size)": "FAIL"
+    }
+  },
+  "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/resume-while-hidden.tentative.sub.html?origin=cross-origin&frame=direct&visibility=display": {
+    "total": 1,
+    "failures": {
+      "cross-origin direct: resume() a suspended AudioContext while its iframe is hidden (visibility=display)": "FAIL"
+    }
+  },
+  "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/resume-while-hidden.tentative.sub.html?origin=cross-origin&frame=direct&visibility=visibility": {
+    "total": 1,
+    "failures": {
+      "cross-origin direct: resume() a suspended AudioContext while its iframe is hidden (visibility=visibility)": "FAIL"
+    }
+  },
+  "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/resume-while-hidden.tentative.sub.html?origin=cross-origin&frame=direct&visibility=zero-size": {
+    "total": 1,
+    "failures": {
+      "cross-origin direct: resume() a suspended AudioContext while its iframe is hidden (visibility=zero-size)": "FAIL"
+    }
+  },
+  "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/resume-while-hidden.tentative.sub.html?origin=cross-origin&frame=nested&visibility=display": {
+    "total": 1,
+    "failures": {
+      "cross-origin nested: resume() a suspended AudioContext while its iframe is hidden (visibility=display)": "FAIL"
+    }
+  },
+  "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/resume-while-hidden.tentative.sub.html?origin=cross-origin&frame=nested&visibility=visibility": {
+    "total": 1,
+    "failures": {
+      "cross-origin nested: resume() a suspended AudioContext while its iframe is hidden (visibility=visibility)": "FAIL"
+    }
+  },
+  "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/resume-while-hidden.tentative.sub.html?origin=cross-origin&frame=nested&visibility=zero-size": {
+    "total": 1,
+    "failures": {
+      "cross-origin nested: resume() a suspended AudioContext while its iframe is hidden (visibility=zero-size)": "FAIL"
+    }
+  },
+  "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/resume-while-hidden.tentative.sub.html?origin=same-origin&frame=direct&visibility=display": {
+    "total": 1,
+    "failures": {
+      "same-origin direct: resume() a suspended AudioContext while its iframe is hidden (visibility=display)": "FAIL"
+    }
+  },
+  "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/resume-while-hidden.tentative.sub.html?origin=same-origin&frame=direct&visibility=visibility": {
+    "total": 1,
+    "failures": {
+      "same-origin direct: resume() a suspended AudioContext while its iframe is hidden (visibility=visibility)": "FAIL"
+    }
+  },
+  "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/resume-while-hidden.tentative.sub.html?origin=same-origin&frame=direct&visibility=zero-size": {
+    "total": 1,
+    "failures": {
+      "same-origin direct: resume() a suspended AudioContext while its iframe is hidden (visibility=zero-size)": "FAIL"
+    }
+  },
+  "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/resume-while-hidden.tentative.sub.html?origin=same-origin&frame=nested&visibility=display": {
+    "total": 1,
+    "failures": {
+      "same-origin nested: resume() a suspended AudioContext while its iframe is hidden (visibility=display)": "FAIL"
+    }
+  },
+  "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/resume-while-hidden.tentative.sub.html?origin=same-origin&frame=nested&visibility=visibility": {
+    "total": 1,
+    "failures": {
+      "same-origin nested: resume() a suspended AudioContext while its iframe is hidden (visibility=visibility)": "FAIL"
+    }
+  },
+  "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/resume-while-hidden.tentative.sub.html?origin=same-origin&frame=nested&visibility=zero-size": {
+    "total": 1,
+    "failures": {
+      "same-origin nested: resume() a suspended AudioContext while its iframe is hidden (visibility=zero-size)": "FAIL"
+    }
+  },
+  "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/suspended-hide-show.tentative.sub.html?origin=cross-origin&frame=direct&visibility=display": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/suspended-hide-show.tentative.sub.html?origin=cross-origin&frame=direct&visibility=visibility": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/suspended-hide-show.tentative.sub.html?origin=cross-origin&frame=direct&visibility=zero-size": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/suspended-hide-show.tentative.sub.html?origin=cross-origin&frame=nested&visibility=display": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/suspended-hide-show.tentative.sub.html?origin=cross-origin&frame=nested&visibility=visibility": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/suspended-hide-show.tentative.sub.html?origin=cross-origin&frame=nested&visibility=zero-size": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/suspended-hide-show.tentative.sub.html?origin=same-origin&frame=direct&visibility=display": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/suspended-hide-show.tentative.sub.html?origin=same-origin&frame=direct&visibility=visibility": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/suspended-hide-show.tentative.sub.html?origin=same-origin&frame=direct&visibility=zero-size": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/suspended-hide-show.tentative.sub.html?origin=same-origin&frame=nested&visibility=display": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/suspended-hide-show.tentative.sub.html?origin=same-origin&frame=nested&visibility=visibility": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/suspended-hide-show.tentative.sub.html?origin=same-origin&frame=nested&visibility=zero-size": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/viewport.tentative.sub.html?origin=cross-origin": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/media-playback-while-not-visible-permission-policy/viewport.tentative.sub.html?origin=same-origin": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/processing-model/cycle-without-delay.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/processing-model/delay-time-clamping.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/processing-model/feedback-delay-time.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/rendersizehint-smoke-tests.https.html": {
+    "total": 60
+  },
+  "webaudio/the-audio-api/the-analysernode-interface/analysernode-rendersizehint.https.html": {
+    "total": 10
+  },
+  "webaudio/the-audio-api/the-analysernode-interface/ctor-analyser.html": {
+    "total": 78
+  },
+  "webaudio/the-audio-api/the-analysernode-interface/realtimeanalyser-basic.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-analysernode-interface/realtimeanalyser-fft-scaling.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-analysernode-interface/realtimeanalyser-fft-sizing.html": {
+    "total": 43
+  },
+  "webaudio/the-audio-api/the-analysernode-interface/test-analyser-gain.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-analysernode-interface/test-analyser-minimum.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-analysernode-interface/test-analyser-output.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-analysernode-interface/test-analyser-resume-after-suspended.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-analysernode-interface/test-analyser-scale.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-analysernode-interface/test-analysernode.html": {
+    "total": 2
+  },
+  "webaudio/the-audio-api/the-audiobuffer-interface/acquire-the-content.html": {
+    "total": 3
+  },
+  "webaudio/the-audio-api/the-audiobuffer-interface/audiobuffer-copy-channel.html": {
+    "total": 62
+  },
+  "webaudio/the-audio-api/the-audiobuffer-interface/audiobuffer-getChannelData.html": {
+    "total": 13
+  },
+  "webaudio/the-audio-api/the-audiobuffer-interface/audiobuffer-reuse.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-audiobuffer-interface/audiobuffer.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-audiobuffer-interface/ctor-audiobuffer.html": {
+    "total": 62
+  },
+  "webaudio/the-audio-api/the-audiobuffersourcenode-interface/active-processing.https.html": {
+    "total": 2
+  },
+  "webaudio/the-audio-api/the-audiobuffersourcenode-interface/audiobuffersource-basic.html": {
+    "total": 18
+  },
+  "webaudio/the-audio-api/the-audiobuffersourcenode-interface/audiobuffersource-channels.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-audiobuffersourcenode-interface/audiobuffersource-duration-loop-playbackrate.html": {
+    "total": 6
+  },
+  "webaudio/the-audio-api/the-audiobuffersourcenode-interface/audiobuffersource-duration-loop.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-audiobuffersourcenode-interface/audiobuffersource-ended.html": {
+    "total": 7
+  },
+  "webaudio/the-audio-api/the-audiobuffersourcenode-interface/audiobuffersource-grain.html": {
+    "total": 7
+  },
+  "webaudio/the-audio-api/the-audiobuffersourcenode-interface/audiobuffersource-loop-continuous.html": {
+    "total": 5
+  },
+  "webaudio/the-audio-api/the-audiobuffersourcenode-interface/audiobuffersource-loop-short-duration.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-audiobuffersourcenode-interface/audiobuffersource-multi-channels.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-audiobuffersourcenode-interface/audiobuffersource-null.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-audiobuffersourcenode-interface/audiobuffersource-one-sample-loop.html": {
+    "total": 7
+  },
+  "webaudio/the-audio-api/the-audiobuffersourcenode-interface/audiobuffersource-output-channel-count.html": {
+    "total": 7
+  },
+  "webaudio/the-audio-api/the-audiobuffersourcenode-interface/audiobuffersource-playbackrate-dynamic-direction.html": {
+    "total": 2
+  },
+  "webaudio/the-audio-api/the-audiobuffersourcenode-interface/audiobuffersource-playbackrate-negative.html": {
+    "total": 15
+  },
+  "webaudio/the-audio-api/the-audiobuffersourcenode-interface/audiobuffersource-playbackrate-zero.html": {
+    "total": 2
+  },
+  "webaudio/the-audio-api/the-audiobuffersourcenode-interface/audiobuffersource-reverse-long-buffer.html": {
+    "total": 2
+  },
+  "webaudio/the-audio-api/the-audiobuffersourcenode-interface/audiobuffersource-start-null-buffer.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-audiobuffersourcenode-interface/audiobuffersource-start.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-audiobuffersourcenode-interface/audiosource-onended.html": {
+    "total": 4
+  },
+  "webaudio/the-audio-api/the-audiobuffersourcenode-interface/audiosource-time-limits.html": {
+    "total": 2
+  },
+  "webaudio/the-audio-api/the-audiobuffersourcenode-interface/buffer-resampling.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-audiobuffersourcenode-interface/ctor-audiobuffersource.html": {
+    "total": 44
+  },
+  "webaudio/the-audio-api/the-audiobuffersourcenode-interface/looped-constant-buffer.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-audiobuffersourcenode-interface/note-grain-on-play.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-audiobuffersourcenode-interface/note-grain-on-timing.html": {
+    "total": 111
+  },
+  "webaudio/the-audio-api/the-audiobuffersourcenode-interface/sample-accurate-scheduling.html": {
+    "total": 18
+  },
+  "webaudio/the-audio-api/the-audiobuffersourcenode-interface/sub-sample-buffer-stitching.html": {
+    "total": 2
+  },
+  "webaudio/the-audio-api/the-audiobuffersourcenode-interface/sub-sample-scheduling.html": {
+    "total": 51
+  },
+  "webaudio/the-audio-api/the-audiocontext-interface/audiocontext-detached-execution-context.html": {
+    "total": 7
+  },
+  "webaudio/the-audio-api/the-audiocontext-interface/audiocontext-getoutputtimestamp-cross-realm.html": {
+    "total": 8
+  },
+  "webaudio/the-audio-api/the-audiocontext-interface/audiocontext-getoutputtimestamp.html": {
+    "total": 10
+  },
+  "webaudio/the-audio-api/the-audiocontext-interface/audiocontext-not-fully-active.html": {
+    "total": 10
+  },
+  "webaudio/the-audio-api/the-audiocontext-interface/audiocontext-playbackstats.html": {
+    "total": 4
+  },
+  "webaudio/the-audio-api/the-audiocontext-interface/audiocontext-rendersizehint.html": {
+    "total": 18
+  },
+  "webaudio/the-audio-api/the-audiocontext-interface/audiocontext-sinkid-constructor.https.html": {
+    "harness": "ERROR",
+    "total": 5,
+    "failures": {
+      "Invalid sinkId argument with a wrong ID should dispatch an onerror event.": "NOTRUN",
+      "Invalid sinkId argument with a wrong type should throw an appropriate exception.": "NOTRUN",
+      "Setting sinkId to the empty string at construction should succeed.": "NOTRUN",
+      "Setting sinkId with a valid device identifier at construction should succeed.": "NOTRUN",
+      "Setting sinkId with an AudioSinkOptions at construction should succeed.": "NOTRUN"
+    }
+  },
+  "webaudio/the-audio-api/the-audiocontext-interface/audiocontext-sinkid-setsinkid.https.html": {
+    "harness": "ERROR",
+    "total": 8,
+    "failures": {
+      "default AudioContext.sinkId should be the empty string.": "NOTRUN",
+      "pending setSinkId() should be rejected with InvalidStateError when AudioContext is closed.": "NOTRUN",
+      "setSinkId() should fail with InvalidStateError when calling from a detached document.": "NOTRUN",
+      "setSinkId() should fail with InvalidStateError when calling from a stopped AudioContext.": "NOTRUN",
+      "setSinkId() should fail with NotFoundError on an invalid device identifier.": "NOTRUN",
+      "setSinkId() should fail with TypeError on an invalid AudioSinkOptions.type value.": "NOTRUN",
+      "setSinkId() with AudioSinkOptions.type of \"none\" and setting the same option should succeed.": "NOTRUN",
+      "setSinkId() with a valid device identifier and setting the same ID should succeed.": "NOTRUN"
+    }
+  },
+  "webaudio/the-audio-api/the-audiocontext-interface/audiocontext-sinkid-state-change.https.html": {
+    "harness": "ERROR",
+    "total": 3,
+    "failures": {
+      "Calling setSinkId() on a running AudioContext should fire both state and sink change events.": "NOTRUN",
+      "Calling setSinkId() on a suspended AudioContext should fire only sink change events.": "NOTRUN",
+      "setSinkId() promise should resolve before the sinkchange event is fired.": "NOTRUN"
+    }
+  },
+  "webaudio/the-audio-api/the-audiocontext-interface/audiocontext-state-change-after-close.http.window.js": {
+    "total": 3
+  },
+  "webaudio/the-audio-api/the-audiocontext-interface/audiocontext-suspend-resume-close.html": {
+    "total": 6,
+    "failures": {
+      "testAudioContext": "FAIL",
+      "testMultiContextInput": "FAIL",
+      "testMultiContextOutput": "FAIL",
+      "testOfflineAudioContext": "FAIL"
+    }
+  },
+  "webaudio/the-audio-api/the-audiocontext-interface/audiocontext-suspend-resume.html": {
+    "total": 4
+  },
+  "webaudio/the-audio-api/the-audiocontext-interface/audiocontextoptions.html": {
+    "total": 41
+  },
+  "webaudio/the-audio-api/the-audiocontext-interface/callback-detached-buffer.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-audiocontext-interface/constructor-allowed-to-start.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-audiocontext-interface/context-time-monotonic-on-setsinkid.https.html": {
+    "total": 1,
+    "failures": {
+      "currentTime and getOutputTimestamp().contextTime should not reset after setSinkId": "FAIL"
+    }
+  },
+  "webaudio/the-audio-api/the-audiocontext-interface/processing-after-resume.https.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-audiocontext-interface/promise-methods-after-discard.html": {
+    "total": 3
+  },
+  "webaudio/the-audio-api/the-audiocontext-interface/suspend-after-construct.html": {
+    "total": 5
+  },
+  "webaudio/the-audio-api/the-audiocontext-interface/suspend-with-navigation.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-audionode-interface/audionode-channel-rules.html": {
+    "total": 178
+  },
+  "webaudio/the-audio-api/the-audionode-interface/audionode-connect-method-chaining.html": {
+    "total": 4,
+    "failures": {
+      "Verify connect() method chaining for MediaElementSourceNode and MediaStreamSourceNode": "FAIL"
+    }
+  },
+  "webaudio/the-audio-api/the-audionode-interface/audionode-connect-order.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-audionode-interface/audionode-connect-return-value.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-audionode-interface/audionode-disconnect-audioparam.html": {
+    "total": 21
+  },
+  "webaudio/the-audio-api/the-audionode-interface/audionode-disconnect.html": {
+    "total": 40
+  },
+  "webaudio/the-audio-api/the-audionode-interface/audionode-iframe.window.js": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-audionode-interface/audionode.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-audionode-interface/channel-mode-interp-basic.html": {
+    "total": 13
+  },
+  "webaudio/the-audio-api/the-audionode-interface/different-contexts.html": {
+    "total": 5
+  },
+  "webaudio/the-audio-api/the-audioparam-interface/adding-events.html": {
+    "total": 2
+  },
+  "webaudio/the-audio-api/the-audioparam-interface/audioparam-cancel-and-hold.html": {
+    "total": 106
+  },
+  "webaudio/the-audio-api/the-audioparam-interface/audioparam-close.html": {
+    "total": 2
+  },
+  "webaudio/the-audio-api/the-audioparam-interface/audioparam-connect-audioratesignal.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-audioparam-interface/audioparam-default-value.window.js": {
+    "total": 3
+  },
+  "webaudio/the-audio-api/the-audioparam-interface/audioparam-exceptional-values.html": {
+    "total": 66
+  },
+  "webaudio/the-audio-api/the-audioparam-interface/audioparam-exponentialRampToValueAtTime.html": {
+    "total": 6
+  },
+  "webaudio/the-audio-api/the-audioparam-interface/audioparam-large-endtime.html": {
+    "total": 11
+  },
+  "webaudio/the-audio-api/the-audioparam-interface/audioparam-linearRampToValueAtTime.html": {
+    "total": 6
+  },
+  "webaudio/the-audio-api/the-audioparam-interface/audioparam-method-chaining.html": {
+    "total": 3
+  },
+  "webaudio/the-audio-api/the-audioparam-interface/audioparam-nominal-range.html": {
+    "total": 323,
+    "failures": {
+      "# AUDIT TASK RUNNER FINISHED: 1 out of 24 tasks were failed.": "FAIL",
+      "< [Offline createBiquadFilter] 2 out of 33 assertions were failed.": "FAIL",
+      "Executing \"Online createMediaElementSource\"": "FAIL",
+      "Executing \"Online createMediaStreamDestination\"": "FAIL",
+      "X BiquadFilterNode.gain.maxValue is not equal to 1541.273681640625. Got 1541.2735595703125.": "FAIL",
+      "X Nominal ranges for AudioParam(s) of BiquadFilterNode are incorrect for: NaN Got false.": "FAIL"
+    }
+  },
+  "webaudio/the-audio-api/the-audioparam-interface/audioparam-setTargetAtTime.html": {
+    "total": 6
+  },
+  "webaudio/the-audio-api/the-audioparam-interface/audioparam-setValueAtTime.html": {
+    "total": 6
+  },
+  "webaudio/the-audio-api/the-audioparam-interface/audioparam-setValueCurve-exceptions.html": {
+    "total": 66
+  },
+  "webaudio/the-audio-api/the-audioparam-interface/audioparam-setValueCurveAtTime.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-audioparam-interface/audioparam-summingjunction.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-audioparam-interface/audioparam-zero-duration-ramp.html": {
+    "total": 8
+  },
+  "webaudio/the-audio-api/the-audioparam-interface/automation-rate.html": {
+    "total": 10
+  },
+  "webaudio/the-audio-api/the-audioparam-interface/cancel-scheduled-values.html": {
+    "total": 2
+  },
+  "webaudio/the-audio-api/the-audioparam-interface/event-insertion.html": {
+    "total": 67
+  },
+  "webaudio/the-audio-api/the-audioparam-interface/exponentialRamp-special-cases.html": {
+    "total": 2
+  },
+  "webaudio/the-audio-api/the-audioparam-interface/k-rate-audiobuffersource-connections.html": {
+    "total": 2
+  },
+  "webaudio/the-audio-api/the-audioparam-interface/k-rate-audioworklet-connections.https.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-audioparam-interface/k-rate-audioworklet.https.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-audioparam-interface/k-rate-biquad-connection.html": {
+    "total": 100
+  },
+  "webaudio/the-audio-api/the-audioparam-interface/k-rate-biquad.html": {
+    "total": 5
+  },
+  "webaudio/the-audio-api/the-audioparam-interface/k-rate-connections.html": {
+    "total": 2
+  },
+  "webaudio/the-audio-api/the-audioparam-interface/k-rate-constant-source.html": {
+    "total": 40
+  },
+  "webaudio/the-audio-api/the-audioparam-interface/k-rate-delay-connections.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-audioparam-interface/k-rate-delay.html": {
+    "total": 14
+  },
+  "webaudio/the-audio-api/the-audioparam-interface/k-rate-dynamics-compressor-connections.html": {
+    "total": 5
+  },
+  "webaudio/the-audio-api/the-audioparam-interface/k-rate-gain.html": {
+    "total": 14
+  },
+  "webaudio/the-audio-api/the-audioparam-interface/k-rate-oscillator-connections.html": {
+    "total": 73
+  },
+  "webaudio/the-audio-api/the-audioparam-interface/k-rate-oscillator.html": {
+    "total": 2
+  },
+  "webaudio/the-audio-api/the-audioparam-interface/k-rate-panner-connections.html": {
+    "total": 93
+  },
+  "webaudio/the-audio-api/the-audioparam-interface/k-rate-panner.html": {
+    "total": 14
+  },
+  "webaudio/the-audio-api/the-audioparam-interface/k-rate-stereo-panner.html": {
+    "total": 14
+  },
+  "webaudio/the-audio-api/the-audioparam-interface/moderate-exponentialRamp.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-audioparam-interface/nan-param.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-audioparam-interface/retrospective-exponentialRampToValueAtTime.html": {
+    "total": 9
+  },
+  "webaudio/the-audio-api/the-audioparam-interface/retrospective-linearRampToValueAtTime.html": {
+    "total": 9
+  },
+  "webaudio/the-audio-api/the-audioparam-interface/retrospective-setTargetAtTime.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-audioparam-interface/retrospective-setValueAtTime.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-audioparam-interface/retrospective-setValueCurveAtTime.html": {
+    "total": 9
+  },
+  "webaudio/the-audio-api/the-audioparam-interface/set-target-conv.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-audioparam-interface/setTargetAtTime-after-event-within-block.html": {
+    "total": 2
+  },
+  "webaudio/the-audio-api/the-audioparam-interface/setValueAtTime-within-block.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-audioworklet-interface/audioworklet-addmodule-resolution.https.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-audioworklet-interface/audioworklet-audioparam-iterable.https.html": {
+    "total": 54
+  },
+  "webaudio/the-audio-api/the-audioworklet-interface/audioworklet-audioparam-range.https.html": {
+    "total": 2
+  },
+  "webaudio/the-audio-api/the-audioworklet-interface/audioworklet-audioparam-size.https.html": {
+    "total": 15
+  },
+  "webaudio/the-audio-api/the-audioworklet-interface/audioworklet-audioparam.https.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-audioworklet-interface/audioworklet-denormals.https.window.js": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-audioworklet-interface/audioworklet-messageport-wasm.https.html": {
+    "total": 2
+  },
+  "webaudio/the-audio-api/the-audioworklet-interface/audioworklet-messageport.https.html": {
+    "total": 4
+  },
+  "webaudio/the-audio-api/the-audioworklet-interface/audioworklet-postmessage-sharedarraybuffer.https.html": {
+    "total": 8
+  },
+  "webaudio/the-audio-api/the-audioworklet-interface/audioworklet-registerprocessor-called-on-globalthis.https.html": {
+    "total": 7
+  },
+  "webaudio/the-audio-api/the-audioworklet-interface/audioworklet-registerprocessor-constructor.https.window.js": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-audioworklet-interface/audioworklet-registerprocessor-dynamic.https.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-audioworklet-interface/audioworklet-rendersizehint.https.html": {
+    "total": 2
+  },
+  "webaudio/the-audio-api/the-audioworklet-interface/audioworklet-suspend.https.html": {
+    "total": 8
+  },
+  "webaudio/the-audio-api/the-audioworklet-interface/audioworklet-throw-onmessage.https.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-audioworklet-interface/audioworkletglobalscope-creation-time.https.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-audioworklet-interface/audioworkletglobalscope-sample-rate.https.html": {
+    "total": 7
+  },
+  "webaudio/the-audio-api/the-audioworklet-interface/audioworkletglobalscope-timing-info.https.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-audioworklet-interface/audioworkletnode-automatic-pull.https.html": {
+    "total": 8
+  },
+  "webaudio/the-audio-api/the-audioworklet-interface/audioworkletnode-channel-count.https.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-audioworklet-interface/audioworkletnode-construction.https.html": {
+    "total": 12
+  },
+  "webaudio/the-audio-api/the-audioworklet-interface/audioworkletnode-constructor-no-coop-coep.https.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-audioworklet-interface/audioworkletnode-constructor-options.https.html": {
+    "total": 5
+  },
+  "webaudio/the-audio-api/the-audioworklet-interface/audioworkletnode-disconnected-input.https.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-audioworklet-interface/audioworkletnode-lifetime.https.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-audioworklet-interface/audioworkletnode-onerror.https.html": {
+    "total": 3
+  },
+  "webaudio/the-audio-api/the-audioworklet-interface/audioworkletnode-output-channel-count.https.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-audioworklet-interface/audioworkletprocessor-malformed-process.https.html": {
+    "total": 5
+  },
+  "webaudio/the-audio-api/the-audioworklet-interface/audioworkletprocessor-options.https.html": {
+    "total": 2
+  },
+  "webaudio/the-audio-api/the-audioworklet-interface/audioworkletprocessor-param-getter-overridden.https.html": {
+    "total": 1,
+    "failures": {
+      "Test if AudioWorkletProcessor with invalid parameters array getter": "FAIL"
+    }
+  },
+  "webaudio/the-audio-api/the-audioworklet-interface/audioworkletprocessor-process-frozen-array.https.html": {
+    "total": 13
+  },
+  "webaudio/the-audio-api/the-audioworklet-interface/audioworkletprocessor-process-zero-outputs.https.html": {
+    "total": 7
+  },
+  "webaudio/the-audio-api/the-audioworklet-interface/audioworkletprocessor-promises.https.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-audioworklet-interface/audioworkletprocessor-unconnected-outputs.https.window.js": {
+    "total": 2
+  },
+  "webaudio/the-audio-api/the-audioworklet-interface/baseaudiocontext-audioworklet.https.html": {
+    "total": 7
+  },
+  "webaudio/the-audio-api/the-audioworklet-interface/extended-audioworkletnode-with-parameters.https.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-audioworklet-interface/process-getter.https.html": {
+    "total": 2
+  },
+  "webaudio/the-audio-api/the-audioworklet-interface/process-parameters.https.html": {
+    "total": 2
+  },
+  "webaudio/the-audio-api/the-audioworklet-interface/processor-construction-port.https.html": {
+    "total": 4
+  },
+  "webaudio/the-audio-api/the-audioworklet-interface/simple-input-output.https.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-audioworklet-interface/suspended-context-messageport.https.html": {
+    "total": 3
+  },
+  "webaudio/the-audio-api/the-biquadfilternode-interface/biquad-allpass.html": {
+    "total": 9
+  },
+  "webaudio/the-audio-api/the-biquadfilternode-interface/biquad-automation.html": {
+    "total": 27
+  },
+  "webaudio/the-audio-api/the-biquadfilternode-interface/biquad-bandpass.html": {
+    "total": 9
+  },
+  "webaudio/the-audio-api/the-biquadfilternode-interface/biquad-basic.html": {
+    "total": 5
+  },
+  "webaudio/the-audio-api/the-biquadfilternode-interface/biquad-getFrequencyResponse.html": {
+    "total": 90
+  },
+  "webaudio/the-audio-api/the-biquadfilternode-interface/biquad-highpass.html": {
+    "total": 9
+  },
+  "webaudio/the-audio-api/the-biquadfilternode-interface/biquad-highshelf.html": {
+    "total": 9
+  },
+  "webaudio/the-audio-api/the-biquadfilternode-interface/biquad-lowpass.html": {
+    "total": 9
+  },
+  "webaudio/the-audio-api/the-biquadfilternode-interface/biquad-lowshelf.html": {
+    "total": 9
+  },
+  "webaudio/the-audio-api/the-biquadfilternode-interface/biquad-notch.html": {
+    "total": 9
+  },
+  "webaudio/the-audio-api/the-biquadfilternode-interface/biquad-peaking.html": {
+    "total": 9
+  },
+  "webaudio/the-audio-api/the-biquadfilternode-interface/biquad-tail.html": {
+    "total": 7
+  },
+  "webaudio/the-audio-api/the-biquadfilternode-interface/biquadfilter-rendersizehint.https.html": {
+    "total": 5
+  },
+  "webaudio/the-audio-api/the-biquadfilternode-interface/biquadfilternode-basic.html": {
+    "total": 29
+  },
+  "webaudio/the-audio-api/the-biquadfilternode-interface/ctor-biquadfilter.html": {
+    "total": 5
+  },
+  "webaudio/the-audio-api/the-biquadfilternode-interface/no-dezippering.html": {
+    "total": 48
+  },
+  "webaudio/the-audio-api/the-channelmergernode-interface/active-processing.https.html": {
+    "total": 2
+  },
+  "webaudio/the-audio-api/the-channelmergernode-interface/audiochannelmerger-basic.html": {
+    "total": 17
+  },
+  "webaudio/the-audio-api/the-channelmergernode-interface/audiochannelmerger-disconnect.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-channelmergernode-interface/audiochannelmerger-input-non-default.html": {
+    "total": 3
+  },
+  "webaudio/the-audio-api/the-channelmergernode-interface/audiochannelmerger-input.html": {
+    "total": 4
+  },
+  "webaudio/the-audio-api/the-channelmergernode-interface/ctor-channelmerger.html": {
+    "total": 5
+  },
+  "webaudio/the-audio-api/the-channelsplitternode-interface/audiochannelsplitter.html": {
+    "total": 2
+  },
+  "webaudio/the-audio-api/the-channelsplitternode-interface/ctor-channelsplitter.html": {
+    "total": 5
+  },
+  "webaudio/the-audio-api/the-constantsourcenode-interface/constant-source-basic.html": {
+    "total": 4
+  },
+  "webaudio/the-audio-api/the-constantsourcenode-interface/constant-source-onended-not-connected.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-constantsourcenode-interface/constant-source-onended.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-constantsourcenode-interface/constant-source-output.html": {
+    "total": 31
+  },
+  "webaudio/the-audio-api/the-constantsourcenode-interface/ctor-constantsource.html": {
+    "total": 24
+  },
+  "webaudio/the-audio-api/the-constantsourcenode-interface/test-constantsourcenode.html": {
+    "total": 6
+  },
+  "webaudio/the-audio-api/the-convolvernode-interface/active-processing.https.html": {
+    "total": 2
+  },
+  "webaudio/the-audio-api/the-convolvernode-interface/convolution-mono-mono.html": {
+    "total": 10,
+    "failures": {
+      "# AUDIT TASK RUNNER FINISHED: 1 out of 1 tasks were failed.": "FAIL",
+      "< [test] 1 out of 4 assertions were failed.": "FAIL",
+      "X Deviation (in dB) of triangular portion of convolution is not less than or equal to -124.41. Got NaN.": "FAIL"
+    }
+  },
+  "webaudio/the-audio-api/the-convolvernode-interface/convolver-cascade.html": {
+    "total": 7
+  },
+  "webaudio/the-audio-api/the-convolvernode-interface/convolver-channels.html": {
+    "total": 38
+  },
+  "webaudio/the-audio-api/the-convolvernode-interface/convolver-rendersizehint.https.html": {
+    "total": 5
+  },
+  "webaudio/the-audio-api/the-convolvernode-interface/convolver-response-1-chan.html": {
+    "total": 59
+  },
+  "webaudio/the-audio-api/the-convolvernode-interface/convolver-response-2-chan.html": {
+    "total": 52
+  },
+  "webaudio/the-audio-api/the-convolvernode-interface/convolver-response-4-chan.html": {
+    "total": 51
+  },
+  "webaudio/the-audio-api/the-convolvernode-interface/convolver-setBuffer-already-has-value.html": {
+    "total": 12
+  },
+  "webaudio/the-audio-api/the-convolvernode-interface/convolver-setBuffer-null.html": {
+    "total": 8
+  },
+  "webaudio/the-audio-api/the-convolvernode-interface/convolver-upmixing-1-channel-response.html": {
+    "total": 3
+  },
+  "webaudio/the-audio-api/the-convolvernode-interface/ctor-convolver.html": {
+    "total": 6
+  },
+  "webaudio/the-audio-api/the-convolvernode-interface/realtime-conv.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-convolvernode-interface/transferred-buffer-output.html": {
+    "total": 8
+  },
+  "webaudio/the-audio-api/the-delaynode-interface/ctor-delay.html": {
+    "total": 53
+  },
+  "webaudio/the-audio-api/the-delaynode-interface/delay-test.html": {
+    "total": 10
+  },
+  "webaudio/the-audio-api/the-delaynode-interface/delaynode-channel-count-1.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-delaynode-interface/delaynode-max-default-delay.html": {
+    "total": 7
+  },
+  "webaudio/the-audio-api/the-delaynode-interface/delaynode-max-nondefault-delay.html": {
+    "total": 7
+  },
+  "webaudio/the-audio-api/the-delaynode-interface/delaynode-maxdelay.html": {
+    "total": 7
+  },
+  "webaudio/the-audio-api/the-delaynode-interface/delaynode-maxdelaylimit.html": {
+    "total": 12
+  },
+  "webaudio/the-audio-api/the-delaynode-interface/delaynode-scheduling.html": {
+    "total": 7
+  },
+  "webaudio/the-audio-api/the-delaynode-interface/delaynode.html": {
+    "total": 12
+  },
+  "webaudio/the-audio-api/the-delaynode-interface/maxdelay-rounding.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-delaynode-interface/no-dezippering.html": {
+    "total": 19
+  },
+  "webaudio/the-audio-api/the-destinationnode-interface/destination.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-dynamicscompressornode-interface/ctor-dynamicscompressor.html": {
+    "total": 4
+  },
+  "webaudio/the-audio-api/the-dynamicscompressornode-interface/dynamicscompressor-basic.html": {
+    "total": 13
+  },
+  "webaudio/the-audio-api/the-gainnode-interface/ctor-gain.html": {
+    "total": 4
+  },
+  "webaudio/the-audio-api/the-gainnode-interface/gain-basic.html": {
+    "total": 7
+  },
+  "webaudio/the-audio-api/the-gainnode-interface/gain.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-gainnode-interface/no-dezippering.html": {
+    "total": 3
+  },
+  "webaudio/the-audio-api/the-iirfilternode-interface/ctor-iirfilter.html": {
+    "total": 6
+  },
+  "webaudio/the-audio-api/the-iirfilternode-interface/iirfilter-basic.html": {
+    "total": 43
+  },
+  "webaudio/the-audio-api/the-iirfilternode-interface/iirfilter-getFrequencyResponse.html": {
+    "total": 3
+  },
+  "webaudio/the-audio-api/the-iirfilternode-interface/iirfilter-normalization-precision.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-iirfilternode-interface/iirfilter.html": {
+    "total": 68
+  },
+  "webaudio/the-audio-api/the-iirfilternode-interface/test-iirfilternode.html": {
+    "total": 8
+  },
+  "webaudio/the-audio-api/the-mediaelementaudiosourcenode-interface/cors-check.https.html": {
+    "total": 7,
+    "failures": {
+      "Executing \"setting-up-graph\"": "FAIL",
+      "Executing \"start-playback-and-capture\"": "FAIL"
+    }
+  },
+  "webaudio/the-audio-api/the-mediaelementaudiosourcenode-interface/mediaElementAudioSourceToScriptProcessorTest.html": {
+    "total": 1,
+    "failures": {
+      "Element Source tests completed": "FAIL"
+    }
+  },
+  "webaudio/the-audio-api/the-mediaelementaudiosourcenode-interface/mediaElementAudioSource_volumeChange.html": {
+    "total": 2,
+    "failures": {
+      "createMediaElementSource() output reflects HTMLMediaElement effective volume changes (volume/muted)(src-file)": "FAIL",
+      "createMediaElementSource() output reflects HTMLMediaElement effective volume changes (volume/muted)(src-stream)": "FAIL"
+    }
+  },
+  "webaudio/the-audio-api/the-mediaelementaudiosourcenode-interface/no-cors.https.html": {
+    "total": 7,
+    "failures": {
+      "Executing \"setting-up-graph\"": "FAIL",
+      "Executing \"start-playback-and-capture\"": "FAIL"
+    }
+  },
+  "webaudio/the-audio-api/the-mediaelementaudiosourcenode-interface/setSinkId-with-MediaElementAudioSourceNode.https.html": {
+    "harness": "ERROR",
+    "total": 3,
+    "failures": {
+      "setSinkId fails with NotFoundError on made up deviceid": "NOTRUN",
+      "setSinkId on default audio output should always work": "NOTRUN",
+      "setSinkId() with output device ID exposed by selectAudioOutput() should resolve": "NOTRUN"
+    }
+  },
+  "webaudio/the-audio-api/the-mediastreamaudiodestinationnode-interface/closed-audiocontext-construction.html": {
+    "total": 1,
+    "failures": {
+      "Constructing MediaStreamAudioDestinationNode on a closed AudioContext succeeds": "FAIL"
+    }
+  },
+  "webaudio/the-audio-api/the-mediastreamaudiodestinationnode-interface/ctor-mediastreamaudiodestination.html": {
+    "total": 4,
+    "failures": {
+      "MediaStreamAudioDestinationNode applies channelCount from options": "FAIL",
+      "MediaStreamAudioDestinationNode: default constructor behavior": "FAIL",
+      "MediaStreamAudioDestinationNode: invalid constructor cases": "FAIL"
+    }
+  },
+  "webaudio/the-audio-api/the-mediastreamaudiosourcenode-interface/mediastreamaudiosourcenode-ctor.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "webaudio/the-audio-api/the-mediastreamaudiosourcenode-interface/mediastreamaudiosourcenode-from-context-with-different-rate.https.html": {
+    "total": 74,
+    "failures": {
+      "Test closing one AudioContext stops only it (cloned tracks, MediaStreamAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
+      "Test closing one AudioContext stops only it (cloned tracks, MediaStreamAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
+      "Test closing one AudioContext stops only it (cloned tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
+      "Test closing one AudioContext stops only it (cloned tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
+      "Test closing one AudioContext stops only it (shared tracks, MediaStreamAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
+      "Test closing one AudioContext stops only it (shared tracks, MediaStreamAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
+      "Test closing one AudioContext stops only it (shared tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
+      "Test closing one AudioContext stops only it (shared tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
+      "Test closing the input AudioContext silences all detectors (cloned tracks, MediaStreamAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
+      "Test closing the input AudioContext silences all detectors (cloned tracks, MediaStreamAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
+      "Test closing the input AudioContext silences all detectors (cloned tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
+      "Test closing the input AudioContext silences all detectors (cloned tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
+      "Test closing the input AudioContext silences all detectors (shared tracks, MediaStreamAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
+      "Test closing the input AudioContext silences all detectors (shared tracks, MediaStreamAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
+      "Test closing the input AudioContext silences all detectors (shared tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
+      "Test closing the input AudioContext silences all detectors (shared tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
+      "Test disabling one MediaStream's tracks silences all detectors (shared tracks, MediaStreamAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
+      "Test disabling one MediaStream's tracks silences all detectors (shared tracks, MediaStreamAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
+      "Test disabling one MediaStream's tracks silences all detectors (shared tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
+      "Test disabling one MediaStream's tracks silences all detectors (shared tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
+      "Test disabling one MediaStream's tracks silences only its detector (cloned tracks, MediaStreamAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
+      "Test disabling one MediaStream's tracks silences only its detector (cloned tracks, MediaStreamAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
+      "Test disabling one MediaStream's tracks silences only its detector (cloned tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
+      "Test disabling one MediaStream's tracks silences only its detector (cloned tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
+      "Test disconnecting one source node silences only it (cloned tracks, MediaStreamAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
+      "Test disconnecting one source node silences only it (cloned tracks, MediaStreamAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
+      "Test disconnecting one source node silences only it (cloned tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
+      "Test disconnecting one source node silences only it (cloned tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
+      "Test disconnecting one source node silences only it (shared tracks, MediaStreamAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
+      "Test disconnecting one source node silences only it (shared tracks, MediaStreamAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
+      "Test disconnecting one source node silences only it (shared tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
+      "Test disconnecting one source node silences only it (shared tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
+      "Test removing tracks from one MediaStream does not silence any detector (cloned tracks, MediaStreamAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
+      "Test removing tracks from one MediaStream does not silence any detector (cloned tracks, MediaStreamAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
+      "Test removing tracks from one MediaStream does not silence any detector (cloned tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
+      "Test removing tracks from one MediaStream does not silence any detector (cloned tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
+      "Test removing tracks from one MediaStream does not silence any detector (shared tracks, MediaStreamAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
+      "Test removing tracks from one MediaStream does not silence any detector (shared tracks, MediaStreamAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
+      "Test removing tracks from one MediaStream does not silence any detector (shared tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
+      "Test removing tracks from one MediaStream does not silence any detector (shared tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
+      "Test removing tracks from one MediaStream does not silence any detector when destination rates are the same (cloned tracks, MediaStreamAudioSourceNode@32000, MediaStreamAudioSourceNode@32000)": "FAIL",
+      "Test removing tracks from one MediaStream does not silence any detector when destination rates are the same (shared tracks, MediaStreamAudioSourceNode@32000, MediaStreamAudioSourceNode@32000)": "FAIL",
+      "Test stopping one MediaStream's tracks silences all detectors (shared tracks, MediaStreamAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
+      "Test stopping one MediaStream's tracks silences all detectors (shared tracks, MediaStreamAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
+      "Test stopping one MediaStream's tracks silences all detectors (shared tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
+      "Test stopping one MediaStream's tracks silences all detectors (shared tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
+      "Test stopping one MediaStream's tracks silences only its detector (cloned tracks, MediaStreamAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
+      "Test stopping one MediaStream's tracks silences only its detector (cloned tracks, MediaStreamAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
+      "Test stopping one MediaStream's tracks silences only its detector (cloned tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
+      "Test stopping one MediaStream's tracks silences only its detector (cloned tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
+      "Test stopping the input MediaStream's tracks silences all detectors (shared tracks, MediaStreamAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
+      "Test stopping the input MediaStream's tracks silences all detectors (shared tracks, MediaStreamAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
+      "Test stopping the input MediaStream's tracks silences all detectors (shared tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
+      "Test stopping the input MediaStream's tracks silences all detectors (shared tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
+      "Test stopping the input MediaStream's tracks silences nothing (cloned tracks, MediaStreamAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
+      "Test stopping the input MediaStream's tracks silences nothing (cloned tracks, MediaStreamAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
+      "Test stopping the input MediaStream's tracks silences nothing (cloned tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
+      "Test stopping the input MediaStream's tracks silences nothing (cloned tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
+      "Test suspending one AudioContext silences only it (cloned tracks, MediaStreamAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
+      "Test suspending one AudioContext silences only it (cloned tracks, MediaStreamAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
+      "Test suspending one AudioContext silences only it (cloned tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
+      "Test suspending one AudioContext silences only it (cloned tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
+      "Test suspending one AudioContext silences only it (shared tracks, MediaStreamAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
+      "Test suspending one AudioContext silences only it (shared tracks, MediaStreamAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
+      "Test suspending one AudioContext silences only it (shared tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
+      "Test suspending one AudioContext silences only it (shared tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
+      "Test suspending the input AudioContext silences all detectors (cloned tracks, MediaStreamAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
+      "Test suspending the input AudioContext silences all detectors (cloned tracks, MediaStreamAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
+      "Test suspending the input AudioContext silences all detectors (cloned tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
+      "Test suspending the input AudioContext silences all detectors (cloned tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
+      "Test suspending the input AudioContext silences all detectors (shared tracks, MediaStreamAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
+      "Test suspending the input AudioContext silences all detectors (shared tracks, MediaStreamAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL",
+      "Test suspending the input AudioContext silences all detectors (shared tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamAudioSourceNode@44100, MediaStreamAudioSourceNode@96000)": "FAIL",
+      "Test suspending the input AudioContext silences all detectors (shared tracks, MediaStreamTrackAudioSourceNode@32000, MediaStreamTrackAudioSourceNode@44100, MediaStreamTrackAudioSourceNode@96000)": "FAIL"
+    }
+  },
+  "webaudio/the-audio-api/the-mediastreamaudiosourcenode-interface/mediastreamaudiosourcenode-routing.html": {
+    "total": 1,
+    "failures": {
+      "MediaStreamAudioSourceNode captures the right track.": "FAIL"
+    }
+  },
+  "webaudio/the-audio-api/the-offlineaudiocontext-interface/ctor-offlineaudiocontext.html": {
+    "total": 45
+  },
+  "webaudio/the-audio-api/the-offlineaudiocontext-interface/current-time-block-size.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-offlineaudiocontext-interface/decodeAudioData-oversized-resample.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-offlineaudiocontext-interface/offlineaudiocontext-close.html": {
+    "total": 5
+  },
+  "webaudio/the-audio-api/the-offlineaudiocontext-interface/offlineaudiocontext-detached-execution-context.html": {
+    "total": 7
+  },
+  "webaudio/the-audio-api/the-offlineaudiocontext-interface/offlineaudiocontext-incremental-rendering-data-integrity.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-offlineaudiocontext-interface/offlineaudiocontext-incremental-rendering.html": {
+    "total": 6
+  },
+  "webaudio/the-audio-api/the-offlineaudiocontext-interface/offlineaudiocontext-rendersizehint.html": {
+    "total": 17
+  },
+  "webaudio/the-audio-api/the-offlineaudiocontext-interface/offlineaudiocontext-suspend-rendersizehint.https.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-offlineaudiocontext-interface/startrendering-after-discard.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-oscillatornode-interface/ctor-oscillator.html": {
+    "total": 62
+  },
+  "webaudio/the-audio-api/the-oscillatornode-interface/detune-limiting.html": {
+    "total": 2
+  },
+  "webaudio/the-audio-api/the-oscillatornode-interface/detune-overflow.html": {
+    "total": 7
+  },
+  "webaudio/the-audio-api/the-oscillatornode-interface/osc-basic-waveform.html": {
+    "total": 33
+  },
+  "webaudio/the-audio-api/the-oscillatornode-interface/sub-sample-start.html": {
+    "total": 10
+  },
+  "webaudio/the-audio-api/the-pannernode-interface/automation-changes.html": {
+    "total": 3
+  },
+  "webaudio/the-audio-api/the-pannernode-interface/ctor-panner.html": {
+    "total": 125
+  },
+  "webaudio/the-audio-api/the-pannernode-interface/distance-exponential.html": {
+    "total": 108
+  },
+  "webaudio/the-audio-api/the-pannernode-interface/distance-inverse.html": {
+    "total": 108
+  },
+  "webaudio/the-audio-api/the-pannernode-interface/distance-linear.html": {
+    "total": 108
+  },
+  "webaudio/the-audio-api/the-pannernode-interface/offline-hrtf-active-immediately.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-pannernode-interface/panner-automation-basic.html": {
+    "total": 147
+  },
+  "webaudio/the-audio-api/the-pannernode-interface/panner-automation-equalpower-stereo.html": {
+    "total": 10
+  },
+  "webaudio/the-audio-api/the-pannernode-interface/panner-automation-position.html": {
+    "total": 43
+  },
+  "webaudio/the-audio-api/the-pannernode-interface/panner-azimuth.html": {
+    "total": 8
+  },
+  "webaudio/the-audio-api/the-pannernode-interface/panner-distance-clamping.html": {
+    "total": 51
+  },
+  "webaudio/the-audio-api/the-pannernode-interface/panner-equalpower-stereo.html": {
+    "total": 10
+  },
+  "webaudio/the-audio-api/the-pannernode-interface/panner-equalpower.html": {
+    "total": 3
+  },
+  "webaudio/the-audio-api/the-pannernode-interface/panner-hrtf-negative-elevation.html": {
+    "total": 8
+  },
+  "webaudio/the-audio-api/the-pannernode-interface/panner-non-finite-distance-params.html": {
+    "total": 2
+  },
+  "webaudio/the-audio-api/the-pannernode-interface/panner-orientation-cone-gain-changes.html": {
+    "total": 2
+  },
+  "webaudio/the-audio-api/the-pannernode-interface/panner-rolloff-clamping.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-pannernode-interface/pannernode-basic.window.js": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-pannernode-interface/pannernode-setposition-throws.html": {
+    "total": 15
+  },
+  "webaudio/the-audio-api/the-pannernode-interface/test-pannernode-automation.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-periodicwave-interface/createPeriodicWaveInfiniteValuesThrows.html": {
+    "total": 2
+  },
+  "webaudio/the-audio-api/the-periodicwave-interface/periodicWave.html": {
+    "total": 31
+  },
+  "webaudio/the-audio-api/the-scriptprocessornode-interface/scriptprocessor-rendersizehint.https.html": {
+    "total": 5
+  },
+  "webaudio/the-audio-api/the-scriptprocessornode-interface/simple-input-output.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-stereopanner-interface/ctor-stereopanner.html": {
+    "total": 51
+  },
+  "webaudio/the-audio-api/the-stereopanner-interface/no-dezippering.html": {
+    "total": 38
+  },
+  "webaudio/the-audio-api/the-stereopanner-interface/stereopannernode-basic.html": {
+    "total": 15
+  },
+  "webaudio/the-audio-api/the-stereopanner-interface/stereopannernode-panning.html": {
+    "total": 17
+  },
+  "webaudio/the-audio-api/the-waveshapernode-interface/ctor-waveshaper.html": {
+    "total": 54
+  },
+  "webaudio/the-audio-api/the-waveshapernode-interface/curve-tests.html": {
+    "total": 7
+  },
+  "webaudio/the-audio-api/the-waveshapernode-interface/silent-inputs.html": {
+    "total": 3
+  },
+  "webaudio/the-audio-api/the-waveshapernode-interface/waveshaper-copy-curve.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-waveshapernode-interface/waveshaper-limits.html": {
+    "total": 1
+  },
+  "webaudio/the-audio-api/the-waveshapernode-interface/waveshaper-simple.html": {
+    "total": 18
+  },
+  "webaudio/the-audio-api/the-waveshapernode-interface/waveshaper.html": {
+    "total": 1
+  }
+}

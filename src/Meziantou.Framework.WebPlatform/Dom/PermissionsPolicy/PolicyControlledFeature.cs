@@ -46,6 +46,8 @@ internal sealed partial class PolicyControlledFeature
 
     public static PolicyControlledFeature MediaPlaybackWhileNotVisible { get; } = new("media-playback-while-not-visible", isAllowedForAllByDefault: true);
 
+    public static PolicyControlledFeature SpeakerSelection { get; } = new("speaker-selection", isAllowedForAllByDefault: false);
+
     public static PolicyControlledFeature SyncXhr { get; } = new("sync-xhr", isAllowedForAllByDefault: true);
 
     public static PolicyControlledFeature Unload { get; } = new("unload", isAllowedForAllByDefault: true);
@@ -86,7 +88,7 @@ internal sealed partial class PolicyControlledFeature
         new("private-state-token-redemption", isAllowedForAllByDefault: false),
         new("screen-wake-lock", isAllowedForAllByDefault: false),
         new("serial", isAllowedForAllByDefault: false),
-        new("speaker-selection", isAllowedForAllByDefault: false),
+        SpeakerSelection,
         SyncXhr,
         Unload,
         new("usb", isAllowedForAllByDefault: false),

@@ -89,7 +89,7 @@
 | [`service-worker/embed-and-object-are-not-intercepted.https.html`](https://wpt.fyi/results/service-workers/service-worker/embed-and-object-are-not-intercepted.https.html) | Pass | 8 / 8 |  |  |
 | [`service-worker/extendable-event-async-waituntil.https.html`](https://wpt.fyi/results/service-workers/service-worker/extendable-event-async-waituntil.https.html) | Pass | 14 / 14 |  |  |
 | [`service-worker/extendable-event-waituntil.https.html`](https://wpt.fyi/results/service-workers/service-worker/extendable-event-waituntil.https.html) | Pass | 6 / 6 |  |  |
-| [`service-worker/fetch-audio-tainting.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-audio-tainting.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Web Audio (`AudioContext`) |
+| [`service-worker/fetch-audio-tainting.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-audio-tainting.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `MediaElementAudioSourceNode` (`createMediaElementSource()`), which the test uses to check that the audio of the element is tainted |
 | [`service-worker/fetch-canvas-tainting-double-write.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-canvas-tainting-double-write.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/fetch-canvas-tainting-image-cache.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-canvas-tainting-image-cache.https.html) | Pass | 40 / 40 |  |  |
 | [`service-worker/fetch-canvas-tainting-image.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-canvas-tainting-image.https.html) | Pass | 40 / 40 |  |  |

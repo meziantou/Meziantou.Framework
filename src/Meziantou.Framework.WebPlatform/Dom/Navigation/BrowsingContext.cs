@@ -3115,6 +3115,9 @@ public sealed partial class BrowsingContext : IDisposable
         // document are terminated
         document.TerminateWorklets();
 
+        // The realtime audio contexts of the document are closed
+        document.CloseAudioContexts();
+
         // https://w3c.github.io/FileAPI/#lifeTime: the blob URLs created by the document are revoked
         document.BrowsingContext?.BlobUrls.RemoveEntries(document);
 

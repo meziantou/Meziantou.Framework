@@ -82,7 +82,10 @@ internal sealed class BarcodeTools
     /// <returns>The barcodes found, with the file they were found in.</returns>
     public async Task<IReadOnlyList<ZXingResult>> ReadWithZXingAsync(IReadOnlyCollection<string> paths)
     {
-        var result = await RunAsync(ZXingReaderPath, ["-json", .. paths], XunitCancellationToken).ConfigureAwait(false);
+        // ZXingReader writes the file path into the JSON without escaping it, so a Windows path with backslashes is
+        // invalid JSON. Windows accepts forward slashes, and the paths of the results map back to the given ones.
+        var arguments = paths.ToDictionary(path => path.Replace('\\', '/'), path => path, StringComparer.Ordinal);
+        var result = await RunAsync(ZXingReaderPath, ["-json", .. arguments.Keys], XunitCancellationToken).ConfigureAwait(false);
         if (result.ExitCode != 0)
             throw new InvalidOperationException($"ZXingReader failed (exit code {result.ExitCode.ToString(CultureInfo.InvariantCulture)}): {result.StandardError}{result.StandardOutput}");
 
@@ -94,8 +97,9 @@ internal sealed class BarcodeTools
 
             using var document = JsonDocument.Parse(line);
             var root = document.RootElement;
+            var filePath = root.GetProperty("FilePath").GetString()!;
             results.Add(new ZXingResult(
-                FilePath: root.GetProperty("FilePath").GetString()!,
+                FilePath: arguments.GetValueOrDefault(filePath, filePath),
                 Text: root.TryGetProperty("Text", out var text) ? text.GetString() ?? "" : "",
                 Bytes: root.TryGetProperty("Bytes", out var bytes) ? Convert.FromHexString((bytes.GetString() ?? "").Replace(" ", "", StringComparison.Ordinal)) : [],
                 Format: root.GetProperty("Format").GetString()!,

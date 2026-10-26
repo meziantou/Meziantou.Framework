@@ -148,7 +148,9 @@ internal sealed class HttpDocumentLoader(HttpClient httpClient) : DocumentLoader
                 var mediaType = response.Content.Headers.ContentType?.MediaType;
                 var isStreamedDocument = request.Mode == RequestMode.Navigate && (mediaType is null || mediaType.Equals("text/html", StringComparison.OrdinalIgnoreCase))
                     && (int)response.StatusCode is not (301 or 302 or 303 or 307 or 308) && !request.Headers.Any(header => header.Key.Equals("Sec-Purpose", StringComparison.OrdinalIgnoreCase));
-                if (isStreamedDocument || (request.Mode != RequestMode.Navigate && mediaType is not null && mediaType.Equals("text/event-stream", StringComparison.OrdinalIgnoreCase)))
+                // The requests whose body is read as it arrives (StreamsResponseBody, e.g. fetch()) are streamed too, except the redirects
+                if (isStreamedDocument || (request.Mode != RequestMode.Navigate && mediaType is not null && mediaType.Equals("text/event-stream", StringComparison.OrdinalIgnoreCase))
+                    || (request.StreamsResponseBody && (int)response.StatusCode is not (301 or 302 or 303 or 307 or 308)))
                 {
                     var streamedResponse = response;
                     response = null;

@@ -1251,11 +1251,15 @@ is a network error. When a script engine is configured, the scripts can send req
 
 `Headers` and `XMLHttpRequest` (with `XMLHttpRequestUpload`) are .NET classes (`Headers`, `XmlHttpRequest`), whose
 events are fired by the tasks of the event loop. `Request`, `Response` and `fetch()` are implemented in JavaScript by the
-WebIDL bindings, because their bodies are streams (see [scripting.md](scripting.md#fetch)). The bodies are not streamed:
-the response is processed once its body is fully received (so an `XMLHttpRequest` fires a single `progress` event; the
-fetch algorithm waits for the end of `DocumentResource.RemainingContentBytes`), except the document of a navigation and
-the event stream of an `EventSource`, and
-the body of a request created from a `ReadableStream` is read before the request is sent. A synchronous
+WebIDL bindings, because their bodies are streams (see [scripting.md](scripting.md#fetch)). `fetch()` resolves once
+the headers are received, and its body is a `ReadableStream` that pulls the chunks of the response as it is read
+(`DocumentRequest.StreamsResponseBody` asks the loader for `DocumentResource.RemainingContentBytes`; one chunk is read
+ahead, so the end or the failure of the body errors or closes the stream without a pending read): a body that fails
+after the response errors the stream, and aborting the fetch or canceling the stream stops reading the body. The other
+responses are processed once their body is fully received (so an `XMLHttpRequest` fires a single `progress` event; the
+fetch algorithm waits for the end of `DocumentResource.RemainingContentBytes`), except the document of a navigation,
+the event stream of an `EventSource` and the media resources, and the body of a request created from a `ReadableStream`
+is read before the request is sent. A synchronous
 `XMLHttpRequest` blocks the event loop until the loader completes (`DocumentRequest.IsSynchronous` is true): the loader
 must not wait for a task of the event loop.
 
@@ -3291,7 +3295,8 @@ await context.WaitUntilIdleAsync();
   scripts by the service worker whose scope matches their URL (the new document or worker is then controlled by it), the
   subresource requests (`fetch()`, `XMLHttpRequest`, scripts, style sheets, images...) by the service worker that
   controls their client. The `Request` and `Response` objects are the ones of the Fetch API (Fetch.js): the body of the
-  response given to `respondWith()` is read before it is given to the client (the bodies are not streamed). The requests
+  response given to `respondWith()` is read as it is given to a `fetch()` of the client (the client that cancels the body,
+  or aborts the fetch, cancels the stream in the service worker), and is read before it is given to the other requests. The requests
   of a service worker are not handled by the service workers, nor the redirects of the subresource requests answered by
   the network; each redirect of a navigation is (its reserved client changes when the origin changes).
 - The request of a `fetch` event has a single URL, the current URL of the request of the client (`event.request.url` is

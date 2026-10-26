@@ -106,8 +106,7 @@
     "total": 12,
     "failures": {
       "Abort reason serialization happens on abort": "NOTRUN",
-      "Service Worker can observe the fetch abort and associated abort reason": "TIMEOUT",
-      "fetch() response body has abort reason": "FAIL"
+      "Service Worker can observe the fetch abort and associated abort reason": "TIMEOUT"
     }
   },
   "fetch/api/basic/accept-header.any.js": {
@@ -141,25 +140,13 @@
     }
   },
   "fetch/api/basic/error-after-response.any.js": {
-    "total": 2,
-    "failures": {
-      "Response reader closed promise should reject after a network error happening after resolving fetch promise": "FAIL",
-      "Response reader read() promise should reject after a network error happening after resolving fetch promise": "FAIL"
-    }
+    "total": 2
   },
   "fetch/api/basic/error-after-response.any.js#dedicatedworker": {
-    "total": 2,
-    "failures": {
-      "Response reader closed promise should reject after a network error happening after resolving fetch promise": "FAIL",
-      "Response reader read() promise should reject after a network error happening after resolving fetch promise": "FAIL"
-    }
+    "total": 2
   },
   "fetch/api/basic/error-after-response.any.js#sharedworker": {
-    "total": 2,
-    "failures": {
-      "Response reader closed promise should reject after a network error happening after resolving fetch promise": "FAIL",
-      "Response reader read() promise should reject after a network error happening after resolving fetch promise": "FAIL"
-    }
+    "total": 2
   },
   "fetch/api/basic/fetch-in-popup-from-iframe.html": {
     "total": 1
@@ -453,25 +440,13 @@
     }
   },
   "fetch/api/basic/stream-response.any.js": {
-    "total": 2,
-    "failures": {
-      "Stream response's body when content-type is not present": "FAIL",
-      "Stream response's body when content-type is present": "FAIL"
-    }
+    "total": 2
   },
   "fetch/api/basic/stream-response.any.js#dedicatedworker": {
-    "total": 2,
-    "failures": {
-      "Stream response's body when content-type is not present": "FAIL",
-      "Stream response's body when content-type is present": "FAIL"
-    }
+    "total": 2
   },
   "fetch/api/basic/stream-response.any.js#sharedworker": {
-    "total": 2,
-    "failures": {
-      "Stream response's body when content-type is not present": "FAIL",
-      "Stream response's body when content-type is present": "FAIL"
-    }
+    "total": 2
   },
   "fetch/api/basic/stream-safe-creation.any.js": {
     "total": 63

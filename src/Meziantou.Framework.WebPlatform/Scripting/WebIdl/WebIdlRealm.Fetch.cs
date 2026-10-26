@@ -272,6 +272,11 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             },
         };
 
+        // The body of the response is a ReadableStream that is read as the body arrives, except when the complete body is
+        // checked: the integrity metadata, and the hashes of the scripts reported to the content security policies (the
+        // request of a fetch event fetched again by its service worker keeps its destination)
+        request.StreamsBody = request.Integrity.Length == 0 && request.Destination is not (RequestDestination.Script or RequestDestination.PaintWorklet or RequestDestination.Worker or RequestDestination.SharedWorker or RequestDestination.ServiceWorker);
+
         // The request of a fetch event fetched again by its service worker: the redirects of a navigation, and its cookies
         if (Adapter.Get(serialized, Key("redirectChain")) is var redirectChain && Adapter.IsObject(redirectChain))
         {
@@ -298,10 +303,33 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         var adapter = Adapter;
 
         // The fetch is aborted with the document (https://fetch.spec.whatwg.org/#concept-fetch-group), unless it is a keepalive
-        // request: the response is an aborted network error, and the response of the loader is ignored
+        // request: the response is an aborted network error, and the response of the loader is ignored. A body that is read
+        // as it arrives is aborted too: its stream is errored with an "AbortError" DOMException.
         var done = false;
         var abortedByFetchGroup = false;
+        var finished = false;
+        FetchBodyReader? bodyReader = null;
+        Action? bodyEnded = null;
         IDisposable? fetchGroupRecord = null;
+
+        // The fetch is done (https://fetch.spec.whatwg.org/#done-flag): its response is received and its body is read (or
+        // canceled). The controller is not disposed while a chunk may still be read with its token.
+        void Finish(bool disposeController)
+        {
+            if (finished)
+                return;
+
+            finished = true;
+            fetchGroupRecord?.Dispose();
+            if (disposeController)
+            {
+                controller.Dispose();
+
+                // The end of a body read as it arrives
+                bodyEnded?.Invoke();
+            }
+        }
+
         void Complete(FetchResponse response)
         {
             // The tasks queued before the abort are discarded
@@ -309,14 +337,20 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
                 return;
 
             done = true;
-            fetchGroupRecord?.Dispose();
-            adapter.Call(callback, adapter.Undefined, [FromFetchResponse(response)]);
+            bodyReader = finished || response.IsNetworkError ? null : FetchBodyReader.Create(response, controller.Token);
+            if (bodyReader is null)
+            {
+                Finish(disposeController: true);
+            }
+
+            adapter.Call(callback, adapter.Undefined, [FromFetchResponse(response, bodyReader is null ? null : CreateBodyReader(bodyReader, document, () => controller.IsCancellationRequested, Finish, controller.Cancel))]);
         }
 
         fetchGroupRecord = document.FetchGroup.Add(() =>
         {
             abortedByFetchGroup = true;
             controller.Cancel();
+            bodyReader?.Cancel();
             document.QueueGlobalTask(() => Complete(FetchResponse.NetworkError(aborted: true)));
         }, request);
 
@@ -325,31 +359,107 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         _ = task.ContinueWith(
             completed => document.QueueGlobalTask(() =>
             {
-                controller.Dispose();
-                if (!done && !abortedByFetchGroup)
+                var report = !done && !abortedByFetchGroup;
+                Complete(completed.Result);
+
+                // The timing of a body read as it arrives is reported at the end of the body (https://fetch.spec.whatwg.org/#fetch-finale)
+                if (report && bodyReader is null)
                 {
                     timing?.Report(completed.Result);
                 }
-
-                Complete(completed.Result);
+                else if (report && timing is not null)
+                {
+                    var response = completed.Result;
+                    var reader = bodyReader;
+                    bodyEnded = () => timing.ReportEndOfBody(response, reader!.Length);
+                }
             }),
             CancellationToken.None,
             TaskContinuationOptions.ExecuteSynchronously,
             TaskScheduler.Default);
 
+        // https://fetch.spec.whatwg.org/#fetch-controller-abort: the fetch, or the reading of its body, is aborted
         return adapter.CreateFunction("abort", 0, (_, _) =>
         {
-            if (!task.IsCompleted)
+            if (!finished)
             {
                 controller.Cancel();
+                bodyReader?.Cancel();
+                if (done)
+                {
+                    Finish(disposeController: false);
+                }
             }
 
             return adapter.Undefined;
         });
     }
 
-    /// <summary>Converts a response of the fetch algorithm to the object read by Fetch.js.</summary>
-    private TValue FromFetchResponse(FetchResponse response)
+    /// <summary>
+    /// The object from which Fetch.js pulls the chunks of a body that arrives over time (see <see cref="FetchBodyReader"/>):
+    /// <c>read(callback)</c> calls the callback from a task with the next chunk (a <c>Uint8Array</c>), with null at the end of
+    /// the body, or with <c>(undefined, error, aborted)</c> when the body fails; <c>cancel()</c> stops reading the body.
+    /// </summary>
+    private TValue CreateBodyReader(FetchBodyReader reader, Document document, Func<bool> isAborted, Action<bool> finish, Action terminate)
+    {
+        var adapter = Adapter;
+        var result = CreateObject();
+        SetMember(result, "read", adapter.CreateFunction("read", 1, (thisValue, args) =>
+        {
+            var callback = args[0];
+            Task<ReadOnlyMemory<byte>?> read;
+            try
+            {
+                read = reader.ReadAsync();
+            }
+#pragma warning disable CA1031 // A failure of the body errors the stream
+            catch (Exception ex)
+#pragma warning restore CA1031
+            {
+                read = Task.FromException<ReadOnlyMemory<byte>?>(ex);
+            }
+
+            // The chunk is given from a task, even when it is already received (the body is read in parallel)
+            var eventLoop = document.EnvironmentEventLoop;
+            eventLoop?.BeginOperation();
+            _ = read.ContinueWith(
+                completed =>
+                {
+                    document.QueueGlobalTask(() =>
+                    {
+                        if (completed.IsCompletedSuccessfully && completed.Result is { } chunk)
+                        {
+                            adapter.Call(callback, adapter.Undefined, [FromBuffer(JsBufferKind.Uint8Array, chunk.ToArray())]);
+                            return;
+                        }
+
+                        var aborted = isAborted();
+                        finish(completed.IsCompletedSuccessfully);
+                        adapter.Call(callback, adapter.Undefined, completed.IsCompletedSuccessfully ? [adapter.Null] : [adapter.Undefined, adapter.FromBoolean(true), adapter.FromBoolean(aborted)]);
+                    });
+                    eventLoop?.EndOperation();
+                },
+                CancellationToken.None,
+                TaskContinuationOptions.ExecuteSynchronously,
+                TaskScheduler.Default);
+            return adapter.Undefined;
+        }));
+        // https://fetch.spec.whatwg.org/#concept-fetch: the cancel algorithm of the stream of the body terminates the fetch
+        SetMember(result, "cancel", adapter.CreateFunction("cancel", 0, (_, _) =>
+        {
+            terminate();
+            reader.Cancel();
+            finish(false);
+            return adapter.Undefined;
+        }));
+        return result;
+    }
+
+    /// <summary>
+    /// Converts a response of the fetch algorithm to the object read by Fetch.js. The chunks of a body that arrives over time
+    /// are pulled from <paramref name="bodyReader"/> (see <see cref="CreateBodyReader"/>).
+    /// </summary>
+    private TValue FromFetchResponse(FetchResponse response, TValue? bodyReader = null)
     {
         var result = CreateObject();
         SetMember(result, "type", Adapter.FromString(response.Type switch
@@ -365,7 +475,17 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         SetMember(result, "status", Adapter.FromNumber(response.Status));
         SetMember(result, "statusText", Adapter.FromString(response.StatusMessage));
         SetMember(result, "headers", FromHeaderList(response.HeaderList));
-        SetMember(result, "body", response.Body is { } body ? FromBuffer(JsBufferKind.Uint8Array, body) : Adapter.Null);
+        if (bodyReader is not null)
+        {
+            SetMember(result, "body", Adapter.Null);
+            SetMember(result, "bodyReader", bodyReader);
+        }
+        else
+        {
+            SetMember(result, "body", response.Body is { } body ? FromBuffer(JsBufferKind.Uint8Array, body) : Adapter.Null);
+            SetMember(result, "bodyReader", Adapter.Null);
+        }
+
         SetMember(result, "urlList", CreateArray(response.UrlList.Select(url => Adapter.FromString(url.Serialize())).ToArray()));
 
         // The data of the internal response of an opaque response used by the cross-origin resource policy check of the Cache API

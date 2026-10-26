@@ -463,10 +463,7 @@
     }
   },
   "service-workers/service-worker/fetch-error.https.html": {
-    "total": 3,
-    "failures": {
-      "Make sure a load that makes progress does not time out": "FAIL"
-    }
+    "total": 3
   },
   "service-workers/service-worker/fetch-event-add-async.https.html": {
     "total": 2
@@ -502,31 +499,16 @@
     "total": 11
   },
   "service-workers/service-worker/fetch-event-respond-with-partial-stream.https.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "respondWith() streams data to an intercepted fetch()": "TIMEOUT"
-    }
+    "total": 1
   },
   "service-workers/service-worker/fetch-event-respond-with-readable-stream-chunk.https.html": {
     "total": 1
   },
   "service-workers/service-worker/fetch-event-respond-with-readable-stream.https.html": {
-    "harness": "TIMEOUT",
-    "total": 10,
-    "failures": {
-      "Abort in the page should be observable in the service worker with empty stream": "NOTRUN",
-      "Abort in the page should be observable in the service worker with nonempty stream": "NOTRUN",
-      "Cancellation in the page should be observable in the service worker with empty stream": "NOTRUN",
-      "Cancellation in the page should be observable in the service worker with nonempty stream": "TIMEOUT"
-    }
+    "total": 10
   },
   "service-workers/service-worker/fetch-event-respond-with-response-body-with-invalid-chunk.https.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "Response with a ReadableStream having non-Uint8Array chunks should be transferred as errored": "TIMEOUT"
-    }
+    "total": 1
   },
   "service-workers/service-worker/fetch-event-respond-with-stops-propagation.https.html": {
     "total": 1

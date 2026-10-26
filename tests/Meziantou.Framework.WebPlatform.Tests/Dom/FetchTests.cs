@@ -1,4 +1,5 @@
 using System.Text;
+using System.Threading.Channels;
 using Meziantou.Framework.WebPlatform.Dom;
 using Meziantou.Framework.WebPlatform.Scripting;
 using Meziantou.Framework.WebPlatform.Tests.Scripting;
@@ -33,6 +34,44 @@ public sealed class FetchTests : IDisposable
         Assert.Empty(_errors);
         return document;
     }
+
+    /// <summary>Runs the tasks of the event loop until the condition is true (a body read as it arrives is not awaited by RunUntilIdle).</summary>
+    private async Task WaitUntilAsync(Func<bool> condition, Func<string> describe)
+    {
+        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(30);
+        while (true)
+        {
+            _contexts.EventLoop.RunUntilIdle();
+            if (condition())
+                return;
+
+            if (DateTime.UtcNow > deadline)
+                throw new TimeoutException(describe());
+
+            await Task.Delay(5, TestContext.Current.CancellationToken);
+        }
+    }
+
+    private const string StreamLogScript = """
+        const log = [];
+        const show = () => document.title = log.join('|');
+        const decoder = new TextDecoder();
+        async function readAll(response) {
+          const reader = response.body.getReader();
+          try {
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) { log.push('done'); break; }
+              log.push(decoder.decode(value));
+              show();
+            }
+          } catch (e) {
+            log.push(e.name);
+          }
+
+          show();
+        }
+        """;
 
     [Fact]
     public void Headers_CombinesTheValuesAndSortsTheNames()
@@ -278,6 +317,114 @@ public sealed class FetchTests : IDisposable
     }
 
     [Fact]
+    public async Task Fetch_StreamsTheResponseBody()
+    {
+        var chunks = Channel.CreateUnbounded<ReadOnlyMemory<byte>>();
+        _loader.Responses["https://example.com/stream"] = new DocumentResource("a"u8.ToArray()) { Headers = [new("Content-Type", "text/plain")], RemainingContentBytes = chunks.Reader.ReadAllAsync() };
+        var document = Load($$"""
+            <script>
+              {{StreamLogScript}}
+              fetch('stream').then(response => { log.push('response:' + response.status); show(); return readAll(response); });
+            </script>
+            """);
+
+        // fetch() resolves once the headers are received, and the chunks are read as they arrive
+        await WaitUntilAsync(() => document.Title == "response:200|a", () => document.Title);
+        Assert.True(Assert.Single(_loader.Requests, request => request.Url == "https://example.com/stream").StreamsResponseBody);
+
+        chunks.Writer.TryWrite("b"u8.ToArray());
+        await WaitUntilAsync(() => document.Title == "response:200|a|b", () => document.Title);
+
+        chunks.Writer.TryWrite(ReadOnlyMemory<byte>.Empty);
+        chunks.Writer.TryWrite("c"u8.ToArray());
+        chunks.Writer.TryComplete();
+        await WaitUntilAsync(() => document.Title.EndsWith("|done", StringComparison.Ordinal), () => document.Title);
+        Assert.Equal("response:200|a|b|c|done", document.Title);
+    }
+
+    [Fact]
+    public async Task Fetch_BodyFailingAfterTheResponse_ErrorsTheStream()
+    {
+        var chunks = Channel.CreateUnbounded<ReadOnlyMemory<byte>>();
+        _loader.Responses["https://example.com/stream"] = new DocumentResource("a"u8.ToArray()) { RemainingContentBytes = chunks.Reader.ReadAllAsync() };
+        var document = Load($$"""
+            <script>
+              {{StreamLogScript}}
+              fetch('stream').then(response => readAll(response), e => { log.push('rejected:' + e.name); show(); });
+            </script>
+            """);
+
+        await WaitUntilAsync(() => document.Title == "a", () => document.Title);
+        chunks.Writer.TryComplete(new IOException("The chunked encoding is invalid"));
+        await WaitUntilAsync(() => document.Title != "a", () => document.Title);
+        Assert.Equal("a|TypeError", document.Title);
+    }
+
+    [Fact]
+    public async Task Fetch_AbortAfterTheResponse_StopsReadingTheBody()
+    {
+        var body = new TrackedBody();
+        _loader.Responses["https://example.com/stream"] = new DocumentResource("a"u8.ToArray()) { RemainingContentBytes = body };
+        var document = Load($$"""
+            <script>
+              {{StreamLogScript}}
+              const controller = new AbortController();
+              fetch('stream', { signal: controller.signal }).then(response => {
+                readAll(response);
+                window.abortFetch = () => controller.abort();
+              });
+            </script>
+            """);
+
+        await WaitUntilAsync(() => document.Title == "a" && body.IsReading, () => document.Title);
+        TestScriptEngines.Evaluate(_engine, document.DefaultView!, "abortFetch()");
+        await WaitUntilAsync(() => document.Title == "a|AbortError" && body.IsDisposed, () => document.Title + ":" + body.IsDisposed);
+        Assert.True(body.WasCanceled);
+    }
+
+    [Fact]
+    public async Task Fetch_CancelingTheBody_StopsReadingTheBody()
+    {
+        var body = new TrackedBody();
+        _loader.Responses["https://example.com/stream"] = new DocumentResource("a"u8.ToArray()) { RemainingContentBytes = body };
+        var document = Load("""
+            <script>
+              fetch('stream').then(async response => {
+                const reader = response.body.getReader();
+                const { value } = await reader.read();
+                await reader.cancel();
+                document.title = new TextDecoder().decode(value) + ':canceled';
+              });
+            </script>
+            """);
+
+        await WaitUntilAsync(() => document.Title == "a:canceled" && body.IsDisposed, () => document.Title + ":" + body.IsDisposed);
+    }
+
+    [Fact]
+    public async Task HttpDocumentLoader_StreamsTheBodyOfFetch()
+    {
+        using var handler = new StubHandler(_ => new System.Net.Http.HttpResponseMessage(System.Net.HttpStatusCode.OK) { Content = new System.Net.Http.StringContent("body") });
+        using var client = new System.Net.Http.HttpClient(handler);
+        var resource = await DocumentLoader.Create(client).LoadAsync(new DocumentRequest("https://example.com/stream")
+        {
+            Destination = RequestDestination.Empty,
+            FollowRedirects = false,
+            StreamsResponseBody = true,
+        }, TestContext.Current.CancellationToken);
+
+        Assert.NotNull(resource);
+        Assert.NotNull(resource.RemainingContentBytes);
+        var body = new List<byte>();
+        await foreach (var chunk in resource.RemainingContentBytes.WithCancellation(TestContext.Current.CancellationToken))
+        {
+            body.AddRange(chunk.ToArray());
+        }
+
+        Assert.Equal("body", Encoding.UTF8.GetString([.. body]));
+    }
+
+    [Fact]
     public async Task HttpDocumentLoader_DoesNotFollowTheRedirectsOfFetch()
     {
         var requests = new List<string>();
@@ -314,6 +461,35 @@ public sealed class FetchTests : IDisposable
         {
             Requests.Add(request);
             return ValueTask.FromResult(Responses.GetValueOrDefault(request.Url));
+        }
+    }
+
+    /// <summary>A body whose next chunk never arrives: records whether it is being read, canceled and disposed.</summary>
+    private sealed class TrackedBody : IAsyncEnumerable<ReadOnlyMemory<byte>>
+    {
+        private volatile bool _isReading;
+        private volatile bool _wasCanceled;
+        private volatile bool _isDisposed;
+
+        public bool IsReading => _isReading;
+
+        public bool WasCanceled => _wasCanceled;
+
+        public bool IsDisposed => _isDisposed;
+
+        public async IAsyncEnumerator<ReadOnlyMemory<byte>> GetAsyncEnumerator(CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                _isReading = true;
+                await Task.Delay(Timeout.Infinite, cancellationToken);
+                yield break;
+            }
+            finally
+            {
+                _wasCanceled = cancellationToken.IsCancellationRequested;
+                _isDisposed = true;
+            }
         }
     }
 

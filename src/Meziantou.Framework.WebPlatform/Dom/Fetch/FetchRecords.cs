@@ -322,9 +322,9 @@ internal sealed partial class FetchRequest
 
     /// <summary>
     /// Whether the body of the response is interpreted as its bytes arrive (an event source, the resource of a media element
-    /// or of a track element): the response is returned when its headers are received, with the rest of its body
-    /// (<see cref="DocumentResource.RemainingContentBytes"/>). The navigations do it too; the other requests get the
-    /// complete body.
+    /// or of a track element, the <c>ReadableStream</c> of the body of <c>fetch()</c>): the response is returned when its
+    /// headers are received, with the rest of its body (<see cref="DocumentResource.RemainingContentBytes"/>, see
+    /// <see cref="FetchBodyReader"/>). The navigations do it too; the other requests get the complete body.
     /// </summary>
     public bool StreamsBody { get; set; }
 

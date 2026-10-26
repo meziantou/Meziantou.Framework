@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 293 | 407 | 3 | 73% |
+| [Stable](#stable-tests) | 295 | 407 | 3 | 73% |
 | [Tentative](#tentative-tests) | 12 | 77 | 1 | 16% |
 | [Reftests](#reftests) | 9 | 11 | 0 | 82% |
-| **All** | **314** | **495** | **4** | **64%** |
+| **All** | **316** | **495** | **4** | **64%** |
 
 ## Stable tests
 
@@ -20,11 +20,11 @@
 | [`api/abort/general.any.js`](https://wpt.fyi/results/fetch/api/abort/general.any.js) | Timeout | 144 / 183 | TEST RUNNER | the never-ending response of `infinite-slow-response.py` never delivers its headers, so `fetch()` does not resolve and the abort is never observed |
 | [`api/abort/keepalive.html`](https://wpt.fyi/results/fetch/api/abort/keepalive.html) | Timeout | 0 / 2 | TEST RUNNER | the never-ending response of `infinite-slow-response.py` never delivers its headers, so `fetch()` does not resolve and the abort is never observed |
 | [`api/abort/request.any.js`](https://wpt.fyi/results/fetch/api/abort/request.any.js) | Fail | 48 / 54 | BUG | an empty `FormData` body is serialized as an empty body (no `--boundary--` close delimiter) and the multipart parser rejects a body without part, so `formData()` throws |
-| [`api/abort/serviceworker-intercepted.https.html`](https://wpt.fyi/results/fetch/api/abort/serviceworker-intercepted.https.html) | Timeout | 9 / 12 | NOT IMPLEMENTED | the bodies are not streamed: aborting a fetch intercepted by a service worker does not abort the body being read |
+| [`api/abort/serviceworker-intercepted.https.html`](https://wpt.fyi/results/fetch/api/abort/serviceworker-intercepted.https.html) | Timeout | 10 / 12 | BUG | aborting a fetch while its fetch event is handled does not abort `event.request.signal` in the service worker, so `sw-intercept-abort.js` never responds |
 | [`api/basic/accept-header.any.js`](https://wpt.fyi/results/fetch/api/basic/accept-header.any.js) | Pass | 12 / 12 |  |  |
 | [`api/basic/block-mime-as-script.html`](https://wpt.fyi/results/fetch/api/basic/block-mime-as-script.html) | Pass | 22 / 22 |  |  |
 | [`api/basic/conditional-get.any.js`](https://wpt.fyi/results/fetch/api/basic/conditional-get.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | the HTTP cache (the second request is not revalidated with `If-None-Match`) |
-| [`api/basic/error-after-response.any.js`](https://wpt.fyi/results/fetch/api/basic/error-after-response.any.js) | Fail | 0 / 6 | NOT IMPLEMENTED | streamed response bodies (the bad chunked encoding of `bad-chunk-encoding.py` rejects `fetch()` instead of erroring the body stream) |
+| [`api/basic/error-after-response.any.js`](https://wpt.fyi/results/fetch/api/basic/error-after-response.any.js) | Pass | 6 / 6 |  |  |
 | [`api/basic/fetch-in-popup-from-iframe.html`](https://wpt.fyi/results/fetch/api/basic/fetch-in-popup-from-iframe.html) | Pass | 1 / 1 |  |  |
 | [`api/basic/gc.any.js`](https://wpt.fyi/results/fetch/api/basic/gc.any.js) | Pass | 18 / 18 |  |  |
 | [`api/basic/header-value-combining.any.js`](https://wpt.fyi/results/fetch/api/basic/header-value-combining.any.js) | Pass | 18 / 18 |  |  |
@@ -54,7 +54,7 @@
 | [`api/basic/scheme-data.any.js`](https://wpt.fyi/results/fetch/api/basic/scheme-data.any.js) | Pass | 24 / 24 |  |  |
 | [`api/basic/scheme-others.sub.any.js`](https://wpt.fyi/results/fetch/api/basic/scheme-others.sub.any.js) | Pass | 48 / 48 |  |  |
 | [`api/basic/status.h2.any.js`](https://wpt.fyi/results/fetch/api/basic/status.h2.any.js) | Fail | 0 / 14 | TEST RUNNER | the `.h2.` tests are served by the HTTP/1.1 emulation, so `statusText` is the reason phrase (HTTP/2 has none) |
-| [`api/basic/stream-response.any.js`](https://wpt.fyi/results/fetch/api/basic/stream-response.any.js) | Fail | 0 / 6 | NOT IMPLEMENTED | streamed response bodies (the body of `trickle.py` is received at once, in a single chunk) |
+| [`api/basic/stream-response.any.js`](https://wpt.fyi/results/fetch/api/basic/stream-response.any.js) | Pass | 6 / 6 |  |  |
 | [`api/basic/stream-safe-creation.any.js`](https://wpt.fyi/results/fetch/api/basic/stream-safe-creation.any.js) | Pass | 189 / 189 |  |  |
 | [`api/basic/text-utf8.any.js`](https://wpt.fyi/results/fetch/api/basic/text-utf8.any.js) | Pass | 90 / 90 |  |  |
 | [`api/basic/url-parsing.sub.html`](https://wpt.fyi/results/fetch/api/basic/url-parsing.sub.html) | Pass | 9 / 9 |  |  |

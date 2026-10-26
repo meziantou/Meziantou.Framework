@@ -235,7 +235,7 @@ internal static partial class WptPythonHandlers
             response.Delay = TimeSpan.FromSeconds(5.2);
         },
         ["/fetch/api/resources/preflight-unterminated-body.py"] = PreflightUnterminatedBody,
-        ["/fetch/api/resources/bad-chunk-encoding.py"] = (_, response, _) => response.NetworkError = true,
+        ["/fetch/api/resources/bad-chunk-encoding.py"] = FetchBadChunkEncoding,
     };
 
     // xhr/resources/content.py
@@ -374,9 +374,32 @@ internal static partial class WptPythonHandlers
             response.Set("Content-type", "text/plain");
         }
 
-        response.Content = string.Concat(Enumerable.Repeat("TEST_TRICKLE\n", count));
+        // The headers after the delay, then each chunk after the delay, and the end of the body after the last delay
         response.Streamed = true;
-        response.Delay = delay * (count + 2);
+        response.Delay = delay;
+        for (var i = 0; i < count; i++)
+        {
+            response.Chunks.Add((delay, "TEST_TRICKLE\n"u8.ToArray()));
+        }
+
+        response.Chunks.Add((delay, []));
+    }
+
+    // fetch/api/resources/bad-chunk-encoding.py: the headers after the delay, then count valid chunks (each after the delay),
+    // then an invalid chunk
+    private static void FetchBadChunkEncoding(WptHandlerRequest request, WptHandlerResponse response, WptStash stash)
+    {
+        var delay = Milliseconds(request.Get("ms"), 1000);
+        var count = ParseInt(request.Get("count"), 50);
+        response.Streamed = true;
+        response.Delay = delay;
+        for (var i = 0; i < count; i++)
+        {
+            response.Chunks.Add((delay, "TEST_CHUNK"u8.ToArray()));
+        }
+
+        response.Chunks.Add((delay, []));
+        response.ChunksError = true;
     }
 
     // fetch/nosniff/resources/js.py: a script with X-Content-Type-Options: nosniff and the type parameter as its Content-Type

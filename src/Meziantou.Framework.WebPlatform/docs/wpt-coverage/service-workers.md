@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 226 | 283 | 4 | 81% |
+| [Stable](#stable-tests) | 230 | 283 | 4 | 82% |
 | [Tentative](#tentative-tests) | 0 | 11 | 0 | 0% |
 | [Reftests](#reftests) | 1 | 1 | 0 | 100% |
-| **All** | **227** | **295** | **4** | **78%** |
+| **All** | **231** | **295** | **4** | **79%** |
 
 ## Stable tests
 
@@ -99,7 +99,7 @@
 | [`service-worker/fetch-cors-exposed-header-names.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-cors-exposed-header-names.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/fetch-cors-xhr.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-cors-xhr.https.html) | Pass | 41 / 41 |  |  |
 | [`service-worker/fetch-csp.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-csp.https.html) | Fail | 0 / 1 | BUG | the CSP of the document does not block the image redirected by the service worker to a disallowed URL |
-| [`service-worker/fetch-error.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-error.https.html) | Fail | 2 / 3 | NOT IMPLEMENTED | the bodies are not streamed: a response that makes progress is fully read before it is given to the client |
+| [`service-worker/fetch-error.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-error.https.html) | Pass | 3 / 3 |  |  |
 | [`service-worker/fetch-event-add-async.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-event-add-async.https.html) | Pass | 2 / 2 |  |  |
 | [`service-worker/fetch-event-after-navigation-within-page.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-event-after-navigation-within-page.https.html) | Pass | 2 / 2 |  |  |
 | [`service-worker/fetch-event-async-respond-with.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-event-async-respond-with.https.html) | Pass | 4 / 4 |  |  |
@@ -110,10 +110,10 @@
 | [`service-worker/fetch-event-respond-with-argument.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-event-respond-with-argument.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/fetch-event-respond-with-body-loaded-in-chunk.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-event-respond-with-body-loaded-in-chunk.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/fetch-event-respond-with-custom-response.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-event-respond-with-custom-response.https.html) | Pass | 11 / 11 |  |  |
-| [`service-worker/fetch-event-respond-with-partial-stream.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-event-respond-with-partial-stream.https.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | the bodies are not streamed: the body of the response of `respondWith()` is read before it is given to the client |
+| [`service-worker/fetch-event-respond-with-partial-stream.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-event-respond-with-partial-stream.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/fetch-event-respond-with-readable-stream-chunk.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-event-respond-with-readable-stream-chunk.https.html) | Pass | 1 / 1 |  |  |
-| [`service-worker/fetch-event-respond-with-readable-stream.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-event-respond-with-readable-stream.https.html) | Timeout | 6 / 10 | NOT IMPLEMENTED | the bodies are not streamed: the cancellation of the body in the page is not observed by the service worker |
-| [`service-worker/fetch-event-respond-with-response-body-with-invalid-chunk.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-event-respond-with-response-body-with-invalid-chunk.https.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | the bodies are not streamed: an invalid chunk makes the fetch fail instead of erroring the body |
+| [`service-worker/fetch-event-respond-with-readable-stream.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-event-respond-with-readable-stream.https.html) | Pass | 10 / 10 |  |  |
+| [`service-worker/fetch-event-respond-with-response-body-with-invalid-chunk.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-event-respond-with-response-body-with-invalid-chunk.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/fetch-event-respond-with-stops-propagation.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-event-respond-with-stops-propagation.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/fetch-event-throws-after-respond-with.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-event-throws-after-respond-with.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/fetch-event-within-sw.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-event-within-sw.https.html) | Pass | 2 / 2 |  |  |

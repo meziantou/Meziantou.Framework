@@ -552,6 +552,10 @@ internal sealed partial class WptTestRunner
                 yield return data;
             }
 
+            // A body that fails after its chunks (e.g. an invalid chunked encoding)
+            if (response.ChunksError)
+                throw new IOException("The chunked encoding of the body is invalid");
+
             if (repeatAfter is not { } repeatDelay || cancellationToken.IsCancellationRequested)
                 yield break;
 
@@ -807,11 +811,26 @@ internal sealed partial class WptTestRunner
         if (response.Chunks.Count > 0 && !request.IsSynchronous && HeaderList.ExtractMimeType(headers)?.Essence == "text/event-stream")
             return (new DocumentResource(body) { Headers = headers, StatusCode = status, StatusText = response.StatusText ?? WptReasonPhrase(status), RemainingContentBytes = GetChunksAsync(response, response.ChunksRepeatAfter) }, delay, null);
 
+        // The body of fetch() is read as its chunks arrive
+        if (response.Chunks.Count > 0 && isFetch && request.StreamsResponseBody)
+        {
+            return (new DocumentResource(body)
+            {
+                StatusCode = status,
+                StatusText = response.StatusText ?? WptReasonPhrase(status),
+                Headers = response.Streamed ? headers : AddContentLength(headers, body.Length + response.Chunks.Sum(chunk => chunk.Data.Length)),
+                RemainingContentBytes = GetChunksAsync(response, response.ChunksRepeatAfter),
+            }, delay, null);
+        }
+
         foreach (var (chunkDelay, chunk) in response.Chunks)
         {
             delay += chunkDelay;
             body = [.. body, .. chunk];
         }
+
+        if (response.ChunksError)
+            return (null, delay, null);
 
         if (!isFetch)
             return (new DocumentResource(body) { Headers = headers, StatusCode = status }, delay, null);

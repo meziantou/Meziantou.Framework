@@ -4272,6 +4272,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public string? Referrer { get => throw null; init { } }
         public string ReferrerPolicy { get => throw null; init { } }
         public string? SiteForCookies { get => throw null; init { } }
+        public bool StreamsResponseBody { get => throw null; init { } }
         public string? TopLevelOrigin { get => throw null; init { } }
         public string Url { get => throw null; }
         public bool UserActivation { get => throw null; init { } }

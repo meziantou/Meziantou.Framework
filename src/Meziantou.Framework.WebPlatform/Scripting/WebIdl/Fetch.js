@@ -265,6 +265,18 @@
   // A body whose source is bytes
   const bodyFromBytes = (bytes) => createBody(streams.createByteStream(bytes), bytes, bytes.length);
 
+  // The body of a response that arrives over time: its chunks are pulled from the reader of the library (read(callback)
+  // gives the next chunk, null at the end, or (undefined, true, aborted) when the body fails; cancel() stops the reading)
+  const bodyFromReader = (reader) => createBody(streams.createPullByteStream((onChunk, onError) => {
+    reader.read((chunk, failed, aborted) => {
+      if (failed) {
+        onError(aborted ? new DOMException_('The operation was aborted.', 'AbortError') : new TypeError_('Failed to fetch: the body of the response could not be read'));
+      } else {
+        onChunk(chunk);
+      }
+    });
+  }, () => reader.cancel()), null, null);
+
   const utf8Encode = (string) => hooks.utf8Encode(string);
 
   // The kind of an ArrayBufferView: the name of the typed array, 'DataView', or undefined
@@ -965,7 +977,7 @@
           fetched.statusText = response.statusText;
           fetched.requestIncludesCredentials = response.requestIncludesCredentials;
           fetched.crossOriginResourcePolicy = response.crossOriginResourcePolicy;
-          fetched.body = response.body === null ? null : bodyFromBytes(response.body);
+          fetched.body = response.bodyReader !== null ? bodyFromReader(response.bodyReader) : response.body === null ? null : bodyFromBytes(response.body);
           fetched.internal = response.internal;
           fetched.internalHeaders = response.internalHeaders;
           responseObject = createResponseObject(realm, fetched, hooks.createHeaders(response.headers, 'immutable'));
@@ -1167,6 +1179,23 @@
     }
 
     cacheSupport.readBody(record, (bytes) => onResponse(cacheSupport.serializeResponse(record, bytes)), () => onResponse(null));
+  };
+
+  // The response of the value given to respondWith() for a client that reads the body as it arrives: onResponse is called
+  // at once with the response, then the chunks of its body are given to onChunk as they are read, until onEnd or onError.
+  // Returns the function that cancels the reading (the client stops reading the body), or null. The body of an opaque
+  // response, which the client does not read, is read before the response is given.
+  cacheSupport.readFetchEventResponseStreamed = (value, onResponse, onChunk, onEnd, onError) => {
+    const record = getRecord(value, 'Response');
+    if (record === undefined || cacheSupport.isDisturbedOrLocked(record) || record.body === null || record.response.type === 'opaque' || record.response.type === 'opaqueredirect') {
+      cacheSupport.readFetchEventResponse(value, onResponse);
+      return null;
+    }
+
+    const serialized = cacheSupport.serializeResponse(record, null);
+    serialized.streamed = true;
+    onResponse(serialized);
+    return streams.readChunks(record.body.stream, onChunk, onEnd, onError);
   };
 
   const realm = {

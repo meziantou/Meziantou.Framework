@@ -3272,6 +3272,64 @@
     return stream.object;
   }
 
+  // A byte stream whose chunks are pulled from the library (the body of a response of fetch() that arrives over time,
+  // https://fetch.spec.whatwg.org/#concept-body-stream): pull(onChunk, onError) calls onChunk with the next chunk (a
+  // Uint8Array), or with null at the end of the body, or onError with the error of the body; cancel() stops the reading.
+  // As the network receives the body in parallel, the next chunk is read ahead while less than 64 KiB are queued: the end
+  // or the failure of the body is seen without a pending read (e.g. the closed promise of a reader is rejected).
+  function createPullByteStream(pull, cancel) {
+    const readAheadSize = 65536;
+    let stream;
+    let reading = false;
+    let pending = null;
+    const settlePending = () => {
+      if (pending === null) return;
+      const deferred = pending;
+      pending = null;
+      resolvePromise(deferred, undefined);
+    };
+    const canEnqueue = () => stream.state === 'readable' && !stream.controller.closeRequested;
+    const readNext = () => {
+      reading = true;
+      pull((chunk) => {
+        reading = false;
+        if (canEnqueue()) {
+          const controller = stream.controller;
+          try {
+            if (chunk === null) {
+              readableByteStreamControllerClose(controller);
+              const byobRequest = readableByteStreamControllerGetBYOBRequest(controller);
+              if (byobRequest !== null) readableByteStreamControllerRespond(controller, 0);
+            } else {
+              readableByteStreamControllerEnqueue(controller, chunk);
+            }
+          } catch (e) {
+            errorReadableStream(stream, e);
+          }
+        }
+
+        settlePending();
+        if (chunk !== null && canEnqueue() && stream.controller.queueTotalSize < readAheadSize) readNext();
+      }, (e) => {
+        reading = false;
+        errorReadableStream(stream, e);
+        settlePending();
+      });
+    };
+    const pullAlgorithm = () => {
+      pending = newPromise();
+      const promise = pending.promise;
+      if (!reading) readNext();
+      return promise;
+    };
+    const cancelAlgorithm = () => {
+      cancel();
+      return promiseResolvedWith(undefined);
+    };
+    stream = createReadableByteStream(realm, () => undefined, pullAlgorithm, cancelAlgorithm);
+    return stream;
+  }
+
   // https://whatpr.org/html/12758/dynamic-markup-insertion.html#stream-html: the WritableStream of the HTML streaming methods,
   // whose sink is the HTML stream writer of the library (its write(string), close() and abort() functions throw the errors
   // of the parser, e.g. a HierarchyRequestError when the reference child was moved)
@@ -3517,6 +3575,7 @@
   const fetchSupport = ObjectCreate(null);
   fetchSupport.getStream = (value) => getRecord(value, 'ReadableStream');
   fetchSupport.createByteStream = (bytes) => getRecord(createBlobStream(bytes), 'ReadableStream');
+  fetchSupport.createPullByteStream = createPullByteStream;
   fetchSupport.isLocked = isReadableStreamLocked;
   fetchSupport.isDisturbed = (stream) => stream.disturbed;
   fetchSupport.isReadable = (stream) => stream.state === 'readable';
@@ -3525,6 +3584,38 @@
   fetchSupport.cancel = (stream, reason) => { setPromiseIsHandledToTrue(readableStreamCancel(stream, reason)); };
   fetchSupport.tee = (stream) => readableStreamTee(stream, true);
   fetchSupport.readAllBytes = readAllBytes;
+
+  // Reads the chunks of a stream (the body of a response given by a service worker to a client that reads it as it arrives):
+  // onChunk is called with each chunk, then onEnd or onError. Returns the function that cancels the stream.
+  fetchSupport.readChunks = (stream, onChunk, onEnd, onError) => {
+    const reader = acquireReadableStreamDefaultReader(stream);
+    let canceled = false;
+    const readLoop = () => {
+      readableStreamDefaultReaderRead(reader, {
+        chunk(chunk) {
+          if (canceled) return;
+          if (getViewKind(chunk) !== 'Uint8Array') {
+            const error = new TypeError_('The chunk is not a Uint8Array');
+            canceled = true;
+            onError(error);
+            setPromiseIsHandledToTrue(readableStreamReaderGenericCancel(reader, error));
+            return;
+          }
+
+          onChunk(cloneAsUint8Array(chunk));
+          readLoop();
+        },
+        close() { if (!canceled) onEnd(); },
+        error(e) { if (!canceled) onError(e); },
+      });
+    };
+    readLoop();
+    return () => {
+      if (canceled) return;
+      canceled = true;
+      setPromiseIsHandledToTrue(readableStreamReaderGenericCancel(reader, undefined));
+    };
+  };
   fetchSupport.error = errorReadableStream;
   fetchSupport.lock = (stream) => { acquireReadableStreamDefaultReader(stream); stream.disturbed = true; };
 

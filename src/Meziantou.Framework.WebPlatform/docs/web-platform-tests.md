@@ -51,9 +51,10 @@
     clock). The pipes of the URL apply to it, as for the files. The streamed responses (chunks, `trickle.py`) are sent at
     once after their delays, except the documents of the navigations and the content of the templates with a `src`
     attribute, which are parsed as their chunks arrive (`WptHandlerResponse.Chunks`, `DocumentResource.RemainingContentBytes`),
-    the media resources, and the event streams (`text/event-stream`),
-    whose events are dispatched as their chunks arrive (a port of a handler that writes a part of the body, sleeps, then
-    writes the rest, sends the parts as chunks); an infinite response never completes
+    the media resources, the bodies of `fetch()` (`DocumentRequest.StreamsResponseBody`, e.g. `fetch/api/resources/trickle.py`,
+    and `bad-chunk-encoding.py`, whose body fails after its chunks: `WptHandlerResponse.ChunksError`), and the event streams
+    (`text/event-stream`), whose events are dispatched as their chunks arrive (a port of a handler that writes a part of
+    the body, sleeps, then writes the rest, sends the parts as chunks); an infinite response never completes
     (the test aborts it), and a handler that writes in a loop repeats its chunks (`WptHandlerResponse.ChunksRepeatAfter`,
     e.g. `eventsource/resources/message2.py`). The loader follows the
     redirects of the handlers, except for `fetch()` and `XMLHttpRequest`: the response has the URL of the location and the

@@ -208,6 +208,9 @@ public sealed class FetchEvent : ExtendableEvent
     /// <summary>https://w3c.github.io/ServiceWorker/#fetchevent-respond-with-error-flag</summary>
     internal bool RespondWithError { get; private set; }
 
+    /// <summary>Whether the client reads the body of the response as it arrives (<see cref="FetchRequest.StreamsBody"/>).</summary>
+    internal bool StreamsResponseBody { get; set; }
+
     /// <summary>https://w3c.github.io/ServiceWorker/#fetchevent-potential-response</summary>
     internal FetchResponse? PotentialResponse { get; private set; }
 
@@ -246,9 +249,9 @@ public sealed class FetchEvent : ExtendableEvent
                     return;
                 }
 
-                // The body of the response is read (the bodies are not streamed): a response whose body is disturbed or locked
-                // is an error
-                operations.ReadResponse(completed.Result!, response =>
+                // The body of the response is read, or streamed to a client that reads it as it arrives: a response whose
+                // body is disturbed or locked is an error
+                operations.ReadResponse(completed.Result!, StreamsResponseBody, response =>
                 {
                     if (response is null)
                     {

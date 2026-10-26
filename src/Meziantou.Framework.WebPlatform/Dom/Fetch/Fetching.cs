@@ -21,8 +21,9 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// The algorithm runs on the event loop: when the loader completes asynchronously, the rest of the algorithm runs in a
 /// task queued when it completes. A synchronous request (<see cref="FetchRequest.Synchronous"/>) waits for the loader.
 /// The requests whose service-workers mode is "all" are handled by the service workers (<see cref="ServiceWorkerFetchHandling"/>).
-/// There is no HTTP cache, and the bodies are not streamed (the response is processed once its body is fully received,
-/// except the rest of the body of a navigation, of an event source or of a media resource, see <see cref="DocumentResource.RemainingContentBytes"/>).
+/// There is no HTTP cache. The response is processed once its body is fully received, except the rest of the body of a
+/// navigation, of an event source, of a media resource and of <c>fetch()</c> (see <see cref="FetchRequest.StreamsBody"/>
+/// and <see cref="DocumentResource.RemainingContentBytes"/>).
 /// </remarks>
 internal static class Fetching
 {
@@ -901,6 +902,7 @@ internal static class Fetching
             FollowRedirects = false,
             IsSynchronous = request.Synchronous,
             IsSpeculative = request.IsSpeculative,
+            StreamsResponseBody = request.StreamsBody && !request.Synchronous,
             UserActivation = request.UserActivation,
             Integrity = request.Integrity,
         };
@@ -916,8 +918,11 @@ internal static class Fetching
         var resource = await LoadAsync(eventLoop, isWebSocket ? loader.ConnectWebSocketAsync : loader.LoadAsync, documentRequest, request.Synchronous, cancellationToken).ConfigureAwait(false);
 
         // A body that arrives over time is interpreted as its bytes arrive by the HTML document of a navigation, by an event
-        // source and by the media and track elements; the other requests wait for the complete body
-        if (resource is { ContentBytes: not null, RemainingContentBytes: not null } streamedResource && !isWebSocket && !request.StreamsBody && (request.Mode != RequestMode.Navigate || (resource.MimeType?.Essence ?? "text/html") != "text/html"))
+        // source, by the media and track elements and by fetch() (a ReadableStream); the other requests, the redirects and
+        // the responses without body wait for the complete body
+        if (resource is { ContentBytes: not null, RemainingContentBytes: not null } streamedResource && !isWebSocket
+            && (!request.StreamsBody || !CanHaveBody(request, resource.StatusCode))
+            && (request.Mode != RequestMode.Navigate || (resource.MimeType?.Essence ?? "text/html") != "text/html"))
         {
             resource = await LoadAsync(eventLoop, (_, token) => new ValueTask<DocumentResource?>(ReadCompleteBodyAsync(streamedResource, token)), documentRequest, request.Synchronous, cancellationToken).ConfigureAwait(false);
         }
@@ -974,6 +979,12 @@ internal static class Fetching
         response.UrlList = [.. request.UrlList];
         return response;
     }
+
+    /// <summary>
+    /// Whether the response of a request can have a body that is read as it arrives: not a redirect, not a null body status
+    /// and not the response of a HEAD or CONNECT request (https://fetch.spec.whatwg.org/#main-fetch, step 19).
+    /// </summary>
+    private static bool CanHaveBody(FetchRequest request, int status) => status is not (101 or 103 or 204 or 205 or 304 or 301 or 302 or 303 or 307 or 308) && request.Method is not ("HEAD" or "CONNECT");
 
     private static bool HasDuplicateNames(List<KeyValuePair<string, string>> headers)
     {

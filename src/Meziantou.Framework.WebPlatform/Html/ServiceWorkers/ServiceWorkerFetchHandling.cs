@@ -335,7 +335,12 @@ internal static class ServiceWorkerFetchHandling
             ResultingClientId = resultingClientId,
             ReplacesClientId = replacesClientId,
             Handled = handled.Task,
-        });
+        })
+        {
+            // The body of a response is given to fetch() as it is read (the other requests that read their body as it arrives,
+            // e.g. the media elements, get the complete body of the response of a service worker)
+            StreamsResponseBody = request.StreamsBody && request.Destination == RequestDestination.Empty,
+        };
 
         global.FireEvent(@event);
         global.UpdateExtendedEvents(@event);

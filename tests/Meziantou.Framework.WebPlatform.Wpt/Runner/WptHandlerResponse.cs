@@ -33,9 +33,9 @@ internal sealed class WptHandlerResponse
 
     /// <summary>
     /// The chunks of the body sent after <see cref="Body"/> (<c>response.writer.write()</c> after a delay), with their delays
-    /// measured by the virtual clock: a document is parsed and a media resource is processed as its chunks arrive, and an
-    /// event stream (<c>text/event-stream</c>) is interpreted as its chunks arrive. The other resources get the whole body
-    /// after the delays.
+    /// measured by the virtual clock: a document is parsed and a media resource is processed as its chunks arrive, an event
+    /// stream (<c>text/event-stream</c>) is interpreted as its chunks arrive, and the body of <c>fetch()</c> is read as its
+    /// chunks arrive (<see cref="Dom.DocumentRequest.StreamsResponseBody"/>). The other resources get the whole body after the delays.
     /// </summary>
     public List<(TimeSpan Delay, byte[] Data)> Chunks { get; } = [];
 
@@ -57,6 +57,12 @@ internal sealed class WptHandlerResponse
 
     /// <summary>Whether the response is a network error (e.g. an invalid chunked encoding).</summary>
     public bool NetworkError { get; set; }
+
+    /// <summary>
+    /// Whether the body fails after <see cref="Chunks"/> (e.g. an invalid chunked encoding after valid chunks): a body read as
+    /// it arrives is errored after its chunks, and the other responses are network errors.
+    /// </summary>
+    public bool ChunksError { get; set; }
 
     /// <summary>Sets the content as a byte string.</summary>
     public string Content

@@ -887,6 +887,12 @@ public enum RequestDestination
     /// (https://html.spec.whatwg.org/multipage/speculative-loading.html#the-speculation-rules-header).
     /// </summary>
     SpeculationRules,
+
+    /// <summary>
+    /// A module script of an audio worklet (<c>audioContext.audioWorklet.addModule()</c>,
+    /// https://webaudio.github.io/web-audio-api/#AudioWorklet), and the modules it imports.
+    /// </summary>
+    AudioWorklet,
 }
 
 /// <summary>The mode of a <see cref="DocumentRequest"/> (https://fetch.spec.whatwg.org/#concept-request-mode).</summary>
@@ -1087,7 +1093,7 @@ public sealed class DocumentResource
     /// <inheritdoc cref="IsBlocked(RequestDestination)"/>
     internal static bool IsBlocked(IReadOnlyList<KeyValuePair<string, string>> headers, RequestDestination destination)
     {
-        if (destination is RequestDestination.PaintWorklet)
+        if (destination is RequestDestination.PaintWorklet or RequestDestination.AudioWorklet)
         {
             destination = RequestDestination.Script;
         }

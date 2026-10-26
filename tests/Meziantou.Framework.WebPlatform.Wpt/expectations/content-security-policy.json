@@ -504,26 +504,10 @@
     "total": 12
   },
   "content-security-policy/gen/top.http-rp/script-src-self/worklet-audio-import-data.https.html": {
-    "total": 12,
-    "failures": {
-      "Content Security Policy: Expects blocked for worklet-audio-import-data to cross-https origin and keep-origin redirection from https context.: securitypolicyviolation": "FAIL",
-      "Content Security Policy: Expects blocked for worklet-audio-import-data to cross-https origin and no-redirect redirection from https context.: securitypolicyviolation": "FAIL",
-      "Content Security Policy: Expects blocked for worklet-audio-import-data to cross-https origin and swap-origin redirection from https context.: securitypolicyviolation": "FAIL",
-      "Content Security Policy: Expects blocked for worklet-audio-import-data to same-https origin and keep-origin redirection from https context.: securitypolicyviolation": "FAIL",
-      "Content Security Policy: Expects blocked for worklet-audio-import-data to same-https origin and no-redirect redirection from https context.: securitypolicyviolation": "FAIL",
-      "Content Security Policy: Expects blocked for worklet-audio-import-data to same-https origin and swap-origin redirection from https context.: securitypolicyviolation": "FAIL"
-    }
+    "total": 12
   },
   "content-security-policy/gen/top.http-rp/script-src-self/worklet-audio.https.html": {
-    "total": 12,
-    "failures": {
-      "Content Security Policy: Expects allowed for worklet-audio to same-https origin and keep-origin redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio to same-https origin and no-redirect redirection from https context.": "FAIL",
-      "Content Security Policy: Expects blocked for worklet-audio to cross-https origin and keep-origin redirection from https context.: securitypolicyviolation": "FAIL",
-      "Content Security Policy: Expects blocked for worklet-audio to cross-https origin and no-redirect redirection from https context.: securitypolicyviolation": "FAIL",
-      "Content Security Policy: Expects blocked for worklet-audio to cross-https origin and swap-origin redirection from https context.: securitypolicyviolation": "FAIL",
-      "Content Security Policy: Expects blocked for worklet-audio to same-https origin and swap-origin redirection from https context.: securitypolicyviolation": "FAIL"
-    }
+    "total": 12
   },
   "content-security-policy/gen/top.http-rp/script-src-self/worklet-layout-import-data.https.html": {
     "total": 12
@@ -598,26 +582,10 @@
     "total": 12
   },
   "content-security-policy/gen/top.http-rp/script-src-wildcard/worklet-audio-import-data.https.html": {
-    "total": 12,
-    "failures": {
-      "Content Security Policy: Expects blocked for worklet-audio-import-data to cross-https origin and keep-origin redirection from https context.: securitypolicyviolation": "FAIL",
-      "Content Security Policy: Expects blocked for worklet-audio-import-data to cross-https origin and no-redirect redirection from https context.: securitypolicyviolation": "FAIL",
-      "Content Security Policy: Expects blocked for worklet-audio-import-data to cross-https origin and swap-origin redirection from https context.: securitypolicyviolation": "FAIL",
-      "Content Security Policy: Expects blocked for worklet-audio-import-data to same-https origin and keep-origin redirection from https context.: securitypolicyviolation": "FAIL",
-      "Content Security Policy: Expects blocked for worklet-audio-import-data to same-https origin and no-redirect redirection from https context.: securitypolicyviolation": "FAIL",
-      "Content Security Policy: Expects blocked for worklet-audio-import-data to same-https origin and swap-origin redirection from https context.: securitypolicyviolation": "FAIL"
-    }
+    "total": 12
   },
   "content-security-policy/gen/top.http-rp/script-src-wildcard/worklet-audio.https.html": {
-    "total": 12,
-    "failures": {
-      "Content Security Policy: Expects allowed for worklet-audio to cross-https origin and keep-origin redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio to cross-https origin and no-redirect redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio to cross-https origin and swap-origin redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio to same-https origin and keep-origin redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio to same-https origin and no-redirect redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio to same-https origin and swap-origin redirection from https context.": "FAIL"
-    }
+    "total": 12
   },
   "content-security-policy/gen/top.http-rp/script-src-wildcard/worklet-layout-import-data.https.html": {
     "total": 12
@@ -692,26 +660,10 @@
     "total": 12
   },
   "content-security-policy/gen/top.http-rp/worker-src-none/worklet-audio-import-data.https.html": {
-    "total": 12,
-    "failures": {
-      "Content Security Policy: Expects allowed for worklet-audio-import-data to cross-https origin and keep-origin redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio-import-data to cross-https origin and no-redirect redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio-import-data to cross-https origin and swap-origin redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio-import-data to same-https origin and keep-origin redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio-import-data to same-https origin and no-redirect redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio-import-data to same-https origin and swap-origin redirection from https context.": "FAIL"
-    }
+    "total": 12
   },
   "content-security-policy/gen/top.http-rp/worker-src-none/worklet-audio.https.html": {
-    "total": 12,
-    "failures": {
-      "Content Security Policy: Expects allowed for worklet-audio to cross-https origin and keep-origin redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio to cross-https origin and no-redirect redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio to cross-https origin and swap-origin redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio to same-https origin and keep-origin redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio to same-https origin and no-redirect redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio to same-https origin and swap-origin redirection from https context.": "FAIL"
-    }
+    "total": 12
   },
   "content-security-policy/gen/top.http-rp/worker-src-none/worklet-layout-import-data.https.html": {
     "total": 12
@@ -786,26 +738,10 @@
     "total": 12
   },
   "content-security-policy/gen/top.http-rp/worker-src-self/worklet-audio-import-data.https.html": {
-    "total": 12,
-    "failures": {
-      "Content Security Policy: Expects allowed for worklet-audio-import-data to cross-https origin and keep-origin redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio-import-data to cross-https origin and no-redirect redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio-import-data to cross-https origin and swap-origin redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio-import-data to same-https origin and keep-origin redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio-import-data to same-https origin and no-redirect redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio-import-data to same-https origin and swap-origin redirection from https context.": "FAIL"
-    }
+    "total": 12
   },
   "content-security-policy/gen/top.http-rp/worker-src-self/worklet-audio.https.html": {
-    "total": 12,
-    "failures": {
-      "Content Security Policy: Expects allowed for worklet-audio to cross-https origin and keep-origin redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio to cross-https origin and no-redirect redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio to cross-https origin and swap-origin redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio to same-https origin and keep-origin redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio to same-https origin and no-redirect redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio to same-https origin and swap-origin redirection from https context.": "FAIL"
-    }
+    "total": 12
   },
   "content-security-policy/gen/top.http-rp/worker-src-self/worklet-layout-import-data.https.html": {
     "total": 12
@@ -880,26 +816,10 @@
     "total": 12
   },
   "content-security-policy/gen/top.http-rp/worker-src-wildcard/worklet-audio-import-data.https.html": {
-    "total": 12,
-    "failures": {
-      "Content Security Policy: Expects allowed for worklet-audio-import-data to cross-https origin and keep-origin redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio-import-data to cross-https origin and no-redirect redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio-import-data to cross-https origin and swap-origin redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio-import-data to same-https origin and keep-origin redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio-import-data to same-https origin and no-redirect redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio-import-data to same-https origin and swap-origin redirection from https context.": "FAIL"
-    }
+    "total": 12
   },
   "content-security-policy/gen/top.http-rp/worker-src-wildcard/worklet-audio.https.html": {
-    "total": 12,
-    "failures": {
-      "Content Security Policy: Expects allowed for worklet-audio to cross-https origin and keep-origin redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio to cross-https origin and no-redirect redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio to cross-https origin and swap-origin redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio to same-https origin and keep-origin redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio to same-https origin and no-redirect redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio to same-https origin and swap-origin redirection from https context.": "FAIL"
-    }
+    "total": 12
   },
   "content-security-policy/gen/top.http-rp/worker-src-wildcard/worklet-layout-import-data.https.html": {
     "total": 12
@@ -974,26 +894,10 @@
     "total": 12
   },
   "content-security-policy/gen/top.meta/script-src-self/worklet-audio-import-data.https.html": {
-    "total": 12,
-    "failures": {
-      "Content Security Policy: Expects blocked for worklet-audio-import-data to cross-https origin and keep-origin redirection from https context.: securitypolicyviolation": "FAIL",
-      "Content Security Policy: Expects blocked for worklet-audio-import-data to cross-https origin and no-redirect redirection from https context.: securitypolicyviolation": "FAIL",
-      "Content Security Policy: Expects blocked for worklet-audio-import-data to cross-https origin and swap-origin redirection from https context.: securitypolicyviolation": "FAIL",
-      "Content Security Policy: Expects blocked for worklet-audio-import-data to same-https origin and keep-origin redirection from https context.: securitypolicyviolation": "FAIL",
-      "Content Security Policy: Expects blocked for worklet-audio-import-data to same-https origin and no-redirect redirection from https context.: securitypolicyviolation": "FAIL",
-      "Content Security Policy: Expects blocked for worklet-audio-import-data to same-https origin and swap-origin redirection from https context.: securitypolicyviolation": "FAIL"
-    }
+    "total": 12
   },
   "content-security-policy/gen/top.meta/script-src-self/worklet-audio.https.html": {
-    "total": 12,
-    "failures": {
-      "Content Security Policy: Expects allowed for worklet-audio to same-https origin and keep-origin redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio to same-https origin and no-redirect redirection from https context.": "FAIL",
-      "Content Security Policy: Expects blocked for worklet-audio to cross-https origin and keep-origin redirection from https context.: securitypolicyviolation": "FAIL",
-      "Content Security Policy: Expects blocked for worklet-audio to cross-https origin and no-redirect redirection from https context.: securitypolicyviolation": "FAIL",
-      "Content Security Policy: Expects blocked for worklet-audio to cross-https origin and swap-origin redirection from https context.: securitypolicyviolation": "FAIL",
-      "Content Security Policy: Expects blocked for worklet-audio to same-https origin and swap-origin redirection from https context.: securitypolicyviolation": "FAIL"
-    }
+    "total": 12
   },
   "content-security-policy/gen/top.meta/script-src-self/worklet-layout-import-data.https.html": {
     "total": 12
@@ -1068,26 +972,10 @@
     "total": 12
   },
   "content-security-policy/gen/top.meta/script-src-wildcard/worklet-audio-import-data.https.html": {
-    "total": 12,
-    "failures": {
-      "Content Security Policy: Expects blocked for worklet-audio-import-data to cross-https origin and keep-origin redirection from https context.: securitypolicyviolation": "FAIL",
-      "Content Security Policy: Expects blocked for worklet-audio-import-data to cross-https origin and no-redirect redirection from https context.: securitypolicyviolation": "FAIL",
-      "Content Security Policy: Expects blocked for worklet-audio-import-data to cross-https origin and swap-origin redirection from https context.: securitypolicyviolation": "FAIL",
-      "Content Security Policy: Expects blocked for worklet-audio-import-data to same-https origin and keep-origin redirection from https context.: securitypolicyviolation": "FAIL",
-      "Content Security Policy: Expects blocked for worklet-audio-import-data to same-https origin and no-redirect redirection from https context.: securitypolicyviolation": "FAIL",
-      "Content Security Policy: Expects blocked for worklet-audio-import-data to same-https origin and swap-origin redirection from https context.: securitypolicyviolation": "FAIL"
-    }
+    "total": 12
   },
   "content-security-policy/gen/top.meta/script-src-wildcard/worklet-audio.https.html": {
-    "total": 12,
-    "failures": {
-      "Content Security Policy: Expects allowed for worklet-audio to cross-https origin and keep-origin redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio to cross-https origin and no-redirect redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio to cross-https origin and swap-origin redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio to same-https origin and keep-origin redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio to same-https origin and no-redirect redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio to same-https origin and swap-origin redirection from https context.": "FAIL"
-    }
+    "total": 12
   },
   "content-security-policy/gen/top.meta/script-src-wildcard/worklet-layout-import-data.https.html": {
     "total": 12
@@ -1162,26 +1050,10 @@
     "total": 12
   },
   "content-security-policy/gen/top.meta/worker-src-none/worklet-audio-import-data.https.html": {
-    "total": 12,
-    "failures": {
-      "Content Security Policy: Expects allowed for worklet-audio-import-data to cross-https origin and keep-origin redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio-import-data to cross-https origin and no-redirect redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio-import-data to cross-https origin and swap-origin redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio-import-data to same-https origin and keep-origin redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio-import-data to same-https origin and no-redirect redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio-import-data to same-https origin and swap-origin redirection from https context.": "FAIL"
-    }
+    "total": 12
   },
   "content-security-policy/gen/top.meta/worker-src-none/worklet-audio.https.html": {
-    "total": 12,
-    "failures": {
-      "Content Security Policy: Expects allowed for worklet-audio to cross-https origin and keep-origin redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio to cross-https origin and no-redirect redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio to cross-https origin and swap-origin redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio to same-https origin and keep-origin redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio to same-https origin and no-redirect redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio to same-https origin and swap-origin redirection from https context.": "FAIL"
-    }
+    "total": 12
   },
   "content-security-policy/gen/top.meta/worker-src-none/worklet-layout-import-data.https.html": {
     "total": 12
@@ -1256,26 +1128,10 @@
     "total": 12
   },
   "content-security-policy/gen/top.meta/worker-src-self/worklet-audio-import-data.https.html": {
-    "total": 12,
-    "failures": {
-      "Content Security Policy: Expects allowed for worklet-audio-import-data to cross-https origin and keep-origin redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio-import-data to cross-https origin and no-redirect redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio-import-data to cross-https origin and swap-origin redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio-import-data to same-https origin and keep-origin redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio-import-data to same-https origin and no-redirect redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio-import-data to same-https origin and swap-origin redirection from https context.": "FAIL"
-    }
+    "total": 12
   },
   "content-security-policy/gen/top.meta/worker-src-self/worklet-audio.https.html": {
-    "total": 12,
-    "failures": {
-      "Content Security Policy: Expects allowed for worklet-audio to cross-https origin and keep-origin redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio to cross-https origin and no-redirect redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio to cross-https origin and swap-origin redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio to same-https origin and keep-origin redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio to same-https origin and no-redirect redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio to same-https origin and swap-origin redirection from https context.": "FAIL"
-    }
+    "total": 12
   },
   "content-security-policy/gen/top.meta/worker-src-self/worklet-layout-import-data.https.html": {
     "total": 12
@@ -1350,26 +1206,10 @@
     "total": 12
   },
   "content-security-policy/gen/top.meta/worker-src-wildcard/worklet-audio-import-data.https.html": {
-    "total": 12,
-    "failures": {
-      "Content Security Policy: Expects allowed for worklet-audio-import-data to cross-https origin and keep-origin redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio-import-data to cross-https origin and no-redirect redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio-import-data to cross-https origin and swap-origin redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio-import-data to same-https origin and keep-origin redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio-import-data to same-https origin and no-redirect redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio-import-data to same-https origin and swap-origin redirection from https context.": "FAIL"
-    }
+    "total": 12
   },
   "content-security-policy/gen/top.meta/worker-src-wildcard/worklet-audio.https.html": {
-    "total": 12,
-    "failures": {
-      "Content Security Policy: Expects allowed for worklet-audio to cross-https origin and keep-origin redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio to cross-https origin and no-redirect redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio to cross-https origin and swap-origin redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio to same-https origin and keep-origin redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio to same-https origin and no-redirect redirection from https context.": "FAIL",
-      "Content Security Policy: Expects allowed for worklet-audio to same-https origin and swap-origin redirection from https context.": "FAIL"
-    }
+    "total": 12
   },
   "content-security-policy/gen/top.meta/worker-src-wildcard/worklet-layout-import-data.https.html": {
     "total": 12
@@ -1889,11 +1729,7 @@
     "total": 2
   },
   "content-security-policy/reporting-api/reporting-api-sends-reports-on-violation-for-worklet-import.https.sub.html": {
-    "total": 2,
-    "failures": {
-      "A blocked static import in an AudioWorklet is reported on the creator document.": "FAIL",
-      "Violation report status OK.": "FAIL"
-    }
+    "total": 2
   },
   "content-security-policy/reporting-api/reporting-api-sends-reports-on-violation.https.sub.html": {
     "total": 4
@@ -2120,16 +1956,10 @@
     "total": 1
   },
   "content-security-policy/script-src/audioworklet-eval-blocked.https.html": {
-    "total": 1,
-    "failures": {
-      "eval() in an AudioWorklet should be blocked by CSP": "FAIL"
-    }
+    "total": 1
   },
   "content-security-policy/script-src/audioworklet-trusted-types-eval-blocked.https.html": {
-    "total": 1,
-    "failures": {
-      "eval() in an AudioWorklet should be blocked by CSP": "FAIL"
-    }
+    "total": 1
   },
   "content-security-policy/script-src/eval-allowed-in-report-only-mode-and-sends-report.html": {
     "total": 2

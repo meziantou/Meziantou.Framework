@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 364 | 384 | 0 | 95% |
+| [Stable](#stable-tests) | 382 | 384 | 0 | 99% |
 | [Tentative](#tentative-tests) | 4 | 4 | 0 | 100% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **368** | **388** | **0** | **95%** |
+| **All** | **386** | **388** | **0** | **99%** |
 
 ## Stable tests
 
@@ -82,8 +82,8 @@
 | [`gen/iframe-inherit.http-rp/opt-in/worker-module.https.html`](https://wpt.fyi/results/mixed-content/gen/iframe-inherit.http-rp/opt-in/worker-module.https.html) | Pass | 4 / 4 |  |  |
 | [`gen/iframe-inherit.http-rp/opt-in/worklet-animation-import-data.https.html`](https://wpt.fyi/results/mixed-content/gen/iframe-inherit.http-rp/opt-in/worklet-animation-import-data.https.html) | Pass | 8 / 8 |  |  |
 | [`gen/iframe-inherit.http-rp/opt-in/worklet-animation.https.html`](https://wpt.fyi/results/mixed-content/gen/iframe-inherit.http-rp/opt-in/worklet-animation.https.html) | Pass | 8 / 8 |  |  |
-| [`gen/iframe-inherit.http-rp/opt-in/worklet-audio-import-data.https.html`](https://wpt.fyi/results/mixed-content/gen/iframe-inherit.http-rp/opt-in/worklet-audio-import-data.https.html) | Fail | 6 / 8 | NOT IMPLEMENTED | `OfflineAudioContext` and its `audioWorklet`, so the expected-allowed `addModule()` request rejects and is reported as blocked |
-| [`gen/iframe-inherit.http-rp/opt-in/worklet-audio.https.html`](https://wpt.fyi/results/mixed-content/gen/iframe-inherit.http-rp/opt-in/worklet-audio.https.html) | Fail | 6 / 8 | NOT IMPLEMENTED | `OfflineAudioContext` and its `audioWorklet`, so the expected-allowed `addModule()` request rejects and is reported as blocked |
+| [`gen/iframe-inherit.http-rp/opt-in/worklet-audio-import-data.https.html`](https://wpt.fyi/results/mixed-content/gen/iframe-inherit.http-rp/opt-in/worklet-audio-import-data.https.html) | Pass | 8 / 8 |  |  |
+| [`gen/iframe-inherit.http-rp/opt-in/worklet-audio.https.html`](https://wpt.fyi/results/mixed-content/gen/iframe-inherit.http-rp/opt-in/worklet-audio.https.html) | Pass | 8 / 8 |  |  |
 | [`gen/iframe-inherit.http-rp/opt-in/worklet-layout-import-data.https.html`](https://wpt.fyi/results/mixed-content/gen/iframe-inherit.http-rp/opt-in/worklet-layout-import-data.https.html) | Pass | 8 / 8 |  |  |
 | [`gen/iframe-inherit.http-rp/opt-in/worklet-layout.https.html`](https://wpt.fyi/results/mixed-content/gen/iframe-inherit.http-rp/opt-in/worklet-layout.https.html) | Pass | 8 / 8 |  |  |
 | [`gen/iframe-inherit.http-rp/opt-in/worklet-paint-import-data.https.html`](https://wpt.fyi/results/mixed-content/gen/iframe-inherit.http-rp/opt-in/worklet-paint-import-data.https.html) | Pass | 8 / 8 |  |  |
@@ -112,8 +112,8 @@
 | [`gen/iframe-inherit.meta/opt-in/worker-module.https.html`](https://wpt.fyi/results/mixed-content/gen/iframe-inherit.meta/opt-in/worker-module.https.html) | Pass | 2 / 2 |  |  |
 | [`gen/iframe-inherit.meta/opt-in/worklet-animation-import-data.https.html`](https://wpt.fyi/results/mixed-content/gen/iframe-inherit.meta/opt-in/worklet-animation-import-data.https.html) | Pass | 5 / 5 |  |  |
 | [`gen/iframe-inherit.meta/opt-in/worklet-animation.https.html`](https://wpt.fyi/results/mixed-content/gen/iframe-inherit.meta/opt-in/worklet-animation.https.html) | Pass | 5 / 5 |  |  |
-| [`gen/iframe-inherit.meta/opt-in/worklet-audio-import-data.https.html`](https://wpt.fyi/results/mixed-content/gen/iframe-inherit.meta/opt-in/worklet-audio-import-data.https.html) | Fail | 4 / 5 | NOT IMPLEMENTED | `OfflineAudioContext` and its `audioWorklet`, so the expected-allowed `addModule()` request rejects and is reported as blocked |
-| [`gen/iframe-inherit.meta/opt-in/worklet-audio.https.html`](https://wpt.fyi/results/mixed-content/gen/iframe-inherit.meta/opt-in/worklet-audio.https.html) | Fail | 4 / 5 | NOT IMPLEMENTED | `OfflineAudioContext` and its `audioWorklet`, so the expected-allowed `addModule()` request rejects and is reported as blocked |
+| [`gen/iframe-inherit.meta/opt-in/worklet-audio-import-data.https.html`](https://wpt.fyi/results/mixed-content/gen/iframe-inherit.meta/opt-in/worklet-audio-import-data.https.html) | Pass | 5 / 5 |  |  |
+| [`gen/iframe-inherit.meta/opt-in/worklet-audio.https.html`](https://wpt.fyi/results/mixed-content/gen/iframe-inherit.meta/opt-in/worklet-audio.https.html) | Pass | 5 / 5 |  |  |
 | [`gen/iframe-inherit.meta/opt-in/worklet-layout-import-data.https.html`](https://wpt.fyi/results/mixed-content/gen/iframe-inherit.meta/opt-in/worklet-layout-import-data.https.html) | Pass | 5 / 5 |  |  |
 | [`gen/iframe-inherit.meta/opt-in/worklet-layout.https.html`](https://wpt.fyi/results/mixed-content/gen/iframe-inherit.meta/opt-in/worklet-layout.https.html) | Pass | 5 / 5 |  |  |
 | [`gen/iframe-inherit.meta/opt-in/worklet-paint-import-data.https.html`](https://wpt.fyi/results/mixed-content/gen/iframe-inherit.meta/opt-in/worklet-paint-import-data.https.html) | Pass | 5 / 5 |  |  |
@@ -142,8 +142,8 @@
 | [`gen/iframe-inherit.meta/unset/worker-module.https.html`](https://wpt.fyi/results/mixed-content/gen/iframe-inherit.meta/unset/worker-module.https.html) | Pass | 4 / 4 |  |  |
 | [`gen/iframe-inherit.meta/unset/worklet-animation-import-data.https.html`](https://wpt.fyi/results/mixed-content/gen/iframe-inherit.meta/unset/worklet-animation-import-data.https.html) | Pass | 8 / 8 |  |  |
 | [`gen/iframe-inherit.meta/unset/worklet-animation.https.html`](https://wpt.fyi/results/mixed-content/gen/iframe-inherit.meta/unset/worklet-animation.https.html) | Pass | 8 / 8 |  |  |
-| [`gen/iframe-inherit.meta/unset/worklet-audio-import-data.https.html`](https://wpt.fyi/results/mixed-content/gen/iframe-inherit.meta/unset/worklet-audio-import-data.https.html) | Fail | 6 / 8 | NOT IMPLEMENTED | `OfflineAudioContext` and its `audioWorklet`, so the expected-allowed `addModule()` request rejects and is reported as blocked |
-| [`gen/iframe-inherit.meta/unset/worklet-audio.https.html`](https://wpt.fyi/results/mixed-content/gen/iframe-inherit.meta/unset/worklet-audio.https.html) | Fail | 6 / 8 | NOT IMPLEMENTED | `OfflineAudioContext` and its `audioWorklet`, so the expected-allowed `addModule()` request rejects and is reported as blocked |
+| [`gen/iframe-inherit.meta/unset/worklet-audio-import-data.https.html`](https://wpt.fyi/results/mixed-content/gen/iframe-inherit.meta/unset/worklet-audio-import-data.https.html) | Pass | 8 / 8 |  |  |
+| [`gen/iframe-inherit.meta/unset/worklet-audio.https.html`](https://wpt.fyi/results/mixed-content/gen/iframe-inherit.meta/unset/worklet-audio.https.html) | Pass | 8 / 8 |  |  |
 | [`gen/iframe-inherit.meta/unset/worklet-layout-import-data.https.html`](https://wpt.fyi/results/mixed-content/gen/iframe-inherit.meta/unset/worklet-layout-import-data.https.html) | Pass | 8 / 8 |  |  |
 | [`gen/iframe-inherit.meta/unset/worklet-layout.https.html`](https://wpt.fyi/results/mixed-content/gen/iframe-inherit.meta/unset/worklet-layout.https.html) | Pass | 8 / 8 |  |  |
 | [`gen/iframe-inherit.meta/unset/worklet-paint-import-data.https.html`](https://wpt.fyi/results/mixed-content/gen/iframe-inherit.meta/unset/worklet-paint-import-data.https.html) | Pass | 8 / 8 |  |  |
@@ -202,8 +202,8 @@
 | [`gen/srcdoc-inherit.http-rp/opt-in/worker-module.https.html`](https://wpt.fyi/results/mixed-content/gen/srcdoc-inherit.http-rp/opt-in/worker-module.https.html) | Pass | 4 / 4 |  |  |
 | [`gen/srcdoc-inherit.http-rp/opt-in/worklet-animation-import-data.https.html`](https://wpt.fyi/results/mixed-content/gen/srcdoc-inherit.http-rp/opt-in/worklet-animation-import-data.https.html) | Pass | 8 / 8 |  |  |
 | [`gen/srcdoc-inherit.http-rp/opt-in/worklet-animation.https.html`](https://wpt.fyi/results/mixed-content/gen/srcdoc-inherit.http-rp/opt-in/worklet-animation.https.html) | Pass | 8 / 8 |  |  |
-| [`gen/srcdoc-inherit.http-rp/opt-in/worklet-audio-import-data.https.html`](https://wpt.fyi/results/mixed-content/gen/srcdoc-inherit.http-rp/opt-in/worklet-audio-import-data.https.html) | Fail | 6 / 8 | NOT IMPLEMENTED | `OfflineAudioContext` and its `audioWorklet`, so the expected-allowed `addModule()` request rejects and is reported as blocked |
-| [`gen/srcdoc-inherit.http-rp/opt-in/worklet-audio.https.html`](https://wpt.fyi/results/mixed-content/gen/srcdoc-inherit.http-rp/opt-in/worklet-audio.https.html) | Fail | 6 / 8 | NOT IMPLEMENTED | `OfflineAudioContext` and its `audioWorklet`, so the expected-allowed `addModule()` request rejects and is reported as blocked |
+| [`gen/srcdoc-inherit.http-rp/opt-in/worklet-audio-import-data.https.html`](https://wpt.fyi/results/mixed-content/gen/srcdoc-inherit.http-rp/opt-in/worklet-audio-import-data.https.html) | Pass | 8 / 8 |  |  |
+| [`gen/srcdoc-inherit.http-rp/opt-in/worklet-audio.https.html`](https://wpt.fyi/results/mixed-content/gen/srcdoc-inherit.http-rp/opt-in/worklet-audio.https.html) | Pass | 8 / 8 |  |  |
 | [`gen/srcdoc-inherit.http-rp/opt-in/worklet-layout-import-data.https.html`](https://wpt.fyi/results/mixed-content/gen/srcdoc-inherit.http-rp/opt-in/worklet-layout-import-data.https.html) | Pass | 8 / 8 |  |  |
 | [`gen/srcdoc-inherit.http-rp/opt-in/worklet-layout.https.html`](https://wpt.fyi/results/mixed-content/gen/srcdoc-inherit.http-rp/opt-in/worklet-layout.https.html) | Pass | 8 / 8 |  |  |
 | [`gen/srcdoc-inherit.http-rp/opt-in/worklet-paint-import-data.https.html`](https://wpt.fyi/results/mixed-content/gen/srcdoc-inherit.http-rp/opt-in/worklet-paint-import-data.https.html) | Pass | 8 / 8 |  |  |
@@ -232,8 +232,8 @@
 | [`gen/srcdoc-inherit.meta/opt-in/worker-module.https.html`](https://wpt.fyi/results/mixed-content/gen/srcdoc-inherit.meta/opt-in/worker-module.https.html) | Pass | 2 / 2 |  |  |
 | [`gen/srcdoc-inherit.meta/opt-in/worklet-animation-import-data.https.html`](https://wpt.fyi/results/mixed-content/gen/srcdoc-inherit.meta/opt-in/worklet-animation-import-data.https.html) | Pass | 5 / 5 |  |  |
 | [`gen/srcdoc-inherit.meta/opt-in/worklet-animation.https.html`](https://wpt.fyi/results/mixed-content/gen/srcdoc-inherit.meta/opt-in/worklet-animation.https.html) | Pass | 5 / 5 |  |  |
-| [`gen/srcdoc-inherit.meta/opt-in/worklet-audio-import-data.https.html`](https://wpt.fyi/results/mixed-content/gen/srcdoc-inherit.meta/opt-in/worklet-audio-import-data.https.html) | Fail | 4 / 5 | NOT IMPLEMENTED | `OfflineAudioContext` and its `audioWorklet`, so the expected-allowed `addModule()` request rejects and is reported as blocked |
-| [`gen/srcdoc-inherit.meta/opt-in/worklet-audio.https.html`](https://wpt.fyi/results/mixed-content/gen/srcdoc-inherit.meta/opt-in/worklet-audio.https.html) | Fail | 4 / 5 | NOT IMPLEMENTED | `OfflineAudioContext` and its `audioWorklet`, so the expected-allowed `addModule()` request rejects and is reported as blocked |
+| [`gen/srcdoc-inherit.meta/opt-in/worklet-audio-import-data.https.html`](https://wpt.fyi/results/mixed-content/gen/srcdoc-inherit.meta/opt-in/worklet-audio-import-data.https.html) | Pass | 5 / 5 |  |  |
+| [`gen/srcdoc-inherit.meta/opt-in/worklet-audio.https.html`](https://wpt.fyi/results/mixed-content/gen/srcdoc-inherit.meta/opt-in/worklet-audio.https.html) | Pass | 5 / 5 |  |  |
 | [`gen/srcdoc-inherit.meta/opt-in/worklet-layout-import-data.https.html`](https://wpt.fyi/results/mixed-content/gen/srcdoc-inherit.meta/opt-in/worklet-layout-import-data.https.html) | Pass | 5 / 5 |  |  |
 | [`gen/srcdoc-inherit.meta/opt-in/worklet-layout.https.html`](https://wpt.fyi/results/mixed-content/gen/srcdoc-inherit.meta/opt-in/worklet-layout.https.html) | Pass | 5 / 5 |  |  |
 | [`gen/srcdoc-inherit.meta/opt-in/worklet-paint-import-data.https.html`](https://wpt.fyi/results/mixed-content/gen/srcdoc-inherit.meta/opt-in/worklet-paint-import-data.https.html) | Pass | 5 / 5 |  |  |
@@ -262,8 +262,8 @@
 | [`gen/srcdoc-inherit.meta/unset/worker-module.https.html`](https://wpt.fyi/results/mixed-content/gen/srcdoc-inherit.meta/unset/worker-module.https.html) | Pass | 4 / 4 |  |  |
 | [`gen/srcdoc-inherit.meta/unset/worklet-animation-import-data.https.html`](https://wpt.fyi/results/mixed-content/gen/srcdoc-inherit.meta/unset/worklet-animation-import-data.https.html) | Pass | 8 / 8 |  |  |
 | [`gen/srcdoc-inherit.meta/unset/worklet-animation.https.html`](https://wpt.fyi/results/mixed-content/gen/srcdoc-inherit.meta/unset/worklet-animation.https.html) | Pass | 8 / 8 |  |  |
-| [`gen/srcdoc-inherit.meta/unset/worklet-audio-import-data.https.html`](https://wpt.fyi/results/mixed-content/gen/srcdoc-inherit.meta/unset/worklet-audio-import-data.https.html) | Fail | 6 / 8 | NOT IMPLEMENTED | `OfflineAudioContext` and its `audioWorklet`, so the expected-allowed `addModule()` request rejects and is reported as blocked |
-| [`gen/srcdoc-inherit.meta/unset/worklet-audio.https.html`](https://wpt.fyi/results/mixed-content/gen/srcdoc-inherit.meta/unset/worklet-audio.https.html) | Fail | 6 / 8 | NOT IMPLEMENTED | `OfflineAudioContext` and its `audioWorklet`, so the expected-allowed `addModule()` request rejects and is reported as blocked |
+| [`gen/srcdoc-inherit.meta/unset/worklet-audio-import-data.https.html`](https://wpt.fyi/results/mixed-content/gen/srcdoc-inherit.meta/unset/worklet-audio-import-data.https.html) | Pass | 8 / 8 |  |  |
+| [`gen/srcdoc-inherit.meta/unset/worklet-audio.https.html`](https://wpt.fyi/results/mixed-content/gen/srcdoc-inherit.meta/unset/worklet-audio.https.html) | Pass | 8 / 8 |  |  |
 | [`gen/srcdoc-inherit.meta/unset/worklet-layout-import-data.https.html`](https://wpt.fyi/results/mixed-content/gen/srcdoc-inherit.meta/unset/worklet-layout-import-data.https.html) | Pass | 8 / 8 |  |  |
 | [`gen/srcdoc-inherit.meta/unset/worklet-layout.https.html`](https://wpt.fyi/results/mixed-content/gen/srcdoc-inherit.meta/unset/worklet-layout.https.html) | Pass | 8 / 8 |  |  |
 | [`gen/srcdoc-inherit.meta/unset/worklet-paint-import-data.https.html`](https://wpt.fyi/results/mixed-content/gen/srcdoc-inherit.meta/unset/worklet-paint-import-data.https.html) | Pass | 8 / 8 |  |  |
@@ -292,8 +292,8 @@
 | [`gen/top.http-rp/opt-in/worker-module.https.html`](https://wpt.fyi/results/mixed-content/gen/top.http-rp/opt-in/worker-module.https.html) | Pass | 4 / 4 |  |  |
 | [`gen/top.http-rp/opt-in/worklet-animation-import-data.https.html`](https://wpt.fyi/results/mixed-content/gen/top.http-rp/opt-in/worklet-animation-import-data.https.html) | Pass | 8 / 8 |  |  |
 | [`gen/top.http-rp/opt-in/worklet-animation.https.html`](https://wpt.fyi/results/mixed-content/gen/top.http-rp/opt-in/worklet-animation.https.html) | Pass | 8 / 8 |  |  |
-| [`gen/top.http-rp/opt-in/worklet-audio-import-data.https.html`](https://wpt.fyi/results/mixed-content/gen/top.http-rp/opt-in/worklet-audio-import-data.https.html) | Fail | 6 / 8 | NOT IMPLEMENTED | `OfflineAudioContext` and its `audioWorklet`, so the expected-allowed `addModule()` request rejects and is reported as blocked |
-| [`gen/top.http-rp/opt-in/worklet-audio.https.html`](https://wpt.fyi/results/mixed-content/gen/top.http-rp/opt-in/worklet-audio.https.html) | Fail | 6 / 8 | NOT IMPLEMENTED | `OfflineAudioContext` and its `audioWorklet`, so the expected-allowed `addModule()` request rejects and is reported as blocked |
+| [`gen/top.http-rp/opt-in/worklet-audio-import-data.https.html`](https://wpt.fyi/results/mixed-content/gen/top.http-rp/opt-in/worklet-audio-import-data.https.html) | Pass | 8 / 8 |  |  |
+| [`gen/top.http-rp/opt-in/worklet-audio.https.html`](https://wpt.fyi/results/mixed-content/gen/top.http-rp/opt-in/worklet-audio.https.html) | Pass | 8 / 8 |  |  |
 | [`gen/top.http-rp/opt-in/worklet-layout-import-data.https.html`](https://wpt.fyi/results/mixed-content/gen/top.http-rp/opt-in/worklet-layout-import-data.https.html) | Pass | 8 / 8 |  |  |
 | [`gen/top.http-rp/opt-in/worklet-layout.https.html`](https://wpt.fyi/results/mixed-content/gen/top.http-rp/opt-in/worklet-layout.https.html) | Pass | 8 / 8 |  |  |
 | [`gen/top.http-rp/opt-in/worklet-paint-import-data.https.html`](https://wpt.fyi/results/mixed-content/gen/top.http-rp/opt-in/worklet-paint-import-data.https.html) | Pass | 8 / 8 |  |  |
@@ -322,8 +322,8 @@
 | [`gen/top.meta/opt-in/worker-module.https.html`](https://wpt.fyi/results/mixed-content/gen/top.meta/opt-in/worker-module.https.html) | Pass | 2 / 2 |  |  |
 | [`gen/top.meta/opt-in/worklet-animation-import-data.https.html`](https://wpt.fyi/results/mixed-content/gen/top.meta/opt-in/worklet-animation-import-data.https.html) | Pass | 5 / 5 |  |  |
 | [`gen/top.meta/opt-in/worklet-animation.https.html`](https://wpt.fyi/results/mixed-content/gen/top.meta/opt-in/worklet-animation.https.html) | Pass | 5 / 5 |  |  |
-| [`gen/top.meta/opt-in/worklet-audio-import-data.https.html`](https://wpt.fyi/results/mixed-content/gen/top.meta/opt-in/worklet-audio-import-data.https.html) | Fail | 4 / 5 | NOT IMPLEMENTED | `OfflineAudioContext` and its `audioWorklet`, so the expected-allowed `addModule()` request rejects and is reported as blocked |
-| [`gen/top.meta/opt-in/worklet-audio.https.html`](https://wpt.fyi/results/mixed-content/gen/top.meta/opt-in/worklet-audio.https.html) | Fail | 4 / 5 | NOT IMPLEMENTED | `OfflineAudioContext` and its `audioWorklet`, so the expected-allowed `addModule()` request rejects and is reported as blocked |
+| [`gen/top.meta/opt-in/worklet-audio-import-data.https.html`](https://wpt.fyi/results/mixed-content/gen/top.meta/opt-in/worklet-audio-import-data.https.html) | Pass | 5 / 5 |  |  |
+| [`gen/top.meta/opt-in/worklet-audio.https.html`](https://wpt.fyi/results/mixed-content/gen/top.meta/opt-in/worklet-audio.https.html) | Pass | 5 / 5 |  |  |
 | [`gen/top.meta/opt-in/worklet-layout-import-data.https.html`](https://wpt.fyi/results/mixed-content/gen/top.meta/opt-in/worklet-layout-import-data.https.html) | Pass | 5 / 5 |  |  |
 | [`gen/top.meta/opt-in/worklet-layout.https.html`](https://wpt.fyi/results/mixed-content/gen/top.meta/opt-in/worklet-layout.https.html) | Pass | 5 / 5 |  |  |
 | [`gen/top.meta/opt-in/worklet-paint-import-data.https.html`](https://wpt.fyi/results/mixed-content/gen/top.meta/opt-in/worklet-paint-import-data.https.html) | Pass | 5 / 5 |  |  |
@@ -352,8 +352,8 @@
 | [`gen/top.meta/unset/worker-module.https.html`](https://wpt.fyi/results/mixed-content/gen/top.meta/unset/worker-module.https.html) | Pass | 4 / 4 |  |  |
 | [`gen/top.meta/unset/worklet-animation-import-data.https.html`](https://wpt.fyi/results/mixed-content/gen/top.meta/unset/worklet-animation-import-data.https.html) | Pass | 8 / 8 |  |  |
 | [`gen/top.meta/unset/worklet-animation.https.html`](https://wpt.fyi/results/mixed-content/gen/top.meta/unset/worklet-animation.https.html) | Pass | 8 / 8 |  |  |
-| [`gen/top.meta/unset/worklet-audio-import-data.https.html`](https://wpt.fyi/results/mixed-content/gen/top.meta/unset/worklet-audio-import-data.https.html) | Fail | 6 / 8 | NOT IMPLEMENTED | `OfflineAudioContext` and its `audioWorklet`, so the expected-allowed `addModule()` request rejects and is reported as blocked |
-| [`gen/top.meta/unset/worklet-audio.https.html`](https://wpt.fyi/results/mixed-content/gen/top.meta/unset/worklet-audio.https.html) | Fail | 6 / 8 | NOT IMPLEMENTED | `OfflineAudioContext` and its `audioWorklet`, so the expected-allowed `addModule()` request rejects and is reported as blocked |
+| [`gen/top.meta/unset/worklet-audio-import-data.https.html`](https://wpt.fyi/results/mixed-content/gen/top.meta/unset/worklet-audio-import-data.https.html) | Pass | 8 / 8 |  |  |
+| [`gen/top.meta/unset/worklet-audio.https.html`](https://wpt.fyi/results/mixed-content/gen/top.meta/unset/worklet-audio.https.html) | Pass | 8 / 8 |  |  |
 | [`gen/top.meta/unset/worklet-layout-import-data.https.html`](https://wpt.fyi/results/mixed-content/gen/top.meta/unset/worklet-layout-import-data.https.html) | Pass | 8 / 8 |  |  |
 | [`gen/top.meta/unset/worklet-layout.https.html`](https://wpt.fyi/results/mixed-content/gen/top.meta/unset/worklet-layout.https.html) | Pass | 8 / 8 |  |  |
 | [`gen/top.meta/unset/worklet-paint-import-data.https.html`](https://wpt.fyi/results/mixed-content/gen/top.meta/unset/worklet-paint-import-data.https.html) | Pass | 8 / 8 |  |  |

@@ -13,8 +13,10 @@ internal enum IntegerConversion
 }
 
 // The conversions of JavaScript values to IDL values (https://webidl.spec.whatwg.org/#es-type-mapping), used by the generated bindings
-public sealed partial class WebIdlRealm<TAdapter, TValue>
+public sealed partial class WebIdlRealm<TAdapter, TValue> : IJsBufferOwner
 {
+    private TValue? _arrayBufferTransfer;
+
     // The @@iterator method got by HasIterator, for the next ToSequence of the same value
     private TValue? _iteratorMethodTarget;
     private TValue? _iteratorMethod;
@@ -56,7 +58,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             if (isShared && kind != JsBufferKind.SharedArrayBuffer && !allowShared)
                 throw CreateTypeError($"The {JsBufferSource.GetName(kind)} cannot view a SharedArrayBuffer");
 
-            return JsBufferSource.FromScript(kind, bytes, value);
+            return JsBufferSource.FromScript(kind, bytes, value, this);
         }
 
         // A SharedArrayBuffer is an ArrayBuffer for an [AllowShared] ArrayBuffer type
@@ -69,6 +71,27 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         }
 
         return null;
+    }
+
+    bool IJsBufferOwner.IsDetached(object value) => value is TValue buffer && IsDetached(buffer);
+
+    bool IJsBufferOwner.TryDetach(object value)
+    {
+        if (value is not TValue buffer || IsDetached(buffer))
+            return false;
+
+        try
+        {
+            // ArrayBuffer.prototype.transfer() detaches the buffer (and throws for a buffer with a detach key, e.g. the
+            // buffer of a WebAssembly.Memory)
+            _arrayBufferTransfer ??= EvaluateBuiltIn("ArrayBuffer.prototype.transfer");
+            Adapter.RunInRealm(EngineRealm, () => Adapter.Call(_arrayBufferTransfer, buffer, [Adapter.FromNumber(0)]));
+            return true;
+        }
+        catch (Exception ex) when (Adapter.TryGetThrownValue(ex, out _))
+        {
+            return false;
+        }
     }
 
     /// <summary>Creates an ArrayBuffer containing a copy of <paramref name="bytes"/>, or a typed array of <paramref name="kind"/> viewing it, in this realm.</summary>

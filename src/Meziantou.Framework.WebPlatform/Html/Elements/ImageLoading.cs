@@ -116,9 +116,9 @@ internal readonly record struct AvailableImageKey(string Url, int CorsState, str
 /// is selected from the src, srcset and sizes attributes and the source elements of a parent picture element, and fetched
 /// by the <see cref="DocumentLoader"/> of the browsing context (<see cref="RequestDestination.Image"/>), the data: and the
 /// blob: URLs. An image is available when its response is an image (its signature or its type), and its natural dimensions
-/// are read from its header (PNG, GIF, JPEG, BMP, WebP, ICO, SVG). With a rendering backend, a raster image is also opened by
-/// the decoder of the backend (an image it cannot read is broken), and its pixels are decoded when they are painted or by
-/// <c>decode()</c>.
+/// are read from its header (PNG, GIF, JPEG, BMP, WebP, ICO, AVIF, JPEG XL, SVG). With a rendering backend, a raster image is
+/// also opened by the decoder of the backend (an image it cannot read is broken), and its pixels are decoded when they are
+/// painted or by <c>decode()</c>.
 /// </summary>
 public partial class HtmlImageElement
 {
@@ -1079,7 +1079,7 @@ public partial class HtmlImageElement
             return true;
 
         var essence = InfraAscii.ToAsciiLowercase(type.Split(';')[0].Trim());
-        return essence is "image/png" or "image/apng" or "image/jpeg" or "image/pjpeg" or "image/gif" or "image/webp" or "image/svg+xml" or "image/bmp" or "image/x-icon" or "image/vnd.microsoft.icon" or "image/avif";
+        return essence is "image/png" or "image/apng" or "image/jpeg" or "image/pjpeg" or "image/gif" or "image/webp" or "image/svg+xml" or "image/bmp" or "image/x-icon" or "image/vnd.microsoft.icon" or "image/avif" or "image/jxl";
     }
 }
 
@@ -1418,10 +1418,11 @@ internal static class ImageHeaders
         => bytes.StartsWith(ImageMetadata.PngSignature) || bytes.StartsWith("GIF87a"u8) || bytes.StartsWith("GIF89a"u8) || bytes.StartsWith((ReadOnlySpan<byte>)[0xFF, 0xD8, 0xFF])
             || bytes.StartsWith("BM"u8) || (bytes.Length >= 12 && bytes.StartsWith("RIFF"u8) && bytes[8..].StartsWith("WEBP"u8))
             || (bytes.Length >= 4 && bytes[0] == 0 && bytes[1] == 0 && bytes[2] is 1 or 2 && bytes[3] == 0)
-            || (bytes.Length >= 12 && bytes[4..].StartsWith("ftyp"u8));
+            || (bytes.Length >= 12 && bytes[4..].StartsWith("ftyp"u8))
+            || ImageMetadata.IsJpegXl(bytes);
 
     /// <summary>
-    /// Returns whether the bytes are an image: a known signature (PNG, GIF, JPEG, BMP, WebP, ICO, AVIF), an SVG document,
+    /// Returns whether the bytes are an image: a known signature (PNG, GIF, JPEG, BMP, WebP, ICO, AVIF, JPEG XL), an SVG document,
     /// or another image/* type. The natural size is read from the header (absent dimensions when they cannot be read).
     /// </summary>
     public static bool TryGetImageInfo(ReadOnlySpan<byte> bytes, string contentType, out ImageNaturalSize naturalSize)
@@ -1498,6 +1499,17 @@ internal static class ImageHeaders
             if (ispe >= 0 && ispe + 16 <= bytes.Length)
             {
                 naturalSize = ImageNaturalSize.FromPixels(ReadUInt32BigEndian(bytes[(ispe + 8)..]), ReadUInt32BigEndian(bytes[(ispe + 12)..]));
+            }
+
+            return true;
+        }
+
+        // JPEG XL: the size header of the codestream, rotated by the orientation of the image header
+        if (ImageMetadata.IsJpegXl(bytes))
+        {
+            if (ImageMetadata.ReadJpegXlHeader(bytes) is var (width, height, _))
+            {
+                naturalSize = ImageNaturalSize.FromEncodedPixels(bytes, width, height);
             }
 
             return true;

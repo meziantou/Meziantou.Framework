@@ -6,7 +6,7 @@
     "reftest": "PASS"
   },
   "png/apng/fDAT-inherits-cICP.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "png/apng/fcTL-acTL-ordering.html": {
     "reftest": "PASS"
@@ -87,13 +87,10 @@
     "reftest": "PASS"
   },
   "png/cICP-wins.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "png/cicp-chunk.html": {
-    "total": 1,
-    "failures": {
-      "test pixel values of a display-p3 PNG": "FAIL"
-    }
+    "total": 1
   },
   "png/errors/idat-crc-error-recovery.html": {
     "total": 1

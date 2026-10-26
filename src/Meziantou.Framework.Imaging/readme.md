@@ -575,13 +575,6 @@ or to another image of the same size, with `AutoCrop(analysis, options)`.
 - **Weights.** `AnalyzeWeights` also measures on which side of the canvas the content is heavier (from -1 to 1 on each
   axis) and moves the padded rectangle that way by `padding * weight` pixels.
 
-When no border or no content is found (a uniform image, for instance), `AutoCrop` returns `false` and leaves the image
-untouched. It works in stored-pixel coordinates: call `AutoOrient` first. The options follow those of
-[ImageSharp.Processing.AutoCrop](https://github.com/Geta/ImageSharp.Processing.AutoCrop), with these differences: the
-padding is in pixels instead of percents, the color difference uses the Rec. 709 weights of the library, the six pixel
-formats and every frame are analyzed, the retry removes the 5% on all four sides, `ColorThreshold` is always set, and a
-uniform image reports the whole canvas as its box.
-
 <!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_AutoCrop;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static bool TrimBackground(string inputPath, string outputPath)
@@ -766,6 +759,21 @@ It never changes the frames.
   color channels of what scikit-image computes. Color channels are premultiplied by alpha, so a fully transparent pixel
   scores the same whatever color it hides. Alpha is scored on its own, and the result is the lower of the two scores. A
   localized difference lowers the score in proportion to its area.
+- `ComputePsnr` returns the peak signal-to-noise ratio in decibels, from the mean squared error of the color channels
+  premultiplied by alpha (scikit-image's `peak_signal_noise_ratio(data_range=255)` for opaque frames); alpha gives its
+  own ratio and the lower one is kept. Identical frames have an infinite ratio.
+- `ComputeSsimulacra2` returns the [SSIMULACRA 2](https://github.com/cloudinary/ssimulacra2) score of two frames of at
+  least 8x8 pixels, a perceptual metric tuned on subjective scores: 100 for identical pixels, about 90 when the
+  difference is not visible, 70 for a high quality, 50 for a medium quality, negative for very different frames. It is a
+  port of the `ssimulacra2` tool of libjxl 0.12.0, whose arithmetic it reproduces: the scores agree with the 8 decimals
+  the tool prints. Frames that are not fully opaque are composited over a dark and a bright gray, and the lower score is
+  kept.
+- `ComputeButteraugliDistance` returns the [Butteraugli](https://github.com/google/butteraugli) distance of libjxl
+  0.12.0, a psychovisual model with a distance for every pixel, with the parameters of `butteraugli_main` for SDR images
+  (80 nits): `MaxDistance` (0 for identical pixels, below about 1 when the difference is not visible) and `PNorm3`, a
+  summary of the whole frame. The values are within about 0.01% of the tool. Frames that are not fully opaque are
+  composited over black and over white, and every pixel keeps the larger distance; frames smaller than 8x8 are extended
+  by repeating their edges. It is the slowest member (about 0.75 s per megapixel) and needs about 120 bytes per pixel.
 - `ComputeDifferenceHash` (dHash) and `ComputePerceptualHash` (pHash) return a 64-bit hash of the structure of a
   frame, computed from an exact, area-weighted luminance thumbnail. Every pixel counts, and differences smaller than a
   luminance level never set a bit.
@@ -775,8 +783,9 @@ It never changes the frames.
   fully opaque are compared over a black and over a white background, and the larger distance is kept.
 
 Every pixel format is read as 8-bit RGBA, with the conversion of `CloneAs<Rgba32>` (16-bit samples are rounded), so
-frames of different pixel formats can be compared. The results depend only on the pixels, not on the hardware. The
-members compare frames: compare an animation frame by frame.
+frames of different pixel formats can be compared. The results depend only on the pixels, not on the hardware; the last
+digits of PSNR, SSIMULACRA 2 and Butteraugli can differ between platforms, as they use the logarithm and power functions
+of the platform. The members compare frames: compare an animation frame by frame.
 
 <!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_ImageSimilarity;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -795,6 +804,14 @@ public static bool LookTheSame(string expectedPath, string actualPath)
 
         // 0 for the same structure and brightness, up to 64; the pHash is the most tolerant to small changes
         if (ImageSimilarity.ComputePerceptualHashDistance(expected.Frames[i], actual.Frames[i]) > 4)
+            return false;
+
+        // Perceptual metrics: 100 for identical pixels, about 90 when the difference is not visible
+        if (ImageSimilarity.ComputeSsimulacra2(expected.Frames[i], actual.Frames[i]) < 90)
+            return false;
+
+        // 0 for identical pixels, below about 1 when the difference is not visible, even in a small area
+        if (ImageSimilarity.ComputeButteraugliDistance(expected.Frames[i], actual.Frames[i]).MaxDistance > 1)
             return false;
     }
 

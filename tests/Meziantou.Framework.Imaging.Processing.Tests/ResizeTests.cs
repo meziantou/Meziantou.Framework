@@ -693,6 +693,132 @@ public sealed class ResizeTests
         }
     }
 
+    public static TheoryData<PixelFormat> FloatingPointFormats => [PixelFormat.RgbaFloat, PixelFormat.RgbaHalf];
+
+    [Theory]
+    [MemberData(nameof(FloatingPointFormats))]
+    public void FloatingPointResizeKeepsHighDynamicRangeValuesAndNegativeLobes(PixelFormat format)
+    {
+        if (format == PixelFormat.RgbaFloat)
+        {
+            CheckFloatingPointResize<RgbaFloat>();
+        }
+        else
+        {
+            CheckFloatingPointResize<RgbaHalf>();
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(FloatingPointFormats))]
+    public void FloatingPointLinearLightResizeFollowsTheLabelOfTheSamples(PixelFormat format)
+    {
+        if (format == PixelFormat.RgbaFloat)
+        {
+            CheckFloatingPointLinearLightResize<RgbaFloat>(tolerance: 1e-6);
+        }
+        else
+        {
+            CheckFloatingPointLinearLightResize<RgbaHalf>(tolerance: 1.0 / 2048);
+        }
+    }
+
+    [Fact]
+    public void FloatingPointResizeAgreesWithTheSixteenBitResize()
+    {
+        // The same pixels resized as Rgba64 and as RgbaFloat (converted exactly, v / 65535), then brought back to 16 bits:
+        // both paths filter the same values in double precision, so they only differ where the 16-bit path rounds a sum
+        // within a few millionths of a unit of a tie, which the single-precision result does not resolve: one unit at most
+        using var translucent = BuildGradient(23, 17, layout: null);
+        using var opaque = BuildGradient(23, 17, layout: null);
+        opaque.Frames[0].ProcessPixelRows(static pixels =>
+        {
+            for (var y = 0; y < pixels.Height; y++)
+            {
+                foreach (ref var pixel in pixels.GetRowSpan(y))
+                {
+                    pixel.A = ushort.MaxValue;
+                }
+            }
+        });
+
+        var largest = 0;
+        foreach (var source in new[] { translucent, opaque })
+        {
+            foreach (var filter in new[] { ResamplingFilter.NearestNeighbor, ResamplingFilter.Bilinear, ResamplingFilter.Bicubic, ResamplingFilter.Lanczos3 })
+            {
+                foreach (var space in new[] { ResizeWorkingSpace.Encoded, ResizeWorkingSpace.LinearSrgb })
+                {
+                    foreach (var size in new[] { new Size(9, 31), new Size(40, 5) })
+                    {
+                        var options = new ResizeOptions(size) { Mode = ResizeMode.Stretch, Filter = filter, WorkingSpace = space };
+                        using var integer = source.Clone();
+                        integer.Resize(options, Ct);
+                        using var floating = source.CloneAs<RgbaFloat>();
+                        Assert.Equal(ColorTransferFunction.Srgb, floating.Metadata.TransferFunction);
+                        floating.Resize(options, Ct);
+                        using var back = floating.CloneAs<Rgba64>(new PixelConversionOptions { OutOfRangeSamples = OutOfRangeSampleHandling.Clip });
+                        var expected = CopyAll(integer.Frames[0]);
+                        var actual = CopyAll(back.Frames[0]);
+                        for (var i = 0; i < expected.Length; i++)
+                        {
+                            // The 16-bit path makes an alpha below half a unit transparent black, the floating-point path
+                            // keeps it (and its colors) until it is rounded to 16 bits
+                            var alpha = Math.Abs(expected[i].A - actual[i].A);
+                            Assert.True(alpha <= 1, $"{filter} {space}: alpha {expected[i]} vs {actual[i]}");
+                            if (expected[i].A is 0)
+                                continue;
+
+                            largest = Math.Max(largest, Math.Max(alpha, Math.Max(Math.Abs(expected[i].R - actual[i].R), Math.Max(Math.Abs(expected[i].G - actual[i].G), Math.Abs(expected[i].B - actual[i].B)))));
+                        }
+                    }
+                }
+            }
+        }
+
+        Assert.True(largest <= 1, $"The largest difference is {largest} units");
+    }
+
+    [Fact]
+    public void TheBudgetOfAFloatingPointResizeCountsSixteenBytesPerPixel()
+    {
+        // The replacement of a 7x9 RgbaFloat frame holds 7 * 9 * 16 bytes: the limit is exact at the measured peak
+        var options = new ResizeOptions(7, 9) { Mode = ResizeMode.Stretch, Filter = ResamplingFilter.Bicubic };
+        long after, peak;
+        using (var probe = new Image<RgbaFloat>(4, 3, new RgbaFloat(0.5f, 2, -1, 0.75f)))
+        {
+            probe.Resize(options, Ct);
+            after = probe.Owner.Scope.LiveBytes;
+            peak = probe.Owner.Scope.GetDiagnostics().PeakLiveBytes;
+        }
+
+        Assert.True(after >= 7 * 9 * 16, $"The replacement storage is {after} bytes");
+        using (var half = new Image<RgbaHalf>(4, 3))
+        {
+            half.Resize(options, Ct);
+            Assert.True(after > half.Owner.Scope.LiveBytes, "A RgbaFloat frame is larger than a RgbaHalf frame");
+        }
+
+        var tight = new ImageConfiguration { Limits = new ImageResourceLimits { MaxLiveAllocationBytes = peak - 1 } };
+        using (var image = new Image<RgbaFloat>(4, 3, new RgbaFloat(0.5f, 2, -1, 0.75f), tight))
+        {
+            var storage = image.Frames[0].Storage;
+            var exception = Assert.Throws<ImageResourceLimitException>(() => image.Resize(options, Ct));
+            Assert.Equal(ImageResourceLimitKind.LiveAllocationBytes, exception.Kind);
+            Assert.Same(storage, image.Frames[0].Storage);
+            Assert.Equal(new Size(4, 3), image.Size);
+        }
+
+        var exact = new ImageConfiguration { Limits = new ImageResourceLimits { MaxLiveAllocationBytes = peak } };
+        using (var image = new Image<RgbaFloat>(4, 3, new RgbaFloat(0.5f, 2, -1, 0.75f), exact))
+        {
+            image.Resize(options, Ct);
+            Assert.Equal(new Size(7, 9), image.Size);
+            Assert.Equal(after, image.Owner.Scope.LiveBytes);
+            Assert.Equal(new RgbaFloat(0.5f, 2, -1, 0.75f), image.Frames[0][3, 4]);
+        }
+    }
+
     /// <summary>
     /// The linear working space decodes the samples with the transfer function that the image declares. Black and white
     /// average to half of the light, which each function encodes to another sample: <c>65535 * Encode(0.5)</c>, computed
@@ -1295,6 +1421,124 @@ public sealed class ResizeTests
         }
 
         return image;
+    }
+
+    private static void CheckFloatingPointResize<TPixel>()
+        where TPixel : unmanaged
+    {
+        // Catmull-Rom 2 -> 4 (UpsamplingCases): d = (-9 v, 26 v, 102 v, 137 v) / 128 for (0, v). With v = 4 the ringing
+        // gives -0.28125 and 4.28125, with v = -4 their opposites, and the constant 1000 stays 1000: nothing is clamped
+        using (var image = new Image<TPixel>(2, 1, ProcessingTests.FloatPixel<TPixel>(0, 0, 1000)))
+        {
+            image.Frames[0][1, 0] = ProcessingTests.FloatPixel<TPixel>(4, -4, 1000);
+            image.Resize(new ResizeOptions(4, 1) { Mode = ResizeMode.Stretch, Filter = ResamplingFilter.Bicubic }, Ct);
+            AssertFloatRow(image, new(-0.28125f, 0.28125f, 1000, 1), new(0.8125f, -0.8125f, 1000, 1), new(3.1875f, -3.1875f, 1000, 1), new(4.28125f, -4.28125f, 1000, 1));
+        }
+
+        // Bilinear 4 -> 2 (DownsamplingCases): weights 1/8, 3/8, 3/8, 1/8 on pixels -1 to 2 and 1 to 4, edges clamped
+        using (var image = new Image<TPixel>(4, 1))
+        {
+            for (var x = 0; x < 4; x++)
+            {
+                image.Frames[0][x, 0] = ProcessingTests.FloatPixel<TPixel>(80 * x, -80 * x, 0.25f);
+            }
+
+            image.Resize(new ResizeOptions(2, 1) { Mode = ResizeMode.Stretch, Filter = ResamplingFilter.Bilinear }, Ct);
+            AssertFloatRow(image, new(50, -50, 0.25f, 1), new(190, -190, 0.25f, 1));
+        }
+
+        // Alpha is a coverage: Catmull-Rom on alpha (0, 1) gives -9/128 (clamped to 0: transparent black, all bits zero),
+        // 26/128, 102/128 and 137/128 (clamped to 1); the colors are unpremultiplied by the unclamped alpha, so they stay
+        // those of the opaque pixel, and the hidden color of the transparent one plays no part
+        using (var image = new Image<TPixel>(2, 1, ProcessingTests.FloatPixel<TPixel>(5, 5, 5, 0)))
+        {
+            image.Frames[0][1, 0] = ProcessingTests.FloatPixel<TPixel>(2, -3, 1000, 1);
+            image.Resize(new ResizeOptions(4, 1) { Mode = ResizeMode.Stretch, Filter = ResamplingFilter.Bicubic }, Ct);
+            AssertFloatRow(image, new(0, 0, 0, 0), new(2, -3, 1000, 0.203125f), new(2, -3, 1000, 0.796875f), new(2, -3, 1000, 1));
+            Assert.Equal((0, 0, 0, 0), ProcessingTests.Bits(image.Frames[0][0, 0]));
+        }
+
+        // A sample that is not a number spreads to the outputs whose window reads it, and only to them
+        using (var image = new Image<TPixel>(4, 1, ProcessingTests.FloatPixel<TPixel>(1, 1, 1)))
+        {
+            image.Frames[0][0, 0] = ProcessingTests.FloatPixel<TPixel>(float.NaN, 1, 1);
+            image.Resize(new ResizeOptions(2, 1) { Mode = ResizeMode.Stretch, Filter = ResamplingFilter.Bilinear }, Ct);
+            Assert.True(float.IsNaN(ProcessingTests.ToRgbaFloat(image.Frames[0][0, 0]).R));
+            Assert.Equal(1f, ProcessingTests.ToRgbaFloat(image.Frames[0][0, 0]).G);
+            Assert.Equal(new RgbaFloat(1, 1, 1), ProcessingTests.ToRgbaFloat(image.Frames[0][1, 0]));
+        }
+
+        // The overshoot of the largest half, 65504 * 137 / 128 = 70109.75, is beyond the range of halves: it becomes an
+        // infinity, as the nearest half of any such value; a float keeps it
+        using (var image = new Image<TPixel>(2, 1, ProcessingTests.FloatPixel<TPixel>(0, 0, 0)))
+        {
+            image.Frames[0][1, 0] = ProcessingTests.FloatPixel<TPixel>(65504, 0, 0);
+            image.Resize(new ResizeOptions(4, 1) { Mode = ResizeMode.Stretch, Filter = ResamplingFilter.Bicubic }, Ct);
+            var last = ProcessingTests.ToRgbaFloat(image.Frames[0][3, 0]).R;
+            Assert.Equal(typeof(TPixel) == typeof(RgbaHalf) ? float.PositiveInfinity : 70109.75f, last);
+        }
+    }
+
+    private static void CheckFloatingPointLinearLightResize<TPixel>(double tolerance)
+        where TPixel : unmanaged
+    {
+        var options = new ResizeOptions(1, 1) { Mode = ResizeMode.Stretch, Filter = ResamplingFilter.Bilinear, WorkingSpace = ResizeWorkingSpace.LinearSrgb };
+
+        // Labeled as linear light (the default of a new image): filtered as stored, whatever the values
+        using (var linear = new Image<TPixel>(2, 1, ProcessingTests.FloatPixel<TPixel>(0, 0, 0)))
+        {
+            Assert.Equal(ColorTransferFunction.Linear, linear.Metadata.TransferFunction);
+            linear.Frames[0][1, 0] = ProcessingTests.FloatPixel<TPixel>(3, -1, 0.5f);
+            linear.Resize(options, Ct);
+            AssertFloatRow(linear, new RgbaFloat(1.5f, -0.5f, 0.25f, 1));
+        }
+
+        // Labeled sRGB: decoded and encoded again in double precision. Black and white average to half of the light,
+        // Encode(0.5) = 1.055 * 0.5^(1 / 2.4) - 0.055 = 0.7353569830524495
+        using (var srgb = new Image<TPixel>(2, 1, ProcessingTests.FloatPixel<TPixel>(0, 1, 0.5f)))
+        {
+            srgb.Metadata.TransferFunction = ColorTransferFunction.Srgb;
+            srgb.Frames[0][1, 0] = ProcessingTests.FloatPixel<TPixel>(1, 1, 0.5f);
+            srgb.Resize(options, Ct);
+            var pixel = ProcessingTests.ToRgbaFloat(srgb.Frames[0][0, 0]);
+            Assert.Equal(0.7353569830524495, pixel.R, tolerance);
+            Assert.Equal(1d, pixel.G, tolerance);
+            Assert.Equal(0.5, pixel.B, tolerance);
+        }
+
+        // An encoded value outside [0, 1], the domain of the function, or that is not a number has no linear-light value:
+        // rejected before anything changes, wherever it is (here, in the second frame, which is also the poster)
+        foreach (var value in new[] { 1.5f, -0.001f, float.NaN, float.NegativeInfinity })
+        {
+            using var image = new Image<TPixel>(2, 1, ProcessingTests.FloatPixel<TPixel>(0.25f, 0.5f, 0.75f));
+            image.Metadata.TransferFunction = ColorTransferFunction.Srgb;
+            var poster = image.AppendFrame();
+            poster[1, 0] = ProcessingTests.FloatPixel<TPixel>(0.5f, 0.5f, value, 0.5f);
+            image.SetPosterFrame(poster);
+            var storage = image.Frames[0].Storage;
+            var exception = Assert.Throws<UnsupportedImageFeatureException>(() => image.Resize(options, Ct));
+            Assert.Equal("Linear-light resizing of floating-point samples outside [0, 1]", exception.Feature);
+            Assert.Contains("(1, 0) of frame 1", exception.Message, StringComparison.Ordinal);
+            Assert.Equal(new Size(2, 1), image.Size);
+            Assert.Same(storage, image.Frames[0].Storage);
+
+            // The encoded working space reads the values as they are
+            image.Resize(new ResizeOptions(1, 1) { Mode = ResizeMode.Stretch, Filter = ResamplingFilter.Bilinear }, Ct);
+            Assert.Equal(new Size(1, 1), image.Size);
+        }
+
+        // Alpha is not decoded: an image whose colors are in [0, 1] is resized whatever its alpha
+        using var translucent = new Image<TPixel>(2, 1, ProcessingTests.FloatPixel<TPixel>(1, 1, 1, 2));
+        translucent.Metadata.TransferFunction = ColorTransferFunction.Srgb;
+        translucent.Resize(options, Ct);
+        AssertFloatRow(translucent, new RgbaFloat(1, 1, 1, 1));
+    }
+
+    private static void AssertFloatRow<TPixel>(Image<TPixel> image, params RgbaFloat[] expected)
+        where TPixel : unmanaged
+    {
+        Assert.Equal(new Size(expected.Length, 1), image.Size);
+        Assert.Equal(expected, CopyRow(image.Frames[0], 0).Select(ProcessingTests.ToRgbaFloat).ToArray());
     }
 
     private static Image<Gray8> BuildGray8(int[] row)

@@ -12,7 +12,12 @@ namespace Meziantou.Framework.Imaging;
 /// <para>
 /// Every member reads the pixels as 8-bit RGBA, whatever the pixel format, with the conversion of
 /// <see cref="Image.CloneAs{TPixel}"/>: 16-bit samples are rounded to 8 bits, gray samples are copied to the three color
-/// channels, and formats without alpha are opaque. Two frames of different pixel formats can be compared. Nothing is
+/// channels, and formats without alpha are opaque. Floating-point samples (<see cref="RgbaFloat"/>,
+/// <see cref="RgbaHalf"/>) are rounded to 8 bits as they are stored, whatever their transfer function label, like the
+/// samples of the other formats: a sample outside [0, 1], or that is not a number, has no 8-bit value and is rejected
+/// with an <see cref="UnsupportedImageFeatureException"/>, never clipped (convert such an image with
+/// <see cref="Image.CloneAs{TPixel}(PixelConversionOptions?)"/> and <see cref="PixelConversionOptions.OutOfRangeSamples"/>
+/// or <see cref="PixelConversionOptions.ToneMapping"/> first). Two frames of different pixel formats can be compared. Nothing is
 /// written to the pixels; the frames are leased for the duration of the call, so a frame cannot be measured while a lease is
 /// active on it. A frame can be compared with itself.
 /// </para>
@@ -78,6 +83,7 @@ public static class ImageSimilarity
     /// <exception cref="InvalidOperationException">A lease is active on one of the frames.</exception>
     /// <exception cref="ObjectDisposedException">A frame is no longer attached to a live image.</exception>
     /// <exception cref="ImageResourceLimitException">The row buffers exceed the allocation limit.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">A floating-point sample is outside [0, 1] or is not a number.</exception>
     public static double ComputeSsim(ImageFrame expected, ImageFrame actual, CancellationToken cancellationToken = default)
     {
         var (expectedStorage, actualStorage) = GetStorages(expected, actual, cancellationToken);
@@ -109,6 +115,7 @@ public static class ImageSimilarity
     /// <exception cref="InvalidOperationException">A lease is active on one of the frames.</exception>
     /// <exception cref="ObjectDisposedException">A frame is no longer attached to a live image.</exception>
     /// <exception cref="ImageResourceLimitException">The row buffers exceed the allocation limit.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">A floating-point sample is outside [0, 1] or is not a number.</exception>
     public static double ComputePsnr(ImageFrame expected, ImageFrame actual, CancellationToken cancellationToken = default)
         => Compute(expected, actual, (_, e, a, ct) => PsnrCalculator.Compute(e, a, ct), cancellationToken);
 
@@ -125,6 +132,7 @@ public static class ImageSimilarity
     /// <exception cref="InvalidOperationException">A lease is active on one of the frames.</exception>
     /// <exception cref="ObjectDisposedException">A frame is no longer attached to a live image.</exception>
     /// <exception cref="ImageResourceLimitException">The planes of the computation exceed the allocation limit.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">A floating-point sample is outside [0, 1] or is not a number.</exception>
     public static double ComputeSsimulacra2(ImageFrame expected, ImageFrame actual, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(expected);
@@ -148,6 +156,7 @@ public static class ImageSimilarity
     /// <exception cref="InvalidOperationException">A lease is active on one of the frames.</exception>
     /// <exception cref="ObjectDisposedException">A frame is no longer attached to a live image.</exception>
     /// <exception cref="ImageResourceLimitException">The planes of the computation exceed the allocation limit.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">A floating-point sample is outside [0, 1] or is not a number.</exception>
     public static ButteraugliDistance ComputeButteraugliDistance(ImageFrame expected, ImageFrame actual, CancellationToken cancellationToken = default)
         => Compute(expected, actual, ButteraugliCalculator.Compute, cancellationToken);
 
@@ -159,6 +168,7 @@ public static class ImageSimilarity
     /// <exception cref="InvalidOperationException">A lease is active on the frame.</exception>
     /// <exception cref="ObjectDisposedException">The frame is no longer attached to a live image.</exception>
     /// <exception cref="ImageResourceLimitException">The row buffer exceeds the allocation limit.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">A floating-point sample is outside [0, 1] or is not a number.</exception>
     public static ulong ComputeDifferenceHash(ImageFrame frame, CancellationToken cancellationToken = default) => ComputeHash(frame, perceptual: false, cancellationToken);
 
     /// <summary>Computes the 64-bit perceptual hash (pHash) of a frame composited over a black background.</summary>
@@ -169,6 +179,7 @@ public static class ImageSimilarity
     /// <exception cref="InvalidOperationException">A lease is active on the frame.</exception>
     /// <exception cref="ObjectDisposedException">The frame is no longer attached to a live image.</exception>
     /// <exception cref="ImageResourceLimitException">The row buffer exceeds the allocation limit.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">A floating-point sample is outside [0, 1] or is not a number.</exception>
     public static ulong ComputePerceptualHash(ImageFrame frame, CancellationToken cancellationToken = default) => ComputeHash(frame, perceptual: true, cancellationToken);
 
     /// <summary>
@@ -184,6 +195,7 @@ public static class ImageSimilarity
     /// <exception cref="InvalidOperationException">A lease is active on one of the frames.</exception>
     /// <exception cref="ObjectDisposedException">A frame is no longer attached to a live image.</exception>
     /// <exception cref="ImageResourceLimitException">The row buffers exceed the allocation limit.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">A floating-point sample is outside [0, 1] or is not a number.</exception>
     public static int ComputeDifferenceHashDistance(ImageFrame expected, ImageFrame actual, CancellationToken cancellationToken = default) => ComputeDistance(expected, actual, perceptual: false, cancellationToken);
 
     /// <summary>
@@ -199,6 +211,7 @@ public static class ImageSimilarity
     /// <exception cref="InvalidOperationException">A lease is active on one of the frames.</exception>
     /// <exception cref="ObjectDisposedException">A frame is no longer attached to a live image.</exception>
     /// <exception cref="ImageResourceLimitException">The row buffers exceed the allocation limit.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">A floating-point sample is outside [0, 1] or is not a number.</exception>
     public static int ComputePerceptualHashDistance(ImageFrame expected, ImageFrame actual, CancellationToken cancellationToken = default) => ComputeDistance(expected, actual, perceptual: true, cancellationToken);
 
     private static ulong ComputeHash(ImageFrame frame, bool perceptual, CancellationToken cancellationToken)

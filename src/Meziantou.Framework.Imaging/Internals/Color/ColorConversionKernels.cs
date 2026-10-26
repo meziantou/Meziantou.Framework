@@ -18,7 +18,9 @@ internal static class ColorConversionKernels
     /// <summary>
     /// Converts every pixel of a frame from the leased source to the leased destination of the same size and pixel
     /// format: the color channels go through the conversion at the storage precision (16-bit samples never go through
-    /// 8 bits), alpha is copied unchanged, hidden colors of transparent pixels included.
+    /// 8 bits, floating-point samples are stored as the nearest <see cref="float"/> or <see cref="Half"/> of the result,
+    /// clipped to [0, 1] like every result), alpha is copied unchanged, hidden colors of transparent pixels included.
+    /// The caller has checked that floating-point colors are numbers in [0, 1].
     /// </summary>
     /// <typeparam name="TPixel">The pixel type of both storages; its color channels match the channel counts of the conversion.</typeparam>
     /// <param name="source">The leased source pixels.</param>
@@ -60,6 +62,14 @@ internal static class ColorConversionKernels
             else if (typeof(TPixel) == typeof(Gray16))
             {
                 Convert<ushort, IccUInt16Sample>(pipeline, unsafe(MemoryMarshal.Cast<byte, ushort>(source.GetRowBytes(y))), unsafe(MemoryMarshal.Cast<byte, ushort>(destination.GetRowBytes(y))), 1, 1, uint16Tables: uint16Tables);
+            }
+            else if (typeof(TPixel) == typeof(RgbaFloat))
+            {
+                Convert<float, IccSingleSample>(pipeline, unsafe(MemoryMarshal.Cast<byte, float>(source.GetRowBytes(y))), unsafe(MemoryMarshal.Cast<byte, float>(destination.GetRowBytes(y))), 4, 4);
+            }
+            else if (typeof(TPixel) == typeof(RgbaHalf))
+            {
+                Convert<Half, IccHalfSample>(pipeline, unsafe(MemoryMarshal.Cast<byte, Half>(source.GetRowBytes(y))), unsafe(MemoryMarshal.Cast<byte, Half>(destination.GetRowBytes(y))), 4, 4);
             }
             else
             {

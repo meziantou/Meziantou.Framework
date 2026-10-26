@@ -20,7 +20,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </remarks>
 internal static class ProcessingKernels
 {
-    /// <summary>The side of the square tiles used by transposing kernels (at most 8 KiB of stack for 8-byte pixels).</summary>
+    /// <summary>The side of the square tiles used by transposing kernels (at most 16 KiB of stack, for 16-byte RgbaFloat pixels).</summary>
     internal const int TileSize = 32;
 
     /// <summary>The number of rows processed between two cancellation checks.</summary>
@@ -591,8 +591,9 @@ internal static class ProcessingKernels
 
     /// <summary>
     /// Replaces the color of every pixel with its Rec. 709 luma on the encoded values, at the storage precision
-    /// (<see cref="PixelConverter.Luma(uint, uint, uint, uint)"/>, the normative rule of the library); alpha is
-    /// kept. Gray formats are already gray and are left unchanged.
+    /// (<see cref="PixelConverter.Luma(uint, uint, uint, uint)"/>, the normative rule of the library), or, for the
+    /// floating-point formats, on the stored values in double precision without clamping (<see cref="FloatingPointLuma"/>);
+    /// alpha is kept. Gray formats are already gray and are left unchanged.
     /// </summary>
     public static void Grayscale<TPixel>(scoped in PixelLease lease, CancellationToken cancellationToken)
         where TPixel : unmanaged
@@ -661,11 +662,38 @@ internal static class ProcessingKernels
                 pixel.B = luma;
             }
         }
+        else if (typeof(TPixel) == typeof(RgbaFloat))
+        {
+            foreach (ref var pixel in unsafe(MemoryMarshal.Cast<TPixel, RgbaFloat>(row)))
+            {
+                var luma = (float)FloatingPointLuma(pixel.R, pixel.G, pixel.B);
+                pixel.R = luma;
+                pixel.G = luma;
+                pixel.B = luma;
+            }
+        }
+        else if (typeof(TPixel) == typeof(RgbaHalf))
+        {
+            foreach (ref var pixel in unsafe(MemoryMarshal.Cast<TPixel, RgbaHalf>(row)))
+            {
+                var luma = (Half)FloatingPointLuma((double)pixel.R, (double)pixel.G, (double)pixel.B);
+                pixel.R = luma;
+                pixel.G = luma;
+                pixel.B = luma;
+            }
+        }
         else
         {
             throw new NotSupportedException($"The pixel type '{typeof(TPixel).Name}' is not supported.");
         }
     }
+
+    /// <summary>
+    /// The Rec. 709 luma of floating-point colors, on the stored values: <c>0.2126 R + 0.7152 G + 0.0722 B</c> in double
+    /// precision, without clamping (an HDR or out-of-gamut color keeps its light), rounded once to the sample type by the
+    /// caller. A sample that is not a number gives a luma that is not a number.
+    /// </summary>
+    private static double FloatingPointLuma(double r, double g, double b) => (0.2126 * r) + (0.7152 * g) + (0.0722 * b);
 
     /// <summary>
     /// Replaces the colors of the leading pixels of a row with their luma, 4 pixels at a time

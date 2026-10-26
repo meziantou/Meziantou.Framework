@@ -424,6 +424,42 @@ public sealed class ImageSimilarityTests
     }
 
     [Fact]
+    public void AllMembers_RejectFloatingPointSamplesWithoutEightBitValue()
+    {
+        // A sample outside [0, 1], alpha included, or that is not a number has no 8-bit value: it is never clipped
+        using var reference = new Image<RgbaFloat>(8, 8, new RgbaFloat(0.5f, 0.5f, 0.5f));
+        foreach (var (color, alpha) in new[] { (1.5f, 1f), (-0.25f, 1f), (float.NaN, 1f), (0.5f, 2f) })
+        {
+            using var image = new Image<RgbaHalf>(8, 8, new RgbaHalf((Half)0.5f, (Half)0.5f, (Half)0.5f));
+            image.Frames[0][3, 5] = new RgbaHalf((Half)0.5f, (Half)color, (Half)0.5f, (Half)alpha);
+            var expected = reference.Frames[0];
+            var actual = image.Frames[0];
+            Action[] members =
+            [
+                () => ImageSimilarity.ComputeSsim(expected, actual, Ct),
+                () => ImageSimilarity.ComputePsnr(actual, expected, Ct),
+                () => ImageSimilarity.ComputeSsimulacra2(expected, actual, Ct),
+                () => ImageSimilarity.ComputeButteraugliDistance(expected, actual, Ct),
+                () => ImageSimilarity.ComputeDifferenceHash(actual, Ct),
+                () => ImageSimilarity.ComputePerceptualHash(actual, Ct),
+                () => ImageSimilarity.ComputeDifferenceHashDistance(expected, actual, Ct),
+                () => ImageSimilarity.ComputePerceptualHashDistance(actual, expected, Ct),
+            ];
+
+            foreach (var member in members)
+            {
+                var exception = Assert.Throws<UnsupportedImageFeatureException>(member);
+                Assert.Equal("Comparison of floating-point samples outside [0, 1]", exception.Feature);
+                Assert.Contains("RgbaHalf pixel (3, 5)", exception.Message, StringComparison.Ordinal);
+            }
+        }
+
+        // In [0, 1], they are rounded to 8 bits like the samples of the other formats: 0.5 is 127.5, which rounds up
+        using var rgba32 = new Image<Rgba32>(8, 8, new Rgba32(128, 128, 128));
+        Assert.Equal(double.PositiveInfinity, ImageSimilarity.ComputePsnr(rgba32.Frames[0], reference.Frames[0], Ct));
+    }
+
+    [Fact]
     public void AllMembers_Round16BitSamplesTo8Bits()
     {
         // 0x12 is 0x1212 on 16 bits, and the midpoint with 0x13 is 0x1292.8: 0x1292 rounds to 0x12, and 0x1293 to 0x13
@@ -799,6 +835,8 @@ public sealed class ImageSimilarityTests
         PixelFormat.Rgba64 => image.CloneAs<Rgba64>(),
         PixelFormat.Gray8 => image.CloneAs<Gray8>(),
         PixelFormat.Gray16 => image.CloneAs<Gray16>(),
+        PixelFormat.RgbaFloat => image.CloneAs<RgbaFloat>(),
+        PixelFormat.RgbaHalf => image.CloneAs<RgbaHalf>(),
         _ => throw new ArgumentOutOfRangeException(nameof(format), format, message: null),
     };
 

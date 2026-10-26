@@ -225,10 +225,11 @@ public abstract class ImageFrame
 
     /// <summary>
     /// Writes the rectangle of the leased source located at <paramref name="origin"/> to the leased destination, filling
-    /// what lies outside the source with <paramref name="fill"/> (geometry transactions). The color must be exactly
-    /// representable in the frame pixel format.
+    /// what lies outside the source with the background of <paramref name="fill"/> (geometry transactions): its typed
+    /// background when it is an analysis of the frame pixel type, otherwise its <see cref="AutoCropAnalysis.BackgroundColor"/>,
+    /// which must then be exactly representable in the frame pixel format.
     /// </summary>
-    internal abstract void ExtendPixels(scoped in PixelLease source, scoped in PixelLease destination, Point origin, Rgba64 fill, CancellationToken cancellationToken);
+    internal abstract void ExtendPixels(scoped in PixelLease source, scoped in PixelLease destination, Point origin, AutoCropAnalysis fill, CancellationToken cancellationToken);
 
     /// <summary>Replaces the storage after a committed geometry transaction; the frame keeps its identity.</summary>
     /// <param name="storage">The replacement storage, owned by the same image.</param>

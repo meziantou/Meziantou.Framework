@@ -38,8 +38,8 @@ namespace Meziantou.Framework.Imaging;
 /// </para>
 /// <para>
 /// Crop, auto-crop, rotations, mirrors and auto-orient are exact pixel permutations: every sample, including 16-bit low
-/// bits and alpha, is copied unchanged (an auto-crop that enlarges the canvas also writes the detected background color
-/// around the copied pixels). Operations run on the calling thread, except that <see cref="Resize"/> and
+/// bits, floating-point samples of any value (not-a-number payloads included) and alpha, is copied unchanged (an
+/// auto-crop that enlarges the canvas also writes the detected background color around the copied pixels). Operations run on the calling thread, except that <see cref="Resize"/> and
 /// <see cref="Convolve(Image, ConvolutionOptions, CancellationToken)"/> may also use up to
 /// <see cref="ImageConfiguration.MaxDegreeOfParallelism"/> workers for large frames (identical results).
 /// </para>
@@ -85,6 +85,15 @@ public static class ImageProcessingExtensions
     /// the 8-bit scale and are multiplied by 257 for 16-bit samples. A fully transparent pixel is read as transparent
     /// black: hidden colors never count.
     /// </para>
+    /// <para>
+    /// Floating-point samples (<see cref="RgbaFloat"/>, <see cref="RgbaHalf"/>) are analyzed as they are stored, in
+    /// double precision and without clipping, so values above 1 and below 0 count as they are: the reduction to 8 bits of
+    /// the first step is the nearest point of the 8-bit grid, <c>floor(255 v + 1/2)</c>, which can be outside [0, 255];
+    /// the luma bucket is that of the luma of that point divided by 255, and is 0 below 0 and 10 above 1; and the
+    /// thresholds are divided by 255 (the differences are those of the samples). A sample that is not a number or is
+    /// infinite has no distance to the background: the analysis rejects it. The background of the analysis is the
+    /// border pixel as stored (<see cref="AutoCropAnalysis{TPixel}.BackgroundColor"/>).
+    /// </para>
     /// <list type="number">
     /// <item>The pixels of the one-pixel outer border of every frame are tallied by color, after reduction to 8 bits, in
     /// frame order and row by row. At most <see cref="AutoCropOptions.ColorThreshold"/> distinct colors are tracked; later
@@ -118,6 +127,7 @@ public static class ImageProcessingExtensions
     /// <see cref="AutoCropAnalysis.Success"/> is <see langword="false"/> when no border or no content of at least 3x3 pixels
     /// is found, for example for a uniform image.
     /// </returns>
+    /// <exception cref="UnsupportedImageFeatureException">A floating-point sample is not a number or is infinite.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
     /// <exception cref="InvalidOperationException">A pixel lease is active on a frame.</exception>
     /// <exception cref="ObjectDisposedException">The image is disposed.</exception>
@@ -136,6 +146,7 @@ public static class ImageProcessingExtensions
     /// <param name="options">The options, or <see langword="null"/> for <see cref="AutoCropOptions.Default"/>.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
     /// <returns>The analysis.</returns>
+    /// <exception cref="UnsupportedImageFeatureException">A floating-point sample is not a number or is infinite.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
     /// <exception cref="InvalidOperationException">A pixel lease is active on a frame.</exception>
     /// <exception cref="ObjectDisposedException">The image is disposed.</exception>
@@ -168,7 +179,7 @@ public static class ImageProcessingExtensions
     /// <param name="options">The options, or <see langword="null"/> for <see cref="AutoCropOptions.Default"/>.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
     /// <returns><see langword="true"/> if the image was cropped or enlarged; <see langword="false"/> if it is unchanged.</returns>
-    /// <exception cref="UnsupportedImageFeatureException">The cursor hotspot of a frame designates a pixel that the crop removes. The image is unchanged.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The cursor hotspot of a frame designates a pixel that the crop removes, or a floating-point sample is not a number or is infinite. The image is unchanged.</exception>
     /// <exception cref="ImageResourceLimitException">The enlarged canvas exceeds <see cref="ImageResourceLimits.MaxWidth"/>, <see cref="ImageResourceLimits.MaxHeight"/> or <see cref="ImageResourceLimits.MaxFramePixels"/>, or the replacement buffers would exceed the allocation limit. The image is unchanged.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled. The image is unchanged.</exception>
     /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
@@ -193,7 +204,7 @@ public static class ImageProcessingExtensions
     /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
     /// <returns><see langword="true"/> if the image was cropped or enlarged; <see langword="false"/> if it is unchanged.</returns>
     /// <exception cref="ArgumentException"><see cref="AutoCropAnalysis.CanvasSize"/> is not the size of the image.</exception>
-    /// <exception cref="UnsupportedImageFeatureException">The canvas must be enlarged but <see cref="AutoCropAnalysis.BackgroundColor"/> is not exactly representable in the pixel format of the image (it comes from an image of another pixel format), or the cursor hotspot of a frame designates a pixel that the crop removes. The image is unchanged.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The canvas must be enlarged but <see cref="AutoCropAnalysis.BackgroundColor"/> is not exactly representable in the pixel format of the image (it comes from an image of another pixel format, or from an image of floating-point pixels of another pixel type, whose background is exact in its own type only), or the cursor hotspot of a frame designates a pixel that the crop removes. The image is unchanged.</exception>
     /// <exception cref="ImageResourceLimitException">The enlarged canvas exceeds <see cref="ImageResourceLimits.MaxWidth"/>, <see cref="ImageResourceLimits.MaxHeight"/> or <see cref="ImageResourceLimits.MaxFramePixels"/>, or the replacement buffers would exceed the allocation limit. The image is unchanged.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled. The image is unchanged.</exception>
     /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
@@ -228,6 +239,21 @@ public static class ImageProcessingExtensions
     /// storages.
     /// </para>
     /// <para>
+    /// Floating-point samples (<see cref="RgbaFloat"/>, <see cref="RgbaHalf"/>) go through the same double-precision
+    /// filters, their values being the working samples (premultiplied by alpha, which is a fraction of 1). The colors are
+    /// rounded to the nearest <see cref="float"/> or <see cref="Half"/> and are not clamped, so values above 1 (high
+    /// dynamic range highlights) and the negative lobes of the filters survive; a finite value beyond the largest half
+    /// becomes an infinity. Alpha is clamped to [0, 1]. A sample that is not a number is not treated apart: it spreads to
+    /// every output sample whose filter reads it. Nearest neighbor copies them exactly too.
+    /// </para>
+    /// <para>
+    /// With <see cref="ResizeWorkingSpace.LinearSrgb"/>, floating-point samples labeled as linear light
+    /// (<see cref="ImageMetadata.TransferFunction"/>, the default of these formats) are filtered as they are, whatever
+    /// their values. Samples labeled with another transfer function are decoded and encoded again with it in double
+    /// precision: its domain is [0, 1], so a color sample outside it, or that is not a number, is rejected before anything
+    /// changes, and the filtered light is clamped to [0, 1] before it is encoded, as for the integer formats.
+    /// </para>
+    /// <para>
     /// When the image configuration allows several workers (<see cref="ImageConfiguration.MaxDegreeOfParallelism"/>), the
     /// output rows of a large frame are split into bands resized concurrently, each with its own scratch; the result is
     /// identical to the single-worker result.
@@ -237,7 +263,7 @@ public static class ImageProcessingExtensions
     /// <param name="options">The resize options.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
     /// <exception cref="ArgumentException">Upscaling is required but <see cref="ResizeOptions.AllowUpscaling"/> is <see langword="false"/> (for <see cref="ResizeMode.Stretch"/> and <see cref="ResizeMode.Cover"/>).</exception>
-    /// <exception cref="UnsupportedImageFeatureException"><see cref="ResizeWorkingSpace.LinearSrgb"/> is requested for an image with an incompatible ICC profile or with reserved transfer characteristics, or the cursor hotspot of a frame designates a pixel that <see cref="ResizeMode.Cover"/> removes. The image is unchanged.</exception>
+    /// <exception cref="UnsupportedImageFeatureException"><see cref="ResizeWorkingSpace.LinearSrgb"/> is requested for an image with an incompatible ICC profile or with reserved transfer characteristics, or for floating-point samples outside [0, 1] that are not labeled as linear light, or the cursor hotspot of a frame designates a pixel that <see cref="ResizeMode.Cover"/> removes. The image is unchanged.</exception>
     /// <exception cref="ImageResourceLimitException">The replacement buffers would exceed the allocation limit. The image is unchanged.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled. The image is unchanged.</exception>
     /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
@@ -348,7 +374,9 @@ public static class ImageProcessingExtensions
     /// Converts every frame of the image (including the poster frame) to grayscale in place, keeping the pixel format and
     /// alpha. Uses Rec. 709 luma coefficients (0.2126, 0.7152, 0.0722) on the encoded sample values, nearest rounding with
     /// ties upward, and clamping, at the storage precision: <c>Y = (2126 R + 7152 G + 722 B + 5000) / 10000</c>, stored
-    /// into R, G and B. Gray formats are left unchanged. The pixel format is kept, so a compatible RGB profile stays. Use <see cref="Image.CloneAs{TPixel}(PixelConversionOptions?)"/> to obtain
+    /// into R, G and B. Floating-point samples (<see cref="RgbaFloat"/>, <see cref="RgbaHalf"/>) get
+    /// <c>0.2126 R + 0.7152 G + 0.0722 B</c> of their stored values in double precision, rounded to the nearest sample
+    /// and not clamped (a sample that is not a number gives a luma that is not a number). Gray formats are left unchanged. The pixel format is kept, so a compatible RGB profile stays. Use <see cref="Image.CloneAs{TPixel}(PixelConversionOptions?)"/> to obtain
     /// <see cref="Gray8"/> or <see cref="Gray16"/> storage.
     /// </summary>
     /// <param name="image">The image to modify.</param>
@@ -467,6 +495,13 @@ public static class ImageProcessingExtensions
     /// any other. Colors outside the destination gamut are clipped per channel.
     /// </para>
     /// <para>
+    /// Floating-point samples (<see cref="RgbaFloat"/>, <see cref="RgbaHalf"/>) are read as they are and the results are
+    /// stored as the nearest <see cref="float"/> or <see cref="Half"/>, without reduction to 16 bits. A profile and a CICP
+    /// color description encode values in [0, 1]: a color sample outside that range, or that is not a number, is rejected
+    /// before anything changes (bring the samples into range first, for example with the tone mapping of
+    /// <see cref="PixelConversionOptions.ToneMapping"/>). Alpha is copied unchanged, whatever its value.
+    /// </para>
+    /// <para>
     /// The operation is transactional: the converted pixels are built in new buffers, budgeted together with the current
     /// ones, and published with the new profile. On failure or cancellation the image is left exactly as it was. After a
     /// successful conversion, <see cref="ImageMetadata.IccProfile"/> is <paramref name="destinationProfile"/>,
@@ -484,7 +519,8 @@ public static class ImageProcessingExtensions
     /// The current or the destination profile cannot label the pixel format, the image has both a profile and the linear
     /// transfer function label, a profile is of a kind that is not supported, the CICP color description of an image
     /// without profile has reserved color primaries or transfer characteristics, or the samples are high dynamic range
-    /// ones and <paramref name="options"/> has no <see cref="IccColorTransformOptions.ToneMapping"/>. The image is unchanged.
+    /// ones and <paramref name="options"/> has no <see cref="IccColorTransformOptions.ToneMapping"/>, or a floating-point
+    /// color sample is outside [0, 1] or is not a number. The image is unchanged.
     /// </exception>
     /// <exception cref="InvalidImageContentException">The current or the destination profile is malformed. The image is unchanged.</exception>
     /// <exception cref="ImageResourceLimitException">The replacement buffers would exceed the allocation limit. The image is unchanged.</exception>
@@ -514,6 +550,15 @@ public static class ImageProcessingExtensions
     /// become 0.
     /// </para>
     /// <para>
+    /// Floating-point samples (<see cref="RgbaFloat"/>, <see cref="RgbaHalf"/>) follow the rules of
+    /// <see cref="Resize"/>: their values are the working samples, the colors are rounded to the nearest
+    /// <see cref="float"/> or <see cref="Half"/> without clamping (negative sums and values above 1 are kept), alpha is
+    /// clamped to [0, 1], and a sample that is not a number spreads to the pixels whose kernel reads it. With
+    /// <see cref="ConvolutionWorkingSpace.LinearSrgb"/>, samples labeled as linear light are filtered as they are, and the
+    /// other ones must be numbers in [0, 1], the domain of their transfer function: otherwise nothing changes and the
+    /// operation is rejected.
+    /// </para>
+    /// <para>
     /// The image is rewritten in place; the scratch storage (a few rows per worker, proportional to the kernel height) is
     /// charged to the image allocation scope and rented before any pixel changes. When the image configuration allows
     /// several workers (<see cref="ImageConfiguration.MaxDegreeOfParallelism"/>), the rows of a large frame are split into
@@ -523,7 +568,7 @@ public static class ImageProcessingExtensions
     /// <param name="image">The image to modify.</param>
     /// <param name="options">The convolution options.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests. On cancellation, some frames or rows may already be convolved.</param>
-    /// <exception cref="UnsupportedImageFeatureException"><see cref="ConvolutionWorkingSpace.LinearSrgb"/> is requested for an image with an incompatible ICC profile or with reserved transfer characteristics. Nothing is changed.</exception>
+    /// <exception cref="UnsupportedImageFeatureException"><see cref="ConvolutionWorkingSpace.LinearSrgb"/> is requested for an image with an incompatible ICC profile or with reserved transfer characteristics, or for floating-point samples outside [0, 1] that are not labeled as linear light. Nothing is changed.</exception>
     /// <exception cref="ImageResourceLimitException">The scratch storage would exceed the allocation limit. The image is unchanged.</exception>
     /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
     /// <exception cref="ObjectDisposedException">The image is disposed.</exception>
@@ -541,7 +586,7 @@ public static class ImageProcessingExtensions
     /// <param name="frame">The frame to modify.</param>
     /// <param name="options">The convolution options.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests. On cancellation, some rows may already be convolved.</param>
-    /// <exception cref="UnsupportedImageFeatureException"><see cref="ConvolutionWorkingSpace.LinearSrgb"/> is requested for an image with an incompatible ICC profile or with reserved transfer characteristics. Nothing is changed.</exception>
+    /// <exception cref="UnsupportedImageFeatureException"><see cref="ConvolutionWorkingSpace.LinearSrgb"/> is requested for an image with an incompatible ICC profile or with reserved transfer characteristics, or for floating-point samples outside [0, 1] that are not labeled as linear light. Nothing is changed.</exception>
     /// <exception cref="ImageResourceLimitException">The scratch storage would exceed the allocation limit. The frame is unchanged.</exception>
     /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
     /// <exception cref="ObjectDisposedException">The frame is no longer attached to a live image.</exception>
@@ -579,7 +624,7 @@ public static class ImageProcessingExtensions
     /// <param name="cancellationToken">The token to monitor for cancellation requests. On cancellation, some frames or rows may already be blurred.</param>
     /// <exception cref="ArgumentException"><paramref name="sigma"/> is not a finite number.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="sigma"/> is negative or exceeds 10000, or <paramref name="edgeMode"/> or <paramref name="workingSpace"/> is not a defined value.</exception>
-    /// <exception cref="UnsupportedImageFeatureException"><see cref="ConvolutionWorkingSpace.LinearSrgb"/> is requested for an image with an incompatible ICC profile. Nothing is changed.</exception>
+    /// <exception cref="UnsupportedImageFeatureException"><see cref="ConvolutionWorkingSpace.LinearSrgb"/> is requested for an image with an incompatible ICC profile, or for floating-point samples outside [0, 1] that are not labeled as linear light. Nothing is changed.</exception>
     /// <exception cref="ImageResourceLimitException">The scratch storage would exceed the allocation limit. The image is unchanged.</exception>
     /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
     /// <exception cref="ObjectDisposedException">The image is disposed.</exception>
@@ -608,7 +653,7 @@ public static class ImageProcessingExtensions
     /// <param name="cancellationToken">The token to monitor for cancellation requests. On cancellation, some rows may already be blurred.</param>
     /// <exception cref="ArgumentException"><paramref name="sigma"/> is not a finite number.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="sigma"/> is negative or exceeds 10000, or <paramref name="edgeMode"/> or <paramref name="workingSpace"/> is not a defined value.</exception>
-    /// <exception cref="UnsupportedImageFeatureException"><see cref="ConvolutionWorkingSpace.LinearSrgb"/> is requested for an image with an incompatible ICC profile. Nothing is changed.</exception>
+    /// <exception cref="UnsupportedImageFeatureException"><see cref="ConvolutionWorkingSpace.LinearSrgb"/> is requested for an image with an incompatible ICC profile, or for floating-point samples outside [0, 1] that are not labeled as linear light. Nothing is changed.</exception>
     /// <exception cref="ImageResourceLimitException">The scratch storage would exceed the allocation limit. The frame is unchanged.</exception>
     /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
     /// <exception cref="ObjectDisposedException">The frame is no longer attached to a live image.</exception>

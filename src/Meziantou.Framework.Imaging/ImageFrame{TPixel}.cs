@@ -133,10 +133,20 @@ public sealed class ImageFrame<TPixel> : ImageFrame
     internal override void AutoCropAnalyzePixels(scoped in PixelLease lease, AutoCropAnalyzer analyzer, CancellationToken cancellationToken)
         => analyzer.Accumulate<TPixel>(lease, cancellationToken);
 
-    internal override void ExtendPixels(scoped in PixelLease source, scoped in PixelLease destination, Point origin, Rgba64 fill, CancellationToken cancellationToken)
+    internal override void ExtendPixels(scoped in PixelLease source, scoped in PixelLease destination, Point origin, AutoCropAnalysis fill, CancellationToken cancellationToken)
     {
+        // The typed background is the exact pixel (the Rgba64 of a floating-point analysis is clipped)
         TPixel pixel = default;
-        PixelConverter.ConvertRow(new ReadOnlySpan<Rgba64>(in fill), new Span<TPixel>(ref pixel));
+        if (fill is AutoCropAnalysis<TPixel> typed)
+        {
+            pixel = typed.BackgroundColor;
+        }
+        else
+        {
+            var color = fill.BackgroundColor;
+            PixelConverter.ConvertRow(new ReadOnlySpan<Rgba64>(in color), new Span<TPixel>(ref pixel));
+        }
+
         ProcessingKernels.Extend(source, destination, origin, pixel, cancellationToken);
     }
 

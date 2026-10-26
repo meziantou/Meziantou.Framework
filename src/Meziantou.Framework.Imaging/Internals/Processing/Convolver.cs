@@ -72,6 +72,14 @@ internal static class Convolver
         {
             Convolve<byte>(storage, plan, alpha, cancellationToken);
         }
+        else if (typeof(TPixel) == typeof(RgbaFloat))
+        {
+            Convolve<float>(storage, plan, alpha, cancellationToken);
+        }
+        else if (typeof(TPixel) == typeof(RgbaHalf))
+        {
+            Convolve<Half>(storage, plan, alpha, cancellationToken);
+        }
         else
         {
             throw new NotSupportedException($"The pixel type '{typeof(TPixel).Name}' is not supported.");

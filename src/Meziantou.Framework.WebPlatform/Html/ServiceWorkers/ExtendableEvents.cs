@@ -142,6 +142,73 @@ public sealed class InstallEvent : ExtendableEvent
         : base(type, eventInitDict)
     {
     }
+
+    /// <summary>
+    /// Registers a rule of the static routing API (https://w3c.github.io/ServiceWorker/#dom-installevent-addroutes): the
+    /// requests that match the condition of the rule are handled by its source before the fetch event is dispatched.
+    /// </summary>
+    /// <returns>A task completed when the rule is registered, or failed with a <see cref="TypeErrorException"/> when the rule is not valid.</returns>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-installevent-addroutes"/>
+    [IdlMember("addRoutes", "https://w3c.github.io/ServiceWorker/#dom-installevent-addroutes")]
+    public Task AddRoutes(RouterRule rules)
+    {
+        ArgumentNullException.ThrowIfNull(rules);
+        return AddRoutes([rules]);
+    }
+
+    /// <summary>
+    /// Registers rules of the static routing API (https://w3c.github.io/ServiceWorker/#dom-installevent-addroutes): a request
+    /// is handled by the source of the first rule whose condition it matches, before the fetch event is dispatched.
+    /// </summary>
+    /// <returns>A task completed when the rules are registered, or failed with a <see cref="TypeErrorException"/> when a rule is not valid or when there are too many conditions.</returns>
+    /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-installevent-addroutes"/>
+    [IdlMember("addRoutes", "https://w3c.github.io/ServiceWorker/#dom-installevent-addroutes")]
+    public Task AddRoutes(IReadOnlyList<RouterRule> rules)
+    {
+        ArgumentNullException.ThrowIfNull(rules);
+        if (GlobalScope.Current is not ServiceWorkerGlobalScope global)
+            return Task.FromException(DomException.InvalidState("addRoutes() must be called from a service worker"));
+
+        var serviceWorker = global.ServiceWorkerRecord;
+        if (ServiceWorkerRouter.Verify(rules, serviceWorker) is not { } verifiedRules)
+            return Task.FromException(new TypeErrorException("The router rule is not valid"));
+
+        // The lifetime of the event is extended until the rules are registered (the lifetime promise is always fulfilled, so
+        // that a rejection does not fail the installation)
+        var lifetimePromise = new TaskCompletionSource();
+        try
+        {
+            AddLifetimePromise(lifetimePromise.Task);
+        }
+        catch (DomException exception)
+        {
+            return Task.FromException(exception);
+        }
+
+        // The steps of the service worker queue run on the thread of the service worker: they only replace the list of the worker
+        var promise = new TaskCompletionSource();
+        List<ServiceWorkerRouterRule> allRules = [.. serviceWorker.RouterRules, .. verifiedRules];
+        var registered = ServiceWorkerRouter.CheckRegistrationLimit(allRules);
+        if (registered)
+        {
+            serviceWorker.RouterRules = allRules;
+        }
+
+        global.QueueGlobalTask(() =>
+        {
+            if (registered)
+            {
+                promise.TrySetResult();
+            }
+            else
+            {
+                promise.TrySetException(new TypeErrorException("The router rules have too many conditions"));
+            }
+
+            lifetimePromise.TrySetResult();
+        });
+        return promise.Task;
+    }
 }
 
 /// <summary>

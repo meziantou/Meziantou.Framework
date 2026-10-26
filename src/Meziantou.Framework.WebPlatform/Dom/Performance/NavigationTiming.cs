@@ -49,6 +49,18 @@ internal sealed class DocumentLoadTimingInfo
     /// <summary>The time the request of the document was given to a service worker (before the worker is started and activated), or 0.</summary>
     public long WorkerStart { get; set; }
 
+    /// <summary>The time the service worker started to evaluate its router rules, or 0 (see <see cref="FetchTimestamps.ServiceWorkerRouterEvaluationStart"/>).</summary>
+    public long WorkerRouterEvaluationStart { get; set; }
+
+    /// <summary>The time the service worker started to look up its caches for a router rule, or 0 (see <see cref="FetchTimestamps.ServiceWorkerCacheLookupStart"/>).</summary>
+    public long WorkerCacheLookupStart { get; set; }
+
+    /// <summary>The source of the router rule that matched the request of the document, or the empty string.</summary>
+    public string WorkerMatchedRouterSource { get; set; } = "";
+
+    /// <summary>The source that gave the response of the document when the request matched a router rule, or the empty string.</summary>
+    public string WorkerFinalRouterSource { get; set; } = "";
+
     /// <summary>The time the response of the document was received.</summary>
     public long ResponseStart { get; set; }
 

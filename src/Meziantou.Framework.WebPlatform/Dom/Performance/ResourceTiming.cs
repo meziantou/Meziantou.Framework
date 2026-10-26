@@ -24,6 +24,18 @@ internal sealed class FetchTimingInfo
     /// <summary>https://fetch.spec.whatwg.org/#fetch-timing-info-final-service-worker-start-time, or 0 when no fetch event was dispatched for the request.</summary>
     public double FinalServiceWorkerStartTime { get; init; }
 
+    /// <summary>https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-workerrouterevaluationstart, or 0 when the service worker has no router rule.</summary>
+    public double WorkerRouterEvaluationStartTime { get; init; }
+
+    /// <summary>https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-workercachelookupstart, or 0 when the request was not routed to the cache.</summary>
+    public double WorkerCacheLookupStartTime { get; init; }
+
+    /// <summary>https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-workermatchedroutersource</summary>
+    public string WorkerMatchedRouterSource { get; init; } = "";
+
+    /// <summary>https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-workerfinalroutersource</summary>
+    public string WorkerFinalRouterSource { get; init; } = "";
+
     public double EndTime { get; set; }
 
     /// <summary>The timing of the connection of the final response (https://fetch.spec.whatwg.org/#connection-timing-info), or null when it is not exposed.</summary>
@@ -143,6 +155,10 @@ internal sealed class ResourceTiming
                 FinalNetworkRequestStartTime = requestStartTime,
                 FinalNetworkResponseStartTime = timing.FinalNetworkResponseStart == 0 ? endTime : Math.Min(endTime, ToRelativeTime(timing.FinalNetworkResponseStart)),
                 FinalServiceWorkerStartTime = workerStartTime,
+                WorkerRouterEvaluationStartTime = timing.ServiceWorkerRouterEvaluationStart == 0 ? 0 : Math.Min(endTime, Math.Max(startTime, ToRelativeTime(timing.ServiceWorkerRouterEvaluationStart))),
+                WorkerCacheLookupStartTime = timing.ServiceWorkerCacheLookupStart == 0 ? 0 : Math.Min(endTime, Math.Max(startTime, ToRelativeTime(timing.ServiceWorkerCacheLookupStart))),
+                WorkerMatchedRouterSource = timing.ServiceWorkerMatchedRouterSource,
+                WorkerFinalRouterSource = timing.ServiceWorkerFinalRouterSource,
                 EndTime = endTime,
 
                 // The connection is reused: its times are the time the fetch started (https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-connectstart).

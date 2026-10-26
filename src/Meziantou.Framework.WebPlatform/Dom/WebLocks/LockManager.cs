@@ -318,6 +318,7 @@ internal sealed class LockManagerState
 
         lock (_gate)
         {
+            EvictBackForwardCachedClientsLocked(name);
             var queue = GetQueue(name);
             if (options.Steal)
             {
@@ -356,6 +357,7 @@ internal sealed class LockManagerState
     {
         lock (_gate)
         {
+            EvictBackForwardCachedClientsLocked(name: null);
             var pending = new List<LockInfo>();
             foreach (var queue in _queues.Values)
             {
@@ -372,6 +374,47 @@ internal sealed class LockManagerState
             }
 
             return new LockManagerSnapshot { Held = held, Pending = pending };
+        }
+    }
+
+    /// <summary>
+    /// As in the browsers, the documents in the back/forward cache whose window or workers hold a lock of the name (or of
+    /// any name, for a query of the lock state) or request one, are evicted ("lock"): the locks are released when the
+    /// documents are destroyed, so that another document can get them.
+    /// </summary>
+    private void EvictBackForwardCachedClientsLocked(string? name)
+    {
+        foreach (var heldLock in _held)
+        {
+            if (name is null || heldLock.Name == name)
+            {
+                EvictIfInBackForwardCache(heldLock.Client);
+            }
+        }
+
+        if (name is not null)
+            return;
+
+        foreach (var queue in _queues.Values)
+        {
+            foreach (var request in queue)
+            {
+                EvictIfInBackForwardCache(request.Client);
+            }
+        }
+
+        static void EvictIfInBackForwardCache(GlobalScope client)
+        {
+            var global = client;
+            while (global is WorkerGlobalScope { Agent.Owner: { } owner })
+            {
+                global = owner;
+            }
+
+            if (global is Window { Document: { IsInBackForwardCache: true } document } window)
+            {
+                window.EventLoop.QueueTask(() => document.EvictFromBackForwardCache("lock"));
+            }
         }
     }
 

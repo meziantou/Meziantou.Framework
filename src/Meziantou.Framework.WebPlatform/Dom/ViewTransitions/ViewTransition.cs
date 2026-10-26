@@ -579,6 +579,16 @@ public sealed class ViewTransition
         Skip(reason);
     }
 
+    /// <summary>
+    /// Skips the outbound transition of a document that enters the back/forward cache: its promises are settled as for a
+    /// skipped transition, but its captured elements are kept, as the inbound transition of the new document shows them.
+    /// </summary>
+    internal void SkipOutboundForBackForwardCache(object? reason)
+    {
+        PromiseSlots.MarkAsHandled(_ready.Task);
+        SkipWithoutUpdateCallback(reason);
+    }
+
     /// <summary>Skips the transition of a document that cannot run its update callback (it is not fully active).</summary>
     internal void SkipWithoutUpdateCallback(object? reason)
     {

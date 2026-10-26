@@ -61,7 +61,7 @@ public sealed class Clients
         RunInParallelQueue(async () =>
         {
             var client = Registry.GetClient(id);
-            if (client is null || client.StorageKey != storageKey)
+            if (client is null || client.StorageKey != storageKey || client.IsInBackForwardCache)
             {
                 _global.QueueGlobalTask(() => promise.TrySetResult(null));
                 return;
@@ -101,7 +101,8 @@ public sealed class Clients
             var matchedClients = new List<ServiceWorkerClientEntry>();
             foreach (var client in Registry.GetClients())
             {
-                if (client.StorageKey != storageKey || client.IsDiscarded || !client.IsSecureContext)
+                // The clients whose document is in the back/forward cache are not listed, as in the browsers
+                if (client.StorageKey != storageKey || client.IsDiscarded || !client.IsSecureContext || client.IsInBackForwardCache)
                     continue;
 
                 if (!options.IncludeUncontrolled && client.Environment?.ActiveServiceWorker != worker)
@@ -226,6 +227,10 @@ public sealed class Clients
                     continue;
 
                 if (UrlParser.Parse(client.CreationUrl, baseUrl: null) is not { } creationUrl || registry.Match(registration.StorageKey, creationUrl) != registration)
+                    continue;
+
+                // A client whose document is in the back/forward cache is evicted instead of being claimed ("serviceworker-claimed")
+                if (environment.ActiveServiceWorker != worker && client.TryEvictFromBackForwardCache("serviceworker-claimed"))
                     continue;
 
                 if (environment.ActiveServiceWorker != worker)

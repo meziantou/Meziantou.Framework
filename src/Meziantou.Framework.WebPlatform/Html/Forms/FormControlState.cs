@@ -69,6 +69,30 @@ internal sealed class FormControlState
         }
     }
 
+    /// <summary>
+    /// https://html.spec.whatwg.org/multipage/browsing-the-web.html#reactivate-a-document, step 1: the form controls of a
+    /// document restored from the back/forward cache whose autofill field name is "off" are reset.
+    /// </summary>
+    public static void ResetAutocompleteOffControls(Document document)
+    {
+        List<HtmlElement>? controls = null;
+        foreach (var node in document.Descendants())
+        {
+            if (node is HtmlElement element && IsAutocompleteOff(element))
+            {
+                (controls ??= []).Add(element);
+            }
+        }
+
+        if (controls is null)
+            return;
+
+        foreach (var control in controls)
+        {
+            control.ResetAlgorithm();
+        }
+    }
+
     private static ControlKey? GetKey(HtmlElement element) => element switch
     {
         HtmlInputElement input => new ControlKey(input.LocalName, input.InputType, input.GetAttributeValue("name")),

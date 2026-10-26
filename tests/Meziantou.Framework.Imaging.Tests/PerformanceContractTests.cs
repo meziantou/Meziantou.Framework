@@ -66,6 +66,8 @@ public sealed class PerformanceContractTests
     [InlineData(PixelFormat.Rgba32)]
     [InlineData(PixelFormat.Rgba64)]
     [InlineData(PixelFormat.Gray8)]
+    [InlineData(PixelFormat.RgbaFloat)]
+    [InlineData(PixelFormat.RgbaHalf)]
     public void DrawingCallsAllocateNothingOnceTheScratchOfTheSessionIsRented(PixelFormat format)
     {
         // A session allocates a bounded number of small objects (the session, its scratch handles); the shapes drawn in
@@ -306,6 +308,32 @@ public sealed class PerformanceContractTests
                 fromCmyk.Convert(inks, gray);
             }));
         }
+    }
+
+    [Fact]
+    public void FloatingPointConversionsAllocateNothingPerRow()
+    {
+        // Every pair with a floating-point format, with the policies that clip and tone map: nothing per pixel or per row
+        var integers = new Rgba64[512];
+        var floats = new RgbaFloat[512];
+        var halves = new RgbaHalf[512];
+        var bytes = new Rgb24[512];
+        for (var i = 0; i < floats.Length; i++)
+        {
+            floats[i] = new RgbaFloat(i / 64f, 0.5f, -0.25f, 0.75f);
+        }
+
+        var toneMapping = FloatSampleConversion.Create(new PixelConversionOptions { ToneMapping = HdrToneMappingOptions.Default, OutOfRangeSamples = OutOfRangeSampleHandling.Clip }, peak: 8);
+        var background = new Rgba64(0, 0, 0);
+        Assert.Equal(0, MeasureSteadyStateAllocations(() =>
+        {
+            PixelConverter.ConvertRow<RgbaFloat, Rgba64>(floats, integers, floats: toneMapping);
+            PixelConverter.ConvertRow<RgbaFloat, Rgb24>(floats, bytes, background, floats: FloatSampleConversion.Clipping);
+            PixelConverter.ConvertRow<RgbaFloat, RgbaHalf>(floats, halves);
+            PixelConverter.ConvertRow<RgbaHalf, RgbaFloat>(halves, floats);
+            PixelConverter.ConvertRow<Rgba64, RgbaFloat>(integers, floats);
+            PixelConverter.ConvertRow<Rgb24, RgbaHalf>(bytes, halves);
+        }));
     }
 
     private static long MeasureSteadyStateAllocations(Action action)

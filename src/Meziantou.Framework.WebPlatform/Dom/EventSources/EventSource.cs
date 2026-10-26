@@ -175,6 +175,9 @@ public sealed class EventSource : EventTarget
         }
     }
 
+    /// <summary>Whether the global object has event sources that are not closed.</summary>
+    internal static bool HasActiveEventSources(GlobalScope global) => ActiveEventSources.TryGetValue(global, out var eventSources) && eventSources.Count > 0;
+
     /// <summary>The request of the event source (https://html.spec.whatwg.org/multipage/server-sent-events.html#concept-event-stream-request), for a connection attempt.</summary>
     private FetchRequest CreateRequest(Document client)
     {

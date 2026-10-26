@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 2,081 | 2,174 | 31 | 97% |
+| [Stable](#stable-tests) | 2,087 | 2,174 | 31 | 97% |
 | [Tentative](#tentative-tests) | 57 | 197 | 31 | 34% |
 | [Reftests](#reftests) | 318 | 418 | 61 | 89% |
-| **All** | **2,456** | **2,789** | **123** | **92%** |
+| **All** | **2,462** | **2,789** | **123** | **92%** |
 
 ## Stable tests
 
@@ -115,12 +115,12 @@
 | [`document-metadata/the-title-element/title.text-04.xhtml`](https://wpt.fyi/results/html/semantics/document-metadata/the-title-element/title.text-04.xhtml) | Pass | 11 / 11 |  |  |
 | [`edits/the-del-element/del_effect.html`](https://wpt.fyi/results/html/semantics/edits/the-del-element/del_effect.html) | Pass | 1 / 1 |  |  |
 | [`edits/the-ins-element/ins_effect.html`](https://wpt.fyi/results/html/semantics/edits/the-ins-element/ins_effect.html) | Pass | 1 / 1 |  |  |
-| [`embedded-content/bfcache/embedded-html.html`](https://wpt.fyi/results/html/semantics/embedded-content/bfcache/embedded-html.html) | Fail | 0 / 2 | NOT IMPLEMENTED | back/forward cache (the BFCache executor reports a failed precondition) |
-| [`embedded-content/bfcache/embedded-img.html`](https://wpt.fyi/results/html/semantics/embedded-content/bfcache/embedded-img.html) | Fail | 0 / 2 | NOT IMPLEMENTED | back/forward cache (the BFCache executor reports a failed precondition) |
-| [`embedded-content/bfcache/embedded-js.html`](https://wpt.fyi/results/html/semantics/embedded-content/bfcache/embedded-js.html) | Fail | 0 / 2 | NOT IMPLEMENTED | back/forward cache (the BFCache executor reports a failed precondition) |
-| [`embedded-content/bfcache/embedded-mp4.html`](https://wpt.fyi/results/html/semantics/embedded-content/bfcache/embedded-mp4.html) | Fail | 0 / 2 | NOT IMPLEMENTED | back/forward cache (the BFCache executor reports a failed precondition) |
-| [`embedded-content/bfcache/embedded-not-found.html`](https://wpt.fyi/results/html/semantics/embedded-content/bfcache/embedded-not-found.html) | Fail | 0 / 2 | NOT IMPLEMENTED | back/forward cache (the BFCache executor reports a failed precondition) |
-| [`embedded-content/bfcache/embedded-type-only.html`](https://wpt.fyi/results/html/semantics/embedded-content/bfcache/embedded-type-only.html) | Fail | 0 / 2 | NOT IMPLEMENTED | back/forward cache (the BFCache executor reports a failed precondition) |
+| [`embedded-content/bfcache/embedded-html.html`](https://wpt.fyi/results/html/semantics/embedded-content/bfcache/embedded-html.html) | Pass | 2 / 2 |  |  |
+| [`embedded-content/bfcache/embedded-img.html`](https://wpt.fyi/results/html/semantics/embedded-content/bfcache/embedded-img.html) | Pass | 2 / 2 |  |  |
+| [`embedded-content/bfcache/embedded-js.html`](https://wpt.fyi/results/html/semantics/embedded-content/bfcache/embedded-js.html) | Pass | 2 / 2 |  |  |
+| [`embedded-content/bfcache/embedded-mp4.html`](https://wpt.fyi/results/html/semantics/embedded-content/bfcache/embedded-mp4.html) | Pass | 2 / 2 |  |  |
+| [`embedded-content/bfcache/embedded-not-found.html`](https://wpt.fyi/results/html/semantics/embedded-content/bfcache/embedded-not-found.html) | Pass | 2 / 2 |  |  |
+| [`embedded-content/bfcache/embedded-type-only.html`](https://wpt.fyi/results/html/semantics/embedded-content/bfcache/embedded-type-only.html) | Pass | 2 / 2 |  |  |
 | [`embedded-content/image-maps/image-map-processing-model/hash-name-reference-dynamic.html`](https://wpt.fyi/results/html/semantics/embedded-content/image-maps/image-map-processing-model/hash-name-reference-dynamic.html) | Pass | 8 / 8 |  |  |
 | [`embedded-content/image-maps/image-map-processing-model/hash-name-reference-id-update.html`](https://wpt.fyi/results/html/semantics/embedded-content/image-maps/image-map-processing-model/hash-name-reference-id-update.html) | Pass | 1 / 1 |  |  |
 | [`embedded-content/image-maps/image-map-processing-model/hash-name-reference.html`](https://wpt.fyi/results/html/semantics/embedded-content/image-maps/image-map-processing-model/hash-name-reference.html) | Pass | 168 / 168 |  |  |

@@ -174,10 +174,7 @@
     "total": 1
   },
   "navigation-api/navigate-event/dangling-navigate-event-after-bfcache-restore.html": {
-    "total": 1,
-    "failures": {
-      "navigateerror should not fire when calling pushState after restoring from bfcache": "PRECONDITION_FAILED"
-    }
+    "total": 1
   },
   "navigation-api/navigate-event/defaultPrevented-navigation-preempted.html": {
     "total": 1
@@ -235,7 +232,7 @@
   "navigation-api/navigate-event/defer/tentative/restore-after-bfcache.html": {
     "total": 1,
     "failures": {
-      "entries() must contain the forward-history page after navigating back to a bfcached page": "PRECONDITION_FAILED"
+      "entries() must contain the forward-history page after navigating back to a bfcached page": "FAIL"
     }
   },
   "navigation-api/navigate-event/document-open-after-replaceState.html": {
@@ -316,7 +313,7 @@
   "navigation-api/navigate-event/intercepted-navigation-after-bfcache-restore.html": {
     "total": 1,
     "failures": {
-      "An intercepted navigation that is ongoing when entering the BFCache should finish after restoring": "PRECONDITION_FAILED"
+      "An intercepted navigation that is ongoing when entering the BFCache should finish after restoring": "FAIL"
     }
   },
   "navigation-api/navigate-event/navigate-anchor-cross-origin.html": {
@@ -398,10 +395,7 @@
     "total": 1
   },
   "navigation-api/navigate-event/navigate-history-back-bfcache.html": {
-    "total": 1,
-    "failures": {
-      "navigate event should fire when traversing to a bfcache hit": "PRECONDITION_FAILED"
-    }
+    "total": 1
   },
   "navigation-api/navigate-event/navigate-history-back-cross-document.html": {
     "total": 1
@@ -539,94 +533,49 @@
     "total": 1
   },
   "navigation-api/navigation-activation/activation-after-bfcache-coop-coep.https.html?from=coop&to=coop-coep": {
-    "total": 1,
-    "failures": {
-      "navigation.activation.from after same-origin coop to coop-coep and back": "PRECONDITION_FAILED"
-    }
+    "total": 1
   },
   "navigation-api/navigation-activation/activation-after-bfcache-coop-coep.https.html?from=coop&to=coop-coep&cross-origin": {
-    "total": 1,
-    "failures": {
-      "navigation.activation.from after cross-origin coop to coop-coep and back": "PRECONDITION_FAILED"
-    }
+    "total": 1
   },
   "navigation-api/navigation-activation/activation-after-bfcache-coop-coep.https.html?from=coop&to=none": {
-    "total": 1,
-    "failures": {
-      "navigation.activation.from after same-origin coop to none and back": "PRECONDITION_FAILED"
-    }
+    "total": 1
   },
   "navigation-api/navigation-activation/activation-after-bfcache-coop-coep.https.html?from=coop&to=none&cross-origin": {
-    "total": 1,
-    "failures": {
-      "navigation.activation.from after cross-origin coop to none and back": "PRECONDITION_FAILED"
-    }
+    "total": 1
   },
   "navigation-api/navigation-activation/activation-after-bfcache-coop-coep.https.html?from=coop-coep&to=coop": {
-    "total": 1,
-    "failures": {
-      "navigation.activation.from after same-origin coop-coep to coop and back": "PRECONDITION_FAILED"
-    }
+    "total": 1
   },
   "navigation-api/navigation-activation/activation-after-bfcache-coop-coep.https.html?from=coop-coep&to=coop&cross-origin": {
-    "total": 1,
-    "failures": {
-      "navigation.activation.from after cross-origin coop-coep to coop and back": "PRECONDITION_FAILED"
-    }
+    "total": 1
   },
   "navigation-api/navigation-activation/activation-after-bfcache-coop-coep.https.html?from=coop-coep&to=none": {
-    "total": 1,
-    "failures": {
-      "navigation.activation.from after same-origin coop-coep to none and back": "PRECONDITION_FAILED"
-    }
+    "total": 1
   },
   "navigation-api/navigation-activation/activation-after-bfcache-coop-coep.https.html?from=coop-coep&to=none&cross-origin": {
-    "total": 1,
-    "failures": {
-      "navigation.activation.from after cross-origin coop-coep to none and back": "PRECONDITION_FAILED"
-    }
+    "total": 1
   },
   "navigation-api/navigation-activation/activation-after-bfcache-coop-coep.https.html?from=none&to=coop": {
-    "total": 1,
-    "failures": {
-      "navigation.activation.from after same-origin none to coop and back": "PRECONDITION_FAILED"
-    }
+    "total": 1
   },
   "navigation-api/navigation-activation/activation-after-bfcache-coop-coep.https.html?from=none&to=coop&cross-origin": {
-    "total": 1,
-    "failures": {
-      "navigation.activation.from after cross-origin none to coop and back": "PRECONDITION_FAILED"
-    }
+    "total": 1
   },
   "navigation-api/navigation-activation/activation-after-bfcache-coop-coep.https.html?from=none&to=coop-coep": {
-    "total": 1,
-    "failures": {
-      "navigation.activation.from after same-origin none to coop-coep and back": "PRECONDITION_FAILED"
-    }
+    "total": 1
   },
   "navigation-api/navigation-activation/activation-after-bfcache-coop-coep.https.html?from=none&to=coop-coep&cross-origin": {
-    "total": 1,
-    "failures": {
-      "navigation.activation.from after cross-origin none to coop-coep and back": "PRECONDITION_FAILED"
-    }
+    "total": 1
   },
   "navigation-api/navigation-activation/activation-after-bfcache-cross-origin-clears-from.html": {
-    "total": 1,
-    "failures": {
-      "navigation.activation.from must be cleared on cross-origin bfcache restoration when it was previously non-null": "PRECONDITION_FAILED"
-    }
+    "total": 1
   },
   "navigation-api/navigation-activation/activation-after-bfcache-cross-origin.html": {
-    "total": 1,
-    "failures": {
-      "navigation.activation must be updated when restored from bfcache": "PRECONDITION_FAILED"
-    }
+    "total": 1
   },
   "navigation-api/navigation-activation/activation-after-bfcache.html": {
-    "total": 1,
-    "failures": {
-      "navigation.activation must be updated when restored from bfcache": "PRECONDITION_FAILED"
-    }
+    "total": 1
   },
   "navigation-api/navigation-activation/activation-history-pushState.html": {
     "total": 1
@@ -674,16 +623,10 @@
     "total": 1
   },
   "navigation-api/navigation-history-entry/entries-after-bfcache-in-iframe.html": {
-    "total": 1,
-    "failures": {
-      "entries() in an iframe must be updated after navigating back to a bfcached page": "PRECONDITION_FAILED"
-    }
+    "total": 1
   },
   "navigation-api/navigation-history-entry/entries-after-bfcache.html": {
-    "total": 1,
-    "failures": {
-      "entries() must contain the forward-history page after navigating back to a bfcached page": "PRECONDITION_FAILED"
-    }
+    "total": 1
   },
   "navigation-api/navigation-history-entry/entries-after-blank-navigation-from-cross-origin.html": {
     "total": 1
@@ -1322,10 +1265,7 @@
     "total": 1
   },
   "navigation-api/per-entry-events/dispose-after-bfcache.html": {
-    "total": 1,
-    "failures": {
-      "entries() must contain the forward-history page after navigating back to a bfcached page": "PRECONDITION_FAILED"
-    }
+    "total": 1
   },
   "navigation-api/per-entry-events/dispose-cross-document.html": {
     "total": 1

@@ -736,6 +736,18 @@ public sealed partial class DomEventLoop
             windows = Array.FindAll(windows, window => !WaitsForRendering(window));
         }
 
+        // "Reveal": a document that is rendered (it runs its animation frame callbacks) is revealed before its callbacks run, also
+        // when no pagereveal listener requested it, so that a listener added later only observes the next reveal (e.g. the
+        // restoration of the document from the back/forward cache)
+        foreach (var window in windows)
+        {
+            if (window.Document is { HasBeenRevealed: false, IsFullyActive: true } revealedDocument)
+            {
+                _documentsToReveal.Remove(revealedDocument);
+                revealedDocument.Reveal();
+            }
+        }
+
         // The timelines of the other documents are updated too, so that the animation frame callbacks see the time of the frame
         foreach (var window in windows)
         {

@@ -88,8 +88,19 @@ public sealed class BroadcastChannel : EventTarget
             if (ReferenceEquals(destination, this) || destination._closed || destination.Name != Name)
                 continue;
 
-            if (destination.RelevantGlobal is not { } destinationGlobal || !destinationGlobal.CanRunScript || !OriginRecord.IsSameOrigin(destinationGlobal.OriginRecord, sourceOrigin))
+            if (destination.RelevantGlobal is not { } destinationGlobal || !OriginRecord.IsSameOrigin(destinationGlobal.OriginRecord, sourceOrigin))
                 continue;
+
+            if (!destinationGlobal.CanRunScript)
+            {
+                // As in the browsers, a message sent to a document in the back/forward cache evicts it ("broadcastchannel-message")
+                if (destinationGlobal is Window { Document: { IsInBackForwardCache: true } cachedDocument } destinationWindow)
+                {
+                    destinationWindow.EventLoop.QueueTask(() => cachedDocument.EvictFromBackForwardCache("broadcastchannel-message"));
+                }
+
+                continue;
+            }
 
             destinationGlobal.QueueGlobalTask(() => destination.Deliver(destinationGlobal, serialized, sourceOrigin.Serialize()));
         }

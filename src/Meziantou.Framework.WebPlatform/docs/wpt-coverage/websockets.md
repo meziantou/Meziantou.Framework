@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 197 | 204 | 0 | 97% |
+| [Stable](#stable-tests) | 199 | 204 | 0 | 98% |
 | [Tentative](#tentative-tests) | 0 | 12 | 0 | 0% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **197** | **216** | **0** | **91%** |
+| **All** | **199** | **216** | **0** | **92%** |
 
 ## Stable tests
 
@@ -74,8 +74,8 @@
 | [`Send-paired-surrogates.any.js`](https://wpt.fyi/results/websockets/Send-paired-surrogates.any.js) | Pass | 6 / 6 |  |  |
 | [`Send-unicode-data.any.js`](https://wpt.fyi/results/websockets/Send-unicode-data.any.js) | Pass | 6 / 6 |  |  |
 | [`Send-unpaired-surrogates.any.js`](https://wpt.fyi/results/websockets/Send-unpaired-surrogates.any.js) | Pass | 6 / 6 |  |  |
-| [`back-forward-cache-with-closed-websocket-connection.window.js`](https://wpt.fyi/results/websockets/back-forward-cache-with-closed-websocket-connection.window.js) | Fail | 0 / 1 | NOT IMPLEMENTED | back/forward cache (the pages are reloaded on traversal: the BFCache executor reports a failed precondition) |
-| [`back-forward-cache-with-open-websocket-connection-and-close-it-in-pagehide.window.js`](https://wpt.fyi/results/websockets/back-forward-cache-with-open-websocket-connection-and-close-it-in-pagehide.window.js) | Fail | 0 / 1 | NOT IMPLEMENTED | back/forward cache (the pages are reloaded on traversal: the BFCache executor reports a failed precondition) |
+| [`back-forward-cache-with-closed-websocket-connection.window.js`](https://wpt.fyi/results/websockets/back-forward-cache-with-closed-websocket-connection.window.js) | Pass | 1 / 1 |  |  |
+| [`back-forward-cache-with-open-websocket-connection-and-close-it-in-pagehide.window.js`](https://wpt.fyi/results/websockets/back-forward-cache-with-open-websocket-connection-and-close-it-in-pagehide.window.js) | Pass | 1 / 1 |  |  |
 | [`back-forward-cache-with-open-websocket-connection.window.js`](https://wpt.fyi/results/websockets/back-forward-cache-with-open-websocket-connection.window.js) | Pass | 1 / 1 |  |  |
 | [`basic-auth.any.js`](https://wpt.fyi/results/websockets/basic-auth.any.js) | Pass | 6 / 6 |  |  |
 | [`binary/001.html`](https://wpt.fyi/results/websockets/binary/001.html) | Pass | 3 / 3 |  |  |
@@ -215,18 +215,18 @@
 | [`send-data-isolation.sub.html`](https://wpt.fyi/results/websockets/send-data-isolation.sub.html) | Pass | 3 / 3 |  |  |
 | [`send-many-64K-messages-with-backpressure.any.js`](https://wpt.fyi/results/websockets/send-many-64K-messages-with-backpressure.any.js) | Pass | 9 / 9 |  |  |
 | [`unload-a-document/001.html`](https://wpt.fyi/results/websockets/unload-a-document/001.html) | Pass | 3 / 3 |  |  |
-| [`unload-a-document/002.html`](https://wpt.fyi/results/websockets/unload-a-document/002.html) | Fail | 0 / 3 | NOT IMPLEMENTED | back/forward cache: the test expects the document to be restored by `history.back()` (it is reloaded, so the test reports that the document was discarded) |
+| [`unload-a-document/002.html`](https://wpt.fyi/results/websockets/unload-a-document/002.html) | Fail | 0 / 3 | OUT OF SCOPE | the test expects the popup to be restored from the back/forward cache by `history.back()`; the popup is opened without `noopener`, and the back/forward cache does not keep the documents of a popup that its opener can script (as in Chromium), so it is loaded again and reports that the document was discarded |
 | [`unload-a-document/003.html`](https://wpt.fyi/results/websockets/unload-a-document/003.html) | Pass | 1 / 1 |  |  |
-| [`unload-a-document/004.html`](https://wpt.fyi/results/websockets/unload-a-document/004.html) | Fail | 0 / 1 | NOT IMPLEMENTED | back/forward cache: the test expects the document of the iframe to be restored by `history.back()` (it is reloaded, so the test reports that the document was discarded) |
+| [`unload-a-document/004.html`](https://wpt.fyi/results/websockets/unload-a-document/004.html) | Fail | 0 / 1 | OUT OF SCOPE | the test expects the document of the iframe to be restored from the back/forward cache by `history.back()`; as in the browsers, only the documents of the top-level traversables are kept in the back/forward cache, so the document of the iframe is loaded again and reports that it was discarded |
 | [`unload-a-document/005.html`](https://wpt.fyi/results/websockets/unload-a-document/005.html) | Pass | 3 / 3 |  |  |
 
 ## Tentative tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`back-forward-cache-closes-open-websocket-connection.tentative.window.js`](https://wpt.fyi/results/websockets/back-forward-cache-closes-open-websocket-connection.tentative.window.js) | Fail | 0 / 1 | NOT IMPLEMENTED | back/forward cache (the pages are reloaded on traversal: the BFCache executor reports a failed precondition) |
-| [`back-forward-cache-with-closed-websocket-connection-ccns.tentative.window.js`](https://wpt.fyi/results/websockets/back-forward-cache-with-closed-websocket-connection-ccns.tentative.window.js) | Fail | 0 / 1 | NOT IMPLEMENTED | back/forward cache (the pages are reloaded on traversal: the BFCache executor reports a failed precondition) |
-| [`back-forward-cache-with-open-websocket-connection-ccns.tentative.window.js`](https://wpt.fyi/results/websockets/back-forward-cache-with-open-websocket-connection-ccns.tentative.window.js) | Fail | 0 / 1 | NOT IMPLEMENTED | back/forward cache (the pages are reloaded on traversal: the BFCache executor reports a failed precondition) |
+| [`back-forward-cache-closes-open-websocket-connection.tentative.window.js`](https://wpt.fyi/results/websockets/back-forward-cache-closes-open-websocket-connection.tentative.window.js) | Fail | 0 / 1 | NOT IMPLEMENTED | the tentative tests expect the behaviors of Chromium: a page served with `Cache-Control: no-store` is kept in the back/forward cache, and an open WebSocket is closed when its page enters it. As in the other browsers, a document whose response has `Cache-Control: no-store` is not cached, and a WebSocket that is still connecting or open once the `pagehide` event handlers ran makes the document unsalvageable (https://html.spec.whatwg.org/multipage/document-lifecycle.html#unloading-document-cleanup-steps), so the BFCache executor reports a failed precondition |
+| [`back-forward-cache-with-closed-websocket-connection-ccns.tentative.window.js`](https://wpt.fyi/results/websockets/back-forward-cache-with-closed-websocket-connection-ccns.tentative.window.js) | Fail | 0 / 1 | NOT IMPLEMENTED | the tentative tests expect the behaviors of Chromium: a page served with `Cache-Control: no-store` is kept in the back/forward cache, and an open WebSocket is closed when its page enters it. As in the other browsers, a document whose response has `Cache-Control: no-store` is not cached, and a WebSocket that is still connecting or open once the `pagehide` event handlers ran makes the document unsalvageable (https://html.spec.whatwg.org/multipage/document-lifecycle.html#unloading-document-cleanup-steps), so the BFCache executor reports a failed precondition |
+| [`back-forward-cache-with-open-websocket-connection-ccns.tentative.window.js`](https://wpt.fyi/results/websockets/back-forward-cache-with-open-websocket-connection-ccns.tentative.window.js) | Fail | 0 / 1 | NOT IMPLEMENTED | the tentative tests expect the behaviors of Chromium: a page served with `Cache-Control: no-store` is kept in the back/forward cache, and an open WebSocket is closed when its page enters it. As in the other browsers, a document whose response has `Cache-Control: no-store` is not cached, and a WebSocket that is still connecting or open once the `pagehide` event handlers ran makes the document unsalvageable (https://html.spec.whatwg.org/multipage/document-lifecycle.html#unloading-document-cleanup-steps), so the BFCache executor reports a failed precondition |
 | [`stream/tentative/abort.any.js`](https://wpt.fyi/results/websockets/stream/tentative/abort.any.js) | Fail | 0 / 30 | NOT IMPLEMENTED | `WebSocketStream` and `WebSocketError` (a proposal of the WebSockets Standard) |
 | [`stream/tentative/backpressure-receive.any.js`](https://wpt.fyi/results/websockets/stream/tentative/backpressure-receive.any.js) | Fail | 0 / 6 | NOT IMPLEMENTED | `WebSocketStream` and `WebSocketError` (a proposal of the WebSockets Standard) |
 | [`stream/tentative/backpressure-send.any.js`](https://wpt.fyi/results/websockets/stream/tentative/backpressure-send.any.js) | Fail | 0 / 6 | NOT IMPLEMENTED | `WebSocketStream` and `WebSocketError` (a proposal of the WebSockets Standard) |

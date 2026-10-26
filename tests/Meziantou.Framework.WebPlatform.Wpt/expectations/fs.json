@@ -239,8 +239,7 @@
   "fs/FileSystemFileHandle-sync-access-handle-back-forward-cache.https.tentative.window.js": {
     "total": 2,
     "failures": {
-      "Creating a SAH on an active page evicts an inactive page on contention.": "PRECONDITION_FAILED",
-      "Creating an SAH should not make it ineligible for the BFCache.": "PRECONDITION_FAILED"
+      "Creating a SAH on an active page evicts an inactive page on contention.": "FAIL"
     }
   },
   "fs/FileSystemFileHandle-sync-access-handle-lock-modes.https.tentative.worker.js": {
@@ -249,8 +248,7 @@
   "fs/FileSystemFileHandle-writable-file-stream-back-forward-cache.https.tentative.window.js": {
     "total": 2,
     "failures": {
-      "Creating a WFS on an active page evicts an inactive page on contention.": "PRECONDITION_FAILED",
-      "Creating an WFS should not make it ineligible for the BFCache.": "PRECONDITION_FAILED"
+      "Creating a WFS on an active page evicts an inactive page on contention.": "PRECONDITION_FAILED"
     }
   },
   "fs/FileSystemFileHandle-writable-file-stream-lock-modes.https.tentative.worker.js": {

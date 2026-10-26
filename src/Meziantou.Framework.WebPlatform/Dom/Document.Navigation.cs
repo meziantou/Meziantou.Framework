@@ -436,7 +436,10 @@ public partial class Document
         return ReferrerPolicies.IsOriginPotentiallyTrustworthy(originDocument.UrlRecord);
     }
 
-    /// <summary>Queues a task that runs only if the document is fully active (https://html.spec.whatwg.org/multipage/webappapis.html#queue-a-global-task).</summary>
+    /// <summary>
+    /// Queues a task that runs only if the document is fully active (https://html.spec.whatwg.org/multipage/webappapis.html#queue-a-global-task):
+    /// the task of a document in the back/forward cache runs once the document is reactivated.
+    /// </summary>
     internal void QueueGlobalTask(Action task)
     {
         // The document of a worker queues the tasks on the event loop of the worker
@@ -455,6 +458,10 @@ public partial class Document
             if (IsFullyActive)
             {
                 task();
+            }
+            else if (IsInBackForwardCache)
+            {
+                DeferTaskUntilReactivated(task);
             }
         });
     }

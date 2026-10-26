@@ -448,6 +448,50 @@ public sealed class Navigation : EventTarget
     }
 
     /// <summary>
+    /// https://html.spec.whatwg.org/multipage/nav-history-apis.html#update-the-navigation-api-entries-for-reactivation: the
+    /// entries of a document restored from the back/forward cache are the session history entries around its entry. The
+    /// entries that are still in the list are kept, the others are disposed by a task.
+    /// </summary>
+    internal void UpdateEntriesForReactivation(IReadOnlyList<SessionHistoryEntry> newEntries, SessionHistoryEntry reactivatedEntry)
+    {
+        if (HasEntriesAndEventsDisabled)
+            return;
+
+        var oldEntries = new List<NavigationHistoryEntry>(_entryList);
+        var entries = new List<NavigationHistoryEntry>(newEntries.Count);
+        foreach (var sessionHistoryEntry in newEntries)
+        {
+            var index = oldEntries.FindIndex(entry => ReferenceEquals(entry.SessionHistoryEntry, sessionHistoryEntry));
+            if (index >= 0)
+            {
+                entries.Add(oldEntries[index]);
+                oldEntries.RemoveAt(index);
+            }
+            else
+            {
+                entries.Add(new NavigationHistoryEntry(this, sessionHistoryEntry));
+            }
+        }
+
+        _entryList.Clear();
+        _entryList.AddRange(entries);
+        _currentEntryIndex = GetEntryIndex(reactivatedEntry);
+        if (oldEntries.Count == 0)
+            return;
+
+        Window.QueueGlobalTask(() =>
+        {
+            using (PrepareToRunScript())
+            {
+                foreach (var disposedEntry in oldEntries)
+                {
+                    disposedEntry.FireEvent(new Event("dispose"));
+                }
+            }
+        });
+    }
+
+    /// <summary>
     /// https://html.spec.whatwg.org/multipage/nav-history-apis.html#update-the-navigation-api-entries-for-a-same-document-navigation:
     /// fires currententrychange and the dispose events, and runs the handlers of the intercepted navigation.
     /// </summary>
@@ -559,7 +603,10 @@ public sealed class Navigation : EventTarget
         if (previousEntry is null || (navigationType != NavigationType.Reload && ReferenceEquals(previousEntry.Document, document)))
             return;
 
+        // The activation of a document restored from the back/forward cache is updated: its previous entry is cleared when
+        // the entry it comes from is not in the entry list (e.g. a cross-origin entry), as in the browsers
         var activation = Activation ??= new NavigationActivation();
+        activation.From = null;
         var previousEntryIndex = GetEntryIndex(previousEntry);
         if (previousEntryIndex >= 0)
         {

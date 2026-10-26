@@ -222,7 +222,7 @@
       "name": "<content-list>",
       "href": "https://drafts.csswg.org/css-content-3/#typedef-content-list",
       "type": "type",
-      "value": "[ <string> | <image> | <attr()> | contents | <quote> | <leader()> | <target> | <string()> | <content()> | <counter> | <symbolic-counter-style> ]+",
+      "value": "[ <string> | <image> | <attr()> | contents | <quote> | <leader()> | <target> | <string()> | <content()> | <counter> | <symbolic-glyph> ]+",
       "values": [
         {
           "name": "<string>",

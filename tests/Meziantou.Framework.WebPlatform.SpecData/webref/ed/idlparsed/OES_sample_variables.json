@@ -1,0 +1,68 @@
+{
+  "spec": {
+    "title": "WebGL OES_sample_variables Extension Specification",
+    "url": "https://registry.khronos.org/webgl/extensions/OES_sample_variables/"
+  },
+  "idlparsed": {
+    "jsNames": {
+      "constructors": {},
+      "functions": {
+        "Window": [
+          "OES_sample_variables"
+        ],
+        "Worker": [
+          "OES_sample_variables"
+        ]
+      }
+    },
+    "idlNames": {
+      "OES_sample_variables": {
+        "fragment": "[Exposed=(Window,Worker), LegacyNoInterfaceObject]\ninterface OES_sample_variables {\n};",
+        "type": "interface",
+        "name": "OES_sample_variables",
+        "inheritance": null,
+        "members": [],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "Worker"
+                }
+              ]
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "LegacyNoInterfaceObject",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
+        "partial": false
+      }
+    },
+    "idlExtendedNames": {},
+    "globals": {},
+    "exposed": {
+      "Window": [
+        "OES_sample_variables"
+      ],
+      "Worker": [
+        "OES_sample_variables"
+      ]
+    },
+    "dependencies": {
+      "OES_sample_variables": []
+    },
+    "externalDependencies": [],
+    "hasObsoleteIdl": false
+  }
+}

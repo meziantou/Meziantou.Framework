@@ -25,8 +25,8 @@ internal static class Binding_FontFace<TAdapter, TValue> where TAdapter : struct
     private static void Set_style(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.Om.FontFace>(t, Binding); var x = r.ToDomString(v); o.Style = x; }
     private static TValue Get_weight(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.Om.FontFace>(t, Binding); return r.FromString(o.Weight); }
     private static void Set_weight(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.Om.FontFace>(t, Binding); var x = r.ToDomString(v); o.Weight = x; }
-    private static TValue Get_stretch(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.Om.FontFace>(t, Binding); return r.FromString(o.Stretch); }
-    private static void Set_stretch(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.Om.FontFace>(t, Binding); var x = r.ToDomString(v); o.Stretch = x; }
+    private static TValue Get_width(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.Om.FontFace>(t, Binding); return r.FromString(o.Width); }
+    private static void Set_width(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.Om.FontFace>(t, Binding); var x = r.ToDomString(v); o.Width = x; }
     private static TValue Get_unicodeRange(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.Om.FontFace>(t, Binding); return r.FromString(o.UnicodeRange); }
     private static void Set_unicodeRange(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.Om.FontFace>(t, Binding); var x = r.ToDomString(v); o.UnicodeRange = x; }
     private static TValue Get_featureSettings(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.Om.FontFace>(t, Binding); return r.FromString(o.FeatureSettings); }
@@ -41,10 +41,12 @@ internal static class Binding_FontFace<TAdapter, TValue> where TAdapter : struct
     private static void Set_descentOverride(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.Om.FontFace>(t, Binding); var x = r.ToDomString(v); o.DescentOverride = x; }
     private static TValue Get_lineGapOverride(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.Om.FontFace>(t, Binding); return r.FromString(o.LineGapOverride); }
     private static void Set_lineGapOverride(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.Om.FontFace>(t, Binding); var x = r.ToDomString(v); o.LineGapOverride = x; }
+    private static TValue Get_sizeAdjust(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.Om.FontFace>(t, Binding); return r.FromString(o.SizeAdjust); }
+    private static void Set_sizeAdjust(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.Om.FontFace>(t, Binding); var x = r.ToDomString(v); o.SizeAdjust = x; }
     private static TValue Get_status(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.Om.FontFace>(t, Binding); return r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Css_Om_FontFaceLoadStatus(o.Status)); }
     private static TValue Get_loaded(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.Om.FontFace>(t, Binding); return r.ToPromise(o.Loaded, static (r, value) => r.Wrap(value)); }
-    private static TValue Get_width(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.Om.FontFace>(t, Binding); return r.FromString(o.Width); }
-    private static void Set_width(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.Om.FontFace>(t, Binding); var x = r.ToDomString(v); o.Width = x; }
+    private static TValue Get_stretch(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.Om.FontFace>(t, Binding); return r.FromString(o.Stretch); }
+    private static void Set_stretch(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.Om.FontFace>(t, Binding); var x = r.ToDomString(v); o.Stretch = x; }
     private static TValue Op_load(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Css.Om.FontFace>(t, Binding);
@@ -55,7 +57,7 @@ internal static class Binding_FontFace<TAdapter, TValue> where TAdapter : struct
         r.DefineAttribute(instanceTarget, "family", Get_family, Set_family);
         r.DefineAttribute(instanceTarget, "style", Get_style, Set_style);
         r.DefineAttribute(instanceTarget, "weight", Get_weight, Set_weight);
-        r.DefineAttribute(instanceTarget, "stretch", Get_stretch, Set_stretch);
+        r.DefineAttribute(instanceTarget, "width", Get_width, Set_width);
         r.DefineAttribute(instanceTarget, "unicodeRange", Get_unicodeRange, Set_unicodeRange);
         r.DefineAttribute(instanceTarget, "featureSettings", Get_featureSettings, Set_featureSettings);
         r.DefineAttribute(instanceTarget, "variationSettings", Get_variationSettings, Set_variationSettings);
@@ -63,9 +65,10 @@ internal static class Binding_FontFace<TAdapter, TValue> where TAdapter : struct
         r.DefineAttribute(instanceTarget, "ascentOverride", Get_ascentOverride, Set_ascentOverride);
         r.DefineAttribute(instanceTarget, "descentOverride", Get_descentOverride, Set_descentOverride);
         r.DefineAttribute(instanceTarget, "lineGapOverride", Get_lineGapOverride, Set_lineGapOverride);
+        r.DefineAttribute(instanceTarget, "sizeAdjust", Get_sizeAdjust, Set_sizeAdjust);
         r.DefineAttribute(instanceTarget, "status", Get_status, null);
         r.DefineAttribute(instanceTarget, "loaded", Get_loaded, null, returnsPromise: true);
-        r.DefineAttribute(instanceTarget, "width", Get_width, Set_width);
+        r.DefineAttribute(instanceTarget, "stretch", Get_stretch, Set_stretch);
         r.DefineOperation(instanceTarget, "load", 0, Op_load, returnsPromise: true);
     }
 

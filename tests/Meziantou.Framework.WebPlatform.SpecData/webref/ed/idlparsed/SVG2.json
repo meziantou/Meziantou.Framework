@@ -40,7 +40,6 @@
           "SVGTitleElement",
           "SVGSymbolElement",
           "SVGUseElement",
-          "SVGUseElementShadowRoot",
           "SVGSwitchElement",
           "SVGStyleElement",
           "SVGTransform",
@@ -3979,26 +3978,6 @@
         ],
         "partial": false,
         "href": "https://w3c.github.io/svgwg/svg2-draft/struct.html#svguseelement"
-      },
-      "SVGUseElementShadowRoot": {
-        "fragment": "[Exposed=Window]\ninterface SVGUseElementShadowRoot : ShadowRoot {\n};",
-        "type": "interface",
-        "name": "SVGUseElementShadowRoot",
-        "inheritance": "ShadowRoot",
-        "members": [],
-        "extAttrs": [
-          {
-            "type": "extended-attribute",
-            "name": "Exposed",
-            "rhs": {
-              "type": "identifier",
-              "value": "Window"
-            },
-            "arguments": []
-          }
-        ],
-        "partial": false,
-        "href": "https://w3c.github.io/svgwg/svg2-draft/struct.html#svguseelementshadowroot"
       },
       "ShadowAnimation": {
         "fragment": "[Exposed=Window]\ninterface ShadowAnimation : Animation {\n  constructor(Animation source, (Element or CSSPseudoElement) newTarget);\n  [SameObject] readonly attribute Animation sourceAnimation;\n};",
@@ -9162,7 +9141,6 @@
         "SVGTitleElement",
         "SVGSymbolElement",
         "SVGUseElement",
-        "SVGUseElementShadowRoot",
         "ShadowAnimation",
         "SVGSwitchElement",
         "SVGStyleElement",
@@ -9306,9 +9284,6 @@
         "SVGGraphicsElement",
         "SVGAnimatedLength",
         "SVGURIReference"
-      ],
-      "SVGUseElementShadowRoot": [
-        "ShadowRoot"
       ],
       "ShadowAnimation": [
         "Animation",
@@ -9465,7 +9440,6 @@
       "Document",
       "NodeList",
       "DOMMatrix2DInit",
-      "ShadowRoot",
       "Animation",
       "CSSPseudoElement",
       "DOMTokenList"

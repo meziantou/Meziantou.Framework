@@ -47,6 +47,7 @@
   "FetchLaterResult": "Not implemented: deferred fetching (fetchLater())",
   "FontFace.features": "Out of scope: the font files are not parsed (no font features, variation axes or palettes)",
   "FontFace.palettes": "Out of scope: the font files are not parsed (no font features, variation axes or palettes)",
+  "FontFace.variant": "Not implemented: @font-face has no font-variant descriptor (css-fonts-4 removed it, and the changes of css-font-loading list the removal of the attribute, which its IDL still declares)",
   "FontFace.variations": "Out of scope: the font files are not parsed (no font features, variation axes or palettes)",
   "FontFaceFeatures": "Out of scope: the font files are not parsed (no font features, variation axes or palettes)",
   "FontFacePalette": "Out of scope: the font files are not parsed (no font features, variation axes or palettes)",

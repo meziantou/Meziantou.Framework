@@ -44186,7 +44186,7 @@
           "includes": "PopoverTargetAttributes"
         },
         {
-          "fragment": "partial interface HTMLInputElement {\n  [CEReactions, Reflect] attribute DOMString align;\n  [CEReactions, Reflect] attribute DOMString useMap;\n};",
+          "fragment": "partial interface HTMLInputElement {\n  [CEReactions, Reflect] attribute DOMString align;\n  [CEReactions, Reflect] attribute DOMString useMap;\n  [CEReactions, Reflect] attribute unsigned long hspace;\n  [CEReactions, Reflect] attribute unsigned long vspace;\n};",
           "type": "interface",
           "name": "HTMLInputElement",
           "inheritance": null,
@@ -44248,6 +44248,64 @@
               "special": "",
               "readonly": false,
               "href": "https://html.spec.whatwg.org/multipage/obsolete.html#dom-input-usemap"
+            },
+            {
+              "type": "attribute",
+              "name": "hspace",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "unsigned long"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "CEReactions",
+                  "rhs": null,
+                  "arguments": []
+                },
+                {
+                  "type": "extended-attribute",
+                  "name": "Reflect",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": false,
+              "href": "https://html.spec.whatwg.org/multipage/obsolete.html#dom-input-hspace"
+            },
+            {
+              "type": "attribute",
+              "name": "vspace",
+              "idlType": {
+                "type": "attribute-type",
+                "extAttrs": [],
+                "generic": "",
+                "nullable": false,
+                "union": false,
+                "idlType": "unsigned long"
+              },
+              "extAttrs": [
+                {
+                  "type": "extended-attribute",
+                  "name": "CEReactions",
+                  "rhs": null,
+                  "arguments": []
+                },
+                {
+                  "type": "extended-attribute",
+                  "name": "Reflect",
+                  "rhs": null,
+                  "arguments": []
+                }
+              ],
+              "special": "",
+              "readonly": false,
+              "href": "https://html.spec.whatwg.org/multipage/obsolete.html#dom-input-vspace"
             }
           ],
           "extAttrs": [],

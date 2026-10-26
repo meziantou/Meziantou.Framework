@@ -380,7 +380,7 @@ internal sealed partial class IdlModel
         AddShadowRootGetSelection(model);
         AddShadowRootElementFromPoint(model);
         AddTrustedHtmlParserOptions(model);
-        AddFontFaceWidth(model);
+        AddFontFaceStretch(model);
         AddUIEventPseudoTarget(model);
         AddElementMatchContainer(model);
         AddPaintWorkletExtensions(model);
@@ -924,32 +924,20 @@ internal sealed partial class IdlModel
     }
 
     /// <summary>
-    /// The width attribute of FontFace and the width member of FontFaceDescriptors (https://drafts.csswg.org/css-font-loading/#fontface-interface):
-    /// stretch is a legacy name alias of width. The editor's draft defines them, but not the IDL of webref yet.
+    /// The stretch attribute of FontFace (https://drafts.csswg.org/css-font-loading/#dom-fontface-stretch): the
+    /// specification defines it in prose as a legacy alias of width, but not in its IDL.
     /// </summary>
-    private static void AddFontFaceWidth(IdlModel model)
+    private static void AddFontFaceStretch(IdlModel model)
     {
-        if (model.Definitions.TryGetValue("FontFace", out var fontFace) && !fontFace.Members.Exists(m => m.Name == "width"))
+        if (model.Definitions.TryGetValue("FontFace", out var fontFace) && !fontFace.Members.Exists(m => m.Name == "stretch"))
         {
             fontFace.Members.Add(new IdlMember
             {
                 Kind = IdlMemberKind.Attribute,
-                Name = "width",
+                Name = "stretch",
                 Type = new IdlType { Name = "CSSOMString" },
                 Source = "css-font-loading-3",
                 DeclaringDefinition = fontFace.Name,
-            });
-        }
-
-        if (model.Definitions.TryGetValue("FontFaceDescriptors", out var descriptors) && !descriptors.Members.Exists(m => m.Name == "width"))
-        {
-            descriptors.Members.Add(new IdlMember
-            {
-                Kind = IdlMemberKind.Field,
-                Name = "width",
-                Type = new IdlType { Name = "CSSOMString" },
-                Source = "css-font-loading-3",
-                DeclaringDefinition = descriptors.Name,
             });
         }
     }

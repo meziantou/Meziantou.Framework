@@ -972,10 +972,7 @@
     "total": 2
   },
   "referrer-policy/css-integration/child-css/external-import-stylesheet.html": {
-    "total": 1,
-    "failures": {
-      "Child css from external stylesheet.": "FAIL"
-    }
+    "total": 1
   },
   "referrer-policy/css-integration/child-css/internal-import-stylesheet-with-differentorigin-base-url-from-preload.tentative.html": {
     "total": 1
@@ -984,55 +981,31 @@
     "total": 1
   },
   "referrer-policy/css-integration/child-css/internal-import-stylesheet.html": {
-    "total": 1,
-    "failures": {
-      "Child css from internal stylesheet.": "FAIL"
-    }
+    "total": 1
   },
   "referrer-policy/css-integration/child-css/processing-instruction.html": {
-    "total": 1,
-    "failures": {
-      "Child css via a ProcessingInstruction.": "FAIL"
-    }
+    "total": 1
   },
   "referrer-policy/css-integration/font-face/external-import-stylesheet.html": {
-    "total": 1,
-    "failures": {
-      "Font from imported stylesheet (external).": "FAIL"
-    }
+    "total": 1
   },
   "referrer-policy/css-integration/font-face/external-stylesheet.html": {
-    "total": 1,
-    "failures": {
-      "Font from external stylesheet.": "FAIL"
-    }
+    "total": 1
   },
   "referrer-policy/css-integration/font-face/internal-import-stylesheet.html": {
-    "total": 1,
-    "failures": {
-      "Font from imported stylesheet (internal).": "FAIL"
-    }
+    "total": 1
   },
   "referrer-policy/css-integration/font-face/internal-stylesheet.html": {
     "total": 1
   },
   "referrer-policy/css-integration/font-face/processing-instruction.html": {
-    "total": 1,
-    "failures": {
-      "Font from external stylesheet (from ProcessingInstruction).": "FAIL"
-    }
+    "total": 1
   },
   "referrer-policy/css-integration/image/external-import-stylesheet.html": {
-    "total": 1,
-    "failures": {
-      "Image from imported stylesheet (external).": "FAIL"
-    }
+    "total": 1
   },
   "referrer-policy/css-integration/image/external-stylesheet.html": {
-    "total": 1,
-    "failures": {
-      "Image from external stylesheet.": "FAIL"
-    }
+    "total": 1
   },
   "referrer-policy/css-integration/image/inline-style-with-differentorigin-base-tag.tentative.html": {
     "total": 1
@@ -1041,10 +1014,7 @@
     "total": 1
   },
   "referrer-policy/css-integration/image/internal-import-stylesheet.html": {
-    "total": 1,
-    "failures": {
-      "Image from imported stylesheet (internal).": "FAIL"
-    }
+    "total": 1
   },
   "referrer-policy/css-integration/image/internal-stylesheet.html": {
     "total": 1
@@ -1053,24 +1023,10 @@
     "total": 1
   },
   "referrer-policy/css-integration/image/processing-instruction.html": {
-    "total": 1,
-    "failures": {
-      "Image from external stylesheet (from ProcessingInstruction).": "FAIL"
-    }
+    "total": 1
   },
   "referrer-policy/css-integration/svg/external-stylesheet.html": {
-    "total": 9,
-    "failures": {
-      "Test styling SVG from external style clip-path": "FAIL",
-      "Test styling SVG from external style fill": "FAIL",
-      "Test styling SVG from external style filter": "FAIL",
-      "Test styling SVG from external style marker-end": "FAIL",
-      "Test styling SVG from external style marker-mid": "FAIL",
-      "Test styling SVG from external style marker-start": "FAIL",
-      "Test styling SVG from external style mask": "FAIL",
-      "Test styling SVG from external style mask-image": "FAIL",
-      "Test styling SVG from external style stroke": "FAIL"
-    }
+    "total": 9
   },
   "referrer-policy/css-integration/svg/filter-no-referrer.html": {
     "reftest": "FAIL"
@@ -1088,16 +1044,7 @@
     "total": 8
   },
   "referrer-policy/css-integration/svg/processing-instruction.html": {
-    "total": 9,
-    "failures": {
-      "Styling SVG from ProcessingInstruction clip-path": "FAIL",
-      "Styling SVG from ProcessingInstruction fill": "FAIL",
-      "Styling SVG from ProcessingInstruction filter": "FAIL",
-      "Styling SVG from ProcessingInstruction marker-end": "FAIL",
-      "Styling SVG from ProcessingInstruction marker-mid": "FAIL",
-      "Styling SVG from ProcessingInstruction marker-start": "FAIL",
-      "Styling SVG from ProcessingInstruction stroke": "FAIL"
-    }
+    "total": 9
   },
   "referrer-policy/gen/iframe.http-rp/no-referrer-when-downgrade/a-tag.http.html": {
     "total": 4

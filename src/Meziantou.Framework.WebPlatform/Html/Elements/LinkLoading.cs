@@ -612,7 +612,10 @@ public partial class HtmlLinkElement
 
         // The title is only used for the style sheets of the document tree
         var title = GetRoot() is Document ? GetAttributeValue("title") : null;
-        return new CssStyleSheet(this, text, GetAttributeValue("media"), title, url, response?.Url ?? url, linkResource.Alternate, originClean);
+        return new CssStyleSheet(this, text, GetAttributeValue("media"), title, url, response?.Url ?? url, linkResource.Alternate, originClean)
+        {
+            ResourceReferrer = CssResourceReferrer.Create(url, response),
+        };
     }
 
     private void RemoveStyleSheet()

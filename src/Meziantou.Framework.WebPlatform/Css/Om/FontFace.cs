@@ -722,6 +722,7 @@ public sealed class FontFace
         // The fetch algorithm blocks the mixed content and the requests blocked by the content security policies, and checks
         // the CORS headers and the integrity metadata.
         var request = SubresourceFetching.CreateRequest(document, url, RequestDestination.Font, cors: true, modifiers.ReferrerPolicy, initiator: null, useCredentials: modifiers.UsesCredentials, integrity: modifiers.IntegrityMetadata);
+        _rule?.ParentStyleSheet?.ResourceReferrer?.Apply(request, modifiers.ReferrerPolicy);
         var timing = _rule?.ParentStyleSheet is { OriginClean: false } ? null
             : document.WorkerGlobal is { } worker ? ResourceTiming.Start(worker, request, "css")
             : ResourceTiming.Start(document, request, "css");

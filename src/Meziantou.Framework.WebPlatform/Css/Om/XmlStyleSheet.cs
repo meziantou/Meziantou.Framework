@@ -137,7 +137,10 @@ public sealed partial class ProcessingInstruction
                 _styleSheetFetch = null;
                 if (resource is not null && CssImportFetching.TryGetStyleSheetText(document, url, resource, environmentEncoding, out var text, out var responseUrl, out var sameOrigin))
                 {
-                    _sheet = new CssStyleSheet(this, text, responseUrl, media, title, alternate, sameOrigin);
+                    _sheet = new CssStyleSheet(this, text, responseUrl, media, title, alternate, sameOrigin)
+                    {
+                        ResourceReferrer = CssResourceReferrer.Create(responseUrl, resource),
+                    };
                     Css.Cascade.CssStyleVersion.Increment(document);
                     CssImportFetching.FetchImports(_sheet);
                 }

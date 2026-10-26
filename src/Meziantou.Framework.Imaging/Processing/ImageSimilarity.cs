@@ -4,8 +4,9 @@ using Meziantou.Framework.Imaging.Internals;
 namespace Meziantou.Framework.Imaging;
 
 /// <summary>
-/// Measures how similar two frames look: the Structural Similarity Index (SSIM), and the distance between two 64-bit
-/// perceptual hashes, the difference hash (dHash) and the perceptual hash (pHash).
+/// Measures how similar two frames look: the Structural Similarity Index (SSIM), the peak signal-to-noise ratio (PSNR), the
+/// SSIMULACRA 2 score and the Butteraugli distance, and the distance between two 64-bit perceptual hashes, the difference
+/// hash (dHash) and the perceptual hash (pHash).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -16,8 +17,10 @@ namespace Meziantou.Framework.Imaging;
 /// active on it. A frame can be compared with itself.
 /// </para>
 /// <para>
-/// The results are deterministic: they depend only on the pixels, not on the hardware. The temporary row buffers are
-/// charged to the allocation scope of the image of the frames. An animated image is compared frame by frame.
+/// The results are deterministic: SSIM and the hashes depend only on the pixels, not on the hardware. PSNR, SSIMULACRA 2 and
+/// Butteraugli use the logarithm, power and cube root functions of the platform, so their last digits can differ between
+/// platforms. The temporary buffers are charged to the allocation scope of the image of the frames. An animated image is
+/// compared frame by frame.
 /// </para>
 /// <para>
 /// <b>SSIM.</b> The score is computed in every 7×7 window that fits inside the frame, moved one pixel at a time, with
@@ -37,6 +40,27 @@ namespace Meziantou.Framework.Imaging;
 /// plus the difference between the mean luminances on the same scale (about 4 levels out of 255 per unit). A frame that is
 /// not fully opaque is evaluated composited over black and over white, and the larger distance is kept. The distance is
 /// capped at <see cref="MaxHashDistance"/>.
+/// </para>
+/// <para>
+/// <b>PSNR.</b> The ratio, in decibels, of the peak value (255) to the mean squared error of the R, G and B channels
+/// premultiplied by alpha (as for SSIM): for opaque frames, it is what scikit-image's
+/// <c>peak_signal_noise_ratio(expected, actual, data_range=255)</c> computes. The alpha channel gives its own ratio, and
+/// the result is the lower of the two. Identical frames have an infinite ratio.
+/// </para>
+/// <para>
+/// <b>SSIMULACRA 2.</b> A port of the <c>ssimulacra2</c> tool of libjxl 0.12.0, a perceptual metric tuned on subjective
+/// scores: the frames are compared in the XYB color space of JPEG XL at 6 scales, with an SSIM map and two edge maps (new
+/// artifacts and lost details). The planes are 32-bit floats, and the arithmetic of the tool is reproduced (its sRGB curve,
+/// cube root and blur, with fused multiply-adds): the scores agree with the 8 decimals it prints. A frame that is not fully
+/// opaque is composited over a dark and a bright gray, and the lower score is kept, as the tool does.
+/// </para>
+/// <para>
+/// <b>Butteraugli.</b> A port of the Butteraugli metric of libjxl 0.12.0 (by Jyrki Alakuijala), with the parameters of its
+/// <c>butteraugli_main</c> tool for SDR images (80 nits): a psychovisual model of the differences per frequency band,
+/// masked by the activity of the frames, that gives a distance for every pixel. The results are within about 0.01% of the
+/// tool. A frame that is not fully opaque is composited over black and over white, and every pixel keeps the larger
+/// distance, as libjxl does. A frame smaller than 8×8 is extended to 8×8 by repeating its edges, as libjxl's
+/// <c>ButteraugliDiffmap</c> does. It is the slowest member, and it needs about 120 bytes per pixel.
 /// </para>
 /// </remarks>
 public static class ImageSimilarity
@@ -71,6 +95,61 @@ public static class ImageSimilarity
 
         return accumulator.ComputeMeanSsim();
     }
+
+    /// <summary>Computes the peak signal-to-noise ratio (PSNR) of two frames of the same size.</summary>
+    /// <param name="expected">The reference frame.</param>
+    /// <param name="actual">The frame compared with the reference.</param>
+    /// <param name="cancellationToken">The token checked between rows.</param>
+    /// <returns>
+    /// The ratio in decibels: <see cref="double.PositiveInfinity"/> for identical pixels; about 30 to 50 for a lossy
+    /// encoding, higher values meaning smaller differences.
+    /// </returns>
+    /// <exception cref="ArgumentNullException"><paramref name="expected"/> or <paramref name="actual"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">The frames do not have the same size.</exception>
+    /// <exception cref="InvalidOperationException">A lease is active on one of the frames.</exception>
+    /// <exception cref="ObjectDisposedException">A frame is no longer attached to a live image.</exception>
+    /// <exception cref="ImageResourceLimitException">The row buffers exceed the allocation limit.</exception>
+    public static double ComputePsnr(ImageFrame expected, ImageFrame actual, CancellationToken cancellationToken = default)
+        => Compute(expected, actual, (_, e, a, ct) => PsnrCalculator.Compute(e, a, ct), cancellationToken);
+
+    /// <summary>Computes the SSIMULACRA 2 score of two frames of the same size, at least 8×8.</summary>
+    /// <param name="expected">The reference frame.</param>
+    /// <param name="actual">The frame compared with the reference.</param>
+    /// <param name="cancellationToken">The token checked between the steps of the computation.</param>
+    /// <returns>
+    /// A score of at most <c>100</c>: <c>100</c> for identical pixels, about <c>90</c> when the difference is not visible,
+    /// <c>70</c> for a high quality, <c>50</c> for a medium quality, and negative values for very different frames.
+    /// </returns>
+    /// <exception cref="ArgumentNullException"><paramref name="expected"/> or <paramref name="actual"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">The frames do not have the same size, or are smaller than 8×8.</exception>
+    /// <exception cref="InvalidOperationException">A lease is active on one of the frames.</exception>
+    /// <exception cref="ObjectDisposedException">A frame is no longer attached to a live image.</exception>
+    /// <exception cref="ImageResourceLimitException">The planes of the computation exceed the allocation limit.</exception>
+    public static double ComputeSsimulacra2(ImageFrame expected, ImageFrame actual, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(expected);
+        ArgumentNullException.ThrowIfNull(actual);
+        if (expected.Width < Ssimulacra2Calculator.MinimumSize || expected.Height < Ssimulacra2Calculator.MinimumSize)
+            throw new ArgumentException(string.Create(CultureInfo.InvariantCulture, $"SSIMULACRA 2 needs frames of at least {Ssimulacra2Calculator.MinimumSize}x{Ssimulacra2Calculator.MinimumSize} pixels: the expected frame is {expected.Width}x{expected.Height}."), nameof(expected));
+
+        return Compute(expected, actual, Ssimulacra2Calculator.Compute, cancellationToken);
+    }
+
+    /// <summary>Computes the Butteraugli distance between two frames of the same size.</summary>
+    /// <param name="expected">The reference frame.</param>
+    /// <param name="actual">The frame compared with the reference.</param>
+    /// <param name="cancellationToken">The token checked between the steps of the computation.</param>
+    /// <returns>
+    /// The largest distance of the map and its 3-norm: <c>0</c> for identical pixels, below about <c>1</c> when the
+    /// difference is not visible.
+    /// </returns>
+    /// <exception cref="ArgumentNullException"><paramref name="expected"/> or <paramref name="actual"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">The frames do not have the same size.</exception>
+    /// <exception cref="InvalidOperationException">A lease is active on one of the frames.</exception>
+    /// <exception cref="ObjectDisposedException">A frame is no longer attached to a live image.</exception>
+    /// <exception cref="ImageResourceLimitException">The planes of the computation exceed the allocation limit.</exception>
+    public static ButteraugliDistance ComputeButteraugliDistance(ImageFrame expected, ImageFrame actual, CancellationToken cancellationToken = default)
+        => Compute(expected, actual, ButteraugliCalculator.Compute, cancellationToken);
 
     /// <summary>Computes the 64-bit difference hash (dHash) of a frame composited over a black background.</summary>
     /// <param name="frame">The frame.</param>
@@ -143,6 +222,17 @@ public static class ImageSimilarity
         return PerceptualHasher.ComputeDistance(expectedSource, actualSource, perceptual, cancellationToken);
     }
 
+    private static T Compute<T>(ImageFrame expected, ImageFrame actual, PairMetric<T> metric, CancellationToken cancellationToken)
+    {
+        var (expectedStorage, actualStorage) = GetStorages(expected, actual, cancellationToken);
+        using var leases = PixelLeasePair.Acquire(expectedStorage, actualStorage);
+        using var expectedReader = Rgba32RowReader.Create(expectedStorage.Owner.Scope, expected.PixelFormat, expectedStorage.Width);
+        using var actualReader = Rgba32RowReader.Create(actualStorage.Owner.Scope, actual.PixelFormat, actualStorage.Width);
+        var expectedSource = new PixelSource(leases.First, expectedReader, expected.PixelFormat);
+        var actualSource = new PixelSource(leases.Second, actualReader, actual.PixelFormat);
+        return metric(expectedStorage.Owner.Scope, expectedSource, actualSource, cancellationToken);
+    }
+
     private static (PixelStorage Expected, PixelStorage Actual) GetStorages(ImageFrame expected, ImageFrame actual, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(expected);
@@ -155,4 +245,6 @@ public static class ImageSimilarity
         cancellationToken.ThrowIfCancellationRequested();
         return (expectedStorage, actualStorage);
     }
+
+    private delegate T PairMetric<T>(AllocationScope scope, PixelSource expected, PixelSource actual, CancellationToken cancellationToken);
 }

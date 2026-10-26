@@ -262,6 +262,7 @@ jobs:
             "tests/Meziantou.Framework.Imaging.Tga.Tests/Meziantou.Framework.Imaging.Tga.Tests.csproj" = 63
             "tests/Meziantou.Framework.Imaging.Pnm.Tests/Meziantou.Framework.Imaging.Pnm.Tests.csproj" = 52
             "tests/Meziantou.Framework.Imaging.Qoi.Tests/Meziantou.Framework.Imaging.Qoi.Tests.csproj" = 36
+            "tests/Meziantou.Framework.Imaging.Barcodes.Tests/Meziantou.Framework.Imaging.Barcodes.Tests.csproj" = 4
             "tests/Meziantou.Framework.Imaging.Ico.Tests/Meziantou.Framework.Imaging.Ico.Tests.csproj" = 1
             "tests/Meziantou.Framework.Imaging.Tiff.Tests/Meziantou.Framework.Imaging.Tiff.Tests.csproj" = 1
           }
@@ -278,7 +279,7 @@ jobs:
             "tests/Meziantou.Framework.Roslyn.PackageTests/Meziantou.Framework.Roslyn.PackageTests.csproj"
             "tests/Meziantou.Framework.EmbeddedConstantsGenerator.Tests/Meziantou.Framework.EmbeddedConstantsGenerator.Tests.csproj"
             "tests/Meziantou.Framework.Yaml.Tests/Meziantou.Framework.Yaml.Tests.csproj"
-            "tests/Meziantou.Framework.QRCode.Tests/Meziantou.Framework.QRCode.Tests.csproj"
+            "tests/Meziantou.Framework.Barcodes.Tests/Meziantou.Framework.Barcodes.Tests.csproj"
             "tests/Meziantou.Framework.Roslyn.Tests/Meziantou.Framework.Roslyn.Tests.Roslyn5_6.csproj"
             "tests/Meziantou.Framework.CommandLineTests/Meziantou.Framework.CommandLineTests.csproj"
           )

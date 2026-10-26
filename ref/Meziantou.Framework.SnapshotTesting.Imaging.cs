@@ -13,9 +13,12 @@ namespace Meziantou.Framework.SnapshotTesting.Imaging
 
     public sealed class ImageComparisonSettings
     {
+        public double? ButteraugliThreshold { get => throw null; set { } }
         public int? DHashThreshold { get => throw null; set { } }
         public int? PHashThreshold { get => throw null; set { } }
+        public double? PsnrThreshold { get => throw null; set { } }
         public float? SimilarityThreshold { get => throw null; set { } }
+        public double? Ssimulacra2Threshold { get => throw null; set { } }
     }
 
     public static class SnapshotComparerCollectionImageComparerExtensions

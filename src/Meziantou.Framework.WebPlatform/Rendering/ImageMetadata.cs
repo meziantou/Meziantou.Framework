@@ -38,7 +38,8 @@ internal enum ExifOrientation : byte
 /// Reads the metadata of an encoded image that the user agent applies (https://drafts.csswg.org/css-images-3/#url-metadata):
 /// its EXIF orientation and its EXIF resolution (the density-corrected dimensions). As in the browsers, only the metadata that precedes the image data is used: the EXIF segment of a
 /// JPEG image before its first frame, the <c>eXIf</c> chunk (or the EXIF raw profile of a text chunk) of a PNG image before
-/// its <c>IDAT</c> chunk. The metadata of the other formats is ignored.
+/// its <c>IDAT</c> chunk. The orientation of a JPEG XL image is the one of its codestream (its EXIF metadata is ignored, as in
+/// the browsers). The metadata of the other formats is ignored.
 /// </summary>
 internal static class ImageMetadata
 {
@@ -54,8 +55,140 @@ internal static class ImageMetadata
         {
             orientation = GetPngOrientation(bytes);
         }
+        else if (ReadJpegXlHeader(bytes) is { } header)
+        {
+            orientation = header.Orientation;
+        }
 
         return orientation is >= 1 and <= 8 ? (ExifOrientation)orientation : ExifOrientation.TopLeft;
+    }
+
+    /// <summary>
+    /// Returns whether the bytes start with the signature of a JPEG XL image (ISO/IEC 18181-2): a bare codestream, or the
+    /// signature box of the container.
+    /// </summary>
+    public static bool IsJpegXl(ReadOnlySpan<byte> bytes)
+        => bytes.StartsWith((ReadOnlySpan<byte>)[0xFF, 0x0A]) || bytes.StartsWith((ReadOnlySpan<byte>)[0x00, 0x00, 0x00, 0x0C, 0x4A, 0x58, 0x4C, 0x20, 0x0D, 0x0A, 0x87, 0x0A]);
+
+    /// <summary>
+    /// Reads the dimensions of the encoded pixels of a JPEG XL image (its <c>SizeHeader</c>) and its orientation (the one of its
+    /// <c>ImageMetadata</c>, 1 to 8: an EXIF orientation), from its codestream: the bytes, or the first <c>jxlc</c> or
+    /// <c>jxlp</c> box of the container (ISO/IEC 18181-1, A.3 and A.6). Returns null when the bytes are not a JPEG XL image or
+    /// end before the header.
+    /// </summary>
+    public static (uint Width, uint Height, int Orientation)? ReadJpegXlHeader(ReadOnlySpan<byte> bytes)
+    {
+        if (!IsJpegXl(bytes))
+            return null;
+
+        var codestream = bytes[0] == 0xFF ? bytes : GetJpegXlContainerCodestream(bytes);
+        if (codestream.Length < 2 || codestream[0] != 0xFF || codestream[1] != 0x0A)
+            return null;
+
+        var reader = new JpegXlBitReader(codestream[2..]);
+
+        // SizeHeader: a height multiple of 8 (small) or not, then a width given by a ratio of the height, or by its own value
+        var small = reader.ReadBool();
+        var height = small ? (reader.ReadBits(5) + 1) * 8 : ReadDimension(ref reader);
+        var ratio = reader.ReadBits(3);
+        var width = ratio switch
+        {
+            0 => small ? (reader.ReadBits(5) + 1) * 8 : ReadDimension(ref reader),
+            1 => height,
+            2 => height * 12UL / 10,
+            3 => height * 4UL / 3,
+            4 => height * 3UL / 2,
+            5 => height * 16UL / 9,
+            6 => height * 5UL / 4,
+            _ => height * 2UL,
+        };
+
+        // ImageMetadata: all_default, then extra_fields, whose first field is the orientation
+        var orientation = 1;
+        if (!reader.ReadBool() && reader.ReadBool())
+        {
+            orientation = (int)reader.ReadBits(3) + 1;
+        }
+
+        if (reader.IsOverrun || width is 0 or > uint.MaxValue || height is 0 or > uint.MaxValue)
+            return null;
+
+        return ((uint)width, (uint)height, orientation);
+
+        // U32(Bits(9), Bits(13), Bits(18), Bits(30)) + 1
+        static ulong ReadDimension(ref JpegXlBitReader reader)
+            => reader.ReadBits(reader.ReadBits(2) switch { 0 => 9, 1 => 13, 2 => 18, _ => 30 }) + 1;
+    }
+
+    /// <summary>The start of the codestream of a JPEG XL container: the content of its first <c>jxlc</c> or <c>jxlp</c> box (after the index of the part), or empty.</summary>
+    private static ReadOnlySpan<byte> GetJpegXlContainerCodestream(ReadOnlySpan<byte> bytes)
+    {
+        var offset = 0;
+        while (offset + 8 <= bytes.Length)
+        {
+            var size = (ulong)BinaryPrimitives.ReadUInt32BigEndian(bytes[offset..]);
+            var type = bytes.Slice(offset + 4, 4);
+            var headerSize = 8;
+            if (size == 1)
+            {
+                if (offset + 16 > bytes.Length)
+                    return [];
+
+                size = BinaryPrimitives.ReadUInt64BigEndian(bytes[(offset + 8)..]);
+                headerSize = 16;
+            }
+            else if (size == 0)
+            {
+                // The last box extends to the end of the file
+                size = (ulong)(bytes.Length - offset);
+            }
+
+            if (size < (ulong)headerSize)
+                return [];
+
+            // The content of the box, up to the end of the bytes (the header of the codestream is at its start)
+            var content = bytes[(offset + headerSize)..];
+            if (type.SequenceEqual("jxlc"u8))
+                return content;
+
+            if (type.SequenceEqual("jxlp"u8))
+                return content.Length < 4 ? [] : content[4..];
+
+            if (size >= (ulong)(bytes.Length - offset))
+                return [];
+
+            offset += (int)size;
+        }
+
+        return [];
+    }
+
+    /// <summary>Reads the bits of a JPEG XL codestream, from the least significant bit of each byte.</summary>
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Auto)]
+    private ref struct JpegXlBitReader(ReadOnlySpan<byte> bytes)
+    {
+        private readonly ReadOnlySpan<byte> _bytes = bytes;
+        private int _position;
+
+        /// <summary>Whether a value was read past the end of the bytes (its missing bits are zeros).</summary>
+        public readonly bool IsOverrun => _position > _bytes.Length * 8;
+
+        public bool ReadBool() => ReadBits(1) != 0;
+
+        public ulong ReadBits(int count)
+        {
+            var value = 0UL;
+            for (var i = 0; i < count; i++, _position++)
+            {
+                var index = _position >> 3;
+                if (index < _bytes.Length && ((_bytes[index] >> (_position & 7)) & 1) != 0)
+                {
+                    value |= 1UL << i;
+                }
+            }
+
+            return value;
+        }
     }
 
     /// <summary>

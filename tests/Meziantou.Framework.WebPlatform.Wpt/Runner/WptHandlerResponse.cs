@@ -55,6 +55,15 @@ internal sealed class WptHandlerResponse
     /// </summary>
     public TimeSpan? ChunksRepeatAfter { get; set; }
 
+    /// <summary>
+    /// The condition that ends a body whose chunks are sent again (<see cref="ChunksRepeatAfter"/>), checked before each
+    /// repetition (e.g. a value put in the stash by another request), or null.
+    /// </summary>
+    public Func<bool>? ChunksStopCondition { get; set; }
+
+    /// <summary>Called when the connection of a body read as it arrives is closed: at the end of the body, or when the client stops reading it.</summary>
+    public Action? Closed { get; set; }
+
     /// <summary>Whether the response is a network error (e.g. an invalid chunked encoding).</summary>
     public bool NetworkError { get; set; }
 

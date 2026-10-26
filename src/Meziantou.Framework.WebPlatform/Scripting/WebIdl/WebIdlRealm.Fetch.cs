@@ -337,13 +337,18 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
                 return;
 
             done = true;
-            bodyReader = finished || response.IsNetworkError ? null : FetchBodyReader.Create(response, controller.Token);
+
+            // The body of an opaque response is hidden from the scripts: the body of its internal response is read in the
+            // background (e.g. to give the response to a client of a service worker), and the abort of the fetch stops it
+            var isOpaque = response.Type is FetchResponseType.Opaque or FetchResponseType.OpaqueRedirect;
+            bodyReader = finished || response.IsNetworkError ? null : FetchBodyReader.Create(isOpaque ? response.Internal : response, controller.Token);
             if (bodyReader is null)
             {
                 Finish(disposeController: true);
             }
 
-            adapter.Call(callback, adapter.Undefined, [FromFetchResponse(response, bodyReader is null ? null : CreateBodyReader(bodyReader, document, () => controller.IsCancellationRequested, Finish, controller.Cancel))]);
+            var reader = bodyReader is null ? null : CreateBodyReader(bodyReader, document, () => controller.IsCancellationRequested, Finish, controller.Cancel);
+            adapter.Call(callback, adapter.Undefined, [isOpaque ? FromFetchResponse(response, internalBodyReader: reader) : FromFetchResponse(response, reader)]);
         }
 
         fetchGroupRecord = document.FetchGroup.Add(() =>
@@ -457,9 +462,10 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
 
     /// <summary>
     /// Converts a response of the fetch algorithm to the object read by Fetch.js. The chunks of a body that arrives over time
-    /// are pulled from <paramref name="bodyReader"/> (see <see cref="CreateBodyReader"/>).
+    /// are pulled from <paramref name="bodyReader"/> (see <see cref="CreateBodyReader"/>), and the ones of the body of the
+    /// internal response of an opaque response from <paramref name="internalBodyReader"/>.
     /// </summary>
-    private TValue FromFetchResponse(FetchResponse response, TValue? bodyReader = null)
+    private TValue FromFetchResponse(FetchResponse response, TValue? bodyReader = null, TValue? internalBodyReader = null)
     {
         var result = CreateObject();
         SetMember(result, "type", Adapter.FromString(response.Type switch
@@ -493,7 +499,8 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         SetMember(result, "crossOriginResourcePolicy", HeaderList.Get(response.Internal.HeaderList, "Cross-Origin-Resource-Policy") is { } policy ? Adapter.FromString(policy) : Adapter.Null);
 
         // The internal response of an opaque response, given back to a client when a service worker answers its request with it
-        SetMember(result, "internal", response.Type is FetchResponseType.Opaque or FetchResponseType.OpaqueRedirect ? FromInternalResponse(response.Internal) : Adapter.Null);
+        SetMember(result, "internal", response.Type is FetchResponseType.Opaque or FetchResponseType.OpaqueRedirect ? FromInternalResponse(response.Internal, streamed: internalBodyReader is not null) : Adapter.Null);
+        SetMember(result, "internalBodyReader", internalBodyReader ?? Adapter.Null);
 
         // The headers of the internal response of a CORS response that the filtered response hides (e.g. Content-Range,
         // which a media element needs when a service worker answers its range request with the response)
@@ -501,13 +508,14 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         return result;
     }
 
-    private TValue FromInternalResponse(FetchResponse response)
+    /// <summary>The internal response of an opaque response; the body of a body read as it arrives is set by Fetch.js at its end.</summary>
+    private TValue FromInternalResponse(FetchResponse response, bool streamed = false)
     {
         var result = CreateObject();
         SetMember(result, "status", Adapter.FromNumber(response.Status));
         SetMember(result, "statusText", Adapter.FromString(response.StatusMessage));
         SetMember(result, "headers", FromHeaderList(response.HeaderList));
-        SetMember(result, "body", response.Body is { } body ? FromBuffer(JsBufferKind.Uint8Array, body) : Adapter.Null);
+        SetMember(result, "body", !streamed && response.Body is { } body ? FromBuffer(JsBufferKind.Uint8Array, body) : Adapter.Null);
         SetMember(result, "urlList", CreateArray(response.UrlList.Select(url => Adapter.FromString(url.Serialize())).ToArray()));
         return result;
     }

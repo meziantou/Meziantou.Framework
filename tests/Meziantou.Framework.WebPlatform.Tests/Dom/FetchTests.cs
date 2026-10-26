@@ -400,6 +400,29 @@ public sealed class FetchTests : IDisposable
     }
 
     [Fact]
+    public async Task Fetch_AbortOfAnOpaqueResponse_StopsReadingTheBodyOfTheInternalResponse()
+    {
+        var body = new TrackedBody();
+        _loader.Responses["https://other.example/stream"] = new DocumentResource("a"u8.ToArray()) { RemainingContentBytes = body };
+        var document = Load("""
+            <script>
+              const controller = new AbortController();
+              fetch('https://other.example/stream', { mode: 'no-cors', signal: controller.signal }).then(response => {
+                document.title = response.type + ':' + response.body;
+                window.abortFetch = () => controller.abort();
+              });
+            </script>
+            """);
+
+        // The body of the internal response is read in the background, and the abort stops reading it
+        await WaitUntilAsync(() => document.Title.Length > 0 && body.IsReading, () => document.Title);
+        Assert.Equal("opaque:null", document.Title);
+        TestScriptEngines.Evaluate(_engine, document.DefaultView!, "abortFetch()");
+        await WaitUntilAsync(() => body.IsDisposed, () => "The body is still read");
+        Assert.True(body.WasCanceled);
+    }
+
+    [Fact]
     public async Task Fetch_CancelingTheBody_StopsReadingTheBody()
     {
         var body = new TrackedBody();

@@ -9,76 +9,19 @@
     "total": 2
   },
   "fetch/api/abort/destroyed-context.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "aborting a fetch in a destroyed context should not crash": "TIMEOUT"
-    }
+    "total": 1
   },
   "fetch/api/abort/general.any.js": {
-    "harness": "TIMEOUT",
-    "total": 61,
-    "failures": {
-      "Fetch aborted & connection closed when aborted after calling response.arrayBuffer()": "NOTRUN",
-      "Fetch aborted & connection closed when aborted after calling response.blob()": "NOTRUN",
-      "Fetch aborted & connection closed when aborted after calling response.bytes()": "NOTRUN",
-      "Fetch aborted & connection closed when aborted after calling response.formData()": "NOTRUN",
-      "Fetch aborted & connection closed when aborted after calling response.json()": "NOTRUN",
-      "Fetch aborted & connection closed when aborted after calling response.text()": "NOTRUN",
-      "Readable stream synchronously cancels with AbortError if aborted before reading": "NOTRUN",
-      "Stream errors once aborted with abort reason. Underlying connection closed.": "NOTRUN",
-      "Stream errors once aborted, after reading. Underlying connection closed.": "NOTRUN",
-      "Stream errors once aborted. Underlying connection closed.": "NOTRUN",
-      "Stream will not error if body is empty. It's closed with an empty queue before it errors.": "NOTRUN",
-      "Underlying connection is closed when aborting after receiving response": "TIMEOUT",
-      "Underlying connection is closed when aborting after receiving response - no-cors": "NOTRUN"
-    }
+    "total": 61
   },
   "fetch/api/abort/general.any.js#dedicatedworker": {
-    "harness": "TIMEOUT",
-    "total": 61,
-    "failures": {
-      "Fetch aborted & connection closed when aborted after calling response.arrayBuffer()": "NOTRUN",
-      "Fetch aborted & connection closed when aborted after calling response.blob()": "NOTRUN",
-      "Fetch aborted & connection closed when aborted after calling response.bytes()": "NOTRUN",
-      "Fetch aborted & connection closed when aborted after calling response.formData()": "NOTRUN",
-      "Fetch aborted & connection closed when aborted after calling response.json()": "NOTRUN",
-      "Fetch aborted & connection closed when aborted after calling response.text()": "NOTRUN",
-      "Readable stream synchronously cancels with AbortError if aborted before reading": "NOTRUN",
-      "Stream errors once aborted with abort reason. Underlying connection closed.": "NOTRUN",
-      "Stream errors once aborted, after reading. Underlying connection closed.": "NOTRUN",
-      "Stream errors once aborted. Underlying connection closed.": "NOTRUN",
-      "Stream will not error if body is empty. It's closed with an empty queue before it errors.": "NOTRUN",
-      "Underlying connection is closed when aborting after receiving response": "TIMEOUT",
-      "Underlying connection is closed when aborting after receiving response - no-cors": "NOTRUN"
-    }
+    "total": 61
   },
   "fetch/api/abort/general.any.js#sharedworker": {
-    "harness": "TIMEOUT",
-    "total": 61,
-    "failures": {
-      "Fetch aborted & connection closed when aborted after calling response.arrayBuffer()": "NOTRUN",
-      "Fetch aborted & connection closed when aborted after calling response.blob()": "NOTRUN",
-      "Fetch aborted & connection closed when aborted after calling response.bytes()": "NOTRUN",
-      "Fetch aborted & connection closed when aborted after calling response.formData()": "NOTRUN",
-      "Fetch aborted & connection closed when aborted after calling response.json()": "NOTRUN",
-      "Fetch aborted & connection closed when aborted after calling response.text()": "NOTRUN",
-      "Readable stream synchronously cancels with AbortError if aborted before reading": "NOTRUN",
-      "Stream errors once aborted with abort reason. Underlying connection closed.": "NOTRUN",
-      "Stream errors once aborted, after reading. Underlying connection closed.": "NOTRUN",
-      "Stream errors once aborted. Underlying connection closed.": "NOTRUN",
-      "Stream will not error if body is empty. It's closed with an empty queue before it errors.": "NOTRUN",
-      "Underlying connection is closed when aborting after receiving response": "TIMEOUT",
-      "Underlying connection is closed when aborting after receiving response - no-cors": "NOTRUN"
-    }
+    "total": 61
   },
   "fetch/api/abort/keepalive.html": {
-    "harness": "TIMEOUT",
-    "total": 2,
-    "failures": {
-      "aborting a detached keepalive fetch should not do anything": "NOTRUN",
-      "aborting a keepalive fetch should work": "TIMEOUT"
-    }
+    "total": 2
   },
   "fetch/api/abort/request.any.js": {
     "total": 18

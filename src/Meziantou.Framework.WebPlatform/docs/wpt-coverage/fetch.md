@@ -6,19 +6,19 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 321 | 407 | 3 | 79% |
+| [Stable](#stable-tests) | 324 | 407 | 3 | 80% |
 | [Tentative](#tentative-tests) | 13 | 77 | 1 | 17% |
 | [Reftests](#reftests) | 9 | 11 | 0 | 82% |
-| **All** | **343** | **495** | **4** | **70%** |
+| **All** | **346** | **495** | **4** | **70%** |
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
 | [`api/abort/cache.https.any.js`](https://wpt.fyi/results/fetch/api/abort/cache.https.any.js) | Pass | 6 / 6 |  |  |
-| [`api/abort/destroyed-context.html`](https://wpt.fyi/results/fetch/api/abort/destroyed-context.html) | Timeout | 0 / 1 | TEST RUNNER | the never-ending response of `infinite-slow-response.py` never delivers its headers, so `fetch()` does not resolve and the abort is never observed |
-| [`api/abort/general.any.js`](https://wpt.fyi/results/fetch/api/abort/general.any.js) | Timeout | 144 / 183 | TEST RUNNER | the never-ending response of `infinite-slow-response.py` never delivers its headers, so `fetch()` does not resolve and the abort is never observed |
-| [`api/abort/keepalive.html`](https://wpt.fyi/results/fetch/api/abort/keepalive.html) | Timeout | 0 / 2 | TEST RUNNER | the never-ending response of `infinite-slow-response.py` never delivers its headers, so `fetch()` does not resolve and the abort is never observed |
+| [`api/abort/destroyed-context.html`](https://wpt.fyi/results/fetch/api/abort/destroyed-context.html) | Pass | 1 / 1 |  |  |
+| [`api/abort/general.any.js`](https://wpt.fyi/results/fetch/api/abort/general.any.js) | Pass | 183 / 183 |  |  |
+| [`api/abort/keepalive.html`](https://wpt.fyi/results/fetch/api/abort/keepalive.html) | Pass | 2 / 2 |  |  |
 | [`api/abort/request.any.js`](https://wpt.fyi/results/fetch/api/abort/request.any.js) | Pass | 54 / 54 |  |  |
 | [`api/abort/serviceworker-intercepted.https.html`](https://wpt.fyi/results/fetch/api/abort/serviceworker-intercepted.https.html) | Timeout | 10 / 12 | BUG | aborting a fetch while its fetch event is handled does not abort `event.request.signal` in the service worker, so `sw-intercept-abort.js` never responds |
 | [`api/basic/accept-header.any.js`](https://wpt.fyi/results/fetch/api/basic/accept-header.any.js) | Pass | 12 / 12 |  |  |

@@ -1873,16 +1873,38 @@ internal static partial class WptPythonHandlers
         response.Body = request.Body;
     }
 
-    // fetch/api/resources/infinite-slow-response.py: the response never ends (the request is aborted by the test)
+    // fetch/api/resources/infinite-slow-response.py: the response never ends (the request is aborted by the test). A body
+    // read as it arrives (fetch()) gets 2048 bytes with the headers, then a byte every 10 ms until the client stops reading
+    // it (the stash of stateKey is then "closed") or until the stash has a value for abortKey; the other requests never get
+    // their response.
     private static void InfiniteSlowResponse(WptHandlerRequest request, WptHandlerResponse response, WptStash stash)
     {
-        if (request.Get("stateKey") is { Length: > 0 } stateKey)
+        var stateKey = request.Get("stateKey");
+        if (stateKey is { Length: > 0 })
         {
             stash.Put("stash-take|" + stateKey, "open");
         }
 
         response.Set("Content-type", "text/plain");
-        response.Pending = true;
+        if (!request.Request.StreamsResponseBody)
+        {
+            response.Pending = true;
+            return;
+        }
+
+        response.Streamed = true;
+        response.Content = new string('.', 2048);
+        response.Chunks.Add((TimeSpan.Zero, "."u8.ToArray()));
+        response.ChunksRepeatAfter = TimeSpan.FromMilliseconds(10);
+        if (request.Get("abortKey") is { Length: > 0 } abortKey)
+        {
+            response.ChunksStopCondition = () => stash.TakeValue("stash-take|" + abortKey) is not null;
+        }
+
+        if (stateKey is { Length: > 0 })
+        {
+            response.Closed = () => stash.Put("stash-take|" + stateKey, "closed");
+        }
     }
 
     // fetch/api/resources/preflight-unterminated-body.py: the body of the preflight response never ends (the headers suffice)

@@ -54,7 +54,9 @@
     the media resources, the bodies of `fetch()` (`DocumentRequest.StreamsResponseBody`, e.g. `fetch/api/resources/trickle.py`,
     and `bad-chunk-encoding.py`, whose body fails after its chunks: `WptHandlerResponse.ChunksError`), and the event streams
     (`text/event-stream`), whose events are dispatched as their chunks arrive (a port of a handler that writes a part of
-    the body, sleeps, then writes the rest, sends the parts as chunks); an infinite response never completes
+    the body, sleeps, then writes the rest, sends the parts as chunks); the connection of a body read as it arrives is
+    closed when the client stops reading it or aborts the request (`WptHandlerResponse.Closed`, e.g.
+    `infinite-slow-response.py`, whose body never ends for `fetch()`); another infinite response never completes
     (the test aborts it), and a handler that writes in a loop repeats its chunks (`WptHandlerResponse.ChunksRepeatAfter`,
     e.g. `eventsource/resources/message2.py`). The loader follows the
     redirects of the handlers, except for `fetch()` and `XMLHttpRequest`: the response has the URL of the location and the

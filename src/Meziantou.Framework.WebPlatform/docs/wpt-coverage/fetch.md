@@ -6,19 +6,19 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 296 | 407 | 3 | 73% |
+| [Stable](#stable-tests) | 304 | 407 | 3 | 75% |
 | [Tentative](#tentative-tests) | 12 | 77 | 1 | 16% |
 | [Reftests](#reftests) | 9 | 11 | 0 | 82% |
-| **All** | **317** | **495** | **4** | **65%** |
+| **All** | **325** | **495** | **4** | **66%** |
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
 | [`api/abort/cache.https.any.js`](https://wpt.fyi/results/fetch/api/abort/cache.https.any.js) | Pass | 6 / 6 |  |  |
-| [`api/abort/destroyed-context.html`](https://wpt.fyi/results/fetch/api/abort/destroyed-context.html) | Timeout | 0 / 1 | TEST RUNNER | the never-ending response of `infinite-slow-response.py` never delivers its headers, so `fetch()` does not resolve and the abort is never observed |
-| [`api/abort/general.any.js`](https://wpt.fyi/results/fetch/api/abort/general.any.js) | Timeout | 144 / 183 | TEST RUNNER | the never-ending response of `infinite-slow-response.py` never delivers its headers, so `fetch()` does not resolve and the abort is never observed |
-| [`api/abort/keepalive.html`](https://wpt.fyi/results/fetch/api/abort/keepalive.html) | Timeout | 0 / 2 | TEST RUNNER | the never-ending response of `infinite-slow-response.py` never delivers its headers, so `fetch()` does not resolve and the abort is never observed |
+| [`api/abort/destroyed-context.html`](https://wpt.fyi/results/fetch/api/abort/destroyed-context.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | streaming response bodies: `fetch()` resolves once the whole body is received (only the navigations, the event sources and the media and track elements read a body as it arrives), so it never resolves for the never-ending body of `infinite-slow-response.py` and the abort of the body is never observed |
+| [`api/abort/general.any.js`](https://wpt.fyi/results/fetch/api/abort/general.any.js) | Timeout | 144 / 183 | NOT IMPLEMENTED | streaming response bodies: `fetch()` resolves once the whole body is received (only the navigations, the event sources and the media and track elements read a body as it arrives), so it never resolves for the never-ending body of `infinite-slow-response.py` and the abort of the body is never observed |
+| [`api/abort/keepalive.html`](https://wpt.fyi/results/fetch/api/abort/keepalive.html) | Timeout | 0 / 2 | NOT IMPLEMENTED | streaming response bodies: `fetch()` resolves once the whole body is received (only the navigations, the event sources and the media and track elements read a body as it arrives), so it never resolves for the never-ending body of `infinite-slow-response.py` and the abort of the body is never observed |
 | [`api/abort/request.any.js`](https://wpt.fyi/results/fetch/api/abort/request.any.js) | Pass | 54 / 54 |  |  |
 | [`api/abort/serviceworker-intercepted.https.html`](https://wpt.fyi/results/fetch/api/abort/serviceworker-intercepted.https.html) | Timeout | 9 / 12 | NOT IMPLEMENTED | the bodies are not streamed: aborting a fetch intercepted by a service worker does not abort the body being read |
 | [`api/basic/accept-header.any.js`](https://wpt.fyi/results/fetch/api/basic/accept-header.any.js) | Pass | 12 / 12 |  |  |
@@ -53,7 +53,7 @@
 | [`api/basic/scheme-blob.sub.any.js`](https://wpt.fyi/results/fetch/api/basic/scheme-blob.sub.any.js) | Pass | 36 / 36 |  |  |
 | [`api/basic/scheme-data.any.js`](https://wpt.fyi/results/fetch/api/basic/scheme-data.any.js) | Pass | 24 / 24 |  |  |
 | [`api/basic/scheme-others.sub.any.js`](https://wpt.fyi/results/fetch/api/basic/scheme-others.sub.any.js) | Pass | 48 / 48 |  |  |
-| [`api/basic/status.h2.any.js`](https://wpt.fyi/results/fetch/api/basic/status.h2.any.js) | Fail | 0 / 14 | TEST RUNNER | the `.h2.` tests are served by the HTTP/1.1 emulation, so `statusText` is the reason phrase (HTTP/2 has none) |
+| [`api/basic/status.h2.any.js`](https://wpt.fyi/results/fetch/api/basic/status.h2.any.js) | Pass | 14 / 14 |  |  |
 | [`api/basic/stream-response.any.js`](https://wpt.fyi/results/fetch/api/basic/stream-response.any.js) | Fail | 0 / 6 | NOT IMPLEMENTED | streamed response bodies (the body of `trickle.py` is received at once, in a single chunk) |
 | [`api/basic/stream-safe-creation.any.js`](https://wpt.fyi/results/fetch/api/basic/stream-safe-creation.any.js) | Pass | 189 / 189 |  |  |
 | [`api/basic/text-utf8.any.js`](https://wpt.fyi/results/fetch/api/basic/text-utf8.any.js) | Pass | 90 / 90 |  |  |
@@ -230,14 +230,14 @@
 | [`corb/style-css-mislabeled-as-html.sub.html`](https://wpt.fyi/results/fetch/corb/style-css-mislabeled-as-html.sub.html) | Pass | 1 / 1 |  |  |
 | [`corb/style-css-with-json-parser-breaker.sub.html`](https://wpt.fyi/results/fetch/corb/style-css-with-json-parser-breaker.sub.html) | Pass | 1 / 1 |  |  |
 | [`corb/style-html-correctly-labeled.sub.html`](https://wpt.fyi/results/fetch/corb/style-html-correctly-labeled.sub.html) | Pass | 1 / 1 |  |  |
-| [`cross-origin-resource-policy/fetch-in-iframe.html`](https://wpt.fyi/results/fetch/cross-origin-resource-policy/fetch-in-iframe.html) | Fail | 1 / 5 | TEST RUNNER | the `fetch/cross-origin-resource-policy/resources/*.py` handlers (`hello.py`, `image.py`, `script.py`, `iframe.py`, `redirect.py`) are not emulated (404) |
-| [`cross-origin-resource-policy/fetch.any.js`](https://wpt.fyi/results/fetch/cross-origin-resource-policy/fetch.any.js) | Fail | 3 / 36 | TEST RUNNER | the `fetch/cross-origin-resource-policy/resources/*.py` handlers (`hello.py`, `image.py`, `script.py`, `iframe.py`, `redirect.py`) are not emulated (404) |
-| [`cross-origin-resource-policy/fetch.https.any.js`](https://wpt.fyi/results/fetch/cross-origin-resource-policy/fetch.https.any.js) | Fail | 3 / 27 | TEST RUNNER | the `fetch/cross-origin-resource-policy/resources/*.py` handlers (`hello.py`, `image.py`, `script.py`, `iframe.py`, `redirect.py`) are not emulated (404) |
-| [`cross-origin-resource-policy/iframe-loads.html`](https://wpt.fyi/results/fetch/cross-origin-resource-policy/iframe-loads.html) | Fail | 0 / 1 | TEST RUNNER | the `fetch/cross-origin-resource-policy/resources/*.py` handlers (`hello.py`, `image.py`, `script.py`, `iframe.py`, `redirect.py`) are not emulated (404) |
-| [`cross-origin-resource-policy/image-loads.html`](https://wpt.fyi/results/fetch/cross-origin-resource-policy/image-loads.html) | Fail | 2 / 6 | TEST RUNNER | the `fetch/cross-origin-resource-policy/resources/*.py` handlers (`hello.py`, `image.py`, `script.py`, `iframe.py`, `redirect.py`) are not emulated (404) |
-| [`cross-origin-resource-policy/scheme-restriction.any.js`](https://wpt.fyi/results/fetch/cross-origin-resource-policy/scheme-restriction.any.js) | Fail | 0 / 2 | TEST RUNNER | the `fetch/cross-origin-resource-policy/resources/*.py` handlers (`hello.py`, `image.py`, `script.py`, `iframe.py`, `redirect.py`) are not emulated (404) |
-| [`cross-origin-resource-policy/scheme-restriction.https.window.js`](https://wpt.fyi/results/fetch/cross-origin-resource-policy/scheme-restriction.https.window.js) | Fail | 0 / 1 | BUG | the mixed-content `<img>` (to be upgraded to `https:`) fires `error` and never reaches `image.py` (which is not emulated either) |
-| [`cross-origin-resource-policy/script-loads.html`](https://wpt.fyi/results/fetch/cross-origin-resource-policy/script-loads.html) | Fail | 2 / 6 | TEST RUNNER | the `fetch/cross-origin-resource-policy/resources/*.py` handlers (`hello.py`, `image.py`, `script.py`, `iframe.py`, `redirect.py`) are not emulated (404) |
+| [`cross-origin-resource-policy/fetch-in-iframe.html`](https://wpt.fyi/results/fetch/cross-origin-resource-policy/fetch-in-iframe.html) | Pass | 5 / 5 |  |  |
+| [`cross-origin-resource-policy/fetch.any.js`](https://wpt.fyi/results/fetch/cross-origin-resource-policy/fetch.any.js) | Fail | 33 / 36 | TEST BUG | the test expects `Cross-Origin-Resource-Policy: same-site` to block a no-cors request from an `http:` page to a same-site `https:` URL, but the cross-origin resource policy internal check of the Fetch Standard allows it: the origins are schemelessly same site, and only an `https:` request origin requires an `https:` response |
+| [`cross-origin-resource-policy/fetch.https.any.js`](https://wpt.fyi/results/fetch/cross-origin-resource-policy/fetch.https.any.js) | Pass | 27 / 27 |  |  |
+| [`cross-origin-resource-policy/iframe-loads.html`](https://wpt.fyi/results/fetch/cross-origin-resource-policy/iframe-loads.html) | Pass | 1 / 1 |  |  |
+| [`cross-origin-resource-policy/image-loads.html`](https://wpt.fyi/results/fetch/cross-origin-resource-policy/image-loads.html) | Pass | 6 / 6 |  |  |
+| [`cross-origin-resource-policy/scheme-restriction.any.js`](https://wpt.fyi/results/fetch/cross-origin-resource-policy/scheme-restriction.any.js) | Fail | 0 / 2 | TEST BUG | the test expects `Cross-Origin-Resource-Policy: same-site` to block a no-cors request from an `http:` page to a same-site `https:` URL, but the cross-origin resource policy internal check of the Fetch Standard allows it: the origins are schemelessly same site, and only an `https:` request origin requires an `https:` response |
+| [`cross-origin-resource-policy/scheme-restriction.https.window.js`](https://wpt.fyi/results/fetch/cross-origin-resource-policy/scheme-restriction.https.window.js) | Fail | 0 / 1 | BUG | the mixed-content `<img>` (to be upgraded to `https:`) fires `error` and never reaches `image.py` |
+| [`cross-origin-resource-policy/script-loads.html`](https://wpt.fyi/results/fetch/cross-origin-resource-policy/script-loads.html) | Pass | 6 / 6 |  |  |
 | [`cross-origin-resource-policy/syntax.any.js`](https://wpt.fyi/results/fetch/cross-origin-resource-policy/syntax.any.js) | Pass | 14 / 14 |  |  |
 | [`data-urls/base64.any.js`](https://wpt.fyi/results/fetch/data-urls/base64.any.js) | Pass | 243 / 243 |  |  |
 | [`data-urls/navigate.window.js`](https://wpt.fyi/results/fetch/data-urls/navigate.window.js) | Pass | 7 / 7 |  |  |
@@ -387,11 +387,11 @@
 | [`metadata/window-open.https.sub.html`](https://wpt.fyi/results/fetch/metadata/window-open.https.sub.html) | Pass | 45 / 45 |  |  |
 | [`metadata/worker.https.sub.html`](https://wpt.fyi/results/fetch/metadata/worker.https.sub.html) | Pass | 5 / 5 |  |  |
 | [`metadata/zz-debug.https.sub.html`](https://wpt.fyi/results/fetch/metadata/zz-debug.https.sub.html) | Pass | 1 / 1 |  |  |
-| [`nosniff/image.html`](https://wpt.fyi/results/fetch/nosniff/image.html) | Fail | 0 / 11 | TEST RUNNER | `fetch/nosniff/resources/image.py` is not emulated (the images get 404 and fire `error`) |
+| [`nosniff/image.html`](https://wpt.fyi/results/fetch/nosniff/image.html) | Pass | 11 / 11 |  |  |
 | [`nosniff/importscripts.html`](https://wpt.fyi/results/fetch/nosniff/importscripts.html) | Pass | 1 / 1 |  |  |
 | [`nosniff/parsing-nosniff.window.js`](https://wpt.fyi/results/fetch/nosniff/parsing-nosniff.window.js) | Fail | 6 / 16 | TEST RUNNER | `fetch/nosniff/resources/nosniff.py` is not emulated (404), so the scripts fail to load |
 | [`nosniff/script.html`](https://wpt.fyi/results/fetch/nosniff/script.html) | Pass | 10 / 10 |  |  |
-| [`nosniff/stylesheet.html`](https://wpt.fyi/results/fetch/nosniff/stylesheet.html) | Fail | 12 / 18 | TEST RUNNER | `fetch/nosniff/resources/css.py` is not emulated (404), so the style sheets fire `error` |
+| [`nosniff/stylesheet.html`](https://wpt.fyi/results/fetch/nosniff/stylesheet.html) | Pass | 18 / 18 |  |  |
 | [`nosniff/worker.html`](https://wpt.fyi/results/fetch/nosniff/worker.html) | Pass | 9 / 9 |  |  |
 | [`origin/assorted.window.js`](https://wpt.fyi/results/fetch/origin/assorted.window.js) | Error | 0 / 43 | TEST RUNNER | `fetch/origin/resources/redirect-and-stash.py` is not emulated (the stash returns the 404 page instead of JSON) |
 | [`range/blob.any.js`](https://wpt.fyi/results/fetch/range/blob.any.js) | Pass | 70 / 70 |  |  |
@@ -462,7 +462,7 @@
 | [`content-disposition/multiple-content-disposition.tentative.any.js`](https://wpt.fyi/results/fetch/content-disposition/multiple-content-disposition.tentative.any.js) | Pass | 8 / 8 |  |  |
 | [`content-disposition/multiple-content-disposition.tentative.h2.window.js`](https://wpt.fyi/results/fetch/content-disposition/multiple-content-disposition.tentative.h2.window.js) | Fail | 0 / 4 | TEST RUNNER | `multiple-content-disposition.h2.py` is not emulated (404) |
 | [`content-encoding/zstd/big-window-zstd-body.tentative.https.any.js`](https://wpt.fyi/results/fetch/content-encoding/zstd/big-window-zstd-body.tentative.https.any.js) | Fail | 0 / 3 | TEST RUNNER | the WPT loader decodes the `gzip`, `deflate` and `br` content codings of the served files, not `zstd` (.NET has no Zstandard decoder; the library relies on the decompression of its loader) (the too-large zstd window is never rejected) |
-| [`corb/img-mime-types-coverage.tentative.sub.html`](https://wpt.fyi/results/fetch/corb/img-mime-types-coverage.tentative.sub.html) | Fail | 15 / 36 | TEST RUNNER | `fetch/nosniff/resources/image.py` is not emulated (the images get 404 and fire `error`) |
+| [`corb/img-mime-types-coverage.tentative.sub.html`](https://wpt.fyi/results/fetch/corb/img-mime-types-coverage.tentative.sub.html) | Fail | 21 / 36 | NOT IMPLEMENTED | Opaque Response Blocking (ORB) of no-cors responses: the `<img>` of a cross-origin response labeled as HTML, JSON or XML (with `X-Content-Type-Options: nosniff`) loads instead of firing `error` |
 | [`corb/preload-image-png-mislabeled-as-html-nosniff.tentative.sub.html`](https://wpt.fyi/results/fetch/corb/preload-image-png-mislabeled-as-html-nosniff.tentative.sub.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Opaque Response Blocking (ORB) of no-cors responses (`<link rel=preload as=image>` of an `text/html` nosniff response loads) |
 | [`corb/response_block.tentative.https.html`](https://wpt.fyi/results/fetch/corb/response_block.tentative.https.html) | Fail | 1 / 2 | NOT IMPLEMENTED | Opaque Response Blocking (ORB) of no-cors responses (a blocked no-cors `fetch()` should be a network error) |
 | [`corb/script-html-correctly-labeled.tentative.sub.html`](https://wpt.fyi/results/fetch/corb/script-html-correctly-labeled.tentative.sub.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Opaque Response Blocking (ORB) of no-cors responses (the cross-origin HTML response is executed as a script and throws a syntax error) |
@@ -491,7 +491,7 @@
 | [`orb/tentative/compressed-image-sniffing.sub.html`](https://wpt.fyi/results/fetch/orb/tentative/compressed-image-sniffing.sub.html) | Pass | 1 / 1 |  |  |
 | [`orb/tentative/content-range.sub.any.js`](https://wpt.fyi/results/fetch/orb/tentative/content-range.sub.any.js) | Fail | 2 / 4 | NOT IMPLEMENTED | Opaque Response Blocking (ORB) of no-cors responses (a no-cors range response not starting at 0 is not blocked) |
 | [`orb/tentative/hls.html`](https://wpt.fyi/results/fetch/orb/tentative/hls.html) | Precondition failed | 0 / 0 | NOT IMPLEMENTED | HTTP Live Streaming: the media backend of the tests does not play `application/vnd.apple.mpegurl` (the precondition of the test fails) |
-| [`orb/tentative/img-mime-types-coverage.tentative.sub.html`](https://wpt.fyi/results/fetch/orb/tentative/img-mime-types-coverage.tentative.sub.html) | Fail | 46 / 64 | TEST RUNNER | `fetch/nosniff/resources/image.py` is not emulated (the images get 404 and fire `error`) |
+| [`orb/tentative/img-mime-types-coverage.tentative.sub.html`](https://wpt.fyi/results/fetch/orb/tentative/img-mime-types-coverage.tentative.sub.html) | Fail | 18 / 64 | NOT IMPLEMENTED | Opaque Response Blocking (ORB) of no-cors responses: the `<img>` of a cross-origin response whose MIME type is not an image, a script, a style sheet or a media type (with `X-Content-Type-Options: nosniff`) loads instead of firing `error` |
 | [`orb/tentative/known-mime-type.sub.any.js`](https://wpt.fyi/results/fetch/orb/tentative/known-mime-type.sub.any.js) | Error | 36 / 51 | NOT IMPLEMENTED | Opaque Response Blocking (ORB) of no-cors responses |
 | [`orb/tentative/nosniff.sub.any.js`](https://wpt.fyi/results/fetch/orb/tentative/nosniff.sub.any.js) | Fail | 15 / 21 | NOT IMPLEMENTED | Opaque Response Blocking (ORB) of no-cors responses |
 | [`orb/tentative/script-js-unlabeled-gzipped.sub.html`](https://wpt.fyi/results/fetch/orb/tentative/script-js-unlabeled-gzipped.sub.html) | Pass | 1 / 1 |  |  |

@@ -285,38 +285,25 @@
     "total": 2
   },
   "workers/baseurl/alpha/import-in-moduleworker.html": {
-    "total": 1,
-    "failures": {
-      "Base URL in module dedicated workers: import": "FAIL"
-    }
+    "total": 1
   },
   "workers/baseurl/alpha/importScripts-in-sharedworker.html": {
-    "harness": "TIMEOUT",
-    "total": 0
+    "total": 1
   },
   "workers/baseurl/alpha/importScripts-in-worker.html": {
-    "harness": "TIMEOUT",
-    "total": 0
+    "total": 1
   },
   "workers/baseurl/alpha/worker-in-worker.html": {
-    "total": 1,
-    "failures": {
-      "Base URL in workers: new Worker()": "FAIL"
-    }
+    "total": 1
   },
   "workers/baseurl/alpha/xhr-in-moduleworker.html": {
-    "total": 1,
-    "failures": {
-      "Base URL in module dedicated workers: XHR": "FAIL"
-    }
+    "total": 1
   },
   "workers/baseurl/alpha/xhr-in-sharedworker.html": {
-    "harness": "TIMEOUT",
-    "total": 0
+    "total": 1
   },
   "workers/baseurl/alpha/xhr-in-worker.html": {
-    "harness": "TIMEOUT",
-    "total": 0
+    "total": 1
   },
   "workers/constructors/SharedWorker/Infinity-arguments.html": {
     "total": 1
@@ -457,26 +444,10 @@
     "total": 1
   },
   "workers/importscripts_mime.any.js#dedicatedworker": {
-    "total": 24,
-    "failures": {
-      "importScripts() requires scripty MIME types: application/javascript is allowed.": "FAIL",
-      "importScripts() requires scripty MIME types: text/ecmascript is allowed.": "FAIL",
-      "importScripts() requires scripty MIME types: text/javascript is allowed.": "FAIL",
-      "importScripts() requires scripty MIME types: text/javascript; charset=utf-8 is allowed.": "FAIL",
-      "importScripts() requires scripty MIME types: text/javascript;bla;bla is allowed.": "FAIL",
-      "importScripts() requires scripty MIME types: text/javascript;charset=utf-8 is allowed.": "FAIL"
-    }
+    "total": 24
   },
   "workers/importscripts_mime.any.js#sharedworker": {
-    "total": 24,
-    "failures": {
-      "importScripts() requires scripty MIME types: application/javascript is allowed.": "FAIL",
-      "importScripts() requires scripty MIME types: text/ecmascript is allowed.": "FAIL",
-      "importScripts() requires scripty MIME types: text/javascript is allowed.": "FAIL",
-      "importScripts() requires scripty MIME types: text/javascript; charset=utf-8 is allowed.": "FAIL",
-      "importScripts() requires scripty MIME types: text/javascript;bla;bla is allowed.": "FAIL",
-      "importScripts() requires scripty MIME types: text/javascript;charset=utf-8 is allowed.": "FAIL"
-    }
+    "total": 24
   },
   "workers/importscripts_mime_local.any.js#dedicatedworker": {
     "total": 48
@@ -545,21 +516,13 @@
     "total": 1
   },
   "workers/interfaces/WorkerGlobalScope/location/redirect-module.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "WorkerLocation with redirects: module dedicated workers": "TIMEOUT"
-    }
+    "total": 1
   },
   "workers/interfaces/WorkerGlobalScope/location/redirect-sharedworker.html": {
     "total": 1
   },
   "workers/interfaces/WorkerGlobalScope/location/redirect.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "WorkerLocation with redirects: classic dedicated workers": "TIMEOUT"
-    }
+    "total": 1
   },
   "workers/interfaces/WorkerGlobalScope/location/returns-same-object.any.js#dedicatedworker": {
     "total": 1
@@ -724,27 +687,13 @@
     "total": 1
   },
   "workers/modules/dedicated-worker-import-blob-url.any.js": {
-    "total": 9,
-    "failures": {
-      "Static import (cross-origin).": "FAIL",
-      "Static import (redirect).": "FAIL"
-    }
+    "total": 9
   },
   "workers/modules/dedicated-worker-import-blob-url.any.js#dedicatedworker": {
-    "total": 9,
-    "failures": {
-      "Static import (cross-origin).": "FAIL",
-      "Static import (redirect).": "FAIL"
-    }
+    "total": 9
   },
   "workers/modules/dedicated-worker-import-csp.html": {
-    "total": 11,
-    "failures": {
-      "script-src * directive should allow cross origin static import.": "FAIL",
-      "script-src-elem 'self' directive should not take effect on static import.": "FAIL",
-      "worker-src * directive should allow cross origin static import.": "FAIL",
-      "worker-src * directive should override script-src 'self' directive and allow cross origin static import.": "FAIL"
-    }
+    "total": 11
   },
   "workers/modules/dedicated-worker-import-data-url-cross-origin.html": {
     "total": 4,
@@ -755,14 +704,12 @@
   "workers/modules/dedicated-worker-import-data-url.any.js": {
     "total": 9,
     "failures": {
-      "Static import (cross-origin).": "FAIL",
       "Static import (redirect).": "FAIL"
     }
   },
   "workers/modules/dedicated-worker-import-data-url.any.js#dedicatedworker": {
     "total": 9,
     "failures": {
-      "Static import (cross-origin).": "FAIL",
       "Static import (redirect).": "FAIL"
     }
   },
@@ -775,73 +722,23 @@
   "workers/modules/dedicated-worker-import-referrer.html": {
     "total": 15,
     "failures": {
-      "Cross-origin dynamic import with \"no-referrer\" referrer policy.": "FAIL",
-      "Cross-origin dynamic import with \"origin\" referrer policy.": "FAIL",
-      "Cross-origin dynamic import with \"same-origin\" referrer policy.": "FAIL",
       "Cross-origin static import with \"no-referrer\" referrer policy.": "FAIL",
-      "Cross-origin static import with \"origin\" referrer policy.": "FAIL",
       "Cross-origin static import with \"same-origin\" referrer policy.": "FAIL",
-      "Same-origin dynamic import with \"no-referrer\" referrer policy.": "FAIL",
-      "Same-origin dynamic import with \"origin\" referrer policy.": "FAIL",
-      "Same-origin dynamic import with \"same-origin\" referrer policy.": "FAIL",
       "Same-origin static import with \"no-referrer\" referrer policy.": "FAIL",
-      "Same-origin static import with \"origin\" referrer policy.": "FAIL",
-      "Same-origin static import with \"same-origin\" referrer policy.": "FAIL",
-      "Same-origin top-level module script loading with \"no-referrer\" referrer policy": "FAIL",
-      "Same-origin top-level module script loading with \"origin\" referrer policy": "FAIL",
-      "Same-origin top-level module script loading with \"same-origin\" referrer policy": "FAIL"
+      "Same-origin static import with \"origin\" referrer policy.": "FAIL"
     }
   },
   "workers/modules/dedicated-worker-import.any.js": {
-    "total": 9,
-    "failures": {
-      "Static import (cross-origin).": "FAIL",
-      "Static import (redirect).": "FAIL"
-    }
+    "total": 9
   },
   "workers/modules/dedicated-worker-import.any.js#dedicatedworker": {
-    "total": 9,
-    "failures": {
-      "Static import (cross-origin).": "FAIL",
-      "Static import (redirect).": "FAIL"
-    }
+    "total": 9
   },
   "workers/modules/dedicated-worker-options-credentials.html": {
-    "harness": "TIMEOUT",
     "total": 33,
     "failures": {
-      "new Worker() with type-module credentials=omit should not send the credentials for cross-origin dynamic imports": "NOTRUN",
-      "new Worker() with type-module credentials=omit should not send the credentials for cross-origin static imports": "NOTRUN",
-      "new Worker() with type=classic should always send the credentials for same-origin dynamic imports regardless of the credentials option (default).": "NOTRUN",
-      "new Worker() with type=classic should always send the credentials for same-origin dynamic imports regardless of the credentials option (include).": "NOTRUN",
-      "new Worker() with type=classic should always send the credentials for same-origin dynamic imports regardless of the credentials option (omit).": "NOTRUN",
-      "new Worker() with type=classic should always send the credentials for same-origin dynamic imports regardless of the credentials option (same-origin).": "NOTRUN",
-      "new Worker() with type=classic should always send the credentials regardless of the credentials option (default).": "NOTRUN",
-      "new Worker() with type=classic should always send the credentials regardless of the credentials option (include).": "NOTRUN",
-      "new Worker() with type=classic should always send the credentials regardless of the credentials option (omit).": "NOTRUN",
-      "new Worker() with type=classic should always send the credentials regardless of the credentials option (same-origin).": "NOTRUN",
-      "new Worker() with type=classic should never send the credentials for cross-origin dynamic imports regardless of the credentials option (default).": "NOTRUN",
-      "new Worker() with type=classic should never send the credentials for cross-origin dynamic imports regardless of the credentials option (include).": "NOTRUN",
-      "new Worker() with type=classic should never send the credentials for cross-origin dynamic imports regardless of the credentials option (omit).": "NOTRUN",
-      "new Worker() with type=classic should never send the credentials for cross-origin dynamic imports regardless of the credentials option (same-origin).": "NOTRUN",
-      "new Worker() with type=module and credentials=include should send the credentials": "NOTRUN",
-      "new Worker() with type=module and credentials=include should send the credentials for cross-origin dynamic imports": "NOTRUN",
-      "new Worker() with type=module and credentials=include should send the credentials for cross-origin static imports": "NOTRUN",
-      "new Worker() with type=module and credentials=include should send the credentials for same-origin dynamic imports": "NOTRUN",
-      "new Worker() with type=module and credentials=include should send the credentials for same-origin static imports": "NOTRUN",
-      "new Worker() with type=module and credentials=omit should not send the credentials": "NOTRUN",
-      "new Worker() with type=module and credentials=omit should not send the credentials for same-origin dynamic imports": "NOTRUN",
-      "new Worker() with type=module and credentials=omit should not send the credentials for same-origin static imports": "NOTRUN",
-      "new Worker() with type=module and credentials=same-origin should not send the credentials for cross-origin dynamic imports": "NOTRUN",
-      "new Worker() with type=module and credentials=same-origin should not send the credentials for cross-origin static imports": "NOTRUN",
-      "new Worker() with type=module and credentials=same-origin should send the credentials": "NOTRUN",
-      "new Worker() with type=module and credentials=same-origin should send the credentials for same-origin dynamic imports": "NOTRUN",
-      "new Worker() with type=module and credentials=same-origin should send the credentials for same-origin static imports": "NOTRUN",
-      "new Worker() with type=module and default credentials option should behave as credentials=same-origin and not send the credentials for cross-origin dynamic imports": "NOTRUN",
-      "new Worker() with type=module and default credentials option should behave as credentials=same-origin and not send the credentials for cross-origin static imports": "NOTRUN",
-      "new Worker() with type=module and default credentials option should behave as credentials=same-origin and send the credentials": "TIMEOUT",
-      "new Worker() with type=module and default credentials option should behave as credentials=same-origin and send the credentials for same-origin dynamic imports": "NOTRUN",
-      "new Worker() with type=module and default credentials option should behave as credentials=same-origin and send the credentials for same-origin static imports": "NOTRUN"
+      "new Worker() with type=module and credentials=omit should not send the credentials for same-origin dynamic imports": "FAIL",
+      "new Worker() with type=module and credentials=omit should not send the credentials for same-origin static imports": "FAIL"
     }
   },
   "workers/modules/dedicated-worker-options-type.html": {
@@ -851,19 +748,10 @@
     "total": 2
   },
   "workers/modules/shared-worker-import-blob-url.window.js": {
-    "total": 9,
-    "failures": {
-      "Static import (cross-origin).": "FAIL",
-      "Static import (redirect).": "FAIL"
-    }
+    "total": 9
   },
   "workers/modules/shared-worker-import-csp.html": {
-    "total": 9,
-    "failures": {
-      "script-src * directive should allow cross origin static import.": "FAIL",
-      "worker-src * directive should allow cross origin static import.": "FAIL",
-      "worker-src * directive should override script-src 'self' directive and allow cross origin static import.": "FAIL"
-    }
+    "total": 9
   },
   "workers/modules/shared-worker-import-data-url-cross-origin.html": {
     "total": 4,
@@ -874,7 +762,6 @@
   "workers/modules/shared-worker-import-data-url.window.js": {
     "total": 9,
     "failures": {
-      "Static import (cross-origin).": "FAIL",
       "Static import (redirect).": "FAIL"
     }
   },
@@ -887,66 +774,20 @@
   "workers/modules/shared-worker-import-referrer.html": {
     "total": 15,
     "failures": {
-      "Cross-origin dynamic import with \"no-referrer\" referrer policy.": "FAIL",
-      "Cross-origin dynamic import with \"origin\" referrer policy.": "FAIL",
-      "Cross-origin dynamic import with \"same-origin\" referrer policy.": "FAIL",
       "Cross-origin static import with \"no-referrer\" referrer policy.": "FAIL",
-      "Cross-origin static import with \"origin\" referrer policy.": "FAIL",
       "Cross-origin static import with \"same-origin\" referrer policy.": "FAIL",
-      "Same-origin dynamic import with \"no-referrer\" referrer policy.": "FAIL",
-      "Same-origin dynamic import with \"origin\" referrer policy.": "FAIL",
-      "Same-origin dynamic import with \"same-origin\" referrer policy.": "FAIL",
       "Same-origin static import with \"no-referrer\" referrer policy.": "FAIL",
-      "Same-origin static import with \"origin\" referrer policy.": "FAIL",
-      "Same-origin static import with \"same-origin\" referrer policy.": "FAIL",
-      "Same-origin top-level module script loading with \"no-referrer\" referrer policy": "FAIL",
-      "Same-origin top-level module script loading with \"origin\" referrer policy": "FAIL",
-      "Same-origin top-level module script loading with \"same-origin\" referrer policy": "FAIL"
+      "Same-origin static import with \"origin\" referrer policy.": "FAIL"
     }
   },
   "workers/modules/shared-worker-import.window.js": {
-    "total": 9,
-    "failures": {
-      "Static import (cross-origin).": "FAIL",
-      "Static import (redirect).": "FAIL"
-    }
+    "total": 9
   },
   "workers/modules/shared-worker-options-credentials.html": {
-    "harness": "TIMEOUT",
     "total": 33,
     "failures": {
-      "new SharedWorker() with type=classic should always send the credentials for same-origin dynamic imports regardless of the credentials option (default).": "NOTRUN",
-      "new SharedWorker() with type=classic should always send the credentials for same-origin dynamic imports regardless of the credentials option (include).": "NOTRUN",
-      "new SharedWorker() with type=classic should always send the credentials for same-origin dynamic imports regardless of the credentials option (omit).": "NOTRUN",
-      "new SharedWorker() with type=classic should always send the credentials for same-origin dynamic imports regardless of the credentials option (same-origin).": "NOTRUN",
-      "new SharedWorker() with type=classic should always send the credentials regardless of the credentials option (default).": "NOTRUN",
-      "new SharedWorker() with type=classic should always send the credentials regardless of the credentials option (include).": "NOTRUN",
-      "new SharedWorker() with type=classic should always send the credentials regardless of the credentials option (omit).": "NOTRUN",
-      "new SharedWorker() with type=classic should always send the credentials regardless of the credentials option (same-origin).": "NOTRUN",
-      "new SharedWorker() with type=classic should never send the credentials for cross-origin dynamic imports regardless of the credentials option (default).": "NOTRUN",
-      "new SharedWorker() with type=classic should never send the credentials for cross-origin dynamic imports regardless of the credentials option (include).": "NOTRUN",
-      "new SharedWorker() with type=classic should never send the credentials for cross-origin dynamic imports regardless of the credentials option (omit).": "NOTRUN",
-      "new SharedWorker() with type=classic should never send the credentials for cross-origin dynamic imports regardless of the credentials option (same-origin).": "NOTRUN",
-      "new SharedWorker() with type=module and credentials=include should send the credentials": "NOTRUN",
-      "new SharedWorker() with type=module and credentials=include should send the credentials for cross-origin dynamic imports": "NOTRUN",
-      "new SharedWorker() with type=module and credentials=include should send the credentials for cross-origin static imports": "NOTRUN",
-      "new SharedWorker() with type=module and credentials=include should send the credentials for same-origin dynamic imports": "NOTRUN",
-      "new SharedWorker() with type=module and credentials=include should send the credentials for same-origin static imports": "NOTRUN",
-      "new SharedWorker() with type=module and credentials=omit should not send the credentials": "NOTRUN",
-      "new SharedWorker() with type=module and credentials=omit should not send the credentials for cross-origin dynamic imports": "NOTRUN",
-      "new SharedWorker() with type=module and credentials=omit should not send the credentials for cross-origin static imports": "NOTRUN",
-      "new SharedWorker() with type=module and credentials=omit should not send the credentials for same-origin dynamic imports": "NOTRUN",
-      "new SharedWorker() with type=module and credentials=omit should not send the credentials for same-origin static imports": "NOTRUN",
-      "new SharedWorker() with type=module and credentials=same-origin should not send the credentials for cross-origin dynamic imports": "NOTRUN",
-      "new SharedWorker() with type=module and credentials=same-origin should not send the credentials for cross-origin static imports": "NOTRUN",
-      "new SharedWorker() with type=module and credentials=same-origin should send the credentials": "NOTRUN",
-      "new SharedWorker() with type=module and credentials=same-origin should send the credentials for same-origin dynamic imports": "NOTRUN",
-      "new SharedWorker() with type=module and credentials=same-origin should send the credentials for same-origin static imports": "NOTRUN",
-      "new SharedWorker() with type=module and default credentials option should behave as credentials=same-origin and not send the credentials for cross-origin dynamic imports": "NOTRUN",
-      "new SharedWorker() with type=module and default credentials option should behave as credentials=same-origin and not send the credentials for cross-origin static imports": "NOTRUN",
-      "new SharedWorker() with type=module and default credentials option should behave as credentials=same-origin and send the credentials": "TIMEOUT",
-      "new SharedWorker() with type=module and default credentials option should behave as credentials=same-origin and send the credentials for same-origin dynamic imports": "NOTRUN",
-      "new SharedWorker() with type=module and default credentials option should behave as credentials=same-origin and send the credentials for same-origin static imports": "NOTRUN"
+      "new SharedWorker() with type=module and credentials=omit should not send the credentials for same-origin dynamic imports": "FAIL",
+      "new SharedWorker() with type=module and credentials=omit should not send the credentials for same-origin static imports": "FAIL"
     }
   },
   "workers/modules/shared-worker-options-type.html": {
@@ -1055,16 +896,10 @@
     "total": 1
   },
   "workers/semantics/encodings/003.html": {
-    "total": 1,
-    "failures": {
-      "URL encoding, dedicated worker": "FAIL"
-    }
+    "total": 1
   },
   "workers/semantics/encodings/004.html": {
-    "total": 1,
-    "failures": {
-      "URL encoding, shared worker": "FAIL"
-    }
+    "total": 1
   },
   "workers/semantics/encodings/004.worker.js": {
     "total": 1

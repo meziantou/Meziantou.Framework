@@ -501,6 +501,16 @@ internal static class Fetching
     {
         // Step 5: the service workers (https://w3c.github.io/ServiceWorker/#handle-fetch): the response of a service worker
         // is already filtered, it is not checked by the CORS check and the cross-origin resource policy
+        // The request of a service worker to the URL of a request whose race-network-and-fetch-handler router rule is
+        // running (e.g. fetch(event.request)) gets the response of the network request of the race
+        if (request is { Method: "GET", Body: null, Client.WorkerGlobal: ServiceWorkerGlobalScope serviceWorkerGlobal }
+            && serviceWorkerGlobal.ServiceWorkerRecord.GetRaceResponse(request.CurrentUrl.Serialize()) is { } raceResponse)
+        {
+            await ((Task)raceResponse).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (GetResult(raceResponse) is { IsNetworkError: false } raceNetworkResponse)
+                return raceNetworkResponse.Clone();
+        }
+
         if (request.ServiceWorkersMode == ServiceWorkersMode.All && await ServiceWorkerFetchHandling.HandleFetchAsync(request, cancellationToken).ConfigureAwait(false) is { } serviceWorkerResponse)
         {
             if (serviceWorkerResponse.Type == FetchResponseType.Error

@@ -7376,6 +7376,8 @@ namespace Meziantou.Framework.WebPlatform.Dom
     public sealed class InstallEvent : Meziantou.Framework.WebPlatform.Dom.ExtendableEvent
     {
         public InstallEvent(string type, Meziantou.Framework.WebPlatform.Dom.ExtendableEventInit? eventInitDict = null) : base(default(string), default(Meziantou.Framework.WebPlatform.Dom.ExtendableEventInit)) { }
+        public System.Threading.Tasks.Task AddRoutes(Meziantou.Framework.WebPlatform.Dom.RouterRule rules) => throw null;
+        public System.Threading.Tasks.Task AddRoutes(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.RouterRule> rules) => throw null;
     }
 
     public sealed class IntersectionObserver
@@ -9175,6 +9177,58 @@ namespace Meziantou.Framework.WebPlatform.Dom
         Low = 1,
         Medium = 2,
         High = 3,
+    }
+
+    public sealed class RouterCondition
+    {
+        public Meziantou.Framework.WebPlatform.Dom.RouterCondition? Not { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.RouterCondition>? Or { get => throw null; init { } }
+        public string? RequestDestination { get => throw null; init { } }
+        public string? RequestMethod { get => throw null; init { } }
+        public string? RequestMode { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.RunningStatus? RunningStatus { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.UrlPatternCompatible? UrlPattern { get => throw null; init { } }
+    }
+
+    public sealed class RouterRule
+    {
+        public required Meziantou.Framework.WebPlatform.Dom.RouterCondition Condition { get => throw null; init { } }
+        public required Meziantou.Framework.WebPlatform.Dom.RouterSource Source { get => throw null; init { } }
+    }
+
+    public readonly struct RouterSource : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.RouterSource>
+    {
+        public Meziantou.Framework.WebPlatform.Dom.RouterSourceDict? Dictionary { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.RouterSourceKind? Kind { get => throw null; }
+        public object Value { get => throw null; }
+        public bool Equals(Meziantou.Framework.WebPlatform.Dom.RouterSource other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public static Meziantou.Framework.WebPlatform.Dom.RouterSource FromRouterSourceDict(Meziantou.Framework.WebPlatform.Dom.RouterSourceDict value) => throw null;
+        public static Meziantou.Framework.WebPlatform.Dom.RouterSource FromRouterSourceKind(Meziantou.Framework.WebPlatform.Dom.RouterSourceKind value) => throw null;
+        public override int GetHashCode() => throw null;
+        public static bool operator ==(Meziantou.Framework.WebPlatform.Dom.RouterSource left, Meziantou.Framework.WebPlatform.Dom.RouterSource right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WebPlatform.Dom.RouterSource left, Meziantou.Framework.WebPlatform.Dom.RouterSource right) => throw null;
+        public static implicit operator Meziantou.Framework.WebPlatform.Dom.RouterSource(Meziantou.Framework.WebPlatform.Dom.RouterSourceDict value) => throw null;
+        public static implicit operator Meziantou.Framework.WebPlatform.Dom.RouterSource(Meziantou.Framework.WebPlatform.Dom.RouterSourceKind value) => throw null;
+    }
+
+    public sealed class RouterSourceDict
+    {
+        public string? CacheName { get => throw null; init { } }
+    }
+
+    public enum RouterSourceKind
+    {
+        Cache = 0,
+        FetchEvent = 1,
+        Network = 2,
+        RaceNetworkAndFetchHandler = 3,
+    }
+
+    public enum RunningStatus
+    {
+        Running = 0,
+        NotRunning = 1,
     }
 
     public sealed class Sanitizer
@@ -11541,6 +11595,23 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.UrlPatternResult? Exec(Meziantou.Framework.WebPlatform.Dom.UrlPatternInput input = default, string? baseUrl = null) => throw null;
         public bool Test(Meziantou.Framework.WebPlatform.Dom.Url url) => throw null;
         public bool Test(Meziantou.Framework.WebPlatform.Dom.UrlPatternInput input = default, string? baseUrl = null) => throw null;
+    }
+
+    public readonly struct UrlPatternCompatible : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.UrlPatternCompatible>
+    {
+        public object Value { get => throw null; }
+        public bool Equals(Meziantou.Framework.WebPlatform.Dom.UrlPatternCompatible other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public static Meziantou.Framework.WebPlatform.Dom.UrlPatternCompatible FromString(string value) => throw null;
+        public static Meziantou.Framework.WebPlatform.Dom.UrlPatternCompatible FromUrlPattern(Meziantou.Framework.WebPlatform.Dom.UrlPattern value) => throw null;
+        public static Meziantou.Framework.WebPlatform.Dom.UrlPatternCompatible FromUrlPatternInit(Meziantou.Framework.WebPlatform.Dom.UrlPatternInit value) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string? ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.WebPlatform.Dom.UrlPatternCompatible left, Meziantou.Framework.WebPlatform.Dom.UrlPatternCompatible right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WebPlatform.Dom.UrlPatternCompatible left, Meziantou.Framework.WebPlatform.Dom.UrlPatternCompatible right) => throw null;
+        public static implicit operator Meziantou.Framework.WebPlatform.Dom.UrlPatternCompatible(Meziantou.Framework.WebPlatform.Dom.UrlPattern value) => throw null;
+        public static implicit operator Meziantou.Framework.WebPlatform.Dom.UrlPatternCompatible(Meziantou.Framework.WebPlatform.Dom.UrlPatternInit value) => throw null;
+        public static implicit operator Meziantou.Framework.WebPlatform.Dom.UrlPatternCompatible(string value) => throw null;
     }
 
     public sealed class UrlPatternComponentResult

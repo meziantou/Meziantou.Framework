@@ -160,6 +160,54 @@ internal sealed class ServiceWorkerRecord
     /// <summary>https://w3c.github.io/ServiceWorker/#all-fetch-listeners-are-empty-flag</summary>
     public bool AllFetchListenersAreEmpty { get; set; }
 
+    /// <summary>
+    /// https://w3c.github.io/ServiceWorker/#dfn-list-of-router-rules: the rules registered by <c>addRoutes()</c>. The list is
+    /// replaced (not modified) by the thread of the service worker, and read by the fetch handling of the clients.
+    /// </summary>
+    public IReadOnlyList<ServiceWorkerRouterRule> RouterRules
+    {
+        get => Volatile.Read(ref field);
+        set => Volatile.Write(ref field, value);
+    } = [];
+
+    /// <summary>
+    /// https://w3c.github.io/ServiceWorker/#serviceworkerglobalscope-race-response-map: the network responses of the requests
+    /// routed to the race-network-and-fetch-handler source whose fetch event is dispatched, by URL (see <see cref="GetRaceResponse"/>).
+    /// </summary>
+    private readonly Dictionary<string, Task<FetchResponse>> _raceResponses = new(StringComparer.Ordinal);
+
+    public void SetRaceResponse(string url, Task<FetchResponse> response)
+    {
+        lock (_raceResponses)
+        {
+            _raceResponses[url] = response;
+        }
+    }
+
+    public void RemoveRaceResponse(string url, Task<FetchResponse> response)
+    {
+        lock (_raceResponses)
+        {
+            if (_raceResponses.TryGetValue(url, out var current) && ReferenceEquals(current, response))
+            {
+                _raceResponses.Remove(url);
+            }
+        }
+    }
+
+    /// <summary>
+    /// https://w3c.github.io/ServiceWorker/#lookup-race-response-algorithm: the network response of the race of a request
+    /// whose fetch event is dispatched, for a GET request of the worker to its URL (e.g. <c>fetch(event.request)</c>), or null.
+    /// The request of the fetch event is a copy of the request (as the request of <c>fetch()</c>), so the race is found by URL.
+    /// </summary>
+    public Task<FetchResponse>? GetRaceResponse(string url)
+    {
+        lock (_raceResponses)
+        {
+            return _raceResponses.GetValueOrDefault(url);
+        }
+    }
+
     /// <summary>The agent of the running service worker, or null (https://w3c.github.io/ServiceWorker/#running).</summary>
     public WorkerAgent? Agent { get; set; }
 

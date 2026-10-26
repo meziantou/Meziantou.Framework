@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using Meziantou.Framework.WebPlatform.Infra;
 using Meziantou.Framework.WebPlatform.Urls;
@@ -166,6 +167,26 @@ public sealed class UrlPattern
         return Match(url.Record, url.Href) is not null;
     }
 
+    /// <summary>Returns whether the pattern matches a URL record (https://urlpattern.spec.whatwg.org/#url-pattern-match).</summary>
+    internal bool Test(UrlRecord url) => Match(url, url.Serialize()) is not null;
+
+    /// <summary>
+    /// https://urlpattern.spec.whatwg.org/#build-a-url-pattern-from-a-web-idl-value: a <see cref="UrlPattern"/> is returned
+    /// as is, a pattern string is resolved against <paramref name="baseUrl"/>, and <paramref name="baseUrl"/> is the base URL
+    /// of a <see cref="UrlPatternInit"/> that has none.
+    /// </summary>
+    /// <exception cref="TypeErrorException">The pattern is not valid.</exception>
+    internal static UrlPattern FromWebIdlValue(UrlPatternCompatible input, UrlRecord baseUrl)
+    {
+        return input.Value switch
+        {
+            UrlPattern pattern => pattern,
+            UrlPatternInit init => new UrlPattern(init.BaseUrl is null ? init.WithBaseUrl(baseUrl.Serialize()) : init),
+            string value => new UrlPattern(value, baseUrl.Serialize()),
+            _ => throw new UnreachableException(),
+        };
+    }
+
     /// <summary>Matches a URL (resolved against <paramref name="baseUrl"/>) or the components of a <see cref="UrlPatternInit"/>, and returns the matched groups, or null if the pattern does not match.</summary>
     /// <exception cref="TypeErrorException"><paramref name="baseUrl"/> is given with a <see cref="UrlPatternInit"/>.</exception>
     /// <seealso href="https://urlpattern.spec.whatwg.org/#dom-urlpattern-exec"/>
@@ -314,12 +335,89 @@ public readonly struct UrlPatternInput : IUnionValue, IEquatable<UrlPatternInput
     public static bool operator !=(UrlPatternInput left, UrlPatternInput right) => !left.Equals(right);
 }
 
+/// <summary>
+/// The <c>(USVString or URLPatternInit or URLPattern)</c> union (https://urlpattern.spec.whatwg.org/#typedefdef-urlpatterncompatible):
+/// a URL pattern given to another API (e.g. the <c>urlPattern</c> condition of a service worker router rule).
+/// </summary>
+public readonly struct UrlPatternCompatible : IUnionValue, IEquatable<UrlPatternCompatible>
+{
+    private readonly object? _value;
+
+    private UrlPatternCompatible(object value) => _value = value;
+
+    /// <summary>Gets the value: a <see cref="string"/>, a <see cref="UrlPatternInit"/> or a <see cref="UrlPattern"/> (an empty <see cref="UrlPatternInit"/> for the default value).</summary>
+    [NotInIdl]
+    public object Value => _value ?? UrlPatternInit.Empty;
+
+    /// <summary>Converts a pattern string to the union.</summary>
+    [NotInIdl]
+    public static implicit operator UrlPatternCompatible(string value) => new(value ?? throw new ArgumentNullException(nameof(value)));
+
+    /// <summary>Converts the components of a URL pattern to the union.</summary>
+    [NotInIdl]
+    public static implicit operator UrlPatternCompatible(UrlPatternInit value) => new(value ?? throw new ArgumentNullException(nameof(value)));
+
+    /// <summary>Converts a URL pattern to the union.</summary>
+    [NotInIdl]
+    public static implicit operator UrlPatternCompatible(UrlPattern value) => new(value ?? throw new ArgumentNullException(nameof(value)));
+
+    /// <summary>Creates the union from a pattern string.</summary>
+    [NotInIdl]
+    public static UrlPatternCompatible FromString(string value) => value;
+
+    /// <summary>Creates the union from the components of a URL pattern.</summary>
+    [NotInIdl]
+    public static UrlPatternCompatible FromUrlPatternInit(UrlPatternInit value) => value;
+
+    /// <summary>Creates the union from a URL pattern.</summary>
+    [NotInIdl]
+    public static UrlPatternCompatible FromUrlPattern(UrlPattern value) => value;
+
+    /// <inheritdoc/>
+    [NotInIdl]
+    public bool Equals(UrlPatternCompatible other) => Equals(Value, other.Value);
+
+    /// <inheritdoc/>
+    [NotInIdl]
+    public override bool Equals([NotNullWhen(true)] object? obj) => obj is UrlPatternCompatible other && Equals(other);
+
+    /// <inheritdoc/>
+    [NotInIdl]
+    public override int GetHashCode() => Value.GetHashCode();
+
+    /// <inheritdoc/>
+    [NotInIdl]
+    public override string? ToString() => Value.ToString();
+
+    /// <summary>Returns whether the two unions hold the same value.</summary>
+    [NotInIdl]
+    public static bool operator ==(UrlPatternCompatible left, UrlPatternCompatible right) => left.Equals(right);
+
+    /// <summary>Returns whether the two unions hold different values.</summary>
+    [NotInIdl]
+    public static bool operator !=(UrlPatternCompatible left, UrlPatternCompatible right) => !left.Equals(right);
+}
+
 /// <summary>The components of a URL pattern or of a URL (https://urlpattern.spec.whatwg.org/#dictdef-urlpatterninit). A null member is not present.</summary>
 /// <seealso href="https://urlpattern.spec.whatwg.org/#dictdef-urlpatterninit"/>
 [IdlInterface("URLPatternInit", "https://urlpattern.spec.whatwg.org/#dictdef-urlpatterninit")]
 public sealed class UrlPatternInit
 {
     internal static UrlPatternInit Empty { get; } = new();
+
+    /// <summary>Returns a copy of the components whose base URL is <paramref name="baseUrl"/>.</summary>
+    internal UrlPatternInit WithBaseUrl(string baseUrl) => new()
+    {
+        Protocol = Protocol,
+        Username = Username,
+        Password = Password,
+        Hostname = Hostname,
+        Port = Port,
+        Pathname = Pathname,
+        Search = Search,
+        Hash = Hash,
+        BaseUrl = baseUrl,
+    };
 
     /// <summary>Gets the <c>protocol</c> pattern or value, or null when it is not present.</summary>
     /// <seealso href="https://urlpattern.spec.whatwg.org/#dom-urlpatterninit-protocol"/>

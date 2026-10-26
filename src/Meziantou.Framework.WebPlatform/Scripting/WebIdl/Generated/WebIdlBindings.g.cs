@@ -1064,6 +1064,15 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.ResizeObserverOptions dictionaryDom_ResizeObserverOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_ResizeObserverOptions(r, dictionaryDom_ResizeObserverOptions);
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.RouterCondition dictionaryDom_RouterCondition:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_RouterCondition(r, dictionaryDom_RouterCondition);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.RouterRule dictionaryDom_RouterRule:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_RouterRule(r, dictionaryDom_RouterRule);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.RouterSourceDict dictionaryDom_RouterSourceDict:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_RouterSourceDict(r, dictionaryDom_RouterSourceDict);
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.SanitizerAttributeNamespace dictionaryDom_SanitizerAttributeNamespace:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_SanitizerAttributeNamespace(r, dictionaryDom_SanitizerAttributeNamespace);
                 return true;
@@ -1360,6 +1369,12 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.ResizeQuality enumDom_ResizeQuality:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_ResizeQuality(enumDom_ResizeQuality));
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.RouterSourceKind enumDom_RouterSourceKind:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_RouterSourceKind(enumDom_RouterSourceKind));
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.RunningStatus enumDom_RunningStatus:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_RunningStatus(enumDom_RunningStatus));
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.SanitizerPresets enumDom_SanitizerPresets:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_SanitizerPresets(enumDom_SanitizerPresets));

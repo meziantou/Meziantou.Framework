@@ -96,6 +96,18 @@ internal sealed class FetchTimestamps
 
     /// <summary>The time the fetch event of the request was queued on the event loop of the service worker, once it is running and activated, or 0.</summary>
     public long ServiceWorkerReady { get; set; }
+
+    /// <summary>The time the service worker started to evaluate its router rules (https://w3c.github.io/ServiceWorker/#service-worker-timing-info-worker-router-evaluation-start), or 0.</summary>
+    public long ServiceWorkerRouterEvaluationStart { get; set; }
+
+    /// <summary>The time the service worker started to look up its caches for a <c>cache</c> router source (https://w3c.github.io/ServiceWorker/#service-worker-timing-info-worker-cache-lookup-start), or 0.</summary>
+    public long ServiceWorkerCacheLookupStart { get; set; }
+
+    /// <summary>The source of the router rule that matched the request (https://w3c.github.io/ServiceWorker/#service-worker-timing-info-worker-matched-router-source), or the empty string.</summary>
+    public string ServiceWorkerMatchedRouterSource { get; set; } = "";
+
+    /// <summary>The source that gave the response of a request that matched a router rule (https://w3c.github.io/ServiceWorker/#service-worker-timing-info-worker-final-router-source), or the empty string.</summary>
+    public string ServiceWorkerFinalRouterSource { get; set; } = "";
 }
 
 internal sealed partial class FetchRequest
@@ -512,6 +524,18 @@ internal sealed class FetchResponse
         }
 
         return new DocumentResource(internalResponse._body ?? []) { StatusCode = internalResponse.Status, StatusText = statusText, Headers = headers, Url = url, RedirectUrls = redirectUrls, ResponseType = Type };
+    }
+
+    /// <summary>https://fetch.spec.whatwg.org/#concept-response-clone: a copy of the response and of its internal response (the body is not copied: it is not modified).</summary>
+    public FetchResponse Clone()
+    {
+        var internalClone = ReferenceEquals(Internal, this) ? null : Internal.Clone();
+        var clone = (FetchResponse)MemberwiseClone();
+        clone.UrlList = [.. UrlList];
+        clone.HeaderList = [.. HeaderList];
+        clone.CorsExposedHeaderNames = [.. CorsExposedHeaderNames];
+        clone.Internal = internalClone ?? clone;
+        return clone;
     }
 
     /// <summary>https://fetch.spec.whatwg.org/#concept-filtered-response-basic</summary>

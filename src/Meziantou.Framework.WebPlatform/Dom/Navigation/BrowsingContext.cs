@@ -1988,6 +1988,12 @@ public sealed partial class BrowsingContext : IDisposable
                 timing.FetchStart = Math.Max(timing.FetchStart, Math.Max(request.Timing.ServiceWorkerStart, request.Timing.ServiceWorkerReady));
             }
 
+            // The router rules of the service worker (https://w3c.github.io/ServiceWorker/#handle-fetch, step 15)
+            timing.WorkerRouterEvaluationStart = request.Timing.ServiceWorkerRouterEvaluationStart;
+            timing.WorkerCacheLookupStart = request.Timing.ServiceWorkerCacheLookupStart;
+            timing.WorkerMatchedRouterSource = request.Timing.ServiceWorkerMatchedRouterSource;
+            timing.WorkerFinalRouterSource = request.Timing.ServiceWorkerFinalRouterSource;
+
             timing.ResponseStart = timing.PrefetchResponseStart != 0 ? timing.PrefetchResponseStart : EventLoop.TimeProvider.GetTimestamp();
             timing.HasCrossOriginRedirects = Fetching.HasRedirectTaintedOrigin(request);
             timing.HasNoReferrer = request.Client is not null && request.Referrer == "no-referrer";
@@ -2629,6 +2635,10 @@ public sealed partial class BrowsingContext : IDisposable
             FinalNetworkRequestStartTime = fetchStart,
             FinalNetworkResponseStartTime = ToRelativeTime(timing.ResponseStart),
             FinalServiceWorkerStartTime = Math.Min(fetchStart, ToRelativeTime(timing.WorkerStart)),
+            WorkerRouterEvaluationStartTime = ToRelativeTime(timing.WorkerRouterEvaluationStart),
+            WorkerCacheLookupStartTime = ToRelativeTime(timing.WorkerCacheLookupStart),
+            WorkerMatchedRouterSource = timing.WorkerMatchedRouterSource,
+            WorkerFinalRouterSource = timing.WorkerFinalRouterSource,
             EndTime = ToRelativeTime(timing.ResponseEnd),
             FinalConnectionTimingInfo = new ConnectionTimingInfo(fetchStart, fetchStart, fetchStart, fetchStart, isSecure ? fetchStart : 0, isFetched ? "http/1.1" : "") { IsSecure = isSecure },
             TimingAllowPassed = true,

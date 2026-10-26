@@ -51,6 +51,10 @@ public sealed partial class Window : GlobalScope
 
     internal override void QueueGlobalTask(Action task) => Document.QueueGlobalTask(task);
 
+    internal override TimeSpan SuspendedDuration => Document.GetSuspendedDuration();
+
+    internal override bool AreTimersSuspended => Document.IsInBackForwardCache;
+
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#concept-document-window</summary>
     /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-document-2"/>
     [IdlMember("document", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-document-2")]
@@ -197,7 +201,13 @@ public sealed partial class Window : GlobalScope
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-window-closed</summary>
     /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-window-closed"/>
     [IdlMember("closed", "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-window-closed")]
-    public bool Closed => BrowsingContext is not { } browsingContext || browsingContext.IsClosing;
+    public bool Closed => BrowsingContext is not { } browsingContext || browsingContext.IsClosing || IsInDiscardedBrowsingContext;
+
+    /// <summary>
+    /// Whether the browsing context of the window was replaced in its navigable (a browsing context group switch) while its
+    /// document is kept in the back/forward cache: the window appears closed to the other windows that reach it.
+    /// </summary>
+    internal bool IsInDiscardedBrowsingContext { get; set; }
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-window-close</summary>
     /// <seealso href="https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-window-close"/>

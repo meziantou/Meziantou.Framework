@@ -350,6 +350,14 @@ public sealed class Performance : EventTarget
     /// Sets the navigation timing entry of the document of the window (https://w3c.github.io/navigation-timing/#dfn-create-the-navigation-timing-entry):
     /// it replaces the entry of the initial <c>about:blank</c> document when the window is reused.
     /// </summary>
+    private ulong _navigationId = 1;
+
+    /// <summary>
+    /// https://w3c.github.io/performance-timeline/#dfn-navigation-id: the document of the window is restored from the
+    /// back/forward cache, which is a new navigation of the document: the entries queued from then on have a new navigation id.
+    /// </summary>
+    internal void IncrementNavigationId() => _navigationId++;
+
     internal void SetNavigationTimingEntry(PerformanceNavigationTiming entry)
     {
         entry.Id = GenerateEntryId();
@@ -549,9 +557,9 @@ public sealed class Performance : EventTarget
             entry.Id = GenerateEntryId();
         }
 
-        // The navigation id is the id of the most recent navigation of the associated document (the document is not
-        // navigated again: its first navigation)
-        entry.NavigationId = _global.AssociatedDocument is null ? 0UL : 1UL;
+        // The navigation id is the id of the most recent navigation of the associated document: its first navigation, or
+        // its last restoration from the back/forward cache
+        entry.NavigationId = _global.AssociatedDocument is null ? 0UL : _navigationId;
 
         var interestedObservers = new List<PerformanceObserver>();
         foreach (var registeredObserver in _registeredObservers)

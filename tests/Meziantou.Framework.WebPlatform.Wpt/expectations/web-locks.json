@@ -9,13 +9,7 @@
     "total": 11
   },
   "web-locks/bfcache/abort.tentative.https.html": {
-    "total": 4,
-    "failures": {
-      "An immediately aborted lock on a nested worker should not prevent bfcache": "PRECONDITION_FAILED",
-      "An immediately aborted lock on a shared worker should not prevent bfcache": "PRECONDITION_FAILED",
-      "An immediately aborted lock on a worker should not prevent bfcache": "PRECONDITION_FAILED",
-      "An immediately aborted lock on main thread should not prevent bfcache": "PRECONDITION_FAILED"
-    }
+    "total": 4
   },
   "web-locks/bfcache/contention.https.window.js?context=document&contention=query": {
     "total": 1
@@ -58,37 +52,16 @@
     "total": 1
   },
   "web-locks/bfcache/held.tentative.https.html": {
-    "total": 4,
-    "failures": {
-      "A held lock on a nested worker should not prevent bfcache": "PRECONDITION_FAILED",
-      "A held lock on a shared worker should not prevent bfcache": "PRECONDITION_FAILED",
-      "A held lock on a worker should not prevent bfcache": "PRECONDITION_FAILED",
-      "A held lock on the main thread should not prevent bfcache": "PRECONDITION_FAILED"
-    }
+    "total": 4
   },
   "web-locks/bfcache/release-across-thread.tentative.https.html": {
-    "total": 3,
-    "failures": {
-      "A held lock on main thread should not prevent bfcache even after worker releases locks": "PRECONDITION_FAILED",
-      "A held lock on shared worker should not prevent bfcache even after main thread releases locks": "PRECONDITION_FAILED",
-      "A held lock on worker should not prevent bfcache even after main thread releases locks": "PRECONDITION_FAILED"
-    }
+    "total": 3
   },
   "web-locks/bfcache/release.tentative.https.html": {
-    "total": 4,
-    "failures": {
-      "A released lock on a nested worker should not prevent bfcache": "PRECONDITION_FAILED",
-      "A released lock on a shared worker should not prevent bfcache": "PRECONDITION_FAILED",
-      "A released lock on a worker should not prevent bfcache": "PRECONDITION_FAILED",
-      "A released lock on the main thread should not prevent bfcache": "PRECONDITION_FAILED"
-    }
+    "total": 4
   },
   "web-locks/bfcache/sharedworker-multiple.tentative.https.html": {
-    "total": 2,
-    "failures": {
-      "A new held lock does not prevent bfcache on all connected documents": "PRECONDITION_FAILED",
-      "An existing held lock does not prevent bfcache on all connected documents": "PRECONDITION_FAILED"
-    }
+    "total": 2
   },
   "web-locks/clientids.https.html": {
     "total": 1

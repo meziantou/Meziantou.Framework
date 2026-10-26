@@ -307,6 +307,10 @@ public sealed class WebSocket : EventTarget
         }
     }
 
+    /// <summary>Whether a WebSocket of the global object is connecting or open (its closing handshake was not started).</summary>
+    internal static bool HasConnectingOrOpenWebSockets(GlobalScope global)
+        => ActiveWebSockets.TryGetValue(global, out var webSockets) && webSockets.Exists(webSocket => webSocket.ReadyState is Connecting or Open);
+
     /// <summary>https://websockets.spec.whatwg.org/#make-disappear</summary>
     private void MakeDisappear()
     {
@@ -824,19 +828,33 @@ public sealed class WebSocket : EventTarget
 
         RemoveFromActiveWebSockets();
         var failed = _failed;
-        _eventLoop!.QueueTask(() =>
+        void FireCloseEvents()
         {
-            ReadyState = Closed;
-            UpdateOperation();
-            if (_global is not { CanRunScript: true })
-                return;
-
             if (failed)
             {
                 FireEvent(new Event("error"));
             }
 
             FireEvent(new CloseEvent("close", new CloseEventInit { WasClean = wasClean, Code = code, Reason = reason }));
+        }
+
+        _eventLoop!.QueueTask(() =>
+        {
+            ReadyState = Closed;
+            UpdateOperation();
+
+            // The events of a WebSocket closed while its document is in the back/forward cache (e.g. by a pagehide event
+            // handler) are fired once the document is restored
+            if (_global is Window { Document: { IsInBackForwardCache: true } cachedDocument })
+            {
+                cachedDocument.DeferTaskUntilReactivated(FireCloseEvents);
+                return;
+            }
+
+            if (_global is not { CanRunScript: true })
+                return;
+
+            FireCloseEvents();
         });
 
         // The connection is closed once the task is queued

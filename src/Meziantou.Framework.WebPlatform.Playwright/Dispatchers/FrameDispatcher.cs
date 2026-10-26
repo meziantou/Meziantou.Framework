@@ -174,6 +174,13 @@ internal sealed partial class FrameDispatcher : Dispatcher
 
         CompleteNavigationWaiters(new NavigationEvent(Url, IsNewDocument: true, CurrentDocumentRequest, error));
         ListenToLifecycleEvents(document);
+
+        // A document restored from the back/forward cache is already loaded: its load event is not fired again
+        if (document.ReadyState == DocumentReadyState.Complete)
+        {
+            AddLifecycleEvent("load");
+        }
+
         if (_inflightRequests == 0)
         {
             StartNetworkIdleTimer();

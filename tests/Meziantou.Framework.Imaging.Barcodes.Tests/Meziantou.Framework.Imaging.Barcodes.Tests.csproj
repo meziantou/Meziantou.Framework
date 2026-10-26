@@ -1,0 +1,19 @@
+<Project Sdk="Meziantou.NET.Sdk.Test">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.Imaging.Barcodes.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Ahem: every glyph is a box, so the ink of a text is easy to locate -->
+    <EmbeddedResource Include="../../src/Meziantou.Framework.WebPlatform/Css/Fonts/Bundled/Ahem.ttf" LogicalName="Ahem.ttf" Link="Fonts/Ahem.ttf" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Meziantou.Framework.Imaging.Barcodes/Meziantou.Framework.Imaging.Barcodes.csproj" />
+    <!-- The embedded fonts are compared with a fresh generation -->
+    <ProjectReference Include="../../tools/Meziantou.Framework.Imaging.Barcodes.FontGenerator/Meziantou.Framework.Imaging.Barcodes.FontGenerator.csproj" />
+  </ItemGroup>
+
+</Project>

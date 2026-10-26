@@ -926,10 +926,6 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
                 return (bufferSource.Bytes.ToArray(), null);
             case FormData formData:
             {
-                // An empty FormData is an empty body, as in the browsers
-                if (formData.Entries.Count == 0)
-                    return ([], "multipart/form-data; boundary=" + FormSubmissionEncoding.SerializeMultipart([], WebEncodingId.Utf8).Boundary);
-
                 var (bytes, boundary) = FormSubmissionEncoding.SerializeMultipart(formData.Entries, WebEncodingId.Utf8);
                 return (bytes, "multipart/form-data; boundary=" + boundary);
             }

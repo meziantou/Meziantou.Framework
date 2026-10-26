@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 47 | 53 | 0 | 89% |
-| [Tentative](#tentative-tests) | 32 | 39 | 0 | 82% |
+| [Stable](#stable-tests) | 50 | 53 | 0 | 94% |
+| [Tentative](#tentative-tests) | 33 | 39 | 0 | 85% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **79** | **92** | **0** | **86%** |
+| **All** | **83** | **92** | **0** | **90%** |
 
 ## Stable tests
 
@@ -37,7 +37,7 @@
 | [`createContextualFragment-xhtml.xhtml`](https://wpt.fyi/results/domparsing/createContextualFragment-xhtml.xhtml) | Pass | 4 / 4 |  |  |
 | [`createContextualFragment.html`](https://wpt.fyi/results/domparsing/createContextualFragment.html) | Pass | 35 / 35 |  |  |
 | [`domparser-spurious-attributes.html`](https://wpt.fyi/results/domparsing/domparser-spurious-attributes.html) | Pass | 2 / 2 |  |  |
-| [`html-insertion-methods-html-element.html`](https://wpt.fyi/results/domparsing/html-insertion-methods-html-element.html) | Fail | 2 / 26 | BUG | the HTML insertion methods do not throw a `HierarchyRequestError` when their target or the parent of the node is an `html` element |
+| [`html-insertion-methods-html-element.html`](https://wpt.fyi/results/domparsing/html-insertion-methods-html-element.html) | Pass | 26 / 26 |  |  |
 | [`innerhtml-01.xhtml`](https://wpt.fyi/results/domparsing/innerhtml-01.xhtml) | Pass | 2 / 2 |  |  |
 | [`innerhtml-03.xhtml`](https://wpt.fyi/results/domparsing/innerhtml-03.xhtml) | Pass | 8 / 8 |  |  |
 | [`innerhtml-04.html`](https://wpt.fyi/results/domparsing/innerhtml-04.html) | Pass | 1 / 1 |  |  |
@@ -59,8 +59,8 @@
 | [`positional-html-into-script-safe.html`](https://wpt.fyi/results/domparsing/positional-html-into-script-safe.html) | Pass | 91 / 91 |  |  |
 | [`positional-methods-with-parser-options.html`](https://wpt.fyi/results/domparsing/positional-methods-with-parser-options.html) | Pass | 284 / 284 |  |  |
 | [`positional-methods-with-trusted-types-no-createParserOptions.html`](https://wpt.fyi/results/domparsing/positional-methods-with-trusted-types-no-createParserOptions.html) | Pass | 180 / 180 |  |  |
-| [`positional-methods-with-trusted-types.html`](https://wpt.fyi/results/domparsing/positional-methods-with-trusted-types.html) | Fail | 354 / 355 | BUG | the HTML insertion methods do not throw a `HierarchyRequestError` when their target or the parent of the node is an `html` element |
-| [`positional-methods.html`](https://wpt.fyi/results/domparsing/positional-methods.html) | Fail | 460 / 480 | BUG | the HTML insertion methods do not throw a `HierarchyRequestError` when their target or the parent of the node is an `html` element |
+| [`positional-methods-with-trusted-types.html`](https://wpt.fyi/results/domparsing/positional-methods-with-trusted-types.html) | Pass | 355 / 355 |  |  |
+| [`positional-methods.html`](https://wpt.fyi/results/domparsing/positional-methods.html) | Pass | 480 / 480 |  |  |
 | [`positional-template-child.html`](https://wpt.fyi/results/domparsing/positional-template-child.html) | Pass | 6 / 6 |  |  |
 | [`stream-html-reentrancy.html`](https://wpt.fyi/results/domparsing/stream-html-reentrancy.html) | Fail | 12 / 21 | NOT IMPLEMENTED | the parser-blocking scripts of the streaming HTML methods (the parser does not pause for an external script streamed with `runScripts`) |
 | [`style_attribute_html.html`](https://wpt.fyi/results/domparsing/style_attribute_html.html) | Pass | 4 / 4 |  |  |
@@ -85,7 +85,7 @@
 | [`tentative/stream-html-custom-element-sanitizer.html`](https://wpt.fyi/results/domparsing/tentative/stream-html-custom-element-sanitizer.html) | Pass | 80 / 80 |  |  |
 | [`tentative/stream-html-custom-element.html`](https://wpt.fyi/results/domparsing/tentative/stream-html-custom-element.html) | Pass | 40 / 40 |  |  |
 | [`tentative/stream-html-defer-async-script.html`](https://wpt.fyi/results/domparsing/tentative/stream-html-defer-async-script.html) | Fail | 6 / 12 | NOT IMPLEMENTED | the `defer` and `async` scripts of the streaming HTML methods: with `runScripts`, a streamed script runs when its end tag is parsed, as a script inserted by a script |
-| [`tentative/stream-html-element.html`](https://wpt.fyi/results/domparsing/tentative/stream-html-element.html) | Fail | 4 / 28 | BUG | the HTML insertion methods do not throw a `HierarchyRequestError` when their target or the parent of the node is an `html` element |
+| [`tentative/stream-html-element.html`](https://wpt.fyi/results/domparsing/tentative/stream-html-element.html) | Pass | 28 / 28 |  |  |
 | [`tentative/stream-html-parser-blocking-script.html`](https://wpt.fyi/results/domparsing/tentative/stream-html-parser-blocking-script.html) | Error | 8 / 26 | NOT IMPLEMENTED | the parser-blocking scripts of the streaming HTML methods (the parser does not pause for an external script streamed with `runScripts`) |
 | [`tentative/stream-html-run-scripts-option.html`](https://wpt.fyi/results/domparsing/tentative/stream-html-run-scripts-option.html) | Pass | 14 / 14 |  |  |
 | [`tentative/stream-html-sanitizer-safe.html`](https://wpt.fyi/results/domparsing/tentative/stream-html-sanitizer-safe.html) | Pass | 30 / 30 |  |  |

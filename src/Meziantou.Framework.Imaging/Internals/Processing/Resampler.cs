@@ -17,7 +17,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// filters are separable: each used source row is loaded into double-precision working samples (premultiplied by alpha,
 /// in encoded or linear-light units), filtered horizontally, then combined vertically; the final sums are unpremultiplied,
 /// rounded to nearest with ties upward (biased by 2^-20 so that exact ties are robust to floating-point error) and clamped. Samples are read and written at their storage precision (8 or 16 bits),
-/// never through an 8-bit intermediate.
+/// never through an 8-bit intermediate. Floating-point samples are their own working values, and the results are
+/// rounded to the nearest <see cref="float"/> or <see cref="Half"/> without clamping the colors (<see cref="WorkingSamples"/>).
 /// </para>
 /// <para>Cancellation is observed between row bands; the destination is a replacement storage, so a partial result is never visible.</para>
 /// <para>
@@ -104,6 +105,14 @@ internal static class Resampler
         else if (typeof(TPixel) == typeof(Rgba32) || typeof(TPixel) == typeof(Bgra32) || typeof(TPixel) == typeof(Rgb24) || typeof(TPixel) == typeof(Gray8))
         {
             Resize<TPixel, byte>(sourceStorage, destinationStorage, plan, cancellationToken);
+        }
+        else if (typeof(TPixel) == typeof(RgbaFloat))
+        {
+            Resize<TPixel, float>(sourceStorage, destinationStorage, plan, cancellationToken);
+        }
+        else if (typeof(TPixel) == typeof(RgbaHalf))
+        {
+            Resize<TPixel, Half>(sourceStorage, destinationStorage, plan, cancellationToken);
         }
         else
         {
@@ -218,7 +227,7 @@ internal static class Resampler
                 var samples = unsafe(MemoryMarshal.Cast<TPixel, TSample>(output));
                 for (var i = 0; i < samples.Length; i += 4)
                 {
-                    if (WorkingSamples.ToInt(samples[i + 3]) == 0)
+                    if (WorkingSamples.IsZero(samples[i + 3]))
                     {
                         samples.Slice(i, 4).Clear();
                     }

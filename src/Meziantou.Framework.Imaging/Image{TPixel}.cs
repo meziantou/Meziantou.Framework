@@ -193,12 +193,23 @@ public sealed class Image<TPixel> : Image
 
     private protected override ImageFrame CreateFrame(PixelStorage storage, FrameMetadata metadata) => new ImageFrame<TPixel>(this, storage, metadata);
 
-    internal override AutoCropAnalysis<TPixel> CreateAutoCropAnalysis(bool success, Rectangle bounds, Rgba64 backgroundColor, double weightX, double weightY)
+    internal override AutoCropAnalysis<TPixel> CreateAutoCropAnalysis(bool success, Rectangle bounds, Rgba64 backgroundColor, double weightX, double weightY, RgbaFloat? floatingPointBackground = null)
     {
+        // A floating-point background is a pixel of the image (finite, a half when the pixels are halves): it converts exactly
         TPixel background = default;
-        PixelConverter.ConvertRow(new ReadOnlySpan<Rgba64>(in backgroundColor), new Span<TPixel>(ref background));
+        if (floatingPointBackground is { } exact && PixelConverter.IsFloat<TPixel>())
+        {
+            PixelConverter.ConvertRow(new ReadOnlySpan<RgbaFloat>(in exact), new Span<TPixel>(ref background));
+        }
+        else
+        {
+            PixelConverter.ConvertRow(new ReadOnlySpan<Rgba64>(in backgroundColor), new Span<TPixel>(ref background));
+        }
+
         return new AutoCropAnalysis<TPixel>(success, Size, bounds, backgroundColor, background, weightX, weightY);
     }
+
+    internal override bool IsAnalysisOfThisPixelType(AutoCropAnalysis analysis) => analysis is AutoCropAnalysis<TPixel>;
 
     private static ImageConfiguration ValidateCanvas(int width, int height, ImageConfiguration? configuration)
     {

@@ -44,7 +44,7 @@ internal sealed class ResizePlan : IDisposable
         Transfer = IsLinear ? transfer : (byte)0;
         Channels = PixelFormats.GetComponentCount(format);
         HasAlpha = PixelFormats.HasAlpha(format);
-        MaxValue = PixelFormats.GetBitsPerComponent(format) == 16 ? ushort.MaxValue : byte.MaxValue;
+        MaxValue = WorkingSamples.GetMaxValue(format);
         // Nearest neighbor copies pixels (memory bound): measured without gain from parallel bands, so it stays sequential
         Workers = filter == ResamplingFilter.NearestNeighbor ? 1 : RowBands.GetWorkerCount(geometry.OutputSize, maxDegreeOfParallelism);
     }
@@ -81,7 +81,7 @@ internal sealed class ResizePlan : IDisposable
     /// </summary>
     public WorkingAlpha Alpha => HasAlpha ? WorkingAlpha.Premultiplied : WorkingAlpha.None;
 
-    /// <summary>Gets the maximum sample value (255 or 65,535).</summary>
+    /// <summary>Gets the maximum sample value: 255 or 65,535, or 1 for floating-point samples (<see cref="WorkingSamples.GetMaxValue"/>).</summary>
     public int MaxValue { get; }
 
     /// <summary>Gets the horizontal weights (filtered resize).</summary>

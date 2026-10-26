@@ -18,7 +18,8 @@ public sealed class AutoCropAnalysis<TPixel> : AutoCropAnalysis
     /// <summary>
     /// Gets the detected background: the first border pixel of the most frequent border color, as stored in the image. A
     /// fully transparent background is transparent black. The <see cref="AutoCropAnalysis.BackgroundColor"/> of the base
-    /// type is the same color widened exactly to 16 bits.
+    /// type is the same color widened exactly to 16 bits (for <see cref="RgbaFloat"/> and <see cref="RgbaHalf"/>, clipped
+    /// to [0, 1] and rounded to 16 bits).
     /// </summary>
     public new TPixel BackgroundColor { get; }
 }

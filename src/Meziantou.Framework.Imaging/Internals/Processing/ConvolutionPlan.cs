@@ -47,7 +47,7 @@ internal sealed class ConvolutionPlan : IDisposable
         Size = size;
         Channels = PixelFormats.GetComponentCount(format);
         Alpha = !PixelFormats.HasAlpha(format) ? WorkingAlpha.None : preserveAlpha ? WorkingAlpha.Preserved : WorkingAlpha.Premultiplied;
-        MaxValue = PixelFormats.GetBitsPerComponent(format) == 16 ? ushort.MaxValue : byte.MaxValue;
+        MaxValue = WorkingSamples.GetMaxValue(format);
         Workers = RowBands.GetWorkerCount(size, maxDegreeOfParallelism);
     }
 
@@ -93,7 +93,7 @@ internal sealed class ConvolutionPlan : IDisposable
     /// <summary>Gets how alpha takes part in the working samples.</summary>
     public WorkingAlpha Alpha { get; }
 
-    /// <summary>Gets the maximum sample value (255 or 65,535).</summary>
+    /// <summary>Gets the maximum sample value: 255 or 65,535, or 1 for floating-point samples (<see cref="WorkingSamples.GetMaxValue"/>).</summary>
     public int MaxValue { get; }
 
     /// <summary>Gets the number of workers (and row bands) of each frame (<see cref="RowBands.GetWorkerCount"/>).</summary>

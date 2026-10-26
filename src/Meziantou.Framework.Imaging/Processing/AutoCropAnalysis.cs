@@ -44,14 +44,19 @@ public abstract class AutoCropAnalysis
 
     /// <summary>
     /// Gets the detected background: the first border pixel of the most frequent border color, widened exactly to 16 bits.
-    /// A fully transparent background is transparent black.
+    /// A fully transparent background is transparent black. The background of an image of floating-point pixels
+    /// (<see cref="RgbaFloat"/>, <see cref="RgbaHalf"/>) is clipped to [0, 1] and rounded to 16 bits here: its exact value
+    /// is <see cref="AutoCropAnalysis{TPixel}.BackgroundColor"/>, which is also the color an auto-crop that enlarges the
+    /// canvas fills it with, and the analysis only applies to images of its own pixel type then.
     /// </summary>
     public Rgba64 BackgroundColor { get; }
 
     /// <summary>
     /// Gets the horizontal weight of the image, from -1 (left) to 1 (right): the mean over all pixels of the horizontal
     /// position of the pixel center relative to the canvas center, multiplied by the difference of the pixel from the
-    /// background (0 to 1, scaled by alpha). It is 0 unless <see cref="AutoCropOptions.AnalyzeWeights"/> is set.
+    /// background (0 to 1, scaled by alpha). It is 0 unless <see cref="AutoCropOptions.AnalyzeWeights"/> is set. The
+    /// samples of floating-point pixels are not clipped, so a difference, and the weight, can exceed 1 for colors outside
+    /// [0, 1].
     /// </summary>
     public double WeightX { get; }
 

@@ -11,6 +11,14 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// samples to working samples and back, shared by <see cref="Resampler"/> and <see cref="Convolver"/> so that both follow
 /// the same premultiplication, transfer function, rounding and clamping rules.
 /// </summary>
+/// <remarks>
+/// The stored samples are <see cref="byte"/> and <see cref="ushort"/> for the integer formats, <see cref="float"/>
+/// (<see cref="RgbaFloat"/>) and <see cref="Half"/> (<see cref="RgbaHalf"/>) for the floating-point ones, whose working
+/// value is the sample itself (a maximum of 1). Floating-point colors are stored rounded to the nearest
+/// <see cref="float"/> or <see cref="Half"/> (a finite value beyond the largest half becomes an infinity), without
+/// clamping, so that values above 1 and below 0 survive the filters; alpha is a coverage, clamped to [0, 1]. A sample
+/// that is not a number is not treated apart: it propagates through the arithmetic to the samples that read it.
+/// </remarks>
 internal static class WorkingSamples
 {
     /// <summary>The rounding offset: one half plus the tie bias <c>2^-20</c> (about 9.5e-7 sample units), exactly representable.</summary>
@@ -36,7 +44,7 @@ internal static class WorkingSamples
         where TSample : unmanaged
     {
         var done = 0;
-        if (transfer is 0 && !Resampler.TestForceScalar)
+        if (transfer is 0 && !IsFloatingPoint<TSample>() && !Resampler.TestForceScalar)
         {
             if (Vector256.IsHardwareAccelerated && Avx2.IsSupported && alpha != WorkingAlpha.Opaque)
             {
@@ -51,6 +59,15 @@ internal static class WorkingSamples
         LoadScalar(samples[done..], working[GetWorkingLength(done, alpha)..], alpha, transfer);
     }
 
+    /// <summary>Gets the largest stored sample of a pixel format: 255 or 65,535 for the integer formats, 1 for the floating-point ones.</summary>
+    internal static int GetMaxValue(PixelFormat format)
+        => PixelFormats.IsFloatingPoint(format) ? 1 : PixelFormats.GetBitsPerComponent(format) == 16 ? ushort.MaxValue : byte.MaxValue;
+
+    /// <summary>Gets a value indicating whether the stored samples are floating-point numbers (<see cref="float"/> or <see cref="Half"/>).</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static bool IsFloatingPoint<TSample>()
+        => typeof(TSample) == typeof(float) || typeof(TSample) == typeof(Half);
+
     /// <summary>Gets the number of working samples of <paramref name="count"/> stored samples (3 per 4 for <see cref="WorkingAlpha.Opaque"/>).</summary>
     internal static int GetWorkingLength(int count, WorkingAlpha alpha) => alpha == WorkingAlpha.Opaque ? count / 4 * 3 : count;
 
@@ -58,6 +75,12 @@ internal static class WorkingSamples
     internal static void LoadScalar<TSample>(ReadOnlySpan<TSample> samples, Span<double> working, WorkingAlpha alpha, byte transfer)
         where TSample : unmanaged
     {
+        if (IsFloatingPoint<TSample>())
+        {
+            LoadFloatingPoint(samples, working, alpha, transfer);
+            return;
+        }
+
         // The tables of the sRGB function are those of SrgbTransfer, whatever the way sRGB is declared
         var linear = transfer is not 0;
         var decode = !linear ? default : typeof(TSample) == typeof(byte) ? CicpTransfer.GetDecode8(transfer) : CicpTransfer.GetDecode16(transfer);
@@ -155,7 +178,7 @@ internal static class WorkingSamples
         where TSample : unmanaged
     {
         var done = 0;
-        if (transfer is 0 && alpha != WorkingAlpha.Preserved && !Resampler.TestForceScalar)
+        if (transfer is 0 && alpha != WorkingAlpha.Preserved && !IsFloatingPoint<TSample>() && !Resampler.TestForceScalar)
         {
             if (alpha == WorkingAlpha.Opaque)
             {
@@ -191,6 +214,12 @@ internal static class WorkingSamples
         where TSample : unmanaged
     {
         Debug.Assert(GetWorkingLength(samples.Length, alpha) == values.Length);
+        if (IsFloatingPoint<TSample>())
+        {
+            StoreFloatingPoint(values, samples, alpha, transfer);
+            return;
+        }
+
         if (alpha == WorkingAlpha.Opaque)
         {
             for (int i = 0, o = 0; i < samples.Length; i += 4, o += 3)
@@ -235,6 +264,145 @@ internal static class WorkingSamples
                 samples[i] = FromInt<TSample>(EncodeColor(values[i], max, transfer, thresholds));
             }
         }
+    }
+
+    /// <summary>
+    /// The <see cref="LoadScalar"/> of floating-point samples: the working value of a sample <c>v</c> is <c>v</c>
+    /// (encoded) or <c>Decode(v)</c> in double precision (linear light: the caller has checked that every color is a
+    /// number in [0, 1], the domain of the function), premultiplied by the alpha sample as for the integer formats.
+    /// </summary>
+    private static void LoadFloatingPoint<TSample>(ReadOnlySpan<TSample> samples, Span<double> working, WorkingAlpha alpha, byte transfer)
+        where TSample : unmanaged
+    {
+        if (alpha == WorkingAlpha.Premultiplied)
+        {
+            for (var i = 0; i < samples.Length; i += 4)
+            {
+                var a = ToDouble(samples[i + 3]);
+                working[i] = DecodeColor(ToDouble(samples[i]), transfer) * a;
+                working[i + 1] = DecodeColor(ToDouble(samples[i + 1]), transfer) * a;
+                working[i + 2] = DecodeColor(ToDouble(samples[i + 2]), transfer) * a;
+                working[i + 3] = a;
+            }
+        }
+        else if (alpha == WorkingAlpha.Preserved)
+        {
+            for (var i = 0; i < samples.Length; i += 4)
+            {
+                working[i] = DecodeColor(ToDouble(samples[i]), transfer);
+                working[i + 1] = DecodeColor(ToDouble(samples[i + 1]), transfer);
+                working[i + 2] = DecodeColor(ToDouble(samples[i + 2]), transfer);
+                working[i + 3] = ToDouble(samples[i + 3]);
+            }
+        }
+        else if (alpha == WorkingAlpha.Opaque)
+        {
+            for (int i = 0, o = 0; i < samples.Length; i += 4, o += 3)
+            {
+                working[o] = DecodeColor(ToDouble(samples[i]), transfer);
+                working[o + 1] = DecodeColor(ToDouble(samples[i + 1]), transfer);
+                working[o + 2] = DecodeColor(ToDouble(samples[i + 2]), transfer);
+            }
+        }
+        else
+        {
+            for (var i = 0; i < samples.Length; i++)
+            {
+                working[i] = DecodeColor(ToDouble(samples[i]), transfer);
+            }
+        }
+    }
+
+    /// <summary>
+    /// The <see cref="StoreScalar"/> of floating-point samples. With <see cref="WorkingAlpha.Premultiplied"/>: <c>A</c>
+    /// clamped to [0, 1] is the output alpha; an alpha stored as zero gives transparent black, otherwise each color is
+    /// unpremultiplied by the unclamped <c>A</c>. With <see cref="WorkingAlpha.Opaque"/>, the stored alpha is 1. Colors
+    /// are then encoded (linear light: clamped to [0, 1], the domain of the function, and <c>Encode(L)</c> in double
+    /// precision), and every value is rounded to the nearest sample, without clamping the colors.
+    /// </summary>
+    private static void StoreFloatingPoint<TSample>(ReadOnlySpan<double> values, Span<TSample> samples, WorkingAlpha alpha, byte transfer)
+        where TSample : unmanaged
+    {
+        if (alpha == WorkingAlpha.Opaque)
+        {
+            var opaque = FromDouble<TSample>(1);
+            for (int i = 0, o = 0; i < samples.Length; i += 4, o += 3)
+            {
+                samples[i] = FromDouble<TSample>(EncodeFloatingPointColor(values[o], transfer));
+                samples[i + 1] = FromDouble<TSample>(EncodeFloatingPointColor(values[o + 1], transfer));
+                samples[i + 2] = FromDouble<TSample>(EncodeFloatingPointColor(values[o + 2], transfer));
+                samples[i + 3] = opaque;
+            }
+        }
+        else if (alpha == WorkingAlpha.Premultiplied)
+        {
+            for (var i = 0; i < samples.Length; i += 4)
+            {
+                // An alpha that is not a number fails both comparisons and stays what it is
+                var a = values[i + 3];
+                var storedAlpha = FromDouble<TSample>(a < 0 ? 0 : a > 1 ? 1 : a);
+                if (ToDouble(storedAlpha) == 0)
+                {
+                    samples.Slice(i, 4).Clear();
+                    continue;
+                }
+
+                samples[i] = FromDouble<TSample>(EncodeFloatingPointColor(values[i] / a, transfer));
+                samples[i + 1] = FromDouble<TSample>(EncodeFloatingPointColor(values[i + 1] / a, transfer));
+                samples[i + 2] = FromDouble<TSample>(EncodeFloatingPointColor(values[i + 2] / a, transfer));
+                samples[i + 3] = storedAlpha;
+            }
+        }
+        else if (alpha == WorkingAlpha.Preserved)
+        {
+            for (var i = 0; i < samples.Length; i += 4)
+            {
+                samples[i] = FromDouble<TSample>(EncodeFloatingPointColor(values[i], transfer));
+                samples[i + 1] = FromDouble<TSample>(EncodeFloatingPointColor(values[i + 1], transfer));
+                samples[i + 2] = FromDouble<TSample>(EncodeFloatingPointColor(values[i + 2], transfer));
+            }
+        }
+        else
+        {
+            for (var i = 0; i < samples.Length; i++)
+            {
+                samples[i] = FromDouble<TSample>(EncodeFloatingPointColor(values[i], transfer));
+            }
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static double DecodeColor(double value, byte transfer)
+        => transfer is 0 ? value : CicpTransfer.Decode(transfer, value);
+
+    private static double EncodeFloatingPointColor(double value, byte transfer)
+    {
+        if (transfer is 0)
+            return value;
+
+        var clamped = value <= 0 ? 0 : value >= 1 ? 1 : value;
+        return transfer is CicpTransfer.Srgb ? SrgbTransfer.Encode(clamped) : CicpTransfer.Encode(transfer, clamped);
+    }
+
+    /// <summary>Reads a floating-point sample (<see cref="float"/> or <see cref="Half"/>), exactly.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static double ToDouble<TSample>(TSample value)
+        where TSample : unmanaged
+        => typeof(TSample) == typeof(float) ? unsafe(Unsafe.As<TSample, float>(ref value)) : (double)unsafe(Unsafe.As<TSample, Half>(ref value));
+
+    /// <summary>Rounds a value to the nearest floating-point sample (<see cref="float"/> or <see cref="Half"/>), ties to even.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static TSample FromDouble<TSample>(double value)
+        where TSample : unmanaged
+    {
+        if (typeof(TSample) == typeof(float))
+        {
+            var f = (float)value;
+            return unsafe(Unsafe.As<float, TSample>(ref f));
+        }
+
+        var h = (Half)value;
+        return unsafe(Unsafe.As<Half, TSample>(ref h));
     }
 
     /// <summary>Converts the leading encoded samples 4 at a time (whole pixels when there is alpha).</summary>
@@ -519,6 +687,12 @@ internal static class WorkingSamples
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static Vector128<double> RoundVector(Vector128<double> value, Vector128<double> maximum)
         => Vector128.Min(Vector128.Max(Vector128.Floor(value + Vector128.Create(RoundingOffset)), Vector128<double>.Zero), maximum);
+
+    /// <summary>Gets a value indicating whether a stored sample is zero (a floating-point sample of either sign).</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool IsZero<TSample>(TSample value)
+        where TSample : unmanaged
+        => IsFloatingPoint<TSample>() ? ToDouble(value) == 0 : ToInt(value) == 0;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int ToInt<TSample>(TSample value)

@@ -2422,10 +2422,7 @@
     "total": 73
   },
   "fetch/fetch-later/activate-after.https.window.js": {
-    "total": 2,
-    "failures": {
-      "fetchLater() sends out based on activateAfter, even if document is in BFCache.": "FAIL"
-    }
+    "total": 2
   },
   "fetch/fetch-later/basic.https.window.js": {
     "total": 23
@@ -2562,12 +2559,7 @@
     }
   },
   "fetch/fetch-later/send-on-deactivate.https.window.js": {
-    "total": 5,
-    "failures": {
-      "Call fetchLater() when BFCached with activateAfter=0 sends immediately.": "FAIL",
-      "fetchLater() sends on page entering BFCache if BackgroundSync is off.": "FAIL",
-      "fetchLater() with activateAfter=1m sends on page entering BFCache if BackgroundSync is off.": "FAIL"
-    }
+    "total": 5
   },
   "fetch/fetch-later/send-on-discard/not-send-after-abort.https.window.js": {
     "total": 1

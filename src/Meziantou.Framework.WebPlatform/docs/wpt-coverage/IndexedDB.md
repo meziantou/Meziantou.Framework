@@ -6,18 +6,18 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 223 | 229 | 1 | 98% |
+| [Stable](#stable-tests) | 225 | 229 | 1 | 99% |
 | [Tentative](#tentative-tests) | 0 | 1 | 0 | 0% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **223** | **230** | **1** | **97%** |
+| **All** | **225** | **230** | **1** | **98%** |
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
 | [`abort-in-initial-upgradeneeded.any.js`](https://wpt.fyi/results/IndexedDB/abort-in-initial-upgradeneeded.any.js) | Pass | 3 / 3 |  |  |
-| [`back-forward-cache-open-connection.window.js`](https://wpt.fyi/results/IndexedDB/back-forward-cache-open-connection.window.js) | Fail | 0 / 1 | NOT IMPLEMENTED | the back/forward cache |
-| [`back-forward-cache-open-transaction.window.js`](https://wpt.fyi/results/IndexedDB/back-forward-cache-open-transaction.window.js) | Fail | 0 / 1 | NOT IMPLEMENTED | the back/forward cache |
+| [`back-forward-cache-open-connection.window.js`](https://wpt.fyi/results/IndexedDB/back-forward-cache-open-connection.window.js) | Pass | 1 / 1 |  |  |
+| [`back-forward-cache-open-transaction.window.js`](https://wpt.fyi/results/IndexedDB/back-forward-cache-open-transaction.window.js) | Pass | 1 / 1 |  |  |
 | [`bindings-inject-keys-bypass.any.js`](https://wpt.fyi/results/IndexedDB/bindings-inject-keys-bypass.any.js) | Pass | 3 / 3 |  |  |
 | [`bindings-inject-values-bypass.any.js`](https://wpt.fyi/results/IndexedDB/bindings-inject-values-bypass.any.js) | Pass | 6 / 6 |  |  |
 | [`blob-composite-blob-reads.any.js`](https://wpt.fyi/results/IndexedDB/blob-composite-blob-reads.any.js) | Pass | 4 / 4 |  |  |

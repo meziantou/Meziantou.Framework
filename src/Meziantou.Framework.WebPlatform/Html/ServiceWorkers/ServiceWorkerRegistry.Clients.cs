@@ -145,6 +145,29 @@ internal sealed class ServiceWorkerClientEntry
     /// <summary>Whether the environment was discarded (https://html.spec.whatwg.org/multipage/webappapis.html#concept-environment-discarded). Guarded by the lock of the registry.</summary>
     public bool IsDiscarded { get; set; }
 
+    /// <summary>Whether the document of the client is in the back/forward cache: it is not listed by <c>clients.matchAll()</c> nor returned by <c>clients.get()</c>.</summary>
+    public bool IsInBackForwardCache
+    {
+        get => Volatile.Read(ref _isInBackForwardCache);
+        set => Volatile.Write(ref _isInBackForwardCache, value);
+    }
+
+    private bool _isInBackForwardCache;
+
+    /// <summary>
+    /// Evicts the document of the client from the back/forward cache when it is in it (on the thread of its event loop), as
+    /// in the browsers: e.g. a service worker posts a message to it, or claims it.
+    /// </summary>
+    /// <returns>Whether the document of the client is in the back/forward cache.</returns>
+    public bool TryEvictFromBackForwardCache(string reason)
+    {
+        if (!IsInBackForwardCache || Global is not Window window)
+            return false;
+
+        window.EventLoop.QueueTask(() => window.Document.EvictFromBackForwardCache(reason));
+        return true;
+    }
+
     /// <summary>The global object of the environment (a <see cref="Window"/> or a <see cref="WorkerGlobalScope"/>), or null when it was collected.</summary>
     public GlobalScope? Global => _global.TryGetTarget(out var global) ? global : null;
 

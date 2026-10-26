@@ -67,7 +67,7 @@ public sealed class HtmlInsertionTests
         var comment = detached.AppendChild(document.CreateComment("c"));
         Assert.Equal("HierarchyRequestError", Assert.Throws<DomException>(() => ((Comment)comment).BeforeHtml("<p>a</p>")).Name);
         Assert.Equal(2, html.ChildNodes.Count);
-        Assert.Equal(1, detached.ChildNodes.Count);
+        Assert.Single(detached.ChildNodes);
 
         html.SetHtmlUnsafe("<head></head><body><p>new</p></body>");
         Assert.Equal("<p>new</p>", document.Body!.InnerHtml);

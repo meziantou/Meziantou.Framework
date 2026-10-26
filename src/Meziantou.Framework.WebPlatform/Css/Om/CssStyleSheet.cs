@@ -647,17 +647,17 @@ public static partial class Css
 
 /// <summary>
 /// The referrer and the referrer policy of the requests of the resources of a fetched style sheet (its @import rules, the
-/// sources of its @font-face rules and the URLs of its declarations): the location of the style sheet is the referrer
+/// sources of its @font-face rules and the URLs of its declarations): the URL of the style sheet is the referrer
 /// (https://drafts.csswg.org/css-values-4/#fetch-a-style-resource), and the referrer policy is the one of the
 /// <c>Referrer-Policy</c> header of its response.
 /// </summary>
-/// <param name="Url">The location of the style sheet.</param>
+/// <param name="Url">The URL of the response of the style sheet (its base URL), or the URL of its request when the response has none (a response created by a service worker).</param>
 /// <param name="ReferrerPolicy">The referrer policy of the response of the style sheet, or the empty string.</param>
 internal sealed record CssResourceReferrer(string Url, string ReferrerPolicy)
 {
-    /// <summary>Returns the referrer of the resources of the style sheet fetched from <paramref name="location"/>.</summary>
-    public static CssResourceReferrer Create(string location, DocumentResource? response)
-        => new(location, response is null ? "" : ReferrerPolicies.ParseHeader(response.Headers));
+    /// <summary>Returns the referrer of the resources of the style sheet whose base URL is <paramref name="url"/>.</summary>
+    public static CssResourceReferrer Create(string url, DocumentResource? response)
+        => new(url, response is null ? "" : ReferrerPolicies.ParseHeader(response.Headers));
 
     /// <summary>
     /// Sets the referrer of a request of a resource of the style sheet, and its referrer policy unless the request has its

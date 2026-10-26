@@ -614,7 +614,7 @@ public partial class HtmlLinkElement
         var title = GetRoot() is Document ? GetAttributeValue("title") : null;
         return new CssStyleSheet(this, text, GetAttributeValue("media"), title, url, response?.Url ?? url, linkResource.Alternate, originClean)
         {
-            ResourceReferrer = CssResourceReferrer.Create(url, response),
+            ResourceReferrer = CssResourceReferrer.Create(response?.Url ?? url, response),
         };
     }
 

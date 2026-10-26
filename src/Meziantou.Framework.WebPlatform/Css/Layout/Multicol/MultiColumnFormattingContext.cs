@@ -404,8 +404,7 @@ internal sealed class MultiColumnFormattingContext : FormattingContext
         var outOfFlow = CollectOutOfFlowCandidates(stripBuilder, children);
         children = PositionedLayout.LayoutInlineContainingBlockCandidatesOfStrip(context, box, children, stripSize, outOfFlow);
         var spannerBoxes = multiColumnFlow.SpannerBoxes.Count > 0 ? multiColumnFlow.SpannerBoxes : null;
-        var flow = FragmentationFlow.Collect(children, stripSize, writingDirection, spannerBoxes, box, separatesOutOfFlow, floatPushes);
-        flow.Relayout = relayout;
+        var flow = FragmentationFlow.Collect(children, stripSize, writingDirection, spannerBoxes, box, separatesOutOfFlow, floatPushes, relayout: relayout);
         return new ColumnStrip(children, stripSize, flow, spannerBoxes, outOfFlow);
     }
 

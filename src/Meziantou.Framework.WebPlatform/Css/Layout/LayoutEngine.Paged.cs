@@ -214,9 +214,8 @@ internal sealed partial class LayoutEngine
             var children = stripBuilder.Build(stripSize) ?? [];
             var initialContainingBlockFragment = new BoxFragment(viewport, writingDirection.ToPhysical(icbLogical), default, default, default, children: null);
             var rules = new PageBreakRules { InitialContainingBlock = initialContainingBlockFragment };
-            var flow = FragmentationFlow.Collect(children, stripSize, writingDirection, spannerBoxes: null, viewport, separatesOutOfFlow: true, floatPushes, rules);
+            var flow = FragmentationFlow.Collect(children, stripSize, writingDirection, spannerBoxes: null, viewport, separatesOutOfFlow: true, floatPushes, rules, stripRelayout);
             flow.SlicesMonolithicContent = true;
-            flow.Relayout = stripRelayout;
 
             // The start of the segment in this strip: the content before it is in a virtual first fragmentainer (the pages of
             // the previous segments), whose fragments are dropped

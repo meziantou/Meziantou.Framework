@@ -30,6 +30,10 @@ namespace Meziantou.Framework.WebPlatform.Css.Layout;
 /// its exclusion ends at the break.</item>
 /// <item>An anchor-positioned box whose anchor is in a nested multi-column container (<see cref="GetNestedAnchorRect"/>): the
 /// anchor box comes from the columns that the fragmentation places.</item>
+/// <item>A table cell whose monolithic contents overflow a fragmentainer where the cell is broken
+/// (<see cref="GetCellBlockSizeReduction"/>): as in Blink, the overflow takes no block size in the next fragmentainers, so the
+/// cell is shorter once fragmented, and its row is measured with that block size (the percentages of the other cells resolve
+/// against it).</item>
 /// </list>
 /// </remarks>
 internal sealed class StripRelayout
@@ -74,6 +78,12 @@ internal sealed class StripRelayout
 
     /// <summary>The maximum number of layouts of the strip for <see cref="_nestedAnchorRects"/>.</summary>
     private const int MaxNestedAnchorUpdates = 4;
+
+    /// <summary>The table cells of the strip.</summary>
+    private HashSet<ContainerBox>? _tableCells;
+
+    /// <summary>The block sizes that the table cells do not take once fragmented (see <see cref="GetCellBlockSizeReduction"/>).</summary>
+    private Dictionary<ContainerBox, double>? _cellReductions;
 
     /// <summary>
     /// Returns the block offset where the exclusion of a float ends in its block formatting context (+∞ for its block-end margin
@@ -126,6 +136,7 @@ internal sealed class StripRelayout
         _collapsedEndMargins?.Clear();
         _inlineVariants?.Clear();
         _nestedAnchors?.Clear();
+        _tableCells?.Clear();
     }
 
     /// <summary>
@@ -235,6 +246,16 @@ internal sealed class StripRelayout
         }
     }
 
+    /// <summary>Records a table cell (see <see cref="GetCellBlockSizeReduction"/>).</summary>
+    public void RecordTableCell(ContainerBox box) => (_tableCells ??= []).Add(box);
+
+    /// <summary>
+    /// Returns the block size that the contents of a table cell do not take once fragmented: the parts of its monolithic contents
+    /// that overflow the fragmentainers where the cell is broken (the content after them starts the next fragmentainer, as in
+    /// Blink). Its row is measured with the block size of the cell without it.
+    /// </summary>
+    public double GetCellBlockSizeReduction(ContainerBox box) => _cellReductions is { } reductions && reductions.TryGetValue(box, out var reduction) ? reduction : 0;
+
     /// <summary>Records a box that avoids the floats, placed beside floats at a block offset of its block formatting context (its border box).</summary>
     public void RecordFloatAvoider(ContainerBox box, double blockOffset) => (_floatAvoiders ??= [])[box] = blockOffset;
 
@@ -299,7 +320,7 @@ internal sealed class StripRelayout
     /// <param name="writingDirection">The writing mode of the fragmentation context.</param>
     /// <param name="blockSizes">The block size of each fragmentainer.</param>
     public bool UpdateBrokenBoxes(FragmentationFlow flow, FlowMap map, ReadOnlySpan<Fragment> children, PhysicalSize stripSize, WritingDirection writingDirection, List<double> blockSizes)
-        => (_alignedBoxes is { Count: > 0 } || _collapsedEndMargins is { Count: > 0 }) && Update(flow, map, children, stripSize, writingDirection, blockSizes, floatAvoiders: false);
+        => (_alignedBoxes is { Count: > 0 } || _collapsedEndMargins is { Count: > 0 } || _tableCells is { Count: > 0 }) && Update(flow, map, children, stripSize, writingDirection, blockSizes, floatAvoiders: false);
 
     /// <summary>
     /// Updates the breaks of the boxes that avoid the floats (see <see cref="GetFloatAvoiderBreaks"/>) from the fragmentation of
@@ -334,6 +355,15 @@ internal sealed class StripRelayout
                 && parentMap.GetOffsetIn(end, top + marginOffset) > blockSizes[Math.Min(end, blockSizes.Count - 1)] + Epsilon
                 && (_separatedEndMargins ??= []).Add(box))
             {
+                changed = true;
+            }
+
+            // (the reductions only grow: the relayouts end)
+            if (!floatAvoiders && _tableCells is not null && _tableCells.Contains(box) && blockSizes is { Count: > 0 }
+                && flow.GetContainingItem(fragment) is { Map: { } cellMap } cellItem && ReferenceEquals(cellItem.Box, fragment)
+                && cellMap.GetUnbreakableOverflow(start, blockSizes) is var reduction && reduction > GetCellBlockSizeReduction(box) + Epsilon)
+            {
+                (_cellReductions ??= [])[box] = reduction;
                 changed = true;
             }
 
@@ -393,7 +423,7 @@ internal sealed class StripRelayout
 
             var (top, bottom, _) = FragmentationFlow.GetBlockRange(child, parentSize, writingDirection, parentTop);
             var box = childBox.Box;
-            if ((_floatAvoiders?.ContainsKey(box) ?? false) || (_alignedBoxes?.Contains(box) ?? false) || (_collapsedEndMargins?.ContainsKey(box) ?? false))
+            if ((_floatAvoiders?.ContainsKey(box) ?? false) || (_alignedBoxes?.Contains(box) ?? false) || (_collapsedEndMargins?.ContainsKey(box) ?? false) || (_tableCells?.Contains(box) ?? false))
             {
                 found.Add((childBox, top, bottom));
             }

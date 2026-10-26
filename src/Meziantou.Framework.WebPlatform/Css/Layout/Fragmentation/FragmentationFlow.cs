@@ -469,11 +469,7 @@ internal sealed class FragmentationFlow
     public ParallelItem? OwnerItem { get; set; }
 
     /// <summary>The inputs of the layout of the strip that depend on its fragmentation (see <see cref="StripRelayout"/>), or null.</summary>
-    public StripRelayout? Relayout
-    {
-        get => _root._relayout;
-        set => _root._relayout = value;
-    }
+    public StripRelayout? Relayout => _root._relayout;
 
     private StripRelayout? _relayout;
 
@@ -737,13 +733,13 @@ internal sealed class FragmentationFlow
     /// <param name="separatesOutOfFlow">Whether the absolutely positioned boxes of the strip are fragmented apart (see <see cref="OutOfFlowItems"/>), else with the content of their containing block.</param>
     /// <param name="pushedFloats">The floats that were pushed to the start of a fragmentainer (see <see cref="FloatPush"/>), or null.</param>
     /// <param name="pageRules">The rules of the page breaks when the fragmentation context is paged, else null (columns).</param>
-    public static FragmentationFlow Collect(ReadOnlySpan<Fragment> children, PhysicalSize stripSize, WritingDirection writingDirection, HashSet<ContainerBox>? spannerBoxes, ContainerBox container, bool separatesOutOfFlow = false, Dictionary<ContainerBox, FloatPush>? pushedFloats = null, PageBreakRules? pageRules = null)
+    public static FragmentationFlow Collect(ReadOnlySpan<Fragment> children, PhysicalSize stripSize, WritingDirection writingDirection, HashSet<ContainerBox>? spannerBoxes, ContainerBox container, bool separatesOutOfFlow = false, Dictionary<ContainerBox, FloatPush>? pushedFloats = null, PageBreakRules? pageRules = null, StripRelayout? relayout = null)
     {
         var outerPageRules = PageBreakRules.Current;
         PageBreakRules.Current = pageRules;
         try
         {
-            return CollectCore(children, stripSize, writingDirection, spannerBoxes, container, separatesOutOfFlow, pushedFloats);
+            return CollectCore(children, stripSize, writingDirection, spannerBoxes, container, separatesOutOfFlow, pushedFloats, relayout);
         }
         finally
         {
@@ -751,7 +747,7 @@ internal sealed class FragmentationFlow
         }
     }
 
-    private static FragmentationFlow CollectCore(ReadOnlySpan<Fragment> children, PhysicalSize stripSize, WritingDirection writingDirection, HashSet<ContainerBox>? spannerBoxes, ContainerBox container, bool separatesOutOfFlow, Dictionary<ContainerBox, FloatPush>? pushedFloats)
+    private static FragmentationFlow CollectCore(ReadOnlySpan<Fragment> children, PhysicalSize stripSize, WritingDirection writingDirection, HashSet<ContainerBox>? spannerBoxes, ContainerBox container, bool separatesOutOfFlow, Dictionary<ContainerBox, FloatPush>? pushedFloats, StripRelayout? relayout)
     {
         var flow = new FragmentationFlow(writingDirection, spannerBoxes)
         {
@@ -759,6 +755,7 @@ internal sealed class FragmentationFlow
             ContentEnd = writingDirection.ToLogical(stripSize).Block,
             _separatesOutOfFlow = separatesOutOfFlow,
             _pushedFloats = pushedFloats,
+            _relayout = relayout,
         };
 
         var fragmentation = container.Style.Layout.Fragmentation;
@@ -2213,6 +2210,17 @@ internal sealed class FragmentationFlow
                             _root.GrowsUnbroken = true;
                         }
                     }
+                    else if (structure.Kind == ParallelStructureKind.TableRow && lastInFlowEnd + childEdges.BlockEnd > childBottom + Epsilon && lastInFlowEnd < context.ClipEnd
+                        && Relayout?.GetCellBlockSizeReduction(child.Box) > 0)
+                    {
+                        // A cell whose row is measured without the monolithic overflow of its contents (see
+                        // StripRelayout.GetCellBlockSizeReduction) is shorter than its contents in the strip: it encompasses them
+                        // once fragmented
+                        item.IntrinsicEnd = lastInFlowEnd + childEdges.BlockEnd;
+                        item.EncompassesContents = true;
+                        item.OverflowsTrack = true;
+                        _root.GrowsUnbroken = true;
+                    }
 
                     item.CanGrow = structure.Kind switch
                     {
@@ -3301,8 +3309,15 @@ internal sealed class ParallelItem(FragmentationFlow flow)
     /// <summary>Whether a break inside the item violates <c>break-inside: avoid</c>.</summary>
     public bool Avoid { get; set; }
 
-    /// <summary>Whether the box is shorter than its contents in the strip, and as tall as them once fragmented (<see cref="IntrinsicEnd"/> is after <see cref="End"/>): an item of a column flex container.</summary>
+    /// <summary>Whether the box is shorter than its contents in the strip, and as tall as them once fragmented (<see cref="IntrinsicEnd"/> is after <see cref="End"/>): an item of a column flex container, a table cell whose contents overflow its row (<see cref="OverflowsTrack"/>).</summary>
     public bool EncompassesContents { get; set; }
+
+    /// <summary>
+    /// Whether the contents of the item continue after the end of its track in the strip: a table cell whose row is measured
+    /// without the monolithic overflow of its contents (see <see cref="StripRelayout.GetCellBlockSizeReduction"/>). The content of
+    /// the container after the track is not beside its contents that overflow a fragmentainer.
+    /// </summary>
+    public bool OverflowsTrack { get; set; }
 
     /// <summary>Whether the track waits for the end of the item (not for a cell that spans several rows).</summary>
     public bool CountsForTrack { get; init; }

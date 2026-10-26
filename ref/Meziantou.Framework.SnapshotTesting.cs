@@ -267,6 +267,7 @@ namespace Meziantou.Framework.SnapshotTesting
         public static Meziantou.Framework.SnapshotTesting.SnapshotType JpegXl { get => throw null; }
         public string? MimeType { get => throw null; }
         public static Meziantou.Framework.SnapshotTesting.SnapshotType None { get => throw null; }
+        public static Meziantou.Framework.SnapshotTesting.SnapshotType Pdf { get => throw null; }
         public static Meziantou.Framework.SnapshotTesting.SnapshotType Png { get => throw null; }
         public static Meziantou.Framework.SnapshotTesting.SnapshotType Svg { get => throw null; }
         public static Meziantou.Framework.SnapshotTesting.SnapshotType Tiff { get => throw null; }

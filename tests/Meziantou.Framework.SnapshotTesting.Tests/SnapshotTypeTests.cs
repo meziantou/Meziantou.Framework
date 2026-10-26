@@ -24,6 +24,8 @@ public sealed class SnapshotTypeTests
         Assert.Equal(SnapshotType.Heic, SnapshotType.Create("heic"));
         Assert.Equal(SnapshotType.JpegXl, SnapshotType.Create("jxl"));
         Assert.Equal(SnapshotType.Jpeg2000, SnapshotType.Create("jp2"));
+        Assert.Equal(SnapshotType.Pdf, SnapshotType.Create("pdf"));
+        Assert.Equal("application/pdf", SnapshotType.Create("PDF").MimeType);
         Assert.Equal("image/jxl", SnapshotType.Create("JXL").MimeType);
     }
 

@@ -1026,6 +1026,10 @@ public sealed class PdfDocumentTests
         using var image = Image.ImportPixelData<Rgba32>([new Rgba32(1, 2, 3, 255)], 1, 1);
 
         Assert.False(PdfImage.FromImage(image).HasSoftMask);
+
+        // PDF samples are integers: floating-point pixels are converted by the caller, never reinterpreted
+        using var floats = new Image<RgbaFloat>(1, 1);
+        Assert.Throws<ArgumentException>("image", () => PdfImage.FromImage(floats));
     }
 
     [Fact]

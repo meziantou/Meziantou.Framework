@@ -36,6 +36,27 @@ public sealed class LimitBoundaryTests
     }
 
     [Fact]
+    public void FloatingPointPixelsAreChargedAtSixteenBytesEach()
+    {
+        // 10x10 RgbaFloat = 1,600 bytes in one slab, charged at the capacity of its size class
+        long capacity;
+        using (var probe = new Image<RgbaFloat>(10, 10))
+        {
+            capacity = probe.Owner.Scope.LiveBytes;
+        }
+
+        Assert.InRange(capacity, 1600, 2047);
+        new Image<RgbaFloat>(10, 10, Configuration(new ImageResourceLimits { MaxLiveAllocationBytes = capacity })).Dispose();
+        AssertLimit(ImageResourceLimitKind.LiveAllocationBytes, capacity - 1, capacity, () => new Image<RgbaFloat>(10, 10, Configuration(new ImageResourceLimits { MaxLiveAllocationBytes = capacity - 1 })).Dispose());
+
+        // A conversion to floating point is charged before anything is converted: twice the bytes of Rgba64 pixels
+        using var source = new Image<Rgba64>(10, 10, Configuration(new ImageResourceLimits { MaxLiveAllocationBytes = capacity - 1 }));
+        AssertLimit(ImageResourceLimitKind.LiveAllocationBytes, capacity - 1, capacity, () => source.CloneAs<RgbaFloat>().Dispose());
+        using var halves = source.CloneAs<RgbaHalf>();
+        Assert.Equal(source.Owner.Scope.LiveBytes, halves.Owner.Scope.LiveBytes);
+    }
+
+    [Fact]
     public void ResizeTargetsAreCheckedInclusively()
     {
         var limits = new ImageResourceLimits { MaxWidth = 12, MaxHeight = 9, MaxFramePixels = 96 };

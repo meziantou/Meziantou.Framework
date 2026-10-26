@@ -73,6 +73,21 @@ internal static class ImageCollectionWriterCore
 
         if (encoder is TiffEncoder && !seekable)
             throw new ArgumentException("TIFF output requires a seekable destination: a directory stores the offsets of the strips it describes, so the pointer to it is written only once the pages are encoded.", nameof(encoder));
+
+        // Floating-point entries are reduced to 16 bits only with the policy of the encoder (decoded entries are never floating-point)
+        if (encoder.FloatingPointConversion is null)
+        {
+            for (var i = 0; i < collection.Count; i++)
+            {
+                if (PixelFormats.IsFloatingPoint(collection[i].PixelFormat))
+                {
+                    throw new UnsupportedImageFeatureException(
+                        string.Create(CultureInfo.InvariantCulture, $"{ImageFormatNames.Get(encoder.Format)} output does not store floating-point samples, so encoding the {collection[i].PixelFormat} pixels of entry {i} would discard their range and precision. Set {encoder.GetType().Name}.FloatingPointConversion to reduce them to 16-bit integers (Rgba64), or convert the image explicitly with CloneAs."),
+                        encoder.Format,
+                        "Floating-point samples");
+                }
+            }
+        }
     }
 
     private static void Write(ImageCollection collection, ImageEncoder encoder, Stream stream)
@@ -100,7 +115,7 @@ internal static class ImageCollectionWriterCore
         writer.WriteHeader(output);
         for (var i = 0; i < collection.Count; i++)
         {
-            using var page = Materialize(collection[i], configuration: collection.Configuration);
+            using var page = Materialize(collection[i], collection.Configuration, encoder);
             var image = page.Image;
             var frame = image.Frames[0];
             var metadata = MetadataWritePlan.Create(image.Metadata, ImageFormat.Tiff, encoder.MetadataHandling, image.Size, TiffSampleLayout.GetLabeledPixelFormat(encoder.PixelLayout, image.PixelFormat));
@@ -126,7 +141,7 @@ internal static class ImageCollectionWriterCore
             for (var i = 0; i < collection.Count; i++)
             {
                 var entry = collection[i];
-                using var item = Materialize(entry, configuration);
+                using var item = Materialize(entry, configuration, encoder);
                 var image = item.Image;
                 IcoDocumentWriter.ValidateSize(encoder.Format, image.Size);
 
@@ -174,11 +189,20 @@ internal static class ImageCollectionWriterCore
         stream.Position = end;
     }
 
-    /// <summary>Gets the image of an entry: the image it owns (borrowed), or a decode of its encoded payload (owned).</summary>
-    private static MaterializedEntry Materialize(ImageCollectionEntry entry, ImageConfiguration configuration)
+    /// <summary>
+    /// Gets the image of an entry: the image it owns (borrowed), or a decode of its encoded payload (owned), or the 16-bit
+    /// reduction of a floating-point image (owned, <see cref="ImageEncoder.FloatingPointConversion"/>).
+    /// </summary>
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The reduced image is owned by the returned entry, which the caller disposes.")]
+    private static MaterializedEntry Materialize(ImageCollectionEntry entry, ImageConfiguration configuration, ImageEncoder encoder)
     {
         if (entry.OwnedOrNull is { } owned)
+        {
+            if (PixelFormats.IsFloatingPoint(owned.PixelFormat))
+                return new MaterializedEntry(owned.CloneAs<Rgba64>(encoder.FloatingPointConversion), ownsImage: true);
+
             return new MaterializedEntry(owned, ownsImage: false);
+        }
 
         var image = entry.Decode(new ImageDecodeOptions { Configuration = configuration });
         return new MaterializedEntry(image, ownsImage: true);

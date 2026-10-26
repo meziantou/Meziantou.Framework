@@ -747,7 +747,7 @@ public sealed class BrowsingContextTests
         Assert.NotSame(document, context.Document);
         Assert.Equal("https://example.com/dir/next.html", context.Document.Title);
         Assert.Equal(2u, context.Window.History.Length);
-        Assert.Null(document.DefaultView);
+        Assert.True(document.IsInBackForwardCache);
 
         context.Navigate("https://example.com/final.html");
         context.EventLoop.RunUntilIdle();
@@ -757,8 +757,10 @@ public sealed class BrowsingContextTests
     [Fact]
     public void History_Traversal_RestoresFormControlState()
     {
+        // The document is loaded again by the traversal: it is not kept in the back/forward cache
         using var context = new BrowsingContext(new BrowsingContextOptions
         {
+            BackForwardCacheSize = 0,
             DocumentLoader = new DelegateDocumentLoader((url, _) => ValueTask.FromResult<DocumentResource?>(new DocumentResource(url.EndsWith("page.html", StringComparison.Ordinal)
                 ? "<form><input id=text><input id=off autocomplete=off><input id=password type=password><input id=check type=checkbox><textarea id=area></textarea><select id=select><option>a<option>b</select><select id=multiple multiple><option>x<option>y<option>z</select></form><form autocomplete=off><input id=formoff></form>"
                 : "<title>next</title>"))),
@@ -808,11 +810,44 @@ public sealed class BrowsingContextTests
     }
 
     [Fact]
+    public void History_Traversal_BackForwardCacheResetsTheAutocompleteOffControls()
+    {
+        using var context = new BrowsingContext(new BrowsingContextOptions
+        {
+            DocumentLoader = new DelegateDocumentLoader((url, _) => ValueTask.FromResult<DocumentResource?>(new DocumentResource(url.EndsWith("page.html", StringComparison.Ordinal)
+                ? "<form><input id=text><input id=off autocomplete=off value=initial></form><form autocomplete=off><input id=formoff></form>"
+                : "<title>next</title>"))),
+        });
+
+        context.Navigate("https://example.com/dir/page.html");
+        context.EventLoop.RunUntilIdle();
+        var document = context.Document;
+        ((HtmlInputElement)document.GetElementById("text")!).Value = "text";
+        ((HtmlInputElement)document.GetElementById("off")!).Value = "off";
+        ((HtmlInputElement)document.GetElementById("formoff")!).Value = "formoff";
+        context.Window.Location.Assign("next.html");
+        context.EventLoop.RunUntilIdle();
+        Assert.Equal("next", context.Document.Title);
+
+        context.Window.History.Back();
+        context.EventLoop.RunUntilIdle();
+
+        // https://html.spec.whatwg.org/multipage/browsing-the-web.html#reactivate-a-document: the document is restored from the
+        // back/forward cache, and its controls whose autofill field name is "off" are reset
+        Assert.Same(document, context.Document);
+        Assert.Equal("text", ((HtmlInputElement)document.GetElementById("text")!).Value);
+        Assert.Equal("initial", ((HtmlInputElement)document.GetElementById("off")!).Value);
+        Assert.Equal("", ((HtmlInputElement)document.GetElementById("formoff")!).Value);
+    }
+
+    [Fact]
     public void History_Traversal_RestoresTheEntriesOfTheChildNavigables()
     {
         var requests = new List<string>();
         using var context = new BrowsingContext(new BrowsingContextOptions
         {
+            // The document is loaded again by the traversal: it is not kept in the back/forward cache
+            BackForwardCacheSize = 0,
             DocumentLoader = new DelegateDocumentLoader((url, _) =>
             {
                 requests.Add(url);
@@ -998,6 +1033,33 @@ public sealed class BrowsingContextTests
     }
 
     [Fact]
+    public void BaseUri_OfAClone_IsTheBaseUrlOfTheSource()
+    {
+        using var context = new BrowsingContext();
+        var document = Load(context, "<base href='https://example.org/base/'>");
+        var shallow = (Document)document.CloneNode(subtree: false);
+        var deep = (Document)document.CloneNode(subtree: true);
+        document.QuerySelector("base")!.Remove();
+        Assert.Equal("https://example.com/dir/page.html", document.BaseUri);
+        Assert.Equal("https://example.org/base/", shallow.BaseUri);
+        Assert.Equal("https://example.org/base/", deep.BaseUri);
+
+        deep.QuerySelector("base")!.SetAttribute("href", "sub/");
+        Assert.Equal("https://example.com/dir/sub/", deep.BaseUri);
+
+        var srcdoc = context.Navigate("https://example.com/", _ => "<base href='https://example.com/base/'><iframe srcdoc='x'></iframe>");
+        context.EventLoop.RunUntilIdle();
+        var frameDocument = ((HtmlIFrameElement)srcdoc.QuerySelector("iframe")!).ContentDocument!;
+        var clone = (Document)frameDocument.CloneNode(subtree: false);
+        Assert.Equal("https://example.com/base/", clone.BaseUri);
+
+        var baseElement = clone.CreateElement("base");
+        baseElement.SetAttribute("href", "sub/");
+        clone.AppendChild(baseElement);
+        Assert.Equal("https://example.com/base/sub/", clone.BaseUri);
+    }
+
+    [Fact]
     public void Navigate_DataUrl()
     {
         using var context = new BrowsingContext();
@@ -1074,7 +1136,7 @@ public sealed class BrowsingContextTests
 
         var second = Load(context, "<p>second</p>", "https://example.com/next.html");
         Assert.Equal(2u, context.Window.History.Length);
-        Assert.Null(first.DefaultView);
+        Assert.True(first.IsInBackForwardCache);
         Assert.NotNull(second.DefaultView);
 
         // A navigation to the same URL replaces the entry

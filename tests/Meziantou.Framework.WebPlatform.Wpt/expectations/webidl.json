@@ -45,15 +45,7 @@
     "total": 2
   },
   "webidl/ecmascript-binding/es-exceptions/DOMException-audioworklet.https.html": {
-    "harness": "ERROR",
-    "total": 5,
-    "failures": {
-      "A DOMException can be posted to AudioWorkletGlobalScope": "NOTRUN",
-      "A DOMException created in AudioWorkletGlobalScope can be posted to the window": "NOTRUN",
-      "A QuotaExceededError can be posted to AudioWorkletGlobalScope": "NOTRUN",
-      "A QuotaExceededError created in AudioWorkletGlobalScope can be posted to the window": "NOTRUN",
-      "DOMException and QuotaExceededError are exposed in AudioWorkletGlobalScope": "NOTRUN"
-    }
+    "total": 5
   },
   "webidl/ecmascript-binding/es-exceptions/DOMException-constants.any.js": {
     "total": 51

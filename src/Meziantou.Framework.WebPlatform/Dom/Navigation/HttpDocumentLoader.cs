@@ -148,7 +148,9 @@ internal sealed class HttpDocumentLoader(HttpClient httpClient) : DocumentLoader
                 var mediaType = response.Content.Headers.ContentType?.MediaType;
                 var isStreamedDocument = request.Mode == RequestMode.Navigate && (mediaType is null || mediaType.Equals("text/html", StringComparison.OrdinalIgnoreCase))
                     && (int)response.StatusCode is not (301 or 302 or 303 or 307 or 308) && !request.Headers.Any(header => header.Key.Equals("Sec-Purpose", StringComparison.OrdinalIgnoreCase));
-                if (isStreamedDocument || (request.Mode != RequestMode.Navigate && mediaType is not null && mediaType.Equals("text/event-stream", StringComparison.OrdinalIgnoreCase)))
+                // The requests whose body is read as it arrives (StreamsResponseBody, e.g. fetch()) are streamed too, except the redirects
+                if (isStreamedDocument || (request.Mode != RequestMode.Navigate && mediaType is not null && mediaType.Equals("text/event-stream", StringComparison.OrdinalIgnoreCase))
+                    || (request.StreamsResponseBody && (int)response.StatusCode is not (301 or 302 or 303 or 307 or 308)))
                 {
                     var streamedResponse = response;
                     response = null;
@@ -302,7 +304,7 @@ internal sealed class HttpDocumentLoader(HttpClient httpClient) : DocumentLoader
         RequestDestination.Style => "text/css,*/*;q=0.1",
         RequestDestination.Json => "application/json,*/*;q=0.5",
         RequestDestination.Text => "text/plain,*/*;q=0.5",
-        RequestDestination.Script or RequestDestination.PaintWorklet or RequestDestination.Font or RequestDestination.Ping or RequestDestination.Report or RequestDestination.Audio or RequestDestination.Video or RequestDestination.Track => "*/*",
+        RequestDestination.Script or RequestDestination.PaintWorklet or RequestDestination.AudioWorklet or RequestDestination.Font or RequestDestination.Ping or RequestDestination.Report or RequestDestination.Audio or RequestDestination.Video or RequestDestination.Track => "*/*",
         RequestDestination.Image => "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
         _ => "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     };

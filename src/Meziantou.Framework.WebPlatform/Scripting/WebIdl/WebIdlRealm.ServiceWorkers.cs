@@ -98,24 +98,68 @@ public sealed partial class WebIdlRealm<TAdapter, TValue> : IServiceWorkerFetchO
     object IServiceWorkerFetchOperations.CreateResponse(FetchResponse response) => Adapter.RunInRealm(EngineRealm, () =>
         (object)Adapter.Call(Adapter.Get(CacheSupport, Key("createResponseObject")), Adapter.Undefined, [FromFetchResponse(response)]));
 
-    void IServiceWorkerFetchOperations.ReadResponse(object value, Action<FetchResponse?> callback)
+    void IServiceWorkerFetchOperations.ReadResponse(object value, bool streamBody, Action<FetchResponse?> callback)
     {
         var adapter = Adapter;
-        var onResponse = adapter.CreateFunction("", 1, (_, arguments) =>
+        if (!streamBody)
+        {
+            var onResponse = adapter.CreateFunction("", 1, (_, arguments) =>
+            {
+                var serialized = arguments.Length > 0 ? arguments[0] : adapter.Undefined;
+                callback(adapter.IsObject(serialized) ? ToFetchResponse(serialized) : null);
+                return adapter.Undefined;
+            });
+
+            Adapter.RunInRealm(EngineRealm, () => Adapter.Call(Adapter.Get(CacheSupport, Key("readFetchEventResponse")), Adapter.Undefined, [(TValue)value, onResponse]));
+            return;
+        }
+
+        // The body is read on the thread of the service worker, and its chunks are given to the client as they are read. The
+        // client that stops reading the body (e.g. an aborted fetch) cancels the stream of the body.
+        var global = GlobalScope;
+        TValue? cancelReading = null;
+        var body = new FetchBodyChannel(() => global.QueueGlobalTask(() =>
+        {
+            if (cancelReading is not null)
+            {
+                Adapter.RunInRealm(EngineRealm, () => Adapter.Call(cancelReading, Adapter.Undefined, []));
+            }
+        }));
+        var onStreamedResponse = adapter.CreateFunction("", 1, (_, arguments) =>
         {
             var serialized = arguments.Length > 0 ? arguments[0] : adapter.Undefined;
-            callback(adapter.IsObject(serialized) ? ToFetchResponse(serialized) : null);
+            callback(adapter.IsObject(serialized) ? ToFetchResponse(serialized, adapter.ToBoolean(Adapter.Get(serialized, Key("streamed"))) ? body : null) : null);
+            return adapter.Undefined;
+        });
+        var onChunk = adapter.CreateFunction("", 1, (_, arguments) =>
+        {
+            body.Write(GetBytes(arguments[0]));
+            return adapter.Undefined;
+        });
+        var onEnd = adapter.CreateFunction("", 0, (_, _) =>
+        {
+            body.Complete();
+            return adapter.Undefined;
+        });
+        var onError = adapter.CreateFunction("", 0, (_, _) =>
+        {
+            body.Fail(new IOException("The body of the response of the service worker is errored"));
             return adapter.Undefined;
         });
 
-        Adapter.RunInRealm(EngineRealm, () => Adapter.Call(Adapter.Get(CacheSupport, Key("readFetchEventResponse")), Adapter.Undefined, [(TValue)value, onResponse]));
+        Adapter.RunInRealm(EngineRealm, () =>
+        {
+            var cancel = Adapter.Call(Adapter.Get(CacheSupport, Key("readFetchEventResponseStreamed")), Adapter.Undefined, [(TValue)value, onStreamedResponse, onChunk, onEnd, onError]);
+            cancelReading = Adapter.IsCallable(cancel) ? cancel : null;
+            return Adapter.Undefined;
+        });
     }
 
     /// <summary>
     /// Converts a response serialized by Fetch.js to a response of the fetch algorithm: the response keeps its type (the
     /// response given by a service worker is already filtered), and an opaque response gets its internal response.
     /// </summary>
-    private FetchResponse ToFetchResponse(TValue serialized)
+    private FetchResponse ToFetchResponse(TValue serialized, FetchBodyChannel? streamedBody = null)
     {
         var type = Adapter.ToString(Adapter.Get(serialized, Key("type")));
         if (type == "error")
@@ -152,11 +196,12 @@ public sealed partial class WebIdlRealm<TAdapter, TValue> : IServiceWorkerFetchO
         FetchResponse CreateResponse(TValue value)
         {
             var body = Adapter.Get(value, Key("body"));
-            var result = FetchResponse.Create(
-                (int)Adapter.ToNumber(Adapter.Get(value, Key("status"))),
-                Adapter.ToString(Adapter.Get(value, Key("statusText"))),
-                ToHeaderList(Adapter.Get(value, Key("headers"))),
-                Adapter.IsNull(body) || Adapter.IsUndefined(body) ? null : GetBytes(body));
+            var status = (int)Adapter.ToNumber(Adapter.Get(value, Key("status")));
+            var statusText = Adapter.ToString(Adapter.Get(value, Key("statusText")));
+            var headers = ToHeaderList(Adapter.Get(value, Key("headers")));
+            var result = streamedBody is not null
+                ? FetchResponse.Create(status, statusText, headers, new DocumentResource(ReadOnlyMemory<byte>.Empty) { StatusCode = status, Headers = headers, RemainingContentBytes = streamedBody })
+                : FetchResponse.Create(status, statusText, headers, Adapter.IsNull(body) || Adapter.IsUndefined(body) ? null : GetBytes(body));
             foreach (var url in ToList(Adapter.Get(value, Key("urlList"))))
             {
                 if (UrlParser.Parse(Adapter.ToString(url), baseUrl: null) is { } parsedUrl)

@@ -398,13 +398,30 @@ internal static class DynamicMarkup
     /// <summary>https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#target-for-html-insertion</summary>
     public static Node GetTargetForHtmlInsertion(Node target) => target is HtmlTemplateElement template ? template.Content : target;
 
+    /// <summary>
+    /// The target of the methods that insert HTML into an element (<c>appendHTML()</c>, <c>prependHTML()</c>): see
+    /// <see cref="GetTargetForHtmlInsertion"/>. The children of an html element are its head and its body, so the HTML
+    /// cannot be inserted into it (https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#filter-and-pre-insert-html).
+    /// </summary>
+    /// <exception cref="DomException">The target is an html element.</exception>
+    public static Node GetTargetForHtmlPreInsertion(Element target)
+    {
+        if (target.IsHtml(TagId.Html))
+            throw new DomException("The HTML cannot be inserted into an html element", "HierarchyRequestError");
+
+        return GetTargetForHtmlInsertion(target);
+    }
+
     /// <summary>https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#parent-for-html-insertion</summary>
-    /// <exception cref="DomException">The parent is a template element, a document or a document fragment without a host.</exception>
+    /// <exception cref="DomException">The parent is a template element, an html element, a document or a document fragment without a host.</exception>
     public static Node? GetParentForHtmlInsertion(Node node)
     {
         var parent = node.ParentNode;
         if (parent is HtmlTemplateElement)
             throw new DomException("The HTML cannot be inserted next to a child of a template element", "HierarchyRequestError");
+
+        if (parent is Element element && element.IsHtml(TagId.Html))
+            throw new DomException("The HTML cannot be inserted next to a child of an html element", "HierarchyRequestError");
 
         if (parent is null or Element or DocumentFragment { Host: not null })
             return parent;

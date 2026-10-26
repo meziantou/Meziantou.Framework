@@ -145,6 +145,9 @@ public sealed class WebIdlAgent<TAdapter, TValue>
     /// <summary>The WeakMap of the internal slots of the Request and Response objects (Fetch.js), shared by the realms of the agent.</summary>
     internal TValue? FetchInternals { get; set; }
 
+    /// <summary>The WeakMap of the internal slots of the Observable and Subscriber objects (Observable.js), shared by the realms of the agent.</summary>
+    internal TValue? ObservableInternals { get; set; }
+
     /// <summary>The WeakSet of the immutable prototype exotic objects of the realms of the agent (see <c>WebIdlRealm.DefineImmutablePrototypes</c>).</summary>
     internal TValue? ImmutablePrototypeObjects { get; set; }
 

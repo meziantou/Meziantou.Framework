@@ -436,6 +436,55 @@ public sealed class ServiceWorkerTests : IDisposable
     }
 
     [Fact]
+    public async Task AddRoutes_RulesArePersistedInTheBackend()
+    {
+        AddScript("https://example.com/dir/sw.js", """
+            self.addEventListener('install', e => e.addRoutes([
+              { condition: { urlPattern: new URLPattern({ pathname: '/**/DIRECT.TXT' }, { ignoreCase: true }) }, source: 'network' },
+              { condition: { or: [{ urlPattern: '/**/*.css' }, { urlPattern: { pathname: '/**', search: 'net' } }] }, source: 'network' },
+              { condition: { requestMethod: 'post', not: undefined }, source: { cacheName: 'missing' } },
+              { condition: { not: { urlPattern: '/**/*.txt' } }, source: 'network' },
+            ]));
+            self.addEventListener('fetch', e => e.respondWith(new Response('sw')));
+            """);
+        AddPage("https://example.com/dir/controlled.html", """
+            <script>
+              const text = (url, init) => fetch(url, init).then(r => r.text());
+              Promise.all([text('direct.txt'), text('style.css'), text('other.txt?net'), text('other.txt', { method: 'POST' }), text('other.txt')]).then(texts => {
+                const entry = performance.getEntriesByName(new URL('direct.txt', location).href)[0];
+                parent.document.title = texts.join(',') + '|' + entry.workerMatchedRouterSource;
+              });
+            </script>
+            """);
+        _loader.Resources["https://example.com/dir/direct.txt"] = new DocumentResource("direct");
+        _loader.Resources["https://example.com/dir/style.css"] = new DocumentResource("style");
+        _loader.Resources["https://example.com/dir/other.txt?net"] = new DocumentResource("net");
+        _loader.Resources["https://example.com/dir/other.txt"] = new DocumentResource("other");
+        const string Expected = "direct,style,net,other,sw|network";
+        var path = Path.Combine(Path.GetTempPath(), "service-workers-" + Guid.NewGuid().ToString("N") + ".db");
+        try
+        {
+            using (var backend = new Storage.SqliteServiceWorkerBackend(path))
+            {
+                Assert.Equal(Expected, await WaitForTitleAsync(Load(RegisterAndOpenControlledFrame, backend)));
+            }
+
+            // A new browsing context reads the registration: the install event is not dispatched again, the rules come from the backend
+            using (var backend = new Storage.SqliteServiceWorkerBackend(path))
+            {
+                var context = CreateContext(backend);
+                var document = context.Navigate("https://example.com/dir/page2.html", _ => "<iframe src='controlled.html'></iframe>");
+                Assert.Equal(Expected, await WaitForTitleAsync(document));
+            }
+        }
+        finally
+        {
+            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
     public async Task UnregisterThenRegister_HasAnInstallingWorker()
     {
         AddScript("https://example.com/dir/resources/worker.js", "self.onfetch = e => {};");
@@ -730,5 +779,147 @@ public sealed class ServiceWorkerTests : IDisposable
             """);
 
         Assert.Equal("https://example.com/dir/sw.js", await WaitForTitleAsync(document));
+    }
+
+    /// <summary>Registers sw.js, waits for its activation, then opens controlled.html in an iframe (whose script sets the title of this document).</summary>
+    private const string RegisterAndOpenControlledFrame = """
+        <script>
+          const activated = worker => worker.state === 'activated' ? Promise.resolve() : new Promise(resolve => worker.addEventListener('statechange', () => worker.state === 'activated' && resolve()));
+          navigator.serviceWorker.register('sw.js').then(() => navigator.serviceWorker.ready).then(registration => activated(registration.active)).then(() => {
+            const frame = document.createElement('iframe');
+            frame.src = 'controlled.html';
+            document.body.appendChild(frame);
+          }, e => document.title = 'error: ' + e);
+        </script>
+        """;
+
+    [Fact]
+    public async Task AddRoutes_RoutesTheMatchingRequestsToTheNetwork()
+    {
+        AddScript("https://example.com/dir/sw.js", """
+            self.addEventListener('install', e => e.addRoutes([
+              { condition: { or: [{ urlPattern: '/**/direct.txt' }, { urlPattern: new URLPattern({ pathname: '/**/DIRECT2.TXT' }, { ignoreCase: true }) }] }, source: 'network' },
+              { condition: { requestMethod: 'post', requestMode: 'cors' }, source: 'network' },
+              { condition: { not: { urlPattern: { pathname: '/**/*.txt' } } }, source: 'network' },
+            ]));
+            self.addEventListener('fetch', e => e.respondWith(new Response('sw')));
+            """);
+        AddPage("https://example.com/dir/controlled.html", """
+            <script>
+              const text = (url, init) => fetch(url, init).then(r => r.text());
+              Promise.all([text('direct.txt'), text('direct2.txt'), text('other.txt'), text('other.txt', { method: 'POST' })]).then(texts => {
+                const timing = name => {
+                  const entry = performance.getEntriesByName(new URL(name, location).href)[0];
+                  return entry.workerMatchedRouterSource + ' ' + entry.workerFinalRouterSource + ' ' + (entry.workerRouterEvaluationStart >= entry.startTime && entry.workerRouterEvaluationStart <= entry.responseEnd);
+                };
+                parent.document.title = texts.join(',') + '|' + (navigator.serviceWorker.controller !== null) + '|' + timing('direct.txt') + '|' + timing('controlled.html');
+              });
+            </script>
+            """);
+        _loader.Resources["https://example.com/dir/direct.txt"] = new DocumentResource("direct");
+        _loader.Resources["https://example.com/dir/direct2.txt"] = new DocumentResource("direct2");
+        _loader.Resources["https://example.com/dir/other.txt"] = new DocumentResource("other");
+        var document = Load(RegisterAndOpenControlledFrame);
+
+        Assert.Equal("direct,direct2,sw,other|true|network network true|network network true", await WaitForTitleAsync(document));
+    }
+
+    [Fact]
+    public async Task AddRoutes_CacheSource_UsesTheCachedResponseOrTheNetwork()
+    {
+        AddScript("https://example.com/dir/sw.js", """
+            self.addEventListener('install', e => {
+              e.waitUntil(caches.open('v1').then(cache => cache.put('cached.txt', new Response('from cache'))));
+              e.addRoutes({ condition: { urlPattern: '/**/*.txt' }, source: { cacheName: 'v1' } });
+            });
+            self.addEventListener('fetch', e => {
+              if (e.request.url.endsWith('page.html'))
+                e.respondWith(new Response('sw'));
+            });
+            """);
+        AddPage("https://example.com/dir/controlled.html", """
+            <script>
+              const text = url => fetch(url).then(r => r.text());
+              Promise.all([text('cached.txt'), text('missing.txt'), text('page.html')]).then(texts => {
+                const timing = name => {
+                  const entry = performance.getEntriesByName(new URL(name, location).href)[0];
+                  return entry.workerMatchedRouterSource + ' ' + entry.workerFinalRouterSource + ' ' + (entry.workerCacheLookupStart >= entry.workerRouterEvaluationStart && entry.workerRouterEvaluationStart > 0);
+                };
+                parent.document.title = texts.join(',') + '|' + timing('cached.txt') + '|' + timing('missing.txt');
+              });
+            </script>
+            """);
+        _loader.Resources["https://example.com/dir/missing.txt"] = new DocumentResource("network");
+        var document = Load(RegisterAndOpenControlledFrame);
+
+        Assert.Equal("from cache,network,sw|cache cache true|cache network true", await WaitForTitleAsync(document));
+    }
+
+    [Fact]
+    public async Task AddRoutes_RejectsTheInvalidRules()
+    {
+        AddScript("https://example.com/dir/sw.js", """
+            const results = [];
+            let installEvent;
+            self.addEventListener('install', e => {
+              installEvent = e;
+              const attempt = (name, rules) => e.addRoutes(rules).then(() => name + ':ok', error => name + ':' + error.name);
+              let deep = { urlPattern: '/x' };
+              for (let i = 0; i < 11; i++) deep = { not: deep };
+              e.waitUntil(Promise.all([
+                attempt('regexp', { condition: { urlPattern: '/:id(\\d+)' }, source: 'network' }),
+                attempt('forbidden', { condition: { requestMethod: 'CONNECT' }, source: 'network' }),
+                attempt('mixed', { condition: { urlPattern: '/a', or: [{ requestMode: 'cors' }] }, source: 'network' }),
+                attempt('empty', { condition: {}, source: 'network' }),
+                attempt('nosource', { condition: { requestMode: 'cors' } }),
+                attempt('mode', { condition: { requestMode: 'invalid' }, source: 'network' }),
+                attempt('depth', { condition: deep, source: 'network' }),
+                attempt('valid', [{ condition: { requestMode: 'cors' }, source: 'fetch-event' }]),
+              ]).then(r => results.push(...r)));
+            });
+            self.addEventListener('activate', e => {
+              e.waitUntil(installEvent.addRoutes({ condition: { requestMode: 'cors' }, source: 'network' }).then(() => results.push('late:ok'), error => results.push('late:' + error.name)));
+            });
+            self.addEventListener('fetch', e => {
+              if (e.request.url.endsWith('results.txt'))
+                e.respondWith(new Response(results.join(' ')));
+            });
+            """);
+        AddPage("https://example.com/dir/controlled.html", "<script>fetch('results.txt').then(r => r.text()).then(t => parent.document.title = t);</script>");
+        var document = Load(RegisterAndOpenControlledFrame);
+
+        Assert.Equal("regexp:TypeError forbidden:TypeError mixed:TypeError empty:TypeError nosource:TypeError mode:TypeError depth:TypeError valid:ok late:InvalidStateError", await WaitForTitleAsync(document));
+    }
+
+    [Fact]
+    public async Task AddRoutes_RaceNetworkAndFetchHandler_UsesTheNetworkWhenTheFetchEventDoesNotRespond()
+    {
+        AddScript("https://example.com/dir/sw.js", """
+            let fetchEvents = 0;
+            self.addEventListener('install', e => e.addRoutes({ condition: { urlPattern: '/**/race.txt' }, source: 'race-network-and-fetch-handler' }));
+            self.addEventListener('fetch', e => {
+              if (e.request.url.endsWith('race.txt'))
+                fetchEvents++;
+              else if (e.request.url.endsWith('count.txt'))
+                e.respondWith(new Response(String(fetchEvents)));
+            });
+            """);
+        AddPage("https://example.com/dir/controlled.html", """
+            <script>
+              fetch('race.txt').then(r => r.text()).then(async t => {
+                const entry = performance.getEntriesByName(new URL('race.txt', location).href)[0];
+                const count = await fetch('count.txt').then(r => r.text());
+                parent.document.title = t + '|' + entry.workerMatchedRouterSource + ' ' + entry.workerFinalRouterSource + '|' + count;
+              });
+            </script>
+            """);
+        _loader.Resources["https://example.com/dir/race.txt"] = new DocumentResource("network");
+        var document = Load(RegisterAndOpenControlledFrame);
+
+        Assert.Equal("network|race-network-and-fetch-handler network|1", await WaitForTitleAsync(document));
+        lock (_loader.Requests)
+        {
+            Assert.Single(_loader.Requests, request => request.Url == "https://example.com/dir/race.txt");
+        }
     }
 }

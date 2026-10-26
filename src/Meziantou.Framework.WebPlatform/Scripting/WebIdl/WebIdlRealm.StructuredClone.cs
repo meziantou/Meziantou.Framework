@@ -579,7 +579,13 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             if (serializedObject is Dom.SerializedFileSystemHandle fileSystemHandle)
                 return DeserializeFileSystemHandle(fileSystemHandle);
 
-            return ToJs(StructuredClone.Deserialize(serializedObject));
+            // https://html.spec.whatwg.org/multipage/structured-data.html#structureddeserialize: a platform object whose
+            // interface is not exposed in the realm (e.g. a Blob in a worklet) cannot be deserialized
+            var deserialized = StructuredClone.Deserialize(serializedObject);
+            if (deserialized is not null && WebIdlBindings<TAdapter, TValue>.GetInterface(deserialized.GetType()) is { } binding && !IsExposed(binding.Exposure))
+                throw adapter.CreateException(ToJsError(new DomException($"The {binding.Name} object cannot be deserialized: its interface is not exposed in the realm", "DataCloneError")));
+
+            return ToJs(deserialized);
         }));
         var platformCanTransfer = Adapter.RunInRealm(EngineRealm, () => adapter.CreateFunction("platformCanTransfer", 2, (_, args) =>
         {

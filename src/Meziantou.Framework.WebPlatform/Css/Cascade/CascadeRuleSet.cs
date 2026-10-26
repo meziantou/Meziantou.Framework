@@ -122,6 +122,9 @@ internal sealed class CascadeRule
     /// <summary>The namespace prefixes declared by the @namespace rules of the style sheet of the rule, or null.</summary>
     public IReadOnlyDictionary<string, string>? NamespacePrefixes { get; init; }
 
+    /// <summary>The referrer of the resources of the style sheet of the rule when it is fetched, or null (see <see cref="CssStyleSheet.ResourceReferrer"/>).</summary>
+    public CssResourceReferrer? ResourceReferrer { get; init; }
+
     /// <summary>The <see cref="BaseUrl"/>, <see cref="TreeScope"/> and <see cref="Mixin"/> of the rule, shared by its cascaded values (null when they are all null).</summary>
     public CascadedValueSource? Source
     {
@@ -132,7 +135,7 @@ internal sealed class CascadeRule
             var source = Volatile.Read(ref _source);
             if (source is null)
             {
-                source = (object?)CascadedValueSource.Create(BaseUrl, TreeScope, Mixin, NamespacePrefixes) ?? NoSource;
+                source = (object?)CascadedValueSource.Create(BaseUrl, TreeScope, Mixin, NamespacePrefixes, ResourceReferrer) ?? NoSource;
                 Volatile.Write(ref _source, source);
             }
 

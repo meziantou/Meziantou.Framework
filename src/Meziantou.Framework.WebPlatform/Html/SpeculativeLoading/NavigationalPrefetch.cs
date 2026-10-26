@@ -471,10 +471,11 @@ internal static class NavigationalPrefetch
                 {
                     CancelAndDiscard(sourceDocument, record);
                 }
-                else if (record.Matches(url) && record.Response is { } response && record.ServiceWorkerMatched != ServiceWorkerFetchHandling.HasActiveWorker(navigable, response.Internal.Url ?? record.Url))
+                else if (record.Matches(url) && record.Response is not null && record.ServiceWorkerMatched != ServiceWorkerFetchHandling.HasActiveWorker(navigable, record.Request?.CurrentUrl ?? record.Url))
                 {
                     // As in Chromium, a prefetch is not used when a service worker started or stopped controlling its URL
-                    // since: the response of the navigation would come from another source
+                    // since: the response of the navigation would come from another source. The URL is the one of the request
+                    // (after its redirects): the response of a service worker may have another URL (e.g. fetch() of a modified URL)
                     CancelAndDiscard(sourceDocument, record);
                 }
                 else if (record.Matches(url))

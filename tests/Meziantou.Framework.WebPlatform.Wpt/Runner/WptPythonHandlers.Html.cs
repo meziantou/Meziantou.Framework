@@ -4,7 +4,7 @@ using Meziantou.Framework.WebPlatform.Dom;
 
 namespace Meziantou.Framework.WebPlatform.Wpt.Runner;
 
-/// <summary>The handlers of the <c>html</c>, <c>dom</c>, <c>encoding</c>, <c>url</c> and <c>FileAPI</c> tests.</summary>
+/// <summary>The handlers of the <c>html</c>, <c>dom</c>, <c>encoding</c>, <c>url</c>, <c>workers</c> and <c>FileAPI</c> tests.</summary>
 internal static partial class WptPythonHandlers
 {
     private static readonly Dictionary<string, Handler> HtmlHandlers = new(StringComparer.Ordinal)
@@ -324,6 +324,131 @@ internal static partial class WptPythonHandlers
         ["/encoding/resources/single-byte-raw.py"] = (request, response, _) => Respond(response, "text/plain;charset=" + request.Get("label"), [.. Enumerable.Range(0, 255).Select(i => (byte)i)]),
         ["/encoding/resources/text-plain-charset.py"] = (request, response, _) => Respond(response, "text/plain;charset=" + request.Get("label"), "hello encoding"u8.ToArray()),
         ["/encoding/resources/text-html-meta-charset.py"] = (request, response, _) => Respond(response, "text/html", Encoding.Latin1.GetBytes("<meta charset=\"" + request.Get("label") + "\">hello encoding")),
+
+        // encoding/resources/json-charset.py: a JSON document encoded as UTF-8, with the type and the charset parameters as its Content-Type
+        ["/encoding/resources/json-charset.py"] = (request, response, _) =>
+        {
+            var contentType = request.Get("type") ?? "application/json";
+            if (request.Get("charset") is { } charset)
+            {
+                contentType += ";charset=" + charset;
+            }
+
+            response.Set("Content-Type", contentType);
+            response.Set("X-Content-Type-Options", "nosniff");
+            response.Body = """{"text":"☃é"}"""u8.ToArray();
+        },
+
+        // workers/baseurl/beta/*.py: a redirect to the script of the same name in the gamma directory (the base URL of the
+        // worker is the URL of the response), with a body that must not run
+        ["/workers/baseurl/beta/import.py"] = (_, response, _) => BaseUrlRedirect(response, "import.js"),
+        ["/workers/baseurl/beta/importScripts.py"] = (_, response, _) => BaseUrlRedirect(response, "importScripts.js"),
+        ["/workers/baseurl/beta/worker.py"] = (_, response, _) => BaseUrlRedirect(response, "worker.js"),
+        ["/workers/baseurl/beta/xhr-worker.py"] = (_, response, _) => BaseUrlRedirect(response, "xhr-worker.js"),
+        ["/workers/baseurl/beta/xhr.py"] = (_, response, _) => BaseUrlRedirect(response, "xhr.js"),
+
+        // workers/interfaces/WorkerGlobalScope/location/helper-redirect.py
+        ["/workers/interfaces/WorkerGlobalScope/location/helper-redirect.py"] = (_, response, _) =>
+        {
+            response.Status = 302;
+            response.Add("Location", "post-location-members.js?a");
+        },
+
+        // workers/modules/resources/redirect.py: a redirect to the location parameter
+        ["/workers/modules/resources/redirect.py"] = (request, response, _) =>
+        {
+            response.Status = 302;
+            response.Set("Location", RequiredParameter(request, "location"));
+        },
+
+        // workers/modules/resources/export-on-load-script.py: a module script imported from another origin (it answers the
+        // CORS preflight of the Service-Worker header too), ending with a comment that changes every second
+        ["/workers/modules/resources/export-on-load-script.py"] = (_, response, _) =>
+        {
+            response.Set("Content-Type", "text/javascript");
+            response.Set("Access-Control-Allow-Origin", "*");
+            response.Set("Access-Control-Allow-Headers", "Service-Worker");
+            response.Content = "export const importedModules = ['export-on-load-script.js'];// " + DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture);
+        },
+
+        // workers/modules/resources/*-checker.py and *-credentials.py: a worker script that posts (or a module that exports) the
+        // Referer header or the value of the COOKIE_NAME cookie of its request
+        ["/workers/modules/resources/postmessage-referrer-checker.py"] = (request, response, _) =>
+        {
+            response.Set("Content-Type", "text/javascript");
+            response.Set("Access-Control-Allow-Origin", "*");
+            response.Content = PostMessageWorkerScript(request.Header("Referer") ?? "");
+        },
+        ["/workers/modules/resources/export-referrer-checker.py"] = (request, response, _) =>
+        {
+            response.Set("Content-Type", "text/javascript");
+            response.Set("Access-Control-Allow-Origin", "*");
+            response.Content = "export const referrer = '" + (request.Header("Referer") ?? "") + "';";
+        },
+        ["/workers/modules/resources/postmessage-credentials.py"] = (request, response, _) =>
+        {
+            response.Set("Content-Type", "text/javascript");
+            response.Set("Access-Control-Allow-Credentials", "true");
+            if (request.Header("Origin") is { Length: > 0 } origin)
+            {
+                response.Set("Access-Control-Allow-Origin", origin);
+            }
+
+            response.Content = PostMessageWorkerScript(GetCookieName(request));
+        },
+        ["/workers/modules/resources/export-credentials.py"] = (request, response, _) =>
+        {
+            response.Set("Content-Type", "text/javascript");
+            response.Set("Access-Control-Allow-Credentials", "true");
+            if (request.Header("Origin") is { Length: > 0 } origin)
+            {
+                response.Set("Access-Control-Allow-Origin", origin);
+            }
+
+            response.Content = "export const cookie = '" + GetCookieName(request) + "';";
+        },
+
+        // workers/semantics/encodings/003-1.py: whether the x parameter is "å" encoded as UTF-8 (the URL of a worker request is UTF-8)
+        ["/workers/semantics/encodings/003-1.py"] = (request, response, _) => response.Content = DecodeUtf8(RequiredParameter(request, "x")) == "å" ? "PASS" : "FAIL",
+
+        // workers/support/imported_script.py: an empty script with the mime parameter as its Content-Type
+        ["/workers/support/imported_script.py"] = (request, response, _) => response.Set("Content-Type", RequiredParameter(request, "mime")),
+
+        // dom/nodes/Document-contentType/support/contenttype_setter.py: a document whose Content-Type is type/subtype (none with
+        // removeContentType), with a <meta http-equiv=Content-Type> of the mime parameter
+        ["/dom/nodes/Document-contentType/support/contenttype_setter.py"] = (request, response, _) =>
+        {
+            if (request.Get("type") is { Length: > 0 } type && request.Get("subtype") is { Length: > 0 } subtype)
+            {
+                response.Set("Content-Type", type + "/" + subtype);
+            }
+
+            if (request.Get("removeContentType") is { Length: > 0 })
+            {
+                response.Set("Content-Type", null);
+            }
+
+            var content = "<head>";
+            if (request.Get("mime") is { Length: > 0 } mime)
+            {
+                content += "<meta http-equiv=\"Content-Type\" content=\"" + mime + "; charset=utf-8\"/>";
+            }
+
+            response.Content = content + "</head>";
+        },
+
+        // html/webappapis/scripting/processing-model-2/unhandled-promise-rejections/support/promise-access-control.py: a
+        // script that rejects a promise, with Access-Control-Allow-Origin: * unless the allow parameter is "false"
+        ["/html/webappapis/scripting/processing-model-2/unhandled-promise-rejections/support/promise-access-control.py"] = (request, response, _) =>
+        {
+            response.Set("Content-Type", "application/javascript");
+            if (request.Get("allow", "false") != "false")
+            {
+                response.Set("Access-Control-Allow-Origin", "*");
+            }
+
+            response.Content = "function handleRejectedPromise(promise) { promise.catch(() => {}); }\n(function() { new Promise(function(resolve, reject) { reject(42); }); })();\n";
+        },
 
         // dom/nodes/encoding.py: a document declaring the label in a <meta charset>
         ["/dom/nodes/encoding.py"] = (request, response, _) => Respond(response, "text/html", Encoding.UTF8.GetBytes("<!doctype html><meta charset=\"" + System.Net.WebUtility.HtmlEncode(DecodeUtf8(request.Get("label") ?? "")) + "\">")),
@@ -840,6 +965,23 @@ internal static partial class WptPythonHandlers
     };
 
     /// <summary>html/dom/partial-updates/tentative/resources/chunked-html.py</summary>
+    // The value of the COOKIE_NAME cookie of the request of workers/modules/resources/*-credentials.py, or an empty string
+    private static string GetCookieName(WptHandlerRequest request) => ParseRequestCookies(request).Find(cookie => cookie.Key == "COOKIE_NAME").Value ?? "";
+
+    // The script of workers/modules/resources/postmessage-*.py: it posts the value from a dedicated worker, or to the port of
+    // each connection of a shared worker
+    private static string PostMessageWorkerScript(string value) =>
+        "if ('DedicatedWorkerGlobalScope' in self &&    self instanceof DedicatedWorkerGlobalScope) {  postMessage('" + value + "');} else if (    'SharedWorkerGlobalScope' in self &&    self instanceof SharedWorkerGlobalScope) {  onconnect = e => e.ports[0].postMessage('" + value + "');}";
+
+    // workers/baseurl/beta/*.py: "302 Moved" to ../gamma/<script>
+    private static void BaseUrlRedirect(WptHandlerResponse response, string script)
+    {
+        response.Status = 302;
+        response.StatusText = "Moved";
+        response.Set("Location", "../gamma/" + script);
+        response.Content = "postMessage('executed redirecting script');";
+    }
+
     private static void ChunkedHtml(WptHandlerRequest request, WptHandlerResponse response, WptStash stash)
     {
         var action = request.Get("action");

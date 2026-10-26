@@ -27,6 +27,15 @@ public partial class Window
         return _animationFrameCallbackIdentifier;
     }
 
+    /// <summary>The document of the window is restored from the back/forward cache: the animation frame callbacks that were not run while it was cached run at the next frame.</summary>
+    internal void RequestPendingAnimationFrames()
+    {
+        if (_animationFrameCallbacks.Count > 0)
+        {
+            EventLoop.RequestAnimationFrame(this);
+        }
+    }
+
     /// <summary>https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#animationframeprovider-cancelanimationframe</summary>
     /// <seealso href="https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#animationframeprovider-cancelanimationframe"/>
     [IdlMember("cancelAnimationFrame", "https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#animationframeprovider-cancelanimationframe")]

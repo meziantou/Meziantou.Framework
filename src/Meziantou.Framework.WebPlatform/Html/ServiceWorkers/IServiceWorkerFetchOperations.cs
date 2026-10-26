@@ -16,7 +16,9 @@ internal interface IServiceWorkerFetchOperations
     /// <summary>
     /// Reads a value given to <c>respondWith()</c>: <paramref name="callback"/> is called (from a task) with the response of
     /// a <c>Response</c> object once its body was read, or with null when the value is not a <c>Response</c> object, when its
-    /// body is disturbed or locked, or when its body cannot be read.
+    /// body is disturbed or locked, or when its body cannot be read. With <paramref name="streamBody"/> (the client reads
+    /// the body as it arrives, <see cref="FetchRequest.StreamsBody"/>), the callback is called at once, and the body of the
+    /// response is the rest of the body, read as it arrives (see <see cref="FetchBodyChannel"/>).
     /// </summary>
-    void ReadResponse(object value, Action<FetchResponse?> callback);
+    void ReadResponse(object value, bool streamBody, Action<FetchResponse?> callback);
 }

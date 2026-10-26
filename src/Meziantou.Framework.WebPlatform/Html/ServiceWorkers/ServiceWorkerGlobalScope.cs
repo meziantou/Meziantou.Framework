@@ -157,7 +157,7 @@ public sealed class ServiceWorkerGlobalScope : WorkerGlobalScope
             }
 
             isStale = registration.IsStale(registry.Now);
-            updateViaCache = registration.UpdateViaCache;
+            updateViaCache = worker.InstallingUpdateViaCache ?? registration.UpdateViaCache;
         }
 
         if (stored is not null)
@@ -221,7 +221,7 @@ public sealed class ServiceWorkerGlobalScope : WorkerGlobalScope
             }
 
             isStale = registration.IsStale(registry.Now);
-            updateViaCache = registration.UpdateViaCache;
+            updateViaCache = worker.InstallingUpdateViaCache ?? registration.UpdateViaCache;
         }
 
         if (stored is not null)

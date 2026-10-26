@@ -82,6 +82,24 @@ internal static class ServiceWorkerFetchHandling
             registration = controller.Registration;
         }
 
+        // The router rules of the active worker are evaluated before the fetch event is dispatched
+        var routerRule = EvaluateRouterRules(request, registration, isNonSubresource, eventLoop.TimeProvider, out var routerActiveWorker);
+        if (routerRule is not null)
+        {
+            switch (routerRule.Source)
+            {
+                case RouterSourceKind.Network:
+                    return Task.FromResult<FetchResponse?>(null);
+
+                case RouterSourceKind.Cache:
+                    request.Timing.ServiceWorkerCacheLookupStart = eventLoop.TimeProvider.GetTimestamp();
+                    return Task.FromResult(LookUpCache(request, registration, routerActiveWorker!, routerRule.CacheName, options));
+
+                case RouterSourceKind.RaceNetworkAndFetchHandler when request.Method == "GET":
+                    return CompleteOnClient(request, eventLoop, registration.Registry, RaceNetworkAndFetchHandlerAsync(request, registration, isNonSubresource, request.Client?.EnvironmentId ?? "", cancellationToken), cancellationToken);
+            }
+        }
+
         // The navigation preload request is sent in parallel with the fetch event
         Task<FetchResponse>? preload = null;
         if (request.Mode == RequestMode.Navigate && request.Method == "GET" && ShouldPreload(registration, out var headerValue))
@@ -108,27 +126,40 @@ internal static class ServiceWorkerFetchHandling
                 TaskScheduler.Default);
         }
 
-        // The client waits for the service worker (an operation of its event loop), and gets the response from a task of its
-        // event loop (the fetch algorithm continues on the thread of the client)
         var clientId = request.Client?.EnvironmentId ?? "";
-        // The dispatch runs in parallel: it is running (for a host that advances a fake clock) until the client gets the response
-        var dispatchRegistry = registration.Registry;
-        dispatchRegistry.BeginParallelOperation();
         request.Timing.ServiceWorkerStart = eventLoop.TimeProvider.GetTimestamp();
 
-        // The response of a speculative fetch is not reused by the fetch of the parser (there is no HTTP cache), which sends
+        // The response of a speculative fetch is not reused by the fetch of the parser (it is not stored in the HTTP cache), which sends
         // the request again; the browsers send one request. A service worker gets one fetch event for the two requests when
         // the speculative one is still handled: the request of the parser waits for its response.
         var speculativeKey = !isNonSubresource && request is { Method: "GET", Body: null, Client: not null } ? new SpeculativeFetchKey(request.CurrentUrl.Serialize(), request.Destination, request.Mode, request.CredentialsMode) : (SpeculativeFetchKey?)null;
         if (speculativeKey is not { } key || request.IsSpeculative || !request.Client!.TryTakeSpeculativeServiceWorkerFetch(key, out var dispatch))
         {
-            dispatch = CreateFetchEventAndDispatchAsync(request, registration, isNonSubresource, clientId, preload, cancellationToken);
+            dispatch = CreateFetchEventAndDispatchAsync(request, registration, isNonSubresource, clientId, preload, raceResponse: null, cancellationToken);
             if (speculativeKey is { } speculativeFetchKey && request.IsSpeculative)
             {
                 request.Client!.AddSpeculativeServiceWorkerFetch(speculativeFetchKey, dispatch);
             }
         }
 
+        // https://w3c.github.io/ServiceWorker/#handle-fetch, step 19: the response of a request routed to the fetch event comes
+        // from the fetch event (the final source is the network when the fetch event does not respond)
+        if (routerRule is not null)
+        {
+            dispatch = SetFinalRouterSourceAsync(dispatch, request.Timing);
+        }
+
+        return CompleteOnClient(request, eventLoop, registration.Registry, dispatch, cancellationToken);
+    }
+
+    /// <summary>
+    /// Gives the response of the service worker to the client: the client waits for the service worker (an operation of its
+    /// event loop), and gets the response from a task of its event loop (the fetch algorithm continues on the thread of the client).
+    /// </summary>
+    private static Task<FetchResponse?> CompleteOnClient(FetchRequest request, DomEventLoop eventLoop, ServiceWorkerRegistry dispatchRegistry, Task<FetchResponse?> dispatch, CancellationToken cancellationToken)
+    {
+        // The dispatch runs in parallel: it is running (for a host that advances a fake clock) until the client gets the response
+        dispatchRegistry.BeginParallelOperation();
         if (request.Synchronous)
         {
             var result = WaitSynchronously(dispatch, cancellationToken);
@@ -155,6 +186,207 @@ internal static class ServiceWorkerFetchHandling
             TaskContinuationOptions.ExecuteSynchronously,
             TaskScheduler.Default);
         return completion.Task;
+    }
+
+    /// <summary>
+    /// https://w3c.github.io/ServiceWorker/#handle-fetch, step 15: returns the router rule that matches the request (the
+    /// source of the timing info of the request is set), or null when the request is handled by the fetch event as usual.
+    /// The registration is updated when the request does not go to the fetch event.
+    /// </summary>
+    private static ServiceWorkerRouterRule? EvaluateRouterRules(FetchRequest request, ServiceWorkerRegistrationRecord registration, bool isNonSubresource, TimeProvider timeProvider, out ServiceWorkerRecord? activeWorker)
+    {
+        var registry = registration.Registry;
+        bool shouldSoftUpdate;
+        lock (registry.Lock)
+        {
+            activeWorker = registration.Active;
+            shouldSoftUpdate = isNonSubresource || registration.IsStale(registry.Now);
+        }
+
+        if (activeWorker is null || activeWorker.RouterRules.Count == 0)
+            return null;
+
+        request.Timing.ServiceWorkerRouterEvaluationStart = timeProvider.GetTimestamp();
+        if (ServiceWorkerRouter.GetRouterSource(activeWorker, request) is not { } rule)
+            return null;
+
+        request.Timing.ServiceWorkerMatchedRouterSource = rule.SourceName;
+        request.Timing.ServiceWorkerFinalRouterSource = "network";
+
+        // The fetch event updates the registration when it is dispatched (a race dispatches it, but not for a non-GET request)
+        if (shouldSoftUpdate && rule.Source is RouterSourceKind.Network or RouterSourceKind.Cache)
+        {
+            registry.ScheduleSoftUpdate(registration);
+        }
+
+        return rule;
+    }
+
+    /// <summary>
+    /// https://w3c.github.io/ServiceWorker/#handle-fetch, step 15.3.3: the response stored for the request in the caches of the
+    /// storage key of the registration (or of the cache named by the rule), or null to fetch the request from the network.
+    /// </summary>
+    private static FetchResponse? LookUpCache(FetchRequest request, ServiceWorkerRegistrationRecord registration, ServiceWorkerRecord activeWorker, string? cacheName, BrowsingContextOptions options)
+    {
+        // The caches of a partitioned storage key (a credentialless iframe) are in memory, in the storage of the top-level
+        // window of its clients: they are not looked up, and the request is fetched from the network
+        if (registration.StorageKey.PartitionNonce is not null)
+            return null;
+
+        var coordinator = (options.CacheStorage ?? registration.Registry.GroupOwner.CacheStorageBackend).Coordinator;
+        var origin = registration.StorageKey.Origin;
+        var query = new CachedRequest { Method = request.Method, Url = request.CurrentUrl.Serialize(), Headers = request.HeaderList };
+        CacheEntry? entry = null;
+        foreach (var name in coordinator.Keys(origin))
+        {
+            if (cacheName is not null && !string.Equals(name, cacheName, StringComparison.Ordinal))
+                continue;
+
+            // The specification stops at the first cache that has no entry for the request; as caches.match(), every cache
+            // is looked up (in creation order)
+            if (CacheStorageCoordinator.QueryCache(coordinator.GetHandle(coordinator.Open(origin, name)), query, default) is [var match, ..])
+            {
+                entry = match;
+                break;
+            }
+        }
+
+        if (entry is null)
+            return null;
+
+        var response = ToFetchResponse(entry);
+
+        // An opaque response blocked by the cross-origin resource policy of the service worker is not used
+        if (response.Type == FetchResponseType.Opaque && response.Internal.Url is { } responseUrl
+            && CrossOriginResourcePolicy.IsBlocked(OriginRecord.FromUrl(activeWorker.ScriptUrl), EmbedderPolicyValue.UnsafeNone, responseUrl, response.Internal.HeaderList, forNavigation: false, response.Internal.RequestIncludesCredentials))
+        {
+            return null;
+        }
+
+        request.Timing.ServiceWorkerFinalRouterSource = "cache";
+        return response;
+    }
+
+    /// <summary>Converts the response of a cache entry to a response of the fetch algorithm (the filtered response stored in the cache).</summary>
+    private static FetchResponse ToFetchResponse(CacheEntry entry)
+    {
+        var cached = entry.Response;
+        List<KeyValuePair<string, string>> headers = [.. cached.Headers];
+        if (cached.CrossOriginResourcePolicy is { } policy && !headers.Exists(header => string.Equals(header.Key, "Cross-Origin-Resource-Policy", StringComparison.OrdinalIgnoreCase)))
+        {
+            headers.Add(new("Cross-Origin-Resource-Policy", policy));
+        }
+
+        var response = FetchResponse.Create(cached.Status, cached.StatusText, headers, cached.Body?.ToArray());
+        response.RequestIncludesCredentials = cached.RequestIncludesCredentials;
+        IEnumerable<string> urls = cached.UrlList.Count > 0 ? cached.UrlList : [entry.Request.Url];
+        foreach (var url in urls)
+        {
+            if (Urls.UrlParser.Parse(url, baseUrl: null) is { } parsedUrl)
+            {
+                response.UrlList.Add(parsedUrl);
+            }
+        }
+
+        switch (cached.Type)
+        {
+            case "basic":
+                return response.ToBasic();
+            case "cors":
+                // The headers of the entry were already filtered
+                response.CorsExposedHeaderNames = [.. response.HeaderList.Select(header => header.Key)];
+                return response.ToCors();
+            case "opaque":
+                return response.ToOpaque();
+            default:
+                return response;
+        }
+    }
+
+    /// <summary>
+    /// https://w3c.github.io/ServiceWorker/#handle-fetch, step 15.3.4: the request is sent to the network while the fetch event
+    /// is dispatched. The response is the first of a response of the network whose status is an ok status, and of the
+    /// response of the fetch event (the response of the network when the fetch event does not respond).
+    /// </summary>
+    private static async Task<FetchResponse?> RaceNetworkAndFetchHandlerAsync(FetchRequest request, ServiceWorkerRegistrationRecord registration, bool isNonSubresource, string clientId, CancellationToken cancellationToken)
+    {
+        // As the request of a navigation preload, the network request has the current URL of the request
+        var networkRequest = request.Clone();
+        networkRequest.UrlList = [request.CurrentUrl];
+        networkRequest.NavigationRedirectUrls = [.. request.NavigationRedirectUrls, .. request.UrlList.Take(request.UrlList.Count - 1)];
+        networkRequest.ServiceWorkersMode = ServiceWorkersMode.None;
+        networkRequest.ReservedClient = null;
+        request.Timing.ServiceWorkerStart = registration.Registry.EventLoop.TimeProvider.GetTimestamp();
+#pragma warning disable CA2000, CA2025 // The cancellation is disposed when the network request completes (the fetch event can win before)
+        var networkCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        var network = Fetching.StartFetch(networkRequest, networkCancellation.Token);
+        _ = network.ContinueWith(_ => networkCancellation.Dispose(), CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+#pragma warning restore CA2000, CA2025
+
+        var result = new TaskCompletionSource<(FetchResponse? Response, string UsedRoute)>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _ = network.ContinueWith(
+            completed =>
+            {
+                var response = Fetching.GetResult(completed);
+                if (!response.IsNetworkError && response.Status is >= 200 and <= 299)
+                {
+                    result.TrySetResult((response, "network"));
+                }
+            },
+            CancellationToken.None,
+            TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default);
+
+        // The fetch event is still dispatched when the network wins
+#pragma warning disable CA2025 // The fetch event does not use the cancellation of the network request
+        var fetchHandler = CreateFetchEventAndDispatchAsync(request, registration, isNonSubresource, clientId, preload: null, network, cancellationToken);
+#pragma warning restore CA2025
+        _ = fetchHandler.ContinueWith(
+            completed =>
+            {
+                var response = completed.IsCompletedSuccessfully ? completed.Result : FetchResponse.NetworkError(aborted: completed.IsCanceled);
+                if (response is { IsNetworkError: false } && !(network.IsCompletedSuccessfully && ReferenceEquals(response, network.Result)))
+                {
+                    CancelNetwork(networkCancellation);
+                }
+
+                result.TrySetResult((response, "fetch-event"));
+            },
+            CancellationToken.None,
+            TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default);
+
+        var (routedResponse, usedRoute) = await result.Task.ConfigureAwait(false);
+        if (routedResponse is not null)
+        {
+            request.Timing.ServiceWorkerFinalRouterSource = usedRoute;
+        }
+
+        return routedResponse;
+
+        static void CancelNetwork(CancellationTokenSource cancellation)
+        {
+            try
+            {
+                cancellation.Cancel();
+            }
+            catch (ObjectDisposedException)
+            {
+                // The network request completed
+            }
+        }
+    }
+
+    /// <summary>Sets the final router source of a request routed to the fetch event once the fetch event gave a response.</summary>
+    private static async Task<FetchResponse?> SetFinalRouterSourceAsync(Task<FetchResponse?> dispatch, FetchTimestamps timing)
+    {
+        var response = await dispatch.ConfigureAwait(false);
+        if (response is not null)
+        {
+            timing.ServiceWorkerFinalRouterSource = "fetch-event";
+        }
+
+        return response;
     }
 
     private static FetchResponse? WaitSynchronously(Task<FetchResponse?> dispatch, CancellationToken cancellationToken)
@@ -188,7 +420,7 @@ internal static class ServiceWorkerFetchHandling
     }
 
     /// <summary>https://w3c.github.io/ServiceWorker/#create-fetch-event-and-dispatch</summary>
-    private static async Task<FetchResponse?> CreateFetchEventAndDispatchAsync(FetchRequest request, ServiceWorkerRegistrationRecord registration, bool isNonSubresource, string clientId, Task<FetchResponse>? preload, CancellationToken cancellationToken)
+    private static async Task<FetchResponse?> CreateFetchEventAndDispatchAsync(FetchRequest request, ServiceWorkerRegistrationRecord registration, bool isNonSubresource, string clientId, Task<FetchResponse>? preload, Task<FetchResponse>? raceResponse, CancellationToken cancellationToken)
     {
         var registry = registration.Registry;
         ServiceWorkerRecord? activeWorker;
@@ -217,6 +449,7 @@ internal static class ServiceWorkerFetchHandling
         var replacesClientId = request.Mode == RequestMode.Navigate ? request.ReplacesClientId ?? "" : "";
         Interlocked.Increment(ref activeWorker.PendingFunctionalEvents);
         FetchEventOutcome outcome;
+        string? raceUrl = null;
         try
         {
             await registry.WaitForActivationAsync(activeWorker).ConfigureAwait(false);
@@ -228,6 +461,12 @@ internal static class ServiceWorkerFetchHandling
             {
                 var wait = registry.CreateWait<FetchEventOutcome>();
                 request.Timing.ServiceWorkerReady = registry.EventLoop.TimeProvider.GetTimestamp();
+                raceUrl = raceResponse is null ? null : request.CurrentUrl.Serialize();
+                if (raceUrl is not null)
+                {
+                    activeWorker.SetRaceResponse(raceUrl, raceResponse!);
+                }
+
                 registry.QueueTaskOnWorker(
                     activeWorker,
                     global => DispatchFetchEvent(global, request, clientId, resultingClientId, replacesClientId, preload, wait, cancellationToken),
@@ -237,6 +476,11 @@ internal static class ServiceWorkerFetchHandling
         }
         finally
         {
+            if (raceUrl is not null)
+            {
+                activeWorker.RemoveRaceResponse(raceUrl, raceResponse!);
+            }
+
             registry.OnFunctionalEventEnded(activeWorker);
         }
 
@@ -269,7 +513,18 @@ internal static class ServiceWorkerFetchHandling
         if (!outcome.RespondWithEntered)
         {
             SettleHandled(networkError: outcome.Canceled);
-            return outcome.Canceled ? FetchResponse.NetworkError() : null;
+            if (outcome.Canceled)
+                return FetchResponse.NetworkError();
+
+            // The response of the network request of a race-network-and-fetch-handler router rule is used when the fetch event
+            // does not respond (https://w3c.github.io/ServiceWorker/#create-fetch-event-and-dispatch, step 18.3)
+            if (raceResponse is not null)
+            {
+                var networkResponse = await raceResponse.ContinueWith(Fetching.GetResult, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default).ConfigureAwait(false);
+                return networkResponse.Aborted ? null : networkResponse;
+            }
+
+            return null;
         }
 
         if (outcome.HandleFetchFailed || outcome.Response is null)
@@ -335,7 +590,12 @@ internal static class ServiceWorkerFetchHandling
             ResultingClientId = resultingClientId,
             ReplacesClientId = replacesClientId,
             Handled = handled.Task,
-        });
+        })
+        {
+            // The body of a response is given to fetch() as it is read (the other requests that read their body as it arrives,
+            // e.g. the media elements, get the complete body of the response of a service worker)
+            StreamsResponseBody = request.StreamsBody && request.Destination == RequestDestination.Empty,
+        };
 
         global.FireEvent(@event);
         global.UpdateExtendedEvents(@event);

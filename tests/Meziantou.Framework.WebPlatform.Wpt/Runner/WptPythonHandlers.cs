@@ -138,6 +138,9 @@ internal static partial class WptPythonHandlers
 
     private static TimeSpan Milliseconds(string? value, double defaultValue) => TimeSpan.FromMilliseconds(double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var milliseconds) ? milliseconds : defaultValue);
 
+    /// <summary><c>request.GET[name]</c> in Python: a missing parameter is a <c>KeyError</c>, so the response is a <c>500</c>.</summary>
+    private static string RequiredParameter(WptHandlerRequest request, string name) => request.Get(name) ?? throw new KeyNotFoundException("The " + name + " parameter is missing");
+
     private static int ParseInt(string? value, int defaultValue) => int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var result) ? result : defaultValue;
 
     private static string? GetPost(WptHandlerRequest request, string name) => request.Post.Find(field => field.Key == name) is { Key: not null } field ? field.Value.StringValue : null;

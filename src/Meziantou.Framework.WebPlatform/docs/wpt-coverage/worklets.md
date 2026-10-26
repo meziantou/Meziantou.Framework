@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 15 | 21 | 0 | 71% |
+| [Stable](#stable-tests) | 20 | 21 | 0 | 95% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **15** | **21** | **0** | **71%** |
+| **All** | **20** | **21** | **0** | **95%** |
 
 ## Stable tests
 
@@ -20,11 +20,11 @@
 | [`animation-worklet-import.https.html`](https://wpt.fyi/results/worklets/animation-worklet-import.https.html) | Pass | 18 / 18 |  |  |
 | [`animation-worklet-referrer.https.html`](https://wpt.fyi/results/worklets/animation-worklet-referrer.https.html) | Pass | 18 / 18 |  |  |
 | [`animation-worklet-service-worker-interception.https.html`](https://wpt.fyi/results/worklets/animation-worklet-service-worker-interception.https.html) | Pass | 3 / 3 |  |  |
-| [`audio-worklet-credentials.https.html`](https://wpt.fyi/results/worklets/audio-worklet-credentials.https.html) | Fail | 0 / 8 | REQUIRES(media) | Web Audio: `OfflineAudioContext` (and its `audioWorklet`) is not defined; the same tests pass for the paint worklet |
-| [`audio-worklet-csp.https.html`](https://wpt.fyi/results/worklets/audio-worklet-csp.https.html) | Fail | 0 / 24 | REQUIRES(media) | Web Audio: `OfflineAudioContext` (and its `audioWorklet`) is not defined; the same tests pass for the paint worklet |
-| [`audio-worklet-import.https.html`](https://wpt.fyi/results/worklets/audio-worklet-import.https.html) | Error | 0 / 0 | REQUIRES(media) | Web Audio: `OfflineAudioContext` (and its `audioWorklet`) is not defined; the same tests pass for the paint worklet |
-| [`audio-worklet-referrer.https.html`](https://wpt.fyi/results/worklets/audio-worklet-referrer.https.html) | Error | 0 / 0 | REQUIRES(media) | Web Audio: `OfflineAudioContext` (and its `audioWorklet`) is not defined; the same tests pass for the paint worklet |
-| [`audio-worklet-service-worker-interception.https.html`](https://wpt.fyi/results/worklets/audio-worklet-service-worker-interception.https.html) | Error | 0 / 0 | REQUIRES(media) | Web Audio: `OfflineAudioContext` (and its `audioWorklet`) is not defined; the same tests pass for the paint worklet |
+| [`audio-worklet-credentials.https.html`](https://wpt.fyi/results/worklets/audio-worklet-credentials.https.html) | Pass | 8 / 8 |  |  |
+| [`audio-worklet-csp.https.html`](https://wpt.fyi/results/worklets/audio-worklet-csp.https.html) | Pass | 24 / 24 |  |  |
+| [`audio-worklet-import.https.html`](https://wpt.fyi/results/worklets/audio-worklet-import.https.html) | Pass | 18 / 18 |  |  |
+| [`audio-worklet-referrer.https.html`](https://wpt.fyi/results/worklets/audio-worklet-referrer.https.html) | Pass | 18 / 18 |  |  |
+| [`audio-worklet-service-worker-interception.https.html`](https://wpt.fyi/results/worklets/audio-worklet-service-worker-interception.https.html) | Pass | 3 / 3 |  |  |
 | [`idlharness.https.any.js`](https://wpt.fyi/results/worklets/idlharness.https.any.js) | Fail | 0 / 2 | TEST BUG | the test fetches `/interfaces/worklets.idl`, which does not exist in the web-platform-tests (the Worklets specification was merged into the HTML Standard, whose IDL is tested by html/dom/idlharness) |
 | [`layout-worklet-credentials.https.html`](https://wpt.fyi/results/worklets/layout-worklet-credentials.https.html) | Pass | 8 / 8 |  |  |
 | [`layout-worklet-csp.https.html`](https://wpt.fyi/results/worklets/layout-worklet-csp.https.html) | Pass | 24 / 24 |  |  |

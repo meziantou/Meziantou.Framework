@@ -214,6 +214,17 @@ public sealed partial class BrowsingContext
         prerendering.IsDestroyed = true;
         GroupOwner._auxiliaryBrowsingContexts?.Remove(prerendering);
 
+        // The browsing context of the document that activates the prerendered document is discarded: it is active again if
+        // the document is restored from the back/forward cache
+        if (Document is { } previousDocument)
+        {
+            previousDocument.ReplacedBrowsingContext = new ReplacedBrowsingContext(ActiveBrowsingContext, Group);
+            if (HasOpenerRelationship())
+            {
+                previousDocument.MakeUnsalvageable("non-trivial-browsing-context-group");
+            }
+        }
+
         ActiveBrowsingContext.Discard(Document?.RelevantWindow);
         ActiveBrowsingContext = prerendering.ActiveBrowsingContext;
         ActiveBrowsingContext.Retarget(this);

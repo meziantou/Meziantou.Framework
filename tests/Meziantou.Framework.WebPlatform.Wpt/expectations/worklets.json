@@ -15,58 +15,19 @@
     "total": 3
   },
   "worklets/audio-worklet-credentials.https.html": {
-    "total": 8,
-    "failures": {
-      "Importing a remote-origin script with credentials=include should send the credentials": "FAIL",
-      "Importing a remote-origin script with credentials=omit should not send the credentials": "FAIL",
-      "Importing a remote-origin script with credentials=same-origin should not send the credentials": "FAIL",
-      "Importing a remote-origin script with the default WorkletOptions should not send the credentials": "FAIL",
-      "Importing a same-origin script with credentials=include should send the credentials": "FAIL",
-      "Importing a same-origin script with credentials=omit should not send the credentials": "FAIL",
-      "Importing a same-origin script with credentials=same-origin should send the credentials": "FAIL",
-      "Importing a same-origin script with the default WorkletOptions should send the credentials": "FAIL"
-    }
+    "total": 8
   },
   "worklets/audio-worklet-csp.https.html": {
-    "total": 24,
-    "failures": {
-      "A remote-origin worklet importing a remote-origin script should be blocked by the script-src 'self' directive.": "FAIL",
-      "A remote-origin worklet importing a remote-origin script should not be blocked because the script-src * directive allows it.": "FAIL",
-      "A remote-origin worklet importing a remote-origin script should not be blocked because the script-src directive specifying the origin allows it.": "FAIL",
-      "A remote-origin worklet importing a remote-origin script should not be blocked by the worker-src directive because worklets obey the script-src directive.": "FAIL",
-      "A remote-origin worklet should be blocked by the script-src 'self' directive.": "FAIL",
-      "A remote-origin worklet should not be blocked because the script-src * directive allows it.": "FAIL",
-      "A remote-origin worklet should not be blocked because the script-src directive specifying the origin allows it.": "FAIL",
-      "A remote-origin worklet should not be blocked by the worker-src directive because worklets obey the script-src directive.": "FAIL",
-      "A remote-origin-redirected worklet should be blocked by the script-src 'self' directive.": "FAIL",
-      "A remote-origin-redirected worklet should not be blocked because the script-src * directive allows it.": "FAIL",
-      "A remote-origin-redirected worklet should not be blocked because the script-src directive specifying the origin allows it.": "FAIL",
-      "A remote-origin-redirected worklet should not be blocked by the worker-src directive because worklets obey the script-src directive.": "FAIL",
-      "A same-origin worklet importing a remote-origin script should be blocked by the script-src 'self' directive.": "FAIL",
-      "A same-origin worklet importing a remote-origin script should not be blocked because the script-src * directive allows it.": "FAIL",
-      "A same-origin worklet importing a remote-origin script should not be blocked because the script-src directive specifying the origin allows it.": "FAIL",
-      "A same-origin worklet importing a remote-origin script should not be blocked by the worker-src directive because worklets obey the script-src directive.": "FAIL",
-      "A same-origin worklet importing a remote-origin-redirected script should be blocked by the script-src 'self' directive.": "FAIL",
-      "A same-origin worklet importing a remote-origin-redirected script should not be blocked because the script-src * directive allows it.": "FAIL",
-      "A same-origin worklet importing a remote-origin-redirected script should not be blocked because the script-src directive specifying the origin allows it.": "FAIL",
-      "A same-origin worklet importing a remote-origin-redirected script should not be blocked by the worker-src directive because worklets obey the script-src directive.": "FAIL",
-      "A same-origin worklet importing an insecure-origin script should be blocked because of mixed contents.": "FAIL",
-      "A same-origin worklet importing an insecure-origin-redirected script should be blocked because of mixed contents.": "FAIL",
-      "An insecure-origin worklet should be blocked because of mixed contents.": "FAIL",
-      "An insecure-origin-redirected worklet should be blocked because of mixed contents.": "FAIL"
-    }
+    "total": 24
   },
   "worklets/audio-worklet-import.https.html": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 18
   },
   "worklets/audio-worklet-referrer.https.html": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 18
   },
   "worklets/audio-worklet-service-worker-interception.https.html": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 3
   },
   "worklets/idlharness.https.any.js": {
     "total": 1,

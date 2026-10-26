@@ -358,6 +358,21 @@ public abstract partial class GlobalScope : EventTarget
         }
     }
 
+    /// <summary>Whether the global object has open writable file streams or access handles.</summary>
+    internal bool HasFileSystemResources
+    {
+        get
+        {
+            if (_fileSystemResources is not { } resources)
+                return false;
+
+            lock (resources)
+            {
+                return resources.Count > 0;
+            }
+        }
+    }
+
     internal void UnregisterFileSystemResource(object resource)
     {
         if (_fileSystemResources is { } resources)

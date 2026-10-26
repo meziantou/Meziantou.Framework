@@ -52,6 +52,28 @@ public sealed class HtmlInsertionTests
     }
 
     [Fact]
+    public void InsertionMethods_IntoOrNextToAChildOfAnHtmlElement_ThrowHierarchyRequestError()
+    {
+        var document = CreateContainer().OwnerDocument!;
+        var html = document.DocumentElement!;
+        Assert.Equal("HierarchyRequestError", Assert.Throws<DomException>(() => html.AppendHtml("<p>a</p>")).Name);
+        Assert.Equal("HierarchyRequestError", Assert.Throws<DomException>(() => html.PrependHtmlUnsafe("<p>a</p>")).Name);
+        Assert.Equal("HierarchyRequestError", Assert.Throws<DomException>(() => html.StreamAppendHtml()).Name);
+        Assert.Equal("HierarchyRequestError", Assert.Throws<DomException>(() => document.Body!.AfterHtml("<p>a</p>")).Name);
+        Assert.Equal("HierarchyRequestError", Assert.Throws<DomException>(() => document.Head!.ReplaceWithHtmlUnsafe("<p>a</p>")).Name);
+        Assert.Equal("HierarchyRequestError", Assert.Throws<DomException>(() => document.Body!.StreamBeforeHtml()).Name);
+
+        var detached = document.CreateElement("html");
+        var comment = detached.AppendChild(document.CreateComment("c"));
+        Assert.Equal("HierarchyRequestError", Assert.Throws<DomException>(() => ((Comment)comment).BeforeHtml("<p>a</p>")).Name);
+        Assert.Equal(2, html.ChildNodes.Count);
+        Assert.Single(detached.ChildNodes);
+
+        html.SetHtmlUnsafe("<head></head><body><p>new</p></body>");
+        Assert.Equal("<p>new</p>", document.Body!.InnerHtml);
+    }
+
+    [Fact]
     public void AppendHtml_OfATemplate_InsertsIntoItsContents()
     {
         var container = CreateContainer("<template><p>a</p></template>");

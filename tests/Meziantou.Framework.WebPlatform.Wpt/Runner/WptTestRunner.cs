@@ -540,24 +540,36 @@ internal sealed partial class WptTestRunner
         }
 
         var chunks = response.Chunks;
-        while (true)
+        try
         {
-            foreach (var (delay, data) in chunks)
+            while (true)
             {
-                if (delay > TimeSpan.Zero)
+                foreach (var (delay, data) in chunks)
                 {
-                    await DelayAsync(delay).ConfigureAwait(false);
+                    if (delay > TimeSpan.Zero)
+                    {
+                        await DelayAsync(delay).ConfigureAwait(false);
+                    }
+
+                    yield return data;
                 }
 
-                yield return data;
+                // A body that fails after its chunks (e.g. an invalid chunked encoding)
+                if (response.ChunksError)
+                    throw new IOException("The chunked encoding of the body is invalid");
+
+                if (repeatAfter is not { } repeatDelay || cancellationToken.IsCancellationRequested || response.ChunksStopCondition?.Invoke() == true)
+                    yield break;
+
+                await DelayAsync(repeatDelay).ConfigureAwait(false);
+                if (cancellationToken.IsCancellationRequested)
+                    yield break;
             }
-
-            if (repeatAfter is not { } repeatDelay || cancellationToken.IsCancellationRequested)
-                yield break;
-
-            await DelayAsync(repeatDelay).ConfigureAwait(false);
-            if (cancellationToken.IsCancellationRequested)
-                yield break;
+        }
+        finally
+        {
+            // The connection is closed: the end of the body, or the client stopped reading it (e.g. an aborted fetch)
+            response.Closed?.Invoke();
         }
     }
 
@@ -738,13 +750,13 @@ internal sealed partial class WptTestRunner
     /// <param name="request">The request.</param>
     /// <param name="isFetch">Whether the request is a request of <c>fetch()</c> or <c>XMLHttpRequest</c>: the response has a status message and a <c>Content-Length</c>.</param>
     /// <param name="pollingElapsed">The time elapsed since the request was received, when a handler that polls the stash runs again.</param>
-    private (DocumentResource? Resource, TimeSpan Delay, TimeSpan? RetryAfter) RunHandler(Url url, DocumentRequest request, bool isFetch, TimeSpan pollingElapsed = default)
+    private (DocumentResource? Resource, TimeSpan Delay, TimeSpan? RetryAfter) RunHandler(Url url, DocumentRequest request, bool isFetch, TimeSpan pollingElapsed = default, CancellationToken cancellationToken = default)
     {
         var path = Uri.UnescapeDataString(url.Pathname);
         WptHandlerResponse? response;
         try
         {
-            response = WptPythonHandlers.Handle(new WptHandlerRequest(url, request, GetRequestHeaders(url, request)) { PollingElapsed = pollingElapsed }, _stash);
+            response = WptPythonHandlers.Handle(new WptHandlerRequest(url, request, GetRequestHeaders(url, request)) { PollingElapsed = pollingElapsed, Now = Now }, _stash);
             if (response?.RetryAfter is { } retryAfter)
                 return (null, TimeSpan.Zero, retryAfter);
         }
@@ -802,10 +814,38 @@ internal sealed partial class WptTestRunner
         // arrive (the library waits for the end of the body for the requests that are not the ones of an EventSource); the
         // other responses are complete after the delays of their chunks
         if (response.Chunks.Count > 0 && (isNavigation || request.Destination is RequestDestination.Audio or RequestDestination.Video || request.Initiator is HtmlTemplateElement))
-            return (new DocumentResource(body) { Headers = headers, StatusCode = status, RemainingContentBytes = GetChunksAsync(response, repeatAfter: null) }, delay, null);
+            return (new DocumentResource(body) { Headers = headers, StatusCode = status, RemainingContentBytes = GetChunksAsync(response, repeatAfter: null, CancellationToken.None) }, delay, null);
 
         if (response.Chunks.Count > 0 && !request.IsSynchronous && HeaderList.ExtractMimeType(headers)?.Essence == "text/event-stream")
-            return (new DocumentResource(body) { Headers = headers, StatusCode = status, StatusText = response.StatusText ?? WptReasonPhrase(status), RemainingContentBytes = GetChunksAsync(response, response.ChunksRepeatAfter) }, delay, null);
+            return (new DocumentResource(body) { Headers = headers, StatusCode = status, StatusText = GetStatusText(url, status, response.StatusText), RemainingContentBytes = GetChunksAsync(response, response.ChunksRepeatAfter, CancellationToken.None) }, delay, null);
+
+        // The body of fetch() is read as its chunks arrive. The connection is closed once, at the end of the body or when the
+        // request is canceled (e.g. an aborted fetch whose body is not read)
+        if (response.Chunks.Count > 0 && isFetch && request.StreamsResponseBody)
+        {
+            if (response.Closed is { } closed)
+            {
+                var closedOnce = 0;
+                void Close()
+                {
+                    if (Interlocked.Exchange(ref closedOnce, 1) == 0)
+                    {
+                        closed();
+                    }
+                }
+
+                response.Closed = Close;
+                cancellationToken.Register(Close);
+            }
+
+            return (new DocumentResource(body)
+            {
+                StatusCode = status,
+                StatusText = response.StatusText ?? WptReasonPhrase(status),
+                Headers = response.Streamed ? headers : AddContentLength(headers, body.Length + response.Chunks.Sum(chunk => chunk.Data.Length)),
+                RemainingContentBytes = GetChunksAsync(response, response.ChunksRepeatAfter, CancellationToken.None),
+            }, delay, null);
+        }
 
         foreach (var (chunkDelay, chunk) in response.Chunks)
         {
@@ -813,13 +853,16 @@ internal sealed partial class WptTestRunner
             body = [.. body, .. chunk];
         }
 
+        if (response.ChunksError)
+            return (null, delay, null);
+
         if (!isFetch)
             return (new DocumentResource(body) { Headers = headers, StatusCode = status }, delay, null);
 
         return (new DocumentResource(body)
         {
             StatusCode = status,
-            StatusText = response.StatusText ?? WptReasonPhrase(status),
+            StatusText = GetStatusText(url, status, response.StatusText),
             Headers = response.Streamed ? headers : AddContentLength(headers, body.Length),
         }, delay, null);
     }
@@ -841,7 +884,7 @@ internal sealed partial class WptTestRunner
         var delay = TimeSpan.Zero;
         if (WptPythonHandlers.IsHandler(url))
         {
-            (resource, delay, var retryAfter) = RunHandler(url, request, isFetch: true);
+            (resource, delay, var retryAfter) = RunHandler(url, request, isFetch: true, cancellationToken: cancellationToken);
             if (retryAfter is { } retry)
                 return LoadPollingFetchResourceAsync(url, request, retry);
         }
@@ -873,7 +916,7 @@ internal sealed partial class WptTestRunner
                 // The body of a file served with a content coding is decoded (see CreateResource)
                 var fileResource = CreateResource(new DocumentResource(bytes), file, url, GetRequestHeaders(url, request));
                 bytes = fileResource.ContentBytes?.ToArray() ?? bytes;
-                resource = new DocumentResource(bytes) { StatusCode = fileResource.StatusCode, StatusText = WptReasonPhrase(fileResource.StatusCode), Headers = AddContentLength(fileResource.Headers, bytes.Length) };
+                resource = new DocumentResource(bytes) { StatusCode = fileResource.StatusCode, StatusText = GetStatusText(url, fileResource.StatusCode), Headers = AddContentLength(fileResource.Headers, bytes.Length) };
                 StoreCookies(url, request, resource.Headers);
                 delay = WptPipes.GetTrickleDelay(WptPipes.Get(url)) ?? TimeSpan.Zero;
             }
@@ -955,11 +998,11 @@ internal sealed partial class WptTestRunner
         if (!path.EndsWith('/', StringComparison.Ordinal))
         {
             var location = url.Protocol + "//" + url.Host + url.Pathname + "/" + url.Search;
-            return new DocumentResource(Array.Empty<byte>()) { StatusCode = 301, StatusText = WptReasonPhrase(301), Headers = [new("Location", location), new("Content-Length", "0")] };
+            return new DocumentResource(Array.Empty<byte>()) { StatusCode = 301, StatusText = GetStatusText(url, 301), Headers = [new("Location", location), new("Content-Length", "0")] };
         }
 
         var body = WptServer.GetDirectoryListing(path, directory);
-        return new DocumentResource(body) { StatusText = WptReasonPhrase(200), Headers = [new("Content-Type", "text/html"), new("Content-Length", body.Length.ToString(System.Globalization.CultureInfo.InvariantCulture))] };
+        return new DocumentResource(body) { StatusText = GetStatusText(url, 200), Headers = [new("Content-Type", "text/html"), new("Content-Length", body.Length.ToString(System.Globalization.CultureInfo.InvariantCulture))] };
     }
 
     private static List<KeyValuePair<string, string>> AddContentLength(IReadOnlyList<KeyValuePair<string, string>> headers, int length)
@@ -1004,6 +1047,12 @@ internal sealed partial class WptTestRunner
 
         return new DocumentResource(body) { StatusCode = status, StatusText = statusLine.Length > 2 ? statusLine[2] : "", Headers = headers };
     }
+
+    /// <summary>
+    /// The status message of a response of wptserve: the one set by the handler, else the reason phrase of the status. The
+    /// responses of the HTTP/2 server have none (HTTP/2 has no reason phrase).
+    /// </summary>
+    private static string GetStatusText(Url url, int status, string? statusText = null) => WptServer.IsHttp2(url) ? "" : statusText ?? WptReasonPhrase(status);
 
     /// <summary>The reason phrases of wptserve (the responses of Python's http.server).</summary>
     private static string WptReasonPhrase(int status) => status switch

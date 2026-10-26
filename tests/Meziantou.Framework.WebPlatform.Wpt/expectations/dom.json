@@ -891,46 +891,19 @@
     "total": 339
   },
   "dom/nodes/Document-cloneNode-about-base-url-relative.window.js": {
-    "total": 4,
-    "failures": {
-      "A data: <base> in an about:blank document and its clone falls back to the inherited base URL": "FAIL",
-      "A relative <base> inserted into a shallow clone of an about:blank document resolves against the inherited base URL": "FAIL",
-      "Clone of an about:blank document with a relative <base>": "FAIL"
-    }
+    "total": 4
   },
   "dom/nodes/Document-cloneNode-about-base-url.window.js": {
-    "total": 5,
-    "failures": {
-      "Clone of an about:blank document after detaching the source": "FAIL",
-      "Clone of an about:blank document with a <base>": "FAIL",
-      "Deep clone of an about:blank document": "FAIL",
-      "Shallow clone of an about:blank document": "FAIL"
-    }
+    "total": 5
   },
   "dom/nodes/Document-cloneNode-base-url-xml.window.js": {
-    "total": 3,
-    "failures": {
-      "Clone of an XHTML document with a <base>": "FAIL"
-    }
+    "total": 3
   },
   "dom/nodes/Document-cloneNode-base-url.window.js": {
-    "total": 11,
-    "failures": {
-      "Clone of a createHTMLDocument() document with a <base>": "FAIL",
-      "Inserting a <base> into a shallow clone overrides the copied base URL": "FAIL",
-      "Shallow clone is unaffected by later mutation of the source": "FAIL",
-      "Shallow clone of a document with a <base>": "FAIL",
-      "Shallow clone of a document with a relative <base>": "FAIL",
-      "Shallow clone's base URL survives later mutation of the clone": "FAIL"
-    }
+    "total": 11
   },
   "dom/nodes/Document-cloneNode-srcdoc-base-url.window.js": {
-    "total": 4,
-    "failures": {
-      "A data: <base> in an about:srcdoc document and its clone falls back to the inherited base URL": "FAIL",
-      "A relative <base> inserted into a shallow clone of an about:srcdoc document resolves against the inherited base URL": "FAIL",
-      "Clone of an about:srcdoc document with a relative <base>": "FAIL"
-    }
+    "total": 4
   },
   "dom/nodes/Document-constructor-svg.svg": {
     "total": 4
@@ -963,16 +936,10 @@
     "total": 1
   },
   "dom/nodes/Document-contentType/contentType/contenttype_mimeheader_01.html": {
-    "total": 1,
-    "failures": {
-      "Custom document.contentType === 'text/xml' when explicitly set to this value": "FAIL"
-    }
+    "total": 1
   },
   "dom/nodes/Document-contentType/contentType/contenttype_mimeheader_02.html": {
-    "total": 1,
-    "failures": {
-      "Custom document.contentType === 'text/html' when explicitly set to this value and an attempt is made to override this value in an HTML meta header": "FAIL"
-    }
+    "total": 1
   },
   "dom/nodes/Document-contentType/contentType/contenttype_png.html": {
     "total": 1
@@ -2124,749 +2091,148 @@
     "total": 3
   },
   "dom/observable/tentative/idlharness.html": {
-    "total": 36,
-    "failures": {
-      "Observable interface object length": "FAIL",
-      "Observable interface object name": "FAIL",
-      "Observable interface: calling subscribe(optional ObserverUnion, optional SubscribeOptions) on new Observable(() => {}) with too few arguments must throw TypeError": "FAIL",
-      "Observable interface: existence and properties of interface object": "FAIL",
-      "Observable interface: existence and properties of interface prototype object": "FAIL",
-      "Observable interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "Observable interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "Observable interface: new Observable(() => {}) must inherit property \"subscribe(optional ObserverUnion, optional SubscribeOptions)\" with the proper type": "FAIL",
-      "Observable interface: operation subscribe(optional ObserverUnion, optional SubscribeOptions)": "FAIL",
-      "Observable must be primary interface of new Observable(() => {})": "FAIL",
-      "Stringification of (() => { let s = null; new Observable(_s => s = _s).subscribe({}); return s })()": "FAIL",
-      "Stringification of new Observable(() => {})": "FAIL",
-      "Subscriber interface object length": "FAIL",
-      "Subscriber interface object name": "FAIL",
-      "Subscriber interface: (() => { let s = null; new Observable(_s => s = _s).subscribe({}); return s })() must inherit property \"active\" with the proper type": "FAIL",
-      "Subscriber interface: (() => { let s = null; new Observable(_s => s = _s).subscribe({}); return s })() must inherit property \"addTeardown(VoidFunction)\" with the proper type": "FAIL",
-      "Subscriber interface: (() => { let s = null; new Observable(_s => s = _s).subscribe({}); return s })() must inherit property \"complete()\" with the proper type": "FAIL",
-      "Subscriber interface: (() => { let s = null; new Observable(_s => s = _s).subscribe({}); return s })() must inherit property \"error(any)\" with the proper type": "FAIL",
-      "Subscriber interface: (() => { let s = null; new Observable(_s => s = _s).subscribe({}); return s })() must inherit property \"next(any)\" with the proper type": "FAIL",
-      "Subscriber interface: (() => { let s = null; new Observable(_s => s = _s).subscribe({}); return s })() must inherit property \"signal\" with the proper type": "FAIL",
-      "Subscriber interface: attribute active": "FAIL",
-      "Subscriber interface: attribute signal": "FAIL",
-      "Subscriber interface: calling addTeardown(VoidFunction) on (() => { let s = null; new Observable(_s => s = _s).subscribe({}); return s })() with too few arguments must throw TypeError": "FAIL",
-      "Subscriber interface: calling error(any) on (() => { let s = null; new Observable(_s => s = _s).subscribe({}); return s })() with too few arguments must throw TypeError": "FAIL",
-      "Subscriber interface: calling next(any) on (() => { let s = null; new Observable(_s => s = _s).subscribe({}); return s })() with too few arguments must throw TypeError": "FAIL",
-      "Subscriber interface: existence and properties of interface object": "FAIL",
-      "Subscriber interface: existence and properties of interface prototype object": "FAIL",
-      "Subscriber interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "Subscriber interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "Subscriber interface: operation addTeardown(VoidFunction)": "FAIL",
-      "Subscriber interface: operation complete()": "FAIL",
-      "Subscriber interface: operation error(any)": "FAIL",
-      "Subscriber interface: operation next(any)": "FAIL",
-      "Subscriber must be primary interface of (() => { let s = null; new Observable(_s => s = _s).subscribe({}); return s })()": "FAIL"
-    }
+    "total": 36
   },
   "dom/observable/tentative/observable-catch.any.js": {
-    "total": 9,
-    "failures": {
-      "catch(): Abort order between outer AbortSignal and inner CatchHandler subscriber's AbortSignal": "FAIL",
-      "catch(): CatchHandler can return a Promise": "FAIL",
-      "catch(): CatchHandler can return an empty iterable": "FAIL",
-      "catch(): CatchHandler emits an error if the value returned is not convertible to an Observable": "FAIL",
-      "catch(): CatchHandler returns an Observable that throws immediately on subscription": "FAIL",
-      "catch(): Errors thrown in the catch() callback are sent to the consumer's error handler": "FAIL",
-      "catch(): Handle errors from source and flatten to a new Observable": "FAIL",
-      "catch(): Returns an Observable that is a pass-through for next()/complete()": "FAIL",
-      "catch(): should handle returning an async iterable": "FAIL"
-    }
+    "total": 9
   },
   "dom/observable/tentative/observable-catch.any.js#dedicatedworker": {
-    "total": 9,
-    "failures": {
-      "catch(): Abort order between outer AbortSignal and inner CatchHandler subscriber's AbortSignal": "FAIL",
-      "catch(): CatchHandler can return a Promise": "FAIL",
-      "catch(): CatchHandler can return an empty iterable": "FAIL",
-      "catch(): CatchHandler emits an error if the value returned is not convertible to an Observable": "FAIL",
-      "catch(): CatchHandler returns an Observable that throws immediately on subscription": "FAIL",
-      "catch(): Errors thrown in the catch() callback are sent to the consumer's error handler": "FAIL",
-      "catch(): Handle errors from source and flatten to a new Observable": "FAIL",
-      "catch(): Returns an Observable that is a pass-through for next()/complete()": "FAIL",
-      "catch(): should handle returning an async iterable": "FAIL"
-    }
+    "total": 9
   },
   "dom/observable/tentative/observable-constructor.any.js": {
-    "total": 44,
-    "failures": {
-      "Aborting a subscription should stop emitting values": "FAIL",
-      "Calling subscribe should never throw an error synchronously, initializer throws error": "FAIL",
-      "Calling subscribe should never throw an error synchronously, subscriber pushes error": "FAIL",
-      "Completing or nexting a subscriber after an error does nothing": "FAIL",
-      "Errors pushed by initializer function after subscriber is closed by error are reported": "FAIL",
-      "Errors pushed to the subscriber that are not handled by the subscription are reported to the global": "FAIL",
-      "Errors thrown by initializer function after subscriber is closed by completion are reported": "FAIL",
-      "Errors thrown by initializer function after subscriber is closed by error are reported": "FAIL",
-      "Errors thrown in the initializer that are not handled by the subscription are reported to the global": "FAIL",
-      "Multiple subscriptions share the same producer and teardown runs only after last subscription abort": "FAIL",
-      "New subscription after complete creates new producer": "FAIL",
-      "Observable constructor": "FAIL",
-      "Observable constructor calls initializer on subscribe": "FAIL",
-      "Observable error path called synchronously": "FAIL",
-      "Observable should error if initializer throws": "FAIL",
-      "Producer-initiated unsubscription in a downstream Observable fires abort events before each teardown, in downstream->upstream order": "FAIL",
-      "Subscribe with just a function as the next handler": "FAIL",
-      "Subscriber active is readonly": "FAIL",
-      "Subscriber complete() will set active to false, and abort signal": "FAIL",
-      "Subscriber interface is not constructible": "FAIL",
-      "Subscriber iterates over a snapshot of its internal observers": "FAIL",
-      "Subscriber must have receiver": "FAIL",
-      "Subscriber next & error must recieve argument": "FAIL",
-      "Subscriber signal is readonly": "FAIL",
-      "Subscriber#complete() cannot re-entrantly invoke itself": "FAIL",
-      "Subscriber#error() cannot re-entrantly invoke itself": "FAIL",
-      "Subscriber#error() value is stored as Subscriber's AbortSignal's reason": "FAIL",
-      "Subscriber#signal is not the same AbortSignal as the one passed into `subscribe()`": "FAIL",
-      "Subscription does not emit values after completion": "FAIL",
-      "Subscription does not emit values after error": "FAIL",
-      "Subscription is inactive after complete()": "FAIL",
-      "Subscription is inactive after error()": "FAIL",
-      "Subscription is inactive when aborted signal is passed in": "FAIL",
-      "Subscription reports errors that are pushed after subscriber is closed by completion": "FAIL",
-      "Teardown runs after last unsubscribe regardless of unsubscription order": "FAIL",
-      "Teardown should be called when subscription is aborted": "FAIL",
-      "Teardowns are called in downstream->upstream order on consumer-initiated unsubscription with pre-aborted Signal": "FAIL",
-      "Teardowns are called in upstream->downstream order on consumer-initiated unsubscription": "FAIL",
-      "Teardowns should be called synchronously during addTeardown() if the subscription is inactive": "FAIL",
-      "Teardowns should be called when subscription is closed by completion": "FAIL",
-      "Teardowns should be called when subscription is closed by subscriber pushing an error": "FAIL",
-      "Teardowns should be called when subscription is closed by subscriber throwing error": "FAIL",
-      "Unsubscription lifecycle": "FAIL",
-      "subscribe() can be called with no arguments": "FAIL"
-    }
+    "total": 44
   },
   "dom/observable/tentative/observable-constructor.any.js#dedicatedworker": {
-    "total": 44,
-    "failures": {
-      "Aborting a subscription should stop emitting values": "FAIL",
-      "Calling subscribe should never throw an error synchronously, initializer throws error": "FAIL",
-      "Calling subscribe should never throw an error synchronously, subscriber pushes error": "FAIL",
-      "Completing or nexting a subscriber after an error does nothing": "FAIL",
-      "Errors pushed by initializer function after subscriber is closed by error are reported": "FAIL",
-      "Errors pushed to the subscriber that are not handled by the subscription are reported to the global": "FAIL",
-      "Errors thrown by initializer function after subscriber is closed by completion are reported": "FAIL",
-      "Errors thrown by initializer function after subscriber is closed by error are reported": "FAIL",
-      "Errors thrown in the initializer that are not handled by the subscription are reported to the global": "FAIL",
-      "Multiple subscriptions share the same producer and teardown runs only after last subscription abort": "FAIL",
-      "New subscription after complete creates new producer": "FAIL",
-      "Observable constructor": "FAIL",
-      "Observable constructor calls initializer on subscribe": "FAIL",
-      "Observable error path called synchronously": "FAIL",
-      "Observable should error if initializer throws": "FAIL",
-      "Producer-initiated unsubscription in a downstream Observable fires abort events before each teardown, in downstream->upstream order": "FAIL",
-      "Subscribe with just a function as the next handler": "FAIL",
-      "Subscriber active is readonly": "FAIL",
-      "Subscriber complete() will set active to false, and abort signal": "FAIL",
-      "Subscriber interface is not constructible": "FAIL",
-      "Subscriber iterates over a snapshot of its internal observers": "FAIL",
-      "Subscriber must have receiver": "FAIL",
-      "Subscriber next & error must recieve argument": "FAIL",
-      "Subscriber signal is readonly": "FAIL",
-      "Subscriber#complete() cannot re-entrantly invoke itself": "FAIL",
-      "Subscriber#error() cannot re-entrantly invoke itself": "FAIL",
-      "Subscriber#error() value is stored as Subscriber's AbortSignal's reason": "FAIL",
-      "Subscriber#signal is not the same AbortSignal as the one passed into `subscribe()`": "FAIL",
-      "Subscription does not emit values after completion": "FAIL",
-      "Subscription does not emit values after error": "FAIL",
-      "Subscription is inactive after complete()": "FAIL",
-      "Subscription is inactive after error()": "FAIL",
-      "Subscription is inactive when aborted signal is passed in": "FAIL",
-      "Subscription reports errors that are pushed after subscriber is closed by completion": "FAIL",
-      "Teardown runs after last unsubscribe regardless of unsubscription order": "FAIL",
-      "Teardown should be called when subscription is aborted": "FAIL",
-      "Teardowns are called in downstream->upstream order on consumer-initiated unsubscription with pre-aborted Signal": "FAIL",
-      "Teardowns are called in upstream->downstream order on consumer-initiated unsubscription": "FAIL",
-      "Teardowns should be called synchronously during addTeardown() if the subscription is inactive": "FAIL",
-      "Teardowns should be called when subscription is closed by completion": "FAIL",
-      "Teardowns should be called when subscription is closed by subscriber pushing an error": "FAIL",
-      "Teardowns should be called when subscription is closed by subscriber throwing error": "FAIL",
-      "Unsubscription lifecycle": "FAIL",
-      "subscribe() can be called with no arguments": "FAIL"
-    }
+    "total": 44
   },
   "dom/observable/tentative/observable-constructor.window.js": {
-    "total": 4,
-    "failures": {
-      "Cannot subscribe to an Observable in a detached document": "FAIL",
-      "No observer handlers can be invoked in detached document": "FAIL",
-      "Observable from EventTarget does not get notified for events in detached documents": "FAIL",
-      "Subscriber.error() does not \"report the exception\" even when an `error()` handler is not present, when it is invoked in a detached document": "FAIL"
-    }
+    "total": 4
   },
   "dom/observable/tentative/observable-drop.any.js": {
-    "total": 7,
-    "failures": {
-      "drop(): A drop amount of 0 simply mirrors the source Observable": "FAIL",
-      "drop(): Observable passes through completions from source observable even before drop count is met": "FAIL",
-      "drop(): Observable passes through errors from source Observable": "FAIL",
-      "drop(): Observable passes through errors from source observable even before drop count is met": "FAIL",
-      "drop(): Observable should skip the first n values from the source observable, then pass through the rest of the values and completion": "FAIL",
-      "drop(): Passing negative value wraps to maximum value ": "FAIL",
-      "drop(): Unsubscribing from the Observable returned by drop() also unsubscribes from the source Observable": "FAIL"
-    }
+    "total": 7
   },
   "dom/observable/tentative/observable-drop.any.js#dedicatedworker": {
-    "total": 7,
-    "failures": {
-      "drop(): A drop amount of 0 simply mirrors the source Observable": "FAIL",
-      "drop(): Observable passes through completions from source observable even before drop count is met": "FAIL",
-      "drop(): Observable passes through errors from source Observable": "FAIL",
-      "drop(): Observable passes through errors from source observable even before drop count is met": "FAIL",
-      "drop(): Observable should skip the first n values from the source observable, then pass through the rest of the values and completion": "FAIL",
-      "drop(): Passing negative value wraps to maximum value ": "FAIL",
-      "drop(): Unsubscribing from the Observable returned by drop() also unsubscribes from the source Observable": "FAIL"
-    }
+    "total": 7
   },
   "dom/observable/tentative/observable-event-target.any.js": {
-    "total": 3,
-    "failures": {
-      "Aborting the subscription should stop the emission of events": "FAIL",
-      "EventTarget Observables can multicast subscriptions for event handling": "FAIL",
-      "EventTarget.when() returns an Observable": "FAIL"
-    }
+    "total": 3
   },
   "dom/observable/tentative/observable-event-target.any.js#dedicatedworker": {
-    "total": 3,
-    "failures": {
-      "Aborting the subscription should stop the emission of events": "FAIL",
-      "EventTarget Observables can multicast subscriptions for event handling": "FAIL",
-      "EventTarget.when() returns an Observable": "FAIL"
-    }
+    "total": 3
   },
   "dom/observable/tentative/observable-event-target.window.js": {
-    "total": 2,
-    "failures": {
-      "EventTarget Observables can be 'passive'": "FAIL",
-      "EventTarget Observables can listen for events in the capturing or bubbling phase": "FAIL"
-    }
+    "total": 2
   },
   "dom/observable/tentative/observable-every.any.js": {
-    "total": 10,
-    "failures": {
-      "every(): Abort the subscription to the source if the predicate does not pass": "FAIL",
-      "every(): Index is passed into the predicate": "FAIL",
-      "every(): Lifecycle checks when all values pass the predicate": "FAIL",
-      "every(): Lifecycle checks when any value fails the predicate": "FAIL",
-      "every(): Promise resolves to false if any value fails the predicate": "FAIL",
-      "every(): Promise resolves to true if all values pass the predicate": "FAIL",
-      "every(): Rejects with a DOMException if the source Observable is aborted": "FAIL",
-      "every(): Rejects with any error emitted from the source observable": "FAIL",
-      "every(): Rejects with any error thrown from the predicate": "FAIL",
-      "every(): Resolves with true if the observable completes without emitting a value": "FAIL"
-    }
+    "total": 10
   },
   "dom/observable/tentative/observable-every.any.js#dedicatedworker": {
-    "total": 10,
-    "failures": {
-      "every(): Abort the subscription to the source if the predicate does not pass": "FAIL",
-      "every(): Index is passed into the predicate": "FAIL",
-      "every(): Lifecycle checks when all values pass the predicate": "FAIL",
-      "every(): Lifecycle checks when any value fails the predicate": "FAIL",
-      "every(): Promise resolves to false if any value fails the predicate": "FAIL",
-      "every(): Promise resolves to true if all values pass the predicate": "FAIL",
-      "every(): Rejects with a DOMException if the source Observable is aborted": "FAIL",
-      "every(): Rejects with any error emitted from the source observable": "FAIL",
-      "every(): Rejects with any error thrown from the predicate": "FAIL",
-      "every(): Resolves with true if the observable completes without emitting a value": "FAIL"
-    }
+    "total": 10
   },
   "dom/observable/tentative/observable-filter.any.js": {
-    "total": 6,
-    "failures": {
-      "filter(): Errors thrown in filter predicate are emitted to Observer error() handler": "FAIL",
-      "filter(): Index is passed correctly to predicate": "FAIL",
-      "filter(): Passes complete() through from source Observable": "FAIL",
-      "filter(): Passes error() through from source Observable": "FAIL",
-      "filter(): Returned Observable filters out results based on predicate": "FAIL",
-      "filter(): Upon source completion, source Observable teardown sequence happens after downstream filter complete() is called": "FAIL"
-    }
+    "total": 6
   },
   "dom/observable/tentative/observable-filter.any.js#dedicatedworker": {
-    "total": 6,
-    "failures": {
-      "filter(): Errors thrown in filter predicate are emitted to Observer error() handler": "FAIL",
-      "filter(): Index is passed correctly to predicate": "FAIL",
-      "filter(): Passes complete() through from source Observable": "FAIL",
-      "filter(): Passes error() through from source Observable": "FAIL",
-      "filter(): Returned Observable filters out results based on predicate": "FAIL",
-      "filter(): Upon source completion, source Observable teardown sequence happens after downstream filter complete() is called": "FAIL"
-    }
+    "total": 6
   },
   "dom/observable/tentative/observable-finally.any.js": {
-    "total": 10,
-    "failures": {
-      "finally(): Callback handler fires BEFORE the source observable completes": "FAIL",
-      "finally(): Callback handler fires BEFORE the source observable errors": "FAIL",
-      "finally(): Callback is run before next inner subscription in flatMap()": "FAIL",
-      "finally(): Callback is run before next inner subscription in switchMap()": "FAIL",
-      "finally(): Callback is run if consumer aborts the subscription": "FAIL",
-      "finally(): Errors thrown in the finally handler (during Subscriber#complete()) are reported to the global immediately": "FAIL",
-      "finally(): Errors thrown in the finally handler (during Subscriber#error()) are reported to the global immediately": "FAIL",
-      "finally(): Handlers run in composition order": "FAIL",
-      "finally(): Mirrors all values and completions from source": "FAIL",
-      "finally(): Mirrors all values and errors from the source": "FAIL"
-    }
+    "total": 10
   },
   "dom/observable/tentative/observable-finally.any.js#dedicatedworker": {
-    "total": 10,
-    "failures": {
-      "finally(): Callback handler fires BEFORE the source observable completes": "FAIL",
-      "finally(): Callback handler fires BEFORE the source observable errors": "FAIL",
-      "finally(): Callback is run before next inner subscription in flatMap()": "FAIL",
-      "finally(): Callback is run before next inner subscription in switchMap()": "FAIL",
-      "finally(): Callback is run if consumer aborts the subscription": "FAIL",
-      "finally(): Errors thrown in the finally handler (during Subscriber#complete()) are reported to the global immediately": "FAIL",
-      "finally(): Errors thrown in the finally handler (during Subscriber#error()) are reported to the global immediately": "FAIL",
-      "finally(): Handlers run in composition order": "FAIL",
-      "finally(): Mirrors all values and completions from source": "FAIL",
-      "finally(): Mirrors all values and errors from the source": "FAIL"
-    }
+    "total": 10
   },
   "dom/observable/tentative/observable-find.any.js": {
-    "total": 6,
-    "failures": {
-      "find(): Passes the index of the value to the predicate": "FAIL",
-      "find(): Promise rejects with any error thrown from the predicate": "FAIL",
-      "find(): Promise rejects with the error emitted from the source Observable": "FAIL",
-      "find(): Promise resolves with the first value that passes the predicate": "FAIL",
-      "find(): Promise resolves with undefined if no value passes the predicate": "FAIL",
-      "find(): Rejects with AbortError when the signal is aborted": "FAIL"
-    }
+    "total": 6
   },
   "dom/observable/tentative/observable-find.any.js#dedicatedworker": {
-    "total": 6,
-    "failures": {
-      "find(): Passes the index of the value to the predicate": "FAIL",
-      "find(): Promise rejects with any error thrown from the predicate": "FAIL",
-      "find(): Promise rejects with the error emitted from the source Observable": "FAIL",
-      "find(): Promise resolves with the first value that passes the predicate": "FAIL",
-      "find(): Promise resolves with undefined if no value passes the predicate": "FAIL",
-      "find(): Rejects with AbortError when the signal is aborted": "FAIL"
-    }
+    "total": 6
   },
   "dom/observable/tentative/observable-first.any.js": {
-    "total": 5,
-    "failures": {
-      "first(): Aborting a signal rejects the Promise with an AbortError DOMException": "FAIL",
-      "first(): Lifecycle": "FAIL",
-      "first(): Promise rejects with RangeError when source Observable completes without emitting any values": "FAIL",
-      "first(): Promise rejects with the error emitted from the source Observable": "FAIL",
-      "first(): Promise resolves with the first value from the source Observable": "FAIL"
-    }
+    "total": 5
   },
   "dom/observable/tentative/observable-first.any.js#dedicatedworker": {
-    "total": 5,
-    "failures": {
-      "first(): Aborting a signal rejects the Promise with an AbortError DOMException": "FAIL",
-      "first(): Lifecycle": "FAIL",
-      "first(): Promise rejects with RangeError when source Observable completes without emitting any values": "FAIL",
-      "first(): Promise rejects with the error emitted from the source Observable": "FAIL",
-      "first(): Promise resolves with the first value from the source Observable": "FAIL"
-    }
+    "total": 5
   },
   "dom/observable/tentative/observable-flatMap.any.js": {
-    "total": 7,
-    "failures": {
-      "flatMap(): Flattens simple source Observable properly": "FAIL",
-      "flatMap(): Outer Subscription synchronously becomes inactive when an 'inner' Observable emits an error": "FAIL",
-      "flatMap(): Outer Subscription synchronously becomes inactive when an 'inner' Observable throws an error": "FAIL",
-      "flatMap(): Returned Observable passes through source Observable errors": "FAIL",
-      "flatMap(): result Observable does not complete after source Observable completes while there are still queued inner Observables to process Observables all complete": "FAIL",
-      "flatMap(): result Observable does not complete until source and inner Observables all complete": "FAIL",
-      "flatMap(): source and inner active Observables are both unsubscribed from once the outer subscription signal is aborted": "FAIL"
-    }
+    "total": 7
   },
   "dom/observable/tentative/observable-flatMap.any.js#dedicatedworker": {
-    "total": 7,
-    "failures": {
-      "flatMap(): Flattens simple source Observable properly": "FAIL",
-      "flatMap(): Outer Subscription synchronously becomes inactive when an 'inner' Observable emits an error": "FAIL",
-      "flatMap(): Outer Subscription synchronously becomes inactive when an 'inner' Observable throws an error": "FAIL",
-      "flatMap(): Returned Observable passes through source Observable errors": "FAIL",
-      "flatMap(): result Observable does not complete after source Observable completes while there are still queued inner Observables to process Observables all complete": "FAIL",
-      "flatMap(): result Observable does not complete until source and inner Observables all complete": "FAIL",
-      "flatMap(): source and inner active Observables are both unsubscribed from once the outer subscription signal is aborted": "FAIL"
-    }
+    "total": 7
   },
   "dom/observable/tentative/observable-forEach.any.js": {
-    "total": 6,
-    "failures": {
-      "Errors pushed by Observable reject the returned promise": "FAIL",
-      "Errors thrown by Observable reject the returned promise": "FAIL",
-      "Errors thrown in the visitor callback reject the promise and unsubscribe from the source": "FAIL",
-      "forEach visitor callback rejection microtask ordering": "FAIL",
-      "forEach() promise resolves with undefined": "FAIL",
-      "forEach(): Visitor callback called synchronously for each value": "FAIL"
-    }
+    "total": 6
   },
   "dom/observable/tentative/observable-forEach.any.js#dedicatedworker": {
-    "total": 6,
-    "failures": {
-      "Errors pushed by Observable reject the returned promise": "FAIL",
-      "Errors thrown by Observable reject the returned promise": "FAIL",
-      "Errors thrown in the visitor callback reject the promise and unsubscribe from the source": "FAIL",
-      "forEach visitor callback rejection microtask ordering": "FAIL",
-      "forEach() promise resolves with undefined": "FAIL",
-      "forEach(): Visitor callback called synchronously for each value": "FAIL"
-    }
+    "total": 6
   },
   "dom/observable/tentative/observable-forEach.window.js": {
-    "total": 2,
-    "failures": {
-      "forEach()'s internal observer's next steps do not crash in a detached document": "FAIL",
-      "forEach()'s internal observer's next steps do not crash when visitor callback detaches the document": "FAIL"
-    }
+    "total": 2
   },
   "dom/observable/tentative/observable-from.any.js": {
-    "total": 48,
-    "failures": {
-      "Invalid async iterator protocol error is surfaced before Subscriber#signal is consulted": "FAIL",
-      "Invalid iterator protocol error is surfaced before Subscriber#signal is consulted": "FAIL",
-      "No error is reported when aborting a subscription to a sync iterator that has no `return()` implementation": "FAIL",
-      "from(): Abort after complete does NOT call IteratorRecord#return()": "FAIL",
-      "from(): Aborting an async iterable subscription stops subsequent next() calls, but old next() Promise reactions are web-observable": "FAIL",
-      "from(): Aborting async iterable midway through iteration both stops iteration and invokes `IteratorRecord#return()": "FAIL",
-      "from(): Aborting sync iterable midway through iteration both stops iteration and invokes `IteratorRecord#return()": "FAIL",
-      "from(): Async generator finally block run when Observable errors": "FAIL",
-      "from(): Async generator finally block run when subscription is aborted": "FAIL",
-      "from(): Async generator finally block runs when Observable completes": "FAIL",
-      "from(): Async iterable protocol null, converts as iterator": "FAIL",
-      "from(): Async iterable: `Iterator#return()` must return an Object, or a Promise rejects asynchronously": "FAIL",
-      "from(): Async iterable: error thrown from IteratorRecord#return() is wrapped in rejected Promise": "FAIL",
-      "from(): Asynchronous generator conversion: can only be used once": "FAIL",
-      "from(): Asynchronous iterable conversion": "FAIL",
-      "from(): Asynchronous iterable conversion, with synchronous iterable fallback": "FAIL",
-      "from(): Asynchronous iterable multiple in-flight subscriptions": "FAIL",
-      "from(): Converts Promise to Observable": "FAIL",
-      "from(): Converts rejected Promise to Observable. No `unhandledrejection` event when error is handled by subscription": "FAIL",
-      "from(): Errors thrown in Symbol.asyncIterator() are propagated synchronously": "FAIL",
-      "from(): Errors thrown in async iterator's next() GETTER are propagated in a microtask": "FAIL",
-      "from(): Errors thrown in async iterator's next() are propagated in a microtask": "FAIL",
-      "from(): Failed conversions": "FAIL",
-      "from(): Generator finally block run when Observable completes": "FAIL",
-      "from(): Generator finally block run when Observable errors": "FAIL",
-      "from(): Generator finally block runs when subscription is aborted": "FAIL",
-      "from(): Given an array": "FAIL",
-      "from(): Given an observable, it returns that exact observable": "FAIL",
-      "from(): Iterable converts to Observable": "FAIL",
-      "from(): Observable that implements @@iterator protocol gets converted as an Observable, not iterator": "FAIL",
-      "from(): Observable.from() is a function": "FAIL",
-      "from(): Promise that implements @@iterator protocol gets converted as an iterable, not Promise": "FAIL",
-      "from(): Promise whose [Symbol.iterator] returns null converts as Promise": "FAIL",
-      "from(): Promise-wrapping semantics of IteratorResult interface": "FAIL",
-      "from(): Rejections not handled by subscription are reported to the global, and still not sent as an unhandledrejection event": "FAIL",
-      "from(): Rethrows the error when Converting an object whose @@iterator method *getter* throws an error": "FAIL",
-      "from(): Subscribing to an iterable Observable with an aborted signal does not call next()": "FAIL",
-      "from(): Sync iterable multiple in-flight subscriptions": "FAIL",
-      "from(): Sync iterable: `Iterator#return()` must return an Object, or an error is thrown": "FAIL",
-      "from(): Sync iterable: error thrown from IteratorRecord#return() can be synchronously caught": "FAIL",
-      "from(): When iterable conversion aborts the subscription, next() is never called": "FAIL",
-      "from(): [Symbol.iterator] is not cached": "FAIL",
-      "from(): [Symbol.iterator] next() throws error": "FAIL",
-      "from(): [Symbol.iterator] not callable": "FAIL",
-      "from(): [Symbol.iterator] not callable AFTER SUBSCRIBE throws": "FAIL",
-      "from(): [Symbol.iterator] returns null AFTER SUBSCRIBE throws": "FAIL",
-      "from(): [Symbol.iterator] side-effects (many observables)": "FAIL",
-      "from(): [Symbol.iterator] side-effects (one observable)": "FAIL"
-    }
+    "total": 48
   },
   "dom/observable/tentative/observable-from.any.js#dedicatedworker": {
-    "total": 48,
-    "failures": {
-      "Invalid async iterator protocol error is surfaced before Subscriber#signal is consulted": "FAIL",
-      "Invalid iterator protocol error is surfaced before Subscriber#signal is consulted": "FAIL",
-      "No error is reported when aborting a subscription to a sync iterator that has no `return()` implementation": "FAIL",
-      "from(): Abort after complete does NOT call IteratorRecord#return()": "FAIL",
-      "from(): Aborting an async iterable subscription stops subsequent next() calls, but old next() Promise reactions are web-observable": "FAIL",
-      "from(): Aborting async iterable midway through iteration both stops iteration and invokes `IteratorRecord#return()": "FAIL",
-      "from(): Aborting sync iterable midway through iteration both stops iteration and invokes `IteratorRecord#return()": "FAIL",
-      "from(): Async generator finally block run when Observable errors": "FAIL",
-      "from(): Async generator finally block run when subscription is aborted": "FAIL",
-      "from(): Async generator finally block runs when Observable completes": "FAIL",
-      "from(): Async iterable protocol null, converts as iterator": "FAIL",
-      "from(): Async iterable: `Iterator#return()` must return an Object, or a Promise rejects asynchronously": "FAIL",
-      "from(): Async iterable: error thrown from IteratorRecord#return() is wrapped in rejected Promise": "FAIL",
-      "from(): Asynchronous generator conversion: can only be used once": "FAIL",
-      "from(): Asynchronous iterable conversion": "FAIL",
-      "from(): Asynchronous iterable conversion, with synchronous iterable fallback": "FAIL",
-      "from(): Asynchronous iterable multiple in-flight subscriptions": "FAIL",
-      "from(): Converts Promise to Observable": "FAIL",
-      "from(): Converts rejected Promise to Observable. No `unhandledrejection` event when error is handled by subscription": "FAIL",
-      "from(): Errors thrown in Symbol.asyncIterator() are propagated synchronously": "FAIL",
-      "from(): Errors thrown in async iterator's next() GETTER are propagated in a microtask": "FAIL",
-      "from(): Errors thrown in async iterator's next() are propagated in a microtask": "FAIL",
-      "from(): Failed conversions": "FAIL",
-      "from(): Generator finally block run when Observable completes": "FAIL",
-      "from(): Generator finally block run when Observable errors": "FAIL",
-      "from(): Generator finally block runs when subscription is aborted": "FAIL",
-      "from(): Given an array": "FAIL",
-      "from(): Given an observable, it returns that exact observable": "FAIL",
-      "from(): Iterable converts to Observable": "FAIL",
-      "from(): Observable that implements @@iterator protocol gets converted as an Observable, not iterator": "FAIL",
-      "from(): Observable.from() is a function": "FAIL",
-      "from(): Promise that implements @@iterator protocol gets converted as an iterable, not Promise": "FAIL",
-      "from(): Promise whose [Symbol.iterator] returns null converts as Promise": "FAIL",
-      "from(): Promise-wrapping semantics of IteratorResult interface": "FAIL",
-      "from(): Rejections not handled by subscription are reported to the global, and still not sent as an unhandledrejection event": "FAIL",
-      "from(): Rethrows the error when Converting an object whose @@iterator method *getter* throws an error": "FAIL",
-      "from(): Subscribing to an iterable Observable with an aborted signal does not call next()": "FAIL",
-      "from(): Sync iterable multiple in-flight subscriptions": "FAIL",
-      "from(): Sync iterable: `Iterator#return()` must return an Object, or an error is thrown": "FAIL",
-      "from(): Sync iterable: error thrown from IteratorRecord#return() can be synchronously caught": "FAIL",
-      "from(): When iterable conversion aborts the subscription, next() is never called": "FAIL",
-      "from(): [Symbol.iterator] is not cached": "FAIL",
-      "from(): [Symbol.iterator] next() throws error": "FAIL",
-      "from(): [Symbol.iterator] not callable": "FAIL",
-      "from(): [Symbol.iterator] not callable AFTER SUBSCRIBE throws": "FAIL",
-      "from(): [Symbol.iterator] returns null AFTER SUBSCRIBE throws": "FAIL",
-      "from(): [Symbol.iterator] side-effects (many observables)": "FAIL",
-      "from(): [Symbol.iterator] side-effects (one observable)": "FAIL"
-    }
+    "total": 48
   },
   "dom/observable/tentative/observable-inspect.any.js": {
-    "total": 13,
-    "failures": {
-      "inspect(): Error handler does not stop error from being reported to the global, when subscriber does not pass error handler": "FAIL",
-      "inspect(): Errors thrown from inspect()'s abort() handler are caught and reported to the global, because the subscription is already closed by the time the handler runs": "FAIL",
-      "inspect(): Errors thrown in subscribe() Inspector handler subscribe handler are caught and sent to error callback": "FAIL",
-      "inspect(): Inspector abort() handler is not called if the source completes before the result is unsubscribed from": "FAIL",
-      "inspect(): ObserverCallback passed in": "FAIL",
-      "inspect(): Provides a pre-subscription subscribe callback": "FAIL",
-      "inspect(): Provides a way to tap into the moment a source observable is unsubscribed from": "FAIL",
-      "inspect(): Provides a way to tap into the values and completions of the source observable using an observer": "FAIL",
-      "inspect(): Provides a way to tap into the values and errors of the source observable using an observer. Errors are passed through": "FAIL",
-      "inspect(): Throwing an error in the next handler function in do should be caught and sent to the error callback of the result observable": "FAIL",
-      "inspect(): Throwing an error in the observer complete handler is caught and sent to the error callback of the result observable": "FAIL",
-      "inspect(): Throwing an error in the observer error handler in inspect() is caught and sent to the error callback of the result observable": "FAIL",
-      "inspect(): Throwing an error in the observer next handler is caught and sent to the error callback of the result observable": "FAIL"
-    }
+    "total": 13
   },
   "dom/observable/tentative/observable-inspect.any.js#dedicatedworker": {
-    "total": 13,
-    "failures": {
-      "inspect(): Error handler does not stop error from being reported to the global, when subscriber does not pass error handler": "FAIL",
-      "inspect(): Errors thrown from inspect()'s abort() handler are caught and reported to the global, because the subscription is already closed by the time the handler runs": "FAIL",
-      "inspect(): Errors thrown in subscribe() Inspector handler subscribe handler are caught and sent to error callback": "FAIL",
-      "inspect(): Inspector abort() handler is not called if the source completes before the result is unsubscribed from": "FAIL",
-      "inspect(): ObserverCallback passed in": "FAIL",
-      "inspect(): Provides a pre-subscription subscribe callback": "FAIL",
-      "inspect(): Provides a way to tap into the moment a source observable is unsubscribed from": "FAIL",
-      "inspect(): Provides a way to tap into the values and completions of the source observable using an observer": "FAIL",
-      "inspect(): Provides a way to tap into the values and errors of the source observable using an observer. Errors are passed through": "FAIL",
-      "inspect(): Throwing an error in the next handler function in do should be caught and sent to the error callback of the result observable": "FAIL",
-      "inspect(): Throwing an error in the observer complete handler is caught and sent to the error callback of the result observable": "FAIL",
-      "inspect(): Throwing an error in the observer error handler in inspect() is caught and sent to the error callback of the result observable": "FAIL",
-      "inspect(): Throwing an error in the observer next handler is caught and sent to the error callback of the result observable": "FAIL"
-    }
+    "total": 13
   },
   "dom/observable/tentative/observable-last.any.js": {
-    "total": 5,
-    "failures": {
-      "last(): Aborting a signal rejects the Promise with an AbortError DOMException": "FAIL",
-      "last(): Lifecycle": "FAIL",
-      "last(): Promise rejects with RangeError when source Observable completes without emitting any values": "FAIL",
-      "last(): Promise rejects with emitted error": "FAIL",
-      "last(): Promise resolves to last value": "FAIL"
-    }
+    "total": 5
   },
   "dom/observable/tentative/observable-last.any.js#dedicatedworker": {
-    "total": 5,
-    "failures": {
-      "last(): Aborting a signal rejects the Promise with an AbortError DOMException": "FAIL",
-      "last(): Lifecycle": "FAIL",
-      "last(): Promise rejects with RangeError when source Observable completes without emitting any values": "FAIL",
-      "last(): Promise rejects with emitted error": "FAIL",
-      "last(): Promise resolves to last value": "FAIL"
-    }
+    "total": 5
   },
   "dom/observable/tentative/observable-map.any.js": {
-    "total": 6,
-    "failures": {
-      "map(): Map observable unsubscription causes source Observable unsubscription. Mapper Observer's complete()/error() are not called": "FAIL",
-      "map(): Mapper errors are emitted to Observer error() handler": "FAIL",
-      "map(): Maps values correctly": "FAIL",
-      "map(): Passes complete() through from source Observable": "FAIL",
-      "map(): Passes error() through from source Observable": "FAIL",
-      "map(): Upon source completion, source Observable teardown sequence happens before downstream mapper complete() is called": "FAIL"
-    }
+    "total": 6
   },
   "dom/observable/tentative/observable-map.any.js#dedicatedworker": {
-    "total": 6,
-    "failures": {
-      "map(): Map observable unsubscription causes source Observable unsubscription. Mapper Observer's complete()/error() are not called": "FAIL",
-      "map(): Mapper errors are emitted to Observer error() handler": "FAIL",
-      "map(): Maps values correctly": "FAIL",
-      "map(): Passes complete() through from source Observable": "FAIL",
-      "map(): Passes error() through from source Observable": "FAIL",
-      "map(): Upon source completion, source Observable teardown sequence happens before downstream mapper complete() is called": "FAIL"
-    }
+    "total": 6
   },
   "dom/observable/tentative/observable-map.window.js": {
-    "total": 1,
-    "failures": {
-      "map()'s internal observer's next steps do not crash in a detached document": "FAIL"
-    }
+    "total": 1
   },
   "dom/observable/tentative/observable-reduce.any.js": {
-    "total": 8,
-    "failures": {
-      "reduce(): Errors thrown in reducer reject the promise and abort the source": "FAIL",
-      "reduce(): Reduces the values for different objects": "FAIL",
-      "reduce(): Reduces the values of the Observable, starting with the initial seed value": "FAIL",
-      "reduce(): Reject with an AbortError if the subscription is aborted before the source completes": "FAIL",
-      "reduce(): Rejects if the source observable emits an error": "FAIL",
-      "reduce(): Seeds with the first value of the source, if no initial value is provided": "FAIL",
-      "reduce(): When source is empty, AND no seed value is provided, the promise rejects with a TypeError": "FAIL",
-      "reduce(): When source is empty, promise resolves with initial value": "FAIL"
-    }
+    "total": 8
   },
   "dom/observable/tentative/observable-reduce.any.js#dedicatedworker": {
-    "total": 8,
-    "failures": {
-      "reduce(): Errors thrown in reducer reject the promise and abort the source": "FAIL",
-      "reduce(): Reduces the values for different objects": "FAIL",
-      "reduce(): Reduces the values of the Observable, starting with the initial seed value": "FAIL",
-      "reduce(): Reject with an AbortError if the subscription is aborted before the source completes": "FAIL",
-      "reduce(): Rejects if the source observable emits an error": "FAIL",
-      "reduce(): Seeds with the first value of the source, if no initial value is provided": "FAIL",
-      "reduce(): When source is empty, AND no seed value is provided, the promise rejects with a TypeError": "FAIL",
-      "reduce(): When source is empty, promise resolves with initial value": "FAIL"
-    }
+    "total": 8
   },
   "dom/observable/tentative/observable-some.any.js": {
-    "total": 7,
-    "failures": {
-      "observable-some": "FAIL",
-      "observable-some 1": "FAIL",
-      "some(): The return promise rejects with a DOMException if the signal is aborted": "FAIL",
-      "some(): The returned promise rejects with an error if the predicate errors": "FAIL",
-      "some(): The returned promise rejects with an error if the source observable errors": "FAIL",
-      "some(): The returned promise resolves as false if the source observable completes without emitting a value": "FAIL",
-      "some(): subscriber is inactive after the first value that passes the predicate, because the source was unsubscribed from": "FAIL"
-    }
+    "total": 7
   },
   "dom/observable/tentative/observable-some.any.js#dedicatedworker": {
-    "total": 7,
-    "failures": {
-      "observable-some": "FAIL",
-      "observable-some 1": "FAIL",
-      "some(): The return promise rejects with a DOMException if the signal is aborted": "FAIL",
-      "some(): The returned promise rejects with an error if the predicate errors": "FAIL",
-      "some(): The returned promise rejects with an error if the source observable errors": "FAIL",
-      "some(): The returned promise resolves as false if the source observable completes without emitting a value": "FAIL",
-      "some(): subscriber is inactive after the first value that passes the predicate, because the source was unsubscribed from": "FAIL"
-    }
+    "total": 7
   },
   "dom/observable/tentative/observable-switchMap.any.js": {
-    "total": 6,
-    "failures": {
-      "switchMap(): result does not complete when the source observable completes, if the inner observable is still active": "FAIL",
-      "switchMap(): result emits an error if Mapper callback throws an error": "FAIL",
-      "switchMap(): result emits an error if the inner observable emits an error": "FAIL",
-      "switchMap(): result emits an error if the source observable emits an error": "FAIL",
-      "switchMap(): result subscribes to one inner observable at a time, unsubscribing from the previous active one when a new one replaces it": "FAIL",
-      "switchMap(): should unsubscribe in the correct order when user aborts the subscription": "FAIL"
-    }
+    "total": 6
   },
   "dom/observable/tentative/observable-switchMap.any.js#dedicatedworker": {
-    "total": 6,
-    "failures": {
-      "switchMap(): result does not complete when the source observable completes, if the inner observable is still active": "FAIL",
-      "switchMap(): result emits an error if Mapper callback throws an error": "FAIL",
-      "switchMap(): result emits an error if the inner observable emits an error": "FAIL",
-      "switchMap(): result emits an error if the source observable emits an error": "FAIL",
-      "switchMap(): result subscribes to one inner observable at a time, unsubscribing from the previous active one when a new one replaces it": "FAIL",
-      "switchMap(): should unsubscribe in the correct order when user aborts the subscription": "FAIL"
-    }
+    "total": 6
   },
   "dom/observable/tentative/observable-take.any.js": {
-    "total": 6,
-    "failures": {
-      "take(): Forwards complete()s that happen before the take count is met, and unsubscribes from source Observable": "FAIL",
-      "take(): Negative count is treated as maximum value": "FAIL",
-      "take(): No crash when take(1) unsubscribes from its source when next() is called, and the Subscriber iterates over the rest of the Observables": "FAIL",
-      "take(): Should forward errors from the source observable": "FAIL",
-      "take(): Takes the first N values from the source observable, then completes": "FAIL",
-      "take(): take(0) should not subscribe to the source observable, and should return an observable that immediately completes": "FAIL"
-    }
+    "total": 6
   },
   "dom/observable/tentative/observable-take.any.js#dedicatedworker": {
-    "total": 6,
-    "failures": {
-      "take(): Forwards complete()s that happen before the take count is met, and unsubscribes from source Observable": "FAIL",
-      "take(): Negative count is treated as maximum value": "FAIL",
-      "take(): No crash when take(1) unsubscribes from its source when next() is called, and the Subscriber iterates over the rest of the Observables": "FAIL",
-      "take(): Should forward errors from the source observable": "FAIL",
-      "take(): Takes the first N values from the source observable, then completes": "FAIL",
-      "take(): take(0) should not subscribe to the source observable, and should return an observable that immediately completes": "FAIL"
-    }
+    "total": 6
   },
   "dom/observable/tentative/observable-takeUntil.any.js": {
-    "total": 12,
-    "failures": {
-      "takeUntil subscribes to notifier": "FAIL",
-      "takeUntil subscribes to source Observable and mirrors it uninterrupted": "FAIL",
-      "takeUntil() mirrors the source Observable until its first next() value": "FAIL",
-      "takeUntil()'s AbortSignal unsubscribes from notifier & source observable": "FAIL",
-      "takeUntil: notifier calls `Subscriber#error()` twice; second goes to global error handler": "FAIL",
-      "takeUntil: notifier error() unsubscribes from notifier": "FAIL",
-      "takeUntil: notifier next() unsubscribes from notifier": "FAIL",
-      "takeUntil: notifier next() unsubscribes from notifier & source observable": "FAIL",
-      "takeUntil: notifier throw Error unsubscribes from notifier": "FAIL",
-      "takeUntil: source is uninterrupted when notifier completes, even synchronously": "FAIL",
-      "takeUntil: source never subscribed to when notifier synchronously emits a value": "FAIL",
-      "takeUntil: source never subscribed to when notifier synchronously emits error": "FAIL"
-    }
+    "total": 12
   },
   "dom/observable/tentative/observable-takeUntil.any.js#dedicatedworker": {
-    "total": 12,
-    "failures": {
-      "takeUntil subscribes to notifier": "FAIL",
-      "takeUntil subscribes to source Observable and mirrors it uninterrupted": "FAIL",
-      "takeUntil() mirrors the source Observable until its first next() value": "FAIL",
-      "takeUntil()'s AbortSignal unsubscribes from notifier & source observable": "FAIL",
-      "takeUntil: notifier calls `Subscriber#error()` twice; second goes to global error handler": "FAIL",
-      "takeUntil: notifier error() unsubscribes from notifier": "FAIL",
-      "takeUntil: notifier next() unsubscribes from notifier": "FAIL",
-      "takeUntil: notifier next() unsubscribes from notifier & source observable": "FAIL",
-      "takeUntil: notifier throw Error unsubscribes from notifier": "FAIL",
-      "takeUntil: source is uninterrupted when notifier completes, even synchronously": "FAIL",
-      "takeUntil: source never subscribed to when notifier synchronously emits a value": "FAIL",
-      "takeUntil: source never subscribed to when notifier synchronously emits error": "FAIL"
-    }
+    "total": 12
   },
   "dom/observable/tentative/observable-takeUntil.window.js": {
-    "total": 2,
-    "failures": {
-      "takeUntil(): Source and notifier internal observers do not crash in a detached document": "FAIL",
-      "takeUntil(): notifier Observable detaches document before source Observable would be subscribed to": "FAIL"
-    }
+    "total": 2
   },
   "dom/observable/tentative/observable-toArray.any.js": {
-    "total": 6,
-    "failures": {
-      "Operator Promise abort ordering": "FAIL",
-      "toArray(): Aborting the passed-in signal rejects the returned promise": "FAIL",
-      "toArray(): Subscribing with an aborted signal returns an immediately rejected promise": "FAIL",
-      "toArray(): basic next/complete": "FAIL",
-      "toArray(): complete() resolves promise; subsequent error()s report the exceptions": "FAIL",
-      "toArray(): first error() rejects promise; subsequent error()s report the exceptions": "FAIL"
-    }
+    "total": 6
   },
   "dom/observable/tentative/observable-toArray.any.js#dedicatedworker": {
-    "total": 6,
-    "failures": {
-      "Operator Promise abort ordering": "FAIL",
-      "toArray(): Aborting the passed-in signal rejects the returned promise": "FAIL",
-      "toArray(): Subscribing with an aborted signal returns an immediately rejected promise": "FAIL",
-      "toArray(): basic next/complete": "FAIL",
-      "toArray(): complete() resolves promise; subsequent error()s report the exceptions": "FAIL",
-      "toArray(): first error() rejects promise; subsequent error()s report the exceptions": "FAIL"
-    }
+    "total": 6
   },
   "dom/ranges/Range-adopt-test.html": {
     "total": 4

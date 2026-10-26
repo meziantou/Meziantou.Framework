@@ -19,7 +19,7 @@
 | [`content-encoding.https.html`](https://wpt.fyi/results/navigation-timing/content-encoding.https.html) | Pass | 1 / 1 |  |  |
 | [`dom-interactive-image-document.html`](https://wpt.fyi/results/navigation-timing/dom-interactive-image-document.html) | Pass | 1 / 1 |  |  |
 | [`dom-interactive-media-document.html`](https://wpt.fyi/results/navigation-timing/dom-interactive-media-document.html) | Pass | 1 / 1 |  |  |
-| [`idlharness.window.js`](https://wpt.fyi/results/navigation-timing/idlharness.window.js) | Fail | 147 / 161 | NOT IMPLEMENTED | `PerformanceNavigationTiming.notRestoredReasons` (there is no back/forward cache) and `confidence` (`PerformanceTimingConfidence`) |
+| [`idlharness.window.js`](https://wpt.fyi/results/navigation-timing/idlharness.window.js) | Fail | 147 / 161 | NOT IMPLEMENTED | `PerformanceNavigationTiming.notRestoredReasons` (the `NotRestoredReasons` and `NotRestoredReasonDetails` interfaces) and `confidence` (`PerformanceTimingConfidence`) |
 | [`nav2-test-attributes-exist.html`](https://wpt.fyi/results/navigation-timing/nav2-test-attributes-exist.html) | Pass | 1 / 1 |  |  |
 | [`nav2-test-attributes-values.html`](https://wpt.fyi/results/navigation-timing/nav2-test-attributes-values.html) | Pass | 1 / 1 |  |  |
 | [`nav2-test-document-open.html`](https://wpt.fyi/results/navigation-timing/nav2-test-document-open.html) | Pass | 1 / 1 |  |  |
@@ -43,8 +43,8 @@
 | [`navigation-type-post-backforward.html`](https://wpt.fyi/results/navigation-timing/navigation-type-post-backforward.html) | Pass | 1 / 1 |  |  |
 | [`nested-unload-timing.html`](https://wpt.fyi/results/navigation-timing/nested-unload-timing.html) | Pass | 1 / 1 |  |  |
 | [`po-navigation.html`](https://wpt.fyi/results/navigation-timing/po-navigation.html) | Pass | 1 / 1 |  |  |
-| [`prefetch-transfer-size-executor.html`](https://wpt.fyi/results/navigation-timing/prefetch-transfer-size-executor.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the HTTP cache: a prefetched document is requested again by the navigation, so its `transferSize` is not 0 |
-| [`prefetch-transfer-size-iframe.html`](https://wpt.fyi/results/navigation-timing/prefetch-transfer-size-iframe.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the HTTP cache: a prefetched document is requested again by the navigation, so its `transferSize` is not 0 |
+| [`prefetch-transfer-size-executor.html`](https://wpt.fyi/results/navigation-timing/prefetch-transfer-size-executor.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the navigation timing entry ignores the cache state of the response: the `transferSize` of a document served by the HTTP cache (the prefetched document) is the size of its body plus 300, not 0 |
+| [`prefetch-transfer-size-iframe.html`](https://wpt.fyi/results/navigation-timing/prefetch-transfer-size-iframe.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the navigation timing entry ignores the cache state of the response: the `transferSize` of a document served by the HTTP cache (the prefetched document) is the size of its body plus 300, not 0 |
 | [`redirect-tao.html`](https://wpt.fyi/results/navigation-timing/redirect-tao.html) | Pass | 6 / 6 |  |  |
 | [`response-start-after-coop-bcg-switch.https.html`](https://wpt.fyi/results/navigation-timing/response-start-after-coop-bcg-switch.https.html) | Fail | 0 / 1 | BUG | the test expects a `redirectCount` of 0 for a popup navigated through two redirects of the origin of its opener that have `Timing-Allow-Origin: *`, to a document of another origin whose opener policy switches the browsing context group; the library exposes the redirects as the navigation TAO check passes (the other assertions pass) |
 | [`secure-connection-start-non-zero.https.html`](https://wpt.fyi/results/navigation-timing/secure-connection-start-non-zero.https.html) | Pass | 1 / 1 |  |  |

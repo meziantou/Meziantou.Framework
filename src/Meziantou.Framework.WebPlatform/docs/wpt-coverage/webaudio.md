@@ -6,17 +6,17 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 202 | 298 | 0 | 68% |
+| [Stable](#stable-tests) | 205 | 298 | 0 | 69% |
 | [Tentative](#tentative-tests) | 0 | 5 | 0 | 0% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **202** | **303** | **0** | **67%** |
+| **All** | **205** | **303** | **0** | **68%** |
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
 | [`historical.html`](https://wpt.fyi/results/webaudio/historical.html) | Pass | 7 / 7 |  |  |
-| [`idlharness.https.window.js`](https://wpt.fyi/results/webaudio/idlharness.https.window.js) | Fail | 384 / 1,166 | NOT IMPLEMENTED | uses `AudioContext`, `AudioParamMap`, `AudioPlaybackStats`, `AudioSinkInfo`, `AudioWorkletNode`, `AudioWorklet`, `MediaElementAudioSourceNode`, `MediaStreamAudioDestinationNode`, `MediaStreamAudioSourceNode`, `MediaStreamTrackAudioSourceNode` (not implemented yet) |
+| [`idlharness.https.window.js`](https://wpt.fyi/results/webaudio/idlharness.https.window.js) | Fail | 387 / 1,166 | NOT IMPLEMENTED | the tested objects are created with an `AudioContext` (not implemented yet); `AudioPlaybackStats`, `AudioSinkInfo`, `MediaElementAudioSourceNode`, `MediaStreamAudioDestinationNode`, `MediaStreamAudioSourceNode`, `MediaStreamTrackAudioSourceNode` are not implemented |
 | [`the-audio-api/processing-model/cycle-without-delay.html`](https://wpt.fyi/results/webaudio/the-audio-api/processing-model/cycle-without-delay.html) | Pass | 1 / 1 |  |  |
 | [`the-audio-api/processing-model/delay-time-clamping.html`](https://wpt.fyi/results/webaudio/the-audio-api/processing-model/delay-time-clamping.html) | Pass | 1 / 1 |  |  |
 | [`the-audio-api/processing-model/feedback-delay-time.html`](https://wpt.fyi/results/webaudio/the-audio-api/processing-model/feedback-delay-time.html) | Pass | 1 / 1 |  |  |
@@ -47,7 +47,7 @@
 | [`the-audio-api/the-audiobuffersourcenode-interface/audiobuffersource-grain.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-audiobuffersourcenode-interface/audiobuffersource-grain.html) | Pass | 7 / 7 |  |  |
 | [`the-audio-api/the-audiobuffersourcenode-interface/audiobuffersource-loop-continuous.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-audiobuffersourcenode-interface/audiobuffersource-loop-continuous.html) | Pass | 5 / 5 |  |  |
 | [`the-audio-api/the-audiobuffersourcenode-interface/audiobuffersource-loop-short-duration.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-audiobuffersourcenode-interface/audiobuffersource-loop-short-duration.html) | Pass | 1 / 1 |  |  |
-| [`the-audio-api/the-audiobuffersourcenode-interface/audiobuffersource-multi-channels.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-audiobuffersourcenode-interface/audiobuffersource-multi-channels.html) | Fail | 0 / 1 | NOT IMPLEMENTED | uses `decodeAudioData()` (not implemented yet) |
+| [`the-audio-api/the-audiobuffersourcenode-interface/audiobuffersource-multi-channels.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-audiobuffersourcenode-interface/audiobuffersource-multi-channels.html) | Pass | 1 / 1 |  |  |
 | [`the-audio-api/the-audiobuffersourcenode-interface/audiobuffersource-null.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-audiobuffersourcenode-interface/audiobuffersource-null.html) | Pass | 1 / 1 |  |  |
 | [`the-audio-api/the-audiobuffersourcenode-interface/audiobuffersource-one-sample-loop.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-audiobuffersourcenode-interface/audiobuffersource-one-sample-loop.html) | Pass | 7 / 7 |  |  |
 | [`the-audio-api/the-audiobuffersourcenode-interface/audiobuffersource-output-channel-count.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-audiobuffersourcenode-interface/audiobuffersource-output-channel-count.html) | Pass | 7 / 7 |  |  |
@@ -265,9 +265,9 @@
 | [`the-audio-api/the-mediastreamaudiosourcenode-interface/mediastreamaudiosourcenode-routing.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-mediastreamaudiosourcenode-interface/mediastreamaudiosourcenode-routing.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `AudioContext`, `MediaStreamAudioSourceNode` |
 | [`the-audio-api/the-offlineaudiocontext-interface/ctor-offlineaudiocontext.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-offlineaudiocontext-interface/ctor-offlineaudiocontext.html) | Pass | 45 / 45 |  |  |
 | [`the-audio-api/the-offlineaudiocontext-interface/current-time-block-size.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-offlineaudiocontext-interface/current-time-block-size.html) | Pass | 1 / 1 |  |  |
-| [`the-audio-api/the-offlineaudiocontext-interface/decodeAudioData-oversized-resample.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-offlineaudiocontext-interface/decodeAudioData-oversized-resample.html) | Fail | 0 / 1 | NOT IMPLEMENTED | uses `decodeAudioData()` (not implemented yet) |
+| [`the-audio-api/the-offlineaudiocontext-interface/decodeAudioData-oversized-resample.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-offlineaudiocontext-interface/decodeAudioData-oversized-resample.html) | Pass | 1 / 1 |  |  |
 | [`the-audio-api/the-offlineaudiocontext-interface/offlineaudiocontext-close.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-offlineaudiocontext-interface/offlineaudiocontext-close.html) | Pass | 5 / 5 |  |  |
-| [`the-audio-api/the-offlineaudiocontext-interface/offlineaudiocontext-detached-execution-context.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-offlineaudiocontext-interface/offlineaudiocontext-detached-execution-context.html) | Fail | 4 / 5 | NOT IMPLEMENTED | uses `decodeAudioData()` (not implemented yet) |
+| [`the-audio-api/the-offlineaudiocontext-interface/offlineaudiocontext-detached-execution-context.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-offlineaudiocontext-interface/offlineaudiocontext-detached-execution-context.html) | Pass | 7 / 7 |  |  |
 | [`the-audio-api/the-offlineaudiocontext-interface/offlineaudiocontext-incremental-rendering-data-integrity.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-offlineaudiocontext-interface/offlineaudiocontext-incremental-rendering-data-integrity.html) | Pass | 1 / 1 |  |  |
 | [`the-audio-api/the-offlineaudiocontext-interface/offlineaudiocontext-incremental-rendering.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-offlineaudiocontext-interface/offlineaudiocontext-incremental-rendering.html) | Pass | 6 / 6 |  |  |
 | [`the-audio-api/the-offlineaudiocontext-interface/offlineaudiocontext-rendersizehint.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-offlineaudiocontext-interface/offlineaudiocontext-rendersizehint.html) | Pass | 17 / 17 |  |  |

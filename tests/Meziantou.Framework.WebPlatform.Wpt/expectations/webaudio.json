@@ -631,7 +631,6 @@
       "BaseAudioContext interface: calling createPeriodicWave(sequence<float>, sequence<float>, optional PeriodicWaveConstraints) on context with too few arguments must throw TypeError": "FAIL",
       "BaseAudioContext interface: calling createScriptProcessor(optional unsigned long, optional unsigned long, optional unsigned long) on context with too few arguments must throw TypeError": "FAIL",
       "BaseAudioContext interface: calling decodeAudioData(ArrayBuffer, optional DecodeSuccessCallback?, optional DecodeErrorCallback?) on context with too few arguments must throw TypeError": "FAIL",
-      "BaseAudioContext interface: calling decodeAudioData(ArrayBuffer, optional DecodeSuccessCallback?, optional DecodeErrorCallback?) on new OfflineAudioContext(1, 1, sample_rate) with too few arguments must throw TypeError": "FAIL",
       "BaseAudioContext interface: context must inherit property \"audioWorklet\" with the proper type": "FAIL",
       "BaseAudioContext interface: context must inherit property \"createAnalyser()\" with the proper type": "FAIL",
       "BaseAudioContext interface: context must inherit property \"createBiquadFilter()\" with the proper type": "FAIL",
@@ -659,8 +658,6 @@
       "BaseAudioContext interface: context must inherit property \"renderQuantumSize\" with the proper type": "FAIL",
       "BaseAudioContext interface: context must inherit property \"sampleRate\" with the proper type": "FAIL",
       "BaseAudioContext interface: context must inherit property \"state\" with the proper type": "FAIL",
-      "BaseAudioContext interface: new OfflineAudioContext(1, 1, sample_rate) must inherit property \"decodeAudioData(ArrayBuffer, optional DecodeSuccessCallback?, optional DecodeErrorCallback?)\" with the proper type": "FAIL",
-      "BaseAudioContext interface: operation decodeAudioData(ArrayBuffer, optional DecodeSuccessCallback?, optional DecodeErrorCallback?)": "FAIL",
       "BiquadFilterNode interface: calling getFrequencyResponse(Float32Array, Float32Array, Float32Array) on new BiquadFilterNode(context) with too few arguments must throw TypeError": "FAIL",
       "BiquadFilterNode interface: new BiquadFilterNode(context) must inherit property \"Q\" with the proper type": "FAIL",
       "BiquadFilterNode interface: new BiquadFilterNode(context) must inherit property \"detune\" with the proper type": "FAIL",
@@ -1216,10 +1213,7 @@
     "total": 1
   },
   "webaudio/the-audio-api/the-audiobuffersourcenode-interface/audiobuffersource-multi-channels.html": {
-    "total": 1,
-    "failures": {
-      "AudioBufferSourceNode 5.1 channel playback verification": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-audiobuffersourcenode-interface/audiobuffersource-null.html": {
     "total": 1
@@ -2267,19 +2261,13 @@
     "total": 1
   },
   "webaudio/the-audio-api/the-offlineaudiocontext-interface/decodeAudioData-oversized-resample.html": {
-    "total": 1,
-    "failures": {
-      "decodeAudioData rejects when the resampled length exceeds AudioBuffer.length": "FAIL"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-offlineaudiocontext-interface/offlineaudiocontext-close.html": {
     "total": 5
   },
   "webaudio/the-audio-api/the-offlineaudiocontext-interface/offlineaudiocontext-detached-execution-context.html": {
-    "total": 5,
-    "failures": {
-      "Executing \"decoding-on-detached-iframe\"": "FAIL"
-    }
+    "total": 7
   },
   "webaudio/the-audio-api/the-offlineaudiocontext-interface/offlineaudiocontext-incremental-rendering-data-integrity.html": {
     "total": 1

@@ -78,9 +78,24 @@ with an instance of its class.
 - **The ports**: `audioWorklet.port` and the global `port` of the worklet, and the `port` of a node and of its processor,
   are entangled `MessagePort`s; `processorOptions` are structured-cloned in the global scope of the worklet.
 
+## Decoding
+
+`decodeAudioData()` (and `DecodeAudioData(ReadOnlyMemory<byte>)` for the .NET code) decodes the audio files whose format is
+sniffed from their content:
+
+- **WAV**: integer PCM of 8 to 32 bits, IEEE floats of 32 and 64 bits, A-law and µ-law, also in a `WAVE_FORMAT_EXTENSIBLE`
+  header.
+- **FLAC**: the native FLAC streams (optionally after an ID3v2 tag), with every subframe type and stereo decorrelation;
+  the checksums are not verified.
+
+The other formats (MP3, AAC, Ogg Vorbis, Opus...) are rejected with an `EncodingError`, as are the files whose audio does not
+fit in an `AudioBuffer` once resampled (checked from the header, before the samples are decoded). The decoded audio is
+resampled to the sample rate of the context with a windowed-sinc interpolation (16 zero crossings, Blackman window). The
+`ArrayBuffer` is detached when the call returns (a `DataCloneError` when it is already detached), and the file is decoded in
+a task of the event loop.
+
 ## Not implemented
 
-- `decodeAudioData()`.
 - `AudioContext` (the realtime context), `MediaElementAudioSourceNode`, the `MediaStream` nodes.
 
 The results of the web-platform-tests are in [docs/wpt-coverage/webaudio.md](wpt-coverage/webaudio.md).

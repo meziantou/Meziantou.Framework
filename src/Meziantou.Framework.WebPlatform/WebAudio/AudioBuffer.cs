@@ -70,6 +70,13 @@ public sealed class AudioBuffer
         _channels = new JsBufferSource?[numberOfChannels];
     }
 
+    /// <summary>Creates a buffer of decoded samples (one array per channel, of the same length), which become its acquired content.</summary>
+    internal AudioBuffer(float[][] channels, float sampleRate)
+        : this((uint)channels.Length, (uint)channels[0].Length, sampleRate)
+    {
+        _acquired = channels;
+    }
+
     private static AudioBufferOptions Validate(AudioBufferOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);

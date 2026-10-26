@@ -1,7 +1,22 @@
+using System.ComponentModel;
 using Meziantou.Framework.WebPlatform.Dom;
+using Meziantou.Framework.WebPlatform.Scripting;
+using Meziantou.Framework.WebPlatform.WebAudio.Decoding;
 using Meziantou.Framework.WebPlatform.WebAudio.Rendering;
 
 namespace Meziantou.Framework.WebPlatform.WebAudio;
+
+/// <summary>The callback of a successful <see cref="BaseAudioContext.DecodeAudioDataArray"/> (https://webaudio.github.io/web-audio-api/#callbackdef-decodesuccesscallback).</summary>
+/// <param name="decodedData">The decoded audio.</param>
+/// <seealso href="https://webaudio.github.io/web-audio-api/#callbackdef-decodesuccesscallback"/>
+[IdlInterface("DecodeSuccessCallback", "https://webaudio.github.io/web-audio-api/#callbackdef-decodesuccesscallback")]
+public delegate void DecodeSuccessCallback(AudioBuffer decodedData);
+
+/// <summary>The callback of a failed <see cref="BaseAudioContext.DecodeAudioDataArray"/> (https://webaudio.github.io/web-audio-api/#callbackdef-decodeerrorcallback).</summary>
+/// <param name="error">The error.</param>
+/// <seealso href="https://webaudio.github.io/web-audio-api/#callbackdef-decodeerrorcallback"/>
+[IdlInterface("DecodeErrorCallback", "https://webaudio.github.io/web-audio-api/#callbackdef-decodeerrorcallback")]
+public delegate void DecodeErrorCallback(DomException error);
 
 /// <summary>
 /// The base of the audio contexts (https://webaudio.github.io/web-audio-api/#BaseAudioContext): a graph of
@@ -203,6 +218,104 @@ public abstract class BaseAudioContext : EventTarget
     /// <seealso href="https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-createwaveshaper"/>
     [IdlMember("createWaveShaper", "https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-createwaveshaper")]
     public WaveShaperNode CreateWaveShaper() => new(this);
+
+    /// <summary>Decodes an audio file (WAV or FLAC) for the scripts, and detaches its <c>ArrayBuffer</c>: use <see cref="DecodeAudioData(ReadOnlyMemory{byte})"/> in .NET code.</summary>
+    /// <seealso href="https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-decodeaudiodata"/>
+    [IdlMember("decodeAudioData", "https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-decodeaudiodata")]
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public Task<AudioBuffer> DecodeAudioDataArray(object audioData, DecodeSuccessCallback? successCallback = null, DecodeErrorCallback? errorCallback = null)
+    {
+        // 1. The document must be fully active
+        if (!IsDocumentFullyActive)
+            return Task.FromException<AudioBuffer>(new DomException("The document is not fully active", "InvalidStateError"));
+
+        // 3. The data is detached, so that the scripts cannot modify it during the decoding; 4. a detached buffer is a DataCloneError
+        if (audioData is not JsBufferSource source || source.IsDetached)
+            return RejectDecoding(new DomException("The ArrayBuffer is detached", "DataCloneError"), errorCallback);
+
+        var data = source.Bytes.ToArray();
+        if (source.Value is not null && !source.TryDetach())
+            return RejectDecoding(new DomException("The ArrayBuffer cannot be detached", "DataCloneError"), errorCallback);
+
+        return Decode(data, successCallback, errorCallback);
+    }
+
+    /// <summary>
+    /// Decodes an audio file to an <see cref="AudioBuffer"/> at the sample rate of the context: WAV (integer PCM of 8 to 32
+    /// bits, floats, A-law and µ-law) or FLAC.
+    /// </summary>
+    /// <returns>A task completed with the buffer, or failed with a <see cref="DomException"/>: an <c>EncodingError</c> when the file cannot be decoded, an <c>InvalidStateError</c> when the document is not fully active.</returns>
+    /// <seealso href="https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-decodeaudiodata"/>
+    [NotInIdl("The decoding for the .NET code: the decodeAudioData operation is DecodeAudioDataArray")]
+    public Task<AudioBuffer> DecodeAudioData(ReadOnlyMemory<byte> audioData)
+    {
+        if (!IsDocumentFullyActive)
+            return Task.FromException<AudioBuffer>(new DomException("The document is not fully active", "InvalidStateError"));
+
+        return Decode(audioData, successCallback: null, errorCallback: null);
+    }
+
+    private Task<AudioBuffer> RejectDecoding(DomException error, DecodeErrorCallback? errorCallback)
+    {
+        if (errorCallback is not null)
+        {
+            QueueMediaElementTask(() => InvokeCallback(() => errorCallback(error)));
+        }
+
+        return Task.FromException<AudioBuffer>(error);
+    }
+
+    /// <summary>The decoding operation (https://webaudio.github.io/web-audio-api/#dom-baseaudiocontext-decodeaudiodata), run in a media element task of the event loop.</summary>
+    private Task<AudioBuffer> Decode(ReadOnlyMemory<byte> data, DecodeSuccessCallback? successCallback, DecodeErrorCallback? errorCallback)
+    {
+        var completion = new TaskCompletionSource<AudioBuffer>();
+        QueueMediaElementTask(() =>
+        {
+            AudioBuffer buffer;
+            try
+            {
+                var decoded = AudioDecoder.Decode(data.Span, SampleRate);
+                buffer = new AudioBuffer(decoded.Channels, decoded.SampleRate);
+            }
+            catch (InvalidDataException ex)
+            {
+                var error = new DomException($"The audio data cannot be decoded: {ex.Message}", "EncodingError");
+                completion.SetException(error);
+                if (errorCallback is not null)
+                {
+                    InvokeCallback(() => errorCallback(error));
+                }
+
+                return;
+            }
+
+            completion.SetResult(buffer);
+            if (successCallback is not null)
+            {
+                InvokeCallback(() => successCallback(buffer));
+            }
+        });
+
+        return completion.Task;
+    }
+
+    /// <summary>Invokes a callback of the scripts, and reports its exceptions.</summary>
+    private void InvokeCallback(Action callback)
+    {
+        try
+        {
+            callback();
+        }
+#pragma warning disable CA1031 // The exceptions of the callbacks are reported
+        catch (Exception ex)
+#pragma warning restore CA1031
+        {
+            if (RelevantGlobal is { } global)
+            {
+                Scripting.ScriptErrors.Report(ex, global);
+            }
+        }
+    }
 
     // ----------------------------------------------------------------------------------------------------------------
     // State

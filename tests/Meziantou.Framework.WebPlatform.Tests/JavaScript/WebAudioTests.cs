@@ -535,4 +535,161 @@ public sealed class WebAudioTests : IDisposable
 
         Assert.Equal("256,suspended,1,2", document.Title);
     }
+
+    private static AudioBuffer Decode(BaseAudioContext context, byte[] data)
+    {
+        var task = context.DecodeAudioData(data);
+        Assert.True(task.IsCompletedSuccessfully);
+        return task.Result;
+    }
+
+    private static byte[] CreateWav(int sampleRate, short[][] channels)
+    {
+        var frames = channels[0].Length;
+        var dataLength = frames * channels.Length * 2;
+        var bytes = new byte[44 + dataLength];
+        var span = bytes.AsSpan();
+        "RIFF"u8.CopyTo(span);
+        System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(span[4..], 36 + dataLength);
+        "WAVEfmt "u8.CopyTo(span[8..]);
+        System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(span[16..], 16);
+        System.Buffers.Binary.BinaryPrimitives.WriteInt16LittleEndian(span[20..], 1);
+        System.Buffers.Binary.BinaryPrimitives.WriteInt16LittleEndian(span[22..], (short)channels.Length);
+        System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(span[24..], sampleRate);
+        System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(span[28..], sampleRate * channels.Length * 2);
+        System.Buffers.Binary.BinaryPrimitives.WriteInt16LittleEndian(span[32..], (short)(channels.Length * 2));
+        System.Buffers.Binary.BinaryPrimitives.WriteInt16LittleEndian(span[34..], 16);
+        "data"u8.CopyTo(span[36..]);
+        System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(span[40..], dataLength);
+        for (var i = 0; i < frames; i++)
+        {
+            for (var c = 0; c < channels.Length; c++)
+            {
+                System.Buffers.Binary.BinaryPrimitives.WriteInt16LittleEndian(span[(44 + (((i * channels.Length) + c) * 2))..], channels[c][i]);
+            }
+        }
+
+        return bytes;
+    }
+
+    [Fact]
+    public void DecodeAudioData_DecodesAWavFile()
+    {
+        var context = new OfflineAudioContext(2, 128, 8000);
+        var wav = CreateWav(8000, [[0, 16384, -32768, 32767], [100, 200, 300, 400]]);
+
+        var buffer = Decode(context, wav);
+
+        Assert.Equal(2u, buffer.NumberOfChannels);
+        Assert.Equal(4u, buffer.Length);
+        Assert.Equal(8000f, buffer.SampleRate);
+        Assert.Equal([0f, 0.5f, -1f, 32767 / 32768f], buffer.GetChannelData(0).ToArray());
+        Assert.Equal(300 / 32768f, buffer.GetChannelData(1)[2]);
+    }
+
+    [Fact]
+    public void DecodeAudioData_ResamplesToTheSampleRateOfTheContext()
+    {
+        var context = new OfflineAudioContext(1, 128, 16000);
+        var sine = new short[800];
+        for (var i = 0; i < sine.Length; i++)
+        {
+            sine[i] = (short)Math.Round(16384 * Math.Sin(2 * Math.PI * 200 * i / 8000), MidpointRounding.AwayFromZero);
+        }
+
+        var buffer = Decode(context, CreateWav(8000, [sine]));
+
+        Assert.Equal(1600u, buffer.Length);
+        Assert.Equal(16000f, buffer.SampleRate);
+        var samples = buffer.GetChannelData(0);
+        for (var i = 200; i < 1400; i++)
+        {
+            Assert.True(Math.Abs(samples[i] - (0.5 * Math.Sin(2 * Math.PI * 200 * i / 16000))) < 0.01, $"Frame {i}: {samples[i]}");
+        }
+    }
+
+    [Fact]
+    public void DecodeAudioData_DecodesAFlacStream()
+    {
+        // A 16-bit stereo stream at 8000 Hz with one frame of 4 samples: the left channel is verbatim, the side channel
+        // (left - right) is constant
+        var bits = new System.Text.StringBuilder();
+        void Write(long value, int count)
+        {
+            for (var i = count - 1; i >= 0; i--)
+            {
+                bits.Append(((value >> i) & 1) != 0 ? '1' : '0');
+            }
+        }
+
+        Write(0x664C6143, 32); // fLaC
+        Write(0x80, 8); // The last metadata block, STREAMINFO
+        Write(34, 24);
+        Write(4, 16);
+        Write(4, 16);
+        Write(0, 48);
+        Write(8000, 20);
+        Write(1, 3);
+        Write(15, 5);
+        Write(4, 36);
+        Write(0, 128);
+
+        Write(0xFFF8, 16); // The frame header
+        Write(6, 4); // The block size in 8 bits
+        Write(0, 4); // The sample rate of STREAMINFO
+        Write(8, 4); // Left and side
+        Write(4, 3); // 16 bits
+        Write(0, 1);
+        Write(0, 8); // Frame 0
+        Write(3, 8); // Block size - 1
+        Write(0, 8); // CRC-8
+
+        Write(0b0_000001_0, 8); // A verbatim subframe
+        Write(1000, 16);
+        Write(-2000, 16);
+        Write(16384, 16);
+        Write(-16384, 16);
+        Write(0b0_000000_0, 8); // A constant subframe (17 bits for the side channel)
+        Write(-100, 17);
+        while (bits.Length % 8 != 0)
+        {
+            bits.Append('0');
+        }
+
+        Write(0, 16); // CRC-16
+        var flac = new byte[bits.Length / 8];
+        for (var i = 0; i < flac.Length; i++)
+        {
+            flac[i] = Convert.ToByte(bits.ToString(i * 8, 8), 2);
+        }
+
+        var buffer = Decode(new OfflineAudioContext(1, 128, 8000), flac);
+
+        Assert.Equal(4u, buffer.Length);
+        Assert.Equal([1000 / 32768f, -2000 / 32768f, 0.5f, -0.5f], buffer.GetChannelData(0).ToArray());
+        Assert.Equal([1100 / 32768f, -1900 / 32768f, 16484 / 32768f, -16284 / 32768f], buffer.GetChannelData(1).ToArray());
+    }
+
+    [Fact]
+    public void Script_DecodeAudioData_DetachesTheBufferAndRejectsTheErrors()
+    {
+        var document = Load("""
+            <script>
+              const context = new OfflineAudioContext(1, 128, 8000);
+              const results = [];
+              const data = new ArrayBuffer(8);
+              const promise = context.decodeAudioData(data, null, error => results.push('callback ' + error.name));
+              results.push(data.byteLength, data.detached);
+              promise.catch(error => {
+                results.push(error.name);
+                return context.decodeAudioData(data);
+              }).catch(error => {
+                results.push(error.name);
+                document.title = results.join();
+              });
+            </script>
+            """);
+
+        Assert.Equal("0,true,callback EncodingError,EncodingError,DataCloneError", document.Title);
+    }
 }

@@ -13577,6 +13577,8 @@ namespace Meziantou.Framework.WebPlatform.WebAudio
         public Meziantou.Framework.WebPlatform.WebAudio.ScriptProcessorNode CreateScriptProcessor(uint bufferSize = 0U, uint numberOfInputChannels = 2U, uint numberOfOutputChannels = 2U) => throw null;
         public Meziantou.Framework.WebPlatform.WebAudio.StereoPannerNode CreateStereoPanner() => throw null;
         public Meziantou.Framework.WebPlatform.WebAudio.WaveShaperNode CreateWaveShaper() => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.WebAudio.AudioBuffer> DecodeAudioData(System.ReadOnlyMemory<byte> audioData) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.WebAudio.AudioBuffer> DecodeAudioDataArray(object audioData, Meziantou.Framework.WebPlatform.WebAudio.DecodeSuccessCallback? successCallback = null, Meziantou.Framework.WebPlatform.WebAudio.DecodeErrorCallback? errorCallback = null) => throw null;
     }
 
     public sealed class BiquadFilterNode : Meziantou.Framework.WebPlatform.WebAudio.AudioNode
@@ -13667,6 +13669,10 @@ namespace Meziantou.Framework.WebPlatform.WebAudio
         public Meziantou.Framework.WebPlatform.WebAudio.AudioBuffer? Buffer { get => throw null; init { } }
         public bool DisableNormalization { get => throw null; init { } }
     }
+
+    public delegate void DecodeErrorCallback(Meziantou.Framework.WebPlatform.Dom.DomException error);
+
+    public delegate void DecodeSuccessCallback(Meziantou.Framework.WebPlatform.WebAudio.AudioBuffer decodedData);
 
     public sealed class DelayNode : Meziantou.Framework.WebPlatform.WebAudio.AudioNode
     {

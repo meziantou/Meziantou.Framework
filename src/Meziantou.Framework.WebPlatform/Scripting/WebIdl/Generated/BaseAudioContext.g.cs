@@ -135,6 +135,15 @@ internal static class Binding_BaseAudioContext<TAdapter, TValue> where TAdapter 
         var o = r.This<global::Meziantou.Framework.WebPlatform.WebAudio.BaseAudioContext>(t, Binding);
         var result = o.CreateWaveShaper(); return r.Wrap(result);
     }
+    private static TValue Op_decodeAudioData(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.WebAudio.BaseAudioContext>(t, Binding);
+        if (a.Length < 1) throw r.NotEnoughArguments("decodeAudioData", 1, a.Length);
+        var a0 = r.ToBufferSource(a[0], 1u, false, "ArrayBuffer");
+        var has1 = !r.IsMissing(a, 1); var a1 = has1 ? (TValue?)(r.IsNullOrUndefined(a[1]) ? null : r.ToCallbackFunction(a[1], "DecodeSuccessCallback", false)) : default;
+        var has2 = !r.IsMissing(a, 2); var a2 = has2 ? (TValue?)(r.IsNullOrUndefined(a[2]) ? null : r.ToCallbackFunction(a[2], "DecodeErrorCallback", false)) : default;
+        var result = o.DecodeAudioDataArray(a0, (has1 ? (a1 is { } a1Function ? WebIdlHelpers<TAdapter, TValue>.ToDelegate_WebAudio_DecodeSuccessCallback(r, a1Function) : null) : (global::Meziantou.Framework.WebPlatform.WebAudio.DecodeSuccessCallback?)null), (has2 ? (a2 is { } a2Function ? WebIdlHelpers<TAdapter, TValue>.ToDelegate_WebAudio_DecodeErrorCallback(r, a2Function) : null) : (global::Meziantou.Framework.WebPlatform.WebAudio.DecodeErrorCallback?)null)); return r.ToPromise(result, static (r, value) => r.Wrap(value));
+    }
     private static void DefineMembers(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue interfaceObject, TValue prototype, TValue instanceTarget)
     {
         r.DefineAttribute(instanceTarget, "destination", Get_destination, null);
@@ -163,5 +172,6 @@ internal static class Binding_BaseAudioContext<TAdapter, TValue> where TAdapter 
         r.DefineOperation(instanceTarget, "createScriptProcessor", 0, Op_createScriptProcessor);
         r.DefineOperation(instanceTarget, "createStereoPanner", 0, Op_createStereoPanner);
         r.DefineOperation(instanceTarget, "createWaveShaper", 0, Op_createWaveShaper);
+        r.DefineOperation(instanceTarget, "decodeAudioData", 1, Op_decodeAudioData, returnsPromise: true);
     }
 }

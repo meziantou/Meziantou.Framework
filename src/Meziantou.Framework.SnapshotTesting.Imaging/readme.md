@@ -108,9 +108,27 @@ settings.AddImaging(new ImageComparisonSettings
 ```
 <!-- endref -->
 
+Perceptual metrics are closer to what a viewer sees, at a higher cost (about 0.3 s per megapixel for SSIMULACRA 2 and
+0.75 s for Butteraugli):
+
+<!-- ref:../../tests/Meziantou.Framework.SnapshotTesting.Imaging.Tests/ImageSnapshotTests.cs;region=SnapshotTestingImaging_PerceptualThresholds;format=md-fenced-code-block;dedent=true -->
+```csharp
+var settings = new SnapshotSettings(); // SnapshotSettings.Default in the module initializer
+settings.AddImaging(new ImageComparisonSettings
+{
+    PsnrThreshold = 40,        // PSNR in decibels: higher is closer, infinite for identical images
+    Ssimulacra2Threshold = 90, // SSIMULACRA 2: 100 = identical, about 90 = not visible
+    ButteraugliThreshold = 1,  // Butteraugli distance: 0 = identical, below about 1 = not visible
+});
+```
+<!-- endref -->
+
 Every configured check must pass for every frame, and the assertion message reports all the checks that failed. The measures are those of `ImageSimilarity` in `Meziantou.Framework.Imaging`; samples of more than 8 bits are rounded to 8 bits.
 
 - **SSIM.** The [Structural Similarity Index](https://en.wikipedia.org/wiki/Structural_similarity_index_measure) must be greater than or equal to `SimilarityThreshold`. The score is the mean SSIM over every 7×7 window of the images (uniform weights, sample covariance, `K1 = 0.01`, `K2 = 0.03`), the value scikit-image's `structural_similarity(expected, actual, data_range=255, channel_axis=-1)` computes with its default parameters. The R, G and B channels are premultiplied by the alpha channel and averaged, and the score is the lower of that value and the SSIM of the alpha channel, so opacity differences are detected. Because the score is a mean, a localized difference lowers it in proportion to the area it covers: a difference confined to 1% of the image lowers it by about 0.01 at most.
+- **PSNR.** The peak signal-to-noise ratio, in decibels, must be greater than or equal to `PsnrThreshold`. It is computed from the mean squared error of the R, G and B channels premultiplied by alpha, the value scikit-image's `peak_signal_noise_ratio(expected, actual, data_range=255)` computes for opaque images; the alpha channel gives its own ratio, and the lower one is used. Identical images have an infinite ratio.
+- **SSIMULACRA 2.** The score of the `ssimulacra2` tool of libjxl must be greater than or equal to `Ssimulacra2Threshold`: 100 for identical images, about 90 when the difference is not visible, 70 for a high quality. It compares the images in the XYB color space at 6 scales, and penalizes new artifacts (ringing, banding, blockiness) and lost details (blurring). Images that are not fully opaque are composited over a dark and a bright gray, and the lower score is used. Images smaller than 8×8 pixels are too small for the metric: they pass this check only when their pixels are identical.
+- **Butteraugli.** The largest Butteraugli distance of libjxl must be lower than or equal to `ButteraugliThreshold`: 0 for identical images, below about 1 when the difference is not visible. The distance of the worst pixel is used, so a difference confined to a small area weighs fully, unlike the SSIM and PSNR means. Images that are not fully opaque are composited over black and over white, and every pixel keeps the larger distance.
 - **dHash and pHash.** The distance between the 64-bit difference hashes or perceptual hashes must be lower than or equal to the threshold. The distance is the Hamming distance between the hashes, plus the difference between the mean luminances (a solid black and a solid white image are 64 apart; each unit is about 4 luminance levels out of 255), capped at 64. Differences smaller than a luminance level never set a bit, so invisible noise in flat areas does not change the hashes. Images that are not fully opaque are compared over a black and over a white background, and the larger distance is used.
 
 When images do not match, the assertion message says why under the changed file: a snapshot cannot be decoded, the images have a different number of frames, different sizes or different pixels, or a score is beyond its threshold. For images with several frames, the message names the first frame that does not match.

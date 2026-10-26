@@ -8,8 +8,8 @@
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 140 | 147 | 0 | 95% |
 | [Tentative](#tentative-tests) | 30 | 76 | 0 | 39% |
-| [Reftests](#reftests) | 31 | 37 | 0 | 84% |
-| **All** | **201** | **260** | **0** | **77%** |
+| [Reftests](#reftests) | 30 | 37 | 0 | 81% |
+| **All** | **200** | **260** | **0** | **77%** |
 
 ## Stable tests
 
@@ -158,7 +158,7 @@
 | [`view-timelines/view-timeline-source-single-axis-inner.html`](https://wpt.fyi/results/scroll-animations/view-timelines/view-timeline-source-single-axis-inner.html) | Pass | 1 / 1 |  |  |
 | [`view-timelines/view-timeline-source-single-axis-outer.html`](https://wpt.fyi/results/scroll-animations/view-timelines/view-timeline-source-single-axis-outer.html) | Pass | 1 / 1 |  |  |
 | [`view-timelines/view-timeline-sticky-block.html`](https://wpt.fyi/results/scroll-animations/view-timelines/view-timeline-sticky-block.html) | Pass | 1 / 1 |  |  |
-| [`view-timelines/view-timeline-sticky-inline-ancestor.html`](https://wpt.fyi/results/scroll-animations/view-timelines/view-timeline-sticky-inline-ancestor.html) | Fail | 1 / 3 | BUG | the view progress timeline of a subject in a block-level box inside a sticky positioned inline box (`<span class=wrapper>`): the sticky inline box is not on the fragment chain of the subject (the block-level box is in an anonymous block box beside the fragments of the inline box), so its sticky offsets are ignored and the ranges are the ones of the static position (66.7% instead of 22.2% at `scrollTop` 300, the progress of a subject in a sticky block box) |
+| [`view-timelines/view-timeline-sticky-inline-ancestor.html`](https://wpt.fyi/results/scroll-animations/view-timelines/view-timeline-sticky-inline-ancestor.html) | Fail | 0 / 3 | BUG | the view progress timeline of a subject in a block-level box inside a sticky positioned inline box (`<span class=wrapper>`): the sticky inline box is not on the fragment chain of the subject (the block-level box is in an anonymous block box beside the fragments of the inline box), so its sticky offsets are ignored and the ranges are the ones of the static position (53.3%, 66.7% and 80% instead of 17.8%, 22.2% and 26.7% at `scrollTop` 280, 300 and 320, the progress of a subject in a sticky block box) |
 | [`view-timelines/view-timeline-sticky-inline.html`](https://wpt.fyi/results/scroll-animations/view-timelines/view-timeline-sticky-inline.html) | Pass | 1 / 1 |  |  |
 | [`view-timelines/view-timeline-sticky-subpixel-adjustment.html`](https://wpt.fyi/results/scroll-animations/view-timelines/view-timeline-sticky-subpixel-adjustment.html) | Pass | 2 / 2 |  |  |
 | [`view-timelines/view-timeline-subject-size-changes.html`](https://wpt.fyi/results/scroll-animations/view-timelines/view-timeline-subject-size-changes.html) | Pass | 1 / 1 |  |  |
@@ -248,7 +248,7 @@
 
 | Test | Result | Variants | Kind | Description |
 |---|---|--:|---|---|
-| [`animation-trigger/animation-trigger-fill-mode-both.tentative.html`](https://wpt.fyi/results/scroll-animations/animation-trigger/animation-trigger-fill-mode-both.tentative.html) | Pass | 1 / 1 |  |  |
+| [`animation-trigger/animation-trigger-fill-mode-both.tentative.html`](https://wpt.fyi/results/scroll-animations/animation-trigger/animation-trigger-fill-mode-both.tentative.html) | Fail | 0 / 1 | NOT IMPLEMENTED | animation triggers (`animation-trigger`, `timeline-trigger`, Web Animations 2): the properties are parsed but have no effect, so the animation plays immediately instead of staying at its first keyframe until its trigger is activated (the screenshot shows it a frame after its start, slightly blue instead of green) |
 | [`animation-trigger/animation-trigger-fill-mode-none.tentative.html`](https://wpt.fyi/results/scroll-animations/animation-trigger/animation-trigger-fill-mode-none.tentative.html) | Fail | 0 / 1 | NOT IMPLEMENTED | animation triggers (`animation-trigger`, `timeline-trigger`, Web Animations 2): the properties are parsed but have no effect, so the animation plays immediately instead of waiting for its trigger (its first keyframe, red and translated, is displayed); only Chrome passes |
 | [`css/animation-fill-outside-range-test.html`](https://wpt.fyi/results/scroll-animations/css/animation-fill-outside-range-test.html) | Pass | 1 / 1 |  |  |
 | [`css/animation-inactive-outside-range-test.html`](https://wpt.fyi/results/scroll-animations/css/animation-inactive-outside-range-test.html) | Pass | 1 / 1 |  |  |

@@ -8,8 +8,8 @@
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 150 | 161 | 0 | 93% |
 | [Tentative](#tentative-tests) | 4 | 7 | 0 | 57% |
-| [Reftests](#reftests) | 306 | 317 | 0 | 97% |
-| **All** | **460** | **485** | **0** | **95%** |
+| [Reftests](#reftests) | 307 | 317 | 0 | 97% |
+| **All** | **461** | **485** | **0** | **95%** |
 
 ## Stable tests
 
@@ -200,7 +200,7 @@
 | [`active-view-transition-type-on-non-root.html`](https://wpt.fyi/results/css/css-view-transitions/active-view-transition-type-on-non-root.html) | Pass | 1 / 1 |  |  |
 | [`animating-new-content-subset.html`](https://wpt.fyi/results/css/css-view-transitions/animating-new-content-subset.html) | Pass | 1 / 1 |  |  |
 | [`animating-new-content.html`](https://wpt.fyi/results/css/css-view-transitions/animating-new-content.html) | Pass | 1 / 1 |  |  |
-| [`animation-name-ua-prefix.html`](https://wpt.fyi/results/css/css-view-transitions/animation-name-ua-prefix.html) | Fail | 0 / 1 | TEST RUNNER | the 1 ms `-ua-view-transition-fade-out` animation of the author style is created by the first style computation, in the first rendering update, and starts at the second one, where the runner takes the screenshot: the box is still opaque (a browser computes the styles and starts the animation before its first frame) |
+| [`animation-name-ua-prefix.html`](https://wpt.fyi/results/css/css-view-transitions/animation-name-ua-prefix.html) | Pass | 1 / 1 |  |  |
 | [`auto-name-from-id-shadow.html`](https://wpt.fyi/results/css/css-view-transitions/auto-name-from-id-shadow.html) | Pass | 1 / 1 |  |  |
 | [`auto-name-from-id.html`](https://wpt.fyi/results/css/css-view-transitions/auto-name-from-id.html) | Pass | 1 / 1 |  |  |
 | [`auto-name.html`](https://wpt.fyi/results/css/css-view-transitions/auto-name.html) | Pass | 1 / 1 |  |  |

@@ -90,6 +90,33 @@ public sealed class ImageSaveTests
     }
 
     [Fact]
+    public async Task FilesLoadIntoFloatingPointPixelsWithTheLabelOfTheFile()
+    {
+        using var source = new Image<Rgba64>(3, 2, new Rgba64(1, 32768, 65535, 40000));
+        source.AppendFrame(source.Frames[0]).Metadata.Duration = new FrameDuration(1, 10);
+        source.Frames[1][2, 1] = new Rgba64(65535, 0, 0);
+        using var stream = new MemoryStream();
+        source.Save(stream, new PngEncoder { AnimationMode = PngAnimationMode.Animated });
+        var data = stream.ToArray();
+
+        // Eager loads convert the decoded samples exactly: v / 65535
+        using var floats = Image.Load<RgbaFloat>(data);
+        using var expected = source.CloneAs<RgbaFloat>();
+        Assert.Equal(2, floats.Frames.Count);
+        Assert.Equal(expected.Frames[0][0, 0], floats.Frames[0][0, 0]);
+        Assert.Equal(new RgbaFloat(1, 0, 0), floats.Frames[1][2, 1]);
+        Assert.Equal(Metadata.ColorTransferFunction.Srgb, floats.Metadata.TransferFunction);
+        Assert.Equal(PixelFormat.Rgba64, Image.Identify(data).PixelFormat);
+
+        // So do sequential readers
+        using var reader = Image.OpenReader<RgbaHalf>(new MemoryStream(data));
+        using var first = await reader.ReadFrameAsync(XunitCancellationToken);
+        using var second = reader.ReadFrame();
+        Assert.Equal(new RgbaHalf((Half)(1 / 65535.0), (Half)(32768 / 65535.0), Half.One, (Half)(40000 / 65535.0)), first!.Frames[0][0, 0]);
+        Assert.Equal(new RgbaHalf(Half.One, Half.Zero, Half.Zero), second!.Frames[0][2, 1]);
+    }
+
+    [Fact]
     public async Task SequentialWritersReduceEachFloatingPointFrame()
     {
         var options = new ImageWriterOptions(2, 1)

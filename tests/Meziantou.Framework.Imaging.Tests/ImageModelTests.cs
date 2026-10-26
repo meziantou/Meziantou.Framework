@@ -1,3 +1,4 @@
+using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.Metadata;
 
@@ -443,6 +444,36 @@ public sealed class ImageModelTests
         Assert.Equal(ColorTransferFunction.Srgb, converted.Metadata.TransferFunction);
         using var back = floats.CloneAs<Rgba32>();
         Assert.Equal(ColorTransferFunction.Linear, back.Metadata.TransferFunction);
+    }
+
+    [Fact]
+    public void FloatingPointImagesNeedAPolicyForTheSamplesOutOfRange()
+    {
+        #region Imaging_FloatingPoint
+        using var hdr = new Image<RgbaFloat>(2, 1);
+        hdr.Frames[0][0, 0] = new RgbaFloat(0.5f, 0.25f, 0.125f);
+        hdr.Frames[0][1, 0] = new RgbaFloat(4, 2, 1); // a highlight four times as bright as the white
+        Assert.Equal(ColorTransferFunction.Linear, hdr.Metadata.TransferFunction);
+
+        // Integer pixels cannot store the highlight: clip it, or compress the highlights with a tone mapping
+        Assert.Throws<UnsupportedImageFeatureException>(() => hdr.CloneAs<Rgba64>());
+        using var toneMapped = hdr.CloneAs<Rgba64>(new PixelConversionOptions
+        {
+            ToneMapping = new HdrToneMappingOptions { Operator = HdrToneMappingOperator.Reinhard },
+        });
+        Assert.Equal(new Rgba64(65535, 32768, 16384), toneMapped.Frames[0][1, 0]);
+
+        // Encoders store integers too: the encoder says how to reduce the samples
+        using var stream = new MemoryStream();
+        hdr.Save(stream, new PngEncoder
+        {
+            FloatingPointConversion = new PixelConversionOptions { OutOfRangeSamples = OutOfRangeSampleHandling.Clip },
+            MetadataHandling = MetadataHandling.DiscardUnsupported,
+        });
+        #endregion
+        stream.Position = 0;
+        using var saved = Image.Load<Rgba64>(stream);
+        Assert.Equal(new Rgba64(65535, 65535, 65535), saved.Frames[0][1, 0]);
     }
 
     [Fact]

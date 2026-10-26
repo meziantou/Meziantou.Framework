@@ -848,6 +848,12 @@ namespace Meziantou.Framework.Imaging
         public static System.Threading.Tasks.Task<bool> TryReconstructJpegAsync(System.IO.Stream jpegXl, System.IO.Stream destination, Meziantou.Framework.Imaging.JpegXlTranscodeOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
     }
 
+    public enum OutOfRangeSampleHandling
+    {
+        Reject = 0,
+        Clip = 1,
+    }
+
     public ref struct PixelAccessor<TPixel> where TPixel : unmanaged
     {
         public int Height { get => throw null; }
@@ -873,6 +879,8 @@ namespace Meziantou.Framework.Imaging
         public Meziantou.Framework.Imaging.Rgba64? BackgroundColor { get => throw null; init { } }
         public static Meziantou.Framework.Imaging.PixelConversionOptions Default { get => throw null; }
         public bool DiscardIncompatibleColorProfile { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.OutOfRangeSampleHandling OutOfRangeSamples { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.HdrToneMappingOptions? ToneMapping { get => throw null; init { } }
     }
 
     public enum PixelFormat
@@ -884,6 +892,8 @@ namespace Meziantou.Framework.Imaging
         Rgba64 = 4,
         Gray8 = 5,
         Gray16 = 6,
+        RgbaFloat = 7,
+        RgbaHalf = 8,
     }
 
     public static class PixelFormats
@@ -895,6 +905,7 @@ namespace Meziantou.Framework.Imaging
         public static Meziantou.Framework.Imaging.PixelFormat GetPixelFormat<TPixel>() where TPixel : unmanaged => throw null;
         public static System.Type GetPixelType(Meziantou.Framework.Imaging.PixelFormat format) => throw null;
         public static bool HasAlpha(Meziantou.Framework.Imaging.PixelFormat format) => throw null;
+        public static bool IsFloatingPoint(Meziantou.Framework.Imaging.PixelFormat format) => throw null;
         public static bool IsGrayscale(Meziantou.Framework.Imaging.PixelFormat format) => throw null;
         public static bool IsSupported<TPixel>() where TPixel : unmanaged => throw null;
     }
@@ -1136,6 +1147,37 @@ namespace Meziantou.Framework.Imaging
         public readonly override string ToString() => throw null;
         public static bool operator ==(Meziantou.Framework.Imaging.Rgba64 left, Meziantou.Framework.Imaging.Rgba64 right) => throw null;
         public static bool operator !=(Meziantou.Framework.Imaging.Rgba64 left, Meziantou.Framework.Imaging.Rgba64 right) => throw null;
+    }
+
+    public struct RgbaFloat : System.IEquatable<Meziantou.Framework.Imaging.RgbaFloat>
+    {
+        public float A;
+        public float B;
+        public float G;
+        public float R;
+        public RgbaFloat(float r, float g, float b, float a = 1f) { }
+        public readonly bool Equals(Meziantou.Framework.Imaging.RgbaFloat other) => throw null;
+        public readonly override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public readonly override int GetHashCode() => throw null;
+        public readonly override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Imaging.RgbaFloat left, Meziantou.Framework.Imaging.RgbaFloat right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Imaging.RgbaFloat left, Meziantou.Framework.Imaging.RgbaFloat right) => throw null;
+    }
+
+    public struct RgbaHalf : System.IEquatable<Meziantou.Framework.Imaging.RgbaHalf>
+    {
+        public System.Half A;
+        public System.Half B;
+        public System.Half G;
+        public System.Half R;
+        public RgbaHalf(System.Half r, System.Half g, System.Half b) { }
+        public RgbaHalf(System.Half r, System.Half g, System.Half b, System.Half a) { }
+        public readonly bool Equals(Meziantou.Framework.Imaging.RgbaHalf other) => throw null;
+        public readonly override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public readonly override int GetHashCode() => throw null;
+        public readonly override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Imaging.RgbaHalf left, Meziantou.Framework.Imaging.RgbaHalf right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Imaging.RgbaHalf left, Meziantou.Framework.Imaging.RgbaHalf right) => throw null;
     }
 
     public enum RotateMode
@@ -2213,6 +2255,7 @@ namespace Meziantou.Framework.Imaging.Formats
 
     public abstract class ImageEncoder
     {
+        public Meziantou.Framework.Imaging.PixelConversionOptions? FloatingPointConversion { get => throw null; init { } }
         public abstract Meziantou.Framework.Imaging.ImageFormat Format { get; }
         public Meziantou.Framework.Imaging.Formats.MetadataHandling MetadataHandling { get => throw null; init { } }
     }

@@ -11,7 +11,10 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// </summary>
 internal sealed class FetchBodyChannel(Action cancel) : IAsyncEnumerable<ReadOnlyMemory<byte>>
 {
-    private readonly Channel<ReadOnlyMemory<byte>> _channel = Channel.CreateUnbounded<ReadOnlyMemory<byte>>(new UnboundedChannelOptions { SingleReader = true, SingleWriter = true });
+    // The pending read of the client completes on the thread of the writer (it only queues a task of the client): the event
+    // loop sees the task of the client while the writer is running, so a host that advances a fake clock when the event
+    // loops are idle does not advance it while a chunk is being given to the client
+    private readonly Channel<ReadOnlyMemory<byte>> _channel = Channel.CreateUnbounded<ReadOnlyMemory<byte>>(new UnboundedChannelOptions { SingleReader = true, SingleWriter = true, AllowSynchronousContinuations = true });
     private int _canceled;
 
     /// <summary>Adds a chunk of the body.</summary>

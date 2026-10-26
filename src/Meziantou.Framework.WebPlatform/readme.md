@@ -299,8 +299,8 @@ See [docs/rendering.md](docs/rendering.md) for what is painted, and [Printing](d
 - **Images are decoded by the rendering backend**, not by the core library: without a backend, only the natural dimensions
   of the images are read from their header (`decode()` resolves once the image is available, `createImageBitmap()` rejects
   the images and the blobs). The Imaging backend decodes PNG (including the animated PNG), JPEG (including CMYK), GIF,
-  WebP, AVIF, BMP and ICO images, with their EXIF orientation, their EXIF resolution (the density-corrected size) and their
-  color profile.
+  WebP, AVIF, JPEG XL, BMP and ICO images, with their EXIF orientation (the orientation of the codestream of a JPEG XL
+  image), their EXIF resolution (the density-corrected size) and their color profile or CICP color description.
 - **Media (audio, video) are not decoded by the library**: the processing model of the media elements (resource selection,
   events, `play()`, seeking...) runs on top of a media backend provided by the application
   (`BrowsingContextOptions.MediaBackend`, see [docs/browsing-context.md](docs/browsing-context.md#media-elements)); without

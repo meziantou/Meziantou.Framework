@@ -14,7 +14,12 @@ available are reproduced below.
 - Version: 0.12.0 (commit a7a9c787341cf703dede03c2009fa460cae5e5df)
 - Used for: the adaptive quantization heuristic of the lossy JPEG XL encoder
   (`Internals/Codecs/JpegXl/Encoding/JpegXlAdaptiveQuantization.cs`), ported from
-  `lib/jxl/enc_adaptive_quantization.cc` and `lib/jxl/quantizer.cc`.
+  `lib/jxl/enc_adaptive_quantization.cc` and `lib/jxl/quantizer.cc`; the SSIMULACRA 2 metric
+  (`Internals/Processing/Ssimulacra2Calculator.cs`), ported from `tools/ssimulacra2.cc` and
+  `tools/gauss_blur.cc`; the Butteraugli metric (`Internals/Processing/Butteraugli*.cs`), ported from
+  `lib/jxl/butteraugli/butteraugli.cc`, `lib/jxl/enc_comparator.cc` and `lib/extras/metrics.cc`; and the
+  sRGB curve and cube root approximations they use (`Internals/Processing/LinearRgbLoader.cs`,
+  `lib/jxl/cms/transfer_functions-inl.h`, `lib/jxl/base/fast_math-inl.h`).
 
 ```
 Copyright (c) the JPEG XL Project Authors.

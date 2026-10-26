@@ -1,0 +1,24 @@
+<Solution>
+  <Folder Name="/fuzz/">
+    <Project Path="../fuzz/Meziantou.Framework.Barcodes.Fuzz/Meziantou.Framework.Barcodes.Fuzz.csproj" />
+    <Project Path="../fuzz/Meziantou.Framework.Fuzzing/Meziantou.Framework.Fuzzing.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.Barcodes/Meziantou.Framework.Barcodes.csproj" />
+    <Project Path="../src/Meziantou.Framework.Fonts/Meziantou.Framework.Fonts.csproj" />
+    <Project Path="../src/Meziantou.Framework.FullPath.Analyzer/Meziantou.Framework.FullPath.Analyzer.csproj" />
+    <Project Path="../src/Meziantou.Framework.FullPath.CodeFix/Meziantou.Framework.FullPath.CodeFix.csproj" />
+    <Project Path="../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
+    <Project Path="../src/Meziantou.Framework.Imaging.Barcodes/Meziantou.Framework.Imaging.Barcodes.csproj" />
+    <Project Path="../src/Meziantou.Framework.Imaging/Meziantou.Framework.Imaging.csproj" />
+    <Project Path="../src/Meziantou.Framework.TemporaryDirectory/Meziantou.Framework.TemporaryDirectory.csproj" />
+    <Project Path="../src/Meziantou.Framework.Unicode/Meziantou.Framework.Unicode.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../tests/Meziantou.Framework.Barcodes.InteropTests/Meziantou.Framework.Barcodes.InteropTests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.Imaging.Barcodes.Tests/Meziantou.Framework.Imaging.Barcodes.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="../tools/Meziantou.Framework.Imaging.Barcodes.FontGenerator/Meziantou.Framework.Imaging.Barcodes.FontGenerator.csproj" />
+  </Folder>
+</Solution>

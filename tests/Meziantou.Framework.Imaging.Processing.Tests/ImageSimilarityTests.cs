@@ -5,9 +5,9 @@ using Meziantou.Framework.Imaging.Internals;
 namespace Meziantou.Framework.Imaging.Tests;
 
 /// <summary>
-/// SSIM, dHash and pHash. The expected scores and hashes come from scikit-image, from an independent Python
-/// implementation of the area-weighted thumbnail, from a brute-force computation of the SSIM definition written in the
-/// test, or from hand-built images whose hashes follow from the definition.
+/// SSIM, PSNR, SSIMULACRA 2, Butteraugli, dHash and pHash. The expected scores and hashes come from scikit-image, from the
+/// libjxl tools, from an independent Python implementation of the area-weighted thumbnail, from brute-force computations of
+/// the SSIM and PSNR definitions written in the test, or from hand-built images whose hashes follow from the definition.
 /// </summary>
 public sealed class ImageSimilarityTests
 {
@@ -99,6 +99,148 @@ public sealed class ImageSimilarityTests
 
         Assert.Throws<InvalidOperationException>(() => accumulator.ComputeMeanSsim());
         Assert.Throws<ArgumentException>(() => accumulator.AddRow(new Rgba32[3], new Rgba32[4]));
+    }
+
+    [Theory]
+    [InlineData("TexturedWithRedBlock")]
+    [InlineData("TranslucentAlphaShift")]
+    [InlineData("ScreenshotWithErrorBanner")]
+    [InlineData("OpaqueVersusTransparentRed")]
+    [InlineData("PatternWithNoise")]
+    public void ComputePsnr_MatchesABruteForceComputation(string name)
+    {
+        var (width, height, expected, actual) = CreateReferenceImages(name);
+        using var expectedImage = Image.ImportPixelData<Rgba32>(expected, width, height);
+        using var actualImage = Image.ImportPixelData<Rgba32>(actual, width, height);
+
+        Assert.Equal(ComputeReferencePsnr(expected, actual), ImageSimilarity.ComputePsnr(expectedImage.Frames[0], actualImage.Frames[0], Ct), tolerance: 1e-12);
+    }
+
+    [Fact]
+    public void ComputePsnr_AOneLevelErrorInEverySampleIs20Log10Of255()
+    {
+        using var expected = CreateSolidImage(9, 7, Gray(100));
+        using var actual = CreateSolidImage(9, 7, Gray(101));
+
+        Assert.Equal(20 * Math.Log10(255), ImageSimilarity.ComputePsnr(expected.Frames[0], actual.Frames[0], Ct), tolerance: 1e-12);
+    }
+
+    [Fact]
+    public void PerceptualMetrics_IdenticalPixelsHaveTheBestScore()
+    {
+        using var image = CreatePatternImage(37, 23, inverted: false);
+        using var copy = image.Clone();
+
+        Assert.Equal(double.PositiveInfinity, ImageSimilarity.ComputePsnr(image.Frames[0], copy.Frames[0], Ct));
+        Assert.Equal(100d, ImageSimilarity.ComputeSsimulacra2(image.Frames[0], copy.Frames[0], Ct));
+        Assert.Equal(new ButteraugliDistance(0, 0), ImageSimilarity.ComputeButteraugliDistance(image.Frames[0], copy.Frames[0], Ct));
+    }
+
+    // The expected scores come from the tools of libjxl 0.12.0, built with -DJPEGXL_ENABLE_DEVTOOLS=ON, on the images built
+    // by CreateReferenceImages saved as PNG files without color chunks (read as sRGB):
+    //   ssimulacra2 expected.png actual.png
+    // The port emulates the arithmetic of the tool (its sRGB curve, cube root and blur, with fused multiply-adds), so the
+    // scores agree with the 8 decimals it prints.
+    [Theory]
+    [InlineData("TexturedWithRedBlock", 22.85836756)]
+    [InlineData("TranslucentAlphaShift", -40.56160581)]
+    [InlineData("WhiteWithBlackSquare", -40.90694011)]
+    [InlineData("ScreenshotWithErrorBanner", -22.96581715)]
+    [InlineData("OpaqueVersusTransparentRed", 75.02388435)]
+    [InlineData("PatternWithNoise", 85.42310758)]
+    [InlineData("MinimumSizePatternWithNoise", 95.22227886)]
+    [InlineData("NarrowPatternWithNoise", 95.42975291)]
+    public void ComputeSsimulacra2_MatchesLibjxl(string name, double expectedScore)
+    {
+        var (width, height, expected, actual) = CreateReferenceImages(name);
+        using var expectedImage = Image.ImportPixelData<Rgba32>(expected, width, height);
+        using var actualImage = Image.ImportPixelData<Rgba32>(actual, width, height);
+
+        Assert.Equal(expectedScore, ImageSimilarity.ComputeSsimulacra2(expectedImage.Frames[0], actualImage.Frames[0], Ct), tolerance: 1e-6);
+    }
+
+    // The expected distances come from butteraugli_main of libjxl 0.12.0 (same build and files as above), which prints the
+    // largest distance and the 3-norm. For SmallPatternWithNoise, which the tool scores 0, the values come from the tool run
+    // on the frame extended to 8x8 as ButteraugliDiffmap extends it, with --rawdistmap, cropped back to 5x6. The port
+    // computes in the order of the scalar code of libjxl: the tool, with SIMD instructions and a fast logarithm, differs by
+    // about 1e-5 of the value.
+    [Theory]
+    [InlineData("TexturedWithRedBlock", 24.7280178070, 10.609880)]
+    [InlineData("TranslucentAlphaShift", 46.2900810242, 25.076416)]
+    [InlineData("ScreenshotWithErrorBanner", 78.8184814453, 29.324292)]
+    [InlineData("OpaqueVersusTransparentRed", 339.9974975586, 339.995591)]
+    [InlineData("PatternWithNoise", 0.5026070476, 0.323986)]
+    [InlineData("SmallPatternWithNoise", 0.5853016973, 0.4634496)]
+    [InlineData("MinimumSizePatternWithNoise", 0.4033407569, 0.308746)]
+    [InlineData("NarrowPatternWithNoise", 0.5056172013, 0.340175)]
+    public void ComputeButteraugliDistance_MatchesLibjxl(string name, double expectedMaxDistance, double expectedPNorm3)
+    {
+        var (width, height, expected, actual) = CreateReferenceImages(name);
+        using var expectedImage = Image.ImportPixelData<Rgba32>(expected, width, height);
+        using var actualImage = Image.ImportPixelData<Rgba32>(actual, width, height);
+
+        var distance = ImageSimilarity.ComputeButteraugliDistance(expectedImage.Frames[0], actualImage.Frames[0], Ct);
+
+        Assert.Equal(expectedMaxDistance, distance.MaxDistance, tolerance: expectedMaxDistance * 1e-4);
+        Assert.Equal(expectedPNorm3, distance.PNorm3, tolerance: expectedPNorm3 * 1e-4);
+    }
+
+    [Fact]
+    public void ComputeButteraugliDistance_PNorm3IsAtMostTheMaxDistance()
+    {
+        var (width, height, expected, actual) = CreateReferenceImages("TexturedWithRedBlock");
+        using var expectedImage = Image.ImportPixelData<Rgba32>(expected, width, height);
+        using var actualImage = Image.ImportPixelData<Rgba32>(actual, width, height);
+
+        var distance = ImageSimilarity.ComputeButteraugliDistance(expectedImage.Frames[0], actualImage.Frames[0], Ct);
+
+        Assert.InRange(distance.PNorm3, 0, distance.MaxDistance);
+        Assert.Equal(distance, new ButteraugliDistance(distance.MaxDistance, distance.PNorm3));
+        Assert.NotEqual(distance, default);
+    }
+
+    [Fact]
+    public void ComputeSsimulacra2_RejectsFramesSmallerThan8x8()
+    {
+        using var narrow = CreatePatternImage(7, 20, inverted: false);
+        using var short_ = CreatePatternImage(20, 7, inverted: false);
+
+        Assert.Throws<ArgumentException>("expected", () => ImageSimilarity.ComputeSsimulacra2(narrow.Frames[0], narrow.Frames[0], Ct));
+        Assert.Throws<ArgumentException>("expected", () => ImageSimilarity.ComputeSsimulacra2(short_.Frames[0], short_.Frames[0], Ct));
+    }
+
+    [Fact]
+    public void PerceptualMetrics_TransparentPixelsScoreTheSameWhateverColorTheyHide()
+    {
+        var (expected, actual) = CreateRandomPixels(20 * 10);
+        for (var i = 0; i < expected.Length; i++)
+        {
+            expected[i] = expected[i] with { A = 0 };
+            actual[i] = actual[i] with { A = 0 };
+        }
+
+        using var expectedImage = Image.ImportPixelData<Rgba32>(expected, 20, 10);
+        using var actualImage = Image.ImportPixelData<Rgba32>(actual, 20, 10);
+
+        Assert.Equal(double.PositiveInfinity, ImageSimilarity.ComputePsnr(expectedImage.Frames[0], actualImage.Frames[0], Ct));
+        Assert.Equal(100d, ImageSimilarity.ComputeSsimulacra2(expectedImage.Frames[0], actualImage.Frames[0], Ct));
+        Assert.Equal(new ButteraugliDistance(0, 0), ImageSimilarity.ComputeButteraugliDistance(expectedImage.Frames[0], actualImage.Frames[0], Ct));
+    }
+
+    [Fact]
+    public void PerceptualMetrics_LargerDifferencesScoreWorse()
+    {
+        var (width, height, expected, _) = CreateReferenceImages("PatternWithNoise");
+        using var reference = Image.ImportPixelData<Rgba32>(expected, width, height);
+        using var slightlyDifferent = Image.ImportPixelData<Rgba32>(Array.ConvertAll(expected, p => new Rgba32((byte)(p.R ^ 1), p.G, p.B)), width, height);
+        using var veryDifferent = Image.ImportPixelData<Rgba32>(Array.ConvertAll(expected, p => new Rgba32((byte)(255 - p.R), p.G, p.B)), width, height);
+        var frame = reference.Frames[0];
+
+        Assert.True(ImageSimilarity.ComputePsnr(frame, slightlyDifferent.Frames[0], Ct) > ImageSimilarity.ComputePsnr(frame, veryDifferent.Frames[0], Ct));
+        Assert.True(ImageSimilarity.ComputeSsimulacra2(frame, slightlyDifferent.Frames[0], Ct) > 90);
+        Assert.True(ImageSimilarity.ComputeSsimulacra2(frame, veryDifferent.Frames[0], Ct) < 50);
+        Assert.True(ImageSimilarity.ComputeButteraugliDistance(frame, slightlyDifferent.Frames[0], Ct).MaxDistance < 1);
+        Assert.True(ImageSimilarity.ComputeButteraugliDistance(frame, veryDifferent.Frames[0], Ct).MaxDistance > 5);
     }
 
     [Fact]
@@ -271,6 +413,9 @@ public sealed class ImageSimilarityTests
         {
             using var converted = ConvertTo(reference, format);
             Assert.Equal(1d, ImageSimilarity.ComputeSsim(reference.Frames[0], converted.Frames[0], Ct));
+            Assert.Equal(double.PositiveInfinity, ImageSimilarity.ComputePsnr(reference.Frames[0], converted.Frames[0], Ct));
+            Assert.Equal(100d, ImageSimilarity.ComputeSsimulacra2(converted.Frames[0], reference.Frames[0], Ct));
+            Assert.Equal(new ButteraugliDistance(0, 0), ImageSimilarity.ComputeButteraugliDistance(reference.Frames[0], converted.Frames[0], Ct));
             Assert.Equal(0, ImageSimilarity.ComputeDifferenceHashDistance(reference.Frames[0], converted.Frames[0], Ct));
             Assert.Equal(0, ImageSimilarity.ComputePerceptualHashDistance(converted.Frames[0], reference.Frames[0], Ct));
             Assert.Equal(ImageSimilarity.ComputeDifferenceHash(reference.Frames[0], Ct), ImageSimilarity.ComputeDifferenceHash(converted.Frames[0], Ct));
@@ -289,6 +434,12 @@ public sealed class ImageSimilarityTests
 
         Assert.Equal(1d, ImageSimilarity.ComputeSsim(reference.Frames[0], roundsDown.Frames[0], Ct));
         Assert.True(ImageSimilarity.ComputeSsim(reference.Frames[0], roundsUp.Frames[0], Ct) < 1);
+        Assert.Equal(double.PositiveInfinity, ImageSimilarity.ComputePsnr(reference.Frames[0], roundsDown.Frames[0], Ct));
+        Assert.Equal(20 * Math.Log10(255), ImageSimilarity.ComputePsnr(reference.Frames[0], roundsUp.Frames[0], Ct), tolerance: 1e-12);
+        Assert.Equal(100d, ImageSimilarity.ComputeSsimulacra2(reference.Frames[0], roundsDown.Frames[0], Ct));
+        Assert.True(ImageSimilarity.ComputeSsimulacra2(reference.Frames[0], roundsUp.Frames[0], Ct) < 100);
+        Assert.Equal(0d, ImageSimilarity.ComputeButteraugliDistance(reference.Frames[0], roundsDown.Frames[0], Ct).MaxDistance);
+        Assert.True(ImageSimilarity.ComputeButteraugliDistance(reference.Frames[0], roundsUp.Frames[0], Ct).MaxDistance > 0);
     }
 
     [Fact]
@@ -305,7 +456,16 @@ public sealed class ImageSimilarityTests
         Assert.Throws<ArgumentNullException>("expected", () => ImageSimilarity.ComputeDifferenceHashDistance(null!, frame, Ct));
         Assert.Throws<ArgumentNullException>("actual", () => ImageSimilarity.ComputePerceptualHashDistance(frame, null!, Ct));
 
+        Assert.Throws<ArgumentNullException>("expected", () => ImageSimilarity.ComputePsnr(null!, frame, Ct));
+        Assert.Throws<ArgumentNullException>("actual", () => ImageSimilarity.ComputePsnr(frame, null!, Ct));
+        Assert.Throws<ArgumentNullException>("expected", () => ImageSimilarity.ComputeSsimulacra2(null!, frame, Ct));
+        Assert.Throws<ArgumentNullException>("actual", () => ImageSimilarity.ComputeSsimulacra2(frame, null!, Ct));
+        Assert.Throws<ArgumentNullException>("expected", () => ImageSimilarity.ComputeButteraugliDistance(null!, frame, Ct));
+        Assert.Throws<ArgumentNullException>("actual", () => ImageSimilarity.ComputeButteraugliDistance(frame, null!, Ct));
+
         Assert.Throws<ArgumentException>("actual", () => ImageSimilarity.ComputeSsim(frame, other.Frames[0], Ct));
+        Assert.Throws<ArgumentException>("actual", () => ImageSimilarity.ComputePsnr(frame, other.Frames[0], Ct));
+        Assert.Throws<ArgumentException>("actual", () => ImageSimilarity.ComputeButteraugliDistance(frame, other.Frames[0], Ct));
         Assert.Throws<ArgumentException>("actual", () => ImageSimilarity.ComputeDifferenceHashDistance(frame, other.Frames[0], Ct));
         Assert.Throws<ArgumentException>("actual", () => ImageSimilarity.ComputePerceptualHashDistance(frame, other.Frames[0], Ct));
     }
@@ -319,6 +479,9 @@ public sealed class ImageSimilarityTests
         var frame = image.Frames[0];
 
         Assert.Throws<OperationCanceledException>(() => ImageSimilarity.ComputeSsim(frame, frame, canceled.Token));
+        Assert.Throws<OperationCanceledException>(() => ImageSimilarity.ComputePsnr(frame, frame, canceled.Token));
+        Assert.Throws<OperationCanceledException>(() => ImageSimilarity.ComputeSsimulacra2(frame, frame, canceled.Token));
+        Assert.Throws<OperationCanceledException>(() => ImageSimilarity.ComputeButteraugliDistance(frame, frame, canceled.Token));
         Assert.Throws<OperationCanceledException>(() => ImageSimilarity.ComputeDifferenceHash(frame, canceled.Token));
         Assert.Throws<OperationCanceledException>(() => ImageSimilarity.ComputePerceptualHash(frame, canceled.Token));
         Assert.Throws<OperationCanceledException>(() => ImageSimilarity.ComputeDifferenceHashDistance(frame, frame, canceled.Token));
@@ -340,6 +503,9 @@ public sealed class ImageSimilarityTests
             Assert.Throws<InvalidOperationException>(() => ImageSimilarity.ComputeSsim(otherFrame, frame, Ct));
             Assert.Throws<InvalidOperationException>(() => ImageSimilarity.ComputeDifferenceHash(frame, Ct));
             Assert.Throws<InvalidOperationException>(() => ImageSimilarity.ComputePerceptualHashDistance(frame, otherFrame, Ct));
+            Assert.Throws<InvalidOperationException>(() => ImageSimilarity.ComputePsnr(frame, otherFrame, Ct));
+            Assert.Throws<InvalidOperationException>(() => ImageSimilarity.ComputeSsimulacra2(otherFrame, frame, Ct));
+            Assert.Throws<InvalidOperationException>(() => ImageSimilarity.ComputeButteraugliDistance(frame, otherFrame, Ct));
         });
 
         // The lease of the other frame was released when the first one failed
@@ -351,6 +517,8 @@ public sealed class ImageSimilarityTests
         Assert.Throws<ObjectDisposedException>(() => ImageSimilarity.ComputeSsim(frame, disposedFrame, Ct));
         Assert.Throws<ObjectDisposedException>(() => ImageSimilarity.ComputePerceptualHash(disposedFrame, Ct));
         Assert.Throws<ObjectDisposedException>(() => ImageSimilarity.ComputeDifferenceHashDistance(disposedFrame, frame, Ct));
+        Assert.Throws<ObjectDisposedException>(() => ImageSimilarity.ComputePsnr(disposedFrame, frame, Ct));
+        Assert.Throws<ObjectDisposedException>(() => ImageSimilarity.ComputeButteraugliDistance(frame, disposedFrame, Ct));
     }
 
     [Fact]
@@ -381,6 +549,51 @@ public sealed class ImageSimilarityTests
         using (var image = new Image<Rgba32>(Size, Size, Colors.White, exact))
         {
             Assert.Equal(1d, ImageSimilarity.ComputeSsim(image.Frames[0], image.Frames[0], Ct));
+        }
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void PerceptualMetrics_ChargeTheirPlanesToTheScopeAndReleaseThem(bool butteraugli)
+    {
+        // The pixels take 64 × 64 × 4 bytes; the float planes of the metrics need several times more
+        const int Size = 64;
+        long peak;
+        using (var probe = CreatePatternImage(Size, Size, inverted: false))
+        {
+            var before = probe.Owner.Scope.LiveBytes;
+            Compute(probe);
+            peak = probe.Owner.Scope.GetDiagnostics().PeakLiveBytes;
+            Assert.True(peak > before + (Size * Size * 4 * 6), "The planes are charged to the scope of the image");
+            Assert.Equal(before, probe.Owner.Scope.LiveBytes);
+        }
+
+        var tight = new ImageConfiguration { Limits = new ImageResourceLimits { MaxLiveAllocationBytes = peak - 1 } };
+        using (var image = CreatePatternImage(Size, Size, inverted: false, tight))
+        {
+            var exception = Assert.Throws<ImageResourceLimitException>(() => Compute(image));
+            Assert.Equal(ImageResourceLimitKind.LiveAllocationBytes, exception.Kind);
+            Assert.Equal(0, image.Owner.ActiveLeaseCount);
+            Assert.Equal(0, image.Owner.Scope.GetLiveBytes(AllocationKind.Temporary));
+        }
+
+        var exact = new ImageConfiguration { Limits = new ImageResourceLimits { MaxLiveAllocationBytes = peak } };
+        using (var image = CreatePatternImage(Size, Size, inverted: false, exact))
+        {
+            Compute(image);
+        }
+
+        void Compute(Image image)
+        {
+            if (butteraugli)
+            {
+                ImageSimilarity.ComputeButteraugliDistance(image.Frames[0], image.Frames[0], Ct);
+            }
+            else
+            {
+                ImageSimilarity.ComputeSsimulacra2(image.Frames[0], image.Frames[0], Ct);
+            }
         }
     }
 
@@ -455,6 +668,19 @@ public sealed class ImageSimilarityTests
             case "OpaqueVersusTransparentRed":
                 return (16, 16, CreateFilled(16, 16, new Rgba32(255, 0, 0)), CreateFilled(16, 16, new Rgba32(255, 0, 0, 0)));
 
+            // Opaque, with a deterministic noise of ±5 levels: the pairs of the perceptual metrics, of several sizes
+            case "PatternWithNoise":
+                return CreateNoisyPair(61, 45);
+
+            case "SmallPatternWithNoise":
+                return CreateNoisyPair(5, 6);
+
+            case "MinimumSizePatternWithNoise":
+                return CreateNoisyPair(8, 8);
+
+            case "NarrowPatternWithNoise":
+                return CreateNoisyPair(9, 40);
+
             default:
                 throw new ArgumentOutOfRangeException(nameof(name), name, message: null);
         }
@@ -474,6 +700,21 @@ public sealed class ImageSimilarityTests
             }
 
             return pixels;
+        }
+
+        static (int Width, int Height, Rgba32[] Expected, Rgba32[] Actual) CreateNoisyPair(int width, int height)
+        {
+            var expected = CreatePattern(width, height, static (_, _) => 255);
+            var actual = new Rgba32[expected.Length];
+            for (var i = 0; i < expected.Length; i++)
+            {
+                var pixel = expected[i];
+                actual[i] = new Rgba32(AddNoise(pixel.R, i), AddNoise(pixel.G, i * 3 + 1), AddNoise(pixel.B, i * 7 + 2));
+            }
+
+            return (width, height, expected, actual);
+
+            static byte AddNoise(byte value, int seed) => (byte)Math.Clamp(value + (seed * 2654435761u >> 28) % 11 - 5, 0, 255);
         }
 
         static Rgba32[] CreateFilled(int width, int height, Rgba32 color)
@@ -521,7 +762,7 @@ public sealed class ImageSimilarityTests
         });
     }
 
-    private static Image<Rgba32> CreatePatternImage(int width, int height, bool inverted)
+    private static Image<Rgba32> CreatePatternImage(int width, int height, bool inverted, ImageConfiguration? configuration = null)
     {
         var pixels = new Rgba32[checked(width * height)];
         for (var y = 0; y < height; y++)
@@ -533,7 +774,7 @@ public sealed class ImageSimilarityTests
             }
         }
 
-        return Image.ImportPixelData<Rgba32>(pixels, width, height);
+        return Image.ImportPixelData<Rgba32>(pixels, width, height, configuration: configuration);
     }
 
     private static Image<Rgba32> CreateGradientImage(int width, int height)
@@ -578,6 +819,39 @@ public sealed class ImageSimilarityTests
         return (expected, actual);
 
         static Rgba32 FromPacked(uint value) => new((byte)value, (byte)(value >> 8), (byte)(value >> 16), (byte)(value >> 24));
+    }
+
+    /// <summary>Computes the ratio straight from its definition, in floating point: 10 log10(255² / MSE), color and alpha apart.</summary>
+    private static double ComputeReferencePsnr(Rgba32[] expected, Rgba32[] actual)
+    {
+        double colorError = 0, alphaError = 0;
+        for (var i = 0; i < expected.Length; i++)
+        {
+            for (var channel = 0; channel < 3; channel++)
+            {
+                var difference = Premultiplied(expected[i], channel) - Premultiplied(actual[i], channel);
+                colorError += difference * difference;
+            }
+
+            var alphaDifference = expected[i].A - actual[i].A;
+            alphaError += alphaDifference * alphaDifference;
+        }
+
+        return Math.Min(ToPsnr(colorError / (3.0 * expected.Length)), ToPsnr(alphaError / expected.Length));
+
+        static double ToPsnr(double meanSquaredError) => meanSquaredError is 0 ? double.PositiveInfinity : 10 * Math.Log10(255.0 * 255.0 / meanSquaredError);
+
+        static double Premultiplied(Rgba32 pixel, int channel)
+        {
+            var value = channel switch
+            {
+                0 => pixel.R,
+                1 => pixel.G,
+                _ => pixel.B,
+            };
+
+            return (value * pixel.A + 127) / 255;
+        }
     }
 
     /// <summary>Computes the score straight from its definition: every window is summed from scratch, in floating point.</summary>

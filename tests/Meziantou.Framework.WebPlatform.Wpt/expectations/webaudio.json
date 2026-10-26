@@ -597,10 +597,7 @@
     "total": 5
   },
   "webaudio/the-audio-api/the-audiocontext-interface/suspend-with-navigation.html": {
-    "total": 1,
-    "failures": {
-      "suspend() with navigation": "PRECONDITION_FAILED"
-    }
+    "total": 1
   },
   "webaudio/the-audio-api/the-audionode-interface/audionode-channel-rules.html": {
     "total": 178

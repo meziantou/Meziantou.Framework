@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 277 | 298 | 0 | 93% |
+| [Stable](#stable-tests) | 278 | 298 | 0 | 93% |
 | [Tentative](#tentative-tests) | 2 | 5 | 0 | 40% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **279** | **303** | **0** | **92%** |
+| **All** | **280** | **303** | **0** | **92%** |
 
 ## Stable tests
 
@@ -86,7 +86,7 @@
 | [`the-audio-api/the-audiocontext-interface/processing-after-resume.https.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-audiocontext-interface/processing-after-resume.https.html) | Pass | 1 / 1 |  |  |
 | [`the-audio-api/the-audiocontext-interface/promise-methods-after-discard.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-audiocontext-interface/promise-methods-after-discard.html) | Pass | 3 / 3 |  |  |
 | [`the-audio-api/the-audiocontext-interface/suspend-after-construct.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-audiocontext-interface/suspend-after-construct.html) | Pass | 5 / 5 |  |  |
-| [`the-audio-api/the-audiocontext-interface/suspend-with-navigation.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-audiocontext-interface/suspend-with-navigation.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the back/forward cache: the test checks that a page with a suspended `AudioContext` is restored from it |
+| [`the-audio-api/the-audiocontext-interface/suspend-with-navigation.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-audiocontext-interface/suspend-with-navigation.html) | Pass | 1 / 1 |  |  |
 | [`the-audio-api/the-audionode-interface/audionode-channel-rules.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-audionode-interface/audionode-channel-rules.html) | Pass | 178 / 178 |  |  |
 | [`the-audio-api/the-audionode-interface/audionode-connect-method-chaining.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-audionode-interface/audionode-connect-method-chaining.html) | Fail | 3 / 4 | NOT IMPLEMENTED | `createMediaElementSource()` and `createMediaStreamSource()` (`MediaElementAudioSourceNode`, `MediaStreamAudioSourceNode`) |
 | [`the-audio-api/the-audionode-interface/audionode-connect-order.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-audionode-interface/audionode-connect-order.html) | Pass | 1 / 1 |  |  |

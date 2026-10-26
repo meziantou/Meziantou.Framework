@@ -11894,6 +11894,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool MediaSourceEnabled { get => throw null; init { } }
         public bool NavigationApiEnabled { get => throw null; init { } }
         public bool NavigationTimingEnabled { get => throw null; init { } }
+        public bool ObservableEnabled { get => throw null; init { } }
         public bool PaintTimingEnabled { get => throw null; init { } }
         public bool PaintWorkletEnabled { get => throw null; init { } }
         public bool PermissionsPolicyEnabled { get => throw null; init { } }

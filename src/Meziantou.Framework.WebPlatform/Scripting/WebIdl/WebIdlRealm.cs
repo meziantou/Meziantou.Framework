@@ -149,9 +149,10 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             DefineLazyGlobal(binding.Name, binding);
         }
 
-        // The streams, the console and WebAssembly are exposed in every global object ([Exposed=*]); fetch, the Web
+        // The streams, the observables, the console and WebAssembly are exposed in every global object ([Exposed=*]); fetch, the Web
         // Cryptography API and the Cache API in the windows and the workers, not in the worklets
         DefineStreamGlobals();
+        DefineObservableGlobals();
         if (Features.FetchEnabled && isWindowOrWorker)
         {
             DefineFetchGlobals();
@@ -516,6 +517,10 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         else if (binding.Name == "Blob")
         {
             DefineBlobStreamMethods(prototype);
+        }
+        else if (binding.Name == "EventTarget")
+        {
+            DefineEventTargetObservableMembers(prototype);
         }
         else if (binding.Name is "Element" or "ShadowRoot" or "CharacterData")
         {

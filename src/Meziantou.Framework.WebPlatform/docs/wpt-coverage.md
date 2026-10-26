@@ -49,9 +49,9 @@ The reasons come from `wpt-skip.json` and `wpt-reasons.json` (`tests/Meziantou.F
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 24,609 | 29,245 | 2,985 | 94% |
-| [Tentative](#tentative-tests) | 1,108 | 2,996 | 830 | 51% |
+| [Tentative](#tentative-tests) | 1,135 | 2,996 | 830 | 52% |
 | [Reftests](#reftests) | 27,308 | 28,735 | 226 | 96% |
-| **All** | **53,025** | **60,976** | **4,041** | **93%** |
+| **All** | **53,052** | **60,976** | **4,041** | **93%** |
 
 ## Stable tests
 
@@ -467,7 +467,7 @@ The reasons come from `wpt-skip.json` and `wpt-reasons.json` (`tests/Meziantou.F
 | [`delegated-ink`](wpt-coverage/delegated-ink.md#tentative-tests) | 0 | 4 | 4 | – |
 | [`digital-credentials`](wpt-coverage/digital-credentials.md#tentative-tests) | 0 | 3 | 3 | – |
 | [`document-policy`](wpt-coverage/document-policy.md#tentative-tests) | 0 | 3 | 3 | – |
-| [`dom`](wpt-coverage/dom.md#tentative-tests) | 3 | 55 | 2 | 6% |
+| [`dom`](wpt-coverage/dom.md#tentative-tests) | 30 | 55 | 2 | 57% |
 | [`domparsing`](wpt-coverage/domparsing.md#tentative-tests) | 32 | 39 | 0 | 82% |
 | [`domxpath`](wpt-coverage/domxpath.md#tentative-tests) | 6 | 6 | 0 | 100% |
 | [`editing`](wpt-coverage/editing.md#tentative-tests) | 25 | 61 | 0 | 41% |
@@ -569,7 +569,7 @@ The reasons come from `wpt-skip.json` and `wpt-reasons.json` (`tests/Meziantou.F
 | [`workers`](wpt-coverage/workers.md#tentative-tests) | 0 | 8 | 0 | 0% |
 | [`xhr`](wpt-coverage/xhr.md#tentative-tests) | 2 | 2 | 0 | 100% |
 | [`xml`](wpt-coverage/xml.md#tentative-tests) | 0 | 2 | 2 | – |
-| **Total (163 sections)** | **1,108** | **2,996** | **830** | **51%** |
+| **Total (163 sections)** | **1,135** | **2,996** | **830** | **52%** |
 
 ## Reftests
 

@@ -90,6 +90,8 @@ Console.WriteLine(document.Body!.InnerHtml); // <ul id="list"><li>a</li><li>b</l
 - The Streams Standard (`ReadableStream`, `WritableStream`, `TransformStream`...), `TextEncoderStream`,
   `TextDecoderStream`, `CompressionStream`, `DecompressionStream`, `Blob.stream()` and `Blob.textStream()` are supported:
   see [Streams](#streams).
+- The Observable API (`Observable`, `Subscriber` and `EventTarget.prototype.when()`) is supported: see
+  [Observable](#observable).
 - `Function.prototype.toString()` returns the source text of the functions (https://tc39.es/ecma262/#sec-function.prototype.tostring):
   the compiled functions reference the source of their script, so the source of a script stays in memory as long as one
   of its functions is alive. This is not configurable. A function without source text (a built-in function, or a
@@ -354,6 +356,26 @@ microtasks are the ones of the engine:
 
 The streams cannot be transferred (`postMessage()` or `structuredClone()` with a transfer list), and the
 `ReadableStream` of type `owning` (a tentative proposal) is not supported.
+
+### Observable
+
+The Observable API (https://wicg.github.io/observable/) is implemented in JavaScript by the WebIDL bindings
+(`Scripting/WebIdl/Observable.js`, an embedded resource), as its algorithms are made of callbacks, promises, iterators
+and abort signals:
+
+- `Observable` (the constructor, `subscribe()` and `Observable.from()` for the observables, the async iterables, the
+  iterables and the promises), `Subscriber` (`next()`, `error()`, `complete()`, `addTeardown()`, `active`, `signal`), and
+  `EventTarget.prototype.when()`, whose subscriptions add an event listener removed when the subscription ends.
+- The operators that return an observable (`takeUntil()`, `map()`, `filter()`, `take()`, `drop()`, `flatMap()`,
+  `switchMap()`, `inspect()`, `catch()`, `finally()`) and those that return a promise (`toArray()`, `forEach()`,
+  `every()`, `first()`, `last()`, `find()`, `some()`, `reduce()`).
+- The subscribers and the abort signals are the ones of the DOM: an abort signal passed to `subscribe()` unsubscribes,
+  and the teardowns run in the reverse order of their addition. An error that no observer handles is reported to the
+  global object (an `error` event). Nothing happens in a window whose document is not fully active.
+- As for the streams, the script is evaluated in a realm when one of its members is first used, the algorithms use the
+  intrinsics captured at that time, and the observables of the realms of an agent can be used together.
+- `BrowsingContextOptions.Features` hides the API with `ObservableEnabled` (see
+  [Disabling features](browsing-context.md#disabling-features)).
 
 ### Fetch
 

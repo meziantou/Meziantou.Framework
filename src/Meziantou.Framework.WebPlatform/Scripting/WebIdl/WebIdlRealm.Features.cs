@@ -58,6 +58,8 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         ["NavigationPrecommitController"] = static features => features.NavigationApiEnabled,
         ["NavigationTransition"] = static features => features.NavigationApiEnabled,
         ["URLPattern"] = static features => features.UrlPatternEnabled,
+        ["Observable"] = static features => features.ObservableEnabled,
+        ["Subscriber"] = static features => features.ObservableEnabled,
         ["IDBCursor"] = static features => features.IndexedDBEnabled,
         ["IDBCursorWithValue"] = static features => features.IndexedDBEnabled,
         ["IDBDatabase"] = static features => features.IndexedDBEnabled,
@@ -137,6 +139,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
     private static readonly FrozenDictionary<(string Interface, string Member), Func<WebPlatformFeatures, bool>> FeatureMembers = new Dictionary<(string Interface, string Member), Func<WebPlatformFeatures, bool>>
     {
         [("Navigator", "sendBeacon")] = static features => features.BeaconEnabled,
+        [("EventTarget", "when")] = static features => features.ObservableEnabled,
         [("Document", "prerendering")] = static features => features.SpeculationRulesEnabled,
         [("Document", "onprerenderingchange")] = static features => features.SpeculationRulesEnabled,
         [("PerformanceNavigationTiming", "activationStart")] = static features => features.SpeculationRulesEnabled,

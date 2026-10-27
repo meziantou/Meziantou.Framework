@@ -1243,7 +1243,9 @@ public class BlockProcessor
     {
         Line = newLine;
         Column = column;
-        ColumnBeforeIndent = 0;
+
+        // The line part starts at the column, so there is no indent before it yet
+        ColumnBeforeIndent = column;
         StartBeforeIndent = Start;
         _originalLineStart = newLine.Start - column;
         TriviaStart = newLine.Start;

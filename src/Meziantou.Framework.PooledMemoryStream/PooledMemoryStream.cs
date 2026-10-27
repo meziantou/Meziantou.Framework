@@ -20,6 +20,14 @@ namespace Meziantou.Framework;
 /// the stream is disposed. Accessing them after the stream is disposed is undefined behavior.
 /// </para>
 /// <para>
+/// An array returned by <see cref="GetBuffer"/> / <see cref="TryGetBuffer"/> is never returned to the pool before the
+/// stream is disposed, so no other stream can rent it while the caller may still hold it. As with
+/// <see cref="MemoryStream"/>, it stays the stream's storage (shrinking the stream with <see cref="SetLength"/> or
+/// <see cref="Capacity"/> keeps it, so later writes overwrite it) until a later <see cref="GetBuffer"/> /
+/// <see cref="TryGetBuffer"/> call has to consolidate several blocks into a new array; from then on it remains valid
+/// but no longer reflects the contents of the stream.
+/// </para>
+/// <para>
 /// Because the storage is a chain of blocks rather than one array, the stream is not bounded by
 /// <see cref="Array.MaxLength"/>: it can hold as many bytes as memory allows. The members that have to materialize
 /// the contents as a single array (<see cref="ToArray"/>, <see cref="GetBuffer"/> and <see cref="TryGetBuffer"/>)
@@ -49,6 +57,12 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
     // EnsureCapacityAtLeast, or the remainder of a reservation the append point has not reached yet. The index only
     // ever moves forward, so segments before it are frozen and the logical order of the data is the segment order.
     private int _appendIndex;
+
+    // The array last handed out by GetBuffer/TryGetBuffer while it is still part of the chain, and the arrays handed
+    // out earlier that the chain no longer uses. The caller may still hold them, so they must not go back to the
+    // shared pool, where another stream could rent them, until the stream is disposed.
+    private byte[]? _exposedBuffer;
+    private List<byte[]>? _detachedBuffers;
 
     /// <summary>Initializes a new instance using <see cref="PooledMemoryStreamOptions.Default"/>.</summary>
     public PooledMemoryStream()
@@ -418,7 +432,8 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
     /// <summary>
     /// Consolidates the stream contents into a single contiguous array and returns it. The returned array may be
     /// larger than <see cref="Length"/>; only the first <see cref="Length"/> bytes are valid. The array is owned by
-    /// the stream and is returned to the pool when the stream is disposed.
+    /// the stream and is returned to the pool when the stream is disposed, not before: if a later operation replaces
+    /// it, it stays valid but no longer reflects the contents of the stream.
     /// </summary>
     /// <exception cref="InvalidOperationException">The stream is longer than <see cref="Array.MaxLength"/>.</exception>
     public override byte[] GetBuffer()
@@ -483,6 +498,15 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
             _isOpen = false;
             ReturnSegmentsToPool();
             _segments.Clear();
+            if (_detachedBuffers is not null)
+            {
+                foreach (var array in _detachedBuffers)
+                    PooledBufferPool.Shared.Return(array, _options.MaxRetainedBytesPerBucket, _options.ClearOnReturn);
+
+                _detachedBuffers = null;
+            }
+
+            _exposedBuffer = null;
             _length = 0;
             _position = 0;
             _capacity = 0;
@@ -673,8 +697,10 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
     {
         while (_segments.Count > 0)
         {
+            // The array handed out by GetBuffer cannot go back to the pool yet, so keep using it as storage rather
+            // than holding it aside until the stream is disposed: the capacity stays at least the requested value.
             var last = _segments[^1];
-            if (last.Used != 0 || _capacity - last.Array.Length < targetCapacity)
+            if (last.Used != 0 || _capacity - last.Array.Length < targetCapacity || ReferenceEquals(last.Array, _exposedBuffer))
                 break;
 
             _capacity -= last.Array.Length;
@@ -697,26 +723,39 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
             if (value <= cumulative + segment.Used)
             {
                 var newUsed = (int)(value - cumulative);
-                for (var j = _segments.Count - 1; j > i; j--)
+                var firstRemoved = newUsed == 0 ? i : i + 1;
+                byte[]? exposed = null;
+                for (var j = _segments.Count - 1; j >= firstRemoved; j--)
                 {
-                    _capacity -= _segments[j].Array.Length;
-                    PooledBufferPool.Shared.Return(_segments[j].Array, _options.MaxRetainedBytesPerBucket, _options.ClearOnReturn);
+                    var array = _segments[j].Array;
                     _segments.RemoveAt(j);
+                    if (ReferenceEquals(array, _exposedBuffer))
+                    {
+                        exposed = array;
+                    }
+                    else
+                    {
+                        _capacity -= array.Length;
+                        PooledBufferPool.Shared.Return(array, _options.MaxRetainedBytesPerBucket, _options.ClearOnReturn);
+                    }
                 }
 
-                if (newUsed == 0)
-                {
-                    _capacity -= segment.Array.Length;
-                    _segments.RemoveAt(i);
-                    PooledBufferPool.Shared.Return(segment.Array, _options.MaxRetainedBytesPerBucket, _options.ClearOnReturn);
-                }
-                else
+                if (newUsed > 0)
                 {
                     CollectionsMarshal.AsSpan(_segments)[i].Used = newUsed;
                 }
 
                 _length = value;
                 _appendIndex = Math.Max(_segments.Count - 1, 0);
+
+                // The array handed out by GetBuffer cannot go back to the pool yet. Keep it as an empty block after the
+                // append point instead, like MemoryStream keeps its buffer: the stream reuses it for the next writes
+                // rather than holding one more array per GetBuffer/SetLength cycle until it is disposed.
+                if (exposed is not null)
+                {
+                    _segments.Add(new Segment(exposed));
+                }
+
                 return;
             }
 
@@ -731,13 +770,15 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
             return Array.Empty<byte>();
 
         if (_segments.Count == 1)
-            return ClearTail(_segments[0].Array);
+            return Expose(_segments[0].Array);
 
         var size = _options.GetContiguousBlockSize((int)_length);
         var array = PooledBufferPool.Shared.Rent(size);
         CopyAllTo(array);
 
-        ReturnSegmentsToPool();
+        foreach (var segment in _segments)
+            ReleaseArray(segment.Array);
+
         _segments.Clear();
         _capacity = 0;
 
@@ -745,16 +786,33 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
         _capacity = array.Length;
         _appendIndex = 0;
         ResetCursor();
-        return ClearTail(array);
+        return Expose(array);
     }
 
-    // GetBuffer/TryGetBuffer hand out the whole array, not just [0, Length). Arrays come from a pool shared by every
-    // instance, so the region past Length would otherwise expose whatever its previous tenant wrote.
-    private byte[] ClearTail(byte[] array)
+    private byte[] Expose(byte[] array)
     {
+        // GetBuffer/TryGetBuffer hand out the whole array, not just [0, Length). Arrays come from a pool shared by
+        // every instance, so the region past Length would otherwise expose whatever its previous tenant wrote.
         var length = (int)_length;
         Array.Clear(array, length, array.Length - length);
+
+        _exposedBuffer = array;
         return array;
+    }
+
+    // Gives back an array the open stream no longer uses. The one handed out by GetBuffer/TryGetBuffer is kept until
+    // the stream is disposed instead, since the caller may still be using it.
+    private void ReleaseArray(byte[] array)
+    {
+        if (ReferenceEquals(array, _exposedBuffer))
+        {
+            (_detachedBuffers ??= []).Add(array);
+            _exposedBuffer = null;
+        }
+        else
+        {
+            PooledBufferPool.Shared.Return(array, _options.MaxRetainedBytesPerBucket, _options.ClearOnReturn);
+        }
     }
 
     private void CopyAllTo(Span<byte> destination)

@@ -122,15 +122,21 @@ public class GenericAttributesParser : InlineParser
 
             // Attributes that end the text are not part of it, so the whitespace before them ends the text and is trimmed, like
             // the whitespace at the end of a paragraph. With trivia, it is kept so that the roundtrip does not lose it.
-            if (!processor.TrackTrivia && slice.IsEmptyOrWhitespace())
+            if (!processor.TrackTrivia && EndsText(slice))
             {
                 var lastInline = processor.Inline;
                 while (lastInline is LiteralInline literal)
                 {
-                    var length = literal.Content.Length;
-                    if (!literal.Content.TrimEnd())
+                    var end = literal.Content.End;
+                    while (end >= literal.Content.Start && IsWhitespaceAtEndOfText(literal.Content.Text[end]))
                     {
-                        literal.Span.End -= length - literal.Content.Length;
+                        end--;
+                    }
+
+                    if (end >= literal.Content.Start)
+                    {
+                        literal.Span.End -= literal.Content.End - end;
+                        literal.Content.End = end;
                         break;
                     }
 
@@ -577,6 +583,23 @@ public class GenericAttributesParser : InlineParser
         public HashSet<string> Names { get; } = new(StringComparer.Ordinal);
 
         public int Count { get; set; } = -1;
+    }
+
+    // The whitespace that a paragraph or a heading does not end with: a no-break space, or another Unicode space, is part of its
+    // content
+    private static bool IsWhitespaceAtEndOfText(char c) => c is ' ' or '\t' or '\n' or '\v' or '\f' or '\r';
+
+    private static bool EndsText(StringSlice slice)
+    {
+        for (var i = slice.Start; i <= slice.End; i++)
+        {
+            if (!IsWhitespaceAtEndOfText(slice.Text[i]))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     // With trivia, the attributes are kept in the inlines, but a paragraph that only has attributes has no content

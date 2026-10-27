@@ -235,9 +235,15 @@ Other properties are named `Trivia*` (for example `TriviaBefore`, `TriviaAfter`)
 them. These properties are only populated when trivia tracking is enabled.
 
 With [`UseGenericAttributes`](#extensions), the attributes of a heading (`GetAttributes()`) that are changed
-after parsing are written as `{#id .class name=value}`, in place of the attributes of the source. Attributes that the
-parsing added without them being in the source, such as an identifier generated from the heading text, are not written
-while they are unchanged. The other blocks and the inlines do not write their changed attributes.
+after parsing are written as `{#id .class name=value}`, in place of the first attributes of the source. Its other
+attributes are written as empty attributes, `{}`, so that the lines stay the same. A heading without attributes gets them
+at the end of its text. Attributes that the parsing added without them being in the source, such as an identifier
+generated from the heading text, are not written while they are unchanged. The other blocks and the inlines do not write
+their changed attributes.
+
+The renderer throws an `InvalidOperationException` when the parser would not read the attributes back: a value that
+cannot be written (an identifier with a space, a value with a line break), or a heading text that would read them, such
+as an unfinished `{name=` or an unclosed code span, or whose last line would then start another block, such as `*`.
 
 ## Differences from Markdig
 

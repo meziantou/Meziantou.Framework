@@ -56,7 +56,16 @@ internal sealed class HeadingAttributesTrivia
     /// <summary>
     /// Records attributes written in the content of the heading, kept in a <see cref="GenericAttributesInline"/>.
     /// </summary>
-    public void AddInlineAttributes(HtmlAttributes attributes) => AddSource(attributes);
+    public void AddInlineAttributes(HtmlAttributes attributes)
+    {
+        AddSource(attributes);
+        HasInlineAttributes = true;
+    }
+
+    /// <summary>
+    /// Gets whether attributes written in the content of the heading are attached to it.
+    /// </summary>
+    public bool HasInlineAttributes { get; private set; }
 
     /// <summary>
     /// Records attributes written on a line before the heading.
@@ -156,6 +165,120 @@ internal sealed class HeadingAttributesTrivia
         sb[0] = '{';
         sb.Append('}');
         return sb.ToString();
+    }
+
+    /// <summary>
+    /// Throws when the parser would not read the attributes written after the text of a heading:
+    /// <list type="bullet">
+    /// <item><description>a <c>{</c> of the text starts other attributes that read them, as a value for example;</description></item>
+    /// <item><description>the parser of an ATX heading reads attributes from the first <c>{</c> of its line only, and cuts the
+    /// heading there, so the other attributes must not start at this <c>{</c> at all;</description></item>
+    /// <item><description>the last line of a setext heading could start another block once it has more text, such as a list
+    /// item (<c>*</c>), a definition (<c>:</c>), a table row or a link reference definition;</description></item>
+    /// <item><description>when the parser reads them as inline attributes (in a setext heading, or after a <c>{</c> of an ATX
+    /// heading), a code span, raw HTML, an autolink or math of the text could end in them.</description></item>
+    /// </list>
+    /// </summary>
+    /// <param name="text">The text before the attributes, with the separator. Its lines start with the indent of the containers.</param>
+    /// <param name="attributes">The attributes, as returned by <see cref="Format"/>.</param>
+    /// <param name="isSetext">Whether the heading is a setext heading.</param>
+    /// <exception cref="InvalidOperationException">The attributes cannot be written after the text.</exception>
+    public static void CheckAttributesAfterText(string text, string attributes, bool isSetext)
+    {
+        if (isSetext && CanStartBlock(text))
+        {
+            throw new InvalidOperationException("The attributes of the heading cannot be written after its text, as its last line would start another block.");
+        }
+
+        // The inline parsers of these constructs look for their end from their start, before the parser of the attributes
+        if ((isSetext || text.Contains('{', StringComparison.Ordinal)) &&
+            ((text.Contains('`', StringComparison.Ordinal) && attributes.Contains('`', StringComparison.Ordinal)) ||
+             (text.Contains('<', StringComparison.Ordinal) && attributes.Contains('>', StringComparison.Ordinal)) ||
+             (text.Contains('$', StringComparison.Ordinal) && attributes.Contains('$', StringComparison.Ordinal))))
+        {
+            throw new InvalidOperationException("The attributes of the heading cannot be written after its text, which has the start of a code span, raw HTML, an autolink or math that could end in them.");
+        }
+
+        var index = text.IndexOf('{', StringComparison.Ordinal);
+        if (index < 0)
+        {
+            return;
+        }
+
+        // The scan does not skip the code spans, so it can report attributes that the inline parser does not read
+        var line = text + attributes;
+        var isFirst = !isSetext;
+        for (; index >= 0; index = text.IndexOf('{', index + 1, StringComparison.Ordinal))
+        {
+            var slice = new StringSlice(line, index, line.Length - 1);
+            if (GenericAttributesParser.TryParse(ref slice, out _) && (isFirst || slice.Start > text.Length))
+            {
+                throw new InvalidOperationException($"The attributes of the heading cannot be written after its text, which has a '{{' that starts other attributes at position {index}.");
+            }
+
+            isFirst = false;
+        }
+    }
+
+    // Whether the text, with more text after it, could be parsed as another block: its first line could start a link reference
+    // definition, a footnote or an abbreviation, whose label can span lines, and its last line could start a block that interrupts
+    // a paragraph. The indent of the containers ('>' and whitespace) is skipped.
+    private static bool CanStartBlock(string text)
+    {
+        var firstLine = text.AsSpan(0, text.AsSpan().IndexOfAny('\r', '\n') is var index and >= 0 ? index : text.Length).TrimStart(" \t>");
+        if ((firstLine.StartsWith('[') || firstLine.StartsWith("*[", StringComparison.Ordinal)) && text.Contains("]:", StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        var line = text.AsSpan(text.AsSpan().LastIndexOfAny('\r', '\n') + 1).TrimStart(" \t>").TrimEnd();
+        if (line.IsEmpty)
+        {
+            return false;
+        }
+
+        // A table row, a definition or a footer
+        if (line[0] is '|' or '+' or ':' or '^')
+        {
+            return true;
+        }
+
+        // A list item: an empty one cannot interrupt a paragraph, but one with text can. The ordered lists of the extensions
+        // number their items with letters and roman numerals too.
+        var markerLength = line[0] is '*' or '-' or '+' ? 1 : 0;
+        if (markerLength == 0)
+        {
+            while (markerLength < line.Length && markerLength < 9 && char.IsAsciiLetterOrDigit(line[markerLength]))
+            {
+                markerLength++;
+            }
+
+            if (markerLength == 0 || markerLength == line.Length || line[markerLength] is not ('.' or ')'))
+            {
+                return false;
+            }
+
+            markerLength++;
+        }
+
+        return markerLength == line.Length || line[markerLength].IsSpaceOrTab();
+    }
+
+    /// <summary>
+    /// Returns the attributes to write in place of attributes of the text. When the text has whitespace, so do they: without it,
+    /// the text around them could change, such as a link reference definition whose destination they end.
+    /// </summary>
+    /// <param name="attributes">The attributes, as returned by <see cref="Format"/>, or <see langword="null"/> for none.</param>
+    /// <param name="text">The attributes of the text.</param>
+    public static string ReplaceAttributes(string? attributes, ReadOnlySpan<char> text)
+    {
+        attributes ??= "{}";
+        if (!attributes.Contains(' ', StringComparison.Ordinal) && text.TrimEnd("\r\n").ContainsAny(" \t"))
+        {
+            return "{ " + attributes[1..];
+        }
+
+        return attributes;
     }
 
     private void AddSource(HtmlAttributes attributes)

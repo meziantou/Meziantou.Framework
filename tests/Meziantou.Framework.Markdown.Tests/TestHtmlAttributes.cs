@@ -157,6 +157,10 @@ public class TestHtmlAttributes
     [InlineData("# h {#custom}", "<h1 id=\"custom\">h</h1>\n")]
     [InlineData("a {#i} b", "<p id=\"i\">a  b</p>\n")]
     [InlineData("text {#i}\t{.c} ", "<p id=\"i\" class=\"c\">text</p>\n")]
+    [InlineData("text\u00A0{#i}", "<p id=\"i\">text\u00A0</p>\n")]
+    [InlineData("text {#i}\u00A0", "<p id=\"i\">text \u00A0</p>\n")]
+    [InlineData("text\v {#i}", "<p id=\"i\">text</p>\n")]
+    [InlineData("\u00A0 {#i}\n=", "<h1 id=\"i\">\u00A0</h1>\n")]
     public void GenericAttributesEndingTheTextDoNotLeaveWhitespace(string markdown, string expected)
     {
         var pipeline = new MarkdownPipelineBuilder().UseGenericAttributes().Build();
@@ -381,13 +385,13 @@ public class TestHtmlAttributes
     [InlineData("# H #  \r\n", null, "c", "# H # {.c}  \r\n", "<h1 class=\"c\">H</h1>\n")]
     [InlineData("#\n", "x", null, "# {#x}\n", "<h1 id=\"x\"></h1>\n")]
     [InlineData("## *H*\n", "x", null, "## *H* {#x}\n", "<h2 id=\"x\"><em>H</em></h2>\n")]
-    [InlineData("# a { b {#a}\n", "b", null, "# a { b  {#b}\n", "<h1 id=\"b\">a { b</h1>\n")]
+    [InlineData("# a { b {#a}\n", "b", null, "# a { b {#b}\n", "<h1 id=\"b\">a { b</h1>\n")]
     [InlineData("# H {.a}\n", null, "b", "# H {.a .b}\n", "<h1 class=\"a b\">H</h1>\n")]
-    [InlineData("{.a}\n# H\n", null, "b", "# H {.a .b}\n", "<h1 class=\"a b\">H</h1>\n")]
-    [InlineData("p\n\n{.a}\n# H\n", null, "b", "p\n\n# H {.a .b}\n", "<p>p</p>\n<h1 class=\"a b\">H</h1>\n")]
+    [InlineData("{.a}\n# H\n", null, "b", "{.a .b}\n# H\n", "<h1 class=\"a b\">H</h1>\n")]
+    [InlineData("p\n\n{.a}\n# H\n", null, "b", "p\n\n{.a .b}\n# H\n", "<p>p</p>\n<h1 class=\"a b\">H</h1>\n")]
     [InlineData("Setext\n===\n", "x", null, "Setext {#x}\n===\n", "<h1 id=\"x\">Setext</h1>\n")]
-    [InlineData("Setext{#a}\n---\n", "b", null, "Setext {#b}\n---\n", "<h2 id=\"b\">Setext</h2>\n")]
-    [InlineData("a {#a}\nb\n---\n", "b", null, "a \nb {#b}\n---\n", "<h2 id=\"b\">a\nb</h2>\n")]
+    [InlineData("Setext{#a}\n---\n", "b", null, "Setext{#b}\n---\n", "<h2 id=\"b\">Setext</h2>\n")]
+    [InlineData("a {#a}\nb\n---\n", "b", null, "a {#b}\nb\n---\n", "<h2 id=\"b\">a b</h2>\n")]
     [InlineData("> # H\n> p\n", "x", null, "> # H {#x}\n> p\n", "<blockquote>\n<h1 id=\"x\">H</h1>\n<p>p</p>\n</blockquote>\n")]
     [InlineData("- # H\n", "x", null, "- # H {#x}\n", "<ul>\n<li><h1 id=\"x\">H</h1>\n</li>\n</ul>\n")]
     public void GenericAttributesRoundtripChangedHeadingAttributes(string markdown, string? id, string? cssClass, string expected, string expectedHtml)
@@ -410,9 +414,12 @@ public class TestHtmlAttributes
     }
 
     [Theory]
-    [InlineData("# H {#a}\n", "# H \n")]
-    [InlineData("{#a}\n# H\n", "# H\n")]
-    [InlineData("Setext {#a}\n===\n", "Setext \n===\n")]
+    [InlineData("# H {#a}\n", "# H {}\n")]
+    [InlineData("{#a}\n# H\n", "{}\n# H\n")]
+    [InlineData("Setext {#a}\n===\n", "Setext {}\n===\n")]
+    [InlineData("{#a}\n===\n", "{}\n===\n")]
+    [InlineData("[foo]: /url{#a .b}\n===\n", "[foo]: /url{ .b}\n===\n")]
+    [InlineData("> {#a}\n> # H\n", "> {}\n> # H\n")]
     public void GenericAttributesRoundtripRemovedHeadingAttributes(string markdown, string expected)
     {
         var result = RoundtripWithChangedHeadingAttributes(markdown, new MarkdownPipelineBuilder().UseGenericAttributes(), attributes => attributes.Id = null);
@@ -452,6 +459,56 @@ public class TestHtmlAttributes
     public void GenericAttributesRoundtripThrowsForPropertiesThatCannotBeWritten(string name, string value)
     {
         Assert.Throws<InvalidOperationException>(() => RoundtripWithChangedHeadingAttributes("# H\n", new MarkdownPipelineBuilder().UseGenericAttributes(), attributes => attributes.AddProperty(name, value)));
+    }
+
+    [Theory]
+    [InlineData("# a {b=\n")]
+    [InlineData("# a {b= \n")]
+    [InlineData("# x {.c b=\n")]
+    [InlineData("a {b=\n===\n")]
+    [InlineData("For\n*\n====\n")]
+    [InlineData("For\n1)\n====\n")]
+    [InlineData("For\nb.\n====\n")]
+    [InlineData("[foo]:\n===\n")]
+    [InlineData("[foo\n]:\n===\n")]
+    [InlineData("a\n| b\n---\n")]
+    [InlineData("a\n: b\n---\n")]
+    [InlineData("a `b\n---\n", "`")]
+    [InlineData("a <b c=\"\n---\n", "\">")]
+    [InlineData("# a{ `b\n", "`")]
+    public void GenericAttributesRoundtripThrowsWhenTheHeadingTextWouldReadTheAttributes(string markdown, string title = "a b")
+    {
+        // The text "{b=" would read the attributes as its value, the last line of a setext heading would start a block, and a code
+        // span or raw HTML of the text would end in them
+        var exception = Assert.Throws<InvalidOperationException>(() => RoundtripWithChangedHeadingAttributes(markdown, new MarkdownPipelineBuilder().UseGenericAttributes(), attributes =>
+        {
+            attributes.Id = "x";
+            attributes.AddProperty("title", title);
+        }));
+        Assert.StartsWith("The attributes of the heading cannot be written after its text", exception.Message);
+    }
+
+    [Theory]
+    [InlineData("*a*{.c}\n===\n", "*a*{.c} {#x}\n===\n", "<h1 id=\"x\"><em class=\"c\">a</em></h1>\n")]
+    [InlineData("**{*\n===\n", "**{* {#x}\n===\n", "<h1 id=\"x\">*<em>{</em></h1>\n")]
+    [InlineData("a { b\n===\n", "a { b {#x}\n===\n", "<h1 id=\"x\">a { b</h1>\n")]
+    [InlineData("*a* b\n===\n", "*a* b {#x}\n===\n", "<h1 id=\"x\"><em>a</em> b</h1>\n")]
+    [InlineData("   a\n===\n", "   a {#x}\n===\n", "<h1 id=\"x\">a</h1>\n")]
+    [InlineData("> {.b}\n> # H\n", "> {#x .b}\n> # H\n", "<blockquote>\n<h1 id=\"x\" class=\"b\">H</h1>\n</blockquote>\n")]
+    [InlineData("> a\n> b\n> ---\n", "> a\n> b {#x}\n> ---\n", "<blockquote>\n<h2 id=\"x\">a\nb</h2>\n</blockquote>\n")]
+    [InlineData("# a { b\n", "# a { b {#x}\n", "<h1 id=\"x\">a { b</h1>\n")]
+    [InlineData("# a {b='\n", "# a {b=' {#x}\n", "<h1 id=\"x\">a {b='</h1>\n")]
+    [InlineData("## # #\n", "## # # {#x}\n", "<h2 id=\"x\">#</h2>\n")]
+    [InlineData("# {a #\n", "# {a {#x} #\n", "<h1 id=\"x\">{a</h1>\n")]
+    [InlineData("[foo]: /url{#a .b}\n===\n", "[foo]: /url{#x .b}\n===\n", "<h1 id=\"x\" class=\"b\">[foo]: /url</h1>\n")]
+    [InlineData("# a {b=\"\n", "# a {b=\" {#x}\n", "<h1 id=\"x\">a {b=&quot;</h1>\n")]
+    [InlineData("a {b=\nc\n===\n", "a {b=\nc {#x}\n===\n", "<h1 id=\"x\">a {b=\nc</h1>\n")]
+    public void GenericAttributesRoundtripWritesTheAttributesAfterATextWithBraces(string markdown, string expected, string expectedHtml)
+    {
+        var result = RoundtripWithChangedHeadingAttributes(markdown, new MarkdownPipelineBuilder().UseGenericAttributes(), attributes => attributes.Id = "x");
+
+        Assert.Equal(expected, result);
+        Assert.Equal(expectedHtml, MarkdownConverter.ToHtml(result, new MarkdownPipelineBuilder().UseGenericAttributes().Build()));
     }
 
     [Fact]

@@ -96,6 +96,12 @@ public class RoundtripRenderer : TextRendererBase<RoundtripRenderer>
     }
 
     /// <summary>
+    /// Gets or sets the changed attributes of a heading that the renderer of the first attributes written in its content writes
+    /// in place of them. The other attributes of its content are written as empty attributes.
+    /// </summary>
+    internal (HeadingBlock Heading, string? Attributes)? PendingHeadingAttributes { get; set; }
+
+    /// <summary>
     /// Performs the render lines before operation.
     /// </summary>
     public void RenderLinesBefore(Block block)

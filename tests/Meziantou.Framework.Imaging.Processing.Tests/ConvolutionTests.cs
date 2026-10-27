@@ -906,6 +906,590 @@ public sealed class ConvolutionTests
     }
 
     // -----------------------------------------------------------------------------------------------------------------
+    // Separable matrices
+    // -----------------------------------------------------------------------------------------------------------------
+
+    [Fact]
+    public void SeparableMatricesAreTheProductsOfTheirFactors()
+    {
+        // The weight at (x, y) is column[y] * row[x]
+        var kernel = ConvolutionKernel.CreateSeparable([1, 2, 1], [-1, 0, 1, 0.5, 2]);
+        Assert.True(kernel.IsSeparable);
+        Assert.Equal(3, kernel.Width);
+        Assert.Equal(5, kernel.Height);
+        Assert.Equal(-2, kernel[1, 0]);
+        Assert.Equal(0, kernel[0, 1]);
+        Assert.Equal(0.5, kernel[2, 3]);
+        Assert.Equal(4, kernel[1, 4]);
+        Assert.Throws<ArgumentOutOfRangeException>(() => kernel[3, 0]);
+        Assert.Throws<ArgumentOutOfRangeException>(() => kernel[0, 5]);
+
+        // A matrix given weight by weight is recognized when every weight is exactly a product: a box, a binomial, Sobel
+        Assert.True(Kernel(3, 3, [.. Enumerable.Repeat(1d / 9, 9)]).IsSeparable);
+        Assert.True(Kernel(3, 3, [1, 2, 1, 2, 4, 2, 1, 2, 1]).IsSeparable);
+        Assert.True(Kernel(3, 3, [-1, 0, 1, -2, 0, 2, -1, 0, 1]).IsSeparable);
+        Assert.False(Kernel(3, 3, [0, -1, 0, -1, 5, -1, 0, -1, 0]).IsSeparable);
+        Assert.False(Kernel(3, 3, [1, 2, 1, 2, 4, 2, 1, 2, 1.000001]).IsSeparable);
+        Assert.False(Kernel(3, 3, new double[9]).IsSeparable);
+        Assert.False(Kernel(5, 1, [1, 2, 3, 2, 1]).IsSeparable);
+        Assert.False(Kernel(1, 3, [1, 2, 1]).IsSeparable);
+
+        Assert.Throws<ArgumentException>(() => ConvolutionKernel.CreateSeparable([], [1]));
+        Assert.Throws<ArgumentException>(() => ConvolutionKernel.CreateSeparable([1, 1], [1]));
+        Assert.Throws<ArgumentException>(() => ConvolutionKernel.CreateSeparable([1], [1, 2, 3, 4]));
+        Assert.Throws<ArgumentException>(() => ConvolutionKernel.CreateSeparable([1, double.NaN, 1], [1]));
+        Assert.Throws<ArgumentException>(() => ConvolutionKernel.CreateSeparable([1], [double.PositiveInfinity]));
+    }
+
+    [Fact]
+    public void SeparableMatricesFilterRowsThenColumns()
+    {
+        // The binomial 1 2 1 / 4 in both directions spreads a white pixel by 255 / 16 * (1, 2, 1, 2, 4, 2, 1, 2, 1):
+        // 15.9, 31.9 and 63.75 round to 16, 32 and 64
+        using var image = new Image<Gray8>(5, 5);
+        image.Frames[0][2, 2] = new Gray8(255);
+        image.Convolve(new ConvolutionOptions(ConvolutionKernel.CreateSeparable([0.25, 0.5, 0.25], [0.25, 0.5, 0.25])), Ct);
+        AssertGray8(image.Frames[0], [[0, 0, 0, 0, 0], [0, 16, 32, 16, 0], [0, 32, 64, 32, 0], [0, 16, 32, 16, 0], [0, 0, 0, 0, 0]]);
+
+        // Sobel across a vertical edge: the columns on both sides, times 1 + 2 + 1, clamped
+        using var edge = BuildGray8([[0, 0, 255, 255], [0, 0, 255, 255], [0, 0, 255, 255]]);
+        edge.Convolve(Options(3, 3, [-1, 0, 1, -2, 0, 2, -1, 0, 1]), Ct);
+        AssertGray8(edge.Frames[0], [[0, 255, 255, 0], [0, 255, 255, 0], [0, 255, 255, 0]]);
+    }
+
+    [Theory]
+    [InlineData(PixelFormat.RgbaFloat)]
+    [InlineData(PixelFormat.RgbaHalf)]
+    public void SeparableMatricesSkipZeroWeightsLikeTheMatrix(PixelFormat format)
+    {
+        if (format == PixelFormat.RgbaFloat)
+        {
+            CheckSeparableSkipsZeroWeights<RgbaFloat>();
+        }
+        else
+        {
+            CheckSeparableSkipsZeroWeights<RgbaHalf>();
+        }
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // Box blur
+    // -----------------------------------------------------------------------------------------------------------------
+
+    [Fact]
+    public void ABoxBlurAveragesTheSquareAroundEveryPixel()
+    {
+        // A white pixel is one of the 9 pixels of the squares that contain it: 255 / 9 = 28.3
+        using var image = new Image<Gray8>(5, 5);
+        image.Frames[0][2, 2] = new Gray8(255);
+        image.BoxBlur(1, cancellationToken: Ct);
+        AssertGray8(image.Frames[0], [[0, 0, 0, 0, 0], [0, 28, 28, 28, 0], [0, 28, 28, 28, 0], [0, 28, 28, 28, 0], [0, 0, 0, 0, 0]]);
+
+        // 16-bit samples keep their precision: 65535 / 9 = 7281.7 and 65535 / 25 = 2621.4
+        using var deep = new Image<Gray16>(5, 5);
+        deep.Frames[0][2, 2] = new Gray16(65535);
+        deep.BoxBlur(1, cancellationToken: Ct);
+        Assert.Equal(7282, deep.Frames[0][1, 3].Value);
+        Assert.Equal(0, deep.Frames[0][0, 3].Value);
+        deep.Frames[0][1, 3] = new Gray16(0);
+        deep.Frames[0][2, 2] = new Gray16(65535);
+        for (var y = 1; y < 4; y++)
+        {
+            for (var x = 1; x < 4; x++)
+            {
+                deep.Frames[0][x, y] = new Gray16((ushort)(x == 2 && y == 2 ? 65535 : 0));
+            }
+        }
+
+        deep.Frames[0].BoxBlur(2, ConvolutionEdgeMode.Zero, cancellationToken: Ct);
+        Assert.All(CopyAll(deep.Frames[0]), pixel => Assert.Equal(2621, pixel.Value));
+
+        // An image of one color keeps it, whatever the radius
+        using var flat = new Image<Rgba32>(20, 15, new Rgba32(12, 200, 99, 180));
+        flat.BoxBlur(37, cancellationToken: Ct);
+        Assert.All(CopyAll(flat.Frames[0]), pixel => Assert.Equal(new Rgba32(12, 200, 99, 180), pixel));
+    }
+
+    [Theory]
+    [InlineData(ConvolutionEdgeMode.Clamp, new[] { 30, 90, 175, 230 })]
+    [InlineData(ConvolutionEdgeMode.Mirror, new[] { 30, 90, 175, 230 })]
+    [InlineData(ConvolutionEdgeMode.Wrap, new[] { 115, 90, 175, 145 })]
+    [InlineData(ConvolutionEdgeMode.Zero, new[] { 10, 30, 58, 48 })]
+    public void ABoxBlurReadsBeyondTheEdgesByTheEdgeMode(ConvolutionEdgeMode mode, int[] expected)
+    {
+        // One row 0 90 180 255: the rows above and below are the row itself, except for Zero (9 samples, 6 of them 0).
+        // Clamp and Mirror read 0 left and 255 right: (0 + 0 + 90) / 3 = 30 ... (180 + 255 + 255) / 3 = 230; Wrap reads
+        // 255 left and 0 right: (255 + 0 + 90) / 3 = 115 and (180 + 255 + 0) / 3 = 145; Zero: 90 / 9, 270 / 9, 525 / 9
+        // and 435 / 9
+        using var image = BuildGray8([[0, 90, 180, 255]]);
+        image.BoxBlur(1, mode, cancellationToken: Ct);
+        AssertGray8(image.Frames[0], [expected]);
+
+        // The square is 11 pixels wide, almost three periods of the row: Wrap averages 255 0 90 180 255 0 90 180 255 0 90
+        // for the first pixel, 1395 / 11 = 126.8
+        using var wide = BuildGray8([[0, 90, 180, 255]]);
+        wide.BoxBlur(5, ConvolutionEdgeMode.Wrap, cancellationToken: Ct);
+        Assert.Equal(127, wide.Frames[0][0, 0].Value);
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void ABoxBlurIsTheConvolutionByEqualWeights()
+    {
+        var random = new Random(21);
+        var noise = new Rgba32[23 * 17];
+        for (var i = 0; i < noise.Length; i++)
+        {
+            noise[i] = new Rgba32((byte)random.Next(256), (byte)random.Next(256), (byte)random.Next(256), (byte)(i % 5 == 0 ? random.Next(256) : 255));
+        }
+
+        foreach (var radius in new[] { 1, 3, 9 })
+        {
+            var size = (2 * radius) + 1;
+            double[] matrix = [.. Enumerable.Repeat(1d / (size * size), size * size)];
+            foreach (var mode in EdgeModes)
+            {
+                using var blurred = Image.ImportPixelData<Rgba32>(noise, 23, 17);
+                using var convolved = Image.ImportPixelData<Rgba32>(noise, 23, 17);
+                blurred.BoxBlur(radius, mode, cancellationToken: Ct);
+                convolved.Convolve(new ConvolutionOptions(Kernel(size, size, matrix)) { EdgeMode = mode }, Ct);
+                var expected = CopyAll(convolved.Frames[0]);
+                var actual = CopyAll(blurred.Frames[0]);
+                for (var i = 0; i < expected.Length; i++)
+                {
+                    Assert.True(
+                        Math.Abs(expected[i].R - actual[i].R) <= 1 && Math.Abs(expected[i].G - actual[i].G) <= 1 && Math.Abs(expected[i].B - actual[i].B) <= 1 && Math.Abs(expected[i].A - actual[i].A) <= 1,
+                        $"radius {radius}, {mode}, pixel {i}: expected {expected[i]}, actual {actual[i]}");
+                }
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void ABoxBlurOfAnOpaqueFrameKeepsTheMaximumAlphaAndHiddenColorsDoNotBleed()
+    {
+        var random = new Random(9);
+        var pixels = new Rgba32[19 * 13];
+        for (var i = 0; i < pixels.Length; i++)
+        {
+            pixels[i] = new Rgba32((byte)random.Next(256), (byte)random.Next(256), (byte)random.Next(256), 255);
+        }
+
+        using (var opaque = Image.ImportPixelData<Rgba32>(pixels, 19, 13))
+        {
+            opaque.BoxBlur(2, ConvolutionEdgeMode.Mirror, cancellationToken: Ct);
+            Assert.All(CopyAll(opaque.Frames[0]), pixel => Assert.Equal(255, pixel.A));
+        }
+
+        using (var zero = Image.ImportPixelData<Rgba32>(pixels, 19, 13))
+        {
+            // Beyond the image, the zero edge mode reads transparent pixels: 4 of the 9 pixels of the corner square
+            zero.BoxBlur(1, ConvolutionEdgeMode.Zero, cancellationToken: Ct);
+            Assert.Equal(113, zero.Frames[0][0, 0].A);
+        }
+
+        pixels[(6 * 19) + 9] = new Rgba32(255, 0, 255, 0);
+        using var red = Image.ImportPixelData<Rgba32>(pixels, 19, 13);
+        pixels[(6 * 19) + 9] = new Rgba32(0, 255, 0, 0);
+        using var green = Image.ImportPixelData<Rgba32>(pixels, 19, 13);
+        red.BoxBlur(2, cancellationToken: Ct);
+        green.BoxBlur(2, cancellationToken: Ct);
+        Assert.Equal(CopyAll(red.Frames[0]), CopyAll(green.Frames[0]));
+
+        // 24 opaque pixels and a transparent one: 255 * 24 / 25 = 244.8
+        Assert.Equal(245, red.Frames[0][9, 6].A);
+    }
+
+    [Theory]
+    [InlineData(PixelFormat.RgbaFloat)]
+    [InlineData(PixelFormat.RgbaHalf)]
+    public void ABoxBlurOnlySpreadsNonFiniteSamplesToTheSquaresThatContainThem(PixelFormat format)
+    {
+        if (format == PixelFormat.RgbaFloat)
+        {
+            CheckBoxBlurNonFinite<RgbaFloat>();
+        }
+        else
+        {
+            CheckBoxBlurNonFinite<RgbaHalf>();
+        }
+    }
+
+    [Fact]
+    public void ABoxBlurAppliesToEveryFrameOrToOneAndValidatesItsArguments()
+    {
+        using var image = BuildGray8([[0, 0, 0, 90, 0, 0, 0]]);
+        Fill(image.AppendFrame(), [[90, 0, 0, 0, 0, 0, 0]]);
+        Fill(image.SetPosterFrame(image.Frames[0]), [[0, 0, 0, 0, 0, 0, 90]]);
+
+        // One row, Clamp: (a + b + c) / 3 along the row, the edge pixel read twice at the edges
+        image.BoxBlur(1, cancellationToken: Ct);
+        AssertGray8(image.Frames[0], [[0, 0, 30, 30, 30, 0, 0]]);
+        AssertGray8(image.Frames[1], [[60, 30, 0, 0, 0, 0, 0]]);
+        AssertGray8(image.PosterFrame!, [[0, 0, 0, 0, 0, 30, 60]]);
+        image.BoxBlur(0, cancellationToken: Ct);
+        image.Frames[1].BoxBlur(0, cancellationToken: Ct);
+        AssertGray8(image.Frames[1], [[60, 30, 0, 0, 0, 0, 0]]);
+        image.Frames[1].BoxBlur(1, cancellationToken: Ct);
+        AssertGray8(image.Frames[0], [[0, 0, 30, 30, 30, 0, 0]]);
+        AssertGray8(image.Frames[1], [[50, 30, 10, 0, 0, 0, 0]]);
+        Assert.Equal(0, image.Owner.Scope.GetLiveBytes(AllocationKind.Temporary));
+        Assert.Equal(0, image.Owner.ActiveLeaseCount);
+
+        Assert.Throws<ArgumentNullException>(() => ((Image)null!).BoxBlur(1));
+        Assert.Throws<ArgumentNullException>(() => ((ImageFrame)null!).BoxBlur(1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => image.BoxBlur(-1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => image.Frames[0].BoxBlur(10001));
+        Assert.Throws<ArgumentOutOfRangeException>(() => image.BoxBlur(1, (ConvolutionEdgeMode)4));
+        Assert.Throws<ArgumentOutOfRangeException>(() => image.Frames[0].BoxBlur(1, workingSpace: (ConvolutionWorkingSpace)2));
+        Assert.Throws<OperationCanceledException>(() => image.BoxBlur(1, cancellationToken: new CancellationToken(canceled: true)));
+        Assert.Throws<OperationCanceledException>(() => image.Frames[0].BoxBlur(1, cancellationToken: new CancellationToken(canceled: true)));
+        image.Frames[0].ProcessPixelRows(_ => Assert.Throws<InvalidOperationException>(() => image.BoxBlur(1)));
+        image.Frames[0].ProcessPixelRows(_ => Assert.Throws<InvalidOperationException>(() => image.BoxBlur(0)));
+        AssertGray8(image.Frames[0], [[0, 0, 30, 30, 30, 0, 0]]);
+
+        // In linear light, a third of white is 0.333, encoded as 156, where the mean code value is 85
+        using var linear = BuildGray8([[0, 255, 0]]);
+        linear.BoxBlur(1, workingSpace: ConvolutionWorkingSpace.LinearSrgb, cancellationToken: Ct);
+        Assert.Equal(156, linear.Frames[0][1, 0].Value);
+
+        var disposed = new Image<Gray8>(2, 2);
+        var frame = disposed.Frames[0];
+        disposed.Dispose();
+        Assert.Throws<ObjectDisposedException>(() => disposed.BoxBlur(1));
+        Assert.Throws<ObjectDisposedException>(() => disposed.BoxBlur(0));
+        Assert.Throws<ObjectDisposedException>(() => frame.BoxBlur(1));
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // Unsharp mask
+    // -----------------------------------------------------------------------------------------------------------------
+
+    [Theory]
+    [InlineData(1, 0, new[] { 50, 50, 34, 216, 200, 200 })]
+    [InlineData(2, 0, new[] { 50, 50, 18, 232, 200, 200 })]
+    [InlineData(1, 0.05, new[] { 50, 50, 34, 216, 200, 200 })]
+    [InlineData(1, 0.1, new[] { 50, 50, 50, 200, 200, 200 })]
+    [InlineData(0, 0, new[] { 50, 50, 50, 200, 200, 200 })]
+    public void SharpeningAddsTheDifferenceFromTheBlur(double amount, double threshold, int[] expected)
+    {
+        // A deviation of 0.5: the weights 0.000264, 0.106451, 0.786571, 0.106451, 0.000264. One row: the blur is the one of
+        // the row, 66.007 left of the edge and 183.993 right of it (50.040 and 199.960 one pixel further). o + a (o - b):
+        // 50 - 16.007 a and 200 + 16.007 a; one pixel further, the difference 0.04 rounds away. A threshold of 0.1 (25.5)
+        // keeps the differences of 16, one of 0.05 (12.75) does not
+        using var image = BuildGray8([[50, 50, 50, 200, 200, 200]]);
+        image.Sharpen(0.5, amount, threshold, cancellationToken: Ct);
+        AssertGray8(image.Frames[0], [expected]);
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void SharpeningClampsKeepsFlatAreasAndTheAlphaOfOpaqueFrames()
+    {
+        // The overshoot beyond black and white is clipped
+        using var image = BuildGray8([[0, 0, 0, 255, 255, 255]]);
+        image.Sharpen(1, 3, cancellationToken: Ct);
+        AssertGray8(image.Frames[0], [[0, 0, 0, 255, 255, 255]]);
+
+        using var flat = new Image<Rgba64>(9, 7, new Rgba64(1000, 30000, 65000, 40000));
+        flat.Sharpen(2, 5, cancellationToken: Ct);
+        Assert.All(CopyAll(flat.Frames[0]), pixel => Assert.Equal(new Rgba64(1000, 30000, 65000, 40000), pixel));
+
+        var random = new Random(4);
+        var pixels = new Rgba32[11 * 9];
+        for (var i = 0; i < pixels.Length; i++)
+        {
+            pixels[i] = new Rgba32((byte)random.Next(256), (byte)random.Next(256), (byte)random.Next(256), 255);
+        }
+
+        using var opaque = Image.ImportPixelData<Rgba32>(pixels, 11, 9);
+        opaque.Sharpen(1, 2, cancellationToken: Ct);
+        Assert.All(CopyAll(opaque.Frames[0]), pixel => Assert.Equal(255, pixel.A));
+        Assert.NotEqual(pixels, CopyAll(opaque.Frames[0]));
+
+        // Floating-point colors are not clipped: the overshoot of a step from 0 to 1 is kept
+        using var hdr = new Image<RgbaFloat>(6, 1, new RgbaFloat(0, 0, 0, 1));
+        for (var x = 3; x < 6; x++)
+        {
+            hdr.Frames[0][x, 0] = new RgbaFloat(1, 1, 1, 1);
+        }
+
+        hdr.Sharpen(0.5, cancellationToken: Ct);
+        Assert.InRange(hdr.Frames[0][2, 0].R, -0.1074f, -0.1066f);
+        Assert.InRange(hdr.Frames[0][3, 0].R, 1.1066f, 1.1074f);
+        Assert.Equal(1, hdr.Frames[0][3, 0].A);
+    }
+
+    [Fact]
+    public void SharpeningAppliesToEveryFrameOrToOneAndValidatesItsArguments()
+    {
+        using var image = BuildGray8([[50, 50, 50, 200, 200, 200]]);
+        Fill(image.AppendFrame(), [[50, 50, 50, 200, 200, 200]]);
+        image.Sharpen(0.5, cancellationToken: Ct);
+        AssertGray8(image.Frames[0], [[50, 50, 34, 216, 200, 200]]);
+        AssertGray8(image.Frames[1], [[50, 50, 34, 216, 200, 200]]);
+        Fill(image.Frames[1], [[50, 50, 50, 200, 200, 200]]);
+        image.Frames[1].Sharpen(0.5, 2, cancellationToken: Ct);
+        image.Frames[1].Sharpen(0, 2, cancellationToken: Ct);
+        image.Sharpen(0.5, 0, cancellationToken: Ct);
+        AssertGray8(image.Frames[0], [[50, 50, 34, 216, 200, 200]]);
+        AssertGray8(image.Frames[1], [[50, 50, 18, 232, 200, 200]]);
+        Assert.Equal(0, image.Owner.Scope.GetLiveBytes(AllocationKind.Temporary));
+
+        Assert.Throws<ArgumentNullException>(() => ((Image)null!).Sharpen(1));
+        Assert.Throws<ArgumentNullException>(() => ((ImageFrame)null!).Sharpen(1));
+        Assert.Throws<ArgumentException>(() => image.Sharpen(double.NaN));
+        Assert.Throws<ArgumentOutOfRangeException>(() => image.Sharpen(-1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => image.Sharpen(10001));
+        Assert.Throws<ArgumentException>(() => image.Sharpen(1, double.PositiveInfinity));
+        Assert.Throws<ArgumentOutOfRangeException>(() => image.Frames[0].Sharpen(1, -0.5));
+        Assert.Throws<ArgumentException>(() => image.Sharpen(1, 1, double.NaN));
+        Assert.Throws<ArgumentOutOfRangeException>(() => image.Sharpen(1, 1, -0.1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => image.Frames[0].Sharpen(1, 1, 1.5));
+        Assert.Throws<ArgumentOutOfRangeException>(() => image.Sharpen(1, edgeMode: (ConvolutionEdgeMode)4));
+        Assert.Throws<ArgumentOutOfRangeException>(() => image.Sharpen(1, workingSpace: (ConvolutionWorkingSpace)2));
+        Assert.Throws<OperationCanceledException>(() => image.Sharpen(1, cancellationToken: new CancellationToken(canceled: true)));
+        image.Frames[0].ProcessPixelRows(_ => Assert.Throws<InvalidOperationException>(() => image.Sharpen(1)));
+        image.Frames[0].ProcessPixelRows(_ => Assert.Throws<InvalidOperationException>(() => image.Sharpen(1, 0)));
+        AssertGray8(image.Frames[0], [[50, 50, 34, 216, 200, 200]]);
+
+        var disposed = new Image<Gray8>(2, 2);
+        var frame = disposed.Frames[0];
+        disposed.Dispose();
+        Assert.Throws<ObjectDisposedException>(() => disposed.Sharpen(1));
+        Assert.Throws<ObjectDisposedException>(() => disposed.Sharpen(0));
+        Assert.Throws<ObjectDisposedException>(() => frame.Sharpen(1));
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // Median
+    // -----------------------------------------------------------------------------------------------------------------
+
+    [Fact]
+    public void AMedianRemovesIsolatedDotsAndKeepsEdges()
+    {
+        // A white dot and a black dot in gray: every square has at most one of them among 9 grays
+        using var image = new Image<Gray8>(5, 5, new Gray8(100));
+        image.Frames[0][2, 2] = new Gray8(255);
+        image.Frames[0][0, 4] = new Gray8(0);
+        image.MedianBlur(1, cancellationToken: Ct);
+        Assert.All(CopyAll(image.Frames[0]), pixel => Assert.Equal(100, pixel.Value));
+
+        // A vertical edge: the squares next to it hold 6 pixels of their own side and 3 of the other one
+        using var edge = BuildGray8([[0, 0, 0, 255, 255, 255], [0, 0, 0, 255, 255, 255], [0, 0, 0, 255, 255, 255]]);
+        edge.MedianBlur(1, cancellationToken: Ct);
+        AssertGray8(edge.Frames[0], [[0, 0, 0, 255, 255, 255], [0, 0, 0, 255, 255, 255], [0, 0, 0, 255, 255, 255]]);
+
+        // 16-bit samples: the median is one of them, exactly
+        using var deep = new Image<Gray16>(3, 1);
+        deep.Frames[0][0, 0] = new Gray16(1001);
+        deep.Frames[0][1, 0] = new Gray16(65535);
+        deep.Frames[0][2, 0] = new Gray16(1003);
+        deep.MedianBlur(1, cancellationToken: Ct);
+        Assert.Equal([1001, 1003, 1003], CopyRow(deep.Frames[0], 0).Select(pixel => (int)pixel.Value));
+
+        // One pixel: Clamp reads it 9 times, Zero reads it once among 8 zeros
+        using var single = BuildGray8([[200]]);
+        single.MedianBlur(1, cancellationToken: Ct);
+        Assert.Equal(200, single.Frames[0][0, 0].Value);
+        single.MedianBlur(1, ConvolutionEdgeMode.Zero, Ct);
+        Assert.Equal(0, single.Frames[0][0, 0].Value);
+    }
+
+    [Fact]
+    public void AMedianFiltersEverySampleOnItsOwnAlphaIncluded()
+    {
+        // One row: every column is read three times. The middle pixel: R 10 20 30, G 200 100 0, B 0 50 255, A 255 0 128
+        using var image = new Image<Rgba32>(3, 1);
+        image.Frames[0][0, 0] = new Rgba32(10, 200, 0, 255);
+        image.Frames[0][1, 0] = new Rgba32(20, 100, 50, 0);
+        image.Frames[0][2, 0] = new Rgba32(30, 0, 255, 128);
+        image.MedianBlur(1, cancellationToken: Ct);
+        Assert.Equal(new Rgba32(10, 200, 0, 255), image.Frames[0][0, 0]);
+        Assert.Equal(new Rgba32(20, 100, 50, 128), image.Frames[0][1, 0]);
+        Assert.Equal(new Rgba32(30, 0, 255, 128), image.Frames[0][2, 0]);
+    }
+
+    [Theory]
+    [InlineData(PixelFormat.RgbaFloat)]
+    [InlineData(PixelFormat.RgbaHalf)]
+    public void AMedianOrdersFloatingPointSamplesAsNumbers(PixelFormat format)
+    {
+        if (format == PixelFormat.RgbaFloat)
+        {
+            CheckFloatingPointMedian<RgbaFloat>();
+        }
+        else
+        {
+            CheckFloatingPointMedian<RgbaHalf>();
+        }
+    }
+
+    [Fact]
+    public void AMedianAppliesToEveryFrameOrToOneAndValidatesItsArguments()
+    {
+        using var image = BuildGray8([[0, 9, 0, 9, 9, 0]]);
+        Fill(image.AppendFrame(), [[9, 0, 9, 0, 0, 9]]);
+        Fill(image.SetPosterFrame(image.Frames[0]), [[5, 5, 1, 5, 1, 1]]);
+
+        // One row, Clamp: the median of three neighbors
+        image.MedianBlur(1, cancellationToken: Ct);
+        AssertGray8(image.Frames[0], [[0, 0, 9, 9, 9, 0]]);
+        AssertGray8(image.Frames[1], [[9, 9, 0, 0, 0, 9]]);
+        AssertGray8(image.PosterFrame!, [[5, 5, 5, 1, 1, 1]]);
+        image.MedianBlur(0, cancellationToken: Ct);
+        Fill(image.Frames[1], [[9, 0, 9, 0, 0, 9]]);
+        image.Frames[1].MedianBlur(1, ConvolutionEdgeMode.Wrap, Ct);
+        image.Frames[1].MedianBlur(0, cancellationToken: Ct);
+        AssertGray8(image.Frames[0], [[0, 0, 9, 9, 9, 0]]);
+        AssertGray8(image.Frames[1], [[9, 9, 0, 0, 0, 9]]);
+        Assert.Equal(0, image.Owner.Scope.GetLiveBytes(AllocationKind.Temporary));
+        Assert.Equal(0, image.Owner.ActiveLeaseCount);
+
+        Assert.Throws<ArgumentNullException>(() => ((Image)null!).MedianBlur(1));
+        Assert.Throws<ArgumentNullException>(() => ((ImageFrame)null!).MedianBlur(1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => image.MedianBlur(-1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => image.Frames[0].MedianBlur(1001));
+        Assert.Throws<ArgumentOutOfRangeException>(() => image.MedianBlur(1, (ConvolutionEdgeMode)4));
+        Assert.Throws<OperationCanceledException>(() => image.MedianBlur(1, cancellationToken: new CancellationToken(canceled: true)));
+        Assert.Throws<OperationCanceledException>(() => image.Frames[0].MedianBlur(1, cancellationToken: new CancellationToken(canceled: true)));
+        image.Frames[0].ProcessPixelRows(_ => Assert.Throws<InvalidOperationException>(() => image.MedianBlur(1)));
+        image.Frames[0].ProcessPixelRows(_ => Assert.Throws<InvalidOperationException>(() => image.MedianBlur(0)));
+        AssertGray8(image.Frames[0], [[0, 0, 9, 9, 9, 0]]);
+
+        var disposed = new Image<Gray8>(2, 2);
+        var frame = disposed.Frames[0];
+        disposed.Dispose();
+        Assert.Throws<ObjectDisposedException>(() => disposed.MedianBlur(1));
+        Assert.Throws<ObjectDisposedException>(() => disposed.MedianBlur(0));
+        Assert.Throws<ObjectDisposedException>(() => frame.MedianBlur(1));
+    }
+
+    /// <summary>
+    /// The outputs of OpenCV 5.0.0 (opencv-python-headless, Python 3.12) for one 9x7 gray image, kept as literals:
+    /// <c>cv2.blur(img, (3, 3), borderType=cv2.BORDER_REFLECT)</c>, <c>cv2.blur(img, (5, 5), borderType=cv2.BORDER_CONSTANT)</c>,
+    /// <c>cv2.medianBlur(img, 3)</c> and <c>cv2.medianBlur(img, 5)</c> (whose border is <c>BORDER_REPLICATE</c>), and the
+    /// unsharp mask <c>floor(f + 1.5 (f - b) + 0.5)</c> clipped to [0, 255], where <c>b</c> is
+    /// <c>cv2.GaussianBlur(f, (7, 7), 1.0, borderType=cv2.BORDER_REPLICATE)</c> of the image as doubles. Every sample is equal.
+    /// </summary>
+    [Fact]
+    public void BoxBlursMediansAndUnsharpMasksMatchOpenCv()
+    {
+        int[][] source =
+        [
+            [12, 40, 80, 120, 160, 200, 230, 250, 255],
+            [20, 50, 255, 130, 170, 205, 235, 0, 250],
+            [30, 60, 100, 140, 180, 210, 240, 245, 248],
+            [200, 190, 180, 0, 160, 150, 140, 130, 120],
+            [210, 200, 190, 180, 170, 160, 150, 140, 255],
+            [60, 60, 60, 60, 220, 220, 220, 220, 220],
+            [0, 60, 60, 60, 220, 220, 220, 220, 90],
+        ];
+
+        Check(image => image.BoxBlur(1, ConvolutionEdgeMode.Mirror, cancellationToken: Ct),
+        [
+            [24, 65, 102, 142, 163, 199, 200, 217, 224],
+            [30, 72, 108, 148, 168, 203, 202, 217, 222],
+            [89, 121, 123, 146, 149, 188, 173, 179, 179],
+            [148, 151, 138, 144, 150, 173, 174, 185, 196],
+            [154, 150, 124, 136, 147, 177, 170, 177, 187],
+            [96, 100, 103, 136, 168, 200, 197, 193, 190],
+            [33, 47, 60, 113, 167, 220, 220, 191, 162],
+        ]);
+        Check(image => image.BoxBlur(2, ConvolutionEdgeMode.Zero, cancellationToken: Ct),
+        [
+            [26, 41, 62, 84, 106, 109, 123, 103, 78],
+            [49, 64, 91, 111, 131, 132, 151, 124, 94],
+            [73, 95, 129, 147, 165, 164, 186, 153, 116],
+            [75, 95, 131, 148, 165, 163, 186, 150, 113],
+            [66, 84, 122, 140, 156, 171, 191, 153, 114],
+            [59, 71, 102, 113, 122, 130, 146, 115, 85],
+            [36, 48, 72, 86, 96, 107, 118, 93, 69],
+        ]);
+        Check(image => image.MedianBlur(1, cancellationToken: Ct),
+        [
+            [20, 40, 80, 130, 160, 200, 230, 250, 250],
+            [30, 50, 100, 140, 170, 205, 230, 245, 250],
+            [50, 100, 130, 160, 160, 180, 205, 235, 245],
+            [200, 190, 180, 170, 160, 160, 150, 150, 245],
+            [200, 190, 180, 170, 160, 160, 150, 150, 220],
+            [60, 60, 60, 170, 180, 220, 220, 220, 220],
+            [60, 60, 60, 60, 220, 220, 220, 220, 220],
+        ]);
+        Check(image => image.MedianBlur(2, cancellationToken: Ct),
+        [
+            [30, 40, 80, 130, 170, 200, 230, 248, 250],
+            [40, 60, 120, 150, 160, 170, 205, 235, 248],
+            [80, 120, 160, 160, 170, 160, 180, 230, 248],
+            [60, 100, 160, 170, 170, 170, 205, 220, 220],
+            [60, 60, 140, 160, 170, 180, 220, 220, 220],
+            [60, 60, 60, 160, 170, 180, 220, 220, 150],
+            [60, 60, 60, 160, 190, 220, 220, 220, 220],
+        ]);
+        Check(image => image.Sharpen(1, 1.5, cancellationToken: Ct),
+        [
+            [0, 10, 49, 101, 154, 208, 255, 255, 255],
+            [0, 7, 255, 109, 173, 223, 255, 0, 255],
+            [0, 0, 60, 142, 209, 249, 255, 255, 255],
+            [255, 255, 242, 0, 173, 122, 91, 62, 21],
+            [255, 255, 255, 244, 187, 140, 112, 80, 255],
+            [15, 7, 0, 0, 255, 255, 253, 255, 255],
+            [0, 66, 39, 0, 255, 239, 235, 255, 0],
+        ]);
+
+        void Check(Action<Image> operation, int[][] expected)
+        {
+            using var image = BuildGray8(source);
+            operation(image);
+            AssertGray8(image.Frames[0], expected);
+        }
+    }
+
+    [Fact]
+    public void TheScratchOfBoxBlursMediansAndUnsharpMasksIsChargedAndAFailureChangesNothing()
+    {
+        // The frames are gradients, which a median keeps: the zero edge mode changes their edges
+        foreach (var operation in new Action<Image<Rgba32>>[] { image => image.BoxBlur(2, cancellationToken: Ct), image => image.Frames[1].MedianBlur(1, ConvolutionEdgeMode.Zero, Ct), image => image.Sharpen(1, cancellationToken: Ct) })
+        {
+            long before, peak;
+            using (var probe = BuildWithPool(new SlabPool(), ImageConfiguration.Default))
+            {
+                before = probe.Owner.Scope.LiveBytes;
+                operation(probe);
+                peak = probe.Owner.Scope.GetDiagnostics().PeakLiveBytes;
+                Assert.Equal(before, probe.Owner.Scope.LiveBytes);
+            }
+
+            Assert.True(peak > before, "The scratch storage is charged in addition to the pixel storages");
+            using (var image = BuildWithPool(new SlabPool(), new ImageConfiguration { Limits = new ImageResourceLimits { MaxLiveAllocationBytes = peak - 1 } }))
+            {
+                var pixels = CopyAllFrames(image);
+                var exif = image.Metadata.ExifProfile;
+                Assert.Throws<ImageResourceLimitException>(() => operation(image));
+                Assert.Equal(pixels, CopyAllFrames(image));
+                Assert.Same(exif, image.Metadata.ExifProfile);
+                Assert.Equal(before, image.Owner.Scope.LiveBytes);
+                Assert.Equal(0, image.Owner.ActiveLeaseCount);
+            }
+
+            var pool = new SlabPool();
+            using (var image = BuildWithPool(pool, ImageConfiguration.Default))
+            {
+                var pixels = CopyAllFrames(image);
+                pool.RentFailureInjector = _ => new InjectedAllocationFailureException();
+                Assert.Throws<InjectedAllocationFailureException>(() => operation(image));
+                pool.RentFailureInjector = null;
+                Assert.Equal(pixels, CopyAllFrames(image));
+                Assert.Equal(before, image.Owner.Scope.LiveBytes);
+                operation(image);
+                Assert.NotEqual(pixels, CopyAllFrames(image));
+                Assert.Equal(before, image.Owner.Scope.LiveBytes);
+            }
+        }
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
     // Arguments
     // -----------------------------------------------------------------------------------------------------------------
 
@@ -1112,6 +1696,61 @@ public sealed class ConvolutionTests
             image.Frames[0].Convolve(options, Ct);
             image.Convolve(Options(3, 1, [0.25, 0.5, 0.25]), Ct);
         }
+    }
+
+    private static void CheckSeparableSkipsZeroWeights<TPixel>()
+        where TPixel : unmanaged
+    {
+        // The four corners of the square, a quarter each, given as factors or weight by weight: both take the two passes.
+        // A sample that is not a number in the middle reaches the pixels whose corners read it (the corner pixels, edges
+        // clamped), and not the middle one, whose zero weight reads it
+        foreach (var kernel in new[] { ConvolutionKernel.CreateSeparable([0.5, 0, 0.5], [0.5, 0, 0.5]), Kernel(3, 3, [0.25, 0, 0.25, 0, 0, 0, 0.25, 0, 0.25]) })
+        {
+            Assert.True(kernel.IsSeparable);
+            using var image = new Image<TPixel>(3, 3, ProcessingTests.FloatPixel<TPixel>(0.5f, 0.5f, 0.5f));
+            image.Frames[0][1, 1] = ProcessingTests.FloatPixel<TPixel>(float.NaN, 0.5f, 0.5f);
+            image.Convolve(new ConvolutionOptions(kernel), Ct);
+            Assert.Equal(new RgbaFloat(0.5f, 0.5f, 0.5f, 1), ProcessingTests.ToRgbaFloat(image.Frames[0][1, 1]));
+            Assert.Equal(new RgbaFloat(0.5f, 0.5f, 0.5f, 1), ProcessingTests.ToRgbaFloat(image.Frames[0][1, 0]));
+            Assert.True(float.IsNaN(ProcessingTests.ToRgbaFloat(image.Frames[0][0, 0]).R));
+            Assert.Equal(0.5f, ProcessingTests.ToRgbaFloat(image.Frames[0][0, 0]).G);
+        }
+    }
+
+    private static void CheckBoxBlurNonFinite<TPixel>()
+        where TPixel : unmanaged
+    {
+        // One row of ones, radius 1: every pixel is the mean of three columns. Red is not a number at 3, green infinite at
+        // 0, blue 4 (above 1) at 6. A running sum would subtract the infinity and leave not-a-number behind it; the block
+        // sums only add the samples of each square
+        using var image = new Image<TPixel>(7, 1, ProcessingTests.FloatPixel<TPixel>(1, 1, 1));
+        image.Frames[0][3, 0] = ProcessingTests.FloatPixel<TPixel>(float.NaN, 1, 1);
+        image.Frames[0][0, 0] = ProcessingTests.FloatPixel<TPixel>(1, float.PositiveInfinity, 1);
+        image.Frames[0][6, 0] = ProcessingTests.FloatPixel<TPixel>(1, 1, 4);
+        image.BoxBlur(1, cancellationToken: Ct);
+        var row = CopyRow(image.Frames[0], 0).Select(ProcessingTests.ToRgbaFloat).ToArray();
+        Assert.Equal([false, false, true, true, true, false, false], row.Select(pixel => float.IsNaN(pixel.R)));
+        Assert.Equal([float.PositiveInfinity, float.PositiveInfinity, 1, 1, 1, 1, 1], row.Select(pixel => pixel.G));
+        Assert.Equal([1, 1, 1, 1, 1, 2, 3], row.Select(pixel => pixel.B));
+        Assert.All(row, pixel => Assert.Equal(1f, pixel.A));
+    }
+
+    private static void CheckFloatingPointMedian<TPixel>()
+        where TPixel : unmanaged
+    {
+        // One row: the middle window reads every pixel three times. Red NaN 1 2 sorts as 1 2 NaN; green -inf 5 -0 as
+        // -inf -0 5 (-0 keeps its sign); blue +inf NaN NaN gives a positive NaN; alpha 0.5 0.25 1 gives 0.5
+        using var image = new Image<TPixel>(3, 1);
+        image.Frames[0][0, 0] = ProcessingTests.FloatPixel<TPixel>(float.NaN, float.NegativeInfinity, float.PositiveInfinity, 0.5f);
+        image.Frames[0][1, 0] = ProcessingTests.FloatPixel<TPixel>(1, 5, float.NaN, 0.25f);
+        image.Frames[0][2, 0] = ProcessingTests.FloatPixel<TPixel>(2, -0f, float.NaN, 1);
+        image.MedianBlur(1, cancellationToken: Ct);
+        var middle = ProcessingTests.ToRgbaFloat(image.Frames[0][1, 0]);
+        Assert.Equal(2f, middle.R);
+        Assert.Equal(0x8000_0000u, BitConverter.SingleToUInt32Bits(middle.G));
+        Assert.True(float.IsNaN(middle.B));
+        Assert.Equal(0u, BitConverter.SingleToUInt32Bits(middle.B) & 0x8000_0000u);
+        Assert.Equal(0.5f, middle.A);
     }
 
     private static void AssertFloatRow<TPixel>(ImageFrame<TPixel> frame, params RgbaFloat[] expected)

@@ -31,8 +31,12 @@ public sealed class ImageConfiguration
     /// </summary>
     /// <remarks>
     /// <para>
-    /// Currently, <see cref="ImageProcessingExtensions.Resize"/> and
-    /// <see cref="ImageProcessingExtensions.Convolve(Image, ConvolutionOptions, CancellationToken)"/> use it: the output rows
+    /// Currently, <see cref="ImageProcessingExtensions.Resize"/>, the transformations,
+    /// <see cref="ImageProcessingExtensions.Convolve(Image, ConvolutionOptions, CancellationToken)"/>, the blurs
+    /// (<see cref="ImageProcessingExtensions.GaussianBlur(Image, double, ConvolutionEdgeMode, ConvolutionWorkingSpace, CancellationToken)"/>,
+    /// <see cref="ImageProcessingExtensions.BoxBlur(Image, int, ConvolutionEdgeMode, ConvolutionWorkingSpace, CancellationToken)"/>,
+    /// <see cref="ImageProcessingExtensions.MedianBlur(Image, int, ConvolutionEdgeMode, CancellationToken)"/>) and
+    /// <see cref="ImageProcessingExtensions.Sharpen(Image, double, double, double, ConvolutionEdgeMode, ConvolutionWorkingSpace, CancellationToken)"/> use it: the output rows
     /// of a large frame (at least 65,536 output pixels and 32 rows per worker; nearest-neighbor resizing excepted) are split
     /// into at most this many bands processed concurrently, the calling thread included. The result is identical whatever
     /// the value. Each worker needs its own row scratch, charged to the image's

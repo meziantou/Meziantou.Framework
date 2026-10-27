@@ -74,7 +74,8 @@ public sealed class ParallelConvolutionTests
         // The rows of a band are filtered horizontally into its ring, and those of its neighbors into its halos, before any
         // row is rewritten; a deviation of 14 reads 42 rows on each side, more than a band of the 7-worker run
         var random = new Random(12);
-        var (width, height) = (230, 260);
+        var (width, height) = (256, 260);
+        Assert.Equal(7, RowBands.GetWorkerCount(new Size(width, height), 7));
         var bytes = new byte[width * height * PixelFormats.GetBytesPerPixel(format)];
         random.NextBytes(bytes);
         foreach (var sigma in new[] { 1.3, 14 })
@@ -101,6 +102,126 @@ public sealed class ParallelConvolutionTests
                 image.GaussianBlur(sigma, mode, cancellationToken: Ct);
                 return CopyBytes(image);
             }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(Cases))]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void BoxBlursMediansUnsharpMasksAndSeparableMatricesDoNotDependOnTheWorkerCount(PixelFormat format, ConvolutionEdgeMode mode)
+    {
+        // A band of the 7-worker run has about 37 rows. The box blur sums its rows by blocks at fixed positions: a band
+        // that starts inside a block computes the end of that block from its window; a radius of 45 makes blocks of 91
+        // rows, and windows that read beyond the neighboring bands and beyond the image at both ends. The median, the
+        // unsharp mask and the separable matrix read their halos before any row is rewritten
+        var random = new Random(13);
+        var (width, height) = (256, 260);
+        Assert.Equal(7, RowBands.GetWorkerCount(new Size(width, height), 7));
+        var bytes = new byte[width * height * PixelFormats.GetBytesPerPixel(format)];
+        random.NextBytes(bytes);
+        double[] row = [.. Enumerable.Range(0, 17).Select(_ => random.NextDouble() - 0.2)];
+        double[] column = [.. Enumerable.Range(0, 41).Select(_ => (random.NextDouble() - 0.2) / 10)];
+        var separable = new ConvolutionOptions(ConvolutionKernel.CreateSeparable(row, column)) { EdgeMode = mode };
+        (string Name, Action<Image> Apply)[] operations =
+        [
+            ("box 1", image => image.BoxBlur(1, mode, cancellationToken: Ct)),
+            ("box 45", image => image.BoxBlur(45, mode, cancellationToken: Ct)),
+            ("box 45 linear", image => image.BoxBlur(45, mode, ConvolutionWorkingSpace.LinearSrgb, Ct)),
+            ("median 1", image => image.MedianBlur(1, mode, Ct)),
+            ("median 40", image => image.MedianBlur(40, mode, Ct)),
+            ("sharpen", image => image.Sharpen(12, 1.5, 0.01, mode, cancellationToken: Ct)),
+            ("separable", image => image.Convolve(separable, Ct)),
+        ];
+
+        foreach (var (name, apply) in operations)
+        {
+            // The wide median costs the most: one 8-bit and one 16-bit format cover its two kinds of histograms
+            if (name == "median 40" && format is not (PixelFormat.Gray8 or PixelFormat.Rgba64))
+                continue;
+
+            var expected = Apply(bytes, workers: 1);
+            Assert.NotEqual(bytes, expected);
+            foreach (var workers in new[] { 3, 7 })
+            {
+                Assert.True(expected.AsSpan().SequenceEqual(Apply(bytes, workers)), $"{name}, {workers} workers");
+            }
+
+            byte[] Apply(byte[] source, int workers)
+            {
+                var configuration = new ImageConfiguration { MaxDegreeOfParallelism = workers };
+                using var image = format switch
+                {
+                    PixelFormat.Rgba32 => (Image)Image.ImportPixelBytes<Rgba32>(source, width, height, configuration: configuration),
+                    PixelFormat.Rgb24 => Image.ImportPixelBytes<Rgb24>(source, width, height, configuration: configuration),
+                    PixelFormat.Gray8 => Image.ImportPixelBytes<Gray8>(source, width, height, configuration: configuration),
+                    PixelFormat.Rgba64 => Image.ImportPixelBytes<Rgba64>(source, width, height, configuration: configuration),
+                    _ => throw new ArgumentOutOfRangeException(nameof(format)),
+                };
+
+                apply(image);
+                return CopyBytes(image);
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(PixelFormat.RgbaFloat)]
+    [InlineData(PixelFormat.RgbaHalf)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void FloatingPointBoxBlursAndMediansDoNotDependOnTheWorkerCount(PixelFormat format)
+    {
+        if (format == PixelFormat.RgbaFloat)
+        {
+            CheckFloatingPointWorkers<RgbaFloat>();
+        }
+        else
+        {
+            CheckFloatingPointWorkers<RgbaHalf>();
+        }
+    }
+
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    private static void CheckFloatingPointWorkers<TPixel>()
+        where TPixel : unmanaged
+    {
+        // Values above 1, negative ones, infinities and numbers that are not numbers. The samples of RgbaFloat are sorted
+        // for every window of the median: its radius stays small
+        var random = new Random(14);
+        var (width, height) = (256, 260);
+        Assert.Equal(7, RowBands.GetWorkerCount(new Size(width, height), 7));
+        var pixels = new TPixel[width * height];
+        for (var i = 0; i < pixels.Length; i++)
+        {
+            pixels[i] = ProcessingTests.FloatPixel<TPixel>(Sample(), Sample(), Sample(), (float)random.NextDouble());
+        }
+
+        foreach (var radius in new[] { 2, 45 })
+        {
+            foreach (var mode in Enum.GetValues<ConvolutionEdgeMode>())
+            {
+                var expected = Apply(1, radius, mode);
+                foreach (var workers in new[] { 3, 7 })
+                {
+                    Assert.True(expected.AsSpan().SequenceEqual(Apply(workers, radius, mode)), $"radius {radius}, {mode}, {workers} workers");
+                }
+            }
+        }
+
+        float Sample() => random.Next(200) switch
+        {
+            0 => float.NaN,
+            1 => float.PositiveInfinity,
+            2 => float.NegativeInfinity,
+            _ => (float)((random.NextDouble() * 3) - 1),
+        };
+
+        byte[] Apply(int workers, int radius, ConvolutionEdgeMode mode)
+        {
+            var configuration = new ImageConfiguration { MaxDegreeOfParallelism = workers };
+            using var image = Image.ImportPixelData<TPixel>(pixels, width, height, configuration: configuration);
+            image.BoxBlur(radius, mode, cancellationToken: Ct);
+            image.MedianBlur(radius == 2 ? 2 : 1, mode, Ct);
+            return CopyBytes(image);
         }
     }
 

@@ -114,6 +114,25 @@ internal static class Examples
     }
     #endregion
 
+    /// <summary>A scan cleaned up by a median and an unsharp mask, then a soft background made by a box blur and a separable matrix.</summary>
+    #region Imaging_BlurAndSharpen
+    public static void CleanUpScan(string inputPath, string cleanedPath, string backgroundPath)
+    {
+        using var image = Image.Load(inputPath);
+
+        // The median of every 3x3 square removes isolated specks and keeps edges. The unsharp mask then adds half the
+        // difference from a Gaussian blur of deviation 1.5, except where it is under 2% of the range: flat paper stays flat
+        image.MedianBlur(1);
+        image.Sharpen(1.5, amount: 0.5, threshold: 0.02);
+        image.Save(cleanedPath);
+
+        // A box blur costs the same whatever its radius; a separable matrix is applied to the rows, then to the columns
+        image.BoxBlur(25, ConvolutionEdgeMode.Mirror);
+        image.Convolve(new ConvolutionOptions(ConvolutionKernel.CreateSeparable([0.25, 0.5, 0.25], [0.25, 0.5, 0.25])));
+        image.Save(backgroundPath);
+    }
+    #endregion
+
     /// <summary>New colors for an image, for a part of it, and for a drawing.</summary>
     #region Imaging_ColorMatrix
     public static void ApplyColorFilters(string photoPath, string iconPath, string outputPath)

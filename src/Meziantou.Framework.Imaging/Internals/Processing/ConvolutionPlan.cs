@@ -12,14 +12,23 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// the scope of the image, before any pixel changes.
 /// </para>
 /// <para>
-/// A separable plan (<see cref="RowWeights"/>, the Gaussian blur) has a kernel of one column: every row it loads is first
-/// filtered by the row weights, from one padded working row, so the ring and the halos hold horizontally filtered rows
-/// and the column of weights combines them. Nothing is rounded between the two directions.
+/// A separable plan (<see cref="RowWeights"/>: the Gaussian blur, the unsharp mask, and the matrices that
+/// <see cref="ConvolutionKernel.IsSeparable"/>) has a kernel of one column: every row it loads is first filtered by the
+/// row weights, from one padded working row, so the ring and the halos hold horizontally filtered rows and the column of
+/// weights combines them. Nothing is rounded between the two directions. A separable matrix takes this path when it saves
+/// taps: both of its factors have at least two weights that are not zero (or it has no weight-by-weight form).
+/// </para>
+/// <para>
+/// An unsharp mask (<see cref="SharpenAmount"/>) is a blur plan whose blurred row is combined with the original row
+/// before it is stored: <c>o + amount (o - b)</c> for every working sample, or <c>o</c> when <c>|o - b|</c> is below the
+/// threshold.
 /// </para>
 /// </remarks>
 internal sealed class ConvolutionPlan : IDisposable
 {
-    private readonly ConvolutionKernel _kernel;
+    private readonly double[] _weights;
+    private readonly int _kernelWidth;
+    private readonly int _kernelHeight;
     private readonly double[]? _rowWeights;
     private ConvolutionScratch?[] _scratch = [];
 
@@ -32,15 +41,38 @@ internal sealed class ConvolutionPlan : IDisposable
     /// <param name="size">The size of the frames.</param>
     /// <param name="maxDegreeOfParallelism">The largest number of workers.</param>
     /// <param name="transfer">The transfer characteristics of linear-light filtering.</param>
-    /// <param name="rowWeights">The weights every row is filtered by before the kernel combines the rows (an odd number), or <see langword="null"/>.</param>
+    /// <param name="rowWeights">
+    /// The weights every row is filtered by before the kernel combines the rows (an odd number), or <see langword="null"/>.
+    /// They make a blur, whose weights add up to 1 (<see cref="IsBlur"/>). Without them, a separable kernel provides its own.
+    /// </param>
     public ConvolutionPlan(ConvolutionKernel kernel, ConvolutionEdgeMode edgeMode, bool preserveAlpha, bool linear, PixelFormat format, Size size, int maxDegreeOfParallelism = 1, byte transfer = CicpTransfer.Srgb, double[]? rowWeights = null)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxDegreeOfParallelism);
         if (rowWeights is not null && (kernel.Width != 1 || rowWeights.Length % 2 != 1))
             throw new ArgumentException("A separable plan has a kernel of one column and an odd number of row weights.", nameof(rowWeights));
 
-        _kernel = kernel;
-        _rowWeights = rowWeights;
+        if (rowWeights is not null)
+        {
+            _weights = kernel.GetValues();
+            _kernelWidth = kernel.Width;
+            _kernelHeight = kernel.Height;
+            _rowWeights = rowWeights;
+            IsBlur = true;
+        }
+        else if (kernel.IsSeparable && (!kernel.HasValues || (CountNonZero(kernel.RowWeights) >= 2 && CountNonZero(kernel.ColumnWeights) >= 2)))
+        {
+            _weights = kernel.ColumnWeights.ToArray();
+            _kernelWidth = 1;
+            _kernelHeight = kernel.Height;
+            _rowWeights = kernel.RowWeights.ToArray();
+        }
+        else
+        {
+            _weights = kernel.GetValues();
+            _kernelWidth = kernel.Width;
+            _kernelHeight = kernel.Height;
+        }
+
         EdgeMode = edgeMode;
         IsLinear = linear;
         Transfer = linear ? transfer : (byte)0;
@@ -51,11 +83,42 @@ internal sealed class ConvolutionPlan : IDisposable
         Workers = RowBands.GetWorkerCount(size, maxDegreeOfParallelism);
     }
 
-    /// <summary>Gets the weights, row by row.</summary>
-    public ReadOnlySpan<double> Weights => _kernel.Values;
+    /// <summary>Gets the weights, row by row (the column of a separable plan).</summary>
+    public ReadOnlySpan<double> Weights => _weights;
 
     /// <summary>Gets a value indicating whether every row is filtered by <see cref="RowWeights"/> before the kernel combines the rows.</summary>
     public bool IsSeparable => _rowWeights is not null;
+
+    /// <summary>
+    /// Gets a value indicating whether the plan is a blur: separable, with weights that add up to 1, so that an opaque frame
+    /// can be filtered as its colors alone (<see cref="Convolver.GetWorkingAlpha"/>).
+    /// </summary>
+    public bool IsBlur { get; }
+
+    /// <summary>
+    /// Gets the amount of an unsharp mask: when positive, every blurred working sample <c>b</c> becomes
+    /// <c>o + amount (o - b)</c>, <c>o</c> being the original working sample. Requires a blur plan.
+    /// </summary>
+    public double SharpenAmount
+    {
+        get;
+        init
+        {
+            if (!IsBlur)
+                throw new InvalidOperationException("Only a blur plan can sharpen.");
+
+            field = value;
+        }
+    }
+
+    /// <summary>
+    /// Gets the threshold of an unsharp mask, a fraction of the range of a working sample: a sample whose difference from
+    /// the blurred one is smaller keeps its original value.
+    /// </summary>
+    public double SharpenThreshold { get; init; }
+
+    /// <summary>Gets a value indicating whether the plan is an unsharp mask (<see cref="SharpenAmount"/>).</summary>
+    public bool IsSharpen => SharpenAmount > 0;
 
     /// <summary>Gets the weights every row is filtered by, from left to right (separable plans), or an empty span.</summary>
     public ReadOnlySpan<double> RowWeights => _rowWeights;
@@ -63,15 +126,15 @@ internal sealed class ConvolutionPlan : IDisposable
     /// <summary>Gets the column of the row weight applied to the pixel itself (separable plans).</summary>
     public int RowCenterX => (_rowWeights?.Length ?? 0) / 2;
 
-    public int KernelWidth => _kernel.Width;
+    public int KernelWidth => _kernelWidth;
 
-    public int KernelHeight => _kernel.Height;
+    public int KernelHeight => _kernelHeight;
 
     /// <summary>Gets the column of the weight applied to the pixel itself.</summary>
-    public int CenterX => _kernel.Width / 2;
+    public int CenterX => _kernelWidth / 2;
 
     /// <summary>Gets the row of the weight applied to the pixel itself.</summary>
-    public int CenterY => _kernel.Height / 2;
+    public int CenterY => _kernelHeight / 2;
 
     public ConvolutionEdgeMode EdgeMode { get; }
 
@@ -141,6 +204,20 @@ internal sealed class ConvolutionPlan : IDisposable
         }
 
         _scratch = [];
+    }
+
+    private static int CountNonZero(ReadOnlySpan<double> values)
+    {
+        var count = 0;
+        foreach (var value in values)
+        {
+            if (value != 0)
+            {
+                count++;
+            }
+        }
+
+        return count;
     }
 
     /// <summary>

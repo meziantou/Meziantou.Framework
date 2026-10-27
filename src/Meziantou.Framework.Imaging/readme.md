@@ -36,7 +36,7 @@ color conversion, and bounded-memory streaming.
 - Six integer working pixel formats (`Rgba32`, `Bgra32`, `Rgb24`, `Rgba64`, `Gray8`, `Gray16`) with 16-bit precision
   preserved, and two floating-point ones (`RgbaFloat`, `RgbaHalf`) for scene-referred and high dynamic range data
 - Crop, auto-crop (background detection), resize (alpha-aware, Contain/Cover/Stretch/Pad/BoxPad), padding and canvas
-  extension, rotate (quarter turns or any angle), skew, affine and perspective transformations, auto-orient, flip, grayscale, Gaussian blur and convolution matrices (sharpen, edge detection) applied to all frames
+  extension, rotate (quarter turns or any angle), skew, affine and perspective transformations, auto-orient, flip, grayscale, Gaussian, box and median blurs, unsharp masking and convolution matrices (sharpen, edge detection, separable matrices in two passes) applied to all frames
 - Antialiased vector drawing on a frame or on every frame: filled and stroked shapes and paths with Bézier curves,
   arcs and curves through points, dashed strokes, strokes on one side of their path and arrow heads, solid colors,
   linear, radial and sweep gradients, images (also in perspective), patterns, clips, masks, layers, shadows, blurs,
@@ -456,8 +456,8 @@ types (configuration, limits, options, encoders, `MetadataBlob`, profiles, brush
 processed concurrently.
 An `Image` and its frames must not be used concurrently while any thread mutates them or holds a lease. Readers and
 writers support one operation at a time: overlapping calls throw `InvalidOperationException`. Internal parallelism is off
-by default (`ImageConfiguration.MaxDegreeOfParallelism = 1`); with more workers, only large resizes and convolutions are
-split into row bands, with results identical to the sequential ones.
+by default (`ImageConfiguration.MaxDegreeOfParallelism = 1`); with more workers, only large resizes, transformations,
+convolutions, blurs, medians and unsharp masks are split into row bands, with results identical to the sequential ones.
 
 ### Failure atomicity
 
@@ -467,10 +467,11 @@ split into row bands, with results identical to the sequential ones.
   frame and the poster in one transaction: replacements are allocated (and charged) while the originals are live, and any failure before the commit
   (limit, allocation failure, cancellation) leaves dimensions, pixels, frame identities and order, cursor hotspots and
   metadata unchanged.
-- **Pixel mutations may be partial.** `Flip`, `Grayscale`, `Convolve`, `Equalize`, `AutoLevels`, `Draw`, row callbacks
-  and `ReadFrameInto` write in place: a failure or a cancellation can leave some rows or frames updated, but the image
-  stays structurally valid and disposable. `Convolve`, `Equalize` and `AutoLevels` rent their working memory first:
-  exceeding the allocation limit leaves the image unchanged. `Flip`
+- **Pixel mutations may be partial.** `Flip`, `Grayscale`, `Convolve` (and the blurs and the sharpening), `Equalize`,
+  `AutoLevels`, `Draw`, row callbacks and `ReadFrameInto` write in place: a failure or a cancellation can leave some rows
+  or frames updated, but the image stays structurally valid and disposable. `Convolve`, `GaussianBlur`, `BoxBlur`,
+  `MedianBlur`, `Sharpen`, `Equalize` and `AutoLevels` rent their working memory first: exceeding the allocation limit
+  leaves the image unchanged. `Flip`
   moves the hotspot of a frame once that frame is completely mirrored. In a `Draw` callback, the shapes already drawn
   stay; each shape rents its working storage before it changes a pixel, and a canceled shape leaves the same rows
   painted on every frame.
@@ -601,10 +602,10 @@ width on each side), `ExtendCanvas` (a larger canvas, with the image at one of n
 permutations, or any angle), `Skew` and `Transform` (an affine or a perspective transformation), `Flip`, `AutoOrient` (all eight EXIF orientations), `Grayscale` (Rec. 709 at storage precision, ties upward; keeps the storage format and
 alpha, and rejects incompatible ICC profiles; use `CloneAs<Gray8>` to change the storage), `ApplyColorMatrix` (a new
 color for each pixel from its own one: brightness, contrast, saturation, a tint), `Convolve` (a convolution
-matrix), `Equalize` and `AutoLevels` (histogram equalization, CLAHE and contrast stretch, see
-[Histograms, equalization and auto-levels](#histograms-equalization-and-auto-levels)) and `Quantize` (a reduction to a
-palette, see [Color reduction](#color-reduction)). `Flip`, `Grayscale`, `ApplyColorMatrix`, `Convolve`, `Equalize`,
-`AutoLevels` and `Quantize` also exist for one frame. Geometry changes preserve 16-bit precision and alpha, and reconcile the EXIF dimensions,
+matrix), `GaussianBlur`, `BoxBlur`, `MedianBlur`, `Sharpen` (an unsharp mask), `Equalize` and `AutoLevels` (histogram
+equalization, CLAHE and contrast stretch, see [Histograms, equalization and auto-levels](#histograms-equalization-and-auto-levels))
+and `Quantize` (a reduction to a palette, see [Color reduction](#color-reduction)). `Flip`, `Grayscale`,
+`ApplyColorMatrix`, `Convolve`, the blurs, `Sharpen`, `Equalize`, `AutoLevels` and `Quantize` also exist for one frame. Geometry changes preserve 16-bit precision and alpha, and reconcile the EXIF dimensions,
 orientation and thumbnail. `ConvertColorProfile` converts the colors to another ICC profile
 (see [Color management](#color-management)).
 
@@ -848,8 +849,12 @@ with 16-bit precision), rounded to nearest (ties up) and clamped to the sample r
 is rewritten in place, with a scratch of a few rows per worker proportional to the matrix height, charged to the
 allocation limit; the pixel format, the size, the frames and the metadata are kept (the EXIF thumbnail, now stale, is
 removed). As for resizing, results do not depend on the worker count or on SIMD support. The cost grows with the number
-of non-zero weights: there is no dedicated fast path for separable matrices such as large blurs: use `GaussianBlur` for
-these.
+of non-zero weights, except for separable matrices. `ConvolutionKernel.CreateSeparable(rowWeights, columnWeights)`
+makes the matrix whose weight at `(x, y)` is `columnWeights[y] * rowWeights[x]`, and a matrix given weight by weight is
+recognized as one when every weight is exactly such a product (a box, a binomial, Sobel: `IsSeparable` tells). A
+separable matrix is applied in two passes, every row filtered by the row weights and the filtered rows combined by the
+column weights, in double precision and rounded once, so that the time grows with the sum of its dimensions instead of
+their product: a 15x15 box is several times faster as factors than as a matrix.
 
 `GaussianBlur(sigma)` blurs an image or a frame with a bell curve of standard deviation `sigma` (the radius CSS
 gives to a blur is twice the deviation): one separable convolution, each row filtered by a row of `2 ceil(3 sigma) + 1`
@@ -859,6 +864,7 @@ weights, rounded once. It takes the edge mode and the working space of a convolu
 frame is blurred as its colors alone and keeps the maximum alpha, except with the `Zero` edge mode, which reads
 transparent pixels beyond the image. The weights `exp(-i^2 / (2 sigma^2))`, divided by their sum, are computed without
 any function of the platform.
+
 
 <!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_Convolve;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -878,6 +884,54 @@ public static void SharpenAndDetectEdges(string inputPath, string sharpenedPath,
     var laplacian = new ConvolutionKernel(3, 3, [0, 1, 0, 1, -4, 1, 0, 1, 0]);
     image.Convolve(new ConvolutionOptions(laplacian) { PreserveAlpha = true, EdgeMode = ConvolutionEdgeMode.Mirror });
     image.Save(edgesPath);
+}
+```
+<!-- endref -->
+
+`BoxBlur(radius)` replaces every sample by the mean of the same sample of the `(2 radius + 1)^2` pixels of the square
+around it, in a time per pixel that does not depend on the radius: the sums of the rows, then of the columns, are
+computed by blocks of `2 radius + 1` values at fixed positions, three additions per sample and no subtraction (a sample
+that is not a number or an infinity only reaches the squares that contain it), and divided once. It takes the edge mode
+and the working space of a convolution and follows its rules, like `GaussianBlur`; the scratch holds about three times
+the radius rows of double-precision samples per worker.
+
+`Sharpen(sigma, amount = 1, threshold = 0)` is an unsharp mask: every sample `o` whose Gaussian blur of deviation
+`sigma` is `b` (the blur of `GaussianBlur`) becomes `o + amount (o - b)`, which raises the contrast of the details
+smaller than the blur, unless `|o - b|` is less than `threshold` times the range of the sample, so that flat areas and
+their noise stay as they are. The samples are those of the blur (premultiplied colors and alpha, or linear light),
+rounded once and clamped (ringing beyond black and white is clipped, except for the colors of floating-point samples);
+an opaque frame keeps its alpha.
+
+`MedianBlur(radius)` replaces every sample by the median of the same sample of the square of side `2 radius + 1` around
+it: isolated specks disappear and edges stay sharp. Every sample, alpha included, is filtered on its own as stored;
+nothing is computed or rounded, and there is no working space (a transfer function keeps the order of the samples).
+Floating-point samples are ordered as numbers, `-0` below `+0`, and every sample that is not a number above the
+infinities (it comes back with a positive sign). Samples of up to 16 bits (the integer formats and `RgbaHalf`) are
+counted in histograms, and the time per pixel grows with the radius; `RgbaFloat` samples are sorted for every pixel,
+and it grows with its square.
+
+The box blur and the median give the samples of `cv2.blur` and `cv2.medianBlur` of OpenCV for the same edges, and the
+unsharp mask those of the same formula over `cv2.GaussianBlur` (the tests keep some of them). ImageMagick 7.1 agrees
+within a few units: its `-statistic Mean` is one unit off for about half of the samples, and its `-unsharp` samples
+the Gaussian in another way, a difference that the amount magnifies (up to 3 units for a deviation of 1 and an amount
+of 1).
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_BlurAndSharpen;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void CleanUpScan(string inputPath, string cleanedPath, string backgroundPath)
+{
+    using var image = Image.Load(inputPath);
+
+    // The median of every 3x3 square removes isolated specks and keeps edges. The unsharp mask then adds half the
+    // difference from a Gaussian blur of deviation 1.5, except where it is under 2% of the range: flat paper stays flat
+    image.MedianBlur(1);
+    image.Sharpen(1.5, amount: 0.5, threshold: 0.02);
+    image.Save(cleanedPath);
+
+    // A box blur costs the same whatever its radius; a separable matrix is applied to the rows, then to the columns
+    image.BoxBlur(25, ConvolutionEdgeMode.Mirror);
+    image.Convolve(new ConvolutionOptions(ConvolutionKernel.CreateSeparable([0.25, 0.5, 0.25], [0.25, 0.5, 0.25])));
+    image.Save(backgroundPath);
 }
 ```
 <!-- endref -->

@@ -130,6 +130,12 @@ public sealed class ImageFrame<TPixel> : ImageFrame
     internal override void ConvolvePixels(scoped in PixelLease lease, ConvolutionPlan plan, CancellationToken cancellationToken)
         => Convolver.Convolve<TPixel>(lease, plan, cancellationToken);
 
+    internal override void BoxBlurPixels(scoped in PixelLease lease, BoxBlurPlan plan, CancellationToken cancellationToken)
+        => BoxBlurrer.Blur<TPixel>(lease, plan, cancellationToken);
+
+    internal override void MedianPixels(scoped in PixelLease lease, MedianPlan plan, CancellationToken cancellationToken)
+        => MedianFilter.Apply<TPixel>(lease, plan, cancellationToken);
+
     internal override void ConvertColorPixels(scoped in PixelLease source, scoped in PixelLease destination, IccPipeline pipeline, IccUInt16InputTables? uint16Tables, CancellationToken cancellationToken)
         => ColorConversionKernels.ConvertRows<TPixel>(source, destination, pipeline, uint16Tables, cancellationToken);
 

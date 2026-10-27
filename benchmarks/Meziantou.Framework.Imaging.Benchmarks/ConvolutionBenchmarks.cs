@@ -17,6 +17,14 @@ public class ConvolutionBenchmarks
 
     private static readonly ConvolutionKernel BinomialKernel = CreateBinomial5();
 
+    // The 15x15 box as factors, and as a matrix whose middle weight is changed by 1e-12 so that it is not recognized as
+    // separable: the same number of weights, applied as a matrix
+    private static readonly ConvolutionKernel SeparableBox15 = ConvolutionKernel.CreateSeparable(Enumerable.Repeat(1 / 15d, 15).ToArray(), Enumerable.Repeat(1 / 15d, 15).ToArray());
+
+    private static readonly ConvolutionKernel MatrixBox15 = CreateMatrixBox(15);
+
+    private static readonly ConvolutionKernel SeparableBox31 = ConvolutionKernel.CreateSeparable(Enumerable.Repeat(1 / 31d, 31).ToArray(), Enumerable.Repeat(1 / 31d, 31).ToArray());
+
     private Image<Rgba32> _rgba32 = null!;
     private Image<Rgba64> _rgba64 = null!;
     private Image<Rgba32> _opaque32 = null!;
@@ -89,6 +97,60 @@ public class ConvolutionBenchmarks
     [Benchmark]
     [Workload("1920x1080 Rgba64 Gaussian blur, deviation 2 (13 weights per direction)")]
     public int GaussianBlur2Rgba64() => Blur(_rgba64, 2);
+
+    [Benchmark]
+    [Workload("1920x1080 Rgba32 15x15 box as a matrix (225 weights)")]
+    public int Matrix15() => Convolve(_rgba32, new ConvolutionOptions(MatrixBox15));
+
+    [Benchmark]
+    [Workload("1920x1080 Rgba32 15x15 box as a separable matrix (15 + 15 weights)")]
+    public int Separable15() => Convolve(_rgba32, new ConvolutionOptions(SeparableBox15));
+
+    [Benchmark]
+    [Workload("1920x1080 Rgba32 31x31 box as a separable matrix (31 + 31 weights)")]
+    public int Separable31() => Convolve(_rgba32, new ConvolutionOptions(SeparableBox31));
+
+    [Benchmark]
+    [Workload("1920x1080 Rgba32 box blur, radius 7 (15x15, block sums)")]
+    public int BoxBlur7() => Filter(_rgba32, image => image.BoxBlur(7));
+
+    [Benchmark]
+    [Workload("1920x1080 Rgba32 box blur, radius 15 (31x31, block sums)")]
+    public int BoxBlur15() => Filter(_rgba32, image => image.BoxBlur(15));
+
+    [Benchmark]
+    [Workload("1920x1080 Rgba32 box blur, radius 100 (201x201, block sums)")]
+    public int BoxBlur100() => Filter(_rgba32, image => image.BoxBlur(100));
+
+    [Benchmark]
+    [Workload("1920x1080 Rgba32 unsharp mask, deviation 2")]
+    public int Sharpen2() => Filter(_rgba32, image => image.Sharpen(2, 1.5));
+
+    [Benchmark]
+    [Workload("1920x1080 Rgba32 median, radius 1 (3x3)")]
+    public int Median1() => Filter(_rgba32, image => image.MedianBlur(1));
+
+    [Benchmark]
+    [Workload("1920x1080 Rgba32 median, radius 5 (11x11)")]
+    public int Median5() => Filter(_rgba32, image => image.MedianBlur(5));
+
+    [Benchmark]
+    [Workload("1920x1080 Rgba64 median, radius 2 (5x5)")]
+    public int Median2Rgba64() => Filter(_rgba64, image => image.MedianBlur(2));
+
+    private static int Filter(Image source, Action<Image> filter)
+    {
+        using var result = ImageWorkloads.FilterCopy(source, filter);
+        return result.Width;
+    }
+
+    private static ConvolutionKernel CreateMatrixBox(int size)
+    {
+        var weights = new double[size * size];
+        Array.Fill(weights, 1d / (size * size));
+        weights[weights.Length / 2] += 1e-12;
+        return new ConvolutionKernel(size, size, weights);
+    }
 
     private static int Convolve(Image source, ConvolutionOptions options)
     {

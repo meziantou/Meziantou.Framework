@@ -21,9 +21,10 @@ namespace Meziantou.Framework.Imaging;
 /// </para>
 /// <para>
 /// Pixel-only operations (<see cref="Flip(Image, FlipMode, CancellationToken)"/>, <see cref="Grayscale(Image, CancellationToken)"/>,
-/// <see cref="Convolve(Image, ConvolutionOptions, CancellationToken)"/>, <see cref="Equalize(Image, HistogramEqualizationOptions?, CancellationToken)"/>,
-/// <see cref="AutoLevels(Image, AutoLevelsOptions?, CancellationToken)"/>) work in place; on failure or cancellation some frames
-/// or rows may already be modified, but the image remains structurally valid.
+/// <see cref="Convolve(Image, ConvolutionOptions, CancellationToken)"/>, the blurs, <see cref="Sharpen(Image, double, double, double, ConvolutionEdgeMode, ConvolutionWorkingSpace, CancellationToken)"/>,
+/// <see cref="Equalize(Image, HistogramEqualizationOptions?, CancellationToken)"/>, <see cref="AutoLevels(Image, AutoLevelsOptions?, CancellationToken)"/>)
+/// work in place; on failure or cancellation some frames or rows may already be modified, but the image remains
+/// structurally valid.
 /// </para>
 /// <para>
 /// Operations work in stored-pixel coordinates. Except for <see cref="AutoOrient"/>, they keep
@@ -47,12 +48,15 @@ namespace Meziantou.Framework.Imaging;
 /// bits, floating-point samples of any value (not-a-number payloads included) and alpha, is copied unchanged (an
 /// auto-crop that enlarges the canvas also writes the detected background color around the copied pixels, as
 /// <see cref="Pad"/> and <see cref="ExtendCanvas"/> write their padding color). Operations run on the calling thread, except that <see cref="Resize"/>,
-/// the transformations and <see cref="Convolve(Image, ConvolutionOptions, CancellationToken)"/> may also use up to
-/// <see cref="ImageConfiguration.MaxDegreeOfParallelism"/> workers for large frames (identical results).
+/// the transformations, <see cref="Convolve(Image, ConvolutionOptions, CancellationToken)"/>, the blurs and the sharpening
+/// may also use up to <see cref="ImageConfiguration.MaxDegreeOfParallelism"/> workers for large frames (identical results).
 /// </para>
 /// </remarks>
 public static class ImageProcessingExtensions
 {
+    private const int MaxBoxBlurRadius = 10000;
+    private const int MaxMedianRadius = 1000;
+
     /// <summary>Crops every frame of the image to a rectangle.</summary>
     /// <param name="image">The image to modify.</param>
     /// <param name="rectangle">The region to keep. It must be non-empty and entirely inside the canvas; it is never clamped.</param>
@@ -1195,7 +1199,7 @@ public static class ImageProcessingExtensions
             return;
         }
 
-        image.BlurAllFrames(GaussianKernel.Create(sigma), edgeMode, workingSpace, cancellationToken);
+        image.BlurAllFrames(GaussianKernel.Create(sigma), edgeMode, workingSpace, sharpenAmount: 0, sharpenThreshold: 0, cancellationToken);
     }
 
     /// <summary>
@@ -1222,7 +1226,221 @@ public static class ImageProcessingExtensions
         if (sigma == 0)
             return;
 
-        frame.OwnerImage.BlurFrame(frame, storage, GaussianKernel.Create(sigma), edgeMode, workingSpace, cancellationToken);
+        frame.OwnerImage.BlurFrame(frame, storage, GaussianKernel.Create(sigma), edgeMode, workingSpace, sharpenAmount: 0, sharpenThreshold: 0, cancellationToken);
+    }
+
+    /// <summary>Blurs every displayed frame and the poster frame in place with a box blur. The EXIF thumbnail, now stale, is removed.</summary>
+    /// <remarks>
+    /// <para>
+    /// Each sample becomes the mean of the same sample of the <c>(2 radius + 1)^2</c> pixels of the square centered on its
+    /// pixel: the convolution by a matrix whose weights are all <c>1 / (2 radius + 1)^2</c>, which is what
+    /// <c>cv2.blur</c> and <c>cv2.boxFilter</c> of OpenCV compute. Pixels read beyond the edges are chosen by
+    /// <paramref name="edgeMode"/>.
+    /// </para>
+    /// <para>
+    /// The time per pixel does not depend on the radius: the sums of the rows of the square, then of its columns, are
+    /// computed by blocks of <c>2 radius + 1</c> values, three additions per sample whatever their number, without
+    /// subtractions (a sample that is not a number or an infinity only reaches the pixels whose square contains it), and
+    /// the sum of the square is divided once and rounded once at the storage precision. It follows the rules of a
+    /// convolution (colors filtered premultiplied by alpha, the same result whatever the number of workers); an opaque
+    /// frame is blurred as its colors alone and keeps the maximum alpha, except with
+    /// <see cref="ConvolutionEdgeMode.Zero"/>, which reads transparent pixels beyond the frame. The scratch storage
+    /// (about three times the radius rows of double-precision samples per worker) is charged to the image allocation
+    /// scope. With a radius of 0, nothing changes.
+    /// </para>
+    /// </remarks>
+    /// <param name="image">The image to modify.</param>
+    /// <param name="radius">The number of pixels averaged on each side of a pixel. Must be between 0 and 10000.</param>
+    /// <param name="edgeMode">The pixels the blur reads beyond the edges of the image.</param>
+    /// <param name="workingSpace">The numeric space the samples are filtered in.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests. On cancellation, some frames or rows may already be blurred.</param>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="radius"/> is negative or exceeds 10000, or <paramref name="edgeMode"/> or <paramref name="workingSpace"/> is not a defined value.</exception>
+    /// <exception cref="UnsupportedImageFeatureException"><see cref="ConvolutionWorkingSpace.LinearSrgb"/> is requested for an image with an incompatible ICC profile, or for floating-point samples outside [0, 1] that are not labeled as linear light. Nothing is changed.</exception>
+    /// <exception cref="ImageResourceLimitException">The scratch storage would exceed the allocation limit. The image is unchanged.</exception>
+    /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
+    /// <exception cref="ObjectDisposedException">The image is disposed.</exception>
+    public static void BoxBlur(this Image image, int radius, ConvolutionEdgeMode edgeMode = ConvolutionEdgeMode.Clamp, ConvolutionWorkingSpace workingSpace = ConvolutionWorkingSpace.Encoded, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(image);
+        ValidateRadius(radius, MaxBoxBlurRadius);
+        ValidateBlur(edgeMode, workingSpace);
+        if (radius == 0)
+        {
+            image.Owner.EnsureCanModify("blur the image");
+            return;
+        }
+
+        image.BoxBlurAllFrames(radius, edgeMode, workingSpace, cancellationToken);
+    }
+
+    /// <summary>
+    /// Blurs one frame in place with a box blur. The EXIF thumbnail of the image, now stale, is removed. See
+    /// <see cref="BoxBlur(Image, int, ConvolutionEdgeMode, ConvolutionWorkingSpace, CancellationToken)"/>.
+    /// </summary>
+    /// <param name="frame">The frame to modify.</param>
+    /// <param name="radius">The number of pixels averaged on each side of a pixel. Must be between 0 and 10000.</param>
+    /// <param name="edgeMode">The pixels the blur reads beyond the edges of the frame.</param>
+    /// <param name="workingSpace">The numeric space the samples are filtered in.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests. On cancellation, some rows may already be blurred.</param>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="radius"/> is negative or exceeds 10000, or <paramref name="edgeMode"/> or <paramref name="workingSpace"/> is not a defined value.</exception>
+    /// <exception cref="UnsupportedImageFeatureException"><see cref="ConvolutionWorkingSpace.LinearSrgb"/> is requested for an image with an incompatible ICC profile, or for floating-point samples outside [0, 1] that are not labeled as linear light. Nothing is changed.</exception>
+    /// <exception cref="ImageResourceLimitException">The scratch storage would exceed the allocation limit. The frame is unchanged.</exception>
+    /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
+    /// <exception cref="ObjectDisposedException">The frame is no longer attached to a live image.</exception>
+    public static void BoxBlur(this ImageFrame frame, int radius, ConvolutionEdgeMode edgeMode = ConvolutionEdgeMode.Clamp, ConvolutionWorkingSpace workingSpace = ConvolutionWorkingSpace.Encoded, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(frame);
+        ValidateRadius(radius, MaxBoxBlurRadius);
+        ValidateBlur(edgeMode, workingSpace);
+        var storage = frame.GetStorage();
+        if (radius == 0)
+            return;
+
+        frame.OwnerImage.BoxBlurFrame(frame, storage, radius, edgeMode, workingSpace, cancellationToken);
+    }
+
+    /// <summary>Sharpens every displayed frame and the poster frame in place with an unsharp mask. The EXIF thumbnail, now stale, is removed.</summary>
+    /// <remarks>
+    /// <para>
+    /// The image is compared with its Gaussian blur of standard deviation <paramref name="sigma"/> (the blur of
+    /// <see cref="GaussianBlur(Image, double, ConvolutionEdgeMode, ConvolutionWorkingSpace, CancellationToken)"/>) and
+    /// their difference is added back, multiplied by <paramref name="amount"/>: every sample <c>o</c> whose blur is
+    /// <c>b</c> becomes <c>o + amount (o - b)</c>, which raises the contrast of the details smaller than the blur. A sample
+    /// whose difference <c>|o - b|</c> is less than <paramref name="threshold"/> times the range of the sample keeps its
+    /// value, so that flat areas and their noise are left alone. The default amount of 1 with no threshold is the
+    /// classic Gaussian sharpen; <c>-unsharp 0x{sigma}+{amount}+0</c> of ImageMagick computes the same.
+    /// </para>
+    /// <para>
+    /// The sharpened samples are those of the blur: colors premultiplied by alpha and alpha sharpened too, in double
+    /// precision, rounded once at the storage precision and clamped to the sample range (ringing beyond black and white is
+    /// clipped, except for the colors of floating-point samples). An opaque frame is sharpened as its colors alone and keeps
+    /// the maximum alpha, except with <see cref="ConvolutionEdgeMode.Zero"/>. The threshold is compared with the samples as
+    /// they are filtered: premultiplied colors range up to the maximum sample squared, and linear light from 0 to 1 (times
+    /// alpha). Without deviation or amount, nothing changes.
+    /// </para>
+    /// </remarks>
+    /// <param name="image">The image to modify.</param>
+    /// <param name="sigma">The standard deviation of the blur, in pixels. Must be between 0 and 10000.</param>
+    /// <param name="amount">The multiple of the difference from the blur that is added. Must be a finite number, not negative.</param>
+    /// <param name="threshold">The smallest difference from the blur that is sharpened, a fraction of the sample range. Must be between 0 and 1.</param>
+    /// <param name="edgeMode">The pixels the blur reads beyond the edges of the image.</param>
+    /// <param name="workingSpace">The numeric space the samples are filtered in.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests. On cancellation, some frames or rows may already be sharpened.</param>
+    /// <exception cref="ArgumentException"><paramref name="sigma"/>, <paramref name="amount"/> or <paramref name="threshold"/> is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="sigma"/> is negative or exceeds 10000, <paramref name="amount"/> is negative, <paramref name="threshold"/> is outside [0, 1], or <paramref name="edgeMode"/> or <paramref name="workingSpace"/> is not a defined value.</exception>
+    /// <exception cref="UnsupportedImageFeatureException"><see cref="ConvolutionWorkingSpace.LinearSrgb"/> is requested for an image with an incompatible ICC profile, or for floating-point samples outside [0, 1] that are not labeled as linear light. Nothing is changed.</exception>
+    /// <exception cref="ImageResourceLimitException">The scratch storage would exceed the allocation limit. The image is unchanged.</exception>
+    /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
+    /// <exception cref="ObjectDisposedException">The image is disposed.</exception>
+    public static void Sharpen(this Image image, double sigma, double amount = 1, double threshold = 0, ConvolutionEdgeMode edgeMode = ConvolutionEdgeMode.Clamp, ConvolutionWorkingSpace workingSpace = ConvolutionWorkingSpace.Encoded, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(image);
+        ValidateSharpen(sigma, amount, threshold);
+        ValidateBlur(edgeMode, workingSpace);
+        if (sigma == 0 || amount == 0)
+        {
+            image.Owner.EnsureCanModify("sharpen the image");
+            return;
+        }
+
+        image.BlurAllFrames(GaussianKernel.Create(sigma), edgeMode, workingSpace, amount, threshold, cancellationToken);
+    }
+
+    /// <summary>
+    /// Sharpens one frame in place with an unsharp mask. The EXIF thumbnail of the image, now stale, is removed. See
+    /// <see cref="Sharpen(Image, double, double, double, ConvolutionEdgeMode, ConvolutionWorkingSpace, CancellationToken)"/>.
+    /// </summary>
+    /// <param name="frame">The frame to modify.</param>
+    /// <param name="sigma">The standard deviation of the blur, in pixels. Must be between 0 and 10000.</param>
+    /// <param name="amount">The multiple of the difference from the blur that is added. Must be a finite number, not negative.</param>
+    /// <param name="threshold">The smallest difference from the blur that is sharpened, a fraction of the sample range. Must be between 0 and 1.</param>
+    /// <param name="edgeMode">The pixels the blur reads beyond the edges of the frame.</param>
+    /// <param name="workingSpace">The numeric space the samples are filtered in.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests. On cancellation, some rows may already be sharpened.</param>
+    /// <exception cref="ArgumentException"><paramref name="sigma"/>, <paramref name="amount"/> or <paramref name="threshold"/> is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="sigma"/> is negative or exceeds 10000, <paramref name="amount"/> is negative, <paramref name="threshold"/> is outside [0, 1], or <paramref name="edgeMode"/> or <paramref name="workingSpace"/> is not a defined value.</exception>
+    /// <exception cref="UnsupportedImageFeatureException"><see cref="ConvolutionWorkingSpace.LinearSrgb"/> is requested for an image with an incompatible ICC profile, or for floating-point samples outside [0, 1] that are not labeled as linear light. Nothing is changed.</exception>
+    /// <exception cref="ImageResourceLimitException">The scratch storage would exceed the allocation limit. The frame is unchanged.</exception>
+    /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
+    /// <exception cref="ObjectDisposedException">The frame is no longer attached to a live image.</exception>
+    public static void Sharpen(this ImageFrame frame, double sigma, double amount = 1, double threshold = 0, ConvolutionEdgeMode edgeMode = ConvolutionEdgeMode.Clamp, ConvolutionWorkingSpace workingSpace = ConvolutionWorkingSpace.Encoded, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(frame);
+        ValidateSharpen(sigma, amount, threshold);
+        ValidateBlur(edgeMode, workingSpace);
+        var storage = frame.GetStorage();
+        if (sigma == 0 || amount == 0)
+            return;
+
+        frame.OwnerImage.BlurFrame(frame, storage, GaussianKernel.Create(sigma), edgeMode, workingSpace, amount, threshold, cancellationToken);
+    }
+
+    /// <summary>
+    /// Replaces every sample of every displayed frame and the poster frame by the median of its neighborhood, in place. The
+    /// EXIF thumbnail, now stale, is removed.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Each sample becomes the median of the same sample of the <c>(2 radius + 1)^2</c> pixels of the square centered on its
+    /// pixel: the middle value once they are sorted, one of them. Isolated dots (salt-and-pepper noise) disappear while
+    /// edges stay sharp. Every sample of a pixel is filtered on its own, alpha included, as stored: the result is the one of
+    /// <c>cv2.medianBlur</c> of OpenCV and of <c>-statistic Median</c> of ImageMagick. Pixels read beyond the edges are
+    /// chosen by <paramref name="edgeMode"/> (<see cref="ConvolutionEdgeMode.Zero"/> reads transparent black).
+    /// </para>
+    /// <para>
+    /// Nothing is computed or rounded, so 16-bit samples keep their precision, and there is no working space: a transfer
+    /// function keeps the order of the samples, so their median in linear light is the same sample. Floating-point samples
+    /// are ordered as numbers, -0 below +0, and every sample that is not a number above the positive infinity (it comes
+    /// back with a positive sign). Samples of up to 16 bits (the integer formats and <see cref="RgbaHalf"/>) are counted in
+    /// histograms, and the time per pixel grows with the radius; the samples of <see cref="RgbaFloat"/> are sorted for every
+    /// pixel, and the time grows with the square of the radius. The result does not depend on the number of workers. With
+    /// a radius of 0, nothing changes.
+    /// </para>
+    /// </remarks>
+    /// <param name="image">The image to modify.</param>
+    /// <param name="radius">The number of pixels on each side of a pixel. Must be between 0 and 1000.</param>
+    /// <param name="edgeMode">The pixels the filter reads beyond the edges of the image.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests. On cancellation, some frames or rows may already be filtered.</param>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="radius"/> is negative or exceeds 1000, or <paramref name="edgeMode"/> is not a defined value.</exception>
+    /// <exception cref="ImageResourceLimitException">The scratch storage would exceed the allocation limit. The image is unchanged.</exception>
+    /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
+    /// <exception cref="ObjectDisposedException">The image is disposed.</exception>
+    public static void MedianBlur(this Image image, int radius, ConvolutionEdgeMode edgeMode = ConvolutionEdgeMode.Clamp, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(image);
+        ValidateRadius(radius, MaxMedianRadius);
+        ValidateBlur(edgeMode, ConvolutionWorkingSpace.Encoded);
+        if (radius == 0)
+        {
+            image.Owner.EnsureCanModify("filter the image");
+            return;
+        }
+
+        image.MedianAllFrames(radius, edgeMode, cancellationToken);
+    }
+
+    /// <summary>
+    /// Replaces every sample of one frame by the median of its neighborhood, in place. The EXIF thumbnail of the image, now
+    /// stale, is removed. See <see cref="MedianBlur(Image, int, ConvolutionEdgeMode, CancellationToken)"/>.
+    /// </summary>
+    /// <param name="frame">The frame to modify.</param>
+    /// <param name="radius">The number of pixels on each side of a pixel. Must be between 0 and 1000.</param>
+    /// <param name="edgeMode">The pixels the filter reads beyond the edges of the frame.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests. On cancellation, some rows may already be filtered.</param>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="radius"/> is negative or exceeds 1000, or <paramref name="edgeMode"/> is not a defined value.</exception>
+    /// <exception cref="ImageResourceLimitException">The scratch storage would exceed the allocation limit. The frame is unchanged.</exception>
+    /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
+    /// <exception cref="ObjectDisposedException">The frame is no longer attached to a live image.</exception>
+    public static void MedianBlur(this ImageFrame frame, int radius, ConvolutionEdgeMode edgeMode = ConvolutionEdgeMode.Clamp, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(frame);
+        ValidateRadius(radius, MaxMedianRadius);
+        ValidateBlur(edgeMode, ConvolutionWorkingSpace.Encoded);
+        var storage = frame.GetStorage();
+        if (radius == 0)
+            return;
+
+        frame.OwnerImage.MedianFrame(frame, storage, radius, edgeMode, cancellationToken);
     }
 
     private static TransformOptions ValidateTransformOptions(TransformOptions? options)
@@ -1232,6 +1450,28 @@ public static class ImageProcessingExtensions
             throw new ArgumentException("TransformCanvasMode.Explicit requires a canvas size that is not empty (TransformOptions.CanvasSize).", nameof(options));
 
         return options;
+    }
+
+    private static void ValidateRadius(int radius, int max)
+    {
+        if (radius < 0 || radius > max)
+            throw new ArgumentOutOfRangeException(nameof(radius), radius, string.Create(CultureInfo.InvariantCulture, $"The radius must be between 0 and {max}."));
+    }
+
+    private static void ValidateSharpen(double sigma, double amount, double threshold)
+    {
+        GaussianKernel.Validate(sigma, nameof(sigma));
+        if (!double.IsFinite(amount))
+            throw new ArgumentException("The amount must be a finite number.", nameof(amount));
+
+        if (amount < 0)
+            throw new ArgumentOutOfRangeException(nameof(amount), amount, "The amount must not be negative.");
+
+        if (!double.IsFinite(threshold))
+            throw new ArgumentException("The threshold must be a finite number.", nameof(threshold));
+
+        if (threshold is < 0 or > 1)
+            throw new ArgumentOutOfRangeException(nameof(threshold), threshold, "The threshold must be between 0 and 1.");
     }
 
     private static void ValidateBlur(ConvolutionEdgeMode edgeMode, ConvolutionWorkingSpace workingSpace)

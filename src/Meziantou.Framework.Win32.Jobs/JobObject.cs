@@ -177,11 +177,17 @@ public sealed class JobObject : IDisposable
     {
         ArgumentNullException.ThrowIfNull(process);
 
-        AssignProcess(process.Handle);
+        // The SafeHandle overload keeps the process handle alive (DangerousAddRef/DangerousRelease) during the native call,
+        // so it cannot be closed by the finalizer of an unreferenced Process and reused by another process.
+        if (!Windows.Win32.PInvoke.AssignProcessToJobObject(_jobHandle, process.SafeHandle))
+        {
+            throw new Win32Exception(Marshal.GetLastWin32Error());
+        }
     }
 
     /// <summary>Assigns a process to an existing job object.</summary>
     /// <param name="processHandle">The process handle.</param>
+    /// <remarks>The caller must keep <paramref name="processHandle"/> open for the duration of the call. Prefer <see cref="AssignProcess(Process)"/> when a <see cref="Process"/> instance is available.</remarks>
     public void AssignProcess(IntPtr processHandle)
     {
         var addedRef = false;
@@ -572,26 +578,13 @@ public sealed class JobObject : IDisposable
     /// <returns><see langword="true"/> if the process is assigned to the job object; otherwise, <see langword="false"/>.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="process"/> is <see langword="null"/>.</exception>
     /// <exception cref="Win32Exception">The operation failed.</exception>
-    public unsafe bool IsAssignedToProcess(Process process)
+    public bool IsAssignedToProcess(Process process)
     {
         ArgumentNullException.ThrowIfNull(process);
 
-        var addedRef = false;
-        try
-        {
-            _jobHandle.DangerousAddRef(ref addedRef);
-
-            BOOL result = default;
-            if (Windows.Win32.PInvoke.IsProcessInJob((HANDLE)process.Handle, (HANDLE)_jobHandle.DangerousGetHandle(), &result))
-                return result;
-        }
-        finally
-        {
-            if (addedRef)
-            {
-                _jobHandle.DangerousRelease();
-            }
-        }
+        // The SafeHandle overload keeps both handles alive (DangerousAddRef/DangerousRelease) during the native call.
+        if (Windows.Win32.PInvoke.IsProcessInJob(process.SafeHandle, _jobHandle, out var result))
+            return result;
 
         var err = Marshal.GetLastWin32Error();
         throw new Win32Exception(err);

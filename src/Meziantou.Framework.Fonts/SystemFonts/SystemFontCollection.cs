@@ -7,7 +7,9 @@ namespace Meziantou.Framework.Fonts;
 /// <remarks>
 /// <para>
 /// A collection is immutable and can be used by several threads at the same time. It is a snapshot of the files when
-/// it is created: a font installed or removed later is not seen.
+/// it is created: a font installed or removed later is not seen. Creating it reads the names and the styles of the
+/// faces, not their characters: <see cref="SystemFontDescriptor.Covers(Rune)"/> reads them when they are first asked
+/// for, and the collection keeps them within a bounded amount of memory.
 /// </para>
 /// <para>
 /// The installed fonts are found in the font directories of the operating system:
@@ -26,13 +28,15 @@ public sealed class SystemFontCollection
     private readonly Dictionary<string, SystemFontDescriptor[]> _families;
     private readonly Dictionary<string, SystemFontDescriptor> _names;
 
-    private SystemFontCollection(SystemFontDescriptor[] fonts)
+    private SystemFontCollection(SystemFontDescriptor[] fonts, long coverageBudget)
     {
         _fonts = fonts;
+        CoverageCache = new SystemFontCoverageCache(coverageBudget);
         var families = new Dictionary<string, List<SystemFontDescriptor>>(StringComparer.OrdinalIgnoreCase);
         _names = new Dictionary<string, SystemFontDescriptor>(StringComparer.OrdinalIgnoreCase);
         foreach (var font in fonts)
         {
+            font.CoverageCache = CoverageCache;
             foreach (var familyName in font.FamilyNames)
             {
                 if (!families.TryGetValue(familyName, out var family))
@@ -67,6 +71,9 @@ public sealed class SystemFontCollection
     /// <remarks>The scan reads the directories of the fonts of the operating system once per process; a font installed later is not seen.</remarks>
     public static SystemFontCollection Default => DefaultCollection.Value;
 
+    /// <summary>Gets the cache of the characters of the faces (<see cref="SystemFontDescriptor.Covers(Rune)"/>).</summary>
+    internal SystemFontCoverageCache CoverageCache { get; }
+
     /// <summary>Gets the faces, ordered by family, then by file, then by index in the file.</summary>
     public IReadOnlyList<SystemFontDescriptor> Fonts => _fonts;
 
@@ -74,10 +81,13 @@ public sealed class SystemFontCollection
     /// <param name="paths">The directories, whose subdirectories are scanned too, and the font files. A path that does not exist is ignored.</param>
     /// <returns>The faces of the <c>.ttf</c>, <c>.otf</c>, <c>.ttc</c>, <c>.otc</c>, <c>.woff</c> and <c>.woff2</c> files the font code loads; the other files are ignored.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="paths"/> is <see langword="null"/>.</exception>
-    public static SystemFontCollection Create(IEnumerable<string> paths)
+    public static SystemFontCollection Create(IEnumerable<string> paths) => Create(paths, SystemFontCoverageCache.DefaultBudget);
+
+    /// <summary>Creates the collection of the fonts of directories, whose characters are kept within <paramref name="coverageBudget"/> bytes.</summary>
+    internal static SystemFontCollection Create(IEnumerable<string> paths, long coverageBudget)
     {
         ArgumentNullException.ThrowIfNull(paths);
-        return new SystemFontCollection(SystemFontScanner.Scan(paths));
+        return new SystemFontCollection(SystemFontScanner.Scan(paths), coverageBudget);
     }
 
     /// <summary>Gets the faces of a family.</summary>

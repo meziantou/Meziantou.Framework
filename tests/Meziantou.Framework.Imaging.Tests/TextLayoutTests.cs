@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using Meziantou.Framework.Imaging.CorpusGenerator.Common;
 using Meziantou.Framework.Imaging.Drawing;
 using Meziantou.Framework.Imaging.TestHarness.Fixtures;
@@ -703,6 +704,93 @@ public sealed class TextLayoutTests
 
         // A selector after a character that is no emoji says nothing.
         Assert.Equal(8, TextLayout.Create("A\uFE0F", textFirst).Width);
+    }
+
+    [Fact]
+    public void ACharacterNoFontOfTheStackHasIsLookedForAmongTheInstalledFonts()
+    {
+        // An emoji, a Han ideograph and a symbol that the boxes font does not have. Each installed font draws its
+        // characters with one glyph whose advance says which font was chosen.
+        const int Emoji = 0x1F600;
+        const int Han = 0x4E00;
+        const int Star = 0x2605;
+        using var directory = new TemporaryFontDirectory();
+        directory.Write("everything.ttf", CreateCoveringFont("AAA Everything", advance: 320, characters: [Emoji, Han]));
+        directory.Write("emoji.ttf", CreateCoveringFont("Noto Color Emoji", advance: 1280, characters: [Emoji]));
+        directory.Write("cjk.ttf", CreateCoveringFont("Noto Sans CJK SC", advance: 768, characters: [Han]));
+        directory.Write("light.ttf", CreateCoveringFont("Aaa Symbols", advance: 448, characters: [Star], weight: 300));
+        var removedPath = directory.Write("removed.ttf", CreateCoveringFont("Abc Symbols", advance: 128, characters: [Star]));
+        directory.Write("symbols.ttf", CreateCoveringFont("Bbb Symbols", advance: 640, characters: [Star]));
+        directory.Write("symbols-bold.ttf", CreateCoveringFont("Bbb Symbols", advance: 896, characters: [Star], weight: 700));
+
+        // A file whose character map is malformed (its number of subtables goes past the end of the table), and a file
+        // removed after the scan, are skipped.
+        directory.Write("broken.ttf", FontTestSupport.PatchTable(CreateCoveringFont("AAA Broken", advance: 64, characters: [Star]), "cmap", table => BinaryPrimitives.WriteUInt16BigEndian(table[2..], 0xFFFF)));
+        var fonts = SystemFontCollection.Create([directory.Path]);
+        File.Delete(removedPath);
+
+        var stack = new FontStack(Boxes).WithInstalledFallback(fonts);
+        Assert.True(stack.HasInstalledFallback);
+        Assert.False(new FontStack(Boxes).HasInstalledFallback);
+        Assert.Equal(new[] { Boxes }, stack.Fonts);
+        var style = new TextStyle(stack, 16);
+
+        // The ideograph is drawn with the font the platforms use for the script; the characters of the fonts are read
+        // when they are needed, not when the fonts are scanned, and only from the fonts that are looked in.
+        Assert.Equal(0, fonts.CoverageCache.ReadCount);
+        var layout = TextLayout.Create("A\u4E00\u4E00", style);
+        Assert.False(layout.HasMissingGlyphs);
+        Assert.Equal(16 + 12 + 12, layout.Width);
+        Assert.Equal(1, fonts.CoverageCache.ReadCount);
+
+        // The emoji is drawn with the color emoji font of the platforms, the emoji in its text presentation with the
+        // first family that has it.
+        Assert.Equal(20, TextLayout.Create("\U0001F600", style).Width);
+        Assert.Equal(5, TextLayout.Create("\U0001F600\uFE0E", style).Width);
+
+        // The symbol is in no family of the platforms: the families whose face has the style of the primary font come
+        // first, by name.
+        layout = TextLayout.Create("\u2605A", style);
+        Assert.False(layout.HasMissingGlyphs);
+        Assert.Equal(10 + 16, layout.Width);
+        var boldBoxes = FontSamples.Boxes();
+        boldBoxes.WeightClass = 700;
+        boldBoxes.IsBold = true;
+        Assert.Equal(14, TextLayout.Create("\u2605", new TextStyle(new FontStack(FontTestSupport.Load(boldBoxes)).WithInstalledFallback(fonts), 16)).Width);
+        var lightBoxes = FontSamples.Boxes();
+        lightBoxes.WeightClass = 300;
+        Assert.Equal(7, TextLayout.Create("\u2605", new TextStyle(new FontStack(FontTestSupport.Load(lightBoxes)).WithInstalledFallback(fonts), 16)).Width);
+        Assert.False(fonts.Fonts.Single(font => font.FamilyName == "AAA Broken").Covers(new Rune(Star)));
+
+        // The preferred families come first.
+        var preferred = new FontStack(Boxes).WithInstalledFallback(fonts, new InstalledFontFallbackOptions { PreferredFamilies = ["AAA Everything"] });
+        Assert.Equal(5, TextLayout.Create("\u4E00", new TextStyle(preferred, 16)).Width);
+
+        // A character no installed font has is the missing glyph of the primary font.
+        layout = TextLayout.Create("\U00010400", style);
+        Assert.True(layout.HasMissingGlyphs);
+        Assert.Equal(8, layout.Width);
+
+        // Without fallback, the text is drawn with the fonts of the stack only.
+        layout = TextLayout.Create("\u2605\u4E00", Style);
+        Assert.True(layout.HasMissingGlyphs);
+        Assert.Equal(16, layout.Width);
+        Assert.Throws<ArgumentNullException>("value", () => new InstalledFontFallbackOptions { LoadOptions = null! });
+        Assert.Throws<ArgumentNullException>("value", () => new InstalledFontFallbackOptions { PreferredFamilies = null! });
+
+        static byte[] CreateCoveringFont(string family, int advance, int[] characters, int weight = 400)
+        {
+            var builder = new FontBuilder { CmapFormats = FontCmapFormats.Format12, UnitsPerEm = 1024, Ascender = 832, Descender = -192, FamilyName = family, PostScriptName = null, WeightClass = weight, IsBold = weight >= 700 };
+            builder.SubfamilyName = weight >= 700 ? "Bold" : "Regular";
+            builder.AddGlyph(FontGlyph.Rectangle(256, 0, 0, 128, 128));
+            builder.AddGlyph(FontGlyph.Rectangle(advance, 0, 0, advance, 512));
+            foreach (var character in characters)
+            {
+                builder.CharacterMap[character] = 1;
+            }
+
+            return builder.Build();
+        }
     }
 
     [Fact]

@@ -2347,10 +2347,8 @@ every few hundred dashes.
 ### Fonts
 
 `Font` and `FontCollection` (namespace `Meziantou.Framework.Imaging.Typography`) read font files. Nothing comes from the
-operating system by itself: a font is always a file, a stream or bytes given by the caller. To use a font installed on
-the machine, find its file with `SystemFontCollection` of `Meziantou.Framework.Fonts`, a dependency of the library:
-`SystemFontCollection.Default.Match("Arial", weight: 700)` gives the face of the family closest to the style (`null` when
-the family is not installed), and `FontCollection.Load(face.FilePath)[face.FaceIndex]` loads it.
+operating system by itself: a font is a file, a stream or bytes given by the caller, or an installed font the caller
+asks for by its family.
 
 <!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_LoadFont;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -2366,6 +2364,36 @@ public static string DescribeFont(string path)
 }
 ```
 <!-- endref -->
+
+`Font.LoadInstalled("Arial", weight: 700)` loads the installed face of a family that is the closest to a style, with
+the font matching of CSS, and returns `null` when the family is not installed: another family is never used instead.
+The installed fonts are the ones `SystemFontCollection.Default` of `Meziantou.Framework.Fonts`, a dependency of the
+library, finds on Windows, macOS and Linux; `LoadInstalled` also takes another `SystemFontCollection`, such as the
+fonts of chosen directories (`SystemFontCollection.Create`), and `Font.Load(face)` loads one of its faces (a
+`SystemFontDescriptor`).
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_LoadInstalledFont;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static string? DescribeInstalledFont(string familyName)
+{
+    // The installed face of the family closest to the style: a bold face, or the bold instance of a variable font.
+    // Null when the family is not installed: another family is never used instead
+    var font = Font.LoadInstalled(familyName, weight: 700);
+    if (font is null)
+        return null;
+
+    return string.Create(CultureInfo.InvariantCulture, $"{font.FamilyName} {font.SubfamilyName}, weight {font.Weight}");
+}
+```
+<!-- endref -->
+
+- **The instance of the style.** When the face is a variable font, its `wght` axis is set to the weight, and for an
+  italic its `ital` axis, or without one its `slnt` axis to an oblique of 14 degrees, each value brought into the range
+  of its axis: `LoadInstalled("Inter", 700)` gives a bold instance. A face that is not variable is used as it is.
+- **A file is read once** while one of its fonts is in use: the faces of a font collection (`.ttc`) share its bytes,
+  and a face loaded again with the same options is the same font. Once none of its fonts is referenced, the file is
+  read again the next time.
+- **Machines differ.** The fonts of a machine, and so the font `LoadInstalled` returns, are not those of another one.
 
 | | Supported |
 | --- | --- |
@@ -2677,6 +2705,26 @@ public static void DrawTextOnPath(string fontPath, string outputPath)
 ```
 <!-- endref -->
 
+The fonts of a text are the ones its `FontStack` is given, so that a text is drawn the same way on every machine.
+`FontStack.WithInstalledFallback()` also looks for a character none of them has (an emoji, an ideograph, a symbol)
+among the installed fonts:
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_InstalledFallback;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void DrawWithInstalledFallback(string fontPath, string outputPath)
+{
+    // Without fallback, a stack only has the fonts it is given, and a text is drawn the same way on every machine.
+    // With it, a character none of them has (an ideograph, an emoji) is drawn with an installed font that has it
+    var fonts = new FontStack(Font.Load(fontPath)).WithInstalledFallback();
+    var layout = TextLayout.Create("Hello, \u4E16\u754C \U0001F600", new TextStyle(fonts, 32));
+
+    using var image = new Image<Rgba32>((int)Math.Ceiling(layout.Width) + 20, (int)Math.Ceiling(layout.Height) + 20, new Rgba32(255, 255, 255));
+    image.Draw(canvas => canvas.FillText(new Rgba32(0, 0, 0), layout, new PointD(10, 10)));
+    image.Save(outputPath);
+}
+```
+<!-- endref -->
+
 | | Supported |
 | --- | --- |
 | Text analysis | Paragraphs, grapheme clusters, the places a line can end at (UAX #14), bidirectional text (UAX #9), script runs (UAX #24), soft hyphens and hyphenation patterns given by the caller: the algorithms of `Meziantou.Framework.Unicode` |
@@ -2807,6 +2855,20 @@ of their characters and were not compared with a font.
   sign, is looked for in the order of the stack like any character. The presentation is a preference: when no font
   of that kind has the character, the stack is searched in its order, and a color font is not drawn without its
   colors.
+- **Installed fonts as fallback.** A stack made with `FontStack.WithInstalledFallback(fonts, options)` looks for a
+  character, with its marks and selectors, that none of its fonts has among the installed fonts
+  (`SystemFontCollection.Default`, or the collection it is given), in this order: the families of
+  `InstalledFontFallbackOptions.PreferredFamilies`; for an emoji presented with colors, the color emoji font of the
+  platforms (Segoe UI Emoji, Apple Color Emoji, Noto Color Emoji); the families the platforms usually use for the
+  script of the character (Microsoft YaHei, PingFang SC or Noto Sans CJK SC for the Han ideographs, the Noto family
+  named after a script, the fonts of symbols), those of the platform the code runs on first; then every family that
+  has the character, those whose closest face has the weight and the italic of the primary font first, by family
+  name and by file. In a family, the face is the one closest to the style of the primary font, at the instance of that
+  style when it is a variable font. The characters of an installed face are read from its file when the fallback
+  first needs them (`SystemFontDescriptor.Covers`), within a bounded amount of memory, and a file that cannot be read
+  or loaded is skipped. The font found for a character is kept by the stack, which its layouts share: each font is
+  loaded once. A stack without fallback never uses an installed font; with fallback, the text depends on the fonts of
+  the machine.
 - **Synthetic bold and oblique.** `TextStyle.Synthesis` makes a replacement for a bold or an italic font the caller
   does not have, by geometry alone. `Oblique` slants every outline to the right around the baseline, by a quarter
   of the height (about 14 degrees); marks follow their letter, advances do not change and decorations stay straight.
@@ -4436,6 +4498,6 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | JPEG recompression | `JpegXlTranscoder.RecompressJpeg` rejects with `UnsupportedImageFeatureException` what a JPEG XL frame cannot hold: four components (CMYK, YCCK), a sampling factor other than 1 or 2 (4:1:1), subsampled RGB components, arithmetic, lossless, hierarchical and 12-bit files, restart intervals of several lengths (the description of the file has one), a quantization table that no component uses unless it repeats the table defined before it, a Huffman table that uses the code of all ones, more than 65,535 bytes between two markers or 4,260,096 bytes after the end of image, and entropy-coded data that would not be rebuilt byte for byte (the output is always checked). The whole file is held in memory, with two bytes per coefficient. The reconstruction data (`jbrd`) are read wherever the container has them: every encoder writes them before the codestream; when they follow it, the frame is held as it is coded until they are read, and `HasJpegReconstructionData` reads the file to its end |
 | JPEG 2000 | Decoding, rejected with `UnsupportedImageFeatureException` (also from `Identify` when the headers tell): signed samples and samples of more than 16 bits, components of different depths, a sub-sampled first component and sub-sampled components that are not the chrominances of an image of three components, more than four components without color specification, a premultiplied opacity, several opacity channels, an opacity of one color, channels that are not defined, the extensions of ISO/IEC 15444-2 (other wavelet filters, other component transformations, other regions of interest), files of the `jpm ` and `mjp2` brands, files of several codestreams or of a fragmented codestream, more than 30 bit-planes in a sub-band; for the high-throughput block coder: tile-components that mix both block coders, a code-block with several HT sets, and placeholder passes in another packet than the HT cleanup pass. CMYK is loaded only with `CmykConversion`. Not read: the intellectual property and XML boxes, the comments of the codestream. Not available: decoding a lower resolution, a region or fewer layers. Encoding: no rate control (a quality, not a size), one tile and one layer (the whole image is transformed at once, in memory), no HTJ2K, no palette, no sub-sampling, no CMYK, no animation; a codestream stores no metadata |
 | OpenEXR | Decoding, rejected with `UnsupportedImageFeatureException` (also from `Identify`): multi-part files, deep data, the DWAA, DWAB, HTJ2K and ZSTD compressions, channels other than R, G, B, A and Y (layers, depth, `RY`/`BY` chroma, extra channels: they would be lost), sub-sampled channels, a data window that leaves the display window (its pixels would be lost), UINT samples that a float cannot hold exactly, and versions other than 2. Not decoded: the lower levels of mipmaps and ripmaps, the preview image and the attributes other than the windows and the chromaticities. Encoding: one still image, scan lines only (no tiles), half or float samples (no UINT), no lossy compression (PXR24, B44, DWA), no attributes other than the required ones and the chromaticities, linear light only
-| Text | In vertical lines, no ruby and no compression of punctuation; a synthetic bold is not in the path of a layout nor in a stroked text; the pen of a style (`TextStyle.Outline`) strokes glyphs, not decorations, and has a width in pixels that a text fitted to a box does not scale; a text is fitted to a box by trying sizes, each with a whole layout; no word list is provided for the scripts that need a dictionary to break their lines; greedy line breaking; no AAT (`morx`, `kerx`) shaping, no device adjustment of positions (hinting); no hinting and no subpixel (LCD) rendering; no system font: every font is given by the caller; along a path, glyphs are turned but not warped; see [Text](#text) |
-| Fonts | No system font, no SVG glyph, no font without outlines, no bitmap glyph of several bits per pixel without colors, no Type 1 font, no hinting; see [Fonts](#fonts) |
+| Text | In vertical lines, no ruby and no compression of punctuation; a synthetic bold is not in the path of a layout nor in a stroked text; the pen of a style (`TextStyle.Outline`) strokes glyphs, not decorations, and has a width in pixels that a text fitted to a box does not scale; a text is fitted to a box by trying sizes, each with a whole layout; no word list is provided for the scripts that need a dictionary to break their lines; greedy line breaking; no AAT (`morx`, `kerx`) shaping, no device adjustment of positions (hinting); no hinting and no subpixel (LCD) rendering; an installed font is never used by itself: it is loaded with `Font.LoadInstalled`, or used for the characters the fonts of a stack lack with `FontStack.WithInstalledFallback`, whose choice depends on the fonts of the machine; along a path, glyphs are turned but not warped; see [Text](#text) |
+| Fonts | No font of the system unless one is asked for (`Font.LoadInstalled`, `FontStack.WithInstalledFallback`, `SystemFontCollection`), no SVG glyph, no font without outlines, no bitmap glyph of several bits per pixel without colors, no Type 1 font, no hinting; see [Fonts](#fonts) |
 | API | No public allocator, custom pixel type, codec plug-in or image-processor interface; implementation types are internal |

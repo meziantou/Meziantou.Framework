@@ -149,8 +149,9 @@ reads the text, `AfmFontMetrics` indexes the characters and the kerning pairs.
 
 `SystemFonts/` indexes the fonts installed on the machine: `SystemFontCollection` (`Default`, scanned once per process,
 or `Create` for chosen directories) holds a `SystemFontDescriptor` per face (file, index in the file, names, style,
-axes). Imaging users load the face with `FontCollection.Load(FilePath)[FaceIndex]`; WebPlatform wraps the collection
-in `InstalledFontCollection.FromSystemFonts` when `BrowsingContextOptions.UseSystemFonts` is set.
+axes). Imaging loads a face with `Font.Load(SystemFontDescriptor)` and `Font.LoadInstalled`, and falls back to the
+installed fonts with `FontStack.WithInstalledFallback`; WebPlatform wraps the collection in
+`InstalledFontCollection.FromSystemFonts` when `BrowsingContextOptions.UseSystemFonts` is set.
 
 - **Where the fonts are** (`SystemFontDirectories`). Windows: `SpecialFolder.Fonts`, `%LOCALAPPDATA%\Microsoft\Windows\Fonts`,
   and the full paths of the values of `HKLM` and `HKCU\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts`. macOS: the
@@ -163,6 +164,13 @@ in `InstalledFontCollection.FromSystemFonts` when `BrowsingContextOptions.UseSys
   `fvar` tables with `RandomAccess` (a few kilobytes per file, 786 faces in about 30 ms on macOS). Only a WOFF or WOFF2
   file is loaded whole. The names and the style come from `FaceStyle`, which `FontFace` uses too: the index and a loaded
   face always agree (`FontTests.SystemFontsAreIndexedWithoutLoadingThem` compares them).
+- **The characters of a face are read lazily** (`SystemFontDescriptor.Covers`, `SystemFontCoverage`): the first
+  request reads the table directory, `maxp` and `cmap` of that face only (`SystemFontScanner.ReadCoverage`), and
+  `CmapTable.GetCoveredRanges` turns the selected subtable into ranges by mapping every character of its ranges, so
+  the coverage is exactly what `Map` says. The coverages of a collection are charged to its
+  `SystemFontCoverageCache` (16 MiB by default): over the budget, the oldest are dropped and read again on demand.
+  A file that cannot be read, or a malformed character map, covers nothing; errors never escape. The tests count
+  the reads (`ReadCount`) to check that a scan reads no character map.
 - **A file the font code would not load is left out whole**: an invalid face, a face without outlines nor color glyphs (the
   rule of WebPlatform's `FontFile`), a file that cannot be read. Errors never escape a scan.
 - `Match` is the font matching of CSS Fonts 4 §5.2 (width, then style, then weight) on the descriptors; WebPlatform has

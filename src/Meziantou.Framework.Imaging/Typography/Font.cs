@@ -30,14 +30,15 @@ public sealed class Font
     private FontColorPalette[]? _palettes;
     private WeakReference<ShapingCache?>? _shapingCache;
 
-    internal Font(FontFace face)
-        : this(face, CreateAxes(face), namedInstances: null)
+    internal Font(FontFace face, object? owner = null)
+        : this(face, CreateAxes(face), namedInstances: null, owner)
     {
     }
 
-    private Font(FontFace face, FontVariationAxis[] axes, FontNamedInstance[]? namedInstances)
+    private Font(FontFace face, FontVariationAxis[] axes, FontNamedInstance[]? namedInstances, object? owner)
     {
         Face = face;
+        Owner = owner;
         Metrics = CreateMetrics(face);
         _axes = axes;
         _namedInstances = namedInstances ?? CreateNamedInstances(face, axes);
@@ -51,6 +52,12 @@ public sealed class Font
     }
 
     internal FontFace Face { get; }
+
+    /// <summary>
+    /// Gets what the font keeps alive: the entry of its file in the cache of the installed fonts, so that the other
+    /// faces of the file are not read again while the font is in use.
+    /// </summary>
+    internal object? Owner { get; }
 
     /// <summary>
     /// Returns what shaping computed from the font for the last layout that is done with it (the digests of its lookups,
@@ -215,7 +222,7 @@ public sealed class Font
             throw FontExceptionTranslation.Translate(exception);
         }
 
-        return new Font(instance, _axes, _namedInstances);
+        return new Font(instance, _axes, _namedInstances, Owner);
     }
 
     /// <summary>Gets a named instance of a variable font.</summary>
@@ -278,6 +285,65 @@ public sealed class Font
     /// <exception cref="ImageResourceLimitException">A configured limit is exceeded.</exception>
     public static Font Load(ReadOnlySpan<byte> data, FontLoadOptions? options = null)
         => new(FontFiles.Load(data, options ?? FontLoadOptions.Default)[0]);
+
+    /// <summary>Loads a face of a font installed on the machine, or of a font of the directories of a <see cref="SystemFontCollection"/>.</summary>
+    /// <param name="face">The face: one of <see cref="SystemFontCollection.Fonts"/>, or what <see cref="SystemFontCollection.Match"/> or <see cref="SystemFontCollection.FindByName"/> returns.</param>
+    /// <param name="options">The options, or <see langword="null"/> for <see cref="FontLoadOptions.Default"/>.</param>
+    /// <returns>The font of the face at <see cref="SystemFontDescriptor.FaceIndex"/> of <see cref="SystemFontDescriptor.FilePath"/>, at the default instance of a variable font.</returns>
+    /// <remarks>
+    /// A file is read once while one of its fonts is in use: the faces of a font collection (<c>.ttc</c>) share its
+    /// bytes, and a face loaded again with the same options is the same font. Once none of the fonts of a file is
+    /// referenced, the file is read again the next time one of its faces is loaded.
+    /// </remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="face"/> is <see langword="null"/>.</exception>
+    /// <exception cref="UnknownImageFormatException">The file is no longer a font.</exception>
+    /// <exception cref="InvalidImageContentException">The font is malformed or truncated, or the file no longer has the face.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The font uses a feature that is not supported.</exception>
+    /// <exception cref="ImageResourceLimitException">A configured limit is exceeded.</exception>
+    /// <exception cref="IOException">An I/O error occurred, such as a file that was removed since the fonts were scanned.</exception>
+    public static Font Load(SystemFontDescriptor face, FontLoadOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(face);
+        return InstalledFontFiles.Load(face, options ?? FontLoadOptions.Default);
+    }
+
+    /// <summary>
+    /// Loads the installed font of a family that is the closest to a style: the face <see cref="SystemFontCollection.Match"/>
+    /// chooses, at the instance of the style when it is a variable font.
+    /// </summary>
+    /// <param name="familyName">A typographic family name or a family name, in any language of the fonts, compared without case.</param>
+    /// <param name="weight">The weight, from 1 to 1000: 400 is normal, 700 is bold.</param>
+    /// <param name="isItalic">Whether an italic face is preferred; an oblique face, then an upright face, are used when the family has none.</param>
+    /// <param name="fonts">The fonts to look in, or <see langword="null"/> for <see cref="SystemFontCollection.Default"/>, the fonts installed on the machine.</param>
+    /// <param name="options">The options, or <see langword="null"/> for <see cref="FontLoadOptions.Default"/>.</param>
+    /// <returns>The font, or <see langword="null"/> when no font has the family: another family is never used instead.</returns>
+    /// <remarks>
+    /// <para>
+    /// When the face is a variable font, its <c>wght</c> axis is set to <paramref name="weight"/>, its <c>ital</c> axis
+    /// to the italic, or, without an <c>ital</c> axis, its <c>slnt</c> axis to an oblique angle of 14 degrees for an
+    /// italic; a value outside the range of its axis is brought to its nearest end. A face that is not variable is
+    /// used as it is: a family without a bold face gives its closest weight, which <see cref="TextStyle.Synthesis"/>
+    /// can embolden.
+    /// </para>
+    /// <para>The fonts of a machine differ from one machine to another: so does the font this method returns. The file is read as <see cref="Load(SystemFontDescriptor, FontLoadOptions?)"/> reads it.</para>
+    /// </remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="familyName"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="weight"/> is not between 1 and 1000.</exception>
+    /// <exception cref="UnknownImageFormatException">The file of the face is no longer a font.</exception>
+    /// <exception cref="InvalidImageContentException">The font is malformed or truncated, or the file no longer has the face.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The font uses a feature that is not supported.</exception>
+    /// <exception cref="ImageResourceLimitException">A configured limit is exceeded.</exception>
+    /// <exception cref="IOException">An I/O error occurred, such as a file that was removed since the fonts were scanned.</exception>
+    public static Font? LoadInstalled(string familyName, int weight = 400, bool isItalic = false, SystemFontCollection? fonts = null, FontLoadOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(familyName);
+        ArgumentOutOfRangeException.ThrowIfLessThan(weight, 1);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(weight, 1000);
+        if ((fonts ?? SystemFontCollection.Default).Match(familyName, weight, isItalic) is not { } face)
+            return null;
+
+        return InstalledFontFiles.ApplyStyle(Load(face, options), weight, isItalic);
+    }
 
     /// <summary>Asynchronously loads a font from a file, using asynchronous file I/O. For a font collection, the first face is loaded.</summary>
     /// <param name="path">The path of the file.</param>

@@ -2861,11 +2861,13 @@ namespace Meziantou.Framework.Imaging.Typography
         public int Weight { get => throw null; }
         public bool ContainsGlyph(System.Text.Rune codePoint) => throw null;
         public Meziantou.Framework.Imaging.Typography.FontMetrics GetMetrics(double size) => throw null;
+        public static Meziantou.Framework.Imaging.Typography.Font Load(Meziantou.Framework.Fonts.SystemFontDescriptor face, Meziantou.Framework.Imaging.Typography.FontLoadOptions? options = null) => throw null;
         public static Meziantou.Framework.Imaging.Typography.Font Load(System.IO.Stream stream, Meziantou.Framework.Imaging.Typography.FontLoadOptions? options = null) => throw null;
         public static Meziantou.Framework.Imaging.Typography.Font Load(System.ReadOnlySpan<byte> data, Meziantou.Framework.Imaging.Typography.FontLoadOptions? options = null) => throw null;
         public static Meziantou.Framework.Imaging.Typography.Font Load(string path, Meziantou.Framework.Imaging.Typography.FontLoadOptions? options = null) => throw null;
         public static System.Threading.Tasks.Task<Meziantou.Framework.Imaging.Typography.Font> LoadAsync(System.IO.Stream stream, Meziantou.Framework.Imaging.Typography.FontLoadOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static System.Threading.Tasks.Task<Meziantou.Framework.Imaging.Typography.Font> LoadAsync(string path, Meziantou.Framework.Imaging.Typography.FontLoadOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static Meziantou.Framework.Imaging.Typography.Font? LoadInstalled(string familyName, int weight = 400, bool isItalic = false, Meziantou.Framework.Fonts.SystemFontCollection? fonts = null, Meziantou.Framework.Imaging.Typography.FontLoadOptions? options = null) => throw null;
         public Meziantou.Framework.Imaging.Typography.Font WithVariations(Meziantou.Framework.Imaging.Typography.FontNamedInstance instance) => throw null;
         public Meziantou.Framework.Imaging.Typography.Font WithVariations(params System.ReadOnlySpan<Meziantou.Framework.Imaging.Typography.FontVariationSetting> settings) => throw null;
     }
@@ -2940,10 +2942,12 @@ namespace Meziantou.Framework.Imaging.Typography
     public sealed class FontStack
     {
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.Typography.Font> Fonts { get => throw null; }
+        public bool HasInstalledFallback { get => throw null; }
         public Meziantou.Framework.Imaging.Typography.Font Primary { get => throw null; }
         public FontStack(Meziantou.Framework.Imaging.Typography.Font primary) { }
         public FontStack(Meziantou.Framework.Imaging.Typography.Font primary, params System.ReadOnlySpan<Meziantou.Framework.Imaging.Typography.Font> fallbacks) { }
         public static Meziantou.Framework.Imaging.Typography.FontStack FromFont(Meziantou.Framework.Imaging.Typography.Font font) => throw null;
+        public Meziantou.Framework.Imaging.Typography.FontStack WithInstalledFallback(Meziantou.Framework.Fonts.SystemFontCollection? fonts = null, Meziantou.Framework.Imaging.Typography.InstalledFontFallbackOptions? options = null) => throw null;
         public static implicit operator Meziantou.Framework.Imaging.Typography.FontStack(Meziantou.Framework.Imaging.Typography.Font font) => throw null;
     }
 
@@ -2995,6 +2999,13 @@ namespace Meziantou.Framework.Imaging.Typography
         public double? ObliqueShear { get => throw null; init { } }
         public int Palette { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Typography.FontSynthesis Synthesis { get => throw null; init { } }
+    }
+
+    public sealed class InstalledFontFallbackOptions
+    {
+        public static Meziantou.Framework.Imaging.Typography.InstalledFontFallbackOptions Default { get => throw null; }
+        public Meziantou.Framework.Imaging.Typography.FontLoadOptions LoadOptions { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<string> PreferredFamilies { get => throw null; init { } }
     }
 
     public readonly struct PositionedGlyph : System.IEquatable<Meziantou.Framework.Imaging.Typography.PositionedGlyph>

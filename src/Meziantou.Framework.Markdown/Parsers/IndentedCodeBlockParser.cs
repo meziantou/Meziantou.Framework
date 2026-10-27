@@ -75,6 +75,7 @@ public class IndentedCodeBlockParser : BlockParser
                 if (block != null)
                 {
                     var codeBlock = (CodeBlock)block;
+                    var insertIndex = processor.LinesBefore?.Count ?? 0;
                     // add trailing blank lines to blank lines stack of processor
                     for (int i = codeBlock.Lines.Count - 1; i >= 0; i--)
                     {
@@ -85,8 +86,11 @@ public class IndentedCodeBlockParser : BlockParser
 
                             if (processor.TrackTrivia)
                             {
+                                // The whitespace of the line is the trivia of its code block line, as in Close.
+                                // The lines are removed from the last one, so each one goes before the ones already moved.
+                                var emptyLine = new StringSlice(line.Slice.Text, codeBlock.CodeBlockLines[i].TriviaBefore.Start, line.Slice.End, line.NewLine);
                                 processor.LinesBefore ??= new List<StringSlice>();
-                                processor.LinesBefore.Add(line.Slice);
+                                processor.LinesBefore.Insert(insertIndex, emptyLine);
                             }
                         }
                         else

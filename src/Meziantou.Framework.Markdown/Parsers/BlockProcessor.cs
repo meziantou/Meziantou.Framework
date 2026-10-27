@@ -473,6 +473,11 @@ public class BlockProcessor
         {
             if (ReferenceEquals(OpenedBlocks[i].Block, block))
             {
+                if (TrackTrivia)
+                {
+                    GiveBackQuoteLinesBeforeClose(i);
+                }
+
                 for (int j = OpenedBlocks.Count - 1; j >= i; j--)
                 {
                     Close(j);
@@ -883,6 +888,32 @@ public class BlockProcessor
             if (!OpenedBlocks[i].Block.IsOpen && OpenedBlocks[i].Block is IQuoteLikeBlock quote)
             {
                 MoveQuoteLinesWithoutContent(linesBefore, quote);
+                return;
+            }
+        }
+    }
+
+    // A parser can close a quote after a new block took the empty lines, such as a list item that closes the previous item and the
+    // quote at its end. The quote is no longer open when the new block is added, so it gets back its lines without content here.
+    private void GiveBackQuoteLinesBeforeClose(int index)
+    {
+        for (int i = OpenedBlocks.Count - 1; i >= index; i--)
+        {
+            if (OpenedBlocks[i].Block is IQuoteLikeBlock quote)
+            {
+                if (LinesBefore is not null)
+                {
+                    MoveQuoteLinesWithoutContent(LinesBefore, quote);
+                }
+
+                foreach (var newBlock in NewBlocks)
+                {
+                    if (newBlock.LinesBefore is { Count: > 0 } linesBefore)
+                    {
+                        MoveQuoteLinesWithoutContent(linesBefore, quote);
+                    }
+                }
+
                 return;
             }
         }

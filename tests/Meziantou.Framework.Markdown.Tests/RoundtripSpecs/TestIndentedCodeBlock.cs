@@ -86,6 +86,14 @@ public class TestIndentedCodeBlock
     [InlineData("    l\n\np")]
     [InlineData("    l\n\n\np")]
     [InlineData("    l\n\n\n\np")]
+    [InlineData("    l\n   \np")]
+    [InlineData("    l\n \np")]
+    [InlineData("    l\n\t\np")]
+    [InlineData("    l\n   \n\np")]
+    [InlineData("    l\n   \n \n  \np")]
+    [InlineData("    l\n      \n   \np")]
+    [InlineData("    l\r\n   \r\np")]
+    [InlineData("    chunk1\n   \n.     chunk:")]
     public void TestParagraph(string value)
     {
         RoundTrip(value);

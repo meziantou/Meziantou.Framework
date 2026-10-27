@@ -38,6 +38,18 @@ public sealed class TransformGoldenTests
         // land on either side in double precision. The coefficients of this transformation and of its inverse (its
         // determinant is 1) are dyadic, so both computations are exact
         new("affine-dyadic-keep-nearest", (image, options) => image.Transform(new AffineTransform(1, 0.5, -0.5, 0.75, 1.25, -0.75), options, Ct), (_, _) => ReferenceMatrix.CreateAffine(1, 0.5m, -0.5m, 0.75m, 1.25m, -0.75m), ReferenceCanvasMode.Keep, ReferenceKernel.Nearest, Background: BackgroundKind.Colored),
+        // The box takes the pixels whose centers lie in a half-open footprint: like nearest neighbor, a dyadic geometry keeps
+        // the points on the edges of the pixels exact. The second one shrinks the image by 2 on both axes
+        new("affine-dyadic-keep-box", (image, options) => image.Transform(new AffineTransform(1, 0.5, -0.5, 0.75, 1.25, -0.75), options, Ct), (_, _) => ReferenceMatrix.CreateAffine(1, 0.5m, -0.5m, 0.75m, 1.25m, -0.75m), ReferenceCanvasMode.Keep, ReferenceKernel.Box, Background: BackgroundKind.Colored),
+        new("affine-shrink-expand-box", (image, options) => image.Transform(new AffineTransform(0.5, 0.25, -0.25, 0.5, 0, 0), options, Ct), (_, _) => ReferenceMatrix.CreateAffine(0.5m, 0.25m, -0.25m, 0.5m, 0, 0), ReferenceCanvasMode.Expand, ReferenceKernel.Box),
+        new("rotate-40-expand-hermite", (image, options) => image.Rotate(40, options, Ct), (w, h) => Centered(w, h, ReferenceMatrix.CreateRotation(40)), ReferenceCanvasMode.Expand, ReferenceKernel.Hermite, Centered: true),
+        new("skew-15-5-keep-mitchell-colored", (image, options) => image.Skew(15, 5, options, Ct), (w, h) => Centered(w, h, ReferenceMatrix.CreateSkew(15, 5)), ReferenceCanvasMode.Keep, ReferenceKernel.MitchellNetravali, Centered: true, Background: BackgroundKind.Colored),
+        new("affine-shrink-expand-robidoux", (image, options) => image.Transform(new AffineTransform(0.625, -0.125, 0.25, 0.5, 0, 0), options, Ct), (_, _) => ReferenceMatrix.CreateAffine(0.625m, -0.125m, 0.25m, 0.5m, 0, 0), ReferenceCanvasMode.Expand, ReferenceKernel.Robidoux),
+        new("rotate-minus-50-expand-robidoux-sharp", (image, options) => image.Rotate(-50, options, Ct), (w, h) => Centered(w, h, ReferenceMatrix.CreateRotation(-50)), ReferenceCanvasMode.Expand, ReferenceKernel.RobidouxSharp, Centered: true),
+        new("projective-expand-spline", (image, options) => image.Transform(new ProjectiveTransform(1, 0.0625, 0.001953125, 0.125, 0.875, 0.0009765625, 2, 1, 1), options, Ct), (_, _) => new ReferenceMatrix(1, 0.0625m, 0.001953125m, 0.125m, 0.875m, 0.0009765625m, 2, 1, 1), ReferenceCanvasMode.Expand, ReferenceKernel.Spline),
+        new("rotate-12-keep-lanczos2-translucent", (image, options) => image.Rotate(12, options, Ct), (w, h) => Centered(w, h, ReferenceMatrix.CreateRotation(12)), ReferenceCanvasMode.Keep, ReferenceKernel.Lanczos2, Centered: true, Background: BackgroundKind.Translucent),
+        new("rotate-75-expand-lanczos5", (image, options) => image.Rotate(75, options, Ct), (w, h) => Centered(w, h, ReferenceMatrix.CreateRotation(75)), ReferenceCanvasMode.Expand, ReferenceKernel.Lanczos5, Centered: true),
+        new("affine-shrink-expand-lanczos8", (image, options) => image.Transform(new AffineTransform(0.75, 0.25, -0.25, 0.75, 0, 0), options, Ct), (_, _) => ReferenceMatrix.CreateAffine(0.75m, 0.25m, -0.25m, 0.75m, 0, 0), ReferenceCanvasMode.Expand, ReferenceKernel.Lanczos8),
         new("affine-dyadic-expand-nearest", (image, options) => image.Transform(new AffineTransform(1, 0.5, -0.5, 0.75, 0, 0), options, Ct), (_, _) => ReferenceMatrix.CreateAffine(1, 0.5m, -0.5m, 0.75m, 0, 0), ReferenceCanvasMode.Expand, ReferenceKernel.Nearest),
         new("rotate-25-expand-linear-translucent", (image, options) => image.Rotate(25, options, Ct), (w, h) => Centered(w, h, ReferenceMatrix.CreateRotation(25)), ReferenceCanvasMode.Expand, ReferenceKernel.CatmullRom, Centered: true, Linear: true, Background: BackgroundKind.Translucent),
         new("skew-20-minus-10-expand-bicubic", (image, options) => image.Skew(20, -10, options, Ct), (w, h) => Centered(w, h, ReferenceMatrix.CreateSkew(20, -10)), ReferenceCanvasMode.Expand, ReferenceKernel.CatmullRom, Centered: true),
@@ -253,9 +265,18 @@ public sealed class TransformGoldenTests
                 Filter = Kernel switch
                 {
                     ReferenceKernel.Nearest => ResamplingFilter.NearestNeighbor,
+                    ReferenceKernel.Box => ResamplingFilter.Box,
                     ReferenceKernel.Triangle => ResamplingFilter.Bilinear,
+                    ReferenceKernel.Hermite => ResamplingFilter.Hermite,
                     ReferenceKernel.CatmullRom => ResamplingFilter.Bicubic,
-                    _ => ResamplingFilter.Lanczos3,
+                    ReferenceKernel.MitchellNetravali => ResamplingFilter.MitchellNetravali,
+                    ReferenceKernel.Robidoux => ResamplingFilter.Robidoux,
+                    ReferenceKernel.RobidouxSharp => ResamplingFilter.RobidouxSharp,
+                    ReferenceKernel.Spline => ResamplingFilter.Spline,
+                    ReferenceKernel.Lanczos2 => ResamplingFilter.Lanczos2,
+                    ReferenceKernel.Lanczos3 => ResamplingFilter.Lanczos3,
+                    ReferenceKernel.Lanczos5 => ResamplingFilter.Lanczos5,
+                    _ => ResamplingFilter.Lanczos8,
                 },
                 BackgroundColor = background,
                 CanvasMode = Canvas switch

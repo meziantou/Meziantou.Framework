@@ -112,7 +112,7 @@ internal sealed class WarpPlan : IDisposable
 
     private static int GetMaxTaps(double reach, int length)
     {
-        // The integers strictly within the reach of a center: at most 2 ceil(reach) of them
+        // The integers strictly within the reach of a center (or in the half-open interval of a box): at most 2 ceil(reach)
         var taps = 2 * Math.Ceiling(reach);
         return taps >= length ? length : (int)taps;
     }

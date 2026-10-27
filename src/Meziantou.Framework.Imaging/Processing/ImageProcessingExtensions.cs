@@ -418,7 +418,9 @@ public static class ImageProcessingExtensions
     /// normalized by their sum. Colors are filtered premultiplied by alpha, in double precision, in the working space of
     /// <see cref="TransformOptions.WorkingSpace"/>, and rounded once to the storage precision as a resize rounds them
     /// (a pixel whose alpha is zero is transparent black); floating-point samples follow the rules of
-    /// <see cref="Resize"/>. Nearest neighbor copies the source pixel that contains the point, exactly.
+    /// <see cref="Resize"/>. Nearest neighbor copies the source pixel that contains the point, exactly. The box filter
+    /// averages the source pixels whose centers lie in <c>(p - f/2, p + f/2]</c> on each axis, where <c>p</c> is the point
+    /// and <c>f</c> the widening of the axis: without widening, the pixel that contains the point.
     /// </para>
     /// <para>
     /// <b>Background.</b> The pixels beyond the edges of the source are <see cref="TransformOptions.BackgroundColor"/>

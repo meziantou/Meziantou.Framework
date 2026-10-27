@@ -270,7 +270,7 @@ internal static class Warper
         count = 0;
         total = 0;
         inside = 0;
-        if (!WarpGeometry.GetWindow(center, radius * scale, out var low, out var high) || high < 0 || low >= length)
+        if (!WarpGeometry.GetWindow(filter, center, radius * scale, out var low, out var high) || high < 0 || low >= length)
             return false;
 
         var start = Math.Max(low, 0);
@@ -282,7 +282,8 @@ internal static class Warper
         // inside, both sums are the same number and nothing is read from the background
         for (var i = low; i <= high; i++)
         {
-            var weight = ResamplingKernels.Evaluate(filter, (i - center) / scale);
+            // Every pixel of the footprint of a box counts the same: rounding must not move its boundaries
+            var weight = filter is ResamplingFilter.Box ? 1 : ResamplingKernels.Evaluate(filter, (i - center) / scale);
             total += weight;
             if (i >= start && i <= stop)
             {

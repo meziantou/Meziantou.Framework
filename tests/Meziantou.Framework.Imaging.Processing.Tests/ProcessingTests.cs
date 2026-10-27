@@ -535,6 +535,15 @@ public sealed class ProcessingTests
         // The same enlargement with Lanczos3 reads 3 pixels around each point, beyond the edges of the image
         Assert.Throws<UnsupportedImageFeatureException>(() => gray.Transform(AffineTransform.CreateScale(2, 2, new PointD(4, 4)), new TransformOptions { CanvasMode = TransformCanvasMode.Keep, Filter = ResamplingFilter.Lanczos3 }, Ct));
 
+        // A canvas of the image without its border, with the same pixel centers: an interpolating filter reads one pixel per
+        // output pixel and shows no background, a smoothing cubic also reads the neighbors, beyond the edges
+        using var smaller = new Image<Gray8>(8, 8, new Gray8(77));
+        var cropped = new TransformOptions { CanvasMode = TransformCanvasMode.Explicit, CanvasSize = new Size(6, 6) };
+        Assert.Throws<UnsupportedImageFeatureException>(() => smaller.Transform(AffineTransform.Identity, new TransformOptions { CanvasMode = TransformCanvasMode.Explicit, CanvasSize = new Size(6, 6), Filter = ResamplingFilter.MitchellNetravali }, Ct));
+        smaller.Transform(AffineTransform.Identity, cropped, Ct);
+        Assert.Equal(new Size(6, 6), smaller.Size);
+        Assert.Equal(new Gray8(77), smaller.Frames[0][0, 0]);
+
         // A projective transformation may always show it
         Assert.Throws<UnsupportedImageFeatureException>(() => gray.Transform(new ProjectiveTransform(1, 0, 0.001, 0, 1, 0, 0, 0, 1), new TransformOptions { CanvasMode = TransformCanvasMode.Keep }, Ct));
 
@@ -643,7 +652,7 @@ public sealed class ProcessingTests
         Assert.Equal(Pixel<Rgba32>(2), image.Frames[0][2, 0]);
 
         Assert.Throws<ArgumentNullException>(() => ImageProcessingExtensions.Rotate(null!, 10.0));
-        Assert.Throws<ArgumentOutOfRangeException>(() => new TransformOptions { Filter = (ResamplingFilter)9 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new TransformOptions { Filter = (ResamplingFilter)99 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new TransformOptions { CanvasMode = (TransformCanvasMode)3 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new TransformOptions { WorkingSpace = (ResizeWorkingSpace)2 });
     }

@@ -740,7 +740,8 @@ skews) or a `ProjectiveTransform` (the image seen in perspective), in stored-pix
   widened by the same factor, as when resizing; a rotation or a skew widens nothing, and a perspective widens its kernels
   by 16 at most, near its horizon. Colors are filtered premultiplied by alpha in double precision and rounded once to the
   storage precision, with the rules of resizing (16-bit precision, floating-point samples unclamped). Nearest neighbor
-  copies the pixel that contains the point.
+  copies the pixel that contains the point, and the box filter averages the pixels whose centers lie in the footprint
+  of the point (the pixel that contains it, when nothing shrinks).
 - `BackgroundColor` (transparent black by default): the pixels beyond the edges of the image, filtered like the others,
   so that the edges blend into it, and the canvas the image does not cover. A pixel format without alpha (`Rgb24`,
   `Gray8`, `Gray16`) needs an opaque color when the result shows it; an `UnsupportedImageFeatureException` says so.

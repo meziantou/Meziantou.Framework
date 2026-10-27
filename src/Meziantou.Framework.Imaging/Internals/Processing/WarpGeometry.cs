@@ -252,9 +252,10 @@ internal sealed class WarpGeometry
         var width = OutputSize.Width - 1;
         var height = OutputSize.Height - 1;
 
-        // When every output pixel center comes from a source pixel center (a quarter turn or an integer translation), a
-        // filter reads that pixel alone: its other weights are those of the kernel at non-zero integers, which are zero
-        var integral = filter != ResamplingFilter.NearestNeighbor && IsIntegral(_affineInverse.M11) && IsIntegral(_affineInverse.M12) && IsIntegral(_affineInverse.M21) && IsIntegral(_affineInverse.M22)
+        // When every output pixel center comes from a source pixel center (a quarter turn or an integer translation), an
+        // interpolating filter reads that pixel alone: its other weights are those of the kernel at non-zero integers, which
+        // are zero
+        var integral = filter != ResamplingFilter.NearestNeighbor && ResamplingKernels.IsInterpolating(filter) && IsIntegral(_affineInverse.M11) && IsIntegral(_affineInverse.M12) && IsIntegral(_affineInverse.M21) && IsIntegral(_affineInverse.M22)
             && ScaleX == 1 && ScaleY == 1
             && TryMapToSource(0, 0, out var u0, out var v0) && IsIntegral(u0 - 0.5) && IsIntegral(v0 - 0.5);
 
@@ -274,25 +275,27 @@ internal sealed class WarpGeometry
             }
 
             var radius = ResamplingKernels.GetRadius(filter);
-            if (!IsWithin(u - 0.5, radius * ScaleX, SourceSize.Width) || !IsWithin(v - 0.5, radius * ScaleY, SourceSize.Height))
+            if (!IsWithin(filter, u - 0.5, radius * ScaleX, SourceSize.Width) || !IsWithin(filter, v - 0.5, radius * ScaleY, SourceSize.Height))
                 return true;
         }
 
         return false;
 
-        static bool IsWithin(double center, double reach, int length)
+        static bool IsWithin(ResamplingFilter filter, double center, double reach, int length)
         {
-            GetWindow(center, reach, out var first, out var last);
+            GetWindow(filter, center, reach, out var first, out var last);
             return first >= 0 && last < length;
         }
     }
 
     /// <summary>
     /// Gets the source pixels whose center is closer to <paramref name="center"/> than <paramref name="reach"/>: the
-    /// contributors of a kernel of that radius, every one of them inside the support.
+    /// contributors of a kernel of that radius, every one of them inside the support. The box filter, whose kernel is not
+    /// zero at its radius, takes the half-open interval <c>(center - reach, center + reach]</c> of the box resize
+    /// (<see cref="ResampleAxis.GetBoxContributors"/>): a point on the edge of two pixels selects the higher one.
     /// </summary>
     /// <returns><see langword="false"/> when the center is too far from any canvas to be computed (it reads nothing).</returns>
-    internal static bool GetWindow(double center, double reach, out long first, out long last)
+    internal static bool GetWindow(ResamplingFilter filter, double center, double reach, out long first, out long last)
     {
         if (!(Math.Abs(center) < MaxCoordinate && reach < MaxCoordinate))
         {
@@ -302,7 +305,7 @@ internal sealed class WarpGeometry
         }
 
         first = (long)Math.Floor(center - reach) + 1;
-        last = (long)Math.Ceiling(center + reach) - 1;
+        last = filter is ResamplingFilter.Box ? (long)Math.Floor(center + reach) : (long)Math.Ceiling(center + reach) - 1;
         return true;
     }
 

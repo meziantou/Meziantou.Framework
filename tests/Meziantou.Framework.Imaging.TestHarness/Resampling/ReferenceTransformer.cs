@@ -156,13 +156,17 @@ public static class ReferenceTransformer
     }
 
     /// <summary>
-    /// Copies the source when the center of every output pixel comes from the center of a source pixel and the source
-    /// fills the canvas: the transformation is then a permutation of the pixels, which keeps every sample (the hidden
-    /// colors of transparent pixels included).
+    /// Copies the source when the transformation is a quarter turn or a mirror (a matrix of 0, 1 and -1 with one
+    /// coefficient per row) that moves the center of every source pixel to the center of a pixel of the canvas and fills
+    /// it: a permutation of the pixels, which keeps every sample (the hidden colors of transparent pixels included),
+    /// whatever the filter.
     /// </summary>
     private static bool TryPermute(RawPixelBuffer source, ReferenceMatrix inverse, int width, int height, decimal[] values)
     {
         if (!inverse.IsAffine || (long)width * height != (long)source.Width * source.Height)
+            return false;
+
+        if (!IsUnit(inverse.M11) || !IsUnit(inverse.M12) || !IsUnit(inverse.M21) || !IsUnit(inverse.M22) || inverse.M11 * inverse.M12 != 0 || inverse.M21 * inverse.M22 != 0)
             return false;
 
         var channels = source.Layout.ChannelCount;
@@ -187,6 +191,8 @@ public static class ReferenceTransformer
 
         return true;
     }
+
+    private static bool IsUnit(decimal value) => value is 0 or 1 or -1;
 
     private static (int Width, int Height, ReferenceMatrix Forward) ComputeCanvas(int sourceWidth, int sourceHeight, ReferenceTransformOptions options)
     {
@@ -230,20 +236,33 @@ public static class ReferenceTransformer
 
     private static decimal Radius(ReferenceKernel kernel) => kernel switch
     {
-        ReferenceKernel.Triangle => 1,
-        ReferenceKernel.CatmullRom => 2,
+        ReferenceKernel.Box => 0.5m,
+        ReferenceKernel.Triangle or ReferenceKernel.Hermite => 1,
+        ReferenceKernel.CatmullRom or ReferenceKernel.MitchellNetravali or ReferenceKernel.Robidoux or ReferenceKernel.RobidouxSharp or ReferenceKernel.Spline or ReferenceKernel.Lanczos2 => 2,
         ReferenceKernel.Lanczos3 => 3,
+        ReferenceKernel.Lanczos5 => 5,
+        ReferenceKernel.Lanczos8 => 8,
         _ => throw new ArgumentOutOfRangeException(nameof(kernel)),
     };
 
-    /// <summary>The weights <c>K((i - c) / f)</c> of every integer <c>i</c> with <c>|i - c| &lt; radius f</c> (not normalized).</summary>
+    /// <summary>
+    /// The weights <c>K((i - c) / f)</c> of every integer <c>i</c> with <c>|i - c| &lt; radius f</c> (not normalized); for a box,
+    /// a weight of 1 for every integer in <c>(c - f/2, c + f/2]</c>, the footprint of the box resize.
+    /// </summary>
     private static List<(int Index, decimal Weight)> Weights(decimal center, decimal scale, ReferenceKernel kernel)
     {
         var reach = Radius(kernel) * scale;
         var result = new List<(int Index, decimal Weight)>();
         for (var i = (int)decimal.Floor(center - reach); i <= (int)decimal.Ceiling(center + reach); i++)
         {
-            if (Math.Abs(i - center) < reach)
+            if (kernel == ReferenceKernel.Box)
+            {
+                if (i > center - reach && i <= center + reach)
+                {
+                    result.Add((i, 1));
+                }
+            }
+            else if (Math.Abs(i - center) < reach)
             {
                 // A distance of 1e-28 is a center the rounding of the geometry moved off a pixel: its square underflows,
                 // and the kernel, flat at 0, is 1 there

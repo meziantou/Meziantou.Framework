@@ -32,6 +32,13 @@ internal static class ResamplingKernels
         _ => throw new ArgumentOutOfRangeException(nameof(filter), filter, "The filter has no kernel."),
     };
 
+    /// <summary>
+    /// Gets a value indicating whether the kernel interpolates: 1 at 0 and 0 at every other integer, so that a point at a
+    /// pixel center reads that pixel alone. The Mitchell-Netravali, Robidoux and B-spline cubics also read its neighbors.
+    /// </summary>
+    public static bool IsInterpolating(ResamplingFilter filter)
+        => filter is not (ResamplingFilter.MitchellNetravali or ResamplingFilter.Robidoux or ResamplingFilter.RobidouxSharp or ResamplingFilter.Spline);
+
     /// <summary>Evaluates the kernel.</summary>
     public static double Evaluate(ResamplingFilter filter, double x) => filter switch
     {

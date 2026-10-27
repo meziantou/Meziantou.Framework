@@ -857,6 +857,25 @@ public sealed class TestPipeTable
     }
 
     [Theory]
+    [InlineData("1bbb", false)]
+    [InlineData("bbbb", true)]
+    [InlineData("-bbb", false)]
+    [InlineData("iv.b", true)]
+    public void GridTableCellStartingRightAfterThePipeKeepsItsFirstCharacter(string text, bool useListExtras)
+    {
+        // A list item parser that failed went back to the wrong column, so the cell lost the first character
+        var builder = new MarkdownPipelineBuilder().UseGridTables();
+        if (useListExtras)
+        {
+            builder.UseListExtras();
+        }
+
+        var html = MarkdownConverter.ToHtml("+--------+--------+\n|a       |" + text + "    |\n+--------+--------+\n", builder.Build());
+
+        Assert.Equal("<table>\n<col style=\"width:50%\" />\n<col style=\"width:50%\" />\n<tbody>\n<tr>\n<td>a</td>\n<td>" + text + "</td>\n</tr>\n</tbody>\n</table>\n", html);
+    }
+
+    [Theory]
     [InlineData("a | b\n-- | --\n0 | 1\n")]
     [InlineData("| a | b |\r\n|:--|--:|\r\n| 0 | 1 |\r\n")]
     [InlineData("|a|b|\n|-|-|\n|0|1|")]

@@ -131,13 +131,19 @@ internal static unsafe class WasmtimeTypes
             return;
         }
 
-        var data = stackalloc nint[types.Length];
+        // The types can come from a script (the parameters of a WebAssembly.Tag), so their number is not bounded: only a
+        // small vector is allocated on the stack. wasm_valtype_vec_new copies the pointers.
+        const int MaxStackLength = 32;
+        Span<nint> data = types.Length <= MaxStackLength ? stackalloc nint[MaxStackLength] : new nint[types.Length];
         for (var i = 0; i < types.Length; i++)
         {
             data[i] = CreateValueType(engine, types[i]);
         }
 
-        NativeMethods.wasm_valtype_vec_new(result, (nuint)types.Length, data);
+        fixed (nint* pointer = data)
+        {
+            NativeMethods.wasm_valtype_vec_new(result, (nuint)types.Length, pointer);
+        }
     }
 
     /// <summary>Reads a global type (borrowed).</summary>

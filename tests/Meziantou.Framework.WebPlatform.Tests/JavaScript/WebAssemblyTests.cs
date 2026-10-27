@@ -320,6 +320,20 @@ public sealed class WebAssemblyTests : IDisposable
     }
 
     [Fact]
+    public async Task Tag_AcceptsALargeNumberOfParameters()
+    {
+        // The value types of the native function type were allocated on the stack: 8 MB for one million parameters
+        var result = await RunAsync("""
+            async () => {
+              const tag = new WebAssembly.Tag({ parameters: Array(1_000_000).fill('i32') });
+              return tag instanceof WebAssembly.Tag;
+            }
+            """);
+
+        Assert.Equal("true", result);
+    }
+
+    [Fact]
     public async Task ExportedFunctions_HaveTheirIndexAsName()
     {
         var bytes = Wasm("""

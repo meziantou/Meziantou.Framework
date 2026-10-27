@@ -2,6 +2,7 @@ using Meziantou.Framework.WebPlatform.Dom;
 using Meziantou.Framework.WebPlatform.Scripting;
 using Meziantou.Framework.WebPlatform.Tests.Scripting;
 using Meziantou.Framework.WebPlatform.Wasmtime;
+using Meziantou.Framework.WebPlatform.WebAssembly;
 
 namespace Meziantou.Framework.WebPlatform.Tests.JavaScript;
 
@@ -317,6 +318,31 @@ public sealed class WebAssemblyTests : IDisposable
             """);
 
         Assert.Equal("1,true,true,true,42,false,7,false,true", result);
+    }
+
+    [Fact]
+    public void CreateTag_AcceptsALargeNumberOfParameters()
+    {
+        // A script chooses the number of parameters of a tag (new WebAssembly.Tag({ parameters })). The value types of
+        // the native function type were allocated on the stack: 800 KB for 100,000 parameters, more than this thread has.
+        var type = new WasmTagType([.. Enumerable.Repeat(WasmValueType.I32, 100_000)]);
+        WasmTag? tag = null;
+        var thread = new Thread(() =>
+        {
+            using var store = Runtime.CreateStore(new NoInterruptionHost());
+            tag = store.CreateTag(type);
+        }, maxStackSize: 256 * 1024);
+        thread.Start();
+        thread.Join();
+
+        Assert.NotNull(tag);
+    }
+
+    private sealed class NoInterruptionHost : IWasmHost
+    {
+        public void CheckInterrupt()
+        {
+        }
     }
 
     [Fact]

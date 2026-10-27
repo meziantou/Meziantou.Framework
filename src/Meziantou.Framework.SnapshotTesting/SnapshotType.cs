@@ -16,6 +16,7 @@ public sealed class SnapshotType : IEquatable<SnapshotType>
     public static SnapshotType Heic { get; } = new("heic", "image/heic", "HEIC image");
     public static SnapshotType JpegXl { get; } = new("jxl", "image/jxl", "JPEG XL image");
     public static SnapshotType Jpeg2000 { get; } = new("jp2", "image/jp2", "JPEG 2000 image");
+    public static SnapshotType Pdf { get; } = new("pdf", "application/pdf", "PDF document");
 
     private static readonly Dictionary<string, SnapshotType> Cache = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -34,6 +35,7 @@ public sealed class SnapshotType : IEquatable<SnapshotType>
         ["heic"] = Heic,
         ["jxl"] = JpegXl,
         ["jp2"] = Jpeg2000,
+        ["pdf"] = Pdf,
     };
 
     // Formats whose content is text. They are compared without regard to line endings or a leading UTF-8 byte

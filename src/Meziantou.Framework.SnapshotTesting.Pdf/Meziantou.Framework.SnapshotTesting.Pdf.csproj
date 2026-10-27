@@ -1,0 +1,18 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <Description>Enables verification of PDF documents using file-based snapshots: each page is rendered to an image and the metadata is written to a JSON file, based on Meziantou.Framework.Pdf</Description>
+    <PackageTags>snapshot-testing, pdf, testing</PackageTags>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.SnapshotTesting.Pdf.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Meziantou.Framework.Pdf/Meziantou.Framework.Pdf.csproj" />
+    <ProjectReference Include="../Meziantou.Framework.SnapshotTesting.Imaging/Meziantou.Framework.SnapshotTesting.Imaging.csproj" />
+  </ItemGroup>
+
+</Project>

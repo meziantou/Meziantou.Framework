@@ -14,6 +14,7 @@ namespace Meziantou.Framework.Imaging.InteropTests;
 /// <remarks>
 /// <list type="bullet">
 /// <item><description>every lossless compression, byte order and layout of the TIFF encoder (the bilevel layout with the CCITT compressions, the palette layout) decodes exactly in FFmpeg;</description></item>
+/// <item><description>the 32-bit floating-point RGB and RGBA pages of the TIFF encoder, with the floating-point predictor, decode exactly in FFmpeg;</description></item>
 /// <item><description>TIFFs written by FFmpeg decode exactly in the library: every compression it writes, palette, bilevel and deep pages, and YCbCr pages with every chroma subsampling (from the samples FFmpeg reads back);</description></item>
 /// <item><description>Apple ImageIO decodes the bilevel pages exactly and the JPEG pages like the library does;</description></item>
 /// <item><description>Apple ImageIO sees the pages of a multi-page document, and the representations of an icon, as separate images with their own pixels;</description></item>
@@ -517,6 +518,40 @@ public sealed class TiffIcoInteropTests
         }
 
         return Image.ImportPixelData<Rgba32>(pixels, width, height);
+    }
+
+    [Theory]
+    [InlineData(TiffCompression.None)]
+    [InlineData(TiffCompression.Deflate)]
+    [InlineData(TiffCompression.Lzw)]
+    [InlineData(TiffCompression.PackBits)]
+    public async Task FloatingPointPagesDecodeExactlyInFFmpeg(TiffCompression compression)
+    {
+        // FFmpeg reads the floating-point RGB and RGBA pages of little-endian classic TIFF files, the floating-point
+        // predictor of the Deflate and LZW strips included; it reads no floating-point gray page and outputs no big-endian
+        // floats. GDAL 3.13.0 and libtiff 4.7.0 read every layout, byte order and offset size of the encoder exactly.
+        float[] values = [0f, -0f, 1f, 0.5f, -0.25f, float.MaxValue, 1e-40f, 65504f, -1234.5678f, float.PositiveInfinity, float.NegativeInfinity, 0.1f, 3.5f];
+        var ffmpeg = await RequiredTools.FFmpegAsync();
+        foreach (var opaque in new[] { true, false })
+        {
+            var pixels = new RgbaFloat[Width * Height];
+            var expected = new List<byte>();
+            for (var i = 0; i < pixels.Length; i++)
+            {
+                pixels[i] = new RgbaFloat(values[i % values.Length], values[(i + 4) % values.Length], values[(i + 9) % values.Length], opaque ? 1 : values[((i * 3) + 1) % values.Length]);
+                float[] samples = opaque ? [pixels[i].R, pixels[i].G, pixels[i].B] : [pixels[i].R, pixels[i].G, pixels[i].B, pixels[i].A];
+                foreach (var sample in samples)
+                {
+                    expected.AddRange(BitConverter.GetBytes(BitConverter.SingleToUInt32Bits(sample)));
+                }
+            }
+
+            using var image = Image.ImportPixelData<RgbaFloat>(pixels, Width, Height);
+            image.Metadata.TransferFunction = Metadata.ColorTransferFunction.Linear;
+            var path = await SaveAsync(image, new TiffEncoder { Compression = compression, RowsPerStrip = 4 }, $"encoder-float-{compression}-{(opaque ? "rgb" : "rgba")}.tif");
+            var decoded = Assert.Single(await ffmpeg.DecodeToRawFramesAsync(path, opaque ? "rgbf32le" : "rgbaf32le", Width, Height, XunitCancellationToken));
+            Assert.Equal(expected.ToArray(), decoded);
+        }
     }
 
     private static async Task<FullPath> SaveAsync(Image image, ImageEncoder encoder, string name)

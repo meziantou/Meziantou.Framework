@@ -28,6 +28,14 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// without alpha given a pixel that is not opaque: <see cref="PreparePage"/> reads the whole frame before anything of
 /// the page is written.
 /// </para>
+/// <para>
+/// Floating-point pixels are written as 32-bit floating-point samples (<c>SampleFormat</c> 3), which hold every value of
+/// <see cref="PixelFormat.RgbaFloat"/> and <see cref="PixelFormat.RgbaHalf"/>. There is no floating-point gray pixel
+/// format, so <see cref="PreparePage"/> also reads the frame to write the fewest samples that store it exactly: one gray
+/// sample when the three colors of every pixel are the same numbers (and no ICC profile describes RGB colors), and no
+/// alpha sample when every pixel is opaque. Deflate and LZW strips use the floating-point predictor of TIFF Technical
+/// Note 3, which makes them much smaller.
+/// </para>
 /// </remarks>
 internal sealed class TiffDocumentWriter : IDisposable
 {
@@ -95,6 +103,9 @@ internal sealed class TiffDocumentWriter : IDisposable
 
     private bool IsBigEndian => _encoder.BigEndian;
 
+    /// <summary>Gets a value indicating whether the strips of the current page use the floating-point predictor: floating-point samples compressed with Deflate or LZW.</summary>
+    private bool UsesFloatingPointPredictor => _page.Layout.IsFloatingPoint && _compression is TiffFormat.CompressionAdobeDeflate or TiffFormat.CompressionLzw;
+
     private int OffsetSize => IsBigTiff ? 8 : 4;
 
     /// <summary>Writes the file header. The offset of the first directory is patched when that directory is written.</summary>
@@ -127,12 +138,19 @@ internal sealed class TiffDocumentWriter : IDisposable
     /// </summary>
     /// <param name="frame">The frame of the page.</param>
     /// <param name="pixelFormat">The pixel format of the frame.</param>
+    /// <param name="metadata">The metadata plan of the page: the colors of floating-point pixels described by an ICC profile are never written as gray samples.</param>
     /// <exception cref="UnsupportedImageFeatureException">The layout or the compression cannot store the frame exactly.</exception>
-    public void PreparePage(ImageFrame frame, PixelFormat pixelFormat)
+    public void PreparePage(ImageFrame frame, PixelFormat pixelFormat, MetadataWritePlan metadata)
     {
         ArgumentNullException.ThrowIfNull(frame);
+        ArgumentNullException.ThrowIfNull(metadata);
         var layout = TiffSampleLayout.Create(_encoder, pixelFormat);
         var size = frame.Size;
+        if (layout.IsFloatingPoint)
+        {
+            layout = TiffSampleLayout.ForFloatingPoint(GetFloatingPointSamplesPerPixel(frame, pixelFormat, allowGray: metadata.IccProfile is null));
+        }
+
         if (_compression == TiffFormat.CompressionJpeg)
         {
             if (PixelFormats.GetBitsPerComponent(pixelFormat) > 8)
@@ -143,7 +161,8 @@ internal sealed class TiffDocumentWriter : IDisposable
         }
 
         var prepared = new PreparedPage(frame, pixelFormat, layout);
-        var rejectsAlpha = PixelFormats.HasAlpha(pixelFormat) && !layout.HasAlpha;
+        // The samples of floating-point pixels were chosen to hold them, alpha included
+        var rejectsAlpha = !layout.IsFloatingPoint && PixelFormats.HasAlpha(pixelFormat) && !layout.HasAlpha;
         if (rejectsAlpha || layout.IsBilevel || layout.IsIndexed)
         {
             var colors = layout.IsIndexed ? new Dictionary<ulong, byte>() : null;
@@ -198,7 +217,7 @@ internal sealed class TiffDocumentWriter : IDisposable
         ArgumentNullException.ThrowIfNull(metadata);
         if (_prepared is null || !ReferenceEquals(_prepared.Frame, frame) || _prepared.PixelFormat != pixelFormat)
         {
-            PreparePage(frame, pixelFormat);
+            PreparePage(frame, pixelFormat, metadata);
         }
 
         var prepared = _prepared!;
@@ -240,7 +259,7 @@ internal sealed class TiffDocumentWriter : IDisposable
         }
 
         EnsureBuffer(ref _strip, (int)rowLength * rowsPerStrip);
-        if (!layout.IsBilevel && !layout.IsIndexed && layout.BitsPerSample == 16)
+        if (!layout.IsBilevel && !layout.IsIndexed && (layout.BitsPerSample == 16 || UsesFloatingPointPredictor))
         {
             EnsureBuffer(ref _converted, (int)rowLength);
         }
@@ -439,11 +458,113 @@ internal sealed class TiffDocumentWriter : IDisposable
         }
     }
 
+    /// <summary>
+    /// Reads a frame of floating-point pixels to find the fewest samples that store it exactly: 1 when the three colors of
+    /// every pixel have the same bits and every pixel is opaque, 2 when they have the same bits, 3 when every pixel is
+    /// opaque (its alpha is exactly 1), and 4 otherwise.
+    /// </summary>
+    private static int GetFloatingPointSamplesPerPixel(ImageFrame frame, PixelFormat pixelFormat, bool allowGray)
+    {
+        var size = frame.Size;
+        var isGray = allowGray;
+        var isOpaque = true;
+        using var lease = frame.GetStorage().AcquireLease();
+        for (var y = 0; y < size.Height && (isGray || isOpaque); y++)
+        {
+            var row = lease.GetRowBytes(y)[..(size.Width * PixelFormats.GetBytesPerPixel(pixelFormat))];
+            if (pixelFormat == PixelFormat.RgbaHalf)
+            {
+                var samples = unsafe(MemoryMarshal.Cast<byte, ushort>(row));
+                var one = BitConverter.HalfToUInt16Bits(Half.One);
+                for (var i = 0; i < samples.Length; i += 4)
+                {
+                    isGray &= samples[i] == samples[i + 1] && samples[i] == samples[i + 2];
+                    isOpaque &= samples[i + 3] == one;
+                }
+            }
+            else
+            {
+                var samples = unsafe(MemoryMarshal.Cast<byte, uint>(row));
+                var one = BitConverter.SingleToUInt32Bits(1f);
+                for (var i = 0; i < samples.Length; i += 4)
+                {
+                    isGray &= samples[i] == samples[i + 1] && samples[i] == samples[i + 2];
+                    isOpaque &= samples[i + 3] == one;
+                }
+            }
+        }
+
+        return (isGray ? 1 : 3) + (isOpaque ? 0 : 1);
+    }
+
+    /// <summary>
+    /// Serializes one row of floating-point pixels as 32-bit samples: in the byte order of the file, or as the planes of
+    /// bytes of the floating-point predictor (TIFF Technical Note 3), the most significant byte of every sample first,
+    /// each byte replaced by its difference from the byte <c>SamplesPerPixel</c> positions before it.
+    /// </summary>
+    private void SerializeFloatingPointRow(ReadOnlySpan<byte> source, Span<byte> destination)
+    {
+        var width = _page.Size.Width;
+        var samplesPerPixel = _page.Layout.SamplesPerPixel;
+        var colors = samplesPerPixel <= 2 ? 1 : 3;
+        var predict = UsesFloatingPointPredictor;
+        var bigEndian = predict || IsBigEndian;
+        var samples = predict ? _converted!.Span[..destination.Length] : destination;
+        var isHalf = _page.PixelFormat == PixelFormat.RgbaHalf;
+        var halves = unsafe(MemoryMarshal.Cast<byte, Half>(source));
+        var singles = unsafe(MemoryMarshal.Cast<byte, float>(source));
+        var position = 0;
+        for (var x = 0; x < width; x++)
+        {
+            for (var c = 0; c < samplesPerPixel; c++)
+            {
+                // The colors, then the alpha
+                var component = c < colors ? c : 3;
+                var value = isHalf ? (float)halves[(x * 4) + component] : singles[(x * 4) + component];
+                var bits = BitConverter.SingleToUInt32Bits(value);
+                if (bigEndian)
+                {
+                    BinaryPrimitives.WriteUInt32BigEndian(samples[position..], bits);
+                }
+                else
+                {
+                    BinaryPrimitives.WriteUInt32LittleEndian(samples[position..], bits);
+                }
+
+                position += sizeof(float);
+            }
+        }
+
+        if (!predict)
+            return;
+
+        var count = width * samplesPerPixel;
+        for (var plane = 0; plane < sizeof(float); plane++)
+        {
+            var bytes = destination.Slice(plane * count, count);
+            for (var i = 0; i < count; i++)
+            {
+                bytes[i] = samples[(i * sizeof(float)) + plane];
+            }
+        }
+
+        for (var i = destination.Length - 1; i >= samplesPerPixel; i--)
+        {
+            destination[i] -= destination[i - samplesPerPixel];
+        }
+    }
+
     /// <summary>Converts one frame row to the sample layout of the page and serializes it in the byte order of the file.</summary>
     private void SerializeRow(ReadOnlySpan<byte> source, Span<byte> destination)
     {
         var width = _page.Size.Width;
         var layout = _page.Layout;
+        if (layout.IsFloatingPoint)
+        {
+            SerializeFloatingPointRow(source, destination);
+            return;
+        }
+
         if (layout.IsBilevel)
         {
             // WhiteIsZero: a set bit is a black pixel, which is also what the CCITT compressions code as a black run
@@ -569,8 +690,13 @@ internal sealed class TiffDocumentWriter : IDisposable
             Scalar(TiffFormat.RowsPerStripTag, TiffFieldType.Long, (ulong)_page.RowsPerStrip),
             Array(TiffFormat.StripByteCountsTag, offsetType, _stripByteCounts),
             Scalar(TiffFormat.PlanarConfigurationTag, TiffFieldType.Short, TiffFormat.PlanarChunky),
-            Repeated(TiffFormat.SampleFormatTag, TiffFieldType.Short, TiffFormat.SampleFormatUnsignedInteger, layout.SamplesPerPixel),
+            Repeated(TiffFormat.SampleFormatTag, TiffFieldType.Short, (ulong)layout.SampleFormat, layout.SamplesPerPixel),
         };
+
+        if (UsesFloatingPointPredictor)
+        {
+            fields.Add(Scalar(TiffFormat.PredictorTag, TiffFieldType.Short, TiffFormat.PredictorFloatingPoint));
+        }
 
         if (metadata.Orientation != ExifOrientation.TopLeft)
         {

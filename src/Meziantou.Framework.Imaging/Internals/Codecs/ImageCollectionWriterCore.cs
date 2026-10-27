@@ -74,8 +74,8 @@ internal static class ImageCollectionWriterCore
         if (encoder is TiffEncoder && !seekable)
             throw new ArgumentException("TIFF output requires a seekable destination: a directory stores the offsets of the strips it describes, so the pointer to it is written only once the pages are encoded.", nameof(encoder));
 
-        // Floating-point entries are reduced to 16 bits only with the policy of the encoder (decoded entries are never floating-point)
-        if (encoder.FloatingPointConversion is null)
+        // Floating-point entries are reduced to 16 bits only with the policy of the encoder, unless it stores them
+        if (encoder.FloatingPointConversion is null && !encoder.StoresFloatingPointSamples)
         {
             for (var i = 0; i < collection.Count; i++)
             {
@@ -191,14 +191,14 @@ internal static class ImageCollectionWriterCore
 
     /// <summary>
     /// Gets the image of an entry: the image it owns (borrowed), or a decode of its encoded payload (owned), or the 16-bit
-    /// reduction of a floating-point image (owned, <see cref="ImageEncoder.FloatingPointConversion"/>).
+    /// reduction of a floating-point image that the encoder does not store (owned, <see cref="ImageEncoder.FloatingPointConversion"/>).
     /// </summary>
     [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The reduced image is owned by the returned entry, which the caller disposes.")]
     private static MaterializedEntry Materialize(ImageCollectionEntry entry, ImageConfiguration configuration, ImageEncoder encoder)
     {
         if (entry.OwnedOrNull is { } owned)
         {
-            if (PixelFormats.IsFloatingPoint(owned.PixelFormat))
+            if (PixelFormats.IsFloatingPoint(owned.PixelFormat) && !encoder.StoresFloatingPointSamples)
                 return new MaterializedEntry(owned.CloneAs<Rgba64>(encoder.FloatingPointConversion), ownsImage: true);
 
             return new MaterializedEntry(owned, ownsImage: false);

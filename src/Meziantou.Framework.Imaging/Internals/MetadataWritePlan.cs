@@ -113,7 +113,7 @@ internal sealed class MetadataWritePlan
             return Empty;
 
         // A JPEG 2000 codestream that is not in a JP2 file stores no metadata
-        var capabilities = encoder is Jpeg2000Encoder { Container: Jpeg2000Container.Codestream } ? FormatCapabilities.Get(ImageFormat.Unknown) : FormatCapabilities.Get(format);
+        var capabilities = encoder is Jpeg2000Encoder { Container: Jpeg2000Container.Codestream } ? FormatCapabilities.Get(ImageFormat.Unknown) : FormatCapabilities.Get(format, pixelFormat);
         var context = new PlanContext(format, handling);
 
         IccProfile? icc = null;
@@ -276,6 +276,11 @@ internal sealed class MetadataWritePlan
                 context.Unsupported("linear transfer function (linear-light samples would be read as sRGB)");
             }
         }
+        else if (capabilities.ImpliesLinearTransfer && icc is null)
+        {
+            // The format reads the samples as linear light: writing samples labeled sRGB would relabel them as linear
+            context.Unsupported("sRGB transfer function (floating-point TIFF samples without an ICC profile are read as linear light)");
+        }
 
         // AVIF stores any CICP color description; PNG stores it when no ICC profile is written (its cICP chunk takes
         // precedence over the profile); JPEG XL stores the ones it can enumerate, as its color encoding, when no ICC profile
@@ -383,6 +388,9 @@ internal sealed class MetadataWritePlan
         // TIFF stores the orientation in its own tag, so no EXIF block has to be synthesized for it
         private static readonly FormatCapabilities Tiff = new(icc: true, exif: false, xmp: true, resolution: true, TextSupport.None, nativeOrientation: true);
 
+        // A TIFF page of floating-point samples is linear light, unless an ICC profile describes it
+        private static readonly FormatCapabilities TiffFloatingPoint = new(icc: true, exif: false, xmp: true, resolution: true, TextSupport.None, linearTransfer: true, nativeOrientation: true, impliesLinearTransfer: true);
+
         // AVIF stores the orientation as item properties (irot and imir), the color description in a colr box, and the
         // light levels, the mastering display and the shape of the pixels in clli, mdcv and pasp boxes
         private static readonly FormatCapabilities Avif = new(icc: true, exif: true, xmp: true, resolution: false, TextSupport.None, nativeOrientation: true, cicp: true, contentLightLevel: true, masteringDisplay: true, pixelAspectRatio: true);
@@ -397,8 +405,9 @@ internal sealed class MetadataWritePlan
         // A JP2 file; the orientation is the one of its EXIF data
         private static readonly FormatCapabilities Jp2 = new(icc: true, exif: true, xmp: true, resolution: true, TextSupport.None);
 
-        private FormatCapabilities(bool icc, bool exif, bool xmp, bool resolution, TextSupport text, bool linearTransfer = false, bool nativeOrientation = false, bool cicp = false, bool enumeratedCicp = false, bool contentLightLevel = false, bool masteringDisplay = false, bool pixelAspectRatio = false, bool cicpWithoutIcc = false)
+        private FormatCapabilities(bool icc, bool exif, bool xmp, bool resolution, TextSupport text, bool linearTransfer = false, bool nativeOrientation = false, bool cicp = false, bool enumeratedCicp = false, bool contentLightLevel = false, bool masteringDisplay = false, bool pixelAspectRatio = false, bool cicpWithoutIcc = false, bool impliesLinearTransfer = false)
         {
+            ImpliesLinearTransfer = impliesLinearTransfer;
             CicpWithoutIcc = cicpWithoutIcc;
             ContentLightLevel = contentLightLevel;
             MasteringDisplay = masteringDisplay;
@@ -433,6 +442,12 @@ internal sealed class MetadataWritePlan
 
         /// <summary>Gets a value indicating whether the format can declare linear-light samples (QOI colorspace 1).</summary>
         public bool LinearTransfer { get; }
+
+        /// <summary>
+        /// Gets a value indicating whether the samples are read as linear light when no ICC profile describes them (the
+        /// floating-point samples of TIFF), so that samples labeled sRGB cannot be stored without being relabeled.
+        /// </summary>
+        public bool ImpliesLinearTransfer { get; }
 
         /// <summary>
         /// Gets a value indicating whether the format stores the orientation in a field of its own (the TIFF <c>Orientation</c>
@@ -471,6 +486,13 @@ internal sealed class MetadataWritePlan
         public bool HasUniqueTextKeywords => Text == TextSupport.AniInfo;
 
         private TextSupport Text { get; }
+
+        /// <summary>Gets the capabilities of a format for the pixels it writes.</summary>
+        /// <param name="format">The output format.</param>
+        /// <param name="pixelFormat">The pixel format of the written frames, or <see langword="null"/> when unknown.</param>
+        /// <returns>The capabilities.</returns>
+        public static FormatCapabilities Get(ImageFormat format, PixelFormat? pixelFormat)
+            => format == ImageFormat.Tiff && pixelFormat is { } written && PixelFormats.IsFloatingPoint(written) ? TiffFloatingPoint : Get(format);
 
         public static FormatCapabilities Get(ImageFormat format) => format switch
         {

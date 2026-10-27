@@ -141,6 +141,15 @@ internal static class DefaultPixelFormats
     /// </returns>
     public static PixelFormat ForTiff(bool isGrayscale, bool hasAlpha, bool is16Bit) => ForPnm(isGrayscale, hasAlpha, is16Bit);
 
+    /// <summary>Selects the default pixel format of one TIFF page of floating-point samples (grayscale or RGB, with or without alpha).</summary>
+    /// <param name="bitsPerSample">The number of bits of a sample: 16 (half precision), 24 or 32.</param>
+    /// <returns>
+    /// <see cref="PixelFormat.RgbaHalf"/> for half-precision samples and <see cref="PixelFormat.RgbaFloat"/> for the others,
+    /// which it stores exactly (the library has no floating-point gray format, so gray samples are repeated in the three
+    /// colors, and samples without alpha are opaque).
+    /// </returns>
+    public static PixelFormat ForTiffFloatingPoint(int bitsPerSample) => bitsPerSample == 16 ? PixelFormat.RgbaHalf : PixelFormat.RgbaFloat;
+
     /// <summary>Selects the default pixel format of one DIB-backed ICO or CUR representation.</summary>
     /// <param name="hasMask">Whether the entry stores an AND mask or an alpha channel.</param>
     /// <returns><see cref="PixelFormat.Rgba32"/> when transparency can be expressed, otherwise <see cref="PixelFormat.Rgb24"/>.</returns>

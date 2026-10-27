@@ -260,6 +260,10 @@ public sealed class BenchmarkWorkloadTests
         { ResamplingFilter.Bilinear, ResizeWorkingSpace.Encoded, 80, 45 },
         { ResamplingFilter.Bicubic, ResizeWorkingSpace.Encoded, 80, 45 },
         { ResamplingFilter.Lanczos3, ResizeWorkingSpace.Encoded, 80, 45 },
+        { ResamplingFilter.Box, ResizeWorkingSpace.Encoded, 80, 45 },
+        { ResamplingFilter.MitchellNetravali, ResizeWorkingSpace.Encoded, 80, 45 },
+        { ResamplingFilter.Lanczos8, ResizeWorkingSpace.Encoded, 80, 45 },
+        { ResamplingFilter.MitchellNetravali, ResizeWorkingSpace.Encoded, 360, 203 },
         { ResamplingFilter.Bicubic, ResizeWorkingSpace.LinearSrgb, 80, 45 },
         { ResamplingFilter.Bicubic, ResizeWorkingSpace.Encoded, 360, 203 },
     };
@@ -282,8 +286,12 @@ public sealed class BenchmarkWorkloadTests
                 {
                     ResamplingFilter.NearestNeighbor => ReferenceKernel.Nearest,
                     ResamplingFilter.Bilinear => ReferenceKernel.Triangle,
+                    ResamplingFilter.Bicubic => ReferenceKernel.CatmullRom,
                     ResamplingFilter.Lanczos3 => ReferenceKernel.Lanczos3,
-                    _ => ReferenceKernel.CatmullRom,
+                    ResamplingFilter.Box => ReferenceKernel.Box,
+                    ResamplingFilter.MitchellNetravali => ReferenceKernel.MitchellNetravali,
+                    ResamplingFilter.Lanczos8 => ReferenceKernel.Lanczos8,
+                    _ => throw new ArgumentOutOfRangeException(nameof(filter)),
                 };
 
                 var reference = ReferenceResampler.Resize(ImageSnapshots.CaptureFrame(source.Frames[0]), new ReferenceResizeOptions(width, height, ReferenceResizeMode.Stretch, kernel, Linear: workingSpace == ResizeWorkingSpace.LinearSrgb));

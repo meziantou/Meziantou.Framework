@@ -92,4 +92,32 @@ internal readonly record struct ResampleAxis(int SourceLength, int OutputLength,
         var (quotient, remainder) = Int128.DivRem(numerator, Denominator);
         return (double)quotient + ((double)remainder / Denominator) - 0.5;
     }
+
+    /// <summary>
+    /// Gets the source pixels that a box filter averages for output pixel <paramref name="index"/>, computed exactly: those
+    /// whose center <c>i + 1/2</c> lies in <c>(u(d) - h, u(d) + h]</c>, with the half-width <c>h = max(1/2, 1 / (2s))</c> (the
+    /// kernel radius 1/2 times <see cref="FilterScale"/>). When downsampling, the interval is the footprint of the output pixel;
+    /// when upsampling, the range is the single pixel <see cref="GetNearestIndex"/> selects. The range is never empty: the
+    /// interval is at least one pixel long. It is not clamped to the source.
+    /// </summary>
+    public (long Low, long High) GetBoxContributors(int index)
+    {
+        // With W = max(Denominator, 2 Step), the interval is (L, L + 2W] / (2 Denominator) with
+        // L = 2 Offset + (4d + 2) Step - W, and pixel i contributes when L < (2i + 1) Denominator <= L + 2W
+        var width = Int128.Max(Denominator, 2 * (Int128)Step);
+        var low = (2 * Offset) + ((4 * (Int128)index) + 2) * Step - width;
+        var high = low + (2 * width);
+
+        // 2i + 1 > floor(L / Denominator) and 2i + 1 <= floor(H / Denominator)
+        var first = FloorDivide(low, Denominator);
+        var last = FloorDivide(high, Denominator);
+        return ((long)-FloorDivide(-first, 2), (long)FloorDivide(last - 1, 2));
+    }
+
+    private static Int128 FloorDivide(Int128 value, Int128 divisor)
+    {
+        Debug.Assert(divisor > 0);
+        var (quotient, remainder) = Int128.DivRem(value, divisor);
+        return remainder < 0 ? quotient - 1 : quotient;
+    }
 }

@@ -2377,7 +2377,12 @@ public void Decode(string id)
   with `TestHarness/Resampling/ReferenceResampler`, an independent high-precision implementation of the resize contract
   (exact rational geometry, decimal kernels and
   sums). Generic tool resize output (FFmpeg, ImageMagick) is not an oracle: their pixel-center, edge, alpha and rounding
-  conventions differ. No resized reference files are stored.
+  conventions differ. No resized reference files are stored. The kernels were cross-checked once, outside the test suite,
+  against ImageMagick 7.1.2-15 Q16-HDRI (`alpine:3.22`, `magick in.png -filter <name> -resize WxH! -depth 16`) on a
+  64x48 16-bit plasma with hard-edged shapes, at 24x18, 32x24 and 100x75: every output pixel whose support lies inside the
+  source was within one unit of 16 bits, for every filter but nearest neighbor (box: identical everywhere). Near the edges,
+  ImageMagick renormalizes the weights of the pixels inside the image instead of repeating the edge pixel (up to 6.4 units
+  of 8 bits apart).
 - Convolution tests (`Processing.Tests/Conformance/ConvolutionGoldenTests`) do the same with
   `TestHarness/Convolution/ReferenceConvolver`, an independent implementation of the convolution contract:
   a direct two-dimensional decimal sum per output

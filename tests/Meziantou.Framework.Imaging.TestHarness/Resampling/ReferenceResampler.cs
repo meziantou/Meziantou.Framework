@@ -165,6 +165,10 @@ public static class ReferenceResampler
     /// <returns>The kernel value.</returns>
     public static decimal Kernel(ReferenceKernel kernel, decimal x)
     {
+        // The box is half-open: a center on a boundary belongs to the higher pixel
+        if (kernel == ReferenceKernel.Box)
+            return x > -0.5m && x <= 0.5m ? 1 : 0;
+
         x = Math.Abs(x);
         switch (kernel)
         {
@@ -178,22 +182,66 @@ public static class ReferenceResampler
 
                 return x < 2 ? (-0.5m * x * x * x) + (2.5m * x * x) - (4 * x) + 2 : 0;
 
+            case ReferenceKernel.Hermite:
+                return x < 1 ? Cubic(x, 0, 0) : 0;
+
+            case ReferenceKernel.MitchellNetravali:
+                return Cubic(x, 1 / 3m, 1 / 3m);
+
+            case ReferenceKernel.Robidoux:
+            {
+                var b = 12 / (19 + (9 * Sqrt2));
+                return Cubic(x, b, (1 - b) / 2);
+            }
+
+            case ReferenceKernel.RobidouxSharp:
+            {
+                var b = 6 / (13 + (7 * Sqrt2));
+                return Cubic(x, b, (1 - b) / 2);
+            }
+
+            case ReferenceKernel.Spline:
+                return Cubic(x, 1, 0);
+
+            case ReferenceKernel.Lanczos2:
             case ReferenceKernel.Lanczos3:
+            case ReferenceKernel.Lanczos5:
+            case ReferenceKernel.Lanczos8:
+            {
+                var lobes = Radius(kernel);
                 if (x == 0)
                     return 1;
 
-                return x < 3 ? 3 * DecimalMath.SinPi(x) * DecimalMath.SinPi(x / 3) / (DecimalMath.Pi * DecimalMath.Pi * x * x) : 0;
+                return x < lobes ? lobes * DecimalMath.SinPi(x) * DecimalMath.SinPi(x / lobes) / (DecimalMath.Pi * DecimalMath.Pi * x * x) : 0;
+            }
 
             default:
                 throw new ArgumentOutOfRangeException(nameof(kernel));
         }
     }
 
+    private const decimal Sqrt2 = 1.4142135623730950488016887242m;
+
+    /// <summary>The cubic of Mitchell and Netravali (SIGGRAPH 1988) at <c>x &gt;= 0</c>, written term by term.</summary>
+    private static decimal Cubic(decimal x, decimal b, decimal c)
+    {
+        if (x < 1)
+            return (((12 - (9 * b) - (6 * c)) * x * x * x) + ((-18 + (12 * b) + (6 * c)) * x * x) + (6 - (2 * b))) / 6;
+
+        if (x < 2)
+            return (((-b - (6 * c)) * x * x * x) + (((6 * b) + (30 * c)) * x * x) + (((-12 * b) - (48 * c)) * x) + (8 * b) + (24 * c)) / 6;
+
+        return 0;
+    }
+
     private static decimal Radius(ReferenceKernel kernel) => kernel switch
     {
-        ReferenceKernel.Triangle => 1,
-        ReferenceKernel.CatmullRom => 2,
+        ReferenceKernel.Box => 0.5m,
+        ReferenceKernel.Triangle or ReferenceKernel.Hermite => 1,
+        ReferenceKernel.CatmullRom or ReferenceKernel.MitchellNetravali or ReferenceKernel.Robidoux or ReferenceKernel.RobidouxSharp or ReferenceKernel.Spline or ReferenceKernel.Lanczos2 => 2,
         ReferenceKernel.Lanczos3 => 3,
+        ReferenceKernel.Lanczos5 => 5,
+        ReferenceKernel.Lanczos8 => 8,
         _ => throw new ArgumentOutOfRangeException(nameof(kernel)),
     };
 
@@ -273,7 +321,7 @@ public static class ReferenceResampler
         var raw = new List<(int Index, decimal Weight)>();
         for (var i = (int)decimal.Floor(center - reach) - 2; i <= (int)decimal.Ceiling(center + reach) + 2; i++)
         {
-            raw.Add((i, Kernel(kernel, (i - center) / scale)));
+            raw.Add((i, kernel == ReferenceKernel.Box ? BoxWeight(axis, index, i) : Kernel(kernel, (i - center) / scale)));
         }
 
         var sum = raw.Sum(item => item.Weight);
@@ -285,6 +333,18 @@ public static class ReferenceResampler
         }
 
         return [.. merged.Select(item => (item.Key, item.Value))];
+    }
+
+    /// <summary>
+    /// The box kernel with exact fractions: 1 when the center <c>i + 1/2</c> of source pixel <paramref name="i"/> lies in
+    /// <c>(u - h, u + h]</c>, with <c>u</c> the center of the output pixel and <c>h = max(1, 1 / scale) / 2</c>.
+    /// </summary>
+    private static decimal BoxWeight(Axis axis, int index, int i)
+    {
+        var center = Center(axis, index);
+        var half = (axis.Scale >= 1 ? 1 : 1 / axis.Scale) / 2;
+        var pixel = new Fraction((2 * i) + 1, 2);
+        return pixel > center - half && pixel <= center + half ? 1 : 0;
     }
 
     /// <summary>Working samples: encoded values or linear light, premultiplied by alpha (0 to max) when present.</summary>

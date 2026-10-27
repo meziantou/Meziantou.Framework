@@ -7,6 +7,8 @@ namespace Meziantou.Framework.PublicApiGenerator;
 /// All the custom attributes found in metadata are exposed, including the ones that the C# formatter does not display
 /// (e.g. <c>NullableAttribute</c>, <c>EditorBrowsableAttribute</c> or <c>CompilerGeneratedAttribute</c>).
 /// Pseudo-attributes, such as <c>SerializableAttribute</c> or <c>InAttribute</c>, are stored as metadata flags and are not exposed.
+/// The members named by <c>MemberNotNullAttribute</c> and <c>MemberNotNullWhenAttribute</c> that are not visible from outside the assembly are removed,
+/// and the attribute is not exposed when it names only such members.
 /// </remarks>
 public sealed class PublicApiAttribute
 {

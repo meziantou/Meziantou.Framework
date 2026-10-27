@@ -16,6 +16,8 @@ internal static class PublicApiModelBuilder
     private const string IUnionInterfaceFullName = "System.Runtime.CompilerServices.IUnion";
     private const string MemorySafetyRulesAttributeFullName = "System.Runtime.CompilerServices.MemorySafetyRulesAttribute";
     private const string RequiresUnsafeAttributeFullName = "System.Diagnostics.CodeAnalysis.RequiresUnsafeAttribute";
+    private const string MemberNotNullAttributeFullName = "System.Diagnostics.CodeAnalysis.MemberNotNullAttribute";
+    private const string MemberNotNullWhenAttributeFullName = "System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute";
     private const GenericParameterAttributes AllowByRefLikeGenericParameterConstraint = (GenericParameterAttributes)0x20;
 
     private static readonly HashSet<string> IrrelevantAttributes = new(StringComparer.Ordinal)
@@ -387,7 +389,7 @@ internal static class PublicApiModelBuilder
     private static string BuildProperty(PropertyInfo property, int indentationLevel)
     {
         var sb = new StringBuilder();
-        AppendAttributes(sb, property.CustomAttributes, indentationLevel);
+        AppendAttributes(sb, property.CustomAttributes, indentationLevel, property.DeclaringType);
 
         // The compiler moves the flow analysis attributes of a property to its accessors
         var propertyAttributes = property.GetCustomAttributesData();
@@ -592,7 +594,7 @@ internal static class PublicApiModelBuilder
         var sb = new StringBuilder();
         var isDestructor = IsDestructor(method);
         var isExplicitInterfaceImplementation = IsExplicitInterfaceImplementation(method);
-        AppendAttributes(sb, method.CustomAttributes, indentationLevel);
+        AppendAttributes(sb, method.CustomAttributes, indentationLevel, method.DeclaringType);
         AppendReturnAttributes(sb, method, indentationLevel);
 
         var isExtensionMethod = IsExtensionMethod(method);
@@ -2042,9 +2044,13 @@ internal static class PublicApiModelBuilder
         return 0;
     }
 
-    private static void AppendAttributes(StringBuilder sb, IEnumerable<CustomAttributeData> attributes, int indentationLevel)
+    /// <param name="sb">The builder to append the attributes to.</param>
+    /// <param name="attributes">The attributes to append.</param>
+    /// <param name="indentationLevel">The indentation level of the attributes.</param>
+    /// <param name="declaringType">The type that declares the method or property the attributes are applied to. When set, the members named by <c>MemberNotNull</c> and <c>MemberNotNullWhen</c> that are not visible from outside the assembly are removed.</param>
+    private static void AppendAttributes(StringBuilder sb, IEnumerable<CustomAttributeData> attributes, int indentationLevel, Type? declaringType = null)
     {
-        foreach (var attribute in SortAttributes(attributes.Where(ShouldIncludeAttribute)))
+        foreach (var attribute in SortAttributes(attributes.Where(ShouldIncludeAttribute), declaringType))
         {
             AppendIndentedLine(sb, indentationLevel, "[" + attribute + "]");
         }
@@ -2126,11 +2132,75 @@ internal static class PublicApiModelBuilder
     }
 
     // The attributes without the brackets, sorted as the metadata reader does, so the output does not depend on the order of the declarations
-    private static IEnumerable<string> SortAttributes(IEnumerable<CustomAttributeData> attributes)
+    private static IEnumerable<string> SortAttributes(IEnumerable<CustomAttributeData> attributes, Type? declaringType = null)
     {
         return attributes
-            .Select(static attribute => BuildAttributeName(attribute.AttributeType) + BuildAttributeArguments(attribute))
+            .Select(attribute => BuildAttribute(attribute, declaringType))
+            .OfType<string>()
             .Order(PublicApiOrdering.AttributeComparer);
+    }
+
+    private static string? BuildAttribute(CustomAttributeData attribute, Type? declaringType)
+    {
+        if (declaringType is null || attribute.AttributeType.FullName is not (MemberNotNullAttributeFullName or MemberNotNullWhenAttributeFullName) || attribute.ConstructorArguments.Count == 0)
+            return BuildAttributeName(attribute.AttributeType) + BuildAttributeArguments(attribute);
+
+        // MemberNotNull and MemberNotNullWhen often name private fields, which are not part of the public API
+        var membersArgument = attribute.ConstructorArguments[^1];
+        string formattedMembers;
+        switch (membersArgument.Value)
+        {
+            case string memberName:
+                if (IsNonPublicFieldOrProperty(declaringType, memberName))
+                    return null;
+
+                formattedMembers = FormatAttributeArgument(membersArgument);
+                break;
+
+            case IReadOnlyCollection<CustomAttributeTypedArgument> memberNames:
+                var publicMemberNames = memberNames.Where(argument => argument.Value is not string name || !IsNonPublicFieldOrProperty(declaringType, name)).ToArray();
+                if (publicMemberNames.Length == 0)
+                    return null;
+
+                formattedMembers = FormatAttributeArgument(new CustomAttributeTypedArgument(membersArgument.ArgumentType, publicMemberNames));
+                break;
+
+            default:
+                return BuildAttributeName(attribute.AttributeType) + BuildAttributeArguments(attribute);
+        }
+
+        var values = attribute.ConstructorArguments.Take(attribute.ConstructorArguments.Count - 1).Select(FormatAttributeArgument).Append(formattedMembers);
+        return BuildAttributeName(attribute.AttributeType) + "(" + string.Join(", ", values) + ")";
+    }
+
+    // The member is searched in the type and its base types declared in the same assembly, as the metadata reader does.
+    // A member that is not found, such as a member of a base type declared in another assembly, is considered visible.
+    private static bool IsNonPublicFieldOrProperty(Type declaringType, string memberName)
+    {
+        const BindingFlags Flags = BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
+        for (var type = declaringType; type is not null && type.Assembly == declaringType.Assembly; type = type.BaseType)
+        {
+            var members = type.GetMember(memberName, MemberTypes.Field | MemberTypes.Property, Flags);
+            if (members.Length > 0)
+                return !members.Any(IsVisibleFieldOrProperty);
+        }
+
+        return false;
+
+        static bool IsVisibleFieldOrProperty(MemberInfo member)
+        {
+            return member switch
+            {
+                FieldInfo field => IsExternallyVisible(field),
+                PropertyInfo property => IsVisibleAccessor(property.GetMethod) || IsVisibleAccessor(property.SetMethod),
+                _ => false,
+            };
+        }
+
+        static bool IsVisibleAccessor(MethodInfo? accessor)
+        {
+            return accessor is not null && (accessor.IsPublic || accessor.IsFamily || accessor.IsFamilyOrAssembly);
+        }
     }
 
     private static string BuildAttributeName(Type attributeType)

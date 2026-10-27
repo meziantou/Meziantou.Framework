@@ -196,7 +196,8 @@ public sealed class ResizeGoldenTests
 
     internal static IEnumerable<(GoldenFixture Fixture, PixelFormat Format)> CaseList()
     {
-        foreach (var fixture in GoldenCorpus.Default.Fixtures.Where(fixture => fixture.IsValid))
+        // The references are integer pixels: an OpenEXR fixture only has floating-point ones
+        foreach (var fixture in GoldenCorpus.Default.Fixtures.Where(fixture => fixture.IsValid && !fixture.CanonicalLayout.IsFloatingPoint))
         {
             var sixteenBit = fixture.CanonicalLayout == RawPixelLayout.Rgba16Le;
             yield return (fixture, sixteenBit ? PixelFormat.Rgba64 : PixelFormat.Rgba32);

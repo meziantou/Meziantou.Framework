@@ -36,8 +36,14 @@ public sealed class RawPixelLayout
     /// <summary>Gets the 16-bit little-endian grayscale + alpha layout.</summary>
     public static RawPixelLayout GrayAlpha16Le { get; } = new("graya16le", "YA", 2);
 
+    /// <summary>
+    /// Gets the 32-bit floating-point little-endian R, G, B, A layout (canonical for <c>RgbaHalf</c> and <c>RgbaFloat</c>
+    /// images: a half converts to a float exactly). A sample is the bits of its float: comparisons are exact.
+    /// </summary>
+    public static RawPixelLayout RgbaF32Le { get; } = new("rgbaf32le", "RGBA", 4);
+
     /// <summary>Gets all the defined layouts.</summary>
-    public static IReadOnlyList<RawPixelLayout> All { get; } = [Rgba8, Rgba16Le, Rgb8, Gray8, Gray16Le, GrayAlpha8, GrayAlpha16Le];
+    public static IReadOnlyList<RawPixelLayout> All { get; } = [Rgba8, Rgba16Le, Rgb8, Gray8, Gray16Le, GrayAlpha8, GrayAlpha16Le, RgbaF32Le];
 
     /// <summary>Gets the manifest name of the layout (e.g. <c>rgba16le</c>).</summary>
     public string Name { get; }
@@ -48,7 +54,7 @@ public sealed class RawPixelLayout
     /// <summary>Gets the number of channels.</summary>
     public int ChannelCount => Channels.Length;
 
-    /// <summary>Gets the number of bytes per sample (1 or 2).</summary>
+    /// <summary>Gets the number of bytes per sample (1 or 2, 4 for floating-point samples).</summary>
     public int BytesPerSample { get; }
 
     /// <summary>Gets the number of bytes per pixel.</summary>
@@ -63,8 +69,16 @@ public sealed class RawPixelLayout
     /// <summary>Gets a value indicating whether the layout has R, G and B channels.</summary>
     public bool IsColor => ChannelCount >= 3;
 
-    /// <summary>Gets the maximum sample value (255 or 65535).</summary>
-    public int MaxSampleValue => BytesPerSample == 1 ? byte.MaxValue : ushort.MaxValue;
+    /// <summary>Gets a value indicating whether the samples are 32-bit floats, read and written as their bits.</summary>
+    public bool IsFloatingPoint => BytesPerSample == 4;
+
+    /// <summary>Gets the maximum sample value (255 or 65535; the bits of 1.0 for floating-point samples, an opaque alpha).</summary>
+    public int MaxSampleValue => BytesPerSample switch
+    {
+        1 => byte.MaxValue,
+        2 => ushort.MaxValue,
+        _ => BitConverter.SingleToInt32Bits(1f),
+    };
 
     /// <summary>Gets the factor converting an 8-bit-scale error to this layout's scale (1 or 257).</summary>
     public int ScaleFrom8Bit => BytesPerSample == 1 ? 1 : 257;
@@ -105,10 +119,12 @@ public sealed class RawPixelLayout
     /// <summary>Formats a sample for diagnostics, keeping full numeric detail (hexadecimal included for 16-bit samples).</summary>
     /// <param name="value">The sample.</param>
     /// <returns>The formatted sample.</returns>
-    public string FormatSample(int value)
-        => BytesPerSample == 1
-            ? value.ToString(CultureInfo.InvariantCulture)
-            : string.Create(CultureInfo.InvariantCulture, $"{value} (0x{value:X4})");
+    public string FormatSample(int value) => BytesPerSample switch
+    {
+        1 => value.ToString(CultureInfo.InvariantCulture),
+        2 => string.Create(CultureInfo.InvariantCulture, $"{value} (0x{value:X4})"),
+        _ => string.Create(CultureInfo.InvariantCulture, $"{BitConverter.Int32BitsToSingle(value):R} (0x{value:X8})"),
+    };
 
     /// <inheritdoc/>
     public override string ToString() => Name;

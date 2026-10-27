@@ -1046,6 +1046,24 @@ internal static class Examples
     }
     #endregion
 
+    /// <summary>OpenEXR: floating-point pixels in and out, and the integer version of a high dynamic range image.</summary>
+    #region Imaging_OpenExr
+    public static Image<Rgba32> ConvertOpenExr(string exrPath, string pizPath)
+    {
+        // An OpenEXR file loads as RgbaHalf (half samples) or RgbaFloat (float or 32-bit integer samples), in linear light
+        using var hdr = Image.Load(exrPath);
+
+        // Lossless: the samples are written as they are, values above 1 included. PIZ is often the smallest
+        hdr.Save(pizPath, new OpenExrEncoder { Compression = OpenExrCompression.Piz });
+
+        // Integer pixels cannot hold the highlights: a typed load compresses them with a tone mapping
+        return Image.Load<Rgba32>(exrPath, new ImageDecodeOptions
+        {
+            Conversion = new PixelConversionOptions { ToneMapping = new HdrToneMappingOptions() },
+        });
+    }
+    #endregion
+
     /// <summary>Progressive reading: the renderings of a frame before it is complete.</summary>
     #region Imaging_ProgressiveRead
     public static int ShowWhileReading(Stream input, Action<Image<Rgba32>, FrameRefinement> show)

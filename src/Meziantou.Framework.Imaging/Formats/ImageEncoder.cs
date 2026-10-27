@@ -30,8 +30,8 @@ public abstract class ImageEncoder
 
     /// <summary>
     /// Gets the conversion that reduces floating-point pixels (<see cref="RgbaFloat"/>, <see cref="RgbaHalf"/>) to 16-bit
-    /// integer ones (<see cref="Rgba64"/>) before they are encoded, or <see langword="null"/> (the default) to reject them:
-    /// no output format of this version stores floating-point samples.
+    /// integer ones (<see cref="Rgba64"/>) before they are encoded, or <see langword="null"/> (the default) to reject them.
+    /// OpenEXR stores floating-point samples: <see cref="OpenExrEncoder"/> ignores it.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -116,6 +116,9 @@ public abstract class ImageEncoder
 
         if (extension.Equals(".j2k", StringComparison.OrdinalIgnoreCase) || extension.Equals(".j2c", StringComparison.OrdinalIgnoreCase) || extension.Equals(".jpc", StringComparison.OrdinalIgnoreCase))
             return new Jpeg2000Encoder { Container = Jpeg2000Container.Codestream };
+
+        if (extension.Equals(".exr", StringComparison.OrdinalIgnoreCase))
+            return new OpenExrEncoder();
 
         // The files of these extensions are read, never written: the extended file format, and the high-throughput block coder
         if (extension.Equals(".jpx", StringComparison.OrdinalIgnoreCase) || extension.Equals(".jpf", StringComparison.OrdinalIgnoreCase))

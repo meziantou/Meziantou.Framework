@@ -121,21 +121,14 @@ public sealed class ResourceLimitBoundaryTests
                 Assert.Equal(selected, image.Frames.Count);
             }
 
-            using (var reader = Image.OpenReader<Rgba64>(new MemoryStream(data), new ImageReaderOptions { Conversion = Conversion, FrameLimit = frameLimit, Configuration = new ImageConfiguration { Limits = limits } }))
-            {
-                Assert.Equal(selected, ReadFrames(reader));
-            }
+            Assert.Equal(selected, ReadFrames(data, new ImageReaderOptions { Conversion = Conversion, FrameLimit = frameLimit, Configuration = new ImageConfiguration { Limits = limits } }));
 
             var tight = Limits(ImageResourceLimitKind.Frames, selected + poster - 1 is var value && value > 0 ? value : 1);
             if (selected + poster - 1 > 0)
             {
                 var exception = Assert.Throws<ImageResourceLimitException>(() => Image.Load(data, new ImageDecodeOptions { FrameLimit = frameLimit, Configuration = new ImageConfiguration { Limits = tight } }).Dispose());
                 AssertLimitException(exception, ImageResourceLimitKind.Frames, selected + poster - 1, selected + poster);
-                var readerException = Assert.Throws<ImageResourceLimitException>(() =>
-                {
-                    using var reader = Image.OpenReader<Rgba64>(new MemoryStream(data), new ImageReaderOptions { Conversion = Conversion, FrameLimit = frameLimit, Configuration = new ImageConfiguration { Limits = tight } });
-                    ReadFrames(reader);
-                });
+                var readerException = Assert.Throws<ImageResourceLimitException>(() => ReadFrames(data, new ImageReaderOptions { Conversion = Conversion, FrameLimit = frameLimit, Configuration = new ImageConfiguration { Limits = tight } }));
                 AssertLimitException(readerException, ImageResourceLimitKind.Frames, selected + poster - 1, selected + poster);
             }
         }
@@ -143,7 +136,21 @@ public sealed class ResourceLimitBoundaryTests
 
     public static TheoryData<string> AnimationIds => [.. CorpusScope.GetIds(FixtureKinds.Valid).Where(id => GoldenCorpus.Default.Get(id) is { Entry.DecodeOptions: null, Expected.FrameCount: > 1 })];
 
-    private static int ReadFrames(ImageReader<Rgba64> reader)
+    /// <summary>Reads every frame of an input with a reader of the pixel type of the suites (<see cref="SuiteReaders"/>).</summary>
+    private static int ReadFrames(byte[] data, ImageReaderOptions options)
+    {
+        if (SuiteReaders.ReadsFloats(data))
+        {
+            using var floats = Image.OpenReader<RgbaFloat>(new MemoryStream(data), options);
+            return ReadFrames(floats);
+        }
+
+        using var reader = Image.OpenReader<Rgba64>(new MemoryStream(data), options);
+        return ReadFrames(reader);
+    }
+
+    private static int ReadFrames<TPixel>(ImageReader<TPixel> reader)
+        where TPixel : unmanaged
     {
         if (reader.Info.HasPosterFrame == true)
         {
@@ -226,11 +233,7 @@ public sealed class ResourceLimitBoundaryTests
                     Image.Load(data, new ImageDecodeOptions { Configuration = configuration }).Dispose();
                     break;
                 case "reader":
-                    using (var reader = Image.OpenReader<Rgba64>(new MemoryStream(data), new ImageReaderOptions { Configuration = configuration, Conversion = Conversion }))
-                    {
-                        ReadFrames(reader);
-                    }
-
+                    ReadFrames(data, new ImageReaderOptions { Configuration = configuration, Conversion = Conversion });
                     break;
                 default:
                     Image.Identify(data, new ImageIdentifyOptions { Configuration = configuration, Mode = context == "identify-full" ? ImageIdentifyMode.FullScan : ImageIdentifyMode.Header });

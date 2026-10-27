@@ -36,6 +36,9 @@ const string Usage = """
         jp2           JPEG 2000 fixtures: codestreams and JP2 files, lossless and lossy, the high-throughput block coder,
                       malformed, unsupported and over-limit files (opj_compress and opj_decompress of OpenJPEG,
                       ojph_compress and ojph_expand of OpenJPH, and the ffmpeg of the pinned meziantou/prebuilt release)
+        exr           OpenEXR fixtures: every compression, sample type, tiles and levels, windows, line orders and
+                      chromaticities, malformed, unsupported and over-limit files (exr-from-raw and exr-to-raw, built with
+                      OpenEXR, and the ffmpeg of the pinned meziantou/prebuilt release; the sample images of OpenEXR)
         icc           ICC profiles and color conversion vectors (transicc of LittleCMS; any OS)
         icc-builtin   the source of the CMYK profile provided by the library, transcribed from the committed corpus
                       (no tool; any OS)
@@ -70,6 +73,7 @@ const string Usage = """
                                   required)
         --language-subtags <file> the language subtag registry of IANA (language-tags only, required)
         --unicode-data <file>     the file UnicodeData.txt of the pinned version of Unicode (arabic-forms only, required)
+        --openexr-images <dir>    the pinned checkout of AcademySoftwareFoundation/openexr-images (exr only, required)
         --output <directory>      generate into this new or empty directory and keep it (to inspect the output)
     """;
 
@@ -83,6 +87,7 @@ string? languageRegistry = null;
 string? iso639 = null;
 string? languageSubtags = null;
 string? unicodeData = null;
+string? openExrImages = null;
 string? output = null;
 for (var i = 0; i < args.Length; i++)
 {
@@ -118,6 +123,9 @@ for (var i = 0; i < args.Length; i++)
         case "--unicode-data" when i + 1 < args.Length:
             unicodeData = args[++i];
             break;
+        case "--openexr-images" when i + 1 < args.Length:
+            openExrImages = args[++i];
+            break;
         case "--output" when i + 1 < args.Length:
             output = args[++i];
             break;
@@ -131,7 +139,7 @@ for (var i = 0; i < args.Length; i++)
     }
 }
 
-var options = new GeneratorOptions(write, acceptToolVersions, qoiHeader, output, iccProfiles, fonts, languageRegistry, iso639, languageSubtags, unicodeData);
+var options = new GeneratorOptions(write, acceptToolVersions, qoiHeader, output, iccProfiles, fonts, languageRegistry, iso639, languageSubtags, unicodeData, openExrImages);
 try
 {
     switch (generator)
@@ -166,6 +174,8 @@ try
             return JxlCorpus.Run(options);
         case "jp2":
             return Jp2Corpus.Run(options);
+        case "exr":
+            return ExrCorpus.Run(options);
         case "icc":
             if (iccProfiles is null)
             {

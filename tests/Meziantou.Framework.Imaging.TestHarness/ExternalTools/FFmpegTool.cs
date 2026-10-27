@@ -194,7 +194,7 @@ public sealed partial class FFmpegTool
     /// frame-rate conversion, and verifies the byte count.
     /// </summary>
     /// <param name="inputPath">The encoded file.</param>
-    /// <param name="pixelFormat">The explicit ffmpeg raw pixel format (<c>rgba</c>, <c>rgba64le</c>, <c>gray</c>, <c>gray16le</c>, <c>rgb24</c>, <c>rgb565le</c>, <c>rgb555le</c>).</param>
+    /// <param name="pixelFormat">The explicit ffmpeg raw pixel format (<c>rgba</c>, <c>rgba64le</c>, <c>gray</c>, <c>gray16le</c>, <c>rgb24</c>, <c>rgb565le</c>, <c>rgb555le</c>, and the planar floats <c>gbrapf32le</c>, <c>gbrapf16le</c> and <c>grayf32le</c>).</param>
     /// <param name="width">The expected width.</param>
     /// <param name="height">The expected height.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
@@ -231,6 +231,9 @@ public sealed partial class FFmpegTool
             "rgb24" => 3,
             "rgb565le" => 2,
             "rgb555le" => 2,
+            "gbrapf32le" => 16,
+            "gbrapf16le" => 8,
+            "grayf32le" => 4,
             _ => throw new ArgumentOutOfRangeException(nameof(pixelFormat), pixelFormat, "Unsupported raw pixel format."),
         };
 

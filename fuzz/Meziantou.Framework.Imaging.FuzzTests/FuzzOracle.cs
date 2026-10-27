@@ -52,7 +52,8 @@ internal static class FuzzOracle
         },
     };
 
-    private static readonly PixelConversionOptions Conversion = new() { DiscardIncompatibleColorProfile = true };
+    // Floating-point samples outside [0, 1] (OpenEXR) are clipped, so that the typed loads and the readers still compare them
+    private static readonly PixelConversionOptions Conversion = new() { DiscardIncompatibleColorProfile = true, OutOfRangeSamples = OutOfRangeSampleHandling.Clip };
 
     // Four-component JPEG files are only loaded with a color conversion: with it, their mutations reach the decoding of
     // the inks and the embedded CMYK profile instead of stopping at the frame header
@@ -168,7 +169,9 @@ internal static class FuzzOracle
         }
 
         // Typed versus untyped, eager versus sequential
-        if (eager.Succeeded != typed.Succeeded && !IsLiveAllocationLimit(eager.Exception) && !IsLiveAllocationLimit(typed.Exception))
+        // A conversion of floating-point samples to integers always refuses a sample that is not a number
+        var refusedFloats = eager.Succeeded && PixelFormats.IsFloatingPoint(eager.Value!.PixelFormat) && typed.Exception is UnsupportedImageFeatureException;
+        if (eager.Succeeded != typed.Succeeded && !IsLiveAllocationLimit(eager.Exception) && !IsLiveAllocationLimit(typed.Exception) && !refusedFloats)
             return FuzzFailure.Property("typed-untyped", $"Untyped load {Describe(eager)}, Rgba64 load {Describe(typed)}");
 
         if (eager.Succeeded && typed.Succeeded && eager.Value!.Frames.Count != typed.Value!.Frames.Count)

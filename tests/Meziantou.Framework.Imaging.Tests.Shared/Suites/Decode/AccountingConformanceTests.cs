@@ -21,13 +21,32 @@ public sealed class AccountingConformanceTests
     public void LiveBytesEqualTheRentedCapacity(string id)
     {
         var data = GoldenCorpus.Default.Get(id).ReadInput();
+        if (SuiteReaders.ReadsFloats(data))
+        {
+            Check<RgbaFloat>(id, data, new OpenExrEncoder { MetadataHandling = MetadataHandling.Strip });
+        }
+        else
+        {
+            var encoder = Image.DetectFormat(data) switch
+            {
+                ImageFormat.Gif => (ImageEncoder)new GifEncoder(),
+                ImageFormat.Jpeg => new JpegEncoder { MetadataHandling = MetadataHandling.Strip, AllowBitDepthReduction = true, BackgroundColor = new Rgba64(0, 0, 0, 65535) },
+                _ => null,
+            };
+            Check<Rgba64>(id, data, encoder);
+        }
+    }
+
+    private static void Check<TPixel>(string id, byte[] data, ImageEncoder? encoder)
+        where TPixel : unmanaged
+    {
         using var audit = new PoolAudit();
         using (var image = Image.Load(data, new ImageDecodeOptions { Conversion = Conversion }))
         {
             AssertBalanced(audit, "loaded image");
             Assert.True(audit.LiveBytes >= (long)image.Width * image.Height * PixelFormats.GetBytesPerPixel(image.PixelFormat) * image.Frames.Count);
 
-            using (var reader = Image.OpenReader<Rgba64>(new MemoryStream(data), new ImageReaderOptions { Conversion = Conversion }))
+            using (var reader = Image.OpenReader<TPixel>(new MemoryStream(data), new ImageReaderOptions { Conversion = Conversion }))
             {
                 AssertBalanced(audit, "open reader");
                 using var first = reader.ReadFrame();
@@ -38,14 +57,9 @@ public sealed class AccountingConformanceTests
             AssertBalanced(audit, "disposed reader");
 
             using var output = new MemoryStream();
-            var encoder = Image.DetectFormat(data) switch
-            {
-                ImageFormat.Gif => (ImageEncoder)new GifEncoder(),
-                ImageFormat.Jpeg => new JpegEncoder { MetadataHandling = MetadataHandling.Strip, AllowBitDepthReduction = true, BackgroundColor = new Rgba64(0, 0, 0, 65535) },
-                _ => new PngEncoder { MetadataHandling = MetadataHandling.Strip, AnimationMode = image.Frames.Count > 1 ? PngAnimationMode.Animated : PngAnimationMode.Auto },
-            };
-            using var typed = image.CloneAs<Rgba64>(Conversion);
-            using (var writer = Image.CreateWriter<Rgba64>(output, new ImageWriterOptions(image.Size) { Encoder = encoder, ExpectedFrameCount = encoder is GifEncoder ? null : image.Frames.Count, Configuration = image.Configuration }))
+            encoder ??= new PngEncoder { MetadataHandling = MetadataHandling.Strip, AnimationMode = image.Frames.Count > 1 ? PngAnimationMode.Animated : PngAnimationMode.Auto };
+            using var typed = image.CloneAs<TPixel>(Conversion);
+            using (var writer = Image.CreateWriter<TPixel>(output, new ImageWriterOptions(image.Size) { Encoder = encoder, ExpectedFrameCount = encoder is GifEncoder ? null : image.Frames.Count, Configuration = image.Configuration }))
             {
                 writer.WriteFrame(typed.Frames[0]);
                 AssertBalanced(audit, "writer after its first frame");

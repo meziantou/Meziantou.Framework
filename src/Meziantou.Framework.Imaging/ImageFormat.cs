@@ -77,4 +77,10 @@ public enum ImageFormat
     /// transformation. Codestreams that use the high-throughput block coder (ISO/IEC 15444-15, HTJ2K) are read.
     /// </summary>
     Jpeg2000 = 16,
+
+    /// <summary>
+    /// OpenEXR: high dynamic range scene-linear images of 16-bit (half) or 32-bit floating-point samples, stored as scan
+    /// lines or tiles with lossless or lossy compression.
+    /// </summary>
+    OpenExr = 17,
 }

@@ -51,7 +51,7 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
         Options = options;
         Capabilities = capabilities;
         PixelFormat = pixelFormat;
-        EncodedPixelFormat = GetEncodedPixelFormat(pixelFormat);
+        EncodedPixelFormat = GetEncodedPixelFormat(capabilities, pixelFormat);
         Scope = scope;
         _session = session;
         _stream = stream;
@@ -338,12 +338,15 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
         if (capabilities.RequiresSeekableOutput && capabilities.Format == ImageFormat.Ani && stream is { CanSeek: false })
             throw new ArgumentException("ANI output requires a seekable stream: the frame and step counts and the sizes are written before the frames and patched once every frame is written. Write to a seekable stream or a path.", nameof(stream));
 
+        if (capabilities.RequiresSeekableOutput && capabilities.Format == ImageFormat.OpenExr && stream is { CanSeek: false })
+            throw new ArgumentException("Compressed OpenEXR output requires a seekable stream: the offsets of the chunks are written before the chunks and patched once they are written. Write to a seekable stream or a path, or set OpenExrEncoder.Compression to None.", nameof(stream));
+
         if (capabilities.RequiresSeekableOutput && stream is { CanSeek: false })
             throw new ArgumentException($"{capabilities.Name} animation output requires a seekable stream: the file size is written before the frames and patched once every frame is written. Write to a seekable stream or a path, or write a still image (ImageWriterOptions.ExpectedFrameCount = 1, no animation settings).", nameof(stream));
 
         // Floating-point pixels are reduced to 16 bits first: the session never sees them
         EnsureEncodable(encoder, capabilities, pixelFormat);
-        pixelFormat = GetEncodedPixelFormat(pixelFormat);
+        pixelFormat = GetEncodedPixelFormat(capabilities, pixelFormat);
 
         // A profile describes the written samples: the bilevel and palette layouts of TIFF and the palette layout of PNG do
         // not follow the pixel format
@@ -501,12 +504,14 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
         Preflight(_session!, frame, isPoster: false);
     }
 
-    private static PixelFormat GetEncodedPixelFormat(PixelFormat pixelFormat) => PixelFormats.IsFloatingPoint(pixelFormat) ? PixelFormat.Rgba64 : pixelFormat;
+    // OpenEXR stores floating-point samples: its session encodes them as they are
+    private static PixelFormat GetEncodedPixelFormat(ImageOutputCapabilities capabilities, PixelFormat pixelFormat)
+        => PixelFormats.IsFloatingPoint(pixelFormat) && !capabilities.StoresFloatingPointSamples ? PixelFormat.Rgba64 : pixelFormat;
 
     /// <summary>Rejects floating-point pixels before anything exists, unless the encoder says how to reduce them.</summary>
     private static void EnsureEncodable(ImageEncoder encoder, ImageOutputCapabilities capabilities, PixelFormat pixelFormat)
     {
-        if (PixelFormats.IsFloatingPoint(pixelFormat) && encoder.FloatingPointConversion is null)
+        if (PixelFormats.IsFloatingPoint(pixelFormat) && !capabilities.StoresFloatingPointSamples && encoder.FloatingPointConversion is null)
         {
             throw new UnsupportedImageFeatureException(
                 $"{capabilities.Name} output does not store floating-point samples, so encoding {pixelFormat} pixels would discard their range and precision. Set {encoder.GetType().Name}.FloatingPointConversion to reduce them to 16-bit integers (Rgba64), or convert the image explicitly with CloneAs.",

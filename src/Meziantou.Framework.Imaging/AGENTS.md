@@ -2,7 +2,7 @@
 
 A fully managed image library: PNG/APNG, GIF, JPEG, WebP, QOI, BMP, TGA, Netpbm, TIFF, ICO/CUR, ANI, AVIF (with its
 own AV1 decoder and encoder), HEIC (with its own HEVC decoder and encoder), JPEG XL (lossless and lossy,
-progressive) and JPEG 2000 decoding and encoding, lossless JPEG recompression (`JpegXlTranscoder`), animation-aware processing,
+progressive), JPEG 2000 and OpenEXR decoding and encoding, lossless JPEG recompression (`JpegXlTranscoder`), animation-aware processing,
 vector drawing, font files (TrueType, OpenType, WOFF, WOFF2), ICC color conversion, and bounded-memory streaming
 readers and writers.
 
@@ -24,6 +24,11 @@ the library guarantees to its callers (support matrix, limitations, defaults). K
   (System.Drawing, libpng, libjpeg, giflib, libwebp, libavif, libaom, dav1d, stb, ...) or from font libraries (FreeType,
   HarfBuzz, the woff2 reference code, fontTools, ...). Those libraries are test oracles only: their output is compared
   with ours, their source is never read to write ours.
+  The one exception is OpenEXR, whose specification names its compressions without defining them: the library
+  defines them. Their data formats were described in prose, without code, by an agent that read OpenEXR 3.5.2
+  (BSD-3-Clause) and wrote nothing else (`Internals/Codecs/Exr/ExrCompression.md`); the codec is written from that
+  description and the OpenEXR File Layout, never from the source. Extend the description the same way (a separate
+  agent reads the source and writes prose) when a compression is added.
 - No public allocator, custom pixel type, codec plug-in or image-processor interface. Implementation types are `internal`
   and live under `Internals/`.
 - Public namespaces: `Meziantou.Framework.Imaging`, `.Metadata`, `.Formats` (encoder settings), `.Drawing` (brushes,
@@ -82,10 +87,11 @@ reference white, values outside [0, 1] are meaningful (highlights, negative out-
   rejects them. Integer to `RgbaFloat` and back must stay exact for every sample.
 - Conversions validate every frame and the poster before allocating (`Image.PrepareConversion`), which also gives the
   tone mapping its peak (`PixelConversionPlan.RequiresPeak`, the largest finite color of all the frames).
-- Codecs never see floating-point pixels: `ImageWriterCore` rejects them at creation unless
+- Codecs never see floating-point pixels, except OpenEXR: `ImageWriterCore` rejects them at creation unless
   `ImageEncoder.FloatingPointConversion` is set, and reduces each frame to an `Rgba64` copy charged to the writer
-  (`EncodedPixelFormat`); `ImageCollectionWriterCore` does the same for collection entries. A codec that stores floating
-  point samples one day opts out there.
+  (`EncodedPixelFormat`); `ImageCollectionWriterCore` does the same for collection entries. OpenEXR opts out there
+  (`ImageOutputCapabilities.StoresFloatingPointSamples`): its session receives `RgbaFloat` and `RgbaHalf` frames, and
+  its decoder produces them (the only one).
 - Drawing (`FloatDrawingKernels`): paints keep 16-bit samples (`DrawingKernels.GetPaintMax`), are composited in double
   precision over the stored values without clipping the colors, and color matrices are applied in place. Layers,
   patterns, groups and filter surfaces stay `Rgba64`, so what goes through them must be in [0, 1].
@@ -484,6 +490,18 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   (`OnDeepRow`), so a decoded block holds samples of `TiffPage.DecodedBitsPerSample` bits, in the byte order of the
   file like the other 16-bit samples. The layouts of `TiffEncoder` store a page
   exactly or reject it before writing anything of it (`TiffDocumentWriter.PreparePage`): no setting makes them lossy.
+- **OpenEXR** (`Internals/Codecs/Exr`). The structure parser reads the header (validated whole by `ExrHeader.Complete`,
+  so that `Identify` reports every rejection), the offset table, then the chunks in the order of their offsets: the input
+  is read forward only, and a chunk must start at its offset, carry its own coordinates and end before the next one.
+  `ExrDecoder` decompresses each chunk of the full-resolution image (`ExrChunkDecompressor`) and writes its samples in
+  place in the rows of the frame (a tile covers part of a row); when the frame is not in the source layout, it decodes
+  into a staging image and converts it at the end (`Image.PrepareConversion`: a tone mapping needs the peak of the whole
+  image). The compressions cite the sections of `ExrCompression.md`; they are bit-exact with OpenEXR, PXR24 and B44
+  included (their loss happens when the file is written). The B44 table of pLinear channels is computed from
+  `Math.Log` in single precision and pinned by a hash (`ExrCompressionTests`). The encoder writes scan lines, and patches
+  the offset table once the chunks are written (seekable destination) unless the chunks are not compressed.
+  `MetadataWritePlan` treats OpenEXR as linear light only (`FormatCapabilities.LinearOnly`): an sRGB label is metadata
+  the format cannot store.
 - `ZLibStream` reports truncation as a clean end: check that the expected number of bytes was produced.
 
 ## Color management
@@ -983,7 +1001,7 @@ thin public types over its `FontFace`.
 | `src/Meziantou.Framework.Imaging` | The library and the package README (`readme.md`) |
 | `tests/Meziantou.Framework.Imaging.Tests` | Tests that are not about one codec: image model, pixels, memory, metadata, readers and writers with test codecs, format detection, defaults, API surface, the corpus and harness self-tests, the documentation examples |
 | `tests/Meziantou.Framework.Imaging.Processing.Tests` | Processing, resampling, convolution, automatic cropping, drawing and color conversion, with their golden and reference suites |
-| `tests/Meziantou.Framework.Imaging.<Codec>.Tests` | One project per codec (`Png` with APNG, `Gif`, `Jpeg`, `JpegXl` with the transcoder, `Jpeg2000`, `WebP`, `Qoi`, `Bmp`, `Tga`, `Pnm`, `Tiff`, `Ico` with CUR and ANI, `Av1`, `Avif`, `AvifEncoder`, `Hevc`, `Heic`, `HeicEncoder`): its unit tests (no fixture file), its conformance tests under `Conformance/`, and the generic suites for its fixtures and its encoder |
+| `tests/Meziantou.Framework.Imaging.<Codec>.Tests` | One project per codec (`Png` with APNG, `Gif`, `Jpeg`, `JpegXl` with the transcoder, `Jpeg2000`, `WebP`, `Qoi`, `Bmp`, `Tga`, `Pnm`, `Tiff`, `Ico` with CUR and ANI, `Av1`, `Avif`, `AvifEncoder`, `Hevc`, `Heic`, `HeicEncoder`, `Exr`): its unit tests (no fixture file), its conformance tests under `Conformance/`, and the generic suites for its fixtures and its encoder |
 | `tests/Meziantou.Framework.Imaging.Tests.Shared` | Sources compiled into every project above (no project file): `Helpers/`, the generic suites over the corpus (`Suites/`) and `Imaging.Tests.Shared.props` |
 | `tests/Meziantou.Framework.Imaging.InteropTests` | Files produced by the encoders are decoded by pinned external tools |
 | `tests/Meziantou.Framework.Imaging.TestHarness` | Shared, test-framework-agnostic support: corpus manifest, raw-buffer comparison, independent reference readers, tool helpers |

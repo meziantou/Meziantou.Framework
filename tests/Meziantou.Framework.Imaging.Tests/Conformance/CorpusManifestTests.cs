@@ -131,6 +131,7 @@ public sealed class CorpusManifestTests
                 "heic" => "tools/Meziantou.Framework.Imaging.CorpusGenerator/HeicCorpus.Container.cs",
                 "jxl" => "tools/Meziantou.Framework.Imaging.CorpusGenerator/JxlCorpus.cs",
                 "jp2" => "tools/Meziantou.Framework.Imaging.CorpusGenerator/Jp2Corpus.cs",
+                "exr" => "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs",
                 _ => "tools/Meziantou.Framework.Imaging.CorpusGenerator/GoldenCorpus.cs",
             };
             Assert.StartsWith(generator, fixture.Provenance.Generator);

@@ -68,6 +68,7 @@ public sealed class ImageInfoTests
     [InlineData(9)]
     [InlineData(11)]
     [InlineData(14)]
+    [InlineData(32)] // OpenEXR FLOAT and UINT samples
     public void EncodedSamplePrecisionsAreAccepted(int bitsPerComponent)
     {
         Assert.Equal(bitsPerComponent, Create(ImageFormat.Avif, bitsPerComponent: bitsPerComponent).BitsPerComponent);
@@ -77,7 +78,8 @@ public sealed class ImageInfoTests
     [InlineData(0)]
     [InlineData(17)]
     [InlineData(24)]
-    [InlineData(32)]
+    [InlineData(33)]
+    [InlineData(64)]
     [InlineData(-8)]
     public void OtherSamplePrecisionsAreRejected(int bitsPerComponent)
     {

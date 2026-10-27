@@ -42,7 +42,7 @@ public sealed class GoldenFixture
     public IReadOnlyList<RawPixelLayout> Layouts => [.. Expected.Frames[0].Buffers.Select(buffer => RawPixelLayout.Parse(buffer.Layout))];
 
     /// <summary>Gets the canonical layout (<c>rgba8</c> or <c>rgba16le</c>) of the references.</summary>
-    public RawPixelLayout CanonicalLayout => Layouts.Contains(RawPixelLayout.Rgba16Le) ? RawPixelLayout.Rgba16Le : RawPixelLayout.Rgba8;
+    public RawPixelLayout CanonicalLayout => Layouts.Contains(RawPixelLayout.RgbaF32Le) ? RawPixelLayout.RgbaF32Le : Layouts.Contains(RawPixelLayout.Rgba16Le) ? RawPixelLayout.Rgba16Le : RawPixelLayout.Rgba8;
 
     /// <summary>Reads the encoded input, verifying its hash.</summary>
     /// <returns>The bytes.</returns>

@@ -264,33 +264,59 @@ internal sealed class MetadataWritePlan
         }
 
         var transferFunction = ColorTransferFunction.Srgb;
-        if (metadata.TransferFunction == ColorTransferFunction.Linear)
+        CicpColorDescription? storedCicp;
+        if (capabilities.LinearOnly)
         {
-            if (capabilities.LinearTransfer)
+            // OpenEXR samples are linear light, described by the chromaticities of their primaries: the label of any other
+            // samples would change their meaning
+            transferFunction = ColorTransferFunction.Linear;
+            storedCicp = null;
+            if (metadata.Cicp is { } exrCicp)
             {
-                transferFunction = ColorTransferFunction.Linear;
+                if (exrCicp.TransferCharacteristics == 8 && exrCicp.ColorPrimaries is 1 or 9 or 11 or 12)
+                {
+                    storedCicp = exrCicp;
+                }
+                else
+                {
+                    context.Unsupported("CICP color description other than linear BT.709, BT.2020 or P3 primaries (OpenEXR stores linear-light samples)");
+                }
             }
-            else
+            else if (metadata.TransferFunction != ColorTransferFunction.Linear && metadata.IccProfile is null)
             {
-                // Writing linear-light samples without the label would relabel them as sRGB
-                context.Unsupported("linear transfer function (linear-light samples would be read as sRGB)");
+                context.Unsupported("sRGB transfer function (OpenEXR stores linear-light samples: sRGB-encoded samples would be read as linear light)");
             }
         }
-
-        // AVIF stores any CICP color description; PNG stores it when no ICC profile is written (its cICP chunk takes
-        // precedence over the profile); JPEG XL stores the ones it can enumerate, as its color encoding, when no ICC profile
-        // is written. Elsewhere a written ICC profile describes the colors in its place; without one, dropping a
-        // description that is not equivalent to sRGB would relabel the samples as sRGB
-        var storedCicp = capabilities.Cicp || (capabilities.CicpWithoutIcc && icc is null) ? metadata.Cicp : null;
-        if (storedCicp is null && metadata.Cicp is { } cicp && icc is null && !IsSrgbEquivalent(cicp) && !(metadata.TransferFunction == ColorTransferFunction.Linear && cicp.TransferCharacteristics is 8))
+        else
         {
-            if (capabilities.EnumeratedCicp && JpegXlEncoderColor.FromCicp(cicp) is not null)
+            if (metadata.TransferFunction == ColorTransferFunction.Linear)
             {
-                storedCicp = cicp;
+                if (capabilities.LinearTransfer)
+                {
+                    transferFunction = ColorTransferFunction.Linear;
+                }
+                else
+                {
+                    // Writing linear-light samples without the label would relabel them as sRGB
+                    context.Unsupported("linear transfer function (linear-light samples would be read as sRGB)");
+                }
             }
-            else
+
+            // AVIF stores any CICP color description; PNG stores it when no ICC profile is written (its cICP chunk takes
+            // precedence over the profile); JPEG XL stores the ones it can enumerate, as its color encoding, when no ICC profile
+            // is written. Elsewhere a written ICC profile describes the colors in its place; without one, dropping a
+            // description that is not equivalent to sRGB would relabel the samples as sRGB
+            storedCicp = capabilities.Cicp || (capabilities.CicpWithoutIcc && icc is null) ? metadata.Cicp : null;
+            if (storedCicp is null && metadata.Cicp is { } cicp && icc is null && !IsSrgbEquivalent(cicp) && !(metadata.TransferFunction == ColorTransferFunction.Linear && cicp.TransferCharacteristics is 8))
             {
-                context.Unsupported("CICP color description (the samples would be read as sRGB)");
+                if (capabilities.EnumeratedCicp && JpegXlEncoderColor.FromCicp(cicp) is not null)
+                {
+                    storedCicp = cicp;
+                }
+                else
+                {
+                    context.Unsupported("CICP color description (the samples would be read as sRGB)");
+                }
             }
         }
 
@@ -397,8 +423,12 @@ internal sealed class MetadataWritePlan
         // A JP2 file; the orientation is the one of its EXIF data
         private static readonly FormatCapabilities Jp2 = new(icc: true, exif: true, xmp: true, resolution: true, TextSupport.None);
 
-        private FormatCapabilities(bool icc, bool exif, bool xmp, bool resolution, TextSupport text, bool linearTransfer = false, bool nativeOrientation = false, bool cicp = false, bool enumeratedCicp = false, bool contentLightLevel = false, bool masteringDisplay = false, bool pixelAspectRatio = false, bool cicpWithoutIcc = false)
+        // OpenEXR stores linear light only, with the chromaticities of its primaries (BT.709 without the attribute)
+        private static readonly FormatCapabilities OpenExr = new(icc: false, exif: false, xmp: false, resolution: false, TextSupport.None, linearTransfer: true, linearOnly: true);
+
+        private FormatCapabilities(bool icc, bool exif, bool xmp, bool resolution, TextSupport text, bool linearTransfer = false, bool nativeOrientation = false, bool cicp = false, bool enumeratedCicp = false, bool contentLightLevel = false, bool masteringDisplay = false, bool pixelAspectRatio = false, bool cicpWithoutIcc = false, bool linearOnly = false)
         {
+            LinearOnly = linearOnly;
             CicpWithoutIcc = cicpWithoutIcc;
             ContentLightLevel = contentLightLevel;
             MasteringDisplay = masteringDisplay;
@@ -433,6 +463,12 @@ internal sealed class MetadataWritePlan
 
         /// <summary>Gets a value indicating whether the format can declare linear-light samples (QOI colorspace 1).</summary>
         public bool LinearTransfer { get; }
+
+        /// <summary>
+        /// Gets a value indicating whether the format stores linear-light samples only (OpenEXR), described by the
+        /// chromaticities of linear CICP descriptions: an sRGB label or another description cannot be stored.
+        /// </summary>
+        public bool LinearOnly { get; }
 
         /// <summary>
         /// Gets a value indicating whether the format stores the orientation in a field of its own (the TIFF <c>Orientation</c>
@@ -486,6 +522,7 @@ internal sealed class MetadataWritePlan
             ImageFormat.Heic => Heic,
             ImageFormat.JpegXl => JpegXl,
             ImageFormat.Jpeg2000 => Jp2,
+            ImageFormat.OpenExr => OpenExr,
             _ => None,
         };
 

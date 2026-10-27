@@ -223,6 +223,23 @@ internal static class ErrorFixtureStages
         "limit/heic/height-over-limit",
         "limit/heic/icc-over-metadata-limit",
         "limit/heic/width-over-limit",
+
+        // OpenEXR: the header, validated whole before the offset table
+        "invalid/exr/compression-dwaa",
+        "invalid/exr/compression-dwab",
+        "invalid/exr/compression-htj2k32",
+        "invalid/exr/compression-zstd",
+        "invalid/exr/data-window-outside",
+        "invalid/exr/deep-scanline",
+        "invalid/exr/extra-channel",
+        "invalid/exr/layer-channels",
+        "invalid/exr/luminance-chroma",
+        "invalid/exr/missing-channels",
+        "invalid/exr/openexr-images-t02",
+        "invalid/exr/openexr-images-t09",
+        "invalid/exr/openexr-images-t13",
+        "limit/exr/frame-pixels-over-limit",
+        "limit/exr/metadata-bytes-over-limit",
     };
 
     private static readonly HashSet<string> StructureDefects = new(StringComparer.Ordinal)
@@ -356,6 +373,11 @@ internal static class ErrorFixtureStages
         "limit/heic/exif-over-metadata-limit",
         "limit/heic/sequence-frames-over-limit",
         "limit/heic/sequence-xmp-over-metadata-limit",
+
+        // OpenEXR: the offset table and the chunks a full scan walks
+        "invalid/exr/chunk-coordinates",
+        "invalid/exr/offset-past-end",
+        "invalid/exr/truncated",
     };
 
     private static readonly HashSet<string> PixelDefects = new(StringComparer.Ordinal)
@@ -454,6 +476,11 @@ internal static class ErrorFixtureStages
         "invalid/heic/two-pictures",
         "limit/heic/live-allocation-over-limit",
         "limit/heic/sequence-total-pixels-over-limit",
+
+        // OpenEXR: the compressed data of a chunk
+        "invalid/exr/piz-huffman-bit-count",
+        "invalid/exr/rle-overrun",
+        "invalid/exr/zip-corrupt",
     };
 
     /// <summary>Gets a value indicating whether a header identification detects the defect.</summary>

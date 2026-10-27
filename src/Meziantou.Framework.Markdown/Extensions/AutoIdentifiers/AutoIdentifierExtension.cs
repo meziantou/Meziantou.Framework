@@ -2,6 +2,7 @@
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
+using Meziantou.Framework.Markdown.Extensions.GenericAttributes;
 using Meziantou.Framework.Markdown.Helpers;
 using Meziantou.Framework.Markdown.Parsers;
 using Meziantou.Framework.Markdown.Renderers;
@@ -80,24 +81,21 @@ public class AutoIdentifierExtension : IMarkdownExtension
         // If the AutoLink options is set, we register a LinkReferenceDefinition at the document level
         if (_options.HasFlag(AutoIdentifierOptions.AutoLink))
         {
-            var headingLine = headingBlock.Lines.Lines[0];
-
-            var text = headingLine.ToString();
-
             var linkRef = new HeadingLinkReferenceDefinition(headingBlock)
             {
                 CreateLinkInline = CreateLinkInlineForHeading
             };
 
+            // The label is computed when the inlines are processed, as it depends on the inline parsers of the pipeline
             var doc = processor.Document;
-            var dictionary = doc.GetData(this) as Dictionary<string, HeadingLinkReferenceDefinition>;
-            if (dictionary is null)
+            var headings = doc.GetData(this) as List<HeadingLinkReferenceDefinition>;
+            if (headings is null)
             {
-                dictionary = new Dictionary<string, HeadingLinkReferenceDefinition>();
-                doc.SetData(this, dictionary);
+                headings = [];
+                doc.SetData(this, headings);
                 doc.ProcessInlinesBegin += _processInlinesBegin;
             }
-            dictionary[text] = linkRef;
+            headings.Add(linkRef);
         }
 
         // Then we register after inline have been processed to actually generate the proper #id
@@ -107,7 +105,18 @@ public class AutoIdentifierExtension : IMarkdownExtension
     private void DocumentOnProcessInlinesBegin(InlineProcessor processor, Inline? inline)
     {
         var doc = processor.Document;
-        var dictionary = (Dictionary<string, HeadingLinkReferenceDefinition>)doc.GetData(this)!;
+        var headings = (List<HeadingLinkReferenceDefinition>)doc.GetData(this)!;
+        var hasGenericAttributes = processor.Parsers.Find<GenericAttributesParser>() is not null;
+
+        // When several headings have the same label, the last one wins
+        var dictionary = new Dictionary<string, HeadingLinkReferenceDefinition>();
+        foreach (var heading in headings)
+        {
+            var headingLine = heading.Heading.Lines.Lines[0].Slice;
+            var label = hasGenericAttributes ? GetLabelWithoutAttributes(headingLine) : headingLine.ToString();
+            dictionary[label] = heading;
+        }
+
         foreach (var keyPair in dictionary)
         {
             // Here we make sure that auto-identifiers will not override an existing link definition
@@ -118,8 +127,124 @@ public class AutoIdentifierExtension : IMarkdownExtension
                 doc.SetLinkReferenceDefinition(keyPair.Key, keyPair.Value, false);
             }
         }
-        // Once we are done, we don't need to keep the intermediate dictionary around
+        // Once we are done, we don't need to keep the intermediate list around
         doc.RemoveData(this);
+    }
+
+    /// <summary>
+    /// Gets the text of a heading line without the generic attributes that the inline parser reads, as they are not part of
+    /// the text of the heading.
+    /// </summary>
+    private static string GetLabelWithoutAttributes(StringSlice line)
+    {
+        var text = line.Text;
+        if (line.IndexOf('{') < 0)
+        {
+            return line.ToString();
+        }
+
+        var label = new ValueStringBuilder(unsafe(stackalloc char[ValueStringBuilder.StackallocThreshold]));
+        var copyStart = line.Start;
+        var endsWithAttributes = false;
+        var index = line.Start;
+        while (index <= line.End)
+        {
+            var c = text[index];
+            if (c == '\\' && index < line.End && text[index + 1].IsAsciiPunctuation())
+            {
+                // An escaped character is never the start of attributes
+                index += 2;
+                endsWithAttributes = false;
+            }
+            else if (c == '`')
+            {
+                index = SkipCodeSpan(text, index, line.End);
+                endsWithAttributes = false;
+            }
+            else if (c == '{')
+            {
+                var attributes = new StringSlice(text, index, line.End);
+                if (GenericAttributesParser.TryParse(ref attributes, out _))
+                {
+                    label.Append(text.AsSpan(copyStart, index - copyStart));
+                    var isAfterWhitespace = index == line.Start || text[index - 1].IsWhitespace();
+                    index = attributes.Start;
+
+                    // Keep a single whitespace between the text around the attributes
+                    if (isAfterWhitespace)
+                    {
+                        while (index <= line.End && text[index].IsWhitespace())
+                        {
+                            index++;
+                        }
+                    }
+
+                    copyStart = index;
+                    endsWithAttributes = true;
+                }
+                else
+                {
+                    index++;
+                    endsWithAttributes = false;
+                }
+            }
+            else
+            {
+                index++;
+                if (!c.IsWhitespace())
+                {
+                    endsWithAttributes = false;
+                }
+            }
+        }
+
+        label.Append(text.AsSpan(copyStart, line.End + 1 - copyStart));
+
+        // The whitespace before the attributes that end the line is not part of the text
+        var result = label.AsSpan();
+        if (endsWithAttributes)
+        {
+            result = result.TrimEnd();
+        }
+
+        var labelText = result.ToString();
+        label.Dispose();
+        return labelText;
+    }
+
+    /// <summary>
+    /// Skips a code span starting at the specified backtick, or only its opening backticks when it is not closed.
+    /// </summary>
+    private static int SkipCodeSpan(string text, int start, int end)
+    {
+        var index = start;
+        while (index <= end && text[index] == '`')
+        {
+            index++;
+        }
+
+        var openingLength = index - start;
+        while (index <= end)
+        {
+            if (text[index] != '`')
+            {
+                index++;
+                continue;
+            }
+
+            var closingStart = index;
+            while (index <= end && text[index] == '`')
+            {
+                index++;
+            }
+
+            if (index - closingStart == openingLength)
+            {
+                return index;
+            }
+        }
+
+        return start + openingLength;
     }
 
     /// <summary>

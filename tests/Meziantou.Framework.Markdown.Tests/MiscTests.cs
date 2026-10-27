@@ -599,6 +599,46 @@ public class MiscTests
         Assert.Equal("<h1 id=\"intro\">Intro</h1>\n<p><img src=\"#intro\" alt=\"alt\" /></p>\n", html);
     }
 
+    [Theory]
+    [InlineData("Setext {#id}\n---\n\n[Setext]", "<h2 id=\"id\">Setext</h2>\n<p><a href=\"#id\">Setext</a></p>\n")]
+    [InlineData("Setext{#id}\n---\n\n[Setext]", "<h2 id=\"id\">Setext</h2>\n<p><a href=\"#id\">Setext</a></p>\n")]
+    [InlineData("Setext {.a} {#id}  \n---\n\n[Setext]", "<h2 id=\"id\" class=\"a\">Setext</h2>\n<p><a href=\"#id\">Setext</a></p>\n")]
+    [InlineData("[Setext]\n\nSetext {#id}\n===", "<p><a href=\"#id\">Setext</a></p>\n<h1 id=\"id\">Setext</h1>\n")]
+    [InlineData("# a{b c {#id}\n\n[a{b c]", "<h1 id=\"id\">a{b c</h1>\n<p><a href=\"#id\">a{b c</a></p>\n")]
+    [InlineData("a {.x} b\n---\n\n[a b]", "<h2 id=\"a-b\" class=\"x\">a  b</h2>\n<p><a href=\"#a-b\">a b</a></p>\n")]
+    [InlineData("`{#x}`\n---\n\n[`{#x}`]", "<h2 id=\"x\"><code>{#x}</code></h2>\n<p><a href=\"#x\"><code>{#x}</code></a></p>\n")]
+    public void HeadingReferenceIgnoresInlineGenericAttributes(string markdown, string expected)
+    {
+        var pipeline = new MarkdownPipelineBuilder().UseGenericAttributes().UseAutoIdentifiers().Build();
+
+        var html = MarkdownConverter.ToHtml(markdown, pipeline);
+
+        Assert.Equal(expected, html);
+    }
+
+    [Theory]
+    [InlineData("Setext {#id}\n---\n\n[Setext]")]
+    [InlineData("[Setext]\n\nSetext {.a} {#id}  \n===")]
+    [InlineData("# Setext{b c {#id}\n\n[Setext{b c]")]
+    public void HeadingReferenceIgnoresInlineGenericAttributesWithTrivia(string markdown)
+    {
+        var pipeline = new MarkdownPipelineBuilder().EnableTrackTrivia().UseGenericAttributes().UseAutoIdentifiers().Build();
+
+        var html = MarkdownConverter.ToHtml(markdown, pipeline);
+
+        Assert.Contains("<a href=\"#id\">Setext", html, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void HeadingReferenceKeepsBracesWithoutGenericAttributes()
+    {
+        var pipeline = new MarkdownPipelineBuilder().UseAutoIdentifiers().Build();
+
+        var html = MarkdownConverter.ToHtml("Setext {#id}\n---\n\n[Setext {#id}] [Setext]", pipeline);
+
+        Assert.Equal("<h2 id=\"setext-id\">Setext {#id}</h2>\n<p><a href=\"#setext-id\">Setext {#id}</a> [Setext]</p>\n", html);
+    }
+
     private static int CountOccurrences(string text, string value)
     {
         var count = 0;

@@ -11,7 +11,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <remarks>
 /// <para>For output pixel <c>d</c> with center <c>c = u(d) - 0.5</c> (source index coordinates) and filter scale
 /// <c>f = max(1, 1 / s)</c>, the support is <c>r * f</c> (<c>r</c> is the kernel radius). The contributors are the
-/// integers <c>i</c> with <c>|i - c| &lt; r * f</c>: <c>lo = floor(c - r f) + 1</c> to <c>hi = ceil(c + r f) - 1</c>. Their raw
+/// integers <c>i</c> with <c>|i - c| &lt; r * f</c>: <c>lo = floor(c - r f) + 1</c> to <c>hi = ceil(c + r f) - 1</c> (for a box
+/// filter, the exact half-open range of <see cref="ResampleAxis.GetBoxContributors"/>, every raw weight 1). Their raw
 /// weights are <c>K((i - c) / f)</c>, normalized by their sum (accumulated in increasing <c>i</c>). Contributors outside the
 /// source are clamped to the nearest edge pixel: their normalized weights are added, in increasing <c>i</c>, to the weight
 /// of pixel 0 or <c>n - 1</c>. The window of <c>d</c> is therefore <c>[clamp(lo), clamp(hi)]</c>; windows are
@@ -115,7 +116,7 @@ internal sealed class ResampleWeights : IDisposable
             var maxCount = 0;
             for (var d = 0; d < outputLength; d++)
             {
-                var (lo, hi) = GetContributors(axis.GetCenter(d), support);
+                var (lo, hi) = GetContributors(axis, d, filter, axis.GetCenter(d), support);
                 var start = Clamp(lo, sourceLength);
                 var count = Clamp(hi, sourceLength) - start + 1;
                 table[3 * d] = start;
@@ -201,9 +202,13 @@ internal sealed class ResampleWeights : IDisposable
         return scope.Rent((int)bytes, AllocationKind.Temporary, clear: true);
     }
 
-    /// <summary>Gets the contributors <c>i</c> with <c>|i - center| &lt; support</c>.</summary>
-    private static (long Low, long High) GetContributors(double center, double support)
-        => ((long)Math.Floor(center - support) + 1, (long)Math.Ceiling(center + support) - 1);
+    /// <summary>
+    /// Gets the contributors <c>i</c> with <c>|i - center| &lt; support</c>, or the exact half-open range of a box filter
+    /// (<see cref="ResampleAxis.GetBoxContributors"/>: its kernel is not zero at its radius, so floating-point rounding must
+    /// not decide which side of a boundary a pixel falls on).
+    /// </summary>
+    private static (long Low, long High) GetContributors(ResampleAxis axis, int index, ResamplingFilter filter, double center, double support)
+        => filter is ResamplingFilter.Box ? axis.GetBoxContributors(index) : ((long)Math.Floor(center - support) + 1, (long)Math.Ceiling(center + support) - 1);
 
     private static int Clamp(long index, int length) => index < 0 ? 0 : index >= length ? length - 1 : (int)index;
 
@@ -218,7 +223,7 @@ internal sealed class ResampleWeights : IDisposable
         for (var d = 0; d < OutputLength; d++)
         {
             var center = axis.GetCenter(d);
-            var (lo, hi) = GetContributors(center, support);
+            var (lo, hi) = GetContributors(axis, d, filter, center, support);
             var sum = 0.0;
             for (var i = lo; i <= hi; i++)
             {
@@ -263,8 +268,12 @@ internal sealed class ResampleWeights : IDisposable
         MaxOverlap = maxOverlap;
     }
 
+    // A box filter weighs every contributor equally (see GetContributors)
     private static double Evaluate(ResamplingFilter filter, long index, double center, double scale)
     {
+        if (filter is ResamplingFilter.Box)
+            return 1;
+
         var distance = index - center;
         return ResamplingKernels.Evaluate(filter, scale == 1 ? distance : distance / scale);
     }

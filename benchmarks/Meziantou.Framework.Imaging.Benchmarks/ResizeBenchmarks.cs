@@ -71,6 +71,26 @@ public class ResizeBenchmarks
     public int Lanczos3() => Resize(_rgba32, ResamplingFilter.Lanczos3, 640, 360);
 
     [Benchmark]
+    [Workload("1920x1080 -> 640x360 Rgba32 box (integer factor 3)")]
+    public int Box() => Resize(_rgba32, ResamplingFilter.Box, 640, 360);
+
+    [Benchmark]
+    [Workload("1920x1080 -> 640x360 Rgba32 Mitchell-Netravali")]
+    public int MitchellNetravali() => Resize(_rgba32, ResamplingFilter.MitchellNetravali, 640, 360);
+
+    [Benchmark]
+    [Workload("1920x1080 -> 640x360 Rgba32 Lanczos8")]
+    public int Lanczos8() => Resize(_rgba32, ResamplingFilter.Lanczos8, 640, 360);
+
+    [Benchmark]
+    [Workload("1920x1080 -> 640x360 opaque Rgba32 box (integer factor 3)")]
+    public int BoxOpaque() => Resize(_opaque32, ResamplingFilter.Box, 640, 360);
+
+    [Benchmark]
+    [Workload("1920x1080 -> 2880x1620 Rgba32 Mitchell-Netravali (upscale)")]
+    public int MitchellNetravaliUpscale() => Resize(_rgba32, ResamplingFilter.MitchellNetravali, 2880, 1620);
+
+    [Benchmark]
     [Workload("1920x1080 -> 640x360 Rgba32 Catmull-Rom, linear sRGB")]
     public int CatmullRomLinear() => Resize(_rgba32, ResamplingFilter.Bicubic, 640, 360, ResizeWorkingSpace.LinearSrgb);
 

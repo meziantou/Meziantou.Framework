@@ -146,7 +146,7 @@ public sealed class ResizeTests
     [MemberData(nameof(Anchors))]
     public void CoverCropsTheOverflowAtTheAnchor(ResizeAnchor anchor, int firstColumn, int firstRow)
     {
-        foreach (var filter in Enum.GetValues<ResamplingFilter>())
+        foreach (var filter in InterpolatingFilters)
         {
             // 5x3 -> 3x3: s = max(3/5, 3/3) = 1, the horizontal overflow is 2 columns
             using (var wide = BuildIds(5, 3))
@@ -161,6 +161,10 @@ public sealed class ResizeTests
             AssertIds(tall.Frames[0], 3, 3, (x, y) => Id(x, y + firstRow));
         }
     }
+
+    // The filters whose kernel is 1 at 0 and 0 at the other integers: at scale 1, they keep the pixels of an axis
+    private static ResamplingFilter[] InterpolatingFilters =>
+        [.. Enum.GetValues<ResamplingFilter>().Except([ResamplingFilter.MitchellNetravali, ResamplingFilter.Robidoux, ResamplingFilter.RobidouxSharp, ResamplingFilter.Spline])];
 
     public static TheoryData<ResamplingFilter, ResizeAnchor, int[]> HalfPixelCases => new()
     {
@@ -220,6 +224,98 @@ public sealed class ResizeTests
         Assert.Equal(0.75, ResamplingKernels.Triangle(-0.25));
     }
 
+    [Fact]
+    public void AdditionalKernelValuesMatchTheirDefinitions()
+    {
+        // Box: 1 on (-1/2, 1/2], the boundary belongs to the higher pixel
+        Assert.Equal(1, ResamplingKernels.Box(0));
+        Assert.Equal(1, ResamplingKernels.Box(0.5));
+        Assert.Equal(1, ResamplingKernels.Box(-0.49));
+        Assert.Equal(0, ResamplingKernels.Box(-0.5));
+        Assert.Equal(0, ResamplingKernels.Box(0.51));
+
+        // Hermite (B = C = 0): 2|x|^3 - 3|x|^2 + 1 -> (1/4) = 27/32, (1/2) = 1/2, (3/4) = 5/32, 0 from 1
+        Assert.Equal(27.0 / 32, ResamplingKernels.Evaluate(ResamplingFilter.Hermite, 0.25));
+        Assert.Equal(0.5, ResamplingKernels.Evaluate(ResamplingFilter.Hermite, -0.5));
+        Assert.Equal(5.0 / 32, ResamplingKernels.Evaluate(ResamplingFilter.Hermite, 0.75));
+
+        // Mitchell-Netravali (B = C = 1/3): 8/9 at 0, 1/18 at 1, (1/2) = 77/144, (3/2) = -5/144, (1/4) = 901/1152, (5/4) = -27/1152
+        Assert.Equal(8.0 / 9, ResamplingKernels.Evaluate(ResamplingFilter.MitchellNetravali, 0), 14);
+        Assert.Equal(1.0 / 18, ResamplingKernels.Evaluate(ResamplingFilter.MitchellNetravali, 1), 14);
+        Assert.Equal(1.0 / 18, ResamplingKernels.Evaluate(ResamplingFilter.MitchellNetravali, -1), 14);
+        Assert.Equal(77.0 / 144, ResamplingKernels.Evaluate(ResamplingFilter.MitchellNetravali, 0.5), 14);
+        Assert.Equal(-5.0 / 144, ResamplingKernels.Evaluate(ResamplingFilter.MitchellNetravali, 1.5), 14);
+        Assert.Equal(901.0 / 1152, ResamplingKernels.Evaluate(ResamplingFilter.MitchellNetravali, 0.25), 14);
+        Assert.Equal(-27.0 / 1152, ResamplingKernels.Evaluate(ResamplingFilter.MitchellNetravali, -1.25), 14);
+
+        // Robidoux: B = 12 / (19 + 9 sqrt(2)) = 0.3782157550939987, C = (1 - B) / 2; 1 - B/3 at 0, B/6 at 1
+        Assert.Equal(0.8739280816353338, ResamplingKernels.Evaluate(ResamplingFilter.Robidoux, 0), 14);
+        Assert.Equal(0.06303595918233311, ResamplingKernels.Evaluate(ResamplingFilter.Robidoux, 1), 14);
+
+        // Sharp Robidoux: B = 6 / (13 + 7 sqrt(2)) = 0.2620145123990142
+        Assert.Equal(0.9126618292003286, ResamplingKernels.Evaluate(ResamplingFilter.RobidouxSharp, 0), 14);
+        Assert.Equal(0.043669085399835696, ResamplingKernels.Evaluate(ResamplingFilter.RobidouxSharp, -1), 14);
+
+        // Cubic B-spline (B = 1, C = 0): 2/3 at 0, 1/6 at 1, (1/2) = 23/48, (2 - |x|)^3 / 6 from 1: (3/2) = 1/48
+        Assert.Equal(2.0 / 3, ResamplingKernels.Evaluate(ResamplingFilter.Spline, 0), 14);
+        Assert.Equal(1.0 / 6, ResamplingKernels.Evaluate(ResamplingFilter.Spline, 1), 14);
+        Assert.Equal(23.0 / 48, ResamplingKernels.Evaluate(ResamplingFilter.Spline, 0.5), 14);
+        Assert.Equal(1.0 / 48, ResamplingKernels.Evaluate(ResamplingFilter.Spline, 1.5), 14);
+
+        // The cubic with B = 0, C = 1/2 is Catmull-Rom
+        foreach (var x in new[] { 0.1, 0.5, 0.9, 1.3, 1.75 })
+        {
+            Assert.Equal(ResamplingKernels.CatmullRom(x), ResamplingKernels.Cubic(x, 0, 0.5), 14);
+        }
+
+        // Lanczos: n sin(pi x) sin(pi x / n) / (pi x)^2 -> Lanczos2(1/2) = 4 sqrt(2) / pi^2, (3/2) = -sqrt(2) / (2.25 pi^2);
+        // Lanczos5(1/2) = 5 (sqrt(5) - 1) / pi^2 (sin(pi / 10) = (sqrt(5) - 1) / 4); Lanczos8(1/2) = 32 sin(pi / 16) / pi^2
+        Assert.Equal(0.5731591682507563, ResamplingKernels.Evaluate(ResamplingFilter.Lanczos2, 0.5), 14);
+        Assert.Equal(-0.06368435202786181, ResamplingKernels.Evaluate(ResamplingFilter.Lanczos2, -1.5), 14);
+        Assert.Equal(0.6261993527133463, ResamplingKernels.Evaluate(ResamplingFilter.Lanczos5, 0.5), 14);
+        Assert.Equal(0.6325370350028462, ResamplingKernels.Evaluate(ResamplingFilter.Lanczos8, -0.5), 14);
+
+        // Every kernel is zero at and beyond its radius; the interpolating ones are 1 at 0 and 0 at the other integers
+        foreach (var filter in Enum.GetValues<ResamplingFilter>().Where(filter => filter is not ResamplingFilter.NearestNeighbor))
+        {
+            var radius = ResamplingKernels.GetRadius(filter);
+            Assert.Equal(0, ResamplingKernels.Evaluate(filter, radius + 0.01));
+            Assert.Equal(0, ResamplingKernels.Evaluate(filter, -radius));
+            Assert.Equal(0, ResamplingKernels.Evaluate(filter, radius * 3));
+            if (InterpolatingFilters.Contains(filter))
+            {
+                Assert.Equal(1, ResamplingKernels.Evaluate(filter, 0));
+                for (var x = 1; x <= 9; x++)
+                {
+                    Assert.Equal(0, ResamplingKernels.Evaluate(filter, x));
+                    Assert.Equal(0, ResamplingKernels.Evaluate(filter, -x));
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void NonInterpolatingFiltersSmoothAnAxisThatKeepsItsSize()
+    {
+        // 3x1 -> 3x2: the horizontal axis keeps its size; Mitchell weighs the pixels at distance 0 and 1 by 8/9 and 1/18,
+        // pixel -1 clamps to pixel 0: [0, 90, 0] -> [90 / 18, 90 * 8/9, 90 / 18] = [5, 80, 5] on both rows
+        using var image = BuildGray8([0, 90, 0]);
+        image.Resize(new ResizeOptions(3, 2) { Mode = ResizeMode.Stretch, Filter = ResamplingFilter.MitchellNetravali }, Ct);
+        for (var y = 0; y < 2; y++)
+        {
+            Assert.Equal([5, 80, 5], Enumerable.Range(0, 3).Select(x => (int)image.Frames[0][x, y].Value));
+        }
+
+        // An interpolating cubic keeps the pixels; a resize that keeps both sizes keeps the image whatever the filter
+        using var hermite = BuildGray8([0, 90, 0]);
+        hermite.Resize(new ResizeOptions(3, 2) { Mode = ResizeMode.Stretch, Filter = ResamplingFilter.Hermite }, Ct);
+        Assert.Equal([0, 90, 0], Enumerable.Range(0, 3).Select(x => (int)hermite.Frames[0][x, 1].Value));
+
+        using var unchanged = BuildGray8([0, 90, 0]);
+        unchanged.Resize(new ResizeOptions(3, 1) { Mode = ResizeMode.Stretch, Filter = ResamplingFilter.Spline }, Ct);
+        AssertGray8(unchanged, [0, 90, 0]);
+    }
+
     public static TheoryData<ResamplingFilter, int[], int[]> UpsamplingCases => new()
     {
         // 2 -> 4 pixels: centers c = (2d + 1) / 4 - 1/2 = -0.25, 0.25, 0.75, 1.25; indices outside the source are clamped
@@ -235,6 +331,10 @@ public sealed class ResizeTests
         // Catmull-Rom, d1 (c = 0.25): weights -9, 111, 29, -3 (/128) on pixels -1, 0, 1, 2 -> 255 * (29 - 3) / 128 = 51.80 -> 52;
         // d2 = 255 * (111 - 9) / 128 = 203.20 -> 203; d0 = 255 * -9 / 128 < 0 -> 0; d3 = 255 * 137 / 128 > 255 -> 255 (clamped overshoot)
         { ResamplingFilter.Bicubic, [0, 255], [0, 52, 203, 255] },
+
+        // Box: the pixel containing the center, like nearest; 2 -> 5: u = 0.2, 0.6, 1.0, 1.4, 1.8, the boundary u = 1 selects
+        // the higher pixel
+        { ResamplingFilter.Box, [0, 100], [0, 0, 100, 100, 100] },
     };
 
     [Theory]
@@ -276,6 +376,21 @@ public sealed class ResizeTests
         // 3 -> 1: c = 1, f = 3, support 3; bilinear raw K((i - 1) / 3) on -1..3 = 1/3, 2/3, 1, 2/3, 1/3 (sum 3); pixel 0 gets
         // 1/9 + 2/9, pixel 1 3/9, pixel 2 3/9 -> (3 * 30 + 3 * 60 + 3 * 120) / 9 = 70
         { ResamplingFilter.Bilinear, [30, 60, 120], [70] },
+
+        // Box, 4 -> 2: the footprints [0, 2) and [2, 4) hold the centers 0.5, 1.5 and 2.5, 3.5 -> 40, 200
+        { ResamplingFilter.Box, [0, 80, 160, 240], [40, 200] },
+
+        // Box, 3 -> 2: footprints (0, 1.5] and (1.5, 3]; the center 1.5 on the boundary belongs to the first -> 45, 120
+        { ResamplingFilter.Box, [30, 60, 120], [45, 120] },
+
+        // Box, 7 -> 6 (non-dyadic footprints of 7/6): d2 = (7/3, 7/2] holds the centers 2.5 and the boundary 3.5 -> 25;
+        // d3 = (7/2, 14/3] holds 4.5 only
+        { ResamplingFilter.Box, [0, 10, 20, 30, 40, 50, 60], [0, 10, 25, 40, 50, 60] },
+
+        // Mitchell-Netravali, 4 -> 2: raw K((i - 0.5) / 2) on pixels -3..4 = (-17, -27, 295, 901, 901, 295, -27, -17) / 1152,
+        // sum 2; clamped weights of pixels 0..3: (1152, 901, 295, -44) / 2304 -> d0 = (80 * 901 + 160 * 295 - 240 * 44) / 2304
+        // = 47.19 -> 47; d1 = 240 - 47.19 -> 193
+        { ResamplingFilter.MitchellNetravali, [0, 80, 160, 240], [47, 193] },
     };
 
     [Theory]

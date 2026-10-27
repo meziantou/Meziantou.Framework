@@ -1059,6 +1059,15 @@ namespace Meziantou.Framework.Imaging
         Bilinear = 1,
         Bicubic = 2,
         Lanczos3 = 3,
+        Box = 4,
+        Hermite = 5,
+        MitchellNetravali = 6,
+        Robidoux = 7,
+        RobidouxSharp = 8,
+        Spline = 9,
+        Lanczos2 = 10,
+        Lanczos5 = 11,
+        Lanczos8 = 12,
     }
 
     public enum ResizeAnchor

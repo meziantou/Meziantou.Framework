@@ -460,6 +460,42 @@ public sealed class ProjectedFileSystemTests
         Assert.Equal(8192, vfs.GetBufferSize());
     }
 
+    // The calls must fail before reaching ProjFS, so this runs on every platform
+    [Fact]
+    [System.Runtime.Versioning.SupportedOSPlatform("windows10.0.17763")]
+    public void NativeCallsWithADisposedInstanceHandleDoNotReachTheDriver()
+    {
+        // Stop can dispose the instance handle while another thread calls ProjFS with it: the driver must never get the
+        // context of an instance that PrjStopVirtualizing already tore down
+        var handle = new ProjFSSafeHandle(1, ownHandle: false);
+        handle.Dispose();
+
+        Assert.Throws<ObjectDisposedException>(() => NativeMethods.PrjClearNegativePathCache(handle, out _));
+        Assert.Throws<ObjectDisposedException>(() => NativeMethods.PrjDeleteFile(handle, "file.txt", PRJ_UPDATE_TYPES.PRJ_UPDATE_NONE, out _));
+        Assert.Throws<ObjectDisposedException>(() => NativeMethods.PrjGetVirtualizationInstanceInfo(handle, out _));
+    }
+
+    [ProjectedFileSystemFact]
+    public void InstanceHelpersCanBeCalledUntilTheInstanceIsStopped()
+    {
+        var rootPath = Path.Combine(Path.GetTempPath(), "MyVirtualFS", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(rootPath);
+        using var vfs = new InstanceHelpersVirtualFileSystem(rootPath);
+        Assert.Throws<InvalidOperationException>(vfs.ClearCache);
+
+        vfs.Start(options: null);
+        vfs.ClearCache();
+        vfs.ClearCache();
+
+        // Stop waits for the calls that use the instance handle: it returns because every call ended
+        vfs.Stop();
+        Assert.Throws<InvalidOperationException>(vfs.ClearCache);
+        Assert.Throws<InvalidOperationException>(() => vfs.Delete("file1.txt"));
+
+        vfs.Dispose();
+        try { Directory.Delete(rootPath, recursive: true); } catch { }
+    }
+
     /// <summary>
     /// Verifies that a stream ending before the declared length fails the read instead of yielding filler.
     ///
@@ -545,6 +581,20 @@ public sealed class ProjectedFileSystemTests
 
         public void SetBufferSize(int value) => BufferSize = value;
         public int GetBufferSize() => BufferSize;
+
+        protected override ValueTask<IEnumerable<ProjectedFileSystemEntry>> GetEntriesAsync(string path)
+            => ValueTask.FromResult<IEnumerable<ProjectedFileSystemEntry>>([]);
+
+        protected override ValueTask<Stream?> OpenReadAsync(string path) => ValueTask.FromResult<Stream?>(null);
+    }
+
+    private sealed class InstanceHelpersVirtualFileSystem : ProjectedFileSystemBase
+    {
+        public InstanceHelpersVirtualFileSystem(string rootFolder) : base(rootFolder) { }
+
+        public void ClearCache() => ClearNegativePathCache();
+
+        public bool Delete(string relativePath) => DeleteFile(relativePath, PRJ_UPDATE_TYPES.PRJ_UPDATE_NONE, out _);
 
         protected override ValueTask<IEnumerable<ProjectedFileSystemEntry>> GetEntriesAsync(string path)
             => ValueTask.FromResult<IEnumerable<ProjectedFileSystemEntry>>([]);

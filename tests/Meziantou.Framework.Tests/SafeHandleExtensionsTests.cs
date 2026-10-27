@@ -72,6 +72,39 @@ public sealed class SafeHandleExtensionsTests
     {
         SafeHandleValue scope = default;
         Assert.Throws<ObjectDisposedException>(() => scope.Value);
+        scope.Dispose();
+    }
+
+    [Fact]
+    public void CopiesOfAScopeReleaseTheReferenceOnce()
+    {
+        using var handle = new TestSafeHandle(42);
+        var scope = handle.CreateHandleScope();
+        var copy = scope;
+        copy.Dispose();
+        scope.Dispose();
+        copy.Dispose();
+
+        // Releasing the reference of the scope more than once would release the reference of the owner of the handle
+        Assert.Equal(0, handle.ReleaseCount);
+        Assert.False(handle.IsClosed);
+        Assert.Throws<ObjectDisposedException>(() => scope.Value);
+        Assert.Throws<ObjectDisposedException>(() => copy.Value);
+
+        handle.Dispose();
+        Assert.Equal(1, handle.ReleaseCount);
+    }
+
+    [Fact]
+    public void TheHandleIsReleasedWhenTheLastScopeIsDisposed()
+    {
+        var handle = new TestSafeHandle(42);
+        var scope = handle.CreateHandleScope();
+        handle.Dispose();
+        Assert.Equal(0, handle.ReleaseCount);
+
+        scope.Dispose();
+        Assert.Equal(1, handle.ReleaseCount);
     }
 
     private sealed class TestSafeHandle : SafeHandleZeroOrMinusOneIsInvalid
@@ -81,8 +114,11 @@ public sealed class SafeHandleExtensionsTests
             SetHandle(value);
         }
 
+        public int ReleaseCount { get; private set; }
+
         protected override bool ReleaseHandle()
         {
+            ReleaseCount++;
             SetHandle(IntPtr.Zero);
             return true;
         }

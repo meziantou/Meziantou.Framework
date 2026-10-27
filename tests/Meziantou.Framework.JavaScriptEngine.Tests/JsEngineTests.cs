@@ -415,6 +415,28 @@ public sealed class JsEngineTests
     }
 
     [Fact]
+    public void BufferViewsCreatedByTheHostAreAlignedAndInBounds()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using var scope = engine.Enter();
+        var shared = realm.Execute("new SharedArrayBuffer(32)").AsObject();
+
+        // The atomic operations access the elements as aligned integers
+        Assert.Throws<ArgumentException>("byteOffset", () => realm.CreateBufferView(JsBufferKind.BigInt64Array, shared, 12, 1));
+        Assert.Throws<ArgumentException>("byteOffset", () => realm.CreateBufferView(JsBufferKind.Int32Array, shared, 2, 1));
+        Assert.Throws<ArgumentOutOfRangeException>("byteOffset", () => realm.CreateBufferView(JsBufferKind.Uint8Array, shared, -1, 1));
+        Assert.Throws<ArgumentOutOfRangeException>("length", () => realm.CreateBufferView(JsBufferKind.BigInt64Array, shared, 24, 2));
+        Assert.Throws<ArgumentOutOfRangeException>("length", () => realm.CreateBufferView(JsBufferKind.DataView, shared, 30, 3));
+
+        // A DataView has no alignment
+        _ = realm.CreateBufferView(JsBufferKind.DataView, shared, 3, 29);
+
+        realm.GlobalObject.SetProperty("view", realm.CreateBufferView(JsBufferKind.BigInt64Array, shared, 8, 3));
+        Assert.Equal("0,5", realm.Execute("String(Atomics.add(view, 2, 5n)) + ',' + String(Atomics.load(view, 2))").AsString());
+    }
+
+    [Fact]
     public void HostHooks()
     {
         var host = new RecordingHost();

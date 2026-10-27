@@ -62,6 +62,11 @@ public sealed class MarkdownPipeline
     internal ProcessDocumentDelegate? _documentProcessed;
 
     /// <summary>
+    /// Gets the callback that runs after the <see cref="MarkdownPipelineBuilder.DocumentProcessed"/> handlers.
+    /// </summary>
+    internal ProcessDocumentDelegate? DocumentCompleted { get; init; }
+
+    /// <summary>
     /// True to parse trivia such as whitespace, extra heading characters and unescaped
     /// string values.
     /// </summary>

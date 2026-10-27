@@ -82,7 +82,11 @@ public class GenericAttributesParser : InlineParser
                     {
                         // The attributes before these ones are in the paragraph too
                         var textStart = paragraph.Inline!.FirstChild is GenericAttributesInline first ? first.SourceText.Start : startPosition;
-                        MoveParagraphToLinesBefore(paragraph, new StringSlice(slice.Text, textStart, slice.End), (Block)objectToAttach);
+                        var lineBefore = MoveParagraphToLinesBefore(paragraph, new StringSlice(slice.Text, textStart, slice.End), (Block)objectToAttach);
+                        if (objectToAttach is HeadingBlock heading)
+                        {
+                            HeadingAttributesTrivia.GetOrCreate(heading).AddLineBefore(attributes, lineBefore);
+                        }
                     }
                 }
             }
@@ -92,12 +96,18 @@ public class GenericAttributesParser : InlineParser
                 // The attributes are written back by the roundtrip renderer. They are not an inline that other attributes
                 // can be attached to, so the current inline stays the same.
                 var previousInline = processor.Inline;
+                var heading = objectToAttach as HeadingBlock;
                 processor.Emit(new GenericAttributesInline
                 {
                     SourceText = new StringSlice(slice.Text, startPosition, slice.Start - 1),
                     Span = new SourceSpan(processor.GetSourcePosition(startPosition), processor.GetSourcePosition(slice.Start - 1)),
                     IsClosed = true,
+                    Heading = heading,
                 });
+                if (heading is not null)
+                {
+                    HeadingAttributesTrivia.GetOrCreate(heading).AddInlineAttributes(attributes);
+                }
                 processor.Inline = previousInline;
             }
 
@@ -584,8 +594,8 @@ public class GenericAttributesParser : InlineParser
     }
 
     // With trivia, the line of a paragraph that only has attributes is written back before the block they are attached to, as the
-    // paragraph is removed
-    private static void MoveParagraphToLinesBefore(ParagraphBlock paragraph, StringSlice attributes, Block block)
+    // paragraph is removed. Returns the text of the line.
+    private static string MoveParagraphToLinesBefore(ParagraphBlock paragraph, StringSlice attributes, Block block)
     {
         var lines = new List<StringSlice>();
         if (paragraph.LinesBefore is { } linesBefore)
@@ -593,7 +603,8 @@ public class GenericAttributesParser : InlineParser
             lines.AddRange(linesBefore);
         }
 
-        lines.Add(new StringSlice(paragraph.TriviaBefore.ToString() + attributes.ToString(), paragraph.NewLine));
+        var line = paragraph.TriviaBefore.ToString() + attributes.ToString();
+        lines.Add(new StringSlice(line, paragraph.NewLine));
         if (paragraph.LinesAfter is { } linesAfter)
         {
             lines.AddRange(linesAfter);
@@ -605,6 +616,7 @@ public class GenericAttributesParser : InlineParser
         }
 
         block.LinesBefore = lines;
+        return line;
     }
 
     internal static void RemoveFilteredProperties(HtmlAttributes attributes, Func<string, bool> filter)

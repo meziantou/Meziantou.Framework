@@ -86,6 +86,7 @@ public static class MarkdownParser
 
         // Allow to call a hook after processing a document
         pipeline._documentProcessed?.Invoke(document);
+        pipeline.DocumentCompleted?.Invoke(document);
 
         return document;
     }

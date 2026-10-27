@@ -1,4 +1,5 @@
 using Meziantou.Framework.Markdown.Helpers;
+using Meziantou.Framework.Markdown.Syntax;
 using Meziantou.Framework.Markdown.Syntax.Inlines;
 
 namespace Meziantou.Framework.Markdown.Extensions.GenericAttributes;
@@ -11,4 +12,9 @@ namespace Meziantou.Framework.Markdown.Extensions.GenericAttributes;
 internal sealed class GenericAttributesInline : ContainerInline
 {
     public StringSlice SourceText { get; set; }
+
+    /// <summary>
+    /// Gets or sets the heading the attributes are attached to, or <see langword="null"/> when they are attached to another object.
+    /// </summary>
+    public HeadingBlock? Heading { get; set; }
 }

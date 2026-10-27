@@ -75,6 +75,13 @@ public class GenericAttributesExtension : IMarkdownExtension
 
         inlineParser.AttributeFilter = AttributeFilter;
 
+        if (pipeline.TrackTrivia)
+        {
+            // The roundtrip renderer writes the attributes of a heading that were changed after the parsing, including by the
+            // handlers of DocumentProcessed
+            pipeline.DocumentCompleted += HeadingAttributesTrivia.RecordParsedAttributes;
+        }
+
         // Plug into all IAttributesParseable
         foreach (var parser in pipeline.BlockParsers)
         {
@@ -120,6 +127,11 @@ public class GenericAttributesExtension : IMarkdownExtension
                     htmlAttributes.Column = startOfAttributes - processor.CurrentLineStartPosition; // This is not accurate with tabs!
                     htmlAttributes.Span.Start = startOfAttributes;
                     htmlAttributes.Span.End = copy.Start - 1;
+
+                    if (processor.TrackTrivia && block is HeadingBlock heading)
+                    {
+                        HeadingAttributesTrivia.GetOrCreate(heading).AddTriviaAfterAttributes(attributes, new StringSlice(line.Text, startOfAttributes, copy.Start - 1));
+                    }
 
                     line.End = indexOfAttributes - 1;
                     return true;

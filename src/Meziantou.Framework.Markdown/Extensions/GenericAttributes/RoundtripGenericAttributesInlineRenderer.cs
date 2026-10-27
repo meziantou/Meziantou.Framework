@@ -9,7 +9,15 @@ internal sealed class RoundtripGenericAttributesInlineRenderer : RoundtripObject
 {
     protected override void Write(RoundtripRenderer renderer, GenericAttributesInline obj)
     {
+        var text = obj.SourceText.AsSpan();
+
+        // The heading renderer writes the changed attributes of the heading in place of the ones of the text
+        if (obj.Heading is { } heading && HeadingAttributesTrivia.GetChanged(heading) is not null)
+        {
+            text = text[text.TrimEnd("\r\n").Length..];
+        }
+
         // The attributes can be followed by the line break that ends their line
-        renderer.WriteLines(obj.SourceText);
+        renderer.WriteLines(text);
     }
 }

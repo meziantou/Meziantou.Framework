@@ -234,6 +234,11 @@ attached to the first node that can hold them. Blank lines are stored in `Block.
 Other properties are named `Trivia*` (for example `TriviaBefore`, `TriviaAfter`) on the blocks and inlines that need
 them. These properties are only populated when trivia tracking is enabled.
 
+With [`UseGenericAttributes`](#extensions), the attributes of a heading (`GetAttributes()`) that are changed
+after parsing are written as `{#id .class name=value}`, in place of the attributes of the source. Attributes that the
+parsing added without them being in the source, such as an identifier generated from the heading text, are not written
+while they are unchanged. The other blocks and the inlines do not write their changed attributes.
+
 ## Differences from Markdig
 
 - The namespaces start with `Meziantou.Framework.Markdown` instead of `Markdig`.

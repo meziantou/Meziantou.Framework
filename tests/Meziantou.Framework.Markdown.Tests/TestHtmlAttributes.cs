@@ -7,6 +7,8 @@ using System.Globalization;
 using Meziantou.Framework.Markdown.Extensions.GenericAttributes;
 using Meziantou.Framework.Markdown.Helpers;
 using Meziantou.Framework.Markdown.Renderers.Html;
+using Meziantou.Framework.Markdown.Renderers.Roundtrip;
+using Meziantou.Framework.Markdown.Syntax;
 
 namespace Meziantou.Framework.Markdown.Tests;
 
@@ -369,6 +371,138 @@ public class TestHtmlAttributes
         var htmlWithTrivia = MarkdownConverter.ToHtml(markdown, new MarkdownPipelineBuilder().UseGenericAttributes().EnableTrackTrivia().Build());
 
         Assert.Equal(html, htmlWithTrivia);
+    }
+
+    [Theory]
+    [InlineData("# H\n", "x", null, "# H {#x}\n", "<h1 id=\"x\">H</h1>\n")]
+    [InlineData("# H {#a}\n", "b", null, "# H {#b}\n", "<h1 id=\"b\">H</h1>\n")]
+    [InlineData("# H{#a} more  \n", "b", null, "# H{#b} more  \n", "<h1 id=\"b\">H</h1>\n")]
+    [InlineData("# H # {#a}  \n", "b", null, "# H # {#b}  \n", "<h1 id=\"b\">H</h1>\n")]
+    [InlineData("# H #  \r\n", null, "c", "# H # {.c}  \r\n", "<h1 class=\"c\">H</h1>\n")]
+    [InlineData("#\n", "x", null, "# {#x}\n", "<h1 id=\"x\"></h1>\n")]
+    [InlineData("## *H*\n", "x", null, "## *H* {#x}\n", "<h2 id=\"x\"><em>H</em></h2>\n")]
+    [InlineData("# a { b {#a}\n", "b", null, "# a { b  {#b}\n", "<h1 id=\"b\">a { b</h1>\n")]
+    [InlineData("# H {.a}\n", null, "b", "# H {.a .b}\n", "<h1 class=\"a b\">H</h1>\n")]
+    [InlineData("{.a}\n# H\n", null, "b", "# H {.a .b}\n", "<h1 class=\"a b\">H</h1>\n")]
+    [InlineData("p\n\n{.a}\n# H\n", null, "b", "p\n\n# H {.a .b}\n", "<p>p</p>\n<h1 class=\"a b\">H</h1>\n")]
+    [InlineData("Setext\n===\n", "x", null, "Setext {#x}\n===\n", "<h1 id=\"x\">Setext</h1>\n")]
+    [InlineData("Setext{#a}\n---\n", "b", null, "Setext {#b}\n---\n", "<h2 id=\"b\">Setext</h2>\n")]
+    [InlineData("a {#a}\nb\n---\n", "b", null, "a \nb {#b}\n---\n", "<h2 id=\"b\">a\nb</h2>\n")]
+    [InlineData("> # H\n> p\n", "x", null, "> # H {#x}\n> p\n", "<blockquote>\n<h1 id=\"x\">H</h1>\n<p>p</p>\n</blockquote>\n")]
+    [InlineData("- # H\n", "x", null, "- # H {#x}\n", "<ul>\n<li><h1 id=\"x\">H</h1>\n</li>\n</ul>\n")]
+    public void GenericAttributesRoundtripChangedHeadingAttributes(string markdown, string? id, string? cssClass, string expected, string expectedHtml)
+    {
+        var result = RoundtripWithChangedHeadingAttributes(markdown, new MarkdownPipelineBuilder().UseGenericAttributes(), attributes =>
+        {
+            if (id is not null)
+            {
+                attributes.Id = id;
+            }
+
+            if (cssClass is not null)
+            {
+                attributes.AddClass(cssClass);
+            }
+        });
+
+        Assert.Equal(expected, result);
+        Assert.Equal(expectedHtml, MarkdownConverter.ToHtml(result, new MarkdownPipelineBuilder().UseGenericAttributes().Build()));
+    }
+
+    [Theory]
+    [InlineData("# H {#a}\n", "# H \n")]
+    [InlineData("{#a}\n# H\n", "# H\n")]
+    [InlineData("Setext {#a}\n===\n", "Setext \n===\n")]
+    public void GenericAttributesRoundtripRemovedHeadingAttributes(string markdown, string expected)
+    {
+        var result = RoundtripWithChangedHeadingAttributes(markdown, new MarkdownPipelineBuilder().UseGenericAttributes(), attributes => attributes.Id = null);
+
+        Assert.Equal(expected, result);
+    }
+
+    [Theory]
+    [InlineData("title", "a b", "# H {title=\"a b\"}\n")]
+    [InlineData("title", "a\"b c", "# H {title='a\"b c'}\n")]
+    [InlineData("title", "", "# H {title=\"\"}\n")]
+    [InlineData("title", "}", "# H {title=\"}\"}\n")]
+    [InlineData("lang", "en", "# H {lang=en}\n")]
+    [InlineData("hidden", null, "# H {hidden}\n")]
+    public void GenericAttributesRoundtripChangedHeadingProperties(string name, string? value, string expected)
+    {
+        var result = RoundtripWithChangedHeadingAttributes("# H\n", new MarkdownPipelineBuilder().UseGenericAttributes(), attributes => attributes.AddPropertyIfNotExist(name, value));
+
+        Assert.Equal(expected, result);
+        var expectedValue = "=\"" + System.Net.WebUtility.HtmlEncode(value) + "\"";
+        Assert.Equal("<h1 " + name + expectedValue + ">H</h1>\n", MarkdownConverter.ToHtml(result, new MarkdownPipelineBuilder().UseGenericAttributes().Build()));
+    }
+
+    [Theory]
+    [InlineData("a b")]
+    [InlineData("a}")]
+    [InlineData("")]
+    public void GenericAttributesRoundtripThrowsForIdentifiersThatCannotBeWritten(string id)
+    {
+        Assert.Throws<InvalidOperationException>(() => RoundtripWithChangedHeadingAttributes("# H\n", new MarkdownPipelineBuilder().UseGenericAttributes(), attributes => attributes.Id = id));
+    }
+
+    [Theory]
+    [InlineData("on click", "x")]
+    [InlineData("title", "a' \"b")]
+    [InlineData("title", "a\nb")]
+    public void GenericAttributesRoundtripThrowsForPropertiesThatCannotBeWritten(string name, string value)
+    {
+        Assert.Throws<InvalidOperationException>(() => RoundtripWithChangedHeadingAttributes("# H\n", new MarkdownPipelineBuilder().UseGenericAttributes(), attributes => attributes.AddProperty(name, value)));
+    }
+
+    [Fact]
+    public void GenericAttributesRoundtripDoesNotWriteUnchangedAttributesAddedByTheParsing()
+    {
+        // The identifiers generated from the content are added again when the text is parsed
+        var pipeline = new MarkdownPipelineBuilder().UseAutoIdentifiers().UseGenericAttributes();
+
+        Assert.Equal("# Hello {.c}\n", RoundtripWithChangedHeadingAttributes("# Hello\n", pipeline, attributes => attributes.AddClass("c")));
+        Assert.Equal("# Hello {#a .c}\n", RoundtripWithChangedHeadingAttributes("# Hello {#a}\n", pipeline, attributes => attributes.AddClass("c")));
+        Assert.Equal("# Hello {#b}\n", RoundtripWithChangedHeadingAttributes("# Hello\n", pipeline, attributes => attributes.Id = "b"));
+        Assert.Equal("# Hello\n", RoundtripWithChangedHeadingAttributes("# Hello\n", pipeline, _ => { }));
+    }
+
+    [Fact]
+    public void GenericAttributesRoundtripSeesTheAttributesAddedByDocumentProcessedHandlers()
+    {
+        // The handler is added before the generic attributes extension registers its own
+        var builder = new MarkdownPipelineBuilder();
+        builder.DocumentProcessed += document =>
+        {
+            foreach (var heading in document.Descendants<HeadingBlock>())
+            {
+                heading.GetAttributes().AddClass("added");
+            }
+        };
+
+        Assert.Equal("# H\n", RoundtripWithChangedHeadingAttributes("# H\n", builder.UseGenericAttributes(), _ => { }));
+    }
+
+    [Fact]
+    public void RoundtripWithoutGenericAttributesDoesNotWriteHeadingAttributes()
+    {
+        // Without the extension, the text "{#x}" would be part of the content of the heading
+        Assert.Equal("# H\n", RoundtripWithChangedHeadingAttributes("# H\n", new MarkdownPipelineBuilder(), attributes => attributes.Id = "x"));
+    }
+
+    private static string RoundtripWithChangedHeadingAttributes(string markdown, MarkdownPipelineBuilder pipelineBuilder, Action<HtmlAttributes> change)
+    {
+        var pipeline = pipelineBuilder.EnableTrackTrivia().Build();
+        var document = MarkdownConverter.Parse(markdown, pipeline);
+        foreach (var heading in document.Descendants<HeadingBlock>())
+        {
+            change(heading.GetAttributes());
+        }
+
+        var writer = new StringWriter();
+        var renderer = new RoundtripRenderer(writer);
+        pipeline.Setup(renderer);
+        renderer.Write(document);
+        return writer.ToString();
     }
 }
 

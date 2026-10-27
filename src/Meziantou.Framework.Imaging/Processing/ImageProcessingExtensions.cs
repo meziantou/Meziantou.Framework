@@ -20,7 +20,8 @@ namespace Meziantou.Framework.Imaging;
 /// </para>
 /// <para>
 /// Pixel-only operations (<see cref="Flip(Image, FlipMode, CancellationToken)"/>, <see cref="Grayscale(Image, CancellationToken)"/>,
-/// <see cref="Convolve(Image, ConvolutionOptions, CancellationToken)"/>) work in place; on failure or cancellation some frames
+/// <see cref="Convolve(Image, ConvolutionOptions, CancellationToken)"/>, <see cref="Equalize(Image, HistogramEqualizationOptions?, CancellationToken)"/>,
+/// <see cref="AutoLevels(Image, AutoLevelsOptions?, CancellationToken)"/>) work in place; on failure or cancellation some frames
 /// or rows may already be modified, but the image remains structurally valid.
 /// </para>
 /// <para>
@@ -704,6 +705,217 @@ public static class ImageProcessingExtensions
         ArgumentNullException.ThrowIfNull(frame);
         ArgumentNullException.ThrowIfNull(matrix);
         frame.Draw(matrix, static (canvas, matrix) => canvas.FilterBackdrop(matrix), cancellationToken);
+    }
+
+    /// <summary>
+    /// Counts the pixels of every level of a channel, over every frame of the image (including the poster frame). The image
+    /// is not changed.
+    /// </summary>
+    /// <remarks>
+    /// The levels are the stored (encoded) sample values, at the storage precision: 256 bins for 8-bit pixel formats,
+    /// 65,536 for 16-bit ones (see <see cref="ImageHistogram"/>). No color profile is applied. Floating-point pixel formats
+    /// have no discrete levels: convert the image to <see cref="Rgba64"/> with <see cref="Image.CloneAs{TPixel}(PixelConversionOptions?)"/>
+    /// first. The working storage (one row) is charged to the image.
+    /// </remarks>
+    /// <param name="image">The image.</param>
+    /// <param name="channel">The channel to count.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <returns>The histogram.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="image"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="channel"/> is not a defined <see cref="HistogramChannel"/>.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The pixel format is a floating-point one.</exception>
+    /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit.</exception>
+    /// <exception cref="ObjectDisposedException">The image is disposed.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public static ImageHistogram ComputeHistogram(this Image image, HistogramChannel channel, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(image);
+        ValidateHistogramChannel(channel);
+        return image.ComputeHistogramCore(frames: null, channel, cancellationToken);
+    }
+
+    /// <summary>Counts the pixels of every level of a channel of one frame. See <see cref="ComputeHistogram(Image, HistogramChannel, CancellationToken)"/>.</summary>
+    /// <param name="frame">The frame.</param>
+    /// <param name="channel">The channel to count.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <returns>The histogram.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="frame"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="channel"/> is not a defined <see cref="HistogramChannel"/>.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The pixel format is a floating-point one.</exception>
+    /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
+    /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit.</exception>
+    /// <exception cref="ObjectDisposedException">The frame is no longer attached to a live image.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public static ImageHistogram ComputeHistogram(this ImageFrame frame, HistogramChannel channel, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(frame);
+        ValidateHistogramChannel(channel);
+        _ = frame.GetStorage();
+        return frame.OwnerImage.ComputeHistogramCore([frame], channel, cancellationToken);
+    }
+
+    /// <summary>
+    /// Equalizes the histogram of every frame of the image (including the poster frame) in place, which spreads its levels
+    /// over the whole sample range: globally, or by tiles with a contrast limit (CLAHE). The pixel format and alpha are kept.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// See <see cref="HistogramEqualizationMode"/> for the mappings and <see cref="HistogramColorMode"/> for the samples
+    /// they remap: by default, the luminance, so that the hues do not shift. The mappings work on the stored (encoded)
+    /// sample values at the storage precision, with 256 levels for 8-bit pixel formats and 65,536 for 16-bit ones, and are
+    /// deterministic: the same on every platform. No color profile is applied. Fully transparent pixels are not counted.
+    /// Floating-point pixel formats have no discrete levels: convert the image to <see cref="Rgba64"/> with
+    /// <see cref="Image.CloneAs{TPixel}(PixelConversionOptions?)"/> first.
+    /// </para>
+    /// <para>
+    /// Each frame is equalized alone by default; <see cref="HistogramEqualizationOptions.ShareHistogramAcrossFrames"/>
+    /// gives every frame the mapping of their combined histograms, so that an animation does not flicker.
+    /// </para>
+    /// <para>
+    /// The working memory (the tables of the tiles: up to 25 MiB for 8 x 8 tiles of 16-bit samples remapped per channel)
+    /// is charged to the image and rented before a pixel changes. On failure or cancellation, some frames or rows may
+    /// already be remapped.
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.Imaging.Processing.Tests/HistogramTests.cs" ref:region="Histogram_Clahe" ref:dedent="true">
+    /// [Fact]
+    /// public void Histogram_Clahe()
+    /// {
+    ///     // A dim, low-contrast image: the levels are between 100 and 131
+    ///     using var image = new Image&lt;Rgb24&gt;(64, 64);
+    ///     image.Frames[0].ProcessPixelRows(pixels =&gt;
+    ///     {
+    ///         for (var y = 0; y &lt; pixels.Height; y++)
+    ///         {
+    ///             var row = pixels.GetRowSpan(y);
+    ///             for (var x = 0; x &lt; row.Length; x++)
+    ///             {
+    ///                 var level = (byte)(100 + ((x + y) % 32));
+    ///                 row[x] = new Rgb24(level, level, (byte)(level - 20));
+    ///             }
+    ///         }
+    ///     });
+    ///
+    ///     var before = image.ComputeHistogram(HistogramChannel.Luminance);
+    ///     var contrastBefore = before.Counts.LastIndexOfAnyExcept(0L) - before.Counts.IndexOfAnyExcept(0L);
+    ///
+    ///     // Contrast-limited adaptive equalization of the luminance, on a 4 x 4 grid of tiles
+    ///     image.Equalize(new HistogramEqualizationOptions
+    ///     {
+    ///         Mode = HistogramEqualizationMode.Adaptive,
+    ///         TileCountX = 4,
+    ///         TileCountY = 4,
+    ///         ClipLimit = 2,
+    ///     });
+    ///
+    ///     // The levels spread over a range more than twice as wide; the clip limit keeps the contrast from growing further
+    ///     var after = image.ComputeHistogram(HistogramChannel.Luminance);
+    ///     var contrastAfter = after.Counts.LastIndexOfAnyExcept(0L) - after.Counts.IndexOfAnyExcept(0L);
+    ///     Assert.InRange(contrastAfter, 2 * contrastBefore, 255);
+    /// }
+    /// </code>
+    /// </example>
+    /// <param name="image">The image to modify.</param>
+    /// <param name="options">The options, or <see langword="null"/> for <see cref="HistogramEqualizationOptions.Default"/>.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="image"/> is <see langword="null"/>.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The pixel format is a floating-point one. Nothing is changed.</exception>
+    /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
+    /// <exception cref="ImageResourceLimitException">The working memory would exceed the allocation limit. Nothing is changed.</exception>
+    /// <exception cref="ObjectDisposedException">The image is disposed.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public static void Equalize(this Image image, HistogramEqualizationOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(image);
+        image.EqualizeFrames(frames: null, options ?? HistogramEqualizationOptions.Default, cancellationToken);
+    }
+
+    /// <summary>Equalizes the histogram of one frame in place. See <see cref="Equalize(Image, HistogramEqualizationOptions?, CancellationToken)"/>.</summary>
+    /// <param name="frame">The frame to modify.</param>
+    /// <param name="options">The options, or <see langword="null"/> for <see cref="HistogramEqualizationOptions.Default"/>.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests. On cancellation, some rows may already be remapped.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="frame"/> is <see langword="null"/>.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The pixel format is a floating-point one. Nothing is changed.</exception>
+    /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
+    /// <exception cref="ImageResourceLimitException">The working memory would exceed the allocation limit. Nothing is changed.</exception>
+    /// <exception cref="ObjectDisposedException">The frame is no longer attached to a live image.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public static void Equalize(this ImageFrame frame, HistogramEqualizationOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(frame);
+        _ = frame.GetStorage();
+        frame.OwnerImage.EqualizeFrames([frame], options ?? HistogramEqualizationOptions.Default, cancellationToken);
+    }
+
+    /// <summary>
+    /// Stretches the contrast of every frame of the image (including the poster frame) in place: the levels between two
+    /// percentiles of the histogram are spread linearly over the whole sample range. The pixel format and alpha are kept.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// See <see cref="AutoLevelsOptions"/> for the mapping and <see cref="HistogramColorMode"/> for the samples it remaps:
+    /// by default, the luminance, so that the hues do not shift. The mapping works on the stored (encoded) sample values at
+    /// the storage precision, with 256 levels for 8-bit pixel formats and 65,536 for 16-bit ones. No color profile is
+    /// applied. Fully transparent pixels are not counted. Floating-point pixel formats have no discrete levels: convert the
+    /// image to <see cref="Rgba64"/> with <see cref="Image.CloneAs{TPixel}(PixelConversionOptions?)"/> first.
+    /// </para>
+    /// <para>
+    /// Each frame is stretched alone by default; <see cref="AutoLevelsOptions.ShareHistogramAcrossFrames"/> gives every
+    /// frame the levels of their combined histograms, so that an animation does not flicker. The working memory is
+    /// charged to the image and rented before a pixel changes. On failure or cancellation, some frames or rows may already
+    /// be remapped.
+    /// </para>
+    /// </remarks>
+    /// <param name="image">The image to modify.</param>
+    /// <param name="options">The options, or <see langword="null"/> for <see cref="AutoLevelsOptions.Default"/>.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="image"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><see cref="AutoLevelsOptions.LowPercentile"/> is not less than <see cref="AutoLevelsOptions.HighPercentile"/>.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The pixel format is a floating-point one. Nothing is changed.</exception>
+    /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
+    /// <exception cref="ImageResourceLimitException">The working memory would exceed the allocation limit. Nothing is changed.</exception>
+    /// <exception cref="ObjectDisposedException">The image is disposed.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public static void AutoLevels(this Image image, AutoLevelsOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(image);
+        options ??= AutoLevelsOptions.Default;
+        ValidateAutoLevels(options);
+        image.AutoLevelsFrames(frames: null, options, cancellationToken);
+    }
+
+    /// <summary>Stretches the contrast of one frame in place. See <see cref="AutoLevels(Image, AutoLevelsOptions?, CancellationToken)"/>.</summary>
+    /// <param name="frame">The frame to modify.</param>
+    /// <param name="options">The options, or <see langword="null"/> for <see cref="AutoLevelsOptions.Default"/>.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests. On cancellation, some rows may already be remapped.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="frame"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><see cref="AutoLevelsOptions.LowPercentile"/> is not less than <see cref="AutoLevelsOptions.HighPercentile"/>.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The pixel format is a floating-point one. Nothing is changed.</exception>
+    /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
+    /// <exception cref="ImageResourceLimitException">The working memory would exceed the allocation limit. Nothing is changed.</exception>
+    /// <exception cref="ObjectDisposedException">The frame is no longer attached to a live image.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public static void AutoLevels(this ImageFrame frame, AutoLevelsOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(frame);
+        options ??= AutoLevelsOptions.Default;
+        ValidateAutoLevels(options);
+        _ = frame.GetStorage();
+        frame.OwnerImage.AutoLevelsFrames([frame], options, cancellationToken);
+    }
+
+    private static void ValidateHistogramChannel(HistogramChannel channel)
+    {
+        if (!Enum.IsDefined(channel))
+            throw new ArgumentOutOfRangeException(nameof(channel), channel, "The histogram channel is not valid.");
+    }
+
+    private static void ValidateAutoLevels(AutoLevelsOptions options)
+    {
+        if (options.LowPercentile >= options.HighPercentile)
+            throw new ArgumentException("The low percentile must be less than the high percentile.", nameof(options));
     }
 
     /// <summary>

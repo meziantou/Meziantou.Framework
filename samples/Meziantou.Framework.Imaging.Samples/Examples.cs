@@ -778,6 +778,32 @@ internal static class Examples
     }
     #endregion
 
+    /// <summary>Histogram-based contrast: the levels of a photo are stretched, then its local contrast is raised (CLAHE).</summary>
+    #region Imaging_Histogram
+    public static ImageHistogram EnhanceContrast(string inputPath, string outputPath)
+    {
+        using var image = Image.Load(inputPath);
+
+        // Stretch the luminance between its 0.5th and 99.5th percentiles: a few very dark or very bright pixels do not
+        // limit the stretch. The hues are kept.
+        image.AutoLevels(new AutoLevelsOptions { LowPercentile = 0.5, HighPercentile = 99.5 });
+
+        // Raise the local contrast: each of 8 x 8 tiles is equalized with a contrast limit, and the tiles are blended
+        // without seams. The frames of an animation share their histograms, so that they do not flicker.
+        image.Equalize(new HistogramEqualizationOptions
+        {
+            Mode = HistogramEqualizationMode.Adaptive,
+            ClipLimit = 2,
+            ShareHistogramAcrossFrames = true,
+        });
+
+        image.Save(outputPath);
+
+        // The number of pixels at each luminance level, over every frame
+        return image.ComputeHistogram(HistogramChannel.Luminance);
+    }
+    #endregion
+
     /// <summary>One palette for every frame of an animation, computed from all of them.</summary>
     #region Imaging_SharedPalette
     public static void SaveGifWithSharedPalette(string inputPath, string outputPath)

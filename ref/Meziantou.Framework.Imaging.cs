@@ -69,6 +69,15 @@ namespace Meziantou.Framework.Imaging
         Contain = 1,
     }
 
+    public sealed class AutoLevelsOptions
+    {
+        public Meziantou.Framework.Imaging.HistogramColorMode ColorMode { get => throw null; init { } }
+        public static Meziantou.Framework.Imaging.AutoLevelsOptions Default { get => throw null; }
+        public double HighPercentile { get => throw null; init { } }
+        public double LowPercentile { get => throw null; init { } }
+        public bool ShareHistogramAcrossFrames { get => throw null; init { } }
+    }
+
     public struct Bgra32 : System.IEquatable<Meziantou.Framework.Imaging.Bgra32>
     {
         public byte A;
@@ -398,6 +407,39 @@ namespace Meziantou.Framework.Imaging
         public double TargetWhiteLuminance { get => throw null; init { } }
     }
 
+    public enum HistogramChannel
+    {
+        Luminance = 0,
+        Red = 1,
+        Green = 2,
+        Blue = 3,
+        Alpha = 4,
+    }
+
+    public enum HistogramColorMode
+    {
+        Luminance = 0,
+        PerChannel = 1,
+    }
+
+    public enum HistogramEqualizationMode
+    {
+        Global = 0,
+        Adaptive = 1,
+    }
+
+    public sealed class HistogramEqualizationOptions
+    {
+        public const int MaxTileCount = 256;
+        public double ClipLimit { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.HistogramColorMode ColorMode { get => throw null; init { } }
+        public static Meziantou.Framework.Imaging.HistogramEqualizationOptions Default { get => throw null; }
+        public Meziantou.Framework.Imaging.HistogramEqualizationMode Mode { get => throw null; init { } }
+        public bool ShareHistogramAcrossFrames { get => throw null; init { } }
+        public int TileCountX { get => throw null; init { } }
+        public int TileCountY { get => throw null; init { } }
+    }
+
     public sealed class IccColorTransform
     {
         public int DestinationChannelCount { get => throw null; }
@@ -632,6 +674,15 @@ namespace Meziantou.Framework.Imaging
         public void ProcessPixelRows<TState>(TState state, Meziantou.Framework.Imaging.PixelRowsAction<TPixel, TState> action) where TState : allows ref struct { }
     }
 
+    public sealed class ImageHistogram
+    {
+        public int BinCount { get => throw null; }
+        public Meziantou.Framework.Imaging.HistogramChannel Channel { get => throw null; }
+        public System.ReadOnlySpan<long> Counts { get => throw null; }
+        public long this[int level] { get => throw null; }
+        public long TotalCount { get => throw null; }
+    }
+
     public enum ImageIdentifyMode
     {
         Header = 0,
@@ -685,11 +736,17 @@ namespace Meziantou.Framework.Imaging
         public static void ApplyColorMatrix(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.ColorMatrix matrix, System.Threading.CancellationToken cancellationToken = default) { }
         public static bool AutoCrop(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.AutoCropOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static bool AutoCrop(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.AutoCropAnalysis analysis, Meziantou.Framework.Imaging.AutoCropOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static void AutoLevels(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.AutoLevelsOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void AutoLevels(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.AutoLevelsOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
         public static void AutoOrient(this Meziantou.Framework.Imaging.Image image, System.Threading.CancellationToken cancellationToken = default) { }
+        public static Meziantou.Framework.Imaging.ImageHistogram ComputeHistogram(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.HistogramChannel channel, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static Meziantou.Framework.Imaging.ImageHistogram ComputeHistogram(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.HistogramChannel channel, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static void ConvertColorProfile(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.Metadata.IccProfile destinationProfile, Meziantou.Framework.Imaging.IccColorTransformOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Convolve(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.ConvolutionOptions options, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Convolve(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.ConvolutionOptions options, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Crop(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.Rectangle rectangle, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void Equalize(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.HistogramEqualizationOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void Equalize(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.HistogramEqualizationOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Flip(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.FlipMode mode, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Flip(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.FlipMode mode, System.Threading.CancellationToken cancellationToken = default) { }
         public static void GaussianBlur(this Meziantou.Framework.Imaging.Image image, double sigma, Meziantou.Framework.Imaging.ConvolutionEdgeMode edgeMode = Meziantou.Framework.Imaging.ConvolutionEdgeMode.Clamp, Meziantou.Framework.Imaging.ConvolutionWorkingSpace workingSpace = Meziantou.Framework.Imaging.ConvolutionWorkingSpace.Encoded, System.Threading.CancellationToken cancellationToken = default) { }

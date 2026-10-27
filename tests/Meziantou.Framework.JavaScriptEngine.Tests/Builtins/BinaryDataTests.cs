@@ -1,4 +1,5 @@
 using System.Numerics;
+using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.JavaScriptEngine.Tests.Builtins;
 
@@ -283,6 +284,48 @@ public sealed class BinaryDataTests
 
         thread.Join();
         Assert.Equal(2000, context.CallStatic("Atomics", "load", view, 0).AsNumber());
+    }
+
+    [Fact]
+    public void SharedArrayBuffer_SpanKeepsTheBlockMemoryAlive()
+    {
+        var span = CreateSharedArrayBufferSpan(1024, out var bufferReference);
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+        Assert.False(bufferReference.TryGetTarget(out _));
+
+        // Reuse the memory of any block freed by the collection
+        var others = new List<JsSharedDataBlock>();
+        for (var i = 0; i < 64; i++)
+        {
+            var other = JsSharedDataBlock.TryCreate(1024, maxByteLength: null)!;
+            other.GetSpan().Fill(0xFF);
+            others.Add(other);
+        }
+
+        Assert.Equal(Enumerable.Range(0, 1024).Select(i => (byte)i).ToArray(), span.ToArray());
+
+        span.Fill(1);
+        foreach (var other in others)
+        {
+            Assert.Equal(-1, other.GetSpan().IndexOfAnyExcept((byte)0xFF));
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Span<byte> CreateSharedArrayBufferSpan(int length, out WeakReference<JsObject> bufferReference)
+    {
+        using var context = new FundamentalsTestContext();
+        var buffer = New(context, "SharedArrayBuffer", length);
+        var view = New(context, "Uint8Array", buffer);
+        for (var i = 0; i < length; i++)
+        {
+            view.Set(new PropertyKey((uint)i), i, throwOnFailure: true);
+        }
+
+        bufferReference = new WeakReference<JsObject>(buffer);
+        return JsBinaryData.GetSharedDataBlock(buffer)!.GetSpan();
     }
 
     // ------------------------------------------------------------------------------------------------------------------

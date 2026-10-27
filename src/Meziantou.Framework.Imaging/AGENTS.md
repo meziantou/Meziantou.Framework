@@ -991,7 +991,7 @@ thin public types over its `FontFace`.
   rented from the scope of the conversion (a scope of the default limits for `IccColorTransform`). The last stage of a
   16-bit conversion is still evaluated: its inputs are the doubles that come out of a matrix, not 65,536 values.
 - Default parallelism is one worker (`ImageConfiguration.MaxDegreeOfParallelism`). Only `Resize`, the transformations,
-  `Convolve`, the blurs (`GaussianBlur`, `BoxBlur`, `MedianBlur`) and `Sharpen` are parallel, and their result must not
+  `Convolve`, the blurs (`GaussianBlur`, `BoxBlur`, `MedianBlur`), `Sharpen` and `DetectEdges` are parallel, and their result must not
   depend on the worker count (`ParallelConvolutionTests`: a frame needs 65,536 pixels to get several workers). Decoding, encoding and drawing stay sequential.
 - Static row callbacks allocate nothing per row (`PerformanceContractTests`).
 - This repository builds with the updated memory-safety rules: wrap `MemoryMarshal`, `Unsafe` and `Vector*.LoadUnsafe` /

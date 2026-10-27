@@ -155,6 +155,7 @@ public static class ReferenceConvolver
                             color = alpha > 0 ? color / alpha : 0;
                         }
 
+                        color += options.Bias * (options.Linear ? 1 : max);
                         value = options.Linear ? max * ReferenceResampler.Encode(options.Transfer, Clamp(color, 1)) : Clamp(color, max);
                     }
 
@@ -164,6 +165,98 @@ public static class ReferenceConvolver
         }
 
         return new ReferenceFilterResult(options.ToString(), width, height, layout, values, zeroAlphaIsTransparentBlack: premultiplied, artifactDirectory: "convolution");
+    }
+
+    /// <summary>
+    /// Detects the edges of a buffer: every color sample becomes the combination of the sums, over the same sample of the
+    /// neighboring pixels (read as stored, as <see cref="Map"/> says beyond the edges), of several square matrices applied
+    /// as written; alpha is kept. With <paramref name="grayscale"/>, the colors of every pixel of a color layout are first
+    /// replaced by their luma <c>floor((2126 R + 7152 G + 722 B + 5000) / 10000)</c>.
+    /// </summary>
+    /// <param name="source">The source pixels (integer samples).</param>
+    /// <param name="size">The number of rows and columns of the matrices (odd).</param>
+    /// <param name="matrices">The weights of every matrix, row by row from the top-left one.</param>
+    /// <param name="combination">How the sums of the matrices make a sample.</param>
+    /// <param name="edgeMode">The pixels read outside the image.</param>
+    /// <param name="grayscale">Whether the colors are replaced by their luma first.</param>
+    /// <returns>The exact output samples.</returns>
+    public static ReferenceFilterResult DetectEdges(RawPixelBuffer source, int size, IReadOnlyList<decimal[]> matrices, ReferenceEdgeCombination combination, ReferenceEdgeMode edgeMode, bool grayscale)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(matrices);
+        if (size % 2 != 1 || matrices.Count == 0 || matrices.Any(matrix => matrix.Length != size * size))
+            throw new ArgumentException("The matrices must be square, of odd size, with one weight per cell.", nameof(matrices));
+
+        var layout = source.Layout;
+        var channels = layout.ChannelCount;
+        var width = source.Width;
+        var height = source.Height;
+        var max = (decimal)layout.MaxSampleValue;
+        var samples = new decimal[width * height * channels];
+        for (var y = 0; y < height; y++)
+        {
+            for (var x = 0; x < width; x++)
+            {
+                var index = ((y * width) + x) * channels;
+                for (var c = 0; c < channels; c++)
+                {
+                    samples[index + c] = source.GetSample(x, y, c);
+                }
+
+                if (grayscale && layout.IsColor)
+                {
+                    var luma = decimal.Floor(((2126 * samples[index]) + (7152 * samples[index + 1]) + (722 * samples[index + 2]) + 5000) / 10000);
+                    samples[index] = samples[index + 1] = samples[index + 2] = luma;
+                }
+            }
+        }
+
+        var values = new decimal[width * height * channels];
+        var sums = new decimal[matrices.Count];
+        for (var y = 0; y < height; y++)
+        {
+            for (var x = 0; x < width; x++)
+            {
+                for (var c = 0; c < channels; c++)
+                {
+                    var index = (((y * width) + x) * channels) + c;
+                    if (c == layout.AlphaChannel)
+                    {
+                        values[index] = samples[index];
+                        continue;
+                    }
+
+                    for (var m = 0; m < matrices.Count; m++)
+                    {
+                        sums[m] = 0;
+                        for (var j = 0; j < size; j++)
+                        {
+                            var sy = Map(y + j - (size / 2), height, edgeMode);
+                            for (var i = 0; i < size; i++)
+                            {
+                                var sx = Map(x + i - (size / 2), width, edgeMode);
+                                if (sx is not null && sy is not null)
+                                {
+                                    sums[m] += matrices[m][(j * size) + i] * samples[(((sy.Value * width) + sx.Value) * channels) + c];
+                                }
+                            }
+                        }
+                    }
+
+                    var value = combination switch
+                    {
+                        ReferenceEdgeCombination.Magnitude => SquareRoot(sums.Sum(sum => sum * sum)),
+                        ReferenceEdgeCombination.Maximum => sums.Max(),
+                        ReferenceEdgeCombination.Absolute when sums.Length == 1 => Math.Abs(sums[0]),
+                        _ => throw new ArgumentOutOfRangeException(nameof(combination)),
+                    };
+
+                    values[index] = Clamp(value, max);
+                }
+            }
+        }
+
+        return new ReferenceFilterResult(string.Create(CultureInfo.InvariantCulture, $"edges {combination} of {matrices.Count} {size}x{size} matrices, {edgeMode} edges{(grayscale ? ", grayscale" : "")}"), width, height, layout, values, zeroAlphaIsTransparentBlack: false, artifactDirectory: "convolution");
     }
 
     /// <summary>Gets the index read for an index that may be outside an axis of <paramref name="length"/> pixels, or <see langword="null"/> when nothing is read.</summary>
@@ -210,4 +303,19 @@ public static class ReferenceConvolver
     }
 
     private static decimal Clamp(decimal value, decimal max) => value < 0 ? 0 : value > max ? max : value;
+
+    /// <summary>Gets the square root of a number that is not negative, by Newton's iterations in <see cref="decimal"/> from the estimate of the platform.</summary>
+    private static decimal SquareRoot(decimal value)
+    {
+        if (value == 0)
+            return 0;
+
+        var root = (decimal)Math.Sqrt((double)value);
+        for (var i = 0; i < 4; i++)
+        {
+            root = (root + (value / root)) / 2;
+        }
+
+        return root;
+    }
 }

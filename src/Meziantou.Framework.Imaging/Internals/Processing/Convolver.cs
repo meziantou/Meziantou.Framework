@@ -36,6 +36,11 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// An unsharp mask reloads every row from the image right before it is rewritten (it is still original) and combines it
 /// with its blur.
 /// </para>
+/// <para>
+/// An edge detector sums several kernels of the same dimensions over the same working rows, into one accumulator each,
+/// then combines the sums sample by sample (<see cref="KernelCombination"/>). A bias is added to the color working samples
+/// last, right before they are stored.
+/// </para>
 /// <para>Cancellation is observed between row bands; the rows already written stay written.</para>
 /// </remarks>
 internal static class Convolver
@@ -178,14 +183,14 @@ internal static class Convolver
         var scratch = plan.GetScratch(band);
         var start = plan.GetBandStart(band);
         var end = plan.GetBandStart(band + 1);
-        var weights = plan.Weights;
         var kernelWidth = plan.KernelWidth;
         var kernelHeight = plan.KernelHeight;
         var centerY = plan.CenterY;
         var channels = GetChannels(plan, alpha);
 
         // The rows of the scratch are sized for every sample of a pixel; colors only use the start of each one
-        var accumulator = scratch.Accumulator[..(plan.Size.Width * channels)];
+        var length = plan.Size.Width * channels;
+        var accumulator = scratch.Accumulator[..length];
 
         // The taps of a row are summed a block of samples at a time (Resampler.SetWeightedSum) when the kernel is small enough
         // for their list to be on the stack; otherwise, and for the scalar reference of the tests, a row is added per tap
@@ -209,70 +214,14 @@ internal static class Convolver
                 LoadRow<TSample>(storage, next, plan, alpha, scratch, scratch.GetRingRowOffset(next));
             }
 
-            // The taps of the row, in the order of the kernel: the position in the scratch of the row they read, shifted by
-            // the kernel column (the padded row starts centerX pixels left of the image), and their weight
-            var buffer = scratch.Buffer;
-            var count = 0;
-            var empty = true;
-            for (var j = 0; j < kernelHeight; j++)
+            for (var k = 0; k < plan.KernelCount; k++)
             {
-                var rowOffset = GetRowOffset(plan, scratch, y + j - centerY, start, end);
-                if (rowOffset < 0)
-                    continue;
-
-                var kernelRow = weights.Slice(j * kernelWidth, kernelWidth);
-                for (var i = 0; i < kernelWidth; i++)
-                {
-                    var weight = kernelRow[i];
-                    if (weight == 0)
-                        continue;
-
-                    var offset = rowOffset + (i * channels);
-                    if (blocked)
-                    {
-                        tapOffsets[count] = offset;
-                        tapWeights[count] = weight;
-                        tapRows[count] = j;
-                        count++;
-                    }
-                    else if (empty)
-                    {
-                        // 0 + w0 x0 written directly (no separate clearing pass)
-                        Resampler.SetScaled(accumulator, buffer.Slice(offset, accumulator.Length), weight);
-                        empty = false;
-                    }
-                    else
-                    {
-                        Resampler.AddScaled(accumulator, buffer.Slice(offset, accumulator.Length), weight);
-                    }
-                }
+                SumKernel(plan, scratch, plan.GetKernelWeights(k), y, start, end, channels, scratch.GetAccumulatorOffset(k), length, blocked, tapOffsets, tapWeights, tapRows);
             }
 
-            if (count is not 0)
+            if (plan.Combination != KernelCombination.None)
             {
-                // The taps are summed by groups that read at most MaxRowsPerPass rows (the prefetching of the processor follows
-                // a limited number of streams), each group adding to the sums of the previous ones
-                var first = 0;
-                var rows = 1;
-                for (var t = 1; t <= count; t++)
-                {
-                    if (t < count && tapRows[t] == tapRows[t - 1])
-                        continue;
-
-                    if (t < count && rows < MaxRowsPerPass)
-                    {
-                        rows++;
-                        continue;
-                    }
-
-                    Resampler.SetWeightedSum(buffer, scratch.AccumulatorOffset, accumulator.Length, tapOffsets[first..t], tapWeights[first..t], accumulate: first is not 0);
-                    first = t;
-                    rows = 1;
-                }
-            }
-            else if (empty)
-            {
-                accumulator.Clear();
+                Combine(plan, scratch, length);
             }
 
             if (plan.IsSharpen)
@@ -280,10 +229,173 @@ internal static class Convolver
                 Sharpen<TSample>(storage, y, plan, alpha, scratch, accumulator);
             }
 
+            if (plan.Bias != 0)
+            {
+                AddBias(accumulator, alpha, plan.Bias);
+            }
+
             WorkingSamples.Store(accumulator, GetSamples<TSample>(storage, y), alpha, plan.Transfer, plan.MaxValue);
         }
 
         observer?.Invoke(band, false);
+    }
+
+    /// <summary>
+    /// Sets the accumulator at <paramref name="accumulatorOffset"/> in the scratch to the sums of one kernel for output row
+    /// <paramref name="y"/>: <c>0 + w0 x0 + w1 x1 + ...</c>, kernel rows from top to bottom and weights from left to right,
+    /// zero weights skipped.
+    /// </summary>
+    private static void SumKernel(ConvolutionPlan plan, ConvolutionScratch scratch, ReadOnlySpan<double> weights, int y, int start, int end, int channels, int accumulatorOffset, int length, bool blocked, Span<int> tapOffsets, Span<double> tapWeights, Span<int> tapRows)
+    {
+        var kernelWidth = plan.KernelWidth;
+        var kernelHeight = plan.KernelHeight;
+        var centerY = plan.CenterY;
+        var buffer = scratch.Buffer;
+        var accumulator = buffer.Slice(accumulatorOffset, length);
+
+        // The taps of the row, in the order of the kernel: the position in the scratch of the row they read, shifted by
+        // the kernel column (the padded row starts centerX pixels left of the image), and their weight
+        var count = 0;
+        var empty = true;
+        for (var j = 0; j < kernelHeight; j++)
+        {
+            var rowOffset = GetRowOffset(plan, scratch, y + j - centerY, start, end);
+            if (rowOffset < 0)
+                continue;
+
+            var kernelRow = weights.Slice(j * kernelWidth, kernelWidth);
+            for (var i = 0; i < kernelWidth; i++)
+            {
+                var weight = kernelRow[i];
+                if (weight == 0)
+                    continue;
+
+                var offset = rowOffset + (i * channels);
+                if (blocked)
+                {
+                    tapOffsets[count] = offset;
+                    tapWeights[count] = weight;
+                    tapRows[count] = j;
+                    count++;
+                }
+                else if (empty)
+                {
+                    // 0 + w0 x0 written directly (no separate clearing pass)
+                    Resampler.SetScaled(accumulator, buffer.Slice(offset, length), weight);
+                    empty = false;
+                }
+                else
+                {
+                    Resampler.AddScaled(accumulator, buffer.Slice(offset, length), weight);
+                }
+            }
+        }
+
+        if (count is not 0)
+        {
+            // The taps are summed by groups that read at most MaxRowsPerPass rows (the prefetching of the processor follows
+            // a limited number of streams), each group adding to the sums of the previous ones
+            var first = 0;
+            var rows = 1;
+            for (var t = 1; t <= count; t++)
+            {
+                if (t < count && tapRows[t] == tapRows[t - 1])
+                    continue;
+
+                if (t < count && rows < MaxRowsPerPass)
+                {
+                    rows++;
+                    continue;
+                }
+
+                Resampler.SetWeightedSum(buffer, accumulatorOffset, length, tapOffsets[first..t], tapWeights[first..t], accumulate: first is not 0);
+                first = t;
+                rows = 1;
+            }
+        }
+        else if (empty)
+        {
+            accumulator.Clear();
+        }
+    }
+
+    /// <summary>
+    /// Combines the sums of the kernels of an edge detector into the first accumulator, sample by sample: the magnitude
+    /// <c>sqrt(a * a + b * b)</c> of two gradients, the largest sum of a compass, or the largest absolute sum. A sum that is
+    /// not a number gives a sample that is not a number.
+    /// </summary>
+    private static void Combine(ConvolutionPlan plan, ConvolutionScratch scratch, int length)
+    {
+        var buffer = scratch.Buffer;
+        var result = buffer.Slice(scratch.GetAccumulatorOffset(0), length);
+        switch (plan.Combination)
+        {
+            case KernelCombination.Magnitude:
+            {
+                var other = buffer.Slice(scratch.GetAccumulatorOffset(1), length);
+                for (var i = 0; i < result.Length; i++)
+                {
+                    result[i] = Math.Sqrt((result[i] * result[i]) + (other[i] * other[i]));
+                }
+
+                break;
+            }
+
+            case KernelCombination.Maximum:
+                for (var k = 1; k < plan.KernelCount; k++)
+                {
+                    var other = buffer.Slice(scratch.GetAccumulatorOffset(k), length);
+                    for (var i = 0; i < result.Length; i++)
+                    {
+                        result[i] = Math.Max(result[i], other[i]);
+                    }
+                }
+
+                break;
+
+            case KernelCombination.MaximumAbsolute:
+                for (var i = 0; i < result.Length; i++)
+                {
+                    result[i] = Math.Abs(result[i]);
+                }
+
+                for (var k = 1; k < plan.KernelCount; k++)
+                {
+                    var other = buffer.Slice(scratch.GetAccumulatorOffset(k), length);
+                    for (var i = 0; i < result.Length; i++)
+                    {
+                        result[i] = Math.Max(result[i], Math.Abs(other[i]));
+                    }
+                }
+
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Adds the bias of a plan to the color working samples of a row: multiplied by the filtered alpha when the colors are
+    /// premultiplied (so that the stored color, divided by it, gets the bias), as is otherwise. Alpha never gets it (a
+    /// preserved alpha is not stored).
+    /// </summary>
+    private static void AddBias(Span<double> values, WorkingAlpha alpha, double bias)
+    {
+        if (alpha == WorkingAlpha.Premultiplied)
+        {
+            for (var i = 0; i < values.Length; i += 4)
+            {
+                var a = values[i + 3];
+                values[i] = Math.FusedMultiplyAdd(bias, a, values[i]);
+                values[i + 1] = Math.FusedMultiplyAdd(bias, a, values[i + 1]);
+                values[i + 2] = Math.FusedMultiplyAdd(bias, a, values[i + 2]);
+            }
+
+            return;
+        }
+
+        foreach (ref var value in values)
+        {
+            value += bias;
+        }
     }
 
     // The position in the scratch of the working row of image row source, or -1 when the edge mode reads no row there

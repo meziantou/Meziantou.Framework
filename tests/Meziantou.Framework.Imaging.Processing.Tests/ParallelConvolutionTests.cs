@@ -113,7 +113,7 @@ public sealed class ParallelConvolutionTests
         // A band of the 7-worker run has about 37 rows. The box blur sums its rows by blocks at fixed positions: a band
         // that starts inside a block computes the end of that block from its window; a radius of 45 makes blocks of 91
         // rows, and windows that read beyond the neighboring bands and beyond the image at both ends. The median, the
-        // unsharp mask and the separable matrix read their halos before any row is rewritten
+        // unsharp mask, the separable matrix and the edge detectors read their halos before any row is rewritten
         var random = new Random(13);
         var (width, height) = (256, 260);
         Assert.Equal(7, RowBands.GetWorkerCount(new Size(width, height), 7));
@@ -131,6 +131,10 @@ public sealed class ParallelConvolutionTests
             ("median 40", image => image.MedianBlur(40, mode, Ct)),
             ("sharpen", image => image.Sharpen(12, 1.5, 0.01, mode, cancellationToken: Ct)),
             ("separable", image => image.Convolve(separable, Ct)),
+            ("emboss with a bias", image => image.Convolve(new ConvolutionOptions(ConvolutionKernel.Emboss) { EdgeMode = mode, Bias = 0.25 }, Ct)),
+            ("sobel", image => image.DetectEdges(EdgeDetector.Sobel, grayscale: false, mode, Ct)),
+            ("kirsch", image => image.DetectEdges(EdgeDetector.Kirsch, edgeMode: mode, cancellationToken: Ct)),
+            ("laplacian of gaussian", image => image.DetectEdges(EdgeDetector.LaplacianOfGaussian, grayscale: false, mode, Ct)),
         ];
 
         foreach (var (name, apply) in operations)

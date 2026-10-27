@@ -45,7 +45,8 @@ internal sealed class ConvolutionPlan : IDisposable
     /// The weights every row is filtered by before the kernel combines the rows (an odd number), or <see langword="null"/>.
     /// They make a blur, whose weights add up to 1 (<see cref="IsBlur"/>). Without them, a separable kernel provides its own.
     /// </param>
-    public ConvolutionPlan(ConvolutionKernel kernel, ConvolutionEdgeMode edgeMode, bool preserveAlpha, bool linear, PixelFormat format, Size size, int maxDegreeOfParallelism = 1, byte transfer = CicpTransfer.Srgb, double[]? rowWeights = null)
+    /// <param name="bias">The value added to every color sum, a fraction of the range of a color (<see cref="ConvolutionOptions.Bias"/>).</param>
+    public ConvolutionPlan(ConvolutionKernel kernel, ConvolutionEdgeMode edgeMode, bool preserveAlpha, bool linear, PixelFormat format, Size size, int maxDegreeOfParallelism = 1, byte transfer = CicpTransfer.Srgb, double[]? rowWeights = null, double bias = 0)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxDegreeOfParallelism);
         if (rowWeights is not null && (kernel.Width != 1 || rowWeights.Length % 2 != 1))
@@ -81,10 +82,98 @@ internal sealed class ConvolutionPlan : IDisposable
         Alpha = !PixelFormats.HasAlpha(format) ? WorkingAlpha.None : preserveAlpha ? WorkingAlpha.Preserved : WorkingAlpha.Premultiplied;
         MaxValue = WorkingSamples.GetMaxValue(format);
         Workers = RowBands.GetWorkerCount(size, maxDegreeOfParallelism);
+        KernelCount = 1;
+        Bias = bias * (linear ? 1 : MaxValue);
     }
 
-    /// <summary>Gets the weights, row by row (the column of a separable plan).</summary>
-    public ReadOnlySpan<double> Weights => _weights;
+    private ConvolutionPlan(ConvolutionKernel[] kernels, KernelCombination combination, ConvolutionEdgeMode edgeMode, PixelFormat format, Size size, int maxDegreeOfParallelism)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxDegreeOfParallelism);
+        _kernelWidth = kernels[0].Width;
+        _kernelHeight = kernels[0].Height;
+        var area = _kernelWidth * _kernelHeight;
+        _weights = new double[kernels.Length * area];
+        for (var k = 0; k < kernels.Length; k++)
+        {
+            if (kernels[k].Width != _kernelWidth || kernels[k].Height != _kernelHeight)
+                throw new ArgumentException("The kernels of a plan have the same dimensions.", nameof(kernels));
+
+            kernels[k].GetValues().CopyTo(_weights, k * area);
+        }
+
+        EdgeMode = edgeMode;
+        Size = size;
+        Channels = PixelFormats.GetComponentCount(format);
+        Alpha = PixelFormats.HasAlpha(format) ? WorkingAlpha.Preserved : WorkingAlpha.None;
+        MaxValue = WorkingSamples.GetMaxValue(format);
+        Workers = RowBands.GetWorkerCount(size, maxDegreeOfParallelism);
+        KernelCount = kernels.Length;
+        Combination = combination;
+    }
+
+    /// <summary>
+    /// Gets the number of kernels whose sums <see cref="Combination"/> combines into every output sample (1 for a plain
+    /// convolution). They have the same dimensions, and <see cref="GetKernelWeights"/> gives their weights.
+    /// </summary>
+    public int KernelCount { get; }
+
+    /// <summary>Gets how the sums of the kernels make an output sample.</summary>
+    public KernelCombination Combination { get; }
+
+    /// <summary>
+    /// Gets the value added to every color working sample before it is stored (premultiplied by the filtered alpha when
+    /// the colors are), in working units: the bias of the options times the range of a color.
+    /// </summary>
+    public double Bias { get; }
+
+    /// <summary>
+    /// Creates the plan of an edge detector: colors filtered as stored, alpha kept, and the sums of the kernels of the
+    /// operator combined into a magnitude (two gradients), a maximum (a compass) or an absolute value (a Laplacian).
+    /// </summary>
+    public static ConvolutionPlan CreateEdgeDetection(EdgeDetector detector, ConvolutionEdgeMode edgeMode, PixelFormat format, Size size, int maxDegreeOfParallelism = 1)
+    {
+        (ConvolutionKernel[] Kernels, KernelCombination Combination) definition = detector switch
+        {
+            EdgeDetector.Sobel => ([ConvolutionKernel.SobelX, ConvolutionKernel.SobelY], KernelCombination.Magnitude),
+            EdgeDetector.Scharr => ([ConvolutionKernel.ScharrX, ConvolutionKernel.ScharrY], KernelCombination.Magnitude),
+            EdgeDetector.Prewitt => ([ConvolutionKernel.PrewittX, ConvolutionKernel.PrewittY], KernelCombination.Magnitude),
+            EdgeDetector.Kirsch => (CreateCompass([5, 5, 5, -3, -3, -3, -3, -3], 8), KernelCombination.Maximum),
+            EdgeDetector.Robinson => (CreateCompass([-1, 0, 1, 2, 1, 0, -1, -2], 4), KernelCombination.MaximumAbsolute),
+            EdgeDetector.Laplacian3x3 => ([ConvolutionKernel.Laplacian3x3], KernelCombination.MaximumAbsolute),
+            EdgeDetector.Laplacian5x5 => ([ConvolutionKernel.Laplacian5x5], KernelCombination.MaximumAbsolute),
+            EdgeDetector.LaplacianOfGaussian => ([ConvolutionKernel.LaplacianOfGaussian], KernelCombination.MaximumAbsolute),
+            _ => throw new ArgumentOutOfRangeException(nameof(detector), detector, "The edge detector is not valid."),
+        };
+
+        return new ConvolutionPlan(definition.Kernels, definition.Combination, edgeMode, format, size, maxDegreeOfParallelism);
+    }
+
+    /// <summary>
+    /// Creates the first <paramref name="count"/> rotations by 45 degrees of a 3x3 compass matrix whose middle weight is 0,
+    /// given by its eight outer weights clockwise from the top-left one: each rotation moves them one place clockwise.
+    /// </summary>
+    internal static ConvolutionKernel[] CreateCompass(ReadOnlySpan<double> ring, int count)
+    {
+        // The positions in a 3x3 matrix of the outer weights, clockwise from the top-left one
+        ReadOnlySpan<int> positions = [0, 1, 2, 5, 8, 7, 6, 3];
+        var kernels = new ConvolutionKernel[count];
+        Span<double> values = stackalloc double[9];
+        for (var rotation = 0; rotation < count; rotation++)
+        {
+            values.Clear();
+            for (var i = 0; i < positions.Length; i++)
+            {
+                values[positions[(i + rotation) % positions.Length]] = ring[i];
+            }
+
+            kernels[rotation] = new ConvolutionKernel(3, 3, values);
+        }
+
+        return kernels;
+    }
+
+    /// <summary>Gets the weights of kernel <paramref name="index"/>, row by row (the column of a separable plan).</summary>
+    public ReadOnlySpan<double> GetKernelWeights(int index) => _weights.AsSpan(index * _kernelWidth * _kernelHeight, _kernelWidth * _kernelHeight);
 
     /// <summary>Gets a value indicating whether every row is filtered by <see cref="RowWeights"/> before the kernel combines the rows.</summary>
     public bool IsSeparable => _rowWeights is not null;
@@ -178,7 +267,7 @@ internal sealed class ConvolutionPlan : IDisposable
         _scratch = new ConvolutionScratch?[Workers];
         for (var worker = 0; worker < Workers; worker++)
         {
-            _scratch[worker] = ConvolutionScratch.Create(scope, paddedLength, rowLength, KernelHeight, CenterY, inputLength);
+            _scratch[worker] = ConvolutionScratch.Create(scope, paddedLength, rowLength, KernelHeight, CenterY, inputLength, KernelCount);
         }
 
         ScratchBytes = scope.LiveBytes - before;

@@ -36,7 +36,7 @@ color conversion, and bounded-memory streaming.
 - Six integer working pixel formats (`Rgba32`, `Bgra32`, `Rgb24`, `Rgba64`, `Gray8`, `Gray16`) with 16-bit precision
   preserved, and two floating-point ones (`RgbaFloat`, `RgbaHalf`) for scene-referred and high dynamic range data
 - Crop, auto-crop (background detection), resize (alpha-aware, Contain/Cover/Stretch/Pad/BoxPad), padding and canvas
-  extension, rotate (quarter turns or any angle), skew, affine and perspective transformations, auto-orient, flip, grayscale, Gaussian, box and median blurs, unsharp masking and convolution matrices (sharpen, edge detection, separable matrices in two passes) applied to all frames
+  extension, rotate (quarter turns or any angle), skew, affine and perspective transformations, auto-orient, flip, grayscale, Gaussian, box and median blurs, unsharp masking, convolution matrices (ready-made sharpen, emboss and edge matrices, a bias for signed results, separable matrices in two passes) and edge detection (Sobel, Scharr, Prewitt, Kirsch, Robinson, Laplacians) applied to all frames
 - Antialiased vector drawing on a frame or on every frame: filled and stroked shapes and paths with Bézier curves,
   arcs and curves through points, dashed strokes, strokes on one side of their path and arrow heads, solid colors,
   linear, radial and sweep gradients, images (also in perspective), patterns, clips, masks, layers, shadows, blurs,
@@ -602,10 +602,10 @@ width on each side), `ExtendCanvas` (a larger canvas, with the image at one of n
 permutations, or any angle), `Skew` and `Transform` (an affine or a perspective transformation), `Flip`, `AutoOrient` (all eight EXIF orientations), `Grayscale` (Rec. 709 at storage precision, ties upward; keeps the storage format and
 alpha, and rejects incompatible ICC profiles; use `CloneAs<Gray8>` to change the storage), `ApplyColorMatrix` (a new
 color for each pixel from its own one: brightness, contrast, saturation, a tint), `Convolve` (a convolution
-matrix), `GaussianBlur`, `BoxBlur`, `MedianBlur`, `Sharpen` (an unsharp mask), `Equalize` and `AutoLevels` (histogram
+matrix), `GaussianBlur`, `BoxBlur`, `MedianBlur`, `Sharpen` (an unsharp mask), `DetectEdges`, `Equalize` and `AutoLevels` (histogram
 equalization, CLAHE and contrast stretch, see [Histograms, equalization and auto-levels](#histograms-equalization-and-auto-levels))
 and `Quantize` (a reduction to a palette, see [Color reduction](#color-reduction)). `Flip`, `Grayscale`,
-`ApplyColorMatrix`, `Convolve`, the blurs, `Sharpen`, `Equalize`, `AutoLevels` and `Quantize` also exist for one frame. Geometry changes preserve 16-bit precision and alpha, and reconcile the EXIF dimensions,
+`ApplyColorMatrix`, `Convolve`, the blurs, `Sharpen`, `DetectEdges`, `Equalize`, `AutoLevels` and `Quantize` also exist for one frame. Geometry changes preserve 16-bit precision and alpha, and reconcile the EXIF dimensions,
 orientation and thumbnail. `ConvertColorProfile` converts the colors to another ICC profile
 (see [Color management](#color-management)).
 
@@ -833,7 +833,11 @@ public static void FlattenPage(string inputPath, string outputPath, PointD topLe
 of the neighboring pixels: sharpening, blurring, embossing and edge detection are all matrices. A `ConvolutionKernel` has
 odd dimensions, so its middle weight is the one of the pixel itself, and holds its weights row by row. It is applied
 *as written* (the top-left weight multiplies the top-left neighbor; it is not flipped) and the weights are used as given:
-divide them by their sum to keep the overall brightness. `ConvolutionOptions` then chooses:
+divide them by their sum to keep the overall brightness. Ready-made matrices hold the published coefficients:
+`SobelX`/`SobelY`, `ScharrX`/`ScharrY` and `PrewittX`/`PrewittY` (horizontal and vertical gradients, the kernels of
+OpenCV's `cv2.Sobel` and `cv2.Scharr`), `Laplacian3x3` and `Laplacian5x5` (those of `cv2.Laplacian` with `ksize` 1 and 5),
+`LaplacianOfGaussian` (the classic 5x5 approximation, with the sign of the Laplacian), `Emboss` and `Sharpen3x3`.
+`ConvolutionOptions` then chooses:
 
 - `EdgeMode`, the pixels read outside the image: `Clamp` (default, the nearest edge pixel), `Mirror` (the image reflected
   about its border), `Wrap` (the image tiled) or `Zero` (nothing: transparent black).
@@ -843,9 +847,13 @@ divide them by their sum to keep the overall brightness. `ConvolutionOptions` th
   filter the colors as stored and leave alpha untouched. Pixel formats without alpha are not concerned.
 - `WorkingSpace`: `Encoded` (default) or `LinearSrgb`, with the same meaning and the same ICC profile rule as
   `ResizeWorkingSpace`.
+- `Bias`, a value added to every color sum, as a fraction of the range of a color (0 by default; 0.5 adds 127.5 to
+  8-bit sums, half of the light in `LinearSrgb`, and 0.5 to floating-point samples). It makes the negative sums of a
+  gradient or an emboss visible, darker than mid-gray, instead of clamping them to 0. Alpha never gets it; with the
+  alpha-aware filter it is added to the colors once they are divided by the filtered alpha.
 
 Sums are computed in double precision with fused multiply-adds, at the storage precision (16-bit images are filtered
-with 16-bit precision), rounded to nearest (ties up) and clamped to the sample range: negative sums become 0. The image
+with 16-bit precision), plus the bias, rounded to nearest (ties up) and clamped to the sample range: negative sums become 0. The image
 is rewritten in place, with a scratch of a few rows per worker proportional to the matrix height, charged to the
 allocation limit; the pixel format, the size, the frames and the metadata are kept (the EXIF thumbnail, now stale, is
 removed). As for resizing, results do not depend on the worker count or on SIMD support. The cost grows with the number
@@ -880,9 +888,36 @@ public static void SharpenAndDetectEdges(string inputPath, string sharpenedPath,
         sharpened.Save(sharpenedPath);
     }
 
-    // Weights that add up to 0 would also filter alpha down to 0 (transparent black): keep the alpha instead
-    var laplacian = new ConvolutionKernel(3, 3, [0, 1, 0, 1, -4, 1, 0, 1, 0]);
-    image.Convolve(new ConvolutionOptions(laplacian) { PreserveAlpha = true, EdgeMode = ConvolutionEdgeMode.Mirror });
+    // Weights that add up to 0 would also filter alpha down to 0 (transparent black): keep the alpha instead, and
+    // add half of the range so that negative sums show as darker than mid-gray instead of black
+    var options = new ConvolutionOptions(ConvolutionKernel.Laplacian3x3) { PreserveAlpha = true, EdgeMode = ConvolutionEdgeMode.Mirror, Bias = 0.5 };
+    image.Convolve(options);
+    image.Save(edgesPath);
+}
+```
+<!-- endref -->
+
+**Edge detection**. `DetectEdges(detector, grayscale = true, edgeMode = Clamp)` replaces every frame by its edges, bright
+where the colors change and black where they are flat. Every color sample becomes the strength of the edge at its
+pixel, computed from the same sample of its neighbors with the ready-made matrices: the magnitude `sqrt(gx² + gy²)` of
+the horizontal and vertical gradients (`Sobel`, `Scharr`, `Prewitt`), the largest response of the eight directions of a
+compass (`Kirsch`, from `[5, 5, 5; -3, 0, -3; -3, -3, -3]` and its rotations, `Robinson`, from the Sobel matrix and its
+rotations), or the absolute value of a Laplacian (`Laplacian3x3`, `Laplacian5x5`, `LaplacianOfGaussian`). The sums and
+their combination are computed in double precision and rounded once, so 16-bit samples keep their precision; with the
+`Clamp` edge mode, the results are those of OpenCV with `BORDER_REPLICATE` (`cv2.magnitude` of two `cv2.Sobel` or
+`cv2.Scharr` gradients, the absolute value of `cv2.Laplacian`), rounded. `grayscale` converts every frame to grayscale
+first, as `Grayscale` does, which gives white edges on black; without it, every color has its own edges. Colors are
+filtered as stored and alpha is kept, as with `PreserveAlpha`. Floating-point samples are not clamped. The edge mode
+`Clamp` finds no edge along the border of the image; `Zero` reads black beyond it.
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_DetectEdges;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void DetectEdges(string inputPath, string edgesPath)
+{
+    using var image = Image.Load(inputPath);
+
+    // White edges on black, computed on the brightness (grayscale: false keeps the edges of every color); alpha is kept
+    image.DetectEdges(EdgeDetector.Sobel);
     image.Save(edgesPath);
 }
 ```
@@ -4427,7 +4462,7 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | Color management | ICC version 2 and 4 grayscale, RGB and CMYK profiles (matrix-based and table-based): no version 5 (iccMAX), device-link, abstract or named-color profile, no multi-process-element (`D2Bx`/`B2Dx`) tag, no other data color space; `ConvertColorProfile` keeps the pixel format (an RGB image cannot become grayscale or CMYK this way); no CMYK pixel format: a CMYK JPEG file or TIFF page is converted to RGB when it is loaded (`CmykConversionOptions`, RGB destination only) and CMYK cannot be written; no gamut mapping beyond per-channel clipping |
 | Drawing | Sequential; under a projective transformation of the canvas (or, for filters, one that turns or skews), shadows, blurs, filters and the glyphs a font draws with its own colors are drawn on an image of the plane at one resolution (the scale of the transformation at its origin, at most 4,194,304 pixels), curves are cut no finer than for a factor of 65536 near the horizon, and a pen that does not scale strokes the parts of a closed contour that crosses the horizon as open contours; a filter graph has no input `BackgroundImage`, `BackgroundAlpha`, `FillPaint` or `StrokePaint`, and its region defaults to the canvas (not to the box of the drawing); no mesh gradient; a marker has no hole, and a stroke on one side of its path costs a clip; linear light is the light of the transfer function the image declares (sRGB when it declares none) or of the tone curves of its ICC profile, and a profile without tone curves has none; a color matrix is applied to the encoded sample values, also in linear light; the colors of a profile (`PaintProfile`) are those of the paints only (an image that is drawn is not converted), an RGB profile only, and never on PQ or HLG samples; without antialiasing, the glyphs a font draws with its own colors stay antialiased; a clip multiplies coverages; combined and simplified paths are made of segments; coordinates are limited to ±16,777,216 (what a transformation sends beyond is cut by that range); on a floating-point canvas, paints have 16-bit colors in [0, 1], and an image, a layer, a pattern, a filter, a shadow, a blur, a group or a backdrop is combined through 16-bit colors, so its samples must be in [0, 1] (others are rejected, never clipped) and are quantized to 1/65535 |
 | Floating-point pixels | `RgbaFloat` and `RgbaHalf` only (no floating-point grayscale format); OpenEXR and TIFF are the formats that decode to them and store them (the other encoders reduce them to `Rgba64` with `ImageEncoder.FloatingPointConversion`); HDR samples of the integer formats are 16-bit integers, converted to a standard dynamic range by an explicit tone mapping |
-| Processing | No custom processors; `LinearSrgb` resizing and convolution accept untagged images, recognized sRGB/sGray profiles and CICP transfer characteristics that have a function; convolution matrices have odd dimensions, no bias or divisor, no ready-made matrices and no separable fast path; histograms, equalization and auto-levels work on the encoded samples of integer pixel formats only (floating-point pixels are rejected), and CLAHE does not pad a frame whose size is not a multiple of the tile grid (its tiles divide it as evenly as possible) |
+| Processing | No custom processors; `LinearSrgb` resizing and convolution accept untagged images, recognized sRGB/sGray profiles and CICP transfer characteristics that have a function; convolution matrices have odd dimensions and no divisor (divide the weights); edge detection has no non-maximum suppression or thresholds (no Canny detector); histograms, equalization and auto-levels work on the encoded samples of integer pixel formats only (floating-point pixels are rejected), and CLAHE does not pad a frame whose size is not a multiple of the tile grid (its tiles divide it as evenly as possible) |
 | AVIF encoding | An image of a sequence is predicted from the previous image only, with one motion vector per block and the regular interpolation filter: no compound prediction (two references), global, warped or overlapped motion, or temporal motion vector prediction. Three tools were implemented, measured with the `avif-quality` report and left out because they did not make its sequences smaller: key frames at scene changes (the key frame of an image that follows a cut is 0.3 to 1.7% larger than the inter frame whose blocks are all intra, since it gives up the probabilities that the previous images adapted; `KeyFrameInterval` is how a sequence gets seek points), the split of the transform blocks of an inter block (0.01% in total: it keeps the largest transform of its size) and an interpolation filter per block (the same size at equal quality, for several times the encoding time). Intra block copy is for lossless images only (a frame that copies blocks has no in-loop filter), and its delay of five superblocks leaves small images out. The loop restoration is the Wiener filter, in units of 256x256 samples, at the efforts 0 to 2 only (it recovered nothing above them in the report), and never the self-guided filter. Not used: quantizer deltas, quantization matrices, CDEF strengths per block (one pair per frame), super-resolution and film grain. No layered (progressive) output, and no grid for an image sequence. An image sequence of one image cannot store animation settings (it is read back as a still image): a single frame with animation settings is rejected. An image sequence needs a seekable destination and its frame count. The level of the stream is the lowest one whose picture size holds the image; the other limits of a level are not checked |
 | AVIF decoding | Rejected with `UnsupportedImageFeatureException`: more than eight nested derivations, an image built from images of several color descriptions, an overlay whose sRGB fill color shows on an image that is not an sRGB one, an alpha plane of an overlay or of a grid of derived images, a derived image with more than 1,024 input images, an alpha plane that is not presented as its derived color image, movie fragments that do not follow each other, have composition time offsets, precede their `moov` box or follow their samples, an edit list that selects a part of a fragmented sequence, edit lists that do not play the media forward at its rate (empty edits, a media rate other than 1, edits out of order or overlapping), an alpha track with another edit list than its color track, image sequences whose images change size, clean apertures that do not select whole samples, grid tiles that declare other transformations than their grid, large scale tile streams, reserved matrix coefficients, and matrix coefficients without the transfer characteristics or the primaries they are defined with (constant luminance without a transfer function, ICtCp with other transfer characteristics than PQ and HLG, chromaticity-derived coefficients without chromaticities). Not read: gain maps, depth maps, thumbnails, the images that are not the primary item, a `tkhd` matrix that is not a quarter turn or a mirror (the images are returned as stored), the content color volume (`cclv`) and the light levels and the mastering display of AV1 metadata units. A layered image is returned at its full quality only: its lower layers are not exposed as a progressive rendering. HDR samples are returned as stored: tone mapping is an explicit `ConvertColorProfile` with `ToneMapping` options |
 | HEIC encoding | One slice per picture, without tiles or wavefront streams (the encoder is sequential). An image of a sequence is a P picture predicted from the previous image only: no B pictures, no second reference, no bi-prediction, no weighted prediction, no long-term reference, no scene change detection. Not used: intra coding blocks of 64x64 samples, PCM blocks, scaling lists, quantizer changes inside a picture (no adaptive quantization, no rate control: `Quality` is a quantizer, not a size), rate-distortion optimized quantization, searched deblocking offsets, and the tools of the range extensions (lossless output is the plain transform bypass of version 1, which every HEVC decoder reads: residual DPCM and cross-component prediction would make it smaller). No screen content tools: a lossless screenshot is larger than its PNG. No grid output (an image is one picture, whatever its size), no premultiplied alpha, no `pasp`, mastering display or content light level box, no orientation for an image sequence, and the decoded picture hash is not written. An image of an odd size with subsampled chroma relies on the clean aperture of the file: libheif ignores the one of a sequence and shows one more column or row, which repeats the last one, and FFmpeg reports the even size of the coded pictures (its command-line tool then crops them to an even size). The readers upsample subsampled chroma each in their own way: the edges of a 4:2:0 or 4:2:2 image differ visibly from one reader to another, as they do for the files of any HEVC encoder. FFmpeg 9 decodes 12-bit lossy output of the coarsest quantizers (`Quality` 0 to 2) to other pictures than libde265, the HM reference decoder and this library, which agree. libheif reports the edit list of a sequence that plays once as unsupported, and plays it once. An image sequence of one image cannot store animation settings. An image sequence needs a seekable destination and its frame count |

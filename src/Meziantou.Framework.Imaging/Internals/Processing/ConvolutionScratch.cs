@@ -4,8 +4,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
 /// The row buffers of one convolution worker, in a single rental (see <see cref="ResizeScratch"/>): the ring of the padded
-/// working rows of its band, the halo rows it reads above and below its band, the accumulator row and, for a separable
-/// plan, the padded working row that is filtered into a ring or halo row.
+/// working rows of its band, the halo rows it reads above and below its band, the accumulator row (one per kernel of the
+/// plan) and, for a separable plan, the padded working row that is filtered into a ring or halo row.
 /// </summary>
 internal sealed class ConvolutionScratch : IDisposable
 {
@@ -14,10 +14,12 @@ internal sealed class ConvolutionScratch : IDisposable
     private readonly int _ringSize;
     private readonly int _haloSize;
     private readonly int _inputLength;
+    private readonly int _accumulatorCount;
     private PooledBuffer? _buffer;
 
-    private ConvolutionScratch(int paddedLength, int rowLength, int ringSize, int haloSize, int inputLength)
+    private ConvolutionScratch(int paddedLength, int rowLength, int ringSize, int haloSize, int inputLength, int accumulatorCount)
     {
+        _accumulatorCount = accumulatorCount;
         _paddedLength = paddedLength;
         _rowLength = rowLength;
         _ringSize = ringSize;
@@ -25,14 +27,14 @@ internal sealed class ConvolutionScratch : IDisposable
         _inputLength = inputLength;
     }
 
-    /// <summary>Gets the accumulator of one output row (not padded).</summary>
+    /// <summary>Gets the accumulator of one output row (not padded), the one of the first kernel.</summary>
     public Span<double> Accumulator => Buffer.Slice(AccumulatorOffset, _rowLength);
 
     /// <summary>Gets the position of <see cref="Accumulator"/> in <see cref="Buffer"/>.</summary>
     public int AccumulatorOffset => (_ringSize + (2 * _haloSize)) * _paddedLength;
 
-    /// <summary>Gets the position of <see cref="InputRow"/> in <see cref="Buffer"/>, after the accumulator.</summary>
-    public int InputOffset => AccumulatorOffset + _rowLength;
+    /// <summary>Gets the position of <see cref="InputRow"/> in <see cref="Buffer"/>, after the accumulators.</summary>
+    public int InputOffset => AccumulatorOffset + (_accumulatorCount * _rowLength);
 
     /// <summary>Gets the padded working row that a separable plan filters into a ring or halo row (empty otherwise).</summary>
     public Span<double> InputRow => Buffer.Slice(InputOffset, _inputLength);
@@ -47,15 +49,19 @@ internal sealed class ConvolutionScratch : IDisposable
     /// <param name="ringSize">The number of ring rows (the kernel height).</param>
     /// <param name="haloSize">The number of halo rows on each side of the band (the kernel center row).</param>
     /// <param name="inputLength">The number of doubles of the padded working row of a separable plan, or 0.</param>
+    /// <param name="accumulatorCount">The number of accumulator rows (the number of kernels of the plan).</param>
     /// <exception cref="ImageResourceLimitException">The buffers exceed the allocation limit.</exception>
-    public static ConvolutionScratch Create(AllocationScope scope, long paddedLength, long rowLength, int ringSize, int haloSize, long inputLength = 0)
+    public static ConvolutionScratch Create(AllocationScope scope, long paddedLength, long rowLength, int ringSize, int haloSize, long inputLength = 0, int accumulatorCount = 1)
     {
-        if (!CheckedSizes.TryMultiply(paddedLength, ringSize + (2L * haloSize), out var rows) || !CheckedSizes.TryAdd(rows, rowLength, out var count) || !CheckedSizes.TryAdd(count, inputLength, out var total))
+        if (!CheckedSizes.TryMultiply(paddedLength, ringSize + (2L * haloSize), out var rows) || !CheckedSizes.TryMultiply(rowLength, accumulatorCount, out var accumulators) || !CheckedSizes.TryAdd(rows, accumulators, out var count) || !CheckedSizes.TryAdd(count, inputLength, out var total))
             throw CheckedSizes.CreateOverflowException(scope.Limits);
 
         var buffer = ResampleWeights.Rent<double>(scope, total);
-        return new ConvolutionScratch((int)paddedLength, (int)rowLength, ringSize, haloSize, (int)inputLength) { _buffer = buffer };
+        return new ConvolutionScratch((int)paddedLength, (int)rowLength, ringSize, haloSize, (int)inputLength, accumulatorCount) { _buffer = buffer };
     }
+
+    /// <summary>Gets the position in <see cref="Buffer"/> of the accumulator of kernel <paramref name="index"/> (0 is <see cref="Accumulator"/>).</summary>
+    public int GetAccumulatorOffset(int index) => AccumulatorOffset + (index * _rowLength);
 
     /// <summary>Gets the position in <see cref="Buffer"/> of the working row of image row <paramref name="y"/>, which is inside the band.</summary>
     public int GetRingRowOffset(int y) => y % _ringSize * _paddedLength;

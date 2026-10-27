@@ -22,7 +22,7 @@ namespace Meziantou.Framework.Imaging;
 /// <para>
 /// Pixel-only operations (<see cref="Flip(Image, FlipMode, CancellationToken)"/>, <see cref="Grayscale(Image, CancellationToken)"/>,
 /// <see cref="Convolve(Image, ConvolutionOptions, CancellationToken)"/>, the blurs, <see cref="Sharpen(Image, double, double, double, ConvolutionEdgeMode, ConvolutionWorkingSpace, CancellationToken)"/>,
-/// <see cref="Equalize(Image, HistogramEqualizationOptions?, CancellationToken)"/>, <see cref="AutoLevels(Image, AutoLevelsOptions?, CancellationToken)"/>)
+/// <see cref="DetectEdges(Image, EdgeDetector, bool, ConvolutionEdgeMode, CancellationToken)"/>, <see cref="Equalize(Image, HistogramEqualizationOptions?, CancellationToken)"/>, <see cref="AutoLevels(Image, AutoLevelsOptions?, CancellationToken)"/>)
 /// work in place; on failure or cancellation some frames or rows may already be modified, but the image remains
 /// structurally valid.
 /// </para>
@@ -48,8 +48,8 @@ namespace Meziantou.Framework.Imaging;
 /// bits, floating-point samples of any value (not-a-number payloads included) and alpha, is copied unchanged (an
 /// auto-crop that enlarges the canvas also writes the detected background color around the copied pixels, as
 /// <see cref="Pad"/> and <see cref="ExtendCanvas"/> write their padding color). Operations run on the calling thread, except that <see cref="Resize"/>,
-/// the transformations, <see cref="Convolve(Image, ConvolutionOptions, CancellationToken)"/>, the blurs and the sharpening
-/// may also use up to <see cref="ImageConfiguration.MaxDegreeOfParallelism"/> workers for large frames (identical results).
+/// the transformations, <see cref="Convolve(Image, ConvolutionOptions, CancellationToken)"/>, the blurs, the sharpening and
+/// the edge detection may also use up to <see cref="ImageConfiguration.MaxDegreeOfParallelism"/> workers for large frames (identical results).
 /// </para>
 /// </remarks>
 public static class ImageProcessingExtensions
@@ -1443,6 +1443,77 @@ public static class ImageProcessingExtensions
         frame.OwnerImage.MedianFrame(frame, storage, radius, edgeMode, cancellationToken);
     }
 
+    /// <summary>
+    /// Replaces every displayed frame and the poster frame by its edges, in place: bright where the colors change, black
+    /// where they are flat. The EXIF thumbnail, now stale, is removed.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Every color sample becomes the strength of the edge of the operator <paramref name="detector"/> at its pixel,
+    /// computed from the same sample of the neighboring pixels: the magnitude <c>sqrt(gx^2 + gy^2)</c> of the horizontal
+    /// and vertical gradients (<see cref="EdgeDetector.Sobel"/>, <see cref="EdgeDetector.Scharr"/>,
+    /// <see cref="EdgeDetector.Prewitt"/>), the largest response of the eight directions of a compass
+    /// (<see cref="EdgeDetector.Kirsch"/>, <see cref="EdgeDetector.Robinson"/>), or the absolute value of a Laplacian
+    /// (<see cref="EdgeDetector.Laplacian3x3"/>, <see cref="EdgeDetector.Laplacian5x5"/>,
+    /// <see cref="EdgeDetector.LaplacianOfGaussian"/>). The matrices are the presets of <see cref="ConvolutionKernel"/>,
+    /// applied as <see cref="Convolve(Image, ConvolutionOptions, CancellationToken)"/> applies them. With
+    /// <see cref="ConvolutionEdgeMode.Clamp"/>, the result is the one of OpenCV with <c>BORDER_REPLICATE</c>:
+    /// <c>cv2.magnitude(cv2.Sobel(f, cv2.CV_64F, 1, 0), cv2.Sobel(f, cv2.CV_64F, 0, 1))</c> for
+    /// <see cref="EdgeDetector.Sobel"/> (and <c>cv2.Scharr</c> for <see cref="EdgeDetector.Scharr"/>), and
+    /// <c>abs(cv2.Laplacian(f, cv2.CV_64F, ksize=1))</c> or <c>ksize=5</c> for the Laplacians, rounded.
+    /// </para>
+    /// <para>
+    /// With <paramref name="grayscale"/> (the default), every frame is first converted to grayscale as
+    /// <see cref="Grayscale(Image, CancellationToken)"/> does, so the edges of the brightness are white on black; otherwise
+    /// every color is processed on its own, and the edges keep the colors that change. Colors are filtered as stored, and
+    /// alpha is kept unchanged: the hidden colors of transparent pixels take part, as with
+    /// <see cref="ConvolutionOptions.PreserveAlpha"/>. The sums of the encoded samples are computed and combined in double
+    /// precision, then rounded once at the storage precision (ties upward) and clamped to the sample range: 16-bit samples
+    /// keep their precision. Floating-point samples are not clamped, and a sample that is not a number spreads to the pixels
+    /// whose matrices read it. The scratch storage (a few rows per worker, and one row per matrix of the operator) is
+    /// charged to the image allocation scope and rented before any pixel changes; the result does not depend on the number
+    /// of workers.
+    /// </para>
+    /// </remarks>
+    /// <param name="image">The image to modify.</param>
+    /// <param name="detector">The edge operator.</param>
+    /// <param name="grayscale">Whether every frame is converted to grayscale first.</param>
+    /// <param name="edgeMode">The pixels the operator reads beyond the edges of the image. The default, <see cref="ConvolutionEdgeMode.Clamp"/>, finds no edge along the border of a flat image.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests. On cancellation, some frames or rows may already be changed.</param>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="detector"/> or <paramref name="edgeMode"/> is not a defined value.</exception>
+    /// <exception cref="UnsupportedImageFeatureException"><paramref name="grayscale"/> is set and the retained ICC profile is incompatible with the pixel format. Nothing is changed.</exception>
+    /// <exception cref="ImageResourceLimitException">The scratch storage would exceed the allocation limit. The image is unchanged.</exception>
+    /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
+    /// <exception cref="ObjectDisposedException">The image is disposed.</exception>
+    public static void DetectEdges(this Image image, EdgeDetector detector, bool grayscale = true, ConvolutionEdgeMode edgeMode = ConvolutionEdgeMode.Clamp, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(image);
+        ValidateEdgeDetection(detector, edgeMode);
+        image.DetectEdgesAllFrames(detector, grayscale, edgeMode, cancellationToken);
+    }
+
+    /// <summary>
+    /// Replaces one frame by its edges, in place. The EXIF thumbnail of the image, now stale, is removed. See
+    /// <see cref="DetectEdges(Image, EdgeDetector, bool, ConvolutionEdgeMode, CancellationToken)"/>.
+    /// </summary>
+    /// <param name="frame">The frame to modify.</param>
+    /// <param name="detector">The edge operator.</param>
+    /// <param name="grayscale">Whether the frame is converted to grayscale first.</param>
+    /// <param name="edgeMode">The pixels the operator reads beyond the edges of the frame.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests. On cancellation, some rows may already be changed.</param>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="detector"/> or <paramref name="edgeMode"/> is not a defined value.</exception>
+    /// <exception cref="UnsupportedImageFeatureException"><paramref name="grayscale"/> is set and the ICC profile of the image is incompatible with the pixel format. Nothing is changed.</exception>
+    /// <exception cref="ImageResourceLimitException">The scratch storage would exceed the allocation limit. The frame is unchanged.</exception>
+    /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
+    /// <exception cref="ObjectDisposedException">The frame is no longer attached to a live image.</exception>
+    public static void DetectEdges(this ImageFrame frame, EdgeDetector detector, bool grayscale = true, ConvolutionEdgeMode edgeMode = ConvolutionEdgeMode.Clamp, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(frame);
+        ValidateEdgeDetection(detector, edgeMode);
+        var storage = frame.GetStorage();
+        frame.OwnerImage.DetectEdgesFrame(frame, storage, detector, grayscale, edgeMode, cancellationToken);
+    }
+
     private static TransformOptions ValidateTransformOptions(TransformOptions? options)
     {
         options ??= TransformOptions.Default;
@@ -1472,6 +1543,15 @@ public static class ImageProcessingExtensions
 
         if (threshold is < 0 or > 1)
             throw new ArgumentOutOfRangeException(nameof(threshold), threshold, "The threshold must be between 0 and 1.");
+    }
+
+    private static void ValidateEdgeDetection(EdgeDetector detector, ConvolutionEdgeMode edgeMode)
+    {
+        if (!Enum.IsDefined(detector))
+            throw new ArgumentOutOfRangeException(nameof(detector), detector, "The edge detector is not valid.");
+
+        if (!Enum.IsDefined(edgeMode))
+            throw new ArgumentOutOfRangeException(nameof(edgeMode), edgeMode, "The edge mode is not valid.");
     }
 
     private static void ValidateBlur(ConvolutionEdgeMode edgeMode, ConvolutionWorkingSpace workingSpace)

@@ -918,14 +918,43 @@ public sealed class DocumentationExampleTests : IDisposable
         Assert.Equal(new Rgba32(100, 100, 100), sharpened.Frames[0][1, 1]);
         Assert.Equal(new Rgba32(100, 100, 100), sharpened.Frames[0][0, 0]);
 
-        // Laplacian (-4 in the middle, 1 on the four sides): the dot is 4 * 100 - 4 * 200 = -400 -> 0, its side neighbors
-        // 3 * 100 + 200 - 4 * 100 = 100, and flat areas are 0; alpha is kept
+        // Laplacian (-4 in the middle, 1 on the four sides) plus 127.5: the dot is 4 * 100 - 4 * 200 + 127.5 -> 0, its side
+        // neighbors 3 * 100 + 200 - 4 * 100 + 127.5 = 227.5 -> 228, and flat areas 127.5 -> 128; alpha is kept
         using var edges = Image.Load<Rgba32>(edgesPath);
         Assert.Equal(new Rgba32(0, 0, 0), edges.Frames[0][2, 2]);
-        Assert.Equal(new Rgba32(100, 100, 100), edges.Frames[0][1, 2]);
-        Assert.Equal(new Rgba32(100, 100, 100), edges.Frames[0][2, 3]);
-        Assert.Equal(new Rgba32(0, 0, 0), edges.Frames[0][1, 1]);
-        Assert.Equal(new Rgba32(0, 0, 0), edges.Frames[0][0, 0]);
+        Assert.Equal(new Rgba32(228, 228, 228), edges.Frames[0][1, 2]);
+        Assert.Equal(new Rgba32(228, 228, 228), edges.Frames[0][2, 3]);
+        Assert.Equal(new Rgba32(128, 128, 128), edges.Frames[0][1, 1]);
+        Assert.Equal(new Rgba32(128, 128, 128), edges.Frames[0][0, 0]);
+    }
+
+    [Fact]
+    public void DetectEdgesFindsTheEdgesOfTheBrightness()
+    {
+        // A 5x5 opaque image, 10 on the right of column 2 and 0 on its left
+        var input = GetPath("step.png");
+        using (var source = new Image<Rgba32>(5, 5, new Rgba32(0, 0, 0)))
+        {
+            for (var y = 0; y < 5; y++)
+            {
+                for (var x = 2; x < 5; x++)
+                {
+                    source.Frames[0][x, y] = new Rgba32(10, 10, 10);
+                }
+            }
+
+            source.Save(input);
+        }
+
+        var edgesPath = GetPath("step-edges.png");
+        Examples.DetectEdges(input, edgesPath);
+
+        // The vertical gradient is 0 and the horizontal one (1 2 1 times right - left) is 40 on both sides of the step
+        using var edges = Image.Load<Rgba32>(edgesPath);
+        for (var y = 0; y < 5; y++)
+        {
+            Assert.Equal([new Rgba32(0, 0, 0), new Rgba32(40, 40, 40), new Rgba32(40, 40, 40), new Rgba32(0, 0, 0), new Rgba32(0, 0, 0)], Enumerable.Range(0, 5).Select(x => edges.Frames[0][x, y]).ToArray());
+        }
     }
 
     [Fact]

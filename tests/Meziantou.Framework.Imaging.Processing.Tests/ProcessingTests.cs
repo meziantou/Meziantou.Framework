@@ -1310,7 +1310,13 @@ public sealed class ProcessingTests
         image.Metadata.IccProfile = new IccProfile(MetadataBlob.FromOwnedArray(CreateIccHeader("GRAY")));
         Assert.Throws<UnsupportedImageFeatureException>(() => image.Grayscale(Ct));
         Assert.Throws<UnsupportedImageFeatureException>(() => image.Frames[0].Grayscale(Ct));
+        Assert.Throws<UnsupportedImageFeatureException>(() => image.DetectEdges(EdgeDetector.Sobel, cancellationToken: Ct));
+        Assert.Throws<UnsupportedImageFeatureException>(() => image.Frames[0].DetectEdges(EdgeDetector.Sobel, cancellationToken: Ct));
         Assert.Equal(new Rgba32(255, 0, 0, 255), image.Frames[0][0, 0]);
+
+        // Without grayscale, edge detection keeps the colors, so the profile does not matter
+        image.DetectEdges(EdgeDetector.Sobel, grayscale: false, cancellationToken: Ct);
+        Assert.Equal(new Rgba32(0, 0, 0, 255), image.Frames[0][0, 0]);
     }
 
     [Fact]

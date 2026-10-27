@@ -412,4 +412,34 @@ public sealed class WebAssemblyTests : IDisposable
         Assert.Single(test._errors);
         Assert.Equal("after", document.Title);
     }
+
+    [Fact]
+    public void Store_DisposedByAHostFunction_IsDeletedAfterTheCall()
+    {
+        var module = Runtime.Compile(WasmtimeRuntime.WatToWasm("""
+            (module
+              (import "env" "f" (func $f (result i32)))
+              (func (export "run") (result i32) (i32.add (call $f) (i32.const 1))))
+            """));
+        using var store = Runtime.CreateStore(new NoInterruptHost());
+        var hostFunction = store.CreateHostFunction(new WasmFunctionType([], [WasmValueType.I32]), hostFunction: null, (_, results) =>
+        {
+            store.Dispose();
+            results[0] = WasmValue.FromI32(41);
+        });
+        var run = (WasmFunction)store.Instantiate(module, [hostFunction]).Exports[0].Value;
+
+        var results = new WasmValue[1];
+        run.Invoke([], results);
+        Assert.Equal(42, results[0].I32);
+        Assert.Throws<ObjectDisposedException>(() => run.Invoke([], results));
+        Assert.Throws<ObjectDisposedException>(() => store.CreateGlobal(new WasmGlobalType(WasmValueType.I32, mutable: false), WasmValue.FromI32(0)));
+    }
+
+    private sealed class NoInterruptHost : IWasmHost
+    {
+        public void CheckInterrupt()
+        {
+        }
+    }
 }

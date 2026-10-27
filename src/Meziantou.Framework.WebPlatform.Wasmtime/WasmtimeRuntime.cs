@@ -35,28 +35,31 @@ public sealed class WasmtimeRuntime : WebAssemblyRuntime, IDisposable
         Options = options ?? new WasmtimeRuntimeOptions();
         _engine = new EngineHandle(CreateEngine(Options));
 
-        // The epoch interruption: the running code calls the deadline callback of its store at each tick
-        var weakSelf = new WeakReference<WasmtimeRuntime>(this);
+        // The epoch interruption: the running code calls the deadline callback of its store at each tick. The state does
+        // not reference the runtime, so that a runtime that is not disposed can be collected (with its timer).
         _epochTimer = new Timer(static state =>
         {
-            var (weak, engine) = ((WeakReference<WasmtimeRuntime>, nint))state!;
-            if (weak.TryGetTarget(out var runtime) && Volatile.Read(ref runtime._disposed) == 0)
+            try
             {
-                NativeMethods.wasmtime_engine_increment_epoch(engine);
+                using var engine = new SafeHandleLease((EngineHandle)state!);
+                NativeMethods.wasmtime_engine_increment_epoch(engine.Value);
             }
-        }, (weakSelf, _engine.DangerousGetHandle()), Options.InterruptionCheckInterval, Options.InterruptionCheckInterval);
+            catch (ObjectDisposedException)
+            {
+                // The runtime is disposed (Timer.Dispose does not wait for the running callbacks)
+            }
+        }, _engine, Options.InterruptionCheckInterval, Options.InterruptionCheckInterval);
     }
 
     /// <summary>Gets the options of the runtime.</summary>
     public WasmtimeRuntimeOptions Options { get; }
 
-    internal nint Engine
+    /// <summary>Returns a lease on the native engine (<c>wasm_engine_t</c>), disposed after the native calls that use it.</summary>
+    /// <exception cref="ObjectDisposedException">The runtime is disposed.</exception>
+    internal SafeHandleLease EnterEngine()
     {
-        get
-        {
-            ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed) != 0, this);
-            return _engine.DangerousGetHandle();
-        }
+        ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed) != 0, this);
+        return new SafeHandleLease(_engine);
     }
 
     private static unsafe nint CreateEngine(WasmtimeRuntimeOptions options)
@@ -119,9 +122,10 @@ public sealed class WasmtimeRuntime : WebAssemblyRuntime, IDisposable
 
     internal override unsafe bool Validate(ReadOnlySpan<byte> bytes)
     {
+        using var engine = EnterEngine();
         fixed (byte* data = bytes)
         {
-            var error = NativeMethods.wasmtime_module_validate(Engine, data, (nuint)bytes.Length);
+            var error = NativeMethods.wasmtime_module_validate(engine.Value, data, (nuint)bytes.Length);
             if (error == 0)
                 return true;
 
@@ -132,10 +136,11 @@ public sealed class WasmtimeRuntime : WebAssemblyRuntime, IDisposable
 
     internal override unsafe WasmModule Compile(byte[] bytes)
     {
+        using var engine = EnterEngine();
         nint module;
         fixed (byte* data = bytes)
         {
-            var error = NativeMethods.wasmtime_module_new(Engine, data, (nuint)bytes.Length, &module);
+            var error = NativeMethods.wasmtime_module_new(engine.Value, data, (nuint)bytes.Length, &module);
             if (error != 0)
                 throw new WasmCompileException(NativeErrors.TakeErrorMessage(error));
         }

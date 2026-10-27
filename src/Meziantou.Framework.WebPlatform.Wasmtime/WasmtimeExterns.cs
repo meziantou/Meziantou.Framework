@@ -102,15 +102,8 @@ internal sealed class WasmtimeGcObject(WasmtimeStore store, RootedReferenceHandl
 {
     public WasmtimeStore Store { get; } = store;
 
-    public WasmtimeRef Handle
-    {
-        get
-        {
-            var result = reference.Reference;
-            GC.KeepAlive(this);
-            return result;
-        }
-    }
+    /// <summary>Returns a lease on the rooted reference: its value is a <c>WasmtimeRef*</c>.</summary>
+    public SafeHandleLease EnterReference() => new(reference);
 
     public override bool IsArray { get; } = isArray;
 }
@@ -122,15 +115,8 @@ internal sealed class WasmtimeExceptionReference(WasmtimeStore store, RootedRefe
 
     public WasmtimeStore Store { get; } = store;
 
-    public WasmtimeRef Handle
-    {
-        get
-        {
-            var result = reference.Reference;
-            GC.KeepAlive(this);
-            return result;
-        }
-    }
+    /// <summary>Returns a lease on the rooted reference: its value is a <c>WasmtimeRef*</c>.</summary>
+    public SafeHandleLease EnterReference() => new(reference);
 
     public override WasmTag Tag => _tag ??= Store.GetExceptionTag(this);
 

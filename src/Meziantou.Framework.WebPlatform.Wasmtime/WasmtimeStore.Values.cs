@@ -79,8 +79,8 @@ internal sealed unsafe partial class WasmtimeStore
         result.Kind = WasmtimeValKind.ExnRef;
         if (reference is WasmtimeExceptionReference exception && exception.Store == this)
         {
-            var handle = exception.Handle;
-            NativeMethods.wasmtime_exnref_clone(&handle, &result.Ref);
+            using var handle = exception.EnterReference();
+            NativeMethods.wasmtime_exnref_clone((WasmtimeRef*)handle.Value, &result.Ref);
         }
         else if (reference is not null)
         {
@@ -100,12 +100,19 @@ internal sealed unsafe partial class WasmtimeStore
                 return default;
 
             case WasmI31Reference i31:
-                NativeMethods.wasmtime_anyref_from_i31(Context, (uint)i31.Value & 0x7FFF_FFFF, &result);
+                using (var context = EnterContext())
+                {
+                    NativeMethods.wasmtime_anyref_from_i31(context.Value, (uint)i31.Value & 0x7FFF_FFFF, &result);
+                }
+
                 return result;
 
             case WasmtimeGcObject gcObject when gcObject.Store == this:
-                var handle = gcObject.Handle;
-                NativeMethods.wasmtime_anyref_clone(&handle, &result);
+                using (var handle = gcObject.EnterReference())
+                {
+                    NativeMethods.wasmtime_anyref_clone((WasmtimeRef*)handle.Value, &result);
+                }
+
                 return result;
 
             case WasmHostReference host:
@@ -170,7 +177,8 @@ internal sealed unsafe partial class WasmtimeStore
 
                 fixed (WasmtimeRef* reference = &value.Ref)
                 {
-                    var data = NativeMethods.wasmtime_externref_data(Context, reference);
+                    using var context = EnterContext();
+                    var data = NativeMethods.wasmtime_externref_data(context.Value, reference);
                     if (data != 0 && GCHandle.FromIntPtr(data).Target is HostValueSlot slot)
                         return WasmValue.FromReference(slot.Value);
                 }
@@ -192,17 +200,18 @@ internal sealed unsafe partial class WasmtimeStore
 
                 fixed (WasmtimeRef* reference = &value.Ref)
                 {
-                    if (NativeMethods.wasmtime_anyref_is_i31(Context, reference))
+                    using var context = EnterContext();
+                    if (NativeMethods.wasmtime_anyref_is_i31(context.Value, reference))
                     {
                         int i31;
-                        NativeMethods.wasmtime_anyref_i31_get_s(Context, reference, &i31);
+                        NativeMethods.wasmtime_anyref_i31_get_s(context.Value, reference, &i31);
                         return WasmValue.FromReference(new WasmI31Reference(i31));
                     }
 
-                    if (NativeMethods.wasmtime_anyref_is_struct(Context, reference))
+                    if (NativeMethods.wasmtime_anyref_is_struct(context.Value, reference))
                         return WasmValue.FromReference(GetGcObject(reference, isArray: false));
 
-                    if (NativeMethods.wasmtime_anyref_is_array(Context, reference))
+                    if (NativeMethods.wasmtime_anyref_is_array(context.Value, reference))
                         return WasmValue.FromReference(GetGcObject(reference, isArray: true));
                 }
 
@@ -240,11 +249,12 @@ internal sealed unsafe partial class WasmtimeStore
     /// <summary>Creates an <c>externref</c> (owned) whose data is a weak handle of a slot of the store.</summary>
     private WasmtimeRef CreateExternRef(WasmHostReference value)
     {
+        using var context = EnterContext();
         var slot = new HostValueSlot(this, value);
         _hostValues.Add(slot);
         var handle = GCHandle.Alloc(slot, GCHandleType.Weak);
         WasmtimeRef result;
-        if (!NativeMethods.wasmtime_externref_new(Context, GCHandle.ToIntPtr(handle), &FinalizeHostValue, &result))
+        if (!NativeMethods.wasmtime_externref_new(context.Value, GCHandle.ToIntPtr(handle), &FinalizeHostValue, &result))
         {
             handle.Free();
             _hostValues.Remove(slot);
@@ -311,9 +321,10 @@ internal sealed unsafe partial class WasmtimeStore
     private WasmtimeRef CallConversion(WasmtimeFunction function, WasmtimeVal argument, WasmtimeValKind resultKind)
     {
         var handle = function.Handle;
+        using var context = EnterContext();
         WasmtimeVal result;
         nint trap;
-        var error = NativeMethods.wasmtime_func_call(Context, &handle, &argument, 1, &result, 1, &trap);
+        var error = NativeMethods.wasmtime_func_call(context.Value, &handle, &argument, 1, &result, 1, &trap);
         if (error != 0 || trap != 0)
         {
             ThrowIfFailed(error, trap, static message => new WasmTypeMismatchException(message));

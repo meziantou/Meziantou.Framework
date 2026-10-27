@@ -1488,6 +1488,35 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void EnhanceContrastSpreadsTheLevelsOfADimImage()
+    {
+        // A dim, low-contrast image: lumas from 79 to 110
+        var input = GetPath("dim.png");
+        using (var dim = new Image<Rgb24>(64, 64))
+        {
+            for (var y = 0; y < 64; y++)
+            {
+                for (var x = 0; x < 64; x++)
+                {
+                    var level = (byte)(80 + ((x + (3 * y)) % 32));
+                    dim.Frames[0][x, y] = new Rgb24(level, level, (byte)(level - 10));
+                }
+            }
+
+            dim.Save(input);
+        }
+
+        var output = GetPath("enhanced.png");
+        var histogram = Examples.EnhanceContrast(input, output);
+        Assert.Equal(64 * 64, histogram.TotalCount);
+        Assert.Equal(256, histogram.BinCount);
+        Assert.InRange(histogram.Counts.LastIndexOfAnyExcept(0L) - histogram.Counts.IndexOfAnyExcept(0L), 200, 255);
+
+        using var image = Image.Load<Rgb24>(output);
+        Assert.Equal(new Size(64, 64), image.Size);
+    }
+
+    [Fact]
     public void SaveGifWithSharedPaletteKeepsTheColorsOfEveryFrame()
     {
         // Two frames of one color each: the shared palette holds both colors, and each frame keeps its own

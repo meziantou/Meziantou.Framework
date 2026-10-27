@@ -638,6 +638,18 @@ public sealed class PlaywrightServerTests(PlaywrightServerFixture fixture) : ICl
     }
 
     [Fact]
+    public async Task Server_DisposeAsync_ClosesTheConnectedClients()
+    {
+        var server = new PlaywrightServer();
+        await server.StartAsync(TestContext.Current.CancellationToken);
+        using var client = new ClientWebSocket();
+        await client.ConnectAsync(server.WsEndpoint, TestContext.Current.CancellationToken);
+
+        // The client is still connected: disposing the server closes its connection
+        await server.DisposeAsync().AsTask().WaitAsync(TimeSpan.FromMinutes(1), TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
     public async Task AriaSnapshot()
     {
         var (context, page) = await fixture.NewPageAsync();

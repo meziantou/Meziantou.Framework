@@ -857,6 +857,23 @@ public sealed class TestPipeTable
     }
 
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void GridTableRowShorterThanTheTableEndsAtItsLine(bool usePipeTables)
+    {
+        // The end of the table was read in the following lines, so the cell had the text of the pipe table after the grid table
+        var builder = new MarkdownPipelineBuilder().UseGridTables();
+        if (usePipeTables)
+        {
+            builder.UsePipeTables();
+        }
+
+        var html = MarkdownConverter.ToHtml("+------+---------\n|abcdefgh|\n-|-|\na|", builder.Build());
+
+        Assert.Equal("<table>\n<col style=\"width:40%\" />\n<col style=\"width:60%\" />\n<tbody>\n<tr>\n<td colspan=\"2\">abcdefgh</td>\n</tr>\n</tbody>\n</table>\n<p>-|-|\na|</p>\n", html);
+    }
+
+    [Theory]
     [InlineData("a | b\n-- | --\n0 | 1\n")]
     [InlineData("| a | b |\r\n|:--|--:|\r\n| 0 | 1 |\r\n")]
     [InlineData("|a|b|\n|-|-|\n|0|1|")]

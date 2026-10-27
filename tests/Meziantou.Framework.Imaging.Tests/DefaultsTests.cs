@@ -247,6 +247,39 @@ public sealed class DefaultsTests
     }
 
     [Fact]
+    public void HistogramDefaults()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new HistogramEqualizationOptions { Mode = (HistogramEqualizationMode)2 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new HistogramEqualizationOptions { ColorMode = (HistogramColorMode)2 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new HistogramEqualizationOptions { TileCountX = 0 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new HistogramEqualizationOptions { TileCountY = HistogramEqualizationOptions.MaxTileCount + 1 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new HistogramEqualizationOptions { ClipLimit = 0 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new HistogramEqualizationOptions { ClipLimit = double.NaN });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new AutoLevelsOptions { LowPercentile = -1 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new AutoLevelsOptions { LowPercentile = 100 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new AutoLevelsOptions { HighPercentile = 0 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new AutoLevelsOptions { HighPercentile = double.NaN });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new AutoLevelsOptions { ColorMode = (HistogramColorMode)(-1) });
+
+        Assert.Equal(HistogramEqualizationOptions.MaxTileCount, new HistogramEqualizationOptions { TileCountX = HistogramEqualizationOptions.MaxTileCount }.TileCountX);
+        Assert.Equal(double.PositiveInfinity, new HistogramEqualizationOptions { ClipLimit = double.PositiveInfinity }.ClipLimit);
+        Assert.Equal(0d, new AutoLevelsOptions { LowPercentile = 0 }.LowPercentile);
+        Assert.Equal(100d, new AutoLevelsOptions { HighPercentile = 100 }.HighPercentile);
+
+        var defaults = HistogramEqualizationOptions.Default;
+        Assert.Equal(HistogramEqualizationMode.Global, defaults.Mode);
+        Assert.Equal(HistogramColorMode.Luminance, defaults.ColorMode);
+        Assert.Equal(8, defaults.TileCountX);
+        Assert.Equal(8, defaults.TileCountY);
+        Assert.Equal(2d, defaults.ClipLimit);
+        Assert.False(defaults.ShareHistogramAcrossFrames);
+        Assert.Equal(0d, AutoLevelsOptions.Default.LowPercentile);
+        Assert.Equal(100d, AutoLevelsOptions.Default.HighPercentile);
+        Assert.Equal(HistogramColorMode.Luminance, AutoLevelsOptions.Default.ColorMode);
+        Assert.False(AutoLevelsOptions.Default.ShareHistogramAcrossFrames);
+    }
+
+    [Fact]
     public void AutoCropDefaults()
     {
         var options = new AutoCropOptions();

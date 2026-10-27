@@ -467,10 +467,11 @@ convolutions, blurs, medians and unsharp masks are split into row bands, with re
   frame and the poster in one transaction: replacements are allocated (and charged) while the originals are live, and any failure before the commit
   (limit, allocation failure, cancellation) leaves dimensions, pixels, frame identities and order, cursor hotspots and
   metadata unchanged.
-- **Pixel mutations may be partial.** `Flip`, `Grayscale`, `Convolve` (and the blurs and the sharpening), `Draw`, row
-  callbacks and `ReadFrameInto` write in place: a failure or a cancellation can leave some rows or frames updated, but
-  the image stays structurally valid and disposable. `Convolve`, `GaussianBlur`, `BoxBlur`, `MedianBlur` and `Sharpen`
-  rent their scratch rows first: exceeding the allocation limit leaves the image unchanged. `Flip`
+- **Pixel mutations may be partial.** `Flip`, `Grayscale`, `Convolve` (and the blurs and the sharpening), `Equalize`,
+  `AutoLevels`, `Draw`, row callbacks and `ReadFrameInto` write in place: a failure or a cancellation can leave some rows
+  or frames updated, but the image stays structurally valid and disposable. `Convolve`, `GaussianBlur`, `BoxBlur`,
+  `MedianBlur`, `Sharpen`, `Equalize` and `AutoLevels` rent their working memory first: exceeding the allocation limit
+  leaves the image unchanged. `Flip`
   moves the hotspot of a frame once that frame is completely mirrored. In a `Draw` callback, the shapes already drawn
   stay; each shape rents its working storage before it changes a pixel, and a canceled shape leaves the same rows
   painted on every frame.
@@ -601,9 +602,10 @@ width on each side), `ExtendCanvas` (a larger canvas, with the image at one of n
 permutations, or any angle), `Skew` and `Transform` (an affine or a perspective transformation), `Flip`, `AutoOrient` (all eight EXIF orientations), `Grayscale` (Rec. 709 at storage precision, ties upward; keeps the storage format and
 alpha, and rejects incompatible ICC profiles; use `CloneAs<Gray8>` to change the storage), `ApplyColorMatrix` (a new
 color for each pixel from its own one: brightness, contrast, saturation, a tint), `Convolve` (a convolution
-matrix), `GaussianBlur`, `BoxBlur`, `MedianBlur`, `Sharpen` (an unsharp mask) and `Quantize` (a reduction to a palette,
-see [Color reduction](#color-reduction)). `Flip`, `Grayscale`, `ApplyColorMatrix`, `Convolve`, the blurs, `Sharpen` and
-`Quantize` also exist for one frame. Geometry changes preserve 16-bit precision and alpha, and reconcile the EXIF dimensions,
+matrix), `GaussianBlur`, `BoxBlur`, `MedianBlur`, `Sharpen` (an unsharp mask), `Equalize` and `AutoLevels` (histogram
+equalization, CLAHE and contrast stretch, see [Histograms, equalization and auto-levels](#histograms-equalization-and-auto-levels))
+and `Quantize` (a reduction to a palette, see [Color reduction](#color-reduction)). `Flip`, `Grayscale`,
+`ApplyColorMatrix`, `Convolve`, the blurs, `Sharpen`, `Equalize`, `AutoLevels` and `Quantize` also exist for one frame. Geometry changes preserve 16-bit precision and alpha, and reconcile the EXIF dimensions,
 orientation and thumbnail. `ConvertColorProfile` converts the colors to another ICC profile
 (see [Color management](#color-management)).
 
@@ -979,6 +981,60 @@ public static void ApplyColorFilters(string photoPath, string iconPath, string o
     });
 
     photo.Save(outputPath);
+}
+```
+<!-- endref -->
+
+#### Histograms, equalization and auto-levels
+
+`ComputeHistogram` counts the pixels of every level of a channel (`HistogramChannel`: the Rec. 709 luminance that
+`Grayscale` stores, red, green, blue or alpha), over every frame and the poster or over one frame, without changing the
+image. `Equalize` and `AutoLevels` remap the levels from such histograms, in place:
+
+- **Global equalization** (`HistogramEqualizationMode.Global`, the default) is the textbook mapping of the cumulative
+  histogram: a level `v` becomes `round((cdf(v) - cdf_min) * max / (N - cdf_min))`. On 8-bit samples it gives the
+  pixels of OpenCV's `equalizeHist`.
+- **Adaptive equalization** (`HistogramEqualizationMode.Adaptive`, CLAHE) equalizes each tile of a grid
+  (`TileCountX` and `TileCountY`, 8 by default) with its histogram clipped at `ClipLimit` times the average bin height
+  (2 by default; the excess is spread over every bin, as Zuiderveld does), and blends the mappings of the four nearest
+  tiles bilinearly at each pixel center. The tables are those of OpenCV's `createCLAHE` with the same settings; OpenCV
+  interpolates them at the corner of each pixel, which moves its results by a few levels.
+- **Auto-levels** (`AutoLevels`) stretches the levels between two percentiles of the histogram (`LowPercentile` and
+  `HighPercentile`, 0 and 100 by default: the darkest and the brightest levels present) linearly to the whole range.
+
+`HistogramColorMode.Luminance`, the default, remaps the luma and adds its change to the red, green and blue samples,
+which keeps the chroma and so the hues (except where a sample is clamped); `PerChannel` remaps each channel from its
+own histogram, which also neutralizes a color cast. Every computation is on the stored samples at the storage
+precision, with one bin per level (256, or 65,536 for 16-bit formats), in exact integer arithmetic except the bilinear
+blend of CLAHE (IEEE doubles): the results are the same on every platform. Fully transparent pixels are not counted,
+but they are remapped. Floating-point formats have no discrete levels and are rejected
+(`UnsupportedImageFeatureException`): convert them to `Rgba64` first. Each frame is processed alone by default;
+`ShareHistogramAcrossFrames` gives every frame of an animation the mapping of their combined histograms, so that it does
+not flicker. The tables (up to 25 MiB for 8 x 8 tiles of 16-bit samples remapped per channel) are charged to the image.
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_Histogram;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static ImageHistogram EnhanceContrast(string inputPath, string outputPath)
+{
+    using var image = Image.Load(inputPath);
+
+    // Stretch the luminance between its 0.5th and 99.5th percentiles: a few very dark or very bright pixels do not
+    // limit the stretch. The hues are kept.
+    image.AutoLevels(new AutoLevelsOptions { LowPercentile = 0.5, HighPercentile = 99.5 });
+
+    // Raise the local contrast: each of 8 x 8 tiles is equalized with a contrast limit, and the tiles are blended
+    // without seams. The frames of an animation share their histograms, so that they do not flicker.
+    image.Equalize(new HistogramEqualizationOptions
+    {
+        Mode = HistogramEqualizationMode.Adaptive,
+        ClipLimit = 2,
+        ShareHistogramAcrossFrames = true,
+    });
+
+    image.Save(outputPath);
+
+    // The number of pixels at each luminance level, over every frame
+    return image.ComputeHistogram(HistogramChannel.Luminance);
 }
 ```
 <!-- endref -->
@@ -4371,7 +4427,7 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | Color management | ICC version 2 and 4 grayscale, RGB and CMYK profiles (matrix-based and table-based): no version 5 (iccMAX), device-link, abstract or named-color profile, no multi-process-element (`D2Bx`/`B2Dx`) tag, no other data color space; `ConvertColorProfile` keeps the pixel format (an RGB image cannot become grayscale or CMYK this way); no CMYK pixel format: a CMYK JPEG file or TIFF page is converted to RGB when it is loaded (`CmykConversionOptions`, RGB destination only) and CMYK cannot be written; no gamut mapping beyond per-channel clipping |
 | Drawing | Sequential; under a projective transformation of the canvas (or, for filters, one that turns or skews), shadows, blurs, filters and the glyphs a font draws with its own colors are drawn on an image of the plane at one resolution (the scale of the transformation at its origin, at most 4,194,304 pixels), curves are cut no finer than for a factor of 65536 near the horizon, and a pen that does not scale strokes the parts of a closed contour that crosses the horizon as open contours; a filter graph has no input `BackgroundImage`, `BackgroundAlpha`, `FillPaint` or `StrokePaint`, and its region defaults to the canvas (not to the box of the drawing); no mesh gradient; a marker has no hole, and a stroke on one side of its path costs a clip; linear light is the light of the transfer function the image declares (sRGB when it declares none) or of the tone curves of its ICC profile, and a profile without tone curves has none; a color matrix is applied to the encoded sample values, also in linear light; the colors of a profile (`PaintProfile`) are those of the paints only (an image that is drawn is not converted), an RGB profile only, and never on PQ or HLG samples; without antialiasing, the glyphs a font draws with its own colors stay antialiased; a clip multiplies coverages; combined and simplified paths are made of segments; coordinates are limited to ±16,777,216 (what a transformation sends beyond is cut by that range); on a floating-point canvas, paints have 16-bit colors in [0, 1], and an image, a layer, a pattern, a filter, a shadow, a blur, a group or a backdrop is combined through 16-bit colors, so its samples must be in [0, 1] (others are rejected, never clipped) and are quantized to 1/65535 |
 | Floating-point pixels | `RgbaFloat` and `RgbaHalf` only (no floating-point grayscale format); OpenEXR and TIFF are the formats that decode to them and store them (the other encoders reduce them to `Rgba64` with `ImageEncoder.FloatingPointConversion`); HDR samples of the integer formats are 16-bit integers, converted to a standard dynamic range by an explicit tone mapping |
-| Processing | No custom processors; `LinearSrgb` resizing and convolution accept untagged images, recognized sRGB/sGray profiles and CICP transfer characteristics that have a function; convolution matrices have odd dimensions, no bias or divisor, no ready-made matrices and no separable fast path |
+| Processing | No custom processors; `LinearSrgb` resizing and convolution accept untagged images, recognized sRGB/sGray profiles and CICP transfer characteristics that have a function; convolution matrices have odd dimensions, no bias or divisor, no ready-made matrices and no separable fast path; histograms, equalization and auto-levels work on the encoded samples of integer pixel formats only (floating-point pixels are rejected), and CLAHE does not pad a frame whose size is not a multiple of the tile grid (its tiles divide it as evenly as possible) |
 | AVIF encoding | An image of a sequence is predicted from the previous image only, with one motion vector per block and the regular interpolation filter: no compound prediction (two references), global, warped or overlapped motion, or temporal motion vector prediction. Three tools were implemented, measured with the `avif-quality` report and left out because they did not make its sequences smaller: key frames at scene changes (the key frame of an image that follows a cut is 0.3 to 1.7% larger than the inter frame whose blocks are all intra, since it gives up the probabilities that the previous images adapted; `KeyFrameInterval` is how a sequence gets seek points), the split of the transform blocks of an inter block (0.01% in total: it keeps the largest transform of its size) and an interpolation filter per block (the same size at equal quality, for several times the encoding time). Intra block copy is for lossless images only (a frame that copies blocks has no in-loop filter), and its delay of five superblocks leaves small images out. The loop restoration is the Wiener filter, in units of 256x256 samples, at the efforts 0 to 2 only (it recovered nothing above them in the report), and never the self-guided filter. Not used: quantizer deltas, quantization matrices, CDEF strengths per block (one pair per frame), super-resolution and film grain. No layered (progressive) output, and no grid for an image sequence. An image sequence of one image cannot store animation settings (it is read back as a still image): a single frame with animation settings is rejected. An image sequence needs a seekable destination and its frame count. The level of the stream is the lowest one whose picture size holds the image; the other limits of a level are not checked |
 | AVIF decoding | Rejected with `UnsupportedImageFeatureException`: more than eight nested derivations, an image built from images of several color descriptions, an overlay whose sRGB fill color shows on an image that is not an sRGB one, an alpha plane of an overlay or of a grid of derived images, a derived image with more than 1,024 input images, an alpha plane that is not presented as its derived color image, movie fragments that do not follow each other, have composition time offsets, precede their `moov` box or follow their samples, an edit list that selects a part of a fragmented sequence, edit lists that do not play the media forward at its rate (empty edits, a media rate other than 1, edits out of order or overlapping), an alpha track with another edit list than its color track, image sequences whose images change size, clean apertures that do not select whole samples, grid tiles that declare other transformations than their grid, large scale tile streams, reserved matrix coefficients, and matrix coefficients without the transfer characteristics or the primaries they are defined with (constant luminance without a transfer function, ICtCp with other transfer characteristics than PQ and HLG, chromaticity-derived coefficients without chromaticities). Not read: gain maps, depth maps, thumbnails, the images that are not the primary item, a `tkhd` matrix that is not a quarter turn or a mirror (the images are returned as stored), the content color volume (`cclv`) and the light levels and the mastering display of AV1 metadata units. A layered image is returned at its full quality only: its lower layers are not exposed as a progressive rendering. HDR samples are returned as stored: tone mapping is an explicit `ConvertColorProfile` with `ToneMapping` options |
 | HEIC encoding | One slice per picture, without tiles or wavefront streams (the encoder is sequential). An image of a sequence is a P picture predicted from the previous image only: no B pictures, no second reference, no bi-prediction, no weighted prediction, no long-term reference, no scene change detection. Not used: intra coding blocks of 64x64 samples, PCM blocks, scaling lists, quantizer changes inside a picture (no adaptive quantization, no rate control: `Quality` is a quantizer, not a size), rate-distortion optimized quantization, searched deblocking offsets, and the tools of the range extensions (lossless output is the plain transform bypass of version 1, which every HEVC decoder reads: residual DPCM and cross-component prediction would make it smaller). No screen content tools: a lossless screenshot is larger than its PNG. No grid output (an image is one picture, whatever its size), no premultiplied alpha, no `pasp`, mastering display or content light level box, no orientation for an image sequence, and the decoded picture hash is not written. An image of an odd size with subsampled chroma relies on the clean aperture of the file: libheif ignores the one of a sequence and shows one more column or row, which repeats the last one, and FFmpeg reports the even size of the coded pictures (its command-line tool then crops them to an even size). The readers upsample subsampled chroma each in their own way: the edges of a 4:2:0 or 4:2:2 image differ visibly from one reader to another, as they do for the files of any HEVC encoder. FFmpeg 9 decodes 12-bit lossy output of the coarsest quantizers (`Quality` 0 to 2) to other pictures than libde265, the HM reference decoder and this library, which agree. libheif reports the edit list of a sequence that plays once as unsupported, and plays it once. An image sequence of one image cannot store animation settings. An image sequence needs a seekable destination and its frame count |

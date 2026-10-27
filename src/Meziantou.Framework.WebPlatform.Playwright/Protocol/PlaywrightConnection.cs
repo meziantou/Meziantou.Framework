@@ -23,6 +23,7 @@ internal sealed class PlaywrightConnection : IDisposable
     private readonly CancellationTokenSource _closed = new();
     private readonly List<Task> _pendingCalls = [];
     private long _nextGuid;
+    private int _isClosed;
 
     public PlaywrightConnection(PlaywrightServerOptions options)
     {
@@ -330,7 +331,9 @@ internal sealed class PlaywrightConnection : IDisposable
     /// <summary>Closes the connection: the pending calls are canceled and the objects are disposed (their browser contexts are closed).</summary>
     public void Close()
     {
-        if (_closed.IsCancellationRequested)
+        // Not _closed.IsCancellationRequested: the cancellation token of RunAsync cancels _closed without closing the
+        // connection, and the writer of the messages would then wait forever for the end of the queue
+        if (Interlocked.Exchange(ref _isClosed, 1) != 0)
             return;
 
         _closed.Cancel();

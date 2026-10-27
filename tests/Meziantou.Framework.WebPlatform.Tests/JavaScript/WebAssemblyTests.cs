@@ -2,6 +2,7 @@ using Meziantou.Framework.WebPlatform.Dom;
 using Meziantou.Framework.WebPlatform.Scripting;
 using Meziantou.Framework.WebPlatform.Tests.Scripting;
 using Meziantou.Framework.WebPlatform.Wasmtime;
+using Meziantou.Framework.WebPlatform.WebAssembly;
 
 namespace Meziantou.Framework.WebPlatform.Tests.JavaScript;
 
@@ -320,17 +321,28 @@ public sealed class WebAssemblyTests : IDisposable
     }
 
     [Fact]
-    public async Task Tag_AcceptsALargeNumberOfParameters()
+    public void CreateTag_AcceptsALargeNumberOfParameters()
     {
-        // The value types of the native function type were allocated on the stack: 8 MB for one million parameters
-        var result = await RunAsync("""
-            async () => {
-              const tag = new WebAssembly.Tag({ parameters: Array(1_000_000).fill('i32') });
-              return tag instanceof WebAssembly.Tag;
-            }
-            """);
+        // A script chooses the number of parameters of a tag (new WebAssembly.Tag({ parameters })). The value types of
+        // the native function type were allocated on the stack: 800 KB for 100,000 parameters, more than this thread has.
+        var type = new WasmTagType([.. Enumerable.Repeat(WasmValueType.I32, 100_000)]);
+        WasmTag? tag = null;
+        var thread = new Thread(() =>
+        {
+            using var store = Runtime.CreateStore(new NoInterruptionHost());
+            tag = store.CreateTag(type);
+        }, maxStackSize: 256 * 1024);
+        thread.Start();
+        thread.Join();
 
-        Assert.Equal("true", result);
+        Assert.NotNull(tag);
+    }
+
+    private sealed class NoInterruptionHost : IWasmHost
+    {
+        public void CheckInterrupt()
+        {
+        }
     }
 
     [Fact]

@@ -198,11 +198,16 @@ public abstract class ProjectedFileSystemBase : IDisposable
     /// <exception cref="InvalidOperationException">Thrown when the virtual file system is not started.</exception>
     protected void ClearNegativePathCache()
     {
-        if (_instanceHandle is null)
-            throw new InvalidOperationException("The service is not started");
-
-        var result = NativeMethods.PrjClearNegativePathCache(_instanceHandle, out _);
-        result.EnsureSuccess();
+        var instanceHandle = EnterInstanceCall();
+        try
+        {
+            var result = NativeMethods.PrjClearNegativePathCache(instanceHandle, out _);
+            result.EnsureSuccess();
+        }
+        finally
+        {
+            _pendingCommands.Signal();
+        }
     }
 
     /// <summary>Deletes a file from the virtual file system projection.</summary>
@@ -213,15 +218,39 @@ public abstract class ProjectedFileSystemBase : IDisposable
     /// <exception cref="InvalidOperationException">Thrown when the virtual file system is not started.</exception>
     protected bool DeleteFile(string relativePath, PRJ_UPDATE_TYPES updateFlags, out PRJ_UPDATE_FAILURE_CAUSES failureReason)
     {
-        if (_instanceHandle is null)
+        var instanceHandle = EnterInstanceCall();
+        try
+        {
+            var hr = NativeMethods.PrjDeleteFile(instanceHandle, relativePath, updateFlags, out failureReason);
+            if (hr == HResult.ERROR_FILE_SYSTEM_VIRTUALIZATION_INVALID_OPERATION)
+                return false;
+
+            hr.EnsureSuccess();
+            return true;
+        }
+        finally
+        {
+            _pendingCommands.Signal();
+        }
+    }
+
+    // Registers a call that uses the instance handle, as a pending command: Stop disposes the handle only once the
+    // registered calls returned, so the driver never gets the context of a stopped instance, and the handle is always
+    // released by Stop (releasing it from a callback would call PrjStopVirtualizing from that callback). The caller
+    // must signal _pendingCommands when the call returns.
+    private ProjFSSafeHandle EnterInstanceCall()
+    {
+        if (!_pendingCommands.TryAddCount())
             throw new InvalidOperationException("The service is not started");
 
-        var hr = NativeMethods.PrjDeleteFile(_instanceHandle, relativePath, updateFlags, out failureReason);
-        if (hr == HResult.ERROR_FILE_SYSTEM_VIRTUALIZATION_INVALID_OPERATION)
-            return false;
+        var instanceHandle = _instanceHandle;
+        if (instanceHandle is null)
+        {
+            _pendingCommands.Signal();
+            throw new InvalidOperationException("The service is not started");
+        }
 
-        hr.EnsureSuccess();
-        return true;
+        return instanceHandle;
     }
 
     /// <summary>Stops the virtual file system.</summary>

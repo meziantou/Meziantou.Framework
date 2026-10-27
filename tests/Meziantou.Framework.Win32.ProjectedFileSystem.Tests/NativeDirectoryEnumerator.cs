@@ -26,7 +26,7 @@ internal sealed class NativeDirectoryEnumerator : IDisposable
 
     public static NativeDirectoryEnumerator Open(string path)
     {
-        var handle = PInvoke.CreateFile(
+        var handle = TestPInvoke.CreateFile(
             path,
             (uint)FILE_ACCESS_RIGHTS.FILE_LIST_DIRECTORY,
             FILE_SHARE_MODE.FILE_SHARE_READ | FILE_SHARE_MODE.FILE_SHARE_WRITE | FILE_SHARE_MODE.FILE_SHARE_DELETE,
@@ -73,7 +73,7 @@ internal sealed class NativeDirectoryEnumerator : IDisposable
                     Buffer = searchExpressionPtr,
                 };
 
-                var status = Windows.Wdk.PInvoke.NtQueryDirectoryFile(
+                var status = Windows.Wdk.TestPInvoke.NtQueryDirectoryFile(
                     (HANDLE)_handle.DangerousGetHandle(),
                     Event: default,
                     ApcRoutine: null,

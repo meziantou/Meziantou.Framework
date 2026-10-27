@@ -809,6 +809,67 @@ public static class ImageProcessingExtensions
     }
 
     /// <summary>
+    /// Gives a color to every pixel of every frame of the image (including the poster frame) whose color is within a
+    /// tolerance of another one, in place: a background color made transparent, a color of a logo changed. The pixel
+    /// format is kept.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Each pixel is read as a 16-bit color (<see cref="Rgba64"/>), with the conversion of
+    /// <see cref="Image.CloneAs{TPixel}(PixelConversionOptions?)"/>: 8-bit and 16-bit samples exactly, a gray level as
+    /// its three colors, and an opaque alpha for a format without alpha. It matches when each of its four samples (alpha
+    /// included) differs from the sample of <paramref name="color"/> by at most <paramref name="tolerance"/> times
+    /// 65535, rounded to nearest with ties upward: 0 matches the exact color only, and <c>1 / 255</c> the next 8-bit
+    /// value on each side. A matching pixel gets <paramref name="replacement"/>, converted to the pixel format with the
+    /// same rules as a color drawn on the image (Rec. 709 luma on a gray format, rounded to 8 bits on an 8-bit one, its
+    /// alpha lost on a format without alpha); the others are not changed.
+    /// </para>
+    /// <para>
+    /// No color profile is applied: the colors are those of the color space of the image. The comparison is made on
+    /// integers: the pixels are the same on every platform. A floating-point pixel is compared
+    /// through its 16-bit color, so its samples must be in [0, 1]. On failure or cancellation, some frames or rows may
+    /// already be changed.
+    /// </para>
+    /// </remarks>
+    /// <param name="image">The image to modify.</param>
+    /// <param name="color">The color of the pixels to change, with straight alpha.</param>
+    /// <param name="replacement">The color they get, with straight alpha.</param>
+    /// <param name="tolerance">How far, as a fraction of the range of a sample, each sample of a pixel can be from the one of <paramref name="color"/>: from 0 (the default) to 1.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="image"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="tolerance"/> is not between 0 and 1.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">A floating-point sample is outside [0, 1] or is not a number.</exception>
+    /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
+    /// <exception cref="ObjectDisposedException">The image is disposed.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public static void ReplaceColor(this Image image, Rgba64 color, Rgba64 replacement, double tolerance = 0, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(image);
+        ValidateTolerance(tolerance);
+        image.ReplaceColorFrames(frames: null, color, replacement, tolerance, cancellationToken);
+    }
+
+    /// <summary>Gives a color to every pixel of one frame whose color is within a tolerance of another one, in place. See <see cref="ReplaceColor(Image, Rgba64, Rgba64, double, CancellationToken)"/>.</summary>
+    /// <param name="frame">The frame to modify.</param>
+    /// <param name="color">The color of the pixels to change, with straight alpha.</param>
+    /// <param name="replacement">The color they get, with straight alpha.</param>
+    /// <param name="tolerance">How far, as a fraction of the range of a sample, each sample of a pixel can be from the one of <paramref name="color"/>: from 0 (the default) to 1.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests. On cancellation, some rows may already be changed.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="frame"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="tolerance"/> is not between 0 and 1.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">A floating-point sample is outside [0, 1] or is not a number.</exception>
+    /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
+    /// <exception cref="ObjectDisposedException">The frame is no longer attached to a live image.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public static void ReplaceColor(this ImageFrame frame, Rgba64 color, Rgba64 replacement, double tolerance = 0, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(frame);
+        ValidateTolerance(tolerance);
+        _ = frame.GetStorage();
+        frame.OwnerImage.ReplaceColorFrames([frame], color, replacement, tolerance, cancellationToken);
+    }
+
+    /// <summary>
     /// Counts the pixels of every level of a channel, over every frame of the image (including the poster frame). The image
     /// is not changed.
     /// </summary>
@@ -1481,5 +1542,11 @@ public static class ImageProcessingExtensions
 
         if (!Enum.IsDefined(workingSpace))
             throw new ArgumentOutOfRangeException(nameof(workingSpace), workingSpace, "The working space is not valid.");
+    }
+
+    private static void ValidateTolerance(double tolerance)
+    {
+        if (!(tolerance >= 0 && tolerance <= 1))
+            throw new ArgumentOutOfRangeException(nameof(tolerance), tolerance, "The tolerance must be between 0 and 1.");
     }
 }

@@ -144,7 +144,7 @@ internal sealed partial class DrawingSession
 
         if (brush is not GradientBrush gradientBrush)
         {
-            // An image or a pattern has no color of its own to give to a glyph that draws with its own colors: the
+            // An image, a pattern or a path gradient has no color of its own to give to a glyph that draws with its own colors: the
             // text is black
             surface.Foreground = (0, 0, 0, 1);
             surface.ForegroundGradient = null;

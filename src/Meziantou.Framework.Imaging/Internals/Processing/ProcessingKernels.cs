@@ -618,6 +618,43 @@ internal static class ProcessingKernels
         }
     }
 
+    /// <summary>
+    /// Gives a color to the pixels whose color is within a tolerance of another one, in place: each pixel is read as a
+    /// 16-bit color (exact for 8-bit and 16-bit samples), and every one of its four samples must be within
+    /// <paramref name="tolerance"/> of the sample of <paramref name="color"/>.
+    /// </summary>
+    public static void ReplaceColor<TPixel>(scoped in PixelLease lease, Rgba64 color, Rgba64 replacement, int tolerance, CancellationToken cancellationToken)
+        where TPixel : unmanaged
+    {
+        TPixel stored = default;
+        PixelConverter.ConvertRow(new ReadOnlySpan<Rgba64>(in replacement), new Span<TPixel>(ref stored));
+        Span<Rgba64> colors = stackalloc Rgba64[64];
+        var height = lease.Height;
+        for (var y = 0; y < height; y++)
+        {
+            if (y % RowsPerCancellationCheck == 0)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+            }
+
+            var row = lease.GetRow<TPixel>(y);
+            for (var start = 0; start < row.Length; start += colors.Length)
+            {
+                var pixels = row.Slice(start, Math.Min(colors.Length, row.Length - start));
+                var read = colors[..pixels.Length];
+                PixelConverter.ConvertRow<TPixel, Rgba64>(pixels, read);
+                for (var i = 0; i < read.Length; i++)
+                {
+                    var pixel = read[i];
+                    if (Math.Abs(pixel.R - color.R) <= tolerance && Math.Abs(pixel.G - color.G) <= tolerance && Math.Abs(pixel.B - color.B) <= tolerance && Math.Abs(pixel.A - color.A) <= tolerance)
+                    {
+                        pixels[i] = stored;
+                    }
+                }
+            }
+        }
+    }
+
     /// <summary>The scalar reference of the in-place grayscale of one row of a color format.</summary>
     internal static void GrayscaleScalar<TPixel>(Span<TPixel> row)
         where TPixel : unmanaged

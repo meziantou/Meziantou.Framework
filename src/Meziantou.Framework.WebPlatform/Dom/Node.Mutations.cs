@@ -228,7 +228,7 @@ public abstract partial class Node
         var document = NodeDocument;
         if (child is not null && document.HasLiveRanges)
         {
-            document.UpdateLiveRangesForInsertion(this, child.GetIndex(), count);
+            document.UpdateLiveRangesForInsertion(this, child, count);
         }
 
         var previousSibling = child is not null ? child._previousSibling : _lastChild;
@@ -882,7 +882,7 @@ public abstract partial class Node
 
         if (child is not null && document.HasLiveRanges)
         {
-            document.UpdateLiveRangesForInsertion(newParent, child.GetIndex(), 1);
+            document.UpdateLiveRangesForInsertion(newParent, child, 1);
         }
 
         var newPreviousSibling = child is not null ? child._previousSibling : newParent._lastChild;

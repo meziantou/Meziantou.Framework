@@ -894,6 +894,17 @@ public sealed partial class Range : AbstractRange
     // Live range updates
     // ----------------------------------------------------------------------------------------------------------------
 
+    /// <summary>Whether <see cref="OnInsertion"/> can change the range: a boundary point is in <paramref name="parent"/>.</summary>
+    internal bool IsAffectedByInsertion(Node parent)
+        => ReferenceEquals(StartContainerInternal, parent) || ReferenceEquals(EndContainerInternal, parent);
+
+    /// <summary>
+    /// Whether <see cref="OnPreRemove"/> can change the range: a boundary point is in <paramref name="parent"/>, or in the
+    /// subtree of the removed <paramref name="node"/>.
+    /// </summary>
+    internal bool IsAffectedByRemoval(Node node, Node parent)
+        => IsAffectedByInsertion(parent) || node.IsInclusiveAncestorOf(StartContainerInternal) || node.IsInclusiveAncestorOf(EndContainerInternal);
+
     /// <summary>The live range steps of the insert algorithm.</summary>
     internal void OnInsertion(Node parent, int childIndex, int count)
     {

@@ -22,8 +22,8 @@ namespace Meziantou.Framework.Imaging;
 /// <para>
 /// Pixel-only operations (<see cref="Flip(Image, FlipMode, CancellationToken)"/>, <see cref="Grayscale(Image, CancellationToken)"/>,
 /// <see cref="Convolve(Image, ConvolutionOptions, CancellationToken)"/>, the blurs, <see cref="Sharpen(Image, double, double, double, ConvolutionEdgeMode, ConvolutionWorkingSpace, CancellationToken)"/>,
-/// <see cref="Equalize(Image, HistogramEqualizationOptions?, CancellationToken)"/>, <see cref="AutoLevels(Image, AutoLevelsOptions?, CancellationToken)"/>)
-/// work in place; on failure or cancellation some frames or rows may already be modified, but the image remains
+/// <see cref="Equalize(Image, HistogramEqualizationOptions?, CancellationToken)"/>, <see cref="AutoLevels(Image, AutoLevelsOptions?, CancellationToken)"/>,
+/// <see cref="Threshold(Image, ThresholdOptions?, CancellationToken)"/>) work in place; on failure or cancellation some frames or rows may already be modified, but the image remains
 /// structurally valid.
 /// </para>
 /// <para>
@@ -1005,6 +1005,100 @@ public static class ImageProcessingExtensions
         ValidateAutoLevels(options);
         _ = frame.GetStorage();
         frame.OwnerImage.AutoLevelsFrames([frame], options, cancellationToken);
+    }
+
+    /// <summary>
+    /// Binarizes every frame of the image (including the poster frame) in place: each pixel becomes
+    /// <see cref="ThresholdOptions.UpperColor"/> (white by default) when its luminance is greater than its threshold, and
+    /// <see cref="ThresholdOptions.LowerColor"/> (black by default) otherwise. The pixel format is kept.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// See <see cref="ThresholdMethod"/> for how the thresholds are chosen: one level for the whole frame, given or chosen by
+    /// Otsu's method, or a level per pixel from its neighborhood (<see cref="ThresholdMethod.Mean"/>,
+    /// <see cref="ThresholdMethod.Sauvola"/>) for uneven lighting. The luminance is the Rec. 709 luma of the stored (encoded)
+    /// samples at the storage precision, which <see cref="Grayscale(Image, CancellationToken)"/> stores; alpha is ignored.
+    /// No color profile is applied. Floating-point pixel formats have no discrete levels: convert the image to
+    /// <see cref="Rgba64"/> with <see cref="Image.CloneAs{TPixel}(PixelConversionOptions?)"/> first.
+    /// </para>
+    /// <para>
+    /// Every pixel gets one of the two colors, alpha included, so the frames hold exactly two colors. With the default
+    /// colors, the result can be saved as a bilevel page (<see cref="Formats.TiffPixelLayout.Bilevel"/>, the layout of the
+    /// CCITT compressions) or as a portable bitmap (<see cref="Formats.PnmPixelLayout.Bitmap"/>), which store exactly black
+    /// and white pixels. The pixel format must store both colors exactly: an opaque color without alpha, a gray color for a
+    /// gray format, samples that are multiples of 257 for an 8-bit format. To dither to black and white instead, use
+    /// <see cref="Quantize(Image, QuantizeOptions?, CancellationToken)"/> with a palette of the two colors.
+    /// </para>
+    /// <para>
+    /// The working memory (one row, and for the adaptive methods 2 bytes per pixel of a frame and 16 bytes per column) is
+    /// charged to the image and rented before a pixel changes. On failure or cancellation, some frames or rows may already
+    /// be binarized.
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.Imaging.Processing.Tests/ThresholdTests.cs" ref:region="Threshold_Sauvola" ref:dedent="true">
+    /// [Fact]
+    /// public void Threshold_Sauvola()
+    /// {
+    ///     // A page lit unevenly: the paper goes from 120 (left) to 250 (right), and the dark strokes are 80 levels darker
+    ///     using var page = new Image&lt;Gray8&gt;(96, 32);
+    ///     page.Frames[0].ProcessPixelRows(pixels =&gt;
+    ///     {
+    ///         for (var y = 0; y &lt; pixels.Height; y++)
+    ///         {
+    ///             var row = pixels.GetRowSpan(y);
+    ///             for (var x = 0; x &lt; row.Length; x++)
+    ///             {
+    ///                 var paper = 120 + (x * 130 / 95);
+    ///                 var stroke = x % 8 &lt; 2 &amp;&amp; y is &gt;= 8 and &lt; 24;
+    ///                 row[x] = new Gray8((byte)(stroke ? paper - 80 : paper));
+    ///             }
+    ///         }
+    ///     });
+    ///
+    ///     // No single level separates the strokes from the paper: the strokes on the right are lighter than the paper on the left
+    ///     Assert.True(page.Frames[0][88, 16].Value &gt; page.Frames[0][4, 4].Value);
+    ///
+    ///     // Sauvola's threshold follows the lighting: the strokes become black, the paper white
+    ///     page.Threshold(new ThresholdOptions { Method = ThresholdMethod.Sauvola, WindowSize = 25 });
+    ///     Assert.Equal(0, page.Frames[0][88, 16].Value);
+    ///     Assert.Equal(255, page.Frames[0][4, 4].Value);
+    ///     Assert.Equal(255, page.Frames[0][92, 16].Value);
+    /// }
+    /// </code>
+    /// </example>
+    /// <param name="image">The image to modify.</param>
+    /// <param name="options">The options, or <see langword="null"/> for <see cref="ThresholdOptions.Default"/>.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="image"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">The pixel format cannot store <see cref="ThresholdOptions.UpperColor"/> or <see cref="ThresholdOptions.LowerColor"/> exactly. Nothing is changed.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The pixel format is a floating-point one. Nothing is changed.</exception>
+    /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
+    /// <exception cref="ImageResourceLimitException">The working memory would exceed the allocation limit. Nothing is changed.</exception>
+    /// <exception cref="ObjectDisposedException">The image is disposed.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public static void Threshold(this Image image, ThresholdOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(image);
+        image.ThresholdFrames(frames: null, options ?? ThresholdOptions.Default, cancellationToken);
+    }
+
+    /// <summary>Binarizes one frame in place. See <see cref="Threshold(Image, ThresholdOptions?, CancellationToken)"/>.</summary>
+    /// <param name="frame">The frame to modify.</param>
+    /// <param name="options">The options, or <see langword="null"/> for <see cref="ThresholdOptions.Default"/>.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests. On cancellation, some rows may already be binarized.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="frame"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">The pixel format cannot store <see cref="ThresholdOptions.UpperColor"/> or <see cref="ThresholdOptions.LowerColor"/> exactly. Nothing is changed.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The pixel format is a floating-point one. Nothing is changed.</exception>
+    /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
+    /// <exception cref="ImageResourceLimitException">The working memory would exceed the allocation limit. Nothing is changed.</exception>
+    /// <exception cref="ObjectDisposedException">The frame is no longer attached to a live image.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public static void Threshold(this ImageFrame frame, ThresholdOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(frame);
+        _ = frame.GetStorage();
+        frame.OwnerImage.ThresholdFrames([frame], options ?? ThresholdOptions.Default, cancellationToken);
     }
 
     private static void ValidateHistogramChannel(HistogramChannel channel)

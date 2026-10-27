@@ -1517,6 +1517,42 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void SaveScanAsBilevelWritesTheTextInBlackOnWhite()
+    {
+        // A page lit from the right: the paper goes from 110 to 240, and dark lines of text are 90 levels darker
+        var input = GetPath("scan.png");
+        using (var scan = new Image<Rgb24>(160, 64))
+        {
+            for (var y = 0; y < 64; y++)
+            {
+                for (var x = 0; x < 160; x++)
+                {
+                    var paper = 110 + (x * 130 / 159);
+                    var text = y % 16 is >= 6 and < 10 && x % 6 < 3;
+                    var level = (byte)(text ? paper - 90 : paper);
+                    scan.Frames[0][x, y] = new Rgb24(level, level, level);
+                }
+            }
+
+            scan.Save(input);
+        }
+
+        var tiff = GetPath("scan.tif");
+        var pbm = GetPath("scan.pbm");
+        Examples.SaveScanAsBilevel(input, tiff, pbm);
+
+        Assert.Equal("P4"u8.ToArray(), File.ReadAllBytes(pbm)[..2]);
+        foreach (var path in new[] { tiff, pbm })
+        {
+            using var image = Image.Load<Gray8>(path);
+            Assert.Equal(0, image.Frames[0][150, 7].Value);
+            Assert.Equal(0, image.Frames[0][1, 7].Value);
+            Assert.Equal(255, image.Frames[0][4, 7].Value);
+            Assert.Equal(255, image.Frames[0][150, 2].Value);
+        }
+    }
+
+    [Fact]
     public void SaveGifWithSharedPaletteKeepsTheColorsOfEveryFrame()
     {
         // Two frames of one color each: the shared palette holds both colors, and each frame keeps its own

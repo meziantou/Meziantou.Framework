@@ -813,6 +813,25 @@ internal static class Examples
     }
     #endregion
 
+    /// <summary>Document scanning: a photographed page is binarized and saved as a CCITT Group 4 TIFF and a portable bitmap.</summary>
+    #region Imaging_Threshold
+    public static void SaveScanAsBilevel(string inputPath, string tiffPath, string pbmPath)
+    {
+        using var page = Image.Load(inputPath);
+
+        // Sauvola's threshold follows uneven lighting: each pixel is compared with the mean and the contrast of the
+        // 31 x 31 pixels around it, so the text becomes black and the paper white, even in a shadow. The pixels are now
+        // exactly black or white, in the same pixel format.
+        page.Threshold(new ThresholdOptions { Method = ThresholdMethod.Sauvola, WindowSize = 31 });
+
+        // A bilevel page with Group 4 compression, the usual format of scanned documents
+        page.Save(tiffPath, new TiffEncoder { PixelLayout = TiffPixelLayout.Bilevel, Compression = TiffCompression.CcittGroup4 });
+
+        // A portable bitmap: one bit per pixel
+        page.Save(pbmPath, new PnmEncoder { PixelLayout = PnmPixelLayout.Bitmap });
+    }
+    #endregion
+
     /// <summary>Histogram-based contrast: the levels of a photo are stretched, then its local contrast is raised (CLAHE).</summary>
     #region Imaging_Histogram
     public static ImageHistogram EnhanceContrast(string inputPath, string outputPath)

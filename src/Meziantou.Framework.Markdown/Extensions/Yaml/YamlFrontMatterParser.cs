@@ -73,42 +73,9 @@ public class YamlFrontMatterParser : BlockParser
         // this is a YAML front matter block
         if (count == 3 && c.IsWhiteSpaceOrZero() && line.TrimEnd())
         {
-            bool hasFullYamlFrontMatter = false;
             // We make sure that there is a closing frontmatter somewhere in the document
             // so here we work on the full document instead of just the line
-            var fullLine = new StringSlice(line.Text, line.Start, line.Text.Length - 1);
-            c = fullLine.CurrentChar;
-            while (c != '\0')
-            {
-                c = fullLine.NextChar();
-                if (c == '\n' || c == '\r')
-                {
-                    var nc = fullLine.PeekChar();
-                    if (c == '\r' && nc == '\n')
-                    {
-                        c = fullLine.NextChar();
-                    }
-                    nc = fullLine.PeekChar();
-                    if (nc == '-')
-                    {
-                        if (fullLine.NextChar() == '-' && fullLine.NextChar() == '-' && fullLine.NextChar() == '-' && (fullLine.NextChar() == '\0' || fullLine.SkipSpacesToEndOfLineOrEndOfDocument()))
-                        {
-                            hasFullYamlFrontMatter = true;
-                            break;
-                        }
-                    }
-                    else if (nc == '.')
-                    {
-                        if (fullLine.NextChar() == '.' && fullLine.NextChar() == '.' && fullLine.NextChar() == '.' && (fullLine.NextChar() == '\0' || fullLine.SkipSpacesToEndOfLineOrEndOfDocument()))
-                        {
-                            hasFullYamlFrontMatter = true;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            if (hasFullYamlFrontMatter)
+            if (HasClosingFence(line.Text, line.Start))
             {
                 // Create a front matter block
                 var block = this.CreateFrontMatterBlock(processor);
@@ -126,6 +93,61 @@ public class YamlFrontMatterParser : BlockParser
         }
 
         return BlockState.None;
+    }
+
+    // Checks every line after the one containing position for a closing fence: "---" or "...",
+    // followed only by whitespace up to the end of the line or of the document.
+    private static bool HasClosingFence(string text, int position)
+    {
+        while (true)
+        {
+            var lineBreak = text.AsSpan(position).IndexOfAny('\r', '\n');
+            if (lineBreak < 0)
+            {
+                return false;
+            }
+
+            position += lineBreak;
+            if (text[position] == '\r' && position + 1 < text.Length && text[position + 1] == '\n')
+            {
+                position++;
+            }
+
+            position++;
+            if (IsClosingFence(text, position))
+            {
+                return true;
+            }
+        }
+    }
+
+    private static bool IsClosingFence(string text, int lineStart)
+    {
+        if (lineStart + 3 > text.Length)
+        {
+            return false;
+        }
+
+        var fenceChar = text[lineStart];
+        if (fenceChar is not ('-' or '.') || text[lineStart + 1] != fenceChar || text[lineStart + 2] != fenceChar)
+        {
+            return false;
+        }
+
+        foreach (var c in text.AsSpan(lineStart + 3))
+        {
+            if (c is '\r' or '\n')
+            {
+                return true;
+            }
+
+            if (!c.IsWhitespace())
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /// <summary>

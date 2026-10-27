@@ -32,6 +32,50 @@ public class TestYamlFrontMatterExtension
             pipeline);
     }
 
+    [Theory]
+    [InlineData("-", "---")]
+    [InlineData("--", "---")]
+    [InlineData("..", "---")]
+    [InlineData("-", "...")]
+    [InlineData("--", "...")]
+    [InlineData("..", "...")]
+    [InlineData(".", "---")]
+    [InlineData("-- ", "---")]
+    [InlineData("----", "---")]
+    [InlineData("---a", "---")]
+    [InlineData("...a", "...")]
+    public void ClosingFenceAfterPartialFenceLine(string partialFence, string closingFence)
+    {
+        foreach (var (newLine, name) in new[] { ("\n", "LF"), ("\r\n", "CRLF"), ("\r", "CR") })
+        {
+            var markdown = string.Join(newLine, "---", "items:", partialFence, closingFence, "Text", "");
+            TestParser.TestSpec(markdown, "<p>Text</p>", "yaml", context: $"New line: {name}");
+        }
+    }
+
+    [Theory]
+    [InlineData("---\n---\nText\n")]
+    [InlineData("--- \n---\nText\n")]
+    [InlineData("---\r\n---\r\nText\r\n")]
+    [InlineData("---\n...\nText\n")]
+    public void EmptyFrontMatter(string markdown)
+    {
+        TestParser.TestSpec(markdown, "<p>Text</p>", "yaml");
+    }
+
+    [Theory]
+    [InlineData("---\nitems:\n-\nText\n")]
+    [InlineData("---\nitems:\n-\n----\nText\n")]
+    [InlineData("---\nitems:\n-\n --- \nText\n")]
+    [InlineData("---\nitems:\n..\n...a\nText\n")]
+    [InlineData("---\nitems:\n--")]
+    public void NoClosingFence(string markdown)
+    {
+        var document = MarkdownConverter.Parse(markdown, new MarkdownPipelineBuilder().UseYamlFrontMatter().Build());
+
+        Assert.Empty(document.Descendants<YamlFrontMatterBlock>());
+    }
+
     public static TheoryData<string, IMarkdownObjectRenderer[], bool, bool> TestCases() => new()
     {
         { "No ObjectRenderers", [], false, false },

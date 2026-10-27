@@ -113,7 +113,8 @@ public class AutoIdentifierExtension : IMarkdownExtension
         foreach (var heading in headings)
         {
             var headingLine = heading.Heading.Lines.Lines[0].Slice;
-            var label = hasGenericAttributes ? GetLabelWithoutAttributes(headingLine) : headingLine.ToString();
+            // A reference to the heading looks up the label as the link parser normalizes it
+            var label = LinkHelper.NormalizeLabel(hasGenericAttributes ? GetLabelWithoutAttributes(headingLine) : headingLine.AsSpan());
             dictionary[label] = heading;
         }
 
@@ -145,7 +146,6 @@ public class AutoIdentifierExtension : IMarkdownExtension
 
         var label = new ValueStringBuilder(unsafe(stackalloc char[ValueStringBuilder.StackallocThreshold]));
         var copyStart = line.Start;
-        var endsWithAttributes = false;
         var index = line.Start;
         while (index <= line.End)
         {
@@ -154,60 +154,34 @@ public class AutoIdentifierExtension : IMarkdownExtension
             {
                 // An escaped character is never the start of attributes
                 index += 2;
-                endsWithAttributes = false;
             }
             else if (c == '`')
             {
                 index = SkipCodeSpan(text, index, line.End);
-                endsWithAttributes = false;
             }
             else if (c == '{')
             {
                 var attributes = new StringSlice(text, index, line.End);
                 if (GenericAttributesParser.TryParse(ref attributes, out _))
                 {
+                    // The whitespace around the attributes is collapsed when the label is normalized
                     label.Append(text.AsSpan(copyStart, index - copyStart));
-                    var isAfterWhitespace = index == line.Start || text[index - 1].IsWhitespace();
                     index = attributes.Start;
-
-                    // Keep a single whitespace between the text around the attributes
-                    if (isAfterWhitespace)
-                    {
-                        while (index <= line.End && text[index].IsWhitespace())
-                        {
-                            index++;
-                        }
-                    }
-
                     copyStart = index;
-                    endsWithAttributes = true;
                 }
                 else
                 {
                     index++;
-                    endsWithAttributes = false;
                 }
             }
             else
             {
                 index++;
-                if (!c.IsWhitespace())
-                {
-                    endsWithAttributes = false;
-                }
             }
         }
 
         label.Append(text.AsSpan(copyStart, line.End + 1 - copyStart));
-
-        // The whitespace before the attributes that end the line is not part of the text
-        var result = label.AsSpan();
-        if (endsWithAttributes)
-        {
-            result = result.TrimEnd();
-        }
-
-        var labelText = result.ToString();
+        var labelText = label.AsSpan().ToString();
         label.Dispose();
         return labelText;
     }

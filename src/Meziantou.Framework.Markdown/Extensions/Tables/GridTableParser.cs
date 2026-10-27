@@ -314,8 +314,10 @@ public class GridTableParser : BlockParser
             }
             else
             {
+                // A line shorter than the table has no character at the end of the table: reading past the end of the line
+                // would find the character of a following line, and the cell would span several lines
                 var columnEnd = columns[columns.Count - 1].End;
-                var columnEndChar = line.PeekCharExtra(columnEnd);
+                var columnEndChar = line.PeekChar(columnEnd);
                 // If there is a `|` (or a `+` in the case that we are dealing with a row line
                 // with spanned contents) exactly at the expected end of the table row, we cut the line
                 // otherwise we allow to have the last cell of a row to be open for longer cell content

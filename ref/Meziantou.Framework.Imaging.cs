@@ -690,12 +690,14 @@ namespace Meziantou.Framework.Imaging
         public static void Convolve(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.ConvolutionOptions options, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Convolve(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.ConvolutionOptions options, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Crop(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.Rectangle rectangle, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void ExtendCanvas(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.Size size, Meziantou.Framework.Imaging.ResizeAnchor anchor = Meziantou.Framework.Imaging.ResizeAnchor.Center, Meziantou.Framework.Imaging.Rgba64? backgroundColor = null, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Flip(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.FlipMode mode, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Flip(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.FlipMode mode, System.Threading.CancellationToken cancellationToken = default) { }
         public static void GaussianBlur(this Meziantou.Framework.Imaging.Image image, double sigma, Meziantou.Framework.Imaging.ConvolutionEdgeMode edgeMode = Meziantou.Framework.Imaging.ConvolutionEdgeMode.Clamp, Meziantou.Framework.Imaging.ConvolutionWorkingSpace workingSpace = Meziantou.Framework.Imaging.ConvolutionWorkingSpace.Encoded, System.Threading.CancellationToken cancellationToken = default) { }
         public static void GaussianBlur(this Meziantou.Framework.Imaging.ImageFrame frame, double sigma, Meziantou.Framework.Imaging.ConvolutionEdgeMode edgeMode = Meziantou.Framework.Imaging.ConvolutionEdgeMode.Clamp, Meziantou.Framework.Imaging.ConvolutionWorkingSpace workingSpace = Meziantou.Framework.Imaging.ConvolutionWorkingSpace.Encoded, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Grayscale(this Meziantou.Framework.Imaging.Image image, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Grayscale(this Meziantou.Framework.Imaging.ImageFrame frame, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void Pad(this Meziantou.Framework.Imaging.Image image, int left, int top, int right, int bottom, Meziantou.Framework.Imaging.Rgba64? backgroundColor = null, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Quantize(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.QuantizeOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Quantize(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.QuantizeOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Resize(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.ResizeOptions options, System.Threading.CancellationToken cancellationToken = default) { }
@@ -1142,12 +1144,16 @@ namespace Meziantou.Framework.Imaging
         Contain = 0,
         Stretch = 1,
         Cover = 2,
+        Pad = 3,
+        BoxPad = 4,
     }
 
     public sealed class ResizeOptions
     {
+        public bool AllowDownscaling { get => throw null; init { } }
         public bool AllowUpscaling { get => throw null; init { } }
         public Meziantou.Framework.Imaging.ResizeAnchor Anchor { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Rgba64? BackgroundColor { get => throw null; init { } }
         public Meziantou.Framework.Imaging.ResamplingFilter Filter { get => throw null; init { } }
         public Meziantou.Framework.Imaging.ResizeMode Mode { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Size Size { get => throw null; }

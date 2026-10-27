@@ -12,7 +12,10 @@ namespace Meziantou.Framework.WebPlatform.Cryptography;
 /// <remarks>
 /// The decapsulation key is the 32-byte seed (draft-irtf-cfrg-hybrid-kems-12 section 5: Ndk = Nseed): the component keys
 /// are expanded from it on every operation. The scalar multiplications of the NIST curves on secret scalars use the base
-/// class library (constant time); the points received from the peer are validated here first.
+/// class library (constant time), or are blinded with a key pair of the base class library for the public point of a
+/// scalar (<see cref="EcCurve.MultiplyGeneratorBlinded"/>); the points received from the peer are validated here first.
+/// The private keys given to the base class library always include their public point: on macOS, a private key without
+/// it goes through the legacy keychain, which costs 50-90 ms per key.
 /// </remarks>
 internal static class HybridKem
 {
@@ -123,7 +126,7 @@ internal static class HybridKem
         // prepareDecapsG (generic draft section 5.1.1). ML-KEM.Decaps cannot fail here: the expanded decapsulation key is
         // well-formed and the ciphertext has the expected length; an invalid ciphertext is implicitly rejected.
         var sharedSecretPq = MlKem.Decapsulate(instance.MlKemParameterSet, keys.DecapsulationKeyPq, ciphertextPq);
-        var sharedSecretT = Exp(instance.Group, ciphertextT, keys.DecapsulationKeyT);
+        var sharedSecretT = Exp(instance.Group, ciphertextT, keys.DecapsulationKeyT, keys.EncapsulationKeyT);
         try
         {
             return Combine(instance, sharedSecretPq, sharedSecretT, ciphertextT, keys.EncapsulationKeyT);
@@ -160,7 +163,7 @@ internal static class HybridKem
         {
             // ct_T = Exp(g, sk_E), ss_T = ElementToSharedSecret(Exp(ek_T, sk_E))
             var ciphertextT = ExpBase(instance.Group, ephemeralScalar);
-            sharedSecretT = Exp(instance.Group, encapsulationKeyT, ephemeralScalar);
+            sharedSecretT = Exp(instance.Group, encapsulationKeyT, ephemeralScalar, ciphertextT);
             var sharedKey = Combine(instance, sharedSecretPq, sharedSecretT, ciphertextT, encapsulationKeyT);
 
             // ct_H = concat(ct_PQ, ct_T)
@@ -275,35 +278,36 @@ internal static class HybridKem
         if (group.Curve is null)
             return X25519.GetPublicKey(scalar);
 
-        // The base class library derives the public point from the private scalar alone, in constant time
-        using var ecdh = ECDiffieHellman.Create(new ECParameters { Curve = group.Curve.BclCurve, D = scalar });
-        var point = ecdh.ExportParameters(includePrivateParameters: false).Q;
-        var x = point.X!;
-        var y = point.Y!;
+        var point = group.Curve.MultiplyGeneratorBlinded(scalar);
 
         // Elliptic-Curve-Point-to-Octet-String (SEC 1 section 2.3.3), uncompressed: 04 || X || Y, each coordinate
         // left-padded to the length of the field
         var length = group.Curve.FieldLength;
         var result = new byte[group.ElementLength];
         result[0] = 4;
-        x.CopyTo(result, 1 + length - x.Length);
-        y.CopyTo(result, 1 + length + length - y.Length);
+        RsaKey.I2Osp(point.X, length).CopyTo(result, 1);
+        RsaKey.I2Osp(point.Y, length).CopyTo(result, 1 + length);
         return result;
     }
 
     /// <summary>
     /// Group_T.ElementToSharedSecret(Group_T.Exp(element, scalar)): the X coordinate of the point for the NIST curves
     /// (concrete draft section 3.1.1), X25519(scalar, element) for Curve25519 (section 3.1.2). The element is validated by
-    /// the caller (<see cref="ValidateElement"/>).
+    /// the caller (<see cref="ValidateElement"/>), and <paramref name="publicElement"/> is Exp(g, scalar).
     /// </summary>
-    private static byte[] Exp(Group group, ReadOnlySpan<byte> element, byte[] scalar)
+    private static byte[] Exp(Group group, ReadOnlySpan<byte> element, byte[] scalar, ReadOnlySpan<byte> publicElement)
     {
         // RFC 7748 X25519 accepts every 32-byte string, and the draft (as X-Wing) does not reject the all-zero output
         if (group.Curve is null)
             return X25519.DeriveSharedSecret(scalar, element);
 
         var length = group.Curve.FieldLength;
-        using var ecdh = ECDiffieHellman.Create(new ECParameters { Curve = group.Curve.BclCurve, D = scalar });
+        using var ecdh = ECDiffieHellman.Create(new ECParameters
+        {
+            Curve = group.Curve.BclCurve,
+            D = scalar,
+            Q = new ECPoint { X = publicElement.Slice(1, length).ToArray(), Y = publicElement.Slice(1 + length, length).ToArray() },
+        });
         using var peer = ECDiffieHellman.Create(new ECParameters
         {
             Curve = group.Curve.BclCurve,

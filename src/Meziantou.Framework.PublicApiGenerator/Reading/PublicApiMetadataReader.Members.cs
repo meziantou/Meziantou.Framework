@@ -308,7 +308,7 @@ internal sealed partial class PublicApiMetadataReader
         var result = new PublicApiProperty(
             name,
             accessibility,
-            ReadAttributes(propertyAttributes),
+            ReadAttributes(propertyAttributes, declaringTypeHandle),
             CreateOrigin(propertyHandle),
             modifiers,
             explicitReferences.ToImmutable(),
@@ -474,7 +474,7 @@ internal sealed partial class PublicApiMetadataReader
         return new PublicApiMethod(
             name,
             isExplicitInterfaceImplementation ? PublicApiAccessibility.Private : GetAccessibility(method.Attributes),
-            ReadAttributes(customAttributes),
+            ReadAttributes(customAttributes, declaringTypeHandle),
             CreateOrigin(methodHandle),
             modifiers,
             explicitReferences,

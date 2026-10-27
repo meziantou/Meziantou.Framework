@@ -5261,6 +5261,97 @@ public sealed class PublicApiGeneratorTests
     }
 
     [Fact]
+    public async Task MemberNotNullAttributes_RemoveNonPublicMembers()
+    {
+        await Validate("""
+            using System.Diagnostics.CodeAnalysis;
+
+            public class Base
+            {
+                protected string? BaseProtectedField;
+                private string? _basePrivateField;
+            }
+
+            public class Sample : Base
+            {
+                private string? _field;
+                private string? _otherField;
+                protected string? ProtectedField;
+                public string? PublicField;
+                private string? PrivateProperty { get; set; }
+                public string? PublicProperty { get; set; }
+                public string? PrivateSetterProperty { get; private set; }
+
+                [MemberNotNull(nameof(_field))] public void PrivateField() => throw null!;
+                [MemberNotNull(nameof(_field), nameof(_otherField))] public void PrivateFields() => throw null!;
+                [MemberNotNull(nameof(PrivateProperty))] public void PrivateProp() => throw null!;
+                [MemberNotNull(nameof(PublicField))] public void Public() => throw null!;
+                [MemberNotNull(nameof(ProtectedField))] public void Protected() => throw null!;
+                [MemberNotNull(nameof(PrivateSetterProperty))] public void PrivateSetter() => throw null!;
+                [MemberNotNull(nameof(_field), nameof(PublicField), nameof(_otherField), nameof(PublicProperty))] public void Mixed() => throw null!;
+                [MemberNotNull(nameof(BaseProtectedField))] public void InheritedProtected() => throw null!;
+                [MemberNotNullWhen(true, nameof(_field))] public bool PrivateWhen() => throw null!;
+                [MemberNotNullWhen(false, nameof(_field), nameof(PublicProperty))] public bool MixedWhen() => throw null!;
+                [MemberNotNullWhen(true, nameof(_field))] public bool HasField => _field is not null;
+                [MemberNotNullWhen(true, nameof(PublicField))] public bool HasPublicField => PublicField is not null;
+            }
+
+            public class Generic<T>
+            {
+                private T? _value;
+                public T? Value;
+
+                [MemberNotNull(nameof(_value))] public void PrivateField() => throw null!;
+                [MemberNotNull(nameof(Value))] public void PublicField() => throw null!;
+            }
+            """, """
+            #nullable enable
+
+            public class Base
+            {
+                protected string? BaseProtectedField;
+            }
+
+
+            public class Generic<T>
+            {
+                public T? Value;
+                public void PrivateField() { }
+                [System.Diagnostics.CodeAnalysis.MemberNotNull("Value")]
+                public void PublicField() { }
+            }
+
+
+            public class Sample : Base
+            {
+                protected string? ProtectedField;
+                public string? PublicField;
+                public bool HasField { get => throw null; }
+                [System.Diagnostics.CodeAnalysis.MemberNotNullWhen(true, "PublicField")]
+                public bool HasPublicField { get => throw null; }
+                public string? PrivateSetterProperty { get => throw null; }
+                public string? PublicProperty { get => throw null; set { } }
+                [System.Diagnostics.CodeAnalysis.MemberNotNull("BaseProtectedField")]
+                public void InheritedProtected() { }
+                [System.Diagnostics.CodeAnalysis.MemberNotNull(new string[] { "PublicField", "PublicProperty" })]
+                public void Mixed() { }
+                [System.Diagnostics.CodeAnalysis.MemberNotNullWhen(false, new string[] { "PublicProperty" })]
+                public bool MixedWhen() => throw null;
+                public void PrivateField() { }
+                public void PrivateFields() { }
+                public void PrivateProp() { }
+                [System.Diagnostics.CodeAnalysis.MemberNotNull("PrivateSetterProperty")]
+                public void PrivateSetter() { }
+                public bool PrivateWhen() => throw null;
+                [System.Diagnostics.CodeAnalysis.MemberNotNull("ProtectedField")]
+                public void Protected() { }
+                [System.Diagnostics.CodeAnalysis.MemberNotNull("PublicField")]
+                public void Public() { }
+            }
+            """);
+    }
+
+    [Fact]
     public async Task EnumConstants_EnumDeclaredInAnotherAssembly_UsesTheRuntimeDirectory()
     {
         // The metadata of the sample does not contain the enum, and nothing loads System.Net.Mail in the test process

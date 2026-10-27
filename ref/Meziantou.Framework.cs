@@ -547,7 +547,6 @@ namespace Meziantou.Framework
 
     public struct SafeHandleValue : System.IDisposable
     {
-        [System.Diagnostics.CodeAnalysis.MemberNotNullWhen(true, "_safeHandle")]
         public readonly bool HasValue { get => throw null; }
         public readonly nint Value { get => throw null; }
         public SafeHandleValue(System.Runtime.InteropServices.SafeHandle safeHandle) { }

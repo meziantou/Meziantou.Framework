@@ -12,8 +12,12 @@ internal sealed partial class PublicApiMetadataReader
     private const string TupleElementNamesAttributeFullName = "System.Runtime.CompilerServices.TupleElementNamesAttribute";
     private const string DynamicAttributeFullName = "System.Runtime.CompilerServices.DynamicAttribute";
     private const string DecimalConstantAttributeFullName = "System.Runtime.CompilerServices.DecimalConstantAttribute";
+    private const string MemberNotNullAttributeFullName = "System.Diagnostics.CodeAnalysis.MemberNotNullAttribute";
+    private const string MemberNotNullWhenAttributeFullName = "System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute";
 
-    private ImmutableArray<PublicApiAttribute> ReadAttributes(CustomAttributeHandleCollection attributes)
+    /// <param name="attributes">The attributes to read.</param>
+    /// <param name="declaringTypeHandle">The type that declares the method or property the attributes are applied to. When set, the members named by <c>MemberNotNull</c> and <c>MemberNotNullWhen</c> that are not visible from outside the assembly are removed.</param>
+    private ImmutableArray<PublicApiAttribute> ReadAttributes(CustomAttributeHandleCollection attributes, TypeDefinitionHandle declaringTypeHandle = default)
     {
         if (attributes.Count == 0)
             return [];
@@ -27,7 +31,15 @@ internal sealed partial class PublicApiMetadataReader
 
             if (TryDecodeAttributeArguments(attribute, out var constructorArguments, out var namedArguments))
             {
-                result.Add(new PublicApiAttribute(attributeType, constructorArguments, namedArguments, areArgumentsDecoded: true));
+                var publicApiAttribute = new PublicApiAttribute(attributeType, constructorArguments, namedArguments, areArgumentsDecoded: true);
+                if (!declaringTypeHandle.IsNil)
+                {
+                    publicApiAttribute = RemoveNonPublicNotNullMembers(declaringTypeHandle, publicApiAttribute);
+                    if (publicApiAttribute is null)
+                        continue;
+                }
+
+                result.Add(publicApiAttribute);
             }
             else
             {
@@ -40,6 +52,112 @@ internal sealed partial class PublicApiMetadataReader
 
         // Sorted so that the model does not depend on the order of the metadata table, which is the order of the declarations
         return [.. result.OrderBy(GetAttributeSortText, PublicApiOrdering.AttributeComparer)];
+    }
+
+    // MemberNotNull and MemberNotNullWhen often name private fields, which are not part of the public API.
+    // Returns null when the attribute names only such members.
+    private PublicApiAttribute? RemoveNonPublicNotNullMembers(TypeDefinitionHandle declaringTypeHandle, PublicApiAttribute attribute)
+    {
+        if (attribute.AttributeType.FullName is not (MemberNotNullAttributeFullName or MemberNotNullWhenAttributeFullName) || attribute.ConstructorArguments.IsEmpty)
+            return attribute;
+
+        var membersArgument = attribute.ConstructorArguments[^1];
+        switch (membersArgument)
+        {
+            case { Kind: PublicApiAttributeArgumentKind.Constant, Value: string memberName }:
+                return IsNonPublicFieldOrProperty(declaringTypeHandle, memberName) ? null : attribute;
+
+            case { Kind: PublicApiAttributeArgumentKind.Array, Value: ImmutableArray<PublicApiAttributeArgument> memberNames }:
+                var publicMemberNames = memberNames.RemoveAll(argument => argument.Value is string name && IsNonPublicFieldOrProperty(declaringTypeHandle, name));
+                if (publicMemberNames.Length == memberNames.Length)
+                    return attribute;
+
+                if (publicMemberNames.IsEmpty)
+                    return null;
+
+                var constructorArguments = attribute.ConstructorArguments.SetItem(attribute.ConstructorArguments.Length - 1, new PublicApiAttributeArgument(membersArgument.Type, PublicApiAttributeArgumentKind.Array, publicMemberNames));
+                return new PublicApiAttribute(attribute.AttributeType, constructorArguments, attribute.NamedArguments, areArgumentsDecoded: true);
+
+            default:
+                return attribute;
+        }
+    }
+
+    // The member is searched in the type and its base types declared in the assembly.
+    // A member that is not found, such as a member of a base type declared in another assembly, is considered visible.
+    private bool IsNonPublicFieldOrProperty(TypeDefinitionHandle typeDefinitionHandle, string memberName)
+    {
+        var handle = (EntityHandle)typeDefinitionHandle;
+        while (TryGetDefinitionInAssembly(handle, out var currentHandle))
+        {
+            var typeDefinition = _metadataReader.GetTypeDefinition(currentHandle);
+            var isFound = false;
+            foreach (var fieldHandle in typeDefinition.GetFields())
+            {
+                var field = _metadataReader.GetFieldDefinition(fieldHandle);
+                if (!_metadataReader.StringComparer.Equals(field.Name, memberName))
+                    continue;
+
+                if (IsExternallyVisible(field.Attributes))
+                    return false;
+
+                isFound = true;
+            }
+
+            foreach (var propertyHandle in typeDefinition.GetProperties())
+            {
+                var property = _metadataReader.GetPropertyDefinition(propertyHandle);
+                if (!_metadataReader.StringComparer.Equals(property.Name, memberName))
+                    continue;
+
+                var accessors = property.GetAccessors();
+                if (IsExternallyVisibleAccessor(accessors.Getter) || IsExternallyVisibleAccessor(accessors.Setter))
+                    return false;
+
+                isFound = true;
+            }
+
+            if (isFound)
+                return true;
+
+            handle = typeDefinition.BaseType;
+        }
+
+        return false;
+
+        bool IsExternallyVisibleAccessor(MethodDefinitionHandle accessorHandle)
+        {
+            return !accessorHandle.IsNil && IsExternallyVisible(_metadataReader.GetMethodDefinition(accessorHandle).Attributes);
+        }
+    }
+
+    private bool TryGetDefinitionInAssembly(EntityHandle handle, out TypeDefinitionHandle typeDefinitionHandle)
+    {
+        switch (handle.Kind)
+        {
+            case HandleKind.TypeDefinition:
+                typeDefinitionHandle = (TypeDefinitionHandle)handle;
+                return true;
+
+            case HandleKind.TypeSpecification:
+                var typeSpecification = _metadataReader.GetTypeSpecification((TypeSpecificationHandle)handle);
+                var blobReader = _metadataReader.GetBlobReader(typeSpecification.Signature);
+                if (blobReader.ReadSignatureTypeCode() is SignatureTypeCode.GenericTypeInstance)
+                {
+                    blobReader.ReadCompressedInteger(); // CLASS or VALUETYPE
+                    var genericTypeHandle = blobReader.ReadTypeHandle();
+                    if (genericTypeHandle.Kind is HandleKind.TypeDefinition)
+                    {
+                        typeDefinitionHandle = (TypeDefinitionHandle)genericTypeHandle;
+                        return true;
+                    }
+                }
+
+                break;
+        }
+
+        typeDefinitionHandle = default;
+        return false;
     }
 
     private static string GetAttributeSortText(PublicApiAttribute attribute)

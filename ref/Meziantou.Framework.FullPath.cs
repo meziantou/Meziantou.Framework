@@ -9,7 +9,6 @@ namespace Meziantou.Framework
     {
         public static Meziantou.Framework.FullPath Empty { get => throw null; }
         public string Extension { get => throw null; }
-        [System.Diagnostics.CodeAnalysis.MemberNotNullWhen(false, "_value")]
         public bool IsEmpty { get => throw null; }
         public string Name { get => throw null; }
         public string NameWithoutExtension { get => throw null; }

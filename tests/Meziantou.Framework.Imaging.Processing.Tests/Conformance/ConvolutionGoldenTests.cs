@@ -72,16 +72,41 @@ public sealed class ConvolutionGoldenTests
         {
             foreach (var segmented in new[] { false, true })
             {
-                switch (Enum.Parse<PixelFormat>(format))
-                {
-                    case PixelFormat.Rgba32: Check<Rgba32>(fixture, name, options, segmented); break;
-                    case PixelFormat.Bgra32: Check<Bgra32>(fixture, name, options, segmented); break;
-                    case PixelFormat.Rgb24: Check<Rgb24>(fixture, name, options, segmented); break;
-                    case PixelFormat.Rgba64: Check<Rgba64>(fixture, name, options, segmented); break;
-                    case PixelFormat.Gray8: Check<Gray8>(fixture, name, options, segmented); break;
-                    case PixelFormat.Gray16: Check<Gray16>(fixture, name, options, segmented); break;
-                    default: throw new ArgumentOutOfRangeException(nameof(format));
-                }
+                CheckOperation(fixture, format, name, image => image.Convolve(ToLibrary(options), TestContext.Current.CancellationToken), frame => ReferenceConvolver.Convolve(frame, options), segmented);
+            }
+        }
+    }
+
+    /// <summary>
+    /// The box blur, the median and the unsharp mask of every frame and poster of the golden corpus (every pixel format,
+    /// alpha, odd sizes, images smaller than the windows): a box blur is the convolution by a matrix of equal weights, an
+    /// unsharp mask adds the difference from the Gaussian blur, and a median is checked against a sort of every window.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(Cases))]
+    public void BoxBlursMediansAndUnsharpMasksOfFramesAndPostersMatchTheIndependentReference(string id, string format)
+    {
+        var fixture = GoldenCorpus.Default.Get(id);
+        var ct = TestContext.Current.CancellationToken;
+        var box1 = Box(1, ReferenceEdgeMode.Clamp);
+        var box3 = Box(3, ReferenceEdgeMode.Mirror);
+        var box2 = Box(2, ReferenceEdgeMode.Wrap) with { Linear = true };
+        var gaussian = Gaussian(1.2, ReferenceEdgeMode.Zero);
+        (string Name, Action<Image> Apply, Func<RawPixelBuffer, ReferenceFilterResult> Reference)[] operations =
+        [
+            ("box-1", image => image.BoxBlur(1, cancellationToken: ct), frame => ReferenceConvolver.Convolve(frame, box1)),
+            ("box-3-mirror", image => image.BoxBlur(3, ConvolutionEdgeMode.Mirror, cancellationToken: ct), frame => ReferenceConvolver.Convolve(frame, box3)),
+            ("box-2-wrap-linear", image => image.BoxBlur(2, ConvolutionEdgeMode.Wrap, ConvolutionWorkingSpace.LinearSrgb, ct), frame => ReferenceConvolver.Convolve(frame, box2)),
+            ("median-1", image => image.MedianBlur(1, cancellationToken: ct), frame => ReferenceConvolver.Median(frame, 1, ReferenceEdgeMode.Clamp)),
+            ("median-2-zero", image => image.MedianBlur(2, ConvolutionEdgeMode.Zero, ct), frame => ReferenceConvolver.Median(frame, 2, ReferenceEdgeMode.Zero)),
+            ("sharpen-1.2-zero", image => image.Sharpen(1.2, 1.5, edgeMode: ConvolutionEdgeMode.Zero, cancellationToken: ct), frame => ReferenceConvolver.Sharpen(frame, gaussian, 1.5m, 0)),
+        ];
+
+        foreach (var (name, apply, reference) in operations)
+        {
+            foreach (var segmented in new[] { false, true })
+            {
+                CheckOperation(fixture, format, name, apply, reference, segmented);
             }
         }
     }
@@ -146,6 +171,104 @@ public sealed class ConvolutionGoldenTests
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// A box blur is the convolution by a matrix of <c>n^2</c> equal weights <c>1 / n^2</c>, rounded once: the reference
+    /// sums that matrix directly. The radii include one whose window is wider and taller than the noise (23x17), so that
+    /// the edge modes read several periods beyond the image.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(BlurSources))]
+    public void BoxBlursMatchTheIndependentReference(string name)
+    {
+        var source = BlurInputs().Single(item => item.Name == name).Buffer;
+        foreach (var radius in new[] { 1, 2, 5, 13 })
+        {
+            foreach (var mode in Enum.GetValues<ReferenceEdgeMode>())
+            {
+                foreach (var linear in new[] { false, true })
+                {
+                    if (linear && mode != ReferenceEdgeMode.Clamp)
+                        continue;
+
+                    var options = Box(radius, mode) with { Linear = linear };
+                    var actual = Apply(source, image => image.BoxBlur(radius, ToLibrary(options).EdgeMode, linear ? ConvolutionWorkingSpace.LinearSrgb : ConvolutionWorkingSpace.Encoded, TestContext.Current.CancellationToken));
+                    AssertMatches(ReferenceConvolver.Convolve(source, options), actual, string.Create(CultureInfo.InvariantCulture, $"{name}, box {radius}, {options}"));
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// An unsharp mask adds to every filtered sample its difference from the Gaussian blur, times the amount, unless the
+    /// difference is below the threshold: the reference computes the blur of the matrix of the products of the weights and
+    /// the original samples in <see cref="decimal"/>, premultiplied by alpha or in linear light like the convolution.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(BlurSources))]
+    public void UnsharpMasksMatchTheIndependentReference(string name)
+    {
+        var source = BlurInputs().Single(item => item.Name == name).Buffer;
+        foreach (var (sigma, amount, threshold) in new[] { (0.7, 1m, 0m), (1.5, 2.5m, 0.03m), (2.5, 0.6m, 0.004m) })
+        {
+            foreach (var mode in Enum.GetValues<ReferenceEdgeMode>())
+            {
+                foreach (var linear in new[] { false, true })
+                {
+                    if (linear && mode != ReferenceEdgeMode.Clamp)
+                        continue;
+
+                    var options = Gaussian(sigma, mode) with { Linear = linear };
+                    var actual = Apply(source, image => image.Sharpen(sigma, (double)amount, (double)threshold, ToLibrary(options).EdgeMode, linear ? ConvolutionWorkingSpace.LinearSrgb : ConvolutionWorkingSpace.Encoded, TestContext.Current.CancellationToken));
+                    AssertMatches(ReferenceConvolver.Sharpen(source, options, amount, threshold), actual, string.Create(CultureInfo.InvariantCulture, $"{name}, sharpen {sigma} {amount} {threshold}, {options}"));
+                }
+            }
+        }
+    }
+
+    /// <summary>A median is one of the samples of its window: the reference sorts every window, and the comparison is exact.</summary>
+    [Theory]
+    [MemberData(nameof(BlurSources))]
+    public void MediansMatchTheIndependentReference(string name)
+    {
+        var source = BlurInputs().Single(item => item.Name == name).Buffer;
+        foreach (var radius in new[] { 1, 2, 3, 12 })
+        {
+            foreach (var mode in Enum.GetValues<ReferenceEdgeMode>())
+            {
+                var actual = Apply(source, image => image.MedianBlur(radius, ToLibrary(Box(1, mode)).EdgeMode, TestContext.Current.CancellationToken));
+                AssertMatches(ReferenceConvolver.Median(source, radius, mode), actual, string.Create(CultureInfo.InvariantCulture, $"{name}, median {radius}, {mode}"));
+            }
+        }
+    }
+
+    /// <summary>The convolution options of a box blur: a matrix of <c>(2 radius + 1)^2</c> weights equal to their inverse.</summary>
+    private static ReferenceConvolutionOptions Box(int radius, ReferenceEdgeMode mode)
+    {
+        var size = (2 * radius) + 1;
+        return new ReferenceConvolutionOptions(size, size, [.. Enumerable.Repeat(1m / (size * size), size * size)], mode);
+    }
+
+    /// <summary>The convolution options of a Gaussian blur: the matrix of the products of the weights of the definition, from the exponential of the platform.</summary>
+    private static ReferenceConvolutionOptions Gaussian(double sigma, ReferenceEdgeMode mode)
+    {
+        var radius = (int)Math.Ceiling(3 * sigma);
+        decimal[] row = [.. Enumerable.Range(-radius, (2 * radius) + 1).Select(i => (decimal)Math.Exp(-(i * i) / (2 * sigma * sigma)))];
+        var sum = row.Sum();
+        row = [.. row.Select(weight => weight / sum)];
+        return new ReferenceConvolutionOptions(row.Length, row.Length, [.. row.SelectMany(vertical => row.Select(horizontal => vertical * horizontal))], mode);
+    }
+
+    private static RawPixelBuffer Apply(RawPixelBuffer source, Action<Image> apply)
+        => source.Layout == RawPixelLayout.Rgba16Le ? Apply<Rgba64>(source, apply) : Apply<Rgba32>(source, apply);
+
+    private static RawPixelBuffer Apply<TPixel>(RawPixelBuffer source, Action<Image> apply)
+        where TPixel : unmanaged
+    {
+        using var image = Import<TPixel>(source, segmented: true);
+        apply(image);
+        return ImageSnapshots.CaptureFrameRows(image.Frames[0]);
     }
 
     /// <summary>The synthetic sources, and noise with and without translucent pixels.</summary>
@@ -241,7 +364,21 @@ public sealed class ConvolutionGoldenTests
         return [.. row.SelectMany(vertical => row.Select(horizontal => vertical * horizontal / 256m))];
     }
 
-    private static void Check<TPixel>(GoldenFixture fixture, string name, ReferenceConvolutionOptions options, bool segmented)
+    private static void CheckOperation(GoldenFixture fixture, string format, string name, Action<Image> apply, Func<RawPixelBuffer, ReferenceFilterResult> reference, bool segmented)
+    {
+        switch (Enum.Parse<PixelFormat>(format))
+        {
+            case PixelFormat.Rgba32: Check<Rgba32>(fixture, name, apply, reference, segmented); break;
+            case PixelFormat.Bgra32: Check<Bgra32>(fixture, name, apply, reference, segmented); break;
+            case PixelFormat.Rgb24: Check<Rgb24>(fixture, name, apply, reference, segmented); break;
+            case PixelFormat.Rgba64: Check<Rgba64>(fixture, name, apply, reference, segmented); break;
+            case PixelFormat.Gray8: Check<Gray8>(fixture, name, apply, reference, segmented); break;
+            case PixelFormat.Gray16: Check<Gray16>(fixture, name, apply, reference, segmented); break;
+            default: throw new ArgumentOutOfRangeException(nameof(format));
+        }
+    }
+
+    private static void Check<TPixel>(GoldenFixture fixture, string name, Action<Image> apply, Func<RawPixelBuffer, ReferenceFilterResult> reference, bool segmented)
         where TPixel : unmanaged
     {
         var format = PixelFormats.GetPixelFormat<TPixel>();
@@ -261,19 +398,19 @@ public sealed class ConvolutionGoldenTests
         }
 
         var frameObjects = ((IEnumerable<ImageFrame<TPixel>>)image.Frames).ToArray();
-        image.Convolve(ToLibrary(options), TestContext.Current.CancellationToken);
+        apply(image);
 
         var context = $"{fixture.Id} ({format}, {name}, segmented: {segmented})";
         Assert.Equal(new Size(frames[0].Width, frames[0].Height), image.Size);
         for (var i = 0; i < frames.Length; i++)
         {
             Assert.Same(frameObjects[i], image.Frames[i]);
-            AssertMatches(ReferenceConvolver.Convolve(frames[i], options), ImageSnapshots.CaptureFrameRows(frameObjects[i]), string.Create(CultureInfo.InvariantCulture, $"{context}, frame {i}"));
+            AssertMatches(reference(frames[i]), ImageSnapshots.CaptureFrameRows(frameObjects[i]), string.Create(CultureInfo.InvariantCulture, $"{context}, frame {i}"));
         }
 
         if (poster is not null)
         {
-            AssertMatches(ReferenceConvolver.Convolve(poster, options), ImageSnapshots.CaptureFrameRows(image.PosterFrame!), context + ", poster");
+            AssertMatches(reference(poster), ImageSnapshots.CaptureFrameRows(image.PosterFrame!), context + ", poster");
         }
     }
 

@@ -906,6 +906,56 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void CleanUpScanRemovesSpecksAndSharpensEdges()
+    {
+        // A 9x9 opaque image: 50 on the left (columns 0 to 4), 200 on the right, and a white speck at (2, 2)
+        var input = GetPath("scan.png");
+        using (var source = new Image<Rgba32>(9, 9, new Rgba32(50, 50, 50)))
+        {
+            for (var y = 0; y < 9; y++)
+            {
+                for (var x = 5; x < 9; x++)
+                {
+                    source.Frames[0][x, y] = new Rgba32(200, 200, 200);
+                }
+            }
+
+            source.Frames[0][2, 2] = new Rgba32(255, 255, 255);
+            source.Save(input);
+        }
+
+        var cleanedPath = GetPath("cleaned.png");
+        var backgroundPath = GetPath("background.png");
+        Examples.CleanUpScan(input, cleanedPath, backgroundPath);
+
+        // Every column is the same (the rows above and below are alike). The 11 weights of the deviation 1.5 put 0.367 of
+        // the blur of column 4 on the columns at 200: 105.05, so it becomes 50 - 55.05 / 2 = 22.5, and column 5 200 + 27.5
+        // = 227.5. Column 2 differs by 6.69 from its blur, over the threshold (5.1): 50 - 3.35 = 46.65. Column 1 differs
+        // by 1.29 and keeps 50; the speck is gone
+        using var cleaned = Image.Load<Rgba32>(cleanedPath);
+        int[] expected = [50, 50, 47, 38, 22, 228, 212, 203, 200];
+        for (var y = 0; y < 9; y++)
+        {
+            for (var x = 0; x < 9; x++)
+            {
+                Assert.Equal(new Rgba32((byte)expected[x], (byte)expected[x], (byte)expected[x]), cleaned.Frames[0][x, y]);
+            }
+        }
+
+        // A square of 51x51 pixels over a 9x9 image reflected about its edges reads it many times: every pixel is close
+        // to its mean (about 115)
+        using var background = Image.Load<Rgba32>(backgroundPath);
+        for (var y = 0; y < 9; y++)
+        {
+            for (var x = 0; x < 9; x++)
+            {
+                Assert.InRange(background.Frames[0][x, y].R, 100, 130);
+                Assert.Equal(255, background.Frames[0][x, y].A);
+            }
+        }
+    }
+
+    [Fact]
     public void InvertColorsRewritesEveryFrame()
     {
         var (apngPath, _) = BuildAnimation();

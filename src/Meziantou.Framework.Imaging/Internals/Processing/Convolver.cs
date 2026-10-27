@@ -24,12 +24,17 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// therefore computed from original pixels by the same operations in the same order whatever the number of bands.
 /// </para>
 /// <para>
-/// A separable plan (the Gaussian blur) filters every row it loads by its row weights, with the same row additions, into
-/// the ring or the halo, and its kernel of one column combines those rows: the result is the two-dimensional sum
-/// <c>0 + v0 (0 + w0 x00 + w1 x01 + ...) + v1 (...) + ...</c>, without any rounding to the storage precision in between.
-/// Its weights add up to 1: a frame with alpha whose pixels all have the maximum alpha, and whose edge mode reads no
-/// transparent pixel beyond the image (any but <see cref="ConvolutionEdgeMode.Zero"/>), is filtered as three colors per
-/// pixel, straight (<see cref="WorkingAlpha.Opaque"/>), and keeps the maximum alpha.
+/// A separable plan (the Gaussian blur, the unsharp mask, a separable matrix) filters every row it loads by its row
+/// weights, with the same row additions (zero weights skipped), into the ring or the halo, and its kernel of one column
+/// combines those rows: the result is the two-dimensional sum <c>0 + v0 (0 + w0 x00 + w1 x01 + ...) + v1 (...) + ...</c>,
+/// without any rounding to the storage precision in between. The weights of a blur add up to 1: a frame with alpha whose
+/// pixels all have the maximum alpha, and whose edge mode reads no transparent pixel beyond the image (any but
+/// <see cref="ConvolutionEdgeMode.Zero"/>), is filtered as three colors per pixel, straight
+/// (<see cref="WorkingAlpha.Opaque"/>), and keeps the maximum alpha.
+/// </para>
+/// <para>
+/// An unsharp mask reloads every row from the image right before it is rewritten (it is still original) and combines it
+/// with its blur.
 /// </para>
 /// <para>Cancellation is observed between row bands; the rows already written stay written.</para>
 /// </remarks>
@@ -87,13 +92,22 @@ internal static class Convolver
     }
 
     /// <summary>
-    /// Gets how alpha takes part in the working samples of a frame: <see cref="WorkingAlpha.Opaque"/> for a separable plan
-    /// (a blur, whose weights add up to 1) filtered premultiplied, whose edge mode reads no pixel beyond the image, of a
-    /// frame whose pixels all have the maximum alpha; otherwise <see cref="ConvolutionPlan.Alpha"/>.
+    /// Gets how alpha takes part in the working samples of a frame: <see cref="WorkingAlpha.Opaque"/> for a blur plan
+    /// (whose weights add up to 1) filtered premultiplied, whose edge mode reads no pixel beyond the image, of a frame whose
+    /// pixels all have the maximum alpha; otherwise <see cref="ConvolutionPlan.Alpha"/>.
     /// </summary>
     internal static WorkingAlpha GetWorkingAlpha<TPixel>(PixelStorage storage, ConvolutionPlan plan)
         where TPixel : unmanaged
-        => plan.IsSeparable && plan.Alpha == WorkingAlpha.Premultiplied && plan.EdgeMode != ConvolutionEdgeMode.Zero && IsOpaque<TPixel>(storage) ? WorkingAlpha.Opaque : plan.Alpha;
+        => GetBlurWorkingAlpha<TPixel>(storage, plan.IsBlur, plan.Alpha, plan.EdgeMode);
+
+    /// <summary>
+    /// Gets how alpha takes part in the working samples of a frame filtered by an operation whose weights add up to 1
+    /// (<paramref name="normalized"/>): <see cref="WorkingAlpha.Opaque"/> when its samples are filtered premultiplied, its
+    /// edge mode reads no pixel beyond the image and every pixel has the maximum alpha; otherwise <paramref name="alpha"/>.
+    /// </summary>
+    internal static WorkingAlpha GetBlurWorkingAlpha<TPixel>(PixelStorage storage, bool normalized, WorkingAlpha alpha, ConvolutionEdgeMode edgeMode)
+        where TPixel : unmanaged
+        => normalized && alpha == WorkingAlpha.Premultiplied && edgeMode != ConvolutionEdgeMode.Zero && IsOpaque<TPixel>(storage) ? WorkingAlpha.Opaque : alpha;
 
     /// <summary>Gets a value indicating whether every pixel of a frame has the maximum alpha.</summary>
     private static bool IsOpaque<TPixel>(PixelStorage storage)
@@ -261,6 +275,11 @@ internal static class Convolver
                 accumulator.Clear();
             }
 
+            if (plan.IsSharpen)
+            {
+                Sharpen<TSample>(storage, y, plan, alpha, scratch, accumulator);
+            }
+
             WorkingSamples.Store(accumulator, GetSamples<TSample>(storage, y), alpha, plan.Transfer, plan.MaxValue);
         }
 
@@ -299,8 +318,9 @@ internal static class Convolver
 
     /// <summary>
     /// Sets the row at <paramref name="offset"/> in the scratch to the input row filtered by the row weights of a separable
-    /// plan: <c>0 + w0 x0 + w1 x1 + ...</c> per sample, with the row additions of the kernel (all the taps read one row,
-    /// so they are summed a block of samples at a time in one pass when their list fits on the stack).
+    /// plan: <c>0 + w0 x0 + w1 x1 + ...</c> per sample, zero weights skipped as in the kernel (a sample that is not a
+    /// number spreads to the same pixels whatever the path), with the row additions of the kernel (all the taps read one
+    /// row, so they are summed a block of samples at a time in one pass when their list fits on the stack).
     /// </summary>
     private static void FilterRow(ConvolutionPlan plan, int channels, ConvolutionScratch scratch, int offset)
     {
@@ -308,24 +328,87 @@ internal static class Convolver
         var length = plan.Size.Width * channels;
         var buffer = scratch.Buffer;
         var input = scratch.InputOffset;
+        var row = buffer.Slice(offset, length);
         if (!Resampler.TestForceScalar && Resampler.IsFmaAccelerated && (Vector128.IsHardwareAccelerated || Vector256.IsHardwareAccelerated) && weights.Length <= MaxBlockedTaps)
         {
-            // A zero weight is not skipped: fma(0, x, s) is s, and fma(w, x, +0) is the 0 + w x of a first term
+            // fma(w, x, +0) is the 0 + w x of a first term
             Span<int> offsets = stackalloc int[weights.Length];
-            for (var i = 0; i < offsets.Length; i++)
+            Span<double> nonZeroWeights = stackalloc double[weights.Length];
+            var count = 0;
+            for (var i = 0; i < weights.Length; i++)
             {
-                offsets[i] = input + (i * channels);
+                if (weights[i] != 0)
+                {
+                    offsets[count] = input + (i * channels);
+                    nonZeroWeights[count] = weights[i];
+                    count++;
+                }
             }
 
-            Resampler.SetWeightedSum(buffer, offset, length, offsets, weights, accumulate: false);
+            if (count is 0)
+            {
+                row.Clear();
+                return;
+            }
+
+            Resampler.SetWeightedSum(buffer, offset, length, offsets[..count], nonZeroWeights[..count], accumulate: false);
             return;
         }
 
-        var row = buffer.Slice(offset, length);
-        Resampler.SetScaled(row, buffer.Slice(input, length), weights[0]);
-        for (var i = 1; i < weights.Length; i++)
+        var empty = true;
+        for (var i = 0; i < weights.Length; i++)
         {
-            Resampler.AddScaled(row, buffer.Slice(input + (i * channels), length), weights[i]);
+            if (weights[i] == 0)
+                continue;
+
+            if (empty)
+            {
+                Resampler.SetScaled(row, buffer.Slice(input + (i * channels), length), weights[i]);
+                empty = false;
+            }
+            else
+            {
+                Resampler.AddScaled(row, buffer.Slice(input + (i * channels), length), weights[i]);
+            }
+        }
+
+        if (empty)
+        {
+            row.Clear();
+        }
+    }
+
+    /// <summary>
+    /// Combines the blurred working samples of row <paramref name="y"/> with its original ones, reloaded from the image
+    /// (the row is rewritten right after): <c>o + amount (o - b)</c> with one rounding (a fused multiply-add), or <c>o</c>
+    /// when <c>|o - b|</c> is below the threshold, a fraction of the range of the working sample.
+    /// </summary>
+    private static void Sharpen<TSample>(PixelStorage storage, int y, ConvolutionPlan plan, WorkingAlpha alpha, ConvolutionScratch scratch, Span<double> blurred)
+        where TSample : unmanaged
+    {
+        var channels = GetChannels(plan, alpha);
+        var original = scratch.InputRow[..blurred.Length];
+        WorkingSamples.Load<TSample>(GetSamples<TSample>(storage, y), original, alpha, plan.Transfer);
+
+        // The range of a working sample: a color is a code value (0 to max) or a light (0 to 1), multiplied by alpha (0 to
+        // max) when premultiplied; alpha is 0 to max
+        var color = plan.IsLinear ? 1d : plan.MaxValue;
+        Span<double> thresholds = stackalloc double[channels];
+        for (var c = 0; c < channels; c++)
+        {
+            var range = alpha != WorkingAlpha.Premultiplied ? color : c == channels - 1 ? plan.MaxValue : color * plan.MaxValue;
+            thresholds[c] = plan.SharpenThreshold * range;
+        }
+
+        var amount = plan.SharpenAmount;
+        for (var i = 0; i < blurred.Length; i += channels)
+        {
+            for (var c = 0; c < channels; c++)
+            {
+                var o = original[i + c];
+                var difference = o - blurred[i + c];
+                blurred[i + c] = Math.Abs(difference) < thresholds[c] ? o : Math.FusedMultiplyAdd(amount, difference, o);
+            }
         }
     }
 

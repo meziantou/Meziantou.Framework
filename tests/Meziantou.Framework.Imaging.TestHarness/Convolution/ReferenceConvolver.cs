@@ -22,6 +22,67 @@ public static class ReferenceConvolver
     /// <returns>The exact output samples.</returns>
     /// <exception cref="ArgumentException">The matrix does not have odd dimensions or the right number of weights.</exception>
     public static ReferenceFilterResult Convolve(RawPixelBuffer source, ReferenceConvolutionOptions options)
+        => Filter(source, options, sharpenAmount: 0, sharpenThreshold: 0);
+
+    /// <summary>
+    /// Sharpens a buffer with an unsharp mask: every filtered sample <c>o</c> (premultiplied by alpha, or in linear light,
+    /// as the convolution filters it) whose convolution by the blur of <paramref name="options"/> is <c>b</c> becomes
+    /// <c>o + amount (o - b)</c>, or stays <c>o</c> when <c>|o - b|</c> is less than <paramref name="threshold"/> times the
+    /// range of the sample (alpha: the maximum sample; a color: the maximum sample, or 1 in linear light, times the maximum
+    /// sample when premultiplied).
+    /// </summary>
+    /// <param name="source">The source pixels.</param>
+    /// <param name="options">The blur.</param>
+    /// <param name="amount">The multiple of the difference that is added.</param>
+    /// <param name="threshold">The smallest difference that is sharpened, a fraction of the range.</param>
+    /// <returns>The exact output samples.</returns>
+    /// <exception cref="ArgumentException">The matrix does not have odd dimensions or the right number of weights.</exception>
+    public static ReferenceFilterResult Sharpen(RawPixelBuffer source, ReferenceConvolutionOptions options, decimal amount, decimal threshold)
+        => Filter(source, options, amount, threshold);
+
+    /// <summary>
+    /// Replaces every sample by the median of the same sample of the square of side <c>2 radius + 1</c> around its pixel
+    /// (pixels read beyond the edges as <see cref="Map"/> says, zeros for <see cref="ReferenceEdgeMode.Zero"/>): every
+    /// value of the square is gathered and sorted, and the middle one is kept. Alpha is filtered like the colors.
+    /// </summary>
+    /// <param name="source">The source pixels.</param>
+    /// <param name="radius">The number of pixels on each side.</param>
+    /// <param name="edgeMode">The pixels read beyond the edges.</param>
+    /// <returns>The output samples.</returns>
+    public static ReferenceFilterResult Median(RawPixelBuffer source, int radius, ReferenceEdgeMode edgeMode)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        var layout = source.Layout;
+        var channels = layout.ChannelCount;
+        var values = new decimal[source.Width * source.Height * channels];
+        var window = new List<int>();
+        for (var y = 0; y < source.Height; y++)
+        {
+            for (var x = 0; x < source.Width; x++)
+            {
+                for (var c = 0; c < channels; c++)
+                {
+                    window.Clear();
+                    for (var j = -radius; j <= radius; j++)
+                    {
+                        for (var i = -radius; i <= radius; i++)
+                        {
+                            var sx = Map(x + i, source.Width, edgeMode);
+                            var sy = Map(y + j, source.Height, edgeMode);
+                            window.Add(sx is null || sy is null ? 0 : source.GetSample(sx.Value, sy.Value, c));
+                        }
+                    }
+
+                    window.Sort();
+                    values[(((y * source.Width) + x) * channels) + c] = window[window.Count / 2];
+                }
+            }
+        }
+
+        return new ReferenceFilterResult(string.Create(CultureInfo.InvariantCulture, $"median {radius}, {edgeMode} edges"), source.Width, source.Height, layout, values, zeroAlphaIsTransparentBlack: false, artifactDirectory: "convolution");
+    }
+
+    private static ReferenceFilterResult Filter(RawPixelBuffer source, ReferenceConvolutionOptions options, decimal sharpenAmount, decimal sharpenThreshold)
     {
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(options);
@@ -60,6 +121,20 @@ public static class ReferenceConvolver
                                 ? weight * sample
                                 : weight * alpha * (options.Linear ? ReferenceResampler.Decode(options.Transfer, sample / max) : sample);
                         }
+                    }
+                }
+
+                if (sharpenAmount != 0)
+                {
+                    // The original samples, as the sums filter them
+                    decimal alpha = premultiplied ? source.GetSample(x, y, layout.AlphaChannel) : 1;
+                    for (var c = 0; c < channels; c++)
+                    {
+                        var sample = (decimal)source.GetSample(x, y, c);
+                        var original = c == layout.AlphaChannel ? sample : alpha * (options.Linear ? ReferenceResampler.Decode(options.Transfer, sample / max) : sample);
+                        var range = c == layout.AlphaChannel ? max : (options.Linear ? 1 : max) * (premultiplied ? max : 1);
+                        var difference = original - sums[c];
+                        sums[c] = Math.Abs(difference) < sharpenThreshold * range ? original : original + (sharpenAmount * difference);
                     }
                 }
 

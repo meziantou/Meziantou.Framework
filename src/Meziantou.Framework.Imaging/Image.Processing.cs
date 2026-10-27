@@ -421,12 +421,12 @@ public abstract partial class Image
     /// <summary>
     /// Blurs every displayed frame and the poster in place: one separable convolution, each row filtered by the weights
     /// then the filtered rows combined by the same weights as a column, without rounding in between. The scratch is
-    /// prepared before a pixel changes.
+    /// prepared before a pixel changes. A positive <paramref name="sharpenAmount"/> makes it an unsharp mask.
     /// </summary>
-    internal void BlurAllFrames(double[] weights, ConvolutionEdgeMode edgeMode, ConvolutionWorkingSpace workingSpace, CancellationToken cancellationToken)
+    internal void BlurAllFrames(double[] weights, ConvolutionEdgeMode edgeMode, ConvolutionWorkingSpace workingSpace, double sharpenAmount, double sharpenThreshold, CancellationToken cancellationToken)
     {
-        Owner.EnsureCanModify("blur the image");
-        using var plan = CreateBlurPlan(weights, edgeMode, workingSpace);
+        Owner.EnsureCanModify(sharpenAmount > 0 ? "sharpen the image" : "blur the image");
+        using var plan = CreateBlurPlan(weights, edgeMode, workingSpace, sharpenAmount, sharpenThreshold);
         cancellationToken.ThrowIfCancellationRequested();
         var frames = GetAllFrames();
         EnsureLinearLightDomain(plan.Transfer, frames, "convolution", "convolve");
@@ -440,15 +440,77 @@ public abstract partial class Image
     }
 
     /// <summary>Blurs one attached frame of this image in place, as <see cref="BlurAllFrames"/> does for all of them.</summary>
-    internal void BlurFrame(ImageFrame frame, PixelStorage storage, double[] weights, ConvolutionEdgeMode edgeMode, ConvolutionWorkingSpace workingSpace, CancellationToken cancellationToken)
+    internal void BlurFrame(ImageFrame frame, PixelStorage storage, double[] weights, ConvolutionEdgeMode edgeMode, ConvolutionWorkingSpace workingSpace, double sharpenAmount, double sharpenThreshold, CancellationToken cancellationToken)
     {
-        using var plan = CreateBlurPlan(weights, edgeMode, workingSpace);
+        using var plan = CreateBlurPlan(weights, edgeMode, workingSpace, sharpenAmount, sharpenThreshold);
         cancellationToken.ThrowIfCancellationRequested();
         using var lease = storage.AcquireLease();
         EnsureLinearLightDomain(plan.Transfer, lease, "the frame", "convolution", "convolve");
         plan.Prepare(Owner.Scope);
         _metadata.RemoveStaleThumbnail();
         frame.ConvolvePixels(lease, plan, cancellationToken);
+    }
+
+    /// <summary>
+    /// Blurs every displayed frame and the poster in place with a box blur. The scratch is charged to the scope of the image
+    /// and rented before any pixel changes; afterward, on failure, some frames or rows may already be blurred.
+    /// </summary>
+    internal void BoxBlurAllFrames(int radius, ConvolutionEdgeMode edgeMode, ConvolutionWorkingSpace workingSpace, CancellationToken cancellationToken)
+    {
+        Owner.EnsureCanModify("blur the image");
+        using var plan = CreateBoxBlurPlan(radius, edgeMode, workingSpace);
+        cancellationToken.ThrowIfCancellationRequested();
+        var frames = GetAllFrames();
+        EnsureLinearLightDomain(plan.Transfer, frames, "convolution", "convolve");
+        plan.Prepare(Owner.Scope);
+        _metadata.RemoveStaleThumbnail();
+        foreach (var frame in frames)
+        {
+            using var lease = frame.GetStorage().AcquireLease();
+            frame.BoxBlurPixels(lease, plan, cancellationToken);
+        }
+    }
+
+    /// <summary>Blurs one attached frame of this image in place with a box blur, as <see cref="BoxBlurAllFrames"/> does for all of them.</summary>
+    internal void BoxBlurFrame(ImageFrame frame, PixelStorage storage, int radius, ConvolutionEdgeMode edgeMode, ConvolutionWorkingSpace workingSpace, CancellationToken cancellationToken)
+    {
+        using var plan = CreateBoxBlurPlan(radius, edgeMode, workingSpace);
+        cancellationToken.ThrowIfCancellationRequested();
+        using var lease = storage.AcquireLease();
+        EnsureLinearLightDomain(plan.Transfer, lease, "the frame", "convolution", "convolve");
+        plan.Prepare(Owner.Scope);
+        _metadata.RemoveStaleThumbnail();
+        frame.BoxBlurPixels(lease, plan, cancellationToken);
+    }
+
+    /// <summary>
+    /// Replaces every sample of every displayed frame and the poster by the median of its neighborhood, in place. The scratch
+    /// is charged to the scope of the image and rented before any pixel changes; afterward, on failure, some frames or rows
+    /// may already be filtered.
+    /// </summary>
+    internal void MedianAllFrames(int radius, ConvolutionEdgeMode edgeMode, CancellationToken cancellationToken)
+    {
+        Owner.EnsureCanModify("filter the image");
+        using var plan = new MedianPlan(radius, edgeMode, PixelFormat, _size, _configuration.MaxDegreeOfParallelism);
+        cancellationToken.ThrowIfCancellationRequested();
+        plan.Prepare(Owner.Scope);
+        _metadata.RemoveStaleThumbnail();
+        foreach (var frame in GetAllFrames())
+        {
+            using var lease = frame.GetStorage().AcquireLease();
+            frame.MedianPixels(lease, plan, cancellationToken);
+        }
+    }
+
+    /// <summary>Filters one attached frame of this image in place with a median filter, as <see cref="MedianAllFrames"/> does for all of them.</summary>
+    internal void MedianFrame(ImageFrame frame, PixelStorage storage, int radius, ConvolutionEdgeMode edgeMode, CancellationToken cancellationToken)
+    {
+        using var plan = new MedianPlan(radius, edgeMode, PixelFormat, _size, _configuration.MaxDegreeOfParallelism);
+        cancellationToken.ThrowIfCancellationRequested();
+        using var lease = storage.AcquireLease();
+        plan.Prepare(Owner.Scope);
+        _metadata.RemoveStaleThumbnail();
+        frame.MedianPixels(lease, plan, cancellationToken);
     }
 
     /// <summary>Large frames are convolved by up to MaxDegreeOfParallelism workers (row bands, bit-identical results).</summary>
@@ -458,11 +520,21 @@ public abstract partial class Image
         return new ConvolutionPlan(options.Kernel, options.EdgeMode, options.PreserveAlpha, transfer is not 0, PixelFormat, _size, _configuration.MaxDegreeOfParallelism, transfer);
     }
 
-    /// <summary>The separable plan of a blur: the weights as a column, every row filtered by the same weights first.</summary>
-    private ConvolutionPlan CreateBlurPlan(double[] weights, ConvolutionEdgeMode edgeMode, ConvolutionWorkingSpace workingSpace)
+    /// <summary>The separable plan of a blur: the weights as a column, every row filtered by the same weights first (and an unsharp mask when <paramref name="sharpenAmount"/> is positive).</summary>
+    private ConvolutionPlan CreateBlurPlan(double[] weights, ConvolutionEdgeMode edgeMode, ConvolutionWorkingSpace workingSpace, double sharpenAmount, double sharpenThreshold)
     {
         var transfer = workingSpace == ConvolutionWorkingSpace.LinearSrgb ? GetLinearLightTransfer("convolution", "convolve") : (byte)0;
-        return new ConvolutionPlan(new ConvolutionKernel(1, weights.Length, weights), edgeMode, preserveAlpha: false, transfer is not 0, PixelFormat, _size, _configuration.MaxDegreeOfParallelism, transfer, rowWeights: weights);
+        return new ConvolutionPlan(new ConvolutionKernel(1, weights.Length, weights), edgeMode, preserveAlpha: false, transfer is not 0, PixelFormat, _size, _configuration.MaxDegreeOfParallelism, transfer, rowWeights: weights)
+        {
+            SharpenAmount = sharpenAmount,
+            SharpenThreshold = sharpenThreshold,
+        };
+    }
+
+    private BoxBlurPlan CreateBoxBlurPlan(int radius, ConvolutionEdgeMode edgeMode, ConvolutionWorkingSpace workingSpace)
+    {
+        var transfer = workingSpace == ConvolutionWorkingSpace.LinearSrgb ? GetLinearLightTransfer("convolution", "convolve") : (byte)0;
+        return new BoxBlurPlan(radius, edgeMode, PixelFormat, _size, _configuration.MaxDegreeOfParallelism, transfer);
     }
 
     /// <summary>

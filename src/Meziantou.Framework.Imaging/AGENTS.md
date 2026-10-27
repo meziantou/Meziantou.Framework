@@ -990,8 +990,9 @@ thin public types over its `FontFace`.
   65,536-entry table per distinct curve, built with the same evaluation of every sample value, so it is exact, and
   rented from the scope of the conversion (a scope of the default limits for `IccColorTransform`). The last stage of a
   16-bit conversion is still evaluated: its inputs are the doubles that come out of a matrix, not 65,536 values.
-- Default parallelism is one worker (`ImageConfiguration.MaxDegreeOfParallelism`). Only `Resize` and `Convolve` are
-  parallel, and their result must not depend on the worker count. Decoding, encoding and drawing stay sequential.
+- Default parallelism is one worker (`ImageConfiguration.MaxDegreeOfParallelism`). Only `Resize`, the transformations,
+  `Convolve`, the blurs (`GaussianBlur`, `BoxBlur`, `MedianBlur`) and `Sharpen` are parallel, and their result must not
+  depend on the worker count (`ParallelConvolutionTests`: a frame needs 65,536 pixels to get several workers). Decoding, encoding and drawing stay sequential.
 - Static row callbacks allocate nothing per row (`PerformanceContractTests`).
 - This repository builds with the updated memory-safety rules: wrap `MemoryMarshal`, `Unsafe` and `Vector*.LoadUnsafe` /
   `StoreUnsafe` calls in `unsafe(...)`, or in an `unsafe { }` block for a statement.

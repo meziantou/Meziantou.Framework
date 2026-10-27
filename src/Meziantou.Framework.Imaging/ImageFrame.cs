@@ -220,6 +220,12 @@ public abstract class ImageFrame
     /// <summary>Convolves the leased pixels in place with the kernel of the frame pixel type.</summary>
     internal abstract void ConvolvePixels(scoped in PixelLease lease, ConvolutionPlan plan, CancellationToken cancellationToken);
 
+    /// <summary>Blurs the leased pixels in place with the box blur of the frame pixel type.</summary>
+    internal abstract void BoxBlurPixels(scoped in PixelLease lease, BoxBlurPlan plan, CancellationToken cancellationToken);
+
+    /// <summary>Replaces the leased pixels in place with the medians of their neighborhoods.</summary>
+    internal abstract void MedianPixels(scoped in PixelLease lease, MedianPlan plan, CancellationToken cancellationToken);
+
     /// <summary>Converts the colors of the leased source to the leased destination with an ICC conversion (color profile transactions), with the input tables of 16-bit samples when given.</summary>
     internal abstract void ConvertColorPixels(scoped in PixelLease source, scoped in PixelLease destination, IccPipeline pipeline, IccUInt16InputTables? uint16Tables, CancellationToken cancellationToken);
 

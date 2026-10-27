@@ -190,6 +190,22 @@ internal static class ImageWorkloads
         }
     }
 
+    /// <summary>Copies a source image and filters the copy in place (the source stays unchanged so the workload can be repeated).</summary>
+    public static Image FilterCopy(Image source, Action<Image> filter)
+    {
+        var copy = source.Clone();
+        try
+        {
+            filter(copy);
+            return copy;
+        }
+        catch
+        {
+            copy.Dispose();
+            throw;
+        }
+    }
+
     /// <summary>Mutable state of <see cref="SumGreen"/>.</summary>
     internal sealed class SumState
     {

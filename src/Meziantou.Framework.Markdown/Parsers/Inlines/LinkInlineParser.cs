@@ -486,7 +486,7 @@ public class LinkInlineParser : InlineParser
     }
 
     // Whether the text starts with a link label: [, then at most 999 characters without an unescaped bracket, then ].
-    // LinkHelper.TryParseLabel also rejects a backslash before other characters: such a label is still not a shortcut.
+    // When LinkHelper.TryParseLabelTrivia rejects such a label, it is still not a shortcut.
     private static bool StartsWithLinkLabel(StringSlice text)
     {
         if (text.CurrentChar != '[')

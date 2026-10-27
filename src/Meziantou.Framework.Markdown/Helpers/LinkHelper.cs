@@ -1629,6 +1629,43 @@ public static class LinkHelper
     }
 
     /// <summary>
+    /// Gets the label that <see cref="TryParseLabel{T}(ref T, bool, out string?, out SourceSpan)"/> returns for the specified text
+    /// between brackets: its whitespace is collapsed and trimmed, and the escaped brackets and backslashes lose their backslash.
+    /// </summary>
+    internal static string NormalizeLabel(ReadOnlySpan<char> text)
+    {
+        var label = new ValueStringBuilder(unsafe(stackalloc char[ValueStringBuilder.StackallocThreshold]));
+        var previousWhitespace = true;
+        for (var i = 0; i < text.Length; i++)
+        {
+            var c = text[i];
+            if (c.IsWhitespace())
+            {
+                if (!previousWhitespace)
+                {
+                    label.Append(' ');
+                }
+
+                previousWhitespace = true;
+                continue;
+            }
+
+            if (c == '\\' && i + 1 < text.Length && text[i + 1] is '[' or ']' or '\\')
+            {
+                i++;
+                c = text[i];
+            }
+
+            label.Append(c);
+            previousWhitespace = false;
+        }
+
+        var result = label.AsSpan().TrimEnd(' ').ToString();
+        label.Dispose();
+        return result;
+    }
+
+    /// <summary>
     /// Attempts to parse label t.
     /// </summary>
     public static bool TryParseLabel<T>(ref T lines, bool allowEmpty, [NotNullWhen(true)] out string? label, out SourceSpan labelSpan) where T : ICharIterator
@@ -1658,9 +1695,11 @@ public static class LinkHelper
 
             if (hasEscape)
             {
+                // Labels match on their raw text: only the escaped brackets and backslashes lose their backslash
                 if (c != '[' && c != ']' && c != '\\')
                 {
-                    break;
+                    buffer.Append('\\');
+                    hasNonWhiteSpace = true;
                 }
             }
             else
@@ -1776,9 +1815,11 @@ public static class LinkHelper
 
             if (hasEscape)
             {
+                // Labels match on their raw text: only the escaped brackets and backslashes lose their backslash
                 if (c != '[' && c != ']' && c != '\\')
                 {
-                    break;
+                    buffer.Append('\\');
+                    hasNonWhiteSpace = true;
                 }
             }
             else

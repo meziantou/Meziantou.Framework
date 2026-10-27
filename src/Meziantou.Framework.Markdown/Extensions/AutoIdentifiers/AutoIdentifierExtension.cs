@@ -82,7 +82,8 @@ public class AutoIdentifierExtension : IMarkdownExtension
         {
             var headingLine = headingBlock.Lines.Lines[0];
 
-            var text = headingLine.ToString();
+            // A reference to the heading looks up the label as the link parser normalizes it
+            var text = LinkHelper.NormalizeLabel(headingLine.Slice.AsSpan());
 
             var linkRef = new HeadingLinkReferenceDefinition(headingBlock)
             {

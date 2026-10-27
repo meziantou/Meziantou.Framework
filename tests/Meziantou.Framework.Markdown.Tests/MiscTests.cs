@@ -599,6 +599,41 @@ public class MiscTests
         Assert.Equal("<h1 id=\"intro\">Intro</h1>\n<p><img src=\"#intro\" alt=\"alt\" /></p>\n", html);
     }
 
+    [Theory]
+    [InlineData("# a \\*\n\n[a \\*]", "<h1 id=\"a\">a *</h1>\n<p><a href=\"#a\">a *</a></p>\n")]
+    [InlineData("# a \\\\b\n\n[A \\\\B]", "<h1 id=\"a-b\">a \\b</h1>\n<p><a href=\"#a-b\">A \\B</a></p>\n")]
+    [InlineData("# a \\[b\\]\n\n[a \\[b\\]]", "<h1 id=\"a-b\">a [b]</h1>\n<p><a href=\"#a-b\">a [b]</a></p>\n")]
+    [InlineData("a \\{#x}\n---\n\n[a \\{#x}]", "<h2 id=\"a-x\">a {#x}</h2>\n<p><a href=\"#a-x\">a {#x}</a></p>\n")]
+    [InlineData("# a  b\n\n[a  b]", "<h1 id=\"a-b\">a  b</h1>\n<p><a href=\"#a-b\">a  b</a></p>\n")]
+    [InlineData("# a \t b\n\n[a\nb]", "<h1 id=\"a-b\">a \t b</h1>\n<p><a href=\"#a-b\">a\nb</a></p>\n")]
+    public void HeadingReferenceMatchesTheNormalizedLabel(string markdown, string expected)
+    {
+        var pipeline = new MarkdownPipelineBuilder().UseAutoIdentifiers().Build();
+
+        Assert.Equal(expected, MarkdownConverter.ToHtml(markdown, pipeline));
+    }
+
+    [Fact]
+    public void HeadingReferenceWithEscapeMatchesWithGenericAttributes()
+    {
+        var pipeline = new MarkdownPipelineBuilder().UseGenericAttributes().UseAutoIdentifiers().Build();
+
+        var html = MarkdownConverter.ToHtml("a \\{#x}\n---\n\n[a \\{#x}]", pipeline);
+
+        Assert.Equal("<h2 id=\"a-x\">a {#x}</h2>\n<p><a href=\"#a-x\">a {#x}</a></p>\n", html);
+    }
+
+    [Theory]
+    [InlineData("[foo\\!]: /url\n\n[foo\\!]", "<p><a href=\"/url\">foo!</a></p>\n")]
+    [InlineData("[foo\\!]: /url\n\n[bar][FOO\\!]", "<p><a href=\"/url\">bar</a></p>\n")]
+    [InlineData("[a\\b]: /url\n\n[a\\b]", "<p><a href=\"/url\">a\\b</a></p>\n")]
+    [InlineData("[foo\\!]: /url\n\n[foo!]", "<p>[foo!]</p>\n")]
+    [InlineData("[foo!]: /url\n\n[foo\\!]", "<p>[foo!]</p>\n")]
+    public void LinkLabelKeepsBackslashEscapes(string markdown, string expected)
+    {
+        Assert.Equal(expected, MarkdownConverter.ToHtml(markdown));
+    }
+
     private static int CountOccurrences(string text, string value)
     {
         var count = 0;

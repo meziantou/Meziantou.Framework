@@ -356,11 +356,25 @@ public partial class Document : Node
         }
     }
 
-    /// <summary>Insert steps of the live ranges: https://dom.spec.whatwg.org/#concept-node-insert (step 5).</summary>
-    internal void UpdateLiveRangesForInsertion(Node parent, int childIndex, int count)
+    /// <summary>
+    /// Insert steps of the live ranges: https://dom.spec.whatwg.org/#concept-node-insert (step 5), for nodes inserted before
+    /// <paramref name="child"/>.
+    /// </summary>
+    internal void UpdateLiveRangesForInsertion(Node parent, Node child, int count)
     {
+        // The index walks the previous siblings: it is computed only for a range that has a boundary point in the parent. The
+        // registry is shared by the documents of the thread, so it often contains only ranges of other documents.
+        var childIndex = -1;
         foreach (var range in GetLiveRanges())
         {
+            if (!range.IsAffectedByInsertion(parent))
+                continue;
+
+            if (childIndex < 0)
+            {
+                childIndex = child.GetIndex();
+            }
+
             range.OnInsertion(parent, childIndex, count);
         }
     }
@@ -369,9 +383,20 @@ public partial class Document : Node
     internal void LiveRangePreRemoveSteps(Node node)
     {
         var parent = node.ParentNode!;
-        var index = node.GetIndex();
+
+        // The index walks the previous siblings: removing the children one by one would be quadratic if it was computed when
+        // no range has a boundary point in the parent or in the removed subtree
+        var index = -1;
         foreach (var range in GetLiveRanges())
         {
+            if (!range.IsAffectedByRemoval(node, parent))
+                continue;
+
+            if (index < 0)
+            {
+                index = node.GetIndex();
+            }
+
             range.OnPreRemove(node, parent, index);
         }
     }

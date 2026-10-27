@@ -480,6 +480,65 @@ public sealed class PooledMemoryStreamTests
     }
 
     [Fact]
+    public void GetBuffer_ThenShrink_HeldBufferIsNotRentedByAnotherStream()
+    {
+        // Unique tier size so this test owns its pool bucket: before the fix, the other stream rented the held array.
+        var options = new PooledMemoryStreamOptions { BufferSizes = [4127] };
+        var data = CreateData(100, seed: 3);
+
+        var stream = new PooledMemoryStream(options);
+        stream.Write(data);
+        var held = stream.GetBuffer();
+
+        stream.SetLength(0);
+        stream.Capacity = 0;
+
+        using var other = new PooledMemoryStream(options);
+        other.Write(CreateData(100, seed: 4));
+        Assert.NotSame(held, other.GetBuffer());
+        Assert.Equal(data, held.AsSpan(0, data.Length).ToArray());
+
+        // The shrunk stream keeps working, and disposing it returns the held array to the pool.
+        var newData = CreateData(50, seed: 5);
+        stream.Write(newData);
+        Assert.Equal(newData, stream.ToArray());
+        stream.Dispose();
+
+        using var third = new PooledMemoryStream(options);
+        third.Write(CreateData(10));
+        Assert.Same(held, third.GetBuffer());
+    }
+
+    [Fact]
+    public void GetBuffer_ThenGrowAndConsolidate_HeldBufferIsNotRentedByAnotherStream()
+    {
+        // The first GetBuffer exposes a 23-byte block; growing past it and calling TryGetBuffer consolidates into a
+        // 4153-byte array. Unique tier sizes so this test owns its pool buckets.
+        var options = new PooledMemoryStreamOptions { BufferSizes = [23, 4153] };
+        var first = CreateData(10, seed: 6);
+        var second = CreateData(20, seed: 7);
+
+        using var stream = new PooledMemoryStream(options);
+        stream.Write(first);
+        var held = stream.GetBuffer();
+        Assert.HasCount(23, held);
+
+        stream.Write(second);
+        Assert.True(stream.TryGetBuffer(out var consolidated));
+        Assert.NotSame(held, consolidated.Array);
+        Assert.Equal([.. first, .. second], consolidated.ToArray());
+
+        for (var i = 0; i < 2; i++)
+        {
+            using var other = new PooledMemoryStream(options);
+            other.Write(CreateData(10, seed: 8 + i));
+            Assert.NotSame(held, other.GetBuffer());
+        }
+
+        Assert.Equal(first, held.AsSpan(0, first.Length).ToArray());
+    }
+
+    [Fact]
     public void CopyTo_FromCurrentPosition()
     {
         var data = CreateData(1000, seed: 6);

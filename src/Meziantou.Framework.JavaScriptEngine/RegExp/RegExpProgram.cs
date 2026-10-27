@@ -1,5 +1,3 @@
-using System.Collections.Concurrent;
-
 namespace Meziantou.Framework.JavaScriptEngine;
 
 /// <summary>
@@ -8,13 +6,6 @@ namespace Meziantou.Framework.JavaScriptEngine;
 /// </summary>
 internal sealed class RegExpProgram
 {
-    private const int MaxCacheSize = 2048;
-
-    private static readonly ConcurrentDictionary<(string Pattern, RegExpFlags Flags), RegExpProgram> Cache = new();
-
-    // ConcurrentDictionary.Count takes all the locks of the dictionary: the number of entries is tracked separately
-    private static int s_cacheCount;
-
     internal RegExpProgram(
         string source,
         RegExpFlags flags,
@@ -80,35 +71,6 @@ internal sealed class RegExpProgram
     internal int RegisterCount { get; }
 
     internal RegExpSearchInfo Search { get; }
-
-    /// <summary>Compiles a pattern, or gets it from the process-wide cache.</summary>
-    /// <param name="pattern">The pattern.</param>
-    /// <param name="flags">The flags; only the flags that change the matcher are part of the key.</param>
-    /// <param name="error">The message of the SyntaxError when the pattern is not valid.</param>
-    public static RegExpProgram? GetOrCompile(string pattern, RegExpFlags flags, out string? error)
-    {
-        // g, y and d do not change the matcher
-        var key = (pattern, flags & ~(RegExpFlags.Global | RegExpFlags.Sticky | RegExpFlags.HasIndices));
-        if (Cache.TryGetValue(key, out var program))
-        {
-            error = null;
-            return program;
-        }
-
-        program = Compile(pattern, key.Item2, out error);
-        if (program is not null)
-        {
-            if (Interlocked.Increment(ref s_cacheCount) > MaxCacheSize)
-            {
-                Interlocked.Exchange(ref s_cacheCount, 0);
-                Cache.Clear();
-            }
-
-            Cache.TryAdd(key, program);
-        }
-
-        return program;
-    }
 
     /// <summary>Compiles a pattern.</summary>
     public static RegExpProgram? Compile(string pattern, RegExpFlags flags, out string? error)

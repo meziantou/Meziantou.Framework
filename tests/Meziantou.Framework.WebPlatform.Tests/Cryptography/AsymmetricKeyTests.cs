@@ -118,6 +118,28 @@ public sealed class AsymmetricKeyTests
         Assert.Equal("DataError", Assert.Throws<WebCryptoException>(() => EcKey.DecodePublicPoint(curve, invalid)).Name);
     }
 
+    [Theory]
+    [InlineData("P-256")]
+    [InlineData("P-384")]
+    [InlineData("P-521")]
+    public void Ec_BlindedGeneratorMultiplication(string curveName)
+    {
+        var curve = EcCurve.FromName(curveName)!;
+
+        // The blinding scalar is random: several keys exercise several blinded scalars
+        for (var i = 0; i < 4; i++)
+        {
+            var key = EcKey.Generate(curve);
+            var point = curve.MultiplyGeneratorBlinded(key.D!);
+            Assert.Equal(new BigInteger(key.X, isUnsigned: true, isBigEndian: true), point.X);
+            Assert.Equal(new BigInteger(key.Y, isUnsigned: true, isBigEndian: true), point.Y);
+        }
+
+        // The extreme scalars 1 and n - 1: G and -G
+        Assert.Equal(curve.G, curve.MultiplyGeneratorBlinded(RsaKey.I2Osp(BigInteger.One, curve.OrderLength)));
+        Assert.Equal((curve.G.X, curve.P - curve.G.Y), curve.MultiplyGeneratorBlinded(RsaKey.I2Osp(curve.N - 1, curve.OrderLength)));
+    }
+
     [Fact]
     public void Ec_SignatureAndKeyAgreement()
     {

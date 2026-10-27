@@ -153,6 +153,13 @@ public sealed class ImageFrame<TPixel> : ImageFrame
         ProcessingKernels.Extend(source, destination, origin, pixel, cancellationToken);
     }
 
+    internal override void ExtendPixels(scoped in PixelLease source, scoped in PixelLease destination, Point origin, Rgba64 fill, CancellationToken cancellationToken)
+    {
+        TPixel pixel = default;
+        PixelConverter.ConvertRow(new ReadOnlySpan<Rgba64>(in fill), new Span<TPixel>(ref pixel));
+        ProcessingKernels.Extend(source, destination, origin, pixel, cancellationToken);
+    }
+
     private static void ValidateCoordinates(PixelStorage storage, int x, int y)
     {
         if ((uint)x >= (uint)storage.Width)

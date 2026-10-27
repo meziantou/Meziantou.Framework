@@ -416,7 +416,17 @@ public partial class HtmlElement
                 }
             }
 
-            document.RequestTopLayerRemoval(this);
+            // A popover hidden without events (e.g. removed from the document) leaves the top layer at once; otherwise it stays
+            // there, pending removal, while its overlay transitions
+            if (fireEvents)
+            {
+                document.RequestTopLayerRemoval(this);
+            }
+            else
+            {
+                document.RemoveFromTopLayer(this);
+            }
+
             data.Trigger = null;
             data.OpenedInPopoverMode = PopoverState.None;
             data.IsShowing = false;
@@ -632,6 +642,8 @@ public partial class HtmlElement
         {
             HidePopover(focusPreviousElement: false, fireEvents: false, throwExceptions: false, source: null, forceHide: true);
         }
+
+        NodeDocument.RemoveDisconnectedFromTopLayer(this);
     }
 }
 
@@ -773,6 +785,18 @@ public partial class Document
         IncrementElementStateVersion();
         InvalidateLayout(rebuildBoxTree: true);
         EventLoop?.RequestRenderingOpportunity(this);
+    }
+
+    /// <summary>
+    /// Removes an element pending removal from the top layer when it is removed from the document: it is no longer rendered, so the
+    /// next rendering update would remove it (<see cref="ProcessTopLayerRemovals"/>). Until then, every layout would compute its style.
+    /// </summary>
+    internal void RemoveDisconnectedFromTopLayer(Element element)
+    {
+        if (_pendingTopLayerRemovals is { Count: > 0 } pending && pending.Contains(element))
+        {
+            RemoveFromTopLayer(element);
+        }
     }
 
     /// <summary>https://drafts.csswg.org/css-position-4/#remove-an-element-from-the-top-layer-immediately</summary>

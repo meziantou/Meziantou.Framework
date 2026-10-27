@@ -115,4 +115,33 @@ public sealed class OverlayTests : IDisposable
         Assert.True(engine.BoxTree!.GetPrincipalBox(popover) is { IsInTopLayer: true });
         Assert.Null(BoxTreeBuilder.DescribeDifference(engine.BoxTree!, BoxTree.Build(document)));
     }
+
+    [Fact]
+    public void RemovingAShowingPopoverRemovesItFromTheTopLayerImmediately()
+    {
+        // https://html.spec.whatwg.org/multipage/popover.html#hide-popover-algorithm: the removing steps hide the popover without
+        // events, which removes it from the top layer immediately, even while its overlay could transition
+        var document = Load("<style>#p { display: block; transition: overlay 1s step-end allow-discrete }</style><div id=p popover></div>");
+        var popover = (HtmlElement)document.GetElementById("p")!;
+        popover.ShowPopover();
+        Advance(1100);
+        popover.Remove();
+        Assert.False(popover.Matches(":popover-open"));
+        Assert.DoesNotContain(popover, document.TopLayerElementsForRendering ?? []);
+    }
+
+    [Fact]
+    public void RemovingAPopoverPendingRemovalRemovesItFromTheTopLayer()
+    {
+        // A hidden popover stays in the top layer, pending removal, until a rendering update; once removed from the document, it
+        // is not rendered, so it leaves the top layer without waiting for the rendering update
+        var document = Load("<style>#p { display: block; transition: overlay 1s step-end allow-discrete }</style><div id=p popover></div>");
+        var popover = (HtmlElement)document.GetElementById("p")!;
+        popover.ShowPopover();
+        Advance(1100);
+        popover.HidePopover();
+        Assert.Contains(popover, document.TopLayerElementsForRendering ?? []);
+        popover.Remove();
+        Assert.DoesNotContain(popover, document.TopLayerElementsForRendering ?? []);
+    }
 }

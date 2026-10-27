@@ -2378,6 +2378,12 @@ public void Decode(string id)
   (exact rational geometry, decimal kernels and
   sums). Generic tool resize output (FFmpeg, ImageMagick) is not an oracle: their pixel-center, edge, alpha and rounding
   conventions differ. No resized reference files are stored.
+- Transformation tests (`Processing.Tests/Conformance/TransformGoldenTests`: rotations by any angle, skews, affine and
+  projective transformations) do the same with `TestHarness/Resampling/ReferenceTransformer`, an independent
+  implementation of the transformation contract: decimal geometry and kernels, and a direct two-dimensional sum per
+  output pixel over every pixel within the reach of the kernels, the pixels beyond the edges of the source being the
+  background. ImageMagick (`-distort SRT`, `-rotate`) is not an oracle either: its default distortion filter is an
+  elliptical weighted average, and `-rotate` shears three times. No transformed reference files are stored.
 - Convolution tests (`Processing.Tests/Conformance/ConvolutionGoldenTests`) do the same with
   `TestHarness/Convolution/ReferenceConvolver`, an independent implementation of the convolution contract:
   a direct two-dimensional decimal sum per output

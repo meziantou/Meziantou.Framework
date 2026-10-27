@@ -58,6 +58,52 @@ public abstract partial class Image
     }
 
     /// <summary>
+    /// Transforms every displayed frame and the poster, transactionally (see <see cref="ReplaceGeometry{TFiller}"/>). A
+    /// transformation that moves every pixel onto a pixel of a canvas it fills (a quarter turn, a mirror) is the exact
+    /// permutation of <see cref="TransformGeometry"/>, and one that moves nothing leaves the image unchanged. The scratch
+    /// storage of the workers is charged to the scope of the image together with the original and replacement storages.
+    /// </summary>
+    /// <param name="transform">The transformation, from the image to the plane of the result.</param>
+    /// <param name="options">The validated options.</param>
+    /// <param name="centered"><see langword="true"/> when <paramref name="transform"/> moves the center of the image to the origin, which then goes to the center of the canvas.</param>
+    /// <param name="paramName">The parameter that describes the transformation, for the exceptions.</param>
+    /// <param name="cancellationToken">The token checked between frames and rows, and once more right before the commit.</param>
+    /// <exception cref="ArgumentException">The transformation cannot be applied (see <see cref="WarpGeometry.Compute"/>).</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The pixel format has no alpha and the background is not opaque, or linear-light filtering is requested for pixels that are not known to be sRGB encoded.</exception>
+    internal void Warp(ProjectiveTransform transform, TransformOptions options, bool centered, string paramName, CancellationToken cancellationToken)
+    {
+        const string Operation = "transform the image";
+        Owner.EnsureCanModify(Operation);
+        var geometry = WarpGeometry.Compute(_size, transform, options, centered, paramName, _configuration.Limits);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (geometry.IsIdentity && geometry.OutputSize == _size)
+            return;
+
+        if (geometry.Permutation is { } permutation)
+        {
+            TransformGeometry(new Rectangle(0, 0, _size.Width, _size.Height), permutation, normalizeOrientation: false, Operation, cancellationToken);
+            return;
+        }
+
+        // A canvas the image does not cover shows the background: a format without alpha cannot store a translucent one
+        if (!PixelFormats.HasAlpha(PixelFormat) && options.BackgroundColor.A != ushort.MaxValue && geometry.ReadsBeyondTheSource(options.Filter))
+        {
+            throw new UnsupportedImageFeatureException(
+                string.Create(CultureInfo.InvariantCulture, $"Cannot {Operation}: the result shows the background, and the {PixelFormat} pixel format has no alpha to store the translucent background color. Set TransformOptions.BackgroundColor to an opaque color."),
+                ImageFormat.Unknown,
+                "Translucent background without alpha");
+        }
+
+        var transfer = options.WorkingSpace == ResizeWorkingSpace.LinearSrgb ? GetLinearLightTransfer("transforming", "transform") : (byte)0;
+        var workingSpace = transfer is not 0 ? ResizeWorkingSpace.LinearSrgb : ResizeWorkingSpace.Encoded;
+        EnsureLinearLightDomain(transfer, GetAllFrames(), "transforming", "transform");
+
+        // Large frames are transformed by up to MaxDegreeOfParallelism workers (row bands, bit-identical results)
+        using var plan = new WarpPlan(geometry, options.Filter, options.BackgroundColor, workingSpace, PixelFormat, _configuration.MaxDegreeOfParallelism, transfer);
+        ReplaceGeometry(geometry.OutputSize, normalizeOrientation: false, Operation, new WarpFiller(plan), cancellationToken);
+    }
+
+    /// <summary>
     /// Detects the background and the content box of the image over every displayed frame and the poster, without changing
     /// anything: each pass leases one frame at a time, and no storage is rented.
     /// </summary>
@@ -853,6 +899,16 @@ public abstract partial class Image
 
         public void Fill(ImageFrame frame, scoped in PixelLease source, scoped in PixelLease destination, CancellationToken cancellationToken)
             => frame.ExtendPixels(source, destination, origin, fill, cancellationToken);
+    }
+
+    private readonly struct WarpFiller(WarpPlan plan) : IGeometryFiller
+    {
+        public bool TryMapPoint(Point source, out Point destination) => plan.Geometry.TryMapPoint(source, out destination);
+
+        public void Prepare(AllocationScope scope) => plan.Prepare(scope);
+
+        public void Fill(ImageFrame frame, scoped in PixelLease source, scoped in PixelLease destination, CancellationToken cancellationToken)
+            => frame.WarpPixels(source, destination, plan, cancellationToken);
     }
 
     private readonly struct ResizeFiller(ResizePlan plan, ResizeGeometry geometry) : IGeometryFiller

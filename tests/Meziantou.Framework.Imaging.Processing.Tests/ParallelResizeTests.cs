@@ -53,6 +53,45 @@ public sealed class ParallelResizeTests
         }
     }
 
+    [Theory]
+    [InlineData(ResamplingFilter.NearestNeighbor)]
+    [InlineData(ResamplingFilter.Bicubic)]
+    [InlineData(ResamplingFilter.Lanczos3)]
+    public void TheResultOfATransformationDoesNotDependOnTheWorkerCount(ResamplingFilter filter)
+    {
+        // Every output pixel is computed alone: the bands of the workers give the same bytes. A projective transformation
+        // has kernels of their own at every pixel
+        var transforms = new (ProjectiveTransform Transform, TransformCanvasMode Mode)[]
+        {
+            (AffineTransform.CreateRotation(23), TransformCanvasMode.Expand),
+            (new AffineTransform(0.4, 0.1, -0.2, 0.6, 0, 0), TransformCanvasMode.Expand),
+            (new ProjectiveTransform(1, 0.05, 0.002, 0.1, 0.9, 0.001, 3, 1, 1), TransformCanvasMode.Keep),
+        };
+
+        foreach (var (transform, mode) in transforms)
+        {
+            var options = new TransformOptions { Filter = filter, CanvasMode = mode };
+            using var expected = CreateImage(300, 260, workers: 1);
+            expected.Transform(transform, options, Ct);
+            var expectedPixels = Pixels(expected);
+            foreach (var workers in new[] { 2, 3, 7 })
+            {
+                using var image = CreateImage(300, 260, workers);
+                image.Transform(transform, options, Ct);
+                Assert.Equal(expected.Size, image.Size);
+                Assert.Equal(expectedPixels, Pixels(image));
+                Assert.Equal(PixelStorageBytes(image), image.Owner.Scope.LiveBytes);
+            }
+        }
+
+        static Rgba32[] Pixels(Image<Rgba32> image)
+        {
+            var pixels = new Rgba32[image.Width * image.Height];
+            image.Frames[0].CopyPixelDataTo(pixels);
+            return pixels;
+        }
+    }
+
     [Fact]
     public void ConcurrencyNeverExceedsTheConfiguredBound()
     {

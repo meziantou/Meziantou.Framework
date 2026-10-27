@@ -316,6 +316,381 @@ public sealed class ProcessingTests
     }
 
     // -----------------------------------------------------------------------------------------------------------------
+    // Rotations by an angle, skews and transformations (their numerics are checked in TransformGoldenTests)
+    // -----------------------------------------------------------------------------------------------------------------
+
+    [Theory]
+    [MemberData(nameof(AllFormats))]
+    public void QuarterTurnsByAnAngleAreThePermutationsOfRotateMode(PixelFormat format)
+    {
+        switch (format)
+        {
+            case PixelFormat.Rgba32: CheckQuarterTurns<Rgba32>(); break;
+            case PixelFormat.Bgra32: CheckQuarterTurns<Bgra32>(); break;
+            case PixelFormat.Rgb24: CheckQuarterTurns<Rgb24>(); break;
+            case PixelFormat.Rgba64: CheckQuarterTurns<Rgba64>(); break;
+            case PixelFormat.Gray8: CheckQuarterTurns<Gray8>(); break;
+            case PixelFormat.Gray16: CheckQuarterTurns<Gray16>(); break;
+            case PixelFormat.RgbaFloat: CheckQuarterTurns<RgbaFloat>(); break;
+            case PixelFormat.RgbaHalf: CheckQuarterTurns<RgbaHalf>(); break;
+            default: throw new ArgumentOutOfRangeException(nameof(format));
+        }
+    }
+
+    [Fact]
+    public void ARotationByAWholeTurnLeavesTheImageUnchanged()
+    {
+        foreach (var degrees in new[] { 0, 360, -720 })
+        {
+            using var image = Build<Rgb24>(Source3X2);
+            var storage = image.Frames[0].Storage;
+            image.Rotate(degrees, new TransformOptions { Filter = ResamplingFilter.Lanczos3 }, Ct);
+            Assert.Same(storage, image.Frames[0].Storage);
+            AssertFrame(image.Frames[0], Source3X2);
+        }
+    }
+
+    [Theory]
+    [InlineData(ResamplingFilter.Bilinear, 30, 0.975)]
+    [InlineData(ResamplingFilter.Bicubic, -17.5, 0.985)]
+    [InlineData(ResamplingFilter.Lanczos3, 63, 0.985)]
+    public void RotatingByAnAngleThenBackIsCloseToTheOriginal(ResamplingFilter filter, double degrees, double minimumSsim)
+    {
+        // A smooth opaque pattern with some detail; the second rotation puts the center back at the center of a canvas of
+        // the original size. The edges blend into the transparent background twice: the comparison is on the image
+        // without a margin of 4 pixels, the reach of the kernels of both rotations. The measured SSIM is 0.982 with the
+        // bilinear filter, which blurs the most, and 0.990 with the others; an image moved by one pixel is far below
+        using var original = new Image<Rgba32>(64, 48);
+        for (var y = 0; y < original.Height; y++)
+        {
+            for (var x = 0; x < original.Width; x++)
+            {
+                original.Frames[0][x, y] = new Rgba32(
+                    (byte)(128 + (100 * Math.Sin(x / 5.0))),
+                    (byte)(128 + (90 * Math.Cos((x + y) / 7.0))),
+                    (byte)(((x + y) / 8 % 2) * 200),
+                    255);
+            }
+        }
+
+        using var image = original.Clone();
+        image.Rotate(degrees, new TransformOptions { Filter = filter }, Ct);
+        Assert.NotEqual(original.Size, image.Size);
+        image.Rotate(-degrees, new TransformOptions { Filter = filter, CanvasMode = TransformCanvasMode.Explicit, CanvasSize = original.Size }, Ct);
+        Assert.Equal(original.Size, image.Size);
+        var interior = new Rectangle(4, 4, original.Width - 8, original.Height - 8);
+        original.Crop(interior, Ct);
+        image.Crop(interior, Ct);
+        var ssim = ImageSimilarity.ComputeSsim(original.Frames[0], image.Frames[0], Ct);
+        Assert.True(ssim > minimumSsim, string.Create(CultureInfo.InvariantCulture, $"SSIM {ssim}"));
+
+        using var moved = original.Clone();
+        moved.Transform(AffineTransform.CreateTranslation(1, 0), new TransformOptions { CanvasMode = TransformCanvasMode.Keep }, Ct);
+        var movedSsim = ImageSimilarity.ComputeSsim(original.Frames[0], moved.Frames[0], Ct);
+        Assert.True(movedSsim < 0.95, string.Create(CultureInfo.InvariantCulture, $"SSIM of the moved image {movedSsim}"));
+    }
+
+    [Theory]
+    [InlineData(ResamplingFilter.Bilinear)]
+    [InlineData(ResamplingFilter.Bicubic)]
+    public void ARotationReproducesALinearGradientInsideTheImage(ResamplingFilter filter)
+    {
+        // Bilinear and Catmull-Rom reproduce linear functions: away from the edges, every output pixel is the gradient at the
+        // point its center comes from, computed here from the definition of the rotation
+        const int Width = 40;
+        const int Height = 30;
+        using var image = new Image<Gray16>(Width, Height);
+        for (var y = 0; y < Height; y++)
+        {
+            for (var x = 0; x < Width; x++)
+            {
+                image.Frames[0][x, y] = new Gray16((ushort)(2000 + (700 * x) + (900 * y)));
+            }
+        }
+
+        image.Rotate(30, new TransformOptions { Filter = filter, BackgroundColor = new Rgba64(0, 0, 0, 65535) }, Ct);
+
+        // 40 cos 30 + 30 sin 30 = 49.64 and 40 sin 30 + 30 cos 30 = 45.98, rounded up
+        Assert.Equal(new Size(50, 46), image.Size);
+        var cos = Math.Sqrt(3) / 2;
+        var sin = 0.5;
+        var radius = filter == ResamplingFilter.Bilinear ? 1 : 2;
+        var checkedPixels = 0;
+        for (var y = 0; y < image.Height; y++)
+        {
+            for (var x = 0; x < image.Width; x++)
+            {
+                // The canvas center is the image center; the inverse of a clockwise turn turns counterclockwise
+                var dx = x + 0.5 - 25;
+                var dy = y + 0.5 - 23;
+                var u = (cos * dx) + (sin * dy) + (Width / 2.0) - 0.5;
+                var v = (-sin * dx) + (cos * dy) + (Height / 2.0) - 0.5;
+                if (u < radius - 1 || v < radius - 1 || u > Width - radius || v > Height - radius)
+                    continue;
+
+                var expected = 2000 + (700 * u) + (900 * v);
+                Assert.True(Math.Abs(image.Frames[0][x, y].Value - expected) <= 0.5 + 1e-6, string.Create(CultureInfo.InvariantCulture, $"({x}, {y}): {image.Frames[0][x, y].Value}, expected {expected}"));
+                checkedPixels++;
+            }
+        }
+
+        Assert.True(checkedPixels > 500, string.Create(CultureInfo.InvariantCulture, $"{checkedPixels} pixels checked"));
+    }
+
+    [Fact]
+    public void AnExpandedRotationCentersTheImageAndFillsTheCornersWithTheBackground()
+    {
+        // 20 x 20 turned by 45 degrees: 20 sqrt(2) = 28.28 is rounded up; the corners are far from the turned square
+        using var image = new Image<Rgb24>(20, 20, new Rgb24(10, 20, 30));
+        image.Rotate(45, new TransformOptions { BackgroundColor = new Rgba64(65535, 0, 0, 65535) }, Ct);
+        Assert.Equal(new Size(29, 29), image.Size);
+        Assert.Equal(new Rgb24(255, 0, 0), image.Frames[0][0, 0]);
+        Assert.Equal(new Rgb24(255, 0, 0), image.Frames[0][28, 28]);
+        Assert.Equal(new Rgb24(10, 20, 30), image.Frames[0][14, 14]);
+        Assert.Equal(new Rgb24(10, 20, 30), image.Frames[0][14, 2]);
+
+        // A translucent background is filtered premultiplied: transparent where nothing of the image is read
+        using var transparent = new Image<Rgba32>(20, 20, new Rgba32(10, 20, 30, 255));
+        transparent.Rotate(45, cancellationToken: Ct);
+        Assert.Equal(default, transparent.Frames[0][0, 0]);
+        Assert.Equal(new Rgba32(10, 20, 30, 255), transparent.Frames[0][14, 14]);
+        var edge = transparent.Frames[0][14, 0];
+        Assert.InRange(edge.A, 1, 254);
+        Assert.Equal(new Rgba32(10, 20, 30, edge.A), edge);
+    }
+
+    [Fact]
+    public void ASkewKeepsTheCenterAndLeansTheEdges()
+    {
+        // tan(45) = 1: the 4 x 2 image becomes a parallelogram 6 pixels wide, X = x + y on the canvas. With the bilinear
+        // filter, the center of output pixel (x, 0) comes from source (x, 0.5) and reads pixels x - 1 and x of row 0, and
+        // that of (x, 1) from (x - 1, 1.5): a pixel that reads one pixel of the image and one of the background is half
+        // transparent, with the color of the image
+        var content = new Rgba32(200, 100, 50, 255);
+        using var image = new Image<Rgba32>(4, 2, content);
+        image.Skew(45, 0, new TransformOptions { Filter = ResamplingFilter.Bilinear }, Ct);
+        Assert.Equal(new Size(6, 2), image.Size);
+        string[] expected = ["half content content content half transparent", "transparent half content content content half"];
+        for (var y = 0; y < 2; y++)
+        {
+            Assert.Equal(expected[y], string.Join(' ', Row(image, y).Select(pixel => pixel switch
+            {
+                { A: 255 } when pixel == content => "content",
+                { A: 0 } when pixel == default => "transparent",
+                { A: > 100 and < 155 } when (pixel.R, pixel.G, pixel.B) == (200, 100, 50) => "half",
+                _ => pixel.ToString(),
+            })));
+        }
+
+        // Two angles whose tangents multiply to 1 flatten the image
+        Assert.Throws<ArgumentException>(() => image.Skew(45, 45, cancellationToken: Ct));
+        Assert.Throws<ArgumentOutOfRangeException>(() => image.Skew(90, 0, cancellationToken: Ct));
+        Assert.Equal(new Size(6, 2), image.Size);
+    }
+
+    [Fact]
+    public void AKeptCanvasAppliesTheTransformationAsGiven()
+    {
+        // An integer translation on a kept canvas: the pixels move, and the background enters where they leave
+        using var image = Build<Rgba32>(Source3X2);
+        image.Transform(AffineTransform.CreateTranslation(1, 0), new TransformOptions { CanvasMode = TransformCanvasMode.Keep }, Ct);
+        Assert.Equal(new Size(3, 2), image.Size);
+        Assert.Equal(default, image.Frames[0][0, 0]);
+        Assert.Equal(Pixel<Rgba32>(1), image.Frames[0][1, 0]);
+        Assert.Equal(Pixel<Rgba32>(5), image.Frames[0][2, 1]);
+
+        // An explicit canvas has the origin of the image at its top-left corner
+        using var larger = Build<Rgba32>(Source3X2);
+        larger.Transform(AffineTransform.Identity, new TransformOptions { CanvasMode = TransformCanvasMode.Explicit, CanvasSize = new Size(4, 3) }, Ct);
+        Assert.Equal(new Size(4, 3), larger.Size);
+        Assert.Equal(Pixel<Rgba32>(1), larger.Frames[0][0, 0]);
+        Assert.Equal(Pixel<Rgba32>(6), larger.Frames[0][2, 1]);
+        Assert.Equal(default, larger.Frames[0][3, 0]);
+        Assert.Equal(default, larger.Frames[0][0, 2]);
+
+        // An explicit canvas needs a size
+        Assert.Throws<ArgumentException>(() => larger.Rotate(10, new TransformOptions { CanvasMode = TransformCanvasMode.Explicit }, Ct));
+    }
+
+    [Fact]
+    public void AFormatWithoutAlphaNeedsAnOpaqueBackgroundWhenTheBackgroundShows()
+    {
+        using var image = Build<Rgb24>(Source3X2);
+        var storage = image.Frames[0].Storage;
+        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => image.Rotate(30, cancellationToken: Ct));
+        Assert.Equal("Translucent background without alpha", exception.Feature);
+        Assert.Throws<UnsupportedImageFeatureException>(() => image.Rotate(30, new TransformOptions { BackgroundColor = new Rgba64(0, 0, 0, 65534) }, Ct));
+        Assert.Same(storage, image.Frames[0].Storage);
+        AssertFrame(image.Frames[0], Source3X2);
+
+        // A quarter turn, a mirror, and an enlargement of the center on a kept canvas show no background
+        image.Rotate(90.0, cancellationToken: Ct);
+        AssertFrame(image.Frames[0], Rotated90);
+        image.Transform(new AffineTransform(-1, 0, 0, 1, 0, 0), cancellationToken: Ct);
+        AssertFrame(image.Frames[0], [[1, 4], [2, 5], [3, 6]]);
+        using var gray = new Image<Gray8>(8, 8, new Gray8(77));
+        gray.Transform(AffineTransform.CreateScale(2, 2, new PointD(4, 4)), new TransformOptions { CanvasMode = TransformCanvasMode.Keep }, Ct);
+        Assert.Equal(new Gray8(77), gray.Frames[0][0, 0]);
+
+        // The same enlargement with Lanczos3 reads 3 pixels around each point, beyond the edges of the image
+        Assert.Throws<UnsupportedImageFeatureException>(() => gray.Transform(AffineTransform.CreateScale(2, 2, new PointD(4, 4)), new TransformOptions { CanvasMode = TransformCanvasMode.Keep, Filter = ResamplingFilter.Lanczos3 }, Ct));
+
+        // A projective transformation may always show it
+        Assert.Throws<UnsupportedImageFeatureException>(() => gray.Transform(new ProjectiveTransform(1, 0, 0.001, 0, 1, 0, 0, 0, 1), new TransformOptions { CanvasMode = TransformCanvasMode.Keep }, Ct));
+
+        image.Rotate(30, new TransformOptions { BackgroundColor = new Rgba64(0, 65535, 0, 65535) }, Ct);
+        Assert.Equal(new Size(4, 4), image.Size);
+    }
+
+    [Fact]
+    public void TheCanvasOfATransformationRespectsTheLimits()
+    {
+        // 100 x 60 turned by 45 degrees: 160 / sqrt(2) = 113.14 in both directions, rounded up to 114
+        foreach (var (limits, kind) in new (ImageResourceLimits Limits, ImageResourceLimitKind? Kind)[]
+        {
+            (new ImageResourceLimits { MaxWidth = 114, MaxHeight = 114, MaxFramePixels = 114 * 114 }, null),
+            (new ImageResourceLimits { MaxWidth = 113 }, ImageResourceLimitKind.Width),
+            (new ImageResourceLimits { MaxHeight = 113 }, ImageResourceLimitKind.Height),
+            (new ImageResourceLimits { MaxFramePixels = (114 * 114) - 1 }, ImageResourceLimitKind.FramePixels),
+        })
+        {
+            using var image = new Image<Rgba32>(100, 60, new ImageConfiguration { Limits = limits });
+            var storage = image.Frames[0].Storage;
+            if (kind is null)
+            {
+                image.Rotate(45, cancellationToken: Ct);
+                Assert.Equal(new Size(114, 114), image.Size);
+                continue;
+            }
+
+            var exception = Assert.Throws<ImageResourceLimitException>(() => image.Rotate(45, cancellationToken: Ct));
+            Assert.Equal(kind, exception.Kind);
+            Assert.Same(storage, image.Frames[0].Storage);
+            Assert.Equal(new Size(100, 60), image.Size);
+        }
+
+        // A canvas larger than any canvas can be is reported with the size it would have, and an explicit canvas is checked too
+        using var small = new Image<Rgba32>(4, 4);
+        var huge = Assert.Throws<ImageResourceLimitException>(() => small.Transform(AffineTransform.CreateScale(1e12, 1), cancellationToken: Ct));
+        Assert.Equal(ImageResourceLimitKind.Width, huge.Kind);
+        var limited = new ImageConfiguration { Limits = new ImageResourceLimits { MaxHeight = 10 } };
+        using var explicitCanvas = new Image<Rgba32>(4, 4, limited);
+        Assert.Equal(ImageResourceLimitKind.Height, Assert.Throws<ImageResourceLimitException>(() => explicitCanvas.Rotate(10, new TransformOptions { CanvasMode = TransformCanvasMode.Explicit, CanvasSize = new Size(10, 11) }, Ct)).Kind);
+        explicitCanvas.Rotate(10, new TransformOptions { CanvasMode = TransformCanvasMode.Explicit, CanvasSize = new Size(10, 10) }, Ct);
+        Assert.Equal(new Size(10, 10), explicitCanvas.Size);
+    }
+
+    [Fact]
+    public void ATransformationIsTransactional()
+    {
+        // The limit is exact at the measured peak: one byte less fails before anything changes, frames and poster included
+        var options = new TransformOptions { Filter = ResamplingFilter.Lanczos3 };
+        long peak;
+        using (var probe = BuildAnimated(ImageConfiguration.Default))
+        {
+            probe.Rotate(20, options, Ct);
+            peak = probe.Owner.Scope.GetDiagnostics().PeakLiveBytes;
+        }
+
+        using (var image = BuildAnimated(new ImageConfiguration { Limits = new ImageResourceLimits { MaxLiveAllocationBytes = peak - 1 } }))
+        {
+            var snapshot = ImageState.Capture(image);
+            Assert.Equal(ImageResourceLimitKind.LiveAllocationBytes, Assert.Throws<ImageResourceLimitException>(() => image.Rotate(20, options, Ct)).Kind);
+            snapshot.AssertUnchanged(image);
+
+            using var canceled = new CancellationTokenSource();
+            canceled.Cancel();
+            Assert.Throws<OperationCanceledException>(() => image.Rotate(20, options, canceled.Token));
+            snapshot.AssertUnchanged(image);
+        }
+
+        using (var image = BuildAnimated(new ImageConfiguration { Limits = new ImageResourceLimits { MaxLiveAllocationBytes = peak } }))
+        {
+            var frames = ((IEnumerable<ImageFrame<Rgba32>>)image.Frames).ToArray();
+            var liveStorages = image.Owner.LiveStorageCount;
+            image.Rotate(20, options, Ct);
+            Assert.Equal(frames, ((IEnumerable<ImageFrame<Rgba32>>)image.Frames).ToArray());
+            Assert.Equal(image.Size, image.PosterFrame!.Size);
+
+            // The scratch and the original storages are released
+            Assert.Equal(liveStorages, image.Owner.LiveStorageCount);
+            Assert.Equal(image.Owner.Scope.GetDiagnostics().LiveAllocations, liveStorages);
+        }
+
+        static Image<Rgba32> BuildAnimated(ImageConfiguration configuration)
+        {
+            var image = Build<Rgba32>(configuration, scope: null, layout: null, Source4X3, Offset(Source4X3, 20));
+            image.SetPosterFrame(image.Frames[1]);
+            return image;
+        }
+    }
+
+    [Fact]
+    public void ATransformationRejectsWhatItCannotDo()
+    {
+        using var image = Build<Rgba32>(Source3X2);
+        Assert.Throws<ArgumentException>(() => image.Rotate(double.NaN, cancellationToken: Ct));
+        Assert.Throws<ArgumentException>(() => image.Transform(new AffineTransform(1, 2, 2, 4, 0, 0), cancellationToken: Ct));
+        Assert.Throws<ArgumentException>(() => image.Transform(new ProjectiveTransform(1, 0, 0, 0, 0, 0, 0, 0, 1), cancellationToken: Ct));
+
+        // W = x - 1: the points left of x = 1 are behind the horizon. An expanded canvas cannot hold them; on a kept canvas,
+        // the center of pixel (0, 0) comes from x = -1, which has no image, and that of (2, 0) from x = 5/3, in pixel 1
+        var horizon = new ProjectiveTransform(1, 0, 1, 0, 1, 0, 0, 0, -1);
+        Assert.Throws<ArgumentException>(() => image.Transform(horizon, cancellationToken: Ct));
+        Assert.Equal(new Size(3, 2), image.Size);
+        image.Transform(horizon, new TransformOptions { CanvasMode = TransformCanvasMode.Keep, Filter = ResamplingFilter.NearestNeighbor }, Ct);
+        Assert.Equal(default, image.Frames[0][0, 0]);
+        Assert.Equal(Pixel<Rgba32>(2), image.Frames[0][2, 0]);
+
+        Assert.Throws<ArgumentNullException>(() => ImageProcessingExtensions.Rotate(null!, 10.0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new TransformOptions { Filter = (ResamplingFilter)9 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new TransformOptions { CanvasMode = (TransformCanvasMode)3 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new TransformOptions { WorkingSpace = (ResizeWorkingSpace)2 });
+    }
+
+    [Fact]
+    public void ATransformationKeepsThePixelAspectRatioAndReconcilesTheExifDimensions()
+    {
+        using var image = Build<Rgba32>(Source4X3);
+        image.Metadata.PixelAspectRatio = new PixelAspectRatio(1, 2);
+        image.Metadata.ExifProfile = CreateExif(orientation: 1, width: 4, height: 3);
+        image.Rotate(30, cancellationToken: Ct);
+        Assert.Equal(new PixelAspectRatio(1, 2), image.Metadata.PixelAspectRatio);
+        var exif = image.Metadata.ExifProfile!.Data.Span;
+        Assert.Equal(((uint)image.Width, (uint)image.Height), ReadIfd0Dimensions(exif));
+        Assert.False(ExifTiff.HasThumbnail(exif));
+
+        // A quarter turn swaps the axes of the pixels, as RotateMode does
+        image.Rotate(-90, cancellationToken: Ct);
+        Assert.Equal(new PixelAspectRatio(2, 1), image.Metadata.PixelAspectRatio);
+    }
+
+    [Fact]
+    public void FloatingPointSamplesAreTransformedWithoutClamping()
+    {
+        // Highlights above 1 and negative values survive the filter; a sample that is not a number spreads to the pixels
+        // whose kernels read it only
+        using var image = new Image<RgbaFloat>(16, 16, new RgbaFloat(4, -0.5f, 0.25f, 1));
+        image.Frames[0][0, 0] = new RgbaFloat(float.NaN, 0, 0, 1);
+        image.Rotate(10, new TransformOptions { Filter = ResamplingFilter.Bilinear }, Ct);
+        var center = image.Frames[0][image.Width / 2, image.Height / 2];
+        Assert.Equal(new RgbaFloat(4, -0.5f, 0.25f, 1), center);
+        var nan = 0;
+        for (var y = 0; y < image.Height; y++)
+        {
+            for (var x = 0; x < image.Width; x++)
+            {
+                if (float.IsNaN(image.Frames[0][x, y].R))
+                {
+                    nan++;
+                }
+            }
+        }
+
+        Assert.InRange(nan, 1, 4);
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
     // Crop
     // -----------------------------------------------------------------------------------------------------------------
 
@@ -472,6 +847,30 @@ public sealed class ProcessingTests
 
         Assert.Equal(new Point(expectedX, expectedY), image.Frames[0].Metadata.Hotspot);
         Assert.Equal(Pixel<Rgba32>(3), image.Frames[0][expectedX, expectedY]); // it still designates C
+    }
+
+    [Fact]
+    public void ATransformationMovesTheHotspotWithItsPixelAndNeverRemovesItSilently()
+    {
+        // 20 x 10 turned by 90.5 degrees: the canvas is 11 x 21 (10.17 x 20.09 rounded up). The center of pixel (2, 4) is
+        // (-7.5, -0.5) from the center of the image: it turns to (0.565, -7.495), at (6.065, 3.005) on the canvas
+        using (var image = new Image<Rgba32>(20, 10))
+        {
+            image.Frames[0].Metadata.Hotspot = new Point(2, 4);
+            image.Rotate(90.5, cancellationToken: Ct);
+            Assert.Equal(new Size(11, 21), image.Size);
+            Assert.Equal(new Point(6, 3), image.Frames[0].Metadata.Hotspot);
+        }
+
+        // A translation on a kept canvas that moves the pixel off the canvas fails, and changes nothing
+        using var removed = Build<Rgba32>(Source3X2, Offset(Source3X2, 10));
+        removed.Frames[1].Metadata.Hotspot = new Point(2, 0);
+        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => removed.Transform(AffineTransform.CreateTranslation(1, 0), new TransformOptions { CanvasMode = TransformCanvasMode.Keep }, Ct));
+        Assert.Equal("Cursor hotspot outside the kept region", exception.Feature);
+        Assert.Contains("frame 1", exception.Message, StringComparison.Ordinal);
+        AssertFrame(removed.Frames[1], Source3X2, idOffset: 10);
+        removed.Transform(AffineTransform.CreateTranslation(-1, 0), new TransformOptions { CanvasMode = TransformCanvasMode.Keep }, Ct);
+        Assert.Equal(new Point(1, 0), removed.Frames[1].Metadata.Hotspot);
     }
 
     [Fact]
@@ -1844,6 +2243,38 @@ public sealed class ProcessingTests
     /// zeros, infinities, subnormals, the largest values, alpha outside [0, 1] or not a number): each output pixel has the bits
     /// of the source pixel the permutation designates.
     /// </summary>
+    private static void CheckQuarterTurns<TPixel>()
+        where TPixel : unmanaged
+    {
+        (double Degrees, int[][] Expected)[] cases = [(90, Rotated90), (-270, Rotated90), (450, Rotated90), (180, Rotated180), (-180, Rotated180), (270, Rotated270), (-90, Rotated270)];
+        foreach (var (degrees, expected) in cases)
+        {
+            foreach (var filter in Enum.GetValues<ResamplingFilter>())
+            {
+                // Two frames and a poster, and the same result as RotateMode, hotspot included
+                using var image = Build<TPixel>(Source3X2, Offset(Source3X2, 10));
+                image.SetPosterFrame(image.Frames[1]);
+                image.Frames[0].Metadata.Hotspot = new Point(2, 0);
+                using var reference = Build<TPixel>(Source3X2);
+                reference.Frames[0].Metadata.Hotspot = new Point(2, 0);
+                reference.Rotate(ReferenceRotateMode(degrees), Ct);
+
+                image.Rotate(degrees, new TransformOptions { Filter = filter }, Ct);
+                AssertFrame(image.Frames[0], expected);
+                AssertFrame(image.Frames[1], expected, idOffset: 10);
+                AssertFrame(image.PosterFrame!, expected, idOffset: 10);
+                Assert.Equal(reference.Frames[0].Metadata.Hotspot, image.Frames[0].Metadata.Hotspot);
+            }
+        }
+
+        static RotateMode ReferenceRotateMode(double degrees) => ((((int)degrees % 360) + 360) % 360) switch
+        {
+            90 => RotateMode.Rotate90,
+            180 => RotateMode.Rotate180,
+            _ => RotateMode.Rotate270,
+        };
+    }
+
     private static void CheckFloatingPointGeometry<TPixel>(TPixel[] pixels)
         where TPixel : unmanaged
     {
@@ -1852,6 +2283,8 @@ public sealed class ProcessingTests
             (static image => image.Rotate(RotateMode.Rotate90, Ct), Rotated90),
             (static image => image.Rotate(RotateMode.Rotate180, Ct), Rotated180),
             (static image => image.Rotate(RotateMode.Rotate270, Ct), Rotated270),
+            (static image => image.Rotate(90.0, cancellationToken: Ct), Rotated90),
+            (static image => image.Transform(new AffineTransform(1, 0, 0, -1, 0, 0), cancellationToken: Ct), FlippedVertically),
             (static image => image.Flip(FlipMode.Horizontal, Ct), FlippedHorizontally),
             (static image => image.Flip(FlipMode.Vertical, Ct), FlippedVertically),
             (static image => image.Crop(new Rectangle(1, 0, 2, 2), Ct), [[2, 3], [5, 6]]),
@@ -2031,6 +2464,8 @@ public sealed class ProcessingTests
         image.Metadata.Orientation = ExifOrientation.RightBottom;
         return image;
     }
+
+    private static Rgba32[] Row(Image<Rgba32> image, int y) => [.. Enumerable.Range(0, image.Width).Select(x => image.Frames[0][x, y])];
 
     private static int[][] Offset(int[][] ids, int offset) => [.. ids.Select(row => row.Select(id => id + offset).ToArray())];
 

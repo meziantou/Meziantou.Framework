@@ -124,6 +124,9 @@ public sealed class ImageFrame<TPixel> : ImageFrame
     internal override void ResizePixels(scoped in PixelLease source, scoped in PixelLease destination, ResizePlan plan, CancellationToken cancellationToken)
         => Resampler.Resize<TPixel>(source, destination, plan, cancellationToken);
 
+    internal override void WarpPixels(scoped in PixelLease source, scoped in PixelLease destination, WarpPlan plan, CancellationToken cancellationToken)
+        => Warper.Warp<TPixel>(source, destination, plan, cancellationToken);
+
     internal override void ConvolvePixels(scoped in PixelLease lease, ConvolutionPlan plan, CancellationToken cancellationToken)
         => Convolver.Convolve<TPixel>(lease, plan, cancellationToken);
 

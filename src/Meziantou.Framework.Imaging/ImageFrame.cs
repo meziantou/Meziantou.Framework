@@ -214,6 +214,9 @@ public abstract class ImageFrame
     /// <summary>Resamples the leased source to the leased destination with the scalar reference resampler (resize transactions).</summary>
     internal abstract void ResizePixels(scoped in PixelLease source, scoped in PixelLease destination, ResizePlan plan, CancellationToken cancellationToken);
 
+    /// <summary>Writes the leased source, transformed by the geometry of <paramref name="plan"/>, to the leased destination (transformation transactions).</summary>
+    internal abstract void WarpPixels(scoped in PixelLease source, scoped in PixelLease destination, WarpPlan plan, CancellationToken cancellationToken);
+
     /// <summary>Convolves the leased pixels in place with the kernel of the frame pixel type.</summary>
     internal abstract void ConvolvePixels(scoped in PixelLease lease, ConvolutionPlan plan, CancellationToken cancellationToken);
 

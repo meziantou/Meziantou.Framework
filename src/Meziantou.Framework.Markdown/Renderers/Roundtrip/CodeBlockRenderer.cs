@@ -40,12 +40,8 @@ public class CodeBlockRenderer : RoundtripObjectRenderer<CodeBlock>
             {
                 renderer.Write(fencedCodeBlock.UnescapedArguments);
             }
-            if (!fencedCodeBlock.TriviaAfterArguments.IsEmpty)
-            {
-                renderer.Write(fencedCodeBlock.TriviaAfterArguments);
-            }
-
-            // The HTML attributes of the block are not written, as they cannot be rendered as Markdown
+            // With the changed attributes of the block
+            renderer.WriteTriviaAfterArguments(obj, fencedCodeBlock);
             renderer.WriteLine(fencedCodeBlock.InfoNewLine);
 
             renderer.WriteLeafRawLines(obj);

@@ -234,16 +234,28 @@ attached to the first node that can hold them. Blank lines are stored in `Block.
 Other properties are named `Trivia*` (for example `TriviaBefore`, `TriviaAfter`) on the blocks and inlines that need
 them. These properties are only populated when trivia tracking is enabled.
 
-With [`UseGenericAttributes`](#extensions), the attributes of a heading (`GetAttributes()`) that are changed
-after parsing are written as `{#id .class name=value}`, in place of the first attributes of the source. Its other
-attributes are written as empty attributes, `{}`, so that the lines stay the same. A heading without attributes gets them
-at the end of its text. Attributes that the parsing added without them being in the source, such as an identifier
-generated from the heading text, are not written while they are unchanged. The other blocks and the inlines do not write
-their changed attributes.
+With [`UseGenericAttributes`](#extensions), the attributes (`GetAttributes()`) of the blocks and the inlines that are
+changed after parsing are written as `{#id .class name=value}`. They replace the attributes of the source attached to the
+same object; when there are several, the others are written as empty attributes, `{}`, so that the lines stay the same.
+An object without attributes in the source gets them where the parser reads them back:
 
-The renderer throws an `InvalidOperationException` when the parser would not read the attributes back: a value that
-cannot be written (an identifier with a space, a value with a line break), or a heading text that would read them, such
-as an unfinished `{name=` or an unclosed code span, or whose last line would then start another block, such as `*`.
+| Object | Where the attributes are written |
+|---|---|
+| Paragraph, heading | At the end of the text |
+| Fenced code block, math block, custom container | At the end of the opening fence line |
+| Quote, list, thematic break, HTML block | On a line before the block, for a block of the document that follows a blank line |
+| Link, image, autolink, code span, raw HTML | Right after the inline |
+
+Attributes that the parsing added without them being in the source, such as an identifier generated from the heading text
+or the class of the language of a fenced code block, are not written while they are unchanged.
+
+The renderer throws an `InvalidOperationException` when the parser would not read the attributes back. For example, when
+a value cannot be written (an identifier with a space, a value with a line break), when the object has no syntax for
+attributes (a list item, a table, an indented code block, a literal), when the text before them would read them (an
+unfinished `{name=`, an unclosed code span, a link found by the autolinks extension), when the last line of a paragraph
+would then start another block (such as `*` or `|`), or when a new attribute line would join the paragraph before the
+block. Emphasis keeps the attributes of the source, but cannot get new ones: they would change which delimiters are
+emphasis.
 
 ## Differences from Markdig
 

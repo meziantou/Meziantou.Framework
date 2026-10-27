@@ -385,6 +385,7 @@ public class EmphasisInlineParser : InlineParser, IPostInlineProcessor
                         if (attributes != null)
                         {
                             emphasis.SetAttributes(attributes);
+                            Extensions.GenericAttributes.AttributesTrivia.Move(closeDelimiter, emphasis);
                         }
 
                         // Embrace all delimiters

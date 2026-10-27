@@ -14,7 +14,7 @@ internal sealed class GenericAttributesInline : ContainerInline
     public StringSlice SourceText { get; set; }
 
     /// <summary>
-    /// Gets or sets the heading the attributes are attached to, or <see langword="null"/> when they are attached to another object.
+    /// Gets or sets the object the attributes are attached to.
     /// </summary>
-    public HeadingBlock? Heading { get; set; }
+    public MarkdownObject? Target { get; set; }
 }

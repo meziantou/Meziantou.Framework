@@ -55,8 +55,14 @@ public class GenericAttributesParser : InlineParser
             var inline = processor.Inline;
 
             // If the current object to attach is either a literal or delimiter
-            // try to find a suitable parent, otherwise attach the html attributes to the block
-            if (inline is LiteralInline)
+            // try to find a suitable parent, otherwise attach the html attributes to the block. With trivia, the whitespace that
+            // starts a line is a literal, which the text has no literal for without trivia: the attributes are attached to the line
+            // break before it, as without trivia.
+            if (processor.TrackTrivia && inline is LiteralInline { PreviousSibling: LineBreakInline lineBreak } whitespace && IsWhitespaceOnly(whitespace.Content))
+            {
+                inline = lineBreak;
+            }
+            else if (inline is LiteralInline)
             {
                 inline = processor.FindNonDelimiterParent(inline);
             }
@@ -83,10 +89,7 @@ public class GenericAttributesParser : InlineParser
                         // The attributes before these ones are in the paragraph too
                         var textStart = paragraph.Inline!.FirstChild is GenericAttributesInline first ? first.SourceText.Start : startPosition;
                         var lineBefore = MoveParagraphToLinesBefore(paragraph, new StringSlice(slice.Text, textStart, slice.End), (Block)objectToAttach);
-                        if (objectToAttach is HeadingBlock heading)
-                        {
-                            HeadingAttributesTrivia.GetOrCreate(heading).AddLineBefore(attributes, lineBefore);
-                        }
+                        AttributesTrivia.GetOrCreate(objectToAttach).AddLineBefore(attributes, lineBefore);
                     }
                 }
             }
@@ -96,18 +99,15 @@ public class GenericAttributesParser : InlineParser
                 // The attributes are written back by the roundtrip renderer. They are not an inline that other attributes
                 // can be attached to, so the current inline stays the same.
                 var previousInline = processor.Inline;
-                var heading = objectToAttach as HeadingBlock;
-                processor.Emit(new GenericAttributesInline
+                var attributesInline = new GenericAttributesInline
                 {
                     SourceText = new StringSlice(slice.Text, startPosition, slice.Start - 1),
                     Span = new SourceSpan(processor.GetSourcePosition(startPosition), processor.GetSourcePosition(slice.Start - 1)),
                     IsClosed = true,
-                    Heading = heading,
-                });
-                if (heading is not null)
-                {
-                    HeadingAttributesTrivia.GetOrCreate(heading).AddInlineAttributes(attributes);
-                }
+                    Target = objectToAttach,
+                };
+                processor.Emit(attributesInline);
+                AttributesTrivia.GetOrCreate(objectToAttach).AddInline(attributes, attributesInline);
                 processor.Inline = previousInline;
             }
 
@@ -127,8 +127,9 @@ public class GenericAttributesParser : InlineParser
                 var lastInline = processor.Inline;
                 while (lastInline is LiteralInline literal)
                 {
+                    // The line breaks between the lines of the text stay
                     var end = literal.Content.End;
-                    while (end >= literal.Content.Start && IsWhitespaceAtEndOfText(literal.Content.Text[end]))
+                    while (end >= literal.Content.Start && literal.Content.Text[end] is ' ' or '\t' or '\v' or '\f')
                     {
                         end--;
                     }
@@ -588,6 +589,8 @@ public class GenericAttributesParser : InlineParser
     // The whitespace that a paragraph or a heading does not end with: a no-break space, or another Unicode space, is part of its
     // content
     private static bool IsWhitespaceAtEndOfText(char c) => c is ' ' or '\t' or '\n' or '\v' or '\f' or '\r';
+
+    private static bool IsWhitespaceOnly(StringSlice slice) => EndsText(slice);
 
     private static bool EndsText(StringSlice slice)
     {

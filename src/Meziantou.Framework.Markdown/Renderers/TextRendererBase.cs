@@ -279,26 +279,40 @@ public abstract class TextRendererBase<T> : TextRendererBase where T : TextRende
     // The number of lines of the last indent specific to each line that are not written yet
     internal int RemainingIndentLines => _indents.Count == 0 ? 0 : _indents[^1].RemainingLines;
 
+    /// <summary>
+    /// Gets or sets the callbacks called before and after the indent of the containers is written at the start of a line.
+    /// </summary>
+    internal (Action Before, Action After)? IndentCallbacks { get; set; }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private protected void WriteIndent()
     {
         if (PreviousWasLine)
         {
+            IndentCallbacks?.Before();
             WriteIndentCore();
+            IndentCallbacks?.After();
         }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void WriteIndent(char next)
     {
-        if (PreviousWasLine)
+        var isLineStart = PreviousWasLine;
+        if (isLineStart)
         {
+            IndentCallbacks?.Before();
             WriteIndentCore();
         }
 
         if (_spaceBeforeWhitespacePending)
         {
             WriteSpaceBeforeWhitespace(next);
+        }
+
+        if (isLineStart)
+        {
+            IndentCallbacks?.After();
         }
     }
 

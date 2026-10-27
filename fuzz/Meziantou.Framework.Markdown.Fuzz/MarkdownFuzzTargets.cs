@@ -23,8 +23,8 @@ namespace Meziantou.Framework.Markdown.Fuzz;
 /// too deeply. The syntax tree must have spans inside the text, the HTML must not depend on the thresholds above which the
 /// inline processor tracks its open containers (the tests lower them to use that path on small documents), raw HTML
 /// disabled must produce well-formed tags with the attributes the renderers write, and a document parsed with trivia must
-/// be written back exactly as it was parsed, and the attributes of its headings changed after the parsing must be read back from
-/// the Markdown it is written to. The normalized document must be normalized to itself and rendered as the
+/// be written back exactly as it was parsed, and the attributes of its blocks and inlines changed after the parsing must be read back
+/// from the Markdown it is written to. The normalized document must be normalized to itself and rendered as the
 /// original one, and the heading identifiers must only contain the characters they allow.
 /// </summary>
 public static class MarkdownFuzzTargets
@@ -162,12 +162,12 @@ public static class MarkdownFuzzTargets
     }
 
     // An input is the extensions and the flags of the other targets, the number of edits, three bytes for each edit (the index of
-    // the heading, the kind of edit and its value), then the Markdown. The generic attributes are always enabled.
+    // the block or the inline, the kind of edit and its value), then the Markdown. The generic attributes are always enabled.
     private static void RoundtripEdit(ReadOnlySpan<byte> data)
     {
         var extensions = FuzzInput.ReadByte(ref data) % Extensions.Length;
         var flags = (byte)(FuzzInput.ReadByte(ref data) & (DisableHtmlFlag | PreciseSourceLocationFlag));
-        var edits = new (byte Heading, byte Kind, byte Value)[1 + (FuzzInput.ReadByte(ref data) % 4)];
+        var edits = new (byte Object, byte Kind, byte Value)[1 + (FuzzInput.ReadByte(ref data) % 4)];
         for (var i = 0; i < edits.Length; i++)
         {
             edits[i] = (FuzzInput.ReadByte(ref data), FuzzInput.ReadByte(ref data), FuzzInput.ReadByte(ref data));
@@ -179,29 +179,33 @@ public static class MarkdownFuzzTargets
         if (!TryParse(markdown, triviaPipeline, out var triviaDocument) || !TryParse(markdown, pipeline, out var expectedDocument))
             return;
 
-        // The edits are applied to the document parsed with trivia, which is written back, and to the one parsed without trivia,
-        // whose HTML the written Markdown must have
-        var triviaHeadings = triviaDocument.Descendants<HeadingBlock>().ToList();
-        var expectedHeadings = expectedDocument.Descendants<HeadingBlock>().ToList();
-        // Another property than the one of this target, which the trivia does not always keep
-        if (expectedHeadings.Count != triviaHeadings.Count || expectedHeadings.Count == 0)
+        // A document that is not written back as it was parsed fails markdown-roundtrip, and the trivia can change the blocks and
+        // the inlines, which the edits are applied to in both documents
+        var triviaObjects = GetEditableObjects(triviaDocument);
+        var expectedObjects = GetEditableObjects(expectedDocument);
+        if (triviaObjects.Count == 0 || !triviaObjects.Select(obj => obj.GetType()).SequenceEqual(expectedObjects.Select(obj => obj.GetType())) || WriteRoundtrip(triviaDocument, triviaPipeline) != markdown)
             return;
 
-        // A grid table is written as it is in the source, so the edits of the headings of its cells are not written. A document
-        // that is not written back as it was parsed fails markdown-roundtrip.
-        if (triviaHeadings.Exists(heading => IsInTable(heading)) || WriteRoundtrip(triviaDocument, triviaPipeline) != markdown)
-            return;
+        // The trivia can change the objects that the attributes of the text are attached to. A grid table is written as it is in
+        // the source.
+        for (var i = 0; i < triviaObjects.Count; i++)
+        {
+            if (triviaObjects[i] is Table { SourceLines: not null } || !HaveSameAttributes(triviaObjects[i].TryGetAttributes(), expectedObjects[i].TryGetAttributes()))
+                return;
+        }
 
+        // The attributes before the edits, which the parsing adds again when they are not written in the text
+        var parsedAttributes = expectedObjects.Select(obj => CopyAttributes(obj.TryGetAttributes())).ToList();
         var hasAutoIdentifiers = pipeline.Extensions.Any(extension => extension is AutoIdentifierExtension);
         var editedIdentifiers = new HashSet<int>();
-        foreach (var (heading, kind, value) in edits)
+        foreach (var (index, kind, value) in edits)
         {
-            var index = heading % expectedHeadings.Count;
-            var editsIdentifier = ApplyEdit(expectedHeadings[index].GetAttributes(), kind, value, hasAutoIdentifiers);
-            _ = ApplyEdit(triviaHeadings[index].GetAttributes(), kind, value, hasAutoIdentifiers);
-            if (editsIdentifier)
+            var i = index % triviaObjects.Count;
+            var keepIdentifier = hasAutoIdentifiers && triviaObjects[i] is HeadingBlock;
+            _ = ApplyEdit(triviaObjects[i].GetAttributes(), kind, value, keepIdentifier);
+            if (ApplyEdit(expectedObjects[i].GetAttributes(), kind, value, keepIdentifier))
             {
-                editedIdentifiers.Add(index);
+                editedIdentifiers.Add(i);
             }
         }
 
@@ -210,49 +214,110 @@ public static class MarkdownFuzzTargets
         {
             edited = WriteRoundtrip(triviaDocument, triviaPipeline);
         }
-        catch (InvalidOperationException ex) when (ex.Message.StartsWith("The attributes of the heading cannot be written after its text", StringComparison.Ordinal))
+        catch (InvalidOperationException ex) when (ex.Message.StartsWith("The attributes of the ", StringComparison.Ordinal))
         {
-            // The renderer documents the texts that it cannot write attributes after
+            // The renderer documents the attributes that it cannot write
             return;
         }
 
         FuzzAssert.True(TryParse(edited, pipeline, out var actualDocument), $"The edited document is nested too deeply: {FuzzAssert.Format(edited)}");
-        var actualHeadings = actualDocument.Descendants<HeadingBlock>().ToList();
-        FuzzAssert.Equal(expectedHeadings.Count, actualHeadings.Count, $"The edited document has a different number of headings: {FuzzAssert.Format(edited)}");
+        var actualObjects = GetEditableObjects(actualDocument);
+        FuzzAssert.Equal(expectedObjects.Count, actualObjects.Count, $"The edited document has a different number of blocks and inlines: {FuzzAssert.Format(edited)}");
 
-        if (hasAutoIdentifiers)
-        {
-            // An identifier generated from the content depends on the identifiers of the other headings, so only the identifiers
-            // that were edited are compared
-            for (var i = 0; i < expectedHeadings.Count; i++)
-            {
-                if (!editedIdentifiers.Contains(i))
-                {
-                    expectedHeadings[i].GetAttributes().Id = null;
-                    actualHeadings[i].GetAttributes().Id = null;
-                }
-            }
-        }
-
-        // The attributes that the extensions add after the parsing, such as the direction of the text, can come before or after the
-        // edited ones. The direction is added again to a heading whose edits removed it.
+        // The attributes that the parsing adds by itself are added again, even when the edits removed them. An identifier generated
+        // from the content depends on the identifiers of the other headings, and the direction of the text is computed again.
         var hasGlobalization = pipeline.Extensions.Any(extension => extension is GlobalizationExtension);
-        foreach (var heading in expectedHeadings.Concat(actualHeadings))
+        for (var i = 0; i < expectedObjects.Count; i++)
         {
-            var attributes = heading.GetAttributes();
-            attributes.Classes?.Sort(StringComparer.Ordinal);
-            attributes.Properties?.Sort((x, y) => StringComparer.Ordinal.Compare(x.Key, y.Key));
-            if (hasGlobalization)
-            {
-                attributes.Properties?.RemoveAll(property => property.Key is "dir");
-            }
+            var expected = expectedObjects[i];
+            var actual = actualObjects[i];
+            FuzzAssert.Equal(expected.GetType(), actual.GetType(), $"The edited document has a {actual.GetType().Name} in place of a {expected.GetType().Name}: {FuzzAssert.Format(edited)}");
+            var compareIdentifier = !(hasAutoIdentifiers && expected is HeadingBlock) || editedIdentifiers.Contains(i);
+            var implicitAttributes = GetAttributesAddedByParsing(parsedAttributes[i], AttributesTrivia.Get(triviaObjects[i])?.Source);
+            CompareAttributes(expected, actual, implicitAttributes, compareIdentifier, hasGlobalization, edited);
         }
 
-        FuzzAssert.Equal(RenderHtml(expectedDocument, pipeline), RenderHtml(actualDocument, pipeline), $"The edited attributes of the headings are not read back from the written document: {FuzzAssert.Format(edited)}");
+        // The rest of the document is the same
+        foreach (var obj in expectedDocument.Descendants().Concat(actualDocument.Descendants()))
+        {
+            obj.SetAttributes(new HtmlAttributes());
+        }
+
+        FuzzAssert.Equal(RenderHtml(expectedDocument, pipeline), RenderHtml(actualDocument, pipeline), $"The edited document has another content: {FuzzAssert.Format(edited)}");
+    }
+
+    // The blocks and the inlines whose attributes the edits change, which the written document has in the same order. The text of
+    // the literals depends on the attributes written in it.
+    private static List<MarkdownObject> GetEditableObjects(MarkdownDocument document)
+    {
+        return document.Descendants().Where(obj => obj is not (GenericAttributesInline or LiteralInline or LineBreakInline or DelimiterInline or ContainerInline { Parent: null, ParentBlock: not null })).ToList();
+    }
+
+    private static bool HaveSameAttributes(HtmlAttributes? left, HtmlAttributes? right)
+    {
+        return left?.Id == right?.Id &&
+            (left?.Classes ?? []).SequenceEqual(right?.Classes ?? [], StringComparer.Ordinal) &&
+            (left?.Properties ?? []).SequenceEqual(right?.Properties ?? []);
+    }
+
+    private static HtmlAttributes CopyAttributes(HtmlAttributes? attributes)
+    {
+        return new HtmlAttributes
+        {
+            Id = attributes?.Id,
+            Classes = attributes?.Classes is { } classes ? [.. classes] : null,
+            Properties = attributes?.Properties is { } properties ? [.. properties] : null,
+        };
+    }
+
+    // The attributes that the parsing added without them being written in the text
+    private static HtmlAttributes GetAttributesAddedByParsing(HtmlAttributes parsed, HtmlAttributes? source)
+    {
+        return new HtmlAttributes
+        {
+            Id = parsed.Id is { } id && id != source?.Id ? id : null,
+            Classes = parsed.Classes?.Where(cssClass => source?.Classes?.Contains(cssClass) is not true).ToList(),
+            Properties = parsed.Properties?.Where(property => source?.Properties?.Contains(property) is not true).ToList(),
+        };
+    }
+
+    private static void CompareAttributes(MarkdownObject expected, MarkdownObject actual, HtmlAttributes implicitAttributes, bool compareIdentifier, bool hasGlobalization, string edited)
+    {
+        var expectedAttributes = expected.TryGetAttributes() ?? new HtmlAttributes();
+        var actualAttributes = actual.TryGetAttributes() ?? new HtmlAttributes();
+        var description = $"{expected.GetType().Name} {FuzzAssert.Format(Describe(expected))}";
+        if (compareIdentifier && expectedAttributes.Id != actualAttributes.Id && !(expectedAttributes.Id is null && actualAttributes.Id == implicitAttributes.Id))
+        {
+            FuzzAssert.Fail($"The identifier of the {description} is {FuzzAssert.Format(actualAttributes.Id)} instead of {FuzzAssert.Format(expectedAttributes.Id)}: {FuzzAssert.Format(edited)}");
+        }
+
+        var expectedClasses = expectedAttributes.Classes ?? [];
+        var actualClasses = actualAttributes.Classes ?? [];
+        foreach (var cssClass in expectedClasses.Except(actualClasses, StringComparer.Ordinal))
+        {
+            FuzzAssert.Fail($"The {description} does not have the class {FuzzAssert.Format(cssClass)}: {FuzzAssert.Format(edited)}");
+        }
+
+        foreach (var cssClass in actualClasses.Except(expectedClasses, StringComparer.Ordinal))
+        {
+            FuzzAssert.True(implicitAttributes.Classes?.Contains(cssClass) is true, $"The {description} has the class {FuzzAssert.Format(cssClass)}: {FuzzAssert.Format(edited)}");
+        }
+
+        var expectedProperties = (expectedAttributes.Properties ?? []).Where(property => !(hasGlobalization && property.Key is "dir")).ToList();
+        var actualProperties = (actualAttributes.Properties ?? []).Where(property => !(hasGlobalization && property.Key is "dir")).ToList();
+        foreach (var property in expectedProperties.Except(actualProperties))
+        {
+            FuzzAssert.Fail($"The {description} does not have the attribute {FuzzAssert.Format(property.Key)}={FuzzAssert.Format(property.Value)}: {FuzzAssert.Format(edited)}");
+        }
+
+        foreach (var property in actualProperties.Except(expectedProperties))
+        {
+            FuzzAssert.True(implicitAttributes.Properties?.Contains(property) is true, $"The {description} has the attribute {FuzzAssert.Format(property.Key)}={FuzzAssert.Format(property.Value)}: {FuzzAssert.Format(edited)}");
+        }
     }
 
     // Returns whether the edit sets the identifier
-    private static bool ApplyEdit(HtmlAttributes attributes, byte kind, byte value, bool hasAutoIdentifiers)
+    private static bool ApplyEdit(HtmlAttributes attributes, byte kind, byte value, bool keepIdentifier)
     {
         switch (kind % EditKindCount)
         {
@@ -260,8 +325,8 @@ public static class MarkdownFuzzTargets
                 attributes.Id = FuzzInput.Pick(EditIdentifiers, value);
                 return true;
 
-            // With the identifiers generated from the content, a heading without an identifier gets one again when it is parsed
-            case 1 when !hasAutoIdentifiers:
+            // A heading without an identifier gets one generated from its content again when it is parsed
+            case 1 when !keepIdentifier:
                 attributes.Id = null;
                 return true;
 
@@ -288,7 +353,7 @@ public static class MarkdownFuzzTargets
             default:
                 attributes.Classes = null;
                 attributes.Properties = null;
-                if (hasAutoIdentifiers)
+                if (keepIdentifier)
                     return false;
 
                 attributes.Id = null;
@@ -303,17 +368,6 @@ public static class MarkdownFuzzTargets
         pipeline.Setup(renderer);
         renderer.Write(document);
         return writer.ToString();
-    }
-
-    private static bool IsInTable(Block block)
-    {
-        for (var parent = block.Parent; parent is not null; parent = parent.Parent)
-        {
-            if (parent is Table)
-                return true;
-        }
-
-        return false;
     }
 
     private static string RenderHtml(MarkdownDocument document, MarkdownPipeline pipeline)
@@ -849,18 +903,14 @@ public static class MarkdownFuzzTargets
         }
     }
 
-    // The seeds of the other targets that can have a heading, with one edit
+    // The seeds of the other targets, with one edit
     private static IEnumerable<FuzzSeed> GetEditSeeds()
     {
         var i = 0;
         foreach (var seed in GetSeeds())
         {
             var data = seed.Data.Span;
-            var text = FuzzText.Decode(data[2..]);
-            if (!text.AsSpan().ContainsAny("#=-"))
-                continue;
-
-            yield return new FuzzSeed(seed.Name, (byte[])[.. data[..2], 0, 0, (byte)(i % EditKindCount), (byte)(i / EditKindCount), .. data[2..]]);
+            yield return new FuzzSeed(seed.Name, (byte[])[.. data[..2], 0, (byte)(i / 7), (byte)(i % EditKindCount), (byte)(i / EditKindCount), .. data[2..]]);
             i++;
         }
     }

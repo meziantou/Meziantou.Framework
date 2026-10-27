@@ -9,6 +9,7 @@ using Meziantou.Framework.Markdown.Helpers;
 using Meziantou.Framework.Markdown.Renderers.Html;
 using Meziantou.Framework.Markdown.Renderers.Roundtrip;
 using Meziantou.Framework.Markdown.Syntax;
+using Meziantou.Framework.Markdown.Syntax.Inlines;
 
 namespace Meziantou.Framework.Markdown.Tests;
 
@@ -418,7 +419,6 @@ public class TestHtmlAttributes
     [InlineData("{#a}\n# H\n", "{}\n# H\n")]
     [InlineData("Setext {#a}\n===\n", "Setext {}\n===\n")]
     [InlineData("{#a}\n===\n", "{}\n===\n")]
-    [InlineData("[foo]: /url{#a .b}\n===\n", "[foo]: /url{ .b}\n===\n")]
     [InlineData("> {#a}\n> # H\n", "> {}\n> # H\n")]
     public void GenericAttributesRoundtripRemovedHeadingAttributes(string markdown, string expected)
     {
@@ -473,6 +473,7 @@ public class TestHtmlAttributes
     [InlineData("[foo\n]:\n===\n")]
     [InlineData("a\n| b\n---\n")]
     [InlineData("a\n: b\n---\n")]
+    [InlineData("[foo]: /url{#a .b}\n===\n")]
     [InlineData("a `b\n---\n", "`")]
     [InlineData("a <b c=\"\n---\n", "\">")]
     [InlineData("# a{ `b\n", "`")]
@@ -485,7 +486,7 @@ public class TestHtmlAttributes
             attributes.Id = "x";
             attributes.AddProperty("title", title);
         }));
-        Assert.StartsWith("The attributes of the heading cannot be written after its text", exception.Message);
+        Assert.StartsWith("The attributes of the HeadingBlock cannot be written: ", exception.Message);
     }
 
     [Theory]
@@ -500,7 +501,6 @@ public class TestHtmlAttributes
     [InlineData("# a {b='\n", "# a {b=' {#x}\n", "<h1 id=\"x\">a {b='</h1>\n")]
     [InlineData("## # #\n", "## # # {#x}\n", "<h2 id=\"x\">#</h2>\n")]
     [InlineData("# {a #\n", "# {a {#x} #\n", "<h1 id=\"x\">{a</h1>\n")]
-    [InlineData("[foo]: /url{#a .b}\n===\n", "[foo]: /url{#x .b}\n===\n", "<h1 id=\"x\" class=\"b\">[foo]: /url</h1>\n")]
     [InlineData("# a {b=\"\n", "# a {b=\" {#x}\n", "<h1 id=\"x\">a {b=&quot;</h1>\n")]
     [InlineData("a {b=\nc\n===\n", "a {b=\nc {#x}\n===\n", "<h1 id=\"x\">a {b=\nc</h1>\n")]
     public void GenericAttributesRoundtripWritesTheAttributesAfterATextWithBraces(string markdown, string expected, string expectedHtml)
@@ -544,6 +544,102 @@ public class TestHtmlAttributes
     {
         // Without the extension, the text "{#x}" would be part of the content of the heading
         Assert.Equal("# H\n", RoundtripWithChangedHeadingAttributes("# H\n", new MarkdownPipelineBuilder(), attributes => attributes.Id = "x"));
+    }
+
+    [Theory]
+    [InlineData("text\n", nameof(ParagraphBlock), "text {#x}\n", "<p id=\"x\">text</p>\n")]
+    [InlineData("text {.a}\n", nameof(ParagraphBlock), "text {#x .a}\n", "<p id=\"x\" class=\"a\">text</p>\n")]
+    [InlineData("a\nb\n", nameof(ParagraphBlock), "a\nb {#x}\n", "<p id=\"x\">a\nb</p>\n")]
+    [InlineData("> a\n> b\n", nameof(ParagraphBlock), "> a\n> b {#x}\n", "<blockquote>\n<p id=\"x\">a\nb</p>\n</blockquote>\n")]
+    [InlineData("```js\ncode\n```\n", nameof(FencedCodeBlock), "```js {#x}\ncode\n```\n", "<pre><code id=\"x\" class=\"language-js\">code\n</code></pre>\n")]
+    [InlineData("```js {.a}\ncode\n```\n", nameof(FencedCodeBlock), "```js {#x .a}\ncode\n```\n", "<pre><code id=\"x\" class=\"a language-js\">code\n</code></pre>\n")]
+    [InlineData("~~~\ncode\n~~~\n", nameof(FencedCodeBlock), "~~~ {#x}\ncode\n~~~\n", "<pre><code id=\"x\">code\n</code></pre>\n")]
+    [InlineData("> q\n", nameof(QuoteBlock), "{#x}\n> q\n", "<blockquote id=\"x\">\n<p>q</p>\n</blockquote>\n")]
+    [InlineData("p\n\n> q\n", nameof(QuoteBlock), "p\n\n{#x}\n> q\n", "<p>p</p>\n<blockquote id=\"x\">\n<p>q</p>\n</blockquote>\n")]
+    [InlineData("{.a}\n> q\n", nameof(QuoteBlock), "{#x .a}\n> q\n", "<blockquote id=\"x\" class=\"a\">\n<p>q</p>\n</blockquote>\n")]
+    [InlineData("- a\n- b\n", nameof(ListBlock), "{#x}\n- a\n- b\n", "<ul id=\"x\">\n<li>a</li>\n<li>b</li>\n</ul>\n")]
+    [InlineData("1. a\n", nameof(ListBlock), "{#x}\n1. a\n", "<ol id=\"x\">\n<li>a</li>\n</ol>\n")]
+    [InlineData("***\n", nameof(ThematicBreakBlock), "{#x}\n***\n", "<hr id=\"x\" />\n")]
+    [InlineData("a [l](u) b\n", nameof(LinkInline), "a [l](u){#x} b\n", "<p>a <a href=\"u\" id=\"x\">l</a> b</p>\n")]
+    [InlineData("a ![i](u) b\n", nameof(LinkInline), "a ![i](u){#x} b\n", "<p>a <img src=\"u\" id=\"x\" alt=\"i\" /> b</p>\n")]
+    [InlineData("a [l](u)\n", nameof(LinkInline), "a [l](u){#x}\n", "<p>a <a href=\"u\" id=\"x\">l</a></p>\n")]
+    [InlineData("a `c` b\n", nameof(CodeInline), "a `c`{#x} b\n", "<p>a <code id=\"x\">c</code> b</p>\n")]
+    [InlineData("a <http://x.y> b\n", nameof(AutolinkInline), "a <http://x.y>{#x} b\n", "<p>a <a href=\"http://x.y\" id=\"x\">http://x.y</a> b</p>\n")]
+    [InlineData("a [l](u){.c} b\n", nameof(LinkInline), "a [l](u){#x .c} b\n", "<p>a <a href=\"u\" id=\"x\" class=\"c\">l</a> b</p>\n")]
+    [InlineData("a *e*{.c} b\n", nameof(EmphasisInline), "a *e*{#x .c} b\n", "<p>a <em id=\"x\" class=\"c\">e</em> b</p>\n")]
+    [InlineData("Setext [l](u)\n===\n", nameof(LinkInline), "Setext [l](u){#x}\n===\n", "<h1>Setext <a href=\"u\" id=\"x\">l</a></h1>\n")]
+    public void GenericAttributesRoundtripChangedAttributes(string markdown, string type, string expected, string expectedHtml)
+    {
+        var result = RoundtripWithChangedAttributes(markdown, new MarkdownPipelineBuilder().UseGenericAttributes(), type, attributes => attributes.Id = "x");
+
+        Assert.Equal(expected, result);
+        Assert.Equal(expectedHtml, MarkdownConverter.ToHtml(result, new MarkdownPipelineBuilder().UseGenericAttributes().Build()));
+    }
+
+    [Fact]
+    public void GenericAttributesRoundtripChangedAttributesOfCustomContainer()
+    {
+        var result = RoundtripWithChangedAttributes(":::note\nx\n:::\n", new MarkdownPipelineBuilder().UseCustomContainers().UseGenericAttributes(), "CustomContainer", attributes => attributes.Id = "x");
+
+        Assert.Equal(":::note {#x}\nx\n:::\n", result);
+        Assert.Equal("<div id=\"x\" class=\"note\"><p>x</p>\n</div>\n", MarkdownConverter.ToHtml(result, new MarkdownPipelineBuilder().UseCustomContainers().UseGenericAttributes().Build()));
+    }
+
+    [Theory]
+    [InlineData("{.a}\n> q\n", nameof(QuoteBlock), "{}\n> q\n")]
+    [InlineData("{.a}\n{.b}\n> q\n", nameof(QuoteBlock), "{}\n{}\n> q\n")]
+    [InlineData("a [l](u){.c} b\n", nameof(LinkInline), "a [l](u){} b\n")]
+    [InlineData("a {.c}\n", nameof(ParagraphBlock), "a {}\n")]
+    [InlineData("```js {.a}\ncode\n```\n", nameof(FencedCodeBlock), "```js {}\ncode\n```\n")]
+    [InlineData("a {.c\n.b}\n", nameof(ParagraphBlock), "a {\n}\n")]
+    public void GenericAttributesRoundtripRemovedAttributes(string markdown, string type, string expected)
+    {
+        var result = RoundtripWithChangedAttributes(markdown, new MarkdownPipelineBuilder().UseGenericAttributes(), type, attributes =>
+        {
+            attributes.Classes = null;
+            attributes.Properties = null;
+        });
+
+        Assert.Equal(expected, result);
+    }
+
+    [Theory]
+    [InlineData("- a\n", nameof(ListItemBlock), "attributes")]
+    [InlineData("    code\n", nameof(CodeBlock), "attributes")]
+    [InlineData("| a |\n|---|\n| b |\n", "Table", "pipetables+attributes")]
+    [InlineData("| a |\n|---|\n| [l](u) |\n", nameof(LinkInline), "pipetables+attributes")]
+    [InlineData("p\n> q\n", nameof(QuoteBlock), "attributes")]
+    [InlineData("- a\n\n  > q\n", nameof(QuoteBlock), "attributes")]
+    [InlineData("---\n", nameof(ThematicBreakBlock), "attributes")]
+    [InlineData("<span>\n", nameof(HtmlBlock), "attributes")]
+    [InlineData("2. a\n", nameof(ListBlock), "attributes")]
+    [InlineData("-\n  a\n", nameof(ListBlock), "attributes")]
+    [InlineData("- | --\n", nameof(ListBlock), "pipetables+attributes")]
+    [InlineData("a [l](u)\nb\n", nameof(LinkInline), "attributes")]
+    [InlineData("# a [l](u)\n", nameof(LinkInline), "attributes")]
+    [InlineData("a *e* b\n", nameof(EmphasisInline), "attributes")]
+    [InlineData("a www.x.y b\n", nameof(LinkInline), "autolinks+attributes")]
+    [InlineData("a tel:1[l](u) b\n", nameof(LinkInline), "autolinks+attributes")]
+    [InlineData("a | b\n", nameof(ParagraphBlock), "attributes")]
+    [InlineData("a\n| b\n|---|\n", nameof(ParagraphBlock), "pipetables+attributes")]
+    [InlineData("::: {#a}\nx\n:::\n", "CustomContainer", "attributes+customcontainers")]
+    public void GenericAttributesRoundtripThrowsForAttributesThatCannotBeWritten(string markdown, string type, string extensions)
+    {
+        var exception = Assert.Throws<InvalidOperationException>(() => RoundtripWithChangedAttributes(markdown, new MarkdownPipelineBuilder().Configure(extensions), type, attributes => attributes.Id = "x"));
+        Assert.StartsWith("The attributes of the " + type + " cannot be written: ", exception.Message);
+    }
+
+    private static string RoundtripWithChangedAttributes(string markdown, MarkdownPipelineBuilder pipelineBuilder, string type, Action<HtmlAttributes> change)
+    {
+        var pipeline = pipelineBuilder.EnableTrackTrivia().Build();
+        var document = MarkdownConverter.Parse(markdown, pipeline);
+        change(document.Descendants().First(obj => obj.GetType().Name == type).GetAttributes());
+
+        var writer = new StringWriter();
+        var renderer = new RoundtripRenderer(writer);
+        pipeline.Setup(renderer);
+        renderer.Write(document);
+        return writer.ToString();
     }
 
     private static string RoundtripWithChangedHeadingAttributes(string markdown, MarkdownPipelineBuilder pipelineBuilder, Action<HtmlAttributes> change)

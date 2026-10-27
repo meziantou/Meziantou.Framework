@@ -77,9 +77,9 @@ public class GenericAttributesExtension : IMarkdownExtension
 
         if (pipeline.TrackTrivia)
         {
-            // The roundtrip renderer writes the attributes of a heading that were changed after the parsing, including by the
-            // handlers of DocumentProcessed
-            pipeline.DocumentCompleted += HeadingAttributesTrivia.RecordParsedAttributes;
+            // The roundtrip renderer writes the attributes that were changed after the parsing, including by the handlers of
+            // DocumentProcessed
+            pipeline.DocumentCompleted += AttributesTrivia.RecordParsedAttributes;
         }
 
         // Plug into all IAttributesParseable
@@ -128,9 +128,9 @@ public class GenericAttributesExtension : IMarkdownExtension
                     htmlAttributes.Span.Start = startOfAttributes;
                     htmlAttributes.Span.End = copy.Start - 1;
 
-                    if (processor.TrackTrivia && block is HeadingBlock heading)
+                    if (processor.TrackTrivia)
                     {
-                        HeadingAttributesTrivia.GetOrCreate(heading).AddTriviaAfterAttributes(attributes, new StringSlice(line.Text, startOfAttributes, copy.Start - 1));
+                        AttributesTrivia.GetOrCreate((MarkdownObject)block).AddTriviaAfterAttributes(attributes, new StringSlice(line.Text, startOfAttributes, copy.Start - 1));
                     }
 
                     line.End = indexOfAttributes - 1;

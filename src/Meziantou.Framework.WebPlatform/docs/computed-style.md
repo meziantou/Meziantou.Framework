@@ -918,10 +918,14 @@ await document.Fonts.Load("16px 'My Font'");
 
 `FontFaceSet.Ready` completes once the document is loaded, has no
 [pending layout operations which might cause the user agent to request a font](https://drafts.csswg.org/css-font-loading/#fontfaceset-pending-on-the-environment)
-and no font face is loading. When the document is loaded, the
+and no font face is loading. Before the load event of the document, the
 font faces used by its text (the first family of the `font-family` of an element with text that has font faces in the
 set, also in the shadow trees) and the first available font of the parent of an element with `font-size: math` (its
-`MATH` table scales the font size, also for an element without text) are loaded, as when the user agent renders the document: then at each rendering opportunity after the tree or the
+`MATH` table scales the font size, also for an element without text) are loaded, and a document that is rendered
+updates its layout, whose font matching requests the other font faces it needs, as when the browsers render the document
+while it loads: as in the browsers, the loads of the font faces started before the load event delay it
+(`Document.FontFacesDelayingTheLoadEvent`), so that the load event handlers see the text with its web fonts. Once the
+document is loaded, they are loaded at each rendering opportunity after the tree or the
 styles change, and when `Ready` is read while such a rendering is pending. The font faces are also loaded when the font
 matching needs them: the first available font of the font-relative units (`ex`, `ch`...) and of the line boxes, the font
 of each character, the next family of the list when a font face fails to load or does not have a character (see

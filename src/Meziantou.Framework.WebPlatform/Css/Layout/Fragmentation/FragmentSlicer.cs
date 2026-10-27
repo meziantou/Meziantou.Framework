@@ -255,6 +255,14 @@ internal sealed class FragmentSlicer
         {
             top = ClampToColumns(top, isEnd: false);
             bottom = Math.Max(top, ClampToColumns(bottom, isEnd: true));
+
+            // A box whose content starts with a column spanner has nothing before it: as in the browsers (a position at the end of
+            // the columns before a spanner is at the start of the columns after it), its first fragment is after the spanner
+            if (spannerBoxes is not null && ReferenceEquals(map, _map) && ContainsSpanner((BoxFragment)fragment, spannerBoxes))
+            {
+                top = SkipSpannersAt(top);
+                bottom = Math.Max(top, bottom);
+            }
         }
 
         if (end is null && fragment is BoxFragment definiteBox && _flow.GetDefiniteBox(definiteBox) is { Map: { } contentMap } definiteItem && !ReferenceEquals(contentMap, map))
@@ -1137,6 +1145,17 @@ internal sealed class FragmentSlicer
         }
 
         return result;
+    }
+
+    /// <summary>Returns the end of the margin boxes of the column spanners that start at a position of the strip (one after the other), or the position.</summary>
+    private double SkipSpannersAt(double position)
+    {
+        for (var index = GetSpannerAt(position); index >= 0 && Math.Abs(_flow.Spanners[index].MarginBoxStart - position) <= 0.01; index = GetSpannerAt(position))
+        {
+            position = _flow.Spanners[index].MarginBoxEnd;
+        }
+
+        return position;
     }
 
     /// <summary>Returns whether the in-flow descendants of a fragment include a column spanner.</summary>

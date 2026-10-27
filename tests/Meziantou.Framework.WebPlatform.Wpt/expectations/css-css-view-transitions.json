@@ -21,7 +21,7 @@
     "reftest": "PASS"
   },
   "css/css-view-transitions/animation-name-ua-prefix.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-view-transitions/auto-name-from-id-shadow.html": {
     "reftest": "PASS"

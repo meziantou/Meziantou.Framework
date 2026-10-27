@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 93 | 107 | 0 | 87% |
+| [Stable](#stable-tests) | 94 | 107 | 0 | 88% |
 | [Tentative](#tentative-tests) | 13 | 18 | 0 | 72% |
-| [Reftests](#reftests) | 5 | 6 | 0 | 83% |
-| **All** | **111** | **131** | **0** | **85%** |
+| [Reftests](#reftests) | 6 | 6 | 0 | 100% |
+| **All** | **113** | **131** | **0** | **86%** |
 
 ## Stable tests
 
@@ -115,7 +115,7 @@
 | [`transition-remove-and-change-immediate.html`](https://wpt.fyi/results/css/css-transitions/transition-remove-and-change-immediate.html) | Pass | 1 / 1 |  |  |
 | [`transition-reparented.html`](https://wpt.fyi/results/css/css-transitions/transition-reparented.html) | Fail | 0 / 1 | BUG | re-parenting or removing an element does not cancel its transitions and animations |
 | [`transition-zero-duration-with-delay.html`](https://wpt.fyi/results/css/css-transitions/transition-zero-duration-with-delay.html) | Pass | 1 / 1 |  |  |
-| [`transitioncancel-001.html`](https://wpt.fyi/results/css/css-transitions/transitioncancel-001.html) | Fail | 0 / 1 | BUG | `transitioncancel` is not fired when the element becomes `display: none` |
+| [`transitioncancel-001.html`](https://wpt.fyi/results/css/css-transitions/transitioncancel-001.html) | Pass | 1 / 1 |  |  |
 | [`transitioncancel-002.html`](https://wpt.fyi/results/css/css-transitions/transitioncancel-002.html) | Pass | 1 / 1 |  |  |
 | [`transitioncancel-003.html`](https://wpt.fyi/results/css/css-transitions/transitioncancel-003.html) | Pass | 1 / 1 |  |  |
 | [`transitionevent-interface.html`](https://wpt.fyi/results/css/css-transitions/transitionevent-interface.html) | Pass | 42 / 42 |  |  |
@@ -152,7 +152,7 @@
 |---|---|--:|---|---|
 | [`allow-discrete-auto-inset.html`](https://wpt.fyi/results/css/css-transitions/allow-discrete-auto-inset.html) | Pass | 1 / 1 |  |  |
 | [`inherit-background-color-transition.html`](https://wpt.fyi/results/css/css-transitions/inherit-background-color-transition.html) | Pass | 1 / 1 |  |  |
-| [`pseudo-element-transform.html`](https://wpt.fyi/results/css/css-transitions/pseudo-element-transform.html) | Timeout | 0 / 1 | BUG | the page never removes the `reftest-wait` class of its root element (an error of its scripts, or an event that is not fired) |
+| [`pseudo-element-transform.html`](https://wpt.fyi/results/css/css-transitions/pseudo-element-transform.html) | Pass | 1 / 1 |  |  |
 | [`render-blocking/no-transition-from-ua-to-blocking-stylesheet.html`](https://wpt.fyi/results/css/css-transitions/render-blocking/no-transition-from-ua-to-blocking-stylesheet.html) | Pass | 1 / 1 |  |  |
 | [`root-color-transition.html`](https://wpt.fyi/results/css/css-transitions/root-color-transition.html) | Pass | 1 / 1 |  |  |
 | [`transition-test.html`](https://wpt.fyi/results/css/css-transitions/transition-test.html) | Pass | 1 / 1 |  |  |

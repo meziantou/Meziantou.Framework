@@ -61,6 +61,41 @@ internal sealed class FlowMap
     }
 
     /// <summary>
+    /// Returns the sum of the parts of the unbreakable content of the flow that overflow the fragmentainers where it is broken
+    /// (see <see cref="SetBreakEnd"/>), from a fragmentainer: the content after them starts the next fragmentainer, they take no
+    /// block size there.
+    /// </summary>
+    public double GetUnbreakableOverflow(int from, List<double> blockSizes)
+    {
+        var result = 0d;
+        if (_breakEnds is not null)
+        {
+            for (var i = 0; i < _breakEnds.Count; i++)
+            {
+                var (index, offset) = _breakEnds[i];
+                if (index >= from && index < blockSizes.Count && IsLastBreakEnd(i))
+                {
+                    result += Math.Max(0, offset - blockSizes[index]);
+                }
+            }
+        }
+
+        return result;
+
+        // (the last offset recorded in a fragmentainer is the one of its break, see GetBreakEnd)
+        bool IsLastBreakEnd(int i)
+        {
+            for (var j = i + 1; j < _breakEnds.Count; j++)
+            {
+                if (_breakEnds[j].Index == _breakEnds[i].Index)
+                    return false;
+            }
+
+            return true;
+        }
+    }
+
+    /// <summary>
     /// Records that the part of a box that continues in a fragmentainer starts below the floats that were pushed to it (see
     /// <c>FragmentationFlow.GetFloatAvoider</c>): the content of the flow is shifted from the start of the fragmentainer.
     /// </summary>

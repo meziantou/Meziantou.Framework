@@ -8,8 +8,8 @@
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 101 | 105 | 0 | 96% |
 | [Tentative](#tentative-tests) | 1 | 3 | 0 | 33% |
-| [Reftests](#reftests) | 788 | 795 | 0 | 99% |
-| **All** | **890** | **903** | **0** | **99%** |
+| [Reftests](#reftests) | 789 | 795 | 0 | 99% |
+| **All** | **891** | **903** | **0** | **99%** |
 
 ## Stable tests
 
@@ -921,7 +921,7 @@
 | [`translate/translate-and-transform-css-property-in-svg.html`](https://wpt.fyi/results/css/css-transforms/translate/translate-and-transform-css-property-in-svg.html) | Pass | 1 / 1 |  |  |
 | [`translate/translate-in-svg.html`](https://wpt.fyi/results/css/css-transforms/translate/translate-in-svg.html) | Pass | 1 / 1 |  |  |
 | [`ttwf-css-3d-polygon-cycle-mismatch.html`](https://wpt.fyi/results/css/css-transforms/ttwf-css-3d-polygon-cycle-mismatch.html) | Pass | 1 / 1 |  |  |
-| [`ttwf-css-3d-polygon-cycle.html`](https://wpt.fyi/results/css/css-transforms/ttwf-css-3d-polygon-cycle.html) | Fail | 0 / 1 | BUG | antialiasing only: 784 pixels differ (maximum difference 90) where the test allows `maxDifference=0-113; totalPixels=0-674`: the pieces of the planes split by the depth sorting of the 3D rendering context are clipped by antialiased polygons, so the backdrop shows through their shared edges (faint lines across the blue rectangle) |
+| [`ttwf-css-3d-polygon-cycle.html`](https://wpt.fyi/results/css/css-transforms/ttwf-css-3d-polygon-cycle.html) | Pass | 1 / 1 |  |  |
 | [`ttwf-reftest-rotate.html`](https://wpt.fyi/results/css/css-transforms/ttwf-reftest-rotate.html) | Pass | 1 / 1 |  |  |
 | [`ttwf-transform-skewx-001.html`](https://wpt.fyi/results/css/css-transforms/ttwf-transform-skewx-001.html) | Pass | 1 / 1 |  |  |
 | [`ttwf-transform-skewy-001.html`](https://wpt.fyi/results/css/css-transforms/ttwf-transform-skewy-001.html) | Pass | 1 / 1 |  |  |

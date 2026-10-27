@@ -2637,10 +2637,15 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
     (as in Blink);
   - the contents of a block container aligned by `align-content` that is broken are not aligned (the alignment of
     fragmented contents is not defined by [CSS Box Alignment](https://drafts.csswg.org/css-align-3/#distribution-block); the
-    WPT tests accept this behavior or an alignment in the space that remains after the fragmentation). The floats are then
-    pushed again from the start.
+    WPT tests accept this behavior or an alignment in the space that remains after the fragmentation);
+  - the monolithic contents of a table cell that overflow a fragmentainer where the cell is broken take no block size in the
+    next ones (the content after them starts the next fragmentainer): as in Blink, the row is measured with the block size of
+    its cells once fragmented (`StripRelayout.GetCellBlockSizeReduction`, the synthesized baselines too), so the percentages
+    of the other cells resolve against it; the cell, shorter than its contents in the strip, encompasses them once fragmented
+    (`ParallelItem.OverflowsTrack`). The floats are then pushed again from the start.
   The relayouts are only done when a recorded box is broken: nothing is recorded in a strip without float beside a box that
-  avoids them, without `align-content`, and without contents that overflow a limited block size.
+  avoids them, without `align-content`, without contents that overflow a limited block size, and without table cells (a cell
+  is laid out again only when its monolithic contents overflow a fragmentainer where it is broken).
   Its limit is what cannot be expressed as a change of the strip: the lines and the items of a flex container aligned again
   in each fragment, see *Not done*. `FragmentationFlow.Collect` walks the fragments of
   the strip and lists the possible breaks ([§4.1](https://drafts.csswg.org/css-break-3/#possible-breaks), in the logical block
@@ -3025,9 +3030,7 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
   fragmentainers (one row per outer fragmentainer, also for the rows of a fixed block size that wrap; they are not counted
   when the outer columns are balanced; the last row of a nested container whose strip has parallel flows is balanced
   without the boxes), the repeated edges of a box with `box-decoration-break: clone` and a specified block size that a
-  column spanner interrupts, the block size of a table row when the monolithic contents of a cell overflow a
-  fragmentainer (the row is as tall as in the strip, where the overflow counts: the percentages of the other cells resolve
-  against it), the gap of a row flex container after a forced break (it disappears, where Blink keeps a part of it), the
+  column spanner interrupts, the
   items that follow, before the position of the break, an
   item placed after a forced break although it overlaps the previous one, a column flex item that is as tall as its
   contents once fragmented in a multi-line container, the stitched scrollable

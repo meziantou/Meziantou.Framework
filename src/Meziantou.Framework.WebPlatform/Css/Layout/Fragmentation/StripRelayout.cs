@@ -28,6 +28,12 @@ namespace Meziantou.Framework.WebPlatform.Css.Layout;
 /// are not aligned (one of the two behaviors that the WPT tests accept).</item>
 /// <item>A float kept in the page before a forced page break that its margin box crosses (<see cref="GetFloatExclusionEnd"/>):
 /// its exclusion ends at the break.</item>
+/// <item>An anchor-positioned box whose anchor is in a nested multi-column container (<see cref="GetNestedAnchorRect"/>): the
+/// anchor box comes from the columns that the fragmentation places.</item>
+/// <item>A table cell whose monolithic contents overflow a fragmentainer where the cell is broken
+/// (<see cref="GetCellBlockSizeReduction"/>): as in Blink, the overflow takes no block size in the next fragmentainers, so the
+/// cell is shorter once fragmented, and its row is measured with that block size (the percentages of the other cells resolve
+/// against it).</item>
 /// </list>
 /// </remarks>
 internal sealed class StripRelayout
@@ -60,6 +66,24 @@ internal sealed class StripRelayout
 
     /// <summary>The block-end edges of the exclusions of the floats kept before a forced page break, in their block formatting context (see <see cref="GetFloatExclusionEnd"/>).</summary>
     private Dictionary<ContainerBox, double>? _floatExclusionEnds;
+
+    /// <summary>The anchors of the anchor-positioned boxes of the strip that are in a nested multi-column container, by anchor (see <see cref="GetNestedAnchorRect"/>).</summary>
+    private Dictionary<ContainerBox, ContainerBox>? _nestedAnchors;
+
+    /// <summary>The anchor boxes of the anchors in the nested multi-column containers (see <see cref="GetNestedAnchorRect"/>).</summary>
+    private Dictionary<ContainerBox, PhysicalRect>? _nestedAnchorRects;
+
+    /// <summary>The number of times the strip was laid out again for <see cref="_nestedAnchorRects"/> (a safeguard against oscillations).</summary>
+    private int _nestedAnchorUpdates;
+
+    /// <summary>The maximum number of layouts of the strip for <see cref="_nestedAnchorRects"/>.</summary>
+    private const int MaxNestedAnchorUpdates = 4;
+
+    /// <summary>The table cells of the strip.</summary>
+    private HashSet<ContainerBox>? _tableCells;
+
+    /// <summary>The block sizes that the table cells do not take once fragmented (see <see cref="GetCellBlockSizeReduction"/>).</summary>
+    private Dictionary<ContainerBox, double>? _cellReductions;
 
     /// <summary>
     /// Returns the block offset where the exclusion of a float ends in its block formatting context (+∞ for its block-end margin
@@ -111,7 +135,126 @@ internal sealed class StripRelayout
         _alignedBoxes?.Clear();
         _collapsedEndMargins?.Clear();
         _inlineVariants?.Clear();
+        _nestedAnchors?.Clear();
+        _tableCells?.Clear();
     }
+
+    /// <summary>
+    /// Records an anchor of an anchor-positioned box whose containing block is in the strip, that is in a multi-column container
+    /// nested in the strip (outside of the containing block): the outer fragmentation context fragments the columns of the
+    /// container, its anchor box comes from that fragmentation (see <see cref="GetNestedAnchorRect"/>).
+    /// </summary>
+    public void RecordNestedAnchor(ContainerBox anchor, ContainerBox container) => (_nestedAnchors ??= [])[anchor] = container;
+
+    /// <summary>
+    /// Returns the anchor box of an anchor in a nested multi-column container (see <see cref="RecordNestedAnchor"/>) in the
+    /// coordinates of the border box of the container, or null: https://drafts.csswg.org/css-anchor-position-1/#anchor-box: the
+    /// bounding rectangle of the fragments of the anchor, in the flow of the strip (the fragments in the columns of each outer
+    /// fragmentainer, which are placed one after the other in the strip, as in Blink), rather than in the columns of the layout
+    /// of the container in the strip (as tall as its content box).
+    /// </summary>
+    public PhysicalRect? GetNestedAnchorRect(ContainerBox anchor) => _nestedAnchorRects is { } rects && rects.TryGetValue(anchor, out var rect) ? rect : null;
+
+    /// <summary>
+    /// Updates the anchor boxes of the anchors in the nested multi-column containers (see <see cref="GetNestedAnchorRect"/>) from
+    /// the fragmentation of the strip. Returns whether the strip must be laid out again.
+    /// </summary>
+    /// <param name="flow">The strip.</param>
+    /// <param name="map">The breaks of the flow of the strip.</param>
+    public bool UpdateNestedAnchors(FragmentationFlow flow, FlowMap map)
+    {
+        if (_nestedAnchors is not { Count: > 0 } anchors || _nestedAnchorUpdates >= MaxNestedAnchorUpdates)
+            return false;
+
+        var changed = false;
+        foreach (var (anchor, container) in anchors)
+        {
+            var rect = container.LastLayoutFragment is { } fragment && flow.GetNestedColumns(fragment) is { Nested: { } nested } item ? GetStitchedRect(anchor, item, nested, map) : null;
+            var previous = GetNestedAnchorRect(anchor);
+            if (rect is { } value)
+            {
+                if (previous is not { } old || Math.Abs(old.X - value.X) > Epsilon || Math.Abs(old.Y - value.Y) > Epsilon || Math.Abs(old.Width - value.Width) > Epsilon || Math.Abs(old.Height - value.Height) > Epsilon)
+                {
+                    (_nestedAnchorRects ??= [])[anchor] = value;
+                    changed = true;
+                }
+            }
+            else if (previous is not null)
+            {
+                _nestedAnchorRects!.Remove(anchor);
+                changed = true;
+            }
+        }
+
+        if (changed)
+        {
+            _nestedAnchorUpdates++;
+        }
+
+        return changed;
+    }
+
+    /// <summary>
+    /// Returns the bounding rectangle of the parts of an anchor in the columns of a nested multi-column container, each one at the
+    /// position of its column in the strip, in the coordinates of the border box of the container (horizontal writing modes only).
+    /// </summary>
+    private static PhysicalRect? GetStitchedRect(ContainerBox anchor, ParallelItem item, NestedColumns nested, FlowMap map)
+    {
+        if (nested.WritingDirection != WritingDirection.HorizontalLtr || nested.Columns.Count == 0 || FindInStrip(nested.Children, anchor, PhysicalOffset.Zero) is not { } anchorRect)
+            return null;
+
+        PhysicalRect? result = null;
+        var columns = nested.Columns;
+        for (var i = 0; i < columns.Count; i++)
+        {
+            var column = columns[i];
+            var columnEnd = double.IsFinite(column.End) ? column.End : i + 1 < columns.Count ? columns[i + 1].Start : double.PositiveInfinity;
+            var from = Math.Max(anchorRect.Top, column.Start);
+            var to = Math.Min(anchorRect.Bottom, columnEnd);
+            if (to < from || (to - from <= Epsilon && anchorRect.Height > Epsilon))
+                continue;
+
+            // (the block-start edge of the outer fragmentainer of the column is at the position -offset of the position 0 of the strip)
+            var top = -map.GetOffsetIn(column.OuterIndex, 0) + column.BlockOffset + column.DisplayOffset + (from - column.Start) - item.Start;
+            var left = nested.ContentOffset.Inline + (column.IndexInRow * nested.ColumnStride) + anchorRect.X;
+            var part = new PhysicalRect(left, top, anchorRect.Width, to - from);
+            result = result is { } existing ? existing.Union(part) : part;
+        }
+
+        return result;
+
+        static PhysicalRect? FindInStrip(ReadOnlySpan<Fragment> children, ContainerBox box, PhysicalOffset offset)
+        {
+            PhysicalRect? found = null;
+            foreach (var child in children)
+            {
+                var childOffset = offset + child.Offset;
+                if (child is BoxFragment childBox && ReferenceEquals(childBox.Box, box))
+                {
+                    var rect = new PhysicalRect(childOffset, child.Size);
+                    found = found is { } existing ? existing.Union(rect) : rect;
+                    continue;
+                }
+
+                if (child.ChildrenSpan.Length > 0 && FindInStrip(child.ChildrenSpan, box, childOffset) is { } nestedRect)
+                {
+                    found = found is { } existing ? existing.Union(nestedRect) : nestedRect;
+                }
+            }
+
+            return found;
+        }
+    }
+
+    /// <summary>Records a table cell (see <see cref="GetCellBlockSizeReduction"/>).</summary>
+    public void RecordTableCell(ContainerBox box) => (_tableCells ??= []).Add(box);
+
+    /// <summary>
+    /// Returns the block size that the contents of a table cell do not take once fragmented: the parts of its monolithic contents
+    /// that overflow the fragmentainers where the cell is broken (the content after them starts the next fragmentainer, as in
+    /// Blink). Its row is measured with the block size of the cell without it.
+    /// </summary>
+    public double GetCellBlockSizeReduction(ContainerBox box) => _cellReductions is { } reductions && reductions.TryGetValue(box, out var reduction) ? reduction : 0;
 
     /// <summary>Records a box that avoids the floats, placed beside floats at a block offset of its block formatting context (its border box).</summary>
     public void RecordFloatAvoider(ContainerBox box, double blockOffset) => (_floatAvoiders ??= [])[box] = blockOffset;
@@ -177,7 +320,7 @@ internal sealed class StripRelayout
     /// <param name="writingDirection">The writing mode of the fragmentation context.</param>
     /// <param name="blockSizes">The block size of each fragmentainer.</param>
     public bool UpdateBrokenBoxes(FragmentationFlow flow, FlowMap map, ReadOnlySpan<Fragment> children, PhysicalSize stripSize, WritingDirection writingDirection, List<double> blockSizes)
-        => (_alignedBoxes is { Count: > 0 } || _collapsedEndMargins is { Count: > 0 }) && Update(flow, map, children, stripSize, writingDirection, blockSizes, floatAvoiders: false);
+        => (_alignedBoxes is { Count: > 0 } || _collapsedEndMargins is { Count: > 0 } || _tableCells is { Count: > 0 }) && Update(flow, map, children, stripSize, writingDirection, blockSizes, floatAvoiders: false);
 
     /// <summary>
     /// Updates the breaks of the boxes that avoid the floats (see <see cref="GetFloatAvoiderBreaks"/>) from the fragmentation of
@@ -212,6 +355,15 @@ internal sealed class StripRelayout
                 && parentMap.GetOffsetIn(end, top + marginOffset) > blockSizes[Math.Min(end, blockSizes.Count - 1)] + Epsilon
                 && (_separatedEndMargins ??= []).Add(box))
             {
+                changed = true;
+            }
+
+            // (the reductions only grow: the relayouts end)
+            if (!floatAvoiders && _tableCells is not null && _tableCells.Contains(box) && blockSizes is { Count: > 0 }
+                && flow.GetContainingItem(fragment) is { Map: { } cellMap } cellItem && ReferenceEquals(cellItem.Box, fragment)
+                && cellMap.GetUnbreakableOverflow(start, blockSizes) is var reduction && reduction > GetCellBlockSizeReduction(box) + Epsilon)
+            {
+                (_cellReductions ??= [])[box] = reduction;
                 changed = true;
             }
 
@@ -271,7 +423,7 @@ internal sealed class StripRelayout
 
             var (top, bottom, _) = FragmentationFlow.GetBlockRange(child, parentSize, writingDirection, parentTop);
             var box = childBox.Box;
-            if ((_floatAvoiders?.ContainsKey(box) ?? false) || (_alignedBoxes?.Contains(box) ?? false) || (_collapsedEndMargins?.ContainsKey(box) ?? false))
+            if ((_floatAvoiders?.ContainsKey(box) ?? false) || (_alignedBoxes?.Contains(box) ?? false) || (_collapsedEndMargins?.ContainsKey(box) ?? false) || (_tableCells?.Contains(box) ?? false))
             {
                 found.Add((childBox, top, bottom));
             }

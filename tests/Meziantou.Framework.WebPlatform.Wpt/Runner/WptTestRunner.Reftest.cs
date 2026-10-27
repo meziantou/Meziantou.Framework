@@ -175,7 +175,9 @@ internal sealed partial class WptTestRunner
     /// <c>tools/wptrunner/wptrunner/executors/test-wait.js</c>): wait for the <c>load</c> event and the web fonts
     /// (<c>document.fonts.ready</c>), then for the pending paints (two animation frames). When the root element has the
     /// <c>reftest-wait</c> class (or <c>test-wait</c>), fire <c>TestRendered</c> at it, wait until the class is removed, and wait
-    /// for the pending paints again.
+    /// for the pending paints again. The screenshot is then taken by WebDriver, of a frame rendered afterwards: one more rendering
+    /// update runs, which dispatches the pending events of the animations (e.g. an <c>animationstart</c> event queued by the
+    /// rendering update that removed the class, css/css-animations/animation-delay-010.html).
     /// </summary>
     private sealed class ReftestWait(WptTestRunner runner)
     {
@@ -185,6 +187,7 @@ internal sealed partial class WptTestRunner
             Fonts,
             Paints,
             ClassRemoval,
+            ScreenshotFrame,
             Ready,
         }
 
@@ -202,6 +205,7 @@ internal sealed partial class WptTestRunner
             State.Fonts => "the web fonts are not loaded",
             State.Paints => "the animation frames did not run",
             State.ClassRemoval => "the reftest-wait class of the root element was not removed",
+            State.ScreenshotFrame => "the frame of the screenshot was not rendered",
             _ => null,
         };
 
@@ -246,7 +250,7 @@ internal sealed partial class WptTestRunner
 
                         if (!HasWaitClass(document))
                         {
-                            _state = State.Ready;
+                            WaitScreenshotFrame(document);
                             continue;
                         }
 
@@ -267,10 +271,31 @@ internal sealed partial class WptTestRunner
                         WaitPaints(document);
                         continue;
 
+                    case State.ScreenshotFrame:
+                        if (!_paintsDone)
+                            return false;
+
+                        _state = State.Ready;
+                        continue;
+
                     default:
                         return true;
                 }
             }
+        }
+
+        // The rendering update of the frame of the screenshot
+        private void WaitScreenshotFrame(Document document)
+        {
+            _state = State.ScreenshotFrame;
+            _paintsDone = false;
+            if (document.DefaultView is not { } window || document.ViewTransitionRenderingSuppressed)
+            {
+                _paintsDone = true;
+                return;
+            }
+
+            window.RequestAnimationFrame(_ => _paintsDone = true);
         }
 
         // requestAnimationFrame(() => requestAnimationFrame(...)): the pending paints are completed

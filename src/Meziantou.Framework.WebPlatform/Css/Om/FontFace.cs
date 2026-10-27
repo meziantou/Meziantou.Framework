@@ -130,6 +130,8 @@ public sealed class FontFace
     private readonly byte[]? _data;
     private readonly string? _urls;
     private Document? _document;
+    private Document? _documentDelayingTheLoadEvent;
+    private bool _isStartingLoad;
     private string? _baseUrl;
     private CssFontFaceRule? _rule;
     private bool _cspChecked;
@@ -408,9 +410,42 @@ public sealed class FontFace
             return Loaded;
 
         SetLoading();
-        var sources = GetSources();
-        LoadSource(sources, 0);
+
+        // The loads started before the load event of a document delay it (see Document.FontFacesDelayingTheLoadEvent)
+        if (_document is { BrowsingContext: not null, WorkerGlobal: null, ReadyState: not DocumentReadyState.Complete } document)
+        {
+            document.FontFacesDelayingTheLoadEvent++;
+            _documentDelayingTheLoadEvent = document;
+        }
+
+        _isStartingLoad = true;
+        try
+        {
+            var sources = GetSources();
+            LoadSource(sources, 0);
+        }
+        finally
+        {
+            _isStartingLoad = false;
+        }
+
         return Loaded;
+    }
+
+    /// <summary>The load of the font face is complete: it no longer delays the load event of its document.</summary>
+    private void StopDelayingTheLoadEvent()
+    {
+        if (_documentDelayingTheLoadEvent is not { } document)
+            return;
+
+        _documentDelayingTheLoadEvent = null;
+        document.FontFacesDelayingTheLoadEvent--;
+
+        // (a load that completes synchronously, e.g. without valid source, completes before the caller of Load checks the load event)
+        if (!_isStartingLoad)
+        {
+            document.TryQueueLoadEvent();
+        }
     }
 
     /// <summary>Parses the family and the descriptors; returns false and sets the status to "error" when one of them is invalid.</summary>
@@ -600,6 +635,8 @@ public sealed class FontFace
         {
             set.OnFontFaceLoaded(this, failed: false);
         }
+
+        StopDelayingTheLoadEvent();
     }
 
     private void SetError(DomException exception)
@@ -611,6 +648,8 @@ public sealed class FontFace
         {
             set.OnFontFaceLoaded(this, failed: true);
         }
+
+        StopDelayingTheLoadEvent();
     }
 
     /// <summary>A source of the src descriptor: a URL and its request URL modifiers, or the name of a local() font.</summary>

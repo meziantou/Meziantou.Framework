@@ -48,10 +48,10 @@ The reasons come from `wpt-skip.json` and `wpt-reasons.json` (`tests/Meziantou.F
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 25,359 | 29,435 | 2,579 | 94% |
-| [Tentative](#tentative-tests) | 1,164 | 3,044 | 837 | 53% |
-| [Reftests](#reftests) | 27,494 | 28,889 | 180 | 96% |
-| **All** | **54,017** | **61,368** | **3,596** | **94%** |
+| [Stable](#stable-tests) | 25,361 | 29,435 | 2,579 | 94% |
+| [Tentative](#tentative-tests) | 1,165 | 3,044 | 837 | 53% |
+| [Reftests](#reftests) | 27,504 | 28,889 | 180 | 96% |
+| **All** | **54,030** | **61,368** | **3,596** | **94%** |
 
 ## Stable tests
 
@@ -96,7 +96,7 @@ The reasons come from `wpt-skip.json` and `wpt-reasons.json` (`tests/Meziantou.F
 | [`credential-management`](wpt-coverage/credential-management.md) | 0 | 16 | 16 | – |
 | [`css/compositing`](wpt-coverage/css/compositing.md) | 13 | 15 | 0 | 87% |
 | [`css/css-align`](wpt-coverage/css/css-align.md) | 209 | 235 | 0 | 89% |
-| [`css/css-anchor-position`](wpt-coverage/css/css-anchor-position.md) | 256 | 260 | 0 | 98% |
+| [`css/css-anchor-position`](wpt-coverage/css/css-anchor-position.md) | 257 | 260 | 0 | 99% |
 | [`css/css-animations`](wpt-coverage/css/css-animations.md) | 94 | 98 | 0 | 96% |
 | [`css/css-backgrounds`](wpt-coverage/css/css-backgrounds.md) | 126 | 132 | 0 | 95% |
 | [`css/css-borders`](wpt-coverage/css/css-borders.md) | 30 | 32 | 0 | 94% |
@@ -156,7 +156,7 @@ The reasons come from `wpt-skip.json` and `wpt-reasons.json` (`tests/Meziantou.F
 | [`css/css-text`](wpt-coverage/css/css-text.md) | 333 | 342 | 0 | 97% |
 | [`css/css-text-decor`](wpt-coverage/css/css-text-decor.md) | 48 | 48 | 0 | 100% |
 | [`css/css-transforms`](wpt-coverage/css/css-transforms.md) | 101 | 105 | 0 | 96% |
-| [`css/css-transitions`](wpt-coverage/css/css-transitions.md) | 93 | 107 | 0 | 87% |
+| [`css/css-transitions`](wpt-coverage/css/css-transitions.md) | 94 | 107 | 0 | 88% |
 | [`css/css-typed-om`](wpt-coverage/css/css-typed-om.md) | 290 | 319 | 0 | 91% |
 | [`css/css-ui`](wpt-coverage/css/css-ui.md) | 85 | 101 | 0 | 84% |
 | [`css/css-values`](wpt-coverage/css/css-values.md) | 253 | 262 | 0 | 97% |
@@ -400,7 +400,7 @@ The reasons come from `wpt-skip.json` and `wpt-reasons.json` (`tests/Meziantou.F
 | [`x-frame-options`](wpt-coverage/x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](wpt-coverage/xhr.md) | 317 | 330 | 0 | 96% |
 | [`xml`](wpt-coverage/xml.md) | 0 | 12 | 12 | – |
-| **Total (343 sections)** | **25,359** | **29,435** | **2,579** | **94%** |
+| **Total (343 sections)** | **25,361** | **29,435** | **2,579** | **94%** |
 
 ## Tentative tests
 
@@ -454,7 +454,7 @@ The reasons come from `wpt-skip.json` and `wpt-reasons.json` (`tests/Meziantou.F
 | [`css/css-transitions`](wpt-coverage/css/css-transitions.md#tentative-tests) | 13 | 18 | 0 | 72% |
 | [`css/css-typed-om`](wpt-coverage/css/css-typed-om.md#tentative-tests) | 37 | 43 | 0 | 86% |
 | [`css/css-ui`](wpt-coverage/css/css-ui.md#tentative-tests) | 11 | 16 | 0 | 69% |
-| [`css/css-values`](wpt-coverage/css/css-values.md#tentative-tests) | 20 | 22 | 0 | 91% |
+| [`css/css-values`](wpt-coverage/css/css-values.md#tentative-tests) | 21 | 22 | 0 | 95% |
 | [`css/css-view-transitions`](wpt-coverage/css/css-view-transitions.md#tentative-tests) | 4 | 7 | 0 | 57% |
 | [`css/css-writing-modes`](wpt-coverage/css/css-writing-modes.md#tentative-tests) | 1 | 1 | 0 | 100% |
 | [`css/CSS2`](wpt-coverage/css/CSS2.md#tentative-tests) | 2 | 2 | 0 | 100% |
@@ -569,7 +569,7 @@ The reasons come from `wpt-skip.json` and `wpt-reasons.json` (`tests/Meziantou.F
 | [`workers`](wpt-coverage/workers.md#tentative-tests) | 0 | 8 | 0 | 0% |
 | [`xhr`](wpt-coverage/xhr.md#tentative-tests) | 2 | 2 | 0 | 100% |
 | [`xml`](wpt-coverage/xml.md#tentative-tests) | 0 | 2 | 2 | – |
-| **Total (163 sections)** | **1,164** | **3,044** | **837** | **53%** |
+| **Total (163 sections)** | **1,165** | **3,044** | **837** | **53%** |
 
 ## Reftests
 
@@ -585,12 +585,12 @@ The reasons come from `wpt-skip.json` and `wpt-reasons.json` (`tests/Meziantou.F
 | [`contenteditable`](wpt-coverage/contenteditable.md#reftests) | 0 | 1 | 1 | – |
 | [`css/compositing`](wpt-coverage/css/compositing.md#reftests) | 55 | 60 | 0 | 92% |
 | [`css/css-align`](wpt-coverage/css/css-align.md#reftests) | 56 | 62 | 0 | 90% |
-| [`css/css-anchor-position`](wpt-coverage/css/css-anchor-position.md#reftests) | 218 | 229 | 0 | 95% |
+| [`css/css-anchor-position`](wpt-coverage/css/css-anchor-position.md#reftests) | 224 | 229 | 0 | 98% |
 | [`css/css-animations`](wpt-coverage/css/css-animations.md#reftests) | 36 | 36 | 0 | 100% |
 | [`css/css-backgrounds`](wpt-coverage/css/css-backgrounds.md#reftests) | 697 | 715 | 1 | 98% |
 | [`css/css-borders`](wpt-coverage/css/css-borders.md#reftests) | 90 | 102 | 0 | 88% |
 | [`css/css-box`](wpt-coverage/css/css-box.md#reftests) | 39 | 69 | 0 | 57% |
-| [`css/css-break`](wpt-coverage/css/css-break.md#reftests) | 1,128 | 1,143 | 0 | 99% |
+| [`css/css-break`](wpt-coverage/css/css-break.md#reftests) | 1,129 | 1,143 | 0 | 99% |
 | [`css/css-cascade`](wpt-coverage/css/css-cascade.md#reftests) | 50 | 50 | 0 | 100% |
 | [`css/css-color`](wpt-coverage/css/css-color.md#reftests) | 301 | 308 | 1 | 98% |
 | [`css/css-color-adjust`](wpt-coverage/css/css-color-adjust.md#reftests) | 22 | 22 | 0 | 100% |
@@ -638,17 +638,17 @@ The reasons come from `wpt-skip.json` and `wpt-reasons.json` (`tests/Meziantou.F
 | [`css/css-tables`](wpt-coverage/css/css-tables.md#reftests) | 165 | 171 | 0 | 96% |
 | [`css/css-text`](wpt-coverage/css/css-text.md#reftests) | 1,466 | 1,511 | 0 | 97% |
 | [`css/css-text-decor`](wpt-coverage/css/css-text-decor.md#reftests) | 300 | 309 | 0 | 97% |
-| [`css/css-transforms`](wpt-coverage/css/css-transforms.md#reftests) | 788 | 795 | 0 | 99% |
-| [`css/css-transitions`](wpt-coverage/css/css-transitions.md#reftests) | 5 | 6 | 0 | 83% |
+| [`css/css-transforms`](wpt-coverage/css/css-transforms.md#reftests) | 789 | 795 | 0 | 99% |
+| [`css/css-transitions`](wpt-coverage/css/css-transitions.md#reftests) | 6 | 6 | 0 | 100% |
 | [`css/css-typed-om`](wpt-coverage/css/css-typed-om.md#reftests) | 5 | 5 | 0 | 100% |
 | [`css/css-ui`](wpt-coverage/css/css-ui.md#reftests) | 955 | 960 | 0 | 99% |
 | [`css/css-values`](wpt-coverage/css/css-values.md#reftests) | 210 | 213 | 0 | 99% |
 | [`css/css-variables`](wpt-coverage/css/css-variables.md#reftests) | 182 | 182 | 0 | 100% |
-| [`css/css-view-transitions`](wpt-coverage/css/css-view-transitions.md#reftests) | 306 | 317 | 0 | 97% |
+| [`css/css-view-transitions`](wpt-coverage/css/css-view-transitions.md#reftests) | 307 | 317 | 0 | 97% |
 | [`css/css-viewport`](wpt-coverage/css/css-viewport.md#reftests) | 108 | 108 | 0 | 100% |
 | [`css/css-will-change`](wpt-coverage/css/css-will-change.md#reftests) | 47 | 47 | 0 | 100% |
 | [`css/css-writing-modes`](wpt-coverage/css/css-writing-modes.md#reftests) | 1,140 | 1,153 | 0 | 99% |
-| [`css/CSS2`](wpt-coverage/css/CSS2.md#reftests) | 6,208 | 6,269 | 0 | 99% |
+| [`css/CSS2`](wpt-coverage/css/CSS2.md#reftests) | 6,209 | 6,269 | 0 | 99% |
 | [`css/cssom`](wpt-coverage/css/cssom.md#reftests) | 9 | 12 | 0 | 75% |
 | [`css/cssom-view`](wpt-coverage/css/cssom-view.md#reftests) | 11 | 11 | 0 | 100% |
 | [`css/fill-stroke`](wpt-coverage/css/fill-stroke.md#reftests) | 1 | 1 | 0 | 100% |
@@ -694,7 +694,7 @@ The reasons come from `wpt-skip.json` and `wpt-reasons.json` (`tests/Meziantou.F
 | [`quirks`](wpt-coverage/quirks.md#reftests) | 29 | 30 | 0 | 97% |
 | [`referrer-policy`](wpt-coverage/referrer-policy.md#reftests) | 0 | 1 | 0 | 0% |
 | [`resize-observer`](wpt-coverage/resize-observer.md#reftests) | 3 | 3 | 0 | 100% |
-| [`scroll-animations`](wpt-coverage/scroll-animations.md#reftests) | 31 | 37 | 0 | 84% |
+| [`scroll-animations`](wpt-coverage/scroll-animations.md#reftests) | 30 | 37 | 0 | 81% |
 | [`scroll-to-text-fragment`](wpt-coverage/scroll-to-text-fragment.md#reftests) | 1 | 1 | 0 | 100% |
 | [`selection`](wpt-coverage/selection.md#reftests) | 19 | 19 | 0 | 100% |
 | [`service-workers`](wpt-coverage/service-workers.md#reftests) | 1 | 1 | 0 | 100% |
@@ -705,4 +705,4 @@ The reasons come from `wpt-skip.json` and `wpt-reasons.json` (`tests/Meziantou.F
 | [`webgl`](wpt-coverage/webgl.md#reftests) | 0 | 2 | 2 | – |
 | [`webvtt`](wpt-coverage/webvtt.md#reftests) | 177 | 251 | 0 | 71% |
 | [`xml`](wpt-coverage/xml.md#reftests) | 0 | 3 | 3 | – |
-| **Total (130 sections)** | **27,494** | **28,889** | **180** | **96%** |
+| **Total (130 sections)** | **27,504** | **28,889** | **180** | **96%** |

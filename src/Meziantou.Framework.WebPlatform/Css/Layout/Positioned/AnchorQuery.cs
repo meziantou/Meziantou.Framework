@@ -521,6 +521,24 @@ internal sealed class AnchorQuery
         if (rect is not { } anchorRect)
             return null;
 
+        // An anchor in a multi-column container nested in the strip of a fragmentation context: its anchor box is the one of its
+        // fragments in the columns placed by the fragmentation context (see StripRelayout.GetNestedAnchorRect)
+        if (!anchor.IsInlineBox && _context.StripRelayout is { } relayout && FindNestedMultiColumnContainer(anchor) is { } container)
+        {
+            relayout.RecordNestedAnchor(anchor, container);
+            List<ContainerBox>? nestedScrollContainers = null;
+            if (relayout.GetNestedAnchorRect(anchor) is { } nestedRect && container.LastLayoutFragment is { } containerFragment && containerFragment.LayoutPass == _context.Pass
+                && TryMapToHost(containerFragment, nestedRect, inScrolledContents: false, ref nestedScrollContainers, out var nestedScrolled) is { } nestedMapped)
+            {
+                anchorRect = nestedMapped;
+                scrolled = nestedScrolled;
+                scrollContainers = nestedScrollContainers;
+                measuredFragment = containerFragment;
+                rectInFragment = nestedRect;
+                measuredInScrolledContents = false;
+            }
+        }
+
         var inFixedBox = _inFixedBox;
         _inFixedBox = false;
 
@@ -531,6 +549,25 @@ internal sealed class AnchorQuery
             RectInFragment = rectInFragment,
             InScrolledContents = measuredInScrolledContents,
         };
+    }
+
+    /// <summary>Returns the outermost multi-column container that contains an anchor in the containing block of the positioned box, or null.</summary>
+    private ContainerBox? FindNestedMultiColumnContainer(ContainerBox anchor)
+    {
+        var host = _hostFragment.Box;
+        ContainerBox? result = null;
+        for (var ancestor = anchor.Parent; ancestor is not null; ancestor = ancestor.Parent)
+        {
+            if (ReferenceEquals(ancestor, host))
+                return result;
+
+            if (ancestor.Style.Layout.IsMultiColumnContainer)
+            {
+                result = ancestor;
+            }
+        }
+
+        return null;
     }
 
     /// <summary>

@@ -404,8 +404,7 @@ internal sealed class MultiColumnFormattingContext : FormattingContext
         var outOfFlow = CollectOutOfFlowCandidates(stripBuilder, children);
         children = PositionedLayout.LayoutInlineContainingBlockCandidatesOfStrip(context, box, children, stripSize, outOfFlow);
         var spannerBoxes = multiColumnFlow.SpannerBoxes.Count > 0 ? multiColumnFlow.SpannerBoxes : null;
-        var flow = FragmentationFlow.Collect(children, stripSize, writingDirection, spannerBoxes, box, separatesOutOfFlow, floatPushes);
-        flow.Relayout = relayout;
+        var flow = FragmentationFlow.Collect(children, stripSize, writingDirection, spannerBoxes, box, separatesOutOfFlow, floatPushes, relayout: relayout);
         return new ColumnStrip(children, stripSize, flow, spannerBoxes, outOfFlow);
     }
 
@@ -821,9 +820,11 @@ internal sealed class MultiColumnFormattingContext : FormattingContext
                     pass = -1;
                 }
             }
-            else if (stripRelayout?.UpdateBrokenBoxes(flow, map, children, stripSize, writingDirection, outOfFlowFragmentainers.BlockSizes) == true)
+            else if (stripRelayout?.UpdateBrokenBoxes(flow, map, children, stripSize, writingDirection, outOfFlowFragmentainers.BlockSizes) == true
+                || stripRelayout?.UpdateNestedAnchors(flow, map) == true)
             {
-                // The broken boxes are laid out again (see StripRelayout): the floats are pushed again from the start
+                // The broken boxes (and the anchor-positioned boxes of the anchors in the nested multi-column containers) are laid
+                // out again (see StripRelayout): the floats are pushed again from the start
                 restarts = true;
                 floatPushes = null;
                 lanesBreaks = null;

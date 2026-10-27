@@ -18,6 +18,12 @@ internal sealed class AnchorPositionState
     /// <summary>The remembered scroll offsets of the anchor references (https://drafts.csswg.org/css-anchor-position-1/#remembered-scroll-offset).</summary>
     public Dictionary<(Element Element, string? PseudoElement), PhysicalOffset> RememberedScrollOffsets { get; } = [];
 
+    /// <summary>
+    /// Whether the remembered scroll offsets were taken when the box began generating boxes, and the next rendering update did not
+    /// take its snapshot of the scroll offsets yet (see <see cref="LayoutEngine.UpdateAnchorPositionedBoxesForRendering"/>).
+    /// </summary>
+    public bool HasProvisionalRememberedScrollOffsets;
+
     /// <summary>The last successful position option (https://drafts.csswg.org/css-anchor-position-1/#last-successful-position-option), or null.</summary>
     public string? LastSuccessfulOption;
 
@@ -447,7 +453,28 @@ internal sealed partial class LayoutEngine
     /// </summary>
     internal void UpdateAnchorPositionedBoxesForRendering()
     {
-        if (_anchorPositionedBoxes is not { Count: > 0 } boxes || NeedsLayout)
+        if (_anchorPositionedBoxes is not { Count: > 0 } boxes)
+            return;
+
+        // The remembered scroll offsets of the boxes that began generating boxes since the last rendering update are the scroll
+        // offsets of the snapshot of this rendering update, as in the browsers, which take the snapshot "each frame, before style
+        // recalc" (https://drafts.csswg.org/css-anchor-position-1/#default-scroll-shift): e.g. the scroll containers scrolled by
+        // the scripts after the layout that created the box. The default scroll shift is then zero, and the scrollable overflow
+        // includes the box where it is displayed.
+        foreach (var state in boxes)
+        {
+            if (!state.HasProvisionalRememberedScrollOffsets)
+                continue;
+
+            state.HasProvisionalRememberedScrollOffsets = false;
+            if (NeedsLayout || state.Fragment is not { } shifted || shifted.AnchorScrollShift != PhysicalOffset.Zero)
+            {
+                state.RememberedScrollOffsets.Clear();
+                SetNeedsLayout();
+            }
+        }
+
+        if (NeedsLayout)
             return;
 
         UpdateForceHiddenBoxes(boxes);

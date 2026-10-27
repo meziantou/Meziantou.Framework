@@ -565,9 +565,26 @@ internal sealed partial class TableLayoutAlgorithm
         // The specified block size of the cell is a minimum: the contents make it taller, whatever its overflow (as in the
         // browsers, WPT css/css-tables/table-cell-overflow-explicit-height-001.html)
         var contentBlockSize = fragment.WritingDirection.IsOrthogonalTo(_writingDirection) ? _writingDirection.ToLogical(fragment.Size).Block : fragment.IntrinsicBlockSize;
+        result.HasBaseline = TryGetCellBaseline(cell, fragment, out result.Baseline);
+
+        // In a fragmentation context, the monolithic contents of the cell that overflow a fragmentainer take no block size in the
+        // next ones: the cell is shorter once fragmented (see StripRelayout.GetCellBlockSizeReduction)
+        if (_context.StripRelayout is { } stripRelayout)
+        {
+            stripRelayout.RecordTableCell(cell.Box);
+            if (stripRelayout.GetCellBlockSizeReduction(cell.Box) is var reduction and > 0)
+            {
+                contentBlockSize = Math.Max(0, contentBlockSize - reduction);
+                if (!result.HasBaseline)
+                {
+                    // (the synthesized baseline is the block-end content edge)
+                    result.Baseline = Math.Max(0, result.Baseline - reduction);
+                }
+            }
+        }
+
         result.ContentBlockSize = contentBlockSize;
         result.BlockSize = Math.Max(contentBlockSize, GetSpecifiedCellBlockSize(cell, fragment));
-        result.HasBaseline = TryGetCellBaseline(cell, fragment, out result.Baseline);
         return result;
     }
 
@@ -689,6 +706,11 @@ internal sealed partial class TableLayoutAlgorithm
         layout.Fragment = fragment;
         layout.BlockSize = blockSize;
         layout.HasBaseline = TryGetCellBaseline(cell, fragment, out layout.Baseline);
+        if (!layout.HasBaseline && _context.StripRelayout?.GetCellBlockSizeReduction(cell.Box) is > 0 and var reduction)
+        {
+            // (the synthesized baseline is the block-end content edge, see MeasureCellBlockSize)
+            layout.Baseline = Math.Max(0, layout.Baseline - reduction);
+        }
     }
 
     /// <summary>

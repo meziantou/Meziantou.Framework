@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -16,6 +17,15 @@ internal readonly record struct ResizeGeometry(Size OutputSize, ResampleAxis X, 
     /// <summary>Gets a value indicating whether the resize keeps every pixel in place (the output size equals the source size).</summary>
     public bool IsIdentity => X.IsIdentity && Y.IsIdentity;
 
+    /// <summary>
+    /// Gets the canvas that the resized image is placed on by <see cref="ResizeMode.Pad"/> and <see cref="ResizeMode.BoxPad"/>,
+    /// or <see langword="null"/> when the result is the resized image alone (its size is <see cref="OutputSize"/>).
+    /// </summary>
+    public ResizePadding? Padding { get; init; }
+
+    /// <summary>Gets the size of the result: the padded canvas, or the resized image.</summary>
+    public Size CanvasSize => Padding?.CanvasSize ?? OutputSize;
+
     /// <summary>Gets the output pixel that designates a source pixel after the resize (see <see cref="ResampleAxis.TryMapSourceIndex"/>).</summary>
     /// <param name="source">A pixel of the source canvas.</param>
     /// <param name="destination">The pixel of the result.</param>
@@ -24,7 +34,8 @@ internal readonly record struct ResizeGeometry(Size OutputSize, ResampleAxis X, 
     {
         if (X.TryMapSourceIndex(source.X, out var x) && Y.TryMapSourceIndex(source.Y, out var y))
         {
-            destination = new Point(x, y);
+            var offset = Padding?.Offset ?? default;
+            destination = new Point(x + offset.X, y + offset.Y);
             return true;
         }
 
@@ -33,7 +44,11 @@ internal readonly record struct ResizeGeometry(Size OutputSize, ResampleAxis X, 
     }
 
     /// <summary>Computes the geometry of resizing a <paramref name="source"/> canvas with <paramref name="options"/>.</summary>
-    /// <exception cref="ArgumentException">Enlargement is required by <see cref="ResizeMode.Stretch"/> or <see cref="ResizeMode.Cover"/> while <see cref="ResizeOptions.AllowUpscaling"/> is <see langword="false"/>.</exception>
+    /// <exception cref="ArgumentException">
+    /// Enlargement is required by <see cref="ResizeMode.Stretch"/> or <see cref="ResizeMode.Cover"/> while
+    /// <see cref="ResizeOptions.AllowUpscaling"/> is <see langword="false"/>, or a reduction is required by a mode other
+    /// than <see cref="ResizeMode.Contain"/> while <see cref="ResizeOptions.AllowDownscaling"/> is <see langword="false"/>.
+    /// </exception>
     public static ResizeGeometry Compute(Size source, ResizeOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -47,23 +62,44 @@ internal readonly record struct ResizeGeometry(Size OutputSize, ResampleAxis X, 
                 if (!options.AllowUpscaling && (targetWidth > sourceWidth || targetHeight > sourceHeight))
                     throw new ArgumentException(string.Create(CultureInfo.InvariantCulture, $"Stretching the {sourceWidth}x{sourceHeight} image to {targetWidth}x{targetHeight} requires enlargement, but ResizeOptions.AllowUpscaling is false."), nameof(options));
 
+                if (!options.AllowDownscaling && (targetWidth < sourceWidth || targetHeight < sourceHeight))
+                    throw new ArgumentException(string.Create(CultureInfo.InvariantCulture, $"Stretching the {sourceWidth}x{sourceHeight} image to {targetWidth}x{targetHeight} requires a reduction, but ResizeOptions.AllowDownscaling is false."), nameof(options));
+
                 return new(new Size(targetWidth, targetHeight), ResampleAxis.FullExtent(sourceWidth, targetWidth), ResampleAxis.FullExtent(sourceHeight, targetHeight));
 
-            case ResizeMode.Contain:
+            case ResizeMode.Contain or ResizeMode.Pad or ResizeMode.BoxPad:
             {
                 // Scale factor s = min(tw / sw, th / sh), compared exactly with cross products
+                var mode = options.Mode;
                 var limitedByWidth = (long)targetWidth * sourceHeight <= (long)targetHeight * sourceWidth;
                 long numerator = limitedByWidth ? targetWidth : targetHeight;
                 long denominator = limitedByWidth ? sourceWidth : sourceHeight;
-                if (!options.AllowUpscaling && numerator > denominator)
+                if (numerator > denominator && (!options.AllowUpscaling || mode == ResizeMode.BoxPad))
                 {
+                    numerator = 1;
+                    denominator = 1;
+                }
+                else if (numerator < denominator && !options.AllowDownscaling)
+                {
+                    // Contain may exceed the target; the padding modes cannot, since the canvas is the target
+                    if (mode != ResizeMode.Contain)
+                        throw new ArgumentException(string.Create(CultureInfo.InvariantCulture, $"Padding the {sourceWidth}x{sourceHeight} image to {targetWidth}x{targetHeight} requires a reduction, but ResizeOptions.AllowDownscaling is false."), nameof(options));
+
                     numerator = 1;
                     denominator = 1;
                 }
 
                 var width = limitedByWidth ? (numerator == denominator ? sourceWidth : targetWidth) : ScaleLength(sourceWidth, numerator, denominator);
                 var height = limitedByWidth ? ScaleLength(sourceHeight, numerator, denominator) : (numerator == denominator ? sourceHeight : targetHeight);
-                return new(new Size(width, height), ResampleAxis.FullExtent(sourceWidth, width), ResampleAxis.FullExtent(sourceHeight, height));
+                var geometry = new ResizeGeometry(new Size(width, height), ResampleAxis.FullExtent(sourceWidth, width), ResampleAxis.FullExtent(sourceHeight, height));
+                if (mode == ResizeMode.Contain || (width == targetWidth && height == targetHeight))
+                    return geometry;
+
+                // The image fits in the target (s <= min(tw / sw, th / sh) and nearest rounding): the remainder is padding
+                Debug.Assert(width <= targetWidth && height <= targetHeight);
+                var (anchorX, anchorY) = GetAnchorPosition(options.Anchor);
+                var offset = new Point((int)((long)(targetWidth - width) * anchorX / 2), (int)((long)(targetHeight - height) * anchorY / 2));
+                return geometry with { Padding = new ResizePadding(new Size(targetWidth, targetHeight), offset) };
             }
 
             case ResizeMode.Cover:
@@ -74,6 +110,9 @@ internal readonly record struct ResizeGeometry(Size OutputSize, ResampleAxis X, 
                 long denominator = limitedByWidth ? sourceWidth : sourceHeight;
                 if (!options.AllowUpscaling && numerator > denominator)
                     throw new ArgumentException(string.Create(CultureInfo.InvariantCulture, $"Covering {targetWidth}x{targetHeight} with the {sourceWidth}x{sourceHeight} image requires enlargement, but ResizeOptions.AllowUpscaling is false."), nameof(options));
+
+                if (!options.AllowDownscaling && numerator < denominator)
+                    throw new ArgumentException(string.Create(CultureInfo.InvariantCulture, $"Covering {targetWidth}x{targetHeight} with the {sourceWidth}x{sourceHeight} image requires a reduction, but ResizeOptions.AllowDownscaling is false."), nameof(options));
 
                 var (anchorX, anchorY) = GetAnchorPosition(options.Anchor);
                 return new(

@@ -202,6 +202,16 @@ public class TestLinkHelper
     }
 
     [Fact]
+    public void TestLabelKeepsOtherEscapes()
+    {
+        //                           0123456
+        var text = new StringSlice(@"[\x \!]");
+        Assert.True(LinkHelper.TryParseLabel(ref text, out string? label, out SourceSpan labelSpan));
+        Assert.Equal(new SourceSpan(1, 5), labelSpan);
+        Assert.Equal(@"\x \!", label);
+    }
+
+    [Fact]
     public void TestLabelEscape2()
     {
         //                           0123
@@ -216,10 +226,9 @@ public class TestLinkHelper
     {
         Assert.False(LinkHelper.TryParseLabel(new StringSlice(@"a"), out _));
         Assert.False(LinkHelper.TryParseLabel(new StringSlice(@"["), out _));
-        Assert.False(LinkHelper.TryParseLabel(new StringSlice(@"[\x]"), out _));
         Assert.False(LinkHelper.TryParseLabel(new StringSlice(@"[[]"), out _));
         Assert.False(LinkHelper.TryParseLabel(new StringSlice(@"[     ]"), out _));
-        Assert.False(LinkHelper.TryParseLabel(new StringSlice(@"[  \t \n  ]"), out _));
+        Assert.False(LinkHelper.TryParseLabel(new StringSlice("[  \t \n  ]"), out _));
     }
 
     [Fact]

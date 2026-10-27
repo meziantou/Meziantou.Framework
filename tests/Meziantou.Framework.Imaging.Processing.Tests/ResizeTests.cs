@@ -1499,6 +1499,376 @@ public sealed class ResizeTests
     }
 
     // -----------------------------------------------------------------------------------------------------------------
+    // Padding: Pad and BoxPad resize modes, AllowDownscaling, Pad and ExtendCanvas
+    // -----------------------------------------------------------------------------------------------------------------
+
+    public static TheoryData<int, int, int, int, ResizeMode, bool, bool, int, int, int, int> PaddingSizeCases => new()
+    {
+        // source, target, mode, allowUpscaling, allowDownscaling -> resized size and its centered offset on the canvas
+        { 4, 2, 7, 7, ResizeMode.Pad, true, true, 7, 4, 0, 1 },        // s = 7/4, 2 * 7/4 = 3.5 -> 4; (7 - 4) / 2 = 1.5 -> 1
+        { 4, 2, 7, 7, ResizeMode.BoxPad, true, true, 4, 2, 1, 2 },     // s = min(7/4, 1) = 1
+        { 4, 2, 7, 7, ResizeMode.Pad, false, true, 4, 2, 1, 2 },       // BoxPad is Pad without upscaling
+        { 4, 2, 7, 7, ResizeMode.Pad, true, false, 7, 4, 0, 1 },       // enlarging only
+        { 8, 4, 6, 6, ResizeMode.Pad, true, true, 6, 3, 0, 1 },        // s = 6/8, 4 * 6/8 = 3
+        { 8, 4, 6, 6, ResizeMode.BoxPad, true, true, 6, 3, 0, 1 },     // a larger image is reduced as by Pad
+        { 3, 3, 5, 2, ResizeMode.Pad, true, true, 2, 2, 1, 0 },        // s = 2/3, 3 * 2/3 = 2; (5 - 2) / 2 = 1.5 -> 1
+        { 4, 2, 8, 4, ResizeMode.Pad, true, true, 8, 4, 0, 0 },        // fits exactly: no padding
+        { 4, 2, 4, 2, ResizeMode.BoxPad, true, true, 4, 2, 0, 0 },
+        { 1, 1, 2, 3, ResizeMode.BoxPad, true, true, 1, 1, 0, 1 },
+
+        // Contain without downscaling ("min"): enlarges to fit, never reduces, may exceed the target
+        { 8, 4, 6, 6, ResizeMode.Contain, true, false, 8, 4, 0, 0 },
+        { 4, 2, 6, 6, ResizeMode.Contain, true, false, 6, 3, 0, 0 },
+        { 4, 2, 6, 6, ResizeMode.Contain, false, false, 4, 2, 0, 0 },
+        { 4, 2, 3, 6, ResizeMode.Contain, false, false, 4, 2, 0, 0 },
+    };
+
+    [Theory]
+    [MemberData(nameof(PaddingSizeCases))]
+    public void PaddingModesPlaceTheContainedImageOnTheTargetCanvas(int sourceWidth, int sourceHeight, int targetWidth, int targetHeight, ResizeMode mode, bool allowUpscaling, bool allowDownscaling, int resizedWidth, int resizedHeight, int offsetX, int offsetY)
+    {
+        var options = new ResizeOptions(targetWidth, targetHeight) { Mode = mode, AllowUpscaling = allowUpscaling, AllowDownscaling = allowDownscaling, BackgroundColor = new Rgba64(0, 0, 0) };
+        var geometry = ResizeGeometry.Compute(new Size(sourceWidth, sourceHeight), options);
+        Assert.Equal(new Size(resizedWidth, resizedHeight), geometry.OutputSize);
+        var padded = mode != ResizeMode.Contain && (resizedWidth != targetWidth || resizedHeight != targetHeight);
+        Assert.Equal(padded ? new ResizePadding(new Size(targetWidth, targetHeight), new Point(offsetX, offsetY)) : null, geometry.Padding);
+
+        // A constant image stays constant inside, and the padding is the background color
+        using var image = new Image<Gray8>(sourceWidth, sourceHeight, new Gray8(7));
+        image.Resize(options, Ct);
+        var canvas = padded ? new Size(targetWidth, targetHeight) : new Size(resizedWidth, resizedHeight);
+        Assert.Equal(canvas, image.Size);
+        var inside = new Rectangle(offsetX, offsetY, resizedWidth, resizedHeight);
+        for (var y = 0; y < canvas.Height; y++)
+        {
+            for (var x = 0; x < canvas.Width; x++)
+            {
+                Assert.Equal(inside.Contains(new Point(x, y)) ? new Gray8(7) : new Gray8(0), image.Frames[0][x, y]);
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(4, 2, 3, 2, ResizeMode.Stretch)]
+    [InlineData(4, 2, 5, 1, ResizeMode.Stretch)]
+    [InlineData(4, 4, 2, 3, ResizeMode.Cover)]          // s = max(2/4, 3/4) < 1
+    [InlineData(8, 4, 6, 6, ResizeMode.Pad)]            // s = 6/8 < 1
+    [InlineData(8, 4, 6, 6, ResizeMode.BoxPad)]
+    [InlineData(8, 4, 9, 3, ResizeMode.Pad)]
+    public void ModesThatMustReachTheTargetRejectReductionWhenDownscalingIsDisabled(int sourceWidth, int sourceHeight, int targetWidth, int targetHeight, ResizeMode mode)
+    {
+        using var image = new Image<Rgba32>(sourceWidth, sourceHeight, new Rgba32(1, 2, 3, 4));
+        var storage = image.Frames[0].Storage;
+        var options = new ResizeOptions(targetWidth, targetHeight) { Mode = mode, AllowDownscaling = false };
+        Assert.Throws<ArgumentException>("options", () => image.Resize(options, Ct));
+        Assert.Equal(new Size(sourceWidth, sourceHeight), image.Size);
+        Assert.Same(storage, image.Frames[0].Storage);
+    }
+
+    [Fact]
+    public void CoverWithoutDownscalingStillCropsAnImageThatIsEnlarged()
+    {
+        // 4x4 -> 2x5: s = max(2/4, 5/4) = 5/4, then 5x5 is cropped to 2x5
+        using var image = new Image<Gray8>(4, 4, new Gray8(9));
+        image.Resize(new ResizeOptions(2, 5) { Mode = ResizeMode.Cover, AllowDownscaling = false }, Ct);
+        Assert.Equal(new Size(2, 5), image.Size);
+    }
+
+    [Theory]
+    [MemberData(nameof(Anchors))]
+    public void BoxPadAndExtendCanvasPlaceTheUnchangedPixelsAtTheAnchor(ResizeAnchor anchor, int ignoredColumn, int ignoredRow)
+    {
+        _ = ignoredColumn;
+        _ = ignoredRow;
+        var (anchorX, anchorY) = ResizeGeometry.GetAnchorPosition(anchor);
+
+        // 5x3 on an 8x6 canvas: 3 columns and 3 rows of padding, split 0/3, 1/2 or 3/0
+        var offsetX = 3 * anchorX / 2;
+        var offsetY = 3 * anchorY / 2;
+        var background = new Rgba64(1, 2, 3, 4);
+        Rgba64 Expected(int x, int y) => x >= offsetX && x < offsetX + 5 && y >= offsetY && y < offsetY + 3 ? Id(x - offsetX, y - offsetY) : background;
+
+        using (var image = BuildIds(5, 3))
+        {
+            // No resampling at all: the filter does not matter, and the hidden low bits are kept
+            image.Resize(new ResizeOptions(8, 6) { Mode = ResizeMode.BoxPad, Anchor = anchor, BackgroundColor = background, Filter = ResamplingFilter.Lanczos3 }, Ct);
+            AssertIds(image.Frames[0], 8, 6, Expected);
+        }
+
+        using (var image = BuildIds(5, 3))
+        {
+            image.ExtendCanvas(new Size(8, 6), anchor, background, Ct);
+            AssertIds(image.Frames[0], 8, 6, Expected);
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(Anchors))]
+    public void PadResizesLikeContainAndPlacesTheResultAtTheAnchor(ResizeAnchor anchor, int ignoredColumn, int ignoredRow)
+    {
+        _ = ignoredColumn;
+        _ = ignoredRow;
+        var (anchorX, anchorY) = ResizeGeometry.GetAnchorPosition(anchor);
+        foreach (var (targetWidth, targetHeight) in new[] { (8, 5), (5, 8) })
+        {
+            // 3x3 -> 5x5 (s = 5/3), then 3 columns or rows of padding
+            var offsetX = (targetWidth - 5) * anchorX / 2;
+            var offsetY = (targetHeight - 5) * anchorY / 2;
+            using var contained = BuildIds(3, 3);
+            contained.Resize(new ResizeOptions(targetWidth, targetHeight), Ct);
+            Assert.Equal(new Size(5, 5), contained.Size);
+
+            // The padding never blends into the image: the edges are clamped as for any resize
+            using var image = BuildIds(3, 3);
+            var background = new Rgba64(65535, 0, 0);
+            image.Resize(new ResizeOptions(targetWidth, targetHeight) { Mode = ResizeMode.Pad, Anchor = anchor, BackgroundColor = background }, Ct);
+            AssertIds(image.Frames[0], targetWidth, targetHeight, (x, y) => x >= offsetX && x < offsetX + 5 && y >= offsetY && y < offsetY + 5 ? contained.Frames[0][x - offsetX, y - offsetY] : background);
+        }
+    }
+
+    [Fact]
+    public void PadAddsTheBorderOfEachSide()
+    {
+        using var image = BuildIds(3, 2);
+        image.Pad(1, 2, 3, 0, cancellationToken: Ct);
+        AssertIds(image.Frames[0], 7, 4, (x, y) => x is >= 1 and < 4 && y >= 2 ? Id(x - 1, y - 2) : default);
+
+        image.Pad(0, 0, 0, 1, new Rgba64(5, 6, 7, 8), Ct);
+        Assert.Equal(new Size(7, 5), image.Size);
+        Assert.Equal(new Rgba64(5, 6, 7, 8), image.Frames[0][6, 4]);
+        Assert.Equal(Id(2, 1), image.Frames[0][3, 3]);
+    }
+
+    [Fact]
+    public void PaddingAnAnimationPadsEveryFrameAndThePosterAndKeepsTheirIdentity()
+    {
+        using var image = BuildIds(3, 3, frameCount: 3);
+        image.SetPosterFrame(image.Frames[1]);
+        image.Frames[2].Metadata.Duration = new FrameDuration(1, 7);
+        var frames = ((IEnumerable<ImageFrame<Rgba64>>)image.Frames).ToArray();
+        var poster = image.PosterFrame!;
+        var background = new Rgba64(9, 8, 7, 6);
+
+        // 3x3 -> 5x5 on a 5x8 canvas, at the bottom: offset (0, 3)
+        image.Resize(new ResizeOptions(5, 8) { Mode = ResizeMode.Pad, Anchor = ResizeAnchor.Bottom, BackgroundColor = background, Filter = ResamplingFilter.Lanczos3 }, Ct);
+        Assert.Equal(new Size(5, 8), image.Size);
+        for (var i = 0; i < frames.Length; i++)
+        {
+            Assert.Same(frames[i], image.Frames[i]);
+            using var single = BuildIds(3, 3, frameCount: 1, frameOffset: i);
+            single.Resize(new ResizeOptions(5, 5) { Filter = ResamplingFilter.Lanczos3 }, Ct);
+            AssertIds(frames[i], 5, 8, (x, y) => y >= 3 ? single.Frames[0][x, y - 3] : background);
+        }
+
+        Assert.Same(poster, image.PosterFrame);
+        Assert.Equal(CopyAll(frames[1]), CopyAll(poster));
+        Assert.Equal(new FrameDuration(1, 7), frames[2].Metadata.Duration);
+
+        // The canvas operations pad every frame too
+        image.ExtendCanvas(new Size(6, 9), ResizeAnchor.TopLeft, background, Ct);
+        image.Pad(1, 0, 0, 0, background, Ct);
+        Assert.Equal(new Size(7, 9), image.Size);
+        foreach (var frame in image.Frames)
+        {
+            Assert.Equal(new Size(7, 9), frame.Size);
+            Assert.Equal(background, frame[0, 4]);
+            Assert.Equal(background, frame[6, 4]);
+        }
+
+        Assert.Equal(new Size(7, 9), poster.Size);
+        Assert.Equal(CopyAll(frames[1]), CopyAll(poster));
+        Assert.Equal(0, image.Owner.Scope.GetLiveBytes(AllocationKind.Temporary));
+        Assert.Equal(4, image.Owner.LiveStorageCount);
+    }
+
+    [Fact]
+    public void PaddingOperationsAreTransactionalOnAllocationFailureAndCancellation()
+    {
+        Action<Image<Rgba32>, CancellationToken>[] operations =
+        [
+            (image, token) => image.Resize(new ResizeOptions(7, 7) { Mode = ResizeMode.Pad, Filter = ResamplingFilter.Lanczos3 }, token),
+            (image, token) => image.Resize(new ResizeOptions(7, 7) { Mode = ResizeMode.Pad, Filter = ResamplingFilter.NearestNeighbor }, token),
+            (image, token) => image.Resize(new ResizeOptions(7, 7) { Mode = ResizeMode.BoxPad }, token),
+            (image, token) => image.Pad(1, 2, 3, 0, cancellationToken: token),
+            (image, token) => image.ExtendCanvas(new Size(9, 4), ResizeAnchor.Right, cancellationToken: token),
+        ];
+
+        foreach (var operation in operations)
+        {
+            var rentals = CountRentals(image => operation(image, Ct));
+            Assert.True(rentals >= 3, "Replacements are rented");
+            for (var failing = 1; failing <= rentals; failing++)
+            {
+                var pool = new SlabPool();
+                using var image = BuildWithPool(pool, ImageConfiguration.Default);
+                var snapshot = ResizeState.Capture(image);
+                var count = 0;
+                var target = failing;
+                pool.RentFailureInjector = _ => ++count == target ? new InjectedAllocationFailureException() : null;
+                Assert.Throws<InjectedAllocationFailureException>(() => operation(image, Ct));
+                pool.RentFailureInjector = null;
+                snapshot.AssertUnchanged(image);
+            }
+
+            for (var cancelAt = 1; cancelAt <= rentals; cancelAt++)
+            {
+                var pool = new SlabPool();
+                using var image = BuildWithPool(pool, ImageConfiguration.Default);
+                var snapshot = ResizeState.Capture(image);
+                using var cancellation = new CancellationTokenSource();
+                var count = 0;
+                var target = cancelAt;
+                pool.RentFailureInjector = _ =>
+                {
+                    if (++count == target)
+                    {
+                        cancellation.Cancel();
+                    }
+
+                    return null;
+                };
+
+                Assert.ThrowsAny<OperationCanceledException>(() => operation(image, cancellation.Token));
+                pool.RentFailureInjector = null;
+                snapshot.AssertUnchanged(image);
+            }
+
+            using (var image = BuildWithPool(new SlabPool(), ImageConfiguration.Default))
+            {
+                var snapshot = ResizeState.Capture(image);
+                Assert.ThrowsAny<OperationCanceledException>(() => operation(image, new CancellationToken(canceled: true)));
+                snapshot.AssertUnchanged(image);
+
+                operation(image, Ct); // succeeds afterward, and releases the scratch
+                Assert.Equal(0, image.Owner.Scope.GetLiveBytes(AllocationKind.Temporary));
+                Assert.Equal(3, image.Owner.LiveStorageCount);
+            }
+        }
+    }
+
+    [Fact]
+    public void PaddingMovesTheHotspotWithThePixels()
+    {
+        using (var image = BuildIds(5, 3))
+        {
+            image.Frames[0].Metadata.Hotspot = new Point(4, 2);
+            image.ExtendCanvas(new Size(8, 6), ResizeAnchor.BottomRight, cancellationToken: Ct);
+            Assert.Equal(new Point(7, 5), image.Frames[0].Metadata.Hotspot);
+            image.Pad(1, 2, 0, 0, cancellationToken: Ct);
+            Assert.Equal(new Point(8, 7), image.Frames[0].Metadata.Hotspot);
+        }
+
+        // 4x3 -> 7x5 (s = 7/4) at offset (0, 1): (3, 2) -> (floor(3 * 7/4), floor(2 * 5/3)) + (0, 1)
+        using (var image = new Image<Rgba32>(4, 3))
+        {
+            image.Frames[0].Metadata.Hotspot = new Point(3, 2);
+            image.Resize(new ResizeOptions(7, 7) { Mode = ResizeMode.Pad }, Ct);
+            Assert.Equal(new Point(5, 4), image.Frames[0].Metadata.Hotspot);
+        }
+    }
+
+    [Fact]
+    public void PaddingAFormatWithoutAlphaRequiresAnOpaqueColor()
+    {
+        using var image = new Image<Rgb24>(3, 2, new Rgb24(10, 20, 30));
+        var storage = image.Frames[0].Storage;
+        Assert.Throws<UnsupportedImageFeatureException>(() => image.Pad(1, 1, 1, 1, cancellationToken: Ct));
+        Assert.Throws<UnsupportedImageFeatureException>(() => image.Pad(1, 1, 1, 1, new Rgba64(0, 0, 0, 65534), Ct));
+        Assert.Throws<UnsupportedImageFeatureException>(() => image.ExtendCanvas(new Size(4, 4), cancellationToken: Ct));
+        Assert.Throws<UnsupportedImageFeatureException>(() => image.Resize(new ResizeOptions(3, 3) { Mode = ResizeMode.BoxPad }, Ct));
+        Assert.Throws<UnsupportedImageFeatureException>(() => image.Resize(new ResizeOptions(9, 9) { Mode = ResizeMode.Pad, BackgroundColor = new Rgba64(1, 2, 3, 4) }, Ct));
+        Assert.Same(storage, image.Frames[0].Storage);
+        Assert.Equal(new Size(3, 2), image.Size);
+
+        // Without padding, the color is not needed
+        image.Pad(0, 0, 0, 0, cancellationToken: Ct);
+        image.ExtendCanvas(new Size(3, 2), cancellationToken: Ct);
+        image.Resize(new ResizeOptions(3, 2) { Mode = ResizeMode.Pad }, Ct);
+        Assert.Same(storage, image.Frames[0].Storage);
+        image.Resize(new ResizeOptions(6, 4) { Mode = ResizeMode.Pad }, Ct);
+        Assert.Equal(new Size(6, 4), image.Size);
+
+        image.Pad(1, 0, 0, 0, new Rgba64(65535, 0, 0), Ct);
+        Assert.Equal(new Rgb24(255, 0, 0), image.Frames[0][0, 3]);
+        Assert.Equal(new Rgb24(10, 20, 30), image.Frames[0][1, 3]);
+
+        using var gray = new Image<Gray16>(1, 1, new Gray16(5));
+        gray.ExtendCanvas(new Size(2, 1), ResizeAnchor.Right, new Rgba64(1000, 1000, 1000), Ct);
+        Assert.Equal(new Gray16(1000), gray.Frames[0][0, 0]);
+        Assert.Equal(new Gray16(5), gray.Frames[0][1, 0]);
+    }
+
+    [Fact]
+    public void PadAndExtendCanvasValidateTheirArguments()
+    {
+        using var image = new Image<Rgba32>(4, 3);
+        var storage = image.Frames[0].Storage;
+        Assert.Throws<ArgumentOutOfRangeException>("left", () => image.Pad(-1, 0, 0, 0, cancellationToken: Ct));
+        Assert.Throws<ArgumentOutOfRangeException>("top", () => image.Pad(0, -1, 0, 0, cancellationToken: Ct));
+        Assert.Throws<ArgumentOutOfRangeException>("right", () => image.Pad(0, 0, -1, 0, cancellationToken: Ct));
+        Assert.Throws<ArgumentOutOfRangeException>("bottom", () => image.Pad(0, 0, 0, -1, cancellationToken: Ct));
+        Assert.Throws<ArgumentOutOfRangeException>("size", () => image.ExtendCanvas(new Size(3, 9), cancellationToken: Ct));
+        Assert.Throws<ArgumentOutOfRangeException>("size", () => image.ExtendCanvas(new Size(9, 2), cancellationToken: Ct));
+        Assert.Throws<ArgumentOutOfRangeException>("anchor", () => image.ExtendCanvas(new Size(9, 9), (ResizeAnchor)9, cancellationToken: Ct));
+        Assert.Throws<ArgumentNullException>("image", () => ImageProcessingExtensions.Pad(null!, 1, 1, 1, 1, cancellationToken: Ct));
+        Assert.Throws<ArgumentNullException>("image", () => ImageProcessingExtensions.ExtendCanvas(null!, new Size(9, 9), cancellationToken: Ct));
+
+        // Nothing to add: the image is unchanged
+        image.Pad(0, 0, 0, 0, cancellationToken: Ct);
+        image.ExtendCanvas(new Size(4, 3), ResizeAnchor.BottomRight, cancellationToken: Ct);
+        Assert.Same(storage, image.Frames[0].Storage);
+
+        image.Frames[0].ProcessPixelRows(image, static (_, image) =>
+        {
+            Assert.Throws<InvalidOperationException>(() => image.Pad(1, 0, 0, 0, cancellationToken: Ct));
+            Assert.Throws<InvalidOperationException>(() => image.ExtendCanvas(new Size(9, 9), cancellationToken: Ct));
+        });
+        Assert.Equal(new Size(4, 3), image.Size);
+
+        var disposed = new Image<Rgba32>(4, 3);
+        disposed.Dispose();
+        Assert.Throws<ObjectDisposedException>(() => disposed.Pad(1, 0, 0, 0, cancellationToken: Ct));
+        Assert.Throws<ObjectDisposedException>(() => disposed.ExtendCanvas(new Size(9, 9), cancellationToken: Ct));
+    }
+
+    [Fact]
+    public void PaddingRespectsCanvasLimits()
+    {
+        var configuration = new ImageConfiguration { Limits = new ImageResourceLimits { MaxWidth = 8, MaxHeight = 8 } };
+        using var image = new Image<Rgba32>(4, 4, configuration);
+        Assert.Equal(ImageResourceLimitKind.Width, Assert.Throws<ImageResourceLimitException>(() => image.Pad(0, 0, 5, 0, cancellationToken: Ct)).Kind);
+        Assert.Equal(ImageResourceLimitKind.Width, Assert.Throws<ImageResourceLimitException>(() => image.Pad(int.MaxValue, 0, int.MaxValue, 0, cancellationToken: Ct)).Kind);
+        Assert.Equal(ImageResourceLimitKind.Height, Assert.Throws<ImageResourceLimitException>(() => image.ExtendCanvas(new Size(4, 9), cancellationToken: Ct)).Kind);
+        Assert.Equal(ImageResourceLimitKind.Height, Assert.Throws<ImageResourceLimitException>(() => image.Resize(new ResizeOptions(4, 9) { Mode = ResizeMode.BoxPad }, Ct)).Kind);
+        Assert.Equal(new Size(4, 4), image.Size);
+        image.Pad(4, 4, 0, 0, cancellationToken: Ct);
+        Assert.Equal(new Size(8, 8), image.Size);
+    }
+
+    [Fact]
+    public void PaddingExamples()
+    {
+        #region Pad_Border
+        using var image = new Image<Rgb24>(4, 3, new Rgb24(10, 20, 30));
+
+        // A 2-pixel white border on the left and on the right, 1 pixel above and below
+        image.Pad(left: 2, top: 1, right: 2, bottom: 1, backgroundColor: new Rgba64(65535, 65535, 65535));
+        Assert.Equal(new Size(8, 5), image.Size);
+        Assert.Equal(new Rgb24(255, 255, 255), image.Frames[0][0, 0]);
+        Assert.Equal(new Rgb24(10, 20, 30), image.Frames[0][2, 1]);
+        #endregion
+
+        #region ExtendCanvas_Square
+        using var banner = new Image<Rgba32>(4, 2, new Rgba32(200, 0, 0, 255));
+
+        // A square canvas with the image at the bottom; the new area is transparent
+        banner.ExtendCanvas(new Size(4, 4), ResizeAnchor.Bottom);
+        Assert.Equal(new Rgba32(0, 0, 0, 0), banner.Frames[0][0, 0]);
+        Assert.Equal(new Rgba32(200, 0, 0, 255), banner.Frames[0][0, 2]);
+        #endregion
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
     // Helpers
     // -----------------------------------------------------------------------------------------------------------------
 
@@ -1725,7 +2095,10 @@ public sealed class ResizeTests
     }
 
     /// <summary>Counts the pool rentals of a successful resize of <see cref="BuildWithPool"/> (replacements and scratch).</summary>
-    private static int CountRentals(ResizeOptions options)
+    private static int CountRentals(ResizeOptions options) => CountRentals(image => image.Resize(options, Ct));
+
+    /// <summary>Counts the pool rentals of a successful operation on <see cref="BuildWithPool"/> (replacements and scratch).</summary>
+    private static int CountRentals(Action<Image<Rgba32>> operation)
     {
         var pool = new SlabPool();
         using var image = BuildWithPool(pool, ImageConfiguration.Default);
@@ -1736,7 +2109,7 @@ public sealed class ResizeTests
             return null;
         };
 
-        image.Resize(options, Ct);
+        operation(image);
         return count;
     }
 

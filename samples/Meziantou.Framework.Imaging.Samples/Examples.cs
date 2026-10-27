@@ -24,6 +24,22 @@ internal static class Examples
     }
     #endregion
 
+    /// <summary>Letterboxing: fits an image inside a box, pads it to exactly that size, and adds a border.</summary>
+    #region Imaging_Letterbox
+    public static void Letterbox(string inputPath, string outputPath)
+    {
+        using var image = Image.Load(inputPath);
+
+        // Fits inside 320x240, then pads to exactly 320x240 with black bars, the image centered (ResizeOptions.Anchor).
+        // The padding is transparent by default, which a pixel format without alpha (an RGB JPEG) cannot store
+        image.Resize(new ResizeOptions(320, 240) { Mode = ResizeMode.Pad, BackgroundColor = new Rgba64(0, 0, 0) });
+
+        // A 4-pixel white frame on every side: 328x248
+        image.Pad(4, 4, 4, 4, new Rgba64(65535, 65535, 65535));
+        image.Save(outputPath);
+    }
+    #endregion
+
     /// <summary>Straightens a tilted scan: turns it around its center, and fills the corners the turn uncovers with white.</summary>
     #region Imaging_Straighten
     public static void Straighten(string inputPath, string outputPath, double degrees)

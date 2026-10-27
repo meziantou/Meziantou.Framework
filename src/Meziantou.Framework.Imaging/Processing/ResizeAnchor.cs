@@ -1,9 +1,13 @@
 namespace Meziantou.Framework.Imaging;
 
-/// <summary>Selects the part of the image kept when <see cref="ResizeMode.Cover"/> crops the overflow.</summary>
+/// <summary>
+/// Selects the part of the image kept when <see cref="ResizeMode.Cover"/> crops the overflow, or where the image is placed
+/// on a larger canvas (<see cref="ResizeMode.Pad"/>, <see cref="ResizeMode.BoxPad"/>,
+/// <see cref="ImageProcessingExtensions.ExtendCanvas(Image, Size, ResizeAnchor, Rgba64?, CancellationToken)"/>).
+/// </summary>
 public enum ResizeAnchor
 {
-    /// <summary>Keeps the center. This is the default.</summary>
+    /// <summary>Keeps the center, or centers the image on the canvas. This is the default.</summary>
     Center = 0,
 
     /// <summary>Keeps the top-left corner.</summary>

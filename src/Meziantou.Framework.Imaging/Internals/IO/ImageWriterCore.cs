@@ -43,8 +43,10 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
     private int _busy;
     private bool _posterWritten;
 
-    // The 16-bit copies of the floating-point frames of an eager save, made by PreflightFrames, kept until the writer is released
-    private List<(ImageFrame Source, Image<Rgba64> Reduced)>? _reducedFrames;
+    // The copies of the frames of an eager save that the session encodes (16-bit copies of floating-point frames, 8-bit copies
+    // reduced to the palette of indexed PNG output), made by PreflightFrames, kept until the writer is released
+    private List<(ImageFrame Source, Image Reduced)>? _reducedFrames;
+    private PngColorReduction? _colorReduction;
 
     private ImageWriterCore(ImageWriterOptions options, ImageOutputCapabilities capabilities, PixelFormat pixelFormat, ImageEncoderSession session, AllocationScope scope, Stream stream, bool ownsStream, AtomicFileOutput? file)
     {
@@ -52,6 +54,7 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
         Capabilities = capabilities;
         PixelFormat = pixelFormat;
         EncodedPixelFormat = GetEncodedPixelFormat(options.Encoder!, pixelFormat);
+        FloatReducedPixelFormat = GetFloatReducedPixelFormat(options.Encoder!, pixelFormat);
         Scope = scope;
         _session = session;
         _stream = stream;
@@ -78,10 +81,17 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
     public PixelFormat PixelFormat { get; }
 
     /// <summary>
-    /// Gets the pixel format the session encodes: <see cref="PixelFormat"/>, or <see cref="PixelFormat.Rgba64"/> for a
-    /// floating-point format, whose frames are reduced with <see cref="ImageEncoder.FloatingPointConversion"/> first.
+    /// Gets the pixel format the session encodes: <see cref="PixelFormat"/>, <see cref="PixelFormat.Rgba64"/> for a
+    /// floating-point format, whose frames are reduced with <see cref="ImageEncoder.FloatingPointConversion"/> first, or
+    /// <see cref="PixelFormat.Rgba32"/> for indexed PNG output that reduces colors (<see cref="PngColorReduction"/>).
     /// </summary>
     public PixelFormat EncodedPixelFormat { get; }
+
+    /// <summary>Gets the pixel format of the frames once their floating-point samples are reduced (<see cref="PixelFormat.Rgba64"/>), before any color reduction.</summary>
+    private PixelFormat FloatReducedPixelFormat { get; }
+
+    /// <summary>Gets a value indicating whether the session encodes copies of the frames instead of the frames (<see cref="EncodedPixelFormat"/>).</summary>
+    private bool ReducesFrames => EncodedPixelFormat != PixelFormat || PngColorReduction.Applies(Options.Encoder!);
 
     public Size CanvasSize => Options.CanvasSize;
 
@@ -139,9 +149,9 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
     {
         ArgumentNullException.ThrowIfNull(frames);
         var session = _session ?? throw new InvalidOperationException("The writer has no active encoding session.");
-        if (EncodedPixelFormat != PixelFormat)
+        if (ReducesFrames)
         {
-            (poster, frames) = ReduceFrames(poster, frames);
+            (poster, frames) = ReduceFrames(poster, frames, sequential: false);
         }
 
         if (poster is not null)
@@ -160,7 +170,7 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
     public void WritePosterFrame(ImageFrame frame)
     {
         Enter(CancellationToken.None);
-        Image<Rgba64>? temporary = null;
+        Image? temporary = null;
         try
         {
             ValidatePoster(ref frame, ref temporary);
@@ -184,7 +194,7 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
     public void WriteFrame(ImageFrame frame)
     {
         Enter(CancellationToken.None);
-        Image<Rgba64>? temporary = null;
+        Image? temporary = null;
         try
         {
             ValidateFrame(ref frame, ref temporary);
@@ -365,7 +375,7 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
     private async ValueTask WritePosterFrameCoreAsync(ImageFrame frame, CancellationToken cancellationToken)
     {
         Enter(cancellationToken);
-        Image<Rgba64>? temporary = null;
+        Image? temporary = null;
         try
         {
             ValidatePoster(ref frame, ref temporary);
@@ -381,7 +391,7 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
     private async ValueTask WriteFrameCoreAsync(ImageFrame frame, CancellationToken cancellationToken)
     {
         Enter(cancellationToken);
-        Image<Rgba64>? temporary = null;
+        Image? temporary = null;
         try
         {
             ValidateFrame(ref frame, ref temporary);
@@ -469,7 +479,7 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
         return true;
     }
 
-    private void ValidatePoster(ref ImageFrame frame, ref Image<Rgba64>? temporary)
+    private void ValidatePoster(ref ImageFrame frame, ref Image? temporary)
     {
         ArgumentNullException.ThrowIfNull(frame);
         if (!Capabilities.SupportsPosterFrame)
@@ -483,10 +493,10 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
 
         ValidateFrameShape(frame);
         frame = GetEncodedFrame(frame, ref temporary);
-        Preflight(_session!, frame, isPoster: true);
+        PreflightReduced(frame, isPoster: true);
     }
 
-    private void ValidateFrame(ref ImageFrame frame, ref Image<Rgba64>? temporary)
+    private void ValidateFrame(ref ImageFrame frame, ref Image? temporary)
     {
         ArgumentNullException.ThrowIfNull(frame);
         if (FramesWritten >= (Options.ExpectedFrameCount ?? Capabilities.MaxFrameCount ?? int.MaxValue))
@@ -498,10 +508,31 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
 
         ValidateFrameShape(frame);
         frame = GetEncodedFrame(frame, ref temporary);
-        Preflight(_session!, frame, isPoster: false);
+        PreflightReduced(frame, isPoster: false);
     }
 
-    private static PixelFormat GetEncodedPixelFormat(ImageEncoder encoder, PixelFormat pixelFormat) => PixelFormats.IsFloatingPoint(pixelFormat) && !encoder.StoresFloatingPointSamples ? PixelFormat.Rgba64 : pixelFormat;
+    /// <summary>
+    /// The preflight of a frame of a sequential write: the palette that the first image of indexed PNG output determined is only
+    /// kept once that image is accepted.
+    /// </summary>
+    private void PreflightReduced(ImageFrame frame, bool isPoster)
+    {
+        try
+        {
+            Preflight(_session!, frame, isPoster);
+        }
+        catch
+        {
+            _colorReduction?.Rollback();
+            throw;
+        }
+
+        _colorReduction?.Commit();
+    }
+
+    private static PixelFormat GetEncodedPixelFormat(ImageEncoder encoder, PixelFormat pixelFormat) => PngColorReduction.Applies(encoder) ? PixelFormat.Rgba32 : GetFloatReducedPixelFormat(encoder, pixelFormat);
+
+    private static PixelFormat GetFloatReducedPixelFormat(ImageEncoder encoder, PixelFormat pixelFormat) => PixelFormats.IsFloatingPoint(pixelFormat) && !encoder.StoresFloatingPointSamples ? PixelFormat.Rgba64 : pixelFormat;
 
     /// <summary>Rejects floating-point pixels before anything exists, unless the encoder stores them or says how to reduce them.</summary>
     private static void EnsureEncodable(ImageEncoder encoder, ImageOutputCapabilities capabilities, PixelFormat pixelFormat)
@@ -516,12 +547,12 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
     }
 
     /// <summary>
-    /// Gets the frame the session encodes: the frame itself, or its 16-bit reduction (the one made by <see cref="PreflightFrames"/>
+    /// Gets the frame the session encodes: the frame itself, or its reduction (the one made by <see cref="PreflightFrames"/>
     /// for an eager save, else a temporary one the caller disposes once the frame is written).
     /// </summary>
-    private ImageFrame GetEncodedFrame(ImageFrame frame, ref Image<Rgba64>? temporary)
+    private ImageFrame GetEncodedFrame(ImageFrame frame, ref Image? temporary)
     {
-        if (EncodedPixelFormat == PixelFormat)
+        if (!ReducesFrames)
             return frame;
 
         if (_reducedFrames is not null)
@@ -533,13 +564,12 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
             }
         }
 
-        var plan = CreateReductionPlan();
-        Image.PrepareConversion(plan, [frame]);
-        temporary = Reduce(frame, plan);
-        return temporary.FrameCore(0);
+        var (reducedFrames, owned) = ReduceImages([frame], sequential: true);
+        temporary = owned[0];
+        return reducedFrames[0];
     }
 
-    private (ImageFrame? Poster, IReadOnlyList<ImageFrame> Frames) ReduceFrames(ImageFrame? poster, IReadOnlyList<ImageFrame> frames)
+    private (ImageFrame? Poster, IReadOnlyList<ImageFrame> Frames) ReduceFrames(ImageFrame? poster, IReadOnlyList<ImageFrame> frames, bool sequential)
     {
         var all = new List<ImageFrame>(frames.Count + 1);
         if (poster is not null)
@@ -548,12 +578,11 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
         }
 
         all.AddRange(frames);
-        var plan = CreateReductionPlan();
-        Image.PrepareConversion(plan, all);
+        var (_, owned) = ReduceImages(all, sequential);
         _reducedFrames ??= [];
-        foreach (var frame in all)
+        for (var i = 0; i < all.Count; i++)
         {
-            _reducedFrames.Add((frame, Reduce(frame, plan)));
+            _reducedFrames.Add((all[i], owned[i]));
         }
 
         var reducedPoster = poster is null ? null : _reducedFrames[^all.Count].Reduced.FrameCore(0);
@@ -566,8 +595,82 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
         return (reducedPoster, reducedFrames);
     }
 
+    /// <summary>
+    /// Reduces images to the pixel format the session encodes: their floating-point samples to 16 bits, then their colors to
+    /// the palette of indexed PNG output. The returned images are owned by the caller (the intermediate copies are disposed).
+    /// </summary>
+    private (ImageFrame[] Frames, Image[] Owned) ReduceImages(List<ImageFrame> images, bool sequential)
+    {
+        var owned = new Image[images.Count];
+        var frames = new ImageFrame[images.Count];
+        var floats = new Image<Rgba64>?[images.Count];
+        try
+        {
+            if (FloatReducedPixelFormat != PixelFormat)
+            {
+                var plan = CreateReductionPlan();
+                Image.PrepareConversion(plan, images);
+                for (var i = 0; i < images.Count; i++)
+                {
+                    floats[i] = Reduce(images[i], plan);
+                }
+            }
+
+            var sources = new ImageFrame[images.Count];
+            for (var i = 0; i < images.Count; i++)
+            {
+                sources[i] = floats[i]?.FrameCore(0) ?? images[i];
+            }
+
+            if (PngColorReduction.Applies(Options.Encoder!))
+            {
+                var reduction = _colorReduction ??= new PngColorReduction((PngEncoder)Options.Encoder!, Options.Configuration, Scope, CanvasSize, sequential);
+                if (!sequential)
+                {
+                    reduction.Plan(sources);
+                }
+
+                for (var i = 0; i < images.Count; i++)
+                {
+                    owned[i] = reduction.Reduce(sources[i]);
+                    floats[i]?.Dispose();
+                    floats[i] = null;
+                }
+            }
+            else
+            {
+                for (var i = 0; i < images.Count; i++)
+                {
+                    owned[i] = floats[i]!;
+                    floats[i] = null;
+                }
+            }
+
+            for (var i = 0; i < images.Count; i++)
+            {
+                frames[i] = owned[i].FrameCore(0);
+            }
+
+            return (frames, owned);
+        }
+        catch
+        {
+            foreach (var image in floats)
+            {
+                image?.Dispose();
+            }
+
+            foreach (var image in owned)
+            {
+                image?.Dispose();
+            }
+
+            throw;
+        }
+    }
+
     private PixelConversionPlan CreateReductionPlan()
-        => PixelConversionPlan.Create(PixelFormat, EncodedPixelFormat, Options.Encoder!.FloatingPointConversion, sourceProfile: null, Format);
+        => PixelConversionPlan.Create(PixelFormat, FloatReducedPixelFormat, Options.Encoder!.FloatingPointConversion, sourceProfile: null, Format);
 
     private Image<Rgba64> Reduce(ImageFrame frame, PixelConversionPlan plan)
     {

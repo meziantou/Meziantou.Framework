@@ -6,15 +6,25 @@ using System.Runtime.Intrinsics;
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
-/// The deterministic color reduction of one frame, shared by the encoders that reduce colors to a palette (GIF, indexed BMP): a
-/// histogram pass over the frame's opaque colors, a palette of at most the requested number of colors, and the mapping of
-/// colors to palette indices.
+/// The deterministic color reduction shared by <see cref="ImageProcessingExtensions.Quantize(Image, QuantizeOptions?, CancellationToken)"/>,
+/// <see cref="PaletteBuilder"/> and the encoders that reduce colors to a palette (GIF, indexed BMP, indexed PNG): a histogram
+/// pass over the colors of one or more frames, a palette of at most the requested number of colors (or a fixed palette), and
+/// the mapping of colors to palette indices.
 /// </summary>
 /// <remarks>
 /// <list type="bullet">
 /// <item><description>
-/// Colors are 24-bit keys <c>(R &lt;&lt; 16) | (G &lt;&lt; 8) | B</c>; <see cref="TransparentKey"/> marks a transparent pixel (it
-/// takes no palette color: the encoder reserves the transparent entry separately).
+/// Colors are keys: <c>(R &lt;&lt; 16) | (G &lt;&lt; 8) | B</c> for an opaque color, <see cref="TransparentKey"/> for a fully
+/// transparent pixel, and <c>(A &lt;&lt; 24) | (R &lt;&lt; 16) | (G &lt;&lt; 8) | B</c> for a translucent color (alpha from 1 to
+/// 254), which only a quantizer created with translucent colors accepts (<see cref="GetKey"/>). A transparent pixel takes no
+/// computed palette color: the caller reserves the transparent entry (<see cref="BuildPalette(int, bool)"/>).
+/// </description></item>
+/// <item><description>
+/// <b>Translucent colors</b> are histogrammed apart from the opaque ones (4 bits per color channel and 3 bits of alpha), and the
+/// median cut never puts an opaque color and a translucent one in the same box (unless a single color is requested): an
+/// opaque pixel always maps to an opaque entry, so opaque areas never become translucent. The coordinates of a translucent
+/// color are premultiplied by its alpha, plus the alpha itself, so colors that are almost transparent are close to each
+/// other whatever their hue. Its palette color is the alpha-weighted mean color of its box, with the mean alpha.
 /// </description></item>
 /// <item><description>
 /// <b>Exact palette.</b> While the frame has at most the requested number of distinct opaque colors (tracked exactly), the
@@ -28,12 +38,21 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// lowest box number) is split along the axis of largest weighted variance (ties: R, then G, then B), between the two
 /// consecutive distinct coordinates that maximize the between-part variance <c>SL²/NL + SR²/NR</c> (ties: the first split),
 /// until the requested number of boxes exists or no box has two items. Each palette color is the weighted mean of its box
-/// (exact 8-bit sums divided by the count, nearest, ties up), and the palette is sorted by key (duplicates removed).
+/// (exact 8-bit sums divided by the count, nearest, ties up). The palette is then refined by k-means (Lloyd iterations): each
+/// item moves to the nearest entry of its class (ties: its current entry, then the lowest index) and each entry becomes the
+/// weighted mean of its items, until no item moves or <see cref="RefinementPasses"/> passes are done. The palette is sorted
+/// by key (duplicates removed).
 /// </description></item>
 /// <item><description>
-/// <b>Mapping.</b> A color maps to the palette entry at the smallest squared RGB distance, ties to the lowest index (a
-/// pure function of the color). Arithmetic is integer except the split criteria (IEEE double, deterministic in .NET), so the
-/// output is identical for the same input and settings on every platform.
+/// <b>Mapping.</b> An opaque color maps to the opaque palette entry at the smallest squared RGB distance, ties to the lowest
+/// index (a pure function of the color). A translucent color, or an opaque color when the palette has no opaque entry, maps
+/// to the entry at the smallest squared distance of the premultiplied samples plus the alpha (<see cref="FindNearestRgba"/>),
+/// the transparent entry included. Arithmetic is integer except the split criteria (IEEE double, deterministic in .NET), so
+/// the output is identical for the same input and settings on every platform.
+/// </description></item>
+/// <item><description>
+/// <b>Palette order.</b> The opaque entries come first, sorted by key, then the translucent ones sorted by key, then the
+/// transparent entry, if any.
 /// </description></item>
 /// <item><description>
 /// <b>Mapping speed.</b> The entries that can be the nearest one of some color of a 5-bit cell of the color cube are found
@@ -42,9 +61,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// is exactly the one of the linear search (<see cref="FindNearestScalar"/>).
 /// </description></item>
 /// </list>
-/// Working memory (about 1.3 MiB, fixed) is rented once from the writer scope as <see cref="AllocationKind.Temporary"/>.
+/// Working memory (about 1.3 MiB, 2.6 MiB with translucent colors, fixed) is rented once from the scope as <see cref="AllocationKind.Temporary"/>.
 /// The mapping reuses the memory of the histogram: a frame is analyzed (<see cref="Begin"/>, <see cref="Add"/>), its palette
-/// is built once (<see cref="BuildPalette"/>), then its colors are mapped (<see cref="Map"/>).
+/// is built once (<see cref="BuildPalette(int, bool)"/>), then its colors are mapped (<see cref="Map"/>).
 /// </remarks>
 internal sealed class PaletteQuantizer : IDisposable
 {
@@ -60,23 +79,34 @@ internal sealed class PaletteQuantizer : IDisposable
     private const int CellGroup = 4;
     private const int MaxCellCandidates = (CellStride - 1) / CellGroup * CellGroup;
     private const byte CellOverflow = byte.MaxValue;
-
-    // The histogram counts and the median cut arrays are only used until the palette is built, and the cells only afterward:
-    // they share their memory
     private const int CountsOffset = 0;
-    private const int ItemsOffset = CountsOffset + (Buckets * sizeof(int));
-    private const int ColorsOffset = ItemsOffset + (Buckets * sizeof(int));
-    private const int SortKeysOffset = ColorsOffset + (Buckets * sizeof(int));
     private const int CellsOffset = CountsOffset;
-    private const int SumsOffset = SortKeysOffset + (Buckets * sizeof(int));
-    private const int ExactOffset = SumsOffset + (Buckets * 3 * sizeof(long));
-    private const int ExactCountsOffset = ExactOffset + (ExactSlots * sizeof(int));
 
     // Vectorized nearest-color search: the palette as 32-bit red, green and blue planes, each padded to whole vectors (at most
     // 16 lanes) with an entry farther than any color (never selected, and 3 * (1000 - 0)^2 cannot overflow)
     private const int VectorPlaneLength = 256 + 16;
-    private const int VectorPaletteOffset = ExactCountsOffset + (ExactSlots * sizeof(int));
-    private const int StateLength = VectorPaletteOffset + (3 * VectorPlaneLength * sizeof(int));
+
+    // The translucent search remembers the entry of the last colors it was given, by key; an empty slot holds a value that
+    // is not a key (alpha 255 is never stored in the high byte)
+    private const int RgbaCacheLength = 4096;
+    private const int NoKey = unchecked((int)0xFF00_0000);
+
+    // The largest number of k-means passes that refine the palette of the median cut
+    private const int RefinementPasses = 8;
+
+    // The histogram counts and the median cut arrays are only used until the palette is built, and the cells only afterward:
+    // they share their memory. A quantizer of translucent colors has twice as many buckets (the opaque ones, then the
+    // translucent ones) and the sums of the translucent buckets (alpha-weighted colors and alpha)
+    private readonly int _bucketCount;
+    private readonly int _itemsOffset;
+    private readonly int _colorsOffset;
+    private readonly int _sortKeysOffset;
+    private readonly int _sumsOffset;
+    private readonly int _translucentSumsOffset;
+    private readonly int _exactOffset;
+    private readonly int _exactCountsOffset;
+    private readonly int _vectorPaletteOffset;
+    private readonly int _stateLength;
 
     private readonly int[] _palette = new int[256];
     private readonly byte[] _paletteRed = new byte[256];
@@ -86,6 +116,13 @@ internal sealed class PaletteQuantizer : IDisposable
     private readonly int[] _boxEnd = new int[256];
     private readonly double[] _boxError = new double[256];
     private readonly int[] _boxAxis = new int[256];
+    private readonly bool[] _boxTranslucent = new bool[256];
+
+    // The samples of every entry premultiplied by its alpha (R * A, G * A, B * A, then A * 255), for the translucent search
+    private readonly int[] _premultiplied = new int[256 * 4];
+    private readonly bool _translucent;
+    private int[]? _rgbaCacheKeys;
+    private byte[]? _rgbaCacheIndexes;
 
     // For each red sample, the index of the first palette entry whose red sample is at least that value (the palette is sorted)
     private readonly ushort[] _redStart = new ushort[256];
@@ -99,14 +136,30 @@ internal sealed class PaletteQuantizer : IDisposable
     private bool _hasTransparency;
     private bool _isExact;
     private int _paletteCount;
+    private int _opaqueCount;
+    private int _transparentIndex = -1;
+    private bool _exactMode;
+    private long _pixelCount;
 
     /// <summary>Allocates the working memory.</summary>
     /// <param name="scope">The scope charged for it.</param>
+    /// <param name="translucent"><see langword="true"/> to accept translucent colors (alpha from 1 to 254) as well as opaque ones.</param>
     /// <exception cref="ImageResourceLimitException">The memory exceeds the live-allocation limit.</exception>
-    public PaletteQuantizer(AllocationScope scope)
+    public PaletteQuantizer(AllocationScope scope, bool translucent = false)
     {
         ArgumentNullException.ThrowIfNull(scope);
-        _state = scope.Rent(StateLength, AllocationKind.Temporary, clear: false);
+        _translucent = translucent;
+        _bucketCount = translucent ? 2 * Buckets : Buckets;
+        _itemsOffset = CountsOffset + (_bucketCount * sizeof(int));
+        _colorsOffset = _itemsOffset + (_bucketCount * sizeof(int));
+        _sortKeysOffset = _colorsOffset + (_bucketCount * sizeof(int));
+        _sumsOffset = _sortKeysOffset + (_bucketCount * sizeof(int));
+        _translucentSumsOffset = _sumsOffset + (Buckets * 3 * sizeof(long));
+        _exactOffset = _translucentSumsOffset + (translucent ? Buckets * 4 * sizeof(long) : 0);
+        _exactCountsOffset = _exactOffset + (ExactSlots * sizeof(int));
+        _vectorPaletteOffset = _exactCountsOffset + (ExactSlots * sizeof(int));
+        _stateLength = _vectorPaletteOffset + (3 * VectorPlaneLength * sizeof(int));
+        _state = scope.Rent(_stateLength, AllocationKind.Temporary, clear: false);
     }
 
     /// <summary>
@@ -121,11 +174,79 @@ internal sealed class PaletteQuantizer : IDisposable
     /// <summary>Gets a value indicating whether the palette holds every color of the frame exactly.</summary>
     public bool IsExact => _isExact;
 
-    /// <summary>Gets the number of palette colors (0 for a frame without opaque pixels).</summary>
+    /// <summary>Gets a value indicating whether the quantizer accepts translucent colors.</summary>
+    public bool IsTranslucent => _translucent;
+
+    /// <summary>Gets the number of palette entries (0 for a frame without opaque pixels), the transparent entry included when the palette has one.</summary>
     public int PaletteCount => _paletteCount;
 
-    /// <summary>Gets the palette color keys, sorted.</summary>
+    /// <summary>Gets the number of opaque palette entries: they are the first ones.</summary>
+    public int OpaqueCount => _opaqueCount;
+
+    /// <summary>Gets a number that changes whenever the palette changes.</summary>
+    public int PaletteVersion { get; private set; }
+
+    /// <summary>
+    /// Gets the mean distance between each palette entry that is not transparent and its nearest other entry (Euclidean, on the
+    /// straight 8-bit samples), or 0 for a palette of one color: the spacing of the palette, which ordered dithering spreads
+    /// its pattern over.
+    /// </summary>
+    /// <returns>The mean distance.</returns>
+    public double GetMeanNeighborDistance()
+    {
+        var count = _paletteCount - (_transparentIndex >= 0 ? 1 : 0);
+        if (count < 2)
+            return 0;
+
+        var total = 0d;
+        for (var i = 0; i < count; i++)
+        {
+            var nearest = int.MaxValue;
+            for (var j = 0; j < count; j++)
+            {
+                if (i == j)
+                    continue;
+
+                var dr = ((_palette[i] >> 16) & 0xFF) - ((_palette[j] >> 16) & 0xFF);
+                var dg = ((_palette[i] >> 8) & 0xFF) - ((_palette[j] >> 8) & 0xFF);
+                var db = (_palette[i] & 0xFF) - (_palette[j] & 0xFF);
+                nearest = Math.Min(nearest, (dr * dr) + (dg * dg) + (db * db));
+            }
+
+            total += Math.Sqrt(nearest);
+        }
+
+        return total / count;
+    }
+
+    /// <summary>Gets the index of the transparent palette entry, or -1 when the palette has none.</summary>
+    public int TransparentIndex => _transparentIndex;
+
+    /// <summary>Gets the palette keys, in palette order (opaque entries, translucent entries, then the transparent entry).</summary>
     public ReadOnlySpan<int> Palette => _palette.AsSpan(0, _paletteCount);
+
+    /// <summary>Gets the key of a color.</summary>
+    /// <param name="red">The red sample.</param>
+    /// <param name="green">The green sample.</param>
+    /// <param name="blue">The blue sample.</param>
+    /// <param name="alpha">The alpha sample.</param>
+    /// <returns><see cref="TransparentKey"/> when <paramref name="alpha"/> is 0, the 24-bit key of an opaque color, or the key of a translucent color.</returns>
+    public static int GetKey(int red, int green, int blue, int alpha) => alpha switch
+    {
+        0 => TransparentKey,
+        byte.MaxValue => (red << 16) | (green << 8) | blue,
+        _ => (alpha << 24) | (red << 16) | (green << 8) | blue,
+    };
+
+    /// <summary>Gets the alpha sample of a key.</summary>
+    /// <param name="key">The key.</param>
+    /// <returns>0 for <see cref="TransparentKey"/>, 255 for an opaque color, the alpha of a translucent color otherwise.</returns>
+    public static int GetAlpha(int key) => key == TransparentKey ? 0 : ((key >>> 24) is var alpha && alpha != 0 ? alpha : byte.MaxValue);
+
+    /// <summary>Gets a value indicating whether a key is the key of a translucent color.</summary>
+    /// <param name="key">The key.</param>
+    /// <returns><see langword="true"/> for an alpha from 1 to 254.</returns>
+    public static bool IsTranslucentKey(int key) => key != TransparentKey && (key >>> 24) != 0;
 
     /// <summary>Gets the 5-bit histogram bucket of a color key.</summary>
     /// <param name="key">The color key.</param>
@@ -144,24 +265,38 @@ internal sealed class PaletteQuantizer : IDisposable
         _hasTransparency = false;
         _isExact = false;
         _paletteCount = 0;
+        _opaqueCount = 0;
+        _transparentIndex = -1;
+        _pixelCount = 0;
         var state = GetState();
-        state.Slice(CountsOffset, Buckets * sizeof(int)).Clear();
-        state.Slice(SumsOffset, Buckets * 3 * sizeof(long)).Clear();
+        state.Slice(CountsOffset, _bucketCount * sizeof(int)).Clear();
+        state.Slice(_sumsOffset, Buckets * 3 * sizeof(long)).Clear();
+        if (_translucent)
+        {
+            state.Slice(_translucentSumsOffset, Buckets * 4 * sizeof(long)).Clear();
+        }
+
         _hasHistogram = true;
-        unsafe { MemoryMarshal.Cast<byte, int>(state.Slice(ExactOffset, ExactSlots * sizeof(int))).Fill(TransparentKey); }
-        state.Slice(ExactCountsOffset, ExactSlots * sizeof(int)).Clear();
+        unsafe { MemoryMarshal.Cast<byte, int>(state.Slice(_exactOffset, ExactSlots * sizeof(int))).Fill(TransparentKey); }
+        state.Slice(_exactCountsOffset, ExactSlots * sizeof(int)).Clear();
     }
 
     /// <summary>Adds a row of color keys to the histogram.</summary>
-    /// <param name="keys">The keys (<see cref="TransparentKey"/> for transparent pixels).</param>
+    /// <param name="keys">The keys (<see cref="TransparentKey"/> for transparent pixels; translucent keys only when <see cref="IsTranslucent"/>).</param>
+    /// <exception cref="InvalidOperationException">The histogram would count more than <see cref="int.MaxValue"/> pixels.</exception>
     public void Add(ReadOnlySpan<int> keys)
     {
         EnsureHistogram();
+        _pixelCount += keys.Length;
+        if (_pixelCount > int.MaxValue)
+            throw new InvalidOperationException("A palette is computed from at most 2^31 - 1 pixels.");
+
         var state = GetState();
-        var counts = unsafe(MemoryMarshal.Cast<byte, int>(state.Slice(CountsOffset, Buckets * sizeof(int))));
-        var sums = unsafe(MemoryMarshal.Cast<byte, long>(state.Slice(SumsOffset, Buckets * 3 * sizeof(long))));
-        var exact = unsafe(MemoryMarshal.Cast<byte, int>(state.Slice(ExactOffset, ExactSlots * sizeof(int))));
-        var exactCounts = unsafe(MemoryMarshal.Cast<byte, int>(state.Slice(ExactCountsOffset, ExactSlots * sizeof(int))));
+        var counts = Counts;
+        var sums = unsafe(MemoryMarshal.Cast<byte, long>(state.Slice(_sumsOffset, Buckets * 3 * sizeof(long))));
+        var translucentSums = TranslucentSums;
+        var exact = unsafe(MemoryMarshal.Cast<byte, int>(state.Slice(_exactOffset, ExactSlots * sizeof(int))));
+        var exactCounts = unsafe(MemoryMarshal.Cast<byte, int>(state.Slice(_exactCountsOffset, ExactSlots * sizeof(int))));
         // A run of equal keys is counted at once: every count and sum it changes grows by the length of the run
         for (var i = 0; i < keys.Length;)
         {
@@ -179,11 +314,28 @@ internal sealed class PaletteQuantizer : IDisposable
                 continue;
             }
 
-            var bucket = GetBucket(key);
-            counts[bucket] += run;
-            sums[3 * bucket] += ((key >> 16) & 0xFF) * run;
-            sums[(3 * bucket) + 1] += ((key >> 8) & 0xFF) * run;
-            sums[(3 * bucket) + 2] += (key & 0xFF) * run;
+            if ((key >>> 24) != 0)
+            {
+                if (!_translucent)
+                    throw new ArgumentException("The quantizer was not created for translucent colors.", nameof(keys));
+
+                var alpha = key >>> 24;
+                var translucent = GetTranslucentBucket(key);
+                counts[Buckets + translucent] += run;
+                translucentSums[4 * translucent] += (long)((key >> 16) & 0xFF) * alpha * run;
+                translucentSums[(4 * translucent) + 1] += (long)((key >> 8) & 0xFF) * alpha * run;
+                translucentSums[(4 * translucent) + 2] += (long)(key & 0xFF) * alpha * run;
+                translucentSums[(4 * translucent) + 3] += (long)alpha * run;
+            }
+            else
+            {
+                var bucket = GetBucket(key);
+                counts[bucket] += run;
+                sums[3 * bucket] += ((key >> 16) & 0xFF) * run;
+                sums[(3 * bucket) + 1] += ((key >> 8) & 0xFF) * run;
+                sums[(3 * bucket) + 2] += (key & 0xFF) * run;
+            }
+
             if (_exactOverflow)
                 continue;
 
@@ -209,21 +361,36 @@ internal sealed class PaletteQuantizer : IDisposable
         }
     }
 
-    /// <summary>Builds the palette of the frame from its histogram.</summary>
+    /// <summary>Builds the palette of the frame from its histogram; the transparent entry is reserved by the caller.</summary>
     /// <param name="maxColors">The largest number of palette colors (at most the value given to <see cref="Begin"/>).</param>
-    public void BuildPalette(int maxColors)
+    public void BuildPalette(int maxColors) => BuildPalette(maxColors, includeTransparent: false);
+
+    /// <summary>Builds the palette of the frame from its histogram.</summary>
+    /// <param name="maxColors">The largest number of palette entries (at most the value given to <see cref="Begin"/>).</param>
+    /// <param name="includeTransparent">
+    /// <see langword="true"/> to make the transparent entry part of the palette when the histogram has transparent pixels
+    /// (it then takes one of the <paramref name="maxColors"/> entries, and translucent colors may map to it).
+    /// </param>
+    public void BuildPalette(int maxColors, bool includeTransparent)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(maxColors, 1);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(maxColors, _limit);
         EnsureHistogram();
+        var transparent = includeTransparent && _hasTransparency;
+        if (transparent && maxColors < 2)
+            throw new ArgumentOutOfRangeException(nameof(maxColors), maxColors, "A palette with a transparent entry has at least two entries.");
+
+        var colorCount = transparent ? maxColors - 1 : maxColors;
         var state = GetState();
-        var exact = unsafe(MemoryMarshal.Cast<byte, int>(state.Slice(ExactOffset, ExactSlots * sizeof(int))));
-        var counts = unsafe(MemoryMarshal.Cast<byte, int>(state.Slice(CountsOffset, Buckets * sizeof(int))));
-        var sums = unsafe(MemoryMarshal.Cast<byte, long>(state.Slice(SumsOffset, Buckets * 3 * sizeof(long))));
-        var bucketCount = Buckets;
+        var exact = unsafe(MemoryMarshal.Cast<byte, int>(state.Slice(_exactOffset, ExactSlots * sizeof(int))));
+        var counts = Counts;
+        var sums = unsafe(MemoryMarshal.Cast<byte, long>(state.Slice(_sumsOffset, Buckets * 3 * sizeof(long))));
+        var translucentSums = TranslucentSums;
+        var bucketCount = _bucketCount;
+        _exactMode = false;
         if (!_exactOverflow)
         {
-            if (_exactCount <= maxColors)
+            if (_exactCount <= colorCount)
             {
                 var count = 0;
                 foreach (var key in exact)
@@ -234,6 +401,11 @@ internal sealed class PaletteQuantizer : IDisposable
                     }
                 }
 
+                if (transparent)
+                {
+                    _palette[count++] = TransparentKey;
+                }
+
                 _isExact = true;
                 SetPalette(count);
                 return;
@@ -241,42 +413,85 @@ internal sealed class PaletteQuantizer : IDisposable
 
             // Every color is known exactly but there are too many (the transparent entry took a slot): the median cut runs
             // on the exact colors, the histogram arrays being reused with one item per exact-set slot
-            var exactCounts = unsafe(MemoryMarshal.Cast<byte, int>(state.Slice(ExactCountsOffset, ExactSlots * sizeof(int))));
+            var exactCounts = unsafe(MemoryMarshal.Cast<byte, int>(state.Slice(_exactCountsOffset, ExactSlots * sizeof(int))));
             bucketCount = ExactSlots;
+            _exactMode = true;
             for (var slot = 0; slot < ExactSlots; slot++)
             {
                 var key = exact[slot];
                 var n = key == TransparentKey ? 0 : exactCounts[slot];
                 counts[slot] = n;
-                sums[3 * slot] = (long)((key >> 16) & 0xFF) * n;
-                sums[(3 * slot) + 1] = (long)((key >> 8) & 0xFF) * n;
-                sums[(3 * slot) + 2] = (long)(key & 0xFF) * n;
+                if (IsTranslucentKey(key))
+                {
+                    long alpha = key >>> 24;
+                    translucentSums[4 * slot] = ((key >> 16) & 0xFF) * alpha * n;
+                    translucentSums[(4 * slot) + 1] = ((key >> 8) & 0xFF) * alpha * n;
+                    translucentSums[(4 * slot) + 2] = (key & 0xFF) * alpha * n;
+                    translucentSums[(4 * slot) + 3] = alpha * n;
+                }
+                else
+                {
+                    sums[3 * slot] = (long)((key >> 16) & 0xFF) * n;
+                    sums[(3 * slot) + 1] = (long)((key >> 8) & 0xFF) * n;
+                    sums[(3 * slot) + 2] = (long)(key & 0xFF) * n;
+                }
             }
         }
 
         _isExact = false;
-        var items = unsafe(MemoryMarshal.Cast<byte, int>(state.Slice(ItemsOffset, Buckets * sizeof(int))));
-        var colors = unsafe(MemoryMarshal.Cast<byte, int>(state.Slice(ColorsOffset, Buckets * sizeof(int))));
-        var sortKeys = unsafe(MemoryMarshal.Cast<byte, int>(state.Slice(SortKeysOffset, Buckets * sizeof(int))));
+        var items = unsafe(MemoryMarshal.Cast<byte, int>(state.Slice(_itemsOffset, _bucketCount * sizeof(int))));
+        var colors = unsafe(MemoryMarshal.Cast<byte, int>(state.Slice(_colorsOffset, _bucketCount * sizeof(int))));
+        var sortKeys = unsafe(MemoryMarshal.Cast<byte, int>(state.Slice(_sortKeysOffset, _bucketCount * sizeof(int))));
 
-        // Items: the non-empty buckets, in bucket order, at their mean color (kept by bucket: the items are reordered)
+        // Items: the non-empty buckets, opaque ones first, in bucket order, at their mean color (kept by bucket: the items are
+        // reordered). An opaque item has the alpha 255; a translucent one has its premultiplied mean color and its mean alpha
         var itemCount = 0;
-        for (var bucket = 0; bucket < bucketCount; bucket++)
+        for (var pass = 0; pass < 2; pass++)
         {
-            var n = counts[bucket];
-            if (n == 0)
-                continue;
+            for (var bucket = 0; bucket < bucketCount; bucket++)
+            {
+                var n = counts[bucket];
+                if (n == 0 || IsTranslucentItem(bucket, exact) != (pass == 1))
+                    continue;
 
-            items[itemCount] = bucket;
-            colors[bucket] = (Mean(sums[3 * bucket], n) << 16) | (Mean(sums[(3 * bucket) + 1], n) << 8) | Mean(sums[(3 * bucket) + 2], n);
-            itemCount++;
+                items[itemCount] = bucket;
+                if (pass == 0)
+                {
+                    colors[bucket] = unchecked((int)0xFF00_0000) | (Mean(sums[3 * bucket], n) << 16) | (Mean(sums[(3 * bucket) + 1], n) << 8) | Mean(sums[(3 * bucket) + 2], n);
+                }
+                else
+                {
+                    var t = 4 * (bucket - (_exactMode ? 0 : Buckets));
+                    var weight = (long)n * byte.MaxValue;
+                    colors[bucket] = (Mean(translucentSums[t + 3], n) << 24) | (Mean(translucentSums[t], weight) << 16) | (Mean(translucentSums[t + 1], weight) << 8) | Mean(translucentSums[t + 2], weight);
+                }
+
+                itemCount++;
+            }
+
+            if (!_translucent)
+                break;
         }
 
-        var boxes = 1;
-        _boxStart[0] = 0;
-        _boxEnd[0] = itemCount;
-        _boxError[0] = ComputeError(counts, items, colors, 0, itemCount, out _boxAxis[0]);
-        while (boxes < maxColors)
+        // The initial boxes: the opaque items, then the translucent ones (one box for both when a single color is requested)
+        var opaqueItems = 0;
+        while (opaqueItems < itemCount && !IsTranslucentItem(items[opaqueItems], exact))
+        {
+            opaqueItems++;
+        }
+
+        var boxes = 0;
+        if (opaqueItems == itemCount || opaqueItems == 0 || colorCount == 1)
+        {
+            AddBox(ref boxes, 0, itemCount, translucent: opaqueItems != itemCount, counts, items, colors);
+        }
+        else
+        {
+            AddBox(ref boxes, 0, opaqueItems, translucent: false, counts, items, colors);
+            AddBox(ref boxes, opaqueItems, itemCount, translucent: true, counts, items, colors);
+        }
+
+        while (boxes < colorCount)
         {
             // The splittable box with the largest weighted squared error (ties: the first)
             var selected = -1;
@@ -293,53 +508,126 @@ internal sealed class PaletteQuantizer : IDisposable
 
             var start = _boxStart[selected];
             var end = _boxEnd[selected];
-            var shift = 16 - (8 * _boxAxis[selected]);
+            var shift = GetShift(_boxAxis[selected]);
 
             // Sort the items of the box along the axis (keys are unique: coordinate, then position in bucket order)
             for (var i = start; i < end; i++)
             {
-                sortKeys[i] = (((colors[items[i]] >> shift) & 0xFF) << 15) | items[i];
+                sortKeys[i] = (((colors[items[i]] >> shift) & 0xFF) << 16) | items[i];
             }
 
             SortKeys(sortKeys[start..end], items[start..end]);
             for (var i = start; i < end; i++)
             {
-                items[i] = sortKeys[i] & (Buckets - 1);
+                items[i] = sortKeys[i] & 0xFFFF;
             }
 
             var split = FindSplit(counts, items, colors, start, end, shift);
+            var translucent = _boxTranslucent[selected];
             _boxEnd[selected] = split;
-            _boxError[selected] = ComputeError(counts, items, colors, start, split, out _boxAxis[selected]);
+            _boxError[selected] = ComputeError(counts, items, colors, start, split, translucent, out _boxAxis[selected]);
             _boxStart[boxes] = split;
             _boxEnd[boxes] = end;
-            _boxError[boxes] = ComputeError(counts, items, colors, split, end, out _boxAxis[boxes]);
+            _boxTranslucent[boxes] = translucent;
+            _boxError[boxes] = ComputeError(counts, items, colors, split, end, translucent, out _boxAxis[boxes]);
             boxes++;
         }
 
-        // Palette colors: the weighted means of the boxes (exact 8-bit sums)
+        // Each item starts in its box, then the palette is refined by k-means: the items move to their nearest entry of their
+        // class and the entries to the weighted mean of their items, until no item moves (at most RefinementPasses times)
+        var owners = sortKeys;
         for (var box = 0; box < boxes; box++)
         {
-            long n = 0, r = 0, g = 0, b = 0;
             for (var i = _boxStart[box]; i < _boxEnd[box]; i++)
             {
-                var bucket = items[i];
-                n += counts[bucket];
-                r += sums[3 * bucket];
-                g += sums[(3 * bucket) + 1];
-                b += sums[(3 * bucket) + 2];
+                owners[i] = box;
             }
+        }
 
-            _palette[box] = (Mean(r, n) << 16) | (Mean(g, n) << 8) | Mean(b, n);
+        Span<int> coordinates = stackalloc int[256 * 4];
+        Span<bool> entryTranslucent = stackalloc bool[256];
+        ComputeEntries(boxes, itemCount, counts, items, owners, sums, translucentSums, exact, coordinates, entryTranslucent);
+        if (boxes > 1 && colorCount > 1)
+        {
+            for (var pass = 0; pass < RefinementPasses; pass++)
+            {
+                if (!AssignItems(boxes, itemCount, items, colors, exact, owners, coordinates, entryTranslucent))
+                    break;
+
+                ComputeEntries(boxes, itemCount, counts, items, owners, sums, translucentSums, exact, coordinates, entryTranslucent);
+            }
+        }
+
+        if (transparent)
+        {
+            _palette[boxes++] = TransparentKey;
         }
 
         SetPalette(boxes);
     }
 
-    /// <summary>Gets the palette index of a color: its exact entry, or the nearest entry (smallest squared distance, lowest index).</summary>
+    /// <summary>
+    /// Uses a fixed palette instead of building one. When the histogram of the frame is still available, the palette is exact
+    /// (<see cref="IsExact"/>) when it holds every color of the frame (the transparent pixels need a transparent entry, unless
+    /// <paramref name="reservedTransparent"/>).
+    /// </summary>
+    /// <param name="keys">The entries, 1 to 256 keys (duplicates are merged; translucent keys only when <see cref="IsTranslucent"/>).</param>
+    /// <param name="reservedTransparent"><see langword="true"/> when the caller maps the transparent pixels to an entry of its own.</param>
+    public void SetPalette(ReadOnlySpan<int> keys, bool reservedTransparent = false)
+    {
+        ArgumentOutOfRangeException.ThrowIfZero(keys.Length);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(keys.Length, _palette.Length);
+        if (!_translucent)
+        {
+            foreach (var key in keys)
+            {
+                if (IsTranslucentKey(key))
+                    throw new ArgumentException("The quantizer was not created for translucent colors.", nameof(keys));
+            }
+        }
+
+        var exact = false;
+        if (_hasHistogram && !_exactOverflow)
+        {
+            exact = !_hasTransparency || reservedTransparent || keys.Contains(TransparentKey);
+            var slots = unsafe(MemoryMarshal.Cast<byte, int>(GetState().Slice(_exactOffset, ExactSlots * sizeof(int))));
+            foreach (var key in slots)
+            {
+                if (key != TransparentKey && !keys.Contains(key))
+                {
+                    exact = false;
+                    break;
+                }
+            }
+        }
+
+        keys.CopyTo(_palette);
+        _isExact = exact;
+        SetPalette(keys.Length);
+    }
+
+    /// <summary>
+    /// Gets the palette index of any color key: the transparent entry (or the nearest entry when the palette has none) for
+    /// <see cref="TransparentKey"/>, <see cref="Map"/> for an opaque color, <see cref="FindNearestRgba"/> for a translucent one.
+    /// </summary>
+    /// <param name="key">A color key.</param>
+    /// <returns>The palette index.</returns>
+    public int MapAny(int key)
+    {
+        if (key == TransparentKey)
+            return _transparentIndex >= 0 ? _transparentIndex : FindNearestRgba(key);
+
+        return IsTranslucentKey(key) ? FindNearestRgba(key) : Map(key);
+    }
+
+    /// <summary>Gets the palette index of a color: its exact entry, or the nearest opaque entry (smallest squared distance, lowest index).</summary>
     /// <param name="key">An opaque color key.</param>
     /// <returns>The palette index.</returns>
     public int Map(int key)
     {
+        if (_opaqueCount == 0)
+            return FindNearestRgba(key);
+
         var cells = GetState().Slice(CellsOffset, Buckets * CellStride);
         var offset = GetBucket(key) * CellStride;
         ref var cell = ref cells[offset];
@@ -436,7 +724,7 @@ internal sealed class PaletteQuantizer : IDisposable
     {
         var reach = (int)Math.Sqrt(bound);
         var first = (int)_redStart[Math.Max(lowRed - reach, 0)];
-        var last = lowRed + 8 + reach > 255 ? _paletteCount : _redStart[lowRed + 8 + reach];
+        var last = lowRed + 8 + reach > 255 ? _opaqueCount : _redStart[lowRed + 8 + reach];
         return (first, last);
     }
 
@@ -623,7 +911,7 @@ internal sealed class PaletteQuantizer : IDisposable
         if (_useSortedSearch)
             return FindNearestSorted(red, green, blue, hint);
 
-        return Vector.IsHardwareAccelerated && Vector<int>.Count <= 16 && _paletteCount >= Vector<int>.Count ? FindNearestVector(red, green, blue) : FindNearestScalar(red, green, blue);
+        return Vector.IsHardwareAccelerated && Vector<int>.Count <= 16 && _opaqueCount >= Vector<int>.Count ? FindNearestVector(red, green, blue) : FindNearestScalar(red, green, blue);
     }
 
     /// <summary>
@@ -642,7 +930,7 @@ internal sealed class PaletteQuantizer : IDisposable
     /// </remarks>
     internal int FindNearestSorted(int red, int green, int blue, int hint)
     {
-        var count = _paletteCount;
+        var count = _opaqueCount;
         ref var reds = ref unsafe(MemoryMarshal.GetArrayDataReference(_paletteRed));
         ref var greens = ref unsafe(MemoryMarshal.GetArrayDataReference(_paletteGreen));
         ref var blues = ref unsafe(MemoryMarshal.GetArrayDataReference(_paletteBlue));
@@ -719,7 +1007,7 @@ internal sealed class PaletteQuantizer : IDisposable
     {
         var best = 0;
         var bestDistance = int.MaxValue;
-        for (var i = 0; i < _paletteCount; i++)
+        for (var i = 0; i < _opaqueCount; i++)
         {
             var dr = red - _paletteRed[i];
             var distance = dr * dr;
@@ -759,7 +1047,7 @@ internal sealed class PaletteQuantizer : IDisposable
         var paletteRed = planes[..VectorPlaneLength];
         var paletteGreen = planes.Slice(VectorPlaneLength, VectorPlaneLength);
         var paletteBlue = planes.Slice(2 * VectorPlaneLength, VectorPlaneLength);
-        for (var i = 0; i < _paletteCount; i += count)
+        for (var i = 0; i < _opaqueCount; i += count)
         {
             var dr = r - new Vector<int>(paletteRed[i..]);
             var dg = g - new Vector<int>(paletteGreen[i..]);
@@ -789,21 +1077,202 @@ internal sealed class PaletteQuantizer : IDisposable
         return best;
     }
 
+    /// <summary>
+    /// Gets the palette index nearest to a color of any alpha, over every entry (the transparent entry included): the smallest
+    /// <c>(R·A − R'·A')² + (G·A − G'·A')² + (B·A − B'·A')² + (255·(A − A'))²</c>, ties to the lowest index. The colors of the
+    /// last searches are remembered by key.
+    /// </summary>
+    /// <param name="key">A color key.</param>
+    /// <returns>The palette index.</returns>
+    public int FindNearestRgba(int key)
+    {
+        var cacheKeys = _rgbaCacheKeys ??= CreateRgbaCache();
+        var cacheIndexes = _rgbaCacheIndexes!;
+        var slot = (int)(((uint)key * 0x9E3779B1u) >> 20);
+        if (cacheKeys[slot] == key)
+            return cacheIndexes[slot];
+
+        var alpha = GetAlpha(key);
+        var red = ((key >> 16) & 0xFF) * alpha;
+        var green = ((key >> 8) & 0xFF) * alpha;
+        var blue = (key & 0xFF) * alpha;
+        alpha *= byte.MaxValue;
+        if (key == TransparentKey)
+        {
+            red = green = blue = 0;
+        }
+
+        var best = 0;
+        var bestDistance = long.MaxValue;
+        for (var i = 0; i < _paletteCount; i++)
+        {
+            long dr = red - _premultiplied[4 * i];
+            long dg = green - _premultiplied[(4 * i) + 1];
+            long db = blue - _premultiplied[(4 * i) + 2];
+            long da = alpha - _premultiplied[(4 * i) + 3];
+            var distance = (dr * dr) + (dg * dg) + (db * db) + (da * da);
+            if (distance < bestDistance)
+            {
+                bestDistance = distance;
+                best = i;
+            }
+        }
+
+        cacheKeys[slot] = key;
+        cacheIndexes[slot] = (byte)best;
+        return best;
+    }
+
     public void Dispose()
     {
         _state?.Dispose();
         _state = null;
     }
 
+    private int[] CreateRgbaCache()
+    {
+        var keys = new int[RgbaCacheLength];
+        keys.AsSpan().Fill(NoKey);
+        _rgbaCacheIndexes = new byte[RgbaCacheLength];
+        return keys;
+    }
+
+    /// <summary>Gets the shift of the sample of an axis (0 R, 1 G, 2 B, 3 A) in a color.</summary>
+    private static int GetShift(int axis) => axis == 3 ? 24 : 16 - (8 * axis);
+
+    /// <summary>Gets the translucent histogram bucket of a translucent key: <c>(A3 &lt;&lt; 12) | (R4 &lt;&lt; 8) | (G4 &lt;&lt; 4) | B4</c>.</summary>
+    private static int GetTranslucentBucket(int key) => (int)(((uint)key >> 29) << 12) | ((key >> 12) & 0x0F00) | ((key >> 8) & 0x00F0) | ((key >> 4) & 0x000F);
+
     private static int Mean(long sum, long count) => (int)((sum + (count / 2)) / count);
 
     private static int HashExact(int key) => (int)(((uint)key * 0x9E3779B1u) >> 22);
 
-    /// <summary>Computes the weighted sum of squared errors of a box around its mean, and the axis (0 R, 1 G, 2 B) of largest error.</summary>
-    private static double ComputeError(ReadOnlySpan<int> counts, ReadOnlySpan<int> items, ReadOnlySpan<int> colors, int start, int end, out int axis)
+    /// <summary>
+    /// Computes the palette entries from the items they own (exact 8-bit sums), alpha-weighted for the translucent colors, as
+    /// palette keys in <c>_palette</c> and as item coordinates (straight samples for an opaque entry, samples premultiplied by
+    /// alpha and the alpha for a translucent one). An entry that owns no item keeps its color.
+    /// </summary>
+    private void ComputeEntries(int entries, int itemCount, ReadOnlySpan<int> counts, ReadOnlySpan<int> items, ReadOnlySpan<int> owners, ReadOnlySpan<long> sums, ReadOnlySpan<long> translucentSums, ReadOnlySpan<int> exact, Span<int> coordinates, Span<bool> entryTranslucent)
     {
-        Span<long> sum = stackalloc long[3];
-        Span<long> squares = stackalloc long[3];
+        Span<long> totals = stackalloc long[256 * 8];
+        totals[..(entries * 8)].Clear();
+        for (var i = 0; i < itemCount; i++)
+        {
+            var item = items[i];
+            var total = totals.Slice(owners[i] * 8, 8);
+            long count = counts[item];
+            total[0] += count;
+            if (IsTranslucentItem(item, exact))
+            {
+                var t = 4 * (item - (_exactMode ? 0 : Buckets));
+                total[4] += translucentSums[t];
+                total[5] += translucentSums[t + 1];
+                total[6] += translucentSums[t + 2];
+                total[7] += translucentSums[t + 3];
+            }
+            else
+            {
+                total[1] += sums[3 * item];
+                total[2] += sums[(3 * item) + 1];
+                total[3] += sums[(3 * item) + 2];
+                total[4] += sums[3 * item] * byte.MaxValue;
+                total[5] += sums[(3 * item) + 1] * byte.MaxValue;
+                total[6] += sums[(3 * item) + 2] * byte.MaxValue;
+                total[7] += count * byte.MaxValue;
+            }
+        }
+
+        for (var entry = 0; entry < entries; entry++)
+        {
+            var total = totals.Slice(entry * 8, 8);
+            var n = total[0];
+            if (n == 0)
+                continue;
+
+            var coordinate = coordinates.Slice(entry * 4, 4);
+            if (total[7] == n * byte.MaxValue)
+            {
+                // Opaque colors only: the exact means of the 8-bit samples
+                _palette[entry] = (Mean(total[1], n) << 16) | (Mean(total[2], n) << 8) | Mean(total[3], n);
+                coordinate[0] = Mean(total[1], n);
+                coordinate[1] = Mean(total[2], n);
+                coordinate[2] = Mean(total[3], n);
+                coordinate[3] = byte.MaxValue;
+                entryTranslucent[entry] = false;
+            }
+            else
+            {
+                var weight = n * byte.MaxValue;
+                _palette[entry] = GetKey(Math.Min(Mean(total[4], total[7]), byte.MaxValue), Math.Min(Mean(total[5], total[7]), byte.MaxValue), Math.Min(Mean(total[6], total[7]), byte.MaxValue), Mean(total[7], n));
+                coordinate[0] = Mean(total[4], weight);
+                coordinate[1] = Mean(total[5], weight);
+                coordinate[2] = Mean(total[6], weight);
+                coordinate[3] = Mean(total[7], n);
+                entryTranslucent[entry] = true;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Moves every item to the entry of its class (opaque or translucent) nearest to its color: the smallest squared distance
+    /// of the coordinates, ties to the current entry, then to the lowest index.
+    /// </summary>
+    /// <returns><see langword="true"/> when an item moved.</returns>
+    private bool AssignItems(int entries, int itemCount, ReadOnlySpan<int> items, ReadOnlySpan<int> colors, ReadOnlySpan<int> exact, Span<int> owners, ReadOnlySpan<int> coordinates, ReadOnlySpan<bool> entryTranslucent)
+    {
+        var moved = false;
+        for (var i = 0; i < itemCount; i++)
+        {
+            var item = items[i];
+            var color = colors[item];
+            var translucent = IsTranslucentItem(item, exact);
+            var r = (color >> 16) & 0xFF;
+            var g = (color >> 8) & 0xFF;
+            var b = color & 0xFF;
+            var a = (color >>> 24) & 0xFF;
+            var best = owners[i];
+            var bestDistance = Distance(coordinates.Slice(best * 4, 4), r, g, b, a);
+            for (var entry = 0; entry < entries && bestDistance > 0; entry++)
+            {
+                if (entryTranslucent[entry] != translucent || entry == best)
+                    continue;
+
+                var distance = Distance(coordinates.Slice(entry * 4, 4), r, g, b, a);
+                if (distance < bestDistance)
+                {
+                    bestDistance = distance;
+                    best = entry;
+                }
+            }
+
+            if (best != owners[i])
+            {
+                owners[i] = best;
+                moved = true;
+            }
+        }
+
+        return moved;
+
+        static int Distance(ReadOnlySpan<int> entry, int r, int g, int b, int a)
+        {
+            var dr = entry[0] - r;
+            var dg = entry[1] - g;
+            var db = entry[2] - b;
+            var da = entry[3] - a;
+            return (dr * dr) + (dg * dg) + (db * db) + (da * da);
+        }
+    }
+
+    /// <summary>
+    /// Computes the weighted sum of squared errors of a box around its mean, and the axis (0 R, 1 G, 2 B, and 3 A for a box of
+    /// translucent colors) of largest error.
+    /// </summary>
+    private static double ComputeError(ReadOnlySpan<int> counts, ReadOnlySpan<int> items, ReadOnlySpan<int> colors, int start, int end, bool translucent, out int axis)
+    {
+        var axes = translucent ? 4 : 3;
+        Span<long> sum = stackalloc long[4];
+        Span<long> squares = stackalloc long[4];
         long n = 0;
         for (var i = start; i < end; i++)
         {
@@ -811,9 +1280,9 @@ internal sealed class PaletteQuantizer : IDisposable
             long weight = counts[item];
             var color = colors[item];
             n += weight;
-            for (var c = 0; c < 3; c++)
+            for (var c = 0; c < axes; c++)
             {
-                long value = (color >> (16 - (8 * c))) & 0xFF;
+                long value = (color >> GetShift(c)) & 0xFF;
                 sum[c] += weight * value;
                 squares[c] += weight * value * value;
             }
@@ -822,7 +1291,7 @@ internal sealed class PaletteQuantizer : IDisposable
         axis = 0;
         var total = 0d;
         var largest = -1d;
-        for (var c = 0; c < 3; c++)
+        for (var c = 0; c < axes; c++)
         {
             var error = squares[c] - ((double)sum[c] * sum[c] / n);
             total += error;
@@ -923,18 +1392,39 @@ internal sealed class PaletteQuantizer : IDisposable
 
     private void SetPalette(int count)
     {
-        var palette = _palette.AsSpan(0, count);
+        // Sorted as unsigned keys: the opaque entries (high byte 0), the translucent ones, then the transparent entry (all ones)
+        var palette = unsafe(MemoryMarshal.Cast<int, uint>(_palette.AsSpan(0, count)));
         palette.Sort();
-        var unique = 0;
+        var total = 0;
         for (var i = 0; i < palette.Length; i++)
         {
-            if (unique == 0 || palette[unique - 1] != palette[i])
+            if (total == 0 || palette[total - 1] != palette[i])
             {
-                palette[unique++] = palette[i];
+                palette[total++] = palette[i];
             }
         }
 
-        _paletteCount = unique;
+        _paletteCount = total;
+        PaletteVersion++;
+        var unique = 0;
+        while (unique < total && (_palette[unique] >>> 24) == 0)
+        {
+            unique++;
+        }
+
+        _opaqueCount = unique;
+        _transparentIndex = total > 0 && _palette[total - 1] == TransparentKey ? total - 1 : -1;
+        for (var i = 0; i < total; i++)
+        {
+            var key = _palette[i];
+            var alpha = GetAlpha(key);
+            _premultiplied[4 * i] = key == TransparentKey ? 0 : ((key >> 16) & 0xFF) * alpha;
+            _premultiplied[(4 * i) + 1] = key == TransparentKey ? 0 : ((key >> 8) & 0xFF) * alpha;
+            _premultiplied[(4 * i) + 2] = key == TransparentKey ? 0 : (key & 0xFF) * alpha;
+            _premultiplied[(4 * i) + 3] = alpha * byte.MaxValue;
+        }
+
+        _rgbaCacheKeys?.AsSpan().Fill(NoKey);
         for (var i = 0; i < unique; i++)
         {
             _paletteRed[i] = (byte)(_palette[i] >> 16);
@@ -997,7 +1487,23 @@ internal sealed class PaletteQuantizer : IDisposable
             throw new InvalidOperationException("The histogram of the frame is released once its palette is built.");
     }
 
-    private Span<int> GetVectorPalette() => unsafe(MemoryMarshal.Cast<byte, int>(GetState().Slice(VectorPaletteOffset, 3 * VectorPlaneLength * sizeof(int))));
+    private Span<int> Counts => unsafe(MemoryMarshal.Cast<byte, int>(GetState().Slice(CountsOffset, _bucketCount * sizeof(int))));
 
-    private Span<byte> GetState() => (_state ?? throw new ObjectDisposedException(nameof(PaletteQuantizer))).RawBuffer.AsSpan(0, StateLength);
+    private Span<long> TranslucentSums => _translucent ? unsafe(MemoryMarshal.Cast<byte, long>(GetState().Slice(_translucentSumsOffset, Buckets * 4 * sizeof(long)))) : default;
+
+    /// <summary>Gets a value indicating whether an item of the median cut (a bucket, or an exact-set slot) holds translucent colors.</summary>
+    private bool IsTranslucentItem(int item, ReadOnlySpan<int> exact) => _exactMode ? IsTranslucentKey(exact[item]) : item >= Buckets;
+
+    private void AddBox(ref int boxes, int start, int end, bool translucent, ReadOnlySpan<int> counts, ReadOnlySpan<int> items, ReadOnlySpan<int> colors)
+    {
+        _boxStart[boxes] = start;
+        _boxEnd[boxes] = end;
+        _boxTranslucent[boxes] = translucent;
+        _boxError[boxes] = ComputeError(counts, items, colors, start, end, translucent, out _boxAxis[boxes]);
+        boxes++;
+    }
+
+    private Span<int> GetVectorPalette() => unsafe(MemoryMarshal.Cast<byte, int>(GetState().Slice(_vectorPaletteOffset, 3 * VectorPlaneLength * sizeof(int))));
+
+    private Span<byte> GetState() => (_state ?? throw new ObjectDisposedException(nameof(PaletteQuantizer))).RawBuffer.AsSpan(0, _stateLength);
 }

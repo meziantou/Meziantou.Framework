@@ -425,6 +425,165 @@ public sealed class PngEncoderTests
         Assert.Equal([0, 0, 0, 1, 1, 1, 255, 255, 255], ReferencePng.Parse(Encode(gray, new PngEncoder { PixelLayout = PngPixelLayout.Indexed })).Palette.ToArray());
     }
 
+    [Theory]
+    [InlineData(PixelFormat.Rgba32, false)]
+    [InlineData(PixelFormat.Rgb24, false)]
+    [InlineData(PixelFormat.Gray8, false)]
+    [InlineData(PixelFormat.Rgba64, false)]
+    [InlineData(PixelFormat.Gray16, false)]
+    [InlineData(PixelFormat.Rgba32, true)]
+    public void IndexedColorReductionStoresImagesThatFitExactly(PixelFormat format, bool minimumSize)
+    {
+        // An image whose colors fit is written as without AllowColorReduction, transparent colors included
+        using var image = CreateWithColors(format, 20, 13, colors: 200, seed: 3);
+        var optimization = minimumSize ? PngOptimization.MinimumSize : PngOptimization.None;
+        var exact = Encode(image, new PngEncoder { PixelLayout = PngPixelLayout.Indexed, Optimization = optimization });
+        var reduced = Encode(image, new PngEncoder { PixelLayout = PngPixelLayout.Indexed, Optimization = optimization, AllowColorReduction = true, Quantization = new QuantizeOptions { Dithering = DitheringMode.Bayer4x4 } });
+
+        Assert.Equal(exact, reduced);
+    }
+
+    [Theory]
+    [InlineData(256, DitheringMode.None, false, 8)]
+    [InlineData(16, DitheringMode.FloydSteinberg, false, 4)]
+    [InlineData(16, DitheringMode.FloydSteinberg, true, 4)]
+    [InlineData(4, DitheringMode.Bayer8x8, false, 2)]
+    public void IndexedColorReductionWritesTheImageThatQuantizeGives(int maxColors, DitheringMode dithering, bool interlaced, int bitDepth)
+    {
+        using var image = CreateWithColors(PixelFormat.Rgba32, 40, 30, colors: 1000, seed: 5);
+        var quantization = new QuantizeOptions { MaxColors = maxColors, Dithering = dithering };
+        AssertRejected(image, "Color reduction");
+
+        var png = Encode(image, new PngEncoder { PixelLayout = PngPixelLayout.Indexed, AllowColorReduction = true, Quantization = quantization, Interlaced = interlaced });
+
+        // The same file as the exact layout of the image reduced first; the image itself is unchanged
+        using var quantized = image.Clone();
+        quantized.Quantize(quantization, TestContext.Current.CancellationToken);
+        Assert.Equal(Encode(quantized, new PngEncoder { PixelLayout = PngPixelLayout.Indexed, Interlaced = interlaced }), png);
+        Assert.NotEqual(ImageSnapshots.CaptureFrame(quantized.Frames[0]).Span.ToArray(), ImageSnapshots.CaptureFrame(image.Frames[0]).Span.ToArray());
+        var reference = AssertIndexedDecodesIndependently(png, quantized, IndexedPngExpectation.Create(ImageSnapshots.CaptureFrame(quantized.Frames[0])));
+        Assert.Equal(bitDepth, reference.BitDepth);
+        Assert.InRange(reference.Palette.Length / 3, 2, maxColors);
+    }
+
+    [Fact]
+    public void IndexedColorReductionRoundsSixteenBitSamples()
+    {
+        using var image = new Image<Rgba64>(2, 1);
+        image.Frames[0].ProcessPixelRows(pixels =>
+        {
+            pixels.GetRowSpan(0)[0] = new Rgba64(0x1213, 0x3434, 0x5656, 0xFFFF);
+            pixels.GetRowSpan(0)[1] = new Rgba64(0x0001, 0xFFFE, 0x8080, 0x7F80);
+        });
+        AssertRejected(image, "Bit depth reduction");
+
+        var reference = ReferencePng.Parse(Encode(image, new PngEncoder { PixelLayout = PngPixelLayout.Indexed, AllowColorReduction = true }));
+
+        Assert.Equal([0x00, 0xFF, 0x80, 0x12, 0x34, 0x56], reference.Palette.ToArray());
+        Assert.Equal([0x7F], reference.Transparency.ToArray());
+    }
+
+    [Fact]
+    public void IndexedColorReductionUsesTheFixedPalette()
+    {
+        var palette = new ImagePalette([new Rgba32(0, 0, 0), new Rgba32(255, 255, 255), new Rgba32(200, 30, 30), new Rgba32(0, 0, 255, 128), default]);
+        using var image = CreateWithColors(PixelFormat.Rgba32, 40, 30, colors: 500, seed: 9);
+        var encoder = new PngEncoder { PixelLayout = PngPixelLayout.Indexed, AllowColorReduction = true, Quantization = new QuantizeOptions { Palette = palette, Dithering = DitheringMode.Atkinson } };
+
+        using var decoded = Image.Load<Rgba32>(Encode(image, encoder));
+
+        var colors = palette.Colors.ToArray();
+        decoded.Frames[0].ProcessPixelRows(pixels =>
+        {
+            for (var y = 0; y < pixels.Height; y++)
+            {
+                foreach (var pixel in pixels.GetRowSpan(y))
+                {
+                    Assert.Contains(pixel, colors);
+                }
+            }
+        });
+
+        // Without AllowColorReduction the fixed palette is not used: the layout stays exact
+        AssertRejected(image, "Color reduction");
+    }
+
+    [Fact]
+    public void IndexedColorReductionKeepsOpaquePixelsOpaque()
+    {
+        // Opaque pixels and translucent ones, more colors than the palette holds
+        using var image = new Image<Rgba32>(64, 32);
+        image.Frames[0].ProcessPixelRows(pixels =>
+        {
+            for (var y = 0; y < pixels.Height; y++)
+            {
+                var row = pixels.GetRowSpan(y);
+                for (var x = 0; x < row.Length; x++)
+                {
+                    row[x] = new Rgba32((byte)(x * 4), (byte)(y * 8), 90, y < 16 ? (byte)255 : (byte)(x * 4));
+                }
+            }
+        });
+
+        var png = Encode(image, new PngEncoder { PixelLayout = PngPixelLayout.Indexed, AllowColorReduction = true, Optimization = PngOptimization.MinimumSize, Quantization = new QuantizeOptions { MaxColors = 64 } });
+
+        Assert.Contains("tRNS", ReferencePng.Parse(png).ChunkTypes);
+        using var decoded = Image.Load<Rgba32>(png);
+        decoded.Frames[0].ProcessPixelRows(pixels =>
+        {
+            for (var y = 0; y < pixels.Height; y++)
+            {
+                var row = pixels.GetRowSpan(y);
+                for (var x = 0; x < row.Length; x++)
+                {
+                    // Translucent pixels may get an opaque entry, never the other way around
+                    if (y < 16)
+                    {
+                        Assert.Equal(byte.MaxValue, row[x].A);
+                    }
+                    else if (x == 0)
+                    {
+                        Assert.Equal(0, row[x].A);
+                    }
+                    else
+                    {
+                        Assert.InRange(row[x].A, (x * 4) - 40, (x * 4) + 40);
+                    }
+                }
+            }
+        });
+    }
+
+    [Fact]
+    public void IndexedColorReductionWritesAPaletteForAPhotograph()
+    {
+        // A photograph-like gradient with 65,536 colors, too many for a palette
+        using var photo = new Image<Rgba32>(256, 256);
+        photo.Frames[0].ProcessPixelRows(pixels =>
+        {
+            for (var y = 0; y < pixels.Height; y++)
+            {
+                var row = pixels.GetRowSpan(y);
+                for (var x = 0; x < row.Length; x++)
+                {
+                    row[x] = new Rgba32((byte)x, (byte)y, (byte)(255 - x));
+                }
+            }
+        });
+
+        // An 8-bit palette PNG of at most 64 colors, dithered; without AllowColorReduction the save would fail
+        using var stream = new MemoryStream();
+        photo.Save(stream, new PngEncoder
+        {
+            PixelLayout = PngPixelLayout.Indexed,
+            AllowColorReduction = true,
+            Quantization = new QuantizeOptions { MaxColors = 64, Dithering = DitheringMode.Atkinson },
+        });
+
+        stream.Position = 0;
+        Assert.Equal(ImageColorModel.Indexed, Image.Identify(stream).ColorModel);
+    }
+
     [Fact]
     public void ARejectedIndexedFrameKeepsTheWriterUsableAndLeavesNoColorInThePalette()
     {

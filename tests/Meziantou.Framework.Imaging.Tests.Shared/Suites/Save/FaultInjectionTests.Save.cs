@@ -226,7 +226,7 @@ public sealed partial class FaultInjectionTests
                     "bmp" => new BmpEncoder { MetadataHandling = MetadataHandling.Strip, AllowBitDepthReduction = true },
 
                     // Every pass of the indexed layouts: histogram, dithered mapping, run-length measurement, headers and rows
-                    "bmp-indexed" => new BmpEncoder { MetadataHandling = MetadataHandling.Strip, AllowBitDepthReduction = true, PixelLayout = BmpPixelLayout.Indexed8, Compression = BmpCompression.RunLength, AllowColorReduction = true, Dithering = BmpDithering.FloydSteinberg, BackgroundColor = new Rgba64(0, 0, 0) },
+                    "bmp-indexed" => new BmpEncoder { MetadataHandling = MetadataHandling.Strip, AllowBitDepthReduction = true, PixelLayout = BmpPixelLayout.Indexed8, Compression = BmpCompression.RunLength, AllowColorReduction = true, BackgroundColor = new Rgba64(0, 0, 0), Quantization = new QuantizeOptions { Dithering = DitheringMode.FloydSteinberg } },
                     "tga" => new TgaEncoder { MetadataHandling = MetadataHandling.Strip, AllowBitDepthReduction = true, Compression = TgaCompression.RunLength },
                     _ => new PnmEncoder { MetadataHandling = MetadataHandling.Strip },
                 };

@@ -150,6 +150,21 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   - The harness reader decodes every color type and bit depth to 16-bit RGBA and composites APNG frames
     (`ReferencePng.Canonical.cs`), rejecting any OVER pixel whose result depends on the rounding of a decoder; verify
     `MinimumSize` output with `OptimizedPngOutputVerifier`, never with `ApngOutputVerifier` (full-canvas frames only).
+- **Color reduction** (`PaletteQuantizer`, `PaletteRowMapper`, `FrameQuantization`): one quantizer serves `Quantize`,
+  `PaletteBuilder`, GIF, indexed BMP and indexed PNG (`PngColorReduction`, which reduces each image into an 8-bit RGBA
+  copy in `ImageWriterCore` so that the PNG sessions stay exact-only). Keep it so:
+  - Every decision is integer arithmetic (the median-cut split criterion and the ordered-dither spacing are IEEE doubles):
+    `QuantizeTests.Quantize_IsDeterministic` pins the output hashes, and CI runs them on every platform. A change of the
+    algorithm re-pins them on purpose, never to make a platform pass.
+  - Opaque keys keep their 24-bit form and the opaque path its exact arithmetic: a quantizer of opaque colors (GIF, BMP)
+    must not pay for translucent colors (`translucent: false` keeps the 1.3 MiB state). Opaque and translucent colors are
+    never in the same median-cut box or k-means cluster (except for a single requested color), and an opaque pixel only
+    maps to an opaque entry.
+  - The fast mapping (`Map`, the 5-bit cells) is only for opaque colors over the opaque entries; it must give exactly the
+    result of `FindNearestScalar` (`VectorizedKernelTests`).
+  - Quality is measured against pngquant 3.0.3 (`apk add pngquant` in an `alpine` container) with `ImageSimilarity`
+    (SSIMULACRA 2, Butteraugli 3-norm, PSNR) on real photographs; the readme table (Processing, Color reduction) holds the
+    figures, so measure again and update it when the palette or the dithering changes.
 - **HEIF container** (`Internals/Codecs/Heif`), shared by AVIF and HEIC: there is one implementation of the container
   rules. The walker (`HeifStructureParser`) resolves the image (`HeifImagePlan`, from the `meta` box) or the image
   sequence (`HeifMovieBox`, from the `moov` box) before any data is read, then captures the items or samples as their

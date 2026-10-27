@@ -14,7 +14,7 @@ namespace Meziantou.Framework.Imaging.Formats;
 /// <see cref="BmpPixelLayout.Bgra32"/>: every other layout requires <see cref="BackgroundColor"/> as soon as a pixel is not
 /// opaque. 16-bit pixel formats, and the 16-bit layouts, require <see cref="AllowBitDepthReduction"/>. An indexed layout
 /// stores the colors of the image exactly when its palette can hold them, and requires <see cref="AllowColorReduction"/>
-/// otherwise (see <see cref="MaxColors"/> and <see cref="Dithering"/>).
+/// otherwise (see <see cref="Quantization"/>).
 /// </para>
 /// <para>
 /// The indexed layouts read the frame twice (its colors, then its pixels) and keep one byte per pixel of working memory,
@@ -108,46 +108,70 @@ public sealed class BmpEncoder : ImageEncoder
     public bool AllowBitDepthReduction { get; init; }
 
     /// <summary>
-    /// Gets a value indicating whether an indexed layout may reduce the colors of an image that has more distinct colors
-    /// than its palette can hold (the smaller of <see cref="MaxColors"/> and the capacity of the layout). Defaults to
-    /// <see langword="false"/>: such an image is rejected with an <see cref="UnsupportedImageFeatureException"/>. When
-    /// <see langword="true"/>, the palette is a deterministic variance-based median cut of the colors of the image and each
-    /// pixel maps to its nearest entry (see <see cref="Dithering"/>). An image whose colors fit is always stored exactly.
-    /// Ignored by the other layouts.
+    /// Gets a value indicating whether an indexed layout may reduce the colors of an image whose colors its palette cannot
+    /// hold exactly (more distinct colors than the smaller of <see cref="QuantizeOptions.MaxColors"/> and the capacity of the
+    /// layout, or colors that are not in <see cref="QuantizeOptions.Palette"/>). Defaults to <see langword="false"/>: such an
+    /// image is rejected with an <see cref="UnsupportedImageFeatureException"/>. When <see langword="true"/>, the colors are
+    /// reduced as <see cref="Quantization"/> says. An image whose colors fit is always stored exactly. Ignored by the other
+    /// layouts.
     /// </summary>
     public bool AllowColorReduction { get; init; }
 
     /// <summary>
-    /// Gets the maximum number of palette entries of an indexed layout, further limited to the capacity of the layout (2,
-    /// 16 or 256). Defaults to 256. The palette only stores the entries the image uses (<c>biClrUsed</c>). Ignored by the
-    /// other layouts.
+    /// Gets how an indexed layout reduces colors to its palette. Defaults to <see cref="QuantizeOptions.Default"/>: at most
+    /// 256 entries, further limited to the capacity of the layout (2, 16 or 256), without dithering. Ignored by the other
+    /// layouts.
     /// </summary>
-    /// <exception cref="ArgumentOutOfRangeException">The value is not between 2 and 256.</exception>
-    public int MaxColors
+    /// <remarks>
+    /// <para>
+    /// The palette is the exact colors of the image when they fit, otherwise a deterministic variance-based median cut of its
+    /// colors (see <see cref="PaletteBuilder"/>), with the dithering of <see cref="QuantizeOptions.Dithering"/>; the colors are
+    /// only reduced with <see cref="AllowColorReduction"/>. The palette only stores the entries it has (<c>biClrUsed</c>).
+    /// </para>
+    /// <para>
+    /// With <see cref="QuantizeOptions.Palette"/>, the pixels map to that palette, whose entries that are not opaque are
+    /// composited over <see cref="BackgroundColor"/> first. Saving fails with an <see cref="ArgumentException"/> when an entry
+    /// is not opaque without <see cref="BackgroundColor"/>, or when the palette has more colors than the layout holds.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="ArgumentNullException">The value is <see langword="null"/>.</exception>
+    public QuantizeOptions Quantization
     {
         get;
         init
         {
-            ArgumentOutOfRangeException.ThrowIfLessThan(value, 2);
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(value, 256);
+            ArgumentNullException.ThrowIfNull(value);
             field = value;
         }
-    } = 256;
+    } = QuantizeOptions.Default;
 
     /// <summary>
-    /// Gets the dithering applied when an indexed layout reduces colors (<see cref="AllowColorReduction"/>). Defaults to
-    /// <see cref="BmpDithering.None"/>. It has no effect on an image whose colors fit the palette.
+    /// Gets the maximum number of palette entries of an indexed layout: <see cref="Quantization"/>.<see cref="QuantizeOptions.MaxColors"/>,
+    /// which it sets.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not between 2 and 256.</exception>
+    [Obsolete("Use Quantization.MaxColors.")]
+    public int MaxColors
+    {
+        get => Quantization.MaxColors;
+        init => Quantization = Quantization.With(maxColors: value);
+    }
+
+    /// <summary>
+    /// Gets the dithering applied when an indexed layout reduces colors: <see cref="Quantization"/>.<see cref="QuantizeOptions.Dithering"/>,
+    /// which it sets.
     /// </summary>
     /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="BmpDithering"/>.</exception>
+    [Obsolete("Use Quantization.Dithering, which also selects other dithering modes.")]
     public BmpDithering Dithering
     {
-        get;
+        get => (BmpDithering)Quantization.Dithering;
         init
         {
             if (!Enum.IsDefined(value))
                 throw new ArgumentOutOfRangeException(nameof(value), value, "The dithering mode is not valid.");
 
-            field = value;
+            Quantization = Quantization.With(dithering: (DitheringMode)value);
         }
     }
 }

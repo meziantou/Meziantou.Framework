@@ -26,9 +26,9 @@ public sealed class GifEncoderConformanceTests
     private static readonly GifEncoder[] Encoders =
     [
         new GifEncoder(),
-        new GifEncoder { Interlaced = true, Dithering = GifDithering.FloydSteinberg },
-        new GifEncoder { MaxColors = 16, AlphaThreshold = 200 },
-        new GifEncoder { MaxColors = 64, Dithering = GifDithering.FloydSteinberg, AlphaMode = GifAlphaMode.Flatten, BackgroundColor = Background },
+        new GifEncoder { Interlaced = true, Quantization = new QuantizeOptions { Dithering = DitheringMode.FloydSteinberg } },
+        new GifEncoder { AlphaThreshold = 200, Quantization = new QuantizeOptions { MaxColors = 16 } },
+        new GifEncoder { AlphaMode = GifAlphaMode.Flatten, BackgroundColor = Background, Quantization = new QuantizeOptions { MaxColors = 64, Dithering = DitheringMode.FloydSteinberg } },
     ];
 
     public static TheoryData<string, string> Cases()
@@ -102,7 +102,7 @@ public sealed class GifEncoderConformanceTests
         {
             using var stream = new MemoryStream();
             image.Save(stream, encoder);
-            var context = $"{id} as {pixelFormat} (max colors {encoder.MaxColors}, {encoder.Dithering}, {encoder.AlphaMode}, interlaced {encoder.Interlaced})";
+            var context = $"{id} as {pixelFormat} (max colors {encoder.Quantization.MaxColors}, {encoder.Quantization.Dithering}, {encoder.AlphaMode}, interlaced {encoder.Interlaced})";
             var verification = GifOutputVerifier.Verify(stream.ToArray(), image, encoder, context: context);
             for (var i = 0; i < frames.Count; i++)
             {
@@ -188,9 +188,9 @@ public sealed class GifEncoderConformanceTests
     /// </summary>
     private static void AssertQuality(ReconstructionError error, GifEncoder encoder, string context)
     {
-        var (minimumPsnr, maximumMean, maximumBias) = (encoder.MaxColors, encoder.Dithering) switch
+        var (minimumPsnr, maximumMean, maximumBias) = (encoder.Quantization.MaxColors, encoder.Quantization.Dithering) switch
         {
-            (256, GifDithering.None) => (33d, 4.5, 1d),
+            (256, DitheringMode.None) => (33d, 4.5, 1d),
             (256, _) => (31d, 5.5, 1d),
             (64, _) => (22.5, 14d, 1.5),
             _ => (17.5, 27d, 3d),

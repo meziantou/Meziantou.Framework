@@ -622,6 +622,90 @@ public sealed class ApngEncoderTests
         Assert.Equal([100], reference.Transparency.ToArray());
     }
 
+    [Theory]
+    [InlineData(false, DitheringMode.None)]
+    [InlineData(true, DitheringMode.FloydSteinberg)]
+    public void IndexedColorReductionSharesOnePaletteOfEveryFrameAndThePoster(bool poster, DitheringMode dithering)
+    {
+        // Every image has its own colors, too many for a palette
+        using var image = CreateIndexedAnimation(30, 20, frameCount: 3, poster, colorsPerImage: 150, seed: 50);
+        image.Animation = new AnimationMetadata { TotalPlays = 2 };
+        var quantization = new QuantizeOptions { MaxColors = 64, Dithering = dithering };
+
+        var png = Encode(image, new PngEncoder { PixelLayout = PngPixelLayout.Indexed, AllowColorReduction = true, Quantization = quantization });
+
+        // The file of the animation reduced first to one palette built from every image
+        using var expected = image.Clone();
+        ImagePalette palette;
+        using (var builder = new PaletteBuilder())
+        {
+            builder.Add(expected, TestContext.Current.CancellationToken);
+            palette = builder.Build(64);
+        }
+
+        expected.Quantize(new QuantizeOptions { Palette = palette, Dithering = dithering }, TestContext.Current.CancellationToken);
+        Assert.Equal(Encode(expected, new PngEncoder { PixelLayout = PngPixelLayout.Indexed }), png);
+        var reference = ApngOutputVerifier.Verify(png, expected);
+        Assert.InRange(reference.Palette.Length / 3, 2, 64);
+    }
+
+    [Fact]
+    public void SequentialWritersReduceLaterFramesToThePaletteOfTheFirstImage()
+    {
+        var red = new Rgba32(255, 0, 0, 255);
+        var green = new Rgba32(0, 255, 0, 255);
+        var veil = new Rgba32(0, 0, 255, 100);
+        using var first = CreateFrame(3, red, green, veil, red, red, green);
+        using var second = CreateFrame(3, new Rgba32(250, 10, 0), new Rgba32(10, 240, 0), new Rgba32(0, 0, 250, 90), green, default, red);
+        using var stream = new TestOutputStream();
+        var encoder = new PngEncoder { AnimationMode = PngAnimationMode.Animated, PixelLayout = PngPixelLayout.Indexed, AllowColorReduction = true };
+        using (var writer = Image.CreateWriter<Rgba32>(stream, new ImageWriterOptions(3, 2) { Encoder = encoder, ExpectedFrameCount = 2 }))
+        {
+            writer.WriteFrame(first.Frames[0]);
+            writer.WriteFrame(second.Frames[0]);
+            writer.Complete();
+        }
+
+        // The palette holds the colors of the first frame; the second frame gets its nearest entries (and a transparent
+        // pixel the nearest entry of transparent black, the veil)
+        using var expected = first.Clone();
+        using var mapped = CreateFrame(3, red, green, veil, green, veil, red);
+        expected.AppendFrame(mapped.Frames[0]);
+        expected.Animation = new AnimationMetadata();
+        var reference = ApngOutputVerifier.Verify(stream.ToArray(), expected);
+        Assert.Equal([0, 0, 255, 0, 255, 0, 255, 0, 0], reference.Palette.ToArray());
+    }
+
+    [Fact]
+    public void SequentialWritersReduceToThePaletteOfTheFirstAcceptedImage()
+    {
+        // The first frame is rejected (its duration does not fit APNG): its colors must not become the palette
+        var red = new Rgba32(255, 0, 0, 255);
+        var blue = new Rgba32(0, 0, 255, 255);
+        using var rejected = CreateFrame(2, red, red, red, red);
+        rejected.Frames[0].Metadata.Duration = new FrameDuration(65536, 1);
+        using var first = CreateFrame(2, blue, blue, blue, new Rgba32(0, 0, 0, 255));
+        using var second = CreateFrame(2, new Rgba32(250, 0, 0, 255), blue, blue, blue);
+        using var stream = new TestOutputStream();
+        var encoder = new PngEncoder { AnimationMode = PngAnimationMode.Animated, PixelLayout = PngPixelLayout.Indexed, AllowColorReduction = true };
+        using (var writer = Image.CreateWriter<Rgba32>(stream, new ImageWriterOptions(2, 2) { Encoder = encoder, ExpectedFrameCount = 2 }))
+        {
+            Assert.Throws<UnsupportedImageFeatureException>(() => writer.WriteFrame(rejected.Frames[0]));
+            Assert.Equal(0, stream.BytesWritten);
+            writer.WriteFrame(first.Frames[0]);
+            writer.WriteFrame(second.Frames[0]);
+            writer.Complete();
+        }
+
+        // The red pixel of the second frame gets the nearest color of the first frame: black
+        using var expected = first.Clone();
+        using var mapped = CreateFrame(2, new Rgba32(0, 0, 0, 255), blue, blue, blue);
+        expected.AppendFrame(mapped.Frames[0]);
+        expected.Animation = new AnimationMetadata();
+        var reference = ApngOutputVerifier.Verify(stream.ToArray(), expected);
+        Assert.Equal([0, 0, 0, 0, 0, 255], reference.Palette.ToArray());
+    }
+
     [Fact]
     public void SequentialWritersDropTheColorsOfARejectedFirstIndexedImage()
     {

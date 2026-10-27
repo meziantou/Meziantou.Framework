@@ -17,7 +17,7 @@ namespace Meziantou.Framework.Imaging.TestHarness.Adapters;
 /// image per displayed frame with a local color table, the interlace flag, a Graphic Control Extension on every animation
 /// frame with disposal 2 (restore to background, cleared to transparent) and the transparent flag exactly when the frame
 /// has transparent pixels, the delays (exact or nearest hundredths), the NETSCAPE2.0 loop count (repetitions; none for a single
-/// play or a still image), the comments, and at most <see cref="GifEncoder.MaxColors"/> palette entries used, the
+/// play or a still image), the comments, and at most <see cref="QuantizeOptions.MaxColors"/> palette entries used, the
 /// transparent one included.
 /// </para>
 /// <para>
@@ -194,7 +194,7 @@ public static class GifOutputVerifier
 
             // Palette entries actually used, the transparent one included
             var used = image.Indices.ToArray().Distinct().Count();
-            Check(used <= encoder.MaxColors, name, $"{used} palette entries used, at most {encoder.MaxColors} allowed");
+            Check(used <= encoder.Quantization.MaxColors, name, $"{used} palette entries used, at most {encoder.Quantization.MaxColors} allowed");
 
             // Transparency: exactly the intended transparent pixels (no stale content under pixels that became transparent)
             var actual = displayed[i];
@@ -208,7 +208,7 @@ public static class GifOutputVerifier
                 }
             }
 
-            var available = encoder.MaxColors - (hasTransparency ? 1 : 0);
+            var available = encoder.Quantization.MaxColors - (hasTransparency ? 1 : 0);
             if (colors <= available)
             {
                 var result = PixelBufferComparer.Compare(intent, actual, ComparisonPolicy.Exact, name + " decoded by the reference reader (exact palette)");

@@ -6,8 +6,8 @@ namespace Meziantou.Framework.Imaging.Formats;
 /// GIF output is inherently lossy: colors are reduced to at most 256 entries per frame (local palettes, including the
 /// transparent entry) with a deterministic quantizer, alpha is reduced to fully transparent or fully opaque, and 16-bit
 /// precision is reduced to 8 bits. Selecting the GIF encoder is the explicit opt-in to these losses. A frame whose colors fit
-/// its palette is reproduced exactly; other frames use a deterministic variance-based median-cut palette, optionally with
-/// Floyd–Steinberg dithering. Only <c>Comment</c> text entries (Latin-1) are stored as metadata.
+/// its palette is reproduced exactly; other frames use a deterministic variance-based median-cut palette, or a fixed palette,
+/// optionally dithered (<see cref="Quantization"/>). Only <c>Comment</c> text entries (Latin-1) are stored as metadata.
 /// </para>
 /// <para>
 /// Frames are encoded from full displayed frames with freshly computed disposal/transparency control data, so pixels that
@@ -57,32 +57,62 @@ public sealed class GifEncoder : ImageEncoder
         }
     }
 
-    /// <summary>Gets the dithering mode. Defaults to <see cref="GifDithering.None"/>.</summary>
-    /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="GifDithering"/>.</exception>
-    public GifDithering Dithering
+    /// <summary>
+    /// Gets how colors are reduced to the palette of each frame. Defaults to <see cref="QuantizeOptions.Default"/>: at most
+    /// 256 entries per frame, the transparent entry included, without dithering.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A frame whose colors fit its palette is reproduced exactly; other frames use a deterministic variance-based median cut
+    /// of their colors (see <see cref="PaletteBuilder"/>), with the dithering of <see cref="QuantizeOptions.Dithering"/>.
+    /// </para>
+    /// <para>
+    /// With <see cref="QuantizeOptions.Palette"/>, every frame maps to that palette (each frame still has its own local color
+    /// table, which holds the colors of the palette). The entries get the alpha reduction of the pixels first:
+    /// <see cref="GifAlphaMode.Threshold"/> drops the entries whose alpha is below <see cref="AlphaThreshold"/> (transparent
+    /// pixels take the transparent entry) and keeps the color of the others, <see cref="GifAlphaMode.Flatten"/> composites them
+    /// over <see cref="BackgroundColor"/>. Saving fails with an <see cref="ArgumentException"/> when no entry is left, or when
+    /// 256 colors are left for a pixel format with alpha and <see cref="GifAlphaMode.Threshold"/> (no room for the transparent
+    /// entry).
+    /// </para>
+    /// </remarks>
+    /// <exception cref="ArgumentNullException">The value is <see langword="null"/>.</exception>
+    public QuantizeOptions Quantization
     {
         get;
+        init
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            field = value;
+        }
+    } = QuantizeOptions.Default;
+
+    /// <summary>Gets the dithering mode: <see cref="Quantization"/>.<see cref="QuantizeOptions.Dithering"/>, which it sets.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="GifDithering"/>.</exception>
+    [Obsolete("Use Quantization.Dithering, which also selects other dithering modes.")]
+    public GifDithering Dithering
+    {
+        get => (GifDithering)Quantization.Dithering;
         init
         {
             if (!Enum.IsDefined(value))
                 throw new ArgumentOutOfRangeException(nameof(value), value, "The dithering mode is not valid.");
 
-            field = value;
+            Quantization = Quantization.With(dithering: (DitheringMode)value);
         }
     }
 
-    /// <summary>Gets the maximum number of palette entries per frame, including the transparent entry. Defaults to 256.</summary>
+    /// <summary>
+    /// Gets the maximum number of palette entries per frame, including the transparent entry:
+    /// <see cref="Quantization"/>.<see cref="QuantizeOptions.MaxColors"/>, which it sets.
+    /// </summary>
     /// <exception cref="ArgumentOutOfRangeException">The value is not between 2 and 256.</exception>
+    [Obsolete("Use Quantization.MaxColors.")]
     public int MaxColors
     {
-        get;
-        init
-        {
-            ArgumentOutOfRangeException.ThrowIfLessThan(value, 2);
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(value, 256);
-            field = value;
-        }
-    } = 256;
+        get => Quantization.MaxColors;
+        init => Quantization = Quantization.With(maxColors: value);
+    }
 
     /// <summary>Gets a value indicating whether frames are written interlaced. Defaults to <see langword="false"/>.</summary>
     public bool Interlaced { get; init; }

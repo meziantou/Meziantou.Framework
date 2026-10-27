@@ -302,6 +302,22 @@ namespace Meziantou.Framework.Imaging
         LinearSrgb = 1,
     }
 
+    public enum DitheringMode
+    {
+        None = 0,
+        FloydSteinberg = 1,
+        Atkinson = 2,
+        Burkes = 3,
+        JarvisJudiceNinke = 4,
+        Sierra = 5,
+        SierraTwoRow = 6,
+        SierraLite = 7,
+        Stucki = 8,
+        Bayer2x2 = 9,
+        Bayer4x4 = 10,
+        Bayer8x8 = 11,
+    }
+
     public enum FlipMode
     {
         Horizontal = 0,
@@ -647,6 +663,19 @@ namespace Meziantou.Framework.Imaging
         public int Width { get => throw null; }
     }
 
+    public sealed class ImagePalette : System.Collections.Generic.IEnumerable<Meziantou.Framework.Imaging.Rgba32>, System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.Imaging.Rgba32>, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.Rgba32>, System.Collections.IEnumerable
+    {
+        public const int MaxCount = 256;
+        public System.ReadOnlySpan<Meziantou.Framework.Imaging.Rgba32> Colors { get => throw null; }
+        public int Count { get => throw null; }
+        public bool HasTransparentColor { get => throw null; }
+        public Meziantou.Framework.Imaging.Rgba32 this[int index] { get => throw null; }
+        public ImagePalette(System.Collections.Generic.IEnumerable<Meziantou.Framework.Imaging.Rgba32> colors) { }
+        public ImagePalette(System.ReadOnlySpan<Meziantou.Framework.Imaging.Rgba32> colors) { }
+        public System.Collections.Generic.IEnumerator<Meziantou.Framework.Imaging.Rgba32> GetEnumerator() => throw null;
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+    }
+
     public static class ImageProcessingExtensions
     {
         public static Meziantou.Framework.Imaging.AutoCropAnalysis AnalyzeAutoCrop(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.AutoCropOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
@@ -666,6 +695,8 @@ namespace Meziantou.Framework.Imaging
         public static void GaussianBlur(this Meziantou.Framework.Imaging.ImageFrame frame, double sigma, Meziantou.Framework.Imaging.ConvolutionEdgeMode edgeMode = Meziantou.Framework.Imaging.ConvolutionEdgeMode.Clamp, Meziantou.Framework.Imaging.ConvolutionWorkingSpace workingSpace = Meziantou.Framework.Imaging.ConvolutionWorkingSpace.Encoded, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Grayscale(this Meziantou.Framework.Imaging.Image image, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Grayscale(this Meziantou.Framework.Imaging.ImageFrame frame, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void Quantize(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.QuantizeOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void Quantize(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.QuantizeOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Resize(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.ResizeOptions options, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Rotate(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.RotateMode mode, System.Threading.CancellationToken cancellationToken = default) { }
     }
@@ -854,6 +885,15 @@ namespace Meziantou.Framework.Imaging
         Clip = 1,
     }
 
+    public sealed class PaletteBuilder : System.IDisposable
+    {
+        public PaletteBuilder(Meziantou.Framework.Imaging.ImageConfiguration? configuration = null) { }
+        public void Add(Meziantou.Framework.Imaging.Image image, System.Threading.CancellationToken cancellationToken = default) { }
+        public void Add(Meziantou.Framework.Imaging.ImageFrame frame, System.Threading.CancellationToken cancellationToken = default) { }
+        public Meziantou.Framework.Imaging.ImagePalette Build(int maxColors = 256) => throw null;
+        public void Dispose() { }
+    }
+
     public ref struct PixelAccessor<TPixel> where TPixel : unmanaged
     {
         public int Height { get => throw null; }
@@ -988,6 +1028,15 @@ namespace Meziantou.Framework.Imaging
         public static bool operator !=(Meziantou.Framework.Imaging.ProjectiveTransform left, Meziantou.Framework.Imaging.ProjectiveTransform right) => throw null;
         public static Meziantou.Framework.Imaging.ProjectiveTransform operator *(Meziantou.Framework.Imaging.ProjectiveTransform left, Meziantou.Framework.Imaging.ProjectiveTransform right) => throw null;
         public static implicit operator Meziantou.Framework.Imaging.ProjectiveTransform(Meziantou.Framework.Imaging.AffineTransform transform) => throw null;
+    }
+
+    public sealed class QuantizeOptions
+    {
+        public static Meziantou.Framework.Imaging.QuantizeOptions Default { get => throw null; }
+        public double DitherStrength { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.DitheringMode Dithering { get => throw null; init { } }
+        public int MaxColors { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.ImagePalette? Palette { get => throw null; init { } }
     }
 
     public readonly struct Rectangle : System.IEquatable<Meziantou.Framework.Imaging.Rectangle>
@@ -2135,6 +2184,7 @@ namespace Meziantou.Framework.Imaging.Formats
         RunLength = 1,
     }
 
+    [System.Obsolete("Use DitheringMode with BmpEncoder.Quantization.")]
     public enum BmpDithering
     {
         None = 0,
@@ -2147,10 +2197,13 @@ namespace Meziantou.Framework.Imaging.Formats
         public bool AllowColorReduction { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Rgba64? BackgroundColor { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Formats.BmpCompression Compression { get => throw null; init { } }
+        [System.Obsolete("Use Quantization.Dithering, which also selects other dithering modes.")]
         public Meziantou.Framework.Imaging.Formats.BmpDithering Dithering { get => throw null; init { } }
         public override Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
+        [System.Obsolete("Use Quantization.MaxColors.")]
         public int MaxColors { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Formats.BmpPixelLayout PixelLayout { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.QuantizeOptions Quantization { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Formats.BmpRowOrder RowOrder { get => throw null; init { } }
     }
 
@@ -2184,6 +2237,7 @@ namespace Meziantou.Framework.Imaging.Formats
         Flatten = 1,
     }
 
+    [System.Obsolete("Use DitheringMode with GifEncoder.Quantization.")]
     public enum GifDithering
     {
         None = 0,
@@ -2195,11 +2249,14 @@ namespace Meziantou.Framework.Imaging.Formats
         public Meziantou.Framework.Imaging.Formats.GifAlphaMode AlphaMode { get => throw null; init { } }
         public byte AlphaThreshold { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Rgba64? BackgroundColor { get => throw null; init { } }
+        [System.Obsolete("Use Quantization.Dithering, which also selects other dithering modes.")]
         public Meziantou.Framework.Imaging.Formats.GifDithering Dithering { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Formats.FrameDurationRounding DurationRounding { get => throw null; init { } }
         public override Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
         public bool Interlaced { get => throw null; init { } }
+        [System.Obsolete("Use Quantization.MaxColors.")]
         public int MaxColors { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.QuantizeOptions Quantization { get => throw null; init { } }
     }
 
     public enum HeicChromaSubsampling
@@ -2336,6 +2393,7 @@ namespace Meziantou.Framework.Imaging.Formats
 
     public sealed class PngEncoder : Meziantou.Framework.Imaging.Formats.ImageEncoder
     {
+        public bool AllowColorReduction { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Formats.PngAnimationMode AnimationMode { get => throw null; init { } }
         public System.IO.Compression.CompressionLevel CompressionLevel { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Formats.FrameDurationRounding DurationRounding { get => throw null; init { } }
@@ -2344,6 +2402,7 @@ namespace Meziantou.Framework.Imaging.Formats
         public bool Interlaced { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Formats.PngOptimization Optimization { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Formats.PngPixelLayout PixelLayout { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.QuantizeOptions Quantization { get => throw null; init { } }
     }
 
     public enum PngFilter

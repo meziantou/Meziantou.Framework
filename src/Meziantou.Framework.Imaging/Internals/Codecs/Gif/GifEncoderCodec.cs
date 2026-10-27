@@ -78,7 +78,8 @@ internal sealed class GifEncoderCodec : ImageEncoderCodec
         private readonly Rgba64? _background;
         private readonly bool _threshold;
         private readonly bool _animated;
-        private readonly bool _dither;
+        private readonly QuantizeOptions _quantization;
+        private readonly int[]? _fixedPalette;
         private readonly int _width;
         private readonly int _height;
         private readonly ushort? _loopCount;
@@ -112,7 +113,8 @@ internal sealed class GifEncoderCodec : ImageEncoderCodec
             _threshold = _encoder.AlphaMode == GifAlphaMode.Threshold && PixelFormats.HasAlpha(_sourceFormat);
             _background = _encoder.AlphaMode == GifAlphaMode.Flatten && PixelFormats.HasAlpha(_sourceFormat) ? _encoder.BackgroundColor : null;
             _workFormat = _threshold ? PixelFormat.Rgba32 : PixelFormat.Rgb24;
-            _dither = _encoder.Dithering == GifDithering.FloydSteinberg;
+            _quantization = _encoder.Quantization;
+            _fixedPalette = _quantization.Palette is { } palette ? GetFixedPalette(palette, nameof(options)) : null;
             _width = options.CanvasSize.Width;
             _height = options.CanvasSize.Height;
             _loopCount = _animated ? AnimationTiming.ToGifLoopCount(options.Animation?.TotalPlays) : null;
@@ -121,7 +123,7 @@ internal sealed class GifEncoderCodec : ImageEncoderCodec
             _comments = [.. options.Metadata.TextEntries.Select(entry => Encoding.Latin1.GetBytes(entry.Value))];
 
             var scope = options.Scope;
-            var planeBytes = _dither && _encoder.Interlaced ? (long)_width * _height : 0;
+            var planeBytes = PaletteRowMapper.IsErrorDiffusion(_quantization.Dithering) && _quantization.DitherStrength > 0 && _encoder.Interlaced ? (long)_width * _height : 0;
             if (planeBytes > CheckedSizes.MaxBufferLength)
                 throw CheckedSizes.CreateOverflowException(scope.Limits);
 
@@ -136,7 +138,7 @@ internal sealed class GifEncoderCodec : ImageEncoderCodec
 
                 _keys = scope.Rent(_width * sizeof(int), AllocationKind.Temporary, clear: false);
                 _indices = scope.Rent(_width, AllocationKind.Temporary, clear: false);
-                _mapper = new PaletteRowMapper(scope, _width, _dither);
+                _mapper = new PaletteRowMapper(scope, _width, _quantization.Dithering, _quantization.DitherStrength);
 
                 if (planeBytes > 0)
                 {
@@ -219,7 +221,15 @@ internal sealed class GifEncoderCodec : ImageEncoderCodec
                         return false;
 
                     // The transparent entry takes one of the MaxColors slots when the frame has transparent pixels
-                    _quantizer!.BuildPalette(_quantizer.HasTransparency ? _encoder.MaxColors - 1 : _encoder.MaxColors);
+                    if (_fixedPalette is not null)
+                    {
+                        _quantizer!.SetPalette(_fixedPalette, reservedTransparent: true);
+                    }
+                    else
+                    {
+                        _quantizer!.BuildPalette(_quantizer.HasTransparency ? _quantization.MaxColors - 1 : _quantization.MaxColors);
+                    }
+
                     PreparePalette();
                     _row = 0;
                     ResetErrors();
@@ -346,7 +356,7 @@ internal sealed class GifEncoderCodec : ImageEncoderCodec
             var quantizer = _quantizer!;
             if (_row == 0)
             {
-                quantizer.Begin(_encoder.MaxColors);
+                quantizer.Begin(_fixedPalette is null ? _quantization.MaxColors : ImagePalette.MaxCount);
             }
 
             using var lease = _frame!.GetStorage().AcquireLease();
@@ -397,7 +407,7 @@ internal sealed class GifEncoderCodec : ImageEncoderCodec
             while (_row < _height && (processed == 0 || processed < PixelsPerStep))
             {
                 LoadKeys(in lease, _row, keys);
-                MapRow(keys, plane.Slice(_row * _width, _width));
+                MapRow(keys, plane.Slice(_row * _width, _width), _row);
                 _row++;
                 processed += _width;
             }
@@ -468,7 +478,7 @@ internal sealed class GifEncoderCodec : ImageEncoderCodec
                     else
                     {
                         LoadKeys(in lease, y, keys);
-                        MapRow(keys, indices);
+                        MapRow(keys, indices, y);
                         lzw.Write(indices, output);
                     }
 
@@ -517,7 +527,53 @@ internal sealed class GifEncoderCodec : ImageEncoderCodec
 
         private void ResetErrors() => _mapper?.Reset();
 
-        /// <summary>Maps a row of keys (rows in display order when dithering) to palette indices; see <see cref="PaletteRowMapper.MapRow"/>.</summary>
-        private void MapRow(ReadOnlySpan<int> keys, Span<byte> indices) => _mapper!.MapRow(_quantizer!, keys, indices, _transparentIndex);
+        /// <summary>Maps a row of keys (rows in display order for error diffusion) to palette indices; see <see cref="PaletteRowMapper.MapRow"/>.</summary>
+        private void MapRow(ReadOnlySpan<int> keys, Span<byte> indices, int y) => _mapper!.MapRow(_quantizer!, keys, indices, _transparentIndex, y);
+
+        /// <summary>
+        /// Reduces the entries of a fixed palette as the pixels are reduced: below the alpha threshold an entry is dropped (the
+        /// transparent entry stands for it) and above it its alpha is ignored, or it is composited over the background.
+        /// </summary>
+        /// <exception cref="ArgumentException">No entry is left, or no room is left for the transparent entry.</exception>
+        private int[] GetFixedPalette(ImagePalette palette, string paramName)
+        {
+            var keys = new List<int>(palette.Count);
+            Span<byte> color = stackalloc byte[4];
+            Span<byte> opaque = stackalloc byte[3];
+            foreach (var entry in palette.Colors)
+            {
+                int key;
+                if (_encoder.AlphaMode == GifAlphaMode.Flatten)
+                {
+                    color[0] = entry.R;
+                    color[1] = entry.G;
+                    color[2] = entry.B;
+                    color[3] = entry.A;
+                    PixelConverter.ConvertRow(PixelFormat.Rgba32, color, PixelFormat.Rgb24, opaque, _encoder.BackgroundColor, ImageFormat.Gif);
+                    key = (opaque[0] << 16) | (opaque[1] << 8) | opaque[2];
+                }
+                else if (entry.A < _encoder.AlphaThreshold)
+                {
+                    continue;
+                }
+                else
+                {
+                    key = (entry.R << 16) | (entry.G << 8) | entry.B;
+                }
+
+                if (!keys.Contains(key))
+                {
+                    keys.Add(key);
+                }
+            }
+
+            if (keys.Count == 0)
+                throw new ArgumentException("GifEncoder.Quantization.Palette has no color a GIF frame can store: every entry is below GifEncoder.AlphaThreshold.", paramName);
+
+            if (keys.Count == ImagePalette.MaxCount && _threshold)
+                throw new ArgumentException("GifEncoder.Quantization.Palette has 256 opaque colors and the pixels have alpha: a GIF color table has no room left for the transparent entry. Use a palette of at most 255 opaque colors.", paramName);
+
+            return [.. keys];
+        }
     }
 }

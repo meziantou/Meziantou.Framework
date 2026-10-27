@@ -203,7 +203,7 @@ public sealed class ImageCollectionTests
     }
 
     [Fact]
-    public void FloatingPointEntriesAreSavedOnlyWithAReduction()
+    public void FloatingPointEntriesAreStoredOrReducedWithThePolicyOfTheEncoder()
     {
         using var hdr = new Image<RgbaFloat>(2, 2, new RgbaFloat(0.25f, 0.5f, 2, 0.75f));
         using var pages = ImageCollection.Create(ImageCollectionKind.Pages);
@@ -211,19 +211,32 @@ public sealed class ImageCollectionTests
         Assert.Equal(PixelFormat.RgbaFloat, entry.PixelFormat);
         Assert.Equal(32, entry.BitsPerComponent);
 
-        // Nothing is written without the policy of the encoder, nor with a policy that rejects the samples out of range
+        // TIFF stores floating-point samples as they are
+        using (var stored = new MemoryStream())
+        {
+            pages.Save(stored, new TiffEncoder());
+            using var floats = Image.Load(stored.ToArray());
+            Assert.Equal(PixelFormat.RgbaFloat, floats.PixelFormat);
+            Assert.Equal(new RgbaFloat(0.25f, 0.5f, 2, 0.75f), ((Image<RgbaFloat>)floats).Frames[0][1, 1]);
+        }
+
+        // A palette page does not: nothing is written without the policy of the encoder, nor with a policy that rejects
+        // the samples out of range
+        using var opaque = new Image<RgbaFloat>(2, 2, new RgbaFloat(0.25f, 0.5f, 2));
+        using var palette = ImageCollection.Create(ImageCollectionKind.Pages);
+        palette.Add(opaque);
         using (var rejected = new MemoryStream())
         {
-            var exception = Assert.Throws<UnsupportedImageFeatureException>(() => pages.Save(rejected, new TiffEncoder()));
+            var exception = Assert.Throws<UnsupportedImageFeatureException>(() => palette.Save(rejected, new TiffEncoder { PixelLayout = TiffPixelLayout.Indexed }));
             Assert.Contains("entry 0", exception.Message);
             Assert.Equal(0, rejected.Length);
-            Assert.Throws<UnsupportedImageFeatureException>(() => pages.Save(rejected, new TiffEncoder { FloatingPointConversion = new PixelConversionOptions(), MetadataHandling = MetadataHandling.DiscardUnsupported }));
+            Assert.Throws<UnsupportedImageFeatureException>(() => palette.Save(rejected, new TiffEncoder { PixelLayout = TiffPixelLayout.Indexed, FloatingPointConversion = new PixelConversionOptions(), MetadataHandling = MetadataHandling.DiscardUnsupported }));
         }
 
         using var stream = new MemoryStream();
-        pages.Save(stream, new TiffEncoder { FloatingPointConversion = new PixelConversionOptions { OutOfRangeSamples = OutOfRangeSampleHandling.Clip }, MetadataHandling = MetadataHandling.DiscardUnsupported });
+        palette.Save(stream, new TiffEncoder { PixelLayout = TiffPixelLayout.Indexed, FloatingPointConversion = new PixelConversionOptions { OutOfRangeSamples = OutOfRangeSampleHandling.Clip }, MetadataHandling = MetadataHandling.DiscardUnsupported });
         using var decoded = Image.Load<Rgba64>(stream.ToArray());
-        Assert.Equal(new Rgba64(16384, 32768, 65535, 49151), decoded.Frames[0][1, 1]);
+        Assert.Equal(new Rgba64(16384, 32768, 65535), decoded.Frames[0][1, 1]);
 
         // Representations too
         using var icons = ImageCollection.Create(ImageCollectionKind.Representations);

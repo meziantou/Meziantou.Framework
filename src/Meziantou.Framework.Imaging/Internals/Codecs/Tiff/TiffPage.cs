@@ -11,9 +11,22 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <para>
 /// The supported subset is checked here, once: unsigned integer samples; grayscale (<c>WhiteIsZero</c> and
 /// <c>BlackIsZero</c>, 1, 2, 4, 8 or 16 bits), RGB (8 or 16 bits), palette color (1, 2, 4 or 8 bits), CMYK (8 or 16 bits)
-/// and YCbCr (8 bits) data; chunky planar configuration; strips or tiles; no compression, Deflate, LZW, PackBits, the CCITT
-/// facsimile compressions, JPEG and JPEG 2000; the horizontal differencing predictor. Everything else is recognized and rejected with
+/// and YCbCr (8 bits) data; signed integer grayscale and RGB samples of 8 or 16 bits; floating-point <c>BlackIsZero</c>
+/// grayscale and RGB samples of 16 (half precision), 24 or 32 bits; chunky planar configuration; strips or tiles; no
+/// compression, Deflate, LZW, PackBits, the CCITT facsimile compressions, JPEG and JPEG 2000; the horizontal differencing
+/// predictor, and the floating-point predictor of TIFF Technical Note 3. Everything else is recognized and rejected with
 /// <see cref="UnsupportedImageFeatureException"/>, never guessed.
+/// </para>
+/// <para>
+/// A signed sample is stored as the unsigned sample of the same width whose value is larger by half of the range
+/// (<c>-2^(n-1)</c> becomes 0, 0 becomes <c>2^(n-1)</c> and <c>2^(n-1) - 1</c> the largest value): the whole range of
+/// the signed type covers the whole range of the unsigned one, exactly. The block reader flips the sign bit of each
+/// sample (<see cref="TiffBlockReader"/>), so the rest of the decoder only sees unsigned samples.
+/// </para>
+/// <para>
+/// Floating-point samples are linear light (<see cref="ColorTransferFunction.Linear"/>, unless an ICC profile describes
+/// them) and are kept as they are stored: half-precision samples in <see cref="PixelFormat.RgbaHalf"/>, 24- and 32-bit
+/// ones in <see cref="PixelFormat.RgbaFloat"/>, which holds both exactly.
 /// </para>
 /// <para>
 /// A page compressed with JPEG stores the samples of its datastreams, which have 8 to 16 bits (12 bits for the
@@ -51,14 +64,29 @@ internal sealed class TiffPage
     /// <summary>Gets the page size, in pixels.</summary>
     public Size Size { get; private set; }
 
-    /// <summary>Gets the number of bits of one sample, as the page declares it: 1, 2, 4, 8 or 16, or 9 to 15 for a page compressed with JPEG.</summary>
+    /// <summary>
+    /// Gets the number of bits of one sample, as the page declares it: 1, 2, 4, 8 or 16, 9 to 15 for a page compressed with
+    /// JPEG, or 24 and 32 for floating-point samples.
+    /// </summary>
     public int BitsPerSample { get; private set; }
 
     /// <summary>
     /// Gets the number of bits of one sample of a decoded block: <see cref="BitsPerSample"/>, or 16 for the samples of 9
     /// to 15 bits of a JPEG datastream, which its decoder scales to 16 bits.
     /// </summary>
-    public int DecodedBitsPerSample => BitsPerSample > 8 ? 16 : BitsPerSample;
+    public int DecodedBitsPerSample => BitsPerSample is > 8 and < 16 ? 16 : BitsPerSample;
+
+    /// <summary>
+    /// Gets the format of the samples: <see cref="TiffFormat.SampleFormatUnsignedInteger"/> (also for an undefined
+    /// format), <see cref="TiffFormat.SampleFormatSignedInteger"/> or <see cref="TiffFormat.SampleFormatFloat"/>.
+    /// </summary>
+    public int SampleFormat { get; private set; } = TiffFormat.SampleFormatUnsignedInteger;
+
+    /// <summary>Gets a value indicating whether the samples are two's complement signed integers.</summary>
+    public bool IsSigned => SampleFormat == TiffFormat.SampleFormatSignedInteger;
+
+    /// <summary>Gets a value indicating whether the samples are IEEE floating-point numbers (16, 24 or 32 bits).</summary>
+    public bool IsFloatingPoint => SampleFormat == TiffFormat.SampleFormatFloat;
 
     /// <summary>Gets the number of samples of one pixel: the color samples of the photometric interpretation, and at most one alpha sample.</summary>
     public int SamplesPerPixel { get; private set; }
@@ -170,6 +198,9 @@ internal sealed class TiffPage
             if (IsPalette)
                 return HasSixteenBitColorMap ? PixelFormat.Rgba64 : PixelFormat.Rgb24;
 
+            if (IsFloatingPoint)
+                return DefaultPixelFormats.ForTiffFloatingPoint(BitsPerSample);
+
             return DefaultPixelFormats.ForTiff(IsGrayscale, HasAlpha, DecodedBitsPerSample == 16);
         }
     }
@@ -241,25 +272,23 @@ internal sealed class TiffPage
                 throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} mixes sample widths ({string.Join(", ", bits)} bits); every sample must have the same width."), "BitsPerSample: mixed widths");
         }
 
+        SampleFormat = ResolveSampleFormat();
+
         // The samples of a JPEG datastream have the precision of its frame: 12 bits, or any number of them when it is lossless
         var isJpeg = Directory.TryGetUnsigned(TiffFormat.CompressionTag, out var compression) && compression == TiffFormat.CompressionJpeg;
-        if (bits[0] is not (1 or 2 or 4 or 8 or 16) && !(isJpeg && bits[0] is > 8 and < 16))
-            throw UnsupportedBitsPerSample(bits[0], "1, 2, 4, 8 and 16 bits are supported, and 9 to 15 bits with JPEG compression");
+        switch (SampleFormat)
+        {
+            case TiffFormat.SampleFormatFloat when bits[0] is not (16 or 24 or 32):
+                throw UnsupportedBitsPerSample(bits[0], "floating-point samples are supported with 16 (half precision), 24 and 32 bits");
+
+            case TiffFormat.SampleFormatSignedInteger when bits[0] is not (8 or 16):
+                throw UnsupportedBitsPerSample(bits[0], "signed integer samples are supported with 8 and 16 bits");
+
+            case TiffFormat.SampleFormatUnsignedInteger when bits[0] is not (1 or 2 or 4 or 8 or 16) && !(isJpeg && bits[0] is > 8 and < 16):
+                throw UnsupportedBitsPerSample(bits[0], "1, 2, 4, 8 and 16 bits are supported, and 9 to 15 bits with JPEG compression");
+        }
 
         BitsPerSample = (int)bits[0];
-
-        var sampleFormats = Directory.TryReadUnsignedArray(TiffFormat.SampleFormatTag, SamplesPerPixel);
-        if (sampleFormats is not null)
-        {
-            foreach (var format in sampleFormats)
-            {
-                if (format is not (TiffFormat.SampleFormatUnsignedInteger or TiffFormat.SampleFormatUndefined))
-                {
-                    var name = format == TiffFormat.SampleFormatSignedInteger ? "signed integer" : format == TiffFormat.SampleFormatFloat ? "floating-point" : string.Create(CultureInfo.InvariantCulture, $"SampleFormat {format}");
-                    throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} stores {name} samples; only unsigned integer samples are supported."), string.Create(CultureInfo.InvariantCulture, $"SampleFormat: {format}"));
-                }
-            }
-        }
 
         if (!Directory.TryGetUnsigned(TiffFormat.PhotometricInterpretationTag, out var photometric))
             throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} has no PhotometricInterpretation tag, which is required."));
@@ -268,6 +297,17 @@ internal sealed class TiffPage
             throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} uses the {TiffFormat.GetPhotometricName((long)photometric)} photometric interpretation; WhiteIsZero, BlackIsZero, RGB, palette color, CMYK and YCbCr are supported."), string.Create(CultureInfo.InvariantCulture, $"PhotometricInterpretation: {photometric}"));
 
         Photometric = (int)photometric;
+        var isSampleFormatSupported = SampleFormat switch
+        {
+            // Signed samples are read as unsigned ones, which WhiteIsZero then inverts; floating-point ones have no maximum to invert from
+            TiffFormat.SampleFormatSignedInteger => Photometric is TiffFormat.PhotometricWhiteIsZero or TiffFormat.PhotometricBlackIsZero or TiffFormat.PhotometricRgb,
+            TiffFormat.SampleFormatFloat => Photometric is TiffFormat.PhotometricBlackIsZero or TiffFormat.PhotometricRgb,
+            _ => true,
+        };
+
+        if (!isSampleFormatSupported)
+            throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} stores {GetSampleFormatName()} samples with the {TiffFormat.GetPhotometricName(Photometric)} photometric interpretation; they are supported with grayscale and RGB data{(IsFloatingPoint ? " (BlackIsZero grayscale only)" : "")}."), string.Create(CultureInfo.InvariantCulture, $"SampleFormat: {SampleFormat} with PhotometricInterpretation {Photometric}"));
+
         switch (Photometric)
         {
             case TiffFormat.PhotometricRgb or TiffFormat.PhotometricCmyk when BitsPerSample < 8:
@@ -327,6 +367,38 @@ internal sealed class TiffPage
                 break;
         }
     }
+
+    /// <summary>Reads the format of the samples, which must be the same for every sample of a pixel.</summary>
+    private int ResolveSampleFormat()
+    {
+        // Some writers store one value for all the samples: the values that are present must agree
+        var formats = Directory.TryReadUnsignedArray(TiffFormat.SampleFormatTag, SamplesPerPixel);
+        if (formats is null or [])
+            return TiffFormat.SampleFormatUnsignedInteger;
+
+        var result = 0UL;
+        foreach (var value in formats)
+        {
+            // An undefined format is the default: unsigned integer data
+            var format = value == TiffFormat.SampleFormatUndefined ? TiffFormat.SampleFormatUnsignedInteger : value;
+            if (format is not (TiffFormat.SampleFormatUnsignedInteger or TiffFormat.SampleFormatSignedInteger or TiffFormat.SampleFormatFloat))
+                throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} stores samples of the SampleFormat {value}; unsigned integer, signed integer and floating-point samples are supported."), string.Create(CultureInfo.InvariantCulture, $"SampleFormat: {value}"));
+
+            if (result != 0 && format != result)
+                throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} mixes sample formats ({string.Join(", ", formats)}); every sample must have the same format."), "SampleFormat: mixed formats");
+
+            result = format;
+        }
+
+        return (int)result;
+    }
+
+    private string GetSampleFormatName() => SampleFormat switch
+    {
+        TiffFormat.SampleFormatSignedInteger => "signed integer",
+        TiffFormat.SampleFormatFloat => "floating-point",
+        _ => "unsigned integer",
+    };
 
     private UnsupportedImageFeatureException UnsupportedBitsPerSample(ulong bits, string supported)
         => TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} stores {bits}-bit samples; {supported}."), string.Create(CultureInfo.InvariantCulture, $"BitsPerSample: {bits}"));
@@ -410,16 +482,21 @@ internal sealed class TiffPage
 
         IsLeastSignificantBitFirst = fillOrder == TiffFormat.FillOrderLeastSignificantBitFirst;
 
+        // The JPEG and JPEG 2000 datastreams of a page hold its samples: they code unsigned integers here
+        if (SampleFormat != TiffFormat.SampleFormatUnsignedInteger && (IsJpeg || IsJpeg2000))
+            throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} uses {TiffFormat.GetCompressionName(Compression)} compression with {GetSampleFormatName()} samples; they are supported uncompressed and with the Deflate, LZW and PackBits compressions."), string.Create(CultureInfo.InvariantCulture, $"Compression: {TiffFormat.GetCompressionName(Compression)} with SampleFormat {SampleFormat}"));
+
         var predictor = Directory.TryGetUnsigned(TiffFormat.PredictorTag, out var predictorValue) ? predictorValue : TiffFormat.PredictorNone;
-        if (predictor is not (TiffFormat.PredictorNone or TiffFormat.PredictorHorizontalDifferencing))
-        {
-            var name = predictor == TiffFormat.PredictorFloatingPoint ? "the floating-point predictor" : string.Create(CultureInfo.InvariantCulture, $"predictor {predictor}");
-            throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} uses {name}; no predictor (1) and horizontal differencing (2) are supported."), string.Create(CultureInfo.InvariantCulture, $"Predictor: {predictor}"));
-        }
+        if (predictor is not (TiffFormat.PredictorNone or TiffFormat.PredictorHorizontalDifferencing or TiffFormat.PredictorFloatingPoint))
+            throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} uses predictor {predictor}; no predictor (1), horizontal differencing (2) and the floating-point predictor (3) are supported."), string.Create(CultureInfo.InvariantCulture, $"Predictor: {predictor}"));
 
         Predictor = (int)predictor;
-        if (Predictor == TiffFormat.PredictorHorizontalDifferencing && (BitsPerSample < 8 || IsYCbCr || IsCcitt || IsJpeg || IsJpeg2000))
-            throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} uses horizontal differencing with {BitsPerSample}-bit {TiffFormat.GetPhotometricName(Photometric)} data and {TiffFormat.GetCompressionName(Compression)} compression; it is supported with 8- and 16-bit samples that are not YCbCr, and not with the CCITT, JPEG and JPEG 2000 compressions."), "Predictor: 2 with this sample layout or compression");
+        if (Predictor == TiffFormat.PredictorHorizontalDifferencing && (BitsPerSample < 8 || IsYCbCr || IsCcitt || IsJpeg || IsJpeg2000 || IsFloatingPoint))
+            throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} uses horizontal differencing with {BitsPerSample}-bit {GetSampleFormatName()} {TiffFormat.GetPhotometricName(Photometric)} data and {TiffFormat.GetCompressionName(Compression)} compression; it is supported with 8- and 16-bit integer samples that are not YCbCr, and not with the CCITT, JPEG and JPEG 2000 compressions (floating-point samples use the floating-point predictor)."), "Predictor: 2 with this sample layout or compression");
+
+        // TIFF Technical Note 3 defines the floating-point predictor for floating-point samples only
+        if (Predictor == TiffFormat.PredictorFloatingPoint && !IsFloatingPoint)
+            throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} uses the floating-point predictor with {GetSampleFormatName()} samples; it is supported with floating-point samples."), "Predictor: 3 with integer samples");
 
         if (IsCcitt)
         {
@@ -577,6 +654,12 @@ internal sealed class TiffPage
         if (Directory.TryReadBytes(TiffFormat.XmpTag, context.Limits.MaxMetadataBytes) is { } xmp)
         {
             builder.TryAdoptXmp(xmp);
+        }
+
+        // Floating-point samples hold linear light (1 is the reference white), unless a profile says how they are encoded
+        if (IsFloatingPoint && builder.Metadata.IccProfile is null)
+        {
+            builder.Metadata.TransferFunction = ColorTransferFunction.Linear;
         }
 
         Metadata = builder.Metadata;

@@ -45,7 +45,7 @@ internal sealed class TiffEncoderCodec : ImageEncoderCodec
 
             // The layouts that store a page exactly or not at all read the whole frame before anything of it is written,
             // so a rejection leaves the writer usable
-            _writer.PreparePage(frame, Options.PixelFormat);
+            _writer.PreparePage(frame, Options.PixelFormat, Options.Metadata);
         }
 
         public override void BeginPosterFrame(ImageFrame frame) => throw new InvalidOperationException("TIFF output has no poster frame.");

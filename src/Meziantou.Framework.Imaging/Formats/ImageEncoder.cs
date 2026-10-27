@@ -30,8 +30,9 @@ public abstract class ImageEncoder
 
     /// <summary>
     /// Gets the conversion that reduces floating-point pixels (<see cref="RgbaFloat"/>, <see cref="RgbaHalf"/>) to 16-bit
-    /// integer ones (<see cref="Rgba64"/>) before they are encoded, or <see langword="null"/> (the default) to reject them:
-    /// no output format of this version stores floating-point samples.
+    /// integer ones (<see cref="Rgba64"/>) before they are encoded, or <see langword="null"/> (the default) to reject them.
+    /// It only applies to the outputs that do not store floating-point samples: every format but TIFF, and the TIFF
+    /// settings that cannot (<see cref="TiffEncoder"/>).
     /// </summary>
     /// <remarks>
     /// <para>
@@ -50,6 +51,12 @@ public abstract class ImageEncoder
     /// </para>
     /// </remarks>
     public PixelConversionOptions? FloatingPointConversion { get; init; }
+
+    /// <summary>
+    /// Gets a value indicating whether the output stores floating-point pixels as they are, in which case
+    /// <see cref="FloatingPointConversion"/> is not used.
+    /// </summary>
+    internal virtual bool StoresFloatingPointSamples => false;
 
     /// <summary>Selects the default encoder for a file name, from its extension.</summary>
     /// <param name="path">The file path.</param>

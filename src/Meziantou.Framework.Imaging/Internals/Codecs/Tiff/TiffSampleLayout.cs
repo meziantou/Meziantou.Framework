@@ -7,18 +7,26 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// The TIFF sample layout one page is written as: the number of samples, their width, the photometric interpretation,
 /// and the pixel format the rows are converted to before they are serialized in the byte order of the file.
 /// </summary>
-/// <param name="SamplesPerPixel">1 (grayscale, bilevel or palette indexes), 3 (RGB or YCbCr) or 4 (RGB and straight alpha).</param>
-/// <param name="BitsPerSample">1 (bilevel), 8 or 16.</param>
+/// <param name="SamplesPerPixel">
+/// 1 (grayscale, bilevel or palette indexes), 2 (floating-point grayscale and straight alpha), 3 (RGB or YCbCr) or 4 (RGB
+/// and straight alpha).
+/// </param>
+/// <param name="BitsPerSample">1 (bilevel), 8 or 16, or 32 for floating-point samples.</param>
 /// <param name="Photometric">0 (<c>WhiteIsZero</c>, bilevel), 1 (<c>BlackIsZero</c>), 2 (<c>RGB</c>), 3 (palette color) or 6 (<c>YCbCr</c>, JPEG).</param>
 /// <param name="SourcePixelFormat">
 /// The pixel format the frame rows are converted to before serialization. The bilevel and palette layouts read the frame
-/// rows as they are, and the rows of a JPEG page are converted by the JPEG encoder.
+/// rows as they are, the rows of a JPEG page are converted by the JPEG encoder, and the floating-point samples are read
+/// from the frame rows.
 /// </param>
+/// <param name="SampleFormat">1 (unsigned integers) or 3 (floating-point numbers).</param>
 [StructLayout(LayoutKind.Auto)]
-internal readonly record struct TiffSampleLayout(int SamplesPerPixel, int BitsPerSample, int Photometric, PixelFormat SourcePixelFormat)
+internal readonly record struct TiffSampleLayout(int SamplesPerPixel, int BitsPerSample, int Photometric, PixelFormat SourcePixelFormat, int SampleFormat = TiffFormat.SampleFormatUnsignedInteger)
 {
     /// <summary>Gets a value indicating whether the layout stores a straight alpha channel (<c>ExtraSamples = 2</c>).</summary>
-    public bool HasAlpha => SamplesPerPixel == 4;
+    public bool HasAlpha => SamplesPerPixel is 2 or 4;
+
+    /// <summary>Gets a value indicating whether the layout stores 32-bit floating-point samples.</summary>
+    public bool IsFloatingPoint => SampleFormat == TiffFormat.SampleFormatFloat;
 
     /// <summary>Gets a value indicating whether the layout stores one bit per pixel.</summary>
     public bool IsBilevel => BitsPerSample == 1;
@@ -61,9 +69,18 @@ internal readonly record struct TiffSampleLayout(int SamplesPerPixel, int BitsPe
         PixelFormat.Rgb24 => new TiffSampleLayout(3, 8, TiffFormat.PhotometricRgb, PixelFormat.Rgb24),
         PixelFormat.Rgba64 => new TiffSampleLayout(4, 16, TiffFormat.PhotometricRgb, PixelFormat.Rgba64),
 
+        // The writer stores fewer samples when they hold the whole page (ForFloatingPoint)
+        PixelFormat.RgbaFloat or PixelFormat.RgbaHalf => ForFloatingPoint(4),
+
         // Bgra32 is reordered to Rgba32 by the row conversion; both store the same information
         _ => new TiffSampleLayout(4, 8, TiffFormat.PhotometricRgb, PixelFormat.Rgba32),
     };
+
+    /// <summary>Gets the layout of 32-bit floating-point samples.</summary>
+    /// <param name="samplesPerPixel">1 (gray), 2 (gray and alpha), 3 (RGB) or 4 (RGB and alpha).</param>
+    /// <returns>The layout.</returns>
+    public static TiffSampleLayout ForFloatingPoint(int samplesPerPixel)
+        => new(samplesPerPixel, 32, samplesPerPixel <= 2 ? TiffFormat.PhotometricBlackIsZero : TiffFormat.PhotometricRgb, PixelFormat.RgbaFloat, TiffFormat.SampleFormatFloat);
 
     /// <summary>
     /// Gets the pixel format whose color space is the one of the written samples, which is what an ICC profile of the

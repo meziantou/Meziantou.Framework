@@ -59,7 +59,8 @@ internal sealed class TiffPageSpec
     public bool IsTiled => TileWidth is not null;
 
     /// <summary>Splits the samples into the strips or tiles the directory will describe, compressing them when asked.</summary>
-    public byte[][] BuildBlocks()
+    /// <param name="bigEndian">Whether the samples are big-endian, which the predictors need to know.</param>
+    public byte[][] BuildBlocks(bool bigEndian = false)
     {
         if (EncodedBlocks is not null)
             return EncodedBlocks;
@@ -89,7 +90,7 @@ internal sealed class TiffPageSpec
                             .CopyTo(tile.AsSpan(y * tileRowLength));
                     }
 
-                    blocks.Add(Finish(tile, tileRowLength));
+                    blocks.Add(Finish(tile, tileRowLength, bigEndian));
                 }
             }
 
@@ -100,17 +101,27 @@ internal sealed class TiffPageSpec
         for (var top = 0; top < Height; top += rows)
         {
             var count = Math.Min(rows, Height - top);
-            blocks.Add(Finish(Samples.AsSpan(top * rowLength, count * rowLength).ToArray(), rowLength));
+            blocks.Add(Finish(Samples.AsSpan(top * rowLength, count * rowLength).ToArray(), rowLength, bigEndian));
         }
 
         return [.. blocks];
     }
 
-    private byte[] Finish(byte[] block, int rowLength)
+    private byte[] Finish(byte[] block, int rowLength, bool bigEndian)
     {
         if (Predictor == 2)
         {
-            block = ApplyHorizontalDifferencing(block);
+            block = ApplyHorizontalDifferencing(block, bigEndian);
+        }
+        else if (Predictor == 3)
+        {
+            var predicted = new byte[block.Length];
+            for (var offset = 0; offset < block.Length; offset += rowLength)
+            {
+                TiffReferenceCodecs.ApplyFloatingPointPredictor(block.AsSpan(offset, rowLength), SamplesPerPixel, BitsPerSample / 8, bigEndian).CopyTo(predicted, offset);
+            }
+
+            block = predicted;
         }
 
         return Compression switch
@@ -122,7 +133,7 @@ internal sealed class TiffPageSpec
         };
     }
 
-    private byte[] ApplyHorizontalDifferencing(byte[] block)
+    private byte[] ApplyHorizontalDifferencing(byte[] block, bool bigEndian)
     {
         var rowLength = (IsTiled ? TileWidth!.Value : Width) * SamplesPerPixel * BitsPerSample / 8;
         var result = (byte[])block.Clone();
@@ -141,8 +152,16 @@ internal sealed class TiffPageSpec
                 var count = row.Length / 2;
                 for (var i = count - 1; i >= SamplesPerPixel; i--)
                 {
-                    var value = (ushort)(BinaryPrimitives.ReadUInt16LittleEndian(row[(i * 2)..]) - BinaryPrimitives.ReadUInt16LittleEndian(row[((i - SamplesPerPixel) * 2)..]));
-                    BinaryPrimitives.WriteUInt16LittleEndian(row[(i * 2)..], value);
+                    if (bigEndian)
+                    {
+                        var value = (ushort)(BinaryPrimitives.ReadUInt16BigEndian(row[(i * 2)..]) - BinaryPrimitives.ReadUInt16BigEndian(row[((i - SamplesPerPixel) * 2)..]));
+                        BinaryPrimitives.WriteUInt16BigEndian(row[(i * 2)..], value);
+                    }
+                    else
+                    {
+                        var value = (ushort)(BinaryPrimitives.ReadUInt16LittleEndian(row[(i * 2)..]) - BinaryPrimitives.ReadUInt16LittleEndian(row[((i - SamplesPerPixel) * 2)..]));
+                        BinaryPrimitives.WriteUInt16LittleEndian(row[(i * 2)..], value);
+                    }
                 }
             }
         }

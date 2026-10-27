@@ -602,6 +602,10 @@ public partial class HtmlImageElement
         if (UsesSrcsetOrPicture())
         {
             document.MayHaveImagesReactingToEnvironment = true;
+            if (!IsConnected)
+            {
+                document.AddDisconnectedImageReactingToEnvironment(this);
+            }
         }
 
         if (SrcsetParser.AllowsAutoSizes(this))
@@ -1722,11 +1726,44 @@ public partial class Document
                 }
             }
 
+            // The img elements that are not in the document react too (e.g. an img element of a picture element that is not
+            // inserted): the algorithm does not depend on the connectedness of the element
+            if (_disconnectedImagesReactingToEnvironment is { } disconnectedImages)
+            {
+                disconnectedImages.RemoveAll(reference => !reference.TryGetTarget(out var image) || image.IsConnected || !ReferenceEquals(image.NodeDocument, this));
+                foreach (var reference in disconnectedImages)
+                {
+                    if (reference.TryGetTarget(out var image) && image.UsesSrcsetOrPicture())
+                    {
+                        images.Add(image);
+                    }
+                }
+            }
+
             foreach (var image in images)
             {
                 image.ReactToEnvironmentChanges();
             }
         });
+    }
+
+    private List<WeakReference<HtmlImageElement>>? _disconnectedImagesReactingToEnvironment;
+
+    /// <summary>
+    /// Registers an img element that uses srcset or picture and is not connected, which reacts to the changes of the environment
+    /// too (see <see cref="QueueReactToEnvironmentChangesOfImages"/>). It is forgotten once it is connected or adopted by another
+    /// document.
+    /// </summary>
+    internal void AddDisconnectedImageReactingToEnvironment(HtmlImageElement image)
+    {
+        _disconnectedImagesReactingToEnvironment ??= [];
+        foreach (var reference in _disconnectedImagesReactingToEnvironment)
+        {
+            if (reference.TryGetTarget(out var target) && ReferenceEquals(target, image))
+                return;
+        }
+
+        _disconnectedImagesReactingToEnvironment.Add(new WeakReference<HtmlImageElement>(image));
     }
 
     private List<WeakReference<HtmlImageElement>>? _autoSizesImages;

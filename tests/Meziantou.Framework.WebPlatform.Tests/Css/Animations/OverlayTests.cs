@@ -64,7 +64,10 @@ public sealed class OverlayTests : IDisposable
     {
         var document = Load("<style>#p { display: block; transition: overlay 1s step-end allow-discrete }</style><div id=p popover></div>");
         var popover = (HtmlElement)document.GetElementById("p")!;
+
+        // (the styles computed once the document is parsed are the before-change styles: the overlay transitions to auto first)
         popover.ShowPopover();
+        Advance(1100);
         Assert.Equal("auto", GetComputed(popover, "overlay"));
         popover.HidePopover();
 
@@ -102,6 +105,7 @@ public sealed class OverlayTests : IDisposable
         var popover = (HtmlElement)document.GetElementById("p")!;
         var engine = document.GetLayoutEngine();
         popover.ShowPopover();
+        Advance(1100);
         engine.EnsureLayout();
         popover.HidePopover();
         engine.EnsureLayout();

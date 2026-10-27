@@ -41,10 +41,12 @@
     <Project Path="../src/Meziantou.Framework.Language/Meziantou.Framework.Language.csproj" />
     <Project Path="../src/Meziantou.Framework.NodeJs/Meziantou.Framework.NodeJs.csproj" />
     <Project Path="../src/Meziantou.Framework.NuGetPackageValidation/Meziantou.Framework.NuGetPackageValidation.csproj" />
+    <Project Path="../src/Meziantou.Framework.Pdf/Meziantou.Framework.Pdf.csproj" />
     <Project Path="../src/Meziantou.Framework.ProcessWrapper/Meziantou.Framework.ProcessWrapper.csproj" />
     <Project Path="../src/Meziantou.Framework.PublicApiGenerator.Tool/Meziantou.Framework.PublicApiGenerator.Tool.csproj" />
     <Project Path="../src/Meziantou.Framework.PublicApiGenerator/Meziantou.Framework.PublicApiGenerator.csproj" />
     <Project Path="../src/Meziantou.Framework.SnapshotTesting.Imaging/Meziantou.Framework.SnapshotTesting.Imaging.csproj" />
+    <Project Path="../src/Meziantou.Framework.SnapshotTesting.Pdf/Meziantou.Framework.SnapshotTesting.Pdf.csproj" />
     <Project Path="../src/Meziantou.Framework.SnapshotTesting.Roslyn/Meziantou.Framework.SnapshotTesting.Roslyn.csproj" />
     <Project Path="../src/Meziantou.Framework.SnapshotTesting.Tool/Meziantou.Framework.SnapshotTesting.Tool.csproj" />
     <Project Path="../src/Meziantou.Framework.SnapshotTesting/Meziantou.Framework.SnapshotTesting.csproj" />
@@ -90,6 +92,7 @@
     <Project Path="../tests/Meziantou.Framework.Roslyn.PackageTests/Meziantou.Framework.Roslyn.PackageTests.csproj" />
     <Project Path="../tests/Meziantou.Framework.SnapshotTesting.Imaging.Tests/Meziantou.Framework.SnapshotTesting.Imaging.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.SnapshotTesting.PackageTests/Meziantou.Framework.SnapshotTesting.PackageTests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.SnapshotTesting.Pdf.Tests/Meziantou.Framework.SnapshotTesting.Pdf.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.SnapshotTesting.Roslyn.Tests/Meziantou.Framework.SnapshotTesting.Roslyn.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.SnapshotTesting.Tests/Meziantou.Framework.SnapshotTesting.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.SnapshotTesting.Tool.Tests/Meziantou.Framework.SnapshotTesting.Tool.Tests.csproj" />

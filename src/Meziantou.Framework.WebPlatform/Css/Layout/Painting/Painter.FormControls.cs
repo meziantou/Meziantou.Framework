@@ -324,6 +324,20 @@ internal sealed partial class Painter
         var filled = rtl ? new PhysicalRect(position, trackY, content.Right - position, trackHeight) : new PhysicalRect(content.X, trackY, position - content.X, trackHeight);
         _builder.Add(new DrawRoundedRectItem(new RoundedRect(new PhysicalRect(content.X, trackY, content.Width, trackHeight), trackRadii), new DisplayPaint(ControlTrackColor)) { Source = input });
         _builder.Add(new DrawRoundedRectItem(new RoundedRect(filled, trackRadii), new DisplayPaint(accent)) { Source = input });
+
+        // The tick marks of the suggestions of its list attribute: thin lines across the track
+        if (input.GetSliderTickMarks() is { } ticks)
+        {
+            var tickWidth = Math.Max(1, zoom);
+            var tickHeight = Math.Min(content.Height, trackHeight + (6 * zoom));
+            var tickY = content.Y + ((content.Height - tickHeight) / 2);
+            foreach (var tick in ticks)
+            {
+                var tickX = left + (length * (rtl ? 1 - tick : tick));
+                _builder.Add(new DrawRectItem(new PhysicalRect(tickX - (tickWidth / 2), tickY, tickWidth, tickHeight), new DisplayPaint(ControlFrameColor)) { Source = input });
+            }
+        }
+
         PaintSliderThumb(input, new PhysicalRect(position - (thumb / 2), content.Y + ((content.Height - thumb) / 2), thumb, thumb), accent);
     }
 
@@ -392,7 +406,9 @@ internal sealed partial class Painter
         var textArea = content with { Width = Math.Max(0, content.Width - arrowSize) };
         if (selected is not null)
         {
-            PaintControlLine(select, style, textArea, GetOptionLabel(selected), color);
+            // https://html.spec.whatwg.org/multipage/rendering.html#the-select-element-2: an option without base appearance
+            // displays its label, which includes the alt text of its images
+            PaintControlLine(select, style, textArea, selected.GetLabel(includeAltText: true), color);
         }
 
         if (arrowSize > 0)
@@ -406,8 +422,6 @@ internal sealed partial class Painter
             _builder.Add(new DrawPathItem(arrow, DisplayPaint.ForStroke(color, new StrokeStyle(Math.Max(1, zoom * 1.5), LineCap.Round, LineJoin.Round))) { Source = select });
         }
     }
-
-    private static string GetOptionLabel(HtmlOptionElement option) => option.GetAttributeValue("label") is { Length: > 0 } label ? label : option.Text;
 
     /// <summary>
     /// Paints a line of text of a control (a text field, a button, a drop-down box) vertically centered in its content box, clipped

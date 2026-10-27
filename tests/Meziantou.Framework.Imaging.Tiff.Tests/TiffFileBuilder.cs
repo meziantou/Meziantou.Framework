@@ -54,7 +54,7 @@ internal sealed class TiffFileBuilder
         foreach (var page in _pages)
         {
             Align(buffer);
-            var blocks = page.BuildBlocks();
+            var blocks = page.BuildBlocks(BigEndian);
             var offsets = new List<ulong>();
             var byteCounts = new List<ulong>();
             foreach (var block in blocks)

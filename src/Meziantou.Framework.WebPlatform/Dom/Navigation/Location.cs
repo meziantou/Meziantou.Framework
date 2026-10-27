@@ -300,10 +300,6 @@ public sealed class Location
         if (_window.BrowsingContext is not { } navigable)
             return;
 
-        // The rate limit of the navigations (https://html.spec.whatwg.org/multipage/browsing-the-web.html#navigate)
-        if (!navigable.IsAllowedToPerformNavigationOrHistoryUpdate())
-            return;
-
         // The source document is the incumbent document: the document of the realm of the running script (the current
         // realm, as the setters and the methods of the bindings run in the realm of their caller)
         var sourceDocument = (navigable.Options.ScriptEngine?.GetCurrentGlobal() as Window)?.Document ?? Document.EntryGlobalDocument ?? navigable.Document;
@@ -314,6 +310,6 @@ public sealed class Location
         {
             historyHandling = NavigationHistoryBehavior.Replace;
         }
-        navigable.Navigate(url, sourceDocument, historyHandling, exceptionsEnabled: true);
+        navigable.Navigate(url, sourceDocument, historyHandling, exceptionsEnabled: true, checkNavigationRateLimit: true);
     }
 }

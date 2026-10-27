@@ -8,8 +8,8 @@
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 63 | 63 | 0 | 100% |
 | [Tentative](#tentative-tests) | 2 | 2 | 0 | 100% |
-| [Reftests](#reftests) | 6,208 | 6,269 | 0 | 99% |
-| **All** | **6,273** | **6,334** | **0** | **99%** |
+| [Reftests](#reftests) | 6,209 | 6,269 | 0 | 99% |
+| **All** | **6,274** | **6,334** | **0** | **99%** |
 
 ## Stable tests
 
@@ -6223,7 +6223,7 @@
 | [`visudet/line-height-201.html`](https://wpt.fyi/results/css/CSS2/visudet/line-height-201.html) | Pass | 1 / 1 |  |  |
 | [`visudet/line-height-202.html`](https://wpt.fyi/results/css/CSS2/visudet/line-height-202.html) | Pass | 1 / 1 |  |  |
 | [`visudet/line-height-203.html`](https://wpt.fyi/results/css/CSS2/visudet/line-height-203.html) | Pass | 1 / 1 |  |  |
-| [`visudet/line-height-204.html`](https://wpt.fyi/results/css/CSS2/visudet/line-height-204.html) | Fail | 0 / 1 | BUG | the test measures the height of a box with `line-height: normal` in its load event handler and sets it as the `line-height` of the other box: the web font (Revalia) is not loaded yet at the load event (the font faces used by the text are loaded once the document is loaded: `FontFaceSet.OnRenderingUpdate` waits while the set is pending on the environment, and the font loads do not delay the load event), so the measured height is the one of the fallback font (115px instead of 124px) and the baselines are 5px apart. The browsers load the fonts during the layout before the load event, which they delay (Blink: the font resources block the load event). The negative descent of the font (`hhea.descender` +382) is inverted, as in Gecko and WebKit (Chrome, which keeps it negative, fails) |
+| [`visudet/line-height-204.html`](https://wpt.fyi/results/css/CSS2/visudet/line-height-204.html) | Pass | 1 / 1 |  |  |
 | [`visudet/line-height-205.html`](https://wpt.fyi/results/css/CSS2/visudet/line-height-205.html) | Pass | 1 / 1 |  |  |
 | [`visudet/line-height-206.html`](https://wpt.fyi/results/css/CSS2/visudet/line-height-206.html) | Pass | 1 / 1 |  |  |
 | [`visudet/replaced-elements-all-auto.html`](https://wpt.fyi/results/css/CSS2/visudet/replaced-elements-all-auto.html) | Pass | 1 / 1 |  |  |

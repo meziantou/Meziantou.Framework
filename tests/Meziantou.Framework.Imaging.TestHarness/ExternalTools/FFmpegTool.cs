@@ -231,16 +231,18 @@ public sealed partial class FFmpegTool
             "rgb24" => 3,
             "rgb565le" => 2,
             "rgb555le" => 2,
+            "rgbf32le" => 12,
+            "rgbaf32le" => 16,
             "gbrapf32le" => 16,
             "gbrapf16le" => 8,
             "grayf32le" => 4,
             _ => throw new ArgumentOutOfRangeException(nameof(pixelFormat), pixelFormat, "Unsupported raw pixel format."),
         };
 
-        // A Netpbm file is a short text header followed by raw samples, which the format probe of ffmpeg can take for another
-        // container (a pattern with 0x47 every 188 bytes scores as MPEG-TS): the image demuxer is named, and it picks the
-        // decoder from the extension
-        string[] demuxer = inputPath.Extension is ".pam" or ".pgm" or ".ppm" or ".pbm" or ".pnm" ? ["-f", "image2"] : [];
+        // A Netpbm file is a short text header followed by raw samples, and so is an uncompressed TIFF file, which the format
+        // probe of ffmpeg can take for another container (a pattern with 0x47 every 188 bytes scores as MPEG-TS): the image
+        // demuxer is named, and it picks the decoder from the extension
+        string[] demuxer = inputPath.Extension is ".pam" or ".pgm" or ".ppm" or ".pbm" or ".pnm" or ".tif" or ".tiff" ? ["-f", "image2"] : [];
         var result = await RunAsync(
             [.. (ignoreLoop ? (string[])["-ignore_loop", "1"] : []), "-noautorotate", .. demuxer, "-i", inputPath, "-fps_mode", "passthrough", "-f", "rawvideo", "-pix_fmt", pixelFormat, "-"],
             cancellationToken).ConfigureAwait(false);

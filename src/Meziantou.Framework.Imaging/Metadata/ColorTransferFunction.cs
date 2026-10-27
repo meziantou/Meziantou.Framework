@@ -5,8 +5,10 @@ namespace Meziantou.Framework.Imaging.Metadata;
 /// The value labels the stored samples, like an ICC profile: pixels are never converted between transfer functions
 /// implicitly. <see cref="ImageProcessingExtensions.ConvertColorProfile"/> reads the label of an image without profile and
 /// resets it to <see cref="Srgb"/>. Alpha is a linear coverage value in both cases. Only QOI (its header colorspace
-/// field) and JPEG XL (its color encoding) store the label; saving <see cref="Linear"/> pixels to another format follows
-/// <see cref="Formats.ImageEncoder.MetadataHandling"/>, so they are never silently relabeled as sRGB.
+/// field), JPEG XL (its color encoding) and TIFF pages of floating-point samples (linear light unless an ICC profile
+/// describes them) store the label; saving <see cref="Linear"/> pixels to another format, or <see cref="Srgb"/>
+/// floating-point pixels to TIFF without an ICC profile, follows <see cref="Formats.ImageEncoder.MetadataHandling"/>, so
+/// they are never silently relabeled.
 /// </remarks>
 public enum ColorTransferFunction
 {
@@ -16,6 +18,9 @@ public enum ColorTransferFunction
     /// </summary>
     Srgb = 0,
 
-    /// <summary>The color samples are linear light (sRGB primaries, no transfer curve), as declared by a QOI colorspace field of 1.</summary>
+    /// <summary>
+    /// The color samples are linear light (sRGB primaries, no transfer curve), as declared by a QOI colorspace field of 1, or
+    /// as the floating-point samples of a TIFF page without ICC profile are.
+    /// </summary>
     Linear = 1,
 }

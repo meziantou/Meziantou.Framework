@@ -28,6 +28,8 @@ Snapshot.Validate(svgText, SnapshotType.Svg);
 Typed binary snapshots, such as images, are compared byte for byte. To compare images by their pixels, exactly or by
 similarity, and to validate image objects, use
 [`Meziantou.Framework.SnapshotTesting.Imaging`](https://www.nuget.org/packages/Meziantou.Framework.SnapshotTesting.Imaging).
+To compare PDF documents (`SnapshotType.Pdf`) page by page as images, with a JSON file of their metadata, use
+[`Meziantou.Framework.SnapshotTesting.Pdf`](https://www.nuget.org/packages/Meziantou.Framework.SnapshotTesting.Pdf).
 
 ## File naming convention
 
@@ -353,6 +355,8 @@ assertion message, by implementing `Equals(SnapshotData expected, SnapshotData a
 [`Meziantou.Framework.SnapshotTesting.Imaging`](https://www.nuget.org/packages/Meziantou.Framework.SnapshotTesting.Imaging)
 provides an image comparer (exact pixels, SSIM, dHash and pHash), a serializer for its images, and serializers that
 store the frames of a GIF or ICO file as PNG snapshots.
+[`Meziantou.Framework.SnapshotTesting.Pdf`](https://www.nuget.org/packages/Meziantou.Framework.SnapshotTesting.Pdf)
+provides a serializer that stores a PDF document as one PNG snapshot per page and a JSON file of its metadata.
 
 ## Scrubbing
 

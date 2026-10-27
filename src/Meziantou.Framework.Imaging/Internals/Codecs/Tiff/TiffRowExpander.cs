@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -6,7 +7,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// Expands the decoded rows of one TIFF page to its lossless working representation
 /// (<see cref="TiffPage.SourcePixelFormat"/>): the samples of 1, 2 and 4 bits are unpacked, the grayscale ones scaled
 /// exactly to 8 bits, <c>WhiteIsZero</c> samples inverted, palette indexes replaced by their colors, 16-bit samples read
-/// in the byte order of the file, and CMYK inks converted to RGB.
+/// in the byte order of the file, CMYK inks converted to RGB, and floating-point samples widened to four components.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -22,6 +23,12 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <para>
 /// The samples of a CMYK page are ink amounts (0 is no ink), which is what the ICC conversion of the inks expects. An
 /// alpha sample is copied unchanged.
+/// </para>
+/// <para>
+/// Floating-point samples keep their bits: a half-precision sample is a component of <see cref="PixelFormat.RgbaHalf"/>,
+/// a 32-bit one a component of <see cref="PixelFormat.RgbaFloat"/>, and a 24-bit one (1 sign bit, 7 exponent bits with a
+/// bias of 63, 16 fraction bits) the single-precision number of the same value, which always exists. Not-a-number values
+/// and infinities are kept too.
 /// </para>
 /// </remarks>
 internal sealed class TiffRowExpander : IDisposable
@@ -73,6 +80,10 @@ internal sealed class TiffRowExpander : IDisposable
         else if (page.IsCmyk)
         {
             ExpandInks(stored, destination);
+        }
+        else if (page.IsFloatingPoint)
+        {
+            ExpandFloats(stored, destination);
         }
         else if (page.BitsPerSample < 8)
         {
@@ -189,6 +200,91 @@ internal sealed class TiffRowExpander : IDisposable
         }
 
         ColorConversionKernels.Convert<ushort, IccUInt16Sample>(_inkConversion!, inks, unsafe(MemoryMarshal.Cast<byte, ushort>(destination)), 5, 4);
+    }
+
+    /// <summary>
+    /// Expands grayscale or RGB floating-point samples, with or without alpha, to four components: a gray sample is repeated
+    /// in the three colors, and a pixel without alpha sample is opaque.
+    /// </summary>
+    private void ExpandFloats(ReadOnlySpan<byte> stored, Span<byte> destination)
+    {
+        var page = _page;
+        var samplesPerPixel = page.SamplesPerPixel;
+        var colors = page.IsGrayscale ? 1 : 3;
+        var hasAlpha = page.HasAlpha;
+        var bigEndian = page.IsBigEndian;
+        var bytesPerSample = page.BitsPerSample / 8;
+        var pixelLength = samplesPerPixel * bytesPerSample;
+        if (bytesPerSample == 2)
+        {
+            var halves = unsafe(MemoryMarshal.Cast<byte, ushort>(destination));
+            for (var x = 0; x < _width; x++)
+            {
+                var source = stored.Slice(x * pixelLength, pixelLength);
+                var target = halves.Slice(x * 4, 4);
+                for (var c = 0; c < 3; c++)
+                {
+                    target[c] = ReadUInt16(source[(colors == 1 ? 0 : c * 2)..], bigEndian);
+                }
+
+                target[3] = hasAlpha ? ReadUInt16(source[(colors * 2)..], bigEndian) : BitConverter.HalfToUInt16Bits(Half.One);
+            }
+
+            return;
+        }
+
+        var singles = unsafe(MemoryMarshal.Cast<byte, uint>(destination));
+        for (var x = 0; x < _width; x++)
+        {
+            var source = stored.Slice(x * pixelLength, pixelLength);
+            var target = singles.Slice(x * 4, 4);
+            for (var c = 0; c < 3; c++)
+            {
+                target[c] = ReadSingleBits(source[(colors == 1 ? 0 : c * bytesPerSample)..], bytesPerSample, bigEndian);
+            }
+
+            target[3] = hasAlpha ? ReadSingleBits(source[(colors * bytesPerSample)..], bytesPerSample, bigEndian) : BitConverter.SingleToUInt32Bits(1f);
+        }
+    }
+
+    private static ushort ReadUInt16(ReadOnlySpan<byte> bytes, bool bigEndian)
+        => bigEndian ? BinaryPrimitives.ReadUInt16BigEndian(bytes) : BinaryPrimitives.ReadUInt16LittleEndian(bytes);
+
+    /// <summary>Reads a 24- or 32-bit floating-point sample as the bits of the single-precision number of the same value.</summary>
+    private static uint ReadSingleBits(ReadOnlySpan<byte> bytes, int length, bool bigEndian)
+    {
+        if (length == 4)
+            return bigEndian ? BinaryPrimitives.ReadUInt32BigEndian(bytes) : BinaryPrimitives.ReadUInt32LittleEndian(bytes);
+
+        var value = bigEndian
+            ? ((uint)bytes[0] << 16) | ((uint)bytes[1] << 8) | bytes[2]
+            : ((uint)bytes[2] << 16) | ((uint)bytes[1] << 8) | bytes[0];
+        return Float24ToSingleBits(value);
+    }
+
+    /// <summary>
+    /// Converts a 24-bit floating-point number (1 sign bit, 7 exponent bits with a bias of 63, 16 fraction bits, with the
+    /// subnormal numbers, infinities and not-a-number values of IEEE 754) to the bits of the single-precision number of the
+    /// same value: its exponent range and its precision are within those of a single.
+    /// </summary>
+    /// <param name="value">The 24 bits of the number, in the low bits.</param>
+    /// <returns>The bits of the single-precision number.</returns>
+    internal static uint Float24ToSingleBits(uint value)
+    {
+        var sign = ((value >> 23) & 1) << 31;
+        var exponent = (value >> 16) & 0x7F;
+        var fraction = value & 0xFFFF;
+
+        // Infinities and not-a-number values, whose payload is kept
+        if (exponent == 0x7F)
+            return sign | 0x7F80_0000 | (fraction << 7);
+
+        // A normal number: the exponent is rebiased from 63 to 127
+        if (exponent != 0)
+            return sign | ((exponent + 64) << 23) | (fraction << 7);
+
+        // Zero and the subnormal numbers, fraction * 2^(1 - 63 - 16): a normal single, computed exactly
+        return sign | BitConverter.SingleToUInt32Bits(MathF.ScaleB(fraction, -78));
     }
 
     private void ExpandBytes(ReadOnlySpan<byte> stored, Span<byte> destination)

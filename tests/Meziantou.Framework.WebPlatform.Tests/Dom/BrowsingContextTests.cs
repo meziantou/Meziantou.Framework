@@ -1,5 +1,7 @@
 using Meziantou.Framework.WebPlatform.Dom;
 using Meziantou.Framework.WebPlatform.Formatting;
+using Meziantou.Framework.WebPlatform.Tests.Scripting;
+using Meziantou.Framework.WebPlatform.Urls;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Meziantou.Framework.WebPlatform.Tests.Dom;
@@ -253,6 +255,60 @@ public sealed class BrowsingContextTests
     }
 
     [Fact]
+    public void Iframe_NavigatedByAFormSubmittedWhileParsing_DelaysTheLoadEvent()
+    {
+        // https://html.spec.whatwg.org/multipage/parsing.html#the-end: the end spins the event loop until nothing delays the load
+        // event, so the planned navigation of a form submitted while the document is parsed delays the load event
+        using var engine = TestScriptEngines.CreateDisposable();
+        using var context = new BrowsingContext(new BrowsingContextOptions
+        {
+            ScriptEngine = engine,
+            DocumentLoader = new DelegateDocumentLoader((_, _) => ValueTask.FromResult<DocumentResource?>(new DocumentResource("<title>Next</title>"))),
+        });
+        context.Navigate("https://example.com/", _ => """
+            <iframe name=target></iframe>
+            <form target=target action="javascript:parent.events.push('submit')"></form>
+            <script>
+              var events = [];
+              document.forms[0].submit();
+              events.push('after script');
+              onload = () => events.push('load');
+            </script>
+            """);
+        context.EventLoop.RunUntilIdle();
+
+        Assert.Equal("after script,submit,load", TestScriptEngines.Evaluate(engine, context.Window, "events.join()"));
+    }
+
+    [Fact]
+    public void Iframe_CrossOriginFragmentNavigationThroughSrc_FiresTheLoadEvent()
+    {
+        // As in Chrome and Safari (https://crbug.com/1248444): the container document cannot tell a fragment navigation of a
+        // cross-origin document from a navigation to another document
+        using var context = new BrowsingContext(new BrowsingContextOptions
+        {
+            DocumentLoader = new DelegateDocumentLoader((_, _) => ValueTask.FromResult<DocumentResource?>(new DocumentResource("<title>Child</title>"))),
+        });
+        var document = Load(context, "<iframe id=cross src='https://other.example/child.html'></iframe><iframe id=same src='child.html'></iframe>");
+        var crossOrigin = (HtmlIFrameElement)document.GetElementById("cross")!;
+        var sameOrigin = (HtmlIFrameElement)document.GetElementById("same")!;
+        var crossOriginDocument = crossOrigin.ContentDocument;
+        var sameOriginDocument = sameOrigin.ContentDocument;
+        var events = new List<string>();
+        crossOrigin.AddEventListener("load", _ => events.Add("cross"));
+        sameOrigin.AddEventListener("load", _ => events.Add("same"));
+
+        crossOrigin.SetAttribute("src", "https://other.example/child.html#foo");
+        sameOrigin.SetAttribute("src", "child.html#foo");
+        context.EventLoop.RunUntilIdle();
+
+        Assert.Equal(["cross"], events);
+        Assert.Same(crossOriginDocument, crossOrigin.ContentDocument);
+        Assert.Same(sameOriginDocument, sameOrigin.ContentDocument);
+        Assert.Equal("https://example.com/dir/child.html#foo", sameOriginDocument!.Url);
+    }
+
+    [Fact]
     public void Iframe_WithoutSrc_FiresLoadEventSynchronously()
     {
         using var context = new BrowsingContext();
@@ -315,6 +371,64 @@ public sealed class BrowsingContextTests
         // The target name of a cross-origin navigable is not a supported property name, but the navigable is a named object
         Assert.Null(context.Window.GetNamedItem("a"));
         Assert.Same(iframes[1].ContentWindow, context.Window.GetNamedItem("b"));
+    }
+
+    [Fact]
+    public void Navigate_CrossOriginDocumentCannotNavigateItsParent()
+    {
+        using var context = new BrowsingContext(new BrowsingContextOptions
+        {
+            DocumentLoader = new DelegateDocumentLoader((url, _) => ValueTask.FromResult<DocumentResource?>(new DocumentResource(url.Contains("/middle.html", StringComparison.Ordinal) ? "<iframe src='https://other.example/inner.html'></iframe>" : "<p>Inner</p>"))),
+        });
+
+        var top = Load(context, "<iframe src='middle.html'></iframe>");
+        var middle = ((HtmlIFrameElement)top.QuerySelector("iframe")!).ContentNavigable!;
+        var inner = ((HtmlIFrameElement)middle.Document.QuerySelector("iframe")!).ContentNavigable!;
+        var url = UrlParser.Parse("https://example.com/dir/other.html", baseUrl: null)!;
+
+        var ex = Assert.Throws<DomException>(() => middle.Navigate(url, inner.Document, NavigationHistoryBehavior.Auto, exceptionsEnabled: true, hasTransientActivation: true));
+        Assert.Equal("SecurityError", ex.Name);
+
+        // The cross-origin document can navigate its descendants and itself
+        inner.Navigate(url, inner.Document, NavigationHistoryBehavior.Auto, exceptionsEnabled: true);
+    }
+
+    [Fact]
+    public void Navigate_CrossOriginDocumentNavigatesItsTopOnlyWithTransientActivation()
+    {
+        using var context = new BrowsingContext(new BrowsingContextOptions
+        {
+            DocumentLoader = new DelegateDocumentLoader((url, _) => ValueTask.FromResult<DocumentResource?>(new DocumentResource(url.Contains("/middle.html", StringComparison.Ordinal) ? "<iframe src='https://other.example/inner.html'></iframe><iframe src='https://example.com/inner.html'></iframe>" : "<p>Inner</p>"))),
+        });
+
+        var top = Load(context, "<iframe src='https://other.example/middle.html'></iframe>");
+        var middle = ((HtmlIFrameElement)top.QuerySelector("iframe")!).ContentNavigable!;
+        var inner = ((HtmlIFrameElement)middle.Document.QuerySelector("iframe")!).ContentNavigable!;
+        var url = UrlParser.Parse("https://third.example/", baseUrl: null)!;
+
+        var ex = Assert.Throws<DomException>(() => context.Navigate(url, inner.Document, NavigationHistoryBehavior.Auto, exceptionsEnabled: true, hasTransientActivation: false));
+        Assert.Equal("SecurityError", ex.Name);
+        ex = Assert.Throws<DomException>(() => context.Navigate(url, middle.Document, NavigationHistoryBehavior.Auto, exceptionsEnabled: true, hasTransientActivation: false));
+        Assert.Equal("SecurityError", ex.Name);
+
+        // A document that is same origin with the top-level document can navigate it, even when its parent is cross-origin
+        var sameOriginInner = ((HtmlIFrameElement)middle.Document.QuerySelectorAll("iframe")[1]).ContentNavigable!;
+        context.Navigate(url, sameOriginInner.Document, NavigationHistoryBehavior.Auto, exceptionsEnabled: true, hasTransientActivation: false);
+        context.Navigate(url, middle.Document, NavigationHistoryBehavior.Auto, exceptionsEnabled: true, hasTransientActivation: true);
+    }
+
+    [Fact]
+    public void WindowOpen_InitialDocumentInheritsTheContentSecurityPolicySandbox()
+    {
+        using var context = new BrowsingContext();
+        context.Navigate("https://example.com/", _ => new DocumentResource("") { Headers = [new("Content-Security-Policy", "sandbox allow-scripts allow-popups allow-popups-to-escape-sandbox")] });
+        context.EventLoop.RunUntilIdle();
+
+        // The popup escapes the sandboxing flags of its opener, but its initial about:blank document has the CSP of its opener
+        var popup = context.Window.Open("", "_blank")!;
+        Assert.True(popup.Document.IsInitialAboutBlank);
+        Assert.NotEqual(SandboxingFlags.None, popup.Document.ActiveSandboxingFlags);
+        Assert.Equal("null", popup.Document.Origin.Serialize());
     }
 
     [Fact]
@@ -920,6 +1034,32 @@ public sealed class BrowsingContextTests
         ((HtmlElement)document.GetElementById("self")!).Click();
         context.EventLoop.RunUntilIdle();
         Assert.Equal("https://example.com/dir/next.html", context.Document.Title);
+    }
+
+    [Fact]
+    public void Download_HyperlinkAndAttachmentAreHandedToTheApplication()
+    {
+        var downloads = new List<string>();
+        using var context = new BrowsingContext(new BrowsingContextOptions
+        {
+            DocumentLoader = new DelegateDocumentLoader((url, _) => ValueTask.FromResult<DocumentResource?>(url.Contains("attachment", StringComparison.Ordinal)
+                ? new DocumentResource("content") { Headers = [new("Content-Disposition", "attachment; filename=a.txt")] }
+                : new DocumentResource("<title>" + url + "</title>"))),
+            DownloadStarted = (_, download) => downloads.Add(download.Url + " " + (download.Filename ?? "(navigation)") + " " + download.Resource.Content),
+        });
+
+        var document = Load(context, "<a id=download href='file.txt' download=name.txt>x</a><a id=attachment href='attachment.txt'>x</a><iframe sandbox=allow-same-origin srcdoc='<a href=file.txt download>x</a>'></iframe>");
+        ((HtmlElement)document.GetElementById("download")!).Click();
+        ((HtmlElement)document.GetElementById("attachment")!).Click();
+        context.EventLoop.RunUntilIdle();
+        Assert.Same(document, context.Document);
+        Assert.Equal(["https://example.com/dir/file.txt name.txt <title>https://example.com/dir/file.txt</title>", "https://example.com/dir/attachment.txt (navigation) content"], downloads);
+
+        // The documents sandboxed without allow-downloads do not download
+        downloads.Clear();
+        ((HtmlElement)context.Children[0].Document.QuerySelector("a")!).Click();
+        context.EventLoop.RunUntilIdle();
+        Assert.Empty(downloads);
     }
 
     [Fact]

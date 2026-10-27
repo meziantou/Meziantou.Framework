@@ -8,7 +8,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
 /// Reads one strip or tile of a TIFF page into rows of exactly the size the geometry requires: it undoes the fill order,
-/// the compression and the horizontal differencing predictor, and converts the data units of a YCbCr page to RGB.
+/// the compression and the predictors, converts the data units of a YCbCr page to RGB, and signed samples to unsigned
+/// ones.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -52,6 +53,7 @@ internal sealed class TiffBlockReader : IDisposable
     private PooledBuffer? _units;
     private PooledBuffer? _changes;
     private PooledBuffer? _jpegRow;
+    private PooledBuffer? _predictorRow;
     private TiffLzwDecoder? _lzw;
 #if NET11_0_OR_GREATER
     private ZLibDecoder? _zlib;
@@ -109,6 +111,15 @@ internal sealed class TiffBlockReader : IDisposable
         {
             UndoHorizontalDifferencing(stored, storedRows);
         }
+        else if (page.Predictor == TiffFormat.PredictorFloatingPoint)
+        {
+            UndoFloatingPointDifferencing(stored, storedRows);
+        }
+
+        if (page.IsSigned)
+        {
+            ToUnsigned(stored, page.BitsPerSample, page.IsBigEndian);
+        }
 
         conversion?.Convert(stored, destination, page.BlockWidth, rowCount);
         return destination;
@@ -141,6 +152,8 @@ internal sealed class TiffBlockReader : IDisposable
         _changes = null;
         _jpegRow?.Dispose();
         _jpegRow = null;
+        _predictorRow?.Dispose();
+        _predictorRow = null;
         _lzw?.Dispose();
         _lzw = null;
     }
@@ -244,7 +257,7 @@ internal sealed class TiffBlockReader : IDisposable
     {
         rows = default;
         var page = _page;
-        if (page.Compression != TiffFormat.CompressionNone || page.IsJpeg || page.IsJpeg2000 || page.YCbCr is not null || page.Predictor == TiffFormat.PredictorHorizontalDifferencing || page.IsLeastSignificantBitFirst)
+        if (page.Compression != TiffFormat.CompressionNone || page.IsJpeg || page.IsJpeg2000 || page.YCbCr is not null || page.Predictor != TiffFormat.PredictorNone || page.IsSigned || page.IsLeastSignificantBitFirst)
             return false;
 
         // A tile is always stored in full, even when it extends past the bottom edge of the page; a strip is not
@@ -519,6 +532,63 @@ internal sealed class TiffBlockReader : IDisposable
             {
                 BinaryPrimitives.WriteUInt16LittleEndian(line[offset..], (ushort)(BinaryPrimitives.ReadUInt16LittleEndian(line[offset..]) + BinaryPrimitives.ReadUInt16LittleEndian(line[previousOffset..])));
             }
+        }
+    }
+
+    /// <summary>
+    /// Undoes the floating-point predictor of TIFF Technical Note 3 row by row, over the stored (padded) width of the block.
+    /// </summary>
+    private void UndoFloatingPointDifferencing(Span<byte> block, int rowCount)
+    {
+        var page = _page;
+        var rowLength = page.BlockRowLength;
+        _predictorRow ??= _source.Scope.Rent(rowLength, AllocationKind.DecoderState, clear: false);
+        var scratch = _predictorRow.Span[..rowLength];
+        for (var row = 0; row < rowCount; row++)
+        {
+            UndoFloatingPointDifferencing(block.Slice(row * rowLength, rowLength), scratch, page.SamplesPerPixel, page.BitsPerSample / 8, page.IsBigEndian);
+        }
+    }
+
+    /// <summary>
+    /// Undoes the floating-point predictor of one row (TIFF Technical Note 3). The encoder splits the samples of the row
+    /// into planes of bytes, the most significant byte of every sample first and the least significant one last whatever
+    /// the byte order of the file, then replaces each byte with its difference from the byte <paramref name="samplesPerPixel"/>
+    /// positions before it, modulo 256. The bytes are summed back, then the samples are rebuilt in the byte order of the
+    /// file, like the other samples of a block.
+    /// </summary>
+    /// <param name="line">The bytes of the row, replaced by its samples.</param>
+    /// <param name="scratch">A buffer of the length of the row.</param>
+    /// <param name="samplesPerPixel">The number of samples of a pixel.</param>
+    /// <param name="bytesPerSample">The number of bytes of a sample (2, 3 or 4).</param>
+    /// <param name="bigEndian">Whether the samples of the file are big-endian.</param>
+    internal static void UndoFloatingPointDifferencing(Span<byte> line, Span<byte> scratch, int samplesPerPixel, int bytesPerSample, bool bigEndian)
+    {
+        // The sum of the byte on the left: the PNG Sub filter with pixels of one byte per sample
+        PngFilters.Unfilter(PngFilters.Sub, line, line, samplesPerPixel);
+        line.CopyTo(scratch);
+        var count = line.Length / bytesPerSample;
+        for (var plane = 0; plane < bytesPerSample; plane++)
+        {
+            var bytes = scratch.Slice(plane * count, count);
+            var position = bigEndian ? plane : bytesPerSample - 1 - plane;
+            for (var i = 0; i < bytes.Length; i++)
+            {
+                line[(i * bytesPerSample) + position] = bytes[i];
+            }
+        }
+    }
+
+    /// <summary>
+    /// Turns two's complement samples of 8 or 16 bits into the unsigned samples that are larger by half of their range, by
+    /// flipping their sign bit: the most significant byte of each sample, in the byte order of the file.
+    /// </summary>
+    internal static void ToUnsigned(Span<byte> samples, int bitsPerSample, bool bigEndian)
+    {
+        var step = bitsPerSample / 8;
+        for (var i = step == 1 || bigEndian ? 0 : 1; i < samples.Length; i += step)
+        {
+            samples[i] ^= 0x80;
         }
     }
 

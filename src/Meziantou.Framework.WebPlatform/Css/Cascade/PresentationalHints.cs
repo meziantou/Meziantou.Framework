@@ -205,6 +205,15 @@ internal static partial class PresentationalHints
                     AppendDimension(css, "margin-bottom", element.GetAttributeValue("vspace"), ignoreZero: false);
                 }
 
+                // The align attribute set to center or middle: "a value that aligns the vertical middle of the element with the
+                // parent element's baseline", the -webkit-baseline-middle value of the browsers (the other values are in the
+                // presentational hints style sheet)
+                if (element.LocalName is "embed" or "iframe" or "img" or "input" or "object" && element.GetAttributeValue("align") is { } replacedAlign
+                    && (InfraAscii.EqualsIgnoreAsciiCase(replacedAlign, "center") || InfraAscii.EqualsIgnoreAsciiCase(replacedAlign, "middle")))
+                {
+                    css.Append("vertical-align: -webkit-baseline-middle;");
+                }
+
                 if (element.LocalName is "img" or "object" or "input" && element.GetAttributeValue("border") is { } imageBorder && TryParseNonNegativeInteger(imageBorder, out var borderWidth) && borderWidth > 0)
                 {
                     css.Append("border-width: ").Append(borderWidth.ToString(CultureInfo.InvariantCulture)).Append("px; border-style: solid;");

@@ -79,13 +79,6 @@ internal sealed class ImageOutputCapabilities
     /// </summary>
     public bool SupportsFrameHotspot => StoresFrameHotspot(Format);
 
-    /// <summary>
-    /// Gets a value indicating whether the output stores floating-point samples (OpenEXR): its session receives
-    /// <see cref="PixelFormat.RgbaFloat"/> and <see cref="PixelFormat.RgbaHalf"/> frames as they are, and
-    /// <see cref="ImageEncoder.FloatingPointConversion"/> does not apply.
-    /// </summary>
-    public bool StoresFloatingPointSamples => Format == ImageFormat.OpenExr;
-
     /// <summary>Gets the output description used in messages (<c>static PNG</c>, <c>APNG</c>, <c>GIF</c>, <c>JPEG</c>).</summary>
     public string Name => Format switch
     {

@@ -489,6 +489,38 @@ public sealed class ReplacedFormattingContextTests : IDisposable
         Assert.Equal(input.Y + 10, x.Y);
     }
 
+    [Theory]
+    [InlineData("<input id=i type=checkbox style='margin: 0 0 5px; padding: 0 0 3px'>", 0)]
+    [InlineData("<input id=i type=radio style='margin: 0 0 5px; padding: 0 0 3px'>", 0)]
+    [InlineData("<input id=i type=checkbox style='margin: 0 0 5px; appearance: none'>", -5)]
+    [InlineData("<input id=i type=checkbox style='margin: 0 0 5px; border: 2px solid'>", -5)]
+    [InlineData("<input id=i type=color style='margin: 0 0 5px; padding: 0 0 3px; border: 2px solid'>", 5)]
+    [InlineData("<input id=i type=color style='margin: 0 0 5px; appearance: none; padding: 0 0 3px'>", 3)]
+    public void FormControls_BaselineOfTheCheckboxesAndColorWells(string control, double baselineAboveBottom)
+    {
+        // As in the browsers (https://github.com/whatwg/html/issues/5065): a checkbox or a radio button with its native
+        // appearance is aligned by the block-end edge of its padding box (by the block-end edge of its margin box without it),
+        // a color well by the block-end edge of its content box
+        var document = Parse("<div id=d>X" + control + "</div>");
+        var input = GetRect(document, "i");
+        var x = document.GetLayoutEngine().GetTextFragments((Text)document.GetElementById("d")!.FirstChild!)[0].GetRectInRoot();
+        Assert.Equal(input.Bottom - baselineAboveBottom, x.Y + 8);
+    }
+
+    [Theory]
+    [InlineData("middle")]
+    [InlineData("CENTER")]
+    public void Image_AlignMiddle_CentersTheImageOnTheBaseline(string align)
+    {
+        // https://html.spec.whatwg.org/multipage/rendering.html#attributes-for-embedded-content-and-images: the vertical middle
+        // of the image is on the baseline of its parent (-webkit-baseline-middle, as in the browsers)
+        var document = Parse($"<div id=d>X<img id=i src=20x20.png align={align}></div>");
+        var image = GetRect(document, "i");
+        var x = document.GetLayoutEngine().GetTextFragments((Text)document.GetElementById("d")!.FirstChild!)[0].GetRectInRoot();
+        Assert.Equal(image.Y + 10, x.Y + 8);
+        Assert.Equal("-webkit-baseline-middle", document.DefaultView!.GetComputedStyle(document.GetElementById("i")!).GetPropertyValue("vertical-align"));
+    }
+
     [Fact]
     public void FormControls_TextFieldLineHeight_ResolvedValueIsAtLeastNormal()
     {

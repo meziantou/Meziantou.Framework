@@ -477,9 +477,11 @@ internal static partial class CssValueComputer
 
         var values = CssParser.ParseListOfComponentValues(value);
         // The font-relative lengths of the font properties refer to the font of the parent (https://drafts.csswg.org/css-values-4/#font-relative-lengths)
+        // The percentages of border-image-slice refer to the size of the image (https://drafts.csswg.org/css-backgrounds-3/#border-image-slice):
+        // like a <length-percentage>, they are resolved at used-value time
         var context = new ComputationContext(style, hasColors ?? (property is not null && HasColorType(property)), baseUrl)
         {
-            PercentageUnit = property is null ? null : GetPercentageUnit(property),
+            PercentageUnit = property is null ? null : GetPercentageUnit(property) ?? (property.Name is "border-image-slice" or "mask-border-slice" ? "px" : null),
             FontSizeContext = fontSizeContext || (property is not null && property.Name.StartsWith("font-", StringComparison.Ordinal)),
         };
         var transformed = Transform(values, context);
@@ -629,6 +631,10 @@ internal static partial class CssValueComputer
                 {
                     return Raw(crossFade);
                 }
+                else if (name is "radial-gradient" or "repeating-radial-gradient" or "conic-gradient" or "repeating-conic-gradient" && context.PercentageUnit is null)
+                {
+                    return ComputeGradientFunction(function, context);
+                }
                 else if (name == "paint")
                 {
                     // https://drafts.css-houdini.org/css-paint-api-1/#paint-notation: the name of the paint is an identifier
@@ -652,6 +658,59 @@ internal static partial class CssValueComputer
             default:
                 return value;
         }
+    }
+
+    /// <summary>
+    /// Computes the arguments of a radial or conic gradient: the percentages of the size and position of the gradient (its first
+    /// argument, before the color stops) are resolved against the gradient box at used-value time, like a &lt;length-percentage&gt;
+    /// (e.g. random(33%, 1%) is kept with a fixed base value: WPT css/css-values/random-computed.tentative.html).
+    /// </summary>
+    private static CssFunction ComputeGradientFunction(CssFunction function, ComputationContext context)
+    {
+        var copy = new CssFunction(function.Name);
+        var preludeLength = function.Value.FindIndex(value => value is CssPreservedToken { Type: CssTokenType.Comma });
+        if (preludeLength < 0 || !IsGradientPrelude(function.Value.GetRange(0, preludeLength)))
+        {
+            copy.Value.AddRange(Transform(function.Value, context));
+            return copy;
+        }
+
+        var preludeContext = new ComputationContext(context.UntrackedStyle, context.HasColors, context.BaseUrl)
+        {
+            FontSizeContext = context.FontSizeContext,
+            LineHeightContext = context.LineHeightContext,
+            PercentageUnit = "px",
+        };
+        copy.Value.AddRange(Transform(function.Value.GetRange(0, preludeLength), preludeContext));
+        copy.Value.AddRange(Transform(function.Value.GetRange(preludeLength, function.Value.Count - preludeLength), context));
+        return copy;
+    }
+
+    /// <summary>Returns whether the first argument of a radial or conic gradient is its shape, size, position or color space, not a color stop.</summary>
+    private static bool IsGradientPrelude(List<CssComponentValue> values)
+    {
+        var hasValue = false;
+        foreach (var value in values)
+        {
+            switch (value)
+            {
+                case CssPreservedToken { Type: CssTokenType.Whitespace }:
+                    continue;
+                case CssPreservedToken { Type: CssTokenType.Ident } ident when ident.Token.IsIdent("at") || ident.Token.IsIdent("from") || ident.Token.IsIdent("in")
+                    || ident.Token.IsIdent("circle") || ident.Token.IsIdent("ellipse") || ident.Token.IsIdent("closest-side") || ident.Token.IsIdent("closest-corner")
+                    || ident.Token.IsIdent("farthest-side") || ident.Token.IsIdent("farthest-corner"):
+                    return true;
+                case CssPreservedToken { Type: CssTokenType.Number or CssTokenType.Percentage or CssTokenType.Dimension }:
+                case CssFunction math when CssCalc.IsMathFunction(InfraAscii.ToAsciiLowercase(math.Name)):
+                    hasValue = true;
+                    break;
+                default:
+                    return false;
+            }
+        }
+
+        // A size without keyword (e.g. radial-gradient(10px 20%, red, blue))
+        return hasValue;
     }
 
     [ThreadStatic]

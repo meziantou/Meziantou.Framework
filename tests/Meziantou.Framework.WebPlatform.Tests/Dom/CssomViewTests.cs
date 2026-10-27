@@ -641,6 +641,29 @@ public sealed class CssomViewTests : IDisposable
     }
 
     [Fact]
+    public void OffsetParent_SkipsTheAncestorsBetweenAColumnSpannerAndItsMultiColumnContainer()
+    {
+        var document = Parse("""
+            <div id=columns style='position: relative; columns: 2; column-gap: 10px; width: 210px; height: 100px'>
+              <div style='height: 40px'></div>
+              <div id=relpos style='position: relative'>
+                <div id=spanner style='column-span: all'><div id=inner style='height: 20px'></div></div>
+                <div id=after style='height: 10px'></div>
+              </div>
+            </div>
+            """);
+        var inner = (HtmlElement)document.GetElementById("inner")!;
+        Assert.Same(document.GetElementById("columns"), inner.OffsetParent);
+        Assert.Equal((0, 20), (inner.OffsetLeft, inner.OffsetTop));
+        Assert.Same(document.GetElementById("columns"), ((HtmlElement)document.GetElementById("spanner")!).OffsetParent);
+
+        // The box whose content starts with the spanner has no fragment before it
+        var after = (HtmlElement)document.GetElementById("after")!;
+        Assert.Same(document.GetElementById("relpos"), after.OffsetParent);
+        Assert.Equal((0, 0), (after.OffsetLeft, after.OffsetTop));
+    }
+
+    [Fact]
     public void OffsetParent_SkipsTheShadowTreeOfTheSlotOfTheElement()
     {
         var document = Parse("<div id=container style='position: relative'><div id=host><div id=static></div><div id=fixed style='position: fixed'></div></div></div>");

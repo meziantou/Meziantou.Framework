@@ -7,8 +7,9 @@ namespace Meziantou.Framework.Imaging.FuzzTests;
 /// <summary>
 /// The seeds of the formats the golden corpus has no fixture of (TIFF, ICO and CUR, ANI, OpenEXR): files written by the encoders of
 /// the library (every compression, pixel layout and container option they have), and files assembled byte by byte by the
-/// builders of the unit tests for what the encoders never write (tiles, the horizontal predictor, packed samples,
-/// palette and masked DIB payloads, the sequence and rate tables of an animated cursor).
+/// builders of the unit tests for what the encoders never write (tiles, the horizontal predictor, packed samples, signed,
+/// half-precision and 24-bit floating-point samples, palette and masked DIB payloads, the sequence and rate tables of an
+/// animated cursor).
 /// </summary>
 internal static class FuzzGeneratedSeeds
 {
@@ -74,10 +75,28 @@ internal static class FuzzGeneratedSeeds
             seeds.Add(Save("tiff/pages-packbits-bigtiff", collection, new TiffEncoder { Compression = TiffCompression.PackBits, BigTiff = true }));
         }
 
+        // Floating-point samples with the floating-point predictor
+        using (var floats = new Image<RgbaFloat>(9, 6))
+        {
+            for (var y = 0; y < floats.Height; y++)
+            {
+                for (var x = 0; x < floats.Width; x++)
+                {
+                    floats.Frames[0][x, y] = new RgbaFloat((x - 3) * 0.75f, y * 0.5f, (x * y) - 20.25f, x % 3 == 0 ? 1 : 0.5f);
+                }
+            }
+
+            seeds.Add(Encode("tiff/rgbafloat-deflate-predictor", floats, new TiffEncoder { RowsPerStrip = 2 }));
+            seeds.Add(Encode("tiff/rgbafloat-lzw-predictor-bigendian", floats, new TiffEncoder { Compression = TiffCompression.Lzw, BigEndian = true }));
+        }
+
         // Tiles, the horizontal predictor, packed samples and an orientation: TIFF features the encoder never writes
         seeds.Add(new FuzzSeed("tiff/builder-gray8-tiles-lzw", new TiffFileBuilder().AddPage(new TiffPageSpec { Width = 20, Height = 20, TileWidth = 16, TileLength = 16, Compression = 5, Samples = Samples(20 * 20, 251) }).Build()));
         seeds.Add(new FuzzSeed("tiff/builder-rgb24-tiles-deflate-predictor", new TiffFileBuilder().AddPage(new TiffPageSpec { Width = 32, Height = 20, SamplesPerPixel = 3, Photometric = 2, TileWidth = 16, TileLength = 16, Compression = 8, Predictor = 2, Samples = Samples(32 * 20 * 3, 256) }).Build()));
         seeds.Add(new FuzzSeed("tiff/builder-gray16-predictor-deflate", new TiffFileBuilder().AddPage(new TiffPageSpec { Width = 6, Height = 3, BitsPerSample = 16, Compression = 32946, Predictor = 2, Samples = Samples(6 * 3 * 2, 256) }).Build()));
+        seeds.Add(new FuzzSeed("tiff/builder-signed16-rgb-predictor-deflate", new TiffFileBuilder().AddPage(new TiffPageSpec { Width = 5, Height = 3, BitsPerSample = 16, SamplesPerPixel = 3, Photometric = 2, SampleFormat = 2, Compression = 8, Predictor = 2, Samples = Samples(5 * 3 * 3 * 2, 256) }).Build()));
+        seeds.Add(new FuzzSeed("tiff/builder-half-gray-tiles-lzw-predictor-bigendian", new TiffFileBuilder { BigEndian = true }.AddPage(new TiffPageSpec { Width = 18, Height = 5, BitsPerSample = 16, SampleFormat = 3, TileWidth = 16, TileLength = 16, Compression = 5, Predictor = 3, Samples = Samples(18 * 5 * 2, 61) }).Build()));
+        seeds.Add(new FuzzSeed("tiff/builder-float24-graya-packbits", new TiffFileBuilder().AddPage(new TiffPageSpec { Width = 4, Height = 3, BitsPerSample = 24, SamplesPerPixel = 2, ExtraSamples = [2], SampleFormat = 3, Compression = 32773, Samples = Samples(4 * 3 * 2 * 3, 64) }).Build()));
         seeds.Add(new FuzzSeed("tiff/builder-gray4-whiteiszero-packbits", new TiffFileBuilder().AddPage(new TiffPageSpec { Width = 7, Height = 5, BitsPerSample = 4, Photometric = 0, Compression = 32773, Orientation = 6, Samples = Samples(4 * 5, 256) }).Build()));
         seeds.Add(new FuzzSeed("tiff/builder-bilevel-strips-bigendian-gap", new TiffFileBuilder { BigEndian = true, Gap = 6 }
             .AddPage(new TiffPageSpec { Width = 10, Height = 4, BitsPerSample = 1, Photometric = 1, RowsPerStrip = 1, Samples = [0b1010_0000, 0b1100_0000, 0b0000_1111, 0b0100_0000, 0b1111_1111, 0b1100_0000, 0b0101_0101, 0b0000_0000] })

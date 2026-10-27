@@ -54,7 +54,7 @@ public sealed class ImageSaveTests
         using var image = new Image<RgbaFloat>(3, 2, new RgbaFloat(0.25f, 0.5f, 1, 0.75f));
         image.Frames[0][2, 1] = new RgbaFloat(1 / 3f, 0, 0.125f);
 
-        // Nothing is written: no output format stores floating-point samples
+        // Nothing is written: PNG does not store floating-point samples (only TIFF does)
         using (var rejected = new MemoryStream())
         {
             var exception = Assert.Throws<UnsupportedImageFeatureException>(() => image.Save(rejected, new PngEncoder()));

@@ -1005,6 +1005,9 @@ internal sealed partial class Painter
         return false;
     }
 
+    /// <summary>How far the clip of a split plane extends beyond the rectangle of the plane (its ink overflow), in its coordinates.</summary>
+    private const double SplitClipMargin = 8;
+
     /// <summary>A plane of a 3D rendering context: a stacking context that participates in it, with its accumulated transform.</summary>
     private sealed class Plane(BoxFragment fragment, double[] matrix, int order)
     {
@@ -1027,8 +1030,8 @@ internal sealed partial class Painter
     /// Paints a 3D rendering context (https://drafts.csswg.org/css-transforms-2/#3d-rendering-contexts): the root (a stacking context
     /// with <c>transform-style: preserve-3d</c>) and the stacking contexts that participate in it are planes with their accumulated
     /// 3D transforms (their 3D transforms are not flattened into the plane of their parent); the planes are painted from the farthest
-    /// to the nearest (the depth of their center, as an approximation of the depth sorting of the browsers; the intersecting planes
-    /// are not split), the planes that show their back face with <c>backface-visibility: hidden</c> are not painted.
+    /// to the nearest (sorted with a BSP tree, see <see cref="PlaneSorting"/>, which splits the intersecting planes), the planes that
+    /// show their back face with <c>backface-visibility: hidden</c> are not painted.
     /// </summary>
     private void Paint3DRenderingContext(List<PaintItem> items, int begin, int end)
     {
@@ -1108,7 +1111,10 @@ internal sealed partial class Painter
         {
             var plane = planes[index];
             matrices[index] = rootMatrix is null ? plane.Matrix : CssTransforms.Multiply(rootMatrix, plane.Matrix);
-            if (polygons is not null && (plane.Items.Count > 0 || !plane.IsContinuation))
+
+            // As in Blink, a plane without drawable content (e.g. a box without background nor borders whose content is in other
+            // planes) is not sorted: it does not split the other planes
+            if (polygons is not null && HasDrawableContent(plane))
             {
                 if (PlaneSorting.CreatePolygon(index, plane.Fragment.InkOverflow, matrices[index]) is { } polygon)
                 {
@@ -1168,7 +1174,7 @@ internal sealed partial class Painter
                         rootGroup.Clips.Clear();
                         var groupSaveCount = rootGroup.SaveCount;
                         _builder.Save();
-                        _builder.Add(new ClipPathItem(CreatePolygonPath(polygon.Local, rootLocal)));
+                        _builder.Add(CreateSplitClip(polygon, plane, rootLocal));
                         rootGroup.SaveCount = _builder.SaveCount;
                         PaintItems(plane.Items);
                         _builder.RestoreTo(groupSaveCount);
@@ -1191,7 +1197,7 @@ internal sealed partial class Painter
             if (polygon is { IsSplit: true })
             {
                 // The part of the plane on one side of another plane
-                _builder.Add(new ClipPathItem(CreatePolygonPath(polygon.Local, PhysicalOffset.Zero)));
+                _builder.Add(CreateSplitClip(polygon, plane, PhysicalOffset.Zero));
             }
 
             PaintItems(plane.Items);
@@ -1199,6 +1205,11 @@ internal sealed partial class Painter
         }
 
         EndStackingContext();
+
+        // The edges created by the splits are not antialiased: the parts of a plane on both sides of another plane cover the pixels
+        // of their common edge (their antialiased coverages would add up to less than 1)
+        static ClipPathItem CreateSplitClip(PlaneSorting.Polygon polygon, Plane plane, PhysicalOffset offset)
+            => new(CreatePolygonPath(PlaneSorting.GetSplitClip(polygon, plane.Fragment.InkOverflow, SplitClipMargin), offset), AntiAlias: false);
 
         static DisplayPath CreatePolygonPath(List<PhysicalOffset> points, PhysicalOffset offset)
         {
@@ -1220,5 +1231,77 @@ internal sealed partial class Painter
         }
 
         static double[] Translation(PhysicalOffset offset) => [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, offset.X, offset.Y, 0, 1];
+    }
+
+    /// <summary>
+    /// Whether the items of a plane of a 3D rendering context may paint something (conservatively: only the boxes that obviously
+    /// paint nothing are ignored, e.g. a block without background, borders, shadows nor outline).
+    /// </summary>
+    private bool HasDrawableContent(Plane plane)
+    {
+        if (_caretAnchor is not null || HasFilterEffects(plane.Fragment))
+            return true;
+
+        foreach (var item in plane.Items)
+        {
+            switch (item.Marker)
+            {
+                case PaintItemMarker.EndStackingContext:
+                case PaintItemMarker.Outlines:
+                    // The outlines are the ones of the boxes of the plane
+                    continue;
+
+                case PaintItemMarker.BeginStackingContext:
+                    // A filter may paint without content (e.g. feFlood); the root of the stacking context is the next item
+                    if (HasFilterEffects((BoxFragment)item.Fragment))
+                        return true;
+
+                    continue;
+
+                default:
+                    if (item.IsSplitInlineBand)
+                        continue;
+
+                    if (item.Part != PaintItemPart.All || item.Fragment is not BoxFragment fragment || !PaintsNothing(fragment))
+                        return true;
+
+                    continue;
+            }
+        }
+
+        return false;
+
+        static bool HasFilterEffects(BoxFragment fragment)
+            => fragment.Box is { IsAnonymous: false } box && box.Kind != ContainerBoxKind.Viewport && (FilterEffects.HasFilter(box.Style) || FilterEffects.HasFilter(box.Style, "backdrop-filter"));
+
+        bool PaintsNothing(BoxFragment fragment)
+        {
+            var box = fragment.Box;
+            if (box.Kind == ContainerBoxKind.Viewport)
+                return true;
+
+            if (box.Kind is ContainerBoxKind.Replaced or ContainerBoxKind.TableGrid or ContainerBoxKind.TableWrapper || IsTablePart(box) || box.IsFieldsetContent)
+                return false;
+
+            if (box.IsAnonymous)
+                return true;
+
+            if (box.Style.Layout.Visibility != Visibility.Visible)
+                return true;
+
+            if (box.PseudoElement is not null || box.LayoutState is FramesetState || fragment.MathData is not null || (box.Element is { } element && FormControlContents.HasNativeFrame(element)))
+                return false;
+
+            var style = GetDecorationStyle(fragment);
+            return GetColor(style, "background-color").IsTransparent
+                && style.GetComputedValue("background-image") is ("none" or "")
+                && box.Style.GetComputedValue("box-shadow") is ("none" or "")
+                && fragment.Border == default
+                && box.Style.GetComputedValue("border-image-source") is ("none" or "")
+                && BorderShapeGeometry.Get(fragment) is null
+                && !HasOutline(box.Style)
+                && (!_paintsScrollbars || fragment.ScrollbarsDisplayed == Scrollbars.None)
+                && GapDecorations.GetDecorations(fragment) is null;
+        }
     }
 }

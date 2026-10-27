@@ -108,6 +108,7 @@ internal static class AnchorPositioning
                 state.RememberedScrollOffsets.Clear();
                 state.LastSuccessfulOption = null;
                 state.ReferencedAnchors.Clear();
+                state.HasProvisionalRememberedScrollOffsets = true;
             }
 
             state.LastPass = context.Pass;

@@ -383,7 +383,7 @@
     }
   },
   "css/css-transitions/pseudo-element-transform.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "PASS"
   },
   "css/css-transitions/pseudo-elements-001.html": {
     "total": 4
@@ -506,10 +506,7 @@
     "total": 1
   },
   "css/css-transitions/transitioncancel-001.html": {
-    "total": 1,
-    "failures": {
-      "transitioncancel should be fired if the element is made display:none during the transition": "FAIL"
-    }
+    "total": 1
   },
   "css/css-transitions/transitioncancel-002.html": {
     "total": 1

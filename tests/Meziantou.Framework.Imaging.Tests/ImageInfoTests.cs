@@ -87,6 +87,16 @@ public sealed class ImageInfoTests
     }
 
     [Fact]
+    public void FloatingPointSamplesOf24And32BitsAreRgbaFloat()
+    {
+        // The floating-point samples of a TIFF page
+        Assert.Equal(24, Create(ImageFormat.Tiff, pixelFormat: PixelFormat.RgbaFloat, bitsPerComponent: 24).BitsPerComponent);
+        Assert.Equal(32, Create(ImageFormat.Tiff, pixelFormat: PixelFormat.RgbaFloat, bitsPerComponent: 32).BitsPerComponent);
+        Assert.Throws<ArgumentOutOfRangeException>(() => Create(ImageFormat.Tiff, pixelFormat: PixelFormat.RgbaHalf, bitsPerComponent: 32));
+        Assert.Throws<ArgumentOutOfRangeException>(() => Create(ImageFormat.Tiff, pixelFormat: PixelFormat.RgbaFloat, bitsPerComponent: 64));
+    }
+
+    [Fact]
     public void InconsistentSnapshotsAreRejected()
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => Create(ImageFormat.Unknown));

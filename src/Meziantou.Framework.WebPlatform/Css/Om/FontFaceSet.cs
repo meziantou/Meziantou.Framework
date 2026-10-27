@@ -484,7 +484,7 @@ public sealed class FontFaceSet : EventTarget, IReadOnlyCollection<FontFace>
     /// rendering backend or its layout was already computed) and whose set has a font face that is not loaded yet: the other
     /// documents have no font to request.
     /// </summary>
-    private void UpdateLayoutForFonts()
+    internal void UpdateLayoutForFonts()
     {
         if (_isUpdatingLayout || !_document.IsFullyActive || _document.BrowsingContext is not { } context)
             return;
@@ -711,7 +711,7 @@ public sealed class FontFaceSet : EventTarget, IReadOnlyCollection<FontFace>
     /// </summary>
     private const string CounterSample = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ. ";
 
-    private void LoadUsedFontFaces()
+    internal void LoadUsedFontFaces()
     {
         // The document of the font source of a worker has no text
         if (_worker is not null)

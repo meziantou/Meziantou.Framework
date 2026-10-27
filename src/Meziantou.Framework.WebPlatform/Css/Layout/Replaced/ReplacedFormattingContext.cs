@@ -59,6 +59,18 @@ internal sealed class ReplacedFormattingContext : FormattingContext
         {
             fragment.ReplacedContentRect = GetObjectRect(layout, content, fragment.ContentBoxRect);
         }
+        else if (content.Baseline is FormControlBaseline.PaddingBoxEnd or FormControlBaseline.ContentBoxEnd)
+        {
+            // An edge of the box (a checkbox or a radio button with its native appearance, else it has no baseline; a color well).
+            // In a vertical writing mode, the control has no baseline: as in the browsers, it is centered on the central baseline
+            // (WPT css/css-writing-modes/forms/checkbox-appearance-native-vertical-rl-baseline.optional.html)
+            var writingDirection = fragment.WritingDirection;
+            if (writingDirection.IsHorizontal && (content.Baseline == FormControlBaseline.ContentBoxEnd || FormControlContents.HasNativeAppearance(box.Element!, box.Style)))
+            {
+                var edges = writingDirection.ToLogical(content.Baseline == FormControlBaseline.ContentBoxEnd ? fragment.Padding.Add(fragment.Border) : fragment.Border);
+                fragment.FirstBaseline = fragment.LastBaseline = writingDirection.ToLogical(fragment.Size).Block - edges.BlockEnd;
+            }
+        }
         else if (content.Baseline != FormControlBaseline.None)
         {
             // The baseline of the line of the inner editor of a text control, else the one of a line of its primary font

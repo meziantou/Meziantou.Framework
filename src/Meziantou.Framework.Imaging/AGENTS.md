@@ -87,11 +87,13 @@ reference white, values outside [0, 1] are meaningful (highlights, negative out-
   rejects them. Integer to `RgbaFloat` and back must stay exact for every sample.
 - Conversions validate every frame and the poster before allocating (`Image.PrepareConversion`), which also gives the
   tone mapping its peak (`PixelConversionPlan.RequiresPeak`, the largest finite color of all the frames).
-- Codecs never see floating-point pixels, except OpenEXR: `ImageWriterCore` rejects them at creation unless
-  `ImageEncoder.FloatingPointConversion` is set, and reduces each frame to an `Rgba64` copy charged to the writer
-  (`EncodedPixelFormat`); `ImageCollectionWriterCore` does the same for collection entries. OpenEXR opts out there
-  (`ImageOutputCapabilities.StoresFloatingPointSamples`): its session receives `RgbaFloat` and `RgbaHalf` frames, and
-  its decoder produces them (the only one).
+- Codecs only see floating-point pixels when their encoder says it stores them (`ImageEncoder.StoresFloatingPointSamples`:
+  OpenEXR always, TIFF with `TiffPixelLayout.Auto` and no JPEG compression): otherwise `ImageWriterCore` rejects them at
+  creation unless `ImageEncoder.FloatingPointConversion` is set, and reduces each frame to an `Rgba64` copy charged to the
+  writer (`EncodedPixelFormat`); `ImageCollectionWriterCore` does the same for collection entries. The OpenEXR and TIFF
+  decoders are the ones that produce them. TIFF floating-point pages are linear light unless an ICC profile describes
+  them: `MetadataWritePlan` gives them the linear label (`FormatCapabilities.TiffFloatingPoint`) and rejects sRGB-labeled
+  floats without profile, which would be relabeled.
 - Drawing (`FloatDrawingKernels`): paints keep 16-bit samples (`DrawingKernels.GetPaintMax`), are composited in double
   precision over the stored values without clipping the colors, and color matrices are applied in place. Layers,
   patterns, groups and filter surfaces stay `Rgba64`, so what goes through them must be in [0, 1].
@@ -490,6 +492,13 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   (`OnDeepRow`), so a decoded block holds samples of `TiffPage.DecodedBitsPerSample` bits, in the byte order of the
   file like the other 16-bit samples. The layouts of `TiffEncoder` store a page
   exactly or reject it before writing anything of it (`TiffDocumentWriter.PreparePage`): no setting makes them lossy.
+  Signed samples become unsigned in the block reader (`TiffBlockReader.ToUnsigned` flips the sign bit: the documented
+  offset of half of the range), so nothing after it knows about them. Floating-point samples stay in the byte order of
+  the file through the block reader (the floating-point predictor, `UndoFloatingPointDifferencing`, rebuilds them so)
+  and become `RgbaHalf` or `RgbaFloat` in `TiffRowExpander`. The predictor of TIFF Technical Note 3 orders the bytes most
+  significant first whatever the byte order of the file; on a little-endian computer, `tiffcp -B` of libtiff 4.7.0
+  writes big-endian pages that libtiff and GDAL read back with the bytes of each sample swapped, so a big-endian oracle
+  file comes from GDAL, which reads and writes them consistently.
 - **OpenEXR** (`Internals/Codecs/Exr`). The structure parser reads the header (validated whole by `ExrHeader.Complete`,
   so that `Identify` reports every rejection), the offset table, then the chunks in the order of their offsets: the input
   is read forward only, and a chunk must start at its offset, carry its own coordinates and end before the next one.
@@ -1046,12 +1055,17 @@ dotnet publish tests/Meziantou.Framework.Imaging.AotSmoke -c Release -f net11.0 
   are not committed and are pinned by a hash: run the command without `--write` to check that a table is what its
   sources give, after downloading them from the addresses the command names.
 - **TIFF has no corpus.** The decoder tests assemble files (`TiffFileBuilder`) whose compressed strips never come from
-  the library: the reference encoders of the tests (`TiffReferenceCodecs`), the examples of the specifications, fax
-  strips written by libtiff and kept as literals, and JPEG datastreams of `JpegTestImage` and `JpegLosslessTestImage`
+  the library: the reference encoders of the tests (`TiffReferenceCodecs`, the floating-point predictor included), the
+  examples of the specifications, fax strips written by libtiff and kept as literals, whole signed and floating-point
+  files written by GDAL 3.13.0 and `tiffcp` of libtiff 4.7.0 (the `ghcr.io/osgeo/gdal:ubuntu-small-3.13.0` image with
+  `libtiff-tools`) and kept as literals, and JPEG datastreams of `JpegTestImage` and `JpegLosslessTestImage`
   (libtiff writes pages of 12-bit JPEG samples, `tiffcp -c jpeg` on a 12-bit page, which make a local oracle: it loses
   the last sample of a row of odd width, so use even widths). The encoder tests compare
   small strips with the bytes the specifications give, and the interop tests decode every compression and layout with
   FFmpeg or Apple ImageIO (the JPEG pages, which FFmpeg does not read), and the pages FFmpeg writes with the library.
+  FFmpeg 9.0.2 reads only the floating-point RGB and RGBA pages of little-endian classic files (no gray, no big-endian
+  floats, no BigTIFF): every floating-point layout, byte order and offset size of the encoder was checked with GDAL and
+  libtiff in the same Docker image when it was written; check them again there after changing the writer.
 - **CMYK JPEG fixtures.** A four-component JPEG file is an `unsupported` fixture (identified, rejected by a load
   without conversion) that declares one conversion and its pixels (`inkConversion`). The reference has two independent
   stages: the samples decoded by `djpeg` from files the generator regroups scan by scan, then the decimal reference of

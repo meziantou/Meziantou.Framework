@@ -7,7 +7,10 @@ public enum TiffPixelLayout
     /// The layout follows the pixel format, losslessly: gray pixel formats are 8- or 16-bit <c>BlackIsZero</c> grayscale,
     /// <see cref="PixelFormat.Rgb24"/> is 8-bit RGB and the pixel formats with alpha are RGB with an unassociated alpha
     /// sample. This is the default: no sample and no alpha value is ever discarded. With
-    /// <see cref="TiffCompression.Jpeg"/> the color pixel formats are stored as YCbCr.
+    /// <see cref="TiffCompression.Jpeg"/> the color pixel formats are stored as YCbCr. <see cref="PixelFormat.RgbaFloat"/>
+    /// and <see cref="PixelFormat.RgbaHalf"/> are 32-bit floating-point samples (except with JPEG compression), gray
+    /// when the three colors of every pixel are the same number and no ICC profile is written, and without alpha when
+    /// every pixel is opaque.
     /// </summary>
     Auto = 0,
 

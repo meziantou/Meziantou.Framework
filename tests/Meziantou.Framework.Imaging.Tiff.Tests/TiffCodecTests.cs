@@ -13,9 +13,9 @@ namespace Meziantou.Framework.Imaging.Tests;
 /// <summary>
 /// TIFF and BigTIFF decoding and encoding through the public APIs, on files assembled byte by byte by
 /// <see cref="TiffFileBuilder"/> with literal expected pixels: both byte orders, both offset sizes, strips and tiles,
-/// samples of 1 to 16 bits, the supported photometric interpretations and compressions, the horizontal predictor,
-/// metadata, the rejections of the unsupported variants, and the malformed structures that must not turn into unbounded
-/// work.
+/// samples of 1 to 16 bits, signed and floating-point samples, the supported photometric interpretations and
+/// compressions, the predictors, metadata, the rejections of the unsupported variants, and the malformed structures that
+/// must not turn into unbounded work.
 /// </summary>
 /// <remarks>
 /// The compressed strips never come from the encoders of the library: LZW and PackBits data is written by the reference
@@ -23,7 +23,8 @@ namespace Meziantou.Framework.Imaging.Tests;
 /// spelled out code by code from the tables of ITU-T T.4 and T.6 or was written by libtiff, and JPEG datastreams come
 /// from the test-side JPEG encoders (<see cref="JpegTestImage"/>, and <see cref="JpegLosslessTestImage"/> for the
 /// lossless ones), whose pixels are computed from the specification. The
-/// colors of CMYK pages are checked against the decimal ICC reference of the test harness.
+/// colors of CMYK pages are checked against the decimal ICC reference of the test harness. Signed and floating-point
+/// pages also come from GDAL and libtiff, kept as literal files.
 /// </remarks>
 public sealed class TiffCodecTests
 {
@@ -508,6 +509,335 @@ public sealed class TiffCodecTests
             Samples = [1, 2, 3, 4],
         }).Build()));
         Assert.Equal("ExtraSamples: alpha with this sample layout", alpha.Feature);
+    }
+
+    /// <summary>
+    /// The values of the floating-point files written by GDAL and libtiff (<see cref="FloatingPointReferenceFileCases"/>):
+    /// signed zeros, values outside [0, 1], the largest single, subnormal numbers, infinities and a not-a-number value.
+    /// Each plane of a file is a rotation of the list (<see cref="Rotate"/>).
+    /// </summary>
+    private static readonly float[] ReferenceSingles =
+    [
+        0f, -0f, 1f, 0.5f, -0.25f,
+        float.MaxValue, 1e-40f, 1.17549435e-38f, 65504f, -1234.5678f,
+        float.PositiveInfinity, float.NegativeInfinity, BitConverter.UInt32BitsToSingle(0x7FC0_0000), 0.1f, MathF.ScaleB(1, -20),
+    ];
+
+    /// <summary>The values of the half-precision files, all of them halves: the largest one and subnormal ones too.</summary>
+    private static readonly float[] ReferenceHalves =
+    [
+        0f, -0f, 1f, 0.5f, -0.25f,
+        65504f, MathF.ScaleB(1, -24), MathF.ScaleB(1, -14), 1000f, -3.140625f,
+        float.PositiveInfinity, float.NegativeInfinity, 0.0999755859375f, 0.333251953125f, 6.103515625E-05f,
+    ];
+
+    private static readonly float[] ReferenceAlphas = [1, 0, 0.5f, 0.25f, 2, 1, 1, -1, 0.75f, 1, 0, 1, 1, 0.125f, 1];
+
+    private static readonly float[] ReferenceGrayAlphas = [1, 0, 0.5f, 0.25f, 1, 1, 1, 0.5f, 0.75f, 1, 0, 1, 1, 0.125f, 1];
+
+    private static readonly float[] ReferenceHalfAlphas = [1, 0, 0.5f, 0.25f, 1, 1, 1, 0.75f, 0.75f, 1, 0, 1, 1, 0.125f, 1];
+
+    /// <summary>
+    /// 24-bit floating-point numbers (1 sign bit, 7 exponent bits with a bias of 63, 16 fraction bits) and their values:
+    /// zeros, the largest number, the smallest and the largest subnormal numbers, the smallest normal number, infinities and
+    /// a not-a-number value. No writer at hand makes such samples: GDAL 3.13.0 reads these values from a page assembled with
+    /// these numbers, in both byte orders, and from its copy compressed by <c>tiffcp -c zip:3</c> of libtiff 4.7.0.
+    /// </summary>
+    private static readonly (uint Bits, float Value)[] Float24Values =
+    [
+        (0x00_0000, 0f), (0x80_0000, -0f), (0x3F_0000, 1f), (0x3E_0000, 0.5f), (0xBD_0000, -0.25f),
+        (0x7E_FFFF, MathF.ScaleB(0x1_FFFF, 47)), (0x00_0001, MathF.ScaleB(1, -78)), (0x00_FFFF, MathF.ScaleB(0xFFFF, -78)), (0x01_0000, MathF.ScaleB(1, -62)), (0x3F_8000, 1.5f),
+        (0x7F_0000, float.PositiveInfinity), (0xFF_0000, float.NegativeInfinity), (0x7F_8000, BitConverter.UInt32BitsToSingle(0x7FC0_0000)), (0x41_ABCD, 109517f / 16384), (0xC2_AAAA, -109226f / 8192),
+    ];
+
+    /// <summary>
+    /// 5x3 floating-point pages written by GDAL 3.13.0 (its Python bindings, <c>PROFILE=BASELINE</c>, from planes of
+    /// <see cref="ReferenceSingles"/> and <see cref="ReferenceHalves"/>; <c>NBITS=16</c> for half-precision samples) and by
+    /// <c>tiffcp</c> of libtiff 4.7.0 from uncompressed GDAL pages: the floating-point predictor with Deflate and LZW, both
+    /// byte orders, strips and tiles, samples of 16, 24 and 32 bits, gray, gray and alpha, RGB and RGBA. GDAL reads each
+    /// file back to the values it was given. On a little-endian computer, <c>tiffcp -B</c> writes big-endian pages whose
+    /// predicted samples libtiff and GDAL read back with their bytes swapped, so the big-endian page comes from GDAL.
+    /// </summary>
+    private static readonly (string Name, ImageColorModel Model, int Bits, float[][] Planes, string File)[] FloatingPointReferenceFileCases =
+    [
+        ("GDAL, gray, Deflate, predictor", ImageColorModel.Grayscale, 32, [ReferenceSingles], "49492A00080000000C0000010300010000000500000001010300010000000300000002010300010000002000000003010300010000000800000006010300010000000100000011010400020000009E000000150103000100000001000000160103000100000002000000170103000200000029001F001C01030001000000010000003D010300010000000300000053010300010000000300000000000000A6000000CF000000789C6368D8CF50EFC4D000040C3050DFC8E05EBBBBA9FEBF74AAF8AB07456B0FDB31680300EBBA0D2C789C011400EBFF7F8080BEF84B00400CB4800000CC34000000CD3356280701"),
+        ("GDAL, RGB, LZW, predictor, big-endian, tiles", ImageColorModel.Rgb, 32, [Rotate(ReferenceSingles, 0), Rotate(ReferenceSingles, 5), Rotate(ReferenceSingles, 10)], "4D4D002A00000008000D0100000300000001000500000101000300000001000300000102000300000003000000AA010300030000000100050000010600030000000100020000011500030000000100030000011C00030000000100010000013D000300000001000300000142000300000001001000000143000300000001001000000144000400000001000000B60145000400000001000000F80153000300000003000000B00000000000200020002000030003000380000FE7F4020102BF4000000BE239FDF07D2132C790A8A4562D178C455007F85209004082031FE805A06E0A668CCA655167FC282F0A7500198E0000D0E50A574AE752996801870A1F0019B0A198AE14D59DD26291C3FA060A008411E167D870F2234AA54710082854108123064996866A7D62773D9780262009A3326E349CD9A933D9F802831466D186748B94EE06008353D7F0C0043CFF12215F6571B8E8024080914924C80B262A5768984CA69369C65B2F0ABAD068600A2D1F3DA7D46A755ABD66B75DAFD86C765B3DA6D76DB7DC6E775BBDE6F77DBFE070785C3E27178DC7E472795CBE67379DCFE8747A5D3EA757ADD7EC76793010"),
+        ("GDAL, half RGBA, Deflate, predictor", ImageColorModel.Rgba, 16, [Rotate(ReferenceHalves, 0), Rotate(ReferenceHalves, 4), Rotate(ReferenceHalves, 8), ReferenceHalfAlphas], "49492A00080000000D000001030001000000050000000101030001000000030000000201030004000000AA0000000301030001000000080000000601030001000000020000001101040001000000BA0000001501030001000000040000001601030001000000030000001701040001000000760000001C01030001000000010000003D01030001000000030000005201030001000000020000005301030004000000B20000000000000010001000100010000300030003000300789C2DCCB109C3301040D18F1028456649E12A85B24176B82E3318A2E21A4DE3058C712970A94C91D64DCA23B60CFEF5E3633E6A27650E72B73A5932BD3CF185D707D61E8691A3B7DE629E03DEEA5F92218BBA47FE16C7CAC640D3F41B2422EA2D769208B2FCEA94AF96290D9DCBA647C70E3DDC2F49"),
+        ("GDAL, RGBA, uncompressed", ImageColorModel.Rgba, 32, [Rotate(ReferenceSingles, 0), Rotate(ReferenceSingles, 5), Rotate(ReferenceSingles, 10), ReferenceAlphas], "49492A00080000000C0000010300010000000500000001010300010000000300000002010300040000009E0000000301030001000000010000000601030001000000020000001101040001000000AE0000001501030001000000040000001601030001000000030000001701040001000000F00000001C01030001000000010000005201030001000000020000005301030004000000A60000000000000020002000200020000300030003000300000000000000807FFFFF7F7F0000803F00000080000080FFC2160100000000000000803F0000C07F000080000000003F0000003FCDCCCC3D00E07F470000803E000080BE000080352B529AC400000040FFFF7F7F000000000000807F0000803FC216010000000080000080FF0000803F000080000000803F0000C07F000080BF00E07F470000003FCDCCCC3D0000403F2B529AC4000080BE000080350000803F0000807FFFFF7F7F0000000000000000000080FFC2160100000000800000803F0000C07F000080000000803F0000803FCDCCCC3D00E07F470000003F0000003E000080352B529AC4000080BE0000803F"),
+        ("libtiff, gray and alpha, LZW, predictor, two strips", ImageColorModel.GrayscaleAlpha, 32, [Rotate(ReferenceSingles, 3), ReferenceGrayAlphas], "49492A0074000000801FC7EBE60BE07ECB7FA0002402083100B40020100008A20198001A452351466800671B000FC7F143F801820040C448313893FC80822042636FF0005C00EA904D186008088000000471F9F400BB7FA00028160C2436007320000808A3800072002BA051B810AC00D58DC0400E000001030001000000050000000101030001000000030000000201030002000000200020000301030001000000050000000601030001000000010000001101040002000000220100001201030001000000010000001501030001000000020000001601030001000000020000001701030002000000450027001C01030001000000010000003D010300010000000300000052010300010000000200000053010300020000000300030000000000080000004D000000"),
+        ("libtiff, RGBA, Deflate, predictor, tiles", ImageColorModel.Rgba, 32, [Rotate(ReferenceSingles, 0), Rotate(ReferenceSingles, 5), Rotate(ReferenceSingles, 10), ReferenceAlphas], "49492A00C0000000789CEDD1211282501485E15FB3DDE0128C1A196128ECC405D8997B60412633E818816827BB02DA336A7C580CDEAF9FF0CFC12C95AA5B2B529A22D8542EF32EB9124B26A8A5CCD02A48978DA423F102B0069ED08FB03F01E799FB3B708001D86D8147F4DAB0B492A0950A1A953691E4DD2D7E2FD58029236875DDE8921D25C5EE3FEA19E939B1FFB61E18D8B29B510F66A04AA968690AC254DAA24BF2E87E1950A3CCC4FBFEF8FE1FDFEF9C73CE39E79C737FE3051BBF55010F0000010300010000000500000001010300010000000300000002010300040000007A0100000301030001000000080000000601030001000000020000001201030001000000010000001501030001000000040000001C01030001000000010000003D01030001000000030000004201030001000000100000004301030001000000100000004401040001000000080000004501040001000000B80000005201030001000000020000005301030004000000820100000000000020002000200020000300030003000300"),
+        ("libtiff, half RGBA, LZW, predictor", ImageColorModel.Rgba, 16, [Rotate(ReferenceHalves, 0), Rotate(ReferenceHalves, 4), Rotate(ReferenceHalves, 8), ReferenceHalfAlphas], "49492A007600000080001F8041E200645F622F00E5F1C3F19EBA7E1F1F88004130000462000CCD000001DE788EAAD711D921ED002E1E2161517873F8BF120017D8E80010F50AE66200A3C007F80156008E474F13D001F0003C0020008FC1E41E8D0B63BD21E85063F10A008CD12371D8FCF6453A80800E0000010300010000000500000001010300010000000300000002010300040000002401000003010300010000000500000006010300010000000200000011010400010000000800000012010300010000000100000015010300010000000400000016010300010000000300000017010400010000006E0000001C01030001000000010000003D010300010000000300000052010300010000000200000053010300040000002C0100000000000010001000100010000300030003000300"),
+        ("libtiff, 24-bit gray, Deflate, predictor", ImageColorModel.Grayscale, 24, [[.. Float24Values.Select(static item => item.Value)]], "49492A0038000000789C6368D8FFBFDE990106EA9A1818ED0E30FE676CA867FAC7C850DFD070A8D18EA141FB7F1803C3D9BB00287D0EAB000D0000010300010000000500000001010300010000000300000002010300010000001800000003010300010000000800000006010300010000000100000011010400010000000800000012010300010000000100000015010300010000000100000016010300010000000300000017010400010000002F0000001C01030001000000010000003D010300010000000300000053010300010000000300000000000000"),
+    ];
+
+    public static TheoryData<string> FloatingPointReferenceFiles => [.. FloatingPointReferenceFileCases.Select(static item => item.Name)];
+
+    [Theory]
+    [MemberData(nameof(FloatingPointReferenceFiles))]
+    public void FloatingPointFilesWrittenByGdalAndLibTiffDecodeToTheirValues(string name)
+    {
+        var (_, model, bits, planes, file) = FloatingPointReferenceFileCases.Single(item => item.Name == name);
+        var data = Convert.FromHexString(file);
+        var format = bits == 16 ? PixelFormat.RgbaHalf : PixelFormat.RgbaFloat;
+
+        // The layout is known without decoding a sample
+        var info = Image.Identify(data);
+        Assert.Equal((format, model, bits, ColorTransferFunction.Linear), (info.PixelFormat, info.ColorModel, info.BitsPerComponent, info.Metadata.TransferFunction));
+
+        using var image = Image.Load(data);
+        Assert.Equal(format, image.PixelFormat);
+        Assert.Equal(ColorTransferFunction.Linear, image.Metadata.TransferFunction);
+        Assert.Equal(GetExpectedComponentBits(planes, format), GetComponentBits(image));
+    }
+
+    [Fact]
+    public void SignedFilesWrittenByGdalDecodeToTheSamplesLargerByHalfOfTheirRange()
+    {
+        // GDAL 3.13.0 (PROFILE=BASELINE): 16-bit gray with Deflate and horizontal differencing, 8-bit RGB with PackBits
+        short[] words = [-32768, -32767, -1, 0, 1, 32767, 1234, -1234, 255, -256, 100, -100, 20000, -20000, 7];
+        var gray = Convert.FromHexString("49492A00080000000C0000010300010000000500000001010300010000000300000002010300010000001000000003010300010000000800000006010300010000000100000011010400010000009E0000001501030001000000010000001601030001000000030000001701040001000000270000001C01030001000000010000003D010300010000000200000053010300010000000200000000000000789C63686064F857CFC8C0C8F0BFFE724BCCB78BAC8CFF52182CFEB7F81D4856F70300AAE10C02");
+        var info = Image.Identify(gray);
+        Assert.Equal((PixelFormat.Gray16, ImageColorModel.Grayscale, 16, ColorTransferFunction.Srgb), (info.PixelFormat, info.ColorModel, info.BitsPerComponent, info.Metadata.TransferFunction));
+        Assert.Equal([.. words.Select(static value => new Gray16((ushort)(value + 32768)))], Decode<Gray16>(gray));
+
+        sbyte[] bytes = [-128, -127, -1, 0, 1, 127, 12, -12, 64, -64, 100, -100, 50, -50, 7];
+        var rgb = Convert.FromHexString("49492A00080000000B0000010300010000000500000001010300010000000300000002010300030000009200000003010300010000000580000006010300010000000200000011010400010000009E0000001501030001000000030000001601030001000000030000001701040001000000300000001C0103000100000001000000530103000300000098000000000000000800080008000200020002000E80647F819C0CFF32F400CE400107C00E7F80640C819CF4FF324000CEC001070E647F809C0C8132F4FFCE400007C001");
+        var rgbInfo = Image.Identify(rgb);
+        Assert.Equal((PixelFormat.Rgb24, ImageColorModel.Rgb, 8), (rgbInfo.PixelFormat, rgbInfo.ColorModel, rgbInfo.BitsPerComponent));
+        var expected = new Rgb24[15];
+        for (var i = 0; i < expected.Length; i++)
+        {
+            expected[i] = new Rgb24((byte)(bytes[i] + 128), (byte)(bytes[(i + 10) % 15] + 128), (byte)(bytes[(i + 5) % 15] + 128));
+        }
+
+        Assert.Equal(expected, Decode<Rgb24>(rgb));
+    }
+
+    public static TheoryData<int, int, bool, int, int> FloatingPointLayouts()
+    {
+        var data = new TheoryData<int, int, bool, int, int>();
+        foreach (var bits in new[] { 16, 24, 32 })
+        {
+            foreach (var samplesPerPixel in new[] { 1, 2, 3, 4 })
+            {
+                foreach (var bigEndian in new[] { false, true })
+                {
+                    foreach (var (predictor, compression) in new[] { (1, 1), (3, 8), (3, 5), (1, 32773) })
+                    {
+                        data.Add(bits, samplesPerPixel, bigEndian, predictor, compression);
+                    }
+                }
+            }
+        }
+
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(FloatingPointLayouts))]
+    public void FloatingPointSamplesOfEveryLayoutDecodeExactly(int bits, int samplesPerPixel, bool bigEndian, int predictor, int compression)
+    {
+        // The values of the files of the other tests, a different one in each sample; tiles in half of the cases
+        const int Width = 5;
+        const int Height = 3;
+        uint[] values = bits switch
+        {
+            16 => [.. ReferenceHalves.Select(static value => (uint)BitConverter.HalfToUInt16Bits((Half)value))],
+            24 => [.. Float24Values.Select(static item => item.Bits)],
+            _ => ReferenceSingles.Select(BitConverter.SingleToUInt32Bits).ToArray(),
+        };
+
+        var bytesPerSample = bits / 8;
+        var samples = new byte[Width * Height * samplesPerPixel * bytesPerSample];
+        var expected = new uint[Width * Height * 4];
+        for (var i = 0; i < Width * Height; i++)
+        {
+            for (var sample = 0; sample < samplesPerPixel; sample++)
+            {
+                var value = values[(i + (4 * sample)) % values.Length];
+                for (var b = 0; b < bytesPerSample; b++)
+                {
+                    var shift = 8 * (bigEndian ? bytesPerSample - 1 - b : b);
+                    samples[(((i * samplesPerPixel) + sample) * bytesPerSample) + b] = (byte)(value >> shift);
+                }
+            }
+
+            uint Expected(int sample) => bits == 24 ? BitConverter.SingleToUInt32Bits(Float24Values[(i + (4 * sample)) % 15].Value) : values[(i + (4 * sample)) % values.Length];
+            var one = bits == 16 ? BitConverter.HalfToUInt16Bits(Half.One) : BitConverter.SingleToUInt32Bits(1f);
+            uint[] pixel = samplesPerPixel switch
+            {
+                1 => [Expected(0), Expected(0), Expected(0), one],
+                2 => [Expected(0), Expected(0), Expected(0), Expected(1)],
+                3 => [Expected(0), Expected(1), Expected(2), one],
+                _ => [Expected(0), Expected(1), Expected(2), Expected(3)],
+            };
+            pixel.CopyTo(expected, i * 4);
+        }
+
+        var tiled = bigEndian == (samplesPerPixel % 2 == 0);
+        var data = new TiffFileBuilder { BigEndian = bigEndian }.AddPage(new TiffPageSpec
+        {
+            Width = Width,
+            Height = Height,
+            BitsPerSample = bits,
+            SamplesPerPixel = samplesPerPixel,
+            Photometric = samplesPerPixel <= 2 ? 1 : 2,
+            ExtraSamples = samplesPerPixel is 2 or 4 ? [2] : null,
+            SampleFormat = 3,
+            Predictor = predictor,
+            Compression = compression,
+            RowsPerStrip = 2,
+            TileWidth = tiled ? 16 : null,
+            TileLength = tiled ? 16 : null,
+            Samples = samples,
+        }).Build();
+
+        using var image = Image.Load(data);
+        Assert.Equal(bits == 16 ? PixelFormat.RgbaHalf : PixelFormat.RgbaFloat, image.PixelFormat);
+        Assert.Equal(expected, GetComponentBits(image));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void A24BitFloatingPointNumberIsTheSingleOfTheSameValue(bool bigEndian)
+    {
+        foreach (var (bits, value) in Float24Values)
+        {
+            byte[] sample = bigEndian ? [(byte)(bits >> 16), (byte)(bits >> 8), (byte)bits] : [(byte)bits, (byte)(bits >> 8), (byte)(bits >> 16)];
+            var data = new TiffFileBuilder { BigEndian = bigEndian }.AddPage(new TiffPageSpec { Width = 1, Height = 1, BitsPerSample = 24, SampleFormat = 3, Samples = sample }).Build();
+            using var image = Image.Load<RgbaFloat>(data);
+            var pixel = image.Frames[0][0, 0];
+            Assert.Equal(BitConverter.SingleToUInt32Bits(value), BitConverter.SingleToUInt32Bits(pixel.R));
+            Assert.Equal((pixel.R, pixel.R, 1f), (pixel.G, pixel.B, pixel.A));
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SignedSamplesAreTheUnsignedSamplesLargerByHalfOfTheirRange(bool bigEndian)
+    {
+        static byte[] Words(bool bigEndian, params short[] values) => [.. values.SelectMany(value => bigEndian ? new[] { (byte)(value >> 8), (byte)value } : [(byte)value, (byte)(value >> 8)])];
+
+        // The smallest value is 0, zero is the middle of the range and the largest value the largest unsigned one
+        var gray = new TiffFileBuilder { BigEndian = bigEndian }.AddPage(new TiffPageSpec { Width = 5, Height = 1, SampleFormat = 2, Samples = [0x80, 0xFF, 0x00, 0x01, 0x7F] }).Build();
+        Assert.Equal(Grays(0, 127, 128, 129, 255), Decode<Gray8>(gray));
+
+        // WhiteIsZero samples are inverted once they are unsigned
+        var inverted = new TiffFileBuilder { BigEndian = bigEndian }.AddPage(new TiffPageSpec { Width = 5, Height = 1, Photometric = 0, SampleFormat = 2, Samples = [0x80, 0xFF, 0x00, 0x01, 0x7F] }).Build();
+        Assert.Equal(Grays(255, 128, 127, 126, 0), Decode<Gray8>(inverted));
+
+        // 16-bit samples in the byte order of the file, after horizontal differencing (modulo 2^16, like unsigned samples), the alpha sample too
+        var rgba = new TiffFileBuilder { BigEndian = bigEndian }.AddPage(new TiffPageSpec
+        {
+            Width = 2,
+            Height = 2,
+            BitsPerSample = 16,
+            SamplesPerPixel = 4,
+            Photometric = 2,
+            ExtraSamples = [2],
+            SampleFormat = 2,
+            Predictor = 2,
+            Compression = 5,
+            Samples = Words(bigEndian, -32768, -1, 0, 32767, 32767, 0, -1, -32768, 1234, -1234, 100, 0, -100, 20000, -20000, 32767),
+        }).Build();
+        Assert.Equal(
+            [new Rgba64(0, 32767, 32768, 65535), new Rgba64(65535, 32768, 32767, 0), new Rgba64(34002, 31534, 32868, 32768), new Rgba64(32668, 52768, 12768, 65535)],
+            Decode<Rgba64>(rgba));
+
+        var words = new TiffFileBuilder { BigEndian = bigEndian }.AddPage(new TiffPageSpec { Width = 3, Height = 1, BitsPerSample = 16, SampleFormat = 2, Compression = 8, Samples = Words(bigEndian, -32768, 0, 32767) }).Build();
+        Assert.Equal([new Gray16(0), new Gray16(32768), new Gray16(65535)], Decode<Gray16>(words));
+    }
+
+    [Theory]
+    [InlineData(3, 64, 1, 1, 1, "BitsPerSample: 64")]
+    [InlineData(3, 8, 1, 1, 1, "BitsPerSample: 8")]
+    [InlineData(2, 32, 1, 1, 1, "BitsPerSample: 32")]
+    [InlineData(2, 4, 1, 1, 1, "BitsPerSample: 4")]
+    [InlineData(3, 32, 0, 1, 1, "SampleFormat: 3 with PhotometricInterpretation 0")]
+    [InlineData(2, 8, 3, 1, 1, "SampleFormat: 2 with PhotometricInterpretation 3")]
+    [InlineData(3, 16, 6, 1, 1, "SampleFormat: 3 with PhotometricInterpretation 6")]
+    [InlineData(5, 8, 1, 1, 1, "SampleFormat: 5")]
+    [InlineData(1, 8, 1, 3, 1, "Predictor: 3 with integer samples")]
+    [InlineData(2, 16, 1, 3, 8, "Predictor: 3 with integer samples")]
+    [InlineData(3, 32, 1, 2, 8, "Predictor: 2 with this sample layout or compression")]
+    [InlineData(3, 16, 1, 1, 7, "Compression: JPEG with SampleFormat 3")]
+    [InlineData(2, 16, 1, 1, 34712, "Compression: JPEG 2000 with SampleFormat 2")]
+    public void UnsupportedSignedAndFloatingPointLayoutsAreRejected(int sampleFormat, int bits, int photometric, int predictor, int compression, string feature)
+    {
+        var samplesPerPixel = photometric == 6 ? 3 : 1;
+        var data = new TiffFileBuilder().AddPage(new TiffPageSpec
+        {
+            Width = 2,
+            Height = 1,
+            BitsPerSample = bits,
+            SamplesPerPixel = samplesPerPixel,
+            Photometric = photometric,
+            SampleFormat = sampleFormat,
+            Predictor = predictor == 1 ? null : predictor,
+            Compression = compression,
+            EncodedBlocks = compression == 1 ? null : [new byte[16]],
+            Samples = new byte[2 * samplesPerPixel * bits / 8],
+        }).Build();
+
+        // Identification rejects them too: nothing depends on the pixels
+        Assert.Equal(feature, Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(data)).Feature);
+        Assert.Equal(feature, Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(data)).Feature);
+    }
+
+    [Fact]
+    public void EverySampleMustHaveTheSameFormat()
+    {
+        var page = new TiffPageSpec { Width = 1, Height = 1, BitsPerSample = 32, SamplesPerPixel = 2, ExtraSamples = [2], Samples = new byte[8] };
+        page.ExtraFields.Add(TiffFieldSpec.Shorts(339, [3, 1]));
+        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(new TiffFileBuilder().AddPage(page).Build()));
+        Assert.Equal("SampleFormat: mixed formats", exception.Feature);
+
+        // An undefined format is unsigned integer data, and one value describes every sample
+        var undefined = new TiffPageSpec { Width = 1, Height = 1, SamplesPerPixel = 3, Photometric = 2, Samples = [1, 2, 3] };
+        undefined.ExtraFields.Add(TiffFieldSpec.Shorts(339, [4, 1, 4]));
+        Assert.Equal([new Rgb24(1, 2, 3)], Decode<Rgb24>(new TiffFileBuilder().AddPage(undefined).Build()));
+        var single = new TiffPageSpec { Width = 1, Height = 1, BitsPerSample = 32, SamplesPerPixel = 3, Photometric = 2, Samples = [0, 0, 0x80, 0x3F, 0, 0, 0, 0x40, 0, 0, 0x80, 0x40] };
+        single.ExtraFields.Add(TiffFieldSpec.Shorts(339, [3]));
+        Assert.Equal([new RgbaFloat(1, 2, 4)], Decode<RgbaFloat>(new TiffFileBuilder().AddPage(single).Build()));
+    }
+
+    [Fact]
+    public void FloatingPointPagesAreConvertedWithThePolicyOfTheRequest()
+    {
+        // Little-endian singles: (0.25, 0.5, 1) and (2, 0, -0)
+        var data = new TiffFileBuilder().AddPage(new TiffPageSpec
+        {
+            Width = 2,
+            Height = 1,
+            BitsPerSample = 32,
+            SamplesPerPixel = 3,
+            Photometric = 2,
+            SampleFormat = 3,
+            Samples = [0, 0, 0x80, 0x3E, 0, 0, 0, 0x3F, 0, 0, 0x80, 0x3F, 0, 0, 0, 0x40, 0, 0, 0, 0, 0, 0, 0, 0x80],
+        }).Build();
+
+        // A sample above 1 is not clipped silently
+        Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load<Rgba64>(data));
+        var clipped = Decode<Rgba64>(data, new ImageDecodeOptions { Conversion = new PixelConversionOptions { OutOfRangeSamples = OutOfRangeSampleHandling.Clip } });
+        Assert.Equal([new Rgba64(16384, 32768, 65535, 65535), new Rgba64(65535, 0, 0, 65535)], clipped);
+
+        // Half-precision samples widen exactly
+        var halves = new TiffFileBuilder { BigEndian = true }.AddPage(new TiffPageSpec { Width = 2, Height = 1, BitsPerSample = 16, SampleFormat = 3, Samples = [0x3C, 0x00, 0xC0, 0x00] }).Build();
+        Assert.Equal([new RgbaFloat(1, 1, 1), new RgbaFloat(-2, -2, -2)], Decode<RgbaFloat>(halves));
+    }
+
+    [Fact]
+    public void AnIccProfileDescribesFloatingPointSamplesInsteadOfTheLinearLabel()
+    {
+        var page = new TiffPageSpec { Width = 1, Height = 1, BitsPerSample = 32, SamplesPerPixel = 3, Photometric = 2, SampleFormat = 3, Samples = new byte[12] };
+        page.ExtraFields.Add(TiffFieldSpec.Bytes(34675, 7, IccProfile.Srgb.Data.ToArray()));
+        var data = new TiffFileBuilder().AddPage(page).Build();
+        using var image = Image.Load(data);
+        Assert.Equal(PixelFormat.RgbaFloat, image.PixelFormat);
+        Assert.Equal(IccProfile.Srgb.Data.ToArray(), image.Metadata.IccProfile?.Data.ToArray());
+        Assert.Equal(ColorTransferFunction.Srgb, image.Metadata.TransferFunction);
     }
 
     [Fact]
@@ -2108,6 +2438,45 @@ public sealed class TiffCodecTests
         .AddPage(new TiffPageSpec { Width = 2, Height = 1, Samples = [7, 9] })
         .AddPage(new TiffPageSpec { Width = 3, Height = 2, SamplesPerPixel = 3, Photometric = 2, Samples = [.. Enumerable.Range(1, 18).Select(static value => (byte)value)] })
         .Build();
+
+    /// <summary>Rotates a list like <c>numpy.roll</c>: the value at <c>i</c> moves to <c>i + shift</c>.</summary>
+    private static float[] Rotate(float[] values, int shift) => [.. values.Select((_, i) => values[(((i - shift) % values.Length) + values.Length) % values.Length])];
+
+    /// <summary>
+    /// Gets the bits of the components of the pixels that the planes of a page stand for: a gray plane is repeated in the
+    /// three colors, and a page without alpha plane is opaque.
+    /// </summary>
+    private static uint[] GetExpectedComponentBits(float[][] planes, PixelFormat format)
+    {
+        var count = planes[0].Length;
+        var result = new uint[count * 4];
+        for (var i = 0; i < count; i++)
+        {
+            float[] pixel = planes.Length switch
+            {
+                1 => [planes[0][i], planes[0][i], planes[0][i], 1],
+                2 => [planes[0][i], planes[0][i], planes[0][i], planes[1][i]],
+                3 => [planes[0][i], planes[1][i], planes[2][i], 1],
+                _ => [planes[0][i], planes[1][i], planes[2][i], planes[3][i]],
+            };
+
+            for (var c = 0; c < 4; c++)
+            {
+                result[(i * 4) + c] = format == PixelFormat.RgbaHalf ? BitConverter.HalfToUInt16Bits((Half)pixel[c]) : BitConverter.SingleToUInt32Bits(pixel[c]);
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>Gets the bits of the components of an <see cref="RgbaHalf"/> or <see cref="RgbaFloat"/> image, so that signed zeros and not-a-number values are compared exactly.</summary>
+    private static uint[] GetComponentBits(Image image)
+    {
+        var bytes = GetBytes(image);
+        return image.PixelFormat == PixelFormat.RgbaHalf
+            ? [.. unsafe(MemoryMarshal.Cast<byte, ushort>(bytes.AsSpan())).ToArray().Select(static value => (uint)value)]
+            : unsafe(MemoryMarshal.Cast<byte, uint>(bytes.AsSpan())).ToArray();
+    }
 
     private static TPixel[] Decode<TPixel>(byte[] data, ImageDecodeOptions? options = null)
         where TPixel : unmanaged

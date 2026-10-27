@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 122 | 132 | 0 | 92% |
+| [Stable](#stable-tests) | 121 | 132 | 0 | 92% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **122** | **132** | **0** | **92%** |
+| **All** | **121** | **132** | **0** | **92%** |
 
 ## Stable tests
 
@@ -65,7 +65,7 @@
 | [`accept-ch/permissions-policy.sub.https.html`](https://wpt.fyi/results/client-hints/accept-ch/permissions-policy.sub.https.html) | Fail | 0 / 2 | TEST BUG | the `Permissions-Policy` header that the test expects is in `feature-policy.sub.https.html.headers`, which is not the headers file of the test: without it `Sec-CH-DPR` is sent to the origin of the document and no hint is delegated to the other origin (the test fails in every browser) |
 | [`clear-site-data/clear-site-data-all.https.html`](https://wpt.fyi/results/client-hints/clear-site-data/clear-site-data-all.https.html) | Pass | 1 / 1 |  |  |
 | [`clear-site-data/clear-site-data-cache.https.html`](https://wpt.fyi/results/client-hints/clear-site-data/clear-site-data-cache.https.html) | Pass | 1 / 1 |  |  |
-| [`clear-site-data/clear-site-data-client-hints-third-party.https.sub.html`](https://wpt.fyi/results/client-hints/clear-site-data/clear-site-data-client-hints-third-party.https.sub.html) | Pass | 1 / 1 |  |  |
+| [`clear-site-data/clear-site-data-client-hints-third-party.https.sub.html`](https://wpt.fyi/results/client-hints/clear-site-data/clear-site-data-client-hints-third-party.https.sub.html) | Timeout | 0 / 1 | TEST BUG | in step 6, the cross-site iframe navigates its top-level traversable to a cross-site URL without user activation, which the framebusting intervention blocks (as in Firefox and Safari), so the page that reports the client hints never loads; fails in every browser |
 | [`clear-site-data/clear-site-data-client-hints.https.html`](https://wpt.fyi/results/client-hints/clear-site-data/clear-site-data-client-hints.https.html) | Pass | 1 / 1 |  |  |
 | [`clear-site-data/clear-site-data-cookies.https.html`](https://wpt.fyi/results/client-hints/clear-site-data/clear-site-data-cookies.https.html) | Pass | 1 / 1 |  |  |
 | [`clear-site-data/clear-site-data-storage.https.html`](https://wpt.fyi/results/client-hints/clear-site-data/clear-site-data-storage.https.html) | Pass | 1 / 1 |  |  |

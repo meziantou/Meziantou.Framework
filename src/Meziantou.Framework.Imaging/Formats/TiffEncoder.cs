@@ -4,14 +4,21 @@ namespace Meziantou.Framework.Imaging.Formats;
 /// <remarks>
 /// <para>
 /// The container is the part of TIFF 6.0 that any reader accepts: little-endian by default, chunky samples, top-down
-/// strips, no predictor. <see cref="Compression"/> selects no compression, Deflate (the default), LZW, PackBits, the
+/// strips, no predictor for integer samples. <see cref="Compression"/> selects no compression, Deflate (the default), LZW, PackBits, the
 /// CCITT facsimile compressions or JPEG. Tiles and planar storage are never written.
 /// </para>
 /// <para>
 /// By default (<see cref="TiffPixelLayout.Auto"/>) the sample layout follows the pixel format of the image, losslessly:
 /// <c>Gray8</c>/<c>Gray16</c> become 8- or 16-bit <c>BlackIsZero</c> grayscale, <c>Rgb24</c> becomes 8-bit RGB, and the
 /// formats with alpha become RGBA with <c>ExtraSamples = 2</c> (unassociated, straight alpha). Nothing is quantized and
-/// alpha is never dropped. <see cref="PixelLayout"/> also selects a bilevel layout (one bit per pixel) and a palette
+/// alpha is never dropped. <c>RgbaFloat</c> and <c>RgbaHalf</c> become 32-bit floating-point samples
+/// (<c>SampleFormat = 3</c>), every value kept, in the fewest samples that hold the page: gray when the three colors of
+/// every pixel are the same number and no ICC profile is written, and without alpha when every alpha is exactly 1.
+/// Deflate and LZW strips of floating-point samples use the floating-point predictor of TIFF Technical Note 3 (<c>Predictor
+/// = 3</c>). A floating-point page without ICC profile is read as linear light, so its pixels must be labeled
+/// <see cref="Metadata.ColorTransferFunction.Linear"/> (the label of a new floating-point image) or described by a profile;
+/// otherwise <see cref="ImageEncoder.MetadataHandling"/> decides. The bilevel and palette layouts and JPEG compression
+/// do not store floating-point samples: <see cref="ImageEncoder.FloatingPointConversion"/> reduces them first. <see cref="PixelLayout"/> also selects a bilevel layout (one bit per pixel) and a palette
 /// layout, which store the image exactly or reject it: this encoder has no background color, no bit-depth-reduction
 /// switch and no color reduction. The only output that is not exact is the one of <see cref="TiffCompression.Jpeg"/>,
 /// which is lossy by nature and selected explicitly. CMYK data is never written.
@@ -140,4 +147,10 @@ public sealed class TiffEncoder : ImageEncoder
             field = value;
         }
     }
+
+    /// <summary>
+    /// Gets a value indicating whether the floating-point pixels are written as 32-bit floating-point samples: with
+    /// <see cref="TiffPixelLayout.Auto"/> and any compression but <see cref="TiffCompression.Jpeg"/>.
+    /// </summary>
+    internal override bool StoresFloatingPointSamples => PixelLayout == TiffPixelLayout.Auto && Compression != TiffCompression.Jpeg;
 }

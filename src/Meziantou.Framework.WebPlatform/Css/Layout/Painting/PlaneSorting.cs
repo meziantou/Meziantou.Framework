@@ -141,6 +141,78 @@ internal static class PlaneSorting
         return (normal, -((normal.Item1 * p.X) + (normal.Item2 * p.Y) + (normal.Item3 * p.Z)));
     }
 
+    /// <summary>
+    /// Returns the clip of a split polygon in the coordinates of its plane: the intersection of the half-planes of the edges created
+    /// by the splits, within <paramref name="rect"/> (the rectangle of the polygon of the plane) extended by <paramref name="margin"/>.
+    /// The edges of the rectangle do not clip (the content is in the rectangle): as in Blink, only the edges created by the splits
+    /// are not antialiased.
+    /// </summary>
+    public static List<PhysicalOffset> GetSplitClip(Polygon polygon, PhysicalRect rect, double margin)
+    {
+        var local = polygon.Local;
+        double centerX = 0, centerY = 0;
+        foreach (var point in local)
+        {
+            centerX += point.X;
+            centerY += point.Y;
+        }
+
+        centerX /= local.Count;
+        centerY /= local.Count;
+        var clip = new List<PhysicalOffset>
+        {
+            new(rect.Left - margin, rect.Top - margin),
+            new(rect.Right + margin, rect.Top - margin),
+            new(rect.Right + margin, rect.Bottom + margin),
+            new(rect.Left - margin, rect.Bottom + margin),
+        };
+
+        var tolerance = 1e-3 * Math.Max(1, Math.Max(rect.Width, rect.Height));
+        for (var i = 0; i < local.Count && clip.Count >= 3; i++)
+        {
+            var a = local[i];
+            var b = local[(i + 1) % local.Count];
+            if (IsOnSameSide(a, b))
+                continue;
+
+            // The half-plane of the edge that contains the polygon: (p - a) × (b - a) has the sign of its center
+            var sign = Math.Sign(Cross(a, b, centerX, centerY));
+            if (sign == 0)
+                continue;
+
+            var clipped = new List<PhysicalOffset>(clip.Count + 1);
+            for (var j = 0; j < clip.Count; j++)
+            {
+                var p = clip[j];
+                var q = clip[(j + 1) % clip.Count];
+                var dp = sign * Cross(a, b, p.X, p.Y);
+                var dq = sign * Cross(a, b, q.X, q.Y);
+                if (dp >= 0)
+                {
+                    clipped.Add(p);
+                }
+
+                if ((dp > 0 && dq < 0) || (dp < 0 && dq > 0))
+                {
+                    var t = dp / (dp - dq);
+                    clipped.Add(new PhysicalOffset(p.X + ((q.X - p.X) * t), p.Y + ((q.Y - p.Y) * t)));
+                }
+            }
+
+            clip = clipped;
+        }
+
+        return clip;
+
+        bool IsOnSameSide(PhysicalOffset a, PhysicalOffset b)
+            => (Math.Abs(a.X - rect.Left) <= tolerance && Math.Abs(b.X - rect.Left) <= tolerance)
+            || (Math.Abs(a.X - rect.Right) <= tolerance && Math.Abs(b.X - rect.Right) <= tolerance)
+            || (Math.Abs(a.Y - rect.Top) <= tolerance && Math.Abs(b.Y - rect.Top) <= tolerance)
+            || (Math.Abs(a.Y - rect.Bottom) <= tolerance && Math.Abs(b.Y - rect.Bottom) <= tolerance);
+
+        static double Cross(PhysicalOffset a, PhysicalOffset b, double x, double y) => ((x - a.X) * (b.Y - a.Y)) - ((y - a.Y) * (b.X - a.X));
+    }
+
     /// <summary>Splits a polygon along a plane (Sutherland-Hodgman); the new vertices are mapped to the coordinates of the plane of the polygon.</summary>
     private static void Split(Polygon polygon, (double X, double Y, double Z) normal, double d, Func<int, double, double, PhysicalOffset?> toLocal, List<Polygon> front, List<Polygon> back)
     {

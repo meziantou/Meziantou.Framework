@@ -2815,32 +2815,18 @@
     }
   },
   "fetch/metadata/generated/element-a.https.sub.html": {
-    "harness": "TIMEOUT",
     "total": 23,
     "failures": {
-      "sec-fetch-dest - attributes: download": "NOTRUN",
-      "sec-fetch-dest - no attributes": "NOTRUN",
-      "sec-fetch-mode - attributes: download": "TIMEOUT",
-      "sec-fetch-storage-access - Cross-site - no attributes": "NOTRUN",
-      "sec-fetch-storage-access - Same site - no attributes": "NOTRUN",
-      "sec-fetch-user - no attributes": "NOTRUN",
-      "sec-fetch-user - no attributes with user activation": "NOTRUN"
+      "sec-fetch-user - no attributes with user activation": "FAIL"
     }
   },
   "fetch/metadata/generated/element-a.sub.html": {
     "total": 18
   },
   "fetch/metadata/generated/element-area.https.sub.html": {
-    "harness": "TIMEOUT",
     "total": 23,
     "failures": {
-      "sec-fetch-dest - attributes: download": "NOTRUN",
-      "sec-fetch-dest - no attributes": "NOTRUN",
-      "sec-fetch-mode - attributes: download": "TIMEOUT",
-      "sec-fetch-storage-access - Cross-site - no attributes": "NOTRUN",
-      "sec-fetch-storage-access - Same site - no attributes": "NOTRUN",
-      "sec-fetch-user - no attributes": "NOTRUN",
-      "sec-fetch-user - no attributes with user activation": "NOTRUN"
+      "sec-fetch-user - no attributes with user activation": "FAIL"
     }
   },
   "fetch/metadata/generated/element-area.sub.html": {

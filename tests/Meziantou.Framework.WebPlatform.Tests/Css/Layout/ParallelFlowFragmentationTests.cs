@@ -187,6 +187,42 @@ public sealed class ParallelFlowFragmentationTests : IDisposable
     }
 
     [Fact]
+    public void Table_MonolithicOverflowOfACellTakesNoBlockSizeInTheNextColumn()
+    {
+        // The monolithic child overflows the first column by 30px, and the child after it starts the second column: the cell is
+        // 200px tall once fragmented, as its row, so the percentage of the other cell resolves against 200px
+        var document = Parse("""
+            <div id=table style='display: table; width: 100%; height: 200px'>
+              <div style='display: table-cell; width: 50%'><div id=a style='height: 100%'></div></div>
+              <div id=b style='display: table-cell; width: 50%'><div style='contain: size; height: 130px'></div><div id=b2 style='height: 100px'></div></div>
+            </div>
+            """);
+        Assert.Equal([Rect(75, 0, 25, 100)], GetClientRects(document, "b2"));
+        Assert.Equal([Rect(0, 0, 25, 100), Rect(50, 0, 25, 100)], GetClientRects(document, "a"));
+
+        // (as in Blink, the first fragments extend over the monolithic overflow)
+        Assert.Equal([Rect(25, 0, 25, 130), Rect(75, 0, 25, 100)], GetClientRects(document, "b"));
+        Assert.Equal([Rect(0, 0, 50, 130), Rect(50, 0, 50, 100)], GetClientRects(document, "table"));
+    }
+
+    [Fact]
+    public void Table_CellEncompassesTheMonolithicContentsAfterTheOverflowOfThePreviousColumn()
+    {
+        // The row is measured without the 30px that overflow the first column: the cell still encompasses its contents in the
+        // second column, as its table
+        var document = Parse("""
+            <div id=table style='display: table; width: 100%'>
+              <div id=b style='display: table-cell'><div style='contain: size; height: 130px'></div><div id=b2 style='contain: size; height: 130px'></div></div>
+            </div>
+            <div id=after style='height: 10px'></div>
+            """);
+        Assert.Equal([Rect(50, 0, 50, 130)], GetClientRects(document, "b2"));
+        Assert.Equal([Rect(0, 0, 50, 130), Rect(50, 0, 50, 130)], GetClientRects(document, "b"));
+        Assert.Equal([Rect(0, 0, 50, 130), Rect(50, 0, 50, 130)], GetClientRects(document, "table"));
+        Assert.Equal([Rect(100, 0, 50, 10)], GetClientRects(document, "after"));
+    }
+
+    [Fact]
     public void ForcedBreak_IsHonoredWhenTheContentFitsInTheColumn()
     {
         var document = Parse("<div style='height: 20px'></div><div id=b style='height: 20px; break-before: column'></div>");

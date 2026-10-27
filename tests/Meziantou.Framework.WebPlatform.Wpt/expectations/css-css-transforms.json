@@ -2716,7 +2716,7 @@
     "reftest": "PASS"
   },
   "css/css-transforms/ttwf-css-3d-polygon-cycle.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-transforms/ttwf-reftest-rotate.html": {
     "reftest": "PASS"

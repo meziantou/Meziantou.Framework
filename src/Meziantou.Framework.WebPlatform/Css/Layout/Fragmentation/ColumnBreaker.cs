@@ -1293,7 +1293,7 @@ internal static partial class ColumnBreaker
             {
                 // The item overflows the fragmentainer (monolithic content): its track ends after it
                 _overflowStart = Math.Min(_overflowStart, item.Start);
-                _overflowEnd = Math.Max(_overflowEnd, Math.Max(item.End, item.Flow.ContentEnd));
+                _overflowEnd = Math.Max(_overflowEnd, item.OverflowsTrack ? Math.Max(item.End, item.Group!.TrackEnds[item.EndTrack]) : Math.Max(item.End, item.Flow.ContentEnd));
                 _overflowEndOffset = Math.Max(_overflowEndOffset, cursor.GetPlacedOffset(item.End));
 
                 // (the item ends after the fragmentainer; the other items of its track are broken at the end of the fragmentainer)

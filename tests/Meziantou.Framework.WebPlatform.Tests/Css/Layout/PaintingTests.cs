@@ -1524,6 +1524,38 @@ public sealed class PaintingTests : IDisposable
     }
 
     [Fact]
+    public void FormControls_TextFieldKeepsItsNativeBackgroundWithAnAnimatedBackgroundColor()
+    {
+        // An animation is not an author-level declaration: the text field keeps its native appearance and its background
+        var animated = Dump(Parse("<style>@keyframes k { to { background-color: rgb(255, 0, 0) } } input { animation: 1e10s steps(2, start) k }</style><input id=i>"));
+        Assert.DoesNotContain("#ff0000", animated, StringComparison.Ordinal);
+        Assert.Contains("[input#i]", animated, StringComparison.Ordinal);
+
+        // An author-level background color devolves the widget, which paints it
+        Assert.Contains("fill #ff0000  [input#i]", Dump(Parse("<input id=i style='background-color: rgb(255, 0, 0)'>")), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void FormControls_DropDownBoxShowsTheAltTextOfTheImagesOfItsSelectedOption()
+    {
+        // https://html.spec.whatwg.org/multipage/rendering.html#the-select-element-2: the label of the option, with includeAltText
+        var dump = Dump(Parse("<select id=s><option>a<img alt=bc>d</option></select>"));
+        Assert.Contains("draw-glyphs \"abcd\"", dump, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void FormControls_SliderPaintsTheTickMarksOfItsSuggestions()
+    {
+        // Only the suggestions that are numbers in the range and not step mismatches get a tick mark: 5 (3 is a step mismatch,
+        // 20 is out of range, x is not a number, the disabled option is ignored)
+        var dump = Dump(Parse("<input id=r type=range min=0 max=10 step=5 list=l><datalist id=l><option value=5><option value=3><option value=20><option value=x><option value=10 disabled></datalist>"));
+        var ticks = dump.Split('\n').Where(line => line.Contains("fill #767676  [input#r]", StringComparison.Ordinal) && line.Contains("draw-rect", StringComparison.Ordinal)).ToList();
+        Assert.Single(ticks);
+
+        Assert.DoesNotContain("fill #767676  [input#r]", Dump(Parse("<input id=r type=range min=0 max=10 step=5>")), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void OverflowClipMargin_RoundedCornersAreShapedAsAShadowSpread()
     {
         // The corners of the clip edge 100px beyond the border edge are not circles of 25px + 100px (css-borders-4, shadow shape)

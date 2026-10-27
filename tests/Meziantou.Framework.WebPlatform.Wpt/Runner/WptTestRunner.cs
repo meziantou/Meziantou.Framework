@@ -188,6 +188,9 @@ internal sealed partial class WptTestRunner
 
                 // The pages of the forced-colors-mode directory are loaded in forced colors mode
                 Viewport = GetViewport(_test),
+
+                // The downloads are saved nowhere, but their whole body is read, as a browser does
+                DownloadStarted = (context, download) => _ = ReadDownloadAsync(download.Resource),
             });
             var eventLoop = browsingContext.EventLoop;
             _eventLoop = eventLoop;
@@ -558,6 +561,8 @@ internal sealed partial class WptTestRunner
                 if (response.ChunksError)
                     throw new IOException("The chunked encoding of the body is invalid");
 
+                response.Completed?.Invoke();
+
                 if (repeatAfter is not { } repeatDelay || cancellationToken.IsCancellationRequested || response.ChunksStopCondition?.Invoke() == true)
                     yield break;
 
@@ -570,6 +575,24 @@ internal sealed partial class WptTestRunner
         {
             // The connection is closed: the end of the body, or the client stopped reading it (e.g. an aborted fetch)
             response.Closed?.Invoke();
+        }
+    }
+
+    /// <summary>Reads the rest of the body of a download (<see cref="DocumentResource.RemainingContentBytes"/>), whose content is discarded.</summary>
+    private static async Task ReadDownloadAsync(DocumentResource resource)
+    {
+        if (resource.RemainingContentBytes is not { } remainingBytes)
+            return;
+
+        try
+        {
+            await foreach (var _ in remainingBytes.ConfigureAwait(false))
+            {
+            }
+        }
+        catch (IOException)
+        {
+            // The connection was closed before the end of the body: the download failed
         }
     }
 
@@ -812,8 +835,11 @@ internal sealed partial class WptTestRunner
         // The document of a navigation is parsed as its chunks arrive, a media resource is processed as they arrive, the
         // content of a template with a src attribute is parsed as it arrives, and an event stream is interpreted as its chunks
         // arrive (the library waits for the end of the body for the requests that are not the ones of an EventSource); the
-        // other responses are complete after the delays of their chunks
-        if (response.Chunks.Count > 0 && (isNavigation || request.Destination is RequestDestination.Audio or RequestDestination.Video || request.Initiator is HtmlTemplateElement))
+        // other responses are complete after the delays of their chunks. A handler that runs code once its whole body was
+        // sent (WptHandlerResponse.Completed) streams the body of the navigations of the object and embed elements too, so
+        // that a client that stops reading it (e.g. a blocked download) is seen.
+        var isContainerNavigation = request.Destination is RequestDestination.Object or RequestDestination.Embed && response.Completed is not null;
+        if (response.Chunks.Count > 0 && (isNavigation || isContainerNavigation || request.Destination is RequestDestination.Audio or RequestDestination.Video || request.Initiator is HtmlTemplateElement))
             return (new DocumentResource(body) { Headers = headers, StatusCode = status, RemainingContentBytes = GetChunksAsync(response, repeatAfter: null, CancellationToken.None) }, delay, null);
 
         if (response.Chunks.Count > 0 && !request.IsSynchronous && HeaderList.ExtractMimeType(headers)?.Essence == "text/event-stream")
@@ -855,6 +881,8 @@ internal sealed partial class WptTestRunner
 
         if (response.ChunksError)
             return (null, delay, null);
+
+        response.Completed?.Invoke();
 
         if (!isFetch)
             return (new DocumentResource(body) { Headers = headers, StatusCode = status }, delay, null);

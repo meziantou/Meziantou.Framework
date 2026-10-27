@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 256 | 260 | 0 | 98% |
+| [Stable](#stable-tests) | 257 | 260 | 0 | 99% |
 | [Tentative](#tentative-tests) | 3 | 4 | 0 | 75% |
-| [Reftests](#reftests) | 218 | 229 | 0 | 95% |
-| **All** | **477** | **493** | **0** | **97%** |
+| [Reftests](#reftests) | 224 | 229 | 0 | 98% |
+| **All** | **484** | **493** | **0** | **98%** |
 
 ## Stable tests
 
@@ -79,7 +79,7 @@
 | [`anchor-position-multicol-001.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-position-multicol-001.html) | Pass | 4 / 4 |  |  |
 | [`anchor-position-multicol-005.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-position-multicol-005.html) | Pass | 1 / 1 |  |  |
 | [`anchor-position-multicol-006.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-position-multicol-006.html) | Pass | 4 / 4 |  |  |
-| [`anchor-position-multicol-colspan-001.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-position-multicol-colspan-001.html) | Fail | 3 / 5 | BUG | the containing block chain skips the ancestors between a column spanner and its multi-column container (https://drafts.csswg.org/css-multicol-1/#column-span), and the test expects `offsetParent` to skip them too, as in Chrome and Firefox (their box trees move the spanner under the multi-column container): `.target 2` is measured from its parent `.relpos` (https://drafts.csswg.org/cssom-view/#dom-htmlelement-offsetparent walks the flat tree, and `.relpos` is a containing block of absolutely positioned descendants), whose first fragment is the empty part before the spanner in the second column (x=110: the 40px spacer before the spanner is balanced in two columns), so `offsetLeft` is -100 instead of 10; `.target 3` (static position after the spanner, in the first column) is measured from the same first fragment (-110 instead of 0): the browsers do not give `.relpos` a fragment before the spanner, where it has no content, so its first fragment is the one after the spanner |
+| [`anchor-position-multicol-colspan-001.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-position-multicol-colspan-001.html) | Pass | 5 / 5 |  |  |
 | [`anchor-position-multicol-colspan-002.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-position-multicol-colspan-002.html) | Pass | 2 / 2 |  |  |
 | [`anchor-position-principal-box.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-position-principal-box.html) | Pass | 1 / 1 |  |  |
 | [`anchor-position-sibling-index.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-position-sibling-index.html) | Pass | 1 / 1 |  |  |
@@ -346,7 +346,7 @@
 | [`anchor-position-multicol-017.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-position-multicol-017.html) | Pass | 1 / 1 |  |  |
 | [`anchor-position-multicol-colspan-003.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-position-multicol-colspan-003.html) | Pass | 1 / 1 |  |  |
 | [`anchor-position-multicol-fixed-001.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-position-multicol-fixed-001.html) | Pass | 1 / 1 |  |  |
-| [`anchor-position-multicol-nested-001.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-position-multicol-nested-001.html) | Fail | 0 / 1 | BUG | `anchor-size(--a1 height)` of a box whose containing block is in the outer multi-column container, for an anchor fragmented by a nested multi-column container across two outer columns, resolves to 200px instead of 132px (the block extent of the anchor fragments in the flow of the containing block: 84px + 48px; `top`, `left` and the 90px width are right): the bottom corner squares of the box are 68px too low, in the fourth outer column, and a 10x10 part of the red anchor is not covered; only Chrome passes |
+| [`anchor-position-multicol-nested-001.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-position-multicol-nested-001.html) | Pass | 1 / 1 |  |  |
 | [`anchor-position-non-anchored-fallback.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-position-non-anchored-fallback.html) | Pass | 1 / 1 |  |  |
 | [`anchor-position-top-layer-001.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-position-top-layer-001.html) | Pass | 1 / 1 |  |  |
 | [`anchor-position-top-layer-002.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-position-top-layer-002.html) | Pass | 1 / 1 |  |  |
@@ -359,9 +359,9 @@
 | [`anchor-scroll-008.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-scroll-008.html) | Pass | 1 / 1 |  |  |
 | [`anchor-scroll-009.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-scroll-009.html) | Pass | 1 / 1 |  |  |
 | [`anchor-scroll-chained-001.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-scroll-chained-001.html) | Pass | 1 / 1 |  |  |
-| [`anchor-scroll-chained-002.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-scroll-chained-002.html) | Fail | 0 / 1 | BUG | the scrollable overflow of the scroll container includes the anchor-positioned boxes at the position they are laid out at, before the default scroll shift moves them (the remembered scroll offset is taken by the layout forced by `scroller1.scrollTop = 80`, before `scroller2.scrollTop = 200`): the scrolling area is larger than in the reference, whose boxes are outside of `#scroller1` (the thumb of `#scroller1` is 76px long, 114px in the reference); https://drafts.csswg.org/css-anchor-position-1/#default-scroll-shift shifts the box "as if affected by a transform", which the scrollable overflow includes, and including it fixes this test but fails css/css-anchor-position/anchor-scroll-010, 011 and 012, which assert that the shift does not change the scrollable overflow ("The default scroll shift of a positioned element is applied after layout"); taking the remembered scroll offsets of a box that starts generating boxes from the scroll offsets of the next rendering update (the spec issue: "Define the precise timing of the snapshot: updated each frame, before style recalc") could also fix it (not tried); the browsers hide the scrollbars in the reftests: the thumbs do not show the difference |
+| [`anchor-scroll-chained-002.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-scroll-chained-002.html) | Pass | 1 / 1 |  |  |
 | [`anchor-scroll-chained-003.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-scroll-chained-003.html) | Pass | 1 / 1 |  |  |
-| [`anchor-scroll-chained-004.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-scroll-chained-004.html) | Fail | 0 / 1 | BUG | the scrollable overflow of the viewport includes the anchor-positioned boxes at the position they are laid out at, before the default scroll shift moves them (the remembered scroll offsets are taken by the layout forced by `scroller1.scrollTop = 80`): the viewport gets a vertical scrollbar that the reference does not have; including the shift in the scrollable overflow fixes it but fails css/css-anchor-position/anchor-scroll-010, 011 and 012 (see anchor-scroll-chained-002.html) |
+| [`anchor-scroll-chained-004.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-scroll-chained-004.html) | Pass | 1 / 1 |  |  |
 | [`anchor-scroll-chained-fallback.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-scroll-chained-fallback.html) | Pass | 1 / 1 |  |  |
 | [`anchor-scroll-composited-scrolling-006.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-scroll-composited-scrolling-006.html) | Pass | 1 / 1 |  |  |
 | [`anchor-scroll-composited-scrolling-paint-001.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-scroll-composited-scrolling-paint-001.html) | Pass | 1 / 1 |  |  |
@@ -400,8 +400,8 @@
 | [`anchor-size-css-zoom.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-size-css-zoom.html) | Pass | 1 / 1 |  |  |
 | [`anchor-size-function-chain-pseudo-elements.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-size-function-chain-pseudo-elements.html) | Pass | 1 / 1 |  |  |
 | [`anchored-c-v-hidden.html`](https://wpt.fyi/results/css/css-anchor-position/anchored-c-v-hidden.html) | Pass | 1 / 1 |  |  |
-| [`anchored-transition-display-none-001.html`](https://wpt.fyi/results/css/css-anchor-position/anchored-transition-display-none-001.html) | Timeout | 0 / 1 | BUG | the styles of the document are not computed before the `load` event (no rendering update resolved them and no script read a style): the `display: none` set by the `load` handler is the first computed style of `#target`, so its `transition-behavior: allow-discrete` transition of `display` does not start and the `transitionend` event that removes the `reftest-wait` class is never fired (see anchored-transition-display-none-002.html) |
-| [`anchored-transition-display-none-002.html`](https://wpt.fyi/results/css/css-anchor-position/anchored-transition-display-none-002.html) | Fail | 0 / 1 | BUG | the styles of the document are not computed before the `load` event (no rendering update resolved them and no script read a style): the `display: none` set by the `load` handler is the first computed style of the anchored boxes, so `transition: display 99999s allow-discrete` has no before-change style and does not start (it starts from the first animation frame on): the two boxes are not rendered instead of staying anchored; computing the styles once the document is parsed, after DOMContentLoaded, as Blink and WebKit (Document::FinishedParsing), fixes this test, anchored-transition-display-none-001, css/css-transitions/pseudo-element-transform, transition-behavior-events and transitioncancel-001, and css/css-view-transitions/animation-name-ua-prefix, but changes the frames of the CSS animations created by the scripts run by the parser: css/css-animations/animation-delay-010, scroll-animations/animation-trigger/animation-trigger-fill-mode-both.tentative and scroll-animations/view-timelines/view-timeline-sticky-* fail |
+| [`anchored-transition-display-none-001.html`](https://wpt.fyi/results/css/css-anchor-position/anchored-transition-display-none-001.html) | Pass | 1 / 1 |  |  |
+| [`anchored-transition-display-none-002.html`](https://wpt.fyi/results/css/css-anchor-position/anchored-transition-display-none-002.html) | Pass | 1 / 1 |  |  |
 | [`auto-margins-position-area.html`](https://wpt.fyi/results/css/css-anchor-position/auto-margins-position-area.html) | Pass | 1 / 1 |  |  |
 | [`container-queries/anchored-fallback-color-change.html`](https://wpt.fyi/results/css/css-anchor-position/container-queries/anchored-fallback-color-change.html) | Pass | 1 / 1 |  |  |
 | [`container-queries/anchored-fallback-style-containment.html`](https://wpt.fyi/results/css/css-anchor-position/container-queries/anchored-fallback-style-containment.html) | Pass | 1 / 1 |  |  |
@@ -508,7 +508,7 @@
 | [`transform-002.html`](https://wpt.fyi/results/css/css-anchor-position/transform-002.html) | Pass | 1 / 1 |  |  |
 | [`transform-003.html`](https://wpt.fyi/results/css/css-anchor-position/transform-003.html) | Pass | 1 / 1 |  |  |
 | [`transform-004.html`](https://wpt.fyi/results/css/css-anchor-position/transform-004.html) | Pass | 1 / 1 |  |  |
-| [`transform-005.html`](https://wpt.fyi/results/css/css-anchor-position/transform-005.html) | Fail | 0 / 1 | BUG | the anchor rectangle is right (the 3D transforms of the `transform-style: preserve-3d` context are accumulated): the 1px antialiased diagonal seam (61 pixels, maximum difference 64) comes from the plane sorting of the 3D rendering context (`Paint3DRenderingContext`): the plane of the anchor (accumulated transform: the identity) is split by the plane of its parent (`rotate3d(1, 1, 1, 90deg)`, the root of the context, which paints nothing but has paint items: its empty background and outlines), and each part is clipped by an antialiased polygon, whose coverages along the shared edge add up to less than 1 (red shows through); Blink does not split by the layers without drawable content and does not antialias the edges created by the split |
+| [`transform-005.html`](https://wpt.fyi/results/css/css-anchor-position/transform-005.html) | Pass | 1 / 1 |  |  |
 | [`transform-006.html`](https://wpt.fyi/results/css/css-anchor-position/transform-006.html) | Pass | 1 / 1 |  |  |
 | [`transform-007.html`](https://wpt.fyi/results/css/css-anchor-position/transform-007.html) | Pass | 1 / 1 |  |  |
 | [`transform-008.html`](https://wpt.fyi/results/css/css-anchor-position/transform-008.html) | Pass | 1 / 1 |  |  |

@@ -7,9 +7,9 @@
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 253 | 262 | 0 | 97% |
-| [Tentative](#tentative-tests) | 20 | 22 | 0 | 91% |
+| [Tentative](#tentative-tests) | 21 | 22 | 0 | 95% |
 | [Reftests](#reftests) | 210 | 213 | 0 | 99% |
-| **All** | **483** | **497** | **0** | **97%** |
+| **All** | **484** | **497** | **0** | **97%** |
 
 ## Stable tests
 
@@ -290,7 +290,7 @@
 | [`position/position-invalid.tentative.html`](https://wpt.fyi/results/css/css-values/position/position-invalid.tentative.html) | Pass | 21 / 21 |  |  |
 | [`position/position-valid.tentative.html`](https://wpt.fyi/results/css/css-values/position/position-valid.tentative.html) | Pass | 34 / 34 |  |  |
 | [`random-alias-property.tentative.html`](https://wpt.fyi/results/css/css-values/random-alias-property.tentative.html) | Pass | 1 / 1 |  |  |
-| [`random-computed.tentative.html`](https://wpt.fyi/results/css/css-values/random-computed.tentative.html) | Fail | 170 / 172 | BUG | `random()` (tentative) with percentages is simplified at computed-value time when all its arguments are percentages, unless the property accepts `<length-percentage>` outside of functions (`CssValueComputer.GetPercentageUnit`): `border-image-slice: random(10%, 30%)` and the position of a gradient (`radial-gradient(at 30% random(33%, 1%), ...)`) compute to a percentage, where the test expects `random(fixed <base>, ...)`, as for the other percentages resolved at used-value time (https://drafts.csswg.org/css-values-5/#random-evaluation; the test also expects the random color stops of the same gradient to be simplified); only Chrome passes, Firefox and Safari fail the same way |
+| [`random-computed.tentative.html`](https://wpt.fyi/results/css/css-values/random-computed.tentative.html) | Pass | 172 / 172 |  |  |
 | [`random-in-animations.tentative.html`](https://wpt.fyi/results/css/css-values/random-in-animations.tentative.html) | Pass | 37 / 37 |  |  |
 | [`random-in-container-query.tentative.html`](https://wpt.fyi/results/css/css-values/random-in-container-query.tentative.html) | Pass | 9 / 9 |  |  |
 | [`random-in-custom-function.tentative.html`](https://wpt.fyi/results/css/css-values/random-in-custom-function.tentative.html) | Pass | 63 / 63 |  |  |

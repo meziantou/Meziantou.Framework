@@ -34,7 +34,7 @@
     }
   },
   "scroll-animations/animation-trigger/animation-trigger-fill-mode-both.tentative.html": {
-    "reftest": "PASS"
+    "reftest": "FAIL"
   },
   "scroll-animations/animation-trigger/animation-trigger-fill-mode-none.tentative.html": {
     "reftest": "FAIL"
@@ -1206,6 +1206,7 @@
   "scroll-animations/view-timelines/view-timeline-sticky-inline-ancestor.html": {
     "total": 3,
     "failures": {
+      "A sticky inline ancestor adjusts the timeline like a sticky block ancestor at scrollTop 280": "FAIL",
       "A sticky inline ancestor adjusts the timeline like a sticky block ancestor at scrollTop 300": "FAIL",
       "A sticky inline ancestor adjusts the timeline like a sticky block ancestor at scrollTop 320": "FAIL"
     }

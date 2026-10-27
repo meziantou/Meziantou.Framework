@@ -61,6 +61,12 @@ internal sealed class WptHandlerResponse
     /// </summary>
     public Func<bool>? ChunksStopCondition { get; set; }
 
+    /// <summary>
+    /// Called once all the <see cref="Chunks"/> were sent (the code of a handler after its <c>write_content()</c> loop, which
+    /// does not run when the client closed the connection before the end of the body).
+    /// </summary>
+    public Action? Completed { get; set; }
+
     /// <summary>Called when the connection of a body read as it arrives is closed: at the end of the body, or when the client stops reading it.</summary>
     public Action? Closed { get; set; }
 

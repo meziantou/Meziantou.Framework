@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.IO.Compression;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Imaging.TestHarness.Streams;
@@ -7,7 +8,7 @@ namespace Meziantou.Framework.Imaging.Tests;
 
 /// <summary>
 /// TIFF and BigTIFF encoding: every working pixel format is written losslessly in both byte orders, both offset sizes
-/// and every lossless compression, the bilevel and palette layouts store a page exactly or reject it, a JPEG page holds
+/// and every lossless compression (the floating-point ones as 32-bit floating-point samples), the bilevel and palette layouts store a page exactly or reject it, a JPEG page holds
 /// what the JPEG encoder writes, multi-page documents keep the size, pixel format and metadata of every page, and the
 /// container constraints (seekable destination, single page per <c>Image.Save</c>, no animation) are enforced before
 /// anything is written.
@@ -826,6 +827,214 @@ public sealed class TiffEncoderTests
         {
             Assert.Null(decoded.Metadata.IccProfile);
         }
+    }
+
+    /// <summary>
+    /// Floating-point values a page must store exactly: signed zeros, values outside [0, 1], the largest and the smallest
+    /// singles, subnormal numbers, infinities and a not-a-number value with a payload.
+    /// </summary>
+    private static readonly float[] SpecialSingles =
+    [
+        0f, -0f, 1f, 0.5f, -0.25f, float.MaxValue, 1e-40f, float.Epsilon, 65504f, -1234.5678f,
+        float.PositiveInfinity, float.NegativeInfinity, BitConverter.UInt32BitsToSingle(0x7FC0_0001), 0.1f, 3.5f, float.MinValue, -1e-40f,
+    ];
+
+    public static TheoryData<TiffCompression, bool, bool, int> FloatingPointCases()
+    {
+        var data = new TheoryData<TiffCompression, bool, bool, int>();
+        foreach (var compression in new[] { TiffCompression.None, TiffCompression.Deflate, TiffCompression.Lzw, TiffCompression.PackBits })
+        {
+            foreach (var (bigEndian, bigTiff) in new[] { (false, false), (true, false), (false, true) })
+            {
+                foreach (var samplesPerPixel in new[] { 1, 2, 3, 4 })
+                {
+                    data.Add(compression, bigEndian, bigTiff, samplesPerPixel);
+                }
+            }
+        }
+
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(FloatingPointCases))]
+    public void FloatingPointPixelsAreWrittenExactlyInTheFewestSamplesThatHoldThem(TiffCompression compression, bool bigEndian, bool bigTiff, int samplesPerPixel)
+    {
+        // Several strips; the gray pages have three equal colors and the opaque ones an alpha of exactly 1
+        using var image = CreateFloatingPointPattern(23, 17, gray: samplesPerPixel <= 2, opaque: samplesPerPixel % 2 == 1);
+        var data = Save(image, new TiffEncoder { Compression = compression, BigEndian = bigEndian, BigTiff = bigTiff, RowsPerStrip = 5 });
+        var info = Image.Identify(data);
+        var model = samplesPerPixel switch
+        {
+            1 => ImageColorModel.Grayscale,
+            2 => ImageColorModel.GrayscaleAlpha,
+            3 => ImageColorModel.Rgb,
+            _ => ImageColorModel.Rgba,
+        };
+        Assert.Equal((PixelFormat.RgbaFloat, model, 32, ColorTransferFunction.Linear), (info.PixelFormat, info.ColorModel, info.BitsPerComponent, info.Metadata.TransferFunction));
+
+        using var decoded = Image.Load<RgbaFloat>(data);
+        Assert.Equal(GetComponentBits(image), GetComponentBits(decoded));
+        if (bigEndian || bigTiff)
+            return;
+
+        // 32-bit floating-point samples, with the floating-point predictor when the compression is Deflate or LZW
+        var tags = ReadTags(data);
+        Assert.Equal([.. Enumerable.Repeat(32UL, samplesPerPixel)], tags[258]);
+        Assert.Equal([.. Enumerable.Repeat(3UL, samplesPerPixel)], tags[339]);
+        Assert.Equal([samplesPerPixel <= 2 ? 1UL : 2UL], tags[262]);
+        Assert.Equal(samplesPerPixel % 2 == 0, tags.TryGetValue(338, out var extra) && extra is [2]);
+        if (compression is TiffCompression.Deflate or TiffCompression.Lzw)
+        {
+            Assert.Equal([3UL], tags[317]);
+        }
+        else
+        {
+            Assert.DoesNotContain((ushort)317, tags.Keys);
+        }
+    }
+
+    [Fact]
+    public void HalfPrecisionPixelsAreWrittenAsSingles()
+    {
+        var halves = SpecialSingles.Select(static value => (Half)value).ToArray();
+        var pixels = new RgbaHalf[halves.Length];
+        for (var i = 0; i < pixels.Length; i++)
+        {
+            pixels[i] = new RgbaHalf(halves[i], halves[(i + 3) % halves.Length], halves[(i + 7) % halves.Length], halves[(i + 1) % halves.Length]);
+        }
+
+        using var image = Image.ImportPixelData<RgbaHalf>(pixels, pixels.Length, 1);
+        image.Metadata.TransferFunction = ColorTransferFunction.Linear;
+        var data = Save(image, new TiffEncoder());
+        Assert.Equal([32UL, 32, 32, 32], ReadTags(data)[258]);
+        using var decoded = Image.Load(data);
+        Assert.Equal(PixelFormat.RgbaFloat, decoded.PixelFormat);
+        using var expected = image.CloneAs<RgbaFloat>();
+        Assert.Equal(GetComponentBits(expected), GetComponentBits((Image<RgbaFloat>)decoded));
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(4)]
+    public void TheFloatingPointPredictorIsTheOneOfTechnicalNote3(int samplesPerPixel)
+    {
+        // The strip is inflated and its rows rebuilt by the reference of the tests, written from the technical note
+        using var image = CreateFloatingPointPattern(9, 4, gray: samplesPerPixel == 1, opaque: samplesPerPixel == 1);
+        var strip = ReadStrip(Save(image, new TiffEncoder()));
+        using var inflated = new MemoryStream();
+        using (var zlib = new ZLibStream(new MemoryStream(strip), CompressionMode.Decompress))
+        {
+            zlib.CopyTo(inflated);
+        }
+
+        var pixels = new RgbaFloat[9 * 4];
+        image.Frames[0].CopyPixelDataTo(pixels);
+        var rowLength = 9 * samplesPerPixel * sizeof(float);
+        Assert.Equal(4 * rowLength, inflated.Length);
+        for (var y = 0; y < 4; y++)
+        {
+            var row = TiffReferenceCodecs.UndoFloatingPointPredictor(inflated.ToArray().AsSpan(y * rowLength, rowLength), samplesPerPixel, sizeof(float), bigEndian: false);
+            for (var x = 0; x < 9; x++)
+            {
+                var pixel = pixels[(y * 9) + x];
+                float[] expected = samplesPerPixel == 1 ? [pixel.R] : [pixel.R, pixel.G, pixel.B, pixel.A];
+                for (var c = 0; c < samplesPerPixel; c++)
+                {
+                    Assert.Equal(BitConverter.SingleToUInt32Bits(expected[c]), BinaryPrimitives.ReadUInt32LittleEndian(row.AsSpan(((x * samplesPerPixel) + c) * sizeof(float))));
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void AnRgbColorProfileKeepsGrayFloatingPointPixelsInRgbSamples()
+    {
+        // A gray sample cannot be described by an RGB profile
+        using var image = CreateFloatingPointPattern(4, 3, gray: true, opaque: true);
+        image.Metadata.IccProfile = IccProfile.Srgb;
+        var data = Save(image, new TiffEncoder());
+        var info = Image.Identify(data);
+        Assert.Equal(ImageColorModel.Rgb, info.ColorModel);
+        Assert.Equal(IccProfile.Srgb.Data.ToArray(), info.Metadata.IccProfile?.Data.ToArray());
+        using var decoded = Image.Load<RgbaFloat>(data);
+        Assert.Equal(GetComponentBits(image), GetComponentBits(decoded));
+    }
+
+    [Fact]
+    public void FloatingPointPixelsAreLinearLightUnlessAProfileDescribesThem()
+    {
+        // A conversion keeps the label of its source: these pixels say they are sRGB encoded, and a floating-point page
+        // without profile is read as linear light
+        using var rgba = CreatePattern(4, 3);
+        using var encoded = rgba.CloneAs<RgbaFloat>();
+        Assert.Equal(ColorTransferFunction.Srgb, encoded.Metadata.TransferFunction);
+        using (var rejected = new MemoryStream())
+        {
+            var exception = Assert.Throws<UnsupportedImageFeatureException>(() => encoded.Save(rejected, new TiffEncoder()));
+            Assert.Contains("sRGB transfer function", exception.Message);
+            Assert.Equal(0, rejected.Length);
+        }
+
+        using (var decoded = RoundTrip(encoded, new TiffEncoder { MetadataHandling = MetadataHandling.DiscardUnsupported }))
+        {
+            Assert.Equal(ColorTransferFunction.Linear, decoded.Metadata.TransferFunction);
+        }
+
+        // A profile describes them
+        encoded.Metadata.IccProfile = IccProfile.Srgb;
+        using (var decoded = RoundTrip(encoded, new TiffEncoder()))
+        {
+            Assert.Equal(ColorTransferFunction.Srgb, decoded.Metadata.TransferFunction);
+            Assert.Equal(IccProfile.Srgb.Data.ToArray(), decoded.Metadata.IccProfile?.Data.ToArray());
+        }
+
+        // An integer page is still not labeled linear light
+        using var linear = rgba.Clone();
+        linear.Metadata.TransferFunction = ColorTransferFunction.Linear;
+        Assert.Throws<UnsupportedImageFeatureException>(() => Save(linear, new TiffEncoder()));
+    }
+
+    [Fact]
+    public void TheSettingsThatCannotStoreFloatingPointPixelsReduceThemWithThePolicyOfTheEncoder()
+    {
+        using var image = Image.ImportPixelData<RgbaFloat>([new RgbaFloat(0, 0, 0), new RgbaFloat(1, 1, 1), new RgbaFloat(1, 0, 0), new RgbaFloat(0, 0, 0)], 2, 2);
+        foreach (var encoder in new[] { new TiffEncoder { Compression = TiffCompression.Jpeg }, new TiffEncoder { PixelLayout = TiffPixelLayout.Indexed } })
+        {
+            using var stream = new MemoryStream();
+            var exception = Assert.Throws<UnsupportedImageFeatureException>(() => image.Save(stream, encoder));
+            Assert.Contains("FloatingPointConversion", exception.Message);
+            Assert.Equal(0, stream.Length);
+        }
+
+        using var decoded = RoundTrip(image, new TiffEncoder { PixelLayout = TiffPixelLayout.Indexed, FloatingPointConversion = new PixelConversionOptions(), MetadataHandling = MetadataHandling.DiscardUnsupported });
+        Assert.Equal(PixelFormat.Rgb24, decoded.PixelFormat);
+        Assert.Equal(new Rgb24(255, 0, 0), ((Image<Rgb24>)decoded).Frames[0][0, 1]);
+    }
+
+    /// <summary>A floating-point image of <see cref="SpecialSingles"/>: gray pixels have three equal colors, and opaque pixels an alpha of exactly 1.</summary>
+    private static Image<RgbaFloat> CreateFloatingPointPattern(int width, int height, bool gray, bool opaque)
+    {
+        var values = SpecialSingles;
+        var pixels = new RgbaFloat[width * height];
+        for (var i = 0; i < pixels.Length; i++)
+        {
+            var red = values[i % values.Length];
+            var alpha = opaque ? 1 : values[((i * 3) + 1) % values.Length];
+            pixels[i] = gray ? new RgbaFloat(red, red, red, alpha) : new RgbaFloat(red, values[(i + 5) % values.Length], values[(i + 11) % values.Length], alpha);
+        }
+
+        var image = Image.ImportPixelData<RgbaFloat>(pixels, width, height);
+        image.Metadata.TransferFunction = ColorTransferFunction.Linear;
+        return image;
+    }
+
+    /// <summary>Gets the bits of the components of an image, so that signed zeros and not-a-number values are compared exactly.</summary>
+    private static uint[] GetComponentBits(Image<RgbaFloat> image)
+    {
+        var pixels = new RgbaFloat[image.Width * image.Height];
+        image.Frames[0].CopyPixelDataTo(pixels);
+        return [.. pixels.SelectMany(static pixel => new[] { pixel.R, pixel.G, pixel.B, pixel.A }).Select(BitConverter.SingleToUInt32Bits)];
     }
 
     /// <summary>An image with flat areas, gradients and noise, and an alpha channel that takes every value.</summary>

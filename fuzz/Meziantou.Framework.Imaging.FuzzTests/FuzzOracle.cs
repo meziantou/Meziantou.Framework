@@ -168,10 +168,11 @@ internal static class FuzzOracle
             }
         }
 
-        // Typed versus untyped, eager versus sequential
-        // A conversion of floating-point samples to integers always refuses a sample that is not a number
-        var refusedFloats = eager.Succeeded && PixelFormats.IsFloatingPoint(eager.Value!.PixelFormat) && typed.Exception is UnsupportedImageFeatureException;
-        if (eager.Succeeded != typed.Succeeded && !IsLiveAllocationLimit(eager.Exception) && !IsLiveAllocationLimit(typed.Exception) && !refusedFloats)
+        // Typed versus untyped, eager versus sequential. Floating-point samples that an integer format cannot store (TIFF
+        // pages, OpenEXR files) are rejected by the Rgba64 load, never clipped
+        var rejectsFloatingPointSamples = eager.Succeeded && PixelFormats.IsFloatingPoint(eager.Value!.PixelFormat)
+            && typed.Exception is UnsupportedImageFeatureException { Feature: "Not-a-number samples" or "Out-of-range samples" };
+        if (eager.Succeeded != typed.Succeeded && !rejectsFloatingPointSamples && !IsLiveAllocationLimit(eager.Exception) && !IsLiveAllocationLimit(typed.Exception))
             return FuzzFailure.Property("typed-untyped", $"Untyped load {Describe(eager)}, Rgba64 load {Describe(typed)}");
 
         if (eager.Succeeded && typed.Succeeded && eager.Value!.Frames.Count != typed.Value!.Frames.Count)

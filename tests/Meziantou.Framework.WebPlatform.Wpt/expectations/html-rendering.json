@@ -797,9 +797,7 @@
     "total": 23,
     "failures": {
       "align=absbottom on replaced elements": "FAIL",
-      "align=bottom on replaced elements": "FAIL",
-      "align=center on replaced elements": "FAIL",
-      "align=middle on replaced elements": "FAIL"
+      "align=bottom on replaced elements": "FAIL"
     }
   },
   "html/rendering/replaced-elements/attributes-for-embedded-content-and-images/canvas-aspect-ratio.html": {
@@ -1238,7 +1236,7 @@
     "reftest": "PASS"
   },
   "html/rendering/widgets/appearance/appearance-animation-002.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/rendering/widgets/appearance/appearance-transition-001.html": {
     "reftest": "PASS"
@@ -1247,7 +1245,7 @@
     "reftest": "PASS"
   },
   "html/rendering/widgets/appearance/appearance-transition-003.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/rendering/widgets/appearance/default-styles.html": {
     "total": 45
@@ -1255,18 +1253,12 @@
   "html/rendering/widgets/baseline-alignment-and-overflow.tentative.html": {
     "total": 132,
     "failures": {
-      "<input type=\"checkbox\" style=\"overflow: hidden; appearance: auto;\">": "FAIL",
-      "<input type=\"checkbox\" style=\"overflow: scroll; appearance: auto;\">": "FAIL",
-      "<input type=\"checkbox\" style=\"overflow: visible; appearance: auto;\">": "FAIL",
       "<input type=\"color\" value=\"#000000\" style=\"overflow: hidden; appearance: auto;\">": "FAIL",
       "<input type=\"color\" value=\"#000000\" style=\"overflow: hidden; appearance: none;\">": "FAIL",
       "<input type=\"color\" value=\"#000000\" style=\"overflow: scroll; appearance: auto;\">": "FAIL",
       "<input type=\"color\" value=\"#000000\" style=\"overflow: scroll; appearance: none;\">": "FAIL",
       "<input type=\"color\" value=\"#000000\" style=\"overflow: visible; appearance: auto;\">": "FAIL",
-      "<input type=\"color\" value=\"#000000\" style=\"overflow: visible; appearance: none;\">": "FAIL",
-      "<input type=\"radio\" style=\"overflow: hidden; appearance: auto;\">": "FAIL",
-      "<input type=\"radio\" style=\"overflow: scroll; appearance: auto;\">": "FAIL",
-      "<input type=\"radio\" style=\"overflow: visible; appearance: auto;\">": "FAIL"
+      "<input type=\"color\" value=\"#000000\" style=\"overflow: visible; appearance: none;\">": "FAIL"
     }
   },
   "html/rendering/widgets/button-layout/anonymous-button-content-box.html": {

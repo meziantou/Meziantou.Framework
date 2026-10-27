@@ -65,7 +65,7 @@ public partial class Document
     internal SandboxingFlags ActiveSandboxingFlags { get; set; }
 
     /// <summary>https://html.spec.whatwg.org/multipage/document-lifecycle.html#completely-loaded</summary>
-    internal bool CompletelyLoaded { get; private set; }
+    internal bool CompletelyLoaded { get; set; }
 
     /// <summary>https://html.spec.whatwg.org/multipage/parsing.html#ready-for-post-load-tasks</summary>
     internal bool ReadyForPostLoadTasks { get; set; }
@@ -602,6 +602,12 @@ public partial class Document
             }
 
             PendingTextDirectives = null;
+
+            // As in the browsers (Document::FinishedParsing in Blink and WebKit), the styles are computed once the document is
+            // parsed, before the load event: they are the before-change styles of the transitions started by the changes of the
+            // load event handlers (https://drafts.csswg.org/css-transitions-1/#before-change-style), and the CSS animations are
+            // created (they start with the next rendering update)
+            FlushAnimationStyles();
         });
 
         // As in the browsers, the load event is queued once the parsing is finished: the specification spins the event loop
@@ -671,6 +677,14 @@ public partial class Document
     internal int CssImagesDelayingTheLoadEvent { get; set; }
 
     /// <summary>
+    /// The number of font faces of the document (<see cref="Css.Om.FontFace"/>) whose load started before the load event and is in
+    /// progress: as in the browsers, they delay the load event (the fetches of a document delay its load event,
+    /// https://html.spec.whatwg.org/multipage/parsing.html#delay-the-load-event), so that the layout at the load event uses them
+    /// (e.g. the height of a line box whose line-height is normal, WPT css/CSS2/visudet/line-height-204.html).
+    /// </summary>
+    internal int FontFacesDelayingTheLoadEvent { get; set; }
+
+    /// <summary>
     /// The number of link elements whose linked resource is being fetched: they delay the load event until the resource and
     /// its critical subresources are fetched (https://html.spec.whatwg.org/multipage/semantics.html#the-link-element).
     /// </summary>
@@ -693,8 +707,11 @@ public partial class Document
     /// </summary>
     private bool IsLoadEventDelayed()
     {
-        if (AreScriptsDelayingTheLoadEvent || StyleSheetImportsDelayingTheLoadEvent > 0 || ImagesDelayingTheLoadEvent > 0 || LinksDelayingTheLoadEvent > 0 || EmbeddedContentDelayingTheLoadEvent > 0 || CssImagesDelayingTheLoadEvent > 0)
+        if (AreScriptsDelayingTheLoadEvent || StyleSheetImportsDelayingTheLoadEvent > 0 || ImagesDelayingTheLoadEvent > 0 || LinksDelayingTheLoadEvent > 0 || EmbeddedContentDelayingTheLoadEvent > 0 || CssImagesDelayingTheLoadEvent > 0
+            || FontFacesDelayingTheLoadEvent > 0)
+        {
             return true;
+        }
 
         if (ChildNavigables is not { Count: > 0 } children)
             return false;
@@ -721,18 +738,26 @@ public partial class Document
         if (FetchPendingCssImages() && IsLoadEventDelayed())
             return;
 
+        // The font faces used by the text are loaded before the load event, which they delay (a font face that fails synchronously
+        // may have queued the load event meanwhile)
+        if (LoadUsedFontFacesBeforeLoadEvent() && (_loadEventQueued || IsLoadEventDelayed()))
+            return;
+
         _loadEventQueued = true;
         var childNavigables = ChildNavigables is { Count: > 0 } children ? new HashSet<BrowsingContext>(children) : null;
         QueueGlobalTask(() =>
         {
-            // https://html.spec.whatwg.org/multipage/parsing.html#the-end (steps 8–9): the load event is delayed by the
-            // navigables inserted since the task was queued (e.g. an iframe inserted by a DOMContentLoaded listener): the
-            // task is queued again once they no longer delay it
+            // https://html.spec.whatwg.org/multipage/parsing.html#the-end (steps 8–9): the end spins the event loop until nothing
+            // delays the load event, so the tasks queued before the load task run first: the load event is delayed by the
+            // navigables inserted since the task was queued (e.g. an iframe inserted by a DOMContentLoaded listener), and by
+            // the navigations of the other child navigables that these tasks started (e.g. the planned navigation of a form
+            // submitted while the document was parsed; a reload does not delay the load event). The task is queued again once
+            // they no longer delay it.
             if (ChildNavigables is { Count: > 0 } currentChildren)
             {
                 foreach (var child in currentChildren)
                 {
-                    if (childNavigables?.Contains(child) != true && (child.IsDelayingLoadEvents || !child.Document.ReadyForPostLoadTasks) && child.Container is not HtmlIFrameElement { CurrentNavigationWasLazyLoaded: true })
+                    if ((child.IsDelayingLoadEvents || (childNavigables?.Contains(child) != true && !child.Document.ReadyForPostLoadTasks)) && child.Container is not HtmlIFrameElement { CurrentNavigationWasLazyLoaded: true })
                     {
                         _loadEventQueued = false;
                         return;

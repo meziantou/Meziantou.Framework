@@ -3006,7 +3006,7 @@
     "reftest": "PASS"
   },
   "css/css-break/table/monolithic-overflow-006.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-break/table/oof-in-cell-with-alignment-001.html": {
     "reftest": "PASS"

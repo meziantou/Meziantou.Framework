@@ -46,7 +46,8 @@ internal static class HyperlinkElementUtils
     /// The activation behavior of the <c>a</c> and <c>area</c> elements
     /// (https://html.spec.whatwg.org/multipage/links.html#links-created-by-a-and-area-elements) and of the SVG and MathML
     /// <c>a</c> elements: follows the hyperlink. The hyperlinks with a <c>download</c> attribute are downloaded: the download
-    /// request navigate event is fired, but nothing is downloaded (downloads are not supported).
+    /// request navigate event is fired, then the resource is fetched and handed to
+    /// <see cref="BrowsingContextOptions.DownloadStarted"/> (nothing is fetched when it is null).
     /// </summary>
     public static void ActivationBehavior(Element element)
     {
@@ -70,10 +71,33 @@ internal static class HyperlinkElementUtils
             return;
 
         var userInvolvement = window.HasTransientActivation ? UserNavigationInvolvement.Activation : UserNavigationInvolvement.None;
-        if (!window.Navigation.FireDownloadRequestNavigateEvent(url, userInvolvement, element, element.GetAttributeValue("download") ?? ""))
+        var filename = element.GetAttributeValue("download") ?? "";
+        if (!window.Navigation.FireDownloadRequestNavigateEvent(url, userInvolvement, element, filename))
             return;
 
         window.Navigation.InformAboutAbortingNavigation();
+        if (document.BrowsingContext is not { } navigable || navigable.Options is not { DownloadStarted: { } downloadStarted, DocumentLoader: not null })
+            return;
+
+        // The request of the download: its initiator is "download" and its destination is the empty string
+        var request = new FetchRequest(url)
+        {
+            Client = document,
+            Origin = document.SerializeOrigin(),
+            ReferrerPolicy = ReferrerPolicies.GetRequestPolicy("", document),
+            Destination = RequestDestination.Empty,
+            Mode = RequestMode.NoCors,
+            CredentialsMode = FetchCredentialsMode.Include,
+            UseUrlCredentials = true,
+        };
+
+        Fetching.Fetch(request, response =>
+        {
+            if (response.ToDocumentResource() is { } resource && !navigable.IsDestroyed)
+            {
+                downloadStarted(navigable, new Download(resource.Url ?? url.Serialize(), filename, resource));
+            }
+        }, document.QueueElementTask);
     }
 
     /// <summary>

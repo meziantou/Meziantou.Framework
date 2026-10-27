@@ -69,4 +69,7 @@ public sealed class OpenExrEncoder : ImageEncoder
     /// (<see cref="PixelType"/> set to <see cref="OpenExrPixelType.Half"/>), which rounds them. Defaults to <see langword="false"/>.
     /// </summary>
     public bool AllowBitDepthReduction { get; init; }
+
+    /// <summary>Gets a value indicating whether the floating-point pixels are written as they are: always, OpenEXR stores floating-point samples.</summary>
+    internal override bool StoresFloatingPointSamples => true;
 }

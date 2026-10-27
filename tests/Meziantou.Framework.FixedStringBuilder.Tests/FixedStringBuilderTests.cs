@@ -133,7 +133,7 @@ public sealed partial class FixedStringBuilderTests
     {
         FixedStringBuilder8 value = "abc";
         var fixedString = (IFixedString)value;
-        var span = fixedString.GetUnsafeFullSpan();
+        var span = unsafe(fixedString.GetUnsafeFullSpan());
 
         Assert.HasCount(FixedStringBuilder8.MaxLength, span);
         Assert.Equal('a', span[0]);
@@ -194,7 +194,7 @@ public sealed partial class FixedStringBuilderTests
         Assert.Equal("", value.ToString(null, null));
 
         // Documented behavior: Clear only resets the length, the characters stay in the underlying buffer.
-        var fullSpan = ((IFixedString)value).GetUnsafeFullSpan();
+        var fullSpan = unsafe(((IFixedString)value).GetUnsafeFullSpan());
         Assert.Equal("abcdefgh", fullSpan.ToString());
     }
 
@@ -207,7 +207,7 @@ public sealed partial class FixedStringBuilderTests
         Assert.Equal(0, value.Length);
         Assert.Equal("", value.ToString(null, null));
 
-        var fullSpan = ((IFixedString)value).GetUnsafeFullSpan();
+        var fullSpan = unsafe(((IFixedString)value).GetUnsafeFullSpan());
         Assert.Equal(new string('\0', 8), fullSpan.ToString());
     }
 
@@ -219,7 +219,7 @@ public sealed partial class FixedStringBuilderTests
         value.AppendLiteral("ab");
         value.Clear(zeroBuffer: true);
 
-        var fullSpan = ((IFixedString)value).GetUnsafeFullSpan();
+        var fullSpan = unsafe(((IFixedString)value).GetUnsafeFullSpan());
         Assert.Equal(new string('\0', 8), fullSpan.ToString());
     }
 
@@ -231,7 +231,7 @@ public sealed partial class FixedStringBuilderTests
 
         Assert.Equal(0, value.Length);
 
-        var fullSpan = ((IFixedString)value).GetUnsafeFullSpan();
+        var fullSpan = unsafe(((IFixedString)value).GetUnsafeFullSpan());
         Assert.Equal("abcdefgh", fullSpan.ToString());
     }
 
@@ -242,7 +242,7 @@ public sealed partial class FixedStringBuilderTests
         Clear(ref value);
 
         Assert.Equal(0, value.Length);
-        Assert.Equal(new string('\0', 8), ((IFixedString)value).GetUnsafeFullSpan().ToString());
+        Assert.Equal(new string('\0', 8), unsafe(((IFixedString)value).GetUnsafeFullSpan()).ToString());
 
         static void Clear<T>(ref T value) where T : IFixedString => value.Clear(zeroBuffer: true);
     }

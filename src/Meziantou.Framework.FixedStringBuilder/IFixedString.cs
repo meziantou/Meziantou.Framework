@@ -43,10 +43,22 @@ public interface IFixedString : ISpanFormattable
     /// Returns a span of all the characters up to <see cref="MaxLength"/>.
     /// </summary>
     /// <returns>A span of characters that contains the characters of this string.</returns>
-    /// <remarks>This method is unsafe as it doesn't protect from returning a ref to a struct that could go out of scope. Favor using AsSpan() on individual FixedStrings structs.
+    /// <remarks>
+    /// <para>
+    /// This method is unsafe: the returned span is not tied to the lifetime of the struct, so the compiler cannot
+    /// prevent it from outliving the struct. The caller must not use the span after the struct goes out of scope
+    /// (for instance, it must not return the span of a local variable). Favor using AsSpan() on individual
+    /// FixedStrings structs.
+    /// </para>
+    /// <para>
+    /// This method requires an unsafe context (an <c>unsafe</c> block or expression) when the calling code is compiled
+    /// with the updated memory safety rules.
+    /// </para>
+    /// <para>
     /// This method can only be used through a generic constraint or by explicit casting/boxing to <see cref="IFixedString"/>.
+    /// </para>
     /// </remarks>
-    Span<char> GetUnsafeFullSpan();
+    unsafe Span<char> GetUnsafeFullSpan();
 }
 
 /// <summary>

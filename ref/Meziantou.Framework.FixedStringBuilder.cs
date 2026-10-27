@@ -158,7 +158,7 @@ namespace Meziantou.Framework.FixedStringBuilder
         static int MaxLength { get; }
         void Clear();
         void Clear(bool zeroBuffer);
-        System.Span<char> GetUnsafeFullSpan();
+        unsafe System.Span<char> GetUnsafeFullSpan();
     }
 
     public interface IFixedString<T> : Meziantou.Framework.FixedStringBuilder.IFixedString, System.IEquatable<T>, System.IFormattable, System.ISpanFormattable where T : Meziantou.Framework.FixedStringBuilder.IFixedString<T>

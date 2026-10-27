@@ -83,7 +83,7 @@ public sealed class FixedStringBuilderSourceGeneratorTests
             {
                 public interface IFixedString
                 {
-                    global::System.Span<char> GetUnsafeFullSpan();
+                    unsafe global::System.Span<char> GetUnsafeFullSpan();
                 }
 
                 public interface IFixedString<T> : IFixedString where T : IFixedString<T>
@@ -143,7 +143,7 @@ public sealed class FixedStringBuilderSourceGeneratorTests
             {
                 public interface IFixedString
                 {
-                    global::System.Span<char> GetUnsafeFullSpan();
+                    unsafe global::System.Span<char> GetUnsafeFullSpan();
                 }
 
                 public interface IFixedString<T> : IFixedString where T : IFixedString<T>
@@ -462,7 +462,7 @@ public sealed class FixedStringBuilderSourceGeneratorTests
             {
                 public interface IFixedString
                 {
-                    global::System.Span<char> GetUnsafeFullSpan();
+                    unsafe global::System.Span<char> GetUnsafeFullSpan();
                 }
 
                 public interface IFixedString<T> : IFixedString where T : IFixedString<T>
@@ -478,15 +478,7 @@ public sealed class FixedStringBuilderSourceGeneratorTests
             """;
 
         var parseOptions = updatedMemorySafetyRules ? ParseOptions.WithFeatures([new("updated-memory-safety-rules", "true")]) : ParseOptions;
-
-        // The reference pack used by the other tests predates the annotations marking Unsafe and MemoryMarshal
-        // members as requiring an unsafe context. The assemblies of the running runtime have them from .NET 11.
-        var references = ((string?)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES") ?? string.Empty)
-            .Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries)
-            .Select(static path => MetadataReference.CreateFromFile(path))
-            .ToArray();
-
-        var (runResult, compilation) = Generate(Source, parseOptions, references);
+        var (runResult, compilation) = Generate(Source, parseOptions, GetRuntimeReferences());
 
         using var peStream = new MemoryStream();
         var emitResult = compilation.Emit(peStream);
@@ -497,6 +489,122 @@ public sealed class FixedStringBuilderSourceGeneratorTests
         Assert.Equal(updatedMemorySafetyRules, generatedCode.Contains("AsUnsafeFullSpan() => unsafe(", StringComparison.Ordinal));
     }
 
+    [Fact]
+    public void GetUnsafeFullSpanRequiresAnUnsafeContextWithUpdatedMemorySafetyRules()
+    {
+        // Without an unsafe context, this would return a span over the storage of a local that is gone once the
+        // method returns.
+        const string SafeCallSource = """
+            [FixedStringBuilderAttribute(4)]
+            public partial struct FixedStringBuilder4
+            {
+            }
+
+            public static class Harness
+            {
+                public static global::System.Span<char> Leak<T>() where T : struct, Meziantou.Framework.FixedStringBuilder.IFixedString
+                {
+                    T value = default;
+                    return value.GetUnsafeFullSpan();
+                }
+            }
+            """;
+
+        const string UnsafeCallSource = """
+            [FixedStringBuilderAttribute(4)]
+            public partial struct FixedStringBuilder4
+            {
+            }
+
+            public static class Harness
+            {
+                public static int GetUnsafeSpanLength<T>(T value) where T : Meziantou.Framework.FixedStringBuilder.IFixedString => unsafe(value.GetUnsafeFullSpan().Length);
+            }
+            """;
+
+        var parseOptions = ParseOptions.WithFeatures([new("updated-memory-safety-rules", "true")]);
+        var references = GetRuntimeReferencesWithFixedStringInterfaces();
+
+        var (_, safeCallCompilation) = Generate(SafeCallSource, parseOptions, references);
+        var diagnostic = Assert.Single(safeCallCompilation.GetDiagnostics(), static diagnostic => diagnostic.Severity is DiagnosticSeverity.Error);
+        Assert.Equal("CS9362", diagnostic.Id);
+        Assert.Equal("value.GetUnsafeFullSpan()", diagnostic.Location.SourceTree!.GetText().ToString(diagnostic.Location.SourceSpan));
+
+        var (_, unsafeCallCompilation) = Generate(UnsafeCallSource, parseOptions, references);
+        using var peStream = new MemoryStream();
+        var emitResult = unsafeCallCompilation.Emit(peStream);
+        Assert.True(emitResult.Success, string.Join('\n', emitResult.Diagnostics));
+    }
+
+    [Theory]
+    [InlineData(LanguageVersion.CSharp13)]
+    [InlineData(LanguageVersion.Preview)]
+    public void GetUnsafeFullSpanCanBeCalledFromSafeCodeWithoutUpdatedMemorySafetyRules(LanguageVersion languageVersion)
+    {
+        // A consumer that does not use the updated memory safety rules or allow unsafe code must still be able to
+        // implement the unsafe interface member and call it.
+        const string Source = """
+            [FixedStringBuilderAttribute(4)]
+            public partial struct FixedStringBuilder4
+            {
+            }
+
+            public static class Harness
+            {
+                public static int GetUnsafeSpanLength<T>(T value) where T : Meziantou.Framework.FixedStringBuilder.IFixedString => value.GetUnsafeFullSpan().Length;
+            }
+            """;
+
+        var (_, compilation) = Generate(Source, new CSharpParseOptions(languageVersion), GetRuntimeReferencesWithFixedStringInterfaces(), allowUnsafe: false);
+
+        using var peStream = new MemoryStream();
+        var emitResult = compilation.Emit(peStream);
+        Assert.True(emitResult.Success, string.Join('\n', emitResult.Diagnostics));
+    }
+
+    private static MetadataReference[] GetRuntimeReferences()
+    {
+        // The reference pack used by the other tests predates the annotations marking Unsafe and MemoryMarshal
+        // members as requiring an unsafe context. The assemblies of the running runtime have them from .NET 11.
+        return [.. ((string?)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES") ?? string.Empty)
+            .Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries)
+            .Select(static path => MetadataReference.CreateFromFile(path))];
+    }
+
+    /// <summary>
+    /// Returns the runtime references and a reference to a copy of the IFixedString interfaces compiled, as the
+    /// library is, with the updated memory safety rules.
+    /// </summary>
+    private static MetadataReference[] GetRuntimeReferencesWithFixedStringInterfaces()
+    {
+        const string InterfacesSource = """
+            namespace Meziantou.Framework.FixedStringBuilder
+            {
+                public interface IFixedString
+                {
+                    unsafe global::System.Span<char> GetUnsafeFullSpan();
+                }
+
+                public interface IFixedString<T> : IFixedString where T : IFixedString<T>
+                {
+                    static abstract implicit operator T(string value);
+                }
+            }
+            """;
+
+        var runtimeReferences = GetRuntimeReferences();
+        var compilation = CSharpCompilation.Create(
+            "FixedStringInterfaces",
+            [CSharpSyntaxTree.ParseText(InterfacesSource, ParseOptions.WithFeatures([new("updated-memory-safety-rules", "true")]))],
+            runtimeReferences,
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, nullableContextOptions: NullableContextOptions.Enable, allowUnsafe: true));
+
+        using var peStream = new MemoryStream();
+        var emitResult = compilation.Emit(peStream);
+        Assert.True(emitResult.Success, string.Join('\n', emitResult.Diagnostics));
+        return [.. runtimeReferences, MetadataReference.CreateFromImage(peStream.ToArray())];
+    }
+
     private static async Task<(GeneratorDriverRunResult RunResult, Compilation Compilation)> GenerateAsync(string source)
     {
         var netcoreRef = await NuGetHelpers.GetNuGetReferences("Microsoft.NETCore.App.Ref", "10.0.0", "ref/net10.0/");
@@ -504,13 +612,13 @@ public sealed class FixedStringBuilderSourceGeneratorTests
         return Generate(source, ParseOptions, references);
     }
 
-    private static (GeneratorDriverRunResult RunResult, Compilation Compilation) Generate(string source, CSharpParseOptions parseOptions, MetadataReference[] references)
+    private static (GeneratorDriverRunResult RunResult, Compilation Compilation) Generate(string source, CSharpParseOptions parseOptions, MetadataReference[] references, bool allowUnsafe = true)
     {
         var compilation = CSharpCompilation.Create(
             "compilation",
             [CSharpSyntaxTree.ParseText(source, parseOptions)],
             references,
-            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, nullableContextOptions: NullableContextOptions.Enable, allowUnsafe: true));
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, nullableContextOptions: NullableContextOptions.Enable, allowUnsafe: allowUnsafe));
 
         ISourceGenerator generator = new FixedStringBuilderSourceGenerator().AsSourceGenerator();
         GeneratorDriver driver = CSharpGeneratorDriver.Create([generator], parseOptions: parseOptions);

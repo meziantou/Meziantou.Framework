@@ -472,8 +472,12 @@ public sealed class FixedStringBuilderSourceGenerator : IIncrementalGenerator
 
         // Unlike AsSpan, this one has to launder the ref: the explicit IFixedString.GetUnsafeFullSpan
         // implementation returns it, and an interface member cannot be [UnscopedRef]. That is the escape hatch
-        // IFixedString.GetUnsafeFullSpan is documented to be. Under the updated memory safety rules, the Unsafe and
-        // MemoryMarshal methods doing so require an unsafe context. The unsafe expression does not exist in older
+        // IFixedString.GetUnsafeFullSpan is documented to be, and why that interface member is declared unsafe: its
+        // callers need an unsafe context under the updated memory safety rules. The explicit implementation itself
+        // stays safe (a safe member may implement an unsafe one), so it compiles whether or not the referenced
+        // IFixedString declares the member unsafe and whatever the rules of the compilation. Under the updated memory
+        // safety rules, the Unsafe and MemoryMarshal methods laundering the ref require an unsafe context, hence the
+        // unsafe expression around them. The unsafe expression does not exist in older
         // language versions, so it is only emitted when the compilation opted into the rules.
         const string FullSpanExpression = "MemoryMarshal.CreateSpan(ref Unsafe.As<Storage, char>(ref Unsafe.AsRef(in _storage)), MaxLength)";
         AppendLine(target.UsesUpdatedMemorySafetyRules

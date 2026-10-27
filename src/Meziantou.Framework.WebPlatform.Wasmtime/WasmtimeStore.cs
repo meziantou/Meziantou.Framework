@@ -43,8 +43,9 @@ internal sealed unsafe partial class WasmtimeStore : WasmStore
     {
         _runtime = runtime;
         _host = host;
+        using var engine = runtime.EnterEngine();
         var data = GCHandle.Alloc(this, GCHandleType.Weak);
-        _store = new StoreHandle(NativeMethods.wasmtime_store_new(runtime.Engine, GCHandle.ToIntPtr(data), null), data);
+        _store = new StoreHandle(NativeMethods.wasmtime_store_new(engine.Value, GCHandle.ToIntPtr(data), null), data);
         var store = _store.DangerousGetHandle();
         _context = NativeMethods.wasmtime_store_context(store);
 
@@ -55,21 +56,15 @@ internal sealed unsafe partial class WasmtimeStore : WasmStore
 
     internal WasmtimeRuntime Runtime => _runtime;
 
-    /// <summary>The context of the store, or of the caller of the running host function.</summary>
-    internal nint Context
-    {
-        get
-        {
-            ObjectDisposedException.ThrowIf(_store.IsClosed, this);
-            return _context;
-        }
-    }
+    /// <summary>
+    /// Returns a lease on the native store, disposed after the native calls that use it: its value is the context of the
+    /// store, or of the caller of the running host function.
+    /// </summary>
+    /// <exception cref="ObjectDisposedException">The store is disposed.</exception>
+    internal SafeHandleLease EnterContext() => new(_store, _context);
 
-    public override void Dispose()
-    {
-        _store.Dispose();
-        _context = 0;
-    }
+    /// <summary>Releases the store. The native store is deleted when the running native calls return (see <see cref="SafeHandleLease"/>).</summary>
+    public override void Dispose() => _store.Dispose();
 
     private static WasmtimeStore? FromContext(nint context)
     {
@@ -166,8 +161,9 @@ internal sealed unsafe partial class WasmtimeStore : WasmStore
             if (trap != 0)
             {
                 // An exception thrown by WebAssembly (https://webassembly.github.io/spec/js-api/#call-an-exported-function)
+                using var context = EnterContext();
                 WasmtimeRef exception;
-                if (NativeMethods.wasmtime_context_take_exception(Context, &exception))
+                if (NativeMethods.wasmtime_context_take_exception(context.Value, &exception))
                     throw new WasmThrowException(GetException(&exception, owned: true));
 
                 byte code;
@@ -230,6 +226,7 @@ internal sealed unsafe partial class WasmtimeStore : WasmStore
             };
         }
 
+        using var context = EnterContext();
         WasmtimeInstance instance = default;
         var previousStore = BeginCreatingMemories();
         var previousException = BeginCall();
@@ -239,7 +236,7 @@ internal sealed unsafe partial class WasmtimeStore : WasmStore
             nint error;
             fixed (WasmtimeExtern* importsPointer = nativeImports)
             {
-                error = NativeMethods.wasmtime_instance_new(Context, wasmtimeModule.Handle, importsPointer, (nuint)nativeImports.Length, &instance, &trap);
+                error = NativeMethods.wasmtime_instance_new(context.Value, wasmtimeModule.Handle, importsPointer, (nuint)nativeImports.Length, &instance, &trap);
             }
 
             GC.KeepAlive(wasmtimeModule);
@@ -259,7 +256,7 @@ internal sealed unsafe partial class WasmtimeStore : WasmStore
             byte* name;
             nuint nameLength;
             WasmtimeExtern item;
-            if (!NativeMethods.wasmtime_instance_export_nth(Context, &instance, index, &name, &nameLength, &item))
+            if (!NativeMethods.wasmtime_instance_export_nth(context.Value, &instance, index, &name, &nameLength, &item))
                 break;
 
             // A re-exported import is the same external value: Wasmtime returns another handle for it
@@ -303,7 +300,8 @@ internal sealed unsafe partial class WasmtimeStore : WasmStore
 
     internal WasmFunctionType GetFunctionType(WasmtimeFunc handle)
     {
-        var type = NativeMethods.wasmtime_func_type(Context, &handle);
+        using var context = EnterContext();
+        var type = NativeMethods.wasmtime_func_type(context.Value, &handle);
         try
         {
             return WasmtimeTypes.ReadFunctionType(type);
@@ -316,14 +314,16 @@ internal sealed unsafe partial class WasmtimeStore : WasmStore
 
     public override WasmFunction CreateHostFunction(WasmFunctionType type, object? hostFunction, WasmHostCallback callback)
     {
-        var nativeType = WasmtimeTypes.CreateFunctionType(_runtime.Engine, type);
+        using var engine = _runtime.EnterEngine();
+        using var context = EnterContext();
+        var nativeType = WasmtimeTypes.CreateFunctionType(engine.Value, type);
         try
         {
             // The environment is the index of the callback in the store
             var index = _hostFunctions.Count;
             _hostFunctions.Add(new HostFunction(type, callback));
             WasmtimeFunc handle;
-            NativeMethods.wasmtime_func_new(Context, nativeType, &InvokeHostFunction, index, null, &handle);
+            NativeMethods.wasmtime_func_new(context.Value, nativeType, &InvokeHostFunction, index, null, &handle);
             var function = new WasmtimeFunction(this, handle, hostFunction) { KnownType = type.Native is null ? null : type };
             _functions[(handle.StoreId, handle.Private)] = function;
             return function;
@@ -358,10 +358,11 @@ internal sealed unsafe partial class WasmtimeStore : WasmStore
             {
                 nint trap = 0;
                 nint error;
+                using var context = EnterContext();
                 fixed (WasmtimeVal* argumentsPointer = nativeArguments)
                 fixed (WasmtimeVal* resultsPointer = nativeResults)
                 {
-                    error = NativeMethods.wasmtime_func_call(Context, &handle, argumentsPointer, (nuint)nativeArguments.Length, resultsPointer, (nuint)nativeResults.Length, &trap);
+                    error = NativeMethods.wasmtime_func_call(context.Value, &handle, argumentsPointer, (nuint)nativeArguments.Length, resultsPointer, (nuint)nativeResults.Length, &trap);
                 }
 
                 ThrowIfFailed(error, trap, static message => new WasmTypeMismatchException(message));
@@ -406,7 +407,7 @@ internal sealed unsafe partial class WasmtimeStore : WasmStore
         store._context = context;
         try
         {
-            return store.InvokeHostFunction((int)env, arguments, (int)argumentCount, results, (int)resultCount);
+            return store.InvokeHostFunction(context, (int)env, arguments, (int)argumentCount, results, (int)resultCount);
         }
         finally
         {
@@ -414,7 +415,7 @@ internal sealed unsafe partial class WasmtimeStore : WasmStore
         }
     }
 
-    private nint InvokeHostFunction(int index, WasmtimeVal* arguments, int argumentCount, WasmtimeVal* results, int resultCount)
+    private nint InvokeHostFunction(nint callerContext, int index, WasmtimeVal* arguments, int argumentCount, WasmtimeVal* results, int resultCount)
     {
         try
         {
@@ -439,9 +440,11 @@ internal sealed unsafe partial class WasmtimeStore : WasmStore
         }
         catch (WasmThrowException ex) when (ex.Exception is WasmtimeExceptionReference exception && exception.Store == this)
         {
-            // The exception is thrown in WebAssembly (https://webassembly.github.io/spec/js-api/#create-a-host-function)
-            var reference = exception.Handle;
-            return NativeMethods.wasmtime_context_set_exception(_context, &reference);
+            // The exception is thrown in WebAssembly (https://webassembly.github.io/spec/js-api/#create-a-host-function).
+            // The context of the caller is valid even if the callback disposed the store: the call into WebAssembly holds
+            // a lease on the store.
+            using var reference = exception.EnterReference();
+            return NativeMethods.wasmtime_context_set_exception(callerContext, (WasmtimeRef*)reference.Value);
         }
         catch (Exception ex)
         {
@@ -461,11 +464,12 @@ internal sealed unsafe partial class WasmtimeStore : WasmStore
     {
         if (!_memories.TryGetValue((handle.StoreId, handle.Private1, handle.Private2), out var memory))
         {
-            var data = (nint)NativeMethods.wasmtime_memory_data(Context, &handle);
+            using var context = EnterContext();
+            var data = (nint)NativeMethods.wasmtime_memory_data(context.Value, &handle);
             if (!_linearMemories.TryGetValue(data, out var linearMemory))
                 throw new InvalidOperationException("The memory was not created by the store");
 
-            var type = NativeMethods.wasmtime_memory_type(Context, &handle);
+            var type = NativeMethods.wasmtime_memory_type(context.Value, &handle);
             try
             {
                 memory = new WasmtimeMemory(this, handle, linearMemory, WasmtimeTypes.ReadMemoryType(type));
@@ -495,15 +499,17 @@ internal sealed unsafe partial class WasmtimeStore : WasmStore
     internal ulong GrowMemory(WasmtimeMemory memory, ulong delta)
     {
         var handle = memory.Handle;
+        using var context = EnterContext();
         ulong previousSize;
-        ThrowIfError(NativeMethods.wasmtime_memory_grow(Context, &handle, delta, &previousSize), static message => new WasmAllocationException(message));
+        ThrowIfError(NativeMethods.wasmtime_memory_grow(context.Value, &handle, delta, &previousSize), static message => new WasmAllocationException(message));
         return previousSize;
     }
 
     internal ulong GetMemorySize(WasmtimeMemory memory)
     {
         var handle = memory.Handle;
-        return NativeMethods.wasmtime_memory_size(Context, &handle);
+        using var context = EnterContext();
+        return NativeMethods.wasmtime_memory_size(context.Value, &handle);
     }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -514,7 +520,8 @@ internal sealed unsafe partial class WasmtimeStore : WasmStore
     {
         if (!_tables.TryGetValue((handle.StoreId, handle.Private1, handle.Private2), out var table))
         {
-            var type = NativeMethods.wasmtime_table_type(Context, &handle);
+            using var context = EnterContext();
+            var type = NativeMethods.wasmtime_table_type(context.Value, &handle);
             try
             {
                 table = new WasmtimeTable(this, handle, WasmtimeTypes.ReadTableType(type, limits));
@@ -536,15 +543,17 @@ internal sealed unsafe partial class WasmtimeStore : WasmStore
         if (type.Is64 || type.Minimum > uint.MaxValue || type.Maximum > uint.MaxValue)
             return CreateTableFromModule(type, value);
 
+        using var engine = _runtime.EnterEngine();
+        using var context = EnterContext();
         var limits = new WasmLimits { Min = (uint)type.Minimum, Max = (uint)(type.Maximum ?? uint.MaxValue) };
-        var nativeType = NativeMethods.wasm_tabletype_new(WasmtimeTypes.CreateValueType(_runtime.Engine, type.ElementType), &limits);
+        var nativeType = NativeMethods.wasm_tabletype_new(WasmtimeTypes.CreateValueType(engine.Value, type.ElementType), &limits);
         try
         {
             var init = ToNative(value, type.ElementType);
             try
             {
                 WasmtimeIndexedExtern handle;
-                ThrowIfError(NativeMethods.wasmtime_table_new(Context, nativeType, &init, &handle), static message => new WasmAllocationException(message));
+                ThrowIfError(NativeMethods.wasmtime_table_new(context.Value, nativeType, &init, &handle), static message => new WasmAllocationException(message));
                 return GetTable(handle, new WasmTableLimits(type.Minimum, type.Maximum, Is64: false));
             }
             finally
@@ -577,8 +586,9 @@ internal sealed unsafe partial class WasmtimeStore : WasmStore
     internal WasmValue GetTableElement(WasmtimeTable table, ulong index)
     {
         var handle = table.Handle;
+        using var context = EnterContext();
         WasmtimeVal value;
-        if (!NativeMethods.wasmtime_table_get(Context, &handle, index, &value))
+        if (!NativeMethods.wasmtime_table_get(context.Value, &handle, index, &value))
             throw new WasmAllocationException("The index is out of the bounds of the table");
 
         try
@@ -594,13 +604,14 @@ internal sealed unsafe partial class WasmtimeStore : WasmStore
     internal void SetTableElement(WasmtimeTable table, ulong index, WasmValue value)
     {
         var handle = table.Handle;
-        if (index >= NativeMethods.wasmtime_table_size(Context, &handle))
+        using var context = EnterContext();
+        if (index >= NativeMethods.wasmtime_table_size(context.Value, &handle))
             throw new WasmAllocationException("The index is out of the bounds of the table");
 
         var nativeValue = ToNative(value, table.Type.ElementType);
         try
         {
-            ThrowIfError(NativeMethods.wasmtime_table_set(Context, &handle, index, &nativeValue), static message => new WasmTypeMismatchException(message));
+            ThrowIfError(NativeMethods.wasmtime_table_set(context.Value, &handle, index, &nativeValue), static message => new WasmTypeMismatchException(message));
         }
         finally
         {
@@ -611,17 +622,19 @@ internal sealed unsafe partial class WasmtimeStore : WasmStore
     internal ulong GetTableSize(WasmtimeTable table)
     {
         var handle = table.Handle;
-        return NativeMethods.wasmtime_table_size(Context, &handle);
+        using var context = EnterContext();
+        return NativeMethods.wasmtime_table_size(context.Value, &handle);
     }
 
     internal ulong GrowTable(WasmtimeTable table, ulong delta, WasmValue value)
     {
         var handle = table.Handle;
+        using var context = EnterContext();
         var nativeValue = ToNative(value, table.Type.ElementType);
         try
         {
             ulong previousSize;
-            ThrowIfError(NativeMethods.wasmtime_table_grow(Context, &handle, delta, &nativeValue, &previousSize), static message => new WasmAllocationException(message));
+            ThrowIfError(NativeMethods.wasmtime_table_grow(context.Value, &handle, delta, &nativeValue, &previousSize), static message => new WasmAllocationException(message));
             return previousSize;
         }
         finally
@@ -638,7 +651,8 @@ internal sealed unsafe partial class WasmtimeStore : WasmStore
     {
         if (!_globals.TryGetValue((handle.StoreId, handle.Private1, handle.Private2, handle.Private3), out var global))
         {
-            var type = NativeMethods.wasmtime_global_type(Context, &handle);
+            using var context = EnterContext();
+            var type = NativeMethods.wasmtime_global_type(context.Value, &handle);
             try
             {
                 global = new WasmtimeGlobal(this, handle, WasmtimeTypes.ReadGlobalType(type));
@@ -656,14 +670,16 @@ internal sealed unsafe partial class WasmtimeStore : WasmStore
 
     public override WasmGlobal CreateGlobal(WasmGlobalType type, WasmValue value)
     {
-        var nativeType = WasmtimeTypes.CreateGlobalType(_runtime.Engine, type);
+        using var engine = _runtime.EnterEngine();
+        using var context = EnterContext();
+        var nativeType = WasmtimeTypes.CreateGlobalType(engine.Value, type);
         try
         {
             var nativeValue = ToNative(value, type.ValueType);
             try
             {
                 WasmtimeGlobalHandle handle;
-                ThrowIfError(NativeMethods.wasmtime_global_new(Context, nativeType, &nativeValue, &handle), static message => new WasmTypeMismatchException(message));
+                ThrowIfError(NativeMethods.wasmtime_global_new(context.Value, nativeType, &nativeValue, &handle), static message => new WasmTypeMismatchException(message));
                 return GetGlobal(handle);
             }
             finally
@@ -680,8 +696,9 @@ internal sealed unsafe partial class WasmtimeStore : WasmStore
     internal WasmValue GetGlobalValue(WasmtimeGlobal global)
     {
         var handle = global.Handle;
+        using var context = EnterContext();
         WasmtimeVal value;
-        NativeMethods.wasmtime_global_get(Context, &handle, &value);
+        NativeMethods.wasmtime_global_get(context.Value, &handle, &value);
         try
         {
             return FromNative(ref value);
@@ -695,10 +712,11 @@ internal sealed unsafe partial class WasmtimeStore : WasmStore
     internal void SetGlobalValue(WasmtimeGlobal global, WasmValue value)
     {
         var handle = global.Handle;
+        using var context = EnterContext();
         var nativeValue = ToNative(value, global.Type.ValueType);
         try
         {
-            ThrowIfError(NativeMethods.wasmtime_global_set(Context, &handle, &nativeValue), static message => new WasmTypeMismatchException(message));
+            ThrowIfError(NativeMethods.wasmtime_global_set(context.Value, &handle, &nativeValue), static message => new WasmTypeMismatchException(message));
         }
         finally
         {
@@ -714,7 +732,8 @@ internal sealed unsafe partial class WasmtimeStore : WasmStore
     {
         if (!_tags.TryGetValue((handle.StoreId, handle.Private1, handle.Private2), out var tag))
         {
-            var type = NativeMethods.wasmtime_tag_type(Context, &handle);
+            using var context = EnterContext();
+            var type = NativeMethods.wasmtime_tag_type(context.Value, &handle);
             try
             {
                 tag = new WasmtimeTag(this, handle, WasmtimeTypes.ReadTagType(type));
@@ -732,11 +751,13 @@ internal sealed unsafe partial class WasmtimeStore : WasmStore
 
     public override WasmTag CreateTag(WasmTagType type)
     {
-        var nativeType = WasmtimeTypes.CreateTagType(_runtime.Engine, type);
+        using var engine = _runtime.EnterEngine();
+        using var context = EnterContext();
+        var nativeType = WasmtimeTypes.CreateTagType(engine.Value, type);
         try
         {
             WasmtimeIndexedExtern handle;
-            ThrowIfError(NativeMethods.wasmtime_tag_new(Context, nativeType, &handle), static message => new WasmTypeMismatchException(message));
+            ThrowIfError(NativeMethods.wasmtime_tag_new(context.Value, nativeType, &handle), static message => new WasmTypeMismatchException(message));
             return GetTag(handle);
         }
         finally
@@ -764,10 +785,11 @@ internal sealed unsafe partial class WasmtimeStore : WasmStore
             }
 
             var tagHandle = wasmtimeTag.Handle;
+            using var context = EnterContext();
             WasmtimeRef exception;
             fixed (WasmtimeVal* fieldsPointer = fields)
             {
-                ThrowIfError(NativeMethods.wasmtime_exnref_new(Context, &tagHandle, fieldsPointer, (nuint)fields.Length, &exception), static message => new WasmTypeMismatchException(message));
+                ThrowIfError(NativeMethods.wasmtime_exnref_new(context.Value, &tagHandle, fieldsPointer, (nuint)fields.Length, &exception), static message => new WasmTypeMismatchException(message));
             }
 
             return GetException(&exception, owned: true);
@@ -784,7 +806,8 @@ internal sealed unsafe partial class WasmtimeStore : WasmStore
     /// <summary>Returns the object of an exception, the same object for the same exception. An owned reference is consumed.</summary>
     internal WasmtimeExceptionReference GetException(WasmtimeRef* reference, bool owned)
     {
-        var raw = NativeMethods.wasmtime_exnref_to_raw(Context, reference);
+        using var context = EnterContext();
+        var raw = NativeMethods.wasmtime_exnref_to_raw(context.Value, reference);
         if (_exceptions.TryGetValue(raw, out var weak) && weak.TryGetTarget(out var existing))
         {
             if (owned)
@@ -814,23 +837,26 @@ internal sealed unsafe partial class WasmtimeStore : WasmStore
 
     internal WasmtimeTag GetExceptionTag(WasmtimeExceptionReference exception)
     {
-        var reference = exception.Handle;
+        using var context = EnterContext();
+        using var reference = exception.EnterReference();
         WasmtimeIndexedExtern tag;
-        ThrowIfError(NativeMethods.wasmtime_exnref_tag(Context, &reference, &tag), static message => new InvalidOperationException(message));
+        ThrowIfError(NativeMethods.wasmtime_exnref_tag(context.Value, (WasmtimeRef*)reference.Value, &tag), static message => new InvalidOperationException(message));
         return GetTag(tag);
     }
 
     internal int GetExceptionArgumentCount(WasmtimeExceptionReference exception)
     {
-        var reference = exception.Handle;
-        return (int)NativeMethods.wasmtime_exnref_field_count(Context, &reference);
+        using var context = EnterContext();
+        using var reference = exception.EnterReference();
+        return (int)NativeMethods.wasmtime_exnref_field_count(context.Value, (WasmtimeRef*)reference.Value);
     }
 
     internal WasmValue GetExceptionArgument(WasmtimeExceptionReference exception, int index)
     {
-        var reference = exception.Handle;
+        using var context = EnterContext();
+        using var reference = exception.EnterReference();
         WasmtimeVal value;
-        ThrowIfError(NativeMethods.wasmtime_exnref_field(Context, &reference, (nuint)index, &value), static message => new WasmAllocationException(message));
+        ThrowIfError(NativeMethods.wasmtime_exnref_field(context.Value, (WasmtimeRef*)reference.Value, (nuint)index, &value), static message => new WasmAllocationException(message));
         try
         {
             return FromNative(ref value);
@@ -848,7 +874,8 @@ internal sealed unsafe partial class WasmtimeStore : WasmStore
     /// <summary>Returns the object of a struct or of an array, the same object for the same struct or array. The reference is borrowed.</summary>
     private WasmtimeGcObject GetGcObject(WasmtimeRef* reference, bool isArray)
     {
-        var raw = NativeMethods.wasmtime_anyref_to_raw(Context, reference);
+        using var context = EnterContext();
+        var raw = NativeMethods.wasmtime_anyref_to_raw(context.Value, reference);
         if (_gcObjects.TryGetValue(raw, out var weak) && weak.TryGetTarget(out var existing))
             return existing;
 

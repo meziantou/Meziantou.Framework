@@ -31,8 +31,8 @@ color conversion, and bounded-memory streaming.
   hotspot that follows its pixel through geometry operations
 - Six integer working pixel formats (`Rgba32`, `Bgra32`, `Rgb24`, `Rgba64`, `Gray8`, `Gray16`) with 16-bit precision
   preserved, and two floating-point ones (`RgbaFloat`, `RgbaHalf`) for scene-referred and high dynamic range data
-- Crop, auto-crop (background detection), resize (alpha-aware, Contain/Cover/Stretch), rotate, auto-orient, flip,
-  grayscale, Gaussian blur and convolution matrices (sharpen, edge detection) applied to all frames
+- Crop, auto-crop (background detection), resize (alpha-aware, Contain/Cover/Stretch), rotate (quarter turns or any
+  angle), skew, affine and perspective transformations, auto-orient, flip, grayscale, Gaussian blur and convolution matrices (sharpen, edge detection) applied to all frames
 - Antialiased vector drawing on a frame or on every frame: filled and stroked shapes and paths with Bézier curves,
   arcs and curves through points, dashed strokes, strokes on one side of their path and arrow heads, solid colors,
   linear, radial and sweep gradients, images (also in perspective), patterns, clips, masks, layers, shadows, blurs,
@@ -137,8 +137,8 @@ frame.Save("first.jpg", new JpegEncoder { Quality = 85, BackgroundColor = new Rg
   floating-point `RgbaFloat` and `RgbaHalf`), 16-bit precision preserved, straight alpha, alpha-aware resampling, and no
   silent alpha/precision/range/metadata/animation loss.
 - **Exact timing.** Rational `FrameDuration` preserves GIF, APNG, WebP and ANI delays exactly; `TotalPlays` counts total plays.
-- **Atomic geometry.** Crop, auto-crop, resize, rotate and auto-orient apply to every frame (and the poster)
-  transactionally.
+- **Atomic geometry.** Crop, auto-crop, resize, rotate, skew, transform and auto-orient apply to every frame (and the
+  poster) transactionally.
 - **Exact drawing.** Shapes are antialiased with the exact area of each pixel they cover, overlaps included, and
   composited with exact integer arithmetic: the same pixels on every platform.
 - **Bounded streaming.** Sequential readers and writers process long animations with memory bounded by one frame.
@@ -457,8 +457,8 @@ split into row bands, with results identical to the sequential ones.
 
 
 
-- **Geometry is atomic.** `Crop`, `AutoCrop`, `Resize`, `Rotate` and `AutoOrient` apply to every frame and the poster in
-  one transaction: replacements are allocated (and charged) while the originals are live, and any failure before the commit
+- **Geometry is atomic.** `Crop`, `AutoCrop`, `Resize`, `Rotate`, `Skew`, `Transform` and `AutoOrient` apply to every
+  frame and the poster in one transaction: replacements are allocated (and charged) while the originals are live, and any failure before the commit
   (limit, allocation failure, cancellation) leaves dimensions, pixels, frame identities and order, cursor hotspots and
   metadata unchanged.
 - **Pixel mutations may be partial.** `Flip`, `Grayscale`, `Convolve`, `Draw`, row callbacks and `ReadFrameInto` write in
@@ -585,7 +585,7 @@ public static void ExportFrameAsJpeg(string animatedPath, int frameIndex, string
 
 In-place extension methods (`ImageProcessingExtensions`), applied to every frame and the poster:
 `Crop` (an in-canvas rectangle, never clamped), `AutoCrop` (the detected content), `Resize`, `Rotate` (exact 90/180/270
-permutations), `Flip`, `AutoOrient` (all eight EXIF orientations), `Grayscale` (Rec. 709 at storage precision, ties upward; keeps the storage format and
+permutations, or any angle), `Skew` and `Transform` (an affine or a perspective transformation), `Flip`, `AutoOrient` (all eight EXIF orientations), `Grayscale` (Rec. 709 at storage precision, ties upward; keeps the storage format and
 alpha, and rejects incompatible ICC profiles; use `CloneAs<Gray8>` to change the storage), `ApplyColorMatrix` (a new
 color for each pixel from its own one: brightness, contrast, saturation, a tint) and `Convolve` (a convolution
 matrix). `Flip`, `Grayscale`, `ApplyColorMatrix` and `Convolve` also exist for one frame. Geometry changes preserve 16-bit precision and alpha, and reconcile the EXIF dimensions,
@@ -593,8 +593,8 @@ orientation and thumbnail. `ConvertColorProfile` converts the colors to another 
 (see [Color management](#color-management)).
 
 **Floating-point pixels**. `RgbaFloat` and `RgbaHalf` images accept every processing operation. Crops, rotations, flips,
-auto-orient and nearest-neighbor resizes move the stored bits unchanged, NaN payloads included. Resize, convolution and
-blur use the double-precision filters of the integer formats, with the sample values as working values premultiplied by
+auto-orient and nearest-neighbor resizes and transformations move the stored bits unchanged, NaN payloads included.
+Resize, transformations, convolution and blur use the double-precision filters of the integer formats, with the sample values as working values premultiplied by
 alpha: colors are rounded to the nearest float or half but never clamped, so highlights above 1 and negative lobes
 survive (a half beyond 65,504 becomes infinite); alpha is clamped to [0, 1], and samples that are not numbers spread to
 the pixels whose filters read them. In the `LinearSrgb` working spaces, an image labeled as linear light (the label of a
@@ -610,8 +610,9 @@ clipped. Image comparisons round samples in [0, 1] to 8 bits and reject any othe
 **Cursor hotspots**. A hotspot (`Frames[i].Metadata.Hotspot`) follows the pixel it designates:
 `Crop` and `AutoCrop` translate it, `Rotate`, `Flip` and `AutoOrient` permute it exactly, and `Resize` moves it to
 `floor(x * newWidth / width)` (and likewise vertically, through the kept region for `Cover`), which is how Windows
-scales a cursor: a hotspot in the top-left corner stays there. When that pixel is not part of the result (a crop, an auto-crop or
-a `Cover` resize that removes it), the operation throws `UnsupportedImageFeatureException` and leaves the image unchanged;
+scales a cursor: a hotspot in the top-left corner stays there. A rotation by any angle, a skew and a transformation move it
+to the pixel that contains the image of the center of its pixel. When that pixel is not part of the result (a crop, an
+auto-crop, a `Cover` resize or a transformation that removes it), the operation throws `UnsupportedImageFeatureException` and leaves the image unchanged;
 set the hotspot to `null` or to a pixel that is kept first. Pixel-only operations keep it.
 
 **Auto-cropping**. `AutoCrop` removes the uniform background around the content of an image, such as the margin of a
@@ -720,6 +721,66 @@ public static void ResizeAnimation(string inputPath, string outputPath)
     image.Resize(new ResizeOptions(320, 240) { Mode = ResizeMode.Contain, Filter = ResamplingFilter.Lanczos3 });
 
     // Same format as the extension; APNG/GIF timing and play count come from the decoded image
+    image.Save(outputPath);
+}
+```
+<!-- endref -->
+
+**Transformations**. `Rotate(degrees)` turns the image by any angle around its center, `Skew(degreesX, degreesY)` leans its vertical and
+horizontal lines, and `Transform` applies an `AffineTransform` (any combination of translations, scalings, rotations and
+skews) or a `ProjectiveTransform` (the image seen in perspective), in stored-pixel coordinates: the image covers
+`[0, width] x [0, height]`. `TransformOptions` chooses:
+
+- `CanvasMode`. `Expand` (default) makes the smallest canvas that holds the whole transformed image and centers the image
+  in it (a size within 1e-6 of an integer is that integer); `Keep` keeps the size of the image, and `Explicit` takes
+  `CanvasSize`. With `Keep` and `Explicit`, `Transform` applies the transformation as given (what lands outside the canvas
+  is cut), and `Rotate` and `Skew` put the center of the image at the center of the canvas.
+- `Filter`, the kernels of resizing (bicubic Catmull-Rom by default). Every output pixel takes the source at the point
+  its center comes from. Where the transformation shrinks the image along one of its axes, the kernel of that axis is
+  widened by the same factor, as when resizing; a rotation or a skew widens nothing, and a perspective widens its kernels
+  by 16 at most, near its horizon. Colors are filtered premultiplied by alpha in double precision and rounded once to the
+  storage precision, with the rules of resizing (16-bit precision, floating-point samples unclamped). Nearest neighbor
+  copies the pixel that contains the point, and the box filter averages the pixels whose centers lie in the footprint
+  of the point (the pixel that contains it, when nothing shrinks).
+- `BackgroundColor` (transparent black by default): the pixels beyond the edges of the image, filtered like the others,
+  so that the edges blend into it, and the canvas the image does not cover. A pixel format without alpha (`Rgb24`,
+  `Gray8`, `Gray16`) needs an opaque color when the result shows it; an `UnsupportedImageFeatureException` says so.
+- `WorkingSpace`, `Encoded` (default) or `LinearSrgb`, as for resizing.
+
+A transformation that moves every pixel onto a pixel of a canvas it fills exactly, such as `Rotate(90)` or a mirror, is
+the exact pixel permutation of `Rotate(RotateMode)` and `Flip`, whatever the filter; one that moves nothing leaves the
+image unchanged. The canvas is checked against the resource limits before anything is allocated, and a transformation
+that flattens the image, or a perspective with an `Expand` canvas whose horizon crosses the image, throws an
+`ArgumentException`. The pixel aspect ratio is kept, except by the quarter turns that swap the axes. Results do not
+depend on the worker count.
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_Straighten;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void Straighten(string inputPath, string outputPath, double degrees)
+{
+    using var image = Image.Load(inputPath);
+
+    // The canvas grows to hold the whole turned image. A JPEG image has no alpha: the corners need an opaque color
+    image.Rotate(degrees, new TransformOptions { Filter = ResamplingFilter.Lanczos3, BackgroundColor = new Rgba64(65535, 65535, 65535, 65535) });
+    image.Save(outputPath);
+}
+```
+<!-- endref -->
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_FlattenPage;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void FlattenPage(string inputPath, string outputPath, PointD topLeft, PointD topRight, PointD bottomRight, PointD bottomLeft, Size pageSize)
+{
+    using var image = Image.Load(inputPath);
+
+    // The page seen in perspective, inverted: from the photo to the page
+    var page = new RectangleD(0, 0, pageSize.Width, pageSize.Height);
+    var pageToPhoto = ProjectiveTransform.CreateFromQuadrilateral(page, topLeft, topRight, bottomRight, bottomLeft);
+    if (!pageToPhoto.TryInvert(out var photoToPage))
+        throw new ArgumentException("The corners do not delimit a page.", nameof(topLeft));
+
+    // The canvas is the page: what the photo shows around it is cut
+    image.Transform(photoToPage, new TransformOptions { CanvasMode = TransformCanvasMode.Explicit, CanvasSize = pageSize, BackgroundColor = new Rgba64(65535, 65535, 65535, 65535) });
     image.Save(outputPath);
 }
 ```

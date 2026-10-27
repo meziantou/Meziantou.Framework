@@ -23,6 +23,7 @@ public sealed class ApiSurfaceTests
         typeof(ImageWriterOptions),
         typeof(PixelConversionOptions),
         typeof(ResizeOptions),
+        typeof(TransformOptions),
         typeof(ConvolutionOptions),
         typeof(ConvolutionKernel),
         typeof(AutoCropOptions),

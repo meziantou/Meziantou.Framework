@@ -220,6 +220,20 @@ public sealed class DefaultsTests
     }
 
     [Fact]
+    public void TransformDefaults()
+    {
+        foreach (var options in new[] { new TransformOptions(), TransformOptions.Default })
+        {
+            Assert.Equal(ResamplingFilter.Bicubic, options.Filter);
+            Assert.Equal(default, options.BackgroundColor);
+            Assert.Equal(TransformCanvasMode.Expand, options.CanvasMode);
+            Assert.Equal(default, options.CanvasMode);
+            Assert.Equal(Size.Empty, options.CanvasSize);
+            Assert.Equal(ResizeWorkingSpace.Encoded, options.WorkingSpace);
+        }
+    }
+
+    [Fact]
     public void AutoCropDefaults()
     {
         var options = new AutoCropOptions();

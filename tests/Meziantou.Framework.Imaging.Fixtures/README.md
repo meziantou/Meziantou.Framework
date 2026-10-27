@@ -2383,6 +2383,17 @@ public void Decode(string id)
   source was within one unit of 16 bits, for every filter but nearest neighbor (box: identical everywhere). Near the edges,
   ImageMagick renormalizes the weights of the pixels inside the image instead of repeating the edge pixel (up to 6.4 units
   of 8 bits apart).
+- Transformation tests (`Processing.Tests/Conformance/TransformGoldenTests`: rotations by any angle, skews, affine and
+  projective transformations) do the same with `TestHarness/Resampling/ReferenceTransformer`, an independent
+  implementation of the transformation contract: decimal geometry and kernels, and a direct two-dimensional sum per
+  output pixel over every pixel within the reach of the kernels, the pixels beyond the edges of the source being the
+  background. ImageMagick (`-distort SRT`, `-rotate`) is not an oracle either: its default distortion filter is an
+  elliptical weighted average, and `-rotate` shears three times. No transformed reference files are stored. The bicubic
+  rotation was cross-checked once, outside the test suite, against ImageMagick 7.1.2-15 Q16-HDRI (`alpine:3.22`,
+  `magick in.png -background white -virtual-pixel background -filter point -interpolate catrom
+  -define distort:viewport=WxH+0+0 +distort SRT "cx,cy 1 angle WX,WY"`, the center placed where the library places it) on
+  a 120x90 8-bit pattern at 30, -17.5 and 63 degrees: the pixels of a disk of radius 30 around the center were identical,
+  and within one unit of 8 bits of the default elliptical weighted average and of `-filter Lanczos`.
 - Convolution tests (`Processing.Tests/Conformance/ConvolutionGoldenTests`) do the same with
   `TestHarness/Convolution/ReferenceConvolver`, an independent implementation of the convolution contract:
   a direct two-dimensional decimal sum per output

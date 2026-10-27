@@ -50,7 +50,11 @@ public sealed class ResizeOptions
         }
     }
 
-    /// <summary>Gets the part of the image kept by <see cref="ResizeMode.Cover"/>. Defaults to <see cref="ResizeAnchor.Center"/>.</summary>
+    /// <summary>
+    /// Gets the part of the image kept by <see cref="ResizeMode.Cover"/>, or where <see cref="ResizeMode.Pad"/> and
+    /// <see cref="ResizeMode.BoxPad"/> place the image on the canvas. Defaults to <see cref="ResizeAnchor.Center"/>. A
+    /// centered image gets the extra pixel of an odd padding on its right or bottom side.
+    /// </summary>
     /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="ResizeAnchor"/>.</exception>
     public ResizeAnchor Anchor
     {
@@ -66,11 +70,40 @@ public sealed class ResizeOptions
 
     /// <summary>
     /// Gets a value indicating whether the image may be enlarged. Defaults to <see langword="true"/>. When
-    /// <see langword="false"/>, <see cref="ResizeMode.Contain"/> never exceeds the original size, while
-    /// <see cref="ResizeMode.Stretch"/> and <see cref="ResizeMode.Cover"/> throw an <see cref="ArgumentException"/> if the
-    /// request requires enlargement, instead of returning an unexpected size.
+    /// <see langword="false"/>, <see cref="ResizeMode.Contain"/>, <see cref="ResizeMode.Pad"/> and
+    /// <see cref="ResizeMode.BoxPad"/> never exceed the original size of the image (the padding modes still produce the
+    /// target size), while <see cref="ResizeMode.Stretch"/> and <see cref="ResizeMode.Cover"/> throw an
+    /// <see cref="ArgumentException"/> if the request requires enlargement, instead of returning an unexpected size.
     /// </summary>
+    /// <remarks>
+    /// <see cref="ResizeMode.Contain"/> with <see langword="false"/> shrinks an image to fit the target size but never
+    /// enlarges it (a "max" resize).
+    /// </remarks>
     public bool AllowUpscaling { get; init; } = true;
+
+    /// <summary>
+    /// Gets a value indicating whether the image may be reduced. Defaults to <see langword="true"/>. When
+    /// <see langword="false"/>, <see cref="ResizeMode.Contain"/> never goes below the original size (the image may then be
+    /// larger than the target size), while <see cref="ResizeMode.Stretch"/>, <see cref="ResizeMode.Cover"/>,
+    /// <see cref="ResizeMode.Pad"/> and <see cref="ResizeMode.BoxPad"/> throw an <see cref="ArgumentException"/> if the
+    /// request requires a reduction, instead of returning an unexpected size.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="ResizeMode.Contain"/> with <see langword="false"/> enlarges an image to fit the target size but never
+    /// shrinks it (a "min" resize).
+    /// </remarks>
+    public bool AllowDownscaling { get; init; } = true;
+
+    /// <summary>
+    /// Gets the color of the padding added by <see cref="ResizeMode.Pad"/> and <see cref="ResizeMode.BoxPad"/>, or
+    /// <see langword="null"/> (the default) for transparent black. It is converted to the pixel format of the image, and is
+    /// not used by the other modes.
+    /// </summary>
+    /// <remarks>
+    /// A pixel format without alpha (<see cref="PixelFormat.Rgb24"/>, <see cref="PixelFormat.Gray8"/>,
+    /// <see cref="PixelFormat.Gray16"/>) cannot store a transparent padding: padding such an image requires an opaque color.
+    /// </remarks>
+    public Rgba64? BackgroundColor { get; init; }
 
     /// <summary>Gets the resampling kernel. Defaults to <see cref="ResamplingFilter.Bicubic"/>.</summary>
     /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="ResamplingFilter"/>.</exception>

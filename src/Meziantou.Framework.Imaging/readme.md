@@ -35,8 +35,8 @@ color conversion, and bounded-memory streaming.
   hotspot that follows its pixel through geometry operations
 - Six integer working pixel formats (`Rgba32`, `Bgra32`, `Rgb24`, `Rgba64`, `Gray8`, `Gray16`) with 16-bit precision
   preserved, and two floating-point ones (`RgbaFloat`, `RgbaHalf`) for scene-referred and high dynamic range data
-- Crop, auto-crop (background detection), resize (alpha-aware, Contain/Cover/Stretch), rotate (quarter turns or any
-  angle), skew, affine and perspective transformations, auto-orient, flip, grayscale, Gaussian, box and median blurs, unsharp masking and convolution matrices (sharpen, edge detection, separable matrices in two passes) applied to all frames
+- Crop, auto-crop (background detection), resize (alpha-aware, Contain/Cover/Stretch/Pad/BoxPad), padding and canvas
+  extension, rotate (quarter turns or any angle), skew, affine and perspective transformations, auto-orient, flip, grayscale, Gaussian, box and median blurs, unsharp masking and convolution matrices (sharpen, edge detection, separable matrices in two passes) applied to all frames
 - Antialiased vector drawing on a frame or on every frame: filled and stroked shapes and paths with Bézier curves,
   arcs and curves through points, dashed strokes, strokes on one side of their path and arrow heads, solid colors,
   linear, radial and sweep gradients, images (also in perspective), patterns, clips, masks, layers, shadows, blurs,
@@ -142,7 +142,7 @@ frame.Save("first.jpg", new JpegEncoder { Quality = 85, BackgroundColor = new Rg
   floating-point `RgbaFloat` and `RgbaHalf`), 16-bit precision preserved, straight alpha, alpha-aware resampling, and no
   silent alpha/precision/range/metadata/animation loss.
 - **Exact timing.** Rational `FrameDuration` preserves GIF, APNG, WebP and ANI delays exactly; `TotalPlays` counts total plays.
-- **Atomic geometry.** Crop, auto-crop, resize, rotate, skew, transform and auto-orient apply to every frame (and the
+- **Atomic geometry.** Crop, auto-crop, resize, pad, extend canvas, rotate, skew, transform and auto-orient apply to every frame (and the
   poster) transactionally.
 - **Exact drawing.** Shapes are antialiased with the exact area of each pixel they cover, overlaps included, and
   composited with exact integer arithmetic: the same pixels on every platform.
@@ -463,7 +463,7 @@ convolutions, blurs, medians and unsharp masks are split into row bands, with re
 
 
 
-- **Geometry is atomic.** `Crop`, `AutoCrop`, `Resize`, `Rotate`, `Skew`, `Transform` and `AutoOrient` apply to every
+- **Geometry is atomic.** `Crop`, `AutoCrop`, `Resize`, `Pad`, `ExtendCanvas`, `Rotate`, `Skew`, `Transform` and `AutoOrient` apply to every
   frame and the poster in one transaction: replacements are allocated (and charged) while the originals are live, and any failure before the commit
   (limit, allocation failure, cancellation) leaves dimensions, pixels, frame identities and order, cursor hotspots and
   metadata unchanged.
@@ -596,7 +596,8 @@ public static void ExportFrameAsJpeg(string animatedPath, int frameIndex, string
 ### Processing
 
 In-place extension methods (`ImageProcessingExtensions`), applied to every frame and the poster:
-`Crop` (an in-canvas rectangle, never clamped), `AutoCrop` (the detected content), `Resize`, `Rotate` (exact 90/180/270
+`Crop` (an in-canvas rectangle, never clamped), `AutoCrop` (the detected content), `Resize`, `Pad` (a border of a given
+width on each side), `ExtendCanvas` (a larger canvas, with the image at one of nine anchors), `Rotate` (exact 90/180/270
 permutations, or any angle), `Skew` and `Transform` (an affine or a perspective transformation), `Flip`, `AutoOrient` (all eight EXIF orientations), `Grayscale` (Rec. 709 at storage precision, ties upward; keeps the storage format and
 alpha, and rejects incompatible ICC profiles; use `CloneAs<Gray8>` to change the storage), `ApplyColorMatrix` (a new
 color for each pixel from its own one: brightness, contrast, saturation, a tint), `Convolve` (a convolution
@@ -622,8 +623,9 @@ values as stored and rejects non-finite samples; the typed `BackgroundColor` of 
 clipped. Image comparisons round samples in [0, 1] to 8 bits and reject any other value instead of clipping it.
 
 **Cursor hotspots**. A hotspot (`Frames[i].Metadata.Hotspot`) follows the pixel it designates:
-`Crop` and `AutoCrop` translate it, `Rotate`, `Flip` and `AutoOrient` permute it exactly, and `Resize` moves it to
-`floor(x * newWidth / width)` (and likewise vertically, through the kept region for `Cover`), which is how Windows
+`Crop`, `AutoCrop`, `Pad` and `ExtendCanvas` translate it, `Rotate`, `Flip` and `AutoOrient` permute it exactly, and `Resize` moves it to
+`floor(x * newWidth / width)` (and likewise vertically, through the kept region for `Cover`, then by the padding for
+`Pad` and `BoxPad`), which is how Windows
 scales a cursor: a hotspot in the top-left corner stays there. A rotation by any angle, a skew and a transformation move it
 to the pixel that contains the image of the center of its pixel. When that pixel is not part of the result (a crop, an
 auto-crop, a `Cover` resize or a transformation that removes it), the operation throws `UnsupportedImageFeatureException` and leaves the image unchanged;
@@ -677,9 +679,34 @@ public static bool TrimBackground(string inputPath, string outputPath)
 <!-- endref -->
 
 **Resizing**. `ResizeOptions` sets the target box and `Mode`: `Contain` (default: fit inside,
-never padded), `Cover` (fill exactly, cropped around `Anchor`, one of nine positions) or `Stretch`;
-`AllowUpscaling = false` keeps `Contain` within the original size and rejects `Cover`/`Stretch` enlargements. Target sizes
-are computed with exact rational arithmetic, rounded to nearest (ties up), and are at least 1 pixel. Filters, sampled at
+never padded), `Cover` (fill exactly, cropped around `Anchor`, one of nine positions), `Stretch`, `Pad` (fit inside like
+`Contain`, then pad to exactly the target size with `BackgroundColor`, the image placed at `Anchor`: letterboxing) or
+`BoxPad` (like `Pad`, but an image that already fits is only placed on the canvas, never enlarged).
+`AllowUpscaling = false` keeps `Contain`, `Pad` and `BoxPad` within the original size ("max") and rejects `Cover`/`Stretch`
+enlargements; `AllowDownscaling = false` keeps `Contain` at or above the original size ("min") and rejects the reductions
+of the other modes. The padding defaults to transparent black: a format without alpha (`Rgb24`, `Gray8`, `Gray16`)
+requires an opaque `BackgroundColor` (`UnsupportedImageFeatureException` otherwise), as do `Pad` and `ExtendCanvas`. A
+centered image gets the extra pixel of an odd padding on its right or bottom side. The padding never blends into the
+image: its edges are clamped as for any resize, and an image that is not resampled is copied unchanged.
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_Letterbox;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void Letterbox(string inputPath, string outputPath)
+{
+    using var image = Image.Load(inputPath);
+
+    // Fits inside 320x240, then pads to exactly 320x240 with black bars, the image centered (ResizeOptions.Anchor).
+    // The padding is transparent by default, which a pixel format without alpha (an RGB JPEG) cannot store
+    image.Resize(new ResizeOptions(320, 240) { Mode = ResizeMode.Pad, BackgroundColor = new Rgba64(0, 0, 0) });
+
+    // A 4-pixel white frame on every side: 328x248
+    image.Pad(4, 4, 4, 4, new Rgba64(65535, 65535, 65535));
+    image.Save(outputPath);
+}
+```
+<!-- endref -->
+
+Target sizes are computed with exact rational arithmetic, rounded to nearest (ties up), and are at least 1 pixel. Filters, sampled at
 pixel centers with clamped edges, normalized weights, and a support widened when downsampling:
 
 | Filter | Kernel | Radius | Interpolating |

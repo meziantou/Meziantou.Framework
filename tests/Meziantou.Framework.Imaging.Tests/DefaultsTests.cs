@@ -224,6 +224,8 @@ public sealed class DefaultsTests
         Assert.Equal(ResizeMode.Contain, options.Mode);
         Assert.Equal(ResizeAnchor.Center, options.Anchor);
         Assert.True(options.AllowUpscaling);
+        Assert.True(options.AllowDownscaling);
+        Assert.Null(options.BackgroundColor);
         Assert.Equal(ResamplingFilter.Bicubic, options.Filter);
         Assert.Equal(ResizeWorkingSpace.Encoded, options.WorkingSpace);
         Assert.Throws<ArgumentOutOfRangeException>(() => new ResizeOptions(0, 1));

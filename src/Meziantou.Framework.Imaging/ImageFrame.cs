@@ -240,6 +240,12 @@ public abstract class ImageFrame
     /// </summary>
     internal abstract void ExtendPixels(scoped in PixelLease source, scoped in PixelLease destination, Point origin, AutoCropAnalysis fill, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Writes the rectangle of the leased source located at <paramref name="origin"/> to the leased destination, filling
+    /// what lies outside the source with <paramref name="fill"/> converted to the frame pixel format (geometry transactions).
+    /// </summary>
+    internal abstract void ExtendPixels(scoped in PixelLease source, scoped in PixelLease destination, Point origin, Rgba64 fill, CancellationToken cancellationToken);
+
     /// <summary>Replaces the storage after a committed geometry transaction; the frame keeps its identity.</summary>
     /// <param name="storage">The replacement storage, owned by the same image.</param>
     internal void ReplaceStorage(PixelStorage storage) => _storage = storage;

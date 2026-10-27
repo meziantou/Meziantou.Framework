@@ -40,6 +40,10 @@ public abstract partial class Image
     /// <param name="options">The options.</param>
     /// <param name="cancellationToken">The token checked between frames and row bands, and once more right before the commit.</param>
     /// <exception cref="UnsupportedImageFeatureException">Linear-light filtering is requested for pixels that are not known to be sRGB encoded.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">
+    /// Linear-light filtering is requested for pixels that are not known to be sRGB encoded, or the result is padded and
+    /// the pixel format has no alpha to store a padding color that is not opaque.
+    /// </exception>
     internal void Resize(ResizeGeometry geometry, ResizeOptions options, CancellationToken cancellationToken)
     {
         const string Operation = "resize the image";
@@ -47,14 +51,79 @@ public abstract partial class Image
         var transfer = options.WorkingSpace == ResizeWorkingSpace.LinearSrgb ? GetLinearLightTransfer("resizing", "resize") : (byte)0;
         var workingSpace = transfer is not 0 ? ResizeWorkingSpace.LinearSrgb : ResizeWorkingSpace.Encoded;
         cancellationToken.ThrowIfCancellationRequested();
+        var padding = geometry.Padding;
+        var background = padding is null ? default : GetPaddingColor(options.BackgroundColor, Operation, "ResizeOptions.BackgroundColor");
         if (geometry.IsIdentity)
+        {
+            // Nothing to resample: a padding resize only places the pixels, unchanged, on the larger canvas
+            if (padding is { } canvas)
+            {
+                ReplaceGeometry(canvas.CanvasSize, normalizeOrientation: false, Operation, new ExtendFiller(new Point(-canvas.Offset.X, -canvas.Offset.Y), canvas.CanvasSize, analysis: null, background), cancellationToken);
+            }
+
             return;
+        }
 
         EnsureLinearLightDomain(transfer, GetAllFrames(), "resizing", "resize");
 
         // Large frames are resized by up to MaxDegreeOfParallelism workers (row bands, bit-identical results)
         using var plan = new ResizePlan(geometry, options.Filter, workingSpace, PixelFormat, _configuration.MaxDegreeOfParallelism, transfer);
-        ReplaceGeometry(geometry.OutputSize, normalizeOrientation: false, Operation, new ResizeFiller(plan, geometry), cancellationToken);
+        if (padding is null)
+        {
+            ReplaceGeometry(geometry.OutputSize, normalizeOrientation: false, Operation, new ResizeFiller(plan, geometry), cancellationToken);
+            return;
+        }
+
+        // The resampler writes whole storages: each frame is resized into a temporary storage, then placed on the canvas
+        using var scratch = new PadResizeScratch(Owner, geometry.OutputSize, PixelFormats.GetBytesPerPixel(PixelFormat), LayoutOptions);
+        ReplaceGeometry(geometry.CanvasSize, normalizeOrientation: false, Operation, new PadResizeFiller(plan, geometry, background, scratch), cancellationToken);
+    }
+
+    /// <summary>
+    /// Enlarges the canvas of every displayed frame and the poster to <paramref name="width"/> x <paramref name="height"/>,
+    /// transactionally (see <see cref="ReplaceGeometry{TFiller}"/>): the pixels are copied unchanged with their top-left
+    /// corner at (<paramref name="left"/>, <paramref name="top"/>), and the rest of the canvas is filled with the padding
+    /// color. A canvas of the current size leaves the image unchanged.
+    /// </summary>
+    /// <param name="left">The columns added on the left; validated by the caller to be within the new canvas.</param>
+    /// <param name="top">The rows added on the top; validated by the caller to be within the new canvas.</param>
+    /// <param name="width">The width of the new canvas, at least the current width.</param>
+    /// <param name="height">The height of the new canvas, at least the current height.</param>
+    /// <param name="color">The padding color, or <see langword="null"/> for transparent black.</param>
+    /// <param name="operation">The operation, for exception messages.</param>
+    /// <param name="colorParameterName">The parameter of the padding color, for exception messages.</param>
+    /// <param name="cancellationToken">The token checked between frames and row bands, and once more right before the commit.</param>
+    /// <exception cref="UnsupportedImageFeatureException">The pixel format has no alpha to store a padding color that is not opaque.</exception>
+    /// <exception cref="ImageResourceLimitException">The new canvas exceeds the limits of the configuration.</exception>
+    internal void ExtendCanvasCore(long left, long top, long width, long height, Rgba64? color, string operation, string colorParameterName, CancellationToken cancellationToken)
+    {
+        Owner.EnsureCanModify(operation);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (width == _size.Width && height == _size.Height)
+            return;
+
+        var fill = GetPaddingColor(color, operation, colorParameterName);
+
+        // The limits bound both dimensions to 32 bits, and the offsets are smaller than the dimensions
+        _configuration.Limits.EnsureCanvasWithinLimits(width, height);
+        var size = new Size((int)width, (int)height);
+        ReplaceGeometry(size, normalizeOrientation: false, operation, new ExtendFiller(new Point((int)-left, (int)-top), size, analysis: null, fill), cancellationToken);
+    }
+
+    /// <summary>Gets the color of a padding: transparent black by default, which only a pixel format with alpha can store.</summary>
+    /// <exception cref="UnsupportedImageFeatureException">The pixel format has no alpha and the color is not opaque.</exception>
+    private Rgba64 GetPaddingColor(Rgba64? color, string operation, string colorParameterName)
+    {
+        if (PixelFormats.HasAlpha(PixelFormat))
+            return color ?? default;
+
+        if (color is { A: ushort.MaxValue } opaque)
+            return opaque;
+
+        throw new UnsupportedImageFeatureException(
+            string.Create(CultureInfo.InvariantCulture, $"Cannot {operation}: the padding is {(color is null ? "transparent by default" : "translucent")}, and the {PixelFormat} pixel format has no alpha to store it. Set {colorParameterName} to an opaque color."),
+            ImageFormat.Unknown,
+            "Translucent background without alpha");
     }
 
     /// <summary>
@@ -212,7 +281,7 @@ public abstract partial class Image
         // The limits bound both dimensions to 32 bits, and the origin is at most one padded canvas away
         _configuration.Limits.EnsureCanvasWithinLimits(geometry.Width, geometry.Height);
         var size = new Size((int)geometry.Width, (int)geometry.Height);
-        ReplaceGeometry(size, normalizeOrientation: false, Operation, new ExtendFiller(new Point((int)geometry.X, (int)geometry.Y), size, analysis), cancellationToken);
+        ReplaceGeometry(size, normalizeOrientation: false, Operation, new ExtendFiller(new Point((int)geometry.X, (int)geometry.Y), size, analysis, color: default), cancellationToken);
         return true;
     }
 
@@ -983,8 +1052,12 @@ public abstract partial class Image
         public void Dispose() => Uint16Tables?.Dispose();
     }
 
+    /// <summary>
+    /// Writes the rectangle of the canvas at <paramref name="origin"/> to the replacement, filling what lies outside the
+    /// canvas with the background of <paramref name="analysis"/> when one is given, or with <paramref name="color"/>.
+    /// </summary>
     [StructLayout(LayoutKind.Auto)]
-    private readonly struct ExtendFiller(Point origin, Size size, AutoCropAnalysis fill) : IGeometryFiller
+    private readonly struct ExtendFiller(Point origin, Size size, AutoCropAnalysis? analysis, Rgba64 color) : IGeometryFiller
     {
         public bool TryMapPoint(Point source, out Point destination)
         {
@@ -1006,7 +1079,16 @@ public abstract partial class Image
         }
 
         public void Fill(ImageFrame frame, scoped in PixelLease source, scoped in PixelLease destination, CancellationToken cancellationToken)
-            => frame.ExtendPixels(source, destination, origin, fill, cancellationToken);
+        {
+            if (analysis is not null)
+            {
+                frame.ExtendPixels(source, destination, origin, analysis, cancellationToken);
+            }
+            else
+            {
+                frame.ExtendPixels(source, destination, origin, color, cancellationToken);
+            }
+        }
     }
 
     private readonly struct WarpFiller(WarpPlan plan) : IGeometryFiller
@@ -1027,5 +1109,36 @@ public abstract partial class Image
 
         public void Fill(ImageFrame frame, scoped in PixelLease source, scoped in PixelLease destination, CancellationToken cancellationToken)
             => frame.ResizePixels(source, destination, plan, cancellationToken);
+    }
+
+    /// <summary>Resizes each frame into the temporary storage of <paramref name="scratch"/>, then places it on the padded canvas.</summary>
+    [StructLayout(LayoutKind.Auto)]
+    private readonly struct PadResizeFiller(ResizePlan plan, ResizeGeometry geometry, Rgba64 background, PadResizeScratch scratch) : IGeometryFiller
+    {
+        public bool TryMapPoint(Point source, out Point destination) => geometry.TryMapPoint(source, out destination);
+
+        public void Prepare(AllocationScope scope)
+        {
+            plan.Prepare(scope);
+            scratch.Allocate();
+        }
+
+        public void Fill(ImageFrame frame, scoped in PixelLease source, scoped in PixelLease destination, CancellationToken cancellationToken)
+        {
+            var offset = geometry.Padding!.Value.Offset;
+            using var resized = scratch.Storage!.AcquireLease();
+            frame.ResizePixels(source, resized, plan, cancellationToken);
+            frame.ExtendPixels(resized, destination, new Point(-offset.X, -offset.Y), background, cancellationToken);
+        }
+    }
+
+    /// <summary>The temporary storage of a padding resize, rented by <see cref="PadResizeFiller.Prepare"/> and released with the resize.</summary>
+    private sealed class PadResizeScratch(StorageOwner owner, Size size, int bytesPerPixel, PixelStorageLayoutOptions? layoutOptions) : IDisposable
+    {
+        public PixelStorage? Storage { get; private set; }
+
+        public void Allocate() => Storage = owner.Allocate(PixelStorageLayout.Create(size.Width, size.Height, bytesPerPixel, layoutOptions), AllocationKind.Temporary, reservation: null);
+
+        public void Dispose() => Storage?.Dispose();
     }
 }

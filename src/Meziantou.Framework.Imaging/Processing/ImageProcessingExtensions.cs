@@ -9,6 +9,7 @@ namespace Meziantou.Framework.Imaging;
 /// <para>
 /// Image-level operations apply to every displayed frame and to the poster frame. Geometry-changing operations
 /// (<see cref="Crop"/>, <see cref="AutoCrop(Image, AutoCropOptions?, CancellationToken)"/>, <see cref="Resize"/>,
+/// <see cref="Pad"/>, <see cref="ExtendCanvas"/>,
 /// <see cref="Rotate(Image, RotateMode, CancellationToken)"/>, <see cref="Rotate(Image, double, TransformOptions?, CancellationToken)"/>,
 /// <see cref="Skew"/>, <see cref="Transform(Image, ProjectiveTransform, TransformOptions?, CancellationToken)"/>,
 /// <see cref="AutoOrient"/>) build all replacement buffers and metadata before committing them
@@ -32,10 +33,11 @@ namespace Meziantou.Framework.Imaging;
 /// EXIF profile is left as is (serializing it fails).
 /// </para>
 /// <para>
-/// A cursor hotspot (<see cref="FrameMetadata.Hotspot"/>) follows the pixel it designates: crops and auto-crops translate it, rotations,
+/// A cursor hotspot (<see cref="FrameMetadata.Hotspot"/>) follows the pixel it designates: crops, auto-crops and paddings translate it, rotations,
 /// mirrors and auto-orient permute it exactly, and a resize moves it to <c>floor(x * newWidth / width)</c> (and likewise
-/// vertically, through the kept region for <see cref="ResizeMode.Cover"/>), so a hotspot in the top-left corner stays
-/// there; an arbitrary transformation moves it to the pixel that contains the image of its pixel center. When the pixel
+/// vertically, through the kept region for <see cref="ResizeMode.Cover"/>, and then by the padding for
+/// <see cref="ResizeMode.Pad"/> and <see cref="ResizeMode.BoxPad"/>), so a hotspot in the top-left corner of an image that
+/// is not padded stays there; an arbitrary transformation moves it to the pixel that contains the image of its pixel center. When the pixel
 /// it designates is not part of the result (a crop, an auto-crop, a cover resize or a transformation that removes it), the operation
 /// throws an <see cref="UnsupportedImageFeatureException"/> and leaves the image unchanged: clear or move the hotspot
 /// first. Pixel-only operations keep it.
@@ -43,7 +45,8 @@ namespace Meziantou.Framework.Imaging;
 /// <para>
 /// Crop, auto-crop, rotations, mirrors and auto-orient are exact pixel permutations: every sample, including 16-bit low
 /// bits, floating-point samples of any value (not-a-number payloads included) and alpha, is copied unchanged (an
-/// auto-crop that enlarges the canvas also writes the detected background color around the copied pixels). Operations run on the calling thread, except that <see cref="Resize"/>,
+/// auto-crop that enlarges the canvas also writes the detected background color around the copied pixels, as
+/// <see cref="Pad"/> and <see cref="ExtendCanvas"/> write their padding color). Operations run on the calling thread, except that <see cref="Resize"/>,
 /// the transformations, <see cref="Convolve(Image, ConvolutionOptions, CancellationToken)"/>, the blurs and the sharpening
 /// may also use up to <see cref="ImageConfiguration.MaxDegreeOfParallelism"/> workers for large frames (identical results).
 /// </para>
@@ -236,6 +239,15 @@ public static class ImageProcessingExtensions
     /// image edges are clamped.
     /// </para>
     /// <para>
+    /// <see cref="ResizeMode.Pad"/> and <see cref="ResizeMode.BoxPad"/> resize the image as <see cref="ResizeMode.Contain"/>
+    /// does, then place it on a canvas of exactly the target size at <see cref="ResizeOptions.Anchor"/>: the padding offset
+    /// is <c>floor((target - size) * a / 2)</c> on each axis, where <c>a</c> is 0 for the left or top side, 1 for the
+    /// center and 2 for the right or bottom side. The padding is <see cref="ResizeOptions.BackgroundColor"/>, and the
+    /// edges of the image are clamped as for any resize: the padding does not blend into the image. When no resampling
+    /// is needed (<see cref="ResizeMode.BoxPad"/> of an image that fits), the pixels are copied unchanged. Otherwise each
+    /// frame is resized into a temporary storage of the resized size, charged to the image allocation scope too.
+    /// </para>
+    /// <para>
     /// Colors are filtered premultiplied by alpha and unpremultiplied afterward; a pixel whose resulting alpha is zero is
     /// transparent black. A frame whose pixels read by the filter are all opaque is filtered as its colors alone and keeps
     /// the maximum alpha. Samples are filtered in double precision and written at the storage precision (16-bit samples
@@ -269,9 +281,9 @@ public static class ImageProcessingExtensions
     /// <param name="image">The image to modify.</param>
     /// <param name="options">The resize options.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
-    /// <exception cref="ArgumentException">Upscaling is required but <see cref="ResizeOptions.AllowUpscaling"/> is <see langword="false"/> (for <see cref="ResizeMode.Stretch"/> and <see cref="ResizeMode.Cover"/>).</exception>
-    /// <exception cref="UnsupportedImageFeatureException"><see cref="ResizeWorkingSpace.LinearSrgb"/> is requested for an image with an incompatible ICC profile or with reserved transfer characteristics, or for floating-point samples outside [0, 1] that are not labeled as linear light, or the cursor hotspot of a frame designates a pixel that <see cref="ResizeMode.Cover"/> removes. The image is unchanged.</exception>
-    /// <exception cref="ImageResourceLimitException">The replacement buffers would exceed the allocation limit. The image is unchanged.</exception>
+    /// <exception cref="ArgumentException">Upscaling is required but <see cref="ResizeOptions.AllowUpscaling"/> is <see langword="false"/> (for <see cref="ResizeMode.Stretch"/> and <see cref="ResizeMode.Cover"/>), or downscaling is required but <see cref="ResizeOptions.AllowDownscaling"/> is <see langword="false"/> (for every mode but <see cref="ResizeMode.Contain"/>).</exception>
+    /// <exception cref="UnsupportedImageFeatureException"><see cref="ResizeWorkingSpace.LinearSrgb"/> is requested for an image with an incompatible ICC profile or with reserved transfer characteristics, or for floating-point samples outside [0, 1] that are not labeled as linear light; the result is padded, the pixel format has no alpha and <see cref="ResizeOptions.BackgroundColor"/> is not an opaque color; or the cursor hotspot of a frame designates a pixel that <see cref="ResizeMode.Cover"/> removes. The image is unchanged.</exception>
+    /// <exception cref="ImageResourceLimitException">The new canvas exceeds <see cref="ImageResourceLimits.MaxWidth"/>, <see cref="ImageResourceLimits.MaxHeight"/> or <see cref="ImageResourceLimits.MaxFramePixels"/>, or the replacement buffers would exceed the allocation limit. The image is unchanged.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled. The image is unchanged.</exception>
     /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
     /// <exception cref="ObjectDisposedException">The image is disposed.</exception>
@@ -281,6 +293,91 @@ public static class ImageProcessingExtensions
         ArgumentNullException.ThrowIfNull(options);
         var geometry = ResizeGeometry.Compute(image.Size, options);
         image.Resize(geometry, options, cancellationToken);
+    }
+
+    /// <summary>Adds a border around every frame of the image: the canvas grows by the given numbers of pixels on each side.</summary>
+    /// <remarks>
+    /// The pixels are copied unchanged, and the border is <paramref name="backgroundColor"/> converted to the pixel format
+    /// of the image. Padding by zero on every side leaves the image unchanged. To center the image on a canvas of a given
+    /// size, use <see cref="ExtendCanvas"/>.
+    /// </remarks>
+    /// <param name="image">The image to modify.</param>
+    /// <param name="left">The number of columns added on the left. Must not be negative.</param>
+    /// <param name="top">The number of rows added on the top. Must not be negative.</param>
+    /// <param name="right">The number of columns added on the right. Must not be negative.</param>
+    /// <param name="bottom">The number of rows added on the bottom. Must not be negative.</param>
+    /// <param name="backgroundColor">The color of the border, or <see langword="null"/> for transparent black, which requires a pixel format with alpha.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <exception cref="ArgumentOutOfRangeException">A padding is negative.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The pixel format has no alpha and <paramref name="backgroundColor"/> is not an opaque color. The image is unchanged.</exception>
+    /// <exception cref="ImageResourceLimitException">The new canvas exceeds <see cref="ImageResourceLimits.MaxWidth"/>, <see cref="ImageResourceLimits.MaxHeight"/> or <see cref="ImageResourceLimits.MaxFramePixels"/>, or the replacement buffers would exceed the allocation limit. The image is unchanged.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled. The image is unchanged.</exception>
+    /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
+    /// <exception cref="ObjectDisposedException">The image is disposed.</exception>
+    /// <example>
+    /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.Imaging.Processing.Tests/ResizeTests.cs" ref:region="Pad_Border" ref:dedent="true">
+    /// using var image = new Image&lt;Rgb24&gt;(4, 3, new Rgb24(10, 20, 30));
+    ///
+    /// // A 2-pixel white border on the left and on the right, 1 pixel above and below
+    /// image.Pad(left: 2, top: 1, right: 2, bottom: 1, backgroundColor: new Rgba64(65535, 65535, 65535));
+    /// Assert.Equal(new Size(8, 5), image.Size);
+    /// Assert.Equal(new Rgb24(255, 255, 255), image.Frames[0][0, 0]);
+    /// Assert.Equal(new Rgb24(10, 20, 30), image.Frames[0][2, 1]);
+    /// </code>
+    /// </example>
+    public static void Pad(this Image image, int left, int top, int right, int bottom, Rgba64? backgroundColor = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(image);
+        ArgumentOutOfRangeException.ThrowIfNegative(left);
+        ArgumentOutOfRangeException.ThrowIfNegative(top);
+        ArgumentOutOfRangeException.ThrowIfNegative(right);
+        ArgumentOutOfRangeException.ThrowIfNegative(bottom);
+        var size = image.Size;
+        image.ExtendCanvasCore(left, top, (long)size.Width + left + right, (long)size.Height + top + bottom, backgroundColor, "pad the image", nameof(backgroundColor), cancellationToken);
+    }
+
+    /// <summary>Enlarges the canvas of every frame of the image to a given size, and places the image on it at an anchor.</summary>
+    /// <remarks>
+    /// The pixels are copied unchanged, and the rest of the canvas is <paramref name="backgroundColor"/> converted to the
+    /// pixel format of the image. The image lies at <c>floor((size - imageSize) * a / 2)</c> on each axis, where <c>a</c>
+    /// is 0 for the left or top side, 1 for the center and 2 for the right or bottom side: a centered image gets the extra
+    /// pixel of an odd padding on its right or bottom side. A canvas of the current size leaves the image unchanged.
+    /// </remarks>
+    /// <param name="image">The image to modify.</param>
+    /// <param name="size">The size of the new canvas. Each dimension must be at least that of the image; use <see cref="Crop"/> to make the canvas smaller.</param>
+    /// <param name="anchor">Where the image is placed on the canvas. Defaults to <see cref="ResizeAnchor.Center"/>.</param>
+    /// <param name="backgroundColor">The color of the new area, or <see langword="null"/> for transparent black, which requires a pixel format with alpha.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="size"/> is smaller than the image in a dimension, or <paramref name="anchor"/> is not a defined <see cref="ResizeAnchor"/>.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The pixel format has no alpha and <paramref name="backgroundColor"/> is not an opaque color. The image is unchanged.</exception>
+    /// <exception cref="ImageResourceLimitException">The new canvas exceeds <see cref="ImageResourceLimits.MaxWidth"/>, <see cref="ImageResourceLimits.MaxHeight"/> or <see cref="ImageResourceLimits.MaxFramePixels"/>, or the replacement buffers would exceed the allocation limit. The image is unchanged.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled. The image is unchanged.</exception>
+    /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
+    /// <exception cref="ObjectDisposedException">The image is disposed.</exception>
+    /// <example>
+    /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.Imaging.Processing.Tests/ResizeTests.cs" ref:region="ExtendCanvas_Square" ref:dedent="true">
+    /// using var banner = new Image&lt;Rgba32&gt;(4, 2, new Rgba32(200, 0, 0, 255));
+    ///
+    /// // A square canvas with the image at the bottom; the new area is transparent
+    /// banner.ExtendCanvas(new Size(4, 4), ResizeAnchor.Bottom);
+    /// Assert.Equal(new Rgba32(0, 0, 0, 0), banner.Frames[0][0, 0]);
+    /// Assert.Equal(new Rgba32(200, 0, 0, 255), banner.Frames[0][0, 2]);
+    /// </code>
+    /// </example>
+    public static void ExtendCanvas(this Image image, Size size, ResizeAnchor anchor = ResizeAnchor.Center, Rgba64? backgroundColor = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(image);
+        if (!Enum.IsDefined(anchor))
+            throw new ArgumentOutOfRangeException(nameof(anchor), anchor, "The anchor is not valid.");
+
+        var current = image.Size;
+        if (size.Width < current.Width || size.Height < current.Height)
+            throw new ArgumentOutOfRangeException(nameof(size), size, string.Create(CultureInfo.InvariantCulture, $"The canvas must be at least as large as the {current.Width}x{current.Height} image in each dimension; use Crop to make it smaller."));
+
+        var (anchorX, anchorY) = ResizeGeometry.GetAnchorPosition(anchor);
+        var left = (long)(size.Width - current.Width) * anchorX / 2;
+        var top = (long)(size.Height - current.Height) * anchorY / 2;
+        image.ExtendCanvasCore(left, top, size.Width, size.Height, backgroundColor, "extend the canvas", nameof(backgroundColor), cancellationToken);
     }
 
     /// <summary>Rotates every frame of the image clockwise by a multiple of 90 degrees (an exact pixel permutation).</summary>

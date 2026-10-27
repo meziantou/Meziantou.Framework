@@ -111,6 +111,29 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void LetterboxPadsToTheBoxAndAddsTheBorder()
+    {
+        var input = GetPath("wide.png");
+        using (var source = new Image<Rgb24>(400, 200, new Rgb24(200, 30, 30)))
+        {
+            source.Save(input);
+        }
+
+        var output = GetPath("letterboxed.png");
+        Examples.Letterbox(input, output);
+
+        // 400x200 -> 320x160 at (0, 40) on 320x240, then the 4-pixel border
+        using var image = Image.Load<Rgb24>(output);
+        Assert.Equal(new Size(328, 248), image.Size);
+        Assert.Equal(new Rgb24(255, 255, 255), image.Frames[0][0, 0]);
+        Assert.Equal(new Rgb24(255, 255, 255), image.Frames[0][327, 247]);
+        Assert.Equal(new Rgb24(0, 0, 0), image.Frames[0][4, 43]);
+        Assert.Equal(new Rgb24(200, 30, 30), image.Frames[0][4, 44]);
+        Assert.Equal(new Rgb24(200, 30, 30), image.Frames[0][323, 203]);
+        Assert.Equal(new Rgb24(0, 0, 0), image.Frames[0][323, 204]);
+    }
+
+    [Fact]
     public void ComposeCardDrawsThePhotoInsideTheCircle()
     {
         var photoPath = GetPath("photo.png");

@@ -280,70 +280,92 @@ public sealed partial class FaultInjectionTests
                 await Image.IdentifyAsync(stream, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan }, cancellationToken);
                 break;
             case "reader-into":
-                using (var reader = Image.OpenReader<Rgba64>(stream, new ImageReaderOptions { Conversion = Conversion }))
+                if (SuiteReaders.ReadsFloats(data))
                 {
-                    using var destination = reader.ReadFrame();
-                    if (destination is null)
-                        break;
-
-                    try
-                    {
-                        while (reader.ReadFrameInto(destination))
-                        {
-                        }
-                    }
-                    catch (Exception exception) when (exception is not InvalidOperationException)
-                    {
-                        // The destination may be partially updated but stays structurally valid and usable
-                        ImageState.AssertReadable(destination);
-                        destination.Frames[0].Flip(FlipMode.Horizontal, CancellationToken.None);
-                        Assert.Throws<InvalidOperationException>(() => reader.ReadFrameInto(destination));
-                        throw;
-                    }
+                    ReadInto<RgbaFloat>(stream);
+                }
+                else
+                {
+                    ReadInto<Rgba64>(stream);
                 }
 
                 break;
             default:
-                var asynchronous = operation == "reader-async";
-                var options = new ImageReaderOptions { Conversion = Conversion };
-                using (var reader = await OpenReaderAsync(stream, options, asynchronous, cancellationToken))
+                if (SuiteReaders.ReadsFloats(data))
                 {
-                    var preCanceled = false;
-                    try
-                    {
-                        if (reader.Info.HasPosterFrame == true)
-                        {
-                            preCanceled = cancellationToken.IsCancellationRequested;
-                            (asynchronous ? await reader.ReadPosterFrameAsync(cancellationToken) : reader.ReadPosterFrame())?.Dispose();
-                        }
-
-                        while (true)
-                        {
-                            preCanceled = cancellationToken.IsCancellationRequested;
-                            if ((asynchronous ? await reader.ReadFrameAsync(cancellationToken) : reader.ReadFrame()) is not { } frame)
-                                break;
-
-                            frame.Dispose();
-                        }
-                    }
-                    catch (Exception exception) when (exception is not InvalidOperationException && !(preCanceled && exception is OperationCanceledException))
-                    {
-                        // Malformed data, I/O failures, allocation failures and cancellation during a call fault the reader (a token
-                        // canceled before the call is a preflight error that leaves it usable)
-                        Assert.Throws<InvalidOperationException>(() => reader.ReadFrame());
-                        throw;
-                    }
+                    await ReadAllAsync<RgbaFloat>(stream, operation == "reader-async", cancellationToken);
+                }
+                else
+                {
+                    await ReadAllAsync<Rgba64>(stream, operation == "reader-async", cancellationToken);
                 }
 
                 break;
         }
     }
 
-    private static async Task<ImageReader<Rgba64>> OpenReaderAsync(Stream stream, ImageReaderOptions options, bool asynchronous, CancellationToken cancellationToken)
+    private static void ReadInto<TPixel>(Stream stream)
+        where TPixel : unmanaged
+    {
+        using var reader = Image.OpenReader<TPixel>(stream, new ImageReaderOptions { Conversion = Conversion });
+        using var destination = reader.ReadFrame();
+        if (destination is null)
+            return;
+
+        try
+        {
+            while (reader.ReadFrameInto(destination))
+            {
+            }
+        }
+        catch (Exception exception) when (exception is not InvalidOperationException)
+        {
+            // The destination may be partially updated but stays structurally valid and usable
+            ImageState.AssertReadable(destination);
+            destination.Frames[0].Flip(FlipMode.Horizontal, CancellationToken.None);
+            Assert.Throws<InvalidOperationException>(() => reader.ReadFrameInto(destination));
+            throw;
+        }
+    }
+
+    private static async Task ReadAllAsync<TPixel>(Stream stream, bool asynchronous, CancellationToken cancellationToken)
+        where TPixel : unmanaged
+    {
+        var options = new ImageReaderOptions { Conversion = Conversion };
+        using var reader = await OpenReaderAsync<TPixel>(stream, options, asynchronous, cancellationToken);
+        var preCanceled = false;
+        try
+        {
+            if (reader.Info.HasPosterFrame == true)
+            {
+                preCanceled = cancellationToken.IsCancellationRequested;
+                (asynchronous ? await reader.ReadPosterFrameAsync(cancellationToken) : reader.ReadPosterFrame())?.Dispose();
+            }
+
+            while (true)
+            {
+                preCanceled = cancellationToken.IsCancellationRequested;
+                if ((asynchronous ? await reader.ReadFrameAsync(cancellationToken) : reader.ReadFrame()) is not { } frame)
+                    break;
+
+                frame.Dispose();
+            }
+        }
+        catch (Exception exception) when (exception is not InvalidOperationException && !(preCanceled && exception is OperationCanceledException))
+        {
+            // Malformed data, I/O failures, allocation failures and cancellation during a call fault the reader (a token
+            // canceled before the call is a preflight error that leaves it usable)
+            Assert.Throws<InvalidOperationException>(() => reader.ReadFrame());
+            throw;
+        }
+    }
+
+    private static async Task<ImageReader<TPixel>> OpenReaderAsync<TPixel>(Stream stream, ImageReaderOptions options, bool asynchronous, CancellationToken cancellationToken)
+        where TPixel : unmanaged
     {
         if (asynchronous)
-            return await Image.OpenReaderAsync<Rgba64>(stream, options, cancellationToken);
+            return await Image.OpenReaderAsync<TPixel>(stream, options, cancellationToken);
 
-        return Image.OpenReader<Rgba64>(stream, options);
+        return Image.OpenReader<TPixel>(stream, options);
     }
 }

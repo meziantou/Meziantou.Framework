@@ -135,7 +135,8 @@ public sealed class ProcessingGoldenTests
 
     private static IEnumerable<(GoldenFixture Fixture, PixelFormat Format)> CaseList()
     {
-        foreach (var fixture in GoldenCorpus.Default.Fixtures.Where(fixture => fixture.IsValid))
+        // The references are integer pixels: an OpenEXR fixture only has floating-point ones
+        foreach (var fixture in GoldenCorpus.Default.Fixtures.Where(fixture => fixture.IsValid && !fixture.CanonicalLayout.IsFloatingPoint))
         {
             yield return (fixture, fixture.CanonicalLayout == RawPixelLayout.Rgba16Le ? PixelFormat.Rgba64 : PixelFormat.Rgba32);
             if (fixture.Layouts.Contains(RawPixelLayout.Gray16Le))

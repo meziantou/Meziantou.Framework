@@ -23,6 +23,7 @@ public sealed class ApiSurfaceTests
         typeof(ImageWriterOptions),
         typeof(PixelConversionOptions),
         typeof(ResizeOptions),
+        typeof(TransformOptions),
         typeof(ConvolutionOptions),
         typeof(ConvolutionKernel),
         typeof(AutoCropOptions),
@@ -257,7 +258,6 @@ public sealed class ApiSurfaceTests
         // A new format is appended: the values of the existing members never change
         Assert.Equal(16, (int)ImageFormat.Jpeg2000);
         Assert.Equal(nameof(ImageFormat.Jpeg2000), Enum.GetName((ImageFormat)16));
-        Assert.Equal(16, Enum.GetValues<ImageFormat>().Max(format => (int)format));
 
         var type = typeof(Jpeg2000Encoder);
         Assert.Equal("Meziantou.Framework.Imaging.Formats", type.Namespace);
@@ -275,6 +275,29 @@ public sealed class ApiSurfaceTests
         Assert.Equal([nameof(Jpeg2000Container.Jp2), nameof(Jpeg2000Container.Codestream)], Enum.GetNames<Jpeg2000Container>());
         Assert.Equal(0, (int)Jpeg2000Compression.Lossless);
         Assert.Equal(0, (int)Jpeg2000Container.Jp2);
+    }
+
+    [Fact]
+    public void OpenExrAdditionsHaveTheirPublicShape()
+    {
+        // A new format is appended: the values of the existing members never change
+        Assert.Equal(17, (int)ImageFormat.OpenExr);
+        Assert.Equal(17, Enum.GetValues<ImageFormat>().Max(format => (int)format));
+
+        var type = typeof(OpenExrEncoder);
+        Assert.Equal("Meziantou.Framework.Imaging.Formats", type.Namespace);
+        Assert.True(type.IsPublic && type.IsSealed && type.IsSubclassOf(typeof(ImageEncoder)));
+        Assert.NotNull(type.GetConstructor(Type.EmptyTypes));
+        Assert.Equal(
+            [nameof(OpenExrEncoder.AllowBitDepthReduction), nameof(OpenExrEncoder.Compression), nameof(OpenExrEncoder.Format), nameof(OpenExrEncoder.PixelType)],
+            type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly).Select(property => property.Name).Order(StringComparer.Ordinal));
+        Assert.Equal(typeof(OpenExrCompression), GetDeclaredProperty(type, nameof(OpenExrEncoder.Compression)).PropertyType);
+        Assert.Equal(typeof(OpenExrPixelType?), GetDeclaredProperty(type, nameof(OpenExrEncoder.PixelType)).PropertyType);
+
+        // The compressions have the values of the format; the pixel types have no default value but null
+        Assert.Equal([nameof(OpenExrCompression.None), nameof(OpenExrCompression.Rle), nameof(OpenExrCompression.Zips), nameof(OpenExrCompression.Zip), nameof(OpenExrCompression.Piz)], Enum.GetNames<OpenExrCompression>());
+        Assert.Equal([0, 1, 2, 3, 4], Enum.GetValues<OpenExrCompression>().Select(value => (int)value));
+        Assert.Equal([nameof(OpenExrPixelType.Half), nameof(OpenExrPixelType.Float)], Enum.GetNames<OpenExrPixelType>());
     }
 
     [Theory]

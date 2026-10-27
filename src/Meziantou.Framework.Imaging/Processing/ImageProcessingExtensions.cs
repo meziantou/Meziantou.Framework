@@ -9,7 +9,9 @@ namespace Meziantou.Framework.Imaging;
 /// <para>
 /// Image-level operations apply to every displayed frame and to the poster frame. Geometry-changing operations
 /// (<see cref="Crop"/>, <see cref="AutoCrop(Image, AutoCropOptions?, CancellationToken)"/>, <see cref="Resize"/>,
-/// <see cref="Rotate"/>, <see cref="AutoOrient"/>) build all replacement buffers and metadata before committing them
+/// <see cref="Rotate(Image, RotateMode, CancellationToken)"/>, <see cref="Rotate(Image, double, TransformOptions?, CancellationToken)"/>,
+/// <see cref="Skew"/>, <see cref="Transform(Image, ProjectiveTransform, TransformOptions?, CancellationToken)"/>,
+/// <see cref="AutoOrient"/>) build all replacement buffers and metadata before committing them
 /// together: on failure or cancellation before the commit, the image is left exactly as it was (dimensions, pixels, frame
 /// identities and order, metadata). The old and new buffers are budgeted together. After a successful commit, existing
 /// <see cref="ImageFrame"/> references designate the same logical frames.
@@ -32,15 +34,16 @@ namespace Meziantou.Framework.Imaging;
 /// A cursor hotspot (<see cref="FrameMetadata.Hotspot"/>) follows the pixel it designates: crops and auto-crops translate it, rotations,
 /// mirrors and auto-orient permute it exactly, and a resize moves it to <c>floor(x * newWidth / width)</c> (and likewise
 /// vertically, through the kept region for <see cref="ResizeMode.Cover"/>), so a hotspot in the top-left corner stays
-/// there. When the pixel it designates is not part of the result (a crop, an auto-crop or a cover resize that removes it), the operation
+/// there; an arbitrary transformation moves it to the pixel that contains the image of its pixel center. When the pixel
+/// it designates is not part of the result (a crop, an auto-crop, a cover resize or a transformation that removes it), the operation
 /// throws an <see cref="UnsupportedImageFeatureException"/> and leaves the image unchanged: clear or move the hotspot
 /// first. Pixel-only operations keep it.
 /// </para>
 /// <para>
 /// Crop, auto-crop, rotations, mirrors and auto-orient are exact pixel permutations: every sample, including 16-bit low
 /// bits, floating-point samples of any value (not-a-number payloads included) and alpha, is copied unchanged (an
-/// auto-crop that enlarges the canvas also writes the detected background color around the copied pixels). Operations run on the calling thread, except that <see cref="Resize"/> and
-/// <see cref="Convolve(Image, ConvolutionOptions, CancellationToken)"/> may also use up to
+/// auto-crop that enlarges the canvas also writes the detected background color around the copied pixels). Operations run on the calling thread, except that <see cref="Resize"/>,
+/// the transformations and <see cref="Convolve(Image, ConvolutionOptions, CancellationToken)"/> may also use up to
 /// <see cref="ImageConfiguration.MaxDegreeOfParallelism"/> workers for large frames (identical results).
 /// </para>
 /// </remarks>
@@ -300,6 +303,156 @@ public static class ImageProcessingExtensions
         }
 
         image.TransformGeometry(new Rectangle(0, 0, size.Width, size.Height), OrientationTransform.ForRotation(mode), normalizeOrientation: false, "rotate the image", cancellationToken);
+    }
+
+    /// <summary>Rotates every frame of the image clockwise by an angle, around its center.</summary>
+    /// <remarks>
+    /// <para>
+    /// The center of the image goes to the center of the canvas. With the default
+    /// <see cref="TransformCanvasMode.Expand"/>, the canvas grows to hold the whole rotated image, and the corners it
+    /// gains get <see cref="TransformOptions.BackgroundColor"/> (transparent by default). A rotation by a multiple of 90
+    /// degrees whose canvas holds exactly the rotated image (always the case with <see cref="TransformCanvasMode.Expand"/>)
+    /// is the exact pixel permutation of <see cref="Rotate(Image, RotateMode, CancellationToken)"/>, which also swaps the
+    /// axes of <see cref="ImageMetadata.PixelAspectRatio"/>; a rotation by a multiple of 360 degrees leaves the image
+    /// unchanged. See <see cref="Transform(Image, ProjectiveTransform, TransformOptions?, CancellationToken)"/> for the
+    /// sampling, the background and the canvas.
+    /// </para>
+    /// </remarks>
+    /// <param name="image">The image to modify.</param>
+    /// <param name="degrees">The angle, in degrees. A positive angle turns clockwise.</param>
+    /// <param name="options">The options, or <see langword="null"/> for <see cref="TransformOptions.Default"/>.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <exception cref="ArgumentException"><paramref name="degrees"/> is not a finite number, or <see cref="TransformOptions.CanvasMode"/> is <see cref="TransformCanvasMode.Explicit"/> and <see cref="TransformOptions.CanvasSize"/> is empty.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The pixel format has no alpha, the result shows the background and <see cref="TransformOptions.BackgroundColor"/> is not opaque; <see cref="ResizeWorkingSpace.LinearSrgb"/> is requested for an image it cannot decode; or the cursor hotspot of a frame leaves the canvas. The image is unchanged.</exception>
+    /// <exception cref="ImageResourceLimitException">The canvas exceeds <see cref="ImageResourceLimits.MaxWidth"/>, <see cref="ImageResourceLimits.MaxHeight"/> or <see cref="ImageResourceLimits.MaxFramePixels"/>, or the replacement buffers would exceed the allocation limit. The image is unchanged.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled. The image is unchanged.</exception>
+    /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
+    /// <exception cref="ObjectDisposedException">The image is disposed.</exception>
+    public static void Rotate(this Image image, double degrees, TransformOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(image);
+        var rotation = AffineTransform.CreateRotation(degrees);
+        options = ValidateTransformOptions(options);
+        var size = image.Size;
+        image.Warp(AffineTransform.CreateTranslation(-size.Width / 2.0, -size.Height / 2.0).Then(rotation), options, centered: true, nameof(degrees), cancellationToken);
+    }
+
+    /// <summary>Skews every frame of the image around its center: its vertical lines lean by one angle and its horizontal lines by another one.</summary>
+    /// <remarks>
+    /// <para>
+    /// A point moves horizontally by <c>tan(degreesX)</c> times its distance to the center row, and vertically by
+    /// <c>tan(degreesY)</c> times its distance to the center column (<see cref="AffineTransform.CreateSkew"/>). The center
+    /// of the image goes to the center of the canvas. With the default <see cref="TransformCanvasMode.Expand"/>, the
+    /// canvas grows to hold the whole skewed image. See
+    /// <see cref="Transform(Image, ProjectiveTransform, TransformOptions?, CancellationToken)"/> for the sampling, the
+    /// background and the canvas.
+    /// </para>
+    /// </remarks>
+    /// <param name="image">The image to modify.</param>
+    /// <param name="degreesX">The angle the vertical lines lean by, in degrees. Must be between -90 and 90, excluded.</param>
+    /// <param name="degreesY">The angle the horizontal lines lean by, in degrees. Must be between -90 and 90, excluded.</param>
+    /// <param name="options">The options, or <see langword="null"/> for <see cref="TransformOptions.Default"/>.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <exception cref="ArgumentOutOfRangeException">An angle is not between -90 and 90 degrees, excluded.</exception>
+    /// <exception cref="ArgumentException">The two angles flatten the image to a line (their tangents multiply to 1), or <see cref="TransformOptions.CanvasMode"/> is <see cref="TransformCanvasMode.Explicit"/> and <see cref="TransformOptions.CanvasSize"/> is empty.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The pixel format has no alpha, the result shows the background and <see cref="TransformOptions.BackgroundColor"/> is not opaque; <see cref="ResizeWorkingSpace.LinearSrgb"/> is requested for an image it cannot decode; or the cursor hotspot of a frame leaves the canvas. The image is unchanged.</exception>
+    /// <exception cref="ImageResourceLimitException">The canvas exceeds <see cref="ImageResourceLimits.MaxWidth"/>, <see cref="ImageResourceLimits.MaxHeight"/> or <see cref="ImageResourceLimits.MaxFramePixels"/>, or the replacement buffers would exceed the allocation limit. The image is unchanged.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled. The image is unchanged.</exception>
+    /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
+    /// <exception cref="ObjectDisposedException">The image is disposed.</exception>
+    public static void Skew(this Image image, double degreesX, double degreesY, TransformOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(image);
+        var skew = AffineTransform.CreateSkew(degreesX, degreesY);
+        options = ValidateTransformOptions(options);
+        var size = image.Size;
+        image.Warp(AffineTransform.CreateTranslation(-size.Width / 2.0, -size.Height / 2.0).Then(skew), options, centered: true, nameof(degreesX), cancellationToken);
+    }
+
+    /// <summary>Transforms every frame of the image with an affine transformation: any combination of translations, scalings, rotations and skews.</summary>
+    /// <remarks>
+    /// <para>
+    /// See <see cref="Transform(Image, ProjectiveTransform, TransformOptions?, CancellationToken)"/>. An affine
+    /// transformation shrinks the image by the same factors everywhere, and its kernels are widened by those factors
+    /// without limit, as a resize does.
+    /// </para>
+    /// </remarks>
+    /// <param name="image">The image to modify.</param>
+    /// <param name="transform">The transformation, in stored-pixel coordinates: the image covers <c>[0, width] x [0, height]</c>.</param>
+    /// <param name="options">The options, or <see langword="null"/> for <see cref="TransformOptions.Default"/>.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <exception cref="ArgumentException"><paramref name="transform"/> flattens the image to a line or a point, or <see cref="TransformOptions.CanvasMode"/> is <see cref="TransformCanvasMode.Explicit"/> and <see cref="TransformOptions.CanvasSize"/> is empty.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The pixel format has no alpha, the result shows the background and <see cref="TransformOptions.BackgroundColor"/> is not opaque; <see cref="ResizeWorkingSpace.LinearSrgb"/> is requested for an image it cannot decode; or the cursor hotspot of a frame leaves the canvas. The image is unchanged.</exception>
+    /// <exception cref="ImageResourceLimitException">The canvas exceeds <see cref="ImageResourceLimits.MaxWidth"/>, <see cref="ImageResourceLimits.MaxHeight"/> or <see cref="ImageResourceLimits.MaxFramePixels"/>, or the replacement buffers would exceed the allocation limit. The image is unchanged.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled. The image is unchanged.</exception>
+    /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
+    /// <exception cref="ObjectDisposedException">The image is disposed.</exception>
+    public static void Transform(this Image image, AffineTransform transform, TransformOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(image);
+        options = ValidateTransformOptions(options);
+        image.Warp(transform, options, centered: false, nameof(transform), cancellationToken);
+    }
+
+    /// <summary>Transforms every frame of the image with a projective transformation: the image seen in perspective.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Geometry.</b> The image covers <c>[0, width] x [0, height]</c> in stored-pixel coordinates (pixel <c>(i, j)</c>
+    /// is the unit square centered at <c>(i + 1/2, j + 1/2)</c>), and <paramref name="transform"/> moves it to the plane of
+    /// the result. With <see cref="TransformCanvasMode.Expand"/> (the default), the canvas is the smallest one that holds
+    /// the bounds of the transformed image (a size within 1e-6 of an integer is that integer), and the bounds are
+    /// centered in it: the translation of the transformation does not matter, and every corner of the image must be in
+    /// front of the viewer (<c>W</c> positive). With <see cref="TransformCanvasMode.Keep"/> and
+    /// <see cref="TransformCanvasMode.Explicit"/>, the canvas has the size of the image or
+    /// <see cref="TransformOptions.CanvasSize"/>, and the coordinates of the plane are those of the canvas: what lands
+    /// outside of it is cut. A transformation that moves every pixel onto a pixel of a canvas it fills exactly (a quarter
+    /// turn, a mirror) is an exact pixel permutation, as <see cref="Rotate(Image, RotateMode, CancellationToken)"/> and
+    /// <see cref="Flip(Image, FlipMode, CancellationToken)"/> are; one that moves nothing leaves the image unchanged.
+    /// </para>
+    /// <para>
+    /// <b>Sampling.</b> Every output pixel takes the value of the source at the point its center comes from, filtered with
+    /// <see cref="TransformOptions.Filter"/>, the kernels of <see cref="Resize"/>. Where the transformation shrinks the
+    /// source along one of its axes, the kernel of that axis is widened by the same factor, as a resize does (a rotation
+    /// or a skew widens nothing); a projective transformation, whose factors grow without bound toward its horizon,
+    /// widens them by 16 at most. The weights are those of the kernel at the distance of each source pixel center,
+    /// normalized by their sum. Colors are filtered premultiplied by alpha, in double precision, in the working space of
+    /// <see cref="TransformOptions.WorkingSpace"/>, and rounded once to the storage precision as a resize rounds them
+    /// (a pixel whose alpha is zero is transparent black); floating-point samples follow the rules of
+    /// <see cref="Resize"/>. Nearest neighbor copies the source pixel that contains the point, exactly. The box filter
+    /// averages the source pixels whose centers lie in <c>(p - f/2, p + f/2]</c> on each axis, where <c>p</c> is the point
+    /// and <c>f</c> the widening of the axis: without widening, the pixel that contains the point.
+    /// </para>
+    /// <para>
+    /// <b>Background.</b> The pixels beyond the edges of the source are <see cref="TransformOptions.BackgroundColor"/>
+    /// (transparent black by default), converted to the pixel format and filtered like the others: the edges of the
+    /// image blend into the background, and the canvas the image does not reach is the background. A pixel format
+    /// without alpha needs an opaque background, unless no output pixel reads beyond the edges of the source (a
+    /// projective transformation always may).
+    /// </para>
+    /// <para>
+    /// <b>Frames.</b> The operation is transactional across every frame and the poster, like <see cref="Resize"/>. A
+    /// cursor hotspot moves to the pixel that contains the image of its pixel center; when that pixel is not on the
+    /// canvas, the operation throws and the image is unchanged. <see cref="ImageMetadata.PixelAspectRatio"/> is kept,
+    /// except by the permutations that swap the axes. When the image configuration allows several workers
+    /// (<see cref="ImageConfiguration.MaxDegreeOfParallelism"/>), the output rows of a large frame are split into bands
+    /// transformed concurrently; the result is identical to the single-worker result.
+    /// </para>
+    /// </remarks>
+    /// <param name="image">The image to modify.</param>
+    /// <param name="transform">The transformation, in stored-pixel coordinates: the image covers <c>[0, width] x [0, height]</c>.</param>
+    /// <param name="options">The options, or <see langword="null"/> for <see cref="TransformOptions.Default"/>.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <exception cref="ArgumentException"><paramref name="transform"/> flattens the image to a line or a point; or puts part of the image on or behind its horizon with <see cref="TransformCanvasMode.Expand"/>; or <see cref="TransformOptions.CanvasMode"/> is <see cref="TransformCanvasMode.Explicit"/> and <see cref="TransformOptions.CanvasSize"/> is empty.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The pixel format has no alpha and <see cref="TransformOptions.BackgroundColor"/> is not opaque; <see cref="ResizeWorkingSpace.LinearSrgb"/> is requested for an image it cannot decode; or the cursor hotspot of a frame leaves the canvas. The image is unchanged.</exception>
+    /// <exception cref="ImageResourceLimitException">The canvas exceeds <see cref="ImageResourceLimits.MaxWidth"/>, <see cref="ImageResourceLimits.MaxHeight"/> or <see cref="ImageResourceLimits.MaxFramePixels"/>, or the replacement buffers would exceed the allocation limit. The image is unchanged.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled. The image is unchanged.</exception>
+    /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
+    /// <exception cref="ObjectDisposedException">The image is disposed.</exception>
+    public static void Transform(this Image image, ProjectiveTransform transform, TransformOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(image);
+        options = ValidateTransformOptions(options);
+        image.Warp(transform, options, centered: false, nameof(transform), cancellationToken);
     }
 
     /// <summary>
@@ -761,6 +914,15 @@ public static class ImageProcessingExtensions
             return;
 
         frame.OwnerImage.BlurFrame(frame, storage, GaussianKernel.Create(sigma), edgeMode, workingSpace, cancellationToken);
+    }
+
+    private static TransformOptions ValidateTransformOptions(TransformOptions? options)
+    {
+        options ??= TransformOptions.Default;
+        if (options.CanvasMode == TransformCanvasMode.Explicit && options.CanvasSize.IsEmpty)
+            throw new ArgumentException("TransformCanvasMode.Explicit requires a canvas size that is not empty (TransformOptions.CanvasSize).", nameof(options));
+
+        return options;
     }
 
     private static void ValidateBlur(ConvolutionEdgeMode edgeMode, ConvolutionWorkingSpace workingSpace)

@@ -296,18 +296,26 @@ public sealed class RawPixelBuffer
         return new RawPixelBuffer(width, height, Layout, result);
     }
 
-    internal int GetSampleAt(int sampleIndex)
-        => Layout.BytesPerSample == 1 ? _data[sampleIndex] : BinaryPrimitives.ReadUInt16LittleEndian(_data.AsSpan(sampleIndex * 2));
+    internal int GetSampleAt(int sampleIndex) => Layout.BytesPerSample switch
+    {
+        1 => _data[sampleIndex],
+        2 => BinaryPrimitives.ReadUInt16LittleEndian(_data.AsSpan(sampleIndex * 2)),
+        _ => BinaryPrimitives.ReadInt32LittleEndian(_data.AsSpan(sampleIndex * 4)),
+    };
 
     internal static void SetSampleAt(Span<byte> data, RawPixelLayout layout, int sampleIndex, int value)
     {
-        if (layout.BytesPerSample == 1)
+        switch (layout.BytesPerSample)
         {
-            data[sampleIndex] = checked((byte)value);
-        }
-        else
-        {
-            BinaryPrimitives.WriteUInt16LittleEndian(data[(sampleIndex * 2)..], checked((ushort)value));
+            case 1:
+                data[sampleIndex] = checked((byte)value);
+                break;
+            case 2:
+                BinaryPrimitives.WriteUInt16LittleEndian(data[(sampleIndex * 2)..], checked((ushort)value));
+                break;
+            default:
+                BinaryPrimitives.WriteInt32LittleEndian(data[(sampleIndex * 4)..], value);
+                break;
         }
     }
 

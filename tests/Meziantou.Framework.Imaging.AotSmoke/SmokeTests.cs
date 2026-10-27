@@ -1263,6 +1263,54 @@ internal static class SmokeTests
         }
     }
 
+    public static void OpenExr()
+    {
+        // Floating-point pixels are stored as they are, values above 1 and the special values included, with every compression
+        using var still = CreatePattern(seed: 13);
+        // Alphas of 0, 1/2 and 1: the premultiplication of the colors, which OpenEXR stores, is then exact
+        using var full = still.CloneAs<RgbaFloat>();
+        full.Frames[0].ProcessPixelRows(rows =>
+        {
+            for (var y = 0; y < rows.Height; y++)
+            {
+                var row = rows.GetRowSpan(y);
+                for (var x = 0; x < row.Length; x++)
+                {
+                    row[x].A = ((x + y) % 3) * 0.5f;
+                }
+            }
+        });
+        full.Frames[0][1, 2] = new RgbaFloat(42.5f, -1f, float.PositiveInfinity, 0.5f);
+        full.Metadata.TransferFunction = ColorTransferFunction.Linear;
+        using var half = full.CloneAs<RgbaHalf>();
+        foreach (var compression in Enum.GetValues<OpenExrCompression>())
+        {
+            foreach (var image in new Image[] { full, half })
+            {
+                var encoded = Encode(image, new OpenExrEncoder { Compression = compression });
+                Check(Image.DetectFormat(encoded) == ImageFormat.OpenExr, "OpenEXR detection");
+                var info = Image.Identify(encoded, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan });
+                Check(info.Width == Width && info.Height == Height && info.PixelFormat == PixelFormat.RgbaFloat, "OpenEXR identification");
+                using var decoded = Image.Load(encoded);
+                using var expected = image is Image<RgbaHalf> halfImage ? halfImage.CloneAs<RgbaFloat>() : ((Image<RgbaFloat>)image).CloneAs<RgbaFloat>();
+                CheckEqual(expected, decoded, "OpenEXR " + compression.ToString());
+                Check(decoded.Metadata.TransferFunction == ColorTransferFunction.Linear, "OpenEXR linear light");
+            }
+        }
+
+        // A typed load clips or tone maps the highlights; 8-bit pixels are exact as half samples
+        using (var clipped = Image.Load<Rgba32>(Encode(full, new OpenExrEncoder()), new ImageDecodeOptions { Conversion = new PixelConversionOptions { OutOfRangeSamples = OutOfRangeSampleHandling.Clip } }))
+        {
+            Check(clipped.Frames[0][1, 2].R == 255, "OpenEXR clipped highlight");
+        }
+
+        still.Metadata.TransferFunction = ColorTransferFunction.Linear;
+        using (var decoded = Image.Load<Rgba32>(Encode(still, new OpenExrEncoder { Compression = OpenExrCompression.Piz, PixelType = OpenExrPixelType.Float })))
+        {
+            CheckEqual(still, decoded, "OpenEXR 8-bit samples");
+        }
+    }
+
     private static byte[] Encode(Image image, ImageEncoder encoder)
     {
         using var stream = new MemoryStream();

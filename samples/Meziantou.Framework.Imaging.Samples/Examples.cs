@@ -24,6 +24,36 @@ internal static class Examples
     }
     #endregion
 
+    /// <summary>Straightens a tilted scan: turns it around its center, and fills the corners the turn uncovers with white.</summary>
+    #region Imaging_Straighten
+    public static void Straighten(string inputPath, string outputPath, double degrees)
+    {
+        using var image = Image.Load(inputPath);
+
+        // The canvas grows to hold the whole turned image. A JPEG image has no alpha: the corners need an opaque color
+        image.Rotate(degrees, new TransformOptions { Filter = ResamplingFilter.Lanczos3, BackgroundColor = new Rgba64(65535, 65535, 65535, 65535) });
+        image.Save(outputPath);
+    }
+    #endregion
+
+    /// <summary>Flattens a page photographed in perspective, from the position of its four corners in the photo.</summary>
+    #region Imaging_FlattenPage
+    public static void FlattenPage(string inputPath, string outputPath, PointD topLeft, PointD topRight, PointD bottomRight, PointD bottomLeft, Size pageSize)
+    {
+        using var image = Image.Load(inputPath);
+
+        // The page seen in perspective, inverted: from the photo to the page
+        var page = new RectangleD(0, 0, pageSize.Width, pageSize.Height);
+        var pageToPhoto = ProjectiveTransform.CreateFromQuadrilateral(page, topLeft, topRight, bottomRight, bottomLeft);
+        if (!pageToPhoto.TryInvert(out var photoToPage))
+            throw new ArgumentException("The corners do not delimit a page.", nameof(topLeft));
+
+        // The canvas is the page: what the photo shows around it is cut
+        image.Transform(photoToPage, new TransformOptions { CanvasMode = TransformCanvasMode.Explicit, CanvasSize = pageSize, BackgroundColor = new Rgba64(65535, 65535, 65535, 65535) });
+        image.Save(outputPath);
+    }
+    #endregion
+
     /// <summary>Auto-crop: trims the uniform background around the content and keeps a margin; returns whether the image changed.</summary>
     #region Imaging_AutoCrop
     public static bool TrimBackground(string inputPath, string outputPath)
@@ -1095,6 +1125,24 @@ internal static class Examples
         // Files, codestreams and the high-throughput block coder (HTJ2K) are decoded, whatever wrote them.
         var info = Image.Identify(jp2Path);
         return $"{info.Format} {info.Size.Width}x{info.Size.Height} {info.PixelFormat}, {info.BitsPerComponent} bits";
+    }
+    #endregion
+
+    /// <summary>OpenEXR: floating-point pixels in and out, and the integer version of a high dynamic range image.</summary>
+    #region Imaging_OpenExr
+    public static Image<Rgba32> ConvertOpenExr(string exrPath, string pizPath)
+    {
+        // An OpenEXR file loads as RgbaHalf (half samples) or RgbaFloat (float or 32-bit integer samples), in linear light
+        using var hdr = Image.Load(exrPath);
+
+        // Lossless: the samples are written as they are, values above 1 included. PIZ is often the smallest
+        hdr.Save(pizPath, new OpenExrEncoder { Compression = OpenExrCompression.Piz });
+
+        // Integer pixels cannot hold the highlights: a typed load compresses them with a tone mapping
+        return Image.Load<Rgba32>(exrPath, new ImageDecodeOptions
+        {
+            Conversion = new PixelConversionOptions { ToneMapping = new HdrToneMappingOptions() },
+        });
     }
     #endregion
 

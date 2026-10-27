@@ -318,19 +318,6 @@ public sealed partial class IdentifyConformanceTests
             buffers.Add(fixture.GetPoster(layout));
         }
 
-        foreach (var buffer in buffers)
-        {
-            var span = buffer.Span;
-            var pixelSize = layout.BytesPerPixel;
-            var alphaOffset = layout.AlphaChannel * layout.BytesPerSample;
-            for (var offset = 0; offset < span.Length; offset += pixelSize)
-            {
-                var alpha = layout.BytesPerSample == 1 ? span[offset + alphaOffset] : span[offset + alphaOffset] | (span[offset + alphaOffset + 1] << 8);
-                if (alpha != layout.MaxSampleValue)
-                    return true;
-            }
-        }
-
-        return false;
+        return !buffers.All(RawImport.IsOpaque);
     }
 }

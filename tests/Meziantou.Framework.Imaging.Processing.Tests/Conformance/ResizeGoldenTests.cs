@@ -37,6 +37,9 @@ public sealed class ResizeGoldenTests
         ("stretch-nearest", (w, h) => new((2 * w) + 1, Math.Max(1, h - 1), ReferenceResizeMode.Stretch, ReferenceKernel.Nearest)),
         ("contain-linear-lanczos3", (w, h) => new(Math.Max(1, (w + 1) / 2), Math.Max(1, (h + 1) / 2), ReferenceResizeMode.Contain, ReferenceKernel.Lanczos3, Linear: true)),
         ("stretch-linear-up-catmull-rom", (w, h) => new(w + 3, (2 * h) + 1, ReferenceResizeMode.Stretch, ReferenceKernel.CatmullRom, Linear: true)),
+        ("stretch-down-box", (w, h) => new(Math.Max(1, w / 2), Math.Max(1, ((2 * h) + 2) / 3), ReferenceResizeMode.Stretch, ReferenceKernel.Box)),
+        ("stretch-up-mitchell", (w, h) => new((2 * w) + 1, Math.Max(1, h - 1), ReferenceResizeMode.Stretch, ReferenceKernel.MitchellNetravali)),
+        ("contain-linear-lanczos8", (w, h) => new(Math.Max(1, (w + 2) / 3), 2 * h, ReferenceResizeMode.Contain, ReferenceKernel.Lanczos8, Linear: true)),
     ];
 
     public static TheoryData<string, string> Cases()
@@ -196,7 +199,8 @@ public sealed class ResizeGoldenTests
 
     internal static IEnumerable<(GoldenFixture Fixture, PixelFormat Format)> CaseList()
     {
-        foreach (var fixture in GoldenCorpus.Default.Fixtures.Where(fixture => fixture.IsValid))
+        // The references are integer pixels: an OpenEXR fixture only has floating-point ones
+        foreach (var fixture in GoldenCorpus.Default.Fixtures.Where(fixture => fixture.IsValid && !fixture.CanonicalLayout.IsFloatingPoint))
         {
             var sixteenBit = fixture.CanonicalLayout == RawPixelLayout.Rgba16Le;
             yield return (fixture, sixteenBit ? PixelFormat.Rgba64 : PixelFormat.Rgba32);
@@ -305,7 +309,17 @@ public sealed class ResizeGoldenTests
             ReferenceKernel.Nearest => ResamplingFilter.NearestNeighbor,
             ReferenceKernel.Triangle => ResamplingFilter.Bilinear,
             ReferenceKernel.CatmullRom => ResamplingFilter.Bicubic,
-            _ => ResamplingFilter.Lanczos3,
+            ReferenceKernel.Lanczos3 => ResamplingFilter.Lanczos3,
+            ReferenceKernel.Box => ResamplingFilter.Box,
+            ReferenceKernel.Hermite => ResamplingFilter.Hermite,
+            ReferenceKernel.MitchellNetravali => ResamplingFilter.MitchellNetravali,
+            ReferenceKernel.Robidoux => ResamplingFilter.Robidoux,
+            ReferenceKernel.RobidouxSharp => ResamplingFilter.RobidouxSharp,
+            ReferenceKernel.Spline => ResamplingFilter.Spline,
+            ReferenceKernel.Lanczos2 => ResamplingFilter.Lanczos2,
+            ReferenceKernel.Lanczos5 => ResamplingFilter.Lanczos5,
+            ReferenceKernel.Lanczos8 => ResamplingFilter.Lanczos8,
+            _ => throw new ArgumentOutOfRangeException(nameof(options)),
         },
         Anchor = (options.AnchorX, options.AnchorY) switch
         {

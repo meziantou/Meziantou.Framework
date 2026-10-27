@@ -775,6 +775,56 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void StraightenTurnsTheScanAndFillsTheCornersWithWhite()
+    {
+        var input = GetPath("scan.jpg");
+        using (var source = new Image<Rgb24>(40, 30, new Rgb24(0, 0, 255)))
+        {
+            source.Save(input);
+        }
+
+        var output = GetPath("straight.png");
+        Examples.Straighten(input, output, -10);
+
+        // 40 cos 10 + 30 sin 10 = 44.6 and 40 sin 10 + 30 cos 10 = 36.5, rounded up; the corners are white
+        using var straight = Image.Load<Rgb24>(output);
+        Assert.Equal(new Size(45, 37), straight.Size);
+        Assert.Equal(new Rgb24(255, 255, 255), straight.Frames[0][0, 0]);
+        Assert.Equal(new Rgb24(255, 255, 255), straight.Frames[0][44, 36]);
+        var center = straight.Frames[0][22, 18];
+        Assert.True(center.R < 8 && center.G < 8 && center.B > 247, center.ToString());
+    }
+
+    [Fact]
+    public void FlattenPageMapsTheCornersOfThePageToTheCanvas()
+    {
+        // A photo whose page is the blue 20 x 20 square at (10, 5), on a red table
+        var input = GetPath("photo.png");
+        using (var source = new Image<Rgba32>(40, 30, Red))
+        {
+            for (var y = 5; y < 25; y++)
+            {
+                for (var x = 10; x < 30; x++)
+                {
+                    source.Frames[0][x, y] = Blue;
+                }
+            }
+
+            source.Save(input);
+        }
+
+        var output = GetPath("page.png");
+        Examples.FlattenPage(input, output, new PointD(10, 5), new PointD(30, 5), new PointD(30, 25), new PointD(10, 25), new Size(40, 40));
+
+        // The page is enlarged twice: away from its edges, where the kernel reads the table, it is blue
+        using var page = Image.Load<Rgba32>(output);
+        Assert.Equal(new Size(40, 40), page.Size);
+        Assert.Equal(Blue, page.Frames[0][5, 5]);
+        Assert.Equal(Blue, page.Frames[0][20, 20]);
+        Assert.Equal(Blue, page.Frames[0][34, 34]);
+    }
+
+    [Fact]
     public void TrimBackgroundCropsToTheContentAndKeepsTheMargin()
     {
         // A 40x30 white image with a 10x6 red block at (2, 12)
@@ -1008,6 +1058,30 @@ public sealed class DocumentationExampleTests : IDisposable
         Assert.Equal(3, animation.Animation!.TotalPlays);
         Assert.Equal(expected.Frames[1].Metadata.Duration, animation.Frames[1].Metadata.Duration); // exact
         Assert.Equal(expected.Frames[1][63, 63], animation.Frames[1][63, 63]); // lossless
+    }
+
+    [Fact]
+    public void ConvertOpenExrKeepsTheHighlightsAndToneMapsThem()
+    {
+        var exr = GetPath("highlights.exr");
+        using (var source = new Image<RgbaHalf>(8, 4, new RgbaHalf((Half)0.25f, (Half)0.5f, (Half)1f)))
+        {
+            source.Frames[0][3, 2] = new RgbaHalf((Half)12f, (Half)6f, (Half)3f);
+            source.Save(exr);
+        }
+
+        var piz = GetPath("highlights-piz.exr");
+        using var toneMapped = Examples.ConvertOpenExr(exr, piz);
+        using (var copy = Image.Load<RgbaHalf>(piz))
+        {
+            Assert.Equal(new RgbaHalf((Half)12f, (Half)6f, (Half)3f), copy.Frames[0][3, 2]);
+        }
+
+        // The highlight is the white of the tone mapping, and its hue is kept
+        var pixel = toneMapped.Frames[0][3, 2];
+        Assert.Equal(255, pixel.R);
+        Assert.InRange(pixel.G, 120, 135);
+        Assert.True(toneMapped.Frames[0][0, 0].B < 255);
     }
 
     [Fact]

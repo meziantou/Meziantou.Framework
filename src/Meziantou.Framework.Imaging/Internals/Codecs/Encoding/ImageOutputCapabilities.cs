@@ -26,6 +26,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <item><term>AVIF</term><description>Known frame count; a count of 1 is a still image, without animation settings, written to any destination; any other count is an image sequence, which needs a seekable destination (the <c>moov</c> box is written at completion, in the room reserved for it); no poster; at most 65,536 pixels per side (65,535 for an image sequence).</description></item>
 /// <item><term>JPEG XL</term><description>Unknown frame count allowed (a frame is written when the next one or the completion arrives); no poster; at most 1,073,741,824 pixels per side; any play count; no seeking.</description></item>
 /// <item><term>JPEG 2000</term><description>Exactly one frame; no animation settings; no poster; at most 2^31 - 1 pixels per side; no seeking (the lengths of a file are known before it is written).</description></item>
+/// <item><term>OpenEXR</term><description>Exactly one frame; no animation settings; no poster; at most 2^31 - 1 pixels per side; floating-point samples stored as they are; a seekable destination unless the chunks are not compressed (the table of their offsets precedes them and is patched once they are written).</description></item>
 /// </list>
 /// <para>
 /// <see cref="PngAnimationMode.Auto"/> writes an APNG when more than one frame is expected or animation settings are given
@@ -162,6 +163,9 @@ internal sealed class ImageOutputCapabilities
         AniEncoder => new ImageOutputCapabilities(ImageFormat.Ani, isAnimated: true, requiresFrameCount: false, maxFrameCount: null, supportsPosterFrame: false, maxDimension: AniEncoder.MaxDimension, requiresSeekableOutput: true),
         JpegXlEncoder => new ImageOutputCapabilities(ImageFormat.JpegXl, isAnimated: frameCount != 1 || hasAnimation, requiresFrameCount: false, maxFrameCount: null, supportsPosterFrame: false, maxDimension: JpegXlEncoderCodec.MaxDimension),
         Jpeg2000Encoder => new ImageOutputCapabilities(ImageFormat.Jpeg2000, isAnimated: false, requiresFrameCount: false, maxFrameCount: 1, supportsPosterFrame: false, maxDimension: int.MaxValue),
+
+        // The offsets of the chunks precede them: compressed chunks need a seekable destination to patch the table
+        OpenExrEncoder exr => new ImageOutputCapabilities(ImageFormat.OpenExr, isAnimated: false, requiresFrameCount: false, maxFrameCount: 1, supportsPosterFrame: false, maxDimension: int.MaxValue, requiresSeekableOutput: exr.Compression != OpenExrCompression.None),
         _ => throw new ArgumentException($"The encoder {encoder.GetType().Name} is not supported.", nameof(encoder)),
     };
 

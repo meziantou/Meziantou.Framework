@@ -125,7 +125,7 @@ public sealed class LimitBoundaryTests
         Assert.Equal(new Size(3, 5), tall.Size);
     }
 
-    public static TheoryData<string> Encoders => ["png", "apng", "gif", "jpeg", "jpeg-progressive", "webp", "webp-lossy", "webp-animated", "qoi", "avif", "avif-lossy", "avif-animated", "heic", "heic-lossy", "heic-animated", "jxl", "jxl-fast", "jxl-animated", "jxl-lossy", "jxl-lossy-progressive", "jxl-progressive", "jp2", "jp2-lossy", "j2k"];
+    public static TheoryData<string> Encoders => ["png", "apng", "gif", "jpeg", "jpeg-progressive", "webp", "webp-lossy", "webp-animated", "qoi", "avif", "avif-lossy", "avif-animated", "heic", "heic-lossy", "heic-animated", "jxl", "jxl-fast", "jxl-animated", "jxl-lossy", "jxl-lossy-progressive", "jxl-progressive", "jp2", "jp2-lossy", "j2k", "exr", "exr-piz"];
 
     [Theory]
     [MemberData(nameof(Encoders))]
@@ -197,6 +197,8 @@ public sealed class LimitBoundaryTests
                 "jp2" => new Jpeg2000Encoder(),
                 "jp2-lossy" => new Jpeg2000Encoder { Compression = Jpeg2000Compression.Lossy },
                 "j2k" => new Jpeg2000Encoder { Container = Jpeg2000Container.Codestream },
+                "exr" => new OpenExrEncoder { MetadataHandling = MetadataHandling.DiscardUnsupported },
+                "exr-piz" => new OpenExrEncoder { Compression = OpenExrCompression.Piz, MetadataHandling = MetadataHandling.DiscardUnsupported },
                 _ => new JpegEncoder(),
             },
             ExpectedFrameCount = encoder is "apng" or "webp-animated" or "avif-animated" or "heic-animated" or "jxl-animated" ? 2 : 1,

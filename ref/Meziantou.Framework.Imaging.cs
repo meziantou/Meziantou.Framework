@@ -570,6 +570,7 @@ namespace Meziantou.Framework.Imaging
         JpegXl = 14,
         Heic = 15,
         Jpeg2000 = 16,
+        OpenExr = 17,
     }
 
     public abstract class ImageFrame
@@ -699,6 +700,10 @@ namespace Meziantou.Framework.Imaging
         public static void Quantize(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.QuantizeOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Resize(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.ResizeOptions options, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Rotate(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.RotateMode mode, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void Rotate(this Meziantou.Framework.Imaging.Image image, double degrees, Meziantou.Framework.Imaging.TransformOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void Skew(this Meziantou.Framework.Imaging.Image image, double degreesX, double degreesY, Meziantou.Framework.Imaging.TransformOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void Transform(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.AffineTransform transform, Meziantou.Framework.Imaging.TransformOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void Transform(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.ProjectiveTransform transform, Meziantou.Framework.Imaging.TransformOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
     }
 
     public sealed class ImageReaderOptions
@@ -1108,6 +1113,15 @@ namespace Meziantou.Framework.Imaging
         Bilinear = 1,
         Bicubic = 2,
         Lanczos3 = 3,
+        Box = 4,
+        Hermite = 5,
+        MitchellNetravali = 6,
+        Robidoux = 7,
+        RobidouxSharp = 8,
+        Spline = 9,
+        Lanczos2 = 10,
+        Lanczos5 = 11,
+        Lanczos8 = 12,
     }
 
     public enum ResizeAnchor
@@ -1294,6 +1308,23 @@ namespace Meziantou.Framework.Imaging
         public static Meziantou.Framework.Imaging.Transform3D operator *(Meziantou.Framework.Imaging.Transform3D left, Meziantou.Framework.Imaging.Transform3D right) => throw null;
         public static implicit operator Meziantou.Framework.Imaging.Transform3D(Meziantou.Framework.Imaging.AffineTransform transform) => throw null;
         public static implicit operator Meziantou.Framework.Imaging.Transform3D(Meziantou.Framework.Imaging.ProjectiveTransform transform) => throw null;
+    }
+
+    public enum TransformCanvasMode
+    {
+        Expand = 0,
+        Keep = 1,
+        Explicit = 2,
+    }
+
+    public sealed class TransformOptions
+    {
+        public Meziantou.Framework.Imaging.Rgba64 BackgroundColor { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.TransformCanvasMode CanvasMode { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Size CanvasSize { get => throw null; init { } }
+        public static Meziantou.Framework.Imaging.TransformOptions Default { get => throw null; }
+        public Meziantou.Framework.Imaging.ResamplingFilter Filter { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.ResizeWorkingSpace WorkingSpace { get => throw null; init { } }
     }
 
     public class UnknownImageFormatException : Meziantou.Framework.Imaging.ImageException
@@ -2382,6 +2413,29 @@ namespace Meziantou.Framework.Imaging.Formats
         Strict = 0,
         DiscardUnsupported = 1,
         Strip = 2,
+    }
+
+    public enum OpenExrCompression
+    {
+        None = 0,
+        Rle = 1,
+        Zips = 2,
+        Zip = 3,
+        Piz = 4,
+    }
+
+    public sealed class OpenExrEncoder : Meziantou.Framework.Imaging.Formats.ImageEncoder
+    {
+        public bool AllowBitDepthReduction { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Formats.OpenExrCompression Compression { get => throw null; init { } }
+        public override Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
+        public Meziantou.Framework.Imaging.Formats.OpenExrPixelType? PixelType { get => throw null; init { } }
+    }
+
+    public enum OpenExrPixelType
+    {
+        Half = 0,
+        Float = 1,
     }
 
     public enum PngAnimationMode

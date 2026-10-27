@@ -95,8 +95,13 @@ public sealed class RawPixelBufferBuilder
         ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(y, Height);
         ArgumentOutOfRangeException.ThrowIfNegative(channel);
         ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(channel, Layout.ChannelCount);
-        ArgumentOutOfRangeException.ThrowIfNegative(value);
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(value, Layout.MaxSampleValue);
+        if (!Layout.IsFloatingPoint)
+        {
+            // A floating-point sample is the bits of its float: any value
+            ArgumentOutOfRangeException.ThrowIfNegative(value);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(value, Layout.MaxSampleValue);
+        }
+
         RawPixelBuffer.SetSampleAt(_data, Layout, (((y * Width) + x) * Layout.ChannelCount) + channel, value);
     }
 

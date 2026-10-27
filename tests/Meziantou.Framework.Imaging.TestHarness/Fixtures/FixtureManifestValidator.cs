@@ -26,6 +26,7 @@ public static partial class FixtureManifestValidator
         "Zlib",
         "Apache-2.0",
         "Unicode-3.0",
+        "BSD-3-Clause",
         FontLicense,
     };
 
@@ -43,7 +44,7 @@ public static partial class FixtureManifestValidator
     public static IReadOnlySet<string> AllowedKinds => FixtureKinds.All;
 
     /// <summary>The accepted values of <see cref="FixtureEntry.Format"/> (container formats; APNG is <c>png</c>).</summary>
-    public static IReadOnlySet<string> AllowedFormats { get; } = new HashSet<string>(StringComparer.Ordinal) { "png", "gif", "jpeg", "webp", "qoi", "bmp", "tga", "pnm", "avif", "heic", "jxl", "jp2" };
+    public static IReadOnlySet<string> AllowedFormats { get; } = new HashSet<string>(StringComparer.Ordinal) { "png", "gif", "jpeg", "webp", "qoi", "bmp", "tga", "pnm", "avif", "heic", "jxl", "jp2", "exr" };
 
     /// <summary>The accepted values of <see cref="FixtureExpectation.PixelFormat"/> (library <c>PixelFormat</c> names).</summary>
     public static IReadOnlySet<string> AllowedPixelFormats { get; } = new HashSet<string>(StringComparer.Ordinal) { "Rgba32", "Bgra32", "Rgb24", "Rgba64", "Gray8", "Gray16", "RgbaFloat", "RgbaHalf" };
@@ -618,16 +619,16 @@ public static partial class FixtureManifestValidator
 
         // AV1 and HEVC samples are 8, 10 or 12 bits wide; JPEG XL and JPEG 2000 samples have any width, the fixtures use
         // the same ones; JPEG samples are 8 or 12 bits wide, and those of a lossless JPEG file 2 to 16 bits wide
-        if (expected.BitsPerComponent is not null and not (1 or 2 or 4 or 8 or 16) && !(entry.Format is "avif" or "heic" or "jxl" or "jp2" && expected.BitsPerComponent is 10 or 12) && !(entry.Format is "jpeg" && expected.BitsPerComponent is >= 2 and <= 16))
+        if (expected.BitsPerComponent is not null and not (1 or 2 or 4 or 8 or 16) && !(entry.Format is "avif" or "heic" or "jxl" or "jp2" && expected.BitsPerComponent is 10 or 12) && !(entry.Format is "jpeg" && expected.BitsPerComponent is >= 2 and <= 16) && !(entry.Format is "exr" && expected.BitsPerComponent is 32))
         {
             errors.Add($"{name}: invalid bitsPerComponent {expected.BitsPerComponent}.");
         }
 
         if (expected.Cicp is { } cicp)
         {
-            if (entry.Format is not ("avif" or "heic" or "jxl"))
+            if (entry.Format is not ("avif" or "heic" or "jxl" or "exr"))
             {
-                errors.Add($"{name}: only AVIF and JPEG XL inputs declare a CICP color description (and HEIC ones, which share the container of AVIF).");
+                errors.Add($"{name}: only AVIF, JPEG XL and OpenEXR inputs declare a CICP color description (and HEIC ones, which share the container of AVIF).");
             }
 
             if (cicp.ColorPrimaries is < 0 or > 255 || cicp.TransferCharacteristics is < 0 or > 255 || cicp.MatrixCoefficients is < 0 or > 255)
@@ -697,9 +698,9 @@ public static partial class FixtureManifestValidator
         {
             errors.Add($"{name}: invalid transferFunction '{transfer}' (allowed: {string.Join(", ", AllowedTransferFunctions)}).");
         }
-        else if (expected.EffectiveTransferFunction == "linear" && entry.Format is not ("qoi" or "jxl"))
+        else if (expected.EffectiveTransferFunction == "linear" && entry.Format is not ("qoi" or "jxl" or "exr"))
         {
-            errors.Add($"{name}: only QOI inputs (colorspace 1) and JPEG XL inputs (a linear transfer function with the sRGB primaries) declare linear samples.");
+            errors.Add($"{name}: only QOI inputs (colorspace 1), JPEG XL inputs (a linear transfer function with the sRGB primaries) and OpenEXR inputs (BT.709 chromaticities) declare linear samples.");
         }
 
         if (expected.Frames.Count == 0)

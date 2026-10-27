@@ -296,11 +296,13 @@ public sealed class MetadataWritePlanTests
     [Fact]
     public void LightLevelsMasteringDisplayAndPixelShapeAreUnsupportedMetadataWhereNoFieldStoresThem()
     {
-        var lightLevel = new ImageMetadata { ContentLightLevel = new ContentLightLevel(1000, 400) };
-        var display = new ImageMetadata { MasteringDisplay = new MasteringDisplayColorVolume(35400, 14600, 8500, 39850, 6550, 2300, 15635, 16450, 10_000_000, 50) };
-        var wide = new ImageMetadata { PixelAspectRatio = new PixelAspectRatio(2, 1) };
         foreach (var format in FormatsWithoutHighDynamicRangeFields)
         {
+            // OpenEXR stores linear light only: an sRGB label would be the first item it cannot store
+            var transfer = format == ImageFormat.OpenExr ? ColorTransferFunction.Linear : ColorTransferFunction.Srgb;
+            var lightLevel = new ImageMetadata { ContentLightLevel = new ContentLightLevel(1000, 400), TransferFunction = transfer };
+            var display = new ImageMetadata { MasteringDisplay = new MasteringDisplayColorVolume(35400, 14600, 8500, 39850, 6550, 2300, 15635, 16450, 10_000_000, 50), TransferFunction = transfer };
+            var wide = new ImageMetadata { PixelAspectRatio = new PixelAspectRatio(2, 1), TransferFunction = transfer };
             AssertUnsupported(lightLevel, format, "content light level");
             AssertUnsupported(display, format, "mastering display color volume");
             AssertUnsupported(wide, format, "pixel aspect ratio");
@@ -311,9 +313,30 @@ public sealed class MetadataWritePlanTests
             Assert.Null(plan.PixelAspectRatio);
 
             // Square pixels are what a format without a field for their shape stores: nothing is lost
-            var square = MetadataWritePlan.Create(new ImageMetadata { PixelAspectRatio = new PixelAspectRatio(3, 3) }, format, MetadataHandling.Strict, Canvas);
+            var square = MetadataWritePlan.Create(new ImageMetadata { PixelAspectRatio = new PixelAspectRatio(3, 3), TransferFunction = transfer }, format, MetadataHandling.Strict, Canvas);
             Assert.Null(square.PixelAspectRatio);
         }
+    }
+
+    [Fact]
+    public void OpenExrStoresLinearLightOnly()
+    {
+        // The samples are linear light: the transfer function of another label would change their meaning
+        var plan = MetadataWritePlan.Create(new ImageMetadata { TransferFunction = ColorTransferFunction.Linear }, ImageFormat.OpenExr, MetadataHandling.Strict, Canvas);
+        Assert.Equal(ColorTransferFunction.Linear, plan.TransferFunction);
+        Assert.Null(plan.Cicp);
+        AssertUnsupported(new ImageMetadata(), ImageFormat.OpenExr, "sRGB transfer function (OpenEXR stores linear-light samples: sRGB-encoded samples would be read as linear light)");
+        AssertUnsupported(new ImageMetadata { Cicp = new CicpColorDescription(9, 16, 0, fullRange: true) }, ImageFormat.OpenExr, "CICP color description other than linear BT.709, BT.2020 or P3 primaries (OpenEXR stores linear-light samples)");
+        AssertUnsupported(new ImageMetadata { TransferFunction = ColorTransferFunction.Linear, IccProfile = IccProfile.Srgb }, ImageFormat.OpenExr, "ICC color profile");
+
+        // Linear BT.2020, DCI-P3 and Display P3 are written as chromaticities, whatever the transfer function label
+        foreach (byte primaries in new byte[] { 9, 11, 12 })
+        {
+            var cicp = new CicpColorDescription(primaries, 8, 0, fullRange: true);
+            Assert.Same(cicp, MetadataWritePlan.Create(new ImageMetadata { Cicp = cicp }, ImageFormat.OpenExr, MetadataHandling.Strict, Canvas).Cicp);
+        }
+
+        Assert.Null(MetadataWritePlan.Create(new ImageMetadata(), ImageFormat.OpenExr, MetadataHandling.DiscardUnsupported, Canvas).Cicp);
     }
 
     [Fact]

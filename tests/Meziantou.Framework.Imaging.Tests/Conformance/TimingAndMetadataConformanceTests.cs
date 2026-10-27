@@ -87,6 +87,11 @@ public sealed class TimingAndMetadataConformanceTests
             Assert.Equal(expected.Orientation, fields.TransformOrientation);
             Assert.Equal(expected.Cicp?.ToString(), fields.ContainerCicp?.ToString());
         }
+        else if (fixture.Entry.Format == "exr")
+        {
+            // The chromaticities of an OpenEXR file: a CICP description for BT.2020 and P3, the linear transfer function for BT.709
+            Assert.Equal(expected.Cicp?.ToString(), fields.ContainerCicp?.ToString());
+        }
         else
         {
             Assert.Null(expected.Cicp);

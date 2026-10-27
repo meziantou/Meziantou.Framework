@@ -52,7 +52,8 @@ internal static class FuzzOracle
         },
     };
 
-    private static readonly PixelConversionOptions Conversion = new() { DiscardIncompatibleColorProfile = true };
+    // Floating-point samples outside [0, 1] (OpenEXR) are clipped, so that the typed loads and the readers still compare them
+    private static readonly PixelConversionOptions Conversion = new() { DiscardIncompatibleColorProfile = true, OutOfRangeSamples = OutOfRangeSampleHandling.Clip };
 
     // Four-component JPEG files are only loaded with a color conversion: with it, their mutations reach the decoding of
     // the inks and the embedded CMYK profile instead of stopping at the frame header
@@ -168,7 +169,7 @@ internal static class FuzzOracle
         }
 
         // Typed versus untyped, eager versus sequential. Floating-point samples that an integer format cannot store (TIFF
-        // pages) are rejected by the Rgba64 load, never clipped
+        // pages, OpenEXR files) are rejected by the Rgba64 load, never clipped
         var rejectsFloatingPointSamples = eager.Succeeded && PixelFormats.IsFloatingPoint(eager.Value!.PixelFormat)
             && typed.Exception is UnsupportedImageFeatureException { Feature: "Not-a-number samples" or "Out-of-range samples" };
         if (eager.Succeeded != typed.Succeeded && !rejectsFloatingPointSamples && !IsLiveAllocationLimit(eager.Exception) && !IsLiveAllocationLimit(typed.Exception))

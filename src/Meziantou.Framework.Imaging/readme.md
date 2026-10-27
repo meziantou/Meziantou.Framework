@@ -665,12 +665,32 @@ public static bool TrimBackground(string inputPath, string outputPath)
 **Resizing**. `ResizeOptions` sets the target box and `Mode`: `Contain` (default: fit inside,
 never padded), `Cover` (fill exactly, cropped around `Anchor`, one of nine positions) or `Stretch`;
 `AllowUpscaling = false` keeps `Contain` within the original size and rejects `Cover`/`Stretch` enlargements. Target sizes
-are computed with exact rational arithmetic, rounded to nearest (ties up), and are at least 1 pixel. Filters: nearest
-neighbor, bilinear, bicubic Catmull-Rom (default) and Lanczos3, sampled at pixel centers with clamped edges, normalized
-weights, and a support widened when downsampling. Colors are filtered premultiplied by alpha, so hidden colors of
-transparent pixels never bleed (zero alpha becomes transparent black), and 16-bit images are filtered with 16-bit
-precision. A frame whose pixels read by the filter are all opaque is filtered as its colors alone and keeps the maximum
-alpha: premultiplying by a constant alpha would only add roundings.
+are computed with exact rational arithmetic, rounded to nearest (ties up), and are at least 1 pixel. Filters, sampled at
+pixel centers with clamped edges, normalized weights, and a support widened when downsampling:
+
+| Filter | Kernel | Radius | Interpolating |
+| --- | --- | --- | --- |
+| `NearestNeighbor` | the pixel containing the center | - | yes |
+| `Box` | average of the pixels whose centers lie in the footprint of the output pixel (exact for integer downscales) | 1/2 | yes |
+| `Bilinear` | triangle | 1 | yes |
+| `Hermite` | cubic B = 0, C = 0 | 1 | yes |
+| `Bicubic` (default) | Catmull-Rom, cubic B = 0, C = 1/2 | 2 | yes |
+| `MitchellNetravali` | cubic B = C = 1/3 | 2 | no |
+| `Robidoux` | Keys cubic, B = 12 / (19 + 9 sqrt(2)) | 2 | no |
+| `RobidouxSharp` | Keys cubic, B = 6 / (13 + 7 sqrt(2)) | 2 | no |
+| `Spline` | cubic B-spline, B = 1, C = 0 | 2 | no |
+| `Lanczos2`, `Lanczos3`, `Lanczos5`, `Lanczos8` | sinc windowed by sinc, with 2, 3, 5 or 8 lobes | 2, 3, 5, 8 | yes |
+
+The cubics are those of Mitchell and Netravali (SIGGRAPH 1988). A non-interpolating filter also smooths an axis that
+keeps its size, for example the width of an image whose height only changes. Away from the edges, every filter gave the
+same result as ImageMagick 7.1.2 (`-filter Box`, `Triangle`, `Hermite`, `Catrom`, `Mitchell`, `Robidoux`, `RobidouxSharp`,
+`Spline`, `Lanczos2`, `Lanczos` and `Lanczos -define filter:lobes=5` or `8`), within one unit of 16-bit samples; at the
+edges, ImageMagick renormalizes the weights of the pixels inside the image instead of repeating the edge pixel.
+
+Colors are filtered premultiplied by alpha, so hidden colors of transparent pixels never bleed (zero alpha becomes
+transparent black), and 16-bit images are filtered with 16-bit precision. A frame whose pixels read by the filter are all
+opaque is filtered as its colors alone and keeps the maximum alpha: premultiplying by a constant alpha would only add
+roundings.
 
 - `ResizeWorkingSpace.Encoded` (default) filters the stored sample values directly, like most image tools.
 - `ResizeWorkingSpace.LinearSrgb` converts the samples to linear light before filtering and back afterward (more

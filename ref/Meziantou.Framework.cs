@@ -545,10 +545,10 @@ namespace Meziantou.Framework
         public static Meziantou.Framework.SafeHandleValue CreateHandleScope(this System.Runtime.InteropServices.SafeHandle safeHandle) => throw null;
     }
 
-    public struct SafeHandleValue : System.IDisposable
+    public readonly struct SafeHandleValue : System.IDisposable
     {
-        public readonly bool HasValue { get => throw null; }
-        public readonly nint Value { get => throw null; }
+        public bool HasValue { get => throw null; }
+        public nint Value { get => throw null; }
         public SafeHandleValue(System.Runtime.InteropServices.SafeHandle safeHandle) { }
         public void Dispose() { }
         public static implicit operator nint(Meziantou.Framework.SafeHandleValue handle) => throw null;

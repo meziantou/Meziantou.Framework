@@ -61,6 +61,9 @@ internal sealed class JsTypedArray : JsObject, IArrayIteratorSource
     public static JsTypedArray Create(JsRealm realm, TypedArrayElementType elementType, JsArrayBuffer buffer, int byteOffset, int? length)
     {
         var typedArray = new JsTypedArray(realm.Intrinsics.GetTypedArrayPrototype(elementType), elementType);
+
+        // The atomic operations rely on aligned elements
+        Debug.Assert(byteOffset >= 0 && byteOffset % typedArray.ElementSize == 0);
         typedArray.Initialize(buffer, byteOffset, length);
         return typedArray;
     }

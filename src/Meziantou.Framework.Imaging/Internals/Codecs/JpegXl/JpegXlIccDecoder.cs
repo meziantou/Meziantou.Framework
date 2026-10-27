@@ -144,7 +144,7 @@ internal static class JpegXlIccDecoder
     }
 
     /// <summary>Rebuilds the profile from the decoded bytes: the size of the profile, the size of the commands, the commands, then the data.</summary>
-    private static byte[] Unpredict(ReadOnlySpan<byte> encoded, JpegXlBitReader reader, long maxLength, ImageResourceLimits limits)
+    internal static byte[] Unpredict(ReadOnlySpan<byte> encoded, JpegXlBitReader reader, long maxLength, ImageResourceLimits limits)
     {
         var position = 0;
         var outputSize = ReadVarInt(encoded, encoded.Length, ref position);
@@ -289,7 +289,9 @@ internal static class JpegXlIccDecoder
             }
         }
 
-        // The main content
+        // The main content. The buffer is allocated once: a stackalloc in the loop would grow the stack with every
+        // command, and the file chooses the number of commands
+        Span<byte> type = stackalloc byte[4];
         while (commandPosition < commandsEnd)
         {
             var command = encoded[commandPosition++];
@@ -375,7 +377,6 @@ internal static class JpegXlIccDecoder
 
                 case >= CommandTypeStartFirst when command - CommandTypeStartFirst < TypeStrings.Length:
                 {
-                    Span<byte> type = stackalloc byte[4];
                     Encoding.ASCII.GetBytes(TypeStrings[command - CommandTypeStartFirst], type);
                     Append(result, ref length, type);
                     Append(result, ref length, [0, 0, 0, 0]);

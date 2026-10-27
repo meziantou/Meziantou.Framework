@@ -563,6 +563,57 @@ public sealed class JpegXlDecoderTests
         Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(JpegXlTestFiles.PqWithWhitePointE));
     }
 
+    [Fact]
+    public void ManyTypeCommandsOfAnIccProfileDoNotGrowTheStack()
+    {
+        // Each type command writes 8 bytes. The commands cost nothing in an entropy-coded stream, so a file can contain a
+        // lot of them: the decoder must not use stack space for each one
+        const int CommandCount = 200_000;
+        const int OutputSize = JpegXlIccDecoder.HeaderSize + (CommandCount * 8);
+        var encoded = new List<byte>();
+        WriteVarInt(encoded, OutputSize);
+        WriteVarInt(encoded, 1 + CommandCount);
+        encoded.Add(0); // No tag list
+        encoded.AddRange(Enumerable.Repeat((byte)16, CommandCount)); // The "XYZ " type
+        encoded.AddRange(new byte[JpegXlIccDecoder.HeaderSize]); // The header is the prediction
+        var data = encoded.ToArray();
+
+        byte[]? profile = null;
+        Exception? exception = null;
+        var thread = new Thread(
+            () =>
+            {
+                try
+                {
+                    profile = JpegXlIccDecoder.Unpredict(data, new JpegXlBitReader(), OutputSize, new ImageResourceLimits());
+                }
+                catch (Exception ex)
+                {
+                    exception = ex;
+                }
+            },
+            maxStackSize: 256 * 1024);
+        thread.Start();
+        thread.Join();
+
+        Assert.Null(exception);
+        Assert.NotNull(profile);
+        Assert.HasCount(OutputSize, profile);
+        Assert.Equal("XYZ \0\0\0\0"u8.ToArray(), profile[JpegXlIccDecoder.HeaderSize..(JpegXlIccDecoder.HeaderSize + 8)]);
+        Assert.Equal("XYZ \0\0\0\0"u8.ToArray(), profile[^8..]);
+
+        static void WriteVarInt(List<byte> output, int value)
+        {
+            while (value >= 0x80)
+            {
+                output.Add((byte)(value | 0x80));
+                value >>= 7;
+            }
+
+            output.Add((byte)value);
+        }
+    }
+
     private static ReadOnlySpan<byte> GetIccTag(IccProfile profile, string signature)
     {
         var data = profile.Data.Span;

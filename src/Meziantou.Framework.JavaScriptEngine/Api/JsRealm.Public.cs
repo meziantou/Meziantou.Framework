@@ -99,10 +99,24 @@ public sealed partial class JsRealm
     /// <param name="buffer">An ArrayBuffer or a SharedArrayBuffer.</param>
     /// <param name="byteOffset">The offset of the view in the buffer.</param>
     /// <param name="length">The number of elements (the byte length of a DataView).</param>
+    /// <exception cref="ArgumentException">The byte offset of a typed array is not a multiple of its element size.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The view does not fit in the buffer.</exception>
     public JsObject CreateBufferView(JsBufferKind kind, JsObject buffer, int byteOffset, int length)
     {
         if (buffer is not JsArrayBuffer arrayBuffer)
             throw new ArgumentException("The value is not an ArrayBuffer nor a SharedArrayBuffer", nameof(buffer));
+
+        ArgumentOutOfRangeException.ThrowIfNegative(byteOffset);
+        ArgumentOutOfRangeException.ThrowIfNegative(length);
+
+        // The atomic operations access the elements of a typed array as aligned integers: as the typed array constructors
+        // do, the offset of an element must be a multiple of its size
+        var elementSize = kind is >= JsBufferKind.Int8Array and <= JsBufferKind.Float64Array ? BinaryDataOperations.GetElementSize((TypedArrayElementType)(kind - JsBufferKind.Int8Array)) : 1;
+        if (byteOffset % elementSize != 0)
+            throw new ArgumentException($"The byte offset must be a multiple of the element size ({elementSize.ToString(System.Globalization.CultureInfo.InvariantCulture)})", nameof(byteOffset));
+
+        if (!arrayBuffer.IsDetached && byteOffset + ((long)length * elementSize) > arrayBuffer.ByteLength)
+            throw new ArgumentOutOfRangeException(nameof(length), length, "The view does not fit in the buffer");
 
         using var scope = Engine.Enter();
         return kind switch

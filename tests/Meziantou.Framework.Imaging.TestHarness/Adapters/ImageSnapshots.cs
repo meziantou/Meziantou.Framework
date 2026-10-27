@@ -30,6 +30,7 @@ public static class ImageSnapshots
         PixelFormat.Rgba64 => RawPixelLayout.Rgba16Le,
         PixelFormat.Gray8 => RawPixelLayout.Gray8,
         PixelFormat.Gray16 => RawPixelLayout.Gray16Le,
+        PixelFormat.RgbaHalf or PixelFormat.RgbaFloat => RawPixelLayout.RgbaF32Le,
         _ => throw new ArgumentOutOfRangeException(nameof(format), format, "Unknown pixel format."),
     };
 
@@ -225,11 +226,36 @@ public static class ImageSnapshots
                 builder.SetRow16(y, unsafe(MemoryMarshal.Cast<byte, ushort>(row)));
                 break;
 
+            case PixelFormat.RgbaHalf:
+            {
+                // Halves in native endianness, captured as the floats they convert to exactly
+                var halves = unsafe(MemoryMarshal.Cast<byte, Half>(row));
+                for (var i = 0; i < halves.Length; i++)
+                {
+                    builder.SetSample(i / 4, y, i % 4, BitConverter.SingleToInt32Bits((float)halves[i]));
+                }
+
+                break;
+            }
+
+            case PixelFormat.RgbaFloat:
+            {
+                var floats = unsafe(MemoryMarshal.Cast<byte, float>(row));
+                for (var i = 0; i < floats.Length; i++)
+                {
+                    builder.SetSample(i / 4, y, i % 4, BitConverter.SingleToInt32Bits(floats[i]));
+                }
+
+                break;
+            }
+
             default:
                 builder.SetRow(y, row);
                 break;
         }
     }
+
+    private static int Bits(float value) => BitConverter.SingleToInt32Bits(value);
 
     private static void SetPixel<TPixel>(RawPixelBufferBuilder builder, int x, int y, TPixel pixel)
         where TPixel : unmanaged
@@ -247,6 +273,12 @@ public static class ImageSnapshots
                 break;
             case Rgba64 p:
                 SetSamples(builder, x, y, p.R, p.G, p.B, p.A);
+                break;
+            case RgbaHalf p:
+                SetSamples(builder, x, y, Bits((float)p.R), Bits((float)p.G), Bits((float)p.B), Bits((float)p.A));
+                break;
+            case RgbaFloat p:
+                SetSamples(builder, x, y, Bits(p.R), Bits(p.G), Bits(p.B), Bits(p.A));
                 break;
             case Gray8 p:
                 builder.SetSample(x, y, 0, p.Value);

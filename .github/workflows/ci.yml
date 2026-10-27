@@ -259,6 +259,7 @@ jobs:
             "tests/Meziantou.Framework.Imaging.Hevc.Tests/Meziantou.Framework.Imaging.Hevc.Tests.csproj" = 250
             "tests/Meziantou.Framework.Imaging.WebP.Tests/Meziantou.Framework.Imaging.WebP.Tests.csproj" = 249
             "tests/Meziantou.Framework.Imaging.Jpeg.Tests/Meziantou.Framework.Imaging.Jpeg.Tests.csproj" = 164
+            "tests/Meziantou.Framework.Imaging.Exr.Tests/Meziantou.Framework.Imaging.Exr.Tests.csproj" = 120
             "tests/Meziantou.Framework.Imaging.Tga.Tests/Meziantou.Framework.Imaging.Tga.Tests.csproj" = 63
             "tests/Meziantou.Framework.Imaging.Pnm.Tests/Meziantou.Framework.Imaging.Pnm.Tests.csproj" = 52
             "tests/Meziantou.Framework.Imaging.Qoi.Tests/Meziantou.Framework.Imaging.Qoi.Tests.csproj" = 36

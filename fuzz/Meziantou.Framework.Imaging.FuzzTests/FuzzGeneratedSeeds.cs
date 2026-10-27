@@ -1,10 +1,11 @@
 using Meziantou.Framework.Imaging.Formats;
+using Meziantou.Framework.Imaging.TestHarness.Exr;
 using Meziantou.Framework.Imaging.Tests;
 
 namespace Meziantou.Framework.Imaging.FuzzTests;
 
 /// <summary>
-/// The seeds of the formats the golden corpus has no fixture of (TIFF, ICO and CUR, ANI): files written by the encoders of
+/// The seeds of the formats the golden corpus has no fixture of (TIFF, ICO and CUR, ANI, OpenEXR): files written by the encoders of
 /// the library (every compression, pixel layout and container option they have), and files assembled byte by byte by the
 /// builders of the unit tests for what the encoders never write (tiles, the horizontal predictor, packed samples, signed,
 /// half-precision and 24-bit floating-point samples, palette and masked DIB payloads, the sequence and rate tables of an
@@ -12,13 +13,14 @@ namespace Meziantou.Framework.Imaging.FuzzTests;
 /// </summary>
 internal static class FuzzGeneratedSeeds
 {
-    public static IReadOnlyList<string> Groups { get; } = ["tiff", "ico", "ani"];
+    public static IReadOnlyList<string> Groups { get; } = ["tiff", "ico", "ani", "exr"];
 
     public static List<FuzzSeed> Get(string group) => group switch
     {
         "tiff" => GetTiffSeeds(),
         "ico" => GetIconSeeds(),
         "ani" => GetAnimatedCursorSeeds(),
+        "exr" => GetOpenExrSeeds(),
         _ => throw new ArgumentOutOfRangeException(nameof(group), group, "The group has no generated seeds."),
     };
 
@@ -201,6 +203,55 @@ internal static class FuzzGeneratedSeeds
         seeds.Add(new FuzzSeed("ani/builder-tables-after-frames", new AniFileBuilder { TablesAfterFrames = true, Sequence = [1, 0], Rates = [3, 5], Flags = 1, LeadingChunks = AniFileBuilder.Chunk("JUNK", [1, 2, 3]) }.AddFrame(first).AddFrame(second).Build()));
         var icon = new IcoFileBuilder().Add(new IcoEntrySpec { Width = 3, Height = 2, Payload = IcoFileBuilder.Dib32(3, 2, [.. Enumerable.Range(0, 6).Select(i => new Rgba32((byte)(i * 30), 1, 2, 255))]) }).Build();
         seeds.Add(new FuzzSeed("ani/builder-icon-frames", new AniFileBuilder { DisplayRate = 1, Rates = [0, 7] }.AddFrame(icon).AddFrame(icon).Build()));
+        return seeds;
+    }
+
+    private static List<FuzzSeed> GetOpenExrSeeds()
+    {
+        var seeds = new List<FuzzSeed>();
+        using (var rgba = CreateRgba32(19, 37, salt: 40))
+        using (var half = rgba.CloneAs<RgbaHalf>())
+        using (var full = rgba.CloneAs<RgbaFloat>())
+        {
+            half.Metadata.TransferFunction = Metadata.ColorTransferFunction.Linear;
+            full.Metadata.TransferFunction = Metadata.ColorTransferFunction.Linear;
+            full.Frames[0][3, 4] = new RgbaFloat(12.5f, -3f, float.PositiveInfinity, 1f);
+            foreach (var compression in Enum.GetValues<OpenExrCompression>())
+            {
+                seeds.Add(Encode("exr/half-" + compression.ToString().ToLowerInvariant(), half, new OpenExrEncoder { Compression = compression }));
+                seeds.Add(Encode("exr/float-" + compression.ToString().ToLowerInvariant(), full, new OpenExrEncoder { Compression = compression }));
+            }
+        }
+
+        using (var gray = CreateGray8(11, 40, salt: 41))
+        {
+            seeds.Add(Encode("exr/luminance-piz", gray, new OpenExrEncoder { Compression = OpenExrCompression.Piz, MetadataHandling = MetadataHandling.DiscardUnsupported }));
+        }
+
+        // Tiles and their levels, windows, sample types and line orders the encoder never writes
+        static byte[] Halves(int count, int salt) => ExrFileBuilder.Halves([.. Enumerable.Range(0, count).Select(i => ((i * 7) + salt) % 13 * 0.5f)]);
+        var tiled = new ExrFileBuilder { VersionField = 2 | 0x200 };
+        foreach (var attribute in ExrFileBuilder.ScanLines(3, 3, 0, ExrChannelDescription.Half("G"), ExrChannelDescription.Half("R")).Attributes)
+        {
+            tiled.Attributes.Add(attribute);
+        }
+
+        tiled.Set("tiles", "tiledesc", ExrFileBuilder.TileDescription(2, 2, levelMode: 1, roundingMode: 0));
+        tiled.AddTile(0, 0, 0, 0, Halves(8, 1)).AddTile(1, 0, 0, 0, Halves(4, 2)).AddTile(0, 1, 0, 0, Halves(4, 3)).AddTile(1, 1, 0, 0, Halves(2, 4)).AddTile(0, 0, 1, 1, Halves(2, 5));
+        tiled.FileOrder = [4, 2, 0, 3, 1];
+        seeds.Add(new FuzzSeed("exr/builder-mipmap-tiles", tiled.Build()));
+
+        var windows = ExrFileBuilder.ScanLines(2, 3, 0, ExrChannelDescription.Half("A"), ExrChannelDescription.FloatingPoint("B"), ExrChannelDescription.UnsignedInt("G"), ExrChannelDescription.Half("R"))
+            .Set("displayWindow", "box2i", ExrFileBuilder.Box(-2, -1, 3, 4))
+            .Set("lineOrder", "lineOrder", [1])
+            .Set("chromaticities", "chromaticities", ExrFileBuilder.Floats(0.708f, 0.292f, 0.170f, 0.797f, 0.131f, 0.046f, 0.3127f, 0.3290f));
+        for (var y = 2; y >= 0; y--)
+        {
+            windows.AddScanLineChunk(y, [.. Halves(2, y), .. ExrFileBuilder.Floats(y, -y), .. ExrFileBuilder.UInts((uint)y, 7), .. Halves(2, y + 3)]);
+        }
+
+        windows.FileOrder = [2, 1, 0];
+        seeds.Add(new FuzzSeed("exr/builder-windows-mixed-types", windows.Build()));
         return seeds;
     }
 

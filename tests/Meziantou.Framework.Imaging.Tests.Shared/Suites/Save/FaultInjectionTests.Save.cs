@@ -81,9 +81,9 @@ public sealed partial class FaultInjectionTests
                 audit.FailureInjector = null;
 
                 // Output failures at many positions of a non-seekable stream (a seekable stream for WebP animations, which
-                // patch their RIFF size, and for AVIF and HEIC image sequences, which write their moov box last: they
-                // reject non-seekable output before writing anything)
-                var patched = (encoder is WebPEncoder && (image.Frames.Count > 1 || image.IsAnimated)) || (encoder is AvifEncoder or HeicEncoder && image.Frames.Count > 1);
+                // patch their RIFF size, for AVIF and HEIC image sequences, which write their moov box last, and for compressed
+                // OpenEXR files, which patch the offsets of their chunks: they reject non-seekable output before writing anything)
+                var patched = (encoder is WebPEncoder && (image.Frames.Count > 1 || image.IsAnimated)) || (encoder is AvifEncoder or HeicEncoder && image.Frames.Count > 1) || encoder is OpenExrEncoder { Compression: not OpenExrCompression.None };
                 if (patched)
                 {
                     await using var rejected = new TestOutputStream();
@@ -112,7 +112,7 @@ public sealed partial class FaultInjectionTests
                 Assert.Equal(live, audit.LiveBytes);
 
                 // A writer faulted by an I/O failure stays faulted
-                var patchedWriter = encoder is WebPEncoder or AvifEncoder or HeicEncoder && image.Frames.Count > 1;
+                var patchedWriter = (encoder is WebPEncoder or AvifEncoder or HeicEncoder && image.Frames.Count > 1) || encoder is OpenExrEncoder { Compression: not OpenExrCompression.None };
                 await using (var output = new TestOutputStream { FailAtPosition = 0, Seekable = patchedWriter, AllowPatching = patchedWriter })
                 using (var writer = CreateWriter(output, image, encoder))
                 {
@@ -139,7 +139,25 @@ public sealed partial class FaultInjectionTests
 
     private static Image? LoadForEncoder(byte[] data, string encoderName, out ImageEncoder encoder)
     {
-        var image = Image.Load(data, new ImageDecodeOptions { Conversion = Conversion });
+        // The integer encoders reject floating-point pixels: an OpenEXR source is reduced to 16-bit integers first, its
+        // samples clipped to [0, 1] (no conversion gives a value to a NaN sample: such a source is skipped)
+        Image image;
+        if (encoderName != "exr" && SuiteReaders.ReadsFloats(data))
+        {
+            using var floats = Image.Load<RgbaFloat>(data, new ImageDecodeOptions { Conversion = Conversion });
+            if (!HasOnlyNumbers(floats))
+            {
+                encoder = new PngEncoder();
+                return null;
+            }
+
+            image = floats.CloneAs<Rgba64>(new PixelConversionOptions { OutOfRangeSamples = OutOfRangeSampleHandling.Clip });
+        }
+        else
+        {
+            image = Image.Load(data, new ImageDecodeOptions { Conversion = Conversion });
+        }
+
         switch (encoderName)
         {
             case "png":
@@ -215,6 +233,14 @@ public sealed partial class FaultInjectionTests
 
                 image.Dispose();
                 return null;
+            case "exr":
+                // PIZ runs every stage of the encoder: range compression, wavelet and Huffman coding
+                encoder = new OpenExrEncoder { MetadataHandling = MetadataHandling.Strip, Compression = OpenExrCompression.Piz };
+                if (image.Frames.Count == 1 && image.PosterFrame is null && !image.IsAnimated)
+                    return image;
+
+                image.Dispose();
+                return null;
             case "qoi":
             case "bmp":
             case "bmp-indexed":
@@ -246,6 +272,24 @@ public sealed partial class FaultInjectionTests
                 image.Dispose();
                 return null;
         }
+    }
+
+    private static bool HasOnlyNumbers(Image<RgbaFloat> image)
+    {
+        foreach (var frame in image.Frames)
+        {
+            for (var y = 0; y < frame.Height; y++)
+            {
+                for (var x = 0; x < frame.Width; x++)
+                {
+                    var pixel = frame[x, y];
+                    if (float.IsNaN(pixel.R) || float.IsNaN(pixel.G) || float.IsNaN(pixel.B) || float.IsNaN(pixel.A))
+                        return false;
+                }
+            }
+        }
+
+        return true;
     }
 
     /// <summary>

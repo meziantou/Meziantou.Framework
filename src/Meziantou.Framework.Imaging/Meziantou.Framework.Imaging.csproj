@@ -41,6 +41,7 @@
     <InternalsVisibleTo Include="Meziantou.Framework.Imaging.HeicEncoder.Tests" />
     <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Hevc.Tests" />
     <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Bmp.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Exr.Tests" />
     <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Gif.Tests" />
     <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Ico.Tests" />
     <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Jpeg.Tests" />

@@ -78,6 +78,8 @@ public sealed class ImageInfoTests
     [InlineData(17)]
     [InlineData(24)]
     [InlineData(32)]
+    [InlineData(33)]
+    [InlineData(64)]
     [InlineData(-8)]
     public void OtherSamplePrecisionsAreRejected(int bitsPerComponent)
     {
@@ -90,6 +92,9 @@ public sealed class ImageInfoTests
         // The floating-point samples of a TIFF page
         Assert.Equal(24, Create(ImageFormat.Tiff, pixelFormat: PixelFormat.RgbaFloat, bitsPerComponent: 24).BitsPerComponent);
         Assert.Equal(32, Create(ImageFormat.Tiff, pixelFormat: PixelFormat.RgbaFloat, bitsPerComponent: 32).BitsPerComponent);
+
+        // The FLOAT and UINT samples of an OpenEXR file
+        Assert.Equal(32, Create(ImageFormat.OpenExr, pixelFormat: PixelFormat.RgbaFloat, bitsPerComponent: 32).BitsPerComponent);
         Assert.Throws<ArgumentOutOfRangeException>(() => Create(ImageFormat.Tiff, pixelFormat: PixelFormat.RgbaHalf, bitsPerComponent: 32));
         Assert.Throws<ArgumentOutOfRangeException>(() => Create(ImageFormat.Tiff, pixelFormat: PixelFormat.RgbaFloat, bitsPerComponent: 64));
     }

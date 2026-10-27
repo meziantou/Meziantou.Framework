@@ -34,8 +34,79 @@ public static class EncodedFieldInspector
         "heic" => InspectHeif(data, "HEIC", "HEVC"),
         "jxl" => InspectJpegXl(data),
         "jp2" => InspectJpeg2000(data),
+        "exr" => InspectOpenExr(data),
         _ => throw new ArgumentException($"Unknown fixture format '{format}'.", nameof(format)),
     };
+
+    /// <summary>
+    /// OpenEXR: the attributes of the header, read from the OpenEXR File Layout. The samples are linear light: the
+    /// <c>chromaticities</c> attribute of BT.2020 or P3 primaries is the CICP description with the linear transfer
+    /// characteristics, and those of BT.709 (the default) the linear transfer function.
+    /// </summary>
+    private static EncodedFields InspectOpenExr(ReadOnlySpan<byte> data)
+    {
+        if (data.Length < 8 || BinaryPrimitives.ReadInt32LittleEndian(data) != 20000630)
+            throw new InvalidDataException("Not an OpenEXR file.");
+
+        var position = 8;
+        float[]? chromaticities = null;
+        while (true)
+        {
+            if (position >= data.Length)
+                throw new InvalidDataException("The OpenEXR header is truncated.");
+
+            if (data[position] == 0)
+                break;
+
+            var name = ReadNullTerminated(data, ref position);
+            _ = ReadNullTerminated(data, ref position);
+            var size = BinaryPrimitives.ReadInt32LittleEndian(data[position..]);
+            position += 4;
+            if (name == "chromaticities" && size == 32)
+            {
+                chromaticities = new float[8];
+                for (var i = 0; i < 8; i++)
+                {
+                    chromaticities[i] = BinaryPrimitives.ReadSingleLittleEndian(data[(position + (4 * i))..]);
+                }
+            }
+
+            position += size;
+        }
+
+        float[] bt709 = [0.64f, 0.33f, 0.30f, 0.60f, 0.15f, 0.06f, 0.3127f, 0.3290f];
+        var primaries = chromaticities switch
+        {
+            null => 1,
+            _ when chromaticities.SequenceEqual(bt709) => 1,
+            _ when chromaticities.SequenceEqual([0.708f, 0.292f, 0.170f, 0.797f, 0.131f, 0.046f, 0.3127f, 0.3290f]) => 9,
+            _ when chromaticities.SequenceEqual([0.680f, 0.320f, 0.265f, 0.690f, 0.150f, 0.060f, 0.314f, 0.351f]) => 11,
+            _ when chromaticities.SequenceEqual([0.680f, 0.320f, 0.265f, 0.690f, 0.150f, 0.060f, 0.3127f, 0.3290f]) => 12,
+            _ => 0,
+        };
+        var result = new EncodedFields();
+        if (primaries == 1)
+        {
+            result.TransferFunction = "linear";
+        }
+        else if (primaries != 0)
+        {
+            result.ContainerCicp = new CicpExpectation { ColorPrimaries = primaries, TransferCharacteristics = 8, MatrixCoefficients = 0, FullRange = true };
+        }
+
+        return result;
+
+        static string ReadNullTerminated(ReadOnlySpan<byte> data, ref int position)
+        {
+            var end = data[position..].IndexOf((byte)0);
+            if (end < 0)
+                throw new InvalidDataException("An OpenEXR name is not terminated.");
+
+            var value = Encoding.UTF8.GetString(data.Slice(position, end));
+            position += end + 1;
+            return value;
+        }
+    }
 
     /// <summary>
     /// JPEG 2000: the fields come from <see cref="Jpeg2000.ReferenceJpeg2000"/>. The ICC profile of the first color

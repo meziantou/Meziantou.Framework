@@ -416,6 +416,7 @@ public sealed class ImageSaveTests
         new IcoEncoder(),
         new AvifEncoder(),
         new HeicEncoder(),
+        new OpenExrEncoder { MetadataHandling = MetadataHandling.Strict },
     ];
 
     [Theory]
@@ -425,6 +426,12 @@ public sealed class ImageSaveTests
         Rgb24[] pixels = [new Rgb24(1, 2, 3), new Rgb24(4, 5, 6), new Rgb24(7, 8, 9), new Rgb24(10, 11, 12)];
         using var image = Image.ImportPixelData<Rgb24>(pixels, 2, 2);
         image.Frames[0].Metadata.Hotspot = new Point(1, 1);
+        if (encoder is OpenExrEncoder)
+        {
+            // OpenEXR stores linear light only
+            image.Metadata.TransferFunction = ColorTransferFunction.Linear;
+        }
+
         using var stream = new MemoryStream();
         var exception = Assert.Throws<UnsupportedImageFeatureException>(() => image.Save(stream, encoder));
         Assert.Equal(encoder.Format, exception.Format);
@@ -458,6 +465,7 @@ public sealed class ImageSaveTests
             TiffEncoder => new TiffEncoder { MetadataHandling = handling },
             AvifEncoder => new AvifEncoder { MetadataHandling = handling },
             HeicEncoder => new HeicEncoder { MetadataHandling = handling },
+            OpenExrEncoder => new OpenExrEncoder { MetadataHandling = handling },
             _ => new IcoEncoder { MetadataHandling = handling },
         };
     }

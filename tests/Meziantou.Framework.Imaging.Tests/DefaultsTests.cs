@@ -115,6 +115,13 @@ public sealed class DefaultsTests
         Assert.Equal(90, jpeg2000.Quality);
         Assert.Equal(Jpeg2000Container.Jp2, jpeg2000.Container);
         Assert.Equal(MetadataHandling.Strict, jpeg2000.MetadataHandling);
+
+        var exr = new OpenExrEncoder();
+        Assert.Equal(ImageFormat.OpenExr, exr.Format);
+        Assert.Equal(OpenExrCompression.Zip, exr.Compression);
+        Assert.Null(exr.PixelType);
+        Assert.False(exr.AllowBitDepthReduction);
+        Assert.Equal(MetadataHandling.Strict, exr.MetadataHandling);
     }
 
     [Fact]
@@ -152,6 +159,8 @@ public sealed class DefaultsTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new Jpeg2000Encoder { Quality = 101 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new Jpeg2000Encoder { Compression = (Jpeg2000Compression)2 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new Jpeg2000Encoder { Container = (Jpeg2000Container)2 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new OpenExrEncoder { Compression = (OpenExrCompression)5 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new OpenExrEncoder { PixelType = (OpenExrPixelType)2 });
     }
 
     [Fact]
@@ -181,6 +190,8 @@ public sealed class DefaultsTests
         Assert.IsType<JpegXlEncoder>(ImageEncoder.FromPath("a.jxl"));
         Assert.IsType<JpegXlEncoder>(ImageEncoder.FromPath("dir/a.JXL"));
         Assert.Equal(JpegXlCompression.Lossless, Assert.IsType<JpegXlEncoder>(ImageEncoder.FromPath("a.jxl")).Compression);
+        Assert.Equal(OpenExrCompression.Zip, Assert.IsType<OpenExrEncoder>(ImageEncoder.FromPath("a.exr")).Compression);
+        Assert.IsType<OpenExrEncoder>(ImageEncoder.FromPath("dir/a.EXR"));
         Assert.Equal(Jpeg2000Container.Jp2, Assert.IsType<Jpeg2000Encoder>(ImageEncoder.FromPath("a.jp2")).Container);
         Assert.Equal(Jpeg2000Container.Jp2, Assert.IsType<Jpeg2000Encoder>(ImageEncoder.FromPath("dir/a.JP2")).Container);
         foreach (var extension in new[] { ".j2k", ".j2c", ".jpc", ".J2K" })

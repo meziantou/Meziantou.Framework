@@ -32,6 +32,8 @@ internal static class RequiredTools
 
     public static Task<OpenJphTool> OpenJphAsync() => OpenJphTool.LocateAsync(XunitCancellationToken);
 
+    public static Task<OpenExrTool> OpenExrAsync() => OpenExrTool.LocateAsync(XunitCancellationToken);
+
     /// <summary>Gets the <c>jpeg</c> tool of the ISO JPEG reference codec, which shares no code with libjpeg-turbo.</summary>
     public static Task<IsoJpegTool> IsoJpegAsync() => IsoJpegTool.LocateAsync(XunitCancellationToken);
 

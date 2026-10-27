@@ -1026,6 +1026,30 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void ConvertOpenExrKeepsTheHighlightsAndToneMapsThem()
+    {
+        var exr = GetPath("highlights.exr");
+        using (var source = new Image<RgbaHalf>(8, 4, new RgbaHalf((Half)0.25f, (Half)0.5f, (Half)1f)))
+        {
+            source.Frames[0][3, 2] = new RgbaHalf((Half)12f, (Half)6f, (Half)3f);
+            source.Save(exr);
+        }
+
+        var piz = GetPath("highlights-piz.exr");
+        using var toneMapped = Examples.ConvertOpenExr(exr, piz);
+        using (var copy = Image.Load<RgbaHalf>(piz))
+        {
+            Assert.Equal(new RgbaHalf((Half)12f, (Half)6f, (Half)3f), copy.Frames[0][3, 2]);
+        }
+
+        // The highlight is the white of the tone mapping, and its hue is kept
+        var pixel = toneMapped.Frames[0][3, 2];
+        Assert.Equal(255, pixel.R);
+        Assert.InRange(pixel.G, 120, 135);
+        Assert.True(toneMapped.Frames[0][0, 0].B < 255);
+    }
+
+    [Fact]
     public void SaveJpeg2000WritesALosslessFileAndALossyCodestream()
     {
         var photo = GetPath("photo16-resolution.png");

@@ -554,6 +554,7 @@ namespace Meziantou.Framework.Imaging
         JpegXl = 14,
         Heic = 15,
         Jpeg2000 = 16,
+        OpenExr = 17,
     }
 
     public abstract class ImageFrame
@@ -2355,6 +2356,29 @@ namespace Meziantou.Framework.Imaging.Formats
         Strict = 0,
         DiscardUnsupported = 1,
         Strip = 2,
+    }
+
+    public enum OpenExrCompression
+    {
+        None = 0,
+        Rle = 1,
+        Zips = 2,
+        Zip = 3,
+        Piz = 4,
+    }
+
+    public sealed class OpenExrEncoder : Meziantou.Framework.Imaging.Formats.ImageEncoder
+    {
+        public bool AllowBitDepthReduction { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Formats.OpenExrCompression Compression { get => throw null; init { } }
+        public override Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
+        public Meziantou.Framework.Imaging.Formats.OpenExrPixelType? PixelType { get => throw null; init { } }
+    }
+
+    public enum OpenExrPixelType
+    {
+        Half = 0,
+        Float = 1,
     }
 
     public enum PngAnimationMode

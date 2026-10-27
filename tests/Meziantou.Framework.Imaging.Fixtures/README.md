@@ -8,7 +8,7 @@ Independent reference data for the conformance and interop tests, extended with 
   `bmp`, `BmpCorpus.cs`; TGA entries: `tga`, `TgaCorpus.cs`; Netpbm entries: `pnm`, `PnmCorpus.cs`; ICC profiles and
   color conversion vectors: `icc`, `IccCorpus.cs`; the AV1 conformance vectors of the `av1Vectors` section: `avif`,
   `AvifCorpus.cs`; AVIF entries: `avif-container`, `AvifCorpus.Container.cs`; HEIC entries: `heic-container`,
-  `HeicCorpus.Container.cs`; JPEG XL entries: `jxl`, `JxlCorpus.cs`; JPEG 2000 entries: `jp2`, `Jp2Corpus.cs`; the HEVC
+  `HeicCorpus.Container.cs`; JPEG XL entries: `jxl`, `JxlCorpus.cs`; JPEG 2000 entries: `jp2`, `Jp2Corpus.cs`; OpenEXR entries: `exr`, `ExrCorpus.cs`; the HEVC
   conformance vectors of the `hevcVectors` section: `hevc`, `HevcCorpus.cs`). Every file of this folder except this README, the manifest, the schema and `LICENSES/` is listed with
   its SHA-256 hash, provenance and license.
 - The tests read this folder from the Git repository root (`FixtureRoot.GetDirectory()`). They never download anything
@@ -23,7 +23,7 @@ Independent reference data for the conformance and interop tests, extended with 
 
 ```
 tests/Meziantou.Framework.Imaging.Fixtures/
-  png/   apng/   gif/   jpeg/   webp/   qoi/   bmp/   tga/   pnm/   avif/   heic/   jxl/   jp2/
+  png/   apng/   gif/   jpeg/   webp/   qoi/   bmp/   tga/   pnm/   avif/   heic/   jxl/   jp2/   exr/
                                       encoded inputs and their raw references
   invalid/<format>/                   malformed, unsupported or over-limit inputs (expected errors, no expected pixels)
   limit/avif/                         over-limit inputs that are not valid fixtures (an AVIF sequence with hidden frames)
@@ -33,13 +33,15 @@ tests/Meziantou.Framework.Imaging.Fixtures/
   fonts/<family>/   fonts/vectors/    font files and the values independent font readers give for them (see Fonts)
   fonts/shaping/                      glyphs and positions the reference shaper gives for texts set in the fonts
   font-suites/<suite>/                third-party suites of test fonts and expectations, stored as published
-  LICENSES/                           full texts of the licenses of third-party files (OFL-1.1, Apache-2.0, Unicode-3.0)
+  LICENSES/                           full texts of the licenses of third-party files (OFL-1.1, Apache-2.0, Unicode-3.0, BSD-3-Clause)
 ```
 
 - Fixture ids are lowercase paths without extension (`png/gray16-low-bit-gradient`); `format` is the container
   (`png` for PNG and APNG, `gif`, `jpeg`, `webp`, `qoi`, `bmp`, `tga`, `pnm` for every Netpbm variant, `avif` for AVIF
   still images and image sequences, `heic` for HEIC still images and image sequences, `jxl` for JPEG XL codestreams and
-  containers, `jp2` for JPEG 2000 codestreams and files of the JP2 family, whatever their block coder).
+  containers, `jp2` for JPEG 2000 codestreams and files of the JP2 family, whatever their block coder, `exr` for OpenEXR
+  files). The expected frames of an OpenEXR fixture are `rgbaf32le` buffers: the 32-bit floats of its `RgbaHalf` or
+  `RgbaFloat` pixels (a half converts to a float exactly), compared bit for bit; they are no source of the encoder suites.
 - Kinds: `valid` (expected pixels and metadata), `invalid` (malformed: expected exception), `unsupported` (recognized but
   unsupported feature: `UnsupportedImageFeatureException`), `limit` (decoded with `decodeOptions.limits`:
   `ImageResourceLimitException` with `limitKind`). Error fixtures never carry fabricated expected pixels and are kept
@@ -767,6 +769,8 @@ header (65,536 bytes) rejects.
 | JPEG XL errors | invalid (rejected by djxl and jxl-oxide too): inverted bytes in the frame header and in the coded samples, a codestream without its signature, a container without codestream, with two codestreams, with parts out of order, with a box smaller than its header; unsupported: floating-point samples, premultiplied alpha, PQ with the white point E, an XYB image with an ICC profile that is not sRGB; limits: width, height, frame pixels, animation frames, metadata bytes, and the pixels of a layer that is decoded without being shown |
 | JPEG 2000 | reversible (5-3): gray, gray + opacity, RGB and RGBA at 8 and 16 bits, samples of 4 and 12 bits scaled exactly, with and without the component transformation, zero to six decomposition levels, images of one pixel, one column and one row; the five progression orders with layers and precincts, a POC marker segment, tiles (with offsets of the image and of the tile grid), tile-parts by resolution level, layer and component, interleaved tile-parts, SOP/EPH, PLT/TLM, packet headers packed in the main header (PPM) and in tile-part headers (PPT), COC/QCC marker segments, a coding style in the tile-part headers, a region of interest, five guard bits, every style of the coding passes (bypass, reset, termination on each pass, vertically causal, predictable termination, segmentation symbols, all of them), code-blocks of 4x4 and 64x4; irreversible (9-7): gray, RGB with and without the component transformation, RGBA, 16 bits, layers, tiles, a region of interest, and a reversible codestream cut by a rate; JP2 files: written by opj_compress (RGB, gray 16 bits, RGBA), a palette (with an opacity column), channel definitions (colors reordered, opacity first, gray + opacity), sYCC with and without sub-sampled chrominances, ICC profiles (RGB and gray), a capture resolution, EXIF and XMP UUID boxes before and after the codestream, boxes of 64-bit length, a codestream box that extends to the end of the file; the high-throughput block coder (Rec. ITU-T T.814): reversible gray and RGB at 8, 12 and 16 bits, tiles, precincts, code-blocks of 1024 columns, images of one column and one row, irreversible, a JPH file, and hand-authored coding passes: HT SigProp and HT MagRef passes (with and without the vertically causal contexts), an HT SigProp pass alone, placeholder passes, the passes of a code-block over two and three layers |
 | JPEG 2000 errors | invalid (rejected by opj_decompress, and by FFmpeg unless stated): a codestream without EOC marker and one cut in its tile-part, a tile of width 0, no component, an empty image area, no COD and no QCD marker segment, a tile index, a tile-part length and a tile-part index out of range, a file without codestream box, without JP2 header box (FFmpeg reads it), with an image header that contradicts the codestream (FFmpeg reads it), with a codestream box that is cut (FFmpeg reads it), without color specification box and with a box length of 4 (the reference decoders read both: the Recommendation is the reference), an HT cleanup segment with a suffix longer than itself; unsupported: signed samples, five components without color specification, a sub-sampled first component, a premultiplied opacity, several opacity channels, the extensions of ISO/IEC 15444-2, the brand of Motion JPEG 2000, two codestreams, mixed block coders, a second HT set, placeholder passes in another packet than the HT cleanup pass; limits: width, height, frame pixels, metadata bytes before and after the codestream |
+| OpenEXR | every compression the library reads (NONE, RLE, ZIPS, ZIP, PIZ, PXR24, B44, B44A) with HALF RGBA and FLOAT RGB samples; luminance (Y) with and without alpha, a red channel alone, HALF, FLOAT and UINT channels in one file, UINT luminance, infinities, not-a-number and the extreme floats, one pixel; flat B44A blocks, a pLinear B44 channel, PXR24 rounding ties, a PIZ chunk of more than 16384 values (16-bit wavelet); tiles of one level, mipmaps rounded up, ripmaps, tiles in random order, B44 tiles of odd sizes; a decreasing line order, a data window inside the display window from negative coordinates, other attributes and a long name; the chromaticities of BT.709, BT.2020 and Display P3; four sample images of the OpenEXR project (stripes, every half value, mipmapped PXR24 tiles, t01 of DisplayWindow) |
+| OpenEXR errors | invalid (rejected by OpenEXR too): a file cut in its last chunk, an offset after the end of the file, a chunk with the coordinates of another one, corrupt zlib data, a PIZ chunk whose Huffman data declare more bits than they have, an RLE run longer than its chunk, no channel list; unsupported: the DWAA, DWAB, ZSTD and HTJ2K32 compressions, a Z channel, the channels of a layer, luminance and chroma (RY, BY), a data window larger than the display window (and three sample images of the OpenEXR project whose windows differ), deep data; limits: frame pixels and the bytes of the attributes |
 | Errors | PNG header defects (bad IHDR CRC, IHDR not first, illegal bit depth, chunk length above 2^31 - 1, unknown critical chunk `CgBI` — unsupported), structure defects (truncated IDAT, bad IDAT CRC, non-consecutive IDAT, PLTE after IDAT, missing IEND) and pixel-data defects with valid containers (truncated zlib, missing or wrong Adler-32, bytes after the zlib datastream, one extra scanline, one missing scanline, filter type 5, out-of-range palette index); truncated GIF image data, GIF plain-text extension (unsupported), arithmetic-coded JPEG (unsupported); GIF LZW and color-table defects inside valid containers (code above the next table code, table code after a clear, end code too early, data ending without end code, an index outside the table, no color table) and block defects (unknown block, 3-byte Graphic Control Extension, minimum code size 12, missing trailer, no image, empty logical screen); resource limits: frame count, GIF displayed pixels (`MaxTotalPixels`, decode-only), width, frame pixels, encoded bytes (reached at IEND), and a `zTXt` whose 171-byte zlib stream inflates to 25,801 bytes with `MaxMetadataBytes` = 4096 (deterministic fixed-Huffman stream written by the generator) |
 
 ## Fixture coverage matrix
@@ -802,6 +806,7 @@ follows it, so keep both headings unique in this file.
 | --- | --- | --- | --- | --- |
 | avif | 189 | 45 | 28 | 12 |
 | bmp | 24 | 21 | 4 | 2 |
+| exr | 43 | 7 | 12 | 2 |
 | gif | 24 | 13 | 1 | 2 |
 | heic | 117 | 31 | 21 | 11 |
 | jpeg | 72 | 19 | 6 | 1 |
@@ -1501,6 +1506,31 @@ follows it, so keep both headings unique in this file.
 | JPEG 2000 tile-part lengths (TLM) | `jp2.tlm` | 1 | 0 | 0 | 0 |
 | JPEG 2000 reversible 5-3 transformation | `jp2.transform=5-3` | 81 | 17 | 11 | 5 |
 | JPEG 2000 irreversible 9-7 transformation | `jp2.transform=9-7` | 11 | 0 | 0 | 0 |
+| OpenEXR NONE compression | `exr.compression=none` | 4 | 0 | 0 | 0 |
+| OpenEXR RLE compression | `exr.compression=rle` | 4 | 0 | 0 | 0 |
+| OpenEXR ZIPS compression | `exr.compression=zips` | 3 | 0 | 0 | 0 |
+| OpenEXR ZIP compression | `exr.compression=zip` | 10 | 0 | 0 | 0 |
+| OpenEXR PIZ compression | `exr.compression=piz` | 11 | 0 | 0 | 0 |
+| OpenEXR PXR24 compression | `exr.compression=pxr24` | 4 | 0 | 0 | 0 |
+| OpenEXR B44 compression | `exr.compression=b44` | 4 | 0 | 0 | 0 |
+| OpenEXR B44A compression | `exr.compression=b44a` | 3 | 0 | 0 | 0 |
+| OpenEXR scan lines | `exr.storage=scanline` | 37 | 0 | 0 | 0 |
+| OpenEXR tiles | `exr.storage=tiled` | 6 | 0 | 0 | 0 |
+| OpenEXR one level of tiles | `exr.levels=one-level` | 3 | 0 | 0 | 0 |
+| OpenEXR mipmap levels | `exr.levels=mipmap` | 2 | 0 | 0 | 0 |
+| OpenEXR ripmap levels | `exr.levels=ripmap` | 1 | 0 | 0 | 0 |
+| OpenEXR HALF samples | `exr.type=half` | 29 | 0 | 0 | 0 |
+| OpenEXR FLOAT samples | `exr.type=float` | 14 | 0 | 0 | 0 |
+| OpenEXR UINT samples | `exr.type=uint` | 2 | 0 | 0 | 0 |
+| OpenEXR channel sets (R, G, B, A, Y) | `exr.channels` | 43 | 0 | 0 | 0 |
+| OpenEXR decreasing line order | `exr.lineOrder=decreasing-y` | 1 | 0 | 0 | 0 |
+| OpenEXR tiles in random order | `exr.lineOrder=random-y` | 1 | 0 | 0 | 0 |
+| OpenEXR data window inside the display window | `exr.dataWindow=inside` | 1 | 0 | 0 | 0 |
+| OpenEXR negative coordinates | `exr.negativeCoordinates` | 1 | 0 | 0 | 0 |
+| OpenEXR chromaticities | `exr.chromaticities` | 3 | 0 | 0 | 0 |
+| OpenEXR other attributes | `exr.otherAttributes` | 5 | 0 | 0 | 0 |
+| OpenEXR long names | `exr.longNames` | 1 | 0 | 0 | 0 |
+| OpenEXR sample images of the OpenEXR project | `exr.external` | 4 | 0 | 0 | 0 |
 
 Not covered by fixtures, and verified elsewhere: encoder outputs (independent readers, FFmpeg and Apple ImageIO), malformed-input robustness beyond the error
 fixtures (`FuzzTests/MutationFuzzTests`, `Tests.Shared/Suites/Decode/TruncationTests`), and limits at every boundary (`Tests.Shared/Suites/Decode/ResourceLimitBoundaryTests`).
@@ -2585,6 +2615,25 @@ tool version to see what changes; the interop CI job runs it on every build to d
   After a change of the irreversible path of the decoder, run
   `Jpeg2000DecoderConformanceTests.ToleranceIsTheMeasuredDisagreementWithTheReference` and copy the measurements it
   prints into `LibraryJp2Measurements`, then regenerate.
+- `exr` (`ExrCorpus.cs`) generates the OpenEXR fixtures; it replaces only the entries of format `exr` and their files
+  (`exr/`, `invalid/exr/`, `limit/exr/`). The files are written by `exr-from-raw` from raw samples and a description of
+  their header, and decoded by `exr-to-raw` (both built with OpenEXR, pinned in `PinnedOpenExr`, currently 3.5.2, by the
+  meziantou/prebuilt release of the `Meziantou.Prebuilt` package). The reference is what OpenEXR decodes, bit for bit,
+  lossy compressions included, presented by the rules of the library (the display window is the image, a missing color
+  is 0 and a missing alpha 1, Y gives the three colors, the colors are divided by alpha unless it is 0). It is
+  cross-checked with the EXR decoder of FFmpeg, on the samples the file stores, wherever FFmpeg reads the file as it is
+  (one type of samples, R, G and B with or without A, or Y, equal windows), and with the pattern given to `exr-from-raw`
+  for the channels a compression keeps exactly. FFmpeg 9.0.2 does not apply the conversion of the pLinear channels of
+  B44 (`exr/b44-plinear` records it). An invalid fixture is a byte edit that OpenEXR rejects too. Four valid and three
+  unsupported fixtures are sample images of the OpenEXR project (BSD-3-Clause), checked by their SHA-256 at the pinned
+  commit `OpenExrImagesCommit` of https://github.com/AcademySoftwareFoundation/openexr-images; the generator never
+  downloads them:
+
+  ```shell
+  dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- exr --openexr-images <checkout>          # check
+  dotnet run --project tools/Meziantou.Framework.Imaging.CorpusGenerator -- exr --openexr-images <checkout> --write  # replace the OpenEXR fixtures, then review the diff
+  ```
+
 - `heic-container` (`HeicCorpus.Container.cs`: tools, references, cross-check and manifest entries;
   `HeicCorpus.ContainerFixtures.cs`: the valid recipes; `HeicCorpus.ContainerErrors.cs`: the malformed, unsupported and
   over-limit ones; `HevcCorpus.Reference.cs`: the three decoders and x265 for the streams of a container) generates the
@@ -2708,8 +2757,8 @@ undiscriminating tolerances and error fixtures with expected pixels fail the bui
 
 ### Allowed fixture licenses
 
-`CC0-1.0`, `MIT`, `Unlicense`, `CC-BY-4.0`, `Libpng`, `Zlib`, `Apache-2.0`, `Unicode-3.0`, and `OFL-1.1` for font
-files only.
+`CC0-1.0`, `MIT`, `Unlicense`, `CC-BY-4.0`, `Libpng`, `Zlib`, `Apache-2.0`, `Unicode-3.0`, `BSD-3-Clause` (the sample
+images of the OpenEXR project, `LICENSES/BSD-3-Clause-OpenEXR.txt`), and `OFL-1.1` for font files only.
 
 The SIL Open Font License is accepted for the entries of the `fonts` section and for nothing else, because open fonts
 for most scripts exist under no other license. Its conditions are met as follows, and the validator enforces the ones

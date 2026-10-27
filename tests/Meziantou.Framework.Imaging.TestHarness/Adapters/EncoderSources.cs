@@ -20,7 +20,8 @@ public static class EncoderSources
     public static IEnumerable<(GoldenFixture Fixture, PixelFormat Format)> GetCases(GoldenCorpus corpus)
     {
         ArgumentNullException.ThrowIfNull(corpus);
-        foreach (var fixture in corpus.Fixtures.Where(fixture => fixture.IsValid && !IsFfmpegDecoderInput(fixture)))
+        // The floating-point references (OpenEXR) are high dynamic range: they are no source of the encoders of integers
+        foreach (var fixture in corpus.Fixtures.Where(fixture => fixture.IsValid && !IsFfmpegDecoderInput(fixture) && !fixture.CanonicalLayout.IsFloatingPoint))
         {
             var sixteenBit = fixture.CanonicalLayout == RawPixelLayout.Rgba16Le;
             yield return (fixture, sixteenBit ? PixelFormat.Rgba64 : PixelFormat.Rgba32);

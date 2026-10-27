@@ -168,7 +168,7 @@ decoded or encoded approximately; see [Format reference](#format-reference) and 
 | Format | Decoding | Encoding | `Save(path)` extensions |
 | --- | --- | --- | --- |
 | PNG / APNG | Every color type and bit depth, palettes, Adam7, APNG animations and poster frames | Gray, RGB and RGBA at 8/16 bits, exact palettes at 1/2/4/8 bits, Adam7, APNG with full-canvas frames and posters | `.png` (APNG when animated), `.apng` |
-| GIF | GIF87a/89a, animations, interlacing, transparency, comments | GIF89a, deterministic quantization per frame, optional dithering, animations with unknown frame counts | `.gif` |
+| GIF | GIF87a/89a, animations, interlacing, transparency, comments | GIF89a, deterministic quantization per frame or to a shared palette, optional dithering, animations with unknown frame counts | `.gif` |
 | JPEG | Baseline, extended sequential and progressive, Huffman or arithmetic coded, 8-bit or 12-bit samples; lossless (Huffman coded), 2-bit to 16-bit samples; gray, YCbCr, RGB, and CMYK/YCCK with a color conversion; any integral sampling | Baseline or progressive 8-bit Huffman, gray or YCbCr, 4:4:4/4:2:2/4:2:0 | `.jpg`, `.jpeg` |
 | WebP | Lossless, lossy, alpha, animations, ICC/EXIF/XMP | Lossless and lossy, alpha, animations (seekable destination) | `.webp` (lossless by default) |
 | QOI | Every chunk form, 3 or 4 channels, colorspace label | Lossless 8-bit RGB/RGBA | `.qoi` |
@@ -246,7 +246,7 @@ public static void BuildAnimation(string apngPath, string gifPath)
     animation.Animation!.TotalPlays = 3; // played three times in total
 
     animation.Save(apngPath, new PngEncoder { AnimationMode = PngAnimationMode.Animated });
-    animation.Save(gifPath, new GifEncoder { Dithering = GifDithering.FloydSteinberg });
+    animation.Save(gifPath, new GifEncoder { Quantization = new QuantizeOptions { Dithering = DitheringMode.FloydSteinberg } });
 }
 ```
 <!-- endref -->
@@ -552,9 +552,10 @@ without the `#`), which `ToHexString` writes back. An `Rgba32` converts implicit
 | Floating-point samples, when encoding a format that does not store them (all but OpenEXR and TIFF, and the TIFF palette, bilevel and JPEG settings) | `ImageEncoder.FloatingPointConversion`: the options of the reduction to `Rgba64`, after which the rules of the encoder apply (`AllowBitDepthReduction` for an 8-bit format) |
 | Float and 16-bit precision, when encoding OpenEXR half samples | `OpenExrEncoder.AllowBitDepthReduction` (with `PixelType = Half`); samples beyond ±65,504 are rejected |
 | sRGB-encoded samples, an ICC profile or a non-linear CICP description, when encoding OpenEXR (it stores linear light only) | `ImageEncoder.MetadataHandling` (the samples are written as they are), or convert the image to linear light first |
-| Colors beyond 256 per frame, when encoding GIF | Lossy by design: deterministic quantization (`MaxColors`), optional `Dithering` |
-| Colors beyond the palette, when encoding indexed BMP (2, 16 or 256 entries, or `MaxColors`) | `BmpEncoder.AllowColorReduction` (the same deterministic quantization, optional `Dithering`); an image whose colors fit is always stored exactly |
-| Colors beyond 256, or 16-bit samples that 8 bits cannot represent, when encoding indexed PNG (`PngPixelLayout.Indexed`) | None: the image is rejected, never quantized, dithered or rounded |
+| Colors beyond 256 per frame, when encoding GIF | Lossy by design: deterministic quantization (`GifEncoder.Quantization`: `MaxColors`, a fixed `Palette`, `Dithering`) |
+| Colors beyond the palette, when encoding indexed BMP (2, 16 or 256 entries, `MaxColors`, or a fixed palette) | `BmpEncoder.AllowColorReduction` (the same deterministic quantization, `BmpEncoder.Quantization`); an image whose colors fit is always stored exactly |
+| Colors beyond 256 (or the fixed palette), or 16-bit samples that 8 bits cannot represent, when encoding indexed PNG (`PngPixelLayout.Indexed`) | `PngEncoder.AllowColorReduction` (the same deterministic quantization, `PngEncoder.Quantization`); without it the image is rejected, never quantized, dithered or rounded |
+| Colors beyond a palette, on request | `Quantize` (see [Processing](#processing)) |
 | A color profile that cannot label the converted pixels | `PixelConversionOptions.DiscardIncompatibleColorProfile` |
 | Metadata the output format cannot store | `ImageEncoder.MetadataHandling` (see [Metadata](#metadata-color-profiles-and-orientation)) |
 
@@ -597,8 +598,9 @@ In-place extension methods (`ImageProcessingExtensions`), applied to every frame
 `Crop` (an in-canvas rectangle, never clamped), `AutoCrop` (the detected content), `Resize`, `Rotate` (exact 90/180/270
 permutations, or any angle), `Skew` and `Transform` (an affine or a perspective transformation), `Flip`, `AutoOrient` (all eight EXIF orientations), `Grayscale` (Rec. 709 at storage precision, ties upward; keeps the storage format and
 alpha, and rejects incompatible ICC profiles; use `CloneAs<Gray8>` to change the storage), `ApplyColorMatrix` (a new
-color for each pixel from its own one: brightness, contrast, saturation, a tint) and `Convolve` (a convolution
-matrix). `Flip`, `Grayscale`, `ApplyColorMatrix` and `Convolve` also exist for one frame. Geometry changes preserve 16-bit precision and alpha, and reconcile the EXIF dimensions,
+color for each pixel from its own one: brightness, contrast, saturation, a tint), `Convolve` (a convolution
+matrix) and `Quantize` (a reduction to a palette, see [Color reduction](#color-reduction)). `Flip`, `Grayscale`,
+`ApplyColorMatrix`, `Convolve` and `Quantize` also exist for one frame. Geometry changes preserve 16-bit precision and alpha, and reconcile the EXIF dimensions,
 orientation and thumbnail. `ConvertColorProfile` converts the colors to another ICC profile
 (see [Color management](#color-management)).
 
@@ -898,6 +900,102 @@ public static void ApplyColorFilters(string photoPath, string iconPath, string o
 }
 ```
 <!-- endref -->
+
+#### Color reduction
+
+`Quantize` reduces the colors of every frame to a palette, in place, so that each frame has at most
+`QuantizeOptions.MaxColors` distinct colors (2 to 256, the transparent entry included), or only the colors of
+`QuantizeOptions.Palette`. The pixel format is kept; the colors are read and written as 8-bit samples (a 16-bit or
+floating-point sample gets the exact value of an 8-bit one), and every fully transparent pixel becomes transparent
+black.
+
+- **Palette.** A frame whose colors fit keeps them exactly. Otherwise the palette is a variance-based median cut of a
+  histogram of fixed size (5 bits per channel for the opaque colors, 4 bits per channel and 3 bits of alpha for the
+  translucent ones), refined by k-means (up to eight passes on exact integer sums). Alpha is reduced with the colors:
+  translucent colors are compared premultiplied by their alpha and get entries of their own, and an opaque pixel always
+  gets an opaque entry, so opaque areas never become translucent.
+- **Shared palettes.** `PaletteBuilder` computes one `ImagePalette` from several frames or images (the frames of an
+  animation, a set of icons), which `QuantizeOptions.Palette` then applies to each of them. A palette can also be listed
+  color by color. A gray pixel format uses the gray entries of a fixed palette only, and a format without alpha the
+  opaque ones.
+- **Dithering.** `QuantizeOptions.Dithering` selects error diffusion (`FloydSteinberg`, `Atkinson`, `Burkes`,
+  `JarvisJudiceNinke`, `Sierra`, `SierraTwoRow`, `SierraLite`, `Stucki`; left to right on every row, from the top row
+  down, on the opaque pixels) or ordered dithering (`Bayer2x2`, `Bayer4x4`, `Bayer8x8`, spread over the mean distance
+  between the palette colors), and `DitherStrength` (0 to 1) scales the error or the pattern. A frame whose colors are
+  all palette entries is never dithered.
+- **Determinism.** Every decision uses integer arithmetic (the split criterion of the median cut and the spacing of
+  the ordered pattern use IEEE doubles, which are the same on every platform): the same pixels and options give the
+  same output everywhere.
+- **Encoders.** `GifEncoder.Quantization`, `BmpEncoder.Quantization` and `PngEncoder.Quantization` take the same
+  options, with the same quantizer; each format first applies its own alpha rules (GIF thresholds or flattens alpha,
+  BMP composites it over its background color, an indexed PNG keeps translucent entries).
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_Quantize;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void QuantizePhoto(string inputPath, string outputPath)
+{
+    using var image = Image.Load(inputPath);
+
+    // Each frame gets its own palette of at most 64 colors (its exact colors when they fit), and Atkinson error
+    // diffusion hides the bands of smooth gradients. The pixel format is kept: the image can be saved in any format.
+    image.Quantize(new QuantizeOptions { MaxColors = 64, Dithering = DitheringMode.Atkinson });
+    image.Save(outputPath);
+}
+```
+<!-- endref -->
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_SharedPalette;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void SaveGifWithSharedPalette(string inputPath, string outputPath)
+{
+    using var animation = Image.Load(inputPath);
+
+    // The palette of the pixels of every frame and of the poster: 255 colors leave room for the transparent entry
+    ImagePalette palette;
+    using (var builder = new PaletteBuilder())
+    {
+        builder.Add(animation);
+        palette = builder.Build(maxColors: 255);
+    }
+
+    // Every frame maps to the same colors, so they do not flicker from one frame to the next
+    animation.Save(outputPath, new GifEncoder
+    {
+        Quantization = new QuantizeOptions { Palette = palette, Dithering = DitheringMode.FloydSteinberg },
+    });
+}
+```
+<!-- endref -->
+
+**Quality.** Measured against pngquant 3.0.3 (libimagequant, default speed, `--nofs` without dithering) with the
+`ImageSimilarity` ports of SSIMULACRA 2 (higher is better, 100 is identical) and Butteraugli (3-norm, lower is better),
+as means over seven photographs and wallpapers of 354×354 to 1024×576 pixels (2026-10-26):
+
+| Colors | Quantizer | Dithering | SSIMULACRA 2 | Butteraugli | PSNR (dB) |
+| ---: | --- | --- | ---: | ---: | ---: |
+| 256 | `Quantize` | `None` | 77.5 | 1.22 | 40.8 |
+| 256 | `Quantize` | `FloydSteinberg` | 77.6 | 1.46 | 37.4 |
+| 256 | `Quantize` | `Atkinson` | 82.0 | 1.10 | 40.1 |
+| 256 | `Quantize` | `Bayer8x8` | 77.7 | 1.60 | 37.4 |
+| 256 | pngquant | none | 80.6 | 1.84 | 36.2 |
+| 256 | pngquant | Floyd–Steinberg | 82.0 | 1.78 | 36.0 |
+| 64 | `Quantize` | `None` | 56.8 | 2.40 | 36.3 |
+| 64 | `Quantize` | `FloydSteinberg` | 58.5 | 2.64 | 32.8 |
+| 64 | `Quantize` | `Atkinson` | 66.1 | 2.09 | 35.5 |
+| 64 | `Quantize` | `Bayer8x8` | 60.3 | 2.72 | 32.9 |
+| 64 | pngquant | none | 63.9 | 2.49 | 33.5 |
+| 64 | pngquant | Floyd–Steinberg | 70.5 | 2.31 | 33.1 |
+| 16 | `Quantize` | `None` | 10.3 | 5.54 | 30.5 |
+| 16 | `Quantize` | `FloydSteinberg` | 20.8 | 5.56 | 27.3 |
+| 16 | `Quantize` | `Atkinson` | 29.3 | 4.42 | 29.5 |
+| 16 | `Quantize` | `Bayer8x8` | 24.3 | 5.28 | 27.0 |
+| 16 | pngquant | none | 20.9 | 5.45 | 29.3 |
+| 16 | pngquant | Floyd–Steinberg | 39.3 | 4.50 | 28.7 |
+
+The palette is closer to the pixels (a higher PSNR and, from 64 colors up, a lower Butteraugli distance), while
+pngquant, which weighs the colors perceptually and adapts its dithering to the content, scores higher on SSIMULACRA 2,
+which penalizes banding most. `Atkinson` is the best choice for photographs: it matches pngquant at 256 colors. With
+few colors, the error diffusion of pngquant remains ahead.
 
 There is no HDR processing or custom processor.
 
@@ -3319,9 +3417,34 @@ a poster or animation settings), `Animated` and the `.apng` extension always do;
 indexed color: a palette of the distinct colors of the file, each with its own alpha, and indexes at the smallest bit depth
 that addresses it (1, 2, 4 or 8 bits). It is exact or it fails: an image with more than 256 distinct combinations of color
 and alpha (fully transparent pixels keep their color, so they count too), or with 16-bit samples that are not exactly
-8-bit values, is rejected before anything is written. The frames and the poster of an animation share the palette:
-`Save` collects the colors of all of them first, while a sequential writer takes the palette from the first image it is
-given. The palette order is deterministic (alpha, then red, green and blue), and an indexed file loads as `Rgba32`.
+8-bit values, is rejected before anything is written, unless `PngEncoder.AllowColorReduction` is set. The frames and
+the poster of an animation share the palette: `Save` collects the colors of all of them first, while a sequential writer
+takes the palette from the first image it is given. The palette order is deterministic (alpha, then red, green and
+blue), and an indexed file loads as `Rgba32`.
+
+`PngEncoder.AllowColorReduction` lets `Indexed` reduce the images that do not fit, with the quantizer of
+[`Quantize`](#color-reduction) and the options of `PngEncoder.Quantization`: a file has one palette, computed from every
+frame and the poster for `Save` (or `QuantizeOptions.Palette`), and from the first image for a sequential writer, whose
+later frames are mapped to it. Each image is reduced into an 8-bit RGBA copy charged to the writer. An image that fits is
+written exactly as without the setting.
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_SavePngColorReduction;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void SavePalettePng(string inputPath, string outputPath)
+{
+    using var image = Image.Load(inputPath);
+
+    // At most 256 colors, each with its own alpha (tRNS), in one palette for every frame. An image whose colors fit
+    // is stored exactly; the others are reduced and dithered.
+    image.Save(outputPath, new PngEncoder
+    {
+        PixelLayout = PngPixelLayout.Indexed,
+        AllowColorReduction = true,
+        Quantization = new QuantizeOptions { Dithering = DitheringMode.Atkinson },
+    });
+}
+```
+<!-- endref -->
 
 <!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_SavePngIndexed;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -3390,7 +3513,7 @@ public static void SaveSmallestPng(string inputPath, string outputPath)
 | --- | --- | --- |
 | Grayscale 1/2/4/8/16-bit | Sub-byte samples scaled exactly to `Gray8`; 16-bit kept in `Gray16`; a `tRNS` key gives `Rgba32`/`Rgba64` | `Gray8` → gray 8, `Gray16` → gray 16 (all 16 bits kept); `PngOptimization.MinimumSize`: every bit depth, and a `tRNS` key, for the gray pixels of any pixel format |
 | RGB / RGBA 8/16-bit, gray+alpha | 16-bit precision preserved, gray+alpha expanded to RGBA | `Rgb24` → RGB 8, `Rgba32`/`Bgra32` → RGBA 8, `Rgba64` → RGBA 16; fixed mapping, no data-dependent reduction; `PngOptimization.MinimumSize` chooses the layout from the pixels instead (RGB 16, gray+alpha 8/16, 8-bit samples of 16-bit pixel formats, RGB with a `tRNS` key), exactly |
-| Palette + `tRNS` | 1/2/4/8-bit, partial `tRNS`, out-of-range indices rejected | `PngPixelLayout.Indexed`, from any pixel format: exact palette of at most 256 colors with per-entry alpha (`tRNS` only for the entries that are not opaque), smallest bit depth, one palette per file; never reducing colors, and selected automatically only by `PngOptimization.MinimumSize` (which keeps 8-bit indexes when they compress smaller, and in an animation) |
+| Palette + `tRNS` | 1/2/4/8-bit, partial `tRNS`, out-of-range indices rejected | `PngPixelLayout.Indexed`, from any pixel format: exact palette of at most 256 colors with per-entry alpha (`tRNS` only for the entries that are not opaque), smallest bit depth, one palette per file; reducing colors only with `AllowColorReduction` (`Quantization`), and selected automatically only by `PngOptimization.MinimumSize` (which keeps 8-bit indexes when they compress smaller, and in an animation) |
 | Adam7 interlacing | Empty passes, pass rows scattered directly into the frame (no intermediate image); with `ReadFrameRefinementInto`, a rendering of the passes completed by each piece of the data, every other pixel taking the value of the top left pixel of its block in them (the passes are then decoded into an image of the decoder, from which the renderings and the frame are written) | Option; pass rows gathered from the frame storage, empty passes have no scanline |
 | Filters | All five; invalid types rejected | Adaptive minimum-sum-of-absolute-differences heuristic, or one fixed type for every scanline; indexed output uses type 0 (None) instead of the heuristic, as the specification recommends; `PngOptimization.MinimumSize` compresses every strategy and keeps the smallest |
 | zlib datastream | Truncation, extra data, Adler-32 and expansion (bounded by the image size) validated; streamed with bounded memory | BCL zlib at the four `CompressionLevel` values (`PngOptimization.MinimumSize` tries `Fastest`, `Optimal` and `SmallestSize`); `IDAT` chunks of at most 32 KiB, streamed in bounded bands |
@@ -3408,10 +3531,10 @@ public static void SaveSmallestPng(string inputPath, string outputPath)
 | Feature | Decoding | Encoding |
 | --- | --- | --- |
 | GIF87a / GIF89a, LZW | Minimum code sizes 1-11, codes up to 12 bits, clear codes anywhere, full tables without clear; a missing end code after a complete image, data after the end code and any data after the last pixel (more indices, a string running past the image, a reset stream that goes on, as browsers decode it) are ignored; invalid codes, short data, out-of-table indices and images without a color table are `InvalidImageContentException` | GIF89a, no global color table, one full-canvas image per frame, LZW with a clear code on a full table, 255-byte sub-blocks |
-| Palettes | Global and local, per image; output always `Rgba32` | One local palette per frame of at most `MaxColors` entries (2–256, the transparent entry included); exact palette when the frame's colors fit, otherwise a deterministic variance-based median cut; nearest-color mapping. Lossy by design |
+| Palettes | Global and local, per image; output always `Rgba32` | One local palette per frame of at most `Quantization.MaxColors` entries (2–256, the transparent entry included); exact palette when the frame's colors fit, otherwise the deterministic median cut of [`Quantize`](#color-reduction), or `Quantization.Palette` for every frame (its entries get the alpha rule of the pixels: dropped below the threshold, or flattened); nearest-color mapping. Lossy by design |
 | Interlacing | Four passes, any height | `GifEncoder.Interlaced` |
 | Transparency and disposal | Full-canvas displayed frames from one compositor (partial rectangles clipped to the screen, the transparent index keeps the canvas); the canvas and disposal 2 are transparent black (the background color index is never painted); disposal 3 restores (first image: clears); undefined 4 is "restore previous", 5–7 "none" | Recomputed from the displayed frames: every frame covers the canvas with disposal 2, so pixels that become transparent never show the previous frame; alpha thresholded (default 128) or flattened onto an explicit background, never partial |
-| Dithering | — | `GifDithering.FloydSteinberg`: deterministic integer error diffusion, quantized frames only |
+| Dithering | — | `Quantization.Dithering`: every `DitheringMode` (error diffusion and ordered), deterministic integer arithmetic, quantized frames only. `GifEncoder.Dithering` and `GifDithering` are obsolete aliases |
 | Loop extension (NETSCAPE2.0, ANIMEXTS1.0) | `L` repetitions → `TotalPlays = L + 1`, `0` → infinite, none → one play; the last extension wins; exact hundredth-second delays | NETSCAPE2.0 with `TotalPlays - 1` repetitions (none for one play, at most 65,536 plays); delays to the nearest hundredth (ties up) or exact (`RequireExact`), beyond 655.35 s rejected, never clamped |
 | Comment extension | `Comment` text entries, Latin-1 (readers see those before the first image) | `Comment` entries only, Latin-1, any length; ICC, EXIF, XMP and resolution follow `MetadataHandling` |
 | Plain-text extension | Not supported (`UnsupportedImageFeatureException`) | — |
@@ -3566,7 +3689,8 @@ public static void SaveAssetFormats(string inputPath, string bmpPath, string tga
 
 The BMP encoder never picks a lossy layout by itself: `BmpPixelLayout.Auto` is 24-bit or 32-bit. The indexed layouts
 (`Indexed1`, `Indexed4`, `Indexed8`) store the colors of the image exactly when its palette can hold them, and reject
-the image otherwise unless `AllowColorReduction` is set; `Indexed4` and `Indexed8` can be run-length encoded.
+the image otherwise unless `AllowColorReduction` is set, which reduces the colors as `BmpEncoder.Quantization` says (the
+quantizer of [`Quantize`](#color-reduction), or a fixed palette); `Indexed4` and `Indexed8` can be run-length encoded.
 
 <!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_SaveBmpIndexed;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -3583,7 +3707,7 @@ public static void SaveIndexedBmp(string inputPath, string outputPath)
         PixelLayout = BmpPixelLayout.Indexed8,
         Compression = BmpCompression.RunLength,
         AllowColorReduction = true,
-        Dithering = BmpDithering.FloydSteinberg,
+        Quantization = new QuantizeOptions { Dithering = DitheringMode.FloydSteinberg },
         BackgroundColor = new Rgba64(65535, 65535, 65535),
         AllowBitDepthReduction = true,
     });
@@ -3595,7 +3719,7 @@ public static void SaveIndexedBmp(string inputPath, string outputPath)
 | --- | --- | --- |
 | DIB headers | `BITMAPINFOHEADER` and the V2, V3, V4 and V5 headers; the OS/2 1.x `BITMAPCOREHEADER` (12 bytes, 16-bit dimensions, three-byte palette entries, a palette that may end early at `bfOffBits`) and the OS/2 2.x `BITMAPCOREHEADER2` (16 to 64 bytes: the fields a short header leaves out are zero; the lengths 40, 52 and 56 are read as Windows headers). Other lengths and inconsistent headers are `InvalidImageContentException` | `BITMAPINFOHEADER`, or `BITMAPV4HEADER` (`LCS_sRGB`) for 32-bit output; OS/2 headers are never written |
 | Layouts | 1/4/8-bit indexed (partial palettes, indexes outside the palette rejected), 16-bit (5-5-5), 24-bit BGR, 32-bit BGRX; 2-bit (Windows CE) is not supported | `BmpPixelLayout`: 24-bit `BI_RGB` or 32-bit `BI_BITFIELDS` by default (`Auto`); `Indexed1`, `Indexed4`, `Indexed8` (the palette stores only the colors used, `biClrUsed`); `Bgr565` (`BI_BITFIELDS`) and `Bgr555` (`BI_RGB`), which need `AllowBitDepthReduction` |
-| Indexed output | | Exact when the image has at most `min(MaxColors, 2^bits)` colors; otherwise `UnsupportedImageFeatureException` unless `AllowColorReduction`, which builds a deterministic median-cut palette and maps each pixel to its nearest entry, with optional Floyd–Steinberg `Dithering` (from the top row down, whatever the row order). Needs one byte per pixel of working memory |
+| Indexed output | | Exact when the image has at most `min(Quantization.MaxColors, 2^bits)` colors, or only colors of `Quantization.Palette` (whose entries that are not opaque are composited over `BackgroundColor`); otherwise `UnsupportedImageFeatureException` unless `AllowColorReduction`, which builds a deterministic median-cut palette (or takes the fixed one) and maps each pixel to its nearest entry, with the optional `Quantization.Dithering` (from the top row down, whatever the row order). `BmpEncoder.MaxColors`, `BmpEncoder.Dithering` and `BmpDithering` are obsolete aliases. Needs one byte per pixel of working memory |
 | Bit fields (`BI_BITFIELDS`, `BI_ALPHABITFIELDS`) | 16 and 32 bits, contiguous masks of 1 to 8 bits, expanded with `round(value * 255 / (2^n - 1))`; channels wider than 8 bits (10-10-10-2) are not supported | Explicit BGRA masks for 32-bit output, 5-6-5 masks after the header for `Bgr565`; samples are reduced with `round(value * (2^n - 1) / 255)` |
 | Alpha | Only a declared alpha mask is transparency: the fourth byte of a 32-bit `BI_RGB` payload is unspecified padding, so such a file loads as opaque `Rgb24` | `BmpPixelLayout.Auto` writes 32-bit with an explicit alpha mask for pixel formats with alpha; every other layout discards alpha and needs `BackgroundColor` as soon as a pixel is not opaque |
 | Rows | Padded to four bytes, bottom-up or top-down; bytes after the last row are not read | Padded to four bytes, bottom-up by default (read from the frame in reverse, no seeking) or top-down (`BmpRowOrder.TopDown`, a negative `biHeight`) |
@@ -4150,7 +4274,7 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | JPEG decoding | Lossless with arithmetic coding (SOF11), hierarchical (SOF5–7, SOF13–15, DHP, EXP), JPEG-LS, sample precisions other than 8 and 12 bits in a frame that is not lossless, heights defined by DNL, other component counts than 1, 3 or 4, non-integral sampling ratios: `UnsupportedImageFeatureException` (also from `Identify`). CMYK/YCCK (four components): identified, but loaded only with `CmykConversion` (an ICC conversion to RGB; `UnsupportedImageFeatureException` otherwise, and for a file without CMYK profile when no profile is assumed). Scaled and region decoding: not available |
 | JPEG encoding | Baseline or progressive 8-bit Huffman only: no arithmetic, lossless, 12-bit, RGB, CMYK or restart markers; the progression of the progressive process is fixed, and the baseline process has no optimized Huffman tables. One frame: animated images and posters are rejected (export one with `CloneFrame`); alpha requires `BackgroundColor`; `Rgba64`/`Gray16` require `AllowBitDepthReduction` |
 | GIF decoding | Plain-text extensions (they require text rendering) are `UnsupportedImageFeatureException`; other unknown extensions (XMP and ICC application extensions included) are skipped; the background color index is never painted (cleared areas are transparent black) |
-| GIF encoding | Lossy by design: at most 256 colors per frame (deterministic quantization, optional dithering), one transparent index (alpha thresholded or flattened, never partial); full-canvas frames (no delta rectangles); comments only (no ICC, EXIF, XMP or resolution); at most 65,535 pixels per side, 655.35 s per frame and 65,536 plays |
+| GIF encoding | Lossy by design: at most 256 colors per frame (deterministic quantization, optional dithering), one transparent index (alpha thresholded or flattened, never partial); a local color table per frame, also with a shared palette (no global color table); full-canvas frames (no delta rectangles); comments only (no ICC, EXIF, XMP or resolution); at most 65,535 pixels per side, 655.35 s per frame and 65,536 plays |
 | WebP decoding | VP8 interframes and frames that are not shown (never produced by WebP encoders): `UnsupportedImageFeatureException`; the `ANIM` background color is a hint and is never painted (disposed areas are transparent black); metadata of simple-layout files and text/resolution do not exist in WebP |
 | WebP encoding | 8-bit RGB(A) only (gray written as RGB, 16-bit after explicit reduction); lossy output is 4:2:0 and not pixel-exact; animations are full-canvas frames (no delta rectangles or blending) and need a seekable destination (no spooling to non-seekable streams); at most 16,383 (lossy) or 16,384 (lossless) pixels per side, 16,777,215 ms per frame, 65,535 plays and 4 GiB per file |
 | QOI | 8-bit RGB(A) only (gray written as RGB, 16-bit after explicit reduction); one still image; no metadata; the colorspace field is a label (no linear-to-sRGB conversion exists) |
@@ -4160,7 +4284,7 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | TIFF | Decoding: old-style JPEG compression (6), L\*a\*b\* and transparency-mask photometric interpretations, planar storage of several samples, the reversed fill order for other data than bilevel, sample widths other than 1, 2, 4, 8 and 16 bits (8 and 16 for RGB and CMYK, 8 for YCbCr, at most 8 for palette indexes; with JPEG compression, any width from 8 to 16 bits; signed samples of 8 or 16 bits and floating-point samples of 16, 24 or 32 bits, gray and RGB only, without JPEG or JPEG 2000 compression; no 64-bit floating-point samples), JPEG compression of samples of less than 8 bits, more than one extra sample, associated (premultiplied) or unspecified extra samples, alpha next to palette, YCbCr or packed grayscale samples, the uncompressed mode of the CCITT compressions, the LZW bit order of TIFF 5.0 drafts, and JPEG-compressed YCbCr data that is not the full-range BT.601 data of JFIF, and JPEG 2000 compression of samples that are not 8 or 16 bits wide, of palette indexes, of YCbCr data or with a predictor are all rejected with `UnsupportedImageFeatureException`; CMYK pages are loaded only with `CmykConversion`. Compressed data is never repaired (a damaged fax row is an error, not a white row). Subsampled chroma of pages that are not JPEG-compressed is replicated. No EXIF block, no sub-IFD, no unknown-tag round trip. Encoding: one page per `Image.Save` (use `ImageCollection.Save`), strips only, no predictor but the floating-point one, no tiles, no CMYK, no signed samples, no half-precision or 24-bit floating-point samples (`RgbaHalf` pixels are written as 32-bit floats), no thresholding and no color reduction (the bilevel and palette layouts store a page exactly or reject it; 16-bit palette colors that are all multiples of 256 without being all multiples of 257 are rejected, since readers take them for 8-bit colors), Group 3 in one dimension only, one strip per JPEG page (at most 65,535 pixels per side, 8-bit samples, opaque pixels), a seekable destination required |
 | ICO/CUR | Decoding: a top-down DIB payload, a DIB whose stored height is not doubled, an animated PNG payload, a representation larger than 256 pixels per side and the DIB variants an icon payload cannot use (run-length encoding, embedded codecs, OS/2 headers) are rejected. Encoding: 32-bit DIB or still PNG payloads only (16-bit pixels need a PNG payload: `IconPayloadFormat.Dib` is rejected for them), at most 256 pixels per side, no metadata; an icon cannot store a hotspot |
 | ANI | Decoding: raw bitmap frames (no icon flag), a frame without a representation of the canvas size and everything the ICO/CUR decoder rejects are `UnsupportedImageFeatureException`; the geometry fields and the sequence flag of the header are not used (the payloads and the `seq ` chunk are authoritative); an ICC profile or text inside a PNG frame is not retained; `Image.OpenReader` does not read it. Encoding: one representation per frame, at most 256 pixels per side, whole jiffies, an infinite play count only, a title and an author as the only metadata, a seekable destination, at most 4 GiB per file |
-| PNG/APNG | Palette output is opt-in and exact only (`PngPixelLayout.Indexed`: no color reduction or dithering, and a sequential writer cannot declare colors beyond its first image), no grayscale output below 8 bits, no RGB 16-bit or gray+alpha output layouts (16-bit color is written as RGBA 16), no APNG delta-rectangle optimization, unknown critical chunks rejected, unknown ancillary chunks not round-tripped |
+| PNG/APNG | Palette output is opt-in (`PngPixelLayout.Indexed`), exact unless `AllowColorReduction` (a sequential writer cannot declare colors beyond its first image: with `AllowColorReduction`, later frames are mapped to them), no grayscale output below 8 bits, no RGB 16-bit or gray+alpha output layouts (16-bit color is written as RGBA 16), no APNG delta-rectangle optimization, unknown critical chunks rejected, unknown ancillary chunks not round-tripped |
 | Metadata | Profiles are preserved and labeled, never applied implicitly (colors are converted only by `ConvertColorProfile` and `IccColorTransform`); EXIF orientation is reported, applied only by `AutoOrient`; extended XMP in JPEG is not supported; per-format storage limits are listed in [Metadata, color profiles and orientation](#metadata-color-profiles-and-orientation); unsupported items follow `MetadataHandling` (`Strict` throws by default) |
 | Color management | ICC version 2 and 4 grayscale, RGB and CMYK profiles (matrix-based and table-based): no version 5 (iccMAX), device-link, abstract or named-color profile, no multi-process-element (`D2Bx`/`B2Dx`) tag, no other data color space; `ConvertColorProfile` keeps the pixel format (an RGB image cannot become grayscale or CMYK this way); no CMYK pixel format: a CMYK JPEG file or TIFF page is converted to RGB when it is loaded (`CmykConversionOptions`, RGB destination only) and CMYK cannot be written; no gamut mapping beyond per-channel clipping |
 | Drawing | Sequential; under a projective transformation of the canvas (or, for filters, one that turns or skews), shadows, blurs, filters and the glyphs a font draws with its own colors are drawn on an image of the plane at one resolution (the scale of the transformation at its origin, at most 4,194,304 pixels), curves are cut no finer than for a factor of 65536 near the horizon, and a pen that does not scale strokes the parts of a closed contour that crosses the horizon as open contours; a filter graph has no input `BackgroundImage`, `BackgroundAlpha`, `FillPaint` or `StrokePaint`, and its region defaults to the canvas (not to the box of the drawing); no mesh gradient; a marker has no hole, and a stroke on one side of its path costs a clip; linear light is the light of the transfer function the image declares (sRGB when it declares none) or of the tone curves of its ICC profile, and a profile without tone curves has none; a color matrix is applied to the encoded sample values, also in linear light; the colors of a profile (`PaintProfile`) are those of the paints only (an image that is drawn is not converted), an RGB profile only, and never on PQ or HLG samples; without antialiasing, the glyphs a font draws with its own colors stay antialiased; a clip multiplies coverages; combined and simplified paths are made of segments; coordinates are limited to ±16,777,216 (what a transformation sends beyond is cut by that range); on a floating-point canvas, paints have 16-bit colors in [0, 1], and an image, a layer, a pattern, a filter, a shadow, a blur, a group or a backdrop is combined through 16-bit colors, so its samples must be in [0, 1] (others are rejected, never clipped) and are quantized to 1/65535 |

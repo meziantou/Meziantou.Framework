@@ -27,6 +27,41 @@ public sealed class DocumentationExampleTests : IDisposable
 
     private FullPath GetPath(string name) => _directory / name;
 
+    /// <summary>Saves a gradient of 1,024 colors, more than a palette holds.</summary>
+    private FullPath SaveGradient(string name)
+    {
+        var path = GetPath(name);
+        using var gradient = new Image<Rgba32>(32, 32);
+        gradient.Frames[0].ProcessPixelRows(pixels =>
+        {
+            for (var y = 0; y < pixels.Height; y++)
+            {
+                var row = pixels.GetRowSpan(y);
+                for (var x = 0; x < row.Length; x++)
+                {
+                    row[x] = new Rgba32((byte)(x * 8), (byte)(y * 8), 0);
+                }
+            }
+        });
+
+        gradient.Save(path);
+        return path;
+    }
+
+    private static int CountColors(ImageFrame<Rgba32> frame)
+    {
+        var colors = new HashSet<Rgba32>();
+        frame.ProcessPixelRows(pixels =>
+        {
+            for (var y = 0; y < pixels.Height; y++)
+            {
+                colors.UnionWith(pixels.GetRowSpan(y).ToArray());
+            }
+        });
+
+        return colors.Count;
+    }
+
     private (string Apng, string Gif) BuildAnimation()
     {
         var apng = GetPath("animation.apng");
@@ -1366,6 +1401,51 @@ public sealed class DocumentationExampleTests : IDisposable
         var fallback = GetPath("fallback.png");
         Assert.False(Examples.SaveIndexedPng(gradientPath, fallback));
         Assert.Equal((8, 6), (File.ReadAllBytes(fallback)[24], File.ReadAllBytes(fallback)[25]));
+    }
+
+    [Fact]
+    public void QuantizePhotoKeepsAtMost64Colors()
+    {
+        var gradientPath = SaveGradient("quantize-input.png");
+        var output = GetPath("quantized.png");
+        Examples.QuantizePhoto(gradientPath, output);
+
+        using var image = Image.Load<Rgba32>(output);
+        Assert.InRange(CountColors(image.Frames[0]), 2, 64);
+    }
+
+    [Fact]
+    public void SaveGifWithSharedPaletteKeepsTheColorsOfEveryFrame()
+    {
+        // Two frames of one color each: the shared palette holds both colors, and each frame keeps its own
+        var (apngPath, _) = BuildAnimation();
+        var gif = GetPath("shared.gif");
+        Examples.SaveGifWithSharedPalette(apngPath, gif);
+
+        using var image = Image.Load<Rgba32>(gif);
+        Assert.Equal(2, image.Frames.Count);
+        Assert.Equal(Red, image.Frames[0][0, 0]);
+        Assert.Equal(Blue, image.Frames[1][63, 63]);
+    }
+
+    [Fact]
+    public void SavePalettePngReducesTheColorsThatDoNotFit()
+    {
+        var gradientPath = SaveGradient("palette-input.png");
+        var output = GetPath("palette.png");
+        Examples.SavePalettePng(gradientPath, output);
+
+        Assert.Equal(3, File.ReadAllBytes(output)[25]); // IHDR color type: indexed
+        using var image = Image.Load<Rgba32>(output);
+        Assert.InRange(CountColors(image.Frames[0]), 2, 256);
+
+        // An image whose colors fit is stored exactly
+        var (apngPath, _) = BuildAnimation();
+        var exact = GetPath("palette-exact.png");
+        Examples.SavePalettePng(apngPath, exact);
+        using var animation = Image.Load<Rgba32>(exact);
+        Assert.Equal(Red, animation.Frames[0][0, 0]);
+        Assert.Equal(Blue, animation.Frames[1][63, 63]);
     }
 
     [Fact]

@@ -562,6 +562,100 @@ public static class ImageProcessingExtensions
     }
 
     /// <summary>
+    /// Reduces the colors of every frame of the image (including the poster frame) to a palette, in place, so that each frame
+    /// has at most <see cref="QuantizeOptions.MaxColors"/> distinct colors, or only colors of
+    /// <see cref="QuantizeOptions.Palette"/>. The pixel format is kept.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The pixels are read as 8-bit RGBA, with the conversion of <see cref="Image.CloneAs{TPixel}(PixelConversionOptions?)"/>, and every pixel gets the
+    /// palette color of its frame that the mapping gives it (see <see cref="QuantizeOptions"/> and
+    /// <see cref="DitheringMode"/>): a 16-bit or floating-point sample gets the exact value of an 8-bit sample, and every fully
+    /// transparent pixel becomes transparent black, so that the frame really has no more colors than its palette. Without a
+    /// fixed palette, each frame gets its own palette, which holds its exact colors when they fit (such a frame only changes
+    /// by those two rules). Alpha is reduced with the colors: translucent colors are palette entries of their own, and an
+    /// opaque pixel always gets an opaque color.
+    /// </para>
+    /// <para>
+    /// A fixed palette is restricted to the colors the pixel format stores: the opaque entries for a format without alpha,
+    /// the opaque gray entries for a gray format. The colors of an image are those of its color space: no color profile is
+    /// applied. The result is deterministic: the same on every platform.
+    /// </para>
+    /// <para>
+    /// The working memory (about 1.3 MiB, 2.6 MiB for a pixel format with alpha, and a few rows) is charged to the image and
+    /// rented before a pixel changes. On failure or cancellation, some frames or rows may already be reduced.
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.Imaging.Processing.Tests/QuantizeTests.cs" ref:region="Quantize_Dithering" ref:dedent="true">
+    /// [Fact]
+    /// public void Quantize_Dithering()
+    /// {
+    ///     // A smooth gradient: 64 x 64 pixels of 4,096 different colors
+    ///     using var image = new Image&lt;Rgba32&gt;(64, 64);
+    ///     image.Frames[0].ProcessPixelRows(pixels =&gt;
+    ///     {
+    ///         for (var y = 0; y &lt; pixels.Height; y++)
+    ///         {
+    ///             var row = pixels.GetRowSpan(y);
+    ///             for (var x = 0; x &lt; row.Length; x++)
+    ///             {
+    ///                 row[x] = new Rgba32((byte)(x * 4), (byte)(y * 4), 128);
+    ///             }
+    ///         }
+    ///     });
+    ///
+    ///     // At most 16 colors, with Floyd–Steinberg error diffusion to hide the bands
+    ///     image.Quantize(new QuantizeOptions { MaxColors = 16, Dithering = DitheringMode.FloydSteinberg });
+    ///
+    ///     var colors = new HashSet&lt;Rgba32&gt;();
+    ///     image.Frames[0].ProcessPixelRows(pixels =&gt;
+    ///     {
+    ///         for (var y = 0; y &lt; pixels.Height; y++)
+    ///         {
+    ///             colors.UnionWith(pixels.GetRowSpan(y).ToArray());
+    ///         }
+    ///     });
+    ///
+    ///     Assert.HasCountLessThanOrEqual(16, colors);
+    /// }
+    /// </code>
+    /// </example>
+    /// <param name="image">The image to modify.</param>
+    /// <param name="options">The options, or <see langword="null"/> for <see cref="QuantizeOptions.Default"/>.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="image"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">The fixed palette has no color the pixel format can store. Nothing is changed.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">A floating-point sample is outside [0, 1] or is not a number.</exception>
+    /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
+    /// <exception cref="ImageResourceLimitException">The working memory would exceed the allocation limit. Nothing is changed.</exception>
+    /// <exception cref="ObjectDisposedException">The image is disposed.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public static void Quantize(this Image image, QuantizeOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(image);
+        image.QuantizeFrames(frames: null, options ?? QuantizeOptions.Default, cancellationToken);
+    }
+
+    /// <summary>Reduces the colors of one frame to a palette, in place. See <see cref="Quantize(Image, QuantizeOptions?, CancellationToken)"/>.</summary>
+    /// <param name="frame">The frame to modify.</param>
+    /// <param name="options">The options, or <see langword="null"/> for <see cref="QuantizeOptions.Default"/>.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests. On cancellation, some rows may already be reduced.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="frame"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">The fixed palette has no color the pixel format can store. Nothing is changed.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">A floating-point sample is outside [0, 1] or is not a number.</exception>
+    /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
+    /// <exception cref="ImageResourceLimitException">The working memory would exceed the allocation limit. Nothing is changed.</exception>
+    /// <exception cref="ObjectDisposedException">The frame is no longer attached to a live image.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public static void Quantize(this ImageFrame frame, QuantizeOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(frame);
+        _ = frame.GetStorage();
+        frame.OwnerImage.QuantizeFrames([frame], options ?? QuantizeOptions.Default, cancellationToken);
+    }
+
+    /// <summary>
     /// Gives every pixel of every frame of the image (including the poster frame) the color a matrix makes of its own
     /// one, in place: brightness, contrast, saturation, a tint, a negative. The pixel format is kept.
     /// </summary>

@@ -57,6 +57,7 @@ internal sealed class BmpEncoderCodec : ImageEncoderCodec
         private readonly int _maskLength;
         private readonly int _paletteCapacity;
         private readonly int _rowLength;
+        private readonly int[]? _fixedPalette;
         private PooledBuffer? _band;
         private PooledBuffer? _keys;
         private PooledBuffer? _plane;
@@ -107,7 +108,8 @@ internal sealed class BmpEncoderCodec : ImageEncoderCodec
             // BITMAPV4HEADER declares the alpha mask of the 32-bit layout; 5-6-5 stores its three masks after a 40-byte header
             _dibLength = _layout == BmpPixelLayout.Bgra32 ? BmpFormat.V4HeaderLength : BmpFormat.InfoHeaderLength;
             _maskLength = _layout == BmpPixelLayout.Bgr565 ? BmpFormat.BitFieldsMaskLength : 0;
-            _paletteCapacity = _isIndexed ? Math.Min(_encoder.MaxColors, 1 << _bitsPerPixel) : 0;
+            _fixedPalette = _isIndexed && _encoder.Quantization.Palette is { } palette ? GetFixedPalette(palette, 1 << _bitsPerPixel, nameof(options)) : null;
+            _paletteCapacity = _isIndexed ? _fixedPalette?.Length ?? Math.Min(_encoder.Quantization.MaxColors, 1 << _bitsPerPixel) : 0;
             _width = options.CanvasSize.Width;
             _height = options.CanvasSize.Height;
 
@@ -142,7 +144,7 @@ internal sealed class BmpEncoderCodec : ImageEncoderCodec
                 {
                     _keys = scope.Rent((int)keysLength, AllocationKind.Temporary, clear: false);
                     _quantizer = new PaletteQuantizer(scope);
-                    _mapper = new PaletteRowMapper(scope, _width, _encoder.Dithering == BmpDithering.FloydSteinberg);
+                    _mapper = new PaletteRowMapper(scope, _width, _encoder.Quantization.Dithering, _encoder.Quantization.DitherStrength);
                     _plane = scope.Rent((int)planeLength, AllocationKind.Temporary, clear: false);
                 }
 
@@ -340,9 +342,18 @@ internal sealed class BmpEncoderCodec : ImageEncoderCodec
         private void BuildPalette()
         {
             var quantizer = _quantizer!;
+            if (_fixedPalette is not null)
+            {
+                quantizer.SetPalette(_fixedPalette);
+                if (!quantizer.IsExact && !_encoder.AllowColorReduction)
+                    throw new UnsupportedImageFeatureException("The image has colors that are not in BmpEncoder.Quantization.Palette. Set BmpEncoder.AllowColorReduction to map them to the palette, or select a layout without a palette.", ImageFormat.Bmp, "Color reduction");
+
+                return;
+            }
+
             quantizer.BuildPalette(_paletteCapacity);
             if (!quantizer.IsExact && !_encoder.AllowColorReduction)
-                throw new UnsupportedImageFeatureException(string.Create(CultureInfo.InvariantCulture, $"The image has more than {_paletteCapacity} distinct colors, the most the palette of the BMP layout {_layout} can hold with BmpEncoder.MaxColors = {_encoder.MaxColors}. Set BmpEncoder.AllowColorReduction to reduce the colors to a palette, or select a layout without a palette."), ImageFormat.Bmp, "Color reduction");
+                throw new UnsupportedImageFeatureException(string.Create(CultureInfo.InvariantCulture, $"The image has more than {_paletteCapacity} distinct colors, the most the palette of the BMP layout {_layout} can hold with BmpEncoder.Quantization.MaxColors = {_encoder.Quantization.MaxColors}. Set BmpEncoder.AllowColorReduction to reduce the colors to a palette, or select a layout without a palette."), ImageFormat.Bmp, "Color reduction");
         }
 
         /// <summary>Maps the rows to palette indexes in display order (dithering diffuses its error downward), a band per call.</summary>
@@ -356,7 +367,7 @@ internal sealed class BmpEncoderCodec : ImageEncoderCodec
             for (; _row < end; _row++)
             {
                 LoadKeys(in lease, _row, keys);
-                _mapper!.MapRow(_quantizer!, keys, plane.Slice(_row * _width, _width), transparentIndex: 0);
+                _mapper!.MapRow(_quantizer!, keys, plane.Slice(_row * _width, _width), transparentIndex: 0, _row);
             }
 
             CancellationToken.ThrowIfCancellationRequested();
@@ -377,6 +388,39 @@ internal sealed class BmpEncoderCodec : ImageEncoderCodec
 
             CancellationToken.ThrowIfCancellationRequested();
             return _row == _height;
+        }
+
+        /// <summary>
+        /// Reduces the entries of a fixed palette as the pixels are reduced: an entry that is not opaque is composited over the
+        /// background.
+        /// </summary>
+        /// <exception cref="ArgumentException">An entry is not opaque without background, or the palette does not fit the layout.</exception>
+        private int[] GetFixedPalette(ImagePalette palette, int capacity, string paramName)
+        {
+            var keys = new List<int>(palette.Count);
+            Span<byte> color = stackalloc byte[4];
+            Span<byte> opaque = stackalloc byte[3];
+            foreach (var entry in palette.Colors)
+            {
+                if (entry.A != byte.MaxValue && _background is null)
+                    throw new ArgumentException($"BmpEncoder.Quantization.Palette has a color that is not opaque, and the BMP layout {_layout} has no alpha channel. Set BmpEncoder.BackgroundColor to composite it over an opaque color, or use an opaque palette.", paramName);
+
+                color[0] = entry.R;
+                color[1] = entry.G;
+                color[2] = entry.B;
+                color[3] = entry.A;
+                PixelConverter.ConvertRow(PixelFormat.Rgba32, color, PixelFormat.Rgb24, opaque, _background, ImageFormat.Bmp);
+                var key = (opaque[0] << 16) | (opaque[1] << 8) | opaque[2];
+                if (!keys.Contains(key))
+                {
+                    keys.Add(key);
+                }
+            }
+
+            if (keys.Count > capacity)
+                throw new ArgumentException(string.Create(CultureInfo.InvariantCulture, $"BmpEncoder.Quantization.Palette has {keys.Count} colors, and the palette of the BMP layout {_layout} holds at most {capacity}."), paramName);
+
+            return [.. keys];
         }
 
         /// <summary>

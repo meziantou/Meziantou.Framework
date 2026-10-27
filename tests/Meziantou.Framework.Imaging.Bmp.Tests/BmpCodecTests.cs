@@ -44,15 +44,15 @@ public sealed class BmpCodecTests
         Assert.Equal(BmpCompression.None, encoder.Compression);
         Assert.Equal(BmpRowOrder.BottomUp, encoder.RowOrder);
         Assert.False(encoder.AllowColorReduction);
-        Assert.Equal(256, encoder.MaxColors);
-        Assert.Equal(BmpDithering.None, encoder.Dithering);
+        Assert.Equal(256, encoder.Quantization.MaxColors);
+        Assert.Equal(DitheringMode.None, encoder.Quantization.Dithering);
         Assert.Equal(MetadataHandling.Strict, encoder.MetadataHandling);
         Assert.Throws<ArgumentOutOfRangeException>(() => new BmpEncoder { PixelLayout = (BmpPixelLayout)42 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new BmpEncoder { Compression = (BmpCompression)2 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new BmpEncoder { RowOrder = (BmpRowOrder)2 });
-        Assert.Throws<ArgumentOutOfRangeException>(() => new BmpEncoder { Dithering = (BmpDithering)2 });
-        Assert.Throws<ArgumentOutOfRangeException>(() => new BmpEncoder { MaxColors = 1 });
-        Assert.Throws<ArgumentOutOfRangeException>(() => new BmpEncoder { MaxColors = 257 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new BmpEncoder { Quantization = new QuantizeOptions { Dithering = (DitheringMode)99 } });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new BmpEncoder { Quantization = new QuantizeOptions { MaxColors = 1 } });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new BmpEncoder { Quantization = new QuantizeOptions { MaxColors = 257 } });
         Assert.Throws<ArgumentException>(() => new BmpEncoder { BackgroundColor = new Rgba64(0, 0, 0, 1) });
     }
 
@@ -701,8 +701,8 @@ public sealed class BmpCodecTests
         foreach (var encoder in new[]
         {
             new BmpEncoder { PixelLayout = BmpPixelLayout.Indexed1 },
-            new BmpEncoder { PixelLayout = BmpPixelLayout.Indexed8, MaxColors = 5 },
-            new BmpEncoder { PixelLayout = BmpPixelLayout.Indexed4, MaxColors = 3, Dithering = BmpDithering.FloydSteinberg },
+            new BmpEncoder { PixelLayout = BmpPixelLayout.Indexed8, Quantization = new QuantizeOptions { MaxColors = 5 } },
+            new BmpEncoder { PixelLayout = BmpPixelLayout.Indexed4, Quantization = new QuantizeOptions { MaxColors = 3, Dithering = DitheringMode.FloydSteinberg } },
         })
         {
             using var stream = new MemoryStream();
@@ -713,11 +713,11 @@ public sealed class BmpCodecTests
         }
 
         // MaxColors only limits the palette: six colors fit six entries exactly
-        var exact = ReferenceBmp.Parse(Save(image, new BmpEncoder { PixelLayout = BmpPixelLayout.Indexed8, MaxColors = 6 }));
+        var exact = ReferenceBmp.Parse(Save(image, new BmpEncoder { PixelLayout = BmpPixelLayout.Indexed8, Quantization = new QuantizeOptions { MaxColors = 6 } }));
         Assert.Equal(6, exact.PaletteEntries);
 
         // Allowed: three entries, each the mean of the two colors it replaces, and every pixel maps to its nearest entry
-        var data = Save(image, new BmpEncoder { PixelLayout = BmpPixelLayout.Indexed4, MaxColors = 3, AllowColorReduction = true });
+        var data = Save(image, new BmpEncoder { PixelLayout = BmpPixelLayout.Indexed4, AllowColorReduction = true, Quantization = new QuantizeOptions { MaxColors = 3 } });
         var reduced = ReferenceBmp.Parse(data);
         Assert.Equal(3, reduced.PaletteEntries);
         Rgba32 blue = new(3, 3, 253), green = new(3, 253, 3), red = new(253, 3, 3);
@@ -725,6 +725,48 @@ public sealed class BmpCodecTests
 
         // The capacity of the layout applies whatever MaxColors says
         Assert.Equal(2, ReferenceBmp.Parse(Save(image, new BmpEncoder { PixelLayout = BmpPixelLayout.Indexed1, AllowColorReduction = true })).PaletteEntries);
+    }
+
+    [Fact]
+    public void AFixedPaletteIsUsedWhenTheColorsAreReducedOrFit()
+    {
+        Rgb24[] pixels = [new(255, 0, 0), new(0, 255, 0), new(0, 0, 255), new(250, 5, 5), new(5, 250, 5), new(5, 5, 250)];
+        using var image = Image.ImportPixelData<Rgb24>(pixels, 3, 2);
+        var palette = new ImagePalette([new Rgba32(0, 0, 255), new Rgba32(0, 255, 0), new Rgba32(255, 0, 0), new Rgba32(9, 9, 9)]);
+
+        // Colors that are not in the palette need AllowColorReduction
+        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => Save(image, new BmpEncoder { PixelLayout = BmpPixelLayout.Indexed4, Quantization = new QuantizeOptions { Palette = palette } }));
+        Assert.Equal("Color reduction", exception.Feature);
+
+        var data = Save(image, new BmpEncoder { PixelLayout = BmpPixelLayout.Indexed4, AllowColorReduction = true, Quantization = new QuantizeOptions { Palette = palette } });
+        Assert.Equal(4, ReferenceBmp.Parse(data).PaletteEntries);
+        Rgba32 red = new(255, 0, 0), green = new(0, 255, 0), blue = new(0, 0, 255);
+        Assert.Equal([red, green, blue, red, green, blue], Decode(data));
+
+        // An image whose colors are in the palette is stored exactly
+        using var fits = Image.ImportPixelData<Rgb24>([new(255, 0, 0), new(9, 9, 9)], 2, 1);
+        Assert.Equal([red, new Rgba32(9, 9, 9)], Decode(Save(fits, new BmpEncoder { PixelLayout = BmpPixelLayout.Indexed8, Quantization = new QuantizeOptions { Palette = palette } })));
+
+        // The palette must fit the layout, and its entries that are not opaque need a background
+        Assert.Throws<ArgumentException>(() => Save(image, new BmpEncoder { PixelLayout = BmpPixelLayout.Indexed1, AllowColorReduction = true, Quantization = new QuantizeOptions { Palette = palette } }));
+        var translucent = new ImagePalette([new Rgba32(255, 255, 255, 128), new Rgba32(0, 0, 0)]);
+        Assert.Throws<ArgumentException>(() => Save(image, new BmpEncoder { PixelLayout = BmpPixelLayout.Indexed1, AllowColorReduction = true, Quantization = new QuantizeOptions { Palette = translucent } }));
+        var flattened = ReferenceBmp.Parse(Save(image, new BmpEncoder { PixelLayout = BmpPixelLayout.Indexed1, AllowColorReduction = true, BackgroundColor = new Rgba64(0, 0, 0), Quantization = new QuantizeOptions { Palette = translucent } }));
+        Assert.Equal([0, 0, 0, 128, 128, 128], flattened.Palette.ToArray());
+    }
+
+    [Fact]
+    public void ObsoletePropertiesSetTheQuantization()
+    {
+#pragma warning disable CS0618 // The obsolete properties forward to Quantization
+        var encoder = new BmpEncoder { MaxColors = 16, Dithering = BmpDithering.FloydSteinberg };
+        Assert.Equal(16, encoder.MaxColors);
+        Assert.Equal(BmpDithering.FloydSteinberg, encoder.Dithering);
+        Assert.Throws<ArgumentOutOfRangeException>(() => new BmpEncoder { Dithering = (BmpDithering)2 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new BmpEncoder { MaxColors = 257 });
+#pragma warning restore CS0618
+        Assert.Equal(16, encoder.Quantization.MaxColors);
+        Assert.Equal(DitheringMode.FloydSteinberg, encoder.Quantization.Dithering);
     }
 
     [Fact]
@@ -821,12 +863,12 @@ public sealed class BmpCodecTests
         using var image = source.CloneAs<Rgb24>(new PixelConversionOptions { BackgroundColor = new Rgba64(0, 0, 0) });
         foreach (var layout in new[] { BmpPixelLayout.Indexed4, BmpPixelLayout.Indexed8 })
         {
-            foreach (var dithering in new[] { BmpDithering.None, BmpDithering.FloydSteinberg })
+            foreach (var dithering in new[] { DitheringMode.None, DitheringMode.FloydSteinberg })
             {
-                var settings = new BmpEncoder { PixelLayout = layout, AllowColorReduction = true, Dithering = dithering };
+                var settings = new BmpEncoder { PixelLayout = layout, AllowColorReduction = true, Quantization = new QuantizeOptions { Dithering = dithering } };
                 var bottomUp = Save(image, settings);
-                var topDown = Save(image, new BmpEncoder { PixelLayout = layout, AllowColorReduction = true, Dithering = dithering, RowOrder = BmpRowOrder.TopDown });
-                var runLength = Save(image, new BmpEncoder { PixelLayout = layout, AllowColorReduction = true, Dithering = dithering, Compression = BmpCompression.RunLength });
+                var topDown = Save(image, new BmpEncoder { PixelLayout = layout, AllowColorReduction = true, RowOrder = BmpRowOrder.TopDown, Quantization = new QuantizeOptions { Dithering = dithering } });
+                var runLength = Save(image, new BmpEncoder { PixelLayout = layout, AllowColorReduction = true, Compression = BmpCompression.RunLength, Quantization = new QuantizeOptions { Dithering = dithering } });
 
                 // Dithering runs from the top row down whatever the order of the rows in the file
                 var expected = Decode(bottomUp);
@@ -837,7 +879,7 @@ public sealed class BmpCodecTests
 
                 // The declared sizes are the bytes written, on a non-seekable output too
                 using var stream = new TestOutputStream { Seekable = false };
-                image.Save(stream, new BmpEncoder { PixelLayout = layout, AllowColorReduction = true, Dithering = dithering, Compression = BmpCompression.RunLength });
+                image.Save(stream, new BmpEncoder { PixelLayout = layout, AllowColorReduction = true, Compression = BmpCompression.RunLength, Quantization = new QuantizeOptions { Dithering = dithering } });
                 var written = stream.ToArray();
                 Assert.Equal(runLength, written);
                 Assert.Equal((uint)written.Length, BinaryPrimitives.ReadUInt32LittleEndian(written.AsSpan(2)));
@@ -850,13 +892,13 @@ public sealed class BmpCodecTests
             // Dithering changes the pixels of a reduced palette, and nothing when the colors fit
             Assert.NotEqual(
                 Decode(Save(image, new BmpEncoder { PixelLayout = layout, AllowColorReduction = true })),
-                Decode(Save(image, new BmpEncoder { PixelLayout = layout, AllowColorReduction = true, Dithering = BmpDithering.FloydSteinberg })));
+                Decode(Save(image, new BmpEncoder { PixelLayout = layout, AllowColorReduction = true, Quantization = new QuantizeOptions { Dithering = DitheringMode.FloydSteinberg } })));
         }
 
         using var fewColors = Image.ImportPixelData<Rgb24>([new(1, 2, 3), new(4, 5, 6), new(7, 8, 9), new(1, 2, 3)], 2, 2);
         Assert.Equal(
             Save(fewColors, new BmpEncoder { PixelLayout = BmpPixelLayout.Indexed8 }),
-            Save(fewColors, new BmpEncoder { PixelLayout = BmpPixelLayout.Indexed8, AllowColorReduction = true, Dithering = BmpDithering.FloydSteinberg }));
+            Save(fewColors, new BmpEncoder { PixelLayout = BmpPixelLayout.Indexed8, AllowColorReduction = true, Quantization = new QuantizeOptions { Dithering = DitheringMode.FloydSteinberg } }));
     }
 
     [Fact]

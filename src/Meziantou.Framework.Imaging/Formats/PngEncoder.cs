@@ -51,6 +51,46 @@ public sealed class PngEncoder : ImageEncoder
         }
     }
 
+    /// <summary>
+    /// Gets a value indicating whether <see cref="PngPixelLayout.Indexed"/> may reduce the colors of an image that its palette
+    /// cannot store exactly: more than 256 distinct colors (or than <see cref="QuantizeOptions.MaxColors"/>), colors that are
+    /// not in <see cref="QuantizeOptions.Palette"/>, 16-bit samples that 8 bits cannot represent, or, for a sequential writer,
+    /// a later frame with colors that are not in the palette of the first image. Defaults to <see langword="false"/>: such an
+    /// image is rejected with an <see cref="UnsupportedImageFeatureException"/>, as without this setting. When
+    /// <see langword="true"/>, the colors are reduced as <see cref="Quantization"/> says. An image whose colors fit is always
+    /// stored exactly. Ignored by the other layouts.
+    /// </summary>
+    public bool AllowColorReduction { get; init; }
+
+    /// <summary>
+    /// Gets how <see cref="PngPixelLayout.Indexed"/> reduces colors when <see cref="AllowColorReduction"/> is set. Defaults
+    /// to <see cref="QuantizeOptions.Default"/>: at most 256 entries, without dithering. Ignored otherwise.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A PNG file has one palette, written before its first image. An eager save computes it from every frame and the poster
+    /// (a deterministic variance-based median cut of their colors, see <see cref="PaletteBuilder"/>, or
+    /// <see cref="QuantizeOptions.Palette"/>), and a sequential writer from the first image it is given; every image then maps
+    /// to it, with the dithering of <see cref="QuantizeOptions.Dithering"/>, as
+    /// <see cref="ImageProcessingExtensions.Quantize(Image, QuantizeOptions?, CancellationToken)"/> does. Alpha is reduced with
+    /// the colors: entries may be translucent (<c>tRNS</c>), and fully transparent pixels share one entry.
+    /// </para>
+    /// <para>
+    /// Each image is reduced into a copy of 8-bit RGBA pixels, charged to the resource limits of the writer: an eager save
+    /// keeps the copies of every image until it completes, a sequential writer the copy of the image it writes.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="ArgumentNullException">The value is <see langword="null"/>.</exception>
+    public QuantizeOptions Quantization
+    {
+        get;
+        init
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            field = value;
+        }
+    } = QuantizeOptions.Default;
+
     /// <summary>Gets the optimization mode. Defaults to <see cref="PngOptimization.None"/>.</summary>
     /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="PngOptimization"/>.</exception>
     public PngOptimization Optimization

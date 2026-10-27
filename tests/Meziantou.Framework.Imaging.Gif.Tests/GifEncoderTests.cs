@@ -42,7 +42,7 @@ public sealed class GifEncoderTests
     {
         // Every frame has at most 255 colors (plus transparency for alpha formats): no quantization, so the displayed frames
         // must be reproduced exactly, including regions that become transparent after an opaque frame
-        var encoder = new GifEncoder { Interlaced = interlaced, Dithering = dithering ? GifDithering.FloydSteinberg : GifDithering.None };
+        var encoder = new GifEncoder { Interlaced = interlaced, Quantization = new QuantizeOptions { Dithering = dithering ? DitheringMode.FloydSteinberg : DitheringMode.None } };
         foreach (var (width, height) in new[] { (1, 1), (7, 5), (8, 8), (13, 11), (3, 17), (40, 2) })
         {
             AssertExact(format, width, height, encoder);
@@ -104,7 +104,7 @@ public sealed class GifEncoderTests
     [InlineData(256)]
     public void MaxColorsBoundsThePaletteAndKeepsExactPalettesThatFit(int maxColors)
     {
-        var encoder = new GifEncoder { MaxColors = maxColors };
+        var encoder = new GifEncoder { Quantization = new QuantizeOptions { MaxColors = maxColors } };
 
         // Exactly maxColors opaque colors: exact; one more: quantized to maxColors entries. With transparency the transparent
         // entry takes a slot: maxColors - 1 colors are exact, maxColors are quantized
@@ -127,11 +127,11 @@ public sealed class GifEncoderTests
     public void QuantizationAndDitheringAreDeterministicAndBounded()
     {
         using var image = Photo(64, 48, seed: 5);
-        foreach (var dithering in new[] { GifDithering.None, GifDithering.FloydSteinberg })
+        foreach (var dithering in new[] { DitheringMode.None, DitheringMode.FloydSteinberg })
         {
             foreach (var interlaced in new[] { false, true })
             {
-                var encoder = new GifEncoder { Dithering = dithering, Interlaced = interlaced };
+                var encoder = new GifEncoder { Interlaced = interlaced, Quantization = new QuantizeOptions { Dithering = dithering } };
                 var gif = Encode(image, encoder);
                 Assert.Equal(gif, Encode(image, encoder));
 
@@ -145,13 +145,13 @@ public sealed class GifEncoderTests
 
                 Assert.Equal(gif, stream.ToArray());
                 var error = GifOutputVerifier.Verify(gif, image, encoder).Errors[0]!;
-                Assert.True(error.Psnr > (dithering == GifDithering.None ? 30 : 28) && error.MaxChannelBias < 1, $"{dithering}: {error.Describe()}");
+                Assert.True(error.Psnr > (dithering == DitheringMode.None ? 30 : 28) && error.MaxChannelBias < 1, $"{dithering}: {error.Describe()}");
             }
         }
 
         // Interlacing changes only the row order of the datastream: the same indices are decoded
-        var plain = ReferenceGif.Parse(Encode(image, new GifEncoder { Dithering = GifDithering.FloydSteinberg }));
-        var interlacedGif = ReferenceGif.Parse(Encode(image, new GifEncoder { Dithering = GifDithering.FloydSteinberg, Interlaced = true }));
+        var plain = ReferenceGif.Parse(Encode(image, new GifEncoder { Quantization = new QuantizeOptions { Dithering = DitheringMode.FloydSteinberg } }));
+        var interlacedGif = ReferenceGif.Parse(Encode(image, new GifEncoder { Interlaced = true, Quantization = new QuantizeOptions { Dithering = DitheringMode.FloydSteinberg } }));
         Assert.Equal(plain.Images[0].Indices.ToArray(), interlacedGif.Images[0].Indices.ToArray());
         Assert.True(interlacedGif.Images[0].Interlaced);
     }
@@ -163,13 +163,111 @@ public sealed class GifEncoderTests
         // stays close to the source
         using var image = new Image<Rgba32>(64, 64);
         Fill(image.Frames[0], (x, y) => new Rgba32((byte)(x * 4), (byte)(y * 4), 128, 255));
-        var none = BlockError(image, new GifEncoder { MaxColors = 4 });
-        var dithered = BlockError(image, new GifEncoder { MaxColors = 4, Dithering = GifDithering.FloydSteinberg });
+        var none = BlockError(image, new GifEncoder { Quantization = new QuantizeOptions { MaxColors = 4 } });
+        var dithered = BlockError(image, new GifEncoder { Quantization = new QuantizeOptions { MaxColors = 4, Dithering = DitheringMode.FloydSteinberg } });
         Assert.True(dithered < none * 0.7, $"block error {dithered:F2} with dithering, {none:F2} without");
 
         // Exact palettes are never dithered (the error is zero everywhere)
         using var exact = Distinct(100, transparent: true);
-        Assert.Equal(Encode(exact, new GifEncoder()), Encode(exact, new GifEncoder { Dithering = GifDithering.FloydSteinberg }));
+        Assert.Equal(Encode(exact, new GifEncoder()), Encode(exact, new GifEncoder { Quantization = new QuantizeOptions { Dithering = DitheringMode.FloydSteinberg } }));
+    }
+
+    [Theory]
+    [InlineData(DitheringMode.FloydSteinberg)]
+    [InlineData(DitheringMode.Atkinson)]
+    [InlineData(DitheringMode.Burkes)]
+    [InlineData(DitheringMode.JarvisJudiceNinke)]
+    [InlineData(DitheringMode.Sierra)]
+    [InlineData(DitheringMode.SierraTwoRow)]
+    [InlineData(DitheringMode.SierraLite)]
+    [InlineData(DitheringMode.Stucki)]
+    [InlineData(DitheringMode.Bayer2x2)]
+    [InlineData(DitheringMode.Bayer4x4)]
+    [InlineData(DitheringMode.Bayer8x8)]
+    public void EveryDitheringModeHidesTheBandsAndIgnoresTheRowOrder(DitheringMode dithering)
+    {
+        using var image = new Image<Rgba32>(64, 64);
+        Fill(image.Frames[0], (x, y) => new Rgba32((byte)(x * 4), (byte)(y * 4), 128, 255));
+        var none = BlockError(image, new GifEncoder { Quantization = new QuantizeOptions { MaxColors = 4 } });
+        var dithered = BlockError(image, new GifEncoder { Quantization = new QuantizeOptions { MaxColors = 4, Dithering = dithering } });
+        Assert.True(dithered < none, $"{dithering}: block error {dithered:F2} with dithering, {none:F2} without");
+
+        // Interlacing changes the order of the rows in the file, not the indexes the dithering gives them
+        var plain = ReferenceGif.Parse(Encode(image, new GifEncoder { Quantization = new QuantizeOptions { MaxColors = 4, Dithering = dithering } }));
+        var interlaced = ReferenceGif.Parse(Encode(image, new GifEncoder { Interlaced = true, Quantization = new QuantizeOptions { MaxColors = 4, Dithering = dithering } }));
+        Assert.Equal(plain.Images[0].Indices.ToArray(), interlaced.Images[0].Indices.ToArray());
+    }
+
+    [Fact]
+    public void AFixedPaletteIsTheColorTableOfEveryFrame()
+    {
+        using var image = Photo(40, 30, seed: 3);
+        using (var second = new Image<Rgba32>(40, 30))
+        {
+            Fill(second.Frames[0], (x, y) => x < 5 ? default : new Rgba32((byte)(x * 6), (byte)(y * 8), 40));
+            image.AppendFrame(second.Frames[0]);
+        }
+        ImagePalette palette;
+        using (var builder = new PaletteBuilder())
+        {
+            builder.Add(image, TestContext.Current.CancellationToken);
+            palette = builder.Build(32);
+        }
+
+        var gif = ReferenceGif.Parse(Encode(image, new GifEncoder { Quantization = new QuantizeOptions { Palette = palette, Dithering = DitheringMode.FloydSteinberg } }));
+
+        // The opaque entries, sorted by color, then the transparent entry of the frame that has transparent pixels
+        var opaque = palette.Colors.ToArray().Where(color => color.A == 255).Select(color => (color.R << 16) | (color.G << 8) | color.B).Order().ToArray();
+        Assert.HasCount(31, opaque);
+        foreach (var (frame, transparent) in gif.Images.Zip([false, true]))
+        {
+            var table = frame.LocalColorTable!.Value.ToArray();
+            for (var i = 0; i < opaque.Length; i++)
+            {
+                Assert.Equal(opaque[i], (table[3 * i] << 16) | (table[(3 * i) + 1] << 8) | table[(3 * i) + 2]);
+            }
+
+            Assert.Equal(transparent, frame.Control?.HasTransparency ?? false);
+            Assert.HasCountLessThanOrEqual(32, frame.Indices.ToArray().Distinct());
+        }
+    }
+
+    [Fact]
+    public void AFixedPaletteGetsTheAlphaReductionOfThePixels()
+    {
+        using var image = Photo(16, 8, seed: 4);
+        var palette = new ImagePalette([new Rgba32(0, 0, 0), new Rgba32(255, 255, 255, 200), new Rgba32(255, 0, 0, 50)]);
+
+        // Threshold: the entry below the threshold is dropped, the others keep their color
+        var threshold = ReferenceGif.Parse(Encode(image, new GifEncoder { Quantization = new QuantizeOptions { Palette = palette } }));
+        Assert.Equal([0, 0, 0, 255, 255, 255], threshold.Images[0].LocalColorTable!.Value.ToArray());
+
+        // Flatten: every entry is composited over the background
+        var background = new Rgba64(0, 0, 65535);
+        var flatten = ReferenceGif.Parse(Encode(image, new GifEncoder { AlphaMode = GifAlphaMode.Flatten, BackgroundColor = background, Quantization = new QuantizeOptions { Palette = palette } }));
+        Assert.Equal([0, 0, 0, 50, 0, 205, 200, 200, 255], flatten.Images[0].LocalColorTable!.Value.ToArray()[..9]);
+
+        // No entry left, or no room left for the transparent entry
+        Assert.Throws<ArgumentException>(() => Encode(image, new GifEncoder { Quantization = new QuantizeOptions { Palette = new ImagePalette([new Rgba32(1, 2, 3, 10)]) } }));
+        var full = new ImagePalette(Enumerable.Range(0, 256).Select(i => new Rgba32((byte)i, (byte)i, 0)));
+        Assert.Throws<ArgumentException>(() => Encode(image, new GifEncoder { Quantization = new QuantizeOptions { Palette = full } }));
+        using var opaque = image.CloneAs<Rgb24>();
+        Assert.HasCount(1, ReferenceGif.Parse(Encode(opaque, new GifEncoder { Quantization = new QuantizeOptions { Palette = full } })).Images);
+    }
+
+    [Fact]
+    public void ObsoletePropertiesSetTheQuantization()
+    {
+#pragma warning disable CS0618 // The obsolete properties forward to Quantization
+        var encoder = new GifEncoder { Quantization = new QuantizeOptions { DitherStrength = 0.5 }, MaxColors = 16, Dithering = GifDithering.FloydSteinberg };
+        Assert.Equal(16, encoder.MaxColors);
+        Assert.Equal(GifDithering.FloydSteinberg, encoder.Dithering);
+        Assert.Throws<ArgumentOutOfRangeException>(() => new GifEncoder { Dithering = (GifDithering)2 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new GifEncoder { MaxColors = 1 });
+#pragma warning restore CS0618
+        Assert.Equal(16, encoder.Quantization.MaxColors);
+        Assert.Equal(DitheringMode.FloydSteinberg, encoder.Quantization.Dithering);
+        Assert.Equal(0.5, encoder.Quantization.DitherStrength);
     }
 
     [Fact]
@@ -409,7 +507,7 @@ public sealed class GifEncoderTests
         foreach (var count in new[] { 2, 30 })
         {
             using var stream = new TestOutputStream { ForbidSynchronousWrites = asynchronous, ForbidAsynchronousWrites = !asynchronous };
-            var options = new ImageWriterOptions(Width, Height) { Encoder = new GifEncoder { Dithering = GifDithering.FloydSteinberg, Interlaced = true } };
+            var options = new ImageWriterOptions(Width, Height) { Encoder = new GifEncoder { Interlaced = true, Quantization = new QuantizeOptions { Dithering = DitheringMode.FloydSteinberg } } };
             using (var writer = Image.CreateWriter<Rgba32>(stream, options))
             {
                 var previous = 0L;

@@ -345,6 +345,42 @@ public abstract partial class Image
     }
 
     /// <summary>
+    /// Reduces the colors of frames of this image in place (every displayed frame and the poster when <paramref name="frames"/>
+    /// is <see langword="null"/>). The working memory is charged to the scope of the image and rented before any pixel changes;
+    /// afterward, on failure, some frames or rows may already be reduced.
+    /// </summary>
+    /// <exception cref="ArgumentException">The palette has no entry the pixel format can store.</exception>
+    internal void QuantizeFrames(ImageFrame[]? frames, QuantizeOptions options, CancellationToken cancellationToken)
+    {
+        Owner.EnsureCanModify("quantize the image");
+        var usableKeys = options.Palette is { } palette ? FrameQuantization.GetUsableKeys(palette, PixelFormat) : null;
+        cancellationToken.ThrowIfCancellationRequested();
+        frames ??= GetAllFrames();
+        var scope = Owner.Scope;
+        using var rows = new FrameQuantization(scope, Size.Width);
+        using var quantizer = new PaletteQuantizer(scope, translucent: PixelFormats.HasAlpha(PixelFormat));
+        using var mapper = new PaletteRowMapper(scope, Size.Width, options.Dithering, options.DitherStrength);
+        _metadata.RemoveStaleThumbnail();
+        foreach (var frame in frames)
+        {
+            using var lease = frame.GetStorage().AcquireLease();
+            quantizer.Begin(ImagePalette.MaxCount);
+            rows.AddRows(quantizer, lease, PixelFormat, cancellationToken);
+            if (usableKeys is not null)
+            {
+                quantizer.SetPalette(usableKeys);
+            }
+            else
+            {
+                quantizer.BuildPalette(options.MaxColors, includeTransparent: true);
+            }
+
+            mapper.Reset();
+            rows.MapRows(quantizer, mapper, lease, PixelFormat, cancellationToken);
+        }
+    }
+
+    /// <summary>
     /// Convolves every displayed frame and the poster in place. The scratch storage is charged to the scope of the image and
     /// rented before any pixel changes; afterward, on failure, some frames or rows may already be convolved.
     /// </summary>

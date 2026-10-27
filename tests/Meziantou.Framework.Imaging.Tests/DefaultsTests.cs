@@ -67,8 +67,8 @@ public sealed class DefaultsTests
         Assert.Equal(GifAlphaMode.Threshold, gif.AlphaMode);
         Assert.Equal(128, gif.AlphaThreshold);
         Assert.Null(gif.BackgroundColor);
-        Assert.Equal(GifDithering.None, gif.Dithering);
-        Assert.Equal(256, gif.MaxColors);
+        Assert.Equal(DitheringMode.None, gif.Quantization.Dithering);
+        Assert.Equal(256, gif.Quantization.MaxColors);
         Assert.Equal(FrameDurationRounding.RoundToNearest, gif.DurationRounding);
         Assert.Equal(MetadataHandling.Strict, gif.MetadataHandling);
 
@@ -130,8 +130,8 @@ public sealed class DefaultsTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new JpegEncoder { Quality = 0 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new JpegEncoder { Quality = 101 });
         Assert.Throws<ArgumentException>(() => new JpegEncoder { BackgroundColor = new Rgba32(1, 2, 3, 254) });
-        Assert.Throws<ArgumentOutOfRangeException>(() => new GifEncoder { MaxColors = 1 });
-        Assert.Throws<ArgumentOutOfRangeException>(() => new GifEncoder { MaxColors = 257 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new GifEncoder { Quantization = new QuantizeOptions { MaxColors = 1 } });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new GifEncoder { Quantization = new QuantizeOptions { MaxColors = 257 } });
         Assert.Throws<ArgumentOutOfRangeException>(() => new PngEncoder { Filter = (PngFilter)42 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new PngEncoder { PixelLayout = (PngPixelLayout)2 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new PngEncoder { Optimization = (PngOptimization)2 });

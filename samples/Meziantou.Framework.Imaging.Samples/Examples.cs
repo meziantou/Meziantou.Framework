@@ -648,7 +648,7 @@ internal static class Examples
         animation.Animation!.TotalPlays = 3; // played three times in total
 
         animation.Save(apngPath, new PngEncoder { AnimationMode = PngAnimationMode.Animated });
-        animation.Save(gifPath, new GifEncoder { Dithering = GifDithering.FloydSteinberg });
+        animation.Save(gifPath, new GifEncoder { Quantization = new QuantizeOptions { Dithering = DitheringMode.FloydSteinberg } });
     }
     #endregion
 
@@ -765,6 +765,58 @@ internal static class Examples
     }
     #endregion
 
+    /// <summary>Fewer colors, in place: at most 64 colors per frame, dithered to hide the bands.</summary>
+    #region Imaging_Quantize
+    public static void QuantizePhoto(string inputPath, string outputPath)
+    {
+        using var image = Image.Load(inputPath);
+
+        // Each frame gets its own palette of at most 64 colors (its exact colors when they fit), and Atkinson error
+        // diffusion hides the bands of smooth gradients. The pixel format is kept: the image can be saved in any format.
+        image.Quantize(new QuantizeOptions { MaxColors = 64, Dithering = DitheringMode.Atkinson });
+        image.Save(outputPath);
+    }
+    #endregion
+
+    /// <summary>One palette for every frame of an animation, computed from all of them.</summary>
+    #region Imaging_SharedPalette
+    public static void SaveGifWithSharedPalette(string inputPath, string outputPath)
+    {
+        using var animation = Image.Load(inputPath);
+
+        // The palette of the pixels of every frame and of the poster: 255 colors leave room for the transparent entry
+        ImagePalette palette;
+        using (var builder = new PaletteBuilder())
+        {
+            builder.Add(animation);
+            palette = builder.Build(maxColors: 255);
+        }
+
+        // Every frame maps to the same colors, so they do not flicker from one frame to the next
+        animation.Save(outputPath, new GifEncoder
+        {
+            Quantization = new QuantizeOptions { Palette = palette, Dithering = DitheringMode.FloydSteinberg },
+        });
+    }
+    #endregion
+
+    /// <summary>An 8-bit palette PNG from any image, colors reduced when they do not fit.</summary>
+    #region Imaging_SavePngColorReduction
+    public static void SavePalettePng(string inputPath, string outputPath)
+    {
+        using var image = Image.Load(inputPath);
+
+        // At most 256 colors, each with its own alpha (tRNS), in one palette for every frame. An image whose colors fit
+        // is stored exactly; the others are reduced and dithered.
+        image.Save(outputPath, new PngEncoder
+        {
+            PixelLayout = PngPixelLayout.Indexed,
+            AllowColorReduction = true,
+            Quantization = new QuantizeOptions { Dithering = DitheringMode.Atkinson },
+        });
+    }
+    #endregion
+
     /// <summary>A compact BMP for graphics: 8-bit palette indexes, run-length encoded, with an explicit color-reduction policy.</summary>
     #region Imaging_SaveBmpIndexed
     public static void SaveIndexedBmp(string inputPath, string outputPath)
@@ -780,7 +832,7 @@ internal static class Examples
             PixelLayout = BmpPixelLayout.Indexed8,
             Compression = BmpCompression.RunLength,
             AllowColorReduction = true,
-            Dithering = BmpDithering.FloydSteinberg,
+            Quantization = new QuantizeOptions { Dithering = DitheringMode.FloydSteinberg },
             BackgroundColor = new Rgba64(65535, 65535, 65535),
             AllowBitDepthReduction = true,
         });

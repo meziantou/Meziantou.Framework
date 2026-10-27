@@ -44,7 +44,7 @@ public sealed class GifEncoderInteropTests
     {
         var ffmpeg = await RequiredTools.FFmpegAsync();
         using var image = CreateTransitions(Width, Height, seed: interlaced ? 3 : 4);
-        var encoder = new GifEncoder { Interlaced = interlaced, Dithering = dithering ? GifDithering.FloydSteinberg : GifDithering.None };
+        var encoder = new GifEncoder { Interlaced = interlaced, Quantization = new QuantizeOptions { Dithering = dithering ? DitheringMode.FloydSteinberg : DitheringMode.None } };
         var name = $"exact-{(interlaced ? "interlaced" : "progressive")}-{(dithering ? "dither" : "nodither")}";
         var path = await SaveAsync(image, encoder, name);
         var verification = GifOutputVerifier.Verify(await File.ReadAllBytesAsync(path, XunitCancellationToken), image, encoder, context: name);
@@ -54,15 +54,15 @@ public sealed class GifEncoderInteropTests
     }
 
     [Theory]
-    [InlineData(GifDithering.None, false, 256)]
-    [InlineData(GifDithering.None, true, 256)]
-    [InlineData(GifDithering.FloydSteinberg, false, 256)]
-    [InlineData(GifDithering.FloydSteinberg, true, 32)]
-    public async Task QuantizedAnimationsDecodeLikeTheReferenceReader(GifDithering dithering, bool interlaced, int maxColors)
+    [InlineData(DitheringMode.None, false, 256)]
+    [InlineData(DitheringMode.None, true, 256)]
+    [InlineData(DitheringMode.FloydSteinberg, false, 256)]
+    [InlineData(DitheringMode.FloydSteinberg, true, 32)]
+    public async Task QuantizedAnimationsDecodeLikeTheReferenceReader(DitheringMode dithering, bool interlaced, int maxColors)
     {
         var ffmpeg = await RequiredTools.FFmpegAsync();
         using var image = CreatePhotoAnimation(96, 64);
-        var encoder = new GifEncoder { Dithering = dithering, Interlaced = interlaced, MaxColors = maxColors };
+        var encoder = new GifEncoder { Interlaced = interlaced, Quantization = new QuantizeOptions { MaxColors = maxColors, Dithering = dithering } };
         var name = $"quantized-{dithering}-{(interlaced ? "interlaced" : "progressive")}-{maxColors}";
         var path = await SaveAsync(image, encoder, name);
         var verification = GifOutputVerifier.Verify(await File.ReadAllBytesAsync(path, XunitCancellationToken), image, encoder, context: name);
@@ -72,7 +72,7 @@ public sealed class GifEncoderInteropTests
         // Documented quantization bounds (opaque photo-like frames, measured with the reference reader when the encoder was written)
         var minimumPsnr = (maxColors, dithering) switch
         {
-            (256, GifDithering.None) => 30d,
+            (256, DitheringMode.None) => 30d,
             (256, _) => 28d,
             _ => 19.5,
         };

@@ -25,7 +25,7 @@ public sealed class BmpInteropTests
         new() { PixelLayout = BmpPixelLayout.Indexed4, AllowColorReduction = true, Compression = BmpCompression.RunLength, MetadataHandling = MetadataHandling.Strip },
         new() { PixelLayout = BmpPixelLayout.Indexed8, AllowColorReduction = true, MetadataHandling = MetadataHandling.Strip },
         new() { PixelLayout = BmpPixelLayout.Indexed8, AllowColorReduction = true, Compression = BmpCompression.RunLength, MetadataHandling = MetadataHandling.Strip },
-        new() { PixelLayout = BmpPixelLayout.Indexed8, AllowColorReduction = true, RowOrder = BmpRowOrder.TopDown, Dithering = BmpDithering.FloydSteinberg, MetadataHandling = MetadataHandling.Strip },
+        new() { PixelLayout = BmpPixelLayout.Indexed8, AllowColorReduction = true, RowOrder = BmpRowOrder.TopDown, Quantization = new QuantizeOptions { Dithering = DitheringMode.FloydSteinberg }, MetadataHandling = MetadataHandling.Strip },
     ];
 
     public static TheoryData<string, string> EncoderCases() => LosslessEncoderInterop.EncoderCases();
@@ -67,7 +67,7 @@ public sealed class BmpInteropTests
             using var image = EncoderSources.CreateImage(source, pixelFormat);
             foreach (var encoder in IndexedEncoders)
             {
-                var description = $"{encoder.PixelLayout}-{encoder.Compression}-{encoder.RowOrder}-{encoder.Dithering}";
+                var description = $"{encoder.PixelLayout}-{encoder.Compression}-{encoder.RowOrder}-{encoder.Quantization.Dithering}";
                 var path = InteropSettings.GetArtifactsDirectory(nameof(BmpInteropTests)) / $"{id.Replace('/', '-')}-{name.Replace(' ', '-')}-{format}-{description}.bmp";
                 await image.SaveAsync(path, encoder, XunitCancellationToken);
 

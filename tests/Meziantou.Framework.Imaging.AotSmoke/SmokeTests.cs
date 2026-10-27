@@ -88,7 +88,7 @@ internal static class SmokeTests
         CheckEqual(animation, decoded, "GIF round trip (exact palette)");
 
         using var dithered = CreatePattern(seed: 5);
-        using var quantized = Image.Load<Rgba32>(Encode(dithered, new GifEncoder { MaxColors = 32, Dithering = GifDithering.FloydSteinberg }));
+        using var quantized = Image.Load<Rgba32>(Encode(dithered, new GifEncoder { Quantization = new QuantizeOptions { MaxColors = 32, Dithering = DitheringMode.FloydSteinberg } }));
         Check(quantized.Width == Width && quantized.Height == Height, "GIF quantized output");
     }
 

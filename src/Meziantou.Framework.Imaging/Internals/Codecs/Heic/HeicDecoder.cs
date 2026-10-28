@@ -11,7 +11,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// Memory: the data of the items or of the samples that are not decoded yet (the walker), the decoded picture buffer of the
 /// HEVC decoders, the planes of the color image and of the alpha plane, and three rows, all charged to the operation scope.
 /// The planes of a grid without alpha plane hold one row of tiles: its rows are converted before the next row is decoded.
-/// The decoder of a coded item is released before the next one is decoded; an image sequence keeps one decoder for the color
+/// The decoder of a coded item is released before the next one is decoded, except that the tiles of a large grid are decoded
+/// by up to <see cref="ImageConfiguration.MaxDegreeOfParallelism"/> workers, each holding a decoder and the picture of its
+/// tile until the tiles of its batch are copied; an image sequence keeps one decoder for the color
 /// images and one for the alpha planes, and the pictures that they output before their turn: the samples are in decoding
 /// order and the images are written in presentation order, so the pictures that wait are bounded by the size of the decoded
 /// picture buffer, whatever the number of images.
@@ -21,6 +23,10 @@ internal sealed class HeicDecoder : HeifDecodeObserver
     // The tiles of a grid that is converted one row of tiles at a time are at least as high as the rows that a row of tiles
     // keeps for the next one
     private const int MinBandTileHeight = 4 * HeicPlanarImage.BandOverlap;
+
+    // The limits of the trackers of the tiles that workers decode, which only record the hidden pixels: the input charges them
+    // in the order of the tiles, so that a limit fails as in a sequential decoding
+    private static readonly ImageResourceLimits TileHiddenPixelsRecording = new() { MaxTotalPixels = long.MaxValue };
 
     private readonly ImageDecodeRequest _request;
     private readonly ImageCodecContext _context;
@@ -168,15 +174,17 @@ internal sealed class HeicDecoder : HeifDecodeObserver
     // Decodes the coded items of an image into planes of the size of the image
     private HeicPlanarImage DecodeImage(HeifStructureParser structure, HeifCodedImage image)
     {
+        if (!image.IsGrid)
+        {
+            var picture = DecodeTile(structure, image, 0, previous: null, out var format);
+            return HeicPlanarImage.FromPicture(_context.Scope, picture, format);
+        }
+
         HeicPlanarImage? result = null;
         try
         {
-            for (var i = 0; i < image.Tiles.Length; i++)
+            DecodeTiles(structure, image, (i, picture, format) =>
             {
-                var picture = DecodeTile(structure, image, i, result?.Format, out var format);
-                if (!image.IsGrid)
-                    return HeicPlanarImage.FromPicture(_context.Scope, picture, format);
-
                 try
                 {
                     // The planes hold whole tiles: the tiles of the last row and column may exceed the image
@@ -187,7 +195,7 @@ internal sealed class HeicDecoder : HeifDecodeObserver
                 {
                     picture.Release();
                 }
-            }
+            });
 
             var planes = result!;
             result = null;
@@ -212,9 +220,8 @@ internal sealed class HeicDecoder : HeifDecodeObserver
         var nextRow = 0;
         try
         {
-            for (var i = 0; i < image.Tiles.Length; i++)
+            DecodeTiles(structure, image, (i, picture, format) =>
             {
-                var picture = DecodeTile(structure, image, i, band?.Format, out var format);
                 var tileRow = i / image.Columns;
                 try
                 {
@@ -232,13 +239,13 @@ internal sealed class HeicDecoder : HeifDecodeObserver
                 }
 
                 if (i % image.Columns != image.Columns - 1 || conversionError is not null)
-                    continue;
+                    return;
 
                 // The chroma of the last two luma rows of a row of tiles may be interpolated with the first chroma row of the
                 // next row of tiles, when it is subsampled vertically
                 var end = tileRow == image.Rows - 1 ? crop.Height : Math.Min(crop.Height, ((tileRow + 1) * tileHeight) - (format.SubsamplingY is 0 ? 0 : HeicPlanarImage.BandOverlap) - crop.Y);
                 if (end <= nextRow)
-                    continue;
+                    return;
 
                 try
                 {
@@ -250,7 +257,7 @@ internal sealed class HeicDecoder : HeifDecodeObserver
                 {
                     conversionError = ExceptionDispatchInfo.Capture(ex);
                 }
-            }
+            });
 
             structure.SetBitstreamColorDescription(band!.Format);
             conversionError?.Throw();
@@ -262,29 +269,182 @@ internal sealed class HeicDecoder : HeifDecodeObserver
         }
     }
 
+    // Decodes the tiles of a grid and hands their pictures to consume, on the calling thread and in the order of the tiles:
+    // consume releases each picture. With several workers (ImageConfiguration.MaxDegreeOfParallelism), up to that many
+    // consecutive tiles that share a configuration record are decoded at once. The structure parser and the input tracker
+    // are only used by the calling thread, and the pictures, the checks and the errors are those of a sequential decoding:
+    // the error of the first tile that fails, after the tiles before it are consumed (a cancellation first).
+    private void DecodeTiles(HeifStructureParser structure, HeifCodedImage image, Action<int, HevcPicture, HeifBitstreamFormat> consume)
+    {
+        HeifBitstreamFormat? first = null;
+        var workers = GetTileWorkerCount(image);
+        if (workers is 1)
+        {
+            for (var i = 0; i < image.Tiles.Length; i++)
+            {
+                var picture = DecodeTile(structure, image, i, first, out var format);
+                first ??= format;
+                consume(i, picture, format);
+            }
+
+            return;
+        }
+
+        var tiles = new PreparedTile[workers];
+        var pictures = new HevcPicture?[workers];
+        var formats = new HeifBitstreamFormat[workers];
+        var trackers = new InputResourceTracker?[workers];
+        var errors = new ExceptionDispatchInfo?[workers];
+        var start = 0;
+        while (start < image.Tiles.Length)
+        {
+            // The batch ends at the first tile that cannot be prepared, and before a tile of another configuration record:
+            // the decoders of a batch copy the parameter sets of the same template
+            var count = 0;
+            var record = image.ConfigurationRecords[start];
+            while (count < workers && start + count < image.Tiles.Length && image.ConfigurationRecords[start + count] == record)
+            {
+                try
+                {
+                    tiles[count] = PrepareTile(structure, image, start + count);
+                    count++;
+                }
+                catch (Exception ex)
+                {
+                    errors[count] = ExceptionDispatchInfo.Capture(ex);
+                    count++;
+                    break;
+                }
+            }
+
+            try
+            {
+                RowBands.RunParallel(count, k =>
+                {
+                    if (errors[k] is not null)
+                        return;
+
+                    // The hidden pixels of a tile are recorded, and charged to the input once its turn comes
+                    var tracker = new InputResourceTracker(TileHiddenPixelsRecording);
+                    trackers[k] = tracker;
+                    try
+                    {
+                        pictures[k] = DecodePreparedTile(image, tiles[k], tracker, out formats[k]);
+                    }
+                    catch (Exception ex)
+                    {
+                        errors[k] = ExceptionDispatchInfo.Capture(ex);
+                    }
+                });
+
+                for (var k = 0; k < count; k++)
+                {
+                    if (errors[k]?.SourceException is OperationCanceledException)
+                        errors[k]!.Throw();
+                }
+
+                for (var k = 0; k < count; k++)
+                {
+                    if (trackers[k] is { TotalPixels: > 0 and var hiddenPixels })
+                    {
+                        _context.Tracker.ChargeHiddenPixels(hiddenPixels);
+                    }
+
+                    errors[k]?.Throw();
+                    var picture = pictures[k]!;
+                    pictures[k] = null;
+                    var format = formats[k];
+                    if (first is { } expected && expected != format)
+                    {
+                        picture.Release();
+                        throw CreateMixedTileFormatsException();
+                    }
+
+                    first ??= format;
+                    consume(start + k, picture, format);
+                }
+            }
+            finally
+            {
+                for (var k = 0; k < count; k++)
+                {
+                    pictures[k]?.Release();
+                    pictures[k] = null;
+                    tiles[k] = default;
+                    trackers[k] = null;
+                    errors[k] = null;
+                }
+            }
+
+            start += count;
+        }
+    }
+
+    // Several workers decode a grid of at least two tiles and RowBands.MinPixelsForParallelism samples
+    private int GetTileWorkerCount(HeifCodedImage image)
+    {
+        var maxDegreeOfParallelism = _context.Configuration.MaxDegreeOfParallelism;
+        if (maxDegreeOfParallelism <= 1 || !image.IsGrid || image.Tiles.Length < 2 || (long)image.TileSize.Width * image.TileSize.Height * image.Tiles.Length < RowBands.MinPixelsForParallelism)
+            return 1;
+
+        return Math.Min(maxDegreeOfParallelism, image.Tiles.Length);
+    }
+
     // Decodes a coded item of an image, and checks the picture against the file and against the previous tiles of a grid
     private HevcPicture DecodeTile(HeifStructureParser structure, HeifCodedImage image, int index, HeifBitstreamFormat? previous, out HeifBitstreamFormat format)
+    {
+        var tile = PrepareTile(structure, image, index);
+        var picture = DecodePreparedTile(image, tile, _context.Tracker, out format);
+        if (previous is { } expected && expected != format)
+        {
+            picture.Release();
+            throw CreateMixedTileFormatsException();
+        }
+
+        return picture;
+    }
+
+    private static InvalidImageContentException CreateMixedTileFormatsException() => HeicBinding.Instance.Invalid("the tiles of a grid do not have the same sample format.");
+
+    // Reads what the decoding of a coded item needs from the structure parser, on the calling thread
+    private PreparedTile PrepareTile(HeifStructureParser structure, HeifCodedImage image, int index)
     {
         _context.CancellationToken.ThrowIfCancellationRequested();
         structure.GetItemBuffer(image.Tiles[index], out var data, out var length);
         var configuration = structure.GetConfigurationRecord(image, index);
 
         // What the identification of the file checks: the sequence parameter set of the configuration record, or else the
-        // first one of the data. The parameter set of the picture, checked below, is another one when the data replace the
-        // one of the record.
+        // first one of the data. The parameter set of the picture, checked by DecodePreparedTile, is another one when the
+        // data replace the one of the record.
         var identified = HeicBinding.Instance.ReadBitstreamFormat(_context.Scope, configuration, data.AsSpan(0, length), image.OperatingPoints[index]);
         HeifStructureParser.EnsureMatchesConfiguration(image, identified);
-        var picture = DecodeCodedItem(configuration, image.ConfigurationRecords[index], data, length);
+
+        // The parameter sets of a configuration record are read once for the items that share it: the tiles of a grid
+        // would otherwise each pay for the whole record, whose size is not bounded by the size of a tile
+        var record = image.ConfigurationRecords[index];
+        if (_itemTemplate is null || _itemTemplateRecord != record)
+        {
+            _itemTemplate?.Dispose();
+            _itemTemplate = null;
+            _itemTemplate = CreateDecoder(configuration);
+            _itemTemplateRecord = record;
+        }
+
+        return new PreparedTile(data, length, HeicConfigurationRecord.GetNalUnitLengthSize(configuration), identified, _itemTemplate);
+    }
+
+    // Decodes a prepared coded item and checks the picture against the file. It uses no state of the decoder but the
+    // template, which it only reads: the tiles of a grid are decoded on several threads.
+    private HevcPicture DecodePreparedTile(HeifCodedImage image, in PreparedTile tile, InputResourceTracker tracker, out HeifBitstreamFormat format)
+    {
+        var picture = DecodeCodedItem(tile, tracker);
         try
         {
             format = HeicBinding.ToBitstreamFormat(picture.Sps);
-            EnsureIsIdentifiedFormat(format, identified);
+            EnsureIsIdentifiedFormat(format, tile.Identified);
             HeifStructureParser.EnsureMatchesConfiguration(image, format);
             if (picture.Sps.OutputWidth != image.TileSize.Width || picture.Sps.OutputHeight != image.TileSize.Height)
                 throw HeicBinding.Instance.Invalid("the size of an HEVC image does not match its 'ispe' property.");
-
-            if (previous is { } expected && expected != format)
-                throw HeicBinding.Instance.Invalid("the tiles of a grid do not have the same sample format.");
         }
         catch
         {
@@ -296,21 +456,11 @@ internal sealed class HeicDecoder : HeifDecodeObserver
     }
 
     // Decodes the picture of a coded item: the decoder is released, the picture is kept by the caller
-    private HevcPicture DecodeCodedItem(ReadOnlySpan<byte> configuration, (int Offset, int Length) record, byte[] data, int length)
+    private HevcPicture DecodeCodedItem(in PreparedTile tile, InputResourceTracker tracker)
     {
-        // The parameter sets of a configuration record are read once for the items that share it: the tiles of a grid
-        // would otherwise each pay for the whole record, whose size is not bounded by the size of a tile
-        if (_itemTemplate is null || _itemTemplateRecord != record)
-        {
-            _itemTemplate?.Dispose();
-            _itemTemplate = null;
-            _itemTemplate = CreateDecoder(configuration);
-            _itemTemplateRecord = record;
-        }
-
-        using var decoder = new HevcDecoder(_context.Scope, _context.Tracker);
-        decoder.CopyParameterSetsFrom(_itemTemplate);
-        decoder.SetInput(data, 0, length, HeicConfigurationRecord.GetNalUnitLengthSize(configuration));
+        using var decoder = new HevcDecoder(_context.Scope, tracker);
+        decoder.CopyParameterSetsFrom(tile.Template);
+        decoder.SetInput(tile.Data, 0, tile.Length, tile.NalLengthSize);
         var picture = decoder.DecodeNextOutputPicture(_context.CancellationToken);
         if (picture is null)
         {
@@ -429,4 +579,7 @@ internal sealed class HeicDecoder : HeifDecodeObserver
 
         return HeicPlanarImage.FromPicture(_context.Scope, picture, format);
     }
+
+    // A coded item whose data, parameter sets and identified format are read: its decoding needs nothing else
+    private readonly record struct PreparedTile(byte[] Data, int Length, int NalLengthSize, HeifBitstreamFormat Identified, HevcDecoder Template);
 }

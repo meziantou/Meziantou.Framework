@@ -48,10 +48,11 @@ public sealed class ImageConfiguration
     /// (the bands of the pixelation start on a row of blocks, and those of the oil painting are at least as tall as its
     /// window). The comparisons of <see cref="ImageSimilarity"/> (SSIM, PSNR, SSIMULACRA 2 and Butteraugli) use the value of
     /// the image of the expected frame: their floating-point sums are made by bands of 64 rows, added in order, so their
-    /// results do not depend on it either. The HEIC decoder uses it too: the tiles of a grid of at
-    /// least 65,536 samples are decoded by up to this many workers, each holding the decoder and the picture of its tile, with
-    /// the pixels and the errors of a decoding by one worker. The other decoders, the encoders and the other operations run on
-    /// the calling thread.
+    /// results do not depend on it either. The HEIC and AVIF decoders use it too: the tiles of a
+    /// grid of at least 65,536 samples are decoded by up to this many workers, each holding the decoder and the picture of its
+    /// tile, with the pixels and the errors of a decoding by one worker. The AVIF encoder codes the tiles of such a grid
+    /// (<see cref="Formats.AvifEncoder.GridTileSize"/>) by up to this many workers, each with encoders of its own, and writes
+    /// the same bytes as one worker. The other decoders, the encoders and the other operations run on the calling thread.
     /// </para>
     /// <para>
     /// Keep the default in services that already process several images concurrently: the bound applies per operation, so

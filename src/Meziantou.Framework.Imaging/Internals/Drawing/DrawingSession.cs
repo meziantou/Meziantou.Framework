@@ -40,6 +40,7 @@ internal sealed partial class DrawingSession : IDisposable
     private PathRecorder? _strokeRecorder;
     private TransformSink? _strokeTransformSink;
     private GradientEvaluator? _gradient;
+    private PathGradientEvaluator? _pathGradient;
     private ImageEvaluator? _imagePaint;
     private GlyphPathSink? _glyphSink;
     private GlyphScratch? _glyphScratch;
@@ -922,6 +923,8 @@ internal sealed partial class DrawingSession : IDisposable
         _glyphScratch?.Dispose();
         _glyphScratch = null;
         _gradient?.Dispose();
+        _pathGradient?.Dispose();
+        _pathGradient = null;
         _imagePaint?.Dispose();
         _imagePaint = null;
         _rasterizer?.Dispose();
@@ -1335,6 +1338,15 @@ internal sealed partial class DrawingSession : IDisposable
             var imagePaint = _imagePaint ??= new ImageEvaluator(_image.Owner.Scope);
             imagePaint.Prepare(tile, region: null, placement, wrapModeX, wrapModeY, ImageSampling.Bilinear, _frames[0], Width, nameof(brush));
             evaluator = imagePaint;
+        }
+        else if (brush is PathGradientBrush pathGradient)
+        {
+            var pathPaint = _pathGradient ??= new PathGradientEvaluator(_image.Owner.Scope);
+            pathPaint.Prepare(pathGradient, ToCanvasProjection(pathGradient.Transform), _frames[0], Width, _paintPipeline);
+            if (pathPaint.IsTransparent && isInert)
+                return false;
+
+            evaluator = pathPaint;
         }
         else
         {

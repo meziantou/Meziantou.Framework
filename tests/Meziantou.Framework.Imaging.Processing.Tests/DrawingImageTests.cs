@@ -1392,6 +1392,73 @@ public sealed class DrawingImageTests
         }
     }
 
+    [Fact]
+    public void AHatchRepeatsATileOfEightPixelsOfTwoColors()
+    {
+        // The ordered dither matrix of 8 by 8 (Bayer): a percentage p lights the pixels whose rank is below round(64 p / 100)
+        int[][] ranks =
+        [
+            [0, 32, 8, 40, 2, 34, 10, 42],
+            [48, 16, 56, 24, 50, 18, 58, 26],
+            [12, 44, 4, 36, 14, 46, 6, 38],
+            [60, 28, 52, 20, 62, 30, 54, 22],
+            [3, 35, 11, 43, 1, 33, 9, 41],
+            [51, 19, 59, 27, 49, 17, 57, 25],
+            [15, 47, 7, 39, 13, 45, 5, 37],
+            [63, 31, 55, 23, 61, 29, 53, 21],
+        ];
+        (HatchStyle Style, Func<int, int, bool> IsForeground)[] cases =
+        [
+            (HatchStyle.Horizontal, (x, y) => y == 0),
+            (HatchStyle.Vertical, (x, y) => x == 0),
+            (HatchStyle.Cross, (x, y) => x == 0 || y == 0),
+            (HatchStyle.ForwardDiagonal, (x, y) => x == y),
+            (HatchStyle.BackwardDiagonal, (x, y) => x + y == 7),
+            (HatchStyle.DiagonalCross, (x, y) => x == y || x + y == 7),
+            (HatchStyle.Percent10, (x, y) => ranks[y][x] < 6),
+            (HatchStyle.Percent20, (x, y) => ranks[y][x] < 13),
+            (HatchStyle.Percent30, (x, y) => ranks[y][x] < 19),
+            (HatchStyle.Percent40, (x, y) => ranks[y][x] < 26),
+            (HatchStyle.Percent50, (x, y) => (x + y) % 2 == 0),
+            (HatchStyle.Percent60, (x, y) => ranks[y][x] < 38),
+            (HatchStyle.Percent70, (x, y) => ranks[y][x] < 45),
+            (HatchStyle.Percent80, (x, y) => ranks[y][x] < 51),
+            (HatchStyle.Percent90, (x, y) => ranks[y][x] < 58),
+        ];
+        Assert.HasCount(Enum.GetValues<HatchStyle>().Length, cases);
+
+        // Each pixel of the canvas has the color of its pixel of the tile, exactly, at the precision of the canvas
+        var foreground = new Rgba64(65535, 1000, 2, 40000);
+        var background = new Rgba64(3, 50000, 65535, 65535);
+        foreach (var (style, isForeground) in cases)
+        {
+            var brush = new PatternBrush(style, foreground, background);
+            Assert.Equal(new RectangleD(0, 0, 8, 8), brush.Tile);
+            using var image = new Image<Rgba64>(19, 17);
+            image.Draw(canvas => canvas.Fill(brush), Ct);
+            for (var y = 0; y < image.Height; y++)
+            {
+                for (var x = 0; x < image.Width; x++)
+                {
+                    Assert.Equal(isForeground(x % 8, y % 8) ? foreground : background, image.Frames[0][x, y], $"{style}, pixel ({x}, {y})");
+                }
+            }
+        }
+
+        // A transparent background leaves the pixels under it as they are, and an 8-bit canvas gets the 8-bit colors
+        using var lines = new Image<Rgba32>(16, 16, new Rgba32(1, 2, 3));
+        lines.Draw(canvas => canvas.FillRectangle(new PatternBrush(HatchStyle.Vertical, new Rgba32(200, 100, 50), default), new Rectangle(0, 0, 16, 16)), Ct);
+        Assert.Equal(new Rgba32(200, 100, 50), lines.Frames[0][8, 5]);
+        Assert.Equal(new Rgba32(1, 2, 3), lines.Frames[0][9, 5]);
+
+        // The transformation of the brush scales the hatch as any pattern: twice as large, a line of two pixels every 16
+        using var scaled = new Image<Gray8>(16, 32, new Gray8(0));
+        scaled.Draw(canvas => canvas.Fill(new PatternBrush(HatchStyle.Horizontal, new Rgba32(255, 255, 255), new Rgba32(0, 0, 0)) { Transform = AffineTransform.CreateScale(2, 2) }), Ct);
+        Assert.Equal([255, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], Enumerable.Range(0, 32).Select(y => (int)scaled.Frames[0][5, y].Value));
+
+        Assert.Throws<ArgumentOutOfRangeException>("style", () => new PatternBrush((HatchStyle)15, foreground, background));
+    }
+
     [Theory]
     [MemberData(nameof(DrawingTestSupport.AllFormats), MemberType = typeof(DrawingTestSupport))]
     public void APatternBrushPaintsAsTheImageOfItsTile(PixelFormat format)

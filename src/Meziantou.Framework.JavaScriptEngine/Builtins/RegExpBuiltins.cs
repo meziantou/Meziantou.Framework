@@ -116,7 +116,7 @@ internal static class RegExpBuiltins
             ThrowHelper.ThrowSyntaxError($"Invalid regular expression flags '{flags}'");
         }
 
-        var program = RegExpProgram.GetOrCompile(pattern, parsedFlags, out var error);
+        var program = RegExpProgramCache.Shared.GetOrCompile(pattern, parsedFlags, out var error);
         if (program is null)
         {
             ThrowHelper.ThrowSyntaxError($"Invalid regular expression: /{pattern}/{flags}: {error}");

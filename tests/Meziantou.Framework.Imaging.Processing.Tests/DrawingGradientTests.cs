@@ -508,6 +508,160 @@ public sealed class DrawingGradientTests
     }
 
     [Fact]
+    public void AnEllipticRadialGradientFollowsItsTwoHalfAxes()
+    {
+        // Half-axes 4 and 1 around (4, 0.5): on its row, the parameter is |x + 0.5 - 4| / 4, as a circle of radius 4
+        AssertFill(8, 1, new RadialGradientBrush(new PointD(4, 0.5), 4, 1, BlackToWhite), [[223, 159, 96, 32, 32, 96, 159, 223]]);
+
+        // Half-axes 1 and 4 around (0.5, 4): on its column, the parameter is |y + 0.5 - 4| / 4
+        AssertFill(1, 8, new RadialGradientBrush(new PointD(0.5, 4), 1, 4, BlackToWhite), [[223], [159], [96], [32], [32], [96], [159], [223]]);
+
+        // Half-axes 10 and 5 around (0.5, 0.5): the parameter is sqrt(dx^2 + (2 dy)^2) / 10.
+        //   (6, 4): sqrt(36 + 64) / 10 = 1 -> 255 | (3, 2): sqrt(9 + 16) / 10 = 1/2 -> 127.5 -> 128
+        //   (0, 3): 6 / 10 -> 153 | (8, 0): 8 / 10 -> 204
+        var brush = new RadialGradientBrush(new PointD(0.5, 0.5), 10, 5, BlackToWhite);
+        Assert.Equal(10, brush.Radius);
+        Assert.Equal(5, brush.RadiusY);
+        using (var image = Fill(9, 9, brush))
+        {
+            Assert.Equal(0, image.Frames[0][0, 0].Value);
+            Assert.Equal(255, image.Frames[0][6, 4].Value);
+            Assert.Equal(128, image.Frames[0][3, 2].Value);
+            Assert.Equal(153, image.Frames[0][0, 3].Value);
+            Assert.Equal(204, image.Frames[0][8, 0].Value);
+        }
+
+        // The focal point is where the gradient starts, on the canvas. Half-axes 4 and 2 around (4.5, 4.5), focal point
+        // (4.5, 3.5): back on the circle of radius 4, the focal point is at (4.5, 2.5) and the pixel (4, y) at
+        // (4.5, 4.5 + 2 (y - 4)). With e = (0, 2), a = 16 - 4 = 12 and d the position from the focal point, the
+        // parameter is (sqrt((d . e)^2 + 12 |d|^2) - d . e) / 12:
+        //   y = 3: d = 0 -> 0 | y = 4: d = (0, 2) -> (8 - 4) / 12 = 1/3 -> 85 | y = 5: d = (0, 4) -> (16 - 8) / 12 -> 170
+        //   y = 6: d = (0, 6) -> (24 - 12) / 12 = 1 -> 255 | y = 2: d = (0, -2) -> (8 + 4) / 12 = 1 -> 255
+        using (var focal = Fill(9, 8, new RadialGradientBrush(new PointD(4.5, 4.5), 4, 2, BlackToWhite) { FocalPoint = new PointD(4.5, 3.5) }))
+        {
+            Assert.Equal([255, 255, 255, 0, 85, 170, 255, 255], Enumerable.Range(0, 8).Select(y => (int)focal.Frames[0][4, y].Value));
+        }
+
+        // A circular gradient has the same half-axes; one half-axis of zero and not the other leaves the color of the
+        // last stop
+        Assert.Equal(3, new RadialGradientBrush(new PointD(1, 1), 3, BlackToWhite).RadiusY);
+        AssertFill(3, 1, new RadialGradientBrush(new PointD(1, 1), 0, 3, BlackToWhite), [[255, 255, 255]]);
+        AssertFill(3, 1, new RadialGradientBrush(new PointD(1, 1), 3, 0, BlackToWhite), [[255, 255, 255]]);
+        Assert.Throws<ArgumentOutOfRangeException>("radiusY", () => new RadialGradientBrush(default, 1, -1, BlackToWhite));
+        Assert.Throws<ArgumentException>("radiusX", () => new RadialGradientBrush(default, double.NaN, 1, BlackToWhite));
+    }
+
+    [Fact]
+    public void APathGradientMixesTheColorsOfItsPointsWithTheColorOfItsCenter()
+    {
+        // White corners of a square of 8 and a black center: in each triangle, the weight of the center is how far the
+        // position is from the edge, as a fraction of the half side. The colors form a pyramid: 255 d / 4, d being the
+        // largest distance to the center along x or y, 0.5, 1.5, 2.5 or 3.5 at the centers of the pixels.
+        //   31.875 -> 32 | 95.625 -> 96 | 159.375 -> 159 | 223.125 -> 223
+        var brush = new PathGradientBrush([new PointD(0, 0), new PointD(8, 0), new PointD(8, 8), new PointD(0, 8)], [new Rgba32(255, 255, 255)], new Rgba32(0, 0, 0));
+        Assert.Equal(new PointD(4, 4), brush.Center);
+        Assert.Equal(4, brush.PointColors.Length);
+        Assert.True(brush.Transform.IsIdentity);
+        int[] outer = [223, 223, 223, 223, 223, 223, 223, 223];
+        int[] second = [223, 159, 159, 159, 159, 159, 159, 223];
+        int[] third = [223, 159, 96, 96, 96, 96, 159, 223];
+        int[] inner = [223, 159, 96, 32, 32, 96, 159, 223];
+        AssertFill(8, 8, brush, [outer, second, third, inner, inner, third, second, outer]);
+    }
+
+    [Fact]
+    public void APathGradientInterpolatesPremultipliedColorsAndGivesEachPointItsColor()
+    {
+        // The corners of the square are at the centers of the pixels (0, 0), (8, 0), (8, 8) and (0, 8), the center at
+        // the one of (4, 4)
+        PointD[] points = [new(0.5, 0.5), new(8.5, 0.5), new(8.5, 8.5), new(0.5, 8.5)];
+        Rgba64[] colors = [new Rgba32(255, 0, 0), new Rgba32(0, 255, 0), new Rgba32(0, 0, 255), new Rgba32(255, 255, 255)];
+        var brush = new PathGradientBrush(points, colors, new PointD(4.5, 4.5), new Rgba32(0, 0, 0, 0));
+        using var image = new Image<Rgba32>(9, 9);
+        image.Frames[0].Draw(canvas => canvas.Fill(brush), Ct);
+
+        // Each point has its color, and the transparent center leaves its pixel as it is
+        Assert.Equal(new Rgba32(255, 0, 0), image.Frames[0][0, 0]);
+        Assert.Equal(new Rgba32(0, 255, 0), image.Frames[0][8, 0]);
+        Assert.Equal(new Rgba32(0, 0, 255), image.Frames[0][8, 8]);
+        Assert.Equal(new Rgba32(255, 255, 255), image.Frames[0][0, 8]);
+        Assert.Equal(default, image.Frames[0][4, 4]);
+
+        // Half way from red to green on the edge, the center has no weight: 127.5 -> 128 for both
+        Assert.Equal(new Rgba32(128, 128, 0), image.Frames[0][4, 0]);
+
+        // Half way from the center to red: alpha 127.5 -> 128, and red 255 255 / 2 / 127.5 = 255. The transparent
+        // center does not darken the color (a straight interpolation would give 128).
+        Assert.Equal(new Rgba32(255, 0, 0, 128), image.Frames[0][2, 2]);
+    }
+
+    [Fact]
+    public void APathGradientPaintsNothingOutsideItsTriangles()
+    {
+        // A red triangle on blue pixels: the centers with x + y + 1 <= 4.25 are inside it; the shape that is painted is
+        // the whole canvas, but nothing is painted outside the triangle
+        var brush = new PathGradientBrush([new PointD(0, 0), new PointD(4.25, 0), new PointD(0, 4.25)], [new Rgba32(255, 0, 0)], new Rgba32(255, 0, 0));
+        using var image = new Image<Rgba32>(4, 4, new Rgba32(0, 0, 255));
+        image.Frames[0].Draw(canvas => canvas.Fill(brush), Ct);
+        for (var y = 0; y < 4; y++)
+        {
+            for (var x = 0; x < 4; x++)
+            {
+                Assert.Equal(x + y <= 3 ? new Rgba32(255, 0, 0) : new Rgba32(0, 0, 255), image.Frames[0][x, y], $"pixel ({x}, {y})");
+            }
+        }
+
+        // A transformation places the points: moved by (2, 1), the triangle is the one of the moved points
+        PointD[] moved = [new(2, 1), new(6.25, 1), new(2, 5.25)];
+        using var expected = Fill(8, 8, new PathGradientBrush(moved, [new Rgba32(255, 255, 255)], new Rgba32(0, 0, 0)));
+        using var actual = Fill(8, 8, new PathGradientBrush([new PointD(0, 0), new PointD(4.25, 0), new PointD(0, 4.25)], [new Rgba32(255, 255, 255)], new Rgba32(0, 0, 0)) { Transform = AffineTransform.CreateTranslation(2, 1) });
+        Assert.Equal(DrawingTestSupport.ReadSamples(expected.Frames[0]), DrawingTestSupport.ReadSamples(actual.Frames[0]));
+        Assert.Contains(DrawingTestSupport.ReadSamples(actual.Frames[0]), sample => sample != 0);
+
+        // A transformation that flattens the plane paints nothing, and neither do points on one line
+        AssertFill(2, 2, new PathGradientBrush(moved, [new Rgba32(255, 255, 255)], new Rgba32(255, 255, 255)) { Transform = AffineTransform.CreateScale(0, 1) }, [[0, 0], [0, 0]]);
+        AssertFill(2, 2, new PathGradientBrush([new PointD(0, 0), new PointD(1, 1), new PointD(2, 2)], [new Rgba32(255, 255, 255)], new Rgba32(255, 255, 255)), [[0, 0], [0, 0]]);
+    }
+
+    [Fact]
+    public void APathGradientTakesTheColorOfTheFirstTriangleThatContainsAPosition()
+    {
+        // The points go back and forth: the triangle 0 (center, (8, 0), (0, 8)) is white everywhere, and the triangle 1
+        // (center, (0, 8), (8, 0)) covers the same pixels with the black of its point (8, 0). The first one wins.
+        PointD[] points = [new(8, 0), new(0, 8), new(8, 0), new(8, 8)];
+        Rgba64[] colors = [new Rgba32(255, 255, 255), new Rgba32(255, 255, 255), new Rgba32(0, 0, 0), new Rgba32(0, 0, 0)];
+        using var image = Fill(8, 8, new PathGradientBrush(points, colors, new PointD(0, 0), new Rgba32(255, 255, 255)));
+        Assert.Equal(255, image.Frames[0][4, 1].Value);
+
+        // (7.5, 3.5) is in the triangle 2 (center, (8, 0), (8, 8)): weights 1/2 for (8, 0) and 7/16 for (8, 8), both
+        // black, 1/16 for the white center -> 15.9375 -> 16
+        Assert.Equal(16, image.Frames[0][7, 3].Value);
+    }
+
+    [Fact]
+    public void APathGradientValidatesItsPointsAndItsColors()
+    {
+        Rgba64[] one = [new Rgba32(1, 2, 3)];
+        Assert.Throws<ArgumentException>("points", () => new PathGradientBrush([new PointD(0, 0), new PointD(1, 0)], one, default));
+        Assert.Throws<ArgumentException>("points", () => new PathGradientBrush([new PointD(0, 0), new PointD(1, 0), new PointD(double.NaN, 1)], one, default));
+        Assert.Throws<ArgumentOutOfRangeException>("points", () => new PathGradientBrush([new PointD(0, 0), new PointD(1, 0), new PointD(1e9, 1)], one, default));
+        Assert.Throws<ArgumentException>("pointColors", () => new PathGradientBrush([new PointD(0, 0), new PointD(1, 0), new PointD(1, 1)], [new Rgba32(1, 2, 3), new Rgba32(1, 2, 3)], default));
+        Assert.Throws<ArgumentException>("center", () => new PathGradientBrush([new PointD(0, 0), new PointD(1, 0), new PointD(1, 1)], one, new PointD(double.PositiveInfinity, 0), default));
+
+        // The points and the colors are copied; one color is the color of every point; the center is the mean of the points
+        PointD[] points = [new(0, 0), new(3, 0), new(3, 6)];
+        Rgba64[] colors = [new Rgba32(1, 2, 3), new Rgba32(4, 5, 6), new Rgba32(7, 8, 9)];
+        var brush = new PathGradientBrush(points, colors, new Rgba32(10, 11, 12));
+        points[0] = new PointD(5, 5);
+        colors[0] = default;
+        Assert.Equal(new PointD(2, 2), brush.Center);
+        Assert.Equal([new PointD(0, 0), new PointD(3, 0), new PointD(3, 6)], brush.Points.ToArray());
+        Assert.Equal([(Rgba64)new Rgba32(1, 2, 3), new Rgba32(4, 5, 6), new Rgba32(7, 8, 9)], brush.PointColors.ToArray());
+        Assert.Equal(new Rgba32(10, 11, 12), brush.CenterColor);
+        Assert.Equal([(Rgba64)new Rgba32(1, 2, 3), new Rgba32(1, 2, 3), new Rgba32(1, 2, 3)], new PathGradientBrush(points, one, default).PointColors.ToArray());
+    }
+
+    [Fact]
     public void AHorizontalGradientPaintsEveryRowWithTheColorsOfItsFormula()
     {
         // The colors of a row of a horizontal gradient are computed once; stretched vertically, the gradient takes the
@@ -665,6 +819,11 @@ public sealed class DrawingGradientTests
                 new LinearGradientBrush(new PointD(1, 2), new PointD(6.5, 3.25), stops) { Transform = new AffineTransform(0.5, 1.25, -2, 0.75, 3, -1) },
                 new LinearGradientBrush(new PointD(1, 2), new PointD(6.5, 3.25), stops) { SpreadMode = GradientSpreadMode.Reflect, ColorSpace = GradientColorSpace.LinearSrgb },
                 new RadialGradientBrush(new PointD(3.3, 4.1), 2.5, stops) { SpreadMode = GradientSpreadMode.Repeat, ColorSpace = GradientColorSpace.Oklab },
+                new RadialGradientBrush(new PointD(3.3, 4.1), 2.5, 1.25, stops) { SpreadMode = GradientSpreadMode.Reflect, FocalPoint = new PointD(3.5, 4) },
+
+                // The triangles of a path gradient cover the canvas
+                new PathGradientBrush([new PointD(-1, -1), new PointD(9.5, -1), new PointD(9, 9.25), new PointD(-1, 9)], [color], new PointD(3.3, 4.1), color),
+                new PathGradientBrush([new PointD(-40, -40), new PointD(50, -40), new PointD(50, 50), new PointD(-40, 50)], [color], color) { Transform = new AffineTransform(1.25, 0.25, -0.5, 1, 1, 0.5) },
             ];
 
             using var solid = DrawingTestSupport.CreateRandom(format, 8, 8, new Random(i).Next);

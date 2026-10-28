@@ -208,6 +208,9 @@ public abstract class ImageFrame
     /// <summary>Converts the leased pixels to grayscale in place with the kernel of the frame pixel type.</summary>
     internal abstract void GrayscalePixels(scoped in PixelLease lease, CancellationToken cancellationToken);
 
+    /// <summary>Gives a color to the leased pixels within a tolerance of another one, in place, with the kernel of the frame pixel type.</summary>
+    internal abstract void ReplaceColorPixels(scoped in PixelLease lease, Rgba64 color, Rgba64 replacement, int tolerance, CancellationToken cancellationToken);
+
     /// <summary>Writes a region of the leased source, permuted by <paramref name="transform"/>, to the leased destination (geometry transactions).</summary>
     internal abstract void TransformPixels(scoped in PixelLease source, scoped in PixelLease destination, Rectangle region, OrientationTransform transform, CancellationToken cancellationToken);
 

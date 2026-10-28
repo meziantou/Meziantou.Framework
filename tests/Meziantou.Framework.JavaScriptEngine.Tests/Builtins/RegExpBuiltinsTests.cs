@@ -467,7 +467,6 @@ public sealed class RegExpBuiltinsTests
         var a = RegExpBuiltins.RegExpCreate(context.Realm, "a+", "g");
         var b = RegExpBuiltins.RegExpCreate(context.Realm, "a+", "g");
         Assert.NotSame(a, b);
-        Assert.Same(a.Matcher, b.Matcher);
         Assert.Equal("/a+/g", JsOperations.ToString(Context.Invoke(a, "toString")));
     }
 

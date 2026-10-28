@@ -601,11 +601,12 @@ In-place extension methods (`ImageProcessingExtensions`), applied to every frame
 width on each side), `ExtendCanvas` (a larger canvas, with the image at one of nine anchors), `Rotate` (exact 90/180/270
 permutations, or any angle), `Skew` and `Transform` (an affine or a perspective transformation), `Flip`, `AutoOrient` (all eight EXIF orientations), `Grayscale` (Rec. 709 at storage precision, ties upward; keeps the storage format and
 alpha, and rejects incompatible ICC profiles; use `CloneAs<Gray8>` to change the storage), `ApplyColorMatrix` (a new
-color for each pixel from its own one: brightness, contrast, saturation, a tint), `Convolve` (a convolution
+color for each pixel from its own one: brightness, contrast, saturation, a tint), `ReplaceColor` (a new color for the
+pixels of one color), `Convolve` (a convolution
 matrix), `GaussianBlur`, `BoxBlur`, `MedianBlur`, `Sharpen` (an unsharp mask), `DetectEdges`, `Equalize` and `AutoLevels` (histogram
 equalization, CLAHE and contrast stretch, see [Histograms, equalization and auto-levels](#histograms-equalization-and-auto-levels))
 and `Quantize` (a reduction to a palette, see [Color reduction](#color-reduction)). `Flip`, `Grayscale`,
-`ApplyColorMatrix`, `Convolve`, the blurs, `Sharpen`, `DetectEdges`, `Equalize`, `AutoLevels` and `Quantize` also exist for one frame. Geometry changes preserve 16-bit precision and alpha, and reconcile the EXIF dimensions,
+`ApplyColorMatrix`, `ReplaceColor`, `Convolve`, the blurs, `Sharpen`, `DetectEdges`, `Equalize`, `AutoLevels` and `Quantize` also exist for one frame. Geometry changes preserve 16-bit precision and alpha, and reconcile the EXIF dimensions,
 orientation and thumbnail. `ConvertColorProfile` converts the colors to another ICC profile
 (see [Color management](#color-management)).
 
@@ -970,6 +971,14 @@ public static void CleanUpScan(string inputPath, string cleanedPath, string back
 }
 ```
 <!-- endref -->
+
+**Replacing a color**. `ReplaceColor(color, replacement, tolerance)` gives `replacement` to every pixel whose color is
+`color`, or within `tolerance` of it (a fraction of the range of a sample, from 0 to 1, rounded to 16-bit steps): a
+plain background made transparent, a color of a logo changed. Each pixel is read as a 16-bit color (8-bit and 16-bit
+samples exactly, a gray level as its three colors, an opaque alpha for a format without alpha), and each of its four
+samples, alpha included, must be within the tolerance; `1 / 255` accepts one 8-bit level on each side. The
+replacement is converted to the pixel format as a drawn color is. The comparison is made on integers, the same on
+every platform, and no color profile is applied.
 
 **Color matrices**. `ApplyColorMatrix` gives each pixel a color computed from its own one, by a `ColorMatrix`: four
 rows, for the red, the green, the blue and the alpha of the result, of five coefficients, for the red, the green, the
@@ -1610,8 +1619,8 @@ may go beyond that range: as browsers draw what is visible, what goes beyond it 
 of millions of pixels around it), and only a coordinate that is no longer a finite number is rejected. `PointD` has the usual arithmetic (`+`, `-`, `*`, `/`, `DistanceTo`) and `RectangleD`
 the usual helpers (`Center`, `Contains`, `Intersect`, `Union`, `Offset`, `Inflate`).
 
-**Brushes**. A brush is a `SolidBrush`, a gradient, an `ImageBrush` or a `PatternBrush` (see Images and Patterns
-below). The `Opacity` of a brush, as `globalAlpha` of the HTML canvas, multiplies the alpha of its paint at each pixel
+**Brushes**. A brush is a `SolidBrush`, a gradient, a `PathGradientBrush`, an `ImageBrush` or a `PatternBrush` (see
+Images and Patterns below). The `Opacity` of a brush, as `globalAlpha` of the HTML canvas, multiplies the alpha of its paint at each pixel
 (at the precision of the canvas, `floor(a opacity + 1/2 + 2^-20)`), before its operator and its blend mode combine it
 with the pixels: a paint at half its opacity that replaces the pixels (`CompositeMode.Source`) leaves them at half
 their opacity. A `SolidBrush` paints one
@@ -1641,7 +1650,18 @@ sweep gradient goes around its center clockwise on the image, from `StartAngle` 
 `EndAngle` (a full turn from the right of the center by default); its colors change abruptly at its start angle unless
 it ends on the color it starts with, and that edge is not antialiased. Every gradient has a `Transform` that places it
 on the canvas: the points of the gradient are given before it applies, so a scaling that is not the same on both axes
-makes an elliptical radial gradient, and a rotation turns a gradient without recomputing its points.
+makes an elliptical radial gradient, and a rotation turns a gradient without recomputing its points. The constructor
+of `RadialGradientBrush` with two half-axes (`radiusX`, `radiusY`) writes that ellipse directly: its circles are
+stretched along y around the center (`RadiusY`), the focal point stays where it is given, and `Transform` can still
+turn the ellipse.
+
+A `PathGradientBrush` paints the colors of the vertices of a polygon (`Points`, `PointColors`) and of a `Center`
+(`CenterColor`; the mean of the points by default), mixed across the triangles from the center to each edge (the
+Gouraud shading of a fan of triangles): each pixel has the color at its center, interpolated from the three
+corners of its triangle on alpha-premultiplied values, and a point has exactly its color. A position takes the color
+of the first triangle that contains it, and nothing is painted outside the triangles: when the center sees every
+edge (a convex polygon around it, a star), the triangles are the polygon. Each pixel tests the triangles in turn, so
+the cost grows with the number of points.
 
 **Images**. `canvas.DrawImage` draws a frame of another image: at a position (its pixels as they are), stretched to a
 rectangle, a region of it stretched to a rectangle (a sprite of a sheet), or placed by an `AffineTransform` (turned,
@@ -1700,8 +1720,16 @@ clipped to its tile, on an image of that part, at the same scale, so that the pi
 perspective, its image is drawn at the resolution those limits allow instead. The image of the tile has the
 precision of the canvas (16-bit samples on a 16-bit canvas); `TilePrecision = PatternTilePrecision.EightBit` draws it
 with 8-bit samples on every canvas, as browsers rasterize the drawing of a canvas (a CSS paint worklet) into an 8-bit
-bitmap. A
-callback is also what replays a drawing: keep a `DrawingAction`, and call it inside `canvas.Transform` wherever the
+bitmap.
+
+A `PatternBrush` built from a `HatchStyle` and two colors repeats a tile of 8 by 8 pixels: lines (`Horizontal`,
+`Vertical`, `Cross`, `ForwardDiagonal`, `BackwardDiagonal`, `DiagonalCross`) or a fraction of the pixels
+(`Percent10` to `Percent90`, the pixels of lowest rank of the 8 by 8 ordered dither matrix, so that each percentage
+lights the pixels of the lower ones). The tile starts at the origin of the canvas, so that shapes painted with the
+same hatch line up, and on whole pixels each pixel has exactly the color of its pixel of the tile; a transparent
+background leaves the pixels under it unchanged.
+
+A callback is also what replays a drawing: keep a `DrawingAction`, and call it inside `canvas.Transform` wherever the
 drawing is needed, at any size.
 
 An `ImageSampling` is `Bilinear` (the default: the four pixels around a position, interpolated), `Nearest` (the pixel
@@ -4460,7 +4488,7 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | PNG/APNG | Palette output is opt-in (`PngPixelLayout.Indexed`), exact unless `AllowColorReduction` (a sequential writer cannot declare colors beyond its first image: with `AllowColorReduction`, later frames are mapped to them), no grayscale output below 8 bits, no RGB 16-bit or gray+alpha output layouts (16-bit color is written as RGBA 16), no APNG delta-rectangle optimization, unknown critical chunks rejected, unknown ancillary chunks not round-tripped |
 | Metadata | Profiles are preserved and labeled, never applied implicitly (colors are converted only by `ConvertColorProfile` and `IccColorTransform`); EXIF orientation is reported, applied only by `AutoOrient`; extended XMP in JPEG is not supported; per-format storage limits are listed in [Metadata, color profiles and orientation](#metadata-color-profiles-and-orientation); unsupported items follow `MetadataHandling` (`Strict` throws by default) |
 | Color management | ICC version 2 and 4 grayscale, RGB and CMYK profiles (matrix-based and table-based): no version 5 (iccMAX), device-link, abstract or named-color profile, no multi-process-element (`D2Bx`/`B2Dx`) tag, no other data color space; `ConvertColorProfile` keeps the pixel format (an RGB image cannot become grayscale or CMYK this way); no CMYK pixel format: a CMYK JPEG file or TIFF page is converted to RGB when it is loaded (`CmykConversionOptions`, RGB destination only) and CMYK cannot be written; no gamut mapping beyond per-channel clipping |
-| Drawing | Sequential; under a projective transformation of the canvas (or, for filters, one that turns or skews), shadows, blurs, filters and the glyphs a font draws with its own colors are drawn on an image of the plane at one resolution (the scale of the transformation at its origin, at most 4,194,304 pixels), curves are cut no finer than for a factor of 65536 near the horizon, and a pen that does not scale strokes the parts of a closed contour that crosses the horizon as open contours; a filter graph has no input `BackgroundImage`, `BackgroundAlpha`, `FillPaint` or `StrokePaint`, and its region defaults to the canvas (not to the box of the drawing); no mesh gradient; a marker has no hole, and a stroke on one side of its path costs a clip; linear light is the light of the transfer function the image declares (sRGB when it declares none) or of the tone curves of its ICC profile, and a profile without tone curves has none; a color matrix is applied to the encoded sample values, also in linear light; the colors of a profile (`PaintProfile`) are those of the paints only (an image that is drawn is not converted), an RGB profile only, and never on PQ or HLG samples; without antialiasing, the glyphs a font draws with its own colors stay antialiased; a clip multiplies coverages; combined and simplified paths are made of segments; coordinates are limited to ±16,777,216 (what a transformation sends beyond is cut by that range); on a floating-point canvas, paints have 16-bit colors in [0, 1], and an image, a layer, a pattern, a filter, a shadow, a blur, a group or a backdrop is combined through 16-bit colors, so its samples must be in [0, 1] (others are rejected, never clipped) and are quantized to 1/65535 |
+| Drawing | Sequential; under a projective transformation of the canvas (or, for filters, one that turns or skews), shadows, blurs, filters and the glyphs a font draws with its own colors are drawn on an image of the plane at one resolution (the scale of the transformation at its origin, at most 4,194,304 pixels), curves are cut no finer than for a factor of 65536 near the horizon, and a pen that does not scale strokes the parts of a closed contour that crosses the horizon as open contours; a filter graph has no input `BackgroundImage`, `BackgroundAlpha`, `FillPaint` or `StrokePaint`, and its region defaults to the canvas (not to the box of the drawing); no mesh gradient of patches (a `PathGradientBrush` is a fan of triangles from one center); a marker has no hole, and a stroke on one side of its path costs a clip; linear light is the light of the transfer function the image declares (sRGB when it declares none) or of the tone curves of its ICC profile, and a profile without tone curves has none; a color matrix is applied to the encoded sample values, also in linear light; the colors of a profile (`PaintProfile`) are those of the paints only (an image that is drawn is not converted), an RGB profile only, and never on PQ or HLG samples; without antialiasing, the glyphs a font draws with its own colors stay antialiased; a clip multiplies coverages; combined and simplified paths are made of segments; coordinates are limited to ±16,777,216 (what a transformation sends beyond is cut by that range); on a floating-point canvas, paints have 16-bit colors in [0, 1], and an image, a layer, a pattern, a filter, a shadow, a blur, a group or a backdrop is combined through 16-bit colors, so its samples must be in [0, 1] (others are rejected, never clipped) and are quantized to 1/65535 |
 | Floating-point pixels | `RgbaFloat` and `RgbaHalf` only (no floating-point grayscale format); OpenEXR and TIFF are the formats that decode to them and store them (the other encoders reduce them to `Rgba64` with `ImageEncoder.FloatingPointConversion`); HDR samples of the integer formats are 16-bit integers, converted to a standard dynamic range by an explicit tone mapping |
 | Processing | No custom processors; `LinearSrgb` resizing and convolution accept untagged images, recognized sRGB/sGray profiles and CICP transfer characteristics that have a function; convolution matrices have odd dimensions and no divisor (divide the weights); edge detection has no non-maximum suppression or thresholds (no Canny detector); histograms, equalization and auto-levels work on the encoded samples of integer pixel formats only (floating-point pixels are rejected), and CLAHE does not pad a frame whose size is not a multiple of the tile grid (its tiles divide it as evenly as possible) |
 | AVIF encoding | An image of a sequence is predicted from the previous image only, with one motion vector per block and the regular interpolation filter: no compound prediction (two references), global, warped or overlapped motion, or temporal motion vector prediction. Three tools were implemented, measured with the `avif-quality` report and left out because they did not make its sequences smaller: key frames at scene changes (the key frame of an image that follows a cut is 0.3 to 1.7% larger than the inter frame whose blocks are all intra, since it gives up the probabilities that the previous images adapted; `KeyFrameInterval` is how a sequence gets seek points), the split of the transform blocks of an inter block (0.01% in total: it keeps the largest transform of its size) and an interpolation filter per block (the same size at equal quality, for several times the encoding time). Intra block copy is for lossless images only (a frame that copies blocks has no in-loop filter), and its delay of five superblocks leaves small images out. The loop restoration is the Wiener filter, in units of 256x256 samples, at the efforts 0 to 2 only (it recovered nothing above them in the report), and never the self-guided filter. Not used: quantizer deltas, quantization matrices, CDEF strengths per block (one pair per frame), super-resolution and film grain. No layered (progressive) output, and no grid for an image sequence. An image sequence of one image cannot store animation settings (it is read back as a still image): a single frame with animation settings is rejected. An image sequence needs a seekable destination and its frame count. The level of the stream is the lowest one whose picture size holds the image; the other limits of a level are not checked |

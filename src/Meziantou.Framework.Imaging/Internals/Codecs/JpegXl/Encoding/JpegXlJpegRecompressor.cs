@@ -153,7 +153,7 @@ internal static class JpegXlJpegRecompressor
 
         using var sections = new LsbBitWriter(scope);
         var sizes = new List<int>();
-        using (var encoder = new JpegXlVarDctEncoder(imageHeader, frameHeader, PixelFormat.Rgb24, quality: -1, effort, scope, context.CancellationToken))
+        using (var encoder = new JpegXlVarDctEncoder(imageHeader, frameHeader, PixelFormat.Rgb24, quality: -1, effort, context.Configuration.MaxDegreeOfParallelism, scope, context.CancellationToken))
         {
             encoder.EncodeJpegCoefficients(coefficients, channelComponents, quantization, dcOffset, sections, sizes);
         }

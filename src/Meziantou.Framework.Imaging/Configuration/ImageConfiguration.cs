@@ -43,8 +43,11 @@ public sealed class ImageConfiguration
     /// the value. Each worker needs its own row scratch, charged to the image's
     /// <see cref="ImageResourceLimits.MaxLiveAllocationBytes"/> budget. The HEIC decoder uses it too: the tiles of a grid of at
     /// least 65,536 samples are decoded by up to this many workers, each holding the decoder and the picture of its tile, with
-    /// the pixels and the errors of a decoding by one worker. The other decoders, the encoders and the other operations run on
-    /// the calling thread.
+    /// the pixels and the errors of a decoding by one worker. So do the JPEG XL encoder, the JPEG XL decoder and
+    /// <see cref="JpegXlTranscoder"/>: the groups of a frame of at least 65,536 pixels (squares of 256x256 pixels, which the
+    /// format codes independently) are encoded or decoded by up to this many workers, each with its own working memory, and
+    /// the restoration filters and the conversion of a decoded frame to its color space are split into row bands; the bytes,
+    /// the pixels and the errors are those of one worker. The other decoders, the encoders and the other operations run on the calling thread.
     /// </para>
     /// <para>
     /// Keep the default in services that already process several images concurrently: the bound applies per operation, so

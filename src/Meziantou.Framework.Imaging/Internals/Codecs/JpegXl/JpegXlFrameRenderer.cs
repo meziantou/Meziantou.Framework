@@ -32,11 +32,17 @@ internal sealed class JpegXlFrameRenderer : IDisposable
     private readonly JpegXlOutputColor? _outputColor;
     private readonly int _extraChannelCount;
     private readonly float[]?[] _upsamplingKernels = new float[]?[3];
+    private readonly int _maxDegreeOfParallelism;
 
-    public JpegXlFrameRenderer(JpegXlImageHeader image, AllocationScope scope, CancellationToken cancellationToken)
+    /// <param name="image">The image header.</param>
+    /// <param name="scope">The scope of the samples and of the working memory.</param>
+    /// <param name="cancellationToken">The token checked between rows.</param>
+    /// <param name="maxDegreeOfParallelism">The largest number of row bands converted at the same time (<see cref="ImageConfiguration.MaxDegreeOfParallelism"/>): the samples do not depend on it.</param>
+    public JpegXlFrameRenderer(JpegXlImageHeader image, AllocationScope scope, CancellationToken cancellationToken, int maxDegreeOfParallelism = 1)
     {
         ArgumentNullException.ThrowIfNull(image);
         ArgumentNullException.ThrowIfNull(scope);
+        _maxDegreeOfParallelism = maxDegreeOfParallelism;
         _image = image;
         _scope = scope;
         _cancellationToken = cancellationToken;
@@ -337,9 +343,10 @@ internal sealed class JpegXlFrameRenderer : IDisposable
             if (isFiltered)
             {
                 ReadOnlySpan<Av1PooledArray<float>> filtered = [planes[0]!, planes[1]!, planes[2]!];
+                var bands = JpegXlRestorationFilters.GetBandCount(codedWidth, codedHeight, _maxDegreeOfParallelism);
                 if (filter.IsGaborEnabled)
                 {
-                    JpegXlRestorationFilters.ApplyGaborish(filtered, codedWidth, codedWidth, codedHeight, filter, _scope, _cancellationToken);
+                    JpegXlRestorationFilters.ApplyGaborish(filtered, codedWidth, codedWidth, codedHeight, filter, bands, _scope, _cancellationToken);
                 }
 
                 if (filter.EpfIterations > 0)
@@ -349,7 +356,7 @@ internal sealed class JpegXlFrameRenderer : IDisposable
                     using var inverseSigma = Av1PooledArray<float>.Rent(_scope, (long)blocksWide * blocksHigh, clear: false);
                     var blocks = inverseSigma.Span[..(blocksWide * blocksHigh)];
                     blocks.Fill(JpegXlRestorationFilters.GetModularInverseSigma(filter));
-                    JpegXlRestorationFilters.ApplyEdgePreservingFilter(filtered, codedWidth, codedWidth, codedHeight, filter, blocks, blocksWide, _scope, _cancellationToken);
+                    JpegXlRestorationFilters.ApplyEdgePreservingFilter(filtered, codedWidth, codedWidth, codedHeight, filter, blocks, blocksWide, bands, _scope, _cancellationToken);
                 }
             }
 
@@ -418,10 +425,23 @@ internal sealed class JpegXlFrameRenderer : IDisposable
         if (buffer.ColorChannelCount != 3)
             return;
 
-        var isGray = _image.ColorEncoding.IsGray;
-        for (var y = 0; y < buffer.Height; y++)
+        // Each row is converted on its own: a large frame is converted by bands of rows, at the same time
+        var workers = RowBands.GetWorkerCount(new Size(buffer.Width, buffer.Height), _maxDegreeOfParallelism);
+        if (workers == 1)
         {
-            if ((y & 63) == 0)
+            ConvertRows(buffer, frame, 0, buffer.Height);
+            return;
+        }
+
+        RowBands.RunParallel(workers, band => ConvertRows(buffer, frame, RowBands.GetBandStart(buffer.Height, band, workers), RowBands.GetBandStart(buffer.Height, band + 1, workers)));
+    }
+
+    private void ConvertRows(JpegXlImageBuffer buffer, JpegXlFrameHeader frame, int start, int end)
+    {
+        var isGray = _image.ColorEncoding.IsGray;
+        for (var y = start; y < end; y++)
+        {
+            if (((y - start) & 63) == 0)
             {
                 _cancellationToken.ThrowIfCancellationRequested();
             }

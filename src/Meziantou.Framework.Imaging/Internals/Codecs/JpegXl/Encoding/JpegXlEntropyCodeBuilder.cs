@@ -9,8 +9,10 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <list type="bullet">
 /// <item><description>
 /// Order of the calls: <see cref="Count"/> for every value of every stream; <see cref="Build"/>;
-/// <see cref="WriteDescription"/>; then, for each stream, <see cref="BeginStream"/>, <see cref="Add"/> for each of its
-/// values, and <see cref="WriteStream"/>. The values are given twice so that only the ones of one stream are kept.
+/// <see cref="WriteDescription"/>; then, for each stream, <see cref="BeginStream"/>, <see cref="Add(int, uint)"/> for each of its
+/// values, and <see cref="WriteStream(LsbBitWriter)"/>. The values are given twice so that only the ones of one stream are kept.
+/// Once the code is built, several streams can be written at the same time, each in a <see cref="StreamBuffer"/> of its own;
+/// the counts of several builders can be added up (<see cref="AddCounts"/>).
 /// </description></item>
 /// <item><description>
 /// Clustering: the contexts are taken in order; each joins the cluster whose size grows the least, or starts a cluster
@@ -45,9 +47,7 @@ internal sealed class JpegXlEntropyCodeBuilder : IDisposable
     private Av1PooledArray<ushort>? _positions;
 
     // The stream that is being written
-    private Av1PooledArray<ulong>? _values;
-    private Av1PooledArray<int>? _refills;
-    private int _count;
+    private readonly StreamBuffer _stream;
 
     /// <summary>Starts the code of streams of <paramref name="contextCount"/> contexts.</summary>
     /// <param name="contextCount">The number of contexts.</param>
@@ -74,6 +74,7 @@ internal sealed class JpegXlEntropyCodeBuilder : IDisposable
 
         _rows = Av1PooledArray<int>.Rent(scope, contextCount, clear: false);
         _rows.Span.Fill(-1);
+        _stream = new StreamBuffer(scope);
     }
 
     /// <summary>Gets the number of clusters, once the code is built.</summary>
@@ -91,6 +92,32 @@ internal sealed class JpegXlEntropyCodeBuilder : IDisposable
 
         var (token, _, _) = JpegXlEntropyEncoder.GetToken(_config, value);
         _histograms!.Span[(row * _alphabetSize) + token]++;
+    }
+
+    /// <summary>Adds the values counted by another builder of the same contexts: the counts are those of one builder that counted both.</summary>
+    public void AddCounts(JpegXlEntropyCodeBuilder other)
+    {
+        ArgumentNullException.ThrowIfNull(other);
+        var otherRows = other._rows!.Span;
+        for (var context = 0; context < _contextCount; context++)
+        {
+            if (otherRows[context] < 0)
+                continue;
+
+            var rows = _rows!.Span;
+            var row = rows[context];
+            if (row < 0)
+            {
+                row = rows[context] = AddRow();
+            }
+
+            var source = other._histograms!.Span.Slice(otherRows[context] * _alphabetSize, _alphabetSize);
+            var target = _histograms!.Span.Slice(row * _alphabetSize, _alphabetSize);
+            for (var token = 0; token < _alphabetSize; token++)
+            {
+                target[token] += source[token];
+            }
+        }
     }
 
     /// <summary>Clusters the contexts and computes the code of each cluster, once every value is counted.</summary>
@@ -265,40 +292,52 @@ internal sealed class JpegXlEntropyCodeBuilder : IDisposable
     }
 
     /// <summary>Starts a stream.</summary>
-    public void BeginStream() => _count = 0;
+    public void BeginStream() => _stream.Count = 0;
 
     /// <summary>Adds a value to the stream that was begun: one of the values that were counted.</summary>
-    public void Add(int context, uint value)
+    public void Add(int context, uint value) => Add(_stream, context, value);
+
+    /// <summary>Writes the stream that was begun: the state of the ANS coder, if any, then its values.</summary>
+    public void WriteStream(LsbBitWriter writer) => WriteStream(_stream, writer);
+
+    /// <summary>
+    /// Adds a value to a stream of its own, once the code is built: several streams can be filled and written at the same
+    /// time, the code being only read.
+    /// </summary>
+    public void Add(StreamBuffer stream, int context, uint value)
     {
-        if (_values is null || _count == _values.Length)
+        ArgumentNullException.ThrowIfNull(stream);
+        if (stream.Values is null || stream.Count == stream.Values.Length)
         {
-            var larger = Av1PooledArray<ulong>.Rent(_scope, Math.Max(4096, (long)_count * 2), clear: false);
-            _values?.Span.CopyTo(larger.Span);
-            _values?.Dispose();
-            _values = larger;
+            var larger = Av1PooledArray<ulong>.Rent(stream.Scope, Math.Max(4096, (long)stream.Count * 2), clear: false);
+            stream.Values?.Span.CopyTo(larger.Span);
+            stream.Values?.Dispose();
+            stream.Values = larger;
         }
 
         // A value is kept as its cluster, its token, the number of raw bits and the raw bits
         var cluster = _map!.Span[context];
         var (token, bitCount, bits) = JpegXlEntropyEncoder.GetToken(_config, value);
-        _values.Span[_count++] = ((ulong)cluster << 56) | ((ulong)token << 40) | ((ulong)bitCount << 32) | bits;
+        stream.Values.Span[stream.Count++] = ((ulong)cluster << 56) | ((ulong)token << 40) | ((ulong)bitCount << 32) | bits;
     }
 
-    /// <summary>Writes the stream that was begun: the state of the ANS coder, if any, then its values.</summary>
-    public void WriteStream(LsbBitWriter writer)
+    /// <summary>Writes the values of a stream, and empties it.</summary>
+    public void WriteStream(StreamBuffer stream, LsbBitWriter writer)
     {
+        ArgumentNullException.ThrowIfNull(stream);
         ArgumentNullException.ThrowIfNull(writer);
-        var values = _values is null ? default : _values.Span[.._count];
+        var values = stream.Values is null ? default : stream.Values.Span[..stream.Count];
+        stream.Count = 0;
         if (_useAns)
         {
-            if (_refills is null || _refills.Length < _count)
+            if (stream.Refills is null || stream.Refills.Length < values.Length)
             {
-                _refills?.Dispose();
-                _refills = null;
-                _refills = Av1PooledArray<int>.Rent(_scope, Math.Max(4096, _values?.Length ?? 0), clear: false);
+                stream.Refills?.Dispose();
+                stream.Refills = null;
+                stream.Refills = Av1PooledArray<int>.Rent(stream.Scope, Math.Max(4096, stream.Values?.Length ?? 0), clear: false);
             }
 
-            JpegXlEntropyEncoder.WriteAnsStream(writer, values, _distributions!.Span, _starts!.Span, _positions!.Span, _refills.Span);
+            JpegXlEntropyEncoder.WriteAnsStream(writer, values, _distributions!.Span, _starts!.Span, _positions!.Span, stream.Refills.Span);
             return;
         }
 
@@ -325,10 +364,7 @@ internal sealed class JpegXlEntropyCodeBuilder : IDisposable
         _starts = null;
         _positions?.Dispose();
         _positions = null;
-        _values?.Dispose();
-        _values = null;
-        _refills?.Dispose();
-        _refills = null;
+        _stream.Dispose();
     }
 
     /// <summary>
@@ -401,5 +437,31 @@ internal sealed class JpegXlEntropyCodeBuilder : IDisposable
         }
 
         return _rowCount++;
+    }
+
+    /// <summary>The values of a stream that is being written (<see cref="Add(StreamBuffer, int, uint)"/>), with its working memory.</summary>
+    public sealed class StreamBuffer : IDisposable
+    {
+        public StreamBuffer(AllocationScope scope)
+        {
+            ArgumentNullException.ThrowIfNull(scope);
+            Scope = scope;
+        }
+
+        internal AllocationScope Scope { get; }
+
+        internal Av1PooledArray<ulong>? Values { get; set; }
+
+        internal Av1PooledArray<int>? Refills { get; set; }
+
+        internal int Count { get; set; }
+
+        public void Dispose()
+        {
+            Values?.Dispose();
+            Values = null;
+            Refills?.Dispose();
+            Refills = null;
+        }
     }
 }

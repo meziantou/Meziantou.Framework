@@ -53,19 +53,6 @@ internal static class Id3v1Writer
         return buffer;
     }
 
-    public static bool HasId3v1Tag(Stream stream)
-    {
-        if (stream.Length < TagSize)
-            return false;
-
-        stream.Seek(-TagSize, SeekOrigin.End);
-        Span<byte> magic = stackalloc byte[3];
-        if (stream.ReadAtLeast(magic, 3, throwOnEndOfStream: false) < 3)
-            return false;
-
-        return magic[0] == 'T' && magic[1] == 'A' && magic[2] == 'G';
-    }
-
     private static void WriteFixedString(Span<byte> destination, string? value)
     {
         destination.Clear();

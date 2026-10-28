@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.WebPlatform.Wasmtime</RootNamespace>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
     <IsAotCompatible>true</IsAotCompatible>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- The package is a binding of the C API of Wasmtime: [LibraryImport] declarations, pointers and explicit layout

@@ -4,7 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <IsTrimmable>true</IsTrimmable>
     <RootNamespace>Meziantou.Framework.Diagnostics</RootNamespace>
-    <Version>1.0.3</Version>
+    <Version>1.0.4</Version>
     <Description>Create a memory dump of the current process on Windows, Linux, and macOS</Description>
     <PackageTags>diagnostics, memory-dump, minidump, createdump, troubleshooting</PackageTags>
   </PropertyGroup>

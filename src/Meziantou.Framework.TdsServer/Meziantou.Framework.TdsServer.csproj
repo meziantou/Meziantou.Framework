@@ -4,7 +4,7 @@
     <!-- Maps the SQL Server collations to named cultures -->
     <GlobalizationSensitive>true</GlobalizationSensitive>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <Version>2.0.15</Version>
+    <Version>2.0.16</Version>
     <IsTrimmable>false</IsTrimmable>
     <Description>A TDS server library for SQL Server protocol connections with query response serialization and ASP.NET Core hosting integration</Description>
     <PackageTags>tds, sql-server, server, wire-protocol, testing</PackageTags>

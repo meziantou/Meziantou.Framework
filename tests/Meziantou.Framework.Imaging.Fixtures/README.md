@@ -342,7 +342,9 @@ path, a line feed, the SHA-256 of its content, a line feed).
 | --- | --- | --- |
 | `font-suites/aots` | Apache-2.0 | The Annotated OpenType Specification tests of Adobe, as the HarfBuzz project distributes them (`test/shape/data/aots` at the commit the manifest records): 205 fonts that each exercise one format of the `cmap`, class definition, coverage, `GSUB` or `GPOS` tables, and 128 files of tests (a font, the options of `hb-shape`, characters, the expected glyphs and positions). `ShapingSuiteTests` runs every test that is not commented out; the commented ones are the cases HarfBuzz itself does not pass |
 
-The generator copies a suite from a directory of the fonts directory (`aots`) and refuses a content whose
+| `font-suites/truetype-hinting` | Apache-2.0 | Droid Sans, Open Sans and Roboto, fonts hinted by hand with TrueType instructions, subset to Basic Latin, and for each glyph at sizes 9 to 16, 20 and 24 the advance and the hinted points FreeType 2.13.2 gives with its version 40 interpreter for black and white pixels (`FT_LOAD_TARGET_MONO`), written by `tools/Meziantou.Framework.Imaging.CorpusGenerator/truetype_hinting.py` (see the README of the suite). `HintingConformanceTests` compares every glyph |
+
+The generator copies a suite from a directory of the fonts directory (`aots`, `truetype-hinting`) and refuses a content whose
 hash is not the pinned one. The tools HarfBuzz keeps next to the suite (its test driver and build files) are not copied.
 
 ## Color management

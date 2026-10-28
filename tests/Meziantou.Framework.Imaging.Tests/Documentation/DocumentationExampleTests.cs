@@ -1893,6 +1893,34 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void DrawSmallLabelHintsTheText()
+    {
+        var fontPath = FixtureRoot.GetDirectory() / "font-suites" / "truetype-hinting" / "DroidSans.subset.ttf";
+        var output = GetPath("hinted-label.png");
+        Examples.DrawSmallLabel(fontPath, output);
+
+        // The advances are whole pixels, so the image is exactly 8 pixels wider than the text.
+        var layout = TextLayout.Create("Settings and preferences", new TextStyle(Font.Load(fontPath), 12), new TextLayoutOptions { Hinting = TextHinting.Full });
+        Assert.Equal(Math.Round(layout.Width, MidpointRounding.AwayFromZero), layout.Width);
+        using var image = Image.Load<Rgba32>(output);
+        Assert.Equal((int)layout.Width + 8, image.Width);
+
+        // Some pixels of the hinted stems are fully covered.
+        var black = 0;
+        image.Frames[0].ProcessPixelRows(pixels =>
+        {
+            for (var y = 0; y < pixels.Height; y++)
+            {
+                foreach (var pixel in pixels.GetRowSpan(y))
+                {
+                    black += pixel == new Rgba32(0, 0, 0) ? 1 : 0;
+                }
+            }
+        });
+        Assert.True(black > 20, $"Only {black} pixels are black");
+    }
+
+    [Fact]
     public void DrawPayButtonPlacesTheTextsByAPointOfTheirBox()
     {
         var fontPath = FixtureRoot.GetDirectory() / "fonts" / "noto-sans" / "NotoSans-Regular.subset.ttf";

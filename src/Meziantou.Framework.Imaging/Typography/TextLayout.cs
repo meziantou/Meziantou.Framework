@@ -28,8 +28,8 @@ namespace Meziantou.Framework.Imaging.Typography;
 /// <para>
 /// <b>Geometry.</b> Positions are in pixels from the top-left corner of the layout, with the y axis down. A line is as
 /// tall as its fonts ask (the largest ascent and descent, each with half of the line gap), or as
-/// <see cref="TextLayoutOptions.LineHeight"/> says. Glyphs are placed at fractions of a pixel: nothing is rounded to
-/// the pixel grid and there is no hinting.
+/// <see cref="TextLayoutOptions.LineHeight"/> says. Glyphs are placed at fractions of a pixel and their outlines are
+/// scaled exactly, unless <see cref="TextLayoutOptions.Hinting"/> fits them to the pixel grid.
 /// </para>
 /// <para>
 /// <b>Shaping.</b> The text is shaped with the OpenType Layout tables of its fonts, one run per script, direction and
@@ -113,7 +113,7 @@ public sealed class TextLayout
             HasEmboldenedGlyphs |= run.EmboldenWidth > 0;
         }
 
-        InkBounds = Measure(out _colorGlyphs, out _colorIndexes, out _recordedOutlines, out _outlineIndexes);
+        InkBounds = Measure(data.HintedOutlines, out _colorGlyphs, out _colorIndexes, out _recordedOutlines, out _outlineIndexes);
     }
 
     /// <summary>Gets the width of the text, in pixels: the width of its widest line, with the indent of a first line.</summary>
@@ -1238,7 +1238,7 @@ public sealed class TextLayout
     }
 
     /// <summary>Decodes each glyph of the layout once, which validates it, records its outline, and measures what the layout draws.</summary>
-    private RectangleD Measure(out ColorGlyph[] colorGlyphs, out int[]? colorIndexes, out RecordedOutlines recordedOutlines, out int[] outlineIndexes)
+    private RectangleD Measure(HintedOutlines? hintedOutlines, out ColorGlyph[] colorGlyphs, out int[]? colorIndexes, out RecordedOutlines recordedOutlines, out int[] outlineIndexes)
     {
         // The display list of each distinct color glyph of a font and a palette.
         var colors = new List<ColorGlyph>();
@@ -1264,8 +1264,12 @@ public sealed class TextLayout
                 if (!outlines.TryGetValue((run.Font, _glyphs[i], run.Size), out var recorded))
                 {
                     recorder.Begin();
-                    var budget = new GlyphBudget(face.Data.Limits);
-                    face.DecodeOutline(_glyphs[i], run.Size, recorder, scratch, ref budget);
+                    if (hintedOutlines is null || !hintedOutlines.TryReplay(_fonts[run.Font], _glyphs[i], run.Size, recorder))
+                    {
+                        var budget = new GlyphBudget(face.Data.Limits);
+                        face.DecodeOutline(_glyphs[i], run.Size, recorder, scratch, ref budget);
+                    }
+
                     var sink = recorder.Bounds;
                     recorded = (recorder.End(), sink.IsEmpty ? null : (sink.MinX, sink.MinY, sink.MaxX, sink.MaxY));
                     outlines.Add((run.Font, _glyphs[i], run.Size), recorded);

@@ -3240,6 +3240,127 @@ public sealed class FontTests
         #endregion
     }
 
+    [Fact]
+    public void TheInstructionsOfAGlyphMoveItsPointsToTheGrid()
+    {
+        // At 12 pixels per em, B is (0.75, 0)-(5.25, 6): MDAP[1] rounds its four points along the x axis.
+        var font = LoadHinted([0x01, 0xB3, 0, 1, 2, 3, 0x2F, 0x2F, 0x2F, 0x2F]);
+        var full = TextLayout.Create("B", new TextStyle(font, 12), new TextLayoutOptions { Hinting = TextHinting.Full });
+        Assert.Equal(1, full.InkBounds.Left);
+        Assert.Equal(5, full.InkBounds.Right);
+        Assert.Equal(6, full.Width);
+
+        // Light hinting does not run the instructions and only moves the outline vertically.
+        var light = TextLayout.Create("B", new TextStyle(font, 12), new TextLayoutOptions { Hinting = TextHinting.Light });
+        Assert.Equal(0.75, light.InkBounds.Left, 1e-9);
+        Assert.Equal(5.25, light.InkBounds.Right, 1e-9);
+
+        var none = TextLayout.Create("B", new TextStyle(font, 12));
+        Assert.Equal(0.75, none.InkBounds.Left, 1e-9);
+        Assert.Equal(5.25, none.InkBounds.Right, 1e-9);
+    }
+
+    [Fact]
+    public void InstructionsThatLoopForeverExceedTheComplexityLimit()
+    {
+        // PUSHW -3, JMPR: a jump back to the push, forever.
+        byte[] loop = [0xB8, 0xFF, 0xFD, 0x1C];
+        var options = new TextLayoutOptions { Hinting = TextHinting.Full };
+        var exception = Assert.Throws<ImageResourceLimitException>(() => TextLayout.Create("B", new TextStyle(LoadHinted(loop), 12), options));
+        Assert.Equal(ImageResourceLimitKind.GlyphComplexity, exception.Kind);
+        Assert.Equal(ImageResourceLimits.DefaultMaxGlyphComplexity, exception.Limit);
+
+        // The control value program is bounded the same way, and so is a function that calls itself in a loop.
+        exception = Assert.Throws<ImageResourceLimitException>(() => TextLayout.Create("B", new TextStyle(LoadHinted([], prep: loop), 12), options));
+        Assert.Equal(ImageResourceLimitKind.GlyphComplexity, exception.Kind);
+
+        // 32,767 calls of a function that calls an empty function 32,767 times: the calls are charged as they run.
+        byte[] fpgm = [0xB0, 0, 0x2C, 0x2D, 0xB0, 1, 0x2C, 0xB8, 0x7F, 0xFF, 0xB0, 0, 0x2A, 0x2D];
+        exception = Assert.Throws<ImageResourceLimitException>(() => TextLayout.Create("B", new TextStyle(LoadHinted([0xB8, 0x7F, 0xFF, 0xB0, 1, 0x2A], fpgm, functions: 2), 12), options));
+        Assert.Equal(ImageResourceLimitKind.GlyphComplexity, exception.Kind);
+
+        // Without hinting, the instructions are never run.
+        Assert.Equal(6, TextLayout.Create("B", new TextStyle(LoadHinted(loop, prep: loop), 12)).Width);
+    }
+
+    [Theory]
+    [InlineData("recursion")]
+    [InlineData("stack")]
+    [InlineData("storage")]
+    [InlineData("point")]
+    [InlineData("opcode")]
+    [InlineData("truncated")]
+    public void AGlyphWhoseInstructionsBreakARuleIsDrawnWithoutHinting(string rule)
+    {
+        // The stack holds what maxp declares and 32 more values, the storage area and the functions what it declares,
+        // and calls are nested at most 64 deep. An opcode that is no instruction (0x28) stops the glyph program, even
+        // after it rounded the points.
+        var font = rule switch
+        {
+            "recursion" => LoadHinted([0xB0, 0, 0x2B], fpgm: [0xB0, 0, 0x2C, 0xB0, 0, 0x2B, 0x2D], functions: 1),
+            "stack" => LoadHinted([0x40, 40, .. new byte[40]], stack: 7),
+            "storage" => LoadHinted([0xB1, 5, 1, 0x42], storage: 5),
+            "point" => LoadHinted([0x01, 0xB0, 9, 0x2F]),
+            "opcode" => LoadHinted([0x01, 0xB3, 0, 1, 2, 3, 0x2F, 0x2F, 0x2F, 0x2F, 0xB0, 0, 0x28]),
+            _ => LoadHinted([0xB2, 0, 1]),
+        };
+
+        var layout = TextLayout.Create("B", new TextStyle(font, 12), new TextLayoutOptions { Hinting = TextHinting.Full });
+        Assert.Equal(0.75, layout.InkBounds.Left, 1e-9);
+        Assert.Equal(5.25, layout.InkBounds.Right, 1e-9);
+
+        // The advance is still a whole number of pixels.
+        Assert.Equal(6, layout.Width);
+    }
+
+    [Fact]
+    public void AFontWhoseProgramsBreakARuleIsHintedWithoutItsInstructions()
+    {
+        // POP on an empty stack in the control value program: the font is hinted as without instructions.
+        var font = LoadHinted([0x01, 0xB3, 0, 1, 2, 3, 0x2F, 0x2F, 0x2F, 0x2F], prep: [0x21]);
+        var layout = TextLayout.Create("B", new TextStyle(font, 12), new TextLayoutOptions { Hinting = TextHinting.Full });
+        Assert.Equal(0.75, layout.InkBounds.Left, 1e-9);
+        Assert.Equal(5.25, layout.InkBounds.Right, 1e-9);
+    }
+
+    [Fact]
+    public void TheStorageOfTheInstructionsIsChargedToTheAllocationLimit()
+    {
+        // The largest sizes maxp can declare: about 2 MiB of twilight points, storage, functions and stack.
+        byte[] instructions = [0x01, 0xB3, 0, 1, 2, 3, 0x2F, 0x2F, 0x2F, 0x2F];
+        var layout = TextLayout.Create("B", new TextStyle(LoadHinted(instructions, twilight: 65535, storage: 65535, functions: 65535, stack: 65535), 12), new TextLayoutOptions { Hinting = TextHinting.Full });
+        Assert.Equal(1, layout.InkBounds.Left);
+
+        var small = new FontLoadOptions { Configuration = new ImageConfiguration { Limits = new ImageResourceLimits { MaxLiveAllocationBytes = 256 * 1024 } } };
+        var unhinted = TextLayout.Create("B", new TextStyle(LoadHinted(instructions, twilight: 65535, storage: 65535, functions: 65535, stack: 65535, options: small), 12));
+        Assert.Equal(6, unhinted.Width);
+        var exception = Assert.Throws<ImageResourceLimitException>(() => TextLayout.Create("B", new TextStyle(LoadHinted(instructions, twilight: 65535, storage: 65535, functions: 65535, stack: 65535, options: small), 12), new TextLayoutOptions { Hinting = TextHinting.Full }));
+        Assert.Equal(ImageResourceLimitKind.LiveAllocationBytes, exception.Kind);
+    }
+
+    /// <summary>
+    /// Loads the boxes font with TrueType instructions: those of B, a font program, a control value program (by default
+    /// one that does nothing) and the sizes maxp declares for them.
+    /// </summary>
+    private static Font LoadHinted(byte[] instructions, byte[]? fpgm = null, byte[]? prep = null, int functions = 0, int storage = 0, int stack = 0, int twilight = 0, FontLoadOptions? options = null)
+    {
+        var builder = FontSamples.Boxes();
+        builder.Glyphs[3].Instructions = instructions;
+        var tables = builder.BuildTables();
+        tables["prep"] = prep ?? [0xB0, 0, 0x21];
+        if (fpgm is not null)
+        {
+            tables["fpgm"] = fpgm;
+        }
+
+        var maxp = tables["maxp"];
+        BinaryPrimitives.WriteUInt16BigEndian(maxp.AsSpan(16), (ushort)twilight);
+        BinaryPrimitives.WriteUInt16BigEndian(maxp.AsSpan(18), (ushort)storage);
+        BinaryPrimitives.WriteUInt16BigEndian(maxp.AsSpan(20), (ushort)functions);
+        BinaryPrimitives.WriteUInt16BigEndian(maxp.AsSpan(24), (ushort)stack);
+        return Font.Load(FontBuilder.WriteSfnt(tables), options);
+    }
+
     private static byte[] WriteNameTable(params (int Platform, int Encoding, int Language, int Id, string Value)[] records)
     {
         var header = new List<byte>();

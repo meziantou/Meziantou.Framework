@@ -317,6 +317,35 @@ public sealed class TextLayoutOptions
         }
     }
 
+    /// <summary>
+    /// Gets how the outlines of the glyphs are fitted to the pixel grid. <see cref="TextHinting.None"/> by default:
+    /// the outlines are scaled exactly and the glyphs are placed at fractions of a pixel.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Hinting makes small text (9 to 16 pixels) sharper: the horizontal edges of the glyphs (the baseline, the
+    /// x-height, the horizontal stems), and with <see cref="TextHinting.Full"/> the vertical ones, fall on whole
+    /// pixels. The baseline of each glyph is then on a whole pixel of the layout, and with <see cref="TextHinting.Full"/>
+    /// the advances are whole pixels too and each glyph starts on a whole pixel: what the layout measures is what it
+    /// draws.
+    /// </para>
+    /// <para>
+    /// The grid is the pixel grid of the layout: draw it at a whole-pixel origin, without a transform that scales or
+    /// rotates the canvas, for the edges to fall on the pixels of the image. Hinting applies to horizontal text; a
+    /// vertical layout (<see cref="WritingMode"/>) is not hinted.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not a member of <see cref="TextHinting"/>.</exception>
+    public TextHinting Hinting
+    {
+        get;
+        init
+        {
+            ValidateEnum((int)value, (int)TextHinting.Full, nameof(value));
+            field = value;
+        }
+    }
+
     /// <summary>The longest hyphen or ellipsis.</summary>
     internal const int MaxInsertedTextLength = 16;
 

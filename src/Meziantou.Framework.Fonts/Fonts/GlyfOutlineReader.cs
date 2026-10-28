@@ -10,7 +10,8 @@ namespace Meziantou.Framework.Fonts;
 /// <para>
 /// The points of the glyph are first gathered, in the coordinate space of the glyph, in the scratch storage; the
 /// points of a component are transformed in place once the component is read, so a nested composite is transformed
-/// once per level. The contours are then emitted. Hinting instructions are skipped: outlines are not grid-fitted.
+/// once per level. The contours are then emitted. The hinting instructions are skipped here: <see cref="TrueTypeHinter"/>
+/// runs them.
 /// </para>
 /// <para>
 /// A glyph also has phantom points, which are not drawn: its origin, at the left side bearing of the horizontal metrics
@@ -37,15 +38,17 @@ internal static class GlyfOutlineReader
     private const int YIsSameOrPositive = 0x20;
 
     // Flags of a component of a composite glyph
-    private const int ArgumentsAreWords = 0x0001;
-    private const int ArgumentsAreXYValues = 0x0002;
-    private const int HasScale = 0x0008;
-    private const int MoreComponents = 0x0020;
-    private const int UseMyMetrics = 0x0200;
-    private const int HasXAndYScale = 0x0040;
-    private const int HasTwoByTwo = 0x0080;
-    private const int ScaledComponentOffset = 0x0800;
-    private const int UnscaledComponentOffset = 0x1000;
+    internal const int ArgumentsAreWords = 0x0001;
+    internal const int ArgumentsAreXYValues = 0x0002;
+    internal const int HasScale = 0x0008;
+    internal const int RoundXYToGrid = 0x0004;
+    internal const int MoreComponents = 0x0020;
+    internal const int WeHaveInstructions = 0x0100;
+    internal const int UseMyMetrics = 0x0200;
+    internal const int HasXAndYScale = 0x0040;
+    internal const int HasTwoByTwo = 0x0080;
+    internal const int ScaledComponentOffset = 0x0800;
+    internal const int UnscaledComponentOffset = 0x1000;
 
     /// <summary>Decodes a glyph into a sink.</summary>
     /// <exception cref="InvalidFontException">The data of the glyph is malformed.</exception>
@@ -127,7 +130,10 @@ internal static class GlyfOutlineReader
         return advance + sumX[1] - sumX[0];
     }
 
-    private static ReadOnlySpan<byte> GetGlyphData(in GlyfContext context, int glyphId)
+    internal static ReadOnlySpan<byte> GetGlyphData(in GlyfContext context, int glyphId) => context.Glyf.Slice(GetGlyphOffset(context, glyphId, out var length), length);
+
+    /// <summary>Gets where the data of a glyph starts in the <c>glyf</c> table, and its length.</summary>
+    internal static int GetGlyphOffset(in GlyfContext context, int glyphId, out int length)
     {
         var loca = context.Loca;
         long start;
@@ -147,11 +153,12 @@ internal static class GlyfOutlineReader
         if (end < start || end > context.Glyf.Length)
             throw FontErrors.InvalidTable(FontTags.Loca, $"gives the glyph {glyphId} a location outside the 'glyf' table.");
 
-        return context.Glyf.Slice((int)start, (int)(end - start));
+        length = (int)(end - start);
+        return (int)start;
     }
 
     /// <summary>Reads the horizontal metrics of a glyph: the glyphs after the last metric have its advance, and their own bearing.</summary>
-    private static void GetMetrics(in GlyfContext context, int glyphId, out int advance, out int leftSideBearing)
+    internal static void GetMetrics(in GlyfContext context, int glyphId, out int advance, out int leftSideBearing)
     {
         var hmtx = context.Hmtx;
         if (glyphId < context.MetricCount)
@@ -169,7 +176,7 @@ internal static class GlyfOutlineReader
     }
 
     /// <summary>Gets the length of the record of a component of a composite glyph.</summary>
-    private static int GetComponentLength(int flags)
+    internal static int GetComponentLength(int flags)
     {
         var length = 4 + ((flags & ArgumentsAreWords) != 0 ? 4 : 2);
         if ((flags & HasScale) != 0)
@@ -422,8 +429,13 @@ internal static class GlyfOutlineReader
         }
     }
 
-    private static void CollectSimple(ReadOnlySpan<byte> data, int contourCount, GlyphScratch scratch, ref GlyphBudget budget)
+    private static void CollectSimple(ReadOnlySpan<byte> data, int contourCount, GlyphScratch scratch, ref GlyphBudget budget) => CollectSimple(data, contourCount, scratch, ref budget, out _, out _);
+
+    /// <summary>Appends the points of a simple glyph to the scratch, and gives where its instructions are in its data.</summary>
+    internal static void CollectSimple(ReadOnlySpan<byte> data, int contourCount, GlyphScratch scratch, ref GlyphBudget budget, out int instructionOffset, out int instructionLength)
     {
+        instructionOffset = 0;
+        instructionLength = 0;
         if (contourCount == 0)
             return;
 
@@ -442,8 +454,10 @@ internal static class GlyfOutlineReader
         budget.Charge(pointCount);
         position += contourCount * 2;
 
-        // The hinting instructions are skipped.
-        position += 2 + FontBinary.UInt16(data, position);
+        // The hinting instructions, which only a hinter runs.
+        instructionLength = FontBinary.UInt16(data, position);
+        instructionOffset = position + 2;
+        position += 2 + instructionLength;
 
         var first = scratch.Add(pointCount);
         var points = scratch.Points[first..];
@@ -506,7 +520,7 @@ internal static class GlyfOutlineReader
     }
 
     /// <summary>Emits the contours of gathered points as lines and quadratic curves.</summary>
-    private static void Emit(ReadOnlySpan<GlyphPoint> points, OutlineSink sink)
+    internal static void Emit(ReadOnlySpan<GlyphPoint> points, OutlineSink sink)
     {
         var start = 0;
         for (var i = 0; i < points.Length; i++)

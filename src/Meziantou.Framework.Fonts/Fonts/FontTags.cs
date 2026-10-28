@@ -95,6 +95,18 @@ internal static class FontTags
     /// <summary>The tag of the 'MVAR' table.</summary>
     public const uint Mvar = ((uint)'M' << 24) | ((uint)'V' << 16) | ((uint)'A' << 8) | 'R';
 
+    /// <summary>The tag of the 'fpgm' table: the font program of the TrueType instructions.</summary>
+    public const uint Fpgm = ((uint)'f' << 24) | ((uint)'p' << 16) | ((uint)'g' << 8) | 'm';
+
+    /// <summary>The tag of the 'prep' table: the control value program of the TrueType instructions.</summary>
+    public const uint Prep = ((uint)'p' << 24) | ((uint)'r' << 16) | ((uint)'e' << 8) | 'p';
+
+    /// <summary>The tag of the 'cvt ' table: the control values of the TrueType instructions.</summary>
+    public const uint Cvt = ((uint)'c' << 24) | ((uint)'v' << 16) | ((uint)'t' << 8) | ' ';
+
+    /// <summary>The tag of the 'cvar' table: the variations of the control values.</summary>
+    public const uint Cvar = ((uint)'c' << 24) | ((uint)'v' << 16) | ((uint)'a' << 8) | 'r';
+
     /// <summary>The tag of the 'vhea' table.</summary>
     public const uint Vhea = ((uint)'v' << 24) | ((uint)'h' << 16) | ((uint)'e' << 8) | 'a';
 

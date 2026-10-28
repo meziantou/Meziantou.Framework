@@ -1225,7 +1225,13 @@ public sealed class FontFace
         }
     }
 
-    private GlyfContext CreateGlyfContext()
+    /// <summary>Gets where the <c>glyf</c> table starts in the bytes of the font.</summary>
+    internal int GlyfOffset => _glyfOffset;
+
+    /// <summary>Finds a table in the bytes of the font.</summary>
+    internal bool TryFindTable(uint tag, out int offset, out int length) => _directory.TryFind(tag, out offset, out length);
+
+    internal GlyfContext CreateGlyfContext()
     {
         var bytes = Data.RawBytes.AsSpan();
         var varies = _instance is not null && _gvar is not null;
@@ -1297,6 +1303,19 @@ public sealed class FontFace
     /// <exception cref="FontResourceLimitException">The glyph exceeds the complexity limit or the allocation limit.</exception>
     public void DecodeOutline(int glyphId, double size, OutlineSink sink, GlyphScratch scratch, ref GlyphBudget budget)
     {
+        if (!TryDecodeMonochromeBitmap(glyphId, size, sink, ref budget))
+        {
+            DecodeOutline(glyphId, sink, scratch, ref budget);
+        }
+    }
+
+    /// <summary>
+    /// Emits the squares of the pixels of the bitmap without colors the font has for a glyph at exactly a size, when
+    /// it was loaded to use them.
+    /// </summary>
+    /// <returns><see langword="true"/> when the glyph is drawn with a bitmap.</returns>
+    internal bool TryDecodeMonochromeBitmap(int glyphId, double size, OutlineSink sink, ref GlyphBudget budget)
+    {
         if (_eblc is not null && (uint)glyphId < (uint)GlyphCount && size is >= 1 and <= 255 && size == Math.Floor(size))
         {
             var bytes = Data.RawBytes.AsSpan();
@@ -1304,11 +1323,11 @@ public sealed class FontFace
             if (_eblc.TryGetMonochromeGlyph(bytes.Slice(_eblcOffset, _eblcLength), bits, glyphId, (int)size, out var bitmap))
             {
                 EmitBitmap(bits.Slice(bitmap.Offset, bitmap.Length), bitmap, sink, ref budget);
-                return;
+                return true;
             }
         }
 
-        DecodeOutline(glyphId, sink, scratch, ref budget);
+        return false;
     }
 
     /// <summary>

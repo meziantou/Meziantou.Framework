@@ -33,6 +33,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// marked with an ellipsis, and the decorations are computed from the positions of the glyphs.
 /// </para>
 /// </remarks>
+[System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1001:Types that own disposable fields should be disposable", Justification = "An engine only lives in Create, which disposes what it rents")]
 internal sealed class TextLayoutEngine
 {
     private const int SoftHyphen = 0x00AD;
@@ -60,6 +61,9 @@ internal sealed class TextLayoutEngine
     private readonly string _text;
     private readonly TextSpan[] _spans;
     private readonly TextLayoutOptions _options;
+
+    // The hinted glyphs, when the text is hinted: a horizontal layout with TextLayoutOptions.Hinting.
+    private readonly TextGlyphHinter? _hinter;
     private readonly ImageResourceLimits _limits;
     private readonly FontResourceLimits _fontLimits;
     private readonly GlyphBuffer _buffer;
@@ -108,6 +112,10 @@ internal sealed class TextLayoutEngine
         _fontLimits = primary.Data.Limits;
         _buffer = new GlyphBuffer(_fontLimits);
         _wraps = options.Wrapping == TextWrapping.Wrap && !double.IsPositiveInfinity(_maxWidth);
+        if (options.Hinting != TextHinting.None && !_isVertical)
+        {
+            _hinter = new TextGlyphHinter(options.Hinting);
+        }
     }
 
     /// <summary>Lays out a text whose spans follow each other and cover it; an empty text has one span of length 0.</summary>
@@ -136,6 +144,7 @@ internal sealed class TextLayoutEngine
         }
         finally
         {
+            engine._hinter?.Dispose();
             engine._scratch?.Dispose();
             foreach (var (font, cache) in engine._shapingCaches)
             {
@@ -716,7 +725,8 @@ internal sealed class TextLayoutEngine
         var isRightToLeft = (item.Level & 1) != 0;
         var features = GetFeatures(style, !_isVertical ? ShapingOrientation.Horizontal : item.IsUpright ? ShapingOrientation.Upright : ShapingOrientation.Sideways);
         TextShaper.Shape(_buffer, item.Font.Face, item.Script, style.LanguageTags, isRightToLeft, features, item.IsUpright, item.IsUpright ? GetScratch(item.Font.Face) : null, GetShapingCache(item.Font));
-        var scale = GetSize(style) / item.Font.UnitsPerEm;
+        var size = GetSize(style);
+        var scale = size / item.Font.UnitsPerEm;
         var info = _buffer.Info;
         var positions = _buffer.Positions;
         for (var i = 0; i < info.Length; i++)
@@ -724,7 +734,7 @@ internal sealed class TextLayoutEngine
             // An upright glyph of a vertical line advances down the line, and is drawn from its vertical origin: in
             // the coordinates of the line, what the font gives along its y axis is along the line, backward, and
             // what it gives along its x axis is across the line, toward the side the top of the line is on.
-            paragraph.Glyphs.Add(new ShapedGlyph
+            var glyph = new ShapedGlyph
             {
                 Glyph = info[i].Glyph,
                 Cluster = info[i].Cluster,
@@ -733,7 +743,18 @@ internal sealed class TextLayoutEngine
                 YOffset = (item.IsUpright ? positions[i].XOffset : positions[i].YOffset) * scale,
                 IsInvisible = info[i].IsIgnorable,
                 WidthScale = 1,
-            });
+            };
+
+            // A glyph hinted with the instructions of its font advances by its hinted advance, a whole number of
+            // pixels, plus what the positioning of the text adds, rounded; its offsets are rounded too.
+            if (_hinter is not null && _hinter.TryGetAdvance(item.Font, size, glyph.Glyph, out var hintedAdvance))
+            {
+                glyph.Advance = hintedAdvance + Math.Round((positions[i].XAdvance - item.Font.Face.GetAdvanceWidth(glyph.Glyph)) * scale, MidpointRounding.AwayFromZero);
+                glyph.XOffset = Math.Round(glyph.XOffset, MidpointRounding.AwayFromZero);
+                glyph.YOffset = Math.Round(glyph.YOffset, MidpointRounding.AwayFromZero);
+            }
+
+            paragraph.Glyphs.Add(glyph);
         }
 
         item.GlyphCount = info.Length;
@@ -1892,6 +1913,12 @@ internal sealed class TextLayoutEngine
                 _ => line.IsRightToLeft ? free : line.Indent,
             };
 
+            // Text hinted with the instructions of its fonts starts each line on a whole pixel.
+            if (_hinter is not null && _options.Hinting == TextHinting.Full)
+            {
+                x = Math.Round(x, MidpointRounding.AwayFromZero);
+            }
+
             var baseline = line.Y + line.Baseline;
             var fullEnd = line.IsLastOfParagraph ? line.Paragraph.FullEnd : line.To;
             lines[lineIndex] = new TextLine(line.From, fullEnd - line.From, x, line.Y, line.Width, line.Height, line.Baseline, line.IsRightToLeft);
@@ -1950,6 +1977,19 @@ internal sealed class TextLayoutEngine
                     }
                     else
                     {
+                        // A hinted glyph is drawn from a whole pixel: its baseline, and with the instructions of
+                        // its font its origin.
+                        if (_hinter is not null)
+                        {
+                            across = Math.Round(across, MidpointRounding.AwayFromZero);
+                            if (_options.Hinting == TextHinting.Full)
+                            {
+                                along = Math.Round(along, MidpointRounding.AwayFromZero);
+                            }
+
+                            _hinter.Add(_fonts[glyph.Font], glyph.Size, glyph.Glyph);
+                        }
+
                         positions.Add(along);
                         positions.Add(across);
                     }
@@ -2012,6 +2052,7 @@ internal sealed class TextLayoutEngine
         return new TextLayoutData
         {
             Fonts = [.. _fonts],
+            HintedOutlines = _hinter?.Build(),
             Brushes = [.. brushes],
             Runs = [.. runs],
             Glyphs = [.. glyphs],

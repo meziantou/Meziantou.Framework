@@ -722,6 +722,9 @@ internal static partial class FontCorpus
     private const string AotsCommit = "c7a7457b7385f33178e8cf87615ca077a810bbe7";
     private const string AotsSha256 = "934e916b1b32a88c673b0307865aff1ad22052f6d74619c5e2ca14ea545e92c3";
 
+    // The hash of the output of truetype_hinting.py, which pins the fonts, hb-subset and FreeType.
+    private const string HintingSuiteSha256 = "8125166b30a0f8e6ecd603f38a67afad6b3d0e254c2e4d8038d11effa20e6abf";
+
     // The texts shaped with each font by the reference shaper, as (text, features). The texts are chosen for what
     // shaping does to them: kerning, ligatures, marks that compose or are attached, characters without visible form,
     // spaces and hyphens the font does not have, fractions, features turned on and off.
@@ -1842,7 +1845,7 @@ internal static partial class FontCorpus
             if (duplicate is not null)
                 throw new FatalException($"Two fonts of the corpus are written to {duplicate.Key}.");
 
-            manifest[CorpusDriver.FontSuitesKey] = new List<object?> { CopyAots(outDir, fontsDirectory / "aots") };
+            manifest[CorpusDriver.FontSuitesKey] = new List<object?> { CopyAots(outDir, fontsDirectory / "aots"), CopyHintingSuite(outDir, fontsDirectory / "truetype-hinting") };
             manifest["schemaVersion"] = CorpusDriver.SchemaVersion;
             manifest[CorpusDriver.FontsKey] = entries.OrderBy(entry => (string)entry["id"]!, StringComparer.Ordinal).Cast<object?>().ToList();
             CorpusDriver.WriteManifest(outDir, manifest);
@@ -1887,6 +1890,45 @@ internal static partial class FontCorpus
             ["fileCount"] = fileCount,
             ["sha256"] = hash,
             ["description"] = "Fonts that each exercise one format of the cmap, class definition, coverage, GSUB or GPOS tables, and tests: a font, the options of hb-shape, characters, and the expected glyphs and positions.",
+        };
+    }
+
+    /// <summary>
+    /// Copies the TrueType hinting suite, which truetype_hinting.py writes (fonts hinted by hand and the points FreeType
+    /// hints them to), and describes it.
+    /// </summary>
+    private static Obj CopyHintingSuite(FullPath outDir, FullPath source)
+    {
+        const string Directory = "font-suites/truetype-hinting";
+        if (!System.IO.Directory.Exists(source / "expected"))
+            throw new FatalException($"The directory {source} is not the output of truetype_hinting.py.");
+
+        var target = outDir / Directory;
+        foreach (var file in System.IO.Directory.EnumerateFiles(source, "*", SearchOption.AllDirectories))
+        {
+            var destination = target / FullPath.FromPath(file).MakePathRelativeTo(source);
+            destination.CreateParentDirectory();
+            File.Copy(file, destination);
+        }
+
+        var hash = ComputeDirectoryHash(target, out var fileCount);
+        if (hash != HintingSuiteSha256)
+            throw new FatalException($"The TrueType hinting suite has the hash {hash} ({fileCount} files) but {HintingSuiteSha256} is pinned.");
+
+        return new Obj
+        {
+            ["id"] = Directory,
+            ["directory"] = Directory,
+            ["provenance"] = new Obj
+            {
+                ["origin"] = "external",
+                ["license"] = "Apache-2.0",
+                ["author"] = "Google Inc. and Christian Robertson (Droid Sans, Open Sans, Roboto), subset by hb-subset; expectations from FreeType 2.13.2",
+                ["source"] = "https://github.com/google/fonts (apache/droidsans, apache/opensans and apache/roboto at the commits of font-suites/truetype-hinting/README.md)",
+            },
+            ["fileCount"] = fileCount,
+            ["sha256"] = hash,
+            ["description"] = "Three fonts hinted by hand with TrueType instructions, subset to Basic Latin, and the advance and the hinted points FreeType gives for each glyph at ten sizes with its version 40 interpreter for black and white pixels.",
         };
     }
 

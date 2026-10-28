@@ -118,6 +118,37 @@ directory and the fixed-size tables, `CmapTable` maps characters, `GlyfOutlineRe
   and mutation fuzzing (`FontFuzzTests`). The test-side writers are not oracles: a file they write is a fixture only
   after the corpus generator has read it back with the reference decoders.
 
+## Hinting
+
+`GlyphHinter` (`Fonts/Hinting/`) decodes outlines fitted to the pixel grid of a size: `LightHinter` (vertical only,
+no instructions, any outline format) and `TrueTypeHinter` with `TrueTypeInterpreter` (the TrueType instructions).
+
+- Written from the OpenType specification ("TrueType Instructions", "Instructing TrueType Glyphs") and the Apple
+  TrueType Reference Manual. FreeType is the oracle (version 40 interpreter, `FT_LOAD_TARGET_MONO`): the corpus suite
+  `font-suites/truetype-hinting` has its points for every glyph of three fonts hinted by hand
+  (`HintingConformanceTests`, exact), written by `truetype_hinting.py` of the corpus generator with freetype-py.
+- **Untrusted programs.** Every instruction, every repetition of a looping instruction and every point an instruction
+  moves is charged to the `GlyphBudget` (the font program and the control value program have one each): exceeding it
+  is a `FontResourceLimitException`, never a fallback. The stack (`maxp` plus 32), the storage, the functions, the
+  control values and the twilight zone are rented from the allocator, at most 65,535 entries each; calls are nested at
+  most 64 deep. Any other broken rule (an opcode that does not exist, a point, a storage location or a control value
+  out of range, a stack underflow or overflow) is a `HintingException`: the glyph is unhinted, or the font when it is
+  in its programs. It never leaves the font code.
+- **Determinism.** Every glyph starts from the state the control value program left (control values, storage,
+  twilight zone, graphics state), so a hinted outline does not depend on the glyphs hinted before it.
+- **What makes the points those of the reference** (each was found by comparing, and each one changed hundreds of
+  points; keep them): the original distances of MDRP, MIRP, MD and the ratio of IP are taken from the positions in
+  font units when every point is a point of a simple glyph (in 26.6 pixels for the points of a composite glyph, whose
+  original positions are where its components put them); IUP places a point with a 16.16 ratio of the distances
+  (`MultiplyFixed` of a `MultiplyDivide(..., 0x10000, ...)`), not with one division; only the current position of
+  the phantom points is rounded before the instructions; a vector set from a line is truncated toward zero; a
+  composite glyph rounds only the vertical offset of a component (`ROUND_XY_TO_GRID`), and nothing when the control
+  value program turned the instructions off (`INSTCTRL`). GETINFO reports version 40, no grayscale and no ClearType.
+- Remaining differences, found with fonts that cannot be committed (Arial, Verdana, Georgia, Times New Roman,
+  Courier New of macOS) and with Noto Sans hinted by ttfautohint: one or two 1/64 pixel differences on a few glyphs of
+  each font (fewer than 1 % of the glyphs), and about a third of the glyphs of Noto Sans at 7, 8, 20, 24 and 32 pixels
+  (1/64 pixel each; 9 to 18 pixels are exact). Not explained yet.
+
 ## AFM reader
 
 `AfmFontMetrics` (`Afm/`) reads AFM files (Adobe Font Metrics, Adobe Technical Note #5004, version 4.1); `AfmParser`

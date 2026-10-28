@@ -1,0 +1,18 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <!-- SharpFuzz targets of Meziantou.Framework.AtlassianDataFormat. See fuzz/README.md. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The documents of the third-party test suites are the seeds -->
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.AtlassianDataFormat.Tests\TestData\third-party\**\*.json" LogicalName="Seeds/adf/%(RecursiveDir)%(Filename)%(Extension)" Link="Seeds\adf\%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.Fuzzing\Meziantou.Framework.Fuzzing.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.AtlassianDataFormat\Meziantou.Framework.AtlassianDataFormat.csproj" />
+  </ItemGroup>
+</Project>

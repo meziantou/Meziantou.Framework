@@ -443,17 +443,20 @@
     <Project Path="tools/Meziantou.Framework.WebPlatform.SpecUpdate/Meziantou.Framework.WebPlatform.SpecUpdate.csproj" />
   </Folder>
   <Folder Name="/fuzz/">
+    <Project Path="fuzz/Meziantou.Framework.AtlassianDataFormat.Fuzz/Meziantou.Framework.AtlassianDataFormat.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Barcodes.Fuzz/Meziantou.Framework.Barcodes.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Bencode.Fuzz/Meziantou.Framework.Bencode.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.CodeOwners.Fuzz/Meziantou.Framework.CodeOwners.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Csv.Fuzz/Meziantou.Framework.Csv.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.DependencyScanning.Fuzz/Meziantou.Framework.DependencyScanning.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Dns.Fuzz/Meziantou.Framework.Dns.Fuzz.csproj" />
+    <Project Path="fuzz/Meziantou.Framework.Fonts.Fuzz/Meziantou.Framework.Fonts.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Fuzzing.Tests/Meziantou.Framework.Fuzzing.Tests.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Fuzzing/Meziantou.Framework.Fuzzing.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Globbing.Fuzz/Meziantou.Framework.Globbing.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.HtmlSanitizer.Fuzz/Meziantou.Framework.HtmlSanitizer.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Http.Caching.Fuzz/Meziantou.Framework.Http.Caching.Fuzz.csproj" />
+    <Project Path="fuzz/Meziantou.Framework.Http.Fuzz/Meziantou.Framework.Http.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Http.Htpasswd.Fuzz/Meziantou.Framework.Http.Htpasswd.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Imaging.FuzzTests/Meziantou.Framework.Imaging.FuzzTests.csproj" />
     <Project Path="fuzz/Meziantou.Framework.JavaScriptEngine.Fuzz/Meziantou.Framework.JavaScriptEngine.Fuzz.csproj" />

@@ -107,6 +107,11 @@ public class MarkdownPipelineBuilder
     internal ProcessDocumentDelegate? GetDocumentProcessed => DocumentProcessed;
 
     /// <summary>
+    /// Gets or sets the callback that runs after the <see cref="DocumentProcessed"/> handlers, when the document is final.
+    /// </summary>
+    internal ProcessDocumentDelegate? DocumentCompleted { get; set; }
+
+    /// <summary>
     /// Builds a pipeline from this instance. Once the pipeline is build, it cannot be modified.
     /// </summary>
     /// <exception cref="InvalidOperationException">An extension cannot be null</exception>
@@ -137,6 +142,7 @@ public class MarkdownPipelineBuilder
             PreciseSourceLocation = PreciseSourceLocation,
             TrackTrivia = TrackTrivia,
             MaximumNestingDepth = MaximumNestingDepth,
+            DocumentCompleted = DocumentCompleted,
         };
         return _pipeline;
     }

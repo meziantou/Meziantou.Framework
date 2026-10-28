@@ -280,6 +280,40 @@ public sealed class DefaultsTests
     }
 
     [Fact]
+    public void ThresholdDefaults()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ThresholdOptions { Method = (ThresholdMethod)4 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ThresholdOptions { Level = -0.1 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ThresholdOptions { Level = double.NaN });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ThresholdOptions { Level = 1.5 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ThresholdOptions { WindowSize = 1 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ThresholdOptions { WindowSize = 16 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ThresholdOptions { WindowSize = 20003 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ThresholdOptions { Offset = 1.1 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ThresholdOptions { Offset = double.NaN });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ThresholdOptions { SauvolaK = -0.1 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ThresholdOptions { SauvolaR = 0 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ThresholdOptions { SauvolaR = double.PositiveInfinity });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ThresholdOptions { EdgeMode = (ConvolutionEdgeMode)4 });
+
+        Assert.Equal(20001, new ThresholdOptions { WindowSize = 20001 }.WindowSize);
+        Assert.Equal(-1d, new ThresholdOptions { Offset = -1 }.Offset);
+        Assert.Equal(1d, new ThresholdOptions { SauvolaR = 1 }.SauvolaR);
+
+        var defaults = ThresholdOptions.Default;
+        Assert.Equal(ThresholdMethod.Otsu, defaults.Method);
+        Assert.Equal(0.5, defaults.Level);
+        Assert.Equal(15, defaults.WindowSize);
+        Assert.Equal(0.0, defaults.Offset);
+        Assert.Equal(0.2, defaults.SauvolaK);
+        Assert.Equal(0.5, defaults.SauvolaR);
+        Assert.Equal(ConvolutionEdgeMode.Mirror, defaults.EdgeMode);
+        Assert.Equal(new Rgba64(65535, 65535, 65535), defaults.UpperColor);
+        Assert.Equal(new Rgba64(0, 0, 0), defaults.LowerColor);
+        Assert.False(defaults.ShareHistogramAcrossFrames);
+    }
+
+    [Fact]
     public void AutoCropDefaults()
     {
         var options = new AutoCropOptions();

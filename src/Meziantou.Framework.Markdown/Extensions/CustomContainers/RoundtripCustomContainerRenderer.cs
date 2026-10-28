@@ -33,7 +33,7 @@ internal sealed class RoundtripCustomContainerRenderer : RoundtripObjectRenderer
         renderer.Write(obj.UnescapedInfo);
         renderer.Write(obj.TriviaAfterInfo);
         renderer.Write(obj.UnescapedArguments);
-        renderer.Write(obj.TriviaAfterArguments);
+        renderer.WriteTriviaAfterArguments(obj, obj);
         renderer.WriteLine(obj.InfoNewLine);
 
         renderer.WriteChildren(obj);

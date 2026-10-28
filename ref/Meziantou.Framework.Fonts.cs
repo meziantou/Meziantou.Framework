@@ -975,6 +975,7 @@ namespace Meziantou.Framework.Fonts
         public string SubfamilyName { get => throw null; }
         public int Weight { get => throw null; }
         public int WidthClass { get => throw null; }
+        public bool Covers(System.Text.Rune character) => throw null;
         public override string ToString() => throw null;
     }
 

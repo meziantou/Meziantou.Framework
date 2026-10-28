@@ -91,6 +91,38 @@ public abstract partial class Image
         }
     }
 
+    /// <summary>
+    /// Binarizes frames of this image in place (every displayed frame and the poster when <paramref name="frames"/> is
+    /// <see langword="null"/>). The working memory is charged to the scope of the image and rented before any pixel changes;
+    /// afterward, on failure, some frames or rows may already be binarized.
+    /// </summary>
+    /// <exception cref="UnsupportedImageFeatureException">The pixel format is a floating-point one.</exception>
+    /// <exception cref="ArgumentException">The pixel format cannot store a color of <paramref name="options"/> exactly.</exception>
+    internal void ThresholdFrames(ImageFrame[]? frames, ThresholdOptions options, CancellationToken cancellationToken)
+    {
+        Owner.EnsureCanModify("threshold the image");
+        Thresholder.Validate(PixelFormat, options);
+        cancellationToken.ThrowIfCancellationRequested();
+        var shared = frames is null && options.ShareHistogramAcrossFrames;
+        frames ??= GetAllFrames();
+        var max = ToneSamples.GetLevelCount(PixelFormat) - 1;
+        using var thresholder = new Thresholder(Owner.Scope, PixelFormat, _size, options);
+        double? sharedLevel = options.Method == ThresholdMethod.Otsu && shared ? ComputeHistogramCore(frames, HistogramChannel.Luminance, cancellationToken).GetOtsuThreshold() : null;
+        _metadata.RemoveStaleThumbnail();
+        foreach (var frame in frames)
+        {
+            var level = options.Method switch
+            {
+                ThresholdMethod.Otsu => sharedLevel ?? ComputeHistogramCore([frame], HistogramChannel.Luminance, cancellationToken).GetOtsuThreshold(),
+                ThresholdMethod.Fixed => options.Level * max,
+                _ => 0,
+            };
+
+            using var lease = frame.GetStorage().AcquireLease();
+            thresholder.Apply(lease, level, cancellationToken);
+        }
+    }
+
     /// <summary>Gets the groups of frames that share their histograms: all of them together, or each frame alone.</summary>
     private static IEnumerable<ImageFrame[]> GetToneGroups(ImageFrame[] frames, bool shared)
     {

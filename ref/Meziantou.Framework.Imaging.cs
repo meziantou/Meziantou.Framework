@@ -707,6 +707,7 @@ namespace Meziantou.Framework.Imaging
         public System.ReadOnlySpan<long> Counts { get => throw null; }
         public long this[int level] { get => throw null; }
         public long TotalCount { get => throw null; }
+        public int GetOtsuThreshold() => throw null;
     }
 
     public enum ImageIdentifyMode
@@ -797,6 +798,8 @@ namespace Meziantou.Framework.Imaging
         public static void Sharpen(this Meziantou.Framework.Imaging.Image image, double sigma, double amount = 1d, double threshold = 0d, Meziantou.Framework.Imaging.ConvolutionEdgeMode edgeMode = Meziantou.Framework.Imaging.ConvolutionEdgeMode.Clamp, Meziantou.Framework.Imaging.ConvolutionWorkingSpace workingSpace = Meziantou.Framework.Imaging.ConvolutionWorkingSpace.Encoded, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Sharpen(this Meziantou.Framework.Imaging.ImageFrame frame, double sigma, double amount = 1d, double threshold = 0d, Meziantou.Framework.Imaging.ConvolutionEdgeMode edgeMode = Meziantou.Framework.Imaging.ConvolutionEdgeMode.Clamp, Meziantou.Framework.Imaging.ConvolutionWorkingSpace workingSpace = Meziantou.Framework.Imaging.ConvolutionWorkingSpace.Encoded, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Skew(this Meziantou.Framework.Imaging.Image image, double degreesX, double degreesY, Meziantou.Framework.Imaging.TransformOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void Threshold(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.ThresholdOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void Threshold(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.ThresholdOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Transform(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.AffineTransform transform, Meziantou.Framework.Imaging.TransformOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Transform(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.ProjectiveTransform transform, Meziantou.Framework.Imaging.TransformOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
     }
@@ -1365,6 +1368,29 @@ namespace Meziantou.Framework.Imaging
         public override string ToString() => throw null;
         public static bool operator ==(Meziantou.Framework.Imaging.Size left, Meziantou.Framework.Imaging.Size right) => throw null;
         public static bool operator !=(Meziantou.Framework.Imaging.Size left, Meziantou.Framework.Imaging.Size right) => throw null;
+    }
+
+    public enum ThresholdMethod
+    {
+        Otsu = 0,
+        Fixed = 1,
+        Mean = 2,
+        Sauvola = 3,
+    }
+
+    public sealed class ThresholdOptions
+    {
+        public static Meziantou.Framework.Imaging.ThresholdOptions Default { get => throw null; }
+        public Meziantou.Framework.Imaging.ConvolutionEdgeMode EdgeMode { get => throw null; init { } }
+        public double Level { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Rgba64 LowerColor { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.ThresholdMethod Method { get => throw null; init { } }
+        public double Offset { get => throw null; init { } }
+        public double SauvolaK { get => throw null; init { } }
+        public double SauvolaR { get => throw null; init { } }
+        public bool ShareHistogramAcrossFrames { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Rgba64 UpperColor { get => throw null; init { } }
+        public int WindowSize { get => throw null; init { } }
     }
 
     public readonly struct Transform3D : System.IEquatable<Meziantou.Framework.Imaging.Transform3D>
@@ -2922,11 +2948,13 @@ namespace Meziantou.Framework.Imaging.Typography
         public int Weight { get => throw null; }
         public bool ContainsGlyph(System.Text.Rune codePoint) => throw null;
         public Meziantou.Framework.Imaging.Typography.FontMetrics GetMetrics(double size) => throw null;
+        public static Meziantou.Framework.Imaging.Typography.Font Load(Meziantou.Framework.Fonts.SystemFontDescriptor face, Meziantou.Framework.Imaging.Typography.FontLoadOptions? options = null) => throw null;
         public static Meziantou.Framework.Imaging.Typography.Font Load(System.IO.Stream stream, Meziantou.Framework.Imaging.Typography.FontLoadOptions? options = null) => throw null;
         public static Meziantou.Framework.Imaging.Typography.Font Load(System.ReadOnlySpan<byte> data, Meziantou.Framework.Imaging.Typography.FontLoadOptions? options = null) => throw null;
         public static Meziantou.Framework.Imaging.Typography.Font Load(string path, Meziantou.Framework.Imaging.Typography.FontLoadOptions? options = null) => throw null;
         public static System.Threading.Tasks.Task<Meziantou.Framework.Imaging.Typography.Font> LoadAsync(System.IO.Stream stream, Meziantou.Framework.Imaging.Typography.FontLoadOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static System.Threading.Tasks.Task<Meziantou.Framework.Imaging.Typography.Font> LoadAsync(string path, Meziantou.Framework.Imaging.Typography.FontLoadOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static Meziantou.Framework.Imaging.Typography.Font? LoadInstalled(string familyName, int weight = 400, bool isItalic = false, Meziantou.Framework.Fonts.SystemFontCollection? fonts = null, Meziantou.Framework.Imaging.Typography.FontLoadOptions? options = null) => throw null;
         public Meziantou.Framework.Imaging.Typography.Font WithVariations(Meziantou.Framework.Imaging.Typography.FontNamedInstance instance) => throw null;
         public Meziantou.Framework.Imaging.Typography.Font WithVariations(params System.ReadOnlySpan<Meziantou.Framework.Imaging.Typography.FontVariationSetting> settings) => throw null;
     }
@@ -3001,10 +3029,12 @@ namespace Meziantou.Framework.Imaging.Typography
     public sealed class FontStack
     {
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.Typography.Font> Fonts { get => throw null; }
+        public bool HasInstalledFallback { get => throw null; }
         public Meziantou.Framework.Imaging.Typography.Font Primary { get => throw null; }
         public FontStack(Meziantou.Framework.Imaging.Typography.Font primary) { }
         public FontStack(Meziantou.Framework.Imaging.Typography.Font primary, params System.ReadOnlySpan<Meziantou.Framework.Imaging.Typography.Font> fallbacks) { }
         public static Meziantou.Framework.Imaging.Typography.FontStack FromFont(Meziantou.Framework.Imaging.Typography.Font font) => throw null;
+        public Meziantou.Framework.Imaging.Typography.FontStack WithInstalledFallback(Meziantou.Framework.Fonts.SystemFontCollection? fonts = null, Meziantou.Framework.Imaging.Typography.InstalledFontFallbackOptions? options = null) => throw null;
         public static implicit operator Meziantou.Framework.Imaging.Typography.FontStack(Meziantou.Framework.Imaging.Typography.Font font) => throw null;
     }
 
@@ -3056,6 +3086,13 @@ namespace Meziantou.Framework.Imaging.Typography
         public double? ObliqueShear { get => throw null; init { } }
         public int Palette { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Typography.FontSynthesis Synthesis { get => throw null; init { } }
+    }
+
+    public sealed class InstalledFontFallbackOptions
+    {
+        public static Meziantou.Framework.Imaging.Typography.InstalledFontFallbackOptions Default { get => throw null; }
+        public Meziantou.Framework.Imaging.Typography.FontLoadOptions LoadOptions { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<string> PreferredFamilies { get => throw null; init { } }
     }
 
     public readonly struct PositionedGlyph : System.IEquatable<Meziantou.Framework.Imaging.Typography.PositionedGlyph>

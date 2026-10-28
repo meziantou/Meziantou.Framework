@@ -141,6 +141,15 @@ internal static class FontTags
     /// <summary>The tag 'wght' of the weight axis of a variable font.</summary>
     public const uint WeightAxis = ((uint)'w' << 24) | ((uint)'g' << 16) | ((uint)'h' << 8) | 't';
 
+    /// <summary>The tag 'wdth' of the width axis of a variable font.</summary>
+    public const uint WidthAxis = ((uint)'w' << 24) | ((uint)'d' << 16) | ((uint)'t' << 8) | 'h';
+
+    /// <summary>The tag 'ital' of the italic axis of a variable font.</summary>
+    public const uint ItalicAxis = ((uint)'i' << 24) | ((uint)'t' << 16) | ((uint)'a' << 8) | 'l';
+
+    /// <summary>The tag 'slnt' of the slant axis of a variable font.</summary>
+    public const uint SlantAxis = ((uint)'s' << 24) | ((uint)'l' << 16) | ((uint)'n' << 8) | 't';
+
     // Metrics the MVAR table varies: OpenType specification, "MVAR", "Value tags"
     /// <summary>The value tag 'hasc' of the horizontal ascender in the MVAR table.</summary>
     public const uint MetricAscender = ((uint)'h' << 24) | ((uint)'a' << 16) | ((uint)'s' << 8) | 'c';

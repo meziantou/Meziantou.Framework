@@ -11,7 +11,7 @@ What it covers:
 - Color fonts: `COLR` versions 0 and 1, `CPAL`, `sbix`, `CBDT`
 - Horizontal and vertical metrics, `BASE` baselines
 - Text shaping with `GSUB` and `GPOS`, and the shaping models of complex scripts (Arabic, Hebrew, Indic, Khmer, Myanmar, Thai and Lao, Hangul, and the universal shaping engine)
-- The fonts installed on Windows, macOS and Linux (`SystemFontCollection`): an index of their faces by family and by name, read without loading the fonts, and the font matching of CSS to choose a face of a family
+- The fonts installed on Windows, macOS and Linux (`SystemFontCollection`): an index of their faces by family and by name, read without loading the fonts, the font matching of CSS to choose a face of a family, and the characters each face has, read when they are first needed
 - AFM files (Adobe Font Metrics, `AfmFontMetrics`): the metrics of a PostScript font without its glyphs, such as the 14 standard fonts of PDF: global metrics, widths, bounding boxes and ligatures of the characters, kerning pairs and tracks, composite characters; the metrics of the 14 standard fonts of PDF are embedded (`AfmFontMetrics.GetStandardFont`)
 
 The types are in the `Meziantou.Framework.Fonts` namespace:
@@ -26,6 +26,18 @@ if (fonts.Match("Arial", weight: 700, isItalic: false) is { } face)
     var font = FontLoader.Load(stream, new PooledFontEnvironment(FontResourceLimits.Default, 64 * 1024 * 1024))[face.FaceIndex];
     Console.WriteLine($"{font.FamilyName} {font.SubfamilyName}: {font.UnitsPerEm} units per em");
 }
+```
+<!-- endref -->
+
+The characters of a face, from its character map, are read from its file the first time `SystemFontDescriptor.Covers`
+asks for one, and kept with the collection within a bounded amount of memory: scanning the fonts reads none of them.
+
+<!-- ref:../../samples/Meziantou.Framework.Fonts.Samples/Program.cs;region=Fonts_Coverage;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The characters of a face are read from its file the first time they are asked for, then kept with the collection.
+var grinningFace = new Rune(0x1F600);
+var emojiFont = SystemFontCollection.Default.Fonts.FirstOrDefault(face => face.Covers(grinningFace));
+Console.WriteLine($"U+1F600: {emojiFont?.FamilyName ?? "no installed font"}");
 ```
 <!-- endref -->
 

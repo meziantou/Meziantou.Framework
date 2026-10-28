@@ -13,3 +13,10 @@ if (fonts.Match("Arial", weight: 700, isItalic: false) is { } face)
     Console.WriteLine($"{font.FamilyName} {font.SubfamilyName}: {font.UnitsPerEm} units per em");
 }
 #endregion
+
+#region Fonts_Coverage
+// The characters of a face are read from its file the first time they are asked for, then kept with the collection.
+var grinningFace = new Rune(0x1F600);
+var emojiFont = SystemFontCollection.Default.Fonts.FirstOrDefault(face => face.Covers(grinningFace));
+Console.WriteLine($"U+1F600: {emojiFont?.FamilyName ?? "no installed font"}");
+#endregion

@@ -826,6 +826,25 @@ internal static class Examples
     }
     #endregion
 
+    /// <summary>Document scanning: a photographed page is binarized and saved as a CCITT Group 4 TIFF and a portable bitmap.</summary>
+    #region Imaging_Threshold
+    public static void SaveScanAsBilevel(string inputPath, string tiffPath, string pbmPath)
+    {
+        using var page = Image.Load(inputPath);
+
+        // Sauvola's threshold follows uneven lighting: each pixel is compared with the mean and the contrast of the
+        // 31 x 31 pixels around it, so the text becomes black and the paper white, even in a shadow. The pixels are now
+        // exactly black or white, in the same pixel format.
+        page.Threshold(new ThresholdOptions { Method = ThresholdMethod.Sauvola, WindowSize = 31 });
+
+        // A bilevel page with Group 4 compression, the usual format of scanned documents
+        page.Save(tiffPath, new TiffEncoder { PixelLayout = TiffPixelLayout.Bilevel, Compression = TiffCompression.CcittGroup4 });
+
+        // A portable bitmap: one bit per pixel
+        page.Save(pbmPath, new PnmEncoder { PixelLayout = PnmPixelLayout.Bitmap });
+    }
+    #endregion
+
     /// <summary>Histogram-based contrast: the levels of a photo are stretched, then its local contrast is raised (CLAHE).</summary>
     #region Imaging_Histogram
     public static ImageHistogram EnhanceContrast(string inputPath, string outputPath)
@@ -1443,6 +1462,21 @@ internal static class Examples
     }
     #endregion
 
+    /// <summary>Installed fonts: load the face of a family closest to a style, in one call.</summary>
+    /// <remarks>It reads the fonts installed on the machine: no test runs it.</remarks>
+    #region Imaging_LoadInstalledFont
+    public static string? DescribeInstalledFont(string familyName)
+    {
+        // The installed face of the family closest to the style: a bold face, or the bold instance of a variable font.
+        // Null when the family is not installed: another family is never used instead
+        var font = Font.LoadInstalled(familyName, weight: 700);
+        if (font is null)
+            return null;
+
+        return string.Create(CultureInfo.InvariantCulture, $"{font.FamilyName} {font.SubfamilyName}, weight {font.Weight}");
+    }
+    #endregion
+
     /// <summary>Variable fonts: draw a word at five weights of one font file.</summary>
     #region Imaging_VariableFont
     public static void DrawWeights(string variableFontPath, string outputPath)
@@ -1542,6 +1576,22 @@ internal static class Examples
         using var image = new Image<Rgba32>(320, (int)Math.Ceiling(layout.Height) + 20, new Rgba32(255, 255, 255));
 
         // The brush of the call paints the spans that have none
+        image.Draw(canvas => canvas.FillText(new Rgba32(0, 0, 0), layout, new PointD(10, 10)));
+        image.Save(outputPath);
+    }
+    #endregion
+
+    /// <summary>Text: the installed fonts draw the characters the fonts of a stack do not have.</summary>
+    /// <remarks>It reads the fonts installed on the machine: no test runs it.</remarks>
+    #region Imaging_InstalledFallback
+    public static void DrawWithInstalledFallback(string fontPath, string outputPath)
+    {
+        // Without fallback, a stack only has the fonts it is given, and a text is drawn the same way on every machine.
+        // With it, a character none of them has (an ideograph, an emoji) is drawn with an installed font that has it
+        var fonts = new FontStack(Font.Load(fontPath)).WithInstalledFallback();
+        var layout = TextLayout.Create("Hello, \u4E16\u754C \U0001F600", new TextStyle(fonts, 32));
+
+        using var image = new Image<Rgba32>((int)Math.Ceiling(layout.Width) + 20, (int)Math.Ceiling(layout.Height) + 20, new Rgba32(255, 255, 255));
         image.Draw(canvas => canvas.FillText(new Rgba32(0, 0, 0), layout, new PointD(10, 10)));
         image.Save(outputPath);
     }

@@ -10,6 +10,23 @@ internal static class FontTestSupport
 {
     public static Font Load(FontBuilder builder, FontLoadOptions? options = null) => Font.Load(builder.Build(), options);
 
+    /// <summary>Changes the bytes of a table of a font, in place.</summary>
+    public static byte[] PatchTable(byte[] font, string tag, Action<Span<byte>> patch)
+    {
+        var tableCount = BinaryPrimitives.ReadUInt16BigEndian(font.AsSpan(4));
+        for (var i = 0; i < tableCount; i++)
+        {
+            var record = font.AsSpan(12 + (i * 16), 16);
+            if (record[..4].SequenceEqual(Encoding.ASCII.GetBytes(tag)))
+            {
+                patch(font.AsSpan((int)BinaryPrimitives.ReadUInt32BigEndian(record[8..]), (int)BinaryPrimitives.ReadUInt32BigEndian(record[12..])));
+                return font;
+            }
+        }
+
+        throw new ArgumentException("The font has no " + tag + " table", nameof(tag));
+    }
+
     /// <summary>
     /// Gives a script of the layout tables of a font another tag: the font is then one made for another script, or
     /// for another version of the shaping model of its script. The new tag must keep the script list sorted.

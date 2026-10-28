@@ -5,12 +5,20 @@ namespace Meziantou.Framework.Fonts;
 /// the font.
 /// </summary>
 /// <remarks>
-/// A descriptor is immutable. To use the face, load <see cref="FilePath"/> and take the face at <see cref="FaceIndex"/>.
-/// The file may have changed or been removed since the fonts were scanned: loading it can fail.
+/// <para>
+/// A descriptor is immutable and can be used by several threads at the same time. To use the face, load
+/// <see cref="FilePath"/> and take the face at <see cref="FaceIndex"/>. The file may have changed or been removed since
+/// the fonts were scanned: loading it can fail.
+/// </para>
+/// <para>
+/// The characters of the face (<see cref="Covers(Rune)"/>) are read from its file the first time they are asked for,
+/// not when the fonts are scanned.
+/// </para>
 /// </remarks>
 public sealed class SystemFontDescriptor
 {
     private readonly FontAxisRecord[] _axes;
+    private volatile SystemFontCoverage? _coverage;
 
     internal SystemFontDescriptor(string filePath, int faceIndex, FaceStyle style, string[] familyNames, string? fullName, int macStyle, FontAxisRecord[] axes)
     {
@@ -86,6 +94,34 @@ public sealed class SystemFontDescriptor
 
     /// <summary>Gets the axes of a variable font, empty for a font that is not variable.</summary>
     public ReadOnlySpan<FontAxisRecord> Axes => _axes;
+
+    /// <summary>
+    /// Gets the cache the characters of the face are kept in: the one of its collection, which bounds the memory they
+    /// take.
+    /// </summary>
+    internal SystemFontCoverageCache CoverageCache { get; set; } = SystemFontCoverageCache.Shared;
+
+    /// <summary>Gets or sets the characters of the face, or <see langword="null"/> when they were not read or were dropped from the cache.</summary>
+    internal SystemFontCoverage? Coverage
+    {
+        get => _coverage;
+        set => _coverage = value;
+    }
+
+    /// <summary>Determines whether the face has a glyph for a character.</summary>
+    /// <param name="character">The character.</param>
+    /// <returns>
+    /// <see langword="true"/> when the character map of the face gives the character a glyph other than the missing
+    /// glyph, as a loaded face does; <see langword="false"/> when it does not, or when the file can no longer be read or
+    /// its character map is malformed.
+    /// </returns>
+    /// <remarks>
+    /// The first call reads the character map (the <c>cmap</c> table) of the face from its file, and keeps the
+    /// characters it has with the collection, as ranges of characters. The characters of the faces of a collection are
+    /// kept within a bounded amount of memory: when it is reached, the ones that were read first are dropped, and read
+    /// again when they are needed. Scanning the fonts reads no character map.
+    /// </remarks>
+    public bool Covers(Rune character) => CoverageCache.Get(this).Contains(character.Value);
 
     internal bool TryGetAxis(uint tag, out FontAxisRecord axis)
     {

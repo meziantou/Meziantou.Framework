@@ -539,6 +539,66 @@ public sealed class PooledMemoryStreamTests
     }
 
     [Fact]
+    public void IBufferWriter_ReservedRegion_ThenShrinkCapacity_IsNotRentedByAnotherStream()
+    {
+        // Unique tier size so this test owns its pool bucket: before the fix, the empty block holding the region went
+        // back to the pool and the other stream rented it.
+        var options = new PooledMemoryStreamOptions { BufferSizes = [4159] };
+        var data = CreateData(100, seed: 11);
+
+        using var stream = new PooledMemoryStream(options);
+        IBufferWriter<byte> writer = stream;
+        var memory = writer.GetMemory(data.Length);
+        stream.Capacity = 0;
+
+        using var other = new PooledMemoryStream(options);
+        IBufferWriter<byte> otherWriter = other;
+        Assert.False(memory.Span.Overlaps(otherWriter.GetSpan(1)));
+
+        data.CopyTo(memory);
+        writer.Advance(data.Length);
+        Assert.Equal(data, stream.ToArray());
+    }
+
+    [Fact]
+    public void IBufferWriter_ReservedRegion_ThenSetLength_IsNotRentedByAnotherStream()
+    {
+        var options = new PooledMemoryStreamOptions { BufferSizes = [4177] };
+
+        using var stream = new PooledMemoryStream(options);
+        stream.Write(CreateData(4177, seed: 12));
+        IBufferWriter<byte> writer = stream;
+        var memory = writer.GetMemory(10);
+        stream.SetLength(10);
+
+        using var other = new PooledMemoryStream(options);
+        IBufferWriter<byte> otherWriter = other;
+        Assert.False(memory.Span.Overlaps(otherWriter.GetSpan(1)));
+    }
+
+    [Fact]
+    public void IBufferWriter_ReservedRegion_ThenGetBuffer_IsNotRentedByAnotherStream()
+    {
+        // The data fills a 29-byte block and the region needs more, so it is a second 4201-byte block, which GetBuffer
+        // consolidates away.
+        var options = new PooledMemoryStreamOptions { BufferSizes = [29, 4201] };
+        var data = CreateData(29, seed: 13);
+
+        using var stream = new PooledMemoryStream(options);
+        stream.Write(data);
+        IBufferWriter<byte> writer = stream;
+        var memory = writer.GetMemory(100);
+        Assert.HasCount(4201, (ReadOnlySpan<byte>)memory.Span);
+        Assert.Equal(data, stream.GetBuffer().AsSpan(0, data.Length).ToArray());
+
+        using var other = new PooledMemoryStream(options);
+        IBufferWriter<byte> otherWriter = other;
+        var otherSpan = otherWriter.GetSpan(30);
+        Assert.HasCount(4201, (ReadOnlySpan<byte>)otherSpan);
+        Assert.False(memory.Span.Overlaps(otherSpan));
+    }
+
+    [Fact]
     public void CopyTo_FromCurrentPosition()
     {
         var data = CreateData(1000, seed: 6);

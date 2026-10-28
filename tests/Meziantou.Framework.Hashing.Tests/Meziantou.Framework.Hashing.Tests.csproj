@@ -2,11 +2,11 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <RootNamespace>Meziantou.Framework.Tests</RootNamespace>
+    <RootNamespace>Meziantou.Framework.Hashing.Tests</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../src/Meziantou.Framework.Bcrypt/Meziantou.Framework.Bcrypt.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.Hashing/Meziantou.Framework.Hashing.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using Meziantou.Framework.Hashing;
 
 namespace Meziantou.Framework.WebPlatform.Cryptography;
 
@@ -18,9 +19,9 @@ internal static class Hashes
         "SHA-256" => SHA256.HashData(data),
         "SHA-384" => SHA384.HashData(data),
         "SHA-512" => SHA512.HashData(data),
-        "SHA3-256" => Keccak.Sha3(256, data),
-        "SHA3-384" => Keccak.Sha3(384, data),
-        "SHA3-512" => Keccak.Sha3(512, data),
+        "SHA3-256" => Sha3.HashData(256, data),
+        "SHA3-384" => Sha3.HashData(384, data),
+        "SHA3-512" => Sha3.HashData(512, data),
         _ => throw new NotSupportedException($"The hash function {hash} is not supported"),
     };
 
@@ -31,12 +32,12 @@ internal static class Hashes
     /// </summary>
     public static byte[] ExtendableOutput(string algorithm, ReadOnlySpan<byte> data, int outputLength, ReadOnlySpan<byte> functionName, ReadOnlySpan<byte> customization, byte domainSeparation) => algorithm switch
     {
-        "cSHAKE128" => Keccak.CShake(128, data, outputLength, functionName, customization),
-        "cSHAKE256" => Keccak.CShake(256, data, outputLength, functionName, customization),
-        "TurboSHAKE128" => Keccak.TurboShake(128, data, outputLength, domainSeparation),
-        "TurboSHAKE256" => Keccak.TurboShake(256, data, outputLength, domainSeparation),
-        "KT128" => Keccak.KangarooTwelve(128, data, outputLength, customization),
-        "KT256" => Keccak.KangarooTwelve(256, data, outputLength, customization),
+        "cSHAKE128" => Shake.HashData(128, data, outputLength, functionName, customization),
+        "cSHAKE256" => Shake.HashData(256, data, outputLength, functionName, customization),
+        "TurboSHAKE128" => TurboShake.HashData(128, data, outputLength, domainSeparation),
+        "TurboSHAKE256" => TurboShake.HashData(256, data, outputLength, domainSeparation),
+        "KT128" => KangarooTwelve.HashData(128, data, outputLength, customization),
+        "KT256" => KangarooTwelve.HashData(256, data, outputLength, customization),
         _ => throw new NotSupportedException($"The {algorithm} algorithm is not supported"),
     };
 

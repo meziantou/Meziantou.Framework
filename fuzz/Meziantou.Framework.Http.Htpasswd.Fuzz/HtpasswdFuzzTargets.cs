@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using Meziantou.Framework.Fuzzing;
+using Meziantou.Framework.Hashing;
 
 namespace Meziantou.Framework.Http.Htpasswd.Fuzz;
 

@@ -249,17 +249,6 @@ public sealed class InputLayerTests
             => InputVariants.DescribeOutcomeAsync(variant, data, ImageFormat.Pnm, new ImageConfiguration { Limits = new ImageResourceLimits { MaxEncodedBytes = limit } }, XunitCancellationToken);
     }
 
-    [Theory]
-    [InlineData("", 0x00000000u)]
-    [InlineData("123456789", 0xCBF43926u)]
-    [InlineData("IEND", 0xAE426082u)]
-    public void Crc32MatchesPublishedVectors(string text, uint expected) => Assert.Equal(expected, Crc32.Compute(Encoding.ASCII.GetBytes(text)));
-
-    [Theory]
-    [InlineData("", 0x00000001u)]
-    [InlineData("Wikipedia", 0x11E60398u)]
-    public void Adler32MatchesPublishedVectors(string text, uint expected) => Assert.Equal(expected, Adler32.Compute(Encoding.ASCII.GetBytes(text)));
-
     [Fact]
     public void BoundedInflaterValidatesCompletenessAndCharges()
     {

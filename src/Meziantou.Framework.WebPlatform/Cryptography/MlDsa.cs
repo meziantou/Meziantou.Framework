@@ -2,6 +2,7 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using Meziantou.Framework.Hashing;
 
 namespace Meziantou.Framework.WebPlatform.Cryptography;
 
@@ -27,6 +28,10 @@ internal static class MlDsa
     private const int Q = 8380417;
     private const int D = 13;
     private const int RandomnessLength = 32;
+
+    // The rates of SHAKE128 and SHAKE256 (FIPS 202 §6.2): the output is read one block at a time
+    private const int Shake128BlockSize = 168;
+    private const int Shake256BlockSize = 136;
 
     // FIPS 204 §7.5: ζ^BitRev8(k) mod q (ζ = 1753)
     private static readonly int[] Zetas = ComputeZetas();
@@ -169,21 +174,21 @@ internal static class MlDsa
             ExpandA(parameters, rho, matrix);
 
             // μ = H(BytesToBits(tr) || M', 64)
-            var sponge = KeccakSponge.CreateShake256();
-            sponge.Absorb(tr);
-            sponge.Absorb(0);
-            sponge.Absorb((byte)context.Length);
-            sponge.Absorb(context);
-            sponge.Absorb(message);
-            sponge.Squeeze(mu);
+            var sponge = new Shake(256);
+            sponge.AppendData(tr);
+            sponge.AppendData(0);
+            sponge.AppendData((byte)context.Length);
+            sponge.AppendData(context);
+            sponge.AppendData(message);
+            sponge.Read(mu);
 
             // ρ'' = H(K || rnd || μ, 64)
-            sponge = KeccakSponge.CreateShake256();
-            sponge.Absorb(key);
-            sponge.Absorb(randomness);
-            sponge.Absorb(mu);
-            sponge.Squeeze(rhoPrimePrime);
-            sponge.Clear();
+            sponge = new Shake(256);
+            sponge.AppendData(key);
+            sponge.AppendData(randomness);
+            sponge.AppendData(mu);
+            sponge.Read(rhoPrimePrime);
+            sponge.Reset();
 
             Span<byte> commitment = stackalloc byte[32 * 6 * 8];
             commitment = commitment[..(32 * parameters.W1Bits * k)];
@@ -213,10 +218,10 @@ internal static class MlDsa
                 }
 
                 // c̃ = H(μ || w1Encode(w₁), λ/4), c = SampleInBall(c̃)
-                sponge = KeccakSponge.CreateShake256();
-                sponge.Absorb(mu);
-                sponge.Absorb(commitment);
-                sponge.Squeeze(cTilde);
+                sponge = new Shake(256);
+                sponge.AppendData(mu);
+                sponge.AppendData(commitment);
+                sponge.Read(cTilde);
                 SampleInBall(parameters, cTilde, c);
                 Ntt(c);
 
@@ -329,17 +334,17 @@ internal static class MlDsa
 
             // tr = H(pk, 64), μ = H(BytesToBits(tr) || M', 64)
             Span<byte> tr = stackalloc byte[64];
-            var sponge = KeccakSponge.CreateShake256();
-            sponge.Absorb(publicKey);
-            sponge.Squeeze(tr);
+            var sponge = new Shake(256);
+            sponge.AppendData(publicKey);
+            sponge.Read(tr);
             Span<byte> mu = stackalloc byte[64];
-            sponge = KeccakSponge.CreateShake256();
-            sponge.Absorb(tr);
-            sponge.Absorb(0);
-            sponge.Absorb((byte)context.Length);
-            sponge.Absorb(context);
-            sponge.Absorb(message);
-            sponge.Squeeze(mu);
+            sponge = new Shake(256);
+            sponge.AppendData(tr);
+            sponge.AppendData(0);
+            sponge.AppendData((byte)context.Length);
+            sponge.AppendData(context);
+            sponge.AppendData(message);
+            sponge.Read(mu);
 
             // w'_Approx = NTT⁻¹(Â ∘ NTT(z) - NTT(c) ∘ NTT(t₁ · 2^d)), w'₁ = UseHint(h, w'_Approx)
             SampleInBall(parameters, cTilde, c);
@@ -386,10 +391,10 @@ internal static class MlDsa
             // c̃' = H(μ || w1Encode(w'₁), λ/4)
             Span<byte> expected = stackalloc byte[64];
             expected = expected[..parameters.CTildeLength];
-            sponge = KeccakSponge.CreateShake256();
-            sponge.Absorb(mu);
-            sponge.Absorb(commitment);
-            sponge.Squeeze(expected);
+            sponge = new Shake(256);
+            sponge.AppendData(mu);
+            sponge.AppendData(commitment);
+            sponge.Read(expected);
             return CryptographicOperations.FixedTimeEquals(expected, cTilde);
         }
         finally
@@ -409,12 +414,12 @@ internal static class MlDsa
 
         // (ρ, ρ', K) = H(ξ || IntegerToBytes(k, 1) || IntegerToBytes(ℓ, 1), 128)
         Span<byte> expanded = stackalloc byte[128];
-        var sponge = KeccakSponge.CreateShake256();
-        sponge.Absorb(seed);
-        sponge.Absorb((byte)k);
-        sponge.Absorb((byte)l);
-        sponge.Squeeze(expanded);
-        sponge.Clear();
+        var sponge = new Shake(256);
+        sponge.AppendData(seed);
+        sponge.AppendData((byte)k);
+        sponge.AppendData((byte)l);
+        sponge.Read(expanded);
+        sponge.Reset();
         expanded[..32].CopyTo(rho);
         expanded[96..].CopyTo(key);
 
@@ -477,9 +482,9 @@ internal static class MlDsa
         }
 
         // tr = H(pk, 64)
-        sponge = KeccakSponge.CreateShake256();
-        sponge.Absorb(publicKey);
-        sponge.Squeeze(tr);
+        sponge = new Shake(256);
+        sponge.AppendData(publicKey);
+        sponge.Read(tr);
     }
 
     /// <summary>ExpandA(ρ) (FIPS 204 §7.3, algorithm 32): Â[r, s] = RejNTTPoly(ρ || IntegerToBytes(s, 1) || IntegerToBytes(r, 1)).</summary>
@@ -504,13 +509,13 @@ internal static class MlDsa
     /// </summary>
     private static void RejNttPoly(ReadOnlySpan<byte> seed, Span<int> output)
     {
-        var sponge = KeccakSponge.CreateShake128();
-        sponge.Absorb(seed);
-        Span<byte> block = stackalloc byte[KeccakSponge.Rate128];
+        var sponge = new Shake(128);
+        sponge.AppendData(seed);
+        Span<byte> block = stackalloc byte[Shake128BlockSize];
         var j = 0;
         while (true)
         {
-            sponge.Squeeze(block);
+            sponge.Read(block);
             for (var i = 0; i < block.Length; i += 3)
             {
                 var value = block[i] | (block[i + 1] << 8) | ((block[i + 2] & 0x7F) << 16);
@@ -530,14 +535,14 @@ internal static class MlDsa
     /// </summary>
     private static void RejBoundedPoly(Parameters parameters, ReadOnlySpan<byte> seed, Span<int> output)
     {
-        var sponge = KeccakSponge.CreateShake256();
-        sponge.Absorb(seed);
-        Span<byte> block = stackalloc byte[KeccakSponge.Rate256];
+        var sponge = new Shake(256);
+        sponge.AppendData(seed);
+        Span<byte> block = stackalloc byte[Shake256BlockSize];
         var eta = parameters.Eta;
         var j = 0;
         while (j < N)
         {
-            sponge.Squeeze(block);
+            sponge.Read(block);
             for (var i = 0; i < block.Length && j < N; i++)
             {
                 var z0 = CoeffFromHalfByte(eta, block[i] & 0x0F);
@@ -554,7 +559,7 @@ internal static class MlDsa
             }
         }
 
-        sponge.Clear();
+        sponge.Reset();
         CryptographicOperations.ZeroMemory(block);
     }
 
@@ -578,12 +583,12 @@ internal static class MlDsa
         bytes = bytes[..(32 * bits)];
         for (var r = 0; r < parameters.L; r++)
         {
-            var sponge = KeccakSponge.CreateShake256();
-            sponge.Absorb(rhoPrimePrime);
-            sponge.Absorb((byte)(kappa + r));
-            sponge.Absorb((byte)((kappa + r) >> 8));
-            sponge.Squeeze(bytes);
-            sponge.Clear();
+            var sponge = new Shake(256);
+            sponge.AppendData(rhoPrimePrime);
+            sponge.AppendData((byte)(kappa + r));
+            sponge.AppendData((byte)((kappa + r) >> 8));
+            sponge.Read(bytes);
+            sponge.Reset();
 
             var polynomial = y.Slice(r * N, N);
             UnpackBits(bytes, bits, polynomial);
@@ -604,17 +609,17 @@ internal static class MlDsa
     private static void SampleInBall(Parameters parameters, ReadOnlySpan<byte> seed, Span<int> c)
     {
         c.Clear();
-        var sponge = KeccakSponge.CreateShake256();
-        sponge.Absorb(seed);
+        var sponge = new Shake(256);
+        sponge.AppendData(seed);
         Span<byte> signBytes = stackalloc byte[8];
-        sponge.Squeeze(signBytes);
+        sponge.Read(signBytes);
         var signs = System.Buffers.Binary.BinaryPrimitives.ReadUInt64LittleEndian(signBytes);
         for (var i = N - parameters.Tau; i < N; i++)
         {
             int j;
             do
             {
-                j = sponge.SqueezeByte();
+                j = sponge.ReadByte();
             }
             while (j > i);
 

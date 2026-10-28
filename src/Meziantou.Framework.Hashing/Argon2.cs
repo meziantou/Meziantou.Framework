@@ -4,33 +4,19 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
-namespace Meziantou.Framework.WebPlatform.Cryptography;
+namespace Meziantou.Framework.Hashing;
 
-/// <summary>The variant of Argon2 (RFC 9106 section 3.1, the type y).</summary>
-internal enum Argon2Type
+/// <summary>Computes the Argon2 memory-hard function (RFC 9106): Argon2d, Argon2i and Argon2id.</summary>
+/// <remarks>
+/// <para>
+/// Argon2 derives a key from a password, or hashes a password to store it. RFC 9106 recommends Argon2id. The cost is set by
+/// the memory size, the number of passes and the degree of parallelism; RFC 9106 section 4 gives recommended values, such as
+/// 2 GiB of memory with 1 pass, or 64 MiB of memory with 3 passes, both with 4 lanes.
+/// </para>
+/// <para>The lanes are computed sequentially: the degree of parallelism changes the result, not the number of threads.</para>
+/// </remarks>
+public static class Argon2
 {
-    /// <summary>Argon2d: data-dependent memory access (y = 0).</summary>
-    Argon2d = 0,
-
-    /// <summary>Argon2i: data-independent memory access (y = 1).</summary>
-    Argon2i = 1,
-
-    /// <summary>Argon2id: data-independent memory access for the first half of the first pass, data-dependent afterwards (y = 2).</summary>
-    Argon2id = 2,
-}
-
-/// <summary>
-/// The Argon2 memory-hard function (RFC 9106), used by the Argon2d, Argon2i and Argon2id algorithms of the Modern Algorithms
-/// in the Web Cryptography API (https://wicg.github.io/webcrypto-modern-algos/#argon2). The lanes are computed sequentially.
-/// </summary>
-internal static class Argon2
-{
-    /// <summary>The version 0x10 of the reference implementation, before the XOR of the blocks of the next passes.</summary>
-    public const int Version10 = 0x10;
-
-    /// <summary>The version 0x13 defined by RFC 9106, the only one allowed by the Web Cryptography API.</summary>
-    public const int Version13 = 0x13;
-
     /// <summary>The maximum degree of parallelism p (RFC 9106 section 3.1: 2^24 - 1).</summary>
     public const int MaxParallelism = (1 << 24) - 1;
 
@@ -41,27 +27,49 @@ internal static class Argon2
     private const int BlockSize = 1024;
     private const int QWordsInBlock = BlockSize / 8;
 
-    /// <summary>Computes the Argon2 tag (RFC 9106 section 3.2).</summary>
-    /// <param name="type">The variant y.</param>
-    /// <param name="password">The message P.</param>
-    /// <param name="nonce">The nonce S (the salt).</param>
-    /// <param name="parallelism">The degree of parallelism p, the number of lanes.</param>
-    /// <param name="memoryKiB">The memory size m, in kibibytes; it must be at least 8 times <paramref name="parallelism"/>.</param>
-    /// <param name="passes">The number of passes t.</param>
-    /// <param name="version">The version v: <see cref="Version13"/> or <see cref="Version10"/>.</param>
-    /// <param name="secret">The secret value K.</param>
-    /// <param name="associatedData">The associated data X.</param>
-    /// <param name="outputLength">The length of the tag T, in bytes.</param>
-    /// <exception cref="ArgumentException">A parameter is out of the range allowed by RFC 9106.</exception>
+    /// <summary>Computes the Argon2 tag T (RFC 9106 section 3.2).</summary>
+    /// <param name="type">The variant y: <see cref="Argon2Type.Argon2id"/> unless you have a reason to use another one.</param>
+    /// <param name="password">The message P: the password.</param>
+    /// <param name="salt">The nonce S: a salt, 16 bytes of random data are recommended.</param>
+    /// <param name="parallelism">The degree of parallelism p, the number of lanes: 1 to <see cref="MaxParallelism"/>.</param>
+    /// <param name="memorySizeInKiB">The memory size m, in kibibytes: at least 8 times <paramref name="parallelism"/>.</param>
+    /// <param name="passes">The number of passes t over the memory: at least 1.</param>
+    /// <param name="outputLength">The length of the tag T, in bytes: at least <see cref="MinOutputLength"/>.</param>
+    /// <param name="secret">The secret value K (a pepper), usually empty.</param>
+    /// <param name="associatedData">The associated data X, usually empty.</param>
+    /// <param name="version">The version v.</param>
+    /// <returns>The tag, of <paramref name="outputLength"/> bytes.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">A parameter is out of the range allowed by RFC 9106.</exception>
     /// <exception cref="OutOfMemoryException">The memory cannot be allocated.</exception>
-    public static byte[] DeriveBytes(Argon2Type type, ReadOnlySpan<byte> password, ReadOnlySpan<byte> nonce, int parallelism, int memoryKiB, int passes, int version, ReadOnlySpan<byte> secret, ReadOnlySpan<byte> associatedData, int outputLength)
+    public static byte[] DeriveBytes(Argon2Type type, ReadOnlySpan<byte> password, ReadOnlySpan<byte> salt, int parallelism, int memorySizeInKiB, int passes, int outputLength, ReadOnlySpan<byte> secret = default, ReadOnlySpan<byte> associatedData = default, Argon2Version version = Argon2Version.Version13)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(outputLength, MinOutputLength);
+        var destination = new byte[outputLength];
+        DeriveBytes(type, password, salt, parallelism, memorySizeInKiB, passes, destination, secret, associatedData, version);
+        return destination;
+    }
+
+    /// <summary>Computes the Argon2 tag T (RFC 9106 section 3.2) into a buffer.</summary>
+    /// <param name="type">The variant y: <see cref="Argon2Type.Argon2id"/> unless you have a reason to use another one.</param>
+    /// <param name="password">The message P: the password.</param>
+    /// <param name="salt">The nonce S: a salt, 16 bytes of random data are recommended.</param>
+    /// <param name="parallelism">The degree of parallelism p, the number of lanes: 1 to <see cref="MaxParallelism"/>.</param>
+    /// <param name="memorySizeInKiB">The memory size m, in kibibytes: at least 8 times <paramref name="parallelism"/>.</param>
+    /// <param name="passes">The number of passes t over the memory: at least 1.</param>
+    /// <param name="destination">The buffer that receives the tag: its length, at least <see cref="MinOutputLength"/> bytes, is the length of the tag.</param>
+    /// <param name="secret">The secret value K (a pepper), usually empty.</param>
+    /// <param name="associatedData">The associated data X, usually empty.</param>
+    /// <param name="version">The version v.</param>
+    /// <exception cref="ArgumentOutOfRangeException">A parameter is out of the range allowed by RFC 9106.</exception>
+    /// <exception cref="OutOfMemoryException">The memory cannot be allocated.</exception>
+    public static void DeriveBytes(Argon2Type type, ReadOnlySpan<byte> password, ReadOnlySpan<byte> salt, int parallelism, int memorySizeInKiB, int passes, Span<byte> destination, ReadOnlySpan<byte> secret = default, ReadOnlySpan<byte> associatedData = default, Argon2Version version = Argon2Version.Version13)
     {
         if (type is not (Argon2Type.Argon2d or Argon2Type.Argon2i or Argon2Type.Argon2id))
         {
             throw new ArgumentOutOfRangeException(nameof(type), type, "The type of Argon2 is not supported.");
         }
 
-        if (version is not (Version10 or Version13))
+        if (version is not (Argon2Version.Version10 or Argon2Version.Version13))
         {
             throw new ArgumentOutOfRangeException(nameof(version), version, "The version of Argon2 is not supported.");
         }
@@ -69,19 +77,24 @@ internal static class Argon2
         ArgumentOutOfRangeException.ThrowIfLessThan(parallelism, 1);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(parallelism, MaxParallelism);
         ArgumentOutOfRangeException.ThrowIfLessThan(passes, 1);
-        ArgumentOutOfRangeException.ThrowIfLessThan(outputLength, MinOutputLength);
-        if (memoryKiB < 8L * parallelism)
+        if (destination.Length < MinOutputLength)
         {
-            throw new ArgumentOutOfRangeException(nameof(memoryKiB), memoryKiB, "The memory size must be at least 8 times the degree of parallelism.");
+            throw new ArgumentOutOfRangeException(nameof(destination), destination.Length, $"The length of the destination must be at least {MinOutputLength}.");
+        }
+
+        var outputLength = destination.Length;
+        if (memorySizeInKiB < 8L * parallelism)
+        {
+            throw new ArgumentOutOfRangeException(nameof(memorySizeInKiB), memorySizeInKiB, "The memory size must be at least 8 times the degree of parallelism.");
         }
 
         // https://www.rfc-editor.org/rfc/rfc9106#section-3.2: m' = 4 * p * floor(m / 4p) blocks, q = m' / p columns per lane
-        var segmentLength = memoryKiB / (SyncPoints * parallelism);
+        var segmentLength = memorySizeInKiB / (SyncPoints * parallelism);
         var laneLength = segmentLength * SyncPoints;
         var blockCount = laneLength * parallelism;
         if ((long)blockCount * QWordsInBlock > Array.MaxLength)
         {
-            throw new ArgumentOutOfRangeException(nameof(memoryKiB), memoryKiB, "The memory size is too large.");
+            throw new ArgumentOutOfRangeException(nameof(memorySizeInKiB), memorySizeInKiB, "The memory size is too large.");
         }
 
         var instance = new Instance(type, version, parallelism, passes, segmentLength, laneLength, blockCount);
@@ -93,15 +106,15 @@ internal static class Argon2
             Span<byte> h0 = stackalloc byte[Blake2b.MaxHashSize + 8];
             hasher.AppendUInt32LittleEndian((uint)parallelism);
             hasher.AppendUInt32LittleEndian((uint)outputLength);
-            hasher.AppendUInt32LittleEndian((uint)memoryKiB);
+            hasher.AppendUInt32LittleEndian((uint)memorySizeInKiB);
             hasher.AppendUInt32LittleEndian((uint)passes);
             hasher.AppendUInt32LittleEndian((uint)version);
             hasher.AppendUInt32LittleEndian((uint)type);
             AppendWithLength(hasher, password);
-            AppendWithLength(hasher, nonce);
+            AppendWithLength(hasher, salt);
             AppendWithLength(hasher, secret);
             AppendWithLength(hasher, associatedData);
-            hasher.Finish(h0[..Blake2b.MaxHashSize]);
+            hasher.GetHashAndReset(h0[..Blake2b.MaxHashSize]);
 
             // Steps 3 and 4: B[i][0] = H'^(1024)(H_0 || LE32(0) || LE32(i)) and B[i][1] = H'^(1024)(H_0 || LE32(1) || LE32(i))
             var blockBytes = new byte[BlockSize];
@@ -140,10 +153,8 @@ internal static class Argon2
             StoreBlock(final, blockBytes);
 
             // Step 8: Tag = H'^T(C)
-            var result = new byte[outputLength];
-            VariableLengthHash(hasher, blockBytes, result);
+            VariableLengthHash(hasher, blockBytes, destination);
             CryptographicOperations.ZeroMemory(blockBytes);
-            return result;
         }
         finally
         {
@@ -154,7 +165,7 @@ internal static class Argon2
     private static void AppendWithLength(Blake2b hasher, ReadOnlySpan<byte> value)
     {
         hasher.AppendUInt32LittleEndian((uint)value.Length);
-        hasher.Append(value);
+        hasher.AppendData(value);
     }
 
     /// <summary>The variable-length hash function H' (RFC 9106 section 3.3); the length T is the length of <paramref name="output"/>.</summary>
@@ -165,8 +176,8 @@ internal static class Argon2
         {
             hasher.Reset(length);
             hasher.AppendUInt32LittleEndian((uint)length);
-            hasher.Append(input);
-            hasher.Finish(output);
+            hasher.AppendData(input);
+            hasher.GetHashAndReset(output);
             return;
         }
 
@@ -176,20 +187,20 @@ internal static class Argon2
         Span<byte> v = stackalloc byte[Blake2b.MaxHashSize];
         hasher.Reset(Blake2b.MaxHashSize);
         hasher.AppendUInt32LittleEndian((uint)length);
-        hasher.Append(input);
-        hasher.Finish(v);
+        hasher.AppendData(input);
+        hasher.GetHashAndReset(v);
         v[..32].CopyTo(output);
         for (var i = 2; i <= r; i++)
         {
             hasher.Reset(Blake2b.MaxHashSize);
-            hasher.Append(v);
-            hasher.Finish(v);
+            hasher.AppendData(v);
+            hasher.GetHashAndReset(v);
             v[..32].CopyTo(output[((i - 1) * 32)..]);
         }
 
         hasher.Reset(length - (32 * r));
-        hasher.Append(v);
-        hasher.Finish(output[(32 * r)..]);
+        hasher.AppendData(v);
+        hasher.GetHashAndReset(output[(32 * r)..]);
         CryptographicOperations.ZeroMemory(v);
     }
 
@@ -307,7 +318,7 @@ internal static class Argon2
     private sealed class Instance
     {
         private readonly Argon2Type _type;
-        private readonly int _version;
+        private readonly Argon2Version _version;
         private readonly int _lanes;
         private readonly int _passes;
         private readonly int _segmentLength;
@@ -322,7 +333,7 @@ internal static class Argon2
         private readonly ulong[] _input = new ulong[QWordsInBlock];
         private readonly ulong[] _addresses = new ulong[QWordsInBlock];
 
-        public Instance(Argon2Type type, int version, int lanes, int passes, int segmentLength, int laneLength, int blockCount)
+        public Instance(Argon2Type type, Argon2Version version, int lanes, int passes, int segmentLength, int laneLength, int blockCount)
         {
             _type = type;
             _version = version;
@@ -373,7 +384,7 @@ internal static class Argon2
 
             var currentOffset = (lane * _laneLength) + (slice * _segmentLength) + startingIndex;
             var previousOffset = currentOffset % _laneLength == 0 ? currentOffset + _laneLength - 1 : currentOffset - 1;
-            var withXor = _version != Version10 && pass != 0;
+            var withXor = _version != Argon2Version.Version10 && pass != 0;
             for (var index = startingIndex; index < _segmentLength; index++, currentOffset++, previousOffset++)
             {
                 if (currentOffset % _laneLength == 1)

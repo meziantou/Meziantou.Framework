@@ -1,6 +1,7 @@
 using System.Buffers;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using Meziantou.Framework.Hashing;
 
 namespace Meziantou.Framework.Http;
 

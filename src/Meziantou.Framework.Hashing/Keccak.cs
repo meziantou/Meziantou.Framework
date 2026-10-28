@@ -1,151 +1,118 @@
 using System.Runtime.InteropServices;
 
-namespace Meziantou.Framework.WebPlatform.Cryptography;
+namespace Meziantou.Framework.Hashing;
 
 /// <summary>
 /// The hash functions and extendable-output functions built on Keccak: SHA-3 and SHAKE (FIPS 202), cSHAKE and KMAC
 /// (NIST SP 800-185), TurboSHAKE and KangarooTwelve (RFC 9861). The base class library cannot be used: its SHA-3 types are
-/// not supported on every platform (e.g. macOS), and it does not implement TurboSHAKE and KangarooTwelve.
+/// not supported on every platform (e.g. macOS), and it does not implement TurboSHAKE and KangarooTwelve. The public types
+/// (<see cref="Hashing.Sha3"/>, <see cref="Shake"/>, <see cref="Hashing.Kmac"/>, <see cref="Hashing.TurboShake"/> and
+/// <see cref="Hashing.KangarooTwelve"/>) validate the arguments and call these methods.
 /// </summary>
 internal static class Keccak
 {
     // https://www.rfc-editor.org/rfc/rfc9861#section-3: the size of the chunks of the KangarooTwelve tree
     private const int KangarooTwelveChunkSize = 8192;
 
-    /// <summary>SHA3-256, SHA3-384 or SHA3-512 (FIPS 202 §6.1).</summary>
-    /// <param name="bits">The size of the digest in bits: 256, 384 or 512.</param>
-    public static byte[] Sha3(int bits, ReadOnlySpan<byte> data)
+    /// <summary>SHA3-224, SHA3-256, SHA3-384 or SHA3-512 (FIPS 202 §6.1), written to <paramref name="destination"/>.</summary>
+    public static void Sha3(int hashSizeInBits, ReadOnlySpan<byte> source, Span<byte> destination)
     {
-        var output = new byte[GetSha3Length(bits)];
-        Sha3(bits, data, output);
-        return output;
-    }
-
-    /// <summary>SHA3-256, SHA3-384 or SHA3-512 (FIPS 202 §6.1), written to <paramref name="output"/>.</summary>
-    public static void Sha3(int bits, ReadOnlySpan<byte> data, Span<byte> output)
-    {
-        var length = GetSha3Length(bits);
-        if (output.Length != length)
-            throw new ArgumentException("The output length does not match the digest size.", nameof(output));
+        var length = GetSha3Length(hashSizeInBits);
+        if (destination.Length != length)
+            throw new ArgumentException("The length of the destination must be the size of the digest.", nameof(destination));
 
         // SHA3-d(M) = KECCAK[2d](M || 01, d): the rate is 1600 - 2d bits
         var sponge = new KeccakSponge(200 - (2 * length), 0x06);
-        sponge.Absorb(data);
-        sponge.Squeeze(output);
-    }
-
-    /// <summary>SHAKE128 or SHAKE256 (FIPS 202 §6.2).</summary>
-    public static byte[] Shake(int securityBits, ReadOnlySpan<byte> data, int outputLength)
-    {
-        ArgumentOutOfRangeException.ThrowIfNegative(outputLength);
-        var output = new byte[outputLength];
-        Shake(securityBits, data, output);
-        return output;
-    }
-
-    /// <summary>SHAKE128 or SHAKE256 (FIPS 202 §6.2), filling <paramref name="output"/>.</summary>
-    public static void Shake(int securityBits, ReadOnlySpan<byte> data, Span<byte> output)
-    {
-        var sponge = new KeccakSponge(GetRate(securityBits), 0x1F);
-        sponge.Absorb(data);
-        sponge.Squeeze(output);
+        sponge.Absorb(source);
+        sponge.Squeeze(destination);
     }
 
     /// <summary>
     /// cSHAKE128 or cSHAKE256 (NIST SP 800-185 §3.3): when the function name N and the customization string S are both
-    /// empty, cSHAKE is SHAKE.
+    /// empty, cSHAKE is SHAKE128 or SHAKE256 (FIPS 202 §6.2). The output fills <paramref name="destination"/>.
     /// </summary>
-    /// <param name="securityBits">128 or 256.</param>
-    /// <param name="outputLength">The length L of the output, in bytes.</param>
-    public static byte[] CShake(int securityBits, ReadOnlySpan<byte> data, int outputLength, ReadOnlySpan<byte> functionName, ReadOnlySpan<byte> customization)
+    public static void CShake(int securityStrength, ReadOnlySpan<byte> source, Span<byte> destination, ReadOnlySpan<byte> functionName, ReadOnlySpan<byte> customization)
     {
-        ArgumentOutOfRangeException.ThrowIfNegative(outputLength);
-        var output = new byte[outputLength];
-        var sponge = CreateCShake(securityBits, functionName, customization);
-        sponge.Absorb(data);
-        sponge.Squeeze(output);
-        return output;
+        var sponge = CreateCShake(securityStrength, functionName, customization);
+        sponge.Absorb(source);
+        sponge.Squeeze(destination);
     }
 
     /// <summary>
     /// KMAC128 or KMAC256 (NIST SP 800-185 §4.3): cSHAKE(bytepad(encode_string(K), rate) || X || right_encode(L), L,
-    /// "KMAC", S).
+    /// "KMAC", S). The length L is the length of <paramref name="destination"/>.
     /// </summary>
-    /// <param name="securityBits">128 or 256.</param>
-    /// <param name="outputLength">The length L of the output, in bytes.</param>
-    public static byte[] Kmac(int securityBits, ReadOnlySpan<byte> key, ReadOnlySpan<byte> data, int outputLength, ReadOnlySpan<byte> customization)
+    public static void Kmac(int securityStrength, ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination, ReadOnlySpan<byte> customization)
     {
-        ArgumentOutOfRangeException.ThrowIfNegative(outputLength);
-        var sponge = CreateCShake(securityBits, "KMAC"u8, customization);
-        AbsorbLeftEncode(ref sponge, (ulong)GetRate(securityBits));
+        var sponge = CreateCShake(securityStrength, "KMAC"u8, customization);
+        AbsorbLeftEncode(ref sponge, (ulong)GetRate(securityStrength));
         AbsorbEncodeString(ref sponge, key);
         sponge.AbsorbZeroPadding();
-        sponge.Absorb(data);
-        AbsorbRightEncode(ref sponge, (ulong)outputLength * 8);
-
-        var output = new byte[outputLength];
-        sponge.Squeeze(output);
+        sponge.Absorb(source);
+        AbsorbRightEncode(ref sponge, (ulong)destination.Length * 8);
+        sponge.Squeeze(destination);
         sponge.Clear();
-        return output;
     }
 
-    /// <summary>TurboSHAKE128 or TurboSHAKE256 (RFC 9861 §2.2): the sponge over Keccak-p[1600, 12].</summary>
-    /// <param name="securityBits">128 or 256.</param>
-    /// <param name="outputLength">The length L of the output, in bytes.</param>
-    /// <param name="domainSeparation">The domain separation byte D, in the range 0x01 to 0x7F (0x1F by default).</param>
-    public static byte[] TurboShake(int securityBits, ReadOnlySpan<byte> data, int outputLength, byte domainSeparation = 0x1F)
+    /// <summary>
+    /// TurboSHAKE128 or TurboSHAKE256 (RFC 9861 §2.2): the sponge over Keccak-p[1600, 12]. The output fills
+    /// <paramref name="destination"/>.
+    /// </summary>
+    public static void TurboShake(int securityStrength, ReadOnlySpan<byte> source, Span<byte> destination, byte domainSeparation)
     {
-        ArgumentOutOfRangeException.ThrowIfNegative(outputLength);
+        var rate = GetRate(securityStrength);
         if (domainSeparation is 0 or > 0x7F)
-            throw new ArgumentOutOfRangeException(nameof(domainSeparation));
+            throw new ArgumentOutOfRangeException(nameof(domainSeparation), domainSeparation, "The domain separation byte must be in the range 0x01 to 0x7F.");
 
-        var output = new byte[outputLength];
-        var sponge = new KeccakSponge(GetRate(securityBits), domainSeparation, rounds: 12);
-        sponge.Absorb(data);
-        sponge.Squeeze(output);
-        return output;
+        var sponge = new KeccakSponge(rate, domainSeparation, rounds: 12);
+        sponge.Absorb(source);
+        sponge.Squeeze(destination);
     }
 
-    /// <summary>KT128 or KT256 (RFC 9861 §3), the KangarooTwelve tree hash over TurboSHAKE128 or TurboSHAKE256.</summary>
-    /// <param name="securityBits">128 (KT128) or 256 (KT256).</param>
-    /// <param name="outputLength">The length L of the output, in bytes.</param>
-    /// <param name="customization">The customization string C.</param>
-    public static byte[] KangarooTwelve(int securityBits, ReadOnlySpan<byte> data, int outputLength, ReadOnlySpan<byte> customization)
+    /// <summary>
+    /// KT128 or KT256 (RFC 9861 §3), the KangarooTwelve tree hash over TurboSHAKE128 or TurboSHAKE256. The output fills
+    /// <paramref name="destination"/>.
+    /// </summary>
+    public static void KangarooTwelve(int securityStrength, ReadOnlySpan<byte> source, Span<byte> destination, ReadOnlySpan<byte> customization)
     {
-        ArgumentOutOfRangeException.ThrowIfNegative(outputLength);
-        var rate = GetRate(securityBits);
-        var output = new byte[outputLength];
+        var rate = GetRate(securityStrength);
 
         // S = M || C || length_encode(|C|)
         Span<byte> customizationLength = stackalloc byte[9];
         customizationLength = customizationLength[..LengthEncode((ulong)customization.Length, customizationLength)];
-        var totalLength = (long)data.Length + customization.Length + customizationLength.Length;
+        var totalLength = (long)source.Length + customization.Length + customizationLength.Length;
         if (totalLength <= KangarooTwelveChunkSize)
         {
             // Single node: TurboSHAKE(S, 0x07, L)
             var sponge = new KeccakSponge(rate, 0x07, rounds: 12);
-            sponge.Absorb(data);
+            sponge.Absorb(source);
             sponge.Absorb(customization);
             sponge.Absorb(customizationLength);
-            sponge.Squeeze(output);
-            return output;
+            sponge.Squeeze(destination);
+            return;
         }
 
-        var tree = new KangarooTwelveTree(rate, securityBits == 128 ? 32 : 64);
-        tree.Absorb(data);
+        var tree = new KangarooTwelveTree(rate, securityStrength == 128 ? 32 : 64);
+        tree.Absorb(source);
         tree.Absorb(customization);
         tree.Absorb(customizationLength);
-        tree.Finish(output);
-        return output;
+        tree.Finish(destination);
+    }
+
+    /// <summary>Allocates the array of an output of <paramref name="outputLength"/> bytes.</summary>
+    public static byte[] AllocateOutput(int outputLength)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(outputLength);
+        return new byte[outputLength];
     }
 
     /// <summary>
     /// Creates the sponge of cSHAKE128 or cSHAKE256 after the absorption of bytepad(encode_string(N) || encode_string(S),
     /// rate) (NIST SP 800-185 §3.3), or the sponge of SHAKE when N and S are empty.
     /// </summary>
-    internal static KeccakSponge CreateCShake(int securityBits, ReadOnlySpan<byte> functionName, ReadOnlySpan<byte> customization)
+    internal static KeccakSponge CreateCShake(int securityStrength, ReadOnlySpan<byte> functionName, ReadOnlySpan<byte> customization)
     {
-        var rate = GetRate(securityBits);
+        var rate = GetRate(securityStrength);
         if (functionName.IsEmpty && customization.IsEmpty)
             return new KeccakSponge(rate, 0x1F);
 
@@ -216,22 +183,24 @@ internal static class Keccak
         return length + 1;
     }
 
-    private static int GetRate(int securityBits)
+    /// <summary>Gets the rate of the functions of a security strength (128 or 256 bits), in bytes.</summary>
+    public static int GetRate(int securityStrength)
     {
-        return securityBits switch
+        return securityStrength switch
         {
             128 => KeccakSponge.Rate128,
             256 => KeccakSponge.Rate256,
-            _ => throw new ArgumentOutOfRangeException(nameof(securityBits)),
+            _ => throw new ArgumentOutOfRangeException(nameof(securityStrength), securityStrength, "The security strength must be 128 or 256 bits."),
         };
     }
 
-    private static int GetSha3Length(int bits)
+    /// <summary>Gets the size of a SHA-3 digest (224, 256, 384 or 512 bits), in bytes.</summary>
+    public static int GetSha3Length(int hashSizeInBits)
     {
-        return bits switch
+        return hashSizeInBits switch
         {
-            224 or 256 or 384 or 512 => bits / 8,
-            _ => throw new ArgumentOutOfRangeException(nameof(bits)),
+            224 or 256 or 384 or 512 => hashSizeInBits / 8,
+            _ => throw new ArgumentOutOfRangeException(nameof(hashSizeInBits), hashSizeInBits, "The size of a SHA-3 digest must be 224, 256, 384 or 512 bits."),
         };
     }
 

@@ -54,6 +54,8 @@
   <ItemGroup>
     <!-- The font reader and the shaper, shared with Meziantou.Framework.Imaging; their API is internal -->
     <ProjectReference Include="..\Meziantou.Framework.Fonts\Meziantou.Framework.Fonts.csproj" />
+    <!-- SHA-3, SHAKE, cSHAKE, KMAC, TurboSHAKE, KangarooTwelve and Argon2 of the Web Cryptography API -->
+    <ProjectReference Include="..\Meziantou.Framework.Hashing\Meziantou.Framework.Hashing.csproj" />
     <!-- The properties of the code points, the normalization, the case mappings and IDNA (independent of the OS and ICU) -->
     <ProjectReference Include="..\Meziantou.Framework.Unicode\Meziantou.Framework.Unicode.csproj" />
     <!-- The word lists and the dictionary break engines of ICU (the lexical word breaking of the Southeast Asian scripts) -->

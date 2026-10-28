@@ -166,5 +166,5 @@ public sealed class MlDsaTests
         Assert.Throws<ArgumentException>(() => MlDsa.Sign(44, new byte[32], [], new byte[256]));
     }
 
-    private static string Sha3(byte[] data) => Convert.ToHexStringLower(Keccak.Sha3(256, data));
+    private static string Sha3(byte[] data) => Convert.ToHexStringLower(Hashing.Sha3.HashData(256, data));
 }

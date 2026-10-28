@@ -1,6 +1,7 @@
 using System.Buffers;
 using System.Buffers.Binary;
 using System.IO.Compression;
+using Meziantou.Framework.Hashing;
 using Meziantou.Framework.Imaging.Internals;
 
 namespace Meziantou.Framework.Imaging.Tests.Codecs;
@@ -85,7 +86,7 @@ internal static class SyntheticImages
             Encoding.ASCII.GetBytes(type, header[4..]);
             Append(header);
             Append(data);
-            var crc = Crc32.Finish(Crc32.Update(Crc32.Update(Crc32.Initial, header[4..]), data));
+            var crc = Crc32.Append(Crc32.Compute(header[4..]), data);
             Span<byte> crcBytes = stackalloc byte[4];
             BinaryPrimitives.WriteUInt32BigEndian(crcBytes, corruptCrc ? ~crc : crc);
             Append(crcBytes);

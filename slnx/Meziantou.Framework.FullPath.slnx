@@ -32,7 +32,6 @@
   </Folder>
   <Folder Name="/src/">
     <Project Path="../src/Meziantou.Framework.Barcodes/Meziantou.Framework.Barcodes.csproj" />
-    <Project Path="../src/Meziantou.Framework.Bcrypt/Meziantou.Framework.Bcrypt.csproj" />
     <Project Path="../src/Meziantou.Framework.Bencode/Meziantou.Framework.Bencode.csproj" />
     <Project Path="../src/Meziantou.Framework.CodeOwners/Meziantou.Framework.CodeOwners.csproj" />
     <Project Path="../src/Meziantou.Framework.CommandLine/Meziantou.Framework.CommandLine.csproj" />
@@ -46,6 +45,7 @@
     <Project Path="../src/Meziantou.Framework.FullPath.CodeFix/Meziantou.Framework.FullPath.CodeFix.csproj" />
     <Project Path="../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
     <Project Path="../src/Meziantou.Framework.Globbing/Meziantou.Framework.Globbing.csproj" />
+    <Project Path="../src/Meziantou.Framework.Hashing/Meziantou.Framework.Hashing.csproj" />
     <Project Path="../src/Meziantou.Framework.HtmlSanitizer/Meziantou.Framework.HtmlSanitizer.csproj" />
     <Project Path="../src/Meziantou.Framework.Http.Caching/Meziantou.Framework.Http.Caching.csproj" />
     <Project Path="../src/Meziantou.Framework.Http.Htpasswd/Meziantou.Framework.Http.Htpasswd.csproj" />

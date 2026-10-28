@@ -1,6 +1,4 @@
-using Meziantou.Framework.WebPlatform.Cryptography;
-
-namespace Meziantou.Framework.WebPlatform.Tests.Cryptography;
+namespace Meziantou.Framework.Hashing.Tests;
 
 // SHA-3 and SHAKE (FIPS 202), cSHAKE and KMAC (NIST SP 800-185), TurboSHAKE and KangarooTwelve (RFC 9861)
 public sealed class KeccakTests
@@ -125,42 +123,126 @@ public sealed class KeccakTests
 
     [Theory]
     [MemberData(nameof(Sha3Vectors))]
-    public void Sha3(int bits, string source, string expected)
+    public void Sha3_Vectors(int bits, string source, string expected)
     {
-        Assert.Equal(expected, Convert.ToHexStringLower(Keccak.Sha3(bits, GetSourceData(source))));
+        Assert.Equal(expected, Convert.ToHexStringLower(Sha3.HashData(bits, GetSourceData(source))));
+
+        var destination = new byte[bits / 8];
+        Sha3.HashData(bits, GetSourceData(source), destination);
+        Assert.Equal(expected, Convert.ToHexStringLower(destination));
+    }
+
+    [Fact]
+    public void Sha3_224()
+    {
+        // FIPS 202 example values (SHA3-224_Msg0.pdf)
+        Assert.Equal("6b4e03423667dbb73b6e15454f0eb1abd4597f9a1b078e3f5b5a6bc7", Convert.ToHexStringLower(Sha3.HashData(224, [])));
+    }
+
+    [Fact]
+    public void Sha3_Usage()
+    {
+        #region Sha3_Usage
+        var digest = Sha3.HashData(256, "abc"u8);
+        Assert.Equal("3a985da74fe225b2045c172d6bd390bd855f086e3e9d525b46bfe24511431532", Convert.ToHexStringLower(digest));
+        #endregion
+    }
+
+    [Theory]
+    [InlineData(31)]
+    [InlineData(33)]
+    public void Sha3_DestinationOfAnotherLength_Throws(int length)
+    {
+        Assert.Throws<ArgumentException>("destination", () => Sha3.HashData(256, [], new byte[length]));
     }
 
     [Theory]
     [MemberData(nameof(ShakeVectors))]
-    public void Shake(int securityBits, string source, string expected)
+    public void Shake_Vectors(int securityBits, string source, string expected)
     {
         var data = GetSourceData(source);
-        Assert.Equal(expected, Convert.ToHexStringLower(Keccak.Shake(securityBits, data, 64)));
-        Assert.Equal(expected, Convert.ToHexStringLower(Keccak.CShake(securityBits, data, 64, [], [])));
+        Assert.Equal(expected, Convert.ToHexStringLower(Shake.HashData(securityBits, data, 64)));
+        Assert.Equal(expected, Convert.ToHexStringLower(Shake.HashData(securityBits, data, 64, [], [])));
 
         // The output of an extendable-output function is a prefix of the longer outputs
-        Assert.Equal(expected[..64], Convert.ToHexStringLower(Keccak.CShake(securityBits, data, 32, [], [])));
-        Assert.Empty(Keccak.CShake(securityBits, data, 0, [], []));
+        Assert.Equal(expected[..64], Convert.ToHexStringLower(Shake.HashData(securityBits, data, 32, [], [])));
+        Assert.Empty(Shake.HashData(securityBits, data, 0, [], []));
+
+        var destination = new byte[64];
+        Shake.HashData(securityBits, data, destination);
+        Assert.Equal(expected, Convert.ToHexStringLower(destination));
+    }
+
+    [Fact]
+    public void Shake_Usage()
+    {
+        #region Shake_Usage
+        // SHAKE256 of "abc", 32 bytes of output
+        var output = Shake.HashData(256, "abc"u8, outputLength: 32);
+
+        // The same output, with the data appended and the output read in several parts
+        var shake = new Shake(256);
+        shake.AppendData("a"u8);
+        shake.AppendData("bc"u8);
+        var first = new byte[16];
+        var second = new byte[16];
+        shake.Read(first);
+        shake.Read(second);
+        Assert.Equal(output, first.Concat(second).ToArray());
+        #endregion
+    }
+
+    [Fact]
+    public void Shake_AppendDataAfterRead_Throws()
+    {
+        var shake = new Shake(128);
+        shake.AppendData([1, 2, 3]);
+        _ = shake.ReadByte();
+        Assert.Throws<InvalidOperationException>(() => shake.AppendData([4]));
+        Assert.Throws<InvalidOperationException>(() => shake.AppendData(4));
+    }
+
+    [Fact]
+    public void Shake_Reset_RestartsWithTheSameParameters()
+    {
+        var expected = Shake.HashData(256, [1, 2, 3], 32, [], "Email Signature"u8);
+        var shake = new Shake(256, customization: "Email Signature"u8);
+        Assert.Equal(256, shake.SecurityStrength);
+        shake.AppendData([9, 9, 9]);
+        var discarded = new byte[10];
+        shake.Read(discarded);
+
+        shake.Reset();
+        shake.AppendData(1);
+        shake.AppendData([2, 3]);
+        var output = new byte[32];
+        output[0] = shake.ReadByte();
+        shake.Read(output.AsSpan(1));
+        Assert.Equal(expected, output);
     }
 
     [Theory]
     [MemberData(nameof(CShakeVectors))]
-    public void CShake(int securityBits, int dataLength, int outputLength, string expected)
+    public void CShake_Vectors(int securityBits, int dataLength, int outputLength, string expected)
     {
         var data = Enumerable.Range(0, dataLength).Select(i => (byte)i).ToArray();
-        var result = Keccak.CShake(securityBits, data, outputLength, [], "Email Signature"u8);
+        var result = Shake.HashData(securityBits, data, outputLength, [], "Email Signature"u8);
         Assert.Equal(expected, Convert.ToHexStringLower(result));
     }
 
     [Theory]
     [MemberData(nameof(KmacVectors))]
-    public void Kmac(int securityBits, int dataLength, bool customized, int outputLength, string expected)
+    public void Kmac_Vectors(int securityBits, int dataLength, bool customized, int outputLength, string expected)
     {
         var key = Enumerable.Range(0x40, 32).Select(i => (byte)i).ToArray();
         var data = Enumerable.Range(0, dataLength).Select(i => (byte)i).ToArray();
         var customization = customized ? "My Tagged Application"u8 : [];
-        var result = Keccak.Kmac(securityBits, key, data, outputLength, customization);
+        var result = Kmac.HashData(securityBits, key, data, outputLength, customization);
         Assert.Equal(expected, Convert.ToHexStringLower(result));
+
+        var destination = new byte[outputLength];
+        Kmac.HashData(securityBits, key, data, destination, customization);
+        Assert.Equal(expected, Convert.ToHexStringLower(destination));
     }
 
     [Fact]
@@ -168,17 +250,21 @@ public sealed class KeccakTests
     {
         // KMAC (not KMACXOF): the requested length is absorbed, so a shorter output is not a prefix of a longer one
         var key = new byte[32];
-        var longer = Keccak.Kmac(128, key, [1, 2, 3], 64, []);
-        var shorter = Keccak.Kmac(128, key, [1, 2, 3], 32, []);
+        var longer = Kmac.HashData(128, key, [1, 2, 3], 64, []);
+        var shorter = Kmac.HashData(128, key, [1, 2, 3], 32, []);
         Assert.NotEqual(longer.AsSpan(0, 32).ToArray(), shorter);
     }
 
     [Theory]
     [MemberData(nameof(TurboShakeVectors))]
-    public void TurboShake(int securityBits, string input, byte domainSeparation, string expected)
+    public void TurboShake_Vectors(int securityBits, string input, byte domainSeparation, string expected)
     {
-        var result = Keccak.TurboShake(securityBits, GetData(input), expected.Length / 2, domainSeparation);
+        var result = TurboShake.HashData(securityBits, GetData(input), expected.Length / 2, domainSeparation);
         Assert.Equal(expected, Convert.ToHexStringLower(result));
+
+        var destination = new byte[expected.Length / 2];
+        TurboShake.HashData(securityBits, GetData(input), destination, domainSeparation);
+        Assert.Equal(expected, Convert.ToHexStringLower(destination));
     }
 
     [Theory]
@@ -187,24 +273,28 @@ public sealed class KeccakTests
     public void TurboShake_LongOutput(int securityBits, string expectedEnd)
     {
         // RFC 9861 §5: the last 32 bytes of the 10032 bytes of output of the empty message
-        var result = Keccak.TurboShake(securityBits, [], 10032);
+        var result = TurboShake.HashData(securityBits, [], 10032);
         Assert.Equal(expectedEnd, Convert.ToHexStringLower(result.AsSpan(10000)));
     }
 
     [Theory]
     [InlineData(0)]
     [InlineData(0x80)]
-    public void TurboShake_InvalidDomainSeparation(byte domainSeparation)
+    public void TurboShake_InvalidDomainSeparation(byte value)
     {
-        Assert.Throws<ArgumentOutOfRangeException>(() => Keccak.TurboShake(128, [], 32, domainSeparation));
+        Assert.Throws<ArgumentOutOfRangeException>("domainSeparation", () => TurboShake.HashData(128, [], 32, value));
     }
 
     [Theory]
     [MemberData(nameof(KangarooTwelveVectors))]
-    public void KangarooTwelve(int securityBits, string input, string customization, string expected)
+    public void KangarooTwelve_Vectors(int securityBits, string input, string customization, string expected)
     {
-        var result = Keccak.KangarooTwelve(securityBits, GetData(input), expected.Length / 2, GetData(customization));
+        var result = KangarooTwelve.HashData(securityBits, GetData(input), expected.Length / 2, GetData(customization));
         Assert.Equal(expected, Convert.ToHexStringLower(result));
+
+        var destination = new byte[expected.Length / 2];
+        KangarooTwelve.HashData(securityBits, GetData(input), destination, GetData(customization));
+        Assert.Equal(expected, Convert.ToHexStringLower(destination));
     }
 
     [Theory]
@@ -213,7 +303,7 @@ public sealed class KeccakTests
     public void KangarooTwelve_LongOutput(int securityBits, int outputLength, string expectedEnd)
     {
         // RFC 9861 §5: the end of a long output of the empty message
-        var result = Keccak.KangarooTwelve(securityBits, [], outputLength, []);
+        var result = KangarooTwelve.HashData(securityBits, [], outputLength, []);
         Assert.Equal(expectedEnd, Convert.ToHexStringLower(result.AsSpan(outputLength - (expectedEnd.Length / 2))));
     }
 
@@ -222,19 +312,19 @@ public sealed class KeccakTests
     {
         // Absorbing and squeezing in pieces of any size gives the same result as a single call, across block boundaries
         var data = GetData("ptn:1000");
-        var expected = Keccak.Shake(128, data, 500);
+        var expected = Shake.HashData(128, data, 500);
         foreach (var step in new[] { 1, 3, 7, 8, 100, 167, 168, 169, 1000 })
         {
-            var sponge = KeccakSponge.CreateShake128();
+            var sponge = new Shake(128);
             for (var i = 0; i < data.Length; i += step)
             {
-                sponge.Absorb(data.AsSpan(i, Math.Min(step, data.Length - i)));
+                sponge.AppendData(data.AsSpan(i, Math.Min(step, data.Length - i)));
             }
 
             var output = new byte[expected.Length];
             for (var i = 0; i < output.Length; i += step)
             {
-                sponge.Squeeze(output.AsSpan(i, Math.Min(step, output.Length - i)));
+                sponge.Read(output.AsSpan(i, Math.Min(step, output.Length - i)));
             }
 
             Assert.Equal(expected, output);
@@ -246,16 +336,27 @@ public sealed class KeccakTests
     [InlineData(192)]
     public void InvalidSecurityStrength(int securityBits)
     {
-        Assert.Throws<ArgumentOutOfRangeException>(() => Keccak.CShake(securityBits, [], 32, [], []));
-        Assert.Throws<ArgumentOutOfRangeException>(() => Keccak.Kmac(securityBits, [], [], 32, []));
-        Assert.Throws<ArgumentOutOfRangeException>(() => Keccak.TurboShake(securityBits, [], 32));
-        Assert.Throws<ArgumentOutOfRangeException>(() => Keccak.KangarooTwelve(securityBits, [], 32, []));
+        Assert.Throws<ArgumentOutOfRangeException>("securityStrength", () => new Shake(securityBits));
+        Assert.Throws<ArgumentOutOfRangeException>("securityStrength", () => Shake.HashData(securityBits, [], 32));
+        Assert.Throws<ArgumentOutOfRangeException>("securityStrength", () => Shake.HashData(securityBits, [], 32, [], "S"u8));
+        Assert.Throws<ArgumentOutOfRangeException>("securityStrength", () => Kmac.HashData(securityBits, [], [], 32));
+        Assert.Throws<ArgumentOutOfRangeException>("securityStrength", () => TurboShake.HashData(securityBits, [], 32));
+        Assert.Throws<ArgumentOutOfRangeException>("securityStrength", () => KangarooTwelve.HashData(securityBits, [], 32));
+    }
+
+    [Fact]
+    public void NegativeOutputLength_Throws()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>("outputLength", () => Shake.HashData(128, [], -1));
+        Assert.Throws<ArgumentOutOfRangeException>("outputLength", () => Kmac.HashData(128, [], [], -1));
+        Assert.Throws<ArgumentOutOfRangeException>("outputLength", () => TurboShake.HashData(128, [], -1));
+        Assert.Throws<ArgumentOutOfRangeException>("outputLength", () => KangarooTwelve.HashData(128, [], -1));
     }
 
     [Fact]
     public void Sha3_InvalidLength()
     {
-        Assert.Throws<ArgumentOutOfRangeException>(() => Keccak.Sha3(128, []));
+        Assert.Throws<ArgumentOutOfRangeException>("hashSizeInBits", () => Sha3.HashData(128, []));
     }
 
     private static byte[] GetSourceData(string source)

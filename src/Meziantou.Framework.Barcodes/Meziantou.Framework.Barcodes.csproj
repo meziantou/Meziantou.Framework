@@ -10,4 +10,9 @@
     <NoWarn>$(NoWarn);CA1814</NoWarn>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- The CRC-32 of PNG chunks -->
+    <ProjectReference Include="..\Meziantou.Framework.Hashing\Meziantou.Framework.Hashing.csproj" />
+  </ItemGroup>
+
 </Project>

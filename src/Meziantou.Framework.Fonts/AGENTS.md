@@ -21,10 +21,11 @@ These instructions complete the repository-level `AGENTS.md`.
   (`AfmFontMetrics` and the `Afm*` types it returns): it is a standalone reader of font metrics, public so that
   applications (PDF writers, text measurement) can read AFM files; `Meziantou.Framework.Pdf` reads the metrics of the
   standard fonts with `AfmFontMetrics.GetStandardFont`.
-- `Adler32`, `DeterministicAngle` (`Infrastructure/`) and `FontTags` are compiled into `Meziantou.Framework.Imaging`
+- `DeterministicAngle` (`Infrastructure/`) and `FontTags` are compiled into `Meziantou.Framework.Imaging`
   too, in its namespace (`MEZIANTOU_FRAMEWORK_IMAGING`): they are helpers, not font API, and stay internal to both
   assemblies. WebPlatform has its own tag constants (`OpenTypeTag`).
-- **The code depends on nothing of the packages that use it.** Its only dependency is `Meziantou.Framework.Unicode`.
+- **The code depends on nothing of the packages that use it.** Its dependencies are `Meziantou.Framework.Unicode` and
+  `Meziantou.Framework.Hashing` (the Adler-32 checksum of WOFF tables).
   What it needs from its caller is a `FontEnvironment`: the `FontResourceLimits`, and a `FontAllocator` for the
   temporary buffers (the allocation scopes of Imaging). It throws its own exceptions
   (`InvalidFontException`, `UnsupportedFontFeatureException`, `UnknownFontFormatException`,

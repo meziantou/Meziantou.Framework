@@ -3,13 +3,17 @@ using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using ArmCrc32 = System.Runtime.Intrinsics.Arm.Crc32;
 
-namespace Meziantou.Framework.Imaging.Internals;
+namespace Meziantou.Framework.Hashing;
 
 /// <summary>
-/// The CRC-32 of ISO 3309 / ITU-T V.42 used by PNG chunks (reflected polynomial 0xEDB88320, initial and final XOR
-/// 0xFFFFFFFF), computed with the table-driven method described in the PNG specification, Annex D (sample CRC code).
+/// Computes the CRC-32 of ISO 3309 / ITU-T V.42 (CRC-32/ISO-HDLC): the CRC of zlib, gzip, ZIP, PNG and Ethernet (reflected
+/// polynomial 0xEDB88320, initial and final XOR 0xFFFFFFFF).
 /// </summary>
 /// <remarks>
+/// <para>
+/// The implementation uses the CRC32 instructions of Arm64 processors and the carry-less multiplication of x64 processors
+/// when they are available; it computes the same value as the byte-at-a-time method of the PNG specification, Annex D.
+/// </para>
 /// <para>
 /// <see cref="UpdateTables"/> processes 8 bytes per step with eight derived tables ("slicing by 8"): table <c>k</c> gives the
 /// contribution of a byte followed by <c>k</c> zero bytes, <c>T[k][i] = (T[k - 1][i] &gt;&gt; 8) ^ T[0][T[k - 1][i] &amp; 0xFF]</c>,
@@ -33,7 +37,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// layout as a block, without a shift. The constants are computed from <c>P</c> when the type is initialized.
 /// </para>
 /// </remarks>
-internal static class Crc32
+public static class Crc32
 {
     private static readonly uint[] Table = CreateTable();
     private static readonly uint[] SlicingTables = CreateSlicingTables(Table);
@@ -42,11 +46,23 @@ internal static class Crc32
     private static readonly Vector128<ulong> Fold128 = Vector128.Create(GetFoldingConstant(128 + 64), GetFoldingConstant(128));
     private static readonly Vector128<ulong> Fold512 = Vector128.Create(GetFoldingConstant(512 + 64), GetFoldingConstant(512));
 
-    /// <summary>Gets the initial running value.</summary>
-    public const uint Initial = 0xFFFFFFFF;
+    /// <summary>Gets the initial running value of <see cref="Update"/>.</summary>
+    internal const uint Initial = 0xFFFFFFFF;
+
+    /// <summary>Computes the CRC-32 of data.</summary>
+    /// <param name="data">The data.</param>
+    /// <returns>The CRC-32 of <paramref name="data"/>; 0 when it is empty.</returns>
+    public static uint Compute(ReadOnlySpan<byte> data) => Finish(Update(Initial, data));
+
+    /// <summary>Computes the CRC-32 of data that follows other data, from the CRC-32 of the other data.</summary>
+    /// <param name="crc">The CRC-32 of the preceding data: 0 when there is none.</param>
+    /// <param name="data">The data that follows.</param>
+    /// <returns>The CRC-32 of the preceding data followed by <paramref name="data"/>.</returns>
+    /// <remarks><c>Append(Compute(a), b)</c> is <c>Compute(a + b)</c>: use it to compute the CRC-32 of data received in several parts.</remarks>
+    public static uint Append(uint crc, ReadOnlySpan<byte> data) => Finish(Update(Finish(crc), data));
 
     /// <summary>Updates a running (non-finalized) CRC with more bytes.</summary>
-    public static uint Update(uint crc, ReadOnlySpan<byte> data)
+    internal static uint Update(uint crc, ReadOnlySpan<byte> data)
     {
         if (!ArmCrc32.Arm64.IsSupported)
             return Pclmulqdq.IsSupported ? UpdateCarrylessMultiply(crc, data) : UpdateTables(crc, data);
@@ -135,11 +151,8 @@ internal static class Crc32
         return crc;
     }
 
-    /// <summary>Finalizes a running CRC.</summary>
-    public static uint Finish(uint crc) => crc ^ 0xFFFFFFFF;
-
-    /// <summary>Computes the CRC of a complete buffer.</summary>
-    public static uint Compute(ReadOnlySpan<byte> data) => Finish(Update(Initial, data));
+    /// <summary>Finalizes a running CRC, or turns a final CRC back into a running CRC.</summary>
+    internal static uint Finish(uint crc) => crc ^ 0xFFFFFFFF;
 
     private static uint[] CreateTable()
     {

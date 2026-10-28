@@ -109,10 +109,10 @@ public class KernelBenchmarks : IDisposable
     }
 
     [Benchmark]
-    public uint Crc32() => Internals.Crc32.Compute(_row);
+    public uint Crc32() => Hashing.Crc32.Compute(_row);
 
     [Benchmark]
-    public uint Adler32() => Imaging.Adler32.Compute(_row);
+    public uint Adler32() => Hashing.Adler32.Compute(_row);
 
     [Benchmark(OperationsPerInvoke = 4096)]
     public int GifNearestScalar()

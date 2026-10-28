@@ -15,6 +15,8 @@
     <ProjectReference Include="..\Meziantou.Framework.Unicode\Meziantou.Framework.Unicode.csproj" />
     <!-- The font reader and the shaper, shared with Meziantou.Framework.WebPlatform -->
     <ProjectReference Include="..\Meziantou.Framework.Fonts\Meziantou.Framework.Fonts.csproj" />
+    <!-- The CRC-32 of PNG and the Adler-32 of zlib -->
+    <ProjectReference Include="..\Meziantou.Framework.Hashing\Meziantou.Framework.Hashing.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -27,7 +29,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\Meziantou.Framework.Fonts\Infrastructure\Adler32.cs" Link="Internals\Shared\Adler32.cs" />
     <Compile Include="..\Meziantou.Framework.Fonts\Infrastructure\DeterministicAngle.cs" Link="Internals\Shared\DeterministicAngle.cs" />
     <Compile Include="..\Meziantou.Framework.Fonts\Fonts\FontTags.cs" Link="Internals\Shared\FontTags.cs" />
   </ItemGroup>

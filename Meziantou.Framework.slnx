@@ -87,7 +87,6 @@
     <Project Path="src/Meziantou.Framework.AtlassianDataFormat/Meziantou.Framework.AtlassianDataFormat.csproj" />
     <Project Path="src/Meziantou.Framework.Avatar/Meziantou.Framework.Avatar.csproj" />
     <Project Path="src/Meziantou.Framework.Barcodes/Meziantou.Framework.Barcodes.csproj" />
-    <Project Path="src/Meziantou.Framework.Bcrypt/Meziantou.Framework.Bcrypt.csproj" />
     <Project Path="src/Meziantou.Framework.Bencode/Meziantou.Framework.Bencode.csproj" />
     <Project Path="src/Meziantou.Framework.BloomFilters/Meziantou.Framework.BloomFilters.csproj" />
     <Project Path="src/Meziantou.Framework.ByteSize/Meziantou.Framework.ByteSize.csproj" />
@@ -114,6 +113,7 @@
     <Project Path="src/Meziantou.Framework.FullPath.CodeFix/Meziantou.Framework.FullPath.CodeFix.csproj" />
     <Project Path="src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
     <Project Path="src/Meziantou.Framework.Globbing/Meziantou.Framework.Globbing.csproj" />
+    <Project Path="src/Meziantou.Framework.Hashing/Meziantou.Framework.Hashing.csproj" />
     <Project Path="src/Meziantou.Framework.Html.Tool/Meziantou.Framework.Html.Tool.csproj" />
     <Project Path="src/Meziantou.Framework.HtmlSanitizer/Meziantou.Framework.HtmlSanitizer.csproj" />
     <Project Path="src/Meziantou.Framework.HtmlToMarkdown.Tool/Meziantou.Framework.HtmlToMarkdown.Tool.csproj" />
@@ -249,7 +249,6 @@
     <Project Path="tests/Meziantou.Framework.Avatar.Tests/Meziantou.Framework.Avatar.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Barcodes.InteropTests/Meziantou.Framework.Barcodes.InteropTests.csproj" />
     <Project Path="tests/Meziantou.Framework.Barcodes.Tests/Meziantou.Framework.Barcodes.Tests.csproj" />
-    <Project Path="tests/Meziantou.Framework.Bcrypt.Tests/Meziantou.Framework.Bcrypt.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Bencode.Tests/Meziantou.Framework.Bencode.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.BloomFilters.Tests/Meziantou.Framework.BloomFilters.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.ByteSize.Tests/Meziantou.Framework.ByteSize.Tests.csproj" />
@@ -276,6 +275,7 @@
     <Project Path="tests/Meziantou.Framework.FullPath.Tests/Meziantou.Framework.FullPath.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.GlobalizationSensitivity.Analyzer.Tests/Meziantou.Framework.GlobalizationSensitivity.Analyzer.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Globbing.Tests/Meziantou.Framework.Globbing.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Hashing.Tests/Meziantou.Framework.Hashing.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Html.Tool.Tests/Meziantou.Framework.Html.Tool.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.HtmlSanitizer.Tests/Meziantou.Framework.HtmlSanitizer.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.HtmlToMarkdown.Tests/Meziantou.Framework.HtmlToMarkdown.Tests.csproj" />

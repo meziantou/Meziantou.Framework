@@ -175,6 +175,48 @@ internal static class Examples
     }
     #endregion
 
+    /// <summary>Photo effects: a preset matrix and a vignette, a mosaic, an oil painting, a color blindness preview, and a flattened copy.</summary>
+    #region Imaging_Effects
+    public static void ApplyPhotoEffects(string photoPath, string outputDirectory)
+    {
+        using var photo = Image.Load(photoPath);
+
+        // A preset matrix, then the dark corners of an old lens: with the half-diagonal as radius, the corners get the
+        // whole color and the center none of it
+        using (var lomo = photo.Clone())
+        {
+            lomo.ApplyColorMatrix(ColorMatrix.Lomograph);
+            var halfDiagonal = Math.Sqrt((lomo.Width * lomo.Width) + (lomo.Height * lomo.Height)) / 2;
+            lomo.Vignette(Colors.Black, halfDiagonal, halfDiagonal);
+            lomo.Save(Path.Combine(outputDirectory, "lomo.png"));
+        }
+
+        // Spatial effects: blocks of 8x8 pixels, and brush strokes of 7x7 pixels with 20 levels of intensity
+        using (var mosaic = photo.Clone())
+        {
+            mosaic.Pixelate(8);
+            mosaic.Save(Path.Combine(outputDirectory, "mosaic.png"));
+        }
+
+        using (var painting = photo.Clone())
+        {
+            painting.OilPaint(levels: 20, radius: 3);
+            painting.Save(Path.Combine(outputDirectory, "painting.png"));
+        }
+
+        // The colors as a person without green cones sees them
+        using (var preview = photo.Clone())
+        {
+            preview.ApplyColorMatrix(ColorMatrix.CreateColorBlindness(ColorBlindnessType.Deuteranopia));
+            preview.Save(Path.Combine(outputDirectory, "deuteranopia.png"));
+        }
+
+        // Transparent pixels composited onto white: every pixel is opaque, and the image keeps its pixel format
+        photo.Flatten(Colors.White);
+        photo.Save(Path.Combine(outputDirectory, "flattened.png"));
+    }
+    #endregion
+
     /// <summary>Image comparison: two files look the same when every frame is similar enough to the expected one.</summary>
     #region Imaging_ImageSimilarity
     public static bool LookTheSame(string expectedPath, string actualPath)

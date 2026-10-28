@@ -23,7 +23,9 @@ namespace Meziantou.Framework.Imaging;
 /// Pixel-only operations (<see cref="Flip(Image, FlipMode, CancellationToken)"/>, <see cref="Grayscale(Image, CancellationToken)"/>,
 /// <see cref="Convolve(Image, ConvolutionOptions, CancellationToken)"/>, the blurs, <see cref="Sharpen(Image, double, double, double, ConvolutionEdgeMode, ConvolutionWorkingSpace, CancellationToken)"/>,
 /// <see cref="DetectEdges(Image, EdgeDetector, bool, ConvolutionEdgeMode, CancellationToken)"/>, <see cref="Equalize(Image, HistogramEqualizationOptions?, CancellationToken)"/>, <see cref="AutoLevels(Image, AutoLevelsOptions?, CancellationToken)"/>,
-/// <see cref="Threshold(Image, ThresholdOptions?, CancellationToken)"/>) work in place; on failure or cancellation some frames or rows may already be modified, but the image remains
+/// <see cref="Threshold(Image, ThresholdOptions?, CancellationToken)"/>, and the effects <see cref="Vignette(Image, Rgba64, double, double, Rectangle?, CancellationToken)"/>,
+/// <see cref="Glow(Image, Rgba64, double, double, Rectangle?, CancellationToken)"/>, <see cref="Pixelate(Image, int, CancellationToken)"/>,
+/// <see cref="OilPaint(Image, int, int, CancellationToken)"/> and <see cref="Flatten(Image, Rgba64, CancellationToken)"/>) work in place; on failure or cancellation some frames or rows may already be modified, but the image remains
 /// structurally valid.
 /// </para>
 /// <para>
@@ -52,7 +54,7 @@ namespace Meziantou.Framework.Imaging;
 /// the edge detection may also use up to <see cref="ImageConfiguration.MaxDegreeOfParallelism"/> workers for large frames (identical results).
 /// </para>
 /// </remarks>
-public static class ImageProcessingExtensions
+public static partial class ImageProcessingExtensions
 {
     private const int MaxBoxBlurRadius = 10000;
     private const int MaxMedianRadius = 1000;

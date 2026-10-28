@@ -139,6 +139,15 @@ public sealed class ImageFrame<TPixel> : ImageFrame
     internal override void MedianPixels(scoped in PixelLease lease, MedianPlan plan, CancellationToken cancellationToken)
         => MedianFilter.Apply<TPixel>(lease, plan, cancellationToken);
 
+    internal override void PixelatePixels(scoped in PixelLease lease, int size, Span<double> scratch, CancellationToken cancellationToken)
+        => EffectKernels.Pixelate<TPixel>(lease, size, scratch, cancellationToken);
+
+    internal override void OilPaintPixels(scoped in PixelLease lease, int levels, int radius, Span<double> scratch, Span<int> levelScratch, CancellationToken cancellationToken)
+        => EffectKernels.OilPaint<TPixel>(lease, levels, radius, scratch, levelScratch, cancellationToken);
+
+    internal override void FlattenPixels(scoped in PixelLease lease, Rgba64 background, CancellationToken cancellationToken)
+        => EffectKernels.Flatten<TPixel>(lease, background, cancellationToken);
+
     internal override void ConvertColorPixels(scoped in PixelLease source, scoped in PixelLease destination, IccPipeline pipeline, IccUInt16InputTables? uint16Tables, CancellationToken cancellationToken)
         => ColorConversionKernels.ConvertRows<TPixel>(source, destination, pipeline, uint16Tables, cancellationToken);
 

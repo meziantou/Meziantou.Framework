@@ -601,13 +601,14 @@ In-place extension methods (`ImageProcessingExtensions`), applied to every frame
 width on each side), `ExtendCanvas` (a larger canvas, with the image at one of nine anchors), `Rotate` (exact 90/180/270
 permutations, or any angle), `Skew` and `Transform` (an affine or a perspective transformation), `Flip`, `AutoOrient` (all eight EXIF orientations), `Grayscale` (Rec. 709 at storage precision, ties upward; keeps the storage format and
 alpha, and rejects incompatible ICC profiles; use `CloneAs<Gray8>` to change the storage), `ApplyColorMatrix` (a new
-color for each pixel from its own one: brightness, contrast, saturation, a tint), `ReplaceColor` (a new color for the
-pixels of one color), `Convolve` (a convolution
+color for each pixel from its own one: brightness, contrast, saturation, a tint, photo presets, a color blindness
+preview), `ReplaceColor` (a new color for the pixels of one color), `Vignette`, `Glow`, `Pixelate`, `OilPaint` and
+`Flatten` (see [Effects](#effects)), `Convolve` (a convolution
 matrix), `GaussianBlur`, `BoxBlur`, `MedianBlur`, `Sharpen` (an unsharp mask), `DetectEdges`, `Equalize` and `AutoLevels` (histogram
 equalization, CLAHE and contrast stretch, see [Histograms, equalization and auto-levels](#histograms-equalization-and-auto-levels)),
 `Quantize` (a reduction to a palette, see [Color reduction](#color-reduction)) and `Threshold` (black and white, with a
 global or an adaptive threshold, see [Binarization](#binarization)). `Flip`, `Grayscale`, `ApplyColorMatrix`,
-`ReplaceColor`, `Convolve`, the blurs, `Sharpen`, `DetectEdges`, `Equalize`, `AutoLevels`, `Quantize` and `Threshold` also exist for one frame. Geometry changes preserve 16-bit precision and alpha, and reconcile the EXIF dimensions,
+`ReplaceColor`, the effects, `Convolve`, the blurs, `Sharpen`, `DetectEdges`, `Equalize`, `AutoLevels`, `Quantize` and `Threshold` also exist for one frame. Geometry changes preserve 16-bit precision and alpha, and reconcile the EXIF dimensions,
 orientation and thumbnail. `ConvertColorProfile` converts the colors to another ICC profile
 (see [Color management](#color-management)).
 
@@ -1026,6 +1027,87 @@ public static void ApplyColorFilters(string photoPath, string iconPath, string o
     });
 
     photo.Save(outputPath);
+}
+```
+<!-- endref -->
+
+#### Effects
+
+The effects are of two kinds. The **color effects** are color matrices (`ColorMatrix`, applied by `ApplyColorMatrix`):
+each pixel gets a color computed from its own one only, with the arithmetic of **Color matrices** above, and they
+combine with `Then` and with the other matrices.
+
+| Color effect (matrix) | What it does | Source of the coefficients |
+| --- | --- | --- |
+| `ColorMatrix.Polaroid` | The cool, saturated look of an instant photograph | `polaroid()` of the `ColorMatrixFilter` of PixiJS 8.6.6 |
+| `ColorMatrix.Kodachrome` | The warm contrast of a Kodachrome slide | `kodachrome()` of the `ColorMatrixFilter` of PixiJS 8.6.6 (constants divided by 255) |
+| `ColorMatrix.Lomograph` | The strong, shifted tones of a Lomography camera | `Lomograph` of ImageProcessor |
+| `ColorMatrix.BlackWhite` | High-contrast black and white: `1.5 (R + G + B) - 1` | `BlackWhite` of ImageProcessor |
+| `ColorMatrix.CreateLightness(amount)` | Adds `amount` (-1 to 1) to every color | The `linear` function of `feComponentTransfer` (SVG), slope 1 |
+| `ColorMatrix.CreateColorBlindness(type)` | The colors as seen with protanopia, deuteranopia, tritanopia or the anomalies of the same cones (severity 0.5, or any severity with the second argument) | Table 1 of Machado, Oliveira and Fernandes, IEEE TVCG 15(6), 2009, interpolated between its severities |
+
+The color blindness matrices are defined on linear RGB: they are exact on a linear-light `RgbaFloat` image, and an
+approximation on sRGB-encoded samples, which is how most simulators apply them.
+
+The **spatial effects** are operations of their own, which read the neighbors of a pixel or its position:
+
+| Spatial effect | What it does |
+| --- | --- |
+| `Vignette(color, radiusX, radiusY, rectangle)` | An elliptic radial gradient, transparent at the center of the rectangle (the canvas by default) and `color` on the ellipse of half-axes `radiusX` and `radiusY` and beyond |
+| `Glow(color, radiusX, radiusY, rectangle)` | The opposite gradient: `color` at the center, transparent on the ellipse and beyond |
+| `Pixelate(size)` | Every block of `size` by `size` pixels from the top-left corner gets the mean of its pixels (smaller blocks on the right and bottom edges) |
+| `OilPaint(levels, radius)` | Every pixel gets the mean of the pixels of the square of side `2 radius + 1` around it whose intensity level (the Rec. 709 luma over black, cut into `levels` levels) is the most frequent there |
+| `Flatten(backgroundColor)` | Every pixel is composited over an opaque color and becomes opaque; the pixel format is kept |
+
+The vignette and the glow are drawn on the image with `CompositeMode.SourceAtop`: the alpha of every pixel is kept,
+and a transparent pixel stays transparent (draw a `RadialGradientBrush` with the canvas to paint those too). Their
+arithmetic is the one of the drawings. The means of `Pixelate` and `OilPaint` are alpha-aware: colors are averaged
+premultiplied by their alpha, so the hidden color of a transparent pixel takes no part, and they are computed on the
+stored samples in double precision and rounded once, as the blurs do (floating-point samples are not clamped). The
+oil painting moves its window by one column at a time for the integer formats, whose sums are exact, so its time per
+pixel grows with the radius; for `RgbaFloat` and `RgbaHalf` it grows with its square. `Flatten` uses the formulas of a
+conversion to a format without alpha with `PixelConversionOptions.BackgroundColor`: a flattened `Rgba32` image converted
+to `Rgb24` is that conversion, bit for bit, and a format without alpha is left as it is.
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_Effects;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void ApplyPhotoEffects(string photoPath, string outputDirectory)
+{
+    using var photo = Image.Load(photoPath);
+
+    // A preset matrix, then the dark corners of an old lens: with the half-diagonal as radius, the corners get the
+    // whole color and the center none of it
+    using (var lomo = photo.Clone())
+    {
+        lomo.ApplyColorMatrix(ColorMatrix.Lomograph);
+        var halfDiagonal = Math.Sqrt((lomo.Width * lomo.Width) + (lomo.Height * lomo.Height)) / 2;
+        lomo.Vignette(Colors.Black, halfDiagonal, halfDiagonal);
+        lomo.Save(Path.Combine(outputDirectory, "lomo.png"));
+    }
+
+    // Spatial effects: blocks of 8x8 pixels, and brush strokes of 7x7 pixels with 20 levels of intensity
+    using (var mosaic = photo.Clone())
+    {
+        mosaic.Pixelate(8);
+        mosaic.Save(Path.Combine(outputDirectory, "mosaic.png"));
+    }
+
+    using (var painting = photo.Clone())
+    {
+        painting.OilPaint(levels: 20, radius: 3);
+        painting.Save(Path.Combine(outputDirectory, "painting.png"));
+    }
+
+    // The colors as a person without green cones sees them
+    using (var preview = photo.Clone())
+    {
+        preview.ApplyColorMatrix(ColorMatrix.CreateColorBlindness(ColorBlindnessType.Deuteranopia));
+        preview.Save(Path.Combine(outputDirectory, "deuteranopia.png"));
+    }
+
+    // Transparent pixels composited onto white: every pixel is opaque, and the image keeps its pixel format
+    photo.Flatten(Colors.White);
+    photo.Save(Path.Combine(outputDirectory, "flattened.png"));
 }
 ```
 <!-- endref -->

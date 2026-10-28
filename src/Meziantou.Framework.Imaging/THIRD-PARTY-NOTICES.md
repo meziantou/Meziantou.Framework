@@ -96,3 +96,64 @@ LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ```
+
+## PixiJS
+
+- Project: PixiJS, a 2D rendering library for the web
+- Source: <https://github.com/pixijs/pixijs>
+- License: <https://github.com/pixijs/pixijs/blob/v8.6.6/LICENSE>
+- Version: 8.6.6 (commit 6f453df5e78fec090294eb57649a8aa9cbdc3825)
+- Used for: the coefficients of the `ColorMatrix.Polaroid` and `ColorMatrix.Kodachrome` presets
+  (`Processing/ColorMatrix.cs`), the `polaroid()` and `kodachrome()` matrices of
+  `src/filters/defaults/color-matrix/ColorMatrixFilter.ts`. No code was copied.
+
+```
+The MIT License
+
+Copyright (c) 2013-2023 Mathew Groves, Chad Engler
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+```
+
+## ImageProcessor
+
+- Project: ImageProcessor, an image processing library for .NET
+- Source: <https://github.com/JimBobSquarePants/ImageProcessor>
+- License: <https://github.com/JimBobSquarePants/ImageProcessor/blob/a94fb903e49f6fa5f47c6ea58d27af55ce8ff89c/LICENSE> (Apache License, Version 2.0)
+- Version: commit a94fb903e49f6fa5f47c6ea58d27af55ce8ff89c
+- Used for: the coefficients of the `ColorMatrix.Lomograph` and `ColorMatrix.BlackWhite` presets
+  (`Processing/ColorMatrix.cs`), the `Lomograph` and `BlackWhite` matrices of
+  `src/ImageProcessor/Imaging/Filters/Photo/ColorMatrixes.cs`, transposed to the layout of the library. No code was
+  copied.
+
+```
+Copyright (c) James Jackson-South.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+```

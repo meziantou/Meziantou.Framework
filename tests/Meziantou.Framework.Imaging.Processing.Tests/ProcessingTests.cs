@@ -2292,6 +2292,476 @@ public sealed class ProcessingTests
     // Helpers
     // -----------------------------------------------------------------------------------------------------------------
 
+    // -----------------------------------------------------------------------------------------------------------------
+    // Effects: pixelation, oil painting, vignette, glow and flattening. The references below are written from the
+    // definitions of the operations, one pixel at a time, in decimal for the integer formats.
+    // -----------------------------------------------------------------------------------------------------------------
+
+    [Fact]
+    public void PixelateGivesEveryBlockTheMeanOfItsPixels()
+    {
+        // A 3x2 image in blocks of 2: the block of the first two columns averages premultiplied colors, so the hidden white
+        // of the transparent pixel takes no part. Alpha: (255 + 255 + 0 + 128) / 4 = 159.5 -> 160; red: 100 * 255 / 638 = 39.97;
+        // blue: 200 * 128 / 638 = 40.13. The last column is a block of two pixels
+        using var image = new Image<Rgba32>(3, 2);
+        image.Frames[0][0, 0] = new Rgba32(100, 0, 0, 255);
+        image.Frames[0][1, 0] = new Rgba32(0, 100, 0, 255);
+        image.Frames[0][0, 1] = new Rgba32(255, 255, 255, 0);
+        image.Frames[0][1, 1] = new Rgba32(0, 0, 200, 128);
+        image.Frames[0][2, 0] = new Rgba32(10, 20, 30, 255);
+        image.Frames[0][2, 1] = new Rgba32(30, 40, 50, 255);
+        image.Pixelate(2, Ct);
+        var block = new Rgba32(40, 40, 40, 160);
+        Assert.Equal([block, block, new Rgba32(20, 30, 40, 255), block, block, new Rgba32(20, 30, 40, 255)], ReadRgba32(image.Frames[0]));
+
+        // A block larger than the image is the whole image
+        using var gray = BuildGray8([0, 10, 20], [30, 40, 51]);
+        gray.Pixelate(100, Ct);
+        Assert.Equal([25, 25, 25, 25, 25, 25], DrawingTestSupport.ReadSamples(gray.Frames[0]));
+    }
+
+    [Theory]
+    [MemberData(nameof(DrawingTestSupport.AllFormats), MemberType = typeof(DrawingTestSupport))]
+    public void PixelateMatchesTheReference(PixelFormat format)
+    {
+        var random = new Random(31);
+        foreach (var size in new[] { 2, 3, 5 })
+        {
+            using var image = DrawingTestSupport.CreateRandom(format, 11, 7, random.Next);
+            var source = ReadValues(image.Frames[0]);
+            image.Pixelate(size, Ct);
+            var expected = new double[source.Length];
+            var channels = PixelFormats.GetComponentCount(format);
+            for (var top = 0; top < 7; top += size)
+            {
+                for (var left = 0; left < 11; left += size)
+                {
+                    var pixels = new List<int>();
+                    for (var y = top; y < Math.Min(7, top + size); y++)
+                    {
+                        for (var x = left; x < Math.Min(11, left + size); x++)
+                        {
+                            pixels.Add(((y * 11) + x) * channels);
+                        }
+                    }
+
+                    var mean = ReferenceMean(format, source, pixels);
+                    foreach (var pixel in pixels)
+                    {
+                        mean.CopyTo(expected, pixel);
+                    }
+                }
+            }
+
+            AssertValues(format, expected, ReadValues(image.Frames[0]), string.Create(CultureInfo.InvariantCulture, $"size {size}"));
+        }
+    }
+
+    [Fact]
+    public void OilPaintGivesEveryPixelTheMeanOfTheMostFrequentLevelOfItsNeighborhood()
+    {
+        // Two levels: 0 and 10 are in the first one, 200, 210 and 220 in the second (200 / 255 * 2 = 1.57). The windows of three
+        // pixels stop at the edges: { 0, 10 } -> 5, { 0, 10, 200 } -> 5, { 10, 200, 210 } -> 205, { 200, 210, 220 } -> 210,
+        // { 210, 220 } -> 215
+        using var image = BuildGray8([0, 10, 200, 210, 220]);
+        image.OilPaint(levels: 2, radius: 1, Ct);
+        Assert.Equal([5, 5, 205, 210, 215], DrawingTestSupport.ReadSamples(image.Frames[0]));
+
+        // The intensity is the luma of the color over black: a transparent pixel is in the first level whatever its hidden
+        // color, and a tie goes to the lowest level. { transparent white, opaque white }: one pixel in each level -> the
+        // transparent one, so transparent black
+        using var alpha = new Image<Rgba32>(2, 1);
+        alpha.Frames[0][0, 0] = new Rgba32(255, 255, 255, 0);
+        alpha.Frames[0][1, 0] = new Rgba32(255, 255, 255, 255);
+        alpha.OilPaint(levels: 2, radius: 1, Ct);
+        Assert.Equal([default, default], ReadRgba32(alpha.Frames[0]));
+    }
+
+    [Theory]
+    [MemberData(nameof(DrawingTestSupport.AllFormats), MemberType = typeof(DrawingTestSupport))]
+    public void OilPaintMatchesTheReference(PixelFormat format)
+    {
+        var random = new Random(47);
+        foreach (var (levels, radius) in new[] { (6, 2), (1, 1), (256, 1), (3, 4) })
+        {
+            using var image = DrawingTestSupport.CreateRandom(format, 13, 9, random.Next);
+            var source = ReadValues(image.Frames[0]);
+            image.OilPaint(levels, radius, Ct);
+            var channels = PixelFormats.GetComponentCount(format);
+            var hasAlpha = PixelFormats.HasAlpha(format);
+            var max = MaxValue(format);
+            var (red, blue) = format == PixelFormat.Bgra32 ? (2, 0) : (0, 2);
+            var pixelLevels = new int[13 * 9];
+            for (var i = 0; i < pixelLevels.Length; i++)
+            {
+                var pixel = i * channels;
+                var a = hasAlpha ? source[pixel + 3] / max : 1;
+                var intensity = channels == 1 ? source[pixel] / max : ((0.2126 * source[pixel + red]) + (0.7152 * source[pixel + 1]) + (0.0722 * source[pixel + blue])) * a / max;
+                pixelLevels[i] = Math.Clamp((int)Math.Floor(intensity * levels), 0, levels - 1);
+            }
+
+            var expected = new double[source.Length];
+            for (var y = 0; y < 9; y++)
+            {
+                for (var x = 0; x < 13; x++)
+                {
+                    var window = new List<int>();
+                    for (var v = Math.Max(0, y - radius); v <= Math.Min(8, y + radius); v++)
+                    {
+                        for (var u = Math.Max(0, x - radius); u <= Math.Min(12, x + radius); u++)
+                        {
+                            window.Add((v * 13) + u);
+                        }
+                    }
+
+                    var best = window.GroupBy(i => pixelLevels[i]).OrderByDescending(group => group.Count()).ThenBy(group => group.Key).First().Key;
+                    ReferenceMean(format, source, [.. window.Where(i => pixelLevels[i] == best).Select(i => i * channels)]).CopyTo(expected, ((y * 13) + x) * channels);
+                }
+            }
+
+            AssertValues(format, expected, ReadValues(image.Frames[0]), string.Create(CultureInfo.InvariantCulture, $"{levels} levels, radius {radius}"));
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(DrawingTestSupport.AllFormats), MemberType = typeof(DrawingTestSupport))]
+    public void VignetteAndGlowMatchTheReference(PixelFormat format)
+    {
+        // At the center of a pixel whose distance to the center of the rectangle is the fraction t of the ellipse, a
+        // vignette composites its color with the alpha t A (1 at the ellipse and beyond), a glow with (1 - t) A (nothing
+        // beyond), on the color of the pixel, whose alpha is kept. Outside the rectangle nothing changes
+        var gray = PixelFormats.IsGrayscale(format);
+        Rgba64 color = gray ? new Rgba32(40, 40, 40, 230) : new Rgba32(20, 60, 200, 230);
+        var random = new Random(53);
+        foreach (var (vignette, rectangle, radiusX, radiusY) in new[] { (true, (Rectangle?)null, 9.0, 6.0), (false, null, 12.0, 5.5), (true, new Rectangle(3, 2, 10, 6), 4.0, 2.5), (false, new Rectangle(-4, 1, 12, 9), 7.0, 7.0) })
+        {
+            using var image = DrawingTestSupport.CreateRandom(format, 17, 11, random.Next);
+            var source = ReadValues(image.Frames[0]);
+            if (vignette)
+            {
+                image.Vignette(color, radiusX, radiusY, rectangle, Ct);
+            }
+            else
+            {
+                image.Glow(color, radiusX, radiusY, rectangle, Ct);
+            }
+
+            var actual = ReadValues(image.Frames[0]);
+            var area = rectangle ?? new Rectangle(0, 0, 17, 11);
+            var channels = PixelFormats.GetComponentCount(format);
+            var max = MaxValue(format);
+            var tolerance = PixelFormats.IsFloatingPoint(format) ? (format == PixelFormat.RgbaFloat ? 1e-4 : 2e-3) : max == 255 ? 1 : 2;
+            var paint = format == PixelFormat.Bgra32 ? new[] { color.B, color.G, color.R } : [color.R, color.G, color.B];
+            for (var y = 0; y < 11; y++)
+            {
+                for (var x = 0; x < 17; x++)
+                {
+                    var pixel = ((y * 17) + x) * channels;
+                    var context = string.Create(CultureInfo.InvariantCulture, $"{(vignette ? "vignette" : "glow")} {area}, pixel ({x}, {y})");
+                    if (x < area.X || x >= area.Right || y < area.Y || y >= area.Bottom)
+                    {
+                        Assert.True(source.AsSpan(pixel, channels).SequenceEqual(actual.AsSpan(pixel, channels)), context);
+                        continue;
+                    }
+
+                    var dx = (x + 0.5 - (area.X + (area.Width / 2.0))) / radiusX;
+                    var dy = (y + 0.5 - (area.Y + (area.Height / 2.0))) / radiusY;
+                    var t = Math.Min(1, Math.Sqrt((dx * dx) + (dy * dy)));
+                    var coverage = (vignette ? t : 1 - t) * color.A / 65535;
+                    if (PixelFormats.HasAlpha(format))
+                    {
+                        Assert.Equal(source[pixel + 3], actual[pixel + 3]);
+                        if (source[pixel + 3] == 0)
+                            continue;
+                    }
+
+                    for (var c = 0; c < Math.Min(channels, 3); c++)
+                    {
+                        var expected = (paint[c] / 65535.0 * max * coverage) + (source[pixel + c] * (1 - coverage));
+                        Assert.True(Math.Abs(expected - actual[pixel + c]) <= tolerance, string.Create(CultureInfo.InvariantCulture, $"{context}, sample {c}: expected {expected}, actual {actual[pixel + c]}"));
+                    }
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void FlattenCompositesOverTheBackgroundAndKeepsThePixelFormat()
+    {
+        // 8-bit: the pixels of the conversion to Rgb24 with the same background, bit for bit, with an opaque alpha
+        var background = new Rgba32(250, 128, 3);
+        var random = new Random(59);
+        foreach (var format in new[] { PixelFormat.Rgba32, PixelFormat.Bgra32 })
+        {
+            using var image = DrawingTestSupport.CreateRandom(format, 23, 9, random.Next);
+            using var converted = image.CloneAs<Rgb24>(new PixelConversionOptions { BackgroundColor = background });
+            image.Flatten(background, Ct);
+            Assert.Equal(format, image.PixelFormat);
+            using var flattened = image.CloneAs<Rgb24>();
+            Assert.Equal(DrawingTestSupport.ReadSamples(converted.Frames[0]), DrawingTestSupport.ReadSamples(flattened.Frames[0]));
+        }
+
+        // 16-bit: (s a + bg (65535 - a) + 32767) / 65535: (1000 * 30000 + 64250 * 35535 + 32767) / 65535 = 35296.5 -> 35296
+        using (var wide = new Image<Rgba64>(2, 1, new Rgba64(1000, 2000, 3000, 30000)))
+        {
+            wide.Frames[0][1, 0] = new Rgba64(1, 2, 3, 65535);
+            wide.Flatten(new Rgba64(64250, 0, 65535), Ct);
+            Assert.Equal(new Rgba64(35296, 916, 36908, 65535), wide.Frames[0][0, 0]);
+            Assert.Equal(new Rgba64(1, 2, 3, 65535), wide.Frames[0][1, 0]);
+        }
+
+        // Floating point: c a + bg (1 - a), colors not clamped, alpha kept between 0 and 1
+        using (var hdr = new Image<RgbaFloat>(3, 1, new RgbaFloat(4, 0.5f, -0.25f, 0.25f)))
+        {
+            hdr.Frames[0][1, 0] = new RgbaFloat(0.5f, 0.5f, 0.5f, 1.5f);
+            hdr.Frames[0][2, 0] = new RgbaFloat(2, 2, 2, 1);
+            hdr.Flatten(new Rgba64(0, 65535, 0), Ct);
+            Assert.Equal(new RgbaFloat(1, 0.875f, -0.0625f, 1), hdr.Frames[0][0, 0]);
+            Assert.Equal(new RgbaFloat(0.5f, 0.5f, 0.5f, 1), hdr.Frames[0][1, 0]);
+            Assert.Equal(new RgbaFloat(2, 2, 2, 1), hdr.Frames[0][2, 0]);
+        }
+
+        using (var half = new Image<RgbaHalf>(1, 1, new RgbaHalf((Half)1, (Half)0, (Half)0, (Half)0.5)))
+        {
+            half.Flatten(new Rgba64(0, 0, 65535), Ct);
+            Assert.Equal(new RgbaHalf((Half)0.5, (Half)0, (Half)0.5, Half.One), half.Frames[0][0, 0]);
+        }
+
+        // A format without alpha is already opaque
+        using (var opaque = new Image<Rgb24>(1, 1, new Rgb24(1, 2, 3)))
+        {
+            opaque.Flatten(new Rgba32(9, 9, 9), Ct);
+            Assert.Equal(new Rgb24(1, 2, 3), opaque.Frames[0][0, 0]);
+        }
+
+        using var rejected = new Image<Rgba32>(1, 1, new Rgba32(1, 2, 3, 4));
+        Assert.Throws<ArgumentException>(() => rejected.Flatten(new Rgba32(9, 9, 9, 254)));
+        Assert.Throws<ArgumentException>(() => rejected.Frames[0].Flatten(new Rgba64(9, 9, 9, 0)));
+        Assert.Equal(new Rgba32(1, 2, 3, 4), rejected.Frames[0][0, 0]);
+    }
+
+    [Fact]
+    public void TheEffectsApplyToEveryFrameOrToOneAndValidateTheirArguments()
+    {
+        using var image = Build<Rgba32>([[1, 2, 3], [4, 5, 6]], [[7, 8, 9], [10, 11, 12]]);
+        image.SetPosterFrame(image.Frames[0]);
+        var effects = new (string Name, Action<Image> OnImage, Action<ImageFrame> OnFrame)[]
+        {
+            ("pixelate", image => image.Pixelate(2, Ct), frame => frame.Pixelate(2, Ct)),
+            ("oil paint", image => image.OilPaint(4, 1, Ct), frame => frame.OilPaint(4, 1, Ct)),
+            ("vignette", image => image.Vignette(new Rgba32(0, 0, 0), 1, 1, cancellationToken: Ct), frame => frame.Vignette(new Rgba32(0, 0, 0), 1, 1, cancellationToken: Ct)),
+            ("glow", image => image.Glow(new Rgba32(255, 255, 255), 2, 1, cancellationToken: Ct), frame => frame.Glow(new Rgba32(255, 255, 255), 2, 1, cancellationToken: Ct)),
+            ("flatten", image => image.Flatten(new Rgba32(0, 0, 0), Ct), frame => frame.Flatten(new Rgba32(0, 0, 0), Ct)),
+        };
+
+        foreach (var (name, onImage, onFrame) in effects)
+        {
+            WriteTranslucent(image);
+            var before = image.Frames.Append(image.PosterFrame!).Select(DrawingTestSupport.ReadSamples).ToArray();
+            onImage(image);
+            var after = image.Frames.Append(image.PosterFrame!).Select(DrawingTestSupport.ReadSamples).ToArray();
+            for (var i = 0; i < before.Length; i++)
+            {
+                Assert.False(before[i].SequenceEqual(after[i]), $"{name}: frame {i} is unchanged.");
+            }
+
+            WriteTranslucent(image);
+            onFrame(image.Frames[1]);
+            Assert.Equal(before[0], DrawingTestSupport.ReadSamples(image.Frames[0]));
+            Assert.False(before[1].SequenceEqual(DrawingTestSupport.ReadSamples(image.Frames[1])), $"{name}: the frame is unchanged.");
+            Assert.Equal(0, image.Owner.Scope.GetLiveBytes(AllocationKind.Temporary));
+            Assert.Equal(0, image.Owner.ActiveLeaseCount);
+
+            image.Frames[0].ProcessPixelRows(_ => Assert.Throws<InvalidOperationException>(() => onImage(image)));
+            Assert.Throws<OperationCanceledException>(() => EffectWithCanceledToken(name, image));
+        }
+
+        // A block of one pixel, a radius of 0: nothing changes
+        WriteTranslucent(image);
+        var unchanged = DrawingTestSupport.ReadSamples(image.Frames[0]);
+        image.Pixelate(1, Ct);
+        image.OilPaint(10, 0, Ct);
+        image.Frames[0].Pixelate(1, Ct);
+        image.Frames[0].OilPaint(10, 0, Ct);
+        Assert.Equal(unchanged, DrawingTestSupport.ReadSamples(image.Frames[0]));
+
+        Assert.Throws<ArgumentNullException>(() => ((Image)null!).Pixelate(2));
+        Assert.Throws<ArgumentNullException>(() => ((ImageFrame)null!).OilPaint(2, 1));
+        Assert.Throws<ArgumentNullException>(() => ((Image)null!).Vignette(default, 1, 1));
+        Assert.Throws<ArgumentNullException>(() => ((ImageFrame)null!).Glow(default, 1, 1));
+        Assert.Throws<ArgumentNullException>(() => ((Image)null!).Flatten(new Rgba32(0, 0, 0)));
+        Assert.Throws<ArgumentOutOfRangeException>(() => image.Pixelate(0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => image.Frames[0].Pixelate(-1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => image.OilPaint(0, 1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => image.OilPaint(257, 1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => image.OilPaint(2, -1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => image.Frames[0].OilPaint(2, 501));
+        Assert.Throws<ArgumentOutOfRangeException>(() => image.Vignette(default, 0, 1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => image.Vignette(default, 1, double.NaN));
+        Assert.Throws<ArgumentOutOfRangeException>(() => image.Glow(default, double.PositiveInfinity, 1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => image.Frames[0].Glow(default, 1, 16777217));
+        Assert.Throws<ArgumentOutOfRangeException>(() => image.Vignette(default, 1, 1, new Rectangle(0, 0, 0, 1)));
+        Assert.Equal(unchanged, DrawingTestSupport.ReadSamples(image.Frames[0]));
+
+        var disposed = new Image<Rgba32>(2, 2);
+        var frame = disposed.Frames[0];
+        disposed.Dispose();
+        Assert.Throws<ObjectDisposedException>(() => disposed.Pixelate(2));
+        Assert.Throws<ObjectDisposedException>(() => disposed.OilPaint(2, 1));
+        Assert.Throws<ObjectDisposedException>(() => disposed.Vignette(default, 1, 1));
+        Assert.Throws<ObjectDisposedException>(() => disposed.Flatten(new Rgba32(0, 0, 0)));
+        Assert.Throws<ObjectDisposedException>(() => frame.Pixelate(2));
+        Assert.Throws<ObjectDisposedException>(() => frame.OilPaint(2, 1));
+        Assert.Throws<ObjectDisposedException>(() => frame.Glow(default, 1, 1));
+        Assert.Throws<ObjectDisposedException>(() => frame.Flatten(new Rgba32(0, 0, 0)));
+
+        static void WriteTranslucent(Image<Rgba32> image)
+        {
+            var frames = image.Frames.Append(image.PosterFrame!).Distinct().ToArray();
+            for (var i = 0; i < frames.Length; i++)
+            {
+                var frame = (ImageFrame<Rgba32>)frames[i];
+                for (var y = 0; y < 2; y++)
+                {
+                    for (var x = 0; x < 3; x++)
+                    {
+                        frame[x, y] = new Rgba32((byte)(40 * x), (byte)(100 + (50 * y)), (byte)(30 * i), (byte)(60 + (60 * x) + (20 * y)));
+                    }
+                }
+            }
+        }
+
+        static void EffectWithCanceledToken(string name, Image image)
+        {
+            var canceled = new CancellationToken(canceled: true);
+            switch (name)
+            {
+                case "pixelate":
+                    image.Pixelate(2, canceled);
+                    break;
+                case "oil paint":
+                    image.OilPaint(4, 1, canceled);
+                    break;
+                case "vignette":
+                    image.Vignette(new Rgba32(0, 0, 0), 1, 1, cancellationToken: canceled);
+                    break;
+                case "glow":
+                    image.Glow(new Rgba32(0, 0, 0), 1, 1, cancellationToken: canceled);
+                    break;
+                default:
+                    image.Flatten(new Rgba32(0, 0, 0), canceled);
+                    break;
+            }
+        }
+    }
+
+    /// <summary>The samples of a frame as numbers: integer samples, or the values of floating-point ones.</summary>
+    private static double[] ReadValues(ImageFrame frame)
+    {
+        var samples = DrawingTestSupport.ReadSamples(frame);
+        return frame.PixelFormat switch
+        {
+            PixelFormat.RgbaFloat => [.. samples.Select(bits => (double)BitConverter.Int32BitsToSingle(bits))],
+            PixelFormat.RgbaHalf => [.. samples.Select(bits => (double)BitConverter.UInt16BitsToHalf((ushort)bits))],
+            _ => [.. samples.Select(sample => (double)sample)],
+        };
+    }
+
+    private static int MaxValue(PixelFormat format) => PixelFormats.IsFloatingPoint(format) ? 1 : PixelFormats.GetBitsPerComponent(format) == 16 ? 65535 : 255;
+
+    /// <summary>
+    /// The alpha-aware mean of pixels (the indexes of their first samples): the colors premultiplied by alpha, then divided by
+    /// the mean alpha, rounded half up (exactly, in decimal) for the integer formats; transparent black when the alpha rounds to 0.
+    /// </summary>
+    private static double[] ReferenceMean(PixelFormat format, double[] samples, List<int> pixels)
+    {
+        var channels = PixelFormats.GetComponentCount(format);
+        var hasAlpha = PixelFormats.HasAlpha(format);
+        var result = new double[channels];
+        if (PixelFormats.IsFloatingPoint(format))
+        {
+            double alphaSum = 0;
+            var colorSums = new double[3];
+            foreach (var pixel in pixels)
+            {
+                var a = samples[pixel + 3];
+                alphaSum += a;
+                for (var c = 0; c < 3; c++)
+                {
+                    colorSums[c] += samples[pixel + c] * a;
+                }
+            }
+
+            var alpha = Math.Clamp(alphaSum / pixels.Count, 0, 1);
+            if (format == PixelFormat.RgbaHalf ? (Half)alpha == Half.Zero : (float)alpha == 0)
+                return result;
+
+            for (var c = 0; c < 3; c++)
+            {
+                result[c] = colorSums[c] / alphaSum;
+            }
+
+            result[3] = alpha;
+            return result;
+        }
+
+        var max = MaxValue(format);
+        if (!hasAlpha)
+        {
+            for (var c = 0; c < channels; c++)
+            {
+                result[c] = RoundHalfUp(pixels.Sum(pixel => (decimal)samples[pixel + c]) / pixels.Count, max);
+            }
+
+            return result;
+        }
+
+        var sumOfAlpha = pixels.Sum(pixel => (decimal)samples[pixel + 3]);
+        var roundedAlpha = RoundHalfUp(sumOfAlpha / pixels.Count, max);
+        if (roundedAlpha == 0)
+            return result;
+
+        for (var c = 0; c < 3; c++)
+        {
+            result[c] = RoundHalfUp(pixels.Sum(pixel => (decimal)samples[pixel + c] * (decimal)samples[pixel + 3]) / sumOfAlpha, max);
+        }
+
+        result[3] = roundedAlpha;
+        return result;
+
+        static int RoundHalfUp(decimal value, int max) => (int)Math.Clamp(Math.Floor(value + 0.5m), 0, max);
+    }
+
+    private static void AssertValues(PixelFormat format, double[] expected, double[] actual, string context)
+    {
+        Assert.HasCount(expected.Length, actual);
+        var tolerance = format switch
+        {
+            PixelFormat.RgbaFloat => 1e-6,
+            PixelFormat.RgbaHalf => 1e-3,
+            _ => 0,
+        };
+
+        for (var i = 0; i < expected.Length; i++)
+        {
+            Assert.True(Math.Abs(expected[i] - actual[i]) <= tolerance, string.Create(CultureInfo.InvariantCulture, $"{format}, {context}: sample {i} is {actual[i]}, expected {expected[i]}."));
+        }
+    }
+
+    private static Image<Gray8> BuildGray8(params int[][] rows)
+    {
+        var image = new Image<Gray8>(rows[0].Length, rows.Length);
+        DrawingTestSupport.WriteSamples(image.Frames[0], [.. rows.SelectMany(row => row)]);
+        return image;
+    }
+
+    private static Rgba32[] ReadRgba32(ImageFrame<Rgba32> frame)
+    {
+        var pixels = new Rgba32[frame.Width * frame.Height];
+        frame.CopyPixelDataTo(pixels);
+        return pixels;
+    }
+
     private static void CheckRotationsAndFlips<TPixel>()
         where TPixel : unmanaged
     {

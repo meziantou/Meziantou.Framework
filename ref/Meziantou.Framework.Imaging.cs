@@ -114,19 +114,36 @@ namespace Meziantou.Framework.Imaging
         public Meziantou.Framework.Imaging.IccColorTransformOptions Transform { get => throw null; init { } }
     }
 
+    public enum ColorBlindnessType
+    {
+        Protanopia = 0,
+        Protanomaly = 1,
+        Deuteranopia = 2,
+        Deuteranomaly = 3,
+        Tritanopia = 4,
+        Tritanomaly = 5,
+    }
+
     public sealed class ColorMatrix
     {
+        public static Meziantou.Framework.Imaging.ColorMatrix BlackWhite { get => throw null; }
         public static Meziantou.Framework.Imaging.ColorMatrix Identity { get => throw null; }
         public bool IsIdentity { get => throw null; }
         public double this[int row, int column] { get => throw null; }
+        public static Meziantou.Framework.Imaging.ColorMatrix Kodachrome { get => throw null; }
+        public static Meziantou.Framework.Imaging.ColorMatrix Lomograph { get => throw null; }
         public static Meziantou.Framework.Imaging.ColorMatrix LuminanceToAlpha { get => throw null; }
+        public static Meziantou.Framework.Imaging.ColorMatrix Polaroid { get => throw null; }
         public ColorMatrix(System.ReadOnlySpan<double> values) { }
         public static Meziantou.Framework.Imaging.ColorMatrix CreateBrightness(double amount) => throw null;
+        public static Meziantou.Framework.Imaging.ColorMatrix CreateColorBlindness(Meziantou.Framework.Imaging.ColorBlindnessType type) => throw null;
+        public static Meziantou.Framework.Imaging.ColorMatrix CreateColorBlindness(Meziantou.Framework.Imaging.ColorBlindnessType type, double severity) => throw null;
         public static Meziantou.Framework.Imaging.ColorMatrix CreateContrast(double amount) => throw null;
         public static Meziantou.Framework.Imaging.ColorMatrix CreateDuotone(Meziantou.Framework.Imaging.Rgba64 dark, Meziantou.Framework.Imaging.Rgba64 light) => throw null;
         public static Meziantou.Framework.Imaging.ColorMatrix CreateGrayscale(double amount = 1d) => throw null;
         public static Meziantou.Framework.Imaging.ColorMatrix CreateHueRotation(double degrees) => throw null;
         public static Meziantou.Framework.Imaging.ColorMatrix CreateInvert(double amount = 1d) => throw null;
+        public static Meziantou.Framework.Imaging.ColorMatrix CreateLightness(double amount) => throw null;
         public static Meziantou.Framework.Imaging.ColorMatrix CreateOpacity(double amount) => throw null;
         public static Meziantou.Framework.Imaging.ColorMatrix CreateSaturation(double amount) => throw null;
         public static Meziantou.Framework.Imaging.ColorMatrix CreateSepia(double amount = 1d) => throw null;
@@ -779,15 +796,23 @@ namespace Meziantou.Framework.Imaging
         public static void Equalize(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.HistogramEqualizationOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Equalize(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.HistogramEqualizationOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
         public static void ExtendCanvas(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.Size size, Meziantou.Framework.Imaging.ResizeAnchor anchor = Meziantou.Framework.Imaging.ResizeAnchor.Center, Meziantou.Framework.Imaging.Rgba64? backgroundColor = null, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void Flatten(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.Rgba64 backgroundColor, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void Flatten(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.Rgba64 backgroundColor, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Flip(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.FlipMode mode, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Flip(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.FlipMode mode, System.Threading.CancellationToken cancellationToken = default) { }
         public static void GaussianBlur(this Meziantou.Framework.Imaging.Image image, double sigma, Meziantou.Framework.Imaging.ConvolutionEdgeMode edgeMode = Meziantou.Framework.Imaging.ConvolutionEdgeMode.Clamp, Meziantou.Framework.Imaging.ConvolutionWorkingSpace workingSpace = Meziantou.Framework.Imaging.ConvolutionWorkingSpace.Encoded, System.Threading.CancellationToken cancellationToken = default) { }
         public static void GaussianBlur(this Meziantou.Framework.Imaging.ImageFrame frame, double sigma, Meziantou.Framework.Imaging.ConvolutionEdgeMode edgeMode = Meziantou.Framework.Imaging.ConvolutionEdgeMode.Clamp, Meziantou.Framework.Imaging.ConvolutionWorkingSpace workingSpace = Meziantou.Framework.Imaging.ConvolutionWorkingSpace.Encoded, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void Glow(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.Rgba64 color, double radiusX, double radiusY, Meziantou.Framework.Imaging.Rectangle? rectangle = null, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void Glow(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.Rgba64 color, double radiusX, double radiusY, Meziantou.Framework.Imaging.Rectangle? rectangle = null, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Grayscale(this Meziantou.Framework.Imaging.Image image, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Grayscale(this Meziantou.Framework.Imaging.ImageFrame frame, System.Threading.CancellationToken cancellationToken = default) { }
         public static void MedianBlur(this Meziantou.Framework.Imaging.Image image, int radius, Meziantou.Framework.Imaging.ConvolutionEdgeMode edgeMode = Meziantou.Framework.Imaging.ConvolutionEdgeMode.Clamp, System.Threading.CancellationToken cancellationToken = default) { }
         public static void MedianBlur(this Meziantou.Framework.Imaging.ImageFrame frame, int radius, Meziantou.Framework.Imaging.ConvolutionEdgeMode edgeMode = Meziantou.Framework.Imaging.ConvolutionEdgeMode.Clamp, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void OilPaint(this Meziantou.Framework.Imaging.Image image, int levels, int radius, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void OilPaint(this Meziantou.Framework.Imaging.ImageFrame frame, int levels, int radius, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Pad(this Meziantou.Framework.Imaging.Image image, int left, int top, int right, int bottom, Meziantou.Framework.Imaging.Rgba64? backgroundColor = null, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void Pixelate(this Meziantou.Framework.Imaging.Image image, int size, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void Pixelate(this Meziantou.Framework.Imaging.ImageFrame frame, int size, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Quantize(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.QuantizeOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Quantize(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.QuantizeOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
         public static void ReplaceColor(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.Rgba64 color, Meziantou.Framework.Imaging.Rgba64 replacement, double tolerance = 0d, System.Threading.CancellationToken cancellationToken = default) { }
@@ -802,6 +827,8 @@ namespace Meziantou.Framework.Imaging
         public static void Threshold(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.ThresholdOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Transform(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.AffineTransform transform, Meziantou.Framework.Imaging.TransformOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Transform(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.ProjectiveTransform transform, Meziantou.Framework.Imaging.TransformOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void Vignette(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.Rgba64 color, double radiusX, double radiusY, Meziantou.Framework.Imaging.Rectangle? rectangle = null, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void Vignette(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.Rgba64 color, double radiusX, double radiusY, Meziantou.Framework.Imaging.Rectangle? rectangle = null, System.Threading.CancellationToken cancellationToken = default) { }
     }
 
     public sealed class ImageReaderOptions

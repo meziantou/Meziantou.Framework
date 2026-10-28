@@ -1575,19 +1575,19 @@ public sealed class TiffCodecTests
         var data = Build(referenceBlackWhite: null);
         var info = Image.Identify(data);
         Assert.Equal(ImageColorModel.YCbCr, info.ColorModel);
-        Assert.Equal(PixelFormat.Rgba64, info.PixelFormat);
+        Assert.Equal(PixelFormat.Rgb48, info.PixelFormat);
         Assert.Equal(12, info.BitsPerComponent);
         byte[] expected = [.. strips.SelectMany(static strip => strip.GetExpectedPixels())];
         using (var image = Image.Load(data))
         {
-            Assert.Equal(PixelFormat.Rgba64, image.PixelFormat);
-            Assert.Equal(expected, GetBytes(image));
+            Assert.Equal(PixelFormat.Rgb48, image.PixelFormat);
+            Assert.Equal(expected, GetRgba64Bytes(image));
         }
 
         // The full range of 12-bit samples, which libtiff writes: black at 0, white at 4095, chroma centered on 2048
         using (var image = Image.Load(Build(new TiffFieldSpec(532, 5, [0, 1, 4095, 1, 2048, 1, 4095, 1, 2048, 1, 4095, 1]))))
         {
-            Assert.Equal(expected, GetBytes(image));
+            Assert.Equal(expected, GetRgba64Bytes(image));
         }
 
         // The full range of 8-bit samples is another conversion for 12-bit ones
@@ -1632,8 +1632,8 @@ public sealed class TiffCodecTests
         var stored = Enumerable.Range(0, 3).Select(color.GetComponentValues).ToArray();
         using (var image = Image.Load(new TiffFileBuilder().AddPage(new TiffPageSpec { Width = 13, Height = 9, SamplesPerPixel = 3, BitsPerSample = 12, Photometric = 2, Compression = 7, EncodedBlocks = [color.Encode()], Samples = [] }).Build()))
         {
-            Assert.Equal(PixelFormat.Rgba64, image.PixelFormat);
-            var actual = unsafe(MemoryMarshal.Cast<byte, ushort>(GetBytes(image).AsSpan()));
+            Assert.Equal(PixelFormat.Rgb48, image.PixelFormat);
+            var actual = unsafe(MemoryMarshal.Cast<byte, ushort>(GetRgba64Bytes(image).AsSpan()));
             for (var i = 0; i < 13 * 9; i++)
             {
                 Assert.Equal((Scale(stored[0][i]), Scale(stored[1][i]), Scale(stored[2][i]), ushort.MaxValue), (actual[i * 4], actual[(i * 4) + 1], actual[(i * 4) + 2], actual[(i * 4) + 3]));
@@ -1647,8 +1647,8 @@ public sealed class TiffCodecTests
         Assert.Equal(12, Image.Identify(cmyk).BitsPerComponent);
         using (var image = Image.Load(cmyk, InkOptions))
         {
-            Assert.Equal(PixelFormat.Rgba64, image.PixelFormat);
-            var pixels = unsafe(MemoryMarshal.Cast<byte, ushort>(GetBytes(image).AsSpan()));
+            Assert.Equal(PixelFormat.Rgb48, image.PixelFormat);
+            var pixels = unsafe(MemoryMarshal.Cast<byte, ushort>(GetRgba64Bytes(image).AsSpan()));
             var colors = new ushort[13 * 9 * 3];
             for (var pixel = 0; pixel < 13 * 9; pixel++)
             {
@@ -1695,9 +1695,9 @@ public sealed class TiffCodecTests
         var tiled = new TiffPageSpec { Width = 30, Height = 20, SamplesPerPixel = 3, BitsPerSample = bitsPerSample, Photometric = 2, Compression = 7, TileWidth = 16, TileLength = 16, EncodedBlocks = [.. tiles.Select(static tile => tile.Encode(new JpegLosslessTestOptions { Predictor = 4 }))], Samples = [] };
         using (var image = Image.Load(new TiffFileBuilder { BigEndian = bigEndian }.AddPage(tiled).Build()))
         {
-            Assert.Equal(deep ? PixelFormat.Rgba64 : PixelFormat.Rgb24, image.PixelFormat);
+            Assert.Equal(deep ? PixelFormat.Rgb48 : PixelFormat.Rgb24, image.PixelFormat);
             var actual = Words(image);
-            var channels = deep ? 4 : 3;
+            const int channels = 3;
             var stored = tiles.Select(static tile => tile.GetStoredSamples()).ToArray();
             for (var y = 0; y < 20; y++)
             {
@@ -1720,7 +1720,7 @@ public sealed class TiffCodecTests
         ycbcr.ExtraFields.Add(TiffFieldSpec.Shorts(530, [2, 2]));
         using (var image = Image.Load(new TiffFileBuilder { BigEndian = bigEndian }.AddPage(ycbcr).Build()))
         {
-            Assert.Equal(color.GetExpectedPixels(), GetBytes(image));
+            Assert.Equal(color.GetExpectedPixels(), deep ? GetRgba64Bytes(image) : GetBytes(image));
         }
 
         // A datastream of another precision is not the one of the page
@@ -1886,7 +1886,7 @@ public sealed class TiffCodecTests
         var deep = new TiffPageSpec { Width = 2, Height = 1, BitsPerSample = 1, Photometric = 3, Samples = [0b01_000000] };
         deep.ExtraFields.Add(TiffFieldSpec.Shorts(320, [1000, 65535, 2000, 257, 3000, 256]));
         var deepData = new TiffFileBuilder().AddPage(deep).Build();
-        Assert.Equal(PixelFormat.Rgba64, Image.Identify(deepData).PixelFormat);
+        Assert.Equal(PixelFormat.Rgb48, Image.Identify(deepData).PixelFormat);
         Assert.Equal([new Rgba64(1000, 2000, 3000, 65535), new Rgba64(65535, 257, 256, 65535)], Decode<Rgba64>(deepData));
     }
 
@@ -2421,6 +2421,13 @@ public sealed class TiffCodecTests
         return new Rgb24(Round(r), Round(g), Round(b));
 
         static byte Round(decimal value) => (byte)Math.Clamp(Math.Floor(value + 0.5m), 0, 255);
+    }
+
+    /// <summary>Gets the pixels as <see cref="Rgba64"/> bytes (an opaque alpha for <see cref="Rgb48"/>).</summary>
+    private static byte[] GetRgba64Bytes(Image image)
+    {
+        using var wide = image.CloneAs<Rgba64>();
+        return GetBytes(wide);
     }
 
     private static byte[] GetBytes(Image image)

@@ -125,19 +125,84 @@ public sealed class ImageFrame<TPixel> : ImageFrame
         => ProcessingKernels.Transform<TPixel>(source, destination, region, transform, cancellationToken);
 
     internal override void ResizePixels(scoped in PixelLease source, scoped in PixelLease destination, ResizePlan plan, CancellationToken cancellationToken)
-        => Resampler.Resize<TPixel>(source, destination, plan, cancellationToken);
+    {
+        if (!ProcessingBridge.IsBridged<TPixel>())
+        {
+            Resampler.Resize<TPixel>(source, destination, plan, cancellationToken);
+        }
+        else if (typeof(TPixel) == typeof(La32))
+        {
+            ProcessingBridge.RunCopy<TPixel>(OwnerImage.Owner, source, destination, (scoped in PixelLease from, scoped in PixelLease to) => Resampler.Resize<Rgba64>(from, to, plan, cancellationToken));
+        }
+        else
+        {
+            ProcessingBridge.RunCopy<TPixel>(OwnerImage.Owner, source, destination, (scoped in PixelLease from, scoped in PixelLease to) => Resampler.Resize<Rgba32>(from, to, plan, cancellationToken));
+        }
+    }
 
     internal override void WarpPixels(scoped in PixelLease source, scoped in PixelLease destination, WarpPlan plan, CancellationToken cancellationToken)
-        => Warper.Warp<TPixel>(source, destination, plan, cancellationToken);
+    {
+        if (!ProcessingBridge.IsBridged<TPixel>())
+        {
+            Warper.Warp<TPixel>(source, destination, plan, cancellationToken);
+        }
+        else if (typeof(TPixel) == typeof(La32))
+        {
+            ProcessingBridge.RunCopy<TPixel>(OwnerImage.Owner, source, destination, (scoped in PixelLease from, scoped in PixelLease to) => Warper.Warp<Rgba64>(from, to, plan, cancellationToken));
+        }
+        else
+        {
+            ProcessingBridge.RunCopy<TPixel>(OwnerImage.Owner, source, destination, (scoped in PixelLease from, scoped in PixelLease to) => Warper.Warp<Rgba32>(from, to, plan, cancellationToken));
+        }
+    }
 
     internal override void ConvolvePixels(scoped in PixelLease lease, ConvolutionPlan plan, CancellationToken cancellationToken)
-        => Convolver.Convolve<TPixel>(lease, plan, cancellationToken);
+    {
+        if (!ProcessingBridge.IsBridged<TPixel>())
+        {
+            Convolver.Convolve<TPixel>(lease, plan, cancellationToken);
+        }
+        else if (typeof(TPixel) == typeof(La32))
+        {
+            ProcessingBridge.RunInPlace<TPixel>(OwnerImage.Owner, lease, (scoped in PixelLease working) => Convolver.Convolve<Rgba64>(working, plan, cancellationToken));
+        }
+        else
+        {
+            ProcessingBridge.RunInPlace<TPixel>(OwnerImage.Owner, lease, (scoped in PixelLease working) => Convolver.Convolve<Rgba32>(working, plan, cancellationToken));
+        }
+    }
 
     internal override void BoxBlurPixels(scoped in PixelLease lease, BoxBlurPlan plan, CancellationToken cancellationToken)
-        => BoxBlurrer.Blur<TPixel>(lease, plan, cancellationToken);
+    {
+        if (!ProcessingBridge.IsBridged<TPixel>())
+        {
+            BoxBlurrer.Blur<TPixel>(lease, plan, cancellationToken);
+        }
+        else if (typeof(TPixel) == typeof(La32))
+        {
+            ProcessingBridge.RunInPlace<TPixel>(OwnerImage.Owner, lease, (scoped in PixelLease working) => BoxBlurrer.Blur<Rgba64>(working, plan, cancellationToken));
+        }
+        else
+        {
+            ProcessingBridge.RunInPlace<TPixel>(OwnerImage.Owner, lease, (scoped in PixelLease working) => BoxBlurrer.Blur<Rgba32>(working, plan, cancellationToken));
+        }
+    }
 
     internal override void MedianPixels(scoped in PixelLease lease, MedianPlan plan, CancellationToken cancellationToken)
-        => MedianFilter.Apply<TPixel>(lease, plan, cancellationToken);
+    {
+        if (!ProcessingBridge.IsBridged<TPixel>())
+        {
+            MedianFilter.Apply<TPixel>(lease, plan, cancellationToken);
+        }
+        else if (typeof(TPixel) == typeof(La32))
+        {
+            ProcessingBridge.RunInPlace<TPixel>(OwnerImage.Owner, lease, (scoped in PixelLease working) => MedianFilter.Apply<Rgba64>(working, plan, cancellationToken));
+        }
+        else
+        {
+            ProcessingBridge.RunInPlace<TPixel>(OwnerImage.Owner, lease, (scoped in PixelLease working) => MedianFilter.Apply<Rgba32>(working, plan, cancellationToken));
+        }
+    }
 
     internal override void ConvertColorPixels(scoped in PixelLease source, scoped in PixelLease destination, IccPipeline pipeline, IccUInt16InputTables? uint16Tables, CancellationToken cancellationToken)
         => ColorConversionKernels.ConvertRows<TPixel>(source, destination, pipeline, uint16Tables, cancellationToken);

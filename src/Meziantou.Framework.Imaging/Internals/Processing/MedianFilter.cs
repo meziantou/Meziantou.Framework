@@ -40,7 +40,7 @@ internal static class MedianFilter
         if (storage.Width != plan.Size.Width || storage.Height != plan.Size.Height)
             throw new InvalidOperationException("The storage does not have the size the median filter was prepared for.");
 
-        if (typeof(TPixel) == typeof(Rgba64) || typeof(TPixel) == typeof(Gray16))
+        if (typeof(TPixel) == typeof(Rgba64) || typeof(TPixel) == typeof(Gray16) || typeof(TPixel) == typeof(Rgb48))
         {
             Apply<ushort>(storage, plan, cancellationToken);
         }

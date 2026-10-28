@@ -399,6 +399,17 @@ internal sealed class TiffDocumentWriter : IDisposable
             case PixelFormat.Bgra32:
                 return Pack(row[(x * 4) + 2] * 257u, row[(x * 4) + 1] * 257u, row[x * 4] * 257u);
 
+            case PixelFormat.La16:
+                return Pack(row[x * 2] * 257u, row[x * 2] * 257u, row[x * 2] * 257u);
+
+            case PixelFormat.La32:
+                var level = unsafe(MemoryMarshal.Cast<byte, ushort>(row))[x * 2];
+                return Pack(level, level, level);
+
+            case PixelFormat.Rgb48:
+                var rgb = unsafe(MemoryMarshal.Cast<byte, ushort>(row)).Slice(x * 3, 3);
+                return Pack(rgb[0], rgb[1], rgb[2]);
+
             default:
                 var offset = x * PixelFormats.GetBytesPerPixel(format);
                 return Pack(row[offset] * 257u, row[offset + 1] * 257u, row[offset + 2] * 257u);

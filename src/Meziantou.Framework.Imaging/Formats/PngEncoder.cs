@@ -6,8 +6,9 @@ namespace Meziantou.Framework.Imaging.Formats;
 /// <remarks>
 /// <para>
 /// By default the PNG color type and bit depth follow the pixel format: grayscale for <see cref="Gray8"/>/<see cref="Gray16"/>,
-/// RGB for <see cref="Rgb24"/>, RGBA for <see cref="Rgba32"/>/<see cref="Bgra32"/>, and 16-bit samples for
-/// <see cref="Rgba64"/> and <see cref="Gray16"/>. <see cref="PngPixelLayout.Indexed"/> writes a palette instead, for the
+/// grayscale with alpha for <see cref="La16"/>/<see cref="La32"/> (and <see cref="A8"/>, written as black with its alpha),
+/// RGB for <see cref="Rgb24"/>/<see cref="Rgb48"/>, RGBA for <see cref="Rgba32"/>/<see cref="Bgra32"/>/<see cref="Rgba64"/>,
+/// and 16-bit samples for the 16-bit pixel formats. <see cref="PngPixelLayout.Indexed"/> writes a palette instead, for the
 /// images whose colors it can hold exactly. <see cref="PngOptimization.MinimumSize"/> chooses the layout, the filters and
 /// the animation frame rectangles that give the smallest file instead. Encoding never reduces precision, never reduces
 /// colors and never drops alpha.
@@ -22,6 +23,9 @@ public sealed class PngEncoder : ImageEncoder
 {
     /// <inheritdoc />
     public override ImageFormat Format => ImageFormat.Png;
+
+    /// <inheritdoc />
+    internal override bool StoresPixelFormat(PixelFormat format) => format != PixelFormat.A8;
 
     /// <summary>Gets the animation mode. Defaults to <see cref="PngAnimationMode.Auto"/>.</summary>
     /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="PngAnimationMode"/>.</exception>

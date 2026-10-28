@@ -121,7 +121,7 @@ public sealed class JpegProgressiveDecoderTests
             Assert.Equal(12, data[FindSegment(data, 0xC2) + 4]);
             Assert.Equal(12, Image.Identify(data).BitsPerComponent);
             using var decoded = Image.Load(data);
-            Assert.Equal(gray ? PixelFormat.Gray16 : PixelFormat.Rgba64, decoded.PixelFormat);
+            Assert.Equal(gray ? PixelFormat.Gray16 : PixelFormat.Rgb48, decoded.PixelFormat);
             AssertPixels(expected, decoded, $"12-bit {layout} {width}x{height}, {name}");
         }
     }
@@ -944,6 +944,13 @@ public sealed class JpegProgressiveDecoderTests
 
     private static byte[] GetBytes(Image image)
     {
+        // 16-bit color loads as Rgb48; the expected pixels are opaque RGBA
+        if (image.PixelFormat == PixelFormat.Rgb48)
+        {
+            using var wide = image.CloneAs<Rgba64>();
+            return GetBytes(wide);
+        }
+
         var bytes = new byte[image.Width * image.Height * PixelFormats.GetBytesPerPixel(image.PixelFormat)];
         image.Frames[0].CopyPixelBytesTo(bytes);
         return bytes;
@@ -956,7 +963,7 @@ public sealed class JpegProgressiveDecoderTests
             return;
 
         var index = expected.AsSpan().CommonPrefixLength(actual);
-        var channels = PixelFormats.GetBytesPerPixel(image.PixelFormat);
+        var channels = PixelFormats.GetBytesPerPixel(image.PixelFormat == PixelFormat.Rgb48 ? PixelFormat.Rgba64 : image.PixelFormat);
         var pixel = index / channels;
         Assert.Fail($"{context}: first difference at ({pixel % image.Width}, {pixel / image.Width}) channel {index % channels}: expected {expected[index]}, actual {actual[index]}.");
     }

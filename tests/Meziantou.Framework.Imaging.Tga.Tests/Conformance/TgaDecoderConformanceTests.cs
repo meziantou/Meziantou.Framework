@@ -60,15 +60,9 @@ public sealed class TgaDecoderConformanceTests
         using (var image = Image.Load(data))
         {
             Assert.Equal(fixture.Expected.PixelFormat, image.PixelFormat.ToString());
-            var layout = image.PixelFormat switch
-            {
-                PixelFormat.Gray8 => RawPixelLayout.Gray8,
-                PixelFormat.Rgb24 => RawPixelLayout.Rgb8,
-                _ => RawPixelLayout.Rgba8,
-            };
-
-            var bytes = new byte[image.Width * image.Height * layout.BytesPerPixel];
-            image.Frames[0].CopyPixelBytesTo(bytes);
+            // The samples of the default format, in the layout of its references (gray with alpha and 16-bit RGB as RGBA)
+            var layout = ImageSnapshots.GetLayout(image.PixelFormat);
+            var bytes = ImageSnapshots.CaptureFrame(image.Frames[0]).Span;
             Assert.True(fixture.GetFrame(0, layout).Span.SequenceEqual(bytes), $"{id}: the {layout.Name} samples differ from the reference.");
         }
     }
@@ -79,7 +73,7 @@ public sealed class TgaDecoderConformanceTests
         // The same 16-bit payload decodes to gray and alpha with eight declared alpha bits and to opaque Gray8 with none
         var declared = Image.Identify(GoldenCorpus.Default.Get("tga/grayscale16-alpha").ReadInput());
         var undeclared = Image.Identify(GoldenCorpus.Default.Get("tga/grayscale16-unspecified-attribute").ReadInput());
-        Assert.Equal((PixelFormat.Rgba32, ImageColorModel.GrayscaleAlpha), (declared.PixelFormat, declared.ColorModel));
+        Assert.Equal((PixelFormat.La16, ImageColorModel.GrayscaleAlpha), (declared.PixelFormat, declared.ColorModel));
         Assert.Equal((PixelFormat.Gray8, ImageColorModel.Grayscale), (undeclared.PixelFormat, undeclared.ColorModel));
         Assert.True(declared.MayHaveTransparency);
         Assert.False(undeclared.MayHaveTransparency);

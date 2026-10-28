@@ -22,12 +22,17 @@ public static class ImageSnapshots
 {
     /// <summary>Gets the raw layout a frame of <paramref name="format"/> is captured in.</summary>
     /// <param name="format">The pixel format.</param>
-    /// <returns><c>rgba8</c> for <c>Rgba32</c> and <c>Bgra32</c> (channels reordered), <c>rgb8</c>, <c>rgba16le</c>, <c>gray8</c> or <c>gray16le</c>.</returns>
+    /// <returns>
+    /// <c>rgba8</c> for <c>Rgba32</c> and <c>Bgra32</c> (channels reordered), <c>rgb8</c>, <c>rgba16le</c>, <c>gray8</c> or
+    /// <c>gray16le</c>. The gray formats with alpha, <c>Rgb48</c> and <c>A8</c> are captured as <c>rgba8</c> or
+    /// <c>rgba16le</c>: the gray level in the three colors, an opaque alpha, black for an alpha mask (the layouts of the
+    /// references of the corpus, which the default formats of the decoders used before these formats existed).
+    /// </returns>
     public static RawPixelLayout GetLayout(PixelFormat format) => format switch
     {
-        PixelFormat.Rgba32 or PixelFormat.Bgra32 => RawPixelLayout.Rgba8,
+        PixelFormat.Rgba32 or PixelFormat.Bgra32 or PixelFormat.La16 or PixelFormat.A8 => RawPixelLayout.Rgba8,
         PixelFormat.Rgb24 => RawPixelLayout.Rgb8,
-        PixelFormat.Rgba64 => RawPixelLayout.Rgba16Le,
+        PixelFormat.Rgba64 or PixelFormat.La32 or PixelFormat.Rgb48 => RawPixelLayout.Rgba16Le,
         PixelFormat.Gray8 => RawPixelLayout.Gray8,
         PixelFormat.Gray16 => RawPixelLayout.Gray16Le,
         PixelFormat.RgbaHalf or PixelFormat.RgbaFloat => RawPixelLayout.RgbaF32Le,
@@ -226,6 +231,44 @@ public static class ImageSnapshots
                 builder.SetRow16(y, unsafe(MemoryMarshal.Cast<byte, ushort>(row)));
                 break;
 
+            case PixelFormat.La16:
+                for (var x = 0; x < row.Length / 2; x++)
+                {
+                    SetSamples(builder, x, y, row[x * 2], row[x * 2], row[x * 2], row[(x * 2) + 1]);
+                }
+
+                break;
+
+            case PixelFormat.A8:
+                for (var x = 0; x < row.Length; x++)
+                {
+                    SetSamples(builder, x, y, 0, 0, 0, row[x]);
+                }
+
+                break;
+
+            case PixelFormat.La32:
+            {
+                var samples = unsafe(MemoryMarshal.Cast<byte, ushort>(row));
+                for (var x = 0; x < samples.Length / 2; x++)
+                {
+                    SetSamples(builder, x, y, samples[x * 2], samples[x * 2], samples[x * 2], samples[(x * 2) + 1]);
+                }
+
+                break;
+            }
+
+            case PixelFormat.Rgb48:
+            {
+                var samples = unsafe(MemoryMarshal.Cast<byte, ushort>(row));
+                for (var x = 0; x < samples.Length / 3; x++)
+                {
+                    SetSamples(builder, x, y, samples[x * 3], samples[(x * 3) + 1], samples[(x * 3) + 2], ushort.MaxValue);
+                }
+
+                break;
+            }
+
             case PixelFormat.RgbaHalf:
             {
                 // Halves in native endianness, captured as the floats they convert to exactly
@@ -285,6 +328,18 @@ public static class ImageSnapshots
                 break;
             case Gray16 p:
                 builder.SetSample(x, y, 0, p.Value);
+                break;
+            case La16 p:
+                SetSamples(builder, x, y, p.L, p.L, p.L, p.A);
+                break;
+            case La32 p:
+                SetSamples(builder, x, y, p.L, p.L, p.L, p.A);
+                break;
+            case Rgb48 p:
+                SetSamples(builder, x, y, p.R, p.G, p.B, ushort.MaxValue);
+                break;
+            case A8 p:
+                SetSamples(builder, x, y, 0, 0, 0, p.A);
                 break;
             default:
                 throw new NotSupportedException($"Unsupported pixel type {typeof(TPixel)}.");

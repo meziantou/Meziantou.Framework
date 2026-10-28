@@ -1370,7 +1370,7 @@ public sealed class DocumentationExampleTests : IDisposable
 
     [Theory]
     [InlineData("avif/lossless-rgba8", "12x9 Rgba32, frames: 1, color: 1/13/0 full")]
-    [InlineData("avif/lossless-rgb10", "8x8 Rgba64, frames: 1, color: 1/13/0 full")] // PNG keeps the 16-bit samples
+    [InlineData("avif/lossless-rgb10", "8x8 Rgb48, frames: 1, color: 1/13/0 full")] // PNG keeps the 16-bit samples
     [InlineData("avif/lossless-gray8", "9x7 Gray8, frames: 1, color: 1/13/6 full")]
     [InlineData("avif/sequence-alpha-repeat-2", "8x8 Rgba32, frames: 2, color: 1/13/6 full")] // saved as an animated PNG
     public void ConvertAvifDescribesTheImageAndSavesItAsPng(string id, string expectedDescription)
@@ -2125,6 +2125,28 @@ public sealed class DocumentationExampleTests : IDisposable
         using var saved = Image.Load<Rgba64>(output);
         Assert.Equal(new Rgba64(65535, 65535, 65535), saved.Frames[0][1, 0]);
         Assert.Equal(new Rgba64(32768, 16384, 8192), saved.Frames[0][0, 0]);
+    }
+
+    [Fact]
+    public void ExtractAlphaMaskLoadsGrayWithAlphaAndKeepsTheAlpha()
+    {
+        var input = GetPath("gray-alpha.png");
+        using (var source = new Image<La16>(2, 1, new La16(l: 200, a: 128)))
+        {
+            source.Frames[0][1, 0] = new La16(l: 10, a: 255);
+            source.Save(input, new PngEncoder());
+        }
+
+        Assert.Equal(PixelFormat.La16, Image.Identify(input).PixelFormat);
+        var output = GetPath("mask.png");
+        using var mask = Examples.ExtractAlphaMask(input, output);
+        Assert.Equal(new A8(128), mask.Frames[0][0, 0]);
+        Assert.Equal(new A8(255), mask.Frames[0][1, 0]);
+
+        // The mask is black gray with alpha in the file
+        using var saved = Image.Load(output);
+        Assert.Equal(PixelFormat.La16, saved.PixelFormat);
+        Assert.Equal(new La16(0, 128), ((Image<La16>)saved).Frames[0][0, 0]);
     }
 
     [Fact]

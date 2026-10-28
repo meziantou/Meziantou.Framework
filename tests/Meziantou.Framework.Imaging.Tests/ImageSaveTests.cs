@@ -1,4 +1,5 @@
 using Meziantou.Framework.Imaging.Formats;
+using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Imaging.TestHarness.Streams;
 using Meziantou.Framework.Imaging.Tests.Codecs;
@@ -401,7 +402,73 @@ public sealed class ImageSaveTests
         Assert.Equal(2, decoded.Frames.Count);
     }
 
-    public static TheoryData<ImageEncoder> EncodersWithoutHotspot() =>
+    public static TheoryData<ImageEncoder, PixelFormat> EncodersAndCompactFormats()
+    {
+        var data = new TheoryData<ImageEncoder, PixelFormat>();
+        foreach (var encoder in CreateEncodersWithoutHotspot())
+        {
+            foreach (var format in (PixelFormat[])[PixelFormat.La16, PixelFormat.La32, PixelFormat.Rgb48, PixelFormat.A8])
+            {
+                data.Add(encoder, format);
+            }
+        }
+
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(EncodersAndCompactFormats))]
+    public void EveryEncoderAcceptsTheCompactFormats(ImageEncoder encoder, PixelFormat format)
+    {
+        // Gray levels, opaque or not, so that every format stores them exactly; an alpha mask is black
+        using var image = DrawingTestSupport.Create(format, Width, Height);
+        image.Frames[0].ProcessPixelBytes(static pixels =>
+        {
+            for (var y = 0; y < pixels.Height; y++)
+            {
+                var row = pixels.GetRowSpan(y);
+                for (var i = 0; i < row.Length; i++)
+                {
+                    row[i] = (byte)((y * 70) + (i * 13));
+                }
+            }
+        });
+
+        if (encoder is OpenExrEncoder)
+        {
+            // OpenEXR stores linear light only
+            image.Metadata.TransferFunction = ColorTransferFunction.Linear;
+        }
+
+        if (encoder is PngEncoder or TiffEncoder)
+        {
+            // Stored as they are (an alpha mask as gray with alpha), and read back so
+            using var stream = new MemoryStream();
+            image.Save(stream, encoder);
+            stream.Position = 0;
+            using var reloaded = Image.Load(stream);
+            var stored = format == PixelFormat.A8 ? PixelFormat.La16 : format;
+            Assert.Equal(encoder is PngEncoder { AnimationMode: PngAnimationMode.Animated } ? PixelFormatWidening.GetWidenedFormat(stored) : stored, reloaded.PixelFormat);
+            using var expected = image.CloneAs<Rgba64>();
+            using var actual = reloaded.CloneAs<Rgba64>();
+            Assert.Equal(StreamImages.GetBytes(expected.Frames[0]), StreamImages.GetBytes(actual.Frames[0]));
+            return;
+        }
+
+        // The other encoders get the pixels widened without any loss: the output is the one of the widened image, or the
+        // same exception before anything is written
+        using var widened = image.CloneAs(PixelFormatWidening.GetWidenedFormat(format), options: null);
+        using var widenedStream = new MemoryStream();
+        using var compactStream = new MemoryStream();
+        var widenedException = Record.Exception(() => widened.Save(widenedStream, encoder));
+        var compactException = Record.Exception(() => image.Save(compactStream, encoder));
+        Assert.Equal(widenedException?.GetType(), compactException?.GetType());
+        Assert.Equal(widenedStream.ToArray(), compactStream.ToArray());
+    }
+
+    public static TheoryData<ImageEncoder> EncodersWithoutHotspot() => [.. CreateEncodersWithoutHotspot()];
+
+    private static ImageEncoder[] CreateEncodersWithoutHotspot() =>
     [
         new PngEncoder(),
         new PngEncoder { AnimationMode = PngAnimationMode.Animated },

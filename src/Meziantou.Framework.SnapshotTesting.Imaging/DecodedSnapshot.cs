@@ -37,7 +37,7 @@ internal sealed class DecodedSnapshot : IDisposable
     public IReadOnlyList<ImageFrame> Frames { get; }
 
     /// <summary>Gets a value indicating whether a frame has samples of more than 8 bits.</summary>
-    public bool HasHighPrecisionSamples => _images.Exists(static image => image.PixelFormat is PixelFormat.Rgba64 or PixelFormat.Gray16);
+    public bool HasHighPrecisionSamples => _images.Exists(static image => image.PixelFormat is PixelFormat.Rgba64 or PixelFormat.Gray16 or PixelFormat.La32 or PixelFormat.Rgb48);
 
     /// <summary>Decodes an image file. CMYK images are converted to RGB.</summary>
     /// <exception cref="ImageException">The data is not an image, or the library cannot decode it.</exception>

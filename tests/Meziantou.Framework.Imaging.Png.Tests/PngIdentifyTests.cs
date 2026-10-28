@@ -13,8 +13,8 @@ public sealed class PngIdentifyTests
     [InlineData((byte)0, (byte)1, PixelFormat.Gray8, ImageColorModel.Grayscale)]
     [InlineData((byte)0, (byte)16, PixelFormat.Gray16, ImageColorModel.Grayscale)]
     [InlineData((byte)2, (byte)8, PixelFormat.Rgb24, ImageColorModel.Rgb)]
-    [InlineData((byte)2, (byte)16, PixelFormat.Rgba64, ImageColorModel.Rgb)]
-    [InlineData((byte)4, (byte)8, PixelFormat.Rgba32, ImageColorModel.GrayscaleAlpha)]
+    [InlineData((byte)2, (byte)16, PixelFormat.Rgb48, ImageColorModel.Rgb)]
+    [InlineData((byte)4, (byte)8, PixelFormat.La16, ImageColorModel.GrayscaleAlpha)]
     [InlineData((byte)6, (byte)16, PixelFormat.Rgba64, ImageColorModel.Rgba)]
     public void StaticImagesAreIdentifiedInBothModes(byte colorType, byte bitDepth, PixelFormat pixelFormat, ImageColorModel colorModel)
     {

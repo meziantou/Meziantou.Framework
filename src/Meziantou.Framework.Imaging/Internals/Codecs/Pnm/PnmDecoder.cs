@@ -25,7 +25,7 @@ internal sealed class PnmDecoder : IImageDecodeObserver
     {
         ArgumentNullException.ThrowIfNull(structure);
         _structure = structure;
-        _sink = DecodedFrameSink.Create(_context, _request, ImageFormat.Pnm, structure.Size, structure.SourcePixelFormat, structure.SourcePixelFormat, iccProfile: null);
+        _sink = DecodedFrameSink.Create(_context, _request, ImageFormat.Pnm, structure.Size, structure.DefaultPixelFormat, structure.SourcePixelFormat, iccProfile: null);
     }
 
     /// <summary>Starts the frame on its first row and leases it; dispose the lease before returning from the parser call.</summary>

@@ -56,6 +56,10 @@ public sealed class AutoCropTests
             case PixelFormat.Rgba64: CheckContentBox<Rgba64>(); break;
             case PixelFormat.Gray8: CheckContentBox<Gray8>(); break;
             case PixelFormat.Gray16: CheckContentBox<Gray16>(); break;
+            case PixelFormat.La16: CheckContentBox<La16>(); break;
+            case PixelFormat.La32: CheckContentBox<La32>(); break;
+            case PixelFormat.Rgb48: CheckContentBox<Rgb48>(); break;
+            case PixelFormat.A8: CheckContentBox<A8>(); break;
             case PixelFormat.RgbaFloat: CheckContentBox<RgbaFloat>(); break;
             case PixelFormat.RgbaHalf: CheckContentBox<RgbaHalf>(); break;
             default: throw new ArgumentOutOfRangeException(nameof(format));
@@ -457,6 +461,10 @@ public sealed class AutoCropTests
             case PixelFormat.Rgba64: CheckExpand<Rgba64>(); break;
             case PixelFormat.Gray8: CheckExpand<Gray8>(); break;
             case PixelFormat.Gray16: CheckExpand<Gray16>(); break;
+            case PixelFormat.La16: CheckExpand<La16>(); break;
+            case PixelFormat.La32: CheckExpand<La32>(); break;
+            case PixelFormat.Rgb48: CheckExpand<Rgb48>(); break;
+            case PixelFormat.A8: CheckExpand<A8>(); break;
             case PixelFormat.RgbaFloat: CheckExpand<RgbaFloat>(); break;
             case PixelFormat.RgbaHalf: CheckExpand<RgbaHalf>(); break;
             default: throw new ArgumentOutOfRangeException(nameof(format));
@@ -1022,6 +1030,12 @@ public sealed class AutoCropTests
             var t when t == typeof(Rgba64) => new Rgba64(r16, g16, b16),
             var t when t == typeof(Gray8) => new Gray8(r),
             var t when t == typeof(Gray16) => new Gray16(r16),
+            var t when t == typeof(La16) => new La16(r),
+            var t when t == typeof(La32) => new La32(r16),
+            var t when t == typeof(Rgb48) => new Rgb48(r16, g16, b16),
+
+            // An alpha mask has no color: the level of the ink is its alpha (the background is opaque black)
+            var t when t == typeof(A8) => new A8(r),
             var t when t == typeof(RgbaFloat) || t == typeof(RgbaHalf) => FloatInk<TPixel>(r / 255f, g / 255f, b / 255f),
             _ => throw new NotSupportedException(),
         };
@@ -1043,11 +1057,14 @@ public sealed class AutoCropTests
     private static Rgba64 ExpectedBackground<TPixel>()
         where TPixel : unmanaged
     {
-        if (typeof(TPixel) == typeof(Rgba64))
+        if (typeof(TPixel) == typeof(Rgba64) || typeof(TPixel) == typeof(Rgb48))
             return new Rgba64(0xFFFE, 0xFFFD, 0xFFFC);
 
-        if (typeof(TPixel) == typeof(Gray16))
+        if (typeof(TPixel) == typeof(Gray16) || typeof(TPixel) == typeof(La32))
             return new Rgba64(0xFFFE, 0xFFFE, 0xFFFE);
+
+        if (typeof(TPixel) == typeof(A8))
+            return new Rgba64(0, 0, 0, ushort.MaxValue);
 
         return White64;
     }

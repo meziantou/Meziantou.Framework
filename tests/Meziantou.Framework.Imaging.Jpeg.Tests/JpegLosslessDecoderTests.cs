@@ -544,7 +544,7 @@ public sealed class JpegLosslessDecoderTests
             return;
         }
 
-        Assert.Equal(PixelFormat.Rgba64, decoded.PixelFormat);
+        Assert.Equal(PixelFormat.Rgb48, decoded.PixelFormat);
         var pixels = unsafe(MemoryMarshal.Cast<byte, ushort>(GetBytes(decoded).AsSpan()));
         var colors = new ushort[image.Width * image.Height * 3];
         for (var pixel = 0; pixel < image.Width * image.Height; pixel++)
@@ -640,6 +640,13 @@ public sealed class JpegLosslessDecoderTests
 
     private static byte[] GetBytes(Image image)
     {
+        // 16-bit color loads as Rgb48; the expected pixels are opaque RGBA
+        if (image.PixelFormat == PixelFormat.Rgb48)
+        {
+            using var wide = image.CloneAs<Rgba64>();
+            return GetBytes(wide);
+        }
+
         var bytes = new byte[image.Width * image.Height * PixelFormats.GetBytesPerPixel(image.PixelFormat)];
         image.Frames[0].CopyPixelBytesTo(bytes);
         return bytes;
@@ -652,7 +659,7 @@ public sealed class JpegLosslessDecoderTests
             return;
 
         var index = expected.AsSpan().CommonPrefixLength(actual);
-        var channels = PixelFormats.GetBytesPerPixel(image.PixelFormat);
+        var channels = PixelFormats.GetBytesPerPixel(image.PixelFormat == PixelFormat.Rgb48 ? PixelFormat.Rgba64 : image.PixelFormat);
         var pixel = index / channels;
         Assert.Fail($"{context}: first difference at ({pixel % image.Width}, {pixel / image.Width}) channel {index % channels}: expected {expected[index]}, actual {actual[index]}.");
     }

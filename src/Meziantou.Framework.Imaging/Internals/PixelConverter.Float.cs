@@ -316,15 +316,34 @@ internal static partial class PixelConverter
             {
                 unsafe { Unsafe.As<TPixel, Gray8>(ref pixel).Value = (byte)ToIntegerSample(y, Max8); }
             }
-            else
+            else if (typeof(TPixel) == typeof(Gray16))
             {
                 unsafe { Unsafe.As<TPixel, Gray16>(ref pixel).Value = (ushort)ToIntegerSample(y, Max16); }
             }
+            else if (typeof(TPixel) == typeof(La16))
+            {
+                ref var p = ref unsafe(Unsafe.As<TPixel, La16>(ref pixel));
+                (p.L, p.A) = ((byte)ToIntegerSample(y, Max8), (byte)ToIntegerSample(a, Max8));
+            }
+            else
+            {
+                ref var p = ref unsafe(Unsafe.As<TPixel, La32>(ref pixel));
+                (p.L, p.A) = ((ushort)ToIntegerSample(y, Max16), (ushort)ToIntegerSample(a, Max16));
+            }
+        }
+        else if (typeof(TPixel) == typeof(A8))
+        {
+            unsafe { Unsafe.As<TPixel, A8>(ref pixel).A = (byte)ToIntegerSample(a, Max8); }
         }
         else if (typeof(TPixel) == typeof(Rgba64))
         {
             ref var p = ref unsafe(Unsafe.As<TPixel, Rgba64>(ref pixel));
             (p.R, p.G, p.B, p.A) = ((ushort)ToIntegerSample(r, Max16), (ushort)ToIntegerSample(g, Max16), (ushort)ToIntegerSample(b, Max16), (ushort)ToIntegerSample(a, Max16));
+        }
+        else if (typeof(TPixel) == typeof(Rgb48))
+        {
+            ref var p = ref unsafe(Unsafe.As<TPixel, Rgb48>(ref pixel));
+            (p.R, p.G, p.B) = ((ushort)ToIntegerSample(r, Max16), (ushort)ToIntegerSample(g, Max16), (ushort)ToIntegerSample(b, Max16));
         }
         else
         {

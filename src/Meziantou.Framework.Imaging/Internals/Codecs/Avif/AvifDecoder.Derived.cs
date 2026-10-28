@@ -110,7 +110,7 @@ internal sealed partial class AvifDecoder
         var fullRange = nclx?.FullRange ?? format.FullRange;
         var primaries = nclx?.ColorPrimaries ?? format.ColorPrimaries;
         var transfer = nclx?.TransferCharacteristics ?? format.TransferCharacteristics;
-        var layout = DefaultPixelFormats.ForAvif(node.Image.IsMonochrome, alpha is not null, Math.Max(node.Image.BitDepth, node.Alpha?.BitDepth ?? 0));
+        var layout = PixelFormatWidening.GetWidenedFormat(DefaultPixelFormats.ForAvif(node.Image.IsMonochrome, alpha is not null, Math.Max(node.Image.BitDepth, node.Alpha?.BitDepth ?? 0)));
         var converter = new HeifYuvConverter(AvifBinding.Instance, format, matrix, fullRange, alpha?.Format, layout, alpha is not null && node.IsPremultiplied, primaries, transfer);
         var (width, height) = (size.Width, size.Height);
         using var rows = Av1PooledArray<ushort>.Rent(_context.Scope, 2L * width, clear: false);

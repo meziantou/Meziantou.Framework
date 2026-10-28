@@ -215,8 +215,8 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
         }
 
         var request = _request!;
-        // The rows of the writer: 8-bit samples as they are, the other ones scaled to 16 bits (no 16-bit RGB format: opaque RGBA)
-        var source = DefaultPixelFormats.ForJpeg(components.Length, _precision);
+        // The rows of the writer: 8-bit samples as they are, the other ones scaled to 16 bits (16-bit color as opaque RGBA)
+        var source = PixelFormatWidening.GetWidenedFormat(DefaultPixelFormats.ForJpeg(components.Length, _precision));
         var profile = structure.Metadata.IccProfile;
         if (components.Length == 4)
         {

@@ -74,7 +74,7 @@ internal static class Convolver
 
         // The blur of an opaque frame is the blur of its colors: alpha stays at the maximum
         var alpha = GetWorkingAlpha<TPixel>(storage, plan);
-        if (typeof(TPixel) == typeof(Rgba64) || typeof(TPixel) == typeof(Gray16))
+        if (typeof(TPixel) == typeof(Rgba64) || typeof(TPixel) == typeof(Gray16) || typeof(TPixel) == typeof(Rgb48))
         {
             Convolve<ushort>(storage, plan, alpha, cancellationToken);
         }

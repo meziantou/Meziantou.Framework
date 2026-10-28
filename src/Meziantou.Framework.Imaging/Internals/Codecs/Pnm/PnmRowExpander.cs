@@ -36,7 +36,7 @@ internal sealed class PnmRowExpander
 
     /// <summary>Expands one stored row.</summary>
     /// <param name="stored">Exactly <see cref="PnmImageHeader.StoredRowLength"/> bytes.</param>
-    /// <param name="destination">Exactly one row of <see cref="PnmImageHeader.PixelFormat"/> pixels.</param>
+    /// <param name="destination">Exactly one row of <see cref="PnmImageHeader.SourcePixelFormat"/> pixels.</param>
     /// <exception cref="InvalidImageContentException">A sample is greater than <c>MAXVAL</c>.</exception>
     public void ExpandRow(ReadOnlySpan<byte> stored, Span<byte> destination)
     {

@@ -11,7 +11,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <para>
 /// The default mapping is fixed (no data-dependent reduction, so a writer never needs a prepass): <c>Gray8</c> → gray 8,
 /// <c>Gray16</c> → gray 16, <c>Rgb24</c> → RGB 8, <c>Rgba32</c>/<c>Bgra32</c> → RGBA 8 (B and R swapped for <c>Bgra32</c>),
-/// <c>Rgba64</c> → RGBA 16. 16-bit samples are written big-endian from the native-endian <see cref="ushort"/> storage with all
+/// <c>Rgba64</c> → RGBA 16, <c>La16</c>/<c>La32</c> → gray+alpha 8/16, <c>Rgb48</c> → RGB 16. 16-bit samples are written big-endian from the native-endian <see cref="ushort"/> storage with all
 /// 16 bits; no precision or alpha is ever lost. The bytes per pixel equal the storage bytes per pixel.
 /// </para>
 /// <para>
@@ -32,7 +32,7 @@ internal sealed class PngEncodedLayout
 
     public PixelFormat PixelFormat { get; }
 
-    /// <summary>Gets the IHDR color type: 0 gray, 2 RGB, 3 indexed, 6 RGBA.</summary>
+    /// <summary>Gets the IHDR color type: 0 gray, 2 RGB, 3 indexed, 4 gray+alpha, 6 RGBA.</summary>
     public byte ColorType { get; }
 
     /// <summary>Gets the IHDR bit depth: 8 or 16, or 1, 2, 4 or 8 for the indexed layout.</summary>
@@ -53,6 +53,9 @@ internal sealed class PngEncodedLayout
         PixelFormat.Rgb24 => new(pixelFormat, colorType: 2, bitDepth: 8),
         PixelFormat.Rgba32 or PixelFormat.Bgra32 => new(pixelFormat, colorType: 6, bitDepth: 8),
         PixelFormat.Rgba64 => new(pixelFormat, colorType: 6, bitDepth: 16),
+        PixelFormat.La16 => new(pixelFormat, colorType: 4, bitDepth: 8),
+        PixelFormat.La32 => new(pixelFormat, colorType: 4, bitDepth: 16),
+        PixelFormat.Rgb48 => new(pixelFormat, colorType: 2, bitDepth: 16),
         _ => throw new ArgumentOutOfRangeException(nameof(pixelFormat), pixelFormat, "The pixel format is not supported."),
     };
 
@@ -128,7 +131,7 @@ internal sealed class PngEncodedLayout
 
                 break;
 
-            case PixelFormat.Gray16 or PixelFormat.Rgba64:
+            case PixelFormat.Gray16 or PixelFormat.Rgba64 or PixelFormat.La32 or PixelFormat.Rgb48:
                 SampleEndianness.WriteBigEndian(unsafe(MemoryMarshal.Cast<byte, ushort>(source)), destination);
                 break;
 

@@ -3,6 +3,7 @@ using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.Metadata;
 
@@ -71,6 +72,10 @@ public sealed class PixelConversionTests
         AssertLayout<Gray16>(2, ("Value", 0));
         AssertLayout<RgbaFloat>(16, ("R", 0), ("G", 4), ("B", 8), ("A", 12));
         AssertLayout<RgbaHalf>(8, ("R", 0), ("G", 2), ("B", 4), ("A", 6));
+        AssertLayout<La16>(2, ("L", 0), ("A", 1));
+        AssertLayout<La32>(4, ("L", 0), ("A", 2));
+        AssertLayout<Rgb48>(6, ("R", 0), ("G", 2), ("B", 4));
+        AssertLayout<A8>(1, ("A", 0));
     }
 
     [Fact]
@@ -80,10 +85,14 @@ public sealed class PixelConversionTests
         Assert.Equal([3, 2, 1, 4], Bytes(new Bgra32(r: 1, g: 2, b: 3, a: 4)));
         Assert.Equal([1, 2, 3], Bytes(new Rgb24(1, 2, 3)));
         Assert.Equal([7], Bytes(new Gray8(7)));
+        Assert.Equal([7, 9], Bytes(new La16(7, 9)));
+        Assert.Equal([9], Bytes(new A8(9)));
 
         // 16-bit components are native-endian ushort values
         Assert.Equal(Native16(0x0102, 0x0304, 0x0506, 0x0708), Bytes(new Rgba64(0x0102, 0x0304, 0x0506, 0x0708)));
         Assert.Equal(Native16(0xA1B2), Bytes(new Gray16(0xA1B2)));
+        Assert.Equal(Native16(0xA1B2, 0x0102), Bytes(new La32(0xA1B2, 0x0102)));
+        Assert.Equal(Native16(0x0102, 0x0304, 0x0506), Bytes(new Rgb48(0x0102, 0x0304, 0x0506)));
     }
 
     [Fact]
@@ -93,6 +102,8 @@ public sealed class PixelConversionTests
         Assert.Equal((10, 20, 30, 255), (bgra.R, bgra.G, bgra.B, bgra.A));
         Assert.Equal(255, new Rgba32(1, 2, 3).A);
         Assert.Equal(65535, new Rgba64(1, 2, 3).A);
+        Assert.Equal(255, new La16(1).A);
+        Assert.Equal(65535, new La32(1).A);
         Assert.Equal(1f, new RgbaFloat(1, 2, 3).A);
         Assert.Equal(Half.One, new RgbaHalf((Half)1, (Half)2, (Half)3).A);
     }
@@ -481,6 +492,209 @@ public sealed class PixelConversionTests
     }
 
     // ---------------------------------------------------------------------------------------------------------------
+    // Gray with alpha, 16-bit RGB and alpha masks: the exact conversions both ways
+    // ---------------------------------------------------------------------------------------------------------------
+
+    [Fact]
+    public void GrayWithAlphaConvertsToRgbaAndBackExactly()
+    {
+        // Every 8-bit gray level with every alpha
+        var la16 = new La16[65536];
+        for (var i = 0; i < la16.Length; i++)
+        {
+            la16[i] = new La16((byte)i, (byte)(i >> 8));
+        }
+
+        var rgba = new Rgba32[la16.Length];
+        PixelConverter.ConvertRow<La16, Rgba32>(la16, rgba);
+        for (var i = 0; i < la16.Length; i++)
+        {
+            Assert.Equal(new Rgba32(la16[i].L, la16[i].L, la16[i].L, la16[i].A), rgba[i]);
+        }
+
+        Assert.Equal(la16, RoundTrip<La16, Rgba32>(la16));
+        Assert.Equal(la16, RoundTrip<La16, Bgra32>(la16));
+        Assert.Equal(la16, RoundTrip<La16, Rgba64>(la16));
+        Assert.Equal(la16, RoundTrip<La16, La32>(la16));
+        Assert.Equal(la16, RoundTrip<La16, RgbaFloat>(la16));
+
+        // Every 16-bit gray level, with alpha ramps
+        var la32 = new La32[65536];
+        for (var i = 0; i < la32.Length; i++)
+        {
+            la32[i] = new La32((ushort)i, (ushort)(65535 - i));
+        }
+
+        Assert.Equal(la32, RoundTrip<La32, Rgba64>(la32));
+        Assert.Equal(la32, RoundTrip<La32, RgbaFloat>(la32));
+
+        // A gray format without alpha gets an opaque alpha, and comes back
+        var gray = new Gray8[256];
+        for (var i = 0; i < gray.Length; i++)
+        {
+            gray[i] = new Gray8((byte)i);
+        }
+
+        var opaque = new La16[gray.Length];
+        PixelConverter.ConvertRow<Gray8, La16>(gray, opaque);
+        Assert.All(opaque, pixel => Assert.Equal(byte.MaxValue, pixel.A));
+        Assert.Equal(gray, RoundTrip<Gray8, La16>(gray));
+    }
+
+    [Fact]
+    public void ColorToGrayWithAlphaKeepsTheAlphaAndTakesTheLuma()
+    {
+        Rgba64[] colors = [new Rgba64(0x1234, 0xABCD, 0x0F0F, 0x8000), new Rgba64(65535, 0, 0, 0), new Rgba64(0, 65535, 0, 65535)];
+        var la32 = new La32[colors.Length];
+        var la16 = new La16[colors.Length];
+        PixelConverter.ConvertRow<Rgba64, La32>(colors, la32);
+        PixelConverter.ConvertRow<Rgba64, La16>(colors, la16);
+        for (var i = 0; i < colors.Length; i++)
+        {
+            var luma = ReferenceModel.Luma(colors[i].R, colors[i].G, colors[i].B, 65535);
+            Assert.Equal(new La32((ushort)luma, colors[i].A), la32[i]);
+            Assert.Equal(new La16(ReferenceModel.To8(luma), ReferenceModel.To8(colors[i].A)), la16[i]);
+        }
+
+        // Removing the alpha of gray pixels flattens them onto the background, whose luma is taken
+        var gray = new Gray16[colors.Length];
+        PixelConverter.ConvertRow<La32, Gray16>(la32, gray, Background);
+        var flattened = ReferenceModel.Flatten(la32[0].L, Background.R, la32[0].A, 65535);
+        Assert.Equal(ReferenceModel.Luma(flattened, ReferenceModel.Flatten(la32[0].L, Background.G, la32[0].A, 65535), ReferenceModel.Flatten(la32[0].L, Background.B, la32[0].A, 65535), 65535), gray[0].Value);
+        Assert.Throws<UnsupportedImageFeatureException>(() => PixelConverter.ConvertRow<La32, Gray16>(la32, gray));
+    }
+
+    [Fact]
+    public void Rgb48ConvertsToRgba64AndBackExactly()
+    {
+        var rgb48 = new Rgb48[65536];
+        for (var i = 0; i < rgb48.Length; i++)
+        {
+            rgb48[i] = new Rgb48((ushort)i, (ushort)(65535 - i), (ushort)(i * 7));
+        }
+
+        var rgba = new Rgba64[rgb48.Length];
+        PixelConverter.ConvertRow<Rgb48, Rgba64>(rgb48, rgba);
+        for (var i = 0; i < rgb48.Length; i++)
+        {
+            Assert.Equal(new Rgba64(rgb48[i].R, rgb48[i].G, rgb48[i].B, ushort.MaxValue), rgba[i]);
+        }
+
+        Assert.Equal(rgb48, RoundTrip<Rgb48, Rgba64>(rgb48));
+        Assert.Equal(rgb48, RoundTrip<Rgb48, RgbaFloat>(rgb48));
+
+        // 8-bit colors widen to 16 bits exactly (v * 257) and come back
+        var rgb24 = new Rgb24[256];
+        for (var i = 0; i < rgb24.Length; i++)
+        {
+            rgb24[i] = new Rgb24((byte)i, (byte)(255 - i), (byte)(i * 3));
+        }
+
+        var wide = new Rgb48[rgb24.Length];
+        PixelConverter.ConvertRow<Rgb24, Rgb48>(rgb24, wide);
+        Assert.Equal(new Rgb48(257, 254 * 257, 3 * 257), wide[1]);
+        Assert.Equal(rgb24, RoundTrip<Rgb24, Rgb48>(rgb24));
+
+        // Removing alpha needs opaque pixels, or a background
+        Rgba64[] translucent = [new Rgba64(1, 2, 3, 4)];
+        Assert.Throws<UnsupportedImageFeatureException>(() => PixelConverter.ConvertRow<Rgba64, Rgb48>(translucent, new Rgb48[1]));
+    }
+
+    [Fact]
+    public void AlphaMasksReadAsBlackAndKeepTheAlphaOnly()
+    {
+        var masks = new A8[256];
+        for (var i = 0; i < masks.Length; i++)
+        {
+            masks[i] = new A8((byte)i);
+        }
+
+        var rgba = new Rgba32[masks.Length];
+        PixelConverter.ConvertRow<A8, Rgba32>(masks, rgba);
+        for (var i = 0; i < masks.Length; i++)
+        {
+            Assert.Equal(new Rgba32(0, 0, 0, (byte)i), rgba[i]);
+        }
+
+        Assert.Equal(masks, RoundTrip<A8, Rgba32>(masks));
+        Assert.Equal(masks, RoundTrip<A8, Rgba64>(masks));
+        Assert.Equal(masks, RoundTrip<A8, La16>(masks));
+        Assert.Equal(masks, RoundTrip<A8, RgbaFloat>(masks));
+
+        // The color of the source is discarded; a format without alpha is opaque
+        var extracted = new A8[2];
+        PixelConverter.ConvertRow<Rgba32, A8>([new Rgba32(10, 20, 30, 40), new Rgba32(255, 255, 255, 255)], extracted);
+        Assert.Equal([new A8(40), new A8(255)], extracted);
+        PixelConverter.ConvertRow<Rgb24, A8>([new Rgb24(1, 2, 3), new Rgb24(4, 5, 6)], extracted);
+        Assert.Equal([new A8(255), new A8(255)], extracted);
+
+        // Black flattened onto a background: what the mask covers is black
+        var flattened = new Rgb24[1];
+        PixelConverter.ConvertRow<A8, Rgb24>([new A8(128)], flattened, new Rgba64(65535, 65535, 65535));
+        Assert.Equal(new Rgb24(127, 127, 127), flattened[0]);
+        Assert.Throws<UnsupportedImageFeatureException>(() => PixelConverter.ConvertRow<A8, Rgb24>([new A8(128)], flattened));
+
+        // Only black colors convert to a mask and back unchanged
+        Assert.True(PixelConverter.IsExactlyRepresentable(new Rgba64(0, 0, 0, 257), PixelFormat.A8));
+        Assert.False(PixelConverter.IsExactlyRepresentable(new Rgba64(257, 257, 257, 257), PixelFormat.A8));
+        Assert.False(PixelConverter.IsExactlyRepresentable(new Rgba64(0, 0, 0, 1), PixelFormat.A8));
+    }
+
+    [Fact]
+    public void CompactFormatsConvertImagesWithCloneAs()
+    {
+        using var image = new Image<Rgba32>(2, 1);
+        image.Frames[0][0, 0] = new Rgba32(10, 10, 10, 200);
+        image.Frames[0][1, 0] = new Rgba32(0, 0, 0, 0);
+        using var gray = image.CloneAs<La16>();
+        Assert.Equal(PixelFormat.La16, gray.PixelFormat);
+        Assert.Equal(new La16(10, 200), gray.Frames[0][0, 0]);
+        using var back = gray.CloneAs<Rgba32>();
+        Assert.Equal(image.Frames[0][0, 0], back.Frames[0][0, 0]);
+        using var mask = image.CloneAs<A8>();
+        Assert.Equal(new A8(200), mask.Frames[0][0, 0]);
+        using var wide = image.CloneAs<Rgb48>(new PixelConversionOptions { BackgroundColor = new Rgba64(0, 0, 0) });
+        var level = (ushort)(ReferenceModel.Flatten(10, 0, 200, 255) * 257);
+        Assert.Equal(new Rgb48(level, level, level), wide.Frames[0][0, 0]);
+    }
+
+    [Fact]
+    public void CompactFormatsConvertExactlyAndPngStoresThem()
+    {
+        // A gray image with transparency takes 2 bytes per pixel instead of the 4 of Rgba32
+        using var image = new Image<La16>(64, 64, new La16(l: 0, a: 0));
+        image.Frames[0][10, 10] = new La16(l: 200, a: 128);
+
+        // Converting gray pixels to RGBA and back is exact
+        using var rgba = image.CloneAs<Rgba32>();
+        Assert.Equal(new Rgba32(200, 200, 200, 128), rgba.Frames[0][10, 10]);
+        using var back = rgba.CloneAs<La16>();
+        Assert.Equal(new La16(200, 128), back.Frames[0][10, 10]);
+
+        // An alpha mask keeps the alpha of an image and reads as black
+        using var mask = rgba.CloneAs<A8>();
+        Assert.Equal(new A8(128), mask.Frames[0][10, 10]);
+
+        // PNG stores gray with alpha as it is, and an untyped load gives it back as La16
+        using var stream = new MemoryStream();
+        image.Save(stream, new PngEncoder());
+        stream.Position = 0;
+        using var loaded = Image.Load(stream);
+        Assert.Equal(PixelFormat.La16, loaded.PixelFormat);
+    }
+
+    private static TPixel[] RoundTrip<TPixel, TIntermediate>(TPixel[] pixels)
+        where TPixel : unmanaged
+        where TIntermediate : unmanaged
+    {
+        var intermediate = new TIntermediate[pixels.Length];
+        PixelConverter.ConvertRow<TPixel, TIntermediate>(pixels, intermediate);
+        var result = new TPixel[pixels.Length];
+        PixelConverter.ConvertRow<TIntermediate, TPixel>(intermediate, result);
+        return result;
+    }
+
+    // ---------------------------------------------------------------------------------------------------------------
     // All pairs, against the independent reference model
     // ---------------------------------------------------------------------------------------------------------------
 
@@ -862,7 +1076,15 @@ public sealed class PixelConversionTests
         foreach (var format in PixelFormats.All)
         {
             Assert.False(ColorProfileCompatibility.IsCompatible(profile, format));
-            Assert.Throws<UnsupportedImageFeatureException>(() => PixelConversionPlan.Create(format, format, options: null, profile));
+            if (PixelFormats.HasColor(format))
+            {
+                Assert.Throws<UnsupportedImageFeatureException>(() => PixelConversionPlan.Create(format, format, options: null, profile));
+            }
+            else
+            {
+                // An alpha mask has no color for a profile to describe: the profile is dropped
+                Assert.Null(PixelConversionPlan.Create(format, format, options: null, profile).ColorProfile);
+            }
         }
 
         Assert.True(ColorProfileCompatibility.IsCompatible(profile: null, PixelFormat.Gray8));
@@ -1045,10 +1267,17 @@ public sealed class PixelConversionTests
                 a = sourceMax;
             }
 
+            // The luma of a gray color is that gray (0.2126 + 0.7152 + 0.0722 = 1)
             if (PixelFormats.IsGrayscale(destination))
             {
-                var y = PixelFormats.IsGrayscale(source) ? r : Luma(r, g, b, sourceMax);
+                var y = Luma(r, g, b, sourceMax);
                 (r, g, b) = (y, y, y);
+            }
+
+            // An alpha mask keeps the alpha only, and reads as black
+            if (!PixelFormats.HasColor(destination))
+            {
+                (r, g, b) = (0, 0, 0);
             }
 
             int Scale(int value) => (sourceMax, destinationMax) switch
@@ -1077,6 +1306,9 @@ public sealed class PixelConversionTests
             {
                 result.Add((random.Next(max + 1), random.Next(max + 1), random.Next(max + 1), random.Next(4) == 0 ? max : random.Next(max + 1)));
             }
+
+            if (!PixelFormats.HasColor(format))
+                return [.. result.Select(p => (0, 0, 0, p.A))];
 
             return [.. result.Select(p => (p.R, gray ? p.R : p.G, gray ? p.R : p.B, alpha ? p.A : max))];
         }
@@ -1110,6 +1342,20 @@ public sealed class PixelConversionTests
                     case PixelFormat.Gray16:
                         Native16(checked((ushort)r)).CopyTo(span);
                         break;
+                    case PixelFormat.La16:
+                        (span[0], span[1]) = ((byte)r, (byte)a);
+                        break;
+                    case PixelFormat.La32:
+                        Native16(checked((ushort)r), checked((ushort)a)).CopyTo(span);
+                        break;
+                    case PixelFormat.Rgb48:
+                        Native16(checked((ushort)r), checked((ushort)g), checked((ushort)b)).CopyTo(span);
+                        break;
+                    case PixelFormat.A8:
+                        span[0] = (byte)a;
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(format), format, "The reference model does not know this format.");
                 }
             }
 
@@ -1191,7 +1437,12 @@ public sealed class PixelConversionTests
                     PixelFormat.Rgb24 => (span[0], span[1], span[2], 255),
                     PixelFormat.Gray8 => (span[0], span[0], span[0], 255),
                     PixelFormat.Rgba64 => (Read16(span, 0), Read16(span, 1), Read16(span, 2), Read16(span, 3)),
-                    _ => (Read16(span, 0), Read16(span, 0), Read16(span, 0), 65535),
+                    PixelFormat.Gray16 => (Read16(span, 0), Read16(span, 0), Read16(span, 0), 65535),
+                    PixelFormat.La16 => (span[0], span[0], span[0], span[1]),
+                    PixelFormat.La32 => (Read16(span, 0), Read16(span, 0), Read16(span, 0), Read16(span, 1)),
+                    PixelFormat.Rgb48 => (Read16(span, 0), Read16(span, 1), Read16(span, 2), 65535),
+                    PixelFormat.A8 => (0, 0, 0, span[0]),
+                    _ => throw new ArgumentOutOfRangeException(nameof(format), format, "The reference model does not know this format."),
                 });
             }
 
@@ -1232,6 +1483,11 @@ public sealed class PixelConversionTests
             {
                 var y = (new Rational(2126, 10000) * r) + (new Rational(7152, 10000) * g) + (new Rational(722, 10000) * b);
                 (r, g, b) = (y, y, y);
+            }
+
+            if (!PixelFormats.HasColor(destination))
+            {
+                (r, g, b) = (new Rational(0, 1), new Rational(0, 1), new Rational(0, 1));
             }
 
             var max = ReferenceModel.Max(destination);

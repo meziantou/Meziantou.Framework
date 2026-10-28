@@ -63,6 +63,18 @@ internal static class ColorConversionKernels
             {
                 Convert<ushort, IccUInt16Sample>(pipeline, unsafe(MemoryMarshal.Cast<byte, ushort>(source.GetRowBytes(y))), unsafe(MemoryMarshal.Cast<byte, ushort>(destination.GetRowBytes(y))), 1, 1, uint16Tables: uint16Tables);
             }
+            else if (typeof(TPixel) == typeof(La16))
+            {
+                Convert<byte, IccByteSample>(pipeline, source.GetRowBytes(y), destination.GetRowBytes(y), 2, 2);
+            }
+            else if (typeof(TPixel) == typeof(La32))
+            {
+                Convert<ushort, IccUInt16Sample>(pipeline, unsafe(MemoryMarshal.Cast<byte, ushort>(source.GetRowBytes(y))), unsafe(MemoryMarshal.Cast<byte, ushort>(destination.GetRowBytes(y))), 2, 2, uint16Tables: uint16Tables);
+            }
+            else if (typeof(TPixel) == typeof(Rgb48))
+            {
+                Convert<ushort, IccUInt16Sample>(pipeline, unsafe(MemoryMarshal.Cast<byte, ushort>(source.GetRowBytes(y))), unsafe(MemoryMarshal.Cast<byte, ushort>(destination.GetRowBytes(y))), 3, 3, uint16Tables: uint16Tables);
+            }
             else if (typeof(TPixel) == typeof(RgbaFloat))
             {
                 Convert<float, IccSingleSample>(pipeline, unsafe(MemoryMarshal.Cast<byte, float>(source.GetRowBytes(y))), unsafe(MemoryMarshal.Cast<byte, float>(destination.GetRowBytes(y))), 4, 4);

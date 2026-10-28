@@ -32,7 +32,7 @@ internal static class Warper
         if (Unsafe.SizeOf<TPixel>() != sourceStorage.BytesPerPixel || Unsafe.SizeOf<TPixel>() != destinationStorage.BytesPerPixel)
             throw new InvalidOperationException($"The pixel type '{typeof(TPixel).Name}' does not match the storage pixel size.");
 
-        if (typeof(TPixel) == typeof(Rgba64) || typeof(TPixel) == typeof(Gray16))
+        if (typeof(TPixel) == typeof(Rgba64) || typeof(TPixel) == typeof(Gray16) || typeof(TPixel) == typeof(Rgb48))
         {
             Warp<TPixel, ushort>(sourceStorage, destinationStorage, plan, cancellationToken);
         }

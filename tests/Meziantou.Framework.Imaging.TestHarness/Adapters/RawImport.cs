@@ -18,14 +18,14 @@ public static class RawImport
     /// <summary>Lays a reference buffer out in the native byte layout of <paramref name="format"/> (BGRA order for <c>Bgra32</c>, native-endian 16-bit samples).</summary>
     /// <param name="source">The reference, in the layout <see cref="ImageSnapshots.GetLayout(PixelFormat)"/> of <paramref name="format"/>.</param>
     /// <param name="format">The pixel format of the import.</param>
-    /// <param name="strideInBytes">The distance between rows (0 = tightly packed); the bytes between rows are set to <paramref name="padding"/>. The last row has no trailing padding.</param>
+    /// <param name="strideInBytes">The distance between rows (0 = tightly packed), at least the row length of <paramref name="format"/>; the bytes between rows are set to <paramref name="padding"/>. The last row has no trailing padding.</param>
     /// <param name="padding">The padding value.</param>
     /// <returns>The bytes.</returns>
     public static byte[] ToPixelBytes(RawPixelBuffer source, PixelFormat format, int strideInBytes = 0, byte padding = DefaultPadding)
     {
         ArgumentNullException.ThrowIfNull(source);
         EnsureLayout(source, format);
-        var rowBytes = source.RowBytes;
+        var rowBytes = source.Width * PixelFormats.GetBytesPerPixel(format);
         var stride = strideInBytes == 0 ? rowBytes : strideInBytes;
         ArgumentOutOfRangeException.ThrowIfLessThan(stride, rowBytes, nameof(strideInBytes));
         var result = new byte[(stride * (source.Height - 1)) + rowBytes];
@@ -52,6 +52,17 @@ public static class RawImport
                     for (var i = 0; i < samples.Length; i++)
                     {
                         samples[i] = BinaryPrimitives.ReadUInt16LittleEndian(input[(i * 2)..]);
+                    }
+
+                    break;
+
+                case PixelFormat.La16 or PixelFormat.La32 or PixelFormat.Rgb48 or PixelFormat.A8:
+                    // From the widened layout of ImageSnapshots.GetLayout: the stored components of each pixel
+                    var width = source.Width;
+                    var pixelSize = PixelFormats.GetBytesPerPixel(format);
+                    for (var x = 0; x < width; x++)
+                    {
+                        WritePixel(format, CreatePixel(source, format, x, y), output.Slice(x * pixelSize, pixelSize));
                     }
 
                     break;
@@ -170,21 +181,88 @@ public static class RawImport
         return true;
     }
 
+    /// <summary>
+    /// Determines whether a reference in the layout of <see cref="ImageSnapshots.GetLayout(PixelFormat)"/> holds pixels that
+    /// <paramref name="format"/> stores: a gray level for the gray formats with alpha, opaque pixels for <c>Rgb48</c> and
+    /// black for <c>A8</c> (always true for the other formats).
+    /// </summary>
+    /// <param name="source">The reference.</param>
+    /// <param name="format">The pixel format.</param>
+    /// <returns><see langword="true"/> if every pixel can be stored.</returns>
+    public static bool IsRepresentable(RawPixelBuffer source, PixelFormat format)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        if (format is not (PixelFormat.La16 or PixelFormat.La32 or PixelFormat.Rgb48 or PixelFormat.A8))
+            return true;
+
+        for (var y = 0; y < source.Height; y++)
+        {
+            for (var x = 0; x < source.Width; x++)
+            {
+                if (!IsRepresentablePixel(source, format, x, y))
+                    return false;
+            }
+        }
+
+        return true;
+    }
+
     private static TPixel CreatePixel<TPixel>(RawPixelBuffer source, int x, int y)
         where TPixel : unmanaged
+        => (TPixel)CreatePixel(source, PixelFormats.GetPixelFormat<TPixel>(), x, y);
+
+    private static object CreatePixel(RawPixelBuffer source, PixelFormat format, int x, int y)
     {
         int S(int channel) => source.GetSample(x, y, channel);
-        object pixel = PixelFormats.GetPixelFormat<TPixel>() switch
+        if (format is PixelFormat.La16 or PixelFormat.La32 or PixelFormat.Rgb48 or PixelFormat.A8 && !IsRepresentablePixel(source, format, x, y))
+            throw new ArgumentException(string.Create(CultureInfo.InvariantCulture, $"Pixel ({x},{y}) ({S(0)}, {S(1)}, {S(2)}, {S(3)}) cannot be stored as {format}."), nameof(source));
+
+        return format switch
         {
             PixelFormat.Rgba32 => new Rgba32((byte)S(0), (byte)S(1), (byte)S(2), (byte)S(3)),
             PixelFormat.Bgra32 => new Bgra32((byte)S(0), (byte)S(1), (byte)S(2), (byte)S(3)),
             PixelFormat.Rgb24 => new Rgb24((byte)S(0), (byte)S(1), (byte)S(2)),
             PixelFormat.Rgba64 => new Rgba64((ushort)S(0), (ushort)S(1), (ushort)S(2), (ushort)S(3)),
             PixelFormat.Gray8 => new Gray8((byte)S(0)),
-            _ => new Gray16((ushort)S(0)),
+            PixelFormat.Gray16 => new Gray16((ushort)S(0)),
+            PixelFormat.La16 => new La16((byte)S(0), (byte)S(3)),
+            PixelFormat.La32 => new La32((ushort)S(0), (ushort)S(3)),
+            PixelFormat.Rgb48 => new Rgb48((ushort)S(0), (ushort)S(1), (ushort)S(2)),
+            PixelFormat.A8 => new A8((byte)S(3)),
+            _ => throw new ArgumentOutOfRangeException(nameof(format), format, "Unknown pixel format."),
         };
+    }
 
-        return (TPixel)pixel;
+    private static bool IsRepresentablePixel(RawPixelBuffer source, PixelFormat format, int x, int y)
+    {
+        var (r, g, b, a) = (source.GetSample(x, y, 0), source.GetSample(x, y, 1), source.GetSample(x, y, 2), source.GetSample(x, y, 3));
+        return format switch
+        {
+            PixelFormat.Rgb48 => a == source.Layout.MaxSampleValue,
+            PixelFormat.A8 => (r | g | b) == 0,
+            _ => r == g && g == b,
+        };
+    }
+
+    private static void WritePixel(PixelFormat format, object pixel, Span<byte> destination)
+    {
+        switch (pixel)
+        {
+            case La16 p:
+                unsafe { MemoryMarshal.Write(destination, p); }
+                break;
+            case La32 p:
+                unsafe { MemoryMarshal.Write(destination, p); }
+                break;
+            case Rgb48 p:
+                unsafe { MemoryMarshal.Write(destination, p); }
+                break;
+            case A8 p:
+                unsafe { MemoryMarshal.Write(destination, p); }
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(format), format, "Unknown pixel format.");
+        }
     }
 
     private static void EnsureLayout(RawPixelBuffer source, PixelFormat format)

@@ -32,13 +32,13 @@ internal static partial class GoldenCorpus
             new("png/gray8-checkerboard", CommonCorpus.PatternCheckerboardGray(9, 9), "Gray8", "Grayscale", 8, false, ["gray8"], "PatternCheckerboardGray", new Obj { ["width"] = 9, ["height"] = 9, ["low"] = 32, ["high"] = 224 }),
             new("png/gray16-low-bit-gradient", CommonCorpus.PatternGray16LowBits(8, 2), "Gray16", "Grayscale", 16, false, ["gray16le"], "PatternGray16LowBits", new Obj { ["width"] = 8, ["height"] = 2 }),
             new("png/rgba16-low-bit-gradient", CommonCorpus.PatternRgba16LowBits(4, 4), "Rgba64", "Rgba", 16, false, [], "PatternRgba16LowBits", new Obj { ["width"] = 4, ["height"] = 4 }),
-            new("png/graya8-alpha-ramp", CommonCorpus.PatternGrayAlphaRamp(8, 2), "Rgba32", "GrayscaleAlpha", 8, false, [], "PatternGrayAlphaRamp", new Obj { ["width"] = 8, ["height"] = 2 }),
+            new("png/graya8-alpha-ramp", CommonCorpus.PatternGrayAlphaRamp(8, 2), "La16", "GrayscaleAlpha", 8, false, [], "PatternGrayAlphaRamp", new Obj { ["width"] = 8, ["height"] = 2 }),
             new("png/single-pixel", new Img(1, 1, "rgba", 8, [new Px(12, 34, 56, 78)]), "Rgba32", "Rgba", 8, false, [], "literal", new Obj { ["pixel"] = new List<int> { 12, 34, 56, 78 } }),
             new("png/rgba8-adam7", CommonCorpus.PatternRgbaAdam7(9, 9), "Rgba32", "Rgba", 8, true, [], "PatternRgbaAdam7", new Obj { ["width"] = 9, ["height"] = 9 }),
-            new("png/rgb16-adam7-empty-passes", CommonCorpus.PatternRgb16(3, 2), "Rgba64", "Rgb", 16, true, [], "PatternRgb16", new Obj { ["width"] = 3, ["height"] = 2 }),
+            new("png/rgb16-adam7-empty-passes", CommonCorpus.PatternRgb16(3, 2), "Rgb48", "Rgb", 16, true, [], "PatternRgb16", new Obj { ["width"] = 3, ["height"] = 2 }),
             // Remaining color type/bit depth combinations and Adam7 edge cases
-            new("png/graya16-low-bit-alpha", CommonCorpus.PatternGraya16LowBits(5, 3), "Rgba64", "GrayscaleAlpha", 16, false, [], "PatternGraya16LowBits", new Obj { ["width"] = 5, ["height"] = 3 }),
-            new("png/rgb16-odd-width", CommonCorpus.PatternRgb16(5, 3), "Rgba64", "Rgb", 16, false, [], "PatternRgb16", new Obj { ["width"] = 5, ["height"] = 3 }),
+            new("png/graya16-low-bit-alpha", CommonCorpus.PatternGraya16LowBits(5, 3), "La32", "GrayscaleAlpha", 16, false, [], "PatternGraya16LowBits", new Obj { ["width"] = 5, ["height"] = 3 }),
+            new("png/rgb16-odd-width", CommonCorpus.PatternRgb16(5, 3), "Rgb48", "Rgb", 16, false, [], "PatternRgb16", new Obj { ["width"] = 5, ["height"] = 3 }),
             new("png/rgba16-adam7-odd", CommonCorpus.PatternRgba16LowBits(5, 7), "Rgba64", "Rgba", 16, true, [], "PatternRgba16LowBits", new Obj { ["width"] = 5, ["height"] = 7 }),
             new("png/gray8-adam7-1x9", CommonCorpus.PatternGrayColumn(1, 9), "Gray8", "Grayscale", 8, true, ["gray8"], "PatternGrayColumn", new Obj { ["width"] = 1, ["height"] = 9 }),
             new("png/rgb8-adam7-9x1", CommonCorpus.PatternRgbOdd(9, 1), "Rgb24", "Rgb", 8, true, ["rgb8"], "PatternRgbOdd", new Obj { ["width"] = 9, ["height"] = 1 }),
@@ -177,7 +177,7 @@ internal static partial class GoldenCorpus
         var key = 100;
         img = new Img(w, h, "rgba", 8, gray.Select(g => new Px(g[0], g[0], g[0], g[0] == key ? 0 : 255)));
         Add("png/gray8-trns-key", CommonCorpus.PngFile(w, h, 8, 0, gray, beforeIdat: [CommonCorpus.PngChunk("tRNS", new ByteBuilder().U16BE(key).ToArray())]), img,
-            "Rgba32", "Grayscale", 8, "PngFile gray8 tRNS", new Obj { ["width"] = w, ["height"] = h, ["key"] = key },
+            "La16", "Grayscale", 8, "PngFile gray8 tRNS", new Obj { ["width"] = w, ["height"] = h, ["key"] = key },
             notes: "Transparent pixels keep their defined gray value (hidden RGB values are compared exactly).");
 
         // 8-bit RGB with a tRNS key color
@@ -263,7 +263,7 @@ internal static partial class GoldenCorpus
         gray = CommonCorpus.Grid(w, h, (x, y) => new Px((3 * x + 7 * y) % 16));
         img = new Img(w, h, "rgba", 8, gray.Select(g => new Px(g[0] * 17, g[0] * 17, g[0] * 17, g[0] == key ? 0 : 255)));
         Add("png/gray4-trns-key", CommonCorpus.PngFile(w, h, 4, 0, gray, beforeIdat: [CommonCorpus.PngChunk("tRNS", new ByteBuilder().U16BE(key).ToArray())]), img,
-            "Rgba32", "Grayscale", 4, "PngFile gray4 tRNS", new Obj { ["width"] = w, ["height"] = h, ["key"] = key },
+            "La16", "Grayscale", 4, "PngFile gray4 tRNS", new Obj { ["width"] = w, ["height"] = h, ["key"] = key },
             notes: "The key is compared with the encoded 4-bit sample (before scaling to 8 bits).",
             ffmpegNotes: "FFmpeg (libavcodec png decoder) ignores tRNS for grayscale below 8 bits and decodes every pixel opaque; " +
                          "the colors agree. Apple ImageIO applies the key like the PNG specification (exact).");
@@ -273,7 +273,7 @@ internal static partial class GoldenCorpus
         gray = [.. new[] { 0x1234, 0x1235, 0x3412, 0x0000, 0xFFFF, 0x1234, 0x00FF, 0xFF00 }.Select(v => new Px(v))];
         img = new Img(w, h, "rgba", 16, gray.Select(g => new Px(g[0], g[0], g[0], g[0] == key ? 0 : 65535)));
         Add("png/gray16-trns-key", CommonCorpus.PngFile(w, h, 16, 0, gray, beforeIdat: [CommonCorpus.PngChunk("tRNS", new ByteBuilder().U16BE(key).ToArray())]), img,
-            "Rgba64", "Grayscale", 16, "PngFile gray16 tRNS", new Obj { ["width"] = w, ["height"] = h, ["key"] = key },
+            "La32", "Grayscale", 16, "PngFile gray16 tRNS", new Obj { ["width"] = w, ["height"] = h, ["key"] = key },
             notes: "Only the exact 16-bit key is transparent: 0x1235 (low bit) and 0x3412 (byte swap) stay opaque.");
 
         (w, h) = (3, 2);

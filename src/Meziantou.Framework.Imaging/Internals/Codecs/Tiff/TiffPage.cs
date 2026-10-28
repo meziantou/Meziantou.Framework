@@ -190,13 +190,16 @@ internal sealed class TiffPage
     /// <summary>Gets the page metadata: resolution, orientation, ICC profile and XMP packet.</summary>
     public ImageMetadata Metadata { get; private set; } = new();
 
+    /// <summary>Gets the layout of the expanded rows: <see cref="DefaultPixelFormat"/>, as RGBA for gray with alpha and 16-bit RGB.</summary>
+    public PixelFormat SourcePixelFormat => PixelFormatWidening.GetWidenedFormat(DefaultPixelFormat);
+
     /// <summary>Gets the lossless working representation of the samples.</summary>
-    public PixelFormat SourcePixelFormat
+    public PixelFormat DefaultPixelFormat
     {
         get
         {
             if (IsPalette)
-                return HasSixteenBitColorMap ? PixelFormat.Rgba64 : PixelFormat.Rgb24;
+                return HasSixteenBitColorMap ? PixelFormat.Rgb48 : PixelFormat.Rgb24;
 
             if (IsFloatingPoint)
                 return DefaultPixelFormats.ForTiffFloatingPoint(BitsPerSample);

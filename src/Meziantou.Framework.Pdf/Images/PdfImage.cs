@@ -93,13 +93,16 @@ public sealed class PdfImage
         var pixels = new byte[checked(width * height * PixelFormats.GetBytesPerPixel(pixelFormat))];
         frame.CopyPixelBytesTo(pixels);
 
-        var gray = PixelFormats.IsGrayscale(pixelFormat);
+        // An alpha mask (A8) has no color: it is black gray samples with its alpha as the soft mask
+        var hasColor = PixelFormats.HasColor(pixelFormat);
+        var gray = PixelFormats.IsGrayscale(pixelFormat) || !hasColor;
         var colorSpace = gray ? PdfDeviceColorSpace.Gray : PdfDeviceColorSpace.Rgb;
         var bitsPerComponent = PixelFormats.GetBitsPerComponent(pixelFormat);
         var bytesPerSample = bitsPerComponent / 8;
         var colorComponents = gray ? 1 : 3;
+        var storedColorComponents = hasColor ? colorComponents : 0;
         var hasAlpha = PixelFormats.HasAlpha(pixelFormat);
-        var components = colorComponents + (hasAlpha ? 1 : 0);
+        var components = storedColorComponents + (hasAlpha ? 1 : 0);
 
         var samples = new byte[width * height * colorComponents * bytesPerSample];
         var alpha = hasAlpha ? new byte[width * height * bytesPerSample] : null;
@@ -107,7 +110,7 @@ public sealed class PdfImage
         var isBgra = pixelFormat == PixelFormat.Bgra32;
         for (var i = 0; i < width * height; i++)
         {
-            for (var c = 0; c < colorComponents; c++)
+            for (var c = 0; c < storedColorComponents; c++)
             {
                 var source = isBgra ? 2 - c : c;
                 CopySample(pixels, ((i * components) + source) * bytesPerSample, samples, ((i * colorComponents) + c) * bytesPerSample, bytesPerSample);
@@ -115,7 +118,7 @@ public sealed class PdfImage
 
             if (alpha is not null)
             {
-                var offset = ((i * components) + colorComponents) * bytesPerSample;
+                var offset = ((i * components) + storedColorComponents) * bytesPerSample;
                 CopySample(pixels, offset, alpha, i * bytesPerSample, bytesPerSample);
                 opaque &= pixels[offset] == 0xFF && (bytesPerSample == 1 || pixels[offset + 1] == 0xFF);
             }

@@ -502,10 +502,10 @@ internal static class PnmCorpus
         var rgb16Img = new Img(5, 3, "rgb", 16, rgb16);
         rows = [.. Enumerable.Range(0, 3).Select(y => U16BERow(rgb16[(y * 5)..((y + 1) * 5)]))];
         data = PnmBinary(6, 5, 3, 65535, rows);
-        AddFixture(c, Format, "pnm/p6-rgb16", "pnm/p6-rgb16.ppm", data, rgb16Img, "Rgba64", "Rgb", 16,
+        AddFixture(c, Format, "pnm/p6-rgb16", "pnm/p6-rgb16.ppm", data, rgb16Img, "Rgb48", "Rgb", 16,
             "BuildPnm", new Obj { ["width"] = 5, ["height"] = 3, ["maxval"] = 65535 },
-            "Binary PPM (P6) with MAXVAL 65535: the library has no 16-bit RGB pixel format, so the samples are decoded " +
-            "into an opaque Rgba64 without losing a bit.",
+            "Binary PPM (P6) with MAXVAL 65535: the samples are decoded into Rgb48 " +
+            "without losing a bit.",
             required: ["pnm.magic=P6", "pnm.maxval=65535"]);
 
         Px[] thousand =
@@ -517,7 +517,7 @@ internal static class PnmCorpus
         var scaledThousand = thousand.Select(p => p.Select(v => (int)(((long)v * 65535 + 500) / 1000))).ToList();
         var thousandImg = new Img(5, 3, "rgb", 16, scaledThousand);
         data = PnmPlain(3, 5, 3, 1000, Enumerable.Range(0, 3).Select(y => thousand[(y * 5)..((y + 1) * 5)].SelectMany(p => p)));
-        AddFixture(c, Format, "pnm/p3-plain-rgb-maxval1000", "pnm/p3-plain-rgb-maxval1000.ppm", data, thousandImg, "Rgba64", "Rgb", 16,
+        AddFixture(c, Format, "pnm/p3-plain-rgb-maxval1000", "pnm/p3-plain-rgb-maxval1000.ppm", data, thousandImg, "Rgb48", "Rgb", 16,
             "BuildPnm", new Obj { ["width"] = 5, ["height"] = 3, ["maxval"] = 1000 },
             "Plain PPM (P3) with MAXVAL 1000: above 255 the samples are 16-bit, normalized with the exact ratio " +
             "round(value * 65535 / 1000).",
@@ -557,10 +557,10 @@ internal static class PnmCorpus
         var grayaImg = new Img(5, 3, "rgba", 8, graya.Select(p => new Px(p[0], p[0], p[0], p[1])));
         rows = [.. Enumerable.Range(0, 3).Select(y => graya[(y * 5)..((y + 1) * 5)].SelectMany(p => p).Select(v => (byte)v).ToArray())];
         data = PnmBinary(7, 5, 3, 255, rows, depth: 2, tupleType: "GRAYSCALE_ALPHA");
-        AddFixture(c, Format, "pnm/p7-grayscale-alpha8", "pnm/p7-grayscale-alpha8.pam", data, grayaImg, "Rgba32", "GrayscaleAlpha", 8,
+        AddFixture(c, Format, "pnm/p7-grayscale-alpha8", "pnm/p7-grayscale-alpha8.pam", data, grayaImg, "La16", "GrayscaleAlpha", 8,
             "BuildPnm", new Obj { ["width"] = 5, ["height"] = 3, ["tupleType"] = "GRAYSCALE_ALPHA" },
-            "PAM (P7) with TUPLTYPE GRAYSCALE_ALPHA and DEPTH 2: the library has no gray-with-alpha pixel format, so the " +
-            "gray sample is replicated into red, green and blue, which is lossless.",
+            "PAM (P7) with TUPLTYPE GRAYSCALE_ALPHA and DEPTH 2: the pixels are decoded into La16, and the " +
+            "gray and alpha samples are kept as they are, which is lossless.",
             required: ["pnm.magic=P7", "pnm.tuple=GRAYSCALE_ALPHA"]);
 
         int[] bw = [1, 0, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 0, 1];

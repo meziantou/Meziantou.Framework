@@ -41,16 +41,16 @@ public sealed class JpegIdentifyTests
     }
 
     [Theory]
-    [InlineData((byte)0xC1, 3, PixelFormat.Rgba64, ImageColorModel.YCbCr)]
-    [InlineData((byte)0xC2, 3, PixelFormat.Rgba64, ImageColorModel.YCbCr)]
+    [InlineData((byte)0xC1, 3, PixelFormat.Rgb48, ImageColorModel.YCbCr)]
+    [InlineData((byte)0xC2, 3, PixelFormat.Rgb48, ImageColorModel.YCbCr)]
     [InlineData((byte)0xC1, 1, PixelFormat.Gray16, ImageColorModel.Grayscale)]
     [InlineData((byte)0xC2, 1, PixelFormat.Gray16, ImageColorModel.Grayscale)]
-    [InlineData((byte)0xC1, 4, PixelFormat.Rgba64, ImageColorModel.Cmyk)]
-    [InlineData((byte)0xC9, 3, PixelFormat.Rgba64, ImageColorModel.YCbCr)]
+    [InlineData((byte)0xC1, 4, PixelFormat.Rgb48, ImageColorModel.Cmyk)]
+    [InlineData((byte)0xC9, 3, PixelFormat.Rgb48, ImageColorModel.YCbCr)]
     [InlineData((byte)0xCA, 1, PixelFormat.Gray16, ImageColorModel.Grayscale)]
 
     // A baseline frame has 8-bit samples by definition: with 12-bit ones, it is read as an extended sequential frame
-    [InlineData((byte)0xC0, 3, PixelFormat.Rgba64, ImageColorModel.YCbCr)]
+    [InlineData((byte)0xC0, 3, PixelFormat.Rgb48, ImageColorModel.YCbCr)]
     public void TwelveBitFramesAreIdentifiedInBothModes(byte marker, int components, PixelFormat pixelFormat, ImageColorModel colorModel)
     {
         var data = SyntheticImages.Jpeg(marker, components, precision: 12, width: 17, height: 9);
@@ -74,9 +74,9 @@ public sealed class JpegIdentifyTests
     [InlineData(8, 3, PixelFormat.Rgb24, ImageColorModel.YCbCr)]
     [InlineData(8, 4, PixelFormat.Rgb24, ImageColorModel.Cmyk)]
     [InlineData(10, 1, PixelFormat.Gray16, ImageColorModel.Grayscale)]
-    [InlineData(12, 3, PixelFormat.Rgba64, ImageColorModel.YCbCr)]
+    [InlineData(12, 3, PixelFormat.Rgb48, ImageColorModel.YCbCr)]
     [InlineData(16, 1, PixelFormat.Gray16, ImageColorModel.Grayscale)]
-    [InlineData(16, 3, PixelFormat.Rgba64, ImageColorModel.YCbCr)]
+    [InlineData(16, 3, PixelFormat.Rgb48, ImageColorModel.YCbCr)]
     public void LosslessFramesAreIdentifiedInBothModes(int precision, int components, PixelFormat pixelFormat, ImageColorModel colorModel)
     {
         // A lossless frame (SOF3) has samples of 2 to 16 bits: the ones that do not have 8 bits are scaled to 16 bits

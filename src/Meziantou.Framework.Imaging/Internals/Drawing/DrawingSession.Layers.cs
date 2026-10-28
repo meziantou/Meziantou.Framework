@@ -335,7 +335,7 @@ internal sealed partial class DrawingSession
     }
 
     /// <summary>Gets a value indicating whether the frames that are drawn on have 16-bit samples already (or floating-point samples, whose paints have 16-bit samples).</summary>
-    public bool HasSixteenBitSamples => _frames[0].PixelFormat is not (PixelFormat.Rgba32 or PixelFormat.Bgra32 or PixelFormat.Rgb24 or PixelFormat.Gray8);
+    public bool HasSixteenBitSamples => PixelFormats.GetBitsPerComponent(_frames[0].PixelFormat) > 8;
 
     /// <summary>
     /// Starts a scope whose drawings are made on a copy of the pixels the clip can show with 16-bit samples (a frame for

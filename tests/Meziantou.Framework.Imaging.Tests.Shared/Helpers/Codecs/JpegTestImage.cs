@@ -72,9 +72,9 @@ internal sealed class JpegTestImage
 
     public int McusY { get; }
 
-    /// <summary>Gets the pixel format of the decoded image: 12-bit samples are scaled to 16 bits, and color ones are opaque RGBA.</summary>
+    /// <summary>Gets the pixel format of the decoded image: 12-bit samples are scaled to 16 bits (Gray16 or Rgb48).</summary>
     public PixelFormat PixelFormat => Precision > 8
-        ? Components.Length == 1 ? PixelFormat.Gray16 : PixelFormat.Rgba64
+        ? Components.Length == 1 ? PixelFormat.Gray16 : PixelFormat.Rgb48
         : Components.Length == 1 ? PixelFormat.Gray8 : PixelFormat.Rgb24;
 
     public static ReadOnlySpan<byte> ZigZag =>
@@ -293,9 +293,10 @@ internal sealed class JpegTestImage
     }
 
     /// <summary>
-    /// Gets the expected decoded pixels in <see cref="PixelFormat"/>: <see cref="PixelFormat.Gray8"/> or
-    /// <see cref="PixelFormat.Rgb24"/> bytes, or the native 16-bit samples of <see cref="PixelFormat.Gray16"/> or opaque
-    /// <see cref="PixelFormat.Rgba64"/> for 12-bit samples, each scaled to 16 bits.
+    /// Gets the expected decoded pixels: <see cref="PixelFormat.Gray8"/> or <see cref="PixelFormat.Rgb24"/> bytes, or the
+    /// native 16-bit samples of <see cref="PixelFormat.Gray16"/> or opaque <see cref="PixelFormat.Rgba64"/> (the
+    /// <see cref="PixelFormat.Rgb48"/> pixels of <see cref="PixelFormat"/> with an opaque alpha) for 12-bit samples, each
+    /// scaled to 16 bits.
     /// </summary>
     public byte[] GetExpectedPixels()
     {

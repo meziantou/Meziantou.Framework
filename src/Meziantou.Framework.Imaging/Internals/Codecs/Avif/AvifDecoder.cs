@@ -36,7 +36,7 @@ internal sealed partial class AvifDecoder : HeifDecodeObserver
     {
         ArgumentNullException.ThrowIfNull(structure);
         _structure = structure;
-        _sink = DecodedFrameSink.Create(_context, _request, ImageFormat.Avif, structure.CanvasSize, structure.PixelFormat, structure.PixelFormat, structure.Metadata.IccProfile);
+        _sink = DecodedFrameSink.Create(_context, _request, ImageFormat.Avif, structure.CanvasSize, structure.PixelFormat, structure.SourcePixelFormat, structure.Metadata.IccProfile);
     }
 
     public override void OnImageData(HeifStructureParser structure)

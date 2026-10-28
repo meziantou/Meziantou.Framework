@@ -191,7 +191,8 @@ internal static class ImageCollectionWriterCore
 
     /// <summary>
     /// Gets the image of an entry: the image it owns (borrowed), or a decode of its encoded payload (owned), or the 16-bit
-    /// reduction of a floating-point image that the encoder does not store (owned, <see cref="ImageEncoder.FloatingPointConversion"/>).
+    /// reduction of a floating-point image that the encoder does not store (owned, <see cref="ImageEncoder.FloatingPointConversion"/>),
+    /// or the lossless widening of a pixel format the encoder does not store (owned, <see cref="PixelFormatWidening"/>).
     /// </summary>
     [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The reduced image is owned by the returned entry, which the caller disposes.")]
     private static MaterializedEntry Materialize(ImageCollectionEntry entry, ImageConfiguration configuration, ImageEncoder encoder)
@@ -201,10 +202,23 @@ internal static class ImageCollectionWriterCore
             if (PixelFormats.IsFloatingPoint(owned.PixelFormat) && !encoder.StoresFloatingPointSamples)
                 return new MaterializedEntry(owned.CloneAs<Rgba64>(encoder.FloatingPointConversion), ownsImage: true);
 
+            var widened = PixelFormatWidening.GetEncodedFormat(encoder, owned.PixelFormat);
+            if (widened != owned.PixelFormat)
+                return new MaterializedEntry(owned.CloneAs(widened, options: null), ownsImage: true);
+
             return new MaterializedEntry(owned, ownsImage: false);
         }
 
         var image = entry.Decode(new ImageDecodeOptions { Configuration = configuration });
+        var encodedFormat = PixelFormatWidening.GetEncodedFormat(encoder, image.PixelFormat);
+        if (encodedFormat != image.PixelFormat)
+        {
+            using (image)
+            {
+                return new MaterializedEntry(image.CloneAs(encodedFormat, options: null), ownsImage: true);
+            }
+        }
+
         return new MaterializedEntry(image, ownsImage: true);
     }
 

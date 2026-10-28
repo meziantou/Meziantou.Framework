@@ -18,20 +18,23 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// precision of the <em>source</em> samples; the precision change is the last step:
 /// </para>
 /// <list type="number">
-/// <item>Read the source components (gray replicates its value into R, G and B; a format without alpha reads as fully opaque).</item>
+/// <item>Read the source components (gray replicates its value into R, G and B; <see cref="A8"/> reads as black; a format
+/// without alpha reads as fully opaque).</item>
 /// <item>Remove alpha when the destination has none: fully opaque pixels are kept as is; otherwise the pixel is flattened
 /// onto the background, <c>out = (src * a + bg * (max - a) + max / 2) / max</c> (nearest; <c>max</c> is odd so no ties
 /// exist), with the background reduced to the source precision first. Without a background, any non-opaque pixel is
 /// rejected before anything is written to the destination row.</item>
 /// <item>Color to gray: Rec. 709 luma on the encoded values, <c>Y = (2126 R + 7152 G + 722 B + 5000) / 10000</c>
-/// (nearest, ties upward), clamped to <c>max</c>.</item>
+/// (nearest, ties upward), clamped to <c>max</c> (the luma of a gray color is that gray). Any format to <see cref="A8"/>
+/// keeps alpha only.</item>
 /// <item>Precision change: 8 to 16 bits <c>v * 257</c> (exact); 16 to 8 bits <c>(v * 255 + 32767) / 65535</c> (nearest,
 /// no ties exist). Adding alpha sets it to fully opaque.</item>
 /// </list>
 /// <para>
 /// <see cref="ConvertRowScalar{TSource, TDestination}(ReadOnlySpan{TSource}, Span{TDestination}, Rgba64?, ImageFormat, FloatSampleConversion?)"/> is the numerical
 /// reference: vectorized kernels must produce bit-identical results and are tested against it. With 128-bit hardware
-/// vectors, every pair of formats and the search for a non-opaque pixel process 16 bytes at a time: byte moves (channel
+/// vectors, every pair of the formats other than <see cref="La16"/>, <see cref="La32"/>, <see cref="Rgb48"/> and
+/// <see cref="A8"/> (whose conversions use the scalar reference) and the search for a non-opaque pixel process 16 bytes at a time: byte moves (channel
 /// order, alpha added or dropped, gray replicated, 8-bit samples to 16 bits), the reduction of 16-bit samples to 8 bits,
 /// luma and flattening use integer forms (or a <see cref="float"/> division that is checked or corrected) that give the
 /// results of the scalar formulas for every input.
@@ -164,9 +167,23 @@ internal static partial class PixelConverter
             case PixelFormat.RgbaHalf:
                 ConvertFrom(unsafe(MemoryMarshal.Cast<byte, RgbaHalf>(source)), destinationFormat, destination, background, format, floats);
                 break;
-            default:
+            case PixelFormat.Gray16:
                 ConvertFrom(unsafe(MemoryMarshal.Cast<byte, Gray16>(source)), destinationFormat, destination, background, format, floats);
                 break;
+            case PixelFormat.La16:
+                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, La16>(source)), destinationFormat, destination, background, format, floats);
+                break;
+            case PixelFormat.La32:
+                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, La32>(source)), destinationFormat, destination, background, format, floats);
+                break;
+            case PixelFormat.Rgb48:
+                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, Rgb48>(source)), destinationFormat, destination, background, format, floats);
+                break;
+            case PixelFormat.A8:
+                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, A8>(source)), destinationFormat, destination, background, format, floats);
+                break;
+            default:
+                throw new UnreachableException();
         }
 
         return width;
@@ -196,6 +213,9 @@ internal static partial class PixelConverter
         PixelFormat.Rgba64 => IndexOfNonOpaque(unsafe(MemoryMarshal.Cast<byte, Rgba64>(row))),
         PixelFormat.RgbaFloat => IndexOfNonOpaque(unsafe(MemoryMarshal.Cast<byte, RgbaFloat>(row))),
         PixelFormat.RgbaHalf => IndexOfNonOpaque(unsafe(MemoryMarshal.Cast<byte, RgbaHalf>(row))),
+        PixelFormat.La16 => IndexOfNonOpaque(unsafe(MemoryMarshal.Cast<byte, La16>(row))),
+        PixelFormat.La32 => IndexOfNonOpaque(unsafe(MemoryMarshal.Cast<byte, La32>(row))),
+        PixelFormat.A8 => IndexOfNonOpaque(unsafe(MemoryMarshal.Cast<byte, A8>(row))),
         _ => PixelFormats.HasAlpha(format) ? throw new UnreachableException() : -1,
     };
 
@@ -247,7 +267,7 @@ internal static partial class PixelConverter
 
     /// <summary>
     /// Gets a value indicating whether a color converts to a pixel format without any loss: alpha is kept or fully opaque,
-    /// a gray format gets a gray color, an 8-bit format gets samples that are exact 8-bit values (multiples of 257), and a
+    /// a gray format gets a gray color, <see cref="A8"/> gets black, an 8-bit format gets samples that are exact 8-bit values (multiples of 257), and a
     /// half-precision format gets samples whose fraction of 65535 rounds back to them.
     /// </summary>
     /// <param name="color">The color.</param>
@@ -261,6 +281,9 @@ internal static partial class PixelConverter
             return false;
 
         if (PixelFormats.IsGrayscale(format) && (color.R != color.G || color.G != color.B))
+            return false;
+
+        if (!PixelFormats.HasColor(format) && (color.R | color.G | color.B) != 0)
             return false;
 
         if (PixelFormats.IsFloatingPoint(format))
@@ -307,9 +330,23 @@ internal static partial class PixelConverter
             case PixelFormat.RgbaHalf:
                 ConvertRow(source, unsafe(MemoryMarshal.Cast<byte, RgbaHalf>(destination)), background, format, floats);
                 break;
-            default:
+            case PixelFormat.Gray16:
                 ConvertRow(source, unsafe(MemoryMarshal.Cast<byte, Gray16>(destination)), background, format, floats);
                 break;
+            case PixelFormat.La16:
+                ConvertRow(source, unsafe(MemoryMarshal.Cast<byte, La16>(destination)), background, format, floats);
+                break;
+            case PixelFormat.La32:
+                ConvertRow(source, unsafe(MemoryMarshal.Cast<byte, La32>(destination)), background, format, floats);
+                break;
+            case PixelFormat.Rgb48:
+                ConvertRow(source, unsafe(MemoryMarshal.Cast<byte, Rgb48>(destination)), background, format, floats);
+                break;
+            case PixelFormat.A8:
+                ConvertRow(source, unsafe(MemoryMarshal.Cast<byte, A8>(destination)), background, format, floats);
+                break;
+            default:
+                throw new UnreachableException();
         }
     }
 
@@ -367,6 +404,33 @@ internal static partial class PixelConverter
             for (var i = 0; i < pixels.Length; i++)
             {
                 if (pixels[i].A != ushort.MaxValue)
+                    return i;
+            }
+        }
+        else if (typeof(TPixel) == typeof(La16))
+        {
+            var pixels = unsafe(MemoryMarshal.Cast<TPixel, La16>(row));
+            for (var i = 0; i < pixels.Length; i++)
+            {
+                if (pixels[i].A != byte.MaxValue)
+                    return i;
+            }
+        }
+        else if (typeof(TPixel) == typeof(La32))
+        {
+            var pixels = unsafe(MemoryMarshal.Cast<TPixel, La32>(row));
+            for (var i = 0; i < pixels.Length; i++)
+            {
+                if (pixels[i].A != ushort.MaxValue)
+                    return i;
+            }
+        }
+        else if (typeof(TPixel) == typeof(A8))
+        {
+            var pixels = unsafe(MemoryMarshal.Cast<TPixel, A8>(row));
+            for (var i = 0; i < pixels.Length; i++)
+            {
+                if (pixels[i].A != byte.MaxValue)
                     return i;
             }
         }
@@ -455,6 +519,10 @@ internal static partial class PixelConverter
         where TSource : unmanaged
         where TDestination : unmanaged
     {
+        // The formats added after the vector kernels (gray with alpha, 16-bit RGB, alpha only) use the scalar reference
+        if (IsScalarOnly<TSource>() || IsScalarOnly<TDestination>())
+            return 0;
+
         ref var input = ref unsafe(Unsafe.As<TSource, byte>(ref MemoryMarshal.GetReference(source)));
         ref var output = ref unsafe(Unsafe.As<TDestination, byte>(ref MemoryMarshal.GetReference(destination)));
         var length = source.Length;
@@ -1077,10 +1145,15 @@ internal static partial class PixelConverter
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static bool Is16Bit<TPixel>() => typeof(TPixel) == typeof(Rgba64) || typeof(TPixel) == typeof(Gray16);
+    private static bool Is16Bit<TPixel>() => typeof(TPixel) == typeof(Rgba64) || typeof(TPixel) == typeof(Gray16) || typeof(TPixel) == typeof(La32) || typeof(TPixel) == typeof(Rgb48);
 
+    /// <summary>Gets a value indicating whether the pixel stores a single gray component (with or without alpha).</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static bool IsGray<TPixel>() => typeof(TPixel) == typeof(Gray8) || typeof(TPixel) == typeof(Gray16);
+    private static bool IsGray<TPixel>() => typeof(TPixel) == typeof(Gray8) || typeof(TPixel) == typeof(Gray16) || typeof(TPixel) == typeof(La16) || typeof(TPixel) == typeof(La32);
+
+    /// <summary>Gets a value indicating whether the conversions of a pixel type have no vector kernel (<see cref="ConvertVector"/>).</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static bool IsScalarOnly<TPixel>() => typeof(TPixel) == typeof(La16) || typeof(TPixel) == typeof(La32) || typeof(TPixel) == typeof(Rgb48) || typeof(TPixel) == typeof(A8);
 
     /// <summary>Reads the components at the source precision; gray is replicated and missing alpha is opaque.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1116,6 +1189,26 @@ internal static partial class PixelConverter
             uint v = unsafe(Unsafe.As<TPixel, Gray16>(ref pixel)).Value;
             (r, g, b, a) = (v, v, v, Max16);
         }
+        else if (typeof(TPixel) == typeof(La16))
+        {
+            ref var p = ref unsafe(Unsafe.As<TPixel, La16>(ref pixel));
+            (r, g, b, a) = (p.L, p.L, p.L, p.A);
+        }
+        else if (typeof(TPixel) == typeof(La32))
+        {
+            ref var p = ref unsafe(Unsafe.As<TPixel, La32>(ref pixel));
+            (r, g, b, a) = (p.L, p.L, p.L, p.A);
+        }
+        else if (typeof(TPixel) == typeof(Rgb48))
+        {
+            ref var p = ref unsafe(Unsafe.As<TPixel, Rgb48>(ref pixel));
+            (r, g, b, a) = (p.R, p.G, p.B, Max16);
+        }
+        else if (typeof(TPixel) == typeof(A8))
+        {
+            // No color: black with the alpha
+            (r, g, b, a) = (0, 0, 0, unsafe(Unsafe.As<TPixel, A8>(ref pixel)).A);
+        }
         else
         {
             throw new UnreachableException();
@@ -1128,14 +1221,41 @@ internal static partial class PixelConverter
     {
         if (IsGray<TDestination>())
         {
-            var y = IsGray<TSource>() ? r : Luma(r, g, b, sourceMax);
+            // A gray source flattened onto a colored background is no longer gray: its luma is taken (exact for a gray color)
+            var y = IsGray<TSource>() && r == g && g == b ? r : Luma(r, g, b, sourceMax);
             if (typeof(TDestination) == typeof(Gray8))
             {
                 unsafe { Unsafe.As<TDestination, Gray8>(ref pixel).Value = Is16Bit<TSource>() ? To8Bit(y) : (byte)y; }
             }
-            else
+            else if (typeof(TDestination) == typeof(Gray16))
             {
                 unsafe { Unsafe.As<TDestination, Gray16>(ref pixel).Value = Is16Bit<TSource>() ? (ushort)y : To16Bit(y); }
+            }
+            else if (typeof(TDestination) == typeof(La16))
+            {
+                ref var p = ref unsafe(Unsafe.As<TDestination, La16>(ref pixel));
+                (p.L, p.A) = Is16Bit<TSource>() ? (To8Bit(y), To8Bit(a)) : ((byte)y, (byte)a);
+            }
+            else
+            {
+                ref var p = ref unsafe(Unsafe.As<TDestination, La32>(ref pixel));
+                (p.L, p.A) = Is16Bit<TSource>() ? ((ushort)y, (ushort)a) : (To16Bit(y), To16Bit(a));
+            }
+        }
+        else if (typeof(TDestination) == typeof(A8))
+        {
+            unsafe { Unsafe.As<TDestination, A8>(ref pixel).A = Is16Bit<TSource>() ? To8Bit(a) : (byte)a; }
+        }
+        else if (typeof(TDestination) == typeof(Rgb48))
+        {
+            ref var p = ref unsafe(Unsafe.As<TDestination, Rgb48>(ref pixel));
+            if (Is16Bit<TSource>())
+            {
+                (p.R, p.G, p.B) = ((ushort)r, (ushort)g, (ushort)b);
+            }
+            else
+            {
+                (p.R, p.G, p.B) = (To16Bit(r), To16Bit(g), To16Bit(b));
             }
         }
         else if (Is16Bit<TDestination>())

@@ -98,7 +98,7 @@ public sealed class HeicDecodingTests
     public void TenBitSamplesAreScaledToSixteenBits()
     {
         var info = Image.Identify(HeicTestFiles.Deep);
-        Assert.Equal((PixelFormat.Rgba64, 10), (info.PixelFormat, info.BitsPerComponent));
+        Assert.Equal((PixelFormat.Rgb48, 10), (info.PixelFormat, info.BitsPerComponent));
 
         using var image = Image.Load(HeicTestFiles.Deep);
         var pixels = ImageSnapshots.CaptureFrame(image.Frames[0]);

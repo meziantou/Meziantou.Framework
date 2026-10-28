@@ -4,6 +4,18 @@
 
 namespace Meziantou.Framework.Imaging
 {
+    public struct A8 : System.IEquatable<Meziantou.Framework.Imaging.A8>
+    {
+        public byte A;
+        public A8(byte a) { }
+        public readonly bool Equals(Meziantou.Framework.Imaging.A8 other) => throw null;
+        public readonly override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public readonly override int GetHashCode() => throw null;
+        public readonly override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Imaging.A8 left, Meziantou.Framework.Imaging.A8 right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Imaging.A8 left, Meziantou.Framework.Imaging.A8 right) => throw null;
+    }
+
     public readonly struct AffineTransform : System.IEquatable<Meziantou.Framework.Imaging.AffineTransform>
     {
         public double Determinant { get => throw null; }
@@ -982,6 +994,32 @@ namespace Meziantou.Framework.Imaging
         public static System.Threading.Tasks.Task<bool> TryReconstructJpegAsync(System.IO.Stream jpegXl, System.IO.Stream destination, Meziantou.Framework.Imaging.JpegXlTranscodeOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
     }
 
+    public struct La16 : System.IEquatable<Meziantou.Framework.Imaging.La16>
+    {
+        public byte A;
+        public byte L;
+        public La16(byte l, byte a = 255) { }
+        public readonly bool Equals(Meziantou.Framework.Imaging.La16 other) => throw null;
+        public readonly override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public readonly override int GetHashCode() => throw null;
+        public readonly override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Imaging.La16 left, Meziantou.Framework.Imaging.La16 right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Imaging.La16 left, Meziantou.Framework.Imaging.La16 right) => throw null;
+    }
+
+    public struct La32 : System.IEquatable<Meziantou.Framework.Imaging.La32>
+    {
+        public ushort A;
+        public ushort L;
+        public La32(ushort l, ushort a = 65535) { }
+        public readonly bool Equals(Meziantou.Framework.Imaging.La32 other) => throw null;
+        public readonly override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public readonly override int GetHashCode() => throw null;
+        public readonly override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Imaging.La32 left, Meziantou.Framework.Imaging.La32 right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Imaging.La32 left, Meziantou.Framework.Imaging.La32 right) => throw null;
+    }
+
     public enum OutOfRangeSampleHandling
     {
         Reject = 0,
@@ -1037,6 +1075,10 @@ namespace Meziantou.Framework.Imaging
         Gray16 = 6,
         RgbaFloat = 7,
         RgbaHalf = 8,
+        La16 = 9,
+        La32 = 10,
+        Rgb48 = 11,
+        A8 = 12,
     }
 
     public static class PixelFormats
@@ -1048,6 +1090,7 @@ namespace Meziantou.Framework.Imaging
         public static Meziantou.Framework.Imaging.PixelFormat GetPixelFormat<TPixel>() where TPixel : unmanaged => throw null;
         public static System.Type GetPixelType(Meziantou.Framework.Imaging.PixelFormat format) => throw null;
         public static bool HasAlpha(Meziantou.Framework.Imaging.PixelFormat format) => throw null;
+        public static bool HasColor(Meziantou.Framework.Imaging.PixelFormat format) => throw null;
         public static bool IsFloatingPoint(Meziantou.Framework.Imaging.PixelFormat format) => throw null;
         public static bool IsGrayscale(Meziantou.Framework.Imaging.PixelFormat format) => throw null;
         public static bool IsSupported<TPixel>() where TPixel : unmanaged => throw null;
@@ -1276,6 +1319,20 @@ namespace Meziantou.Framework.Imaging
         public readonly override string ToString() => throw null;
         public static bool operator ==(Meziantou.Framework.Imaging.Rgb24 left, Meziantou.Framework.Imaging.Rgb24 right) => throw null;
         public static bool operator !=(Meziantou.Framework.Imaging.Rgb24 left, Meziantou.Framework.Imaging.Rgb24 right) => throw null;
+    }
+
+    public struct Rgb48 : System.IEquatable<Meziantou.Framework.Imaging.Rgb48>
+    {
+        public ushort B;
+        public ushort G;
+        public ushort R;
+        public Rgb48(ushort r, ushort g, ushort b) { }
+        public readonly bool Equals(Meziantou.Framework.Imaging.Rgb48 other) => throw null;
+        public readonly override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public readonly override int GetHashCode() => throw null;
+        public readonly override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Imaging.Rgb48 left, Meziantou.Framework.Imaging.Rgb48 right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Imaging.Rgb48 left, Meziantou.Framework.Imaging.Rgb48 right) => throw null;
     }
 
     public struct Rgba32 : System.IEquatable<Meziantou.Framework.Imaging.Rgba32>

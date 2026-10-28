@@ -590,8 +590,7 @@ internal static partial class GoldenCorpus
                 }
             }
 
-            // No 16-bit RGB pixel format: the 12-bit color samples are loaded as opaque RGBA
-            var expected = CommonCorpus.StillExpected("jpeg", img, deep ? (img.Model == "gray" ? "Gray16" : "Rgba64") : img.Model == "gray" ? "Gray8" : "Rgb24",
+            var expected = CommonCorpus.StillExpected("jpeg", img, deep ? (img.Model == "gray" ? "Gray16" : "Rgb48") : img.Model == "gray" ? "Gray8" : "Rgb24",
                 img.Model == "gray" ? "Grayscale" : (arguments.Contains("-rgb", StringComparer.Ordinal) ? "Rgb" : "YCbCr"), precision, orientation is null or 0 ? 1 : orientation.Value);
             expected["iccProfile"] = iccLabel;
             var reference2 = new Obj

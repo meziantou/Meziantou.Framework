@@ -4316,7 +4316,7 @@
       "expected": {
         "width": 16,
         "height": 16,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "YCbCr",
         "bitsPerComponent": 10,
         "orientation": 1,
@@ -4416,7 +4416,7 @@
       "expected": {
         "width": 16,
         "height": 16,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "YCbCr",
         "bitsPerComponent": 12,
         "orientation": 1,
@@ -4616,7 +4616,7 @@
       "expected": {
         "width": 128,
         "height": 64,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "YCbCr",
         "bitsPerComponent": 10,
         "orientation": 1,
@@ -5489,7 +5489,7 @@
       "expected": {
         "width": 8,
         "height": 8,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "YCbCr",
         "bitsPerComponent": 10,
         "orientation": 1,
@@ -8589,7 +8589,7 @@
       "expected": {
         "width": 16,
         "height": 16,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "YCbCr",
         "bitsPerComponent": 10,
         "orientation": 1,
@@ -9166,7 +9166,7 @@
       "expected": {
         "width": 4,
         "height": 4,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "Rgb",
         "bitsPerComponent": 10,
         "orientation": 1,
@@ -9981,7 +9981,7 @@
       "expected": {
         "width": 4,
         "height": 4,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "Rgb",
         "bitsPerComponent": 10,
         "orientation": 1,
@@ -10680,7 +10680,7 @@
       "expected": {
         "width": 8,
         "height": 8,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "Rgb",
         "bitsPerComponent": 10,
         "orientation": 1,
@@ -11467,7 +11467,7 @@
       "expected": {
         "width": 8,
         "height": 6,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "YCbCr",
         "bitsPerComponent": 10,
         "orientation": 1,
@@ -11671,7 +11671,7 @@
       "expected": {
         "width": 6,
         "height": 8,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "YCbCr",
         "bitsPerComponent": 12,
         "orientation": 1,
@@ -11767,7 +11767,7 @@
       "expected": {
         "width": 8,
         "height": 6,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "YCbCr",
         "bitsPerComponent": 12,
         "orientation": 1,
@@ -11864,7 +11864,7 @@
       "expected": {
         "width": 8,
         "height": 6,
-        "pixelFormat": "Rgba32",
+        "pixelFormat": "La16",
         "colorModel": "GrayscaleAlpha",
         "bitsPerComponent": 8,
         "orientation": 1,
@@ -12312,7 +12312,7 @@
       "expected": {
         "width": 8,
         "height": 8,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "Rgb",
         "bitsPerComponent": 10,
         "orientation": 1,
@@ -12417,7 +12417,7 @@
       "expected": {
         "width": 7,
         "height": 6,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "Rgb",
         "bitsPerComponent": 12,
         "orientation": 1,
@@ -13455,7 +13455,7 @@
       "expected": {
         "width": 8,
         "height": 8,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "YCbCr",
         "bitsPerComponent": 10,
         "orientation": 1,
@@ -13666,7 +13666,7 @@
       "expected": {
         "width": 8,
         "height": 6,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "YCbCr",
         "bitsPerComponent": 12,
         "orientation": 1,
@@ -14320,7 +14320,7 @@
       "expected": {
         "width": 9,
         "height": 7,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "YCbCr",
         "bitsPerComponent": 10,
         "orientation": 1,
@@ -14642,7 +14642,7 @@
       "expected": {
         "width": 7,
         "height": 9,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "YCbCr",
         "bitsPerComponent": 12,
         "orientation": 1,
@@ -14965,7 +14965,7 @@
       "expected": {
         "width": 8,
         "height": 6,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "YCbCr",
         "bitsPerComponent": 10,
         "orientation": 1,
@@ -15065,7 +15065,7 @@
       "expected": {
         "width": 8,
         "height": 8,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "YCbCr",
         "bitsPerComponent": 10,
         "orientation": 1,
@@ -15724,7 +15724,7 @@
       "expected": {
         "width": 8,
         "height": 6,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "YCbCr",
         "bitsPerComponent": 12,
         "orientation": 1,
@@ -15924,7 +15924,7 @@
       "expected": {
         "width": 8,
         "height": 6,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "YCbCr",
         "bitsPerComponent": 12,
         "orientation": 1,
@@ -16245,7 +16245,7 @@
       "expected": {
         "width": 8,
         "height": 6,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "YCbCr",
         "bitsPerComponent": 12,
         "orientation": 1,
@@ -16455,7 +16455,7 @@
       "expected": {
         "width": 8,
         "height": 8,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "YCbCr",
         "bitsPerComponent": 10,
         "orientation": 1,
@@ -16665,7 +16665,7 @@
       "expected": {
         "width": 8,
         "height": 8,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "YCbCr",
         "bitsPerComponent": 10,
         "orientation": 1,
@@ -16875,7 +16875,7 @@
       "expected": {
         "width": 8,
         "height": 8,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "YCbCr",
         "bitsPerComponent": 10,
         "orientation": 1,
@@ -17418,7 +17418,7 @@
       "expected": {
         "width": 8,
         "height": 6,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "La32",
         "colorModel": "GrayscaleAlpha",
         "bitsPerComponent": 10,
         "orientation": 1,
@@ -19077,7 +19077,7 @@
       "expected": {
         "width": 8,
         "height": 8,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "YCbCr",
         "bitsPerComponent": 10,
         "orientation": 1,
@@ -19707,7 +19707,7 @@
       "expected": {
         "width": 12,
         "height": 12,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "YCbCr",
         "bitsPerComponent": 10,
         "orientation": 1,
@@ -21309,7 +21309,7 @@
       "expected": {
         "width": 8,
         "height": 8,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "Rgb",
         "bitsPerComponent": 12,
         "orientation": 1,
@@ -25617,7 +25617,7 @@
       "expected": {
         "width": 8,
         "height": 8,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "YCbCr",
         "bitsPerComponent": 10,
         "orientation": 1,
@@ -26057,7 +26057,7 @@
       "expected": {
         "width": 8,
         "height": 8,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "YCbCr",
         "bitsPerComponent": 10,
         "orientation": 1,
@@ -26422,7 +26422,7 @@
       "expected": {
         "width": 8,
         "height": 8,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "YCbCr",
         "bitsPerComponent": 10,
         "orientation": 1,
@@ -40560,7 +40560,7 @@
       "expected": {
         "width": 128,
         "height": 64,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "YCbCr",
         "bitsPerComponent": 10,
         "orientation": 1,
@@ -42841,7 +42841,7 @@
       "expected": {
         "width": 8,
         "height": 6,
-        "pixelFormat": "Rgba32",
+        "pixelFormat": "La16",
         "colorModel": "GrayscaleAlpha",
         "bitsPerComponent": 8,
         "orientation": 1,
@@ -43277,7 +43277,7 @@
       "expected": {
         "width": 8,
         "height": 8,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "Rgb",
         "bitsPerComponent": 10,
         "orientation": 1,
@@ -43378,7 +43378,7 @@
       "expected": {
         "width": 7,
         "height": 6,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "Rgb",
         "bitsPerComponent": 12,
         "orientation": 1,
@@ -44233,7 +44233,7 @@
       "expected": {
         "width": 8,
         "height": 8,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "YCbCr",
         "bitsPerComponent": 10,
         "orientation": 1,
@@ -44454,7 +44454,7 @@
       "expected": {
         "width": 8,
         "height": 6,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "YCbCr",
         "bitsPerComponent": 12,
         "orientation": 1,
@@ -44906,7 +44906,7 @@
       "expected": {
         "width": 8,
         "height": 8,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "YCbCr",
         "bitsPerComponent": 10,
         "orientation": 1,
@@ -45360,7 +45360,7 @@
       "expected": {
         "width": 8,
         "height": 8,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "YCbCr",
         "bitsPerComponent": 10,
         "orientation": 1,
@@ -45685,7 +45685,7 @@
       "expected": {
         "width": 8,
         "height": 6,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "YCbCr",
         "bitsPerComponent": 12,
         "orientation": 1,
@@ -46018,7 +46018,7 @@
       "expected": {
         "width": 8,
         "height": 8,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "YCbCr",
         "bitsPerComponent": 10,
         "orientation": 1,
@@ -46330,7 +46330,7 @@
       "expected": {
         "width": 8,
         "height": 8,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "YCbCr",
         "bitsPerComponent": 10,
         "orientation": 1,
@@ -46434,7 +46434,7 @@
       "expected": {
         "width": 8,
         "height": 6,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "YCbCr",
         "bitsPerComponent": 12,
         "orientation": 1,
@@ -48499,7 +48499,7 @@
       "expected": {
         "width": 64,
         "height": 24,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "YCbCr",
         "bitsPerComponent": 10,
         "orientation": 6,
@@ -49350,7 +49350,7 @@
       "expected": {
         "width": 64,
         "height": 64,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "YCbCr",
         "bitsPerComponent": 10,
         "orientation": 1,
@@ -54600,7 +54600,7 @@
       "expected": {
         "width": 20,
         "height": 18,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "YCbCr",
         "bitsPerComponent": 10,
         "orientation": 1,
@@ -55145,7 +55145,7 @@
       "expected": {
         "width": 18,
         "height": 17,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "Rgb",
         "bitsPerComponent": 10,
         "orientation": 1,
@@ -65737,7 +65737,7 @@
       "expected": {
         "width": 8,
         "height": 2,
-        "pixelFormat": "Rgba32",
+        "pixelFormat": "La16",
         "colorModel": "GrayscaleAlpha",
         "bitsPerComponent": 8,
         "orientation": 1,
@@ -68189,7 +68189,7 @@
       "expected": {
         "width": 9,
         "height": 7,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "Rgb",
         "bitsPerComponent": 16,
         "orientation": 1,
@@ -70217,7 +70217,7 @@
       "expected": {
         "width": 8,
         "height": 6,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "La32",
         "colorModel": "GrayscaleAlpha",
         "bitsPerComponent": 16,
         "orientation": 1,
@@ -70316,7 +70316,7 @@
       "expected": {
         "width": 8,
         "height": 2,
-        "pixelFormat": "Rgba32",
+        "pixelFormat": "La16",
         "colorModel": "GrayscaleAlpha",
         "bitsPerComponent": 8,
         "orientation": 1,
@@ -70864,7 +70864,7 @@
       "expected": {
         "width": 9,
         "height": 7,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "Rgb",
         "bitsPerComponent": 16,
         "orientation": 1,
@@ -71950,7 +71950,7 @@
       "expected": {
         "width": 24,
         "height": 16,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "Rgb",
         "bitsPerComponent": 16,
         "orientation": 1,
@@ -76116,7 +76116,7 @@
       "expected": {
         "width": 36,
         "height": 20,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "YCbCr",
         "bitsPerComponent": 12,
         "orientation": 1,
@@ -76232,7 +76232,7 @@
       "expected": {
         "width": 24,
         "height": 16,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "YCbCr",
         "bitsPerComponent": 12,
         "orientation": 1,
@@ -80126,7 +80126,7 @@
       "expected": {
         "width": 13,
         "height": 10,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "Rgb",
         "bitsPerComponent": 10,
         "orientation": 1,
@@ -80226,7 +80226,7 @@
       "expected": {
         "width": 17,
         "height": 11,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "Rgb",
         "bitsPerComponent": 12,
         "orientation": 1,
@@ -80327,7 +80327,7 @@
       "expected": {
         "width": 17,
         "height": 11,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "Rgb",
         "bitsPerComponent": 16,
         "orientation": 1,
@@ -80956,7 +80956,7 @@
       "expected": {
         "width": 33,
         "height": 17,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "YCbCr",
         "bitsPerComponent": 12,
         "orientation": 1,
@@ -81074,7 +81074,7 @@
       "expected": {
         "width": 29,
         "height": 13,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "YCbCr",
         "bitsPerComponent": 12,
         "orientation": 1,
@@ -81190,7 +81190,7 @@
       "expected": {
         "width": 24,
         "height": 16,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "YCbCr",
         "bitsPerComponent": 12,
         "orientation": 1,
@@ -81434,7 +81434,7 @@
       "expected": {
         "width": 12,
         "height": 10,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "Rgb",
         "bitsPerComponent": 12,
         "orientation": 1,
@@ -83309,7 +83309,7 @@
       "expected": {
         "width": 20,
         "height": 12,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "YCbCr",
         "bitsPerComponent": 12,
         "orientation": 1,
@@ -85294,7 +85294,7 @@
       "expected": {
         "width": 9,
         "height": 7,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "Rgb",
         "bitsPerComponent": 16,
         "orientation": 1,
@@ -87335,7 +87335,7 @@
       "expected": {
         "width": 8,
         "height": 6,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "La32",
         "colorModel": "GrayscaleAlpha",
         "bitsPerComponent": 16,
         "orientation": 1,
@@ -87433,7 +87433,7 @@
       "expected": {
         "width": 8,
         "height": 2,
-        "pixelFormat": "Rgba32",
+        "pixelFormat": "La16",
         "colorModel": "GrayscaleAlpha",
         "bitsPerComponent": 8,
         "orientation": 1,
@@ -87642,7 +87642,7 @@
       "expected": {
         "width": 7,
         "height": 5,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "Rgb",
         "bitsPerComponent": 12,
         "orientation": 1,
@@ -87741,7 +87741,7 @@
       "expected": {
         "width": 9,
         "height": 7,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "Rgb",
         "bitsPerComponent": 16,
         "orientation": 1,
@@ -89043,7 +89043,7 @@
       "expected": {
         "width": 24,
         "height": 16,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "Rgb",
         "bitsPerComponent": 16,
         "orientation": 1,
@@ -95478,7 +95478,7 @@
       "expected": {
         "width": 13,
         "height": 9,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "Rgb",
         "bitsPerComponent": 16,
         "orientation": 1,
@@ -95570,7 +95570,7 @@
       "expected": {
         "width": 13,
         "height": 9,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "Rgb",
         "bitsPerComponent": 16,
         "orientation": 1,
@@ -95662,7 +95662,7 @@
       "expected": {
         "width": 13,
         "height": 9,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "Rgb",
         "bitsPerComponent": 16,
         "orientation": 1,
@@ -95754,7 +95754,7 @@
       "expected": {
         "width": 13,
         "height": 9,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "Rgb",
         "bitsPerComponent": 16,
         "orientation": 1,
@@ -95846,7 +95846,7 @@
       "expected": {
         "width": 13,
         "height": 9,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "Rgb",
         "bitsPerComponent": 16,
         "orientation": 1,
@@ -95938,7 +95938,7 @@
       "expected": {
         "width": 13,
         "height": 9,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "Rgb",
         "bitsPerComponent": 16,
         "orientation": 1,
@@ -97134,7 +97134,7 @@
       "expected": {
         "width": 13,
         "height": 9,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "La32",
         "colorModel": "GrayscaleAlpha",
         "bitsPerComponent": 16,
         "orientation": 1,
@@ -97226,7 +97226,7 @@
       "expected": {
         "width": 13,
         "height": 9,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "La32",
         "colorModel": "GrayscaleAlpha",
         "bitsPerComponent": 16,
         "orientation": 1,
@@ -97318,7 +97318,7 @@
       "expected": {
         "width": 13,
         "height": 9,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "La32",
         "colorModel": "GrayscaleAlpha",
         "bitsPerComponent": 16,
         "orientation": 1,
@@ -97410,7 +97410,7 @@
       "expected": {
         "width": 13,
         "height": 9,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "La32",
         "colorModel": "GrayscaleAlpha",
         "bitsPerComponent": 16,
         "orientation": 1,
@@ -97502,7 +97502,7 @@
       "expected": {
         "width": 13,
         "height": 9,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "La32",
         "colorModel": "GrayscaleAlpha",
         "bitsPerComponent": 16,
         "orientation": 1,
@@ -97594,7 +97594,7 @@
       "expected": {
         "width": 13,
         "height": 9,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "La32",
         "colorModel": "GrayscaleAlpha",
         "bitsPerComponent": 16,
         "orientation": 1,
@@ -97686,7 +97686,7 @@
       "expected": {
         "width": 13,
         "height": 9,
-        "pixelFormat": "Rgba32",
+        "pixelFormat": "La16",
         "colorModel": "GrayscaleAlpha",
         "bitsPerComponent": 8,
         "orientation": 1,
@@ -97778,7 +97778,7 @@
       "expected": {
         "width": 13,
         "height": 9,
-        "pixelFormat": "Rgba32",
+        "pixelFormat": "La16",
         "colorModel": "GrayscaleAlpha",
         "bitsPerComponent": 8,
         "orientation": 1,
@@ -97870,7 +97870,7 @@
       "expected": {
         "width": 13,
         "height": 9,
-        "pixelFormat": "Rgba32",
+        "pixelFormat": "La16",
         "colorModel": "GrayscaleAlpha",
         "bitsPerComponent": 8,
         "orientation": 1,
@@ -97962,7 +97962,7 @@
       "expected": {
         "width": 13,
         "height": 9,
-        "pixelFormat": "Rgba32",
+        "pixelFormat": "La16",
         "colorModel": "GrayscaleAlpha",
         "bitsPerComponent": 8,
         "orientation": 1,
@@ -98054,7 +98054,7 @@
       "expected": {
         "width": 13,
         "height": 9,
-        "pixelFormat": "Rgba32",
+        "pixelFormat": "La16",
         "colorModel": "GrayscaleAlpha",
         "bitsPerComponent": 8,
         "orientation": 1,
@@ -98146,7 +98146,7 @@
       "expected": {
         "width": 13,
         "height": 9,
-        "pixelFormat": "Rgba32",
+        "pixelFormat": "La16",
         "colorModel": "GrayscaleAlpha",
         "bitsPerComponent": 8,
         "orientation": 1,
@@ -98532,7 +98532,7 @@
       "expected": {
         "width": 4,
         "height": 2,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "La32",
         "colorModel": "Grayscale",
         "bitsPerComponent": 16,
         "orientation": 1,
@@ -98824,7 +98824,7 @@
       "expected": {
         "width": 5,
         "height": 2,
-        "pixelFormat": "Rgba32",
+        "pixelFormat": "La16",
         "colorModel": "Grayscale",
         "bitsPerComponent": 4,
         "orientation": 1,
@@ -99123,7 +99123,7 @@
       "expected": {
         "width": 4,
         "height": 2,
-        "pixelFormat": "Rgba32",
+        "pixelFormat": "La16",
         "colorModel": "Grayscale",
         "bitsPerComponent": 8,
         "orientation": 1,
@@ -99212,7 +99212,7 @@
       "expected": {
         "width": 5,
         "height": 3,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "La32",
         "colorModel": "GrayscaleAlpha",
         "bitsPerComponent": 16,
         "orientation": 1,
@@ -99300,7 +99300,7 @@
       "expected": {
         "width": 8,
         "height": 2,
-        "pixelFormat": "Rgba32",
+        "pixelFormat": "La16",
         "colorModel": "GrayscaleAlpha",
         "bitsPerComponent": 8,
         "orientation": 1,
@@ -100104,7 +100104,7 @@
       "expected": {
         "width": 3,
         "height": 2,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "Rgb",
         "bitsPerComponent": 16,
         "orientation": 1,
@@ -100192,7 +100192,7 @@
       "expected": {
         "width": 5,
         "height": 3,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "Rgb",
         "bitsPerComponent": 16,
         "orientation": 1,
@@ -101689,7 +101689,7 @@
       "expected": {
         "width": 5,
         "height": 3,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "Rgb",
         "bitsPerComponent": 16,
         "orientation": 1,
@@ -102057,7 +102057,7 @@
       ],
       "reference": {
         "method": "hand-computed",
-        "description": "Binary PPM (P6) with MAXVAL 65535: the library has no 16-bit RGB pixel format, so the samples are decoded into an opaque Rgba64 without losing a bit.",
+        "description": "Binary PPM (P6) with MAXVAL 65535: the samples are decoded into Rgb48 without losing a bit.",
         "crossChecks": [
           {
             "decoder": "ffmpeg 9.0.2 (libavcodec pnm decoder)",
@@ -102071,7 +102071,7 @@
       "expected": {
         "width": 5,
         "height": 3,
-        "pixelFormat": "Rgba64",
+        "pixelFormat": "Rgb48",
         "colorModel": "Rgb",
         "bitsPerComponent": 16,
         "orientation": 1,
@@ -102339,7 +102339,7 @@
       ],
       "reference": {
         "method": "hand-computed",
-        "description": "PAM (P7) with TUPLTYPE GRAYSCALE_ALPHA and DEPTH 2: the library has no gray-with-alpha pixel format, so the gray sample is replicated into red, green and blue, which is lossless.",
+        "description": "PAM (P7) with TUPLTYPE GRAYSCALE_ALPHA and DEPTH 2: the pixels are decoded into La16, and the gray and alpha samples are kept as they are, which is lossless.",
         "crossChecks": [
           {
             "decoder": "ffmpeg 9.0.2 (libavcodec pnm decoder)",
@@ -102353,7 +102353,7 @@
       "expected": {
         "width": 5,
         "height": 3,
-        "pixelFormat": "Rgba32",
+        "pixelFormat": "La16",
         "colorModel": "GrayscaleAlpha",
         "bitsPerComponent": 8,
         "orientation": 1,
@@ -104427,7 +104427,7 @@
       ],
       "reference": {
         "method": "hand-computed",
-        "description": "16-bit grayscale with eight declared alpha bits: each pixel is an 8-bit gray sample followed by an 8-bit alpha sample. The library has no gray-with-alpha pixel format, so the gray sample is replicated into Rgba32; fully transparent pixels keep their gray value.",
+        "description": "16-bit grayscale with eight declared alpha bits: each pixel is an 8-bit gray sample followed by an 8-bit alpha sample. The pixels are decoded into La16; fully transparent pixels keep their gray value.",
         "crossChecks": [
           {
             "decoder": "ffmpeg 9.0.2 (libavcodec tga decoder)",
@@ -104442,7 +104442,7 @@
       "expected": {
         "width": 5,
         "height": 3,
-        "pixelFormat": "Rgba32",
+        "pixelFormat": "La16",
         "colorModel": "GrayscaleAlpha",
         "bitsPerComponent": 8,
         "orientation": 1,
@@ -104931,7 +104931,7 @@
       "expected": {
         "width": 8,
         "height": 6,
-        "pixelFormat": "Rgba32",
+        "pixelFormat": "La16",
         "colorModel": "GrayscaleAlpha",
         "bitsPerComponent": 8,
         "orientation": 1,

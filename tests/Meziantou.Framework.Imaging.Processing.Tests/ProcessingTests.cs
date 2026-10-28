@@ -58,6 +58,10 @@ public sealed class ProcessingTests
             case PixelFormat.Rgba64: CheckRotationsAndFlips<Rgba64>(); break;
             case PixelFormat.Gray8: CheckRotationsAndFlips<Gray8>(); break;
             case PixelFormat.Gray16: CheckRotationsAndFlips<Gray16>(); break;
+            case PixelFormat.La16: CheckRotationsAndFlips<La16>(); break;
+            case PixelFormat.La32: CheckRotationsAndFlips<La32>(); break;
+            case PixelFormat.Rgb48: CheckRotationsAndFlips<Rgb48>(); break;
+            case PixelFormat.A8: CheckRotationsAndFlips<A8>(); break;
             case PixelFormat.RgbaFloat: CheckRotationsAndFlips<RgbaFloat>(); break;
             case PixelFormat.RgbaHalf: CheckRotationsAndFlips<RgbaHalf>(); break;
             default: throw new ArgumentOutOfRangeException(nameof(format));
@@ -407,6 +411,10 @@ public sealed class ProcessingTests
             case PixelFormat.Rgba64: CheckQuarterTurns<Rgba64>(); break;
             case PixelFormat.Gray8: CheckQuarterTurns<Gray8>(); break;
             case PixelFormat.Gray16: CheckQuarterTurns<Gray16>(); break;
+            case PixelFormat.La16: CheckQuarterTurns<La16>(); break;
+            case PixelFormat.La32: CheckQuarterTurns<La32>(); break;
+            case PixelFormat.Rgb48: CheckQuarterTurns<Rgb48>(); break;
+            case PixelFormat.A8: CheckQuarterTurns<A8>(); break;
             case PixelFormat.RgbaFloat: CheckQuarterTurns<RgbaFloat>(); break;
             case PixelFormat.RgbaHalf: CheckQuarterTurns<RgbaHalf>(); break;
             default: throw new ArgumentOutOfRangeException(nameof(format));
@@ -2475,6 +2483,10 @@ public sealed class ProcessingTests
             var t when t == typeof(Rgba64) => new Rgba64((ushort)((0x0101 * id) + 1), (ushort)(0x1000 + (3 * id)), (ushort)(0xFFFF - (7 * id)), (ushort)(0x8000 + id)),
             var t when t == typeof(Gray8) => new Gray8((byte)(id * 3)),
             var t when t == typeof(Gray16) => new Gray16((ushort)((id * 1000) + 1)),
+            var t when t == typeof(La16) => new La16((byte)(id * 3), (byte)(255 - id)),
+            var t when t == typeof(La32) => new La32((ushort)((id * 1000) + 1), (ushort)(0x8000 + id)),
+            var t when t == typeof(Rgb48) => new Rgb48((ushort)((0x0101 * id) + 1), (ushort)(0x1000 + (3 * id)), (ushort)(0xFFFF - (7 * id))),
+            var t when t == typeof(A8) => new A8((byte)(255 - (id * 3))),
 
             // A fraction, a negative (out-of-gamut) color, a high dynamic range one and a translucent alpha, all exact as halves
             var t when t == typeof(RgbaFloat) => new RgbaFloat(id + 0.25f, -id / 8f, 1000f + id, 1f - (id / 64f)),

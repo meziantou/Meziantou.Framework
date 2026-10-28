@@ -15,6 +15,56 @@ public sealed class PixelTypeTests
         Assert.Equal(PixelFormats.GetBytesPerPixel(PixelFormat.Rgba64), Unsafe.SizeOf<Rgba64>());
         Assert.Equal(PixelFormats.GetBytesPerPixel(PixelFormat.Gray8), Unsafe.SizeOf<Gray8>());
         Assert.Equal(PixelFormats.GetBytesPerPixel(PixelFormat.Gray16), Unsafe.SizeOf<Gray16>());
+        Assert.Equal(PixelFormats.GetBytesPerPixel(PixelFormat.La16), Unsafe.SizeOf<La16>());
+        Assert.Equal(PixelFormats.GetBytesPerPixel(PixelFormat.La32), Unsafe.SizeOf<La32>());
+        Assert.Equal(PixelFormats.GetBytesPerPixel(PixelFormat.Rgb48), Unsafe.SizeOf<Rgb48>());
+        Assert.Equal(PixelFormats.GetBytesPerPixel(PixelFormat.A8), Unsafe.SizeOf<A8>());
+    }
+
+    [Theory]
+    [InlineData(PixelFormat.Rgba32, 4, 8, 4, true, false, true)]
+    [InlineData(PixelFormat.Bgra32, 4, 8, 4, true, false, true)]
+    [InlineData(PixelFormat.Rgb24, 3, 8, 3, false, false, true)]
+    [InlineData(PixelFormat.Rgba64, 8, 16, 4, true, false, true)]
+    [InlineData(PixelFormat.Gray8, 1, 8, 1, false, true, true)]
+    [InlineData(PixelFormat.Gray16, 2, 16, 1, false, true, true)]
+    [InlineData(PixelFormat.RgbaFloat, 16, 32, 4, true, false, true)]
+    [InlineData(PixelFormat.RgbaHalf, 8, 16, 4, true, false, true)]
+    [InlineData(PixelFormat.La16, 2, 8, 2, true, true, true)]
+    [InlineData(PixelFormat.La32, 4, 16, 2, true, true, true)]
+    [InlineData(PixelFormat.Rgb48, 6, 16, 3, false, false, true)]
+    [InlineData(PixelFormat.A8, 1, 8, 1, true, false, false)]
+    public void PixelFormatsDescribeEveryFormat(PixelFormat format, int bytesPerPixel, int bitsPerComponent, int componentCount, bool hasAlpha, bool isGrayscale, bool hasColor)
+    {
+        Assert.Contains(format, PixelFormats.All);
+        Assert.Equal(bytesPerPixel, PixelFormats.GetBytesPerPixel(format));
+        Assert.Equal(bitsPerComponent, PixelFormats.GetBitsPerComponent(format));
+        Assert.Equal(componentCount, PixelFormats.GetComponentCount(format));
+        Assert.Equal(hasAlpha, PixelFormats.HasAlpha(format));
+        Assert.Equal(isGrayscale, PixelFormats.IsGrayscale(format));
+        Assert.Equal(hasColor, PixelFormats.HasColor(format));
+        Assert.Equal(format is PixelFormat.RgbaFloat or PixelFormat.RgbaHalf, PixelFormats.IsFloatingPoint(format));
+    }
+
+    [Fact]
+    public void PixelFormatsListsEveryFormatOnce()
+    {
+        Assert.Equal(Enum.GetValues<PixelFormat>().Where(format => format != PixelFormat.Unknown).Order(), PixelFormats.All.Order());
+        Assert.Throws<ArgumentOutOfRangeException>(() => PixelFormats.HasColor(PixelFormat.Unknown));
+    }
+
+    [Fact]
+    public void CompactPixelStructsCompareTheirComponents()
+    {
+        Assert.Equal(new La16(10, 20), new La16(10, 20));
+        Assert.NotEqual(new La16(10, 20), new La16(10, 21));
+        Assert.True(new La32(1000, 2000) == new La32(1000, 2000));
+        Assert.True(new Rgb48(1, 2, 3) != new Rgb48(1, 2, 4));
+        Assert.Equal(new A8(7).GetHashCode(), new A8(7).GetHashCode());
+        Assert.Equal("La16(10, 20)", new La16(10, 20).ToString());
+        Assert.Equal("La32(1000, 65535)", new La32(1000).ToString());
+        Assert.Equal("Rgb48(1, 2, 3)", new Rgb48(1, 2, 3).ToString());
+        Assert.Equal("A8(7)", new A8(7).ToString());
     }
 
     [Fact]

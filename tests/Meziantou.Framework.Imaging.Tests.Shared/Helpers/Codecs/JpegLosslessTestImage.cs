@@ -43,9 +43,9 @@ internal sealed class JpegLosslessTestImage
 
     public int MaxVertical { get; }
 
-    /// <summary>Gets the pixel format of the decoded image: the samples that do not have 8 bits are scaled to 16 bits, and color ones are then opaque RGBA.</summary>
+    /// <summary>Gets the pixel format of the decoded image: the samples that do not have 8 bits are scaled to 16 bits (Gray16 or Rgb48).</summary>
     public PixelFormat PixelFormat => Precision != 8
-        ? Components.Length == 1 ? PixelFormat.Gray16 : PixelFormat.Rgba64
+        ? Components.Length == 1 ? PixelFormat.Gray16 : PixelFormat.Rgb48
         : Components.Length == 1 ? PixelFormat.Gray8 : PixelFormat.Rgb24;
 
     /// <summary>Gets a value indicating whether the last encoding wrote the difference 32,768, which has a category of its own and no additional bit.</summary>
@@ -149,9 +149,10 @@ internal sealed class JpegLosslessTestImage
     }
 
     /// <summary>
-    /// Gets the expected decoded pixels in <see cref="PixelFormat"/>: <see cref="PixelFormat.Gray8"/> or
-    /// <see cref="PixelFormat.Rgb24"/> bytes for 8-bit samples; otherwise the native 16-bit samples of
-    /// <see cref="PixelFormat.Gray16"/> or opaque <see cref="PixelFormat.Rgba64"/>, each scaled to 16 bits.
+    /// Gets the expected decoded pixels: <see cref="PixelFormat.Gray8"/> or <see cref="PixelFormat.Rgb24"/> bytes for 8-bit
+    /// samples; otherwise the native 16-bit samples of <see cref="PixelFormat.Gray16"/> or opaque
+    /// <see cref="PixelFormat.Rgba64"/> (the <see cref="PixelFormat.Rgb48"/> pixels of <see cref="PixelFormat"/> with an
+    /// opaque alpha), each scaled to 16 bits.
     /// </summary>
     public byte[] GetExpectedPixels()
     {

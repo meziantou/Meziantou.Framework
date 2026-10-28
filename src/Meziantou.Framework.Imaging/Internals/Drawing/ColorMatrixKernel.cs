@@ -9,7 +9,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <remarks>
 /// <para>
 /// <b>Contract.</b> With <c>M</c> the largest sample value of the pixel format, and <c>R, G, B, A</c> the samples of a
-/// pixel (<c>A = M</c> for a format without alpha, <c>R = G = B</c> the gray level of a grayscale format), each sample
+/// pixel (<c>A = M</c> for a format without alpha, <c>R = G = B</c> the gray level of a grayscale format, and
+/// <c>R = G = B = 0</c> for <see cref="A8"/>), each sample
 /// of the result is <c>floor(((((m0 R + m1 G) + m2 B) + m3 A) + m4 M) + 1/2 + 2^-20)</c> in double precision, kept between
 /// 0 and <c>M</c>; a value that is not a number is 0. The small term makes a value that is half way between two
 /// samples, to the rounding of the sum, go up: with the coefficients of
@@ -18,7 +19,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </para>
 /// <para>
 /// The result is given as paint colors (<see cref="DrawingColor"/>: the color samples in storage order, then the
-/// alpha; a grayscale format gets the Rec. 709 luma of the three colors). <see cref="Write"/> stores them: as they
+/// alpha; a grayscale format gets the Rec. 709 luma of the three colors, three times for a gray format with alpha, and
+/// <see cref="A8"/> keeps the alpha only). <see cref="Write"/> stores them: as they
 /// are in a format with alpha, hidden colors included (a pixel that is or becomes fully transparent has the color
 /// the matrix gives it, as <see cref="ProcessingKernels.Grayscale"/> leaves it its gray level), and multiplied by the
 /// alpha in a format without alpha, <c>round(c a / M)</c> to nearest with ties upward: the color of the result over
@@ -44,7 +46,7 @@ internal static class ColorMatrixKernel
             throw new InvalidOperationException($"The pixel type '{typeof(TPixel).Name}' does not match the storage pixel size.");
 
         var row = storage.GetRowSpanCore(y);
-        if (Vector128.IsHardwareAccelerated)
+        if (Vector128.IsHardwareAccelerated && !HasScalarKernelOnly<TPixel>())
         {
             ApplyVector<TPixel>(row, x, matrix, destination);
         }
@@ -112,11 +114,49 @@ internal static class ColorMatrixKernel
                 TransformGray(m, pixels[i], ushort.MaxValue, destination.Slice(i * 4, 4));
             }
         }
+        else if (typeof(TPixel) == typeof(Rgb48))
+        {
+            var pixels = unsafe(MemoryMarshal.Cast<byte, Rgb48>(row)).Slice(x, count);
+            for (var i = 0; i < pixels.Length; i++)
+            {
+                var pixel = pixels[i];
+                Transform(m, pixel.R, pixel.G, pixel.B, ushort.MaxValue, ushort.MaxValue, destination.Slice(i * 4, 4), isBlueFirst: false);
+            }
+        }
+        else if (typeof(TPixel) == typeof(La16))
+        {
+            var pixels = unsafe(MemoryMarshal.Cast<byte, La16>(row)).Slice(x, count);
+            for (var i = 0; i < pixels.Length; i++)
+            {
+                TransformGrayAlpha(m, pixels[i].L, pixels[i].A, byte.MaxValue, destination.Slice(i * 4, 4));
+            }
+        }
+        else if (typeof(TPixel) == typeof(La32))
+        {
+            var pixels = unsafe(MemoryMarshal.Cast<byte, La32>(row)).Slice(x, count);
+            for (var i = 0; i < pixels.Length; i++)
+            {
+                TransformGrayAlpha(m, pixels[i].L, pixels[i].A, ushort.MaxValue, destination.Slice(i * 4, 4));
+            }
+        }
+        else if (typeof(TPixel) == typeof(A8))
+        {
+            var pixels = row.Slice(x, count);
+            for (var i = 0; i < pixels.Length; i++)
+            {
+                var color = destination.Slice(i * 4, 4);
+                color[0] = color[1] = color[2] = 0;
+                color[3] = Row(m, 3, 0, 0, 0, pixels[i], byte.MaxValue);
+            }
+        }
         else
         {
             throw new NotSupportedException($"The pixel type '{typeof(TPixel).Name}' is not supported.");
         }
     }
+
+    /// <summary>Gets a value indicating whether the pixel type has no vector kernel (<see cref="ApplyVector"/>).</summary>
+    private static bool HasScalarKernelOnly<TPixel>() => typeof(TPixel) == typeof(Rgb48) || typeof(TPixel) == typeof(La16) || typeof(TPixel) == typeof(La32) || typeof(TPixel) == typeof(A8);
 
     /// <summary>
     /// Computes the colors a matrix gives to the pixels of a run, the four rows of the matrix two at a time: each lane
@@ -231,6 +271,43 @@ internal static class ColorMatrixKernel
                 samples[i] = (ushort)OverBlack(colors[i * 4], colors[(i * 4) + 3], ushort.MaxValue);
             }
         }
+        else if (typeof(TPixel) == typeof(Rgb48))
+        {
+            var samples = unsafe(MemoryMarshal.Cast<byte, ushort>(row)).Slice(x * 3, count * 3);
+            for (var i = 0; i < count; i++)
+            {
+                var color = colors.Slice(i * 4, 4);
+                samples[i * 3] = (ushort)OverBlack(color[0], color[3], ushort.MaxValue);
+                samples[(i * 3) + 1] = (ushort)OverBlack(color[1], color[3], ushort.MaxValue);
+                samples[(i * 3) + 2] = (ushort)OverBlack(color[2], color[3], ushort.MaxValue);
+            }
+        }
+        else if (typeof(TPixel) == typeof(La16))
+        {
+            var samples = row.Slice(x * 2, count * 2);
+            for (var i = 0; i < count; i++)
+            {
+                samples[i * 2] = (byte)colors[i * 4];
+                samples[(i * 2) + 1] = (byte)colors[(i * 4) + 3];
+            }
+        }
+        else if (typeof(TPixel) == typeof(La32))
+        {
+            var samples = unsafe(MemoryMarshal.Cast<byte, ushort>(row)).Slice(x * 2, count * 2);
+            for (var i = 0; i < count; i++)
+            {
+                samples[i * 2] = colors[i * 4];
+                samples[(i * 2) + 1] = colors[(i * 4) + 3];
+            }
+        }
+        else if (typeof(TPixel) == typeof(A8))
+        {
+            var samples = row.Slice(x, count);
+            for (var i = 0; i < count; i++)
+            {
+                samples[i] = (byte)colors[(i * 4) + 3];
+            }
+        }
         else
         {
             throw new NotSupportedException($"The pixel type '{typeof(TPixel).Name}' is not supported.");
@@ -254,6 +331,16 @@ internal static class ColorMatrixKernel
         color[1] = Row(m, 1, r, g, b, a, max);
         color[2] = isBlueFirst ? red : blue;
         color[3] = Row(m, 3, r, g, b, a, max);
+    }
+
+    /// <summary>Transforms a gray pixel with alpha: the colors are the luma of the three rows, three times (the paint layout of the formats composited as RGBA).</summary>
+    private static void TransformGrayAlpha(ReadOnlySpan<double> m, double gray, double alpha, double max, Span<ushort> color)
+    {
+        var red = Row(m, 0, gray, gray, gray, alpha, max);
+        var green = Row(m, 1, gray, gray, gray, alpha, max);
+        var blue = Row(m, 2, gray, gray, gray, alpha, max);
+        color[0] = color[1] = color[2] = (ushort)PixelConverter.Luma(red, green, blue, (uint)max);
+        color[3] = Row(m, 3, gray, gray, gray, alpha, max);
     }
 
     private static void TransformGray(ReadOnlySpan<double> m, double gray, double max, Span<ushort> color)

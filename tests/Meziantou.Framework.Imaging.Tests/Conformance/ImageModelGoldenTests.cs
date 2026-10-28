@@ -37,8 +37,9 @@ public sealed class ImageModelGoldenTests
 
     public static TheoryData<string> AnimatedFixtures => [.. AnimatedFixtureIds];
 
-    // The integer formats: the references of the corpus are integer samples, and no decoder produces floating-point pixels
-    private static IEnumerable<PixelFormat> ReferenceFormats => PixelFormats.All.Where(format => !PixelFormats.IsFloatingPoint(format));
+    // The integer formats: the references of the corpus are integer samples, and no decoder produces floating-point pixels.
+    // No file decodes to an alpha mask, so no reference is black with alpha: A8 is covered by PixelAccessTests
+    private static IEnumerable<PixelFormat> ReferenceFormats => PixelFormats.All.Where(format => !PixelFormats.IsFloatingPoint(format) && format != PixelFormat.A8);
 
     private static IEnumerable<string> AnimatedFixtureIds => GoldenCorpus.Default.Fixtures.Where(fixture => fixture.IsValid && (fixture.Expected.FrameCount > 1 || fixture.Expected.Poster is not null)).Select(fixture => fixture.Id);
 
@@ -68,6 +69,9 @@ public sealed class ImageModelGoldenTests
             case PixelFormat.Rgba64: RoundTrip<Rgba64>(fixture, segmented); break;
             case PixelFormat.Gray8: RoundTrip<Gray8>(fixture, segmented); break;
             case PixelFormat.Gray16: RoundTrip<Gray16>(fixture, segmented); break;
+            case PixelFormat.La16: RoundTrip<La16>(fixture, segmented); break;
+            case PixelFormat.La32: RoundTrip<La32>(fixture, segmented); break;
+            case PixelFormat.Rgb48: RoundTrip<Rgb48>(fixture, segmented); break;
             default: throw new ArgumentOutOfRangeException(nameof(format));
         }
     }
@@ -276,10 +280,11 @@ public sealed class ImageModelGoldenTests
         var format = PixelFormats.GetPixelFormat<TPixel>();
         var expected = fixture.Expected;
         var first = GetReference(fixture, format, 0);
-        var stride = first.RowBytes + 5;
+        var rowBytes = first.Width * PixelFormats.GetBytesPerPixel(format);
+        var stride = rowBytes + 5;
 
         // Segmented and padded storage: rows aligned to 16 bytes, two rows per slab
-        var layoutOptions = segmented ? new PixelStorageLayoutOptions { RowAlignment = 16, TargetSlabBytes = 2 * ((first.RowBytes + 15) / 16 * 16) } : null;
+        var layoutOptions = segmented ? new PixelStorageLayoutOptions { RowAlignment = 16, TargetSlabBytes = 2 * ((rowBytes + 15) / 16 * 16) } : null;
         var image = Image.ImportPixelBytesCore<TPixel>(RawImport.ToPixelBytes(first, format, stride), first.Width, first.Height, stride, ImageConfiguration.Default, layoutOptions);
         try
         {
@@ -323,7 +328,15 @@ public sealed class ImageModelGoldenTests
             return fixture.Layouts.Contains(RawPixelLayout.Rgba8) && fixture.Expected.Frames.Select((_, i) => i).All(i => RawImport.IsOpaque(fixture.GetFrame(i, RawPixelLayout.Rgba8)));
         }
 
-        return fixture.Layouts.Contains(layout);
+        if (!fixture.Layouts.Contains(layout))
+            return false;
+
+        // The gray formats with alpha and Rgb48 import the references that they store exactly (gray levels, opaque pixels)
+        if (format is not (PixelFormat.La16 or PixelFormat.La32 or PixelFormat.Rgb48))
+            return true;
+
+        return fixture.Expected.Frames.Select((_, i) => i).All(i => RawImport.IsRepresentable(fixture.GetFrame(i, layout), format))
+            && (fixture.Expected.Poster is null || RawImport.IsRepresentable(fixture.GetPoster(layout), format));
     }
 
     private static RawPixelBuffer GetReference(GoldenFixture fixture, PixelFormat format, int? frameIndex)

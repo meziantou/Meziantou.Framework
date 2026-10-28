@@ -65,7 +65,7 @@ public sealed partial class HeicDecoderInteropTests
         Assert.Equal((width, height, depth, color ? "RGB" : "monochrome"), (info.Width, info.Height, info.BitDepth, info.ColorSpace));
         var reference = await heif.DecodeAsync(path, bilinearChroma: true, XunitCancellationToken);
         using var image = Image.Load(path);
-        Assert.Equal(color ? PixelFormat.Rgba64 : PixelFormat.Gray16, image.PixelFormat);
+        Assert.Equal(color ? PixelFormat.Rgb48 : PixelFormat.Gray16, image.PixelFormat);
         var decoded = ToRgba16(ImageSnapshots.CaptureFrame(image.Frames[0]));
         for (var i = 0; i <= max; i++)
         {

@@ -224,6 +224,28 @@ public abstract partial class Image : IDisposable
         }
     }
 
+    /// <summary>Creates an independent copy of the image converted to a pixel format given at run time, as <see cref="CloneAs{TPixel}(PixelConversionOptions?)"/> does.</summary>
+    /// <param name="format">The target pixel format.</param>
+    /// <param name="options">The conversion options, or <see langword="null"/> for <see cref="PixelConversionOptions.Default"/>.</param>
+    /// <returns>A new image owned by the caller.</returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="format"/> is not a supported pixel format.</exception>
+    internal Image CloneAs(PixelFormat format, PixelConversionOptions? options) => format switch
+    {
+        PixelFormat.Rgba32 => CloneAs<Rgba32>(options),
+        PixelFormat.Bgra32 => CloneAs<Bgra32>(options),
+        PixelFormat.Rgb24 => CloneAs<Rgb24>(options),
+        PixelFormat.Rgba64 => CloneAs<Rgba64>(options),
+        PixelFormat.Gray8 => CloneAs<Gray8>(options),
+        PixelFormat.Gray16 => CloneAs<Gray16>(options),
+        PixelFormat.RgbaFloat => CloneAs<RgbaFloat>(options),
+        PixelFormat.RgbaHalf => CloneAs<RgbaHalf>(options),
+        PixelFormat.La16 => CloneAs<La16>(options),
+        PixelFormat.La32 => CloneAs<La32>(options),
+        PixelFormat.Rgb48 => CloneAs<Rgb48>(options),
+        PixelFormat.A8 => CloneAs<A8>(options),
+        _ => throw new ArgumentOutOfRangeException(nameof(format), format, "The pixel format is not supported."),
+    };
+
     /// <summary>
     /// Extracts a copy of one displayed frame as a new single-frame still image. The copy keeps the frame duration and the
     /// image-wide metadata, but not the animation settings or the poster frame.

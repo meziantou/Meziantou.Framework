@@ -148,7 +148,7 @@ internal sealed class PngColorReduction
     /// <summary>Gets the 8-bit RGBA keys of the pixels of a row, or <see langword="false"/> when a 16-bit sample has no 8-bit value.</summary>
     private static bool TryReadColors(ReadOnlySpan<byte> row, PixelFormat pixelFormat, Span<Rgba32> rgba)
     {
-        if (pixelFormat is PixelFormat.Rgba64 or PixelFormat.Gray16)
+        if (PixelFormats.GetBitsPerComponent(pixelFormat) == 16 && !PixelFormats.IsFloatingPoint(pixelFormat))
         {
             foreach (var sample in unsafe(MemoryMarshal.Cast<byte, ushort>(row)))
             {

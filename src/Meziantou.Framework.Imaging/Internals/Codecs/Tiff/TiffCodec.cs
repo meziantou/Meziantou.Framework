@@ -44,7 +44,7 @@ internal sealed class TiffCodec : ImageCodec
         return new ImageInfo(
             ImageFormat.Tiff,
             page0.Size,
-            page0.SourcePixelFormat,
+            page0.DefaultPixelFormat,
             page0.ColorModel,
             page0.BitsPerSample,
             frameCount: 1,

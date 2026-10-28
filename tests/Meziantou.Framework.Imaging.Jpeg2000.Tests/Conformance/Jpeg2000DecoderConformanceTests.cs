@@ -63,7 +63,7 @@ public sealed class Jpeg2000DecoderConformanceTests
 
         Assert.Contains(fixtures, fixture => !fixture.Policy.IsExact && fixture.Expected.PixelFormat == "Rgba32");
         Assert.Contains(fixtures, fixture => !fixture.Policy.IsExact && fixture.Expected.PixelFormat == "Gray8");
-        Assert.Contains(fixtures, fixture => !fixture.Policy.IsExact && fixture.Expected.PixelFormat == "Rgba64");
+        Assert.Contains(fixtures, fixture => !fixture.Policy.IsExact && fixture.Expected.PixelFormat == "Rgb48");
         Assert.Contains(fixtures, fixture => !fixture.Policy.IsExact && fixture.Entry.HasFeature("jp2.ht"));
         Assert.Contains(fixtures, fixture => fixture.Expected.Resolution is not null);
         Assert.Contains(fixtures, fixture => fixture.Expected.Orientation != 1);

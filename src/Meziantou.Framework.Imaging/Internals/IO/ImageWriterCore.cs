@@ -54,7 +54,7 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
         Capabilities = capabilities;
         PixelFormat = pixelFormat;
         EncodedPixelFormat = GetEncodedPixelFormat(options.Encoder!, pixelFormat);
-        FloatReducedPixelFormat = GetFloatReducedPixelFormat(options.Encoder!, pixelFormat);
+        ReducedPixelFormat = GetReducedPixelFormat(options.Encoder!, pixelFormat);
         Scope = scope;
         _session = session;
         _stream = stream;
@@ -82,13 +82,17 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
 
     /// <summary>
     /// Gets the pixel format the session encodes: <see cref="PixelFormat"/>, <see cref="PixelFormat.Rgba64"/> for a
-    /// floating-point format, whose frames are reduced with <see cref="ImageEncoder.FloatingPointConversion"/> first, or
+    /// floating-point format, whose frames are reduced with <see cref="ImageEncoder.FloatingPointConversion"/> first, the
+    /// lossless widening of a format the encoder does not store (<see cref="PixelFormatWidening"/>), or
     /// <see cref="PixelFormat.Rgba32"/> for indexed PNG output that reduces colors (<see cref="PngColorReduction"/>).
     /// </summary>
     public PixelFormat EncodedPixelFormat { get; }
 
-    /// <summary>Gets the pixel format of the frames once their floating-point samples are reduced (<see cref="PixelFormat.Rgba64"/>), before any color reduction.</summary>
-    private PixelFormat FloatReducedPixelFormat { get; }
+    /// <summary>
+    /// Gets the pixel format of the frames once their floating-point samples are reduced (<see cref="PixelFormat.Rgba64"/>)
+    /// or their format is widened for the encoder, before any color reduction.
+    /// </summary>
+    private PixelFormat ReducedPixelFormat { get; }
 
     /// <summary>Gets a value indicating whether the session encodes copies of the frames instead of the frames (<see cref="EncodedPixelFormat"/>).</summary>
     private bool ReducesFrames => EncodedPixelFormat != PixelFormat || PngColorReduction.Applies(Options.Encoder!);
@@ -533,9 +537,10 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
         _colorReduction?.Commit();
     }
 
-    private static PixelFormat GetEncodedPixelFormat(ImageEncoder encoder, PixelFormat pixelFormat) => PngColorReduction.Applies(encoder) ? PixelFormat.Rgba32 : GetFloatReducedPixelFormat(encoder, pixelFormat);
+    private static PixelFormat GetEncodedPixelFormat(ImageEncoder encoder, PixelFormat pixelFormat) => PngColorReduction.Applies(encoder) ? PixelFormat.Rgba32 : GetReducedPixelFormat(encoder, pixelFormat);
 
-    private static PixelFormat GetFloatReducedPixelFormat(ImageEncoder encoder, PixelFormat pixelFormat) => PixelFormats.IsFloatingPoint(pixelFormat) && !encoder.StoresFloatingPointSamples ? PixelFormat.Rgba64 : pixelFormat;
+    private static PixelFormat GetReducedPixelFormat(ImageEncoder encoder, PixelFormat pixelFormat)
+        => PixelFormats.IsFloatingPoint(pixelFormat) && !encoder.StoresFloatingPointSamples ? PixelFormat.Rgba64 : PixelFormatWidening.GetEncodedFormat(encoder, pixelFormat);
 
     /// <summary>Rejects floating-point pixels before anything exists, unless the encoder stores them or says how to reduce them.</summary>
     private static void EnsureEncodable(ImageEncoder encoder, ImageOutputCapabilities capabilities, PixelFormat pixelFormat)
@@ -599,17 +604,17 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
     }
 
     /// <summary>
-    /// Reduces images to the pixel format the session encodes: their floating-point samples to 16 bits, then their colors to
-    /// the palette of indexed PNG output. The returned images are owned by the caller (the intermediate copies are disposed).
+    /// Reduces images to the pixel format the session encodes: their floating-point samples to 16 bits or their format to its
+    /// lossless widening, then their colors to the palette of indexed PNG output. The returned images are owned by the caller (the intermediate copies are disposed).
     /// </summary>
     private (ImageFrame[] Frames, Image[] Owned) ReduceImages(List<ImageFrame> images, bool sequential)
     {
         var owned = new Image[images.Count];
         var frames = new ImageFrame[images.Count];
-        var floats = new Image<Rgba64>?[images.Count];
+        var floats = new Image?[images.Count];
         try
         {
-            if (FloatReducedPixelFormat != PixelFormat)
+            if (ReducedPixelFormat != PixelFormat)
             {
                 var plan = CreateReductionPlan();
                 Image.PrepareConversion(plan, images);
@@ -673,11 +678,11 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
     }
 
     private PixelConversionPlan CreateReductionPlan()
-        => PixelConversionPlan.Create(PixelFormat, FloatReducedPixelFormat, Options.Encoder!.FloatingPointConversion, sourceProfile: null, Format);
+        => PixelConversionPlan.Create(PixelFormat, ReducedPixelFormat, Options.Encoder!.FloatingPointConversion, sourceProfile: null, Format);
 
-    private Image<Rgba64> Reduce(ImageFrame frame, PixelConversionPlan plan)
+    private Image Reduce(ImageFrame frame, PixelConversionPlan plan)
     {
-        var image = new Image<Rgba64>(Options.Configuration, CanvasSize, Scope, layoutOptions: null);
+        var image = Image.CreateForDecoder(ReducedPixelFormat, Options.Configuration, CanvasSize, Scope);
         try
         {
             Image.ConvertFramePixels(frame, image.FrameCore(0), plan);

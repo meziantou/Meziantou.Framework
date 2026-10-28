@@ -9,6 +9,12 @@ namespace Meziantou.Framework.Imaging;
 public abstract partial class Image
 {
     /// <summary>
+    /// Gets the pixel format the filtering kernels (resize, transform, convolution, blurs, median) work in: the pixel format
+    /// of the image, or the lossless widening of a format they do not handle themselves (<see cref="ProcessingBridge"/>).
+    /// </summary>
+    internal PixelFormat KernelPixelFormat => ProcessingBridge.GetKernelFormat(PixelFormat);
+
+    /// <summary>
     /// Replaces every displayed frame and the poster with <paramref name="region"/> of the canvas permuted by
     /// <paramref name="transform"/>, transactionally (see <see cref="ReplaceGeometry{TFiller}"/>).
     /// </summary>
@@ -67,7 +73,7 @@ public abstract partial class Image
         EnsureLinearLightDomain(transfer, GetAllFrames(), "resizing", "resize");
 
         // Large frames are resized by up to MaxDegreeOfParallelism workers (row bands, bit-identical results)
-        using var plan = new ResizePlan(geometry, options.Filter, workingSpace, PixelFormat, _configuration.MaxDegreeOfParallelism, transfer);
+        using var plan = new ResizePlan(geometry, options.Filter, workingSpace, KernelPixelFormat, _configuration.MaxDegreeOfParallelism, transfer);
         if (padding is null)
         {
             ReplaceGeometry(geometry.OutputSize, normalizeOrientation: false, Operation, new ResizeFiller(plan, geometry), cancellationToken);
@@ -168,7 +174,7 @@ public abstract partial class Image
         EnsureLinearLightDomain(transfer, GetAllFrames(), "transforming", "transform");
 
         // Large frames are transformed by up to MaxDegreeOfParallelism workers (row bands, bit-identical results)
-        using var plan = new WarpPlan(geometry, options.Filter, options.BackgroundColor, workingSpace, PixelFormat, _configuration.MaxDegreeOfParallelism, transfer);
+        using var plan = new WarpPlan(geometry, options.Filter, options.BackgroundColor, workingSpace, KernelPixelFormat, _configuration.MaxDegreeOfParallelism, transfer);
         ReplaceGeometry(geometry.OutputSize, normalizeOrientation: false, Operation, new WarpFiller(plan), cancellationToken);
     }
 
@@ -522,7 +528,7 @@ public abstract partial class Image
             EnsureColorProfileCompatible();
         }
 
-        using var plan = ConvolutionPlan.CreateEdgeDetection(detector, edgeMode, PixelFormat, _size, _configuration.MaxDegreeOfParallelism);
+        using var plan = ConvolutionPlan.CreateEdgeDetection(detector, edgeMode, KernelPixelFormat, _size, _configuration.MaxDegreeOfParallelism);
         cancellationToken.ThrowIfCancellationRequested();
         plan.Prepare(Owner.Scope);
         _metadata.RemoveStaleThumbnail();
@@ -547,7 +553,7 @@ public abstract partial class Image
             EnsureColorProfileCompatible();
         }
 
-        using var plan = ConvolutionPlan.CreateEdgeDetection(detector, edgeMode, PixelFormat, _size, _configuration.MaxDegreeOfParallelism);
+        using var plan = ConvolutionPlan.CreateEdgeDetection(detector, edgeMode, KernelPixelFormat, _size, _configuration.MaxDegreeOfParallelism);
         cancellationToken.ThrowIfCancellationRequested();
         using var lease = storage.AcquireLease();
         plan.Prepare(Owner.Scope);
@@ -633,7 +639,7 @@ public abstract partial class Image
     internal void MedianAllFrames(int radius, ConvolutionEdgeMode edgeMode, CancellationToken cancellationToken)
     {
         Owner.EnsureCanModify("filter the image");
-        using var plan = new MedianPlan(radius, edgeMode, PixelFormat, _size, _configuration.MaxDegreeOfParallelism);
+        using var plan = new MedianPlan(radius, edgeMode, KernelPixelFormat, _size, _configuration.MaxDegreeOfParallelism);
         cancellationToken.ThrowIfCancellationRequested();
         plan.Prepare(Owner.Scope);
         _metadata.RemoveStaleThumbnail();
@@ -647,7 +653,7 @@ public abstract partial class Image
     /// <summary>Filters one attached frame of this image in place with a median filter, as <see cref="MedianAllFrames"/> does for all of them.</summary>
     internal void MedianFrame(ImageFrame frame, PixelStorage storage, int radius, ConvolutionEdgeMode edgeMode, CancellationToken cancellationToken)
     {
-        using var plan = new MedianPlan(radius, edgeMode, PixelFormat, _size, _configuration.MaxDegreeOfParallelism);
+        using var plan = new MedianPlan(radius, edgeMode, KernelPixelFormat, _size, _configuration.MaxDegreeOfParallelism);
         cancellationToken.ThrowIfCancellationRequested();
         using var lease = storage.AcquireLease();
         plan.Prepare(Owner.Scope);
@@ -659,14 +665,14 @@ public abstract partial class Image
     private ConvolutionPlan CreateConvolutionPlan(ConvolutionOptions options)
     {
         var transfer = options.WorkingSpace == ConvolutionWorkingSpace.LinearSrgb ? GetLinearLightTransfer("convolution", "convolve") : (byte)0;
-        return new ConvolutionPlan(options.Kernel, options.EdgeMode, options.PreserveAlpha, transfer is not 0, PixelFormat, _size, _configuration.MaxDegreeOfParallelism, transfer, bias: options.Bias);
+        return new ConvolutionPlan(options.Kernel, options.EdgeMode, options.PreserveAlpha, transfer is not 0, KernelPixelFormat, _size, _configuration.MaxDegreeOfParallelism, transfer, bias: options.Bias);
     }
 
     /// <summary>The separable plan of a blur: the weights as a column, every row filtered by the same weights first (and an unsharp mask when <paramref name="sharpenAmount"/> is positive).</summary>
     private ConvolutionPlan CreateBlurPlan(double[] weights, ConvolutionEdgeMode edgeMode, ConvolutionWorkingSpace workingSpace, double sharpenAmount, double sharpenThreshold)
     {
         var transfer = workingSpace == ConvolutionWorkingSpace.LinearSrgb ? GetLinearLightTransfer("convolution", "convolve") : (byte)0;
-        return new ConvolutionPlan(new ConvolutionKernel(1, weights.Length, weights), edgeMode, preserveAlpha: false, transfer is not 0, PixelFormat, _size, _configuration.MaxDegreeOfParallelism, transfer, rowWeights: weights)
+        return new ConvolutionPlan(new ConvolutionKernel(1, weights.Length, weights), edgeMode, preserveAlpha: false, transfer is not 0, KernelPixelFormat, _size, _configuration.MaxDegreeOfParallelism, transfer, rowWeights: weights)
         {
             SharpenAmount = sharpenAmount,
             SharpenThreshold = sharpenThreshold,
@@ -676,7 +682,7 @@ public abstract partial class Image
     private BoxBlurPlan CreateBoxBlurPlan(int radius, ConvolutionEdgeMode edgeMode, ConvolutionWorkingSpace workingSpace)
     {
         var transfer = workingSpace == ConvolutionWorkingSpace.LinearSrgb ? GetLinearLightTransfer("convolution", "convolve") : (byte)0;
-        return new BoxBlurPlan(radius, edgeMode, PixelFormat, _size, _configuration.MaxDegreeOfParallelism, transfer);
+        return new BoxBlurPlan(radius, edgeMode, KernelPixelFormat, _size, _configuration.MaxDegreeOfParallelism, transfer);
     }
 
     /// <summary>
@@ -716,7 +722,7 @@ public abstract partial class Image
 
             // 16-bit samples read the first stage from tables when the image is large enough (the tables are rented once,
             // after the replacements are reserved, and released with the conversion)
-            var colors = PixelFormat is PixelFormat.Rgba64 or PixelFormat.Gray16 ? (long)_size.Width * _size.Height * GetAllFrames().Length : 0;
+            var colors = PixelFormats.GetBitsPerComponent(PixelFormat) == 16 && !PixelFormats.IsFloatingPoint(PixelFormat) ? (long)_size.Width * _size.Height * GetAllFrames().Length : 0;
             using var scratch = new ColorConversionScratch();
             ReplaceGeometry(_size, normalizeOrientation: false, Operation, new ColorConversionFiller(pipeline, colors, scratch), cancellationToken);
         }

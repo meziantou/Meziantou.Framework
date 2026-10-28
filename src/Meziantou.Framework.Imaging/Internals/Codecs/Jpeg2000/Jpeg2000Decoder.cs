@@ -50,8 +50,9 @@ internal sealed class Jpeg2000Decoder : Jpeg2000DecodeObserver
             profile = conversion.DestinationProfile;
         }
 
+        // The rows are written as RGBA for the gray formats with alpha and 16-bit RGB
         var format = layout.DefaultPixelFormat;
-        _sink = DecodedFrameSink.Create(_context, _request, ImageFormat.Jpeg2000, structure.Size, format, format, profile);
+        _sink = DecodedFrameSink.Create(_context, _request, ImageFormat.Jpeg2000, structure.Size, format, PixelFormatWidening.GetWidenedFormat(format), profile);
     }
 
     public override void OnTile(Jpeg2000StructureParser structure, Jpeg2000Tile tile)

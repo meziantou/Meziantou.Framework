@@ -503,10 +503,10 @@ internal static partial class Jp2Corpus
         {
             ("gray", 8) => ("Gray8", "Grayscale"),
             ("gray", 16) => ("Gray16", "Grayscale"),
-            ("graya", 8) => ("Rgba32", "GrayscaleAlpha"),
-            ("graya", 16) => ("Rgba64", "GrayscaleAlpha"),
+            ("graya", 8) => ("La16", "GrayscaleAlpha"),
+            ("graya", 16) => ("La32", "GrayscaleAlpha"),
             ("rgb", 8) => ("Rgb24", "Rgb"),
-            ("rgb", 16) => ("Rgba64", "Rgb"),
+            ("rgb", 16) => ("Rgb48", "Rgb"),
             ("rgba", 8) => ("Rgba32", "Rgba"),
             _ => ("Rgba64", "Rgba"),
         };

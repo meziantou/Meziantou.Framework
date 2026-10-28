@@ -103,12 +103,6 @@ namespace Meziantou.Framework.Hashing
         public static byte[] HashData(int securityStrength, System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, int outputLength, System.ReadOnlySpan<byte> customization = default) => throw null;
     }
 
-    public static class OggCrc32
-    {
-        public static uint Append(uint crc, System.ReadOnlySpan<byte> data) => throw null;
-        public static uint Compute(System.ReadOnlySpan<byte> data) => throw null;
-    }
-
     public static class Sha3
     {
         public static byte[] HashData(int hashSizeInBits, System.ReadOnlySpan<byte> source) => throw null;

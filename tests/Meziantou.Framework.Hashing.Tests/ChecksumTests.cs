@@ -3,7 +3,7 @@ using System.Runtime.Intrinsics.X86;
 
 namespace Meziantou.Framework.Hashing.Tests;
 
-// CRC-32 (ISO 3309), the CRC-32 of Ogg pages (RFC 3533) and Adler-32 (RFC 1950)
+// CRC-32 (ISO 3309) and Adler-32 (RFC 1950)
 public sealed class ChecksumTests
 {
     [Theory]
@@ -34,36 +34,6 @@ public sealed class ChecksumTests
     {
         Assert.Equal(Crc32.Compute("123456789"u8), Crc32.Append(0, "123456789"u8));
         Assert.Equal(Crc32.Compute("123456789"u8), Crc32.Append(Crc32.Compute("123456789"u8), []));
-    }
-
-    // Known answers for the Ogg variant of CRC-32: polynomial 0x04C11DB7, initial value 0, not reflected, no final XOR.
-    // They come from an independent implementation of the specification, so a wrong table, a wrong shift direction or an
-    // off-by-one fails here rather than silently producing files that every Ogg player rejects.
-    [Theory]
-    [InlineData("", 0x00000000u)]
-    [InlineData("123456789", 0x89A1897Fu)]
-    [InlineData("OggS", 0x5FB0A94Fu)]
-    public void OggCrc32_KnownAnswer(string text, uint expected)
-    {
-        Assert.Equal(expected, OggCrc32.Compute(Encoding.ASCII.GetBytes(text)));
-    }
-
-    [Fact]
-    public void OggCrc32_SingleByte_KnownAnswer()
-    {
-        // A single 0x01 byte shifts the polynomial into the register exactly once
-        Assert.Equal(0x04C11DB7u, OggCrc32.Compute([0x01]));
-    }
-
-    [Fact]
-    public void OggCrc32_Append_MatchesComputeOverTheWholeInput()
-    {
-        byte[] data = [0x4F, 0x67, 0x67, 0x53, 0x00, 0x02, 0xFF, 0x10];
-
-        var whole = OggCrc32.Compute(data);
-        var incremental = OggCrc32.Append(OggCrc32.Compute(data.AsSpan(0, 3)), data.AsSpan(3));
-
-        Assert.Equal(whole, incremental);
     }
 
     [Theory]
@@ -99,7 +69,6 @@ public sealed class ChecksumTests
         foreach (var split in splits)
         {
             Assert.Equal(Crc32.Compute(data), Crc32.Append(Crc32.Compute(data.AsSpan(0, split)), data.AsSpan(split)));
-            Assert.Equal(OggCrc32.Compute(data), OggCrc32.Append(OggCrc32.Compute(data.AsSpan(0, split)), data.AsSpan(split)));
             Assert.Equal(Adler32.Compute(data), Adler32.Append(Adler32.Compute(data.AsSpan(0, split)), data.AsSpan(split)));
         }
     }

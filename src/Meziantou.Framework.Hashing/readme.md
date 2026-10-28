@@ -6,7 +6,7 @@ Fully managed hash algorithms that the base class library does not provide, or d
 |---|---|---|
 | Password hashing and key derivation | BCrypt, Argon2d, Argon2i, Argon2id (RFC 9106) | `Bcrypt`, `Argon2` |
 | Cryptographic hashes | SHA3-224/256/384/512, SHAKE128/256 (FIPS 202), cSHAKE128/256, KMAC128/256 (NIST SP 800-185), TurboSHAKE128/256, KT128/KT256 (KangarooTwelve, RFC 9861), BLAKE2b (RFC 7693) | `Sha3`, `Shake`, `Kmac`, `TurboShake`, `KangarooTwelve`, `Blake2b` |
-| Checksums | CRC-32 (zlib, gzip, ZIP, PNG), the CRC-32 of Ogg pages, Adler-32 (RFC 1950) | `Crc32`, `OggCrc32`, `Adler32` |
+| Checksums | CRC-32 (zlib, gzip, ZIP, PNG), Adler-32 (RFC 1950) | `Crc32`, `Adler32` |
 
 The types are in the `Meziantou.Framework.Hashing` namespace. The SHA-3 types of `System.Security.Cryptography` use the
 cryptographic library of the operating system, which does not support them on every platform (e.g. macOS): the types of
@@ -144,5 +144,4 @@ Assert.Equal(checksum, running);
 ```
 <!-- endref -->
 
-`OggCrc32` works the same way. `Crc32` and `Adler32` use the vector and CRC instructions of the processor when they are
-available.
+`Crc32` and `Adler32` use the vector and CRC instructions of the processor when they are available.

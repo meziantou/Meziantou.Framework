@@ -6,7 +6,7 @@
     <Version>1.0.0</Version>
     <IsTrimmable>true</IsTrimmable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Description>Fully managed hash algorithms: password hashing and key derivation (BCrypt, Argon2), cryptographic hashes (SHA-3, SHAKE, cSHAKE, KMAC, TurboSHAKE, KangarooTwelve, BLAKE2b) and checksums (CRC-32, Ogg CRC-32, Adler-32).</Description>
+    <Description>Fully managed hash algorithms: password hashing and key derivation (BCrypt, Argon2), cryptographic hashes (SHA-3, SHAKE, cSHAKE, KMAC, TurboSHAKE, KangarooTwelve, BLAKE2b) and checksums (CRC-32, Adler-32).</Description>
     <PackageTags>hash;hashing;password;bcrypt;argon2;sha3;shake;cshake;kmac;turboshake;kangarootwelve;blake2b;crc32;adler32;checksum;cryptography</PackageTags>
 
     <!-- Every public member must be documented -->

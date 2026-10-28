@@ -118,6 +118,9 @@ public sealed class ImageFrame<TPixel> : ImageFrame
     internal override void GrayscalePixels(scoped in PixelLease lease, CancellationToken cancellationToken)
         => ProcessingKernels.Grayscale<TPixel>(lease, cancellationToken);
 
+    internal override void ReplaceColorPixels(scoped in PixelLease lease, Rgba64 color, Rgba64 replacement, int tolerance, CancellationToken cancellationToken)
+        => ProcessingKernels.ReplaceColor<TPixel>(lease, color, replacement, tolerance, cancellationToken);
+
     internal override void TransformPixels(scoped in PixelLease source, scoped in PixelLease destination, Rectangle region, OrientationTransform transform, CancellationToken cancellationToken)
         => ProcessingKernels.Transform<TPixel>(source, destination, region, transform, cancellationToken);
 

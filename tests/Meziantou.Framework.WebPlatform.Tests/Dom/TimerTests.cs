@@ -185,6 +185,71 @@ public sealed class TimerTests : IDisposable
     }
 
     [Fact]
+    public void RequestIdleCallback_RunsTheCallbacksWhenNoTaskIsQueued()
+    {
+        var window = CreateWindow();
+        Advance(1000);
+        window.RequestIdleCallback(deadline => _log.Add($"a {deadline.TimeRemaining()} {deadline.DidTimeout}"));
+        var cancelled = window.RequestIdleCallback(_ => _log.Add("cancelled"));
+        window.RequestIdleCallback(deadline => _log.Add($"b {deadline.TimeRemaining()} {deadline.DidTimeout}"));
+        window.CancelIdleCallback(cancelled);
+        RunUntilIdle();
+        Assert.Equal(["a 50 False", "b 50 False"], _log);
+    }
+
+    [Fact]
+    public void RequestIdleCallback_RunsTheCallbacksRequestedByAnIdleCallbackInTheNextIdlePeriod()
+    {
+        var window = CreateWindow();
+        Advance(1000);
+        window.RequestIdleCallback(_ =>
+        {
+            _log.Add("a");
+            window.RequestIdleCallback(_ => _log.Add("b"));
+        });
+        RunUntilIdle();
+        Assert.Equal(["a"], _log);
+
+        Advance(50);
+        Assert.Equal(["a", "b"], _log);
+    }
+
+    [Fact]
+    public void RequestIdleCallback_EndsTheIdlePeriodAtTheNextTimer()
+    {
+        var window = CreateWindow();
+        Advance(1000);
+        window.SetTimeout(() => _log.Add("timeout"), 20);
+        var remaining = new List<double>();
+        window.RequestIdleCallback(deadline =>
+        {
+            remaining.Add(deadline.TimeRemaining());
+            window.RequestAnimationFrame(_ => { });
+            remaining.Add(deadline.TimeRemaining());
+        });
+        RunUntilIdle();
+        Assert.Equal(2, remaining.Count);
+        Assert.Equal(20, remaining[0]);
+        Assert.InRange(remaining[1], 0, 1000d / 60);
+    }
+
+    [Fact]
+    public void RequestIdleCallback_TimesOutWhenTheEventLoopIsBusy()
+    {
+        var window = CreateWindow();
+        Advance(1000);
+
+        // A gap shorter than 5 ms between two tasks is not an idle period
+        window.SetTimeout(() => _log.Add("timeout"), 3);
+        window.RequestIdleCallback(deadline => _log.Add($"idle {deadline.TimeRemaining()} {deadline.DidTimeout}"), new IdleRequestOptions { Timeout = 1 });
+        RunUntilIdle();
+        Assert.Empty(_log);
+
+        Advance(1);
+        Assert.Equal(["idle 0 True"], _log);
+    }
+
+    [Fact]
     public void Performance_UsesTheClock()
     {
         var window = CreateWindow();

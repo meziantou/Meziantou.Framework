@@ -10,6 +10,7 @@ public sealed partial class BrowsingContextOptions
     private readonly bool? _scriptingEnabled;
     private readonly bool? _declarativeRefreshEnabled;
     private SystemClipboard? _defaultClipboard;
+    private PermissionStore? _defaultPermissions;
 
     /// <summary>
     /// Gets or sets the loader of the documents of the navigations (e.g. the <c>src</c> of an <c>iframe</c>, or
@@ -471,6 +472,16 @@ public sealed partial class BrowsingContextOptions
 
     /// <summary>The system clipboard of the browsing contexts: <see cref="Clipboard"/>, or the in-memory clipboard of the options.</summary>
     internal SystemClipboard EffectiveClipboard => Clipboard ?? LazyInitializer.EnsureInitialized(ref _defaultClipboard);
+
+    /// <summary>
+    /// Gets or sets the permissions that the user gave to the origins, read by <c>navigator.permissions.query()</c> (see
+    /// <see cref="PermissionStore"/>). The default is null: the browsing contexts that use these options share a store in
+    /// which every permission is <see cref="PermissionState.Prompt"/> until it is set.
+    /// </summary>
+    public PermissionStore? Permissions { get; init; }
+
+    /// <summary>The permission store of the browsing contexts: <see cref="Permissions"/>, or the store of the options.</summary>
+    internal PermissionStore EffectivePermissions => Permissions ?? LazyInitializer.EnsureInitialized(ref _defaultPermissions);
 }
 
 /// <summary>

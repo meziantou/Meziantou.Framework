@@ -177,10 +177,7 @@
     "total": 1
   },
   "fullscreen/api/element-request-fullscreen-without-user-activation.tentative.https.html": {
-    "total": 2,
-    "failures": {
-      "Element#requestFullscreen() resolves without user activation with permission": "FAIL"
-    }
+    "total": 2
   },
   "fullscreen/api/element-request-fullscreen.html": {
     "total": 1
@@ -219,12 +216,7 @@
     }
   },
   "fullscreen/api/permission.tentative.https.html": {
-    "total": 3,
-    "failures": {
-      "Querying \"fullscreen\" permission checks \"allowWithoutGesture\" option": "FAIL",
-      "Querying \"fullscreen\" permission with \"allowWithoutGesture\" false is unsupported": "FAIL",
-      "Set and query \"fullscreen\" permission with \"allowWithoutGesture\" true": "FAIL"
-    }
+    "total": 3
   },
   "fullscreen/api/promises-reject.html": {
     "total": 1

@@ -20,6 +20,7 @@ internal static class Binding_Navigator<TAdapter, TValue> where TAdapter : struc
 
     private static TValue Get_clipboard(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.Clipboard); }
     private static TValue Get_userActivation(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.UserActivation); }
+    private static TValue Get_permissions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.Permissions); }
     private static TValue Get_maxTouchPoints(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.FromNumber((double)o.MaxTouchPoints); }
     private static TValue Get_serviceWorker(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.ServiceWorker); }
     private static TValue Get_appCodeName(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.FromString(o.AppCodeName); }
@@ -81,6 +82,7 @@ internal static class Binding_Navigator<TAdapter, TValue> where TAdapter : struc
     {
         if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "clipboard", Get_clipboard, null);
         r.DefineAttribute(instanceTarget, "userActivation", Get_userActivation, null);
+        r.DefineAttribute(instanceTarget, "permissions", Get_permissions, null);
         r.DefineAttribute(instanceTarget, "maxTouchPoints", Get_maxTouchPoints, null);
         if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "serviceWorker", Get_serviceWorker, null);
         r.DefineAttribute(instanceTarget, "appCodeName", Get_appCodeName, null);

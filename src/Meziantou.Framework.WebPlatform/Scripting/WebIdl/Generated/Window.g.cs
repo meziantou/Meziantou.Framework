@@ -526,6 +526,21 @@ internal static class Binding_Window<TAdapter, TValue> where TAdapter : struct, 
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Window>(t, Binding);
         o.ReleaseEvents(); return r.Adapter.Undefined;
     }
+    private static TValue Op_requestIdleCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Window>(t, Binding);
+        if (a.Length < 1) throw r.NotEnoughArguments("requestIdleCallback", 1, a.Length);
+        var a0 = r.ToCallbackFunction(a[0], "IdleRequestCallback", false)!;
+        var a1 = r.IsMissing(a, 1) ? (global::Meziantou.Framework.WebPlatform.Dom.IdleRequestOptions)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_IdleRequestOptions(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_IdleRequestOptions(r, a[1]);
+        var result = o.RequestIdleCallback(WebIdlHelpers<TAdapter, TValue>.ToDelegate_Dom_IdleRequestCallback(r, a0), a1); return r.FromNumber((double)result);
+    }
+    private static TValue Op_cancelIdleCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Window>(t, Binding);
+        if (a.Length < 1) throw r.NotEnoughArguments("cancelIdleCallback", 1, a.Length);
+        var a0 = r.ToUnsignedLong(a[0], global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None);
+        o.CancelIdleCallback(a0); return r.Adapter.Undefined;
+    }
     private static TValue Op_getSelection(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Window>(t, Binding);
@@ -834,6 +849,8 @@ internal static class Binding_Window<TAdapter, TValue> where TAdapter : struct, 
         r.DefineOperation(instanceTarget, "scrollBy", 0, Op_scrollBy, returnsPromise: true);
         r.DefineOperation(instanceTarget, "captureEvents", 0, Op_captureEvents);
         r.DefineOperation(instanceTarget, "releaseEvents", 0, Op_releaseEvents);
+        r.DefineOperation(instanceTarget, "requestIdleCallback", 1, Op_requestIdleCallback);
+        r.DefineOperation(instanceTarget, "cancelIdleCallback", 1, Op_cancelIdleCallback);
         r.DefineOperation(instanceTarget, "getSelection", 0, Op_getSelection);
         r.DefineOperation(instanceTarget, "reportError", 1, Op_reportError);
         r.DefineOperation(instanceTarget, "btoa", 1, Op_btoa);

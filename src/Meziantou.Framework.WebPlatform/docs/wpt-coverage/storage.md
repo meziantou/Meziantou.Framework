@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 10 | 14 | 0 | 71% |
+| [Stable](#stable-tests) | 11 | 14 | 0 | 79% |
 | [Tentative](#tentative-tests) | 0 | 13 | 0 | 0% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **10** | **27** | **0** | **37%** |
+| **All** | **11** | **27** | **0** | **41%** |
 
 ## Stable tests
 
@@ -22,7 +22,7 @@
 | [`estimate-parallel.https.any.js`](https://wpt.fyi/results/storage/estimate-parallel.https.any.js) | Pass | 2 / 2 |  |  |
 | [`idlharness.https.any.js`](https://wpt.fyi/results/storage/idlharness.https.any.js) | Pass | 66 / 66 |  |  |
 | [`opaque-origin.https.window.js`](https://wpt.fyi/results/storage/opaque-origin.https.window.js) | Pass | 6 / 6 |  |  |
-| [`permission-query.https.any.js`](https://wpt.fyi/results/storage/permission-query.https.any.js) | Fail | 0 / 2 | NOT IMPLEMENTED | the Permissions API (`navigator.permissions.query({ name: 'persistent-storage' })`); the permission is decided by `StorageOptions.RequestPersistentStorage` |
+| [`permission-query.https.any.js`](https://wpt.fyi/results/storage/permission-query.https.any.js) | Pass | 2 / 2 |  |  |
 | [`persisted.https.any.js`](https://wpt.fyi/results/storage/persisted.https.any.js) | Pass | 4 / 4 |  |  |
 | [`storagemanager-estimate.https.any.js`](https://wpt.fyi/results/storage/storagemanager-estimate.https.any.js) | Pass | 4 / 4 |  |  |
 | [`storagemanager-persist-persisted-match.https.window.js`](https://wpt.fyi/results/storage/storagemanager-persist-persisted-match.https.window.js) | Pass | 1 / 1 |  |  |

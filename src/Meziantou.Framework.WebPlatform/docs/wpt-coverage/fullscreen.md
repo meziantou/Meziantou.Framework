@@ -7,9 +7,9 @@
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 81 | 87 | 0 | 93% |
-| [Tentative](#tentative-tests) | 0 | 3 | 0 | 0% |
+| [Tentative](#tentative-tests) | 2 | 3 | 0 | 67% |
 | [Reftests](#reftests) | 6 | 6 | 0 | 100% |
-| **All** | **87** | **96** | **0** | **91%** |
+| **All** | **89** | **96** | **0** | **93%** |
 
 ## Stable tests
 
@@ -108,8 +108,8 @@
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
 | [`api/element-request-fullscreen-options.tentative.https.html`](https://wpt.fyi/results/fullscreen/api/element-request-fullscreen-options.tentative.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the tentative `screen` option of `requestFullscreen()` (Window Management); `set_permission()` of the test driver only supports the clipboard permissions |
-| [`api/element-request-fullscreen-without-user-activation.tentative.https.html`](https://wpt.fyi/results/fullscreen/api/element-request-fullscreen-without-user-activation.tentative.https.html) | Fail | 1 / 2 | NOT IMPLEMENTED | 1 subtest: the tentative `fullscreen` permission with `allowWithoutGesture` (the Permissions API is not implemented, and `set_permission()` of the test driver only supports the clipboard permissions) |
-| [`api/permission.tentative.https.html`](https://wpt.fyi/results/fullscreen/api/permission.tentative.https.html) | Fail | 0 / 3 | NOT IMPLEMENTED | the Permissions API (`navigator.permissions`) and the tentative `fullscreen` permission with `allowWithoutGesture` |
+| [`api/element-request-fullscreen-without-user-activation.tentative.https.html`](https://wpt.fyi/results/fullscreen/api/element-request-fullscreen-without-user-activation.tentative.https.html) | Pass | 2 / 2 |  |  |
+| [`api/permission.tentative.https.html`](https://wpt.fyi/results/fullscreen/api/permission.tentative.https.html) | Pass | 3 / 3 |  |  |
 
 ## Reftests
 

@@ -1403,27 +1403,31 @@
     }
   },
   "speculation-rules/prerender/restriction-background-fetch.https.html?target_hint=_blank": {
+    "harness": "TIMEOUT",
     "total": 1,
     "failures": {
-      "The access to the Background Fetch API should be deferred until the\n    prerendered page is activated": "FAIL"
+      "The access to the Background Fetch API should be deferred until the\n    prerendered page is activated": "TIMEOUT"
     }
   },
   "speculation-rules/prerender/restriction-background-fetch.https.html?target_hint=_self": {
+    "harness": "TIMEOUT",
     "total": 1,
     "failures": {
-      "The access to the Background Fetch API should be deferred until the\n    prerendered page is activated": "FAIL"
+      "The access to the Background Fetch API should be deferred until the\n    prerendered page is activated": "TIMEOUT"
     }
   },
   "speculation-rules/prerender/restriction-background-sync.https.html?target_hint=_blank": {
+    "harness": "TIMEOUT",
     "total": 1,
     "failures": {
-      "The access to the Background Sync API should be deferred until the\n    prerendered page is activated": "FAIL"
+      "The access to the Background Sync API should be deferred until the\n    prerendered page is activated": "TIMEOUT"
     }
   },
   "speculation-rules/prerender/restriction-background-sync.https.html?target_hint=_self": {
+    "harness": "TIMEOUT",
     "total": 1,
     "failures": {
-      "The access to the Background Sync API should be deferred until the\n    prerendered page is activated": "FAIL"
+      "The access to the Background Sync API should be deferred until the\n    prerendered page is activated": "TIMEOUT"
     }
   },
   "speculation-rules/prerender/restriction-battery-status.https.html?target_hint=_blank": {
@@ -1599,10 +1603,11 @@
     }
   },
   "speculation-rules/prerender/restriction-notification.https.html": {
+    "harness": "TIMEOUT",
     "total": 2,
     "failures": {
-      "Displaying Notification should be deferred until the prerendered page is\n activated": "FAIL",
-      "it is allowed to access the notification API in the prerenderingchange\n    event": "FAIL"
+      "it is allowed to access the notification API in the prerenderingchange\n    event": "TIMEOUT",
+      "Displaying Notification should be deferred until the prerendered page is\n activated": "NOTRUN"
     }
   },
   "speculation-rules/prerender/restriction-presentation-request.https.html": {
@@ -1616,9 +1621,10 @@
     "total": 1
   },
   "speculation-rules/prerender/restriction-push.https.html": {
+    "harness": "TIMEOUT",
     "total": 1,
     "failures": {
-      "The access to the Push API should be deferred until the prerendered page is\n    activated": "FAIL"
+      "The access to the Push API should be deferred until the prerendered page is\n    activated": "TIMEOUT"
     }
   },
   "speculation-rules/prerender/restriction-request-picture-in-picture.https.html": {
@@ -1647,51 +1653,59 @@
     }
   },
   "speculation-rules/prerender/restriction-sensor-accelerometer.https.html?target_hint=_blank": {
+    "harness": "TIMEOUT",
     "total": 1,
     "failures": {
-      "the access to the Accelerometer API should be deferred until the prerendered\n    page is activated": "FAIL"
+      "the access to the Accelerometer API should be deferred until the prerendered\n    page is activated": "TIMEOUT"
     }
   },
   "speculation-rules/prerender/restriction-sensor-accelerometer.https.html?target_hint=_self": {
+    "harness": "TIMEOUT",
     "total": 1,
     "failures": {
-      "the access to the Accelerometer API should be deferred until the prerendered\n    page is activated": "FAIL"
+      "the access to the Accelerometer API should be deferred until the prerendered\n    page is activated": "TIMEOUT"
     }
   },
   "speculation-rules/prerender/restriction-sensor-ambient-light-sensor.https.html?target_hint=_blank": {
+    "harness": "TIMEOUT",
     "total": 1,
     "failures": {
-      "the access to the Ambient Light Sensor API should be deferred until the\n    prerendered page is activated": "FAIL"
+      "the access to the Ambient Light Sensor API should be deferred until the\n    prerendered page is activated": "TIMEOUT"
     }
   },
   "speculation-rules/prerender/restriction-sensor-ambient-light-sensor.https.html?target_hint=_self": {
+    "harness": "TIMEOUT",
     "total": 1,
     "failures": {
-      "the access to the Ambient Light Sensor API should be deferred until the\n    prerendered page is activated": "FAIL"
+      "the access to the Ambient Light Sensor API should be deferred until the\n    prerendered page is activated": "TIMEOUT"
     }
   },
   "speculation-rules/prerender/restriction-sensor-gyroscope.https.html?target_hint=_blank": {
+    "harness": "TIMEOUT",
     "total": 1,
     "failures": {
-      "the access to the Gyroscope API should be deferred until the prerendered\n    page is activated": "FAIL"
+      "the access to the Gyroscope API should be deferred until the prerendered\n    page is activated": "TIMEOUT"
     }
   },
   "speculation-rules/prerender/restriction-sensor-gyroscope.https.html?target_hint=_self": {
+    "harness": "TIMEOUT",
     "total": 1,
     "failures": {
-      "the access to the Gyroscope API should be deferred until the prerendered\n    page is activated": "FAIL"
+      "the access to the Gyroscope API should be deferred until the prerendered\n    page is activated": "TIMEOUT"
     }
   },
   "speculation-rules/prerender/restriction-sensor-magnetometer.https.html?target_hint=_blank": {
+    "harness": "TIMEOUT",
     "total": 1,
     "failures": {
-      "the access to the Magnetometer API should be deferred until the prerendered\n    page is activated": "FAIL"
+      "the access to the Magnetometer API should be deferred until the prerendered\n    page is activated": "TIMEOUT"
     }
   },
   "speculation-rules/prerender/restriction-sensor-magnetometer.https.html?target_hint=_self": {
+    "harness": "TIMEOUT",
     "total": 1,
     "failures": {
-      "the access to the Magnetometer API should be deferred until the prerendered\n    page is activated": "FAIL"
+      "the access to the Magnetometer API should be deferred until the prerendered\n    page is activated": "TIMEOUT"
     }
   },
   "speculation-rules/prerender/restriction-service-worker-postmessage.https.html": {

@@ -1161,7 +1161,8 @@ public sealed partial class DomEventLoop
     /// <summary>
     /// Runs one task, followed by a microtask checkpoint. Returns false when there is no task. The tasks run in the order
     /// they were queued, except the tasks of the schedulers (<see cref="Scheduler.PostTask"/>, <see cref="Scheduler.Yield"/>),
-    /// which run in the order of their priorities: see <see cref="SelectNextSchedulerTaskQueue"/>.
+    /// which run in the order of their priorities: see <see cref="SelectNextSchedulerTaskQueue"/>. When no task is queued,
+    /// an idle period runs the idle callbacks of the windows (<see cref="Window.RequestIdleCallback"/>).
     /// </summary>
     public bool RunTask()
     {
@@ -1179,15 +1180,17 @@ public sealed partial class DomEventLoop
             var slotEnqueueOrder = 0L;
             lock (_tasksLock)
             {
-                if (!_tasks.TryDequeue(out task))
-                    return false;
-
-                if (ReferenceEquals(task, SchedulerTaskSlot))
+                _tasks.TryDequeue(out task);
+                if (task is not null && ReferenceEquals(task, SchedulerTaskSlot))
                 {
                     slotEnqueueOrder = _schedulerTaskSlots.Dequeue();
                     hasOtherTasks = _tasks.Count > _schedulerTaskSlots.Count;
                 }
             }
+
+            // The idle tasks run when no other task is queued
+            if (task is null)
+                return RunIdleTask();
 
             if (ReferenceEquals(task, SchedulerTaskSlot))
             {
@@ -1211,6 +1214,7 @@ public sealed partial class DomEventLoop
             // A task that is not a task of a scheduler has no scheduling state (it is set while a task of a scheduler spins the event loop)
             var continuationState = CurrentContinuationState;
             CurrentContinuationState = null;
+            EndIdlePeriod();
             try
             {
                 task();
@@ -1341,6 +1345,7 @@ public sealed partial class DomEventLoop
         DisposeChildLoops();
         ReleaseOwner();
         _windowsWithAnimationFrameCallbacks.Clear();
+        ClearIdleCallbacks();
         _windowsWithEventTimingEntries.Clear();
         _documentsWithCssResources.Clear();
         _documentsWithAnimations.Clear();

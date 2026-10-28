@@ -71,6 +71,8 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.IdbGetAllOptions Defaults_Dom_IdbGetAllOptions = new();
 
+    private static readonly global::Meziantou.Framework.WebPlatform.Dom.IdleRequestOptions Defaults_Dom_IdleRequestOptions = new();
+
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.ImageBitmapOptions Defaults_Dom_ImageBitmapOptions = new();
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.ImageDataSettings Defaults_Dom_ImageDataSettings = new();
@@ -1313,6 +1315,13 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return result;
     }
 
+    internal static TValue FromDictionary_Dom_IdleRequestOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.IdleRequestOptions value)
+    {
+        var result = r.CreateObject();
+        if (value.Timeout is not null) r.SetMember(result, "timeout", (value.Timeout.HasValue ? r.FromNumber((double)value.Timeout.GetValueOrDefault()) : r.Adapter.Null));
+        return result;
+    }
+
     internal static TValue FromDictionary_Dom_ImageBitmapOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.ImageBitmapOptions value)
     {
         var result = r.CreateObject();
@@ -1742,6 +1751,13 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         if (value.DurationThreshold is not null) r.SetMember(result, "durationThreshold", (value.DurationThreshold.HasValue ? r.FromNumber((double)value.DurationThreshold.GetValueOrDefault()) : r.Adapter.Null));
         if (value.EntryTypes is not null) r.SetMember(result, "entryTypes", r.FromSequence(value.EntryTypes, static (r, e) => r.FromString(e)));
         if (value.Type is not null) r.SetMember(result, "type", r.FromString(value.Type));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_PermissionDescriptor(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.PermissionDescriptor value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "name", r.FromString(value.Name));
         return result;
     }
 
@@ -3261,6 +3277,14 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         _ => value.ToString(),
     };
 
+    internal static string FromEnum_Dom_PermissionState(global::Meziantou.Framework.WebPlatform.Dom.PermissionState value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.Dom.PermissionState.Granted => "granted",
+        global::Meziantou.Framework.WebPlatform.Dom.PermissionState.Denied => "denied",
+        global::Meziantou.Framework.WebPlatform.Dom.PermissionState.Prompt => "prompt",
+        _ => value.ToString(),
+    };
+
     internal static string FromEnum_Dom_PositionAlignSetting(global::Meziantou.Framework.WebPlatform.Dom.PositionAlignSetting value) => value switch
     {
         global::Meziantou.Framework.WebPlatform.Dom.PositionAlignSetting.LineLeft => "line-left",
@@ -3584,6 +3608,8 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     internal static global::Meziantou.Framework.WebPlatform.Dom.FunctionCallback ToDelegate_Dom_FunctionCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.FunctionCallback((p0) => { var arguments = new global::System.Collections.Generic.List<TValue>(); foreach (var item in p0) { arguments.Add(r.ToJs(item)); } var result = r.InvokeCallback(function, r.ToJs(r.GlobalScope), global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.ReportExceptions); return result; }));
 
     internal static global::Meziantou.Framework.WebPlatform.Dom.FunctionStringCallback ToDelegate_Dom_FunctionStringCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.FunctionStringCallback((p0) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.FromString(p0)); r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None); }));
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.IdleRequestCallback ToDelegate_Dom_IdleRequestCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.IdleRequestCallback((p0) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.Wrap(p0)); r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None); }));
 
     internal static global::Meziantou.Framework.WebPlatform.Dom.IntersectionObserverCallback ToDelegate_Dom_IntersectionObserverCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.IntersectionObserverCallback((p0, p1) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.FromSequence(p0, static (r, e) => r.Wrap(e))); arguments.Add(r.Wrap(p1)); r.InvokeCallback(function, r.ToJs(p1), global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.ReportExceptions); }));
 
@@ -5344,6 +5370,18 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
             Composed = m2,
             NewVersion = m3,
             OldVersion = m4,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.IdleRequestOptions ToDictionary_Dom_IdleRequestOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "IdleRequestOptions");
+        var m0_value = r.GetDictionaryMember(value, "timeout");
+        var m0_present = !r.Adapter.IsUndefined(m0_value);
+        var m0 = m0_present ? (uint?)r.ToUnsignedLong(m0_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None) : default;
+        return new global::Meziantou.Framework.WebPlatform.Dom.IdleRequestOptions
+        {
+            Timeout = m0_present ? m0 : Defaults_Dom_IdleRequestOptions.Timeout,
         };
     }
 

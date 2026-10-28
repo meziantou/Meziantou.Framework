@@ -2277,12 +2277,7 @@
     "total": 6
   },
   "fetch/fetch-later/send-on-deactivate-with-background-sync.https.window.js": {
-    "total": 3,
-    "failures": {
-      "fetchLater() does send on page entering BFCache even if BackgroundSync is on.": "FAIL",
-      "fetchLater() with activateAfter=0 sends on page entering BFCache if BackgroundSync is on.": "FAIL",
-      "fetchLater() with activateAfter=1m does send on page entering BFCache even if BackgroundSync is on.": "FAIL"
-    }
+    "total": 3
   },
   "fetch/fetch-later/send-on-deactivate.https.window.js": {
     "total": 5

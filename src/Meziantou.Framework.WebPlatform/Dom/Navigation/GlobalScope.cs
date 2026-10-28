@@ -415,6 +415,12 @@ public abstract partial class GlobalScope : EventTarget
 
     private Scheduler? _scheduler;
 
+    /// <summary>The permission statuses that have <c>change</c> listeners: they live as long as the global object.</summary>
+    private HashSet<PermissionStatus>? _observedPermissionStatuses;
+
+    /// <summary>Keeps a permission status alive while the global object is alive (see <see cref="PermissionStore"/>, which only references it weakly).</summary>
+    internal void KeepPermissionStatusAlive(PermissionStatus status) => (_observedPermissionStatuses ??= []).Add(status);
+
     /// <summary>
     /// Gets the scheduler of the global object (https://wicg.github.io/scheduling-apis/#dom-windoworworkerglobalscope-scheduler),
     /// which posts prioritized tasks to its event loop.

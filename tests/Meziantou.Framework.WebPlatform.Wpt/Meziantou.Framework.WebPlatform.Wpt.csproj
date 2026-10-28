@@ -13,7 +13,7 @@
     <NoWarn>$(NoWarn);CA1707;CA1515;CA2007;CA1031;CA1812;CA1859;CA1305;CA1307;CA1310;CA1309;CA2201;CA1062;CA1508;CA1869</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" Version="10.10.0" />
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" Version="10.11.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Meziantou.Framework.FullPath\Meziantou.Framework.FullPath.csproj" />

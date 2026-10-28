@@ -1697,7 +1697,7 @@ public sealed class TiffCodecTests
         {
             Assert.Equal(deep ? PixelFormat.Rgb48 : PixelFormat.Rgb24, image.PixelFormat);
             var actual = Words(image);
-            const int channels = 3;
+            const int Channels = 3;
             var stored = tiles.Select(static tile => tile.GetStoredSamples()).ToArray();
             for (var y = 0; y < 20; y++)
             {
@@ -1707,7 +1707,7 @@ public sealed class TiffCodecTests
                     for (var c = 0; c < 3; c++)
                     {
                         var sample = stored[tile][((((y % 16) * 16) + (x % 16)) * 3) + c];
-                        if (actual[(((y * 30) + x) * channels) + c] != (deep ? tiles[tile].ScaleToSixteenBits(sample) : sample))
+                        if (actual[(((y * 30) + x) * Channels) + c] != (deep ? tiles[tile].ScaleToSixteenBits(sample) : sample))
                             Assert.Fail($"The sample {c} of the pixel ({x}, {y}) differs from the sample of its tile.");
                     }
                 }

@@ -60,6 +60,70 @@ public sealed class ConvolutionKernel
         _columnWeights = columnWeights;
     }
 
+    /// <summary>
+    /// Gets the horizontal Sobel operator, the derivative <c>[-1, 0, 1]</c> of the rows smoothed by <c>[1, 2, 1]</c> across
+    /// them: <c>[-1, 0, 1; -2, 0, 2; -1, 0, 1]</c>. It responds to vertical edges, positively where the right side is
+    /// brighter, as <c>cv2.Sobel</c> with <c>dx = 1</c> and <c>dy = 0</c>.
+    /// </summary>
+    public static ConvolutionKernel SobelX { get; } = new(3, 3, [-1, 0, 1, -2, 0, 2, -1, 0, 1]);
+
+    /// <summary>
+    /// Gets the vertical Sobel operator, <see cref="SobelX"/> transposed: <c>[-1, -2, -1; 0, 0, 0; 1, 2, 1]</c>. It
+    /// responds to horizontal edges, positively where the bottom side is brighter.
+    /// </summary>
+    public static ConvolutionKernel SobelY { get; } = new(3, 3, [-1, -2, -1, 0, 0, 0, 1, 2, 1]);
+
+    /// <summary>
+    /// Gets the horizontal Scharr operator, a Sobel operator whose smoothing <c>[3, 10, 3]</c> makes the response closer to
+    /// the same for every direction of the edge: <c>[-3, 0, 3; -10, 0, 10; -3, 0, 3]</c>, as <c>cv2.Scharr</c> with
+    /// <c>dx = 1</c> and <c>dy = 0</c>.
+    /// </summary>
+    public static ConvolutionKernel ScharrX { get; } = new(3, 3, [-3, 0, 3, -10, 0, 10, -3, 0, 3]);
+
+    /// <summary>Gets the vertical Scharr operator, <see cref="ScharrX"/> transposed: <c>[-3, -10, -3; 0, 0, 0; 3, 10, 3]</c>.</summary>
+    public static ConvolutionKernel ScharrY { get; } = new(3, 3, [-3, -10, -3, 0, 0, 0, 3, 10, 3]);
+
+    /// <summary>Gets the horizontal Prewitt operator, the derivative <c>[-1, 0, 1]</c> of the rows averaged across them: <c>[-1, 0, 1; -1, 0, 1; -1, 0, 1]</c>.</summary>
+    public static ConvolutionKernel PrewittX { get; } = new(3, 3, [-1, 0, 1, -1, 0, 1, -1, 0, 1]);
+
+    /// <summary>Gets the vertical Prewitt operator, <see cref="PrewittX"/> transposed: <c>[-1, -1, -1; 0, 0, 0; 1, 1, 1]</c>.</summary>
+    public static ConvolutionKernel PrewittY { get; } = new(3, 3, [-1, -1, -1, 0, 0, 0, 1, 1, 1]);
+
+    /// <summary>
+    /// Gets the Laplacian of the four nearest neighbors, the sum of the second derivatives <c>[1, -2, 1]</c> of both
+    /// directions: <c>[0, 1, 0; 1, -4, 1; 0, 1, 0]</c>, as <c>cv2.Laplacian</c> with <c>ksize = 1</c>. Its weights add up to
+    /// zero, and it is negative on the bright side of an edge.
+    /// </summary>
+    public static ConvolutionKernel Laplacian3x3 { get; } = new(3, 3, [0, 1, 0, 1, -4, 1, 0, 1, 0]);
+
+    /// <summary>
+    /// Gets the 5x5 Laplacian, the sum of the second derivatives <c>[1, 0, -2, 0, 1]</c> of each direction smoothed by
+    /// <c>[1, 4, 6, 4, 1]</c> across it (the second derivatives of the 5x5 Sobel operator), as <c>cv2.Laplacian</c> with
+    /// <c>ksize = 5</c>: <c>[2, 4, 4, 4, 2; 4, 0, -8, 0, 4; 4, -8, -24, -8, 4; 4, 0, -8, 0, 4; 2, 4, 4, 4, 2]</c>. Its weights
+    /// add up to zero.
+    /// </summary>
+    public static ConvolutionKernel Laplacian5x5 { get; } = new(5, 5, [2, 4, 4, 4, 2, 4, 0, -8, 0, 4, 4, -8, -24, -8, 4, 4, 0, -8, 0, 4, 2, 4, 4, 4, 2]);
+
+    /// <summary>
+    /// Gets the 5x5 Laplacian of Gaussian, the Laplacian of a slightly blurred image, which responds less to noise:
+    /// <c>[0, 0, 1, 0, 0; 0, 1, 2, 1, 0; 1, 2, -16, 2, 1; 0, 1, 2, 1, 0; 0, 0, 1, 0, 0]</c>. Its weights add up to zero. It is
+    /// the classic 5x5 approximation with the sign of the Laplacian (negative in the middle, like
+    /// <see cref="Laplacian3x3"/>); the "Mexican hat" form of that approximation is its negation.
+    /// </summary>
+    public static ConvolutionKernel LaplacianOfGaussian { get; } = new(5, 5, [0, 0, 1, 0, 0, 0, 1, 2, 1, 0, 1, 2, -16, 2, 1, 0, 1, 2, 1, 0, 0, 0, 1, 0, 0]);
+
+    /// <summary>
+    /// Gets the emboss matrix <c>[-2, -1, 0; -1, 1, 1; 0, 1, 2]</c>, which lights the image from the bottom right. Its
+    /// weights add up to 1, so flat areas keep their color.
+    /// </summary>
+    public static ConvolutionKernel Emboss { get; } = new(3, 3, [-2, -1, 0, -1, 1, 1, 0, 1, 2]);
+
+    /// <summary>
+    /// Gets the sharpen matrix <c>[0, -1, 0; -1, 5, -1; 0, -1, 0]</c>: the pixel minus the Laplacian of its four nearest
+    /// neighbors. Its weights add up to 1, so flat areas keep their color.
+    /// </summary>
+    public static ConvolutionKernel Sharpen3x3 { get; } = new(3, 3, [0, -1, 0, -1, 5, -1, 0, -1, 0]);
+
     /// <summary>Gets the number of columns.</summary>
     public int Width { get; }
 

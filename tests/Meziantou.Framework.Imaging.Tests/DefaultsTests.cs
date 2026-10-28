@@ -352,6 +352,7 @@ public sealed class DefaultsTests
         Assert.Equal(ConvolutionEdgeMode.Clamp, options.EdgeMode);
         Assert.False(options.PreserveAlpha);
         Assert.Equal(ConvolutionWorkingSpace.Encoded, options.WorkingSpace);
+        Assert.Equal(0d, options.Bias);
         Assert.Equal(default, options.EdgeMode);
         Assert.Equal(default, options.WorkingSpace);
     }

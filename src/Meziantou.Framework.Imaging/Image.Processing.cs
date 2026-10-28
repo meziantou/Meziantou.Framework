@@ -508,6 +508,59 @@ public abstract partial class Image
     }
 
     /// <summary>
+    /// Replaces every displayed frame and the poster by its edges, in place: converted to grayscale first when
+    /// <paramref name="grayscale"/> is set, then convolved by the kernels of the operator, whose sums are combined. The
+    /// scratch is charged to the scope of the image and rented before any pixel changes; afterward, on failure, some
+    /// frames or rows may already be changed.
+    /// </summary>
+    /// <exception cref="UnsupportedImageFeatureException"><paramref name="grayscale"/> is set and the ICC profile is incompatible with the pixel format.</exception>
+    internal void DetectEdgesAllFrames(EdgeDetector detector, bool grayscale, ConvolutionEdgeMode edgeMode, CancellationToken cancellationToken)
+    {
+        Owner.EnsureCanModify("detect the edges of the image");
+        if (grayscale)
+        {
+            EnsureColorProfileCompatible();
+        }
+
+        using var plan = ConvolutionPlan.CreateEdgeDetection(detector, edgeMode, PixelFormat, _size, _configuration.MaxDegreeOfParallelism);
+        cancellationToken.ThrowIfCancellationRequested();
+        plan.Prepare(Owner.Scope);
+        _metadata.RemoveStaleThumbnail();
+        foreach (var frame in GetAllFrames())
+        {
+            using var lease = frame.GetStorage().AcquireLease();
+            if (grayscale)
+            {
+                frame.GrayscalePixels(lease, cancellationToken);
+            }
+
+            frame.ConvolvePixels(lease, plan, cancellationToken);
+        }
+    }
+
+    /// <summary>Replaces one attached frame of this image by its edges, in place, as <see cref="DetectEdgesAllFrames"/> does for all of them.</summary>
+    /// <exception cref="UnsupportedImageFeatureException"><paramref name="grayscale"/> is set and the ICC profile is incompatible with the pixel format.</exception>
+    internal void DetectEdgesFrame(ImageFrame frame, PixelStorage storage, EdgeDetector detector, bool grayscale, ConvolutionEdgeMode edgeMode, CancellationToken cancellationToken)
+    {
+        if (grayscale)
+        {
+            EnsureColorProfileCompatible();
+        }
+
+        using var plan = ConvolutionPlan.CreateEdgeDetection(detector, edgeMode, PixelFormat, _size, _configuration.MaxDegreeOfParallelism);
+        cancellationToken.ThrowIfCancellationRequested();
+        using var lease = storage.AcquireLease();
+        plan.Prepare(Owner.Scope);
+        _metadata.RemoveStaleThumbnail();
+        if (grayscale)
+        {
+            frame.GrayscalePixels(lease, cancellationToken);
+        }
+
+        frame.ConvolvePixels(lease, plan, cancellationToken);
+    }
+
+    /// <summary>
     /// Blurs every displayed frame and the poster in place: one separable convolution, each row filtered by the weights
     /// then the filtered rows combined by the same weights as a column, without rounding in between. The scratch is
     /// prepared before a pixel changes. A positive <paramref name="sharpenAmount"/> makes it an unsharp mask.
@@ -606,7 +659,7 @@ public abstract partial class Image
     private ConvolutionPlan CreateConvolutionPlan(ConvolutionOptions options)
     {
         var transfer = options.WorkingSpace == ConvolutionWorkingSpace.LinearSrgb ? GetLinearLightTransfer("convolution", "convolve") : (byte)0;
-        return new ConvolutionPlan(options.Kernel, options.EdgeMode, options.PreserveAlpha, transfer is not 0, PixelFormat, _size, _configuration.MaxDegreeOfParallelism, transfer);
+        return new ConvolutionPlan(options.Kernel, options.EdgeMode, options.PreserveAlpha, transfer is not 0, PixelFormat, _size, _configuration.MaxDegreeOfParallelism, transfer, bias: options.Bias);
     }
 
     /// <summary>The separable plan of a blur: the weights as a column, every row filtered by the same weights first (and an unsharp mask when <paramref name="sharpenAmount"/> is positive).</summary>

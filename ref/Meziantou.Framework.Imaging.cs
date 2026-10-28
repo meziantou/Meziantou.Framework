@@ -290,9 +290,20 @@ namespace Meziantou.Framework.Imaging
 
     public sealed class ConvolutionKernel
     {
+        public static Meziantou.Framework.Imaging.ConvolutionKernel Emboss { get => throw null; }
         public int Height { get => throw null; }
         public bool IsSeparable { get => throw null; }
         public double this[int x, int y] { get => throw null; }
+        public static Meziantou.Framework.Imaging.ConvolutionKernel Laplacian3x3 { get => throw null; }
+        public static Meziantou.Framework.Imaging.ConvolutionKernel Laplacian5x5 { get => throw null; }
+        public static Meziantou.Framework.Imaging.ConvolutionKernel LaplacianOfGaussian { get => throw null; }
+        public static Meziantou.Framework.Imaging.ConvolutionKernel PrewittX { get => throw null; }
+        public static Meziantou.Framework.Imaging.ConvolutionKernel PrewittY { get => throw null; }
+        public static Meziantou.Framework.Imaging.ConvolutionKernel ScharrX { get => throw null; }
+        public static Meziantou.Framework.Imaging.ConvolutionKernel ScharrY { get => throw null; }
+        public static Meziantou.Framework.Imaging.ConvolutionKernel Sharpen3x3 { get => throw null; }
+        public static Meziantou.Framework.Imaging.ConvolutionKernel SobelX { get => throw null; }
+        public static Meziantou.Framework.Imaging.ConvolutionKernel SobelY { get => throw null; }
         public int Width { get => throw null; }
         public ConvolutionKernel(int width, int height, System.ReadOnlySpan<double> values) { }
         public static Meziantou.Framework.Imaging.ConvolutionKernel CreateSeparable(System.ReadOnlySpan<double> rowWeights, System.ReadOnlySpan<double> columnWeights) => throw null;
@@ -300,6 +311,7 @@ namespace Meziantou.Framework.Imaging
 
     public sealed class ConvolutionOptions
     {
+        public double Bias { get => throw null; init { } }
         public Meziantou.Framework.Imaging.ConvolutionEdgeMode EdgeMode { get => throw null; init { } }
         public Meziantou.Framework.Imaging.ConvolutionKernel Kernel { get => throw null; }
         public bool PreserveAlpha { get => throw null; init { } }
@@ -327,6 +339,18 @@ namespace Meziantou.Framework.Imaging
         Bayer2x2 = 9,
         Bayer4x4 = 10,
         Bayer8x8 = 11,
+    }
+
+    public enum EdgeDetector
+    {
+        Sobel = 0,
+        Scharr = 1,
+        Prewitt = 2,
+        Kirsch = 3,
+        Robinson = 4,
+        Laplacian3x3 = 5,
+        Laplacian5x5 = 6,
+        LaplacianOfGaussian = 7,
     }
 
     public enum FlipMode
@@ -750,6 +774,8 @@ namespace Meziantou.Framework.Imaging
         public static void Convolve(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.ConvolutionOptions options, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Convolve(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.ConvolutionOptions options, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Crop(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.Rectangle rectangle, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void DetectEdges(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.EdgeDetector detector, bool grayscale = true, Meziantou.Framework.Imaging.ConvolutionEdgeMode edgeMode = Meziantou.Framework.Imaging.ConvolutionEdgeMode.Clamp, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void DetectEdges(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.EdgeDetector detector, bool grayscale = true, Meziantou.Framework.Imaging.ConvolutionEdgeMode edgeMode = Meziantou.Framework.Imaging.ConvolutionEdgeMode.Clamp, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Equalize(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.HistogramEqualizationOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Equalize(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.HistogramEqualizationOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
         public static void ExtendCanvas(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.Size size, Meziantou.Framework.Imaging.ResizeAnchor anchor = Meziantou.Framework.Imaging.ResizeAnchor.Center, Meziantou.Framework.Imaging.Rgba64? backgroundColor = null, System.Threading.CancellationToken cancellationToken = default) { }

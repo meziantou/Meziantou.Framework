@@ -107,9 +107,22 @@ internal static class Examples
             sharpened.Save(sharpenedPath);
         }
 
-        // Weights that add up to 0 would also filter alpha down to 0 (transparent black): keep the alpha instead
-        var laplacian = new ConvolutionKernel(3, 3, [0, 1, 0, 1, -4, 1, 0, 1, 0]);
-        image.Convolve(new ConvolutionOptions(laplacian) { PreserveAlpha = true, EdgeMode = ConvolutionEdgeMode.Mirror });
+        // Weights that add up to 0 would also filter alpha down to 0 (transparent black): keep the alpha instead, and
+        // add half of the range so that negative sums show as darker than mid-gray instead of black
+        var options = new ConvolutionOptions(ConvolutionKernel.Laplacian3x3) { PreserveAlpha = true, EdgeMode = ConvolutionEdgeMode.Mirror, Bias = 0.5 };
+        image.Convolve(options);
+        image.Save(edgesPath);
+    }
+    #endregion
+
+    /// <summary>The edges of an image: the magnitude of its Sobel gradients.</summary>
+    #region Imaging_DetectEdges
+    public static void DetectEdges(string inputPath, string edgesPath)
+    {
+        using var image = Image.Load(inputPath);
+
+        // White edges on black, computed on the brightness (grayscale: false keeps the edges of every color); alpha is kept
+        image.DetectEdges(EdgeDetector.Sobel);
         image.Save(edgesPath);
     }
     #endregion

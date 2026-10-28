@@ -37,6 +37,46 @@ public sealed class ConvolutionGoldenTests
         ("asymmetric-3x5-zero", new(3, 5, [0.1m, 0, 0.05m, 0, 0.2m, -0.1m, 0.05m, 0.3m, 0.15m, 0, 0.1m, 0, 0.05m, 0.05m, 0.05m], ReferenceEdgeMode.Zero)),
         ("binomial-3x3-linear", new(3, 3, [0.0625m, 0.125m, 0.0625m, 0.125m, 0.25m, 0.125m, 0.0625m, 0.125m, 0.0625m], Linear: true)),
         ("sharpen-3x3-linear-mirror-alpha-preserved", new(3, 3, [0, -0.5m, 0, -0.5m, 3, -0.5m, 0, -0.5m, 0], ReferenceEdgeMode.Mirror, PreserveAlpha: true, Linear: true)),
+        ("sobel-3x3-bias-alpha-preserved", new(3, 3, [-1, 0, 1, -2, 0, 2, -1, 0, 1], PreserveAlpha: true, Bias: 0.5m)),
+        ("emboss-3x3-negative-bias-mirror", new(3, 3, [-2, -1, 0, -1, 1, 1, 0, 1, 2], ReferenceEdgeMode.Mirror, Bias: -0.375m)),
+        ("binomial-3x3-linear-bias-wrap", new(3, 3, [0.0625m, 0.125m, 0.0625m, 0.125m, 0.25m, 0.125m, 0.0625m, 0.125m, 0.0625m], ReferenceEdgeMode.Wrap, Linear: true, Bias: 0.1m)),
+    ];
+
+    /// <summary>
+    /// The edge operators, with the matrices written out as published (independently of the presets of the library): the
+    /// eight Kirsch and the eight Robinson compass matrices (north, north-west, west, south-west, south, south-east, east,
+    /// north-east), whose largest response the reference takes over all eight.
+    /// </summary>
+    private static readonly (string Name, EdgeDetector Detector, int Size, decimal[][] Matrices, ReferenceEdgeCombination Combination)[] EdgeOperators =
+    [
+        ("sobel", EdgeDetector.Sobel, 3, [[-1, 0, 1, -2, 0, 2, -1, 0, 1], [-1, -2, -1, 0, 0, 0, 1, 2, 1]], ReferenceEdgeCombination.Magnitude),
+        ("scharr", EdgeDetector.Scharr, 3, [[-3, 0, 3, -10, 0, 10, -3, 0, 3], [-3, -10, -3, 0, 0, 0, 3, 10, 3]], ReferenceEdgeCombination.Magnitude),
+        ("prewitt", EdgeDetector.Prewitt, 3, [[-1, 0, 1, -1, 0, 1, -1, 0, 1], [-1, -1, -1, 0, 0, 0, 1, 1, 1]], ReferenceEdgeCombination.Magnitude),
+        ("kirsch", EdgeDetector.Kirsch, 3,
+        [
+            [5, 5, 5, -3, 0, -3, -3, -3, -3],
+            [5, 5, -3, 5, 0, -3, -3, -3, -3],
+            [5, -3, -3, 5, 0, -3, 5, -3, -3],
+            [-3, -3, -3, 5, 0, -3, 5, 5, -3],
+            [-3, -3, -3, -3, 0, -3, 5, 5, 5],
+            [-3, -3, -3, -3, 0, 5, -3, 5, 5],
+            [-3, -3, 5, -3, 0, 5, -3, -3, 5],
+            [-3, 5, 5, -3, 0, 5, -3, -3, -3],
+        ], ReferenceEdgeCombination.Maximum),
+        ("robinson", EdgeDetector.Robinson, 3,
+        [
+            [1, 2, 1, 0, 0, 0, -1, -2, -1],
+            [2, 1, 0, 1, 0, -1, 0, -1, -2],
+            [1, 0, -1, 2, 0, -2, 1, 0, -1],
+            [0, -1, -2, 1, 0, -1, 2, 1, 0],
+            [-1, -2, -1, 0, 0, 0, 1, 2, 1],
+            [-2, -1, 0, -1, 0, 1, 0, 1, 2],
+            [-1, 0, 1, -2, 0, 2, -1, 0, 1],
+            [0, 1, 2, -1, 0, 1, -2, -1, 0],
+        ], ReferenceEdgeCombination.Maximum),
+        ("laplacian-3x3", EdgeDetector.Laplacian3x3, 3, [[0, 1, 0, 1, -4, 1, 0, 1, 0]], ReferenceEdgeCombination.Absolute),
+        ("laplacian-5x5", EdgeDetector.Laplacian5x5, 5, [[2, 4, 4, 4, 2, 4, 0, -8, 0, 4, 4, -8, -24, -8, 4, 4, 0, -8, 0, 4, 2, 4, 4, 4, 2]], ReferenceEdgeCombination.Absolute),
+        ("laplacian-of-gaussian", EdgeDetector.LaplacianOfGaussian, 5, [[0, 0, 1, 0, 0, 0, 1, 2, 1, 0, 1, 2, -16, 2, 1, 0, 1, 2, 1, 0, 0, 0, 1, 0, 0]], ReferenceEdgeCombination.Absolute),
     ];
 
     public static TheoryData<string, string> Cases()
@@ -107,6 +147,50 @@ public sealed class ConvolutionGoldenTests
             foreach (var segmented in new[] { false, true })
             {
                 CheckOperation(fixture, format, name, apply, reference, segmented);
+            }
+        }
+    }
+
+    /// <summary>
+    /// The edges of every frame and poster of the golden corpus (every pixel format, alpha, odd sizes, images smaller than
+    /// the matrices), with and without grayscale, against the decimal reference: the exact combination of the exact sums,
+    /// rounded once. Each operator takes another edge mode.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(Cases))]
+    public void EdgesOfFramesAndPostersMatchTheIndependentReference(string id, string format)
+    {
+        var fixture = GoldenCorpus.Default.Get(id);
+        var ct = TestContext.Current.CancellationToken;
+        var modes = Enum.GetValues<ReferenceEdgeMode>();
+        for (var i = 0; i < EdgeOperators.Length; i++)
+        {
+            var (name, detector, size, matrices, combination) = EdgeOperators[i];
+            var mode = modes[i % modes.Length];
+            var edgeMode = ToLibrary(new ReferenceConvolutionOptions(1, 1, [1], mode)).EdgeMode;
+            foreach (var grayscale in new[] { false, true })
+            {
+                CheckOperation(fixture, format, $"{name}-{mode}{(grayscale ? "-grayscale" : "")}", image => image.DetectEdges(detector, grayscale, edgeMode, ct), frame => ReferenceConvolver.DetectEdges(frame, size, matrices, combination, mode, grayscale), segmented: grayscale);
+            }
+        }
+    }
+
+    /// <summary>Every edge operator under every edge mode, with and without grayscale, over the synthetic sources and noise.</summary>
+    [Theory]
+    [MemberData(nameof(BlurSources))]
+    public void EdgesMatchTheIndependentReference(string name)
+    {
+        var source = BlurInputs().Single(item => item.Name == name).Buffer;
+        foreach (var (operatorName, detector, size, matrices, combination) in EdgeOperators)
+        {
+            foreach (var mode in Enum.GetValues<ReferenceEdgeMode>())
+            {
+                var edgeMode = ToLibrary(new ReferenceConvolutionOptions(1, 1, [1], mode)).EdgeMode;
+                foreach (var grayscale in new[] { false, true })
+                {
+                    var actual = Apply(source, image => image.DetectEdges(detector, grayscale, edgeMode, TestContext.Current.CancellationToken));
+                    AssertMatches(ReferenceConvolver.DetectEdges(source, size, matrices, combination, mode, grayscale), actual, $"{name}, {operatorName}, {mode}{(grayscale ? ", grayscale" : "")}");
+                }
             }
         }
     }
@@ -459,5 +543,6 @@ public sealed class ConvolutionGoldenTests
             },
             PreserveAlpha = options.PreserveAlpha,
             WorkingSpace = options.Linear ? ConvolutionWorkingSpace.LinearSrgb : ConvolutionWorkingSpace.Encoded,
+            Bias = (double)options.Bias,
         };
 }

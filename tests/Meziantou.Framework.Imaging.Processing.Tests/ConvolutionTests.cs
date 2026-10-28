@@ -1450,7 +1450,7 @@ public sealed class ConvolutionTests
     public void TheScratchOfBoxBlursMediansAndUnsharpMasksIsChargedAndAFailureChangesNothing()
     {
         // The frames are gradients, which a median keeps: the zero edge mode changes their edges
-        foreach (var operation in new Action<Image<Rgba32>>[] { image => image.BoxBlur(2, cancellationToken: Ct), image => image.Frames[1].MedianBlur(1, ConvolutionEdgeMode.Zero, Ct), image => image.Sharpen(1, cancellationToken: Ct) })
+        foreach (var operation in new Action<Image<Rgba32>>[] { image => image.BoxBlur(2, cancellationToken: Ct), image => image.Frames[1].MedianBlur(1, ConvolutionEdgeMode.Zero, Ct), image => image.Sharpen(1, cancellationToken: Ct), image => image.DetectEdges(EdgeDetector.Kirsch, cancellationToken: Ct), image => image.Frames[1].DetectEdges(EdgeDetector.Sobel, grayscale: false, cancellationToken: Ct) })
         {
             long before, peak;
             using (var probe = BuildWithPool(new SlabPool(), ImageConfiguration.Default))
@@ -1487,6 +1487,283 @@ public sealed class ConvolutionTests
                 Assert.Equal(before, image.Owner.Scope.LiveBytes);
             }
         }
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // Ready-made matrices, bias and edge detection
+    // -----------------------------------------------------------------------------------------------------------------
+
+    /// <summary>
+    /// The presets hold the published coefficients: the operators of Sobel and Feldman, Prewitt and Scharr, the Laplacians
+    /// of OpenCV's <c>cv2.Laplacian</c> (<c>ksize = 1</c> and <c>ksize = 5</c>, documented as the sum of the second
+    /// derivatives of the Sobel operator), the classic 5x5 Laplacian of Gaussian with the sign of the Laplacian, and the
+    /// usual emboss and sharpen matrices. <c>cv2.filter2D</c> of OpenCV 5.0.0 with the matrices below gives exactly
+    /// <c>cv2.Sobel</c>, <c>cv2.Scharr</c> and <c>cv2.Laplacian</c> (checked on the image of
+    /// <see cref="EdgeDetectorsAndTheBiasMatchOpenCv"/>).
+    /// </summary>
+    [Fact]
+    public void PresetsHaveThePublishedCoefficients()
+    {
+        Check(ConvolutionKernel.SobelX, 3, [-1, 0, 1, -2, 0, 2, -1, 0, 1]);
+        Check(ConvolutionKernel.SobelY, 3, [-1, -2, -1, 0, 0, 0, 1, 2, 1]);
+        Check(ConvolutionKernel.ScharrX, 3, [-3, 0, 3, -10, 0, 10, -3, 0, 3]);
+        Check(ConvolutionKernel.ScharrY, 3, [-3, -10, -3, 0, 0, 0, 3, 10, 3]);
+        Check(ConvolutionKernel.PrewittX, 3, [-1, 0, 1, -1, 0, 1, -1, 0, 1]);
+        Check(ConvolutionKernel.PrewittY, 3, [-1, -1, -1, 0, 0, 0, 1, 1, 1]);
+        Check(ConvolutionKernel.Laplacian3x3, 3, [0, 1, 0, 1, -4, 1, 0, 1, 0]);
+        Check(ConvolutionKernel.Laplacian5x5, 5, [2, 4, 4, 4, 2, 4, 0, -8, 0, 4, 4, -8, -24, -8, 4, 4, 0, -8, 0, 4, 2, 4, 4, 4, 2]);
+        Check(ConvolutionKernel.LaplacianOfGaussian, 5, [0, 0, 1, 0, 0, 0, 1, 2, 1, 0, 1, 2, -16, 2, 1, 0, 1, 2, 1, 0, 0, 0, 1, 0, 0]);
+        Check(ConvolutionKernel.Emboss, 3, [-2, -1, 0, -1, 1, 1, 0, 1, 2]);
+        Check(ConvolutionKernel.Sharpen3x3, 3, [0, -1, 0, -1, 5, -1, 0, -1, 0]);
+
+        // The gradients are separable: a smoothing times a derivative
+        Assert.True(ConvolutionKernel.SobelX.IsSeparable);
+        Assert.True(ConvolutionKernel.ScharrY.IsSeparable);
+        Assert.True(ConvolutionKernel.PrewittX.IsSeparable);
+        Assert.False(ConvolutionKernel.Laplacian3x3.IsSeparable);
+        Assert.Same(ConvolutionKernel.SobelX, ConvolutionKernel.SobelX);
+
+        static void Check(ConvolutionKernel kernel, int size, double[] expected)
+        {
+            Assert.Equal(size, kernel.Width);
+            Assert.Equal(size, kernel.Height);
+            Assert.Equal(expected, Enumerable.Range(0, size * size).Select(i => kernel[i % size, i / size]).ToArray());
+        }
+    }
+
+    /// <summary>
+    /// The outputs of OpenCV 5.0.0 (opencv-python-headless, Python 3.12) for one 9x7 gray image <c>f</c>, kept as literals:
+    /// <c>cv2.magnitude(cv2.Sobel(f, cv2.CV_64F, 1, 0, borderType=cv2.BORDER_REPLICATE), cv2.Sobel(f, cv2.CV_64F, 0, 1, borderType=cv2.BORDER_REPLICATE))</c>,
+    /// the same with <c>cv2.Scharr</c> and <c>cv2.BORDER_REFLECT</c>, <c>abs(cv2.Laplacian(f, cv2.CV_64F, ksize=1, borderType=cv2.BORDER_REPLICATE))</c>
+    /// and <c>abs(cv2.Laplacian(f, cv2.CV_64F, ksize=5, borderType=cv2.BORDER_CONSTANT))</c>, rounded with
+    /// <c>floor(x + 0.5)</c> and clipped to [0, 255], and <c>cv2.filter2D(f, cv2.CV_8U, sobelX, delta=128, borderType=cv2.BORDER_REPLICATE)</c>
+    /// for a bias of one half (127.5, which rounds the integer sums up by 128). Every sample is equal.
+    /// </summary>
+    [Fact]
+    public void EdgeDetectorsAndTheBiasMatchOpenCv()
+    {
+        int[][] source =
+        [
+            [0, 2, 5, 7, 10, 12, 14, 15, 15],
+            [1, 3, 15, 8, 10, 12, 14, 0, 15],
+            [1, 3, 6, 8, 11, 13, 15, 15, 15],
+            [12, 11, 11, 0, 10, 9, 8, 8, 7],
+            [13, 12, 11, 11, 10, 10, 9, 8, 15],
+            [3, 3, 3, 3, 13, 13, 13, 13, 13],
+            [0, 3, 3, 3, 13, 13, 13, 13, 5],
+        ];
+
+        Check(image => image.DetectEdges(EdgeDetector.Sobel, cancellationToken: Ct),
+        [
+            [9, 32, 30, 16, 19, 16, 15, 30, 21],
+            [9, 38, 20, 4, 18, 16, 19, 3, 30],
+            [41, 33, 9, 20, 25, 16, 11, 2, 21],
+            [45, 35, 28, 10, 22, 13, 22, 20, 9],
+            [35, 33, 25, 7, 21, 16, 20, 24, 26],
+            [48, 39, 33, 36, 29, 13, 16, 4, 25],
+            [13, 9, 0, 40, 40, 0, 0, 25, 34],
+        ]);
+        Check(image => image.DetectEdges(EdgeDetector.Scharr, edgeMode: ConvolutionEdgeMode.Mirror, cancellationToken: Ct),
+        [
+            [36, 115, 133, 64, 77, 64, 45, 151, 64],
+            [36, 171, 82, 26, 72, 66, 106, 13, 150],
+            [169, 135, 51, 97, 95, 66, 49, 38, 90],
+            [183, 141, 130, 42, 102, 52, 91, 88, 24],
+            [142, 133, 104, 23, 69, 66, 80, 101, 115],
+            [196, 153, 131, 159, 128, 51, 64, 33, 115],
+            [55, 40, 0, 160, 160, 0, 0, 107, 147],
+        ]);
+        Check(image => image.DetectEdges(EdgeDetector.Laplacian3x3, cancellationToken: Ct),
+        [
+            [3, 2, 9, 2, 1, 0, 1, 16, 0],
+            [1, 9, 38, 8, 1, 1, 15, 59, 15],
+            [13, 9, 13, 7, 3, 5, 10, 22, 8],
+            [11, 6, 16, 40, 10, 5, 9, 6, 17],
+            [12, 10, 7, 20, 4, 1, 3, 13, 17],
+            [7, 9, 8, 18, 13, 3, 4, 5, 6],
+            [6, 3, 0, 10, 10, 0, 0, 8, 16],
+        ]);
+        Check(image => image.DetectEdges(EdgeDetector.Laplacian5x5, edgeMode: ConvolutionEdgeMode.Zero, cancellationToken: Ct),
+        [
+            [84, 4, 136, 104, 110, 254, 240, 255, 255],
+            [162, 12, 255, 208, 178, 255, 226, 214, 255],
+            [116, 32, 2, 100, 2, 190, 116, 180, 250],
+            [255, 255, 66, 182, 86, 4, 114, 46, 126],
+            [255, 255, 162, 16, 54, 6, 160, 68, 216],
+            [18, 36, 108, 28, 255, 255, 255, 255, 255],
+            [98, 70, 154, 76, 252, 255, 255, 255, 114],
+        ]);
+        Check(image => image.Convolve(new ConvolutionOptions(ConvolutionKernel.SobelX) { Bias = 0.5 }, Ct),
+        [
+            [136, 157, 148, 138, 147, 144, 125, 132, 143],
+            [136, 166, 148, 128, 146, 144, 109, 131, 158],
+            [133, 151, 132, 132, 151, 138, 119, 128, 142],
+            [127, 129, 110, 130, 150, 127, 126, 132, 133],
+            [125, 123, 115, 135, 145, 124, 123, 139, 141],
+            [130, 129, 127, 157, 157, 127, 126, 126, 127],
+            [137, 137, 128, 168, 168, 128, 128, 104, 104],
+        ]);
+
+        void Check(Action<Image> operation, int[][] expected)
+        {
+            using var image = BuildGray8(source);
+            operation(image);
+            AssertGray8(image.Frames[0], expected);
+        }
+    }
+
+    [Fact]
+    public void EdgeDetectorsCombineTheResponsesOfTheirMatrices()
+    {
+        // A vertical step, edges clamped: every row is 0 0 10, so a pixel reads its row three times (y - 1, y and y + 1).
+        // Pixel 1 reads the columns 0 0 10, pixel 2 the columns 0 10 10 (the last one clamped); every vertical gradient is 0.
+        // Sobel: (10 + 20 + 10) - 0 = 40 at both; Prewitt: 30 at both.
+        // Kirsch: pixel 1, east [-3 -3 5; -3 0 5; -3 -3 5] = 3 * 5 * 10 = 150 (north-east: 50 + 50 - 30 = 70); pixel 2, east
+        // (-3 - 3) * 10 + 3 * 5 * 10 = 90, north-east (5 - 3) * 10 + (5 + 5 - 3) * 10 = 90, the largest.
+        // Robinson: the largest of the Sobel matrix (40) and the diagonal ones ([0 1 2; -1 0 1; -2 -1 0]: 30 at pixel 1,
+        // 30 at pixel 2), whatever their sign: 40.
+        // Laplacian: pixel 1 = 10 (the right neighbor); pixel 2 = 0 (left) + 10 (right, clamped) + 10 (up) + 10 (down) - 4 * 10
+        // = -10, whose absolute value is 10.
+        Check(EdgeDetector.Sobel, [0, 40, 40]);
+        Check(EdgeDetector.Prewitt, [0, 30, 30]);
+        Check(EdgeDetector.Kirsch, [0, 150, 90]);
+        Check(EdgeDetector.Robinson, [0, 40, 40]);
+        Check(EdgeDetector.Laplacian3x3, [0, 10, 10]);
+
+        static void Check(EdgeDetector detector, int[] expected)
+        {
+            using var image = BuildGray8([[0, 0, 10], [0, 0, 10], [0, 0, 10]]);
+            image.DetectEdges(detector, cancellationToken: Ct);
+            AssertGray8(image.Frames[0], [expected, expected, expected]);
+        }
+    }
+
+    [Fact]
+    public void EdgesKeepAlphaAndTheColorsOfEveryChannelUnlessGrayscale()
+    {
+        // One row, edges clamped: the Laplacian reads the pixel itself above and below, so it is left + right - 2 center,
+        // on the stored colors (the hidden color of the transparent pixel takes part); alpha is kept.
+        // Pixel 1: R = -200 -> 200, G = -100 -> 100; pixels 0 and 2: R = 100, G = 50.
+        // Grayscale first: the luma of pixel 1 is (2126 * 100 + 7152 * 50 + 5000) / 10000 = 57, so 114 and 57.
+        Rgba32[] source = [new(0, 0, 0, 255), new(100, 50, 0, 128), new(0, 0, 0, 0)];
+        using (var image = Image.ImportPixelData<Rgba32>(source, 3, 1))
+        {
+            image.DetectEdges(EdgeDetector.Laplacian3x3, grayscale: false, cancellationToken: Ct);
+            AssertRow(image.Frames[0], new Rgba32(100, 50, 0, 255), new Rgba32(200, 100, 0, 128), new Rgba32(100, 50, 0, 0));
+        }
+
+        using (var image = Image.ImportPixelData<Rgba32>(source, 3, 1))
+        {
+            image.DetectEdges(EdgeDetector.Laplacian3x3, cancellationToken: Ct);
+            AssertRow(image.Frames[0], new Rgba32(57, 57, 57, 255), new Rgba32(114, 114, 114, 128), new Rgba32(57, 57, 57, 0));
+        }
+
+        // 16-bit samples keep their precision: 1000 next to 0 gives 1000, not a multiple of 257
+        using (var image = Image.ImportPixelData<Gray16>([new Gray16(0), new Gray16(1000), new Gray16(0)], 3, 1))
+        {
+            image.DetectEdges(EdgeDetector.Laplacian3x3, cancellationToken: Ct);
+            AssertRow(image.Frames[0], new Gray16(1000), new Gray16(2000), new Gray16(1000));
+        }
+    }
+
+    [Fact]
+    public void TheBiasIsAddedToTheStraightColorsAndNeverToAlpha()
+    {
+        // The identity on (100, 0, 250, 128) with a bias of a quarter (63.75): premultiplied, the colors get 63.75 * 128,
+        // and once divided by the alpha 128 they are 163.75 -> 164, 63.75 -> 64 and 313.75 -> 255; alpha stays 128
+        using (var image = new Image<Rgba32>(1, 1, new Rgba32(100, 0, 250, 128)))
+        {
+            image.Convolve(new ConvolutionOptions(Kernel(1, 1, [1])) { Bias = 0.25 }, Ct);
+            Assert.Equal(new Rgba32(164, 64, 255, 128), image.Frames[0][0, 0]);
+            image.Frames[0][0, 0] = new Rgba32(100, 0, 250, 128);
+            image.Convolve(new ConvolutionOptions(Kernel(1, 1, [1])) { Bias = -0.25, PreserveAlpha = true }, Ct);
+            Assert.Equal(new Rgba32(36, 0, 186, 128), image.Frames[0][0, 0]);
+        }
+
+        // A matrix whose weights add up to zero shows negative sums around mid-gray: 127.5 + (0 - 20) = 107.5 -> 108 and
+        // 127.5 - 40 = 87.5 -> 88 (edges clamped); in 16-bit samples, 32767.5 + 20 -> 32788 and 32767.5 + 40 -> 32808
+        using (var image = BuildGray8([[0, 20, 40]]))
+        {
+            image.Convolve(new ConvolutionOptions(Kernel(3, 1, [1, 0, -1])) { Bias = 0.5 }, Ct);
+            AssertGray8(image.Frames[0], [[108, 88, 108]]);
+        }
+
+        using (var image = Image.ImportPixelData<Gray16>([new Gray16(0), new Gray16(20), new Gray16(40)], 3, 1))
+        {
+            image.Convolve(new ConvolutionOptions(Kernel(3, 1, [-1, 0, 1])) { Bias = 0.5 }, Ct);
+            AssertRow(image.Frames[0], new Gray16(32788), new Gray16(32808), new Gray16(32788));
+        }
+
+        // Floating-point samples get the bias as a value (1 is the range)
+        using (var image = new Image<RgbaFloat>(1, 1, new RgbaFloat(0.25f, -1, 2, 1)))
+        {
+            image.Convolve(new ConvolutionOptions(Kernel(1, 1, [1])) { Bias = 0.5 }, Ct);
+            Assert.Equal(new RgbaFloat(0.75f, -0.5f, 2.5f, 1), image.Frames[0][0, 0]);
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(FloatingPointFormats))]
+    public void EdgesOfFloatingPointSamplesAreNotClamped(PixelFormat format)
+    {
+        if (format == PixelFormat.RgbaFloat)
+        {
+            CheckFloatingPointEdges<RgbaFloat>();
+        }
+        else
+        {
+            CheckFloatingPointEdges<RgbaHalf>();
+        }
+    }
+
+    [Fact]
+    public void EdgeDetectionAppliesToEveryFrameOrToOneAndValidatesItsArguments()
+    {
+        // One row, edges clamped: the Laplacian is left + right - 2 center
+        using var image = BuildGray8([[0, 0, 0, 90, 0, 0, 0]]);
+        Fill(image.AppendFrame(), [[90, 0, 0, 0, 0, 0, 0]]);
+        Fill(image.SetPosterFrame(image.Frames[0]), [[0, 0, 0, 0, 0, 0, 90]]);
+        image.DetectEdges(EdgeDetector.Laplacian3x3, cancellationToken: Ct);
+        AssertGray8(image.Frames[0], [[0, 0, 90, 180, 90, 0, 0]]);
+        AssertGray8(image.Frames[1], [[90, 90, 0, 0, 0, 0, 0]]);
+        AssertGray8(image.PosterFrame!, [[0, 0, 0, 0, 0, 90, 90]]);
+        image.Frames[1].DetectEdges(EdgeDetector.Laplacian3x3, cancellationToken: Ct);
+        AssertGray8(image.Frames[0], [[0, 0, 90, 180, 90, 0, 0]]);
+        AssertGray8(image.Frames[1], [[0, 90, 90, 0, 0, 0, 0]]);
+        Assert.Equal(0, image.Owner.Scope.GetLiveBytes(AllocationKind.Temporary));
+        Assert.Equal(0, image.Owner.ActiveLeaseCount);
+
+        // A flat image has no edge, except with the zero edge mode, which reads black beyond the image (one row: up and
+        // down are black too, so 50 + 0 + 0 + 0 - 200 at the ends and 50 + 50 - 200 in the middle)
+        using (var flat = BuildGray8([[50, 50, 50]]))
+        {
+            flat.DetectEdges(EdgeDetector.Laplacian3x3, cancellationToken: Ct);
+            AssertGray8(flat.Frames[0], [[0, 0, 0]]);
+        }
+
+        using (var flat = BuildGray8([[50, 50, 50]]))
+        {
+            flat.DetectEdges(EdgeDetector.Laplacian3x3, edgeMode: ConvolutionEdgeMode.Zero, cancellationToken: Ct);
+            AssertGray8(flat.Frames[0], [[150, 100, 150]]);
+        }
+
+        Assert.Throws<ArgumentNullException>("image", () => ((Image)null!).DetectEdges(EdgeDetector.Sobel));
+        Assert.Throws<ArgumentNullException>("frame", () => ((ImageFrame)null!).DetectEdges(EdgeDetector.Sobel));
+        Assert.Throws<ArgumentOutOfRangeException>("detector", () => image.DetectEdges((EdgeDetector)8));
+        Assert.Throws<ArgumentOutOfRangeException>("detector", () => image.Frames[0].DetectEdges((EdgeDetector)(-1)));
+        Assert.Throws<ArgumentOutOfRangeException>("edgeMode", () => image.DetectEdges(EdgeDetector.Sobel, edgeMode: (ConvolutionEdgeMode)4));
+        Assert.Throws<ArgumentOutOfRangeException>("edgeMode", () => image.Frames[0].DetectEdges(EdgeDetector.Sobel, edgeMode: (ConvolutionEdgeMode)4));
+        Assert.Throws<OperationCanceledException>(() => image.DetectEdges(EdgeDetector.Sobel, cancellationToken: new CancellationToken(canceled: true)));
+        Assert.Throws<OperationCanceledException>(() => image.Frames[0].DetectEdges(EdgeDetector.Sobel, cancellationToken: new CancellationToken(canceled: true)));
+        image.Frames[0].ProcessPixelRows(_ => Assert.Throws<InvalidOperationException>(() => image.DetectEdges(EdgeDetector.Sobel)));
+        image.Frames[0].ProcessPixelRows(_ => Assert.Throws<InvalidOperationException>(() => image.Frames[0].DetectEdges(EdgeDetector.Sobel)));
+        AssertGray8(image.Frames[0], [[0, 0, 90, 180, 90, 0, 0]]);
+
+        var disposed = new Image<Gray8>(2, 2);
+        var frame = disposed.Frames[0];
+        disposed.Dispose();
+        Assert.Throws<ObjectDisposedException>(() => disposed.DetectEdges(EdgeDetector.Sobel));
+        Assert.Throws<ObjectDisposedException>(() => frame.DetectEdges(EdgeDetector.Sobel));
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -1533,6 +1810,10 @@ public sealed class ConvolutionTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new ConvolutionOptions(kernel) { EdgeMode = (ConvolutionEdgeMode)4 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new ConvolutionOptions(kernel) { EdgeMode = (ConvolutionEdgeMode)(-1) });
         Assert.Throws<ArgumentOutOfRangeException>(() => new ConvolutionOptions(kernel) { WorkingSpace = (ConvolutionWorkingSpace)2 });
+        Assert.Throws<ArgumentException>("value", () => new ConvolutionOptions(kernel) { Bias = double.NaN });
+        Assert.Throws<ArgumentException>("value", () => new ConvolutionOptions(kernel) { Bias = double.PositiveInfinity });
+        Assert.Throws<ArgumentException>("value", () => new ConvolutionOptions(kernel) { Bias = double.NegativeInfinity });
+        Assert.Equal(-3.5, new ConvolutionOptions(kernel) { Bias = -3.5 }.Bias);
 
         using var image = BuildGray8([[1]]);
         Assert.Throws<ArgumentNullException>("image", () => ((Image)null!).Convolve(new ConvolutionOptions(kernel), Ct));
@@ -1751,6 +2032,32 @@ public sealed class ConvolutionTests
         Assert.True(float.IsNaN(middle.B));
         Assert.Equal(0u, BitConverter.SingleToUInt32Bits(middle.B) & 0x8000_0000u);
         Assert.Equal(0.5f, middle.A);
+    }
+
+    private static void CheckFloatingPointEdges<TPixel>()
+        where TPixel : unmanaged
+    {
+        // One row, edges clamped: the vertical Sobel gradient is 0 and the horizontal one is 4 (right - left), so the
+        // magnitude is 4 |right - left|: 16, 16 and 4000 at the ends, 0 in the middle; nothing is clamped
+        using (var image = new Image<TPixel>(3, 1, ProcessingTests.FloatPixel<TPixel>(0, 0, 0)))
+        {
+            image.Frames[0][1, 0] = ProcessingTests.FloatPixel<TPixel>(4, -4, 1000);
+            image.DetectEdges(EdgeDetector.Sobel, grayscale: false, cancellationToken: Ct);
+            AssertFloatRow(image.Frames[0], new(16, 16, 4000, 1), new(0, 0, 0, 1), new(16, 16, 4000, 1));
+        }
+
+        // A sample that is not a number spreads to the pixels whose matrices read it with a weight: pixel 0 (the vertical
+        // matrix reads it above and below) and pixel 1, not pixel 2
+        using (var image = new Image<TPixel>(3, 1, ProcessingTests.FloatPixel<TPixel>(1, 1, 1)))
+        {
+            image.Frames[0][0, 0] = ProcessingTests.FloatPixel<TPixel>(float.NaN, 1, 1);
+            image.DetectEdges(EdgeDetector.Sobel, grayscale: false, cancellationToken: Ct);
+            var row = CopyRow(image.Frames[0], 0).Select(ProcessingTests.ToRgbaFloat).ToArray();
+            Assert.True(float.IsNaN(row[0].R));
+            Assert.True(float.IsNaN(row[1].R));
+            Assert.Equal(new RgbaFloat(0, 0, 0), row[2]);
+            Assert.Equal(0f, row[1].G);
+        }
     }
 
     private static void AssertFloatRow<TPixel>(ImageFrame<TPixel> frame, params RgbaFloat[] expected)

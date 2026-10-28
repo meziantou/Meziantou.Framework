@@ -1,4 +1,6 @@
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -93,7 +95,9 @@ internal sealed class ToneCurveMapper : IDisposable
         }
     }
 
-    private Span<ushort> Row => unsafe(MemoryMarshal.Cast<byte, ushort>(GetBuffer(_row).Span))[..(4 * _width)];
+    private Span<ushort> Row => ToneSamples.GetSamples(GetBuffer(_row), _width);
+
+    private Span<ushort> LumaRow => ToneSamples.GetLuma(GetBuffer(_row), _width);
 
     private Span<long> Histogram => unsafe(MemoryMarshal.Cast<byte, long>(GetBuffer(_histogram).Span))[..(_planes * _levels)];
 
@@ -401,7 +405,16 @@ internal sealed class ToneCurveMapper : IDisposable
     private void AddRegion(scoped in PixelLease lease, int left, int right, int top, int bottom, CancellationToken cancellationToken)
     {
         var histogram = Histogram;
-        var samples = Row[..(4 * (right - left))];
+        var width = right - left;
+        var samples = Row[..(4 * width)];
+        var luma = LumaRow[..width];
+
+        // 8-bit levels are counted in partial counters (one set per plane), added up at the end of the region or before
+        // they can overflow
+        var partialCounts = _levels == 256;
+        Span<uint> partial = partialCounts ? stackalloc uint[_planes * ToneSamples.PartialCountLength] : default;
+        partial.Clear();
+        var pending = 0L;
         for (var y = top; y < bottom; y++)
         {
             if ((y - top) % ProcessingKernels.RowsPerCancellationCheck == 0)
@@ -409,23 +422,83 @@ internal sealed class ToneCurveMapper : IDisposable
                 cancellationToken.ThrowIfCancellationRequested();
             }
 
-            ToneSamples.Read(_format, lease.GetRowBytes(y)[(left * _bytesPerPixel)..(right * _bytesPerPixel)], samples);
-            for (var i = 0; i < samples.Length; i += 4)
+            var pixels = lease.GetRowBytes(y)[(left * _bytesPerPixel)..(right * _bytesPerPixel)];
+            if (_planes == 1)
             {
-                if (_hasAlpha && samples[i + 3] == 0)
+                // The samples are only read for the formats whose luma is not computed from the stored bytes
+                ToneSamples.ReadLuma(_format, pixels, samples, luma);
+            }
+            else
+            {
+                ToneSamples.Read(_format, pixels, samples);
+            }
+
+            if (partialCounts)
+            {
+                // The fully transparent pixels are counted apart
+                if (_hasAlpha)
+                {
+                    if (_planes == 1 && (_format is PixelFormat.Rgba32 or PixelFormat.Bgra32))
+                    {
+                        ToneSamples.MarkTransparent32(pixels, luma);
+                    }
+                    else
+                    {
+                        ToneSamples.MarkTransparent(samples, _planes == 1 ? luma : default);
+                    }
+                }
+
+                if (_planes == 1)
+                {
+                    ToneSamples.CountBytes(luma, 1, partial[..ToneSamples.PartialCountLength]);
+                }
+                else
+                {
+                    ToneSamples.CountBytes(samples, 4, partial[..ToneSamples.PartialCountLength]);
+                    ToneSamples.CountBytes(samples[1..], 4, partial.Slice(ToneSamples.PartialCountLength, ToneSamples.PartialCountLength));
+                    ToneSamples.CountBytes(samples[2..], 4, partial.Slice(2 * ToneSamples.PartialCountLength, ToneSamples.PartialCountLength));
+                }
+
+                pending += width;
+                if (pending > uint.MaxValue - (long)width)
+                {
+                    FlushPartialCounts(partial, histogram);
+                    pending = 0;
+                }
+
+                continue;
+            }
+
+            for (var x = 0; x < width; x++)
+            {
+                if (_hasAlpha && samples[(4 * x) + 3] == 0)
                     continue;
 
                 if (_planes == 1)
                 {
-                    histogram[(int)PixelConverter.Luma(samples[i], samples[i + 1], samples[i + 2], _max)]++;
+                    histogram[luma[x]]++;
                 }
                 else
                 {
-                    histogram[samples[i]]++;
-                    histogram[_levels + samples[i + 1]]++;
-                    histogram[(2 * _levels) + samples[i + 2]]++;
+                    histogram[samples[4 * x]]++;
+                    histogram[_levels + samples[(4 * x) + 1]]++;
+                    histogram[(2 * _levels) + samples[(4 * x) + 2]]++;
                 }
             }
+        }
+
+        if (partialCounts)
+        {
+            FlushPartialCounts(partial, histogram);
+        }
+    }
+
+    /// <summary>Adds the partial counters of every plane to the histograms and clears them.</summary>
+    private void FlushPartialCounts(Span<uint> partial, Span<long> histogram)
+    {
+        for (var plane = 0; plane < _planes; plane++)
+        {
+            ToneSamples.FlushPartialCounts(partial.Slice(plane * ToneSamples.PartialCountLength, ToneSamples.PartialCountLength), histogram.Slice(plane * _levels, _levels));
         }
     }
 
@@ -437,6 +510,13 @@ internal sealed class ToneCurveMapper : IDisposable
             using var lease = frame.GetStorage().AcquireLease();
             var tables = Tables;
             var samples = Row;
+            var luma = LumaRow;
+            if (_planes == 1 && (_format is PixelFormat.Rgba32 or PixelFormat.Bgra32) && Vector128.IsHardwareAccelerated && !Resampler.TestForceScalar)
+            {
+                ApplyGlobalLuma32(lease, tables[.._levels], cancellationToken);
+                continue;
+            }
+
             for (var y = 0; y < _height; y++)
             {
                 if (y % ProcessingKernels.RowsPerCancellationCheck == 0)
@@ -446,18 +526,40 @@ internal sealed class ToneCurveMapper : IDisposable
 
                 var row = lease.GetRowBytes(y)[..(_width * _bytesPerPixel)];
                 ToneSamples.Read(_format, row, samples);
-                for (var i = 0; i < samples.Length; i += 4)
+                if (_planes == 1)
                 {
-                    if (_planes == 1)
+                    ToneSamples.ComputeLuma(samples, luma);
+                    var table = tables[.._levels];
+                    if (_levels == 256)
                     {
-                        var luma = (int)PixelConverter.Luma(samples[i], samples[i + 1], samples[i + 2], _max);
-                        Shift(samples.Slice(i, 3), tables[luma] - luma);
+                        // The changes of 8-bit lumas fit in 16 bits
+                        for (var x = 0; x < luma.Length; x++)
+                        {
+                            int level = luma[x];
+                            luma[x] = (ushort)(table[level] - level);
+                        }
+
+                        ShiftBytes(samples, unsafe(MemoryMarshal.Cast<ushort, short>(luma)));
                     }
                     else
                     {
-                        samples[i] = tables[samples[i]];
-                        samples[i + 1] = tables[_levels + samples[i + 1]];
-                        samples[i + 2] = tables[(2 * _levels) + samples[i + 2]];
+                        for (var x = 0; x < luma.Length; x++)
+                        {
+                            int level = luma[x];
+                            Shift(samples.Slice(4 * x, 3), table[level] - level);
+                        }
+                    }
+                }
+                else
+                {
+                    var red = tables[.._levels];
+                    var green = tables.Slice(_levels, _levels);
+                    var blue = tables.Slice(2 * _levels, _levels);
+                    for (var i = 0; i < samples.Length; i += 4)
+                    {
+                        samples[i] = red[samples[i]];
+                        samples[i + 1] = green[samples[i + 1]];
+                        samples[i + 2] = blue[samples[i + 2]];
                     }
                 }
 
@@ -466,11 +568,55 @@ internal sealed class ToneCurveMapper : IDisposable
         }
     }
 
+    /// <summary>
+    /// Remaps every <see cref="PixelFormat.Rgba32"/> or <see cref="PixelFormat.Bgra32"/> pixel of a leased frame with the
+    /// table of the luma, in place: the change of luma of each level is stored as a saturated increase and decrease of the
+    /// three colors (<see cref="ToneSamples.ShiftColors32"/>).
+    /// </summary>
+    private void ApplyGlobalLuma32(scoped in PixelLease lease, ReadOnlySpan<ushort> table, CancellationToken cancellationToken)
+    {
+        Span<uint> changes = stackalloc uint[2 * 256];
+        var increasesOfLevel = changes[..256];
+        var decreasesOfLevel = changes[256..];
+        for (var level = 0; level < 256; level++)
+        {
+            var change = table[level] - level;
+            increasesOfLevel[level] = (uint)Math.Max(change, 0) * 0x010101u;
+            decreasesOfLevel[level] = (uint)Math.Max(-change, 0) * 0x010101u;
+        }
+
+        // The samples of the row hold the increases and the decreases of its pixels
+        var samples = Row;
+        var luma = LumaRow;
+        var shifts = unsafe(MemoryMarshal.Cast<ushort, uint>(samples));
+        var increases = shifts[.._width];
+        var decreases = shifts.Slice(_width, _width);
+        for (var y = 0; y < _height; y++)
+        {
+            if (y % ProcessingKernels.RowsPerCancellationCheck == 0)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+            }
+
+            var row = lease.GetRowBytes(y)[..(4 * _width)];
+            ToneSamples.ReadLuma(_format, row, samples, luma);
+            for (var x = 0; x < luma.Length; x++)
+            {
+                var level = (byte)luma[x];
+                increases[x] = increasesOfLevel[level];
+                decreases[x] = decreasesOfLevel[level];
+            }
+
+            ToneSamples.ShiftColors32(row, increases, decreases);
+        }
+    }
+
     /// <summary>Remaps every pixel of a leased frame with the bilinear interpolation of the tables of the four nearest tiles.</summary>
     private void ApplyAdaptive(scoped in PixelLease lease, CancellationToken cancellationToken)
     {
         var tables = Tables;
         var samples = Row;
+        var lumaRow = LumaRow;
         var columnTiles = ColumnTiles;
         var columnWeights = ColumnWeights;
         for (var y = 0; y < _height; y++)
@@ -484,6 +630,11 @@ internal sealed class ToneCurveMapper : IDisposable
             var bottom = Math.Min(top + 1, _tilesY - 1);
             var row = lease.GetRowBytes(y)[..(_width * _bytesPerPixel)];
             ToneSamples.Read(_format, row, samples);
+            if (_planes == 1)
+            {
+                ToneSamples.ComputeLuma(samples, lumaRow);
+            }
+
             for (var x = 0; x < _width; x++)
             {
                 var left = columnTiles[x];
@@ -492,7 +643,7 @@ internal sealed class ToneCurveMapper : IDisposable
                 var i = 4 * x;
                 if (_planes == 1)
                 {
-                    var luma = (int)PixelConverter.Luma(samples[i], samples[i + 1], samples[i + 2], _max);
+                    int luma = lumaRow[x];
                     Shift(samples.Slice(i, 3), Interpolate(tables, left, right, top, bottom, 0, luma, weightX, weightY) - luma);
                 }
                 else
@@ -517,12 +668,57 @@ internal sealed class ToneCurveMapper : IDisposable
         return (int)Math.Min(value + 0.5, _max);
     }
 
+    /// <summary>
+    /// Adds a change of luma to the three colors of every pixel of 8-bit samples, clamped to the sample range; the alpha is
+    /// left as it is.
+    /// </summary>
+    /// <param name="samples">The samples, four per pixel, at most 255.</param>
+    /// <param name="changes">The change of each pixel, from -255 to 255.</param>
+    internal static void ShiftBytes(Span<ushort> samples, ReadOnlySpan<short> changes)
+    {
+        var count = samples.Length / 4;
+        var x = 0;
+        if (Vector128.IsHardwareAccelerated && BitConverter.IsLittleEndian && !Resampler.TestForceScalar)
+        {
+            ref var start = ref unsafe(Unsafe.As<ushort, short>(ref MemoryMarshal.GetReference(samples)));
+            ref var deltas = ref unsafe(MemoryMarshal.GetReference(changes[..count]));
+            var max = Vector128.Create((short)255);
+
+            // Constant indices in range keep the shuffle a single instruction; the alpha lanes get no change
+            var first = Vector128.Create((short)0, 0, 0, 0, 1, 1, 1, 1);
+            var second = Vector128.Create((short)2, 2, 2, 2, 3, 3, 3, 3);
+            var colors = Vector128.Create(-1, -1, -1, 0, -1, -1, -1, 0);
+            for (; x + 4 <= count; x += 4)
+            {
+                var change = unsafe(Vector128.CreateScalarUnsafe(unsafe(Unsafe.ReadUnaligned<ulong>(ref Unsafe.As<short, byte>(ref Unsafe.Add(ref deltas, x)))))).AsInt16();
+                var low = unsafe(Vector128.LoadUnsafe(ref start, (nuint)(4 * x))) + (Vector128.Shuffle(change, first) & colors);
+                var high = unsafe(Vector128.LoadUnsafe(ref start, (nuint)((4 * x) + 8))) + (Vector128.Shuffle(change, second) & colors);
+                unsafe { Vector128.Min(Vector128.Max(low, Vector128<short>.Zero), max).StoreUnsafe(ref start, (nuint)(4 * x)); }
+                unsafe { Vector128.Min(Vector128.Max(high, Vector128<short>.Zero), max).StoreUnsafe(ref start, (nuint)((4 * x) + 8)); }
+            }
+        }
+
+        ShiftBytesScalar(samples[(4 * x)..], changes[x..count]);
+    }
+
+    /// <summary>The scalar reference of <see cref="ShiftBytes"/>.</summary>
+    internal static void ShiftBytesScalar(Span<ushort> samples, ReadOnlySpan<short> changes)
+    {
+        for (var x = 0; x < changes.Length; x++)
+        {
+            for (var c = 0; c < 3; c++)
+            {
+                samples[(4 * x) + c] = (ushort)Math.Clamp(samples[(4 * x) + c] + changes[x], 0, byte.MaxValue);
+            }
+        }
+    }
+
     /// <summary>Adds a change of luma to the three colors of a pixel, clamped to the sample range.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void Shift(Span<ushort> colors, int delta)
     {
-        for (var c = 0; c < colors.Length; c++)
-        {
-            colors[c] = (ushort)Math.Clamp(colors[c] + delta, 0, _max);
-        }
+        colors[0] = (ushort)Math.Clamp(colors[0] + delta, 0, _max);
+        colors[1] = (ushort)Math.Clamp(colors[1] + delta, 0, _max);
+        colors[2] = (ushort)Math.Clamp(colors[2] + delta, 0, _max);
     }
 }

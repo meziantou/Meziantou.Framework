@@ -1,6 +1,7 @@
 using System.Buffers.Binary;
 using System.Globalization;
 using System.Numerics;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Metadata;
@@ -18,6 +19,12 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// they are encoded. The <c>moov</c> box, which holds the size and the duration of every image, and the size of the media
 /// data are written at completion (<see cref="ImageOutputBuffer.AddPatch"/>; the destination is seekable). The session
 /// keeps 24 bytes per image for them, rented before any output.
+/// </para>
+/// <para>
+/// The tiles of a grid are coded one after the other by the same encoders, or, with several workers
+/// (<see cref="ImageConfiguration.MaxDegreeOfParallelism"/>, at least <see cref="RowBands.MinPixelsForParallelism"/>
+/// samples), up to that many at once, each worker with encoders and rows of its own, rented before any output. The coded
+/// tiles are appended in the order of the tiles: the file and the errors are those of one worker.
 /// </para>
 /// </summary>
 internal sealed class HeifEncoderSession : ImageEncoderSession
@@ -56,6 +63,7 @@ internal sealed class HeifEncoderSession : ImageEncoderSession
     private readonly int _frameCount;
     private readonly int _movieReservation;
     private readonly List<ReadOnlyMemory<byte>> _pieces = [];
+    private readonly ExceptionDispatchInfo?[]? _tileErrors;
     private Av1PooledArray<int>? _sizes;
     private Av1PooledArray<long>? _durations;
     private Av1PooledArray<byte>? _keyFrames;
@@ -71,6 +79,7 @@ internal sealed class HeifEncoderSession : ImageEncoderSession
     private PooledPayloadWriter? _colorTiles;
     private PooledPayloadWriter? _alphaTiles;
     private Av1PooledArray<int>? _tileLengths;
+    private TileEncoder[]? _tileEncoders;
     private int _tileIndex;
     private PooledBuffer? _rows;
     private PooledPayloadWriter? _prefix;
@@ -161,6 +170,7 @@ internal sealed class HeifEncoderSession : ImageEncoderSession
         try
         {
             var scope = options.Scope;
+            HeifPictureSettings? alphaSettings = null;
             var colorSettings = new HeifPictureSettings(codedWidth, codedHeight, bitDepth, monochrome, subsamplingX, subsamplingY, primaries, transfer, matrix, fullRange, StillPicture: !_isSequence, lossless, settings.Quality, settings.Effort, settings.KeyFrameInterval);
             _color = binding.CreatePictureEncoder(scope, colorSettings);
 
@@ -172,8 +182,8 @@ internal sealed class HeifEncoderSession : ImageEncoderSession
             {
                 // The alpha plane: a monochrome image in full range, always lossless. Its key frames are the ones of
                 // the color planes
-                var alphaSettings = new HeifPictureSettings(_codedSize.Width, _codedSize.Height, bitDepth, Monochrome: true, SubsamplingX: 1, SubsamplingY: 1, Av1Constants.CpUnspecified, Av1Constants.TcUnspecified, Av1Constants.McUnspecified, FullRange: true, StillPicture: !_isSequence, Lossless: true, Quality: 100, settings.Effort, settings.KeyFrameInterval);
-                _alpha = binding.CreatePictureEncoder(scope, alphaSettings);
+                alphaSettings = new HeifPictureSettings(_codedSize.Width, _codedSize.Height, bitDepth, Monochrome: true, SubsamplingX: 1, SubsamplingY: 1, Av1Constants.CpUnspecified, Av1Constants.TcUnspecified, Av1Constants.McUnspecified, FullRange: true, StillPicture: !_isSequence, Lossless: true, Quality: 100, settings.Effort, settings.KeyFrameInterval);
+                _alpha = binding.CreatePictureEncoder(scope, alphaSettings.Value);
             }
 
             // Two rows of pixels in the layout of the converter: a chroma sample covers two rows when it is subsampled.
@@ -190,6 +200,18 @@ internal sealed class HeifEncoderSession : ImageEncoderSession
                 _colorTiles = new PooledPayloadWriter(scope);
                 _alphaTiles = _alpha is null ? null : new PooledPayloadWriter(scope);
                 _tileLengths = Av1PooledArray<int>.Rent(scope, 2L * _gridColumns * _gridRows, clear: true, AllocationKind.Temporary);
+
+                // The encoders and the rows of the workers that code the tiles of a batch with the ones of the session
+                var workers = HeifGridTiles.GetWorkerCount(options.Configuration.MaxDegreeOfParallelism, new Size(_tileWidth, _tileHeight), _gridColumns * _gridRows);
+                if (workers > 1)
+                {
+                    _tileEncoders = new TileEncoder[workers - 1];
+                    _tileErrors = new ExceptionDispatchInfo?[workers];
+                    for (var k = 0; k < _tileEncoders.Length; k++)
+                    {
+                        _tileEncoders[k] = TileEncoder.Create(binding, scope, colorSettings, alphaSettings, (int)rowBytes);
+                    }
+                }
             }
 
             if (_isSequence)
@@ -297,7 +319,9 @@ internal sealed class HeifEncoderSession : ImageEncoderSession
                 AnalyzeRows();
                 return false;
             case Step.Convert:
-                if (IsGrid)
+                if (_tileEncoders is not null)
+                    EncodeTiles();
+                else if (IsGrid)
                     ConvertTileRows();
                 else
                     ConvertRows();
@@ -355,6 +379,16 @@ internal sealed class HeifEncoderSession : ImageEncoderSession
             _alphaTiles = null;
             _tileLengths?.Dispose();
             _tileLengths = null;
+            if (_tileEncoders is not null)
+            {
+                foreach (var encoder in _tileEncoders)
+                {
+                    encoder?.Dispose();
+                }
+
+                _tileEncoders = null;
+            }
+
             _movie?.Dispose();
             _movie = null;
             _sizes?.Dispose();
@@ -417,7 +451,7 @@ internal sealed class HeifEncoderSession : ImageEncoderSession
             return default;
 
         if ((subsamplingX is not 0 && ((tile.Width | width) & 1) is not 0) || (subsamplingY is not 0 && ((tile.Height | height) & 1) is not 0))
-            throw _binding.Unsupported($"A grid of an {_binding.Name} image with subsampled chroma needs an even width of the tiles ({tile.Width}) and of the image ({width}){(subsamplingY is not 0 ? $", and an even height ({tile.Height} and {height})" : "")}. Change the size of the tiles, select AvifChromaSubsampling.Ratio444, or remove {_settings.EncoderName}.GridTileSize.", $"{_binding.Name} grid between chroma samples");
+            throw _binding.Unsupported($"A grid of an {_binding.Name} image with subsampled chroma needs an even width of the tiles ({tile.Width}) and of the image ({width}){(subsamplingY is not 0 ? $", and an even height ({tile.Height} and {height})" : "")}. Change the size of the tiles, set {_settings.EncoderName}.ChromaSubsampling to Ratio444, or remove {_settings.EncoderName}.GridTileSize.", $"{_binding.Name} grid between chroma samples");
 
         var columns = ((width - 1) / tile.Width) + 1;
         var rows = ((height - 1) / tile.Height) + 1;
@@ -473,56 +507,142 @@ internal sealed class HeifEncoderSession : ImageEncoderSession
         _step = Step.Convert;
     }
 
-    // Converts a band of rows of the current tile to the planes of the encoders. The tiles of the right column and of
-    // the bottom row may extend past the image: its last column and its last row are repeated there, which is what
-    // costs the least to code and what the grid then crops
+    // Converts a band of rows of the current tile to the planes of the encoders
     private void ConvertTileRows()
     {
         var frame = _frame ?? throw new InvalidOperationException("No frame was begun.");
         CancellationToken.ThrowIfCancellationRequested();
         var color = _color!;
-        var luma = color.GetSourcePlane(0);
-        var monochrome = color.Description.PlaneCount is 1;
-        var u = monochrome ? null : color.GetSourcePlane(1);
-        var v = monochrome ? null : color.GetSourcePlane(2);
-        var alpha = _isTransparent ? _alpha?.GetSourcePlane(0) : null;
-        var bytesPerPixel = PixelFormats.GetBytesPerPixel(_layout);
-        var rowLength = _width * bytesPerPixel;
-        var tileLength = _tileWidth * bytesPerPixel;
-        var buffer = _rows!.RawBuffer.AsSpan();
-        var scratch = buffer[..(2 * rowLength)];
-        var tileScratch = buffer.Slice(2 * rowLength, 2 * tileLength);
-        var left = _tileIndex % _gridColumns * _tileWidth;
-        var top = _tileIndex / _gridColumns * _tileHeight;
-        var step = _converter.RowsPerCall;
-        var subY = step - 1;
         var end = Math.Min(_tileHeight, _row + RowsPerCall);
         using (var lease = frame.GetStorage().AcquireLease())
         {
-            for (; _row < end; _row += step)
-            {
-                // The height of a tile is even when the chroma planes have half the rows
-                var hasSecondRow = step is 2;
-                var row0 = GetTileRow(lease.GetRowBytes(Math.Min(top + _row, _height - 1)), left, scratch[..rowLength], tileScratch[..tileLength]);
-                var row1 = hasSecondRow ? GetTileRow(lease.GetRowBytes(Math.Min(top + _row + 1, _height - 1)), left, scratch[rowLength..], tileScratch[tileLength..]) : row0;
-                _converter.ConvertRows(
-                    row0,
-                    row1,
-                    luma.GetRow(_row),
-                    hasSecondRow ? luma.GetRow(_row + 1) : default,
-                    u is null ? default : u.GetRow(_row >> subY),
-                    v is null ? default : v.GetRow(_row >> subY),
-                    alpha is null ? default : alpha.GetRow(_row),
-                    alpha is null || !hasSecondRow ? default : alpha.GetRow(_row + 1),
-                    hasSecondRow);
-            }
+            ConvertTileRows(lease.Storage, _tileIndex, _row, end, color, _isTransparent ? _alpha : null, _rows!.RawBuffer);
         }
 
+        _row = end;
         if (_row < _tileHeight)
             return;
 
         color.BeginFrame();
         _step = Step.EncodeColor;
+    }
+
+    // Converts the next tiles of the grid and codes them at once, one tile per worker, then appends them in the order of the
+    // tiles. The errors are those of a sequential coding: a cancellation first, then the error of the first tile that fails
+    private void EncodeTiles()
+    {
+        var frame = _frame ?? throw new InvalidOperationException("No frame was begun.");
+        var cancellationToken = CancellationToken;
+        cancellationToken.ThrowIfCancellationRequested();
+        var errors = _tileErrors!;
+        var tileCount = _gridColumns * _gridRows;
+        var first = _tileIndex;
+        var count = Math.Min(errors.Length, tileCount - first);
+        var transparent = _isTransparent;
+        try
+        {
+            using (var lease = frame.GetStorage().AcquireLease())
+            {
+                // The lease is held for the whole batch: the workers read the rows of the leased storage
+                var storage = lease.Storage;
+                RowBands.RunParallel(count, k =>
+                {
+                    var (color, alpha, rows) = GetTileEncoder(k);
+                    try
+                    {
+                        ConvertTileRows(storage, first + k, 0, _tileHeight, color, transparent ? alpha : null, rows);
+                        EncodePicture(color, cancellationToken);
+                        if (transparent)
+                            EncodePicture(alpha!, cancellationToken);
+                    }
+                    catch (Exception ex)
+                    {
+                        errors[k] = ExceptionDispatchInfo.Capture(ex);
+                    }
+                });
+            }
+
+            for (var k = 0; k < count; k++)
+            {
+                if (errors[k]?.SourceException is OperationCanceledException)
+                    errors[k]!.Throw();
+            }
+
+            for (var k = 0; k < count; k++)
+            {
+                errors[k]?.Throw();
+                var (color, alpha, _) = GetTileEncoder(k);
+                AppendTile(color, alpha);
+            }
+        }
+        finally
+        {
+            Array.Clear(errors);
+        }
+
+        if (_tileIndex < tileCount)
+            return;
+
+        _frame = null;
+        AssembleGrid();
+    }
+
+    // The encoders and the rows of a worker: the ones of the session for the first one
+    private (HeifPictureEncoder Color, HeifPictureEncoder? Alpha, byte[] Rows) GetTileEncoder(int worker)
+    {
+        if (worker is 0)
+            return (_color!, _alpha, _rows!.RawBuffer);
+
+        var encoder = _tileEncoders![worker - 1];
+        return (encoder.Color, encoder.Alpha, encoder.Rows.RawBuffer);
+    }
+
+    private static void EncodePicture(HeifPictureEncoder encoder, CancellationToken cancellationToken)
+    {
+        encoder.BeginFrame();
+        while (!encoder.Encode(cancellationToken))
+        {
+        }
+    }
+
+    // Converts the rows [start, end) of a tile to the planes of the encoders. The tiles of the right column and of the
+    // bottom row may extend past the image: its last column and its last row are repeated there, which is what costs the
+    // least to code and what the grid then crops. It uses no state of the session but its settings: the tiles of a grid are
+    // converted on several threads, each with encoders and rows of its own.
+    private void ConvertTileRows(PixelStorage storage, int tileIndex, int start, int end, HeifPictureEncoder color, HeifPictureEncoder? alphaEncoder, byte[] rows)
+    {
+        var luma = color.GetSourcePlane(0);
+        var monochrome = color.Description.PlaneCount is 1;
+        var u = monochrome ? null : color.GetSourcePlane(1);
+        var v = monochrome ? null : color.GetSourcePlane(2);
+        var alpha = alphaEncoder?.GetSourcePlane(0);
+        var bytesPerPixel = PixelFormats.GetBytesPerPixel(_layout);
+        var rowLength = _width * bytesPerPixel;
+        var tileLength = _tileWidth * bytesPerPixel;
+        var buffer = rows.AsSpan();
+        var scratch = buffer[..(2 * rowLength)];
+        var tileScratch = buffer.Slice(2 * rowLength, 2 * tileLength);
+        var left = tileIndex % _gridColumns * _tileWidth;
+        var top = tileIndex / _gridColumns * _tileHeight;
+        var step = _converter.RowsPerCall;
+        var subY = step - 1;
+        for (var row = start; row < end; row += step)
+        {
+            // The height of a tile is even when the chroma planes have half the rows
+            var hasSecondRow = step is 2;
+            var row0 = GetTileRow(storage.GetRowSpanCore(Math.Min(top + row, _height - 1)), left, scratch[..rowLength], tileScratch[..tileLength]);
+            var row1 = hasSecondRow ? GetTileRow(storage.GetRowSpanCore(Math.Min(top + row + 1, _height - 1)), left, scratch[rowLength..], tileScratch[tileLength..]) : row0;
+            _converter.ConvertRows(
+                row0,
+                row1,
+                luma.GetRow(row),
+                hasSecondRow ? luma.GetRow(row + 1) : default,
+                u is null ? default : u.GetRow(row >> subY),
+                v is null ? default : v.GetRow(row >> subY),
+                alpha is null ? default : alpha.GetRow(row),
+                alpha is null || !hasSecondRow ? default : alpha.GetRow(row + 1),
+                hasSecondRow);
+        }
     }
 
     // The pixels of a row of the frame that a tile covers, in the layout of the converter
@@ -553,22 +673,8 @@ internal sealed class HeifEncoderSession : ImageEncoderSession
             return;
         }
 
-        var count = _gridColumns * _gridRows;
-        var lengths = _tileLengths!.Span;
-        var colorPayload = _color!.Payload.Span;
-        _colorTiles!.Write(colorPayload);
-        lengths[_tileIndex] = colorPayload.Length;
-        _color.Reset();
-        if (_isTransparent)
-        {
-            var alphaPayload = _alpha!.Payload.Span;
-            _alphaTiles!.Write(alphaPayload);
-            lengths[count + _tileIndex] = alphaPayload.Length;
-            _alpha.Reset();
-        }
-
-        _tileIndex++;
-        if (_tileIndex < count)
+        AppendTile(_color!, _alpha);
+        if (_tileIndex < _gridColumns * _gridRows)
         {
             _row = 0;
             _step = Step.Convert;
@@ -577,6 +683,26 @@ internal sealed class HeifEncoderSession : ImageEncoderSession
 
         _frame = null;
         AssembleGrid();
+    }
+
+    // Keeps the next coded tile until every tile is coded, and makes its encoders ready for another tile
+    private void AppendTile(HeifPictureEncoder color, HeifPictureEncoder? alpha)
+    {
+        var count = _gridColumns * _gridRows;
+        var lengths = _tileLengths!.Span;
+        var colorPayload = color.Payload.Span;
+        _colorTiles!.Write(colorPayload);
+        lengths[_tileIndex] = colorPayload.Length;
+        color.Reset();
+        if (_isTransparent)
+        {
+            var alphaPayload = alpha!.Payload.Span;
+            _alphaTiles!.Write(alphaPayload);
+            lengths[count + _tileIndex] = alphaPayload.Length;
+            alpha.Reset();
+        }
+
+        _tileIndex++;
     }
 
     // Writes the boxes that describe the grids and their tiles, now that the size of every tile is known
@@ -883,5 +1009,48 @@ internal sealed class HeifEncoderSession : ImageEncoderSession
         _pieces.Clear();
         _step = Step.None;
         return true;
+    }
+
+    // The encoders and the rows of a worker that codes tiles of a grid with the ones of the session
+    private sealed class TileEncoder : IDisposable
+    {
+        private TileEncoder(HeifPictureEncoder color, HeifPictureEncoder? alpha, PooledBuffer rows)
+        {
+            Color = color;
+            Alpha = alpha;
+            Rows = rows;
+        }
+
+        public HeifPictureEncoder Color { get; }
+
+        public HeifPictureEncoder? Alpha { get; }
+
+        public PooledBuffer Rows { get; }
+
+        public static TileEncoder Create(HeifCodecBinding binding, AllocationScope scope, in HeifPictureSettings colorSettings, in HeifPictureSettings? alphaSettings, int rowBytes)
+        {
+            HeifPictureEncoder? color = null;
+            HeifPictureEncoder? alpha = null;
+            try
+            {
+                color = binding.CreatePictureEncoder(scope, colorSettings);
+                alpha = alphaSettings is { } settings ? binding.CreatePictureEncoder(scope, settings) : null;
+                var rows = scope.Rent(rowBytes, AllocationKind.Temporary, clear: false);
+                return new TileEncoder(color, alpha, rows);
+            }
+            catch
+            {
+                alpha?.Dispose();
+                color?.Dispose();
+                throw;
+            }
+        }
+
+        public void Dispose()
+        {
+            Color.Dispose();
+            Alpha?.Dispose();
+            Rows.Dispose();
+        }
     }
 }

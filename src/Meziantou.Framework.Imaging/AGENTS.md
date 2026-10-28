@@ -1048,16 +1048,21 @@ thin public types over its `FontFace`.
 - Default parallelism is one worker (`ImageConfiguration.MaxDegreeOfParallelism`). Only `Resize`, the transformations,
   `Convolve`, the blurs (`GaussianBlur`, `BoxBlur`, `MedianBlur`), `Sharpen` and `DetectEdges` are parallel, and their result must not
   depend on the worker count (`ParallelConvolutionTests`: a frame needs 65,536 pixels to get several workers). The HEIC
-  decoder decodes the tiles of a grid of at least 65,536 samples concurrently (`HeicDecoder.DecodeTiles`): the structure
-  parser and the `InputResourceTracker` are not thread-safe and stay on the calling thread (each worker charges its hidden
-  pixels to a tracker of its own, merged in tile order), and the pixels and the errors are those of one worker (the error
-  of the first tile that fails, a cancellation first; `HeicDecodingTests`). The JPEG XL encoder and decoder code the groups
-  of a frame of at least 65,536 pixels concurrently (`JpegXlGroupWorkers`): a worker is a copy of `JpegXlVarDctEncoder` or
-  `JpegXlVarDctDecoder` that shares the arrays of the frame, writes them only in the rectangle of its group, and owns its
-  working memory; what is computed on first use (matrices, orders, ranks) is computed before the workers start; a group
-  section is written in a writer of its own and appended in order (sections start at a byte boundary); the counts of the
-  entropy code are added up from one code per worker. The bytes, the pixels and the error (the one of the first failing
-  group) never depend on the worker count (`FilesWrittenByWorkersAreTheFilesOfOneWorker`,
+  and AVIF decoders decode the tiles of a grid of at least 65,536 samples concurrently (`HeifGridTiles.Decode`): the
+  structure parser and the `InputResourceTracker` are not thread-safe and stay on the calling thread (each worker charges
+  its hidden pixels to a tracker of its own, merged in tile order), and the pixels and the errors are those of one worker
+  (the error of the first tile that fails, a cancellation first; `HeicDecodingTests`, `AvifDecoderTests`). The HEIC
+  and AVIF encoders code the tiles of such a grid (`HeicEncoder.GridTileSize`, `AvifEncoder.GridTileSize`) the same way
+  (`HeifEncoderSession.EncodeTiles`): each worker has encoders of its own, created with the session and charged to its
+  scope, and the coded tiles are appended in tile order, so the file is byte-identical to one worker's
+  (`HeicEncoderTests`, `AvifEncoderTests`). A worker codes its next tile with the same encoders after a `Reset`, which
+  must code it as a new encoder would (`HevcEncoder.Reset`, `Av1Encoder.Reset`). The JPEG XL encoder and decoder code
+  the groups of a frame of at least 65,536 pixels concurrently (`JpegXlGroupWorkers`): a worker is a copy of
+  `JpegXlVarDctEncoder` or `JpegXlVarDctDecoder` that shares the arrays of the frame, writes them only in the rectangle of
+  its group, and owns its working memory; what is computed on first use (matrices, orders, ranks) is computed before the
+  workers start; a group section is written in a writer of its own and appended in order (sections start at a byte
+  boundary); the counts of the entropy code are added up from one code per worker. The bytes, the pixels and the error
+  (the one of the first failing group) never depend on the worker count (`FilesWrittenByWorkersAreTheFilesOfOneWorker`,
   `FramesDecodedByWorkersHaveThePixelsOfOneWorker`). The restoration filters of the decoder run by row bands
   (`JpegXlRestorationFilters`), each with its own pipeline: they filter in place, so the rows a band reads around it (the
   sum of the reaches of the filters, 7 rows at most) are copied before any band starts, and each filter of a band also

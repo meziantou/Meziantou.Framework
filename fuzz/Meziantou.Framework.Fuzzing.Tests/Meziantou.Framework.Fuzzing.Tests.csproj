@@ -10,15 +10,18 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Meziantou.Framework.FullPath\Meziantou.Framework.FullPath.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.Fuzzing\Meziantou.Framework.Fuzzing.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.AtlassianDataFormat.Fuzz\Meziantou.Framework.AtlassianDataFormat.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.Barcodes.Fuzz\Meziantou.Framework.Barcodes.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.Bencode.Fuzz\Meziantou.Framework.Bencode.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.CodeOwners.Fuzz\Meziantou.Framework.CodeOwners.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.Csv.Fuzz\Meziantou.Framework.Csv.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.DependencyScanning.Fuzz\Meziantou.Framework.DependencyScanning.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.Dns.Fuzz\Meziantou.Framework.Dns.Fuzz.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.Fonts.Fuzz\Meziantou.Framework.Fonts.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.Globbing.Fuzz\Meziantou.Framework.Globbing.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.HtmlSanitizer.Fuzz\Meziantou.Framework.HtmlSanitizer.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.Http.Caching.Fuzz\Meziantou.Framework.Http.Caching.Fuzz.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.Http.Fuzz\Meziantou.Framework.Http.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.Http.Htpasswd.Fuzz\Meziantou.Framework.Http.Htpasswd.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.JavaScriptEngine.Fuzz\Meziantou.Framework.JavaScriptEngine.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.JsonPath.Fuzz\Meziantou.Framework.JsonPath.Fuzz.csproj" />

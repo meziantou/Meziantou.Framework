@@ -16,15 +16,18 @@ on:
         default: all
         options:
           - all
+          - atlassian-data-format
           - barcodes
           - bencode
           - codeowners
           - csv
           - dependency-scanning
           - dns
+          - fonts
           - globbing
           - html-sanitizer
           - http-caching
+          - http
           - htpasswd
           - javascript-engine
           - jsonpath
@@ -83,15 +86,18 @@ env:
   # with the fewest, and gets an option of the component input (Meziantou.Framework.Fuzzing.Tests checks both).
   FUZZ_PROJECTS: |
     [
+      { "project": "Meziantou.Framework.AtlassianDataFormat.Fuzz", "component": "atlassian-data-format", "day": 4 },
       { "project": "Meziantou.Framework.Barcodes.Fuzz",            "component": "barcodes",              "day": 5 },
       { "project": "Meziantou.Framework.Bencode.Fuzz",             "component": "bencode",               "day": 2 },
       { "project": "Meziantou.Framework.CodeOwners.Fuzz",          "component": "codeowners",            "day": 1 },
       { "project": "Meziantou.Framework.Csv.Fuzz",                 "component": "csv",                   "day": 3 },
       { "project": "Meziantou.Framework.DependencyScanning.Fuzz",  "component": "dependency-scanning",   "day": 0 },
       { "project": "Meziantou.Framework.Dns.Fuzz",                 "component": "dns",                   "day": 0 },
+      { "project": "Meziantou.Framework.Fonts.Fuzz",               "component": "fonts",                 "day": 2 },
       { "project": "Meziantou.Framework.Globbing.Fuzz",            "component": "globbing",              "day": 0 },
       { "project": "Meziantou.Framework.HtmlSanitizer.Fuzz",       "component": "html-sanitizer",        "day": 1 },
       { "project": "Meziantou.Framework.Http.Caching.Fuzz",        "component": "http-caching",          "day": 2 },
+      { "project": "Meziantou.Framework.Http.Fuzz",                "component": "http",                  "day": 3 },
       { "project": "Meziantou.Framework.Http.Htpasswd.Fuzz",       "component": "htpasswd",              "day": 1 },
       { "project": "Meziantou.Framework.JavaScriptEngine.Fuzz",     "component": "javascript-engine",     "day": 6 },
       { "project": "Meziantou.Framework.JsonPath.Fuzz",            "component": "jsonpath",              "day": 1 },

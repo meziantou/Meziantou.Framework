@@ -7,15 +7,18 @@ internal static class FuzzProjects
 {
     public static IReadOnlyList<(string Project, IReadOnlyList<FuzzTarget> Targets)> All { get; } =
     [
+        ("Meziantou.Framework.AtlassianDataFormat.Fuzz", AtlassianDataFormat.Fuzz.AtlassianDataFormatFuzzTargets.All),
         ("Meziantou.Framework.Barcodes.Fuzz", Barcodes.Fuzz.BarcodesFuzzTargets.All),
         ("Meziantou.Framework.Bencode.Fuzz", Bencode.Fuzz.BencodeFuzzTargets.All),
         ("Meziantou.Framework.CodeOwners.Fuzz", CodeOwners.Fuzz.CodeOwnersFuzzTargets.All),
         ("Meziantou.Framework.Csv.Fuzz", Csv.Fuzz.CsvFuzzTargets.All),
         ("Meziantou.Framework.DependencyScanning.Fuzz", DependencyScanning.Fuzz.DependencyScanningFuzzTargets.All),
         ("Meziantou.Framework.Dns.Fuzz", DnsFuzz.DnsFuzzTargets.All),
+        ("Meziantou.Framework.Fonts.Fuzz", Fonts.Fuzz.FontsFuzzTargets.All),
         ("Meziantou.Framework.Globbing.Fuzz", Globbing.Fuzz.GlobbingFuzzTargets.All),
         ("Meziantou.Framework.HtmlSanitizer.Fuzz", Sanitizers.Fuzz.HtmlSanitizerFuzzTargets.All),
         ("Meziantou.Framework.Http.Caching.Fuzz", Http.Caching.Fuzz.HttpCachingFuzzTargets.All),
+        ("Meziantou.Framework.Http.Fuzz", Http.Fuzz.HttpFuzzTargets.All),
         ("Meziantou.Framework.Http.Htpasswd.Fuzz", Http.Htpasswd.Fuzz.HtpasswdFuzzTargets.All),
         ("Meziantou.Framework.JavaScriptEngine.Fuzz", JavaScriptEngine.Fuzz.JavaScriptEngineFuzzTargets.All),
         ("Meziantou.Framework.JsonPath.Fuzz", JsonPath.Fuzz.JsonPathFuzzTargets.All),

@@ -1,4 +1,6 @@
+using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Metadata;
+using Meziantou.Framework.Imaging.TestHarness.Adapters;
 using Meziantou.Framework.Imaging.TestHarness.Heif;
 using Meziantou.Framework.Imaging.TestHarness.Fixtures;
 
@@ -640,6 +642,68 @@ public sealed class AvifDecoderTests
             var tile = builder.GetItem(3);
             tile.Associations[1] = (builder.AddProperty(HeifFileBuilder.Av1Configuration(1, 0, 10, monochrome: false, 0, 0)), true);
         }).Build()));
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(16)]
+    [InlineData(64)]
+    public void TheTilesOfAGridAreDecodedByWorkersAsByOne(int workers)
+    {
+        // Batches of 3 tiles span two rows of 5 tiles; 64 workers are more than the 20 tiles. The alpha plane is a grid too
+        var data = CreateLargeGrid(transparent: true);
+        using var expected = Image.Load(data);
+        using var image = Image.Load(data, WithWorkers(workers));
+        Assert.Equal((320, 256), (image.Width, image.Height));
+        Assert.Equal(ImageSnapshots.CaptureFrame(expected.Frames[0]).ToArray(), ImageSnapshots.CaptureFrame(image.Frames[0]).ToArray());
+
+        // A forward-only stream gives the same image
+        using var stream = new MemoryStream(data);
+        using var streamed = Image.Load(stream, WithWorkers(workers));
+        Assert.Equal(ImageSnapshots.CaptureFrame(expected.Frames[0]).ToArray(), ImageSnapshots.CaptureFrame(streamed.Frames[0]).ToArray());
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(4)]
+    [InlineData(16)]
+    public void AGridDecodedByWorkersFailsWithTheErrorOfItsFirstFailingTile(int workers)
+    {
+        // Tile 6 is truncated and tile 13 has no frame (a temporal delimiter alone): the error is the one of tile 6 alone,
+        // whichever tile fails first
+        var data = CreateLargeGrid(transparent: false);
+        var first = HeifFileBuilder.From(data);
+        var tiles = first.References.Single(reference => reference.Type == "dimg").ToItemIds;
+        first.GetItem(tiles[6]).Data = first.GetItem(tiles[6]).Data[..^8];
+        var expected = Assert.Throws<InvalidImageContentException>(() => Image.Load(first.Build()));
+
+        var both = HeifFileBuilder.From(data);
+        both.GetItem(tiles[6]).Data = both.GetItem(tiles[6]).Data[..^8];
+        both.GetItem(tiles[13]).Data = TemporalDelimiter;
+        var exception = Assert.Throws<InvalidImageContentException>(() => Image.Load(both.Build(), WithWorkers(workers)));
+        Assert.Equal(expected.Message, exception.Message);
+
+        // Tile 13 alone fails differently
+        var last = HeifFileBuilder.From(data);
+        last.GetItem(tiles[13]).Data = TemporalDelimiter;
+        var other = Assert.Throws<InvalidImageContentException>(() => Image.Load(last.Build(), WithWorkers(workers)));
+        Assert.NotEqual(expected.Message, other.Message);
+    }
+
+    // A temporal unit with a temporal delimiter and no frame
+    private static byte[] TemporalDelimiter => [0x12, 0x00];
+
+    private static ImageDecodeOptions WithWorkers(int workers) => new() { Configuration = new ImageConfiguration { MaxDegreeOfParallelism = workers } };
+
+    // A grid of 5x4 tiles of 64x64: from 16 tiles, the grid has the 65,536 samples that a decoding by several workers needs
+    private static byte[] CreateLargeGrid(bool transparent)
+    {
+        using var image = HeifEncoderTestImages.CreateSmoothImage(320, 256, transparent);
+        using var stream = new MemoryStream();
+        image.Save(stream, new AvifEncoder { Compression = AvifCompression.Lossy, GridTileSize = new Size(64, 64), Effort = 0 });
+        return stream.ToArray();
     }
 
     [Fact]

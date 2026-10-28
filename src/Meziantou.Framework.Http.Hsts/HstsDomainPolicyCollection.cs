@@ -683,37 +683,36 @@ public sealed class HstsDomainPolicyCollection : IEnumerable<HstsDomainPolicy>
     }
 
     [StructLayout(LayoutKind.Auto)]
+    // Enumerates the suffixes of a host from the least to the most specific: the start of the suffix after each dot,
+    // from the last one, then 0 for the host itself. A dot at the start of the host starts the suffix at 1, not 0.
     private ref struct DomainSplitReverseEnumerator
     {
         private ReadOnlySpan<char> _span;
+        private bool _isDone;
 
         public DomainSplitReverseEnumerator(ReadOnlySpan<char> span)
         {
             _span = span;
-            Current = span.Length;
+            _isDone = span.IsEmpty;
         }
 
-        public int Current
-        {
-            readonly get => field == 0 ? 0 : (field + 1);
-            private set;
-        }
+        public int Current { readonly get; private set; }
 
         public bool MoveNext()
         {
+            if (_isDone)
+                return false;
+
             var index = _span.LastIndexOf('.');
             if (index == -1)
             {
-                if (_span.IsEmpty)
-                    return false;
-
                 Current = 0;
-                _span = ReadOnlySpan<char>.Empty;
+                _isDone = true;
                 return true;
             }
 
-            Current = index;
-            _span = _span.Slice(0, index);
+            Current = index + 1;
+            _span = _span[..index];
             return true;
         }
     }

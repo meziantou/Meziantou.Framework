@@ -139,6 +139,43 @@ public sealed class HeicEncoder : ImageEncoder
     public bool ClearTransparentColors { get; init; }
 
     /// <summary>
+    /// Gets the size of the tiles of a still image that is coded as a grid, or <see langword="null"/> (the default) for an
+    /// image that is coded whole. An image that is larger than a tile is cut into tiles of this size, each one coded on
+    /// its own, which a grid item assembles; an image that one tile holds is coded whole.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A grid bounds the size of what a decoder decodes at once, and the memory that encoding takes (one tile at a time):
+    /// cameras write their photos as grids of 512x512 tiles. The tiles of the right column and of the bottom row extend past
+    /// the image, whose last column and last row they repeat. The alpha plane is a grid of the same tiles. A tile is coded
+    /// without its neighbors: lossy output can show the edges of the tiles, and is larger than the image coded whole.
+    /// </para>
+    /// <para>
+    /// With <see cref="ImageConfiguration.MaxDegreeOfParallelism"/> above 1, the tiles of a grid of at least 65,536 samples
+    /// are coded by up to that many workers at once, each with encoders of its own (charged to
+    /// <see cref="ImageResourceLimits.MaxLiveAllocationBytes"/>); the output is byte-identical to the one of one worker.
+    /// </para>
+    /// <para>
+    /// Each side of a tile is between 64 and 65,528 pixels (the largest HEVC picture), and a grid has at most 256 columns
+    /// and 256 rows. A tile whose size is not a whole number of coding blocks of 8 samples is cropped to its size by the
+    /// conformance window of its picture. With subsampled chroma (<see cref="ChromaSubsampling"/>), the widths of the
+    /// tiles and of the image must be even, and their heights too for 4:2:0. Ignored by an image sequence.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">A side of the tiles is not between 64 and 65,528.</exception>
+    public Size? GridTileSize
+    {
+        get;
+        init
+        {
+            if (value is { } tile && (tile.Width is < 64 or > 65528 || tile.Height is < 64 or > 65528))
+                throw new ArgumentOutOfRangeException(nameof(value), value, "Each side of a tile must be between 64 and 65,528 pixels.");
+
+            field = value;
+        }
+    }
+
+    /// <summary>
     /// Gets the number of images from a key frame to the next one in an image sequence. Defaults to 0: the first image is
     /// the only key frame. 1 makes every image a key frame. An image that is not a key frame is predicted from the image
     /// that precedes it, which makes it smaller; a reader that seeks decodes from the last key frame. Ignored by a still

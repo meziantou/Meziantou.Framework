@@ -391,6 +391,41 @@ internal static class Examples
     }
     #endregion
 
+    /// <summary>Color values: read colors written in CSS, convert them, compare them, mix them and write them back.</summary>
+    #region Imaging_ColorValues
+    public static (string Lab, double Difference, Rgba32[] Palette, Rgba32 Tint, Rgba32 InDisplayP3) DescribeColors()
+    {
+        // Colors of CSS, as sRGB colors: hexadecimal, rgb(), hsl(), hwb(), lab(), lch(), oklab() and oklch()
+        var brand = Rgba32.ParseCss("oklch(62% 0.2 29)");
+        var accent = Rgba32.ParseCss("#2A9D8F");
+
+        // CIELAB, relative to D50 as in CSS, and its CSS notation
+        var lab = CieLab.FromRgb(brand);
+        var labText = lab.ToCssString();
+
+        // How different two colors look: about 1 is a just noticeable difference
+        var difference = ColorDifference.DeltaE2000(lab, CieLab.FromRgb(accent));
+
+        // Five colors evenly spaced in Oklch, from one color to the other along the shorter arc of hues
+        var from = Oklch.FromRgb(brand);
+        var to = Oklch.FromRgb(accent);
+        var palette = new Rgba32[5];
+        for (var i = 0; i < palette.Length; i++)
+        {
+            palette[i] = Oklch.Lerp(from, to, i / 4.0).ToRgba32();
+        }
+
+        // A lighter tint of the same hue and saturation
+        var hsl = Hsl.FromRgb(brand);
+        var tint = new Hsl(hsl.H, hsl.S, Math.Min(1, hsl.L + 0.2)).ToRgba32();
+
+        // The same color in the samples of a Display P3 image, which its CICP description gives
+        var displayP3 = RgbColorSpace.FromCicp(new CicpColorDescription(12, 13, 0, fullRange: true));
+        var inDisplayP3 = lab.ToRgba32(displayP3);
+        return (labText, difference, palette, tint, inDisplayP3);
+    }
+    #endregion
+
     /// <summary>A shape with round corners, and its outline moved outward and inward.</summary>
     #region Imaging_DrawSticker
     public static void DrawSticker(string outputPath)

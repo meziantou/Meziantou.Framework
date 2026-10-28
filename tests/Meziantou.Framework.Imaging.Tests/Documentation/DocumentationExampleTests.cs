@@ -2333,4 +2333,24 @@ public sealed class DocumentationExampleTests : IDisposable
         var grayGamma = IccTestProfiles.Gray(IccTestProfiles.Gamma(563));
         Assert.Equal([62, 62, 62, 255, 255, 255], Examples.ConvertSamplesToSrgb(grayGamma, [64, 255]));
     }
+
+    [Fact]
+    public void DescribeColorsConvertsComparesAndMixesColors()
+    {
+        // The expected values were computed with the sample code of CSS Color 4: oklch(62% 0.2 29) is the sRGB color
+        // (0.9004, 0.2687, 0.2147), lab(54.1369 62.1394 45.602), 58.6485 away from #2A9D8F by CIEDE2000
+        var (lab, difference, palette, tint, inDisplayP3) = Examples.DescribeColors();
+        var brand = new Rgba32(230, 69, 55);
+        var accent = new Rgba32(0x2A, 0x9D, 0x8F);
+        Assert.StartsWith("lab(54.13687720100", lab);
+        Assert.Equal(58.648510019335816, difference, 1e-9);
+        Assert.HasCount(5, palette);
+        Assert.Equal(brand, palette[0]);
+        Assert.Equal(accent, palette[4]);
+
+        // The tint is lighter, of the same hue; the color takes other samples in Display P3, less saturated ones
+        Assert.True(Hsl.FromRgb(tint).L > Hsl.FromRgb(brand).L);
+        Assert.Equal(Hsl.FromRgb(brand).H, Hsl.FromRgb(tint).H, 1.0);
+        Assert.True(inDisplayP3.R < brand.R && inDisplayP3.G > brand.G);
+    }
 }

@@ -77,6 +77,7 @@ copied from code that compiles, and most of them also run in the test suite.
   - [Text](#text)
   - [Metadata, color profiles and orientation](#metadata-color-profiles-and-orientation)
   - [Color management](#color-management)
+  - [Color values](#color-values)
   - [Loading, identification and limits](#loading-identification-and-limits)
   - [Streaming readers and writers](#streaming-readers-and-writers)
   - [Saving files](#saving-files)
@@ -1769,8 +1770,10 @@ stop does not tint its neighbors.
 `ColorSpace` says in which space the colors of two stops are mixed. `Encoded` (the default, as in CSS and SVG) mixes
 the stored sample values: half way from red to green is a dark olive, (128, 128, 0). `LinearSrgb` mixes light, as
 paints of light do: the yellow (188, 188, 0). `Oklab` mixes in a space made for it, where the lightness and the hue
-change evenly: (208, 168, 0), with no dull band between two saturated colors. The stops are taken as sRGB colors; at
-a stop, the color is the color of the stop in every space.
+change evenly: (208, 168, 0), with no dull band between two saturated colors. `Oklch` mixes the lightness, the chroma
+and the hue of the same space, the hue along the shorter arc as CSS does for `in oklch`: an orange half way, and from
+blue to yellow a teal where `Oklab` goes through a gray; the hue of a gray stop is the hue of the other stop. The stops
+are taken as sRGB colors; at a stop, the color is the color of the stop in every space.
 
 A radial gradient can spread from a `FocalPoint` that is not its center (a highlight on a sphere). With a
 `FocalRadius`, it starts on a circle around that point instead of at the point: the gradient between two circles of
@@ -2355,7 +2358,7 @@ public static void MarkAnimation(string inputPath, string outputPath)
   alpha and exact integer arithmetic, rounded to nearest with ties upward. A full coverage with an opaque color writes
   that color exactly; frames without alpha stay opaque; a pixel that would stay fully transparent is not written and
   keeps its hidden color. A gradient whose stops have the same color paints exactly what a solid brush paints. A
-  gradient that mixes its colors in linear light or in Oklab computes them at 16 bits with the power and cube root
+  gradient that mixes its colors in linear light, in Oklab or in Oklch computes them at 16 bits with the power and cube root
   functions of the platform, as `ResizeWorkingSpace.LinearSrgb` does: a sample within about 1e-12 of a rounding
   boundary can differ by one from a platform to another.
 - **Operators.** The other compositing operators use the same exact arithmetic and the same rounding. A pixel whose
@@ -3555,6 +3558,82 @@ uses simplex interpolation along the main diagonal of the grid cell (tetrahedral
 RGB, gray or CIEXYZ, whose neutral axis is that diagonal, and multilinear interpolation when they are CIELAB or CMYK,
 where it is not. Color management systems differ here: between the grid points of a coarse CMYK table they can
 disagree by several levels, and they may also estimate black points differently.
+
+### Color values
+
+Single colors have value types of their own, immutable `readonly struct`s of `double` components, in the namespace
+`Meziantou.Framework.Imaging`: `CieXyz`, `CieLab` and its cylindrical form `CieLch`, `CieLuv`, `Oklab` and `Oklch`, and
+the cylindrical forms of RGB values `Hsl`, `Hsv` and `Hwb`, and the device `Cmyk`. They convert from and to `Rgba32` and
+`Rgba64`, measure how different two colors look (`ColorDifference`), mix colors (`Oklab.Lerp`, `Oklch.Lerp`), and read
+and write the functional notations of CSS Color 4.
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_ColorValues;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static (string Lab, double Difference, Rgba32[] Palette, Rgba32 Tint, Rgba32 InDisplayP3) DescribeColors()
+{
+    // Colors of CSS, as sRGB colors: hexadecimal, rgb(), hsl(), hwb(), lab(), lch(), oklab() and oklch()
+    var brand = Rgba32.ParseCss("oklch(62% 0.2 29)");
+    var accent = Rgba32.ParseCss("#2A9D8F");
+
+    // CIELAB, relative to D50 as in CSS, and its CSS notation
+    var lab = CieLab.FromRgb(brand);
+    var labText = lab.ToCssString();
+
+    // How different two colors look: about 1 is a just noticeable difference
+    var difference = ColorDifference.DeltaE2000(lab, CieLab.FromRgb(accent));
+
+    // Five colors evenly spaced in Oklch, from one color to the other along the shorter arc of hues
+    var from = Oklch.FromRgb(brand);
+    var to = Oklch.FromRgb(accent);
+    var palette = new Rgba32[5];
+    for (var i = 0; i < palette.Length; i++)
+    {
+        palette[i] = Oklch.Lerp(from, to, i / 4.0).ToRgba32();
+    }
+
+    // A lighter tint of the same hue and saturation
+    var hsl = Hsl.FromRgb(brand);
+    var tint = new Hsl(hsl.H, hsl.S, Math.Min(1, hsl.L + 0.2)).ToRgba32();
+
+    // The same color in the samples of a Display P3 image, which its CICP description gives
+    var displayP3 = RgbColorSpace.FromCicp(new CicpColorDescription(12, 13, 0, fullRange: true));
+    var inDisplayP3 = lab.ToRgba32(displayP3);
+    return (labText, difference, palette, tint, inDisplayP3);
+}
+```
+<!-- endref -->
+
+- **RGB values have a color space.** `FromRgb` and `ToRgba32`/`ToRgba64` take an `RgbColorSpace`: `RgbColorSpace.Srgb`
+  (the default), `RgbColorSpace.FromIccProfile(profile)` for an RGB ICC profile (the relative colorimetric intent), or
+  `RgbColorSpace.FromCicp(description)` for a CICP color description (PQ and HLG are rejected: their light needs tone
+  mapping). Create a space once and reuse it. Alpha is not a color coordinate: it is ignored by `FromRgb`, and the
+  colors `ToRgba32`/`ToRgba64` give are opaque. A color outside the gamut of the space is clipped component by
+  component (CSS gamut-maps instead). `Hsl`, `Hsv`, `Hwb` and `Cmyk` describe the stored RGB values as they are, of
+  whatever color space: they take no space.
+- **The white is D50.** `CieXyz` is relative to `CieXyz.D50` in every conversion, as the `lab()` colors of CSS and the
+  connection space of ICC profiles are; `CieLab.FromXyz` and `CieLuv.FromXyz` take another white, and `CieXyz.Adapt`
+  moves a color from a white to another with the linear Bradford transform. `CieXyz.D50` and `CieXyz.D65` are those of
+  CSS Color 4, from the four-figure chromaticities of CIE.
+- **The numbers are those of CSS Color 4.** sRGB uses the rational matrix and the transfer function of the CSS sample
+  code, the adaptation between D65 and D50 its 64-bit Bradford matrices, and Oklab its matrices recomputed for that D65
+  (they differ from the first ones Björn Ottosson published by up to 1.3e-4). The tests compare every conversion with
+  the sample code of CSS Color 4 and with colour-science, to 1e-9. An ICC profile converts with its s15Fixed16 numbers,
+  so `RgbColorSpace.FromIccProfile(IccProfile.Srgb)` differs from `RgbColorSpace.Srgb` by about 1e-5 in CIEXYZ: the
+  connection space of ICC (D50 rounded to 0.9642, 1, 0.8249) is adapted to `CieXyz.D50` with the Bradford transform.
+- **Color differences.** `ColorDifference.DeltaE76` is the distance in CIELAB, `DeltaE94` the CIE 1994 formula (graphic
+  arts or textiles weights; not symmetric, the reference color weights it), `DeltaE2000` CIEDE2000 with optional
+  parametric factors (it passes the test data of Sharma, Wu and Dalal), and `DeltaEOK` the distance in Oklab of CSS.
+- **Hues** are in degrees. Conversions give them in [0, 360); a gray has no hue, which is then the angle of its tiny
+  components, or 0. `Oklch.Lerp` mixes the hues along the arc a `HueInterpolation` selects (`Shorter` by default, as
+  CSS), and takes the hue of the other color when one is gray (a chroma of at most 0.000004).
+- **CSS notations.** `Parse` and `TryParse` of `CieLab` (`lab()`), `CieLch` (`lch()`), `Oklab` (`oklab()`), `Oklch`
+  (`oklch()`), `Hsl` (`hsl()`, `hsla()`) and `Hwb` (`hwb()`) read the modern syntax (white space between the
+  components, `/ alpha`, `none`) and, for `hsl()`, the legacy syntax with commas; the alpha is returned apart.
+  Percentages, angles (`deg`, `grad`, `rad`, `turn`) and the clamping of CSS are applied as the specification resolves
+  them at parse time, and hues are brought to [0, 360). `ToCssString` writes the modern syntax with the shortest numbers
+  that read back the same values. `Rgba32.ParseCss` reads any of them, `rgb()`/`rgba()` and the hexadecimal notation
+  too, and converts the color to sRGB. Named colors, `calc()`, relative colors and `color()` are not supported.
+- The operations of the value types allocate nothing, except the formatting, which returns a string.
 
 ### Loading, identification and limits
 

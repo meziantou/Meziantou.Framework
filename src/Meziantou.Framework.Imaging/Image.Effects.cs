@@ -1,4 +1,3 @@
-using System.Runtime.InteropServices;
 using Meziantou.Framework.Imaging.Internals;
 
 namespace Meziantou.Framework.Imaging;
@@ -18,12 +17,12 @@ public abstract partial class Image
         EffectKernels.EnsureSupported(PixelFormat);
         cancellationToken.ThrowIfCancellationRequested();
         frames ??= GetAllFrames();
-        using var scratch = ResampleWeights.Rent<double>(Owner.Scope, EffectKernels.GetPixelateScratchLength(PixelFormat, _size.Width, size));
+        using var scratch = ResampleWeights.Rent<double>(Owner.Scope, EffectKernels.GetPixelateScratchLength(KernelPixelFormat, _size.Width, size));
         _metadata.RemoveStaleThumbnail();
         foreach (var frame in frames)
         {
             using var lease = frame.GetStorage().AcquireLease();
-            frame.PixelatePixels(lease, size, unsafe(MemoryMarshal.Cast<byte, double>(scratch.Span)), cancellationToken);
+            frame.PixelatePixels(lease, size, scratch.Memory, cancellationToken);
         }
     }
 
@@ -39,13 +38,13 @@ public abstract partial class Image
         cancellationToken.ThrowIfCancellationRequested();
         frames ??= GetAllFrames();
         var scope = Owner.Scope;
-        using var scratch = ResampleWeights.Rent<double>(scope, EffectKernels.GetOilPaintScratchLength(PixelFormat, _size.Width, radius, levels));
+        using var scratch = ResampleWeights.Rent<double>(scope, EffectKernels.GetOilPaintScratchLength(KernelPixelFormat, _size.Width, radius, levels));
         using var levelScratch = ResampleWeights.Rent<int>(scope, EffectKernels.GetOilPaintLevelsLength(_size.Width, radius, levels));
         _metadata.RemoveStaleThumbnail();
         foreach (var frame in frames)
         {
             using var lease = frame.GetStorage().AcquireLease();
-            frame.OilPaintPixels(lease, levels, radius, unsafe(MemoryMarshal.Cast<byte, double>(scratch.Span)), unsafe(MemoryMarshal.Cast<byte, int>(levelScratch.Span)), cancellationToken);
+            frame.OilPaintPixels(lease, levels, radius, scratch.Memory, levelScratch.Memory, cancellationToken);
         }
     }
 
@@ -57,7 +56,7 @@ public abstract partial class Image
     internal void FlattenFrames(ImageFrame[]? frames, Rgba64 background, CancellationToken cancellationToken)
     {
         Owner.EnsureCanModify("flatten the image");
-        EffectKernels.EnsureSupported(PixelFormat);
+        EffectKernels.EnsureFlattenSupported(PixelFormat);
         cancellationToken.ThrowIfCancellationRequested();
         if (!PixelFormats.HasAlpha(PixelFormat))
             return;

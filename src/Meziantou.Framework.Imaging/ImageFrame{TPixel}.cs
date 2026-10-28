@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.Metadata;
 
@@ -204,14 +205,60 @@ public sealed class ImageFrame<TPixel> : ImageFrame
         }
     }
 
-    internal override void PixelatePixels(scoped in PixelLease lease, int size, Span<double> scratch, CancellationToken cancellationToken)
-        => EffectKernels.Pixelate<TPixel>(lease, size, scratch, cancellationToken);
+    internal override void PixelatePixels(scoped in PixelLease lease, int size, Memory<byte> scratch, CancellationToken cancellationToken)
+    {
+        if (!ProcessingBridge.IsBridged<TPixel>())
+        {
+            EffectKernels.Pixelate<TPixel>(lease, size, AsDoubles(scratch), cancellationToken);
+        }
+        else if (typeof(TPixel) == typeof(La32))
+        {
+            ProcessingBridge.RunInPlace<TPixel>(OwnerImage.Owner, lease, (scoped in PixelLease working) => EffectKernels.Pixelate<Rgba64>(working, size, AsDoubles(scratch), cancellationToken));
+        }
+        else
+        {
+            ProcessingBridge.RunInPlace<TPixel>(OwnerImage.Owner, lease, (scoped in PixelLease working) => EffectKernels.Pixelate<Rgba32>(working, size, AsDoubles(scratch), cancellationToken));
+        }
+    }
 
-    internal override void OilPaintPixels(scoped in PixelLease lease, int levels, int radius, Span<double> scratch, Span<int> levelScratch, CancellationToken cancellationToken)
-        => EffectKernels.OilPaint<TPixel>(lease, levels, radius, scratch, levelScratch, cancellationToken);
+    internal override void OilPaintPixels(scoped in PixelLease lease, int levels, int radius, Memory<byte> scratch, Memory<byte> levelScratch, CancellationToken cancellationToken)
+    {
+        // The working copy of a gray format has three equal colors: its intensity is that gray
+        if (!ProcessingBridge.IsBridged<TPixel>())
+        {
+            EffectKernels.OilPaint<TPixel>(lease, levels, radius, grayColors: false, AsDoubles(scratch), AsInts(levelScratch), cancellationToken);
+        }
+        else if (typeof(TPixel) == typeof(La32))
+        {
+            ProcessingBridge.RunInPlace<TPixel>(OwnerImage.Owner, lease, (scoped in PixelLease working) => EffectKernels.OilPaint<Rgba64>(working, levels, radius, grayColors: true, AsDoubles(scratch), AsInts(levelScratch), cancellationToken));
+        }
+        else
+        {
+            ProcessingBridge.RunInPlace<TPixel>(OwnerImage.Owner, lease, (scoped in PixelLease working) => EffectKernels.OilPaint<Rgba32>(working, levels, radius, grayColors: true, AsDoubles(scratch), AsInts(levelScratch), cancellationToken));
+        }
+    }
 
     internal override void FlattenPixels(scoped in PixelLease lease, Rgba64 background, CancellationToken cancellationToken)
-        => EffectKernels.Flatten<TPixel>(lease, background, cancellationToken);
+    {
+        // The flattened working copy of a gray format converts back to the luma of its colors: the conversion of the gray
+        // format to a format without alpha
+        if (!ProcessingBridge.IsBridged<TPixel>())
+        {
+            EffectKernels.Flatten<TPixel>(lease, background, cancellationToken);
+        }
+        else if (typeof(TPixel) == typeof(La32))
+        {
+            ProcessingBridge.RunInPlace<TPixel>(OwnerImage.Owner, lease, (scoped in PixelLease working) => EffectKernels.Flatten<Rgba64>(working, background, cancellationToken));
+        }
+        else if (typeof(TPixel) == typeof(La16))
+        {
+            ProcessingBridge.RunInPlace<TPixel>(OwnerImage.Owner, lease, (scoped in PixelLease working) => EffectKernels.Flatten<Rgba32>(working, background, cancellationToken));
+        }
+        else
+        {
+            throw new NotSupportedException($"The pixel type '{typeof(TPixel).Name}' is not supported.");
+        }
+    }
 
     internal override void ConvertColorPixels(scoped in PixelLease source, scoped in PixelLease destination, IccPipeline pipeline, IccUInt16InputTables? uint16Tables, CancellationToken cancellationToken)
         => ColorConversionKernels.ConvertRows<TPixel>(source, destination, pipeline, uint16Tables, cancellationToken);
@@ -251,4 +298,8 @@ public sealed class ImageFrame<TPixel> : ImageFrame
         if ((uint)y >= (uint)storage.Height)
             throw new ArgumentOutOfRangeException(nameof(y), y, "The row is out of range.");
     }
+
+    private static Span<double> AsDoubles(Memory<byte> scratch) => unsafe(MemoryMarshal.Cast<byte, double>(scratch.Span));
+
+    private static Span<int> AsInts(Memory<byte> scratch) => unsafe(MemoryMarshal.Cast<byte, int>(scratch.Span));
 }

@@ -21,6 +21,12 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <para>
 /// The flattening uses the formulas of the conversions to a format without alpha (<see cref="PixelConverter"/>).
 /// </para>
+/// <para>
+/// <see cref="Rgb48"/> has kernels here. <see cref="La16"/>, <see cref="La32"/> and <see cref="A8"/> run on the working copy
+/// of <see cref="ProcessingBridge"/>, whose three colors are equal: the means keep them equal, the oil painting takes the
+/// gray as the intensity, and the flattened colors convert back to their luma, as the conversion of the gray format to a
+/// format without alpha does. <see cref="A8"/> cannot be flattened.
+/// </para>
 /// </remarks>
 internal static class EffectKernels
 {
@@ -33,13 +39,26 @@ internal static class EffectKernels
     }
 
     /// <summary>
-    /// Throws a <see cref="NotSupportedException"/> when a pixel format has no kernel here. Called before anything
-    /// changes.
+    /// Throws a <see cref="NotSupportedException"/> when a pixel format has no kernel here, directly or through
+    /// <see cref="ProcessingBridge"/>. Called before anything changes.
     /// </summary>
     public static void EnsureSupported(PixelFormat format)
     {
-        if (format is not (PixelFormat.Rgba32 or PixelFormat.Bgra32 or PixelFormat.Rgb24 or PixelFormat.Rgba64 or PixelFormat.Gray8 or PixelFormat.Gray16 or PixelFormat.RgbaFloat or PixelFormat.RgbaHalf))
+        if (ProcessingBridge.GetKernelFormat(format) is not (PixelFormat.Rgba32 or PixelFormat.Bgra32 or PixelFormat.Rgb24 or PixelFormat.Rgba64 or PixelFormat.Gray8 or PixelFormat.Gray16 or PixelFormat.Rgb48 or PixelFormat.RgbaFloat or PixelFormat.RgbaHalf))
             throw new NotSupportedException($"The pixel format '{format}' is not supported by this effect.");
+    }
+
+    /// <summary>
+    /// Throws a <see cref="NotSupportedException"/> when <see cref="Flatten{TPixel}"/> cannot flatten a pixel format:
+    /// those of <see cref="EnsureSupported"/> but <see cref="PixelFormat.A8"/>, an alpha mask that cannot store the colors
+    /// of the result (convert it to a format with colors first). Called before anything changes.
+    /// </summary>
+    public static void EnsureFlattenSupported(PixelFormat format)
+    {
+        if (format is PixelFormat.A8)
+            throw new NotSupportedException($"The pixel format '{format}' cannot be flattened: it has no color to hold the background. Convert the image to a format with colors first.");
+
+        EnsureSupported(format);
     }
 
     /// <summary>
@@ -55,7 +74,7 @@ internal static class EffectKernels
             throw new InvalidOperationException($"The pixel type '{typeof(TPixel).Name}' does not match the storage pixel size.");
 
         var format = PixelFormats.GetPixelFormat<TPixel>();
-        if (typeof(TPixel) == typeof(Rgba64) || typeof(TPixel) == typeof(Gray16))
+        if (typeof(TPixel) == typeof(Rgba64) || typeof(TPixel) == typeof(Gray16) || typeof(TPixel) == typeof(Rgb48))
         {
             PixelateCore<ushort>(storage, format, size, scratch, cancellationToken);
         }
@@ -157,7 +176,7 @@ internal static class EffectKernels
     /// for the floating-point formats, the sums of every window are made again from its pixels, so that a sample that is
     /// not a number or an infinity only reaches the windows that contain it.
     /// </remarks>
-    public static void OilPaint<TPixel>(scoped in PixelLease lease, int levels, int radius, Span<double> scratch, Span<int> levelScratch, CancellationToken cancellationToken)
+    public static void OilPaint<TPixel>(scoped in PixelLease lease, int levels, int radius, bool grayColors, Span<double> scratch, Span<int> levelScratch, CancellationToken cancellationToken)
         where TPixel : unmanaged
     {
         var storage = lease.Storage;
@@ -165,21 +184,21 @@ internal static class EffectKernels
             throw new InvalidOperationException($"The pixel type '{typeof(TPixel).Name}' does not match the storage pixel size.");
 
         var format = PixelFormats.GetPixelFormat<TPixel>();
-        if (typeof(TPixel) == typeof(Rgba64) || typeof(TPixel) == typeof(Gray16))
+        if (typeof(TPixel) == typeof(Rgba64) || typeof(TPixel) == typeof(Gray16) || typeof(TPixel) == typeof(Rgb48))
         {
-            OilPaintCore<ushort>(storage, format, levels, radius, blueFirst: false, scratch, levelScratch, cancellationToken);
+            OilPaintCore<ushort>(storage, format, levels, radius, blueFirst: false, grayColors, scratch, levelScratch, cancellationToken);
         }
         else if (typeof(TPixel) == typeof(Rgba32) || typeof(TPixel) == typeof(Bgra32) || typeof(TPixel) == typeof(Rgb24) || typeof(TPixel) == typeof(Gray8))
         {
-            OilPaintCore<byte>(storage, format, levels, radius, blueFirst: typeof(TPixel) == typeof(Bgra32), scratch, levelScratch, cancellationToken);
+            OilPaintCore<byte>(storage, format, levels, radius, blueFirst: typeof(TPixel) == typeof(Bgra32), grayColors, scratch, levelScratch, cancellationToken);
         }
         else if (typeof(TPixel) == typeof(RgbaFloat))
         {
-            OilPaintCore<float>(storage, format, levels, radius, blueFirst: false, scratch, levelScratch, cancellationToken);
+            OilPaintCore<float>(storage, format, levels, radius, blueFirst: false, grayColors, scratch, levelScratch, cancellationToken);
         }
         else if (typeof(TPixel) == typeof(RgbaHalf))
         {
-            OilPaintCore<Half>(storage, format, levels, radius, blueFirst: false, scratch, levelScratch, cancellationToken);
+            OilPaintCore<Half>(storage, format, levels, radius, blueFirst: false, grayColors, scratch, levelScratch, cancellationToken);
         }
         else
         {
@@ -187,7 +206,7 @@ internal static class EffectKernels
         }
     }
 
-    private static void OilPaintCore<TSample>(PixelStorage storage, PixelFormat format, int levels, int radius, bool blueFirst, Span<double> scratch, Span<int> levelScratch, CancellationToken cancellationToken)
+    private static void OilPaintCore<TSample>(PixelStorage storage, PixelFormat format, int levels, int radius, bool blueFirst, bool grayColors, Span<double> scratch, Span<int> levelScratch, CancellationToken cancellationToken)
         where TSample : unmanaged
     {
         var width = storage.Width;
@@ -207,6 +226,7 @@ internal static class EffectKernels
             Scale = WorkingSamples.IsFloatingPoint<TSample>() ? 1.0 : hasAlpha ? (double)max * max : max,
             LumaR = blueFirst ? 0.0722 : 0.2126,
             LumaB = blueFirst ? 0.2126 : 0.0722,
+            GrayColors = grayColors,
         };
 
         var rowLength = width * window.Channels;
@@ -296,7 +316,7 @@ internal static class EffectKernels
         for (var x = 0; x < window.Width; x++)
         {
             var pixel = working.Slice(x * channels, channels);
-            var intensity = channels < 3 ? pixel[0] : (window.LumaR * pixel[0]) + (0.7152 * pixel[1]) + (window.LumaB * pixel[2]);
+            var intensity = channels < 3 || window.GrayColors ? pixel[0] : (window.LumaR * pixel[0]) + (0.7152 * pixel[1]) + (window.LumaB * pixel[2]);
             var level = intensity / window.Scale * levels;
 
             // Written so that a sample that is not a number gets the first level
@@ -341,6 +361,9 @@ internal static class EffectKernels
         public double LumaR { get; init; }
 
         public double LumaB { get; init; }
+
+        /// <summary>Gets a value indicating whether the three colors are equal (the working copy of a gray format): the intensity is the first one, exactly.</summary>
+        public bool GrayColors { get; init; }
     }
 
     /// <summary>
@@ -352,7 +375,7 @@ internal static class EffectKernels
     public static void Flatten<TPixel>(scoped in PixelLease lease, Rgba64 background, CancellationToken cancellationToken)
         where TPixel : unmanaged
     {
-        if (typeof(TPixel) == typeof(Rgb24) || typeof(TPixel) == typeof(Gray8) || typeof(TPixel) == typeof(Gray16))
+        if (typeof(TPixel) == typeof(Rgb24) || typeof(TPixel) == typeof(Gray8) || typeof(TPixel) == typeof(Gray16) || typeof(TPixel) == typeof(Rgb48))
         {
             cancellationToken.ThrowIfCancellationRequested();
             return;

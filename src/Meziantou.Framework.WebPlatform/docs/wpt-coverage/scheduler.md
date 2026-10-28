@@ -7,9 +7,9 @@
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 24 | 24 | 0 | 100% |
-| [Tentative](#tentative-tests) | 14 | 15 | 0 | 93% |
+| [Tentative](#tentative-tests) | 15 | 15 | 0 | 100% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **38** | **39** | **0** | **97%** |
+| **All** | **39** | **39** | **0** | **100%** |
 
 ## Stable tests
 
@@ -52,7 +52,7 @@
 | [`tentative/yield/yield-inherit-abort-across-settled-promises.any.js`](https://wpt.fyi/results/scheduler/tentative/yield/yield-inherit-abort-across-settled-promises.any.js) | Pass | 16 / 16 |  |  |
 | [`tentative/yield/yield-inherit-across-promises.any.js`](https://wpt.fyi/results/scheduler/tentative/yield/yield-inherit-across-promises.any.js) | Pass | 16 / 16 |  |  |
 | [`tentative/yield/yield-inherit-across-settled-promises.any.js`](https://wpt.fyi/results/scheduler/tentative/yield/yield-inherit-across-settled-promises.any.js) | Pass | 18 / 18 |  |  |
-| [`tentative/yield/yield-priority-idle-callbacks.html`](https://wpt.fyi/results/scheduler/tentative/yield/yield-priority-idle-callbacks.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `requestIdleCallback()` (Cooperative Scheduling of Background Tasks), whose callbacks have the `background` scheduling state |
+| [`tentative/yield/yield-priority-idle-callbacks.html`](https://wpt.fyi/results/scheduler/tentative/yield/yield-priority-idle-callbacks.html) | Pass | 1 / 1 |  |  |
 | [`tentative/yield/yield-priority-posttask.any.js`](https://wpt.fyi/results/scheduler/tentative/yield/yield-priority-posttask.any.js) | Pass | 6 / 6 |  |  |
 | [`tentative/yield/yield-priority-timers.any.js`](https://wpt.fyi/results/scheduler/tentative/yield/yield-priority-timers.any.js) | Pass | 2 / 2 |  |  |
 | [`tentative/yield/yield-same-origin-propagation.html`](https://wpt.fyi/results/scheduler/tentative/yield/yield-same-origin-propagation.html) | Pass | 1 / 1 |  |  |

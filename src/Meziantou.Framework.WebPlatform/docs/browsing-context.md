@@ -1855,6 +1855,35 @@ Differences from the specification and from the browsers:
 - The permissions policy does not apply to the workers (the specification does not define it yet): a worker can send
   synchronous requests whatever the policy of its owner.
 
+## Permissions
+
+The [Permissions API](https://w3c.github.io/permissions/) is implemented in the windows and the workers:
+`navigator.permissions.query()` (`Navigator.Permissions`, `WorkerNavigator.Permissions`), `PermissionStatus` and its
+`change` event. The states come from the `PermissionStore` of the browsing context (`BrowsingContextOptions.Permissions`),
+which plays the role of the permission prompts of a browser: a permission that was not set is `prompt`.
+
+```csharp
+var permissions = new PermissionStore();
+permissions.SetState("geolocation", PermissionState.Granted);                     // every origin
+permissions.SetState("camera", "https://example.com", PermissionState.Denied);    // one top-level origin
+using var context = new BrowsingContext(new BrowsingContextOptions { Permissions = permissions });
+```
+
+- **States.** A permission is keyed by its name and by the top-level origin of the document that queries it. It is
+  `denied` in a context that is not secure, and in a document whose permissions policy does not allow the feature (e.g.
+  `geolocation` in a cross-origin `iframe` without `allow="geolocation"`).
+- **Names.** `query()` supports the names of the powerful features of the
+  [registry](https://w3c.github.io/permissions-registry/) and the ones the browsers support (`geolocation`,
+  `notifications`, `push`, `camera`, `microphone`, `midi`, `persistent-storage`, `storage-access`, the sensors...); it
+  rejects the other names with a `TypeError`. The descriptor is converted twice, the second time to the descriptor type
+  of the feature (e.g. `sysex` of `midi`). The `fullscreen` permission needs `allowWithoutGesture: true`; when it is
+  granted, `requestFullscreen()` does not need a user activation.
+- **Changes.** `PermissionStore.SetState()` fires the `change` event of the `PermissionStatus` objects whose state
+  changed, from a task of their event loop, while their document is fully active. A status that has `change` listeners
+  lives as long as its global object.
+- **Not done.** `request()` and `revoke()` (proposals that no browser ships). The permission store only decides the
+  states that `query()` returns: the clipboard is decided by `BrowsingContextOptions.ClipboardPermission`.
+
 ## Client hints
 
 [Client Hints](https://wicg.github.io/client-hints-infrastructure/) let a server ask for information about the user
@@ -2236,10 +2265,41 @@ context.EventLoop.RunUntilIdle();
 - **Documents that are not fully active.** The tasks of the scheduler of a document that is no longer fully active
   (e.g. its `iframe` was removed) never run, and `postTask()` and `yield()` reject with a `NotSupportedError`, as in the
   browsers.
-- **Not done.** `requestIdleCallback()` (whose callbacks would have the `background` scheduling state), and
-  `scheduler.isInputPending()` (not in the specification).
+- **Idle callbacks.** The callbacks of [`requestIdleCallback()`](#idle-callbacks) run with the `background`
+  scheduling state: `scheduler.yield()` continues them at the `background` priority.
+- **Not done.** `scheduler.isInputPending()` (not in the specification).
 
 `WebPlatformFeatures.PrioritizedTaskSchedulingEnabled` hides the API from the scripts.
+
+## Idle callbacks
+
+[Cooperative Scheduling of Background Tasks](https://w3c.github.io/requestidlecallback/) is implemented in the windows:
+`Window.RequestIdleCallback()`, `CancelIdleCallback()` and `IdleDeadline`.
+
+```csharp
+context.Window.RequestIdleCallback(deadline =>
+{
+    while (deadline.TimeRemaining() > 0 && HasWork())
+    {
+        DoSomeWork();
+    }
+}, new IdleRequestOptions { Timeout = 1000 });
+context.EventLoop.RunUntilIdle();
+```
+
+- **Idle periods.** The event loop starts an idle period when no task is queued (`DomEventLoop.RunTask()` runs the idle
+  callbacks when there is no other task). Its deadline is the earliest of 50 milliseconds later, the next timer, and the
+  next animation frame (the frames are timers of the event loop), on the clock of the event loop. It is computed again
+  each time `IdleDeadline.TimeRemaining()` is called: a timer or an animation frame requested by an idle callback ends
+  the idle period sooner. A gap shorter than 5 milliseconds between two tasks (e.g. the 4 ms of the nested timers of a
+  busy loop) is not an idle period.
+- **Order.** The callbacks run in the order they were requested, one task each, while the idle period lasts. A callback
+  requested by an idle callback runs in the next idle period, which starts when another task runs or when the current
+  idle period ends.
+- **Timeouts.** With the `timeout` option, the callback is queued as a task once the timeout elapsed, if no idle
+  period ran it: its `IdleDeadline.DidTimeout` is true and `TimeRemaining()` returns 0.
+- **Documents that are not fully active.** The callbacks of a document that is not fully active (e.g. in the
+  back/forward cache) wait until it is fully active again; the ones of a removed `iframe` never run.
 
 ## Page visibility
 

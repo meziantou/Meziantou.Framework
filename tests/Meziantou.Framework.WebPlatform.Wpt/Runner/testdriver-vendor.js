@@ -35,15 +35,16 @@
     return queue(() => __wpt_send_keys(element, String(keys))).then(() => new Promise(resolve => setTimeout(resolve, 0)));
   };
 
-  // The clipboard permissions (BrowsingContextOptions.ClipboardPermission of the runner): the other permissions are not implemented
+  // The permission store of the runner (BrowsingContextOptions.Permissions, and BrowsingContextOptions.ClipboardPermission
+  // for the clipboard permissions): the state is set for every origin, by a task (see __wpt_set_permission)
   internal.set_permission = function (params, context) {
     const name = params && params.descriptor && params.descriptor.name;
-    if (name !== 'clipboard-read' && name !== 'clipboard-write') {
-      return Promise.reject(new Error('set_permission() only supports the clipboard permissions'));
+    if (typeof name !== 'string') {
+      return Promise.reject(new Error('set_permission() needs the name of the permission'));
     }
 
-    __wpt_set_permission(name, String(params.state));
-    return Promise.resolve();
+    const state = String(params.state);
+    return new Promise(resolve => __wpt_set_permission(name, state, resolve));
   };
 
   // The window of the top-level browsing context (https://w3c.github.io/webdriver/#resizing-and-positioning-windows): the

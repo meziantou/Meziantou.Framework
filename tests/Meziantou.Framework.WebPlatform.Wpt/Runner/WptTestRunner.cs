@@ -84,6 +84,9 @@ internal sealed partial class WptTestRunner
 
     /// <summary>The states of the permissions set by test_driver.set_permission(), by name.</summary>
     private readonly Dictionary<string, string> _permissions = new(StringComparer.Ordinal);
+
+    /// <summary>The permission store of the browsing contexts, whose states are set by test_driver.set_permission().</summary>
+    private readonly PermissionStore _permissionStore = new();
     private readonly WptStash _stash = new();
 
     /// <summary>The WebSocket server of wptserve (its connections are in-memory pipes).</summary>
@@ -171,6 +174,7 @@ internal sealed partial class WptTestRunner
                 ConsoleMessage = OnConsoleMessage,
 
                 // The permissions set by test_driver.set_permission(): the access is allowed unless it is denied
+                Permissions = _permissionStore,
                 ClipboardPermission = (_, access) => !_permissions.TryGetValue(access == ClipboardAccess.Read ? "clipboard-read" : "clipboard-write", out var state) || state != "denied",
 
                 // The pages of the reftests are rasterized; the images of all the tests are decoded by the backend
@@ -1553,9 +1557,25 @@ internal sealed partial class WptTestRunner
 
             return adapter.Undefined;
         });
-        Define("__wpt_set_permission", 2, (_, args) =>
+        Define("__wpt_set_permission", 3, (_, args) =>
         {
-            _permissions[adapter.ToString(args[0])] = adapter.ToString(args[1]);
+            var name = adapter.ToString(args[0]);
+            var state = adapter.ToString(args[1]);
+            var completion = CreateCompletion(args[2], args[2]);
+
+            // As a WebDriver command, the permission is set after the tasks that are already queued (e.g. the task that
+            // resolves a pending navigator.permissions.query()), without waiting for a timer
+            QueueTask(() =>
+            {
+                _permissions[name] = state;
+                _permissionStore.SetState(name, state switch
+                {
+                    "granted" => PermissionState.Granted,
+                    "denied" => PermissionState.Denied,
+                    _ => PermissionState.Prompt,
+                });
+                completion(null);
+            });
             return adapter.Undefined;
         });
         Define("__wpt_generate_test_report", 1, (_, args) =>

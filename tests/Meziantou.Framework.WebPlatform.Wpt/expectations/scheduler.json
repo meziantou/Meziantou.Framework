@@ -252,10 +252,7 @@
     "total": 9
   },
   "scheduler/tentative/yield/yield-priority-idle-callbacks.html": {
-    "total": 1,
-    "failures": {
-      "requestIdleCallback() yields at background priority when inheriting signal": "FAIL"
-    }
+    "total": 1
   },
   "scheduler/tentative/yield/yield-priority-posttask.any.js": {
     "total": 3

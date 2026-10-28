@@ -433,16 +433,10 @@
     }
   },
   "storage/permission-query.https.any.js": {
-    "total": 1,
-    "failures": {
-      "The \"persistent-storage\" permission is recognized": "FAIL"
-    }
+    "total": 1
   },
   "storage/permission-query.https.any.js#dedicatedworker": {
-    "total": 1,
-    "failures": {
-      "The \"persistent-storage\" permission is recognized": "FAIL"
-    }
+    "total": 1
   },
   "storage/persisted.https.any.js": {
     "total": 2

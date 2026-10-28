@@ -1,0 +1,62 @@
+{
+  "requestidlecallback/basic.html": {
+    "total": 6
+  },
+  "requestidlecallback/callback-exception.html": {
+    "total": 1
+  },
+  "requestidlecallback/callback-idle-periods.html": {
+    "total": 1
+  },
+  "requestidlecallback/callback-iframe-different-origin.html": {
+    "total": 1
+  },
+  "requestidlecallback/callback-iframe.html": {
+    "total": 1
+  },
+  "requestidlecallback/callback-invoked.html": {
+    "total": 1
+  },
+  "requestidlecallback/callback-multiple-calls.html": {
+    "total": 2
+  },
+  "requestidlecallback/callback-removed-frame.html": {
+    "total": 1
+  },
+  "requestidlecallback/callback-suspended.html": {
+    "total": 1
+  },
+  "requestidlecallback/callback-timeRemaining-cross-realm-method.html": {
+    "total": 1
+  },
+  "requestidlecallback/callback-timeout-when-busy.html": {
+    "total": 2
+  },
+  "requestidlecallback/callback-timeout.html": {
+    "total": 2
+  },
+  "requestidlecallback/callback-xhr-sync.html": {
+    "total": 1
+  },
+  "requestidlecallback/cancel-invoked.html": {
+    "total": 3
+  },
+  "requestidlecallback/deadline-after-expired-timer.html": {
+    "total": 1
+  },
+  "requestidlecallback/deadline-max-rAF-dynamic.html": {
+    "total": 1
+  },
+  "requestidlecallback/deadline-max-rAF.html": {
+    "total": 1
+  },
+  "requestidlecallback/deadline-max-timeout-dynamic.html": {
+    "total": 1
+  },
+  "requestidlecallback/deadline-max.html": {
+    "total": 1
+  },
+  "requestidlecallback/idlharness.window.js": {
+    "total": 29
+  }
+}

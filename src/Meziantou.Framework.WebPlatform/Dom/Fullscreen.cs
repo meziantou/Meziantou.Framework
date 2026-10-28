@@ -241,8 +241,10 @@ internal static class FullscreenModel
         {
             error = "The element is not connected, is a showing popover, or its document is not allowed to use fullscreen";
         }
-        else if (!window.HasTransientActivation)
+        else if (!window.HasTransientActivation && Permissions.GetPermissionState(window, "fullscreen") != PermissionState.Granted)
         {
+            // https://github.com/explainers-by-googlers/html-fullscreen-without-a-gesture: the "fullscreen" permission (with
+            // allowWithoutGesture) allows the request without a user activation
             error = "requestFullscreen() requires a user activation";
         }
 

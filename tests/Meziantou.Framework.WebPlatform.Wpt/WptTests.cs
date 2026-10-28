@@ -134,6 +134,10 @@ public sealed class WptTests
 
     public static TheoryData<string> SchedulerTests => GetTests("scheduler");
 
+    public static TheoryData<string> RequestIdleCallbackTests => GetTests("requestidlecallback");
+
+    public static TheoryData<string> PermissionsTests => GetTests("permissions");
+
     public static TheoryData<string> WebLocksTests => GetTests("web-locks");
 
     public static TheoryData<string> StorageTests => GetTests("storage");
@@ -882,6 +886,14 @@ public sealed class WptTests
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(SchedulerTests))]
     public void Scheduler(string test) => Run("scheduler", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(RequestIdleCallbackTests))]
+    public void RequestIdleCallback(string test) => Run("requestidlecallback", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(PermissionsTests))]
+    public void Permissions(string test) => Run("permissions", test);
 
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(WebLocksTests))]

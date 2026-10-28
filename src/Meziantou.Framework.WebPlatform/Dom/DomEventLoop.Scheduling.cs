@@ -122,6 +122,7 @@ public sealed partial class DomEventLoop
     {
         var task = queue.First!;
         queue.Remove(task);
+        EndIdlePeriod();
         var continuationState = CurrentContinuationState;
         CurrentContinuationState = task.ContinuationState;
         try

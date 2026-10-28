@@ -354,6 +354,10 @@ internal sealed partial class WebIdlBindingsGenerator
                 if (target == typeof(IEnumerable<Meziantou.Framework.WebPlatform.Animations.Keyframe>))
                     return $"r.ToKeyframes({expression})";
 
+                // https://w3c.github.io/permissions/#dom-permissions-query: the object is converted to the descriptor type of the permission it names
+                if (target == typeof(PermissionDescriptor))
+                    return $"r.ToPermissionDescriptor({expression})";
+
                 return null;
 
             case NaturalKind.Function:

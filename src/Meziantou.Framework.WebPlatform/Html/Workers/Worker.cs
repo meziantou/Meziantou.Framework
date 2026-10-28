@@ -504,6 +504,13 @@ public sealed partial class WorkerNavigator
     [IdlMember("locks", "https://w3c.github.io/web-locks/#dom-navigatorlocks-locks")]
     public LockManager Locks => _locks ??= new LockManager(_global);
 
+    private Permissions? _permissions;
+
+    /// <summary>Gets the Permissions API of the worker (https://w3c.github.io/permissions/#dom-workernavigator-permissions).</summary>
+    /// <seealso href="https://w3c.github.io/permissions/#dom-workernavigator-permissions"/>
+    [IdlMember("permissions", "https://w3c.github.io/permissions/#dom-workernavigator-permissions")]
+    public Permissions Permissions => _permissions ??= new Permissions(_global);
+
     /// <summary>Gets the service workers of the worker (https://w3c.github.io/ServiceWorker/#navigator-service-worker).</summary>
     /// <seealso href="https://w3c.github.io/ServiceWorker/#dom-workernavigator-serviceworker"/>
     [IdlMember("serviceWorker", "https://w3c.github.io/ServiceWorker/#dom-workernavigator-serviceworker")]

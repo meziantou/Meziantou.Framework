@@ -211,6 +211,13 @@ public sealed partial class Navigator
     [IdlMember("locks", "https://w3c.github.io/web-locks/#dom-navigatorlocks-locks")]
     public LockManager Locks => _locks ??= new LockManager(_window);
 
+    private Permissions? _permissions;
+
+    /// <summary>Gets the Permissions API of the window (https://w3c.github.io/permissions/#dom-navigator-permissions).</summary>
+    /// <seealso href="https://w3c.github.io/permissions/#dom-navigator-permissions"/>
+    [IdlMember("permissions", "https://w3c.github.io/permissions/#dom-navigator-permissions")]
+    public Permissions Permissions => _permissions ??= new Permissions(_window);
+
     /// <summary>The clipboard of the window, if it was created.</summary>
     internal Clipboard? ClipboardOrNull => _clipboard;
 

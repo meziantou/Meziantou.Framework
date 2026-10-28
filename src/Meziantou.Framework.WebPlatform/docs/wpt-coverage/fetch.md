@@ -6,10 +6,10 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 325 | 407 | 3 | 80% |
+| [Stable](#stable-tests) | 326 | 407 | 3 | 81% |
 | [Tentative](#tentative-tests) | 13 | 77 | 1 | 17% |
 | [Reftests](#reftests) | 9 | 11 | 0 | 82% |
-| **All** | **347** | **495** | **4** | **71%** |
+| **All** | **348** | **495** | **4** | **71%** |
 
 ## Stable tests
 
@@ -284,7 +284,7 @@
 | [`fetch-later/quota/same-origin-iframe/sandboxed-iframe.https.window.js`](https://wpt.fyi/results/fetch/fetch-later/quota/same-origin-iframe/sandboxed-iframe.https.window.js) | Pass | 1 / 1 |  |  |
 | [`fetch-later/quota/same-origin-iframe/small-payload.https.window.js`](https://wpt.fyi/results/fetch/fetch-later/quota/same-origin-iframe/small-payload.https.window.js) | Pass | 6 / 6 |  |  |
 | [`fetch-later/quota/small-payload.https.window.js`](https://wpt.fyi/results/fetch/fetch-later/quota/small-payload.https.window.js) | Pass | 6 / 6 |  |  |
-| [`fetch-later/send-on-deactivate-with-background-sync.https.window.js`](https://wpt.fyi/results/fetch/fetch-later/send-on-deactivate-with-background-sync.https.window.js) | Fail | 0 / 3 | NOT IMPLEMENTED, TEST RUNNER | the Background Sync API; `test_driver.set_permission()` only supports the clipboard permissions (the test grants `background-sync`) |
+| [`fetch-later/send-on-deactivate-with-background-sync.https.window.js`](https://wpt.fyi/results/fetch/fetch-later/send-on-deactivate-with-background-sync.https.window.js) | Pass | 3 / 3 |  |  |
 | [`fetch-later/send-on-deactivate.https.window.js`](https://wpt.fyi/results/fetch/fetch-later/send-on-deactivate.https.window.js) | Pass | 5 / 5 |  |  |
 | [`fetch-later/send-on-discard/not-send-after-abort.https.window.js`](https://wpt.fyi/results/fetch/fetch-later/send-on-discard/not-send-after-abort.https.window.js) | Pass | 1 / 1 |  |  |
 | [`fetch-later/send-on-discard/send-multiple-with-activate-after.https.window.js`](https://wpt.fyi/results/fetch/fetch-later/send-on-discard/send-multiple-with-activate-after.https.window.js) | Pass | 1 / 1 |  |  |

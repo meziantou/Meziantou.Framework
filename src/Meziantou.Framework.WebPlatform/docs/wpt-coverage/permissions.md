@@ -6,26 +6,26 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 14 | 14 | – |
+| [Stable](#stable-tests) | 11 | 14 | 2 | 92% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **0** | **14** | **14** | **–** |
+| **All** | **11** | **14** | **2** | **92%** |
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`all-permissions.html`](https://wpt.fyi/results/permissions/all-permissions.html) | Disabled | – | NOT IMPLEMENTED | Permissions API (navigator.permissions) |
-| [`crashtests/permissions-query-worker.window.js`](https://wpt.fyi/results/permissions/crashtests/permissions-query-worker.window.js) | Disabled | – | NOT IMPLEMENTED | Permissions API (navigator.permissions) |
-| [`crashtests/permissions-query.any.js`](https://wpt.fyi/results/permissions/crashtests/permissions-query.any.js) | Disabled | – | NOT IMPLEMENTED | Permissions API (navigator.permissions) |
-| [`edge-cases.https.html`](https://wpt.fyi/results/permissions/edge-cases.https.html) | Disabled | – | NOT IMPLEMENTED | Permissions API (navigator.permissions) |
-| [`event-model.https.html`](https://wpt.fyi/results/permissions/event-model.https.html) | Disabled | – | NOT IMPLEMENTED | Permissions API (navigator.permissions) |
-| [`idlharness.any.js`](https://wpt.fyi/results/permissions/idlharness.any.js) | Disabled | – | NOT IMPLEMENTED | Permissions API (navigator.permissions) |
-| [`midi-permission.html`](https://wpt.fyi/results/permissions/midi-permission.html) | Disabled | – | NOT IMPLEMENTED | Permissions API (navigator.permissions) |
-| [`non-fully-active.https.html`](https://wpt.fyi/results/permissions/non-fully-active.https.html) | Disabled | – | NOT IMPLEMENTED | Permissions API (navigator.permissions) |
-| [`permissions-cg.https.html`](https://wpt.fyi/results/permissions/permissions-cg.https.html) | Disabled | – | NOT IMPLEMENTED | Permissions API (navigator.permissions) |
-| [`permissions-garbage-collect.https.html`](https://wpt.fyi/results/permissions/permissions-garbage-collect.https.html) | Disabled | – | NOT IMPLEMENTED | Permissions API (navigator.permissions) |
-| [`permissions-query-permissions-policy-attribute.https.sub.html`](https://wpt.fyi/results/permissions/permissions-query-permissions-policy-attribute.https.sub.html) | Disabled | – | NOT IMPLEMENTED | Permissions API (navigator.permissions) |
-| [`permissionsstatus-name.html`](https://wpt.fyi/results/permissions/permissionsstatus-name.html) | Disabled | – | NOT IMPLEMENTED | Permissions API (navigator.permissions) |
-| [`revocation.https.html`](https://wpt.fyi/results/permissions/revocation.https.html) | Disabled | – | NOT IMPLEMENTED | Permissions API (navigator.permissions) |
-| [`worker.https.html`](https://wpt.fyi/results/permissions/worker.https.html) | Disabled | – | NOT IMPLEMENTED | Permissions API (navigator.permissions) |
+| [`all-permissions.html`](https://wpt.fyi/results/permissions/all-permissions.html) | Pass | 19 / 19 |  |  |
+| [`crashtests/permissions-query-worker.window.js`](https://wpt.fyi/results/permissions/crashtests/permissions-query-worker.window.js) | Disabled | – | TEST RUNNER | the crash tests (`crashtests` directories and `-crash.` files) are not run by the test discovery |
+| [`crashtests/permissions-query.any.js`](https://wpt.fyi/results/permissions/crashtests/permissions-query.any.js) | Disabled | – | TEST RUNNER | the crash tests (`crashtests` directories and `-crash.` files) are not run by the test discovery |
+| [`edge-cases.https.html`](https://wpt.fyi/results/permissions/edge-cases.https.html) | Pass | 1 / 1 |  |  |
+| [`event-model.https.html`](https://wpt.fyi/results/permissions/event-model.https.html) | Pass | 4 / 4 |  |  |
+| [`idlharness.any.js`](https://wpt.fyi/results/permissions/idlharness.any.js) | Pass | 96 / 96 |  |  |
+| [`midi-permission.html`](https://wpt.fyi/results/permissions/midi-permission.html) | Pass | 1 / 1 |  |  |
+| [`non-fully-active.https.html`](https://wpt.fyi/results/permissions/non-fully-active.https.html) | Pass | 2 / 2 |  |  |
+| [`permissions-cg.https.html`](https://wpt.fyi/results/permissions/permissions-cg.https.html) | Pass | 1 / 1 |  |  |
+| [`permissions-garbage-collect.https.html`](https://wpt.fyi/results/permissions/permissions-garbage-collect.https.html) | Pass | 1 / 1 |  |  |
+| [`permissions-query-permissions-policy-attribute.https.sub.html`](https://wpt.fyi/results/permissions/permissions-query-permissions-policy-attribute.https.sub.html) | Pass | 4 / 4 |  |  |
+| [`permissionsstatus-name.html`](https://wpt.fyi/results/permissions/permissionsstatus-name.html) | Pass | 1 / 1 |  |  |
+| [`revocation.https.html`](https://wpt.fyi/results/permissions/revocation.https.html) | Pass | 2 / 2 |  |  |
+| [`worker.https.html`](https://wpt.fyi/results/permissions/worker.https.html) | Fail | 0 / 1 | TEST BUG | the test awaits `messagePromise`, which is not defined (the variable is `changePromise`): a `ReferenceError`; it fails in every browser |

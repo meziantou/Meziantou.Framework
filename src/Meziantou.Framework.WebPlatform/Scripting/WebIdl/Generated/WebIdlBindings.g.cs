@@ -319,6 +319,7 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["IDBTransaction"] = Binding_IDBTransaction<TAdapter, TValue>.Binding,
             ["IDBVersionChangeEvent"] = Binding_IDBVersionChangeEvent<TAdapter, TValue>.Binding,
             ["IIRFilterNode"] = Binding_IIRFilterNode<TAdapter, TValue>.Binding,
+            ["IdleDeadline"] = Binding_IdleDeadline<TAdapter, TValue>.Binding,
             ["ImageBitmap"] = Binding_ImageBitmap<TAdapter, TValue>.Binding,
             ["ImageBitmapRenderingContext"] = Binding_ImageBitmapRenderingContext<TAdapter, TValue>.Binding,
             ["ImageData"] = Binding_ImageData<TAdapter, TValue>.Binding,
@@ -402,6 +403,8 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["PerformanceServerTiming"] = Binding_PerformanceServerTiming<TAdapter, TValue>.Binding,
             ["PerformanceTiming"] = Binding_PerformanceTiming<TAdapter, TValue>.Binding,
             ["PeriodicWave"] = Binding_PeriodicWave<TAdapter, TValue>.Binding,
+            ["PermissionStatus"] = Binding_PermissionStatus<TAdapter, TValue>.Binding,
+            ["Permissions"] = Binding_Permissions<TAdapter, TValue>.Binding,
             ["PermissionsPolicy"] = Binding_PermissionsPolicy<TAdapter, TValue>.Binding,
             ["Plugin"] = Binding_Plugin<TAdapter, TValue>.Binding,
             ["PluginArray"] = Binding_PluginArray<TAdapter, TValue>.Binding,
@@ -1057,6 +1060,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.IdbTransactionOptions dictionaryDom_IdbTransactionOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_IdbTransactionOptions(r, dictionaryDom_IdbTransactionOptions);
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.IdleRequestOptions dictionaryDom_IdleRequestOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_IdleRequestOptions(r, dictionaryDom_IdleRequestOptions);
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.ImageBitmapOptions dictionaryDom_ImageBitmapOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_ImageBitmapOptions(r, dictionaryDom_ImageBitmapOptions);
                 return true;
@@ -1131,6 +1137,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.PerformanceObserverInit dictionaryDom_PerformanceObserverInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_PerformanceObserverInit(r, dictionaryDom_PerformanceObserverInit);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.PermissionDescriptor dictionaryDom_PermissionDescriptor:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_PermissionDescriptor(r, dictionaryDom_PermissionDescriptor);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.PointerLockOptions dictionaryDom_PointerLockOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_PointerLockOptions(r, dictionaryDom_PointerLockOptions);
@@ -1465,6 +1474,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.OffscreenRenderingContextId enumDom_OffscreenRenderingContextId:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_OffscreenRenderingContextId(enumDom_OffscreenRenderingContextId));
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.PermissionState enumDom_PermissionState:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_PermissionState(enumDom_PermissionState));
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.PositionAlignSetting enumDom_PositionAlignSetting:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_PositionAlignSetting(enumDom_PositionAlignSetting));
                 return true;
@@ -1635,6 +1647,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.NavigationPreloadState> taskSystem_Threading_Tasks_Task_Dom_NavigationPreloadState_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_NavigationPreloadState_, static (r, v) => (v is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_NavigationPreloadState(r, dictionaryValue) : r.Adapter.Null));
+                return true;
+            case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.PermissionStatus> taskSystem_Threading_Tasks_Task_Dom_PermissionStatus_:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_PermissionStatus_, static (r, v) => r.Wrap(v));
                 return true;
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.ServiceWorkerRegistration> taskSystem_Threading_Tasks_Task_Dom_ServiceWorkerRegistration_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_ServiceWorkerRegistration_, static (r, v) => r.Wrap(v));

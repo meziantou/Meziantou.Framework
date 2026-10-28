@@ -1,0 +1,44 @@
+{
+  "permissions/all-permissions.html": {
+    "total": 19
+  },
+  "permissions/edge-cases.https.html": {
+    "total": 1
+  },
+  "permissions/event-model.https.html": {
+    "total": 4
+  },
+  "permissions/idlharness.any.js": {
+    "total": 48
+  },
+  "permissions/idlharness.any.js#dedicatedworker": {
+    "total": 48
+  },
+  "permissions/midi-permission.html": {
+    "total": 1
+  },
+  "permissions/non-fully-active.https.html": {
+    "total": 2
+  },
+  "permissions/permissions-cg.https.html": {
+    "total": 1
+  },
+  "permissions/permissions-garbage-collect.https.html": {
+    "total": 1
+  },
+  "permissions/permissions-query-permissions-policy-attribute.https.sub.html": {
+    "total": 4
+  },
+  "permissions/permissionsstatus-name.html": {
+    "total": 1
+  },
+  "permissions/revocation.https.html": {
+    "total": 2
+  },
+  "permissions/worker.https.html": {
+    "total": 1,
+    "failures": {
+      "Worker can query the 'geolocation' permission and detect a transition to 'granted'": "FAIL"
+    }
+  }
+}

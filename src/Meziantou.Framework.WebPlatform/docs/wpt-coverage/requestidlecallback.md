@@ -6,32 +6,32 @@
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 20 | 20 | – |
+| [Stable](#stable-tests) | 20 | 20 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **0** | **20** | **20** | **–** |
+| **All** | **20** | **20** | **0** | **100%** |
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`basic.html`](https://wpt.fyi/results/requestidlecallback/basic.html) | Disabled | – | NOT IMPLEMENTED | requestIdleCallback() |
-| [`callback-exception.html`](https://wpt.fyi/results/requestidlecallback/callback-exception.html) | Disabled | – | NOT IMPLEMENTED | requestIdleCallback() |
-| [`callback-idle-periods.html`](https://wpt.fyi/results/requestidlecallback/callback-idle-periods.html) | Disabled | – | NOT IMPLEMENTED | requestIdleCallback() |
-| [`callback-iframe-different-origin.html`](https://wpt.fyi/results/requestidlecallback/callback-iframe-different-origin.html) | Disabled | – | NOT IMPLEMENTED | requestIdleCallback() |
-| [`callback-iframe.html`](https://wpt.fyi/results/requestidlecallback/callback-iframe.html) | Disabled | – | NOT IMPLEMENTED | requestIdleCallback() |
-| [`callback-invoked.html`](https://wpt.fyi/results/requestidlecallback/callback-invoked.html) | Disabled | – | NOT IMPLEMENTED | requestIdleCallback() |
-| [`callback-multiple-calls.html`](https://wpt.fyi/results/requestidlecallback/callback-multiple-calls.html) | Disabled | – | NOT IMPLEMENTED | requestIdleCallback() |
-| [`callback-removed-frame.html`](https://wpt.fyi/results/requestidlecallback/callback-removed-frame.html) | Disabled | – | NOT IMPLEMENTED | requestIdleCallback() |
-| [`callback-suspended.html`](https://wpt.fyi/results/requestidlecallback/callback-suspended.html) | Disabled | – | NOT IMPLEMENTED | requestIdleCallback() |
-| [`callback-timeRemaining-cross-realm-method.html`](https://wpt.fyi/results/requestidlecallback/callback-timeRemaining-cross-realm-method.html) | Disabled | – | NOT IMPLEMENTED | requestIdleCallback() |
-| [`callback-timeout-when-busy.html`](https://wpt.fyi/results/requestidlecallback/callback-timeout-when-busy.html) | Disabled | – | NOT IMPLEMENTED | requestIdleCallback() |
-| [`callback-timeout.html`](https://wpt.fyi/results/requestidlecallback/callback-timeout.html) | Disabled | – | NOT IMPLEMENTED | requestIdleCallback() |
-| [`callback-xhr-sync.html`](https://wpt.fyi/results/requestidlecallback/callback-xhr-sync.html) | Disabled | – | NOT IMPLEMENTED | requestIdleCallback() |
-| [`cancel-invoked.html`](https://wpt.fyi/results/requestidlecallback/cancel-invoked.html) | Disabled | – | NOT IMPLEMENTED | requestIdleCallback() |
-| [`deadline-after-expired-timer.html`](https://wpt.fyi/results/requestidlecallback/deadline-after-expired-timer.html) | Disabled | – | NOT IMPLEMENTED | requestIdleCallback() |
-| [`deadline-max-rAF-dynamic.html`](https://wpt.fyi/results/requestidlecallback/deadline-max-rAF-dynamic.html) | Disabled | – | NOT IMPLEMENTED | requestIdleCallback() |
-| [`deadline-max-rAF.html`](https://wpt.fyi/results/requestidlecallback/deadline-max-rAF.html) | Disabled | – | NOT IMPLEMENTED | requestIdleCallback() |
-| [`deadline-max-timeout-dynamic.html`](https://wpt.fyi/results/requestidlecallback/deadline-max-timeout-dynamic.html) | Disabled | – | NOT IMPLEMENTED | requestIdleCallback() |
-| [`deadline-max.html`](https://wpt.fyi/results/requestidlecallback/deadline-max.html) | Disabled | – | NOT IMPLEMENTED | requestIdleCallback() |
-| [`idlharness.window.js`](https://wpt.fyi/results/requestidlecallback/idlharness.window.js) | Disabled | – | NOT IMPLEMENTED | requestIdleCallback() |
+| [`basic.html`](https://wpt.fyi/results/requestidlecallback/basic.html) | Pass | 6 / 6 |  |  |
+| [`callback-exception.html`](https://wpt.fyi/results/requestidlecallback/callback-exception.html) | Pass | 1 / 1 |  |  |
+| [`callback-idle-periods.html`](https://wpt.fyi/results/requestidlecallback/callback-idle-periods.html) | Pass | 1 / 1 |  |  |
+| [`callback-iframe-different-origin.html`](https://wpt.fyi/results/requestidlecallback/callback-iframe-different-origin.html) | Pass | 1 / 1 |  |  |
+| [`callback-iframe.html`](https://wpt.fyi/results/requestidlecallback/callback-iframe.html) | Pass | 1 / 1 |  |  |
+| [`callback-invoked.html`](https://wpt.fyi/results/requestidlecallback/callback-invoked.html) | Pass | 1 / 1 |  |  |
+| [`callback-multiple-calls.html`](https://wpt.fyi/results/requestidlecallback/callback-multiple-calls.html) | Pass | 2 / 2 |  |  |
+| [`callback-removed-frame.html`](https://wpt.fyi/results/requestidlecallback/callback-removed-frame.html) | Pass | 1 / 1 |  |  |
+| [`callback-suspended.html`](https://wpt.fyi/results/requestidlecallback/callback-suspended.html) | Pass | 1 / 1 |  |  |
+| [`callback-timeRemaining-cross-realm-method.html`](https://wpt.fyi/results/requestidlecallback/callback-timeRemaining-cross-realm-method.html) | Pass | 1 / 1 |  |  |
+| [`callback-timeout-when-busy.html`](https://wpt.fyi/results/requestidlecallback/callback-timeout-when-busy.html) | Pass | 2 / 2 |  |  |
+| [`callback-timeout.html`](https://wpt.fyi/results/requestidlecallback/callback-timeout.html) | Pass | 2 / 2 |  |  |
+| [`callback-xhr-sync.html`](https://wpt.fyi/results/requestidlecallback/callback-xhr-sync.html) | Pass | 1 / 1 |  |  |
+| [`cancel-invoked.html`](https://wpt.fyi/results/requestidlecallback/cancel-invoked.html) | Pass | 3 / 3 |  |  |
+| [`deadline-after-expired-timer.html`](https://wpt.fyi/results/requestidlecallback/deadline-after-expired-timer.html) | Pass | 1 / 1 |  |  |
+| [`deadline-max-rAF-dynamic.html`](https://wpt.fyi/results/requestidlecallback/deadline-max-rAF-dynamic.html) | Pass | 1 / 1 |  |  |
+| [`deadline-max-rAF.html`](https://wpt.fyi/results/requestidlecallback/deadline-max-rAF.html) | Pass | 1 / 1 |  |  |
+| [`deadline-max-timeout-dynamic.html`](https://wpt.fyi/results/requestidlecallback/deadline-max-timeout-dynamic.html) | Pass | 1 / 1 |  |  |
+| [`deadline-max.html`](https://wpt.fyi/results/requestidlecallback/deadline-max.html) | Pass | 1 / 1 |  |  |
+| [`idlharness.window.js`](https://wpt.fyi/results/requestidlecallback/idlharness.window.js) | Pass | 29 / 29 |  |  |

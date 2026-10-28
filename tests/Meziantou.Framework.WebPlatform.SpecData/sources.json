@@ -224,6 +224,8 @@
       "fullscreen",
       "pointerlock",
       "scheduler",
+      "requestidlecallback",
+      "permissions",
       "web-locks",
       "storage",
       "fs",

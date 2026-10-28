@@ -3131,6 +3131,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.StorageShed? LocalStorage { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Media.MediaAutoplayPolicy MediaAutoplayPolicy { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Media.MediaBackend? MediaBackend { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.PermissionStore? Permissions { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Rendering.RenderingBackend? RenderingBackend { get => throw null; init { } }
         public System.Func<Meziantou.Framework.WebPlatform.Dom.BrowsingContext, Meziantou.Framework.WebPlatform.Dom.PointerLockOptions, bool>? RequestPointerLock { get => throw null; init { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.BrowsingContext>? SameDocumentNavigated { get => throw null; init { } }
@@ -7048,6 +7049,19 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public ulong OldVersion { get => throw null; init { } }
     }
 
+    public sealed class IdleDeadline
+    {
+        public bool DidTimeout { get => throw null; }
+        public double TimeRemaining() => throw null;
+    }
+
+    public delegate void IdleRequestCallback(Meziantou.Framework.WebPlatform.Dom.IdleDeadline deadline);
+
+    public sealed class IdleRequestOptions
+    {
+        public uint? Timeout { get => throw null; init { } }
+    }
+
     public sealed class ImageBitmap
     {
         public uint Height { get => throw null; }
@@ -8234,6 +8248,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool OnLine { get => throw null; }
         public string Oscpu { get => throw null; }
         public bool PdfViewerEnabled { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.Permissions Permissions { get => throw null; }
         public string Platform { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.PluginArray Plugins { get => throw null; }
         public string Product { get => throw null; }
@@ -8726,6 +8741,37 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public ulong SecureConnectionStart { get => throw null; }
         public ulong UnloadEventEnd { get => throw null; }
         public ulong UnloadEventStart { get => throw null; }
+    }
+
+    public sealed class PermissionDescriptor
+    {
+        public required string Name { get => throw null; init { } }
+    }
+
+    public enum PermissionState
+    {
+        Granted = 0,
+        Denied = 1,
+        Prompt = 2,
+    }
+
+    public sealed class PermissionStatus : Meziantou.Framework.WebPlatform.Dom.EventTarget
+    {
+        public string Name { get => throw null; }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnChange { get => throw null; set { } }
+        public Meziantou.Framework.WebPlatform.Dom.PermissionState State { get => throw null; }
+    }
+
+    public sealed class PermissionStore
+    {
+        public Meziantou.Framework.WebPlatform.Dom.PermissionState GetState(string name, string origin) => throw null;
+        public void SetState(string name, Meziantou.Framework.WebPlatform.Dom.PermissionState state) { }
+        public void SetState(string name, string origin, Meziantou.Framework.WebPlatform.Dom.PermissionState state) { }
+    }
+
+    public sealed class Permissions
+    {
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.PermissionStatus> Query(Meziantou.Framework.WebPlatform.Dom.PermissionDescriptor permissionDescriptor) => throw null;
     }
 
     public sealed class PermissionsPolicy
@@ -12270,6 +12316,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public void Alert(string message) { }
         public void Blur() { }
         public void CancelAnimationFrame(uint handle) { }
+        public void CancelIdleCallback(uint handle) { }
         public void CaptureEvents() { }
         public void Close() { }
         public bool Confirm(string message = "") => throw null;
@@ -12287,6 +12334,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public string? Prompt(string message = "", string @default = "") => throw null;
         public void ReleaseEvents() { }
         public uint RequestAnimationFrame(Meziantou.Framework.WebPlatform.Dom.FrameRequestCallback callback) => throw null;
+        public uint RequestIdleCallback(Meziantou.Framework.WebPlatform.Dom.IdleRequestCallback callback, Meziantou.Framework.WebPlatform.Dom.IdleRequestOptions? options = null) => throw null;
         public void ResizeBy(int x, int y) { }
         public void ResizeTo(int width, int height) { }
         public System.Threading.Tasks.Task Scroll(Meziantou.Framework.WebPlatform.Dom.ScrollToOptions? options = null) => throw null;
@@ -12370,6 +12418,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public System.Collections.Generic.IReadOnlyList<string> Languages { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.LockManager Locks { get => throw null; }
         public bool OnLine { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.Permissions Permissions { get => throw null; }
         public string Platform { get => throw null; }
         public string Product { get => throw null; }
         public string ProductSub { get => throw null; }

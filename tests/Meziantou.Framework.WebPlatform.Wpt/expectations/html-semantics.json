@@ -2745,7 +2745,6 @@
   "html/semantics/embedded-content/the-iframe-element/srcdoc-lifecycle-crash-crbug-1472607.https.html": {
     "total": 2,
     "failures": {
-      "common setup": "FAIL",
       "requestStorageAccess() from about:blank Document before it gets replaced with a srcdoc resource does not crash the host process": "FAIL"
     }
   },

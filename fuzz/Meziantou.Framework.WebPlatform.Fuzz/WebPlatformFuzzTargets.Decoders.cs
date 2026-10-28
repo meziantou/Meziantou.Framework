@@ -623,22 +623,25 @@ public static partial class WebPlatformFuzzTargets
 
     private static IEnumerable<FuzzSeed> GetMimeSeeds()
     {
-        var assembly = typeof(WebPlatformFuzzTargets).Assembly;
-        using (var document = FuzzResources.ReadJson(assembly, "Seeds/mime-types.json"))
+        // The tests of WPT: the MIME types are the "input" of the objects of mime-types.json, the data: URLs the first item
+        // of the arrays of data-urls.json
+        foreach (var file in GetSeeds("mime"))
         {
+            using var document = JsonDocument.Parse(file.Data);
             var index = 0;
-            foreach (var test in document.RootElement.EnumerateArray().Where(test => test.ValueKind is JsonValueKind.Object))
+            foreach (var test in document.RootElement.EnumerateArray())
             {
-                yield return FuzzSeed.FromText($"mime-{index++}", test.GetProperty("input").GetString()!);
-            }
-        }
+                var input = test.ValueKind switch
+                {
+                    JsonValueKind.Object => test.GetProperty("input").GetString(),
+                    JsonValueKind.Array => test[0].GetString(),
+                    _ => null,
+                };
 
-        using (var document = FuzzResources.ReadJson(assembly, "Seeds/data-urls.json"))
-        {
-            var index = 0;
-            foreach (var test in document.RootElement.EnumerateArray().Where(test => test.ValueKind is JsonValueKind.Array))
-            {
-                yield return FuzzSeed.FromText($"data-url-{index++}", test[0].GetString()!);
+                if (input is not null)
+                {
+                    yield return FuzzSeed.FromText($"{Path.GetFileNameWithoutExtension(file.Name)}-{index++}", input);
+                }
             }
         }
     }

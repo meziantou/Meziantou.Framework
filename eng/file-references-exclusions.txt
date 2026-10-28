@@ -3,6 +3,8 @@
 #
 # Vendored files are copies of upstream data: they contain no file references, but some of their comments look like
 # references (e.g. "// Reference: ..." in public_suffix_list.dat).
+fuzz/Meziantou.Framework.WebPlatform.Fuzz/Seeds/mime/
+fuzz/Meziantou.Framework.WebPlatform.Fuzz/Seeds/webvtt/
 src/Meziantou.Framework.Fonts/Afm/StandardFonts/
 src/Meziantou.Framework.Pdf/Fonts/GlyphList/
 src/Meziantou.Framework.Pdf/Rendering/Fonts/Substitution/

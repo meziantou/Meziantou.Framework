@@ -1339,20 +1339,6 @@ internal sealed partial class TrueTypeInterpreter : IDisposable
         }
     }
 
-    /// <summary>Moves the original position of a point of the twilight zone, as <see cref="Move"/> moves the current one.</summary>
-    private void MoveOriginal(ref HintPoint point, int distance)
-    {
-        if (_state.FreedomX != 0)
-        {
-            point.OriginalX = Saturate(point.OriginalX + (long)MultiplyDivide(distance, _state.FreedomX, _freedomDotProjection));
-        }
-
-        if (_state.FreedomY != 0)
-        {
-            point.OriginalY = Saturate(point.OriginalY + (long)MultiplyDivide(distance, _state.FreedomY, _freedomDotProjection));
-        }
-    }
-
     private int TakeLoop()
     {
         var count = _state.Loop;

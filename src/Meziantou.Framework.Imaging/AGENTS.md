@@ -85,8 +85,9 @@ the library guarantees to its callers (support matrix, limitations, defaults). K
   sink converts them: keep the decoder layouts unchanged when a default changes.
 - Encoders: `ImageEncoder.StoresPixelFormat` says which of them a codec receives as they are (PNG, TIFF); the writers
   widen the others losslessly (`ImageWriterCore`, `ImageCollectionWriterCore`).
-- Processing: `Rgb48` has kernels of its own. The filtering kernels run `La16`, `La32` and `A8` through
-  `ProcessingBridge` (an `Rgba32`/`Rgba64` copy of the frame, `Image.KernelPixelFormat` for the plans), and drawing
+- Processing: `Rgb48` has kernels of its own. The filtering kernels and the `Pixelate`/`OilPaint`/`Flatten` effects run
+  `La16`, `La32` and `A8` through `ProcessingBridge` (an `Rgba32`/`Rgba64` copy of the frame, `Image.KernelPixelFormat`
+  for the plans and scratch sizes; `Flatten` rejects `A8`, which cannot hold the flattened colors), and drawing
   composites them through `DrawingKernels.CompositeBridged`, their paints holding the gray level in the three colors. A
   new per-frame operation must handle them natively, go through the bridge, or reject them before any allocation.
 

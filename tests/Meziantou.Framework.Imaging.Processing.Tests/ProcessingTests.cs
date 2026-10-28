@@ -2,6 +2,7 @@ using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Imaging.TestHarness.Adapters;
 using Meziantou.Framework.Imaging.TestHarness.Color;
+using Meziantou.Framework.Imaging.TestHarness.Drawing;
 using Meziantou.Framework.Imaging.TestHarness.Pixels;
 
 namespace Meziantou.Framework.Imaging.Tests;
@@ -2396,15 +2397,22 @@ public sealed class ProcessingTests
             var source = ReadValues(image.Frames[0]);
             image.OilPaint(levels, radius, Ct);
             var channels = PixelFormats.GetComponentCount(format);
-            var hasAlpha = PixelFormats.HasAlpha(format);
+            var (colors, alpha) = GetSampleLayout(format);
             var max = MaxValue(format);
             var (red, blue) = format == PixelFormat.Bgra32 ? (2, 0) : (0, 2);
             var pixelLevels = new int[13 * 9];
             for (var i = 0; i < pixelLevels.Length; i++)
             {
                 var pixel = i * channels;
-                var a = hasAlpha ? source[pixel + 3] / max : 1;
-                var intensity = channels == 1 ? source[pixel] / max : ((0.2126 * source[pixel + red]) + (0.7152 * source[pixel + 1]) + (0.0722 * source[pixel + blue])) * a / max;
+                var a = alpha >= 0 ? source[pixel + alpha] / max : 1;
+
+                // A gray over black is the product of the gray and alpha (black for an alpha mask)
+                var intensity = colors switch
+                {
+                    0 => 0,
+                    1 => alpha >= 0 ? source[pixel] * source[pixel + alpha] / ((double)max * max) : source[pixel] / max,
+                    _ => ((0.2126 * source[pixel + red]) + (0.7152 * source[pixel + 1]) + (0.0722 * source[pixel + blue])) * a / max,
+                };
                 pixelLevels[i] = Math.Clamp((int)Math.Floor(intensity * levels), 0, levels - 1);
             }
 
@@ -2457,6 +2465,7 @@ public sealed class ProcessingTests
             var actual = ReadValues(image.Frames[0]);
             var area = rectangle ?? new Rectangle(0, 0, 17, 11);
             var channels = PixelFormats.GetComponentCount(format);
+            var (colors, alpha) = GetSampleLayout(format);
             var max = MaxValue(format);
             var tolerance = PixelFormats.IsFloatingPoint(format) ? (format == PixelFormat.RgbaFloat ? 1e-4 : 2e-3) : max == 255 ? 1 : 2;
             var paint = format == PixelFormat.Bgra32 ? new[] { color.B, color.G, color.R } : [color.R, color.G, color.B];
@@ -2476,14 +2485,14 @@ public sealed class ProcessingTests
                     var dy = (y + 0.5 - (area.Y + (area.Height / 2.0))) / radiusY;
                     var t = Math.Min(1, Math.Sqrt((dx * dx) + (dy * dy)));
                     var coverage = (vignette ? t : 1 - t) * color.A / 65535;
-                    if (PixelFormats.HasAlpha(format))
+                    if (alpha >= 0)
                     {
-                        Assert.Equal(source[pixel + 3], actual[pixel + 3]);
-                        if (source[pixel + 3] == 0)
+                        Assert.Equal(source[pixel + alpha], actual[pixel + alpha]);
+                        if (source[pixel + alpha] == 0)
                             continue;
                     }
 
-                    for (var c = 0; c < Math.Min(channels, 3); c++)
+                    for (var c = 0; c < colors; c++)
                     {
                         var expected = (paint[c] / 65535.0 * max * coverage) + (source[pixel + c] * (1 - coverage));
                         Assert.True(Math.Abs(expected - actual[pixel + c]) <= tolerance, string.Create(CultureInfo.InvariantCulture, $"{context}, sample {c}: expected {expected}, actual {actual[pixel + c]}"));
@@ -2535,6 +2544,17 @@ public sealed class ProcessingTests
             Assert.Equal(new RgbaHalf((Half)0.5, (Half)0, (Half)0.5, Half.One), half.Frames[0][0, 0]);
         }
 
+        // Gray with alpha: the pixels of the conversion to the gray format without alpha, the luma of the flattened colors
+        using (var image = DrawingTestSupport.CreateRandom(PixelFormat.La16, 23, 9, random.Next))
+        {
+            CheckGrayFlatten<Gray8>(image, background);
+        }
+
+        using (var image = DrawingTestSupport.CreateRandom(PixelFormat.La32, 23, 9, random.Next))
+        {
+            CheckGrayFlatten<Gray16>(image, background);
+        }
+
         // A format without alpha is already opaque
         using (var opaque = new Image<Rgb24>(1, 1, new Rgb24(1, 2, 3)))
         {
@@ -2542,10 +2562,34 @@ public sealed class ProcessingTests
             Assert.Equal(new Rgb24(1, 2, 3), opaque.Frames[0][0, 0]);
         }
 
+        using (var opaque = new Image<Rgb48>(1, 1, new Rgb48(1, 2, 3)))
+        {
+            opaque.Flatten(new Rgba32(9, 9, 9), Ct);
+            Assert.Equal(new Rgb48(1, 2, 3), opaque.Frames[0][0, 0]);
+        }
+
+        // An alpha mask has no color to hold the background
+        using (var mask = new Image<A8>(1, 1, new A8(4)))
+        {
+            Assert.Throws<NotSupportedException>(() => mask.Flatten(new Rgba32(9, 9, 9), Ct));
+            Assert.Equal(new A8(4), mask.Frames[0][0, 0]);
+        }
+
         using var rejected = new Image<Rgba32>(1, 1, new Rgba32(1, 2, 3, 4));
         Assert.Throws<ArgumentException>(() => rejected.Flatten(new Rgba32(9, 9, 9, 254)));
         Assert.Throws<ArgumentException>(() => rejected.Frames[0].Flatten(new Rgba64(9, 9, 9, 0)));
         Assert.Equal(new Rgba32(1, 2, 3, 4), rejected.Frames[0][0, 0]);
+
+        static void CheckGrayFlatten<TGray>(Image image, Rgba64 background)
+            where TGray : unmanaged
+        {
+            var format = image.PixelFormat;
+            using var converted = image.CloneAs<TGray>(new PixelConversionOptions { BackgroundColor = background });
+            image.Flatten(background, Ct);
+            Assert.Equal(format, image.PixelFormat);
+            using var flattened = image.CloneAs<TGray>();
+            Assert.Equal(DrawingTestSupport.ReadSamples(converted.Frames[0]), DrawingTestSupport.ReadSamples(flattened.Frames[0]));
+        }
     }
 
     [Fact]
@@ -2675,6 +2719,16 @@ public sealed class ProcessingTests
         };
     }
 
+    /// <summary>The number of color samples of a pixel and the index of its alpha sample (-1 without alpha).</summary>
+    private static (int Colors, int Alpha) GetSampleLayout(PixelFormat format)
+    {
+        if (PixelFormats.IsFloatingPoint(format))
+            return (3, 3);
+
+        var layout = ReferencePixelLayout.FromPixelFormat(format);
+        return (layout.ColorChannels, layout.HasAlpha ? layout.ColorChannels : -1);
+    }
+
     private static int MaxValue(PixelFormat format) => PixelFormats.IsFloatingPoint(format) ? 1 : PixelFormats.GetBitsPerComponent(format) == 16 ? 65535 : 255;
 
     /// <summary>
@@ -2684,7 +2738,7 @@ public sealed class ProcessingTests
     private static double[] ReferenceMean(PixelFormat format, double[] samples, List<int> pixels)
     {
         var channels = PixelFormats.GetComponentCount(format);
-        var hasAlpha = PixelFormats.HasAlpha(format);
+        var (colors, alphaIndex) = GetSampleLayout(format);
         var result = new double[channels];
         if (PixelFormats.IsFloatingPoint(format))
         {
@@ -2714,7 +2768,7 @@ public sealed class ProcessingTests
         }
 
         var max = MaxValue(format);
-        if (!hasAlpha)
+        if (alphaIndex < 0)
         {
             for (var c = 0; c < channels; c++)
             {
@@ -2724,17 +2778,17 @@ public sealed class ProcessingTests
             return result;
         }
 
-        var sumOfAlpha = pixels.Sum(pixel => (decimal)samples[pixel + 3]);
+        var sumOfAlpha = pixels.Sum(pixel => (decimal)samples[pixel + alphaIndex]);
         var roundedAlpha = RoundHalfUp(sumOfAlpha / pixels.Count, max);
         if (roundedAlpha == 0)
             return result;
 
-        for (var c = 0; c < 3; c++)
+        for (var c = 0; c < colors; c++)
         {
-            result[c] = RoundHalfUp(pixels.Sum(pixel => (decimal)samples[pixel + c] * (decimal)samples[pixel + 3]) / sumOfAlpha, max);
+            result[c] = RoundHalfUp(pixels.Sum(pixel => (decimal)samples[pixel + c] * (decimal)samples[pixel + alphaIndex]) / sumOfAlpha, max);
         }
 
-        result[3] = roundedAlpha;
+        result[alphaIndex] = roundedAlpha;
         return result;
 
         static int RoundHalfUp(decimal value, int max) => (int)Math.Clamp(Math.Floor(value + 0.5m), 0, max);

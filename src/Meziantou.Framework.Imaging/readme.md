@@ -505,10 +505,12 @@ and back, and alpha masks to any format with alpha and back are exact.
 > `Image<Rgba64>` should load with `Load<Rgba32>`/`Load<Rgba64>` instead. A gray ICC profile of such a file is now kept,
 > where it could not label the RGBA pixels of before. Animations keep `Rgba32`/`Rgba64`.
 
-Every processing operation and the drawing canvas accept the compact formats. `Rgb48` has kernels of its own; the
-filtering operations (resize, transform, convolution, blurs, median) process `La16`, `La32` and `A8` through a
-temporary `Rgba32`/`Rgba64` copy of each frame, charged to the image, which gives back the same gray levels and alpha;
-drawing composites them the same way, a run of pixels at a time. `PngEncoder` and `TiffEncoder` store `La16`, `La32` and
+Every processing operation and the drawing canvas accept the compact formats, except `Flatten` on an `A8` mask, which
+has no color to hold the result (`NotSupportedException`). `Rgb48` has kernels of its own; the filtering operations
+(resize, transform, convolution, blurs, median) and the `Pixelate`, `OilPaint` and `Flatten` effects process `La16`,
+`La32` and `A8` through a temporary `Rgba32`/`Rgba64` copy of each frame, charged to the image, which gives back the
+same gray levels and alpha (a flattened gray with alpha gets the luma of its flattened colors, as its conversion to
+`Gray8`/`Gray16` does); drawing composites them the same way, a run of pixels at a time. `PngEncoder` and `TiffEncoder` store `La16`, `La32` and
 `Rgb48` as they are (gray with alpha, 16-bit RGB) and an alpha mask as black gray with alpha; the other encoders get a
 copy of the frames widened without loss to `Rgba32` or `Rgba64`, charged to the writer, and follow their own rules for
 those formats (for example `JpegEncoder` needs a `BackgroundColor` for pixels that are not opaque).

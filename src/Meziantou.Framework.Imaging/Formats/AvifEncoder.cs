@@ -143,6 +143,11 @@ public sealed class AvifEncoder : ImageEncoder
     /// output can show the edges of the tiles, and is larger than the image coded whole.
     /// </para>
     /// <para>
+    /// With <see cref="ImageConfiguration.MaxDegreeOfParallelism"/> above 1, the tiles of a grid of at least 65,536 samples
+    /// are coded by up to that many workers at once, each with encoders of its own (charged to
+    /// <see cref="ImageResourceLimits.MaxLiveAllocationBytes"/>); the output is byte-identical to the one of one worker.
+    /// </para>
+    /// <para>
     /// Each side of a tile is between 64 and 65,536 pixels, and a grid has at most 256 columns and 256 rows. With
     /// subsampled chroma (<see cref="ChromaSubsampling"/>), the widths of the tiles and of the image must be even, and
     /// their heights too for 4:2:0. Ignored by an image sequence.

@@ -1044,11 +1044,14 @@ thin public types over its `FontFace`.
 - Default parallelism is one worker (`ImageConfiguration.MaxDegreeOfParallelism`). Only `Resize`, the transformations,
   `Convolve`, the blurs (`GaussianBlur`, `BoxBlur`, `MedianBlur`), `Sharpen` and `DetectEdges` are parallel, and their result must not
   depend on the worker count (`ParallelConvolutionTests`: a frame needs 65,536 pixels to get several workers). The HEIC
-  decoder decodes the tiles of a grid of at least 65,536 samples concurrently (`HeicDecoder.DecodeTiles`): the structure
-  parser and the `InputResourceTracker` are not thread-safe and stay on the calling thread (each worker charges its hidden
-  pixels to a tracker of its own, merged in tile order), and the pixels and the errors are those of one worker (the error
-  of the first tile that fails, a cancellation first; `HeicDecodingTests`). Other decoding, encoding and drawing stay
-  sequential.
+  and AVIF decoders decode the tiles of a grid of at least 65,536 samples concurrently (`HeifGridTiles.Decode`): the
+  structure parser and the `InputResourceTracker` are not thread-safe and stay on the calling thread (each worker charges
+  its hidden pixels to a tracker of its own, merged in tile order), and the pixels and the errors are those of one worker
+  (the error of the first tile that fails, a cancellation first; `HeicDecodingTests`, `AvifDecoderTests`). The AVIF
+  encoder codes the tiles of such a grid (`AvifEncoder.GridTileSize`) the same way (`HeifEncoderSession.EncodeTiles`):
+  each worker has encoders of its own, created with the session and charged to its scope, and the coded tiles are appended
+  in tile order, so the file is byte-identical to one worker's (`AvifEncoderTests`). Other decoding, encoding and drawing
+  stay sequential.
 - Static row callbacks allocate nothing per row (`PerformanceContractTests`).
 - This repository builds with the updated memory-safety rules: wrap `MemoryMarshal`, `Unsafe` and `Vector*.LoadUnsafe` /
   `StoreUnsafe` calls in `unsafe(...)`, or in an `unsafe { }` block for a statement.

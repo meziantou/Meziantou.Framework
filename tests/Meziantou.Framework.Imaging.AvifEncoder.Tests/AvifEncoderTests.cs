@@ -430,6 +430,33 @@ public sealed class AvifEncoderTests
         Assert.Equal("av01", sequence.PrimaryItem!.Type);
     }
 
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(16)]
+    [InlineData(64)]
+    public void TheTilesOfAGridAreCodedByWorkersAsByOne(int workers)
+    {
+        // 20 tiles of 64x64, whose last column and last row extend past the image: batches of 3 tiles span two rows of 5
+        // tiles, and 64 workers are more than the tiles. The file is the one of one worker, with its alpha grid
+        using var transparent = CreateSmoothImage(300, 250, transparent: true);
+        var lossless = new AvifEncoder { GridTileSize = new Size(64, 64), Effort = 0 };
+        var expected = Encode(transparent, lossless);
+        using var transparentWithWorkers = WithWorkers(transparent, workers);
+        Assert.Equal(expected, Encode(transparentWithWorkers, lossless));
+
+        // Lossy tiles of subsampled chroma, at an effort that searches more
+        using var opaque = CreateSmoothImage(300, 250, transparent: false);
+        var lossy = new AvifEncoder { Compression = AvifCompression.Lossy, GridTileSize = new Size(64, 64), Effort = 4 };
+        using var opaqueWithWorkers = WithWorkers(opaque, workers);
+        Assert.Equal(Encode(opaque, lossy), Encode(opaqueWithWorkers, lossy));
+
+        // Every sample of the image is decoded back
+        using var decoded = Image.Load<Rgba32>(expected);
+        Assert.Equal(GetBytes(transparent), GetBytes(decoded));
+    }
+
     [Fact]
     public void AGridOfSubsampledChromaNeedsEvenSizes()
     {
@@ -1190,6 +1217,14 @@ public sealed class AvifEncoderTests
         var track = ReferenceHeif.Parse(data).ColorTrack;
         Assert.Equal(1_000_000u, track!.Timescale);
         Assert.Equal([0u, 250_000u], track.Samples.Select(sample => sample.Duration));
+    }
+
+    // A copy of an image whose operations use up to that many workers
+    private static Image<Rgba32> WithWorkers(Image<Rgba32> image, int workers)
+    {
+        var pixels = new Rgba32[image.Width * image.Height];
+        image.Frames[0].CopyPixelDataTo(pixels);
+        return Image.ImportPixelData<Rgba32>(pixels, image.Width, image.Height, configuration: new ImageConfiguration { MaxDegreeOfParallelism = workers });
     }
 
     private static byte[] Encode(Image image, AvifEncoder encoder)

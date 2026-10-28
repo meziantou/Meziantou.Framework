@@ -241,6 +241,57 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void ApplyPhotoEffectsWritesEveryEffect()
+    {
+        // The left 12 columns are opaque red, the others a half-transparent green
+        var photoPath = GetPath("photo.png");
+        using (var photo = new Image<Rgba32>(32, 24, new Rgba32(40, 200, 60, 128)))
+        {
+            photo.Draw(canvas => canvas.FillRectangle(new Rgba32(220, 40, 40), new Rectangle(0, 0, 12, 24)));
+            photo.Save(photoPath);
+        }
+
+        Examples.ApplyPhotoEffects(photoPath, _directory);
+
+        // The Lomograph red is (255, 71, 23), darker the farther it is from the center: 0.23 of the half-diagonal of 20 pixels
+        // keeps 77% of it, 0.78 keeps 22%, and the corners are nearly black
+        using (var lomo = Image.Load<Rgba32>(GetPath("lomo.png")))
+        {
+            Assert.InRange(lomo.Frames[0][11, 12].R, 190, 205);
+            Assert.InRange(lomo.Frames[0][0, 12].R, 50, 65);
+            Assert.InRange(lomo.Frames[0][0, 0].R, 0, 15);
+        }
+
+        // A block that straddles the two colors: alpha (4 * 255 + 4 * 128) / 8 = 191.5, colors averaged premultiplied
+        using (var mosaic = Image.Load<Rgba32>(GetPath("mosaic.png")))
+        {
+            Assert.Equal(new Rgba32(160, 93, 47, 192), mosaic.Frames[0][8, 0]);
+            Assert.Equal(new Rgba32(160, 93, 47, 192), mosaic.Frames[0][15, 7]);
+            Assert.Equal(new Rgba32(220, 40, 40), mosaic.Frames[0][7, 23]);
+        }
+
+        // Inside a flat area, the oil painting keeps the color
+        using (var painting = Image.Load<Rgba32>(GetPath("painting.png")))
+        {
+            Assert.Equal(new Size(32, 24), painting.Size);
+            Assert.Equal(new Rgba32(220, 40, 40), painting.Frames[0][2, 10]);
+            Assert.Equal(new Rgba32(40, 200, 60, 128), painting.Frames[0][28, 10]);
+        }
+
+        // Deuteranopia: 0.367322 * 220 + 0.860646 * 40 - 0.227968 * 40 = 106.12, 0.280085 * 220 + 0.672501 * 40 + 0.047413 * 40 = 90.42,
+        // -0.011820 * 220 + 0.042940 * 40 + 0.968881 * 40 = 37.87
+        using (var preview = Image.Load<Rgba32>(GetPath("deuteranopia.png")))
+        {
+            Assert.Equal(new Rgba32(106, 90, 38), preview.Frames[0][0, 0]);
+        }
+
+        // On white: (40 * 128 + 255 * 127 + 127) / 255 = 147
+        using var flattened = Image.Load<Rgba32>(GetPath("flattened.png"));
+        Assert.Equal(new Rgba32(147, 227, 157), flattened.Frames[0][20, 5]);
+        Assert.Equal(new Rgba32(220, 40, 40), flattened.Frames[0][0, 0]);
+    }
+
+    [Fact]
     public void ApplyColorFiltersRecolorsAnImageAPartOfItAndADrawing()
     {
         var photoPath = GetPath("plain.png");

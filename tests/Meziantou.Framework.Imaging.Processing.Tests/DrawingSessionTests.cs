@@ -3332,6 +3332,162 @@ public sealed class DrawingSessionTests
     }
 
     [Fact]
+    public void ThePhotoPresetsAreTheMatricesOfTheirSources()
+    {
+        // The polaroid() and kodachrome() presets of the ColorMatrixFilter of PixiJS 8.6.6 (src/filters/defaults/color-matrix/ColorMatrixFilter.ts,
+        // commit 6f453df5e78fec090294eb57649a8aa9cbdc3825), as published: the same row-by-row layout, the constants on the 0 to 255 scale
+        AssertMatrix(
+            [
+                1.438, -0.062, -0.062, 0, 0,
+                -0.122, 1.378, -0.122, 0, 0,
+                -0.016, -0.016, 1.483, 0, 0,
+                0, 0, 0, 1, 0,
+            ],
+            ColorMatrix.Polaroid,
+            constantScale: 255);
+        AssertMatrix(
+            [
+                1.1285582396593525, -0.3967382283601348, -0.03992559172921793, 0, 63.72958762196502,
+                -0.16404339962244616, 1.0835251566291304, -0.05498805115633132, 0, 24.732407896706203,
+                -0.16786010706155763, -0.5603416277695248, 1.6014850761964943, 0, 35.62982807460946,
+                0, 0, 0, 1, 0,
+            ],
+            ColorMatrix.Kodachrome,
+            constantScale: 255);
+
+        // The Lomograph and BlackWhite matrices of ImageProcessor (src/ImageProcessor/Imaging/Filters/Photo/ColorMatrixes.cs, commit
+        // a94fb903e49f6fa5f47c6ea58d27af55ce8ff89c), as published: System.Drawing matrices, whose rows are the inputs (red, green,
+        // blue, alpha, then the constants) and whose columns are the outputs, so that they are the transposes of ours
+        AssertTransposedMatrix(
+            [
+                [1.50f, 0, 0, 0, 0],
+                [0, 1.45f, 0, 0, 0],
+                [0, 0, 1.09f, 0, 0],
+                [0, 0, 0, 1, 0],
+                [-0.10f, 0.05f, -0.08f, 0, 1],
+            ],
+            ColorMatrix.Lomograph);
+        AssertTransposedMatrix(
+            [
+                [1.5f, 1.5f, 1.5f, 0, 0],
+                [1.5f, 1.5f, 1.5f, 0, 0],
+                [1.5f, 1.5f, 1.5f, 0, 0],
+                [0, 0, 0, 1, 0],
+                [-1, -1, -1, 0, 1],
+            ],
+            ColorMatrix.BlackWhite);
+
+        // On (200, 100, 40, 128). Polaroid: 1.438 * 200 - 0.062 * 100 - 0.062 * 40 = 278.92 -> 255, -24.4 + 137.8 - 4.88 = 108.52,
+        // -3.2 - 1.6 + 59.32 = 54.52. Kodachrome: 225.71 - 39.67 - 1.60 + 63.73 = 248.17, -32.81 + 108.35 - 2.20 + 24.73 = 98.08,
+        // -33.57 - 56.03 + 64.06 + 35.63 = 10.08. Lomograph: 300 - 25.5 = 274.5 -> 255, 145 + 12.75 = 157.75, 43.6 - 20.4 = 23.2.
+        // BlackWhite: 1.5 * 340 - 255 = 255; (20, 30, 40): 135 - 255 < 0, so black
+        var pixel = new Rgba32(200, 100, 40, 128);
+        Assert.Equal(new Rgba32(255, 109, 55, 128), Apply(ColorMatrix.Polaroid, pixel));
+        Assert.Equal(new Rgba32(248, 98, 10, 128), Apply(ColorMatrix.Kodachrome, pixel));
+        Assert.Equal(new Rgba32(255, 158, 23, 128), Apply(ColorMatrix.Lomograph, pixel));
+        Assert.Equal(new Rgba32(255, 255, 255, 128), Apply(ColorMatrix.BlackWhite, pixel));
+        Assert.Equal(new Rgba32(0, 0, 0, 255), Apply(ColorMatrix.BlackWhite, new Rgba32(20, 30, 40)));
+
+        // Lightness adds the amount to the colors: 0.2 * 255 = 51
+        Assert.Equal(new Rgba32(251, 151, 91, 128), Apply(ColorMatrix.CreateLightness(0.2), pixel));
+        Assert.Equal(new Rgba32(149, 49, 0, 128), Apply(ColorMatrix.CreateLightness(-0.2), pixel));
+        Assert.Equal(new Rgba32(0, 0, 0, 128), Apply(ColorMatrix.CreateLightness(-1), pixel));
+        Assert.Equal(new Rgba32(255, 255, 255, 128), Apply(ColorMatrix.CreateLightness(1), pixel));
+        Assert.True(ColorMatrix.CreateLightness(0).IsIdentity);
+        Assert.Throws<ArgumentOutOfRangeException>(() => ColorMatrix.CreateLightness(1.01));
+        Assert.Throws<ArgumentOutOfRangeException>(() => ColorMatrix.CreateLightness(-1.01));
+        Assert.Throws<ArgumentOutOfRangeException>(() => ColorMatrix.CreateLightness(double.NaN));
+
+        static void AssertMatrix(double[] published, ColorMatrix matrix, double constantScale)
+        {
+            for (var row = 0; row < 4; row++)
+            {
+                for (var column = 0; column < 5; column++)
+                {
+                    var expected = published[(row * 5) + column];
+                    Assert.Equal(column == 4 ? expected / constantScale : expected, matrix[row, column], 1e-15);
+                }
+            }
+        }
+
+        static void AssertTransposedMatrix(float[][] published, ColorMatrix matrix)
+        {
+            for (var row = 0; row < 4; row++)
+            {
+                for (var column = 0; column < 5; column++)
+                {
+                    Assert.Equal(published[column][row], matrix[row, column], 1e-6);
+                }
+            }
+        }
+
+        static Rgba32 Apply(ColorMatrix matrix, Rgba32 color)
+        {
+            using var image = new Image<Rgba32>(1, 1, color);
+            image.ApplyColorMatrix(matrix, Ct);
+            return image.Frames[0][0, 0];
+        }
+    }
+
+    [Fact]
+    public void TheColorBlindnessMatricesAreTheTableOfMachadoOliveiraAndFernandes()
+    {
+        // Table 1 of G. M. Machado, M. M. Oliveira and L. A. F. Fernandes, "A Physiologically-based Model for Simulation of Color
+        // Vision Deficiency" (IEEE TVCG 15(6), 2009), from https://www.inf.ufrgs.br/~oliveira/pubs_files/CVD_Simulation/CVD_Simulation.html:
+        // the 3x3 matrices of the severities 0.1, 0.5, 0.8, 0.9 and 1.0, row by row
+        double[] protan01 = [0.856167, 0.182038, -0.038205, 0.029342, 0.955115, 0.015544, -0.002880, -0.001563, 1.004443];
+        double[] protan05 = [0.458064, 0.679578, -0.137642, 0.092785, 0.846313, 0.060902, -0.007494, -0.016807, 1.024301];
+        double[] protan08 = [0.259411, 0.923008, -0.182420, 0.110296, 0.804340, 0.085364, -0.006276, -0.034346, 1.040622];
+        double[] protan09 = [0.203876, 0.990338, -0.194214, 0.112975, 0.794542, 0.092483, -0.005222, -0.041043, 1.046265];
+        double[] protan10 = [0.152286, 1.052583, -0.204868, 0.114503, 0.786281, 0.099216, -0.003882, -0.048116, 1.051998];
+        double[] deutan05 = [0.547494, 0.607765, -0.155259, 0.181692, 0.781742, 0.036566, -0.010410, 0.027275, 0.983136];
+        double[] deutan10 = [0.367322, 0.860646, -0.227968, 0.280085, 0.672501, 0.047413, -0.011820, 0.042940, 0.968881];
+        double[] tritan03 = [0.905871, 0.127791, -0.033662, 0.026856, 0.941251, 0.031893, 0.013410, 0.148296, 0.838294];
+        double[] tritan05 = [1.017277, 0.027029, -0.044306, -0.006113, 0.958479, 0.047634, 0.006379, 0.248708, 0.744913];
+        double[] tritan10 = [1.255528, -0.076749, -0.178779, -0.078411, 0.930809, 0.147602, 0.004733, 0.691367, 0.303900];
+
+        // A dichromacy is the severity 1.0, an anomaly without a severity the severity 0.5
+        AssertColorMatrix(protan10, ColorMatrix.CreateColorBlindness(ColorBlindnessType.Protanopia));
+        AssertColorMatrix(deutan10, ColorMatrix.CreateColorBlindness(ColorBlindnessType.Deuteranopia));
+        AssertColorMatrix(tritan10, ColorMatrix.CreateColorBlindness(ColorBlindnessType.Tritanopia));
+        AssertColorMatrix(protan05, ColorMatrix.CreateColorBlindness(ColorBlindnessType.Protanomaly));
+        AssertColorMatrix(deutan05, ColorMatrix.CreateColorBlindness(ColorBlindnessType.Deuteranomaly));
+        AssertColorMatrix(tritan05, ColorMatrix.CreateColorBlindness(ColorBlindnessType.Tritanomaly));
+        AssertColorMatrix(protan01, ColorMatrix.CreateColorBlindness(ColorBlindnessType.Protanomaly, 0.1));
+        AssertColorMatrix(tritan03, ColorMatrix.CreateColorBlindness(ColorBlindnessType.Tritanomaly, 0.3));
+        AssertColorMatrix(protan10, ColorMatrix.CreateColorBlindness(ColorBlindnessType.Protanomaly, 1));
+        Assert.True(ColorMatrix.CreateColorBlindness(ColorBlindnessType.Deuteranomaly, 0).IsIdentity);
+
+        // Between two severities, the interpolation the authors recommend: 0.873 is 0.73 of the way from 0.8 to 0.9
+        AssertColorMatrix([.. protan08.Zip(protan09, static (low, high) => low + (0.73 * (high - low)))], ColorMatrix.CreateColorBlindness(ColorBlindnessType.Protanomaly, 0.873));
+
+        // On pure red, a deuteranope sees 0.367322 * 255 = 93.67, 0.280085 * 255 = 71.42, and no blue; the alpha is kept
+        using (var image = new Image<Rgba32>(1, 1, new Rgba32(255, 0, 0, 77)))
+        {
+            image.ApplyColorMatrix(ColorMatrix.CreateColorBlindness(ColorBlindnessType.Deuteranopia), Ct);
+            Assert.Equal(new Rgba32(94, 71, 0, 77), image.Frames[0][0, 0]);
+        }
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => ColorMatrix.CreateColorBlindness((ColorBlindnessType)6));
+        Assert.Throws<ArgumentOutOfRangeException>(() => ColorMatrix.CreateColorBlindness((ColorBlindnessType)(-1), 0.5));
+        Assert.Throws<ArgumentOutOfRangeException>(() => ColorMatrix.CreateColorBlindness(ColorBlindnessType.Protanomaly, 1.5));
+        Assert.Throws<ArgumentOutOfRangeException>(() => ColorMatrix.CreateColorBlindness(ColorBlindnessType.Protanomaly, double.NaN));
+        Assert.Throws<ArgumentException>(() => ColorMatrix.CreateColorBlindness(ColorBlindnessType.Tritanopia, 0.5));
+
+        static void AssertColorMatrix(double[] published, ColorMatrix matrix)
+        {
+            for (var row = 0; row < 4; row++)
+            {
+                for (var column = 0; column < 5; column++)
+                {
+                    var expected = row < 3 && column < 3 ? published[(row * 3) + column] : row == 3 && column == 3 ? 1 : 0;
+                    Assert.Equal(expected, matrix[row, column], 1e-12);
+                }
+            }
+        }
+    }
+
+    [Fact]
     public void AColorFilterAppliesToADrawingAsAWholeOrToWhatIsAlreadyDrawn()
     {
         // A layer whose pixels get a color: the drawing of the callback, with its antialiasing and its alpha, in

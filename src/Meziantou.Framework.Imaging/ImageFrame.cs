@@ -229,6 +229,15 @@ public abstract class ImageFrame
     /// <summary>Replaces the leased pixels in place with the medians of their neighborhoods.</summary>
     internal abstract void MedianPixels(scoped in PixelLease lease, MedianPlan plan, CancellationToken cancellationToken);
 
+    /// <summary>Replaces the blocks of the leased pixels by their means, in place (<see cref="EffectKernels.Pixelate{TPixel}"/>).</summary>
+    internal abstract void PixelatePixels(scoped in PixelLease lease, int size, Span<double> scratch, CancellationToken cancellationToken);
+
+    /// <summary>Applies the oil painting effect to the leased pixels, in place (<see cref="EffectKernels.OilPaint{TPixel}"/>).</summary>
+    internal abstract void OilPaintPixels(scoped in PixelLease lease, int levels, int radius, Span<double> scratch, Span<int> levelScratch, CancellationToken cancellationToken);
+
+    /// <summary>Composites the leased pixels over an opaque background, in place (<see cref="EffectKernels.Flatten{TPixel}"/>).</summary>
+    internal abstract void FlattenPixels(scoped in PixelLease lease, Rgba64 background, CancellationToken cancellationToken);
+
     /// <summary>Converts the colors of the leased source to the leased destination with an ICC conversion (color profile transactions), with the input tables of 16-bit samples when given.</summary>
     internal abstract void ConvertColorPixels(scoped in PixelLease source, scoped in PixelLease destination, IccPipeline pipeline, IccUInt16InputTables? uint16Tables, CancellationToken cancellationToken);
 

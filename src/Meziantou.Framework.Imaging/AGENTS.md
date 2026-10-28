@@ -1042,7 +1042,12 @@ thin public types over its `FontFace`.
   16-bit conversion is still evaluated: its inputs are the doubles that come out of a matrix, not 65,536 values.
 - Default parallelism is one worker (`ImageConfiguration.MaxDegreeOfParallelism`). Only `Resize`, the transformations,
   `Convolve`, the blurs (`GaussianBlur`, `BoxBlur`, `MedianBlur`), `Sharpen` and `DetectEdges` are parallel, and their result must not
-  depend on the worker count (`ParallelConvolutionTests`: a frame needs 65,536 pixels to get several workers). Decoding, encoding and drawing stay sequential.
+  depend on the worker count (`ParallelConvolutionTests`: a frame needs 65,536 pixels to get several workers). The HEIC
+  decoder decodes the tiles of a grid of at least 65,536 samples concurrently (`HeicDecoder.DecodeTiles`): the structure
+  parser and the `InputResourceTracker` are not thread-safe and stay on the calling thread (each worker charges its hidden
+  pixels to a tracker of its own, merged in tile order), and the pixels and the errors are those of one worker (the error
+  of the first tile that fails, a cancellation first; `HeicDecodingTests`). Other decoding, encoding and drawing stay
+  sequential.
 - Static row callbacks allocate nothing per row (`PerformanceContractTests`).
 - This repository builds with the updated memory-safety rules: wrap `MemoryMarshal`, `Unsafe` and `Vector*.LoadUnsafe` /
   `StoreUnsafe` calls in `unsafe(...)`, or in an `unsafe { }` block for a statement.

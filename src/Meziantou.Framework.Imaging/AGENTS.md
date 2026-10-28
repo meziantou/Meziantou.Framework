@@ -156,6 +156,13 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   - The harness reader decodes every color type and bit depth to 16-bit RGBA and composites APNG frames
     (`ReferencePng.Canonical.cs`), rejecting any OVER pixel whose result depends on the rounding of a decoder; verify
     `MinimumSize` output with `OptimizedPngOutputVerifier`, never with `ApngOutputVerifier` (full-canvas frames only).
+- **Apple CgBI PNG** (`PngStructureParser.IsAppleCgbi`, `PngSampleFormat.ExpandCgbiBgra`). No specification describes
+  it: Xcode's `pngcrush -iphone` writes it and Apple ImageIO (`sips`) is the reference. Its raw deflate datastream goes
+  through the zlib inflater of the other files, behind a synthetic header and followed by the checksum of what it
+  decompressed, so that extra and missing bytes are found the same way. The colors are un-premultiplied to
+  `round(c * 255 / a)`, which equals ImageIO for all 32,896 valid pairs (measured on sips-316). The test files are
+  literals in `PngDecoderTests` (pngcrush output and the pixels sips decodes), not corpus fixtures. ImageIO is lenient
+  where the library is not: it accepts a `CgBI` chunk after `IHDR` and clamps a color above its alpha.
 - **Color reduction** (`PaletteQuantizer`, `PaletteRowMapper`, `FrameQuantization`): one quantizer serves `Quantize`,
   `PaletteBuilder`, GIF, indexed BMP and indexed PNG (`PngColorReduction`, which reduces each image into an 8-bit RGBA
   copy in `ImageWriterCore` so that the PNG sessions stay exact-only). Keep it so:

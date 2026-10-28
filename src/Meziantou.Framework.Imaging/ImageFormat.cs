@@ -11,6 +11,11 @@ public enum ImageFormat
     Unknown = 0,
 
     /// <summary>Portable Network Graphics, including animated PNG (APNG).</summary>
+    /// <remarks>
+    /// Apple's CgBI variant (the iOS-optimized PNG files of application bundles: premultiplied BGRA samples in a raw
+    /// deflate datastream) is decoded too, and never written. Its colors are un-premultiplied to <c>round(c * 255 / a)</c>,
+    /// as Apple ImageIO decodes them: this is lossy for low alpha values (a color with an alpha of 1 can only be 0 or 255).
+    /// </remarks>
     Png = 1,
 
     /// <summary>Graphics Interchange Format (GIF87a and GIF89a).</summary>

@@ -1404,6 +1404,23 @@ internal static class Examples
     }
     #endregion
 
+    /// <summary>Loads an image into its smallest lossless pixel format and extracts its alpha mask.</summary>
+    #region Imaging_CompactFormats
+    public static Image<A8> ExtractAlphaMask(string inputPath, string maskPath)
+    {
+        // Untyped loads pick the smallest lossless format: La16 for a gray image with alpha (2 bytes per pixel instead of
+        // the 4 of Rgba32), Rgb48 for 16-bit color without alpha
+        using var image = Image.Load(inputPath);
+
+        // An alpha mask keeps the alpha of the image in 1 byte per pixel; its pixels read as black
+        var mask = image.CloneAs<A8>();
+
+        // PNG stores the mask as gray with alpha, which loads back as La16
+        mask.Save(maskPath, new PngEncoder());
+        return mask;
+    }
+    #endregion
+
     /// <summary>Copies raw pixels in and out; the library never wraps caller memory.</summary>
     #region Imaging_RawPixels
     public static byte[] RoundTripRawPixels(ReadOnlySpan<byte> rgba, int width, int height)

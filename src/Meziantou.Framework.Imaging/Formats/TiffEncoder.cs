@@ -9,8 +9,9 @@ namespace Meziantou.Framework.Imaging.Formats;
 /// </para>
 /// <para>
 /// By default (<see cref="TiffPixelLayout.Auto"/>) the sample layout follows the pixel format of the image, losslessly:
-/// <c>Gray8</c>/<c>Gray16</c> become 8- or 16-bit <c>BlackIsZero</c> grayscale, <c>Rgb24</c> becomes 8-bit RGB, and the
-/// formats with alpha become RGBA with <c>ExtraSamples = 2</c> (unassociated, straight alpha). Nothing is quantized and
+/// <c>Gray8</c>/<c>Gray16</c> become 8- or 16-bit <c>BlackIsZero</c> grayscale, <c>La16</c>/<c>La32</c> (and <c>A8</c>,
+/// written as black with its alpha) the same grayscale with an alpha sample, <c>Rgb24</c>/<c>Rgb48</c> 8- or 16-bit RGB,
+/// and the other formats with alpha RGBA, the alpha with <c>ExtraSamples = 2</c> (unassociated, straight alpha). Nothing is quantized and
 /// alpha is never dropped. <c>RgbaFloat</c> and <c>RgbaHalf</c> become 32-bit floating-point samples
 /// (<c>SampleFormat = 3</c>), every value kept, in the fewest samples that hold the page: gray when the three colors of
 /// every pixel are the same number and no ICC profile is written, and without alpha when every alpha is exactly 1.
@@ -153,4 +154,7 @@ public sealed class TiffEncoder : ImageEncoder
     /// <see cref="TiffPixelLayout.Auto"/> and any compression but <see cref="TiffCompression.Jpeg"/>.
     /// </summary>
     internal override bool StoresFloatingPointSamples => PixelLayout == TiffPixelLayout.Auto && Compression != TiffCompression.Jpeg;
+
+    /// <inheritdoc />
+    internal override bool StoresPixelFormat(PixelFormat format) => format != PixelFormat.A8;
 }

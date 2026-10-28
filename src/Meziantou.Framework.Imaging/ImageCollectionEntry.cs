@@ -129,23 +129,14 @@ public sealed class ImageCollectionEntry
         if (pixelFormat is null || pixelFormat == image.PixelFormat)
             return image.Clone();
 
-        return PixelFormats.GetPixelType(pixelFormat.Value) switch
-        {
-            var type when type == typeof(Rgba32) => image.CloneAs<Rgba32>(options.Conversion),
-            var type when type == typeof(Bgra32) => image.CloneAs<Bgra32>(options.Conversion),
-            var type when type == typeof(Rgb24) => image.CloneAs<Rgb24>(options.Conversion),
-            var type when type == typeof(Rgba64) => image.CloneAs<Rgba64>(options.Conversion),
-            var type when type == typeof(Gray8) => image.CloneAs<Gray8>(options.Conversion),
-            var type when type == typeof(RgbaFloat) => image.CloneAs<RgbaFloat>(options.Conversion),
-            var type when type == typeof(RgbaHalf) => image.CloneAs<RgbaHalf>(options.Conversion),
-            _ => image.CloneAs<Gray16>(options.Conversion),
-        };
+        return image.CloneAs(pixelFormat.Value, options.Conversion);
     }
 
     private static ImageColorModel GetColorModel(PixelFormat format)
     {
-        if (PixelFormats.IsGrayscale(format))
-            return ImageColorModel.Grayscale;
+        // An alpha mask is described as gray with alpha, the model its pixels are encoded with
+        if (PixelFormats.IsGrayscale(format) || !PixelFormats.HasColor(format))
+            return PixelFormats.HasAlpha(format) ? ImageColorModel.GrayscaleAlpha : ImageColorModel.Grayscale;
 
         return PixelFormats.HasAlpha(format) ? ImageColorModel.Rgba : ImageColorModel.Rgb;
     }

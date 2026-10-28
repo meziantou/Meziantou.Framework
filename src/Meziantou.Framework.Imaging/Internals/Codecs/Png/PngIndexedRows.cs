@@ -312,6 +312,44 @@ internal sealed class PngIndexedRows : IDisposable
                     return -1;
                 }
 
+            case PixelFormat.La16:
+                for (int i = 0, x = start; i < keys.Length; i++, x += step)
+                {
+                    keys[i] = ((uint)row[(x * 2) + 1] << 24) | (row[x * 2] * 0x01_0101u);
+                }
+
+                return -1;
+
+            case PixelFormat.La32:
+                {
+                    var samples = unsafe(MemoryMarshal.Cast<byte, ushort>(row));
+                    for (int i = 0, x = start; i < keys.Length; i++, x += step)
+                    {
+                        var (gray, alpha) = (samples[x * 2], samples[(x * 2) + 1]);
+                        if (!IsEightBit(gray) || !IsEightBit(alpha))
+                            return x;
+
+                        keys[i] = ((alpha & 0xFFu) << 24) | ((gray & 0xFFu) * 0x01_0101u);
+                    }
+
+                    return -1;
+                }
+
+            case PixelFormat.Rgb48:
+                {
+                    var samples = unsafe(MemoryMarshal.Cast<byte, ushort>(row));
+                    for (int i = 0, x = start; i < keys.Length; i++, x += step)
+                    {
+                        var pixel = samples.Slice(x * 3, 3);
+                        if (!IsEightBit(pixel[0]) || !IsEightBit(pixel[1]) || !IsEightBit(pixel[2]))
+                            return x;
+
+                        keys[i] = Opaque | ((pixel[0] & 0xFFu) << 16) | ((pixel[1] & 0xFFu) << 8) | (pixel[2] & 0xFFu);
+                    }
+
+                    return -1;
+                }
+
             default:
                 throw new ArgumentOutOfRangeException(nameof(row), _pixelFormat, "The pixel format is not supported.");
         }

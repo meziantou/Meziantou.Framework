@@ -90,8 +90,11 @@ internal sealed class TgaStructureParser : ImageParser<ImageInfo>
     /// <summary>Gets the metadata: TGA stores none this version exposes.</summary>
     public ImageMetadata Metadata => _metadata.Metadata;
 
-    /// <summary>Gets the layout of the rows handed to the decoder, which is also the default working representation.</summary>
+    /// <summary>Gets the layout of the rows handed to the decoder.</summary>
     public PixelFormat SourcePixelFormat => Layout.SourcePixelFormat;
+
+    /// <summary>Gets the default working representation.</summary>
+    public PixelFormat DefaultPixelFormat => Layout.DefaultPixelFormat;
 
     public override ParseStatus Parse(ReadOnlySpan<byte> buffer, bool isEndOfInput, out int consumed)
     {
@@ -465,7 +468,7 @@ internal sealed class TgaStructureParser : ImageParser<ImageInfo>
         => new(
             ImageFormat.Tga,
             Size,
-            SourcePixelFormat,
+            DefaultPixelFormat,
             Layout.ColorModel,
             bitsPerComponent: 8,
             frameCount: 1,

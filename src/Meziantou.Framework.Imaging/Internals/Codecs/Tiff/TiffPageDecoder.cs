@@ -41,7 +41,7 @@ internal static class TiffPageDecoder
             profile = conversion.DestinationProfile;
         }
 
-        using var sink = DecodedFrameSink.Create(context, request, ImageFormat.Tiff, page.Size, page.SourcePixelFormat, page.SourcePixelFormat, profile);
+        using var sink = DecodedFrameSink.Create(context, request, ImageFormat.Tiff, page.Size, page.DefaultPixelFormat, page.SourcePixelFormat, profile);
         var scope = source.Scope;
         using var expander = new TiffRowExpander(page, inkConversion, scope);
         using var reader = new TiffBlockReader(source, page);

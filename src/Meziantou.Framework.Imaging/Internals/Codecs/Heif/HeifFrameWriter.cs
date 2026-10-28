@@ -32,7 +32,7 @@ internal sealed class HeifFrameWriter : IDisposable
         var fullRange = nclx?.FullRange ?? color.FullRange;
         var primaries = nclx?.ColorPrimaries ?? color.ColorPrimaries;
         var transfer = nclx?.TransferCharacteristics ?? color.TransferCharacteristics;
-        _converter = new HeifYuvConverter(structure.Binding, color, matrix, fullRange, alpha, structure.PixelFormat, alpha is not null && structure.IsPremultiplied, primaries, transfer);
+        _converter = new HeifYuvConverter(structure.Binding, color, matrix, fullRange, alpha, structure.SourcePixelFormat, alpha is not null && structure.IsPremultiplied, primaries, transfer);
         _context = context;
         _width = codedSize.Width;
         _height = codedSize.Height;

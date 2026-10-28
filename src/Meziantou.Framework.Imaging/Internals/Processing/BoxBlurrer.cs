@@ -50,7 +50,7 @@ internal static class BoxBlurrer
             throw new InvalidOperationException("The storage does not have the size the blur was prepared for.");
 
         var alpha = Convolver.GetBlurWorkingAlpha<TPixel>(storage, normalized: true, plan.Alpha, plan.EdgeMode);
-        if (typeof(TPixel) == typeof(Rgba64) || typeof(TPixel) == typeof(Gray16))
+        if (typeof(TPixel) == typeof(Rgba64) || typeof(TPixel) == typeof(Gray16) || typeof(TPixel) == typeof(Rgb48))
         {
             Blur<ushort>(storage, plan, alpha, cancellationToken);
         }

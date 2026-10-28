@@ -8,8 +8,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// and the pixel format the rows are converted to before they are serialized in the byte order of the file.
 /// </summary>
 /// <param name="SamplesPerPixel">
-/// 1 (grayscale, bilevel or palette indexes), 2 (floating-point grayscale and straight alpha), 3 (RGB or YCbCr) or 4 (RGB
-/// and straight alpha).
+/// 1 (grayscale, bilevel or palette indexes), 2 (grayscale and straight alpha), 3 (RGB or YCbCr) or 4 (RGB and straight
+/// alpha).
 /// </param>
 /// <param name="BitsPerSample">1 (bilevel), 8 or 16, or 32 for floating-point samples.</param>
 /// <param name="Photometric">0 (<c>WhiteIsZero</c>, bilevel), 1 (<c>BlackIsZero</c>), 2 (<c>RGB</c>), 3 (palette color) or 6 (<c>YCbCr</c>, JPEG).</param>
@@ -68,6 +68,9 @@ internal readonly record struct TiffSampleLayout(int SamplesPerPixel, int BitsPe
         PixelFormat.Gray16 => new TiffSampleLayout(1, 16, TiffFormat.PhotometricBlackIsZero, PixelFormat.Gray16),
         PixelFormat.Rgb24 => new TiffSampleLayout(3, 8, TiffFormat.PhotometricRgb, PixelFormat.Rgb24),
         PixelFormat.Rgba64 => new TiffSampleLayout(4, 16, TiffFormat.PhotometricRgb, PixelFormat.Rgba64),
+        PixelFormat.La16 => new TiffSampleLayout(2, 8, TiffFormat.PhotometricBlackIsZero, PixelFormat.La16),
+        PixelFormat.La32 => new TiffSampleLayout(2, 16, TiffFormat.PhotometricBlackIsZero, PixelFormat.La32),
+        PixelFormat.Rgb48 => new TiffSampleLayout(3, 16, TiffFormat.PhotometricRgb, PixelFormat.Rgb48),
 
         // The writer stores fewer samples when they hold the whole page (ForFloatingPoint)
         PixelFormat.RgbaFloat or PixelFormat.RgbaHalf => ForFloatingPoint(4),

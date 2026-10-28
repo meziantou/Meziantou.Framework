@@ -9,7 +9,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 internal static class ToneSamples
 {
     /// <summary>Gets the number of levels of a sample of an integer pixel format: 256 or 65,536.</summary>
-    public static int GetLevelCount(PixelFormat format) => format is PixelFormat.Rgba64 or PixelFormat.Gray16 ? 65536 : 256;
+    public static int GetLevelCount(PixelFormat format) => format is PixelFormat.Rgba64 or PixelFormat.Gray16 or PixelFormat.La32 or PixelFormat.Rgb48 ? 65536 : 256;
 
     /// <summary>
     /// Checks that the pixels have discrete levels: floating-point samples have none, and binning them would lose their
@@ -103,6 +103,55 @@ internal static class ToneSamples
 
                 break;
 
+            case PixelFormat.La16:
+                for (var i = 0; i < count; i++)
+                {
+                    var value = pixels[2 * i];
+                    rgba[4 * i] = value;
+                    rgba[(4 * i) + 1] = value;
+                    rgba[(4 * i) + 2] = value;
+                    rgba[(4 * i) + 3] = pixels[(2 * i) + 1];
+                }
+
+                break;
+
+            case PixelFormat.La32:
+                var levels = unsafe(MemoryMarshal.Cast<byte, ushort>(pixels));
+                for (var i = 0; i < count; i++)
+                {
+                    var value = levels[2 * i];
+                    rgba[4 * i] = value;
+                    rgba[(4 * i) + 1] = value;
+                    rgba[(4 * i) + 2] = value;
+                    rgba[(4 * i) + 3] = levels[(2 * i) + 1];
+                }
+
+                break;
+
+            case PixelFormat.Rgb48:
+                var rgb = unsafe(MemoryMarshal.Cast<byte, ushort>(pixels));
+                for (var i = 0; i < count; i++)
+                {
+                    rgba[4 * i] = rgb[3 * i];
+                    rgba[(4 * i) + 1] = rgb[(3 * i) + 1];
+                    rgba[(4 * i) + 2] = rgb[(3 * i) + 2];
+                    rgba[(4 * i) + 3] = ushort.MaxValue;
+                }
+
+                break;
+
+            case PixelFormat.A8:
+                // No color: black with the alpha
+                for (var i = 0; i < count; i++)
+                {
+                    rgba[4 * i] = 0;
+                    rgba[(4 * i) + 1] = 0;
+                    rgba[(4 * i) + 2] = 0;
+                    rgba[(4 * i) + 3] = pixels[i];
+                }
+
+                break;
+
             default:
                 throw new NotSupportedException($"The pixel format '{format}' has no integer samples.");
         }
@@ -110,7 +159,8 @@ internal static class ToneSamples
 
     /// <summary>
     /// Writes the red, green and blue samples of <see cref="Read"/> back to stored pixels, whose alpha is left as it is; a
-    /// gray pixel gets the red sample, which the tone operations keep equal to the other two.
+    /// gray pixel gets the red sample, which the tone operations keep equal to the other two, and an <see cref="PixelFormat.A8"/>
+    /// pixel, which has no color, is unchanged.
     /// </summary>
     /// <param name="format">The pixel format.</param>
     /// <param name="rgba">The samples, four per pixel.</param>
@@ -176,6 +226,38 @@ internal static class ToneSamples
                     values[i] = rgba[4 * i];
                 }
 
+                break;
+
+            case PixelFormat.La16:
+                for (var i = 0; i < count; i++)
+                {
+                    pixels[2 * i] = (byte)rgba[4 * i];
+                }
+
+                break;
+
+            case PixelFormat.La32:
+                var levels = unsafe(MemoryMarshal.Cast<byte, ushort>(pixels));
+                for (var i = 0; i < count; i++)
+                {
+                    levels[2 * i] = rgba[4 * i];
+                }
+
+                break;
+
+            case PixelFormat.Rgb48:
+                var rgb = unsafe(MemoryMarshal.Cast<byte, ushort>(pixels));
+                for (var i = 0; i < count; i++)
+                {
+                    rgb[3 * i] = rgba[4 * i];
+                    rgb[(3 * i) + 1] = rgba[(4 * i) + 1];
+                    rgb[(3 * i) + 2] = rgba[(4 * i) + 2];
+                }
+
+                break;
+
+            case PixelFormat.A8:
+                // No color to write: the tone operations leave an alpha mask unchanged
                 break;
 
             default:

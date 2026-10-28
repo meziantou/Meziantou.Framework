@@ -7,7 +7,8 @@ namespace Meziantou.Framework.Imaging;
 /// <summary>An owned, disposable image whose frames store pixels of type <typeparamref name="TPixel"/>.</summary>
 /// <typeparam name="TPixel">
 /// The pixel type: <see cref="Rgba32"/>, <see cref="Bgra32"/>, <see cref="Rgb24"/>, <see cref="Rgba64"/>,
-/// <see cref="Gray8"/>, <see cref="Gray16"/>, <see cref="RgbaFloat"/> or <see cref="RgbaHalf"/>. Other unmanaged types are
+/// <see cref="Gray8"/>, <see cref="Gray16"/>, <see cref="RgbaFloat"/>, <see cref="RgbaHalf"/>, <see cref="La16"/>,
+/// <see cref="La32"/>, <see cref="Rgb48"/> or <see cref="A8"/>. Other unmanaged types are
 /// rejected with a <see cref="NotSupportedException"/>.
 /// </typeparam>
 /// <remarks>See <see cref="Image"/> for the ownership, frame and atomicity contract.</remarks>

@@ -44,7 +44,7 @@ internal sealed class TiffCollectionReader : ImageCollectionReader
         var page = _pages[index];
         return new ImageCollectionEntryDescriptor(
             page.Size,
-            page.SourcePixelFormat,
+            page.DefaultPixelFormat,
             page.ColorModel,
             page.BitsPerSample,
             page.HasAlpha,

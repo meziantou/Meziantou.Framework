@@ -568,7 +568,7 @@ internal sealed class JpegXlStructureParser : ImageParser<ImageInfo>
         {
             // The profile was charged when it was decoded
             var adopted = _walker.IccProfile is { } icc && _metadata.TryAdoptIccProfile(icc, isGray);
-            if (header.IsXybEncoded && !(adopted && SrgbProfileRecognition.IsSrgb(_metadata.Metadata.IccProfile!, DefaultPixelFormat)))
+            if (header.IsXybEncoded && !(adopted && SrgbProfileRecognition.IsSrgb(_metadata.Metadata.IccProfile!, PixelFormatWidening.GetWidenedFormat(DefaultPixelFormat))))
                 throw JpegXlFormat.Unsupported("The JPEG XL image is stored in the XYB color space and its ICC profile is not sRGB: decoding it requires a color conversion to that profile.", "XYB image with a color profile other than sRGB");
         }
         else if (encoding.IsLinearSrgb)

@@ -55,4 +55,11 @@ internal readonly ref struct DrawingSource
 
     /// <summary>Gets a value indicating whether the paint is combined with the pixels in linear light.</summary>
     public bool IsLinearLight => Transfer != 0 || Curves is not null;
+
+    /// <summary>Gets the paint of a part of the run: the same paint for a single color, the colors of those pixels otherwise.</summary>
+    /// <param name="start">The first pixel of the part.</param>
+    /// <param name="length">The number of pixels of the part.</param>
+    /// <returns>The paint of the part.</returns>
+    public DrawingSource Slice(int start, int length)
+        => Colors.IsEmpty ? this : new DrawingSource(Colors.Slice(start * 4, length * 4), Mode, Blend, Transfer, Curves);
 }

@@ -5,8 +5,10 @@ public enum PngPixelLayout
 {
     /// <summary>
     /// The color type and the bit depth follow the pixel format, losslessly: grayscale for
-    /// <see cref="PixelFormat.Gray8"/>/<see cref="PixelFormat.Gray16"/>, RGB for <see cref="PixelFormat.Rgb24"/> and RGBA
-    /// for the pixel formats with alpha, with 16-bit samples for the 16-bit pixel formats. This is the default: the
+    /// <see cref="PixelFormat.Gray8"/>/<see cref="PixelFormat.Gray16"/>, grayscale with alpha for
+    /// <see cref="PixelFormat.La16"/>/<see cref="PixelFormat.La32"/>/<see cref="PixelFormat.A8"/>, RGB for
+    /// <see cref="PixelFormat.Rgb24"/>/<see cref="PixelFormat.Rgb48"/> and RGBA for the other pixel formats with alpha, with
+    /// 16-bit samples for the 16-bit pixel formats. This is the default: the
     /// mapping never depends on the pixels, and a palette is never written. With <see cref="PngOptimization.MinimumSize"/>,
     /// the layout is the smallest exact one instead, a palette included.
     /// </summary>

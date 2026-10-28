@@ -610,9 +610,10 @@ public sealed class TiffEncoderTests
         // The colors of a 16-bit pixel format keep their 16 bits: the page is read back with them
         using (var deep = Image.ImportPixelData<Rgba64>([new Rgba64(1000, 2000, 3000, 65535), new Rgba64(65535, 0, 1, 65535), new Rgba64(1000, 2000, 3000, 65535)], 3, 1))
         using (var decoded = RoundTrip(deep, encoder))
+        using (var wide = decoded.CloneAs<Rgba64>())
         {
-            Assert.Equal(PixelFormat.Rgba64, decoded.PixelFormat);
-            TestImages.AssertSamePixels(deep, (Image<Rgba64>)decoded);
+            Assert.Equal(PixelFormat.Rgb48, decoded.PixelFormat);
+            TestImages.AssertSamePixels(deep, wide);
         }
 
         // 16-bit colors that 8 bits store exactly are an 8-bit color map

@@ -62,7 +62,7 @@ public sealed class AvifDecoderConformanceTests
         // Odd sizes (odd chroma planes), every documented pixel format, a rotation combined with a mirror and with a clean
         // aperture, matrixed content at every bit depth and in both ranges, and sequences with and without alpha
         Assert.Contains(fixtures, fixture => fixture.Entry.HasFeature("avif.subsampling=4:2:0") && fixture.Expected.Width % 2 == 1 && fixture.Expected.Height % 2 == 1);
-        Assert.Equal(["Gray16", "Gray8", "Rgb24", "Rgba32", "Rgba64"], fixtures.Select(fixture => fixture.Expected.PixelFormat).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray());
+        Assert.Equal(["Gray16", "Gray8", "La16", "La32", "Rgb24", "Rgb48", "Rgba32", "Rgba64"], fixtures.Select(fixture => fixture.Expected.PixelFormat).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray());
         Assert.Equal(["Grayscale", "GrayscaleAlpha", "Rgb", "Rgba", "YCbCr"], fixtures.Select(fixture => fixture.Expected.ColorModel!).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray());
         Assert.Contains(fixtures, fixture => fixture.Entry.Features!.Count(feature => feature.StartsWith("avif.irot=", StringComparison.Ordinal) || feature.StartsWith("avif.imir=", StringComparison.Ordinal)) == 2);
         Assert.Contains(fixtures, fixture => fixture.Entry.HasFeature("avif.clap") && fixture.Expected.Orientation != 1);
@@ -398,9 +398,17 @@ public sealed class AvifDecoderConformanceTests
         Assert.Equal((ExifOrientation)orientation, image.Metadata.Orientation);
         Assert.Equal((ExifOrientation)orientation, info.Metadata.Orientation);
         var deep = Math.Max(configuration.BitDepth, alphaBitDepth) > 8;
-        var pixelFormat = configuration.IsMonochrome && !hasAlpha
-            ? (deep ? PixelFormat.Gray16 : PixelFormat.Gray8)
-            : deep ? PixelFormat.Rgba64 : hasAlpha ? PixelFormat.Rgba32 : PixelFormat.Rgb24;
+        var pixelFormat = (configuration.IsMonochrome, hasAlpha, deep) switch
+        {
+            (true, false, false) => PixelFormat.Gray8,
+            (true, false, true) => PixelFormat.Gray16,
+            (true, true, false) => PixelFormat.La16,
+            (true, true, true) => PixelFormat.La32,
+            (false, false, false) => PixelFormat.Rgb24,
+            (false, false, true) => PixelFormat.Rgb48,
+            (false, true, false) => PixelFormat.Rgba32,
+            (false, true, true) => PixelFormat.Rgba64,
+        };
         Assert.Equal(pixelFormat.ToString(), expected.PixelFormat);
         Assert.Equal(pixelFormat, image.PixelFormat);
         Assert.Equal(pixelFormat, info.PixelFormat);

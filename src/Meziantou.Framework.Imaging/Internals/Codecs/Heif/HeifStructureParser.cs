@@ -115,10 +115,13 @@ internal sealed class HeifStructureParser : ImageParser<ImageInfo>
     /// <summary>Gets the size of the images that the file presents.</summary>
     public Size CanvasSize => _movie is { } movie ? new Size(movie.Color.Crop.Width, movie.Color.Crop.Height) : Plan.Size;
 
-    /// <summary>Gets the pixel format of an untyped load, which is also the layout of the rows that the decoder produces.</summary>
+    /// <summary>Gets the pixel format of an untyped load.</summary>
     public PixelFormat PixelFormat => _movie is { } movie
         ? _binding.GetDefaultPixelFormat(movie.Color.IsMonochrome, movie.Alpha is not null, Math.Max(movie.Color.BitDepth, movie.Alpha?.BitDepth ?? 0))
         : Plan.PixelFormat;
+
+    /// <summary>Gets the layout of the rows that the decoder produces: <see cref="PixelFormat"/>, as RGBA for the gray formats with alpha and 16-bit RGB.</summary>
+    public PixelFormat SourcePixelFormat => PixelFormatWidening.GetWidenedFormat(PixelFormat);
 
     /// <summary>Gets a value indicating whether the color samples of the images are multiplied by the alpha of their pixel.</summary>
     public bool IsPremultiplied => _movie?.IsPremultiplied ?? Plan.IsPremultiplied;

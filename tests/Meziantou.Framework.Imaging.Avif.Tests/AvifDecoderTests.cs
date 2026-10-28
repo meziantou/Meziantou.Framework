@@ -59,11 +59,11 @@ public sealed class AvifDecoderTests
     [InlineData(8, false, false, PixelFormat.Rgb24, ImageColorModel.Unknown)] // no 'colr' box: the bitstream, which a header identification does not read, gives the matrix
     [InlineData(8, false, true, PixelFormat.Rgba32, ImageColorModel.Unknown)]
     [InlineData(8, true, false, PixelFormat.Gray8, ImageColorModel.Grayscale)]
-    [InlineData(8, true, true, PixelFormat.Rgba32, ImageColorModel.GrayscaleAlpha)]
-    [InlineData(10, false, false, PixelFormat.Rgba64, ImageColorModel.Unknown)]
+    [InlineData(8, true, true, PixelFormat.La16, ImageColorModel.GrayscaleAlpha)]
+    [InlineData(10, false, false, PixelFormat.Rgb48, ImageColorModel.Unknown)]
     [InlineData(12, false, true, PixelFormat.Rgba64, ImageColorModel.Unknown)]
     [InlineData(10, true, false, PixelFormat.Gray16, ImageColorModel.Grayscale)]
-    [InlineData(12, true, true, PixelFormat.Rgba64, ImageColorModel.GrayscaleAlpha)]
+    [InlineData(12, true, true, PixelFormat.La32, ImageColorModel.GrayscaleAlpha)]
     public void HeaderGivesTheSizeAndThePixelFormatOfTheItemProperties(int bitDepth, bool monochrome, bool alpha, PixelFormat pixelFormat, ImageColorModel colorModel)
     {
         var builder = Still(13, 7, bitDepth, monochrome);

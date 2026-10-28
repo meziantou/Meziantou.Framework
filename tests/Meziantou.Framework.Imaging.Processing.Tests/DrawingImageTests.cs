@@ -1747,6 +1747,9 @@ public sealed class DrawingImageTests
         var samples = DrawingTestSupport.ReadSamples(frame).AsSpan(((y * frame.Width) + x) * layout.ChannelCount, layout.ChannelCount);
         int Widen(int value) => layout.MaxValue == 255 ? value * 257 : value;
         var alpha = layout.HasAlpha ? Widen(samples[layout.ColorChannels]) : 65535;
+        if (layout.ColorChannels == 0)
+            return (0, 0, 0, alpha);
+
         if (layout.ColorChannels == 1)
             return (Widen(samples[0]), Widen(samples[0]), Widen(samples[0]), alpha);
 

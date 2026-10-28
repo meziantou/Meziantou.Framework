@@ -408,8 +408,9 @@ public sealed class ImageSimilarityTests
     public void AllMembers_ReadEveryPixelFormatAs8BitRgba()
     {
         // The same pixels in every format: the conversion of CloneAs<Rgba32> gives the same 8-bit values
+        // An alpha mask has no color to compare
         using var reference = CreatePatternImage(23, 19, inverted: false);
-        foreach (var format in PixelFormats.All)
+        foreach (var format in PixelFormats.All.Where(PixelFormats.HasColor))
         {
             using var converted = ConvertTo(reference, format);
             Assert.Equal(1d, ImageSimilarity.ComputeSsim(reference.Frames[0], converted.Frames[0], Ct));
@@ -835,6 +836,10 @@ public sealed class ImageSimilarityTests
         PixelFormat.Rgba64 => image.CloneAs<Rgba64>(),
         PixelFormat.Gray8 => image.CloneAs<Gray8>(),
         PixelFormat.Gray16 => image.CloneAs<Gray16>(),
+        PixelFormat.La16 => image.CloneAs<La16>(),
+        PixelFormat.La32 => image.CloneAs<La32>(),
+        PixelFormat.Rgb48 => image.CloneAs<Rgb48>(),
+        PixelFormat.A8 => image.CloneAs<A8>(),
         PixelFormat.RgbaFloat => image.CloneAs<RgbaFloat>(),
         PixelFormat.RgbaHalf => image.CloneAs<RgbaHalf>(),
         _ => throw new ArgumentOutOfRangeException(nameof(format), format, message: null),

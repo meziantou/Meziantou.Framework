@@ -37,4 +37,16 @@ public enum PixelFormat
 
     /// <summary>Half-precision floating-point red, green, blue and straight alpha components (<see cref="Imaging.RgbaHalf"/>), with the meaning of <see cref="RgbaFloat"/>.</summary>
     RgbaHalf = 8,
+
+    /// <summary>8-bit gray level and straight alpha components, stored in that byte order (<see cref="Imaging.La16"/>).</summary>
+    La16 = 9,
+
+    /// <summary>16-bit gray level and straight alpha components in native endianness (<see cref="Imaging.La32"/>).</summary>
+    La32 = 10,
+
+    /// <summary>16-bit red, green and blue components without alpha in native endianness (<see cref="Imaging.Rgb48"/>).</summary>
+    Rgb48 = 11,
+
+    /// <summary>8-bit alpha without color (<see cref="Imaging.A8"/>): an alpha mask, read as black with its alpha.</summary>
+    A8 = 12,
 }

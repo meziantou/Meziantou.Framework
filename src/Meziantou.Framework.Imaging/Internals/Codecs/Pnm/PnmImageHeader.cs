@@ -81,6 +81,9 @@ internal readonly struct PnmImageHeader
     /// <summary>Gets the decoded representation.</summary>
     public PixelFormat PixelFormat => DefaultPixelFormats.ForPnm(IsGrayscale, HasAlpha, Is16Bit);
 
+    /// <summary>Gets the layout of the expanded rows: <see cref="PixelFormat"/>, as RGBA for gray with alpha and 16-bit RGB.</summary>
+    public PixelFormat SourcePixelFormat => PixelFormatWidening.GetWidenedFormat(PixelFormat);
+
     /// <summary>Gets the color model of the encoded samples.</summary>
     public ImageColorModel ColorModel => (IsGrayscale, HasAlpha) switch
     {

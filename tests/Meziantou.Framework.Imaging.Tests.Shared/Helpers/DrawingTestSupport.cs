@@ -30,6 +30,10 @@ internal static class DrawingTestSupport
         PixelFormat.Gray16 => new Image<Gray16>(width, height, configuration),
         PixelFormat.RgbaFloat => new Image<RgbaFloat>(width, height, configuration),
         PixelFormat.RgbaHalf => new Image<RgbaHalf>(width, height, configuration),
+        PixelFormat.La16 => new Image<La16>(width, height, configuration),
+        PixelFormat.La32 => new Image<La32>(width, height, configuration),
+        PixelFormat.Rgb48 => new Image<Rgb48>(width, height, configuration),
+        PixelFormat.A8 => new Image<A8>(width, height, configuration),
         _ => throw new ArgumentOutOfRangeException(nameof(format)),
     };
 

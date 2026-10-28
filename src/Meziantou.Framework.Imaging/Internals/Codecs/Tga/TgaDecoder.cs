@@ -30,7 +30,7 @@ internal sealed class TgaDecoder : IImageDecodeObserver
     {
         ArgumentNullException.ThrowIfNull(structure);
         _structure = structure;
-        _sink = DecodedFrameSink.Create(_context, _request, ImageFormat.Tga, structure.Size, structure.SourcePixelFormat, structure.SourcePixelFormat, iccProfile: null);
+        _sink = DecodedFrameSink.Create(_context, _request, ImageFormat.Tga, structure.Size, structure.DefaultPixelFormat, structure.SourcePixelFormat, iccProfile: null);
     }
 
     /// <summary>Starts the frame on its first row and leases it; dispose the lease before returning from the parser call.</summary>

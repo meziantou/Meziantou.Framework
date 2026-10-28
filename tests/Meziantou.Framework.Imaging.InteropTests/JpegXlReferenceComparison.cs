@@ -79,7 +79,7 @@ internal static class JpegXlReferenceComparison
         Assert.Equal((reference.FrameCount, reference.Width, reference.Height), (image.Frames.Count, image.Width, image.Height));
 
         // The library returns integers of 8 or 16 bits: half a unit of rounding is its own
-        var is8Bit = image.PixelFormat is PixelFormat.Gray8 or PixelFormat.Rgb24 or PixelFormat.Rgba32 or PixelFormat.Bgra32;
+        var is8Bit = PixelFormats.GetBitsPerComponent(image.PixelFormat) == 8;
         var allowed = tolerance + (0.5 / (is8Bit ? byte.MaxValue : ushort.MaxValue)) + 1e-7;
         // The samples are compared as they are stored: a grayscale profile does not describe their RGBA copy
         using var typed = image.CloneAs<Rgba64>(new PixelConversionOptions { DiscardIncompatibleColorProfile = true });

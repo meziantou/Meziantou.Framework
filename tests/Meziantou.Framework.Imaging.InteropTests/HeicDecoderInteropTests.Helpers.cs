@@ -324,8 +324,11 @@ public sealed partial class HeicDecoderInteropTests
     {
         (8, true, false) => PixelFormat.Gray8,
         (8, false, false) => PixelFormat.Rgb24,
-        (8, _, true) => PixelFormat.Rgba32,
+        (8, true, true) => PixelFormat.La16,
+        (8, false, true) => PixelFormat.Rgba32,
         (_, true, false) => PixelFormat.Gray16,
+        (_, false, false) => PixelFormat.Rgb48,
+        (_, true, true) => PixelFormat.La32,
         _ => PixelFormat.Rgba64,
     };
 

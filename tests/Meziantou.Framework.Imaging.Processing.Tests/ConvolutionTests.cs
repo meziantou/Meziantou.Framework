@@ -33,6 +33,10 @@ public sealed class ConvolutionTests
             case PixelFormat.Rgba64: CheckIdentity<Rgba64>(); break;
             case PixelFormat.Gray8: CheckIdentity<Gray8>(); break;
             case PixelFormat.Gray16: CheckIdentity<Gray16>(); break;
+            case PixelFormat.La16: CheckIdentity<La16>(); break;
+            case PixelFormat.La32: CheckIdentity<La32>(); break;
+            case PixelFormat.Rgb48: CheckIdentity<Rgb48>(); break;
+            case PixelFormat.A8: CheckIdentity<A8>(); break;
             case PixelFormat.RgbaFloat: CheckIdentity<RgbaFloat>(); break;
             case PixelFormat.RgbaHalf: CheckIdentity<RgbaHalf>(); break;
             default: throw new ArgumentOutOfRangeException(nameof(format));

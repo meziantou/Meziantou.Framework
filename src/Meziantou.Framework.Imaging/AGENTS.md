@@ -73,6 +73,23 @@ the library guarantees to its callers (support matrix, limitations, defaults). K
 - **Thread safety.** Immutable types and static methods are thread-safe. An image, a reader or a writer supports one
   operation at a time.
 
+## Compact pixel formats
+
+`La16`/`La32` (gray with alpha), `Rgb48` (16-bit RGB) and `A8` (alpha mask, read as black) came after most kernels.
+
+- Never write a `switch` over `PixelFormat` or a `typeof(TPixel)` chain whose `default` branch silently means one
+  format: list the formats, and throw for the others. `PixelFormats.GetBitsPerComponent(format) == 16` includes `La32`
+  and `Rgb48`; `PixelFormats.HasAlpha` includes `A8`; `PixelFormats.HasColor` is false for `A8` only.
+- `PixelConverter.ConvertVector` skips them (scalar reference only); `Read`/`Write` are the reference for them too.
+- Decoders produce their rows in `PixelFormatWidening.GetWidenedFormat` of the default format (RGBA), and the frame
+  sink converts them: keep the decoder layouts unchanged when a default changes.
+- Encoders: `ImageEncoder.StoresPixelFormat` says which of them a codec receives as they are (PNG, TIFF); the writers
+  widen the others losslessly (`ImageWriterCore`, `ImageCollectionWriterCore`).
+- Processing: `Rgb48` has kernels of its own. The filtering kernels run `La16`, `La32` and `A8` through
+  `ProcessingBridge` (an `Rgba32`/`Rgba64` copy of the frame, `Image.KernelPixelFormat` for the plans), and drawing
+  composites them through `DrawingKernels.CompositeBridged`, their paints holding the gray level in the three colors. A
+  new per-frame operation must handle them natively, go through the bridge, or reject them before any allocation.
+
 ## Floating-point pixels
 
 `RgbaFloat` and `RgbaHalf` are built-in formats like the others (not a custom pixel type): linear light, 1 is the

@@ -92,8 +92,11 @@ internal sealed class PnmStructureParser : ImageParser<ImageInfo>
     /// <summary>Gets the metadata: Netpbm files store none.</summary>
     public ImageMetadata Metadata => _metadata.Metadata;
 
-    /// <summary>Gets the decoded representation, which is also the layout of the rows handed to the decoder.</summary>
-    public PixelFormat SourcePixelFormat => _header.PixelFormat;
+    /// <summary>Gets the layout of the rows handed to the decoder.</summary>
+    public PixelFormat SourcePixelFormat => _header.SourcePixelFormat;
+
+    /// <summary>Gets the decoded representation.</summary>
+    public PixelFormat DefaultPixelFormat => _header.PixelFormat;
 
     public override ParseStatus Parse(ReadOnlySpan<byte> buffer, bool isEndOfInput, out int consumed)
     {
@@ -489,7 +492,7 @@ internal sealed class PnmStructureParser : ImageParser<ImageInfo>
         limits.EnsureCanvasWithinLimits(_width, _height);
         _header = new PnmImageHeader(_variant, _width, _height, _maxValue, tupleType);
         if (CheckedSizes.GetRowLength(_width, _header.Channels * _header.BytesPerSample) > CheckedSizes.MaxBufferLength
-            || CheckedSizes.GetRowLength(_width, PixelFormats.GetBytesPerPixel(_header.PixelFormat)) > CheckedSizes.MaxBufferLength)
+            || CheckedSizes.GetRowLength(_width, PixelFormats.GetBytesPerPixel(_header.SourcePixelFormat)) > CheckedSizes.MaxBufferLength)
         {
             throw CheckedSizes.CreateOverflowException(limits);
         }
@@ -510,7 +513,7 @@ internal sealed class PnmStructureParser : ImageParser<ImageInfo>
         _expander = new PnmRowExpander(_header);
         _context.Sequential?.OnHeader(CreateInfo(ImageIdentifyMode.Header));
         _decoder!.OnHeaderComplete(this);
-        _sourceRow = _context.Scope.Rent(_header.Width * PixelFormats.GetBytesPerPixel(_header.PixelFormat), AllocationKind.DecoderState, clear: false);
+        _sourceRow = _context.Scope.Rent(_header.Width * PixelFormats.GetBytesPerPixel(_header.SourcePixelFormat), AllocationKind.DecoderState, clear: false);
         return !_context.TryConsumeYield();
     }
 
@@ -722,7 +725,7 @@ internal sealed class PnmStructureParser : ImageParser<ImageInfo>
             }
         }
 
-        var source = _sourceRow!.Span[..(_header.Width * PixelFormats.GetBytesPerPixel(_header.PixelFormat))];
+        var source = _sourceRow!.Span[..(_header.Width * PixelFormats.GetBytesPerPixel(_header.SourcePixelFormat))];
         _expander!.ExpandRow(stored, source);
         if (!lease.IsActive)
         {

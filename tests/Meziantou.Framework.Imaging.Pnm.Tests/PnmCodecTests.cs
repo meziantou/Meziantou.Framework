@@ -61,7 +61,7 @@ public sealed class PnmCodecTests
         // Above 255 the samples are 16-bit: round(value * 65535 / 1000)
         var wide = Bytes("P3\n2 1\n1000\n0 500 1000 1000 0 250\n", []);
         var info = Image.Identify(wide);
-        Assert.Equal(PixelFormat.Rgba64, info.PixelFormat);
+        Assert.Equal(PixelFormat.Rgb48, info.PixelFormat);
         Assert.Equal(16, info.BitsPerComponent);
         using var image = Image.Load<Rgba64>(wide);
         var pixels = new Rgba64[2];
@@ -102,10 +102,10 @@ public sealed class PnmCodecTests
         Assert.Equal([new(1, 2, 3, 128), new(4, 5, 6, 0)], Decode(rgba));
         Assert.Equal(ImageColorModel.Rgba, Image.Identify(rgba).ColorModel);
 
-        // GRAYSCALE_ALPHA has no pixel format of its own: the gray sample is replicated, which is lossless
+        // GRAYSCALE_ALPHA loads as gray with alpha; as RGBA, the gray sample is replicated, which is lossless
         var graya = Bytes("P7\nWIDTH 2\nHEIGHT 1\nDEPTH 2\nMAXVAL 255\nTUPLTYPE GRAYSCALE_ALPHA\nENDHDR\n", [10, 255, 20, 0]);
         var info = Image.Identify(graya);
-        Assert.Equal(PixelFormat.Rgba32, info.PixelFormat);
+        Assert.Equal(PixelFormat.La16, info.PixelFormat);
         Assert.Equal(ImageColorModel.GrayscaleAlpha, info.ColorModel);
         Assert.Equal([new(10, 10, 10, 255), new(20, 20, 20, 0)], Decode(graya));
 

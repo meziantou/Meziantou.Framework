@@ -534,10 +534,10 @@ internal static class TgaCorpus
         var grayAlphaStored = TgaStoreOrder([.. grays.Zip(grayAlphas, (g, a) => new[] { (byte)g, (byte)a })], 5, 3, false, false);
         var grayAlphaImg = new Img(5, 3, "rgba", 8, grays.Zip(grayAlphas, (g, a) => new Px(g, g, g, a)));
         data = Bytes.Concat([TgaHeader(3, 5, 3, 16, descriptor: 0x08), .. grayAlphaStored]);
-        AddFixture(c, Format, "tga/grayscale16-alpha", "tga/grayscale16-alpha.tga", data, grayAlphaImg, "Rgba32", "GrayscaleAlpha", 8,
+        AddFixture(c, Format, "tga/grayscale16-alpha", "tga/grayscale16-alpha.tga", data, grayAlphaImg, "La16", "GrayscaleAlpha", 8,
             "BuildTga", new Obj { ["width"] = 5, ["height"] = 3, ["pixelDepth"] = 16, ["alphaBits"] = 8 },
             "16-bit grayscale with eight declared alpha bits: each pixel is an 8-bit gray sample followed by an 8-bit " +
-            "alpha sample. The library has no gray-with-alpha pixel format, so the gray sample is replicated into Rgba32; " +
+            "alpha sample. The pixels are decoded into La16; " +
             "fully transparent pixels keep their gray value.",
             required: ["tga.imageType=3", "tga.depth=16", "tga.alphaBits=8", "tga.grayAttribute=alpha"],
             crossCheck: "differs", crossCheckNotes: FfmpegGray16Notes);
@@ -607,7 +607,7 @@ internal static class TgaCorpus
         Py.Assert(rleGrayAlphas.Length == 48);
         var rleGrayAlphaImg = new Img(8, 6, "rgba", 8, rleGrayAlphas.Select(v => new Px(v.Gray, v.Gray, v.Gray, v.Alpha)));
         data = Bytes.Concat(TgaHeader(11, 8, 6, 16, descriptor: 0x28), TgaRle([.. rleGrayAlphas.Select(v => new[] { (byte)v.Gray, (byte)v.Alpha })], 2));
-        AddFixture(c, Format, "tga/rle-grayscale16-alpha", "tga/rle-grayscale16-alpha.tga", data, rleGrayAlphaImg, "Rgba32", "GrayscaleAlpha", 8,
+        AddFixture(c, Format, "tga/rle-grayscale16-alpha", "tga/rle-grayscale16-alpha.tga", data, rleGrayAlphaImg, "La16", "GrayscaleAlpha", 8,
             "BuildTga", new Obj { ["width"] = 8, ["height"] = 6, ["imageType"] = 11, ["pixelDepth"] = 16, ["alphaBits"] = 8 },
             "Run-length encoded 16-bit grayscale with eight declared alpha bits (image type 11): the packets repeat or " +
             "list two-byte pixels, runs cross scan lines, and two neighbours with the same gray and different alphas " +

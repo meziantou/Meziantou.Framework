@@ -233,9 +233,17 @@ public sealed class HeicDecoderConformanceTests
         Assert.Equal((ExifOrientation)orientation, image.Metadata.Orientation);
         Assert.Equal((ExifOrientation)orientation, info.Metadata.Orientation);
         var deep = Math.Max(configuration.BitDepthLuma, alphaBitDepth) > 8;
-        var pixelFormat = configuration.IsMonochrome && !hasAlpha
-            ? (deep ? PixelFormat.Gray16 : PixelFormat.Gray8)
-            : deep ? PixelFormat.Rgba64 : hasAlpha ? PixelFormat.Rgba32 : PixelFormat.Rgb24;
+        var pixelFormat = (configuration.IsMonochrome, hasAlpha, deep) switch
+        {
+            (true, false, false) => PixelFormat.Gray8,
+            (true, false, true) => PixelFormat.Gray16,
+            (true, true, false) => PixelFormat.La16,
+            (true, true, true) => PixelFormat.La32,
+            (false, false, false) => PixelFormat.Rgb24,
+            (false, false, true) => PixelFormat.Rgb48,
+            (false, true, false) => PixelFormat.Rgba32,
+            (false, true, true) => PixelFormat.Rgba64,
+        };
         Assert.Equal(pixelFormat.ToString(), expected.PixelFormat);
         Assert.Equal(pixelFormat, image.PixelFormat);
         Assert.Equal(pixelFormat, info.PixelFormat);
@@ -377,7 +385,7 @@ public sealed class HeicDecoderConformanceTests
         var track = ReferenceHeif.Parse(data).ColorTrack!;
         var order = track.PresentationOrder;
         using var stream = InputVariants.CreateStream(InputVariant.NonSeekableStream, data);
-        if (fixture.Expected.PixelFormat is "Rgba64" or "Gray16")
+        if (fixture.Expected.PixelFormat is "Rgba64" or "Gray16" or "Rgb48" or "La32")
         {
             using var reader = Image.OpenReader<Rgba64>(stream);
             Read(reader);

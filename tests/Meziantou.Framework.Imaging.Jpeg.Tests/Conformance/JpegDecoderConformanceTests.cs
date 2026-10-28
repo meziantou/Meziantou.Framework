@@ -104,7 +104,7 @@ public sealed class JpegDecoderConformanceTests
 
         // A lossless file is compared exactly, whatever its precision, and its pixels follow the precision
         Assert.All(fixtures, fixture => Assert.True(fixture.Policy.IsExact));
-        Assert.All(fixtures, fixture => Assert.Equal(fixture.Expected.BitsPerComponent == 8 ? (fixture.Entry.HasFeature("jpeg.components=1") ? PixelFormat.Gray8 : PixelFormat.Rgb24) : fixture.Entry.HasFeature("jpeg.components=1") ? PixelFormat.Gray16 : PixelFormat.Rgba64, Image.Identify(fixture.ReadInput()).PixelFormat));
+        Assert.All(fixtures, fixture => Assert.Equal(fixture.Expected.BitsPerComponent == 8 ? (fixture.Entry.HasFeature("jpeg.components=1") ? PixelFormat.Gray8 : PixelFormat.Rgb24) : fixture.Entry.HasFeature("jpeg.components=1") ? PixelFormat.Gray16 : PixelFormat.Rgb48, Image.Identify(fixture.ReadInput()).PixelFormat));
         foreach (var components in new[] { "jpeg.components=1", "jpeg.components=3" })
         {
             Assert.Contains(fixtures, fixture => fixture.Entry.HasFeature(components) && fixture.Entry.Features!.Any(feature => feature.StartsWith("jpeg.restartInterval=", StringComparison.Ordinal)));

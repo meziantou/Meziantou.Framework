@@ -133,7 +133,7 @@ public sealed class TgaCodecTests
         // Eight declared alpha bits: the attribute is the alpha channel
         var withAlpha = Tga(3, 1, 16, 3, pixels, descriptor: 0x08);
         var info = Image.Identify(withAlpha);
-        Assert.Equal(PixelFormat.Rgba32, info.PixelFormat);
+        Assert.Equal(PixelFormat.La16, info.PixelFormat);
         Assert.Equal(ImageColorModel.GrayscaleAlpha, info.ColorModel);
         Assert.Equal(8, info.BitsPerComponent);
         Assert.True(info.MayHaveTransparency);

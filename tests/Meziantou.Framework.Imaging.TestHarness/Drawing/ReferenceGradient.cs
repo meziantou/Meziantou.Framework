@@ -165,9 +165,9 @@ public sealed class ReferenceGradient
         var result = new List<ReferencePaint>();
         foreach (var a in alphas)
         {
-            if (a == 0 || colors.Count == 0)
+            if (a == 0 || alpha == 0)
             {
-                // A paint without opacity paints nothing, whatever its color
+                // A paint without opacity paints nothing, whatever its color (an alpha mask has no color at all)
                 result.Add(new ReferencePaint(new int[_layout.ColorChannels], 0));
                 continue;
             }

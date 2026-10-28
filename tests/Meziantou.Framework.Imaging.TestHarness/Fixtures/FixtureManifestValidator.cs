@@ -47,7 +47,7 @@ public static partial class FixtureManifestValidator
     public static IReadOnlySet<string> AllowedFormats { get; } = new HashSet<string>(StringComparer.Ordinal) { "png", "gif", "jpeg", "webp", "qoi", "bmp", "tga", "pnm", "avif", "heic", "jxl", "jp2", "exr" };
 
     /// <summary>The accepted values of <see cref="FixtureExpectation.PixelFormat"/> (library <c>PixelFormat</c> names).</summary>
-    public static IReadOnlySet<string> AllowedPixelFormats { get; } = new HashSet<string>(StringComparer.Ordinal) { "Rgba32", "Bgra32", "Rgb24", "Rgba64", "Gray8", "Gray16", "RgbaFloat", "RgbaHalf" };
+    public static IReadOnlySet<string> AllowedPixelFormats { get; } = new HashSet<string>(StringComparer.Ordinal) { "Rgba32", "Bgra32", "Rgb24", "Rgba64", "Gray8", "Gray16", "RgbaFloat", "RgbaHalf", "La16", "La32", "Rgb48", "A8" };
 
     /// <summary>The accepted values of <see cref="FixtureExpectation.ColorModel"/> (library <c>ImageColorModel</c> names).</summary>
     public static IReadOnlySet<string> AllowedColorModels { get; } = new HashSet<string>(StringComparer.Ordinal) { "Grayscale", "GrayscaleAlpha", "Rgb", "Rgba", "Indexed", "YCbCr", "Cmyk", "Ycck" };
@@ -744,7 +744,7 @@ public static partial class FixtureManifestValidator
             ValidateBuffers($"{name} poster", poster, expected, root, referencedFiles, ref layouts, buffers, errors);
         }
 
-        if (layouts is not null && expected.PixelFormat is "Rgba64" or "Gray16" && !layouts.Any(layout => RawPixelLayout.TryParse(layout, out var parsed) && parsed.BytesPerSample == 2))
+        if (layouts is not null && expected.PixelFormat is "Rgba64" or "Gray16" or "La32" or "Rgb48" && !layouts.Any(layout => RawPixelLayout.TryParse(layout, out var parsed) && parsed.BytesPerSample == 2))
         {
             errors.Add($"{name}: 16-bit fixtures ({expected.PixelFormat}) must provide a 16-bit reference layout so low bits are compared exactly.");
         }

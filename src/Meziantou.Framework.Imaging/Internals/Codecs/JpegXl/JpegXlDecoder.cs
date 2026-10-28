@@ -51,8 +51,9 @@ internal sealed class JpegXlDecoder : JpegXlDecodeObserver
     {
         ArgumentNullException.ThrowIfNull(structure);
         _structure = structure;
+        // The rows are written as RGBA for the gray formats with alpha and 16-bit RGB
         var format = structure.DefaultPixelFormat;
-        _sink = DecodedFrameSink.Create(_context, _request, ImageFormat.JpegXl, structure.Size, format, format, structure.Metadata.IccProfile);
+        _sink = DecodedFrameSink.Create(_context, _request, ImageFormat.JpegXl, structure.Size, format, PixelFormatWidening.GetWidenedFormat(format), structure.Metadata.IccProfile);
     }
 
     public override bool OnFrame(JpegXlStructureParser structure, JpegXlFrameHeader frame, JpegXlToc toc, WebPPayloadBuffer sections)

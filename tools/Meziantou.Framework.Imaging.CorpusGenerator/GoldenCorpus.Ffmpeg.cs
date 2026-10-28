@@ -19,12 +19,12 @@ internal static partial class GoldenCorpus
     [
         ("rgb24", "rgb24", "rgb", 8, "Rgb24", "Rgb", 8, ["rgb8"]),
         ("rgba", "rgba", "rgba", 8, "Rgba32", "Rgba", 8, []),
-        ("rgb48be", "rgb48be", "rgb", 16, "Rgba64", "Rgb", 16, []),
+        ("rgb48be", "rgb48be", "rgb", 16, "Rgb48", "Rgb", 16, []),
         ("rgba64be", "rgba64be", "rgba", 16, "Rgba64", "Rgba", 16, []),
         ("gray", "gray", "gray", 8, "Gray8", "Grayscale", 8, ["gray8"]),
         ("gray16be", "gray16be", "gray", 16, "Gray16", "Grayscale", 16, ["gray16le"]),
-        ("ya8", "ya8", "graya", 8, "Rgba32", "GrayscaleAlpha", 8, []),
-        ("ya16be", "ya16be", "graya", 16, "Rgba64", "GrayscaleAlpha", 16, []),
+        ("ya8", "ya8", "graya", 8, "La16", "GrayscaleAlpha", 8, []),
+        ("ya16be", "ya16be", "graya", 16, "La32", "GrayscaleAlpha", 16, []),
         // 1-bit gray from black and white samples; palette from RGB samples of the fixed 3-3-2 palette FFmpeg converts to
         ("monob", "gray", "gray", 8, "Gray8", "Grayscale", 1, ["gray8"]),
         ("pal8", "rgb24", "rgb", 8, "Rgba32", "Indexed", 8, []),

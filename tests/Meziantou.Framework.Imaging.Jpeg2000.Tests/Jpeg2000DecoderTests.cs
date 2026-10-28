@@ -19,9 +19,9 @@ public sealed class Jpeg2000DecoderTests
         { nameof(Jpeg2000TestFiles.Gray), 5, 3, PixelFormat.Gray8, ImageColorModel.Grayscale, 8, false },
         { nameof(Jpeg2000TestFiles.Rgb), 5, 3, PixelFormat.Rgb24, ImageColorModel.Rgb, 8, false },
         { nameof(Jpeg2000TestFiles.RgbaFile), 5, 3, PixelFormat.Rgba32, ImageColorModel.Rgba, 8, true },
-        { nameof(Jpeg2000TestFiles.GrayAlpha), 5, 3, PixelFormat.Rgba32, ImageColorModel.GrayscaleAlpha, 8, true },
+        { nameof(Jpeg2000TestFiles.GrayAlpha), 5, 3, PixelFormat.La16, ImageColorModel.GrayscaleAlpha, 8, true },
         { nameof(Jpeg2000TestFiles.Gray16), 5, 3, PixelFormat.Gray16, ImageColorModel.Grayscale, 16, false },
-        { nameof(Jpeg2000TestFiles.Rgb16File), 5, 3, PixelFormat.Rgba64, ImageColorModel.Rgb, 16, false },
+        { nameof(Jpeg2000TestFiles.Rgb16File), 5, 3, PixelFormat.Rgb48, ImageColorModel.Rgb, 16, false },
         { nameof(Jpeg2000TestFiles.RgbIrreversible), 5, 3, PixelFormat.Rgb24, ImageColorModel.Rgb, 8, false },
         { nameof(Jpeg2000TestFiles.Tiled), 13, 11, PixelFormat.Rgb24, ImageColorModel.Rgb, 8, false },
         { nameof(Jpeg2000TestFiles.Subsampled), 6, 4, PixelFormat.Rgb24, ImageColorModel.YCbCr, 8, false },
@@ -93,26 +93,9 @@ public sealed class Jpeg2000DecoderTests
     {
         using var image = Image.Load(GetFile(file));
         var pixels = GetBytes(image);
-        var expected = file switch
-        {
-            // The gray level and its opacity of each pixel become a gray RGBA pixel
-            nameof(Jpeg2000TestFiles.GrayAlpha) => ExpandGrayAlpha(Jpeg2000TestFiles.GetPattern8(image.Width * image.Height * 2)),
-            _ => Jpeg2000TestFiles.GetPattern8(pixels.Length),
-        };
 
-        Assert.Equal(expected, pixels);
-
-        static byte[] ExpandGrayAlpha(byte[] samples)
-        {
-            var result = new byte[samples.Length * 2];
-            for (var i = 0; i < samples.Length / 2; i++)
-            {
-                result.AsSpan(4 * i, 3).Fill(samples[2 * i]);
-                result[(4 * i) + 3] = samples[(2 * i) + 1];
-            }
-
-            return result;
-        }
+        // The gray level and its opacity of each pixel are a La16 pixel: every format stores the samples as they are
+        Assert.Equal(Jpeg2000TestFiles.GetPattern8(pixels.Length), pixels);
     }
 
     [Fact]
@@ -124,18 +107,10 @@ public sealed class Jpeg2000DecoderTests
             Assert.Equal(Jpeg2000TestFiles.GetPattern16(15), GetWords(gray));
         }
 
-        // There is no 16-bit RGB pixel format: the image is opaque RGBA
+        // 16-bit RGB without opacity is Rgb48
         using var color = Image.Load(Jpeg2000TestFiles.Rgb16File);
-        Assert.Equal(PixelFormat.Rgba64, color.PixelFormat);
-        var samples = Jpeg2000TestFiles.GetPattern16(45);
-        var expected = new ushort[60];
-        for (var i = 0; i < 15; i++)
-        {
-            samples.AsSpan(3 * i, 3).CopyTo(expected.AsSpan(4 * i));
-            expected[(4 * i) + 3] = ushort.MaxValue;
-        }
-
-        Assert.Equal(expected, GetWords(color));
+        Assert.Equal(PixelFormat.Rgb48, color.PixelFormat);
+        Assert.Equal(Jpeg2000TestFiles.GetPattern16(45), GetWords(color));
     }
 
     [Fact]
@@ -568,9 +543,10 @@ public sealed class Jpeg2000DecoderTests
         using (var image = Image.Load(Jp2FileBuilder.File(Jpeg2000TestFiles.GrayAlpha, Jp2FileBuilder.ImageHeader(5, 3, 2, 7), Jp2FileBuilder.EnumeratedColor(Jp2FileBuilder.ColorSpaceGray), Jp2FileBuilder.ChannelDefinition((0, 1, 0), (1, 0, 1)))))
         {
             var pixels = GetBytes(image);
+            Assert.Equal(PixelFormat.La16, image.PixelFormat);
             for (var i = 0; i < 15; i++)
             {
-                Assert.Equal([pairs[(2 * i) + 1], pairs[(2 * i) + 1], pairs[(2 * i) + 1], pairs[2 * i]], pixels.AsSpan(4 * i, 4).ToArray());
+                Assert.Equal([pairs[(2 * i) + 1], pairs[2 * i]], pixels.AsSpan(2 * i, 2).ToArray());
             }
         }
 

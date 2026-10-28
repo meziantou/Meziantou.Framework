@@ -104,10 +104,32 @@ internal static class DrawingKernels
             return new DrawingColor(value.R, value.G, value.B, color.A);
         }
 
+        if (typeof(TPixel) == typeof(Rgb48))
+        {
+            var value = unsafe(Unsafe.As<TPixel, Rgb48>(ref pixel));
+            return new DrawingColor(value.R, value.G, value.B, color.A);
+        }
+
         if (typeof(TPixel) == typeof(Gray16))
             return new DrawingColor(unsafe(Unsafe.As<TPixel, Gray16>(ref pixel)).Value, 0, 0, color.A);
 
+        // The formats composited as RGBA (CompositeBridged) get their gray level in the three colors
+        if (typeof(TPixel) == typeof(La32))
+        {
+            var level = unsafe(Unsafe.As<TPixel, La32>(ref pixel)).L;
+            return new DrawingColor(level, level, level, color.A);
+        }
+
         var alpha = PixelConverter.To8Bit(color.A);
+        if (typeof(TPixel) == typeof(La16))
+        {
+            var level = unsafe(Unsafe.As<TPixel, La16>(ref pixel)).L;
+            return new DrawingColor(level, level, level, alpha);
+        }
+
+        if (typeof(TPixel) == typeof(A8))
+            return new DrawingColor(0, 0, 0, alpha);
+
         if (typeof(TPixel) == typeof(Rgba32))
         {
             var value = unsafe(Unsafe.As<TPixel, Rgba32>(ref pixel));
@@ -238,6 +260,48 @@ internal static class DrawingKernels
                     entry[3] = PixelConverter.To8Bit(chunk[i].A);
                 }
             }
+            else if (typeof(TPixel) == typeof(La16))
+            {
+                var values = unsafe(MemoryMarshal.Cast<TPixel, La16>(pixels));
+                for (var i = 0; i < count; i++)
+                {
+                    var entry = entries.Slice(i * 4, 4);
+                    entry[0] = entry[1] = entry[2] = values[i].L;
+                    entry[3] = PixelConverter.To8Bit(chunk[i].A);
+                }
+            }
+            else if (typeof(TPixel) == typeof(La32))
+            {
+                var values = unsafe(MemoryMarshal.Cast<TPixel, La32>(pixels));
+                for (var i = 0; i < count; i++)
+                {
+                    var entry = entries.Slice(i * 4, 4);
+                    entry[0] = entry[1] = entry[2] = values[i].L;
+                    entry[3] = chunk[i].A;
+                }
+            }
+            else if (typeof(TPixel) == typeof(A8))
+            {
+                for (var i = 0; i < count; i++)
+                {
+                    var entry = entries.Slice(i * 4, 4);
+                    entry[0] = entry[1] = entry[2] = 0;
+                    entry[3] = PixelConverter.To8Bit(chunk[i].A);
+                }
+            }
+            else if (typeof(TPixel) == typeof(Rgb48))
+            {
+                var values = unsafe(MemoryMarshal.Cast<TPixel, Rgb48>(pixels));
+                for (var i = 0; i < count; i++)
+                {
+                    var value = values[i];
+                    var entry = entries.Slice(i * 4, 4);
+                    entry[0] = value.R;
+                    entry[1] = value.G;
+                    entry[2] = value.B;
+                    entry[3] = chunk[i].A;
+                }
+            }
             else
             {
                 throw new NotSupportedException($"The pixel type '{typeof(TPixel).Name}' is not supported.");
@@ -264,7 +328,8 @@ internal static class DrawingKernels
     /// Reads pixels of a row as the paint colors of a frame of the same pixel type: four samples per pixel, laid out as
     /// <see cref="DrawingColor"/>. These are the colors <see cref="ConvertColors{TPixel}"/> gives for those
     /// <see cref="ReadColors{TPixel}"/> reads, without the 16-bit colors in between: each sample is written as it is
-    /// stored, a format without alpha has an opaque one, and a gray format has its level first then two zeros. Every
+    /// stored, a format without alpha has an opaque one, a gray format has its level first then two zeros, a gray format
+    /// with alpha has its level three times (<see cref="A8"/> zeros), as the paints of these formats are composited as RGBA. Every
     /// sample goes back to itself through 16 bits, and the luma of a gray is that gray (<c>VectorizedKernelTests</c>
     /// checks every 8-bit sample and every 16-bit gray).
     /// </summary>
@@ -340,6 +405,48 @@ internal static class DrawingKernels
                 entry[3] = ushort.MaxValue;
             }
         }
+        else if (typeof(TPixel) == typeof(Rgb48))
+        {
+            var samples = unsafe(MemoryMarshal.Cast<byte, ushort>(row)).Slice(x * 3, count * 3);
+            for (var i = 0; i < count; i++)
+            {
+                var entry = destination.Slice(i * 4, 4);
+                entry[0] = samples[i * 3];
+                entry[1] = samples[(i * 3) + 1];
+                entry[2] = samples[(i * 3) + 2];
+                entry[3] = ushort.MaxValue;
+            }
+        }
+        else if (typeof(TPixel) == typeof(La16))
+        {
+            var samples = row.Slice(x * 2, count * 2);
+            for (var i = 0; i < count; i++)
+            {
+                var entry = destination.Slice(i * 4, 4);
+                entry[0] = entry[1] = entry[2] = samples[i * 2];
+                entry[3] = samples[(i * 2) + 1];
+            }
+        }
+        else if (typeof(TPixel) == typeof(La32))
+        {
+            var samples = unsafe(MemoryMarshal.Cast<byte, ushort>(row)).Slice(x * 2, count * 2);
+            for (var i = 0; i < count; i++)
+            {
+                var entry = destination.Slice(i * 4, 4);
+                entry[0] = entry[1] = entry[2] = samples[i * 2];
+                entry[3] = samples[(i * 2) + 1];
+            }
+        }
+        else if (typeof(TPixel) == typeof(A8))
+        {
+            var samples = row.Slice(x, count);
+            for (var i = 0; i < count; i++)
+            {
+                var entry = destination.Slice(i * 4, 4);
+                entry[0] = entry[1] = entry[2] = 0;
+                entry[3] = samples[i];
+            }
+        }
         else if (PixelConverter.IsFloat<TPixel>())
         {
             // The 16-bit colors of the pixels: a sample outside [0, 1] has none, and is rejected
@@ -385,6 +492,18 @@ internal static class DrawingKernels
         {
             Composite(unsafe(MemoryMarshal.Cast<byte, ushort>(row)).Slice(x, coverage.Length), channels: 1, coverage, source);
         }
+        else if (typeof(TPixel) == typeof(Rgb48))
+        {
+            Composite(unsafe(MemoryMarshal.Cast<byte, ushort>(row)).Slice(x * 3, coverage.Length * 3), channels: 3, coverage, source);
+        }
+        else if (typeof(TPixel) == typeof(La16) || typeof(TPixel) == typeof(A8))
+        {
+            CompositeBridged<TPixel, Rgba32, byte>(unsafe(MemoryMarshal.Cast<byte, TPixel>(row)).Slice(x, coverage.Length), coverage, source);
+        }
+        else if (typeof(TPixel) == typeof(La32))
+        {
+            CompositeBridged<TPixel, Rgba64, ushort>(unsafe(MemoryMarshal.Cast<byte, TPixel>(row)).Slice(x, coverage.Length), coverage, source);
+        }
         else if (PixelConverter.IsFloat<TPixel>())
         {
             FloatDrawingKernels.Composite<TPixel>(storage, y, x, coverage, source);
@@ -392,6 +511,31 @@ internal static class DrawingKernels
         else
         {
             throw new NotSupportedException($"The pixel type '{typeof(TPixel).Name}' is not supported.");
+        }
+    }
+
+    /// <summary>
+    /// Composites a paint over pixels of a format that has no kernel of its own (gray with alpha, alpha only): each chunk of
+    /// the run is converted to RGBA of the same precision, composited, and converted back. The paints of these formats
+    /// have the gray level in the three colors (black for <see cref="A8"/>), so the three colors of the result are the
+    /// same and the conversion back is exact: the result is the one of a gray kernel with alpha, and an alpha mask gets
+    /// the alpha of the result.
+    /// </summary>
+    private static void CompositeBridged<TPixel, TWorking, TSample>(Span<TPixel> pixels, ReadOnlySpan<uint> coverage, scoped in DrawingSource source)
+        where TPixel : unmanaged
+        where TWorking : unmanaged
+        where TSample : unmanaged, IBinaryInteger<TSample>, IMinMaxValue<TSample>
+    {
+        const int ChunkSize = 128;
+        Span<TWorking> working = stackalloc TWorking[ChunkSize];
+        for (var start = 0; start < pixels.Length; start += ChunkSize)
+        {
+            var count = Math.Min(ChunkSize, pixels.Length - start);
+            var chunk = pixels.Slice(start, count);
+            var rgba = working[..count];
+            PixelConverter.ConvertRow<TPixel, TWorking>(chunk, rgba);
+            Composite(unsafe(MemoryMarshal.Cast<TWorking, TSample>(rgba)), channels: 4, coverage.Slice(start, count), source.Slice(start, count));
+            PixelConverter.ConvertRow<TWorking, TPixel>(rgba, chunk);
         }
     }
 

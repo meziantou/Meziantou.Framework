@@ -374,7 +374,7 @@ public sealed class AvifDecoderInteropTests
         // Increasing 16-bit values that give max + 1 distinct samples: the sample of pixel i is i
         Assert.HasCount(max + 1, values, $"{name}: avifdec does not return {max + 1} distinct sample values; the image does not cover every value.");
         using var image = Image.Load(path);
-        Assert.Equal(color ? PixelFormat.Rgba64 : PixelFormat.Gray16, image.PixelFormat);
+        Assert.Equal(color ? PixelFormat.Rgb48 : PixelFormat.Gray16, image.PixelFormat);
         var decoded = ToRgba16(ImageSnapshots.CaptureFrame(image.Frames[0]));
         var inexact = new SortedSet<int>();
         for (var i = 0; i <= max; i++)
@@ -1443,8 +1443,11 @@ public sealed class AvifDecoderInteropTests
     {
         (8, true, false) => PixelFormat.Gray8,
         (8, false, false) => PixelFormat.Rgb24,
-        (8, _, true) => PixelFormat.Rgba32,
+        (8, true, true) => PixelFormat.La16,
+        (8, false, true) => PixelFormat.Rgba32,
         (_, true, false) => PixelFormat.Gray16,
+        (_, false, false) => PixelFormat.Rgb48,
+        (_, true, true) => PixelFormat.La32,
         _ => PixelFormat.Rgba64,
     };
 

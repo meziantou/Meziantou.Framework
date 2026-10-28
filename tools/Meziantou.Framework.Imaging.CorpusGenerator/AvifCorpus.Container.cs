@@ -1029,15 +1029,23 @@ internal static partial class AvifCorpus
             features.Add("avif.lossless");
     }
 
-    /// <summary>The documented pixel format of an untyped load: Rgb24, Rgba32 with alpha and Gray8 for monochrome at 8 bits;
-    /// Rgba64 and Gray16 for deeper samples (the deepest of the color and alpha planes).</summary>
+    /// <summary>The documented pixel format of an untyped load: the smallest format that stores the samples exactly, Gray8,
+    /// La16 (monochrome with alpha), Rgb24 or Rgba32 at 8 bits; Gray16, La32, Rgb48 or Rgba64 for deeper samples (the
+    /// deepest of the color and alpha planes).</summary>
     private static string PixelFormatOf(PlaneImage color, PlaneImage? alpha)
     {
         var deep = color.Color.BitDepth > 8 || alpha?.Color.BitDepth > 8;
-        if (color.Color.Monochrome && alpha is null)
-            return deep ? "Gray16" : "Gray8";
-
-        return deep ? "Rgba64" : alpha is null ? "Rgb24" : "Rgba32";
+        return (color.Color.Monochrome, alpha is not null, deep) switch
+        {
+            (true, false, false) => "Gray8",
+            (true, false, true) => "Gray16",
+            (true, true, false) => "La16",
+            (true, true, true) => "La32",
+            (false, false, false) => "Rgb24",
+            (false, false, true) => "Rgb48",
+            (false, true, false) => "Rgba32",
+            (false, true, true) => "Rgba64",
+        };
     }
 
     private static string ColorModelOf(PlaneImage color, bool hasAlpha, int matrix)
@@ -1057,7 +1065,7 @@ internal static partial class AvifCorpus
         "Rgb24" => ["rgba8", "rgb8"],
         "Gray8" => ["rgba8", "gray8"],
         "Gray16" => ["rgba16le", "gray16le"],
-        "Rgba64" => ["rgba16le"],
+        "Rgba64" or "La32" or "Rgb48" => ["rgba16le"],
         _ => ["rgba8"],
     };
 

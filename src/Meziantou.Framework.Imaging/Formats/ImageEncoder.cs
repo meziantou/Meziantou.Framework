@@ -1,3 +1,5 @@
+using Meziantou.Framework.Imaging.Internals;
+
 namespace Meziantou.Framework.Imaging.Formats;
 
 /// <summary>The base class of the immutable encoder settings accepted by the save and writer APIs.</summary>
@@ -57,6 +59,16 @@ public abstract class ImageEncoder
     /// <see cref="FloatingPointConversion"/> is not used.
     /// </summary>
     internal virtual bool StoresFloatingPointSamples => false;
+
+    /// <summary>
+    /// Gets a value indicating whether the output stores pixels of <see cref="PixelFormat.La16"/>, <see cref="PixelFormat.La32"/>,
+    /// <see cref="PixelFormat.Rgb48"/> or <see cref="PixelFormat.A8"/> as they are; otherwise the writer gives the encoder
+    /// a copy of the frames widened without any loss (<see cref="PixelFormatWidening"/>). The other formats always return
+    /// <see langword="true"/>.
+    /// </summary>
+    /// <param name="format">The pixel format of the frames.</param>
+    /// <returns><see langword="true"/> if the encoder receives the frames in <paramref name="format"/>.</returns>
+    internal virtual bool StoresPixelFormat(PixelFormat format) => !PixelFormatWidening.IsWidened(format);
 
     /// <summary>Selects the default encoder for a file name, from its extension.</summary>
     /// <param name="path">The file path.</param>

@@ -60,11 +60,11 @@ public sealed class HeicDecoderTests
     [InlineData(8, 2, null, PixelFormat.Rgb24, ImageColorModel.Unknown)]
     [InlineData(8, 3, ReferenceHeif.HevcAlphaAuxiliaryType, PixelFormat.Rgba32, ImageColorModel.Unknown)]
     [InlineData(8, 0, null, PixelFormat.Gray8, ImageColorModel.Grayscale)]
-    [InlineData(8, 0, ReferenceHeif.AlphaAuxiliaryType, PixelFormat.Rgba32, ImageColorModel.GrayscaleAlpha)]
-    [InlineData(10, 1, null, PixelFormat.Rgba64, ImageColorModel.Unknown)]
+    [InlineData(8, 0, ReferenceHeif.AlphaAuxiliaryType, PixelFormat.La16, ImageColorModel.GrayscaleAlpha)]
+    [InlineData(10, 1, null, PixelFormat.Rgb48, ImageColorModel.Unknown)]
     [InlineData(12, 3, ReferenceHeif.HevcAlphaAuxiliaryType, PixelFormat.Rgba64, ImageColorModel.Unknown)]
     [InlineData(10, 0, null, PixelFormat.Gray16, ImageColorModel.Grayscale)]
-    [InlineData(12, 0, ReferenceHeif.AlphaAuxiliaryType, PixelFormat.Rgba64, ImageColorModel.GrayscaleAlpha)]
+    [InlineData(12, 0, ReferenceHeif.AlphaAuxiliaryType, PixelFormat.La32, ImageColorModel.GrayscaleAlpha)]
     public void HeaderGivesTheSizeAndThePixelFormatOfTheItemProperties(int bitDepth, int chromaFormat, string? alphaType, PixelFormat pixelFormat, ImageColorModel colorModel)
     {
         var builder = Still(13, 7, bitDepth, chromaFormat);

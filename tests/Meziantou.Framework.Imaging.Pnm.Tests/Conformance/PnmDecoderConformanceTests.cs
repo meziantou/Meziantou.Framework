@@ -70,17 +70,9 @@ public sealed class PnmDecoderConformanceTests
         using (var image = Image.Load(data))
         {
             Assert.Equal(fixture.Expected.PixelFormat, image.PixelFormat.ToString());
-            var layout = image.PixelFormat switch
-            {
-                PixelFormat.Gray8 => RawPixelLayout.Gray8,
-                PixelFormat.Gray16 => RawPixelLayout.Gray16Le,
-                PixelFormat.Rgb24 => RawPixelLayout.Rgb8,
-                PixelFormat.Rgba64 => RawPixelLayout.Rgba16Le,
-                _ => RawPixelLayout.Rgba8,
-            };
-
-            var bytes = new byte[image.Width * image.Height * layout.BytesPerPixel];
-            image.Frames[0].CopyPixelBytesTo(bytes);
+            // The samples of the default format, in the layout of its references (gray with alpha and 16-bit RGB as RGBA)
+            var layout = ImageSnapshots.GetLayout(image.PixelFormat);
+            var bytes = ImageSnapshots.CaptureFrame(image.Frames[0]).Span;
             Assert.True(fixture.GetFrame(0, layout).Span.SequenceEqual(bytes), $"{id}: the {layout.Name} samples differ from the reference.");
         }
     }

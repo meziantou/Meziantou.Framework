@@ -285,6 +285,53 @@ public sealed class PerformanceContractTests
     }
 
     [Theory]
+    [InlineData(PixelFormat.La16, PixelFormat.Rgba32, 1, 2)]
+    [InlineData(PixelFormat.La32, PixelFormat.Rgba64, 1, 2)]
+    [InlineData(PixelFormat.Rgb48, PixelFormat.Rgba64, 3, 4)]
+    [InlineData(PixelFormat.A8, PixelFormat.Rgba32, 1, 4)]
+    public void CompactFormatsStoreFramesInAFractionOfTheMemory(PixelFormat compact, PixelFormat wide, int numerator, int denominator)
+    {
+        // The pixel storage of a frame is its pixels, whatever the format: gray with alpha takes half the memory of RGBA,
+        // 16-bit RGB three quarters, and an alpha mask a quarter (the slabs round the storage up a little)
+        using var compactImage = DrawingTestSupport.Create(compact, 256, 192);
+        using var wideImage = DrawingTestSupport.Create(wide, 256, 192);
+        Assert.Equal(256 * PixelFormats.GetBytesPerPixel(compact), compactImage.Frames[0].Storage.RowLength);
+        var compactBytes = compactImage.Owner.Scope.GetLiveBytes(AllocationKind.ImagePixels);
+        var wideBytes = wideImage.Owner.Scope.GetLiveBytes(AllocationKind.ImagePixels);
+        Assert.InRange(compactBytes, 256L * 192 * PixelFormats.GetBytesPerPixel(compact), (long)(wideBytes * numerator / denominator * 1.15));
+    }
+
+    [Theory]
+    [InlineData(PixelFormat.La16, PixelFormat.Rgba32)]
+    [InlineData(PixelFormat.La32, PixelFormat.Rgba64)]
+    [InlineData(PixelFormat.Rgb48, PixelFormat.Rgba64)]
+    public void LoadingIntoTheDefaultCompactFormatPeaksLowerThanLoadingAsRgba(PixelFormat compact, PixelFormat wide)
+    {
+        // A file whose default is a compact format is decoded into it, not into RGBA first: the peak of the load is the
+        // image plus a few rows, well below the one of a load as RGBA
+        using var source = DrawingTestSupport.CreateRandom(compact, 512, 384, new Random(42).Next);
+        using var stream = new MemoryStream();
+        source.Save(stream, new PngEncoder());
+        var data = stream.ToArray();
+
+        var compactPeak = MeasurePeak(() => Image.Load(data), compact);
+        var widePeak = MeasurePeak(() => wide == PixelFormat.Rgba32 ? Image.Load<Rgba32>(data) : Image.Load<Rgba64>(data), wide);
+        var expectedRatio = (double)PixelFormats.GetBytesPerPixel(compact) / PixelFormats.GetBytesPerPixel(wide);
+        Assert.InRange((double)compactPeak / widePeak, 0, expectedRatio + 0.1);
+
+        static long MeasurePeak(Func<Image> load, PixelFormat expected)
+        {
+            using var tracking = new AllocationTracking();
+            using (var image = load())
+            {
+                Assert.Equal(expected, image.PixelFormat);
+            }
+
+            return tracking.Scopes.Sum(scope => scope.GetDiagnostics().PeakLiveBytes);
+        }
+    }
+
+    [Theory]
     [InlineData(PixelFormat.RgbaFloat)]
     [InlineData(PixelFormat.RgbaHalf)]
     public void FloatingPointFilteringAllocatesNothingPerPixel(PixelFormat format)

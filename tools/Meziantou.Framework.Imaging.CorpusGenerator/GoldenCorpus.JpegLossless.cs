@@ -137,7 +137,7 @@ internal static partial class GoldenCorpus
             checks.Add(check);
 
             var colorModel = gray ? "Grayscale" : "Rgb";
-            var expected = CommonCorpus.StillExpected("jpeg", img, deep ? (gray ? "Gray16" : "Rgba64") : gray ? "Gray8" : "Rgb24", colorModel, precision);
+            var expected = CommonCorpus.StillExpected("jpeg", img, deep ? (gray ? "Gray16" : "Rgb48") : gray ? "Gray8" : "Rgb24", colorModel, precision);
             var reference = CommonCorpus.HandReference(
                 "The pattern given to cjpeg: a lossless file stores its samples" +
                 (pointTransform == 0 ? "" : $", without the {CommonCorpus.Str(pointTransform)} low bit(s) the point transform drops (each sample s is (s >> {CommonCorpus.Str(pointTransform)}) << {CommonCorpus.Str(pointTransform)})") +

@@ -230,9 +230,9 @@ public sealed class TiffIcoInteropTests
     [InlineData("monob", "lzw", PixelFormat.Gray8, ImageColorModel.Grayscale)]
     [InlineData("monob", "packbits", PixelFormat.Gray8, ImageColorModel.Grayscale)]
     [InlineData("gray", "lzw", PixelFormat.Gray8, ImageColorModel.Grayscale)]
-    [InlineData("ya8", "packbits", PixelFormat.Rgba32, ImageColorModel.GrayscaleAlpha)]
+    [InlineData("ya8", "packbits", PixelFormat.La16, ImageColorModel.GrayscaleAlpha)]
     [InlineData("gray16le", "lzw", PixelFormat.Gray16, ImageColorModel.Grayscale)]
-    [InlineData("rgb48le", "lzw", PixelFormat.Rgba64, ImageColorModel.Rgb)]
+    [InlineData("rgb48le", "lzw", PixelFormat.Rgb48, ImageColorModel.Rgb)]
     [InlineData("rgba64le", "packbits", PixelFormat.Rgba64, ImageColorModel.Rgba)]
     public async Task EverySampleLayoutWrittenByFFmpegDecodesExactly(string pixelFormat, string algorithm, PixelFormat expectedFormat, ImageColorModel expectedModel)
     {
@@ -245,7 +245,7 @@ public sealed class TiffIcoInteropTests
         Assert.Equal(expectedModel, Image.Identify(data).ColorModel);
         using var decoded = Image.Load(data);
         Assert.Equal(expectedFormat, decoded.PixelFormat);
-        var deep = expectedFormat is PixelFormat.Gray16 or PixelFormat.Rgba64;
+        var deep = PixelFormats.GetBitsPerComponent(expectedFormat) == 16;
         var reference = Assert.Single(await ffmpeg.DecodeToRawFramesAsync(path, deep ? "rgba64le" : "rgba", LargeWidth, LargeHeight, XunitCancellationToken));
         using var converted = deep ? decoded.CloneAs<Rgba64>() : (Image)decoded.CloneAs<Rgba32>();
         AssertSame(ImageSnapshots.CaptureFrame(converted.Frames[0]), reference, $"ffmpeg {pixelFormat} {algorithm} TIFF decoded by the library");

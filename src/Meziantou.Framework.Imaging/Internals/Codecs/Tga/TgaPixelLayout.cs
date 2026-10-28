@@ -40,8 +40,11 @@ internal sealed class TgaPixelLayout
     /// <summary>Gets the parsed header.</summary>
     public TgaHeader Header { get; }
 
-    /// <summary>Gets the layout of the rows produced by <see cref="ExpandRow"/>.</summary>
+    /// <summary>Gets the layout of the rows produced by <see cref="ExpandRow"/>: <see cref="DefaultPixelFormat"/>, as RGBA for gray with alpha.</summary>
     public PixelFormat SourcePixelFormat { get; }
+
+    /// <summary>Gets the default working representation.</summary>
+    public PixelFormat DefaultPixelFormat => DefaultPixelFormats.ForTga(Header.IsGrayscale, HasAlpha);
 
     /// <summary>Gets a value indicating whether the image descriptor declares a real alpha channel.</summary>
     public bool HasAlpha => Header.AlphaBits > 0;
@@ -66,7 +69,7 @@ internal sealed class TgaPixelLayout
     /// <summary>Creates the layout of a parsed header.</summary>
     public static TgaPixelLayout Create(TgaHeader header)
     {
-        var sourceFormat = DefaultPixelFormats.ForTga(header.IsGrayscale, header.AlphaBits > 0);
+        var sourceFormat = PixelFormatWidening.GetWidenedFormat(DefaultPixelFormats.ForTga(header.IsGrayscale, header.AlphaBits > 0));
         if (!header.IsColorMapped)
             return new TgaPixelLayout(header, sourceFormat, 0, 0, -1);
 

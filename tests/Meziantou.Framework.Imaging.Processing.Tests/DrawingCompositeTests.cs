@@ -510,7 +510,9 @@ public sealed class DrawingCompositeTests
         {
             decimal max = layout.MaxValue;
             var backdrop = layout.HasAlpha ? destination[layout.ColorChannels] / max : 1;
-            if (paint.Alpha == 0 || backdrop == 0)
+
+            // An alpha mask has no color to blend
+            if (paint.Alpha == 0 || backdrop == 0 || layout.ColorChannels == 0)
                 return paint;
 
             // Red, green and blue as fractions of one; a gray level three times
@@ -573,12 +575,13 @@ public sealed class DrawingCompositeTests
             var l = Luminosity(result);
             var min = result.Min();
             var max = result.Max();
-            if (min < 0)
+            // A gray color (l = min = max, to the rounding of the decimals) needs no clipping
+            if (min < 0 && l != min)
             {
                 result = [.. result.Select(value => l + ((value - l) * l / (l - min)))];
             }
 
-            if (max > 1)
+            if (max > 1 && l != max)
             {
                 result = [.. result.Select(value => l + ((value - l) * (1 - l) / (max - l)))];
             }

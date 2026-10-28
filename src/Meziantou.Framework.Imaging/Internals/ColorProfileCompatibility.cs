@@ -7,6 +7,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// conversion is not color management: a profile is never applied implicitly, so it can only be kept when its declared
 /// color space matches the pixels: <see cref="IccProfileColorSpace.Gray"/> for gray formats, <see cref="IccProfileColorSpace.Rgb"/> for
 /// color formats. Profiles declaring any other (or no) color space are compatible with no built-in pixel format.
+/// <see cref="PixelFormat.A8"/> has no color, so no profile labels it: a conversion to it drops the profile, which describes
+/// nothing of its pixels.
 /// </summary>
 internal static class ColorProfileCompatibility
 {
@@ -16,7 +18,7 @@ internal static class ColorProfileCompatibility
     /// <returns><see langword="true"/> if the combination is compatible.</returns>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="format"/> is not a supported pixel format.</exception>
     public static bool IsCompatible(IccProfileColorSpace colorSpace, PixelFormat format)
-        => PixelFormats.IsGrayscale(format) ? colorSpace == IccProfileColorSpace.Gray : colorSpace == IccProfileColorSpace.Rgb;
+        => PixelFormats.HasColor(format) && (PixelFormats.IsGrayscale(format) ? colorSpace == IccProfileColorSpace.Gray : colorSpace == IccProfileColorSpace.Rgb);
 
     /// <summary>Determines whether a profile can label pixels of a format (no profile is always compatible).</summary>
     /// <param name="profile">The profile, or <see langword="null"/>.</param>
@@ -27,7 +29,8 @@ internal static class ColorProfileCompatibility
 
     /// <summary>
     /// Gets the profile to retain on pixels converted to <paramref name="destinationFormat"/>: the profile itself when it is
-    /// compatible, <see langword="null"/> when it is incompatible and <paramref name="discardIncompatible"/> is set.
+    /// compatible, <see langword="null"/> when it is incompatible and <paramref name="discardIncompatible"/> is set, or when
+    /// the destination has no color (<see cref="PixelFormat.A8"/>).
     /// The resulting combination is always checked, so an incompatible profile that the caller attached to the source is
     /// reported too.
     /// </summary>
@@ -42,7 +45,7 @@ internal static class ColorProfileCompatibility
         if (profile is null || IsCompatible(profile.ColorSpace, destinationFormat))
             return profile;
 
-        if (discardIncompatible)
+        if (discardIncompatible || !PixelFormats.HasColor(destinationFormat))
             return null;
 
         var kind = PixelFormats.IsGrayscale(destinationFormat) ? "grayscale" : "color";

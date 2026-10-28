@@ -436,6 +436,38 @@ public sealed class WebAssemblyTests : IDisposable
         Assert.Throws<ObjectDisposedException>(() => store.CreateGlobal(new WasmGlobalType(WasmValueType.I32, mutable: false), WasmValue.FromI32(0)));
     }
 
+    [Fact]
+    public void ExternRef_WhenTheGcHeapIsFull_Throws()
+    {
+        // Wasmtime drops the data of an externref it cannot allocate, which runs the finalizer that frees the GCHandle of
+        // the host value: the store must not free it a second time
+        using var runtime = new WasmtimeRuntime(new WasmtimeRuntimeOptions { MaxMemorySize = 1024 * 1024 });
+        using var store = runtime.CreateStore(new NoInterruptHost());
+        var table = store.CreateTable(new WasmTableType(WasmValueType.ExternRef, minimum: 0, maximum: null, is64: false), WasmValue.Null);
+        var first = new WasmHostReference(new object());
+        table.Grow(1, WasmValue.FromReference(first));
+
+        WasmAllocationException? exception = null;
+        for (var i = 0; i < 10_000_000 && exception is null; i++)
+        {
+            try
+            {
+                table.Grow(1, WasmValue.FromReference(new WasmHostReference(new object())));
+            }
+            catch (WasmAllocationException ex)
+            {
+                exception = ex;
+            }
+        }
+
+        Assert.NotNull(exception);
+        Assert.Equal("The externref cannot be allocated", exception.Message);
+        Assert.Same(first, table.Get(0).Reference);
+
+        table.Set(0, WasmValue.Null);
+        Assert.Null(table.Get(0).Reference);
+    }
+
     private sealed class NoInterruptHost : IWasmHost
     {
         public void CheckInterrupt()

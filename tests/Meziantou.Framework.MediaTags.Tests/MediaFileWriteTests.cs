@@ -287,6 +287,40 @@ public sealed class MediaFileWriteTests
     }
 
     [Fact]
+    public void WriteTags_Mp3EndingInsideItsTagHeaderBeforeTheId3v1Tag_IsRefused()
+    {
+        // The ID3v1 tag supplies size bytes that make the header invalid. A write without an ID3v1 tag removes them,
+        // and leaves a cut-off header at the end of the file.
+        var id3v1Tag = Formats.Id3v1.Id3v1Writer.BuildTag(new MediaTagInfo { Title = "éé" });
+        using var input = new MemoryStream([.. "ID3\u0004\u0000"u8, .. id3v1Tag]);
+        using var output = new MemoryStream();
+
+        var result = MediaFile.WriteTags(input, output, new MediaTagInfo(), MediaFormat.Mp3, new MediaTagWriteOptions { WriteId3v1Tag = false });
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(MediaTagError.CorruptFile, result.Error);
+    }
+
+    [Fact]
+    public void WriteTags_Mp3StartingWithBytesThatCannotStartAnId3v2Header_KeepsThemAsAudio()
+    {
+        // "ID3" followed by an unknown version is not a tag, whether the ID3v1 tag follows it or not
+        var id3v1Tag = Formats.Id3v1.Id3v1Writer.BuildTag(new MediaTagInfo { Title = "Title" });
+        var options = new MediaTagWriteOptions { WriteId3v1Tag = false };
+        using var input = new MemoryStream([.. "ID3C"u8, .. id3v1Tag]);
+        using var output = new MemoryStream();
+        Assert.True(MediaFile.WriteTags(input, output, new MediaTagInfo { Title = "Title" }, MediaFormat.Mp3, options).IsSuccess);
+        var written = output.ToArray();
+        Assert.True(written.AsSpan().EndsWith("ID3C"u8));
+
+        using var rewritten = new MemoryStream();
+        var result = MediaFile.WriteTags(new MemoryStream(written), rewritten, new MediaTagInfo { Title = "Title" }, MediaFormat.Mp3, options);
+
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        Assert.Equal(written, rewritten.ToArray());
+    }
+
+    [Fact]
     public void WriteTags_DoesNotTouchAnUnrelatedFileNamedAfterTheTarget()
     {
         // The temporary file used to stage the new content must not have a name a caller could already be

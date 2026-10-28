@@ -56,4 +56,27 @@ internal readonly struct Id3v2Header
         };
         return true;
     }
+
+    /// <summary>
+    /// Gets whether the first bytes of a header, cut short, can be completed into a header that <see cref="TryParse"/> accepts.
+    /// </summary>
+    public static bool IsPossiblePrefix(ReadOnlySpan<byte> data)
+    {
+        if (data.Length < 3)
+            return false;
+
+        if (data[0] != 'I' || data[1] != 'D' || data[2] != '3')
+            return false;
+
+        if (data.Length > 3 && data[3] is not (2 or 3 or 4))
+            return false;
+
+        for (var i = 6; i < data.Length && i < 10; i++)
+        {
+            if (data[i] > 0x7F)
+                return false;
+        }
+
+        return true;
+    }
 }

@@ -349,26 +349,33 @@ internal static class Id3v2Reader
     private static bool IsItunesInternalComment(string description) => description.StartsWith("iTun", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
-    /// Gets the number of bytes the ID3v2 tag at the current position occupies, or 0 when there is none.
+    /// Gets the number of bytes the ID3v2 tag at the current position of a seekable stream occupies, or 0 when there is none.
     /// </summary>
+    /// <param name="stream">The stream, positioned where a tag may start.</param>
+    /// <param name="headerEnd">
+    /// The offset the header must end before: the start of the ID3v1 tag, or the end of the stream. The bytes of an
+    /// ID3v1 tag are not part of the header, as a write that removes or rebuilds the ID3v1 tag would change them.
+    /// </param>
+    /// <param name="tagSize">The size of the tag, header and footer included.</param>
     /// <returns>
     /// <see langword="false"/> when a tag header is present but its declared size runs past the end of the
-    /// stream, or when the stream ends inside a header. A writer must not treat those bytes as audio, and must not
-    /// treat the tag as absent either: doing the first drops the audio and doing the second embeds a stale tag in
-    /// the audio stream. A cut-off header kept as audio also becomes a header once the ID3v1 tag that follows it
-    /// supplies its last bytes.
+    /// stream, or when the header is cut off by <paramref name="headerEnd"/> and its first bytes can start a header.
+    /// A writer must not treat those bytes as audio, and must not treat the tag as absent either: doing the first
+    /// drops the audio and doing the second embeds a stale tag in the audio stream. A cut-off header kept as audio
+    /// also becomes a header once the bytes written after it supply its last bytes.
     /// </returns>
-    public static bool TryGetTagSize(Stream stream, out int tagSize)
+    public static bool TryGetTagSize(Stream stream, long headerEnd, out int tagSize)
     {
         tagSize = 0;
 
         var originalPosition = stream.Position;
         Span<byte> headerBytes = stackalloc byte[10];
-        var bytesRead = stream.ReadAtLeast(headerBytes, 10, throwOnEndOfStream: false);
+        var available = (int)Math.Clamp(headerEnd - originalPosition, 0, headerBytes.Length);
+        var bytesRead = stream.ReadAtLeast(headerBytes[..available], available, throwOnEndOfStream: false);
         if (bytesRead < 10)
         {
             stream.Position = originalPosition;
-            return !headerBytes[..bytesRead].StartsWith("ID3"u8);
+            return !Id3v2Header.IsPossiblePrefix(headerBytes[..bytesRead]);
         }
 
         if (!Id3v2Header.TryParse(headerBytes, out var header))
@@ -380,17 +387,12 @@ internal static class Id3v2Reader
         stream.Position = originalPosition;
 
         var size = 10L + header.TagSize + (header.FooterPresent ? 10 : 0);
-        if (stream.CanSeek && size > stream.Length - originalPosition)
+        if (size > stream.Length - originalPosition)
             return false;
 
         tagSize = (int)size;
         return true;
     }
-
-    /// <summary>
-    /// Gets the size of the ID3v2 tag at the current position, treating an unusable declared size as no tag.
-    /// </summary>
-    public static int GetTagSize(Stream stream) => TryGetTagSize(stream, out var tagSize) ? tagSize : 0;
 
     private static void ProcessFrame(string frameId, ReadOnlySpan<byte> data, MediaTagInfo tags)
     {

@@ -77,9 +77,7 @@ internal sealed class Mp3TagReader : IMediaTagReader
         var originalPosition = stream.Position;
         try
         {
-            var audioStart = GetAudioStartOffset(stream);
-            var audioEnd = GetAudioEndOffset(stream);
-            if (audioEnd - audioStart < 4)
+            if (!Mp3AudioLocator.TryLocate(stream, out var audioStart, out var audioEnd, out _) || audioEnd - audioStart < 4)
                 return null;
 
             if (!TryFindFirstFrame(stream, audioStart, audioEnd, out var frameOffset, out var frame))
@@ -180,42 +178,6 @@ internal sealed class Mp3TagReader : IMediaTagReader
             return frame.IsMono ? 17 : 32;
 
         return frame.IsMono ? 9 : 17;
-    }
-
-    /// <summary>
-    /// Gets the offset of the audio, after every consecutive ID3v2 tag.
-    /// </summary>
-    /// <remarks>
-    /// Some taggers prepend a new tag without removing the old one. Only the first is read, but the audio starts
-    /// after all of them, as the writer assumes when it replaces them. Searching for the first frame from the end
-    /// of the first tag would find a false frame sync in the data of the next one, which a write then removes.
-    /// </remarks>
-    private static long GetAudioStartOffset(Stream stream)
-    {
-        var offset = 0L;
-        while (true)
-        {
-            stream.Position = offset;
-            var tagSize = Id3v2Reader.GetTagSize(stream);
-            if (tagSize is 0)
-                return offset;
-
-            offset += tagSize;
-        }
-    }
-
-    private static long GetAudioEndOffset(Stream stream)
-    {
-        var audioEnd = stream.Length;
-        if (audioEnd < 128)
-            return audioEnd;
-
-        stream.Position = audioEnd - 128;
-        Span<byte> id3v1Header = stackalloc byte[3];
-        if (stream.ReadAtLeast(id3v1Header, id3v1Header.Length, throwOnEndOfStream: false) < id3v1Header.Length)
-            return audioEnd;
-
-        return id3v1Header is [(byte)'T', (byte)'A', (byte)'G'] ? audioEnd - 128 : audioEnd;
     }
 
     private static bool TryParseFrameHeader(ReadOnlySpan<byte> header, out Mp3FrameHeader frame)

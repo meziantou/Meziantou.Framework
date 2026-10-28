@@ -738,6 +738,30 @@ public sealed class Mp3Id3v2Tests
         Assert.Equal(expected, ReadMp3(WriteMp3(bytes, tags)).Duration);
     }
 
+    [Fact]
+    public void RemoveTags_StackedId3v1Tags_RemovesThemAll()
+    {
+        // Some taggers append a new ID3v1 tag without removing the old one. Only the last is read, so removing it
+        // alone would bring back the tags of the previous one, and shorten the audio by the size of a tag.
+        var audio = CreateSyntheticMp3(100, includeId3v2Tag: false);
+        var expected = ReadMp3(audio).Duration;
+        Assert.NotNull(expected);
+        byte[] bytes = [.. audio, .. Formats.Id3v1.Id3v1Writer.BuildTag(new MediaTagInfo { Title = "Old" }), .. Formats.Id3v1.Id3v1Writer.BuildTag(new MediaTagInfo { Title = "New" })];
+
+        var tags = ReadMp3(bytes);
+        Assert.Equal("New", tags.Title);
+        Assert.Equal(expected, tags.Duration);
+
+        using var input = new MemoryStream(bytes);
+        using var output = new MemoryStream();
+        Assert.True(MediaFile.RemoveTags(input, output, MediaFormat.Mp3).IsSuccess);
+
+        var written = output.ToArray();
+        Assert.Equal(audio, written);
+        Assert.Null(ReadMp3(written).Title);
+        Assert.Equal(expected, ReadMp3(written).Duration);
+    }
+
     private static MediaTagInfo ReadMp3(byte[] bytes)
     {
         using var stream = new MemoryStream(bytes);

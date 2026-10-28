@@ -8,34 +8,8 @@ internal sealed class Mp3TagWriter : IMediaTagWriter
     {
         try
         {
-            inputStream.Position = 0;
-
-            // Determine where the audio data starts (skip existing ID3v2 tags). Some taggers prepend a new tag
-            // without removing the old one. Only the first is read, but every one is skipped: otherwise a write
-            // leaves a stale tag at the start of the audio, and removing the tags brings it back.
-            var existingTagSize = 0L;
-            while (true)
-            {
-                inputStream.Position = existingTagSize;
-                if (!Id3v2Reader.TryGetTagSize(inputStream, out var tagSize))
-                    return MediaTagResult.Failure(MediaTagError.CorruptFile, "The ID3v2 tag declares a size that runs past the end of the file.");
-
-                if (tagSize == 0)
-                    break;
-
-                existingTagSize += tagSize;
-            }
-
-            // Determine where the audio data ends (check for ID3v1 tag)
-            var audioEnd = inputStream.Length;
-            if (Id3v1.Id3v1Writer.HasId3v1Tag(inputStream))
-            {
-                audioEnd -= 128;
-            }
-
-            var audioLength = audioEnd - existingTagSize;
-            if (audioLength < 0)
-                return MediaTagResult.Failure(MediaTagError.CorruptFile, "The ID3v2 and ID3v1 tags overlap; the file contains no audio data.");
+            if (!Mp3AudioLocator.TryLocate(inputStream, out var audioStart, out var audioEnd, out var locateError))
+                return MediaTagResult.Failure(MediaTagError.CorruptFile, locateError);
 
             // Build new ID3v2 tag
             inputStream.Position = 0;
@@ -48,8 +22,8 @@ internal sealed class Mp3TagWriter : IMediaTagWriter
 
             // Copy audio data. A short read here means the input ended early: the output would be a truncated
             // file, and it is about to replace the caller's, so fail instead of reporting success.
-            inputStream.Position = existingTagSize;
-            if (!StreamHelpers.CopyExactly(inputStream, outputStream, audioLength))
+            inputStream.Position = audioStart;
+            if (!StreamHelpers.CopyExactly(inputStream, outputStream, audioEnd - audioStart))
                 return MediaTagResult.Failure(MediaTagError.UnexpectedEndOfStream, "The file ended before all audio data could be read.");
 
             // Write ID3v1 tag at end

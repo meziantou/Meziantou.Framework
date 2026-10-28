@@ -6205,6 +6205,292 @@ public sealed class VectorizedKernelTests
         }
     }
 
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void ToneSampleRowsMatchTheScalarReferences()
+    {
+        var random = new Random(91);
+        foreach (var format in DrawingTestSupport.IntegerPixelFormats)
+        {
+            var bytesPerPixel = PixelFormats.GetBytesPerPixel(format);
+            var max = ToneSamples.GetLevelCount(format) - 1;
+            foreach (var width in new[] { 1, 3, 4, 5, 7, 8, 9, 15, 16, 17, 31, 33, 67 })
+            {
+                // Stored pixels, a few of them fully transparent
+                var pixels = new byte[width * bytesPerPixel];
+                random.NextBytes(pixels);
+                if (format is PixelFormat.Rgba32 or PixelFormat.Bgra32)
+                {
+                    for (var x = 0; x < width; x += 3)
+                    {
+                        pixels[(4 * x) + 3] = 0;
+                    }
+                }
+
+                var expected = new ushort[4 * width];
+                var actual = new ushort[4 * width];
+                ToneSamples.ReadScalar(format, pixels, expected);
+                ToneSamples.Read(format, pixels, actual);
+                Assert.Equal(expected, actual);
+
+                var expectedLuma = new ushort[width];
+                var actualLuma = new ushort[width];
+                ToneSamples.ComputeLumaScalar(expected, expectedLuma);
+                ToneSamples.ComputeLuma(expected, actualLuma);
+                Assert.Equal(expectedLuma, actualLuma);
+
+                Array.Clear(actualLuma);
+                ToneSamples.ReadLuma(format, pixels, new ushort[4 * width], actualLuma);
+                Assert.Equal(expectedLuma, actualLuma);
+
+                // Colors written back over the stored pixels, whose alpha is kept
+                var colors = new ushort[4 * width];
+                for (var i = 0; i < colors.Length; i++)
+                {
+                    colors[i] = (ushort)random.Next(max + 1);
+                }
+
+                var expectedPixels = pixels.ToArray();
+                var actualPixels = pixels.ToArray();
+                ToneSamples.WriteColorsScalar(format, colors, expectedPixels);
+                ToneSamples.WriteColors(format, colors, actualPixels);
+                Assert.Equal(expectedPixels, actualPixels);
+
+                if (max == 255 && PixelFormats.HasAlpha(format))
+                {
+                    var expectedMarks = expected.ToArray();
+                    var actualMarks = expected.ToArray();
+                    ToneSamples.MarkTransparentScalar(expectedMarks, default);
+                    ToneSamples.MarkTransparent(actualMarks, default);
+                    Assert.Equal(expectedMarks, actualMarks);
+
+                    var expectedLumaMarks = expectedLuma.ToArray();
+                    var actualLumaMarks = expectedLuma.ToArray();
+                    ToneSamples.MarkTransparentScalar(expected.ToArray(), expectedLumaMarks);
+                    ToneSamples.MarkTransparent(expected.ToArray(), actualLumaMarks);
+                    Assert.Equal(expectedLumaMarks, actualLumaMarks);
+                    if (format is PixelFormat.Rgba32 or PixelFormat.Bgra32)
+                    {
+                        actualLumaMarks = expectedLuma.ToArray();
+                        ToneSamples.MarkTransparent32(pixels, actualLumaMarks);
+                        Assert.Equal(expectedLumaMarks, actualLumaMarks);
+                    }
+                }
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void ToneShiftsMatchTheScalarReferences()
+    {
+        var random = new Random(92);
+        foreach (var width in new[] { 1, 3, 4, 5, 8, 9, 17, 64, 67 })
+        {
+            // A change of luma added to the three colors of 8-bit samples; the alpha is not changed
+            var changes = new short[width];
+            var increases = new uint[width];
+            var decreases = new uint[width];
+            for (var x = 0; x < width; x++)
+            {
+                changes[x] = (short)random.Next(-255, 256);
+                increases[x] = (uint)Math.Max((int)changes[x], 0) * 0x010101u;
+                decreases[x] = (uint)Math.Max(-changes[x], 0) * 0x010101u;
+            }
+
+            var samples = new ushort[4 * width];
+            for (var i = 0; i < samples.Length; i++)
+            {
+                samples[i] = (ushort)random.Next(256);
+            }
+
+            var expected = samples.ToArray();
+            var actual = samples.ToArray();
+            ToneCurveMapper.ShiftBytesScalar(expected, changes);
+            ToneCurveMapper.ShiftBytes(actual, changes);
+            Assert.Equal(expected, actual);
+
+            // The same changes on stored pixels, as saturated additions and subtractions
+            var pixels = new byte[4 * width];
+            random.NextBytes(pixels);
+            var expectedPixels = pixels.ToArray();
+            var actualPixels = pixels.ToArray();
+            ToneSamples.ShiftColors32Scalar(expectedPixels, increases, decreases);
+            ToneSamples.ShiftColors32(actualPixels, increases, decreases);
+            Assert.Equal(expectedPixels, actualPixels);
+            for (var x = 0; x < width; x++)
+            {
+                for (var c = 0; c < 3; c++)
+                {
+                    Assert.Equal(Math.Clamp(pixels[(4 * x) + c] + changes[x], 0, 255), expectedPixels[(4 * x) + c]);
+                }
+
+                Assert.Equal(pixels[(4 * x) + 3], expectedPixels[(4 * x) + 3]);
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void ThresholdMasksMatchTheComparisonWithTheLevel()
+    {
+        var random = new Random(93);
+        foreach (var max in new uint[] { 255, 65535 })
+        {
+            foreach (var level in new[] { double.NaN, double.NegativeInfinity, -0.5, -0.0, 0, 0.5, 1, 127.5, 128, max - 1.0, max - 0.5, max, max + 1.0, double.PositiveInfinity })
+            {
+                var luma = new ushort[37];
+                for (var i = 0; i < luma.Length; i++)
+                {
+                    luma[i] = (ushort)random.Next((int)max + 1);
+                }
+
+                luma[0] = 0;
+                luma[1] = (ushort)max;
+                var mask = luma.ToArray();
+                Thresholder.CompareLuma(mask, Thresholder.GetLowestLumaAbove(level, max));
+                for (var i = 0; i < luma.Length; i++)
+                {
+                    Assert.Equal(luma[i] > level ? ushort.MaxValue : (ushort)0, mask[i]);
+                }
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void OilPaintMostFrequentLevelIsTheFirstLargestCount()
+    {
+        var random = new Random(94);
+        for (var length = 1; length <= 40; length++)
+        {
+            for (var round = 0; round < 20; round++)
+            {
+                var counts = new int[length];
+                for (var i = 0; i < length; i++)
+                {
+                    counts[i] = random.Next(4);
+                }
+
+                var largest = counts.Max();
+                Assert.Equal(Array.IndexOf(counts, largest), EffectKernels.GetMostFrequentLevel(counts));
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void FlattenOf16BitPixelsMatchesTheScalarFormula()
+    {
+        var random = new Random(95);
+        var background = new Rgba64(0x1234, 0xABCD, 0xFFFF, ushort.MaxValue);
+        var pixels = new Rgba64[67];
+        for (var i = 0; i < pixels.Length; i++)
+        {
+            var alpha = random.Next(4) switch
+            {
+                0 => 0,
+                1 => ushort.MaxValue,
+                _ => random.Next(65536),
+            };
+
+            pixels[i] = new Rgba64((ushort)random.Next(65536), (ushort)random.Next(65536), (ushort)random.Next(65536), (ushort)alpha);
+        }
+
+        var actual = pixels.ToArray();
+        var done = EffectKernels.Flatten64Vector(actual, background);
+        for (var i = 0; i < done; i++)
+        {
+            var pixel = pixels[i];
+            uint a = pixel.A;
+            var expected = new Rgba64(
+                (ushort)PixelConverter.Flatten(pixel.R, background.R, a, ushort.MaxValue),
+                (ushort)PixelConverter.Flatten(pixel.G, background.G, a, ushort.MaxValue),
+                (ushort)PixelConverter.Flatten(pixel.B, background.B, a, ushort.MaxValue));
+            Assert.Equal(expected, actual[i]);
+        }
+
+        Assert.Equal(pixels[done..], actual[done..]);
+    }
+
+    [Theory]
+    [MemberData(nameof(DrawingTestSupport.IntegerFormats), MemberType = typeof(DrawingTestSupport))]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void ToneOperationsMatchTheScalarPaths(PixelFormat format)
+    {
+        var random = new Random(96);
+        using var source = DrawingTestSupport.CreateRandom(format, 67, 23, random.Next);
+        foreach (var channel in Enum.GetValues<HistogramChannel>())
+        {
+            var expected = RunScalar(() => source.ComputeHistogram(channel, TestContext.Current.CancellationToken));
+            var actual = source.ComputeHistogram(channel, TestContext.Current.CancellationToken);
+            Assert.Equal(expected.TotalCount, actual.TotalCount);
+            for (var level = 0; level < ToneSamples.GetLevelCount(format); level++)
+            {
+                Assert.Equal(expected[level], actual[level]);
+            }
+        }
+
+        var upper = format == PixelFormat.A8 ? new Rgba64(0, 0, 0, ushort.MaxValue) : new Rgba64(ushort.MaxValue, ushort.MaxValue, ushort.MaxValue, ushort.MaxValue);
+        var lower = format == PixelFormat.A8 ? default : new Rgba64(0, 0, 0, ushort.MaxValue);
+        var operations = new List<(string Name, Action<Image> Apply)>
+        {
+            ("equalize", image => image.Equalize(cancellationToken: TestContext.Current.CancellationToken)),
+            ("equalize per channel", image => image.Equalize(new HistogramEqualizationOptions { ColorMode = HistogramColorMode.PerChannel }, TestContext.Current.CancellationToken)),
+            ("adaptive equalize", image => image.Equalize(new HistogramEqualizationOptions { Mode = HistogramEqualizationMode.Adaptive, TileCountX = 3, TileCountY = 2 }, TestContext.Current.CancellationToken)),
+            ("adaptive equalize per channel", image => image.Equalize(new HistogramEqualizationOptions { Mode = HistogramEqualizationMode.Adaptive, ColorMode = HistogramColorMode.PerChannel, TileCountX = 3, TileCountY = 2 }, TestContext.Current.CancellationToken)),
+            ("auto levels", image => image.AutoLevels(cancellationToken: TestContext.Current.CancellationToken)),
+            ("auto levels per channel", image => image.AutoLevels(new AutoLevelsOptions { ColorMode = HistogramColorMode.PerChannel }, TestContext.Current.CancellationToken)),
+            ("replace color", image => image.ReplaceColor(new Rgba64(0x8080, 0x8080, 0x8080, 0x8080), new Rgba64(1, 2, 3, ushort.MaxValue), 0.4, TestContext.Current.CancellationToken)),
+            ("replace exact color", image => image.ReplaceColor(new Rgba64(0, 0, 0, 0), new Rgba64(0x0101, 0x0202, 0x0303, ushort.MaxValue), 0, TestContext.Current.CancellationToken)),
+            ("vignette", image => image.Vignette(new Rgba64(0x2000, 0x4000, 0x6000, 0xE000), 30, 9, cancellationToken: TestContext.Current.CancellationToken)),
+            ("glow", image => image.Glow(new Rgba64(0x2000, 0x4000, 0x6000, 0xE000), 25, 25, new Rectangle(-5, 3, 60, 17), TestContext.Current.CancellationToken)),
+            ("repeated radial gradient", image => image.Draw(canvas => canvas.FillRectangle(new RadialGradientBrush(new PointD(20.25, 9.5), 7, 4, [new(0, new Rgba64(0, 0, 0, ushort.MaxValue)), new(1, new Rgba64(0xFFFF, 0x8000, 0, 0x8000))]) { SpreadMode = GradientSpreadMode.Reflect }, new RectangleD(0, 0, 67, 23)), TestContext.Current.CancellationToken)),
+        };
+
+        if (format is PixelFormat.Rgba32 or PixelFormat.Bgra32 or PixelFormat.Rgba64)
+        {
+            operations.Add(("flatten", image => image.Flatten(new Rgba64(0x1234, 0xABCD, 0x7F7F, ushort.MaxValue), TestContext.Current.CancellationToken)));
+        }
+
+        foreach (var method in new[] { ThresholdMethod.Fixed, ThresholdMethod.Otsu })
+        {
+            operations.Add((method.ToString(), image => image.Threshold(new ThresholdOptions { Method = method, Level = 0.4, UpperColor = upper, LowerColor = lower }, TestContext.Current.CancellationToken)));
+        }
+
+        foreach (var edgeMode in Enum.GetValues<ConvolutionEdgeMode>())
+        {
+            operations.Add(("mean " + edgeMode, image => image.Threshold(new ThresholdOptions { Method = ThresholdMethod.Mean, WindowSize = 7, Offset = 0.01, EdgeMode = edgeMode, UpperColor = upper, LowerColor = lower }, TestContext.Current.CancellationToken)));
+            operations.Add(("sauvola " + edgeMode, image => image.Threshold(new ThresholdOptions { Method = ThresholdMethod.Sauvola, WindowSize = 31, EdgeMode = edgeMode, UpperColor = upper, LowerColor = lower }, TestContext.Current.CancellationToken)));
+        }
+
+        foreach (var (name, apply) in operations)
+        {
+            using var expected = source.Clone();
+            using var actual = source.Clone();
+            RunScalar(() =>
+            {
+                apply(expected);
+                return 0;
+            });
+            apply(actual);
+            Assert.True(DrawingTestSupport.ReadSamples(expected.Frames[0]).SequenceEqual(DrawingTestSupport.ReadSamples(actual.Frames[0])), name);
+        }
+
+        static T RunScalar<T>(Func<T> action)
+        {
+            Resampler.TestForceScalar = true;
+            try
+            {
+                return action();
+            }
+            finally
+            {
+                Resampler.TestForceScalar = false;
+            }
+        }
+    }
+
     private static int[] ToBits(float[] values) => Array.ConvertAll(values, BitConverter.SingleToInt32Bits);
 
     /// <summary>A finite single-precision number: an integer, a fraction, a large or a tiny magnitude, or a zero of either sign.</summary>

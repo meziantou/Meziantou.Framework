@@ -8,8 +8,10 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <remarks>
 /// Memory: the data of the items or of the samples that are not decoded yet (the walker), the reference state of the AV1
 /// decoders, the planes of the color image and of the alpha plane, and three rows, all charged to the operation scope. The
-/// decoder of a coded item is released before the next one is decoded; an image sequence keeps one decoder for the color
-/// images and one for the alpha planes, whose state does not depend on the number of images.
+/// decoder of a coded item is released before the next one is decoded, except that the tiles of a large grid are decoded by
+/// up to <see cref="ImageConfiguration.MaxDegreeOfParallelism"/> workers, each holding a decoder and the frame of its tile
+/// until the tiles of its batch are copied; an image sequence keeps one decoder for the color images and one for the alpha
+/// planes, whose state does not depend on the number of images.
 /// </remarks>
 internal sealed partial class AvifDecoder : HeifDecodeObserver
 {
@@ -163,41 +165,43 @@ internal sealed partial class AvifDecoder : HeifDecodeObserver
         base.Dispose(disposing);
     }
 
-    // Decodes the coded items of an image into planes of the size of the image
+    // Decodes the coded items of an image into planes of the size of the image. With several workers
+    // (ImageConfiguration.MaxDegreeOfParallelism), up to that many tiles of a grid are decoded at once, each by a decoder of
+    // its own; the tiles are checked against each other and copied on the calling thread, in the order of the tiles, so the
+    // planes and the errors are those of a sequential decoding.
     private AvifPlanarImage DecodeImage(HeifStructureParser structure, HeifCodedImage image)
     {
         AvifPlanarImage? result = null;
         try
         {
-            for (var i = 0; i < image.Tiles.Length; i++)
+            if (!image.IsGrid)
             {
-                _context.CancellationToken.ThrowIfCancellationRequested();
-                structure.GetItemBuffer(image.Tiles[i], out var data, out var length);
-                var frame = DecodeCodedItem(data, length, image.OperatingPoints[i], image.Layers[i]);
-                try
+                var frame = DecodePreparedTile(image, PrepareTile(structure, image, 0), _context.Tracker, _context.Configuration.MaxDegreeOfParallelism);
+                if (frame.Header.FilmGrain is null)
                 {
-                    var plane = frame.GetPlane(0);
-                    HeifStructureParser.EnsureMatchesConfiguration(image, AvifBinding.ToBitstreamFormat(frame.Sequence));
-                    if (plane.Width != image.TileSize.Width || plane.Height != image.TileSize.Height)
-                        throw AvifBinding.Instance.Invalid("the size of an AV1 image does not match its 'ispe' property.");
-
-                    if (result is not null && !result.Sequence.IsSameSequence(frame.Sequence))
-                        throw AvifBinding.Instance.Invalid("the tiles of a grid do not have the same sequence header.");
-
-                    var filmGrain = frame.Header.FilmGrain;
-                    if (!image.IsGrid && filmGrain is null)
+                    try
+                    {
                         return AvifPlanarImage.FromFrame(frame);
-
-                    // The planes hold whole tiles: the tiles of the last row and column may exceed the image
-                    if (result is null)
-                        result = AvifPlanarImage.Create(_context.Scope, frame.Sequence, image.Columns * image.TileSize.Width, image.Rows * image.TileSize.Height);
-
-                    CopyTile(frame, filmGrain, result, i % image.Columns * image.TileSize.Width, i / image.Columns * image.TileSize.Height);
+                    }
+                    finally
+                    {
+                        frame.Release();
+                    }
                 }
-                finally
-                {
-                    frame.Release();
-                }
+
+                ConsumeTile(0, frame);
+            }
+            else
+            {
+                // The tiles decoded at once filter their frames on their own worker: the threads would multiply otherwise
+                var filterWorkers = HeifGridTiles.GetWorkerCount(_context, image) is 1 ? _context.Configuration.MaxDegreeOfParallelism : 1;
+                HeifGridTiles.Decode(
+                    _context,
+                    image,
+                    index => PrepareTile(structure, image, index),
+                    (tile, tracker) => DecodePreparedTile(image, tile, tracker, filterWorkers),
+                    static frame => frame.Release(),
+                    ConsumeTile);
             }
 
             var planes = result!;
@@ -208,6 +212,53 @@ internal sealed partial class AvifDecoder : HeifDecodeObserver
         {
             result?.Dispose();
         }
+
+        // Copies a tile to the planes, and releases it
+        void ConsumeTile(int index, Av1FrameBuffer frame)
+        {
+            try
+            {
+                if (result is not null && !result.Sequence.IsSameSequence(frame.Sequence))
+                    throw AvifBinding.Instance.Invalid("the tiles of a grid do not have the same sequence header.");
+
+                // The planes hold whole tiles: the tiles of the last row and column may exceed the image
+                result ??= AvifPlanarImage.Create(_context.Scope, frame.Sequence, image.Columns * image.TileSize.Width, image.Rows * image.TileSize.Height);
+                CopyTile(frame, frame.Header.FilmGrain, result, index % image.Columns * image.TileSize.Width, index / image.Columns * image.TileSize.Height);
+            }
+            finally
+            {
+                frame.Release();
+            }
+        }
+    }
+
+    // Reads the data of a coded item, on the calling thread
+    private PreparedTile PrepareTile(HeifStructureParser structure, HeifCodedImage image, int index)
+    {
+        _context.CancellationToken.ThrowIfCancellationRequested();
+        structure.GetItemBuffer(image.Tiles[index], out var data, out var length);
+        return new PreparedTile(data, length, image.OperatingPoints[index], image.Layers[index]);
+    }
+
+    // Decodes a prepared coded item and checks its frame against the file. It uses no state of the decoder: the tiles of a
+    // grid are decoded on several threads.
+    private Av1FrameBuffer DecodePreparedTile(HeifCodedImage image, in PreparedTile tile, InputResourceTracker tracker, int maxDegreeOfParallelism)
+    {
+        var frame = DecodeCodedItem(tile, tracker, maxDegreeOfParallelism);
+        try
+        {
+            var plane = frame.GetPlane(0);
+            HeifStructureParser.EnsureMatchesConfiguration(image, AvifBinding.ToBitstreamFormat(frame.Sequence));
+            if (plane.Width != image.TileSize.Width || plane.Height != image.TileSize.Height)
+                throw AvifBinding.Instance.Invalid("the size of an AV1 image does not match its 'ispe' property.");
+        }
+        catch
+        {
+            frame.Release();
+            throw;
+        }
+
+        return frame;
     }
 
     // Decodes the temporal unit of an image of a sequence: the decoder keeps the frames that the next images refer to
@@ -255,13 +306,14 @@ internal sealed partial class AvifDecoder : HeifDecodeObserver
     // Decodes the frame of a coded item: the reference state of the decoder is released, the frame is kept by the caller.
     // A layered item holds a frame per spatial layer: the frame of the selected layer is the image, or the frame of the
     // highest layer of the operating point, which the lower layers only help to decode or to show progressively
-    private Av1FrameBuffer DecodeCodedItem(byte[] data, int length, int operatingPoint, int? layer)
+    private Av1FrameBuffer DecodeCodedItem(in PreparedTile tile, InputResourceTracker tracker, int maxDegreeOfParallelism)
     {
-        using var decoder = new Av1Decoder(_context.Scope, _context.Tracker, operatingPoint) { MaxDegreeOfParallelism = _context.Configuration.MaxDegreeOfParallelism };
+        var layer = tile.Layer;
+        using var decoder = new Av1Decoder(_context.Scope, tracker, tile.OperatingPoint) { MaxDegreeOfParallelism = maxDegreeOfParallelism };
         if (layer is { } selected)
             decoder.MaxSpatialLayer = selected;
 
-        decoder.SetInput(data, 0, length);
+        decoder.SetInput(tile.Data, 0, tile.Length);
         var frame = decoder.DecodeNextOutputFrame(_context.CancellationToken) ?? throw AvifBinding.Instance.Invalid("an AV1 image has no frame.");
         if (layer is not null && decoder.OutputSpatialId != layer)
         {
@@ -314,4 +366,7 @@ internal sealed partial class AvifDecoder : HeifDecodeObserver
             grain.ApplyStripe(frame, stripe, lumaRows, targetY.Stride, uRows, vRows, chromaStride);
         }
     }
+
+    // A coded item whose data are read: its decoding needs nothing else
+    private readonly record struct PreparedTile(byte[] Data, int Length, int OperatingPoint, int? Layer);
 }

@@ -1044,21 +1044,24 @@ thin public types over its `FontFace`.
 - Default parallelism is one worker (`ImageConfiguration.MaxDegreeOfParallelism`). Only `Resize`, the transformations,
   `Convolve`, the blurs (`GaussianBlur`, `BoxBlur`, `MedianBlur`), `Sharpen` and `DetectEdges` are parallel, and their result must not
   depend on the worker count (`ParallelConvolutionTests`: a frame needs 65,536 pixels to get several workers). The HEIC
-  decoder decodes the tiles of a grid of at least 65,536 samples concurrently (`HeicDecoder.DecodeTiles`): the structure
-  parser and the `InputResourceTracker` are not thread-safe and stay on the calling thread (each worker charges its hidden
-  pixels to a tracker of its own, merged in tile order), and the pixels and the errors are those of one worker (the error
-  of the first tile that fails, a cancellation first; `HeicDecodingTests`). The AV1 post-processing filters
+  and AVIF decoders decode the tiles of a grid of at least 65,536 samples concurrently (`HeifGridTiles.Decode`): the
+  structure parser and the `InputResourceTracker` are not thread-safe and stay on the calling thread (each worker charges
+  its hidden pixels to a tracker of its own, merged in tile order), and the pixels and the errors are those of one worker
+  (the error of the first tile that fails, a cancellation first; `HeicDecodingTests`, `AvifDecoderTests`). The AVIF
+  encoder codes the tiles of such a grid (`AvifEncoder.GridTileSize`) the same way (`HeifEncoderSession.EncodeTiles`):
+  each worker has encoders of its own, created with the session and charged to its scope, and the coded tiles are appended
+  in tile order, so the file is byte-identical to one worker's (`AvifEncoderTests`). The AV1 post-processing filters
   (`Av1PostFilter.Apply`) of a frame of at least 65,536 pixels run by bands of whole groups of 16 luma rows
   (`Av1PostFilter.GetBandRow`), one stage after the other: the loop filter one pass at a time (an edge reads at most half
   the transform block on each side, so the edges of different rows of a pass never share a sample), CDEF from copies of
   the 2 unfiltered rows on each side of every band edge (`Av1Cdef.SaveBandEdge`), the upscaling by rows and the loop
   restoration by stripes (a stripe reads only its own rows and the saved deblocked boundaries). Each worker rents its own
-  rows and scratch. `Av1PostFilter.TestIgnoreMinimumSize` makes `Av1DecoderConformanceTests` decode every vector by 2, 3
+  rows and scratch. The tiles of a grid that several workers decode filter their frames on their own worker
+  (`AvifDecoder.DecodeImage`), so the threads never multiply; a single item, or a grid decoded by one worker, gets the
+  configured count. `Av1PostFilter.TestIgnoreMinimumSize` makes `Av1DecoderConformanceTests` decode every vector by 2, 3
   and 16 workers against the reference digests. Measured on 3840x2160 single-frame files (Release, net11.0, M5 Pro, one
   worker): the loop filter and CDEF are 25% of the decoding time of our default-effort output and 39% at quality 40,
-  which decode 1.27x and 1.45x faster with 8 workers (the bound is ~1.5x). An ImageIO (`sips`) file is a grid of 512x512
-  tiles decoded one after the other, without CDEF: its loop filter is 9.5% of the time, ~0.4 ms per tile, and it gains
-  4%. The HEVC in-loop filters stay sequential:
+  which decode 1.27x and 1.45x faster with 8 workers (the bound is ~1.5x). The HEVC in-loop filters stay sequential:
   deblocking and SAO are 3-6% of the decoding time of a single-picture HEIC at the default quality and 19% at quality 40,
   too little to be worth splitting (camera HEIC files are grids, already decoded by tiles). Other decoding, encoding and
   drawing stay sequential.

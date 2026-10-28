@@ -546,11 +546,9 @@ public sealed class ProjectedFileSystemTests
             vfs.Start(options: null);
 
             var read = Task.Run(() => File.ReadAllBytes(Path.Combine(fullPath, "gated.bin")));
+            // ExecuteCallback registers the command before it enters the provider, so the command is
+            // already part of what Stop drains once the provider is entered
             await vfs.Entered.WaitAsync(TimeSpan.FromSeconds(30));
-
-            // Entering the provider happens just before ExecuteCallback registers the command, so
-            // let that settle: otherwise this races the registration instead of testing the drain.
-            await Task.Delay(TimeSpan.FromSeconds(1));
 
             var holdFor = TimeSpan.FromSeconds(2);
             _ = Task.Run(async () =>

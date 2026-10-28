@@ -10,6 +10,11 @@
     <!-- The seeds of the text targets (Seeds/<target>/*) and the bundled fonts of the library (the font target) -->
     <EmbeddedResource Include="Seeds\**\*" LogicalName="Seeds/%(RecursiveDir)%(Filename)%(Extension)" />
     <EmbeddedResource Include="..\..\src\Meziantou.Framework.WebPlatform\Css\Fonts\Bundled\*.ttf;..\..\src\Meziantou.Framework.WebPlatform\Css\Fonts\Bundled\*.woff2" Exclude="..\..\src\Meziantou.Framework.WebPlatform\Css\Fonts\Bundled\STIXTwoMath-*" LogicalName="Seeds/font/%(Filename)%(Extension)" Link="Seeds\font\%(Filename)%(Extension)" />
+    <!-- The seeds of the decoders of bytes: WPT resources and test files -->
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.WebPlatform.External\wpt\wasm\incrementer.wasm;..\..\tests\Meziantou.Framework.WebPlatform.External\wpt\wasm\webapi\esm-integration\resources\*.wasm" LogicalName="Seeds/wasm/%(Filename)%(Extension)" Link="Seeds\wasm\%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.WebPlatform.External\wpt\webvtt\parsing\file-parsing\support\*.vtt;..\..\tests\Meziantou.Framework.WebPlatform.External\wpt\webvtt\parsing\file-parsing\tests\support\*.vtt" LogicalName="Seeds/webvtt/%(Filename)%(Extension)" Link="Seeds\webvtt\%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.MediaTags.Tests\TestFiles\basic.flac" LogicalName="Seeds/audio/%(Filename)%(Extension)" Link="Seeds\audio\%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.WebPlatform.External\wpt\mimesniff\mime-types\resources\mime-types.json;..\..\tests\Meziantou.Framework.WebPlatform.External\wpt\fetch\data-urls\resources\data-urls.json" LogicalName="Seeds/%(Filename)%(Extension)" Link="Seeds\%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>

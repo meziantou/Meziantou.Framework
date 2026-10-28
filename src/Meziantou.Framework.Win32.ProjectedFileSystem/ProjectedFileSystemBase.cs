@@ -498,7 +498,8 @@ public abstract class ProjectedFileSystemBase : IDisposable
     {
         return ExecuteCallback(
             in callbackData,
-            QueryFileNameCallbackAsync(callbackData.FilePathName.ToString() ?? ""),
+            (Instance: this, FileName: callbackData.FilePathName.ToString() ?? ""),
+            static state => state.Instance.QueryFileNameCallbackAsync(state.FileName),
             extendedParameters: null);
     }
 
@@ -527,7 +528,8 @@ public abstract class ProjectedFileSystemBase : IDisposable
     {
         return ExecuteCallback(
             in callbackData,
-            StartDirectoryEnumerationCallbackAsync(callbackData.FilePathName.ToString() ?? "", enumerationId),
+            (Instance: this, FilePathName: callbackData.FilePathName.ToString() ?? "", EnumerationId: enumerationId),
+            static state => state.Instance.StartDirectoryEnumerationCallbackAsync(state.FilePathName, state.EnumerationId),
             extendedParameters: null);
     }
 
@@ -601,7 +603,8 @@ public abstract class ProjectedFileSystemBase : IDisposable
     {
         return ExecuteCallback(
             in callbackData,
-            GetPlaceholderInfoCallbackAsync(callbackData.FilePathName.ToString() ?? "", callbackData.NamespaceVirtualizationContext),
+            (FilePathName: callbackData.FilePathName.ToString() ?? "", Context: callbackData.NamespaceVirtualizationContext, Instance: this),
+            static state => state.Instance.GetPlaceholderInfoCallbackAsync(state.FilePathName, state.Context),
             extendedParameters: null);
     }
 
@@ -635,12 +638,8 @@ public abstract class ProjectedFileSystemBase : IDisposable
     {
         return ExecuteCallback(
             in callbackData,
-            GetFileDataCallbackAsync(
-                callbackData.FilePathName.ToString() ?? "",
-                callbackData.NamespaceVirtualizationContext,
-                callbackData.DataStreamId,
-                byteOffset,
-                length),
+            (Instance: this, FilePathName: callbackData.FilePathName.ToString() ?? "", Context: callbackData.NamespaceVirtualizationContext, callbackData.DataStreamId, ByteOffset: byteOffset, Length: length),
+            static state => state.Instance.GetFileDataCallbackAsync(state.FilePathName, state.Context, state.DataStreamId, state.ByteOffset, state.Length),
             extendedParameters: null);
     }
 
@@ -749,17 +748,34 @@ public abstract class ProjectedFileSystemBase : IDisposable
         }
     }
 
-    private HResult ExecuteCallback(in ProjFs.PRJ_CALLBACK_DATA callbackData, ValueTask<HResult> callbackResult, ProjFs.PRJ_COMPLETE_COMMAND_EXTENDED_PARAMETERS? extendedParameters)
+    // The state carries the arguments of the callback, so that starting it does not allocate a closure
+    private HResult ExecuteCallback<TState>(in ProjFs.PRJ_CALLBACK_DATA callbackData, TState state, Func<TState, ValueTask<HResult>> callback, ProjFs.PRJ_COMPLETE_COMMAND_EXTENDED_PARAMETERS? extendedParameters)
     {
-        if (callbackResult.IsCompletedSuccessfully)
-            return callbackResult.Result;
-
-        // Register before handing back ERROR_IO_PENDING so Stop cannot tear the context down
-        // underneath the PrjCompleteCommand this is about to schedule. TryAddCount fails once
-        // the drain has finished, which means the instance is going away.
+        // Register before starting the work, not only before handing back ERROR_IO_PENDING: the work calls ProjFS with
+        // the context of the instance (PrjWriteFileData, PrjWritePlaceholderInfo, then PrjCompleteCommand), so it must
+        // be part of what Stop drains. Work started without a registration would keep running after Stop tore the
+        // context down. TryAddCount fails once the drain has finished, which means the instance is going away.
         if (!_pendingCommands.TryAddCount())
             return HResult.ERROR_FILE_SYSTEM_VIRTUALIZATION_INVALID_OPERATION;
 
+        ValueTask<HResult> callbackResult;
+        try
+        {
+            callbackResult = callback(state);
+        }
+        catch
+        {
+            _pendingCommands.Signal();
+            throw;
+        }
+
+        if (callbackResult.IsCompletedSuccessfully)
+        {
+            _pendingCommands.Signal();
+            return callbackResult.Result;
+        }
+
+        // CompleteCommandAsync releases the registration once the command is completed
         _ = CompleteCommandAsync(callbackData.NamespaceVirtualizationContext, callbackData.CommandId, callbackResult.AsTask(), extendedParameters);
         return HResult.ERROR_IO_PENDING;
     }

@@ -2339,6 +2339,68 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void ImageBilinearSumsMatchTheScalarReferenceBitForBit()
+    {
+        if (!Avx.IsSupported)
+            return;
+
+        var random = new Random(4242);
+        var colors = new Rgba64[4];
+        var weights = new double[4];
+        for (var round = 0; round < 200_000; round++)
+        {
+            // The fractions of a bilinear interpolation: any, on a dyadic grid, tiny, or close to 1
+            var fx = NextFraction(random);
+            var fy = NextFraction(random);
+            weights[0] = (1 - fx) * (1 - fy);
+            weights[1] = fx * (1 - fy);
+            weights[2] = (1 - fx) * fy;
+            weights[3] = fx * fy;
+            for (var i = 0; i < 4; i++)
+            {
+                colors[i] = new Rgba64(NextSample(random), NextSample(random), NextSample(random), random.Next(6) switch
+                {
+                    0 => 0,
+                    1 => ushort.MaxValue,
+                    2 => (ushort)random.Next(1, 16),
+                    _ => NextSample(random),
+                });
+            }
+
+            // The pixels outside the image are not added: any subset of the four, in order
+            var taps = random.Next(1, 16);
+            var expected = default(ImageEvaluator.Accumulator);
+            var actual = default(ImageEvaluator.VectorAccumulator);
+            for (var i = 0; i < 4; i++)
+            {
+                if ((taps & (1 << i)) != 0)
+                {
+                    expected.Add(colors[i], weights[i]);
+                    actual.Add(colors[i], weights[i]);
+                }
+            }
+
+            Assert.Equal(expected.ToColor(), actual.ToColor());
+        }
+
+        static double NextFraction(Random random) => random.Next(5) switch
+        {
+            0 => random.Next(1024) / 1024.0,
+            1 => random.NextDouble() * 1e-12,
+            2 => 1 - (random.NextDouble() * 1e-12),
+            _ => random.NextDouble(),
+        };
+
+        static ushort NextSample(Random random) => random.Next(5) switch
+        {
+            0 => 0,
+            1 => ushort.MaxValue,
+            _ => (ushort)random.Next(ushort.MaxValue + 1),
+        };
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void DrawingSourceOverOf8BitPixelsMatchesTheScalarReference()
     {
         // The division of the vectorized path: by 2^16, then by 255 as a product and a shift, below 2^32

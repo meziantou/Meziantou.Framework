@@ -467,6 +467,75 @@ public sealed class HevcEncoderRoundTripTests
     }
 
     [Theory]
+    [InlineData(-1, 0, "444", true)]
+    [InlineData(60, 5, "420", true)]
+    [InlineData(40, 9, "420", true)]
+    [InlineData(60, 5, "420", false)]
+    public void AResetEncoderCodesItsNextPictureAsANewEncoder(int quality, int effort, string format, bool stillPicture)
+    {
+        // The tiles of a grid are coded one after the other by one encoder: after a reset, a picture is coded as by a new
+        // encoder, whatever the encoder coded before (a still picture, or the pictures of a sequence)
+        var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(AResetEncoderCodesItsNextPictureAsANewEncoder));
+        var settings = HevcEncoderTestSession.CreateSettings(66, 50, 8, format, quality < 0, Math.Max(quality, 0), effort, stillPicture);
+        using var reused = new HevcEncoder(scope, settings);
+        EncodePicture(reused, seed: 1);
+        if (!stillPicture)
+        {
+            EncodePicture(reused, seed: 2);
+            Assert.False(reused.IsKeyFrame);
+        }
+
+        reused.Reset();
+        Assert.Throws<InvalidOperationException>(() => reused.Payload);
+        Assert.Throws<InvalidOperationException>(() => reused.Reconstruction);
+        var (payload, reconstruction) = EncodePicture(reused, seed: 3);
+        Assert.True(reused.IsKeyFrame);
+
+        using var fresh = new HevcEncoder(scope, settings);
+        var (expectedPayload, expectedReconstruction) = EncodePicture(fresh, seed: 3);
+        Assert.Equal(expectedPayload, payload);
+        Assert.Equal(expectedReconstruction, reconstruction);
+
+        // A picture that is not complete cannot be forgotten
+        reused.Reset();
+        reused.BeginFrame();
+        Assert.Throws<InvalidOperationException>(reused.Reset);
+        Assert.False(reused.Encode(XunitCancellationToken));
+        Assert.Throws<InvalidOperationException>(reused.Reset);
+
+        static (byte[] Payload, ushort[] Reconstruction) EncodePicture(HevcEncoder encoder, int seed)
+        {
+            var planeCount = encoder.Parameters.ChromaFormatIdc is 0 ? 1 : 3;
+            for (var plane = 0; plane < planeCount; plane++)
+            {
+                var buffer = encoder.GetSourcePlane(plane);
+                var samples = HevcEncoderTestSession.CreateSamples("photo", buffer.Width, buffer.Height, bitDepth: 8, seed: (seed * 7919) + plane);
+                for (var y = 0; y < buffer.Height; y++)
+                {
+                    samples.AsSpan(y * buffer.Width, buffer.Width).CopyTo(buffer.GetRow(y));
+                }
+            }
+
+            encoder.BeginFrame();
+            while (!encoder.Encode(XunitCancellationToken))
+            {
+            }
+
+            var reconstruction = new List<ushort>();
+            for (var plane = 0; plane < planeCount; plane++)
+            {
+                var samples = encoder.Reconstruction.GetPlane(plane);
+                for (var y = 0; y < samples.Height; y++)
+                {
+                    reconstruction.AddRange(samples.GetRow(y));
+                }
+            }
+
+            return (encoder.Payload.ToArray(), [.. reconstruction]);
+        }
+    }
+
+    [Theory]
     [InlineData(-1, 4, 1)]
     [InlineData(50, 5, 2)]
     public void ACancelledTokenStopsTheEncoder(int quality, int effort, int pictureCount)

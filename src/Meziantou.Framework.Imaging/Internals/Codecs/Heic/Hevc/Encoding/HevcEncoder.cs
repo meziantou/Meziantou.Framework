@@ -211,6 +211,25 @@ internal sealed class HevcEncoder : IDisposable
         _phase = Phase.Start;
     }
 
+    /// <summary>
+    /// Forgets the pictures that were encoded, so that the next one starts a new stream with the same parameter sets: an
+    /// instantaneous decoding refresh picture, coded as by a new encoder (the tiles of a grid are coded one after the
+    /// other by one encoder). The payload and the reconstruction of the last picture are no longer valid.
+    /// </summary>
+    public void Reset()
+    {
+        if (_phase is not (Phase.Idle or Phase.Done))
+            throw new InvalidOperationException("The previous picture is not complete.");
+
+        _reconstruction = null;
+        _references = null;
+        _header = null;
+        _current = 0;
+        _frameIndex = -1;
+        _picOrderCnt = 0;
+        _phase = Phase.Idle;
+    }
+
     /// <summary>Encodes a part of the picture: a row of coding tree units, or one of the steps that start and finish the picture.</summary>
     /// <returns><see langword="true"/> when the picture is complete.</returns>
     /// <exception cref="ImageResourceLimitException">A buffer exceeds the live-allocation limit.</exception>

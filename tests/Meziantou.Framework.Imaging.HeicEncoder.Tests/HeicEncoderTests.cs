@@ -58,6 +58,7 @@ public sealed class HeicEncoderTests
         Assert.Null(encoder.BitDepth);
         Assert.False(encoder.AllowBitDepthReduction);
         Assert.False(encoder.ClearTransparentColors);
+        Assert.Null(encoder.GridTileSize);
         Assert.Equal(0, encoder.KeyFrameInterval);
         Assert.Equal(FrameDurationRounding.RequireExact, encoder.DurationRounding);
         Assert.Equal(MetadataHandling.Strict, encoder.MetadataHandling);
@@ -73,6 +74,11 @@ public sealed class HeicEncoderTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new HeicEncoder { BitDepth = 16 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new HeicEncoder { KeyFrameInterval = -1 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new HeicEncoder { DurationRounding = (FrameDurationRounding)2 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new HeicEncoder { GridTileSize = new Size(63, 64) });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new HeicEncoder { GridTileSize = new Size(64, 63) });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new HeicEncoder { GridTileSize = new Size(65529, 64) });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new HeicEncoder { GridTileSize = new Size(64, 65529) });
+        Assert.Equal(new Size(64, 65528), new HeicEncoder { GridTileSize = new Size(64, 65528) }.GridTileSize);
         Assert.Equal(12, new HeicEncoder { KeyFrameInterval = 12 }.KeyFrameInterval);
         Assert.Equal((0, 100), (new HeicEncoder { Quality = 0 }.Quality, new HeicEncoder { Quality = 100 }.Quality));
         Assert.Equal((0, 9), (new HeicEncoder { Effort = 0 }.Effort, new HeicEncoder { Effort = 9 }.Effort));
@@ -1584,6 +1590,232 @@ public sealed class HeicEncoderTests
         Assert.Equal(new Size(65528, 1), decoded.Size);
     }
 
+    [Theory]
+    [InlineData(150, 100, 64, 64, 3, 2)] // the right column and the bottom row extend past the image
+    [InlineData(128, 64, 64, 64, 2, 1)] // tiles that cover the image exactly
+    [InlineData(65, 130, 64, 65, 2, 2)] // one column and one row of samples in the last tiles, tiles of 65 rows
+    [InlineData(70, 200, 128, 64, 1, 4)] // a tile wider than the image: one column
+    public void AnImageLargerThanATileIsAGridOfTiles(int width, int height, int tileWidth, int tileHeight, int columns, int rows)
+    {
+        using var image = CreateImage(width, height, seed: width + height, transparent: true);
+        var data = Encode(image, new HeicEncoder { GridTileSize = new Size(tileWidth, tileHeight), Effort = 0 });
+        var reader = ReferenceHeif.Parse(data);
+        Assert.Equal("heix", reader.MajorBrand);
+
+        // ISO/IEC 23008-12, section 6.6.2.3: the primary item is a grid, whose data are its descriptor, derived from its
+        // tiles in row-major order; the tiles are hidden items of one size
+        var grid = reader.PrimaryItem;
+        Assert.NotNull(grid);
+        Assert.Equal("grid", grid.Type);
+        Assert.Equal((width, height), grid.Size);
+        Assert.Equal((rows, columns, (long)width, (long)height), reader.ReadGridDescriptor(grid));
+        Assert.Null(grid.HevcConfiguration);
+        var tiles = reader.GetGridTiles(grid);
+        Assert.HasCount(columns * rows, tiles);
+        Assert.Equal(Enumerable.Range(2, columns * rows).Select(id => (uint)id), tiles.Select(tile => tile.Id));
+        Assert.False(grid.IsHidden);
+
+        // Each tile is a still picture of the size of the tile: the conformance window crops the coding blocks of 8
+        // samples to the tiles of 65 rows
+        foreach (var tile in tiles)
+        {
+            Assert.Equal("hvc1", tile.Type);
+            Assert.True(tile.IsHidden);
+            Assert.Equal((tileWidth, tileHeight), tile.Size);
+            Assert.Null(tile.CleanAperture);
+            AssertStream(tile.HevcConfiguration, StreamKind.Still, chromaFormat: 3, bitDepth: 8, codedSize: (tileWidth, tileHeight));
+            Assert.Equal([NalIdrNLp], GetNalUnitTypes(tile.HevcConfiguration!, reader.ReadItemData(tile)));
+        }
+
+        // The alpha plane is a grid of the same tiles
+        var alpha = reader.AlphaItem;
+        Assert.NotNull(alpha);
+        Assert.Equal("grid", alpha.Type);
+        Assert.Equal((rows, columns, (long)width, (long)height), reader.ReadGridDescriptor(alpha));
+        var alphaTiles = reader.GetGridTiles(alpha);
+        Assert.HasCount(columns * rows, alphaTiles);
+        foreach (var tile in alphaTiles)
+        {
+            Assert.Equal("hvc1", tile.Type);
+            Assert.True(tile.IsHidden);
+            Assert.Equal((tileWidth, tileHeight), tile.Size);
+            AssertStream(tile.HevcConfiguration, StreamKind.Still, chromaFormat: 0, bitDepth: 8, codedSize: (tileWidth, tileHeight));
+        }
+
+        // Lossless: every sample of the image is decoded back, and nothing of what the tiles hold past the image, by one
+        // worker or by several
+        var source = GetBytes(image);
+        using var decoded = Image.Load<Rgba32>(data);
+        Assert.Equal((width, height), (decoded.Width, decoded.Height));
+        Assert.Equal(source, GetBytes(decoded));
+        using var decodedByWorkers = Image.Load<Rgba32>(data, new ImageDecodeOptions { Configuration = new ImageConfiguration { MaxDegreeOfParallelism = 4 } });
+        Assert.Equal(source, GetBytes(decodedByWorkers));
+        var info = Image.Identify(data, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan });
+        Assert.Equal((ImageFormat.Heic, width, height), (info.Format, info.Width, info.Height));
+        Assert.True(info.MayHaveTransparency);
+    }
+
+    [Theory]
+    [InlineData(HeicChromaSubsampling.Ratio420, 130, 70, 66, 66, false, 1, "heic")]
+    [InlineData(HeicChromaSubsampling.Ratio420, 150, 100, 64, 64, true, 1, "heic")]
+    [InlineData(HeicChromaSubsampling.Ratio422, 130, 71, 66, 65, false, 2, "heix")]
+    [InlineData(HeicChromaSubsampling.Ratio444, 131, 71, 65, 65, true, 3, "heix")]
+    public void TheTilesOfALossyGridAreWholeChromaSamples(HeicChromaSubsampling subsampling, int width, int height, int tileWidth, int tileHeight, bool transparent, int chromaFormat, string brand)
+    {
+        using var image = CreateSmoothImage(width, height, transparent);
+        var source = GetBytes(image);
+        var data = Encode(image, new HeicEncoder { Compression = HeicCompression.Lossy, Quality = 90, ChromaSubsampling = subsampling, GridTileSize = new Size(tileWidth, tileHeight), Effort = 2 });
+        var reader = ReferenceHeif.Parse(data);
+
+        // 8-bit 4:2:0 tiles are Main Still Picture pictures, which every HEIC reader decodes, whatever the alpha plane is
+        Assert.Equal(brand, reader.MajorBrand);
+        var grid = reader.PrimaryItem!;
+        Assert.Equal("grid", grid.Type);
+        Assert.Equal(new ReferenceHeif.ColorDescription(2, 2, 6, FullRange: true), grid.Nclx);
+        Assert.Null(grid.CleanAperture);
+
+        // The tiles have a whole number of chroma samples: the conformance window crops the coding blocks to them, and no
+        // clean aperture is needed
+        foreach (var tile in reader.GetGridTiles(grid))
+        {
+            Assert.Equal((tileWidth, tileHeight), tile.Size);
+            Assert.Null(tile.CleanAperture);
+            AssertStream(tile.HevcConfiguration, StreamKind.Still, chromaFormat, bitDepth: 8, codedSize: (tileWidth, tileHeight));
+        }
+
+        Assert.Equal(transparent, reader.AlphaItem is not null);
+        if (transparent)
+        {
+            Assert.Equal("grid", reader.AlphaItem!.Type);
+            Assert.All(reader.GetGridTiles(reader.AlphaItem), tile => AssertStream(tile.HevcConfiguration, StreamKind.Still, chromaFormat: 0, bitDepth: 8, codedSize: (tileWidth, tileHeight)));
+        }
+
+        using var decoded = Image.Load<Rgba32>(data);
+        Assert.Equal(new Size(width, height), decoded.Size);
+        var actual = GetBytes(decoded);
+        double squaredError = 0;
+        for (var i = 0; i < source.Length; i += 4)
+        {
+            Assert.Equal(source[i + 3], actual[i + 3]);
+            for (var channel = 0; channel < 3; channel++)
+            {
+                double difference = source[i + channel] - actual[i + channel];
+                squaredError += difference * difference;
+            }
+        }
+
+        var psnr = 10 * Math.Log10(255.0 * 255.0 * (source.Length / 4 * 3) / Math.Max(squaredError, 1));
+        TestContext.Current.TestOutputHelper?.WriteLine(string.Create(CultureInfo.InvariantCulture, $"{subsampling}: PSNR {psnr:F2} dB, {data.Length} bytes"));
+        Assert.True(psnr >= 40, string.Create(CultureInfo.InvariantCulture, $"PSNR {psnr:F2} dB"));
+    }
+
+    [Fact]
+    public void AGridIsOnlyWrittenForAStillImageThatIsLargerThanATile()
+    {
+        // An image that one tile holds is one item, whatever the setting
+        using var small = CreateSmoothImage(64, 48, transparent: false);
+        Assert.Equal(Encode(small, new HeicEncoder { Effort = 0 }), Encode(small, new HeicEncoder { GridTileSize = new Size(64, 64), Effort = 0 }));
+
+        // An opaque image of a pixel format with alpha has no alpha grid
+        using var opaque = CreateSmoothImage(100, 70, transparent: false);
+        var reader = ReferenceHeif.Parse(Encode(opaque, new HeicEncoder { GridTileSize = new Size(64, 64), Effort = 0 }));
+        Assert.Equal("grid", reader.PrimaryItem!.Type);
+        Assert.Null(reader.AlphaItem);
+        Assert.Equal(["dimg"], reader.ItemReferences.Select(reference => reference.Type));
+
+        // An image sequence is not a grid
+        using var frame = CreateSmoothImage(100, 70, transparent: false, phase: 3);
+        opaque.AppendFrame(frame.Frames[0]);
+        opaque.Frames[0].Metadata.Duration = new FrameDuration(1, 10);
+        opaque.Frames[1].Metadata.Duration = new FrameDuration(1, 10);
+        var sequence = ReferenceHeif.Parse(Encode(opaque, new HeicEncoder { GridTileSize = new Size(64, 64), Effort = 0 }));
+        Assert.True(sequence.IsSequence);
+        Assert.Equal("hvc1", sequence.PrimaryItem!.Type);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(16)]
+    public void TheTilesOfAGridAreCodedByWorkersAsByOne(int workers)
+    {
+        // 20 tiles of 64x64, whose last column and last row extend past the image: batches of 3 tiles span two rows of 5
+        // tiles, and 16 workers code every tile at once. The file is the one of one worker, with its alpha grid
+        using var transparent = CreateImage(300, 250, seed: 17, transparent: true);
+        var lossless = new HeicEncoder { GridTileSize = new Size(64, 64), Effort = 0 };
+        var expected = Encode(transparent, lossless);
+        using var transparentWithWorkers = WithWorkers(transparent, workers);
+        Assert.Equal(expected, Encode(transparentWithWorkers, lossless));
+
+        // Lossy tiles of subsampled chroma, at the default effort, which searches more and filters the tiles
+        using var opaque = CreateSmoothImage(300, 250, transparent: false);
+        var lossy = new HeicEncoder { Compression = HeicCompression.Lossy, GridTileSize = new Size(64, 64) };
+        using var opaqueWithWorkers = WithWorkers(opaque, workers);
+        Assert.Equal(Encode(opaque, lossy), Encode(opaqueWithWorkers, lossy));
+
+        // Every sample of the image is decoded back
+        using var decoded = Image.Load<Rgba32>(expected);
+        Assert.Equal(GetBytes(transparent), GetBytes(decoded));
+    }
+
+    [Fact]
+    public void AGridOfSubsampledChromaNeedsEvenSizes()
+    {
+        static HeicEncoder Lossy(HeicChromaSubsampling subsampling, int tileWidth, int tileHeight) => new() { Compression = HeicCompression.Lossy, ChromaSubsampling = subsampling, GridTileSize = new Size(tileWidth, tileHeight), Effort = 0 };
+        using var even = CreateSmoothImage(100, 70, transparent: false);
+        using var oddWidth = CreateSmoothImage(101, 70, transparent: false);
+        using var oddHeight = CreateSmoothImage(100, 71, transparent: false);
+
+        // 4:2:0: the widths and the heights of the tiles and of the image are even
+        Assert.Equal("grid", ReferenceHeif.Parse(Encode(even, Lossy(HeicChromaSubsampling.Ratio420, 64, 64))).PrimaryItem!.Type);
+        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => Encode(oddWidth, Lossy(HeicChromaSubsampling.Ratio420, 64, 64)));
+        Assert.Equal(ImageFormat.Heic, exception.Format);
+        Assert.Contains("HeicEncoder.ChromaSubsampling", exception.Message, StringComparison.Ordinal);
+        Assert.Throws<UnsupportedImageFeatureException>(() => Encode(oddHeight, Lossy(HeicChromaSubsampling.Ratio420, 64, 64)));
+        Assert.Throws<UnsupportedImageFeatureException>(() => Encode(even, Lossy(HeicChromaSubsampling.Auto, 65, 64)));
+        Assert.Throws<UnsupportedImageFeatureException>(() => Encode(even, Lossy(HeicChromaSubsampling.Ratio420, 64, 65)));
+
+        // 4:2:2: only the widths; 4:4:4, the lossless coding and gray pixels: any size
+        Assert.Equal("grid", ReferenceHeif.Parse(Encode(oddHeight, Lossy(HeicChromaSubsampling.Ratio422, 64, 65))).PrimaryItem!.Type);
+        Assert.Throws<UnsupportedImageFeatureException>(() => Encode(oddWidth, Lossy(HeicChromaSubsampling.Ratio422, 64, 64)));
+        Assert.Equal("grid", ReferenceHeif.Parse(Encode(oddWidth, Lossy(HeicChromaSubsampling.Ratio444, 65, 65))).PrimaryItem!.Type);
+        Assert.Equal("grid", ReferenceHeif.Parse(Encode(oddWidth, new HeicEncoder { GridTileSize = new Size(65, 65), Effort = 0 })).PrimaryItem!.Type);
+        using var gray = oddWidth.CloneAs<Gray8>();
+        Assert.Equal("grid", ReferenceHeif.Parse(Encode(gray, Lossy(HeicChromaSubsampling.Ratio420, 65, 65))).PrimaryItem!.Type);
+
+        // At most 256 columns and 256 rows
+        using var wide = new Image<Gray8>(64 * 257, 64);
+        Assert.Throws<UnsupportedImageFeatureException>(() => Encode(wide, new HeicEncoder { GridTileSize = new Size(64, 64), Effort = 0 }));
+    }
+
+    [Fact]
+    public void TheLargestTileIsTheLargestPicture()
+    {
+        // A tile is an HEVC picture: 65,528 samples per side at most, a whole number of coding blocks of 8 samples. A tile
+        // taller than the image is one row of tiles, which extend past the image. Such a picture exceeds the limits of
+        // every level: it is labeled with level 8.5, in the High tier (ITU-T H.265, clause A.4.1)
+        using var image = new Image<Gray8>(100, 70, new Gray8(100));
+        var data = Encode(image, new HeicEncoder { GridTileSize = new Size(64, 65528), Effort = 0 });
+        var reader = ReferenceHeif.Parse(data);
+        Assert.Equal((1, 2, 100L, 70L), reader.ReadGridDescriptor(reader.PrimaryItem!));
+        foreach (var tile in reader.GetGridTiles(reader.PrimaryItem!))
+        {
+            Assert.Equal((64, 65528), tile.Size);
+            var configuration = tile.HevcConfiguration!;
+            Assert.Equal((255, true), (configuration.LevelIdc, configuration.TierFlag));
+            var sequence = ReferenceHevcStream.ReadSequenceParameterSet(configuration.Arrays[1].NalUnits[0].Span);
+            Assert.Equal((64, 65528, 64, 65528), (sequence.Width, sequence.Height, sequence.CropWidth, sequence.CropHeight));
+        }
+
+        // The decoder checks the size of the tiles against the canvas limits, which the default limits do not allow
+        using var decoded = Image.Load<Gray8>(data, new ImageDecodeOptions { Configuration = new ImageConfiguration { Limits = new ImageResourceLimits { MaxHeight = 70000 } } });
+        Assert.Equal(new Size(100, 70), decoded.Size);
+        var pixels = new byte[100 * 70];
+        decoded.Frames[0].CopyPixelBytesTo(pixels);
+        Assert.False(pixels.AsSpan().ContainsAnyExcept((byte)100));
+    }
+
     [Fact]
     public void ALimitFailureWritesNothing()
     {
@@ -1762,6 +1994,13 @@ public sealed class HeicEncoderTests
 
     private static byte[] CreateExif(ExifOrientation orientation)
         => new TiffBuilder(bigEndian: false).Ifd0(TiffBuilder.Short(ExifTiff.OrientationTag, (ushort)orientation), TiffBuilder.Ascii(0x0131, "software")).Build();
+
+    private static Image<Rgba32> WithWorkers(Image<Rgba32> image, int workers)
+    {
+        var pixels = new Rgba32[image.Width * image.Height];
+        image.Frames[0].CopyPixelDataTo(pixels);
+        return Image.ImportPixelData<Rgba32>(pixels, image.Width, image.Height, configuration: new ImageConfiguration { MaxDegreeOfParallelism = workers });
+    }
 
     private static byte[] Encode(Image image, HeicEncoder encoder)
     {

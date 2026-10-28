@@ -1,4 +1,3 @@
-using System.Runtime.InteropServices;
 using Meziantou.Framework.Imaging.Internals;
 
 namespace Meziantou.Framework.Imaging;
@@ -16,11 +15,27 @@ public abstract partial class Image
         frames ??= GetAllFrames();
         var format = PixelFormat;
         var levels = ToneSamples.GetLevelCount(format);
-        var max = (uint)(levels - 1);
         var bytesPerPixel = PixelFormats.GetBytesPerPixel(format);
         var counts = new long[levels];
         using var buffer = ToneSamples.RentRow(Owner.Scope, _size.Width);
-        var samples = unsafe(MemoryMarshal.Cast<byte, ushort>(buffer.Span))[..(4 * _size.Width)];
+        var samples = ToneSamples.GetSamples(buffer, _size.Width);
+        var luma = ToneSamples.GetLuma(buffer, _size.Width);
+
+        // The values counted in a row: the luma, or one of the four samples of each pixel
+        var stride = channel == HistogramChannel.Luminance ? 1 : 4;
+        ReadOnlySpan<ushort> values = channel switch
+        {
+            HistogramChannel.Luminance => luma,
+            HistogramChannel.Red => samples,
+            HistogramChannel.Green => samples[1..],
+            HistogramChannel.Blue => samples[2..],
+            _ => samples[3..],
+        };
+
+        // 8-bit levels are counted in partial counters, added up before they can overflow
+        Span<uint> partial = levels == 256 ? stackalloc uint[ToneSamples.PartialCountLength] : default;
+        partial.Clear();
+        var pending = 0L;
         foreach (var frame in frames)
         {
             using var lease = frame.GetStorage().AcquireLease();
@@ -31,20 +46,39 @@ public abstract partial class Image
                     cancellationToken.ThrowIfCancellationRequested();
                 }
 
-                ToneSamples.Read(format, lease.GetRowBytes(y)[..(_size.Width * bytesPerPixel)], samples);
-                for (var i = 0; i < samples.Length; i += 4)
+                var pixels = lease.GetRowBytes(y)[..(_size.Width * bytesPerPixel)];
+                if (channel == HistogramChannel.Luminance)
                 {
-                    var level = channel switch
+                    ToneSamples.ReadLuma(format, pixels, samples, luma);
+                }
+                else
+                {
+                    ToneSamples.Read(format, pixels, samples);
+                }
+
+                if (levels == 256)
+                {
+                    ToneSamples.CountBytes(values, stride, partial);
+                    pending += _size.Width;
+                    if (pending > uint.MaxValue - (long)_size.Width)
                     {
-                        HistogramChannel.Luminance => PixelConverter.Luma(samples[i], samples[i + 1], samples[i + 2], max),
-                        HistogramChannel.Red => samples[i],
-                        HistogramChannel.Green => samples[i + 1],
-                        HistogramChannel.Blue => samples[i + 2],
-                        _ => samples[i + 3],
-                    };
-                    counts[level]++;
+                        ToneSamples.FlushPartialCounts(partial, counts);
+                        pending = 0;
+                    }
+                }
+                else
+                {
+                    for (var i = 0; i < values.Length; i += stride)
+                    {
+                        counts[values[i]]++;
+                    }
                 }
             }
+        }
+
+        if (levels == 256)
+        {
+            ToneSamples.FlushPartialCounts(partial, counts);
         }
 
         return new ImageHistogram(channel, counts, (long)frames.Length * _size.Width * _size.Height);

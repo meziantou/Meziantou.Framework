@@ -10,5 +10,10 @@
     <ProjectReference Include="..\Meziantou.Framework.Imaging.TestHarness\Meziantou.Framework.Imaging.TestHarness.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The expected values of ColorValueReferenceTests, and the scripts that compute them -->
+    <EmbeddedResource Include="ColorValues/*.json;ColorValues/*.txt" LogicalName="ColorValues/%(Filename)%(Extension)" />
+  </ItemGroup>
+
   <Import Project="..\Meziantou.Framework.Imaging.Tests.Shared\Imaging.Tests.Shared.props" />
 </Project>

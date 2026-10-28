@@ -25,4 +25,12 @@ public enum GradientColorSpace
     /// perceived differences: the lightness changes evenly, and the gradient goes through no dull or dark band.
     /// </summary>
     Oklab = 2,
+
+    /// <summary>
+    /// The colors of the stops are taken as sRGB and interpolated in Oklch, the cylindrical form of Oklab: the lightness
+    /// and the chroma linearly, the hue along the shorter arc of the hue circle (<see cref="HueInterpolation.Shorter"/>),
+    /// as CSS does for <c>in oklch</c>. The colors keep their colorfulness between two hues, where Oklab goes through
+    /// grayer ones. The hue of a gray or fully transparent stop is powerless: the hue of the other stop is used.
+    /// </summary>
+    Oklch = 3,
 }

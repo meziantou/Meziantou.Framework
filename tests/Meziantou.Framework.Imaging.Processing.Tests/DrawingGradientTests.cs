@@ -669,7 +669,7 @@ public sealed class DrawingGradientTests
         var random = new Random(20261018);
         GradientStop[] stops = [new(0, new Rgba64(65535, 0, 0, 65535)), new(0.3, new Rgba64(0, 65535, 0, 65535)), new(0.7, new Rgba64(0, 0, 65535, 20000)), new(1, new Rgba64(65535, 65535, 0, 0))];
         GradientSpreadMode[] spreads = [GradientSpreadMode.Pad, GradientSpreadMode.Repeat, GradientSpreadMode.Reflect, GradientSpreadMode.Transparent];
-        GradientColorSpace[] spaces = [GradientColorSpace.Encoded, GradientColorSpace.LinearSrgb, GradientColorSpace.Oklab];
+        GradientColorSpace[] spaces = [GradientColorSpace.Encoded, GradientColorSpace.LinearSrgb, GradientColorSpace.Oklab, GradientColorSpace.Oklch];
         foreach (var format in new[] { PixelFormat.Rgba32, PixelFormat.Rgba64, PixelFormat.Rgb24 })
         {
             foreach (var spread in spreads)
@@ -787,12 +787,37 @@ public sealed class DrawingGradientTests
         // Radial and sweep gradients, and the gradient a text is given, take their colors the same way
         AssertFill(1, 1, new RadialGradientBrush(new PointD(0.5, 1.5), 2, BlackToWhite) { ColorSpace = GradientColorSpace.LinearSrgb }, [[188]]);
         AssertFill(1, 1, new SweepGradientBrush(new PointD(0.5, 1.5), 0, 360, BlackToWhite) { ColorSpace = GradientColorSpace.Oklab }, [[174]]);
-        Assert.Throws<ArgumentOutOfRangeException>(() => new LinearGradientBrush(new PointD(0, 0), new PointD(1, 0), BlackToWhite) { ColorSpace = (GradientColorSpace)3 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new LinearGradientBrush(new PointD(0, 0), new PointD(1, 0), BlackToWhite) { ColorSpace = (GradientColorSpace)4 });
 
         static Rgba32 Middle(GradientStop[] stops, GradientColorSpace space)
         {
             using var image = new Image<Rgba32>(1, 1);
             image.Draw(canvas => canvas.Fill(new LinearGradientBrush(new PointD(0, 0), new PointD(1, 0), stops) { ColorSpace = space }), Ct);
+            return image.Frames[0][0, 0];
+        }
+    }
+
+    [Fact]
+    public void OklchMixesTheHueAlongTheShorterArc()
+    {
+        // Half way between two 16-bit sRGB stops, computed outside the library from the Oklab matrices of Ottosson: the
+        // lightness and the chroma are halved, the hue goes along the shorter arc (red 29 to green 142 degrees: an orange;
+        // blue 264 to yellow 110 degrees: through cyan, where Oklab goes through a gray), then the color is clipped to sRGB
+        Assert.Equal(new Rgba64(63876, 38211, 0, 65535), Middle([new(0, new Rgba32(255, 0, 0)), new(1, new Rgba32(0, 255, 0))]));
+        Assert.Equal(new Rgba64(0, 53161, 48471, 65535), Middle([new(0, new Rgba32(0, 0, 255)), new(1, new Rgba32(255, 255, 0))]));
+
+        // A gray stop has no hue: the gradient keeps the hue of the other stop, from black to a dark red, from white to a light blue
+        Assert.Equal(new Rgba64(25465, 0, 0, 65535), Middle([new(0, new Rgba32(0, 0, 0)), new(1, new Rgba32(255, 0, 0))]));
+        Assert.Equal(new Rgba64(29688, 41817, 65535, 65535), Middle([new(0, new Rgba32(255, 255, 255)), new(1, new Rgba32(0, 0, 255))]));
+
+        // Between grays, Oklch is Oklab: the lightness is 1/4, 3/4 and 1/2
+        AssertFill(2, 1, new LinearGradientBrush(new PointD(0, 0), new PointD(2, 0), BlackToWhite) { ColorSpace = GradientColorSpace.Oklch }, [[34, 174]]);
+        AssertFill(1, 1, new LinearGradientBrush(new PointD(0, 0), new PointD(1, 0), BlackToWhite) { ColorSpace = GradientColorSpace.Oklch }, [[99]]);
+
+        static Rgba64 Middle(GradientStop[] stops)
+        {
+            using var image = new Image<Rgba64>(1, 1);
+            image.Draw(canvas => canvas.Fill(new LinearGradientBrush(new PointD(0, 0), new PointD(1, 0), stops) { ColorSpace = GradientColorSpace.Oklch }), Ct);
             return image.Frames[0][0, 0];
         }
     }

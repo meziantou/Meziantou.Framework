@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using Meziantou.Framework.Imaging.Internals;
 
 namespace Meziantou.Framework.Imaging;
 
@@ -90,6 +91,60 @@ public struct Rgba32 : IEquatable<Rgba32>
                 value.Length == 8 ? (byte)((digits[6] << 4) | digits[7]) : byte.MaxValue);
         }
 
+        return true;
+    }
+
+    /// <summary>
+    /// Parses a color written in CSS Color 4: hexadecimal (<c>#RRGGBB</c>, ...), or one of the functions <c>rgb()</c>,
+    /// <c>rgba()</c>, <c>hsl()</c>, <c>hsla()</c>, <c>hwb()</c>, <c>lab()</c>, <c>lch()</c>, <c>oklab()</c> and
+    /// <c>oklch()</c>, converted to sRGB.
+    /// </summary>
+    /// <remarks>
+    /// The hexadecimal form needs its <c>#</c> here. The functions accept the modern syntax (components separated by white
+    /// space, an optional <c>/ alpha</c>, <c>none</c>) and, for <c>rgb()</c> and <c>hsl()</c>, the legacy syntax with
+    /// commas; see <see cref="CieLab.Parse(ReadOnlySpan{char}, out double)"/> and the other color value types for the
+    /// components. A color outside sRGB is clipped component by component (not gamut-mapped as a browser does), and each
+    /// component is rounded to the nearest 8-bit value. Named colors, <c>calc()</c>, relative colors and the
+    /// <c>color()</c> function are not supported.
+    /// </remarks>
+    /// <param name="value">The text.</param>
+    /// <returns>The color.</returns>
+    /// <exception cref="FormatException"><paramref name="value"/> is not a supported CSS color.</exception>
+    public static Rgba32 ParseCss(ReadOnlySpan<char> value)
+    {
+        if (!TryParseCss(value, out var result))
+            throw new FormatException("The value is not a supported CSS color (hexadecimal, rgb(), hsl(), hwb(), lab(), lch(), oklab() or oklch()).");
+
+        return result;
+    }
+
+    /// <summary>Tries to parse a color written in CSS Color 4, as <see cref="ParseCss(ReadOnlySpan{char})"/> does.</summary>
+    /// <param name="value">The text.</param>
+    /// <param name="result">The color, or the default value when the text is not a supported CSS color.</param>
+    /// <returns><see langword="true"/> if the text is a supported CSS color.</returns>
+    public static bool TryParseCss(ReadOnlySpan<char> value, out Rgba32 result)
+    {
+        var trimmed = value.Trim(" \t\n\r\f");
+        if (!trimmed.IsEmpty && trimmed[0] == '#')
+            return TryParseHex(trimmed, out result);
+
+        if (!CssColorSyntax.TryParse(trimmed, out var function, out var first, out var second, out var third, out var alpha))
+        {
+            result = default;
+            return false;
+        }
+
+        result = function switch
+        {
+            CssColorSyntax.ColorFunction.Rgb => new Rgba32(ColorValueMath.ToByte(first), ColorValueMath.ToByte(second), ColorValueMath.ToByte(third)),
+            CssColorSyntax.ColorFunction.Hsl => new Hsl(first, second, third).ToRgba32(),
+            CssColorSyntax.ColorFunction.Hwb => new Hwb(first, second, third).ToRgba32(),
+            CssColorSyntax.ColorFunction.Lab => new CieLab(first, second, third).ToRgba32(),
+            CssColorSyntax.ColorFunction.Lch => new CieLch(first, second, third).ToRgba32(),
+            CssColorSyntax.ColorFunction.Oklab => new Oklab(first, second, third).ToRgba32(),
+            _ => new Oklch(first, second, third).ToRgba32(),
+        };
+        result.A = ColorValueMath.ToByte(alpha);
         return true;
     }
 

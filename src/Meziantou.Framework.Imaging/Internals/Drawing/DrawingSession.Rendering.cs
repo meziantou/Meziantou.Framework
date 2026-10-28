@@ -27,7 +27,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <b>Paint colors.</b> Inside <see cref="DrawingCanvas.PaintProfile(IccProfile, DrawingAction, IccColorTransformOptions)"/>,
 /// the colors that the caller gives are colors of a profile: the color of a solid brush, the stops of a gradient, the
 /// color of a shadow and the color the canvas is cleared with go through <see cref="PaintColorConverter"/> before
-/// they are converted to the pixel format. A gradient that mixes its stops in linear light or in Oklab mixes the
+/// they are converted to the pixel format. A gradient that mixes its stops in linear light, in Oklab or in Oklch mixes the
 /// colors as they are given, and converts each color it obtains. What already is samples of an image is not
 /// converted: the images that are drawn, the tiles of the patterns (whose drawings were), the layers, and the colors
 /// a font gives to its glyphs.

@@ -415,6 +415,42 @@ public sealed class PerformanceContractTests
         }));
     }
 
+    [Fact]
+    public void ColorValueOperationsAllocateNothing()
+    {
+        // The value types, their conversions through the three kinds of color spaces, the differences, the interpolations
+        // and the parsing of CSS notations: everything but the formatting, which returns a string
+        var displayP3 = RgbColorSpace.FromCicp(new Metadata.CicpColorDescription(12, 13, 0, fullRange: true));
+        var profile = RgbColorSpace.FromIccProfile(Metadata.IccProfile.Srgb);
+        var color = new Rgba32(201, 37, 119);
+        var wide = new Rgba64(1234, 54321, 32100, 65535);
+        var sum = 0.0;
+        Assert.Equal(0, MeasureSteadyStateAllocations(() =>
+        {
+            ReadOnlySpan<RgbColorSpace> spaces = [RgbColorSpace.Srgb, displayP3, profile];
+            foreach (var space in spaces)
+            {
+                var xyz = CieXyz.FromRgb(color, space);
+                var lab = CieLab.FromRgb(wide, space);
+                var lch = CieLch.FromRgb(color, space);
+                var luv = CieLuv.FromRgb(color, space);
+                var oklab = Oklab.FromRgb(color, space);
+                var oklch = Oklch.FromRgb(wide, space);
+                sum += xyz.ToRgba32(space).R + lab.ToRgba64(space).G + lch.ToRgba32(space).B + luv.ToRgba64(space).R + oklab.ToRgba32(space).G + oklch.ToRgba64(space).B;
+                sum += ColorDifference.DeltaE76(lab, lch.ToLab()) + ColorDifference.DeltaE94(lab, CieLab.FromXyz(xyz)) + ColorDifference.DeltaE2000(lab, CieLab.FromXyz(luv.ToXyz()));
+                sum += ColorDifference.DeltaEOK(oklab, oklch.ToOklab()) + Oklab.Lerp(oklab, Oklab.FromXyz(xyz), 0.3).L + Oklch.Lerp(oklch, oklab.ToOklch(), 0.7, HueInterpolation.Longer).H;
+                sum += xyz.Adapt(CieXyz.D50, CieXyz.D65).X + lab.ToXyz(CieXyz.D65).Y + CieLuv.FromXyz(xyz, CieXyz.D65).U;
+            }
+
+            sum += Hsl.FromRgb(color).ToRgba32().R + Hsv.FromRgb(wide).ToRgba64().G + Hwb.FromRgb(color).ToRgba32().B + Cmyk.FromRgb(wide).ToRgba64().R;
+            sum += CieLab.TryParse("lab(52.2345% 40.1645 59.9971 / 0.5)", out var parsed, out var alpha) ? parsed.L + alpha : 0;
+            sum += Oklch.TryParse("oklch(70% 0.1 0.5turn)", out var parsedOklch, out _) ? parsedOklch.H : 0;
+            sum += Hsl.TryParse("hsla(120, 100%, 25%, 0.5)", out var parsedHsl, out _) ? parsedHsl.L : 0;
+            sum += Rgba32.TryParseCss("hwb(120 20% 30%)", out var parsedRgba) ? parsedRgba.G : 0;
+        }));
+        Assert.True(sum > 0);
+    }
+
     private static long MeasureSteadyStateAllocations(Action action)
     {
         for (var i = 0; i < 3; i++)

@@ -14,7 +14,7 @@ namespace Meziantou.Framework.Imaging.Drawing;
 /// <para>
 /// The stops are converted to the pixel format of the frame first, then interpolated on alpha-premultiplied values (a
 /// transparent stop does not darken its neighbors), on the encoded sample values, and rounded to nearest with ties
-/// upward. <see cref="ColorSpace"/> selects another space to mix the colors in: linear light, or Oklab. A gradient whose
+/// upward. <see cref="ColorSpace"/> selects another space to mix the colors in: linear light, Oklab or Oklch. A gradient whose
 /// stops all have the same color paints exactly what a <see cref="SolidBrush"/> of that color paints.
 /// </para>
 /// </remarks>

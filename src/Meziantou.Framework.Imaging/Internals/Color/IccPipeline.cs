@@ -151,6 +151,37 @@ internal sealed class IccPipeline
         return new IccPipeline(stages.ToArray(), sourceModel.ChannelCount, destinationModel.ChannelCount, isIdentity: false);
     }
 
+    /// <summary>
+    /// Creates the conversion from the device values of a profile to CIEXYZ of the connection space (relative to its D50
+    /// illuminant, Y = 1 for the white): the first half of <see cref="Create(IccProfile, IccProfile, IccRenderingIntent, bool)"/>.
+    /// </summary>
+    /// <exception cref="InvalidImageContentException">The profile is malformed.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The profile is valid but not supported.</exception>
+    public static IccPipeline CreateToConnectionSpace(IccProfile source, IccRenderingIntent intent)
+    {
+        var model = IccProfileModel.Create(source, "source");
+        var stages = new IccStageList();
+        model.AppendToConnectionSpace(stages, intent);
+        return new IccPipeline(stages.ToArray(), model.ChannelCount, destinationChannelCount: 3, isIdentity: false);
+    }
+
+    /// <summary>
+    /// Creates the conversion from CIEXYZ of the connection space to the device values of a profile, or returns
+    /// <see langword="null"/> when the profile has no conversion in that direction (an input profile with lookup tables only).
+    /// </summary>
+    /// <exception cref="InvalidImageContentException">The profile is malformed.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The profile is valid but not supported.</exception>
+    public static IccPipeline? TryCreateFromConnectionSpace(IccProfile destination, IccRenderingIntent intent)
+    {
+        var model = IccProfileModel.Create(destination, "destination");
+        if (!model.HasConversion(deviceToConnection: false, intent))
+            return null;
+
+        var stages = new IccStageList();
+        model.AppendFromConnectionSpace(stages, intent);
+        return new IccPipeline(stages.ToArray(), sourceChannelCount: 3, model.ChannelCount, isIdentity: false);
+    }
+
     /// <summary>Creates the conversion from a CICP color space to a profile.</summary>
     /// <remarks>
     /// The source is treated as a display: its white is the white of the connection space once adapted, so the

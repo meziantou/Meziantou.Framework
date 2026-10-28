@@ -106,12 +106,137 @@ namespace Meziantou.Framework.Imaging
         public static bool operator !=(Meziantou.Framework.Imaging.ButteraugliDistance left, Meziantou.Framework.Imaging.ButteraugliDistance right) => throw null;
     }
 
+    public enum Cie94Application
+    {
+        GraphicArts = 0,
+        Textiles = 1,
+    }
+
+    public readonly struct CieLab : System.IEquatable<Meziantou.Framework.Imaging.CieLab>
+    {
+        public double A { get => throw null; }
+        public double B { get => throw null; }
+        public double L { get => throw null; }
+        public CieLab(double l, double a, double b) { }
+        public bool Equals(Meziantou.Framework.Imaging.CieLab other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public static Meziantou.Framework.Imaging.CieLab FromRgb(Meziantou.Framework.Imaging.Rgba32 color, Meziantou.Framework.Imaging.RgbColorSpace? colorSpace = null) => throw null;
+        public static Meziantou.Framework.Imaging.CieLab FromRgb(Meziantou.Framework.Imaging.Rgba64 color, Meziantou.Framework.Imaging.RgbColorSpace? colorSpace = null) => throw null;
+        public static Meziantou.Framework.Imaging.CieLab FromXyz(Meziantou.Framework.Imaging.CieXyz xyz) => throw null;
+        public static Meziantou.Framework.Imaging.CieLab FromXyz(Meziantou.Framework.Imaging.CieXyz xyz, Meziantou.Framework.Imaging.CieXyz whitePoint) => throw null;
+        public override int GetHashCode() => throw null;
+        public static Meziantou.Framework.Imaging.CieLab Parse(System.ReadOnlySpan<char> value, out double alpha) => throw null;
+        public string ToCssString(double alpha = 1d) => throw null;
+        public Meziantou.Framework.Imaging.CieLch ToLch() => throw null;
+        public Meziantou.Framework.Imaging.Rgba32 ToRgba32(Meziantou.Framework.Imaging.RgbColorSpace? colorSpace = null) => throw null;
+        public Meziantou.Framework.Imaging.Rgba64 ToRgba64(Meziantou.Framework.Imaging.RgbColorSpace? colorSpace = null) => throw null;
+        public override string ToString() => throw null;
+        public Meziantou.Framework.Imaging.CieXyz ToXyz() => throw null;
+        public Meziantou.Framework.Imaging.CieXyz ToXyz(Meziantou.Framework.Imaging.CieXyz whitePoint) => throw null;
+        public static bool TryParse(System.ReadOnlySpan<char> value, out Meziantou.Framework.Imaging.CieLab result, out double alpha) => throw null;
+        public static bool operator ==(Meziantou.Framework.Imaging.CieLab left, Meziantou.Framework.Imaging.CieLab right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Imaging.CieLab left, Meziantou.Framework.Imaging.CieLab right) => throw null;
+    }
+
+    public readonly struct CieLch : System.IEquatable<Meziantou.Framework.Imaging.CieLch>
+    {
+        public double C { get => throw null; }
+        public double H { get => throw null; }
+        public double L { get => throw null; }
+        public CieLch(double l, double c, double h) { }
+        public bool Equals(Meziantou.Framework.Imaging.CieLch other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public static Meziantou.Framework.Imaging.CieLch FromLab(Meziantou.Framework.Imaging.CieLab lab) => throw null;
+        public static Meziantou.Framework.Imaging.CieLch FromRgb(Meziantou.Framework.Imaging.Rgba32 color, Meziantou.Framework.Imaging.RgbColorSpace? colorSpace = null) => throw null;
+        public static Meziantou.Framework.Imaging.CieLch FromRgb(Meziantou.Framework.Imaging.Rgba64 color, Meziantou.Framework.Imaging.RgbColorSpace? colorSpace = null) => throw null;
+        public override int GetHashCode() => throw null;
+        public static Meziantou.Framework.Imaging.CieLch Parse(System.ReadOnlySpan<char> value, out double alpha) => throw null;
+        public string ToCssString(double alpha = 1d) => throw null;
+        public Meziantou.Framework.Imaging.CieLab ToLab() => throw null;
+        public Meziantou.Framework.Imaging.Rgba32 ToRgba32(Meziantou.Framework.Imaging.RgbColorSpace? colorSpace = null) => throw null;
+        public Meziantou.Framework.Imaging.Rgba64 ToRgba64(Meziantou.Framework.Imaging.RgbColorSpace? colorSpace = null) => throw null;
+        public override string ToString() => throw null;
+        public static bool TryParse(System.ReadOnlySpan<char> value, out Meziantou.Framework.Imaging.CieLch result, out double alpha) => throw null;
+        public static bool operator ==(Meziantou.Framework.Imaging.CieLch left, Meziantou.Framework.Imaging.CieLch right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Imaging.CieLch left, Meziantou.Framework.Imaging.CieLch right) => throw null;
+    }
+
+    public readonly struct CieLuv : System.IEquatable<Meziantou.Framework.Imaging.CieLuv>
+    {
+        public double L { get => throw null; }
+        public double U { get => throw null; }
+        public double V { get => throw null; }
+        public CieLuv(double l, double u, double v) { }
+        public bool Equals(Meziantou.Framework.Imaging.CieLuv other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public static Meziantou.Framework.Imaging.CieLuv FromRgb(Meziantou.Framework.Imaging.Rgba32 color, Meziantou.Framework.Imaging.RgbColorSpace? colorSpace = null) => throw null;
+        public static Meziantou.Framework.Imaging.CieLuv FromRgb(Meziantou.Framework.Imaging.Rgba64 color, Meziantou.Framework.Imaging.RgbColorSpace? colorSpace = null) => throw null;
+        public static Meziantou.Framework.Imaging.CieLuv FromXyz(Meziantou.Framework.Imaging.CieXyz xyz) => throw null;
+        public static Meziantou.Framework.Imaging.CieLuv FromXyz(Meziantou.Framework.Imaging.CieXyz xyz, Meziantou.Framework.Imaging.CieXyz whitePoint) => throw null;
+        public override int GetHashCode() => throw null;
+        public Meziantou.Framework.Imaging.Rgba32 ToRgba32(Meziantou.Framework.Imaging.RgbColorSpace? colorSpace = null) => throw null;
+        public Meziantou.Framework.Imaging.Rgba64 ToRgba64(Meziantou.Framework.Imaging.RgbColorSpace? colorSpace = null) => throw null;
+        public override string ToString() => throw null;
+        public Meziantou.Framework.Imaging.CieXyz ToXyz() => throw null;
+        public Meziantou.Framework.Imaging.CieXyz ToXyz(Meziantou.Framework.Imaging.CieXyz whitePoint) => throw null;
+        public static bool operator ==(Meziantou.Framework.Imaging.CieLuv left, Meziantou.Framework.Imaging.CieLuv right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Imaging.CieLuv left, Meziantou.Framework.Imaging.CieLuv right) => throw null;
+    }
+
+    public readonly struct CieXyz : System.IEquatable<Meziantou.Framework.Imaging.CieXyz>
+    {
+        public static Meziantou.Framework.Imaging.CieXyz D50 { get => throw null; }
+        public static Meziantou.Framework.Imaging.CieXyz D65 { get => throw null; }
+        public double X { get => throw null; }
+        public double Y { get => throw null; }
+        public double Z { get => throw null; }
+        public CieXyz(double x, double y, double z) { }
+        public Meziantou.Framework.Imaging.CieXyz Adapt(Meziantou.Framework.Imaging.CieXyz sourceWhite, Meziantou.Framework.Imaging.CieXyz destinationWhite) => throw null;
+        public bool Equals(Meziantou.Framework.Imaging.CieXyz other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public static Meziantou.Framework.Imaging.CieXyz FromRgb(Meziantou.Framework.Imaging.Rgba32 color, Meziantou.Framework.Imaging.RgbColorSpace? colorSpace = null) => throw null;
+        public static Meziantou.Framework.Imaging.CieXyz FromRgb(Meziantou.Framework.Imaging.Rgba64 color, Meziantou.Framework.Imaging.RgbColorSpace? colorSpace = null) => throw null;
+        public override int GetHashCode() => throw null;
+        public Meziantou.Framework.Imaging.Rgba32 ToRgba32(Meziantou.Framework.Imaging.RgbColorSpace? colorSpace = null) => throw null;
+        public Meziantou.Framework.Imaging.Rgba64 ToRgba64(Meziantou.Framework.Imaging.RgbColorSpace? colorSpace = null) => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Imaging.CieXyz left, Meziantou.Framework.Imaging.CieXyz right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Imaging.CieXyz left, Meziantou.Framework.Imaging.CieXyz right) => throw null;
+    }
+
+    public readonly struct Cmyk : System.IEquatable<Meziantou.Framework.Imaging.Cmyk>
+    {
+        public double C { get => throw null; }
+        public double K { get => throw null; }
+        public double M { get => throw null; }
+        public double Y { get => throw null; }
+        public Cmyk(double c, double m, double y, double k) { }
+        public bool Equals(Meziantou.Framework.Imaging.Cmyk other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public static Meziantou.Framework.Imaging.Cmyk FromRgb(Meziantou.Framework.Imaging.Rgba32 color) => throw null;
+        public static Meziantou.Framework.Imaging.Cmyk FromRgb(Meziantou.Framework.Imaging.Rgba64 color) => throw null;
+        public override int GetHashCode() => throw null;
+        public Meziantou.Framework.Imaging.Rgba32 ToRgba32() => throw null;
+        public Meziantou.Framework.Imaging.Rgba64 ToRgba64() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Imaging.Cmyk left, Meziantou.Framework.Imaging.Cmyk right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Imaging.Cmyk left, Meziantou.Framework.Imaging.Cmyk right) => throw null;
+    }
+
     public sealed class CmykConversionOptions
     {
         public Meziantou.Framework.Imaging.Metadata.IccProfile? AssumedSourceProfile { get => throw null; init { } }
         public static Meziantou.Framework.Imaging.CmykConversionOptions Default { get => throw null; }
         public Meziantou.Framework.Imaging.Metadata.IccProfile DestinationProfile { get => throw null; init { } }
         public Meziantou.Framework.Imaging.IccColorTransformOptions Transform { get => throw null; init { } }
+    }
+
+    public static class ColorDifference
+    {
+        public static double DeltaE2000(Meziantou.Framework.Imaging.CieLab reference, Meziantou.Framework.Imaging.CieLab sample, double lightnessWeight = 1d, double chromaWeight = 1d, double hueWeight = 1d) => throw null;
+        public static double DeltaE76(Meziantou.Framework.Imaging.CieLab reference, Meziantou.Framework.Imaging.CieLab sample) => throw null;
+        public static double DeltaE94(Meziantou.Framework.Imaging.CieLab reference, Meziantou.Framework.Imaging.CieLab sample, Meziantou.Framework.Imaging.Cie94Application application = Meziantou.Framework.Imaging.Cie94Application.GraphicArts) => throw null;
+        public static double DeltaEOK(Meziantou.Framework.Imaging.Oklab reference, Meziantou.Framework.Imaging.Oklab sample) => throw null;
     }
 
     public sealed class ColorMatrix
@@ -464,6 +589,74 @@ namespace Meziantou.Framework.Imaging
         public bool ShareHistogramAcrossFrames { get => throw null; init { } }
         public int TileCountX { get => throw null; init { } }
         public int TileCountY { get => throw null; init { } }
+    }
+
+    public readonly struct Hsl : System.IEquatable<Meziantou.Framework.Imaging.Hsl>
+    {
+        public double H { get => throw null; }
+        public double L { get => throw null; }
+        public double S { get => throw null; }
+        public Hsl(double h, double s, double l) { }
+        public bool Equals(Meziantou.Framework.Imaging.Hsl other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public static Meziantou.Framework.Imaging.Hsl FromRgb(Meziantou.Framework.Imaging.Rgba32 color) => throw null;
+        public static Meziantou.Framework.Imaging.Hsl FromRgb(Meziantou.Framework.Imaging.Rgba64 color) => throw null;
+        public override int GetHashCode() => throw null;
+        public static Meziantou.Framework.Imaging.Hsl Parse(System.ReadOnlySpan<char> value, out double alpha) => throw null;
+        public string ToCssString(double alpha = 1d) => throw null;
+        public Meziantou.Framework.Imaging.Rgba32 ToRgba32() => throw null;
+        public Meziantou.Framework.Imaging.Rgba64 ToRgba64() => throw null;
+        public override string ToString() => throw null;
+        public static bool TryParse(System.ReadOnlySpan<char> value, out Meziantou.Framework.Imaging.Hsl result, out double alpha) => throw null;
+        public static bool operator ==(Meziantou.Framework.Imaging.Hsl left, Meziantou.Framework.Imaging.Hsl right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Imaging.Hsl left, Meziantou.Framework.Imaging.Hsl right) => throw null;
+    }
+
+    public readonly struct Hsv : System.IEquatable<Meziantou.Framework.Imaging.Hsv>
+    {
+        public double H { get => throw null; }
+        public double S { get => throw null; }
+        public double V { get => throw null; }
+        public Hsv(double h, double s, double v) { }
+        public bool Equals(Meziantou.Framework.Imaging.Hsv other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public static Meziantou.Framework.Imaging.Hsv FromRgb(Meziantou.Framework.Imaging.Rgba32 color) => throw null;
+        public static Meziantou.Framework.Imaging.Hsv FromRgb(Meziantou.Framework.Imaging.Rgba64 color) => throw null;
+        public override int GetHashCode() => throw null;
+        public Meziantou.Framework.Imaging.Rgba32 ToRgba32() => throw null;
+        public Meziantou.Framework.Imaging.Rgba64 ToRgba64() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Imaging.Hsv left, Meziantou.Framework.Imaging.Hsv right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Imaging.Hsv left, Meziantou.Framework.Imaging.Hsv right) => throw null;
+    }
+
+    public enum HueInterpolation
+    {
+        Shorter = 0,
+        Longer = 1,
+        Increasing = 2,
+        Decreasing = 3,
+    }
+
+    public readonly struct Hwb : System.IEquatable<Meziantou.Framework.Imaging.Hwb>
+    {
+        public double B { get => throw null; }
+        public double H { get => throw null; }
+        public double W { get => throw null; }
+        public Hwb(double h, double w, double b) { }
+        public bool Equals(Meziantou.Framework.Imaging.Hwb other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public static Meziantou.Framework.Imaging.Hwb FromRgb(Meziantou.Framework.Imaging.Rgba32 color) => throw null;
+        public static Meziantou.Framework.Imaging.Hwb FromRgb(Meziantou.Framework.Imaging.Rgba64 color) => throw null;
+        public override int GetHashCode() => throw null;
+        public static Meziantou.Framework.Imaging.Hwb Parse(System.ReadOnlySpan<char> value, out double alpha) => throw null;
+        public string ToCssString(double alpha = 1d) => throw null;
+        public Meziantou.Framework.Imaging.Rgba32 ToRgba32() => throw null;
+        public Meziantou.Framework.Imaging.Rgba64 ToRgba64() => throw null;
+        public override string ToString() => throw null;
+        public static bool TryParse(System.ReadOnlySpan<char> value, out Meziantou.Framework.Imaging.Hwb result, out double alpha) => throw null;
+        public static bool operator ==(Meziantou.Framework.Imaging.Hwb left, Meziantou.Framework.Imaging.Hwb right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Imaging.Hwb left, Meziantou.Framework.Imaging.Hwb right) => throw null;
     }
 
     public sealed class IccColorTransform
@@ -982,6 +1175,55 @@ namespace Meziantou.Framework.Imaging
         public static System.Threading.Tasks.Task<bool> TryReconstructJpegAsync(System.IO.Stream jpegXl, System.IO.Stream destination, Meziantou.Framework.Imaging.JpegXlTranscodeOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
     }
 
+    public readonly struct Oklab : System.IEquatable<Meziantou.Framework.Imaging.Oklab>
+    {
+        public double A { get => throw null; }
+        public double B { get => throw null; }
+        public double L { get => throw null; }
+        public Oklab(double l, double a, double b) { }
+        public bool Equals(Meziantou.Framework.Imaging.Oklab other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public static Meziantou.Framework.Imaging.Oklab FromRgb(Meziantou.Framework.Imaging.Rgba32 color, Meziantou.Framework.Imaging.RgbColorSpace? colorSpace = null) => throw null;
+        public static Meziantou.Framework.Imaging.Oklab FromRgb(Meziantou.Framework.Imaging.Rgba64 color, Meziantou.Framework.Imaging.RgbColorSpace? colorSpace = null) => throw null;
+        public static Meziantou.Framework.Imaging.Oklab FromXyz(Meziantou.Framework.Imaging.CieXyz xyz) => throw null;
+        public override int GetHashCode() => throw null;
+        public static Meziantou.Framework.Imaging.Oklab Lerp(Meziantou.Framework.Imaging.Oklab from, Meziantou.Framework.Imaging.Oklab to, double amount) => throw null;
+        public static Meziantou.Framework.Imaging.Oklab Parse(System.ReadOnlySpan<char> value, out double alpha) => throw null;
+        public string ToCssString(double alpha = 1d) => throw null;
+        public Meziantou.Framework.Imaging.Oklch ToOklch() => throw null;
+        public Meziantou.Framework.Imaging.Rgba32 ToRgba32(Meziantou.Framework.Imaging.RgbColorSpace? colorSpace = null) => throw null;
+        public Meziantou.Framework.Imaging.Rgba64 ToRgba64(Meziantou.Framework.Imaging.RgbColorSpace? colorSpace = null) => throw null;
+        public override string ToString() => throw null;
+        public Meziantou.Framework.Imaging.CieXyz ToXyz() => throw null;
+        public static bool TryParse(System.ReadOnlySpan<char> value, out Meziantou.Framework.Imaging.Oklab result, out double alpha) => throw null;
+        public static bool operator ==(Meziantou.Framework.Imaging.Oklab left, Meziantou.Framework.Imaging.Oklab right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Imaging.Oklab left, Meziantou.Framework.Imaging.Oklab right) => throw null;
+    }
+
+    public readonly struct Oklch : System.IEquatable<Meziantou.Framework.Imaging.Oklch>
+    {
+        public double C { get => throw null; }
+        public double H { get => throw null; }
+        public double L { get => throw null; }
+        public Oklch(double l, double c, double h) { }
+        public bool Equals(Meziantou.Framework.Imaging.Oklch other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public static Meziantou.Framework.Imaging.Oklch FromOklab(Meziantou.Framework.Imaging.Oklab oklab) => throw null;
+        public static Meziantou.Framework.Imaging.Oklch FromRgb(Meziantou.Framework.Imaging.Rgba32 color, Meziantou.Framework.Imaging.RgbColorSpace? colorSpace = null) => throw null;
+        public static Meziantou.Framework.Imaging.Oklch FromRgb(Meziantou.Framework.Imaging.Rgba64 color, Meziantou.Framework.Imaging.RgbColorSpace? colorSpace = null) => throw null;
+        public override int GetHashCode() => throw null;
+        public static Meziantou.Framework.Imaging.Oklch Lerp(Meziantou.Framework.Imaging.Oklch from, Meziantou.Framework.Imaging.Oklch to, double amount, Meziantou.Framework.Imaging.HueInterpolation hueInterpolation = Meziantou.Framework.Imaging.HueInterpolation.Shorter) => throw null;
+        public static Meziantou.Framework.Imaging.Oklch Parse(System.ReadOnlySpan<char> value, out double alpha) => throw null;
+        public string ToCssString(double alpha = 1d) => throw null;
+        public Meziantou.Framework.Imaging.Oklab ToOklab() => throw null;
+        public Meziantou.Framework.Imaging.Rgba32 ToRgba32(Meziantou.Framework.Imaging.RgbColorSpace? colorSpace = null) => throw null;
+        public Meziantou.Framework.Imaging.Rgba64 ToRgba64(Meziantou.Framework.Imaging.RgbColorSpace? colorSpace = null) => throw null;
+        public override string ToString() => throw null;
+        public static bool TryParse(System.ReadOnlySpan<char> value, out Meziantou.Framework.Imaging.Oklch result, out double alpha) => throw null;
+        public static bool operator ==(Meziantou.Framework.Imaging.Oklch left, Meziantou.Framework.Imaging.Oklch right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Imaging.Oklch left, Meziantou.Framework.Imaging.Oklch right) => throw null;
+    }
+
     public enum OutOfRangeSampleHandling
     {
         Reject = 0,
@@ -1278,6 +1520,16 @@ namespace Meziantou.Framework.Imaging
         public static bool operator !=(Meziantou.Framework.Imaging.Rgb24 left, Meziantou.Framework.Imaging.Rgb24 right) => throw null;
     }
 
+    public sealed class RgbColorSpace
+    {
+        public bool CanConvertFromXyz { get => throw null; }
+        public string Description { get => throw null; }
+        public static Meziantou.Framework.Imaging.RgbColorSpace Srgb { get => throw null; }
+        public static Meziantou.Framework.Imaging.RgbColorSpace FromCicp(Meziantou.Framework.Imaging.Metadata.CicpColorDescription description) => throw null;
+        public static Meziantou.Framework.Imaging.RgbColorSpace FromIccProfile(Meziantou.Framework.Imaging.Metadata.IccProfile profile) => throw null;
+        public override string ToString() => throw null;
+    }
+
     public struct Rgba32 : System.IEquatable<Meziantou.Framework.Imaging.Rgba32>
     {
         public byte A;
@@ -1288,10 +1540,12 @@ namespace Meziantou.Framework.Imaging
         public readonly bool Equals(Meziantou.Framework.Imaging.Rgba32 other) => throw null;
         public readonly override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public readonly override int GetHashCode() => throw null;
+        public static Meziantou.Framework.Imaging.Rgba32 ParseCss(System.ReadOnlySpan<char> value) => throw null;
         public static Meziantou.Framework.Imaging.Rgba32 ParseHex(System.ReadOnlySpan<char> value) => throw null;
         public readonly string ToHexString() => throw null;
         public readonly Meziantou.Framework.Imaging.Rgba64 ToRgba64() => throw null;
         public readonly override string ToString() => throw null;
+        public static bool TryParseCss(System.ReadOnlySpan<char> value, out Meziantou.Framework.Imaging.Rgba32 result) => throw null;
         public static bool TryParseHex(System.ReadOnlySpan<char> value, out Meziantou.Framework.Imaging.Rgba32 result) => throw null;
         public static bool operator ==(Meziantou.Framework.Imaging.Rgba32 left, Meziantou.Framework.Imaging.Rgba32 right) => throw null;
         public static bool operator !=(Meziantou.Framework.Imaging.Rgba32 left, Meziantou.Framework.Imaging.Rgba32 right) => throw null;
@@ -1884,6 +2138,7 @@ namespace Meziantou.Framework.Imaging.Drawing
         Encoded = 0,
         LinearSrgb = 1,
         Oklab = 2,
+        Oklch = 3,
     }
 
     public enum GradientSpreadMode

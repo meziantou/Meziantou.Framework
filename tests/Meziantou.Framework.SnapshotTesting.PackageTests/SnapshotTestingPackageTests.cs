@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using TestUtilities;
 using Xunit.Sdk;
 
 namespace Meziantou.Framework.SnapshotTesting.PackageTests;
@@ -66,7 +67,7 @@ public sealed class SnapshotTestingPackageTests(SnapshotTestingPackageFixture fi
         temporaryDirectory.CreateTextFile("consumer-transitive/Library/Library.csproj", $$"""
             <Project Sdk="Microsoft.NET.Sdk">
               <PropertyGroup>
-                <TargetFramework>net10.0</TargetFramework>
+                <TargetFramework>{{TargetFrameworkHelper.GetTargetFrameworkMoniker()}}</TargetFramework>
               </PropertyGroup>
 
               <ItemGroup>
@@ -76,10 +77,10 @@ public sealed class SnapshotTestingPackageTests(SnapshotTestingPackageFixture fi
             """);
         temporaryDirectory.CreateTextFile("consumer-transitive/Library/Library.cs", "namespace Library; internal sealed class Sample { }");
 
-        temporaryDirectory.CreateTextFile("consumer-transitive/Consumer/Consumer.csproj", """
+        temporaryDirectory.CreateTextFile("consumer-transitive/Consumer/Consumer.csproj", $$"""
             <Project Sdk="Microsoft.NET.Sdk">
               <PropertyGroup>
-                <TargetFramework>net10.0</TargetFramework>
+                <TargetFramework>{{TargetFrameworkHelper.GetTargetFrameworkMoniker()}}</TargetFramework>
                 <DeterministicSourcePaths>true</DeterministicSourcePaths>
               </PropertyGroup>
 
@@ -112,7 +113,7 @@ public sealed class SnapshotTestingPackageTests(SnapshotTestingPackageFixture fi
             <Project Sdk="Microsoft.NET.Sdk">
               <PropertyGroup>
                 <OutputType>Exe</OutputType>
-                <TargetFramework>net10.0</TargetFramework>
+                <TargetFramework>{{TargetFrameworkHelper.GetTargetFrameworkMoniker()}}</TargetFramework>
                 <DeterministicSourcePaths>true</DeterministicSourcePaths>
               </PropertyGroup>
 
@@ -163,7 +164,7 @@ public sealed class SnapshotTestingPackageTests(SnapshotTestingPackageFixture fi
         temporaryDirectory.CreateTextFile($"{directoryName}/Sample.csproj", $$"""
             <Project Sdk="Microsoft.NET.Sdk">
               <PropertyGroup>
-                <TargetFramework>net10.0</TargetFramework>
+                <TargetFramework>{{TargetFrameworkHelper.GetTargetFrameworkMoniker()}}</TargetFramework>
                 {{additionalProperties}}
               </PropertyGroup>
 

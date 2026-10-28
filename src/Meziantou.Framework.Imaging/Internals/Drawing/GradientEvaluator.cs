@@ -40,10 +40,13 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// color a solid brush has. A degenerate gradient (no length, no radius) has the color of the last stop everywhere.
 /// </para>
 /// <para>
-/// <b>Other color spaces.</b> With <see cref="GradientColorSpace.LinearSrgb"/> or <see cref="GradientColorSpace.Oklab"/>,
+/// <b>Other color spaces.</b> With <see cref="GradientColorSpace.LinearSrgb"/>, <see cref="GradientColorSpace.Oklab"/> or <see cref="GradientColorSpace.Oklch"/>,
 /// the stops are 16-bit sRGB colors, not converted to the pixel format: each is converted to the space
 /// (<see cref="SrgbTransfer.Decode(double)"/>, then for Oklab the two matrices and the cube root of its definition),
-/// and two stops are interpolated there with the same formulas, on values from 0 to 1. The result is converted back,
+/// and two stops are interpolated there with the same formulas, on values from 0 to 1. With
+/// <see cref="GradientColorSpace.Oklch"/>, the two color axes of Oklab become a chroma and a hue: the hue is interpolated
+/// along the shorter arc, not premultiplied, and the hue of a stop whose chroma is at most 0.000004 or whose alpha is 0 is that of the other
+/// stop (<see cref="ColorValueMath.InterpolateHue"/>). The result is converted back,
 /// brought into <c>[0, 1]</c>, and rounded to a 16-bit sRGB color as <c>floor(65535 v + 1/2 + 2^-20)</c>, which is
 /// then converted to the pixel format like any brush color. Where the color is the color of a stop (before the first
 /// one, from the last one, or between two stops of the same color), it is that 16-bit color itself.
@@ -66,6 +69,9 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
 
     /// <summary>The tie bias of the rounding rule shared with the resampler and the convolver.</summary>
     private const double RoundingOffset = 0.5 + (1.0 / 1048576);
+
+    // CSS Color 4 (OKLab_to_OKLCH): a chroma at most this small makes the hue of a stop powerless
+    private const double OklchPowerlessChroma = 0.000004;
 
     private readonly AllocationScope _scope;
     private PooledBuffer? _stops;
@@ -705,7 +711,7 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
         return _focalRadius + (smaller * growth) >= 0 ? smaller : double.NaN;
     }
 
-    /// <summary>Computes the colors of a run of pixels of a gradient that mixes its stops in linear light or in Oklab.</summary>
+    /// <summary>Computes the colors of a run of pixels of a gradient that mixes its stops in linear light, in Oklab or in Oklch.</summary>
     private void EvaluateInColorSpace(int y, int x, int count, Span<ushort> colors)
     {
         var stops = Stops[..(_stopCount * ValuesPerStop)];
@@ -755,6 +761,15 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
             {
                 var start = from[6 + c] * from[5];
                 mixed[c] = (start + (u * ((to[6 + c] * to[5]) - start))) / alpha;
+            }
+
+            if (_colorSpace == GradientColorSpace.Oklch)
+            {
+                // A hue is an angle, not premultiplied: along the shorter arc, the hue of a gray or transparent stop
+                // taking the other one, so that a transparent stop does not tint its neighbor
+                var fromHue = from[7] <= OklchPowerlessChroma || from[5] == 0 ? to[8] : from[8];
+                var toHue = to[7] <= OklchPowerlessChroma || to[5] == 0 ? from[8] : to[8];
+                mixed[2] = ColorValueMath.InterpolateHue(fromHue, toHue, u, HueInterpolation.Shorter);
             }
 
             samples[i] = FromColorSpace(mixed, alpha);
@@ -812,6 +827,11 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
         values[1] = (0.2104542553 * l) + (0.7936177850 * m) - (0.0040720468 * s);
         values[2] = (1.9779984951 * l) - (2.4285922050 * m) + (0.4505937099 * s);
         values[3] = (0.0259040371 * l) + (0.7827717662 * m) - (0.8086757660 * s);
+        if (_colorSpace == GradientColorSpace.Oklch)
+        {
+            // Oklch: the chroma and the hue of the two color axes
+            (values[2], values[3]) = ColorValueMath.ToPolar(values[2], values[3]);
+        }
     }
 
     /// <summary>Converts a color of the color space of the gradient to a 16-bit sRGB color.</summary>
@@ -820,11 +840,17 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
         var red = values[0];
         var green = values[1];
         var blue = values[2];
-        if (_colorSpace == GradientColorSpace.Oklab)
+        if (_colorSpace == GradientColorSpace.Oklch)
         {
-            var l = values[0] + (0.3963377774 * values[1]) + (0.2158037573 * values[2]);
-            var m = values[0] - (0.1055613458 * values[1]) - (0.0638541728 * values[2]);
-            var s = values[0] - (0.0894841775 * values[1]) - (1.2914855480 * values[2]);
+            // The two color axes of the chroma and the hue
+            (green, blue) = ColorValueMath.FromPolar(green, blue);
+        }
+
+        if (_colorSpace is GradientColorSpace.Oklab or GradientColorSpace.Oklch)
+        {
+            var l = red + (0.3963377774 * green) + (0.2158037573 * blue);
+            var m = red - (0.1055613458 * green) - (0.0638541728 * blue);
+            var s = red - (0.0894841775 * green) - (1.2914855480 * blue);
             l = l * l * l;
             m = m * m * m;
             s = s * s * s;

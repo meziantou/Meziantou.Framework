@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <Compile Include="../../common/NuGetPackageFixture.cs" Link="NuGetPackageFixture.cs" />
+    <Compile Include="../../common/TargetFrameworkHelper.cs" Link="TargetFrameworkHelper.cs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -2550,7 +2550,7 @@ public readonly ref struct DrawingCanvas
     /// <para>
     /// The colors that are converted are those the caller gives: the color of a <see cref="SolidBrush"/>, the stops
     /// of a gradient, the color of a shadow and of <see cref="Clear(Rgba64)"/>, and the brushes of a text. A gradient
-    /// that mixes its stops in linear light or in Oklab mixes the colors as they are given, then converts each color
+    /// that mixes its stops in linear light, in Oklab or in Oklch mixes the colors as they are given, then converts each color
     /// it obtains; one that mixes encoded values mixes the converted stops. A color outside the color space of the
     /// image is clipped, component by component. The alpha of a color is not converted.
     /// </para>

@@ -19,6 +19,12 @@ public abstract class NuGetPackageFixture(string packageProjectName, params stri
     public FullPath PackagesDirectory { get; private set; }
     public string PackageVersion { get; } = PackageVersionValue;
 
+    /// <summary>
+    /// Gets the target frameworks the packages are built for, or <see langword="null"/> to build all the target frameworks of the projects.
+    /// The tests only start once the packages are built, so building fewer target frameworks keeps the fixture under the hang dump timeout of the test host.
+    /// </summary>
+    protected virtual string? TargetFrameworks => null;
+
     public async ValueTask InitializeAsync()
     {
         _temporaryDirectory = TemporaryDirectory.Create();
@@ -39,6 +45,7 @@ public abstract class NuGetPackageFixture(string packageProjectName, params stri
             "/p:RunAnalyzers=false",
             "/p:PublicApiGeneratorGenerateOnBuild=false",
             "/p:PublicApiGeneratorVerifyNoChangeOnBuild=false",
+            .. TargetFrameworks is null ? [] : new[] { "/p:LatestTargetFrameworks=" + TargetFrameworks, "/p:ValidateProjectTargets=false" },
         ];
 
         // Building the main project also builds the projects it references, so they can all be packed without rebuilding.

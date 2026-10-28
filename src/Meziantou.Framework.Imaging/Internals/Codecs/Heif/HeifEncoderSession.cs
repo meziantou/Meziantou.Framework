@@ -451,7 +451,7 @@ internal sealed class HeifEncoderSession : ImageEncoderSession
             return default;
 
         if ((subsamplingX is not 0 && ((tile.Width | width) & 1) is not 0) || (subsamplingY is not 0 && ((tile.Height | height) & 1) is not 0))
-            throw _binding.Unsupported($"A grid of an {_binding.Name} image with subsampled chroma needs an even width of the tiles ({tile.Width}) and of the image ({width}){(subsamplingY is not 0 ? $", and an even height ({tile.Height} and {height})" : "")}. Change the size of the tiles, select AvifChromaSubsampling.Ratio444, or remove {_settings.EncoderName}.GridTileSize.", $"{_binding.Name} grid between chroma samples");
+            throw _binding.Unsupported($"A grid of an {_binding.Name} image with subsampled chroma needs an even width of the tiles ({tile.Width}) and of the image ({width}){(subsamplingY is not 0 ? $", and an even height ({tile.Height} and {height})" : "")}. Change the size of the tiles, set {_settings.EncoderName}.ChromaSubsampling to Ratio444, or remove {_settings.EncoderName}.GridTileSize.", $"{_binding.Name} grid between chroma samples");
 
         var columns = ((width - 1) / tile.Width) + 1;
         var rows = ((height - 1) / tile.Height) + 1;

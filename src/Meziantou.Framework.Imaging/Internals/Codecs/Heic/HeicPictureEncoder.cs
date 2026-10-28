@@ -45,8 +45,7 @@ internal sealed class HeicPictureEncoder : HeifPictureEncoder
 
     public override bool IsKeyFrame => _encoder.IsKeyFrame;
 
-    // The HEIC encoder has no grid output: a picture is the whole image
-    public override void Reset() => throw new NotSupportedException("The HEIC encoder codes one stream of pictures.");
+    public override void Reset() => _encoder.Reset();
 
     public override Av1Plane GetSourcePlane(int plane) => _encoder.GetSourcePlane(plane);
 

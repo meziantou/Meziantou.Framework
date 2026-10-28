@@ -682,6 +682,109 @@ public sealed class HeicEncoderInteropTests
     }
 
     /// <summary>
+    /// The grids of <see cref="HeicEncoder.GridTileSize"/>: lossless and lossy, with and without alpha, with tiles that extend
+    /// past the image, tiles whose size is not a whole number of coding blocks, and the 512x512 tiles of the photos of
+    /// cameras. Each case gives the image, the source, the encoder and what the pixels of a reader must be:
+    /// <c>exact</c> (the pixels of the library), <c>matrix</c> (within the rounding of a matrix) or <c>measured</c> (alpha
+    /// is exact, the colors of subsampled chroma, which the readers do not place as the stream says, are only measured).
+    /// </summary>
+    public static TheoryData<string, SourceKind, int, int, int, int, HeicCompression, HeicChromaSubsampling, string> GridCases() => new()
+    {
+        { "grid-lossless-alpha", SourceKind.Rgba8, 150, 100, 64, 64, HeicCompression.Lossless, HeicChromaSubsampling.Auto, "exact" },
+        { "grid-lossless-odd", SourceKind.Rgb8, 65, 130, 64, 65, HeicCompression.Lossless, HeicChromaSubsampling.Auto, "exact" },
+        { "grid-lossy-420-camera", SourceKind.Rgb8, 1100, 700, 512, 512, HeicCompression.Lossy, HeicChromaSubsampling.Ratio420, "measured" },
+        { "grid-lossy-420-alpha", SourceKind.Rgba8, 130, 70, 66, 66, HeicCompression.Lossy, HeicChromaSubsampling.Ratio420, "measured" },
+        { "grid-lossy-444-odd", SourceKind.Rgb8, 131, 71, 65, 65, HeicCompression.Lossy, HeicChromaSubsampling.Ratio444, "matrix" },
+    };
+
+    /// <summary>libheif assembles the tiles of the grids, of the color image and of the alpha plane, into the image.</summary>
+    [Theory]
+    [MemberData(nameof(GridCases))]
+    public async Task GridsAreAssembledByHeifDec(string label, SourceKind kind, int width, int height, int tileWidth, int tileHeight, HeicCompression compression, HeicChromaSubsampling subsampling, string expectation)
+    {
+        var heif = await RequiredTools.LibHeifAsync();
+        var (path, library) = await SaveGridAsync(label, kind, width, height, tileWidth, tileHeight, compression, subsampling);
+        var info = await heif.GetInfoAsync(path, XunitCancellationToken);
+        Assert.Equal((width, height), (info.Width, info.Height));
+        var decoded = await heif.DecodeAsync(path, bilinearChroma: true, XunitCancellationToken);
+        Assert.Equal((width, height), (decoded.Width, decoded.Height));
+        var pixels = decoded.GetPixels(8);
+        var measured = MeasurePixels(pixels, library);
+        WriteOutput(string.Create(CultureInfo.InvariantCulture, $"{label}: library vs heif-dec {heif.Version} max {measured.Max} ({measured.Max / 257.0:F3}/255), mean {measured.Mean:F2}"));
+        switch (expectation)
+        {
+            case "exact":
+                AssertPixels(pixels, library, ColorBound.Exact, $"{label}: library vs heif-dec {heif.Version}");
+                break;
+
+            case "matrix":
+                AssertPixels(pixels, library, ColorBound.Matrix(8, fullRange: true), $"{label}: library vs heif-dec {heif.Version}");
+                break;
+
+            default:
+                Assert.Null(measured.FirstAlphaMismatch);
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Apple ImageIO, which reads the grids of the photos of Apple cameras, assembles the tiles of the grids of the encoder,
+    /// of the color image and of the alpha plane, into the image.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(GridCases))]
+    public async Task GridsDecodeWithAppleImageIO(string label, SourceKind kind, int width, int height, int tileWidth, int tileHeight, HeicCompression compression, HeicChromaSubsampling subsampling, string expectation)
+    {
+        // Apple ImageIO exists only on macOS: skipped elsewhere locally; required (never skipped) in the CI interop job (macOS)
+        var (swift, script) = RequiredTools.AppleImageIO();
+        var (path, library) = await SaveGridAsync("imageio-" + label, kind, width, height, tileWidth, tileHeight, compression, subsampling);
+        string[] arguments = kind is SourceKind.Rgba8 ? [script, path] : [script, "--binary-alpha", path];
+        var result = await ProcessRunner.RunAsync(swift, arguments, XunitCancellationToken);
+        if (result.ExitCode != 0)
+            Assert.Fail($"ImageIO failed on {label} (exit code {result.ExitCode}): {result.StandardError}");
+
+        var lastLine = result.StandardError.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).LastOrDefault() ?? "";
+        Assert.Equal(["frames", "1", width.ToString(CultureInfo.InvariantCulture), height.ToString(CultureInfo.InvariantCulture), "8"], lastLine.Split(' '));
+        var apple = ToRgba16(RawPixelBuffer.Create(width, height, RawPixelLayout.Rgba8, result.StandardOutput.Span));
+        var measured = MeasurePixels(apple, library);
+        WriteOutput(string.Create(CultureInfo.InvariantCulture, $"{label}: library vs Apple ImageIO max {measured.Max} ({measured.Max / 257.0:F3}/255), mean {measured.Mean:F2}"));
+        switch (expectation)
+        {
+            case "exact":
+                AssertPixels(apple, library, ColorBound.Exact, $"{label}: library vs Apple ImageIO");
+                break;
+
+            case "matrix":
+                AssertPixels(apple, library, 3 * 257, $"{label}: library vs Apple ImageIO");
+                break;
+
+            default:
+                Assert.Null(measured.FirstAlphaMismatch);
+                break;
+        }
+    }
+
+    // Saves a grid, checks its structure, and gives the pixels that the library decodes, which are its source when it is lossless
+    private static async Task<(FullPath Path, RawPixelBuffer Pixels)> SaveGridAsync(string name, SourceKind kind, int width, int height, int tileWidth, int tileHeight, HeicCompression compression, HeicChromaSubsampling subsampling)
+    {
+        var source = CreateSource(kind, width, height, seed: StableSeed(name));
+        using var image = CreateImage(source);
+        var path = ArtifactPath(name + ".heic");
+        await image.SaveAsync(path, new HeicEncoder { Compression = compression, ChromaSubsampling = subsampling, Quality = 95, Effort = 2, GridTileSize = new Size(tileWidth, tileHeight) }, XunitCancellationToken);
+        var reader = ReferenceHeif.Parse(await File.ReadAllBytesAsync(path, XunitCancellationToken));
+        Assert.Equal("grid", reader.PrimaryItem!.Type);
+        Assert.Equal(kind is SourceKind.Rgba8, reader.AlphaItem?.Type is "grid");
+        Assert.All(reader.GetGridTiles(reader.PrimaryItem), tile => Assert.Equal((tileWidth, tileHeight), tile.Size));
+
+        using var loaded = Image.Load(path);
+        var library = ToRgba16(ImageSnapshots.CaptureFrame(loaded.Frames[0]));
+        if (compression is HeicCompression.Lossless)
+            AssertPixels(ToRgba16(source), library, ColorBound.Exact, $"{name}: library vs source");
+
+        return (path, library);
+    }
+
+    /// <summary>
     /// Apple ImageIO reads the image sequences: every image, in order. The images that are predicted from the image before
     /// them are decoded like the key frames. The pixels are compared as those of the still images are.
     /// </summary>

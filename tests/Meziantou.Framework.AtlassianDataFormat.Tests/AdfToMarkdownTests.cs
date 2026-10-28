@@ -996,4 +996,18 @@ public sealed class AdfToMarkdownTests
         var options = new AdfToMarkdownOptions { UnknownNodeHandling = AdfUnknownNodeHandling.Throw };
         Assert.Throws<AdfException>(() => AdfToMarkdown.Convert(json, options));
     }
+
+    [Theory]
+    [InlineData("tableRow")]
+    [InlineData("tableCell")]
+    [InlineData("tableHeader")]
+    [InlineData("taskItem")]
+    [InlineData("decisionItem")]
+    public void NodeOutsideItsParentKeepsItsContent(string type)
+    {
+        // These nodes are neither blocks nor inline nodes outside their table or list
+        AssertMarkdown(Doc($$"""{"type":"{{type}}","content":[{{Paragraph(Text("content"))}}]}"""), "content");
+        var inParagraph = $$"""{"type":"{{type}}","content":[{{Text("inline")}}]}""";
+        AssertMarkdown(Doc(Paragraph(inParagraph)), "inline");
+    }
 }

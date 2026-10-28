@@ -21,14 +21,20 @@ public sealed class AdfDocument
     {
         ArgumentNullException.ThrowIfNull(json);
 
+        JsonDocument document;
         try
         {
-            using var document = JsonDocument.Parse(json);
-            return AdfJsonReader.ReadDocument(document.RootElement);
+            document = JsonDocument.Parse(json);
         }
-        catch (JsonException ex)
+        catch (Exception ex) when (ex is JsonException or ArgumentException)
         {
+            // A string with an unpaired surrogate is not text, so JsonDocument cannot read it (ArgumentException)
             throw new AdfException("The value is not valid JSON", ex);
+        }
+
+        using (document)
+        {
+            return AdfJsonReader.ReadDocument(document.RootElement);
         }
     }
 
@@ -45,7 +51,18 @@ public sealed class AdfDocument
         ArgumentNullException.ThrowIfNull(node);
 
         // Deserializing to JsonElement goes through the reflection-based serializer, which is not trim safe.
-        using var document = JsonDocument.Parse(node.ToJsonString());
+        string json;
+        try
+        {
+            json = node.ToJsonString();
+        }
+        catch (InvalidOperationException ex)
+        {
+            // Writing the node unescapes its strings, and a string with an escaped unpaired surrogate ("\ud800") is not text
+            throw new AdfException("The document has a string that is not valid UTF-16", ex);
+        }
+
+        using var document = JsonDocument.Parse(json);
         return AdfJsonReader.ReadDocument(document.RootElement);
     }
 

@@ -124,6 +124,62 @@ public sealed class AdfDocumentTests
     }
 
     [Fact]
+    public void ParseRejectsAStringWithAnUnpairedSurrogate()
+    {
+        var exception = Assert.Throws<AdfException>(() => AdfDocument.Parse("{\"type\":\"doc\",\"content\":[],\"version\":1,\"x\":\"\uDC8E\"}"));
+        Assert.IsType<ArgumentException>(exception.InnerException);
+        Assert.False(AdfDocument.TryParse("\uD800", out _));
+    }
+
+    [Fact]
+    public void ParseRejectsAnEscapedUnpairedSurrogate()
+    {
+        var json = """{"type":"doc","version":1,"content":[{"type":"paragraph","content":[{"type":"text","text":"a\ud800"}]}]}""";
+        var exception = Assert.Throws<AdfException>(() => AdfDocument.Parse(json));
+        Assert.IsType<InvalidOperationException>(exception.InnerException);
+        using var document = JsonDocument.Parse(json);
+        Assert.False(AdfDocument.TryParse(document.RootElement, out _));
+    }
+
+    [Theory]
+    [InlineData("""{"type":"somethingNew","x\ud800":1}""")]
+    [InlineData("""{"type":"paragraph","content":[{"type":"text","text":"a","marks":[{"type":"newMark","attrs":{"v":"\udc00"}}]}]}""")]
+    [InlineData("""{"type":"paragraph","content":[{"type":"inlineCard","attrs":{"url":"https://example.com","data":{"name":"\ud800x"}}}]}""")]
+    public void ParseRejectsAnEscapedUnpairedSurrogateInAValueItWritesBack(string node)
+    {
+        // The unknown nodes and marks and the JSON attributes are written back as they are read
+        var json = $$"""{"type":"doc","version":1,"content":[{{node}}]}""";
+        var exception = Assert.Throws<AdfException>(() => AdfDocument.Parse(json));
+        Assert.IsType<InvalidOperationException>(exception.InnerException);
+    }
+
+    [Fact]
+    public void ParseIgnoresANumberAttributeOutOfTheRangeOfADouble()
+    {
+        // 1e400 reads as an infinity, which JSON cannot represent
+        var document = AdfDocument.Parse("""{"type":"doc","version":1,"content":[{"type":"table","attrs":{"width":1e400},"content":[]}]}""");
+        Assert.Null(Assert.IsType<AdfTable>(Assert.Single(document.Content)).Width);
+        Assert.Equal("""{"version":1,"type":"doc","content":[{"type":"table"}]}""", document.ToJsonString());
+    }
+
+    [Fact]
+    public void ParseKeepsTheEscapesOfAnUnknownNode()
+    {
+        var document = AdfDocument.Parse("""{"type":"doc","version":1,"content":[{"type":"somethingNew","x":"\u00E9\uD83D\uDE00\n"}]}""");
+        Assert.Equal("""{"version":1,"type":"doc","content":[{"type":"somethingNew","x":"\u00E9\uD83D\uDE00\n"}]}""", document.ToJsonString());
+    }
+
+    [Fact]
+    public void ParseJsonNodeRejectsAnEscapedUnpairedSurrogateInAnIgnoredProperty()
+    {
+        // The JsonNode overload writes the whole node, so it reads the strings the reader ignores
+        var json = """{"type":"doc","version":1,"content":[],"extra":"a\ud800"}""";
+        Assert.Empty(AdfDocument.Parse(json).Content);
+        var exception = Assert.Throws<AdfException>(() => AdfDocument.Parse(JsonNode.Parse(json)!));
+        Assert.IsType<InvalidOperationException>(exception.InnerException);
+    }
+
+    [Fact]
     public void TryParseReturnsFalseForInvalidInput()
     {
         Assert.False(AdfDocument.TryParse("not json", out var document));

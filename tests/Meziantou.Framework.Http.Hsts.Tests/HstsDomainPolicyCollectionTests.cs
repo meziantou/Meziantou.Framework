@@ -121,6 +121,19 @@ public sealed class HstsDomainPolicyCollectionTests
     }
 
     [Fact]
+    public void HstsCollection_Match_IncludeSubdomain_HostWithAnEmptyFirstLabel()
+    {
+        // The labels of ".google.com" are "", "google" and "com": google.com is a superdomain
+        var hsts = new HstsDomainPolicyCollection(includePreloadDomains: false);
+        hsts.Add("google.com", DateTimeOffset.UtcNow.AddYears(1), includeSubdomains: true);
+        hsts.Add("example.com", DateTimeOffset.UtcNow.AddYears(1), includeSubdomains: false);
+
+        Assert.True(hsts.MustUpgradeRequest(".google.com"));
+        Assert.True(hsts.MustUpgradeRequest(".dummy.google.com"));
+        Assert.False(hsts.MustUpgradeRequest(".example.com"));
+    }
+
+    [Fact]
     public void HstsCollection_Match_IncludeSubdomain_False()
     {
         var hsts = new HstsDomainPolicyCollection(includePreloadDomains: false);

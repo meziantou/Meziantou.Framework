@@ -17,7 +17,7 @@ namespace Meziantou.Framework.WebPlatform.Fuzz;
 /// for invalid input (e.g. a <see cref="DomException"/> for an invalid selector): any other exception, a crash (stack
 /// overflow, out of memory) or a hang is a bug.
 /// </summary>
-public static class WebPlatformFuzzTargets
+public static partial class WebPlatformFuzzTargets
 {
     private const string QueryDocumentMarkup = """
         <!DOCTYPE html>
@@ -68,6 +68,14 @@ public static class WebPlatformFuzzTargets
         new("webplatform-font", data => Font(data.ToArray())) { Seeds = () => GetSeeds("font") },
         new("webplatform-text-decoder", TextDecoding) { Seeds = () => GetSeeds("text-decoder") },
         new("webplatform-cookies", Cookies) { Seeds = () => GetSeeds("cookies") },
+        new("webplatform-inflate", Inflate) { Seeds = GetInflateSeeds },
+        new("webplatform-wasm", Wasm) { Seeds = () => GetSeeds("wasm") },
+        new("webplatform-encoding-sniff", EncodingSniff) { Seeds = GetEncodingSniffSeeds },
+        new("webplatform-webvtt", WebVttFile) { Seeds = () => GetSeeds("webvtt").Select((seed, index) => seed with { Data = (byte[])[(byte)index, .. seed.Data.Span] }) },
+        new("webplatform-audio", Audio) { Seeds = GetAudioSeeds },
+        new("webplatform-form-data", FormDataBody) { Seeds = GetFormDataSeeds },
+        new("webplatform-event-stream", EventStream) { Seeds = GetEventStreamSeeds },
+        new("webplatform-mime", data => Mime(FuzzText.Decode(data))) { Seeds = GetMimeSeeds },
     ];
 
     /// <summary>

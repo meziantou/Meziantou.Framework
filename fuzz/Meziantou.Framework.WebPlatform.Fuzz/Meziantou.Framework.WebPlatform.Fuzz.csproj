@@ -10,6 +10,8 @@
     <!-- The seeds of the text targets (Seeds/<target>/*) and the bundled fonts of the library (the font target) -->
     <EmbeddedResource Include="Seeds\**\*" LogicalName="Seeds/%(RecursiveDir)%(Filename)%(Extension)" />
     <EmbeddedResource Include="..\..\src\Meziantou.Framework.WebPlatform\Css\Fonts\Bundled\*.ttf;..\..\src\Meziantou.Framework.WebPlatform\Css\Fonts\Bundled\*.woff2" Exclude="..\..\src\Meziantou.Framework.WebPlatform\Css\Fonts\Bundled\STIXTwoMath-*" LogicalName="Seeds/font/%(Filename)%(Extension)" Link="Seeds\font\%(Filename)%(Extension)" />
+    <!-- A FLAC file of the MediaTags tests is a seed of the audio target; the WPT seeds are copied in Seeds (see THIRD-PARTY-NOTICES.md) -->
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.MediaTags.Tests\TestFiles\basic.flac" LogicalName="Seeds/audio/%(Filename)%(Extension)" Link="Seeds\audio\%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>

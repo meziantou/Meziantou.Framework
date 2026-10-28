@@ -31,6 +31,7 @@
   <ItemGroup>
     <!-- The tests, the fuzzing and the benchmarks also use the internal types -->
     <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Fonts.Fuzz" />
     <InternalsVisibleTo Include="Meziantou.Framework.Imaging.FuzzTests" />
     <InternalsVisibleTo Include="Meziantou.Framework.Imaging.Benchmarks" />
     <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Tests" />

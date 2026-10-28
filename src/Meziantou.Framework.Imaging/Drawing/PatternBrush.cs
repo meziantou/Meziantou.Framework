@@ -42,6 +42,9 @@ namespace Meziantou.Framework.Imaging.Drawing;
 /// </remarks>
 public sealed class PatternBrush : Brush
 {
+    /// <summary>The width and the height of the tile of a hatch, in pixels.</summary>
+    private const int HatchSize = 8;
+
     /// <summary>Initializes a new instance of the <see cref="PatternBrush"/> class.</summary>
     /// <param name="tile">The rectangle that repeats, in the coordinates of the pattern. A <see cref="Rectangle"/> converts implicitly.</param>
     /// <param name="content">The callback that draws the tile, in the coordinates of the pattern.</param>
@@ -57,6 +60,26 @@ public sealed class PatternBrush : Brush
         ArgumentNullException.ThrowIfNull(content);
         Tile = tile;
         Content = content;
+    }
+
+    /// <summary>Initializes a new instance of the <see cref="PatternBrush"/> class that repeats a hatch: a tile of 8 by 8 pixels of two colors.</summary>
+    /// <param name="style">The pixels of the tile that have the foreground color.</param>
+    /// <param name="foreground">The color of the lines or of the pixels <paramref name="style"/> lights, with straight alpha. An <see cref="Rgba32"/> converts implicitly.</param>
+    /// <param name="background">The color of the other pixels, with straight alpha: a transparent color leaves them unpainted.</param>
+    /// <remarks>
+    /// The tile is the rectangle from <c>(0, 0)</c> to <c>(8, 8)</c>, and each of its pixels is painted with one of the
+    /// two colors: without a <see cref="Transform"/> and on a canvas without transformation, the pixel <c>(x, y)</c> of
+    /// the canvas has the color of the pixel <c>(x mod 8, y mod 8)</c> of the tile, exactly, whatever the shape that is
+    /// painted. A transformation scales and turns the hatch like any pattern.
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="style"/> is not a defined <see cref="HatchStyle"/>.</exception>
+    public PatternBrush(HatchStyle style, Rgba64 foreground, Rgba64 background)
+    {
+        if (!Enum.IsDefined(style))
+            throw new ArgumentOutOfRangeException(nameof(style), style, "The hatch style is not valid.");
+
+        Tile = new RectangleD(0, 0, HatchSize, HatchSize);
+        Content = CreateHatch(style, foreground, background);
     }
 
     /// <summary>Gets the rectangle that repeats, in the coordinates of the pattern.</summary>
@@ -153,4 +176,80 @@ public sealed class PatternBrush : Brush
             field = value;
         }
     }
+
+    /// <summary>Creates the callback that draws the tile of a hatch: the runs of pixels of each color of a row are rectangles of one path per color.</summary>
+    private static DrawingAction CreateHatch(HatchStyle style, Rgba64 foreground, Rgba64 background)
+    {
+        var foregroundBuilder = new VectorPathBuilder();
+        var backgroundBuilder = new VectorPathBuilder();
+        for (var y = 0; y < HatchSize; y++)
+        {
+            var x = 0;
+            while (x < HatchSize)
+            {
+                var isForeground = IsHatchForeground(style, x, y);
+                var end = x + 1;
+                while (end < HatchSize && IsHatchForeground(style, end, y) == isForeground)
+                {
+                    end++;
+                }
+
+                (isForeground ? foregroundBuilder : backgroundBuilder).AddRectangle(new RectangleD(x, y, end - x, 1));
+                x = end;
+            }
+        }
+
+        var foregroundPath = foregroundBuilder.Build();
+        var backgroundPath = backgroundBuilder.Build();
+        var foregroundBrush = new SolidBrush(foreground);
+        var backgroundBrush = new SolidBrush(background);
+
+        // Each pixel of the tile is covered by one of the paths, on a transparent image: it gets its color as it is
+        return canvas =>
+        {
+            if (!backgroundPath.IsEmpty)
+            {
+                canvas.Fill(backgroundBrush, backgroundPath);
+            }
+
+            if (!foregroundPath.IsEmpty)
+            {
+                canvas.Fill(foregroundBrush, foregroundPath);
+            }
+        };
+    }
+
+    /// <summary>Gets a value indicating whether a pixel of the tile of a hatch has the foreground color.</summary>
+    internal static bool IsHatchForeground(HatchStyle style, int x, int y) => style switch
+    {
+        HatchStyle.Horizontal => y == 0,
+        HatchStyle.Vertical => x == 0,
+        HatchStyle.Cross => x == 0 || y == 0,
+        HatchStyle.ForwardDiagonal => x == y,
+        HatchStyle.BackwardDiagonal => x + y == HatchSize - 1,
+        HatchStyle.DiagonalCross => x == y || x + y == HatchSize - 1,
+        HatchStyle.Percent10 => GetDitherRank(x, y) < 6,
+        HatchStyle.Percent20 => GetDitherRank(x, y) < 13,
+        HatchStyle.Percent30 => GetDitherRank(x, y) < 19,
+        HatchStyle.Percent40 => GetDitherRank(x, y) < 26,
+        HatchStyle.Percent50 => GetDitherRank(x, y) < 32,
+        HatchStyle.Percent60 => GetDitherRank(x, y) < 38,
+        HatchStyle.Percent70 => GetDitherRank(x, y) < 45,
+        HatchStyle.Percent80 => GetDitherRank(x, y) < 51,
+        _ => GetDitherRank(x, y) < 58,
+    };
+
+    /// <summary>
+    /// Gets the rank of a pixel in the ordered dither matrix of 8 by 8: the matrix of 2 by 2 <c>[[0, 2], [3, 1]]</c>,
+    /// each of whose cells holds the matrix of half the size times 4, plus that cell.
+    /// </summary>
+    internal static int GetDitherRank(int x, int y) => (16 * GetDitherCell(x & 1, y & 1)) + (4 * GetDitherCell((x >> 1) & 1, (y >> 1) & 1)) + GetDitherCell((x >> 2) & 1, (y >> 2) & 1);
+
+    private static int GetDitherCell(int x, int y) => (x, y) switch
+    {
+        (0, 0) => 0,
+        (1, 0) => 2,
+        (0, _) => 3,
+        _ => 1,
+    };
 }

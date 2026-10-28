@@ -685,7 +685,13 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
   (`WhatIsOutsideTheCanvasIsNotCutIntoDashesAndThePatternGoesOn`, `AWidePenIsNotCutIntoTheDashesTheCanvasDoesNotShow`).
   `Widen` has no canvas and cuts everything.
 - A brush that is not a single color is a `PaintEvaluator`: it gives a row of colors in the pixel format of the frame
-  (`GradientEvaluator`, `ImageEvaluator`). An image is read through the lease of its frame, taken when a shape is painted
+  (`GradientEvaluator`, `PathGradientEvaluator`, `ImageEvaluator`). An elliptic radial gradient is the circular one,
+  the y of each position brought back to its circle before the formulas of the circles (`CircleFocalPoint` is the
+  focal point there): a circular gradient (`RadiusY == Radius`) must keep its bits. `PathGradientEvaluator` uses the
+  rounding of `GradientEvaluator`, and tests the triangles of the fan in their order (the first one that contains a
+  position wins), only those whose bounds hold the row when there is no transformation. The hatches of `PatternBrush`
+  are an ordinary tile drawn by a callback (one path of whole-pixel rectangles per color): they go through the pattern
+  machinery, not through an evaluator of their own. An image is read through the lease of its frame, taken when a shape is painted
   and released in `finally` (`Begin` / `End`): never keep it between two draw calls. `ImageEvaluator` interpolates
   16-bit colors read with the pixel conversion (`ReadRgba64`), then converts them like any brush color; when the rows
   of the canvas stay rows of the image, it converts each row of the image once; otherwise it converts the pixels it reads

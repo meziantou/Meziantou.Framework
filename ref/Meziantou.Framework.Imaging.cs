@@ -764,6 +764,8 @@ namespace Meziantou.Framework.Imaging
         public static void Pad(this Meziantou.Framework.Imaging.Image image, int left, int top, int right, int bottom, Meziantou.Framework.Imaging.Rgba64? backgroundColor = null, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Quantize(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.QuantizeOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Quantize(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.QuantizeOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void ReplaceColor(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.Rgba64 color, Meziantou.Framework.Imaging.Rgba64 replacement, double tolerance = 0d, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void ReplaceColor(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.Rgba64 color, Meziantou.Framework.Imaging.Rgba64 replacement, double tolerance = 0d, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Resize(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.ResizeOptions options, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Rotate(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.RotateMode mode, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Rotate(this Meziantou.Framework.Imaging.Image image, double degrees, Meziantou.Framework.Imaging.TransformOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
@@ -1889,6 +1891,25 @@ namespace Meziantou.Framework.Imaging.Drawing
         public double Opacity { get => throw null; init { } }
     }
 
+    public enum HatchStyle
+    {
+        Horizontal = 0,
+        Vertical = 1,
+        Cross = 2,
+        ForwardDiagonal = 3,
+        BackwardDiagonal = 4,
+        DiagonalCross = 5,
+        Percent10 = 6,
+        Percent20 = 7,
+        Percent30 = 8,
+        Percent40 = 9,
+        Percent50 = 10,
+        Percent60 = 11,
+        Percent70 = 12,
+        Percent80 = 13,
+        Percent90 = 14,
+    }
+
     public sealed class ImageBrush : Meziantou.Framework.Imaging.Drawing.Brush
     {
         public new double Opacity { get => throw null; init { } }
@@ -1999,6 +2020,17 @@ namespace Meziantou.Framework.Imaging.Drawing
         Xor = 3,
     }
 
+    public sealed class PathGradientBrush : Meziantou.Framework.Imaging.Drawing.Brush
+    {
+        public Meziantou.Framework.Imaging.PointD Center { get => throw null; }
+        public Meziantou.Framework.Imaging.Rgba64 CenterColor { get => throw null; }
+        public System.ReadOnlyMemory<Meziantou.Framework.Imaging.Rgba64> PointColors { get => throw null; }
+        public System.ReadOnlyMemory<Meziantou.Framework.Imaging.PointD> Points { get => throw null; }
+        public Meziantou.Framework.Imaging.AffineTransform Transform { get => throw null; init { } }
+        public PathGradientBrush(System.ReadOnlySpan<Meziantou.Framework.Imaging.PointD> points, System.ReadOnlySpan<Meziantou.Framework.Imaging.Rgba64> pointColors, Meziantou.Framework.Imaging.Rgba64 centerColor) { }
+        public PathGradientBrush(System.ReadOnlySpan<Meziantou.Framework.Imaging.PointD> points, System.ReadOnlySpan<Meziantou.Framework.Imaging.Rgba64> pointColors, Meziantou.Framework.Imaging.PointD center, Meziantou.Framework.Imaging.Rgba64 centerColor) { }
+    }
+
     public readonly struct PathSegment : System.IEquatable<Meziantou.Framework.Imaging.Drawing.PathSegment>
     {
         public Meziantou.Framework.Imaging.PointD Control1 { get => throw null; }
@@ -2051,6 +2083,7 @@ namespace Meziantou.Framework.Imaging.Drawing
         public Meziantou.Framework.Imaging.Drawing.ImageWrapMode WrapModeX { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Drawing.ImageWrapMode WrapModeY { get => throw null; init { } }
         public PatternBrush(Meziantou.Framework.Imaging.RectangleD tile, Meziantou.Framework.Imaging.Drawing.DrawingAction content) { }
+        public PatternBrush(Meziantou.Framework.Imaging.Drawing.HatchStyle style, Meziantou.Framework.Imaging.Rgba64 foreground, Meziantou.Framework.Imaging.Rgba64 background) { }
     }
 
     public enum PatternTilePrecision
@@ -2096,7 +2129,9 @@ namespace Meziantou.Framework.Imaging.Drawing
         public Meziantou.Framework.Imaging.PointD FocalPoint { get => throw null; init { } }
         public double FocalRadius { get => throw null; init { } }
         public double Radius { get => throw null; }
+        public double RadiusY { get => throw null; }
         public RadialGradientBrush(Meziantou.Framework.Imaging.PointD center, double radius, System.ReadOnlySpan<Meziantou.Framework.Imaging.Drawing.GradientStop> stops) { }
+        public RadialGradientBrush(Meziantou.Framework.Imaging.PointD center, double radiusX, double radiusY, System.ReadOnlySpan<Meziantou.Framework.Imaging.Drawing.GradientStop> stops) { }
     }
 
     public sealed class SolidBrush : Meziantou.Framework.Imaging.Drawing.Brush

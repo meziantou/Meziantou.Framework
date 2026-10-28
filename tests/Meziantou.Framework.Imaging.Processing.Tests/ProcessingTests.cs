@@ -96,6 +96,82 @@ public sealed class ProcessingTests
     }
 
     [Fact]
+    public void ReplaceColorChangesThePixelsWithinTheToleranceOfAColor()
+    {
+        // Exactly the color, alpha included: the pixel 0 only
+        Rgba32[] pixels = [new(10, 20, 30), new(11, 19, 30), new(10, 20, 30, 128), new(12, 20, 30), new(200, 20, 30)];
+        using (var image = new Image<Rgba32>(5, 1))
+        {
+            Write(image, pixels);
+            image.ReplaceColor(new Rgba32(10, 20, 30), default, cancellationToken: Ct);
+            Assert.Equal([default, pixels[1], pixels[2], pixels[3], pixels[4]], Read(image));
+        }
+
+        // 1/255 is 257 in 16-bit steps: one 8-bit level on each side, in each sample
+        using (var image = new Image<Rgba32>(5, 1))
+        {
+            Write(image, pixels);
+            image.ReplaceColor(new Rgba32(10, 20, 30), new Rgba32(0, 0, 255), 1.0 / 255, Ct);
+            Assert.Equal([new Rgba32(0, 0, 255), new Rgba32(0, 0, 255), pixels[2], pixels[3], pixels[4]], Read(image));
+        }
+
+        // A 16-bit image compares its own samples: 1/65535 is one step
+        using (var wide = new Image<Rgba64>(3, 1))
+        {
+            wide.Frames[0][0, 0] = new Rgba64(1000, 2000, 3000, 65535);
+            wide.Frames[0][1, 0] = new Rgba64(1001, 1999, 3000, 65535);
+            wide.Frames[0][2, 0] = new Rgba64(1002, 2000, 3000, 65535);
+            wide.Frames[0].ReplaceColor(new Rgba64(1000, 2000, 3000, 65535), new Rgba64(1, 2, 3, 4), 1.0 / 65535, Ct);
+            Assert.Equal(new Rgba64(1, 2, 3, 4), wide.Frames[0][0, 0]);
+            Assert.Equal(new Rgba64(1, 2, 3, 4), wide.Frames[0][1, 0]);
+            Assert.Equal(new Rgba64(1002, 2000, 3000, 65535), wide.Frames[0][2, 0]);
+        }
+
+        // A gray level is its three colors, and a format without alpha is opaque
+        using (var gray = new Image<Gray8>(2, 1))
+        {
+            gray.Frames[0][0, 0] = new Gray8(10);
+            gray.Frames[0][1, 0] = new Gray8(20);
+            gray.ReplaceColor(new Rgba32(10, 10, 10), new Rgba32(255, 255, 255), cancellationToken: Ct);
+            Assert.Equal(new Gray8(255), gray.Frames[0][0, 0]);
+            Assert.Equal(new Gray8(20), gray.Frames[0][1, 0]);
+        }
+
+        using (var opaque = new Image<Rgb24>(1, 1, new Rgb24(10, 20, 30)))
+        {
+            opaque.ReplaceColor(new Rgba32(10, 20, 30, 0), new Rgba32(0, 0, 0), cancellationToken: Ct);
+            Assert.Equal(new Rgb24(10, 20, 30), opaque.Frames[0][0, 0]);
+            opaque.ReplaceColor(new Rgba32(10, 20, 30), new Rgba32(1, 2, 3), cancellationToken: Ct);
+            Assert.Equal(new Rgb24(1, 2, 3), opaque.Frames[0][0, 0]);
+        }
+
+        // Floating-point pixels are compared through their 16-bit colors, which must exist
+        using (var floats = new Image<RgbaFloat>(1, 1, new RgbaFloat(1, 0, 0, 1)))
+        {
+            floats.ReplaceColor(new Rgba64(65535, 0, 0, 65535), new Rgba64(0, 65535, 0, 65535), cancellationToken: Ct);
+            Assert.Equal(new RgbaFloat(0, 1, 0, 1), floats.Frames[0][0, 0]);
+            floats.Frames[0][0, 0] = new RgbaFloat(2, 0, 0, 1);
+            Assert.Throws<UnsupportedImageFeatureException>(() => floats.ReplaceColor(new Rgba64(65535, 0, 0, 65535), default, cancellationToken: Ct));
+        }
+
+        using var invalid = new Image<Rgba32>(1, 1);
+        Assert.Throws<ArgumentOutOfRangeException>("tolerance", () => invalid.ReplaceColor(default, default, -0.5, Ct));
+        Assert.Throws<ArgumentOutOfRangeException>("tolerance", () => invalid.ReplaceColor(default, default, 1.5, Ct));
+        Assert.Throws<ArgumentOutOfRangeException>("tolerance", () => invalid.Frames[0].ReplaceColor(default, default, double.NaN, Ct));
+        Assert.Throws<ArgumentNullException>("image", () => ((Image)null!).ReplaceColor(default, default, cancellationToken: Ct));
+
+        static void Write(Image<Rgba32> image, Rgba32[] values)
+        {
+            for (var x = 0; x < values.Length; x++)
+            {
+                image.Frames[0][x, 0] = values[x];
+            }
+        }
+
+        static Rgba32[] Read(Image<Rgba32> image) => [.. Enumerable.Range(0, image.Width).Select(x => image.Frames[0][x, 0])];
+    }
+
+    [Fact]
     public void GrayscaleOfFloatingPointPixelsIsTheLumaOfTheStoredValues()
     {
         // 0.2126 * 2 + 0.7152 * -1 + 0.0722 * 0.5 = 0.4252 - 0.7152 + 0.0361 = -0.2539: not clamped, alpha kept;

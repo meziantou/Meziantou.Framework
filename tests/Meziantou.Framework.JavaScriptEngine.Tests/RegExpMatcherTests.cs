@@ -393,6 +393,81 @@ public sealed class RegExpMatcherTests
         Assert.NotNull(error);
     }
 
+    [Fact]
+    public void Cache_SharesProgramsBetweenFlagsThatDoNotChangeTheMatcher()
+    {
+        var cache = new RegExpProgramCache(maxSize: 16);
+        var program = cache.GetOrCompile("a+", RegExpFlags.Global, out var error);
+        Assert.NotNull(program);
+        Assert.Null(error);
+        Assert.Same(program, cache.GetOrCompile("a+", RegExpFlags.Sticky | RegExpFlags.HasIndices, out _));
+        Assert.NotSame(program, cache.GetOrCompile("a+", RegExpFlags.IgnoreCase, out _));
+        Assert.NotSame(program, cache.GetOrCompile("a*", RegExpFlags.Global, out _));
+    }
+
+    [Fact]
+    public void Cache_ConcurrentCallersShareTheCachedProgram()
+    {
+        const int ThreadCount = 8;
+        const int IterationCount = 200;
+        var cache = new RegExpProgramCache(maxSize: 1024);
+        var programs = new RegExpProgram?[IterationCount][];
+        for (var iteration = 0; iteration < IterationCount; iteration++)
+        {
+            programs[iteration] = new RegExpProgram?[ThreadCount];
+        }
+
+        using var barrier = new Barrier(ThreadCount);
+        var threads = new Thread[ThreadCount];
+        for (var i = 0; i < ThreadCount; i++)
+        {
+            var index = i;
+            threads[i] = new Thread(() =>
+            {
+                for (var iteration = 0; iteration < IterationCount; iteration++)
+                {
+                    barrier.SignalAndWait();
+                    var pattern = "(a|b)+c" + iteration.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                    programs[iteration][index] = cache.GetOrCompile(pattern, RegExpFlags.None, out _);
+                }
+            });
+            threads[i].Start();
+        }
+
+        foreach (var thread in threads)
+        {
+            thread.Join();
+        }
+
+        foreach (var results in programs)
+        {
+            Assert.NotNull(results[0]);
+            foreach (var program in results)
+            {
+                Assert.Same(results[0], program);
+            }
+        }
+    }
+
+    [Fact]
+    public void Cache_ClearedWhenFull()
+    {
+        var cache = new RegExpProgramCache(maxSize: 2);
+        var a = cache.GetOrCompile("a", RegExpFlags.None, out _);
+        Assert.Same(a, cache.GetOrCompile("a", RegExpFlags.None, out _));
+        cache.GetOrCompile("b", RegExpFlags.None, out _);
+        cache.GetOrCompile("c", RegExpFlags.None, out _);
+        Assert.NotSame(a, cache.GetOrCompile("a", RegExpFlags.None, out _));
+    }
+
+    [Fact]
+    public void Cache_InvalidPattern()
+    {
+        var cache = new RegExpProgramCache(maxSize: 16);
+        Assert.Null(cache.GetOrCompile("(", RegExpFlags.None, out var error));
+        Assert.NotNull(error);
+    }
+
     [Theory]
     [InlineData("dgimsuy")]
     [InlineData("v")]

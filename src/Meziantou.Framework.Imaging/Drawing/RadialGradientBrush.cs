@@ -33,6 +33,12 @@ namespace Meziantou.Framework.Imaging.Drawing;
 /// circle has the color of the first stop and the rest of the canvas the color of the last one; with the other
 /// spread modes, nothing is painted.
 /// </para>
+/// <para>
+/// With a <see cref="RadiusY"/> that is not <see cref="Radius"/>, the color is constant on ellipses instead: the circles
+/// above are stretched along y around <see cref="Center"/> by <c>RadiusY / Radius</c>, before <see cref="GradientBrush.Transform"/>,
+/// which can still turn them. This is the radial gradient with a <see cref="GradientBrush.Transform"/> that scales y
+/// around the center, written with the half-axes of the ellipse.
+/// </para>
 /// </remarks>
 public sealed class RadialGradientBrush : GradientBrush
 {
@@ -49,6 +55,32 @@ public sealed class RadialGradientBrush : GradientBrush
         DrawingGuard.Length(radius, nameof(radius));
         Center = center;
         Radius = radius;
+        RadiusY = radius;
+        FocalPoint = center;
+    }
+
+    /// <summary>Initializes a new instance of the <see cref="RadialGradientBrush"/> class whose color is constant on ellipses around a point.</summary>
+    /// <param name="center">The position of offset 0, in canvas coordinates.</param>
+    /// <param name="radiusX">The half-axis along x of the ellipse of offset 1. Must be zero or positive.</param>
+    /// <param name="radiusY">The half-axis along y of the ellipse of offset 1. Must be zero or positive.</param>
+    /// <param name="stops">The stops, in increasing order of offset. They are copied.</param>
+    /// <remarks>
+    /// The gradient is the circular gradient of radius <paramref name="radiusX"/>, stretched along y around
+    /// <paramref name="center"/> by <c>radiusY / radiusX</c>, before <see cref="GradientBrush.Transform"/>: the parameter of
+    /// a position <c>p</c> is <c>sqrt(dx^2 + (dy radiusX / radiusY)^2) / radiusX</c>, with <c>(dx, dy) = p - center</c>.
+    /// When one of the half-axes is zero and the other is not, the whole canvas has the color of the last stop.
+    /// </remarks>
+    /// <exception cref="ArgumentException">There is no stop, the offsets decrease, or a coordinate or a half-axis is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The magnitude of a coordinate exceeds 16777216, or a half-axis is negative or exceeds 16777216.</exception>
+    public RadialGradientBrush(PointD center, double radiusX, double radiusY, ReadOnlySpan<GradientStop> stops)
+        : base(stops)
+    {
+        DrawingGuard.Point(center, nameof(center));
+        DrawingGuard.Length(radiusX, nameof(radiusX));
+        DrawingGuard.Length(radiusY, nameof(radiusY));
+        Center = center;
+        Radius = radiusX;
+        RadiusY = radiusY;
         FocalPoint = center;
     }
 
@@ -84,6 +116,20 @@ public sealed class RadialGradientBrush : GradientBrush
         }
     }
 
-    /// <summary>Gets the distance from the center at which the offset is 1.</summary>
+    /// <summary>Gets the distance from the center at which the offset is 1: the radius of the circle of offset 1, or the half-axis along x of its ellipse.</summary>
     public double Radius { get; }
+
+    /// <summary>Gets the half-axis along y of the ellipse of offset 1: <see cref="Radius"/> for a circular gradient.</summary>
+    /// <remarks>
+    /// When it differs from <see cref="Radius"/>, every circle of the gradient is stretched along y around
+    /// <see cref="Center"/> by <c>RadiusY / Radius</c>: <see cref="FocalPoint"/> is the position of offset 0 after that
+    /// stretch, and <see cref="FocalRadius"/> the half-axis along x of the ellipse of offset 0.
+    /// </remarks>
+    public double RadiusY { get; }
+
+    /// <summary>Gets a value indicating whether the circles of the gradient are stretched into ellipses.</summary>
+    internal bool IsElliptic => RadiusY != Radius;
+
+    /// <summary>Gets the focal point before the stretch of an elliptic gradient: the one of the circular gradient it comes from.</summary>
+    internal PointD CircleFocalPoint => IsElliptic && RadiusY != 0 ? new PointD(FocalPoint.X, Center.Y + ((FocalPoint.Y - Center.Y) * Radius / RadiusY)) : FocalPoint;
 }

@@ -96,6 +96,7 @@ public sealed class PerformanceContractTests
             new RadialGradientBrush(new PointD(25, 14), 12, [new GradientStop(0, new Rgba32(0, 0, 0)), new GradientStop(1, new Rgba32(0, 0, 0, 0))]) { CompositeMode = CompositeMode.DestinationOut },
             sprite.Frames[0],
             new ImageBrush(sprite.Frames[0]) { Transform = AffineTransform.CreateRotation(20).Then(AffineTransform.CreateScale(1.5, 0.75)), WrapMode = ImageWrapMode.Reflect, Opacity = 0.75, CompositeMode = CompositeMode.DestinationOver },
+            new PathGradientBrush([new PointD(4, 2), new PointD(58, 6), new PointD(50, 44), new PointD(30, 30), new PointD(6, 40)], [new Rgba32(255, 0, 0), new Rgba32(0, 255, 0, 90), new Rgba32(0, 0, 255), new Rgba32(255, 255, 0), new Rgba32(0, 255, 255)], new Rgba32(255, 255, 255)) { Transform = AffineTransform.CreateRotation(10, new PointD(32, 24)), Opacity = 0.5 },
             new StrongBox<long>(long.MaxValue));
 
         // Tiered compilation running concurrently can attribute a few bytes to this thread, and the many methods behind a
@@ -128,6 +129,7 @@ public sealed class PerformanceContractTests
             canvas.FillRectangle(state.Eraser, new RectangleD(10.5, 4, 30, 20.25));
             canvas.FillRectangle(state.Sweep, new RectangleD(2, 2, 50, 40));
             canvas.FillEllipse(state.Focal, new PointD(30, 20), 25, 15);
+            canvas.FillRectangle(state.PathGradient, new RectangleD(1.5, 0.25, 60, 46));
             canvas.Fill(state.Solid, state.Path, FillRule.EvenOdd);
             canvas.Stroke(state.Pen, state.Path);
             canvas.FillRectangle(state.Solid, new RectangleD(3.5, 2.25, 40, 30));
@@ -581,5 +583,5 @@ public sealed class PerformanceContractTests
 
     private sealed record GlyphState(Font Boxes, Font Colors, Font Bitmaps, PositionedGlyph[] Glyphs, PositionedGlyph[] ColorGlyphs, PositionedGlyph[] BitmapGlyphs, GlyphRunOptions Options, SolidBrush Solid, GradientBrush Gradient, Pen Pen, StrongBox<long> Allocated);
 
-    private sealed record DrawingState(SolidBrush Solid, GradientBrush Gradient, Pen Pen, VectorPath Path, TextLayout Text, TextLayout CffText, TextLayout CompositeText, TextLayout RichText, TextLayout VariableText, TextLayout BlendedText, TextLayout ColorText, TextLayout BitmapText, TextLayout ScaledBitmapText, TextPathOptions PathOptions, Pen DashedPen, SweepGradientBrush Sweep, RadialGradientBrush Focal, Brush Eraser, ImageFrame Sprite, ImageBrush Tile, StrongBox<long> Allocated);
+    private sealed record DrawingState(SolidBrush Solid, GradientBrush Gradient, Pen Pen, VectorPath Path, TextLayout Text, TextLayout CffText, TextLayout CompositeText, TextLayout RichText, TextLayout VariableText, TextLayout BlendedText, TextLayout ColorText, TextLayout BitmapText, TextLayout ScaledBitmapText, TextPathOptions PathOptions, Pen DashedPen, SweepGradientBrush Sweep, RadialGradientBrush Focal, Brush Eraser, ImageFrame Sprite, ImageBrush Tile, PathGradientBrush PathGradient, StrongBox<long> Allocated);
 }

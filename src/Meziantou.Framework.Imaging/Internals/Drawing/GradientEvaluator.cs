@@ -24,7 +24,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <c>a = |e|^2 - g^2</c>, <c>b = (d . e) + fr g</c> and <c>c = |d|^2 - fr^2</c> whose radius <c>fr + t g</c> is not negative
 /// (see <see cref="GetConeParameter"/>); a position without such a root has no color. A sweep gradient has the
 /// parameter <c>(angle(p - center) - start) mod 360 / (end - start)</c>, the angle being the one of
-/// <see cref="DeterministicAngle.Atan2"/>. When the brush has a transformation, <c>p</c> is the center of the pixel
+/// <see cref="DeterministicAngle.Atan2"/>. An elliptic radial gradient (<c>rx = Radius</c>, <c>ry = RadiusY</c>) is
+/// the circular one of the focal point <c>(fx, cy + ((fy - cy) rx) / ry)</c>, at the position
+/// <c>(px, cy + ((py - cy) rx) / ry)</c>; with one half-axis zero and not the other, it is degenerate. When the brush has a transformation, <c>p</c> is the center of the pixel
 /// brought back through the inverse of that transformation; a transformation without inverse makes a degenerate gradient.
 /// A projective transformation brings the center back to <c>(X / W, Y / W)</c>; where <c>W</c> is not positive (beyond
 /// the horizon of the plane), the pixel has no color.
@@ -81,6 +83,10 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
     private bool _degenerate;
     private bool _hasTransform;
     private Affine2D _inverse;
+    private bool _isElliptic;
+    private double _ellipseCenterY;
+    private double _ellipseRadiusX;
+    private double _ellipseRadiusY;
     private bool _isProjective;
     private ProjectiveTransform _projectiveInverse;
     private GradientSpreadMode _spreadMode;
@@ -235,10 +241,10 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
             case RadialGradientBrush radial when !IsFirstCircleInside(radial):
                 // Two circles anywhere: the cone of their circles, solved for the largest parameter
                 _kind = GradientKind.Cone;
-                _originX = radial.FocalPoint.X;
-                _originY = radial.FocalPoint.Y;
-                _axisX = radial.Center.X - radial.FocalPoint.X;
-                _axisY = radial.Center.Y - radial.FocalPoint.Y;
+                _originX = radial.CircleFocalPoint.X;
+                _originY = radial.CircleFocalPoint.Y;
+                _axisX = radial.Center.X - radial.CircleFocalPoint.X;
+                _axisY = radial.Center.Y - radial.CircleFocalPoint.Y;
                 _focalRadius = radial.FocalRadius;
                 _focalGrowth = radial.Radius - radial.FocalRadius;
                 _divisor = ((_axisX * _axisX) + (_axisY * _axisY)) - (_focalGrowth * _focalGrowth);
@@ -247,21 +253,21 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
             case RadialGradientBrush radial when radial.FocalRadius != 0:
                 // The circles from the one of the focal point to the one of the gradient
                 _kind = GradientKind.TwoCircles;
-                _originX = radial.FocalPoint.X;
-                _originY = radial.FocalPoint.Y;
-                _axisX = radial.Center.X - radial.FocalPoint.X;
-                _axisY = radial.Center.Y - radial.FocalPoint.Y;
+                _originX = radial.CircleFocalPoint.X;
+                _originY = radial.CircleFocalPoint.Y;
+                _axisX = radial.Center.X - radial.CircleFocalPoint.X;
+                _axisY = radial.Center.Y - radial.CircleFocalPoint.Y;
                 _focalRadius = radial.FocalRadius;
                 _focalGrowth = radial.Radius - radial.FocalRadius;
                 _divisor = (_focalGrowth * _focalGrowth) - ((_axisX * _axisX) + (_axisY * _axisY));
                 break;
 
-            case RadialGradientBrush radial when radial.FocalPoint != radial.Center:
+            case RadialGradientBrush radial when radial.CircleFocalPoint != radial.Center:
                 _kind = GradientKind.Focal;
-                _originX = radial.FocalPoint.X;
-                _originY = radial.FocalPoint.Y;
-                _axisX = radial.Center.X - radial.FocalPoint.X;
-                _axisY = radial.Center.Y - radial.FocalPoint.Y;
+                _originX = radial.CircleFocalPoint.X;
+                _originY = radial.CircleFocalPoint.Y;
+                _axisX = radial.Center.X - radial.CircleFocalPoint.X;
+                _axisY = radial.Center.Y - radial.CircleFocalPoint.Y;
                 _divisor = (radial.Radius * radial.Radius) - ((_axisX * _axisX) + (_axisY * _axisY));
                 break;
 
@@ -284,6 +290,20 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
         }
 
         _degenerate = _kind != GradientKind.Cone && !(_divisor > 0);
+        _isElliptic = false;
+        if (brush is RadialGradientBrush { IsElliptic: true } ellipse)
+        {
+            // The circles are stretched along y around the center: a position is brought back to its circle first
+            _isElliptic = true;
+            _ellipseCenterY = ellipse.Center.Y;
+            _ellipseRadiusX = ellipse.Radius;
+            _ellipseRadiusY = ellipse.RadiusY;
+            if (ellipse.Radius == 0 || ellipse.RadiusY == 0)
+            {
+                _degenerate = true;
+            }
+        }
+
         _isProjective = false;
         _hasTransform = !transform.IsIdentity;
         if (_hasTransform)
@@ -448,7 +468,7 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
                 parameters[i] = ((px * _axisX) + along) / _divisor;
             }
         }
-        else if (_kind == GradientKind.Radial && !_hasTransform && !_isProjective)
+        else if (_kind == GradientKind.Radial && !_hasTransform && !_isProjective && !_isElliptic)
         {
             var py = centerY - _originY;
             var squared = py * py;
@@ -550,8 +570,8 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private double GetUnspreadParameter(double centerX, double centerY)
     {
-        double px;
-        var py = centerY - _originY;
+        double x;
+        var y = centerY;
         if (_isProjective)
         {
             var w = _projectiveInverse.TransformW(centerX, centerY);
@@ -560,18 +580,27 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
             if (!(w > 0))
                 return double.NaN;
 
-            px = (_projectiveInverse.TransformX(centerX, centerY) / w) - _originX;
-            py = (_projectiveInverse.TransformY(centerX, centerY) / w) - _originY;
+            x = _projectiveInverse.TransformX(centerX, centerY) / w;
+            y = _projectiveInverse.TransformY(centerX, centerY) / w;
         }
         else if (_hasTransform)
         {
-            px = _inverse.TransformX(centerX, centerY) - _originX;
-            py = _inverse.TransformY(centerX, centerY) - _originY;
+            x = _inverse.TransformX(centerX, centerY);
+            y = _inverse.TransformY(centerX, centerY);
         }
         else
         {
-            px = centerX - _originX;
+            x = centerX;
         }
+
+        if (_isElliptic)
+        {
+            // Back from the ellipse to the circle it is stretched from
+            y = _ellipseCenterY + (((y - _ellipseCenterY) * _ellipseRadiusX) / _ellipseRadiusY);
+        }
+
+        var px = x - _originX;
+        var py = y - _originY;
 
         double t;
         switch (_kind)
@@ -620,7 +649,7 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
     /// those versions.
     /// </summary>
     private static bool IsFirstCircleInside(RadialGradientBrush radial)
-        => (radial.FocalPoint == radial.Center && radial.FocalRadius == 0) || radial.FocalPoint.DistanceTo(radial.Center) + radial.FocalRadius < radial.Radius;
+        => (radial.CircleFocalPoint == radial.Center && radial.FocalRadius == 0) || radial.CircleFocalPoint.DistanceTo(radial.Center) + radial.FocalRadius < radial.Radius;
 
     /// <summary>
     /// Gets the parameter of a position relative to the first circle of a cone: the largest <c>t</c> for which the

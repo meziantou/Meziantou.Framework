@@ -414,6 +414,26 @@ public abstract partial class Image
     }
 
     /// <summary>
+    /// Gives a color to the pixels of frames of this image whose color is within a tolerance of another one, in place
+    /// (every displayed frame and the poster when <paramref name="frames"/> is <see langword="null"/>). On failure, some
+    /// frames or rows may already be changed.
+    /// </summary>
+    internal void ReplaceColorFrames(ImageFrame[]? frames, Rgba64 color, Rgba64 replacement, double tolerance, CancellationToken cancellationToken)
+    {
+        Owner.EnsureCanModify("replace a color");
+        cancellationToken.ThrowIfCancellationRequested();
+
+        // The tolerance in 16-bit steps, rounded to nearest with ties upward
+        var steps = (int)Math.Floor((tolerance * ushort.MaxValue) + 0.5 + (1.0 / 1048576));
+        _metadata.RemoveStaleThumbnail();
+        foreach (var frame in frames ?? GetAllFrames())
+        {
+            using var lease = frame.GetStorage().AcquireLease();
+            frame.ReplaceColorPixels(lease, color, replacement, steps, cancellationToken);
+        }
+    }
+
+    /// <summary>
     /// Reduces the colors of frames of this image in place (every displayed frame and the poster when <paramref name="frames"/>
     /// is <see langword="null"/>). The working memory is charged to the scope of the image and rented before any pixel changes;
     /// afterward, on failure, some frames or rows may already be reduced.

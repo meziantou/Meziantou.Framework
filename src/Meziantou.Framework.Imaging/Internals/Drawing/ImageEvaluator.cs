@@ -1,5 +1,7 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 using Meziantou.Framework.Imaging.Drawing;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -621,6 +623,20 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
     /// <summary>Evaluates a run whose pixels all read the same two rows of the image.</summary>
     private void EvaluateRows(int y, int x, Span<Rgba64> samples)
     {
+        if (Avx.IsSupported)
+        {
+            EvaluateRows<VectorAccumulator>(y, x, samples);
+        }
+        else
+        {
+            EvaluateRows<Accumulator>(y, x, samples);
+        }
+    }
+
+    /// <summary>Evaluates a run whose pixels all read the same two rows of the image, with the sums of <typeparamref name="TAccumulator"/>.</summary>
+    private void EvaluateRows<TAccumulator>(int y, int x, Span<Rgba64> samples)
+        where TAccumulator : struct, IAccumulator
+    {
         var centerY = y + 0.5;
         var v = _inverse.TransformY(x + 0.5, centerY);
         Split(v, out var row, out var fy);
@@ -660,7 +676,7 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
                 continue;
             }
 
-            var accumulator = default(Accumulator);
+            var accumulator = default(TAccumulator);
             if (hasRow0)
             {
                 if (hasColumn0)
@@ -1096,6 +1112,7 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
         return roundedAlpha == 0 ? default : new Rgba64(Round(red / alpha), Round(green / alpha), Round(blue / alpha), roundedAlpha);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static ushort Round(double value)
     {
         var rounded = Math.Floor(value + RoundingOffset);
@@ -1106,6 +1123,7 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
     /// Gets the first of the two pixels around a coordinate of the image, in the coordinates of the frame, and the weight
     /// of the second one. Nearest sampling has one pixel, the one that contains the coordinate.
     /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void Split(double coordinate, out int index, out double fraction)
     {
         // Written so that a coordinate that is not a number is far away
@@ -1134,6 +1152,8 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
     /// <param name="mode">The wrap mode of the axis.</param>
     /// <param name="result">The row or the column, from the first one of the region.</param>
     /// <returns><see langword="false"/> when there is no pixel there: outside the region, without wrapping.</returns>
+    /// <remarks>Inlined in the loops over the pixels, where the row or the column is nearly always in the region.</remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool TryWrap(int index, int origin, int size, ImageWrapMode mode, out int result)
     {
         var offset = (long)index - origin;
@@ -1143,6 +1163,17 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
             return true;
         }
 
+        return TryWrapOutside(offset, size, mode, out result);
+    }
+
+    /// <summary>Brings a row or a column outside the region into it, by the wrap mode.</summary>
+    /// <param name="offset">The row or the column, from the first one of the region: outside the region.</param>
+    /// <param name="size">The height or the width of the region.</param>
+    /// <param name="mode">The wrap mode of the axis.</param>
+    /// <param name="result">The row or the column, from the first one of the region.</param>
+    /// <returns><see langword="false"/> when there is no pixel there: without wrapping.</returns>
+    private static bool TryWrapOutside(long offset, int size, ImageWrapMode mode, out int result)
+    {
         switch (mode)
         {
             case ImageWrapMode.Pad:
@@ -1282,14 +1313,23 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
     }
 
     /// <summary>The weighted sum of colors multiplied by their alpha.</summary>
+    internal interface IAccumulator
+    {
+        void Add(Rgba64 color, double weight);
+
+        Rgba64 ToColor();
+    }
+
+    /// <summary>The weighted sum of colors multiplied by their alpha.</summary>
     [StructLayout(LayoutKind.Auto)]
-    private struct Accumulator
+    internal struct Accumulator : IAccumulator
     {
         private double _red;
         private double _green;
         private double _blue;
         private double _alpha;
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Add(Rgba64 color, double weight)
         {
             var alpha = weight * color.A;
@@ -1299,6 +1339,7 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
             _alpha += alpha;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly Rgba64 ToColor()
         {
             var alpha = Round(_alpha);
@@ -1306,6 +1347,43 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
                 return default;
 
             return new Rgba64(Round(_red / _alpha), Round(_green / _alpha), Round(_blue / _alpha), alpha);
+        }
+    }
+
+    /// <summary>The sums of <see cref="Accumulator"/> as the lanes of one vector, (red, green, blue, alpha), with AVX.</summary>
+    /// <remarks>
+    /// Each lane is computed with the same products, sums, quotient and rounding as the field of <see cref="Accumulator"/>,
+    /// so the colors are the same, bit for bit. It is used where no call separates the additions: the upper half of the
+    /// vector would be saved and restored around each call.
+    /// </remarks>
+    internal struct VectorAccumulator : IAccumulator
+    {
+        private Vector256<double> _sums;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Add(Rgba64 color, double weight)
+        {
+            // The channels as doubles, the alpha replaced by 1: alpha * 1 is the alpha, exactly
+            var alpha = weight * color.A;
+            var channels = Avx.ConvertToVector256Double(Sse41.ConvertToVector128Int32(Vector128.CreateScalar(unsafe(Unsafe.BitCast<Rgba64, ulong>(color))).AsUInt16()));
+            _sums += Vector256.Create(alpha) * Avx.Blend(channels, Vector256.Create(1.0), 0b1000);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly Rgba64 ToColor()
+        {
+            var total = _sums.GetElement(3);
+            var alpha = Round(total);
+            if (alpha == 0)
+                return default;
+
+            // The sums are finite and not negative: clamping is the comparisons of Round
+            var rounded = Vector256.Floor((_sums / Vector256.Create(total)) + Vector256.Create(RoundingOffset));
+            rounded = Vector256.Min(Vector256.Max(rounded, Vector256<double>.Zero), Vector256.Create((double)ushort.MaxValue));
+            var values = Avx.ConvertToVector128Int32WithTruncation(rounded);
+            var color = unsafe(Unsafe.BitCast<ulong, Rgba64>(Sse41.PackUnsignedSaturate(values, values).AsUInt64().ToScalar()));
+            color.A = alpha;
+            return color;
         }
     }
 

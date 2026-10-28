@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 
-namespace Meziantou.Framework;
+namespace Meziantou.Framework.Hashing;
 
 internal sealed class BcryptImplementation
 {

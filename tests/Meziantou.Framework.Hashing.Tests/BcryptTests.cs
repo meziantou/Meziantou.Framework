@@ -1,4 +1,4 @@
-namespace Meziantou.Framework.Tests;
+namespace Meziantou.Framework.Hashing.Tests;
 
 public sealed class BcryptTests
 {

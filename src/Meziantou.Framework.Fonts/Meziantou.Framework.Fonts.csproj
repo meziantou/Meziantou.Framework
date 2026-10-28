@@ -16,6 +16,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The Adler-32 checksum of the tables of WOFF files -->
+    <ProjectReference Include="..\Meziantou.Framework.Hashing\Meziantou.Framework.Hashing.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!--
       The metrics of the 14 standard fonts of PDF, as Adobe published them in Core14_AFMs.zip (see THIRD-PARTY-NOTICES.md):
       their license forbids distributing the AFM files without MustRead.html

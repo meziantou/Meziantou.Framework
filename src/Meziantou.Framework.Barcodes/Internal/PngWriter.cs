@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using System.IO.Compression;
+using Meziantou.Framework.Hashing;
 
 namespace Meziantou.Framework.Barcodes.Internal;
 
@@ -14,7 +15,6 @@ internal static class PngWriter
     private static readonly byte[] TrnsChunkType = [116, 82, 78, 83];
     private static readonly byte[] IdatChunkType = [73, 68, 65, 84];
     private static readonly byte[] IendChunkType = [73, 69, 78, 68];
-    private static readonly uint[] Crc32Table = InitializeCrc32Table();
 
     /// <summary>
     /// Writes a two-colour indexed PNG at one bit per pixel.
@@ -110,44 +110,8 @@ internal static class PngWriter
         stream.Write(chunkType);
         stream.Write(data);
 
-        var crc = ComputeCrc32(chunkType, data);
+        var crc = Crc32.Append(Crc32.Compute(chunkType), data);
         BinaryPrimitives.WriteUInt32BigEndian(uintBuffer, crc);
         stream.Write(uintBuffer);
-    }
-
-    private static uint ComputeCrc32(ReadOnlySpan<byte> chunkType, ReadOnlySpan<byte> data)
-    {
-        var crc = uint.MaxValue;
-        crc = UpdateCrc32(crc, chunkType);
-        crc = UpdateCrc32(crc, data);
-
-        return ~crc;
-    }
-
-    private static uint UpdateCrc32(uint crc, ReadOnlySpan<byte> data)
-    {
-        foreach (var value in data)
-        {
-            crc = Crc32Table[(int)((crc ^ value) & 0xFF)] ^ (crc >> 8);
-        }
-
-        return crc;
-    }
-
-    private static uint[] InitializeCrc32Table()
-    {
-        var table = new uint[256];
-        for (uint index = 0; index < table.Length; index++)
-        {
-            var crc = index;
-            for (var bit = 0; bit < 8; bit++)
-            {
-                crc = (crc & 1) == 0 ? (crc >> 1) : (0xEDB88320u ^ (crc >> 1));
-            }
-
-            table[index] = crc;
-        }
-
-        return table;
     }
 }

@@ -1,4 +1,4 @@
-namespace Meziantou.Framework;
+namespace Meziantou.Framework.Hashing;
 
 /// <summary>
 /// Provides helper methods to hash and verify passwords using BCrypt.

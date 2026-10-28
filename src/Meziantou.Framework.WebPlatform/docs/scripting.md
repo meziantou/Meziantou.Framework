@@ -426,7 +426,7 @@ everywhere (SHA-1/SHA-2, HMAC, HKDF, PBKDF2, the AES block cipher, the RSA key g
 ECDH, ChaCha20-Poly1305). The other ones are managed implementations: the AES-CTR and AES-GCM modes (any IV length and
 the short tags), AES-KW (RFC 3394), AES-OCB, the RSA padding schemes (OAEP labels and any PSS salt length), the NIST curve
 point validation and decompression, the CFRG curves, the Keccak family, ML-KEM, ML-DSA, the hybrid KEMs, BLAKE2b and
-Argon2. They are not audited, and some of them are not constant-time (e.g. the RSA operations use `BigInteger`): do not use
+Argon2 (the Keccak family, BLAKE2b and Argon2 come from `Meziantou.Framework.Hashing`). They are not audited, and some of them are not constant-time (e.g. the RSA operations use `BigInteger`): do not use
 them to protect secrets against an attacker who can measure the time of the operations.
 
 ### WebAssembly

@@ -8,4 +8,9 @@
     <PackageTags>metadata, tags, id3, mp3, flac, ogg, mp4</PackageTags>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- The CRC-32 of Ogg pages -->
+    <ProjectReference Include="..\Meziantou.Framework.Hashing\Meziantou.Framework.Hashing.csproj" />
+  </ItemGroup>
+
 </Project>

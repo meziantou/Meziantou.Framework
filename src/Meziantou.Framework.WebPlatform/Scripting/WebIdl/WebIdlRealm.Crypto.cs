@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using Meziantou.Framework.Hashing;
 using Meziantou.Framework.WebPlatform.Cryptography;
 using Meziantou.Framework.WebPlatform.Dom;
 
@@ -222,11 +223,11 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
                 : AesOcb.Decrypt(CryptoBytes(args[1]), CryptoBytes(args[2]), CryptoBytes(args[3]), CryptoBytes(args[5]), (int)Adapter.ToNumber(args[4]))));
             Define("argon2", 10, (_, args) => CryptoResult(Argon2.DeriveBytes(
                 Adapter.ToString(args[0]) switch { "Argon2d" => Argon2Type.Argon2d, "Argon2i" => Argon2Type.Argon2i, _ => Argon2Type.Argon2id },
-                CryptoBytes(args[1]), CryptoBytes(args[2]), ToInt32(args[3]), ToInt32(args[4]), ToInt32(args[5]), ToInt32(args[6]), CryptoBytes(args[7]), CryptoBytes(args[8]), ToInt32(args[9]))));
+                CryptoBytes(args[1]), CryptoBytes(args[2]), ToInt32(args[3]), ToInt32(args[4]), ToInt32(args[5]), outputLength: ToInt32(args[9]), CryptoBytes(args[7]), CryptoBytes(args[8]), (Argon2Version)ToInt32(args[6]))));
 
             // SHA-3, cSHAKE, TurboSHAKE, KangarooTwelve, KMAC and ChaCha20-Poly1305 (https://wicg.github.io/webcrypto-modern-algos/)
             Define("xof", 6, (_, args) => CryptoResult(Hashes.ExtendableOutput(Adapter.ToString(args[0]), CryptoBytes(args[1]), ToInt32(args[2]), CryptoBytes(args[3]), CryptoBytes(args[4]), (byte)Adapter.ToNumber(args[5]))));
-            Define("kmac", 5, (_, args) => CryptoResult(Keccak.Kmac(Adapter.ToString(args[0]) == "KMAC128" ? 128 : 256, CryptoBytes(args[1]), CryptoBytes(args[2]), ToInt32(args[3]), CryptoBytes(args[4]))));
+            Define("kmac", 5, (_, args) => CryptoResult(Kmac.HashData(Adapter.ToString(args[0]) == "KMAC128" ? 128 : 256, CryptoBytes(args[1]), CryptoBytes(args[2]), ToInt32(args[3]), CryptoBytes(args[4]))));
             Define("chacha20Poly1305", 5, (_, args) =>
             {
                 var key = CryptoBytes(args[1]);

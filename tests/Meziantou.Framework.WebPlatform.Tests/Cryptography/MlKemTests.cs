@@ -138,5 +138,5 @@ public sealed class MlKemTests
         Assert.Throws<ArgumentException>(() => MlKem.GenerateKeyFromSeed(512, new byte[32]));
     }
 
-    private static string Sha3(byte[] data) => Convert.ToHexStringLower(Keccak.Sha3(256, data));
+    private static string Sha3(byte[] data) => Convert.ToHexStringLower(Hashing.Sha3.HashData(256, data));
 }

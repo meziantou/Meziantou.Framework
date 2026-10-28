@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using Meziantou.Framework.Hashing;
 using Meziantou.Framework.MediaTags.Internals;
 
 namespace Meziantou.Framework.MediaTags.Formats.Ogg;

@@ -1,6 +1,7 @@
 using System.Buffers.Binary;
 using System.Text.Unicode;
 using Meziantou.Framework.Imaging.Metadata;
+using Meziantou.Framework.Hashing;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -223,7 +224,7 @@ internal sealed class PngStructureParser : ImageParser<ImageInfo>
 
                     // Streamed chunk (IDAT, fdAT, skipped ancillary): fdAT starts with its 4-byte sequence number
                     _chunkType = type;
-                    _runningCrc = Crc32.Update(Crc32.Initial, remaining.Slice(4, 4));
+                    _runningCrc = Crc32.Compute(remaining.Slice(4, 4));
                     _chunkRemaining = length;
                     if (type == ChunkFdat && _deliverChunkData)
                     {
@@ -231,7 +232,7 @@ internal sealed class PngStructureParser : ImageParser<ImageInfo>
                             return ParseStatus.NeedMoreData(12);
 
                         OnFrameDataSequence(BinaryPrimitives.ReadUInt32BigEndian(remaining[8..]));
-                        _runningCrc = Crc32.Update(_runningCrc, remaining.Slice(8, 4));
+                        _runningCrc = Crc32.Append(_runningCrc, remaining.Slice(8, 4));
                         _chunkRemaining -= 4;
                         consumed += 12;
                     }
@@ -256,7 +257,7 @@ internal sealed class PngStructureParser : ImageParser<ImageInfo>
                         return ParseStatus.NeedMoreData(1);
 
                     var piece = remaining[..(int)Math.Min(remaining.Length, _chunkRemaining)];
-                    _runningCrc = Crc32.Update(_runningCrc, piece);
+                    _runningCrc = Crc32.Append(_runningCrc, piece);
                     if (_deliverChunkData && !piece.IsEmpty)
                     {
                         _observer?.OnImageData(piece);
@@ -276,7 +277,7 @@ internal sealed class PngStructureParser : ImageParser<ImageInfo>
                     if (remaining.Length < 4)
                         return ParseStatus.NeedMoreData(4);
 
-                    if (Crc32.Finish(_runningCrc) != BinaryPrimitives.ReadUInt32BigEndian(remaining))
+                    if (_runningCrc != BinaryPrimitives.ReadUInt32BigEndian(remaining))
                         throw CrcMismatch(_chunkType);
 
                     consumed += 4;

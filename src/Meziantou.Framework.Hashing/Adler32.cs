@@ -3,27 +3,24 @@ using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 
-// Compiled into Meziantou.Framework.Fonts and Meziantou.Framework.Imaging, internal to each. The copy of Imaging is in
-// its namespace: its tests see the internals of both assemblies, and find that copy first.
-#if MEZIANTOU_FRAMEWORK_IMAGING
-namespace Meziantou.Framework.Imaging;
-#else
-namespace Meziantou.Framework.Fonts;
-#endif
+namespace Meziantou.Framework.Hashing;
 
-/// <summary>The Adler-32 checksum of RFC 1950 (zlib): the checksum of the tables of a WOFF file, and of the zlib streams of the image codecs.</summary>
+/// <summary>Computes the Adler-32 checksum of RFC 1950: the checksum of zlib streams.</summary>
 /// <remarks>
+/// <para>The implementation uses the vector instructions of the processor (AdvSimd, AVX2, SSSE3) when they are available.</para>
+/// <para>
 /// The vector paths sum whole blocks of <c>w</c> bytes (16 or 32) in vector lanes. For a run of <c>n</c> bytes <c>x0..x(n-1)</c>,
 /// RFC 1950 gives <c>A = A0 + sum x</c> and <c>B = B0 + n A0 + sum (n - j) x_j</c>. Split into blocks <c>m = 0..k-1</c> of sums
 /// <c>S_m</c>, the weight of byte <c>i</c> of block <c>m</c> is <c>w (k - 1 - m) + (w - i)</c>, so
 /// <c>B = B0 + n A0 + w sum_m (S_0 + ... + S_(m-1)) + sum_m sum_i (w - i) x_(m,i)</c>: the lanes accumulate the block sums, their
 /// running prefix and the in-block weighted sums. Runs are short enough for 32-bit lanes (and for the 16-bit column sums of
 /// <see cref="UpdateAdvSimd"/>); every path equals the byte-at-a-time reference (<see cref="UpdateScalar"/>).
+/// </para>
 /// </remarks>
-internal static class Adler32
+public static class Adler32
 {
-    /// <summary>Gets the initial running value of <see cref="Update"/>.</summary>
-    public const uint Initial = 1;
+    // The Adler-32 of no data
+    private const uint Initial = 1;
 
     private const uint Modulus = 65521;
 
@@ -31,11 +28,20 @@ internal static class Adler32
     // the 16-bit column sums of the AdvSimd path below 172 * 255 = 43,860
     private const int RunLength = 5504;
 
-    /// <summary>Computes the Adler-32 checksum of RFC 1950.</summary>
+    /// <summary>Computes the Adler-32 checksum of data.</summary>
+    /// <param name="data">The data.</param>
+    /// <returns>The Adler-32 checksum of <paramref name="data"/>; 1 when it is empty.</returns>
     public static uint Compute(ReadOnlySpan<byte> data) => Update(Initial, data);
 
-    /// <summary>Updates a running Adler-32 checksum (RFC 1950) with more bytes; start from <see cref="Initial"/>.</summary>
-    public static uint Update(uint adler, ReadOnlySpan<byte> data)
+    /// <summary>Computes the Adler-32 checksum of data that follows other data, from the checksum of the other data.</summary>
+    /// <param name="checksum">The Adler-32 checksum of the preceding data: 1 when there is none.</param>
+    /// <param name="data">The data that follows.</param>
+    /// <returns>The Adler-32 checksum of the preceding data followed by <paramref name="data"/>.</returns>
+    /// <remarks><c>Append(Compute(a), b)</c> is <c>Compute(a + b)</c>: use it to compute the checksum of data received in several parts.</remarks>
+    public static uint Append(uint checksum, ReadOnlySpan<byte> data) => Update(checksum, data);
+
+    /// <summary>Updates a running Adler-32 checksum (RFC 1950) with more bytes; start from 1.</summary>
+    internal static uint Update(uint adler, ReadOnlySpan<byte> data)
     {
         if (data.Length < 64)
             return UpdateScalar(adler, data);
@@ -59,7 +65,7 @@ internal static class Adler32
     /// The Arm path: 32 bytes per step. Pairwise widening adds give the block sums, and each byte position keeps a 16-bit
     /// column sum whose weight is applied once per run with widening multiply-adds.
     /// </summary>
-    public static uint UpdateAdvSimd(uint adler, ReadOnlySpan<byte> data)
+    internal static uint UpdateAdvSimd(uint adler, ReadOnlySpan<byte> data)
     {
         var a = adler & 0xFFFF;
         var b = adler >> 16;
@@ -105,7 +111,7 @@ internal static class Adler32
     }
 
     /// <summary>The AVX2 path: 32 bytes per step, summed by <c>vpsadbw</c> and weighted by <c>vpmaddubsw</c> + <c>vpmaddwd</c>.</summary>
-    public static uint UpdateAvx2(uint adler, ReadOnlySpan<byte> data)
+    internal static uint UpdateAvx2(uint adler, ReadOnlySpan<byte> data)
     {
         var a = adler & 0xFFFF;
         var b = adler >> 16;
@@ -134,7 +140,7 @@ internal static class Adler32
     }
 
     /// <summary>The SSSE3 path: 32 bytes per step, summed by <c>psadbw</c> and weighted by <c>pmaddubsw</c> + <c>pmaddwd</c>.</summary>
-    public static uint UpdateSsse3(uint adler, ReadOnlySpan<byte> data)
+    internal static uint UpdateSsse3(uint adler, ReadOnlySpan<byte> data)
     {
         var a = adler & 0xFFFF;
         var b = adler >> 16;
@@ -168,7 +174,7 @@ internal static class Adler32
     }
 
     /// <summary>The portable path of the platforms without a dedicated path: 16 bytes per step, widened to 32-bit lanes.</summary>
-    public static uint UpdateVector128(uint adler, ReadOnlySpan<byte> data)
+    internal static uint UpdateVector128(uint adler, ReadOnlySpan<byte> data)
     {
         var a = adler & 0xFFFF;
         var b = adler >> 16;
@@ -203,7 +209,7 @@ internal static class Adler32
     }
 
     /// <summary>The byte-at-a-time reference of <see cref="Update"/>.</summary>
-    public static uint UpdateScalar(uint adler, ReadOnlySpan<byte> data)
+    internal static uint UpdateScalar(uint adler, ReadOnlySpan<byte> data)
     {
         // 5552 is the largest block for which the sums cannot overflow 32 bits (RFC 1950)
         const int BlockSize = 5552;

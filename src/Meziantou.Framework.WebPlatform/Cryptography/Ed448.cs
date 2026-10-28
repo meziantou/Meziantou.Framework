@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Numerics;
 using System.Security.Cryptography;
+using Meziantou.Framework.Hashing;
 
 namespace Meziantou.Framework.WebPlatform.Cryptography;
 
@@ -135,7 +136,7 @@ internal static class Ed448
     // (RFC 8032 section 5.2.5)
     private static byte[] ExpandPrivateKey(ReadOnlySpan<byte> privateKey)
     {
-        var hash = Keccak.Shake(256, privateKey, HashSize);
+        var hash = Shake.HashData(256, privateKey, HashSize);
         hash[0] &= 252;
         hash[56] = 0;
         hash[55] |= 128;
@@ -145,15 +146,15 @@ internal static class Ed448
     // SHAKE256(dom4(0, context) || first || second || message, 114) with phflag = 0 (pure Ed448)
     private static byte[] HashWithDomain(ReadOnlySpan<byte> context, ReadOnlySpan<byte> first, ReadOnlySpan<byte> second, ReadOnlySpan<byte> message)
     {
-        var shake = KeccakSponge.CreateShake256();
-        shake.Absorb(Dom4Prefix);
-        shake.Absorb([0, (byte)context.Length]);
-        shake.Absorb(context);
-        shake.Absorb(first);
-        shake.Absorb(second);
-        shake.Absorb(message);
+        var shake = new Shake(256);
+        shake.AppendData(Dom4Prefix);
+        shake.AppendData([0, (byte)context.Length]);
+        shake.AppendData(context);
+        shake.AppendData(first);
+        shake.AppendData(second);
+        shake.AppendData(message);
         var result = new byte[HashSize];
-        shake.Squeeze(result);
+        shake.Read(result);
         return result;
     }
 

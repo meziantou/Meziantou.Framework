@@ -21,7 +21,6 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.AtlassianDataFormat\Meziantou.Framework.AtlassianDataFormat.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Avatar\Meziantou.Framework.Avatar.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Barcodes\Meziantou.Framework.Barcodes.csproj" />
-    <ProjectReference Include="..\..\src\Meziantou.Framework.Bcrypt\Meziantou.Framework.Bcrypt.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Bencode\Meziantou.Framework.Bencode.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.BloomFilters\Meziantou.Framework.BloomFilters.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.ByteSize\Meziantou.Framework.ByteSize.csproj" />
@@ -37,6 +36,7 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.Fonts\Meziantou.Framework.Fonts.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.FullPath\Meziantou.Framework.FullPath.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Globbing\Meziantou.Framework.Globbing.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Hashing\Meziantou.Framework.Hashing.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Http\Meziantou.Framework.Http.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Http.Caching\Meziantou.Framework.Http.Caching.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Http.Caching.InMemory\Meziantou.Framework.Http.Caching.InMemory.csproj" />
@@ -103,7 +103,6 @@
     <TrimmerRootAssembly Include="Meziantou.Framework.AtlassianDataFormat" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Avatar" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Barcodes" />
-    <TrimmerRootAssembly Include="Meziantou.Framework.Bcrypt" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Bencode" />
     <TrimmerRootAssembly Include="Meziantou.Framework.BloomFilters" />
     <TrimmerRootAssembly Include="Meziantou.Framework.ByteSize" />
@@ -119,6 +118,7 @@
     <TrimmerRootAssembly Include="Meziantou.Framework.Fonts" />
     <TrimmerRootAssembly Include="Meziantou.Framework.FullPath" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Globbing" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.Hashing" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Http" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Http.Caching" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Http.Caching.InMemory" />

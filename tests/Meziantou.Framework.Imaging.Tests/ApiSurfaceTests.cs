@@ -387,11 +387,12 @@ public sealed class ApiSurfaceTests
     [Fact]
     public void LibraryOnlyReferencesFrameworkAssemblies()
     {
-        // The package is fully managed: no native or third-party runtime dependency. Its dependencies are two packages of
-        // this repository: Unicode, for the text algorithms of text layout, and Fonts, the font reader and the shaper.
+        // The package is fully managed: no native or third-party runtime dependency. Its dependencies are three packages of
+        // this repository: Unicode, for the text algorithms of text layout, Fonts, the font reader and the shaper, and
+        // Hashing, for the CRC-32 of PNG and the Adler-32 of zlib.
         // 'netstandard' is a framework facade that code-coverage instrumentation (CI) may add to the instrumented assembly.
         Assert.All(LibraryAssembly.GetReferencedAssemblies(), name => Assert.True(
-            name.Name!.StartsWith("System", StringComparison.Ordinal) || name.Name.StartsWith("Microsoft.", StringComparison.Ordinal) || name.Name is "netstandard" or "Meziantou.Framework.Unicode" or "Meziantou.Framework.Fonts",
+            name.Name!.StartsWith("System", StringComparison.Ordinal) || name.Name.StartsWith("Microsoft.", StringComparison.Ordinal) || name.Name is "netstandard" or "Meziantou.Framework.Unicode" or "Meziantou.Framework.Fonts" or "Meziantou.Framework.Hashing",
             $"Unexpected dependency: {name}"));
     }
 

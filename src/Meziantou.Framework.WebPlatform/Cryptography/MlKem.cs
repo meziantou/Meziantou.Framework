@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using Meziantou.Framework.Hashing;
 
 namespace Meziantou.Framework.WebPlatform.Cryptography;
 
@@ -23,6 +24,9 @@ internal static class MlKem
 
     private const int N = 256;
     private const int Q = 3329;
+
+    // The rate of SHAKE128 (FIPS 202 §6.2): the output is read one block at a time
+    private const int Shake128BlockSize = 168;
 
     // The coefficient bytes of a polynomial encoded with ByteEncode_12 (FIPS 203 §4.2.1)
     private const int EncodedPolynomialLength = 384;
@@ -58,7 +62,7 @@ internal static class MlKem
 
         // dk = dk_PKE || ek || H(ek) || z
         encapsulationKey.CopyTo(decapsulationKey.AsSpan(EncodedPolynomialLength * k));
-        Keccak.Sha3(256, encapsulationKey, decapsulationKey.AsSpan((2 * EncodedPolynomialLength * k) + 32, 32));
+        Sha3.HashData(256, encapsulationKey, decapsulationKey.AsSpan((2 * EncodedPolynomialLength * k) + 32, 32));
         seed[32..].CopyTo(decapsulationKey.AsSpan((2 * EncodedPolynomialLength * k) + 64));
         return (encapsulationKey, decapsulationKey);
     }
@@ -91,9 +95,9 @@ internal static class MlKem
         // (K, r) = G(m || H(ek))
         Span<byte> input = stackalloc byte[64];
         message.CopyTo(input);
-        Keccak.Sha3(256, encapsulationKey, input[32..]);
+        Sha3.HashData(256, encapsulationKey, input[32..]);
         Span<byte> keyAndRandomness = stackalloc byte[64];
-        Keccak.Sha3(512, input, keyAndRandomness);
+        Sha3.HashData(512, input, keyAndRandomness);
 
         var ciphertext = new byte[parameters.CiphertextLength];
         Encrypt(parameters, encapsulationKey, message, keyAndRandomness[32..], ciphertext);
@@ -125,15 +129,15 @@ internal static class MlKem
         Decrypt(parameters, decryptionKey, ciphertext, input[..32]);
         hash.CopyTo(input[32..]);
         Span<byte> keyAndRandomness = stackalloc byte[64];
-        Keccak.Sha3(512, input, keyAndRandomness);
+        Sha3.HashData(512, input, keyAndRandomness);
 
         // K̄ = J(z || c)
         Span<byte> rejectionKey = stackalloc byte[SharedKeyLength];
-        var sponge = KeccakSponge.CreateShake256();
-        sponge.Absorb(z);
-        sponge.Absorb(ciphertext);
-        sponge.Squeeze(rejectionKey);
-        sponge.Clear();
+        var sponge = new Shake(256);
+        sponge.AppendData(z);
+        sponge.AppendData(ciphertext);
+        sponge.Read(rejectionKey);
+        sponge.Reset();
 
         // c' = K-PKE.Encrypt(ek_PKE, m', r'); if c ≠ c' then K' = K̄ (implicit rejection, in constant time)
         var reencrypted = new byte[parameters.CiphertextLength];
@@ -201,7 +205,7 @@ internal static class MlKem
 
         var k = parameters.K;
         Span<byte> hash = stackalloc byte[32];
-        Keccak.Sha3(256, decapsulationKey.Slice(EncodedPolynomialLength * k, (EncodedPolynomialLength * k) + 32), hash);
+        Sha3.HashData(256, decapsulationKey.Slice(EncodedPolynomialLength * k, (EncodedPolynomialLength * k) + 32), hash);
         return CryptographicOperations.FixedTimeEquals(hash, decapsulationKey.Slice((2 * EncodedPolynomialLength * k) + 32, 32));
     }
 
@@ -215,7 +219,7 @@ internal static class MlKem
         d.CopyTo(input);
         input[32] = (byte)k;
         Span<byte> rhoSigma = stackalloc byte[64];
-        Keccak.Sha3(512, input, rhoSigma);
+        Sha3.HashData(512, input, rhoSigma);
         var rho = rhoSigma[..32];
         var sigma = rhoSigma[32..];
 
@@ -362,17 +366,17 @@ internal static class MlKem
     /// <summary>SampleNTT(ρ || x || y) (FIPS 203 §4.2.2, algorithm 7): rejection sampling from SHAKE128.</summary>
     private static void SampleNtt(ReadOnlySpan<byte> rho, byte x, byte y, Span<int> output)
     {
-        var sponge = KeccakSponge.CreateShake128();
-        sponge.Absorb(rho);
-        sponge.Absorb(x);
-        sponge.Absorb(y);
+        var sponge = new Shake(128);
+        sponge.AppendData(rho);
+        sponge.AppendData(x);
+        sponge.AppendData(y);
 
         // A block of SHAKE128 contains 56 groups of 3 bytes
-        Span<byte> block = stackalloc byte[KeccakSponge.Rate128];
+        Span<byte> block = stackalloc byte[Shake128BlockSize];
         var j = 0;
         while (true)
         {
-            sponge.Squeeze(block);
+            sponge.Read(block);
             for (var i = 0; i < block.Length; i += 3)
             {
                 var d1 = block[i] | ((block[i + 1] & 0x0F) << 8);
@@ -402,11 +406,11 @@ internal static class MlKem
     {
         Span<byte> bytes = stackalloc byte[64 * 3];
         bytes = bytes[..(64 * eta)];
-        var sponge = KeccakSponge.CreateShake256();
-        sponge.Absorb(seed);
-        sponge.Absorb(nonce);
-        sponge.Squeeze(bytes);
-        sponge.Clear();
+        var sponge = new Shake(256);
+        sponge.AppendData(seed);
+        sponge.AppendData(nonce);
+        sponge.Read(bytes);
+        sponge.Reset();
 
         var bit = 0;
         for (var i = 0; i < N; i++)

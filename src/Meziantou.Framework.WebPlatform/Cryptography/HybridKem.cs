@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using Meziantou.Framework.Hashing;
 
 namespace Meziantou.Framework.WebPlatform.Cryptography;
 
@@ -194,7 +195,7 @@ internal static class HybridKem
             throw new ArgumentException("The seed must be 32 bytes long.", nameof(seed));
 
         Span<byte> fullSeed = stackalloc byte[MlKem.SeedLength + instance.Group.SeedLength];
-        Keccak.Shake(256, seed, fullSeed);
+        Shake.HashData(256, seed, fullSeed);
         try
         {
             var (encapsulationKeyPq, decapsulationKeyPq) = MlKem.GenerateKeyFromSeed(instance.MlKemParameterSet, fullSeed[..MlKem.SeedLength]);
@@ -227,7 +228,7 @@ internal static class HybridKem
         offset += encapsulationKeyT.Length;
         instance.Label.CopyTo(input[offset..]);
 
-        var result = Keccak.Sha3(256, input);
+        var result = Sha3.HashData(256, input);
         CryptographicOperations.ZeroMemory(input);
         return result;
     }

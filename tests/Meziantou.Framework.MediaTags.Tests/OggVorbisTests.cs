@@ -210,7 +210,7 @@ public sealed class OggVorbisTests
             Assert.NotEmpty(pages);
             foreach (var page in pages)
             {
-                Assert.Equal(page.StoredChecksum, Meziantou.Framework.MediaTags.Internals.OggCrc32.Compute(page.BytesWithZeroedChecksum));
+                Assert.Equal(page.StoredChecksum, Meziantou.Framework.Hashing.OggCrc32.Compute(page.BytesWithZeroedChecksum));
             }
         }
         finally

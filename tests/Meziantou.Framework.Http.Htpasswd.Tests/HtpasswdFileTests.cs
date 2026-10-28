@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using Meziantou.Framework.Hashing;
 
 namespace Meziantou.Framework.Http.Tests;
 

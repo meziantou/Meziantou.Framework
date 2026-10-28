@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace Meziantou.Framework;
+namespace Meziantou.Framework.Hashing;
 
 internal static class EncodingExtensions
 {

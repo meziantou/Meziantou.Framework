@@ -1,4 +1,4 @@
-namespace Meziantou.Framework;
+namespace Meziantou.Framework.Hashing;
 
 /// <summary>Represents supported BCrypt hash revisions.</summary>
 public enum BcryptVersion

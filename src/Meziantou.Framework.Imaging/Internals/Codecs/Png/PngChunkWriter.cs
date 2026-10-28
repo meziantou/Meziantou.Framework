@@ -1,5 +1,6 @@
 using System.Buffers;
 using System.Buffers.Binary;
+using Meziantou.Framework.Hashing;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -64,7 +65,7 @@ internal static class PngChunkWriter
         var header = output.GetSpan(8);
         BinaryPrimitives.WriteUInt32BigEndian(header, (uint)length);
         BinaryPrimitives.WriteUInt32BigEndian(header[4..], type);
-        var crc = Crc32.Update(Crc32.Initial, header.Slice(4, 4));
+        var crc = Crc32.Compute(header.Slice(4, 4));
         output.Advance(8);
         return crc;
     }
@@ -77,7 +78,7 @@ internal static class PngChunkWriter
 
         data.CopyTo(output.GetSpan(data.Length));
         output.Advance(data.Length);
-        crc = Crc32.Update(crc, data);
+        crc = Crc32.Append(crc, data);
     }
 
     /// <summary>Writes one byte of the chunk data.</summary>
@@ -86,7 +87,7 @@ internal static class PngChunkWriter
     /// <summary>Writes the CRC that ends the chunk.</summary>
     public static void End(IBufferWriter<byte> output, uint crc)
     {
-        BinaryPrimitives.WriteUInt32BigEndian(output.GetSpan(4), Crc32.Finish(crc));
+        BinaryPrimitives.WriteUInt32BigEndian(output.GetSpan(4), crc);
         output.Advance(4);
     }
 }

@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using System.IO.Compression;
+using Meziantou.Framework.Hashing;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -61,7 +62,7 @@ internal sealed class PngImageDataDecoder : IDisposable
     private long _decodedScanlines;
     private bool _done;
     private bool _firstScanlineOfPass;
-    private uint _adler = Adler32.Initial;
+    private uint _adler = Adler32.Compute([]);
     private long _compressedLength;
     private uint _trailer;
 
@@ -327,7 +328,7 @@ internal sealed class PngImageDataDecoder : IDisposable
             throw Invalid("The zlib datastream of the PNG image data is invalid.", exception);
         }
 
-        _adler = Adler32.Update(_adler, destination[..read]);
+        _adler = Adler32.Append(_adler, destination[..read]);
         return read;
     }
 }

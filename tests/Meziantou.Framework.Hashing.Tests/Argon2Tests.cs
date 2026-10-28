@@ -1,9 +1,8 @@
-using System.Text;
-using Meziantou.Framework.WebPlatform.Cryptography;
+using System.Security.Cryptography;
 
-namespace Meziantou.Framework.WebPlatform.Tests.Cryptography;
+namespace Meziantou.Framework.Hashing.Tests;
 
-// Argon2 (RFC 9106), used by the Argon2d, Argon2i and Argon2id algorithms (https://wicg.github.io/webcrypto-modern-algos/#argon2)
+// Argon2 (RFC 9106)
 public sealed class Argon2Tests
 {
     // https://www.rfc-editor.org/rfc/rfc9106#section-5, also in WPT WebCryptoAPI/derive_bits_keys/argon2_vectors.js
@@ -17,7 +16,7 @@ public sealed class Argon2Tests
         var nonce = Enumerable.Repeat((byte)0x02, 16).ToArray();
         var secret = Enumerable.Repeat((byte)0x03, 8).ToArray();
         var associatedData = Enumerable.Repeat((byte)0x04, 12).ToArray();
-        var result = Argon2.DeriveBytes(Enum.Parse<Argon2Type>(type), password, nonce, parallelism: 4, memoryKiB: 32, passes: 3, Argon2.Version13, secret, associatedData, outputLength: 32);
+        var result = Argon2.DeriveBytes(Enum.Parse<Argon2Type>(type), password, nonce, parallelism: 4, memorySizeInKiB: 32, passes: 3, outputLength: 32, secret, associatedData);
         Assert.Equal(expected, Convert.ToHexStringLower(result));
     }
 
@@ -34,7 +33,7 @@ public sealed class Argon2Tests
     [InlineData("Argon2id", 0x13, 1, 8, 1, "", "", 4, "6b7a947d")]
     public void DeriveBytes_OpenSsl(string type, int version, int parallelism, int memoryKiB, int passes, string secret, string associatedData, int outputLength, string expected)
     {
-        var result = Argon2.DeriveBytes(Enum.Parse<Argon2Type>(type), "password"u8, "somesalt"u8, parallelism, memoryKiB, passes, version, Encoding.ASCII.GetBytes(secret), Encoding.ASCII.GetBytes(associatedData), outputLength);
+        var result = Argon2.DeriveBytes(Enum.Parse<Argon2Type>(type), "password"u8, "somesalt"u8, parallelism, memoryKiB, passes, outputLength, Encoding.ASCII.GetBytes(secret), Encoding.ASCII.GetBytes(associatedData), (Argon2Version)version);
         Assert.Equal(expected, Convert.ToHexStringLower(result));
     }
 
@@ -48,20 +47,51 @@ public sealed class Argon2Tests
     [InlineData(1, -1, 1, 0x13, 32)]
     public void DeriveBytes_InvalidParameters_Throws(int parallelism, int memoryKiB, int passes, int version, int outputLength)
     {
-        Assert.ThrowsAny<ArgumentException>(() => Argon2.DeriveBytes(Argon2Type.Argon2id, "password"u8, "somesalt"u8, parallelism, memoryKiB, passes, version, [], [], outputLength));
+        Assert.Throws<ArgumentOutOfRangeException>(() => Argon2.DeriveBytes(Argon2Type.Argon2id, "password"u8, "somesalt"u8, parallelism, memoryKiB, passes, outputLength, [], [], (Argon2Version)version));
     }
 
     [Fact]
     public void DeriveBytes_InvalidType_Throws()
     {
-        Assert.ThrowsAny<ArgumentException>(() => Argon2.DeriveBytes((Argon2Type)3, "password"u8, "somesalt"u8, 1, 8, 1, Argon2.Version13, [], [], 32));
+        Assert.Throws<ArgumentOutOfRangeException>("type", () => Argon2.DeriveBytes((Argon2Type)3, "password"u8, "somesalt"u8, 1, 8, 1, 32));
+    }
+
+    [Fact]
+    public void Argon2_Usage()
+    {
+        #region Argon2_Usage
+        // A random salt of 16 bytes, stored next to the hash
+        var salt = RandomNumberGenerator.GetBytes(16);
+
+        // RFC 9106 section 4: Argon2id with 64 MiB of memory, 3 passes and 4 lanes
+        var hash = Argon2.DeriveBytes(Argon2Type.Argon2id, "my password"u8, salt, parallelism: 4, memorySizeInKiB: 64 * 1024, passes: 3, outputLength: 32);
+
+        // To verify a password, compute the hash with the same parameters and compare in constant time
+        var other = Argon2.DeriveBytes(Argon2Type.Argon2id, "my password"u8, salt, parallelism: 4, memorySizeInKiB: 64 * 1024, passes: 3, outputLength: 32);
+        Assert.True(CryptographicOperations.FixedTimeEquals(hash, other));
+        #endregion
+    }
+
+    [Fact]
+    public void DeriveBytes_Destination_MatchesTheArrayOverload()
+    {
+        var expected = Argon2.DeriveBytes(Argon2Type.Argon2i, "password"u8, "somesalt"u8, 1, 300, 3, 65, "key"u8, "data"u8, Argon2Version.Version13);
+        var destination = new byte[65];
+        Argon2.DeriveBytes(Argon2Type.Argon2i, "password"u8, "somesalt"u8, 1, 300, 3, destination, "key"u8, "data"u8, Argon2Version.Version13);
+        Assert.Equal(expected, destination);
+    }
+
+    [Fact]
+    public void DeriveBytes_DestinationTooShort_Throws()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>("destination", () => Argon2.DeriveBytes(Argon2Type.Argon2id, "password"u8, "somesalt"u8, 1, 8, 1, new byte[3]));
     }
 
     [Fact]
     public void DeriveBytes_EmptyInputs()
     {
         // RFC 9106 does not require a minimum length for the password and the nonce
-        var result = Argon2.DeriveBytes(Argon2Type.Argon2id, [], [], 1, 8, 1, Argon2.Version13, [], [], 32);
-        Assert.Equal(32, result.Length);
+        var result = Argon2.DeriveBytes(Argon2Type.Argon2id, [], [], 1, 8, 1, 32);
+        Assert.HasCount(32, result);
     }
 }

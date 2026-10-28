@@ -1,17 +1,9 @@
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Numerics;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-namespace Meziantou.Framework.WebPlatform.Cryptography;
-
-/// <summary>The 25 lanes of 64 bits of the Keccak-p[1600] state (FIPS 202 §3.1).</summary>
-[InlineArray(25)]
-internal struct KeccakLanes
-{
-    private ulong _element0;
-}
+namespace Meziantou.Framework.Hashing;
 
 /// <summary>
 /// An incremental sponge construction (FIPS 202 §4) over Keccak-p[1600, n<sub>r</sub>]: the data is absorbed in any number
@@ -67,11 +59,8 @@ internal struct KeccakSponge
         _rounds = rounds;
     }
 
-    /// <summary>Creates the sponge of SHAKE128 (FIPS 202 §6.2).</summary>
-    public static KeccakSponge CreateShake128() => new(Rate128, 0x1F);
-
-    /// <summary>Creates the sponge of SHAKE256 (FIPS 202 §6.2).</summary>
-    public static KeccakSponge CreateShake256() => new(Rate256, 0x1F);
+    /// <summary>Gets a value indicating whether the output is being squeezed: no more data can be absorbed.</summary>
+    public readonly bool IsSqueezing => _squeezing;
 
     /// <summary>Absorbs data; this method must not be called after <see cref="Squeeze"/>.</summary>
     public void Absorb(ReadOnlySpan<byte> data)
@@ -118,12 +107,6 @@ internal struct KeccakSponge
         }
 
         _position = position;
-    }
-
-    /// <summary>Absorbs a single byte.</summary>
-    public void Absorb(byte value)
-    {
-        Absorb(new ReadOnlySpan<byte>(in value));
     }
 
     /// <summary>
@@ -189,14 +172,6 @@ internal struct KeccakSponge
         }
 
         _position = position;
-    }
-
-    /// <summary>Squeezes a single byte of the output.</summary>
-    public byte SqueezeByte()
-    {
-        byte value = 0;
-        Squeeze(new Span<byte>(ref value));
-        return value;
     }
 
     /// <summary>Clears the state, which may depend on secret data.</summary>

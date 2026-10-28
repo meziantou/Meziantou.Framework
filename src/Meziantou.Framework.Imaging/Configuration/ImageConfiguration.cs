@@ -41,8 +41,10 @@ public sealed class ImageConfiguration
     /// of a large frame (at least 65,536 output pixels and 32 rows per worker; nearest-neighbor resizing excepted) are split
     /// into at most this many bands processed concurrently, the calling thread included. The result is identical whatever
     /// the value. Each worker needs its own row scratch, charged to the image's
-    /// <see cref="ImageResourceLimits.MaxLiveAllocationBytes"/> budget. Decoding, encoding and the other operations run on the
-    /// calling thread.
+    /// <see cref="ImageResourceLimits.MaxLiveAllocationBytes"/> budget. The HEIC decoder uses it too: the tiles of a grid of at
+    /// least 65,536 samples are decoded by up to this many workers, each holding the decoder and the picture of its tile, with
+    /// the pixels and the errors of a decoding by one worker. The other decoders, the encoders and the other operations run on
+    /// the calling thread.
     /// </para>
     /// <para>
     /// Keep the default in services that already process several images concurrently: the bound applies per operation, so

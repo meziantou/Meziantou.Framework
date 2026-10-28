@@ -280,7 +280,10 @@ public static partial class ImageProcessingExtensions
     /// their precision first, so that a flattened <see cref="Rgba32"/> image converted to <see cref="Rgb24"/> is the
     /// <see cref="Rgb24"/> conversion of the image with that background, bit for bit; <c>c a + bg (1 - a)</c> in double
     /// precision for the floating-point formats, with the alpha kept between 0 and 1 and the colors not clamped. An opaque
-    /// pixel is not changed. A pixel format without alpha is already opaque: nothing changes.
+    /// pixel is not changed. A pixel format without alpha is already opaque: nothing changes. A gray format with alpha
+    /// (<see cref="La16"/>, <see cref="La32"/>) gets the luma of the flattened colors, as its conversion to
+    /// <see cref="Gray8"/> or <see cref="Gray16"/> does. An alpha mask (<see cref="A8"/>) has no color to hold the
+    /// result: it is rejected.
     /// </para>
     /// <para>
     /// No color profile is applied: the color is in the color space of the image. On failure or cancellation, some frames
@@ -292,7 +295,7 @@ public static partial class ImageProcessingExtensions
     /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
     /// <exception cref="ArgumentNullException"><paramref name="image"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException"><paramref name="backgroundColor"/> is not fully opaque.</exception>
-    /// <exception cref="NotSupportedException">The pixel format is not supported. Nothing is changed.</exception>
+    /// <exception cref="NotSupportedException">The pixel format is not supported (<see cref="A8"/>). Nothing is changed.</exception>
     /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
     /// <exception cref="ObjectDisposedException">The image is disposed.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
@@ -312,7 +315,7 @@ public static partial class ImageProcessingExtensions
     /// <param name="cancellationToken">The token to monitor for cancellation requests. On cancellation, some rows may already be changed.</param>
     /// <exception cref="ArgumentNullException"><paramref name="frame"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException"><paramref name="backgroundColor"/> is not fully opaque.</exception>
-    /// <exception cref="NotSupportedException">The pixel format is not supported. Nothing is changed.</exception>
+    /// <exception cref="NotSupportedException">The pixel format is not supported (<see cref="A8"/>). Nothing is changed.</exception>
     /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
     /// <exception cref="ObjectDisposedException">The frame is no longer attached to a live image.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>

@@ -256,8 +256,14 @@ internal sealed unsafe partial class WasmtimeStore
         WasmtimeRef result;
         if (!NativeMethods.wasmtime_externref_new(context.Value, GCHandle.ToIntPtr(handle), &FinalizeHostValue, &result))
         {
-            handle.Free();
-            _hostValues.Remove(slot);
+            // Wasmtime drops the data when it cannot allocate the externref, which runs FinalizeHostValue: it already
+            // removed the slot and freed the handle, and freeing it again would release a handle slot another
+            // GCHandle may own by now. Only clean up here if the finalizer did not run.
+            if (_hostValues.Remove(slot))
+            {
+                handle.Free();
+            }
+
             throw new WasmAllocationException("The externref cannot be allocated");
         }
 

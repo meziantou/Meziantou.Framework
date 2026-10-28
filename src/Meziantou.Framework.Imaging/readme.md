@@ -459,7 +459,8 @@ processed concurrently.
 An `Image` and its frames must not be used concurrently while any thread mutates them or holds a lease. Readers and
 writers support one operation at a time: overlapping calls throw `InvalidOperationException`. Internal parallelism is off
 by default (`ImageConfiguration.MaxDegreeOfParallelism = 1`); with more workers, only large resizes, transformations,
-convolutions, blurs, medians and unsharp masks are split into row bands, with results identical to the sequential ones.
+convolutions, blurs, medians and unsharp masks are split into row bands, and the tiles of large HEIC grids are decoded
+concurrently, with results identical to the sequential ones.
 
 ### Failure atomicity
 
@@ -504,10 +505,12 @@ and back, and alpha masks to any format with alpha and back are exact.
 > `Image<Rgba64>` should load with `Load<Rgba32>`/`Load<Rgba64>` instead. A gray ICC profile of such a file is now kept,
 > where it could not label the RGBA pixels of before. Animations keep `Rgba32`/`Rgba64`.
 
-Every processing operation and the drawing canvas accept the compact formats. `Rgb48` has kernels of its own; the
-filtering operations (resize, transform, convolution, blurs, median) process `La16`, `La32` and `A8` through a
-temporary `Rgba32`/`Rgba64` copy of each frame, charged to the image, which gives back the same gray levels and alpha;
-drawing composites them the same way, a run of pixels at a time. `PngEncoder` and `TiffEncoder` store `La16`, `La32` and
+Every processing operation and the drawing canvas accept the compact formats, except `Flatten` on an `A8` mask, which
+has no color to hold the result (`NotSupportedException`). `Rgb48` has kernels of its own; the filtering operations
+(resize, transform, convolution, blurs, median) and the `Pixelate`, `OilPaint` and `Flatten` effects process `La16`,
+`La32` and `A8` through a temporary `Rgba32`/`Rgba64` copy of each frame, charged to the image, which gives back the
+same gray levels and alpha (a flattened gray with alpha gets the luma of its flattened colors, as its conversion to
+`Gray8`/`Gray16` does); drawing composites them the same way, a run of pixels at a time. `PngEncoder` and `TiffEncoder` store `La16`, `La32` and
 `Rgb48` as they are (gray with alpha, 16-bit RGB) and an alpha mask as black gray with alpha; the other encoders get a
 copy of the frames widened without loss to `Rgba32` or `Rgba64`, charged to the writer, and follow their own rules for
 those formats (for example `JpegEncoder` needs a `BackgroundColor` for pixels that are not opaque).
@@ -4578,7 +4581,7 @@ public static string ConvertHeic(string heicPath, string jpegPath)
 | Pixel formats | 8-bit files load as `Rgb24` (`Rgba32` with alpha, `Gray8` for monochrome without alpha); 9-bit to 12-bit files load as `Rgb48` (`Rgba64` with alpha, `Gray16`/`La32` for monochrome), their samples scaled to 16 bits exactly; monochrome 8-bit files with alpha load as `La16` |
 | Color conversion | As for AVIF: the matrix coefficients and the range of the `colr` box, or else of the video usability information of the bitstream, convert YCbCr to RGB with integer arithmetic; unspecified coefficients are BT.601. A bitstream without video signal description uses the limited range, which is what H.265 infers and how libheif and Apple ImageIO read such a file. The chroma samples of a 4:2:0 picture are at the position that the bitstream declares (types 0, 1 and 2 of H.265: at the left of the luma samples by default), and the ones of a 4:2:2 picture at the position of the luma samples of even columns |
 | Alpha | The alpha auxiliary image (`urn:mpeg:hevc:2015:auxid:1` or the URN of MPEG-B), or the alpha track of a sequence, of the size of the color image. An alpha plane uses the full range unless its bitstream states the limited range. Premultiplied alpha is rejected |
-| Grids | Grid images, for the color image and its alpha plane: the layout of the photos of a phone (tiles of 512x512 samples). A grid without alpha plane is converted one row of tiles at a time, so its decoded planes hold one row of tiles, not the whole image |
+| Grids | Grid images, for the color image and its alpha plane: the layout of the photos of a phone (tiles of 512x512 samples). A grid without alpha plane is converted one row of tiles at a time, so its decoded planes hold one row of tiles, not the whole image. With `ImageConfiguration.MaxDegreeOfParallelism` above 1, the tiles of a grid of at least 65,536 samples are decoded by up to that many workers (the pixels and the errors are those of one worker; each worker holds the decoder and the picture of its tile, charged to `MaxLiveAllocationBytes`): about 5 times faster with 8 workers for a 3840x2160 photo on an Apple M5 Pro |
 | Transformations | `irot` and `imir` are composed and reported as `Metadata.Orientation`, never applied (`AutoOrient()` applies them); the EXIF orientation tag is ignored, as the format requires. `clap` crops the image when it selects whole samples, as does the `clap` box of the sample entry of a sequence. The properties apply in the order of their association: a `clap` that follows a rotation or a mirroring selects a part of the image as they present it, and the pixels are still returned as they are coded. `pasp` is validated and not reported, and the matrix of the track header of a sequence is ignored |
 | Metadata | ICC profile, EXIF, XMP and the CICP color description, as for AVIF |
 | Identification | `Header` mode reads the `meta` box (or the `moov` box of a sequence), whose configuration record gives the sample format and, when the file has no `colr` box, the color description of the bitstream; when the record holds no sequence parameter set (an `hev1` track), it reads on to the one of the bitstream. `FullScan` also walks every item and sample |

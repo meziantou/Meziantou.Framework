@@ -142,6 +142,99 @@ public sealed class HeicDecodingTests
     }
 
     [Theory]
+    [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(16)]
+    [InlineData(64)]
+    public void TheTilesOfAGridAreDecodedByWorkersAsByOne(int workers)
+    {
+        // Batches of 3 tiles span two rows of 5 tiles; 64 workers are more than the 20 tiles
+        var data = CreateLargeGrid(rows: 4, columns: 5).Build();
+        using var expected = Image.Load(data);
+        using var image = Image.Load(data, WithWorkers(workers));
+        Assert.Equal((320, 256), (image.Width, image.Height));
+        Assert.Equal(ImageSnapshots.CaptureFrame(expected.Frames[0]).ToArray(), ImageSnapshots.CaptureFrame(image.Frames[0]).ToArray());
+
+        // A forward-only stream gives the same image
+        using var stream = new MemoryStream(data);
+        using var streamed = Image.Load(stream, WithWorkers(workers));
+        Assert.Equal(ImageSnapshots.CaptureFrame(expected.Frames[0]).ToArray(), ImageSnapshots.CaptureFrame(streamed.Frames[0]).ToArray());
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(4)]
+    [InlineData(16)]
+    public void AGridDecodedByWorkersFailsWithTheErrorOfItsFirstFailingTile(int workers)
+    {
+        // Tile 6 is truncated and tile 13 has no picture (an end of sequence NAL unit): the error is the one of tile 6 alone,
+        // whichever tile fails first
+        var first = CreateLargeGrid(rows: 4, columns: 5);
+        var tiles = first.References.Single(reference => reference.Type == "dimg").ToItemIds;
+        first.GetItem(tiles[6]).Data = first.GetItem(tiles[6]).Data[..40];
+        var expected = Assert.Throws<InvalidImageContentException>(() => Image.Load(first.Build()));
+
+        var both = CreateLargeGrid(rows: 4, columns: 5);
+        both.GetItem(tiles[6]).Data = both.GetItem(tiles[6]).Data[..40];
+        both.GetItem(tiles[13]).Data = EndOfSequence;
+        var exception = Assert.Throws<InvalidImageContentException>(() => Image.Load(both.Build(), WithWorkers(workers)));
+        Assert.Equal(expected.Message, exception.Message);
+
+        // Tile 13 alone fails differently
+        var last = CreateLargeGrid(rows: 4, columns: 5);
+        last.GetItem(tiles[13]).Data = EndOfSequence;
+        var other = Assert.Throws<InvalidImageContentException>(() => Image.Load(last.Build(), WithWorkers(workers)));
+        Assert.NotEqual(expected.Message, other.Message);
+    }
+
+    // An access unit with one NAL unit of 4-byte length: end_of_seq_rbsp (type 36), with no slice
+    private static byte[] EndOfSequence => [0, 0, 0, 2, 36 << 1, 1];
+
+    private static ImageDecodeOptions WithWorkers(int workers) => new() { Configuration = new ImageConfiguration { MaxDegreeOfParallelism = workers } };
+
+    // The grid of HeicTestFiles.Grid with rows x columns tiles of 64x64, copies of its six tiles, and no tile past the
+    // image: from 16 tiles, the grid has the 65,536 samples that a decoding by several workers needs
+    private static HeifFileBuilder CreateLargeGrid(int rows, int columns)
+    {
+        var builder = HeifFileBuilder.From(HeicTestFiles.Grid);
+        var index = builder.References.IndexOf(builder.References.Single(reference => reference.Type == "dimg"));
+        var (_, gridId, sourceIds) = builder.References[index];
+        var sources = sourceIds.Select(builder.GetItem).ToArray();
+        var nextId = builder.Items.Max(item => item.Id) + 1;
+        var tileIds = new uint[rows * columns];
+        for (var i = 0; i < tileIds.Length; i++)
+        {
+            var source = sources[i % sources.Length];
+            var tile = builder.AddItem(nextId++, source.Type, source.Data);
+            tile.IsHidden = source.IsHidden;
+            foreach (var association in source.Associations)
+            {
+                tile.Associations.Add(association);
+            }
+
+            tileIds[i] = tile.Id;
+        }
+
+        foreach (var source in sources)
+        {
+            builder.Items.Remove(source);
+        }
+
+        builder.References[index] = ("dimg", gridId, tileIds);
+        var grid = builder.GetItem(gridId);
+        grid.Data = HeifFileBuilder.GridDescriptor(rows, columns, (uint)(columns * 64), (uint)(rows * 64));
+        foreach (var (property, _) in grid.Associations)
+        {
+            if (builder.Properties[property - 1].AsSpan(4, 4).SequenceEqual("ispe"u8))
+            {
+                builder.Properties[property - 1] = HeifFileBuilder.ImageSize((uint)(columns * 64), (uint)(rows * 64));
+            }
+        }
+
+        return builder;
+    }
+
+    [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public void TheLayoutOfTheFileDoesNotMatter(bool itemsInItemData)

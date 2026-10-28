@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -186,11 +187,18 @@ internal static class PngInterlace
     private static void CopyPixels<T>(ref byte source, nint sourceStride, ref byte destination, nint destinationStride, int count)
         where T : unmanaged
     {
-        for (var i = 0; i < count; i++)
+        Debug.Assert(count > 0);
+
+        // The references only advance between two pixels: moving past the last one would leave them beyond the end of the
+        // spans, which is invalid for a managed reference even if it is never dereferenced
+        for (var i = 1; ; i++)
         {
             unsafe
             {
                 Unsafe.WriteUnaligned(ref destination, Unsafe.ReadUnaligned<T>(ref source));
+                if (i == count)
+                    break;
+
                 source = ref Unsafe.Add(ref source, sourceStride);
                 destination = ref Unsafe.Add(ref destination, destinationStride);
             }
@@ -199,12 +207,19 @@ internal static class PngInterlace
 
     private static void CopyPixels3(ref byte source, nint sourceStride, ref byte destination, nint destinationStride, int count)
     {
-        for (var i = 0; i < count; i++)
+        Debug.Assert(count > 0);
+
+        // The references only advance between two pixels: moving past the last one would leave them beyond the end of the
+        // spans, which is invalid for a managed reference even if it is never dereferenced
+        for (var i = 1; ; i++)
         {
             unsafe
             {
                 Unsafe.WriteUnaligned(ref destination, Unsafe.ReadUnaligned<ushort>(ref source));
                 Unsafe.Add(ref destination, 2) = Unsafe.Add(ref source, 2);
+                if (i == count)
+                    break;
+
                 source = ref Unsafe.Add(ref source, sourceStride);
                 destination = ref Unsafe.Add(ref destination, destinationStride);
             }
@@ -213,12 +228,19 @@ internal static class PngInterlace
 
     private static void CopyPixels6(ref byte source, nint sourceStride, ref byte destination, nint destinationStride, int count)
     {
-        for (var i = 0; i < count; i++)
+        Debug.Assert(count > 0);
+
+        // The references only advance between two pixels: moving past the last one would leave them beyond the end of the
+        // spans, which is invalid for a managed reference even if it is never dereferenced
+        for (var i = 1; ; i++)
         {
             unsafe
             {
                 Unsafe.WriteUnaligned(ref destination, Unsafe.ReadUnaligned<uint>(ref source));
                 Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, 4), Unsafe.ReadUnaligned<ushort>(ref Unsafe.Add(ref source, 4)));
+                if (i == count)
+                    break;
+
                 source = ref Unsafe.Add(ref source, sourceStride);
                 destination = ref Unsafe.Add(ref destination, destinationStride);
             }

@@ -1,6 +1,11 @@
 <Project Sdk="Meziantou.NET.Sdk.Test">
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <!--
+      The macOS CI agents run the two target frameworks in about 100 minutes each, close to the 2-hour limit of the job.
+      The other agents still run both, so macOS only runs the latest one (the faster one).
+    -->
+    <TargetFrameworks Condition="'$(GITHUB_ACTIONS)' == 'true' AND $([MSBuild]::IsOSPlatform('OSX'))">$(LatestTargetFramework)</TargetFrameworks>
     <!-- The tests use the assertions of xUnit.net -->
     <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
     <!-- The tests run in parallel and allocate a lot: the workstation GC pauses all of them -->

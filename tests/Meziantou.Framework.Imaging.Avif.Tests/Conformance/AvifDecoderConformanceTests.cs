@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Imaging.TestHarness.Adapters;
@@ -639,6 +640,43 @@ public sealed class AvifDecoderConformanceTests
         {
             var file = ReferenceHeif.Parse(fixture.ReadInput());
             return Convert.ToHexString(file.ReadItemData(file.PrimaryItem!));
+        }
+    }
+
+    [Fact]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test input.")]
+    public void PixelsDoNotDependOnTheNumberOfWorkers()
+    {
+        // A lossy image with alpha of more than 65,536 pixels, whose height is not a multiple of the 16 rows of a band: the
+        // post-processing filters of the color image and of the alpha plane run by bands of rows
+        const int Width = 300;
+        const int Height = 283;
+        var random = new Random(7);
+        var source = new Rgba32[Width * Height];
+        for (var y = 0; y < Height; y++)
+        {
+            for (var x = 0; x < Width; x++)
+            {
+                var edge = ((x / 23) + (y / 17)) % 3 is 0 ? 60 : 0;
+                source[(y * Width) + x] = new Rgba32((byte)Math.Clamp(x - (y / 3) + edge + random.Next(-12, 13), 0, 255), (byte)Math.Clamp(y + edge + random.Next(-12, 13), 0, 255), (byte)Math.Clamp(((x + y) / 2) + random.Next(-12, 13), 0, 255), (byte)Math.Clamp((x / 2) + 40 + random.Next(-8, 9), 0, 255));
+            }
+        }
+
+        using var stream = new MemoryStream();
+        using (var image = Image.ImportPixelData<Rgba32>(source, Width, Height))
+        {
+            image.Save(stream, new AvifEncoder { Compression = AvifCompression.Lossy, Quality = 30, Effort = 0 });
+        }
+
+        var data = stream.ToArray();
+        Rgba32[]? expected = null;
+        foreach (var workers in (int[])[1, 2, 3, 16])
+        {
+            using var image = Image.Load<Rgba32>(data, new ImageDecodeOptions { Configuration = new ImageConfiguration { MaxDegreeOfParallelism = workers } });
+            var pixels = new Rgba32[Width * Height];
+            image.Frames[0].CopyPixelDataTo(pixels);
+            expected ??= pixels;
+            Assert.True(expected.AsSpan().SequenceEqual(pixels), $"The pixels decoded by {workers} workers differ from those decoded by one worker.");
         }
     }
 

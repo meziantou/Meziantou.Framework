@@ -71,6 +71,29 @@ public sealed class Av1DecoderConformanceTests
         dirty.AssertEveryRentalWasDirty(id);
     }
 
+    /// <summary>
+    /// Third pass, by several workers: the post-processing filters of each frame run by bands of rows, whatever the size of
+    /// the frame (<see cref="Av1PostFilter.TestIgnoreMinimumSize"/>), so that the bands cut every vector, the last one
+    /// shorter than the others. The planes must still have the digests of the independent decoders.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(Vectors))]
+    public void DecodedPlanesDoNotDependOnTheNumberOfWorkers(string id)
+    {
+        Av1PostFilter.TestIgnoreMinimumSize = true;
+        try
+        {
+            foreach (var workers in (int[])[2, 3, 16])
+            {
+                AssertDecodedPlanes(id, AllocationScope.Create(ImageConfiguration.Default, id), workers);
+            }
+        }
+        finally
+        {
+            Av1PostFilter.TestIgnoreMinimumSize = false;
+        }
+    }
+
     [Fact]
     public void LayeredVectorsCoverTheLayerCountsAndTheLowerLayers()
     {
@@ -390,11 +413,11 @@ public sealed class Av1DecoderConformanceTests
         }
     }
 
-    private static void AssertDecodedPlanes(string id, AllocationScope scope)
+    private static void AssertDecodedPlanes(string id, AllocationScope scope, int maxDegreeOfParallelism = 1)
     {
         var vector = GoldenCorpus.Default.GetAv1Vector(id);
         var data = File.ReadAllBytes(GoldenCorpus.Default.RootDirectory / vector.Input.Path);
-        using var decoder = new Av1Decoder(scope);
+        using var decoder = new Av1Decoder(scope) { MaxDegreeOfParallelism = maxDegreeOfParallelism };
         decoder.SetInput(data, 0, data.Length);
 
         var frameIndex = 0;

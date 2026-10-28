@@ -43,8 +43,13 @@ public sealed class ImageConfiguration
     /// the value. Each worker needs its own row scratch, charged to the image's
     /// <see cref="ImageResourceLimits.MaxLiveAllocationBytes"/> budget. The HEIC decoder uses it too: the tiles of a grid of at
     /// least 65,536 samples are decoded by up to this many workers, each holding the decoder and the picture of its tile, with
-    /// the pixels and the errors of a decoding by one worker. The other decoders, the encoders and the other operations run on
-    /// the calling thread.
+    /// the pixels and the errors of a decoding by one worker. So does the AVIF decoder: the post-processing filters of an AV1
+    /// frame of at least 65,536 pixels (the loop filter, CDEF, the super-resolution upscaling and the loop restoration) run
+    /// by bands of rows, with the pixels of a decoding by one worker. They take about 25% to 40% of the decoding time of a
+    /// 3840x2160 image that uses CDEF, which then decodes about 1.3 to 1.45 times faster with 8 workers; the tiles of a grid
+    /// are decoded one after the other, and the small frame of a tile gains little. Each worker needs its own rows, about 140 bytes per pixel of the width of the frame, charged to
+    /// <see cref="ImageResourceLimits.MaxLiveAllocationBytes"/>. The other decoders (the HEVC in-loop filters of a HEIC image
+    /// that is not a grid included), the encoders and the other operations run on the calling thread.
     /// </para>
     /// <para>
     /// Keep the default in services that already process several images concurrently: the bound applies per operation, so

@@ -82,7 +82,7 @@ internal sealed partial class AvifDecoder : HeifDecodeObserver
         var movie = structure.Movie ?? throw new InvalidOperationException("The AVIF file is not an image sequence.");
         var sink = _sink!;
         sink.BeginFrame(duration);
-        _colorDecoder ??= new Av1Decoder(_context.Scope, _context.Tracker);
+        _colorDecoder ??= new Av1Decoder(_context.Scope, _context.Tracker) { MaxDegreeOfParallelism = _context.Configuration.MaxDegreeOfParallelism };
         using var colorImage = DecodeSample(_colorDecoder, color, movie.Color);
         structure.SetBitstreamColorDescription(colorImage.Format);
         AvifPlanarImage? alphaImage = null;
@@ -90,7 +90,7 @@ internal sealed partial class AvifDecoder : HeifDecodeObserver
         {
             if (alpha is not null)
             {
-                _alphaDecoder ??= new Av1Decoder(_context.Scope, _context.Tracker);
+                _alphaDecoder ??= new Av1Decoder(_context.Scope, _context.Tracker) { MaxDegreeOfParallelism = _context.Configuration.MaxDegreeOfParallelism };
                 alphaImage = DecodeSample(_alphaDecoder, alpha, movie.Alpha!);
             }
 
@@ -128,12 +128,12 @@ internal sealed partial class AvifDecoder : HeifDecodeObserver
 
         // An image that the edit list leaves out: it is decoded for the images that refer to it, and counts toward the
         // pixel limit like a frame of the bitstream that is not shown
-        _colorDecoder ??= new Av1Decoder(_context.Scope, _context.Tracker);
+        _colorDecoder ??= new Av1Decoder(_context.Scope, _context.Tracker) { MaxDegreeOfParallelism = _context.Configuration.MaxDegreeOfParallelism };
         using var colorImage = DecodeSample(_colorDecoder, color, movie.Color);
         structure.SetBitstreamColorDescription(colorImage.Format);
         if (alpha is not null)
         {
-            _alphaDecoder ??= new Av1Decoder(_context.Scope, _context.Tracker);
+            _alphaDecoder ??= new Av1Decoder(_context.Scope, _context.Tracker) { MaxDegreeOfParallelism = _context.Configuration.MaxDegreeOfParallelism };
             using var alphaImage = DecodeSample(_alphaDecoder, alpha, movie.Alpha!);
         }
 
@@ -257,7 +257,7 @@ internal sealed partial class AvifDecoder : HeifDecodeObserver
     // highest layer of the operating point, which the lower layers only help to decode or to show progressively
     private Av1FrameBuffer DecodeCodedItem(byte[] data, int length, int operatingPoint, int? layer)
     {
-        using var decoder = new Av1Decoder(_context.Scope, _context.Tracker, operatingPoint);
+        using var decoder = new Av1Decoder(_context.Scope, _context.Tracker, operatingPoint) { MaxDegreeOfParallelism = _context.Configuration.MaxDegreeOfParallelism };
         if (layer is { } selected)
             decoder.MaxSpatialLayer = selected;
 

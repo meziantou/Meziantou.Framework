@@ -14,7 +14,7 @@ namespace Meziantou.Framework.Markdown.Renderers.Roundtrip;
 /// </summary>
 /// Ensure to call the <see cref="MarkdownExtensions.EnableTrackTrivia"/> extension method when
 /// parsing markdown to have trivia available for rendering.
-public class RoundtripRenderer : TextRendererBase<RoundtripRenderer>
+public partial class RoundtripRenderer : TextRendererBase<RoundtripRenderer>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="RoundtripRenderer"/> class.
@@ -53,9 +53,13 @@ public class RoundtripRenderer : TextRendererBase<RoundtripRenderer>
     private void OnObjectWriteBefore(IMarkdownRenderer renderer, MarkdownObject obj)
     {
         if (obj is not MarkdownDocument document)
+        {
+            OnAttributesObjectWriteBefore(obj);
             return;
+        }
 
         // The writing of a previous document threw
+        EndAttributes();
         if (Writer is NullCharacterWriter previousWriter)
         {
             ReplaceWriter(previousWriter.InnerWriter);
@@ -65,13 +69,27 @@ public class RoundtripRenderer : TextRendererBase<RoundtripRenderer>
         {
             ReplaceWriter(new NullCharacterWriter(Writer, text));
         }
+
+        BeginAttributes(document);
     }
 
     private void OnObjectWriteAfter(IMarkdownRenderer renderer, MarkdownObject obj)
     {
-        if (obj is MarkdownDocument && Writer is NullCharacterWriter writer)
+        if (obj is not MarkdownDocument)
+        {
+            OnAttributesObjectWriteAfter(obj);
+            return;
+        }
+
+        var unwritten = EndAttributes();
+        if (Writer is NullCharacterWriter writer)
         {
             ReplaceWriter(writer.InnerWriter);
+        }
+
+        if (unwritten is not null)
+        {
+            Extensions.GenericAttributes.AttributesTrivia.ThrowCannotWrite(unwritten, "the Markdown has no place for the attributes of this object");
         }
     }
 
@@ -95,19 +113,34 @@ public class RoundtripRenderer : TextRendererBase<RoundtripRenderer>
         }
     }
 
+
     /// <summary>
     /// Performs the render lines before operation.
     /// </summary>
     public void RenderLinesBefore(Block block)
     {
-        if (block.LinesBefore is null)
+        var changedAttributes = GetChangedAttributes(block);
+        if (block.LinesBefore is not null)
         {
-            return;
+            foreach (var line in block.LinesBefore)
+            {
+                // A line that only has attributes gets the changed ones, so that the containers keep the same lines
+                if (changedAttributes?.Trivia?.LinesBefore?.Exists(text => ReferenceEquals(text, line.Text)) is true)
+                {
+                    Write(Extensions.GenericAttributes.AttributesTrivia.ReplaceLineOfAttributes(block, line.AsSpan(), changedAttributes.Take()));
+                }
+                else
+                {
+                    Write(line);
+                }
+
+                WriteLine(line.NewLine);
+            }
         }
-        foreach (var line in block.LinesBefore)
+
+        if (changedAttributes?.NeedsPlace is true && IsWrittenOnLineBefore(block))
         {
-            Write(line);
-            WriteLine(line.NewLine);
+            WriteLineOfAttributesBefore(block, changedAttributes);
         }
     }
 

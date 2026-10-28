@@ -55,8 +55,14 @@ public class GenericAttributesParser : InlineParser
             var inline = processor.Inline;
 
             // If the current object to attach is either a literal or delimiter
-            // try to find a suitable parent, otherwise attach the html attributes to the block
-            if (inline is LiteralInline)
+            // try to find a suitable parent, otherwise attach the html attributes to the block. With trivia, the whitespace that
+            // starts a line is a literal, which the text has no literal for without trivia: the attributes are attached to the line
+            // break before it, as without trivia.
+            if (processor.TrackTrivia && inline is LiteralInline { PreviousSibling: LineBreakInline lineBreak } whitespace && IsWhitespaceOnly(whitespace.Content))
+            {
+                inline = lineBreak;
+            }
+            else if (inline is LiteralInline)
             {
                 inline = processor.FindNonDelimiterParent(inline);
             }
@@ -82,7 +88,8 @@ public class GenericAttributesParser : InlineParser
                     {
                         // The attributes before these ones are in the paragraph too
                         var textStart = paragraph.Inline!.FirstChild is GenericAttributesInline first ? first.SourceText.Start : startPosition;
-                        MoveParagraphToLinesBefore(paragraph, new StringSlice(slice.Text, textStart, slice.End), (Block)objectToAttach);
+                        var lineBefore = MoveParagraphToLinesBefore(paragraph, new StringSlice(slice.Text, textStart, slice.End), (Block)objectToAttach);
+                        AttributesTrivia.GetOrCreate(objectToAttach).AddLineBefore(attributes, lineBefore);
                     }
                 }
             }
@@ -92,12 +99,15 @@ public class GenericAttributesParser : InlineParser
                 // The attributes are written back by the roundtrip renderer. They are not an inline that other attributes
                 // can be attached to, so the current inline stays the same.
                 var previousInline = processor.Inline;
-                processor.Emit(new GenericAttributesInline
+                var attributesInline = new GenericAttributesInline
                 {
                     SourceText = new StringSlice(slice.Text, startPosition, slice.Start - 1),
                     Span = new SourceSpan(processor.GetSourcePosition(startPosition), processor.GetSourcePosition(slice.Start - 1)),
                     IsClosed = true,
-                });
+                    Target = objectToAttach,
+                };
+                processor.Emit(attributesInline);
+                AttributesTrivia.GetOrCreate(objectToAttach).AddInline(attributes, attributesInline);
                 processor.Inline = previousInline;
             }
 
@@ -112,15 +122,22 @@ public class GenericAttributesParser : InlineParser
 
             // Attributes that end the text are not part of it, so the whitespace before them ends the text and is trimmed, like
             // the whitespace at the end of a paragraph. With trivia, it is kept so that the roundtrip does not lose it.
-            if (!processor.TrackTrivia && slice.IsEmptyOrWhitespace())
+            if (!processor.TrackTrivia && EndsText(slice))
             {
                 var lastInline = processor.Inline;
                 while (lastInline is LiteralInline literal)
                 {
-                    var length = literal.Content.Length;
-                    if (!literal.Content.TrimEnd())
+                    // The line breaks between the lines of the text stay
+                    var end = literal.Content.End;
+                    while (end >= literal.Content.Start && literal.Content.Text[end] is ' ' or '\t' or '\v' or '\f')
                     {
-                        literal.Span.End -= length - literal.Content.Length;
+                        end--;
+                    }
+
+                    if (end >= literal.Content.Start)
+                    {
+                        literal.Span.End -= literal.Content.End - end;
+                        literal.Content.End = end;
                         break;
                     }
 
@@ -569,6 +586,25 @@ public class GenericAttributesParser : InlineParser
         public int Count { get; set; } = -1;
     }
 
+    // The whitespace that a paragraph or a heading does not end with: a no-break space, or another Unicode space, is part of its
+    // content
+    private static bool IsWhitespaceAtEndOfText(char c) => c is ' ' or '\t' or '\n' or '\v' or '\f' or '\r';
+
+    private static bool IsWhitespaceOnly(StringSlice slice) => EndsText(slice);
+
+    private static bool EndsText(StringSlice slice)
+    {
+        for (var i = slice.Start; i <= slice.End; i++)
+        {
+            if (!IsWhitespaceAtEndOfText(slice.Text[i]))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     // With trivia, the attributes are kept in the inlines, but a paragraph that only has attributes has no content
     private static bool HasOnlyAttributes(ContainerInline inline)
     {
@@ -584,8 +620,8 @@ public class GenericAttributesParser : InlineParser
     }
 
     // With trivia, the line of a paragraph that only has attributes is written back before the block they are attached to, as the
-    // paragraph is removed
-    private static void MoveParagraphToLinesBefore(ParagraphBlock paragraph, StringSlice attributes, Block block)
+    // paragraph is removed. Returns the text of the line.
+    private static string MoveParagraphToLinesBefore(ParagraphBlock paragraph, StringSlice attributes, Block block)
     {
         var lines = new List<StringSlice>();
         if (paragraph.LinesBefore is { } linesBefore)
@@ -593,7 +629,8 @@ public class GenericAttributesParser : InlineParser
             lines.AddRange(linesBefore);
         }
 
-        lines.Add(new StringSlice(paragraph.TriviaBefore.ToString() + attributes.ToString(), paragraph.NewLine));
+        var line = paragraph.TriviaBefore.ToString() + attributes.ToString();
+        lines.Add(new StringSlice(line, paragraph.NewLine));
         if (paragraph.LinesAfter is { } linesAfter)
         {
             lines.AddRange(linesAfter);
@@ -605,6 +642,7 @@ public class GenericAttributesParser : InlineParser
         }
 
         block.LinesBefore = lines;
+        return line;
     }
 
     internal static void RemoveFilteredProperties(HtmlAttributes attributes, Func<string, bool> filter)

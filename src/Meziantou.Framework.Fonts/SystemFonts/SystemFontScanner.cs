@@ -22,6 +22,9 @@ internal static class SystemFontScanner
     private const int MaxNameLength = 4 * 1024 * 1024;
     private const int MaxFvarLength = 1024 * 1024;
 
+    // A character map of every character of Unicode, one group per character, is 13 MiB.
+    private const int MaxCmapLength = 16 * 1024 * 1024;
+
     // OS/2 is at most 100 bytes in its version 5; the fields that are read are in the first 78 bytes.
     private const int MaxOs2Length = 128;
 
@@ -202,15 +205,7 @@ internal static class SystemFontScanner
     /// <summary>Reads the faces of a font collection: OpenType specification, "Font Collections".</summary>
     private static SystemFontDescriptor[] ReadCollection(FileSource source, string path, ReadOnlySpan<byte> header)
     {
-        var majorVersion = FontBinary.UInt16(header, 4);
-        if (majorVersion is not (1 or 2))
-            throw FontErrors.Invalid($"the font collection has the unknown version {majorVersion}.");
-
-        var count = FontBinary.Offset32(header, 8);
-        if (count is 0 or > MaxFaceCount)
-            throw FontErrors.Invalid($"the font collection has {count} fonts.");
-
-        var offsets = source.Read(HeaderLength, count * 4);
+        var offsets = ReadCollectionOffsets(source, header, out var count);
         var faces = new SystemFontDescriptor[count];
         for (var i = 0; i < count; i++)
         {
@@ -218,6 +213,92 @@ internal static class SystemFontScanner
         }
 
         return faces;
+    }
+
+    /// <summary>Reads the offsets of the faces of a font collection: OpenType specification, "Font Collections".</summary>
+    private static byte[] ReadCollectionOffsets(FileSource source, ReadOnlySpan<byte> header, out int count)
+    {
+        var majorVersion = FontBinary.UInt16(header, 4);
+        if (majorVersion is not (1 or 2))
+            throw FontErrors.Invalid($"the font collection has the unknown version {majorVersion}.");
+
+        count = FontBinary.Offset32(header, 8);
+        if (count is 0 or > MaxFaceCount)
+            throw FontErrors.Invalid($"the font collection has {count} fonts.");
+
+        return source.Read(HeaderLength, count * 4);
+    }
+
+    /// <summary>
+    /// Reads the characters a face of a file has a glyph for, from its character map, or returns
+    /// <see cref="SystemFontCoverage.Empty"/> when the file cannot be read or the character map is malformed.
+    /// </summary>
+    /// <remarks>Only the table directory of the face, its <c>maxp</c> table and its <c>cmap</c> table are read; a WOFF or WOFF2 file is expanded.</remarks>
+    internal static SystemFontCoverage ReadCoverage(string path, int faceIndex)
+    {
+        try
+        {
+            using var handle = File.OpenHandle(path, FileMode.Open, FileAccess.Read, FileShare.Read, FileOptions.RandomAccess);
+            var length = RandomAccess.GetLength(handle);
+            if (length < HeaderLength)
+                return SystemFontCoverage.Empty;
+
+            Span<byte> header = stackalloc byte[HeaderLength];
+            ReadExactly(handle, header, 0);
+            switch (FontBinary.UInt32(header, 0))
+            {
+                case FontTags.TrueType or FontTags.AppleTrueType or FontTags.OpenTypeCff:
+                    return faceIndex == 0 ? ReadFaceCoverage(new FileSource(handle, length), 0) : SystemFontCoverage.Empty;
+
+                case FontTags.Collection:
+                    return ReadCollectionCoverage(new FileSource(handle, length), header, faceIndex);
+
+                case FontTags.Woff or FontTags.Woff2:
+                    {
+                        if (length > CompressedFontEnvironment.Limits.MaxEncodedBytes)
+                            return SystemFontCoverage.Empty;
+
+                        var bytes = new byte[length];
+                        ReadExactly(handle, bytes, 0);
+                        var font = FontLoader.Load(bytes, CompressedFontEnvironment)[0].Data.RawBytes;
+                        var source = new FileSource(font);
+                        if (FontBinary.UInt32(font, 0) == FontTags.Collection)
+                            return ReadCollectionCoverage(source, font.AsSpan(0, HeaderLength), faceIndex);
+
+                        return faceIndex == 0 ? ReadFaceCoverage(source, 0) : SystemFontCoverage.Empty;
+                    }
+
+                default:
+                    return SystemFontCoverage.Empty;
+            }
+        }
+        catch (Exception exception) when (exception is FontException or IOException or UnauthorizedAccessException or System.Security.SecurityException)
+        {
+            return SystemFontCoverage.Empty;
+        }
+    }
+
+    private static SystemFontCoverage ReadCollectionCoverage(FileSource source, ReadOnlySpan<byte> header, int faceIndex)
+    {
+        var offsets = ReadCollectionOffsets(source, header, out var count);
+        return faceIndex >= 0 && faceIndex < count ? ReadFaceCoverage(source, FontBinary.UInt32(offsets, faceIndex * 4)) : SystemFontCoverage.Empty;
+    }
+
+    private static SystemFontCoverage ReadFaceCoverage(FileSource source, long offset)
+    {
+        var directoryLength = SfntDirectory.GetLength(source.Read(offset, HeaderLength));
+        var directory = SfntDirectory.ReadDirectory(source.Read(offset, directoryLength), source.Length);
+
+        // maxp: the number of glyphs, which bounds the glyphs of the character map.
+        var maxp = ReadTable(source, directory, FontTags.Maxp, maxLength: 6);
+        if (maxp.Length < 6)
+            throw FontErrors.InvalidTable(FontTags.Maxp, "is too short.");
+
+        var cmap = ReadTable(source, directory, FontTags.Cmap, MaxCmapLength, whole: true);
+        if (cmap.Length == 0)
+            return SystemFontCoverage.Empty;
+
+        return new SystemFontCoverage(CmapTable.Read(cmap, FontBinary.UInt16(maxp, 4)).GetCoveredRanges());
     }
 
     /// <summary>Reads the names and the style of a face, and checks what the font code checks of the tables that are read.</summary>

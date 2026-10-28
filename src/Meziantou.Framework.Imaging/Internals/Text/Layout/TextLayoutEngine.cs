@@ -285,7 +285,7 @@ internal sealed class TextLayoutEngine
         // The font of each character: the one chosen for its grapheme cluster. In a vertical line, whether the
         // cluster is upright.
         var upright = _isVertical ? new bool[content.Length] : [];
-        var fonts = new int[content.Length];
+        var fonts = new Font[content.Length];
         for (var i = 0; i < content.Length;)
         {
             if (combined.Length != 0 && combined[i] != 0)
@@ -316,7 +316,7 @@ internal sealed class TextLayoutEngine
             var span = _spans[FindSpan(paragraph.Start + i)];
             length = Math.Min(length, span.Start + span.Length - (paragraph.Start + i));
             fonts.AsSpan(i, length).Fill(SelectFont(span.Style.Fonts, content.Slice(i, length)));
-            if (_isVertical && !span.IsPlaceholder && IsUpright(span.Style.Fonts.FontSpan[fonts[i]], content.Slice(i, length), UsesRotatedForms(span.Style)))
+            if (_isVertical && !span.IsPlaceholder && IsUpright(fonts[i], content.Slice(i, length), UsesRotatedForms(span.Style)))
             {
                 // Upright text goes down the line whatever is around it: among right-to-left text, which goes
                 // up, it keeps the order of the text, as a number does
@@ -353,7 +353,7 @@ internal sealed class TextLayoutEngine
                 || (!isInsideCombined && (content[i] == '\t' || content[i - 1] == '\t'))
                 || paragraph.Levels[i] != paragraph.Levels[start]
                 || scripts[i] != scripts[start]
-                || fonts[i] != fonts[start]
+                || !ReferenceEquals(fonts[i], fonts[start])
                 || (_isVertical && upright[i] != upright[start])
                 || (nextSpan != span && (_spans[span].IsPlaceholder || _spans[nextSpan].IsPlaceholder || !AreShapedTogether(_spans[span].Style, _spans[nextSpan].Style))))
             {
@@ -364,7 +364,7 @@ internal sealed class TextLayoutEngine
                     Start = paragraph.Start + start,
                     End = paragraph.Start + i,
                     Style = style,
-                    Font = style.Fonts.FontSpan[fonts[start]],
+                    Font = fonts[start],
                     Level = paragraph.Levels[start],
                     Script = scripts[start],
                     IsTabulation = content[start] == '\t' && !isCombined,
@@ -552,6 +552,7 @@ internal sealed class TextLayoutEngine
     {
         return ReferenceEquals(first, second)
             || (first.Fonts.FontSpan.SequenceEqual(second.Fonts.FontSpan)
+                && ReferenceEquals(first.Fonts.InstalledFallback, second.Fonts.InstalledFallback)
                 && first.Size == second.Size
                 && first.LetterSpacing == second.LetterSpacing
                 && first.WordSpacing == second.WordSpacing
@@ -566,15 +567,22 @@ internal sealed class TextLayoutEngine
     /// the primary font, whose missing glyph is drawn.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// An emoji is first looked for in the fonts of the kind it is presented with (<see cref="GetPresentation"/>): the
     /// fonts that have color glyphs for the emoji presentation, the other ones for the text presentation. The stack is
     /// then searched in its order, as for any character.
+    /// </para>
+    /// <para>
+    /// A stack with installed fallback looks for a cluster no font of the stack has among the installed fonts
+    /// (<see cref="InstalledFontFallback"/>), before the fonts that only have its first character.
+    /// </para>
     /// </remarks>
-    private static int SelectFont(FontStack stack, ReadOnlySpan<char> cluster)
+    private static Font SelectFont(FontStack stack, ReadOnlySpan<char> cluster)
     {
         var fonts = stack.FontSpan;
-        if (fonts.Length == 1)
-            return 0;
+        var fallback = stack.InstalledFallback;
+        if (fonts.Length == 1 && fallback is null)
+            return fonts[0];
 
         var presentation = GetPresentation(cluster);
         if (presentation != EmojiPresentation.None)
@@ -582,7 +590,7 @@ internal sealed class TextLayoutEngine
             for (var i = 0; i < fonts.Length; i++)
             {
                 if (fonts[i].HasColorGlyphs == (presentation == EmojiPresentation.Emoji) && HasCluster(fonts[i].Face, cluster, out _))
-                    return i;
+                    return fonts[i];
             }
         }
 
@@ -590,7 +598,7 @@ internal sealed class TextLayoutEngine
         for (var i = 0; i < fonts.Length; i++)
         {
             if (HasCluster(fonts[i].Face, cluster, out var hasFirst))
-                return i;
+                return fonts[i];
 
             if (hasFirst && withFirst < 0)
             {
@@ -598,14 +606,23 @@ internal sealed class TextLayoutEngine
             }
         }
 
-        return Math.Max(withFirst, 0);
+        if (fallback is not null)
+        {
+            if (fallback.Find(cluster, presentation == EmojiPresentation.Emoji, out var installedWithFirst) is { } installed)
+                return installed;
+
+            if (withFirst < 0 && installedWithFirst is not null)
+                return installedWithFirst;
+        }
+
+        return fonts[Math.Max(withFirst, 0)];
     }
 
     /// <summary>Determines whether a font has a glyph for each character of a cluster, alone or composed with the one before.</summary>
     /// <param name="face">The font.</param>
     /// <param name="cluster">The cluster.</param>
     /// <param name="hasFirst">Whether the font has the first character of the cluster that needs a glyph.</param>
-    private static bool HasCluster(FontFace face, ReadOnlySpan<char> cluster, out bool hasFirst)
+    internal static bool HasCluster(FontFace face, ReadOnlySpan<char> cluster, out bool hasFirst)
     {
         hasFirst = false;
         var hasAll = true;
@@ -614,7 +631,7 @@ internal sealed class TextLayoutEngine
         foreach (var rune in cluster.EnumerateRunes())
         {
             var codePoint = rune.Value;
-            if (IsControl(codePoint) || UnicodeProperties.IsDefaultIgnorable(codePoint))
+            if (!NeedsGlyph(codePoint))
                 continue;
 
             var hasGlyph = face.MapCodePoint(codePoint) != 0
@@ -1772,6 +1789,9 @@ internal sealed class TextLayoutEngine
     }
 
     /// <summary>Determines whether a character is a control character, which has no glyph and takes no space.</summary>
+    /// <summary>Determines whether a character of a cluster needs a glyph of the font: neither a control nor a default ignorable character.</summary>
+    internal static bool NeedsGlyph(int codePoint) => !IsControl(codePoint) && !UnicodeProperties.IsDefaultIgnorable(codePoint);
+
     private static bool IsControl(int codePoint) => codePoint is < 0x20 or (>= 0x7F and <= 0x9F);
 
     /// <summary>Determines whether a character is white space a line can end with: every space but the ones that keep the words around them together.</summary>

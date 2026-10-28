@@ -8,10 +8,6 @@ internal static class SystemFontMatcher
 {
     private const double NormalWidth = 100;
 
-    private static readonly uint WeightAxis = Tag("wght");
-    private static readonly uint WidthAxis = Tag("wdth");
-    private static readonly uint ItalicAxis = Tag("ital");
-
     public static SystemFontDescriptor? Match(IReadOnlyList<SystemFontDescriptor> faces, int weight, bool isItalic)
     {
         if (faces.Count == 0)
@@ -52,7 +48,7 @@ internal static class SystemFontMatcher
     /// <summary>Italic: italic, then oblique, then normal. Normal: normal, then oblique, then italic.</summary>
     private static (int Rank, double Distance) StyleDistance(SystemFontDescriptor face, bool isItalic)
     {
-        var hasItalicAxis = face.TryGetAxis(ItalicAxis, out var italicAxis);
+        var hasItalicAxis = face.TryGetAxis(FontTags.ItalicAxis, out var italicAxis);
         var supportsItalic = hasItalicAxis ? italicAxis.Maximum >= 65536 : face.IsItalic && !face.IsOblique;
         var supportsNormal = hasItalicAxis ? italicAxis.Minimum <= 0 : !face.IsItalic && !face.IsOblique;
         var rank = isItalic
@@ -87,7 +83,7 @@ internal static class SystemFontMatcher
 
     private static (double Min, double Max) GetWeightRange(SystemFontDescriptor face)
     {
-        if (face.TryGetAxis(WeightAxis, out var axis))
+        if (face.TryGetAxis(FontTags.WeightAxis, out var axis))
             return (axis.Minimum / 65536.0, axis.Maximum / 65536.0);
 
         var weight = face.Weight is >= 1 and <= 1000 ? face.Weight : 400;
@@ -96,7 +92,7 @@ internal static class SystemFontMatcher
 
     private static (double Min, double Max) GetWidthRange(SystemFontDescriptor face)
     {
-        if (face.TryGetAxis(WidthAxis, out var axis))
+        if (face.TryGetAxis(FontTags.WidthAxis, out var axis))
             return (axis.Minimum / 65536.0, axis.Maximum / 65536.0);
 
         // CSS Fonts Module Level 4, §2.2 "Font width": the percentages of the width classes.
@@ -114,6 +110,4 @@ internal static class SystemFontMatcher
         };
         return (width, width);
     }
-
-    private static uint Tag(string tag) => ((uint)tag[0] << 24) | ((uint)tag[1] << 16) | ((uint)tag[2] << 8) | tag[3];
 }

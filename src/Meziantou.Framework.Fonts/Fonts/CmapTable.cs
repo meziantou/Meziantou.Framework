@@ -15,6 +15,8 @@ namespace Meziantou.Framework.Fonts;
 /// </remarks>
 internal sealed class CmapTable
 {
+    private const int MaxCodePoint = 0x10FFFF;
+
     private readonly ReadOnlyMemory<byte> _table;
     private readonly int _glyphCount;
     private readonly int _offset;
@@ -141,6 +143,103 @@ internal sealed class CmapTable
         }
 
         return MapUncached(codePoint);
+    }
+
+    /// <summary>
+    /// Gets the characters that map to a glyph other than the glyph 0, as sorted and disjoint ranges: the first and the
+    /// last character of each range, one range after the other.
+    /// </summary>
+    /// <remarks>
+    /// The characters are the ones <see cref="Map"/> gives a glyph: the ranges of the subtable are merged, then each of
+    /// their characters is mapped, so that the ranges say exactly what <see cref="Map"/> says. A subtable has at most
+    /// all the characters of Unicode: the work is bounded by their number, whatever the ranges of the subtable.
+    /// </remarks>
+    public int[] GetCoveredRanges()
+    {
+        var data = _table.Span[_offset..];
+        var candidates = new List<(int Start, int End)>();
+        switch (_format)
+        {
+            case 0:
+                candidates.Add((0, 0xFF));
+                break;
+
+            case 4:
+                {
+                    var endCodes = 14;
+                    var startCodes = endCodes + (_count * 2) + 2;
+                    for (var i = 0; i < _count; i++)
+                    {
+                        AddCandidate(candidates, FontBinary.UInt16(data, startCodes + (i * 2)), FontBinary.UInt16(data, endCodes + (i * 2)));
+                    }
+
+                    break;
+                }
+
+            case 6:
+                {
+                    var first = FontBinary.UInt16(data, 6);
+                    AddCandidate(candidates, first, (long)first + _count - 1);
+                    break;
+                }
+
+            case 10:
+                {
+                    var first = FontBinary.UInt32(data, 12);
+                    AddCandidate(candidates, first, (long)first + _count - 1);
+                    break;
+                }
+
+            default:
+                for (var i = 0; i < _count; i++)
+                {
+                    var group = 16 + (i * 12);
+                    AddCandidate(candidates, FontBinary.UInt32(data, group), FontBinary.UInt32(data, group + 4));
+                }
+
+                break;
+        }
+
+        // A symbol font also maps the characters below U+0100 to the ones it has at U+F000 plus their code.
+        if (_isSymbol)
+        {
+            candidates.Add((0, 0xFF));
+        }
+
+        candidates.Sort((x, y) => x.Start.CompareTo(y.Start));
+        var ranges = new List<int>();
+        var next = 0;
+        foreach (var (start, end) in candidates)
+        {
+            var last = _isMacintosh ? Math.Min(end, 0x7F) : end;
+            for (var codePoint = Math.Max(start, next); codePoint <= last; codePoint++)
+            {
+                if (MapUncached(codePoint) == 0)
+                    continue;
+
+                if (ranges.Count > 0 && ranges[^1] == codePoint - 1)
+                {
+                    ranges[^1] = codePoint;
+                }
+                else
+                {
+                    ranges.Add(codePoint);
+                    ranges.Add(codePoint);
+                }
+            }
+
+            next = Math.Max(next, end + 1);
+        }
+
+        return [.. ranges];
+
+        static void AddCandidate(List<(int Start, int End)> candidates, long start, long end)
+        {
+            if (start > end || start > MaxCodePoint)
+                return;
+
+            candidates.Add(((int)start, (int)Math.Min(end, MaxCodePoint)));
+        }
     }
 
     private int MapUncached(int codePoint)

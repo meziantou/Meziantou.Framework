@@ -813,6 +813,11 @@ thin public types over its `FontFace`.
   `BitmapGlyphFormat` and the internal `FontException` types (`InvalidFontException`, `UnsupportedFontFeatureException`,
   `UnknownFontFormatException`, `FontResourceLimitException`), raised by `FontErrors`. Decoding the image of a bitmap
   glyph needs the codecs: it is `BitmapGlyphDecoder`, in `Internals/Drawing`.
+- **Installed fonts** (`InstalledFontFiles`). `Font.Load(SystemFontDescriptor)` and `Font.LoadInstalled` read a file
+  once while one of its fonts is in use: the cache holds each file weakly, keyed by path and options (by reference),
+  and each `Font` it makes keeps its file entry alive (`Font.Owner`, carried by `WithVariations`), so a face loaded
+  twice is the same font. `ApplyStyle` sets `wght`, `ital` (or `slnt` at -14) of a variable face. Installed fonts are
+  never used implicitly: output without `LoadInstalled` or `WithInstalledFallback` stays machine-independent.
 - **A font is not an image.** No `ImageFormat` member, no codec: at the public boundary (`FontFiles`, `Font`,
   `TextLayout`, the text members of `DrawingCanvas`), `FontExceptionTranslation` turns the exceptions of the font code
   into the four content exceptions with `ImageFormat.Unknown`, as for ICC profiles. An unsupported feature is named
@@ -845,7 +850,14 @@ thin public types over its `FontFace`.
 - **The font of a cluster** (`SelectFont`): the first font of the stack that has every character of the grapheme
   cluster. An emoji is first looked for in the fonts of its presentation (`GetPresentation`: UTS #51; the fonts with
   color glyphs for the emoji presentation, the others for the text presentation), then in the order of the stack: the
-  presentation is a preference, never a reason to draw a missing glyph.
+  presentation is a preference, never a reason to draw a missing glyph. `SelectFont` returns a `Font`, which may be
+  outside the stack: with `FontStack.WithInstalledFallback`, a cluster no font of the stack has is looked for by
+  `InstalledFontFallback` (preferred families, color emoji families, the per-script families of
+  `InstalledFontFallbackFamilies` with the current platform first, then every covering family, same style first, in
+  the order of the collection), before the fonts that only have its first character. The fallback caches the font of
+  each cluster and of each face, so a layout loads each font once and adjacent clusters share a font (one item).
+  Tests use `SystemFontCollection.Create` on a temporary directory (`TemporaryFontDirectory`) and fonts whose advance
+  says which one was chosen; only the smoke test in `FontTests` uses `Default`.
 - **The steps of a paragraph**: levels, items (one level, script, font and shaping style each), shaping, lines, display
   order. An item is cut where shaping could differ, never where only the paint differs. A line break inside an item
   cuts it, and both parts are shaped again: no ligature or kerning pair spans two lines. The advance of each character

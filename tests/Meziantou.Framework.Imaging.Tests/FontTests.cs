@@ -2342,6 +2342,152 @@ public sealed class FontTests
     }
 
     [Fact]
+    public void TheCharactersOfASystemFontAreReadFromItsFileWhenTheyAreFirstAskedFor()
+    {
+        using var directory = new TemporaryFontDirectory();
+        var italic = FontSamples.Boxes();
+        italic.SubfamilyName = "Italic";
+        italic.IsItalic = true;
+        italic.CharacterMap[0x1F600] = FontSamples.BoxA;
+        var curves = FontSamples.Curves();
+        curves.CmapFormats = FontCmapFormats.Format12;
+        directory.Write("boxes.ttf", FontSamples.Boxes().Build());
+        directory.Write("family.ttc", FontBuilder.WriteCollection([FontSamples.Curves().BuildTables(), italic.BuildTables()], 2));
+        directory.Write("curves.woff2", FontWoff2Writer.Write(curves));
+
+        // A character map whose number of subtables goes past the end of the table: the scan does not read it.
+        var broken = FontSamples.Boxes();
+        broken.FamilyName = "Meziantou Broken";
+        broken.PostScriptName = null;
+        directory.Write("broken.ttf", FontTestSupport.PatchTable(broken.Build(), "cmap", table => BinaryPrimitives.WriteUInt16BigEndian(table[2..], 0xFFFF)));
+
+        var fonts = SystemFontCollection.Create([directory.Path]);
+        Assert.HasCount(5, fonts.Fonts);
+        Assert.Equal(0, fonts.CoverageCache.ReadCount);
+        Assert.All(fonts.Fonts, font => Assert.Null(font.Coverage));
+
+        // Only the face that is asked for is read, once.
+        var boxes = fonts.Fonts.Single(font => font.FamilyName == "Meziantou Boxes" && !font.IsItalic);
+        Assert.True(boxes.Covers(new Rune('A')));
+        Assert.False(boxes.Covers(new Rune('Z')));
+        Assert.Equal(1, fonts.CoverageCache.ReadCount);
+        Assert.All(fonts.Fonts.Where(font => !ReferenceEquals(font, boxes)), font => Assert.Null(font.Coverage));
+
+        // The characters are those the loaded face maps to a glyph, for every character of Unicode.
+        var environment = new PooledFontEnvironment(FontResourceLimits.Default, 1024 * 1024);
+        foreach (var descriptor in fonts.Fonts.Where(font => font.FamilyName != "Meziantou Broken"))
+        {
+            var face = FontLoader.Load(File.ReadAllBytes(descriptor.FilePath), environment)[descriptor.FaceIndex];
+            for (var codePoint = 0; codePoint <= 0x10FFFF; codePoint++)
+            {
+                if (Rune.IsValid(codePoint) && descriptor.Covers(new Rune(codePoint)) != (face.MapCodePoint(codePoint) != 0))
+                    Assert.Fail($"{descriptor}: U+{codePoint:X4}");
+            }
+        }
+
+        Assert.True(fonts.Fonts.Single(font => font.IsItalic).Covers(new Rune(0x1F600)));
+
+        // A face whose character map cannot be read has no character, and is read once.
+        var brokenFace = fonts.Fonts.Single(font => font.FamilyName == "Meziantou Broken");
+        var reads = fonts.CoverageCache.ReadCount;
+        Assert.False(brokenFace.Covers(new Rune('A')));
+        Assert.False(brokenFace.Covers(new Rune('B')));
+        Assert.Equal(reads + 1, fonts.CoverageCache.ReadCount);
+
+        // A file that was removed since the scan has no character either.
+        var removed = SystemFontCollection.Create([directory.Path]);
+        File.Delete(boxes.FilePath);
+        Assert.False(removed.Fonts.Single(font => font.FilePath == boxes.FilePath).Covers(new Rune('A')));
+    }
+
+    [Fact]
+    public void TheCharactersOfTheSystemFontsAreKeptWithinABudget()
+    {
+        using var directory = new TemporaryFontDirectory();
+        directory.Write("boxes.ttf", FontSamples.Boxes().Build());
+        directory.Write("curves.ttf", FontSamples.Curves().Build());
+
+        // A budget of one byte keeps the coverage that was read last, and drops the others.
+        var fonts = SystemFontCollection.Create([directory.Path], coverageBudget: 1);
+        var (boxes, curves) = (fonts.Fonts[0], fonts.Fonts[1]);
+        Assert.True(boxes.Covers(new Rune('A')));
+        Assert.NotNull(boxes.Coverage);
+        Assert.True(curves.Covers(new Rune('O')));
+        Assert.Null(boxes.Coverage);
+        Assert.Equal(curves.Coverage!.Size, fonts.CoverageCache.Size);
+
+        // A dropped coverage is read again.
+        Assert.True(boxes.Covers(new Rune('A')));
+        Assert.Equal(3, fonts.CoverageCache.ReadCount);
+        Assert.Null(curves.Coverage);
+
+        // The default budget keeps both.
+        var unbounded = SystemFontCollection.Create([directory.Path]);
+        Assert.True(unbounded.Fonts[0].Covers(new Rune('A')));
+        Assert.True(unbounded.Fonts[1].Covers(new Rune('O')));
+        Assert.NotNull(unbounded.Fonts[0].Coverage);
+        Assert.Equal(unbounded.Fonts[0].Coverage!.Size + unbounded.Fonts[1].Coverage!.Size, unbounded.CoverageCache.Size);
+    }
+
+    [Fact]
+    public void AnInstalledFontIsLoadedInOneCall()
+    {
+        using var directory = new TemporaryFontDirectory();
+        var bold = FontSamples.Boxes();
+        bold.SubfamilyName = "Bold";
+        bold.PostScriptName = "MeziantouBoxes-Bold";
+        bold.WeightClass = 700;
+        bold.IsBold = true;
+        var collectionPath = directory.Write("boxes.ttc", FontBuilder.WriteCollection([FontSamples.Boxes().BuildTables(), bold.BuildTables()]));
+
+        var variable = FontSamples.Curves();
+        variable.Axes.Add(new FontAxisDefinition("wght", 100, 400, 900, "Weight"));
+        variable.Axes.Add(new FontAxisDefinition("slnt", -20, 0, 0, "Slant"));
+        var variablePath = directory.Write("curves.ttf", variable.Build());
+        var fonts = SystemFontCollection.Create([directory.Path]);
+
+        // The face of the family closest to the style; the faces of a collection share the bytes of its file.
+        var regular = Font.LoadInstalled("Meziantou Boxes", fonts: fonts);
+        var boldFont = Font.LoadInstalled("meziantou boxes", weight: 800, fonts: fonts);
+        Assert.NotNull(regular);
+        Assert.NotNull(boldFont);
+        Assert.Equal(("Regular", 400), (regular.SubfamilyName, regular.Weight));
+        Assert.Equal(("Bold", 700), (boldFont.SubfamilyName, boldFont.Weight));
+        Assert.Same(regular.Face.Data.RawBytes, boldFont.Face.Data.RawBytes);
+
+        // A face loaded again is the same font; with other options, it is read again.
+        var descriptor = fonts.Fonts.Single(font => font.FilePath == collectionPath && font.FaceIndex == 1);
+        Assert.Same(boldFont, Font.Load(descriptor));
+        Assert.Same(boldFont, Font.Load(descriptor, FontLoadOptions.Default));
+        var other = Font.Load(descriptor, new FontLoadOptions { UseEmbeddedBitmaps = true });
+        Assert.NotSame(boldFont, other);
+        Assert.Equal("Bold", other.SubfamilyName);
+
+        // A variable font is loaded at the instance of the style, within the range of its axes.
+        var variableFont = Font.LoadInstalled("Meziantou Curves", weight: 700, fonts: fonts);
+        Assert.NotNull(variableFont);
+        Assert.Equal(700, variableFont.Weight);
+        Assert.Equal([new FontVariationSetting("wght", 700), new FontVariationSetting("slnt", 0)], variableFont.Variations.ToArray());
+        Assert.Equal(900, Font.LoadInstalled("Meziantou Curves", weight: 1000, fonts: fonts)?.Weight);
+        Assert.Equal([new FontVariationSetting("wght", 400), new FontVariationSetting("slnt", -14)], Font.LoadInstalled("Meziantou Curves", isItalic: true, fonts: fonts)?.Variations.ToArray());
+
+        // Loading the face itself gives its default instance.
+        Assert.Equal(variablePath, fonts.Match("Meziantou Curves")?.FilePath);
+        Assert.Equal(400, Font.Load(fonts.Match("Meziantou Curves")!).Weight);
+
+        // A family that is not installed is not replaced by another one.
+        Assert.Null(Font.LoadInstalled("Meziantou Missing", fonts: fonts));
+        Assert.Throws<ArgumentNullException>("familyName", () => Font.LoadInstalled(null!, fonts: fonts));
+        Assert.Throws<ArgumentOutOfRangeException>("weight", () => Font.LoadInstalled("Meziantou Boxes", weight: 0, fonts: fonts));
+        Assert.Throws<ArgumentNullException>("face", () => Font.Load((SystemFontDescriptor)null!));
+
+        // A file removed since the scan fails to load.
+        var curves = fonts.Match("Meziantou Curves")!;
+        File.Delete(variablePath);
+        Assert.ThrowsAny<IOException>(() => Font.Load(curves, new FontLoadOptions()));
+    }
+
+    [Fact]
     public void TheFontDirectoriesOfFontconfigAreReadFromItsConfiguration()
     {
         using var directory = new TemporaryFontDirectory();
@@ -2424,6 +2570,23 @@ public sealed class FontTests
         {
             Assert.Equal(descriptor.FamilyName, FontCollection.Load(descriptor.FilePath)[descriptor.FaceIndex].FamilyName);
         }
+
+        // A font every machine of a platform has is loaded in one call; on Linux, the first family of the machine.
+        var family = OperatingSystem.IsWindows() || OperatingSystem.IsMacOS() ? "Arial" : fonts.Fonts.FirstOrDefault(font => font.FamilyName.Length > 0)?.FamilyName;
+        if (family is not null)
+        {
+            var font = Font.LoadInstalled(family, weight: 700);
+            Assert.NotNull(font);
+            Assert.Equal(family, font.FamilyName, StringComparer.OrdinalIgnoreCase);
+            Assert.Same(font, Font.LoadInstalled(family, weight: 700));
+        }
+
+        Assert.Null(Font.LoadInstalled("Meziantou Framework Missing Family"));
+
+        // The fallback of a stack to the installed fonts works on the fonts of the machine.
+        var stack = new FontStack(FontTestSupport.Load(FontSamples.Boxes())).WithInstalledFallback();
+        Assert.True(stack.HasInstalledFallback);
+        Assert.True(TextLayout.Create("A \u4E00 \u2605 \U0001F600", new TextStyle(stack, 16)).Width > 0);
     }
 
     [Fact]
@@ -3136,27 +3299,6 @@ public sealed class FontTests
         }
 
         throw new ArgumentException("The font has no name table", nameof(font));
-    }
-
-    private sealed class TemporaryFontDirectory : IDisposable
-    {
-        public TemporaryFontDirectory()
-        {
-            Path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "font-tests-" + Guid.NewGuid().ToString("N"));
-            Directory.CreateDirectory(Path);
-        }
-
-        public string Path { get; }
-
-        public string Write(string relativePath, byte[] data)
-        {
-            var path = System.IO.Path.Combine(Path, relativePath);
-            Directory.CreateDirectory(System.IO.Path.GetDirectoryName(path)!);
-            File.WriteAllBytes(path, data);
-            return path;
-        }
-
-        public void Dispose() => Directory.Delete(Path, recursive: true);
     }
 
     private sealed class NonSeekableStream(byte[] data) : Stream

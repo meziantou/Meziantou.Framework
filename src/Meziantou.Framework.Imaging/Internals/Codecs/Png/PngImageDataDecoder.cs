@@ -13,10 +13,13 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <para>
 /// Push-model use: <see cref="Feed"/> copies a bounded piece of compressed data, then <see cref="TryReadRow"/> returns the
 /// reconstructed rows that piece completes, until the inflater starves; finally <see cref="Complete"/> validates the end of
-/// the datastream. Memory is bounded by two scanlines, one expanded row (none when the scanline bytes already are the
-/// source pixels), one compressed piece, one piece of decompressed data and the inflater window, whatever the image or
-/// chunk sizes; every buffer is charged to the operation scope as decoder state. The two scanline buffers are swapped
-/// after each row instead of being copied. The inflater is asked for pieces of up to
+/// the datastream. The image data of an Apple CgBI file (<see cref="PngSampleFormat.IsAppleCgbi"/>) is a raw deflate
+/// datastream instead of a zlib one: it has no header and no Adler-32 trailer. The inflater is given a zlib header before
+/// it and, once the image is complete, the Adler-32 checksum of the decompressed bytes after it, so that both datastreams
+/// are validated by the same zlib inflater. Memory is bounded by two scanlines, one expanded row (none when the scanline
+/// bytes already are the source pixels), one compressed piece, one piece of decompressed data and the inflater window,
+/// whatever the image or chunk sizes; every buffer is charged to the operation scope as decoder state. The two scanline
+/// buffers are swapped after each row instead of being copied. The inflater is asked for pieces of up to
 /// <see cref="InflatedCapacity"/> bytes, never past the size of the image, rather than for each scanline: each call
 /// costs as much as tens of bytes of data.
 /// </para>
@@ -26,7 +29,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// than the image (checked as soon as the last scanline is complete, so the expansion is bounded by the image size), data
 /// shorter than the image, and a datastream that does not end with its Adler-32 trailer (the BCL reports truncated zlib
 /// data as a clean end, so the trailer is checked against the running checksum of the decompressed bytes; extra bytes after
-/// the zlib datastream are rejected the same way).
+/// the zlib datastream are rejected the same way). A raw deflate datastream must end with its final block: bytes after it
+/// are read as the checksum and do not match it, and an inflater that did not reach it reads the byte pushed after the
+/// checksum, which a finished one leaves unread.
 /// </para>
 /// </remarks>
 internal sealed class PngImageDataDecoder : IDisposable
@@ -52,6 +57,7 @@ internal sealed class PngImageDataDecoder : IDisposable
     private long _remainingBytes;
     private InflateFeedStream? _feed;
     private ZLibStream? _zlib;
+    private bool _pendingSyntheticHeader;
 
     private int _pass = -1;
     private int _passWidth;
@@ -114,6 +120,7 @@ internal sealed class PngImageDataDecoder : IDisposable
             _inflatedBuffer = scope.Rent((int)Math.Min(InflatedCapacity, _remainingBytes), AllocationKind.DecoderState, clear: false);
             _feed = new InflateFeedStream(_feedBuffer.RawBuffer);
             _zlib = new ZLibStream(_feed, CompressionMode.Decompress, leaveOpen: true);
+            _pendingSyntheticHeader = format.IsAppleCgbi;
         }
         catch
         {
@@ -150,7 +157,8 @@ internal sealed class PngImageDataDecoder : IDisposable
                 : Invalid(string.Create(CultureInfo.InvariantCulture, $"The zlib datastream of the PNG image data ends after {_decodedScanlines} of {_totalScanlines} scanlines."));
         }
 
-        var count = feed.Push(compressed);
+        var count = _pendingSyntheticHeader ? feed.Push(BoundedInflater.SyntheticZlibHeader, compressed) : feed.Push(compressed);
+        _pendingSyntheticHeader = false;
         var piece = compressed[..count];
         _compressedLength += count;
 
@@ -255,6 +263,12 @@ internal sealed class PngImageDataDecoder : IDisposable
         }
 
         EnsureNoExtraData();
+        if (_format.IsAppleCgbi)
+        {
+            CompleteRawDeflate();
+            return;
+        }
+
         if (_compressedLength < 6 || _trailer != _adler)
             throw Invalid("The PNG image data does not end with the Adler-32 checksum of its zlib datastream (truncated datastream or extra data after it).");
     }
@@ -296,6 +310,32 @@ internal sealed class PngImageDataDecoder : IDisposable
         }
 
         _done = true;
+    }
+
+    /// <summary>
+    /// Ends the raw deflate datastream of an Apple CgBI file: the inflater is given the checksum of the decompressed bytes,
+    /// which ends a complete datastream, then one byte, which only an inflater that did not reach the end reads.
+    /// </summary>
+    private void CompleteRawDeflate()
+    {
+        var feed = _feed!;
+        Span<byte> checksum = stackalloc byte[4];
+        BinaryPrimitives.WriteUInt32BigEndian(checksum, _adler);
+        feed.Push(checksum);
+        Span<byte> probe = stackalloc byte[1];
+
+        // The image is complete (more data was rejected before): a datastream that goes on after the checksum is truncated
+        if (Inflate(_zlib!, probe) != 0)
+            throw Truncated();
+
+        if (feed.Available != 0)
+            throw Invalid("The Apple CgBI image data has extra bytes after the end of its deflate datastream.");
+
+        feed.Push([0]);
+        if (Inflate(_zlib!, probe) != 0 || feed.Available == 0)
+            throw Truncated();
+
+        static InvalidImageContentException Truncated() => Invalid("The deflate datastream of the Apple CgBI image data does not end with its final block (truncated datastream).");
     }
 
     private void EnsureNoExtraData()

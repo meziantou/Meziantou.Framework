@@ -1,7 +1,10 @@
+using System.Buffers.Binary;
 using System.IO.Compression;
+using System.Security.Cryptography;
 using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Imaging.TestHarness.Adapters;
+using Meziantou.Framework.Imaging.TestHarness.Streams;
 using Meziantou.Framework.Imaging.Tests.Codecs;
 
 namespace Meziantou.Framework.Imaging.Tests;
@@ -673,6 +676,256 @@ public sealed class PngDecoderTests
         Assert.Throws<InvalidImageContentException>(() => PngFilters.Unfilter(5, [1, 2], [0, 0], 1));
         PngFilters.Unfilter(PngFilters.Average, row, [10, 20, 30, 40], 2);
         Assert.Equal([1 + 5, 2 + 10, 3 + ((6 + 30) / 2), 4 + ((12 + 40) / 2)], row.ToArray().Select(value => (int)value));
+    }
+
+    // Apple CgBI files written by Xcode's pngcrush 1.6.4 (`xcrun pngcrush -iphone`, Xcode on macOS 27.2) from PNG files
+    // of the patterns below, and the pixels Apple ImageIO decodes from them (`sips -s format png`, sips-316, read back
+    // as RGBA): rgba is 8x5 RGBA whose alpha cycles through 0, 1, 2, 3, 77, 128, 200, 254 and 255; rgb is 6x4 RGB
+    // (pngcrush writes it as opaque RGBA); adam7 is the same RGBA pattern, 9x7 and interlaced
+    private static readonly (string Name, string File, int Width, int Height, string ExpectedPixels)[] AppleCgbiFixtures =
+    [
+        (
+            "rgba",
+            "iVBORw0KGgoAAAAEQ2dCSTAAIAIQ80R8AAAADUlIRFIAAAAIAAAABQgGAAAAeJGtVQAAAJZJREFUNc1LCkFRAMfh/+/qkkfE5MpjJJIUue7JlTyKOp2ZgRKmZkxsw8AKlM0oMxuwGAP5NvAhSUggkMQ41XXtVD+Mc2vbyW0MHkosgrwblerhrRbZSnlqAr/F8z5BEtwvxde20TG9ZJPP8QGABB6goe/Q7+Bvvozce2DCmd3bXXwweCKRzgYuyjTCc2Fmr4WVOfgtTq8qkvgCsO4CSwAAAABJRU5ErkJggg==",
+            8,
+            5,
+            "000000000000ff018000ff025500aa039517c74db91cc780de21c8c80326c8fe0055aa032e4fde4d5654f5807a590dc89f5e24fec4633bff00000000000000011691c8c83b96f6fe609b24ff00000000ffffff01ff808002ffaaff031ab30a4d0000000000ff000180ff8002aaffaa03b6ebdb4dd9f12280fff666c824fbabfe5500aa034f24244d762a80809c2eddc8c03338fee53894ff0000000000000001"),
+        (
+            "rgb",
+            "iVBORw0KGgoAAAAEQ2dCSTAAIAYXnoBlAAAADUlIRFIAAAAGAAAABAgGAAAArQROQwAAAC1JREFUY2ziZPjPwKDJgI4Zm3wY/gszaDKgY8amfob/agyaDOiYsekSw39LBk0GdAwAeDwZ8gAAAABJRU5ErkJggg==",
+            6,
+            4,
+            "000982ff290982ff520982ff7b0982ffa40982ffcd0982ff004c82ff294c95ff524ca8ff7b4cbbffa44cceffcd4ce1ff008f82ff298fa8ff528fceff7b8ff4ffa48f1affcd8f40ff00d282ff29d2bbff52d2f4ff7bd22dffa4d266ffcdd29fff"),
+        (
+            "adam7",
+            "iVBORw0KGgoAAAAEQ2dCSTAAIAIQ80R8AAAADUlIRFIAAAAJAAAABwgGAAABrZxX9gAAAPxJREFUJcu9SwIBHAbg9/2ZNhwISeL5kZt9IA113F3iUVeEHSeSNaZLRi062Whnbo21NMUFNbT1FwTRcnUttbY0FzQ3Bdrgsz8EgLA4P6I1uVijgBFDe/x7fduYoIBylbl/pp0sD55+ggH97lR4trBtfh7diFAk3ch5BAAhpVKyqw+HH72ksWOSAAlKK970DtS7Pn8vy0OlHQgpInqsSkVRa7fpVu9rum12wqwQBEkRa//Eq3de+hQisp6KuyuJGe08pzsZddVIRWcZ+BYBkAQJAOM5Zm/q7vuyoa05DWev1DQqsQLp14vhdXbJOI4WuHtxSoIckSSH3JpLuN/5vPYPb/VSKAAAAABJRU5ErkJggg==",
+            9,
+            7,
+            "000000000000ff018000ff025500aa039517c74db91cc780de21c8c80326c8fe282bc8ff0055aa032e4fde4d5654f5807a590dc89f5e24fec4633bff0000000000000001008080021691c8c83b96f6fe609b24ff00000000ffffff01ff808002ffaaff031ab30a4d3eb938800000000000ff000180ff8002aaffaa03b6ebdb4dd9f12280fff666c824fbabfe4900f0ff5500aa034f24244d762a80809c2eddc8c03338fee53894ff0000000000000001808080023766c8c85c6b3bfe8170aeff00000000ff00ff01ff80000200aa55033c88ee4d608d60800000000000ff00018080ff02aaaa5503d7c0ee4dfbc57a8020cb04c845d08efe6ad518ff"),
+    ];
+
+    public static TheoryData<string, string, int, int, string> AppleCgbiFiles
+    {
+        get
+        {
+            var data = new TheoryData<string, string, int, int, string>();
+            foreach (var (name, file, width, height, expectedPixels) in AppleCgbiFixtures)
+            {
+                data.Add(name, file, width, height, expectedPixels);
+            }
+
+            return data;
+        }
+    }
+
+    // pngcrush -iphone writes the iCCP and zTXt chunks of a CgBI file as raw deflate datastreams too: a 3x2 RGBA image
+    // with the Display P3 profile of macOS (536 bytes), a zTXt and a tEXt chunk
+    private const string AppleCgbiFileWithMetadata = "iVBORw0KGgoAAAAEQ2dCSTAAIAIQ80R8AAAADUlIRFIAAAADAAAAAggGAAAAnXRmGgAAAU1pQ0NQRGlzcGxheSBQMwAAldA/axNxAMbxz7VKIdZBvMGhw03iEKWkgi4O/QOiOISqkMTpek3SwjX+uFyRglvfQMF3oIKzm8Whjg4OgugkduvkpOCi5RwSSR0cfJbn4cszPDxMXUhDyE9ha1AWqzeXkla7k8wciURAmg3DYrN5B/743/rxadT9cDkNIfd/qq13hxl+YT4LRUlUR/NRGUqix4iLVrtDtIe4P8rPEa+N8ivExb3VZaJ3SLKNdJ3oK+prJ3j/RN7Kt7Pxhgiz3cH9u4gxZ8WmoSCX2pFoWvhH/yrmLHso2FHY1LehlFgUBLmuxC0DmSvqEg3zGhqtdicZ//dx/F99wnYPuXFQVdXrCbt9wMtr1PYn7NJ1zp3h7X5IixRMY6rX49sLzrY5/57ag2FvoTFaP7vE6S9V9f0iM0843quqn0+r6vgZ0595M/gNE/oCgQAAACl6VFh0Q29tbWVudAAAc87PLShKLS5OTVFIqlQoyEtPLiotzlDQzSzIyM9LBQCk8jF4AAAACnRFWHRUaXRsZQBDZ0JJgyqiuAAAABxJREFUY2RgYGBgZGBgZGRgZGRkYmRgdhTn87IQkjUGABhWqjAAAAAASUVORK5CYII=";
+
+    [Theory]
+    [MemberData(nameof(AppleCgbiFiles))]
+    public void AppleCgbiFilesDecodeLikeAppleImageIo(string name, string file, int width, int height, string expectedPixels)
+    {
+        var data = Convert.FromBase64String(file);
+        var expected = Convert.FromHexString(expectedPixels);
+        var info = Image.Identify(data, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan });
+        Assert.Equal(ImageFormat.Png, info.Format);
+        Assert.Equal(new Size(width, height), info.Size);
+        Assert.Equal(PixelFormat.Rgba32, info.PixelFormat);
+
+        using (var untyped = Image.Load(data))
+        {
+            Assert.Equal(PixelFormat.Rgba32, untyped.PixelFormat);
+            using var typed = untyped.CloneAs<Rgba32>();
+            Assert.Equal(expected, GetBytes(typed), $"{name}: untyped load");
+        }
+
+        using (var reader = Image.OpenReader<Rgba32>(new MemoryStream(data)))
+        {
+            using var frame = reader.ReadFrame();
+            Assert.NotNull(frame);
+            Assert.Equal(expected, GetBytes(frame), $"{name}: sequential reader");
+            Assert.Null(reader.ReadFrame());
+        }
+
+        // Pieces of one byte go through every state of the inflater, the end of the datastream included
+        using var stream = new TestInputStream(data) { Seekable = false, MaxBytesPerRead = 1 };
+        using var image = Image.Load<Rgba32>(stream);
+        Assert.Equal(expected, GetBytes(image), $"{name}: one byte at a time");
+
+        static byte[] GetBytes(Image<Rgba32> image)
+        {
+            var pixels = new Rgba32[image.Width * image.Height];
+            image.Frames[0].CopyPixelDataTo(pixels);
+            return [.. pixels.SelectMany(pixel => new[] { pixel.R, pixel.G, pixel.B, pixel.A })];
+        }
+    }
+
+    [Fact]
+    public void AppleCgbiMetadataIsReadFromRawDeflateDatastreams()
+    {
+        using var image = Image.Load(Convert.FromBase64String(AppleCgbiFileWithMetadata));
+        var profile = image.Metadata.IccProfile;
+        Assert.NotNull(profile);
+        Assert.Equal("0ff6958f98684c61f6bbdce1368ddeaf3873baf84545baba482e920d92a914c0", Convert.ToHexStringLower(SHA256.HashData(profile.Data.Span)));
+        Assert.Equal(["Comment", "Title"], image.Metadata.TextEntries.Select(entry => entry.Keyword));
+        Assert.Equal(["Compressed by pngcrush -iphone", "CgBI"], image.Metadata.TextEntries.Select(entry => entry.Value));
+
+        // Both datastreams are read in a CgBI file; a truncated one, or one followed by other bytes, is not adopted
+        var text = RawDeflate("Raw deflate text"u8);
+        byte[] keyword = [.. "Comment"u8, 0, 0];
+        using var texts = Image.Load(new SyntheticImages.PngBuilder().Chunk("CgBI", [0x30, 0x00, 0x20, 0x02]).Header(1, 1)
+            .Chunk("zTXt", [.. keyword, .. text])
+            .Chunk("zTXt", [.. keyword, .. SyntheticImages.Zlib("zlib text"u8)])
+            .Chunk("zTXt", [.. keyword, .. text.AsSpan(0, text.Length - 1)])
+            .Chunk("zTXt", [.. keyword, .. text, 0])
+            .Chunk("IDAT", RawDeflate([0, 0, 0, 0, 0])).End().ToArray());
+        Assert.Equal(["Raw deflate text", "zlib text"], texts.Metadata.TextEntries.Select(entry => entry.Value));
+    }
+
+    [Fact]
+    public void AppleCgbiColorsAreUnpremultipliedLikeAppleImageIo()
+    {
+        // Every premultiplied color c and alpha a with c <= a (B = c, G = c / 2, R = 3c / 4 at x = c, y = a). Apple ImageIO
+        // (sips-316) gives round(c * 255 / a) for each of these 32,896 pairs, which was checked on the same file: colors
+        // with a low alpha cannot be recovered exactly (an alpha of 1 only leaves 0 and 255)
+        var scanlines = new byte[256 * (1 + (256 * 4))];
+        for (var alpha = 0; alpha < 256; alpha++)
+        {
+            for (var color = 0; color < 256; color++)
+            {
+                var value = color <= alpha ? color : 0;
+                var offset = (alpha * (1 + (256 * 4))) + 1 + (color * 4);
+                scanlines[offset] = (byte)value;
+                scanlines[offset + 1] = (byte)(value / 2);
+                scanlines[offset + 2] = (byte)(value * 3 / 4);
+                scanlines[offset + 3] = (byte)alpha;
+            }
+        }
+
+        using var image = Image.Load<Rgba32>(CreateAppleCgbiFile(256, 256, colorType: 6, RawDeflate(scanlines)));
+        var pixels = new Rgba32[256 * 256];
+        image.Frames[0].CopyPixelDataTo(pixels);
+        for (var alpha = 0; alpha < 256; alpha++)
+        {
+            for (var color = 0; color < 256; color++)
+            {
+                var value = color <= alpha ? color : 0;
+                var expected = new Rgba32(Unpremultiply(value * 3 / 4, alpha), Unpremultiply(value / 2, alpha), Unpremultiply(value, alpha), (byte)alpha);
+                if (!expected.Equals(pixels[(alpha * 256) + color]))
+                    Assert.Fail($"Premultiplied ({value * 3 / 4}, {value / 2}, {value}, {alpha}) decodes to {pixels[(alpha * 256) + color]}, expected {expected}.");
+            }
+        }
+
+        static byte Unpremultiply(int value, int alpha) => alpha == 0 ? (byte)0 : (byte)Math.Round(value * 255.0 / alpha, MidpointRounding.AwayFromZero);
+    }
+
+    [Fact]
+    public void AppleCgbiBgrSamplesAreSwapped()
+    {
+        // No tool at hand writes an RGB CgBI file; Apple ImageIO (sips-316) decodes this one to (20, 10, 200) and (7, 6, 5)
+        using var image = Image.Load(CreateAppleCgbiFile(2, 1, colorType: 2, RawDeflate([0, 200, 10, 20, 5, 6, 7])));
+        Assert.Equal(PixelFormat.Rgb24, image.PixelFormat);
+        using var pixels = image.CloneAs<Rgb24>();
+        var actual = new Rgb24[2];
+        pixels.Frames[0].CopyPixelDataTo(actual);
+        Assert.Equal([new Rgb24(20, 10, 200), new Rgb24(7, 6, 5)], actual);
+    }
+
+    public static TheoryData<string, byte[]> InvalidAppleCgbiFiles
+    {
+        get
+        {
+            byte[] cgbi = [0x30, 0x00, 0x20, 0x02];
+            byte[] scanlines = [0, 1, 2, 3, 4, 0, 0, 0, 0];
+            var idat = RawDeflate(scanlines);
+            return new TheoryData<string, byte[]>
+            {
+                { "CgBI chunk of 5 bytes", new SyntheticImages.PngBuilder().Chunk("CgBI", [.. cgbi, 0]).Header(2, 1).Chunk("IDAT", idat).End().ToArray() },
+                { "two CgBI chunks before IHDR", new SyntheticImages.PngBuilder().Chunk("CgBI", cgbi).Chunk("CgBI", cgbi).Header(2, 1).Chunk("IDAT", idat).End().ToArray() },
+                { "a CgBI chunk after the IHDR of a CgBI file", new SyntheticImages.PngBuilder().Chunk("CgBI", cgbi).Header(2, 1).Chunk("CgBI", cgbi).Chunk("IDAT", idat).End().ToArray() },
+                { "tEXt between CgBI and IHDR", new SyntheticImages.PngBuilder().Chunk("CgBI", cgbi).Text("Title", "x").Header(2, 1).Chunk("IDAT", idat).End().ToArray() },
+                { "CgBI file of gray samples", new SyntheticImages.PngBuilder().Chunk("CgBI", cgbi).Header(2, 1, bitDepth: 8, colorType: 0).Chunk("IDAT", RawDeflate([0, 1, 2])).End().ToArray() },
+                { "CgBI file of 16-bit samples", new SyntheticImages.PngBuilder().Chunk("CgBI", cgbi).Header(1, 1, bitDepth: 16, colorType: 6).Chunk("IDAT", RawDeflate(new byte[9])).End().ToArray() },
+                { "zlib datastream", CreateAppleCgbiFile(2, 1, colorType: 6, SyntheticImages.Zlib(scanlines)) },
+                { "color above its alpha", CreateAppleCgbiFile(2, 1, colorType: 6, RawDeflate([0, 1, 2, 3, 4, 0, 0, 5, 4])) },
+                { "colored transparent pixel", CreateAppleCgbiFile(2, 1, colorType: 6, RawDeflate([0, 1, 2, 3, 4, 1, 0, 0, 0])) },
+                { "extra bytes after the deflate datastream", CreateAppleCgbiFile(2, 1, colorType: 6, [.. idat, 0, 0, 0, 0, 0]) },
+                { "one extra byte after the deflate datastream", CreateAppleCgbiFile(2, 1, colorType: 6, [.. idat, 0]) },
+                { "one scanline too many", CreateAppleCgbiFile(2, 1, colorType: 6, RawDeflate([.. scanlines, .. scanlines])) },
+                { "one scanline too few", CreateAppleCgbiFile(2, 2, colorType: 6, idat) },
+            };
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(InvalidAppleCgbiFiles))]
+    public void InconsistentAppleCgbiFilesAreInvalidContent(string name, byte[] data)
+    {
+        _ = name;
+        Assert.Equal(ImageFormat.Png, Assert.Throws<InvalidImageContentException>(() => Image.Load(data)).Format);
+        Assert.Throws<InvalidImageContentException>(() =>
+        {
+            using var reader = Image.OpenReader<Rgba32>(new MemoryStream(data));
+            using var frame = reader.ReadFrame();
+        });
+    }
+
+    [Fact]
+    public void TruncatedAppleCgbiFilesAreInvalidAtEveryLength()
+    {
+        // Every prefix of the file after its signature, and every prefix of its deflate datastream in a file whose chunks are valid: the last
+        // one only lacks the end of the final block, after the data of every scanline
+        foreach (var file in AppleCgbiFixtures.Select(fixture => Convert.FromBase64String(fixture.File)))
+        {
+            for (var length = PngCodec.Signature.Length; length < file.Length; length++)
+            {
+                Assert.Throws<InvalidImageContentException>(() => Image.Load(file.AsSpan(0, length)));
+            }
+
+            var idatStart = file.AsSpan().IndexOf("IDAT"u8) + 4;
+            var idatLength = (int)BinaryPrimitives.ReadUInt32BigEndian(file.AsSpan(idatStart - 8));
+            var width = (int)BinaryPrimitives.ReadUInt32BigEndian(file.AsSpan(8 + 12 + 8));
+            var height = (int)BinaryPrimitives.ReadUInt32BigEndian(file.AsSpan(8 + 12 + 12));
+            var interlace = file[8 + 12 + 8 + 12];
+            for (var length = 0; length < idatLength; length++)
+            {
+                var data = new SyntheticImages.PngBuilder().Chunk("CgBI", [0x30, 0x00, 0x20, 0x02]).Header(width, height, interlace: interlace)
+                    .Chunk("IDAT", file.AsSpan(idatStart, length)).End().ToArray();
+                Assert.Throws<InvalidImageContentException>(() => Image.Load(data));
+            }
+        }
+    }
+
+    [Fact]
+    public void AnimatedAndKeyedAppleCgbiFilesAreUnsupported()
+    {
+        byte[] cgbi = [0x30, 0x00, 0x20, 0x02];
+        var animated = new SyntheticImages.PngBuilder().Chunk("CgBI", cgbi).Header(1, 1).AnimationControl(1, 0).FrameControl(1, 1)
+            .Chunk("IDAT", RawDeflate([0, 0, 0, 0, 0])).End().ToArray();
+        Assert.Equal("PNG CgBI animation", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(animated)).Feature);
+
+        var keyed = new SyntheticImages.PngBuilder().Chunk("CgBI", cgbi).Header(1, 1, colorType: 2).Chunk("tRNS", [0, 1, 0, 2, 0, 3])
+            .Chunk("IDAT", RawDeflate([0, 3, 2, 1])).End().ToArray();
+        Assert.Equal("PNG CgBI tRNS", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(keyed)).Feature);
+
+        // Only a chunk before IHDR makes a CgBI file: after it, the chunk is an unknown critical chunk
+        var late = new SyntheticImages.PngBuilder().Header(1, 1).Chunk("CgBI", cgbi).Chunk("IDAT", SyntheticImages.Zlib([0, 0, 0, 0, 0])).End().ToArray();
+        Assert.Equal("PNG critical chunk CgBI", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(late)).Feature);
+    }
+
+    private static byte[] CreateAppleCgbiFile(int width, int height, byte colorType, byte[] imageData)
+        => new SyntheticImages.PngBuilder().Chunk("CgBI", [0x30, 0x00, 0x20, 0x02]).Header(width, height, colorType: colorType).Chunk("IDAT", imageData).End().ToArray();
+
+    private static byte[] RawDeflate(ReadOnlySpan<byte> data)
+    {
+        using var output = new MemoryStream();
+        using (var deflate = new DeflateStream(output, CompressionLevel.SmallestSize, leaveOpen: true))
+        {
+            deflate.Write(data);
+        }
+
+        return output.ToArray();
     }
 
     private static void AssertPixels(Rgba64[] expected, Image<Rgba64> image, string context)

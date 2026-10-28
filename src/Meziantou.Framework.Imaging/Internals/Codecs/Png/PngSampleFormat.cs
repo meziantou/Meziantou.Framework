@@ -15,6 +15,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <item><description>Source layouts: <see cref="PixelFormat.Gray8"/>/<see cref="PixelFormat.Gray16"/> (gray), <see cref="PixelFormat.Rgb24"/> (RGB 8, palette), <see cref="PixelFormat.Rgba32"/>/<see cref="PixelFormat.Rgba64"/> (alpha, <c>tRNS</c>, RGB 16, gray+alpha replicated to RGBA).</description></item>
 /// <item><description>A <c>tRNS</c> key (gray or RGB) makes exactly the samples equal to the key fully transparent; their color is kept. The key is compared with the encoded sample value (before scaling), all 16 bits included.</description></item>
 /// <item><description>Palette entries without a <c>tRNS</c> value are opaque. A palette index outside the <c>PLTE</c> entries is <see cref="InvalidImageContentException"/>.</description></item>
+/// <item><description>Apple CgBI files (<see cref="IsAppleCgbi"/>) store BGR or premultiplied BGRA samples: the channels are swapped and the colors un-premultiplied to <c>round(c * 255 / a)</c> (zero when the alpha is zero), as Apple ImageIO decodes them. A color above its alpha is <see cref="InvalidImageContentException"/>.</description></item>
 /// </list>
 /// </remarks>
 internal sealed class PngSampleFormat
@@ -26,9 +27,10 @@ internal sealed class PngSampleFormat
     private readonly ushort _keyGreen;
     private readonly ushort _keyBlue;
 
-    private PngSampleFormat(byte colorType, byte bitDepth, ReadOnlySpan<byte> palette, ReadOnlySpan<byte> transparency, bool hasTransparency)
+    private PngSampleFormat(byte colorType, byte bitDepth, ReadOnlySpan<byte> palette, ReadOnlySpan<byte> transparency, bool hasTransparency, bool isAppleCgbi = false)
     {
         ColorType = colorType;
+        IsAppleCgbi = isAppleCgbi;
         BitDepth = bitDepth;
         Channels = colorType switch
         {
@@ -119,14 +121,20 @@ internal sealed class PngSampleFormat
     /// Gets a value indicating whether an unfiltered scanline already is a row of source pixels (8-bit gray, RGB or RGBA
     /// without a <c>tRNS</c> key), so that <see cref="Expand"/> would only copy it.
     /// </summary>
-    public bool IsIdentity => BitDepth == 8 && !_hasKey && ColorType is 0 or 2 or 6;
+    public bool IsIdentity => BitDepth == 8 && !_hasKey && !IsAppleCgbi && ColorType is 0 or 2 or 6;
+
+    /// <summary>
+    /// Gets a value indicating whether the samples are those of an Apple CgBI file: 8-bit BGR, or BGRA with premultiplied
+    /// alpha, in a raw deflate datastream.
+    /// </summary>
+    public bool IsAppleCgbi { get; }
 
     /// <summary>Creates the sample format of the image walked by a structure parser (IHDR, PLTE, tRNS already validated).</summary>
     public static PngSampleFormat Create(PngStructureParser structure)
     {
         ArgumentNullException.ThrowIfNull(structure);
         var transparency = structure.Transparency;
-        return new PngSampleFormat(structure.ColorType, structure.BitDepth, structure.Palette.Span, transparency is { } value ? value.Span : default, transparency is not null);
+        return new PngSampleFormat(structure.ColorType, structure.BitDepth, structure.Palette.Span, transparency is { } value ? value.Span : default, transparency is not null, structure.IsAppleCgbi);
     }
 
     /// <summary>Creates a sample format from validated header values.</summary>
@@ -144,9 +152,23 @@ internal sealed class PngSampleFormat
     /// <param name="scanline">The unfiltered scanline (filter byte excluded).</param>
     /// <param name="width">The number of pixels.</param>
     /// <param name="destination">At least <c>width * SourceBytesPerPixel</c> bytes.</param>
-    /// <exception cref="InvalidImageContentException">A palette index is outside the palette.</exception>
+    /// <exception cref="InvalidImageContentException">A palette index is outside the palette, or a premultiplied color of an Apple CgBI file is above its alpha.</exception>
     public void Expand(ReadOnlySpan<byte> scanline, int width, Span<byte> destination)
     {
+        if (IsAppleCgbi)
+        {
+            if (ColorType == 6)
+            {
+                ExpandCgbiBgra(scanline, width, destination);
+            }
+            else
+            {
+                ExpandCgbiBgr(scanline, width, destination);
+            }
+
+            return;
+        }
+
         switch (ColorType)
         {
             case 0:
@@ -201,6 +223,45 @@ internal sealed class PngSampleFormat
                 }
 
                 break;
+        }
+    }
+
+    /// <summary>Swaps the BGR samples of an Apple CgBI file to <see cref="PixelFormat.Rgb24"/>.</summary>
+    private static void ExpandCgbiBgr(ReadOnlySpan<byte> scanline, int width, Span<byte> destination)
+    {
+        for (var x = 0; x < width; x++)
+        {
+            var source = scanline.Slice(x * 3, 3);
+            var pixel = destination.Slice(x * 3, 3);
+            pixel[0] = source[2];
+            pixel[1] = source[1];
+            pixel[2] = source[0];
+        }
+    }
+
+    /// <summary>
+    /// Swaps the premultiplied BGRA samples of an Apple CgBI file to <see cref="PixelFormat.Rgba32"/> and un-premultiplies
+    /// them: <c>round(c * 255 / a)</c>, the value Apple ImageIO gives for every color that is not above its alpha. Colors
+    /// with a low alpha cannot be recovered exactly: an alpha of 1 only leaves 0 and 255.
+    /// </summary>
+    private static void ExpandCgbiBgra(ReadOnlySpan<byte> scanline, int width, Span<byte> destination)
+    {
+        for (var x = 0; x < width; x++)
+        {
+            var source = scanline.Slice(x * 4, 4);
+            var pixel = destination.Slice(x * 4, 4);
+            int blue = source[0];
+            int green = source[1];
+            int red = source[2];
+            int alpha = source[3];
+            if (red > alpha || green > alpha || blue > alpha)
+                throw new InvalidImageContentException(string.Create(CultureInfo.InvariantCulture, $"The premultiplied color ({red}, {green}, {blue}) of the Apple CgBI file is above its alpha {alpha}."), ImageFormat.Png);
+
+            var half = alpha / 2;
+            pixel[0] = alpha == 0 ? (byte)0 : (byte)(((red * 255) + half) / alpha);
+            pixel[1] = alpha == 0 ? (byte)0 : (byte)(((green * 255) + half) / alpha);
+            pixel[2] = alpha == 0 ? (byte)0 : (byte)(((blue * 255) + half) / alpha);
+            pixel[3] = (byte)alpha;
         }
     }
 

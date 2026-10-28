@@ -10,6 +10,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// CRCs, critical-chunk order, IHDR/PLTE/tRNS validity, APNG <c>acTL</c>/<c>fcTL</c>/<c>fdAT</c> sequence numbers and
 /// frame bounds, and the supported metadata chunks (<c>iCCP</c>, <c>cICP</c>, <c>mDCV</c>, <c>cLLI</c>, <c>eXIf</c>,
 /// <c>pHYs</c>, <c>tEXt</c>, <c>zTXt</c>, <c>iTXt</c> including XMP). It never decompresses or allocates pixel data.
+/// It also reads Apple's CgBI variant (the iOS-optimized PNG files of application bundles), which no specification
+/// describes: a 4-byte <c>CgBI</c> chunk before <c>IHDR</c> marks a file whose image data is a raw deflate datastream
+/// (no zlib header and no Adler-32 trailer) of 8-bit BGR or premultiplied BGRA samples.
 /// </summary>
 /// <remarks>
 /// <list type="bullet">
@@ -25,9 +28,16 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// A <c>cICP</c> chunk takes precedence over <c>iCCP</c> (PNG third edition, section 4.3): the profile is then not
 /// adopted. Its matrix coefficients must be 0 (RGB), else the chunk is skipped; a narrow range is an
 /// <see cref="UnsupportedImageFeatureException"/>, since decoded samples are always full range.
+/// CgBI rules (<see cref="IsAppleCgbi"/>): the chunk is recognized only before <c>IHDR</c> (elsewhere it is an unknown
+/// critical chunk); its length must be 4, the file must have 8-bit RGB or RGBA samples and only one <c>CgBI</c> chunk,
+/// otherwise it is <see cref="InvalidImageContentException"/>. An animated CgBI file and a CgBI file with a <c>tRNS</c>
+/// key are <see cref="UnsupportedImageFeatureException"/>: no tool writes them and their layout is not known. The
+/// compressed metadata of a CgBI file (<c>iCCP</c>, <c>zTXt</c>, compressed <c>iTXt</c>) is a zlib datastream or, as
+/// Xcode's <c>pngcrush -iphone</c> writes <c>iCCP</c> and <c>zTXt</c>, a raw deflate datastream.
 /// </remarks>
 internal sealed class PngStructureParser : ImageParser<ImageInfo>
 {
+    private const uint ChunkCgbi = 0x43674249;
     private const uint ChunkIhdr = 0x49484452;
     private const uint ChunkPlte = 0x504C5445;
     private const uint ChunkIdat = 0x49444154;
@@ -130,6 +140,12 @@ internal sealed class PngStructureParser : ImageParser<ImageInfo>
 
     /// <summary>Gets the IHDR interlace method: 0 none, 1 Adam7.</summary>
     public byte InterlaceMethod { get; private set; }
+
+    /// <summary>
+    /// Gets a value indicating whether the file is an Apple CgBI file (a <c>CgBI</c> chunk before <c>IHDR</c>): its image
+    /// data is a raw deflate datastream of BGR or premultiplied BGRA samples.
+    /// </summary>
+    public bool IsAppleCgbi { get; private set; }
 
     /// <summary>Gets the PLTE entries (RGB triplets), or empty.</summary>
     public ReadOnlyMemory<byte> Palette { get; private set; }
@@ -307,8 +323,19 @@ internal sealed class PngStructureParser : ImageParser<ImageInfo>
     private ChunkAction OnChunkHeader(uint type, int length)
     {
         _deliverChunkData = false;
+        if (!_seenIhdr && type == ChunkCgbi)
+        {
+            if (IsAppleCgbi)
+                throw Invalid("The Apple CgBI file has several CgBI chunks.");
+
+            if (length != 4)
+                throw Invalid("The CgBI chunk must be 4 bytes long.");
+
+            return ChunkAction.Buffer;
+        }
+
         if (!_seenIhdr && type != ChunkIhdr)
-            throw Invalid("The first PNG chunk must be IHDR.");
+            throw Invalid(IsAppleCgbi ? "The CgBI chunk of an Apple CgBI file must be followed by IHDR." : "The first PNG chunk must be IHDR.");
 
         // The end of an IDAT run ends the default image. Yield points (sequential readers) return before the chunk header
         // is consumed; every state change before them is idempotent, so the next call processes the same header again.
@@ -333,6 +360,10 @@ internal sealed class PngStructureParser : ImageParser<ImageInfo>
                     throw Invalid("The IHDR chunk must be 13 bytes long.");
 
                 return ChunkAction.Buffer;
+
+            // Before IHDR, the chunk marks an Apple CgBI file; after it, it is an unknown critical chunk, except for a second one
+            case ChunkCgbi when IsAppleCgbi:
+                throw Invalid("The Apple CgBI file has several CgBI chunks.");
 
             case ChunkPlte:
                 if (_seenIdat)
@@ -441,6 +472,9 @@ internal sealed class PngStructureParser : ImageParser<ImageInfo>
                 if (_seenIdat || _seenTrns || ColorType is 4 or 6)
                     return ChunkAction.Stream;
 
+                if (IsAppleCgbi)
+                    throw new UnsupportedImageFeatureException("The Apple CgBI file has a tRNS chunk, whose layout is not known.", ImageFormat.Png, "PNG CgBI tRNS");
+
                 if (ColorType == 3 && Palette.IsEmpty)
                     throw Invalid("The tRNS chunk must follow the PLTE chunk.");
 
@@ -493,6 +527,10 @@ internal sealed class PngStructureParser : ImageParser<ImageInfo>
     {
         switch (type)
         {
+            case ChunkCgbi:
+                IsAppleCgbi = true;
+                break;
+
             case ChunkIhdr:
                 ProcessHeader(data);
                 break;
@@ -608,6 +646,9 @@ internal sealed class PngStructureParser : ImageParser<ImageInfo>
         if (data[12] > 1)
             throw Invalid("The PNG interlace method must be 0 or 1.");
 
+        if (IsAppleCgbi && (bitDepth != 8 || colorType is not (2 or 6)))
+            throw Invalid(string.Create(CultureInfo.InvariantCulture, $"An Apple CgBI file has 8-bit RGB or RGBA samples, not color type {colorType} with bit depth {bitDepth}."));
+
         Width = (int)width;
         Height = (int)height;
         BitDepth = bitDepth;
@@ -687,6 +728,9 @@ internal sealed class PngStructureParser : ImageParser<ImageInfo>
         _seenIdat = true;
         if (ColorType == 3 && Palette.IsEmpty)
             throw Invalid("A palette image has no PLTE chunk before its image data.");
+
+        if (IsAppleCgbi && _seenActl)
+            throw new UnsupportedImageFeatureException("The Apple CgBI file is animated (acTL chunk), which is not supported.", ImageFormat.Png, "PNG CgBI animation");
 
         IsAnimated = _seenActl;
         if (_walk == StructureWalk.Header)
@@ -851,7 +895,7 @@ internal sealed class PngStructureParser : ImageParser<ImageInfo>
         if (separator is < 1 or > 79 || separator + 2 > data.Length || data[separator + 1] != 0)
             return;
 
-        var profile = BoundedInflater.TryInflateZlib(data[(separator + 2)..], _context.Tracker);
+        var profile = InflateMetadata(data[(separator + 2)..]);
         if (profile is not null)
         {
             _metadata.TryAdoptIccProfile(profile, IsGrayscale);
@@ -874,7 +918,7 @@ internal sealed class PngStructureParser : ImageParser<ImageInfo>
         if (separator is < 1 or > 79 || separator + 2 > data.Length || data[separator + 1] != 0)
             return;
 
-        var text = BoundedInflater.TryInflateZlib(data[(separator + 2)..], _context.Tracker);
+        var text = InflateMetadata(data[(separator + 2)..]);
         if (text is null)
             return;
 
@@ -909,7 +953,7 @@ internal sealed class PngStructureParser : ImageParser<ImageInfo>
         byte[]? inflated = null;
         if (compressed == 1)
         {
-            inflated = BoundedInflater.TryInflateZlib(payload, _context.Tracker);
+            inflated = InflateMetadata(payload);
             if (inflated is null)
                 return;
 
@@ -929,6 +973,19 @@ internal sealed class PngStructureParser : ImageParser<ImageInfo>
 
         _metadata.Charge(keywordEnd + language.Length + translated.Length + (inflated is null ? payload.Length : 0));
         _metadata.AddText(keyword, Encoding.UTF8.GetString(payload), Encoding.ASCII.GetString(language), Encoding.UTF8.GetString(translated));
+    }
+
+    /// <summary>
+    /// Inflates compressed metadata: a zlib datastream, or in an Apple CgBI file a raw deflate datastream when it does not
+    /// start with a zlib header (deflate method, valid check bits). One inflater is tried, so the decompressed bytes are
+    /// charged once.
+    /// </summary>
+    private byte[]? InflateMetadata(ReadOnlySpan<byte> compressed)
+    {
+        var isZlib = compressed.Length >= 2 && (compressed[0] & 0x0F) == 8 && ((compressed[0] << 8) | compressed[1]) % 31 == 0;
+        return IsAppleCgbi && !isZlib
+            ? BoundedInflater.TryInflateRawDeflate(compressed, _context.Tracker)
+            : BoundedInflater.TryInflateZlib(compressed, _context.Tracker);
     }
 
     private static string ChunkName(uint type)

@@ -17,6 +17,10 @@ namespace Meziantou.Framework.Imaging.Formats;
 /// changed with <see cref="PngOptimization.MinimumSize"/>; delta information from a decoded source is never reused. PNG
 /// and APNG writers require <see cref="ImageWriterOptions.ExpectedFrameCount"/>.
 /// </para>
+/// <para>
+/// The output is always a standard PNG file: Apple's CgBI variant (iOS-optimized PNG), which the decoder reads, is never
+/// written.
+/// </para>
 /// </remarks>
 public sealed class PngEncoder : ImageEncoder
 {

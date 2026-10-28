@@ -2,9 +2,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
 /// The source of a streaming <see cref="System.IO.Compression.ZLibStream"/> fed by a push-model decoder:
-/// the decoder copies one bounded piece of compressed data at a time with
-/// <see cref="Push"/>, then pulls decompressed bytes until the inflater starves (this stream then reads 0 bytes). The BCL
-/// inflater resumes after a starved read, so the compressed datastream is never buffered as a whole.
+/// the decoder copies one bounded piece of compressed data at a time with <see cref="Push(ReadOnlySpan{byte})"/>, then
+/// pulls decompressed bytes until the inflater starves (this stream then reads 0 bytes). The BCL inflater resumes after a
+/// starved read, so the compressed datastream is never buffered as a whole.
 /// </summary>
 internal sealed class InflateFeedStream : Stream
 {
@@ -43,6 +43,21 @@ internal sealed class InflateFeedStream : Stream
         data[..count].CopyTo(_buffer);
         _offset = 0;
         _length = count;
+        return count;
+    }
+
+    /// <summary>Copies a prefix, then the next piece of compressed data; the previous piece must have been read completely.</summary>
+    /// <returns>The number of bytes of <paramref name="data"/> copied (at most the buffer capacity, less the prefix).</returns>
+    public int Push(ReadOnlySpan<byte> prefix, ReadOnlySpan<byte> data)
+    {
+        if (Available != 0)
+            throw new InvalidOperationException("The previous compressed piece was not consumed by the inflater.");
+
+        var count = Math.Min(data.Length, _buffer.Length - prefix.Length);
+        prefix.CopyTo(_buffer);
+        data[..count].CopyTo(_buffer.AsSpan(prefix.Length));
+        _offset = 0;
+        _length = prefix.Length + count;
         return count;
     }
 

@@ -2623,7 +2623,8 @@ public static void DrawWeights(string variableFontPath, string outputPath)
 - **Not supported**: the variation of the hinting values (`cvar`), glyphs in SVG (`SVG `: their outlines are drawn), fonts
   without outlines (bitmap-only fonts), PostScript Type 1 fonts, Type 1
   charstrings and the deprecated `seac` form of `endchar` in a CFF table, the font matrix of a CFF table (the units of
-  the `head` table are used), and hinting: instructions and hints are skipped. A WOFF or WOFF2 file is expanded in
+  the `head` table are used), and the hints of CFF outlines (TrueType instructions are run with
+  `TextLayoutOptions.Hinting = Full`, see [Text](#text)). A WOFF or WOFF2 file is expanded in
   memory; its metadata and private blocks are not read. Table checksums are not verified.
 
 ### Text
@@ -3109,12 +3110,66 @@ of their characters and were not compared with a font.
   is not broken) are invisible. A character no font of the stack has is drawn with the missing glyph of the primary
   font, and `HasMissingGlyphs` says so: nothing throws.
 - **Rendering.** The outlines are scaled to the size and placed at fractions of a pixel, then filled or stroked like any
-  path: exact coverage, the same compositing, the same flattening tolerance. Nothing is snapped to the pixel grid and
-  the hinting of the font is not applied, so the same text gives the same pixels on every platform. The glyphs and the
+  path: exact coverage, the same compositing, the same flattening tolerance. By default nothing is snapped to the
+  pixel grid and the hinting of the font is not applied (see **Hinting** below); the same text gives the same pixels
+  on every platform, with or without hinting. The glyphs and the
   decorations of one paint are one shape: where glyphs overlap, the brush is applied once. The brush of `FillText`
   paints the spans that have none; `StrokeText` strokes every outline with its pen. `TextLayout.ToPath` gives the
   outlines as a `VectorPath`; filling or stroking it changes the same pixels to the same values as a layout of one
   paint.
+- **Hinting** (`TextLayoutOptions.Hinting`, `None` by default). Small text (9 to 16 pixels) is blurry when its edges
+  fall across pixels; hinting fits the outlines to the pixel grid of the layout:
+  - `Light`: the outlines are moved along the vertical axis only, without the instructions of the font. The
+    alignment zones of the font (baseline, x-height, cap height, ascenders, descenders, measured on reference letters,
+    with the overshoot of the round letters kept from half a pixel) go to whole pixels, horizontal stems become a
+    whole number of pixels thick, and the rest of the outline follows; a gap of three quarters of a pixel keeps a
+    pixel (the dot of an i). The advances and the horizontal positions do not change. Every outline format.
+  - `Full`: the TrueType instructions of the font (`fpgm`, `prep`, `cvt `, the instructions of each glyph) fit the
+    outlines along both axes, with the version 40 interpreter of FreeType for black and white pixels
+    (`FT_LOAD_TARGET_MONO`) as the reference: on the fonts of the corpus (Droid Sans, Open Sans and Roboto, hinted by
+    hand), every point of every glyph at sizes 9 to 16, 20 and 24 is where FreeType puts it. The advances are those of
+    the hinted glyphs, whole pixels, plus what the positioning of the text adds, rounded; each glyph starts on a whole
+    pixel. A font without instructions (CFF outlines, or neither a font program nor a control value program), an
+    instance of a variable font (the variations of the control values, `cvar`, are not applied) and a font whose
+    programs break a rule of the specification are hinted as with `Light`; a glyph whose instructions break one is
+    drawn unhinted. The programs are untrusted: every instruction is charged to `MaxGlyphComplexity` (a program that
+    loops forever is an `ImageResourceLimitException`), the calls are nested at most 64 deep, and the stack, the
+    storage, the functions and the twilight zone are sized from `maxp` and charged to `MaxLiveAllocationBytes`.
+
+  The baseline of each hinted glyph is on a whole pixel of the layout, and what the layout measures is what it draws.
+  The grid is the pixel grid of the layout: draw it at a whole-pixel origin and without a transform that scales or
+  rotates the canvas. A vertical layout is not hinted. The contrast across the horizontal edges (the sum of the
+  differences between vertically neighboring pixels divided by the coverage, at 10 to 16 pixels, averaged) goes up
+  with hinting:
+
+  | Font | None | Light | Full |
+  | --- | --- | --- | --- |
+  | Droid Sans | 0.730 | 0.807 (+10.6 %) | 0.784 (+7.5 %) |
+  | Open Sans | 0.792 | 0.876 (+10.5 %) | 0.864 (+9.1 %) |
+  | Roboto | 0.729 | 0.798 (+9.5 %) | 0.778 (+6.8 %) |
+
+  Across the vertical edges, `Full` raises the contrast of Droid Sans by 11.8 %, and changes that of Open Sans and
+  Roboto by -3.0 % and +1.9 %: their instructions mostly fit the vertical axis (`TextLayoutTests.HintingMakesSmallTextSharper`
+  measures it).
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_DrawHintedText;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void DrawSmallLabel(string fontPath, string outputPath)
+{
+    // The instructions of the font fit the glyphs to the pixel grid: sharper text at small sizes, with advances
+    // of whole pixels. TextHinting.Light fits them vertically only, without the instructions, for any font.
+    var options = new TextLayoutOptions { Hinting = TextHinting.Full };
+    var layout = TextLayout.Create("Settings and preferences", new TextStyle(Font.Load(fontPath), size: 12), options);
+
+    using var image = new Image<Rgba32>((int)layout.Width + 8, (int)Math.Ceiling(layout.Height) + 8, new Rgba32(255, 255, 255));
+
+    // The grid is the pixel grid of the layout: draw it at a whole-pixel origin, without a transform that scales it
+    image.Draw(canvas => canvas.FillText(new Rgba32(0, 0, 0), layout, new PointD(4, 4)));
+    image.Save(outputPath);
+}
+```
+<!-- endref -->
+
 - **On a path.** The baseline of the first line follows the path, from its start, and the text stands on the left of
   its direction: above a path drawn from left to right. Each character, with its marks, is placed whole where the
   middle of its advance falls on the path and is turned to the direction of the path there; a glyph is never bent. The
@@ -4613,6 +4668,6 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | JPEG recompression | `JpegXlTranscoder.RecompressJpeg` rejects with `UnsupportedImageFeatureException` what a JPEG XL frame cannot hold: four components (CMYK, YCCK), a sampling factor other than 1 or 2 (4:1:1), subsampled RGB components, arithmetic, lossless, hierarchical and 12-bit files, restart intervals of several lengths (the description of the file has one), a quantization table that no component uses unless it repeats the table defined before it, a Huffman table that uses the code of all ones, more than 65,535 bytes between two markers or 4,260,096 bytes after the end of image, and entropy-coded data that would not be rebuilt byte for byte (the output is always checked). The whole file is held in memory, with two bytes per coefficient. The reconstruction data (`jbrd`) are read wherever the container has them: every encoder writes them before the codestream; when they follow it, the frame is held as it is coded until they are read, and `HasJpegReconstructionData` reads the file to its end |
 | JPEG 2000 | Decoding, rejected with `UnsupportedImageFeatureException` (also from `Identify` when the headers tell): signed samples and samples of more than 16 bits, components of different depths, a sub-sampled first component and sub-sampled components that are not the chrominances of an image of three components, more than four components without color specification, a premultiplied opacity, several opacity channels, an opacity of one color, channels that are not defined, the extensions of ISO/IEC 15444-2 (other wavelet filters, other component transformations, other regions of interest), files of the `jpm ` and `mjp2` brands, files of several codestreams or of a fragmented codestream, more than 30 bit-planes in a sub-band; for the high-throughput block coder: tile-components that mix both block coders, a code-block with several HT sets, and placeholder passes in another packet than the HT cleanup pass. CMYK is loaded only with `CmykConversion`. Not read: the intellectual property and XML boxes, the comments of the codestream. Not available: decoding a lower resolution, a region or fewer layers. Encoding: no rate control (a quality, not a size), one tile and one layer (the whole image is transformed at once, in memory), no HTJ2K, no palette, no sub-sampling, no CMYK, no animation; a codestream stores no metadata |
 | OpenEXR | Decoding, rejected with `UnsupportedImageFeatureException` (also from `Identify`): multi-part files, deep data, the DWAA, DWAB, HTJ2K and ZSTD compressions, channels other than R, G, B, A and Y (layers, depth, `RY`/`BY` chroma, extra channels: they would be lost), sub-sampled channels, a data window that leaves the display window (its pixels would be lost), UINT samples that a float cannot hold exactly, and versions other than 2. Not decoded: the lower levels of mipmaps and ripmaps, the preview image and the attributes other than the windows and the chromaticities. Encoding: one still image, scan lines only (no tiles), half or float samples (no UINT), no lossy compression (PXR24, B44, DWA), no attributes other than the required ones and the chromaticities, linear light only
-| Text | In vertical lines, no ruby and no compression of punctuation; a synthetic bold is not in the path of a layout nor in a stroked text; the pen of a style (`TextStyle.Outline`) strokes glyphs, not decorations, and has a width in pixels that a text fitted to a box does not scale; a text is fitted to a box by trying sizes, each with a whole layout; no word list is provided for the scripts that need a dictionary to break their lines; greedy line breaking; no AAT (`morx`, `kerx`) shaping, no device adjustment of positions (hinting); no hinting and no subpixel (LCD) rendering; an installed font is never used by itself: it is loaded with `Font.LoadInstalled`, or used for the characters the fonts of a stack lack with `FontStack.WithInstalledFallback`, whose choice depends on the fonts of the machine; along a path, glyphs are turned but not warped; see [Text](#text) |
-| Fonts | No font of the system unless one is asked for (`Font.LoadInstalled`, `FontStack.WithInstalledFallback`, `SystemFontCollection`), no SVG glyph, no font without outlines, no bitmap glyph of several bits per pixel without colors, no Type 1 font, no hinting; see [Fonts](#fonts) |
+| Text | In vertical lines, no ruby and no compression of punctuation; a synthetic bold is not in the path of a layout nor in a stroked text; the pen of a style (`TextStyle.Outline`) strokes glyphs, not decorations, and has a width in pixels that a text fitted to a box does not scale; a text is fitted to a box by trying sizes, each with a whole layout; no word list is provided for the scripts that need a dictionary to break their lines; greedy line breaking; no AAT (`morx`, `kerx`) shaping, no device adjustment of positions; hinting is opt-in (`TextLayoutOptions.Hinting`), only for horizontal text, without the variations of the control values (`cvar`) and without the hints of CFF outlines; no subpixel (LCD) rendering; an installed font is never used by itself: it is loaded with `Font.LoadInstalled`, or used for the characters the fonts of a stack lack with `FontStack.WithInstalledFallback`, whose choice depends on the fonts of the machine; along a path, glyphs are turned but not warped; see [Text](#text) |
+| Fonts | No font of the system unless one is asked for (`Font.LoadInstalled`, `FontStack.WithInstalledFallback`, `SystemFontCollection`), no SVG glyph, no font without outlines, no bitmap glyph of several bits per pixel without colors, no Type 1 font, no hints of CFF outlines; see [Fonts](#fonts) |
 | API | No public allocator, custom pixel type, codec plug-in or image-processor interface; implementation types are internal |

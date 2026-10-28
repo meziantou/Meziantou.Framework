@@ -1529,6 +1529,23 @@ internal static class Examples
     }
     #endregion
 
+    /// <summary>Text: small text hinted with the TrueType instructions of its font.</summary>
+    #region Imaging_DrawHintedText
+    public static void DrawSmallLabel(string fontPath, string outputPath)
+    {
+        // The instructions of the font fit the glyphs to the pixel grid: sharper text at small sizes, with advances
+        // of whole pixels. TextHinting.Light fits them vertically only, without the instructions, for any font.
+        var options = new TextLayoutOptions { Hinting = TextHinting.Full };
+        var layout = TextLayout.Create("Settings and preferences", new TextStyle(Font.Load(fontPath), size: 12), options);
+
+        using var image = new Image<Rgba32>((int)layout.Width + 8, (int)Math.Ceiling(layout.Height) + 8, new Rgba32(255, 255, 255));
+
+        // The grid is the pixel grid of the layout: draw it at a whole-pixel origin, without a transform that scales it
+        image.Draw(canvas => canvas.FillText(new Rgba32(0, 0, 0), layout, new PointD(4, 4)));
+        image.Save(outputPath);
+    }
+    #endregion
+
     /// <summary>Text: place texts by a point of their box, centered in a button and on a common baseline.</summary>
     #region Imaging_PlaceText
     public static void DrawPayButton(string fontPath, string outputPath)

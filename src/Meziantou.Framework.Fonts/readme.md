@@ -10,6 +10,7 @@ What it covers:
 - TrueType, CFF and CFF2 outlines, variable fonts (`fvar`, `avar` 1 and 2, `gvar`, `HVAR`, `VVAR`, `MVAR`)
 - Color fonts: `COLR` versions 0 and 1, `CPAL`, `sbix`, `CBDT`
 - Horizontal and vertical metrics, `BASE` baselines
+- Hinting (`GlyphHinter`): outlines fitted to the pixel grid of a size, along the vertical axis without the instructions of the font (any outline format), or with the TrueType instructions (`fpgm`, `prep`, `cvt `, glyph programs) run by a bounded interpreter whose points are those of FreeType's version 40 interpreter for black and white pixels
 - Text shaping with `GSUB` and `GPOS`, and the shaping models of complex scripts (Arabic, Hebrew, Indic, Khmer, Myanmar, Thai and Lao, Hangul, and the universal shaping engine)
 - The fonts installed on Windows, macOS and Linux (`SystemFontCollection`): an index of their faces by family and by name, read without loading the fonts, the font matching of CSS to choose a face of a family, and the characters each face has, read when they are first needed
 - AFM files (Adobe Font Metrics, `AfmFontMetrics`): the metrics of a PostScript font without its glyphs, such as the 14 standard fonts of PDF: global metrics, widths, bounding boxes and ligatures of the characters, kerning pairs and tracks, composite characters; the metrics of the 14 standard fonts of PDF are embedded (`AfmFontMetrics.GetStandardFont`)

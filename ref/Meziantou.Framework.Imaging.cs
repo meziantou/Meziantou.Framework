@@ -3151,6 +3151,13 @@ namespace Meziantou.Framework.Imaging.Typography
         RightToLeft = 2,
     }
 
+    public enum TextHinting
+    {
+        None = 0,
+        Light = 1,
+        Full = 2,
+    }
+
     public readonly struct TextHit : System.IEquatable<Meziantou.Framework.Imaging.Typography.TextHit>
     {
         public int CaretIndex { get => throw null; }
@@ -3215,6 +3222,7 @@ namespace Meziantou.Framework.Imaging.Typography
         public Meziantou.Framework.Imaging.Typography.TextDirection Direction { get => throw null; init { } }
         public string? Ellipsis { get => throw null; init { } }
         public double FirstLineIndent { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Typography.TextHinting Hinting { get => throw null; init { } }
         public string? HyphenCharacter { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Typography.TextHyphenation Hyphenation { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Typography.TextLineBreak LineBreak { get => throw null; init { } }

@@ -134572,6 +134572,19 @@
       "fileCount": 334,
       "sha256": "934e916b1b32a88c673b0307865aff1ad22052f6d74619c5e2ca14ea545e92c3",
       "description": "Fonts that each exercise one format of the cmap, class definition, coverage, GSUB or GPOS tables, and tests: a font, the options of hb-shape, characters, and the expected glyphs and positions."
+    },
+    {
+      "id": "font-suites/truetype-hinting",
+      "directory": "font-suites/truetype-hinting",
+      "provenance": {
+        "origin": "external",
+        "license": "Apache-2.0",
+        "author": "Google Inc. and Christian Robertson (Droid Sans, Open Sans, Roboto), subset by hb-subset; expectations from FreeType 2.13.2",
+        "source": "https://github.com/google/fonts (apache/droidsans, apache/opensans and apache/roboto at the commits of font-suites/truetype-hinting/README.md)"
+      },
+      "fileCount": 7,
+      "sha256": "8125166b30a0f8e6ecd603f38a67afad6b3d0e254c2e4d8038d11effa20e6abf",
+      "description": "Three fonts hinted by hand with TrueType instructions, subset to Basic Latin, and the advance and the hinted points FreeType gives for each glyph at ten sizes with its version 40 interpreter for black and white pixels."
     }
   ],
   "hevcVectors": {

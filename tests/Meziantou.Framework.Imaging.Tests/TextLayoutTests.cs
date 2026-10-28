@@ -54,6 +54,148 @@ public sealed class TextLayoutTests
         return FontTestSupport.Load(builder);
     }
 
+    [Fact]
+    public void HintingIsOffByDefault()
+    {
+        Assert.Equal(TextHinting.None, TextLayoutOptions.Default.Hinting);
+        Assert.Throws<ArgumentOutOfRangeException>(() => new TextLayoutOptions { Hinting = (TextHinting)3 });
+
+        // A font without instructions, at a size where everything is a whole number of pixels, is not changed.
+        foreach (var hinting in (TextHinting[])[TextHinting.Light, TextHinting.Full])
+        {
+            var hinted = TextLayout.Create("ABC", new TextStyle(Boxes, 16), new TextLayoutOptions { Hinting = hinting });
+            var unhinted = TextLayout.Create("ABC", new TextStyle(Boxes, 16));
+            Assert.Equal(unhinted.Width, hinted.Width);
+            Assert.Equal(unhinted.InkBounds, hinted.InkBounds);
+        }
+
+        // A vertical layout is not hinted.
+        var vertical = new TextLayoutOptions { WritingMode = TextWritingMode.VerticalRightToLeft, Hinting = TextHinting.Full };
+        var font = Font.Load(HintedFontPath("DroidSans"));
+        Assert.Equal(TextLayout.Create("Hello", new TextStyle(font, 13), new TextLayoutOptions { WritingMode = TextWritingMode.VerticalRightToLeft }).InkBounds, TextLayout.Create("Hello", new TextStyle(font, 13), vertical).InkBounds);
+    }
+
+    [Theory]
+    [InlineData("DroidSans")]
+    [InlineData("OpenSans-Regular")]
+    [InlineData("Roboto-Regular")]
+    public void FullHintingPlacesTheGlyphsOnWholePixels(string name)
+    {
+        var font = Font.Load(HintedFontPath(name));
+        for (var size = 9; size <= 16; size++)
+        {
+            const string Text = "Hamburgefonstiv AVATAR 0123";
+            var layout = TextLayout.Create(Text, new TextStyle(font, size), new TextLayoutOptions { Hinting = TextHinting.Full, Alignment = TextAlignment.Center, MaxWidth = 333.3 });
+
+            // The advances are whole pixels, the lines start on a whole pixel and the baselines are on whole pixels:
+            // every caret is on the grid.
+            Assert.Equal(Math.Round(layout.Lines[0].Width, MidpointRounding.AwayFromZero), layout.Lines[0].Width);
+            for (var i = 0; i <= Text.Length; i++)
+            {
+                var caret = layout.GetCaretRectangle(i);
+                Assert.Equal(Math.Round(caret.X, MidpointRounding.AwayFromZero), caret.X);
+            }
+
+            // What is measured is what is drawn: the path of the layout fills the pixels the layout fills.
+            Assert.Equal(Render(layout, path: false), Render(layout, path: true));
+        }
+
+        static int[] Render(TextLayout layout, bool path)
+        {
+            using var image = new Image<Gray8>(340, 24, new Gray8(0));
+            image.Draw(canvas =>
+            {
+                if (path)
+                {
+                    canvas.Fill(White, layout.ToPath(new PointD(2, 2)));
+                }
+                else
+                {
+                    canvas.FillText(White, layout, new PointD(2, 2));
+                }
+            }, Ct);
+            return DrawingTestSupport.ReadSamples(image.Frames[0]);
+        }
+    }
+
+    [Fact]
+    public void LightHintingOnlyMovesTheOutlinesVertically()
+    {
+        var font = Font.Load(HintedFontPath("OpenSans-Regular"));
+        for (var size = 10; size <= 16; size++)
+        {
+            var unhinted = TextLayout.Create("Hamburgefonstiv", new TextStyle(font, size));
+            var light = TextLayout.Create("Hamburgefonstiv", new TextStyle(font, size), new TextLayoutOptions { Hinting = TextHinting.Light });
+            Assert.Equal(unhinted.Width, light.Width);
+            Assert.Equal(unhinted.InkBounds.Left, light.InkBounds.Left);
+            Assert.Equal(unhinted.InkBounds.Right, light.InkBounds.Right);
+
+            // The top of H (the cap height) and the baseline are on whole pixels.
+            var capital = TextLayout.Create("H", new TextStyle(font, size + 0.3), new TextLayoutOptions { Hinting = TextHinting.Light });
+            Assert.Equal(Math.Round(capital.InkBounds.Top, MidpointRounding.AwayFromZero), capital.InkBounds.Top, 1e-9);
+            Assert.Equal(Math.Round(capital.InkBounds.Bottom, MidpointRounding.AwayFromZero), capital.InkBounds.Bottom, 1e-9);
+        }
+    }
+
+    [Theory]
+    [InlineData("DroidSans")]
+    [InlineData("OpenSans-Regular")]
+    [InlineData("Roboto-Regular")]
+    public void HintingMakesSmallTextSharper(string name)
+    {
+        // The horizontal edges (the baseline, the x-height, the horizontal stems) are sharper at every size with light
+        // hinting, and on average with the instructions of the font, which also fit the vertical edges.
+        var font = Font.Load(HintedFontPath(name));
+        var none = 0.0;
+        var full = 0.0;
+        for (var size = 10; size <= 16; size++)
+        {
+            var unhinted = MeasureContrast(font, size, TextHinting.None, vertical: true);
+            Assert.True(MeasureContrast(font, size, TextHinting.Light, vertical: true) > unhinted * 1.02, $"{size} px");
+            none += unhinted;
+            full += MeasureContrast(font, size, TextHinting.Full, vertical: true);
+        }
+
+        Assert.True(full > none * 1.05);
+    }
+
+    /// <summary>
+    /// Gets how sharp the edges of a text are along an axis: the sum of the differences between neighbor pixels across
+    /// that axis, divided by the sum of the coverage. Edges across pixels are spread over two pixels of smaller
+    /// differences; the coverage of the text hardly depends on hinting.
+    /// </summary>
+    internal static double MeasureContrast(Font font, double size, TextHinting hinting, bool vertical)
+    {
+        var layout = TextLayout.Create("Hamburgefonstiv quickly jumps over 0123456789", new TextStyle(font, size), new TextLayoutOptions { Hinting = hinting });
+        var width = (int)layout.Width + 4;
+        var height = (int)layout.Height + 4;
+        using var image = new Image<Gray8>(width, height, new Gray8(0));
+        image.Draw(canvas => canvas.FillText(White, layout, new PointD(2, 2)), Ct);
+        var samples = DrawingTestSupport.ReadSamples(image.Frames[0]);
+        long variation = 0;
+        long coverage = 0;
+        for (var y = 0; y < height; y++)
+        {
+            for (var x = 0; x < width; x++)
+            {
+                var sample = samples[(y * width) + x];
+                coverage += sample;
+                if (vertical && y > 0)
+                {
+                    variation += Math.Abs(sample - samples[((y - 1) * width) + x]);
+                }
+                else if (!vertical && x > 0)
+                {
+                    variation += Math.Abs(sample - samples[(y * width) + x - 1]);
+                }
+            }
+        }
+
+        return (double)variation / coverage;
+    }
+
+    private static FullPath HintedFontPath(string name) => FixtureRoot.GetDirectory() / "font-suites" / "truetype-hinting" / (name + ".subset.ttf");
+
     private static Font CreateExtended()
     {
         var builder = FontSamples.Boxes();

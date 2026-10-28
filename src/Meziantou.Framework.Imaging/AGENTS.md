@@ -869,10 +869,18 @@ thin public types over its `FontFace`.
   line break, a trimming. `IsTruncated` is the only way text is left out. `TextLayoutFuzzTests` checks it on random
   texts and options.
 - **Transform, then flatten.** The control points of an outline are transformed to pixels with `Affine2D` (one fixed
-  order of operations), then flattened by the unchanged `PathFlattener` with the tolerance of every other curve. No
-  hinting, no snapping, no rounding of advances: a run is positioned in whole font units, then scaled once.
+  order of operations), then flattened by the unchanged `PathFlattener` with the tolerance of every other curve.
+  Without hinting, no snapping and no rounding of advances: a run is positioned in whole font units, then scaled once.
   `TextLayout.ToPath` uses the same transform, and filling or stroking that path must stay bit-identical to
   `FillText` and `StrokeText` of a layout of one paint (`DrawingTextTests.DrawingALayoutIsDrawingItsPath`).
+- **Hinting** (`TextLayoutOptions.Hinting`, `TextGlyphHinter`, `GlyphHinter` of the font code). `None` must keep the
+  exact output of an unhinted layout: every hinting path is behind `_hinter is not null`. A hinted layout (horizontal
+  only) decodes each distinct glyph once through a `GlyphHinter` per font and size, in the engine, and gives the
+  outlines to the layout (`HintedOutlines`), which records them instead of decoding the glyphs: they are in font
+  units, so the transforms of the glyphs do not change. With `Full`, `Shape` takes the hinted advance plus the
+  rounded adjustment of the positioning, and `Finish` rounds the start of each line and the origin of each glyph;
+  both modes round the baseline of each glyph. Measured equals drawn because the rounded positions are the ones
+  recorded. The hinters rent from the allocators of the fonts and are disposed by `TextLayoutEngine.Create`.
 - **Synthesis** (`TextStyle.Synthesis`, `GlyphRun.Shear` and `EmboldenWidth`). An oblique is a shear in the transform
   of the glyph (`Affine2D.ForGlyph` with a shear; `Then` on a path): exact, and everywhere the outline goes (fill,
   stroke, path, bounds). A bold is the fill of the glyph united with a stroke of its outline: `Emit` sends the outline

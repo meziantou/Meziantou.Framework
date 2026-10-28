@@ -686,6 +686,22 @@ namespace Meziantou.Framework.Fonts
         public void StartShaping() { }
     }
 
+    public sealed class GlyphHinter : System.IDisposable
+    {
+        public Meziantou.Framework.Fonts.GlyphHinting Hinting { get => throw null; }
+        public double Size { get => throw null; }
+        public static Meziantou.Framework.Fonts.GlyphHinter Create(Meziantou.Framework.Fonts.FontFace face, double size, Meziantou.Framework.Fonts.GlyphHinting hinting, Meziantou.Framework.Fonts.GlyphScratch scratch, Meziantou.Framework.Fonts.FontAllocator allocator) => throw null;
+        public double DecodeOutline(int glyphId, Meziantou.Framework.Fonts.OutlineSink sink, Meziantou.Framework.Fonts.GlyphScratch scratch, ref Meziantou.Framework.Fonts.GlyphBudget budget) => throw null;
+        public void Dispose() { }
+    }
+
+    public enum GlyphHinting
+    {
+        None = 0,
+        Light = 1,
+        Full = 2,
+    }
+
     public struct GlyphInfo
     {
         public const int BaseGlyph = 2;

@@ -6,6 +6,21 @@ internal static class AdfJsonReader
 {
     public static AdfDocument ReadDocument(JsonElement element)
     {
+        try
+        {
+            return ReadDocumentCore(element);
+        }
+        catch (InvalidOperationException ex)
+        {
+            // The value kinds are checked before the values are read, so this is a string with an escaped unpaired
+            // surrogate ("\ud800"), which is valid JSON but not text: a string the reader reads, or one of a value it keeps
+            // to write it back (CloneWritable)
+            throw new AdfException("The document has a string that is not valid UTF-16", ex);
+        }
+    }
+
+    private static AdfDocument ReadDocumentCore(JsonElement element)
+    {
         if (element.ValueKind is not JsonValueKind.Object)
             throw new AdfException("The root of an ADF document must be a JSON object");
 
@@ -237,7 +252,7 @@ internal static class AdfJsonReader
             _ => new AdfUnknownNode
             {
                 TypeName = typeName ?? "",
-                RawJson = element.Clone(),
+                RawJson = element.CloneWritable(),
                 LocalId = localId,
                 Marks = marks,
                 Content = ReadNodes(element),
@@ -297,7 +312,7 @@ internal static class AdfJsonReader
             "annotation" => new AdfAnnotationMark { Id = attrs.AttrString("id") ?? "", AnnotationType = attrs.AttrString("annotationType") },
             "border" => new AdfBorderMark { Size = attrs.AttrInt32("size") ?? 1, Color = attrs.AttrString("color") },
             "breakout" => new AdfBreakoutMark { Mode = attrs.AttrString("mode") ?? "", Width = attrs.AttrDouble("width") },
-            _ => new AdfUnknownMark { TypeName = typeName ?? "", RawJson = element.Clone() },
+            _ => new AdfUnknownMark { TypeName = typeName ?? "", RawJson = element.CloneWritable() },
         };
     }
 

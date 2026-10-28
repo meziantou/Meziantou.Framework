@@ -1463,6 +1463,21 @@ internal static class DrawingKernels
 
             var pixel = samples.Slice(i * channels, channels);
             var destinationAlpha = channels == 4 ? ulong.CreateTruncating(pixel[3]) : max;
+            if (mode == CompositeMode.SourceAtop && q == Full && channels >= 3)
+            {
+                // The weights below, with Q = 1, are Da Pa and Da (M - Pa), and their total Da M: the alpha is kept, and
+                // each color is round((P Pa + D (M - Pa)) / M), ties upward, the factor Da (a transparent pixel is kept)
+                if (destinationAlpha != 0)
+                {
+                    for (var c = 0; c < 3; c++)
+                    {
+                        pixel[c] = TSample.CreateTruncating(((2 * ((paint[c] * paintAlpha) + (ulong.CreateTruncating(pixel[c]) * (max - paintAlpha)))) + max) / (2 * max));
+                    }
+                }
+
+                continue;
+            }
+
             if (mode == CompositeMode.Plus)
             {
                 Add(pixel, channels, colorChannels, q, paint, paintAlpha, destinationAlpha, max);

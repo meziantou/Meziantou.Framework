@@ -630,6 +630,7 @@ internal static class ProcessingKernels
         PixelConverter.ConvertRow(new ReadOnlySpan<Rgba64>(in replacement), new Span<TPixel>(ref stored));
         Span<Rgba64> colors = stackalloc Rgba64[64];
         var height = lease.Height;
+        var vectorized = Vector128.IsHardwareAccelerated && BitConverter.IsLittleEndian && !Resampler.TestForceScalar && (typeof(TPixel) == typeof(Rgba32) || typeof(TPixel) == typeof(Bgra32) || typeof(TPixel) == typeof(Rgba64));
         for (var y = 0; y < height; y++)
         {
             if (y % RowsPerCancellationCheck == 0)
@@ -638,6 +639,11 @@ internal static class ProcessingKernels
             }
 
             var row = lease.GetRow<TPixel>(y);
+            if (vectorized)
+            {
+                row = row[ReplaceColorVector(row, color, stored, tolerance)..];
+            }
+
             for (var start = 0; start < row.Length; start += colors.Length)
             {
                 var pixels = row.Slice(start, Math.Min(colors.Length, row.Length - start));
@@ -653,6 +659,67 @@ internal static class ProcessingKernels
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// Replaces the first pixels of a row of <see cref="Rgba32"/>, <see cref="Bgra32"/> or <see cref="Rgba64"/> pixels like
+    /// <see cref="ReplaceColor{TPixel}"/>, with vectors; returns the number of pixels done. An 8-bit sample <c>v</c> is
+    /// <c>257 v</c> in 16 bits, so <c>|257 v - c| &lt;= tolerance</c> is a range of 8-bit samples.
+    /// </summary>
+    internal static int ReplaceColorVector<TPixel>(Span<TPixel> row, Rgba64 color, TPixel replacement, int tolerance)
+        where TPixel : unmanaged
+    {
+        var i = 0;
+        if (typeof(TPixel) == typeof(Rgba32) || typeof(TPixel) == typeof(Bgra32))
+        {
+            var (low, high) = (GetByteRange(color.R, tolerance), GetByteRange(color.B, tolerance));
+            var (first, third) = typeof(TPixel) == typeof(Bgra32) ? (high, low) : (low, high);
+            var green = GetByteRange(color.G, tolerance);
+            var alpha = GetByteRange(color.A, tolerance);
+            var minimum = Vector128.Create((uint)(first.Minimum | (green.Minimum << 8) | (third.Minimum << 16) | (alpha.Minimum << 24))).AsByte();
+            var maximum = Vector128.Create((uint)(first.Maximum | (green.Maximum << 8) | (third.Maximum << 16) | (alpha.Maximum << 24))).AsByte();
+            var value = Vector128.Create(unsafe(Unsafe.As<TPixel, uint>(ref replacement))).AsByte();
+            var bytes = unsafe(MemoryMarshal.AsBytes(row));
+            for (; i + 4 <= row.Length; i += 4)
+            {
+                var pixels = Vector128.Create(bytes.Slice(4 * i, 16));
+
+                // A pixel matches when its 4 samples are in their ranges (unsigned comparisons)
+                var inRange = Vector128.Equals(Vector128.Max(pixels, minimum), pixels) & Vector128.Equals(Vector128.Min(pixels, maximum), pixels);
+                var matches = Vector128.Equals(inRange.AsUInt32(), Vector128<uint>.AllBitsSet).AsByte();
+                Vector128.ConditionalSelect(matches, value, pixels).CopyTo(bytes.Slice(4 * i, 16));
+            }
+        }
+        else if (typeof(TPixel) == typeof(Rgba64))
+        {
+            var (red, green, blue, alpha) = (GetRange(color.R, tolerance), GetRange(color.G, tolerance), GetRange(color.B, tolerance), GetRange(color.A, tolerance));
+            var minimum = Vector128.Create(red.Minimum, green.Minimum, blue.Minimum, alpha.Minimum, red.Minimum, green.Minimum, blue.Minimum, alpha.Minimum);
+            var maximum = Vector128.Create(red.Maximum, green.Maximum, blue.Maximum, alpha.Maximum, red.Maximum, green.Maximum, blue.Maximum, alpha.Maximum);
+            var value = Vector128.Create(unsafe(Unsafe.As<TPixel, ulong>(ref replacement))).AsUInt16();
+            var samples = unsafe(MemoryMarshal.Cast<TPixel, ushort>(row));
+            for (; i + 2 <= row.Length; i += 2)
+            {
+                var pixels = Vector128.Create(samples.Slice(4 * i, 8));
+                var inRange = Vector128.Equals(Vector128.Max(pixels, minimum), pixels) & Vector128.Equals(Vector128.Min(pixels, maximum), pixels);
+                var matches = Vector128.Equals(inRange.AsUInt64(), Vector128<ulong>.AllBitsSet).AsUInt16();
+                Vector128.ConditionalSelect(matches, value, pixels).CopyTo(samples.Slice(4 * i, 8));
+            }
+        }
+
+        return i;
+
+        static (uint Minimum, uint Maximum) GetByteRange(int sample, int tolerance)
+        {
+            // ceil((sample - tolerance) / 257) and floor((sample + tolerance) / 257), from 0 to 255 (the minimum of a range
+            // that matches nothing is above its maximum)
+            var low = sample - tolerance;
+            var minimum = low <= 0 ? 0 : (low + 256) / 257;
+            var maximum = Math.Min(255, (sample + tolerance) / 257);
+            return ((uint)minimum, (uint)maximum);
+        }
+
+        static (ushort Minimum, ushort Maximum) GetRange(int sample, int tolerance)
+            => ((ushort)Math.Max(0, sample - tolerance), (ushort)Math.Min(ushort.MaxValue, sample + tolerance));
     }
 
     /// <summary>The scalar reference of the in-place grayscale of one row of a color format.</summary>

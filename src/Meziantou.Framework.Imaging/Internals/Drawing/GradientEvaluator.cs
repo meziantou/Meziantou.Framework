@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using Meziantou.Framework.Imaging.Drawing;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -474,11 +475,28 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
                 parameters[i] = ((px * _axisX) + along) / _divisor;
             }
         }
-        else if (_kind == GradientKind.Radial && !_hasTransform && !_isProjective && !_isElliptic)
+        else if (_kind == GradientKind.Radial && !_hasTransform && !_isProjective)
         {
-            var py = centerY - _originY;
+            // An ellipse is a circle stretched vertically: the row is brought back to the circle as GetUnspreadParameter does
+            var circleY = _isElliptic ? _ellipseCenterY + (((centerY - _ellipseCenterY) * _ellipseRadiusX) / _ellipseRadiusY) : centerY;
+            var py = circleY - _originY;
             var squared = py * py;
-            for (var i = 0; i < parameters.Length; i++)
+            var i = 0;
+            if (Vector128.IsHardwareAccelerated && !Resampler.TestForceScalar)
+            {
+                // The same operations on two columns at a time
+                var origin = Vector128.Create(_originX);
+                var half = Vector128.Create(0.5);
+                var squaredY = Vector128.Create(squared);
+                var divisor = Vector128.Create(_divisor);
+                for (; i + 2 <= parameters.Length; i += 2)
+                {
+                    var px = (Vector128.Create((double)(x + i), x + i + 1) + half) - origin;
+                    (Vector128.Sqrt((px * px) + squaredY) / divisor).CopyTo(parameters[i..]);
+                }
+            }
+
+            for (; i < parameters.Length; i++)
             {
                 var px = (x + i + 0.5) - _originX;
                 parameters[i] = Math.Sqrt((px * px) + squared) / _divisor;

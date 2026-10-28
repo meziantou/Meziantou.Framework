@@ -1047,10 +1047,12 @@ thin public types over its `FontFace`.
   and AVIF decoders decode the tiles of a grid of at least 65,536 samples concurrently (`HeifGridTiles.Decode`): the
   structure parser and the `InputResourceTracker` are not thread-safe and stay on the calling thread (each worker charges
   its hidden pixels to a tracker of its own, merged in tile order), and the pixels and the errors are those of one worker
-  (the error of the first tile that fails, a cancellation first; `HeicDecodingTests`, `AvifDecoderTests`). The AVIF
-  encoder codes the tiles of such a grid (`AvifEncoder.GridTileSize`) the same way (`HeifEncoderSession.EncodeTiles`):
-  each worker has encoders of its own, created with the session and charged to its scope, and the coded tiles are appended
-  in tile order, so the file is byte-identical to one worker's (`AvifEncoderTests`). The AV1 post-processing filters
+  (the error of the first tile that fails, a cancellation first; `HeicDecodingTests`, `AvifDecoderTests`). The HEIC
+  and AVIF encoders code the tiles of such a grid (`HeicEncoder.GridTileSize`, `AvifEncoder.GridTileSize`) the same way
+  (`HeifEncoderSession.EncodeTiles`): each worker has encoders of its own, created with the session and charged to its
+  scope, and the coded tiles are appended in tile order, so the file is byte-identical to one worker's
+  (`HeicEncoderTests`, `AvifEncoderTests`). A worker codes its next tile with the same encoders after a `Reset`, which
+  must code it as a new encoder would (`HevcEncoder.Reset`, `Av1Encoder.Reset`). The AV1 post-processing filters
   (`Av1PostFilter.Apply`) of a frame of at least 65,536 pixels run by bands of whole groups of 16 luma rows
   (`Av1PostFilter.GetBandRow`), one stage after the other: the loop filter one pass at a time (an edge reads at most half
   the transform block on each side, so the edges of different rows of a pass never share a sample), CDEF from copies of

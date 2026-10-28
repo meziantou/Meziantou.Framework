@@ -43,15 +43,16 @@ public sealed class ImageConfiguration
     /// the value. Each worker needs its own row scratch, charged to the image's
     /// <see cref="ImageResourceLimits.MaxLiveAllocationBytes"/> budget. The HEIC and AVIF decoders use it too: the tiles of a
     /// grid of at least 65,536 samples are decoded by up to this many workers, each holding the decoder and the picture of its
-    /// tile, with the pixels and the errors of a decoding by one worker. The AVIF encoder codes the tiles of such a grid
-    /// (<see cref="Formats.AvifEncoder.GridTileSize"/>) by up to this many workers, each with encoders of its own, and writes
-    /// the same bytes as one worker. The AVIF decoder also runs the post-processing filters of an AV1 frame of at least
-    /// 65,536 pixels (the loop filter, CDEF, the super-resolution upscaling and the loop restoration) by bands of rows, with
-    /// the pixels of a decoding by one worker, unless the frame is a tile decoded alongside other tiles. They take about 25%
-    /// to 40% of the decoding time of a 3840x2160 image that uses CDEF, which then decodes about 1.3 to 1.45 times faster
-    /// with 8 workers. Each worker needs its own rows, about 140 bytes per pixel of the width of the frame, charged to
-    /// <see cref="ImageResourceLimits.MaxLiveAllocationBytes"/>. The other decoders (the HEVC in-loop filters of a HEIC image
-    /// that is not a grid included), the encoders and the other operations run on the calling thread.
+    /// tile, with the pixels and the errors of a decoding by one worker. The HEIC and AVIF encoders code the tiles of such a
+    /// grid (<see cref="Formats.HeicEncoder.GridTileSize"/>, <see cref="Formats.AvifEncoder.GridTileSize"/>) by up to this
+    /// many workers, each with encoders of its own, and write the same bytes as one worker. The AVIF decoder also runs the
+    /// post-processing filters of an AV1 frame of at least 65,536 pixels (the loop filter, CDEF, the super-resolution
+    /// upscaling and the loop restoration) by bands of rows, with the pixels of a decoding by one worker, unless the frame is
+    /// a tile decoded alongside other tiles. They take about 25% to 40% of the decoding time of a 3840x2160 image that uses
+    /// CDEF, which then decodes about 1.3 to 1.45 times faster with 8 workers. Each worker needs its own rows, about 140
+    /// bytes per pixel of the width of the frame, charged to <see cref="ImageResourceLimits.MaxLiveAllocationBytes"/>. The
+    /// other decoders (the HEVC in-loop filters of a HEIC image that is not a grid included), the encoders and the other
+    /// operations run on the calling thread.
     /// </para>
     /// <para>
     /// Keep the default in services that already process several images concurrently: the bound applies per operation, so

@@ -175,12 +175,12 @@ public sealed class ApiSurfaceTests
         Assert.Equal(
             [
                 nameof(HeicEncoder.AllowBitDepthReduction), nameof(HeicEncoder.BitDepth), nameof(HeicEncoder.ChromaSubsampling), nameof(HeicEncoder.ClearTransparentColors), nameof(HeicEncoder.Compression),
-                nameof(HeicEncoder.DurationRounding), nameof(HeicEncoder.Effort), nameof(HeicEncoder.Format), nameof(HeicEncoder.KeyFrameInterval), nameof(HeicEncoder.Quality),
+                nameof(HeicEncoder.DurationRounding), nameof(HeicEncoder.Effort), nameof(HeicEncoder.Format), nameof(HeicEncoder.GridTileSize), nameof(HeicEncoder.KeyFrameInterval), nameof(HeicEncoder.Quality),
             ],
             settings);
 
         // The settings of the AVIF encoder, without the container features that only AVIF writes so far
-        string[] avifOnly = [nameof(AvifEncoder.CleanAperture), nameof(AvifEncoder.GridTileSize), nameof(AvifEncoder.PremultiplyAlpha)];
+        string[] avifOnly = [nameof(AvifEncoder.CleanAperture), nameof(AvifEncoder.PremultiplyAlpha)];
         Assert.Equal(typeof(AvifEncoder).GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly).Select(property => property.Name).Except(avifOnly).Order(StringComparer.Ordinal), settings);
         Assert.Equal(typeof(HeicCompression), GetDeclaredProperty(type, nameof(HeicEncoder.Compression)).PropertyType);
         Assert.Equal(typeof(HeicChromaSubsampling), GetDeclaredProperty(type, nameof(HeicEncoder.ChromaSubsampling)).PropertyType);

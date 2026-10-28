@@ -105,6 +105,7 @@ public sealed class DefaultsTests
         Assert.Null(heic.BitDepth);
         Assert.False(heic.AllowBitDepthReduction);
         Assert.False(heic.ClearTransparentColors);
+        Assert.Null(heic.GridTileSize);
         Assert.Equal(0, heic.KeyFrameInterval);
         Assert.Equal(FrameDurationRounding.RequireExact, heic.DurationRounding);
         Assert.Equal(MetadataHandling.Strict, heic.MetadataHandling);
@@ -154,6 +155,8 @@ public sealed class DefaultsTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new HeicEncoder { BitDepth = 16 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new HeicEncoder { DurationRounding = (FrameDurationRounding)2 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new HeicEncoder { KeyFrameInterval = -1 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new HeicEncoder { GridTileSize = new Size(63, 64) });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new HeicEncoder { GridTileSize = new Size(64, 65529) });
         Assert.Equal(new Rgba64(65535, 0, 0), new JpegEncoder { BackgroundColor = new Rgba32(255, 0, 0) }.BackgroundColor);
         Assert.Throws<ArgumentOutOfRangeException>(() => new Jpeg2000Encoder { Quality = 0 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new Jpeg2000Encoder { Quality = 101 });

@@ -604,9 +604,10 @@ alpha, and rejects incompatible ICC profiles; use `CloneAs<Gray8>` to change the
 color for each pixel from its own one: brightness, contrast, saturation, a tint), `ReplaceColor` (a new color for the
 pixels of one color), `Convolve` (a convolution
 matrix), `GaussianBlur`, `BoxBlur`, `MedianBlur`, `Sharpen` (an unsharp mask), `Equalize` and `AutoLevels` (histogram
-equalization, CLAHE and contrast stretch, see [Histograms, equalization and auto-levels](#histograms-equalization-and-auto-levels))
-and `Quantize` (a reduction to a palette, see [Color reduction](#color-reduction)). `Flip`, `Grayscale`,
-`ApplyColorMatrix`, `ReplaceColor`, `Convolve`, the blurs, `Sharpen`, `Equalize`, `AutoLevels` and `Quantize` also exist for one frame. Geometry changes preserve 16-bit precision and alpha, and reconcile the EXIF dimensions,
+equalization, CLAHE and contrast stretch, see [Histograms, equalization and auto-levels](#histograms-equalization-and-auto-levels)),
+`Quantize` (a reduction to a palette, see [Color reduction](#color-reduction)) and `Threshold` (black and white, with a
+global or an adaptive threshold, see [Binarization](#binarization)). `Flip`, `Grayscale`, `ApplyColorMatrix`,
+`ReplaceColor`, `Convolve`, the blurs, `Sharpen`, `Equalize`, `AutoLevels`, `Quantize` and `Threshold` also exist for one frame. Geometry changes preserve 16-bit precision and alpha, and reconcile the EXIF dimensions,
 orientation and thumbnail. `ConvertColorProfile` converts the colors to another ICC profile
 (see [Color management](#color-management)).
 
@@ -1143,6 +1144,57 @@ The palette is closer to the pixels (a higher PSNR and, from 64 colors up, a low
 pngquant, which weighs the colors perceptually and adapts its dithering to the content, scores higher on SSIMULACRA 2,
 which penalizes banding most. `Atkinson` is the best choice for photographs: it matches pngquant at 256 colors. With
 few colors, the error diffusion of pngquant remains ahead.
+
+#### Binarization
+
+`Threshold` makes every frame black and white, in place: a pixel whose luminance (the Rec. 709 luma that `Grayscale`
+stores, at the storage precision) is greater than its threshold becomes `ThresholdOptions.UpperColor` (white by
+default), and any other pixel `LowerColor` (black). The pixel format is kept. `ThresholdOptions.Method` chooses the
+thresholds:
+
+- **Otsu** (`ThresholdMethod.Otsu`, the default) gives the frame the level that maximizes the variance between the two
+  classes of its luminance histogram. `ImageHistogram.GetOtsuThreshold` returns that level for any histogram; on the
+  same integer samples it is the level of scikit-image's `threshold_otsu`. `ShareHistogramAcrossFrames` gives every
+  frame of an animation the level of their combined histograms.
+- **Fixed** (`ThresholdMethod.Fixed`) uses `Level`, a fraction of the sample range (0.5 by default: 128 and above
+  become white on 8-bit samples).
+- **Mean** (`ThresholdMethod.Mean`) compares each pixel with the mean of the `WindowSize` square around it (15 by
+  default) minus `Offset`, as scikit-image's `threshold_local` with `method='mean'` does: it follows uneven lighting.
+- **Sauvola** (`ThresholdMethod.Sauvola`), for documents, uses `m * (1 + k * (s / R - 1))`, where `m` and `s` are the
+  mean and the standard deviation of the window, `k` is `SauvolaK` (0.2) and `R` is `SauvolaR` (0.5 of the range, the
+  127.5 of the paper), the formula of scikit-image's `threshold_sauvola`: a blank background stays blank.
+
+The windows read the pixels outside the frame as `EdgeMode` says (`Mirror` by default, scipy's `reflect`). Their sums
+are exact integers and their means and deviations IEEE doubles, so the results are the same on every platform; on the
+same samples, they are the masks of scikit-image 0.25.2 with every edge mode. The working memory of the adaptive
+methods (2 bytes per pixel of a frame) is charged to the image. Alpha is ignored and every pixel gets one of the two
+colors, alpha included, which the pixel format must store exactly (`ArgumentException` otherwise). Floating-point
+formats have no discrete levels and are rejected (`UnsupportedImageFeatureException`): convert them to `Rgba64` first.
+
+The result is what a bilevel TIFF page (`TiffPixelLayout.Bilevel`, required by the CCITT compressions) and a portable
+bitmap (`PnmPixelLayout.Bitmap`) store, since these encoders never threshold: they accept only exactly black and white
+pixels. To dither to black and white instead, `Quantize` with an `ImagePalette` of black and white and a `Dithering`
+mode.
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_Threshold;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void SaveScanAsBilevel(string inputPath, string tiffPath, string pbmPath)
+{
+    using var page = Image.Load(inputPath);
+
+    // Sauvola's threshold follows uneven lighting: each pixel is compared with the mean and the contrast of the
+    // 31 x 31 pixels around it, so the text becomes black and the paper white, even in a shadow. The pixels are now
+    // exactly black or white, in the same pixel format.
+    page.Threshold(new ThresholdOptions { Method = ThresholdMethod.Sauvola, WindowSize = 31 });
+
+    // A bilevel page with Group 4 compression, the usual format of scanned documents
+    page.Save(tiffPath, new TiffEncoder { PixelLayout = TiffPixelLayout.Bilevel, Compression = TiffCompression.CcittGroup4 });
+
+    // A portable bitmap: one bit per pixel
+    page.Save(pbmPath, new PnmEncoder { PixelLayout = PnmPixelLayout.Bitmap });
+}
+```
+<!-- endref -->
 
 There is no HDR processing or custom processor.
 
@@ -3993,7 +4045,7 @@ animation.
 | Magic numbers | `P1` to `P6` (plain and binary PBM, PGM, PPM) and `P7` (PAM) | `P5`/`P6` (binary) or `P2`/`P3` (plain, `PnmEncoding.Plain`), and `P7` for pixel formats with alpha: the variant follows the pixel format. `P4`, or `P1` when plain, only with `PnmPixelLayout.Bitmap`. An encoder never looks at the extension; `Save(path)` without an encoder maps `.pbm` to `PnmPixelLayout.Bitmap` |
 | Header | White space and `#` comments between tokens, exactly one white-space byte before a binary raster, `ENDHDR` for PAM; bounded at 65,536 bytes; illegal values are `InvalidImageContentException` | — |
 | Tuple types | `BLACKANDWHITE`, `GRAYSCALE`, `RGB` and their `_ALPHA` forms, inferred from `DEPTH` when `TUPLTYPE` is absent; others are not supported | `RGB_ALPHA` for pixel formats with alpha |
-| Samples | 8 or 16 bits (big-endian); a sample above `MAXVAL` is `InvalidImageContentException`; a set PBM bit is black, while a PAM `BLACKANDWHITE` sample is an intensity | `MAXVAL` 255 or 65,535, so the output is always lossless (no bit-depth setting). A portable bitmap is lossless too: one bit per pixel, a set bit is black, and a pixel that is not exactly black or white (once composited over `BackgroundColor`) is `UnsupportedImageFeatureException`; it is read back as `Gray8` with one bit per component |
+| Samples | 8 or 16 bits (big-endian); a sample above `MAXVAL` is `InvalidImageContentException`; a set PBM bit is black, while a PAM `BLACKANDWHITE` sample is an intensity | `MAXVAL` 255 or 65,535, so the output is always lossless (no bit-depth setting). A portable bitmap is lossless too: one bit per pixel, a set bit is black, and a pixel that is not exactly black or white (once composited over `BackgroundColor`) is `UnsupportedImageFeatureException` (binarize the image first with `Threshold`, see [Binarization](#binarization)); it is read back as `Gray8` with one bit per component |
 | Plain rasters | Decimal samples with comments allowed; a prefix of a plain raster can be a complete raster with a smaller last sample, so truncation is not detectable there | Lines within 70 characters; PAM has no plain form, so alpha then needs `BackgroundColor`, as it does for a portable bitmap. A plain portable bitmap has one digit per pixel, without separators |
 | Metadata | Netpbm stores none | Follows `MetadataHandling` |
 
@@ -4013,7 +4065,7 @@ the offsets of the strips it describes.
 | Signed samples (`SampleFormat` 2) | Grayscale (`BlackIsZero` or `WhiteIsZero`) and RGB of 8 or 16 bits, with an optional alpha sample, loaded as the unsigned samples of the same width that are larger by half of the range: `-2^(n-1)` → 0, 0 → `2^(n-1)`, `2^(n-1) - 1` → `2^n - 1` (a signed 16-bit sample `v` is the `Gray16` value `v + 32768`), exactly, the alpha sample too; the page is then read like an unsigned one (`ImageInfo` does not tell them apart) | Not written |
 | Floating-point samples (`SampleFormat` 3) | `BlackIsZero` grayscale and RGB of 16 (half precision), 24 and 32 bits, with an optional alpha sample → `RgbaHalf` (16 bits) or `RgbaFloat` (24 and 32 bits), every value kept (signed zeros, subnormal numbers, infinities, not-a-number values and their payloads); a gray sample is repeated in the three colors, and a page without alpha is opaque. A 24-bit number has 1 sign bit, 7 exponent bits (bias 63) and 16 fraction bits, which a `float` holds exactly. The samples are linear light (`ColorTransferFunction.Linear`) unless an ICC profile describes them; `ImageInfo.BitsPerComponent` is 16, 24 or 32 | `RgbaFloat` and `RgbaHalf` pixels with `TiffPixelLayout.Auto` and any compression but JPEG: 32-bit floats, exactly, in the fewest samples that hold the page (one gray sample when the three colors of every pixel are the same number and no ICC profile is written, no alpha sample when every alpha is exactly 1). The pixels must be labeled linear light (the label of a new floating-point image) or described by an ICC profile: other pixels follow `MetadataHandling`, since a floating-point page without profile is read as linear light |
 | Photometric interpretation | `WhiteIsZero`, `BlackIsZero`, `RGB`, palette color, CMYK (separated) and YCbCr | `BlackIsZero` and `RGB`; `WhiteIsZero` for the bilevel layout, palette color for the palette layout, YCbCr for JPEG compression |
-| Bilevel | One bit per pixel, most or least significant bit first (`FillOrder` 1 or 2) → `Gray8`, reported with 1 bit per component | `TiffPixelLayout.Bilevel`: every pixel must be opaque and exactly black or exactly white, whatever the pixel format (never thresholded nor dithered) |
+| Bilevel | One bit per pixel, most or least significant bit first (`FillOrder` 1 or 2) → `Gray8`, reported with 1 bit per component | `TiffPixelLayout.Bilevel`: every pixel must be opaque and exactly black or exactly white, whatever the pixel format (never thresholded nor dithered: binarize the page first with `Threshold`, see [Binarization](#binarization)) |
 | Palette | Indexes of 1, 2, 4 or 8 bits → `Rgb24`. The entries of a `ColorMap` are 16-bit values: they are 8-bit colors when they are all multiples of 257 or all multiples of 256 (the two ways writers store an 8-bit color); otherwise the page is `Rgba64`, with the entries as they are | `TiffPixelLayout.Indexed`: 8-bit indexes into a sorted `ColorMap` of the colors of the page, at most 256 (never reduced); every pixel must be opaque; the colors of a 16-bit pixel format keep their 16 bits |
 | CMYK | 8 or 16 bits, with an optional alpha sample: loaded only with `CmykConversion`, by an ICC conversion to RGB (see [Color management](#color-management)); `Identify` reports `ImageColorModel.Cmyk` and the CMYK profile | Not written |
 | YCbCr | 8 bits, one chroma sample for 1, 2 or 4 pixels in each direction, `YCbCrCoefficients` and `ReferenceBlackWhite` applied → `Rgb24`; 8 to 16 bits with JPEG compression | Only as the samples of JPEG compression |

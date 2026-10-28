@@ -683,6 +683,7 @@ namespace Meziantou.Framework.Imaging
         public System.ReadOnlySpan<long> Counts { get => throw null; }
         public long this[int level] { get => throw null; }
         public long TotalCount { get => throw null; }
+        public int GetOtsuThreshold() => throw null;
     }
 
     public enum ImageIdentifyMode
@@ -771,6 +772,8 @@ namespace Meziantou.Framework.Imaging
         public static void Sharpen(this Meziantou.Framework.Imaging.Image image, double sigma, double amount = 1d, double threshold = 0d, Meziantou.Framework.Imaging.ConvolutionEdgeMode edgeMode = Meziantou.Framework.Imaging.ConvolutionEdgeMode.Clamp, Meziantou.Framework.Imaging.ConvolutionWorkingSpace workingSpace = Meziantou.Framework.Imaging.ConvolutionWorkingSpace.Encoded, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Sharpen(this Meziantou.Framework.Imaging.ImageFrame frame, double sigma, double amount = 1d, double threshold = 0d, Meziantou.Framework.Imaging.ConvolutionEdgeMode edgeMode = Meziantou.Framework.Imaging.ConvolutionEdgeMode.Clamp, Meziantou.Framework.Imaging.ConvolutionWorkingSpace workingSpace = Meziantou.Framework.Imaging.ConvolutionWorkingSpace.Encoded, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Skew(this Meziantou.Framework.Imaging.Image image, double degreesX, double degreesY, Meziantou.Framework.Imaging.TransformOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void Threshold(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.ThresholdOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void Threshold(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.ThresholdOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Transform(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.AffineTransform transform, Meziantou.Framework.Imaging.TransformOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Transform(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.ProjectiveTransform transform, Meziantou.Framework.Imaging.TransformOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
     }
@@ -1339,6 +1342,29 @@ namespace Meziantou.Framework.Imaging
         public override string ToString() => throw null;
         public static bool operator ==(Meziantou.Framework.Imaging.Size left, Meziantou.Framework.Imaging.Size right) => throw null;
         public static bool operator !=(Meziantou.Framework.Imaging.Size left, Meziantou.Framework.Imaging.Size right) => throw null;
+    }
+
+    public enum ThresholdMethod
+    {
+        Otsu = 0,
+        Fixed = 1,
+        Mean = 2,
+        Sauvola = 3,
+    }
+
+    public sealed class ThresholdOptions
+    {
+        public static Meziantou.Framework.Imaging.ThresholdOptions Default { get => throw null; }
+        public Meziantou.Framework.Imaging.ConvolutionEdgeMode EdgeMode { get => throw null; init { } }
+        public double Level { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Rgba64 LowerColor { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.ThresholdMethod Method { get => throw null; init { } }
+        public double Offset { get => throw null; init { } }
+        public double SauvolaK { get => throw null; init { } }
+        public double SauvolaR { get => throw null; init { } }
+        public bool ShareHistogramAcrossFrames { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Rgba64 UpperColor { get => throw null; init { } }
+        public int WindowSize { get => throw null; init { } }
     }
 
     public readonly struct Transform3D : System.IEquatable<Meziantou.Framework.Imaging.Transform3D>

@@ -23,6 +23,10 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// The flattening uses the formulas of the conversions to a format without alpha (<see cref="PixelConverter"/>).
 /// </para>
 /// <para>
+/// Large frames are processed by up to <see cref="ImageConfiguration.MaxDegreeOfParallelism"/> workers, by row bands
+/// (<see cref="EffectScratch"/> for the pixelation and the oil painting): every pixel is computed as by one worker.
+/// </para>
+/// <para>
 /// <see cref="Rgb48"/> has kernels here. <see cref="La16"/>, <see cref="La32"/> and <see cref="A8"/> run on the working copy
 /// of <see cref="ProcessingBridge"/>, whose three colors are equal: the means keep them equal, the oil painting takes the
 /// gray as the intensity, and the flattened colors convert back to their luma, as the conversion of the gray format to a
@@ -67,7 +71,7 @@ internal static class EffectKernels
     /// mean of its pixels: premultiplied colors and alpha. The blocks of the right and bottom edges have the pixels that
     /// remain.
     /// </summary>
-    public static void Pixelate<TPixel>(scoped in PixelLease lease, int size, Span<double> scratch, CancellationToken cancellationToken)
+    public static void Pixelate<TPixel>(scoped in PixelLease lease, int size, EffectScratch scratch, CancellationToken cancellationToken)
         where TPixel : unmanaged
     {
         var storage = lease.Storage;
@@ -97,7 +101,20 @@ internal static class EffectKernels
         }
     }
 
-    private static void PixelateCore<TSample>(PixelStorage storage, PixelFormat format, int size, Span<double> scratch, CancellationToken cancellationToken)
+    private static void PixelateCore<TSample>(PixelStorage storage, PixelFormat format, int size, EffectScratch scratch, CancellationToken cancellationToken)
+        where TSample : unmanaged
+    {
+        // The bands start on the first row of a block
+        if (scratch.Workers is 1)
+        {
+            PixelateBand<TSample>(storage, format, size, scratch.GetDoubles(0), 0, storage.Height, cancellationToken);
+            return;
+        }
+
+        RowBands.RunParallel(scratch.Workers, band => PixelateBand<TSample>(storage, format, size, scratch.GetDoubles(band), scratch.GetBandStart(band), scratch.GetBandStart(band + 1), cancellationToken));
+    }
+
+    private static void PixelateBand<TSample>(PixelStorage storage, PixelFormat format, int size, Span<double> scratch, int start, int end, CancellationToken cancellationToken)
         where TSample : unmanaged
     {
         var width = storage.Width;
@@ -110,7 +127,7 @@ internal static class EffectKernels
         var working = scratch[..rowLength];
         var output = scratch.Slice(rowLength, rowLength);
         var sums = scratch.Slice(2 * rowLength, blocks * channels);
-        for (var top = 0; top < height; top += size)
+        for (var top = start; top < end; top += size)
         {
             cancellationToken.ThrowIfCancellationRequested();
             var rows = Math.Min(size, height - top);
@@ -231,7 +248,7 @@ internal static class EffectKernels
     /// for the floating-point formats, the sums of every window are made again from its pixels, so that a sample that is
     /// not a number or an infinity only reaches the windows that contain it.
     /// </remarks>
-    public static void OilPaint<TPixel>(scoped in PixelLease lease, int levels, int radius, bool grayColors, Span<double> scratch, Span<int> levelScratch, CancellationToken cancellationToken)
+    public static void OilPaint<TPixel>(scoped in PixelLease lease, int levels, int radius, bool grayColors, EffectScratch scratch, CancellationToken cancellationToken)
         where TPixel : unmanaged
     {
         var storage = lease.Storage;
@@ -241,19 +258,19 @@ internal static class EffectKernels
         var format = PixelFormats.GetPixelFormat<TPixel>();
         if (typeof(TPixel) == typeof(Rgba64) || typeof(TPixel) == typeof(Gray16) || typeof(TPixel) == typeof(Rgb48))
         {
-            OilPaintCore<ushort>(storage, format, levels, radius, blueFirst: false, grayColors, scratch, levelScratch, cancellationToken);
+            OilPaintCore<ushort>(storage, format, levels, radius, blueFirst: false, grayColors, scratch, cancellationToken);
         }
         else if (typeof(TPixel) == typeof(Rgba32) || typeof(TPixel) == typeof(Bgra32) || typeof(TPixel) == typeof(Rgb24) || typeof(TPixel) == typeof(Gray8))
         {
-            OilPaintCore<byte>(storage, format, levels, radius, blueFirst: typeof(TPixel) == typeof(Bgra32), grayColors, scratch, levelScratch, cancellationToken);
+            OilPaintCore<byte>(storage, format, levels, radius, blueFirst: typeof(TPixel) == typeof(Bgra32), grayColors, scratch, cancellationToken);
         }
         else if (typeof(TPixel) == typeof(RgbaFloat))
         {
-            OilPaintCore<float>(storage, format, levels, radius, blueFirst: false, grayColors, scratch, levelScratch, cancellationToken);
+            OilPaintCore<float>(storage, format, levels, radius, blueFirst: false, grayColors, scratch, cancellationToken);
         }
         else if (typeof(TPixel) == typeof(RgbaHalf))
         {
-            OilPaintCore<Half>(storage, format, levels, radius, blueFirst: false, grayColors, scratch, levelScratch, cancellationToken);
+            OilPaintCore<Half>(storage, format, levels, radius, blueFirst: false, grayColors, scratch, cancellationToken);
         }
         else
         {
@@ -261,7 +278,42 @@ internal static class EffectKernels
         }
     }
 
-    private static void OilPaintCore<TSample>(PixelStorage storage, PixelFormat format, int levels, int radius, bool blueFirst, bool grayColors, Span<double> scratch, Span<int> levelScratch, CancellationToken cancellationToken)
+    private static void OilPaintCore<TSample>(PixelStorage storage, PixelFormat format, int levels, int radius, bool blueFirst, bool grayColors, EffectScratch scratch, CancellationToken cancellationToken)
+        where TSample : unmanaged
+    {
+        var workers = scratch.Workers;
+        if (workers is 1)
+        {
+            OilPaintBand<TSample>(storage, format, levels, radius, blueFirst, grayColors, scratch.GetDoubles(0), scratch.GetInts(0), halo: default, 0, storage.Height, cancellationToken);
+            return;
+        }
+
+        // Every band reads the rows within the radius of its edges as they were: copy them before any row is rewritten
+        var rowLength = storage.RowLength;
+        for (var band = 0; band < workers; band++)
+        {
+            var halo = scratch.GetHalo(band);
+            var start = scratch.GetBandStart(band);
+            var end = scratch.GetBandStart(band + 1);
+            for (var y = Math.Max(0, start - radius); y < start; y++)
+            {
+                storage.GetRowSpanCore(y).CopyTo(halo.Slice((y - start + radius) * rowLength, rowLength));
+            }
+
+            for (var y = end; y < Math.Min(storage.Height, end + radius); y++)
+            {
+                storage.GetRowSpanCore(y).CopyTo(halo.Slice((radius + y - end) * rowLength, rowLength));
+            }
+        }
+
+        RowBands.RunParallel(workers, band => OilPaintBand<TSample>(storage, format, levels, radius, blueFirst, grayColors, scratch.GetDoubles(band), scratch.GetInts(band), scratch.GetHalo(band), scratch.GetBandStart(band), scratch.GetBandStart(band + 1), cancellationToken));
+    }
+
+    /// <summary>
+    /// Paints the rows <c>[start, end)</c>. The rows of the window outside the band are read from <paramref name="halo"/>
+    /// (the radius above the band, then the radius below it), the others from the storage, each one before it is rewritten.
+    /// </summary>
+    private static void OilPaintBand<TSample>(PixelStorage storage, PixelFormat format, int levels, int radius, bool blueFirst, bool grayColors, Span<double> scratch, Span<int> levelScratch, ReadOnlySpan<byte> halo, int start, int end, CancellationToken cancellationToken)
         where TSample : unmanaged
     {
         var width = storage.Width;
@@ -302,21 +354,21 @@ internal static class EffectKernels
 
         // The rows of the first window. Every row is read before it is written: the window of a row reaches the rows
         // below it, and the slot of a row in the ring is reused once no window reads it
-        for (var y = 0; y < Math.Min(radius, height); y++)
+        for (var y = Math.Max(0, start - radius); y < Math.Min(start + radius, height); y++)
         {
-            LoadOilPaintRow(GetSamples<TSample>(storage, y), y, window, ring, ringLevels);
+            LoadOilPaintRow(GetOilPaintRow<TSample>(storage, halo, radius, start, end, y), y, window, ring, ringLevels);
         }
 
-        for (var y = 0; y < height; y++)
+        for (var y = start; y < end; y++)
         {
-            if (y % ProcessingKernels.RowsPerCancellationCheck == 0)
+            if ((y - start) % ProcessingKernels.RowsPerCancellationCheck == 0)
             {
                 cancellationToken.ThrowIfCancellationRequested();
             }
 
             if (y + radius < height)
             {
-                LoadOilPaintRow(GetSamples<TSample>(storage, y + radius), y + radius, window, ring, ringLevels);
+                LoadOilPaintRow(GetOilPaintRow<TSample>(storage, halo, radius, start, end, y + radius), y + radius, window, ring, ringLevels);
             }
 
             var top = Math.Max(0, y - radius);
@@ -396,6 +448,18 @@ internal static class EffectKernels
 
             WorkingSamples.Store<TSample>(output, GetSamples<TSample>(storage, y), window.Alpha, transfer: 0, max);
         }
+    }
+
+    /// <summary>Gets a row read by the band <c>[start, end)</c>: from the storage inside it, from its halos outside it.</summary>
+    private static ReadOnlySpan<TSample> GetOilPaintRow<TSample>(PixelStorage storage, ReadOnlySpan<byte> halo, int radius, int start, int end, int y)
+        where TSample : unmanaged
+    {
+        if (y >= start && y < end)
+            return GetSamples<TSample>(storage, y);
+
+        var rowLength = storage.RowLength;
+        var slot = y < start ? y - start + radius : radius + y - end;
+        return unsafe(MemoryMarshal.Cast<byte, TSample>(halo.Slice(slot * rowLength, rowLength)));
     }
 
     /// <summary>Adds up the counts of every level of the <see cref="OilPaintSets"/> sets.</summary>
@@ -599,7 +663,7 @@ internal static class EffectKernels
     /// background reduced to their precision first), <c>c a + bg (1 - a)</c> in double precision for the floating-point
     /// ones (alpha kept between 0 and 1). A format without alpha is left as it is.
     /// </summary>
-    public static void Flatten<TPixel>(scoped in PixelLease lease, Rgba64 background, CancellationToken cancellationToken)
+    public static void Flatten<TPixel>(scoped in PixelLease lease, Rgba64 background, int maxDegreeOfParallelism, CancellationToken cancellationToken)
         where TPixel : unmanaged
     {
         if (typeof(TPixel) == typeof(Rgb24) || typeof(TPixel) == typeof(Gray8) || typeof(TPixel) == typeof(Gray16) || typeof(TPixel) == typeof(Rgb48))
@@ -611,23 +675,32 @@ internal static class EffectKernels
         if (typeof(TPixel) != typeof(Rgba32) && typeof(TPixel) != typeof(Bgra32) && typeof(TPixel) != typeof(Rgba64) && typeof(TPixel) != typeof(RgbaFloat) && typeof(TPixel) != typeof(RgbaHalf))
             throw new NotSupportedException($"The pixel type '{typeof(TPixel).Name}' is not supported.");
 
+        var storage = lease.Storage;
+        if (Unsafe.SizeOf<TPixel>() != storage.BytesPerPixel)
+            throw new InvalidOperationException($"The pixel type '{typeof(TPixel).Name}' does not match the storage pixel size.");
+
+        RowBands.For(new Size(storage.Width, storage.Height), maxDegreeOfParallelism, (start, end) => FlattenRows<TPixel>(storage, background, start, end, cancellationToken));
+    }
+
+    private static void FlattenRows<TPixel>(PixelStorage storage, Rgba64 background, int start, int end, CancellationToken cancellationToken)
+        where TPixel : unmanaged
+    {
         Span<Rgb24> opaque = stackalloc Rgb24[64];
         var (bgR, bgG, bgB) = (background.R / (double)ushort.MaxValue, background.G / (double)ushort.MaxValue, background.B / (double)ushort.MaxValue);
-        var height = lease.Height;
-        for (var y = 0; y < height; y++)
+        for (var y = start; y < end; y++)
         {
-            if (y % ProcessingKernels.RowsPerCancellationCheck == 0)
+            if ((y - start) % ProcessingKernels.RowsPerCancellationCheck == 0)
             {
                 cancellationToken.ThrowIfCancellationRequested();
             }
 
-            var row = lease.GetRow<TPixel>(y);
+            var row = GetSamples<TPixel>(storage, y);
             if (typeof(TPixel) == typeof(Rgba32) || typeof(TPixel) == typeof(Bgra32))
             {
                 // The conversion to Rgb24 flattens the 8-bit samples, and the conversion back adds an opaque alpha
-                for (var start = 0; start < row.Length; start += opaque.Length)
+                for (var x = 0; x < row.Length; x += opaque.Length)
                 {
-                    var pixels = row.Slice(start, Math.Min(opaque.Length, row.Length - start));
+                    var pixels = row.Slice(x, Math.Min(opaque.Length, row.Length - x));
                     var colors = opaque[..pixels.Length];
                     PixelConverter.ConvertRow<TPixel, Rgb24>(pixels, colors, background);
                     PixelConverter.ConvertRow<Rgb24, TPixel>(colors, pixels);

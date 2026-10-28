@@ -338,6 +338,100 @@ public sealed class ParallelConvolutionTests
         Assert.Equal(expected, plan.Workers);
     }
 
+    [Theory]
+    [InlineData(PixelFormat.Rgba32)]
+    [InlineData(PixelFormat.Bgra32)]
+    [InlineData(PixelFormat.Rgb24)]
+    [InlineData(PixelFormat.Gray8)]
+    [InlineData(PixelFormat.Rgba64)]
+    [InlineData(PixelFormat.La16)]
+    [InlineData(PixelFormat.RgbaFloat)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void EffectsDoNotDependOnTheWorkerCount(PixelFormat format)
+    {
+        // 257 rows is not a multiple of the blocks of the pixelation. An oil painting of radius 40 reads 40 rows on each
+        // side of a band: its bands (3 with 16 workers) are at least as tall as its window
+        var random = new Random(13);
+        var (width, height) = (300, 257);
+        Assert.Equal(8, RowBands.GetWorkerCount(new Size(width, height), 16));
+        var bytes = new byte[width * height * PixelFormats.GetBytesPerPixel(format)];
+        if (format is PixelFormat.RgbaFloat)
+        {
+            for (var i = 0; i < bytes.Length; i += sizeof(float))
+            {
+                BitConverter.TryWriteBytes(bytes.AsSpan(i), random.NextSingle());
+            }
+        }
+        else
+        {
+            random.NextBytes(bytes);
+        }
+
+        Action<Image>[] effects =
+        [
+            image => image.Pixelate(7, Ct),
+            image => image.Pixelate(64, Ct),
+            image => image.OilPaint(levels: 20, radius: 3, Ct),
+            image => image.OilPaint(levels: 8, radius: 40, Ct),
+            image => image.Flatten(new Rgba64(0x1234, 0x8000, 0xFEDC, 0xFFFF), Ct),
+        ];
+
+        foreach (var effect in effects)
+        {
+            var expected = Apply(effect, workers: 1);
+            if (PixelFormats.HasAlpha(format))
+            {
+                Assert.NotEqual(bytes, expected);
+            }
+
+            foreach (var workers in new[] { 2, 3, 16 })
+            {
+                Assert.Equal(expected, Apply(effect, workers));
+            }
+        }
+
+        byte[] Apply(Action<Image> effect, int workers)
+        {
+            using var image = Import(bytes, width, height, format, workers);
+            effect(image);
+            return CopyBytes(image);
+        }
+    }
+
+    [Theory]
+    [InlineData(16, 3, 8)]     // a band of 32 rows holds the window of 7 rows
+    [InlineData(16, 40, 3)]    // 257 rows hold 3 windows of 81 rows
+    [InlineData(16, 200, 1)]
+    [InlineData(1, 3, 1)]
+    public void OilPaintBandsAreAtLeastAsTallAsTheWindow(int maxDegreeOfParallelism, int radius, int expected)
+    {
+        using var image = CreateImage(300, 257, maxDegreeOfParallelism);
+        using var scratch = EffectScratch.ForOilPaint(image.Owner.Scope, PixelFormat.Rgba32, image.Size, radius, levels: 20, maxDegreeOfParallelism);
+        Assert.Equal(expected, scratch.Workers);
+        Assert.Equal(expected > 1 ? radius : 0, scratch.HaloRows);
+        Assert.Equal(257, scratch.GetBandStart(scratch.Workers));
+        for (var band = 0; band < scratch.Workers && scratch.Workers > 1; band++)
+        {
+            Assert.True(scratch.GetBandStart(band + 1) - scratch.GetBandStart(band) >= (2 * radius) + 1);
+        }
+    }
+
+    [Theory]
+    [InlineData(64, 5)]        // 257 rows are 5 rows of blocks, the last one of 1 row
+    [InlineData(7, 8)]
+    [InlineData(300, 1)]
+    public void PixelationBandsStartOnARowOfBlocks(int size, int expected)
+    {
+        using var image = CreateImage(300, 257, workers: 16);
+        using var scratch = EffectScratch.ForPixelate(image.Owner.Scope, PixelFormat.Rgba32, image.Size, size, maxDegreeOfParallelism: 16);
+        Assert.Equal(expected, scratch.Workers);
+        Assert.Equal(257, scratch.GetBandStart(scratch.Workers));
+        for (var band = 0; band < scratch.Workers; band++)
+        {
+            Assert.Equal(0, scratch.GetBandStart(band) % size);
+        }
+    }
+
     [Fact]
     public void EachWorkerHasItsOwnBudgetedScratchAndNothingAccumulates()
     {
@@ -477,6 +571,22 @@ public sealed class ParallelConvolutionTests
 
         image.Convolve(options, Ct);
         return CopyBytes(image);
+    }
+
+    private static Image Import(byte[] bytes, int width, int height, PixelFormat format, int workers)
+    {
+        var configuration = new ImageConfiguration { MaxDegreeOfParallelism = workers };
+        return format switch
+        {
+            PixelFormat.Rgba32 => Image.ImportPixelBytes<Rgba32>(bytes, width, height, configuration: configuration),
+            PixelFormat.Bgra32 => Image.ImportPixelBytes<Bgra32>(bytes, width, height, configuration: configuration),
+            PixelFormat.Rgb24 => Image.ImportPixelBytes<Rgb24>(bytes, width, height, configuration: configuration),
+            PixelFormat.Gray8 => Image.ImportPixelBytes<Gray8>(bytes, width, height, configuration: configuration),
+            PixelFormat.Rgba64 => Image.ImportPixelBytes<Rgba64>(bytes, width, height, configuration: configuration),
+            PixelFormat.La16 => Image.ImportPixelBytes<La16>(bytes, width, height, configuration: configuration),
+            PixelFormat.RgbaFloat => Image.ImportPixelBytes<RgbaFloat>(bytes, width, height, configuration: configuration),
+            _ => throw new ArgumentOutOfRangeException(nameof(format)),
+        };
     }
 
     private static byte[] CopyBytes(Image image)

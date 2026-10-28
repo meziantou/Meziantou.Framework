@@ -17,12 +17,12 @@ public abstract partial class Image
         EffectKernels.EnsureSupported(PixelFormat);
         cancellationToken.ThrowIfCancellationRequested();
         frames ??= GetAllFrames();
-        using var scratch = ResampleWeights.Rent<double>(Owner.Scope, EffectKernels.GetPixelateScratchLength(KernelPixelFormat, _size.Width, size));
+        using var scratch = EffectScratch.ForPixelate(Owner.Scope, KernelPixelFormat, _size, size, _configuration.MaxDegreeOfParallelism);
         _metadata.RemoveStaleThumbnail();
         foreach (var frame in frames)
         {
             using var lease = frame.GetStorage().AcquireLease();
-            frame.PixelatePixels(lease, size, scratch.Memory, cancellationToken);
+            frame.PixelatePixels(lease, size, scratch, cancellationToken);
         }
     }
 
@@ -37,14 +37,12 @@ public abstract partial class Image
         EffectKernels.EnsureSupported(PixelFormat);
         cancellationToken.ThrowIfCancellationRequested();
         frames ??= GetAllFrames();
-        var scope = Owner.Scope;
-        using var scratch = ResampleWeights.Rent<double>(scope, EffectKernels.GetOilPaintScratchLength(KernelPixelFormat, _size.Width, radius, levels));
-        using var levelScratch = ResampleWeights.Rent<int>(scope, EffectKernels.GetOilPaintLevelsLength(_size.Width, radius, levels));
+        using var scratch = EffectScratch.ForOilPaint(Owner.Scope, KernelPixelFormat, _size, radius, levels, _configuration.MaxDegreeOfParallelism);
         _metadata.RemoveStaleThumbnail();
         foreach (var frame in frames)
         {
             using var lease = frame.GetStorage().AcquireLease();
-            frame.OilPaintPixels(lease, levels, radius, scratch.Memory, levelScratch.Memory, cancellationToken);
+            frame.OilPaintPixels(lease, levels, radius, scratch, cancellationToken);
         }
     }
 
@@ -65,7 +63,7 @@ public abstract partial class Image
         foreach (var frame in frames ?? GetAllFrames())
         {
             using var lease = frame.GetStorage().AcquireLease();
-            frame.FlattenPixels(lease, background, cancellationToken);
+            frame.FlattenPixels(lease, background, _configuration.MaxDegreeOfParallelism, cancellationToken);
         }
     }
 }

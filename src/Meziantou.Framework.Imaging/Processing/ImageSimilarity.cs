@@ -67,6 +67,12 @@ namespace Meziantou.Framework.Imaging;
 /// distance, as libjxl does. A frame smaller than 8×8 is extended to 8×8 by repeating its edges, as libjxl's
 /// <c>ButteraugliDiffmap</c> does. It is the slowest member, and it needs about 120 bytes per pixel.
 /// </para>
+/// <para>
+/// <b>Parallelism.</b> SSIM, PSNR, SSIMULACRA 2 and Butteraugli use up to
+/// <see cref="ImageConfiguration.MaxDegreeOfParallelism"/> workers (the configuration of the image of the expected frame)
+/// for frames of at least 65,536 pixels, and the result is identical whatever the number of workers: the floating-point
+/// sums are made by bands of 64 rows, added in order. With several workers, each one has its own row buffers.
+/// </para>
 /// </remarks>
 public static class ImageSimilarity
 {
@@ -88,18 +94,7 @@ public static class ImageSimilarity
     {
         var (expectedStorage, actualStorage) = GetStorages(expected, actual, cancellationToken);
         using var leases = PixelLeasePair.Acquire(expectedStorage, actualStorage);
-        using var expectedReader = Rgba32RowReader.Create(expectedStorage.Owner.Scope, expected.PixelFormat, expectedStorage.Width);
-        using var actualReader = Rgba32RowReader.Create(actualStorage.Owner.Scope, actual.PixelFormat, actualStorage.Width);
-        using var accumulator = new SsimAccumulator(expectedStorage.Owner.Scope, expectedStorage.Width, expectedStorage.Height);
-        var expectedLease = leases.First;
-        var actualLease = leases.Second;
-        for (var y = 0; y < expectedStorage.Height; y++)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            accumulator.AddRow(expectedReader.GetRow(expectedLease, y), actualReader.GetRow(actualLease, y));
-        }
-
-        return accumulator.ComputeMeanSsim();
+        return SsimAccumulator.Compute(expectedStorage.Owner.Scope, expectedStorage, expected.PixelFormat, actualStorage, actual.PixelFormat, GetMaxDegreeOfParallelism(expected), cancellationToken);
     }
 
     /// <summary>Computes the peak signal-to-noise ratio (PSNR) of two frames of the same size.</summary>
@@ -117,7 +112,11 @@ public static class ImageSimilarity
     /// <exception cref="ImageResourceLimitException">The row buffers exceed the allocation limit.</exception>
     /// <exception cref="UnsupportedImageFeatureException">A floating-point sample is outside [0, 1] or is not a number.</exception>
     public static double ComputePsnr(ImageFrame expected, ImageFrame actual, CancellationToken cancellationToken = default)
-        => Compute(expected, actual, (_, e, a, ct) => PsnrCalculator.Compute(e, a, ct), cancellationToken);
+    {
+        var (expectedStorage, actualStorage) = GetStorages(expected, actual, cancellationToken);
+        using var leases = PixelLeasePair.Acquire(expectedStorage, actualStorage);
+        return PsnrCalculator.Compute(expectedStorage.Owner.Scope, expectedStorage, expected.PixelFormat, actualStorage, actual.PixelFormat, GetMaxDegreeOfParallelism(expected), cancellationToken);
+    }
 
     /// <summary>Computes the SSIMULACRA 2 score of two frames of the same size, at least 8×8.</summary>
     /// <param name="expected">The reference frame.</param>
@@ -243,8 +242,11 @@ public static class ImageSimilarity
         using var actualReader = Rgba32RowReader.Create(actualStorage.Owner.Scope, actual.PixelFormat, actualStorage.Width);
         var expectedSource = new PixelSource(leases.First, expectedReader, expected.PixelFormat);
         var actualSource = new PixelSource(leases.Second, actualReader, actual.PixelFormat);
-        return metric(expectedStorage.Owner.Scope, expectedSource, actualSource, cancellationToken);
+        return metric(expectedStorage.Owner.Scope, expectedSource, actualSource, GetMaxDegreeOfParallelism(expected), cancellationToken);
     }
+
+    /// <summary>Gets the largest number of workers of a comparison: that of the configuration of the image of the expected frame.</summary>
+    private static int GetMaxDegreeOfParallelism(ImageFrame expected) => expected.OwnerImage.Configuration.MaxDegreeOfParallelism;
 
     private static (PixelStorage Expected, PixelStorage Actual) GetStorages(ImageFrame expected, ImageFrame actual, CancellationToken cancellationToken)
     {
@@ -259,5 +261,5 @@ public static class ImageSimilarity
         return (expectedStorage, actualStorage);
     }
 
-    private delegate T PairMetric<T>(AllocationScope scope, PixelSource expected, PixelSource actual, CancellationToken cancellationToken);
+    private delegate T PairMetric<T>(AllocationScope scope, PixelSource expected, PixelSource actual, int maxDegreeOfParallelism, CancellationToken cancellationToken);
 }

@@ -24,8 +24,9 @@ internal sealed class ExrEncoderCodec : ImageEncoderCodec
     /// </summary>
     /// <remarks>
     /// The rows of a chunk are converted to <see cref="PixelFormat.RgbaFloat"/> (in place for <see cref="RgbaFloat"/>
-    /// frames), their colors multiplied by alpha (the convention of OpenEXR; a pixel whose alpha is 0 keeps its color, as
-    /// <see cref="ExrDecoder.Unpremultiply"/> reads it), their samples laid out channel by channel in name order, then compressed; a compressed chunk that is not
+    /// frames), their colors multiplied by the alpha that is stored (the convention of OpenEXR; a pixel whose stored alpha is
+    /// 0 keeps its color, as <see cref="ExrDecoder.Unpremultiply"/> reads it), their samples laid out channel by channel in
+    /// name order, then compressed; a compressed chunk that is not
     /// smaller than its samples is stored uncompressed (compression notes, section 1.5). The private state is one chunk of
     /// samples, its compressed copy and the offset table: memory does not depend on the height beyond the table.
     /// </remarks>
@@ -40,6 +41,7 @@ internal sealed class ExrEncoderCodec : ImageEncoderCodec
         private readonly int _linesPerChunk;
         private readonly int _chunkCount;
         private readonly bool _reducesFloats;
+        private readonly bool _validatesSamples;
         private readonly bool _hasAlpha;
         private readonly byte _primaries;
         private readonly PixelConversionPlan? _plan;
@@ -67,6 +69,9 @@ internal sealed class ExrEncoderCodec : ImageEncoderCodec
 
             _pixelType = pixelType == OpenExrPixelType.Half ? ExrPixelType.Half : ExrPixelType.Float;
             _reducesFloats = _pixelType == ExrPixelType.Half && source == PixelFormat.RgbaFloat;
+
+            // Integer samples and their products are within [0, 1], and the product of two halves is within the range of floats
+            _validatesSamples = source == PixelFormat.RgbaFloat || (source == PixelFormat.RgbaHalf && _pixelType == ExrPixelType.Half);
             _compression = (ExrCompressionMethod)(int)encoder.Compression;
             _width = options.CanvasSize.Width;
             _height = options.CanvasSize.Height;
@@ -133,25 +138,31 @@ internal sealed class ExrEncoderCodec : ImageEncoderCodec
         public override void ValidateFrame(ImageFrame frame, bool isPoster)
         {
             ArgumentNullException.ThrowIfNull(frame);
-            if (!_reducesFloats)
+            if (!_validatesSamples)
                 return;
 
-            // A finite sample that rounds beyond the largest half would become an infinity
+            // A finite sample that the reduction to half, or the multiplication by alpha, takes beyond the range of the sample
+            // type would become an infinity (or not a number, for an alpha that is not finite)
             using var lease = frame.GetStorage().AcquireLease();
             for (var y = 0; y < lease.Height; y++)
             {
-                var row = unsafe(MemoryMarshal.Cast<byte, float>(lease.GetRowBytes(y)));
-                for (var i = 0; i < row.Length; i++)
+                var pixels = GetRow(lease, y);
+                for (var i = 0; i < pixels.Length; i++)
                 {
-                    // The sample that is written: the colors multiplied by alpha
-                    double value = row[i];
-                    if (i % 4 != 3 && row[i | 3] is var alpha && alpha != 0)
-                    {
-                        value *= alpha;
-                    }
+                    var sample = pixels[i];
+                    if (!float.IsFinite(sample))
+                        continue;
 
-                    if (double.IsFinite(value) && Half.IsInfinity((Half)value))
-                        throw new UnsupportedImageFeatureException(string.Create(CultureInfo.InvariantCulture, $"The sample {value} of the row {y} is beyond the range of half samples (±65,504). Write float samples (OpenExrPixelType.Float), or clip the image first."), ImageFormat.OpenExr, "Samples beyond the range of half");
+                    var premultiplied = _hasAlpha && i % 4 != 3 && GetStoredAlpha(pixels[i | 3]) != 0;
+                    var value = GetSampleValue(pixels, i, premultiplied);
+                    if (_pixelType == ExrPixelType.Half ? Half.IsFinite((Half)value) : float.IsFinite((float)value))
+                        continue;
+
+                    var range = _pixelType == ExrPixelType.Half ? "half samples (±65,504)" : "float samples (±3.4028235E+38)";
+                    var message = premultiplied
+                        ? string.Create(CultureInfo.InvariantCulture, $"The color {sample} of the row {y} multiplied by its alpha {pixels[i | 3]} is beyond the range of {range}: OpenEXR stores colors premultiplied by alpha. Clip the colors or the alpha of the image first.")
+                        : string.Create(CultureInfo.InvariantCulture, $"The sample {sample} of the row {y} is beyond the range of {range}. Write float samples (OpenExrPixelType.Float), or clip the image first.");
+                    throw new UnsupportedImageFeatureException(message, ImageFormat.OpenExr, premultiplied ? "Premultiplied samples beyond the range of the sample type" : "Samples beyond the range of half");
                 }
             }
         }
@@ -335,33 +346,15 @@ internal sealed class ExrEncoderCodec : ImageEncoderCodec
             var position = 0;
             for (var line = 0; line < lines; line++)
             {
-                var source = lease.GetRowBytes(y0 + line);
-                ReadOnlySpan<float> pixels;
-                if (_plan is null)
-                {
-                    pixels = unsafe(MemoryMarshal.Cast<byte, float>(source));
-                }
-                else
-                {
-                    var floats = _floats!.Span[..(_width * 16)];
-                    _plan.ConvertRow(source, floats);
-                    pixels = unsafe(MemoryMarshal.Cast<byte, float>(floats));
-                }
-
+                var pixels = GetRow(lease, y0 + line);
                 for (var c = 0; c < _channels.Length; c++)
                 {
                     var component = _components[c];
-                    var premultiplied = _hasAlpha && component != 3;
                     var samples = data.Slice(position, _width * sampleSize);
                     for (var x = 0; x < _width; x++)
                     {
-                        // OpenEXR colors are premultiplied by alpha; a pixel whose alpha is 0 keeps its color (the light it emits)
-                        double value = pixels[(4 * x) + component];
-                        if (premultiplied && pixels[(4 * x) + 3] is var alpha && alpha != 0)
-                        {
-                            value *= alpha;
-                        }
-
+                        var index = (4 * x) + component;
+                        var value = GetSampleValue(pixels, index, _hasAlpha && component != 3 && GetStoredAlpha(pixels[index | 3]) != 0);
                         if (_pixelType == ExrPixelType.Half)
                         {
                             BinaryPrimitives.WriteUInt16LittleEndian(samples[(2 * x)..], BitConverter.HalfToUInt16Bits((Half)value));
@@ -375,6 +368,37 @@ internal sealed class ExrEncoderCodec : ImageEncoderCodec
                     position += samples.Length;
                 }
             }
+        }
+
+        /// <summary>Gets the pixels of a row as <see cref="PixelFormat.RgbaFloat"/> samples.</summary>
+        private ReadOnlySpan<float> GetRow(in PixelLease lease, int y)
+        {
+            var source = lease.GetRowBytes(y);
+            if (_plan is null)
+                return unsafe(MemoryMarshal.Cast<byte, float>(source));
+
+            var floats = _floats!.Span[..(_width * 16)];
+            _plan.ConvertRow(source, floats);
+            return unsafe(MemoryMarshal.Cast<byte, float>(floats));
+        }
+
+        /// <summary>Gets the alpha the file stores: the alpha rounded to the sample type, which the decoder divides the colors by.</summary>
+        private double GetStoredAlpha(float alpha) => _pixelType == ExrPixelType.Half ? (double)(Half)alpha : alpha;
+
+        /// <summary>
+        /// Gets the value of the sample a component is written as, before its rounding to the sample type: a color is
+        /// multiplied by the stored alpha of its pixel when <paramref name="premultiplied"/> (the product of a float and a
+        /// half or a float is exact in double precision, so the sample is rounded once).
+        /// </summary>
+        private double GetSampleValue(ReadOnlySpan<float> pixels, int index, bool premultiplied)
+        {
+            double value = pixels[index];
+            if (premultiplied)
+            {
+                value *= GetStoredAlpha(pixels[index | 3]);
+            }
+
+            return value;
         }
 
         /// <summary>Compresses a chunk; data that do not shrink are stored as they are (section 1.5).</summary>

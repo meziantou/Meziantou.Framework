@@ -1,5 +1,5 @@
 title: WebPlatform
-description: A browser engine for .NET: parse HTML and CSS as a browser does, query and change the DOM, load pages, run their scripts, take screenshots and print to PDF.
+description: "A browser engine for .NET: parse HTML and CSS as a browser does, query and change the DOM, load pages, run their scripts, take screenshots and print to PDF."
 packageIds:
 - Meziantou.Framework.WebPlatform
 - Meziantou.Framework.WebPlatform.Imaging

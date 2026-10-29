@@ -1,3 +1,6 @@
+using System.Net;
+using System.Text;
+
 namespace Meziantou.Framework.Tests;
 
 public class AnsiTextProcessorTests
@@ -32,6 +35,99 @@ public class AnsiTextProcessorTests
                 "12-16: Bold=False, Underline=True",
             ],
             runs);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_CleanLogs()
+    {
+        #region AnsiTextProcessor_CleanProcessOutput
+        // Output of a command-line tool, with colors, a cursor sequence and a hyperlink
+        var output = "\u001b[32m✔\u001b[0m Build succeeded\u001b[K\n" +
+                     "See \u001b]8;;https://example.com/build/42\u001b\\the report\u001b]8;;\u001b\\";
+
+        if (AnsiTextProcessor.ContainsAnsiSequences(output))
+        {
+            output = AnsiTextProcessor.RemoveAnsiSequences(output);
+        }
+
+        Assert.Equal("✔ Build succeeded\nSee the report", output);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_KeptSequences()
+    {
+        #region AnsiTextProcessor_KeptSequences
+        // A sequence cut before its terminator is kept, so no text is lost
+        Assert.Equal("Done\u001b[1;3", AnsiTextProcessor.RemoveAnsiSequences("Done\u001b[1;3"));
+        Assert.False(AnsiTextProcessor.ContainsAnsiSequences("Done\u001b[1;3"));
+
+        // An escape character that does not start a CSI or OSC sequence is kept
+        Assert.Equal("a\u001bb", AnsiTextProcessor.RemoveAnsiSequences("a\u001bb"));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Colors()
+    {
+        #region AnsiTextProcessor_Colors
+        var parsed = AnsiTextProcessor.ParseTextWithAnsiStyles(
+            "\u001b[31mred\u001b[0m \u001b[38;2;255;128;0morange\u001b[0m \u001b[1;97;44mwhite on blue\u001b[0m");
+
+        Assert.Equal("red orange white on blue", parsed.Text);
+        Assert.HasCount(5, parsed.Runs);
+
+        // 30-37 and 90-97 are the 16 standard colors: indexes 0-7 and 8-15
+        var red = parsed.Runs[0];
+        Assert.Equal("red", parsed.Text[red.Start..red.End]);
+        Assert.Equal(AnsiTextProcessor.AnsiColor.FromIndexed(1), red.Style.Foreground);
+
+        // The space between two styled words is a run without style
+        Assert.Equal(AnsiTextProcessor.AnsiStyle.None, parsed.Runs[1].Style);
+
+        // 38;2;r;g;b is a 24-bit color
+        var orange = parsed.Runs[2];
+        Assert.Equal(AnsiTextProcessor.AnsiColor.FromRgb(255, 128, 0), orange.Style.Foreground);
+        Assert.Equal(AnsiTextProcessor.AnsiColorKind.Rgb, orange.Style.Foreground?.Kind);
+
+        var whiteOnBlue = parsed.Runs[4].Style;
+        Assert.True(whiteOnBlue.Bold);
+        Assert.Equal(AnsiTextProcessor.AnsiColor.FromIndexed(15), whiteOnBlue.Foreground);
+        Assert.Equal(AnsiTextProcessor.AnsiColor.FromIndexed(4), whiteOnBlue.Background);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_ToHtml()
+    {
+        #region AnsiTextProcessor_ToHtml
+        static string ToHtml(string ansiText)
+        {
+            var parsed = AnsiTextProcessor.ParseTextWithAnsiStyles(ansiText);
+            var html = new StringBuilder();
+            foreach (var run in parsed.Runs)
+            {
+                var text = WebUtility.HtmlEncode(parsed.Text[run.Start..run.End]);
+                var style = run.Style;
+                if (style.Bold)
+                    text = "<strong>" + text + "</strong>";
+
+                if (style.Underline)
+                    text = "<u>" + text + "</u>";
+
+                if (style.Foreground is { Kind: AnsiTextProcessor.AnsiColorKind.Rgb } color)
+                    text = "<span style=\"color:#" + Convert.ToHexStringLower([color.Red, color.Green, color.Blue]) + "\">" + text + "</span>";
+
+                html.Append(text);
+            }
+
+            return html.ToString();
+        }
+
+        Assert.Equal(
+            "<strong>Error:</strong> <span style=\"color:#ff8000\">disk &lt;C:&gt; is full</span>",
+            ToHtml("\u001b[1mError:\u001b[0m \u001b[38;2;255;128;0mdisk <C:> is full\u001b[0m"));
         #endregion
     }
 

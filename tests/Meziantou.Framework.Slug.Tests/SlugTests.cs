@@ -64,6 +64,88 @@ public class SlugTests
         #endregion
     }
 
+    // Removing diacritics normalizes the text
+    [Fact, RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
+    public void Documentation_DefaultRules()
+    {
+        #region Slug_DefaultRules
+        // Diacritics are removed
+        Assert.Equal("Creme-brulee-a-la-francaise", Slug.Create("Crème brûlée à la française"));
+
+        // Other characters become a single separator, never at the start or the end
+        Assert.Equal("Hello-World-2024", Slug.Create("  Hello, World! (2024)  "));
+
+        // Text written outside the allowed ranges gives an empty slug
+        Assert.Equal("", Slug.Create("Привет, мир"));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_MaximumLength()
+    {
+        #region Slug_MaximumLength
+        var options = new SlugOptions
+        {
+            MaximumLength = 10,
+            CasingTransformation = CasingTransformation.ToLowerCase,
+        };
+
+        // "the-quick-" is cut to 10 characters, then the trailing separator is removed
+        Assert.Equal("the-quick", Slug.Create("The quick brown fox", options));
+
+        // The slug is cut between characters, not between words
+        options.MaximumLength = 12;
+        Assert.Equal("the-quick-br", Slug.Create("The quick brown fox", options));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Separator()
+    {
+        #region Slug_Separator
+        var options = new SlugOptions
+        {
+            Separator = "_",
+            CasingTransformation = CasingTransformation.ToUpperCase,
+        };
+        Assert.Equal("RELEASE_NOTES_V2", Slug.Create("Release notes: v2!", options));
+
+        options.CanEndWithSeparator = true;
+        Assert.Equal("RELEASE_NOTES_V2_", Slug.Create("Release notes: v2!", options));
+        #endregion
+    }
+
+    [Fact, RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
+    public void Documentation_AllowedRanges()
+    {
+        #region Slug_AllowedRanges
+        var options = new SlugOptions { CasingTransformation = CasingTransformation.ToLowerCase };
+
+        // Keep Cyrillic letters in addition to a-z, A-Z and 0-9
+        options.AllowedRanges.Add(UnicodeRanges.Cyrillic);
+        Assert.Equal("привет-мир", Slug.Create("Привет, мир!", options));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_CustomOptions()
+    {
+        #region Slug_CustomOptionsUsage
+        Assert.Equal("Tom-and-Jerry", Slug.Create("Tom & Jerry", new AmpersandSlugOptions()));
+        #endregion
+    }
+
+    #region Slug_CustomOptionsClass
+    private sealed class AmpersandSlugOptions : SlugOptions
+    {
+        // Keep '&' instead of turning it into a separator...
+        public override bool IsAllowed(Rune character) => character.Value is '&' || base.IsAllowed(character);
+
+        // ...and write it as "and"
+        public override string Replace(Rune rune) => rune.Value is '&' ? "and" : base.Replace(rune);
+    }
+    #endregion
+
     [Theory]
     [InlineData("a", "a")]
     [InlineData("z", "z")]

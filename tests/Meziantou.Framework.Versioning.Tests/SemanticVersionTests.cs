@@ -3,6 +3,66 @@ namespace Meziantou.Framework.Versioning.Tests;
 public class SemanticVersionTests
 {
     [Fact]
+    public void Documentation_ParseAndFormat()
+    {
+        #region SemanticVersion_ParseAndFormat
+        // A leading "v" is accepted, and not written back
+        var version = SemanticVersion.Parse("v2.1.0-rc.1+build.42");
+        Assert.Equal("2.1.0-rc.1+build.42", version.ToString());
+
+        // Versions that do not follow Semantic Versioning 2.0.0 are rejected
+        Assert.False(SemanticVersion.TryParse("1.0", out _));       // Three numbers are required
+        Assert.False(SemanticVersion.TryParse("1.02.0", out _));    // No leading zero
+        Assert.False(SemanticVersion.TryParse("1.0.0-beta.01", out _));
+        Assert.Throws<ArgumentException>(() => SemanticVersion.Parse("1.0.0.0"));
+
+        // Create a version from its parts
+        var prerelease = new SemanticVersion(1, 4, 0, prereleaseLabel: "beta.2", metadata: "sha.5114f85");
+        Assert.Equal("1.4.0-beta.2+sha.5114f85", prerelease.ToString());
+        Assert.Equal(["beta", "2"], prerelease.PrereleaseLabels);
+        Assert.Equal(["sha", "5114f85"], prerelease.Metadata);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Compare()
+    {
+        #region SemanticVersion_Compare
+        var versions = new[] { "1.0.0", "1.0.0-rc.1", "1.0.0-beta.11", "1.0.0-beta.2", "1.0.0-alpha", "0.9.0" }
+            .Select(SemanticVersion.Parse)
+            .Order()
+            .Select(version => version.ToString());
+
+        Assert.Equal(["0.9.0", "1.0.0-alpha", "1.0.0-beta.2", "1.0.0-beta.11", "1.0.0-rc.1", "1.0.0"], versions);
+
+        // Build metadata does not take part in comparisons and equality
+        Assert.True(SemanticVersion.Parse("1.0.0+linux") == SemanticVersion.Parse("1.0.0+windows"));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_NextVersions()
+    {
+        #region SemanticVersion_NextVersions
+        var stable = SemanticVersion.Parse("1.2.3");
+        Assert.Equal("1.2.4", stable.NextPatchVersion().ToString());
+        Assert.Equal("1.3.0", stable.NextMinorVersion().ToString());
+        Assert.Equal("2.0.0", stable.NextMajorVersion().ToString());
+
+        // A prerelease is followed by the smallest stable version that is greater
+        var beta = SemanticVersion.Parse("1.2.3-beta");
+        Assert.Equal("1.2.3", beta.NextPatchVersion().ToString());
+        Assert.Equal("1.3.0", beta.NextMinorVersion().ToString());
+        Assert.Equal("2.0.0", beta.NextMajorVersion().ToString());
+
+        var rc = SemanticVersion.Parse("2.0.0-rc.1");
+        Assert.Equal("2.0.0", rc.NextPatchVersion().ToString());
+        Assert.Equal("2.0.0", rc.NextMinorVersion().ToString());
+        Assert.Equal("2.0.0", rc.NextMajorVersion().ToString());
+        #endregion
+    }
+
+    [Fact]
     public void DocumentationExample()
     {
         #region SemanticVersion_Example

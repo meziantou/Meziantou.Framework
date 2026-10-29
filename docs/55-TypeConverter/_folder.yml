@@ -1,0 +1,2 @@
+title: TypeConverter
+description: Convert values between types, such as strings to numbers, enums, GUIDs or byte arrays, with a culture.

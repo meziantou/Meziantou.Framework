@@ -770,4 +770,36 @@ public sealed class CssomViewTests : IDisposable
         Assert.True(document.GetElementById("a")!.CheckVisibility(new CheckVisibilityOptions { VisibilityProperty = true }));
         Assert.False(document.GetElementById("c")!.CheckVisibility());
     }
+
+    [Fact]
+    public void Documentation_Geometry()
+    {
+        #region WebPlatform_Geometry
+        using var context = new BrowsingContext(new BrowsingContextOptions
+        {
+            Viewport = new ViewportOptions { Width = 800, Height = 600 },
+        });
+
+        var document = context.Navigate("https://example.com/", _ => """
+            <!DOCTYPE html>
+            <style>
+              body { margin: 0 }
+              header { height: 60px }
+              .sidebar { position: absolute; top: 60px; width: 25%; height: 300px }
+            </style>
+            <header>Title</header>
+            <div class="sidebar">Menu</div>
+            """);
+
+        // The layout runs when the geometry is read
+        var sidebar = document.QuerySelector(".sidebar")!;
+        var rect = sidebar.GetBoundingClientRect();
+        Assert.Equal((0, 60, 200, 300), (rect.X, rect.Y, rect.Width, rect.Height));
+        Assert.Same(sidebar, document.ElementFromPoint(100, 100));
+
+        // A new viewport size lays the document out again
+        context.Viewport = new ViewportOptions { Width = 1200, Height = 600 };
+        Assert.Equal(300, sidebar.GetBoundingClientRect().Width);
+        #endregion
+    }
 }

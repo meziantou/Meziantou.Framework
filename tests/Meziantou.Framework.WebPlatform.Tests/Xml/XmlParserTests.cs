@@ -158,4 +158,28 @@ public sealed class XmlParserTests
         Assert.Equal("<root><!--a--b--></root>", Serialize(document.DocumentElement));
         Assert.Equal("InvalidStateError", Assert.Throws<DomException>(() => document.DocumentElement.InnerHtml).Name);
     }
+
+    [Fact]
+    public void Documentation_ParseXml()
+    {
+        #region WebPlatform_ParseXml
+        var feed = XmlDocumentParser.ParseDocument("""
+            <?xml version="1.0" encoding="utf-8"?>
+            <feed xmlns="http://www.w3.org/2005/Atom">
+              <entry><title>First post</title></entry>
+              <entry><title>Second post</title></entry>
+            </feed>
+            """);
+
+        var titles = feed.GetElementsByTagNameNS("http://www.w3.org/2005/Atom", "title").Select(title => title.TextContent);
+        Assert.Equal(["First post", "Second post"], titles);
+
+        // A document that is not well-formed throws
+        Assert.Throws<XmlException>(() => XmlDocumentParser.ParseDocument("<root><item></root>"));
+
+        // DOMParser returns a parsererror document instead, as in a browser
+        var invalid = new DomParser().ParseFromString("<root><item></root>", DomParserSupportedType.ApplicationXml);
+        Assert.Equal("parsererror", invalid.DocumentElement!.LocalName);
+        #endregion
+    }
 }

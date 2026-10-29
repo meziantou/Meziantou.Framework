@@ -1899,4 +1899,61 @@ public sealed class BrowsingContextTests
             return load(request.Url, cancellationToken);
         }
     }
+
+    [Fact]
+    public void Documentation_NavigateToAResource()
+    {
+        #region WebPlatform_NavigateToResource
+        using var context = new BrowsingContext();
+
+        // The callback returns the response, as a DocumentLoader would: here, an XML document
+        var document = context.Navigate("https://example.com/feed.xml", url => new DocumentResource("<feed><title>News</title></feed>")
+        {
+            Headers = [new("Content-Type", "application/xml")],
+        });
+
+        Assert.Equal("application/xml", document.ContentType);
+        Assert.Equal("https://example.com/feed.xml", document.Url);
+        Assert.Equal("News", document.QuerySelector("title")!.TextContent);
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_InMemoryLoader()
+    {
+        #region WebPlatform_UseInMemoryLoader
+        var loader = new InMemoryLoader(new Dictionary<string, (string Content, string ContentType)>(StringComparer.Ordinal)
+        {
+            ["https://example.com/"] = ("<link rel=stylesheet href=site.css><h1>Home</h1><iframe src=/frame.html></iframe>", "text/html"),
+            ["https://example.com/site.css"] = ("h1 { color: green }", "text/css"),
+            ["https://example.com/frame.html"] = ("<p>Inside the frame</p>", "text/html"),
+        });
+
+        using var context = new BrowsingContext(new BrowsingContextOptions { DocumentLoader = loader });
+        context.Navigate("https://example.com/");
+        await context.EventLoop.RunUntilIdleAsync(); // the document, its style sheet, the iframe and its document
+
+        var document = context.Document;
+        Assert.Equal("rgb(0, 128, 0)", context.Window.GetComputedStyle(document.QuerySelector("h1")!).Color);
+        var frame = (HtmlIFrameElement)document.QuerySelector("iframe")!;
+        Assert.Equal("Inside the frame", frame.ContentDocument!.Body!.TextContent);
+        #endregion
+    }
+
+    #region WebPlatform_InMemoryLoader
+    /// <summary>Serves the documents and the resources from memory, by absolute URL.</summary>
+    private sealed class InMemoryLoader(IReadOnlyDictionary<string, (string Content, string ContentType)> files) : DocumentLoader
+    {
+        public override ValueTask<DocumentResource?> LoadAsync(DocumentRequest request, CancellationToken cancellationToken)
+        {
+            if (!files.TryGetValue(request.Url, out var file))
+                return ValueTask.FromResult<DocumentResource?>(new DocumentResource("Not found") { StatusCode = 404 });
+
+            return ValueTask.FromResult<DocumentResource?>(new DocumentResource(file.Content)
+            {
+                Headers = [new("Content-Type", file.ContentType)],
+            });
+        }
+    }
+    #endregion
 }

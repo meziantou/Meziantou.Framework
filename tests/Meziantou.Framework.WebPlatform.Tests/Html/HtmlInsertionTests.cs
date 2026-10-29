@@ -174,4 +174,23 @@ public sealed class HtmlInsertionTests
         Assert.True(writer.IsCompleted);
         Assert.Equal("<p>a</p>", container.InnerHtml);
     }
+
+    [Fact]
+    public void Documentation_ParseFragment()
+    {
+        #region WebPlatform_ParseFragment
+        var document = HtmlDocumentParser.ParseDocument("<table><tr id=row></tr></table>");
+        var row = document.GetElementById("row")!;
+
+        // The markup is parsed as the content of the context element: here, cells of a table row
+        var fragment = new HtmlDocumentParser().ParseFragment("<td>a<td>b", row);
+        row.Append(fragment);
+        Assert.Equal("<td>a</td><td>b</td>", row.InnerHtml);
+
+        // The same, in one step
+        row.InnerHtml = "<td>c<td>d";
+        row.InsertAdjacentHtml("beforeend", "<td>e");
+        Assert.Equal("<td>c</td><td>d</td><td>e</td>", row.InnerHtml);
+        #endregion
+    }
 }

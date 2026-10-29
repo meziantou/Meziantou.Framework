@@ -139,4 +139,27 @@ public sealed class HtmlFormatterTests
             protected override void WriteAttribute(Element element, string serializedName, string value) => base.WriteAttribute(element, serializedName.ToUpperInvariant(), value);
         }
     }
+
+    [Fact]
+    public void Documentation_CustomFormatter()
+    {
+        #region WebPlatform_UseCustomHtmlFormatter
+        var document = HtmlDocumentParser.ParseDocument("<!-- build 42 --><p>Hello <!-- todo -->world</p>");
+        var html = document.Body!.ToHtml(new NoCommentFormatter());
+        Assert.Equal("<body><p>Hello world</p></body>", html);
+        #endregion
+    }
+
+    #region WebPlatform_CustomHtmlFormatter
+    /// <summary>Writes the markup of the nodes without their comments.</summary>
+    private sealed class NoCommentFormatter : HtmlFormatter
+    {
+        protected override HtmlMarkupWriter CreateWriter(TextWriter output) => new Writer(output);
+
+        private sealed class Writer(TextWriter output) : HtmlMarkupWriter(output)
+        {
+            protected override bool ShouldWrite(Node node) => node is not Comment;
+        }
+    }
+    #endregion
 }

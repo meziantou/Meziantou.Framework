@@ -1,0 +1,2 @@
+title: HTML and the DOM
+description: Parse HTML and XML as a browser does, query and change the tree, write it back, and insert untrusted markup safely.

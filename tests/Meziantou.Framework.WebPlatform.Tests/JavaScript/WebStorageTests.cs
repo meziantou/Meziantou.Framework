@@ -328,4 +328,19 @@ public sealed class WebStorageTests : IDisposable
             return area;
         }
     }
+
+    [Fact]
+    public void Documentation_LocalStorage()
+    {
+        #region WebPlatform_LocalStorage
+        // The local storage areas of the origins, which several browsing contexts can share
+        var storage = new StorageShed();
+        using var context = new BrowsingContext(new BrowsingContextOptions { LocalStorage = storage });
+        context.Navigate("https://example.com/", _ => "<p>Hello</p>");
+
+        // window.localStorage, from .NET or from the scripts of the page
+        context.Window.LocalStorage.SetItem("theme", "dark");
+        Assert.Equal([new("theme", "dark")], storage.GetItems("https://example.com"));
+        #endregion
+    }
 }

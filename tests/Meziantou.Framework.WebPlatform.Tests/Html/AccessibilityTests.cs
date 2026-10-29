@@ -98,4 +98,28 @@ public sealed class AccessibilityTests : IDisposable
     [InlineData("<div id=target role=dialog><div><h2>Title</h2></div><h3>Other</h3></div>", "Title")]
     [InlineData("<div id=target role=group><h2>Title</h2></div>", "")]
     public void ComputedName(string html, string expected) => Assert.Equal(expected, Get(html).ComputedName);
+
+    [Fact]
+    public void Documentation_ComputedRoleAndName()
+    {
+        #region WebPlatform_Accessibility
+        using var context = new BrowsingContext();
+        var document = context.Navigate("https://example.com/", _ => """
+            <label>Email <input type="email" id="email"></label>
+            <button id="close" aria-label="Close"><svg></svg></button>
+            <img id="logo" src="logo.png">
+            """);
+
+        // The role and the accessible name that an accessibility tree exposes, as WebDriver reports them
+        var email = document.GetElementById("email")!;
+        Assert.Equal(("textbox", "Email"), (email.ComputedRole, email.ComputedName));
+
+        var close = document.GetElementById("close")!;
+        Assert.Equal(("button", "Close"), (close.ComputedRole, close.ComputedName));
+
+        // An image without alt attribute has no name: a check of generated HTML can report it
+        var logo = document.GetElementById("logo")!;
+        Assert.Equal(("image", ""), (logo.ComputedRole, logo.ComputedName));
+        #endregion
+    }
 }

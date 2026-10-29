@@ -548,4 +548,35 @@ public sealed class UserInputTests : IDisposable
         Assert.Equal((10d, 110d), (x, y));
         Assert.Equal((10d, 10d), (frameX, frameY));
     }
+
+    [Fact]
+    public void Documentation_ClickAndType()
+    {
+        #region WebPlatform_UserInput
+        using var context = new BrowsingContext();
+        var document = context.Navigate("https://example.com/", _ => """
+            <!DOCTYPE html>
+            <style>body { margin: 0 } button { display: block; width: 100px; height: 40px }</style>
+            <button>Save</button>
+            <input id="name">
+            """);
+
+        var clicks = 0;
+        document.QuerySelector("button")!.AddEventListener("click", _ => clicks++);
+
+        // The positions are in CSS pixels, in the viewport: the element at the position gets the events
+        var input = context.Input;
+        input.Mouse.Move(50, 20);
+        input.Mouse.Down();
+        input.Mouse.Up();
+        Assert.Equal(1, clicks);
+
+        // The keys go to the focused element
+        var name = (HtmlInputElement)document.GetElementById("name")!;
+        name.Focus();
+        input.Keyboard.Type("Ada");
+        input.Keyboard.Press("Backspace");
+        Assert.Equal("Ad", name.Value);
+        #endregion
+    }
 }

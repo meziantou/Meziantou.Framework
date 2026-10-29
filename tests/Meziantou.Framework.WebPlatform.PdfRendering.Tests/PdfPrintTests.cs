@@ -421,4 +421,34 @@ public sealed class PdfPrintTests : IDisposable
         var mean = (double)total / count;
         Assert.True(different <= count * 0.02 && mean < 4, $"{name}: {different} of {count} pixels differ, mean difference {mean:F2}");
     }
+
+    [Fact]
+    public void Documentation_PrintOptions()
+    {
+        #region WebPlatformPdf_PrintOptions
+        using var context = new BrowsingContext(new BrowsingContextOptions { RenderingBackend = new ImagingRenderingBackend() });
+        context.Navigate("https://example.com/invoices/42", _ => """
+            <!DOCTYPE html>
+            <title>Invoice 42</title>
+            <h1>Invoice 42</h1>
+            <p>Thank you for your order.</p>
+            """);
+        context.EventLoop.RunUntilIdle();
+
+        using var stream = new MemoryStream(); // or a FileStream
+        context.PrintToPdf(stream, new PrintOptions
+        {
+            PageWidth = 794,    // A4 at 96 dpi, in CSS px, for the pages without @page size
+            PageHeight = 1123,
+            MarginTop = 48,
+            MarginBottom = 48,
+            DisplayHeaderFooter = true,
+            FooterTemplate = """<div style="width: 100%; font-size: 10px; text-align: center"><span class="pageNumber"></span> / <span class="totalPages"></span></div>""",
+        });
+        #endregion
+
+        var document = PdfDocument.Open(stream.ToArray());
+        Assert.Single(document.Pages);
+        Assert.Equal("Invoice 42", document.Information.Title);
+    }
 }

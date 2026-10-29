@@ -37,4 +37,21 @@ public sealed class ParseErrorTests
         // The tokenizer reports the NULL character, then the "in body" insertion mode ignores it (another parse error)
         Assert.Equal(["(1,21): unexpected-null-character", "(1,21): unexpected-null-character"], Parse("<!DOCTYPE html><p>ab\0"));
     }
+
+    [Fact]
+    public void Documentation_ParseErrors()
+    {
+        #region WebPlatform_ParseErrors
+        var errors = new List<HtmlParseError>();
+        var document = HtmlDocumentParser.ParseDocument("<p>Unclosed <b>bold</p>", new HtmlParserOptions
+        {
+            ParseErrorHandler = errors.Add,
+        });
+
+        // The errors are reported, and the document is built as a browser builds it
+        Assert.Equal("<p>Unclosed <b>bold</b></p>", document.Body!.InnerHtml);
+        Assert.Equal(["(1,3): expected-doctype-but-got-other", "(1,23): unexpected-end-tag"], errors.Select(error => error.ToString()));
+        Assert.Equal((1, 3), (errors[0].Line, errors[0].Column));
+        #endregion
+    }
 }

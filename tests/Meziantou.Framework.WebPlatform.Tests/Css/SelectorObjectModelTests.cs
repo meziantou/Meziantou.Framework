@@ -324,4 +324,37 @@ public sealed class SelectorObjectModelTests
         var list = SelectorList.Parse(selector);
         return Assert.IsType<T>(Assert.Single(Assert.Single(Assert.Single(list.Selectors).Compounds).Selectors));
     }
+
+    [Fact]
+    public void Documentation_SelectorObjectModel()
+    {
+        #region WebPlatform_SelectorObjectModel
+        var document = HtmlDocumentParser.ParseDocument("""
+            <style>
+              nav > a.active { color: red }
+              .menu .item:hover, #main .title { font-weight: bold }
+            </style>
+            """);
+
+        // The class names used by the selectors of a style sheet
+        var classNames = new SortedSet<string>(StringComparer.Ordinal);
+        foreach (var rule in document.StyleSheets[0].CssRules.OfType<CssStyleRule>())
+        {
+            foreach (var complex in rule.Selectors.Selectors)
+            {
+                foreach (var compound in complex.Compounds)
+                {
+                    classNames.UnionWith(compound.Selectors.OfType<ClassSelector>().Select(selector => selector.ClassName));
+                }
+            }
+        }
+
+        Assert.Equal(["active", "item", "menu", "title"], classNames);
+
+        // Parse a selector once, then match it or compare its specificity
+        var selector = SelectorList.Parse("#main .title");
+        Assert.Equal(new Specificity(1, 1, 0), selector.Selectors[0].Specificity);
+        Assert.False(selector.Matches(document.DocumentElement!));
+        #endregion
+    }
 }

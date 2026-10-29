@@ -1900,4 +1900,36 @@ public sealed class ComputedStyleTests : IDisposable
     {
         Assert.Equal(value, Get($"<div id=target style='{property}: {value}'></div>", property));
     }
+
+    [Fact]
+    public void Documentation_ComputedStyleFollowsTheViewport()
+    {
+        #region WebPlatform_ComputedStyleViewport
+        using var context = new BrowsingContext(new BrowsingContextOptions
+        {
+            Viewport = new ViewportOptions { Width = 1280, Height = 720 },
+        });
+
+        var document = context.Navigate("https://example.com/", _ => """
+            <!DOCTYPE html>
+            <style>
+              body { margin: 0 }
+              nav { display: flex; width: 50% }
+              nav::before { content: "Menu" }
+              @media (max-width: 600px) { nav { display: none } }
+            </style>
+            <nav></nav>
+            """);
+
+        var nav = document.QuerySelector("nav")!;
+        var style = context.Window.GetComputedStyle(nav);
+        Assert.Equal("flex", style.Display);
+        Assert.Equal("640px", style.Width); // a used value, computed by the layout
+        Assert.Equal("\"Menu\"", context.Window.GetComputedStyle(nav, "::before").GetPropertyValue("content"));
+
+        // The styles follow the viewport: the media queries and the layout use its new size
+        context.Viewport = new ViewportOptions { Width = 400, Height = 800 };
+        Assert.Equal("none", context.Window.GetComputedStyle(nav).Display);
+        #endregion
+    }
 }

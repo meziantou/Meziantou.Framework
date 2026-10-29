@@ -74,6 +74,24 @@ public sealed class IcuDictionaryTests
         #endregion
     }
 
+    [Fact]
+    public void Documentation_LineBreaks()
+    {
+        #region IcuWordDictionary_LineBreaks
+        // The words of Thai, Lao, Khmer and Burmese, for the line breaking algorithm
+        var dictionary = IcuWordDictionary.CreateLineBreakDictionary();
+
+        var text = "\u0E20\u0E32\u0E29\u0E32\u0E44\u0E17\u0E22\u0E07\u0E48\u0E32\u0E22\u0E19\u0E34\u0E14\u0E40\u0E14\u0E35\u0E22\u0E27"; // "Thai is very easy", written without spaces
+        var breaks = new List<int>();
+        foreach (UnicodeLineBreak lineBreak in Unicode.EnumerateLineBreaks(text, dictionary))
+        {
+            breaks.Add(lineBreak.Index);
+        }
+
+        Assert.Equal([4, 7, 11, 14, 19], breaks); // before each word, and at the end of the text
+        #endregion
+    }
+
     [Theory]
     [InlineData("東京都に住んでいます", new[] { "東京", "都", "に", "住", "んで", "い", "ます" })]
     [InlineData("ภาษาไทยง่ายนิดเดียว", new[] { "ภาษา", "ไทย", "ง่าย", "นิด", "เดียว" })]

@@ -58,6 +58,20 @@ public class QRCodePayloadTests
     }
 
     [Fact]
+    public void Documentation_WifiQRCode()
+    {
+        #region QRCodePayload_WifiQRCode
+        var payload = QRCodePayload.Wifi("Guests", "correct horse battery staple", WifiAuthentication.WPA);
+        var qrCode = QRCode.Create(payload, ErrorCorrectionLevel.Q);
+
+        // A phone that scans it offers to join the network
+        var png = qrCode.ToPng(new QRCodePngOptions { ModuleSize = 4 });
+        #endregion
+
+        DocumentationImages.AssertPng("WifiQRCode", png);
+    }
+
+    [Fact]
     public void Wifi_WPA_ProducesExpectedPayload()
     {
         var payload = QRCodePayload.Wifi("MyNetwork", "MyPassword123");

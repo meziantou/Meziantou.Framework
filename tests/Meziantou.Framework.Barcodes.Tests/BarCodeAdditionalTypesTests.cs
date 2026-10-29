@@ -36,6 +36,65 @@ public class BarCodeAdditionalTypesTests
         #endregion
     }
 
+    [Fact]
+    public void Documentation_GettingStarted()
+    {
+        #region Barcode_GettingStarted
+        var barcode = Barcode.CreateCode128("SKU-123456");
+
+        // The bytes of a PNG file, to save with File.WriteAllBytes("barcode.png", png)
+        var png = barcode.ToPng(new BarcodePngOptions { ModuleHeight = 60 });
+        #endregion
+
+        DocumentationImages.AssertPng("GettingStartedBarcode", png);
+    }
+
+    [Fact]
+    public void Documentation_Ean13WithAddOn()
+    {
+        #region Barcode_Ean13WithAddOn
+        // A book: its ISBN without the check digit, and a 5-digit add-on
+        var barcode = Barcode.CreateEan13("978020137962", extension: "52499");
+        Assert.Equal("9780201379624 52499", barcode.Text); // the check digit is added
+
+        var png = barcode.ToPng(new BarcodePngOptions { ModuleHeight = 60 });
+        #endregion
+
+        DocumentationImages.AssertPng("Ean13WithAddOn", png);
+    }
+
+    [Fact]
+    public void Documentation_InvalidData()
+    {
+        #region Barcode_InvalidData
+        // A check digit that does not match the data
+        Assert.Throws<ArgumentException>("data", () => Barcode.CreateEan13("4006381333932"));
+
+        // A character the symbology cannot encode
+        Assert.Throws<ArgumentException>("data", () => Barcode.CreateCode39("abc"));
+
+        // ITF encodes pairs of digits
+        Assert.Throws<ArgumentException>("data", () => Barcode.CreateItf("12345"));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Modules()
+    {
+        #region Barcode_Modules
+        var barcode = Barcode.CreateEan8("5512345");
+
+        // One row of modules: true for a bar
+        var bars = new StringBuilder();
+        for (var column = 0; column < barcode.Width; column++)
+        {
+            bars.Append(barcode[0, column] ? '|' : ' ');
+        }
+
+        Assert.StartsWith("| |", bars.ToString()); // the start guard
+        #endregion
+    }
+
     [Theory]
     [InlineData(BarcodeType.Code39, "ABC-123", "ABC-123")]
     [InlineData(BarcodeType.Code93, "ABC123xyz", "ABC123xyz")]

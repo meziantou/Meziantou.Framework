@@ -471,6 +471,150 @@ public sealed class UnicodeTests
     }
 
     [Fact]
+    public void Documentation_GettingStarted()
+    {
+        #region Unicode_GettingStarted
+        var text = "e\u0301\U0001F44D\U0001F3FD"; // "e" and a combining acute accent, then a thumbs up with a skin tone
+        Assert.HasCount(6, text); // 6 UTF-16 code units, not characters
+
+        // What a reader sees as characters: the grapheme clusters
+        var characters = new List<string>();
+        foreach (Range cluster in Unicode.EnumerateGraphemeClusters(text))
+        {
+            characters.Add(text[cluster]);
+        }
+
+        Assert.Equal(["e\u0301", "\U0001F44D\U0001F3FD"], characters);
+
+        // The composed form of the text, the same on every platform
+        Assert.Equal("\u00E9\U0001F44D\U0001F3FD", UnicodeNormalization.Normalize(text));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_BlocksAndEmoji()
+    {
+        #region Unicode_BlocksAndEmoji
+        Assert.True(UnicodeBlocks.BasicLatin.Contains('A'));
+        Assert.Equal(new UnicodeRange(0x0000, 0x007F), UnicodeBlocks.BasicLatin.Range);
+
+        Assert.True(UnicodeEmoji.IsEmoji(0x1F600));
+        Assert.True(UnicodeEmoji.HasEmojiPresentation(0x1F600));
+        Assert.False(UnicodeEmoji.HasEmojiPresentation(0x2764)); // the heart is shown as text unless followed by U+FE0F
+
+        // The emoji that are sequences of code points, such as flags
+        var flags = UnicodeEmoji.GetSequences(UnicodeEmojiSequenceProperty.RgiEmojiFlagSequence);
+        Assert.Contains("\U0001F1EB\U0001F1F7", flags);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_TruncateText()
+    {
+        #region Unicode_TruncateText
+        static string Truncate(string text, int maxLength)
+        {
+            // Keep whole grapheme clusters: an accent or an emoji is never cut in half
+            var length = 0;
+            foreach (Range cluster in Unicode.EnumerateGraphemeClusters(text))
+            {
+                var end = cluster.End.GetOffset(text.Length);
+                if (end > maxLength)
+                    break;
+
+                length = end;
+            }
+
+            return text[..length];
+        }
+
+        Assert.Equal("Caf", Truncate("Cafe\u0301 au lait", 4)); // not "Cafe" without its accent
+        Assert.Equal("Go ", Truncate("Go \U0001F1EB\U0001F1F7", 5)); // not half of the flag
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_WrapText()
+    {
+        #region Unicode_WrapText
+        static List<string> Wrap(string text, int maxLength)
+        {
+            var lines = new List<string>();
+            var lineStart = 0;
+            var previousBreak = 0;
+            foreach (UnicodeLineBreak lineBreak in Unicode.EnumerateLineBreaks(text))
+            {
+                // The line would be too long: break at the previous opportunity
+                if (lineBreak.Index - lineStart > maxLength && previousBreak > lineStart)
+                {
+                    lines.Add(text[lineStart..previousBreak].TrimEnd());
+                    lineStart = previousBreak;
+                }
+
+                if (lineBreak.IsMandatory)
+                {
+                    lines.Add(text[lineStart..lineBreak.Index].TrimEnd());
+                    lineStart = lineBreak.Index;
+                }
+
+                previousBreak = lineBreak.Index;
+            }
+
+            return lines;
+        }
+
+        Assert.Equal(["The quick brown", "fox jumps over", "the lazy dog."], Wrap("The quick brown fox jumps over the lazy dog.", 16));
+        Assert.Equal(["See https://", "www.meziantou.net/", "blog"], Wrap("See https://www.meziantou.net/blog", 16));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_LineBreakTailorings()
+    {
+        #region Unicode_LineBreakTailorings
+        static List<string> Split(string text, UnicodeLineBreakStrictness strictness = UnicodeLineBreakStrictness.Strict, UnicodeWordBreakBehavior wordBreak = UnicodeWordBreakBehavior.Normal)
+        {
+            var segments = new List<string>();
+            var start = 0;
+            foreach (UnicodeLineBreak lineBreak in Unicode.EnumerateLineBreaks(text, strictness, wordBreak))
+            {
+                segments.Add(text[start..lineBreak.Index]);
+                start = lineBreak.Index;
+            }
+
+            return segments;
+        }
+
+        // Ideographs: a line can break between any two of them, unless KeepAll keeps the words together
+        var japanese = "\u65E5\u672C\u8A9E";
+        Assert.Equal(["\u65E5", "\u672C", "\u8A9E"], Split(japanese));
+        Assert.Equal(["\u65E5\u672C\u8A9E"], Split(japanese, wordBreak: UnicodeWordBreakBehavior.KeepAll));
+
+        // BreakAll: a line can break between two letters, as in a table cell that must not overflow
+        Assert.Equal(["a", "b", "c"], Split("abc", wordBreak: UnicodeWordBreakBehavior.BreakAll));
+
+        // A small kana starts no line with the strict rules; Normal allows it
+        var katakana = "\u30C1\u30E3";
+        Assert.Equal(["\u30C1\u30E3"], Split(katakana));
+        Assert.Equal(["\u30C1", "\u30E3"], Split(katakana, UnicodeLineBreakStrictness.Normal));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_CompatibilityNormalization()
+    {
+        #region Unicode_CompatibilityNormalization
+        // NFKC also replaces the characters that differ only by their presentation
+        Assert.Equal("fi", UnicodeNormalization.Normalize("\uFB01", NormalizationForm.FormKC)); // the "fi" ligature
+        Assert.Equal("x2", UnicodeNormalization.Normalize("x\u00B2", NormalizationForm.FormKC)); // a superscript two
+        Assert.Equal("ABC", UnicodeNormalization.Normalize("\uFF21\uFF22\uFF23", NormalizationForm.FormKC)); // full-width letters
+
+        // NFC keeps them
+        Assert.Equal("\uFB01", UnicodeNormalization.Normalize("\uFB01"));
+        #endregion
+    }
+
+    [Fact]
     public void ReplaceConfusablesCharacters_ReplacesMappedCharacters()
     {
         var input = "\u0410\u0430\u03B1";

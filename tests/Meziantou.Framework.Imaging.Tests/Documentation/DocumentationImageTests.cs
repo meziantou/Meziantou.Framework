@@ -1,3 +1,4 @@
+using Meziantou.Framework.Imaging.Drawing;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Samples;
 using Meziantou.Framework.Imaging.TestHarness;
@@ -19,6 +20,9 @@ public sealed class DocumentationImageTests : IDisposable
     private const string LoadingAndSaving = "05-LoadingAndSaving";
 
     private static readonly FullPath DocumentationRoot = RepositoryPaths.Root / "docs" / "01-Imaging";
+
+    /// <summary>The images of the pages of Meziantou.Framework.Fonts, whose examples are tested here.</summary>
+    private static readonly FullPath FontsImages = RepositoryPaths.Root / "docs" / "37-Fonts" / "images";
     private static readonly FullPath RegularFont = FixtureRoot.GetDirectory() / "fonts" / "noto-sans" / "NotoSans-Regular.subset.ttf";
 
     private readonly FullPath _directory = FullPath.GetTempPath() / "Meziantou.Framework.Imaging.Tests" / ("docs-images-" + Guid.NewGuid().ToString("N"));
@@ -308,13 +312,77 @@ public sealed class DocumentationImageTests : IDisposable
         });
     }
 
+    [Fact]
+    public void DrawShapedText()
+    {
+        var fontPath = FixtureRoot.GetDirectory() / "fonts" / "noto-naskh-arabic" / "NotoNaskhArabic-Regular.subset.ttf";
+        var face = FontLoader.Load(File.ReadAllBytes(fontPath), new PooledFontEnvironment(FontResourceLimits.Default, 64 * 1024 * 1024))[0];
+
+        #region Fonts_DrawShapedText
+        static VectorPath ShapeToPath(FontFace face, string text, double size, PointD origin)
+        {
+            // Arabic is written from right to left, with joined letters: shaping chooses the form of each letter
+            var buffer = new GlyphBuffer(face.Data.Limits);
+            TextShaper.AddText(buffer, text);
+            TextShaper.Shape(buffer, face, UnicodeScript.Arabic, OpenTypeLanguage.GetTags("ar"), isRightToLeft: true, features: []);
+
+            // The glyphs are in the order they are drawn, from the left; positions are in font units
+            var scale = size / face.UnitsPerEm;
+            var builder = new VectorPathBuilder();
+            using var scratch = new GlyphScratch(face.Data.Environment.CreateAllocator("outline"));
+            var penX = 0;
+            for (var i = 0; i < buffer.Length; i++)
+            {
+                var position = buffer.Positions[i];
+                var x = origin.X + ((penX + position.XOffset) * scale);
+                var y = origin.Y - (position.YOffset * scale);
+                var budget = new GlyphBudget(face.Data.Limits);
+                face.DecodeOutline(buffer.Info[i].Glyph, new PathSink(builder, x, y, scale), scratch, ref budget);
+                penX += position.XAdvance;
+            }
+
+            return builder.Build();
+        }
+
+        // "Hello, world" in Arabic, drawn with the drawing API of Meziantou.Framework.Imaging
+        var text = "\u0645\u0631\u062D\u0628\u0627 \u0628\u0627\u0644\u0639\u0627\u0644\u0645";
+        using var image = new Image<Rgba32>(220, 80, Colors.White);
+        image.Draw(canvas => canvas.Fill(Colors.Black, ShapeToPath(face, text, size: 40, origin: new PointD(16, 52))));
+        #endregion
+
+        AssertImage(FontsImages, nameof(DrawShapedText), output => image.Save(output));
+    }
+
+    #region Fonts_PathSink
+    // Adds the outline of a glyph to a path, scaled from font units: the y axis of a font goes up, the one of an image down
+    private sealed class PathSink(VectorPathBuilder builder, double originX, double originY, double scale) : OutlineSink
+    {
+        public override void MoveTo(double x, double y) => builder.MoveTo(X(x), Y(y));
+
+        public override void LineTo(double x, double y) => builder.LineTo(X(x), Y(y));
+
+        public override void QuadraticTo(double controlX, double controlY, double x, double y) => builder.QuadraticBezierTo(X(controlX), Y(controlY), X(x), Y(y));
+
+        public override void CubicTo(double control1X, double control1Y, double control2X, double control2Y, double x, double y) => builder.CubicBezierTo(X(control1X), Y(control1Y), X(control2X), Y(control2Y), X(x), Y(y));
+
+        public override void Close() => builder.Close();
+
+        private double X(double x) => originX + (x * scale);
+
+        private double Y(double y) => originY - (y * scale);
+    }
+    #endregion
+
     /// <summary>Runs an example and compares the image it writes with docs/01-Imaging/<paramref name="group"/>/images/<paramref name="name"/>.png.</summary>
-    private void AssertImage(string group, string name, Action<string> draw)
+    private void AssertImage(string group, string name, Action<string> draw) => AssertImage(DocumentationRoot / group / "images", name, draw);
+
+    /// <summary>Runs an example and compares the image it writes with <paramref name="imagesDirectory"/>/<paramref name="name"/>.png.</summary>
+    private void AssertImage(FullPath imagesDirectory, string name, Action<string> draw)
     {
         var actualPath = GetPath(name + ".png");
         draw(actualPath);
 
-        var expectedPath = DocumentationRoot / group / "images" / (name + ".png");
+        var expectedPath = imagesDirectory / (name + ".png");
         var difference = File.Exists(expectedPath) ? Compare(expectedPath, actualPath) : "the image does not exist";
         if (difference is null)
             return;

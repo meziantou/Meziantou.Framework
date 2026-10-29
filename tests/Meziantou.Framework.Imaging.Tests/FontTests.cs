@@ -3241,6 +3241,202 @@ public sealed class FontTests
     }
 
     [Fact]
+    public void Documentation_LoadFontFace()
+    {
+        #region Fonts_LoadFontFace
+        static string DescribeFont(string path)
+        {
+            // The limits that protect the application from hostile fonts, and the storage of the temporary buffers
+            var environment = new PooledFontEnvironment(FontResourceLimits.Default, maxLiveAllocationBytes: 64 * 1024 * 1024);
+
+            // One face per font of the file: a font collection has several
+            using var stream = File.OpenRead(path);
+            var face = FontLoader.Load(stream, environment)[0];
+
+            var glyph = face.MapCodePoint('A'); // 0 when the font does not have the character
+            return string.Create(
+                CultureInfo.InvariantCulture,
+                $"{face.FamilyName} {face.SubfamilyName}: {face.UnitsPerEm} units per em, 'A' is glyph {glyph}, {face.GetAdvanceWidth(glyph)} units wide");
+        }
+        #endregion
+
+        var path = FixtureRoot.GetDirectory() / "fonts" / "noto-sans" / "NotoSans-Regular.subset.ttf";
+        Assert.Equal("Noto Sans Regular: 1000 units per em, 'A' is glyph 34, 639 units wide", DescribeFont(path));
+    }
+
+    [Fact]
+    public void Documentation_LoadErrors()
+    {
+        #region Fonts_LoadErrors
+        var environment = new PooledFontEnvironment(FontResourceLimits.Default, maxLiveAllocationBytes: 64 * 1024 * 1024);
+
+        // The format is detected from the content: this is not a font
+        Assert.Throws<UnknownFontFormatException>(() => FontLoader.Load("<!DOCTYPE html>"u8, environment));
+
+        // A limit is exceeded: the file is larger than what the application accepts
+        var limits = new FontResourceLimits { MaxEncodedBytes = 1024 };
+        var exception = Assert.Throws<FontResourceLimitException>(() => FontLoader.Load(new byte[4096], new PooledFontEnvironment(limits, 1024 * 1024)));
+        Assert.Equal(FontResourceLimitKind.EncodedBytes, exception.Kind);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_DecodeOutline()
+    {
+        var path = FixtureRoot.GetDirectory() / "fonts" / "noto-sans" / "NotoSans-Regular.subset.ttf";
+        var face = FontLoader.Load(File.ReadAllBytes(path), new PooledFontEnvironment(FontResourceLimits.Default, 64 * 1024 * 1024))[0];
+
+        #region Fonts_DecodeOutline
+        static (string Path, GlyphBox Bounds) GetOutline(FontFace face, char character)
+        {
+            var glyph = face.MapCodePoint(character);
+
+            // The working storage of the outline, rented from the environment of the font, and the budget of the glyph
+            using var scratch = new GlyphScratch(face.Data.Environment.CreateAllocator("outline"));
+            var budget = new GlyphBudget(face.Data.Limits);
+
+            var sink = new SvgPathSink();
+            face.DecodeOutline(glyph, sink, scratch, ref budget);
+
+            face.TryGetGlyphBounds(glyph, scratch, out var bounds); // false for a glyph without outline, such as a space
+            return (sink.ToString(), bounds);
+        }
+        #endregion
+
+        var (svgPath, glyphBounds) = GetOutline(face, 'l');
+        Assert.Equal("M173 0L85 0L85 -760L173 -760L173 0Z", svgPath);
+        Assert.Equal(new GlyphBox(85, 0, 173, 760), glyphBounds);
+    }
+
+    [Fact]
+    public void Documentation_VariableFont()
+    {
+        var path = FixtureRoot.GetDirectory() / "fonts" / "noto-sans-variable" / "NotoSans-Variable.subset.ttf";
+        var face = FontLoader.Load(File.ReadAllBytes(path), new PooledFontEnvironment(FontResourceLimits.Default, 64 * 1024 * 1024))[0];
+
+        #region Fonts_VariableFont
+        static FontFace WithWeight(FontFace face, int weight)
+        {
+            // One value per axis, in the order of the axes, as 16.16 fixed-point numbers
+            var coordinates = new int[face.Axes.Length];
+            for (var i = 0; i < face.Axes.Length; i++)
+            {
+                coordinates[i] = face.Axes[i].Tag == ShapingFeature.ToTag("wght") ? weight << 16 : face.Axes[i].Default;
+            }
+
+            // The face of the instance shares the data of the font
+            return face.WithCoordinates(coordinates);
+        }
+        #endregion
+
+        var glyph = face.MapCodePoint('o');
+        Assert.Equal((605, 637), (face.GetAdvanceWidth(glyph), WithWeight(face, 900).GetAdvanceWidth(glyph)));
+        Assert.Equal((ShapingFeature.ToTag("wght"), 100 << 16, 400 << 16, 900 << 16), (face.Axes[0].Tag, face.Axes[0].Minimum, face.Axes[0].Default, face.Axes[0].Maximum));
+    }
+
+    [Fact]
+    public void Documentation_Subset()
+    {
+        var path = FixtureRoot.GetDirectory() / "fonts" / "noto-sans" / "NotoSans-Regular.subset.ttf";
+        var face = FontLoader.Load(File.ReadAllBytes(path), new PooledFontEnvironment(FontResourceLimits.Default, 64 * 1024 * 1024))[0];
+
+        #region Fonts_Subset
+        static byte[] Subset(FontFace face, string text)
+        {
+            // The glyphs the document uses; the closure adds the glyph 0 and the components of composite glyphs
+            var glyphs = new HashSet<int>();
+            foreach (var rune in text.EnumerateRunes())
+            {
+                glyphs.Add(face.MapCodePoint(rune.Value));
+            }
+
+            // A font program to embed in a document that refers to the glyphs by their identifiers, such as a PDF file:
+            // the identifiers are kept, the other glyphs are empty, and there is no character map
+            return face.Outlines is FontOutlineKind.TrueType
+                ? FontSubsetter.SubsetTrueType(face, glyphs, keepHinting: false)
+                : throw new NotSupportedException("SubsetCff gives the CFF table of a font with CFF outlines");
+        }
+        #endregion
+
+        var subset = Subset(face, "Hello");
+        Assert.HasCountLessThan(File.ReadAllBytes(path).Length, subset);
+        Assert.Equal([0, face.MapCodePoint('H')], FontSubsetter.GetClosure(face, [face.MapCodePoint('H')]).ToArray());
+    }
+
+    [Fact]
+    public void Documentation_FontDirectory()
+    {
+        var directory = FixtureRoot.GetDirectory() / "fonts" / "noto-sans";
+
+        #region Fonts_FontDirectory
+        static string? FindFont(string directory, string familyName)
+        {
+            // The fonts of a directory and of its subdirectories: only the tables that describe a face are read
+            var fonts = SystemFontCollection.Create([directory]);
+            var face = fonts.Match(familyName, weight: 700); // the closest face of the family, as CSS chooses it
+            return face is null ? null : string.Create(CultureInfo.InvariantCulture, $"{face.FamilyName} {face.SubfamilyName}, weight {face.Weight}, face {face.FaceIndex} of {Path.GetFileName(face.FilePath)}");
+        }
+        #endregion
+
+        Assert.Equal("Noto Sans Regular, weight 400, face 0 of NotoSans-Regular.subset.ttf", FindFont(directory, "noto sans"));
+        Assert.Null(FindFont(directory, "Arial"));
+    }
+
+    [Fact]
+    public void Documentation_AfmStandardFont()
+    {
+        #region AfmFontMetrics_StandardFont
+        // The metrics of the 14 standard fonts of PDF are embedded
+        var helvetica = AfmFontMetrics.GetStandardFont("Helvetica-Bold")!;
+
+        // The width of a text at 12 points: the widths are in 1/1000 of the point size
+        var units = 0.0;
+        string? previous = null;
+        foreach (var character in "Total")
+        {
+            var metrics = helvetica.GetCharacterByCode(character)!; // the codes of the standard encoding of the font
+            units += helvetica.GetWidth(metrics)!.Value.X;
+            if (previous is not null)
+                units += helvetica.GetKerning(previous, metrics.Name!).X;
+
+            previous = metrics.Name;
+        }
+
+        Assert.Equal(27.708, units * 12 / 1000);
+        Assert.HasCount(14, AfmFontMetrics.StandardFontNames);
+        #endregion
+    }
+
+    #region Fonts_SvgPathSink
+    // Writes an outline as the data of an SVG path, in font units. The y axis of a font goes up, the one of SVG down.
+    private sealed class SvgPathSink : OutlineSink
+    {
+        private readonly StringBuilder _path = new();
+
+        public override void MoveTo(double x, double y) => Append('M', x, y);
+
+        public override void LineTo(double x, double y) => Append('L', x, y);
+
+        public override void QuadraticTo(double controlX, double controlY, double x, double y) => Append('Q', controlX, controlY, x, y);
+
+        public override void CubicTo(double control1X, double control1Y, double control2X, double control2Y, double x, double y) => Append('C', control1X, control1Y, control2X, control2Y, x, y);
+
+        public override void Close() => _path.Append('Z');
+
+        public override string ToString() => _path.ToString();
+
+        private void Append(char command, params ReadOnlySpan<double> coordinates)
+        {
+            _path.Append(command);
+            for (var i = 0; i < coordinates.Length; i += 2)
+            {
+                _path.Append(CultureInfo.InvariantCulture, $"{(i > 0 ? " " : "")}{coordinates[i]} {0 - coordinates[i + 1]}");
+            }
+        }
+    }
+    #endregion
+
+    [Fact]
     public void TheInstructionsOfAGlyphMoveItsPointsToTheGrid()
     {
         // At 12 pixels per em, B is (0.75, 0)-(5.25, 6): MDAP[1] rounds its four points along the x axis.

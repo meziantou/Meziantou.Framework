@@ -41,6 +41,23 @@ public class QRCodePngRendererTests
         Assert.NotEmpty(barcodePng);
     }
 
+    [Fact]
+    public void Documentation_Colors()
+    {
+        #region QRCode_Colors
+        var qrCode = QRCode.Create("https://www.meziantou.net");
+        var png = qrCode.ToPng(new QRCodePngOptions
+        {
+            ModuleSize = 4,
+            QuietZoneModules = 2,
+            DarkColor = Color.Parse("#1e3a8a"),
+            LightColor = Color.Parse("rgb(239, 246, 255)"),
+        });
+        #endregion
+
+        DocumentationImages.AssertPng("Colors", png);
+    }
+
     public static IEnumerable<object[]> ModuleSizes
     {
         get

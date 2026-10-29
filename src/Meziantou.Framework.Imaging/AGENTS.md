@@ -7,8 +7,10 @@ vector drawing, font files (TrueType, OpenType, WOFF, WOFF2), ICC color conversi
 readers and writers.
 
 These instructions complete the repository-level `AGENTS.md`. The user guide is [readme.md](readme.md): it states what
-the library guarantees to its callers (support matrix, limitations, defaults). Keep the code, the XML documentation and
-`readme.md` consistent in the same change.
+the library guarantees to its callers (support matrix, limitations, defaults). The pages of the documentation site,
+[docs/01-Imaging](../../docs/01-Imaging) (rules in [docs/AGENTS.md](../../docs/AGENTS.md)), explain how to use it. Keep the
+code, the XML documentation, `readme.md` and the documentation pages consistent in the same change; a change of the
+rendering also changes the images of the pages (`DocumentationImageTests`).
 
 ## Hard constraints
 

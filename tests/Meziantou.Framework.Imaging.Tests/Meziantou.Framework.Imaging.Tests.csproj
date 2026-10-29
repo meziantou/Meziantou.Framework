@@ -11,10 +11,11 @@
 
   <ItemGroup>
     <!--
-      Published documentation (Documentation/DocumentationSnippetTests, DocumentationExampleTests): the usage examples are
-      compiled and run here (the README snippets, which use relative paths, are only compiled by the samples project).
+      Published documentation (Documentation/DocumentationSnippetTests, DocumentationExampleTests, DocumentationImageTests):
+      the usage examples of the README and of docs/1-Imaging are compiled and run here (the README quick starts, which use
+      relative paths, are only compiled by the samples project).
     -->
-    <Compile Include="..\..\samples\Meziantou.Framework.Imaging.Samples\Examples.cs" Link="Documentation\Samples\Examples.cs" />
+    <Compile Include="..\..\samples\Meziantou.Framework.Imaging.Samples\*Examples.cs" LinkBase="Documentation\Samples" />
   </ItemGroup>
 
   <ItemGroup>

@@ -2,6 +2,11 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <!--
+      MA0182 (unused internal type): the *Examples classes of the documentation site are run by
+      tests/Meziantou.Framework.Imaging.Tests, which compiles them too; Program.cs does not call them.
+    -->
+    <NoWarn>$(NoWarn);MA0182</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

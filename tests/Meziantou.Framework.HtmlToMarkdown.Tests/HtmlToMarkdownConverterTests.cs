@@ -1,4 +1,6 @@
 using System.Collections.Concurrent;
+using Meziantou.Framework.WebPlatform;
+using Meziantou.Framework.WebPlatform.Dom;
 
 namespace Meziantou.Framework.HtmlToMarkdownTests;
 
@@ -83,6 +85,304 @@ public sealed class HtmlToMarkdownConverterTests
             EmojiShortcodeMode = EmojiShortcodeMode.Unicode,
         });
         Assert.Equal("I :red_heart: Markdown", unicodeMarkdown);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_Blocks()
+    {
+        #region HtmlToMarkdown_Blocks
+        var markdown = HtmlToMarkdown.Convert("""
+            <h2>Release notes</h2>
+            <p>This version adds two features.</p>
+            <blockquote><p>Upgrade before the end of the year.</p></blockquote>
+            <hr>
+            <h3>Changes</h3>
+            """);
+        Assert.Equal("""
+            ## Release notes
+
+            This version adds two features.
+
+            > Upgrade before the end of the year.
+
+            ---
+
+            ### Changes
+            """, markdown);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_Inlines()
+    {
+        #region HtmlToMarkdown_Inlines
+        var markdown = HtmlToMarkdown.Convert("""
+            <p>
+              <strong>Bold</strong>, <em>italic</em>, <del>deleted</del> and <code>code</code>.
+              Read <a href="https://example.com/docs" title="Documentation">the docs</a>.
+              <img src="logo.png" alt="Logo">
+            </p>
+            """);
+        Assert.Equal("""
+            **Bold**, *italic*, ~~deleted~~ and `code`. Read [the docs](https://example.com/docs "Documentation"). ![Logo](logo.png)
+            """, markdown);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_LineBreaks()
+    {
+        #region HtmlToMarkdown_LineBreaks
+        var html = "<p>Line 1<br>Line 2</p>";
+
+        // Two trailing spaces by default
+        var markdown = HtmlToMarkdown.Convert(html);
+        Assert.Equal("Line 1  \nLine 2", markdown);
+
+        var backslash = HtmlToMarkdown.Convert(html, new HtmlToMarkdownOptions { LineBreakStyle = LineBreakStyle.Backslash });
+        Assert.Equal("Line 1\\\nLine 2", backslash);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_Escaping()
+    {
+        #region HtmlToMarkdown_Escaping
+        var markdown = HtmlToMarkdown.Convert("""
+            <p>1. Use *.txt files</p>
+            <p># is not a heading, and [this] is not a link</p>
+            """);
+        Assert.Equal("""
+            1\. Use \*.txt files
+
+            \# is not a heading, and \[this\] is not a link
+            """, markdown);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_Lists()
+    {
+        #region HtmlToMarkdown_Lists
+        var markdown = HtmlToMarkdown.Convert("""
+            <ul>
+              <li>Fruits
+                <ol start="3">
+                  <li>Apple</li>
+                  <li>Banana</li>
+                </ol>
+              </li>
+              <li><input type="checkbox" checked> Done</li>
+              <li><input type="checkbox"> To do</li>
+            </ul>
+            """);
+        Assert.Equal("""
+            - Fruits
+              3. Apple
+              4. Banana
+            - [x] Done
+            - [ ] To do
+            """, markdown);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_CodeBlocks()
+    {
+        #region HtmlToMarkdown_CodeBlocks
+        var html = """
+            <pre><code class="language-csharp">var x = 1;
+            Console.WriteLine(x);
+            </code></pre>
+            """;
+
+        var fenced = HtmlToMarkdown.Convert(html);
+        Assert.Equal("""
+            ```csharp
+            var x = 1;
+            Console.WriteLine(x);
+            ```
+            """, fenced);
+
+        var indented = HtmlToMarkdown.Convert(html, new HtmlToMarkdownOptions { CodeBlockStyle = CodeBlockStyle.Indented });
+        Assert.Equal("""
+                var x = 1;
+                Console.WriteLine(x);
+            """, indented);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_Tables()
+    {
+        #region HtmlToMarkdown_Tables
+        var markdown = HtmlToMarkdown.Convert("""
+            <table>
+              <thead>
+                <tr><th>Name</th><th style="text-align: right">Price</th><th align="center">Stock</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Apple</td><td>$1.20</td><td>Yes</td></tr>
+                <tr><td>Banana<br>(organic)</td><td>$0.80</td><td>No</td></tr>
+              </tbody>
+            </table>
+            """);
+        Assert.Equal("""
+            | Name | Price | Stock |
+            | --- | ---: | :---: |
+            | Apple | $1.20 | Yes |
+            | Banana<br>(organic) | $0.80 | No |
+            """, markdown);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_DefinitionLists()
+    {
+        #region HtmlToMarkdown_DefinitionLists
+        var markdown = HtmlToMarkdown.Convert("""
+            <dl>
+              <dt>HTML</dt>
+              <dd>The markup language of the web.</dd>
+              <dt>CSS</dt>
+              <dd>The style sheet language of the web.</dd>
+            </dl>
+            """);
+        Assert.Equal("""
+            HTML
+            :   The markup language of the web.
+
+            CSS
+            :   The style sheet language of the web.
+            """, markdown);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_Containers()
+    {
+        #region HtmlToMarkdown_Containers
+        var markdown = HtmlToMarkdown.Convert("""
+            <article>
+              <header><h1>Title</h1></header>
+              <section><p>Some <span class="highlight">text</span>.</p></section>
+              <script>alert('removed')</script>
+            </article>
+            """);
+        Assert.Equal("""
+            # Title
+
+            Some text.
+            """, markdown);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_UnknownElements()
+    {
+        #region HtmlToMarkdown_UnknownElements
+        var html = "<p>Water is H<sub>2</sub>O</p>";
+
+        var passThrough = HtmlToMarkdown.Convert(html);
+        Assert.Equal("Water is H<sub>2</sub>O", passThrough);
+
+        var strip = HtmlToMarkdown.Convert(html, new HtmlToMarkdownOptions { UnknownElementHandling = UnknownElementHandling.Strip });
+        Assert.Equal("Water is HO", strip);
+
+        var keepContent = HtmlToMarkdown.Convert(html, new HtmlToMarkdownOptions { UnknownElementHandling = UnknownElementHandling.StripKeepContent });
+        Assert.Equal("Water is H2O", keepContent);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_UntrustedHtml()
+    {
+        #region HtmlToMarkdown_UntrustedHtml
+        var untrustedHtml = """<p>Hello <u onclick="steal()">world</u></p>""";
+
+        // With the default options, the unknown element is copied with its attributes
+        var unsafeMarkdown = HtmlToMarkdown.Convert(untrustedHtml);
+        Assert.Equal("""Hello <u onclick="steal()">world</u>""", unsafeMarkdown);
+
+        // Sanitize the HTML first: the event handlers, scripts and javascript: URLs are removed
+        var sanitizedHtml = Document.ParseHtml(untrustedHtml).Body!.InnerHtml;
+        var markdown = HtmlToMarkdown.Convert(sanitizedHtml);
+        Assert.Equal("Hello <u>world</u>", markdown);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_CompleteDocument()
+    {
+        #region HtmlToMarkdown_CompleteDocument
+        var html = """
+            <!DOCTYPE html>
+            <html>
+            <head><title>Page title</title></head>
+            <body><h1>Title</h1><p>Content</p></body>
+            </html>
+            """;
+
+        // Convert the content of the body, not the whole document
+        var document = HtmlDocumentParser.ParseDocument(html);
+        var markdown = HtmlToMarkdown.Convert(document.Body!.InnerHtml);
+        Assert.Equal("""
+            # Title
+
+            Content
+            """, markdown);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_SetextHeadings()
+    {
+        #region HtmlToMarkdown_SetextHeadings
+        var markdown = HtmlToMarkdown.Convert("<h1>Title</h1><h2>Section</h2><h3>Subsection</h3>", new HtmlToMarkdownOptions
+        {
+            HeadingStyle = HeadingStyle.Setext,
+        });
+        Assert.Equal("""
+            Title
+            =====
+
+            Section
+            -------
+
+            ### Subsection
+            """, markdown);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_MarkdownStyle()
+    {
+        #region HtmlToMarkdown_MarkdownStyle
+        var markdown = HtmlToMarkdown.Convert("<p><strong>Note</strong>: <em>read</em> this.</p><hr><ul><li>One</li><li>Two</li></ul>", new HtmlToMarkdownOptions
+        {
+            EmphasisMarker = EmphasisMarker.Underscore,
+            ThematicBreak = "* * *",
+            UnorderedListMarker = '+',
+        });
+        Assert.Equal("""
+            __Note__: _read_ this.
+
+            * * *
+
+            + One
+            + Two
+            """, markdown);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_InvalidOptionValue()
+    {
+        #region HtmlToMarkdown_InvalidOptionValue
+        var options = new HtmlToMarkdownOptions();
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => options.UnorderedListMarker = '#');
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => options.CodeBlockFenceCharacter = '"');
         #endregion
     }
 

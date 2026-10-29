@@ -8,6 +8,34 @@ namespace Meziantou.Framework.Toml.Tests;
 public sealed class Toml11ParsingTests
 {
     [Fact]
+    public void Documentation_ReadToml11AndWriteToml10()
+    {
+        #region TomlSerializer_Toml11
+        var document = TomlSerializer.Deserialize<TomlTable>("""
+            # TOML 1.1: an inline table can span lines and end with a comma
+            server = {
+              host = "localhost",
+              port = 8080,
+            }
+            title = "\e[1mMy App\e[0m" # the TOML 1.1 \e escape
+            start = 07:30 # the seconds are optional
+            """)!;
+
+        var server = (TomlTable)document["server"];
+        Assert.Equal(8080L, server["port"]);
+        Assert.Equal("\u001B[1mMy App\u001B[0m", document["title"]);
+        Assert.Equal("07:30:00", document["start"].ToString());
+
+        // The output uses no TOML 1.1 syntax, so TOML 1.0 readers can read it
+        Assert.Equal("""
+            server = {host = "localhost", port = 8080}
+            title = "\u001B[1mMy App\u001B[0m"
+            start = 07:30:00
+
+            """, TomlSerializer.Serialize(document));
+        #endregion
+    }
+    [Fact]
     public void InlineTable_MultilineWithCommentsAndTrailingComma_IsAccepted()
     {
         var toml =

@@ -14,6 +14,11 @@ internal readonly record struct JpegXlBitDepth(int BitsPerSample, int ExponentBi
     /// <summary>Gets a value indicating whether the samples are floating-point numbers.</summary>
     public bool IsFloat => ExponentBits != 0;
 
+    /// <summary>Gets the sample that stands for 1: the largest integer, or the encoding of 1 in the floating-point format.</summary>
+    public int One => IsFloat ? ((1 << (ExponentBits - 1)) - 1) << MantissaBits : (int)((1L << BitsPerSample) - 1);
+
+    private int MantissaBits => BitsPerSample - ExponentBits - 1;
+
     public static JpegXlBitDepth Read(JpegXlBitReader reader)
     {
         if (!reader.ReadBool())
@@ -32,5 +37,73 @@ internal readonly record struct JpegXlBitDepth(int BitsPerSample, int ExponentBi
             throw JpegXlFormat.Invalid("the bit depth of floating-point samples is not valid.");
 
         return new JpegXlBitDepth(floatBits, exponentBits);
+    }
+
+    /// <summary>
+    /// Converts samples to floating-point numbers, where 1 is the largest integer sample: integers are scaled by their
+    /// depth, floating-point samples are the numbers their bits encode.
+    /// </summary>
+    /// <param name="source">The samples.</param>
+    /// <param name="destination">The converted samples, as many as <paramref name="source"/>.</param>
+    public void ToSingle(ReadOnlySpan<int> source, Span<float> destination)
+    {
+        destination = destination[..source.Length];
+        if (!IsFloat)
+        {
+            // A 31-bit maximum does not fit the arithmetic of 32-bit integers
+            var scale = 1f / ((1L << BitsPerSample) - 1);
+            for (var i = 0; i < source.Length; i++)
+            {
+                destination[i] = source[i] * scale;
+            }
+
+            return;
+        }
+
+        if (BitsPerSample == 32)
+        {
+            // The validation of the depth leaves 8 exponent bits and 23 mantissa bits: the samples are single-precision numbers
+            for (var i = 0; i < source.Length; i++)
+            {
+                destination[i] = BitConverter.Int32BitsToSingle(source[i]);
+            }
+
+            return;
+        }
+
+        for (var i = 0; i < source.Length; i++)
+        {
+            destination[i] = ToSingle(source[i]);
+        }
+    }
+
+    /// <summary>Converts the bits of a floating-point sample of less than 32 bits to the number they encode, as libjxl does.</summary>
+    private float ToSingle(int sample)
+    {
+        var mantissaBits = MantissaBits;
+        var signShift = BitsPerSample - 1;
+        var bits = (uint)sample;
+        var sign = (bits >> signShift) != 0 ? 0x8000_0000u : 0;
+        bits &= (1u << signShift) - 1;
+        if (bits == 0)
+            return BitConverter.UInt32BitsToSingle(sign);
+
+        var exponent = (int)(bits >> mantissaBits);
+        var mantissa = (bits & ((1u << mantissaBits) - 1)) << (23 - mantissaBits);
+        if (exponent == 0 && ExponentBits < 8)
+        {
+            // A subnormal number is normal in single precision, whose exponent range is larger
+            while ((mantissa & 0x80_0000) == 0)
+            {
+                mantissa <<= 1;
+                exponent--;
+            }
+
+            exponent++;
+            mantissa &= 0x7F_FFFF;
+        }
+
+        exponent += 127 - ((1 << (ExponentBits - 1)) - 1);
+        return BitConverter.UInt32BitsToSingle(sign | ((uint)exponent << 23) | mantissa);
     }
 }

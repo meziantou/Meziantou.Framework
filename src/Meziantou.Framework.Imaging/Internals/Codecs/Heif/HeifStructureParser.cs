@@ -511,7 +511,7 @@ internal sealed class HeifStructureParser : ImageParser<ImageInfo>
     private void ProcessMeta()
     {
         var payload = _meta!.Span;
-        var meta = HeifMetaBox.Parse(payload, _binding);
+        var meta = HeifMetaBox.Parse(payload, _binding, _context.CancellationToken);
         if (_alternateBinding is { } alternate && HeifImagePlan.IsCodedWith(alternate, meta))
             SetBinding(alternate);
 
@@ -1263,7 +1263,7 @@ internal sealed class HeifStructureParser : ImageParser<ImageInfo>
             return;
         }
 
-        var meta = HeifMetaBox.Parse(metaPayload, _binding);
+        var meta = HeifMetaBox.Parse(metaPayload, _binding, _context.CancellationToken);
         foreach (var item in meta.Items.Values.OrderBy(item => item.Id))
         {
             if (item.Type is HeifFormat.Exif)

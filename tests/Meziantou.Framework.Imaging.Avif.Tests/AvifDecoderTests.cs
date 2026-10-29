@@ -422,6 +422,31 @@ public sealed class AvifDecoderTests
     }
 
     [Theory]
+    [InlineData(0x00, 0x00, 1, 0, true)]
+    [InlineData(0x00, 0x00, 2, 0, false)]
+    [InlineData(0x00, 0x00, ushort.MaxValue, 0, false)]
+    [InlineData(0x44, 0x00, 2, 8, false)]
+    [InlineData(0x44, 0x00, 2, 16, true)]
+    [InlineData(0x40, 0x00, ushort.MaxValue, 4, false)]
+    public void ItemLocationExtentsAreBoundedByTheBytesOfTheBox(byte sizes, byte baseOffsetSize, ushort extentCount, int extentBytes, bool isValid)
+    {
+        // An extent without index, offset and length fields takes no byte of the box: its count does not depend on the size of the file
+        var builder = Still();
+        builder.OmittedBoxes.Add("iloc");
+        builder.ExtraMetaBoxes.Add(HeifFileBuilder.FullBox("iloc", 0, 0, [sizes, baseOffsetSize], HeifFileBuilder.U16(1), HeifFileBuilder.U16(1), HeifFileBuilder.U16(0), HeifFileBuilder.U16(extentCount), new byte[extentBytes]));
+        var data = builder.Build();
+        if (isValid)
+        {
+            Assert.Equal((8, 6), (Image.Identify(data).Width, Image.Identify(data).Height));
+        }
+        else
+        {
+            Assert.Throws<InvalidImageContentException>(() => Image.Identify(data));
+            Assert.Throws<InvalidImageContentException>(() => Image.Identify(data, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan }));
+        }
+    }
+
+    [Theory]
     [InlineData(0u, 1u)]
     [InlineData(1u, 0u)]
     [InlineData(0u, 0u)]

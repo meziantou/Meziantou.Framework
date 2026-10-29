@@ -112,8 +112,9 @@ yourself is rejected when you save. Which format stores what is described in
 
 ## Floating-point images
 
-`RgbaFloat` and `RgbaHalf` images are stored as they are by the OpenEXR encoder, and by the TIFF encoder (as 32-bit
-floats, with `TiffPixelLayout.Auto` and a compression other than JPEG). Every other encoder rejects them before writing,
+`RgbaFloat` and `RgbaHalf` images are stored by the OpenEXR encoder with the
+[sample type and alpha conversion](../10-Formats/17-OpenExr.md) of OpenEXR, and by the TIFF encoder as 32-bit
+floats (with `TiffPixelLayout.Auto` and a compression other than JPEG). Every other encoder rejects them before writing,
 unless `ImageEncoder.FloatingPointConversion` gives the options of their reduction to 16-bit integers: a tone mapping
 for the highlights, or clipping. See
 [Pixel formats](../04-Concepts/05-PixelFormats.md#floating-point-and-high-dynamic-range).

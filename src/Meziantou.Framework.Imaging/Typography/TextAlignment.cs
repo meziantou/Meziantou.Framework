@@ -13,8 +13,9 @@ public enum TextAlignment
     End = 2,
 
     /// <summary>
-    /// Each line is stretched to the width of the layout by widening its spaces, except the last line of a paragraph
-    /// and a line without space, which are aligned as with <see cref="Start"/>.
+    /// Each line is stretched to the width of the layout by widening U+0020 spaces and U+00A0 no-break spaces, except the
+    /// last line of a paragraph and a line without expandable spaces, which are aligned as with <see cref="Start"/>.
+    /// Does not add space between CJK characters or lengthen Arabic words (kashida).
     /// </summary>
     Justify = 3,
 }

@@ -4,15 +4,20 @@ namespace Meziantou.Framework.Imaging.Formats;
 /// <remarks>
 /// <para>
 /// The output is a single-part scan-line file whose data window and display window are the image. Floating-point pixels
-/// are stored as they are, values outside [0, 1], infinities and samples that are not numbers included
+/// may have values outside [0, 1], infinities and samples that are not numbers
 /// (<see cref="ImageEncoder.FloatingPointConversion"/> does not apply). Integer pixels are stored as the floating-point
 /// values of the conversion of <see cref="Image.CloneAs{TPixel}(PixelConversionOptions?)"/> to <see cref="RgbaFloat"/>
 /// (<c>v / max</c>). Gray pixel formats are written as a luminance channel (<c>Y</c>), the formats with alpha with an
 /// <c>A</c> channel.
 /// </para>
 /// <para>
-/// By default, the samples are written as <see cref="OpenExrPixelType.Half"/> when a half holds them exactly
-/// (<see cref="RgbaHalf"/> and 8-bit pixel formats) and as <see cref="OpenExrPixelType.Float"/> otherwise. Writing
+/// Colors are multiplied by nonzero alpha before writing and divided by it when decoded, as OpenEXR stores premultiplied
+/// colors and the library holds straight colors. Rounding, underflow or overflow can change them: lossless compression
+/// preserves the stored samples, not necessarily the source pixels. A zero alpha keeps its colors without multiplication.
+/// </para>
+/// <para>
+/// By default, the samples are written as <see cref="OpenExrPixelType.Half"/> for
+/// <see cref="RgbaHalf"/> and 8-bit pixel formats, and as <see cref="OpenExrPixelType.Float"/> otherwise. Writing
 /// <see cref="RgbaFloat"/> or 16-bit pixels as half samples rounds them (nearest, ties to even) and requires
 /// <see cref="AllowBitDepthReduction"/>; a finite sample beyond ±65,504 (the largest half) is rejected.
 /// </para>
@@ -48,8 +53,8 @@ public sealed class OpenExrEncoder : ImageEncoder
     } = OpenExrCompression.Zip;
 
     /// <summary>
-    /// Gets the type of the samples, or <see langword="null"/> (the default) for the narrowest type that stores the pixels
-    /// exactly.
+    /// Gets the type of the samples, or <see langword="null"/> (the default) for half samples of <see cref="RgbaHalf"/>
+    /// and 8-bit pixels, float samples otherwise. Alpha conversion can round colors independently of this choice.
     /// </summary>
     /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="OpenExrPixelType"/>.</exception>
     public OpenExrPixelType? PixelType
@@ -70,6 +75,6 @@ public sealed class OpenExrEncoder : ImageEncoder
     /// </summary>
     public bool AllowBitDepthReduction { get; init; }
 
-    /// <summary>Gets a value indicating whether the floating-point pixels are written as they are: always, OpenEXR stores floating-point samples.</summary>
+    /// <summary>Gets a value indicating whether floating-point samples are stored without reduction to integer pixels: always for OpenEXR.</summary>
     internal override bool StoresFloatingPointSamples => true;
 }

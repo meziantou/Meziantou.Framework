@@ -48,6 +48,17 @@ public static void SaveWebP(string photoPath, string webpPath, string animatedPa
 Lossy output uses 4:2:0 chroma subsampling, and keeps alpha losslessly. Lossless output keeps every 8-bit sample,
 including the colors of fully transparent pixels.
 
+At effort 2 and above, lossy encoding tries 4x4 luma prediction. If the modes exceed the VP8 first-partition limit
+(524,287 bytes), it retries with 16x16 prediction only at the same quantizer. That can change the decoded quality and
+file size; `Quality` is not a target distortion guarantee. If the partition still does not fit, encoding throws
+`UnsupportedImageFeatureException`: use lossless output or reduce the image dimensions.
+
+The managed encoder makes its own prediction and entropy-coding decisions: lossless output uses one prefix-code group
+(no spatial entropy image), and lossy output uses one quantizer for the frame and one token partition. It is not libwebp.
+There is no general
+guarantee of comparable file size, encoding speed or perceptual quality, and equal quality/effort numbers do not
+establish a matched comparison. Compare representative images at matched decoded quality for lossy output.
+
 ## Options
 
 | Option | What it does | Default |

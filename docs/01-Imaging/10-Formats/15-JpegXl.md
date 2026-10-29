@@ -7,6 +7,10 @@ JPEG XL stores lossless and lossy images and animations, up to 16 bits per sampl
 that does not use the features listed in [Limitations](../12-Limitations.md), and `JpegXlEncoder` writes lossless files
 by default. `JpegXlTranscoder` stores a JPEG file in a smaller JPEG XL file without any loss, and rebuilds it.
 
+Interoperability does not imply encoder parity with libjxl: the managed encoder makes its own coding decisions.
+There is no general guarantee of comparable file size, encoding speed or perceptual quality, and equal quality/effort
+numbers do not establish a matched comparison. Measure representative images at matched decoded quality for lossy output.
+
 ## What is read and written
 
 | | Reading | Writing |

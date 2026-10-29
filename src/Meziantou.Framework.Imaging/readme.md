@@ -169,7 +169,7 @@ decoded or encoded approximately; see [Format reference](#format-reference) and 
 
 | Format | Decoding | Encoding | `Save(path)` extensions |
 | --- | --- | --- | --- |
-| PNG / APNG | Every color type and bit depth, palettes, Adam7, APNG animations and poster frames, Apple CgBI (iOS-optimized) files | Gray, RGB and RGBA at 8/16 bits, exact palettes at 1/2/4/8 bits, Adam7, APNG with full-canvas frames and posters | `.png` (APNG when animated), `.apng` |
+| PNG / APNG | Every color type and bit depth, palettes, Adam7, APNG animations and poster frames, Apple CgBI (iOS-optimized) files | Gray, gray+alpha, RGB and RGBA at 8/16 bits, exact palettes at 1/2/4/8 bits, Adam7, APNG with full-canvas frames and posters; sub-byte grayscale and APNG delta rectangles with `PngOptimization.MinimumSize` | `.png` (APNG when animated), `.apng` |
 | GIF | GIF87a/89a, animations, interlacing, transparency, comments | GIF89a, deterministic quantization per frame or to a shared palette, optional dithering, animations with unknown frame counts | `.gif` |
 | JPEG | Baseline, extended sequential and progressive, Huffman or arithmetic coded, 8-bit or 12-bit samples; lossless (Huffman coded), 2-bit to 16-bit samples; gray, YCbCr, RGB, and CMYK/YCCK with a color conversion; any integral sampling | Baseline or progressive 8-bit Huffman, gray or YCbCr, 4:4:4/4:2:2/4:2:0 | `.jpg`, `.jpeg` |
 | WebP | Lossless, lossy, alpha, animations, ICC/EXIF/XMP | Lossless and lossy, alpha, animations (seekable destination) | `.webp` (lossless by default) |
@@ -3078,8 +3078,9 @@ of their characters and were not compared with a font.
     right; the strikethrough of upright text is in the middle of the line. A placeholder takes its height down the
     line and is centered on it.
 - **Alignment.** Lines are aligned in `MaxWidth`, or in the width of the widest line without it. `Justify` stretches
-  each line to that width by widening its spaces, except the last line of a paragraph. `FirstLineIndent` indents the
-  first line of each paragraph, and `TabSize` sets the tabulation stops.
+  each line to that width by widening U+0020 spaces and U+00A0 no-break spaces, except the last line of a paragraph.
+  A line without these spaces stays start-aligned: there is no inter-character justification for CJK text.
+  `FirstLineIndent` indents the first line of each paragraph, and `TabSize` sets the tabulation stops.
 - **Fitting.** `MaxLines` and `MaxHeight` cut the text (the first line is always kept); `Trimming` ends the last line
   with an ellipsis after the last character or the last word that leaves room for it, and also trims a line that is
   wider than `MaxWidth` when lines are not wrapped. `IsTruncated` says that a part of the text is not in the layout.
@@ -3131,7 +3132,9 @@ of their characters and were not compared with a font.
   first needs them (`SystemFontDescriptor.Covers`), within a bounded amount of memory, and a file that cannot be read
   or loaded is skipped. The font found for a character is kept by the stack, which its layouts share: each font is
   loaded once. A stack without fallback never uses an installed font; with fallback, the text depends on the fonts of
-  the machine.
+  the machine. Fallback does not use `TextStyle.Language`: Han ideographs use the simplified-Chinese family list
+  regardless of the language. Put the desired Japanese, Korean or traditional-Chinese fonts in the stack or in
+  `PreferredFamilies` when their regional forms matter.
 - **Synthetic bold and oblique.** `TextStyle.Synthesis` makes a replacement for a bold or an italic font the caller
   does not have, by geometry alone. `Oblique` slants every outline to the right around the baseline, by a quarter
   of the height (about 14 degrees); marks follow their letter, advances do not change and decorations stay straight.
@@ -3783,15 +3786,18 @@ AVIF and HEIC are detected from the brands of their file type box and read forwa
 by, so a file whose media data precede its index is buffered up to that index, bounded by `MaxEncodedBytes` and the live
 allocation limit.
 
-`MaxEncodedBytes` equal to the length of the input is always enough, and a smaller value fails the same way from a span,
-a path or a stream. A stream only reports its end by returning no byte, so when the format needs the end of the input (the
+For forward-only parsing, `MaxEncodedBytes` bounds the prefix examined; the input length is enough for that limit.
+When parsing stops early (`Identify` in header mode or `FrameLimit`), the remaining bytes need not fit the limit.
+A stream only reports its end by returning no byte, so when the format needs the end of the input (the
 TGA trailer, the last sample of a plain Netpbm raster, a TIFF, an icon or an animated cursor buffered whole, an input shorter than the detection
 prefix) and every byte the limit allows was read, one more byte is read and discarded to tell an input that ends there from
 a longer one. It is the only byte ever read past the limit, and it is never decoded.
 
 TIFF, ICO, CUR and ANI are random-access containers: on a seekable source, only the bytes their structure points at are read
-(the stream position afterward is unspecified), and a non-seekable or asynchronous load buffers the input, bounded by
-`MaxEncodedBytes`.
+(the stream position afterward is unspecified). Synchronous path and seekable-stream loads charge the cumulative bytes
+read to `MaxEncodedBytes`, including repeated reads of the same range: they may succeed with a limit below the input
+length, or need more than that length when ranges are read repeatedly. Span, non-seekable and asynchronous loads instead
+parse the whole input in memory and charge its length once, so the input length is exactly enough for this limit.
 
 ### Streaming readers and writers
 
@@ -3942,7 +3948,8 @@ same rules apply, before any output: alpha to JPEG needs `BackgroundColor`, 16 b
 `InvalidOperationException`, and one that was removed or replaced, or whose image is disposed, throws
 `ObjectDisposedException`.
 
-OpenEXR and TIFF store floating-point samples: `OpenExrEncoder` writes `RgbaFloat` and `RgbaHalf` images as they are, and
+OpenEXR and TIFF store floating-point samples: `OpenExrEncoder` writes `RgbaFloat` and `RgbaHalf` images using the sample
+type and alpha conversion described in [OpenEXR](#openexr), and
 `TiffEncoder` writes them as 32-bit floats (see [TIFF and BigTIFF](#tiff-and-bigtiff)) with `TiffPixelLayout.Auto` and a
 compression that is not `TiffCompression.Jpeg`. Elsewhere an `RgbaFloat` or `RgbaHalf` image, writer or collection entry
 is rejected before anything is written, unless `ImageEncoder.FloatingPointConversion` gives the options of its reduction
@@ -4186,6 +4193,16 @@ default) keeps every 8-bit sample, including the colors of fully transparent pix
 transparent black); `Lossy` is VP8 with 4:2:0 chroma, controlled by `Quality` (0-100), and keeps alpha losslessly.
 `Effort` (0-9, default 5) trades encoding time for size and never changes lossless pixels. Gray images are stored as RGB;
 16-bit images need `AllowBitDepthReduction`.
+
+Lossy output first tries 4x4 luma prediction from effort 2. If the modes exceed the VP8 first-partition limit
+(524,287 bytes), it retries with 16x16 prediction only, at the same quantizer. This can change the decoded quality and
+file size; `Quality` is not a target distortion guarantee. If that partition still does not fit, encoding throws
+`UnsupportedImageFeatureException`: use lossless output or reduce the image dimensions.
+
+The managed encoder makes its own prediction and entropy-coding decisions: lossless output uses one prefix-code group
+(no spatial entropy image), and lossy output uses one quantizer for the frame and one token partition. It is not libwebp. No general file-size,
+speed or perceptual-quality comparison with libwebp is guaranteed, and quality/effort numbers are not interchangeable
+between encoders. Compare representative images at matched decoded quality for a lossy size comparison.
 
 A still image streams to any destination. An animation (several frames, animation settings, or a writer without
 `ExpectedFrameCount = 1`) declares its size before its frames, so it needs a **seekable** destination: frames are written
@@ -4675,6 +4692,10 @@ path is exact: a lossless file decodes to the samples that were encoded, and the
 same samples in libjxl and jxl-oxide. The lossy path (VarDCT) is defined in floating point: the decoded samples are
 within a few sixteen-bit units of what those decoders give (they differ from each other by as much), not bit-exact.
 
+Interoperability does not imply encoder parity with libjxl: the managed encoder makes its own coding decisions.
+There is no general guarantee of comparable file size, encoding speed or perceptual quality, and equal quality/effort
+numbers do not establish a matched comparison. Measure representative images at matched decoded quality for lossy output.
+
 <!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_SaveJpegxl;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static string SaveJpegXl(string inputPath, string jxlPath, string lossyPath, string animatedPath, string animatedJxlPath)
@@ -4831,16 +4852,20 @@ its EOC marker: a file that is cut is `InvalidImageContentException`, never a sh
 OpenEXR files hold scene-linear, high dynamic range images of 16-bit (half) or 32-bit floating-point samples, as used in
 visual effects and rendering. The codec is fully managed. Its decoder reads the files OpenEXR 3.5 writes bit for bit,
 lossy compressions included: what PXR24, B44 and B44A lost was lost when the file was written, and decoding them is
-exact. Its encoder writes lossless files that OpenEXR and FFmpeg read back to the same samples.
+exact for the stored samples. Its encoder uses lossless compression, but the pixel-to-sample conversion is not a
+general bit-exact round-trip guarantee: OpenEXR stores premultiplied colors, whereas the library holds straight colors.
+Nonzero alpha multiplies the colors on encoding and divides them on decoding; rounding, underflow or overflow can
+change them. A zero alpha keeps its colors without multiplication or division. Integer normalization and half-sample
+rounding are separate from compression.
 
 <!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_OpenExr;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static Image<Rgba32> ConvertOpenExr(string exrPath, string pizPath)
 {
-    // An OpenEXR file loads as RgbaHalf (half samples) or RgbaFloat (float or 32-bit integer samples), in linear light
+    // Half-only files without alpha load as RgbaHalf; other OpenEXR files load as RgbaFloat, in linear light
     using var hdr = Image.Load(exrPath);
 
-    // Lossless: the samples are written as they are, values above 1 included. PIZ is often the smallest
+    // PIZ compresses the stored samples losslessly, values above 1 included; alpha conversion can round colors
     hdr.Save(pizPath, new OpenExrEncoder { Compression = OpenExrCompression.Piz });
 
     // Integer pixels cannot hold the highlights: a typed load compresses them with a tone mapping
@@ -4856,7 +4881,7 @@ public static Image<Rgba32> ConvertOpenExr(string exrPath, string pizPath)
 | --- | --- | --- |
 | Files | Single-part files (version 2) of scan lines or tiles; the chunks may be in any order in the file (decreasing lines, random tiles) and are read forward only. A tiled file with mipmap or ripmap levels gives its full-resolution level; the other levels are walked and skipped | A single-part file of scan lines in increasing order, with the attributes the specification requires |
 | Compression | NONE, RLE, ZIPS, ZIP, PIZ, PXR24, B44 and B44A; a chunk stored uncompressed whatever the compression of the file | NONE, RLE, ZIPS, ZIP (the default) or PIZ, all lossless; a chunk that does not shrink is stored uncompressed |
-| Samples | HALF, FLOAT and UINT channels: an image of HALF channels loads as `RgbaHalf`, any other as `RgbaFloat` (a UINT sample is the floating-point number of the same value, which must be exact: up to 2^24, or a larger value with at most 24 significant bits). `ImageInfo.BitsPerComponent` is 16 or 32. Infinities and samples that are not numbers are kept | `RgbaHalf` and 8-bit pixels as HALF samples, `RgbaFloat` and 16-bit pixels as FLOAT samples, all exact; `PixelType` chooses the type, and half samples of wider pixels need `AllowBitDepthReduction` (round to nearest, ties to even; beyond ±65,504 rejected) |
+| Samples | HALF, FLOAT and UINT channels: an image of HALF channels without an alpha channel loads as `RgbaHalf`, any other as `RgbaFloat` (the extra precision is used when dividing colors by alpha; a UINT sample must have an exact float value: up to 2^24, or a larger value with at most 24 significant bits). `ImageInfo.BitsPerComponent` is 16 or 32. Infinities and samples that are not numbers are kept, subject to the alpha conversion | By default, `RgbaHalf` and 8-bit pixels as HALF samples, `RgbaFloat` and 16-bit pixels as FLOAT samples; colors are premultiplied by nonzero alpha and rounded to the sample type, so lossless compression does not guarantee exact source pixels. `PixelType` chooses the type, and half samples of wider pixels need `AllowBitDepthReduction` (round to nearest, ties to even; beyond ±65,504 rejected) |
 | Channels | `R`, `G`, `B` and `A`, any of them (a missing color is 0, a missing alpha is 1), or `Y` (luminance, with or without `A`), which gives the three colors; the channels are not sub-sampled | `R`, `G`, `B`, and `A` for the pixel formats with alpha; `Y` for gray pixel formats |
 | Windows | The display window is the image; the data window is placed in it, and the pixels it does not cover are transparent black | Both windows are the image, from (0, 0) |
 | Color | Linear light: the `chromaticities` attribute (BT.709 and D65 without it) gives `ColorTransferFunction.Linear` for BT.709, a CICP description with the linear transfer characteristics (8) for BT.2020, DCI-P3 and Display P3, and an ICC profile with linear curves for the others. Never applied | A `chromaticities` attribute for a linear CICP description of BT.2020, DCI-P3 or Display P3. The samples must be linear light: an image labeled sRGB (the default of integer pixels), with an ICC profile or another CICP description follows `MetadataHandling` |
@@ -4889,7 +4914,7 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | TIFF | Decoding: old-style JPEG compression (6), L\*a\*b\* and transparency-mask photometric interpretations, planar storage of several samples, the reversed fill order for other data than bilevel, sample widths other than 1, 2, 4, 8 and 16 bits (8 and 16 for RGB and CMYK, 8 for YCbCr, at most 8 for palette indexes; with JPEG compression, any width from 8 to 16 bits; signed samples of 8 or 16 bits and floating-point samples of 16, 24 or 32 bits, gray and RGB only, without JPEG or JPEG 2000 compression; no 64-bit floating-point samples), JPEG compression of samples of less than 8 bits, more than one extra sample, associated (premultiplied) or unspecified extra samples, alpha next to palette, YCbCr or packed grayscale samples, the uncompressed mode of the CCITT compressions, the LZW bit order of TIFF 5.0 drafts, and JPEG-compressed YCbCr data that is not the full-range BT.601 data of JFIF, and JPEG 2000 compression of samples that are not 8 or 16 bits wide, of palette indexes, of YCbCr data or with a predictor are all rejected with `UnsupportedImageFeatureException`; CMYK pages are loaded only with `CmykConversion`. Compressed data is never repaired (a damaged fax row is an error, not a white row). Subsampled chroma of pages that are not JPEG-compressed is replicated. No EXIF block, no sub-IFD, no unknown-tag round trip. Encoding: one page per `Image.Save` (use `ImageCollection.Save`), strips only, no predictor but the floating-point one, no tiles, no CMYK, no signed samples, no half-precision or 24-bit floating-point samples (`RgbaHalf` pixels are written as 32-bit floats), no thresholding and no color reduction (the bilevel and palette layouts store a page exactly or reject it; 16-bit palette colors that are all multiples of 256 without being all multiples of 257 are rejected, since readers take them for 8-bit colors), Group 3 in one dimension only, one strip per JPEG page (at most 65,535 pixels per side, 8-bit samples, opaque pixels), a seekable destination required |
 | ICO/CUR | Decoding: a top-down DIB payload, a DIB whose stored height is not doubled, an animated PNG payload, a representation larger than 256 pixels per side and the DIB variants an icon payload cannot use (run-length encoding, embedded codecs, OS/2 headers) are rejected. Encoding: 32-bit DIB or still PNG payloads only (16-bit pixels need a PNG payload: `IconPayloadFormat.Dib` is rejected for them), at most 256 pixels per side, no metadata; an icon cannot store a hotspot |
 | ANI | Decoding: raw bitmap frames (no icon flag), a frame without a representation of the canvas size and everything the ICO/CUR decoder rejects are `UnsupportedImageFeatureException`; the geometry fields and the sequence flag of the header are not used (the payloads and the `seq ` chunk are authoritative); an ICC profile or text inside a PNG frame is not retained; `Image.OpenReader` does not read it. Encoding: one representation per frame, at most 256 pixels per side, whole jiffies, an infinite play count only, a title and an author as the only metadata, a seekable destination, at most 4 GiB per file |
-| PNG/APNG | Palette output is opt-in (`PngPixelLayout.Indexed`), exact unless `AllowColorReduction` (a sequential writer cannot declare colors beyond its first image: with `AllowColorReduction`, later frames are mapped to them), no grayscale output below 8 bits, no RGB 16-bit or gray+alpha output layouts (16-bit color is written as RGBA 16), no APNG delta-rectangle optimization, unknown critical chunks rejected, unknown ancillary chunks not round-tripped; Apple CgBI files are decoded with the precision their premultiplied colors keep (lossy for low alpha values) and never written |
+| PNG/APNG | Default output follows the pixel format, including RGB 16-bit and gray+alpha 8/16-bit; grayscale below 8 bits and APNG delta rectangles require `PngOptimization.MinimumSize`. Palettes are selected by `PngPixelLayout.Indexed` or `MinimumSize`, exact unless `AllowColorReduction` (a sequential writer fixes its palette from the first image; later frames must fit it, or are mapped to it with `AllowColorReduction`). Unknown critical chunks are rejected, unknown ancillary chunks are not round-tripped; Apple CgBI files are decoded with the precision their premultiplied colors keep (lossy for low alpha values) and never written |
 | Metadata | Profiles are preserved and labeled, never applied implicitly (colors are converted only by `ConvertColorProfile` and `IccColorTransform`); EXIF orientation is reported, applied only by `AutoOrient`; extended XMP in JPEG is not supported; per-format storage limits are listed in [Metadata, color profiles and orientation](#metadata-color-profiles-and-orientation); unsupported items follow `MetadataHandling` (`Strict` throws by default) |
 | Color management | ICC version 2 and 4 grayscale, RGB and CMYK profiles (matrix-based and table-based): no version 5 (iccMAX), device-link, abstract or named-color profile, no multi-process-element (`D2Bx`/`B2Dx`) tag, no other data color space; `ConvertColorProfile` keeps the pixel format (an RGB image cannot become grayscale or CMYK this way); no CMYK pixel format: a CMYK JPEG file or TIFF page is converted to RGB when it is loaded (`CmykConversionOptions`, RGB destination only) and CMYK cannot be written; no gamut mapping beyond per-channel clipping |
 | Drawing | Sequential; under a projective transformation of the canvas (or, for filters, one that turns or skews), shadows, blurs, filters and the glyphs a font draws with its own colors are drawn on an image of the plane at one resolution (the scale of the transformation at its origin, at most 4,194,304 pixels), curves are cut no finer than for a factor of 65536 near the horizon, and a pen that does not scale strokes the parts of a closed contour that crosses the horizon as open contours; a filter graph has no input `BackgroundImage`, `BackgroundAlpha`, `FillPaint` or `StrokePaint`, and its region defaults to the canvas (not to the box of the drawing); no mesh gradient of patches (a `PathGradientBrush` is a fan of triangles from one center); a marker has no hole, and a stroke on one side of its path costs a clip; linear light is the light of the transfer function the image declares (sRGB when it declares none) or of the tone curves of its ICC profile, and a profile without tone curves has none; a color matrix is applied to the encoded sample values, also in linear light; the colors of a profile (`PaintProfile`) are those of the paints only (an image that is drawn is not converted), an RGB profile only, and never on PQ or HLG samples; without antialiasing, the glyphs a font draws with its own colors stay antialiased; a clip multiplies coverages; combined and simplified paths are made of segments; coordinates are limited to ±16,777,216 (what a transformation sends beyond is cut by that range); on a floating-point canvas, paints have 16-bit colors in [0, 1], and an image, a layer, a pattern, a filter, a shadow, a blur, a group or a backdrop is combined through 16-bit colors, so its samples must be in [0, 1] (others are rejected, never clipped) and are quantized to 1/65535 |

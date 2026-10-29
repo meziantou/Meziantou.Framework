@@ -117,6 +117,10 @@ public sealed class ImageResourceLimits
     } = DefaultMaxTotalPixels;
 
     /// <summary>Gets the maximum number of encoded bytes read from one input. Defaults to <see cref="DefaultMaxEncodedBytes"/>.</summary>
+    /// <remarks>
+    /// Synchronous TIFF, ICO, CUR and ANI loads from a path or seekable stream charge cumulative reads, including repeated
+    /// ranges, not the file length. Span, non-seekable and asynchronous loads of these formats charge the whole input once.
+    /// </remarks>
     /// <exception cref="ArgumentOutOfRangeException">The value is not positive.</exception>
     public long MaxEncodedBytes
     {

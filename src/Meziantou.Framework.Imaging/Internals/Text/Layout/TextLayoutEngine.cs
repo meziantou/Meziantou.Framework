@@ -539,7 +539,6 @@ internal sealed class TextLayoutEngine
         return position + Math.Max(Unicode.GetGraphemeClusterLength(text[position..]), 1);
     }
 
-    /// <summary>Gets the working storage that measures the outlines of a font without vertical origins.</summary>
     /// <summary>Gets the shaping cache of a font for the layout: the one the font kept from a layout before.</summary>
     private ShapingCache GetShapingCache(Font font)
     {
@@ -1809,7 +1808,6 @@ internal sealed class TextLayoutEngine
         return index;
     }
 
-    /// <summary>Determines whether a character is a control character, which has no glyph and takes no space.</summary>
     /// <summary>Determines whether a character of a cluster needs a glyph of the font: neither a control nor a default ignorable character.</summary>
     internal static bool NeedsGlyph(int codePoint) => !IsControl(codePoint) && !UnicodeProperties.IsDefaultIgnorable(codePoint);
 

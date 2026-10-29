@@ -65,7 +65,12 @@ fonts and text layouts: see [Fonts](../08-Text/02-Fonts.md).
   type (`int.MaxValue` or `long.MaxValue`).
 - `MaxLiveAllocationBytes` bounds each owner separately. It is a safety bound, not a cap on the memory of the process:
   bound the number of images you process at once too.
-- `MaxEncodedBytes` equal to the length of the input is always enough.
+- For forward-only parsing, `MaxEncodedBytes` equal to the input length is enough; a header-only identification or
+  `FrameLimit` may stop before that many bytes are examined.
+- TIFF, ICO, CUR and ANI loads from a synchronous path or seekable stream charge the cumulative bytes read, including
+  repeated reads of the same range. They can succeed with a limit below the input length or require more than that length.
+  Span, non-seekable and asynchronous loads instead parse the whole input in memory and charge its length once, so the
+  input length is exactly enough for this limit.
 
 ## When a limit is exceeded
 

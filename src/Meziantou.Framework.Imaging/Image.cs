@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.Metadata;
@@ -782,17 +783,17 @@ public abstract partial class Image : IDisposable
         }
     }
 
-    private static void ValidateReadableStream(Stream stream)
+    internal static void ValidateReadableStream(Stream stream, [CallerArgumentExpression(nameof(stream))] string? paramName = null)
     {
-        ArgumentNullException.ThrowIfNull(stream);
+        ArgumentNullException.ThrowIfNull(stream, paramName);
         if (!stream.CanRead)
-            throw new ArgumentException("The stream must be readable.", nameof(stream));
+            throw new ArgumentException("The stream must be readable.", paramName);
     }
 
-    internal static void ValidateWritableStream(Stream stream)
+    internal static void ValidateWritableStream(Stream stream, [CallerArgumentExpression(nameof(stream))] string? paramName = null)
     {
-        ArgumentNullException.ThrowIfNull(stream);
+        ArgumentNullException.ThrowIfNull(stream, paramName);
         if (!stream.CanWrite)
-            throw new ArgumentException("The stream must be writable.", nameof(stream));
+            throw new ArgumentException("The stream must be writable.", paramName);
     }
 }

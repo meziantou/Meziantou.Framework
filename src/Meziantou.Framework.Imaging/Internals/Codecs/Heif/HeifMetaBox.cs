@@ -31,7 +31,7 @@ internal sealed class HeifMetaBox
     /// <summary>Parses the payload of a <c>meta</c> box.</summary>
     /// <exception cref="InvalidImageContentException">The box is malformed.</exception>
     /// <exception cref="UnsupportedImageFeatureException">The box uses a version or a feature that is not supported.</exception>
-    public static HeifMetaBox Parse(ReadOnlySpan<byte> payload, HeifCodecBinding binding)
+    public static HeifMetaBox Parse(ReadOnlySpan<byte> payload, HeifCodecBinding binding, CancellationToken cancellationToken)
     {
         var meta = new HeifMetaBox();
         var reader = new HeifBoxReader(payload, binding);
@@ -59,7 +59,7 @@ internal sealed class HeifMetaBox
                     break;
                 case HeifFormat.Iloc:
                     EnsureSingle(binding, seen, type);
-                    meta.ReadItemLocations(ref box);
+                    meta.ReadItemLocations(ref box, cancellationToken);
                     break;
                 case HeifFormat.Iinf:
                     EnsureSingle(binding, seen, type);
@@ -104,7 +104,7 @@ internal sealed class HeifMetaBox
     }
 
     // ISO/IEC 14496-12, section 8.11.3 "The Item Location Box"
-    private void ReadItemLocations(ref HeifBoxReader box)
+    private void ReadItemLocations(ref HeifBoxReader box, CancellationToken cancellationToken)
     {
         var binding = box.Binding;
         var (version, _) = box.ReadFullBoxHeader();
@@ -123,6 +123,7 @@ internal sealed class HeifMetaBox
         var itemCount = version < 2 ? box.ReadUInt16() : box.ReadUInt32();
         for (uint i = 0; i < itemCount; i++)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var id = version < 2 ? box.ReadUInt16() : box.ReadUInt32();
             var item = GetOrAddItem(id);
             if (item.HasLocation)
@@ -138,6 +139,15 @@ internal sealed class HeifMetaBox
 
             var baseOffset = box.ReadUInt(baseOffsetSize);
             var extentCount = box.ReadUInt16();
+
+            // The extents are validated against the bytes of the box before they are stored, so that their storage stays
+            // proportional to the 'meta' payload. Without index, offset and length fields, an extent takes no byte: every
+            // extent is then the whole data of the item, which can only be a single extent.
+            var extentSize = indexSize + offsetSize + lengthSize;
+            if (extentSize is 0 ? extentCount > 1 : extentCount * extentSize > box.Remaining)
+                throw binding.Invalid("the 'iloc' box declares more extents than it has.");
+
+            item.Extents.EnsureCapacity(extentCount);
             ulong itemLength = 0;
             for (var j = 0; j < extentCount; j++)
             {

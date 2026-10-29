@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Buffers.Binary;
 using Meziantou.Framework.Imaging.Formats;
+using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Imaging.TestHarness.Fixtures;
 using Meziantou.Framework.Imaging.TestHarness.Streams;
@@ -376,6 +377,77 @@ public sealed class WebPEncoderTests
         {
             Assert.Equal(Encode(image, encoder), Encode(image, encoder));
         }
+    }
+
+    [Fact]
+    public void LosslessTokenReserveFitsTheLargestImage()
+    {
+        // At most 2 bytes per pixel: the parse of a 16,384 x 16,384 image fits in one buffer
+        Assert.Equal(536_871_936L, Vp8LEncoder.GetTokenCapacity(16_384 * 16_384) * sizeof(uint));
+        Assert.True(Vp8LEncoder.GetTokenCapacity(16_384 * 16_384) * sizeof(uint) <= Array.MaxLength);
+    }
+
+    [Theory]
+    [InlineData("noise", 1100, 1000, 0)] // more than 2^20 consecutive literals
+    [InlineData("noise", 16_384, 3, 5)]
+    [InlineData("noise", 257, 129, 9)]
+    [InlineData("short-repeats", 509, 67, 0)]
+    [InlineData("short-repeats", 509, 67, 3)]
+    [InlineData("short-repeats", 509, 67, 9)]
+    [InlineData("long-repeats", 300, 200, 5)]
+    [InlineData("single-pixel", 1, 1, 5)]
+    public void LosslessTokensRoundTrip(string pattern, int width, int height, int effort)
+    {
+        var source = CreateArgb(pattern, width, height);
+        var argb = source.ToArray();
+        var scope = new AllocationScope(ImageResourceLimits.Default);
+        using var writer = new LsbBitWriter(scope);
+        Vp8LEncoder.Encode(scope, writer, argb, width, height, effort, CancellationToken.None);
+        writer.Finish();
+
+        var decoded = ReferenceVp8L.Decode(writer.WrittenSpan);
+        Assert.Equal(width, decoded.Width);
+        Assert.Equal(height, decoded.Height);
+        Assert.True(source.AsSpan().SequenceEqual(decoded.Argb));
+    }
+
+    [Fact]
+    public void LosslessWorkingMemoryIsBounded()
+    {
+        // Noise is mostly literals, the largest parse, and does not compress. The input stays with the caller: the working
+        // memory is the hash chains (4 bytes per pixel and a 1 MiB table, released after the parse), the tokens (at most 2)
+        // and the output (about 4), whose buffer doubles as it grows (12 while it is copied)
+        const int Width = 512;
+        const int Height = 512;
+        var argb = CreateArgb("noise", Width, Height);
+        var scope = new AllocationScope(ImageResourceLimits.Default);
+        using var writer = new LsbBitWriter(scope);
+        Vp8LEncoder.Encode(scope, writer, argb, Width, Height, effort: 5, CancellationToken.None);
+        writer.Finish();
+
+        var peak = scope.GetDiagnostics().PeakLiveBytes;
+        Assert.True(peak <= 16L * Width * Height, $"peak live bytes: {peak}");
+    }
+
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    private static uint[] CreateArgb(string pattern, int width, int height)
+    {
+        var random = new Random(width ^ (height << 16));
+        var argb = new uint[width * height];
+        for (var i = 0; i < argb.Length; i++)
+        {
+            argb[i] = pattern switch
+            {
+                "noise" or "single-pixel" => (uint)random.Next() | ((uint)random.Next(2) << 31),
+
+                // Runs of 3 or 4 repeated colors between new ones: alternating literals and short backward references
+                "short-repeats" => i % 7 < 3 ? (uint)random.Next() : argb[i - 3 - (i % 7 == 6 ? 1 : 0)],
+                "long-repeats" => i < width || i % 97 == 0 ? (uint)random.Next() : argb[i - width],
+                _ => throw new ArgumentOutOfRangeException(nameof(pattern)),
+            };
+        }
+
+        return argb;
     }
 
     private static byte[] Encode(Image image, WebPEncoder encoder)

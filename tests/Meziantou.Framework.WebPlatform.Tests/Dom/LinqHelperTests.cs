@@ -192,4 +192,31 @@ public sealed class LinqHelperTests
         var document = ParseDocument("").Implementation.CreateDocument(@namespace: null, "root");
         Assert.Throws<ArgumentException>(() => document.CreateElement<HtmlAnchorElement>());
     }
+
+    [Fact]
+    public void Documentation_TreeWalksAndSequences()
+    {
+        #region WebPlatform_TreeWalks
+        var document = HtmlDocumentParser.ParseDocument("""
+            <article><header><a href="/a">A</a></header><p>Read <a href="/b">B</a></p></article>
+            <article><header><a href="/c">C</a></header></article>
+            """);
+
+        // Lazy walks of the tree, as in LINQ to XML
+        var texts = document.Body!.Descendants<HtmlAnchorElement>().Select(link => link.TextContent);
+        Assert.Equal(["A", "B", "C"], texts);
+
+        var link = document.QuerySelector("a[href='/b']")!;
+        Assert.Equal(["p", "article", "body", "html"], link.Ancestors<Element>().Select(element => element.LocalName));
+
+        // Search the descendants of every node of a sequence
+        var articles = document.QuerySelectorAll("article");
+        var headerLinks = articles.QuerySelectorAll<HtmlAnchorElement>(":scope > header a");
+        Assert.Equal(["A", "C"], headerLinks.Select(link => link.TextContent));
+
+        // Filter elements with a selector parsed once
+        var inParagraph = SelectorList.Parse("p a");
+        Assert.Equal(["B"], document.Body.Descendants<Element>().Where(element => element.Matches(inParagraph)).Select(element => element.TextContent));
+        #endregion
+    }
 }

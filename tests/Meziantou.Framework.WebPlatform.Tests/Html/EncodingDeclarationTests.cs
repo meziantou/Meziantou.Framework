@@ -52,4 +52,30 @@ public sealed class EncodingDeclarationTests
         Assert.Equal("windows-1251", document.CharacterSet);
         Assert.Equal(Windows1251Character, document.Body!.TextContent);
     }
+
+    [Fact]
+    public async Task Documentation_ParseBytes()
+    {
+        #region WebPlatform_ParseBytes
+        // The bytes of a page in windows-1252, as they come from a file or an HTTP response
+        var bytes = Encoding.Latin1.GetBytes("<meta charset=windows-1252><p>Café</p>");
+
+        // The encoding is found from the bytes: byte order mark, <meta charset>, or detected from the content
+        var document = new HtmlDocumentParser().Parse(bytes);
+        Assert.Equal("windows-1252", document.CharacterSet);
+        Assert.Equal("Café", document.QuerySelector("p")!.TextContent);
+
+        // The charset of the Content-Type header wins over the document, and Url resolves the relative URLs
+        var parser = new HtmlDocumentParser(new HtmlParserOptions
+        {
+            TransportEncoding = "utf-8",
+            Url = "https://example.com/blog/",
+        });
+        using var stream = new MemoryStream("<a href='first-post'>Café</a>"u8.ToArray());
+        var post = await parser.ParseAsync(stream);
+        var link = post.QuerySelector<HtmlAnchorElement>("a")!;
+        Assert.Equal("https://example.com/blog/first-post", link.Href);
+        Assert.Equal("Café", link.TextContent);
+        #endregion
+    }
 }

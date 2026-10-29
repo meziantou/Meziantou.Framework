@@ -1,4 +1,5 @@
 using Meziantou.Framework.WebPlatform.Dom;
+using Meziantou.Framework.WebPlatform.JavaScript;
 using Meziantou.Framework.WebPlatform.Tests.Scripting;
 using Microsoft.Extensions.Time.Testing;
 
@@ -282,5 +283,28 @@ public sealed class TimerTests : IDisposable
         RunUntilIdle();
         Assert.Equal(["a"], _log);
         Assert.False(await _contexts.EventLoop.WaitForNextTimerAsync(TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task Documentation_FakeClock()
+    {
+        #region WebPlatform_FakeClock
+        var clock = new FakeTimeProvider(); // Microsoft.Extensions.TimeProvider.Testing
+        using var engine = new JavaScriptScriptEngine();
+        using var context = new BrowsingContext(new BrowsingContextOptions { ScriptEngine = engine, TimeProvider = clock });
+
+        var document = await context.NavigateAsync("https://example.com/", _ => """
+            <p id="ticks">0</p>
+            <script>setInterval(() => document.getElementById('ticks').textContent++, 1000);</script>
+            """);
+
+        // The timers follow the clock of the event loop: advance it instead of waiting
+        for (var i = 0; i < 3; i++)
+        {
+            clock.Advance(TimeSpan.FromSeconds(1));
+            context.EventLoop.RunUntilIdle(); // runs the callbacks of the timers that are due
+        }
+        Assert.Equal("3", document.GetElementById("ticks")!.TextContent);
+        #endregion
     }
 }

@@ -525,4 +525,26 @@ public sealed class TypedOmTests : IDisposable
         Assert.Throws<DomException>(() => new CssRgb(CssFactory.Deg(1), 0, 0));
         Assert.Throws<DomException>(() => rgb.Alpha = CssFactory.Number(1));
     }
+
+    [Fact]
+    public void Documentation_TypedValues()
+    {
+        #region WebPlatform_TypedOm
+        using var context = new BrowsingContext();
+        var document = context.Navigate("https://example.com/", _ => "<div style='font-size: 16px; height: 2em'></div>");
+        var element = (HtmlElement)document.QuerySelector("div")!;
+
+        // Set a value as an object: the style attribute is updated
+        element.AttributeStyleMap.Set("width", CssFactory.Px(10).Add(CssFactory.Em(2)));
+        Assert.Equal("font-size: 16px; height: 2em; width: calc(2em + 10px);", element.GetAttribute("style"));
+
+        // Read the computed values as numbers and units
+        var height = Assert.IsType<CssUnitValue>(element.ComputedStyleMap().Get("height"));
+        Assert.Equal((32, "px"), (height.Value, height.Unit));
+
+        // Parse and convert values
+        var length = CssNumericValue.Parse("calc(1in + 4px)").To("px");
+        Assert.Equal(100, length.Value);
+        #endregion
+    }
 }

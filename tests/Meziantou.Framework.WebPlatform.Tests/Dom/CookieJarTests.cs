@@ -212,4 +212,24 @@ public sealed class CookieJarTests
         jar.Clear();
         Assert.Empty(jar.GetCookies());
     }
+
+    [Fact]
+    public void Documentation_Cookies()
+    {
+        #region WebPlatform_Cookies
+        var cookies = new CookieJar();
+        cookies.SetCookie("https://example.com/", "session=abc; Path=/; Secure; HttpOnly");
+        cookies.SetCookie("https://example.com/", "theme=dark; Path=/");
+
+        using var context = new BrowsingContext(new BrowsingContextOptions { CookieJar = cookies });
+        var document = context.Navigate("https://example.com/", _ => "<p>Hello</p>");
+
+        // document.cookie does not see the HttpOnly cookies
+        Assert.Equal("theme=dark", document.Cookie);
+        document.Cookie = "lang=fr; Path=/";
+
+        var names = cookies.GetCookies("https://example.com/").Select(cookie => cookie.Name).Order(StringComparer.Ordinal);
+        Assert.Equal(["lang", "session", "theme"], names);
+        #endregion
+    }
 }

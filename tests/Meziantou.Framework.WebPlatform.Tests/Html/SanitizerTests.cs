@@ -187,4 +187,28 @@ public sealed class SanitizerTests
         var after = sanitizer.Get();
         Assert.Equal(before.RemoveElements!.Count, after.RemoveElements!.Count);
     }
+
+    [Fact]
+    public void Documentation_SanitizeHtml()
+    {
+        #region WebPlatform_SanitizeHtml
+        var document = HtmlDocumentParser.ParseDocument("<!DOCTYPE html><div id=comment></div>");
+        var comment = document.GetElementById("comment")!;
+
+        // SetHtml removes what can run scripts: script elements, event handlers, javascript: URLs...
+        comment.SetHtml("""<p onclick="steal()">Nice post! <a href="javascript:steal()">Link</a><script>steal()</script></p>""");
+        Assert.Equal("<p>Nice post! <a>Link</a></p>", comment.InnerHtml);
+
+        // A configuration restricts the elements and the attributes further
+        comment.SetHtml("<h1>Title</h1><p title=t>Some <b>bold</b> and <i>italic</i> text</p>", new SetHtmlOptions
+        {
+            Sanitizer = new SanitizerConfig { Elements = ["p", "b"], Attributes = [] },
+        });
+        Assert.Equal("<p>Some <b>bold</b> and  text</p>", comment.InnerHtml);
+
+        // Parse a whole document with the same rules
+        var page = Document.ParseHtml("<title>Post</title><p onclick=steal()>Hello</p>");
+        Assert.Equal("<p>Hello</p>", page.Body!.InnerHtml);
+        #endregion
+    }
 }

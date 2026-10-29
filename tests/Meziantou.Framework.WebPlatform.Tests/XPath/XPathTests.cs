@@ -975,4 +975,32 @@ public sealed class XPathTests
     {
         public string? LookupNamespaceUri(string? prefix) => throw new InvalidOperationException("resolver error");
     }
+
+    [Fact]
+    public void Documentation_XPathSnapshot()
+    {
+        #region WebPlatform_XPath
+        var document = HtmlDocumentParser.ParseDocument("""
+            <ul>
+              <li data-price="12">Pen</li>
+              <li data-price="45">Bag</li>
+              <li data-price="30">Book</li>
+            </ul>
+            """);
+
+        // A snapshot of the matching nodes, in document order
+        var result = document.Evaluate("//li[@data-price > 20]", document, type: XPathResult.OrderedNodeSnapshotType);
+        var names = new List<string>();
+        for (var i = 0u; i < result.SnapshotLength; i++)
+        {
+            names.Add(result.SnapshotItem(i)!.TextContent!);
+        }
+
+        Assert.Equal(["Bag", "Book"], names);
+
+        // The other result types: numbers, strings and booleans
+        var total = document.Evaluate("sum(//li/@data-price)", document, type: XPathResult.NumberType).NumberValue;
+        Assert.Equal(87, total);
+        #endregion
+    }
 }

@@ -706,4 +706,34 @@ public sealed class CssomTests
         rule.Swash.Clear();
         Assert.Equal("@font-feature-values Other {\n  font-display: swap;\n  @styleset { nice-style: 12 4; }\n  @character-variant { cv: 1 2; }\n}", rule.CssText);
     }
+
+    [Fact]
+    public void Documentation_StyleSheets()
+    {
+        #region WebPlatform_StyleSheets
+        var document = HtmlDocumentParser.ParseDocument("""
+            <style>
+              .button { color: white; background-color: #2563eb }
+              @media (min-width: 800px) { .button { padding: 8px 16px } }
+            </style>
+            """);
+
+        var sheet = document.StyleSheets[0];
+        var button = sheet.CssRules.OfType<CssStyleRule>().Single(rule => rule.SelectorText == ".button");
+        Assert.Equal("rgb(37, 99, 235)", button.Style.GetPropertyValue("background-color"));
+
+        var media = sheet.CssRules.OfType<CssMediaRule>().Single();
+        Assert.Equal("(min-width: 800px)", media.Media.MediaText);
+
+        // Edit the rules: the documents that use the style sheet see the changes
+        button.Style.SetProperty("border-radius", "6px");
+        sheet.InsertRule(".button:hover { opacity: 0.8 }", index: 2); // at the end
+        Assert.Equal(".button { color: white; background-color: rgb(37, 99, 235); border-radius: 6px; }", button.CssText);
+
+        // A style sheet without document (a constructable style sheet)
+        var standalone = new CssStyleSheet();
+        standalone.ReplaceSync("p { margin: 0 } h1 { font-size: 2em }");
+        Assert.Equal(2, standalone.CssRules.Count);
+        #endregion
+    }
 }

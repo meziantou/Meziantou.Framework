@@ -983,4 +983,61 @@ public sealed class JavaScriptScriptEngineTests : IDisposable
         }
     }
     #endregion
+
+    [Fact]
+    public async Task Documentation_ExchangeValues()
+    {
+        #region WebPlatformJavaScript_ExchangeValues
+        using var engine = new JavaScriptScriptEngine();
+        using var context = new BrowsingContext(new BrowsingContextOptions { ScriptEngine = engine });
+        var document = await context.NavigateAsync("https://example.com/", _ => """
+            <p id="price">12</p>
+            <script>
+              function addTax(amount, rate) { return amount * (1 + rate); }
+            </script>
+            """);
+
+        // Evaluate an expression in the realm of the window
+        var count = engine.Evaluate(context.Window, "document.querySelectorAll('p').length");
+        Assert.Equal(1, count.AsNumber());
+
+        // The nodes are the same objects in .NET and in JavaScript
+        var price = engine.FromJsValue(context.Window, engine.Evaluate(context.Window, "document.getElementById('price')"));
+        Assert.Same(document.GetElementById("price"), price);
+
+        // Call a function of the page with .NET values
+        var addTax = engine.Evaluate(context.Window, "addTax");
+        var total = engine.Call(context.Window, addTax, JsValue.Undefined, engine.ToJsValue(context.Window, 100), engine.ToJsValue(context.Window, 0.2));
+        Assert.Equal(120, total.AsNumber(), 6);
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_Limits()
+    {
+        #region WebPlatformJavaScript_Limits
+        var errors = new List<ScriptError>();
+        using var engine = new JavaScriptScriptEngine(new JavaScriptScriptEngineOptions
+        {
+            Timeout = TimeSpan.FromSeconds(2),   // per script, event listener or timer callback
+            MaxStatements = 100_000,             // loop iterations and calls
+            MemoryLimit = 64 * 1024 * 1024,      // bytes allocated
+        });
+
+        using var context = new BrowsingContext(new BrowsingContextOptions
+        {
+            ScriptEngine = engine,
+            UnhandledScriptError = (_, error) => errors.Add(error),
+        });
+
+        var document = await context.NavigateAsync("https://example.com/", _ => """
+            <script>while (true) { }</script>
+            <p>The page goes on after the script is stopped</p>
+            """);
+        await context.EventLoop.RunUntilIdleAsync();
+
+        Assert.Single(errors);
+        Assert.NotNull(document.QuerySelector("p"));
+        #endregion
+    }
 }

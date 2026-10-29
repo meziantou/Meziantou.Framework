@@ -143,4 +143,25 @@ public sealed class HtmlStyleFormattingTests
     {
         protected override HtmlMarkupWriter CreateWriter(TextWriter output) => new(output) { StyleElementFormatter = styleSheetFormatter };
     }
+
+    [Fact]
+    public void Documentation_FormatStyles()
+    {
+        #region WebPlatform_FormatStyles
+        var document = HtmlDocumentParser.ParseDocument("""
+            <style>
+              /* The title */
+              h1 { color: #ff0000; margin: 0px 0px 0px 0px }
+            </style>
+            <h1 style="font-weight : bold ;">Title</h1>
+            """);
+
+        var minified = document.ToHtml(new HtmlMinifyFormatter
+        {
+            StyleElementFormatter = new CssMinifyFormatter(),
+            StyleAttributeFormatter = new CssMinifyFormatter(),
+        });
+        Assert.Equal("<style>h1{color:#f00;margin:0px}</style><h1 style=font-weight:bold>Title</h1>", minified);
+        #endregion
+    }
 }

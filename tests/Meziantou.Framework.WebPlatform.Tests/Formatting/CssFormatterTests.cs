@@ -96,4 +96,34 @@ public sealed class CssFormatterTests
             }
         }
     }
+
+    [Fact]
+    public void Documentation_FormatStyleSheet()
+    {
+        #region WebPlatform_FormatCss
+        var sheet = new CssStyleSheet();
+        sheet.ReplaceSync("""
+            /* Links */
+            a > b, c:hover { color: #FF0000; margin: 0px auto !important }
+            @media (min-width: 100px) { a { transition: color 0.5s } }
+            """);
+
+        var minified = sheet.ToCss(new CssMinifyFormatter());
+        Assert.Equal("a>b,c:hover{color:#f00;margin:0px auto!important}@media (min-width:100px){a{transition:color .5s}}", minified);
+
+        var indented = sheet.ToCss(new CssPrettyFormatter());
+        Assert.Equal("""
+            a > b,
+            c:hover {
+              color: rgb(255, 0, 0);
+              margin: 0px auto !important;
+            }
+            @media (min-width: 100px) {
+              a {
+                transition: color 0.5s;
+              }
+            }
+            """, indented);
+        #endregion
+    }
 }

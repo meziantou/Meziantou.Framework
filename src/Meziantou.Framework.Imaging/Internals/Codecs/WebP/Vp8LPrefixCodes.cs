@@ -57,28 +57,7 @@ internal sealed class Vp8LPrefixCodes : IDisposable
     public Vp8LPrefixCode Build(ReadOnlySpan<byte> codeLengths)
     {
         Span<int> counts = stackalloc int[MaxCodeLength + 1];
-        counts.Clear();
-        var usedSymbols = 0;
-        var lastSymbol = 0;
-        var maxLength = 0;
-        for (var symbol = 0; symbol < codeLengths.Length; symbol++)
-        {
-            int length = codeLengths[symbol];
-            if (length == 0)
-                continue;
-
-            if (length > MaxCodeLength)
-                throw Invalid("A WebP lossless code length is above 15.");
-
-            counts[length]++;
-            usedSymbols++;
-            lastSymbol = symbol;
-            maxLength = Math.Max(maxLength, length);
-        }
-
-        if (usedSymbols == 0)
-            throw Invalid("A WebP lossless prefix code has no symbol.");
-
+        var usedSymbols = Analyze(codeLengths, counts, out var lastSymbol, out var maxLength);
         if (usedSymbols == 1)
         {
             // The single leaf node tree: no bit is consumed
@@ -86,16 +65,6 @@ internal sealed class Vp8LPrefixCodes : IDisposable
             Entries[offset] = (uint)lastSymbol;
             return new Vp8LPrefixCode(offset, 0);
         }
-
-        // Complete tree: sum(count[len] * 2^(15 - len)) == 2^15
-        long kraft = 0;
-        for (var length = 1; length <= MaxCodeLength; length++)
-        {
-            kraft += (long)counts[length] << (MaxCodeLength - length);
-        }
-
-        if (kraft != 1L << MaxCodeLength)
-            throw Invalid("A WebP lossless prefix code is not complete (its code lengths do not describe a full binary tree).");
 
         Span<int> nextCode = stackalloc int[MaxCodeLength + 1];
         var code = 0;
@@ -182,6 +151,58 @@ internal sealed class Vp8LPrefixCodes : IDisposable
         }
 
         return new Vp8LPrefixCode(baseOffset, rootBits);
+    }
+
+    /// <summary>Validates the code lengths of a code like <see cref="Build"/>, without building its lookup tables (a code that is never read).</summary>
+    /// <param name="codeLengths">The code length of each symbol of the alphabet (0 = unused).</param>
+    /// <exception cref="InvalidImageContentException">The lengths do not describe a valid complete prefix code.</exception>
+    public static void Validate(ReadOnlySpan<byte> codeLengths)
+    {
+        Span<int> counts = stackalloc int[MaxCodeLength + 1];
+        _ = Analyze(codeLengths, counts, out _, out _);
+    }
+
+    /// <summary>Counts the symbols of each code length and validates them.</summary>
+    /// <returns>The number of used symbols (at least one).</returns>
+    /// <exception cref="InvalidImageContentException">The lengths do not describe a valid complete prefix code.</exception>
+    private static int Analyze(ReadOnlySpan<byte> codeLengths, Span<int> counts, out int lastSymbol, out int maxLength)
+    {
+        counts.Clear();
+        var usedSymbols = 0;
+        lastSymbol = 0;
+        maxLength = 0;
+        for (var symbol = 0; symbol < codeLengths.Length; symbol++)
+        {
+            int length = codeLengths[symbol];
+            if (length == 0)
+                continue;
+
+            if (length > MaxCodeLength)
+                throw Invalid("A WebP lossless code length is above 15.");
+
+            counts[length]++;
+            usedSymbols++;
+            lastSymbol = symbol;
+            maxLength = Math.Max(maxLength, length);
+        }
+
+        if (usedSymbols == 0)
+            throw Invalid("A WebP lossless prefix code has no symbol.");
+
+        if (usedSymbols == 1)
+            return usedSymbols;
+
+        // Complete tree: sum(count[len] * 2^(15 - len)) == 2^15
+        long kraft = 0;
+        for (var length = 1; length <= MaxCodeLength; length++)
+        {
+            kraft += (long)counts[length] << (MaxCodeLength - length);
+        }
+
+        if (kraft != 1L << MaxCodeLength)
+            throw Invalid("A WebP lossless prefix code is not complete (its code lengths do not describe a full binary tree).");
+
+        return usedSymbols;
     }
 
     /// <summary>Reads one symbol.</summary>

@@ -24,7 +24,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </description></item>
 /// <item><description>
 /// Memory (all <see cref="AllocationKind.DecoderState"/>): the ARGB image, the transform and entropy subresolution images,
-/// the color cache and the prefix-code tables. The image is decoded at its final width (transforms are applied in place).
+/// the color cache and the prefix-code tables of the groups used by a pixel (the codes of an unused group are read and
+/// validated, then discarded). The image is decoded at its final width (transforms are applied in place).
 /// </description></item>
 /// </list>
 /// </remarks>
@@ -269,30 +270,22 @@ internal sealed class Vp8LDecoder : IDisposable
         var entropyWidth = 0;
         Span<uint> entropyImage = default;
         var groupCount = 1;
-        if (isMainImage && _reader.ReadBits(1) != 0)
-        {
-            prefixBits = (int)_reader.ReadBits(3) + 2;
-            entropyWidth = DivRoundUp(width, prefixBits);
-            var entropyHeight = DivRoundUp(height, prefixBits);
-            var entropyBuffer = DecodeEntropyCodedImage(entropyWidth, entropyHeight);
-            entropyImage = AsPixels(entropyBuffer, (long)entropyWidth * entropyHeight);
-            var maxCode = 0;
-            foreach (var value in entropyImage)
-            {
-                maxCode = Math.Max(maxCode, (int)((value >> 8) & 0xFFFF));
-            }
-
-            groupCount = maxCode + 1;
-        }
+        using var mappingBuffer = isMainImage && _reader.ReadBits(1) != 0 ? ReadEntropyImage(width, height, out prefixBits, out entropyWidth, out entropyImage, out groupCount) : null;
+        var mapping = mappingBuffer is null ? default : unsafe(MemoryMarshal.Cast<byte, int>(mappingBuffer.Span));
 
         // The prefix codes of the subresolution images decoded so far are no longer needed
         _codes.Reset();
         var cacheSize = cacheBits == 0 ? 0 : 1 << cacheBits;
+        var bitstreamGroupCount = mapping.IsEmpty ? groupCount : mapping.Length;
         using var groupBuffer = _scope.Rent(groupCount * GroupSize * 2 * sizeof(int), AllocationKind.DecoderState, clear: false);
         var groups = unsafe(MemoryMarshal.Cast<byte, Vp8LPrefixCode>(groupBuffer.RawBuffer.AsSpan()))[..(groupCount * GroupSize)];
-        for (var group = 0; group < groupCount; group++)
+        for (var group = 0; group < bitstreamGroupCount; group++)
         {
-            ReadGroup(groups.Slice(group * GroupSize, GroupSize), cacheSize);
+            _cancellationToken.ThrowIfCancellationRequested();
+
+            // A group no pixel uses is still read (it is in the bitstream) and validated, but its tables are not built
+            var index = mapping.IsEmpty ? group : mapping[group];
+            ReadGroup(index < 0 ? default : groups.Slice(index * GroupSize, GroupSize), cacheSize);
         }
 
         using var cacheBuffer = cacheSize == 0 ? null : _scope.Rent(cacheSize * sizeof(uint), AllocationKind.DecoderState, clear: true);
@@ -303,16 +296,70 @@ internal sealed class Vp8LDecoder : IDisposable
 
     private const int GroupSize = 5;
 
-    private void ReadGroup(Span<Vp8LPrefixCode> group, int cacheSize)
+    /// <summary>
+    /// Decodes the entropy image of the main image and replaces each meta prefix code with a compact group index, in order of
+    /// first use, so that only the groups used by a pixel get lookup tables.
+    /// </summary>
+    /// <param name="width">The width of the main image.</param>
+    /// <param name="height">The height of the main image.</param>
+    /// <param name="prefixBits">The block size bits.</param>
+    /// <param name="entropyWidth">The width of the entropy image.</param>
+    /// <param name="entropyImage">The entropy image, holding compact group indexes.</param>
+    /// <param name="usedGroupCount">The number of groups used by the entropy image.</param>
+    /// <returns>The compact index of each group of the bitstream (one more than the highest meta code), or -1 for an unused group.</returns>
+    private PooledBuffer ReadEntropyImage(int width, int height, out int prefixBits, out int entropyWidth, out Span<uint> entropyImage, out int usedGroupCount)
     {
-        group[0] = ReadPrefixCode(NumLiteralCodes + NumLengthCodes + cacheSize);
-        group[1] = ReadPrefixCode(NumLiteralCodes);
-        group[2] = ReadPrefixCode(NumLiteralCodes);
-        group[3] = ReadPrefixCode(NumLiteralCodes);
-        group[4] = ReadPrefixCode(NumDistanceCodes);
+        prefixBits = (int)_reader.ReadBits(3) + 2;
+        entropyWidth = DivRoundUp(width, prefixBits);
+        var entropyHeight = DivRoundUp(height, prefixBits);
+        var entropyBuffer = DecodeEntropyCodedImage(entropyWidth, entropyHeight);
+        entropyImage = AsPixels(entropyBuffer, (long)entropyWidth * entropyHeight);
+        var maxCode = 0;
+        foreach (var value in entropyImage)
+        {
+            maxCode = Math.Max(maxCode, (int)((value >> 8) & 0xFFFF));
+        }
+
+        var groupCount = maxCode + 1;
+        var mappingBuffer = _scope.Rent(groupCount * sizeof(int), AllocationKind.DecoderState, clear: false);
+        var mapping = unsafe(MemoryMarshal.Cast<byte, int>(mappingBuffer.Span));
+        mapping.Fill(-1);
+        usedGroupCount = 0;
+        foreach (ref var value in entropyImage)
+        {
+            ref var index = ref mapping[(int)((value >> 8) & 0xFFFF)];
+            if (index < 0)
+            {
+                index = usedGroupCount++;
+            }
+
+            value = (uint)index;
+        }
+
+        return mappingBuffer;
     }
 
-    private Vp8LPrefixCode ReadPrefixCode(int alphabetSize)
+    /// <summary>Reads the five codes of a group, into <paramref name="group"/>, or only validates them when it is empty (an unused group).</summary>
+    private void ReadGroup(Span<Vp8LPrefixCode> group, int cacheSize)
+    {
+        var retain = !group.IsEmpty;
+        var literal = ReadPrefixCode(NumLiteralCodes + NumLengthCodes + cacheSize, retain);
+        var red = ReadPrefixCode(NumLiteralCodes, retain);
+        var blue = ReadPrefixCode(NumLiteralCodes, retain);
+        var alpha = ReadPrefixCode(NumLiteralCodes, retain);
+        var distance = ReadPrefixCode(NumDistanceCodes, retain);
+        if (retain)
+        {
+            group[0] = literal;
+            group[1] = red;
+            group[2] = blue;
+            group[3] = alpha;
+            group[4] = distance;
+        }
+    }
+
+    /// <summary>Reads a prefix code and builds its tables, or only validates it when <paramref name="retain"/> is false (the result is then <see langword="default"/>).</summary>
+    private Vp8LPrefixCode ReadPrefixCode(int alphabetSize, bool retain)
     {
         var lengths = _codeLengths.AsSpan(0, alphabetSize);
         lengths.Clear();
@@ -328,7 +375,7 @@ internal sealed class Vp8LDecoder : IDisposable
                 SetSimpleSymbol(lengths, (int)_reader.ReadBits(8));
             }
 
-            return _codes.Build(lengths);
+            return BuildOrValidate(lengths, retain);
         }
 
         // Normal code length code
@@ -386,7 +433,16 @@ internal sealed class Vp8LDecoder : IDisposable
 
         // The code-length code is not needed anymore: its table is overwritten by the next code
         _codes.Release(mark);
-        return _codes.Build(lengths);
+        return BuildOrValidate(lengths, retain);
+    }
+
+    private Vp8LPrefixCode BuildOrValidate(ReadOnlySpan<byte> lengths, bool retain)
+    {
+        if (retain)
+            return _codes.Build(lengths);
+
+        Vp8LPrefixCodes.Validate(lengths);
+        return default;
     }
 
     private static void SetSimpleSymbol(Span<byte> lengths, int symbol)
@@ -553,15 +609,15 @@ internal sealed class Vp8LDecoder : IDisposable
         return unsafe(((Unsafe.Add(ref entries, alpha.Offset) & 0xFFFF) << 24) | ((Unsafe.Add(ref entries, red.Offset) & 0xFFFF) << 16) | (Unsafe.Add(ref entries, blue.Offset) & 0xFFFF));
     }
 
-    /// <summary>Gets the first of the <see cref="GroupSize"/> codes of the group of a pixel (the group count is above every meta code).</summary>
+    /// <summary>Gets the first of the <see cref="GroupSize"/> codes of the group of a pixel (the entropy image holds compact group indexes, see <see cref="ReadEntropyImage"/>).</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static ref readonly Vp8LPrefixCode GetGroup(ReadOnlySpan<Vp8LPrefixCode> groups, ReadOnlySpan<uint> entropyImage, int entropyWidth, int prefixBits, int x, int y)
     {
         if (entropyImage.IsEmpty)
             return ref groups[0];
 
-        var metaCode = (int)((entropyImage[((y >> prefixBits) * entropyWidth) + (x >> prefixBits)] >> 8) & 0xFFFF);
-        return ref groups.Slice(metaCode * GroupSize, GroupSize)[0];
+        var index = (int)entropyImage[((y >> prefixBits) * entropyWidth) + (x >> prefixBits)];
+        return ref groups.Slice(index * GroupSize, GroupSize)[0];
     }
 
     /// <summary>Reads a length or distance from its prefix symbol and extra bits (specification section 5.2.2).</summary>

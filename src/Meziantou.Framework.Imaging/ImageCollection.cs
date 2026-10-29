@@ -28,6 +28,15 @@ namespace Meziantou.Framework.Imaging;
 /// <item><description><see cref="Load(ReadOnlySpan{byte}, ImageConfiguration?)"/> copies the data once, because the collection cannot retain a span.</description></item>
 /// </list>
 /// <para>
+/// <strong>Loaded entries can be decoded concurrently.</strong> <see cref="ImageCollectionEntry.Decode(ImageDecodeOptions)"/>
+/// may be called from several threads at once on the entries read from the input, the same entry or different ones: a
+/// file or in-memory collection reads at an offset, and a stream collection serializes its reads of the shared stream
+/// (the decoding itself still runs in parallel). The caller must not use a stream given to
+/// <see cref="Load(Stream, ImageConfiguration?)"/> while the collection is alive. Disposing the collection while an entry is decoding waits for the read in progress; the decode
+/// then completes or throws <see cref="ObjectDisposedException"/>. Editing the collection (<see cref="Add(Image, Point?)"/>,
+/// <c>Insert</c>, <c>Move</c>, <c>RemoveAt</c>) and <c>Save</c> are not thread-safe and must not overlap any other call.
+/// </para>
+/// <para>
 /// <strong>Loading is synchronous.</strong> A random-access decoder issues many small reads whose offsets depend on the
 /// bytes just read, so an asynchronous variant would either await every tag or buffer the whole file. The asynchronous
 /// <c>Image.LoadAsync</c> and <c>Image.IdentifyAsync</c> entry points do buffer the whole input for these formats, which
@@ -129,22 +138,14 @@ public sealed class ImageCollection : IDisposable
     public static ImageCollection Load(string path, ImageConfiguration? configuration = null)
     {
         ArgumentException.ThrowIfNullOrEmpty(path);
-        var stream = new FileStream(path, new FileStreamOptions
-        {
-            Mode = FileMode.Open,
-            Access = FileAccess.Read,
-            Share = FileShare.Read,
-            BufferSize = 0,
-            Options = FileOptions.RandomAccess,
-        });
-
+        var handle = File.OpenHandle(path, FileMode.Open, FileAccess.Read, FileShare.Read, FileOptions.RandomAccess);
         try
         {
-            return Create(RandomAccessInput.Create(stream, origin: 0, ownsStream: true), configuration);
+            return Create(RandomAccessInput.Create(handle), configuration);
         }
         catch
         {
-            stream.Dispose();
+            handle.Dispose();
             throw;
         }
     }

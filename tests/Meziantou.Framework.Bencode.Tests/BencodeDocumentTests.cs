@@ -53,6 +53,82 @@ public sealed class BencodeDocumentTests
     }
 
     [Fact]
+    public void Documentation_ReadValues()
+    {
+        #region BencodeDocument_ReadValues
+        var document = BencodeDocument.Parse("d4:name5:Alice3:agei30e4:tagsl3:dev3:opsee"u8);
+        var root = (BencodeDictionary)document.Root;
+
+        var name = (BencodeString)root[new BencodeString("name"u8.ToArray())];
+        Assert.Equal("Alice", name.ToUtf8String());
+
+        Assert.True(root.TryGetValue(new BencodeString("age"u8.ToArray()), out var age));
+        Assert.Equal(30, ((BencodeInteger)age).Value);
+
+        var tags = (BencodeList)root[new BencodeString("tags"u8.ToArray())];
+        Assert.Equal(["dev", "ops"], tags.Cast<BencodeString>().Select(tag => tag.ToUtf8String()));
+
+        // The entries keep the order of the data
+        Assert.Equal(["string Alice", "integer 30", "list of 2"], root.Values.Select(Describe));
+
+        static string Describe(BencodeValue value) => value switch
+        {
+            BencodeInteger integer => $"integer {integer.Value}",
+            BencodeString text => $"string {text}",
+            BencodeList list => $"list of {list.Count}",
+            BencodeDictionary dictionary => $"dictionary of {dictionary.Count}",
+            _ => throw new ArgumentOutOfRangeException(nameof(value)),
+        };
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_BuildValues()
+    {
+        #region BencodeValue_Build
+        var dictionary = new BencodeDictionary
+        {
+            { new BencodeString("zebra"u8.ToArray()), new BencodeInteger(1) },
+            { new BencodeString("apple"u8.ToArray()), new BencodeList([new BencodeString("x"u8.ToArray()), new BencodeInteger(-2)]) },
+        };
+
+        // By default, the keys are sorted by their bytes (canonical bencode)
+        Assert.Equal("d5:applel1:xi-2ee5:zebrai1ee"u8.ToArray(), dictionary.ToUtf8ByteArray());
+
+        // canonical: false keeps the insertion order
+        Assert.Equal("d5:zebrai1e5:applel1:xi-2eee"u8.ToArray(), dictionary.ToUtf8ByteArray(canonical: false));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_BinaryStrings()
+    {
+        #region BencodeString_BinaryData
+        var value = new BencodeString(new byte[] { 0xFF, 0x00, 0x10 });
+
+        // The bytes are always available
+        Assert.Equal([0xFF, 0x00, 0x10], value.Value.ToArray());
+
+        // ToString is for diagnostics: it shows bytes that are not UTF-8 as hexadecimal
+        Assert.Equal("0xFF0010", value.ToString());
+
+        // ToUtf8String throws when the bytes are not valid UTF-8
+        Assert.Throws<DecoderFallbackException>(() => value.ToUtf8String());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_InvalidData()
+    {
+        #region BencodeDocument_InvalidData
+        Assert.Throws<FormatException>(() => BencodeDocument.Parse("d3:cow3:moo"u8));   // unterminated dictionary
+        Assert.Throws<FormatException>(() => BencodeDocument.Parse("i03e"u8));          // leading zero
+        Assert.Throws<FormatException>(() => BencodeDocument.Parse("i1ei2e"u8));        // two root values
+        Assert.Throws<FormatException>(() => BencodeDocument.Parse("d1:ai1e1:ai2ee"u8)); // duplicate key
+        #endregion
+    }
+
+    [Fact]
     public void Parse_Dictionary()
     {
         var data = Encoding.ASCII.GetBytes("d3:cow3:moo4:spam4:eggse");

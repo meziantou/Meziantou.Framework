@@ -114,6 +114,94 @@ public class CsvReaderTests
     }
 
     [Fact]
+    public async Task Documentation_ReadFile()
+    {
+        await File.WriteAllTextAsync("people.csv", "Name,Age\nAlice,30\nBob,25\n", XunitCancellationToken);
+        try
+        {
+            #region CsvReader_ReadFile
+            using var reader = new StreamReader("people.csv");
+            var csvReader = new CsvReader(reader) { HasHeaderRow = true };
+
+            var names = new List<string>();
+            var totalAge = 0;
+            while (await csvReader.ReadRowAsync() is { } row)
+            {
+                names.Add(row["Name"]!);
+                totalAge += int.Parse(row["Age"]!, CultureInfo.InvariantCulture);
+            }
+
+            Assert.Equal(["Alice", "Bob"], names);
+            Assert.Equal(55, totalAge);
+            #endregion
+        }
+        finally
+        {
+            File.Delete("people.csv");
+        }
+    }
+
+    [Fact]
+    public async Task Documentation_BlankLinesAndShortRows()
+    {
+        #region CsvReader_BlankLinesAndShortRows
+        using var reader = new StringReader("Name,Age,City\nAlice,30\n\nBob,25,London");
+        var csvReader = new CsvReader(reader) { HasHeaderRow = true };
+
+        var alice = await csvReader.ReadRowAsync();
+        Assert.NotNull(alice);
+        Assert.Equal(["Alice", "30"], alice.Values);
+        Assert.Null(alice["City"]);    // The row has no value for this column
+        Assert.Null(alice["Country"]); // The header row has no such column
+
+        var blankLine = await csvReader.ReadRowAsync();
+        Assert.NotNull(blankLine);
+        Assert.Empty(blankLine.Values);
+
+        var bob = await csvReader.ReadRowAsync();
+        Assert.NotNull(bob);
+        Assert.Equal("London", bob["City"]);
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_RowNumber()
+    {
+        #region CsvReader_RowNumber
+        using var reader = new StringReader("Name,Age\nAlice,30\nBob,unknown");
+        var csvReader = new CsvReader(reader) { HasHeaderRow = true };
+
+        var errors = new List<string>();
+        while (await csvReader.ReadRowAsync() is { } row)
+        {
+            if (!int.TryParse(row["Age"], CultureInfo.InvariantCulture, out _))
+            {
+                errors.Add($"Row {csvReader.RowNumber}: invalid age '{row["Age"]}'");
+            }
+        }
+
+        // The header row is row 0
+        Assert.Equal(["Row 2: invalid age 'unknown'"], errors);
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_RowAsDictionary()
+    {
+        #region CsvRow_AsDictionary
+        using var reader = new StringReader("Name,Age\nAlice,30");
+        var csvReader = new CsvReader(reader) { HasHeaderRow = true };
+        var row = await csvReader.ReadRowAsync();
+        Assert.NotNull(row);
+
+        IReadOnlyDictionary<string, string?> values = row;
+        Assert.Equal(["Name", "Age"], values.Keys);
+        Assert.True(values.TryGetValue("Age", out var age));
+        Assert.Equal("30", age);
+        #endregion
+    }
+
+    [Fact]
     public async Task CsvReader_RowWithoutHeader()
     {
         var sb = new StringBuilder();

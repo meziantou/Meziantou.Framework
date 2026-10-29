@@ -6,6 +6,27 @@ public sealed class AtlassianDataFormatToolTests(ITestOutputHelper testOutputHel
         {"version":1,"type":"doc","content":[{"type":"heading","attrs":{"level":1},"content":[{"type":"text","text":"Title"}]},{"type":"paragraph","content":[{"type":"text","text":"Hello","marks":[{"type":"strong"}]}]}]}
         """;
 
+    [Theory]
+    [InlineData("issue.md", "")]
+    [InlineData("issue.github.md", "--panel-style GitHubAlert --expand-style HtmlDetails")]
+    public async Task DocumentationExample_WritesTheExpectedFile(string expectedFileName, string options)
+    {
+        var examplesPath = FullPath.FromPath(AppContext.BaseDirectory) / "Examples";
+        await using var temp = TemporaryDirectory.Create();
+        var outputPath = temp.GetFullPath(expectedFileName);
+
+        var console = new ConsoleHelper(testOutputHelper);
+        string[] args = ["--input", (examplesPath / "issue.json").ToString(), "--output", outputPath.ToString(), .. options.Split(' ', StringSplitOptions.RemoveEmptyEntries)];
+        var result = await Program.MainImpl(args, console.ConfigureConsole);
+
+        Assert.Equal(0, result);
+        Assert.Equal(string.Empty, console.Output);
+        Assert.Equal(string.Empty, console.Error);
+        var expected = await File.ReadAllTextAsync(examplesPath / expectedFileName, XunitCancellationToken);
+        var actual = await File.ReadAllTextAsync(outputPath, XunitCancellationToken);
+        Assert.Equal(expected, actual);
+    }
+
     [Fact]
     public async Task ConvertStdinToStdout()
     {

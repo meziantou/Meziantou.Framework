@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace Meziantou.Framework.AtlassianDataFormat.Tests;
 
 public sealed class AdfToMarkdownTests
@@ -104,6 +106,151 @@ public sealed class AdfToMarkdownTests
         });
 
         Assert.Equal("@Alex\n\n![diagram.png](https://media.example.com/files/abc)", markdown);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_JsonElement()
+    {
+        #region AdfToMarkdown_JsonElement
+        // The body of a Jira issue, where the description is an ADF document
+        using var issue = JsonDocument.Parse("""
+            {
+              "key": "ABC-1",
+              "fields": {
+                "description": {
+                  "version": 1,
+                  "type": "doc",
+                  "content": [ { "type": "paragraph", "content": [ { "type": "text", "text": "Steps to reproduce" } ] } ]
+                }
+              }
+            }
+            """);
+
+        var description = issue.RootElement.GetProperty("fields").GetProperty("description");
+        var markdown = AdfToMarkdown.Convert(description);
+        Assert.Equal("Steps to reproduce", markdown);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Panels()
+    {
+        #region AdfToMarkdown_Panels
+        var json = """
+            {
+              "version": 1,
+              "type": "doc",
+              "content": [
+                {
+                  "type": "panel",
+                  "attrs": { "panelType": "warning" },
+                  "content": [ { "type": "paragraph", "content": [ { "type": "text", "text": "Back up first." } ] } ]
+                }
+              ]
+            }
+            """;
+
+        Assert.Equal("> ⚠️ Back up first.", AdfToMarkdown.Convert(json));
+
+        var markdown = AdfToMarkdown.Convert(json, new AdfToMarkdownOptions { PanelStyle = AdfPanelStyle.GitHubAlert });
+        Assert.Equal("> [!WARNING]\n> Back up first.", markdown);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Tables()
+    {
+        #region AdfToMarkdown_Tables
+        var json = """
+            {
+              "version": 1,
+              "type": "doc",
+              "content": [
+                {
+                  "type": "table",
+                  "content": [
+                    {
+                      "type": "tableRow",
+                      "content": [
+                        { "type": "tableHeader", "content": [ { "type": "paragraph", "content": [ { "type": "text", "text": "Name" } ] } ] },
+                        { "type": "tableHeader", "content": [ { "type": "paragraph", "content": [ { "type": "text", "text": "Role" } ] } ] }
+                      ]
+                    },
+                    {
+                      "type": "tableRow",
+                      "content": [
+                        { "type": "tableCell", "content": [ { "type": "paragraph", "content": [ { "type": "text", "text": "Alex" } ] } ] },
+                        { "type": "tableCell", "content": [ { "type": "paragraph", "content": [ { "type": "text", "text": "Developer" } ] } ] }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+            """;
+
+        Assert.Equal("| Name | Role |\n| --- | --- |\n| Alex | Developer |", AdfToMarkdown.Convert(json));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_InlineNodes()
+    {
+        #region AdfToMarkdown_InlineNodes
+        var json = """
+            {
+              "version": 1,
+              "type": "doc",
+              "content": [
+                {
+                  "type": "paragraph",
+                  "content": [
+                    { "type": "mention", "attrs": { "id": "557058:1", "text": "@Alex" } },
+                    { "type": "text", "text": " moved it to " },
+                    { "type": "status", "attrs": { "text": "In progress", "color": "blue" } },
+                    { "type": "text", "text": " on " },
+                    { "type": "date", "attrs": { "timestamp": "1767225600000" } }
+                  ]
+                }
+              ]
+            }
+            """;
+
+        Assert.Equal("@Alex moved it to `In progress` on 2026-01-01", AdfToMarkdown.Convert(json));
+
+        var markdown = AdfToMarkdown.Convert(json, new AdfToMarkdownOptions
+        {
+            MentionFormat = "[{text}](https://example.atlassian.net/people/{id})",
+            StatusFormat = "**{text}** ({color})",
+            DateFormat = "MMMM d, yyyy",
+        });
+        Assert.Equal("[Alex](https://example.atlassian.net/people/557058:1) moved it to **In progress** (blue) on January 1, 2026", markdown);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_UnknownNodes()
+    {
+        #region AdfToMarkdown_UnknownNodes
+        var json = """
+            {
+              "version": 1,
+              "type": "doc",
+              "content": [
+                { "type": "paragraph", "content": [ { "type": "text", "text": "Before" } ] },
+                { "type": "somethingNew", "content": [ { "type": "paragraph", "content": [ { "type": "text", "text": "Inside" } ] } ] }
+              ]
+            }
+            """;
+
+        // By default, the node and its content are dropped
+        Assert.Equal("Before", AdfToMarkdown.Convert(json));
+
+        var markdown = AdfToMarkdown.Convert(json, new AdfToMarkdownOptions { UnknownNodeHandling = AdfUnknownNodeHandling.KeepContent });
+        Assert.Equal("Before\n\nInside", markdown);
+
+        Assert.Throws<AdfException>(() => AdfToMarkdown.Convert(json, new AdfToMarkdownOptions { UnknownNodeHandling = AdfUnknownNodeHandling.Throw }));
         #endregion
     }
 

@@ -76,6 +76,68 @@ public sealed class AdfDocumentTests
     }
 
     [Fact]
+    public void Documentation_FindLinks()
+    {
+        #region AdfDocument_FindLinks
+        var document = AdfDocument.Parse("""
+            {
+              "version": 1,
+              "type": "doc",
+              "content": [
+                {
+                  "type": "paragraph",
+                  "content": [
+                    { "type": "text", "text": "See the " },
+                    { "type": "text", "text": "design", "marks": [ { "type": "link", "attrs": { "href": "https://example.com/design" } } ] },
+                    { "type": "text", "text": " and the " },
+                    { "type": "text", "text": "plan", "marks": [ { "type": "strong" }, { "type": "link", "attrs": { "href": "https://example.com/plan" } } ] }
+                  ]
+                }
+              ]
+            }
+            """);
+
+        var links = document.Descendants()
+            .OfType<AdfText>()
+            .Select(text => text.GetMark<AdfLinkMark>()?.Href)
+            .OfType<string>();
+
+        Assert.Equal(["https://example.com/design", "https://example.com/plan"], links);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_TryParse()
+    {
+        #region AdfDocument_TryParse
+        // Not JSON
+        Assert.False(AdfDocument.TryParse("Steps to reproduce", out _));
+
+        // JSON, but the root is not a "doc" node
+        Assert.False(AdfDocument.TryParse("""{ "type": "paragraph" }""", out _));
+
+        // Parse throws an AdfException instead
+        Assert.Throws<AdfException>(() => AdfDocument.Parse("""{ "type": "paragraph" }"""));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_UnknownNodes()
+    {
+        #region AdfDocument_UnknownNodes
+        var json = """{"version":1,"type":"doc","content":[{"type":"somethingNew","attrs":{"answer":42}}]}""";
+        var document = AdfDocument.Parse(json);
+
+        var unknown = Assert.IsType<AdfUnknownNode>(document.Content[0]);
+        Assert.Equal("somethingNew", unknown.TypeName);
+        Assert.Equal(42, unknown.RawJson.GetProperty("attrs").GetProperty("answer").GetInt32());
+
+        // The node is written back unchanged
+        Assert.Equal(json, document.ToJsonString());
+        #endregion
+    }
+
+    [Fact]
     public void ParseReadsTheDocumentStructure()
     {
         var document = AdfDocument.Parse(SampleJson);

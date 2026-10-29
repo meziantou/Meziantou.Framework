@@ -159,7 +159,6 @@ public sealed class DrawingFuzzTests
         if (whole.Owner.ActiveLeaseCount != 0 || separate.Owner.ActiveLeaseCount != 0)
             return "a lease is still active";
 
-        var channels = PixelFormats.GetComponentCount(format);
         var hasAlpha = PixelFormats.HasAlpha(format);
         for (var i = 0; i < frameCount; i++)
         {
@@ -171,14 +170,41 @@ public sealed class DrawingFuzzTests
             if (!hasAlpha || !checkAlpha)
                 continue;
 
-            for (var sample = channels - 1; sample < after.Length; sample += channels)
+            var alphasBefore = GetAlphas(format, before[i]);
+            var alphasAfter = GetAlphas(format, after);
+            for (var pixel = 0; pixel < alphasAfter.Length; pixel++)
             {
-                if (after[sample] < before[i][sample])
-                    return $"frame {i}: the alpha of pixel {sample / channels} went from {before[i][sample]} to {after[sample]}";
+                if (alphasAfter[pixel] < alphasBefore[pixel])
+                    return $"frame {i}: the alpha of pixel {pixel} went from {alphasBefore[pixel]} to {alphasAfter[pixel]}";
             }
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// Gets the alpha of each pixel from the samples of <see cref="DrawingTestSupport.ReadSamples"/>: the last sample of a
+    /// pixel, or, for the interoperability formats, whose samples are their bytes, the alpha stored in them.
+    /// </summary>
+    private static int[] GetAlphas(PixelFormat format, int[] samples)
+    {
+        var size = DrawingTestSupport.IsInteropFormat(format) ? PixelFormats.GetBytesPerPixel(format) : PixelFormats.GetComponentCount(format);
+        var alphas = new int[samples.Length / size];
+        for (var pixel = 0; pixel < alphas.Length; pixel++)
+        {
+            var offset = pixel * size;
+            alphas[pixel] = format switch
+            {
+                // Alpha is the first byte of both layouts
+                PixelFormat.Argb32 or PixelFormat.Abgr32 => samples[offset],
+
+                // Alpha is the 2 high bits of the native-endian packed value
+                PixelFormat.Rgba1010102 => (int)(BitConverter.ToUInt32([(byte)samples[offset], (byte)samples[offset + 1], (byte)samples[offset + 2], (byte)samples[offset + 3]]) >> 30),
+                _ => samples[offset + size - 1],
+            };
+        }
+
+        return alphas;
     }
 
     private static Image CreateImage(PixelFormat format, int width, int height, int frameCount, ulong seed)

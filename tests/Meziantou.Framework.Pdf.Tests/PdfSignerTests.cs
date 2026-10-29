@@ -226,4 +226,47 @@ public sealed class PdfSignerTests
         AsnDecoder.ReadEncodedValue(data, AsnEncodingRules.BER, out _, out _, out var length);
         return length;
     }
+
+    [Fact]
+    public void Example_IsSignedByTrustedSigner()
+    {
+        using var certificate = CreateCertificate("ecdsa");
+        using var other = CreateCertificate("ecdsa");
+        var signed = PdfSigner.Sign(CreateDocument(), new PdfSignatureOptions(certificate));
+
+        Assert.True(IsSignedByTrustedSigner(signed, certificate));
+        Assert.False(IsSignedByTrustedSigner(signed, other));
+
+        // A change appended after the signature: the signature no longer covers the whole file
+        var document = PdfDocument.Open(signed);
+        document.Information.Title = "Changed";
+        using var changed = new MemoryStream();
+        document.SaveIncremental(changed);
+        Assert.False(IsSignedByTrustedSigner(changed.ToArray(), certificate));
+    }
+
+#pragma warning disable xUnit1013 // An example of the documentation, called by DocumentationImageTests
+    #region PdfSigning_Verify
+    public static bool IsSignedByTrustedSigner(byte[] file, X509Certificate2 trustedRoot)
+    {
+        foreach (var signature in PdfSignatureVerifier.Verify(file))
+        {
+            // Intact and cryptographically valid, and nothing was appended to the file after it
+            if (!signature.IsValid || !signature.CoversWholeDocument || signature.Certificate is null)
+                continue;
+
+            // The library does not decide whether the signer is trusted: the application builds the chain
+            using var chain = new X509Chain();
+            chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+            chain.ChainPolicy.CustomTrustStore.Add(trustedRoot);
+            chain.ChainPolicy.ExtraStore.AddRange(signature.Certificates);
+            chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck; // a private root without revocation lists
+            if (chain.Build(signature.Certificate))
+                return true;
+        }
+
+        return false;
+    }
+    #endregion
+#pragma warning restore xUnit1013
 }

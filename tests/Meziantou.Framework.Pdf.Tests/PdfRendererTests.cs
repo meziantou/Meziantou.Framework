@@ -1,8 +1,9 @@
 using System.Text;
+using Meziantou.Framework.Fonts;
 using Meziantou.Framework.Imaging;
 using Meziantou.Framework.Pdf.Objects;
-using Meziantou.Framework.Pdf.TestHarness;
 using Meziantou.Framework.Pdf.Rendering;
+using Meziantou.Framework.Pdf.TestHarness;
 
 namespace Meziantou.Framework.Pdf.Tests;
 
@@ -692,5 +693,95 @@ public sealed class PdfRendererTests
     private static void AssertColor(Rgba32 pixel, int r, int g, int b, int tolerance = 2)
     {
         Assert.True(Math.Abs(pixel.R - r) <= tolerance && Math.Abs(pixel.G - g) <= tolerance && Math.Abs(pixel.B - b) <= tolerance, $"The pixel is ({pixel.R}, {pixel.G}, {pixel.B}), not ({r}, {g}, {b})");
+    }
+
+    [Fact]
+    public void Example_RenderThumbnail()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var document = new PdfDocument();
+        document.Pages.Add(new PdfSize(300, 150)).CreateContentBuilder().SetFillRgb(1, 0, 0).Rectangle(0, 0, 150, 150).Fill();
+        document.Pages.Add(new PdfSize(300, 150)).Rotation = 90;
+        document.Save(directory / "input.pdf");
+
+        RenderThumbnails(directory / "input.pdf", directory);
+
+        using var first = Image.Load<Rgba32>(directory / "page-1.png");
+        using var second = Image.Load<Rgba32>(directory / "page-2.png");
+        Assert.Equal(200, first.Width);
+        Assert.Equal(100, first.Height);
+        Assert.Equal(200, second.Width);
+        Assert.Equal(400, second.Height);
+        AssertColor(first.Frames[0][50, 50], 255, 0, 0);
+    }
+
+#pragma warning disable xUnit1013 // An example of the documentation, called by DocumentationImageTests
+    #region PdfRendering_RenderThumbnails
+    public static void RenderThumbnails(string pdfPath, string outputDirectory)
+    {
+        var document = PdfDocument.Open(pdfPath);
+        for (var i = 0; i < document.Pages.Count; i++)
+        {
+            // The width of the page as it is shown: a rotation of 90 or 270 degrees exchanges its sides
+            var page = document.Pages[i];
+            var width = page.Rotation is 90 or 270 ? page.CropBox.Height : page.CropBox.Width;
+
+            // 72 dpi is one pixel per point: the resolution that gives images 200 pixels wide
+            var options = new PdfRenderOptions
+            {
+                Dpi = 72 * 200 / width,
+                UseSystemFonts = false, // the same pixels on every machine
+            };
+
+            using var image = page.Render(options);
+            image.Save(Path.Combine(outputDirectory, $"page-{i + 1}.png"));
+        }
+    }
+    #endregion
+#pragma warning restore xUnit1013
+
+    [Fact]
+    public void Example_FontResolver()
+    {
+        var fontData = File.ReadAllBytes(RepositoryPaths.Fonts / "noto-sans" / "NotoSans-Regular.subset.ttf");
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 100 100] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>")
+            .Add(4, "<< /Type /Font /Subtype /TrueType /BaseFont /Corporate-Sans /FirstChar 72 /LastChar 72 /Widths [722] /Encoding /WinAnsiEncoding >>")
+            .Add(5, HandWrittenPdf.Stream("BT /F1 100 Tf 10 20 Td (H) Tj ET"))
+            .ToArray();
+
+        #region PdfRendering_FontResolver
+        // A font of the application, loaded once
+        var corporateSans = FontLoader.Load(fontData, new PooledFontEnvironment(FontResourceLimits.Default, maxLiveAllocationBytes: 64 * 1024 * 1024))[0];
+
+        var options = new PdfRenderOptions
+        {
+            // Called for each font a document does not embed; null lets the library choose
+            FontResolver = request => request.Name.StartsWith("Corporate", StringComparison.Ordinal) ? corporateSans : null,
+            UseSystemFonts = false,
+        };
+
+        var document = PdfDocument.Open(file);
+        using var image = document.Pages[0].Render(options);
+        #endregion
+
+        // The resolver is called once, for the font the document does not embed, and gives the font of the application
+        var faces = new List<(string Name, FontFace? Face)>();
+        using var recorded = document.Pages[0].Render(new PdfRenderOptions
+        {
+            FontResolver = request =>
+            {
+                var face = options.FontResolver!(request);
+                faces.Add((request.Name, face));
+                return face;
+            },
+            UseSystemFonts = false,
+        });
+        var (name, resolved) = Assert.Single(faces);
+        Assert.Equal("Corporate-Sans", name);
+        Assert.Same(corporateSans, resolved);
+        Assert.True(Pixel(image, 22, 50).R < 64);
     }
 }

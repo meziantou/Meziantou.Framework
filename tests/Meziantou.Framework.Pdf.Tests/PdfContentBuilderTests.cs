@@ -1,4 +1,5 @@
 using System.Text;
+using Meziantou.Framework.Imaging;
 using Meziantou.Framework.Pdf.Objects;
 
 namespace Meziantou.Framework.Pdf.Tests;
@@ -357,4 +358,288 @@ public sealed class PdfContentBuilderTests
         var page = document.Pages.Add(PdfSize.A4);
         return (page, page.CreateContentBuilder());
     }
+
+    [Fact]
+    public void Example_DrawingMethods()
+    {
+        using var directory = TemporaryDirectory.Create();
+        DrawShapes(directory / "shapes.pdf");
+        DrawLineStyles(directory / "lines.pdf");
+        DrawTransformations(directory / "transformations.pdf");
+        DrawGradients(directory / "gradients.pdf");
+        DrawPatterns(directory / "patterns.pdf");
+        DrawReusableContent(directory / "forms.pdf");
+        DrawTransparency(directory / "transparency.pdf");
+
+        Assert.Equal(new PdfRectangle(0, 0, 300, 150), PdfDocument.Open(directory / "shapes.pdf").Pages[0].MediaBox);
+        Assert.Contains("[0 10] 0 d", Encoding.ASCII.GetString(PdfDocument.Open(directory / "lines.pdf").Pages[0].GetContentData()), StringComparison.Ordinal);
+        Assert.Equal("PDF", PdfDocument.Open(directory / "patterns.pdf").Pages[0].ExtractText());
+
+        // The form is written once, and painted five times
+        var forms = PdfDocument.Open(directory / "forms.pdf");
+        Assert.Single(forms.Pages[0].Resources!.Get<PdfDictionary>(PdfNames.XObject)!.Keys);
+        Assert.Equal(5, Encoding.ASCII.GetString(forms.Pages[0].GetContentData()).Split(" Do").Length - 1);
+    }
+
+#pragma warning disable xUnit1013 // An example of the documentation, called by DocumentationImageTests
+    #region Pdf_DrawShapes
+    public static void DrawShapes(string outputPath)
+    {
+        var document = new PdfDocument();
+        document.Pages.Add(new PdfSize(300, 150)).CreateContentBuilder()
+            // Filled shapes: set the fill color, build the path, then fill it
+            .SetFillRgb(0.27, 0.51, 0.71).Rectangle(15, 80, 55, 55).Fill()
+            .SetFillColor(PdfColor.FromRgb24(46, 139, 87)).Circle(112, 107.5, 27.5).Fill()
+            .SetFillCmyk(0, 0.2, 0.9, 0).Ellipse(185, 107.5, 35, 22).Fill()
+            .SetFillRgb(0.86, 0.08, 0.24).MoveTo(235, 80).LineTo(285, 80).LineTo(260, 135).ClosePath().Fill()
+
+            // Outlines: set the stroke color and the line width, build the path, then stroke it
+            .SetStrokeGray(0.3).SetLineWidth(3)
+            .Rectangle(15, 15, 55, 50).Stroke()
+            .MoveTo(85, 20).CurveTo(100, 75, 125, -15, 140, 60).Stroke() // a cubic Bézier curve
+
+            // Both: fill, then stroke the same path
+            .SetFillRgb(1, 0.85, 0.4).Rectangle(160, 15, 50, 50).FillAndStroke()
+
+            // Two squares, one inside the other: with the even-odd rule, the inner one is a hole
+            .SetFillRgb(0.58, 0.44, 0.86).Rectangle(230, 15, 55, 50).Rectangle(245, 27.5, 25, 25).Fill(PdfFillRule.EvenOdd);
+
+        document.Save(outputPath);
+    }
+    #endregion
+#pragma warning restore xUnit1013
+
+#pragma warning disable xUnit1013 // An example of the documentation, called by DocumentationImageTests
+    #region Pdf_DrawLineStyles
+    public static void DrawLineStyles(string outputPath)
+    {
+        var document = new PdfDocument();
+        var builder = document.Pages.Add(new PdfSize(300, 150)).CreateContentBuilder().SetStrokeRgb(0.2, 0.3, 0.5);
+
+        // Caps: the ends of the lines, butt (the default), round and projecting square
+        builder.SetLineWidth(10)
+            .SetLineCap(PdfLineCap.Butt).MoveTo(25, 125).LineTo(105, 125).Stroke()
+            .SetLineCap(PdfLineCap.Round).MoveTo(25, 100).LineTo(105, 100).Stroke()
+            .SetLineCap(PdfLineCap.ProjectingSquare).MoveTo(25, 75).LineTo(105, 75).Stroke();
+
+        // Joins: the corners, miter (the default), round and bevel
+        builder.SetLineCap(PdfLineCap.Butt)
+            .SetLineJoin(PdfLineJoin.Miter).MoveTo(135, 70).LineTo(155, 125).LineTo(175, 70).Stroke()
+            .SetLineJoin(PdfLineJoin.Round).MoveTo(190, 70).LineTo(210, 125).LineTo(230, 70).Stroke()
+            .SetLineJoin(PdfLineJoin.Bevel).MoveTo(245, 70).LineTo(265, 125).LineTo(285, 70).Stroke();
+
+        // Dashes: 12 points drawn, 6 skipped; then dashes of length 0 with round caps, which are dots
+        builder.SetLineWidth(3).SetDashPattern([12, 6]).MoveTo(25, 40).LineTo(285, 40).Stroke()
+            .SetLineWidth(5).SetLineCap(PdfLineCap.Round).SetDashPattern([0, 10]).MoveTo(25, 20).LineTo(285, 20).Stroke()
+            .SetDashPattern([]); // solid lines again
+
+        document.Save(outputPath);
+    }
+    #endregion
+#pragma warning restore xUnit1013
+
+#pragma warning disable xUnit1013 // An example of the documentation, called by DocumentationImageTests
+    #region Pdf_DrawTransformations
+    public static void DrawTransformations(string outputPath)
+    {
+        var document = new PdfDocument();
+        var builder = document.Pages.Add(new PdfSize(300, 150)).CreateContentBuilder();
+
+        // The same square, turned around the center of the left half: move the origin there, then rotate the axes
+        for (var i = 0; i < 6; i++)
+        {
+            builder.SaveGraphicsState()
+                .Translate(75, 75)
+                .Rotate(i * 15) // degrees, counterclockwise
+                .SetStrokeRgb(0.1, 0.25 + (i * 0.12), 0.6).SetLineWidth(2)
+                .Rectangle(-40, -40, 80, 80).Stroke()
+                .RestoreGraphicsState(); // back to the coordinates of the page
+        }
+
+        // Clipping: stripes painted through a circle
+        builder.SaveGraphicsState()
+            .Circle(225, 75, 55).Clip().EndPath()
+            .SetFillRgb(0.95, 0.6, 0.1);
+        for (var x = 165; x < 285; x += 20)
+        {
+            builder.Rectangle(x, 0, 10, 150);
+        }
+
+        builder.Fill()
+            .RestoreGraphicsState() // removes the clip
+            .SetStrokeGray(0.3).SetLineWidth(1.5).Circle(225, 75, 55).Stroke();
+
+        document.Save(outputPath);
+    }
+    #endregion
+#pragma warning restore xUnit1013
+
+#pragma warning disable xUnit1013 // An example of the documentation, called by DocumentationImageTests
+    #region Pdf_DrawGradients
+    public static void DrawGradients(string outputPath)
+    {
+        var document = new PdfDocument();
+        var builder = document.Pages.Add(new PdfSize(300, 150)).CreateContentBuilder();
+
+        // An axial gradient: the colors change along a line, from x = 15 to x = 135, with three stops
+        var sunset = PdfShading.Axial(PdfDeviceColorSpace.Rgb, 15, 0, 135, 0, PdfFunction.Gradient(
+            (0, PdfColor.FromRgb(0.98, 0.8, 0.2)),
+            (0.5, PdfColor.FromRgb(0.95, 0.35, 0.3)),
+            (1, PdfColor.FromRgb(0.35, 0.15, 0.5))));
+
+        // A shading paints the whole clipping region: clip to the rectangle first
+        builder.SaveGraphicsState()
+            .Rectangle(15, 15, 120, 120).Clip().EndPath()
+            .PaintShading(sunset)
+            .RestoreGraphicsState();
+
+        // A radial gradient: from a small circle of light to the edge of the sphere
+        var sphere = PdfShading.Radial(PdfDeviceColorSpace.Rgb, 205, 95, 5, 225, 75, 60,
+            PdfFunction.Gradient((0, PdfColor.FromRgb(1, 1, 1)), (1, PdfColor.FromRgb(0.1, 0.35, 0.75))));
+        builder.SaveGraphicsState()
+            .Circle(225, 75, 60).Clip().EndPath()
+            .PaintShading(sphere)
+            .RestoreGraphicsState();
+
+        document.Save(outputPath);
+    }
+    #endregion
+#pragma warning restore xUnit1013
+
+#pragma warning disable xUnit1013 // An example of the documentation, called by DocumentationImageTests
+    #region Pdf_DrawPatterns
+    public static void DrawPatterns(string outputPath)
+    {
+        var document = new PdfDocument();
+        var builder = document.Pages.Add(new PdfSize(300, 150)).CreateContentBuilder();
+
+        // A colored tiling pattern: a cell of 20 by 20 points with its own colors, repeated every 20 points
+        var checkerboard = document.CreateTilingPattern(new PdfRectangle(0, 0, 20, 20), 20, 20);
+        checkerboard.CreateContentBuilder()
+            .SetFillRgb(0.85, 0.9, 1).Rectangle(0, 0, 20, 20).Fill()
+            .SetFillRgb(0.3, 0.45, 0.75).Rectangle(0, 0, 10, 10).Rectangle(10, 10, 10, 10).Fill();
+        builder.SetFillPattern(checkerboard).Rectangle(15, 15, 80, 120).Fill();
+
+        // An uncolored tiling pattern: a shape without colors, painted with the color given when it is used.
+        // The matrix of the pattern turns its stripes by 45 degrees.
+        var stripes = document.CreateTilingPattern(new PdfRectangle(0, 0, 8, 8), 8, 8, isColored: false, matrix: PdfMatrix.CreateRotation(45));
+        stripes.CreateContentBuilder().Rectangle(0, 0, 8, 3).Fill();
+        builder.SetFillPattern(stripes, PdfColor.FromRgb(0.8, 0.2, 0.2)).Rectangle(110, 80, 80, 55).Fill()
+            .SetFillPattern(stripes, PdfColor.FromRgb(0.2, 0.6, 0.3)).Rectangle(110, 15, 80, 55).Fill();
+
+        // A shading pattern: a gradient used as a color, here to fill text
+        var gradient = new PdfShadingPattern(PdfShading.Axial(PdfDeviceColorSpace.Rgb, 0, 50, 0, 100,
+            PdfFunction.Gradient((0, PdfColor.FromRgb(0.1, 0.3, 0.8)), (1, PdfColor.FromRgb(0.9, 0.2, 0.5)))));
+        builder.SetFillPattern(gradient).DrawText("PDF", PdfFont.GetStandardFont(PdfStandardFont.HelveticaBold), 40, 205, 60);
+
+        document.Save(outputPath);
+    }
+    #endregion
+#pragma warning restore xUnit1013
+
+#pragma warning disable xUnit1013 // An example of the documentation, called by DocumentationImageTests
+    #region Pdf_DrawReusableContent
+    public static void DrawReusableContent(string outputPath)
+    {
+        var document = new PdfDocument();
+        var builder = document.Pages.Add(new PdfSize(300, 150)).CreateContentBuilder();
+
+        // A form: content written once in the file, painted as many times as needed
+        var star = document.CreateForm(new PdfRectangle(0, 0, 40, 40));
+        star.CreateContentBuilder()
+            .SetFillRgb(1, 0.75, 0.1).SetStrokeRgb(0.75, 0.45, 0).SetLineWidth(1.5).SetLineJoin(PdfLineJoin.Round)
+            .MoveTo(20, 38).LineTo(25, 25).LineTo(38, 25).LineTo(27, 17).LineTo(31, 3)
+            .LineTo(20, 11).LineTo(9, 3).LineTo(13, 17).LineTo(2, 25).LineTo(15, 25).ClosePath()
+            .FillAndStroke();
+
+        // Each copy is placed and sized by the transformation of the graphics state
+        for (var i = 0; i < 5; i++)
+        {
+            var scale = 0.6 + (i * 0.2);
+            builder.SaveGraphicsState()
+                .Translate(15 + (i * 55), 20 + (i * 15))
+                .Scale(scale, scale)
+                .DrawForm(star)
+                .RestoreGraphicsState();
+        }
+
+        document.Save(outputPath);
+    }
+    #endregion
+#pragma warning restore xUnit1013
+
+#pragma warning disable xUnit1013 // An example of the documentation, called by DocumentationImageTests
+    #region Pdf_DrawTransparency
+    public static void DrawTransparency(string outputPath)
+    {
+        var document = new PdfDocument();
+        var builder = document.Pages.Add(new PdfSize(300, 200)).CreateContentBuilder();
+
+        // Constant alpha: three disks at 60% opacity
+        builder.SaveGraphicsState()
+            .SetGraphicsState(new PdfExtGState { FillAlpha = 0.6 })
+            .SetFillRgb(0.9, 0.2, 0.2).Circle(55, 140, 35).Fill()
+            .SetFillRgb(0.2, 0.7, 0.3).Circle(95, 140, 35).Fill()
+            .SetFillRgb(0.2, 0.4, 0.9).Circle(75, 105, 35).Fill()
+            .RestoreGraphicsState();
+
+        // A blend mode: the same disks, opaque, multiplied with the colors under them
+        builder.SaveGraphicsState()
+            .SetGraphicsState(new PdfExtGState { BlendMode = PdfBlendMode.Multiply })
+            .SetFillRgb(1, 0.4, 0.4).Circle(205, 140, 35).Fill()
+            .SetFillRgb(0.4, 1, 0.5).Circle(245, 140, 35).Fill()
+            .SetFillRgb(0.4, 0.6, 1).Circle(225, 105, 35).Fill()
+            .RestoreGraphicsState();
+
+        // A soft mask: the luminosity of a gradient from white to black fades the band from opaque to transparent
+        var fade = document.CreateForm(new PdfRectangle(0, 0, 300, 200), group: new PdfTransparencyGroup { ColorSpace = PdfDeviceColorSpace.Gray });
+        fade.CreateContentBuilder().PaintShading(PdfShading.Axial(PdfDeviceColorSpace.Gray, 15, 0, 285, 0,
+            PdfFunction.Exponential(PdfColor.FromGray(1), PdfColor.FromGray(0))));
+        builder.SaveGraphicsState()
+            .SetGraphicsState(new PdfExtGState { SoftMask = PdfSoftMask.FromLuminosity(fade) })
+            .SetFillRgb(0.1, 0.3, 0.6).Rectangle(15, 20, 270, 40).Fill()
+            .RestoreGraphicsState();
+
+        document.Save(outputPath);
+    }
+    #endregion
+#pragma warning restore xUnit1013
+
+    [Fact]
+    public void Example_DrawImage()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var imagePath = directory / "photo.png";
+        using (var photo = new Image<Rgba32>(160, 120, new Rgba32(70, 130, 180)))
+        {
+            photo.Save(imagePath);
+        }
+
+        DrawImage(imagePath, directory / "image.pdf");
+
+        var page = PdfDocument.Open(directory / "image.pdf").Pages[0];
+        Assert.Single(page.Resources!.Get<PdfDictionary>(PdfNames.XObject)!.Keys);
+    }
+
+#pragma warning disable xUnit1013 // An example of the documentation, called by DocumentationImageTests
+    #region Pdf_DrawImage
+    public static void DrawImage(string imagePath, string outputPath)
+    {
+        // A JPEG file is embedded as it is; another format (PNG, WebP...) is decoded, with its transparency
+        var image = PdfImage.Load(imagePath);
+
+        var document = new PdfDocument();
+        var builder = document.Pages.Add(new PdfSize(300, 150)).CreateContentBuilder()
+            .SetFillRgb(0.9, 0.93, 0.97).Rectangle(0, 0, 300, 150).Fill();
+
+        // The image is stretched to the rectangle it is drawn in: compute the width that keeps its aspect ratio
+        var height = 120.0;
+        var width = height * image.Width / image.Height;
+        builder.DrawImage(image, 15, 15, width, height)
+            .DrawImage(image, 30 + width, 15, width / 2, height / 2); // drawn again: the file stores it once
+
+        document.Save(outputPath);
+    }
+    #endregion
+#pragma warning restore xUnit1013
 }

@@ -3,7 +3,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Description>Enables verification of PDF documents using file-based snapshots: each page is rendered to an image and the metadata is written to a JSON file, based on Meziantou.Framework.Pdf</Description>
     <PackageTags>snapshot-testing, pdf, testing</PackageTags>
-    <Version>1.0.1</Version>
+    <Version>1.0.2</Version>
   </PropertyGroup>
 
   <ItemGroup>

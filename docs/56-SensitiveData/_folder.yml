@@ -1,0 +1,2 @@
+title: SensitiveData
+description: Keep secrets such as passwords and keys in a type that is hard to disclose by accident.

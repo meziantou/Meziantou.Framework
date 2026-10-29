@@ -14,6 +14,8 @@ public class AvatarGeneratorTests
         Assert.StartsWith("<svg ", svg);
         Assert.Contains("aria-label=\"JD\"", svg);
         #endregion
+
+        AssertDocumentationImage("JohnDoe", svg);
     }
 
     [Fact]
@@ -32,6 +34,115 @@ public class AvatarGeneratorTests
         var svg = AvatarGenerator.CreateSvg("John Doe", options);
         Assert.Contains("width=\"128\" height=\"128\"", svg);
         Assert.Contains("<circle cx=\"64\" cy=\"64\" r=\"64\" fill=\"#CFDADE\"/>", svg);
+        #endregion
+
+        AssertDocumentationImage("CustomPalette", svg);
+    }
+
+    [Fact]
+    public void Documentation_Shapes()
+    {
+        #region AvatarGenerator_Shapes
+        var round = AvatarGenerator.CreateSvg("Ada Lovelace", new AvatarOptions { Shape = AvatarShape.Round });
+        var square = AvatarGenerator.CreateSvg("Ada Lovelace", new AvatarOptions { Shape = AvatarShape.Square });
+        var roundedSquare = AvatarGenerator.CreateSvg("Ada Lovelace", new AvatarOptions { Shape = AvatarShape.RoundedSquare });
+
+        Assert.Contains("<circle ", round);
+        Assert.Contains("<rect width=\"64\" height=\"64\" fill=", square);
+        Assert.Contains(" rx=\"", roundedSquare);
+        #endregion
+
+        AssertDocumentationImage("Round", round);
+        AssertDocumentationImage("Square", square);
+        AssertDocumentationImage("RoundedSquare", roundedSquare);
+    }
+
+    [Fact]
+    public void Documentation_Initials()
+    {
+        #region AvatarGenerator_Initials
+        var threeWords = AvatarGenerator.CreateSvg("John Michael Doe"); // first and last words
+        var compound = AvatarGenerator.CreateSvg("Jean-Pierre");       // connectors split the words
+        var apostrophe = AvatarGenerator.CreateSvg("O'Brien");
+        var singleWord = AvatarGenerator.CreateSvg("John");            // first two graphemes
+        var japanese = AvatarGenerator.CreateSvg("山田太郎");
+
+        Assert.Contains(">JD</text>", threeWords);
+        Assert.Contains(">JP</text>", compound);
+        Assert.Contains(">OB</text>", apostrophe);
+        Assert.Contains(">Jo</text>", singleWord);
+        Assert.Contains(">山田</text>", japanese);
+        #endregion
+
+        AssertDocumentationImage("InitialsJohnMichaelDoe", threeWords);
+        AssertDocumentationImage("InitialsJeanPierre", compound);
+        AssertDocumentationImage("InitialsOBrien", apostrophe);
+        AssertDocumentationImage("InitialsJohn", singleWord);
+        AssertDocumentationImage("InitialsYamadaTaro", japanese);
+    }
+
+    [Fact]
+    public void Documentation_ExplicitBigram()
+    {
+        #region AvatarGenerator_ExplicitBigram
+        // The text comes from Bigram, the color still comes from the name
+        var svg = AvatarGenerator.CreateSvg("Ada Lovelace", new AvatarOptions { Bigram = "A" });
+        var fromName = AvatarGenerator.CreateSvg("Ada Lovelace");
+
+        Assert.Contains(">A</text>", svg);
+        Assert.Equal(GetBackground(fromName), GetBackground(svg));
+
+        static string GetBackground(string svg) => svg.Split("fill=\"")[1].Split('"')[0];
+        #endregion
+
+        AssertDocumentationImage("ExplicitBigram", svg);
+    }
+
+    [Fact]
+    public void Documentation_Accessibility()
+    {
+        #region AvatarGenerator_Accessibility
+        // By default, the avatar is an image whose label is the bigram
+        var byDefault = AvatarGenerator.CreateSvg("Ada Lovelace");
+        Assert.Contains("role=\"img\" aria-label=\"AL\"", byDefault);
+
+        // Announce the full name instead
+        var labeled = AvatarGenerator.CreateSvg("Ada Lovelace", new AvatarOptions { AccessibleLabel = "Ada Lovelace" });
+        Assert.Contains("role=\"img\" aria-label=\"Ada Lovelace\"", labeled);
+
+        // Or hide it when the name is already displayed next to it
+        var decorative = AvatarGenerator.CreateSvg("Ada Lovelace", new AvatarOptions { IsDecorative = true });
+        Assert.Contains("aria-hidden=\"true\"", decorative);
+        Assert.DoesNotContain("aria-label", decorative);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Determinism()
+    {
+        #region AvatarGenerator_Determinism
+        // The same name always gives the same avatar; surrounding whitespace is ignored
+        Assert.Equal(AvatarGenerator.CreateSvg("Ada Lovelace"), AvatarGenerator.CreateSvg("  Ada Lovelace "));
+
+        // The color depends on the palette: adding or removing an entry changes the color of most names
+        var options = new AvatarOptions();
+        options.Palette.RemoveAt(options.Palette.Count - 1);
+        Assert.NotEqual(AvatarGenerator.CreateSvg("Ada Lovelace"), AvatarGenerator.CreateSvg("Ada Lovelace", options));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_UntrustedName()
+    {
+        #region AvatarGenerator_UntrustedName
+        // A display name typed by a user, with markup and a control character
+        var name = "<Ada> & \u0007Lovelace";
+        var svg = AvatarGenerator.CreateSvg(name, new AvatarOptions { AccessibleLabel = name });
+
+        // The result is always well-formed XML: the markup is escaped and the control character is removed
+        var document = new XmlDocument();
+        document.LoadXml(svg);
+        Assert.Equal("<Ada> & Lovelace", document.DocumentElement!.GetAttribute("aria-label"));
         #endregion
     }
 
@@ -654,5 +765,41 @@ public class AvatarGeneratorTests
             return component / 12.92;
 
         return Math.Pow((component + 0.055) / 1.055, 2.4);
+    }
+
+    private const string UpdateDocumentationImagesVariable = "MEZIANTOU_AVATAR_UPDATE_DOCS_IMAGES";
+
+    /// <summary>
+    /// Compares an avatar with the image of the documentation (docs/59-Avatar/images). With the environment variable
+    /// <see cref="UpdateDocumentationImagesVariable"/> set to 1, a missing or different image is written instead.
+    /// </summary>
+    private static void AssertDocumentationImage(string name, string svg)
+    {
+        var path = Path.Combine(GetRepositoryRoot(), "docs", "59-Avatar", "images", name + ".svg");
+        if (File.Exists(path) && string.Equals(File.ReadAllText(path), svg, StringComparison.Ordinal))
+            return;
+
+        if (Environment.GetEnvironmentVariable(UpdateDocumentationImagesVariable) is not "1")
+        {
+            Assert.Fail($"docs/59-Avatar/images/{name}.svg is missing or different. Run the test with the environment variable {UpdateDocumentationImagesVariable}=1 to write the image, look at it, and commit it.");
+        }
+
+        // The test runs for each target framework at the same time: publish the file with a rename
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        var temporaryPath = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
+        File.WriteAllText(temporaryPath, svg);
+        File.Move(temporaryPath, path, overwrite: true);
+    }
+
+    // The deterministic builds of CI map the source paths to /_/, so the root is found from the test assembly
+    private static string GetRepositoryRoot()
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory is not null && !Path.Exists(Path.Combine(directory.FullName, ".git")))
+        {
+            directory = directory.Parent;
+        }
+
+        return directory?.FullName ?? throw new InvalidOperationException("The Git repository root cannot be found.");
     }
 }

@@ -1,0 +1,2 @@
+title: ValueStringBuilder
+description: Build strings in a stack buffer or a pooled array with a ref struct string builder.

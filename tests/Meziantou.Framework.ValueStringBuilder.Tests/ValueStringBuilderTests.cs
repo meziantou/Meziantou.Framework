@@ -1,5 +1,7 @@
 using System.Buffers;
+using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Text;
 
 namespace Meziantou.Framework.Tests;
 
@@ -45,6 +47,99 @@ public class ValueStringBuilderTests
 
         sb.Append(" World");
         Assert.Equal("Hello World", sb.AsSpan());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_AppendValues()
+    {
+        #region ValueStringBuilder_AppendValues
+        using var sb = new ValueStringBuilder(stackalloc char[64]);
+
+        sb.Append('[');
+        sb.Append('=', 3);                      // a character repeated
+        sb.Append("] ".AsSpan());               // a span of characters
+        sb.Append(new Rune(0x1F600));           // a Unicode scalar value, here a surrogate pair
+        sb.Append(' ');
+        sb.AppendSpanFormattable(42, "D5", CultureInfo.InvariantCulture);
+
+        // Interpolated strings are formatted into the builder; pass a format provider to choose the culture
+        sb.Append(CultureInfo.InvariantCulture, $" {1.5:F2} {DateOnly.MinValue:yyyy}");
+
+        Assert.Equal("[===] \U0001F600 00042 1.50 0001", sb.ToString());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Edit()
+    {
+        #region ValueStringBuilder_Edit
+        // Not a using declaration: it would make the variable read-only, and Length could not be set
+        var sb = new ValueStringBuilder(stackalloc char[64]);
+        sb.Append("Hello World");
+
+        sb.Insert(5, ",");
+        sb.Insert(0, ">> ");
+        sb[3] = 'h';                          // the indexer returns a reference: assign to replace a character
+        Assert.Equal(">> hello, World", sb.AsSpan());
+
+        sb.Length = 9;                        // setting Length truncates the content
+        Assert.Equal(">> hello,", sb.AsSpan());
+
+        sb.Clear();                           // Length is 0 again; the buffer is kept
+        sb.Append("Done");
+
+        // ToString returns the content and disposes the builder
+        Assert.Equal("Done", sb.ToString());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_AppendSpan()
+    {
+        #region ValueStringBuilder_AppendSpan
+        using var sb = new ValueStringBuilder(stackalloc char[64]);
+        sb.Append("id=");
+
+        // Reserve 8 characters at the end of the content and write them directly
+        var destination = sb.AppendSpan(8);
+        Assert.True(0xCAFE.TryFormat(destination, out var written, "X8", CultureInfo.InvariantCulture));
+        Assert.Equal(8, written);
+
+        Assert.Equal("id=0000CAFE", sb.AsSpan());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Capacity()
+    {
+        #region ValueStringBuilder_Capacity
+        // Without an initial buffer, the builder rents one of at least 256 characters from ArrayPool<char>.Shared
+        using var sb = new ValueStringBuilder(initialCapacity: 256);
+        Assert.True(sb.Capacity >= 256);
+
+        // Grow once before a series of appends whose total length you know
+        sb.EnsureCapacity(1024);
+        Assert.True(sb.Capacity >= 1024);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_PassByRef()
+    {
+        #region ValueStringBuilder_PassByRef
+        var sb = new ValueStringBuilder(stackalloc char[64]);
+        AppendGreeting(ref sb, "Alice");
+        AppendGreeting(ref sb, "Bob");
+        Assert.Equal("Hello Alice! Hello Bob! ", sb.ToString());
+
+        // A ValueStringBuilder is a struct: pass it by reference, or the method appends to a copy
+        static void AppendGreeting(ref ValueStringBuilder sb, string name)
+        {
+            sb.Append("Hello ");
+            sb.Append(name);
+            sb.Append("! ");
+        }
         #endregion
     }
 

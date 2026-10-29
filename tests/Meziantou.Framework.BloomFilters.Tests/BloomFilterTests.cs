@@ -72,6 +72,90 @@ public sealed class BloomFilterTests
         Assert.True(filter.MayContain("alice@example.com"));
     }
 
+    [Fact]
+    public void Documentation_Size()
+    {
+        #region BloomFilter_Size
+        // The size for 1 million items and a 1% false positive probability
+        var size = BloomFilterSize.CreateOptimalSize(expectedItemCount: 1_000_000, falsePositiveProbability: 0.01);
+        Assert.Equal(9_585_059, size.BitCount); // about 1.2 MB of memory
+        Assert.Equal(7, size.HashCount);
+
+        // Or choose the number of bits and of hash functions yourself
+        var exact = BloomFilterSize.CreateExact(bitCount: 8 * 1024 * 1024, hashCount: 5);
+        var filter = BloomFilter.CreateXXHash128(exact);
+        filter.Add("alice@example.com");
+        Assert.True(filter.MayContain("alice@example.com"));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Values()
+    {
+        #region BloomFilter_Values
+        var filter = BloomFilter.CreateXXHash128(BloomFilterSize.CreateOptimalSize(expectedItemCount: 1000, falsePositiveProbability: 0.01));
+
+        var userId = new Guid("b2c4a0a6-4f5e-4d58-9a43-5d1c37bf0f4e");
+        filter.Add(userId);
+        filter.Add(42);
+        filter.Add("alice@example.com"u8); // the bytes of a value
+
+        // Add several 64-bit values in one call
+        filter.AddRange(1L, 2L, 3L);
+
+        Assert.True(filter.MayContain(userId));
+        Assert.True(filter.MayContain(42));
+        Assert.True(filter.MayContain("alice@example.com"u8));
+        Assert.True(filter.MayContain(2L));
+
+        // The type is part of the value: 42 as an int and 42 as a long are different values,
+        // like a string and its UTF-8 bytes
+        Assert.False(filter.MayContain(42L));
+        Assert.False(filter.MayContain("alice@example.com"));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Concurrency()
+    {
+        #region BloomFilter_Concurrency
+        var filter = BloomFilter.CreateXXHash128(BloomFilterSize.CreateOptimalSize(expectedItemCount: 100_000, falsePositiveProbability: 0.01));
+
+        // Add values from several threads at the same time, without a lock
+        Parallel.For(0, 100_000, i => filter.Add(i));
+
+        for (var i = 0; i < 100_000; i++)
+        {
+            Assert.True(filter.MayContain(i));
+        }
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_CountingSaturation()
+    {
+        #region CountingBloomFilter_Saturation
+        var filter = CountingBloomFilter.CreateXXHash128(CountingBloomFilterSize.CreateOptimalSize(expectedItemCount: 1000, falsePositiveProbability: 0.01));
+
+        filter.Add("bob@example.com");
+        filter.Remove("bob@example.com");
+        Assert.False(filter.MayContain("bob@example.com"));
+
+        // Removing a value that was never added is ignored when the filter knows it is absent
+        filter.Remove("carol@example.com");
+
+        // Counters stop at 255: past that, the count is not tracked and the value cannot be removed
+        for (var i = 0; i < 300; i++)
+        {
+            filter.Add("alice@example.com");
+        }
+
+        Assert.Equal(255, filter.GetEstimatedCount("alice@example.com"));
+        filter.Remove("alice@example.com");
+        Assert.True(filter.MayContain("alice@example.com"));
+        #endregion
+    }
+
     [Theory]
     [MemberData(nameof(AllAlgorithmsAndValues))]
     public void Add_ThenMayContain_ReturnsTrue_ForAllAlgorithmsAndTypes(string createMethodName, object value)

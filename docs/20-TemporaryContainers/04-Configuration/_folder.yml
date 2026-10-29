@@ -1,0 +1,2 @@
+title: Configuring a container
+description: Choose the image, the command, the environment, the ports, the mounts and how to wait until the container is ready.

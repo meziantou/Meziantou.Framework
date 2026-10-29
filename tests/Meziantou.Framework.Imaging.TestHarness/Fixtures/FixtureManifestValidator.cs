@@ -47,7 +47,7 @@ public static partial class FixtureManifestValidator
     public static IReadOnlySet<string> AllowedFormats { get; } = new HashSet<string>(StringComparer.Ordinal) { "png", "gif", "jpeg", "webp", "qoi", "bmp", "tga", "pnm", "avif", "heic", "jxl", "jp2", "exr" };
 
     /// <summary>The accepted values of <see cref="FixtureExpectation.PixelFormat"/> (library <c>PixelFormat</c> names).</summary>
-    public static IReadOnlySet<string> AllowedPixelFormats { get; } = new HashSet<string>(StringComparer.Ordinal) { "Rgba32", "Bgra32", "Rgb24", "Rgba64", "Gray8", "Gray16", "RgbaFloat", "RgbaHalf", "La16", "La32", "Rgb48", "A8" };
+    public static IReadOnlySet<string> AllowedPixelFormats { get; } = new HashSet<string>(StringComparer.Ordinal) { "Rgba32", "Bgra32", "Rgb24", "Rgba64", "Gray8", "Gray16", "RgbaFloat", "RgbaHalf", "La16", "La32", "Rgb48", "A8", "Argb32", "Abgr32", "Bgr565", "Rgba1010102" };
 
     /// <summary>The accepted values of <see cref="FixtureExpectation.ColorModel"/> (library <c>ImageColorModel</c> names).</summary>
     public static IReadOnlySet<string> AllowedColorModels { get; } = new HashSet<string>(StringComparer.Ordinal) { "Grayscale", "GrayscaleAlpha", "Rgb", "Rgba", "Indexed", "YCbCr", "Cmyk", "Ycck" };

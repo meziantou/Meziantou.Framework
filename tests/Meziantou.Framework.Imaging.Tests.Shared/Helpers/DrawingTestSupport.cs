@@ -8,13 +8,35 @@ namespace Meziantou.Framework.Imaging.Tests;
 /// <summary>Shared support of the drawing tests: images of any pixel format, their samples, and the comparison with the references of the test harness.</summary>
 internal static class DrawingTestSupport
 {
-    public static TheoryData<PixelFormat> AllFormats => [.. PixelFormats.All];
+    /// <summary>
+    /// Gets the pixel formats whose samples the references of the tests describe: every format but the interoperability
+    /// formats (<see cref="IsInteropFormat"/>), which are compared with their working format instead.
+    /// </summary>
+    public static TheoryData<PixelFormat> AllFormats => [.. PixelFormats.All.Where(format => !IsInteropFormat(format))];
 
     /// <summary>Gets the integer pixel formats: the ones the exact references of the test harness describe (<see cref="ReferencePixelLayout"/>).</summary>
     public static TheoryData<PixelFormat> IntegerFormats => [.. IntegerPixelFormats];
 
-    /// <summary>Gets the integer pixel formats, as a list.</summary>
-    public static IReadOnlyList<PixelFormat> IntegerPixelFormats { get; } = [.. PixelFormats.All.Where(format => !PixelFormats.IsFloatingPoint(format))];
+    /// <summary>
+    /// Gets the integer pixel formats, as a list. The interoperability formats are not in it: the library draws and
+    /// processes them as their working format (<see cref="GetWorkingFormat"/>), and the tests compare them with it.
+    /// </summary>
+    public static IReadOnlyList<PixelFormat> IntegerPixelFormats { get; } = [.. PixelFormats.All.Where(format => !PixelFormats.IsFloatingPoint(format) && !IsInteropFormat(format))];
+
+    /// <summary>Gets the interoperability formats (<see cref="IsInteropFormat"/>).</summary>
+    public static TheoryData<PixelFormat> InteropFormats => [.. PixelFormats.All.Where(IsInteropFormat)];
+
+    /// <summary>Gets a value indicating whether a format is one of the interoperability formats, whose samples are read and written as their bytes.</summary>
+    public static bool IsInteropFormat(PixelFormat format) => format is PixelFormat.Argb32 or PixelFormat.Abgr32 or PixelFormat.Bgr565 or PixelFormat.Rgba1010102;
+
+    /// <summary>Gets the format the library draws and processes an interoperability format in.</summary>
+    public static PixelFormat GetWorkingFormat(PixelFormat format) => format switch
+    {
+        PixelFormat.Argb32 or PixelFormat.Abgr32 => PixelFormat.Rgba32,
+        PixelFormat.Bgr565 => PixelFormat.Rgb24,
+        PixelFormat.Rgba1010102 => PixelFormat.Rgba64,
+        _ => throw new ArgumentOutOfRangeException(nameof(format), format, "Not an interoperability format."),
+    };
 
     /// <summary>Gets the floating-point pixel formats.</summary>
     public static TheoryData<PixelFormat> FloatFormats => [PixelFormat.RgbaFloat, PixelFormat.RgbaHalf];
@@ -34,6 +56,10 @@ internal static class DrawingTestSupport
         PixelFormat.La32 => new Image<La32>(width, height, configuration),
         PixelFormat.Rgb48 => new Image<Rgb48>(width, height, configuration),
         PixelFormat.A8 => new Image<A8>(width, height, configuration),
+        PixelFormat.Argb32 => new Image<Argb32>(width, height, configuration),
+        PixelFormat.Abgr32 => new Image<Abgr32>(width, height, configuration),
+        PixelFormat.Bgr565 => new Image<Bgr565>(width, height, configuration),
+        PixelFormat.Rgba1010102 => new Image<Rgba1010102>(width, height, configuration),
         _ => throw new ArgumentOutOfRangeException(nameof(format)),
     };
 
@@ -46,6 +72,18 @@ internal static class DrawingTestSupport
     public static Image CreateRandom(PixelFormat format, int width, int height, Func<int, int> next)
     {
         var image = Create(format, width, height);
+        if (IsInteropFormat(format))
+        {
+            // Every bit pattern is a valid pixel of these formats
+            var bytes = new int[width * height * PixelFormats.GetBytesPerPixel(format)];
+            for (var i = 0; i < bytes.Length; i++)
+            {
+                bytes[i] = next(256);
+            }
+
+            WriteSamples(image.Frames[0], bytes);
+            return image;
+        }
         if (PixelFormats.IsFloatingPoint(format))
         {
             var values = new int[width * height * 4];
@@ -94,9 +132,16 @@ internal static class DrawingTestSupport
     }
 
     /// <summary>Reads every sample of a frame, row by row, in storage order.</summary>
-    /// <remarks>A floating-point sample is read as its bits (<see cref="BitConverter.SingleToInt32Bits(float)"/>, <see cref="BitConverter.HalfToUInt16Bits(Half)"/>): two drawings are equal when their bits are.</remarks>
+    /// <remarks>A floating-point sample is read as its bits (<see cref="BitConverter.SingleToInt32Bits(float)"/>, <see cref="BitConverter.HalfToUInt16Bits(Half)"/>), and an interoperability format as its bytes: two drawings are equal when their bits are.</remarks>
     public static int[] ReadSamples(ImageFrame frame)
     {
+        if (IsInteropFormat(frame.PixelFormat))
+        {
+            var bytes = new byte[frame.Width * frame.Height * PixelFormats.GetBytesPerPixel(frame.PixelFormat)];
+            frame.CopyPixelBytesTo(bytes);
+            return [.. bytes.Select(value => (int)value)];
+        }
+
         if (PixelFormats.IsFloatingPoint(frame.PixelFormat))
         {
             var bits = new int[frame.Width * frame.Height * 4];
@@ -155,6 +200,23 @@ internal static class DrawingTestSupport
     /// <summary>Writes every sample of a frame, row by row, in storage order (the bits of a floating-point sample, see <see cref="ReadSamples"/>).</summary>
     public static void WriteSamples(ImageFrame frame, int[] samples)
     {
+        if (IsInteropFormat(frame.PixelFormat))
+        {
+            frame.ProcessPixelBytes(samples, static (pixels, samples) =>
+            {
+                var index = 0;
+                for (var y = 0; y < pixels.Height; y++)
+                {
+                    var row = pixels.GetRowSpan(y);
+                    for (var i = 0; i < row.Length; i++)
+                    {
+                        row[i] = (byte)samples[index++];
+                    }
+                }
+            });
+            return;
+        }
+
         if (PixelFormats.IsFloatingPoint(frame.PixelFormat))
         {
             frame.ProcessPixelBytes(samples, static (pixels, samples) =>

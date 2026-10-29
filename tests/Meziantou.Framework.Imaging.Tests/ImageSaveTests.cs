@@ -466,6 +466,56 @@ public sealed class ImageSaveTests
         Assert.Equal(widenedStream.ToArray(), compactStream.ToArray());
     }
 
+    public static TheoryData<ImageEncoder, PixelFormat> EncodersAndInteropFormats()
+    {
+        var data = new TheoryData<ImageEncoder, PixelFormat>();
+        foreach (var encoder in CreateEncodersWithoutHotspot())
+        {
+            foreach (var format in (PixelFormat[])[PixelFormat.Argb32, PixelFormat.Abgr32, PixelFormat.Bgr565, PixelFormat.Rgba1010102])
+            {
+                data.Add(encoder, format);
+            }
+        }
+
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(EncodersAndInteropFormats))]
+    public void EveryEncoderWritesTheInteropFormatsAsTheirWidening(ImageEncoder encoder, PixelFormat format)
+    {
+        // Every bit pattern is a pixel of these formats
+        using var image = DrawingTestSupport.Create(format, Width, Height);
+        image.Frames[0].ProcessPixelBytes(static pixels =>
+        {
+            for (var y = 0; y < pixels.Height; y++)
+            {
+                var row = pixels.GetRowSpan(y);
+                for (var i = 0; i < row.Length; i++)
+                {
+                    row[i] = (byte)((y * 70) + (i * 13));
+                }
+            }
+        });
+
+        if (encoder is OpenExrEncoder)
+        {
+            // OpenEXR stores linear light only
+            image.Metadata.TransferFunction = ColorTransferFunction.Linear;
+        }
+
+        // No encoder stores them: the output is the one of the image widened without any loss, or the same exception
+        // before anything is written
+        Assert.False(encoder.StoresPixelFormat(format));
+        using var widened = image.CloneAs(PixelFormatWidening.GetWidenedFormat(format), options: null);
+        using var widenedStream = new MemoryStream();
+        using var interopStream = new MemoryStream();
+        var widenedException = Record.Exception(() => widened.Save(widenedStream, encoder));
+        var interopException = Record.Exception(() => image.Save(interopStream, encoder));
+        Assert.Equal(widenedException?.GetType(), interopException?.GetType());
+        Assert.Equal(widenedStream.ToArray(), interopStream.ToArray());
+    }
+
     public static TheoryData<ImageEncoder> EncodersWithoutHotspot() => [.. CreateEncodersWithoutHotspot()];
 
     private static ImageEncoder[] CreateEncodersWithoutHotspot() =>

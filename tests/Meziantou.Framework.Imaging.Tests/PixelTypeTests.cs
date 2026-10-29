@@ -19,6 +19,10 @@ public sealed class PixelTypeTests
         Assert.Equal(PixelFormats.GetBytesPerPixel(PixelFormat.La32), Unsafe.SizeOf<La32>());
         Assert.Equal(PixelFormats.GetBytesPerPixel(PixelFormat.Rgb48), Unsafe.SizeOf<Rgb48>());
         Assert.Equal(PixelFormats.GetBytesPerPixel(PixelFormat.A8), Unsafe.SizeOf<A8>());
+        Assert.Equal(PixelFormats.GetBytesPerPixel(PixelFormat.Argb32), Unsafe.SizeOf<Argb32>());
+        Assert.Equal(PixelFormats.GetBytesPerPixel(PixelFormat.Abgr32), Unsafe.SizeOf<Abgr32>());
+        Assert.Equal(PixelFormats.GetBytesPerPixel(PixelFormat.Bgr565), Unsafe.SizeOf<Bgr565>());
+        Assert.Equal(PixelFormats.GetBytesPerPixel(PixelFormat.Rgba1010102), Unsafe.SizeOf<Rgba1010102>());
     }
 
     [Theory]
@@ -34,6 +38,10 @@ public sealed class PixelTypeTests
     [InlineData(PixelFormat.La32, 4, 16, 2, true, true, true)]
     [InlineData(PixelFormat.Rgb48, 6, 16, 3, false, false, true)]
     [InlineData(PixelFormat.A8, 1, 8, 1, true, false, false)]
+    [InlineData(PixelFormat.Argb32, 4, 8, 4, true, false, true)]
+    [InlineData(PixelFormat.Abgr32, 4, 8, 4, true, false, true)]
+    [InlineData(PixelFormat.Bgr565, 2, 6, 3, false, false, true)]
+    [InlineData(PixelFormat.Rgba1010102, 4, 10, 4, true, false, true)]
     public void PixelFormatsDescribeEveryFormat(PixelFormat format, int bytesPerPixel, int bitsPerComponent, int componentCount, bool hasAlpha, bool isGrayscale, bool hasColor)
     {
         Assert.Contains(format, PixelFormats.All);
@@ -65,6 +73,74 @@ public sealed class PixelTypeTests
         Assert.Equal("La32(1000, 65535)", new La32(1000).ToString());
         Assert.Equal("Rgb48(1, 2, 3)", new Rgb48(1, 2, 3).ToString());
         Assert.Equal("A8(7)", new A8(7).ToString());
+    }
+
+    [Fact]
+    public void InteropPixelStructsCompareTheirComponents()
+    {
+        Assert.Equal(new Argb32(1, 2, 3, 4), new Argb32(1, 2, 3, 4));
+        Assert.NotEqual(new Argb32(1, 2, 3, 4), new Argb32(1, 2, 3, 5));
+        Assert.True(new Abgr32(1, 2, 3) == new Abgr32(1, 2, 3, 255));
+        Assert.True(new Bgr565(1, 2, 3) != new Bgr565(1, 2, 4));
+        Assert.Equal(new Rgba1010102(1, 2, 3, 1).GetHashCode(), new Rgba1010102(1, 2, 3, 1).GetHashCode());
+        Assert.Equal("Argb32(R: 1, G: 2, B: 3, A: 4)", new Argb32(1, 2, 3, 4).ToString());
+        Assert.Equal("Abgr32(R: 1, G: 2, B: 3, A: 255)", new Abgr32(1, 2, 3).ToString());
+        Assert.Equal("Bgr565(R: 31, G: 63, B: 0)", new Bgr565(31, 63, 0).ToString());
+        Assert.Equal("Rgba1010102(R: 1023, G: 512, B: 0, A: 3)", new Rgba1010102(1023, 512, 0).ToString());
+    }
+
+    [Fact]
+    public void Argb32AndAbgr32ConstructorsTakeLogicalOrder()
+    {
+        var argb = new Argb32(r: 1, g: 2, b: 3, a: 4);
+        Assert.Equal(new byte[] { 4, 1, 2, 3 }, unsafe(MemoryMarshal.AsBytes(new ReadOnlySpan<Argb32>(in argb))).ToArray());
+        var abgr = new Abgr32(r: 1, g: 2, b: 3, a: 4);
+        Assert.Equal(new byte[] { 4, 3, 2, 1 }, unsafe(MemoryMarshal.AsBytes(new ReadOnlySpan<Abgr32>(in abgr))).ToArray());
+    }
+
+    [Fact]
+    public void Bgr565PacksBlueInTheLowBits()
+    {
+        var pixel = new Bgr565(r: 0b10001, g: 0b100101, b: 0b00011);
+        Assert.Equal((ushort)0b10001_100101_00011, pixel.PackedValue);
+        Assert.Equal(0b10001, pixel.R);
+        Assert.Equal(0b100101, pixel.G);
+        Assert.Equal(0b00011, pixel.B);
+
+        pixel.G = 0;
+        Assert.Equal((ushort)0b10001_000000_00011, pixel.PackedValue);
+        pixel.R = 31;
+        pixel.B = 31;
+        Assert.Equal((ushort)0b11111_000000_11111, pixel.PackedValue);
+        Assert.Equal(new Bgr565 { PackedValue = 0xF81F }, pixel);
+    }
+
+    [Fact]
+    public void Rgba1010102PacksRedInTheLowBitsAndAlphaInTheHighBits()
+    {
+        var pixel = new Rgba1010102(r: 1, g: 2, b: 3, a: 2);
+        Assert.Equal(1u | (2u << 10) | (3u << 20) | (2u << 30), pixel.PackedValue);
+        Assert.Equal(3, new Rgba1010102(0, 0, 0).A);
+
+        pixel.R = 1023;
+        pixel.G = 0;
+        pixel.B = 1023;
+        pixel.A = 1;
+        Assert.Equal(1023u | (1023u << 20) | (1u << 30), pixel.PackedValue);
+        Assert.Equal((1023, 0, 1023, 1), (pixel.R, pixel.G, pixel.B, pixel.A));
+    }
+
+    [Fact]
+    public void PackedPixelStructsRejectComponentsOutOfRange()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>("r", () => new Bgr565(32, 0, 0));
+        Assert.Throws<ArgumentOutOfRangeException>("g", () => new Bgr565(0, 64, 0));
+        Assert.Throws<ArgumentOutOfRangeException>("b", () => new Bgr565(0, 0, 32));
+        Assert.Throws<ArgumentOutOfRangeException>("a", () => new Rgba1010102(0, 0, 0, 4));
+        Assert.Throws<ArgumentOutOfRangeException>("g", () => new Rgba1010102(0, 1024, 0));
+        var pixel = new Rgba1010102(5, 6, 7);
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => pixel.B = 1024);
+        Assert.Equal(new Rgba1010102(5, 6, 7), pixel);
     }
 
     [Fact]

@@ -1,6 +1,6 @@
 ---
 title: Pixel formats
-description: The twelve pixel formats, which one a file loads as, how to convert, and how alpha and precision are kept.
+description: The sixteen pixel formats, which one a file loads as, how to convert, and how alpha and precision are kept.
 ---
 
 Every image stores its pixels in one pixel format, such as `Rgba32` or `Gray16`. This page lists the formats, tells
@@ -20,10 +20,15 @@ which one a file loads as, and shows how to convert between them without losing 
 | `La16` | 2 | 8-bit gray and alpha |
 | `La32` | 4 | 16-bit gray and alpha |
 | `A8` | 1 | An alpha mask: no color, its pixels read as black with their alpha |
+| `Argb32` | 4 | 8-bit color and alpha in alpha, red, green, blue order, for APIs that expect it |
+| `Abgr32` | 4 | 8-bit color and alpha in alpha, blue, green, red order, for APIs that expect it |
+| `Bgr565` | 2 | 5-bit red and blue and 6-bit green packed in 16 bits, for display buffers |
+| `Rgba1010102` | 4 | 10-bit color and 2-bit alpha packed in 32 bits, for GPU and HDR display buffers |
 | `RgbaHalf` | 8 | Half-precision floating-point color and alpha, in linear light |
 | `RgbaFloat` | 16 | Single-precision floating-point color and alpha, in linear light |
 
-Alpha is always straight (not premultiplied), and 16-bit samples are in the native byte order of the machine.
+Alpha is always straight (not premultiplied), and 16-bit samples and packed values are in the native byte order of the
+machine.
 `PixelFormats` describes each format (`HasAlpha`, `HasColor`, `IsGrayscale`, `IsFloatingPoint`, `GetBytesPerPixel`, …).
 
 ## `Image` and `Image<TPixel>`
@@ -43,7 +48,7 @@ Alpha is always straight (not premultiplied), and 16-bit samples are in the nati
 [Identifying images](../05-LoadingAndSaving/03-IdentifyingImages.md).
 
 When your code works on pixels of a known type, load in that type with `Image.Load<TPixel>`, or convert with
-`CloneAs<TPixel>`. A type that is not one of the twelve formats throws a `NotSupportedException` before anything is
+`CloneAs<TPixel>`. A type that is not one of the sixteen formats throws a `NotSupportedException` before anything is
 read.
 
 ## Convert between formats
@@ -140,6 +145,37 @@ Every processing operation and the drawing canvas accept these formats, except `
 color to hold the result. The PNG and TIFF encoders store them as they are (a mask as black gray with alpha); the other
 encoders receive a copy widened without loss to `Rgba32` or `Rgba64`, then apply their own rules, such as the
 background color a JPEG needs for pixels that are not opaque.
+
+## Formats for other APIs
+
+`Argb32`, `Abgr32`, `Bgr565` and `Rgba1010102` exist to exchange pixel buffers with graphics and display APIs without
+copying them in another layout. `Bgr565` has blue in its low bits (`DXGI_FORMAT_B5G6R5_UNORM`, Android `RGB_565`), and
+`Rgba1010102` red in its low bits and alpha in its two high bits (`DXGI_FORMAT_R10G10B10A2_UNORM`, Android
+`RGBA_1010102`). No file loads in these formats: import a buffer with `Image.ImportPixelData`, or convert an image with
+`CloneAs`.
+
+<!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_InteropFormats;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static Image<Rgba1010102> ConvertDisplayBuffer(ReadOnlySpan<Bgr565> frameBuffer, int width, int height)
+{
+    // Bgr565 is the 16-bit layout of display buffers (blue in the low bits): the pixels are copied as they are
+    using var image = Image.ImportPixelData<Bgr565>(frameBuffer, width, height);
+
+    // Every operation works on it like on Rgb24 and stores the result back in 5, 6 and 5 bits
+    image.Flip(FlipMode.Horizontal);
+
+    // The components convert to the nearest samples of any other format, here 10-bit colors and a 2-bit alpha
+    return image.CloneAs<Rgba1010102>();
+}
+```
+<!-- endref -->
+
+- A packed component converts to the nearest sample of the other formats, and back exactly from 8 bits (`Bgr565`) or
+  16 bits (`Rgba1010102`). Converting to a packed format keeps fewer levels: 32 or 64 per color for `Bgr565`, 1024 per
+  color and 4 for the alpha for `Rgba1010102`.
+- Every operation, the drawing canvas and every encoder accept them. They work on `Rgba32` (for `Argb32` and
+  `Abgr32`), `Rgb24` (for `Bgr565`) or `Rgba64` (for `Rgba1010102`) and store the result back, in a temporary copy of each
+  frame, so prefer one of these formats for a long series of edits.
 
 ## Floating-point and high dynamic range
 

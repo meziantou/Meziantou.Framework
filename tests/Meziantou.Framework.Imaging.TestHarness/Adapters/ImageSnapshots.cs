@@ -27,12 +27,14 @@ public static class ImageSnapshots
     /// <c>gray16le</c>. The gray formats with alpha, <c>Rgb48</c> and <c>A8</c> are captured as <c>rgba8</c> or
     /// <c>rgba16le</c>: the gray level in the three colors, an opaque alpha, black for an alpha mask (the layouts of the
     /// references of the corpus, which the default formats of the decoders used before these formats existed).
+    /// <c>Argb32</c> and <c>Abgr32</c> are captured as <c>rgba8</c> (channels reordered), and the packed formats as the
+    /// nearest samples of their components: <c>Bgr565</c> as <c>rgb8</c>, <c>Rgba1010102</c> as <c>rgba16le</c>.
     /// </returns>
     public static RawPixelLayout GetLayout(PixelFormat format) => format switch
     {
-        PixelFormat.Rgba32 or PixelFormat.Bgra32 or PixelFormat.La16 or PixelFormat.A8 => RawPixelLayout.Rgba8,
-        PixelFormat.Rgb24 => RawPixelLayout.Rgb8,
-        PixelFormat.Rgba64 or PixelFormat.La32 or PixelFormat.Rgb48 => RawPixelLayout.Rgba16Le,
+        PixelFormat.Rgba32 or PixelFormat.Bgra32 or PixelFormat.La16 or PixelFormat.A8 or PixelFormat.Argb32 or PixelFormat.Abgr32 => RawPixelLayout.Rgba8,
+        PixelFormat.Rgb24 or PixelFormat.Bgr565 => RawPixelLayout.Rgb8,
+        PixelFormat.Rgba64 or PixelFormat.La32 or PixelFormat.Rgb48 or PixelFormat.Rgba1010102 => RawPixelLayout.Rgba16Le,
         PixelFormat.Gray8 => RawPixelLayout.Gray8,
         PixelFormat.Gray16 => RawPixelLayout.Gray16Le,
         PixelFormat.RgbaHalf or PixelFormat.RgbaFloat => RawPixelLayout.RgbaF32Le,
@@ -269,6 +271,44 @@ public static class ImageSnapshots
                 break;
             }
 
+            case PixelFormat.Argb32:
+                for (var x = 0; x < row.Length / 4; x++)
+                {
+                    SetSamples(builder, x, y, row[(x * 4) + 1], row[(x * 4) + 2], row[(x * 4) + 3], row[x * 4]);
+                }
+
+                break;
+
+            case PixelFormat.Abgr32:
+                for (var x = 0; x < row.Length / 4; x++)
+                {
+                    SetSamples(builder, x, y, row[(x * 4) + 3], row[(x * 4) + 2], row[(x * 4) + 1], row[x * 4]);
+                }
+
+                break;
+
+            case PixelFormat.Bgr565:
+            {
+                var values = unsafe(MemoryMarshal.Cast<byte, ushort>(row));
+                for (var x = 0; x < values.Length; x++)
+                {
+                    SetPixel(builder, x, y, new Bgr565 { PackedValue = values[x] });
+                }
+
+                break;
+            }
+
+            case PixelFormat.Rgba1010102:
+            {
+                var values = unsafe(MemoryMarshal.Cast<byte, uint>(row));
+                for (var x = 0; x < values.Length; x++)
+                {
+                    SetPixel(builder, x, y, new Rgba1010102 { PackedValue = values[x] });
+                }
+
+                break;
+            }
+
             case PixelFormat.RgbaHalf:
             {
                 // Halves in native endianness, captured as the floats they convert to exactly
@@ -341,10 +381,25 @@ public static class ImageSnapshots
             case A8 p:
                 SetSamples(builder, x, y, 0, 0, 0, p.A);
                 break;
+            case Argb32 p:
+                SetSamples(builder, x, y, p.R, p.G, p.B, p.A);
+                break;
+            case Abgr32 p:
+                SetSamples(builder, x, y, p.R, p.G, p.B, p.A);
+                break;
+            case Bgr565 p:
+                SetSamples(builder, x, y, Nearest(p.R, 31, 255), Nearest(p.G, 63, 255), Nearest(p.B, 31, 255));
+                break;
+            case Rgba1010102 p:
+                SetSamples(builder, x, y, Nearest(p.R, 1023, 65535), Nearest(p.G, 1023, 65535), Nearest(p.B, 1023, 65535), Nearest(p.A, 3, 65535));
+                break;
             default:
                 throw new NotSupportedException($"Unsupported pixel type {typeof(TPixel)}.");
         }
     }
+
+    /// <summary>The nearest sample of a packed component: <c>round(v * max / componentMax)</c>.</summary>
+    private static int Nearest(int value, int componentMax, int max) => (int)Math.Round((double)value * max / componentMax, MidpointRounding.AwayFromZero);
 
     private static void SetSamples(RawPixelBufferBuilder builder, int x, int y, params ReadOnlySpan<int> samples)
     {

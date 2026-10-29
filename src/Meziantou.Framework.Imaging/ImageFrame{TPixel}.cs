@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.Metadata;
@@ -117,7 +118,29 @@ public sealed class ImageFrame<TPixel> : ImageFrame
         => ProcessingKernels.Flip<TPixel>(lease, mode, cancellationToken);
 
     internal override void GrayscalePixels(scoped in PixelLease lease, CancellationToken cancellationToken)
-        => ProcessingKernels.Grayscale<TPixel>(lease, cancellationToken);
+    {
+        // The formats drawn in another color format are made gray in it (the gray formats are left as they are)
+        if (!DrawingKernels.IsBridgedToColorFormat<TPixel>())
+        {
+            ProcessingKernels.Grayscale<TPixel>(lease, cancellationToken);
+        }
+        else if (BridgeFormat == PixelFormat.Rgba64)
+        {
+            ProcessingBridge.RunInPlace<TPixel>(OwnerImage.Owner, lease, (scoped in PixelLease working) => ProcessingKernels.Grayscale<Rgba64>(working, cancellationToken));
+        }
+        else if (BridgeFormat == PixelFormat.Rgb24)
+        {
+            ProcessingBridge.RunInPlace<TPixel>(OwnerImage.Owner, lease, (scoped in PixelLease working) => ProcessingKernels.Grayscale<Rgb24>(working, cancellationToken));
+        }
+        else if (BridgeFormat == PixelFormat.Rgba32)
+        {
+            ProcessingBridge.RunInPlace<TPixel>(OwnerImage.Owner, lease, (scoped in PixelLease working) => ProcessingKernels.Grayscale<Rgba32>(working, cancellationToken));
+        }
+        else
+        {
+            throw new UnreachableException();
+        }
+    }
 
     internal override void ReplaceColorPixels(scoped in PixelLease lease, Rgba64 color, Rgba64 replacement, int tolerance, CancellationToken cancellationToken)
         => ProcessingKernels.ReplaceColor<TPixel>(lease, color, replacement, tolerance, cancellationToken);
@@ -125,19 +148,30 @@ public sealed class ImageFrame<TPixel> : ImageFrame
     internal override void TransformPixels(scoped in PixelLease source, scoped in PixelLease destination, Rectangle region, OrientationTransform transform, CancellationToken cancellationToken)
         => ProcessingKernels.Transform<TPixel>(source, destination, region, transform, cancellationToken);
 
+    /// <summary>Gets the pixel format the filtering kernels work in for <typeparamref name="TPixel"/> (<see cref="ProcessingBridge.GetKernelFormat"/>).</summary>
+    private static PixelFormat BridgeFormat => ProcessingBridge.GetKernelFormat(PixelFormats.GetPixelFormat<TPixel>());
+
     internal override void ResizePixels(scoped in PixelLease source, scoped in PixelLease destination, ResizePlan plan, CancellationToken cancellationToken)
     {
         if (!ProcessingBridge.IsBridged<TPixel>())
         {
             Resampler.Resize<TPixel>(source, destination, plan, cancellationToken);
         }
-        else if (typeof(TPixel) == typeof(La32))
+        else if (BridgeFormat == PixelFormat.Rgba64)
         {
             ProcessingBridge.RunCopy<TPixel>(OwnerImage.Owner, source, destination, (scoped in PixelLease from, scoped in PixelLease to) => Resampler.Resize<Rgba64>(from, to, plan, cancellationToken));
         }
-        else
+        else if (BridgeFormat == PixelFormat.Rgb24)
+        {
+            ProcessingBridge.RunCopy<TPixel>(OwnerImage.Owner, source, destination, (scoped in PixelLease from, scoped in PixelLease to) => Resampler.Resize<Rgb24>(from, to, plan, cancellationToken));
+        }
+        else if (BridgeFormat == PixelFormat.Rgba32)
         {
             ProcessingBridge.RunCopy<TPixel>(OwnerImage.Owner, source, destination, (scoped in PixelLease from, scoped in PixelLease to) => Resampler.Resize<Rgba32>(from, to, plan, cancellationToken));
+        }
+        else
+        {
+            throw new UnreachableException();
         }
     }
 
@@ -147,13 +181,21 @@ public sealed class ImageFrame<TPixel> : ImageFrame
         {
             Warper.Warp<TPixel>(source, destination, plan, cancellationToken);
         }
-        else if (typeof(TPixel) == typeof(La32))
+        else if (BridgeFormat == PixelFormat.Rgba64)
         {
             ProcessingBridge.RunCopy<TPixel>(OwnerImage.Owner, source, destination, (scoped in PixelLease from, scoped in PixelLease to) => Warper.Warp<Rgba64>(from, to, plan, cancellationToken));
         }
-        else
+        else if (BridgeFormat == PixelFormat.Rgb24)
+        {
+            ProcessingBridge.RunCopy<TPixel>(OwnerImage.Owner, source, destination, (scoped in PixelLease from, scoped in PixelLease to) => Warper.Warp<Rgb24>(from, to, plan, cancellationToken));
+        }
+        else if (BridgeFormat == PixelFormat.Rgba32)
         {
             ProcessingBridge.RunCopy<TPixel>(OwnerImage.Owner, source, destination, (scoped in PixelLease from, scoped in PixelLease to) => Warper.Warp<Rgba32>(from, to, plan, cancellationToken));
+        }
+        else
+        {
+            throw new UnreachableException();
         }
     }
 
@@ -163,13 +205,21 @@ public sealed class ImageFrame<TPixel> : ImageFrame
         {
             Convolver.Convolve<TPixel>(lease, plan, cancellationToken);
         }
-        else if (typeof(TPixel) == typeof(La32))
+        else if (BridgeFormat == PixelFormat.Rgba64)
         {
             ProcessingBridge.RunInPlace<TPixel>(OwnerImage.Owner, lease, (scoped in PixelLease working) => Convolver.Convolve<Rgba64>(working, plan, cancellationToken));
         }
-        else
+        else if (BridgeFormat == PixelFormat.Rgb24)
+        {
+            ProcessingBridge.RunInPlace<TPixel>(OwnerImage.Owner, lease, (scoped in PixelLease working) => Convolver.Convolve<Rgb24>(working, plan, cancellationToken));
+        }
+        else if (BridgeFormat == PixelFormat.Rgba32)
         {
             ProcessingBridge.RunInPlace<TPixel>(OwnerImage.Owner, lease, (scoped in PixelLease working) => Convolver.Convolve<Rgba32>(working, plan, cancellationToken));
+        }
+        else
+        {
+            throw new UnreachableException();
         }
     }
 
@@ -179,13 +229,21 @@ public sealed class ImageFrame<TPixel> : ImageFrame
         {
             BoxBlurrer.Blur<TPixel>(lease, plan, cancellationToken);
         }
-        else if (typeof(TPixel) == typeof(La32))
+        else if (BridgeFormat == PixelFormat.Rgba64)
         {
             ProcessingBridge.RunInPlace<TPixel>(OwnerImage.Owner, lease, (scoped in PixelLease working) => BoxBlurrer.Blur<Rgba64>(working, plan, cancellationToken));
         }
-        else
+        else if (BridgeFormat == PixelFormat.Rgb24)
+        {
+            ProcessingBridge.RunInPlace<TPixel>(OwnerImage.Owner, lease, (scoped in PixelLease working) => BoxBlurrer.Blur<Rgb24>(working, plan, cancellationToken));
+        }
+        else if (BridgeFormat == PixelFormat.Rgba32)
         {
             ProcessingBridge.RunInPlace<TPixel>(OwnerImage.Owner, lease, (scoped in PixelLease working) => BoxBlurrer.Blur<Rgba32>(working, plan, cancellationToken));
+        }
+        else
+        {
+            throw new UnreachableException();
         }
     }
 
@@ -195,13 +253,21 @@ public sealed class ImageFrame<TPixel> : ImageFrame
         {
             MedianFilter.Apply<TPixel>(lease, plan, cancellationToken);
         }
-        else if (typeof(TPixel) == typeof(La32))
+        else if (BridgeFormat == PixelFormat.Rgba64)
         {
             ProcessingBridge.RunInPlace<TPixel>(OwnerImage.Owner, lease, (scoped in PixelLease working) => MedianFilter.Apply<Rgba64>(working, plan, cancellationToken));
         }
-        else
+        else if (BridgeFormat == PixelFormat.Rgb24)
+        {
+            ProcessingBridge.RunInPlace<TPixel>(OwnerImage.Owner, lease, (scoped in PixelLease working) => MedianFilter.Apply<Rgb24>(working, plan, cancellationToken));
+        }
+        else if (BridgeFormat == PixelFormat.Rgba32)
         {
             ProcessingBridge.RunInPlace<TPixel>(OwnerImage.Owner, lease, (scoped in PixelLease working) => MedianFilter.Apply<Rgba32>(working, plan, cancellationToken));
+        }
+        else
+        {
+            throw new UnreachableException();
         }
     }
 
@@ -211,13 +277,21 @@ public sealed class ImageFrame<TPixel> : ImageFrame
         {
             EffectKernels.Pixelate<TPixel>(lease, size, scratch, cancellationToken);
         }
-        else if (typeof(TPixel) == typeof(La32))
+        else if (BridgeFormat == PixelFormat.Rgba64)
         {
             ProcessingBridge.RunInPlace<TPixel>(OwnerImage.Owner, lease, (scoped in PixelLease working) => EffectKernels.Pixelate<Rgba64>(working, size, scratch, cancellationToken));
         }
-        else
+        else if (BridgeFormat == PixelFormat.Rgb24)
+        {
+            ProcessingBridge.RunInPlace<TPixel>(OwnerImage.Owner, lease, (scoped in PixelLease working) => EffectKernels.Pixelate<Rgb24>(working, size, scratch, cancellationToken));
+        }
+        else if (BridgeFormat == PixelFormat.Rgba32)
         {
             ProcessingBridge.RunInPlace<TPixel>(OwnerImage.Owner, lease, (scoped in PixelLease working) => EffectKernels.Pixelate<Rgba32>(working, size, scratch, cancellationToken));
+        }
+        else
+        {
+            throw new UnreachableException();
         }
     }
 
@@ -228,13 +302,21 @@ public sealed class ImageFrame<TPixel> : ImageFrame
         {
             EffectKernels.OilPaint<TPixel>(lease, levels, radius, grayColors: false, scratch, cancellationToken);
         }
-        else if (typeof(TPixel) == typeof(La32))
+        else if (BridgeFormat == PixelFormat.Rgba64)
         {
-            ProcessingBridge.RunInPlace<TPixel>(OwnerImage.Owner, lease, (scoped in PixelLease working) => EffectKernels.OilPaint<Rgba64>(working, levels, radius, grayColors: true, scratch, cancellationToken));
+            ProcessingBridge.RunInPlace<TPixel>(OwnerImage.Owner, lease, (scoped in PixelLease working) => EffectKernels.OilPaint<Rgba64>(working, levels, radius, grayColors: ProcessingBridge.HasGrayColors<TPixel>(), scratch, cancellationToken));
+        }
+        else if (BridgeFormat == PixelFormat.Rgb24)
+        {
+            ProcessingBridge.RunInPlace<TPixel>(OwnerImage.Owner, lease, (scoped in PixelLease working) => EffectKernels.OilPaint<Rgb24>(working, levels, radius, grayColors: ProcessingBridge.HasGrayColors<TPixel>(), scratch, cancellationToken));
+        }
+        else if (BridgeFormat == PixelFormat.Rgba32)
+        {
+            ProcessingBridge.RunInPlace<TPixel>(OwnerImage.Owner, lease, (scoped in PixelLease working) => EffectKernels.OilPaint<Rgba32>(working, levels, radius, grayColors: ProcessingBridge.HasGrayColors<TPixel>(), scratch, cancellationToken));
         }
         else
         {
-            ProcessingBridge.RunInPlace<TPixel>(OwnerImage.Owner, lease, (scoped in PixelLease working) => EffectKernels.OilPaint<Rgba32>(working, levels, radius, grayColors: true, scratch, cancellationToken));
+            throw new UnreachableException();
         }
     }
 
@@ -246,22 +328,51 @@ public sealed class ImageFrame<TPixel> : ImageFrame
         {
             EffectKernels.Flatten<TPixel>(lease, background, maxDegreeOfParallelism, cancellationToken);
         }
-        else if (typeof(TPixel) == typeof(La32))
+        else if (typeof(TPixel) == typeof(A8))
+        {
+            throw new NotSupportedException($"The pixel type '{typeof(TPixel).Name}' is not supported.");
+        }
+        else if (BridgeFormat == PixelFormat.Rgba64)
         {
             ProcessingBridge.RunInPlace<TPixel>(OwnerImage.Owner, lease, (scoped in PixelLease working) => EffectKernels.Flatten<Rgba64>(working, background, maxDegreeOfParallelism, cancellationToken));
         }
-        else if (typeof(TPixel) == typeof(La16))
+        else if (BridgeFormat == PixelFormat.Rgb24)
+        {
+            ProcessingBridge.RunInPlace<TPixel>(OwnerImage.Owner, lease, (scoped in PixelLease working) => EffectKernels.Flatten<Rgb24>(working, background, maxDegreeOfParallelism, cancellationToken));
+        }
+        else if (BridgeFormat == PixelFormat.Rgba32)
         {
             ProcessingBridge.RunInPlace<TPixel>(OwnerImage.Owner, lease, (scoped in PixelLease working) => EffectKernels.Flatten<Rgba32>(working, background, maxDegreeOfParallelism, cancellationToken));
         }
         else
         {
-            throw new NotSupportedException($"The pixel type '{typeof(TPixel).Name}' is not supported.");
+            throw new UnreachableException();
         }
     }
 
     internal override void ConvertColorPixels(scoped in PixelLease source, scoped in PixelLease destination, IccPipeline pipeline, IccUInt16InputTables? uint16Tables, CancellationToken cancellationToken)
-        => ColorConversionKernels.ConvertRows<TPixel>(source, destination, pipeline, uint16Tables, cancellationToken);
+    {
+        if (!DrawingKernels.IsBridgedToColorFormat<TPixel>())
+        {
+            ColorConversionKernels.ConvertRows<TPixel>(source, destination, pipeline, uint16Tables, cancellationToken);
+        }
+        else if (BridgeFormat == PixelFormat.Rgba64)
+        {
+            ProcessingBridge.RunCopy<TPixel>(OwnerImage.Owner, source, destination, (scoped in PixelLease from, scoped in PixelLease to) => ColorConversionKernels.ConvertRows<Rgba64>(from, to, pipeline, uint16Tables, cancellationToken));
+        }
+        else if (BridgeFormat == PixelFormat.Rgb24)
+        {
+            ProcessingBridge.RunCopy<TPixel>(OwnerImage.Owner, source, destination, (scoped in PixelLease from, scoped in PixelLease to) => ColorConversionKernels.ConvertRows<Rgb24>(from, to, pipeline, uint16Tables, cancellationToken));
+        }
+        else if (BridgeFormat == PixelFormat.Rgba32)
+        {
+            ProcessingBridge.RunCopy<TPixel>(OwnerImage.Owner, source, destination, (scoped in PixelLease from, scoped in PixelLease to) => ColorConversionKernels.ConvertRows<Rgba32>(from, to, pipeline, uint16Tables, cancellationToken));
+        }
+        else
+        {
+            throw new UnreachableException();
+        }
+    }
 
     internal override void AutoCropAnalyzePixels(scoped in PixelLease lease, AutoCropAnalyzer analyzer, CancellationToken cancellationToken)
         => analyzer.Accumulate<TPixel>(lease, cancellationToken);

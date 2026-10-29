@@ -16,6 +16,21 @@ namespace Meziantou.Framework.Imaging
         public static bool operator !=(Meziantou.Framework.Imaging.A8 left, Meziantou.Framework.Imaging.A8 right) => throw null;
     }
 
+    public struct Abgr32 : System.IEquatable<Meziantou.Framework.Imaging.Abgr32>
+    {
+        public byte A;
+        public byte B;
+        public byte G;
+        public byte R;
+        public Abgr32(byte r, byte g, byte b, byte a = 255) { }
+        public readonly bool Equals(Meziantou.Framework.Imaging.Abgr32 other) => throw null;
+        public readonly override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public readonly override int GetHashCode() => throw null;
+        public readonly override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Imaging.Abgr32 left, Meziantou.Framework.Imaging.Abgr32 right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Imaging.Abgr32 left, Meziantou.Framework.Imaging.Abgr32 right) => throw null;
+    }
+
     public readonly struct AffineTransform : System.IEquatable<Meziantou.Framework.Imaging.AffineTransform>
     {
         public double Determinant { get => throw null; }
@@ -47,6 +62,21 @@ namespace Meziantou.Framework.Imaging
         public static bool operator ==(Meziantou.Framework.Imaging.AffineTransform left, Meziantou.Framework.Imaging.AffineTransform right) => throw null;
         public static bool operator !=(Meziantou.Framework.Imaging.AffineTransform left, Meziantou.Framework.Imaging.AffineTransform right) => throw null;
         public static Meziantou.Framework.Imaging.AffineTransform operator *(Meziantou.Framework.Imaging.AffineTransform left, Meziantou.Framework.Imaging.AffineTransform right) => throw null;
+    }
+
+    public struct Argb32 : System.IEquatable<Meziantou.Framework.Imaging.Argb32>
+    {
+        public byte A;
+        public byte B;
+        public byte G;
+        public byte R;
+        public Argb32(byte r, byte g, byte b, byte a = 255) { }
+        public readonly bool Equals(Meziantou.Framework.Imaging.Argb32 other) => throw null;
+        public readonly override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public readonly override int GetHashCode() => throw null;
+        public readonly override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Imaging.Argb32 left, Meziantou.Framework.Imaging.Argb32 right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Imaging.Argb32 left, Meziantou.Framework.Imaging.Argb32 right) => throw null;
     }
 
     public abstract class AutoCropAnalysis
@@ -88,6 +118,21 @@ namespace Meziantou.Framework.Imaging
         public double HighPercentile { get => throw null; init { } }
         public double LowPercentile { get => throw null; init { } }
         public bool ShareHistogramAcrossFrames { get => throw null; init { } }
+    }
+
+    public struct Bgr565 : System.IEquatable<Meziantou.Framework.Imaging.Bgr565>
+    {
+        public ushort PackedValue;
+        public byte B { readonly get => throw null; set { } }
+        public byte G { readonly get => throw null; set { } }
+        public byte R { readonly get => throw null; set { } }
+        public Bgr565(byte r, byte g, byte b) { }
+        public readonly bool Equals(Meziantou.Framework.Imaging.Bgr565 other) => throw null;
+        public readonly override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public readonly override int GetHashCode() => throw null;
+        public readonly override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Imaging.Bgr565 left, Meziantou.Framework.Imaging.Bgr565 right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Imaging.Bgr565 left, Meziantou.Framework.Imaging.Bgr565 right) => throw null;
     }
 
     public struct Bgra32 : System.IEquatable<Meziantou.Framework.Imaging.Bgra32>
@@ -1352,6 +1397,10 @@ namespace Meziantou.Framework.Imaging
         La32 = 10,
         Rgb48 = 11,
         A8 = 12,
+        Argb32 = 13,
+        Abgr32 = 14,
+        Bgr565 = 15,
+        Rgba1010102 = 16,
     }
 
     public static class PixelFormats
@@ -1616,6 +1665,22 @@ namespace Meziantou.Framework.Imaging
         public static Meziantou.Framework.Imaging.RgbColorSpace FromCicp(Meziantou.Framework.Imaging.Metadata.CicpColorDescription description) => throw null;
         public static Meziantou.Framework.Imaging.RgbColorSpace FromIccProfile(Meziantou.Framework.Imaging.Metadata.IccProfile profile) => throw null;
         public override string ToString() => throw null;
+    }
+
+    public struct Rgba1010102 : System.IEquatable<Meziantou.Framework.Imaging.Rgba1010102>
+    {
+        public uint PackedValue;
+        public byte A { readonly get => throw null; set { } }
+        public ushort B { readonly get => throw null; set { } }
+        public ushort G { readonly get => throw null; set { } }
+        public ushort R { readonly get => throw null; set { } }
+        public Rgba1010102(ushort r, ushort g, ushort b, byte a = 3) { }
+        public readonly bool Equals(Meziantou.Framework.Imaging.Rgba1010102 other) => throw null;
+        public readonly override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public readonly override int GetHashCode() => throw null;
+        public readonly override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Imaging.Rgba1010102 left, Meziantou.Framework.Imaging.Rgba1010102 right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Imaging.Rgba1010102 left, Meziantou.Framework.Imaging.Rgba1010102 right) => throw null;
     }
 
     public struct Rgba32 : System.IEquatable<Meziantou.Framework.Imaging.Rgba32>

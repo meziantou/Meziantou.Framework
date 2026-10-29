@@ -33,9 +33,10 @@ color conversion, and bounded-memory streaming.
   read and written one entry at a time
 - Animation-aware model: every frame is a full-canvas displayed image with exact rational timing and, for cursors, a
   hotspot that follows its pixel through geometry operations
-- Ten integer working pixel formats (`Rgba32`, `Bgra32`, `Rgb24`, `Rgba64`, `Gray8`, `Gray16`, the gray-with-alpha
-  `La16` and `La32`, the 16-bit `Rgb48` and the `A8` alpha mask) with 16-bit precision preserved, and two floating-point
-  ones (`RgbaFloat`, `RgbaHalf`) for scene-referred and high dynamic range data
+- Fourteen integer working pixel formats (`Rgba32`, `Bgra32`, `Rgb24`, `Rgba64`, `Gray8`, `Gray16`, the gray-with-alpha
+  `La16` and `La32`, the 16-bit `Rgb48`, the `A8` alpha mask, and `Argb32`, `Abgr32`, `Bgr565` and `Rgba1010102` to
+  exchange buffers with GPU and display APIs) with 16-bit precision preserved, and two floating-point ones (`RgbaFloat`,
+  `RgbaHalf`) for scene-referred and high dynamic range data
 - Crop, auto-crop (background detection), resize (alpha-aware, Contain/Cover/Stretch/Pad/BoxPad), padding and canvas
   extension, rotate (quarter turns or any angle), skew, affine and perspective transformations, auto-orient, flip, grayscale, Gaussian, box and median blurs, unsharp masking, convolution matrices (ready-made sharpen, emboss and edge matrices, a bias for signed results, separable matrices in two passes) and edge detection (Sobel, Scharr, Prewitt, Kirsch, Robinson, Laplacians) applied to all frames
 - Antialiased vector drawing on a frame or on every frame: filled and stroked shapes and paths with Bézier curves,
@@ -140,8 +141,9 @@ image.Frames[0].Save("first.jpg",                         // JPEG stores one fra
   separate `ImageCollection`, whose entries may differ in size and pixel format and never carry timing or looping.
 - **Explicit ownership.** `Image`/`Image<TPixel>` are disposable owners; frames are borrowed views; clones, extracted
   frames and reader results are independent owned images. Eager loads never retain their input.
-- **Precision and alpha.** Twelve working pixel formats (`Rgba32`, `Bgra32`, `Rgb24`, `Rgba64`, `Gray8`, `Gray16`,
-  `La16`, `La32`, `Rgb48`, `A8`, and the floating-point `RgbaFloat` and `RgbaHalf`), 16-bit precision preserved, straight alpha, alpha-aware resampling, and no
+- **Precision and alpha.** Sixteen working pixel formats (`Rgba32`, `Bgra32`, `Rgb24`, `Rgba64`, `Gray8`, `Gray16`,
+  `La16`, `La32`, `Rgb48`, `A8`, `Argb32`, `Abgr32`, `Bgr565`, `Rgba1010102`, and the floating-point `RgbaFloat` and
+  `RgbaHalf`), 16-bit precision preserved, straight alpha, alpha-aware resampling, and no
   silent alpha/precision/range/metadata/animation loss.
 - **Exact timing.** Rational `FrameDuration` preserves GIF, APNG, WebP and ANI delays exactly; `TotalPlays` counts total plays.
 - **Atomic geometry.** Crop, auto-crop, resize, pad, extend canvas, rotate, skew, transform and auto-orient apply to every frame (and the
@@ -488,9 +490,9 @@ of 64 rows whatever the number of workers, added in order.
 
 ### Pixel formats, precision and alpha
 
-**Working formats**. Twelve pixel types: `Rgba32`, `Bgra32`, `Rgb24`, `Rgba64`, `Gray8`,
-`Gray16`, `La16`, `La32`, `Rgb48`, `A8`, `RgbaFloat` and `RgbaHalf` (sequential `Pack = 1` layouts, straight alpha, 16-bit components in native
-endianness; `PixelFormats` describes them, `PixelFormats.IsFloatingPoint` tells the floating-point ones and
+**Working formats**. Sixteen pixel types: `Rgba32`, `Bgra32`, `Rgb24`, `Rgba64`, `Gray8`,
+`Gray16`, `La16`, `La32`, `Rgb48`, `A8`, `Argb32`, `Abgr32`, `Bgr565`, `Rgba1010102`, `RgbaFloat` and `RgbaHalf`
+(sequential `Pack = 1` layouts, straight alpha, 16-bit components and packed values in native endianness; `PixelFormats` describes them, `PixelFormats.IsFloatingPoint` tells the floating-point ones and
 `PixelFormats.HasColor` the alpha mask). Untyped `Load` picks the smallest format that preserves the source: for example 16-bit PNGs load as `Gray16`/`Rgb48`/`Rgba64`,
 gray with alpha (or with a `tRNS` key) as `La16`/`La32`, palettes and color transparency as `Rgba32`, JPEG as `Gray8`/`Rgb24` (`Gray16`/`Rgb48` for samples that do not have 8 bits), GIF as `Rgba32` (`ImageInfo.PixelFormat` tells it before
 decoding). Typed `Load<TPixel>` and `CloneAs<TPixel>` convert explicitly between any two formats: 8 to 16 bits is exact
@@ -535,6 +537,37 @@ public static Image<A8> ExtractAlphaMask(string inputPath, string maskPath)
     // PNG stores the mask as gray with alpha, which loads back as La16
     mask.Save(maskPath, new PngEncoder());
     return mask;
+}
+```
+<!-- endref -->
+
+**Interoperability formats**. `Argb32` and `Abgr32` store the 8-bit components of `Rgba32` in the byte orders that
+some APIs expect (alpha first), `Bgr565` packs an opaque color in 16 bits (5-bit red and blue, 6-bit green, blue in the
+low bits: `DXGI_FORMAT_B5G6R5_UNORM`, Android `RGB_565`) and `Rgba1010102` packs 10-bit colors and a 2-bit alpha in 32
+bits (red in the low bits: `DXGI_FORMAT_R10G10B10A2_UNORM`, Android `RGBA_1010102`), so that such buffers can be
+imported and exported without a copy in another layout. A packed component is the fraction of its largest value:
+conversions round it to the nearest sample of the destination and back to the nearest component, so `Bgr565` goes to
+any format of 8 bits or more and back exactly, `Rgba1010102` to any 16-bit format and back exactly, and a conversion
+to them reduces the precision (`PixelFormats.GetBitsPerComponent` gives their largest component: 6 and 10). Every
+processing operation, the drawing canvas and every encoder accept them: the library works on their working format
+(`Rgba32` for the byte orders, `Rgb24` for `Bgr565`, `Rgba64` for `Rgba1010102`), in a temporary copy of each frame
+charged to the image, and stores the result back, so `Argb32` and `Abgr32` give the results of `Rgba32` and a packed
+format those of its working format rounded once to its components (an image of these formats drawn on another one is
+read like any other: a packed component as its nearest 16-bit sample). Encoders get a copy widened to that format
+without loss.
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_InteropFormats;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static Image<Rgba1010102> ConvertDisplayBuffer(ReadOnlySpan<Bgr565> frameBuffer, int width, int height)
+{
+    // Bgr565 is the 16-bit layout of display buffers (blue in the low bits): the pixels are copied as they are
+    using var image = Image.ImportPixelData<Bgr565>(frameBuffer, width, height);
+
+    // Every operation works on it like on Rgb24 and stores the result back in 5, 6 and 5 bits
+    image.Flip(FlipMode.Horizontal);
+
+    // The components convert to the nearest samples of any other format, here 10-bit colors and a 2-bit alpha
+    return image.CloneAs<Rgba1010102>();
 }
 ```
 <!-- endref -->

@@ -69,6 +69,10 @@ public sealed class SequentialReadConformanceTests
             PixelFormat.La16 => ReadAsync<La16>(variant, data, format, options, into, lateLoopPlays, metadataOfLastImage),
             PixelFormat.La32 => ReadAsync<La32>(variant, data, format, options, into, lateLoopPlays, metadataOfLastImage),
             PixelFormat.Rgb48 => ReadAsync<Rgb48>(variant, data, format, options, into, lateLoopPlays, metadataOfLastImage),
+            PixelFormat.Argb32 => ReadAsync<Argb32>(variant, data, format, options, into, lateLoopPlays, metadataOfLastImage),
+            PixelFormat.Abgr32 => ReadAsync<Abgr32>(variant, data, format, options, into, lateLoopPlays, metadataOfLastImage),
+            PixelFormat.Bgr565 => ReadAsync<Bgr565>(variant, data, format, options, into, lateLoopPlays, metadataOfLastImage),
+            PixelFormat.Rgba1010102 => ReadAsync<Rgba1010102>(variant, data, format, options, into, lateLoopPlays, metadataOfLastImage),
             _ => ReadAsync<Bgra32>(variant, data, format, options, into, lateLoopPlays, metadataOfLastImage),
         };
     }

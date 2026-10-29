@@ -78,11 +78,33 @@ public sealed class PdfImage
 
     /// <summary>Creates an image from the first frame of an image of <c>Meziantou.Framework.Imaging</c>.</summary>
     /// <param name="image">The image. Its pixels are copied.</param>
-    /// <returns>The image: 8 or 16 bits per component, gray or RGB, with a soft mask when the image has transparent pixels.</returns>
+    /// <returns>
+    /// The image: 8 or 16 bits per component, gray or RGB, with a soft mask when the image has transparent pixels. The
+    /// packed pixel formats get the precision of their widening: 8 bits for <see cref="PixelFormat.Bgr565"/>, 16 bits for
+    /// <see cref="PixelFormat.Rgba1010102"/>.
+    /// </returns>
     /// <exception cref="ArgumentException">The image has floating-point pixels, which PDF samples cannot store: convert it to an integer pixel format first.</exception>
     public static PdfImage FromImage(Image image)
     {
         ArgumentNullException.ThrowIfNull(image);
+
+        // The formats whose samples are not whole bytes in RGB order are written from their lossless widening
+        Image? widened = image.PixelFormat switch
+        {
+            PixelFormat.Argb32 or PixelFormat.Abgr32 => image.CloneAs<Rgba32>(),
+            PixelFormat.Bgr565 => image.CloneAs<Rgb24>(),
+            PixelFormat.Rgba1010102 => image.CloneAs<Rgba64>(),
+            _ => null,
+        };
+
+        if (widened is not null)
+        {
+            using (widened)
+            {
+                return FromImage(widened);
+            }
+        }
+
         var frame = image.Frames[0];
         var width = frame.Width;
         var height = frame.Height;

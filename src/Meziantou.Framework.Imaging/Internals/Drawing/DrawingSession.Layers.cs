@@ -304,7 +304,7 @@ internal sealed partial class DrawingSession
         var width = isEmpty ? 1 : right - left;
         var height = isEmpty ? 1 : bottom - top;
         _image.Configuration.Limits.EnsureCanvasWithinLimits(width, height);
-        var isWide = _frames[0].PixelFormat is not (PixelFormat.Rgba32 or PixelFormat.Bgra32 or PixelFormat.Rgb24);
+        var isWide = !DrawingKernels.HasNarrowWorkingImages(_frames[0].PixelFormat);
         Image image = isWide
             ? new Image<Rgba64>(_image.Configuration, new Size(width, height), _image.Owner.Scope, layoutOptions: null)
             : new Image<Rgba32>(_image.Configuration, new Size(width, height), _image.Owner.Scope, layoutOptions: null);
@@ -454,7 +454,7 @@ internal sealed partial class DrawingSession
             bottom = Math.Min(Height, bottom + margin);
         }
 
-        level.Begin(_image, _frames[0].PixelFormat is not (PixelFormat.Rgba32 or PixelFormat.Bgra32 or PixelFormat.Rgb24), Width, Height, left, top, right, bottom, frameCount);
+        level.Begin(_image, !DrawingKernels.HasNarrowWorkingImages(_frames[0].PixelFormat), Width, Height, left, top, right, bottom, frameCount);
         level.ParentFrames = _frames;
         level.ParentStorages = _storages;
         _frames = level.Frames!;

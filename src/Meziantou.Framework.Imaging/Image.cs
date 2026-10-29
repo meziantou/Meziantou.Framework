@@ -243,6 +243,10 @@ public abstract partial class Image : IDisposable
         PixelFormat.La32 => CloneAs<La32>(options),
         PixelFormat.Rgb48 => CloneAs<Rgb48>(options),
         PixelFormat.A8 => CloneAs<A8>(options),
+        PixelFormat.Argb32 => CloneAs<Argb32>(options),
+        PixelFormat.Abgr32 => CloneAs<Abgr32>(options),
+        PixelFormat.Bgr565 => CloneAs<Bgr565>(options),
+        PixelFormat.Rgba1010102 => CloneAs<Rgba1010102>(options),
         _ => throw new ArgumentOutOfRangeException(nameof(format), format, "The pixel format is not supported."),
     };
 

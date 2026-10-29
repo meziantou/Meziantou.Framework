@@ -38,8 +38,9 @@ public sealed class ImageModelGoldenTests
     public static TheoryData<string> AnimatedFixtures => [.. AnimatedFixtureIds];
 
     // The integer formats: the references of the corpus are integer samples, and no decoder produces floating-point pixels.
-    // No file decodes to an alpha mask, so no reference is black with alpha: A8 is covered by PixelAccessTests
-    private static IEnumerable<PixelFormat> ReferenceFormats => PixelFormats.All.Where(format => !PixelFormats.IsFloatingPoint(format) && format != PixelFormat.A8);
+    // No file decodes to an alpha mask, so no reference is black with alpha: A8 is covered by PixelAccessTests. The packed
+    // formats store few levels that the references do not keep to: they are covered by PixelAccessTests and PixelConversionTests
+    private static IEnumerable<PixelFormat> ReferenceFormats => PixelFormats.All.Where(format => !PixelFormats.IsFloatingPoint(format) && format is not (PixelFormat.A8 or PixelFormat.Bgr565 or PixelFormat.Rgba1010102));
 
     private static IEnumerable<string> AnimatedFixtureIds => GoldenCorpus.Default.Fixtures.Where(fixture => fixture.IsValid && (fixture.Expected.FrameCount > 1 || fixture.Expected.Poster is not null)).Select(fixture => fixture.Id);
 
@@ -72,6 +73,8 @@ public sealed class ImageModelGoldenTests
             case PixelFormat.La16: RoundTrip<La16>(fixture, segmented); break;
             case PixelFormat.La32: RoundTrip<La32>(fixture, segmented); break;
             case PixelFormat.Rgb48: RoundTrip<Rgb48>(fixture, segmented); break;
+            case PixelFormat.Argb32: RoundTrip<Argb32>(fixture, segmented); break;
+            case PixelFormat.Abgr32: RoundTrip<Abgr32>(fixture, segmented); break;
             default: throw new ArgumentOutOfRangeException(nameof(format));
         }
     }

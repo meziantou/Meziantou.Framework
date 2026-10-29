@@ -71,7 +71,7 @@ internal sealed partial class DrawingSession
             height = (int)Math.Max(1, Math.Ceiling(bounds.Height * scale));
         }
 
-        var isWide = _frames[0].PixelFormat is not (PixelFormat.Rgba32 or PixelFormat.Bgra32 or PixelFormat.Rgb24);
+        var isWide = !DrawingKernels.HasNarrowWorkingImages(_frames[0].PixelFormat);
         _image.Configuration.Limits.EnsureCanvasWithinLimits(width, height);
         Image image = isWide
             ? new Image<Rgba64>(_image.Configuration, new Size(width, height), _image.Owner.Scope, layoutOptions: null)

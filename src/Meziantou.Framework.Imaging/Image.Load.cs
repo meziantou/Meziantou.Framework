@@ -377,6 +377,10 @@ public abstract partial class Image
         PixelFormat.La32 => new Image<La32>(configuration, size, scope, layoutOptions: null),
         PixelFormat.Rgb48 => new Image<Rgb48>(configuration, size, scope, layoutOptions: null),
         PixelFormat.A8 => new Image<A8>(configuration, size, scope, layoutOptions: null),
+        PixelFormat.Argb32 => new Image<Argb32>(configuration, size, scope, layoutOptions: null),
+        PixelFormat.Abgr32 => new Image<Abgr32>(configuration, size, scope, layoutOptions: null),
+        PixelFormat.Bgr565 => new Image<Bgr565>(configuration, size, scope, layoutOptions: null),
+        PixelFormat.Rgba1010102 => new Image<Rgba1010102>(configuration, size, scope, layoutOptions: null),
         _ => throw new ArgumentOutOfRangeException(nameof(format), format, "The pixel format is not supported."),
     };
 

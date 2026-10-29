@@ -262,6 +262,10 @@ public sealed class PixelAccessTests
             case PixelFormat.La32: CopyRoundTrip<La32>(segmented); break;
             case PixelFormat.Rgb48: CopyRoundTrip<Rgb48>(segmented); break;
             case PixelFormat.A8: CopyRoundTrip<A8>(segmented); break;
+            case PixelFormat.Argb32: CopyRoundTrip<Argb32>(segmented); break;
+            case PixelFormat.Abgr32: CopyRoundTrip<Abgr32>(segmented); break;
+            case PixelFormat.Bgr565: CopyRoundTrip<Bgr565>(segmented); break;
+            case PixelFormat.Rgba1010102: CopyRoundTrip<Rgba1010102>(segmented); break;
             default: throw new ArgumentOutOfRangeException(nameof(format));
         }
     }

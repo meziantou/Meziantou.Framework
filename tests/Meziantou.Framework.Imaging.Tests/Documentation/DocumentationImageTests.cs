@@ -16,6 +16,7 @@ public sealed class DocumentationImageTests : IDisposable
     private const string UpdateVariable = "MEZIANTOU_IMAGING_UPDATE_DOCS_IMAGES";
     private const string Drawing = "07-Drawing";
     private const string Text = "08-Text";
+    private const string LoadingAndSaving = "05-LoadingAndSaving";
 
     private static readonly FullPath DocumentationRoot = RepositoryPaths.Root / "docs" / "01-Imaging";
     private static readonly FullPath RegularFont = FixtureRoot.GetDirectory() / "fonts" / "noto-sans" / "NotoSans-Regular.subset.ttf";
@@ -261,6 +262,51 @@ public sealed class DocumentationImageTests : IDisposable
 
     [Fact]
     public void DrawSelection() => AssertImage(Text, nameof(TextExamples.DrawSelection), output => TextExamples.DrawSelection(RegularFont, new PointD(120, 50), output));
+
+    [Fact]
+    public void ProgressiveJpegRenderings()
+    {
+        // The landscape saved as a progressive JPEG file
+        var jpeg = GetPath("progressive.jpg");
+        using (var photo = Image.Load(CreatePhoto()))
+        {
+            photo.Save(jpeg, new JpegEncoder { Process = JpegEncodingProcess.Progressive, Quality = 90, BackgroundColor = new Rgba32(255, 255, 255) });
+        }
+
+        AssertImage(LoadingAndSaving, nameof(ProgressiveJpegRenderings), output =>
+        {
+            // Every rendering the example shows, as copies
+            var renderings = new List<Image<Rgba32>>();
+            try
+            {
+                using (var input = File.OpenRead(jpeg))
+                {
+                    Examples.ShowWhileReading(input, (image, _) => renderings.Add(image.CloneFrame(0)));
+                }
+
+                // The first three renderings and the frame, in a grid of two columns
+                Image<Rgba32>[] shown = [renderings[0], renderings[1], renderings[2], renderings[^1]];
+                var width = shown[0].Width;
+                var height = shown[0].Height;
+                using var grid = new Image<Rgba32>((width * 2) + 8, (height * 2) + 8, new Rgba32(255, 255, 255));
+                grid.Draw(canvas =>
+                {
+                    for (var i = 0; i < shown.Length; i++)
+                    {
+                        canvas.DrawImage(shown[i].Frames[0], new PointD((i % 2) * (width + 8), (i / 2) * (height + 8)));
+                    }
+                });
+                grid.Save(output);
+            }
+            finally
+            {
+                foreach (var rendering in renderings)
+                {
+                    rendering.Dispose();
+                }
+            }
+        });
+    }
 
     /// <summary>Runs an example and compares the image it writes with docs/01-Imaging/<paramref name="group"/>/images/<paramref name="name"/>.png.</summary>
     private void AssertImage(string group, string name, Action<string> draw)

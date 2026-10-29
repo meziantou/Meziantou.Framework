@@ -19,7 +19,7 @@ and you can read and change it in between.
 
 Each frame also has its own metadata (`frame.Metadata`): its duration in an animation, and the hotspot of a cursor.
 Decoded metadata is bounded by `MaxMetadataBytes` (16 MiB by default), decompressed text included: see
-[Resource limits](../05-LoadingAndSaving/06-ResourceLimits.md).
+[Resource limits](../05-LoadingAndSaving/07-ResourceLimits.md).
 
 ## Apply the EXIF orientation
 

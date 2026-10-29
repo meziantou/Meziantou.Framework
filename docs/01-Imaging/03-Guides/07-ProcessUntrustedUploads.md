@@ -114,7 +114,7 @@ throws an `ImageResourceLimitException`, never a truncated image:
 The defaults suit trusted files; lower them for uploads. Pass the same `ImageConfiguration` to `Identify` and to `Load`:
 the loaded image keeps its configuration, so its later operations (a resize, a color conversion) stay within the same
 limits. Every limit must be positive; to lift one, set it to the largest value of its type. See
-[Resource limits](../05-LoadingAndSaving/06-ResourceLimits.md).
+[Resource limits](../05-LoadingAndSaving/07-ResourceLimits.md).
 
 `FrameLimit = 1` is not a limit: it deliberately decodes the first frame of an animation and ignores the rest of the
 file, where `MaxFrames` rejects a file that has too many frames.
@@ -131,7 +131,7 @@ Each kind of problem throws its own exception, all derived from `ImageException`
 | `ImageResourceLimitException` | A limit is exceeded (`Kind`, `Limit` and `Requested` say which and by how much) | "Image too large" |
 
 `IOException` (the stream failed) and `OperationCanceledException` are not problems of the file: let them propagate.
-See [Handling errors](../05-LoadingAndSaving/07-ErrorHandling.md).
+See [Handling errors](../05-LoadingAndSaving/08-ErrorHandling.md).
 
 ## Re-encode the image
 

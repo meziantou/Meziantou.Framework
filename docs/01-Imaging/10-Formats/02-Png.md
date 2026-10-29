@@ -30,7 +30,7 @@ pixel values to reduce them: an opaque `Rgba32` image is written as RGBA.
 | `Optimization` | `MinimumSize` searches the lossless options and writes the smallest file it finds | `None` |
 | `CompressionLevel` | The zlib level; ignored by `MinimumSize` | `Optimal` |
 | `Filter` | The row filter strategy, or one fixed filter for every row | `Adaptive` |
-| `Interlaced` | Adam7 interlacing | `false` |
+| `Interlaced` | Adam7 interlacing: a viewer can show the image while it downloads (see [Show an image while it downloads](../05-LoadingAndSaving/06-ShowImagesWhileTheyDownload.md)) | `false` |
 | `DurationRounding` | `RoundToNearest` rounds the delays an APNG cannot store exactly (16-bit fractions); `RequireExact` throws | `RequireExact` |
 | `MetadataHandling` | What to do with metadata PNG cannot store | `Strict` |
 

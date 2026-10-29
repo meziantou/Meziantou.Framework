@@ -25,6 +25,8 @@ A few rules hold for all of them:
   cannot store, save to a stream.
 - [Streaming readers and writers](05-StreamingReadersAndWriters.md): process animations of any length one frame at a
   time.
-- [Resource limits](06-ResourceLimits.md): bound the size, the frame count and the memory of what you load, especially
+- [Show an image while it downloads](06-ShowImagesWhileTheyDownload.md): show progressive JPEG, interlaced PNG and
+  progressive JPEG XL files before they are complete.
+- [Resource limits](07-ResourceLimits.md): bound the size, the frame count and the memory of what you load, especially
   from untrusted sources.
-- [Handling errors](07-ErrorHandling.md): the exceptions the library throws and which ones to catch.
+- [Handling errors](08-ErrorHandling.md): the exceptions the library throws and which ones to catch.

@@ -42,7 +42,7 @@ public static void SavePreview(string animationPath, string previewPath)
   dispose intermediate images (clones, extracted frames) when you are done with them.
 - **Set resource limits.** The limits of `ImageResourceLimits` bound the size of the canvas, the number of frames and
   the memory an image may allocate. They protect a service from files that would exhaust its memory. See
-  [Resource limits](05-LoadingAndSaving/06-ResourceLimits.md).
+  [Resource limits](05-LoadingAndSaving/07-ResourceLimits.md).
 
 ## Use several threads where it pays
 

@@ -139,7 +139,7 @@ it to a format that cannot store them throws until you choose `DiscardUnsupporte
 ## Large photos
 
 The photo of a recent phone has tens of millions of pixels, and an `Rgb48` image takes 6 bytes per pixel. The default
-[resource limits](../05-LoadingAndSaving/06-ResourceLimits.md) allow 100 million pixels per frame and 512 MiB of live
+[resource limits](../05-LoadingAndSaving/07-ResourceLimits.md) allow 100 million pixels per frame and 512 MiB of live
 memory for an image and the operation working on it; raise them in an `ImageConfiguration` if your photos need more.
 With `ImageConfiguration.MaxDegreeOfParallelism` above 1, the tiles of a large HEIC photo are decoded by several
 threads, and resizes use several threads too: see [Performance](../11-Performance.md).

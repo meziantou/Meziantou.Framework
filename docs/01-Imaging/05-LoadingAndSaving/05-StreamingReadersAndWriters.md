@@ -96,7 +96,7 @@ hotspot and metadata are replaced with those of the frame read.
 | `ReadPosterFrame()` | Returns the APNG poster frame, or `null`. Allowed once, before the first frame |
 | `ReadFrame()` | Returns the next frame as a still image you own, or `null` at the end of the animation |
 | `ReadFrameInto(image)` | Overwrites your image with the next frame; returns `false` at the end, and leaves the image unchanged |
-| `ReadFrameRefinementInto(image)` | Writes the next rendering of a progressive frame (JPEG XL, progressive JPEG, interlaced PNG), then the frame itself |
+| `ReadFrameRefinementInto(image)` | Writes the next rendering of a progressive frame (JPEG XL, progressive JPEG, interlaced PNG), then the frame itself: see [Show an image while it downloads](06-ShowImagesWhileTheyDownload.md) |
 | `FramesRead` | The number of frames read so far |
 
 - `null` or `false` always means that the animation ended cleanly, or that `ImageReaderOptions.FrameLimit` was reached.
@@ -104,7 +104,7 @@ hotspot and metadata are replaced with those of the frame read.
 - After an error in the data, a limit, an I/O error or a cancellation, the reader is faulted: later calls throw an
   `InvalidOperationException`. An invalid argument leaves it usable.
 - The images a reader returns are independent: they stay valid after the reader is disposed. They are charged to the
-  [allocation limit](06-ResourceLimits.md) of the reader until you dispose them.
+  [allocation limit](07-ResourceLimits.md) of the reader until you dispose them.
 - TIFF, ICO and CUR files are rejected: their entries are pages or sizes, not frames (use
   [`ImageCollection`](../04-Concepts/03-PagesAndRepresentations.md)). ANI files are rejected too, because the order of
   their frames is only known once the whole file is read (use `Image.Load`).

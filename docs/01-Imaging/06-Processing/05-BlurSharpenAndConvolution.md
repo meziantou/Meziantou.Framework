@@ -123,7 +123,7 @@ the border of the image, and `Zero` reads black beyond it.
 
 16-bit images are filtered with 16-bit precision, and the colors of floating-point images are not clamped. The working
 memory is charged to the allocation limit of the image. `Convolve`, the blurs and `Sharpen` rent it before any pixel
-changes, so an exceeded [limit](../05-LoadingAndSaving/06-ResourceLimits.md) leaves the image unchanged. The EXIF
+changes, so an exceeded [limit](../05-LoadingAndSaving/07-ResourceLimits.md) leaves the image unchanged. The EXIF
 thumbnail, now stale, is removed.
 
 The cost of `GaussianBlur` grows with its deviation, the cost of `BoxBlur` does not depend on its radius, and the cost

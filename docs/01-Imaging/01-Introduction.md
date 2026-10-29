@@ -27,7 +27,7 @@ applications.
 - **Process large inputs with bounded memory**: read and write long animations one frame at a time, and protect your
   application from hostile files with resource limits. See
   [Streaming readers and writers](05-LoadingAndSaving/05-StreamingReadersAndWriters.md) and
-  [Resource limits](05-LoadingAndSaving/06-ResourceLimits.md).
+  [Resource limits](05-LoadingAndSaving/07-ResourceLimits.md).
 
 ## Principles
 
@@ -45,7 +45,7 @@ The library favors predictable results over guesses:
   leaves the image unchanged.
 - **Same input, same pixels.** Decoding, processing and drawing give the same pixels on every platform and runtime.
 - **Errors are explicit.** An unknown format, a corrupted file, an unsupported feature and an exceeded limit each throw a
-  distinct exception. See [Handling errors](05-LoadingAndSaving/07-ErrorHandling.md).
+  distinct exception. See [Handling errors](05-LoadingAndSaving/08-ErrorHandling.md).
 
 ## Namespaces
 

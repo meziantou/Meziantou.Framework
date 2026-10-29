@@ -157,12 +157,12 @@ that describe an outline far larger than the file. Loading and using a font is b
 | `MaxGlyphComplexity` | 1,000,000 | The points, components and charstring operators needed to produce one glyph, and the instructions run to hint it |
 
 The limits of text layouts (`MaxTextLength`, `MaxTextGlyphs`, `MaxTextLines`) come from the configuration of the
-font too. See [Resource limits](../05-LoadingAndSaving/06-ResourceLimits.md).
+font too. See [Resource limits](../05-LoadingAndSaving/07-ResourceLimits.md).
 
 A font fails with the exceptions of images, with `ImageFormat.Unknown`: `UnknownImageFormatException` when the data is
 not a font, `InvalidImageContentException` for a malformed font, `UnsupportedImageFeatureException` for a feature the
 library does not support, and `ImageResourceLimitException` for a limit. See
-[Handling errors](../05-LoadingAndSaving/07-ErrorHandling.md).
+[Handling errors](../05-LoadingAndSaving/08-ErrorHandling.md).
 
 ## What is not supported
 

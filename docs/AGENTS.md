@@ -63,7 +63,7 @@ The page body does not repeat the title as a `#` heading: the site shows the `ti
   and its XML documentation are the reference: check every statement against them, and never promise more than they
   do. When the behavior of a library changes, its pages change in the same change.
 - Link to other pages with relative paths, including the number prefixes:
-  `[resource limits](../05-LoadingAndSaving/06-ResourceLimits.md)`. Do not link to the library readme for things a page
+  `[resource limits](../05-LoadingAndSaving/07-ResourceLimits.md)`. Do not link to the library readme for things a page
   covers.
 - No benchmark numbers or comparisons with other libraries: they go stale. Give guidance instead.
 

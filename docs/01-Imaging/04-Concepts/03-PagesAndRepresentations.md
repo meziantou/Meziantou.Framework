@@ -107,7 +107,7 @@ because their entries are not a sequence of frames.
   open; a stream must be seekable, is seeked freely, and its position afterward is unspecified; a span is copied once.
 - `ImageCollection.Load` is synchronous only: the decoder issues many small dependent reads. `Image.LoadAsync` and
   `Image.IdentifyAsync` accept these files by buffering the whole input, up to the `MaxEncodedBytes`
-  [limit](../05-LoadingAndSaving/06-ResourceLimits.md).
+  [limit](../05-LoadingAndSaving/07-ResourceLimits.md).
 
 ## See also
 

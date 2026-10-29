@@ -125,4 +125,4 @@ total is bounded by `ImageResourceLimits.MaxLiveAllocationBytes`. An operation t
 dispose them, even after the reader is disposed.
 
 This bound is a safety limit per owner, not a cap on the memory of the process: ten images can each use up to the limit.
-See [Resource limits](../05-LoadingAndSaving/06-ResourceLimits.md).
+See [Resource limits](../05-LoadingAndSaving/07-ResourceLimits.md).

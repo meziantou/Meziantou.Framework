@@ -138,7 +138,7 @@ An `AffineTransform` converts implicitly to a `ProjectiveTransform`.
 A pixel format without alpha (`Rgb24`, `Gray8`, `Gray16`) needs an opaque `BackgroundColor` when the result shows it:
 otherwise the operation throws an `UnsupportedImageFeatureException`. A transformation that flattens the image to a
 line, or a perspective whose horizon crosses the image with an `Expand` canvas, throws an `ArgumentException`. The
-canvas is checked against the [resource limits](../05-LoadingAndSaving/06-ResourceLimits.md) before anything is
+canvas is checked against the [resource limits](../05-LoadingAndSaving/07-ResourceLimits.md) before anything is
 allocated, and the image is unchanged when an operation fails.
 
 ## Cursor hotspots

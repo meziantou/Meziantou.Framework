@@ -94,7 +94,8 @@ public static int ShowWhileReading(Stream input, Action<Image<Rgba32>, FrameRefi
 ```
 <!-- endref -->
 
-See [Streaming readers and writers](../05-LoadingAndSaving/05-StreamingReadersAndWriters.md).
+See [Show an image while it downloads](../05-LoadingAndSaving/06-ShowImagesWhileTheyDownload.md) for the other
+formats and for partial downloads.
 
 ## Recompress JPEG files without loss
 

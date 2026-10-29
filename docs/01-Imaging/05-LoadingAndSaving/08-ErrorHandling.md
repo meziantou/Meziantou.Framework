@@ -47,7 +47,7 @@ These exceptions derive from `ImageException`, which you can catch to handle the
 | `UnknownImageFormatException` | The content is not recognized as an image format. |
 | `InvalidImageContentException` | The format is recognized, but the data is malformed, inconsistent or truncated. Also thrown when you save a malformed EXIF, ICC or XMP payload. `Format` tells the format. |
 | `UnsupportedImageFeatureException` | The data uses a valid feature that the library does not support (a hierarchical JPEG, for example), or an operation would lose information without an explicit setting: an animation, transparency, precision, metadata, a cursor hotspot, a poster frame, a color profile, a duration or a play count the output cannot store. `Format` and `Feature` tell what. |
-| `ImageResourceLimitException` | A [resource limit](06-ResourceLimits.md) was exceeded. `Kind`, `Limit` and `Requested` tell which one and by how much. |
+| `ImageResourceLimitException` | A [resource limit](07-ResourceLimits.md) was exceeded. `Kind`, `Limit` and `Requested` tell which one and by how much. |
 
 A malformed or truncated input always throws: it is never reported as the clean end of an animation, and never
 returns a partial image.

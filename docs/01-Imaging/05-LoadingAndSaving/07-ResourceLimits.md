@@ -78,7 +78,7 @@ The exception tells which limit failed:
 | `Requested` | The value the input or the operation asked for, when it is known |
 
 A limit failure is never turned into a partial result: the load returns no image, and a geometry change leaves the
-image [unchanged](../04-Concepts/06-ThreadSafetyAndAtomicity.md). See [Handling errors](07-ErrorHandling.md).
+image [unchanged](../04-Concepts/06-ThreadSafetyAndAtomicity.md). See [Handling errors](08-ErrorHandling.md).
 
 ## Limits are not a way to select frames
 
@@ -95,7 +95,7 @@ For files that come from users:
   `MaxFramePixels` and `MaxFrames`.
 - Use [`Image.Identify`](03-IdentifyingImages.md) to check the format and the size before decoding, for example to
   accept only some formats.
-- Catch the [exceptions](07-ErrorHandling.md) of malformed files and exceeded limits, and answer with a client error.
+- Catch the [exceptions](08-ErrorHandling.md) of malformed files and exceeded limits, and answer with a client error.
 - Bound the number of images processed at once, since each one can use up to `MaxLiveAllocationBytes`.
 
 [Process untrusted uploads](../03-Guides/07-ProcessUntrustedUploads.md) puts these together.

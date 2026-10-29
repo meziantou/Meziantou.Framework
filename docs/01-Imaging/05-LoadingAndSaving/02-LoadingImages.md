@@ -44,7 +44,7 @@ dispose it. Nothing of the input is kept:
 
 TIFF, ICO, CUR and ANI files are read at the offsets their structure points at. On a seekable stream, only those bytes
 are read, and the position of the stream afterward is unspecified. A stream that cannot seek, or an asynchronous load,
-reads the whole file into memory first, up to the `MaxEncodedBytes` [limit](06-ResourceLimits.md).
+reads the whole file into memory first, up to the `MaxEncodedBytes` [limit](07-ResourceLimits.md).
 
 ## Load asynchronously
 
@@ -64,7 +64,7 @@ public static async Task<Image> LoadUploadAsync(Stream upload, CancellationToken
 The asynchronous overloads read with asynchronous I/O and accept a `CancellationToken`. A canceled load throws an
 `OperationCanceledException` and returns no image. Invalid arguments, such as a stream that cannot be read, throw
 before the task is returned. To protect a service from hostile uploads, combine the load with
-[resource limits](06-ResourceLimits.md) and see [Process untrusted uploads](../03-Guides/07-ProcessUntrustedUploads.md).
+[resource limits](07-ResourceLimits.md) and see [Process untrusted uploads](../03-Guides/07-ProcessUntrustedUploads.md).
 
 ## Load in a specific pixel format
 
@@ -97,7 +97,7 @@ supported throws a `NotSupportedException` before anything is read.
 
 | Option | Default | Effect |
 | --- | --- | --- |
-| `Configuration` | `ImageConfiguration.Default` | The [resource limits](06-ResourceLimits.md) and the parallelism. The loaded image keeps it for its later operations. |
+| `Configuration` | `ImageConfiguration.Default` | The [resource limits](07-ResourceLimits.md) and the parallelism. The loaded image keeps it for its later operations. |
 | `FrameLimit` | `null` (every frame) | Decode only the first frames of an animation |
 | `Conversion` | `PixelConversionOptions.Default` | How a typed load converts the pixels: background color for the alpha, floating-point samples out of range, color profile |
 | `CmykConversion` | `null` (rejected) | Convert a CMYK image (a JPEG, a TIFF page or a JPEG 2000 file) to RGB: see [Color management](../09-Color/03-ColorManagement.md) |

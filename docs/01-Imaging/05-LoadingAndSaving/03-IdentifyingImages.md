@@ -49,8 +49,8 @@ In `Header` mode, values that only appear later in the file are `null`: a GIF fi
 frame count in its header. A full scan validates the structure of the file but does not decode the pixels, so a file
 that identifies without error can still fail to load.
 
-Identification reads the input under the same [resource limits](06-ResourceLimits.md) as a load
-(`ImageIdentifyOptions.Configuration`), and throws the same [exceptions](07-ErrorHandling.md) for a file it does not
+Identification reads the input under the same [resource limits](07-ResourceLimits.md) as a load
+(`ImageIdentifyOptions.Configuration`), and throws the same [exceptions](08-ErrorHandling.md) for a file it does not
 recognize or that is malformed.
 
 ## Detect the format from the first bytes

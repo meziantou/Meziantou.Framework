@@ -193,4 +193,4 @@ color and soft edges, save the animation as APNG or WebP instead. See [GIF](../1
 `Image.Load` decodes every frame into memory. To process an animation of thousands of frames, or one larger than the
 default limit of 1,000 frames, read and write it one frame at a time: see
 [Streaming readers and writers](../05-LoadingAndSaving/05-StreamingReadersAndWriters.md) and
-[Resource limits](../05-LoadingAndSaving/06-ResourceLimits.md).
+[Resource limits](../05-LoadingAndSaving/07-ResourceLimits.md).

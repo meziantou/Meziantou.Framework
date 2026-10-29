@@ -99,4 +99,4 @@ public static void ExportFrameAsJpeg(string animatedPath, int frameIndex, string
 - To store a JPEG file in a smaller file without any loss, recompress it to JPEG XL with `JpegXlTranscoder`: the original
   file can be rebuilt byte for byte. See [JPEG XL](15-JpegXl.md).
 - A progressive file can be shown while it is read, with `ReadFrameRefinementInto`. See
-  [Streaming readers and writers](../05-LoadingAndSaving/05-StreamingReadersAndWriters.md).
+  [Show an image while it downloads](../05-LoadingAndSaving/06-ShowImagesWhileTheyDownload.md).

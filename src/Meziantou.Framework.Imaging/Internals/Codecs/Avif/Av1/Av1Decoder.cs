@@ -210,6 +210,11 @@ internal sealed class Av1Decoder : IDisposable
         var sequence = Av1SequenceHeader.Parse(payload, _operatingPoint);
         if (_sequence is not null && !_sequence.IsSameSequence(sequence))
         {
+            // Section 7.5 "Ordering of OBUs": a new coded video sequence starts with a temporal unit, so it cannot start
+            // between the header and the tiles of a frame, whose reference frames are the buffers of the slots
+            if (_seenFrameHeader)
+                throw Av1Errors.Invalid("a sequence header starts a new sequence before the tiles of the frame are complete.");
+
             // A new coded video sequence does not refer to the frames of the previous one
             _coding.ReleaseSlots();
         }

@@ -30,7 +30,7 @@ public async Task ApplyMigrations()
     await container.StartAsync(TestContext.Current.CancellationToken);
 
     var connectionString = container.GetConnectionString();
-    // Run the migrations against the database
+    Assert.StartsWith("Host=127.0.0.1;", connectionString, StringComparison.Ordinal); // run the migrations against the database instead
 }
 ```
 <!-- endref -->
@@ -66,7 +66,7 @@ public sealed class OrderRepositoryTests(PostgreSqlFixture database) : IClassFix
     public void SaveOrder()
     {
         var connectionString = database.Container.GetConnectionString();
-        // Open a connection with the connection string and test the repository
+        Assert.StartsWith("Host=127.0.0.1;", connectionString, StringComparison.Ordinal); // open a connection and test the repository instead
     }
 }
 ```
@@ -92,7 +92,7 @@ public sealed class InvoiceRepositoryTests(PostgreSqlFixture database)
     public void SaveInvoice()
     {
         var connectionString = database.Container.GetConnectionString();
-        // Open a connection with the connection string and test the repository
+        Assert.StartsWith("Host=127.0.0.1;", connectionString, StringComparison.Ordinal); // open a connection and test the repository instead
     }
 }
 ```

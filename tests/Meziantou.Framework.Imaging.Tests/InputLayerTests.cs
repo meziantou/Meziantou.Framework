@@ -1,4 +1,6 @@
+using System.Buffers.Binary;
 using System.IO.Compression;
+using Meziantou.Framework.Hashing;
 using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.TestHarness.Adapters;
 using Meziantou.Framework.Imaging.TestHarness.Streams;
@@ -267,6 +269,48 @@ public sealed class InputLayerTests
         var exception = Assert.Throws<ImageResourceLimitException>(() => BoundedInflater.TryInflateZlib(compressed, limited));
         Assert.Equal(ImageResourceLimitKind.MetadataBytes, exception.Kind);
         Assert.True(limited.MetadataBytes <= 10_000);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(4)]
+    [InlineData(5)]
+    [InlineData(100)]
+    [InlineData(4096)]
+    [InlineData(8192)]
+    [InlineData(8193)]
+    [InlineData(65_536)]
+    [InlineData(1_000_000)]
+    public void BoundedInflaterRejectsBytesAfterTheRawDeflateDatastream(int trailingLength)
+    {
+        var payload = Enumerable.Range(0, 20_000).Select(value => (byte)(value % 7)).ToArray();
+        var compressed = RawDeflate(payload);
+        var tracker = new InputResourceTracker(ImageResourceLimits.Default);
+        Assert.Equal(payload, BoundedInflater.TryInflateRawDeflate(compressed, tracker));
+        Assert.Equal(payload.Length, tracker.MetadataBytes);
+
+        // The bytes after the final block may exceed the read-ahead of the inflater, which then leaves them unread
+        var adler = new byte[4];
+        BinaryPrimitives.WriteUInt32BigEndian(adler, Adler32.Compute(payload));
+        foreach (var trailing in new[] { new byte[trailingLength], Enumerable.Range(0, trailingLength).Select(value => (byte)(adler[value % 4] ^ value)).ToArray() })
+        {
+            Assert.Null(BoundedInflater.TryInflateRawDeflate([.. compressed, .. trailing], new InputResourceTracker(ImageResourceLimits.Default)));
+            Assert.Null(BoundedInflater.TryInflateRawDeflate([.. compressed, .. adler, .. trailing], new InputResourceTracker(ImageResourceLimits.Default)));
+        }
+
+        Assert.Null(BoundedInflater.TryInflateRawDeflate([.. compressed, .. adler], new InputResourceTracker(ImageResourceLimits.Default)));
+        Assert.Null(BoundedInflater.TryInflateRawDeflate(compressed.AsSpan(0, compressed.Length - 1), new InputResourceTracker(ImageResourceLimits.Default)));
+
+        static byte[] RawDeflate(byte[] data)
+        {
+            var output = new MemoryStream();
+            using (var deflate = new DeflateStream(output, CompressionLevel.Optimal, leaveOpen: true))
+            {
+                deflate.Write(data);
+            }
+
+            return output.ToArray();
+        }
     }
 
     [Fact]

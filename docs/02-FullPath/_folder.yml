@@ -1,0 +1,2 @@
+title: FullPath
+description: An absolute, normalized path type for .NET, with an analyzer that finds the string paths to convert.

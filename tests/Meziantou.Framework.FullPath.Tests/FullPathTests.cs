@@ -97,6 +97,323 @@ public sealed partial class FullPathTests
     #endregion
 
     [Fact]
+    public void Documentation_GettingStarted()
+    {
+        #region FullPath_GettingStarted
+        FullPath root = FullPath.FromFileSystemInfo(Directory.CreateTempSubdirectory());
+
+        // Combine paths with the / operator
+        FullPath settings = root / "config" / "settings.json";
+        Assert.Equal("settings.json", settings.Name);
+        Assert.Equal(root / "config", settings.Parent);
+
+        // FullPath converts to string implicitly, so it works with every API that takes a path
+        settings.CreateParentDirectory();
+        File.WriteAllText(settings, "{}");
+        Assert.True(File.Exists(settings));
+
+        // Show the path relative to the root folder (config/settings.json, or config\settings.json on Windows)
+        Assert.Equal(Path.Combine("config", "settings.json"), settings.MakePathRelativeTo(root));
+        #endregion
+
+        Directory.Delete(root, recursive: true);
+    }
+
+    [Fact]
+    public void Documentation_Normalization()
+    {
+        #region FullPath_Normalization
+        // A relative path is resolved against the current directory
+        FullPath data = FullPath.FromPath("data");
+        Assert.Equal(FullPath.CurrentDirectory() / "data", data);
+
+        // "." and ".." segments are resolved, and the trailing separator is removed
+        FullPath logs = FullPath.FromPath("data/./../logs/");
+        Assert.Equal(FullPath.CurrentDirectory() / "logs", logs);
+        Assert.Equal("logs", logs.Name);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Combine()
+    {
+        #region FullPath_Combine
+        FullPath root = FullPath.GetTempPath() / "app";
+
+        // The / operator and Combine are equivalent
+        Assert.Equal(FullPath.Combine(root, "logs", "today.log"), root / "logs" / "today.log");
+
+        // The right operand can hold several segments and ".."
+        Assert.Equal(root / "data" / "input.csv", root / "logs/../data/input.csv");
+
+        // The + operator appends text to the last segment
+        Assert.Equal(root / "logs.old", root / "logs" + ".old");
+
+        // Like Path.Combine, a rooted right operand replaces the left one
+        string absolutePath = Environment.CurrentDirectory;
+        Assert.Equal(FullPath.FromPath(absolutePath), root / absolutePath);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Empty()
+    {
+        #region FullPath_Empty
+        // An empty string gives the empty path, not the current directory
+        FullPath path = FullPath.FromPath("");
+        Assert.True(path.IsEmpty);
+        Assert.Equal(FullPath.Empty, path);
+        Assert.Equal(default(FullPath), path);
+        Assert.Equal("", path.Value);
+
+        // A null FileSystemInfo gives the empty path too
+        Assert.True(FullPath.FromFileSystemInfo(null).IsEmpty);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_WellKnownFolders()
+    {
+        #region FullPath_WellKnownFolders
+        FullPath temp = FullPath.GetTempPath();
+        FullPath current = FullPath.CurrentDirectory();
+        FullPath home = FullPath.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        FullPath fromInfo = FullPath.FromFileSystemInfo(new DirectoryInfo("output"));
+
+        Assert.False(temp.IsEmpty);
+        Assert.False(current.IsEmpty);
+        Assert.False(home.IsEmpty);
+        Assert.Equal(current / "output", fromInfo);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_CreateTempFile()
+    {
+        #region FullPath_CreateTempFile
+        // Creates an empty file with a unique name in the temporary folder
+        FullPath report = FullPath.CreateTempFile(prefix: "report-", suffix: ".csv");
+
+        Assert.True(File.Exists(report));
+        Assert.Equal(FullPath.GetTempPath(), report.Parent);
+        Assert.StartsWith("report-", report.Name);
+        Assert.Equal(".csv", report.Extension);
+        #endregion
+
+        File.Delete(report);
+    }
+
+    [Fact]
+    public void Documentation_NamesAndExtensions()
+    {
+        #region FullPath_NamesAndExtensions
+        FullPath file = FullPath.GetTempPath() / "reports" / "summary.tar.gz";
+
+        Assert.Equal("summary.tar.gz", file.Name);
+        Assert.Equal("summary.tar", file.NameWithoutExtension);
+        Assert.Equal(".gz", file.Extension);
+        Assert.Equal(FullPath.GetTempPath() / "reports", file.Parent);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_ChangeNameAndExtension()
+    {
+        #region FullPath_ChangeNameAndExtension
+        FullPath file = FullPath.GetTempPath() / "reports" / "summary.tar.gz";
+
+        // Replace the last extension, all the extensions, or a number of them
+        Assert.Equal("summary.tar.zip", file.WithExtension(".zip").Name);
+        Assert.Equal("summary.zip", file.WithExtension(".zip", replaceAllTrailingExtensions: true).Name);
+        Assert.Equal("summary.zip", file.WithExtension("zip", extensionCount: 2).Name); // the leading dot is optional
+
+        // null removes the extension
+        Assert.Equal("summary.tar", file.WithExtension(null).Name);
+
+        // Rename the file and keep its folder
+        Assert.Equal(FullPath.GetTempPath() / "reports" / "readme.md", file.WithName("readme.md"));
+        Assert.Equal("details.gz", file.WithNameWithoutExtension("details").Name);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_ParentOfRoot()
+    {
+        #region FullPath_ParentOfRoot
+        FullPath root = FullPath.FromPath(Path.GetPathRoot(Environment.CurrentDirectory)!);
+
+        // A root folder (/ or C:\) has no parent
+        Assert.True(root.Parent.IsEmpty);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Equality()
+    {
+        #region FullPath_Equality
+        FullPath upper = FullPath.GetTempPath() / "Reports" / "summary.txt";
+        FullPath lower = FullPath.GetTempPath() / "reports" / "summary.txt";
+
+        // == and Equals ignore case on Windows, macOS, iOS and tvOS, and are case-sensitive elsewhere
+        Assert.Equal(!FullPathComparer.Default.IsCaseSensitive, upper == lower);
+
+        // Choose the case sensitivity when the result must not depend on the operating system
+        Assert.True(upper.Equals(lower, ignoreCase: true));
+        Assert.False(upper.Equals(lower, ignoreCase: false));
+        Assert.True(FullPathComparer.CaseInsensitive.Equals(upper, lower));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Collections()
+    {
+        #region FullPath_Collections
+        FullPath root = FullPath.GetTempPath();
+
+        // Use a FullPathComparer to choose the case sensitivity of a set or a dictionary
+        var visited = new HashSet<FullPath>(FullPathComparer.CaseInsensitive);
+        Assert.True(visited.Add(root / "Data"));
+        Assert.False(visited.Add(root / "data"));
+
+        // Sort paths with the same comparers
+        List<FullPath> paths = [root / "b.txt", root / "A.txt", root / "a.txt"];
+        paths.Sort(FullPathComparer.CaseSensitive);
+        Assert.Equal([root / "A.txt", root / "a.txt", root / "b.txt"], paths);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_IsChildOf()
+    {
+        #region FullPath_IsChildOf
+        FullPath uploads = FullPath.GetTempPath() / "uploads";
+
+        FullPath image = uploads / "images" / "logo.png";
+        Assert.True(image.IsChildOf(uploads));
+
+        // ".." is resolved before the check, so the path cannot escape the folder
+        FullPath escaped = uploads / "../secrets.txt";
+        Assert.False(escaped.IsChildOf(uploads));
+
+        // A folder is not its own child, and a sibling that starts with the same name is not a child
+        Assert.False(uploads.IsChildOf(uploads));
+        Assert.False((FullPath.GetTempPath() / "uploads-old").IsChildOf(uploads));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_MakePathRelativeTo()
+    {
+        #region FullPath_MakePathRelativeTo
+        FullPath project = FullPath.GetTempPath() / "project";
+        FullPath program = project / "src" / "Program.cs";
+
+        Assert.Equal(Path.Combine("src", "Program.cs"), program.MakePathRelativeTo(project));
+        Assert.Equal(Path.Combine("..", "..", "docs"), (project / "docs").MakePathRelativeTo(project / "src" / "app"));
+        Assert.Equal(".", project.MakePathRelativeTo(project));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_FindAncestors()
+    {
+        #region FullPath_FindAncestors
+        FullPath repository = FullPath.FromFileSystemInfo(Directory.CreateTempSubdirectory());
+        Directory.CreateDirectory(repository / ".git");
+        FullPath project = repository / "src" / "App";
+        Directory.CreateDirectory(project);
+        File.WriteAllText(project / "App.csproj", "<Project />");
+        FullPath program = project / "Program.cs";
+
+        // The folder that contains .git (a folder, or a file in a worktree)
+        Assert.True(program.TryFindGitRepositoryRoot(out FullPath root));
+        Assert.Equal(repository, root);
+
+        // The nearest folder that matches a condition
+        Assert.True(program.TryFindFirstAncestor(path => Directory.EnumerateFiles(path, "*.csproj").Any(), out FullPath projectFolder));
+        Assert.Equal(project, projectFolder);
+        #endregion
+
+        Directory.Delete(repository, recursive: true);
+    }
+
+    [Fact]
+    public void Documentation_SymbolicLinks()
+    {
+        #region FullPath_SymbolicLinks
+        FullPath folder = FullPath.FromFileSystemInfo(Directory.CreateTempSubdirectory());
+        FullPath file = folder / "data.txt";
+        File.WriteAllText(file, "");
+        FullPath link1 = folder / "link1.txt"; // link1.txt -> data.txt
+        File.CreateSymbolicLink(link1, file);
+        FullPath link2 = folder / "link2.txt"; // link2.txt -> link1.txt
+        File.CreateSymbolicLink(link2, link1);
+
+        Assert.True(link2.IsSymbolicLink());
+        Assert.False(file.IsSymbolicLink());
+
+        // The target stored in the link, which can be another link
+        Assert.True(link2.TryGetSymbolicLinkTarget(out FullPath? target));
+        Assert.Equal(link1, target);
+
+        // Follow the links until the target is not a link
+        Assert.True(link2.TryGetSymbolicLinkTarget(SymbolicLinkResolutionMode.FinalTarget, out FullPath? finalTarget));
+        Assert.Equal(file, finalTarget);
+
+        // The canonical path also resolves the links in the parent folders
+        Assert.True(link2.TryGetCanonicalPath(out FullPath? canonicalLink));
+        Assert.True(file.TryGetCanonicalPath(out FullPath? canonicalFile));
+        Assert.Equal(canonicalFile, canonicalLink);
+        #endregion
+
+        Directory.Delete(folder, recursive: true);
+    }
+
+    [Fact]
+    public void Documentation_Json()
+    {
+        #region FullPath_Json
+        FullPath output = FullPath.GetTempPath() / "output";
+
+        // A FullPath is written as a JSON string
+        string json = JsonSerializer.Serialize(output);
+        Assert.Equal(JsonSerializer.Serialize(output.Value), json);
+        Assert.Equal(output, JsonSerializer.Deserialize<FullPath>(json));
+
+        // A relative path is resolved against the current directory, and an empty string gives the empty path
+        Assert.Equal(FullPath.CurrentDirectory() / "output", JsonSerializer.Deserialize<FullPath>("\"output\""));
+        Assert.True(JsonSerializer.Deserialize<FullPath>("\"\"").IsEmpty);
+        #endregion
+    }
+
+    [Fact]
+    [RunIf(TestOperatingSystems.Windows)]
+    public void Documentation_ReservedDeviceNames()
+    {
+        #region FullPath_ReservedDeviceNames
+        FullPath file = FullPath.FromPath(@"C:\logs\NUL.txt");
+
+        // Value adds the \\?\ prefix, so the file APIs open the file instead of the NUL device
+        Assert.Equal(@"\\?\C:\logs\NUL.txt", file.Value);
+        Assert.Equal(@"C:\logs\NUL.txt", file.RawValue);
+        #endregion
+    }
+
+    [Fact]
+    [RunIf(TestOperatingSystems.Windows)]
+    public void Documentation_WindowsExtendedPath()
+    {
+        #region FullPath_WindowsExtendedPath
+        Assert.Equal(@"\\?\C:\temp\test.txt", FullPath.FromPath(@"C:\temp\test.txt").ToWindowsExtendedPath());
+        Assert.Equal(@"\\?\UNC\server\share\file.txt", FullPath.FromPath(@"\\server\share\file.txt").ToWindowsExtendedPath());
+
+        // FromPath removes the prefix
+        Assert.Equal(@"C:\temp\test.txt", FullPath.FromPath(@"\\?\C:\temp\test.txt").Value);
+        Assert.Equal(@"\\server\share\file.txt", FullPath.FromPath(@"\\?\UNC\server\share\file.txt").Value);
+        #endregion
+    }
+
+    [Fact]
     public void IsEmpty()
     {
         Assert.True(default(FullPath).IsEmpty);

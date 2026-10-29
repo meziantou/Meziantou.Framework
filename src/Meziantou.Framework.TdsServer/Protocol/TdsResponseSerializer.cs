@@ -14,6 +14,14 @@ internal static class TdsResponseSerializer
     private const byte DecimalPrecision = 38;
     private const byte DecimalMaxLength = 17; // 1 sign byte + 16 magnitude bytes
 
+    // DONE token status flags (MS-TDS 2.2.7.6). Errors use DONE_ERROR, as SQL Server does: SqlClient reads
+    // DONE_SRVERROR as a severe error, appends "A severe error occurred on the current command" to the
+    // message, and closes the connection.
+    private const ushort DoneFinal = 0x0000;
+    private const ushort DoneMore = 0x0001;
+    private const ushort DoneError = 0x0002;
+    private const ushort DoneAttention = 0x0020;
+
     // A token's length field is 16 bits, so a message has to leave room for the rest of the token body.
     private const int MaxTokenMessageLength = 32000;
 
@@ -35,7 +43,7 @@ internal static class TdsResponseSerializer
         }
 
         WriteCollationEnvironmentChangeToken(writer, DefaultCollation);
-        WriteDoneToken(writer, status: 0x0000, rowCount: 0);
+        WriteDoneToken(writer, status: DoneFinal, rowCount: 0);
         writer.Flush();
         return stream.ToArray();
     }
@@ -54,7 +62,7 @@ internal static class TdsResponseSerializer
             authenticationResult.ErrorClass,
             authenticationResult.ErrorMessage ?? "Login failed");
 
-        WriteDoneToken(writer, status: 0x0102, rowCount: 0);
+        WriteDoneToken(writer, status: DoneError, rowCount: 0);
         writer.Flush();
         return stream.ToArray();
     }
@@ -65,7 +73,7 @@ internal static class TdsResponseSerializer
         using var writer = new BinaryWriter(stream, Encoding.Unicode, leaveOpen: true);
 
         WriteErrorToken(writer, errorNumber, state: 1, @class: 16, message);
-        WriteDoneToken(writer, status: 0x0102, rowCount: 0);
+        WriteDoneToken(writer, status: DoneError, rowCount: 0);
         writer.Flush();
         return stream.ToArray();
     }
@@ -80,7 +88,7 @@ internal static class TdsResponseSerializer
         if (result.Error is not null)
         {
             WriteErrorToken(writer, result.Error.Number, result.Error.State, result.Error.Class, result.Error.Message);
-            WriteDoneToken(writer, status: 0x0102, rowCount: 0);
+            WriteDoneToken(writer, status: DoneError, rowCount: 0);
             writer.Flush();
             return stream.ToArray();
         }
@@ -99,7 +107,7 @@ internal static class TdsResponseSerializer
 
         if (result.ResultSets.Count == 0)
         {
-            WriteDoneToken(writer, status: 0x0000, rowCount: 0);
+            WriteDoneToken(writer, status: DoneFinal, rowCount: 0);
         }
 
         writer.Flush();
@@ -111,7 +119,7 @@ internal static class TdsResponseSerializer
         using var stream = new MemoryStream();
         using var writer = new BinaryWriter(stream, Encoding.Unicode, leaveOpen: true);
 
-        WriteDoneToken(writer, status: 0x0020, rowCount: 0);
+        WriteDoneToken(writer, status: DoneAttention, rowCount: 0);
         writer.Flush();
         return stream.ToArray();
     }
@@ -126,7 +134,7 @@ internal static class TdsResponseSerializer
             WriteRowToken(writer, resultSet.Columns, encodings, payloadSizePerPacket, row);
         }
 
-        var status = hasMoreResults ? (ushort)0x0001 : (ushort)0x0000;
+        var status = hasMoreResults ? DoneMore : DoneFinal;
         WriteDoneToken(writer, status, (ulong)resultSet.Rows.Count);
     }
 

@@ -69,12 +69,14 @@ public sealed class RegexSyntaxVisitorTests
     [Fact]
     public void Walker_DocumentationExample()
     {
+        #region RegexSyntaxWalker_LiteralCounterUsage
         var tree = RegexSyntaxTree.ParseText("ab|c", RegexDialect.Net);
         var counter = new LiteralCounter();
 
         counter.Visit(tree.GetRoot());
 
         Assert.Equal(3, counter.Count);
+        #endregion
     }
 
     #region RegexSyntaxWalker_LiteralCounter

@@ -168,6 +168,96 @@ public sealed class JsonSyntaxTreeTests
         #endregion
     }
 
+    [Fact]
+    public void DocumentationExample_FindToken()
+    {
+        #region JsonSyntaxTree_FindToken
+        var text = """{ "name": "app", "port": 8080 }""";
+        var root = JsonSyntaxTree.ParseText(text).GetRoot();
+
+        // The position of the caret in an editor, here on 8080
+        var token = root.FindToken(text.IndexOf("8080", StringComparison.Ordinal));
+        Assert.Equal(SyntaxKind.NumberToken, token.Kind());
+
+        var member = token.Parent?.FirstAncestorOrSelf<JsonMemberSyntax>();
+        Assert.Equal("port", member?.Name);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_SpanAndFullSpan()
+    {
+        #region JsonSyntaxTree_SpanAndFullSpan
+        var tree = JsonSyntaxTree.ParseText("""
+            {
+              // the port
+              "port": 8080
+            }
+            """);
+        var member = ((JsonObjectSyntax)tree.GetRoot().Value!).Members[0];
+
+        // Span and ToString() leave out the trivia, FullSpan and ToFullString() include it
+        Assert.Equal("\"port\": 8080", member.ToString());
+        Assert.Equal("  // the port\n  \"port\": 8080\n", member.ToFullString());
+        Assert.Equal(member.ToString(), tree.GetText().ToString(member.Span));
+        Assert.Equal(member.ToFullString(), tree.GetText().ToString(member.FullSpan));
+
+        var trivia = new List<SyntaxKind>();
+        foreach (var item in member.GetLeadingTrivia())
+        {
+            trivia.Add(item.Kind());
+        }
+
+        Assert.Equal([SyntaxKind.WhitespaceTrivia, SyntaxKind.SingleLineCommentTrivia, SyntaxKind.EndOfLineTrivia, SyntaxKind.WhitespaceTrivia], trivia);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_DiagnosticSeverity()
+    {
+        #region JsonSyntaxTree_DiagnosticSeverity
+        var tree = JsonSyntaxTree.ParseText("""{ "a": 1, "a": 2 }""");
+
+        var diagnostic = Assert.Single(tree.GetDiagnostics());
+        Assert.Equal("JSON0015", diagnostic.Id);
+        Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
+
+        // A warning does not make the document invalid
+        var hasErrors = tree.GetDiagnostics().Any(d => d.Severity == DiagnosticSeverity.Error);
+        Assert.False(hasErrors);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_GetChanges()
+    {
+        #region JsonSyntaxTree_GetChanges
+        var tree = JsonSyntaxTree.ParseText("""{ "version": "1.0.0", "name": "app" }""");
+        var version = ((JsonObjectSyntax)tree.GetRoot().Value!).GetMember("version")!;
+
+        var updatedRoot = tree.GetRoot().ReplaceNode(version.Value, SyntaxFactory.JsonString("2.0.0"));
+        var updatedTree = tree.WithRoot(updatedRoot);
+
+        // The text changes from the old tree to the new one, for an editor that applies edits
+        var change = Assert.Single(updatedTree.GetChanges(tree));
+        Assert.Equal(new TextSpan(13, 7), change.Span); // "1.0.0", quotes included
+        Assert.Equal("\"2.0.0\"", change.NewText);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_SyntaxFactory()
+    {
+        #region JsonSyntaxTree_SyntaxFactory
+        var document = SyntaxFactory.JsonDocument(
+            SyntaxFactory.JsonObject(
+                SyntaxFactory.JsonMember("name", SyntaxFactory.JsonString("app")),
+                SyntaxFactory.JsonMember("ports", SyntaxFactory.JsonArray(SyntaxFactory.JsonNumber("80"), SyntaxFactory.JsonNumber("443")))));
+
+        Assert.Equal("""{"name":"app","ports":[80,443]}""", document.ToFullString());
+        #endregion
+    }
+
     public static TheoryData<string> RoundTripSamples => new()
     {
         """{"name":"value","enabled":true,"items":[1,false,null]}""",
@@ -889,11 +979,13 @@ public sealed class JsonSyntaxTreeTests
     [Fact]
     public void Rewriter_DocumentationExample()
     {
+        #region JsonSyntaxTree_RewriterUsage
         var tree = JsonSyntaxTree.ParseText("""{ "a": 1, "b": { "c": 2 } }""");
 
         var rewritten = new RenameMembers().Visit(tree.GetRoot());
 
-        Assert.Equal("""{ "A": 1, "B": { "C": 2 } }""", rewritten!.ToFullString());
+        Assert.Equal("""{ "A": 1, "B": { "C": 2 } }""", rewritten?.ToFullString());
+        #endregion
     }
 
     #region JsonSyntaxRewriter_RenameMembers

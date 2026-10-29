@@ -161,6 +161,26 @@ public sealed class ShellSyntaxTreeTests
         #endregion
     }
 
+    [Fact]
+    public void DocumentationExample_Dialects()
+    {
+        #region ShellSyntaxTree_Dialects
+        var powerShell = ShellSyntaxTree.ParseText("Get-ChildItem -Recurse | Where-Object { $_.Length -gt 1kb }", ShellDialect.PowerShellCore);
+        Assert.Empty(powerShell.GetDiagnostics());
+
+        var cmd = ShellSyntaxTree.ParseText("@echo off\r\nif exist out (rmdir /s /q out)\r\n", ShellDialect.Cmd);
+        Assert.Empty(cmd.GetDiagnostics());
+
+        // [[ ]] is bash and zsh only: in sh, it is an ordinary command name
+        Assert.True(ShellDialect.Bash.HasFeature(ShellDialectFeatures.ExtendedTest));
+        Assert.False(ShellDialect.Sh.HasFeature(ShellDialectFeatures.ExtendedTest));
+
+        // Read a dialect from its name
+        Assert.True(ShellDialect.TryParse("pwsh", out var dialect));
+        Assert.Equal(ShellDialect.PowerShellCore, dialect);
+        #endregion
+    }
+
     public static IEnumerable<ShellDialect> PosixDialects => [ShellDialect.Sh, ShellDialect.Bash, ShellDialect.Zsh];
 
     public static TheoryData<string> PosixSamples =>

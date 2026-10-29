@@ -223,6 +223,25 @@ public sealed class RegexSyntaxTreeTests
         #endregion
     }
 
+    [Fact]
+    public void DocumentationExample_Dialects()
+    {
+        #region RegexSyntaxTree_Dialects
+        // An atomic group is valid in .NET, and reported in JavaScript, which has no syntax for it
+        Assert.Empty(RegexSyntaxTree.ParseText("(?>a+)b", RegexDialect.Net).GetDiagnostics());
+        var diagnostic = Assert.Single(RegexSyntaxTree.ParseText("(?>a+)b", RegexDialect.JavaScript).GetDiagnostics());
+        Assert.Equal("REGEX0010", diagnostic.Id);
+
+        // \A is an anchor in .NET, and the letter A in JavaScript
+        Assert.Single(RegexSyntaxTree.ParseText(@"\Ahello", RegexDialect.Net).GetRoot().DescendantNodes().OfType<RegexAnchorSyntax>());
+        Assert.Empty(RegexSyntaxTree.ParseText(@"\Ahello", RegexDialect.JavaScript).GetRoot().DescendantNodes().OfType<RegexAnchorSyntax>());
+
+        // What each dialect supports
+        Assert.True(RegexDialect.Net.HasFeature(RegexDialectFeatures.BalancingGroups));
+        Assert.False(RegexDialect.JavaScript.HasFeature(RegexDialectFeatures.AtomicGroups));
+        #endregion
+    }
+
     public static TheoryData<string> Patterns =>
     [
         "",

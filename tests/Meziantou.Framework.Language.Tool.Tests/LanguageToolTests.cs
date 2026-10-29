@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace Meziantou.Framework.Language.Tool.Tests;
 
@@ -191,6 +192,22 @@ public sealed class LanguageToolTests(ITestOutputHelper testOutputHelper)
 
         using var document = JsonDocument.Parse(bytes);
         Assert.Equal("json", document.RootElement.GetProperty("language").GetString());
+    }
+
+    [Theory]
+    [InlineData("Comment.json", new string[0])]
+    [InlineData("MissingValue.json", new[] { "--no-tokens", "--no-spans" })]
+    public async Task Dump_DocumentationExamples(string fileName, string[] options)
+    {
+        // The documentation shows these files: the output is the formatted JSON the tool writes for the input
+        var directory = Path.Combine(AppContext.BaseDirectory, "Examples");
+        var console = new ConsoleHelper(testOutputHelper);
+        var exitCode = await Program.MainImpl(["syntax", "--input", Path.Combine(directory, fileName), .. options], console.ConfigureConsole);
+
+        Assert.Equal(0, exitCode);
+        var expected = JsonNode.Parse(await File.ReadAllTextAsync(Path.Combine(directory, Path.ChangeExtension(fileName, ".output.json")), TestContext.Current.CancellationToken));
+        var actual = JsonNode.Parse(console.Output);
+        Assert.True(JsonNode.DeepEquals(expected, actual), console.Output);
     }
 
     [Fact]

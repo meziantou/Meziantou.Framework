@@ -1,0 +1,85 @@
+{
+  "language": "json",
+  "root": {
+    "kind": "JsonDocument",
+    "type": "JsonDocumentSyntax",
+    "span": {
+      "start": 0,
+      "length": 12
+    },
+    "fullSpan": {
+      "start": 0,
+      "length": 12
+    },
+    "text": "true // yes\n",
+    "children": [
+      {
+        "kind": "JsonTrueLiteral",
+        "type": "JsonLiteralSyntax",
+        "span": {
+          "start": 0,
+          "length": 4
+        },
+        "fullSpan": {
+          "start": 0,
+          "length": 12
+        },
+        "text": "true // yes\n",
+        "children": [
+          {
+            "kind": "TrueKeyword",
+            "type": "SyntaxToken",
+            "text": "true",
+            "span": {
+              "start": 0,
+              "length": 4
+            },
+            "fullSpan": {
+              "start": 0,
+              "length": 12
+            },
+            "trailingTrivia": [
+              {
+                "kind": "WhitespaceTrivia",
+                "text": " ",
+                "span": {
+                  "start": 4,
+                  "length": 1
+                }
+              },
+              {
+                "kind": "SingleLineCommentTrivia",
+                "text": "// yes",
+                "span": {
+                  "start": 5,
+                  "length": 6
+                }
+              },
+              {
+                "kind": "EndOfLineTrivia",
+                "text": "\n",
+                "span": {
+                  "start": 11,
+                  "length": 1
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "EndOfFileToken",
+        "type": "SyntaxToken",
+        "text": "",
+        "span": {
+          "start": 12,
+          "length": 0
+        },
+        "fullSpan": {
+          "start": 12,
+          "length": 0
+        }
+      }
+    ]
+  }
+}

@@ -145,6 +145,48 @@ public sealed class XmlSyntaxTreeTests
     }
 
     [Fact]
+    public void DocumentationExample_Values()
+    {
+        #region XmlSyntaxTree_Values
+        var root = XmlSyntaxTree.ParseText("<note title='Tom &amp; Jerry'>1 &lt; 2</note>").GetRoot();
+        var note = (XmlElementSyntax)root.Nodes[0];
+        var title = note.GetAttribute("title")!;
+
+        // The text as written, and the value an XML processor reads
+        Assert.Equal("Tom &amp; Jerry", title.ValueToken.Text);
+        Assert.Equal("Tom & Jerry", title.Value);
+        Assert.Equal("1 < 2", ((XmlTextSyntax)note.Content[0]).Value);
+
+        // WithValue escapes what it has to
+        var updated = root.ReplaceNode(title, title.WithValue("Tom & Jerry's"));
+        Assert.Equal("<note title='Tom &amp; Jerry&apos;s'>1 &lt; 2</note>", updated.ToFullString());
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_SelectSyntaxNodes()
+    {
+        #region XmlSyntaxTree_SelectSyntaxNodes
+        var root = XmlSyntaxTree.ParseText("""
+            <Project>
+              <ItemGroup>
+                <PackageReference Include="Meziantou.Framework.Language.Xml" Version="4.0.0" />
+                <PackageReference Include="Meziantou.Framework.Language.Json" Version="4.0.0" />
+              </ItemGroup>
+            </Project>
+            """).GetRoot();
+
+        var packages = new List<string>();
+        foreach (var node in root.SelectSyntaxNodes("//PackageReference/@Include"))
+        {
+            packages.Add(((XmlAttributeSyntax)node).Value);
+        }
+
+        Assert.Equal(["Meziantou.Framework.Language.Xml", "Meziantou.Framework.Language.Json"], packages);
+        #endregion
+    }
+
+    [Fact]
     public void ReadmeExample_LanguageDiagnostics()
     {
         #region Language_Diagnostics

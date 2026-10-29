@@ -23,6 +23,95 @@ public class QRCodeTests
         #endregion
     }
 
+    [Fact]
+    public void Documentation_GettingStarted()
+    {
+        #region QRCode_GettingStarted
+        var qrCode = QRCode.Create("https://www.meziantou.net");
+
+        // The bytes of a PNG file, to save with File.WriteAllBytes("qrcode.png", png)
+        var png = qrCode.ToPng(new QRCodePngOptions { ModuleSize = 4 });
+        #endregion
+
+        DocumentationImages.AssertPng("GettingStartedQRCode", png);
+    }
+
+    [Fact]
+    public void Documentation_ErrorCorrectionLevel()
+    {
+        #region QRCode_ErrorCorrectionLevel
+        var low = QRCode.Create("https://www.meziantou.net", ErrorCorrectionLevel.L);
+        var high = QRCode.Create("https://www.meziantou.net", ErrorCorrectionLevel.H);
+
+        // More redundancy takes more modules: the version is the smallest one that holds the data
+        Assert.Equal((2, 25), (low.Version, low.Width));
+        Assert.Equal((4, 33), (high.Version, high.Width));
+
+        var lowPng = low.ToPng(new QRCodePngOptions { ModuleSize = 4 });
+        var highPng = high.ToPng(new QRCodePngOptions { ModuleSize = 4 });
+        #endregion
+
+        DocumentationImages.AssertPng("ErrorCorrectionLow", lowPng);
+        DocumentationImages.AssertPng("ErrorCorrectionHigh", highPng);
+    }
+
+    [Fact]
+    public void Documentation_EncodingModes()
+    {
+        #region QRCode_EncodingModes
+        // Uppercase letters, digits and " $%*+-./:" take fewer bits than other characters
+        Assert.Equal(2, QRCode.Create("HTTPS://WWW.MEZIANTOU.NET/BLOG/").Version);
+        Assert.Equal(3, QRCode.Create("https://www.meziantou.net/blog/").Version);
+
+        // Digits alone take even fewer
+        Assert.Equal(1, QRCode.Create("0123456789012345678901234567890123").Version);
+
+        // Any other text is encoded as UTF-8, and binary data as it is
+        Assert.Equal(1, QRCode.Create("Caf\u00E9").Version);
+        Assert.Equal(1, QRCode.Create([0x00, 0x01, 0xFE, 0xFF]).Version);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Modules()
+    {
+        #region QRCode_Modules
+        var qrCode = QRCode.Create("HELLO");
+
+        // The modules, row by row: true for a dark module
+        var text = new StringBuilder();
+        for (var row = 0; row < qrCode.Height; row++)
+        {
+            for (var column = 0; column < qrCode.Width; column++)
+            {
+                text.Append(qrCode[row, column] ? '#' : '.');
+            }
+
+            text.Append('\n');
+        }
+
+        Assert.StartsWith("#######.", text.ToString()); // the top-left finder pattern, then its separator
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_SmallSymbols()
+    {
+        #region QRCode_SmallSymbols
+        var microQr = QRCode.CreateMicroQR("12345");
+        var rmqr = QRCode.CreateRMQR("HELLO WORLD");
+
+        Assert.Equal((1, 11, 11), (microQr.Version, microQr.Width, microQr.Height));
+        Assert.Equal((27, 13), (rmqr.Width, rmqr.Height));
+
+        var microPng = microQr.ToPng(new QRCodePngOptions { ModuleSize = 6, QuietZoneModules = 2 });
+        var rmqrPng = rmqr.ToPng(new QRCodePngOptions { ModuleSize = 6, QuietZoneModules = 2 });
+        #endregion
+
+        DocumentationImages.AssertPng("MicroQR", microPng);
+        DocumentationImages.AssertPng("RectangularMicroQR", rmqrPng);
+    }
+
     // ───── Numeric mode ─────
 
     [Fact]

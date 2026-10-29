@@ -1,6 +1,7 @@
 using System.Buffers.Binary;
 using Meziantou.Framework.Imaging.CorpusGenerator.Common;
 using Meziantou.Framework.Imaging.Internals;
+using Meziantou.Framework.Imaging.TestHarness.Fixtures;
 using Meziantou.Framework.Imaging.Typography;
 
 namespace Meziantou.Framework.Imaging.Tests;
@@ -22,6 +23,37 @@ public sealed class TextShaperTests
         // A (glyph 2, 1024 units), B (3, 512), space (1, 512), C (4, 768). The kerning of the pair A B, -128, is split
         // between the advance of A and the advance and offset of B.
         Assert.Equal("2=0+960|3=1@-64,0+448|1=2+512|4=3+768", Format(buffer));
+    }
+
+    [Fact]
+    public void Documentation_Shape()
+    {
+        var path = FixtureRoot.GetDirectory() / "fonts" / "noto-sans" / "NotoSans-Regular.subset.ttf";
+        var face = FontLoader.Load(File.ReadAllBytes(path), new PooledFontEnvironment(FontResourceLimits.Default, 64 * 1024 * 1024))[0];
+
+        #region Fonts_Shape
+        static string Shape(FontFace face, string text, params ReadOnlySpan<ShapingFeature> features)
+        {
+            var buffer = new GlyphBuffer(face.Data.Limits);
+            TextShaper.AddText(buffer, text);
+            TextShaper.Shape(buffer, face, UnicodeScript.Latin, languages: [], isRightToLeft: false, features);
+
+            // Each glyph: its identifier, the index of the first character of its cluster, and its advance in font units
+            var glyphs = new List<string>();
+            for (var i = 0; i < buffer.Length; i++)
+            {
+                glyphs.Add(string.Create(CultureInfo.InvariantCulture, $"{buffer.Info[i].Glyph}@{buffer.Info[i].Cluster}+{buffer.Positions[i].XAdvance}"));
+            }
+
+            return string.Join(' ', glyphs);
+        }
+
+        // The pair "AV" is kerned: the advance of A is reduced
+        Assert.Equal("34@0+599 55@1+600", Shape(face, "AV"));
+
+        // The features to turn on or off, besides the default ones
+        Assert.Equal("34@0+639 55@1+600", Shape(face, "AV", new ShapingFeature("kern", 0)));
+        #endregion
     }
 
     [Fact]

@@ -71,6 +71,8 @@ public sealed class ImageRendererTests
         using var png = new MemoryStream();
         ticket.Save(png, new PngEncoder());
         #endregion
+
+        DocumentationImages.AssertImage("DrawQRCode", ticket);
     }
 
     [Fact]
@@ -95,6 +97,44 @@ public sealed class ImageRendererTests
         label.Draw(canvas => canvas.DrawBarcode(barcode, new PointD(20, 20), options));
         Assert.Equal(new Rgba32(0x00, 0x33, 0x66), label.Frames[0][20 + 18, 50]); // the first guard bar
         #endregion
+
+        DocumentationImages.AssertImage("DrawBarcode", label);
+    }
+
+    [Fact]
+    public void Documentation_GradientQRCode()
+    {
+        #region ImagingBarcodes_GradientQRCode
+        var qrCode = QRCode.Create("https://www.meziantou.net", ErrorCorrectionLevel.Q);
+
+        // The brushes are in the coordinates of the image: the gradient goes across the whole symbol
+        var options = new QRCodeDrawingOptions
+        {
+            ModuleSize = 5,
+            QuietZoneModules = 2,
+            DarkBrush = new LinearGradientBrush(new PointD(0, 0), new PointD(165, 165), [new GradientStop(0, new Rgba32(0x7c, 0x3a, 0xed)), new GradientStop(1, new Rgba32(0x0e, 0x74, 0x90))]),
+        };
+
+        using var image = qrCode.ToImage(options);
+        #endregion
+
+        DocumentationImages.AssertImage("GradientQRCode", image);
+    }
+
+    [Fact]
+    public void Documentation_OcrFonts()
+    {
+        #region ImagingBarcodes_OcrFonts
+        using var image = new Image<Rgba32>(280, 72, Colors.White);
+        image.Draw(canvas =>
+        {
+            var ink = new SolidBrush(Colors.Black);
+            canvas.FillText(ink, "OCR-A 0123456789", BarcodeFonts.OcrA, size: 24, new PointD(8, 6));
+            canvas.FillText(ink, "OCR-B 0123456789", BarcodeFonts.OcrB, size: 24, new PointD(8, 38));
+        });
+        #endregion
+
+        DocumentationImages.AssertImage("OcrFonts", image);
     }
 
     public static TheoryData<QRCodeType, int, int> QRCodeLayouts()

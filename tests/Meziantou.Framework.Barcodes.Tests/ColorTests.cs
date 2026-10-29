@@ -71,4 +71,21 @@ public class ColorTests
     {
         Assert.Throws<ArgumentException>(() => Color.Parse("not a color"));
     }
+    [Fact]
+    public void Documentation_ParseColors()
+    {
+        #region Color_Parse
+        Assert.Equal(Color.FromRgb(0x1e, 0x3a, 0x8a), Color.Parse("#1e3a8a"));
+        Assert.Equal(Color.FromRgb(0x11, 0x22, 0x33), Color.Parse("#123"));
+        Assert.Equal(Color.FromRgb(239, 246, 255), Color.Parse("rgb(239, 246, 255)"));
+
+        // The alpha comes first in the hexadecimal forms, and is a fraction in rgba()
+        Assert.Equal(Color.FromArgb(0x80, 0x00, 0x00, 0x00), Color.Parse("#80000000"));
+        Assert.Equal(Color.FromArgb(128, 0, 0, 0), Color.Parse("rgba(0, 0, 0, 0.5)"));
+
+        Assert.False(Color.TryParse("navy", out _)); // no color names
+        Assert.Equal("rgba(0,0,0,0.502)", Color.FromArgb(128, 0, 0, 0).ToCssString());
+        #endregion
+    }
+
 }

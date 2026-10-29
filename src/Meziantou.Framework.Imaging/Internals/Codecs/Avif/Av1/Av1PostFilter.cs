@@ -9,10 +9,23 @@ internal sealed class Av1PostFilter : IDisposable
 {
     private const int BoundaryRows = 4;
 
+    private static readonly AsyncLocal<bool> TestIgnoreMinimumSizeValue = new();
+
     private Av1PooledArray<ushort>? _rows;
     private Av1PooledArray<ushort>? _boundaries;
     private Av1PooledArray<int>? _scratch;
     private Av1PooledArray<int>? _cdefDirections;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the frames filtered on the current asynchronous flow use the workers they are
+    /// given whatever their size: bands of 16 rows, the smallest that <see cref="GetBandRow"/> makes, instead of the minimum
+    /// size of <see cref="RowBands.GetWorkerCount"/>. Tests decode small streams by several workers.
+    /// </summary>
+    internal static bool TestIgnoreMinimumSize
+    {
+        get => TestIgnoreMinimumSizeValue.Value;
+        set => TestIgnoreMinimumSizeValue.Value = value;
+    }
 
     /// <summary>Applies the filters that the header of <paramref name="frame"/> enables.</summary>
     /// <param name="scope">The allocation scope of the operation.</param>
@@ -25,13 +38,21 @@ internal sealed class Av1PostFilter : IDisposable
     /// restoration reads: an encoder applies the filters one at a time, and the frame is no longer the deblocked one
     /// when it applies the last one.
     /// </param>
+    /// <param name="maxDegreeOfParallelism">
+    /// The largest number of workers: a frame of at least <see cref="RowBands.MinPixelsForParallelism"/> pixels is filtered by
+    /// bands of rows (<see cref="GetBandRow"/>), each stage once the previous one is done, with the samples of a filtering
+    /// by one worker. Each worker has its own rows and scratch, charged to <paramref name="scope"/>.
+    /// </param>
     /// <exception cref="ImageResourceLimitException">The working buffers exceed the live-allocation limit.</exception>
-    public void Apply(AllocationScope scope, Av1FrameBuffer frame, Av1FrameState state, Av1InLoopFilters filters, CancellationToken cancellationToken, bool boundariesSaved = false)
+    public void Apply(AllocationScope scope, Av1FrameBuffer frame, Av1FrameState state, Av1InLoopFilters filters, CancellationToken cancellationToken, bool boundariesSaved = false, int maxDegreeOfParallelism = 1)
     {
         var header = frame.Header;
         var sequence = frame.Sequence;
+        var workers = TestIgnoreMinimumSize
+            ? Math.Clamp((header.MiRows + 3) / 4, 1, maxDegreeOfParallelism)
+            : RowBands.GetWorkerCount(new Size(header.UpscaledWidth, header.FrameHeight), maxDegreeOfParallelism);
         if (filters.HasFlag(Av1InLoopFilters.Deblock) && (header.LoopFilterLevel[0] is not 0 || header.LoopFilterLevel[1] is not 0))
-            Av1LoopFilter.Apply(frame, state, cancellationToken);
+            Av1LoopFilter.Apply(frame, state, workers, cancellationToken);
 
         var useCdef = filters.HasFlag(Av1InLoopFilters.Cdef) && !header.CodedLossless && !header.AllowIntrabc && sequence.EnableCdef;
         var useRestoration = filters.HasFlag(Av1InLoopFilters.Restoration) && header.UsesLr;
@@ -42,16 +63,91 @@ internal sealed class Av1PostFilter : IDisposable
         if (useRestoration && !boundariesSaved)
             SaveBoundaries(scope, frame);
 
-        if (useCdef)
-            Av1Cdef.Apply(frame, state, _rows!.Span, cancellationToken, _cdefDirections is null ? default : _cdefDirections.Span);
-
-        if (header.UseSuperres)
-            Upscale(frame, useRestoration, cancellationToken);
-
         if (useRestoration)
-        {
             _scratch ??= Av1PooledArray<int>.Rent(scope, Av1LoopRestoration.ScratchLength, clear: false);
-            Restore(frame, state, cancellationToken);
+
+        // The saved rows do not depend on the stages that modify the frame: they are upscaled first
+        if (header.UseSuperres && useRestoration)
+            UpscaleBoundaries(frame, cancellationToken);
+
+        if (workers is 1)
+        {
+            if (useCdef)
+                Av1Cdef.Apply(frame, state, _rows!.Span, cancellationToken, _cdefDirections is null ? default : _cdefDirections.Span);
+
+            if (header.UseSuperres)
+                Upscale(frame, _rows!.Span, 0, 1, cancellationToken);
+
+            if (useRestoration)
+                Restore(frame, state, _rows!.Span, _scratch!.Span, 0, 1, cancellationToken);
+        }
+        else
+        {
+            ApplyParallel(scope, frame, state, useCdef, useRestoration, workers, cancellationToken);
+        }
+    }
+
+    /// <summary>
+    /// Gets the first row of blocks (in 4x4 luma units) of a band of the frame filters: the bands hold whole groups of 4 rows
+    /// of blocks (16 luma rows), so that the rows of 8x8 blocks of CDEF and the pairs of rows of edges of the loop filter of
+    /// every plane do not cross them.
+    /// </summary>
+    internal static int GetBandRow(int miRows, int band, int workers) => Math.Min(miRows, 4 * RowBands.GetBandStart((miRows + 3) / 4, band, workers));
+
+    // CDEF, the upscaling and the loop restoration by several workers. The first worker uses the rows and the scratch of the
+    // filter, the other ones rent their own
+    private void ApplyParallel(AllocationScope scope, Av1FrameBuffer frame, Av1FrameState state, bool useCdef, bool useRestoration, int workers, CancellationToken cancellationToken)
+    {
+        var header = frame.Header;
+        var rows = new Av1PooledArray<ushort>?[workers];
+        var scratch = new Av1PooledArray<int>?[workers];
+        Av1PooledArray<ushort>? edges = null;
+        try
+        {
+            rows[0] = _rows;
+            scratch[0] = _scratch;
+            for (var i = 1; i < workers; i++)
+            {
+                rows[i] = Av1PooledArray<ushort>.Rent(scope, _rows!.Length, clear: false);
+                if (useRestoration)
+                    scratch[i] = Av1PooledArray<int>.Rent(scope, Av1LoopRestoration.ScratchLength, clear: false);
+            }
+
+            if (useCdef)
+            {
+                // The unfiltered rows around the edges of the bands, which the bands on both sides read
+                var edgeLength = Av1Cdef.GetBandEdgeLength(frame);
+                var edgeBuffer = Av1PooledArray<ushort>.Rent(scope, (long)(workers - 1) * edgeLength, clear: false);
+                edges = edgeBuffer;
+                for (var band = 1; band < workers; band++)
+                {
+                    Av1Cdef.SaveBandEdge(frame, GetBandRow(header.MiRows, band, workers), edgeBuffer.Span.Slice((band - 1) * edgeLength, edgeLength));
+                }
+
+                var directions = _cdefDirections;
+                RowBands.RunParallel(workers, band =>
+                {
+                    var edgeSpan = edgeBuffer.Span;
+                    var above = band is 0 ? default : edgeSpan.Slice((band - 1) * edgeLength, edgeLength);
+                    var below = band == workers - 1 ? default : edgeSpan.Slice(band * edgeLength, edgeLength);
+                    Av1Cdef.ApplyRows(frame, state, rows[band]!.Span, above, below, GetBandRow(header.MiRows, band, workers), GetBandRow(header.MiRows, band + 1, workers), cancellationToken, directions is null ? default : directions.Span);
+                });
+            }
+
+            if (header.UseSuperres)
+                RowBands.RunParallel(workers, band => Upscale(frame, rows[band]!.Span, band, workers, cancellationToken));
+
+            if (useRestoration)
+                RowBands.RunParallel(workers, band => Restore(frame, state, rows[band]!.Span, scratch[band]!.Span, band, workers, cancellationToken));
+        }
+        finally
+        {
+            edges?.Dispose();
+            for (var i = 1; i < workers; i++)
+            {
+                rows[i]?.Dispose();
+                scratch[i]?.Dispose();
+            }
         }
     }
 
@@ -109,6 +205,10 @@ internal sealed class Av1PostFilter : IDisposable
     /// <param name="height">The number of rows of the stripe in the plane.</param>
     /// <returns><see langword="false"/> when the stripe has no row in the plane.</returns>
     public bool TryGetRestorationStripe(Av1FrameBuffer frame, int plane, int stripe, out ReadOnlySpan<ushort> source, out int sourceStride, out int y0, out int height)
+        => TryGetStripe(frame, plane, stripe, _rows!.Span, out source, out sourceStride, out y0, out height);
+
+    // TryGetRestorationStripe, in the rows of a worker
+    private bool TryGetStripe(Av1FrameBuffer frame, int plane, int stripe, Span<ushort> rows, out ReadOnlySpan<ushort> source, out int sourceStride, out int y0, out int height)
     {
         var header = frame.Header;
         var sequence = frame.Sequence;
@@ -120,7 +220,6 @@ internal sealed class Av1PostFilter : IDisposable
         var planeEndX = planeWidth - 1;
         var planeEndY = buffer.Height - 1;
         var samples = buffer.Samples;
-        var rows = _rows!.Span;
         sourceStride = planeWidth + (2 * Av1LoopRestoration.Padding);
         var stripeStartY = (-8 + (stripe * 64)) >> subY;
         var stripeEndY = stripeStartY + (64 >> subY) - 1;
@@ -225,12 +324,39 @@ internal sealed class Av1PostFilter : IDisposable
         }
     }
 
-    // Section 7.16 "Upscaling process", for the frame and for the saved rows of the deblocked frame
-    private void Upscale(Av1FrameBuffer frame, bool upscaleBoundaries, CancellationToken cancellationToken)
+    // Section 7.16 "Upscaling process", for the rows of a band of each plane (the band of workers), with a copy of each row
+    // in scratch
+    private static void Upscale(Av1FrameBuffer frame, Span<ushort> scratch, int band, int workers, CancellationToken cancellationToken)
     {
         var header = frame.Header;
         var sequence = frame.Sequence;
-        var scratch = _rows!.Span;
+        for (var plane = 0; plane < frame.PlaneCount; plane++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var subX = plane > 0 ? sequence.SubsamplingX : 0;
+            var buffer = frame.GetPlane(plane);
+            var stride = buffer.Stride;
+            var downscaledWidth = (header.FrameWidth + subX) >> subX;
+            var upscaledWidth = (header.UpscaledWidth + subX) >> subX;
+            var maxX = ((header.MiCols >> subX) * Av1Constants.MiSize) - 1;
+            var samples = buffer.Samples;
+            var row = scratch[..stride];
+            var end = RowBands.GetBandStart(buffer.Height, band + 1, workers);
+            for (var y = RowBands.GetBandStart(buffer.Height, band, workers); y < end; y++)
+            {
+                var destination = samples.Slice(y * stride, stride);
+                destination.CopyTo(row);
+                Av1SuperRes.UpscaleRow(row, destination, downscaledWidth, upscaledWidth, maxX, sequence.BitDepth);
+            }
+        }
+    }
+
+    // Section 7.16, for the saved rows of the deblocked frame that the loop restoration reads
+    private void UpscaleBoundaries(Av1FrameBuffer frame, CancellationToken cancellationToken)
+    {
+        var header = frame.Header;
+        var sequence = frame.Sequence;
+        var row = _rows!.Span[..frame.GetPlane(0).Stride];
         var boundaryOffset = 0;
         for (var plane = 0; plane < frame.PlaneCount; plane++)
         {
@@ -242,37 +368,26 @@ internal sealed class Av1PostFilter : IDisposable
             var downscaledWidth = (header.FrameWidth + subX) >> subX;
             var upscaledWidth = (header.UpscaledWidth + subX) >> subX;
             var maxX = ((header.MiCols >> subX) * Av1Constants.MiSize) - 1;
-            var samples = buffer.Samples;
-            var row = scratch[..stride];
-            for (var y = 0; y < buffer.Height; y++)
+            var stripeCount = GetStripeCount(buffer.Height, subY);
+            var boundaries = _boundaries!.Span.Slice(boundaryOffset, stripeCount * BoundaryRows * stride);
+            for (var i = BoundaryRows; i < stripeCount * BoundaryRows; i++)
             {
-                var destination = samples.Slice(y * stride, stride);
-                destination.CopyTo(row);
-                Av1SuperRes.UpscaleRow(row, destination, downscaledWidth, upscaledWidth, maxX, sequence.BitDepth);
+                var destination = boundaries.Slice(i * stride, stride);
+                destination.CopyTo(row[..stride]);
+                Av1SuperRes.UpscaleRow(row[..stride], destination, downscaledWidth, upscaledWidth, maxX, sequence.BitDepth);
             }
 
-            if (upscaleBoundaries)
-            {
-                var stripeCount = GetStripeCount(buffer.Height, subY);
-                var boundaries = _boundaries!.Span.Slice(boundaryOffset, stripeCount * BoundaryRows * stride);
-                for (var i = BoundaryRows; i < stripeCount * BoundaryRows; i++)
-                {
-                    var destination = boundaries.Slice(i * stride, stride);
-                    destination.CopyTo(row);
-                    Av1SuperRes.UpscaleRow(row, destination, downscaledWidth, upscaledWidth, maxX, sequence.BitDepth);
-                }
-
-                boundaryOffset += stripeCount * BoundaryRows * stride;
-            }
+            boundaryOffset += stripeCount * BoundaryRows * stride;
         }
     }
 
-    // Section 7.17 "Loop restoration process", by stripes of 64 luma rows offset upwards by 8 rows
-    private void Restore(Av1FrameBuffer frame, Av1FrameState state, CancellationToken cancellationToken)
+    // Section 7.17 "Loop restoration process", by stripes of 64 luma rows offset upwards by 8 rows: the stripes of a band of
+    // each plane (the band of workers). A stripe reads the rows of the frame that it modifies, and the saved rows of the
+    // deblocked frame beyond it, so the stripes do not depend on each other
+    private void Restore(Av1FrameBuffer frame, Av1FrameState state, Span<ushort> rows, Span<int> scratch, int band, int workers, CancellationToken cancellationToken)
     {
         var header = frame.Header;
         var sequence = frame.Sequence;
-        var scratch = _scratch!.Span;
         for (var plane = 0; plane < frame.PlaneCount; plane++)
         {
             if (header.FrameRestorationType[plane] is Av1Constants.RestoreNone)
@@ -289,10 +404,11 @@ internal sealed class Av1PostFilter : IDisposable
             var unitCols = state.GetLoopRestorationUnitCols(plane);
             var units = state.GetLoopRestorationUnits(plane);
             var samples = buffer.Samples;
-            for (var stripe = 0; stripe < stripeCount; stripe++)
+            var stripeEnd = RowBands.GetBandStart(stripeCount, band + 1, workers);
+            for (var stripe = RowBands.GetBandStart(stripeCount, band, workers); stripe < stripeEnd; stripe++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                if (!TryGetRestorationStripe(frame, plane, stripe, out var source, out var sourceStride, out var y0, out var h))
+                if (!TryGetStripe(frame, plane, stripe, rows, out var source, out var sourceStride, out var y0, out var h))
                     continue;
 
                 var unitRow = Math.Min(unitRows - 1, (((y0 << subY) + 8) >> subY) / unitSize);

@@ -9,7 +9,7 @@ namespace Meziantou.Framework.Imaging.Formats;
 /// </para>
 /// <para>
 /// QOI stores exactly one frame: animated images and images with a poster frame are rejected with an
-/// <see cref="UnsupportedImageFeatureException"/>; use <see cref="Image.CloneFrame(int)"/> to export one frame explicitly.
+/// <see cref="UnsupportedImageFeatureException"/>; use <see cref="ImageFrame.Save(string, ImageEncoder?)"/> to save one frame explicitly.
 /// </para>
 /// <para>
 /// The header colorspace field is written from <see cref="Metadata.ImageMetadata.TransferFunction"/>: 0 (sRGB with linear

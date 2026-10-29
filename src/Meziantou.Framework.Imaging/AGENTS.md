@@ -356,7 +356,11 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   (`JpegXlVarDctEncoder`) mirrors `JpegXlVarDctDecoder`: its forward DCT undoes the halving steps of the inverse DCT
   of the decoder in the opposite order, and its LF matrices and its color matrix are measured on, or inverted from,
   what the decoder computes (`JpegXlForwardTransform`, `JpegXlForwardColor`); a coefficient is written with the
-  context derivation the decoder reads it with (`JpegXlCoefficientContexts`). The forward DCT was a product by bases
+  context derivation the decoder reads it with (`JpegXlCoefficientContexts`). The vector paths of the encoder (Gaborish,
+  quantization, the terms of the adaptive quantization) do the operations of the scalar code in the same order, and the
+  sums stay scalar, so they leave the files unchanged; the conversion to XYB uses its own cube root
+  (`JpegXlForwardColor.CubeRoot`, three Newton steps, within 3e-7 of `MathF.Cbrt`), the same in the scalar and the vector
+  code, so the files do not depend on the vector width. The forward DCT was a product by bases
   measured on the decoder, O(N^2) per line: the halving one gives the same coefficients within 3e-8 and the same files
   but for a few bytes, with 2.4 to 3.2 times fewer instructions for the 64x64 and 8x8 transforms. The blocks of a VarDCT
   frame do not predict each other, so the encoder does not reconstruct what it writes; its decisions use float32 in a
@@ -1044,8 +1048,16 @@ thin public types over its `FontFace`.
   rented from the scope of the conversion (a scope of the default limits for `IccColorTransform`). The last stage of a
   16-bit conversion is still evaluated: its inputs are the doubles that come out of a matrix, not 65,536 values.
 - Default parallelism is one worker (`ImageConfiguration.MaxDegreeOfParallelism`). Only `Resize`, the transformations,
-  `Convolve`, the blurs (`GaussianBlur`, `BoxBlur`, `MedianBlur`), `Sharpen` and `DetectEdges` are parallel, and their result must not
-  depend on the worker count (`ParallelConvolutionTests`: a frame needs 65,536 pixels to get several workers). The HEIC
+  `Convolve`, the blurs (`GaussianBlur`, `BoxBlur`, `MedianBlur`), `Sharpen`, `DetectEdges`, the `Pixelate`, `OilPaint` and
+  `Flatten` effects (`EffectScratch`) and the `ImageSimilarity` metrics (SSIM, PSNR, SSIMULACRA 2, Butteraugli) are
+  parallel, and their result must not depend on the worker count (`ParallelConvolutionTests`,
+  `ImageSimilarityTests.Metrics_DoNotDependOnTheWorkerCount`: a frame needs 65,536 pixels to get several workers). Split
+  rows with `RowBands`: a worker writes only its own rows, and reads the rows of its neighbors from copies taken before any
+  row is rewritten (halos). A floating-point sum is never split by worker: sum bands of `RowBands.SumBandRows` rows, a
+  constant, and add the band sums in band order (`RowBands.Sum`), so one worker and sixteen add in the same order. Integer
+  sums are exact and can be split any way. When the rows a worker reads can fail (samples without an 8-bit value), use
+  `RowBands.RunParallelInBandOrder`, which throws the error of the first failing band, as one worker would. Rent the
+  scratch of every worker on the calling thread, before any pixel changes. The HEIC
   and AVIF decoders decode the tiles of a grid of at least 65,536 samples concurrently (`HeifGridTiles.Decode`): the
   structure parser and the `InputResourceTracker` are not thread-safe and stay on the calling thread (each worker charges
   its hidden pixels to a tracker of its own, merged in tile order), and the pixels and the errors are those of one worker
@@ -1054,8 +1066,31 @@ thin public types over its `FontFace`.
   (`HeifEncoderSession.EncodeTiles`): each worker has encoders of its own, created with the session and charged to its
   scope, and the coded tiles are appended in tile order, so the file is byte-identical to one worker's
   (`HeicEncoderTests`, `AvifEncoderTests`). A worker codes its next tile with the same encoders after a `Reset`, which
-  must code it as a new encoder would (`HevcEncoder.Reset`, `Av1Encoder.Reset`). Other decoding, encoding and drawing
-  stay sequential.
+  must code it as a new encoder would (`HevcEncoder.Reset`, `Av1Encoder.Reset`). The AV1 post-processing filters
+  (`Av1PostFilter.Apply`) of a frame of at least 65,536 pixels run by bands of whole groups of 16 luma rows
+  (`Av1PostFilter.GetBandRow`), one stage after the other: the loop filter one pass at a time (an edge reads at most half
+  the transform block on each side, so the edges of different rows of a pass never share a sample), CDEF from copies of
+  the 2 unfiltered rows on each side of every band edge (`Av1Cdef.SaveBandEdge`), the upscaling by rows and the loop
+  restoration by stripes (a stripe reads only its own rows and the saved deblocked boundaries). Each worker rents its own
+  rows and scratch. The tiles of a grid that several workers decode filter their frames on their own worker
+  (`AvifDecoder.DecodeImage`), so the threads never multiply; a single item, or a grid decoded by one worker, gets the
+  configured count. `Av1PostFilter.TestIgnoreMinimumSize` makes `Av1DecoderConformanceTests` decode every vector by 2, 3
+  and 16 workers against the reference digests. Measured on 3840x2160 single-frame files (Release, net11.0, M5 Pro, one
+  worker): the loop filter and CDEF are 25% of the decoding time of our default-effort output and 39% at quality 40,
+  which decode 1.27x and 1.45x faster with 8 workers (the bound is ~1.5x). The HEVC in-loop filters stay sequential:
+  deblocking and SAO are 3-6% of the decoding time of a single-picture HEIC at the default quality and 19% at quality 40,
+  too little to be worth splitting (camera HEIC files are grids, already decoded by tiles). The JPEG XL encoder and
+  decoder code the groups of a frame of at least 65,536 pixels concurrently (`JpegXlGroupWorkers`): a worker is a copy of
+  `JpegXlVarDctEncoder` or `JpegXlVarDctDecoder` that shares the arrays of the frame, writes them only in the rectangle of
+  its group, and owns its working memory; what is computed on first use (matrices, orders, ranks) is computed before the
+  workers start; a group section is written in a writer of its own and appended in order (sections start at a byte
+  boundary); the counts of the entropy code are added up from one code per worker. The bytes, the pixels and the error
+  (the one of the first failing group) never depend on the worker count (`FilesWrittenByWorkersAreTheFilesOfOneWorker`,
+  `FramesDecodedByWorkersHaveThePixelsOfOneWorker`). The restoration filters of the decoder run by row bands
+  (`JpegXlRestorationFilters`), each with its own pipeline: they filter in place, so the rows a band reads around it (the
+  sum of the reaches of the filters, 7 rows at most) are copied before any band starts, and each filter of a band also
+  produces the rows around it that the next filters read (`RestorationFiltersMatchTheFiltersAppliedToTheWholeFrame`
+  splits frames down to bands of one row). Other decoding, encoding and drawing stay sequential.
 - Static row callbacks allocate nothing per row (`PerformanceContractTests`).
 - This repository builds with the updated memory-safety rules: wrap `MemoryMarshal`, `Unsafe` and `Vector*.LoadUnsafe` /
   `StoreUnsafe` calls in `unsafe(...)`, or in an `unsafe { }` block for a statement.

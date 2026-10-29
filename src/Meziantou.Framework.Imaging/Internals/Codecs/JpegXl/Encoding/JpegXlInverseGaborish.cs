@@ -1,3 +1,6 @@
+using System.Numerics;
+using System.Runtime.InteropServices;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
@@ -100,7 +103,39 @@ internal static class JpegXlInverseGaborish
             var row3 = source.Slice((y + 3) * sourceStride, width + (2 * Radius));
             var row4 = source.Slice((y + 4) * sourceStride, width + (2 * Radius));
             var output = destination.Slice(y * destinationStride, width);
-            for (var x = 0; x < width; x++)
+            var x = 0;
+            if (Vector.IsHardwareAccelerated && width >= Vector<float>.Count)
+            {
+                // The same sums in the same order as below, a vector of samples at a time
+                ref var r0 = ref unsafe(MemoryMarshal.GetReference(row0));
+                ref var r1 = ref unsafe(MemoryMarshal.GetReference(row1));
+                ref var r2 = ref unsafe(MemoryMarshal.GetReference(row2));
+                ref var r3 = ref unsafe(MemoryMarshal.GetReference(row3));
+                ref var r4 = ref unsafe(MemoryMarshal.GetReference(row4));
+                ref var target = ref unsafe(MemoryMarshal.GetReference(output));
+                var centerVector = new Vector<float>(center);
+                var sideVector = new Vector<float>(side);
+                var cornerVector = new Vector<float>(corner);
+                var farVector = new Vector<float>(far);
+                var knightVector = new Vector<float>(knight);
+                var farCornerVector = new Vector<float>(farCorner);
+                for (; x <= width - Vector<float>.Count; x += Vector<float>.Count)
+                {
+                    var offset = (nuint)x;
+                    var sides = (Load(ref r2, offset + 1) + Load(ref r2, offset + 3)) + (Load(ref r1, offset + 2) + Load(ref r3, offset + 2));
+                    var corners = (Load(ref r1, offset + 1) + Load(ref r1, offset + 3)) + (Load(ref r3, offset + 1) + Load(ref r3, offset + 3));
+                    var fars = (Load(ref r2, offset) + Load(ref r2, offset + 4)) + (Load(ref r0, offset + 2) + Load(ref r4, offset + 2));
+                    var knights = ((Load(ref r0, offset + 1) + Load(ref r0, offset + 3)) + (Load(ref r4, offset + 1) + Load(ref r4, offset + 3))) + ((Load(ref r1, offset) + Load(ref r1, offset + 4)) + (Load(ref r3, offset) + Load(ref r3, offset + 4)));
+                    var farCorners = (Load(ref r0, offset) + Load(ref r0, offset + 4)) + (Load(ref r4, offset) + Load(ref r4, offset + 4));
+                    var value = (Load(ref r2, offset + 2) * centerVector) + (sides * sideVector) + (corners * cornerVector) + (fars * farVector) + (knights * knightVector) + (farCorners * farCornerVector);
+                    unsafe
+                    {
+                        value.StoreUnsafe(ref target, offset);
+                    }
+                }
+            }
+
+            for (; x < width; x++)
             {
                 var sides = (row2[x + 1] + row2[x + 3]) + (row1[x + 2] + row3[x + 2]);
                 var corners = (row1[x + 1] + row1[x + 3]) + (row3[x + 1] + row3[x + 3]);
@@ -110,5 +145,7 @@ internal static class JpegXlInverseGaborish
                 output[x] = (row2[x + 2] * center) + (sides * side) + (corners * corner) + (fars * far) + (knights * knight) + (farCorners * farCorner);
             }
         }
+
+        static Vector<float> Load(ref float source, nuint offset) => unsafe(Vector.LoadUnsafe(ref source, offset));
     }
 }

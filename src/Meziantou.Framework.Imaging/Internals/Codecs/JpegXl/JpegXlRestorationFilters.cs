@@ -21,6 +21,13 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// first one has already copied. The result is the one of the filters applied to the whole frame one after the other.
 /// </para>
 /// <para>
+/// Several workers filter a large frame in bands of rows, each with its own pipeline. The first filter of a band receives
+/// its rows and, around them, the rows up to the sum of the reaches of the filters, which the neighbor bands filter in
+/// place: they are copied before any band starts. Each filter produces the rows of the band and the rows around them that
+/// the filters after it read, so a band computes again a few rows of its neighbors, and the result does not depend on
+/// the number of bands.
+/// </para>
+/// <para>
 /// A step of the edge-preserving filter computes, once for each row, the absolute differences of the samples with their
 /// neighbor in each direction of the step, then their sums over the patch: the distance of each sample to that neighbor.
 /// The distance of a sample to its neighbor in the opposite direction is the distance of that neighbor, since the
@@ -93,18 +100,25 @@ internal static class JpegXlRestorationFilters
         return InverseSigmaNumerator / filter.EpfSigmaForModular;
     }
 
+    /// <summary>
+    /// Gets the number of bands of rows a frame is filtered in: one per worker, at most
+    /// <paramref name="maxDegreeOfParallelism"/>, and one for a small frame (<see cref="RowBands.GetWorkerCount"/>).
+    /// </summary>
+    public static int GetBandCount(int width, int height, int maxDegreeOfParallelism) => RowBands.GetWorkerCount(new Size(width, height), maxDegreeOfParallelism);
+
     /// <summary>Applies the Gabor-like filter to the three channels.</summary>
     /// <param name="planes">The samples of each channel, in rows of <paramref name="stride"/> values.</param>
     /// <param name="stride">The distance between two rows.</param>
     /// <param name="width">The width of the frame.</param>
     /// <param name="height">The height of the frame.</param>
     /// <param name="filter">The parameters of the filter.</param>
+    /// <param name="bands">The number of bands of rows filtered at the same time (<see cref="GetBandCount"/>); the result does not depend on it.</param>
     /// <param name="scope">The scope of the working memory.</param>
     /// <param name="cancellationToken">The token checked between rows.</param>
-    public static void ApplyGaborish(ReadOnlySpan<Av1PooledArray<float>> planes, int stride, int width, int height, JpegXlRestorationFilter filter, AllocationScope scope, CancellationToken cancellationToken)
+    public static void ApplyGaborish(ReadOnlySpan<Av1PooledArray<float>> planes, int stride, int width, int height, JpegXlRestorationFilter filter, int bands, AllocationScope scope, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(filter);
-        Run(planes, stride, width, height, filter, isGaborEnabled: true, epfIterations: 0, inverseSigma: default, blocksWide: 0, scope, cancellationToken);
+        Run(planes, stride, width, height, filter, isGaborEnabled: true, epfIterations: 0, inverseSigma: default, blocksWide: 0, bands, scope, cancellationToken);
     }
 
     /// <summary>Applies the steps of the edge-preserving filter that the number of iterations of the frame selects.</summary>
@@ -115,12 +129,13 @@ internal static class JpegXlRestorationFilters
     /// <param name="filter">The parameters of the filter.</param>
     /// <param name="inverseSigma">The inverse strength of each block of 8x8 samples, in rows of <paramref name="blocksWide"/> values.</param>
     /// <param name="blocksWide">The width of the frame, in blocks.</param>
+    /// <param name="bands">The number of bands of rows filtered at the same time (<see cref="GetBandCount"/>); the result does not depend on it.</param>
     /// <param name="scope">The scope of the working memory.</param>
     /// <param name="cancellationToken">The token checked between rows.</param>
-    public static void ApplyEdgePreservingFilter(ReadOnlySpan<Av1PooledArray<float>> planes, int stride, int width, int height, JpegXlRestorationFilter filter, ReadOnlySpan<float> inverseSigma, int blocksWide, AllocationScope scope, CancellationToken cancellationToken)
+    public static void ApplyEdgePreservingFilter(ReadOnlySpan<Av1PooledArray<float>> planes, int stride, int width, int height, JpegXlRestorationFilter filter, ReadOnlySpan<float> inverseSigma, int blocksWide, int bands, AllocationScope scope, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(filter);
-        Run(planes, stride, width, height, filter, isGaborEnabled: false, filter.EpfIterations, inverseSigma, blocksWide, scope, cancellationToken);
+        Run(planes, stride, width, height, filter, isGaborEnabled: false, filter.EpfIterations, inverseSigma, blocksWide, bands, scope, cancellationToken);
     }
 
     /// <summary>
@@ -134,55 +149,157 @@ internal static class JpegXlRestorationFilters
     /// <param name="filter">The parameters of the filters.</param>
     /// <param name="inverseSigma">The inverse strength of each block of 8x8 samples, in rows of <paramref name="blocksWide"/> values; not read without edge-preserving filter.</param>
     /// <param name="blocksWide">The width of the frame, in blocks.</param>
+    /// <param name="bands">The number of bands of rows filtered at the same time (<see cref="GetBandCount"/>); the result does not depend on it.</param>
     /// <param name="scope">The scope of the working memory.</param>
     /// <param name="cancellationToken">The token checked between rows.</param>
-    public static void Apply(ReadOnlySpan<Av1PooledArray<float>> planes, int stride, int width, int height, JpegXlRestorationFilter filter, ReadOnlySpan<float> inverseSigma, int blocksWide, AllocationScope scope, CancellationToken cancellationToken)
+    public static void Apply(ReadOnlySpan<Av1PooledArray<float>> planes, int stride, int width, int height, JpegXlRestorationFilter filter, ReadOnlySpan<float> inverseSigma, int blocksWide, int bands, AllocationScope scope, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(filter);
-        Run(planes, stride, width, height, filter, filter.IsGaborEnabled, filter.EpfIterations, inverseSigma, blocksWide, scope, cancellationToken);
+        Run(planes, stride, width, height, filter, filter.IsGaborEnabled, filter.EpfIterations, inverseSigma, blocksWide, bands, scope, cancellationToken);
     }
 
-    private static void Run(ReadOnlySpan<Av1PooledArray<float>> planes, int stride, int width, int height, JpegXlRestorationFilter filter, bool isGaborEnabled, int epfIterations, ReadOnlySpan<float> inverseSigma, int blocksWide, AllocationScope scope, CancellationToken cancellationToken)
+    private static void Run(ReadOnlySpan<Av1PooledArray<float>> planes, int stride, int width, int height, JpegXlRestorationFilter filter, bool isGaborEnabled, int epfIterations, ReadOnlySpan<float> inverseSigma, int blocksWide, int bands, AllocationScope scope, CancellationToken cancellationToken)
     {
         // Three iterations add a first step with a wide neighborhood; two add a last step that compares single samples
-        Span<int> steps = stackalloc int[4];
-        var count = 0;
+        var steps = new List<int>(4);
         if (isGaborEnabled)
         {
-            steps[count++] = GaborishStep;
+            steps.Add(GaborishStep);
         }
 
         if (epfIterations >= 3)
         {
-            steps[count++] = 0;
+            steps.Add(0);
         }
 
         if (epfIterations >= 1)
         {
-            steps[count++] = 1;
+            steps.Add(1);
         }
 
         if (epfIterations >= 2)
         {
-            steps[count++] = 2;
+            steps.Add(2);
         }
 
-        if (count == 0 || width <= 0 || height <= 0)
+        if (steps.Count == 0 || width <= 0 || height <= 0)
             return;
 
-        Span<Stage> stages = stackalloc Stage[count];
-        var length = 0L;
-        for (var s = 0; s < count; s++)
+        bands = Math.Clamp(bands, 1, height);
+        if (bands == 1)
         {
-            stages[s] = new Stage(steps[s], width, length);
+            RunBand(planes, stride, width, height, filter, CollectionsMarshal.AsSpan(steps), inverseSigma, blocksWide, 0, height, halo: default, scope, cancellationToken);
+            return;
+        }
+
+        // A band reads the rows around it, up to the reach of the filters, which the neighbor bands filter in place: they
+        // are copied before any band starts, and each band computes again the rows of the filters it needs around it
+        var reach = 0;
+        foreach (var step in steps)
+        {
+            reach += GetBorder(step);
+        }
+
+        var haloStarts = new int[bands + 1];
+        for (var band = 0; band < bands; band++)
+        {
+            var (start, end) = GetBand(height, band, bands);
+            haloStarts[band + 1] = checked(haloStarts[band] + (3 * width * GetHaloRows(height, reach, start, end)));
+        }
+
+        using var halo = Av1PooledArray<float>.Rent(scope, haloStarts[bands], clear: false);
+        for (var band = 0; band < bands; band++)
+        {
+            var (start, end) = GetBand(height, band, bands);
+            CopyHalo(planes, stride, width, height, reach, start, end, halo.Span[haloStarts[band]..haloStarts[band + 1]]);
+        }
+
+        // The workers cannot hold spans: they read the planes and the strengths of the blocks from arrays
+        Av1PooledArray<float>[] planeArray = [planes[0], planes[1], planes[2]];
+        using var sigma = inverseSigma.IsEmpty ? null : Av1PooledArray<float>.Rent(scope, inverseSigma.Length, clear: false);
+        if (sigma is not null)
+        {
+            inverseSigma.CopyTo(sigma.Span);
+        }
+
+        RowBands.RunParallel(bands, band =>
+        {
+            var (start, end) = GetBand(height, band, bands);
+            var sigmaSpan = sigma is null ? default : sigma.Span;
+            RunBand(planeArray, stride, width, height, filter, CollectionsMarshal.AsSpan(steps), sigmaSpan, blocksWide, start, end, halo.Span[haloStarts[band]..haloStarts[band + 1]], scope, cancellationToken);
+        });
+    }
+
+    /// <summary>Gets the rows of a band: the first one and the one after the last one.</summary>
+    private static (int Start, int End) GetBand(int height, int band, int bands) => (RowBands.GetBandStart(height, band, bands), RowBands.GetBandStart(height, band + 1, bands));
+
+    /// <summary>Gets the reach of a filter: the number of rows it reads above and below a row, and of samples on each side.</summary>
+    private static int GetBorder(int step) => step switch
+    {
+        GaborishStep => 1,
+        0 => 3,
+        1 => 2,
+        _ => 1,
+    };
+
+    /// <summary>Gets the number of rows of the frame that a band reads above and below its own rows.</summary>
+    private static int GetHaloRows(int height, int reach, int start, int end) => (start - Math.Max(0, start - reach)) + (Math.Min(height, end + reach) - end);
+
+    /// <summary>Copies the rows a band reads above and below its own rows, the three channels one after the other.</summary>
+    private static void CopyHalo(ReadOnlySpan<Av1PooledArray<float>> planes, int stride, int width, int height, int reach, int start, int end, Span<float> halo)
+    {
+        var first = Math.Max(0, start - reach);
+        var last = Math.Min(height, end + reach);
+        var rows = GetHaloRows(height, reach, start, end);
+        for (var c = 0; c < 3; c++)
+        {
+            var plane = planes[c].Span;
+            var target = halo.Slice(c * rows * width, rows * width);
+            var index = 0;
+            for (var y = first; y < last; y++)
+            {
+                if (y >= start && y < end)
+                    continue;
+
+                plane.Slice(y * stride, width).CopyTo(target.Slice(index * width, width));
+                index++;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Filters the rows from <paramref name="start"/> to <paramref name="end"/>: the first filter receives them with the rows
+    /// around them up to the reach of the filters, read from <paramref name="halo"/> (<see cref="CopyHalo"/>, empty for a band
+    /// of the whole frame), and each filter produces the rows the next filters read.
+    /// </summary>
+    private static void RunBand(ReadOnlySpan<Av1PooledArray<float>> planes, int stride, int width, int height, JpegXlRestorationFilter filter, ReadOnlySpan<int> steps, ReadOnlySpan<float> inverseSigma, int blocksWide, int start, int end, ReadOnlySpan<float> halo, AllocationScope scope, CancellationToken cancellationToken)
+    {
+        // A filter produces the rows of the band and, around them, the rows the filters after it read
+        Span<int> outputStarts = stackalloc int[steps.Length];
+        Span<int> outputEnds = stackalloc int[steps.Length];
+        var reach = 0;
+        for (var s = steps.Length - 1; s >= 0; s--)
+        {
+            outputStarts[s] = Math.Max(0, start - reach);
+            outputEnds[s] = Math.Min(height, end + reach);
+            reach += GetBorder(steps[s]);
+        }
+
+        Span<Stage> stages = stackalloc Stage[steps.Length];
+        var length = 0L;
+        for (var s = 0; s < steps.Length; s++)
+        {
+            stages[s] = new Stage(steps[s], width, length, outputStarts[s], outputEnds[s]);
             length += stages[s].Length;
         }
 
+        var first = Math.Max(0, start - reach);
+        var last = Math.Min(height, end + reach);
         using var buffer = Av1PooledArray<float>.Rent(scope, length, clear: false);
-        var pipeline = new Pipeline(planes[0].Span, planes[1].Span, planes[2].Span, stride, width, height, buffer.Span, stages, filter, inverseSigma, blocksWide);
-        for (var y = 0; y < height; y++)
+        var pipeline = new Pipeline(planes[0].Span, planes[1].Span, planes[2].Span, stride, width, height, buffer.Span, stages, filter, inverseSigma, blocksWide, start, end, first, halo);
+        for (var y = first; y < last; y++)
         {
-            if ((y & 63) == 0)
+            if (((y - first) & 63) == 0)
             {
                 cancellationToken.ThrowIfCancellationRequested();
             }
@@ -843,16 +960,12 @@ internal static class JpegXlRestorationFilters
     [StructLayout(LayoutKind.Auto)]
     private struct Stage
     {
-        public Stage(int step, int width, long start)
+        public Stage(int step, int width, long start, int outputStart, int outputEnd)
         {
             Step = step;
-            Border = step switch
-            {
-                GaborishStep => 1,
-                0 => 3,
-                1 => 2,
-                _ => 1,
-            };
+            Border = GetBorder(step);
+            NextOutput = outputStart;
+            OutputEnd = outputEnd;
             Rows = (2 * Border) + 1;
             PaddedWidth = width + (2 * Border);
             Start = checked((int)start);
@@ -877,7 +990,7 @@ internal static class JpegXlRestorationFilters
                 // The distance to a neighbor in the opposite direction is the distance of that neighbor, on a row up to
                 // the deepest direction above; the distances of a row sum the differences of the rows of the patch
                 DistanceRows = deepestDirection + 1;
-                NextDistance = -deepestDirection;
+                NextDistance = outputStart - deepestDirection;
                 DifferenceRows = lastRow - firstRow + 1;
                 NextDifference = NextDistance + firstRow;
                 DifferenceStart = checked((int)(start + length));
@@ -938,13 +1051,16 @@ internal static class JpegXlRestorationFilters
         /// <summary>Gets the working memory of the filter.</summary>
         public long Length { get; }
 
+        /// <summary>Gets the row after the last row the filter produces.</summary>
+        public int OutputEnd { get; }
+
         /// <summary>Gets or sets the number of rows the filter has received.</summary>
         public int Received { get; set; }
 
         /// <summary>Gets or sets the next row the filter produces.</summary>
         public int NextOutput { get; set; }
 
-        /// <summary>Gets or sets the next row whose differences are computed; rows above the frame are mirrored rows.</summary>
+        /// <summary>Gets or sets the next row whose differences are computed; rows above the frame or the band are mirrored rows or rows the filter does not produce.</summary>
         public int NextDifference { get; set; }
 
         /// <summary>Gets or sets the next row whose distances are computed.</summary>
@@ -965,9 +1081,19 @@ internal static class JpegXlRestorationFilters
         private readonly JpegXlRestorationFilter _filter;
         private readonly ReadOnlySpan<float> _inverseSigma;
         private readonly int _blocksWide;
+        private readonly int _start;
+        private readonly int _end;
+        private readonly int _first;
+        private readonly ReadOnlySpan<float> _halo;
+        private readonly int _haloRows;
 
-        public Pipeline(Span<float> planeX, Span<float> planeY, Span<float> planeB, int stride, int width, int height, Span<float> buffer, Span<Stage> stages, JpegXlRestorationFilter filter, ReadOnlySpan<float> inverseSigma, int blocksWide)
+        public Pipeline(Span<float> planeX, Span<float> planeY, Span<float> planeB, int stride, int width, int height, Span<float> buffer, Span<Stage> stages, JpegXlRestorationFilter filter, ReadOnlySpan<float> inverseSigma, int blocksWide, int start, int end, int first, ReadOnlySpan<float> halo)
         {
+            _start = start;
+            _end = end;
+            _first = first;
+            _halo = halo;
+            _haloRows = width == 0 ? 0 : halo.Length / (3 * width);
             _planeX = planeX;
             _planeY = planeY;
             _planeB = planeB;
@@ -981,14 +1107,28 @@ internal static class JpegXlRestorationFilters
             _blocksWide = blocksWide;
         }
 
-        /// <summary>Gives a row of the channels to the first filter, then lets every filter produce the rows it can.</summary>
+        /// <summary>
+        /// Gives a row of the channels to the first filter, then lets every filter produce the rows it can. A row outside
+        /// the band is read from the copy of the rows around it, which the neighbor bands may have filtered already.
+        /// </summary>
         public void Receive(int y)
         {
             ref var first = ref _stages[0];
             for (var c = 0; c < 3; c++)
             {
                 var target = GetRingRow(first, c, y % first.Rows);
-                GetPlane(c).Slice(y * _stride, _width).CopyTo(target[first.Border..]);
+                ReadOnlySpan<float> source;
+                if (y >= _start && y < _end)
+                {
+                    source = GetPlane(c).Slice(y * _stride, _width);
+                }
+                else
+                {
+                    var index = y < _start ? y - _first : _start - _first + (y - _end);
+                    source = _halo.Slice(((c * _haloRows) + index) * _width, _width);
+                }
+
+                source.CopyTo(target[first.Border..]);
                 FillBorder(target, first.Border, _width);
             }
 
@@ -1009,7 +1149,7 @@ internal static class JpegXlRestorationFilters
         {
             ref var stage = ref _stages[index];
             stage.Received = row + 1;
-            while (stage.NextOutput < _height && stage.Received >= Math.Min(stage.NextOutput + stage.Border + 1, _height))
+            while (stage.NextOutput < stage.OutputEnd && stage.Received >= Math.Min(stage.NextOutput + stage.Border + 1, _height))
             {
                 var y = stage.NextOutput;
                 stage.NextOutput = y + 1;

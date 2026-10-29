@@ -653,6 +653,67 @@ public sealed class Av1EncoderRoundTripTests
     }
 
     [Theory]
+    [InlineData(300, 283, 8, "420", 30, 0)]
+    [InlineData(260, 261, 10, "444", 45, 1)]
+    [InlineData(290, 250, 12, "400", 30, 2)]
+    public void FramesDecodeToTheReconstructionWhateverTheNumberOfWorkers(int width, int height, int bitDepth, string format, int quality, int effort)
+    {
+        // A frame of more than 65,536 samples, coded coarsely at an effort that looks for the loop restoration, with heights
+        // that are not a multiple of the 16 rows of a band of the post-processing filters: the frame of every number of
+        // workers is the reconstruction of the encoder
+        var name = $"workers-{width}x{height}-{bitDepth}-{format}-q{quality}-e{effort}";
+        var scope = AllocationScope.Create(ImageConfiguration.Default, name);
+        var monochrome = format is "400";
+        var subsamplingX = format is "420" or "422" ? 1 : 0;
+        var subsamplingY = format is "420" ? 1 : 0;
+        var settings = new Av1EncoderSettings(width, height, bitDepth, monochrome, subsamplingX, subsamplingY, ColorPrimaries: 1, TransferCharacteristics: 13, MatrixCoefficients: 6, FullRange: true, ChromaSamplePosition: 0, StillPicture: true, Lossless: false, Quality: quality, Effort: effort);
+        using var encoder = new Av1Encoder(scope, settings);
+        var planeCount = monochrome ? 1 : 3;
+        for (var plane = 0; plane < planeCount; plane++)
+        {
+            var buffer = encoder.GetSourcePlane(plane);
+            var samples = CreateSamples("photo", buffer.Width, buffer.Height, bitDepth, seed: plane + height);
+            for (var y = 0; y < buffer.Height; y++)
+            {
+                samples.AsSpan(y * buffer.Width, buffer.Width).CopyTo(buffer.GetRow(y));
+            }
+        }
+
+        encoder.BeginFrame();
+        while (!encoder.Encode(XunitCancellationToken))
+        {
+        }
+
+        var payload = encoder.Payload.ToArray();
+        foreach (var workers in (int[])[1, 2, 3, 16])
+        {
+            using var decoder = new Av1Decoder(scope) { MaxDegreeOfParallelism = workers };
+            decoder.SetInput(payload, 0, payload.Length);
+            var frame = decoder.DecodeNextOutputFrame(XunitCancellationToken);
+            Assert.NotNull(frame);
+            try
+            {
+                var header = frame.Header;
+                Assert.True(header.UsesLr, $"{name}: the frame has no loop restoration");
+                Assert.True(header.CdefYPriStrength[0] is not 0 || header.CdefYSecStrength[0] is not 0 || header.CdefBits is not 0, $"{name}: the frame has no CDEF");
+                for (var plane = 0; plane < planeCount; plane++)
+                {
+                    var decoded = frame.GetPlane(plane);
+                    var reconstructed = encoder.Reconstruction.GetPlane(plane);
+                    for (var y = 0; y < decoded.Height; y++)
+                    {
+                        Assert.True(reconstructed.GetRow(y).SequenceEqual(decoded.GetRow(y)), $"{name}: row {y} of plane {plane} decoded by {workers} workers is not the row that the encoder reconstructed");
+                    }
+                }
+            }
+            finally
+            {
+                frame.Release();
+            }
+        }
+    }
+
+    [Theory]
     [InlineData(96, 80, 8, "420", 30, 0)]
     [InlineData(200, 130, 8, "444", 60, 1)]
     [InlineData(300, 280, 10, "422", 45, 0)]

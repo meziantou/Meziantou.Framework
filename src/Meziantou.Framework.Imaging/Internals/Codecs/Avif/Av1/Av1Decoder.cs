@@ -47,6 +47,12 @@ internal sealed class Av1Decoder : IDisposable
     public Av1InLoopFilters InLoopFilters { get; set; } = Av1InLoopFilters.All;
 
     /// <summary>
+    /// Gets or sets the largest number of workers of the post-processing filters of a frame (<see cref="Av1PostFilter.Apply"/>):
+    /// the frames are the same whatever the value. Defaults to 1, the calling thread only.
+    /// </summary>
+    public int MaxDegreeOfParallelism { get; set; } = 1;
+
+    /// <summary>
     /// Gets or sets whether every shown frame of the operating point is output, whatever its spatial layer: the output of a
     /// conformance test. Otherwise a temporal unit outputs the frame of its highest spatial layer only.
     /// </summary>
@@ -355,7 +361,7 @@ internal sealed class Av1Decoder : IDisposable
     private Av1FrameBuffer? DecodeFrameWrapup(Av1FrameBuffer frame, CancellationToken cancellationToken)
     {
         var header = frame.Header;
-        _coding.PostFilter.Apply(_scope, frame, _coding.State, InLoopFilters, cancellationToken);
+        _coding.PostFilter.Apply(_scope, frame, _coding.State, InLoopFilters, cancellationToken, maxDegreeOfParallelism: MaxDegreeOfParallelism);
         _coding.StoreFrame();
         if (header.ShowFrame)
             return frame;

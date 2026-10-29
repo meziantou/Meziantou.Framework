@@ -66,44 +66,70 @@ internal ref struct Av1LoopFilter
     }
 
     /// <summary>Filters the planes of <paramref name="frame"/> (section 7.14.1).</summary>
-    public static void Apply(Av1FrameBuffer frame, Av1FrameState state, CancellationToken cancellationToken)
+    /// <param name="frame">The reconstructed frame.</param>
+    /// <param name="state">The block-level state of the frame.</param>
+    /// <param name="workers">
+    /// The number of workers: the rows of blocks are split into <see cref="Av1PostFilter.GetBandRow"/> bands, filtered
+    /// concurrently, all the vertical edges of a plane before its horizontal edges.
+    /// </param>
+    /// <param name="cancellationToken">The cancellation token of the operation.</param>
+    /// <remarks>
+    /// An edge reads at most half the size of the transform blocks on each side of it (7 samples of a filter of size 16, 4
+    /// of size 8 and 2 of size 4), so the edges of different rows of blocks of a pass never touch the same sample: the
+    /// samples do not depend on the order of the rows, nor on the number of workers.
+    /// </remarks>
+    public static void Apply(Av1FrameBuffer frame, Av1FrameState state, int workers, CancellationToken cancellationToken)
     {
-        Span<byte> levels = stackalloc byte[LevelCount];
-        var filter = new Av1LoopFilter(frame, state, levels);
         var header = frame.Header;
-        var sequence = frame.Sequence;
-        for (var plane = 0; plane < sequence.PlaneCount; plane++)
+        for (var plane = 0; plane < frame.Sequence.PlaneCount; plane++)
         {
             if (plane is not 0 && header.LoopFilterLevel[1 + plane] is 0)
                 continue;
 
-            var planeBuffer = frame.GetPlane(plane);
-            filter._samples = planeBuffer.Samples;
-            filter._stride = planeBuffer.Stride;
-            filter._txSizes = state.GetLoopFilterTxSizes(plane);
-            var rowStep = plane is 0 ? 1 : 1 << sequence.SubsamplingY;
-            var colStep = plane is 0 ? 1 : 1 << sequence.SubsamplingX;
-
-            // The edges are filtered by pairs of consecutive edges along their lines: the vertical edges of two rows of
-            // blocks, then the horizontal edges of two columns. The lines of the edges of a pair are distinct and the edges
-            // that cross a line are still filtered in order, so the samples are those of the order of section 7.14.1
-            for (var row = 0; row < header.MiRows; row += 2 * rowStep)
+            for (var pass = 0; pass < 2; pass++)
             {
-                if ((row & 15) is 0)
-                    cancellationToken.ThrowIfCancellationRequested();
+                if (workers is 1)
+                {
+                    FilterRows(frame, state, plane, pass, 0, header.MiRows, cancellationToken);
+                    continue;
+                }
 
-                for (var col = 0; col < header.MiCols; col += colStep)
+                RowBands.RunParallel(workers, band => FilterRows(frame, state, plane, pass, Av1PostFilter.GetBandRow(header.MiRows, band, workers), Av1PostFilter.GetBandRow(header.MiRows, band + 1, workers), cancellationToken));
+            }
+        }
+    }
+
+    // The edges of a pass of a plane on the rows of blocks from rowStart to rowEnd, two multiples of 4. The edges are filtered
+    // by pairs of consecutive edges along their lines: the vertical edges of two rows of blocks, or the horizontal edges of
+    // two columns. The lines of the edges of a pair are distinct and the edges that cross a line are still filtered in order,
+    // so the samples are those of the order of section 7.14.1
+    private static void FilterRows(Av1FrameBuffer frame, Av1FrameState state, int plane, int pass, int rowStart, int rowEnd, CancellationToken cancellationToken)
+    {
+        Span<byte> levels = stackalloc byte[LevelCount];
+        var filter = new Av1LoopFilter(frame, state, levels);
+        var sequence = frame.Sequence;
+        var planeBuffer = frame.GetPlane(plane);
+        filter._samples = planeBuffer.Samples;
+        filter._stride = planeBuffer.Stride;
+        filter._txSizes = state.GetLoopFilterTxSizes(plane);
+        var rowStep = plane is 0 ? 1 : 1 << sequence.SubsamplingY;
+        var colStep = plane is 0 ? 1 : 1 << sequence.SubsamplingX;
+        var miCols = frame.Header.MiCols;
+        for (var row = rowStart; row < rowEnd; row += pass is 0 ? 2 * rowStep : rowStep)
+        {
+            if ((row & 15) is 0)
+                cancellationToken.ThrowIfCancellationRequested();
+
+            if (pass is 0)
+            {
+                for (var col = 0; col < miCols; col += colStep)
                 {
                     filter.FilterEdgePair(plane, pass: 0, row, col, row + rowStep, col);
                 }
             }
-
-            for (var row = 0; row < header.MiRows; row += rowStep)
+            else
             {
-                if ((row & 15) is 0)
-                    cancellationToken.ThrowIfCancellationRequested();
-
-                for (var col = 0; col < header.MiCols; col += 2 * colStep)
+                for (var col = 0; col < miCols; col += 2 * colStep)
                 {
                     filter.FilterEdgePair(plane, pass: 1, row, col, row, col + colStep);
                 }

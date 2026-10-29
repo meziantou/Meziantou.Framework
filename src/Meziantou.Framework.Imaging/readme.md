@@ -127,8 +127,8 @@ using var image = Image.Load("animation.gif");          // every displayed frame
 image.Resize(new ResizeOptions(320, 240));               // all frames, atomically
 image.Save("thumbnail.png", new PngEncoder());           // APNG, because the image is animated
 
-using var frame = image.CloneFrame(0);                    // JPEG stores one frame: export it explicitly
-frame.Save("first.jpg", new JpegEncoder { Quality = 85, BackgroundColor = new Rgba32(255, 255, 255) });
+image.Frames[0].Save("first.jpg",                         // JPEG stores one frame: export it explicitly
+    new JpegEncoder { Quality = 85, BackgroundColor = new Rgba32(255, 255, 255) });
 ```
 <!-- endref -->
 
@@ -207,7 +207,8 @@ public state: editing, removing or reordering frames can never leave stale encod
   creates default settings (infinite loop); removing frames down to one keeps them, so the image stays animated until
   `Animation` is set to `null` (allowed only with one frame and no poster).
 - Static outputs (static PNG, JPEG) reject animated images with `UnsupportedImageFeatureException` instead of silently
-  saving the first frame; export a frame explicitly with `CloneFrame`.
+  saving the first frame; save a frame explicitly with `Frames[i].Save` (or `PosterFrame.Save`), or extract it with
+  `CloneFrame` to edit it apart from the animation.
 
 **Posters and playback**. APNG can store a default image that is *not* part of the animation:
 decoders that do not support APNG show it, APNG players skip it. It is exposed as `PosterFrame`, excluded from
@@ -459,10 +460,13 @@ processed concurrently.
 An `Image` and its frames must not be used concurrently while any thread mutates them or holds a lease. Readers and
 writers support one operation at a time: overlapping calls throw `InvalidOperationException`. Internal parallelism is off
 by default (`ImageConfiguration.MaxDegreeOfParallelism = 1`); with more workers, only large resizes, transformations,
-convolutions, blurs, medians and unsharp masks are split into row bands, the tiles of large HEIC and AVIF grids are
-decoded concurrently, and the tiles of large HEIC and AVIF grids (`HeicEncoder.GridTileSize`, `AvifEncoder.GridTileSize`)
-are encoded concurrently, with results
-identical to the sequential ones (the same pixels, the same encoded bytes).
+convolutions, blurs, medians, unsharp masks, the `Pixelate`, `OilPaint` and `Flatten` effects and the `ImageSimilarity`
+comparisons (SSIM, PSNR, SSIMULACRA 2, Butteraugli) are split into row bands, the tiles of large HEIC and AVIF grids and
+the post-processing filters of large AVIF images (by row bands) are decoded concurrently, the tiles of large HEIC and
+AVIF grids (`HeicEncoder.GridTileSize`, `AvifEncoder.GridTileSize`) are encoded concurrently, and the groups of large
+JPEG XL frames are encoded and decoded concurrently, with results identical to the sequential ones (the same pixels, the
+same encoded bytes). A worker writes only its own rows, and the floating-point sums of the comparisons are made by bands
+of 64 rows whatever the number of workers, added in order.
 
 ### Failure atomicity
 
@@ -630,8 +634,9 @@ public static void ConvertToGray16(string inputPath, string outputPath)
 public static void ExportFrameAsJpeg(string animatedPath, int frameIndex, string jpegPath)
 {
     using var animation = Image.Load(animatedPath);
-    using var frame = animation.CloneFrame(frameIndex);
-    frame.Save(jpegPath, new JpegEncoder
+
+    // The frame is saved as a still image, without copying its pixels
+    animation.Frames[frameIndex].Save(jpegPath, new JpegEncoder
     {
         Quality = 85,
         BackgroundColor = new Rgba32(255, 255, 255),
@@ -1115,7 +1120,11 @@ stored samples in double precision and rounded once, as the blurs do (floating-p
 oil painting moves its window by one column at a time for the integer formats, whose sums are exact, so its time per
 pixel grows with the radius; for `RgbaFloat` and `RgbaHalf` it grows with its square. `Flatten` uses the formulas of a
 conversion to a format without alpha with `PixelConversionOptions.BackgroundColor`: a flattened `Rgba32` image converted
-to `Rgb24` is that conversion, bit for bit, and a format without alpha is left as it is.
+to `Rgb24` is that conversion, bit for bit, and a format without alpha is left as it is. `Pixelate`, `OilPaint` and
+`Flatten` split the rows of a frame of at least 65,536 pixels between up to `ImageConfiguration.MaxDegreeOfParallelism`
+workers, with identical results: a band of the pixelation starts on a row of blocks, and a band of the oil painting is
+at least as tall as its window and reads the rows around it from a copy taken before any row changes. With 8 workers,
+`OilPaint(levels: 20, radius: 5)` on a 3840x2160 photograph is 5 times faster (350 ms to 70 ms, Apple M5 Pro).
 
 <!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_Effects;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -1401,6 +1410,12 @@ Every pixel format is read as 8-bit RGBA, with the conversion of `CloneAs<Rgba32
 frames of different pixel formats can be compared. The results depend only on the pixels, not on the hardware; the last
 digits of PSNR, SSIMULACRA 2 and Butteraugli can differ between platforms, as they use the logarithm and power functions
 of the platform. The members compare frames: compare an animation frame by frame.
+
+SSIM, PSNR, SSIMULACRA 2 and Butteraugli use up to `ImageConfiguration.MaxDegreeOfParallelism` workers (the
+configuration of the image of the expected frame) for frames of at least 65,536 pixels, with identical results: their
+floating-point sums are made by bands of 64 rows, added in order, whatever the number of workers. With 8 workers on a
+3840x2160 photograph (Release, net11.0, Apple M5 Pro), SSIMULACRA 2 is 5.5 times faster (2.0 s to
+0.37 s) and Butteraugli 6.7 times faster (6.3 s to 0.94 s).
 
 <!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_ImageSimilarity;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -3919,6 +3934,14 @@ anything else throws
 `ArgumentException`, the `.jpx`, `.jpf`, `.jph` and `.jhc` extensions included (these files are read, not written). An eager save validates the whole image against the output (animation, poster,
 durations, alpha, precision, metadata) before writing anything.
 
+`ImageFrame.Save` and `SaveAsync` (to a path or a stream) save one frame, a displayed frame or the poster frame, as a
+still image without copying its pixels: the output is the one of `CloneFrame(i).Save` (or `ClonePosterFrame().Save`),
+with the metadata of the frame (duration, cursor hotspot) and of its image, and no animation settings or poster. The
+same rules apply, before any output: alpha to JPEG needs `BackgroundColor`, 16 bits to an 8-bit output need
+`AllowBitDepthReduction`, and metadata the output cannot store follows `MetadataHandling`. A frame that is leased throws
+`InvalidOperationException`, and one that was removed or replaced, or whose image is disposed, throws
+`ObjectDisposedException`.
+
 OpenEXR and TIFF store floating-point samples: `OpenExrEncoder` writes `RgbaFloat` and `RgbaHalf` images as they are, and
 `TiffEncoder` writes them as 32-bit floats (see [TIFF and BigTIFF](#tiff-and-bigtiff)) with `TiffPixelLayout.Auto` and a
 compression that is not `TiffCompression.Jpeg`. Elsewhere an `RgbaFloat` or `RgbaHalf` image, writer or collection entry
@@ -4134,7 +4157,7 @@ public static void SaveSmallestPng(string inputPath, string outputPath)
 | Chroma subsampling | 4:4:4, 4:2:2, 4:2:0, 4:4:0, 4:1:1 and any integral sampling ratio (libjpeg-turbo-compatible triangle filters for factor 2, replication otherwise) | `Auto` (= 4:2:0 for color), 4:4:4, 4:2:2, 4:2:0; box-filter downsampling, canvas padded to whole MCUs by edge replication; ignored for gray formats |
 | Restart markers | Sequential and progressive scans, sequence checked | Not written |
 | Metadata (EXIF, XMP, ICC, JFIF density, COM) | Bounded; ICC reassembled from APP2 chunks; segments after the scans included | APP1 EXIF (orientation and dimensions reconciled; at most 65,527 bytes), APP1 standard XMP (at most 65,504 bytes), APP2 ICC in up to 255 chunks, JFIF density, COM for `Comment` entries; anything else follows `MetadataHandling` (`Strip` writes only the JFIF segment) |
-| Animated images, posters | — | Rejected with `UnsupportedImageFeatureException` before any output; export a frame with `CloneFrame` |
+| Animated images, posters | — | Rejected with `UnsupportedImageFeatureException` before any output; save a frame with `Frames[i].Save` |
 | CMYK/YCCK (four components) | Identified; loaded only with `CmykConversion`, otherwise `UnsupportedImageFeatureException` | Not supported |
 | Lossless with arithmetic coding (SOF11), hierarchical, sample precisions other than 8 and 12 bits in a frame that is not lossless, non-integral sampling | Not supported (`UnsupportedImageFeatureException`, also from `Identify`) | Not supported |
 
@@ -4218,7 +4241,7 @@ arrives, the encoder writes bounded bands to any destination.
 public static void SaveQoi(string inputPath, string qoiPath, string linearQoiPath, string pngPath)
 {
     using var image = Image.Load(inputPath);
-    using var frame = image.CloneFrame(0); // QOI stores one still image
+    var frame = image.Frames[0]; // QOI stores one still image
     frame.Save(qoiPath, new QoiEncoder { AllowBitDepthReduction = true });
 
     // A QOI colorspace of 1 (linear samples) is reported as a label, never applied: other formats cannot store it, so
@@ -4249,7 +4272,7 @@ format-specific choices explicit.
 public static void SaveAssetFormats(string inputPath, string bmpPath, string tgaPath, string pnmPath)
 {
     using var image = Image.Load(inputPath);
-    using var frame = image.CloneFrame(0); // BMP, TGA and Netpbm store one still image
+    var frame = image.Frames[0]; // BMP, TGA and Netpbm store one still image
 
     // BMP: 32-bit with an explicit alpha mask for pixel formats with alpha, 24-bit otherwise. Forcing 24-bit discards
     // alpha, so it needs a background color.
@@ -4276,7 +4299,7 @@ quantizer of [`Quantize`](#color-reduction), or a fixed palette); `Indexed4` and
 public static void SaveIndexedBmp(string inputPath, string outputPath)
 {
     using var image = Image.Load(inputPath);
-    using var frame = image.CloneFrame(0);
+    var frame = image.Frames[0];
 
     // 8-bit indexes, run-length encoded (BI_RLE8). The palette holds the colors of the frame exactly when there are at
     // most 256 of them; AllowColorReduction accepts a deterministic palette for the other frames, here with dithering.
@@ -4491,6 +4514,7 @@ public static string ConvertAvif(string avifPath, string pngPath)
 | Color conversion | The matrix coefficients and the range of the `colr` box, or else of the bitstream, convert YCbCr to RGB with integer arithmetic and a documented rounding: identity (RGB, exact), BT.709, FCC, BT.470BG, BT.601, SMPTE 240M, YCgCo, BT.2020 non-constant luminance, SMPTE ST 2085 (Y'D'zD'x) and the chromaticity-derived non-constant luminance coefficients, whose weights are the exact luminance of the color primaries that the file declares (primaries without chromaticities are rejected); unspecified coefficients are BT.601. The BT.2020 and chromaticity-derived constant luminance coefficients and ICtCp (with PQ or HLG) are not a matrix of the samples: they go through the transfer characteristics that the file declares, in double precision, and give the nearest sample to the exact value (a value within about a billionth of a rounding boundary may round either way, depending on the platform). The extents of the chroma of constant luminance are the ones the equations of ITU-T H.273 give, which differ in the fourth decimal from the constants printed in Rec. ITU-R BT.2020. The samples stay encoded with the transfer characteristics of the file. Subsampled chroma is upsampled bilinearly at the sample position that the bitstream declares |
 | Alpha | The alpha auxiliary image, or the alpha track of a sequence, of the size of the color image. Premultiplied colors (a `prem` reference from the color image, or from the color track, to its alpha plane) are divided by the alpha of their pixel once they are converted, with an integer division rounded to nearest: pixels always have straight alpha. A color above its alpha is clipped, and nothing is left of the color of a fully transparent pixel, which is black |
 | Grids | Grid images, for the color image and its alpha plane. The transformations of a grid apply once, to the assembled image, whether or not the tiles repeat them. With `ImageConfiguration.MaxDegreeOfParallelism` above 1, the tiles of a grid of at least 65,536 samples are decoded by up to that many workers (the pixels and the errors are those of one worker; each worker holds the decoder and the frame of its tile, charged to `MaxLiveAllocationBytes`): about 4 times faster with 8 workers for a 3840x2160 photo in tiles of 512x512 on an Apple M5 Pro |
+| Parallelism | With `ImageConfiguration.MaxDegreeOfParallelism` above 1, the post-processing filters of a frame of at least 65,536 pixels (the loop filter, CDEF, the super-resolution upscaling and the loop restoration) run by bands of rows, with the pixels of one worker; each worker needs its own rows, charged to `MaxLiveAllocationBytes`. On an Apple M5 Pro, the loop filter and CDEF are 25% (default quality) to 39% (quality 40) of the decoding time of a 3840x2160 image, which decodes 1.27 to 1.45 times faster with 8 workers. The tiles of a grid that several workers decode filter their frames on their own worker. The rest of the decoding (the symbols, the reconstruction of the blocks, film grain and the color conversion) runs on the calling thread |
 | Transformations | `irot` and `imir` are composed and reported as `Metadata.Orientation`, never applied (`AutoOrient()` applies them); the EXIF orientation tag is ignored, as the format requires. `clap` crops the image when it selects whole samples. The properties apply in the order of their association: a `clap` that follows a rotation or a mirroring selects a part of the image as they present it, and the pixels are still returned as they are coded. `pasp` is reported as `Metadata.PixelAspectRatio`, never applied. An image sequence takes its orientation from the matrix of the track header of its color track, when the matrix turns the images by quarter turns or mirrors them (any other matrix places the track in the presentation of a player and is ignored), and its clean aperture from the `clap` box of its sample entry; its alpha track has the same ones or none |
 | Metadata | ICC profile, EXIF, XMP, the CICP color description, the content light level (`clli`), the mastering display color volume (`mdcv`) and the pixel aspect ratio (`pasp`). A still image takes them from its primary item. An image sequence takes its ICC profile, its color description and the `clli`, `mdcv` and `pasp` boxes from the sample entry of its track, and its EXIF and XMP from the `meta` box of the track, or else from the `meta` box of the file when it precedes the `moov` box. The light levels and the mastering display that the bitstream itself carries (AV1 metadata units) and the content color volume (`cclv`) are not read |
 | Identification | `Header` mode reads the `meta` box (or the `moov` box of a sequence). When the file has no `colr` box, it reads on to the sequence header of the bitstream, which gives the color description and tells RGB samples from YCbCr ones, and stops there; if the bitstream precedes that box, it has already gone by and the color model is `Unknown`, never guessed. The EXIF and XMP items, which are data of the file, are returned by a full scan or a load. `FullScan` also walks every item and sample, and checks the sample format of the bitstream against its declaration |
@@ -4690,6 +4714,7 @@ public static string SaveJpegXl(string inputPath, string jxlPath, string lossyPa
 | JPEG recompression | A JPEG file recompressed by `cjxl` or by `JpegXlTranscoder` is decoded to pixels: YCbCr or RGB, subsampled chroma, the quantization tables of the file. `JpegXlTranscoder.ReconstructJpeg` rebuilds the JPEG file instead | `JpegXlTranscoder.RecompressJpeg` (not `Image.Save`: an image holds pixels) |
 | Animations | Exact durations (ticks over the tick rate), play count; frames smaller or larger than the image, the blend modes (replace, add, blend, alpha-weighted add, multiply) and the four reference frames are composed. A frame without duration is a layer of the next one, not a frame of the animation | Full frames, 1000 ticks per second (`DurationRounding`), play count; a frame without duration is rejected |
 | Orientation | The orientation of the image header is reported as `Metadata.Orientation`, never applied; the EXIF orientation tag is ignored, as the format requires | Stored in the image header |
+| Parallelism | With `ImageConfiguration.MaxDegreeOfParallelism` above 1, the groups of a frame of at least 65,536 pixels (256x256 pixels each) are decoded by up to that many workers, and the restoration filters and the color conversion of a frame run by row bands; the pixels and the errors are those of one worker. With 8 workers instead of one, a 3840x2160 lossy file decodes about 3.7 times faster and a lossless one about 5.5 times, on an Apple M5 Pro | The groups of a frame of at least 65,536 pixels are encoded by up to that many workers (lossy and lossless output, and `JpegXlTranscoder`); the bytes are those of one worker: with 8 workers instead of one, a 3840x2160 photo encodes about 4 times faster lossy (effort 5) and 6 times lossless, on an Apple M5 Pro |
 | Effort | n/a | `Effort` 0 to 9 (default 5). Lossless: 0 to 2 use a fixed color transform and predictor, 3 and above search them, 7 and above also try the weighted predictor; at every effort the samples are written with prefix codes or with ANS entropy coding, whichever is smaller; the pixels never depend on it. Lossy: 0 to 2 only use the 8x8 DCT and one quantization factor for the frame; 3 and above give each block its own quantization factor, choose between the 8x8 and the 16x16 DCT for each area, fit the chroma from luma factors of each tile and search how the alpha channel is predicted; 6 and above give the contexts of the coefficients more distributions; 7 and above also try the 16x8 and 8x16 DCTs; 8 and above the DCTs of up to 64x64 samples. It changes decisions, not the file size that `Quality` aims at |
 | Limits | Every frame is checked against the frame limits, shown or not; the pixels that are decoded without being shown (reference frames, layers, LF frames, the part of a frame outside the image, intermediate renderings) count toward `MaxTotalPixels`; decoded planes are charged to the memory budget | At most 1,073,741,824 pixels per side. Lossy output keeps 12 bytes per pixel of the frame it compresses, progressive lossless output 4 bytes per sample |
 
@@ -4852,7 +4877,7 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | Area | Behavior |
 | --- | --- |
 | JPEG decoding | Lossless with arithmetic coding (SOF11), hierarchical (SOF5–7, SOF13–15, DHP, EXP), JPEG-LS, sample precisions other than 8 and 12 bits in a frame that is not lossless, heights defined by DNL, other component counts than 1, 3 or 4, non-integral sampling ratios: `UnsupportedImageFeatureException` (also from `Identify`). CMYK/YCCK (four components): identified, but loaded only with `CmykConversion` (an ICC conversion to RGB; `UnsupportedImageFeatureException` otherwise, and for a file without CMYK profile when no profile is assumed). Scaled and region decoding: not available |
-| JPEG encoding | Baseline or progressive 8-bit Huffman only: no arithmetic, lossless, 12-bit, RGB, CMYK or restart markers; the progression of the progressive process is fixed, and the baseline process has no optimized Huffman tables. One frame: animated images and posters are rejected (export one with `CloneFrame`); alpha requires `BackgroundColor`; `Rgba64`/`Gray16` require `AllowBitDepthReduction` |
+| JPEG encoding | Baseline or progressive 8-bit Huffman only: no arithmetic, lossless, 12-bit, RGB, CMYK or restart markers; the progression of the progressive process is fixed, and the baseline process has no optimized Huffman tables. One frame: animated images and posters are rejected (save one with `Frames[i].Save`); alpha requires `BackgroundColor`; `Rgba64`/`Gray16` require `AllowBitDepthReduction` |
 | GIF decoding | Plain-text extensions (they require text rendering) are `UnsupportedImageFeatureException`; other unknown extensions (XMP and ICC application extensions included) are skipped; the background color index is never painted (cleared areas are transparent black) |
 | GIF encoding | Lossy by design: at most 256 colors per frame (deterministic quantization, optional dithering), one transparent index (alpha thresholded or flattened, never partial); a local color table per frame, also with a shared palette (no global color table); full-canvas frames (no delta rectangles); comments only (no ICC, EXIF, XMP or resolution); at most 65,535 pixels per side, 655.35 s per frame and 65,536 plays |
 | WebP decoding | VP8 interframes and frames that are not shown (never produced by WebP encoders): `UnsupportedImageFeatureException`; the `ANIM` background color is a hint and is never painted (disposed areas are transparent black); metadata of simple-layout files and text/resolution do not exist in WebP |

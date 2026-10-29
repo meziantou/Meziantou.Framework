@@ -397,23 +397,35 @@ internal static class JpegXlModularEncoder
         if (residuals.IsEmpty)
             return 0;
 
-        Span<int> histogram = stackalloc int[MaxTokenCount];
-        histogram.Clear();
+        // Four histograms, one per position modulo 4: consecutive equal residuals (most of them are small) would otherwise
+        // wait on the increment of the same counter
+        Span<int> histograms = stackalloc int[4 * MaxTokenCount];
+        histograms.Clear();
+        var histogram0 = histograms[..MaxTokenCount];
+        var histogram1 = histograms.Slice(MaxTokenCount, MaxTokenCount);
+        var histogram2 = histograms.Slice(2 * MaxTokenCount, MaxTokenCount);
+        var histogram3 = histograms.Slice(3 * MaxTokenCount, MaxTokenCount);
         long rawBits = 0;
-        foreach (var residual in residuals)
+        var i = 0;
+        for (; i + 4 <= residuals.Length; i += 4)
         {
-            if (residual < (1u << TokenSplitExponent))
-            {
-                histogram[(int)residual]++;
-            }
-            else
-            {
-                var log = BitOperations.Log2(residual);
-                histogram[(1 << TokenSplitExponent) + ((log - TokenSplitExponent) << 1) + (int)((residual >> (log - 1)) & 1)]++;
-                rawBits += log - 1;
-            }
+            histogram0[GetToken(residuals[i], ref rawBits)]++;
+            histogram1[GetToken(residuals[i + 1], ref rawBits)]++;
+            histogram2[GetToken(residuals[i + 2], ref rawBits)]++;
+            histogram3[GetToken(residuals[i + 3], ref rawBits)]++;
         }
 
+        for (; i < residuals.Length; i++)
+        {
+            histogram0[GetToken(residuals[i], ref rawBits)]++;
+        }
+
+        for (var token = 0; token < MaxTokenCount; token++)
+        {
+            histogram0[token] += histogram1[token] + histogram2[token] + histogram3[token];
+        }
+
+        var histogram = histogram0;
         var total = (double)residuals.Length;
         var cost = (double)rawBits;
         foreach (var count in histogram)
@@ -425,6 +437,16 @@ internal static class JpegXlModularEncoder
         }
 
         return cost;
+
+        // Without a branch: residuals of photographs are small and large in no predictable order
+        static int GetToken(uint residual, ref long rawBits)
+        {
+            var log = BitOperations.Log2(residual | 1);
+            var isLarge = residual >= (1u << TokenSplitExponent);
+            rawBits += isLarge ? log - 1 : 0;
+            var large = (1 << TokenSplitExponent) + ((log - TokenSplitExponent) << 1) + (int)((residual >> ((log - 1) & 31)) & 1);
+            return isLarge ? large : (int)residual;
+        }
     }
 
     /// <summary>

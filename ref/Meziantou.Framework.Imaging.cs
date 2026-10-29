@@ -875,6 +875,10 @@ namespace Meziantou.Framework.Imaging
         public void Draw<TState>(TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action, System.Threading.CancellationToken cancellationToken = default) where TState : allows ref struct { }
         public void ProcessPixelBytes(Meziantou.Framework.Imaging.PixelBytesAction action) { }
         public void ProcessPixelBytes<TState>(TState state, Meziantou.Framework.Imaging.PixelBytesAction<TState> action) where TState : allows ref struct { }
+        public void Save(System.IO.Stream stream, Meziantou.Framework.Imaging.Formats.ImageEncoder encoder) { }
+        public void Save(string path, Meziantou.Framework.Imaging.Formats.ImageEncoder? encoder = null) { }
+        public System.Threading.Tasks.Task SaveAsync(System.IO.Stream stream, Meziantou.Framework.Imaging.Formats.ImageEncoder encoder, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.Task SaveAsync(string path, Meziantou.Framework.Imaging.Formats.ImageEncoder? encoder = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
     }
 
     public abstract class ImageFrameCollection : System.Collections.Generic.IEnumerable<Meziantou.Framework.Imaging.ImageFrame>, System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.Imaging.ImageFrame>, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.ImageFrame>, System.Collections.IEnumerable

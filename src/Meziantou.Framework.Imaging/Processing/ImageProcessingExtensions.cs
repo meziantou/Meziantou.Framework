@@ -50,8 +50,10 @@ namespace Meziantou.Framework.Imaging;
 /// bits, floating-point samples of any value (not-a-number payloads included) and alpha, is copied unchanged (an
 /// auto-crop that enlarges the canvas also writes the detected background color around the copied pixels, as
 /// <see cref="Pad"/> and <see cref="ExtendCanvas"/> write their padding color). Operations run on the calling thread, except that <see cref="Resize"/>,
-/// the transformations, <see cref="Convolve(Image, ConvolutionOptions, CancellationToken)"/>, the blurs, the sharpening and
-/// the edge detection may also use up to <see cref="ImageConfiguration.MaxDegreeOfParallelism"/> workers for large frames (identical results).
+/// the transformations, <see cref="Convolve(Image, ConvolutionOptions, CancellationToken)"/>, the blurs, the sharpening,
+/// the edge detection, <see cref="Pixelate(Image, int, CancellationToken)"/>, <see cref="OilPaint(Image, int, int, CancellationToken)"/>
+/// and <see cref="Flatten(Image, Rgba64, CancellationToken)"/> may also use up to <see cref="ImageConfiguration.MaxDegreeOfParallelism"/>
+/// workers for large frames (identical results).
 /// </para>
 /// </remarks>
 public static partial class ImageProcessingExtensions

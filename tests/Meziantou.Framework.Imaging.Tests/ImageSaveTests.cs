@@ -569,4 +569,259 @@ public sealed class ImageSaveTests
         Assert.True(gif.LastSession.IsDisposed);
         Assert.False(stream.IsDisposed);
     }
+
+    public static TheoryData<ImageEncoder> FrameEncoders() =>
+    [
+        new PngEncoder(),
+        new PngEncoder { AnimationMode = PngAnimationMode.Animated },
+        new JpegEncoder { BackgroundColor = new Rgba64(65535, 65535, 65535) },
+        new GifEncoder(),
+        // The comment of the test image is metadata these formats cannot store
+        new WebPEncoder { MetadataHandling = MetadataHandling.DiscardUnsupported },
+        new WebPEncoder { Compression = WebPCompression.Lossy, MetadataHandling = MetadataHandling.DiscardUnsupported },
+        new IcoEncoder { Kind = IconKind.Cursor, MetadataHandling = MetadataHandling.DiscardUnsupported },
+        new AniEncoder { MetadataHandling = MetadataHandling.DiscardUnsupported },
+    ];
+
+    [Theory]
+    [MemberData(nameof(FrameEncoders))]
+    public async Task FrameSavesWriteTheBytesOfTheExtractedFrame(ImageEncoder encoder)
+    {
+        // An animation with a poster: the frame is written as a still image, as CloneFrame extracts it
+        using var image = StreamImages.CreateAnimation(Width, Height, 3, poster: true, totalPlays: 2);
+        var frame = image.Frames[1];
+        frame.Metadata.Duration = new FrameDuration(1, 8);
+        if (encoder.Format is ImageFormat.Cur or ImageFormat.Ani)
+        {
+            frame.Metadata.Hotspot = new Point(2, 1);
+        }
+
+        byte[] expected;
+        using (var clone = image.CloneFrame(1))
+        using (var stream = new MemoryStream())
+        {
+            clone.Save(stream, encoder);
+            expected = stream.ToArray();
+        }
+
+        using (var stream = new MemoryStream())
+        {
+            frame.Save(stream, encoder);
+            Assert.Equal(expected, stream.ToArray());
+        }
+
+        using (var stream = new MemoryStream())
+        {
+            await frame.SaveAsync(stream, encoder, XunitCancellationToken);
+            Assert.Equal(expected, stream.ToArray());
+        }
+
+        var directory = TestFiles.CreateDirectory();
+        try
+        {
+            var path = directory / "frame.bin";
+            frame.Save(path, encoder);
+            Assert.Equal(expected, await File.ReadAllBytesAsync(path, XunitCancellationToken));
+            await frame.SaveAsync(path, encoder, XunitCancellationToken);
+            Assert.Equal(expected, await File.ReadAllBytesAsync(path, XunitCancellationToken));
+            Assert.Equal([path], Directory.GetFiles(directory));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+
+        // The image keeps its frames, its poster and its animation settings
+        Assert.Equal(3, image.Frames.Count);
+        Assert.NotNull(image.PosterFrame);
+        Assert.Equal(2, image.Animation?.TotalPlays);
+    }
+
+    [Fact]
+    public async Task ThePosterFrameIsSavedAsAStillImage()
+    {
+        using var image = StreamImages.CreateAnimation(Width, Height, 2, poster: true);
+        var poster = image.PosterFrame!;
+        var directory = TestFiles.CreateDirectory();
+        try
+        {
+            // The encoder is inferred from the extension, as for an image
+            using (var clone = image.ClonePosterFrame())
+            {
+                clone.Save(directory / "expected.png");
+            }
+
+            poster.Save(directory / "poster.png");
+            await poster.SaveAsync(directory / "poster-async.png", cancellationToken: XunitCancellationToken);
+            var expected = await File.ReadAllBytesAsync(directory / "expected.png", XunitCancellationToken);
+            Assert.Equal(expected, await File.ReadAllBytesAsync(directory / "poster.png", XunitCancellationToken));
+            Assert.Equal(expected, await File.ReadAllBytesAsync(directory / "poster-async.png", XunitCancellationToken));
+
+            using var decoded = Image.Load<Rgba32>(expected);
+            Assert.Single(decoded.Frames);
+            Assert.Null(decoded.PosterFrame);
+            Assert.Null(decoded.Animation);
+            Assert.Equal(StreamImages.GetBytes(poster), StreamImages.GetBytes(decoded.Frames[0]));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+
+        // The image itself still needs an output that stores its poster
+        Assert.Equal("Animation", Assert.Throws<UnsupportedImageFeatureException>(() => image.Save(new ThrowingStream(), new PngEncoder { AnimationMode = PngAnimationMode.Static })).Feature);
+    }
+
+    [Fact]
+    public async Task FrameSavesRejectWhatTheExtractedFrameCannotStoreBeforeAnyOutput()
+    {
+        // Alpha to JPEG without a background color
+        using var image = StreamImages.CreateAnimation(Width, Height, 2);
+        image.Frames[1][0, 0] = new Rgba32(1, 2, 3, 128);
+        await AssertRejectedLikeTheExtractedFrame(image, 1, new JpegEncoder());
+
+        // 16-bit samples to JPEG without a bit depth reduction
+        using var deep = image.CloneAs<Rgba64>();
+        await AssertRejectedLikeTheExtractedFrame(deep, 1, new JpegEncoder { BackgroundColor = new Rgba64(0, 0, 0) });
+
+        // A cursor hotspot that the output cannot store
+        image.Frames[1].Metadata.Hotspot = new Point(1, 1);
+        await AssertRejectedLikeTheExtractedFrame(image, 1, new PngEncoder());
+        image.Frames[1].Metadata.Hotspot = null;
+
+        // The metadata of the image: GIF cannot store the orientation
+        image.Metadata.Orientation = ExifOrientation.RightTop;
+        await AssertRejectedLikeTheExtractedFrame(image, 0, new GifEncoder());
+
+        // A failed path save publishes nothing and keeps the existing file
+        var directory = TestFiles.CreateDirectory();
+        try
+        {
+            var path = directory / "frame.gif";
+            await File.WriteAllTextAsync(path, "previous content", XunitCancellationToken);
+            Assert.Throws<UnsupportedImageFeatureException>(() => image.Frames[0].Save(path));
+            await Assert.ThrowsAsync<UnsupportedImageFeatureException>(() => image.Frames[0].SaveAsync(path, cancellationToken: XunitCancellationToken));
+            Assert.Equal("previous content", await File.ReadAllTextAsync(path, XunitCancellationToken));
+            Assert.Equal([path], Directory.GetFiles(directory));
+
+            // The policy of the encoder allows the loss explicitly
+            using var stream = new MemoryStream();
+            image.Frames[0].Save(stream, new GifEncoder { MetadataHandling = MetadataHandling.DiscardUnsupported });
+            Assert.True(stream.ToArray().AsSpan().StartsWith("GIF89a"u8));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+
+        static async Task AssertRejectedLikeTheExtractedFrame(Image image, int index, ImageEncoder encoder)
+        {
+            UnsupportedImageFeatureException expected;
+            using (var clone = image.CloneFrame(index))
+            {
+                expected = Assert.Throws<UnsupportedImageFeatureException>(() => clone.Save(new ThrowingStream(), encoder));
+            }
+
+            // ThrowingStream fails the test on any I/O
+            var frame = image.Frames[index];
+            var actual = Assert.Throws<UnsupportedImageFeatureException>(() => frame.Save(new ThrowingStream(), encoder));
+            var actualAsync = await Assert.ThrowsAsync<UnsupportedImageFeatureException>(() => frame.SaveAsync(new ThrowingStream(), encoder, XunitCancellationToken));
+            foreach (var exception in (UnsupportedImageFeatureException[])[actual, actualAsync])
+            {
+                Assert.Equal(expected.Format, exception.Format);
+                Assert.Equal(expected.Feature, exception.Feature);
+                Assert.Equal(expected.Message, exception.Message);
+            }
+        }
+    }
+
+    [Fact]
+    public async Task FrameSavesValidateTheirArgumentsBeforeAnyOutput()
+    {
+        using var image = StreamImages.CreateAnimation(Width, Height, 1);
+        var frame = image.Frames[0];
+        var directory = TestFiles.CreateDirectory();
+        try
+        {
+            Assert.Throws<ArgumentNullException>(() => frame.Save((string)null!));
+            Assert.Throws<ArgumentException>(() => frame.Save(""));
+            Assert.Throws<ArgumentException>(() => frame.Save(directory / "frame.xyz"));
+            Assert.IsType<ArgumentNullException>(RecordSynchronousException(() => frame.SaveAsync((string)null!, cancellationToken: XunitCancellationToken)));
+            Assert.IsType<ArgumentException>(RecordSynchronousException(() => frame.SaveAsync(directory / "frame", cancellationToken: XunitCancellationToken)));
+
+            Assert.Throws<ArgumentNullException>(() => frame.Save((Stream)null!, new PngEncoder()));
+            Assert.Throws<ArgumentNullException>(() => frame.Save(new ThrowingStream(), null!));
+            Assert.Throws<ArgumentException>(() => frame.Save(new MemoryStream([], writable: false), new PngEncoder()));
+            Assert.IsType<ArgumentNullException>(RecordSynchronousException(() => frame.SaveAsync(new ThrowingStream(), null!, XunitCancellationToken)));
+            Assert.IsType<ArgumentException>(RecordSynchronousException(() => frame.SaveAsync(new MemoryStream([], writable: false), new PngEncoder(), XunitCancellationToken)));
+
+            // A canceled save creates nothing
+            using var canceled = new CancellationTokenSource();
+            await canceled.CancelAsync();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => frame.SaveAsync(directory / "frame.png", cancellationToken: canceled.Token));
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => frame.SaveAsync(new ThrowingStream(), new PngEncoder(), canceled.Token));
+            Assert.Empty(Directory.GetFileSystemEntries(directory));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void FrameSavesRequireAnAttachedFrameThatIsNotLeased()
+    {
+        using var image = StreamImages.CreateAnimation(Width, Height, 3, poster: true);
+        var directory = TestFiles.CreateDirectory();
+        try
+        {
+            var removed = image.Frames[2];
+            image.RemoveFrame(2);
+            var replacedPoster = image.PosterFrame!;
+            image.SetPosterFrame(image.Frames[0]);
+            AssertRejected<ObjectDisposedException>(removed, directory);
+            AssertRejected<ObjectDisposedException>(replacedPoster, directory);
+
+            // A lease of the frame conflicts with the save, as it does with CloneFrame; the other frames can be saved
+            var leased = image.Frames[0];
+            using var output = new MemoryStream();
+            leased.ProcessPixelBytes(_ =>
+            {
+                Assert.Throws<InvalidOperationException>(() => image.CloneFrame(0));
+                AssertRejected<InvalidOperationException>(leased, directory);
+                image.Frames[1].Save(output, new PngEncoder());
+            });
+
+            Assert.True(output.Length > 0);
+            leased.Save(output, new PngEncoder());
+
+            image.Dispose();
+            AssertRejected<ObjectDisposedException>(leased, directory);
+            Assert.Empty(Directory.GetFileSystemEntries(directory));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+
+        static void AssertRejected<TException>(ImageFrame frame, FullPath directory)
+            where TException : Exception
+        {
+            using var stream = new MemoryStream();
+            Assert.Throws<TException>(() => frame.Save(stream, new PngEncoder()));
+            Assert.Throws<TException>(() => frame.Save(directory / "frame.png"));
+            Assert.IsType<TException>(RecordSynchronousException(() => frame.SaveAsync(new MemoryStream(), new PngEncoder(), XunitCancellationToken)));
+            Assert.IsType<TException>(RecordSynchronousException(() => frame.SaveAsync(directory / "frame.png", cancellationToken: XunitCancellationToken)));
+            Assert.Equal(0, stream.Length);
+        }
+    }
+
+    /// <summary>Records the exception that an asynchronous method throws before it returns its task.</summary>
+    private static Exception? RecordSynchronousException(Func<Task> action)
+    {
+        Task? task = null;
+        var exception = Record.Exception(() => { task = action(); });
+        Assert.Null(task);
+        return exception;
+    }
 }

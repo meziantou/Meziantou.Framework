@@ -45,7 +45,8 @@ internal sealed class Av1PooledArray<T> : IDisposable
     {
         ArgumentNullException.ThrowIfNull(scope);
         ArgumentOutOfRangeException.ThrowIfNegative(length);
-        var bytes = length * Marshal.SizeOf<T>();
+        // The size of the elements of the span over the buffer (Marshal.SizeOf is the marshaled size, and is slow)
+        var bytes = length * Unsafe.SizeOf<T>();
         if (bytes > CheckedSizes.MaxBufferLength)
             throw CheckedSizes.CreateOverflowException(scope.Limits);
 

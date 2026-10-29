@@ -31,13 +31,17 @@ internal sealed class Rgba32RowReader : IDisposable
 
     /// <summary>Gets row <paramref name="y"/> of a lease on a storage of the format given at creation.</summary>
     /// <exception cref="UnsupportedImageFeatureException">A floating-point sample of the row is not a number in [0, 1]: it has no 8-bit value, and it is not clipped.</exception>
-    public ReadOnlySpan<Rgba32> GetRow(PixelLease lease, int y)
+    public ReadOnlySpan<Rgba32> GetRow(PixelLease lease, int y) => GetRow(lease.Storage, y);
+
+    /// <summary>Gets row <paramref name="y"/> of a storage of the format given at creation, leased by the caller.</summary>
+    /// <exception cref="UnsupportedImageFeatureException">A floating-point sample of the row is not a number in [0, 1]: it has no 8-bit value, and it is not clipped.</exception>
+    public ReadOnlySpan<Rgba32> GetRow(PixelStorage storage, int y)
     {
+        var row = storage.GetRowSpanCore(y);
         if (_format is PixelFormat.Rgba32)
-            return lease.GetRow<Rgba32>(y);
+            return unsafe(MemoryMarshal.Cast<byte, Rgba32>(row));
 
         var buffer = _buffer ?? throw new ObjectDisposedException(nameof(Rgba32RowReader));
-        var row = lease.GetRowBytes(y);
         if (FloatingPointSampleRange.TryFind(_format, row, FloatingPointSampleRequirement.UnitSamples, out var x, out var pixel))
             throw new UnsupportedImageFeatureException(
                 string.Create(CultureInfo.InvariantCulture, $"Image comparison reads the pixels as 8-bit samples, but the {_format} pixel ({x}, {y}) is ({pixel.R}, {pixel.G}, {pixel.B}, {pixel.A}): a sample outside [0, 1], or that is not a number, has no 8-bit value, and it is not clipped implicitly. Convert the image with Image.CloneAs and PixelConversionOptions.OutOfRangeSamples or PixelConversionOptions.ToneMapping first."),

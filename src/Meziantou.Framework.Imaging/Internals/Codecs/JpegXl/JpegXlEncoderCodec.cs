@@ -413,7 +413,7 @@ internal sealed class JpegXlEncoderCodec : ImageEncoderCodec
                 {
                     // A single group: no global tree, the global Modular data are the whole image, and the frame is one section
                     writer.WriteBool(false);
-                    EncodeGroup(writer, lease, 0, 0, colorChannelCount);
+                    EncodeGroup(writer, lease.Storage, 0, 0, colorChannelCount);
                     EndSection(writer, sizes, ref total);
                 }
                 else
@@ -433,14 +433,7 @@ internal sealed class JpegXlEncoderCodec : ImageEncoderCodec
                         sizes.Add(0);
                     }
 
-                    for (var row = 0; row < rows; row++)
-                    {
-                        for (var column = 0; column < columns; column++)
-                        {
-                            EncodeGroup(writer, lease, column * GroupDimension, row * GroupDimension, colorChannelCount);
-                            EndSection(writer, sizes, ref total);
-                        }
-                    }
+                    EncodeGroups(writer, sizes, ref total, lease.Storage, columns, rows, colorChannelCount);
                 }
 
                 owned = null;
@@ -488,7 +481,7 @@ internal sealed class JpegXlEncoderCodec : ImageEncoderCodec
 
                 using (var lease = frame.GetStorage().AcquireLease())
                 {
-                    LoadChannels(image, lease, 0, 0, _width, _height);
+                    LoadChannels(image, lease.Storage, 0, 0, _width, _height);
                 }
 
                 if (colorChannelCount == 3)
@@ -579,7 +572,7 @@ internal sealed class JpegXlEncoderCodec : ImageEncoderCodec
                 var writer = owned = new LsbBitWriter(Options.Scope);
                 var sizes = new List<int>();
                 using var lease = frame.GetStorage().AcquireLease();
-                using var encoder = new JpegXlVarDctEncoder(_imageHeader!, header, _sourceFormat, _encoder.Quality, _encoder.Effort, Options.Scope, CancellationToken);
+                using var encoder = new JpegXlVarDctEncoder(_imageHeader!, header, _sourceFormat, _encoder.Quality, _encoder.Effort, Options.Configuration.MaxDegreeOfParallelism, Options.Scope, CancellationToken);
                 encoder.Encode(lease, writer, sizes, _hasAlpha ? EncodeAlpha : null);
                 owned = null;
                 return new EncodedFrame(writer, sizes, duration);
@@ -591,7 +584,7 @@ internal sealed class JpegXlEncoderCodec : ImageEncoderCodec
         }
 
         /// <summary>Compresses the alpha samples of a rectangle as a Modular sub-bitstream of one channel.</summary>
-        private void EncodeAlpha(LsbBitWriter writer, scoped in PixelLease lease, int x0, int y0, int width, int height)
+        private void EncodeAlpha(LsbBitWriter writer, PixelStorage storage, int x0, int y0, int width, int height)
         {
             CancellationToken.ThrowIfCancellationRequested();
             var scope = Options.Scope;
@@ -600,7 +593,7 @@ internal sealed class JpegXlEncoderCodec : ImageEncoderCodec
             image.Channels[0].Allocate(scope);
             for (var y = 0; y < height; y++)
             {
-                var source = lease.GetRowBytes(y0 + y);
+                var source = storage.GetRowSpanCore(y0 + y);
                 var alpha = image.Channels[0].GetRow(y);
                 if (_bitsPerSample == 8)
                 {
@@ -630,8 +623,54 @@ internal sealed class JpegXlEncoderCodec : ImageEncoderCodec
             total = writer.Length;
         }
 
+        /// <summary>
+        /// Compresses the groups of a frame, each as a section, by up to <see cref="ImageConfiguration.MaxDegreeOfParallelism"/>
+        /// workers: each worker writes a group in a writer of its own, and the sections, which start at a byte boundary, are
+        /// appended in order, so the bytes do not depend on the workers.
+        /// </summary>
+        private void EncodeGroups(LsbBitWriter writer, List<int> sizes, ref int total, PixelStorage pixels, int columns, int rows, int colorChannelCount)
+        {
+            var groupCount = columns * rows;
+            var workers = JpegXlGroupWorkers.GetWorkerCount(Options.Configuration.MaxDegreeOfParallelism, groupCount, (long)_width * _height);
+            if (workers == 1)
+            {
+                for (var group = 0; group < groupCount; group++)
+                {
+                    EncodeGroup(writer, pixels, group % columns * GroupDimension, group / columns * GroupDimension, colorChannelCount);
+                    EndSection(writer, sizes, ref total);
+                }
+
+                return;
+            }
+
+            var sections = new LsbBitWriter?[groupCount];
+            try
+            {
+                var scope = Options.Scope;
+                JpegXlGroupWorkers.Run(workers, groupCount, group =>
+                {
+                    var section = sections[group] = new LsbBitWriter(scope);
+                    EncodeGroup(section, pixels, group % columns * GroupDimension, group / columns * GroupDimension, colorChannelCount);
+                    section.ZeroPadToByte();
+                });
+
+                foreach (var section in sections)
+                {
+                    writer.WriteAlignedBytes(section!.WrittenSpan);
+                    EndSection(writer, sizes, ref total);
+                }
+            }
+            finally
+            {
+                foreach (var section in sections)
+                {
+                    section?.Dispose();
+                }
+            }
+        }
+
         /// <summary>Compresses the samples of one group as a Modular sub-bitstream.</summary>
-        private void EncodeGroup(LsbBitWriter writer, scoped in PixelLease lease, int x0, int y0, int colorChannelCount)
+        private void EncodeGroup(LsbBitWriter writer, PixelStorage pixels, int x0, int y0, int colorChannelCount)
         {
             CancellationToken.ThrowIfCancellationRequested();
             var width = Math.Min(GroupDimension, _width - x0);
@@ -645,16 +684,16 @@ internal sealed class JpegXlEncoderCodec : ImageEncoderCodec
                 image.Channels[i].Allocate(scope);
             }
 
-            LoadChannels(image, lease, x0, y0, width, height);
+            LoadChannels(image, pixels, x0, y0, width, height);
             JpegXlModularEncoder.Encode(writer, image, colorChannelCount, _encoder.Effort, scope, CancellationToken);
         }
 
         /// <summary>Copies the samples of a rectangle of the frame to the channels of an image: the color channels, then the alpha channel.</summary>
-        private void LoadChannels(JpegXlModularImage image, scoped in PixelLease lease, int x0, int y0, int width, int height)
+        private void LoadChannels(JpegXlModularImage image, PixelStorage storage, int x0, int y0, int width, int height)
         {
             for (var y = 0; y < height; y++)
             {
-                var source = lease.GetRowBytes(y0 + y);
+                var source = storage.GetRowSpanCore(y0 + y);
                 var first = image.Channels[0].GetRow(y);
                 switch (_sourceFormat)
                 {

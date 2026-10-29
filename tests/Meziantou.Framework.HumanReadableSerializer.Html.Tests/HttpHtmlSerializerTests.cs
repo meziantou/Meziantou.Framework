@@ -36,6 +36,48 @@ public sealed class HttpHtmlSerializerTests
     }
 
     [Fact]
+    public void Documentation_Normalize()
+    {
+        #region HtmlFormatter_Normalize
+        using var content = new StringContent(
+            """<p id='greeting' class=intro nonce=r4nd0m>Hello<br/>world &amp; all</p>""",
+            encoding: null,
+            "text/html");
+
+        var options = new HumanReadableSerializerOptions()
+            .AddHtmlFormatter(new HtmlFormatterOptions
+            {
+                OrderAttributes = true,
+                RedactContentSecurityPolicyNonce = true,
+            });
+
+        Assert.Equal("""
+            Headers:
+              Content-Type: text/html; charset=utf-8
+            Value: <p class="intro" id="greeting" nonce="[redacted]">Hello<br>world &amp; all</p>
+            """, HumanReadableSerializer.Serialize(content, options));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_SimpleQuote()
+    {
+        #region HtmlFormatter_SimpleQuote
+        using var content = new StringContent("""<!DOCTYPE html><html lang=en><body><a href="/docs">Docs</a></body></html>""", encoding: null, "text/html");
+
+        var options = new HumanReadableSerializerOptions()
+            .AddHtmlFormatter(new HtmlFormatterOptions { AttributeQuote = HtmlAttributeQuote.SimpleQuote });
+
+        // A document keeps its doctype, html, head and body elements
+        Assert.Equal("""
+            Headers:
+              Content-Type: text/html; charset=utf-8
+            Value: <!DOCTYPE html><html lang='en'><head></head><body><a href='/docs'>Docs</a></body></html>
+            """, HumanReadableSerializer.Serialize(content, options));
+        #endregion
+    }
+
+    [Fact]
     public void StringValue()
     {
         using var httpContent = new StringContent("""dummy""", encoding: null, "text/html");

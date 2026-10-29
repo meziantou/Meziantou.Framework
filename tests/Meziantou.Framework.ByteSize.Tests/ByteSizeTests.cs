@@ -60,6 +60,94 @@ public sealed class ByteSizeTests
         #endregion
     }
 
+    [Fact]
+    public void Documentation_Create()
+    {
+        #region ByteSize_Create
+        var a = new ByteSize(1_500);                       // 1,500 bytes
+        var b = ByteSize.FromKiloBytes(1.5);               // 1.5 × 1,000 bytes
+        var c = ByteSize.FromKibiBytes(1);                 // 1 × 1,024 bytes
+        var d = ByteSize.From(2, ByteSizeUnit.MebiByte);   // 2 × 1,048,576 bytes
+        ByteSize e = 4_096;                                // implicit conversion from long
+
+        Assert.Equal(a, b);
+        Assert.Equal(1_024, c.Value);
+        Assert.Equal(2_097_152, d.Value);
+        Assert.Equal(4_096, e.Value);
+
+        // Read the value in another unit
+        Assert.Equal(1.5, a.GetValue(ByteSizeUnit.KiloByte));
+        Assert.Equal(2, d.GetValue(ByteSizeUnit.MebiByte));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Format()
+    {
+        #region ByteSize_Format
+        var size = new ByteSize(1_536_000);
+
+        // Best decimal unit (kB, MB, GB, ...)
+        Assert.Equal("1.536MB", size.ToString(CultureInfo.InvariantCulture));
+        Assert.Equal("1.54MB", size.ToString("G2", CultureInfo.InvariantCulture));
+
+        // Best binary unit (kiB, MiB, GiB, ...)
+        Assert.Equal("1.46484375MiB", size.ToString("Gi", CultureInfo.InvariantCulture));
+        Assert.Equal("1.46MiB", size.ToString("Gi2", CultureInfo.InvariantCulture));
+
+        // A given unit, with or without a number of decimals
+        Assert.Equal("1536kB", size.ToString("kB", CultureInfo.InvariantCulture));
+        Assert.Equal("1500.000kiB", size.ToString("kiB3", CultureInfo.InvariantCulture));
+        Assert.Equal("1536kB", size.ToString(ByteSizeUnit.KiloByte, CultureInfo.InvariantCulture));
+
+        // Format strings work in interpolated strings and string.Format
+        Assert.Equal("Downloaded 1.46MiB", string.Create(CultureInfo.InvariantCulture, $"Downloaded {size:Gi2}"));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Parse()
+    {
+        #region ByteSize_Parse
+        Assert.Equal(1_500, ByteSize.Parse("1.5kB", CultureInfo.InvariantCulture).Value);
+        Assert.Equal(1_536, ByteSize.Parse("1.5 kiB", CultureInfo.InvariantCulture).Value);
+        Assert.Equal(42, ByteSize.Parse("42", CultureInfo.InvariantCulture).Value); // No unit: bytes
+
+        // Units are case-insensitive: "KB" is a kilobyte (1,000 bytes), "KIB" a kibibyte (1,024 bytes)
+        Assert.Equal(1_000, ByteSize.Parse("1KB", CultureInfo.InvariantCulture).Value);
+        Assert.Equal(1_024, ByteSize.Parse("1KIB", CultureInfo.InvariantCulture).Value);
+
+        // UTF-8 text
+        Assert.Equal(1_500, ByteSize.Parse("1.5kB"u8).Value);
+
+        // Invalid text, and sizes that do not fit in a long, are rejected
+        Assert.False(ByteSize.TryParse("ten MB", CultureInfo.InvariantCulture, out _));
+        Assert.False(ByteSize.TryParse("100EB", CultureInfo.InvariantCulture, out _));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Arithmetic()
+    {
+        #region ByteSize_Arithmetic
+        var total = ByteSize.FromMegaBytes(1) + ByteSize.FromKiloBytes(500);
+        Assert.Equal("1.5MB", total.ToString(CultureInfo.InvariantCulture));
+
+        var remaining = ByteSize.FromGigaBytes(1) - total;
+        Assert.Equal(998_500_000, remaining.Value);
+
+        Assert.Equal(ByteSize.FromMegaBytes(3), total * 2);
+        Assert.Equal(ByteSize.FromKiloBytes(750), total / 2);
+
+        var files = new[] { ByteSize.FromKiloBytes(3), ByteSize.FromMegaBytes(1), new ByteSize(10) };
+        Assert.Equal(ByteSize.FromMegaBytes(1), files.Max());
+        Assert.True(files[0] < files[1]);
+
+        // Additions and multiplications are checked
+        Assert.Throws<OverflowException>(() => _ = ByteSize.MaxValue + ByteSize.FromBytes(1));
+        #endregion
+    }
+
     [Theory]
     [InlineData(10L, null, "10B")]
     [InlineData(10L, "", "10B")]

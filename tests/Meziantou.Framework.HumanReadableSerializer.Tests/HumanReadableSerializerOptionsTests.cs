@@ -1,4 +1,10 @@
+using System.Net;
+using System.Net.Mail;
 using System.Reflection;
+using System.Text;
+using System.Text.Json.Nodes;
+using System.Xml.Linq;
+using Meziantou.Framework.HumanReadable.Converters;
 using Meziantou.Framework.HumanReadable.ValueFormatters;
 
 namespace Meziantou.Framework.HumanReadable.Tests;
@@ -383,5 +389,409 @@ public sealed class HumanReadableSerializerOptionsTests
     {
         public override bool CanConvert(Type type) => true;
         public override void WriteValue(HumanReadableTextWriter writer, object? value, Type valueType, HumanReadableSerializerOptions options) => writer.WriteValue("constant");
+    }
+
+    [Fact]
+    public void Documentation_GettingStarted()
+    {
+        #region HumanReadableSerializer_GettingStarted
+        var order = new
+        {
+            Id = 42,
+            Customer = new { Name = "Ada Lovelace", Email = "ada@example.com" },
+            Lines = new[]
+            {
+                new { Product = "Keyboard", Quantity = 1 },
+                new { Product = "Mouse", Quantity = 2 },
+            },
+            Notes = "Leave at the door\nRing twice",
+        };
+
+        var text = HumanReadableSerializer.Serialize(order);
+
+        Assert.Equal("""
+            Id: 42
+            Customer:
+              Name: Ada Lovelace
+              Email: ada@example.com
+            Lines:
+              - Product: Keyboard
+                Quantity: 1
+              - Product: Mouse
+                Quantity: 2
+            Notes:
+              Leave at the door
+              Ring twice
+            """, text);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Values()
+    {
+        #region HumanReadableSerializer_Values
+        var value = new
+        {
+            Missing = (string?)null,
+            Empty = Array.Empty<int>(),
+            Matrix = new[] { new[] { 1, 2 }, new[] { 3, 4 } },
+            Scores = new Dictionary<string, int>(StringComparer.Ordinal) { ["Ada"] = 12, ["Alan"] = 9 },
+            Day = DayOfWeek.Friday,
+            Date = new DateTimeOffset(2024, 6, 15, 12, 30, 0, TimeSpan.FromHours(2)),
+            Duration = TimeSpan.FromMinutes(90),
+            Price = 12.5m,
+            Id = new Guid("1c7a7a4e-0f43-4a3f-9d5b-6a7cb4b1f2d3"),
+            Website = new Uri("https://www.meziantou.net/"),
+        };
+
+        Assert.Equal("""
+            Missing: <null>
+            Empty: []
+            Matrix:
+              - - 1
+                - 2
+              - - 3
+                - 4
+            Scores:
+              Ada: 12
+              Alan: 9
+            Day: Friday
+            Date: 2024-06-15T12:30:00+02:00
+            Duration: 01:30:00
+            Price: 12.5
+            Id: 1c7a7a4e-0f43-4a3f-9d5b-6a7cb4b1f2d3
+            Website: https://www.meziantou.net/
+            """, HumanReadableSerializer.Serialize(value));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Attributes()
+    {
+        #region HumanReadableSerializer_AttributesUsage
+        var invoice = new Invoice
+        {
+            Number = "INV-001",
+            Total = 99.9m,
+            InternalNote = "VIP customer",
+            Discount = null,
+            Revision = 3,
+        };
+
+        Assert.Equal("""
+            Number: INV-001
+            Total (EUR): 99.9
+            Revision: 3
+            """, HumanReadableSerializer.Serialize(invoice));
+        #endregion
+    }
+
+    #region HumanReadableSerializer_AttributesType
+    private sealed class Invoice
+    {
+        [HumanReadablePropertyName("Total (EUR)")]
+        public decimal Total { get; set; }
+
+        [HumanReadablePropertyOrder(0)]
+        public string Number { get; set; } = "";
+
+        [HumanReadableIgnore]
+        public string? InternalNote { get; set; }
+
+        [HumanReadableIgnore(Condition = HumanReadableIgnoreCondition.WhenWritingNull)]
+        public string? Discount { get; set; }
+
+        // Non-public members are serialized when they have [HumanReadableInclude]
+        [HumanReadableInclude]
+        internal int Revision { get; set; }
+    }
+    #endregion
+
+    [Fact]
+    public void Documentation_DefaultIgnoreCondition()
+    {
+        #region HumanReadableSerializer_DefaultIgnoreCondition
+        var user = new { Name = "Ada", Age = 0, Email = (string?)null, Roles = Array.Empty<string>() };
+
+        var options = new HumanReadableSerializerOptions
+        {
+            DefaultIgnoreCondition = HumanReadableIgnoreCondition.WhenWritingDefaultOrEmptyCollection,
+        };
+
+        Assert.Equal("Name: Ada", HumanReadableSerializer.Serialize(user, options));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_TypeYouDoNotOwn()
+    {
+        #region HumanReadableSerializer_IgnoreMembersOfTypeYouDoNotOwn
+        var address = new MailAddress("ada@example.com", "Ada Lovelace");
+
+        var options = new HumanReadableSerializerOptions();
+        options.IgnoreMember<MailAddress>(x => new { x.User, x.Host });
+        options.AddAttribute(typeof(MailAddress), nameof(MailAddress.DisplayName), new HumanReadablePropertyNameAttribute("Name"));
+
+        Assert.Equal("""
+            Name: Ada Lovelace
+            Address: ada@example.com
+            """, HumanReadableSerializer.Serialize(address, options));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Order()
+    {
+        #region HumanReadableSerializer_Order
+        var value = new
+        {
+            Name = "Ada",
+            Links = new Dictionary<string, string>(StringComparer.Ordinal) { ["web"] = "example.com", ["code"] = "github.com" },
+            Age = 36,
+        };
+
+        var options = new HumanReadableSerializerOptions
+        {
+            PropertyOrder = StringComparer.Ordinal,
+            DictionaryKeyOrder = StringComparer.Ordinal,
+        };
+
+        Assert.Equal("""
+            Age: 36
+            Links:
+              code: github.com
+              web: example.com
+            Name: Ada
+            """, HumanReadableSerializer.Serialize(value, options));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Converter()
+    {
+        #region HumanReadableSerializer_ConverterUsage
+        var options = new HumanReadableSerializerOptions();
+        options.Converters.Add(new TemperatureConverter());
+
+        var forecast = new { City = "Paris", Min = new Temperature(12.3), Max = new Temperature(21) };
+
+        Assert.Equal("""
+            City: Paris
+            Min: 12.3 °C
+            Max: 21.0 °C
+            """, HumanReadableSerializer.Serialize(forecast, options));
+        #endregion
+    }
+
+    #region HumanReadableSerializer_Converter
+    private sealed record Temperature(double Celsius);
+
+    private sealed class TemperatureConverter : HumanReadableConverter<Temperature>
+    {
+        protected override void WriteValue(HumanReadableTextWriter writer, Temperature? value, HumanReadableSerializerOptions options)
+        {
+            // The serializer writes null values itself, so value is never null here
+            ArgumentNullException.ThrowIfNull(value);
+            writer.WriteValue(value.Celsius.ToString("0.0", CultureInfo.InvariantCulture) + " °C");
+        }
+    }
+    #endregion
+
+    [Fact]
+    public void Documentation_ObjectConverter()
+    {
+        #region HumanReadableSerializer_ObjectConverterUsage
+        var options = new HumanReadableSerializerOptions();
+        options.Converters.Add(new MoneyConverter());
+
+        Assert.Equal("""
+            Total:
+              Amount: 12.5
+              Currency: EUR
+            """, HumanReadableSerializer.Serialize(new { Total = new Money(12.5m, "EUR") }, options));
+        #endregion
+    }
+
+    #region HumanReadableSerializer_ObjectConverter
+    private sealed record Money(decimal Amount, string Currency);
+
+    private sealed class MoneyConverter : HumanReadableConverter<Money>
+    {
+        protected override void WriteValue(HumanReadableTextWriter writer, Money? value, HumanReadableSerializerOptions options)
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            writer.StartObject();
+            writer.WritePropertyName("Amount");
+            HumanReadableSerializer.Serialize(writer, value.Amount, options);
+            writer.WritePropertyName("Currency");
+            writer.WriteValue(value.Currency);
+            writer.EndObject();
+        }
+    }
+    #endregion
+
+    [Fact]
+    public void Documentation_JsonAndXml()
+    {
+        #region HumanReadableSerializer_JsonAndXml
+        var options = new HumanReadableSerializerOptions()
+            .AddJsonFormatter(new JsonFormatterOptions { OrderProperties = true })
+            .AddXmlFormatter(new XmlFormatterOptions { OrderAttributes = true });
+
+        var value = new
+        {
+            Json = JsonNode.Parse("""{"name":"Ada","id":42}"""),
+            Xml = XElement.Parse("""<user name="Ada" id="42"><role>admin</role></user>"""),
+        };
+
+        Assert.Equal("""
+            Json:
+              {
+                "id": 42,
+                "name": "Ada"
+              }
+            Xml:
+              <user id="42" name="Ada">
+                <role>admin</role>
+              </user>
+            """, HumanReadableSerializer.Serialize(value, options));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_JsonAsObject()
+    {
+        #region HumanReadableSerializer_JsonAsObject
+        var options = new HumanReadableSerializerOptions()
+            .AddJsonFormatter(new JsonFormatterOptions { FormatAsStandardObject = true });
+
+        var value = new { Json = JsonNode.Parse("""{"name":"Ada","roles":["admin","dev"]}""") };
+
+        Assert.Equal("""
+            Json:
+              name: Ada
+              roles:
+                - admin
+                - dev
+            """, HumanReadableSerializer.Serialize(value, options));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_HttpResponse()
+    {
+        using var httpResponseMessage = new HttpResponseMessage(HttpStatusCode.Created)
+        {
+            Content = new StringContent("""{"name":"Ada","id":42}""", Encoding.UTF8, "application/json"),
+        };
+        httpResponseMessage.Headers.Location = new Uri("https://example.com/users/42");
+        httpResponseMessage.Headers.Date = DateTimeOffset.UtcNow;
+        httpResponseMessage.RequestMessage = new HttpRequestMessage(HttpMethod.Post, "https://example.com/users");
+
+        #region HumanReadableSerializer_HttpResponse
+        var options = new HumanReadableSerializerOptions()
+            .AddHttpConverters(new HumanReadableHttpOptions
+            {
+                ResponseMessageOptions = { RequestMessageFormat = HttpRequestMessageFormat.MethodAndUri },
+            })
+            .AddJsonFormatter(new JsonFormatterOptions { OrderProperties = true });
+
+        var text = HumanReadableSerializer.Serialize(httpResponseMessage, options);
+
+        Assert.Equal("""
+            StatusCode: 201 (Created)
+            Headers:
+              Location: https://example.com/users/42
+            Content:
+              Headers:
+                Content-Type: application/json; charset=utf-8
+              Value:
+                {
+                  "id": 42,
+                  "name": "Ada"
+                }
+            RequestMessage: POST https://example.com/users
+            """, text);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_HttpHeaders()
+    {
+        using var httpResponseMessage = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("Hello"),
+        };
+        httpResponseMessage.Headers.Add("X-Request-Id", "5f1d0c2a");
+        httpResponseMessage.Headers.Add("Set-Cookie", "session=abc123; Path=/; HttpOnly");
+
+        #region HumanReadableSerializer_HttpHeaders
+        var httpOptions = new HumanReadableHttpOptions();
+        httpOptions.ResponseMessageOptions.ExcludedHeaderNames.Add("X-Request-Id");
+        httpOptions.ResponseMessageOptions.HeaderValueTransformer.Add(new RedactCookieFormatter());
+
+        var options = new HumanReadableSerializerOptions().AddHttpConverters(httpOptions);
+
+        Assert.Equal("""
+            StatusCode: 200 (OK)
+            Headers:
+              Set-Cookie: [redacted]
+            Content:
+              Headers:
+                Content-Type: text/plain; charset=utf-8
+              Value: Hello
+            """, HumanReadableSerializer.Serialize(httpResponseMessage, options));
+        #endregion
+    }
+
+    #region HumanReadableSerializer_HttpHeaderValueFormatter
+    private sealed class RedactCookieFormatter : HttpHeaderValueFormatter
+    {
+        public override string FormatHeaderValue(string headerName, string headerValue)
+        {
+            return string.Equals(headerName, "Set-Cookie", StringComparison.OrdinalIgnoreCase) ? "[redacted]" : headerValue;
+        }
+    }
+    #endregion
+
+    [Fact]
+    public void Documentation_TextOptions()
+    {
+        #region HumanReadableSerializer_TextOptions
+        var value = new { Name = "Ada ", Notes = "line1\tend\nline2" };
+
+        var options = new HumanReadableSerializerOptions
+        {
+            ShowInvisibleCharactersInValues = true,
+        };
+
+        Assert.Equal("""
+            Name: Ada␠
+            Notes:
+              line1␉end␊
+              line2
+            """, HumanReadableSerializer.Serialize(value, options));
+
+        // Windows line endings
+        var windowsOptions = new HumanReadableSerializerOptions { NewLine = "\r\n" };
+        Assert.Equal("Name: Ada \r\nNotes:\r\n  line1\tend\r\n  line2", HumanReadableSerializer.Serialize(value, windowsOptions));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_ReadOnlyOptions()
+    {
+        #region HumanReadableSerializer_ReadOnlyOptions
+        var options = new HumanReadableSerializerOptions { PropertyOrder = StringComparer.Ordinal };
+        _ = HumanReadableSerializer.Serialize(new { B = 1, A = 2 }, options);
+
+        // The options cannot change once they have been used...
+        Assert.True(options.IsReadOnly);
+        Assert.Throws<InvalidOperationException>(() => options.IncludeFields = true);
+
+        // ...but a copy can
+        var copy = options with { IncludeFields = true };
+        Assert.False(copy.IsReadOnly);
+        #endregion
     }
 }

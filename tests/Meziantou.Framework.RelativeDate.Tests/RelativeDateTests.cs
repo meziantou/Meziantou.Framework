@@ -456,6 +456,118 @@ public class RelativeDateTests
         }
     }
 
+    [Fact]
+    public void Documentation_Thresholds()
+    {
+        #region RelativeDate_Thresholds
+        var timeProvider = new FakeTimeProvider(new DateTimeOffset(2024, 6, 15, 12, 0, 0, TimeSpan.Zero));
+        string Format(TimeSpan offset)
+        {
+            var date = RelativeDate.Get(timeProvider.GetUtcNow() + offset, timeProvider);
+            return date.ToString(format: null, CultureInfo.InvariantCulture);
+        }
+
+        Assert.Equal("now", Format(TimeSpan.Zero));
+        Assert.Equal("30 seconds ago", Format(TimeSpan.FromSeconds(-30)));
+        Assert.Equal("a minute ago", Format(TimeSpan.FromSeconds(-90)));
+        Assert.Equal("10 minutes ago", Format(TimeSpan.FromMinutes(-10)));
+        Assert.Equal("an hour ago", Format(TimeSpan.FromMinutes(-50)));
+        Assert.Equal("5 hours ago", Format(TimeSpan.FromHours(-5)));
+        Assert.Equal("yesterday", Format(TimeSpan.FromHours(-30)));
+        Assert.Equal("3 days ago", Format(TimeSpan.FromDays(-3)));
+        Assert.Equal("one month ago", Format(TimeSpan.FromDays(-45)));
+        Assert.Equal("3 months ago", Format(TimeSpan.FromDays(-100)));
+        Assert.Equal("one year ago", Format(TimeSpan.FromDays(-400)));
+        Assert.Equal("2 years ago", Format(TimeSpan.FromDays(-1000)));
+
+        // Dates in the future
+        Assert.Equal("in 2 hours", Format(TimeSpan.FromHours(2)));
+        Assert.Equal("tomorrow", Format(TimeSpan.FromHours(30)));
+        Assert.Equal("in 3 days", Format(TimeSpan.FromDays(3)));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Cultures()
+    {
+        #region RelativeDate_Cultures
+        var timeProvider = new FakeTimeProvider(new DateTimeOffset(2024, 6, 15, 12, 0, 0, TimeSpan.Zero));
+        var date = RelativeDate.Get(timeProvider.GetUtcNow().AddDays(-3), timeProvider);
+
+        Assert.Equal("3 days ago", date.ToString(format: null, CultureInfo.GetCultureInfo("en-US")));
+        Assert.Equal("il y a 3 jours", date.ToString(format: null, CultureInfo.GetCultureInfo("fr-FR")));
+        Assert.Equal("vor 3 Tagen", date.ToString(format: null, CultureInfo.GetCultureInfo("de")));
+        Assert.Equal("hace 3 días", date.ToString(format: null, CultureInfo.GetCultureInfo("es")));
+
+        // A language without translations uses the English texts
+        Assert.Equal("3 days ago", date.ToString(format: null, CultureInfo.GetCultureInfo("sv-SE")));
+
+        // string.Format and interpolated strings pass their culture to RelativeDate
+        Assert.Equal("Modifié il y a 3 jours", string.Create(CultureInfo.GetCultureInfo("fr-FR"), $"Modifié {date}"));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_DateKinds()
+    {
+        #region RelativeDate_DateKinds
+        var timeProvider = new FakeTimeProvider(new DateTimeOffset(2024, 6, 15, 12, 0, 0, TimeSpan.Zero));
+
+        // A DateTimeOffset is an instant: its offset does not matter
+        var fromOffset = RelativeDate.Get(new DateTimeOffset(2024, 6, 15, 12, 0, 0, TimeSpan.FromHours(2)), timeProvider);
+        Assert.Equal("2 hours ago", fromOffset.ToString(format: null, CultureInfo.InvariantCulture));
+
+        // A UTC DateTime
+        var fromUtc = RelativeDate.Get(new DateTime(2024, 6, 15, 11, 0, 0, DateTimeKind.Utc), timeProvider);
+        Assert.Equal("an hour ago", fromUtc.ToString(format: null, CultureInfo.InvariantCulture));
+
+        // A DateTime of unspecified kind is rejected: it could be local or UTC
+        var unspecified = new DateTime(2024, 6, 15, 11, 0, 0, DateTimeKind.Unspecified);
+        Assert.Throws<ArgumentException>(() => _ = RelativeDate.Get(unspecified, timeProvider));
+        #endregion
+    }
+
+    // Swaps LocalizationProvider.Current, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
+    public void Documentation_CustomTexts()
+    {
+        var previousProvider = LocalizationProvider.Current;
+        try
+        {
+            #region RelativeDate_UseCustomTexts
+            // Wrap the current provider, so the built-in texts stay available
+            LocalizationProvider.Current = new CasualEnglishLocalizationProvider(LocalizationProvider.Current);
+
+            var timeProvider = new FakeTimeProvider(new DateTimeOffset(2024, 6, 15, 12, 0, 0, TimeSpan.Zero));
+            var date = RelativeDate.Get(timeProvider.GetUtcNow().AddSeconds(-20), timeProvider);
+
+            Assert.Equal("a few seconds ago", date.ToString(format: null, CultureInfo.GetCultureInfo("en-US")));
+            Assert.Equal("il y a 20 secondes", date.ToString(format: null, CultureInfo.GetCultureInfo("fr-FR")));
+            #endregion
+        }
+        finally
+        {
+            LocalizationProvider.Current = previousProvider;
+        }
+    }
+
+    #region RelativeDate_CustomTextsProvider
+    private sealed class CasualEnglishLocalizationProvider(ILocalizationProvider inner) : ILocalizationProvider
+    {
+        public string GetString(string name, CultureInfo? culture)
+        {
+            var text = (culture?.TwoLetterISOLanguageName, name) switch
+            {
+                ("en", "Now") => "just now",
+                ("en", "OneSecondAgo" or "ManySecondsAgo") => "a few seconds ago",
+                _ => null,
+            };
+
+            return text ?? inner.GetString(name, culture);
+        }
+    }
+    #endregion
+
     private sealed class CultureFormatProvider(CultureInfo culture) : IFormatProvider
     {
         public object? GetFormat(Type? formatType) => formatType == typeof(CultureInfo) ? culture : null;

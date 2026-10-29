@@ -149,6 +149,63 @@ public class JobObjectTests
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void JobObjectLimits_CombineDocumentationExample()
+    {
+        #region JobObject_CombineLimits
+        using var job = new JobObject();
+
+        // SetLimits replaces every limit set by a previous call: set them all at once
+        job.SetLimits(new JobObjectLimits
+        {
+            Flags = JobObjectLimitFlags.KillOnJobClose | JobObjectLimitFlags.DieOnUnhandledException,
+            ActiveProcessLimit = 4,
+            ProcessMemoryLimit = 512 * 1024 * 1024, // 512 MB per process
+            PerProcessUserTimeLimit = TimeSpan.FromMinutes(5).Ticks,
+        });
+        #endregion
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void CpuRate_DocumentationExample()
+    {
+        #region JobObject_CpuRate
+        using var job = new JobObject();
+
+        // The rate is a number of cycles per 10,000: 2,000 is 20% of the CPU
+        job.SetCpuRateHardCap(2_000);
+
+        var cpuRate = job.GetCpuRateHardCap();
+        Assert.Equal(JobObjectCpuRateControlMode.HardCap, cpuRate.Mode);
+        Assert.Equal(2_000, cpuRate.Rate);
+
+        job.DisableCpuRateHardCap();
+        Assert.Equal(JobObjectCpuRateControlMode.Disabled, job.GetCpuRateHardCap().Mode);
+        #endregion
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void NamedJob_DocumentationExample()
+    {
+        #region JobObject_NamedJob
+        var name = "MyApplication-" + Guid.NewGuid().ToString("N");
+
+        // CreatedNew is false when a job object with this name already exists: the instance attaches to it
+        using var job = new JobObject(name);
+        Assert.True(job.CreatedNew);
+
+        // Another process can open the job object by its name
+        if (JobObject.TryOpen(JobObjectAccessRights.Query | JobObjectAccessRights.AssignProcess, inherited: false, name, out var existingJob))
+        {
+            using (existingJob)
+            {
+                using var currentProcess = Process.GetCurrentProcess();
+                Assert.False(existingJob.IsAssignedToProcess(currentProcess));
+            }
+        }
+        #endregion
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void Flags_AreReplacedNotAccumulated()
     {
         var limits = new JobObjectLimits { Flags = JobObjectLimitFlags.KillOnJobClose };

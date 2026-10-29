@@ -1,3 +1,4 @@
+using System.IO;
 using System.Windows.Threading;
 
 namespace Meziantou.Framework.WPF.Tests;
@@ -52,6 +53,83 @@ public sealed class DelegateCommandTests
         }
     }
     #endregion
+
+    [Fact]
+    public void AsyncCommandDocumentationExample()
+    {
+        var viewModel = new EditorViewModel();
+        var raised = false;
+        viewModel.SaveCommand.CanExecuteChanged += (_, _) => raised = true;
+
+        Assert.False(viewModel.SaveCommand.CanExecute(parameter: null));
+
+        viewModel.FileName = "notes.txt";
+        Assert.True(raised);
+        Assert.True(viewModel.SaveCommand.CanExecute(parameter: null));
+    }
+
+    #region DelegateCommand_AsyncCommand
+    public sealed class EditorViewModel
+    {
+        public EditorViewModel()
+        {
+            // The command cannot execute while SaveAsync runs, so the bound button is disabled
+            SaveCommand = DelegateCommand.Create(SaveAsync, CanSave);
+        }
+
+        public IDelegateCommand SaveCommand { get; }
+
+        public string Text { get; set; } = "";
+
+        public string? ErrorMessage { get; private set; }
+
+        public string? FileName
+        {
+            get;
+            set
+            {
+                field = value;
+
+                // CanSave depends on FileName: tell the bound controls to call it again
+                SaveCommand.RaiseCanExecuteChanged();
+            }
+        }
+
+        private bool CanSave() => !string.IsNullOrEmpty(FileName);
+
+        private async Task SaveAsync()
+        {
+            try
+            {
+                await File.WriteAllTextAsync(FileName!, Text);
+                ErrorMessage = null;
+            }
+            catch (IOException ex)
+            {
+                // Handle the errors here: the caller of the command cannot catch them
+                ErrorMessage = ex.Message;
+            }
+        }
+    }
+    #endregion
+
+    [Fact]
+    public void ParameterDocumentationExample()
+    {
+        #region DelegateCommand_Parameter
+        var openedFiles = new List<string>();
+        var openCommand = DelegateCommand.Create(
+            execute: parameter => openedFiles.Add((string)parameter!),
+            canExecute: parameter => parameter is string);
+
+        // The parameter is the CommandParameter of the button or menu item
+        Assert.False(openCommand.CanExecute(parameter: null));
+        Assert.True(openCommand.CanExecute("report.txt"));
+
+        openCommand.Execute("report.txt");
+        Assert.Equal(["report.txt"], openedFiles);
+        #endregion
+    }
 
     [Fact]
     public void ExecuteAction()

@@ -593,4 +593,62 @@ public sealed class MarkOfTheWebTests
         Assert.Null(zoneIdentifier.ReferrerUrl);
         Assert.Null(zoneIdentifier.HostUrl);
     }
+
+    [Fact]
+    public void PlatformGuardDocumentationExample()
+    {
+        var path = Path.GetTempFileName();
+
+        #region MarkOfTheWeb_PlatformGuard
+        static bool IsFromInternet(string path)
+        {
+            // The package only works on Windows: check the operating system before calling it
+            if (!OperatingSystem.IsWindows())
+                return false;
+
+            return MarkOfTheWeb.IsUntrusted(path);
+        }
+        #endregion
+
+        Assert.False(IsFromInternet(path));
+        File.Delete(path);
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void CopyZoneDocumentationExample()
+    {
+        var archivePath = Path.GetTempFileName();
+        var extractedPath = Path.GetTempFileName();
+        MarkOfTheWeb.SetFileZone(archivePath, UrlZone.Internet, referrerUrl: null, hostUrl: "https://example.com/archive.zip");
+
+        #region MarkOfTheWeb_CopyZone
+        // Give the files extracted from a downloaded archive the Mark of the Web of the archive
+        var zoneIdentifier = MarkOfTheWeb.GetFileZoneIdentifier(archivePath);
+        if (zoneIdentifier is { Zone: >= UrlZone.LocalMachine and <= UrlZone.Untrusted })
+        {
+            MarkOfTheWeb.SetFileZone(extractedPath, zoneIdentifier.Zone, zoneIdentifier.ReferrerUrl, zoneIdentifier.HostUrl);
+        }
+        #endregion
+
+        Assert.Equal(UrlZone.Internet, MarkOfTheWeb.GetFileZone(extractedPath));
+        Assert.Equal("https://example.com/archive.zip", MarkOfTheWeb.GetFileZoneIdentifier(extractedPath)?.HostUrl);
+        File.Delete(archivePath);
+        File.Delete(extractedPath);
+    }
+
+    [Fact]
+    public void ParseDocumentationExample()
+    {
+        #region ZoneIdentifier_Parse
+        var zoneIdentifier = ZoneIdentifier.Parse("""
+            [ZoneTransfer]
+            ZoneId=3
+            HostUrl=https://example.com/file.zip
+            """);
+
+        Assert.Equal(UrlZone.Internet, zoneIdentifier.Zone);
+        Assert.Equal("https://example.com/file.zip", zoneIdentifier.HostUrl);
+        Assert.Null(zoneIdentifier.ReferrerUrl);
+        #endregion
+    }
 }

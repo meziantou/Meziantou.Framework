@@ -185,6 +185,77 @@ public sealed class ImageSimilarityTests
         Assert.Equal(expectedPNorm3, distance.PNorm3, tolerance: expectedPNorm3 * 1e-4);
     }
 
+    [Theory]
+    [InlineData(300, 257, false)]
+    [InlineData(300, 257, true)]
+    [InlineData(257, 300, true)]
+    public void Metrics_DoNotDependOnTheWorkerCount(int width, int height, bool opaque)
+    {
+        // Neither height is a multiple of the 64-row bands of the sums; 16 workers get a band of at least 32 rows each
+        Assert.Equal(height / 32, RowBands.GetWorkerCount(new Size(width, height), 16));
+        var (expectedPixels, actualPixels) = CreateRandomPixels(width * height);
+        if (opaque)
+        {
+            for (var i = 0; i < expectedPixels.Length; i++)
+            {
+                expectedPixels[i].A = 255;
+                actualPixels[i].A = 255;
+            }
+        }
+
+        var reference = Compute(workers: 1);
+        Assert.InRange(reference.Ssim, 0.1, 0.99);
+        foreach (var workers in new[] { 2, 3, 16 })
+        {
+            Assert.Equal(reference, Compute(workers));
+        }
+
+        (double Ssim, double Psnr, double Ssimulacra2, ButteraugliDistance Butteraugli) Compute(int workers)
+        {
+            var configuration = new ImageConfiguration { MaxDegreeOfParallelism = workers };
+            using var expectedImage = Image.ImportPixelData<Rgba32>(expectedPixels, width, height, configuration: configuration);
+            using var actualImage = Image.ImportPixelData<Rgba32>(actualPixels, width, height, configuration: configuration);
+            var expected = expectedImage.Frames[0];
+            var actual = actualImage.Frames[0];
+            return (
+                ImageSimilarity.ComputeSsim(expected, actual, Ct),
+                ImageSimilarity.ComputePsnr(expected, actual, Ct),
+                ImageSimilarity.ComputeSsimulacra2(expected, actual, Ct),
+                ImageSimilarity.ComputeButteraugliDistance(expected, actual, Ct));
+        }
+    }
+
+    [Fact]
+    public void Metrics_ReportTheFirstInvalidSampleWhateverTheWorkerCount()
+    {
+        // Rows 20 and 230 are read by different workers: the error is the one of row 20, as with one worker
+        const int Width = 300;
+        const int Height = 257;
+        foreach (var workers in new[] { 1, 2, 3, 16 })
+        {
+            var configuration = new ImageConfiguration { MaxDegreeOfParallelism = workers };
+            using var reference = new Image<RgbaFloat>(Width, Height, new RgbaFloat(0.5f, 0.5f, 0.5f), configuration);
+            using var image = new Image<RgbaFloat>(Width, Height, new RgbaFloat(0.5f, 0.5f, 0.5f), configuration);
+            image.Frames[0][7, 230] = new RgbaFloat(2f, 0.5f, 0.5f);
+            image.Frames[0][9, 20] = new RgbaFloat(float.NaN, 0.5f, 0.5f);
+            var expected = reference.Frames[0];
+            var actual = image.Frames[0];
+            Action[] members =
+            [
+                () => ImageSimilarity.ComputeSsim(expected, actual, Ct),
+                () => ImageSimilarity.ComputePsnr(expected, actual, Ct),
+                () => ImageSimilarity.ComputeSsimulacra2(expected, actual, Ct),
+                () => ImageSimilarity.ComputeButteraugliDistance(expected, actual, Ct),
+            ];
+
+            foreach (var member in members)
+            {
+                var exception = Assert.Throws<UnsupportedImageFeatureException>(member);
+                Assert.Contains("RgbaFloat pixel (9, 20)", exception.Message, StringComparison.Ordinal);
+            }
+        }
+    }
+
     [Fact]
     public void ComputeButteraugliDistance_PNorm3IsAtMostTheMaxDistance()
     {

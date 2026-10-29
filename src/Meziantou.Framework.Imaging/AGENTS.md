@@ -1046,8 +1046,16 @@ thin public types over its `FontFace`.
   rented from the scope of the conversion (a scope of the default limits for `IccColorTransform`). The last stage of a
   16-bit conversion is still evaluated: its inputs are the doubles that come out of a matrix, not 65,536 values.
 - Default parallelism is one worker (`ImageConfiguration.MaxDegreeOfParallelism`). Only `Resize`, the transformations,
-  `Convolve`, the blurs (`GaussianBlur`, `BoxBlur`, `MedianBlur`), `Sharpen` and `DetectEdges` are parallel, and their result must not
-  depend on the worker count (`ParallelConvolutionTests`: a frame needs 65,536 pixels to get several workers). The HEIC
+  `Convolve`, the blurs (`GaussianBlur`, `BoxBlur`, `MedianBlur`), `Sharpen`, `DetectEdges`, the `Pixelate`, `OilPaint` and
+  `Flatten` effects (`EffectScratch`) and the `ImageSimilarity` metrics (SSIM, PSNR, SSIMULACRA 2, Butteraugli) are
+  parallel, and their result must not depend on the worker count (`ParallelConvolutionTests`,
+  `ImageSimilarityTests.Metrics_DoNotDependOnTheWorkerCount`: a frame needs 65,536 pixels to get several workers). Split
+  rows with `RowBands`: a worker writes only its own rows, and reads the rows of its neighbors from copies taken before any
+  row is rewritten (halos). A floating-point sum is never split by worker: sum bands of `RowBands.SumBandRows` rows, a
+  constant, and add the band sums in band order (`RowBands.Sum`), so one worker and sixteen add in the same order. Integer
+  sums are exact and can be split any way. When the rows a worker reads can fail (samples without an 8-bit value), use
+  `RowBands.RunParallelInBandOrder`, which throws the error of the first failing band, as one worker would. Rent the
+  scratch of every worker on the calling thread, before any pixel changes. The HEIC
   and AVIF decoders decode the tiles of a grid of at least 65,536 samples concurrently (`HeifGridTiles.Decode`): the
   structure parser and the `InputResourceTracker` are not thread-safe and stay on the calling thread (each worker charges
   its hidden pixels to a tracker of its own, merged in tile order), and the pixels and the errors are those of one worker

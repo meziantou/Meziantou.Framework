@@ -205,54 +205,54 @@ public sealed class ImageFrame<TPixel> : ImageFrame
         }
     }
 
-    internal override void PixelatePixels(scoped in PixelLease lease, int size, Memory<byte> scratch, CancellationToken cancellationToken)
+    internal override void PixelatePixels(scoped in PixelLease lease, int size, EffectScratch scratch, CancellationToken cancellationToken)
     {
         if (!ProcessingBridge.IsBridged<TPixel>())
         {
-            EffectKernels.Pixelate<TPixel>(lease, size, AsDoubles(scratch), cancellationToken);
+            EffectKernels.Pixelate<TPixel>(lease, size, scratch, cancellationToken);
         }
         else if (typeof(TPixel) == typeof(La32))
         {
-            ProcessingBridge.RunInPlace<TPixel>(OwnerImage.Owner, lease, (scoped in PixelLease working) => EffectKernels.Pixelate<Rgba64>(working, size, AsDoubles(scratch), cancellationToken));
+            ProcessingBridge.RunInPlace<TPixel>(OwnerImage.Owner, lease, (scoped in PixelLease working) => EffectKernels.Pixelate<Rgba64>(working, size, scratch, cancellationToken));
         }
         else
         {
-            ProcessingBridge.RunInPlace<TPixel>(OwnerImage.Owner, lease, (scoped in PixelLease working) => EffectKernels.Pixelate<Rgba32>(working, size, AsDoubles(scratch), cancellationToken));
+            ProcessingBridge.RunInPlace<TPixel>(OwnerImage.Owner, lease, (scoped in PixelLease working) => EffectKernels.Pixelate<Rgba32>(working, size, scratch, cancellationToken));
         }
     }
 
-    internal override void OilPaintPixels(scoped in PixelLease lease, int levels, int radius, Memory<byte> scratch, Memory<byte> levelScratch, CancellationToken cancellationToken)
+    internal override void OilPaintPixels(scoped in PixelLease lease, int levels, int radius, EffectScratch scratch, CancellationToken cancellationToken)
     {
         // The working copy of a gray format has three equal colors: its intensity is that gray
         if (!ProcessingBridge.IsBridged<TPixel>())
         {
-            EffectKernels.OilPaint<TPixel>(lease, levels, radius, grayColors: false, AsDoubles(scratch), AsInts(levelScratch), cancellationToken);
+            EffectKernels.OilPaint<TPixel>(lease, levels, radius, grayColors: false, scratch, cancellationToken);
         }
         else if (typeof(TPixel) == typeof(La32))
         {
-            ProcessingBridge.RunInPlace<TPixel>(OwnerImage.Owner, lease, (scoped in PixelLease working) => EffectKernels.OilPaint<Rgba64>(working, levels, radius, grayColors: true, AsDoubles(scratch), AsInts(levelScratch), cancellationToken));
+            ProcessingBridge.RunInPlace<TPixel>(OwnerImage.Owner, lease, (scoped in PixelLease working) => EffectKernels.OilPaint<Rgba64>(working, levels, radius, grayColors: true, scratch, cancellationToken));
         }
         else
         {
-            ProcessingBridge.RunInPlace<TPixel>(OwnerImage.Owner, lease, (scoped in PixelLease working) => EffectKernels.OilPaint<Rgba32>(working, levels, radius, grayColors: true, AsDoubles(scratch), AsInts(levelScratch), cancellationToken));
+            ProcessingBridge.RunInPlace<TPixel>(OwnerImage.Owner, lease, (scoped in PixelLease working) => EffectKernels.OilPaint<Rgba32>(working, levels, radius, grayColors: true, scratch, cancellationToken));
         }
     }
 
-    internal override void FlattenPixels(scoped in PixelLease lease, Rgba64 background, CancellationToken cancellationToken)
+    internal override void FlattenPixels(scoped in PixelLease lease, Rgba64 background, int maxDegreeOfParallelism, CancellationToken cancellationToken)
     {
         // The flattened working copy of a gray format converts back to the luma of its colors: the conversion of the gray
         // format to a format without alpha
         if (!ProcessingBridge.IsBridged<TPixel>())
         {
-            EffectKernels.Flatten<TPixel>(lease, background, cancellationToken);
+            EffectKernels.Flatten<TPixel>(lease, background, maxDegreeOfParallelism, cancellationToken);
         }
         else if (typeof(TPixel) == typeof(La32))
         {
-            ProcessingBridge.RunInPlace<TPixel>(OwnerImage.Owner, lease, (scoped in PixelLease working) => EffectKernels.Flatten<Rgba64>(working, background, cancellationToken));
+            ProcessingBridge.RunInPlace<TPixel>(OwnerImage.Owner, lease, (scoped in PixelLease working) => EffectKernels.Flatten<Rgba64>(working, background, maxDegreeOfParallelism, cancellationToken));
         }
         else if (typeof(TPixel) == typeof(La16))
         {
-            ProcessingBridge.RunInPlace<TPixel>(OwnerImage.Owner, lease, (scoped in PixelLease working) => EffectKernels.Flatten<Rgba32>(working, background, cancellationToken));
+            ProcessingBridge.RunInPlace<TPixel>(OwnerImage.Owner, lease, (scoped in PixelLease working) => EffectKernels.Flatten<Rgba32>(working, background, maxDegreeOfParallelism, cancellationToken));
         }
         else
         {
@@ -298,8 +298,4 @@ public sealed class ImageFrame<TPixel> : ImageFrame
         if ((uint)y >= (uint)storage.Height)
             throw new ArgumentOutOfRangeException(nameof(y), y, "The row is out of range.");
     }
-
-    private static Span<double> AsDoubles(Memory<byte> scratch) => unsafe(MemoryMarshal.Cast<byte, double>(scratch.Span));
-
-    private static Span<int> AsInts(Memory<byte> scratch) => unsafe(MemoryMarshal.Cast<byte, int>(scratch.Span));
 }

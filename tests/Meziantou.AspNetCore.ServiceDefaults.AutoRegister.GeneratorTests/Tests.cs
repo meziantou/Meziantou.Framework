@@ -26,6 +26,52 @@ public sealed class Tests
     }
 
     [Fact]
+    public async Task Documentation_Usage()
+    {
+        string[] args = [];
+
+        #region ServiceDefaultsAutoRegister_Usage
+        var builder = WebApplication.CreateBuilder(args);
+        var app = builder.Build(); // Also calls UseMeziantouConventions and MapMeziantouDefaultEndpoints
+
+        app.MapGet("/", () => "Hello World!");
+        #endregion
+
+        app.Urls.Add("http://127.0.0.1:0");
+        await app.StartAsync(XunitCancellationToken);
+        try
+        {
+            using var httpClient = new HttpClient() { BaseAddress = new Uri(app.Urls.First()) };
+            Assert.Equal("Healthy", await httpClient.GetStringAsync("health", XunitCancellationToken));
+            Assert.Equal("Hello World!", await httpClient.GetStringAsync("/", XunitCancellationToken));
+        }
+        finally
+        {
+            await app.StopAsync(XunitCancellationToken);
+            await app.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task Documentation_Configure()
+    {
+        string[] args = [];
+
+        #region ServiceDefaultsAutoRegister_Configure
+        var builder = WebApplication.CreateBuilder(args);
+        builder.UseMeziantouConventions(options => options.OpenApi.Enabled = false);
+
+        var app = builder.Build(); // Keeps these options: the generated code only adds the conventions when they are missing
+        #endregion
+
+        await using (app)
+        {
+            var options = app.Services.GetRequiredService<MeziantouServiceDefaultsOptions>();
+            Assert.False(options.OpenApi.Enabled);
+        }
+    }
+
+    [Fact]
     public async Task CreateBuilderArgsTest()
     {
         var builder = WebApplication.CreateBuilder([]);

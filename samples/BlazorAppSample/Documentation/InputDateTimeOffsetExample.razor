@@ -1,0 +1,25 @@
+@inject TimeZoneService TimeZoneService
+
+<EditForm Model="model">
+    <InputDateTime @bind-Value="model.StartsAt" Offset="userOffset" />
+</EditForm>
+
+@code {
+    private readonly Appointment model = new();
+    private TimeSpan? userOffset;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Interpret the value the user types in their own time zone, not in the time zone of the server
+            userOffset = await TimeZoneService.GetOffsetAsync();
+            StateHasChanged();
+        }
+    }
+
+    public sealed class Appointment
+    {
+        public DateTimeOffset? StartsAt { get; set; }
+    }
+}

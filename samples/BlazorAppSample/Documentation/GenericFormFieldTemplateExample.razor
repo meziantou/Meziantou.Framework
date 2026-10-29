@@ -1,0 +1,32 @@
+@using System.ComponentModel.DataAnnotations
+
+<EditForm Model="settings">
+    <DataAnnotationsValidator />
+    <GenericForm Model="settings" EditorClass="form-control">
+        <FieldTemplate Context="field">
+            <div class="mb-3">
+                <label class="form-label" for="@field.EditorId">@field.DisplayName</label>
+                @field.EditorTemplate
+                @if (field.Description is not null)
+                {
+                    <div class="form-text">@field.Description</div>
+                }
+                @field.FieldValidationTemplate
+            </div>
+        </FieldTemplate>
+    </GenericForm>
+</EditForm>
+
+@code {
+    private readonly Settings settings = new();
+
+    public sealed class Settings
+    {
+        [Range(1, 100)]
+        [Display(Name = "Page size", Description = "Number of items shown on each page")]
+        public int PageSize { get; set; } = 20;
+
+        [Display(Description = "Address of the API, for instance https://api.example.com")]
+        public Uri? ApiUrl { get; set; }
+    }
+}

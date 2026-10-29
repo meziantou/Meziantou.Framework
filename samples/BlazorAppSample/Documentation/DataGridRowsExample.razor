@@ -1,0 +1,26 @@
+<DataGrid Items="@orders" class="table" RowKey="@(order => order.Id)" RowClass="@GetRowClass">
+    <DataGridColumn TRowData="Order" Expression="order => order.Id" Title="#" />
+    <DataGridColumn TRowData="Order" Expression="order => order.Customer" />
+    <DataGridColumn TRowData="Order" Expression="order => order.Total" Format="0.00" />
+    <DataGridColumn TRowData="Order" Title="Status">
+        @(context.IsLate ? "Late" : "On time")
+    </DataGridColumn>
+</DataGrid>
+
+@code {
+    private readonly List<Order> orders =
+    [
+        new Order(1, "Alice", 12.5m, IsLate: false),
+        new Order(2, "Bob", 99m, IsLate: true),
+    ];
+
+    private static string GetRowClass(Order order, int rowIndex)
+    {
+        if (order.IsLate)
+            return "table-warning";
+
+        return rowIndex % 2 == 0 ? "even" : "odd";
+    }
+
+    private sealed record Order(int Id, string Customer, decimal Total, bool IsLate);
+}

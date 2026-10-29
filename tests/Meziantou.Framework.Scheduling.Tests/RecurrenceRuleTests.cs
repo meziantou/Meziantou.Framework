@@ -2842,4 +2842,186 @@ public partial class RecurrenceRuleTests
         var text = rrule.GetHumanText(culture);
         Assert.Equal(expectedText, text);
     }
+
+    [Fact]
+    public void DocumentationExample_InvalidRule()
+    {
+        #region RecurrenceRule_InvalidRule
+        // BYMONTHDAY cannot be used with FREQ=WEEKLY
+        Assert.False(RecurrenceRule.TryParse("FREQ=WEEKLY;BYMONTHDAY=1", out _, out var error));
+        Assert.Equal("BYMONTHDAY cannot be used when FREQ is WEEKLY.", error);
+
+        // Parse throws a FormatException that contains the reason
+        var exception = Assert.Throws<FormatException>(() => RecurrenceRule.Parse("FREQ=DAILY;CONUT=3"));
+        Assert.StartsWith("RRule value 'FREQ=DAILY;CONUT=3' is invalid: ", exception.Message);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_ModifyRule()
+    {
+        #region RecurrenceRule_Modify
+        var rule = RecurrenceRule.Parse("FREQ=DAILY;BYHOUR=9");
+        rule.Interval = 2;
+        rule.Occurrences = 3;
+        rule.ByMinutes = [30];
+
+        Assert.Equal("FREQ=DAILY;INTERVAL=2;COUNT=3;BYHOUR=9;BYMINUTE=30", rule.Text);
+        Assert.Equal(
+            [
+                new DateTime(2024, 01, 01, 09, 30, 00),
+                new DateTime(2024, 01, 03, 09, 30, 00),
+                new DateTime(2024, 01, 05, 09, 30, 00),
+            ],
+            rule.GetNextOccurrences(new DateTime(2024, 01, 01)));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_Until()
+    {
+        #region RecurrenceRule_Until
+        // A date designates the whole day, so the occurrence of January 10 is included
+        var rule = RecurrenceRule.Parse("FREQ=DAILY;UNTIL=20240110");
+        Assert.Equal(
+            [
+                new DateTime(2024, 01, 08, 09, 00, 00),
+                new DateTime(2024, 01, 09, 09, 00, 00),
+                new DateTime(2024, 01, 10, 09, 00, 00),
+            ],
+            rule.GetNextOccurrences(new DateTime(2024, 01, 08, 09, 00, 00)));
+
+        Assert.Equal(new DateTime(2024, 01, 10), rule.EndDate);
+        Assert.Equal(DateTimeKind.Unspecified, rule.EndDate?.Kind);
+        Assert.False(rule.IsForever);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_CommonRules()
+    {
+        #region RecurrenceRule_CommonRules
+        var dtStart = new DateTime(2024, 01, 01, 09, 00, 00); // a Monday
+
+        IEnumerable<DateTime> FirstThree(string rrule) => RecurrenceRule.Parse(rrule).GetNextOccurrences(dtStart).Take(3);
+
+        // Every weekday
+        Assert.Equal(
+            [new DateTime(2024, 01, 01, 09, 00, 00), new DateTime(2024, 01, 02, 09, 00, 00), new DateTime(2024, 01, 03, 09, 00, 00)],
+            FirstThree("FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR"));
+
+        // The first Monday of each month
+        Assert.Equal(
+            [new DateTime(2024, 01, 01, 09, 00, 00), new DateTime(2024, 02, 05, 09, 00, 00), new DateTime(2024, 03, 04, 09, 00, 00)],
+            FirstThree("FREQ=MONTHLY;BYDAY=1MO"));
+
+        // The last Friday of each month
+        Assert.Equal(
+            [new DateTime(2024, 01, 26, 09, 00, 00), new DateTime(2024, 02, 23, 09, 00, 00), new DateTime(2024, 03, 29, 09, 00, 00)],
+            FirstThree("FREQ=MONTHLY;BYDAY=-1FR"));
+
+        // The last weekday of each month
+        Assert.Equal(
+            [new DateTime(2024, 01, 31, 09, 00, 00), new DateTime(2024, 02, 29, 09, 00, 00), new DateTime(2024, 03, 29, 09, 00, 00)],
+            FirstThree("FREQ=MONTHLY;BYDAY=MO,TU,WE,TH,FR;BYSETPOS=-1"));
+
+        // The 15th and the last day of each month
+        Assert.Equal(
+            [new DateTime(2024, 01, 15, 09, 00, 00), new DateTime(2024, 01, 31, 09, 00, 00), new DateTime(2024, 02, 15, 09, 00, 00)],
+            FirstThree("FREQ=MONTHLY;BYMONTHDAY=15,-1"));
+
+        // Three times a day: the minutes and seconds come from the start date
+        Assert.Equal(
+            [new DateTime(2024, 01, 01, 09, 00, 00), new DateTime(2024, 01, 01, 12, 00, 00), new DateTime(2024, 01, 01, 17, 00, 00)],
+            FirstThree("FREQ=DAILY;BYHOUR=9,12,17"));
+
+        // February 29: the years without one are skipped
+        Assert.Equal(
+            [new DateTime(2024, 02, 29, 09, 00, 00), new DateTime(2028, 02, 29, 09, 00, 00), new DateTime(2032, 02, 29, 09, 00, 00)],
+            FirstThree("FREQ=YEARLY;BYMONTH=2;BYMONTHDAY=29"));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_NextOccurrence()
+    {
+        #region RecurrenceRule_NextOccurrence
+        var rule = RecurrenceRule.Parse("FREQ=MONTHLY;BYDAY=1MO;COUNT=3");
+        var dtStart = new DateTime(2024, 01, 01, 09, 00, 00);
+
+        // The first occurrence of the series
+        Assert.Equal(new DateTime(2024, 01, 01, 09, 00, 00), rule.GetNextOccurrence(dtStart));
+
+        // The next occurrence after a date: enumerate the series and skip the earlier occurrences
+        var now = new DateTime(2024, 01, 15); // DateTime.Now
+        DateTime? next = rule.GetNextOccurrences(dtStart).Where(occurrence => occurrence > now).Cast<DateTime?>().FirstOrDefault();
+        Assert.Equal(new DateTime(2024, 02, 05, 09, 00, 00), next);
+
+        // null once the series is over
+        var afterTheEnd = new DateTime(2024, 06, 01);
+        Assert.Null(rule.GetNextOccurrences(dtStart).Where(occurrence => occurrence > afterTheEnd).Cast<DateTime?>().FirstOrDefault());
+        #endregion
+    }
+
+#if !INVARIANT_GLOBALIZATION_MODE_ENABLED
+    // Named cultures and IANA identifiers need ICU
+    [Fact]
+    public void DocumentationExample_GetHumanTextFrench()
+    {
+        #region RecurrenceRule_GetHumanTextFrench
+        var culture = CultureInfo.GetCultureInfo("fr-FR");
+        Assert.Equal("tous les jours", RecurrenceRule.Parse("FREQ=DAILY").GetHumanText(culture));
+        Assert.Equal("tous les mois le dernier vendredi pour 5 fois", RecurrenceRule.Parse("FREQ=MONTHLY;BYDAY=-1FR;COUNT=5").GetHumanText(culture));
+
+        // A language that is not supported gives null
+        Assert.Null(RecurrenceRule.Parse("FREQ=DAILY").GetHumanText(CultureInfo.GetCultureInfo("de-DE")));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_GetHumanTextEnglish()
+    {
+        #region RecurrenceRule_GetHumanTextEnglish
+        var culture = CultureInfo.GetCultureInfo("en-US");
+        Assert.Equal("every week on Monday, Tuesday, Wednesday, Thursday and Friday", RecurrenceRule.Parse("FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR").GetHumanText(culture));
+        Assert.Equal("every month on the last Friday for 5 times", RecurrenceRule.Parse("FREQ=MONTHLY;BYDAY=-1FR;COUNT=5").GetHumanText(culture));
+        Assert.Equal("every year on February the 29th", RecurrenceRule.Parse("FREQ=YEARLY;BYMONTH=2;BYMONTHDAY=29").GetHumanText(culture));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_TimeZoneGap()
+    {
+        #region RecurrenceRule_TimeZoneGap
+        // 02:30 does not exist in Paris on March 31, 2024: the clocks jump from 02:00 to 03:00
+        var rule = RecurrenceRule.Parse("FREQ=DAILY;BYHOUR=2;BYMINUTE=30");
+        var timeZone = TimeZoneInfo.FindSystemTimeZoneById("Europe/Paris");
+
+        var occurrences = rule.GetNextOccurrences(new DateTime(2024, 03, 30), timeZone).Take(3);
+
+        Assert.Equal(
+            [
+                new DateTimeOffset(2024, 03, 30, 02, 30, 00, TimeSpan.FromHours(1)),
+                new DateTimeOffset(2024, 03, 31, 03, 30, 00, TimeSpan.FromHours(2)), // read with the offset before the gap
+                new DateTimeOffset(2024, 04, 01, 02, 30, 00, TimeSpan.FromHours(2)),
+            ],
+            occurrences);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_TimeZoneInstant()
+    {
+        #region RecurrenceRule_TimeZoneInstant
+        var rule = RecurrenceRule.Parse("FREQ=DAILY;BYHOUR=9;BYMINUTE=0;BYSECOND=0");
+        var timeZone = TimeZoneInfo.FindSystemTimeZoneById("Asia/Tokyo");
+
+        // An instant: 10:00 in Tokyo. The 09:00 occurrence of that day is before it, so it is not returned
+        var start = new DateTimeOffset(2024, 01, 01, 01, 00, 00, TimeSpan.Zero);
+        var next = rule.GetNextOccurrence(start, timeZone);
+
+        Assert.Equal(new DateTimeOffset(2024, 01, 02, 09, 00, 00, TimeSpan.FromHours(9)), next);
+        #endregion
+    }
+#endif
 }

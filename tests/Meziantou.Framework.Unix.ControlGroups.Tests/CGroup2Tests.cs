@@ -241,4 +241,136 @@ public sealed class CGroup2Tests : IDisposable
         child.Unfreeze();
         child.Delete();
     }
+
+    // The documentation examples create cgroups of their own, under the root cgroup, with names that differ from one
+    // example to the other because the tests of a class run in parallel.
+    [Fact]
+    public void DocumentationExample_GettingStarted()
+    {
+        #region CGroup2_GettingStarted
+        // Controllers are enabled on a parent cgroup, and apply to its children
+        var parent = CGroup2.Root.CreateOrGetChild("myapp");
+        parent.SetControllers("cpu", "memory", "pids");
+
+        // The processes go into a child cgroup, which holds the limits
+        var worker = parent.CreateOrGetChild("worker");
+        worker.SetCpuMax(50_000, 100_000);         // half of a CPU
+        worker.SetMemoryMax(256L * 1024 * 1024);   // 256 MB
+        worker.SetPidsMax(20);                     // 20 processes
+
+        using var process = Process.Start("sleep", "60");
+        worker.AssociateProcess(process);
+        Assert.Contains(process.Id, worker.GetProcesses());
+
+        // A cgroup can be deleted only when it has no process and no child cgroup
+        worker.Kill();
+        process.WaitForExit();
+        worker.Delete();
+        parent.Delete();
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_ReadValues()
+    {
+        #region CGroup2_ReadValues
+        var parent = CGroup2.Root.CreateOrGetChild("myapp-values");
+        parent.SetControllers("memory");
+        var worker = parent.CreateOrGetChild("worker");
+
+        // memory.max holds "max": there is no limit
+        var memoryMax = worker.GetMemoryMax();
+        Assert.Equal(CGroupValueState.NotConfigured, memoryMax.State);
+        Assert.Equal("max", memoryMax.RawValue);
+
+        worker.SetMemoryMax(512L * 1024 * 1024);
+        memoryMax = worker.GetMemoryMax();
+        Assert.Equal(CGroupValueState.Configured, memoryMax.State);
+        Assert.Equal(512L * 1024 * 1024, memoryMax.Value);
+
+        // The pids controller is not enabled on the parent, so pids.max does not exist
+        var pidsMax = worker.GetPidsMax();
+        Assert.Equal(CGroupValueState.Unavailable, pidsMax.State);
+        Assert.False(pidsMax.TryGetValue(out _));
+        Assert.Equal(long.MaxValue, pidsMax.GetValueOrDefault(long.MaxValue));
+
+        worker.Delete();
+        parent.Delete();
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_ResourceLimits()
+    {
+        #region CGroup2_ResourceLimits
+        var parent = CGroup2.Root.CreateOrGetChild("myapp-limits");
+        parent.SetControllers("cpu", "memory", "pids");
+        var worker = parent.CreateOrGetChild("worker");
+
+        // CPU: a relative weight (1 to 10000, 100 by default) and a hard limit of 2 CPUs
+        worker.SetCpuWeight(50);
+        worker.SetCpuMax(200_000, 100_000);
+        Assert.Equal(new CpuMax(200_000, 100_000), worker.GetCpuMax().Value);
+
+        // Memory: throttled above 1.5 GB, never more than 2 GB
+        worker.SetMemoryHigh(1536L * 1024 * 1024);
+        worker.SetMemoryMax(2048L * 1024 * 1024);
+
+        // Processes: at most 100
+        worker.SetPidsMax(100);
+
+        // null removes a limit
+        worker.SetMemoryHigh(null);
+        worker.SetPidsMax(null);
+        worker.RemoveCpuMax();
+        Assert.Equal(CGroupValueState.NotConfigured, worker.GetPidsMax().State);
+
+        worker.Delete();
+        parent.Delete();
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_Statistics()
+    {
+        #region CGroup2_Statistics
+        var group = CGroup2.Root.CreateOrGetChild("myapp-statistics");
+
+        // TryGetValue when only a value matters
+        if (group.GetCpuStat().TryGetValue(out var cpuStat))
+        {
+            var cpuTime = TimeSpan.FromMicroseconds(cpuStat.UsageMicroseconds);
+            Assert.True(cpuTime >= TimeSpan.Zero);
+        }
+
+        // GetValueOrDefault when a fallback is good enough
+        var memoryInBytes = group.GetMemoryCurrent().GetValueOrDefault(0);
+        Assert.True(memoryInBytes >= 0);
+
+        group.Delete();
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_Freeze()
+    {
+        #region CGroup2_Freeze
+        var group = CGroup2.Root.CreateOrGetChild("myapp-freezer");
+        using var process = Process.Start("sleep", "60");
+        group.AssociateProcess(process);
+
+        // Freezing is asynchronous: IsFrozen returns true once every process of the cgroup is stopped
+        group.Freeze();
+        Assert.True(SpinWait.SpinUntil(group.IsFrozen, TimeSpan.FromSeconds(10)));
+
+        group.Unfreeze();
+        Assert.False(group.IsFrozen());
+
+        // Kill all the processes of the cgroup and of its descendants
+        group.Kill();
+        process.WaitForExit();
+        Assert.Empty(group.GetProcesses());
+        group.Delete();
+        #endregion
+    }
 }

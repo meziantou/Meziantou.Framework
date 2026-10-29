@@ -1,0 +1,2 @@
+title: TemporaryDirectory
+description: Create a unique temporary folder or file that is deleted when you dispose it.

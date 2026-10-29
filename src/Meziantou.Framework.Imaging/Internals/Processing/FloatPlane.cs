@@ -27,6 +27,12 @@ internal sealed class FloatPlane : IDisposable
 
     public Span<float> GetRow(int y) => Span.Slice(y * Width, Width);
 
+    /// <summary>Gets the samples of the rows <c>[start, end)</c>.</summary>
+    public Span<float> GetRows(int start, int end) => Span.Slice(start * Width, (end - start) * Width);
+
+    /// <summary>Gets the size of the plane.</summary>
+    public Size Size => new(Width, Height);
+
     public void Dispose()
     {
         _buffer?.Dispose();

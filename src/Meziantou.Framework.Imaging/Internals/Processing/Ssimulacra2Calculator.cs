@@ -22,6 +22,13 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// scale can be smaller than 8×8; the frames must be at least 8×8.
 /// </para>
 /// <para>
+/// Large planes are processed by up to <see cref="ImageConfiguration.MaxDegreeOfParallelism"/> workers: the conversions, the
+/// products and the horizontal blur by row bands, the vertical blur by column ranges, and the norms of the maps by bands of
+/// <see cref="RowBands.SumBandRows"/> rows whose sums are added in order (<see cref="RowBands.Sum"/>). Every value is
+/// computed in the same order whatever the number of workers, so the score does not depend on it. The tool sums every map
+/// in one loop: the sums by bands differ from it in the last bits only (planes taller than 64 rows).
+/// </para>
+/// <para>
 /// A frame that is not fully opaque is composited over a dark (0.1) and a bright (0.9) gray background in encoded sRGB,
 /// and the result is the lower of the two scores, as the tool does for an image with alpha.
 /// </para>
@@ -71,17 +78,17 @@ internal static class Ssimulacra2Calculator
 
     /// <exception cref="ImageResourceLimitException">The planes exceed the allocation limit.</exception>
     /// <exception cref="OperationCanceledException">The token was canceled.</exception>
-    public static double Compute(AllocationScope scope, PixelSource expected, PixelSource actual, CancellationToken cancellationToken)
+    public static double Compute(AllocationScope scope, PixelSource expected, PixelSource actual, int maxDegreeOfParallelism, CancellationToken cancellationToken)
     {
         if (expected.IsOpaque(cancellationToken) && actual.IsOpaque(cancellationToken))
-            return ComputeScore(scope, expected, actual, background: 0.5f, cancellationToken);
+            return ComputeScore(scope, expected, actual, background: 0.5f, maxDegreeOfParallelism, cancellationToken);
 
-        var dark = ComputeScore(scope, expected, actual, background: 0.1f, cancellationToken);
-        var bright = ComputeScore(scope, expected, actual, background: 0.9f, cancellationToken);
+        var dark = ComputeScore(scope, expected, actual, background: 0.1f, maxDegreeOfParallelism, cancellationToken);
+        var bright = ComputeScore(scope, expected, actual, background: 0.9f, maxDegreeOfParallelism, cancellationToken);
         return Math.Min(dark, bright);
     }
 
-    private static double ComputeScore(AllocationScope scope, PixelSource expected, PixelSource actual, float background, CancellationToken cancellationToken)
+    private static double ComputeScore(AllocationScope scope, PixelSource expected, PixelSource actual, float background, int maxDegreeOfParallelism, CancellationToken cancellationToken)
     {
         using var arena = new FloatPlaneArena(scope);
         var width = expected.Width;
@@ -102,8 +109,8 @@ internal static class Ssimulacra2Calculator
 
             if (scale > 0)
             {
-                var downsampledReference = Downsample(arena, reference);
-                var downsampledDistorted = Downsample(arena, distorted);
+                var downsampledReference = Downsample(arena, reference, maxDegreeOfParallelism);
+                var downsampledDistorted = Downsample(arena, distorted, maxDegreeOfParallelism);
                 arena.Release(reference);
                 arena.Release(distorted);
                 reference = downsampledReference;
@@ -115,7 +122,7 @@ internal static class Ssimulacra2Calculator
             cancellationToken.ThrowIfCancellationRequested();
             var ssim = new double[6];
             var edges = new double[12];
-            ComputeScale(arena, reference, distorted, ssim, edges, cancellationToken);
+            ComputeScale(arena, reference, distorted, ssim, edges, maxDegreeOfParallelism, cancellationToken);
             ssimNorms.Add(ssim);
             edgeNorms.Add(edges);
         }
@@ -123,14 +130,18 @@ internal static class Ssimulacra2Calculator
         return ComputeFinalScore(ssimNorms, edgeNorms);
     }
 
-    private static void ComputeScale(FloatPlaneArena arena, FloatPlane[] reference, FloatPlane[] distorted, double[] ssimNorms, double[] edgeNorms, CancellationToken cancellationToken)
+    private static void ComputeScale(FloatPlaneArena arena, FloatPlane[] reference, FloatPlane[] distorted, double[] ssimNorms, double[] edgeNorms, int maxDegreeOfParallelism, CancellationToken cancellationToken)
     {
         var width = reference[0].Width;
         var height = reference[0].Height;
+        var size = reference[0].Size;
         var image1 = arena.Rent(3, width, height);
         var image2 = arena.Rent(3, width, height);
-        ToPositiveXyb(reference, image1);
-        ToPositiveXyb(distorted, image2);
+        RowBands.For(size, maxDegreeOfParallelism, (start, end) =>
+        {
+            ToPositiveXyb(reference, image1, start, end);
+            ToPositiveXyb(distorted, image2, start, end);
+        });
 
         var product = arena.Rent(width, height);
         var temp = arena.Rent(width, height);
@@ -140,22 +151,37 @@ internal static class Ssimulacra2Calculator
         var sigma12 = arena.Rent(width, height);
         var mu1 = arena.Rent(width, height);
         var mu2 = arena.Rent(width, height);
+
+        // Per channel: the sums of the SSIM map, then those of the artifact and detail-lost maps
+        Span<double> sums = stackalloc double[6];
         for (var channel = 0; channel < 3; channel++)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var plane1 = image1[channel].Span;
-            var plane2 = image2[channel].Span;
-            Multiply(plane1, plane1, product.Span);
-            Gaussian.Blur(product.Span, temp.Span, sigma11.Span, state.Span, width, height);
-            Multiply(plane2, plane2, product.Span);
-            Gaussian.Blur(product.Span, temp.Span, sigma22.Span, state.Span, width, height);
-            Multiply(plane1, plane2, product.Span);
-            Gaussian.Blur(product.Span, temp.Span, sigma12.Span, state.Span, width, height);
-            Gaussian.Blur(plane1, temp.Span, mu1.Span, state.Span, width, height);
-            Gaussian.Blur(plane2, temp.Span, mu2.Span, state.Span, width, height);
+            var plane1 = image1[channel];
+            var plane2 = image2[channel];
+            Multiply(plane1, plane1, product, maxDegreeOfParallelism);
+            Gaussian.Blur(product, temp, sigma11, state, maxDegreeOfParallelism);
+            Multiply(plane2, plane2, product, maxDegreeOfParallelism);
+            Gaussian.Blur(product, temp, sigma22, state, maxDegreeOfParallelism);
+            Multiply(plane1, plane2, product, maxDegreeOfParallelism);
+            Gaussian.Blur(product, temp, sigma12, state, maxDegreeOfParallelism);
+            Gaussian.Blur(plane1, temp, mu1, state, maxDegreeOfParallelism);
+            Gaussian.Blur(plane2, temp, mu2, state, maxDegreeOfParallelism);
 
-            ComputeSsimMap(mu1.Span, mu2.Span, sigma11.Span, sigma22.Span, sigma12.Span, ssimNorms.AsSpan(channel * 2, 2));
-            ComputeEdgeDiffMap(plane1, mu1.Span, plane2, mu2.Span, edgeNorms.AsSpan(channel * 4, 4));
+            RowBands.Sum(size, maxDegreeOfParallelism, sums, (start, end, bandSums) =>
+            {
+                ComputeSsimMap(mu1.GetRows(start, end), mu2.GetRows(start, end), sigma11.GetRows(start, end), sigma22.GetRows(start, end), sigma12.GetRows(start, end), bandSums[..2]);
+                ComputeEdgeDiffMap(plane1.GetRows(start, end), mu1.GetRows(start, end), plane2.GetRows(start, end), mu2.GetRows(start, end), bandSums[2..]);
+            });
+
+            var onePerPixels = 1.0 / ((double)width * height);
+            ssimNorms[channel * 2] = onePerPixels * sums[0];
+            ssimNorms[channel * 2 + 1] = Math.Sqrt(Math.Sqrt(onePerPixels * sums[1]));
+            for (var n = 0; n < 4; n += 2)
+            {
+                edgeNorms[channel * 4 + n] = onePerPixels * sums[2 + n];
+                edgeNorms[channel * 4 + n + 1] = Math.Sqrt(Math.Sqrt(onePerPixels * sums[3 + n]));
+            }
         }
 
         arena.Release(image1);
@@ -186,49 +212,55 @@ internal static class Ssimulacra2Calculator
         return sum > 0 ? 100.0 - 10.0 * Math.Pow(sum, 0.6276336467831387) : 100.0;
     }
 
-    private static FloatPlane[] Downsample(FloatPlaneArena arena, FloatPlane[] input)
+    private static FloatPlane[] Downsample(FloatPlaneArena arena, FloatPlane[] input, int maxDegreeOfParallelism)
     {
         var inWidth = input[0].Width;
         var inHeight = input[0].Height;
         var outWidth = (inWidth + 1) / 2;
         var outHeight = (inHeight + 1) / 2;
         var output = arena.Rent(3, outWidth, outHeight);
-        for (var c = 0; c < 3; c++)
+        RowBands.For(output[0].Size, maxDegreeOfParallelism, (start, end) =>
         {
-            var source = input[c].Span;
-            var destination = output[c].Span;
-            for (var oy = 0; oy < outHeight; oy++)
+            for (var c = 0; c < 3; c++)
             {
-                for (var ox = 0; ox < outWidth; ox++)
-                {
-                    var sum = 0f;
-                    for (var iy = 0; iy < 2; iy++)
-                    {
-                        for (var ix = 0; ix < 2; ix++)
-                        {
-                            var x = Math.Min(ox * 2 + ix, inWidth - 1);
-                            var y = Math.Min(oy * 2 + iy, inHeight - 1);
-                            sum += source[y * inWidth + x];
-                        }
-                    }
-
-                    destination[oy * outWidth + ox] = sum * 0.25f;
-                }
+                DownsampleRows(input[c].Span, inWidth, inHeight, output[c].Span, outWidth, start, end);
             }
-        }
+        });
 
         return output;
     }
 
-    /// <summary>Converts linear sRGB to XYB (enc_xyb.cc, intensity target 255), then rescales it (MakePositiveXYB).</summary>
-    private static void ToPositiveXyb(FloatPlane[] linear, FloatPlane[] xyb)
+    private static void DownsampleRows(ReadOnlySpan<float> source, int inWidth, int inHeight, Span<float> destination, int outWidth, int start, int end)
     {
-        var red = linear[0].Span;
-        var green = linear[1].Span;
-        var blue = linear[2].Span;
-        var outX = xyb[0].Span;
-        var outY = xyb[1].Span;
-        var outB = xyb[2].Span;
+        for (var oy = start; oy < end; oy++)
+        {
+            for (var ox = 0; ox < outWidth; ox++)
+            {
+                var sum = 0f;
+                for (var iy = 0; iy < 2; iy++)
+                {
+                    for (var ix = 0; ix < 2; ix++)
+                    {
+                        var x = Math.Min(ox * 2 + ix, inWidth - 1);
+                        var y = Math.Min(oy * 2 + iy, inHeight - 1);
+                        sum += source[y * inWidth + x];
+                    }
+                }
+
+                destination[oy * outWidth + ox] = sum * 0.25f;
+            }
+        }
+    }
+
+    /// <summary>Converts linear sRGB to XYB (enc_xyb.cc, intensity target 255), then rescales it (MakePositiveXYB).</summary>
+    private static void ToPositiveXyb(FloatPlane[] linear, FloatPlane[] xyb, int start, int end)
+    {
+        var red = linear[0].GetRows(start, end);
+        var green = linear[1].GetRows(start, end);
+        var blue = linear[2].GetRows(start, end);
+        var outX = xyb[0].GetRows(start, end);
+        var outY = xyb[1].GetRows(start, end);
+        var outB = xyb[2].GetRows(start, end);
         for (var i = 0; i < red.Length; i++)
         {
             var r = red[i];
@@ -272,6 +304,9 @@ internal static class Ssimulacra2Calculator
         return MathF.FusedMultiplyAdd(square, x, NegativeCubeRootBias);
     }
 
+    private static void Multiply(FloatPlane a, FloatPlane b, FloatPlane product, int maxDegreeOfParallelism)
+        => RowBands.For(product.Size, maxDegreeOfParallelism, (start, end) => Multiply(a.GetRows(start, end), b.GetRows(start, end), product.GetRows(start, end)));
+
     private static void Multiply(ReadOnlySpan<float> a, ReadOnlySpan<float> b, Span<float> product)
     {
         for (var i = 0; i < product.Length; i++)
@@ -280,7 +315,8 @@ internal static class Ssimulacra2Calculator
         }
     }
 
-    private static void ComputeSsimMap(ReadOnlySpan<float> m1, ReadOnlySpan<float> m2, ReadOnlySpan<float> s11, ReadOnlySpan<float> s22, ReadOnlySpan<float> s12, Span<double> norms)
+    /// <summary>Adds the 1-norm and the 4-norm sums of the SSIM map of a band to <paramref name="sums"/>.</summary>
+    private static void ComputeSsimMap(ReadOnlySpan<float> m1, ReadOnlySpan<float> m2, ReadOnlySpan<float> s11, ReadOnlySpan<float> s22, ReadOnlySpan<float> s12, Span<double> sums)
     {
         var sum1 = 0d;
         var sum4 = 0d;
@@ -301,12 +337,12 @@ internal static class Ssimulacra2Calculator
             sum4 += Quartic(d);
         }
 
-        var onePerPixels = 1.0 / m1.Length;
-        norms[0] = onePerPixels * sum1;
-        norms[1] = Math.Sqrt(Math.Sqrt(onePerPixels * sum4));
+        sums[0] += sum1;
+        sums[1] += sum4;
     }
 
-    private static void ComputeEdgeDiffMap(ReadOnlySpan<float> image1, ReadOnlySpan<float> mu1, ReadOnlySpan<float> image2, ReadOnlySpan<float> mu2, Span<double> norms)
+    /// <summary>Adds the 1-norm and the 4-norm sums of the artifact and detail-lost maps of a band to <paramref name="sums"/>.</summary>
+    private static void ComputeEdgeDiffMap(ReadOnlySpan<float> image1, ReadOnlySpan<float> mu1, ReadOnlySpan<float> image2, ReadOnlySpan<float> mu2, Span<double> sums)
     {
         var artifact1 = 0d;
         var artifact4 = 0d;
@@ -327,11 +363,10 @@ internal static class Ssimulacra2Calculator
             detailLost4 += Quartic(detailLost);
         }
 
-        var onePerPixels = 1.0 / image1.Length;
-        norms[0] = onePerPixels * artifact1;
-        norms[1] = Math.Sqrt(Math.Sqrt(onePerPixels * artifact4));
-        norms[2] = onePerPixels * detailLost1;
-        norms[3] = Math.Sqrt(Math.Sqrt(onePerPixels * detailLost4));
+        sums[0] += artifact1;
+        sums[1] += artifact4;
+        sums[2] += detailLost1;
+        sums[3] += detailLost4;
     }
 
     private static double Quartic(double x)
@@ -424,15 +459,39 @@ internal static class Ssimulacra2Calculator
             }
         }
 
-        /// <summary>Blurs <paramref name="input"/> into <paramref name="output"/>; <paramref name="temp"/> has the size of the plane.</summary>
-        public void Blur(ReadOnlySpan<float> input, Span<float> temp, Span<float> output, Span<float> state, int width, int height)
+        /// <summary>
+        /// Blurs <paramref name="input"/> into <paramref name="output"/>; <paramref name="temp"/> has the size of the plane, and
+        /// <paramref name="state"/> has <see cref="StateRows"/> rows. The rows of the horizontal pass, then the columns of the
+        /// vertical one, are split between the workers: each value is computed as by one worker.
+        /// </summary>
+        public void Blur(FloatPlane input, FloatPlane temp, FloatPlane output, FloatPlane state, int maxDegreeOfParallelism)
         {
-            for (var y = 0; y < height; y++)
+            var width = input.Width;
+            var height = input.Height;
+            RowBands.For(input.Size, maxDegreeOfParallelism, (start, end) =>
             {
-                BlurRow(input.Slice(y * width, width), temp.Slice(y * width, width));
+                var source = input.Span;
+                var destination = temp.Span;
+                for (var y = start; y < end; y++)
+                {
+                    BlurRow(source.Slice(y * width, width), destination.Slice(y * width, width));
+                }
+            });
+
+            // The columns are independent: each worker takes a range of them, aligned on 64 bytes
+            var workers = RowBands.GetWorkerCount(input.Size, maxDegreeOfParallelism);
+            if (workers is 1)
+            {
+                BlurColumns(temp.Span, output.Span, state.Span, width, height, 0, width);
+                return;
             }
 
-            BlurColumns(temp, output, state, width, height);
+            RowBands.RunParallel(workers, band =>
+            {
+                var first = RowBands.GetBandStart(width, band, workers) & ~15;
+                var end = band == workers - 1 ? width : RowBands.GetBandStart(width, band + 1, workers) & ~15;
+                BlurColumns(temp.Span, output.Span, state.Span, width, height, first, end);
+            });
         }
 
         /// <summary>
@@ -511,16 +570,20 @@ internal static class Ssimulacra2Calculator
             }
         }
 
-        /// <summary>The vertical pass of libjxl (<c>VerticalBlock</c>): every column at once, with fused multiply-adds.</summary>
-        private void BlurColumns(ReadOnlySpan<float> input, Span<float> output, Span<float> state, int width, int height)
+        /// <summary>The vertical pass of libjxl (<c>VerticalBlock</c>) on the columns <c>[first, end)</c>, with fused multiply-adds.</summary>
+        private void BlurColumns(ReadOnlySpan<float> input, Span<float> output, Span<float> state, int width, int height, int first, int end)
         {
             // Rows 0-2 of the state are the previous outputs of the three filters, rows 3-5 the outputs before them
-            state.Clear();
+            for (var row = 0; row < StateRows; row++)
+            {
+                state.Slice(row * width + first, end - first).Clear();
+            }
+
             for (var n = -_radius + 1; n < height; n++)
             {
                 var top = n - _radius - 1;
                 var bottom = n + _radius - 1;
-                for (var x = 0; x < width; x++)
+                for (var x = first; x < end; x++)
                 {
                     var sum = top >= 0
                         ? input[top * width + x] + (bottom < height ? input[bottom * width + x] : 0f)

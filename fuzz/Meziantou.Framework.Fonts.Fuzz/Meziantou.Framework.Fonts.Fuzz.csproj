@@ -1,0 +1,26 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <!-- SharpFuzz targets of Meziantou.Framework.Fonts (the TrueType hinting interpreter and the subsetter). See fuzz/README.md. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The seeds: small fonts of the test fixtures, the hinted ones first -->
+    <SeedFont Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\font-suites\truetype-hinting\*.ttf" />
+    <SeedFont Include="..\..\tests\Meziantou.Framework.WebPlatform.Tests\Css\Fonts\Resources\HarfBuzz\fonts\57a9d9f83020155cbb1d2be1f43d82388cbecc88.ttf" />
+    <SeedFont Include="..\..\tests\Meziantou.Framework.WebPlatform.Tests\Css\Fonts\Resources\HarfBuzz\fonts\270b89df543a7e48e206a2d830c0e10e5265c630.ttf" />
+    <SeedFont Include="..\..\tests\Meziantou.Framework.WebPlatform.Tests\Css\Fonts\Resources\HarfBuzz\fonts\df768b9c257e0c9c35786c47cae15c46571d56be.ttf" />
+    <SeedFont Include="..\..\tests\Meziantou.Framework.WebPlatform.Tests\Css\Fonts\Resources\HarfBuzz\fonts\341421e629668b1a1242245d39238ca48432d35d.ttf" />
+    <SeedFont Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\synthetic\boxes.ttf;..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\synthetic\boxes.woff2;..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\synthetic\curves.ttf;..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\synthetic\deltas.woff;..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\synthetic\marks.ttf;..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\synthetic\variable.ttf;..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\synthetic\variable.phantom.ttf;..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\synthetic\monochrome-boxes.ttf;..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\synthetic\collection.ttc;..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\synthetic\charstrings.otf;..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\synthetic\cid.otf;..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\synthetic\variable-charstrings.otf" />
+    <SeedFont Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\noto-sans\NotoSans-Regular.subset.ttf;..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\noto-sans-cff\NotoSans-Regular.subset.otf" />
+    <SeedFont Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\font-suites\aots\fonts\cmap4_font1.otf" />
+    <EmbeddedResource Include="@(SeedFont)" LogicalName="Seeds/fonts/%(Filename)%(Extension)" Link="Seeds\fonts\%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.Fuzzing\Meziantou.Framework.Fuzzing.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Fonts\Meziantou.Framework.Fonts.csproj" />
+  </ItemGroup>
+</Project>

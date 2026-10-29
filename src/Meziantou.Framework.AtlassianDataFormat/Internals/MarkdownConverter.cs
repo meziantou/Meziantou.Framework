@@ -51,6 +51,11 @@ internal sealed class MarkdownConverter(AdfToMarkdownOptions options)
             AdfExtension extension => extension.Text is { Length: > 0 } text ? MarkdownHelper.Escape(text) : "",
             AdfBodiedExtension extension => ConvertBlocks(extension.Content),
             AdfUnknownNode unknown => ConvertUnknown(unknown),
+
+            // Nodes that belong in a table or a list, met somewhere else: their content is kept. They are not inline
+            // nodes either, and converting them as such would convert them as blocks again, without end.
+            AdfTableRow or AdfTableCell or AdfTableHeader => ConvertBlocks(node.Content),
+            AdfTaskItem or AdfDecisionItem => ConvertItemContent(node.Content),
             _ => ConvertInlines([node]),
         };
     }

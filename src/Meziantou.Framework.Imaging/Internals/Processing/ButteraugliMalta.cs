@@ -57,7 +57,7 @@ internal static class ButteraugliMalta
     /// Adds the Malta error of <c>lum1</c> against <c>lum0</c> to <c>blockDiffAc</c>. <c>padded</c> is a buffer of
     /// <c>(width + 8) × (height + 8)</c> floats whose margin of <see cref="Padding"/> samples is zero.
     /// </summary>
-    public static void AddDiffMap(bool lowFrequency, FloatPlane lum0, FloatPlane lum1, double w0Gt1, double w0Lt1, double norm1, FloatPlane padded, FloatPlane blockDiffAc)
+    public static void AddDiffMap(bool lowFrequency, FloatPlane lum0, FloatPlane lum1, double w0Gt1, double w0Lt1, double norm1, FloatPlane padded, FloatPlane blockDiffAc, int maxDegreeOfParallelism)
     {
         const double Length = 3.75;
         const float Weight0 = 0.5f;
@@ -71,12 +71,23 @@ internal static class ButteraugliMalta
         var norm1Float = (float)norm1;
 
         var width = lum0.Width;
-        var height = lum0.Height;
         var stride = width + 2 * Padding;
-        var diffs = padded.Span;
-        var plane0 = lum0.Span;
-        var plane1 = lum1.Span;
-        for (var y = 0; y < height; y++)
+
+        // The differences of every row, then the lines through every pixel, which read the rows around it
+        RowBands.For(lum0.Size, maxDegreeOfParallelism, (start, end) => ComputeDifferences(lum0.Span, lum1.Span, padded.Span, width, stride, norm1Float, norm2Gt1, norm2Lt1, start, end));
+        var lines = lowFrequency ? LowFrequencyLines : HighFrequencyLines;
+        var offsets = new int[lines.Length][];
+        for (var i = 0; i < lines.Length; i++)
+        {
+            offsets[i] = Array.ConvertAll(lines[i], point => point.Dy * stride + point.Dx);
+        }
+
+        RowBands.For(lum0.Size, maxDegreeOfParallelism, (start, end) => AddLines(padded.Span, blockDiffAc.Span, offsets, width, stride, start, end));
+    }
+
+    private static void ComputeDifferences(ReadOnlySpan<float> plane0, ReadOnlySpan<float> plane1, Span<float> diffs, int width, int stride, float norm1Float, float norm2Gt1, float norm2Lt1, int start, int end)
+    {
+        for (var y = start; y < end; y++)
         {
             var row0 = plane0.Slice(y * width, width);
             var row1 = plane1.Slice(y * width, width);
@@ -121,16 +132,11 @@ internal static class ButteraugliMalta
                 rowDiffs[x] = result;
             }
         }
+    }
 
-        var lines = lowFrequency ? LowFrequencyLines : HighFrequencyLines;
-        var offsets = new int[lines.Length][];
-        for (var i = 0; i < lines.Length; i++)
-        {
-            offsets[i] = Array.ConvertAll(lines[i], point => point.Dy * stride + point.Dx);
-        }
-
-        var output = blockDiffAc.Span;
-        for (var y = 0; y < height; y++)
+    private static void AddLines(ReadOnlySpan<float> diffs, Span<float> output, int[][] offsets, int width, int stride, int start, int end)
+    {
+        for (var y = start; y < end; y++)
         {
             var outputRow = output.Slice(y * width, width);
             var center = (y + Padding) * stride + Padding;

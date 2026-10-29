@@ -3,7 +3,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <summary>
 /// The blurs of <see cref="ButteraugliCalculator"/> (<c>Blur</c> in <c>lib/jxl/butteraugli/butteraugli.cc</c> of libjxl
 /// 0.12.0): a Gaussian kernel truncated at 2.25 sigma, renormalized near the borders, or, for the 5-tap kernel, a separable
-/// convolution that mirrors the plane at its borders.
+/// convolution that mirrors the plane at its borders. Large planes are split into row bands between up to
+/// <see cref="ImageConfiguration.MaxDegreeOfParallelism"/> workers; every value is computed as by one worker.
 /// </summary>
 internal static class ButteraugliBlur
 {
@@ -12,18 +13,18 @@ internal static class ButteraugliBlur
 
     /// <summary>Blurs <paramref name="input"/> into <paramref name="output"/>, which can be the same plane.</summary>
     /// <exception cref="ImageResourceLimitException">The temporary plane exceeds the allocation limit.</exception>
-    public static void Blur(FloatPlaneArena arena, FloatPlane input, float sigma, FloatPlane output)
+    public static void Blur(FloatPlaneArena arena, FloatPlane input, float sigma, FloatPlane output, int maxDegreeOfParallelism)
     {
         var kernel = GetKernel(sigma);
         if (kernel.Length is 5 && input != output)
         {
-            Separable5(arena, input, kernel, output);
+            Separable5(arena, input, kernel, output, maxDegreeOfParallelism);
             return;
         }
 
         var transposed = arena.Rent(input.Height, input.Width);
-        ConvolveAndTranspose(input, kernel, transposed);
-        ConvolveAndTranspose(transposed, kernel, output);
+        ConvolveAndTranspose(input, kernel, transposed, maxDegreeOfParallelism);
+        ConvolveAndTranspose(transposed, kernel, output, maxDegreeOfParallelism);
         arena.Release(transposed);
     }
 
@@ -50,12 +51,10 @@ internal static class ButteraugliBlur
     }
 
     /// <summary>Convolves the rows and writes the result transposed: <c>output[x, y]</c> is the convolution at <c>(x, y)</c>.</summary>
-    private static void ConvolveAndTranspose(FloatPlane input, float[] kernel, FloatPlane output)
+    private static void ConvolveAndTranspose(FloatPlane input, float[] kernel, FloatPlane output, int maxDegreeOfParallelism)
     {
         var width = input.Width;
         var height = input.Height;
-        var source = input.Span;
-        var destination = output.Span;
         var offset = kernel.Length / 2;
 
         var weightNoBorder = 0f;
@@ -73,7 +72,26 @@ internal static class ButteraugliBlur
 
         var border1 = Math.Min(width, offset);
         var border2 = width > offset ? width - offset : 0;
-        for (var y = 0; y < height; y++)
+        RowBands.For(input.Size, maxDegreeOfParallelism, (start, end) =>
+        {
+            ConvolveRows(input.Span, output.Span, width, height, scaledKernel, border1, border2, start, end);
+            for (var x = 0; x < border1; x++)
+            {
+                ConvolveBorderColumn(input.Span, width, height, kernel, x, output.Span, start, end);
+            }
+
+            for (var x = border2; x < width; x++)
+            {
+                ConvolveBorderColumn(input.Span, width, height, kernel, x, output.Span, start, end);
+            }
+        });
+    }
+
+    /// <summary>Convolves the rows <c>[start, end)</c> between the border columns.</summary>
+    private static void ConvolveRows(ReadOnlySpan<float> source, Span<float> destination, int width, int height, float[] scaledKernel, int border1, int border2, int start, int end)
+    {
+        var offset = scaledKernel.Length - 1;
+        for (var y = start; y < end; y++)
         {
             var row = source.Slice(y * width, width);
             for (var x = border1; x < border2; x++)
@@ -95,19 +113,10 @@ internal static class ButteraugliBlur
                 destination[x * height + y] = row[x] * scaledKernel[offset] + sum0 + sum1 + sum2 + sum3;
             }
         }
-
-        for (var x = 0; x < border1; x++)
-        {
-            ConvolveBorderColumn(source, width, height, kernel, x, destination.Slice(x * height, height));
-        }
-
-        for (var x = border2; x < width; x++)
-        {
-            ConvolveBorderColumn(source, width, height, kernel, x, destination.Slice(x * height, height));
-        }
     }
 
-    private static void ConvolveBorderColumn(ReadOnlySpan<float> source, int width, int height, float[] kernel, int x, Span<float> destination)
+    /// <summary>Convolves column <paramref name="x"/> of the rows <c>[start, end)</c>, with the weights inside the plane.</summary>
+    private static void ConvolveBorderColumn(ReadOnlySpan<float> source, int width, int height, float[] kernel, int x, Span<float> transposed, int start, int end)
     {
         var offset = kernel.Length / 2;
         var minX = Math.Max(0, x - offset);
@@ -119,7 +128,8 @@ internal static class ButteraugliBlur
         }
 
         var scale = 1.0f / weight;
-        for (var y = 0; y < height; y++)
+        var destination = transposed.Slice(x * height, height);
+        for (var y = start; y < end; y++)
         {
             var row = source.Slice(y * width, width);
             var sum = 0f;
@@ -133,7 +143,7 @@ internal static class ButteraugliBlur
     }
 
     /// <summary>The 5×5 separable convolution of libjxl (<c>Separable5</c>), which mirrors the plane at its borders.</summary>
-    private static void Separable5(FloatPlaneArena arena, FloatPlane input, float[] kernel, FloatPlane output)
+    private static void Separable5(FloatPlaneArena arena, FloatPlane input, float[] kernel, FloatPlane output, int maxDegreeOfParallelism)
     {
         var width = input.Width;
         var height = input.Height;
@@ -149,34 +159,41 @@ internal static class ButteraugliBlur
         var w2 = kernel[0] * scale;
 
         var horizontal = arena.Rent(width, height);
-        var source = input.Span;
-        var rows = horizontal.Span;
-        for (var y = 0; y < height; y++)
+        RowBands.For(input.Size, maxDegreeOfParallelism, (start, end) =>
         {
-            var row = source.Slice(y * width, width);
-            var destination = rows.Slice(y * width, width);
-            for (var x = 0; x < width; x++)
+            var source = input.Span;
+            var rows = horizontal.Span;
+            for (var y = start; y < end; y++)
             {
-                destination[x] = w0 * row[x]
-                    + w1 * (row[Mirror(x - 1, width)] + row[Mirror(x + 1, width)])
-                    + w2 * (row[Mirror(x - 2, width)] + row[Mirror(x + 2, width)]);
+                var row = source.Slice(y * width, width);
+                var destination = rows.Slice(y * width, width);
+                for (var x = 0; x < width; x++)
+                {
+                    destination[x] = w0 * row[x]
+                        + w1 * (row[Mirror(x - 1, width)] + row[Mirror(x + 1, width)])
+                        + w2 * (row[Mirror(x - 2, width)] + row[Mirror(x + 2, width)]);
+                }
             }
-        }
+        });
 
-        var result = output.Span;
-        for (var y = 0; y < height; y++)
+        RowBands.For(input.Size, maxDegreeOfParallelism, (start, end) =>
         {
-            var center = rows.Slice(y * width, width);
-            var up1 = rows.Slice(Mirror(y - 1, height) * width, width);
-            var down1 = rows.Slice(Mirror(y + 1, height) * width, width);
-            var up2 = rows.Slice(Mirror(y - 2, height) * width, width);
-            var down2 = rows.Slice(Mirror(y + 2, height) * width, width);
-            var destination = result.Slice(y * width, width);
-            for (var x = 0; x < width; x++)
+            var rows = horizontal.Span;
+            var result = output.Span;
+            for (var y = start; y < end; y++)
             {
-                destination[x] = w0 * center[x] + w1 * (up1[x] + down1[x]) + w2 * (up2[x] + down2[x]);
+                var center = rows.Slice(y * width, width);
+                var up1 = rows.Slice(Mirror(y - 1, height) * width, width);
+                var down1 = rows.Slice(Mirror(y + 1, height) * width, width);
+                var up2 = rows.Slice(Mirror(y - 2, height) * width, width);
+                var down2 = rows.Slice(Mirror(y + 2, height) * width, width);
+                var destination = result.Slice(y * width, width);
+                for (var x = 0; x < width; x++)
+                {
+                    destination[x] = w0 * center[x] + w1 * (up1[x] + down1[x]) + w2 * (up2[x] + down2[x]);
+                }
             }
-        }
+        });
 
         arena.Release(horizontal);
     }

@@ -13,7 +13,7 @@ namespace Meziantou.Framework.JavaScriptEngine.Fuzz;
 /// (for its syntax errors) as an indirect eval; the line and column offsets of a source only shift its error positions. A
 /// JSON module exports the value of JSON.parse, and the text and bytes modules export their content unchanged.
 /// </summary>
-public static class JavaScriptEngineFuzzTargets
+public static partial class JavaScriptEngineFuzzTargets
 {
     // Separates the parts of the inputs that hold several texts: JavaScript source and regular expressions accept no raw NUL here
     private const byte Separator = 0;
@@ -66,6 +66,7 @@ public static class JavaScriptEngineFuzzTargets
         new("javascript-regexp", RegExpMatch) { Seeds = GetRegExpSeeds, Dictionary = RegExpTokens },
         new("javascript-json-module", JsonModule) { Seeds = GetJsonSeeds, Dictionary = JsonTokens },
         new("javascript-engine-options", EngineOptions) { Seeds = GetEngineOptionsSeeds, Dictionary = EngineOptionsTokens },
+        new("javascript-string-parsers", StringParsers) { Seeds = GetStringParserSeeds, Dictionary = StringParserTokens },
     ];
 
     private static void Parse(ReadOnlySpan<byte> data)

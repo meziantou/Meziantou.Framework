@@ -3,6 +3,7 @@ using System.Runtime.Serialization;
 
 namespace Meziantou.Framework.FastEnumGenerator.GeneratorTests;
 
+#region FastEnum_MetadataEnum
 public enum Color
 {
     [Display(Name = "Blue metadata")]
@@ -13,3 +14,4 @@ public enum Color
 
     Green,
 }
+#endregion

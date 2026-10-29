@@ -1,0 +1,2 @@
+title: EmbeddedConstantsGenerator
+description: Embed text and binary files in your assembly as C# constants generated at build time.

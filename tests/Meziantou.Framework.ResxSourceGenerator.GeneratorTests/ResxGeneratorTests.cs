@@ -15,6 +15,63 @@ public class ResxGeneratorTests
         #endregion
     }
 
+    [Fact]
+    public void Documentation_KeyNames()
+    {
+        #region ResxSourceGenerator_KeyNames
+        Assert.Equal("Hello", SampleNames.Hello);
+        Assert.Equal("Hello {0}!", Sample.GetString(SampleNames.Hello));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_GetString()
+    {
+        #region ResxSourceGenerator_GetString
+        Assert.Equal("Hello {0}!", Sample.GetString("Hello"));
+
+        // Unknown resources
+        Assert.Null(Sample.GetString("Unknown"));
+        Assert.Equal("Default value", Sample.GetString("Unknown", defaultValue: "Default value"));
+        #endregion
+    }
+
+    [Fact, RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
+    public void Documentation_Culture()
+    {
+        #region ResxSourceGenerator_Culture
+        var french = CultureInfo.GetCultureInfo("fr");
+
+        // Resource1.resx and Resource1.fr.resx
+        Assert.Equal("valeur", Resource1.GetString(french, "Sample"));
+        Assert.Equal("Bonjour le monde!", Resource1.FormatHello(french, "le monde"));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_FormatParameters()
+    {
+        #region ResxSourceGenerator_FormatParameters
+        // <mfrg:parameter name="name" typename="global::System.String" comment="Name to greet." />
+        string? message = Resource1.FormatHello(name: "world");
+        Assert.NotNull(message);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_FileResources()
+    {
+        #region ResxSourceGenerator_FileResources
+        // Resources\Image1.png;System.Byte[]
+        byte[]? image = Resource1.Image1;
+        Assert.Equal([0x89, 0x50, 0x4E, 0x47], image!.AsSpan()[..4]);
+
+        // Resources\TextFile1.txt;System.String
+        string? text = Resource1.TextFile1;
+        Assert.Equal("test", text);
+        #endregion
+    }
+
     // Ambient UI culture is restored in a finally block, but a leak would be observed by anything running beside this test
     [Fact(DisableParallelization = true), RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
     public void FormatString()

@@ -126,6 +126,58 @@ public sealed class FastEnumGeneratedBehaviorTests
     }
 
     [Fact]
+    public void Documentation_InstanceMethods()
+    {
+        #region FastEnum_InstanceMethods
+        Assert.Equal("Green", Color.Green.ToStringFast());
+        Assert.Equal("Green", Color.Green.GetName());
+
+        // Values that are not declared
+        Assert.Equal("42", ((Color)42).ToStringFast());
+        Assert.Null(((Color)42).GetName());
+
+        // Flags
+        var permission = Permission.Read | Permission.Write;
+        Assert.Equal("Read, Write", permission.ToStringFast());
+        Assert.True(permission.HasFlagFast(Permission.Write));
+        Assert.False(permission.HasFlagFast(Permission.Execute));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_MetadataNames()
+    {
+        #region FastEnum_MetadataNames
+        Assert.Equal("Blue", Color.Blue.ToStringFast());
+        Assert.Equal("Blue metadata", Color.Blue.ToStringFast(useMetadata: true)); // [Display(Name = ...)]
+        Assert.Equal("Red metadata", Color.Red.ToStringFast(useMetadata: true)); // [EnumMember(Value = ...)]
+        Assert.Equal("Green", Color.Green.ToStringFast(useMetadata: true)); // No metadata: the declared name
+
+        Assert.Equal(Color.Red, Color.Parse("red metadata", ignoreCase: true, useMetadata: true));
+        Assert.Equal(["Blue metadata", "Red metadata", "Green"], Color.GetNames(useMetadata: true).ToArray());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_StaticMembers()
+    {
+        #region FastEnum_StaticMembers
+        Assert.Equal(Color.Red, Color.Parse("red", ignoreCase: true));
+        Assert.Equal(Permission.Read | Permission.Write, Permission.Parse("Read, Write", ignoreCase: false));
+
+        Assert.True(Color.TryParse("Blue", ignoreCase: false, out var color));
+        Assert.Equal(Color.Blue, color);
+        Assert.False(Color.TryParse("Purple", ignoreCase: true, out _));
+
+        Assert.True(Color.IsDefinedFast(Color.Green));
+        Assert.False(Color.IsDefinedFast((Color)42));
+
+        Assert.Equal(["Blue", "Red", "Green"], Color.GetNames(useMetadata: false).ToArray());
+        Assert.Equal([Color.Blue, Color.Red, Color.Green], Color.GetValues().ToArray());
+        #endregion
+    }
+
+    [Fact]
     public void ToStringFast_UsesMetadataWhenRequested()
     {
         Assert.Equal("Blue", Color.Blue.ToStringFast());

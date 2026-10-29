@@ -2094,6 +2094,360 @@ public sealed class TdsServerProtocolTests
         _ = await Assert.ThrowsAnyAsync<Exception>(() => queryTask);
     }
 
+    [Fact]
+    public async Task Documentation_GettingStarted()
+    {
+        #region TdsServer_GettingStarted
+        var options = new TdsServerOptions();
+        options.AddTcpListener(port: 0, bindAddress: IPAddress.Loopback); // 0: the system picks a free port
+
+        using var server = new TdsServer(
+            options,
+            authenticationHandler: (context, cancellationToken) =>
+            {
+                var result = context.UserName == "app" && context.Password == "Password123!"
+                    ? TdsAuthenticationResult.Success()
+                    : TdsAuthenticationResult.Fail("Login failed.");
+                return ValueTask.FromResult(result);
+            },
+            queryHandler: (context, cancellationToken) =>
+            {
+                var resultSet = new TdsResultSet();
+                resultSet.Columns.Add(new TdsColumn("Message", TdsColumnType.NVarChar));
+                resultSet.Rows.Add([$"You sent: {context.CommandText}"]);
+
+                var result = new TdsQueryResult();
+                result.ResultSets.Add(resultSet);
+                return ValueTask.FromResult(result);
+            });
+        await server.StartAsync();
+
+        var port = server.Ports[0];
+        await using var connection = new SqlConnection($"Server=127.0.0.1,{port};User ID=app;Password=Password123!;Encrypt=Optional");
+        await connection.OpenAsync();
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT 1";
+        var message = await command.ExecuteScalarAsync();
+        Assert.Equal("You sent: SELECT 1", message);
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_Authentication()
+    {
+        #region TdsServer_Authentication
+        TdsAuthenticationDelegate authenticate = (context, cancellationToken) =>
+        {
+            if (context.UserName != "app" || context.Password != "Password123!")
+            {
+                return ValueTask.FromResult(TdsAuthenticationResult.Fail($"Login failed for user '{context.UserName}'."));
+            }
+
+            var identity = new ClaimsIdentity([new Claim(ClaimTypes.Name, "app"), new Claim(ClaimTypes.Role, "reader")], authenticationType: "password");
+            return ValueTask.FromResult(TdsAuthenticationResult.Success(database: "Sales", userContext: new ClaimsPrincipal(identity)));
+        };
+
+        TdsQueryDelegate query = (context, cancellationToken) =>
+        {
+            var user = context.UserContext; // the ClaimsPrincipal returned by the authentication handler
+
+            var resultSet = new TdsResultSet();
+            resultSet.Columns.Add(new TdsColumn("UserName", TdsColumnType.NVarChar));
+            resultSet.Columns.Add(new TdsColumn("IsReader", TdsColumnType.Boolean));
+            resultSet.Rows.Add([user?.Identity?.Name, user?.IsInRole("reader") ?? false]);
+
+            var result = new TdsQueryResult();
+            result.ResultSets.Add(resultSet);
+            return ValueTask.FromResult(result);
+        };
+        #endregion
+
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+        using var server = new TdsServer(options, authenticate, query);
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        await using (var connection = new SqlConnection(CreateConnectionString(port, "app", "Password123!", connectTimeout: 30)))
+        {
+            await connection.OpenAsync();
+            Assert.Equal("Sales", connection.Database);
+
+            await using var command = connection.CreateCommand();
+            command.CommandText = "SELECT 1";
+            await using var reader = await command.ExecuteReaderAsync();
+            Assert.True(await reader.ReadAsync());
+            Assert.Equal("app", reader.GetString(0));
+            Assert.True(reader.GetBoolean(1));
+        }
+
+        await using (var connection = new SqlConnection(CreateConnectionString(port, "app", "wrong", connectTimeout: 30)))
+        {
+            var exception = await Assert.ThrowsAsync<SqlException>(() => connection.OpenAsync());
+            Assert.Equal(18456, exception.Number);
+            Assert.Contains("Login failed for user 'app'.", exception.Message);
+        }
+    }
+
+    [Fact]
+    public async Task Documentation_ConnectionString()
+    {
+        #region TdsServer_ConnectionString
+        var login = new TaskCompletionSource<TdsAuthenticationContext>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var options = new TdsServerOptions();
+        options.AddTcpListener(port: 0, bindAddress: IPAddress.Loopback);
+        using var server = new TdsServer(
+            options,
+            authenticationHandler: (context, cancellationToken) =>
+            {
+                login.TrySetResult(context);
+                return ValueTask.FromResult(TdsAuthenticationResult.Success());
+            },
+            queryHandler: (context, cancellationToken) => ValueTask.FromResult(new TdsQueryResult()));
+        await server.StartAsync();
+
+        var connectionString = new SqlConnectionStringBuilder
+        {
+            DataSource = $"127.0.0.1,{server.Ports[0]}", // host,port
+            UserID = "app",
+            Password = "Password123!",
+            InitialCatalog = "Sales",
+            ApplicationName = "Reporting",
+            Encrypt = SqlConnectionEncryptOption.Optional,
+        }.ConnectionString;
+
+        await using var connection = new SqlConnection(connectionString);
+        await connection.OpenAsync();
+
+        var context = await login.Task;
+        Assert.Equal("app", context.UserName);
+        Assert.Equal("Password123!", context.Password);
+        Assert.Equal("Sales", context.Database);
+        Assert.Equal("Reporting", context.ApplicationName);
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_ResultSets()
+    {
+        #region TdsServer_ResultSets
+        TdsQueryDelegate query = (context, cancellationToken) =>
+        {
+            var products = new TdsResultSet();
+            products.Columns.Add(new TdsColumn("Id", TdsColumnType.Int32, isNullable: false));
+            products.Columns.Add(new TdsColumn("Name", TdsColumnType.NVarChar));
+            products.Columns.Add(new TdsColumn("Price", TdsColumnType.Decimal));
+            products.Columns.Add(new TdsColumn("ReleaseDate", TdsColumnType.Date));
+            products.Rows.Add([1, "Keyboard", 49.90m, new DateOnly(2024, 3, 1)]);
+            products.Rows.Add([2, "Mouse", 19.50m, null]); // null is sent as SQL NULL
+
+            var count = new TdsResultSet();
+            count.Columns.Add(new TdsColumn("Count", TdsColumnType.Int32));
+            count.Rows.Add([2]);
+
+            var result = new TdsQueryResult();
+            result.InfoMessages.Add("2 products found");
+            result.ResultSets.Add(products);
+            result.ResultSets.Add(count);
+            return ValueTask.FromResult(result);
+        };
+        #endregion
+
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+        using var server = new TdsServer(options, (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success()), query);
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        await using var connection = new SqlConnection(CreateConnectionString(port, connectTimeout: 30));
+
+        #region TdsServer_ReadResultSets
+        var messages = new List<string>();
+        connection.InfoMessage += (sender, e) => messages.Add(e.Message);
+        await connection.OpenAsync();
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT * FROM products";
+        await using var reader = await command.ExecuteReaderAsync();
+
+        var names = new List<string>();
+        while (await reader.ReadAsync())
+        {
+            names.Add(reader.GetString(reader.GetOrdinal("Name")));
+        }
+
+        Assert.True(await reader.NextResultAsync()); // move to the second result set
+        Assert.True(await reader.ReadAsync());
+        Assert.Equal(2, reader.GetInt32(0));
+
+        Assert.Equal(["Keyboard", "Mouse"], names);
+        Assert.Equal(["2 products found"], messages);
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_ColumnValues()
+    {
+        var result = new TdsQueryResult();
+        var resultSet = new TdsResultSet();
+        resultSet.Columns.Add(new TdsColumn("Id", TdsColumnType.Int32, isNullable: false));
+        resultSet.Columns.Add(new TdsColumn("Name", TdsColumnType.NVarChar));
+        resultSet.Columns.Add(new TdsColumn("Price", TdsColumnType.Decimal));
+        resultSet.Columns.Add(new TdsColumn("ReleaseDate", TdsColumnType.Date));
+        resultSet.Rows.Add([2, "Mouse", 19.50m, null]);
+        result.ResultSets.Add(resultSet);
+
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+        using var server = new TdsServer(options, (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success()), (context, cancellationToken) => ValueTask.FromResult(result));
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        await using var connection = new SqlConnection(CreateConnectionString(port, connectTimeout: 30));
+        await connection.OpenAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT 1";
+        await using var reader = await command.ExecuteReaderAsync();
+        Assert.True(await reader.ReadAsync());
+        Assert.Equal(2, reader.GetInt32(0));
+        Assert.Equal(19.50m, reader.GetDecimal(2));
+        Assert.True(reader.IsDBNull(3));
+        Assert.Equal("date", reader.GetDataTypeName(3));
+    }
+
+    [Fact]
+    public async Task Documentation_Errors()
+    {
+        #region TdsServer_Errors
+        TdsQueryDelegate query = (context, cancellationToken) =>
+        {
+            if (context.CommandText?.Contains("orders", StringComparison.OrdinalIgnoreCase) == true)
+            {
+                return ValueTask.FromResult(TdsQueryResult.FromError(new TdsQueryError
+                {
+                    Number = 208,
+                    Class = 16,
+                    Message = "Invalid object name 'orders'.",
+                }));
+            }
+
+            return ValueTask.FromResult(new TdsQueryResult());
+        };
+        #endregion
+
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+        using var server = new TdsServer(options, (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success()), query);
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        await using var connection = new SqlConnection(CreateConnectionString(port, connectTimeout: 30));
+        await connection.OpenAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT * FROM orders";
+        var exception = await Assert.ThrowsAsync<SqlException>(() => command.ExecuteScalarAsync());
+        Assert.Equal(208, exception.Number);
+        Assert.Equal(16, exception.Class);
+        Assert.StartsWith("Invalid object name 'orders'.", exception.Message);
+    }
+
+    [Fact]
+    public async Task Documentation_ParameterizedQuery()
+    {
+        #region TdsServer_ParameterizedQuery
+        TdsQueryDelegate query = (context, cancellationToken) =>
+        {
+            if (!context.HasCompleteParameters)
+            {
+                return ValueTask.FromResult(TdsQueryResult.FromError(new TdsQueryError { Message = "A parameter has an unsupported type." }));
+            }
+
+            // A command with parameters is sent as a call to sp_executesql: the first parameter is the SQL text,
+            // the second one declares the parameters, and the values follow
+            if (context.RequestType == TdsQueryRequestType.Rpc && string.Equals(context.ProcedureName, "sp_executesql", StringComparison.OrdinalIgnoreCase))
+            {
+                var sql = context.Parameters[0].AsString();
+                var id = context.Parameters.FirstOrDefault(parameter => parameter.Name == "@id")?.AsInt32();
+
+                var resultSet = new TdsResultSet();
+                resultSet.Columns.Add(new TdsColumn("Sql", TdsColumnType.NVarChar));
+                resultSet.Columns.Add(new TdsColumn("Id", TdsColumnType.Int32));
+                resultSet.Rows.Add([sql, id]);
+
+                var result = new TdsQueryResult();
+                result.ResultSets.Add(resultSet);
+                return ValueTask.FromResult(result);
+            }
+
+            return ValueTask.FromResult(new TdsQueryResult());
+        };
+        #endregion
+
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+        using var server = new TdsServer(options, (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success()), query);
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        await using var connection = new SqlConnection(CreateConnectionString(port, connectTimeout: 30));
+        await connection.OpenAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT Name FROM customers WHERE Id = @id";
+        _ = command.Parameters.Add(new SqlParameter("@id", SqlDbType.Int) { Value = 42 });
+        await using var reader = await command.ExecuteReaderAsync();
+        Assert.True(await reader.ReadAsync());
+        Assert.Equal("SELECT Name FROM customers WHERE Id = @id", reader.GetString(0));
+        Assert.Equal(42, reader.GetInt32(1));
+    }
+
+    [Fact]
+    public async Task Documentation_StoredProcedureCall()
+    {
+        #region TdsServer_StoredProcedureCall
+        TdsQueryDelegate query = (context, cancellationToken) =>
+        {
+            if (context.RequestType == TdsQueryRequestType.Rpc && string.Equals(context.ProcedureName, "GetCustomerName", StringComparison.OrdinalIgnoreCase))
+            {
+                var id = context.Parameters.FirstOrDefault(parameter => parameter.Name == "@id")?.AsInt32();
+
+                var resultSet = new TdsResultSet();
+                resultSet.Columns.Add(new TdsColumn("Name", TdsColumnType.NVarChar));
+                resultSet.Rows.Add([id == 1 ? "Alice" : null]);
+
+                var result = new TdsQueryResult();
+                result.ResultSets.Add(resultSet);
+                return ValueTask.FromResult(result);
+            }
+
+            return ValueTask.FromResult(TdsQueryResult.FromError(new TdsQueryError
+            {
+                Number = 2812,
+                Message = $"Could not find stored procedure '{context.ProcedureName}'.",
+            }));
+        };
+        #endregion
+
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+        using var server = new TdsServer(options, (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success()), query);
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        await using var connection = new SqlConnection(CreateConnectionString(port, connectTimeout: 30));
+        await connection.OpenAsync();
+
+        #region TdsServer_CallStoredProcedure
+        await using var command = connection.CreateCommand();
+        command.CommandType = CommandType.StoredProcedure;
+        command.CommandText = "GetCustomerName";
+        command.Parameters.Add(new SqlParameter("@id", SqlDbType.Int) { Value = 1 });
+
+        var name = await command.ExecuteScalarAsync();
+        Assert.Equal("Alice", name);
+        #endregion
+    }
+
     private static string CreateConnectionString(int port, string userName = "sa", string password = "Password123!", string encrypt = "Optional", bool trustServerCertificate = true, int connectTimeout = 5)
     {
         return $"Server={IPAddress.Loopback},{port};User ID={userName};Password={password};Database=master;Encrypt={encrypt};TrustServerCertificate={(trustServerCertificate ? "True" : "False")};Pooling=False;Connect Timeout={connectTimeout}";

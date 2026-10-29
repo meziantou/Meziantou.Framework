@@ -4097,6 +4097,107 @@ public sealed class TdsQueryEngineTests
         }
     }
 
+    [Fact]
+    public async Task Documentation_QueryEngineQuickStart()
+    {
+        #region TdsServer_QueryEngineQuickStart
+        var products = new[]
+        {
+            new { Id = 1, Name = "Keyboard", Price = 49.90m },
+            new { Id = 2, Name = "Mouse", Price = 19.50m },
+            new { Id = 3, Name = "Monitor", Price = 189.00m },
+        }.AsQueryable();
+
+        var queryEngineOptions = new TdsQueryEngineOptions();
+        queryEngineOptions.AddQueryRoot("products", context => products);
+
+        var options = new TdsServerOptions();
+        options.AddTcpListener(port: 0, bindAddress: IPAddress.Loopback);
+        using var server = new TdsServer(
+            options,
+            authenticationHandler: (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success()),
+            queryHandler: TdsQueryEngine.CreateQueryHandler(queryEngineOptions));
+        await server.StartAsync();
+
+        await using var connection = new SqlConnection($"Server=127.0.0.1,{server.Ports[0]};User ID=app;Password=Password123!;Encrypt=Optional");
+        await connection.OpenAsync();
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT Name, Price FROM dbo.products WHERE Price < @maxPrice ORDER BY Name";
+        command.Parameters.Add(new SqlParameter("@maxPrice", SqlDbType.Decimal) { Value = 50m });
+
+        var names = new List<string>();
+        await using (var reader = await command.ExecuteReaderAsync())
+        {
+            while (await reader.ReadAsync())
+            {
+                names.Add(reader.GetString(0));
+            }
+        }
+
+        Assert.Equal(["Keyboard", "Mouse"], names);
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_QueryEngineStoredProcedure()
+    {
+        var queryEngineOptions = new TdsQueryEngineOptions();
+
+        #region TdsServer_QueryEngineStoredProcedure
+        var products = new[]
+        {
+            new { Id = 1, Name = "Keyboard" },
+            new { Id = 2, Name = "Mouse" },
+            new { Id = 3, Name = "Webcam" },
+        };
+
+        queryEngineOptions.StoredProcedures.Add(
+            "SearchProducts",
+            async (TdsQueryContext context, string name, int top = 10, CancellationToken cancellationToken = default) =>
+            {
+                await Task.Yield(); // call an async API with cancellationToken here
+                return products.Where(product => product.Name.Contains(name, StringComparison.OrdinalIgnoreCase)).Take(top).ToArray();
+            });
+        #endregion
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command =>
+            {
+                command.CommandType = CommandType.StoredProcedure;
+                command.CommandText = "SearchProducts";
+                _ = command.Parameters.Add(new SqlParameter("@name", SqlDbType.NVarChar, 50) { Value = "o" });
+            },
+            """
+            Id Name
+            1 Keyboard
+            2 Mouse
+            """,
+            expectedMaterializedQueries: null);
+    }
+
+    [Fact]
+    public async Task Documentation_QueryEngineScalarFunction()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+
+        #region TdsServer_QueryEngineScalarFunction
+        queryEngineOptions.AddScalarFunction(
+            "UPPER",
+            arguments => Expression.Call(arguments[0], typeof(string).GetMethod(nameof(string.ToUpper), Type.EmptyTypes)!));
+        #endregion
+
+        await ExecuteQuery(
+            queryEngineOptions,
+            command => command.CommandText = "SELECT UPPER(Name) AS Name FROM customers WHERE Id = 1",
+            """
+            Name
+            ALICE
+            """,
+            expectedMaterializedQueries: null);
+    }
+
     private static TdsQueryEngineOptions CreateQueryEngineOptions()
     {
         var options = new TdsQueryEngineOptions();

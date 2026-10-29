@@ -1,0 +1,2 @@
+title: TdsServer
+description: A server that speaks the TDS protocol of SQL Server, so SQL Server clients can query your .NET code.

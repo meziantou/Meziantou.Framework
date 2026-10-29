@@ -1,0 +1,2 @@
+title: CodeOwners
+description: Parse the CODEOWNERS files of GitHub and GitLab repositories into patterns, owners and sections.

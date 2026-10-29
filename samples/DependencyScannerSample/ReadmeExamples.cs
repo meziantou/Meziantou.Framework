@@ -177,4 +177,44 @@ public static class ReadmeExamples
 
         _ = dependencies;
     }
+
+    public static async Task CustomScanner(CancellationToken cancellationToken)
+    {
+        #region DependencyScanning_CustomScannerUsage
+        var options = new ScannerOptions();
+
+        // Keep the built-in scanners, and add the custom one
+        options.Scanners = options.Scanners.Add(new VersionsFileScanner());
+
+        var dependencies = await DependencyScanner.ScanDirectoryAsync("C:\\MyProject", options, cancellationToken);
+        #endregion
+
+        _ = dependencies;
+    }
+
+    #region DependencyScanning_CustomScanner
+    // Reads the "name version" lines of the versions.txt files
+    public sealed class VersionsFileScanner : DependencyScanner
+    {
+        protected override IReadOnlyCollection<DependencyType> SupportedDependencyTypes { get; } = [DependencyType.Unknown];
+
+        // Called for every file: keep it cheap, the content is only read for the files it accepts
+        protected override bool ShouldScanFileCore(CandidateFileContext context)
+            => context.HasFileName("versions.txt", ignoreCase: true);
+
+        public override async ValueTask ScanAsync(ScanFileContext context)
+        {
+            using var reader = new StreamReader(context.Content, leaveOpen: true);
+            while (await reader.ReadLineAsync(context.CancellationToken) is { } line)
+            {
+                var parts = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                if (parts.Length is 2)
+                {
+                    // Without a location, the dependency is reported but cannot be updated
+                    context.ReportDependency(this, parts[0], parts[1], DependencyType.Unknown, nameLocation: null, versionLocation: null);
+                }
+            }
+        }
+    }
+    #endregion
 }

@@ -560,6 +560,126 @@ public sealed class DependencyScannerTests
     }
 
     [Fact]
+    public async Task DocumentationExample_ScanDirectory()
+    {
+        var cancellationToken = XunitCancellationToken;
+        #region DependencyScanning_ScanDirectory
+        var root = Directory.CreateTempSubdirectory().FullName; // The folder to scan
+        // A repository with a .NET project and an npm package
+        File.WriteAllText(Path.Combine(root, "App.csproj"), """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <ItemGroup>
+                <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+              </ItemGroup>
+            </Project>
+            """);
+        File.WriteAllText(Path.Combine(root, "package.json"), """
+            { "devDependencies": { "typescript": "5.4.5" } }
+            """);
+
+        var dependencies = await DependencyScanner.ScanDirectoryAsync(root, options: null, cancellationToken);
+
+        Assert.Equal(
+            ["Npm typescript 5.4.5", "NuGet Newtonsoft.Json 13.0.1"],
+            dependencies.Select(dependency => $"{dependency.Type} {dependency.Name} {dependency.Version}").Order(StringComparer.Ordinal));
+        #endregion
+
+        Directory.Delete(root, recursive: true);
+    }
+
+    [Fact]
+    public async Task DocumentationExample_UpdateVersion()
+    {
+        var cancellationToken = XunitCancellationToken;
+        #region DependencyScanning_UpdateVersion
+        var root = Directory.CreateTempSubdirectory().FullName; // The folder to scan
+        var projectPath = Path.Combine(root, "App.csproj");
+        File.WriteAllText(projectPath, """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <ItemGroup>
+                <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+              </ItemGroup>
+            </Project>
+            """);
+
+        var dependencies = await DependencyScanner.ScanDirectoryAsync(root, options: null, cancellationToken);
+        var dependency = dependencies.Single(dependency => dependency.Name == "Newtonsoft.Json");
+
+        Assert.True(dependency.VersionLocation?.IsUpdatable);
+        await dependency.UpdateVersionAsync("13.0.3", cancellationToken);
+
+        // Only the version is changed: the rest of the file keeps its formatting
+        Assert.Equal("""
+            <Project Sdk="Microsoft.NET.Sdk">
+              <ItemGroup>
+                <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+              </ItemGroup>
+            </Project>
+            """, File.ReadAllText(projectPath));
+
+        // The dependency keeps the values found by the scan
+        Assert.Equal("13.0.1", dependency.Version);
+        #endregion
+
+        Directory.Delete(root, recursive: true);
+    }
+
+    [Fact]
+    public async Task DocumentationExample_UpdateModifiedFile()
+    {
+        var cancellationToken = XunitCancellationToken;
+        #region DependencyScanning_UpdateModifiedFile
+        var root = Directory.CreateTempSubdirectory().FullName; // The folder to scan
+        var dockerfilePath = Path.Combine(root, "Dockerfile");
+        File.WriteAllText(dockerfilePath, "FROM node:20\n");
+
+        var dependencies = await DependencyScanner.ScanDirectoryAsync(root, options: null, cancellationToken);
+        var node = Assert.Single(dependencies);
+
+        // The file changes after the scan
+        File.WriteAllText(dockerfilePath, "FROM node:22\n");
+
+        // The update checks that the file still holds the scanned value, and does not write anything
+        await Assert.ThrowsAsync<DependencyScannerException>(() => node.UpdateVersionAsync("24", cancellationToken));
+        Assert.Equal("FROM node:22\n", File.ReadAllText(dockerfilePath));
+        #endregion
+
+        Directory.Delete(root, recursive: true);
+    }
+
+    [Fact]
+    public async Task DocumentationExample_ScanContent()
+    {
+        var cancellationToken = XunitCancellationToken;
+
+        #region DependencyScanning_ScanContent
+        var content = Encoding.UTF8.GetBytes("""
+            FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+            FROM build AS publish
+            FROM nginx:1.27@sha256:0000000000000000000000000000000000000000000000000000000000000000
+            """);
+
+        // The file path chooses the scanners: this content is scanned as a Dockerfile
+        var dependencies = await DependencyScanner.ScanFileAsync("/repo", "/repo/Dockerfile", content, cancellationToken);
+
+        // "FROM build" is a build stage, not an image
+        Assert.Equal(["mcr.microsoft.com/dotnet/sdk", "nginx"], dependencies.Select(dependency => dependency.Name).Order(StringComparer.Ordinal));
+
+        var sdk = dependencies.Single(dependency => dependency.Name == "mcr.microsoft.com/dotnet/sdk");
+        Assert.Equal(DependencyType.DockerImage, sdk.Type);
+        Assert.Equal("10.0", sdk.Version);
+
+        // An image pinned by digest has the digest as its version, and the tag in its metadata
+        var nginx = dependencies.Single(dependency => dependency.Name == "nginx");
+        Assert.Equal("sha256:0000000000000000000000000000000000000000000000000000000000000000", nginx.Version);
+        Assert.Equal("1.27", nginx.Metadata["tag"]);
+
+        // There is no file to write
+        Assert.False(sdk.VersionLocation?.IsUpdatable);
+        #endregion
+    }
+
+    [Fact]
     public async Task ScanFile()
     {
         await using var directory = TemporaryDirectory.Create();

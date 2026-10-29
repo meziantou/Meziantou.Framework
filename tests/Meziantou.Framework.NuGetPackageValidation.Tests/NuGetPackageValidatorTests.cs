@@ -145,6 +145,80 @@ public sealed class NuGetPackageValidatorTests
     }
 
     [Fact]
+    public async Task DocumentationExample_ReadErrors()
+    {
+        #region NuGetPackageValidation_ReadErrors
+        var packagePath = FullPath.FromPath(AppContext.BaseDirectory) / "Packages" / "Debug.1.0.0.nupkg";
+        var result = await NuGetPackageValidator.ValidateAsync(packagePath, [NuGetPackageValidationRules.AssembliesMustBeOptimized]);
+
+        Assert.False(result.IsValid);
+        NuGetPackageValidationError error = Assert.Single(result.Errors);
+        Assert.Equal(81, error.ErrorCode); // AssemblyIsNotOptimized
+        Assert.Equal("Assembly is not optimized", error.Message);
+
+        // The file of the package the error is about, and how to fix the error
+        Assert.Equal("lib/net6.0/samplelib.dll", error.FileName);
+        Assert.StartsWith("Build the package using the Release configuration", error.HelpText, StringComparison.Ordinal);
+
+        Assert.Equal("81 - lib/net6.0/samplelib.dll: Assembly is not optimized", error.ToString());
+        #endregion
+    }
+
+    [Fact]
+    public async Task DocumentationExample_ExcludeErrorCodes()
+    {
+        #region NuGetPackageValidation_ExcludeErrorCodes
+        var packagePath = FullPath.FromPath(AppContext.BaseDirectory) / "Packages" / "Release_Author.1.0.0.nupkg";
+
+        var options = new NuGetPackageValidationOptions();
+        options.Rules.Add(NuGetPackageValidationRules.LicenseMustBeSet);
+        options.Rules.Add(NuGetPackageValidationRules.IconMustBeSet);
+
+        // The rule still runs, but it does not report this error
+        options.ExcludedRuleIds.Add(32); // IconNotSet
+
+        var result = await NuGetPackageValidator.ValidateAsync(packagePath, options);
+        Assert.Equal(21, Assert.Single(result.Errors).ErrorCode); // LicenseNotSet
+        #endregion
+    }
+
+    [Fact]
+    public async Task DocumentationExample_CustomRule()
+    {
+        #region NuGetPackageValidation_CustomRuleUsage
+        var packagePath = FullPath.FromPath(AppContext.BaseDirectory) / "Packages" / "Release_Author.1.0.0.nupkg";
+
+        var options = new NuGetPackageValidationOptions();
+        options.Rules.Add(NuGetPackageValidationRules.AuthorMustBeSet);
+        options.Rules.Add(new PackageIdPrefixRule("Contoso."));
+
+        var result = await NuGetPackageValidator.ValidateAsync(packagePath, options);
+        NuGetPackageValidationError error = Assert.Single(result.Errors);
+        Assert.Equal(PackageIdPrefixRule.ErrorCode, error.ErrorCode);
+        Assert.Equal("The package id 'Release_Author' does not start with 'Contoso.'", error.Message);
+        #endregion
+    }
+
+    #region NuGetPackageValidation_CustomRuleDefinition
+    // Reports an error when the id of the package does not start with the prefix of the company
+    private sealed class PackageIdPrefixRule(string prefix) : NuGetPackageValidationRule
+    {
+        public const int ErrorCode = 1001; // Outside the ranges of the built-in error codes
+
+        public override Task ExecuteAsync(NuGetPackageValidationContext context)
+        {
+            var id = context.Package.NuspecReader.GetId();
+            if (!id.StartsWith(prefix, StringComparison.Ordinal))
+            {
+                context.ReportError(ErrorCode, $"The package id '{id}' does not start with '{prefix}'", helpText: $"Rename the package to '{prefix}{id}'");
+            }
+
+            return Task.CompletedTask;
+        }
+    }
+    #endregion
+
+    [Fact]
     public async Task Validate_PackageFileNotFound()
     {
         using var temporaryDirectory = TemporaryDirectory.Create();

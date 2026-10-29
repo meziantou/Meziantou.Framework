@@ -47,17 +47,6 @@ The library favors predictable results over guesses:
 - **Errors are explicit.** An unknown format, a corrupted file, an unsupported feature and an exceeded limit each throw a
   distinct exception. See [Handling errors](05-LoadingAndSaving/07-ErrorHandling.md).
 
-## Platforms
-
-| | Support |
-| --- | --- |
-| Frameworks | .NET 10 and .NET 11 |
-| Operating systems and processors | Windows, Linux and macOS, on x64 and arm64 |
-| Trimming and NativeAOT | Supported |
-| Dependencies | `Meziantou.Framework.Unicode` and `Meziantou.Framework.Fonts`, two fully managed packages of the same repository |
-
-Older versions of .NET, .NET Standard and .NET Framework are not supported.
-
 ## Namespaces
 
 | Namespace | Contains |

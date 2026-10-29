@@ -1,2 +1,4 @@
 title: Uri
 description: Match URLs against URL patterns, read and edit query strings, and find the registrable domain of a host name.
+packageIds:
+- Meziantou.Framework.Uri

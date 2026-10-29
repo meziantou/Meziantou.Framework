@@ -1,2 +1,12 @@
 title: Http
 description: Add HTTP caching, HSTS, SSRF protection and record-and-replay to HttpClient, and parse Link headers and htpasswd files.
+packageIds:
+- Meziantou.Framework.Http
+- Meziantou.Framework.Http.Caching
+- Meziantou.Framework.Http.Caching.InMemory
+- Meziantou.Framework.Http.Caching.Redis
+- Meziantou.Framework.Http.Caching.Sqlite
+- Meziantou.Framework.Http.Hsts
+- Meziantou.Framework.Http.Htpasswd
+- Meziantou.Framework.Http.Recording
+- Meziantou.Framework.Http.ServerSideRequestForgery

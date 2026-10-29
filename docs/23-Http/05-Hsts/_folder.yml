@@ -1,2 +1,4 @@
 title: HSTS
 description: Upgrade HttpClient requests from HTTP to HTTPS for the hosts that require it, with the HSTS preload list built in.
+packageIds:
+- Meziantou.Framework.Http.Hsts

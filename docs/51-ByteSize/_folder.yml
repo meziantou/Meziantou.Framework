@@ -1,2 +1,4 @@
 title: ByteSize
 description: Create, format, parse and compare sizes in bytes, with decimal (kB, MB) and binary (kiB, MiB) units.
+packageIds:
+- Meziantou.Framework.ByteSize

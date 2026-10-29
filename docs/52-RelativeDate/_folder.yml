@@ -1,2 +1,4 @@
 title: RelativeDate
 description: Write a date as a localized relative text, such as "5 minutes ago" or "in 3 days".
+packageIds:
+- Meziantou.Framework.RelativeDate

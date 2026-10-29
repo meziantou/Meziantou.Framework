@@ -1,2 +1,5 @@
 title: Rendering
 description: Take screenshots of pages and elements, print pages as images or PDF, draw on canvases, and choose the fonts.
+packageIds:
+- Meziantou.Framework.WebPlatform.Imaging
+- Meziantou.Framework.WebPlatform.PdfRendering

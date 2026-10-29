@@ -1,2 +1,4 @@
 title: Log viewer
 description: Display log entries in a Blazor application, with timestamps, line numbers, highlighting, ANSI colors, structured payloads and nested entries.
+packageIds:
+- Meziantou.AspNetCore.Components.LogViewer

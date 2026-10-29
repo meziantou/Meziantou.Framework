@@ -1,2 +1,4 @@
 title: Globbing
 description: Match paths against glob patterns and enumerate the files that match, in the syntax of your choice or the one of git, MSBuild or fnmatch.
+packageIds:
+- Meziantou.Framework.Globbing

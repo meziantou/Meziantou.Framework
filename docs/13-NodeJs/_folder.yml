@@ -1,2 +1,4 @@
 title: Node.js
 description: Run JavaScript code and call Node.js modules, local files or npm packages, from .NET.
+packageIds:
+- Meziantou.Framework.NodeJs

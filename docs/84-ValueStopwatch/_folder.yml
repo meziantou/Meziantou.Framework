@@ -1,2 +1,4 @@
 title: ValueStopwatch
 description: Measure elapsed time with a struct that wraps the high-resolution timestamps of Stopwatch.
+packageIds:
+- Meziantou.Framework.ValueStopwatch

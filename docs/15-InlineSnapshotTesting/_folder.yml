@@ -1,2 +1,4 @@
 title: Inline snapshot testing
 description: Validate objects against snapshots written in the source code of your tests, and let the library update them.
+packageIds:
+- Meziantou.Framework.InlineSnapshotTesting

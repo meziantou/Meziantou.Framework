@@ -1,2 +1,4 @@
 title: HTML emails
 description: Generate the HTML of an email with encoded values, a subject and embedded images.
+packageIds:
+- Meziantou.Framework.Templating.Html

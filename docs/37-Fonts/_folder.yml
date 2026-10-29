@@ -1,2 +1,4 @@
 title: Fonts
 description: Read OpenType fonts, shape text into positioned glyphs, find installed fonts, subset fonts and read AFM metrics, for your own text renderer.
+packageIds:
+- Meziantou.Framework.Fonts

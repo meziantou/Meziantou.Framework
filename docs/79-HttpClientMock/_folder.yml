@@ -1,2 +1,4 @@
 title: HttpClientMock
 description: Mock the HTTP services an HttpClient calls with an in-memory ASP.NET Core server, for tests.
+packageIds:
+- Meziantou.Framework.HttpClientMock

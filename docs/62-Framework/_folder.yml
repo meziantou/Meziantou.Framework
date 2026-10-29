@@ -1,2 +1,4 @@
 title: Meziantou.Framework (core)
 description: Everyday helpers for .NET applications, for strings, collections, files, processes, timing, reflection and more.
+packageIds:
+- Meziantou.Framework

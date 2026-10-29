@@ -1,2 +1,4 @@
 title: In-memory logger
 description: Keep the log entries in memory and assert on them in tests.
+packageIds:
+- Meziantou.Extensions.Logging.InMemory

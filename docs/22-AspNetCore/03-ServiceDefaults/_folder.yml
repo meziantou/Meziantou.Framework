@@ -1,2 +1,5 @@
 title: Service defaults
 description: Configure OpenTelemetry, health checks, OpenAPI, resilience, JSON and security defaults of a web application in two calls.
+packageIds:
+- Meziantou.AspNetCore.ServiceDefaults
+- Meziantou.AspNetCore.ServiceDefaults.AutoRegister

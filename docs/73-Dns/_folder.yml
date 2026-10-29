@@ -1,2 +1,7 @@
 title: DNS
 description: Query DNS servers over UDP, TCP, TLS, HTTPS and QUIC, serve your own records, filter domains with block lists, and run a filtering DNS proxy.
+packageIds:
+- Meziantou.DnsProxy
+- Meziantou.Framework.DnsClient
+- Meziantou.Framework.DnsFilter
+- Meziantou.Framework.DnsServer

@@ -1,2 +1,5 @@
 title: AtlassianDataFormat
 description: Read, build and write Atlassian Document Format documents from Jira, Confluence and Bitbucket, and convert them to Markdown.
+packageIds:
+- Meziantou.Framework.AtlassianDataFormat
+- Meziantou.Framework.AtlassianDataFormat.Tool

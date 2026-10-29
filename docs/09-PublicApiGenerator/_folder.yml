@@ -1,2 +1,6 @@
 title: Public API generator
 description: Write the public API of a .NET assembly as C# files, keep them up to date in the build, and review API changes in pull requests.
+packageIds:
+- Meziantou.Framework.PublicApiGenerator
+- Meziantou.Framework.PublicApiGenerator.MSBuild
+- Meziantou.Framework.PublicApiGenerator.Tool

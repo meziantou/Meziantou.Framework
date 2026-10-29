@@ -1,2 +1,4 @@
 title: TextDiff
 description: Compute the differences between two texts, line by line, word by word or character by character.
+packageIds:
+- Meziantou.Framework.TextDiff

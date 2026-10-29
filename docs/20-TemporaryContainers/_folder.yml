@@ -1,2 +1,4 @@
 title: TemporaryContainers
 description: Start throwaway containers from .NET integration tests, with the Docker Engine API, Docker, Podman, Apple container or wslc.
+packageIds:
+- Meziantou.Framework.TemporaryContainers

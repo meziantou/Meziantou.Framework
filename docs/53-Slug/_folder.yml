@@ -1,2 +1,4 @@
 title: Slug
 description: Turn a title into a URL-friendly slug, such as "creme-brulee-recipe".
+packageIds:
+- Meziantou.Framework.Slug

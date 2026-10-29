@@ -1,2 +1,5 @@
 title: StronglyTypedId
 description: Generate strongly-typed IDs that wrap an int, a Guid or a string, with parsing, formatting and converters for serializers and frameworks.
+packageIds:
+- Meziantou.Framework.StronglyTypedId
+- Meziantou.Framework.StronglyTypedId.Interfaces

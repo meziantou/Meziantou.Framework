@@ -1,2 +1,5 @@
 title: NuGetPackageValidation
 description: Check that NuGet packages have the metadata, symbols and documentation users expect, from code or from the command line.
+packageIds:
+- Meziantou.Framework.NuGetPackageValidation
+- Meziantou.Framework.NuGetPackageValidation.Tool

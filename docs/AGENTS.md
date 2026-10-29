@@ -41,6 +41,26 @@ description: Load images from files, streams and memory, identify them, save the
 
 The `images` folders have none: they are not shown.
 
+`packageIds` lists the NuGet packages the folder documents, as a block list sorted ordinally, after `description`:
+
+```yaml
+title: DNS
+description: Query DNS servers over UDP, TCP, TLS, HTTPS and QUIC, serve your own records, filter domains with block lists, and run a filtering DNS proxy.
+packageIds:
+- Meziantou.DnsProxy
+- Meziantou.Framework.DnsClient
+- Meziantou.Framework.DnsFilter
+- Meziantou.Framework.DnsServer
+```
+
+- A section requires it. Every package of `src/` (the projects that are not `IsPackable=false`; the id is the project
+  file name) is listed by exactly one section, so a new package is added to the list of its section.
+- A group may have it when its pages are about some of the packages of its section, for instance
+  `73-Dns/03-DnsClient/` lists `Meziantou.Framework.DnsClient`. It can only list packages of its parent. Without it,
+  the group covers the packages of its parent.
+- Third-party packages the pages install (`Npgsql`) are not listed.
+- `dotnet run ./eng/update-all.cs` (or `-- --step docs`) checks the lists.
+
 ## Front matter
 
 Every page starts with a YAML front matter. `title` is required, `description` (one sentence, shown in lists and search

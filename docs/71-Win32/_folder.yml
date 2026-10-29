@@ -1,2 +1,15 @@
 title: Win32
 description: Use Windows features from .NET - access tokens, antimalware scans, the change journal, credentials, job objects, virtual file systems and more.
+packageIds:
+- Meziantou.Framework.Win32.AccessToken
+- Meziantou.Framework.Win32.Amsi
+- Meziantou.Framework.Win32.ChangeJournal
+- Meziantou.Framework.Win32.CredentialManager
+- Meziantou.Framework.Win32.Dialogs
+- Meziantou.Framework.Win32.Jobs
+- Meziantou.Framework.Win32.Lsa
+- Meziantou.Framework.Win32.MarkOfTheWeb
+- Meziantou.Framework.Win32.PerceivedType
+- Meziantou.Framework.Win32.ProjectedFileSystem
+- Meziantou.Framework.Win32.RecentDocuments
+- Meziantou.Framework.Win32.RestartManager

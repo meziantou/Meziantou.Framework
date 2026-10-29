@@ -1,2 +1,4 @@
 title: DnsServer
 description: Answer DNS queries from your own code over UDP, TCP, TLS, HTTPS and QUIC, in an ASP.NET Core application.
+packageIds:
+- Meziantou.Framework.DnsServer

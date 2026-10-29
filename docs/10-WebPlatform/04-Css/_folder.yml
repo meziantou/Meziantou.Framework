@@ -1,2 +1,4 @@
 title: CSS
 description: Read the computed styles of the elements, inspect and edit style sheets, work with typed values and format CSS.
+packageIds:
+- Meziantou.Framework.WebPlatform

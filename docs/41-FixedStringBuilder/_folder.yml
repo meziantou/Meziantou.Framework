@@ -1,2 +1,5 @@
 title: FixedStringBuilder
 description: Build short strings in fixed-capacity value types, without allocating, and generate types of any capacity.
+packageIds:
+- Meziantou.Framework.FixedStringBuilder
+- Meziantou.Framework.FixedStringBuilder.Generator

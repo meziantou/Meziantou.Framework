@@ -1,2 +1,5 @@
 title: Playwright
 description: Automate the pages of the engine with the Playwright clients for .NET, Node.js, Python and Java, without a native browser.
+packageIds:
+- Meziantou.Framework.WebPlatform.Playwright
+- Meziantou.Framework.WebPlatform.Playwright.Tool

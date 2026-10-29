@@ -68,6 +68,442 @@ public sealed class JsonPathEvaluateTests
     }
 
     [Fact]
+    public void DocumentationExample_ParseAndTryParse()
+    {
+        #region JsonPath_ParseAndTryParse
+        // Parse throws a FormatException when the query is not valid
+        var path = JsonPath.Parse("$.store.book[?@.price < 10].title");
+        Assert.Equal("$.store.book[?@.price < 10].title", path.ToString());
+        Assert.Throws<FormatException>(() => JsonPath.Parse("store.book"));
+
+        // TryParse returns false instead, for queries that come from users or configuration files
+        Assert.True(JsonPath.TryParse("$.store.book[0]", out var first));
+        Assert.NotNull(first);
+        Assert.False(JsonPath.TryParse("$.store.book[", out _));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_EvaluateJsonDocument()
+    {
+        #region JsonPath_EvaluateJsonDocument
+        using var document = JsonDocument.Parse("""{"store":{"book":[{"title":"A","price":8},{"title":"B","price":12}]}}""");
+        var path = JsonPath.Parse("$.store.book[?@.price < 10].title");
+
+        // Evaluate works on a JsonDocument and on any JsonElement, as an instance or an extension method
+        JsonPathResult<JsonElement> result = path.Evaluate(document);
+        Assert.Single(result);
+        Assert.Equal("A", result[0].Value.GetString());
+        Assert.Equal("$['store']['book'][0]['title']", result[0].Path);
+
+        JsonElement? title = document.RootElement.EvaluateValue(path);
+        Assert.Equal("A", title?.GetString());
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_EvaluateValue()
+    {
+        #region JsonPath_EvaluateValue
+        var document = JsonNode.Parse("""{"users":[{"name":"Alice"},{"name":"Bob"}]}""");
+
+        // EvaluateValue returns the first match, or null when nothing matches
+        JsonNode? firstName = document.EvaluateValue(JsonPath.Parse("$.users[*].name"));
+        Assert.Equal("Alice", firstName?.GetValue<string>());
+
+        JsonNode? missing = document.EvaluateValue(JsonPath.Parse("$.groups[0]"));
+        Assert.Null(missing);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_MissingVersusNull()
+    {
+        #region JsonPath_MissingVersusNull
+        var path = JsonPath.Parse("$.manager");
+
+        // With JsonNode, JSON null is a null value: count the matches to tell it apart from a missing member
+        var node = JsonNode.Parse("""{"manager":null}""");
+        Assert.Null(node.EvaluateValue(path));
+        Assert.Single(node.Evaluate(path));
+        Assert.Empty(JsonNode.Parse("{}").Evaluate(path));
+
+        // With JsonElement, JSON null is an element of kind Null, and a missing member is null
+        using var document = JsonDocument.Parse("""{"manager":null}""");
+        Assert.Equal(JsonValueKind.Null, document.EvaluateValue(path)?.ValueKind);
+
+        using var emptyDocument = JsonDocument.Parse("{}");
+        Assert.Null(emptyDocument.EvaluateValue(path));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_ToJsonArray()
+    {
+        #region JsonPath_ToJsonArray
+        var document = JsonNode.Parse("""{"items":[{"id":1,"tags":["a"]},{"id":2,"tags":["b","c"]}]}""");
+
+        // ToJsonArray copies the matched values into a new array
+        JsonArray tags = JsonPath.Parse("$.items[*].tags[*]").Evaluate(document).ToJsonArray();
+        Assert.Equal("""["a","b","c"]""", tags.ToJsonString());
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_ModifyMatches()
+    {
+        #region JsonPath_ModifyMatches
+        var document = JsonNode.Parse("""{"items":[{"price":8},{"price":12}]}""");
+
+        // With JsonNode, the matched values are the nodes of the document, not copies
+        foreach (var match in JsonPath.Parse("$.items[?@.price > 10]").Evaluate(document))
+        {
+            match.Value!["discounted"] = true;
+        }
+
+        Assert.Equal("""{"items":[{"price":8},{"price":12,"discounted":true}]}""", document!.ToJsonString());
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_NormalizedPaths()
+    {
+        #region JsonPath_NormalizedPaths
+        var document = JsonNode.Parse("""{"teams":{"red team":{"members":["Alice","Bob"]}}}""");
+
+        // Path is the normalized path of the match: names in brackets and quotes, non-negative indexes
+        var match = JsonPath.Parse("$.teams.*.members[-1]").Evaluate(document)[0];
+        Assert.Equal("$['teams']['red team']['members'][1]", match.Path);
+
+        // A normalized path is itself a query that selects the same node
+        Assert.Equal("Bob", JsonPath.Parse(match.Path).EvaluateValue(document)?.GetValue<string>());
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_NameSelectors()
+    {
+        #region JsonPath_NameSelectors
+        var document = JsonNode.Parse("""{"name":"Alice","first name":"Al","address":{"city":"Paris"}}""");
+        string Select(string query) => JsonPath.Parse(query).Evaluate(document).ToJsonArray().ToJsonString();
+
+        Assert.Equal("""["Alice"]""", Select("$.name"));
+        Assert.Equal("""["Paris"]""", Select("$.address.city"));
+
+        // Bracket notation accepts any member name, in single or double quotes
+        Assert.Equal("""["Al"]""", Select("$['first name']"));
+        Assert.Equal("""["Paris"]""", Select("""$["address"]["city"]"""));
+
+        // A missing member selects nothing
+        Assert.Equal("[]", Select("$.phone"));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_WildcardSelector()
+    {
+        #region JsonPath_WildcardSelector
+        var document = JsonNode.Parse("""{"sizes":{"small":1,"large":3},"tags":["a","b"],"count":2}""");
+        string Select(string query) => JsonPath.Parse(query).Evaluate(document).ToJsonArray().ToJsonString();
+
+        // The values of the members of an object, or the elements of an array
+        Assert.Equal("[1,3]", Select("$.sizes.*"));
+        Assert.Equal("""["a","b"]""", Select("$.tags[*]"));
+
+        // A number, a string, a Boolean or null has no children
+        Assert.Equal("[]", Select("$.count.*"));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_IndexSelectors()
+    {
+        #region JsonPath_IndexSelectors
+        var document = JsonNode.Parse("""["a","b","c","d"]""");
+        string Select(string query) => JsonPath.Parse(query).Evaluate(document).ToJsonArray().ToJsonString();
+
+        Assert.Equal("""["a"]""", Select("$[0]"));
+
+        // A negative index counts from the end of the array
+        Assert.Equal("""["d"]""", Select("$[-1]"));
+
+        // An index outside the array selects nothing
+        Assert.Equal("[]", Select("$[10]"));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_SliceSelectors()
+    {
+        #region JsonPath_SliceSelectors
+        var document = JsonNode.Parse("""[0,1,2,3,4,5]""");
+        string Select(string query) => JsonPath.Parse(query).Evaluate(document).ToJsonArray().ToJsonString();
+
+        // [start:end:step]; start is included, end is excluded
+        Assert.Equal("[1,2]", Select("$[1:3]"));
+        Assert.Equal("[0,1]", Select("$[:2]"));
+        Assert.Equal("[4,5]", Select("$[-2:]"));
+        Assert.Equal("[0,2,4]", Select("$[::2]"));
+
+        // A negative step walks the array backward
+        Assert.Equal("[5,4,3,2,1,0]", Select("$[::-1]"));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_MultipleSelectors()
+    {
+        #region JsonPath_MultipleSelectors
+        var document = JsonNode.Parse("""{"id":7,"name":"Alice","tags":["a","b","c","d"]}""");
+        string Select(string query) => JsonPath.Parse(query).Evaluate(document).ToJsonArray().ToJsonString();
+
+        // The results follow the order of the selectors
+        Assert.Equal("""["Alice",7]""", Select("$['name','id']"));
+        Assert.Equal("""["d","a","b"]""", Select("$.tags[-1, 0:2]"));
+
+        // A node selected twice is returned twice
+        Assert.Equal("""["a","a"]""", Select("$.tags[0, 0]"));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_DescendantSegment()
+    {
+        #region JsonPath_DescendantSegment
+        var document = JsonNode.Parse("""
+            {
+              "price": 1,
+              "books": [{ "price": 8 }, { "price": 12, "parts": [{ "price": 5 }] }]
+            }
+            """);
+        string Select(string query) => JsonPath.Parse(query).Evaluate(document).ToJsonArray().ToJsonString();
+
+        // The member, at any depth
+        Assert.Equal("[1,8,12,5]", Select("$..price"));
+
+        // Any selector works after .., here the first element of every array
+        Assert.Equal("""[{"price":8},{"price":5}]""", Select("$..[0]"));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_FilterComparisons()
+    {
+        #region JsonPath_FilterComparisons
+        var document = JsonNode.Parse("""
+            {
+              "books": [
+                { "title": "A", "price": 8, "category": "fiction" },
+                { "title": "B", "price": 12, "category": "science" },
+                { "title": "C", "price": 25, "category": "fiction" }
+              ]
+            }
+            """);
+        string Select(string query) => JsonPath.Parse(query).Evaluate(document).ToJsonArray().ToJsonString();
+
+        // @ is the node being tested: here, each book
+        Assert.Equal("""["A","B"]""", Select("$.books[?@.price < 20].title"));
+        Assert.Equal("""["A","C"]""", Select("$.books[?@.category == 'fiction'].title"));
+
+        // && (and), || (or), ! (not) and parentheses combine the tests
+        Assert.Equal("""["A"]""", Select("$.books[?@.category == 'fiction' && @.price < 20].title"));
+        Assert.Equal("""["B"]""", Select("$.books[?!(@.category == 'fiction')].title"));
+
+        // Parentheses around the whole test are allowed, as in other JSONPath dialects
+        Assert.Equal("""["A","B"]""", Select("$.books[?(@.price < 20)].title"));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_FilterExistence()
+    {
+        #region JsonPath_FilterExistence
+        var document = JsonNode.Parse("""
+            [
+              { "name": "A", "enabled": true },
+              { "name": "B", "enabled": false },
+              { "name": "C" }
+            ]
+            """);
+        string Select(string query) => JsonPath.Parse(query).Evaluate(document).ToJsonArray().ToJsonString();
+
+        // A query alone tests whether the member exists, whatever its value
+        Assert.Equal("""["A","B"]""", Select("$[?@.enabled].name"));
+        Assert.Equal("""["C"]""", Select("$[?!@.enabled].name"));
+
+        // Compare with true to test the value
+        Assert.Equal("""["A"]""", Select("$[?@.enabled == true].name"));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_FilterRootAndNested()
+    {
+        #region JsonPath_FilterRootAndNested
+        var document = JsonNode.Parse("""
+            {
+              "maxPrice": 10,
+              "orders": [
+                { "id": 1, "lines": [{ "price": 4 }, { "price": 15 }] },
+                { "id": 2, "lines": [{ "price": 9 }] }
+              ]
+            }
+            """);
+        string Select(string query) => JsonPath.Parse(query).Evaluate(document).ToJsonArray().ToJsonString();
+
+        // $ refers to the root of the document from inside a filter
+        Assert.Equal("[4,9]", Select("$.orders[*].lines[?@.price <= $.maxPrice].price"));
+
+        // A filter inside a filter: the orders that have at least one line above 10
+        Assert.Equal("[1]", Select("$.orders[?@.lines[?@.price > 10]].id"));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_FilterObjectMembers()
+    {
+        #region JsonPath_FilterObjectMembers
+        var document = JsonNode.Parse("""{"users":{"alice":{"age":31},"bob":{"age":25}}}""");
+
+        // On an object, a filter tests the value of every member
+        var result = JsonPath.Parse("$.users[?@.age > 30]").Evaluate(document);
+        Assert.Equal(["$['users']['alice']"], result.Select(match => match.Path));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_ComparisonRules()
+    {
+        #region JsonPath_ComparisonRules
+        var document = JsonNode.Parse("""
+            [
+              { "id": 1, "value": 1 },
+              { "id": 2, "value": 1.0 },
+              { "id": 3, "value": "1" },
+              { "id": 4, "value": [1, 2] },
+              { "id": 5 }
+            ]
+            """);
+        string Select(string query) => JsonPath.Parse(query).Evaluate(document).ToJsonArray().ToJsonString();
+
+        // Numbers compare by value; values of different types are never equal
+        Assert.Equal("[1,2]", Select("$[?@.value == 1].id"));
+
+        // Arrays and objects compare deeply: here, with the value of the fourth element
+        Assert.Equal("[4]", Select("$[?@.value == $[3].value].id"));
+
+        // A missing member is only equal to another missing member, and is not less or greater than anything
+        Assert.Equal("[5]", Select("$[?@.value == @.missing].id"));
+        Assert.Equal("[]", Select("$[?@.value < @.missing || @.value > @.missing].id"));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_FunctionLengthAndCount()
+    {
+        #region JsonPath_FunctionLengthAndCount
+        var document = JsonNode.Parse("""
+            [
+              { "name": "Al", "tags": ["a", "b", "c"], "address": { "city": "Paris", "zip": "75001" } },
+              { "name": "Alice", "tags": ["a"], "address": { "city": "Lyon" } }
+            ]
+            """);
+        string Select(string query) => JsonPath.Parse(query).Evaluate(document).ToJsonArray().ToJsonString();
+
+        // length(): the number of characters of a string, of elements of an array, of members of an object
+        Assert.Equal("""["Alice"]""", Select("$[?length(@.name) > 3].name"));
+        Assert.Equal("""["Al"]""", Select("$[?length(@.tags) >= 2].name"));
+        Assert.Equal("""["Al"]""", Select("$[?length(@.address) == 2].name"));
+
+        // count(): the number of nodes a query selects
+        Assert.Equal("""["Al"]""", Select("$[?count(@.tags[?@ == 'a' || @ == 'b']) == 2].name"));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_FunctionMatchAndSearch()
+    {
+        #region JsonPath_FunctionMatchAndSearch
+        var document = JsonNode.Parse("""[{ "code": "AB-12" }, { "code": "AB-123" }, { "code": "XAB-1" }]""");
+        string Select(string query) => JsonPath.Parse(query).Evaluate(document).ToJsonArray().ToJsonString();
+
+        // match(): the whole string matches the pattern
+        Assert.Equal("""["AB-12"]""", Select("$[?match(@.code, 'AB-[0-9]{2}')].code"));
+
+        // search(): the pattern matches a part of the string
+        Assert.Equal("""["AB-12","AB-123","XAB-1"]""", Select("$[?search(@.code, 'AB-[0-9]')].code"));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_FunctionValue()
+    {
+        #region JsonPath_FunctionValue
+        var document = JsonNode.Parse("""
+            [
+              { "name": "A", "labels": [{ "key": "env", "value": "prod" }] },
+              { "name": "B", "labels": [{ "key": "env", "value": "test" }, { "key": "team", "value": "web" }] }
+            ]
+            """);
+        string Select(string query) => JsonPath.Parse(query).Evaluate(document).ToJsonArray().ToJsonString();
+
+        // value() turns a query that selects one node into a value that can be compared
+        Assert.Equal("""["A"]""", Select("$[?value(@.labels[?@.key == 'env'].value) == 'prod'].name"));
+
+        // When the query selects no node or several nodes, value() has no value: B has two labels
+        Assert.Equal("""["A"]""", Select("$[?value(@.labels[*].key) == 'env'].name"));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_InvalidQueries()
+    {
+        #region JsonPath_InvalidQueries
+        // Well-formed and valid queries only: these look plausible but are rejected
+        Assert.False(JsonPath.TryParse("$.store.book[(@.length-1)]", out _)); // script expressions are not JSONPath
+        Assert.False(JsonPath.TryParse("$[?@.price = 10]", out _));            // the equality operator is ==
+        Assert.False(JsonPath.TryParse("$[?!@.a == 1]", out _));               // write !(@.a == 1)
+        Assert.False(JsonPath.TryParse("$[?length(@.*) > 1]", out _));         // length() takes a single value
+        Assert.False(JsonPath.TryParse("$[?count(@.*)]", out _));              // count() returns a number, not a test
+        Assert.False(JsonPath.TryParse("$[?upper(@.name) == 'A']", out _));    // unknown function
+        Assert.False(JsonPath.TryParse("$[?@.name =~ /^A/]", out _));          // use match() or search()
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_LengthIsAMemberName()
+    {
+        #region JsonPath_LengthIsAMemberName
+        var document = JsonNode.Parse("""{"books":[{"title":"A"},{"title":"B"}]}""");
+
+        // .length selects a member named "length", not the length of the array
+        Assert.Empty(JsonPath.Parse("$.books.length").Evaluate(document));
+
+        // Count the matches instead
+        Assert.HasCount(2, JsonPath.Parse("$.books[*]").Evaluate(document));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_StrictModeScope()
+    {
+        #region JsonPath_StrictModeScope
+        var document = JsonNode.Parse("""{"items":[{"id":1},{"id":2,"tag":"new"}]}""");
+
+        // Filters and descendant segments test nodes: a missing member is not an error, even in strict mode
+        var tagged = JsonPath.Parse("$.items[?@.tag == 'new'].id").Evaluate(document, JsonPathEvaluationMode.Strict);
+        Assert.Single(tagged);
+        var tags = JsonPath.Parse("$..tag").Evaluate(document, JsonPathEvaluationMode.Strict);
+        Assert.Single(tags);
+
+        // A name, index, wildcard, slice or filter selector that does not apply to the node throws
+        var exception = Assert.Throws<JsonPathEvaluationException>(
+            () => JsonPath.Parse("$.items[*].tag").Evaluate(document, JsonPathEvaluationMode.Strict));
+        Assert.Equal("Path error at $['items'][0]: Object member 'tag' does not exist", exception.Message);
+        #endregion
+    }
+
+    [Fact]
     public void Evaluate_RootOnly()
     {
         var doc = JsonNode.Parse("""{"a": 1}""");

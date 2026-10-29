@@ -54,7 +54,7 @@ choice:
 | --- | --- | --- |
 | Transparency | JPEG | `BackgroundColor`: the opaque color that transparent pixels are blended on |
 | 16-bit samples | JPEG, GIF, WebP, QOI, AVIF and HEIC (12 bits at most), and others | `AllowBitDepthReduction` on the encoders that have it (JPEG, WebP, AVIF, HEIC, QOI...); GIF reduces the colors to a palette anyway |
-| Several frames (an animation) | JPEG, BMP, QOI, static PNG... | Export one frame with `CloneFrame` |
+| Several frames (an animation) | JPEG, BMP, QOI, static PNG... | Save one frame: `image.Frames[i].Save(...)` |
 | Metadata (EXIF, XMP, ICC profile, text) | GIF, BMP, QOI, TGA, Netpbm, and partly the others | `MetadataHandling = MetadataHandling.DiscardUnsupported` drops what the format cannot store; `Strip` writes none |
 | Floating-point samples (OpenEXR) | Every format but OpenEXR and TIFF | `FloatingPointConversion`: how the samples are reduced to integers |
 
@@ -65,8 +65,9 @@ For example, to export one frame of an animation as a JPEG file:
 public static void ExportFrameAsJpeg(string animatedPath, int frameIndex, string jpegPath)
 {
     using var animation = Image.Load(animatedPath);
-    using var frame = animation.CloneFrame(frameIndex);
-    frame.Save(jpegPath, new JpegEncoder
+
+    // The frame is saved as a still image, without copying its pixels
+    animation.Frames[frameIndex].Save(jpegPath, new JpegEncoder
     {
         Quality = 85,
         BackgroundColor = new Rgba32(255, 255, 255),

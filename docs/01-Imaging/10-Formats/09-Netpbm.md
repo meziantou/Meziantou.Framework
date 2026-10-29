@@ -25,7 +25,7 @@ With the default settings, gray pixel formats are written as PGM, pixel formats 
 public static void SaveAssetFormats(string inputPath, string bmpPath, string tgaPath, string pnmPath)
 {
     using var image = Image.Load(inputPath);
-    using var frame = image.CloneFrame(0); // BMP, TGA and Netpbm store one still image
+    var frame = image.Frames[0]; // BMP, TGA and Netpbm store one still image
 
     // BMP: 32-bit with an explicit alpha mask for pixel formats with alpha, 24-bit otherwise. Forcing 24-bit discards
     // alpha, so it needs a background color.
@@ -50,12 +50,11 @@ portable bitmap, so pixels that are not opaque need `BackgroundColor`:
 public static void SavePlainNetpbm(string inputPath, string outputPath)
 {
     using var image = Image.Load(inputPath);
-    using var frame = image.CloneFrame(0); // Netpbm stores one still image
 
-    // Decimal samples that a text editor and a diff can show. The variant still follows the pixel format: P2 (PGM)
-    // for gray pixels, P3 (PPM) otherwise. The plain forms have no alpha, so pixels that are not opaque are composited
-    // over the background color.
-    frame.Save(outputPath, new PnmEncoder { Encoding = PnmEncoding.Plain, BackgroundColor = new Rgba32(255, 255, 255) });
+    // Netpbm stores one still image: save the first frame. Decimal samples that a text editor and a diff can show. The
+    // variant still follows the pixel format: P2 (PGM) for gray pixels, P3 (PPM) otherwise. The plain forms have no
+    // alpha, so pixels that are not opaque are composited over the background color.
+    image.Frames[0].Save(outputPath, new PnmEncoder { Encoding = PnmEncoding.Plain, BackgroundColor = new Rgba32(255, 255, 255) });
 }
 ```
 <!-- endref -->
@@ -102,7 +101,7 @@ back as `Gray8`, with one bit per component.
 - An encoder never looks at the file extension: `Save("page.pbm")` without an encoder writes a portable bitmap, but
   `Save("page.pbm", new PnmEncoder())` writes the variant of the pixel format. Set `PixelLayout = PnmPixelLayout.Bitmap`
   explicitly.
-- Netpbm stores one frame: export one frame of an animation with `CloneFrame`. A file that holds several images is read
+- Netpbm stores one frame: save one frame of an animation with `image.Frames[i].Save`. A file that holds several images is read
   as its first image.
 - Netpbm stores no metadata: an ICC profile, EXIF, XMP, an orientation, a resolution or text entries follow
   `MetadataHandling`, which rejects them by default.

@@ -46,8 +46,8 @@ using var image = Image.Load("animation.gif");          // every displayed frame
 image.Resize(new ResizeOptions(320, 240));               // all frames, atomically
 image.Save("thumbnail.png", new PngEncoder());           // APNG, because the image is animated
 
-using var frame = image.CloneFrame(0);                    // JPEG stores one frame: export it explicitly
-frame.Save("first.jpg", new JpegEncoder { Quality = 85, BackgroundColor = new Rgba32(255, 255, 255) });
+image.Frames[0].Save("first.jpg",                         // JPEG stores one frame: export it explicitly
+    new JpegEncoder { Quality = 85, BackgroundColor = new Rgba32(255, 255, 255) });
 ```
 <!-- endref -->
 
@@ -85,7 +85,7 @@ encoder:
 
 | The image has | The output cannot store it | Setting |
 | --- | --- | --- |
-| Several frames | JPEG, a static PNG, and the other still formats | None: export one frame with `CloneFrame` |
+| Several frames | JPEG, a static PNG, and the other still formats | None: save one frame with `image.Frames[i].Save(...)` |
 | A poster frame | Every format but animated PNG | None: remove it with `RemovePosterFrame` |
 | A duration the format cannot represent | GIF, APNG, ANI, … | `DurationRounding` |
 | Transparency | JPEG, BMP layouts other than 32-bit, … | `BackgroundColor` |

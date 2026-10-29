@@ -99,8 +99,9 @@ image to JPEG sets the three controls:
 public static void ExportFrameAsJpeg(string animatedPath, int frameIndex, string jpegPath)
 {
     using var animation = Image.Load(animatedPath);
-    using var frame = animation.CloneFrame(frameIndex);
-    frame.Save(jpegPath, new JpegEncoder
+
+    // The frame is saved as a still image, without copying its pixels
+    animation.Frames[frameIndex].Save(jpegPath, new JpegEncoder
     {
         Quality = 85,
         BackgroundColor = new Rgba32(255, 255, 255),

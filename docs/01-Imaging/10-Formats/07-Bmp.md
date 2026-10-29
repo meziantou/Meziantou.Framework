@@ -30,7 +30,7 @@ others as 24-bit. Another layout is chosen explicitly, with the settings for wha
 public static void SaveAssetFormats(string inputPath, string bmpPath, string tgaPath, string pnmPath)
 {
     using var image = Image.Load(inputPath);
-    using var frame = image.CloneFrame(0); // BMP, TGA and Netpbm store one still image
+    var frame = image.Frames[0]; // BMP, TGA and Netpbm store one still image
 
     // BMP: 32-bit with an explicit alpha mask for pixel formats with alpha, 24-bit otherwise. Forcing 24-bit discards
     // alpha, so it needs a background color.
@@ -57,7 +57,7 @@ the image otherwise, unless `AllowColorReduction` is set. `Indexed4` and `Indexe
 public static void SaveIndexedBmp(string inputPath, string outputPath)
 {
     using var image = Image.Load(inputPath);
-    using var frame = image.CloneFrame(0);
+    var frame = image.Frames[0];
 
     // 8-bit indexes, run-length encoded (BI_RLE8). The palette holds the colors of the frame exactly when there are at
     // most 256 of them; AllowColorReduction accepts a deterministic palette for the other frames, here with dithering.
@@ -95,7 +95,7 @@ lossless, but can be larger than uncompressed output.
 
 ## Pitfalls
 
-- BMP stores one frame: export one frame of an animation with `CloneFrame`.
+- BMP stores one frame: save one frame of an animation with `image.Frames[i].Save`.
 - `Compression = RunLength` with another layout than `Indexed4` or `Indexed8`, or with top-down rows, throws an
   `ArgumentException`.
 - BMP stores no ICC profile, EXIF, XMP, orientation or text: they follow `MetadataHandling`, which rejects them by

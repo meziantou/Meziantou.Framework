@@ -22,7 +22,7 @@ byte-identical to the one of the reference encoder.
 public static void SaveQoi(string inputPath, string qoiPath, string linearQoiPath, string pngPath)
 {
     using var image = Image.Load(inputPath);
-    using var frame = image.CloneFrame(0); // QOI stores one still image
+    var frame = image.Frames[0]; // QOI stores one still image
     frame.Save(qoiPath, new QoiEncoder { AllowBitDepthReduction = true });
 
     // A QOI colorspace of 1 (linear samples) is reported as a label, never applied: other formats cannot store it, so
@@ -46,7 +46,7 @@ public static void SaveQoi(string inputPath, string qoiPath, string linearQoiPat
 ## Pitfalls
 
 - QOI stores one frame: an animation, or an image with a poster frame, throws an `UnsupportedImageFeatureException`.
-  Export one frame with `CloneFrame`.
+  Save one frame with `image.Frames[i].Save`.
 - QOI stores no metadata: an image with an ICC profile, EXIF, XMP, an orientation, a resolution or text entries throws
   by default. Set `MetadataHandling` to `DiscardUnsupported` or `Strip`, after `AutoOrient` if the orientation matters.
 - A colorspace of 1 (linear samples) is a label, never applied: the pixels load as they are stored, labeled

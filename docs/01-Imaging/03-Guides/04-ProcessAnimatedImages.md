@@ -106,17 +106,19 @@ public static void BuildAnimation(string apngPath, string gifPath)
 `InsertFrame`, `RemoveFrame` and `MoveFrame` edit the list of frames. A frame added from another image must have the
 same size and pixel format: frames are never resized or converted implicitly.
 
-## Extract a frame
+## Save or extract a frame
 
-`CloneFrame(index)` copies one frame into a new still image, with its metadata but without the animation settings:
+`Frames[index].Save` saves one frame as a still image, with the metadata of the image but without the animation
+settings, and without copying its pixels:
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_ExportJpegFrame;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static void ExportFrameAsJpeg(string animatedPath, int frameIndex, string jpegPath)
 {
     using var animation = Image.Load(animatedPath);
-    using var frame = animation.CloneFrame(frameIndex);
-    frame.Save(jpegPath, new JpegEncoder
+
+    // The frame is saved as a still image, without copying its pixels
+    animation.Frames[frameIndex].Save(jpegPath, new JpegEncoder
     {
         Quality = 85,
         BackgroundColor = new Rgba32(255, 255, 255),
@@ -137,10 +139,10 @@ public static void SavePreview(string animationPath, string previewPath)
     // Decoding stops after the first displayed frame: the rest of the file is not read
     using var image = Image.Load(animationPath, new ImageDecodeOptions { FrameLimit = 1 });
 
-    // The image keeps its animation settings: export the frame as a still image
-    using var preview = image.CloneFrame(0);
-    preview.Resize(new ResizeOptions(128, 128) { AllowUpscaling = false });
-    preview.Save(previewPath, new PngEncoder());
+    image.Resize(new ResizeOptions(128, 128) { AllowUpscaling = false });
+
+    // The image keeps its animation settings: save its frame as a still image
+    image.Frames[0].Save(previewPath, new PngEncoder());
 }
 ```
 <!-- endref -->

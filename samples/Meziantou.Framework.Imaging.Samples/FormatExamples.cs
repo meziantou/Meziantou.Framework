@@ -37,11 +37,11 @@ internal static class FormatExamples
     public static ImageFormat SaveTga(string inputPath, string tgaPath)
     {
         using var image = Image.Load(inputPath);
-        using var frame = image.CloneFrame(0); // TGA stores one still image
 
-        // Run-length packets are lossless and usually smaller on flat colors; uncompressed rows (the default) are the
-        // most widely readable. 16-bit images are rounded to 8 bits only with consent.
-        frame.Save(tgaPath, new TgaEncoder { Compression = TgaCompression.RunLength, AllowBitDepthReduction = true });
+        // TGA stores one still image: save the first frame. Run-length packets are lossless and usually smaller on flat
+        // colors; uncompressed rows (the default) are the most widely readable. 16-bit images are rounded to 8 bits only
+        // with consent.
+        image.Frames[0].Save(tgaPath, new TgaEncoder { Compression = TgaCompression.RunLength, AllowBitDepthReduction = true });
 
         // TGA has no signature: DetectFormat recognizes it from its whole 18-byte header
         var header = new byte[Image.FormatDetectionPrefixLength];
@@ -56,12 +56,11 @@ internal static class FormatExamples
     public static void SavePlainNetpbm(string inputPath, string outputPath)
     {
         using var image = Image.Load(inputPath);
-        using var frame = image.CloneFrame(0); // Netpbm stores one still image
 
-        // Decimal samples that a text editor and a diff can show. The variant still follows the pixel format: P2 (PGM)
-        // for gray pixels, P3 (PPM) otherwise. The plain forms have no alpha, so pixels that are not opaque are composited
-        // over the background color.
-        frame.Save(outputPath, new PnmEncoder { Encoding = PnmEncoding.Plain, BackgroundColor = new Rgba32(255, 255, 255) });
+        // Netpbm stores one still image: save the first frame. Decimal samples that a text editor and a diff can show. The
+        // variant still follows the pixel format: P2 (PGM) for gray pixels, P3 (PPM) otherwise. The plain forms have no
+        // alpha, so pixels that are not opaque are composited over the background color.
+        image.Frames[0].Save(outputPath, new PnmEncoder { Encoding = PnmEncoding.Plain, BackgroundColor = new Rgba32(255, 255, 255) });
     }
     #endregion
 

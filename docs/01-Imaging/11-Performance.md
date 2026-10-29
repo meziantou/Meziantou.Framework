@@ -20,10 +20,10 @@ public static void SavePreview(string animationPath, string previewPath)
     // Decoding stops after the first displayed frame: the rest of the file is not read
     using var image = Image.Load(animationPath, new ImageDecodeOptions { FrameLimit = 1 });
 
-    // The image keeps its animation settings: export the frame as a still image
-    using var preview = image.CloneFrame(0);
-    preview.Resize(new ResizeOptions(128, 128) { AllowUpscaling = false });
-    preview.Save(previewPath, new PngEncoder());
+    image.Resize(new ResizeOptions(128, 128) { AllowUpscaling = false });
+
+    // The image keeps its animation settings: save its frame as a still image
+    image.Frames[0].Save(previewPath, new PngEncoder());
 }
 ```
 <!-- endref -->

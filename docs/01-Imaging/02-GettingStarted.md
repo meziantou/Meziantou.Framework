@@ -44,8 +44,8 @@ using var image = Image.Load("animation.gif");          // every displayed frame
 image.Resize(new ResizeOptions(320, 240));               // all frames, atomically
 image.Save("thumbnail.png", new PngEncoder());           // APNG, because the image is animated
 
-using var frame = image.CloneFrame(0);                    // JPEG stores one frame: export it explicitly
-frame.Save("first.jpg", new JpegEncoder { Quality = 85, BackgroundColor = new Rgba32(255, 255, 255) });
+image.Frames[0].Save("first.jpg",                         // JPEG stores one frame: export it explicitly
+    new JpegEncoder { Quality = 85, BackgroundColor = new Rgba32(255, 255, 255) });
 ```
 <!-- endref -->
 

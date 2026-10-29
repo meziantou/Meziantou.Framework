@@ -56,16 +56,17 @@ removing or reordering frames can never leave stale instructions behind.
 - Removing frames down to one keeps the settings: the image is then a one-frame animation, and is saved as one. Set
   `Animation` to `null` to make it a still image; this is allowed only with one frame and no poster.
 - A format that stores one picture (JPEG, a static PNG) rejects an animated image with an
-  `UnsupportedImageFeatureException` instead of saving its first frame. Extract the frame you want with `CloneFrame`,
-  which returns a still image:
+  `UnsupportedImageFeatureException` instead of saving its first frame. Save the frame you want with
+  `Frames[index].Save`, which writes it as a still image (`CloneFrame` copies it into a new still image instead):
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_ExportJpegFrame;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static void ExportFrameAsJpeg(string animatedPath, int frameIndex, string jpegPath)
 {
     using var animation = Image.Load(animatedPath);
-    using var frame = animation.CloneFrame(frameIndex);
-    frame.Save(jpegPath, new JpegEncoder
+
+    // The frame is saved as a still image, without copying its pixels
+    animation.Frames[frameIndex].Save(jpegPath, new JpegEncoder
     {
         Quality = 85,
         BackgroundColor = new Rgba32(255, 255, 255),
@@ -110,7 +111,7 @@ and APNG players skip it. The library exposes it as `PosterFrame`:
 - It is not counted in `Frames.Count`, and is kept by loads and by the operations on the whole image, such as a
   resize.
 - `SetPosterFrame` sets it to a copy of a frame, `RemovePosterFrame` removes it, and `ClonePosterFrame` extracts it as a
-  still image.
+  still image; `PosterFrame.Save` saves it as one.
 - Only animated PNG output can store a poster. Other formats reject an image that has one: remove it first.
 
 ## Animated cursors

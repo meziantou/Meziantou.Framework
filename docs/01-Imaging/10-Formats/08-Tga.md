@@ -25,11 +25,11 @@ BGR. Color-mapped and 15/16-bit files are read, never written.
 public static ImageFormat SaveTga(string inputPath, string tgaPath)
 {
     using var image = Image.Load(inputPath);
-    using var frame = image.CloneFrame(0); // TGA stores one still image
 
-    // Run-length packets are lossless and usually smaller on flat colors; uncompressed rows (the default) are the
-    // most widely readable. 16-bit images are rounded to 8 bits only with consent.
-    frame.Save(tgaPath, new TgaEncoder { Compression = TgaCompression.RunLength, AllowBitDepthReduction = true });
+    // TGA stores one still image: save the first frame. Run-length packets are lossless and usually smaller on flat
+    // colors; uncompressed rows (the default) are the most widely readable. 16-bit images are rounded to 8 bits only
+    // with consent.
+    image.Frames[0].Save(tgaPath, new TgaEncoder { Compression = TgaCompression.RunLength, AllowBitDepthReduction = true });
 
     // TGA has no signature: DetectFormat recognizes it from its whole 18-byte header
     var header = new byte[Image.FormatDetectionPrefixLength];
@@ -58,7 +58,7 @@ example above.
 
 ## Pitfalls
 
-- TGA stores one frame: export one frame of an animation with `CloneFrame`.
+- TGA stores one frame: save one frame of an animation with `image.Frames[i].Save`.
 - TGA stores no metadata: an ICC profile, EXIF, XMP, an orientation, a resolution or text entries follow
   `MetadataHandling`, which rejects them by default.
 - A side is at most 65,535 pixels.

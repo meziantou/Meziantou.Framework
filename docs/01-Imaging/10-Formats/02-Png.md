@@ -131,8 +131,8 @@ needs `ImageWriterOptions.ExpectedFrameCount`, because the frame count precedes 
 
 - PNG has no lossy mode: for photos, use a lossy format ([JPEG](04-Jpeg.md), [WebP](05-WebP.md), [AVIF](13-Avif.md) or
   [JPEG XL](15-JpegXl.md)).
-- `AnimationMode = Static` throws for an animated image instead of dropping its frames: export one frame with
-  `CloneFrame` to write a still image.
+- `AnimationMode = Static` throws for an animated image instead of dropping its frames: save one frame with
+  `image.Frames[i].Save` to write a still image.
 - Unknown critical chunks are rejected with an `UnsupportedImageFeatureException`; unknown ancillary chunks are skipped
   and not written back.
 - Apple CgBI files store premultiplied colors: they are decoded, but the colors of nearly transparent pixels are lossy.

@@ -60,15 +60,16 @@ component, every other pixel format YCbCr, even when its pixels are gray.
 ## Save one frame of an animation
 
 JPEG stores one frame. Saving an animation, or an image with a poster frame, throws an `UnsupportedImageFeatureException`
-before anything is written: export the frame you want with `CloneFrame`, and give the settings for what JPEG cannot store:
+before anything is written: save the frame you want with `Frames[index].Save`, and give the settings for what JPEG cannot store:
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_ExportJpegFrame;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static void ExportFrameAsJpeg(string animatedPath, int frameIndex, string jpegPath)
 {
     using var animation = Image.Load(animatedPath);
-    using var frame = animation.CloneFrame(frameIndex);
-    frame.Save(jpegPath, new JpegEncoder
+
+    // The frame is saved as a still image, without copying its pixels
+    animation.Frames[frameIndex].Save(jpegPath, new JpegEncoder
     {
         Quality = 85,
         BackgroundColor = new Rgba32(255, 255, 255),

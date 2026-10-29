@@ -1,12 +1,15 @@
 using System.Buffers.Binary;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO.Compression;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using Meziantou.Framework.DiffEngine;
+using Meziantou.Framework.HumanReadable;
 using Meziantou.Framework.SnapshotTesting.MergeTools;
 using Meziantou.Framework.SnapshotTesting.SnapshotUpdateStrategies;
 using Meziantou.Xunit;
+using InlineSnapshot = Meziantou.Framework.InlineSnapshotTesting.InlineSnapshot;
 
 namespace Meziantou.Framework.SnapshotTesting.Tests;
 
@@ -149,6 +152,131 @@ public sealed partial class SnapshotTests
         settings.ConfigureHumanReadableSerializer(options => options.ShowInvisibleCharactersInValues = true);
 
         Snapshot.Validate("line 1 \r\nline\t2", settings);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_TestContext()
+    {
+        #region Snapshot_TestContext
+        var documents = new Dictionary<string, string>
+        {
+            ["json"] = """{ "name": "John" }""",
+            ["yaml"] = "name: John",
+        };
+
+        try
+        {
+            foreach (var (format, content) in documents)
+            {
+                // Calls made from the same line share a name: give each one its own
+                Snapshot.TestContext.Value = new SnapshotTestContext(TestName: "Export_" + format);
+                Snapshot.Validate(content, format); // __snapshots__/SnapshotTests_Export_json.verified.json, ...
+            }
+        }
+        finally
+        {
+            Snapshot.TestContext.Value = null;
+        }
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_NamingStrategy()
+    {
+        #region Snapshot_NamingStrategy
+        var settings = SnapshotSettings.Default with
+        {
+            SnapshotNamingStrategy = SnapshotNamingStrategies.FullName,
+        };
+
+        Snapshot.Validate("Hello", settings); // __snapshots__/SnapshotTests.DocumentationExample_NamingStrategy.verified.txt
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_ConfigureSerializer()
+    {
+        #region Snapshot_ConfigureSerializer
+        var value = new { Name = "John", Email = (string?)null, Age = 42 };
+
+        var settings = SnapshotSettings.Default with { };
+        settings.ConfigureHumanReadableSerializer(options =>
+        {
+            options.PropertyOrder = StringComparer.Ordinal; // Sort the properties by name
+            options.DefaultIgnoreCondition = HumanReadableIgnoreCondition.Never; // Also write null and default values
+        });
+
+        Snapshot.Validate(value, settings);
+        #endregion
+    }
+
+    #region Snapshot_CustomSerializer
+    public sealed class CsvSnapshotSerializer : ISnapshotSerializer
+    {
+        public bool TrySerialize(SnapshotType type, object? value, [NotNullWhen(true)] out SerializedSnapshot? result)
+        {
+            if (value is not string[][] rows)
+            {
+                result = null;
+                return false; // Let the serializers registered before this one handle the value
+            }
+
+            var csv = string.Join('\n', rows.Select(row => string.Join(',', row)));
+            result = new SerializedSnapshot([new SnapshotData("csv", Encoding.UTF8.GetBytes(csv))]);
+            return true;
+        }
+    }
+    #endregion
+
+    #region Snapshot_CustomComparer
+    public sealed class UnorderedLinesSnapshotComparer : ISnapshotComparer
+    {
+        public bool Equals(SnapshotData expected, SnapshotData actual) => Equals(expected, actual, out _);
+
+        public bool Equals(SnapshotData expected, SnapshotData actual, out string? mismatchReason)
+        {
+            var expectedLines = Encoding.UTF8.GetString(expected.Data).Split('\n').Order(StringComparer.Ordinal);
+            var actualLines = Encoding.UTF8.GetString(actual.Data).Split('\n').Order(StringComparer.Ordinal);
+            if (expectedLines.SequenceEqual(actualLines, StringComparer.Ordinal))
+            {
+                mismatchReason = null;
+                return true;
+            }
+
+            mismatchReason = "The files do not contain the same lines";
+            return false;
+        }
+    }
+    #endregion
+
+    [Fact]
+    public void DocumentationExample_CustomSerializerAndComparer()
+    {
+        #region Snapshot_CustomSerializerUsage
+        var settings = SnapshotSettings.Default with { };
+        settings.Serializers.Add(new CsvSnapshotSerializer());
+        settings.Comparers.Set(SnapshotType.Create("csv"), new UnorderedLinesSnapshotComparer());
+
+        string[][] rows = [["Name", "Age"], ["John", "42"], ["Jane", "36"]];
+        Snapshot.Validate(rows, settings); // __snapshots__/SnapshotTests_DocumentationExample_CustomSerializerAndComparer.verified.csv
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_FileAndInlineSnapshots()
+    {
+        #region Snapshot_FileAndInlineSnapshots
+        var user = new { Name = "John", Age = 42 };
+
+        // Meziantou.Framework.SnapshotTesting: the expected value is a file next to the test
+        Snapshot.Validate(user); // __snapshots__/SnapshotTests_DocumentationExample_FileAndInlineSnapshots.verified.txt
+
+        // Meziantou.Framework.InlineSnapshotTesting: the expected value is in the source code of the test
+        InlineSnapshot.Validate(user, """
+            Name: John
+            Age: 42
+            """);
         #endregion
     }
 

@@ -41,6 +41,7 @@
     <Project Path="samples/Meziantou.Framework.ProcessWrapper.Samples/Meziantou.Framework.ProcessWrapper.Samples.csproj" />
     <Project Path="samples/Meziantou.Framework.PublicApiGenerator.Samples/Meziantou.Framework.PublicApiGenerator.Samples.csproj" />
     <Project Path="samples/Meziantou.Framework.Scheduling.RecurrenceRuleSample/Meziantou.Framework.Scheduling.RecurrenceRuleSample.csproj" />
+    <Project Path="samples/Meziantou.Framework.SnapshotTesting.Samples/Meziantou.Framework.SnapshotTesting.Samples.csproj" />
     <Project Path="samples/Meziantou.Framework.StronglyTypedId.AssemblyDefaults.Samples/Meziantou.Framework.StronglyTypedId.AssemblyDefaults.Samples.csproj" />
     <Project Path="samples/Meziantou.Framework.StronglyTypedId.Samples/Meziantou.Framework.StronglyTypedId.Samples.csproj" />
     <Project Path="samples/Meziantou.Framework.TaggedValues.Samples/Meziantou.Framework.TaggedValues.Samples.csproj" />

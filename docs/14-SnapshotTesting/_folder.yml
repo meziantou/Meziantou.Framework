@@ -1,0 +1,2 @@
+title: Snapshot testing
+description: Validate objects, documents, images and generated code against snapshot files stored next to your tests.

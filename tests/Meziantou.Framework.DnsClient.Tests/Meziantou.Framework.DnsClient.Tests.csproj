@@ -9,6 +9,8 @@
   <ItemGroup>
     <ProjectReference Include="../../src/Meziantou.Framework/Meziantou.Framework.csproj" />
     <ProjectReference Include="../../src/Meziantou.Framework.DnsClient/Meziantou.Framework.DnsClient.csproj" />
+    <!-- The documentation examples query a DNS server running on the loopback interface -->
+    <ProjectReference Include="../../src/Meziantou.Framework.DnsServer/Meziantou.Framework.DnsServer.csproj" />
   </ItemGroup>
 
 </Project>

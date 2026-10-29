@@ -187,6 +187,209 @@ public sealed class DnsFilterEngineTests
     }
 
     [Fact]
+    public void Documentation_PatternSyntax()
+    {
+        #region DnsFilter_PatternSyntax
+        var ruleSet = new DnsFilterRuleSet();
+        ruleSet.AddFromList("""
+            ! A comment
+            ||ads.example.com^
+            |exact.example.com^
+            ||ads-*.example.net^
+            /^track[0-9]+\.example\.org$/
+            """, DnsFilterListFormat.AdBlock);
+        var engine = new DnsFilterEngine(ruleSet);
+
+        // ||: the domain and its subdomains
+        Assert.Equal(DnsFilterAction.Block, engine.Evaluate("ads.example.com").Action);
+        Assert.Equal(DnsFilterAction.Block, engine.Evaluate("cdn.ads.example.com").Action);
+        Assert.False(engine.Evaluate("badads.example.com").IsMatched);
+
+        // A single |: only the domain itself
+        Assert.Equal(DnsFilterAction.Block, engine.Evaluate("exact.example.com").Action);
+        Assert.False(engine.Evaluate("www.exact.example.com").IsMatched);
+
+        // * matches any characters
+        Assert.Equal(DnsFilterAction.Block, engine.Evaluate("ads-eu.example.net").Action);
+
+        // /regex/ is matched against the whole name
+        Assert.Equal(DnsFilterAction.Block, engine.Evaluate("track42.example.org").Action);
+        Assert.False(engine.Evaluate("tracker.example.org").IsMatched);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Priority()
+    {
+        #region DnsFilter_Priority
+        var ruleSet = new DnsFilterRuleSet();
+        ruleSet.AddFromList("""
+            ||example.com^
+            @@||www.example.com^
+            ||cdn.example.com^$important
+            @@||safe.cdn.example.com^$important
+            """, DnsFilterListFormat.AdBlock);
+        var engine = new DnsFilterEngine(ruleSet);
+
+        // An exception (@@) beats a normal block
+        Assert.Equal(DnsFilterAction.Allow, engine.Evaluate("www.example.com").Action);
+
+        // $important beats an exception...
+        Assert.Equal(DnsFilterAction.Block, engine.Evaluate("cdn.example.com").Action);
+
+        // ...unless the exception is $important too
+        var result = engine.Evaluate("safe.cdn.example.com");
+        Assert.Equal(DnsFilterAction.Allow, result.Action);
+        Assert.Equal("@@||safe.cdn.example.com^$important", result.MatchingRule?.OriginalText);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_BadFilter()
+    {
+        #region DnsFilter_BadFilter
+        var ruleSet = new DnsFilterRuleSet();
+
+        // A list you do not control
+        ruleSet.AddFromList("||cdn.example.com^", DnsFilterListFormat.AdBlock);
+
+        // Your own list: $badfilter disables the rule that has the same text
+        ruleSet.AddFromList("||cdn.example.com^$badfilter", DnsFilterListFormat.AdBlock);
+
+        var engine = new DnsFilterEngine(ruleSet);
+        Assert.False(engine.Evaluate("cdn.example.com").IsMatched);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_DenyAllow()
+    {
+        #region DnsFilter_DenyAllow
+        var ruleSet = new DnsFilterRuleSet();
+        ruleSet.AddFromList("||example.com^$denyallow=www.example.com|api.example.com", DnsFilterListFormat.AdBlock);
+        var engine = new DnsFilterEngine(ruleSet);
+
+        Assert.Equal(DnsFilterAction.Block, engine.Evaluate("ads.example.com").Action);
+
+        // The domains of $denyallow, and their subdomains, are not blocked by this rule
+        Assert.False(engine.Evaluate("www.example.com").IsMatched);
+        Assert.False(engine.Evaluate("v2.api.example.com").IsMatched);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Exclusions()
+    {
+        #region DnsFilter_Exclusions
+        var ruleSet = new DnsFilterRuleSet();
+        ruleSet.AddFromList("""
+            ||ipv6-only.example.com^$dnstype=~AAAA
+            ||games.example.com^$ctag=~user_admin
+            ||office.example.com^$client=~192.168.1.10
+            """, DnsFilterListFormat.AdBlock);
+        var engine = new DnsFilterEngine(ruleSet);
+
+        // ~ excludes a query type, a tag or a client
+        Assert.Equal(DnsFilterAction.Block, engine.Evaluate("ipv6-only.example.com", DnsFilterQueryType.A).Action);
+        Assert.False(engine.Evaluate("ipv6-only.example.com", DnsFilterQueryType.AAAA).IsMatched);
+
+        var child = new DnsClientInfo { Tags = ["user_child"] };
+        var admin = new DnsClientInfo { Tags = ["user_admin"] };
+        Assert.Equal(DnsFilterAction.Block, engine.Evaluate("games.example.com", DnsFilterQueryType.A, child).Action);
+        Assert.False(engine.Evaluate("games.example.com", DnsFilterQueryType.A, admin).IsMatched);
+
+        var laptop = new DnsClientInfo { Address = IPAddress.Parse("192.168.1.20") };
+        var boss = new DnsClientInfo { Address = IPAddress.Parse("192.168.1.10") };
+        Assert.Equal(DnsFilterAction.Block, engine.Evaluate("office.example.com", DnsFilterQueryType.A, laptop).Action);
+        Assert.False(engine.Evaluate("office.example.com", DnsFilterQueryType.A, boss).IsMatched);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_ClientName()
+    {
+        #region DnsFilter_ClientName
+        var ruleSet = new DnsFilterRuleSet();
+        ruleSet.AddFromList("||video.example.com^$client='Kids tablet'|10.0.0.0/8", DnsFilterListFormat.AdBlock);
+        var engine = new DnsFilterEngine(ruleSet);
+
+        // The engine does not resolve names: pass the name you know for the client
+        var tablet = new DnsClientInfo { Name = "Kids tablet", Address = IPAddress.Parse("192.168.1.30") };
+        Assert.Equal(DnsFilterAction.Block, engine.Evaluate("video.example.com", DnsFilterQueryType.A, tablet).Action);
+
+        var vpnClient = new DnsClientInfo { Address = IPAddress.Parse("10.1.2.3") };
+        Assert.Equal(DnsFilterAction.Block, engine.Evaluate("video.example.com", DnsFilterQueryType.A, vpnClient).Action);
+
+        // Without client information, a rule scoped on clients does not match
+        Assert.False(engine.Evaluate("video.example.com").IsMatched);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_RewriteForms()
+    {
+        #region DnsFilter_RewriteForms
+        var ruleSet = new DnsFilterRuleSet();
+        ruleSet.AddFromList("""
+            ||nas.example.com^$dnsrewrite=192.168.1.5
+            ||nas6.example.com^$dnsrewrite=fd00::5
+            ||www.example.org^$dnsrewrite=example.net
+            ||blocked.example.com^$dnsrewrite=REFUSED
+            ||mail.example.com^$dnsrewrite=NOERROR;MX;10 mx.example.com
+            """, DnsFilterListFormat.AdBlock);
+        var engine = new DnsFilterEngine(ruleSet);
+
+        DnsFilterRewriteRule? Rewrite(string domain) => engine.Evaluate(domain).Rewrite;
+
+        // An address: an A or AAAA answer
+        Assert.Equal(DnsFilterQueryType.A, Rewrite("nas.example.com")?.RecordType);
+        Assert.Equal(DnsFilterQueryType.AAAA, Rewrite("nas6.example.com")?.RecordType);
+
+        // A domain: a CNAME answer
+        Assert.Equal(DnsFilterQueryType.CNAME, Rewrite("www.example.org")?.RecordType);
+        Assert.Equal("example.net", Rewrite("www.example.org")?.Value);
+
+        // A response code alone: no answer
+        Assert.Equal(DnsFilterRewriteResponseCode.Refused, Rewrite("blocked.example.com")?.ResponseCode);
+        Assert.Null(Rewrite("blocked.example.com")?.RecordType);
+
+        // The full form: response code;record type;value
+        Assert.Equal(DnsFilterQueryType.MX, Rewrite("mail.example.com")?.RecordType);
+        Assert.Equal("10 mx.example.com", Rewrite("mail.example.com")?.Value);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_ParseWithDiagnostics()
+    {
+        #region DnsFilter_ParseWithDiagnostics
+        var listText = """
+            # A hosts file
+            0.0.0.0 ads.example.com tracking.example.com
+            127.0.0.1 localhost
+            not a hosts line
+            """;
+
+        var result = DnsFilterListReader.ParseWithDiagnostics(listText);
+
+        // AutoDetect chose the format from the content of the list
+        Assert.Equal(DnsFilterListFormat.Hosts, result.Format);
+
+        // One rule per domain; localhost entries are skipped
+        Assert.Equal(["ads.example.com", "tracking.example.com"], result.Rules.Select(rule => rule.ExactDomain));
+
+        var diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal(4, diagnostic.LineNumber);
+        Assert.Equal(DnsFilterParseError.InvalidPattern, diagnostic.Error);
+
+        var ruleSet = new DnsFilterRuleSet();
+        ruleSet.AddRange(result.Rules);
+        #endregion
+
+        Assert.Equal(2, ruleSet.Count);
+    }
+
+    [Fact]
     public void Evaluate_ExactDomainMatch_Blocked()
     {
         var ruleSet = new DnsFilterRuleSet();

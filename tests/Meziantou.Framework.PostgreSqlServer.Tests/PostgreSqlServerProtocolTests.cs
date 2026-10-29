@@ -103,6 +103,333 @@ public sealed class PostgreSqlServerProtocolTests
     }
 
     [Fact]
+    public async Task Documentation_GettingStarted()
+    {
+        #region PostgreSqlServer_GettingStarted
+        var options = new PostgreSqlServerOptions();
+        options.AddTcpListener(port: 0, bindAddress: IPAddress.Loopback); // 0: the system picks a free port
+
+        await using var server = new PostgreSqlServer(
+            options,
+            authenticationHandler: (context, cancellationToken) =>
+            {
+                // SCRAM-SHA-256 by default: ValidatePassword checks the proof the client sent
+                var result = context.UserName == "app" && context.ValidatePassword("Password123!")
+                    ? PostgreSqlAuthenticationResult.Success()
+                    : PostgreSqlAuthenticationResult.Fail("password authentication failed");
+                return ValueTask.FromResult(result);
+            },
+            queryHandler: (context, cancellationToken) =>
+            {
+                var resultSet = new PostgreSqlResultSet();
+                resultSet.Columns.Add(new PostgreSqlColumn("message", PostgreSqlColumnType.Text));
+
+                // Describe asks for the columns only, before the execution
+                if (context.RequestType is not PostgreSqlQueryRequestType.Describe)
+                {
+                    resultSet.Rows.Add([$"You sent: {context.CommandText}"]);
+                }
+
+                var result = new PostgreSqlQueryResult();
+                result.ResultSets.Add(resultSet);
+                return ValueTask.FromResult(result);
+            });
+        await server.StartAsync();
+
+        var port = server.Ports[0];
+        await using var connection = new NpgsqlConnection($"Host=127.0.0.1;Port={port};Username=app;Password=Password123!;Server Compatibility Mode=NoTypeLoading");
+        await connection.OpenAsync();
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT 1";
+        var message = await command.ExecuteScalarAsync();
+        Assert.Equal("You sent: SELECT 1", message);
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_Authentication()
+    {
+        var options = new PostgreSqlServerOptions();
+        options.AddTcpListener(port: 0, bindAddress: IPAddress.Loopback);
+
+        #region PostgreSqlServer_Authentication
+        var users = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["app"] = "Password123!",
+            ["reporting"] = "Reporting456!",
+        };
+
+        PostgreSqlAuthenticationDelegate authenticate = (context, cancellationToken) =>
+        {
+            if (context.UserName is null || !users.TryGetValue(context.UserName, out var password) || !context.ValidatePassword(password))
+            {
+                return ValueTask.FromResult(PostgreSqlAuthenticationResult.Fail($"password authentication failed for user \"{context.UserName}\""));
+            }
+
+            if (context.Database is not "sales")
+            {
+                // 3D000: invalid_catalog_name
+                return ValueTask.FromResult(PostgreSqlAuthenticationResult.Fail($"database \"{context.Database}\" does not exist", "3D000"));
+            }
+
+            // Every startup parameter the client sent, such as application_name
+            _ = context.StartupParameters.TryGetValue("application_name", out var applicationName);
+            return ValueTask.FromResult(PostgreSqlAuthenticationResult.Success());
+        };
+        #endregion
+
+        await using var server = new PostgreSqlServer(options, authenticate, (context, cancellationToken) => ValueTask.FromResult(new PostgreSqlQueryResult()));
+        await server.StartAsync();
+        var port = server.Ports[0];
+
+        await using (var connection = new NpgsqlConnection($"Host=127.0.0.1;Port={port};Username=reporting;Password=Reporting456!;Database=sales;Server Compatibility Mode=NoTypeLoading;Pooling=false"))
+        {
+            await connection.OpenAsync();
+        }
+
+        await using (var connection = new NpgsqlConnection($"Host=127.0.0.1;Port={port};Username=app;Password=wrong;Database=sales;Server Compatibility Mode=NoTypeLoading;Pooling=false"))
+        {
+            var exception = await Assert.ThrowsAsync<PostgresException>(() => connection.OpenAsync());
+            Assert.Equal("28P01", exception.SqlState);
+        }
+
+        await using (var connection = new NpgsqlConnection($"Host=127.0.0.1;Port={port};Username=app;Password=Password123!;Database=other;Server Compatibility Mode=NoTypeLoading;Pooling=false"))
+        {
+            var exception = await Assert.ThrowsAsync<PostgresException>(() => connection.OpenAsync());
+            Assert.Equal("3D000", exception.SqlState);
+        }
+    }
+
+    [Fact]
+    public async Task Documentation_Parameters()
+    {
+        var options = new PostgreSqlServerOptions();
+        options.AddTcpListener(port: 0, bindAddress: IPAddress.Loopback);
+
+        #region PostgreSqlServer_Parameters
+        var customers = new Dictionary<int, string> { [1] = "Alice", [2] = "Bob" };
+
+        PostgreSqlQueryDelegate query = (context, cancellationToken) =>
+        {
+            var resultSet = new PostgreSqlResultSet();
+            resultSet.Columns.Add(new PostgreSqlColumn("id", PostgreSqlColumnType.Int32));
+            resultSet.Columns.Add(new PostgreSqlColumn("name", PostgreSqlColumnType.Text));
+
+            var result = new PostgreSqlQueryResult();
+            result.ResultSets.Add(resultSet);
+
+            // The same columns for Describe and for the execution; Describe gets no rows
+            if (context.RequestType is PostgreSqlQueryRequestType.Describe)
+            {
+                return ValueTask.FromResult(result);
+            }
+
+            // Parameters are positional: $1, $2, ...
+            var id = context.Parameters.Count > 0 ? context.Parameters[0].AsInt32() : null;
+            if (id is not null && customers.TryGetValue(id.Value, out var name))
+            {
+                resultSet.Rows.Add([id.Value, name]);
+            }
+
+            return ValueTask.FromResult(result);
+        };
+        #endregion
+
+        await using var server = new PostgreSqlServer(options, (context, cancellationToken) => ValueTask.FromResult(context.ValidatePassword("Password123!") ? PostgreSqlAuthenticationResult.Success() : PostgreSqlAuthenticationResult.Fail("invalid")), query);
+        await server.StartAsync();
+
+        await using var connection = new NpgsqlConnection($"Host=127.0.0.1;Port={server.Ports[0]};Username=app;Password=Password123!;Server Compatibility Mode=NoTypeLoading;Pooling=false");
+        await connection.OpenAsync();
+
+        #region PostgreSqlServer_ParametersClient
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT id, name FROM customers WHERE id = $1";
+        command.Parameters.Add(new NpgsqlParameter { Value = 2 });
+
+        await using var reader = await command.ExecuteReaderAsync();
+        Assert.True(await reader.ReadAsync());
+        Assert.Equal(2, reader.GetInt32(0));
+        Assert.Equal("Bob", reader.GetString(1));
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_ColumnTypes()
+    {
+        var options = new PostgreSqlServerOptions();
+        options.AddTcpListener(port: 0, bindAddress: IPAddress.Loopback);
+
+        #region PostgreSqlServer_ColumnTypes
+        PostgreSqlQueryDelegate query = (context, cancellationToken) =>
+        {
+            var resultSet = new PostgreSqlResultSet();
+            resultSet.Columns.Add(new PostgreSqlColumn("id", PostgreSqlColumnType.Uuid));
+            resultSet.Columns.Add(new PostgreSqlColumn("quantity", PostgreSqlColumnType.Int64));
+            resultSet.Columns.Add(new PostgreSqlColumn("price", PostgreSqlColumnType.Numeric));
+            resultSet.Columns.Add(new PostgreSqlColumn("in_stock", PostgreSqlColumnType.Boolean));
+            resultSet.Columns.Add(new PostgreSqlColumn("released", PostgreSqlColumnType.Date));
+            resultSet.Columns.Add(new PostgreSqlColumn("updated_at", PostgreSqlColumnType.TimestampTz));
+            resultSet.Columns.Add(new PostgreSqlColumn("comment", PostgreSqlColumnType.Text));
+
+            if (context.RequestType is not PostgreSqlQueryRequestType.Describe)
+            {
+                resultSet.Rows.Add(
+                [
+                    Guid.Parse("9f89d58d-f350-4ad6-af79-b2cbf2f65fd2"),
+                    12L,
+                    19.99m,
+                    true,
+                    new DateOnly(2026, 3, 1),
+                    new DateTimeOffset(2026, 10, 29, 8, 30, 0, TimeSpan.Zero),
+                    null, // SQL NULL
+                ]);
+            }
+
+            var result = new PostgreSqlQueryResult();
+            result.ResultSets.Add(resultSet);
+            return ValueTask.FromResult(result);
+        };
+        #endregion
+
+        await using var server = new PostgreSqlServer(options, (context, cancellationToken) => ValueTask.FromResult(context.ValidatePassword("Password123!") ? PostgreSqlAuthenticationResult.Success() : PostgreSqlAuthenticationResult.Fail("invalid")), query);
+        await server.StartAsync();
+
+        await using var connection = new NpgsqlConnection($"Host=127.0.0.1;Port={server.Ports[0]};Username=app;Password=Password123!;Server Compatibility Mode=NoTypeLoading;Pooling=false");
+        await connection.OpenAsync();
+
+        #region PostgreSqlServer_ColumnTypesClient
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT * FROM products";
+        await using var reader = await command.ExecuteReaderAsync();
+        Assert.True(await reader.ReadAsync());
+
+        Assert.Equal(Guid.Parse("9f89d58d-f350-4ad6-af79-b2cbf2f65fd2"), reader.GetGuid(0));
+        Assert.Equal(12L, reader.GetInt64(1));
+        Assert.Equal(19.99m, reader.GetDecimal(2));
+        Assert.True(reader.GetBoolean(3));
+        Assert.Equal(new DateOnly(2026, 3, 1), reader.GetFieldValue<DateOnly>(4));
+        Assert.Equal(new DateTime(2026, 10, 29, 8, 30, 0, DateTimeKind.Utc), reader.GetDateTime(5));
+        Assert.True(reader.IsDBNull(6));
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_Notices()
+    {
+        var options = new PostgreSqlServerOptions();
+        options.AddTcpListener(port: 0, bindAddress: IPAddress.Loopback);
+
+        #region PostgreSqlServer_Notices
+        PostgreSqlQueryDelegate query = (context, cancellationToken) =>
+        {
+            var result = new PostgreSqlQueryResult
+            {
+                CommandTag = "DELETE",
+                AffectedRowCount = 3,
+            };
+            result.Notices.Add("3 rows deleted, 2 rows kept");
+            return ValueTask.FromResult(result);
+        };
+        #endregion
+
+        await using var server = new PostgreSqlServer(options, (context, cancellationToken) => ValueTask.FromResult(context.ValidatePassword("Password123!") ? PostgreSqlAuthenticationResult.Success() : PostgreSqlAuthenticationResult.Fail("invalid")), query);
+        await server.StartAsync();
+
+        await using var connection = new NpgsqlConnection($"Host=127.0.0.1;Port={server.Ports[0]};Username=app;Password=Password123!;Server Compatibility Mode=NoTypeLoading;Pooling=false");
+        await connection.OpenAsync();
+
+        #region PostgreSqlServer_NoticesClient
+        var notices = new List<string>();
+        connection.Notice += (sender, e) => notices.Add(e.Notice.MessageText);
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = "DELETE FROM sessions WHERE expired";
+        var affectedRows = await command.ExecuteNonQueryAsync();
+
+        Assert.Equal(3, affectedRows);
+        Assert.Equal(["3 rows deleted, 2 rows kept"], notices);
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_Cancellation()
+    {
+        var options = new PostgreSqlServerOptions();
+        options.AddTcpListener(port: 0, bindAddress: IPAddress.Loopback);
+        var handlerStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        #region PostgreSqlServer_Cancellation
+        PostgreSqlQueryDelegate query = async (context, cancellationToken) =>
+        {
+            if (context.RequestType is not PostgreSqlQueryRequestType.Describe && context.CommandText == "SELECT pg_sleep(3600)")
+            {
+                handlerStarted.TrySetResult();
+
+                // Canceled when the client cancels the command, or when the server stops
+                await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+            }
+
+            return new PostgreSqlQueryResult();
+        };
+        #endregion
+
+        await using var server = new PostgreSqlServer(options, (context, cancellationToken) => ValueTask.FromResult(context.ValidatePassword("Password123!") ? PostgreSqlAuthenticationResult.Success() : PostgreSqlAuthenticationResult.Fail("invalid")), query);
+        await server.StartAsync();
+
+        await using var connection = new NpgsqlConnection($"Host=127.0.0.1;Port={server.Ports[0]};Username=app;Password=Password123!;Server Compatibility Mode=NoTypeLoading;Pooling=false");
+        await connection.OpenAsync();
+
+        using var cancellationTokenSource = new CancellationTokenSource();
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT pg_sleep(3600)";
+        var executeTask = command.ExecuteNonQueryAsync(cancellationTokenSource.Token);
+        await handlerStarted.Task.WaitAsync(TimeSpan.FromSeconds(30));
+        await cancellationTokenSource.CancelAsync();
+
+        var exception = await Assert.ThrowsAsync<OperationCanceledException>(() => executeTask);
+        Assert.Equal("57014", Assert.IsType<PostgresException>(exception.InnerException).SqlState);
+
+        // The connection is still usable
+        await using var nextCommand = connection.CreateCommand();
+        nextCommand.CommandText = "SELECT 1";
+        // Npgsql reports -1 for the default "OK 0" command tag
+        Assert.Equal(-1, await nextCommand.ExecuteNonQueryAsync());
+    }
+
+    [Fact]
+    public async Task Documentation_Tls()
+    {
+        using var certificate = TestCertificate.Create();
+        var pfxPath = certificate.PfxPath;
+        var pfxPassword = certificate.PfxPassword;
+
+        #region PostgreSqlServer_RequireTls
+        var options = new PostgreSqlServerOptions
+        {
+            TlsPfxPath = pfxPath,
+            TlsPfxPassword = pfxPassword,
+            RequireEncryption = true, // reject the clients that do not upgrade to TLS
+        };
+        options.AddTcpListener(port: 0, bindAddress: IPAddress.Loopback);
+        #endregion
+
+        await using var server = new PostgreSqlServer(options, (context, cancellationToken) => ValueTask.FromResult(context.ValidatePassword("Password123!") ? PostgreSqlAuthenticationResult.Success() : PostgreSqlAuthenticationResult.Fail("invalid")), (context, cancellationToken) => ValueTask.FromResult(new PostgreSqlQueryResult()));
+        await server.StartAsync();
+        var port = server.Ports[0];
+
+        #region PostgreSqlServer_TlsClient
+        // Trust Server Certificate accepts a self-signed certificate: use it in tests only
+        await using var connection = new NpgsqlConnection($"Host=127.0.0.1;Port={port};Username=app;Password=Password123!;SSL Mode=Require;Trust Server Certificate=true;Server Compatibility Mode=NoTypeLoading");
+        await connection.OpenAsync();
+        #endregion
+
+        await using var plaintextConnection = new NpgsqlConnection($"Host=127.0.0.1;Port={port};Username=app;Password=Password123!;SSL Mode=Disable;Server Compatibility Mode=NoTypeLoading;Pooling=false");
+        var exception = await Assert.ThrowsAsync<PostgresException>(() => plaintextConnection.OpenAsync());
+        Assert.Equal("28000", exception.SqlState);
+    }
+
+    [Fact]
     public async Task Npgsql_ClearTextAuthentication_UsesCallbackValidation()
     {
         const string UserName = "app_user";

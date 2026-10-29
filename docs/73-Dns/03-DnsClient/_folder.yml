@@ -1,0 +1,2 @@
+title: DnsClient
+description: Query DNS servers over UDP, TCP, TLS, HTTPS or QUIC, read typed records, and validate DNSSEC answers.

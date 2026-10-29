@@ -137,4 +137,22 @@ public class UrlSanitizerTests
         var sanitizer = new HtmlSanitizer();
         Assert.Equal(expectedResult, sanitizer.SanitizeHtmlFragment(html));
     }
+
+    [Fact]
+    public void DocumentationExample_ValidateUrl()
+    {
+        #region UrlSanitizer_ValidateUrl
+        Assert.True(UrlSanitizer.IsSafeUrl("https://example.com/about"));
+        Assert.True(UrlSanitizer.IsSafeUrl("/about"));
+        Assert.False(UrlSanitizer.IsSafeUrl("javascript:alert(1)"));
+
+        // The value is not decoded, so a '&' before the first '/', '?' or '#' is rejected
+        Assert.False(UrlSanitizer.IsSafeUrl("javascript&#58;alert(1)"));
+        Assert.False(UrlSanitizer.IsSafeUrl("q&a.html"));
+        Assert.True(UrlSanitizer.IsSafeUrl("q%26a.html"));
+
+        // null is safe: there is no URL
+        Assert.True(UrlSanitizer.IsSafeUrl(url: null));
+        #endregion
+    }
 }

@@ -88,10 +88,12 @@ internal sealed class HeifImagePlan
     /// <param name="meta">The parsed box.</param>
     /// <param name="payload">The payload of the box.</param>
     /// <param name="limits">The resource limits of the operation.</param>
+    /// <param name="cancellationToken">The cancellation token of the operation.</param>
     /// <exception cref="InvalidImageContentException">The description of the image is inconsistent.</exception>
     /// <exception cref="UnsupportedImageFeatureException">The image uses a feature that is not supported.</exception>
     /// <exception cref="ImageResourceLimitException">The image exceeds a resource limit.</exception>
-    public static HeifImagePlan Create(HeifCodecBinding binding, HeifMetaBox meta, ReadOnlySpan<byte> payload, ImageResourceLimits limits)
+    /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> is canceled.</exception>
+    public static HeifImagePlan Create(HeifCodecBinding binding, HeifMetaBox meta, ReadOnlySpan<byte> payload, ImageResourceLimits limits, CancellationToken cancellationToken)
     {
         var primaryId = meta.PrimaryItemId ?? throw binding.Invalid("the file has no primary item.");
         if (!meta.Items.TryGetValue(primaryId, out var primary) || primary.Type is 0)
@@ -100,7 +102,7 @@ internal sealed class HeifImagePlan
         var plan = new HeifImagePlan(binding);
         if (binding.Supports(HeifContainerFeatures.DerivedImages) && !HeifImageNode.IsDirect(binding, meta, primary))
         {
-            plan.ReadTree(meta, payload, primary, limits);
+            plan.ReadTree(meta, payload, primary, limits, cancellationToken);
             return plan;
         }
 
@@ -177,10 +179,10 @@ internal sealed class HeifImagePlan
     // An image that is built from other images: the transformations of the primary item apply to the image that is
     // built, like those of a coded image (the clean aperture selects a part of it, the rotation and the mirroring are
     // its orientation); the transformations of the other items are applied to the pixels they concern
-    private void ReadTree(HeifMetaBox meta, ReadOnlySpan<byte> payload, HeifItem primary, ImageResourceLimits limits)
+    private void ReadTree(HeifMetaBox meta, ReadOnlySpan<byte> payload, HeifItem primary, ImageResourceLimits limits, CancellationToken cancellationToken)
     {
         var binding = _binding;
-        var root = HeifImageNode.Create(binding, meta, payload, primary, limits);
+        var root = HeifImageNode.Create(binding, meta, payload, primary, limits, cancellationToken);
         Root = root;
         ReadTransforms(binding, payload, root.Image, [], out var crop, out var orientation);
         Crop = crop;

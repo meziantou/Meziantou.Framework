@@ -515,7 +515,7 @@ internal sealed class HeifStructureParser : ImageParser<ImageInfo>
         if (_alternateBinding is { } alternate && HeifImagePlan.IsCodedWith(alternate, meta))
             SetBinding(alternate);
 
-        var plan = HeifImagePlan.Create(_binding, meta, payload, _context.Limits);
+        var plan = HeifImagePlan.Create(_binding, meta, payload, _context.Limits, _context.CancellationToken);
         _plan = plan;
 
         var metadata = _metadata.Metadata;
@@ -581,7 +581,7 @@ internal sealed class HeifStructureParser : ImageParser<ImageInfo>
     // plane, and the Exif and XMP items
     private void Schedule(HeifMetaBox meta, HeifImagePlan plan, ReadOnlySpan<byte> metaPayload)
     {
-        var items = new List<HeifItem>();
+        var items = new HashSet<HeifItem>(ReferenceEqualityComparer.Instance);
         if (plan.Root is { } root)
         {
             // An image that is built: every coded image with its alpha plane, and the descriptors of the grids and of the
@@ -640,10 +640,9 @@ internal sealed class HeifStructureParser : ImageParser<ImageInfo>
         void AddItem(HeifItem item, bool isMetadata)
         {
             // Identical tiles may share an item
-            if (items.Contains(item))
+            if (!items.Add(item))
                 return;
 
-            items.Add(item);
             AddItemCaptures(meta, item, isMetadata);
         }
     }

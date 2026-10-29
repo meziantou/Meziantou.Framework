@@ -389,6 +389,128 @@ public sealed class Av1EncoderRoundTripTests
         }
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ASequenceHeaderBetweenTheHeaderAndTheTilesOfAFrame(bool startsANewSequence)
+    {
+        // TD, SH, KEY, TD, FH (inter), SH, TILE_GROUP: a copy of the sequence header may be repeated anywhere, but a new
+        // sequence would release the reference slots that the pending inter frame predicts from
+        var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(ASequenceHeaderBetweenTheHeaderAndTheTilesOfAFrame));
+        var settings = new Av1EncoderSettings(24, 16, 8, Monochrome: true, 1, 1, 1, 13, 6, FullRange: true, ChromaSamplePosition: 0, StillPicture: false, Lossless: true, Quality: 100, Effort: 0, KeyFrameInterval: 0);
+        using var encoder = new Av1Encoder(scope, settings);
+        var payloads = new byte[2][];
+        var samples = new ushort[2][];
+        for (var index = 0; index < payloads.Length; index++)
+        {
+            var buffer = encoder.GetSourcePlane(0);
+            samples[index] = CreateFrame("pan", index, buffer.Width, buffer.Height, 0, 0, 8, seed: 5);
+            for (var y = 0; y < buffer.Height; y++)
+            {
+                samples[index].AsSpan(y * buffer.Width, buffer.Width).CopyTo(buffer.GetRow(y));
+            }
+
+            encoder.BeginFrame();
+            while (!encoder.Encode(TestContext.Current.CancellationToken))
+            {
+            }
+
+            Assert.Equal(index is 0, encoder.IsKeyFrame);
+            payloads[index] = encoder.Payload.ToArray();
+        }
+
+        var sequenceHeaderObu = Av1ObuHeader.Read(payloads[0]);
+        Assert.Equal(Av1Constants.ObuSequenceHeader, sequenceHeaderObu.Type);
+        var keyFrame = payloads[0].AsSpan(sequenceHeaderObu.TotalLength).ToArray();
+        var interFrameObu = Av1ObuHeader.Read(payloads[1]);
+        Assert.HasCount(Av1ObuHeader.Read(keyFrame).TotalLength, keyFrame);
+        Assert.Equal((Av1Constants.ObuFrame, interFrameObu.TotalLength), (interFrameObu.Type, payloads[1].Length));
+        var interFrame = payloads[1].AsSpan(interFrameObu.HeaderLength).ToArray();
+
+        // The other sequence: frames of another size
+        var otherSettings = settings with { Width = 32 };
+        using var otherEncoder = new Av1Encoder(scope, otherSettings);
+        otherEncoder.BeginFrame();
+        while (!otherEncoder.Encode(TestContext.Current.CancellationToken))
+        {
+        }
+
+        var otherPayload = otherEncoder.Payload.ToArray();
+        var otherSequenceHeaderObu = Av1ObuHeader.Read(otherPayload);
+        Assert.Equal(Av1Constants.ObuSequenceHeader, otherSequenceHeaderObu.Type);
+        var sequenceHeader = payloads[0].AsSpan(sequenceHeaderObu.HeaderLength, sequenceHeaderObu.PayloadLength).ToArray();
+        var otherSequenceHeader = otherPayload.AsSpan(otherSequenceHeaderObu.HeaderLength, otherSequenceHeaderObu.PayloadLength).ToArray();
+        Assert.False(sequenceHeader.AsSpan().SequenceEqual(otherSequenceHeader));
+
+        // The frame OBU of the inter frame is split into a frame header OBU and a tile group OBU: its frame header is
+        // written again from the header that the decoder reads, then ended with trailing bits instead of a byte alignment
+        byte[] frameHeader;
+        int frameHeaderLength;
+        using (var decoder = new Av1Decoder(scope))
+        {
+            var data = payloads[0].Concat(payloads[1]).ToArray();
+            decoder.SetInput(data, 0, data.Length);
+            decoder.DecodeNextOutputFrame(TestContext.Current.CancellationToken)!.Release();
+            var frame = decoder.DecodeNextOutputFrame(TestContext.Current.CancellationToken);
+            Assert.NotNull(frame);
+            try
+            {
+                using var output = new PooledPayloadWriter(scope);
+                var writer = new Av1BitWriter(output);
+                Av1HeaderWriter.WriteFrameHeader(ref writer, frame.Sequence, frame.Header);
+                writer.ByteAlign();
+                frameHeaderLength = output.Length;
+                Assert.True(interFrame.AsSpan(0, frameHeaderLength).SequenceEqual(output.WrittenSpan), "the frame header is not the one of the frame OBU");
+
+                output.Reset();
+                writer = new Av1BitWriter(output);
+                Av1HeaderWriter.WriteFrameHeader(ref writer, frame.Sequence, frame.Header);
+                writer.WriteTrailingBits();
+                frameHeader = output.WrittenSpan.ToArray();
+            }
+            finally
+            {
+                frame.Release();
+            }
+        }
+
+        using var stream = new PooledPayloadWriter(scope);
+        Av1ObuWriter.WriteTemporalDelimiter(stream);
+        Av1ObuWriter.Write(stream, Av1Constants.ObuSequenceHeader, sequenceHeader);
+        stream.Write(keyFrame);
+        Av1ObuWriter.WriteTemporalDelimiter(stream);
+        Av1ObuWriter.Write(stream, Av1Constants.ObuFrameHeader, frameHeader);
+        Av1ObuWriter.Write(stream, Av1Constants.ObuSequenceHeader, startsANewSequence ? otherSequenceHeader : sequenceHeader);
+        Av1ObuWriter.Write(stream, Av1Constants.ObuTileGroup, interFrame.AsSpan(frameHeaderLength));
+        var input = stream.WrittenSpan.ToArray();
+
+        using var streamDecoder = new Av1Decoder(scope);
+        streamDecoder.SetInput(input, 0, input.Length);
+        streamDecoder.DecodeNextOutputFrame(TestContext.Current.CancellationToken)!.Release();
+        if (startsANewSequence)
+        {
+            Assert.Throws<InvalidImageContentException>(() => streamDecoder.DecodeNextOutputFrame(TestContext.Current.CancellationToken));
+            return;
+        }
+
+        var interOutput = streamDecoder.DecodeNextOutputFrame(TestContext.Current.CancellationToken);
+        Assert.NotNull(interOutput);
+        try
+        {
+            var plane = interOutput.GetPlane(0);
+            for (var y = 0; y < plane.Height; y++)
+            {
+                Assert.True(samples[1].AsSpan(y * plane.Width, plane.Width).SequenceEqual(plane.GetRow(y)), $"row {y} of the inter frame is not the encoded row");
+            }
+        }
+        finally
+        {
+            interOutput.Release();
+        }
+
+        Assert.Null(streamDecoder.DecodeNextOutputFrame(TestContext.Current.CancellationToken));
+    }
+
     [Fact]
     public void EncodingIsDeterministic()
     {

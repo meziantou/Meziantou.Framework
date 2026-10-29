@@ -69,6 +69,51 @@ public class HighlighterTests
     }
 
     [Fact]
+    public void DocumentationExample_HtmlPage()
+    {
+        #region SyntaxHighlighter_HtmlPage
+        var code = """var tag = "<b>";""";
+        var html = $"""<pre><code class="hljs language-csharp">{SyntaxHighlighter.Highlight(code, "csharp")}</code></pre>""";
+
+        Assert.Equal("""<pre><code class="hljs language-csharp"><span class="hljs-keyword">var</span> tag = <span class="hljs-string">&quot;&lt;b&gt;&quot;</span>;</code></pre>""", html);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_ScopeClasses()
+    {
+        #region SyntaxHighlighter_ScopeClasses
+        var html = SyntaxHighlighter.Highlight("function add(a, b) { return a + b; }", "javascript");
+
+        Assert.Equal("""<span class="hljs-keyword">function</span> <span class="hljs-title function_">add</span>(<span class="hljs-params">a, b</span>) { <span class="hljs-keyword">return</span> a + b; }""", html);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_EmbeddedLanguage()
+    {
+        #region SyntaxHighlighter_EmbeddedLanguage
+        var html = SyntaxHighlighter.Highlight("<style>p { color: red }</style>", "html");
+
+        Assert.Equal("""<span class="hljs-tag">&lt;<span class="hljs-name">style</span>&gt;</span><span class="language-css"><span class="hljs-selector-tag">p</span> { <span class="hljs-attribute">color</span>: red }</span><span class="hljs-tag">&lt;/<span class="hljs-name">style</span>&gt;</span>""", html);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_IsSupported()
+    {
+        #region SyntaxHighlighter_IsSupported
+        // Identifiers and aliases are case-insensitive
+        Assert.True(SyntaxHighlighter.IsSupported("C#"));
+        Assert.True(SyntaxHighlighter.IsSupported("cs"));
+        Assert.False(SyntaxHighlighter.IsSupported("not-a-language"));
+
+        var languages = SyntaxHighlighter.GetSupportedLanguages();
+        Assert.Contains("csharp", languages);
+        #endregion
+    }
+
+    [Fact]
     public void Highlight()
     {
         AssertHighlighter("csharp",

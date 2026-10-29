@@ -78,6 +78,36 @@ public sealed class CssSyntaxTreeTests
         #endregion
     }
 
+    [Fact]
+    public void DocumentationExample_DeclarationList()
+    {
+        #region CssSyntaxTree_DeclarationList
+        // The content of a style attribute is a list of declarations, not a style sheet
+        var options = new CssParseOptions { SourceKind = CssSourceKind.DeclarationList };
+        var tree = CssSyntaxTree.ParseText("color: red; margin: 0 auto !important", options);
+        Assert.Empty(tree.GetDiagnostics());
+
+        var declarations = new List<string>();
+        foreach (var declaration in tree.GetRoot().Declarations)
+        {
+            declarations.Add($"{declaration.Name}: {declaration.GetValueText()} (important: {declaration.IsImportant})");
+        }
+
+        Assert.Equal(["color: red (important: False)", "margin: 0 auto (important: True)"], declarations);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_WalkerUsage()
+    {
+        #region CssSyntaxTree_WalkerUsage
+        var counter = new DeclarationCounter();
+        counter.Visit(CssSyntaxTree.ParseText("a { color: red; &:hover { color: blue; } } b { margin: 0 }").GetRoot());
+
+        Assert.Equal(3, counter.Count);
+        #endregion
+    }
+
     private const string ModernStyleSheet = """
         @charset "utf-8";
         @import url("theme.css") layer(theme) supports(display: grid) screen and (min-width: 600px);

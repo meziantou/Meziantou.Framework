@@ -1,0 +1,2 @@
+title: Language
+description: Parse CSS, INI, JSON, TOML, XML, regular expressions and shell scripts into syntax trees that keep every character, report diagnostics, and edit text without reformatting it.

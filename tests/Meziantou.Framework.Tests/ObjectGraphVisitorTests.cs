@@ -5,6 +5,39 @@ namespace Meziantou.Framework.Tests;
 public sealed class ObjectGraphVisitorTests
 {
     [Fact]
+    public void Documentation_Visit()
+    {
+        #region ObjectGraphVisitor_Visit
+        var order = new
+        {
+            Customer = new { Name = "Ada" },
+            Lines = new[] { "Keyboard", "Mouse" },
+        };
+
+        var collector = new StringCollector();
+        collector.Visit(order);
+
+        Assert.Equal(["Ada", "Keyboard", "Mouse"], collector.Strings.Order(StringComparer.Ordinal));
+        #endregion
+    }
+
+    #region ObjectGraphVisitor_StringCollector
+    private sealed class StringCollector : ObjectGraphVisitor
+    {
+        public List<string> Strings { get; } = [];
+
+        // Called once for every object of the graph: the root, property values and collection items
+        protected override void VisitValue(object value)
+        {
+            if (value is string text)
+            {
+                Strings.Add(text);
+            }
+        }
+    }
+    #endregion
+
+    [Fact]
     public void VisitAnonymousObject()
     {
         var visitor = new TestObjectGraphVisitor();

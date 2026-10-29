@@ -20,6 +20,26 @@ public sealed class ResettableCancellationTokenSourceTests
     }
 
     [Fact]
+    public void ResettableCancellationTokenSource_OptionsExample()
+    {
+        #region ResettableCancellationTokenSource_Options
+        using var cts = new ResettableCancellationTokenSource(ResettableCancellationTokenSourceOptions.CancelOnDispose);
+
+        // Reset gives a fresh token after a cancellation
+        cts.Cancel();
+        var canceledToken = cts.Token;
+        cts.Reset();
+        Assert.True(canceledToken.IsCancellationRequested);
+        Assert.False(cts.IsCancellationRequested);
+
+        // CancelOnDispose cancels the current token when the source is disposed
+        var token = cts.Token;
+        cts.Dispose();
+        Assert.True(token.IsCancellationRequested);
+        #endregion
+    }
+
+    [Fact]
     public void Dispose_IsIdempotent()
     {
         var cts = new ResettableCancellationTokenSource(cancelOnResetAndDispose: true);

@@ -3,6 +3,23 @@ namespace Meziantou.Framework.Text.Tests;
 public sealed class Utf8ExtensionsTests
 {
     [Fact]
+    public void Documentation_EnumerateRunes()
+    {
+        #region Utf8Extensions_EnumerateRunesFromUtf8
+        ReadOnlySpan<byte> utf8 = [0x41, 0xC3, 0xA9, 0xFF, 0x42]; // A, then U+00E9 on 2 bytes, an invalid byte, B
+
+        var runes = new List<Rune>();
+        foreach (var rune in utf8.EnumerateRunesFromUtf8())
+        {
+            runes.Add(rune);
+        }
+
+        // Invalid bytes are returned as the replacement character, and the enumeration continues
+        Assert.Equal([new Rune('A'), new Rune(0xE9), Rune.ReplacementChar, new Rune('B')], runes);
+        #endregion
+    }
+
+    [Fact]
     public void EnumerateRunesFromUtf8Test()
     {
         ReadOnlySpan<byte> bytes = "😊<√"u8.ToArray();

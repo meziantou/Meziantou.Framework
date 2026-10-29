@@ -32,6 +32,29 @@ public sealed class MonoThreadedTaskSchedulerTests : IDisposable
     }
 
     [Fact]
+    public async Task MonoThreadedTaskScheduler_MultipleTasksExample()
+    {
+        #region MonoThreadedTaskScheduler_MultipleTasks
+        using var scheduler = new MonoThreadedTaskScheduler("MyWorkerThread")
+        {
+            // Run the tasks already queued when the scheduler is disposed
+            DequeueOnDispose = true,
+        };
+
+        // Every task queued to the scheduler runs on the same dedicated thread, one at a time
+        Task<int> GetThreadIdAsync() => Task.Factory.StartNew(
+            () => Environment.CurrentManagedThreadId,
+            CancellationToken.None,
+            TaskCreationOptions.None,
+            scheduler);
+
+        var threadIds = await Task.WhenAll(GetThreadIdAsync(), GetThreadIdAsync());
+
+        Assert.Equal(threadIds[0], threadIds[1]);
+        #endregion
+    }
+
+    [Fact]
     public void MaximumConcurrencyLevel_IsOne()
     {
         // The TPL reads this to size partitions; the base TaskScheduler value is int.MaxValue, which is the

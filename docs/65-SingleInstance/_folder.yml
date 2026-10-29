@@ -1,0 +1,2 @@
+title: SingleInstance
+description: Make sure an application runs only once per user, and pass the arguments of the next launches to the running instance.

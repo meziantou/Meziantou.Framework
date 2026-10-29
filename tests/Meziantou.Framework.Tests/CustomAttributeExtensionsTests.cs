@@ -8,6 +8,23 @@ namespace Meziantou.Framework.Tests;
 
 public class CustomAttributeExtensionsTests
 {
+    [Fact]
+    public void Documentation_HasCustomAttribute()
+    {
+        #region CustomAttributeExtensions_HasCustomAttribute
+        Assert.True(typeof(FileAttributes).HasCustomAttribute<FlagsAttribute>());
+        Assert.False(typeof(DayOfWeek).HasCustomAttribute<FlagsAttribute>());
+
+        // The same with a Type, for instance one read from a configuration file
+        Assert.True(typeof(FileAttributes).HasCustomAttribute(typeof(FlagsAttribute)));
+
+        // Members, parameters, modules and assemblies have the same methods
+        var method = typeof(string).GetMethod(nameof(string.Format), [typeof(string), typeof(object[])]);
+        Assert.NotNull(method);
+        Assert.True(method.GetParameters()[1].HasCustomAttribute<ParamArrayAttribute>());
+        #endregion
+    }
+
     // Type tests
     [Fact]
     public void Type_HasCustomAttribute_Generic_ShouldDetectAttribute()

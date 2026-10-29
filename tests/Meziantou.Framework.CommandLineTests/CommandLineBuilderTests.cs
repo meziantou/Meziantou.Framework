@@ -82,4 +82,34 @@ public class CommandLineBuilderTests(ArgumentPrinterClassFixture argumentPrinter
         Assert.Equal(@"^""malicious argument\^"" ^& whoami^""", cmdArg);
         #endregion
     }
+
+    [Fact]
+    public void CommandLineBuilder_EscapingRules()
+    {
+        #region CommandLineBuilder_EscapingRules
+        // An argument without spaces, tabs, line feeds or quotes is returned as is
+        Assert.Equal("simple", CommandLineBuilder.WindowsQuotedArgument("simple"));
+
+        // An empty argument is quoted, so the program still receives it
+        Assert.Equal(@"""""", CommandLineBuilder.WindowsQuotedArgument(""));
+
+        // Quotes are escaped with a backslash
+        Assert.Equal(@"""say \""hi\""""", CommandLineBuilder.WindowsQuotedArgument(@"say ""hi"""));
+
+        // Backslashes are doubled only when they precede a quote, including the closing quote
+        Assert.Equal(@"""C:\Program Files\\""", CommandLineBuilder.WindowsQuotedArgument(@"C:\Program Files\"));
+        #endregion
+    }
+
+    [Fact]
+    public void CommandLineBuilder_CmdEscaping()
+    {
+        #region CommandLineBuilder_CmdEscaping
+        // cmd.exe special characters are prefixed with ^, including the quotes that delimit the argument
+        Assert.Equal(@"^""100^% ^(tested^)^""", CommandLineBuilder.WindowsCmdArgument("100% (tested)"));
+
+        // An argument without any special character is returned as is
+        Assert.Equal("report.txt", CommandLineBuilder.WindowsCmdArgument("report.txt"));
+        #endregion
+    }
 }

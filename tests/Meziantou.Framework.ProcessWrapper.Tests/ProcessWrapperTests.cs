@@ -95,6 +95,114 @@ public class ProcessWrapperTests
     }
 
     [Fact]
+    public async Task Documentation_ExitCodes()
+    {
+        #region ProcessWrapper_ExitCodes
+        var result = await ProcessWrapper.Create("my-command")
+            .WithProcessFactory(new FakeProcessFactory(FakeProcess.Create(exitCode: 3)))
+            .WithValidation(ProcessValidationMode.None)
+            .ExecuteAsync();
+
+        Assert.False(result.ExitCode.IsSuccess);
+        Assert.True(result.ExitCode.IsAnyOf(2, 3));
+
+        // ProcessExitCode converts implicitly to int
+        int exitCode = result.ExitCode;
+        Assert.Equal(3, exitCode);
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_ExecutionException()
+    {
+        #region ProcessWrapper_ExecutionException
+        var command = ProcessWrapper.Create("my-command")
+            .WithProcessFactory(new FakeProcessFactory(FakeProcess.Create(exitCode: 1)));
+
+        var exception = await Assert.ThrowsAsync<ProcessExecutionException>(async () => await command.ExecuteAsync());
+        Assert.Equal(1, exception.ExitCode.Value);
+        Assert.StartsWith("Process exited with code 1.", exception.Message);
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_AssertArguments()
+    {
+        #region ProcessWrapper_AssertArguments
+        var startInfos = new List<ProcessStartInfo>();
+        var factory = new FakeProcessFactory(startInfo =>
+        {
+            startInfos.Add(startInfo);
+            return FakeProcess.Create(exitCode: 0);
+        });
+
+        await ProcessWrapper.Create("git")
+            .WithArguments("commit", "--message", "Fix \"quoted\" text")
+            .WithProcessFactory(factory)
+            .ExecuteAsync();
+
+        // Each argument reaches the process as is: no quoting or escaping is needed
+        var startInfo = Assert.Single(startInfos);
+        Assert.Equal(["commit", "--message", "Fix \"quoted\" text"], startInfo.ArgumentList);
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_PendingFakeProcess()
+    {
+        #region ProcessWrapper_PendingFakeProcess
+        // A pending fake process runs until Complete is called
+        var fakeProcess = FakeProcess.CreatePending(exitCode: 0, outputText: "processed", errorText: "");
+
+        var instance = ProcessWrapper.Create("my-command")
+            .WithInputStream(InputSource.FromText("input data"))
+            .WithProcessFactory(new FakeProcessFactory(fakeProcess))
+            .ExecuteBufferedAsync();
+
+        // The code under test can observe the running process here, then the test lets it exit
+        fakeProcess.Complete();
+        var result = await instance;
+
+        Assert.Equal("processed", result.Output.StandardOutput.Single().Text);
+        Assert.Equal("input data", fakeProcess.ReadInputAsText());
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_Telemetry()
+    {
+        #region ProcessWrapper_Telemetry
+        // Collect the activities of the current test only (ScopedActivityListener is in Meziantou.Framework)
+        using var listener = new ScopedActivityListener(new ScopedActivityListenerOptions
+        {
+            SourceNames = ["Meziantou.Framework.ProcessWrapper"],
+            SamplingResult = ActivitySamplingResult.AllDataAndRecorded,
+        });
+
+        await ProcessWrapper.Create("dotnet")
+            .WithArguments("--version")
+            .ExecuteAsync();
+
+        var activity = Assert.Single(listener.Activities);
+        Assert.Equal("process.execute", activity.OperationName);
+        Assert.Equal(0, activity.GetTagItem("process.exit.code"));
+        Assert.IsType<string>(activity.GetTagItem("process.executable.path"));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_ToString()
+    {
+        #region ProcessWrapper_ToString
+        var command = ProcessWrapper.Create("dotnet")
+            .WithArguments("build", "My Project.csproj");
+
+        // The command line, with the arguments quoted when needed
+        Assert.Equal(@"dotnet build ""My Project.csproj""", command.ToString());
+        #endregion
+    }
+
+    [Fact]
     public void ProcessExitCode_IsSuccess_TrueForZero()
     {
         var exitCode = new ProcessExitCode(0);

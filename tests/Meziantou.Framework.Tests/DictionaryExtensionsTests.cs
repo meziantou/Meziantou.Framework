@@ -107,4 +107,19 @@ public sealed class DictionaryExtensionsTests
         Assert.True(result);
         Assert.Equal("updated", dict[0]);
     }
+
+    [Fact]
+    public void Documentation_GetOrAdd()
+    {
+        #region DictionaryExtensions_GetOrAdd
+        var cache = new Dictionary<string, int>(StringComparer.Ordinal);
+        Assert.Equal(5, cache.GetOrAdd("hello", key => key.Length));
+        Assert.Equal(5, cache.GetOrAdd("hello", key => throw new InvalidOperationException("Not called")));
+
+        // TryUpdate only changes existing keys
+        Assert.True(cache.TryUpdate("hello", (key, value) => value * 2));
+        Assert.False(cache.TryUpdate("missing", 1));
+        Assert.Equal(10, cache["hello"]);
+        #endregion
+    }
 }

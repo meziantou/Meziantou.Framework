@@ -5,6 +5,22 @@ namespace Meziantou.Framework.Threading.Tests;
 public class SemaphoreSlimExtensionsTests
 {
     [Fact]
+    public async Task SemaphoreSlim_DisposableWaitAsyncExample()
+    {
+        #region SemaphoreSlim_DisposableWaitAsync
+        using var semaphore = new SemaphoreSlim(initialCount: 2);
+
+        // Disposing the returned object releases the semaphore, even when the block throws
+        using (await semaphore.DisposableWaitAsync())
+        {
+            Assert.Equal(1, semaphore.CurrentCount);
+        }
+
+        Assert.Equal(2, semaphore.CurrentCount);
+        #endregion
+    }
+
+    [Fact]
     public void SemaphoreDisposer_Default_DisposeDoesNothing()
     {
         var disposer = default(SemaphoreSlimExtensions.SemaphoreDisposer);

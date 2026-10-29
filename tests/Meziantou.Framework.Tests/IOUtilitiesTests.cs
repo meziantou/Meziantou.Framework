@@ -129,4 +129,44 @@ public class IOUtilitiesTests
             root.Delete(recursive: true);
         }
     }
+
+    [Fact]
+    public void Documentation_ToValidFileName()
+    {
+        #region IOUtilities_ToValidFileName
+        // Invalid characters are replaced by their code: '/' is 47
+        Assert.Equal("Q1_x47_Q2 report.txt", IOUtilities.ToValidFileName("Q1/Q2 report.txt"));
+
+        // Windows reserved device names are wrapped, even with an extension
+        Assert.Equal("_con.txt_", IOUtilities.ToValidFileName("con.txt"));
+
+        // Trailing periods and spaces, which Windows removes, are replaced too
+        Assert.Equal("draft_x46_", IOUtilities.ToValidFileName("draft."));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_CopyAndDelete()
+    {
+        #region IOUtilities_CopyAndDelete
+        var source = Directory.CreateTempSubdirectory();
+        var destination = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var file = Path.Combine(source.FullName, "sub", "data.txt");
+
+        // Create the folder of a file
+        IOUtilities.PathCreateDirectory(file);
+        File.WriteAllText(file, "content");
+        File.SetAttributes(file, FileAttributes.ReadOnly);
+
+        // Copy a folder and its subfolders
+        IOUtilities.CopyDirectory(source.FullName, destination);
+        Assert.True(File.Exists(Path.Combine(destination, "sub", "data.txt")));
+
+        // Delete a folder recursively, read-only files included
+        IOUtilities.Delete(source);
+        IOUtilities.Delete(destination);
+        Assert.False(Directory.Exists(source.FullName));
+        Assert.False(Directory.Exists(destination));
+        #endregion
+    }
 }

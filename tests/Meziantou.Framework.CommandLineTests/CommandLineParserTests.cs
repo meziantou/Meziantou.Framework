@@ -52,6 +52,62 @@ public class CommandLineParserTests
     }
 
     [Fact]
+    public void CommandLineParser_ArgumentFormats()
+    {
+        #region CommandLineParser_ArgumentFormats
+        var parser = new CommandLineParser();
+        parser.Parse(["-output:result.txt", "/Level=3", "/force", "input.txt"]);
+
+        // Names are case-insensitive, and the value follows the first ':' or '='
+        Assert.Equal("result.txt", parser.GetArgument("OUTPUT"));
+        Assert.Equal("3", parser.GetArgument("level"));
+
+        // A named argument without a value has an empty value
+        Assert.True(parser.HasArgument("force"));
+        Assert.Equal("", parser.GetArgument("force"));
+
+        // Missing arguments return null
+        Assert.Null(parser.GetArgument("verbose"));
+        Assert.Null(parser.GetArgument(10));
+
+        // Every argument keeps its position, named arguments included (without their prefix)
+        Assert.Equal("input.txt", parser.GetArgument(3));
+        Assert.Equal("force", parser.GetArgument(2));
+        #endregion
+    }
+
+    [Fact]
+    public void CommandLineParser_HelpArguments()
+    {
+        #region CommandLineParser_HelpArguments
+        var parser = new CommandLineParser();
+        parser.Parse(["--help"]);
+
+        // Help arguments set HelpRequested, and are not named or positional arguments
+        Assert.True(parser.HelpRequested);
+        Assert.False(parser.HasArgument("help"));
+        Assert.Null(parser.GetArgument(0));
+        #endregion
+    }
+
+    [Fact]
+    public void CommandLineParser_Prefixes()
+    {
+        #region CommandLineParser_Prefixes
+        var parser = new CommandLineParser();
+        parser.Parse(["--verbose", "/tmp/file.txt"]);
+
+        // The prefix is a single '-' or '/': the second '-' is part of the name
+        Assert.False(parser.HasArgument("verbose"));
+        Assert.True(parser.HasArgument("-verbose"));
+
+        // A Unix absolute path starts with '/', so it is read as a named argument, and loses its '/' at its position too
+        Assert.True(parser.HasArgument("tmp/file.txt"));
+        Assert.Equal("tmp/file.txt", parser.GetArgument(1));
+        #endregion
+    }
+
+    [Fact]
     public void HasArgument_01()
     {
         // Arrange

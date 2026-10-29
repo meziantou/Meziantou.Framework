@@ -6,6 +6,25 @@ namespace Meziantou.Framework.Tests.DataAnnotations;
 public sealed class ValidateCollectionItemsAttributeTests
 {
     [Fact]
+    public void Documentation_TryValidateObject()
+    {
+        #region ValidateCollectionItemsAttribute_TryValidateObject
+        var model = new MyModel
+        {
+            Items = [new ChildModel { Name = "valid" }, new ChildModel { Name = null }],
+        };
+
+        var results = new List<ValidationResult>();
+        var isValid = Validator.TryValidateObject(model, new ValidationContext(model), results, validateAllProperties: true);
+
+        // The result is the first error of the first invalid item
+        Assert.False(isValid);
+        var error = Assert.Single(results);
+        Assert.Equal("The Name field is required.", error.ErrorMessage);
+        #endregion
+    }
+
+    [Fact]
     public void ReportsItemsViolatingNonRequiredAttributes()
     {
         var model = new Model { Items = [new Item { Name = "way too long", Age = 9999 }] };

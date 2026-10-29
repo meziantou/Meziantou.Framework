@@ -231,4 +231,21 @@ public sealed class AppendOnlyCollectionTests
 
         Assert.HasCount(Count, collection);
     }
+
+    [Fact]
+    public async Task Documentation_Usage()
+    {
+        #region AppendOnlyCollection_Usage
+        var log = new AppendOnlyCollection<string>();
+
+        // Add items from several threads, and read them at the same time
+        await Task.WhenAll(
+            Task.Run(() => log.Add("from task 1")),
+            Task.Run(() => log.Add("from task 2")));
+
+        Assert.HasCount(2, log);
+        Assert.True(log.Contains(item => item == "from task 1"));
+        Assert.Equal("from task 2", log.Find(item => item.EndsWith("2", StringComparison.Ordinal)));
+        #endregion
+    }
 }

@@ -47,4 +47,18 @@ public class UnsafeListDictionaryTests
         var deserialized = JsonSerializer.Deserialize<UnsafeListDictionary<int, string>>(json);
         Assert.Equal(dict, deserialized);
     }
+
+    [Fact]
+    public void Documentation_Usage()
+    {
+        #region UnsafeListDictionary_Usage
+        // Adding does not check whether the key already exists
+        var values = new UnsafeListDictionary<string, int>();
+        values.Add("a", 1);
+        values.Add("b", 2);
+
+        Assert.Equal(2, values["b"]);
+        Assert.Equal(["a", "b"], values.Select(item => item.Key));
+        #endregion
+    }
 }

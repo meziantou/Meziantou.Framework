@@ -48,6 +48,42 @@ public sealed class SingleInstanceTests
     }
 
     [Fact]
+    public async Task TestSingleInstance_ReceiveNotification()
+    {
+        #region SingleInstance_ReceiveNotification
+        var applicationId = Guid.NewGuid();
+
+        using var firstInstance = new SingleInstance(applicationId);
+        var notification = new TaskCompletionSource<SingleInstanceEventArgs>(TaskCreationOptions.RunContinuationsAsynchronously);
+        firstInstance.NewInstance += (sender, e) => notification.TrySetResult(e);
+        Assert.True(firstInstance.StartApplication());
+
+        // Usually done by another process started with the same application id
+        using var secondInstance = new SingleInstance(applicationId);
+        Assert.True(secondInstance.NotifyFirstInstance(["open", "report.txt"]));
+
+        var received = await notification.Task;
+        Assert.Equal(["open", "report.txt"], received.Arguments);
+        Assert.Equal(Environment.ProcessId, received.ProcessId);
+        #endregion
+    }
+
+    [Fact]
+    public void TestSingleInstance_NotifyFirstInstanceFailure()
+    {
+        #region SingleInstance_NotifyFailure
+        using var singleInstance = new SingleInstance(Guid.NewGuid())
+        {
+            // Wait at most 1 second for the first instance to accept the connection (the default is 3 seconds)
+            ClientConnectionTimeout = TimeSpan.FromSeconds(1),
+        };
+
+        // No instance is listening: NotifyFirstInstance returns false instead of throwing
+        Assert.False(singleInstance.NotifyFirstInstance(["open", "report.txt"]));
+        #endregion
+    }
+
+    [Fact]
     public void TestSingleInstance_NotifyFirstInstanceReturnsFalseWhenNobodyIsListening()
     {
         using var singleInstance = new SingleInstance(Guid.NewGuid())

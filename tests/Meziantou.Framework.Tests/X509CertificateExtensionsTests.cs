@@ -6,6 +6,34 @@ namespace Meziantou.Framework.Tests;
 public sealed class X509CertificateExtensionsTests
 {
     [Fact]
+    public void Documentation_UtcDates()
+    {
+        #region X509CertificateExtensions_UtcDates
+        using var rsa = RSA.Create(2048);
+        var request = new CertificateRequest("CN=localhost", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+        using var certificate = request.CreateSelfSigned(
+            new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
+            new DateTimeOffset(2027, 1, 1, 0, 0, 0, TimeSpan.Zero));
+
+        // NotBefore and NotAfter are local times; NotBeforeUtc and NotAfterUtc do not depend on the time zone
+        Assert.Equal(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), certificate.NotBeforeUtc);
+        Assert.Equal(new DateTimeOffset(2027, 1, 1, 0, 0, 0, TimeSpan.Zero), certificate.NotAfterUtc);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_IsHttpOrHttps()
+    {
+        #region UriExtensions_IsHttpOrHttps
+        Assert.True(new Uri("https://www.example.com/").IsHttpOrHttps());
+        Assert.False(new Uri("ftp://www.example.com/").IsHttpOrHttps());
+
+        // A relative URI has no scheme
+        Assert.False(new Uri("images/logo.png", UriKind.Relative).IsHttpOrHttps());
+        #endregion
+    }
+
+    [Fact]
     public void NotBeforeUtc_And_NotAfterUtc()
     {
         using var rsa = RSA.Create(2048);

@@ -959,4 +959,26 @@ public sealed class RestrictedStreamTests
             }
         }
     }
+
+    [Fact]
+    public void Documentation_Usage()
+    {
+        #region RestrictedStream_Usage
+        using var inner = new MemoryStream([1, 2, 3, 4]);
+
+        // Give code a read-only, forward-only view of a stream, that returns at most 1 byte per read
+        using var stream = new RestrictedStream(inner, new RestrictedStreamOptions
+        {
+            AllowReading = true,
+            AllowSynchronousCalls = true,
+            MaxReadLength = 1,
+        });
+
+        var buffer = new byte[4];
+        Assert.Equal(1, stream.Read(buffer));
+        Assert.False(stream.CanWrite);
+        Assert.False(stream.CanSeek);
+        Assert.Throws<NotSupportedException>(() => stream.Write([5]));
+        #endregion
+    }
 }

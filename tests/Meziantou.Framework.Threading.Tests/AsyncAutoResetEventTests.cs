@@ -28,6 +28,26 @@ public class AsyncAutoResetEventTests
     }
 
     [Fact]
+    public async Task AsyncAutoResetEvent_SetBeforeWaitExample()
+    {
+        #region AsyncAutoResetEvent_SetBeforeWait
+        var autoResetEvent = new AsyncAutoResetEvent(initialState: false);
+
+        // Nobody is waiting: the event stays signaled until a single waiter consumes it
+        autoResetEvent.Set();
+        autoResetEvent.Set();
+        await autoResetEvent.WaitAsync(); // Completes immediately and resets the event
+
+        // Setting the event twice did not store two signals
+        var secondWait = autoResetEvent.WaitAsync();
+        Assert.False(secondWait.IsCompleted);
+
+        autoResetEvent.Set();
+        await secondWait;
+        #endregion
+    }
+
+    [Fact]
     public async Task WaitAsync_InitiallySignaled_CompletesImmediatelyOnce()
     {
         var e = new AsyncAutoResetEvent(initialState: true);

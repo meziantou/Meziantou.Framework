@@ -3,6 +3,24 @@ namespace Meziantou.Framework.Tests;
 public class RangeTests
 {
     [Fact]
+    public void Documentation_Boundaries()
+    {
+        #region Range_Boundaries
+        var range = Range.Create(1, 10);
+
+        Assert.True(range.IsInRangeInclusive(10));       // 1 <= value <= 10
+        Assert.False(range.IsInRangeExclusive(10));      // 1 < value < 10
+        Assert.True(range.IsInRangeLowerInclusive(1));   // 1 <= value < 10
+        Assert.False(range.IsInRangeLowerInclusive(10));
+        Assert.True(range.IsInRangeUpperInclusive(10));  // 1 < value <= 10
+
+        // A range is in another range when both of its bounds are
+        Assert.True(range.IsInRangeInclusive(Range.Create(2, 5)));
+        Assert.False(range.IsInRangeInclusive(Range.Create(5, 15)));
+        #endregion
+    }
+
+    [Fact]
     public void Range_IsInRangeInclusive_Example()
     {
         #region Range_IsInRangeInclusive

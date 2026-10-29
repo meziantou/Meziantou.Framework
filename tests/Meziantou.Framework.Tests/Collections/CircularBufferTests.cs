@@ -562,4 +562,22 @@ public class CircularBufferTests
         list.AddLast("e");
         Assert.Equal(["e"], list);
     }
+
+    [Fact]
+    public void Documentation_Full()
+    {
+        #region CircularBuffer_Full
+        var buffer = new CircularBuffer<int>(2);
+        buffer.AddLast(1);
+        buffer.AddLast(2);
+
+        // Without AllowOverwrite, adding to a full buffer throws
+        Assert.Throws<InvalidOperationException>(() => buffer.AddLast(3));
+
+        // Remove items from either end
+        Assert.Equal(1, buffer.RemoveFirst());
+        buffer.AddLast(3);
+        Assert.Equal([2, 3], buffer);
+        #endregion
+    }
 }

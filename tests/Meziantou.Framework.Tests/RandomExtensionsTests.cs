@@ -3,6 +3,28 @@ namespace Meziantou.Framework.Tests;
 public sealed class RandomExtensionsTests
 {
     [Fact]
+    public void Documentation_Values()
+    {
+        #region RandomExtensions_Values
+        // A seed gives the same values on every run; use Random.Shared otherwise
+        var random = new Random(42);
+
+        // The minimum is inclusive and the maximum is exclusive: a die roll is between 1 and 6
+        var die = random.NextInt32(1, 7);
+        Assert.InRange(die, 1, 6);
+
+        string[] colors = ["red", "green", "blue"];
+        Assert.Contains(random.NextFromList(colors), colors);
+
+        var code = random.NextString(length: 6, chars: "ABCDEFGHJKLMNPQRSTUVWXYZ23456789");
+        Assert.HasCount(6, code);
+
+        var date = random.NextDateTime(new DateTime(2026, 1, 1), new DateTime(2027, 1, 1));
+        Assert.Equal(2026, date.Year);
+        #endregion
+    }
+
+    [Fact]
     public void NextUInt64_SpreadsOverASmallRange()
     {
         var random = new Random(42);

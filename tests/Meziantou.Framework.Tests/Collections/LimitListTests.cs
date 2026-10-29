@@ -165,4 +165,19 @@ public class LimitListTests
         list.RemoveAt(1);
         Assert.Equal([1, 3], list);
     }
+
+    [Fact]
+    public void Documentation_Usage()
+    {
+        #region LimitList_Usage
+        // Keep the 3 most recent items
+        var recentFiles = new LimitList<string>(3);
+        recentFiles.AddFirst("a.txt");
+        recentFiles.AddFirst("b.txt");
+        recentFiles.AddFirst("c.txt");
+        recentFiles.AddFirst("d.txt"); // a.txt, the last item, is removed
+
+        Assert.Equal(["d.txt", "c.txt", "b.txt"], recentFiles);
+        #endregion
+    }
 }

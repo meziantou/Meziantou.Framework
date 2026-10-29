@@ -58,4 +58,19 @@ public sealed class MarkdownBuilderTests
         var html = MarkdownConverter.ToHtml(value);
         Assert.Equal("<p><code>" + HtmlEncoder.Default.Encode(text) + "</code></p>\n", html);
     }
+
+    [Fact]
+    public void Documentation_Escape()
+    {
+        #region MarkdownBuilder_Escape
+        // Escape the text so that Markdown renders it as is
+        // Every ASCII punctuation character is escaped
+        Assert.Equal(@"\*Note\* \[docs\]\!", MarkdownBuilder.Escape("*Note* [docs]!"));
+
+        // Create a code span that can contain backticks
+        Assert.Equal("`dotnet build`", MarkdownBuilder.CreateCodeSpan("dotnet build"));
+        Assert.Equal("``a`b``", MarkdownBuilder.CreateCodeSpan("a`b"));
+        Assert.Equal("`` `code` ``", MarkdownBuilder.CreateCodeSpan("`code`"));
+        #endregion
+    }
 }

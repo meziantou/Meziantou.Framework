@@ -3,6 +3,51 @@ namespace Meziantou.Framework.Tests;
 public class ReflectionDynamicObjectTests
 {
     [Fact]
+    public void Documentation_PrivateMembers()
+    {
+        #region ReflectionDynamicObject_PrivateMembers
+        dynamic counter = new ReflectionDynamicObject(new Counter());
+
+        // Read and write private fields and properties
+        counter._count = 41;
+        Assert.Equal(41, counter.Count);
+
+        // Call private methods
+        counter.Increment();
+        Assert.Equal(42, counter._count);
+
+        // Wrap the type to reach static members and to call a public constructor
+        dynamic counterType = new ReflectionDynamicObject(typeof(Counter));
+        Assert.Equal("counter", (string)counterType.Name);
+        dynamic createdCounter = counterType.CreateInstance(10);
+        Assert.Equal(10, createdCounter.Count);
+        #endregion
+    }
+
+#pragma warning disable IDE0051 // Remove unused private members: they are used through reflection
+#pragma warning disable IDE0032 // Use auto property
+    #region ReflectionDynamicObject_Counter
+    private sealed class Counter
+    {
+        private int _count;
+
+        public Counter()
+        {
+        }
+
+        public Counter(int count) => _count = count;
+
+        private static string Name => "counter";
+
+        private int Count => _count;
+
+        private void Increment() => _count++;
+    }
+    #endregion
+#pragma warning restore IDE0032
+#pragma warning restore IDE0051
+
+    [Fact]
     public void ReflectionDynamicObject()
     {
         var test = new Test();

@@ -91,4 +91,23 @@ public class ThrottleExtensionsTests
                 TimeSpan.FromSeconds(30)),
             "The throttle is stuck after the action threw");
     }
+
+    [Fact]
+    public async Task Documentation_Throttle()
+    {
+        #region ThrottleExtensions_Throttle
+        var timeProvider = new FakeTimeProvider();
+        var saved = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var save = ThrottleExtensions.Throttle<int>(version => saved.TrySetResult(version), TimeSpan.FromSeconds(1), timeProvider);
+
+        // The first call schedules the action; the next calls only update the arguments
+        save(1);
+        save(2);
+        save(3);
+
+        // The action runs once the interval has elapsed, with the last arguments
+        timeProvider.Advance(TimeSpan.FromSeconds(1));
+        Assert.Equal(3, await saved.Task);
+        #endregion
+    }
 }

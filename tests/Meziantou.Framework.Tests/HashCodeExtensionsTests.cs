@@ -3,6 +3,23 @@ namespace Meziantou.Framework.Tests;
 public sealed class HashCodeExtensionsTests
 {
     [Fact]
+    public void Documentation_AddValues()
+    {
+        #region HashCodeExtensions_AddValues
+        var first = new HashCode();
+        first.Add("order", StringComparer.Ordinal);
+        first.AddValues(new[] { 1, 2, 3 });
+
+        var second = new HashCode();
+        second.Add("order", StringComparer.Ordinal);
+        second.AddValues(new List<int> { 1, 2, 3 });
+
+        // Each value is added in order, so equal sequences give equal hash codes
+        Assert.Equal(first.ToHashCode(), second.ToHashCode());
+        #endregion
+    }
+
+    [Fact]
     public void AddValues_Array_ContributesToTheHashCode()
     {
         var hashCode = new HashCode();

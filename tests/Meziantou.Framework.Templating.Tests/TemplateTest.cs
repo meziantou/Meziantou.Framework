@@ -363,6 +363,132 @@ public class TemplateTest
     }
 
     [Fact]
+    public void DocumentationExample_LineOnlyBlocks()
+    {
+        #region Template_LineOnlyBlocks
+        using var template = new Template();
+        template.Load("""
+            <ul>
+            <% foreach (var item in new[] { "Apples", "Pears" }) { %>
+              <li><%= item %></li>
+            <% } %>
+            </ul>
+            """);
+
+        var result = template.Run();
+        Assert.Equal("""
+            <ul>
+              <li>Apples</li>
+              <li>Pears</li>
+            </ul>
+            """, result);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_RunWithWriter()
+    {
+        #region Template_RunWithWriter
+        using var template = new Template();
+        template.Arguments.Add(new TemplateArgument("Total", typeof(decimal)));
+        template.Load("Total: <%= Total %>");
+
+        using var writer = new StringWriter(CultureInfo.InvariantCulture);
+        template.Run(writer, 1234.5m);
+        Assert.Equal("Total: 1234.5", writer.ToString());
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_ModelArgument()
+    {
+        #region Template_ModelArgument
+        using var template = new Template();
+        template.AssemblyReferences.Add(typeof(Invoice));
+        template.Arguments.Add(new TemplateArgument("Invoice", typeof(Invoice)));
+        template.Load("Invoice for <%= Invoice.Customer %>: <%= Invoice.ItemCount %> items");
+
+        var result = template.Run(new Invoice("Contoso", 3));
+        Assert.Equal("Invoice for Contoso: 3 items", result);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_UsingDirective()
+    {
+        #region Template_UsingDirective
+        using var template = new Template();
+        template.Load("""
+            <%@ using System.IO %>
+            <%= Path.GetFileNameWithoutExtension("report.txt") %>
+            """);
+
+        var result = template.Run();
+        Assert.Equal("report", result);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_CustomDirective()
+    {
+        #region Template_CustomDirective
+        using var template = new Template();
+        template.Load("""
+            <%@ outputextension .cs %>
+            public class Generated { }
+            """);
+
+        var directive = template.Blocks.OfType<DirectiveBlock>()
+            .Single(block => string.Equals(block.Name, "outputextension", StringComparison.OrdinalIgnoreCase));
+        Assert.Equal(".cs", directive.Value);
+        Assert.Equal("public class Generated { }", template.Run());
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_BaseClass()
+    {
+        #region Template_BaseClass
+        using var template = new Template();
+        template.AssemblyReferences.Add(typeof(ReportTemplateBase));
+        template.BaseClassFullTypeName = typeof(ReportTemplateBase).FullName;
+        template.Load("<%= Bullet(\"Apples\") %>");
+
+        var result = template.Run();
+        Assert.Equal("- Apples", result);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_SourceFileName()
+    {
+        #region Template_SourceFileName
+        using var template = new Template { SourceFileName = "welcome.txt" };
+        template.Load("""
+            Hello
+            <%= Nmae %>
+            """);
+
+        var exception = Assert.Throws<TemplateException>(() => template.Build(CancellationToken.None));
+        Assert.Contains("welcome.txt(2,5)", exception.Message);
+        Assert.Contains("CS0103", exception.Message);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_RuntimeError()
+    {
+        #region Template_RuntimeError
+        using var template = new Template();
+        template.Load("<% throw new InvalidOperationException(\"Out of stock\"); %>");
+
+        var exception = Assert.Throws<TargetInvocationException>(() => template.Run());
+        var innerException = Assert.IsType<InvalidOperationException>(exception.InnerException);
+        Assert.Equal("Out of stock", innerException.Message);
+        #endregion
+    }
+
+    [Fact]
     public void Template_TextOnly()
     {
         // Arrange
@@ -1461,3 +1587,18 @@ public class TemplateTest
         }
     }
 }
+
+// The types used by the templates of the documentation. A template references types by their full name, so they must
+// be public and not nested in another type. They stay next to the examples that use them.
+#pragma warning disable MA0048 // File name must match type name
+#region Template_InvoiceType
+public sealed record Invoice(string Customer, int ItemCount);
+#endregion
+
+#region Template_ReportTemplateBase
+public abstract class ReportTemplateBase
+{
+    protected static string Bullet(string text) => "- " + text;
+}
+#endregion
+#pragma warning restore MA0048

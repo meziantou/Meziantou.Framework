@@ -2,6 +2,28 @@ namespace Meziantou.Framework.Templating.Tool.Tests;
 
 public sealed class TemplatingToolTests(ITestOutputHelper testOutputHelper)
 {
+    // The templates of the documentation are rendered next to themselves, from their output directive
+    [Theory]
+    [InlineData("Weekdays.template", "Weekdays.g.cs")]
+    [InlineData("Greeting.tt", "Greeting.txt")]
+    public async Task DocumentationExample_RendersTheExpectedFile(string templateFileName, string expectedFileName)
+    {
+        var examplesPath = FullPath.FromPath(AppContext.BaseDirectory) / "Examples";
+        await using var temp = TemporaryDirectory.Create();
+        var inputPath = temp.GetFullPath(templateFileName);
+        File.Copy(examplesPath / templateFileName, inputPath);
+
+        var console = new ConsoleHelper(testOutputHelper);
+        var result = await Program.MainImpl(["--input", inputPath.ToString()], console.ConfigureConsole);
+
+        Assert.Equal(0, result);
+        Assert.Equal(string.Empty, console.Output);
+        Assert.Equal(string.Empty, console.Error);
+        var expected = await File.ReadAllTextAsync(examplesPath / expectedFileName, XunitCancellationToken);
+        var actual = await File.ReadAllTextAsync(temp.GetFullPath(expectedFileName), XunitCancellationToken);
+        Assert.Equal(expected, actual);
+    }
+
     [Fact]
     public async Task RenderToStdout_DefaultDelimiters()
     {

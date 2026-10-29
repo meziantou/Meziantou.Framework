@@ -166,6 +166,59 @@ public class EmailTemplateTest
     }
 
     [Fact]
+    public void DocumentationExample_UrlEncodeValue()
+    {
+        #region HtmlEmailTemplate_UrlEncodeValue
+        using var template = new HtmlEmailTemplate();
+        template.Arguments.Add(new TemplateArgument("query", typeof(string)));
+        template.Load("<a href=\"https://example.com/search?q={{#url query}}\">Search</a>");
+
+        var result = template.Run(out _, "fish & chips");
+        Assert.Equal("<a href=\"https://example.com/search?q=fish%20%26%20chips\">Search</a>", result);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_NonAsciiCharacters()
+    {
+        #region HtmlEmailTemplate_NonAsciiCharacters
+        using var template = new HtmlEmailTemplate();
+        template.Arguments.Add(new TemplateArgument("name", typeof(string)));
+        template.Load("<p>Hello {{#html name}}!</p>");
+
+        var result = template.Run(out _, "Zoé");
+        Assert.Equal("<p>Hello Zo&#xE9;!</p>", result);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_TitleIsPlainText()
+    {
+        #region HtmlEmailTemplate_TitleIsPlainText
+        using var template = new HtmlEmailTemplate();
+        template.Arguments.Add(new TemplateArgument("product", typeof(string)));
+        template.Load("<title>{{@begin_section title}}Your {{#html product}} order{{@end_section}}</title>");
+
+        var result = template.Run(out var metadata, "Fish & Chips");
+        Assert.Equal("<title>Your Fish &amp; Chips order</title>", result);
+        Assert.NotNull(metadata);
+        Assert.Equal("Your Fish & Chips order", metadata.Title);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_UnclosedSection()
+    {
+        #region HtmlEmailTemplate_UnclosedSection
+        using var template = new HtmlEmailTemplate();
+        template.Load("<title>{{@begin_section title}}Welcome</title>");
+
+        var exception = Assert.Throws<TemplateException>(() => template.Run(out _));
+        Assert.Equal("The template is invalid: no end_section directive for 'title'.", exception.Message);
+        #endregion
+    }
+
+    [Fact]
     public void HtmlEmailTemplate_Example()
     {
         #region HtmlEmailTemplate_Example

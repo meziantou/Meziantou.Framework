@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+
 namespace Meziantou.Framework.Hashing.Tests;
 
 // SHA-3 and SHAKE (FIPS 202), cSHAKE and KMAC (NIST SP 800-185), TurboSHAKE and KangarooTwelve (RFC 9861)
@@ -189,6 +191,59 @@ public sealed class KeccakTests
         shake.Read(first);
         shake.Read(second);
         Assert.Equal(output, first.Concat(second).ToArray());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_CShake()
+    {
+        #region Shake_Customization
+        // cSHAKE: the customization string separates the outputs of two uses of the same function
+        var signing = Shake.HashData(256, "abc"u8, outputLength: 32, customization: "Email Signature"u8);
+        var plain = Shake.HashData(256, "abc"u8, outputLength: 32);
+        Assert.NotEqual(plain, signing);
+
+        // A shorter output is a prefix of a longer one
+        var longer = Shake.HashData(256, "abc"u8, outputLength: 64, customization: "Email Signature"u8);
+        Assert.Equal(signing, longer.AsSpan(0, 32).ToArray());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Kmac()
+    {
+        #region Kmac_Usage
+        var key = RandomNumberGenerator.GetBytes(32);
+        var message = "the message to authenticate"u8;
+
+        // KMAC256 with a code of 32 bytes and a customization string
+        var code = Kmac.HashData(256, key, message, outputLength: 32, customization: "My Application"u8);
+
+        // To verify a message, compute the code again and compare in constant time
+        var expected = Kmac.HashData(256, key, message, outputLength: 32, customization: "My Application"u8);
+        Assert.True(CryptographicOperations.FixedTimeEquals(code, expected));
+
+        // The length is part of the input: a shorter code is not a prefix of a longer one
+        var shorter = Kmac.HashData(256, key, message, outputLength: 16, customization: "My Application"u8);
+        Assert.NotEqual(code.AsSpan(0, 16).ToArray(), shorter);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_TurboShakeAndKangarooTwelve()
+    {
+        #region TurboShake_Usage
+        // TurboSHAKE128, 32 bytes of output
+        var turboShake = TurboShake.HashData(128, "abc"u8, outputLength: 32);
+        Assert.HasCount(32, turboShake);
+
+        // A domain separation byte (0x01 to 0x7F) gives another, independent function
+        var otherDomain = TurboShake.HashData(128, "abc"u8, outputLength: 32, domainSeparation: 0x0B);
+        Assert.NotEqual(turboShake, otherDomain);
+
+        // KT128 (KangarooTwelve), with an optional customization string
+        var kt128 = KangarooTwelve.HashData(128, "abc"u8, outputLength: 32, customization: "My Application"u8);
+        Assert.HasCount(32, kt128);
         #endregion
     }
 

@@ -3,6 +3,7 @@ using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Security.Cryptography;
 using System.Text.Json;
+using Microsoft.Extensions.Configuration;
 
 namespace Meziantou.Framework.Tests;
 
@@ -356,6 +357,75 @@ public sealed class SensitiveDataTests
     }
 
     [Fact]
+    public void Documentation_CloneAndDispose()
+    {
+        #region SensitiveData_CloneAndDispose
+        var secret = SensitiveData.Create("my-password");
+
+        // A clone holds its own copy of the contents
+        using var copy = secret.Clone();
+
+        // Disposing clears the contents; the instance can no longer be revealed
+        secret.Dispose();
+        Assert.Throws<ObjectDisposedException>(() => secret.RevealToString());
+        Assert.Equal("my-password", copy.RevealToString());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_NoAccidentalDisclosure()
+    {
+#pragma warning disable MA0150 // The example shows what an accidental ToString gives
+        #region SensitiveData_NoAccidentalDisclosure
+        using var secret = SensitiveData.Create("my-password");
+
+        // Formatting the instance gives its type name, not its contents
+        var message = $"Connecting with {secret}";
+        Assert.DoesNotContain("my-password", message, StringComparison.Ordinal);
+
+        // Serializing it gives an empty object
+        var json = JsonSerializer.Serialize(secret);
+        Assert.Equal("{}", json);
+        #endregion
+#pragma warning restore MA0150
+    }
+
+    [Fact]
+    public void Documentation_Configuration()
+    {
+        #region SensitiveData_Configuration
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>(StringComparer.Ordinal)
+            {
+                ["Payment:ApiKey"] = "my-api-key",
+            })
+            .Build();
+
+        var options = configuration.GetSection("Payment").Get<PaymentOptions>();
+        Assert.NotNull(options);
+        Assert.NotNull(options.ApiKey);
+        Assert.Equal("my-api-key", options.ApiKey.RevealToString());
+        #endregion
+
+        options.ApiKey.Dispose();
+    }
+
+    [Fact]
+    public void Documentation_TypeConverter()
+    {
+        #region SensitiveData_TypeConverter
+        var converter = TypeDescriptor.GetConverter(typeof(SensitiveData<char>));
+
+        // A string converts to SensitiveData<char>...
+        using var secret = (SensitiveData<char>)converter.ConvertFromInvariantString("my-password")!;
+        Assert.Equal("my-password", secret.RevealToString());
+
+        // ...but SensitiveData<char> never converts back to a string
+        Assert.Throws<NotSupportedException>(() => converter.ConvertToInvariantString(secret));
+        #endregion
+    }
+
+    [Fact]
     public void Clone_CreatesIndependentCopy()
     {
         var original = SensitiveData.Create("foo");
@@ -629,3 +699,12 @@ public sealed class SensitiveDataTests
         Assert.Throws<NotSupportedException>(() => converter.ConvertFromString("bar"));
     }
 }
+
+#pragma warning disable MA0048 // File name must match type name
+#region SensitiveData_ConfigurationOptions
+public sealed class PaymentOptions
+{
+    public SensitiveData<char>? ApiKey { get; set; }
+}
+#endregion
+#pragma warning restore MA0048

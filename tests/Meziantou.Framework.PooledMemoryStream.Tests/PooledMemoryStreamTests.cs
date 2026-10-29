@@ -85,6 +85,90 @@ public sealed class PooledMemoryStreamTests
         Assert.Equal(0, stream.Length);
     }
 
+    [Fact]
+    public void Documentation_CopyContents()
+    {
+        #region PooledMemoryStream_CopyContents
+        using var stream = new PooledMemoryStream(initialCapacity: 64 * 1024); // reserves the capacity up front
+        stream.Write("Hello, World!"u8);
+
+        // WriteTo copies the whole stream, whatever the position
+        using var file = new MemoryStream();
+        stream.WriteTo(file);
+        Assert.Equal("Hello, World!"u8.ToArray(), file.ToArray());
+
+        // CopyTo copies from the current position, like with any stream
+        stream.Position = 7;
+        using var rest = new MemoryStream();
+        stream.CopyTo(rest);
+        Assert.Equal("World!"u8.ToArray(), rest.ToArray());
+
+        // ToArray returns a new array of Length bytes, which you can keep after the stream is disposed
+        byte[] copy = stream.ToArray();
+        Assert.HasCount(13, copy);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_BufferWriterAppends()
+    {
+        #region PooledMemoryStream_BufferWriterAppends
+        using var stream = new PooledMemoryStream();
+        stream.Write("Hello"u8);
+        stream.Position = 0;
+
+        // The IBufferWriter<byte> members always write at the end of the stream, whatever the position
+        IBufferWriter<byte> writer = stream;
+        var span = writer.GetSpan(sizeHint: 7);
+        ", World"u8.CopyTo(span);
+        writer.Advance(7);
+
+        Assert.Equal("Hello, World"u8.ToArray(), stream.ToArray());
+        Assert.Equal(12, stream.Position); // Advance moves the position to the new end
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_SharedOptions()
+    {
+        #region PooledMemoryStream_SharedOptions
+        // Create the options once, and share them between the streams
+        var options = new PooledMemoryStreamOptions
+        {
+            BufferSizes = [16 * 1024, 256 * 1024],
+            ClearOnReturn = true, // zero the buffers before another stream can rent them
+        };
+
+        using (var first = new PooledMemoryStream(options))
+        {
+            first.Write("secret"u8);
+        }
+
+        using var second = new PooledMemoryStream(options);
+
+        // Creating a stream froze the options: they cannot change any more
+        Assert.True(options.IsFrozen);
+        Assert.Throws<InvalidOperationException>(() => options.ClearOnReturn = false);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_GetBuffer()
+    {
+        #region PooledMemoryStream_GetBuffer
+        using var stream = new PooledMemoryStream();
+        stream.Write("Hello"u8);
+
+        // The contents as one array, without a copy when they fit in one pooled block
+        Assert.True(stream.TryGetBuffer(out var buffer));
+        Assert.Equal("Hello"u8.ToArray(), buffer.ToArray()); // the segment is limited to Length
+
+        // GetBuffer returns the whole array: only the first Length bytes are the contents
+        byte[] array = stream.GetBuffer();
+        Assert.Equal("Hello"u8.ToArray(), array.AsSpan(0, (int)stream.Length).ToArray());
+        #endregion
+    }
+
     [Theory]
     [InlineData(0)]
     [InlineData(1)]

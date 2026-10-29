@@ -1,0 +1,2 @@
+title: Hashing
+description: Fully managed password hashing (BCrypt, Argon2), SHA-3 and related functions, BLAKE2b, CRC-32 and Adler-32.

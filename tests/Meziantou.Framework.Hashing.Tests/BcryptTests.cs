@@ -26,6 +26,58 @@ public sealed class BcryptTests
         #endregion
     }
 
+    [Fact]
+    public void Documentation_ParseHash()
+    {
+        #region Bcrypt_ParseHash
+        var hash = Bcrypt.HashPassword("my password", workFactor: 10, version: BcryptVersion.Revision2A);
+
+        // Read the revision and the work factor of a stored hash
+        var info = Bcrypt.ParseHash(hash);
+        Assert.Equal(BcryptVersion.Revision2A, info.Version);
+        Assert.Equal(10, info.WorkFactor);
+
+        // TryParseHash returns false for a value that is not a BCrypt hash
+        Assert.False(Bcrypt.TryParseHash("not a hash", out _));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_RehashOnLogin()
+    {
+        #region Bcrypt_RehashOnLogin
+        // The hash stored for the user, created with a work factor of 10
+        var storedHash = Bcrypt.HashPassword("my password", workFactor: 10);
+
+        if (Bcrypt.Verify("my password", storedHash))
+        {
+            // The password is correct: this is the only moment the application knows it,
+            // so replace a hash created with another revision or work factor now
+            if (Bcrypt.NeedsRehash(storedHash, workFactor: 12))
+            {
+                storedHash = Bcrypt.HashPassword("my password", workFactor: 12);
+            }
+        }
+
+        Assert.Equal(12, Bcrypt.ParseHash(storedHash).WorkFactor);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_GenerateSalt()
+    {
+        #region Bcrypt_GenerateSalt
+        // The salt includes the revision and the work factor
+        var salt = Bcrypt.GenerateSalt(workFactor: 10);
+        Assert.StartsWith("$2b$10$", salt);
+
+        // The same password and salt always give the same hash
+        var hash = Bcrypt.HashPassword("my password", salt);
+        Assert.Equal(hash, Bcrypt.HashPassword("my password", salt));
+        Assert.True(Bcrypt.Verify("my password", hash));
+        #endregion
+    }
+
     [Theory]
     [InlineData("", "$2a$06$DCq7YPn5Rq63x1Lad4cll.", "$2a$06$DCq7YPn5Rq63x1Lad4cll.TV4S6ytwfsfvkgY8jIucDrjc8deX1s.")]
     [InlineData("abc", "$2a$10$WvvTPHKwdBJ3uk0Z37EMR.", "$2a$10$WvvTPHKwdBJ3uk0Z37EMR.hLA2W6N9AEBhEgrAOljy2Ae5MtaSIUi")]

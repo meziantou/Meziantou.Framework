@@ -18,7 +18,7 @@ internal sealed partial class PublicApiMetadataReader
         foreach (var fieldHandle in typeDefinition.GetFields())
         {
             var field = _metadataReader.GetFieldDefinition(fieldHandle);
-            if (!IsExternallyVisible(field.Attributes) || field.Attributes.HasFlag(FieldAttributes.SpecialName))
+            if (!IsVisible(field.Attributes) || field.Attributes.HasFlag(FieldAttributes.SpecialName))
                 continue;
 
             result.Add(ReadField(typeDefinitionHandle, fieldHandle, field));
@@ -48,7 +48,7 @@ internal sealed partial class PublicApiMetadataReader
             var name = _metadataReader.GetString(method.Name);
             if (string.Equals(name, ".ctor", StringComparison.Ordinal))
             {
-                if (!IsExternallyVisible(method.Attributes))
+                if (!IsVisible(method.Attributes))
                     continue;
 
                 result.Add(ReadMethod(typeDefinitionHandle, methodHandle, PublicApiMethodKind.Constructor, explicitImplementations));
@@ -57,7 +57,7 @@ internal sealed partial class PublicApiMetadataReader
 
             // Accessors and static constructors are special-name methods
             var isExplicitInterfaceImplementation = IsExplicitInterfaceImplementation(method.Attributes, name) && ImplementsVisibleInterface(methodHandle, explicitImplementations);
-            if ((!IsExternallyVisible(method.Attributes) && !isExplicitInterfaceImplementation) ||
+            if ((!IsVisible(method.Attributes) && !isExplicitInterfaceImplementation) ||
                 (method.Attributes.HasFlag(MethodAttributes.SpecialName) && !IsOperatorName(name)) ||
                 IsUnspeakableName(name, isExplicitInterfaceImplementation))
             {
@@ -83,7 +83,7 @@ internal sealed partial class PublicApiMetadataReader
         return name.Contains('<', StringComparison.Ordinal);
     }
 
-    // The explicit implementation of a member of an interface that is not visible outside the assembly is not part of the public API
+    // The explicit implementation of a member of an interface that is not visible (see IsVisible) is not part of the API
     private bool ImplementsVisibleInterface(MethodDefinitionHandle methodHandle, Dictionary<MethodDefinitionHandle, List<EntityHandle>> explicitImplementations)
     {
         if (!explicitImplementations.TryGetValue(methodHandle, out var declarations))
@@ -98,7 +98,7 @@ internal sealed partial class PublicApiMetadataReader
                 _ => default,
             };
 
-            if (interfaceHandle.IsNil || IsInterfaceExternallyVisible(interfaceHandle))
+            if (interfaceHandle.IsNil || IsInterfaceVisible(interfaceHandle))
                 return true;
         }
 
@@ -209,8 +209,8 @@ internal sealed partial class PublicApiMetadataReader
         var getAccessor = getAccessorHandle.IsNil ? default(MethodDefinition?) : _metadataReader.GetMethodDefinition(getAccessorHandle);
         var setAccessor = setAccessorHandle.IsNil ? default(MethodDefinition?) : _metadataReader.GetMethodDefinition(setAccessorHandle);
 
-        var includeGetter = getAccessor is not null && IsExternallyVisible(getAccessor.Value.Attributes);
-        var includeSetter = setAccessor is not null && IsExternallyVisible(setAccessor.Value.Attributes);
+        var includeGetter = getAccessor is not null && IsVisible(getAccessor.Value.Attributes);
+        var includeSetter = setAccessor is not null && IsVisible(setAccessor.Value.Attributes);
         var isExplicitInterfaceImplementation = false;
         if (!includeGetter && !includeSetter)
         {
@@ -341,7 +341,7 @@ internal sealed partial class PublicApiMetadataReader
 
         var addMethodDefinition = _metadataReader.GetMethodDefinition(accessors.Adder);
         var isExplicitInterfaceImplementation = false;
-        if (!IsExternallyVisible(addMethodDefinition.Attributes))
+        if (!IsVisible(addMethodDefinition.Attributes))
         {
             isExplicitInterfaceImplementation = IsExplicitInterfaceImplementation(addMethodDefinition.Attributes, _metadataReader.GetString(addMethodDefinition.Name)) && ImplementsVisibleInterface(accessors.Adder, explicitImplementations);
             if (!isExplicitInterfaceImplementation)
@@ -414,7 +414,7 @@ internal sealed partial class PublicApiMetadataReader
             return null;
 
         var accessor = _metadataReader.GetMethodDefinition(accessorHandle);
-        if (!IsExternallyVisible(accessor.Attributes) && !IsExplicitInterfaceImplementation(accessor.Attributes, _metadataReader.GetString(accessor.Name)))
+        if (!IsVisible(accessor.Attributes) && !IsExplicitInterfaceImplementation(accessor.Attributes, _metadataReader.GetString(accessor.Name)))
             return null;
 
         return ReadMethod(declaringTypeHandle, accessorHandle, kind, explicitImplementations);

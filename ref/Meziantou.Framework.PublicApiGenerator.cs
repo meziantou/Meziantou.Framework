@@ -443,6 +443,7 @@ namespace Meziantou.Framework.PublicApiGenerator
 
     public sealed class PublicApiReadOptions
     {
+        public bool IncludeInternalSymbols { get => throw null; set { } }
         public string? InputIdentity { get => throw null; set { } }
         public string? TargetFramework { get => throw null; set { } }
     }

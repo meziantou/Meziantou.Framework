@@ -19,14 +19,17 @@ internal sealed class InheritedMemberResolver : IDisposable
 
     private readonly Module _mainModule;
     private readonly string? _assemblyDirectory;
+    private readonly bool _includeInternalSymbols;
     private readonly Dictionary<string, Module?> _modules = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<TypeDefinitionHandle, InheritedMemberSet> _inheritedMembers = [];
     private readonly List<PEReader> _peReaders = [];
 
-    public InheritedMemberResolver(MetadataReader metadataReader, string? assemblyDirectory)
+    /// <param name="includeInternalSymbols">Whether the internal members of the types declared in the assembly being read are considered, as they are part of its API.</param>
+    public InheritedMemberResolver(MetadataReader metadataReader, string? assemblyDirectory, bool includeInternalSymbols = false)
     {
         _mainModule = new Module(metadataReader);
         _assemblyDirectory = assemblyDirectory;
+        _includeInternalSymbols = includeInternalSymbols;
     }
 
     public void Dispose()
@@ -181,14 +184,15 @@ internal sealed class InheritedMemberResolver : IDisposable
         }
     }
 
-    private static void AddMembers(InheritedMemberSet result, ResolvedType type)
+    private void AddMembers(InheritedMemberSet result, ResolvedType type)
     {
         var reader = type.Module.Reader;
+        var includeInternals = _includeInternalSymbols && ReferenceEquals(type.Module, _mainModule);
         var typeDefinition = reader.GetTypeDefinition(type.Handle);
         foreach (var fieldHandle in typeDefinition.GetFields())
         {
             var field = reader.GetFieldDefinition(fieldHandle);
-            if (IsExternallyVisible(field.Attributes) && !field.Attributes.HasFlag(FieldAttributes.SpecialName))
+            if (IsVisible(field.Attributes, includeInternals) && !field.Attributes.HasFlag(FieldAttributes.SpecialName))
             {
                 result.Add(InheritedMemberKind.Field, reader.GetString(field.Name));
             }
@@ -198,7 +202,7 @@ internal sealed class InheritedMemberResolver : IDisposable
         {
             var property = reader.GetPropertyDefinition(propertyHandle);
             var accessors = property.GetAccessors();
-            if (IsExternallyVisible(reader, accessors.Getter) || IsExternallyVisible(reader, accessors.Setter))
+            if (IsVisible(reader, accessors.Getter, includeInternals) || IsVisible(reader, accessors.Setter, includeInternals))
             {
                 result.Add(InheritedMemberKind.Property, reader.GetString(property.Name), arity: 0, GetParameterList(reader, property, type.TypeArguments));
             }
@@ -208,7 +212,7 @@ internal sealed class InheritedMemberResolver : IDisposable
         {
             var eventDefinition = reader.GetEventDefinition(eventHandle);
             var accessors = eventDefinition.GetAccessors();
-            if (IsExternallyVisible(reader, accessors.Adder) || IsExternallyVisible(reader, accessors.Remover))
+            if (IsVisible(reader, accessors.Adder, includeInternals) || IsVisible(reader, accessors.Remover, includeInternals))
             {
                 result.Add(InheritedMemberKind.Event, reader.GetString(eventDefinition.Name));
             }
@@ -218,7 +222,7 @@ internal sealed class InheritedMemberResolver : IDisposable
         {
             // Accessors, constructors and operators are special-name methods, and they are not hidden by name
             var method = reader.GetMethodDefinition(methodHandle);
-            if (!IsExternallyVisible(method.Attributes) || method.Attributes.HasFlag(MethodAttributes.SpecialName))
+            if (!IsVisible(method.Attributes, includeInternals) || method.Attributes.HasFlag(MethodAttributes.SpecialName))
                 continue;
 
             var name = reader.GetString(method.Name);
@@ -233,7 +237,9 @@ internal sealed class InheritedMemberResolver : IDisposable
         foreach (var nestedTypeHandle in typeDefinition.GetNestedTypes())
         {
             var nestedType = reader.GetTypeDefinition(nestedTypeHandle);
-            if ((nestedType.Attributes & TypeAttributes.VisibilityMask) is TypeAttributes.NestedPublic or TypeAttributes.NestedFamily or TypeAttributes.NestedFamORAssem)
+            var nestedTypeVisibility = nestedType.Attributes & TypeAttributes.VisibilityMask;
+            if (nestedTypeVisibility is TypeAttributes.NestedPublic or TypeAttributes.NestedFamily or TypeAttributes.NestedFamORAssem ||
+                (includeInternals && nestedTypeVisibility is TypeAttributes.NestedAssembly))
             {
                 var name = MetadataNameHelper.RemoveGenericArity(reader.GetString(nestedType.Name));
                 result.Add(InheritedMemberKind.Type, name, nestedType.GetGenericParameters().Count - genericParameterCount);
@@ -241,19 +247,29 @@ internal sealed class InheritedMemberResolver : IDisposable
         }
     }
 
-    private static bool IsExternallyVisible(MetadataReader reader, MethodDefinitionHandle methodHandle)
+    private static bool IsVisible(MetadataReader reader, MethodDefinitionHandle methodHandle, bool includeInternals)
     {
-        return !methodHandle.IsNil && IsExternallyVisible(reader.GetMethodDefinition(methodHandle).Attributes);
+        return !methodHandle.IsNil && IsVisible(reader.GetMethodDefinition(methodHandle).Attributes, includeInternals);
     }
 
-    private static bool IsExternallyVisible(MethodAttributes attributes)
+    private static bool IsVisible(MethodAttributes attributes, bool includeInternals)
     {
-        return (attributes & MethodAttributes.MemberAccessMask) is MethodAttributes.Public or MethodAttributes.Family or MethodAttributes.FamORAssem;
+        return (attributes & MethodAttributes.MemberAccessMask) switch
+        {
+            MethodAttributes.Public or MethodAttributes.Family or MethodAttributes.FamORAssem => true,
+            MethodAttributes.Assembly => includeInternals,
+            _ => false,
+        };
     }
 
-    private static bool IsExternallyVisible(FieldAttributes attributes)
+    private static bool IsVisible(FieldAttributes attributes, bool includeInternals)
     {
-        return (attributes & FieldAttributes.FieldAccessMask) is FieldAttributes.Public or FieldAttributes.Family or FieldAttributes.FamORAssem;
+        return (attributes & FieldAttributes.FieldAccessMask) switch
+        {
+            FieldAttributes.Public or FieldAttributes.Family or FieldAttributes.FamORAssem => true,
+            FieldAttributes.Assembly => includeInternals,
+            _ => false,
+        };
     }
 
     // typeArguments are the type arguments of the type that refers to the handle, expressed with the generic parameters of the type being read

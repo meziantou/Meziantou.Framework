@@ -1,0 +1,15 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <!--
+      The classes of the documentation site (docs/11-JavaScriptEngine). They are compiled outside of the test project:
+      Meziantou.Framework.JavaScriptEngine.Tests sees the internals of the engine, so an override of a protected internal
+      member (JsModuleLoader) would not have the modifiers that an application writes. The test project references this
+      project and runs them.
+    -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Framework.JavaScriptEngine\Meziantou.Framework.JavaScriptEngine.csproj" />
+  </ItemGroup>
+</Project>

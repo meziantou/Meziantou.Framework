@@ -3101,7 +3101,8 @@ of their characters and were not compared with a font.
   the size of its style, at which it fits a box: a title that fills a card, a label that never overflows its button.
   Every length of the styles is multiplied by one factor, which `TextLayout.Scale` gives (the sizes of every span, the
   spacings, the indent, a fixed line height, the placeholders). Lines are wrapped at the width of the box as the
-  options say, and the text fits when none of it is cut, no line is wider than the box and its lines are not taller.
+  options say (the columns of a vertical text at its height), and the text fits when none of it is cut, no line is
+  wider than the box and its lines are not taller.
   The factor is the one the box is to the text when its lines stay the same, or else the largest of those found by
   halving the range twelve times, each with a whole layout: creating such a layout costs up to fifteen. A text that
   does not fit at `minimumScale` (0.1 by default) is laid out at it, and cut as the options say.

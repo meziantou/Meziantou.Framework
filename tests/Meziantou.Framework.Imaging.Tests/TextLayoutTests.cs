@@ -1357,6 +1357,44 @@ public sealed class TextLayoutTests
         Assert.Equal(32, layout.Height);
     }
 
+    [Theory]
+    [InlineData(TextWritingMode.VerticalRightToLeft)]
+    [InlineData(TextWritingMode.VerticalLeftToRight)]
+    public void AVerticalTextIsFittedInColumns(TextWritingMode mode)
+    {
+        // Twenty ideographs are one column 320 pixels long. In a 64 by 64 box, they fit in four columns of five
+        // ideographs 12.8 pixels square: at a larger scale, a column holds four, and the five columns are too wide
+        var style = new TextStyle(Ideographs, 16);
+        var text = new string('\u4E00', 20);
+        var layout = TextLayout.CreateToFit(text, style, 64, 64, Vertical(mode: mode));
+        Assert.Equal(0.8, layout.Scale);
+        Assert.False(layout.IsTruncated);
+        Assert.Equal(51.2, layout.Width, 1e-9);
+        Assert.Equal(64, layout.Height);
+        Assert.True(layout.InkBounds.Right <= 64 && layout.InkBounds.Bottom <= 64);
+
+        // The first column is on the side the lines start from
+        Assert.Equal(4, layout.LineCount);
+        for (var i = 0; i < 4; i++)
+        {
+            var line = layout.Lines[i];
+            var column = mode == TextWritingMode.VerticalRightToLeft ? 3 - i : i;
+            Assert.Equal((i * 5, 5, 0.0, 12.8, 64.0), (line.Start, line.Length, line.Y, line.Width, line.Height));
+            Assert.Equal(column * 12.8, line.X, 1e-9);
+        }
+
+        // The text fits at its smallest scale
+        Assert.Equal(0.8, TextLayout.CreateToFit(text, style, 64, 64, Vertical(mode: mode), minimumScale: 0.8).Scale);
+
+        // Above it, the text is laid out at its smallest scale, its columns wrapped at the height of the box as when
+        // it is fitted, and cut after the last column that fits
+        var cut = TextLayout.CreateToFit(text, style, 64, 64, Vertical(mode: mode), minimumScale: 0.9);
+        Assert.Equal(0.9, cut.Scale);
+        Assert.True(cut.IsTruncated);
+        Assert.Equal([4, 4, 4, 4], cut.Lines.Select(line => line.Length));
+        Assert.True(cut.Width <= 64 && cut.Height <= 64);
+    }
+
     [Fact]
     public void AVerticalLineOfTextOnItsSideIsAHorizontalLineTurned()
     {

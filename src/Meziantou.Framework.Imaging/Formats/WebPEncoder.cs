@@ -13,6 +13,11 @@ namespace Meziantou.Framework.Imaging.Formats;
 /// mode).
 /// </para>
 /// <para>
+/// Lossy encoding retries with 16x16 luma prediction only if the VP8 first partition exceeds 524,287 bytes.
+/// The quantizer stays the same, but the decoded quality and file size can change. If it still does not fit,
+/// encoding throws <see cref="UnsupportedImageFeatureException"/>: use lossless output or reduce the image dimensions.
+/// </para>
+/// <para>
 /// An image with several frames or animation settings is written as an animation of full-canvas frames that replace the
 /// canvas ("do not blend", "do not dispose"), with freshly computed control data. A still image (one frame, no animation
 /// settings) can be written to any stream. Animations need a seekable destination: the RIFF size and the alpha flag are
@@ -50,7 +55,8 @@ public sealed class WebPEncoder : ImageEncoder
     /// </summary>
     /// <remarks>
     /// The quality selects the quantizer index (100 is the finest quantizer, still lossy: chroma subsampling, color conversion
-    /// and rounding remain) and the loop-filter strength. It never changes the encoding time.
+    /// and rounding remain) and the loop-filter strength. It is not a target distortion or file size, and is not
+    /// interchangeable with the quality scale of other encoders.
     /// </remarks>
     /// <exception cref="ArgumentOutOfRangeException">The value is not between 0 and 100.</exception>
     public int Quality

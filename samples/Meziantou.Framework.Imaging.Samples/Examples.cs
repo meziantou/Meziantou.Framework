@@ -1303,10 +1303,10 @@ internal static class Examples
     #region Imaging_OpenExr
     public static Image<Rgba32> ConvertOpenExr(string exrPath, string pizPath)
     {
-        // An OpenEXR file loads as RgbaHalf (half samples) or RgbaFloat (float or 32-bit integer samples), in linear light
+        // Half-only files without alpha load as RgbaHalf; other OpenEXR files load as RgbaFloat, in linear light
         using var hdr = Image.Load(exrPath);
 
-        // Lossless: the samples are written as they are, values above 1 included. PIZ is often the smallest
+        // PIZ compresses the stored samples losslessly, values above 1 included; alpha conversion can round colors
         hdr.Save(pizPath, new OpenExrEncoder { Compression = OpenExrCompression.Piz });
 
         // Integer pixels cannot hold the highlights: a typed load compresses them with a tone mapping

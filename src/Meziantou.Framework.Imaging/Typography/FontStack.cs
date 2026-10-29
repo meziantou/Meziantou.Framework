@@ -100,6 +100,11 @@ public sealed class FontStack
     /// primary font.
     /// </para>
     /// <para>
+    /// Fallback does not use <see cref="TextStyle.Language"/>: Han ideographs use the simplified-Chinese family list
+    /// regardless of the language. Put the desired regional fonts in the stack or in
+    /// <see cref="InstalledFontFallbackOptions.PreferredFamilies"/> when their forms matter.
+    /// </para>
+    /// <para>
     /// The installed fonts differ from one machine to another, and so does a text drawn with this stack: use it when
     /// the text matters more than the exact pixels. The characters of a face are read from its file the first time the
     /// fallback needs them (<see cref="SystemFontDescriptor.Covers(Rune)"/>); a file that cannot be loaded is skipped. The

@@ -5,7 +5,8 @@ description: Read and write OpenEXR files of half or float samples, the linear-l
 
 OpenEXR stores scene-linear, high dynamic range images in 16-bit (half) or 32-bit floating-point samples, as rendering
 and visual-effects tools produce them. Files load as `RgbaHalf` or `RgbaFloat` pixels, values above 1 included, and
-`OpenExrEncoder` writes them without loss.
+`OpenExrEncoder` compresses the stored samples losslessly. Conversion between the library's straight colors and
+OpenEXR's premultiplied colors can round them; this is not a general bit-exact source-pixel round-trip guarantee.
 
 ## What is read and written
 
@@ -17,8 +18,9 @@ and visual-effects tools produce them. Files load as `RgbaHalf` or `RgbaFloat` p
 | Compression | NONE, RLE, ZIPS, ZIP, PIZ, PXR24, B44, B44A | NONE, RLE, ZIPS, ZIP (default) or PIZ, all lossless |
 | Metadata | Chromaticities | Chromaticities |
 
-A file of half samples loads as `RgbaHalf`, any other as `RgbaFloat`, in linear light. Infinities and samples that are
-not numbers are kept.
+A file of half samples without an alpha channel loads as `RgbaHalf`, any other as `RgbaFloat`, in linear light.
+The extra precision is used when dividing colors by alpha. Infinities and samples that are not numbers are kept,
+subject to the alpha conversion.
 
 ## Load and save an OpenEXR file
 
@@ -26,10 +28,10 @@ not numbers are kept.
 ```csharp
 public static Image<Rgba32> ConvertOpenExr(string exrPath, string pizPath)
 {
-    // An OpenEXR file loads as RgbaHalf (half samples) or RgbaFloat (float or 32-bit integer samples), in linear light
+    // Half-only files without alpha load as RgbaHalf; other OpenEXR files load as RgbaFloat, in linear light
     using var hdr = Image.Load(exrPath);
 
-    // Lossless: the samples are written as they are, values above 1 included. PIZ is often the smallest
+    // PIZ compresses the stored samples losslessly, values above 1 included; alpha conversion can round colors
     hdr.Save(pizPath, new OpenExrEncoder { Compression = OpenExrCompression.Piz });
 
     // Integer pixels cannot hold the highlights: a typed load compresses them with a tone mapping
@@ -51,12 +53,17 @@ floating-point images to other formats, with `ImageEncoder.FloatingPointConversi
 | Option | What it does | Default |
 | --- | --- | --- |
 | `Compression` | `None`, `Rle`, `Zips`, `Zip` or `Piz`; PIZ is usually the smallest for photos and noisy images | `Zip` |
-| `PixelType` | `Half` or `Float`; `null` chooses the narrowest type that stores the pixels exactly | `null` |
+| `PixelType` | `Half` or `Float`; `null` chooses half for `RgbaHalf` and 8-bit pixels, float otherwise | `null` |
 | `AllowBitDepthReduction` | Lets `RgbaFloat` and 16-bit pixels be rounded to half samples when `PixelType` is `Half` | `false` |
 | `MetadataHandling` | What to do with metadata OpenEXR cannot store | `Strict` |
 
 By default, `RgbaHalf` and 8-bit pixels are written as half samples, and `RgbaFloat` and 16-bit pixels as float samples.
 Integer pixels are written as their value divided by the largest sample (`v / max`).
+
+Nonzero alpha multiplies the colors on encoding and divides them on decoding. Rounding, underflow or overflow can
+change the colors even with the default sample type. A zero alpha keeps its colors without multiplication or division.
+Lossless compression preserves the resulting stored samples, independently of integer normalization, half-sample
+rounding and alpha conversion.
 
 ## Pitfalls
 

@@ -22,8 +22,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </list>
 /// <para>
 /// Memory (all <see cref="AllocationKind.Temporary"/>, from the writer scope): the ARGB image (transformed in place), the hash
-/// chains (4 bytes per pixel), the subresolution images and the output bit stream. The parse runs twice (statistics, then
-/// emission) instead of storing the tokens.
+/// chains (4 bytes per pixel), the subresolution images, the recorded LZ77 tokens (two 32-bit words per pixel reserved for
+/// each spatial image) and the output bit stream. Each spatial image is parsed once; its tokens are replayed for statistics
+/// and then emission.
 /// </para>
 /// </remarks>
 internal sealed class Vp8LEncoder : IDisposable

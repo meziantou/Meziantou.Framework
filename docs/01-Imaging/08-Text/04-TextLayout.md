@@ -64,6 +64,10 @@ the platforms usually use for the script of the character; then every family tha
 the one closest to the style of the primary font. The font found for a character is loaded once and kept by the
 stack. With fallback, the result depends on the fonts of the machine.
 
+Fallback does not use `TextStyle.Language`: Han ideographs use the simplified-Chinese family list regardless of the
+language. Put the desired Japanese, Korean or traditional-Chinese fonts in the stack or in `PreferredFamilies` when
+their regional forms matter.
+
 ## Right-to-left and mixed directions
 
 Each paragraph is ordered by the Unicode Bidirectional Algorithm: left-to-right and right-to-left text can be mixed,
@@ -233,4 +237,5 @@ substitutes glyphs (ligatures, contextual forms, the forms of joining scripts) a
   has a model.
 
 What layout does not do yet: letter spacing is added between the letters of every script, including those that join;
-justification does not lengthen Arabic words (kashida).
+justification only widens U+0020 spaces and U+00A0 no-break spaces. It does not add gaps between CJK characters or
+lengthen Arabic words (kashida). A line without expandable spaces stays start-aligned.

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -10,7 +11,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <para>
 /// <b>Contract.</b> With <c>M</c> the largest sample value of the pixel format, and <c>R, G, B, A</c> the samples of a
 /// pixel (<c>A = M</c> for a format without alpha, <c>R = G = B</c> the gray level of a grayscale format, and
-/// <c>R = G = B = 0</c> for <see cref="A8"/>), each sample
+/// <c>R = G = B = 0</c> for <see cref="A8"/>; the samples of the format of its kernels for an interoperability format,
+/// <see cref="DrawingKernels.IsBridgedToColorFormat{TPixel}"/>), each sample
 /// of the result is <c>floor(((((m0 R + m1 G) + m2 B) + m3 A) + m4 M) + 1/2 + 2^-20)</c> in double precision, kept between
 /// 0 and <c>M</c>; a value that is not a number is 0. The small term makes a value that is half way between two
 /// samples, to the rounding of the sum, go up: with the coefficients of
@@ -46,7 +48,11 @@ internal static class ColorMatrixKernel
             throw new InvalidOperationException($"The pixel type '{typeof(TPixel).Name}' does not match the storage pixel size.");
 
         var row = storage.GetRowSpanCore(y);
-        if (Vector128.IsHardwareAccelerated && !HasScalarKernelOnly<TPixel>())
+        if (DrawingKernels.IsBridgedToColorFormat<TPixel>())
+        {
+            ApplyBridged<TPixel>(row, x, matrix, destination);
+        }
+        else if (Vector128.IsHardwareAccelerated && !HasScalarKernelOnly<TPixel>())
         {
             ApplyVector<TPixel>(row, x, matrix, destination);
         }
@@ -155,6 +161,44 @@ internal static class ColorMatrixKernel
         }
     }
 
+    /// <summary>
+    /// Applies a matrix to pixels of an interoperability format (<see cref="DrawingKernels.IsBridgedToColorFormat{TPixel}"/>):
+    /// the pixels converted exactly to the format of their kernels, with the colors of that format.
+    /// </summary>
+    private static void ApplyBridged<TPixel>(ReadOnlySpan<byte> row, int x, ColorMatrix matrix, Span<ushort> destination)
+        where TPixel : unmanaged
+    {
+        var pixels = unsafe(MemoryMarshal.Cast<byte, TPixel>(row)).Slice(x, destination.Length / 4);
+        switch (ProcessingBridge.GetKernelFormat(PixelFormats.GetPixelFormat<TPixel>()))
+        {
+            case PixelFormat.Rgba32:
+                ApplyBridged<TPixel, Rgba32>(pixels, matrix, destination);
+                break;
+            case PixelFormat.Rgb24:
+                ApplyBridged<TPixel, Rgb24>(pixels, matrix, destination);
+                break;
+            case PixelFormat.Rgba64:
+                ApplyBridged<TPixel, Rgba64>(pixels, matrix, destination);
+                break;
+            default:
+                throw new UnreachableException();
+        }
+    }
+
+    private static void ApplyBridged<TPixel, TWorking>(ReadOnlySpan<TPixel> pixels, ColorMatrix matrix, Span<ushort> destination)
+        where TPixel : unmanaged
+        where TWorking : unmanaged
+    {
+        const int ChunkSize = 64;
+        Span<TWorking> working = stackalloc TWorking[ChunkSize];
+        for (var start = 0; start < pixels.Length; start += ChunkSize)
+        {
+            var count = Math.Min(ChunkSize, pixels.Length - start);
+            PixelConverter.ConvertRow(pixels.Slice(start, count), working);
+            ApplyScalar<TWorking>(unsafe(MemoryMarshal.AsBytes(working)), 0, matrix, destination.Slice(start * 4, count * 4));
+        }
+    }
+
     /// <summary>Gets a value indicating whether the pixel type has no vector kernel (<see cref="ApplyVector"/>).</summary>
     private static bool HasScalarKernelOnly<TPixel>() => typeof(TPixel) == typeof(Rgb48) || typeof(TPixel) == typeof(La16) || typeof(TPixel) == typeof(La32) || typeof(TPixel) == typeof(A8);
 
@@ -230,8 +274,50 @@ internal static class ColorMatrixKernel
     public static void Write<TPixel>(PixelStorage storage, int y, int x, ReadOnlySpan<ushort> colors)
         where TPixel : unmanaged
     {
-        var count = colors.Length / 4;
         var row = storage.GetRowSpanCore(y);
+        if (DrawingKernels.IsBridgedToColorFormat<TPixel>())
+        {
+            var pixels = unsafe(MemoryMarshal.Cast<byte, TPixel>(row)).Slice(x, colors.Length / 4);
+            switch (ProcessingBridge.GetKernelFormat(PixelFormats.GetPixelFormat<TPixel>()))
+            {
+                case PixelFormat.Rgba32:
+                    WriteBridged<TPixel, Rgba32>(pixels, colors);
+                    break;
+                case PixelFormat.Rgb24:
+                    WriteBridged<TPixel, Rgb24>(pixels, colors);
+                    break;
+                case PixelFormat.Rgba64:
+                    WriteBridged<TPixel, Rgba64>(pixels, colors);
+                    break;
+                default:
+                    throw new UnreachableException();
+            }
+
+            return;
+        }
+
+        WriteCore<TPixel>(row, x, colors);
+    }
+
+    /// <summary>Stores colors of the format of the kernels of an interoperability format: written to that format, then converted to the pixels (to the nearest components).</summary>
+    private static void WriteBridged<TPixel, TWorking>(Span<TPixel> pixels, ReadOnlySpan<ushort> colors)
+        where TPixel : unmanaged
+        where TWorking : unmanaged
+    {
+        const int ChunkSize = 64;
+        Span<TWorking> working = stackalloc TWorking[ChunkSize];
+        for (var start = 0; start < pixels.Length; start += ChunkSize)
+        {
+            var count = Math.Min(ChunkSize, pixels.Length - start);
+            WriteCore<TWorking>(unsafe(MemoryMarshal.AsBytes(working)), 0, colors.Slice(start * 4, count * 4));
+            PixelConverter.ConvertRow<TWorking, TPixel>(working[..count], pixels.Slice(start, count));
+        }
+    }
+
+    private static void WriteCore<TPixel>(Span<byte> row, int x, ReadOnlySpan<ushort> colors)
+        where TPixel : unmanaged
+    {
+        var count = colors.Length / 4;
         if (typeof(TPixel) == typeof(Rgba32) || typeof(TPixel) == typeof(Bgra32))
         {
             var samples = row.Slice(x * 4, count * 4);

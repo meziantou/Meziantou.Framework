@@ -8,8 +8,9 @@ namespace Meziantou.Framework.Imaging;
 /// <typeparam name="TPixel">
 /// The pixel type: <see cref="Rgba32"/>, <see cref="Bgra32"/>, <see cref="Rgb24"/>, <see cref="Rgba64"/>,
 /// <see cref="Gray8"/>, <see cref="Gray16"/>, <see cref="RgbaFloat"/>, <see cref="RgbaHalf"/>, <see cref="La16"/>,
-/// <see cref="La32"/>, <see cref="Rgb48"/> or <see cref="A8"/>. Other unmanaged types are
-/// rejected with a <see cref="NotSupportedException"/>.
+/// <see cref="La32"/>, <see cref="Rgb48"/>, <see cref="A8"/>, <see cref="Argb32"/>, <see cref="Abgr32"/>,
+/// <see cref="Bgr565"/> or <see cref="Rgba1010102"/>. Other unmanaged types are rejected with a
+/// <see cref="NotSupportedException"/>.
 /// </typeparam>
 /// <remarks>See <see cref="Image"/> for the ownership, frame and atomicity contract.</remarks>
 public sealed class Image<TPixel> : Image

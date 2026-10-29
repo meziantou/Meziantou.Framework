@@ -289,10 +289,13 @@ public sealed class PerformanceContractTests
     [InlineData(PixelFormat.La32, PixelFormat.Rgba64, 1, 2)]
     [InlineData(PixelFormat.Rgb48, PixelFormat.Rgba64, 3, 4)]
     [InlineData(PixelFormat.A8, PixelFormat.Rgba32, 1, 4)]
+    [InlineData(PixelFormat.Bgr565, PixelFormat.Rgb24, 2, 3)]
+    [InlineData(PixelFormat.Rgba1010102, PixelFormat.Rgba64, 1, 2)]
     public void CompactFormatsStoreFramesInAFractionOfTheMemory(PixelFormat compact, PixelFormat wide, int numerator, int denominator)
     {
         // The pixel storage of a frame is its pixels, whatever the format: gray with alpha takes half the memory of RGBA,
-        // 16-bit RGB three quarters, and an alpha mask a quarter (the slabs round the storage up a little)
+        // 16-bit RGB three quarters, an alpha mask a quarter, 5-6-5 bits two thirds of Rgb24 and 10-bit colors half of
+        // Rgba64 (the slabs round the storage up a little)
         using var compactImage = DrawingTestSupport.Create(compact, 256, 192);
         using var wideImage = DrawingTestSupport.Create(wide, 256, 192);
         Assert.Equal(256 * PixelFormats.GetBytesPerPixel(compact), compactImage.Frames[0].Storage.RowLength);

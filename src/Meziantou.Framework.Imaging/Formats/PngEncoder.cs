@@ -29,7 +29,7 @@ public sealed class PngEncoder : ImageEncoder
     public override ImageFormat Format => ImageFormat.Png;
 
     /// <inheritdoc />
-    internal override bool StoresPixelFormat(PixelFormat format) => format != PixelFormat.A8;
+    internal override bool StoresPixelFormat(PixelFormat format) => format is PixelFormat.La16 or PixelFormat.La32 or PixelFormat.Rgb48;
 
     /// <summary>Gets the animation mode. Defaults to <see cref="PngAnimationMode.Auto"/>.</summary>
     /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="PngAnimationMode"/>.</exception>

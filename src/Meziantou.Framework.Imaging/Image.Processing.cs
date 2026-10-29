@@ -722,7 +722,7 @@ public abstract partial class Image
 
             // 16-bit samples read the first stage from tables when the image is large enough (the tables are rented once,
             // after the replacements are reserved, and released with the conversion)
-            var colors = PixelFormats.GetBitsPerComponent(PixelFormat) == 16 && !PixelFormats.IsFloatingPoint(PixelFormat) ? (long)_size.Width * _size.Height * GetAllFrames().Length : 0;
+            var colors = PixelFormats.GetBitsPerComponent(KernelPixelFormat) == 16 && !PixelFormats.IsFloatingPoint(KernelPixelFormat) ? (long)_size.Width * _size.Height * GetAllFrames().Length : 0;
             using var scratch = new ColorConversionScratch();
             ReplaceGeometry(_size, normalizeOrientation: false, Operation, new ColorConversionFiller(pipeline, colors, scratch), cancellationToken);
         }

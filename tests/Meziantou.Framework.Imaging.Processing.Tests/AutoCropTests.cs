@@ -62,6 +62,10 @@ public sealed class AutoCropTests
             case PixelFormat.A8: CheckContentBox<A8>(); break;
             case PixelFormat.RgbaFloat: CheckContentBox<RgbaFloat>(); break;
             case PixelFormat.RgbaHalf: CheckContentBox<RgbaHalf>(); break;
+            case PixelFormat.Argb32: CheckContentBox<Argb32>(); break;
+            case PixelFormat.Abgr32: CheckContentBox<Abgr32>(); break;
+            case PixelFormat.Bgr565: CheckContentBox<Bgr565>(); break;
+            case PixelFormat.Rgba1010102: CheckContentBox<Rgba1010102>(); break;
             default: throw new ArgumentOutOfRangeException(nameof(format));
         }
     }
@@ -467,6 +471,10 @@ public sealed class AutoCropTests
             case PixelFormat.A8: CheckExpand<A8>(); break;
             case PixelFormat.RgbaFloat: CheckExpand<RgbaFloat>(); break;
             case PixelFormat.RgbaHalf: CheckExpand<RgbaHalf>(); break;
+            case PixelFormat.Argb32: CheckExpand<Argb32>(); break;
+            case PixelFormat.Abgr32: CheckExpand<Abgr32>(); break;
+            case PixelFormat.Bgr565: CheckExpand<Bgr565>(); break;
+            case PixelFormat.Rgba1010102: CheckExpand<Rgba1010102>(); break;
             default: throw new ArgumentOutOfRangeException(nameof(format));
         }
     }
@@ -1036,12 +1044,20 @@ public sealed class AutoCropTests
 
             // An alpha mask has no color: the level of the ink is its alpha (the background is opaque black)
             var t when t == typeof(A8) => new A8(r),
+            var t when t == typeof(Argb32) => new Argb32(r, g, b),
+            var t when t == typeof(Abgr32) => new Abgr32(r, g, b),
+
+            // The packed formats get the nearest components of the 8-bit and 16-bit inks
+            var t when t == typeof(Bgr565) => new Bgr565((byte)Nearest(r, 255, 31), (byte)Nearest(g, 255, 63), (byte)Nearest(b, 255, 31)),
+            var t when t == typeof(Rgba1010102) => new Rgba1010102((ushort)Nearest(r16, 65535, 1023), (ushort)Nearest(g16, 65535, 1023), (ushort)Nearest(b16, 65535, 1023)),
             var t when t == typeof(RgbaFloat) || t == typeof(RgbaHalf) => FloatInk<TPixel>(r / 255f, g / 255f, b / 255f),
             _ => throw new NotSupportedException(),
         };
 
         return (TPixel)pixel;
     }
+
+    private static int Nearest(int value, int max, int componentMax) => ((value * componentMax) + (max / 2)) / max;
 
     private static TPixel FloatInk<TPixel>(float r, float g, float b)
         where TPixel : unmanaged

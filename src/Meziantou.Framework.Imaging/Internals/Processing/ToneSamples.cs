@@ -8,10 +8,15 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// The samples of the histogram-based tone operations: rows of stored pixels read as red, green, blue and alpha samples at
 /// the storage precision (0 to 255 for 8-bit formats, 0 to 65,535 for 16-bit ones), and their colors written back.
 /// </summary>
+/// <remarks>
+/// The packed formats have the precision of the format their kernels work in (<see cref="ProcessingBridge.GetKernelFormat"/>):
+/// <see cref="PixelFormat.Bgr565"/> is read as 8-bit samples and <see cref="PixelFormat.Rgba1010102"/> as 16-bit ones, the
+/// nearest of each component, and the colors are written back to the nearest component, which gives back every sample read.
+/// </remarks>
 internal static class ToneSamples
 {
     /// <summary>Gets the number of levels of a sample of an integer pixel format: 256 or 65,536.</summary>
-    public static int GetLevelCount(PixelFormat format) => format is PixelFormat.Rgba64 or PixelFormat.Gray16 or PixelFormat.La32 or PixelFormat.Rgb48 ? 65536 : 256;
+    public static int GetLevelCount(PixelFormat format) => format is PixelFormat.Rgba64 or PixelFormat.Gray16 or PixelFormat.La32 or PixelFormat.Rgb48 or PixelFormat.Rgba1010102 ? 65536 : 256;
 
     /// <summary>
     /// Checks that the pixels have discrete levels: floating-point samples have none, and binning them would lose their
@@ -315,6 +320,54 @@ internal static class ToneSamples
 
                 break;
 
+            case PixelFormat.Argb32:
+                for (var i = 0; i < 4 * count; i += 4)
+                {
+                    rgba[i] = pixels[i + 1];
+                    rgba[i + 1] = pixels[i + 2];
+                    rgba[i + 2] = pixels[i + 3];
+                    rgba[i + 3] = pixels[i];
+                }
+
+                break;
+
+            case PixelFormat.Abgr32:
+                for (var i = 0; i < 4 * count; i += 4)
+                {
+                    rgba[i] = pixels[i + 3];
+                    rgba[i + 1] = pixels[i + 2];
+                    rgba[i + 2] = pixels[i + 1];
+                    rgba[i + 3] = pixels[i];
+                }
+
+                break;
+
+            case PixelFormat.Bgr565:
+                var packed16 = unsafe(MemoryMarshal.Cast<byte, ushort>(pixels));
+                for (var i = 0; i < count; i++)
+                {
+                    uint value = packed16[i];
+                    rgba[4 * i] = (ushort)PixelConverter.ExpandTo8(value >> 11, 31);
+                    rgba[(4 * i) + 1] = (ushort)PixelConverter.ExpandTo8((value >> 5) & 63, 63);
+                    rgba[(4 * i) + 2] = (ushort)PixelConverter.ExpandTo8(value & 31, 31);
+                    rgba[(4 * i) + 3] = byte.MaxValue;
+                }
+
+                break;
+
+            case PixelFormat.Rgba1010102:
+                var packed32 = unsafe(MemoryMarshal.Cast<byte, uint>(pixels));
+                for (var i = 0; i < count; i++)
+                {
+                    var value = packed32[i];
+                    rgba[4 * i] = (ushort)PixelConverter.Expand(value & 1023, 1023);
+                    rgba[(4 * i) + 1] = (ushort)PixelConverter.Expand((value >> 10) & 1023, 1023);
+                    rgba[(4 * i) + 2] = (ushort)PixelConverter.Expand((value >> 20) & 1023, 1023);
+                    rgba[(4 * i) + 3] = (ushort)PixelConverter.Expand(value >> 30, 3);
+                }
+
+                break;
+
             default:
                 throw new NotSupportedException($"The pixel format '{format}' has no integer samples.");
         }
@@ -434,6 +487,45 @@ internal static class ToneSamples
 
             case PixelFormat.A8:
                 // No color to write: the tone operations leave an alpha mask unchanged
+                break;
+
+            case PixelFormat.Argb32:
+                for (var i = 0; i < 4 * count; i += 4)
+                {
+                    pixels[i + 1] = (byte)rgba[i];
+                    pixels[i + 2] = (byte)rgba[i + 1];
+                    pixels[i + 3] = (byte)rgba[i + 2];
+                }
+
+                break;
+
+            case PixelFormat.Abgr32:
+                for (var i = 0; i < 4 * count; i += 4)
+                {
+                    pixels[i + 3] = (byte)rgba[i];
+                    pixels[i + 2] = (byte)rgba[i + 1];
+                    pixels[i + 1] = (byte)rgba[i + 2];
+                }
+
+                break;
+
+            case PixelFormat.Bgr565:
+                var packed16 = unsafe(MemoryMarshal.Cast<byte, ushort>(pixels));
+                for (var i = 0; i < count; i++)
+                {
+                    packed16[i] = (ushort)((PixelConverter.Reduce(rgba[4 * i], 31, byte.MaxValue) << 11) | (PixelConverter.Reduce(rgba[(4 * i) + 1], 63, byte.MaxValue) << 5) | PixelConverter.Reduce(rgba[(4 * i) + 2], 31, byte.MaxValue));
+                }
+
+                break;
+
+            case PixelFormat.Rgba1010102:
+                var packed32 = unsafe(MemoryMarshal.Cast<byte, uint>(pixels));
+                for (var i = 0; i < count; i++)
+                {
+                    // The alpha bits are kept
+                    packed32[i] = (packed32[i] & 0xC0000000u) | PixelConverter.Reduce(rgba[4 * i], 1023, ushort.MaxValue) | (PixelConverter.Reduce(rgba[(4 * i) + 1], 1023, ushort.MaxValue) << 10) | (PixelConverter.Reduce(rgba[(4 * i) + 2], 1023, ushort.MaxValue) << 20);
+                }
+
                 break;
 
             default:

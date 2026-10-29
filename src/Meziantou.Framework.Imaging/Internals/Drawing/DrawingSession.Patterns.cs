@@ -104,7 +104,7 @@ internal sealed partial class DrawingSession
 
         var width = (int)window.Width;
         var height = (int)window.Height;
-        var isWide = brush.TilePrecision == PatternTilePrecision.Canvas && _frames[0].PixelFormat is not (PixelFormat.Rgba32 or PixelFormat.Bgra32 or PixelFormat.Rgb24);
+        var isWide = brush.TilePrecision == PatternTilePrecision.Canvas && !DrawingKernels.HasNarrowWorkingImages(_frames[0].PixelFormat);
         var image = _patternImage;
         if (image is not null && image.PixelFormat != (isWide ? PixelFormat.Rgba64 : PixelFormat.Rgba32))
         {

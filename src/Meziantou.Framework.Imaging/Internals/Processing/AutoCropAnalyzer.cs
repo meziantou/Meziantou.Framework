@@ -493,7 +493,7 @@ internal sealed class AutoCropAnalyzer
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static bool Is16Bit<TPixel>() => typeof(TPixel) == typeof(Rgba64) || typeof(TPixel) == typeof(Gray16) || typeof(TPixel) == typeof(La32) || typeof(TPixel) == typeof(Rgb48);
+    private static bool Is16Bit<TPixel>() => typeof(TPixel) == typeof(Rgba64) || typeof(TPixel) == typeof(Gray16) || typeof(TPixel) == typeof(La32) || typeof(TPixel) == typeof(Rgb48) || PixelConverter.IsPacked<TPixel>();
 
     /// <summary>Reads a floating-point pixel as it is stored; a fully transparent pixel is transparent black.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

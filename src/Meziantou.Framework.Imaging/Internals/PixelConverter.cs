@@ -31,10 +31,18 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// no ties exist). Adding alpha sets it to fully opaque.</item>
 /// </list>
 /// <para>
+/// The packed formats (<see cref="Bgr565"/>, <see cref="Rgba1010102"/>) store components of 2, 5, 6 or 10 bits, each the
+/// fraction of its largest value <c>m</c>. They are read as 16-bit samples, <c>(v * 65535 + m / 2) / m</c>, and written
+/// from the samples of the source precision <c>M</c> as <c>(v * m + M / 2) / M</c>, both to nearest without ties: reading
+/// then reducing to 8 bits gives the nearest 8-bit sample of the component, and a packed component goes back to itself
+/// through 16 bits (and through 8 bits for the 5- and 6-bit components).
+/// </para>
+/// <para>
 /// <see cref="ConvertRowScalar{TSource, TDestination}(ReadOnlySpan{TSource}, Span{TDestination}, Rgba64?, ImageFormat, FloatSampleConversion?)"/> is the numerical
 /// reference: vectorized kernels must produce bit-identical results and are tested against it. With 128-bit hardware
-/// vectors, every pair of the formats other than <see cref="La16"/>, <see cref="La32"/>, <see cref="Rgb48"/> and
-/// <see cref="A8"/> (whose conversions use the scalar reference) and the search for a non-opaque pixel process 16 bytes at a time: byte moves (channel
+/// vectors, every pair of the formats other than <see cref="La16"/>, <see cref="La32"/>, <see cref="Rgb48"/>,
+/// <see cref="A8"/>, <see cref="Argb32"/>, <see cref="Abgr32"/>, <see cref="Bgr565"/> and <see cref="Rgba1010102"/> (whose
+/// conversions use the scalar reference) and the search for a non-opaque pixel process 16 bytes at a time: byte moves (channel
 /// order, alpha added or dropped, gray replicated, 8-bit samples to 16 bits), the reduction of 16-bit samples to 8 bits,
 /// luma and flattening use integer forms (or a <see cref="float"/> division that is checked or corrected) that give the
 /// results of the scalar formulas for every input.
@@ -182,6 +190,18 @@ internal static partial class PixelConverter
             case PixelFormat.A8:
                 ConvertFrom(unsafe(MemoryMarshal.Cast<byte, A8>(source)), destinationFormat, destination, background, format, floats);
                 break;
+            case PixelFormat.Argb32:
+                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, Argb32>(source)), destinationFormat, destination, background, format, floats);
+                break;
+            case PixelFormat.Abgr32:
+                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, Abgr32>(source)), destinationFormat, destination, background, format, floats);
+                break;
+            case PixelFormat.Bgr565:
+                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, Bgr565>(source)), destinationFormat, destination, background, format, floats);
+                break;
+            case PixelFormat.Rgba1010102:
+                ConvertFrom(unsafe(MemoryMarshal.Cast<byte, Rgba1010102>(source)), destinationFormat, destination, background, format, floats);
+                break;
             default:
                 throw new UnreachableException();
         }
@@ -216,6 +236,9 @@ internal static partial class PixelConverter
         PixelFormat.La16 => IndexOfNonOpaque(unsafe(MemoryMarshal.Cast<byte, La16>(row))),
         PixelFormat.La32 => IndexOfNonOpaque(unsafe(MemoryMarshal.Cast<byte, La32>(row))),
         PixelFormat.A8 => IndexOfNonOpaque(unsafe(MemoryMarshal.Cast<byte, A8>(row))),
+        PixelFormat.Argb32 => IndexOfNonOpaque(unsafe(MemoryMarshal.Cast<byte, Argb32>(row))),
+        PixelFormat.Abgr32 => IndexOfNonOpaque(unsafe(MemoryMarshal.Cast<byte, Abgr32>(row))),
+        PixelFormat.Rgba1010102 => IndexOfNonOpaque(unsafe(MemoryMarshal.Cast<byte, Rgba1010102>(row))),
         _ => PixelFormats.HasAlpha(format) ? throw new UnreachableException() : -1,
     };
 
@@ -267,7 +290,8 @@ internal static partial class PixelConverter
 
     /// <summary>
     /// Gets a value indicating whether a color converts to a pixel format without any loss: alpha is kept or fully opaque,
-    /// a gray format gets a gray color, <see cref="A8"/> gets black, an 8-bit format gets samples that are exact 8-bit values (multiples of 257), and a
+    /// a gray format gets a gray color, <see cref="A8"/> gets black, an 8-bit format gets samples that are exact 8-bit values (multiples of 257), a
+    /// packed format (<see cref="Bgr565"/>, <see cref="Rgba1010102"/>) gets samples that are the nearest 16-bit values of its components, and a
     /// half-precision format gets samples whose fraction of 65535 rounds back to them.
     /// </summary>
     /// <param name="color">The color.</param>
@@ -288,6 +312,16 @@ internal static partial class PixelConverter
 
         if (PixelFormats.IsFloatingPoint(format))
             return IsExactlyRepresentableAsFloat(color, format);
+
+        if (format is PixelFormat.Bgr565 or PixelFormat.Rgba1010102)
+        {
+            // The color goes through the format and back: a sample is kept when it is the expansion of a component
+            Span<Rgba64> colors = [color];
+            Span<byte> packed = stackalloc byte[4];
+            ConvertRow(PixelFormat.Rgba64, unsafe(MemoryMarshal.AsBytes(colors)), format, packed);
+            ConvertRow(format, packed[..PixelFormats.GetBytesPerPixel(format)], PixelFormat.Rgba64, unsafe(MemoryMarshal.AsBytes(colors)));
+            return colors[0] == color;
+        }
 
         if (PixelFormats.GetBitsPerComponent(format) == 16)
             return true;
@@ -344,6 +378,18 @@ internal static partial class PixelConverter
                 break;
             case PixelFormat.A8:
                 ConvertRow(source, unsafe(MemoryMarshal.Cast<byte, A8>(destination)), background, format, floats);
+                break;
+            case PixelFormat.Argb32:
+                ConvertRow(source, unsafe(MemoryMarshal.Cast<byte, Argb32>(destination)), background, format, floats);
+                break;
+            case PixelFormat.Abgr32:
+                ConvertRow(source, unsafe(MemoryMarshal.Cast<byte, Abgr32>(destination)), background, format, floats);
+                break;
+            case PixelFormat.Bgr565:
+                ConvertRow(source, unsafe(MemoryMarshal.Cast<byte, Bgr565>(destination)), background, format, floats);
+                break;
+            case PixelFormat.Rgba1010102:
+                ConvertRow(source, unsafe(MemoryMarshal.Cast<byte, Rgba1010102>(destination)), background, format, floats);
                 break;
             default:
                 throw new UnreachableException();
@@ -431,6 +477,34 @@ internal static partial class PixelConverter
             for (var i = 0; i < pixels.Length; i++)
             {
                 if (pixels[i].A != byte.MaxValue)
+                    return i;
+            }
+        }
+        else if (typeof(TPixel) == typeof(Argb32))
+        {
+            var pixels = unsafe(MemoryMarshal.Cast<TPixel, Argb32>(row));
+            for (var i = 0; i < pixels.Length; i++)
+            {
+                if (pixels[i].A != byte.MaxValue)
+                    return i;
+            }
+        }
+        else if (typeof(TPixel) == typeof(Abgr32))
+        {
+            var pixels = unsafe(MemoryMarshal.Cast<TPixel, Abgr32>(row));
+            for (var i = 0; i < pixels.Length; i++)
+            {
+                if (pixels[i].A != byte.MaxValue)
+                    return i;
+            }
+        }
+        else if (typeof(TPixel) == typeof(Rgba1010102))
+        {
+            // Alpha is the 2 high bits: fully opaque when both are set
+            var pixels = unsafe(MemoryMarshal.Cast<TPixel, uint>(row));
+            for (var i = 0; i < pixels.Length; i++)
+            {
+                if (pixels[i] < 0xC0000000u)
                     return i;
             }
         }
@@ -1144,8 +1218,41 @@ internal static partial class PixelConverter
         }
     }
 
+    /// <summary>
+    /// Gets a value indicating whether the samples of a pixel type are read as 16-bit values: the 16-bit formats, and the
+    /// packed formats, whose components are read as the nearest 16-bit value of their fraction (<see cref="Expand"/>).
+    /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static bool Is16Bit<TPixel>() => typeof(TPixel) == typeof(Rgba64) || typeof(TPixel) == typeof(Gray16) || typeof(TPixel) == typeof(La32) || typeof(TPixel) == typeof(Rgb48);
+    private static bool Is16Bit<TPixel>() => typeof(TPixel) == typeof(Rgba64) || typeof(TPixel) == typeof(Gray16) || typeof(TPixel) == typeof(La32) || typeof(TPixel) == typeof(Rgb48) || IsPacked<TPixel>();
+
+    /// <summary>Gets a value indicating whether a pixel type packs components of fewer bits than a byte or a 16-bit value (<see cref="Bgr565"/>, <see cref="Rgba1010102"/>).</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static bool IsPacked<TPixel>() => typeof(TPixel) == typeof(Bgr565) || typeof(TPixel) == typeof(Rgba1010102);
+
+    /// <summary>Converts a packed component to 16 bits, to nearest: <c>(v * 65535 + max / 2) / max</c> (<paramref name="max"/> is odd: no ties exist).</summary>
+    /// <param name="value">The component.</param>
+    /// <param name="max">The largest value of the component (3, 31, 63 or 1023).</param>
+    /// <returns>The 16-bit sample.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static uint Expand(uint value, uint max) => ((value * Max16) + (max / 2)) / max;
+
+    /// <summary>
+    /// Converts a packed component to 8 bits, to nearest: <c>(v * 255 + max / 2) / max</c>, the 8-bit sample of its
+    /// 16-bit expansion (<see cref="Expand"/>).
+    /// </summary>
+    /// <param name="value">The component.</param>
+    /// <param name="max">The largest value of the component (3, 31 or 63).</param>
+    /// <returns>The 8-bit sample.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static uint ExpandTo8(uint value, uint max) => ((value * Max8) + (max / 2)) / max;
+
+    /// <summary>Converts a sample to a packed component, to nearest: <c>(v * max + sourceMax / 2) / sourceMax</c> (<paramref name="sourceMax"/> is odd: no ties exist).</summary>
+    /// <param name="value">The sample.</param>
+    /// <param name="max">The largest value of the component (3, 31, 63 or 1023).</param>
+    /// <param name="sourceMax">The largest value of the sample (255 or 65535).</param>
+    /// <returns>The component.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static uint Reduce(uint value, uint max, uint sourceMax) => ((value * max) + (sourceMax / 2)) / sourceMax;
 
     /// <summary>Gets a value indicating whether the pixel stores a single gray component (with or without alpha).</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1153,7 +1260,7 @@ internal static partial class PixelConverter
 
     /// <summary>Gets a value indicating whether the conversions of a pixel type have no vector kernel (<see cref="ConvertVector"/>).</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static bool IsScalarOnly<TPixel>() => typeof(TPixel) == typeof(La16) || typeof(TPixel) == typeof(La32) || typeof(TPixel) == typeof(Rgb48) || typeof(TPixel) == typeof(A8);
+    private static bool IsScalarOnly<TPixel>() => typeof(TPixel) == typeof(La16) || typeof(TPixel) == typeof(La32) || typeof(TPixel) == typeof(Rgb48) || typeof(TPixel) == typeof(A8) || typeof(TPixel) == typeof(Argb32) || typeof(TPixel) == typeof(Abgr32) || IsPacked<TPixel>();
 
     /// <summary>Reads the components at the source precision; gray is replicated and missing alpha is opaque.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1209,6 +1316,26 @@ internal static partial class PixelConverter
             // No color: black with the alpha
             (r, g, b, a) = (0, 0, 0, unsafe(Unsafe.As<TPixel, A8>(ref pixel)).A);
         }
+        else if (typeof(TPixel) == typeof(Argb32))
+        {
+            ref var p = ref unsafe(Unsafe.As<TPixel, Argb32>(ref pixel));
+            (r, g, b, a) = (p.R, p.G, p.B, p.A);
+        }
+        else if (typeof(TPixel) == typeof(Abgr32))
+        {
+            ref var p = ref unsafe(Unsafe.As<TPixel, Abgr32>(ref pixel));
+            (r, g, b, a) = (p.R, p.G, p.B, p.A);
+        }
+        else if (typeof(TPixel) == typeof(Bgr565))
+        {
+            uint v = unsafe(Unsafe.As<TPixel, Bgr565>(ref pixel)).PackedValue;
+            (r, g, b, a) = (Expand(v >> 11, 31), Expand((v >> 5) & 63, 63), Expand(v & 31, 31), Max16);
+        }
+        else if (typeof(TPixel) == typeof(Rgba1010102))
+        {
+            var v = unsafe(Unsafe.As<TPixel, Rgba1010102>(ref pixel)).PackedValue;
+            (r, g, b, a) = (Expand(v & 1023, 1023), Expand((v >> 10) & 1023, 1023), Expand((v >> 20) & 1023, 1023), Expand(v >> 30, 3));
+        }
         else
         {
             throw new UnreachableException();
@@ -1245,6 +1372,14 @@ internal static partial class PixelConverter
         else if (typeof(TDestination) == typeof(A8))
         {
             unsafe { Unsafe.As<TDestination, A8>(ref pixel).A = Is16Bit<TSource>() ? To8Bit(a) : (byte)a; }
+        }
+        else if (typeof(TDestination) == typeof(Bgr565))
+        {
+            unsafe { Unsafe.As<TDestination, Bgr565>(ref pixel).PackedValue = (ushort)((Reduce(r, 31, sourceMax) << 11) | (Reduce(g, 63, sourceMax) << 5) | Reduce(b, 31, sourceMax)); }
+        }
+        else if (typeof(TDestination) == typeof(Rgba1010102))
+        {
+            unsafe { Unsafe.As<TDestination, Rgba1010102>(ref pixel).PackedValue = Reduce(r, 1023, sourceMax) | (Reduce(g, 1023, sourceMax) << 10) | (Reduce(b, 1023, sourceMax) << 20) | (Reduce(a, 3, sourceMax) << 30); }
         }
         else if (typeof(TDestination) == typeof(Rgb48))
         {
@@ -1291,6 +1426,16 @@ internal static partial class PixelConverter
             {
                 ref var p = ref unsafe(Unsafe.As<TDestination, Bgra32>(ref pixel));
                 (p.B, p.G, p.R, p.A) = (b8, g8, r8, a8);
+            }
+            else if (typeof(TDestination) == typeof(Argb32))
+            {
+                ref var p = ref unsafe(Unsafe.As<TDestination, Argb32>(ref pixel));
+                (p.A, p.R, p.G, p.B) = (a8, r8, g8, b8);
+            }
+            else if (typeof(TDestination) == typeof(Abgr32))
+            {
+                ref var p = ref unsafe(Unsafe.As<TDestination, Abgr32>(ref pixel));
+                (p.A, p.B, p.G, p.R) = (a8, b8, g8, r8);
             }
             else
             {

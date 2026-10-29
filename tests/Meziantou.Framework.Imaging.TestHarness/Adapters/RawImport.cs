@@ -56,7 +56,7 @@ public static class RawImport
 
                     break;
 
-                case PixelFormat.La16 or PixelFormat.La32 or PixelFormat.Rgb48 or PixelFormat.A8:
+                case PixelFormat.La16 or PixelFormat.La32 or PixelFormat.Rgb48 or PixelFormat.A8 or PixelFormat.Argb32 or PixelFormat.Abgr32:
                     // From the widened layout of ImageSnapshots.GetLayout: the stored components of each pixel
                     var width = source.Width;
                     var pixelSize = PixelFormats.GetBytesPerPixel(format);
@@ -229,6 +229,8 @@ public static class RawImport
             PixelFormat.La32 => new La32((ushort)S(0), (ushort)S(3)),
             PixelFormat.Rgb48 => new Rgb48((ushort)S(0), (ushort)S(1), (ushort)S(2)),
             PixelFormat.A8 => new A8((byte)S(3)),
+            PixelFormat.Argb32 => new Argb32((byte)S(0), (byte)S(1), (byte)S(2), (byte)S(3)),
+            PixelFormat.Abgr32 => new Abgr32((byte)S(0), (byte)S(1), (byte)S(2), (byte)S(3)),
             _ => throw new ArgumentOutOfRangeException(nameof(format), format, "Unknown pixel format."),
         };
     }
@@ -258,6 +260,12 @@ public static class RawImport
                 unsafe { MemoryMarshal.Write(destination, p); }
                 break;
             case A8 p:
+                unsafe { MemoryMarshal.Write(destination, p); }
+                break;
+            case Argb32 p:
+                unsafe { MemoryMarshal.Write(destination, p); }
+                break;
+            case Abgr32 p:
                 unsafe { MemoryMarshal.Write(destination, p); }
                 break;
             default:

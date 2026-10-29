@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -95,6 +96,19 @@ internal static class DrawingKernels
         if (PixelConverter.IsFloat<TPixel>())
             return new DrawingColor(color.R, color.G, color.B, color.A);
 
+        // The formats composited in the format of their kernels (CompositeBridged) get its paints: the result is rounded
+        // to their components once, when it is stored
+        if (IsBridgedToColorFormat<TPixel>())
+        {
+            return ProcessingBridge.GetKernelFormat(PixelFormats.GetPixelFormat<TPixel>()) switch
+            {
+                PixelFormat.Rgba32 => ConvertColor<Rgba32>(color),
+                PixelFormat.Rgb24 => ConvertColor<Rgb24>(color),
+                PixelFormat.Rgba64 => ConvertColor<Rgba64>(color),
+                _ => throw new UnreachableException(),
+            };
+        }
+
         var opaque = new Rgba64(color.R, color.G, color.B);
         TPixel pixel = default;
         PixelConverter.ConvertRow(new ReadOnlySpan<Rgba64>(in opaque), new Span<TPixel>(ref pixel));
@@ -180,6 +194,27 @@ internal static class DrawingKernels
             {
                 // The paints of a floating-point format keep the 16-bit colors
                 unsafe { MemoryMarshal.Cast<Rgba64, ushort>(chunk).CopyTo(entries); }
+                continue;
+            }
+
+            if (IsBridgedToColorFormat<TPixel>())
+            {
+                // The paints of the format of the kernels (see ConvertColor)
+                switch (ProcessingBridge.GetKernelFormat(PixelFormats.GetPixelFormat<TPixel>()))
+                {
+                    case PixelFormat.Rgba32:
+                        ConvertColors<Rgba32>(chunk, entries);
+                        break;
+                    case PixelFormat.Rgb24:
+                        ConvertColors<Rgb24>(chunk, entries);
+                        break;
+                    case PixelFormat.Rgba64:
+                        ConvertColors<Rgba64>(chunk, entries);
+                        break;
+                    default:
+                        throw new UnreachableException();
+                }
+
                 continue;
             }
 
@@ -447,6 +482,10 @@ internal static class DrawingKernels
                 entry[3] = samples[i];
             }
         }
+        else if (IsBridgedToColorFormat<TPixel>())
+        {
+            ReadBridgedDrawingColors(unsafe(MemoryMarshal.Cast<byte, TPixel>(row)).Slice(x, count), destination);
+        }
         else if (PixelConverter.IsFloat<TPixel>())
         {
             // The 16-bit colors of the pixels: a sample outside [0, 1] has none, and is rejected
@@ -496,13 +535,17 @@ internal static class DrawingKernels
         {
             Composite(unsafe(MemoryMarshal.Cast<byte, ushort>(row)).Slice(x * 3, coverage.Length * 3), channels: 3, coverage, source);
         }
-        else if (typeof(TPixel) == typeof(La16) || typeof(TPixel) == typeof(A8))
+        else if (typeof(TPixel) == typeof(La16) || typeof(TPixel) == typeof(A8) || typeof(TPixel) == typeof(Argb32) || typeof(TPixel) == typeof(Abgr32))
         {
-            CompositeBridged<TPixel, Rgba32, byte>(unsafe(MemoryMarshal.Cast<byte, TPixel>(row)).Slice(x, coverage.Length), coverage, source);
+            CompositeBridged<TPixel, Rgba32, byte>(unsafe(MemoryMarshal.Cast<byte, TPixel>(row)).Slice(x, coverage.Length), channels: 4, coverage, source);
         }
-        else if (typeof(TPixel) == typeof(La32))
+        else if (typeof(TPixel) == typeof(Bgr565))
         {
-            CompositeBridged<TPixel, Rgba64, ushort>(unsafe(MemoryMarshal.Cast<byte, TPixel>(row)).Slice(x, coverage.Length), coverage, source);
+            CompositeBridged<TPixel, Rgb24, byte>(unsafe(MemoryMarshal.Cast<byte, TPixel>(row)).Slice(x, coverage.Length), channels: 3, coverage, source);
+        }
+        else if (typeof(TPixel) == typeof(La32) || typeof(TPixel) == typeof(Rgba1010102))
+        {
+            CompositeBridged<TPixel, Rgba64, ushort>(unsafe(MemoryMarshal.Cast<byte, TPixel>(row)).Slice(x, coverage.Length), channels: 4, coverage, source);
         }
         else if (PixelConverter.IsFloat<TPixel>())
         {
@@ -515,13 +558,15 @@ internal static class DrawingKernels
     }
 
     /// <summary>
-    /// Composites a paint over pixels of a format that has no kernel of its own (gray with alpha, alpha only): each chunk of
-    /// the run is converted to RGBA of the same precision, composited, and converted back. The paints of these formats
+    /// Composites a paint over pixels of a format that has no kernel of its own (gray with alpha, alpha only, the
+    /// interoperability formats): each chunk of the run is converted to the format of its kernels
+    /// (<see cref="ProcessingBridge.GetKernelFormat"/>), composited, and converted back. The paints of the gray formats
     /// have the gray level in the three colors (black for <see cref="A8"/>), so the three colors of the result are the
     /// same and the conversion back is exact: the result is the one of a gray kernel with alpha, and an alpha mask gets
-    /// the alpha of the result.
+    /// the alpha of the result. <see cref="Argb32"/> and <see cref="Abgr32"/> get the result of <see cref="Rgba32"/>, and
+    /// a packed format the result of its wider format rounded to its components.
     /// </summary>
-    private static void CompositeBridged<TPixel, TWorking, TSample>(Span<TPixel> pixels, ReadOnlySpan<uint> coverage, scoped in DrawingSource source)
+    private static void CompositeBridged<TPixel, TWorking, TSample>(Span<TPixel> pixels, int channels, ReadOnlySpan<uint> coverage, scoped in DrawingSource source)
         where TPixel : unmanaged
         where TWorking : unmanaged
         where TSample : unmanaged, IBinaryInteger<TSample>, IMinMaxValue<TSample>
@@ -534,8 +579,78 @@ internal static class DrawingKernels
             var chunk = pixels.Slice(start, count);
             var rgba = working[..count];
             PixelConverter.ConvertRow<TPixel, TWorking>(chunk, rgba);
-            Composite(unsafe(MemoryMarshal.Cast<TWorking, TSample>(rgba)), channels: 4, coverage.Slice(start, count), source.Slice(start, count));
+            Composite(unsafe(MemoryMarshal.Cast<TWorking, TSample>(rgba)), channels, coverage.Slice(start, count), source.Slice(start, count));
             PixelConverter.ConvertRow<TWorking, TPixel>(rgba, chunk);
+        }
+    }
+
+    /// <summary>
+    /// Gets a value indicating whether a pixel format is drawn in the format of its kernels with the paints of that format:
+    /// the interoperability formats (<see cref="Argb32"/>, <see cref="Abgr32"/>, <see cref="Bgr565"/>,
+    /// <see cref="Rgba1010102"/>), whose colors are those of <see cref="Rgba32"/>, <see cref="Rgb24"/> or <see cref="Rgba64"/>:
+    /// the result of that format is rounded to their components when it is stored.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static bool IsBridgedToColorFormat<TPixel>() => typeof(TPixel) == typeof(Argb32) || typeof(TPixel) == typeof(Abgr32) || typeof(TPixel) == typeof(Bgr565) || typeof(TPixel) == typeof(Rgba1010102);
+
+    /// <summary>
+    /// Gets a value indicating whether the layers, the projections and the canvas pattern tiles of a frame are 8-bit
+    /// (<see cref="Rgba32"/>) rather than 16-bit (<see cref="Rgba64"/>) images: the 8-bit color formats, and those drawn
+    /// as one of them.
+    /// </summary>
+    /// <param name="format">The pixel format of the frame.</param>
+    public static bool HasNarrowWorkingImages(PixelFormat format) => format is PixelFormat.Rgba32 or PixelFormat.Bgra32 or PixelFormat.Rgb24 or PixelFormat.Argb32 or PixelFormat.Abgr32 or PixelFormat.Bgr565;
+
+    /// <summary>
+    /// Reads pixels of an interoperability format as the paint colors of the format of its kernels: the pixels converted to
+    /// that format (exactly), laid out as <see cref="DrawingColor"/>.
+    /// </summary>
+    private static void ReadBridgedDrawingColors<TPixel>(ReadOnlySpan<TPixel> pixels, Span<ushort> destination)
+        where TPixel : unmanaged
+    {
+        const int ChunkSize = 64;
+        switch (ProcessingBridge.GetKernelFormat(PixelFormats.GetPixelFormat<TPixel>()))
+        {
+            case PixelFormat.Rgba32:
+                {
+                    Span<Rgba32> working = stackalloc Rgba32[ChunkSize];
+                    for (var start = 0; start < pixels.Length; start += ChunkSize)
+                    {
+                        var count = Math.Min(ChunkSize, pixels.Length - start);
+                        PixelConverter.ConvertRow(pixels.Slice(start, count), working);
+                        for (var i = 0; i < count; i++)
+                        {
+                            var entry = destination.Slice((start + i) * 4, 4);
+                            (entry[0], entry[1], entry[2], entry[3]) = (working[i].R, working[i].G, working[i].B, working[i].A);
+                        }
+                    }
+
+                    break;
+                }
+
+            case PixelFormat.Rgb24:
+                {
+                    Span<Rgb24> working = stackalloc Rgb24[ChunkSize];
+                    for (var start = 0; start < pixels.Length; start += ChunkSize)
+                    {
+                        var count = Math.Min(ChunkSize, pixels.Length - start);
+                        PixelConverter.ConvertRow(pixels.Slice(start, count), working);
+                        for (var i = 0; i < count; i++)
+                        {
+                            var entry = destination.Slice((start + i) * 4, 4);
+                            (entry[0], entry[1], entry[2], entry[3]) = (working[i].R, working[i].G, working[i].B, byte.MaxValue);
+                        }
+                    }
+
+                    break;
+                }
+
+            case PixelFormat.Rgba64:
+                PixelConverter.ConvertRow(pixels, unsafe(MemoryMarshal.Cast<ushort, Rgba64>(destination)));
+                break;
+
+            default:
+                throw new UnreachableException();
         }
     }
 

@@ -1,3 +1,4 @@
+using Meziantou.Framework.Imaging.Drawing;
 using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Imaging.TestHarness.Adapters;
@@ -65,6 +66,10 @@ public sealed class ProcessingTests
             case PixelFormat.A8: CheckRotationsAndFlips<A8>(); break;
             case PixelFormat.RgbaFloat: CheckRotationsAndFlips<RgbaFloat>(); break;
             case PixelFormat.RgbaHalf: CheckRotationsAndFlips<RgbaHalf>(); break;
+            case PixelFormat.Argb32: CheckRotationsAndFlips<Argb32>(); break;
+            case PixelFormat.Abgr32: CheckRotationsAndFlips<Abgr32>(); break;
+            case PixelFormat.Bgr565: CheckRotationsAndFlips<Bgr565>(); break;
+            case PixelFormat.Rgba1010102: CheckRotationsAndFlips<Rgba1010102>(); break;
             default: throw new ArgumentOutOfRangeException(nameof(format));
         }
     }
@@ -418,6 +423,10 @@ public sealed class ProcessingTests
             case PixelFormat.A8: CheckQuarterTurns<A8>(); break;
             case PixelFormat.RgbaFloat: CheckQuarterTurns<RgbaFloat>(); break;
             case PixelFormat.RgbaHalf: CheckQuarterTurns<RgbaHalf>(); break;
+            case PixelFormat.Argb32: CheckQuarterTurns<Argb32>(); break;
+            case PixelFormat.Abgr32: CheckQuarterTurns<Abgr32>(); break;
+            case PixelFormat.Bgr565: CheckQuarterTurns<Bgr565>(); break;
+            case PixelFormat.Rgba1010102: CheckQuarterTurns<Rgba1010102>(); break;
             default: throw new ArgumentOutOfRangeException(nameof(format));
         }
     }
@@ -2708,6 +2717,94 @@ public sealed class ProcessingTests
     }
 
     /// <summary>The samples of a frame as numbers: integer samples, or the values of floating-point ones.</summary>
+    // -----------------------------------------------------------------------------------------------------------------
+    // Interoperability formats: every operation gives the result of the working format, stored back in the format
+    // -----------------------------------------------------------------------------------------------------------------
+
+    public static TheoryData<PixelFormat, string> InteropOperations
+    {
+        get
+        {
+            var data = new TheoryData<PixelFormat, string>();
+            foreach (var format in PixelFormats.All.Where(DrawingTestSupport.IsInteropFormat))
+            {
+                foreach (var operation in InteropOperationsByName.Keys)
+                {
+                    data.Add(format, operation);
+                }
+            }
+
+            return data;
+        }
+    }
+
+    private static Dictionary<string, Action<Image>> InteropOperationsByName { get; } = new(StringComparer.Ordinal)
+    {
+        ["Resize"] = image => image.Resize(new ResizeOptions(7, 5), Ct),
+        ["Rotate"] = image => image.Rotate(17, new TransformOptions { BackgroundColor = new Rgba64(0, 0, 65535) }, Ct),
+        ["GaussianBlur"] = image => image.GaussianBlur(1.5, cancellationToken: Ct),
+        ["BoxBlur"] = image => image.BoxBlur(2, cancellationToken: Ct),
+        ["MedianBlur"] = image => image.MedianBlur(1, cancellationToken: Ct),
+        ["Sharpen"] = image => image.Sharpen(1, 1.5, cancellationToken: Ct),
+        ["DetectEdges"] = image => image.DetectEdges(EdgeDetector.Sobel, grayscale: false, cancellationToken: Ct),
+        ["Grayscale"] = image => image.Grayscale(Ct),
+        ["Sepia"] = image => image.ApplyColorMatrix(ColorMatrix.CreateSepia(), Ct),
+        ["Opacity"] = image => image.ApplyColorMatrix(ColorMatrix.CreateOpacity(0.5), Ct),
+        ["AutoLevels"] = image => image.AutoLevels(cancellationToken: Ct),
+        ["Equalize"] = image => image.Equalize(cancellationToken: Ct),
+        ["Threshold"] = image => image.Threshold(cancellationToken: Ct),
+        ["Pixelate"] = image => image.Pixelate(3, Ct),
+        ["OilPaint"] = image => image.OilPaint(5, 2, Ct),
+        ["Flatten"] = image => image.Flatten(new Rgba64(65535, 32768, 0), Ct),
+        ["Vignette"] = image => image.Vignette(new Rgba32(20, 60, 200, 230), 6, 4, cancellationToken: Ct),
+        ["ConvertColorProfile"] = image => image.ConvertColorProfile(IccTestProfiles.Rgb(IccTestProfiles.DisplayP3Colorants, IccTestProfiles.SrgbCurve()), cancellationToken: Ct),
+        ["AutoCrop"] = image => image.AutoCrop(cancellationToken: Ct),
+        ["Fill"] = image => image.Draw(canvas => canvas.FillRectangle(new SolidBrush(new Rgba32(200, 30, 90, 160)), new RectangleD(1.5, 2.25, 8, 5)), Ct),
+        ["Layer"] = image => image.Draw(canvas => canvas.Layer(0.5, layer => layer.FillRectangle(new SolidBrush(new Rgba32(10, 220, 90)), new RectangleD(0.5, 0.5, 6, 4))), Ct),
+    };
+
+    [Theory]
+    [MemberData(nameof(InteropOperations))]
+    public void InteropFormatsProcessLikeTheirWorkingFormat(PixelFormat format, string operation)
+    {
+        var random = new Random(61);
+        using var image = DrawingTestSupport.CreateRandom(format, 13, 9, random.Next);
+        using var working = CloneAs(image, DrawingTestSupport.GetWorkingFormat(format));
+        InteropOperationsByName[operation](image);
+        InteropOperationsByName[operation](working);
+        using var expected = CloneAs(working, format);
+        Assert.Equal(format, image.PixelFormat);
+        Assert.Equal(expected.Size, image.Size);
+        Assert.Equal(DrawingTestSupport.ReadSamples(expected.Frames[0]), DrawingTestSupport.ReadSamples(image.Frames[0]));
+    }
+
+    [Theory]
+    [MemberData(nameof(DrawingTestSupport.InteropFormats), MemberType = typeof(DrawingTestSupport))]
+    public void InteropImagesAreDrawnLikeTheColorsTheyStore(PixelFormat format)
+    {
+        // A source is read as 16-bit colors: the byte orders as Rgba32, a packed component as its nearest 16-bit sample
+        var random = new Random(67);
+        using var source = DrawingTestSupport.CreateRandom(format, 6, 5, random.Next);
+        using var workingSource = CloneAs(source, format is PixelFormat.Bgr565 or PixelFormat.Rgba1010102 ? PixelFormat.Rgba64 : DrawingTestSupport.GetWorkingFormat(format));
+        using var canvas = DrawingTestSupport.CreateRandom(PixelFormat.Rgba64, 9, 8, random.Next);
+        using var expected = canvas.CloneAs<Rgba64>();
+        canvas.Draw(drawing => drawing.DrawImage(source.Frames[0], new RectangleD(1.25, 0.5, 7, 6), opacity: 0.75), Ct);
+        expected.Draw(drawing => drawing.DrawImage(workingSource.Frames[0], new RectangleD(1.25, 0.5, 7, 6), opacity: 0.75), Ct);
+        Assert.Equal(DrawingTestSupport.ReadSamples(expected.Frames[0]), DrawingTestSupport.ReadSamples(canvas.Frames[0]));
+    }
+
+    private static Image CloneAs(Image image, PixelFormat format) => format switch
+    {
+        PixelFormat.Rgba32 => image.CloneAs<Rgba32>(),
+        PixelFormat.Rgb24 => image.CloneAs<Rgb24>(),
+        PixelFormat.Rgba64 => image.CloneAs<Rgba64>(),
+        PixelFormat.Argb32 => image.CloneAs<Argb32>(),
+        PixelFormat.Abgr32 => image.CloneAs<Abgr32>(),
+        PixelFormat.Bgr565 => image.CloneAs<Bgr565>(),
+        PixelFormat.Rgba1010102 => image.CloneAs<Rgba1010102>(),
+        _ => throw new ArgumentOutOfRangeException(nameof(format), format, "Not an interoperability format or the working format of one."),
+    };
+
     private static double[] ReadValues(ImageFrame frame)
     {
         var samples = DrawingTestSupport.ReadSamples(frame);
@@ -3011,6 +3108,10 @@ public sealed class ProcessingTests
             var t when t == typeof(La32) => new La32((ushort)((id * 1000) + 1), (ushort)(0x8000 + id)),
             var t when t == typeof(Rgb48) => new Rgb48((ushort)((0x0101 * id) + 1), (ushort)(0x1000 + (3 * id)), (ushort)(0xFFFF - (7 * id))),
             var t when t == typeof(A8) => new A8((byte)(255 - (id * 3))),
+            var t when t == typeof(Argb32) => new Argb32((byte)id, (byte)(id + 100), (byte)(200 - id), (byte)(255 - id)),
+            var t when t == typeof(Abgr32) => new Abgr32((byte)id, (byte)(id + 100), (byte)(200 - id), (byte)(255 - id)),
+            var t when t == typeof(Bgr565) => new Bgr565((byte)(id & 31), (byte)((id + 20) & 63), (byte)((31 - id) & 31)),
+            var t when t == typeof(Rgba1010102) => new Rgba1010102((ushort)(((37 * id) + 1) & 1023), (ushort)((0x100 + (3 * id)) & 1023), (ushort)((1023 - (7 * id)) & 1023), (byte)(1 + (id % 3))),
 
             // A fraction, a negative (out-of-gamut) color, a high dynamic range one and a translucent alpha, all exact as halves
             var t when t == typeof(RgbaFloat) => new RgbaFloat(id + 0.25f, -id / 8f, 1000f + id, 1f - (id / 64f)),

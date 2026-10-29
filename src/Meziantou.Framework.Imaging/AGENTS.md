@@ -93,6 +93,31 @@ rendering also changes the images of the pages (`DocumentationImageTests`).
   composites them through `DrawingKernels.CompositeBridged`, their paints holding the gray level in the three colors. A
   new per-frame operation must handle them natively, go through the bridge, or reject them before any allocation.
 
+## Interoperability pixel formats
+
+`Argb32`, `Abgr32` (byte orders of other APIs), `Bgr565` and `Rgba1010102` (packed components of 5/6/5 and 10/10/10/2
+bits) exist to exchange buffers with GPU and display APIs. The library has no kernel for them: everything works on their
+working format, `ProcessingBridge.GetKernelFormat` (`Rgba32` for the two byte orders, `Rgb24` for `Bgr565`, `Rgba64`
+for `Rgba1010102`), and stores the result back with the conversion rules.
+
+- Conversions: the packed formats are read as 16-bit samples, each component the nearest 16-bit value of its fraction
+  (`PixelConverter.Expand`), and written to the nearest component (`PixelConverter.Reduce`), from the samples of the
+  source precision; `PixelConverter.Is16Bit` includes them, `IsPacked` tells them. A packed component goes back to
+  itself through 16 bits (and through 8 bits for 5 and 6 bits), and their conversions to and from the floating-point
+  formats use the fraction of each component (`ReadPackedComponents`), not its 16-bit expansion.
+- `PixelFormats.GetBitsPerComponent` gives the largest component (6, 10): never use it to mean "byte" or "`ushort`"
+  samples for a raw format; use the kernel format (`Image.KernelPixelFormat`) or the pixel type.
+- Every lease-based kernel (filters, effects, grayscale, ICC conversion) bridges them in `ImageFrame<TPixel>`;
+  `DrawingKernels.IsBridgedToColorFormat` covers the paints (`ConvertColor`, `ConvertColors`, `ReadDrawingColors`),
+  `Composite` and the color matrix: the paints are those of the working format, never rounded to the components first,
+  so a composite rounds once, when it is stored. An interoperability image drawn on another one is read like any source
+  (`ReadRgba64`: a packed component as its nearest 16-bit sample). Tone
+  operations read them natively at the precision of the working format (`ToneSamples`), auto-crop and `ReplaceColor`
+  through `PixelConverter.Read`. Layers, projections and canvas pattern tiles of `Argb32`, `Abgr32` and `Bgr565` frames
+  are 8-bit (`DrawingKernels.HasNarrowWorkingImages`).
+- Encoders never receive them: `PixelFormatWidening` widens them losslessly for every encoder (`StoresPixelFormat`
+  lists the formats an encoder stores; do not write it as "every format but ..."). `PdfImage.FromImage` widens them too.
+
 ## Floating-point pixels
 
 `RgbaFloat` and `RgbaHalf` are built-in formats like the others (not a custom pixel type): linear light, 1 is the

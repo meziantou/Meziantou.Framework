@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -46,11 +47,38 @@ internal static partial class PixelConverter
             ref var p = ref unsafe(Unsafe.As<TPixel, RgbaHalf>(ref pixel));
             (r, g, b, a) = ((double)p.R, (double)p.G, (double)p.B, (double)p.A);
         }
+        else if (IsPacked<TPixel>())
+        {
+            ReadPackedComponents(ref pixel, out var ri, out var gi, out var bi, out var ai, out var maxR, out var maxG, out var maxB, out var maxA);
+            (r, g, b, a) = (ri / (double)maxR, gi / (double)maxG, bi / (double)maxB, ai / (double)maxA);
+        }
         else
         {
             Read(ref pixel, out var ri, out var gi, out var bi, out var ai);
             double max = Is16Bit<TPixel>() ? Max16 : Max8;
             (r, g, b, a) = (ri / max, gi / max, bi / max, ai / max);
+        }
+    }
+
+    /// <summary>Reads the components of a packed pixel as they are stored, with the largest value of each (a missing alpha is opaque).</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void ReadPackedComponents<TPixel>(ref TPixel pixel, out uint r, out uint g, out uint b, out uint a, out uint maxR, out uint maxG, out uint maxB, out uint maxA)
+    {
+        if (typeof(TPixel) == typeof(Bgr565))
+        {
+            uint v = unsafe(Unsafe.As<TPixel, Bgr565>(ref pixel)).PackedValue;
+            (r, g, b, a) = (v >> 11, (v >> 5) & 63, v & 31, 1);
+            (maxR, maxG, maxB, maxA) = (31, 63, 31, 1);
+        }
+        else if (typeof(TPixel) == typeof(Rgba1010102))
+        {
+            var v = unsafe(Unsafe.As<TPixel, Rgba1010102>(ref pixel)).PackedValue;
+            (r, g, b, a) = (v & 1023, (v >> 10) & 1023, (v >> 20) & 1023, v >> 30);
+            (maxR, maxG, maxB, maxA) = (1023, 1023, 1023, 3);
+        }
+        else
+        {
+            throw new UnreachableException();
         }
     }
 
@@ -246,17 +274,26 @@ internal static partial class PixelConverter
         var max = Is16Bit<TSource>() ? Max16 : Max8;
         for (nint i = 0; i < source.Length; i++)
         {
-            Read(ref unsafe(Unsafe.Add(ref src, i)), out var r, out var g, out var b, out var a);
-            if (typeof(TDestination) == typeof(RgbaFloat))
+            // A packed component is the fraction of its own largest value, not of its 16-bit expansion
+            uint r, g, b, a, maxR, maxG, maxB, maxA;
+            if (IsPacked<TSource>())
             {
-                // One correctly rounded division: the integers are exact in single precision
-                var maxF = (float)max;
-                unsafe { Unsafe.As<TDestination, RgbaFloat>(ref Unsafe.Add(ref dst, i)) = new RgbaFloat(r / maxF, g / maxF, b / maxF, a / maxF); }
+                ReadPackedComponents(ref unsafe(Unsafe.Add(ref src, i)), out r, out g, out b, out a, out maxR, out maxG, out maxB, out maxA);
             }
             else
             {
-                double maxD = max;
-                unsafe { Unsafe.As<TDestination, RgbaHalf>(ref Unsafe.Add(ref dst, i)) = new RgbaHalf((Half)(r / maxD), (Half)(g / maxD), (Half)(b / maxD), (Half)(a / maxD)); }
+                Read(ref unsafe(Unsafe.Add(ref src, i)), out r, out g, out b, out a);
+                (maxR, maxG, maxB, maxA) = (max, max, max, max);
+            }
+
+            if (typeof(TDestination) == typeof(RgbaFloat))
+            {
+                // One correctly rounded division: the integers are exact in single precision
+                unsafe { Unsafe.As<TDestination, RgbaFloat>(ref Unsafe.Add(ref dst, i)) = new RgbaFloat(r / (float)maxR, g / (float)maxG, b / (float)maxB, a / (float)maxA); }
+            }
+            else
+            {
+                unsafe { Unsafe.As<TDestination, RgbaHalf>(ref Unsafe.Add(ref dst, i)) = new RgbaHalf((Half)(r / (double)maxR), (Half)(g / (double)maxG), (Half)(b / (double)maxB), (Half)(a / (double)maxA)); }
             }
         }
     }
@@ -345,6 +382,14 @@ internal static partial class PixelConverter
             ref var p = ref unsafe(Unsafe.As<TPixel, Rgb48>(ref pixel));
             (p.R, p.G, p.B) = ((ushort)ToIntegerSample(r, Max16), (ushort)ToIntegerSample(g, Max16), (ushort)ToIntegerSample(b, Max16));
         }
+        else if (typeof(TPixel) == typeof(Bgr565))
+        {
+            unsafe { Unsafe.As<TPixel, Bgr565>(ref pixel).PackedValue = (ushort)((ToIntegerSample(r, 31) << 11) | (ToIntegerSample(g, 63) << 5) | ToIntegerSample(b, 31)); }
+        }
+        else if (typeof(TPixel) == typeof(Rgba1010102))
+        {
+            unsafe { Unsafe.As<TPixel, Rgba1010102>(ref pixel).PackedValue = ToIntegerSample(r, 1023) | (ToIntegerSample(g, 1023) << 10) | (ToIntegerSample(b, 1023) << 20) | (ToIntegerSample(a, 3) << 30); }
+        }
         else
         {
             var (r8, g8, b8, a8) = ((byte)ToIntegerSample(r, Max8), (byte)ToIntegerSample(g, Max8), (byte)ToIntegerSample(b, Max8), (byte)ToIntegerSample(a, Max8));
@@ -357,6 +402,16 @@ internal static partial class PixelConverter
             {
                 ref var p = ref unsafe(Unsafe.As<TPixel, Bgra32>(ref pixel));
                 (p.B, p.G, p.R, p.A) = (b8, g8, r8, a8);
+            }
+            else if (typeof(TPixel) == typeof(Argb32))
+            {
+                ref var p = ref unsafe(Unsafe.As<TPixel, Argb32>(ref pixel));
+                (p.A, p.R, p.G, p.B) = (a8, r8, g8, b8);
+            }
+            else if (typeof(TPixel) == typeof(Abgr32))
+            {
+                ref var p = ref unsafe(Unsafe.As<TPixel, Abgr32>(ref pixel));
+                (p.A, p.B, p.G, p.R) = (a8, b8, g8, r8);
             }
             else
             {

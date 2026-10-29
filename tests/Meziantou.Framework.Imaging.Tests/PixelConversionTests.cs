@@ -76,6 +76,10 @@ public sealed class PixelConversionTests
         AssertLayout<La32>(4, ("L", 0), ("A", 2));
         AssertLayout<Rgb48>(6, ("R", 0), ("G", 2), ("B", 4));
         AssertLayout<A8>(1, ("A", 0));
+        AssertLayout<Argb32>(4, ("A", 0), ("R", 1), ("G", 2), ("B", 3));
+        AssertLayout<Abgr32>(4, ("A", 0), ("B", 1), ("G", 2), ("R", 3));
+        AssertLayout<Bgr565>(2, ("PackedValue", 0));
+        AssertLayout<Rgba1010102>(4, ("PackedValue", 0));
     }
 
     [Fact]
@@ -93,6 +97,12 @@ public sealed class PixelConversionTests
         Assert.Equal(Native16(0xA1B2), Bytes(new Gray16(0xA1B2)));
         Assert.Equal(Native16(0xA1B2, 0x0102), Bytes(new La32(0xA1B2, 0x0102)));
         Assert.Equal(Native16(0x0102, 0x0304, 0x0506), Bytes(new Rgb48(0x0102, 0x0304, 0x0506)));
+        Assert.Equal([4, 1, 2, 3], Bytes(new Argb32(r: 1, g: 2, b: 3, a: 4)));
+        Assert.Equal([4, 3, 2, 1], Bytes(new Abgr32(r: 1, g: 2, b: 3, a: 4)));
+
+        // Packed values are native-endian too
+        Assert.Equal(Native16(0b00001_000010_00011), Bytes(new Bgr565(1, 2, 3)));
+        Assert.Equal(BitConverter.GetBytes(1u | (2u << 10) | (3u << 20) | (1u << 30)), Bytes(new Rgba1010102(1, 2, 3, 1)));
     }
 
     [Fact]
@@ -683,6 +693,186 @@ public sealed class PixelConversionTests
         Assert.Equal(PixelFormat.La16, loaded.PixelFormat);
     }
 
+    // ---------------------------------------------------------------------------------------------------------------
+    // Interoperability formats: other byte orders and packed components
+    // ---------------------------------------------------------------------------------------------------------------
+
+    [Fact]
+    public void InteropByteOrdersConvertToRgba32AndBackExactly()
+    {
+        var rgba = new Rgba32[65536];
+        for (var i = 0; i < rgba.Length; i++)
+        {
+            rgba[i] = new Rgba32((byte)i, (byte)(i >> 8), (byte)(255 - i), (byte)(i ^ (i >> 8)));
+        }
+
+        var argb = new Argb32[rgba.Length];
+        var abgr = new Abgr32[rgba.Length];
+        PixelConverter.ConvertRow<Rgba32, Argb32>(rgba, argb);
+        PixelConverter.ConvertRow<Rgba32, Abgr32>(rgba, abgr);
+        for (var i = 0; i < rgba.Length; i++)
+        {
+            var (r, g, b, a) = (rgba[i].R, rgba[i].G, rgba[i].B, rgba[i].A);
+            Assert.Equal(new Argb32(r, g, b, a), argb[i]);
+            Assert.Equal(new Abgr32(r, g, b, a), abgr[i]);
+        }
+
+        Assert.Equal(argb, RoundTrip<Argb32, Rgba32>(argb));
+        Assert.Equal(argb, RoundTrip<Argb32, Bgra32>(argb));
+        Assert.Equal(argb, RoundTrip<Argb32, Abgr32>(argb));
+        Assert.Equal(argb, RoundTrip<Argb32, Rgba64>(argb));
+        Assert.Equal(argb, RoundTrip<Argb32, RgbaFloat>(argb));
+        Assert.Equal(abgr, RoundTrip<Abgr32, Rgba32>(abgr));
+        Assert.Equal(abgr, RoundTrip<Abgr32, Rgba64>(abgr));
+        Assert.Equal(abgr, RoundTrip<Abgr32, RgbaHalf>(abgr));
+    }
+
+    [Fact]
+    public void Bgr565ConvertsToTheNearestSamplesAndBackExactly()
+    {
+        // Every packed value
+        var packed = new Bgr565[65536];
+        for (var i = 0; i < packed.Length; i++)
+        {
+            packed[i] = new Bgr565 { PackedValue = (ushort)i };
+        }
+
+        var rgb24 = new Rgb24[packed.Length];
+        var rgba64 = new Rgba64[packed.Length];
+        PixelConverter.ConvertRow<Bgr565, Rgb24>(packed, rgb24);
+        PixelConverter.ConvertRow<Bgr565, Rgba64>(packed, rgba64);
+        for (var i = 0; i < packed.Length; i++)
+        {
+            var (r, g, b) = (packed[i].R, packed[i].G, packed[i].B);
+            Assert.Equal(new Rgb24((byte)ReferenceModel.Rescale(r, 31, 255), (byte)ReferenceModel.Rescale(g, 63, 255), (byte)ReferenceModel.Rescale(b, 31, 255)), rgb24[i]);
+            Assert.Equal(new Rgba64((ushort)ReferenceModel.Rescale(r, 31, 65535), (ushort)ReferenceModel.Rescale(g, 63, 65535), (ushort)ReferenceModel.Rescale(b, 31, 65535)), rgba64[i]);
+        }
+
+        Assert.Equal(packed, RoundTrip<Bgr565, Rgb24>(packed));
+        Assert.Equal(packed, RoundTrip<Bgr565, Rgba32>(packed));
+        Assert.Equal(packed, RoundTrip<Bgr565, Argb32>(packed));
+        Assert.Equal(packed, RoundTrip<Bgr565, Rgba64>(packed));
+        Assert.Equal(packed, RoundTrip<Bgr565, Rgb48>(packed));
+        Assert.Equal(packed, RoundTrip<Bgr565, Rgba1010102>(packed));
+        Assert.Equal(packed, RoundTrip<Bgr565, RgbaFloat>(packed));
+        Assert.Equal(packed, RoundTrip<Bgr565, RgbaHalf>(packed));
+
+        // Every 8-bit and 16-bit sample goes to the nearest component
+        var samples8 = new Rgb24[256];
+        for (var i = 0; i < samples8.Length; i++)
+        {
+            samples8[i] = new Rgb24((byte)i, (byte)i, (byte)(255 - i));
+        }
+
+        var reduced = new Bgr565[samples8.Length];
+        PixelConverter.ConvertRow<Rgb24, Bgr565>(samples8, reduced);
+        for (var i = 0; i < samples8.Length; i++)
+        {
+            Assert.Equal(new Bgr565((byte)ReferenceModel.Rescale(i, 255, 31), (byte)ReferenceModel.Rescale(i, 255, 63), (byte)ReferenceModel.Rescale(255 - i, 255, 31)), reduced[i]);
+        }
+
+        var samples16 = new Rgb48[65536];
+        for (var i = 0; i < samples16.Length; i++)
+        {
+            samples16[i] = new Rgb48((ushort)i, (ushort)i, (ushort)(65535 - i));
+        }
+
+        reduced = new Bgr565[samples16.Length];
+        PixelConverter.ConvertRow<Rgb48, Bgr565>(samples16, reduced);
+        for (var i = 0; i < samples16.Length; i++)
+        {
+            Assert.Equal(new Bgr565((byte)ReferenceModel.Rescale(i, 65535, 31), (byte)ReferenceModel.Rescale(i, 65535, 63), (byte)ReferenceModel.Rescale(65535 - i, 65535, 31)), reduced[i]);
+        }
+
+        // Removing alpha needs opaque pixels, or a background
+        Assert.Throws<UnsupportedImageFeatureException>(() => PixelConverter.ConvertRow<Rgba32, Bgr565>([new Rgba32(1, 2, 3, 4)], new Bgr565[1]));
+    }
+
+    [Fact]
+    public void Rgba1010102ConvertsToTheNearestSamplesAndBackExactly()
+    {
+        // Every 10-bit color with every alpha
+        var packed = new Rgba1010102[4096];
+        for (var i = 0; i < packed.Length; i++)
+        {
+            var v = (ushort)(i >> 2);
+            packed[i] = new Rgba1010102(v, (ushort)(1023 - v), (ushort)((v * 7) & 1023), (byte)(i & 3));
+        }
+
+        var rgba64 = new Rgba64[packed.Length];
+        var rgba32 = new Rgba32[packed.Length];
+        PixelConverter.ConvertRow<Rgba1010102, Rgba64>(packed, rgba64);
+        PixelConverter.ConvertRow<Rgba1010102, Rgba32>(packed, rgba32);
+        for (var i = 0; i < packed.Length; i++)
+        {
+            var (r, g, b, a) = (packed[i].R, packed[i].G, packed[i].B, packed[i].A);
+            Assert.Equal(new Rgba64((ushort)ReferenceModel.Rescale(r, 1023, 65535), (ushort)ReferenceModel.Rescale(g, 1023, 65535), (ushort)ReferenceModel.Rescale(b, 1023, 65535), (ushort)(a * 21845)), rgba64[i]);
+            Assert.Equal(new Rgba32((byte)ReferenceModel.Rescale(r, 1023, 255), (byte)ReferenceModel.Rescale(g, 1023, 255), (byte)ReferenceModel.Rescale(b, 1023, 255), (byte)(a * 85)), rgba32[i]);
+        }
+
+        Assert.Equal(packed, RoundTrip<Rgba1010102, Rgba64>(packed));
+        Assert.Equal(packed, RoundTrip<Rgba1010102, RgbaFloat>(packed));
+
+        // 8 bits keep the alpha but not every color
+        Assert.Equal(packed.Select(pixel => pixel.A).ToArray(), RoundTrip<Rgba1010102, Rgba32>(packed).Select(pixel => pixel.A).ToArray());
+        Assert.NotEqual(packed, RoundTrip<Rgba1010102, Rgba32>(packed));
+
+        // Every 16-bit sample goes to the nearest component
+        var samples = new Rgba64[65536];
+        for (var i = 0; i < samples.Length; i++)
+        {
+            samples[i] = new Rgba64((ushort)i, (ushort)(65535 - i), (ushort)i, (ushort)i);
+        }
+
+        var reduced = new Rgba1010102[samples.Length];
+        PixelConverter.ConvertRow<Rgba64, Rgba1010102>(samples, reduced);
+        for (var i = 0; i < samples.Length; i++)
+        {
+            Assert.Equal(new Rgba1010102((ushort)ReferenceModel.Rescale(i, 65535, 1023), (ushort)ReferenceModel.Rescale(65535 - i, 65535, 1023), (ushort)ReferenceModel.Rescale(i, 65535, 1023), (byte)ReferenceModel.Rescale(i, 65535, 3)), reduced[i]);
+        }
+
+        // A pixel is opaque when both alpha bits are set
+        Assert.Equal(1, PixelConverter.IndexOfNonOpaque<Rgba1010102>([new Rgba1010102(1, 2, 3), new Rgba1010102(1, 2, 3, 2)]));
+        Assert.True(PixelConverter.IsOpaque<Rgba1010102>([new Rgba1010102(1023, 0, 0, 3)]));
+    }
+
+    [Fact]
+    public void PackedFormatsRepresentExactlyTheExpansionsOfTheirComponents()
+    {
+        Assert.True(PixelConverter.IsExactlyRepresentable(new Rgba64(65535, 0, 2114), PixelFormat.Bgr565));
+        Assert.True(PixelConverter.IsExactlyRepresentable(new Rgba64(2114, 1040, 65535), PixelFormat.Bgr565));
+        Assert.False(PixelConverter.IsExactlyRepresentable(new Rgba64(257, 0, 0), PixelFormat.Bgr565));
+        Assert.False(PixelConverter.IsExactlyRepresentable(new Rgba64(0, 0, 0, 0), PixelFormat.Bgr565));
+        Assert.True(PixelConverter.IsExactlyRepresentable(new Rgba64(64, 65535, 0, 21845), PixelFormat.Rgba1010102));
+        Assert.False(PixelConverter.IsExactlyRepresentable(new Rgba64(64, 65535, 0, 21844), PixelFormat.Rgba1010102));
+        Assert.False(PixelConverter.IsExactlyRepresentable(new Rgba64(63, 65535, 0, 65535), PixelFormat.Rgba1010102));
+        Assert.True(PixelConverter.IsExactlyRepresentable(new Rgba64(257, 514, 771, 1028), PixelFormat.Argb32));
+        Assert.False(PixelConverter.IsExactlyRepresentable(new Rgba64(256, 514, 771, 1028), PixelFormat.Abgr32));
+    }
+
+    [Fact]
+    public void InteropFormatsConvertImagesWithCloneAs()
+    {
+        // A 16-bit display buffer: red, green, blue and white pixels, blue in the low bits
+        Bgr565[] buffer = [new() { PackedValue = 0xF800 }, new() { PackedValue = 0x07E0 }, new() { PackedValue = 0x001F }, new() { PackedValue = 0xFFFF }];
+        using var image = Image.ImportPixelData<Bgr565>(buffer, width: 2, height: 2);
+
+        // The components convert to the nearest samples of the other formats, and back exactly
+        using var rgb = image.CloneAs<Rgb24>();
+        Assert.Equal(new Rgb24(255, 0, 0), rgb.Frames[0][0, 0]);
+        Assert.Equal(new Rgb24(0, 255, 0), rgb.Frames[0][1, 0]);
+
+        // Every operation works on it like on Rgb24 and stores the result back in 5, 6 and 5 bits
+        image.Flip(FlipMode.Horizontal);
+        Assert.Equal(new Bgr565(r: 0, g: 63, b: 0), image.Frames[0][0, 0]);
+
+        // A GPU texture in another byte order or with 10-bit samples is a conversion away
+        using var texture = rgb.CloneAs<Rgba1010102>();
+        Assert.Equal(new Rgba1010102(r: 1023, g: 0, b: 0, a: 3), texture.Frames[0][0, 0]);
+        using var argb = rgb.CloneAs<Argb32>();
+        Assert.Equal(new Argb32(r: 0, g: 0, b: 255), argb.Frames[0][0, 1]);
+    }
+
     private static TPixel[] RoundTrip<TPixel, TIntermediate>(TPixel[] pixels)
         where TPixel : unmanaged
         where TIntermediate : unmanaged
@@ -715,7 +905,7 @@ public sealed class PixelConversionTests
         if (removesAlpha)
         {
             Assert.Throws<UnsupportedImageFeatureException>(() => PixelConverter.ConvertRow(source, bytes, destination, output));
-            var max = ReferenceModel.Max(source);
+            var max = ReferenceModel.Maxima(source).A;
             pixels = [.. pixels.Select(p => (p.R, p.G, p.B, max))];
             bytes = ReferenceModel.CreateRow(source, pixels);
         }
@@ -1240,7 +1430,18 @@ public sealed class PixelConversionTests
     /// </summary>
     internal static class ReferenceModel
     {
-        public static int Max(PixelFormat format) => PixelFormats.GetBitsPerComponent(format) == 16 ? 65535 : 255;
+        /// <summary>Gets the largest sample of the precision a format is read at: the packed formats are read as 16-bit samples.</summary>
+        public static int Max(PixelFormat format) => IsPacked(format) || PixelFormats.GetBitsPerComponent(format) == 16 ? 65535 : 255;
+
+        public static bool IsPacked(PixelFormat format) => format is PixelFormat.Bgr565 or PixelFormat.Rgba1010102;
+
+        /// <summary>Gets the largest value of each stored component (a format without alpha gets the largest color one).</summary>
+        public static (int R, int G, int B, int A) Maxima(PixelFormat format) => format switch
+        {
+            PixelFormat.Bgr565 => (31, 63, 31, 63),
+            PixelFormat.Rgba1010102 => (1023, 1023, 1023, 3),
+            _ => (Max(format), Max(format), Max(format), Max(format)),
+        };
 
         public static int RoundHalfUp(decimal value) => (int)decimal.Floor(value + 0.5m);
 
@@ -1255,6 +1456,14 @@ public sealed class PixelConversionTests
             var sourceMax = Max(source);
             var destinationMax = Max(destination);
             var (r, g, b, a) = pixel;
+            if (IsPacked(source))
+            {
+                // Each component is read as the nearest 16-bit sample of its fraction
+                var (mr, mg, mb, ma) = Maxima(source);
+                (r, g, b) = (Rescale(r, mr, 65535), Rescale(g, mg, 65535), Rescale(b, mb, 65535));
+                a = PixelFormats.HasAlpha(source) ? Rescale(a, ma, 65535) : 65535;
+            }
+
             if (PixelFormats.HasAlpha(source) && !PixelFormats.HasAlpha(destination) && background is { } bg)
             {
                 int bgR = bg.R, bgG = bg.G, bgB = bg.B;
@@ -1287,8 +1496,17 @@ public sealed class PixelConversionTests
                 _ => value,
             };
 
+            if (IsPacked(destination))
+            {
+                // Each component is the nearest of the sample
+                var (mr, mg, mb, ma) = Maxima(destination);
+                return (Rescale(r, sourceMax, mr), Rescale(g, sourceMax, mg), Rescale(b, sourceMax, mb), PixelFormats.HasAlpha(destination) ? Rescale(a, sourceMax, ma) : ma);
+            }
+
             return (Scale(r), Scale(g), Scale(b), PixelFormats.HasAlpha(destination) ? Scale(a) : destinationMax);
         }
+
+        public static int Rescale(int value, int fromMax, int toMax) => RoundHalfUp((decimal)value * toMax / fromMax);
 
         /// <summary>Random pixels plus edge cases: extremes, transparent hidden colors, alpha ramps, luma ties, low bits.</summary>
         public static List<(int R, int G, int B, int A)> CreateSamplePixels(PixelFormat format, int count, int seed)
@@ -1310,7 +1528,16 @@ public sealed class PixelConversionTests
             if (!PixelFormats.HasColor(format))
                 return [.. result.Select(p => (0, 0, 0, p.A))];
 
+            if (IsPacked(format))
+            {
+                // The samples fitted to the components: the largest sample is the largest component
+                var (mr, mg, mb, ma) = Maxima(format);
+                return [.. result.Select(p => (Fit(p.R, mr), Fit(p.G, mg), Fit(p.B, mb), alpha ? Fit(p.A, ma) : ma))];
+            }
+
             return [.. result.Select(p => (p.R, gray ? p.R : p.G, gray ? p.R : p.B, alpha ? p.A : max))];
+
+            int Fit(int value, int componentMax) => value >= max ? componentMax : value % (componentMax + 1);
         }
 
         /// <summary>Serializes logical pixels in the documented storage layout of a format (16-bit samples native endian).</summary>
@@ -1353,6 +1580,18 @@ public sealed class PixelConversionTests
                         break;
                     case PixelFormat.A8:
                         span[0] = (byte)a;
+                        break;
+                    case PixelFormat.Argb32:
+                        (span[0], span[1], span[2], span[3]) = ((byte)a, (byte)r, (byte)g, (byte)b);
+                        break;
+                    case PixelFormat.Abgr32:
+                        (span[0], span[1], span[2], span[3]) = ((byte)a, (byte)b, (byte)g, (byte)r);
+                        break;
+                    case PixelFormat.Bgr565:
+                        Native16(checked((ushort)((r << 11) | (g << 5) | b))).CopyTo(span);
+                        break;
+                    case PixelFormat.Rgba1010102:
+                        BitConverter.TryWriteBytes(span, (uint)r | ((uint)g << 10) | ((uint)b << 20) | ((uint)a << 30));
                         break;
                     default:
                         throw new ArgumentOutOfRangeException(nameof(format), format, "The reference model does not know this format.");
@@ -1442,6 +1681,10 @@ public sealed class PixelConversionTests
                     PixelFormat.La32 => (Read16(span, 0), Read16(span, 0), Read16(span, 0), Read16(span, 1)),
                     PixelFormat.Rgb48 => (Read16(span, 0), Read16(span, 1), Read16(span, 2), 65535),
                     PixelFormat.A8 => (0, 0, 0, span[0]),
+                    PixelFormat.Argb32 => (span[1], span[2], span[3], span[0]),
+                    PixelFormat.Abgr32 => (span[3], span[2], span[1], span[0]),
+                    PixelFormat.Bgr565 => (Read16(span, 0) >> 11, (Read16(span, 0) >> 5) & 63, Read16(span, 0) & 31, 63),
+                    PixelFormat.Rgba1010102 => ((int)(BitConverter.ToUInt32(span) & 1023), (int)((BitConverter.ToUInt32(span) >> 10) & 1023), (int)((BitConverter.ToUInt32(span) >> 20) & 1023), (int)(BitConverter.ToUInt32(span) >> 30)),
                     _ => throw new ArgumentOutOfRangeException(nameof(format), format, "The reference model does not know this format."),
                 });
             }
@@ -1460,8 +1703,9 @@ public sealed class PixelConversionTests
         /// </summary>
         public static void AssertConverted(PixelFormat source, (Rational R, Rational G, Rational B, Rational A) pixel, PixelFormat destination, Rgba64 background, (Rational R, Rational G, Rational B, Rational A) actual, int index)
         {
-            var sourceMax = PixelFormats.IsFloatingPoint(source) ? 1 : ReferenceModel.Max(source);
-            var (r, g, b, a) = (pixel.R / sourceMax, pixel.G / sourceMax, pixel.B / sourceMax, pixel.A / sourceMax);
+            // The integer components are fractions of the largest value of each (a packed format has its own)
+            (int R, int G, int B, int A) sourceMax = PixelFormats.IsFloatingPoint(source) ? (1, 1, 1, 1) : ReferenceModel.Maxima(source);
+            var (r, g, b, a) = (pixel.R / sourceMax.R, pixel.G / sourceMax.G, pixel.B / sourceMax.B, pixel.A / sourceMax.A);
             if (PixelFormats.IsFloatingPoint(destination))
             {
                 foreach (var (expected, value) in new[] { (r, actual.R), (g, actual.G), (b, actual.B), (a, actual.A) })
@@ -1490,13 +1734,13 @@ public sealed class PixelConversionTests
                 (r, g, b) = (new Rational(0, 1), new Rational(0, 1), new Rational(0, 1));
             }
 
-            var max = ReferenceModel.Max(destination);
-            AssertRounded(r * max, actual.R, index);
-            AssertRounded(g * max, actual.G, index);
-            AssertRounded(b * max, actual.B, index);
+            var max = ReferenceModel.Maxima(destination);
+            AssertRounded(r * max.R, actual.R, index);
+            AssertRounded(g * max.G, actual.G, index);
+            AssertRounded(b * max.B, actual.B, index);
             if (PixelFormats.HasAlpha(destination))
             {
-                AssertRounded(a * max, actual.A, index);
+                AssertRounded(a * max.A, actual.A, index);
             }
         }
 

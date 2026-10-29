@@ -61,10 +61,10 @@ public abstract class ImageEncoder
     internal virtual bool StoresFloatingPointSamples => false;
 
     /// <summary>
-    /// Gets a value indicating whether the output stores pixels of <see cref="PixelFormat.La16"/>, <see cref="PixelFormat.La32"/>,
-    /// <see cref="PixelFormat.Rgb48"/> or <see cref="PixelFormat.A8"/> as they are; otherwise the writer gives the encoder
-    /// a copy of the frames widened without any loss (<see cref="PixelFormatWidening"/>). The other formats always return
-    /// <see langword="true"/>.
+    /// Gets a value indicating whether the output stores pixels of a format that widens (<see cref="PixelFormatWidening.IsWidened"/>:
+    /// <see cref="PixelFormat.La16"/>, <see cref="PixelFormat.La32"/>, <see cref="PixelFormat.Rgb48"/>, <see cref="PixelFormat.A8"/>
+    /// and the interoperability formats) as they are; otherwise the writer gives the encoder a copy of the frames widened
+    /// without any loss (<see cref="PixelFormatWidening"/>). The other formats always return <see langword="true"/>.
     /// </summary>
     /// <param name="format">The pixel format of the frames.</param>
     /// <returns><see langword="true"/> if the encoder receives the frames in <paramref name="format"/>.</returns>

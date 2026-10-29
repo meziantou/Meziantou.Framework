@@ -1422,6 +1422,21 @@ internal static class Examples
     }
     #endregion
 
+    /// <summary>Imports a 16-bit display buffer and converts it to a 10-bit texture layout.</summary>
+    #region Imaging_InteropFormats
+    public static Image<Rgba1010102> ConvertDisplayBuffer(ReadOnlySpan<Bgr565> frameBuffer, int width, int height)
+    {
+        // Bgr565 is the 16-bit layout of display buffers (blue in the low bits): the pixels are copied as they are
+        using var image = Image.ImportPixelData<Bgr565>(frameBuffer, width, height);
+
+        // Every operation works on it like on Rgb24 and stores the result back in 5, 6 and 5 bits
+        image.Flip(FlipMode.Horizontal);
+
+        // The components convert to the nearest samples of any other format, here 10-bit colors and a 2-bit alpha
+        return image.CloneAs<Rgba1010102>();
+    }
+    #endregion
+
     /// <summary>Copies raw pixels in and out; the library never wraps caller memory.</summary>
     #region Imaging_RawPixels
     public static byte[] RoundTripRawPixels(ReadOnlySpan<byte> rgba, int width, int height)

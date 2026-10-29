@@ -1046,6 +1046,39 @@ public sealed class PdfDocumentTests
     }
 
     [Fact]
+    public void InteropPixelFormatsAreWrittenFromTheirWidening()
+    {
+        // Another byte order: the samples of Rgba32, with the alpha as soft mask
+        using var argb = Image.ImportPixelData<Argb32>([new Argb32(1, 2, 3, 128)], 1, 1);
+        Assert.Equal([1, 2, 3], GetImageData(argb, out var bits, out var mask));
+        Assert.Equal(8, bits);
+        Assert.Equal([128], mask);
+
+        // 5-6-5 bits: the nearest 8-bit samples
+        using var bgr565 = Image.ImportPixelData<Bgr565>([new Bgr565(31, 0, 1)], 1, 1);
+        Assert.Equal([255, 0, 8], GetImageData(bgr565, out bits, out mask));
+        Assert.Equal(8, bits);
+        Assert.Null(mask);
+
+        // 10-bit colors: the nearest 16-bit samples, big-endian
+        using var rgba1010102 = Image.ImportPixelData<Rgba1010102>([new Rgba1010102(1023, 1, 0, 3)], 1, 1);
+        Assert.Equal([0xFF, 0xFF, 0x00, 0x40, 0x00, 0x00], GetImageData(rgba1010102, out bits, out mask));
+        Assert.Equal(16, bits);
+        Assert.Null(mask);
+
+        static byte[] GetImageData(Image image, out long bitsPerComponent, out byte[]? mask)
+        {
+            var document = new PdfDocument();
+            document.Pages.Add(PdfSize.A5).CreateContentBuilder().DrawImage(PdfImage.FromImage(image), 0, 0, 1, 1);
+            var read = PdfDocument.Open(document.ToByteArray());
+            var xobject = read.Pages[0].Resources!.Get<PdfDictionary>(PdfName.Create("XObject"))!.Get<PdfStream>(PdfName.Create("Im1"))!;
+            bitsPerComponent = xobject.Dictionary.GetInteger(PdfName.Create("BitsPerComponent"));
+            mask = xobject.Dictionary.Get<PdfStream>(PdfName.Create("SMask"))?.GetDecodedData();
+            return xobject.GetDecodedData();
+        }
+    }
+
+    [Fact]
     public void ImageIsSharedByThePagesOfADocument()
     {
         using var image = Image.ImportPixelData<Rgb24>([new Rgb24(1, 2, 3)], 1, 1);

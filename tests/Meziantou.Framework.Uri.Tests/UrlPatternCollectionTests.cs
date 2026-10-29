@@ -846,4 +846,19 @@ public sealed class UrlPatternCollectionTests
         Assert.Equal("users", result.Pathname.Groups["resource"]);
         Assert.Equal("42", result.Pathname.Groups["id"]);
     }
+
+    [Fact]
+    public void Documentation_FirstMatchWins()
+    {
+        #region UrlPatternCollection_FirstMatchWins
+        // Patterns are tried in the order they were added: put the specific ones first
+        var routes = new UrlPatternCollection();
+        var newBook = routes.Add("https://example.com/books/new");
+        var bookById = routes.Add("https://example.com/books/:id");
+
+        Assert.Same(newBook, routes.FindPattern("https://example.com/books/new"));
+        Assert.Same(bookById, routes.FindPattern("https://example.com/books/123"));
+        Assert.Null(routes.FindPattern("https://example.com/authors/123"));
+        #endregion
+    }
 }

@@ -6,6 +6,35 @@ namespace Meziantou.Framework.Http.Caching.Tests;
 /// <summary>Tests for conditional requests and revalidation (RFC 7232, RFC 7234 Section 4.3).</summary>
 public sealed class ConditionalRequestsAndRevalidationTests
 {
+    [Fact]
+    public async Task Documentation_FreshnessAndRevalidation()
+    {
+        await using var context = new HttpTestContext();
+        context.AddResponse(HttpStatusCode.OK, "v1", ("Cache-Control", "max-age=60"), ("ETag", "\"v1\""));
+        context.AddNotModifiedResponse([("If-None-Match", "\"v1\"")], ("Cache-Control", "max-age=60"), ("ETag", "\"v1\""));
+        var httpClient = context.HttpClient;
+        var timeProvider = context.TimeProvider;
+
+        #region HttpCaching_FreshnessAndRevalidation
+        // The server answers with:
+        // Cache-Control: max-age=60
+        // ETag: "v1"
+        using var response1 = await httpClient.GetAsync("https://example.com/data");
+
+        // The response is fresh for 60 seconds: the cache serves it without contacting the server
+        timeProvider.Advance(TimeSpan.FromSeconds(30));
+        using var response2 = await httpClient.GetAsync("https://example.com/data");
+        Assert.Equal(TimeSpan.FromSeconds(30), response2.Headers.Age);
+
+        // The response is stale: the cache sends If-None-Match: "v1", the server answers
+        // 304 Not Modified, and the cache serves the stored response again
+        timeProvider.Advance(TimeSpan.FromSeconds(60));
+        using var response3 = await httpClient.GetAsync("https://example.com/data");
+        Assert.Equal(HttpStatusCode.OK, response3.StatusCode);
+        Assert.Equal("v1", await response3.Content.ReadAsStringAsync());
+        #endregion
+    }
+
     #region ETag-based Revalidation (RFC 7232 Section 2.3 & 3.1)
 
     [Fact]

@@ -8,6 +8,36 @@ namespace Meziantou.Framework.Http.Caching.Tests;
 public sealed class AdvancedCachingTests
 {
     [Fact]
+    public async Task Documentation_Options()
+    {
+        #region HttpCaching_Options
+        var options = new HttpCachingOptions
+        {
+            // Do not store the responses larger than 1 MB. The default is 5 MB, and null removes the limit.
+            MaximumResponseSize = 1024 * 1024,
+
+            // Only store the successful responses, even when the server allows storing the others
+            ShouldCacheResponse = response => response.IsSuccessStatusCode,
+        };
+        #endregion
+
+        await using var context = new HttpTestContext(options);
+        context.AddResponse(HttpStatusCode.NotFound, "missing", ("Cache-Control", "max-age=3600"));
+        context.AddResponse(HttpStatusCode.NotFound, "missing", ("Cache-Control", "max-age=3600"));
+        context.AddResponse(HttpStatusCode.OK, new string('a', 2 * 1024 * 1024), ("Cache-Control", "max-age=3600"));
+        context.AddResponse(HttpStatusCode.OK, new string('a', 2 * 1024 * 1024), ("Cache-Control", "max-age=3600"));
+
+        using var notFound1 = await context.HttpClient.GetAsync("https://example.com/missing", CancellationToken.None);
+        using var notFound2 = await context.HttpClient.GetAsync("https://example.com/missing", CancellationToken.None);
+        Assert.Null(notFound2.Headers.Age);
+
+        using var large1 = await context.HttpClient.GetAsync("https://example.com/large", CancellationToken.None);
+        using var large2 = await context.HttpClient.GetAsync("https://example.com/large", CancellationToken.None);
+        Assert.Null(large2.Headers.Age);
+        Assert.HasCount(2 * 1024 * 1024, await large2.Content.ReadAsByteArrayAsync(CancellationToken.None));
+    }
+
+    [Fact]
     public async Task ReadmeExample_Immutable()
     {
         await using var context = new HttpTestContext();

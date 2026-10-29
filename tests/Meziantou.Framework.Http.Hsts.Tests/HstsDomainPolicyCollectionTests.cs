@@ -47,6 +47,53 @@ public sealed class HstsDomainPolicyCollectionTests
         Assert.NotNull(policy);
     }
 
+    [Fact]
+    public void Documentation_Expiration()
+    {
+        #region HstsDomainPolicyCollection_Expiration
+        var timeProvider = new FakeTimeProvider();
+        var policies = new HstsDomainPolicyCollection(timeProvider, includePreloadDomains: false);
+
+        policies.Add("example.com", TimeSpan.FromDays(1), includeSubdomains: false);
+        Assert.True(policies.MustUpgradeRequest("example.com"));
+        Assert.False(policies.MustUpgradeRequest("www.example.com")); // Subdomains are not included
+
+        timeProvider.Advance(TimeSpan.FromDays(2));
+        Assert.False(policies.MustUpgradeRequest("example.com")); // The policy has expired
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_RemoveAndClear()
+    {
+        #region HstsDomainPolicyCollection_RemoveAndClear
+        var policies = new HstsDomainPolicyCollection(includePreloadDomains: true);
+        policies.Add("example.com", TimeSpan.FromDays(365), includeSubdomains: true);
+
+        // Remove takes a host off the list, even a preloaded one, for this collection only
+        Assert.True(policies.Remove("github.com"));
+        Assert.False(policies.MustUpgradeRequest("github.com"));
+
+        // ClearLearnedPolicies returns the collection to its initial state
+        policies.ClearLearnedPolicies();
+        Assert.False(policies.MustUpgradeRequest("example.com"));
+        Assert.True(policies.MustUpgradeRequest("github.com"));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_TryGetPolicyOfASubdomain()
+    {
+        #region HstsDomainPolicyCollection_TryGetPolicyOfASubdomain
+        var policies = new HstsDomainPolicyCollection(includePreloadDomains: false);
+        policies.Add("example.com", TimeSpan.FromDays(365), includeSubdomains: true);
+
+        // www.example.com is covered by the policy of example.com, but has no policy of its own
+        Assert.True(policies.MustUpgradeRequest("www.example.com"));
+        Assert.False(policies.TryGetPolicy("www.example.com", out _));
+        #endregion
+    }
+
     [Theory]
     [InlineData("google", 1)]
     [InlineData("google.com", 2)]

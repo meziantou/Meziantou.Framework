@@ -717,6 +717,131 @@ public sealed class HarEntryExtensionsTests
         Assert.Empty(await message.Content.ReadAsByteArrayAsync(TestContext.Current.CancellationToken));
     }
 
+#pragma warning disable xUnit1051 // The documentation examples do not pass the test cancellation token
+    [Fact]
+    public async Task Documentation_ConvertRequest()
+    {
+        #region HarEntry_ConvertRequest
+        var entry = new HarEntry
+        {
+            Request = new HarRequest
+            {
+                Method = "POST",
+                Url = "https://example.com/api/items",
+                HttpVersion = "HTTP/2",
+                Headers =
+                [
+                    new HarHeader { Name = "Accept", Value = "application/json" },
+                    new HarHeader { Name = "Content-Length", Value = "999" },
+                ],
+                PostData = new HarPostData { MimeType = "application/json", Text = """{"name":"pen"}""" },
+            },
+        };
+
+        using var request = entry.ToHttpRequestMessage();
+
+        Assert.Equal(HttpMethod.Post, request.Method);
+        Assert.Equal(new Uri("https://example.com/api/items"), request.RequestUri);
+        Assert.Equal(new Version(2, 0), request.Version);
+        Assert.Equal(["application/json"], request.Headers.GetValues("Accept"));
+
+        // The body comes from postData; its MIME type becomes the Content-Type header
+        Assert.Equal("""{"name":"pen"}""", await request.Content!.ReadAsStringAsync());
+        Assert.Equal("application/json", request.Content.Headers.ContentType!.MediaType);
+
+        // The recorded Content-Length is not replayed: it is computed from the body
+        Assert.Equal(14, request.Content.Headers.ContentLength);
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_ConvertResponse()
+    {
+        #region HarEntry_ConvertResponse
+        var entry = new HarEntry
+        {
+            Response = new HarResponse
+            {
+                Status = 200,
+                StatusText = "OK",
+                HttpVersion = "HTTP/1.1",
+                Headers = [new HarHeader { Name = "Cache-Control", Value = "max-age=60" }],
+                Cookies = [new HarCookie { Name = "theme", Value = "dark", Path = "/" }],
+                Content = new HarContent
+                {
+                    MimeType = "image/png",
+                    Encoding = "base64",
+                    Text = Convert.ToBase64String([0x89, 0x50, 0x4E, 0x47]),
+                },
+            },
+        };
+
+        using var response = entry.ToHttpResponseMessage();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("max-age=60", response.Headers.CacheControl!.ToString());
+        Assert.Equal(["theme=dark; Path=/"], response.Headers.GetValues("Set-Cookie"));
+
+        // The base64 text is decoded
+        Assert.Equal([0x89, 0x50, 0x4E, 0x47], await response.Content.ReadAsByteArrayAsync());
+        Assert.Equal("image/png", response.Content.Headers.ContentType!.MediaType);
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_FormParams()
+    {
+        #region HarRequest_FormParams
+        var harRequest = new HarRequest
+        {
+            Method = "POST",
+            Url = "https://example.com/login",
+            PostData = new HarPostData
+            {
+                MimeType = "application/x-www-form-urlencoded",
+                Params =
+                [
+                    new HarPostDataParameter { Name = "user", Value = "someone%40example.com" },
+                    new HarPostDataParameter { Name = "remember", Value = "on" },
+                ],
+            },
+        };
+
+        using var request = harRequest.ToHttpRequestMessage();
+
+        // The parameters are joined as recorded: they are already percent-encoded
+        Assert.Equal("user=someone%40example.com&remember=on", await request.Content!.ReadAsStringAsync());
+        #endregion
+    }
+#pragma warning restore xUnit1051
+
+    [Fact]
+    public void Documentation_PostDataRawData()
+    {
+        #region HarPostData_TryGetRawData
+        var document = HarDocument.Parse("""
+            {
+              "log": {
+                "entries": [
+                  {
+                    "request": {
+                      "method": "POST",
+                      "url": "https://example.com/upload",
+                      "postData": { "mimeType": "application/octet-stream", "text": "AAF/gP8=", "x-meziantou-encoding": "base64" }
+                    }
+                  }
+                ]
+              }
+            }
+            """);
+
+        var postData = document.Log!.Entries![0].Request!.PostData;
+
+        Assert.True(postData.TryGetRawData(out var bytes));
+        Assert.Equal([0x00, 0x01, 0x7F, 0x80, 0xFF], bytes);
+        #endregion
+    }
+
     private static HarDocument LoadChromeHar()
     {
         using var stream = typeof(HarEntryExtensionsTests).Assembly.GetManifestResourceStream("files/chrome-devtools.har")!;

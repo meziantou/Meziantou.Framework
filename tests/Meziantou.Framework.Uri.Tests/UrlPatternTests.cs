@@ -2155,4 +2155,256 @@ public sealed class UrlPatternTests
         Assert.Null(pattern.Match(new UrlPatternInit { Pathname = "/foo" })!.Pathname.Groups["id"]);
         Assert.Equal("1", pattern.Match(new UrlPatternInit { Pathname = "/foo/1" })!.Pathname.Groups["id"]);
     }
+
+    [Fact]
+    public void Documentation_CreateFromString()
+    {
+        #region UrlPattern_CreateFromString
+        var pattern = UrlPattern.Create("https://example.com/books/:id");
+
+        // Each component of the URL gets its own pattern
+        Assert.Equal("https", pattern.Protocol);
+        Assert.Equal("example.com", pattern.Hostname);
+        Assert.Equal("/books/:id", pattern.Pathname);
+
+        // A component the string does not mention matches anything
+        Assert.Equal("*", pattern.Search);
+        Assert.True(pattern.IsMatch("https://example.com/books/123?format=json#reviews"));
+
+        // A relative pattern needs a base URL, which supplies the missing components
+        var relativePattern = UrlPattern.Create("/books/:id", "https://example.com");
+        Assert.Equal("example.com", relativePattern.Hostname);
+        Assert.True(relativePattern.IsMatch("https://example.com/books/123"));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_CreateFromInit()
+    {
+        #region UrlPattern_CreateFromInit
+        // Only the pathname is constrained: every other component defaults to "*"
+        var pattern = UrlPattern.Create(new UrlPatternInit
+        {
+            Pathname = "/books/:id",
+        });
+
+        Assert.True(pattern.IsMatch("https://example.com/books/123"));
+        Assert.True(pattern.IsMatch("http://localhost:5000/books/123"));
+        Assert.False(pattern.IsMatch("https://example.com/authors/123"));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_MatchResult()
+    {
+        #region UrlPattern_MatchResult
+        var pattern = UrlPattern.Create("https://:tenant.example.com/orders/:orderId");
+
+        var result = pattern.Match("https://contoso.example.com/orders/42?page=2");
+        Assert.NotNull(result);
+
+        // One result per component: the value it was matched against and its groups
+        Assert.Equal("contoso", result.Hostname.Groups["tenant"]);
+        Assert.Equal("42", result.Pathname.Groups["orderId"]);
+        Assert.Equal("/orders/42", result.Pathname.Input);
+        Assert.Equal("page=2", result.Search.Input);
+
+        // The URL that was matched, as given
+        Assert.Equal("https://contoso.example.com/orders/42?page=2", result.Inputs[0].Url);
+
+        // No match: Match returns null
+        Assert.Null(pattern.Match("https://contoso.example.com/invoices/42"));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_MatchInputs()
+    {
+        #region UrlPattern_MatchInputs
+        var pattern = UrlPattern.Create("https://example.com/books/:id");
+
+        // A string
+        Assert.True(pattern.IsMatch("https://example.com/books/123"));
+
+        // A relative URL and the base URL to resolve it against
+        Assert.True(pattern.IsMatch("/books/123", "https://example.com"));
+
+        // A System.Uri. A relative Uri never matches.
+        Assert.True(pattern.IsMatch(new System.Uri("https://example.com/books/123")));
+        Assert.False(pattern.IsMatch(new System.Uri("/books/123", UriKind.Relative)));
+
+        // The components of a URL, given separately
+        Assert.True(pattern.IsMatch(new UrlPatternInit
+        {
+            Protocol = "https",
+            Hostname = "example.com",
+            Pathname = "/books/123",
+        }));
+
+        // A string that is not a URL does not match, it does not throw
+        Assert.False(pattern.IsMatch("not a url"));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_NamedGroups()
+    {
+        #region UrlPattern_NamedGroups
+        var pattern = UrlPattern.Create(new UrlPatternInit { Pathname = "/books/:id" });
+
+        // A named group matches one path segment
+        Assert.True(pattern.IsMatch("https://example.com/books/123"));
+        Assert.False(pattern.IsMatch("https://example.com/books/123/reviews"));
+        Assert.False(pattern.IsMatch("https://example.com/books/"));
+
+        // Fixed text can follow a group in the same segment
+        var formatPattern = UrlPattern.Create(new UrlPatternInit { Pathname = "/books/:id.:format" });
+        var result = formatPattern.Match("https://example.com/books/123.json");
+        Assert.NotNull(result);
+        Assert.Equal("123", result.Pathname.Groups["id"]);
+        Assert.Equal("json", result.Pathname.Groups["format"]);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Wildcards()
+    {
+        #region UrlPattern_Wildcards
+        var pattern = UrlPattern.Create(new UrlPatternInit { Pathname = "/files/*" });
+
+        // A wildcard matches any text, "/" included. Its group is named by its index.
+        var result = pattern.Match("https://example.com/files/2024/report.pdf");
+        Assert.NotNull(result);
+        Assert.Equal("2024/report.pdf", result.Pathname.Groups["0"]);
+
+        // A wildcard in the hostname
+        var subdomains = UrlPattern.Create("https://*.example.com/*");
+        Assert.True(subdomains.IsMatch("https://api.example.com/v1/users"));
+        Assert.False(subdomains.IsMatch("https://example.org/v1/users"));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_RegexGroups()
+    {
+        #region UrlPattern_RegexGroups
+        // A regular expression constrains what a group matches
+        var pattern = UrlPattern.Create(new UrlPatternInit { Pathname = "/books/:id(\\d+)" });
+        Assert.True(pattern.IsMatch("https://example.com/books/123"));
+        Assert.False(pattern.IsMatch("https://example.com/books/abc"));
+        Assert.True(pattern.HasRegExpGroups);
+
+        // A regular expression without a name is named by its index
+        var versionPattern = UrlPattern.Create(new UrlPatternInit { Pathname = "/api/(v1|v2)/*" });
+        var result = versionPattern.Match("https://example.com/api/v2/users");
+        Assert.NotNull(result);
+        Assert.Equal("v2", result.Pathname.Groups["0"]);
+        Assert.Equal("users", result.Pathname.Groups["1"]);
+
+        // A group inside a regular expression must be non-capturing
+        var imagePattern = UrlPattern.Create(new UrlPatternInit { Pathname = "/images/:name([^/]+\\.(?:png|jpg))" });
+        Assert.True(imagePattern.IsMatch("https://example.com/images/logo.png"));
+        Assert.False(imagePattern.IsMatch("https://example.com/images/logo.gif"));
+        Assert.Throws<UrlPatternException>(() => UrlPattern.Create(new UrlPatternInit { Pathname = "/images/:name([^/]+\\.(png|jpg))" }));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Modifiers()
+    {
+        #region UrlPattern_Modifiers
+        // "?" makes the group optional, with the "/" before it
+        var optional = UrlPattern.Create(new UrlPatternInit { Pathname = "/books/:id?" });
+        Assert.True(optional.IsMatch("https://example.com/books"));
+        Assert.True(optional.IsMatch("https://example.com/books/123"));
+        Assert.Null(optional.Match("https://example.com/books")!.Pathname.Groups["id"]);
+
+        // "+" repeats the group one or more times
+        var oneOrMore = UrlPattern.Create(new UrlPatternInit { Pathname = "/files/:path+" });
+        Assert.False(oneOrMore.IsMatch("https://example.com/files"));
+        Assert.Equal("a/b/c", oneOrMore.Match("https://example.com/files/a/b/c")!.Pathname.Groups["path"]);
+
+        // "*" repeats the group zero or more times
+        var zeroOrMore = UrlPattern.Create(new UrlPatternInit { Pathname = "/files/:path*" });
+        Assert.True(zeroOrMore.IsMatch("https://example.com/files"));
+        Assert.True(zeroOrMore.IsMatch("https://example.com/files/a/b/c"));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Braces()
+    {
+        #region UrlPattern_Braces
+        // Braces group text so that a modifier applies to all of it
+        var pattern = UrlPattern.Create(new UrlPatternInit { Pathname = "/book{s}?/:id" });
+        Assert.True(pattern.IsMatch("https://example.com/book/123"));
+        Assert.True(pattern.IsMatch("https://example.com/books/123"));
+
+        var withCategory = UrlPattern.Create(new UrlPatternInit { Pathname = "/products{/:category}?/list" });
+        Assert.True(withCategory.IsMatch("https://example.com/products/list"));
+        Assert.Equal("toys", withCategory.Match("https://example.com/products/toys/list")!.Pathname.Groups["category"]);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Escaping()
+    {
+        #region UrlPattern_Escaping
+        // A backslash makes a special character literal
+        var pattern = UrlPattern.Create(new UrlPatternInit { Pathname = "/search/\\*" });
+        Assert.True(pattern.IsMatch("https://example.com/search/*"));
+        Assert.False(pattern.IsMatch("https://example.com/search/books"));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Canonicalization()
+    {
+        #region UrlPattern_Canonicalization
+        // The fixed text of a pattern is canonicalized like the URLs it is matched against
+        var pattern = UrlPattern.Create(new UrlPatternInit { Pathname = "/café" });
+        Assert.Equal("/caf%C3%A9", pattern.Pathname);
+        Assert.True(pattern.IsMatch("https://example.com/café"));
+        Assert.True(pattern.IsMatch("https://example.com/caf%C3%A9"));
+
+        // A group captures the normalized text
+        var namePattern = UrlPattern.Create(new UrlPatternInit { Pathname = "/:name" });
+        Assert.Equal("caf%C3%A9", namePattern.Match("https://example.com/café")!.Pathname.Groups["name"]);
+
+        // The default port of the protocol is the same as no port
+        var portPattern = UrlPattern.Create("https://example.com:443/*");
+        Assert.Equal("", portPattern.Port);
+        Assert.True(portPattern.IsMatch("https://example.com/books"));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_IgnoreCase()
+    {
+        #region UrlPattern_IgnoreCase
+        var caseSensitive = UrlPattern.Create(new UrlPatternInit { Pathname = "/Books/:id" });
+        Assert.False(caseSensitive.IsMatch("https://example.com/books/123"));
+
+        // IgnoreCase applies to the pathname, the search and the hash
+        var options = new UrlPatternOptions { IgnoreCase = true };
+        var pattern = UrlPattern.Create(new UrlPatternInit { Pathname = "/Books/:id", Search = "lang=en" }, options);
+        Assert.True(pattern.IsMatch("https://example.com/BOOKS/123?LANG=EN"));
+
+        // The protocol and the hostname are always compared in lower case
+        var hostPattern = UrlPattern.Create("https://example.com/*");
+        Assert.True(hostPattern.IsMatch("HTTPS://EXAMPLE.COM/books"));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_InvalidPattern()
+    {
+        #region UrlPattern_InvalidPattern
+        // An unclosed regular expression group
+        Assert.Throws<UrlPatternException>(() => UrlPattern.Create(new UrlPatternInit { Pathname = "/books/:id(" }));
+
+        // A pattern string without a protocol, and no base URL
+        Assert.Throws<UrlPatternException>(() => UrlPattern.Create("/books/:id"));
+        #endregion
+    }
 }

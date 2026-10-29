@@ -140,4 +140,21 @@ public static class HttpCachingExamples
         await cacheStore.PruneObsoleteEntriesAsync();
         #endregion
     }
+
+    public static async Task RedisStoreWithInnerHandler()
+    {
+        #region HttpCaching_RedisStore
+        await using var connection = await ConnectionMultiplexer.ConnectAsync("localhost:6379");
+
+        // The key prefix isolates the entries of this cache from the other data of the Redis database
+        var cacheStore = new RedisHttpCacheStore(connection, keyPrefix: "MyApp:HttpCache");
+
+        using var cachingHandler = new HttpCachingDelegateHandler(new SocketsHttpHandler(), cacheStore);
+        using var httpClient = new HttpClient(cachingHandler);
+        using var response = await httpClient.GetAsync("https://example.com/data");
+
+        // Redis keeps the entries until they are removed: remove the obsolete ones from time to time
+        await cacheStore.PruneObsoleteEntriesAsync();
+        #endregion
+    }
 }

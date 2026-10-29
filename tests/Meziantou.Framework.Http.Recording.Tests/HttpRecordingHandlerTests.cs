@@ -496,6 +496,7 @@ public sealed class HttpRecordingHandlerTests
 
         var app = builder.Build();
         app.MapGet("/api/text", static () => Results.Text("hello integration"));
+        app.MapGet("/api/token", static () => Results.Text("""{"access_token":"s3cr3t-t0ken"}""", "application/json"));
         app.MapGet("/api/items/{id:int}", static (int id) => Results.Json(new { id, name = $"item-{id}" }));
         app.MapGet("/api/binary", static () => Results.Bytes(new byte[] { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0xFF }, "application/octet-stream"));
         app.MapPost("/api/echo", static async (HttpRequest request) =>
@@ -1031,6 +1032,236 @@ public sealed class HttpRecordingHandlerTests
         Assert.Empty(store.SavedEntries);
     }
 
+    [Fact]
+    public async Task Documentation_RecordThenReplay()
+    {
+        using var recordingFile = TemporaryFile.Create("GetText.json");
+        var recordingPath = (string)recordingFile;
+        File.Delete(recordingPath);
+
+        var (app, serverUrl) = await StartTestServerAsync();
+        try
+        {
+            // First run: no recording yet, the request reaches the server
+            await GetTextWithRecordingAsync(recordingPath, serverUrl);
+        }
+        finally
+        {
+            await app.StopAsync();
+            await app.DisposeAsync();
+        }
+
+        Assert.True(File.Exists(recordingPath));
+
+        // Later run: the server is stopped, the response comes from the recording
+        await GetTextWithRecordingAsync(recordingPath, serverUrl);
+    }
+
+    private static async Task GetTextWithRecordingAsync(string recordingPath, Uri serverUrl)
+    {
+        #region HttpRecording_RecordThenReplay
+        var store = new JsonHttpRecordingStore(recordingPath);
+        var options = new HttpRecordingOptions { AutoSave = true }; // Mode is Auto by default
+
+        using var innerHandler = new SocketsHttpHandler();
+        await using var recordingHandler = new HttpRecordingHandler(innerHandler, store, options);
+        using var httpClient = new HttpClient(recordingHandler);
+
+        // The first run calls the server and records the response. Later runs replay it.
+        var text = await httpClient.GetStringAsync(new Uri(serverUrl, "/api/text"));
+        Assert.Equal("hello integration", text);
+        #endregion
+    }
+
+    private static async Task<(string RecordingPath, Uri ServerUrl)> RecordDocumentationRequestsAsync(TemporaryFile recordingFile, HttpRecordingOptions? options, params string[] paths)
+    {
+        var recordingPath = (string)recordingFile;
+        File.Delete(recordingPath);
+
+        var (app, serverUrl) = await StartTestServerAsync();
+        try
+        {
+            options ??= new HttpRecordingOptions();
+            options.Mode = HttpRecordingMode.Record;
+            using var innerHandler = new SocketsHttpHandler();
+            using var handler = new HttpRecordingHandler(innerHandler, new JsonHttpRecordingStore(recordingPath), options);
+            using var client = new HttpClient(handler);
+            foreach (var path in paths)
+            {
+                using var response = await client.GetAsync(new Uri(serverUrl, path));
+                response.EnsureSuccessStatusCode();
+            }
+
+            await handler.SaveAsync();
+        }
+        finally
+        {
+            await app.StopAsync();
+            await app.DisposeAsync();
+        }
+
+        return (recordingPath, serverUrl);
+    }
+
+    [Fact]
+    public async Task Documentation_ReplayWithoutInnerHandler()
+    {
+        using var recordingFile = TemporaryFile.Create("recordings.json");
+        var (recordingPath, serverUrl) = await RecordDocumentationRequestsAsync(recordingFile, options: null, "/api/text");
+
+        #region HttpRecording_ReplayWithoutInnerHandler
+        var store = new JsonHttpRecordingStore(recordingPath);
+        var options = new HttpRecordingOptions { Mode = HttpRecordingMode.Replay };
+
+        // Without an inner handler, no request can reach the network
+        using var recordingHandler = new HttpRecordingHandler(store, options);
+        using var httpClient = new HttpClient(recordingHandler);
+
+        Assert.Equal("hello integration", await httpClient.GetStringAsync(new Uri(serverUrl, "/api/text")));
+
+        // Nothing was recorded for this request: Replay throws by default
+        await Assert.ThrowsAsync<HttpRecordingMissException>(() => httpClient.GetStringAsync(new Uri(serverUrl, "/api/items/1")));
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_RecordingsAreConsumedInOrder()
+    {
+        using var recordingFile = TemporaryFile.Create("recordings.json");
+        var (recordingPath, serverUrl) = await RecordDocumentationRequestsAsync(recordingFile, options: null, "/api/text");
+
+        #region HttpRecording_RecordingsAreConsumedInOrder
+        var options = new HttpRecordingOptions { Mode = HttpRecordingMode.Replay };
+        using var recordingHandler = new HttpRecordingHandler(new JsonHttpRecordingStore(recordingPath), options);
+        using var httpClient = new HttpClient(recordingHandler);
+
+        // The recording holds one GET /api/text: it answers the first request only
+        Assert.Equal("hello integration", await httpClient.GetStringAsync(new Uri(serverUrl, "/api/text")));
+        await Assert.ThrowsAsync<HttpRecordingMissException>(() => httpClient.GetStringAsync(new Uri(serverUrl, "/api/text")));
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_CustomRequestMatcher()
+    {
+        using var recordingFile = TemporaryFile.Create("recordings.json");
+        var (recordingPath, serverUrl) = await RecordDocumentationRequestsAsync(recordingFile, new HttpRecordingOptions { RequestMatcher = new PathOnlyRequestMatcher() }, "/api/items/42?timestamp=1");
+
+        #region HttpRecording_UseCustomRequestMatcher
+        var options = new HttpRecordingOptions
+        {
+            Mode = HttpRecordingMode.Replay,
+            RequestMatcher = new PathOnlyRequestMatcher(),
+        };
+        using var recordingHandler = new HttpRecordingHandler(new JsonHttpRecordingStore(recordingPath), options);
+        using var httpClient = new HttpClient(recordingHandler);
+
+        // Recorded as /api/items/42?timestamp=1: the query string is not part of the fingerprint
+        var json = await httpClient.GetStringAsync(new Uri(serverUrl, "/api/items/42?timestamp=2"));
+        Assert.Equal("""{"id":42,"name":"item-42"}""", json);
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_ReturnDefaultOnMiss()
+    {
+        using var recordingFile = TemporaryFile.Create("recordings.json");
+        var recordingPath = (string)recordingFile;
+        File.Delete(recordingPath);
+
+        #region HttpRecording_ReturnDefaultOnMiss
+        var options = new HttpRecordingOptions
+        {
+            Mode = HttpRecordingMode.Replay,
+            MissBehavior = HttpRecordingMissBehavior.ReturnDefault,
+        };
+        using var recordingHandler = new HttpRecordingHandler(new JsonHttpRecordingStore(recordingPath), options);
+        using var httpClient = new HttpClient(recordingHandler);
+
+        using var response = await httpClient.GetAsync(new Uri("https://example.com/api/items/1"));
+        Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        Assert.Equal("No recorded response found for GET https://example.com/api/items/1.", await response.Content.ReadAsStringAsync());
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_MissException()
+    {
+        using var recordingFile = TemporaryFile.Create("recordings.json");
+        var recordingPath = (string)recordingFile;
+        File.Delete(recordingPath);
+
+        var options = new HttpRecordingOptions { Mode = HttpRecordingMode.Replay };
+        using var recordingHandler = new HttpRecordingHandler(new JsonHttpRecordingStore(recordingPath), options);
+        using var httpClient = new HttpClient(recordingHandler);
+
+        #region HttpRecording_MissException
+        var exception = await Assert.ThrowsAsync<HttpRecordingMissException>(
+            () => httpClient.GetAsync(new Uri("https://example.com/api/items?token=secret")));
+
+        // The message is safe to log: query values are masked
+        Assert.Equal("No recorded response found for GET https://example.com/api/items?token=***.", exception.Message);
+
+        // The properties hold the request as it was sent
+        Assert.Equal("GET", exception.Method);
+        Assert.Equal("https://example.com/api/items?token=secret", exception.RequestUri);
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_ResponseBodySanitizer()
+    {
+        using var recordingFile = TemporaryFile.Create("recordings.json");
+
+        #region HttpRecording_UseResponseBodySanitizer
+        var options = new HttpRecordingOptions
+        {
+            Sanitizers = { new ResponseBodySanitizer("s3cr3t-t0ken") },
+        };
+        #endregion
+
+        var (recordingPath, serverUrl) = await RecordDocumentationRequestsAsync(recordingFile, options, "/api/token");
+        Assert.DoesNotContain("s3cr3t-t0ken", await File.ReadAllTextAsync(recordingPath));
+
+        using var replayHandler = new HttpRecordingHandler(new JsonHttpRecordingStore(recordingPath), new HttpRecordingOptions { Mode = HttpRecordingMode.Replay });
+        using var replayClient = new HttpClient(replayHandler);
+        Assert.Equal("""{"access_token":"***"}""", await replayClient.GetStringAsync(new Uri(serverUrl, "/api/token")));
+    }
+
+    [Fact]
+    public async Task Documentation_HarStore()
+    {
+        using var recordingFile = TemporaryFile.Create("recordings.har");
+        var recordingPath = (string)recordingFile;
+        File.Delete(recordingPath);
+        var (app, serverUrl) = await StartTestServerAsync();
+        try
+        {
+            #region HttpRecording_HarStore
+            var store = new HarHttpRecordingStore(recordingPath);
+            var options = new HttpRecordingOptions { Mode = HttpRecordingMode.Record };
+
+            using var innerHandler = new SocketsHttpHandler();
+            using var recordingHandler = new HttpRecordingHandler(innerHandler, store, options);
+            using var httpClient = new HttpClient(recordingHandler);
+
+            await httpClient.GetStringAsync(new Uri(serverUrl, "/api/text"));
+
+            // Writes an HTTP Archive (HAR 1.2) file
+            await recordingHandler.SaveAsync();
+            #endregion
+        }
+        finally
+        {
+            await app.StopAsync();
+            await app.DisposeAsync();
+        }
+
+        var document = Meziantou.Framework.HttpArchive.HarDocument.Parse(await File.ReadAllTextAsync(recordingPath));
+        Assert.Equal("1.2", document.Log?.Version);
+        Assert.Single(document.Log?.Entries ?? []);
+    }
+
     private sealed class EchoHttpHandler : HttpMessageHandler
     {
         public int CallCount { get; private set; }
@@ -1199,3 +1430,32 @@ public sealed class HttpRecordingHandlerTests
         }
     }
 }
+
+#pragma warning disable MA0048 // File name must match type name: documentation examples
+#region HttpRecording_PathOnlyRequestMatcher
+// Matches the requests on their method and path, whatever their query string and body
+public sealed class PathOnlyRequestMatcher : IHttpRequestMatcher
+{
+    public string ComputeFingerprint(HttpRecordingEntry entry)
+    {
+        var uri = new Uri(entry.RequestUri);
+        return entry.Method + " " + uri.GetLeftPart(UriPartial.Path);
+    }
+}
+#endregion
+
+#region HttpRecording_ResponseBodySanitizer
+// Replaces a known secret in the response bodies. It runs before the entries are saved.
+public sealed class ResponseBodySanitizer(string secret) : IHttpRecordingSanitizer
+{
+    public void Sanitize(HttpRecordingEntry entry)
+    {
+        if (entry.ResponseBody is { } body)
+        {
+            var text = Encoding.UTF8.GetString(body);
+            entry.ResponseBody = Encoding.UTF8.GetBytes(text.Replace(secret, "***", StringComparison.Ordinal));
+        }
+    }
+}
+#endregion
+#pragma warning restore MA0048

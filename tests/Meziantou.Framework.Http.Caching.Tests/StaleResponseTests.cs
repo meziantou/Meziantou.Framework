@@ -7,6 +7,56 @@ namespace Meziantou.Framework.Http.Caching.Tests;
 public class StaleResponseTests
 {
     [Fact]
+    public async Task Documentation_StaleIfError()
+    {
+        await using var context = new HttpTestContext();
+        context.AddResponse(HttpStatusCode.OK, "content", ("Cache-Control", "max-age=60, stale-if-error=3600"));
+        context.AddResponse(HttpStatusCode.ServiceUnavailable, "error");
+        var httpClient = context.HttpClient;
+        var timeProvider = context.TimeProvider;
+
+        #region HttpCaching_StaleIfError
+        // The server answers with Cache-Control: max-age=60, stale-if-error=3600
+        using var response1 = await httpClient.GetAsync("https://example.com/data");
+
+        // Two minutes later, the response is stale and the server answers 503 Service Unavailable.
+        // The response is stale for less than an hour, so the cache serves it instead of the error.
+        timeProvider.Advance(TimeSpan.FromMinutes(2));
+        using var response2 = await httpClient.GetAsync("https://example.com/data");
+        Assert.Equal(HttpStatusCode.OK, response2.StatusCode);
+        Assert.Equal("content", await response2.Content.ReadAsStringAsync());
+        Assert.Equal("110 - \"Response is Stale\", 111 - \"Revalidation Failed\"", string.Join(", ", response2.Headers.GetValues("Warning")));
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_TimeProvider()
+    {
+        using var originHandler = new StubHandler();
+        originHandler.AddResponse(static () => CreateResponse(HttpStatusCode.OK, "v1", ("Cache-Control", "max-age=300")));
+        originHandler.AddResponse(static () => CreateResponse(HttpStatusCode.OK, "v2", ("Cache-Control", "max-age=300")));
+
+        #region HttpCaching_TimeProvider
+        // FakeTimeProvider comes from the Microsoft.Extensions.TimeProvider.Testing package
+        var timeProvider = new FakeTimeProvider();
+        var options = new HttpCachingOptions
+        {
+            TimeProvider = timeProvider,
+        };
+
+        using var cachingHandler = new HttpCachingDelegateHandler(originHandler, new InMemoryHttpCacheStore(), options);
+        using var httpClient = new HttpClient(cachingHandler);
+
+        // The server answers with Cache-Control: max-age=300
+        Assert.Equal("v1", await httpClient.GetStringAsync("https://example.com/data"));
+
+        // Five minutes later, the stored response is stale, so the cache asks the server again
+        timeProvider.Advance(TimeSpan.FromMinutes(5));
+        Assert.Equal("v2", await httpClient.GetStringAsync("https://example.com/data"));
+        #endregion
+    }
+
+    [Fact]
     public async Task WhenMaxStaleAllowsAnyStalenessThenStaleResponseServed()
     {
         await using var context = new HttpTestContext();

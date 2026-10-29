@@ -1,3 +1,5 @@
+using System.Collections.Concurrent;
+using System.Collections.Immutable;
 using System.Net;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
@@ -30,6 +32,148 @@ public class PersistenceProvidersTests
         await using var serviceProvider = services.BuildServiceProvider();
         using var httpClient = serviceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("MyApi");
         Assert.NotNull(httpClient);
+    }
+
+    [Fact]
+    public async Task Documentation_GettingStarted()
+    {
+        var originRequestCount = 0;
+        using var originHandler = new MockResponseHandler(_ =>
+        {
+            originRequestCount++;
+            return CreateCacheableResponse("Hello");
+        });
+
+        #region HttpCaching_GettingStarted
+        // originHandler sends the requests to the server, for instance a SocketsHttpHandler.
+        // The server answers with Cache-Control: max-age=600
+        var cacheStore = new InMemoryHttpCacheStore();
+        using var cachingHandler = new HttpCachingDelegateHandler(originHandler, cacheStore);
+        using var httpClient = new HttpClient(cachingHandler);
+
+        using var response1 = await httpClient.GetAsync("https://example.com/data");
+        using var response2 = await httpClient.GetAsync("https://example.com/data");
+
+        Assert.Equal("Hello", await response2.Content.ReadAsStringAsync());
+        Assert.Null(response1.Headers.Age);    // Sent by the server
+        Assert.NotNull(response2.Headers.Age); // Served from the cache
+        #endregion
+
+        Assert.Equal(1, originRequestCount);
+    }
+
+    [Fact]
+    public async Task Documentation_InMemorySaveAndLoad()
+    {
+        var tempDirectory = Path.Combine(Path.GetTempPath(), "meziantou-http-cache", Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture));
+        var cacheFilePath = Path.Combine(tempDirectory, "http-cache.json");
+        try
+        {
+            using (var originHandler = new MockResponseHandler(_ => CreateCacheableResponse("Hello")))
+            {
+                #region HttpCaching_InMemorySaveAndLoad
+                var cacheStore = new InMemoryHttpCacheStore();
+
+                // Restore the entries saved by a previous run. A missing file leaves the store empty.
+                await cacheStore.LoadFromFileAsync(cacheFilePath);
+
+                using var cachingHandler = new HttpCachingDelegateHandler(originHandler, cacheStore);
+                using var httpClient = new HttpClient(cachingHandler);
+                using var response = await httpClient.GetAsync("https://example.com/data");
+
+                // Drop the entries that can no longer be used, then save the others for the next run
+                await cacheStore.PruneObsoleteEntriesAsync();
+                await cacheStore.SaveToFileAsync(cacheFilePath);
+                #endregion
+            }
+
+            var nextRunStore = new InMemoryHttpCacheStore();
+            await nextRunStore.LoadFromFileAsync(cacheFilePath, CancellationToken.None);
+            using var failingOriginHandler = new MockResponseHandler(_ => new HttpResponseMessage(HttpStatusCode.InternalServerError));
+            using var nextRunCachingHandler = new HttpCachingDelegateHandler(failingOriginHandler, nextRunStore);
+            using var nextRunClient = new HttpClient(nextRunCachingHandler);
+            using var nextRunResponse = await nextRunClient.GetAsync("https://example.com/data", CancellationToken.None);
+            Assert.Equal("Hello", await nextRunResponse.Content.ReadAsStringAsync(CancellationToken.None));
+            Assert.NotNull(nextRunResponse.Headers.Age);
+        }
+        finally
+        {
+            if (Directory.Exists(tempDirectory))
+            {
+                Directory.Delete(tempDirectory, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
+    public async Task Documentation_SqliteStore()
+    {
+        var tempDirectory = Path.Combine(Path.GetTempPath(), "meziantou-http-cache", Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture));
+        Directory.CreateDirectory(tempDirectory);
+        var databasePath = Path.Combine(tempDirectory, "http-cache.db");
+        try
+        {
+            var originRequestCount = 0;
+            using var originHandler = new MockResponseHandler(_ =>
+            {
+                originRequestCount++;
+                return CreateCacheableResponse("Hello");
+            });
+
+            #region HttpCaching_SqliteStore
+            var connectionString = new SqliteConnectionStringBuilder
+            {
+                DataSource = databasePath,
+                Mode = SqliteOpenMode.ReadWriteCreate,
+                Pooling = false,
+            }.ToString();
+
+            using var cacheStore = new SqliteHttpCacheStore(connectionString);
+
+            // Remove the entries that can no longer be used, for instance when the application starts
+            await cacheStore.PruneObsoleteEntriesAsync();
+
+            using var cachingHandler = new HttpCachingDelegateHandler(originHandler, cacheStore);
+            using var httpClient = new HttpClient(cachingHandler);
+            using var response = await httpClient.GetAsync("https://example.com/data");
+            #endregion
+
+            using var secondResponse = await httpClient.GetAsync("https://example.com/data", CancellationToken.None);
+            Assert.NotNull(secondResponse.Headers.Age);
+            Assert.Equal(1, originRequestCount);
+        }
+        finally
+        {
+            if (Directory.Exists(tempDirectory))
+            {
+                Directory.Delete(tempDirectory, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
+    public async Task Documentation_CustomStore()
+    {
+        var originRequestCount = 0;
+        using var originHandler = new MockResponseHandler(_ =>
+        {
+            originRequestCount++;
+            return CreateCacheableResponse("Hello");
+        });
+
+        var cacheStore = new DictionaryHttpCacheStore();
+        using var cachingHandler = new HttpCachingDelegateHandler(originHandler, cacheStore);
+        using var httpClient = new HttpClient(cachingHandler);
+
+        using var response1 = await httpClient.GetAsync("https://example.com/data", CancellationToken.None);
+        using var response2 = await httpClient.GetAsync("https://example.com/data", CancellationToken.None);
+        Assert.NotNull(response2.Headers.Age);
+        Assert.Equal(1, originRequestCount);
+
+        using var postResponse = await httpClient.PostAsync("https://example.com/data", content: null, CancellationToken.None);
+        using var response3 = await httpClient.GetAsync("https://example.com/data", CancellationToken.None);
+        Assert.Null(response3.Headers.Age);
+        Assert.Equal(3, originRequestCount);
     }
 
     [Fact]
@@ -895,6 +1039,47 @@ public class PersistenceProvidersTests
             }
         }
     }
+
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Ownership is transferred to the caller")]
+    private static HttpResponseMessage CreateCacheableResponse(string content)
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(content),
+        };
+
+        response.Headers.TryAddWithoutValidation("Cache-Control", "max-age=600");
+        return response;
+    }
+
+    #region HttpCaching_CustomStore
+    private sealed class DictionaryHttpCacheStore : IHttpCacheStore
+    {
+        private readonly ConcurrentDictionary<string, ImmutableArray<HttpCachePersistenceEntry>> _entries = new(StringComparer.Ordinal);
+
+        public ValueTask<IReadOnlyCollection<HttpCachePersistenceEntry>> GetEntriesAsync(string primaryKey, CancellationToken cancellationToken)
+        {
+            IReadOnlyCollection<HttpCachePersistenceEntry> entries = _entries.TryGetValue(primaryKey, out var value) ? value : [];
+            return ValueTask.FromResult(entries);
+        }
+
+        public ValueTask SetEntryAsync(string primaryKey, HttpCachePersistenceEntry entry, CancellationToken cancellationToken)
+        {
+            // An entry replaces the one stored for the same variant of the response (same Vary headers and query)
+            _entries.AddOrUpdate(
+                primaryKey,
+                _ => [entry],
+                (_, existing) => [.. existing.Where(item => !HttpCachePersistenceEntry.HasSameSecondaryKey(item, entry)), entry]);
+            return ValueTask.CompletedTask;
+        }
+
+        public ValueTask RemoveEntriesAsync(string primaryKey, CancellationToken cancellationToken)
+        {
+            _entries.TryRemove(primaryKey, out _);
+            return ValueTask.CompletedTask;
+        }
+    }
+    #endregion
 
     private sealed class MockResponseHandler(Func<HttpRequestMessage, HttpResponseMessage> responseFunc) : DelegatingHandler
     {

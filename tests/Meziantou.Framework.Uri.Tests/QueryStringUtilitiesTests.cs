@@ -203,4 +203,76 @@ public sealed class QueryStringUtilitiesTests
 
         Assert.Equal("queryString", exception.ParamName);
     }
+
+    [Fact]
+    public void Documentation_ParseQuery()
+    {
+        #region QueryStringUtilities_ParseQuery
+        // The leading "?" is optional, names and values are decoded
+        var query = QueryStringUtilities.ParseQuery("q=hello+world&path=%2Fdocs&tag=a&tag=b&debug");
+
+        Assert.Equal("hello world", query["q"].ToString());
+        Assert.Equal("/docs", query["path"].ToString());
+        Assert.Equal(["a", "b"], query["tag"].ToArray());
+
+        // A parameter without "=" has an empty value
+        Assert.Equal("", query["debug"].ToString());
+
+        // A missing parameter has no value
+        Assert.True(StringValues.IsNullOrEmpty(query["missing"]));
+
+        // Parameters are enumerated in the order of the query string
+        Assert.Equal(["q", "path", "tag", "debug"], query.Select(parameter => parameter.Key));
+
+        // ParseNullableQuery returns null instead of an empty collection
+        Assert.Null(QueryStringUtilities.ParseNullableQuery("?"));
+        Assert.True(QueryStringUtilities.ParseQuery("?").IsEmpty);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_EditQuery()
+    {
+        #region QueryStringUtilities_EditQuery
+        var uri = "https://example.com/search?q=books#results";
+
+        // Values are encoded, and the fragment stays at the end
+        Assert.Equal(
+            "https://example.com/search?q=books&author=Jane%20Doe#results",
+            QueryStringUtilities.AddQueryString(uri, "author", "Jane Doe"));
+
+        // Several parameters at once, a name with several values
+        Assert.Equal(
+            "https://example.com/search?q=books&tag=a&tag=b&page=2#results",
+            QueryStringUtilities.AddQueryString(uri, [("tag", new StringValues(["a", "b"])), ("page", new StringValues("2"))]));
+
+        // A null value adds nothing
+        Assert.Equal(uri, QueryStringUtilities.AddQueryString(uri, "author", null));
+
+        // AddOrReplaceQueryString replaces every value of the name, and a null value removes it
+        Assert.Equal("https://example.com/search?q=novels#results", QueryStringUtilities.AddOrReplaceQueryString(uri, "q", "novels"));
+        Assert.Equal("https://example.com/search#results", QueryStringUtilities.AddOrReplaceQueryString(uri, "q", null));
+
+        // The parameters that are kept are written again
+        Assert.Equal("https://example.com/?q=a%20b&debug=&page=2", QueryStringUtilities.AddOrReplaceQueryString("https://example.com/?q=a+b&debug", "page", "2"));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_ParameterCollection()
+    {
+        #region QueryStringParameterCollection_Edit
+        var uri = "https://example.com/search?q=books&page=3&utm_source=newsletter";
+
+        var query = QueryStringUtilities.ParseQuery(new System.Uri(uri).Query);
+        query.Remove("utm_source");
+        query.Set("page", "1");
+        query.Append("tag", "fiction");
+        query.Append("tag", "history");
+
+        Assert.Equal(
+            "https://example.com/search?q=books&page=1&tag=fiction&tag=history",
+            QueryStringUtilities.SetQueryString(uri, query));
+        #endregion
+    }
 }

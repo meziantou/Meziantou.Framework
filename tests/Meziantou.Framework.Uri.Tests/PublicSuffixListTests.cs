@@ -258,4 +258,49 @@ public sealed class PublicSuffixListTests
         Assert.True(PublicSuffixList.RuleCount > 5000);
         Assert.True(PublicSuffixList.LastUpdated > new DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero));
     }
+
+    [Fact]
+    public void Documentation_SameSite()
+    {
+        #region PublicSuffixList_SameSite
+        static bool IsSameSite(string host1, string host2)
+        {
+            var site1 = PublicSuffixList.GetRegistrableDomain(host1);
+            var site2 = PublicSuffixList.GetRegistrableDomain(host2);
+            return site1 is not null && site1 == site2;
+        }
+
+        Assert.True(IsSameSite("www.example.co.uk", "shop.example.co.uk"));
+        Assert.False(IsSameSite("example.co.uk", "contoso.co.uk"));
+
+        // github.io is a public suffix: two sites hosted there are different sites
+        Assert.False(IsSameSite("alice.github.io", "bob.github.io"));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Normalization()
+    {
+        #region PublicSuffixList_Normalization
+        // The domain is lower-cased and a trailing dot is ignored
+        Assert.True(PublicSuffixList.TryGetDomainInfo("WWW.Example.COM.", out var info));
+        Assert.Equal("www.example.com", info.Domain);
+        Assert.Equal("example.com", info.RegistrableDomain);
+
+        // A top-level domain that is not in the list is still a public suffix, by the implicit "*" rule
+        Assert.True(PublicSuffixList.TryGetDomainInfo("www.example.unknowntld", out var unknown));
+        Assert.Equal("unknowntld", unknown.PublicSuffix);
+        Assert.Equal("example.unknowntld", unknown.RegistrableDomain);
+        Assert.False(unknown.IsKnownPublicSuffix);
+        Assert.Equal(PublicSuffixRuleSources.None, unknown.Source);
+        Assert.False(PublicSuffixList.IsPublicSuffix("unknowntld"));
+
+        // A value that is not a domain name
+        Assert.False(PublicSuffixList.TryGetDomainInfo("example..com", out _));
+        Assert.Null(PublicSuffixList.GetRegistrableDomain(""));
+
+        // The host of a Uri must be a domain name, not an IP address
+        Assert.False(PublicSuffixList.TryGetDomainInfo(new System.Uri("https://192.168.1.1/"), out _));
+        #endregion
+    }
 }

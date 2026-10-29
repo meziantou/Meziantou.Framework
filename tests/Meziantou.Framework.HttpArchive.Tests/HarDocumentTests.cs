@@ -237,6 +237,135 @@ public sealed class HarDocumentTests
     }
 
     [Fact]
+    public void Documentation_Parse()
+    {
+        #region HarDocument_Parse
+        var document = HarDocument.Parse("""
+            {
+              "log": {
+                "version": "1.2",
+                "creator": { "name": "MyTool", "version": "1.0" },
+                "entries": [
+                  {
+                    "startedDateTime": "2026-01-15T10:00:00.000Z",
+                    "time": 42.5,
+                    "request": { "method": "GET", "url": "https://example.com/api/items" },
+                    "response": { "status": 200, "statusText": "OK", "content": { "size": 2, "mimeType": "application/json", "text": "[]" } }
+                  }
+                ]
+              }
+            }
+            """);
+
+        var entry = Assert.Single(document.Log!.Entries!);
+        Assert.Equal("GET", entry.Request!.Method);
+        Assert.Equal("https://example.com/api/items", entry.Request.Url);
+        Assert.Equal(200, entry.Response!.Status);
+        Assert.Equal("[]", entry.Response.Content!.Text);
+        Assert.Equal(42.5, entry.Time);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_ToJsonString()
+    {
+        #region HarDocument_ToJsonString
+        var document = new HarDocument();
+        document.Log!.Creator = new HarCreator { Name = "MyTool", Version = "1.0" };
+        document.Log.Entries!.Add(new HarEntry
+        {
+            StartedDateTime = new DateTimeOffset(2026, 1, 15, 10, 0, 0, TimeSpan.Zero),
+            Request = new HarRequest { Method = "GET", Url = "https://example.com/" },
+            Response = new HarResponse { Status = 204, StatusText = "No Content" },
+        });
+
+        var json = document.ToJsonString(indented: true);
+
+        var copy = HarDocument.Parse(json);
+        Assert.Equal("1.2", copy.Log!.Version);
+        Assert.Equal(204, Assert.Single(copy.Log.Entries!).Response!.Status);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_ExtensionData()
+    {
+        #region HarDocument_ExtensionData
+        var document = HarDocument.Parse("""
+            {
+              "log": {
+                "version": "1.2",
+                "entries": [
+                  { "_resourceType": "xhr", "request": { "method": "GET", "url": "https://example.com/" } }
+                ]
+              }
+            }
+            """);
+
+        var entry = Assert.Single(document.Log!.Entries!);
+        Assert.Equal("xhr", entry.ExtensionData!["_resourceType"].GetString());
+
+        // Custom fields are written back
+        Assert.Contains("\"_resourceType\":\"xhr\"", document.ToJsonString());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Nullability()
+    {
+        #region HarDocument_Nullability
+        var document = HarDocument.Parse("""
+            {
+              "log": {
+                "entries": [
+                  { "request": { "method": "GET", "url": "https://example.com/", "headers": null } },
+                  { "request": null }
+                ]
+              }
+            }
+            """);
+
+        var entries = document.Log!.Entries!;
+
+        // A missing property keeps its default value
+        Assert.Equal("", entries[0].Request!.HttpVersion);
+        Assert.Empty(entries[0].Request!.Cookies!);
+
+        // An explicit null is kept as null
+        Assert.Null(entries[0].Request!.Headers);
+        Assert.Null(entries[1].Request);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_RemoveCredentials()
+    {
+        var document = HarDocument.Parse(CompleteHar);
+
+        #region HarDocument_RemoveCredentials
+        string[] sensitiveHeaders = ["Authorization", "Cookie", "Set-Cookie"];
+        foreach (var entry in document.Log?.Entries ?? [])
+        {
+            if (entry.Request is { } request)
+            {
+                request.Headers?.RemoveAll(header => sensitiveHeaders.Contains(header.Name, StringComparer.OrdinalIgnoreCase));
+                request.Cookies?.Clear();
+            }
+
+            if (entry.Response is { } response)
+            {
+                response.Headers?.RemoveAll(header => sensitiveHeaders.Contains(header.Name, StringComparer.OrdinalIgnoreCase));
+                response.Cookies?.Clear();
+            }
+        }
+        #endregion
+
+        var cleaned = Assert.Single(document.Log!.Entries!);
+        Assert.Empty(cleaned.Request!.Cookies!);
+        Assert.Equal(["Host", "Accept"], cleaned.Request.Headers!.Select(header => header.Name));
+    }
+
+    [Fact]
     public async Task ParseAsync_FromStream()
     {
         var stream = new MemoryStream(Encoding.UTF8.GetBytes(CompleteHar));

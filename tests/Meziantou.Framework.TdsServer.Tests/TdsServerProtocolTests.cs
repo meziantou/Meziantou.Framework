@@ -1074,8 +1074,68 @@ public sealed class TdsServerProtocolTests
 
         var exception = await Assert.ThrowsAsync<SqlException>(() => command.ExecuteReaderAsync());
         Assert.Equal(50001, exception.Number);
-        Assert.Contains("Invalid query", exception.Message);
+        Assert.Equal("Invalid query", exception.Message);
         Assert.True(await invalidQueryTask.Task.WaitAsync(TimeSpan.FromSeconds(5)));
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryError_KeepsTheConnectionOpenAndUsable()
+    {
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            (context, cancellationToken) =>
+            {
+                if (context.CommandText?.Contains("missing_table", StringComparison.Ordinal) == true)
+                {
+                    return ValueTask.FromResult(TdsQueryResult.FromError(new TdsQueryError
+                    {
+                        Number = 208,
+                        State = 1,
+                        Class = 16,
+                        Message = "Invalid object name 'missing_table'.",
+                    }));
+                }
+
+                var result = new TdsQueryResult();
+                var resultSet = new TdsResultSet();
+                resultSet.Columns.Add(new TdsColumn("Value", TdsColumnType.Int32));
+                resultSet.Rows.Add([42]);
+                result.ResultSets.Add(resultSet);
+                return ValueTask.FromResult(result);
+            });
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        await using var connection = new SqlConnection(CreateConnectionString(port));
+        await connection.OpenAsync();
+
+        for (var i = 0; i < 2; i++)
+        {
+            await using (var failingCommand = connection.CreateCommand())
+            {
+                failingCommand.CommandText = "SELECT * FROM missing_table";
+                var exception = await Assert.ThrowsAsync<SqlException>(() => failingCommand.ExecuteReaderAsync());
+
+                // The message is the handler's message only: SqlClient appends "A severe error occurred on the
+                // current command" when the server reports the error as severe, and then closes the connection.
+                Assert.Equal("Invalid object name 'missing_table'.", exception.Message);
+                Assert.Equal(208, exception.Number);
+                Assert.Equal(16, exception.Class);
+                Assert.Equal(1, exception.State);
+                Assert.HasCount(1, exception.Errors);
+            }
+
+            Assert.Equal(ConnectionState.Open, connection.State);
+
+            await using var command = connection.CreateCommand();
+            command.CommandText = "SELECT 42";
+            Assert.Equal(42, await command.ExecuteScalarAsync());
+        }
     }
 
     [Fact]
@@ -1986,11 +2046,8 @@ public sealed class TdsServerProtocolTests
 
         Assert.Equal(50004, exception.Number);
 
-        // The message fits in the token's 16-bit length field rather than wrapping it. SqlClient appends its
-        // own note about the severity, so compare the first line only. Normalise the line endings first: they
-        // are CRLF on Windows and LF elsewhere.
-        var reportedMessage = exception.Message.ReplaceLineEndings("\n").Split('\n')[0];
-        Assert.Equal(new string('e', 32_000), reportedMessage);
+        // The message fits in the token's 16-bit length field rather than wrapping it.
+        Assert.Equal(new string('e', 32_000), exception.Message);
     }
 
     [Fact]

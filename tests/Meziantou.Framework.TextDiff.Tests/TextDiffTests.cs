@@ -1,4 +1,5 @@
 extern alias TextDiffLib;
+using System.Net;
 using Diff = TextDiffLib::Meziantou.Framework.TextDiff;
 using TextDiffLib::Meziantou.Framework;
 
@@ -292,6 +293,267 @@ public sealed class TextDiffTests
             result.Entries);
         #endregion
     }
+
+    [Fact]
+    public void DocumentationExample_WordDiff()
+    {
+        #region TextDiff_WordDiff
+        var options = new TextDiffOptions { Chunker = TextChunker.Words };
+
+        var result = TextDiff.ComputeDiff("the quick fox", "the slow fox", options);
+
+        Assert.Equal(
+            [
+                new TextDiffEntry(TextDiffOperation.Equal, "the"),
+                new TextDiffEntry(TextDiffOperation.Equal, " "),
+                new TextDiffEntry(TextDiffOperation.Delete, "quick"),
+                new TextDiffEntry(TextDiffOperation.Insert, "slow"),
+                new TextDiffEntry(TextDiffOperation.Equal, " "),
+                new TextDiffEntry(TextDiffOperation.Equal, "fox"),
+            ],
+            result.Entries);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_LineChunks()
+    {
+        #region TextDiff_LineChunks
+        var chunks = TextChunker.Lines.Chunk("first\r\nsecond\n");
+
+        // Each line keeps its terminator, and the text ends with an empty chunk
+        Assert.Equal(["first\r\n", "second\n", ""], chunks);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_CustomChunker()
+    {
+        #region TextDiff_CustomChunkerUsage
+        var options = new TextDiffOptions { Chunker = new SentenceChunker() };
+
+        var result = TextDiff.ComputeDiff("Hello world. Goodbye world.", "Hello world. Hi world.", options);
+
+        Assert.Equal(
+            [
+                new TextDiffEntry(TextDiffOperation.Equal, "Hello world. "),
+                new TextDiffEntry(TextDiffOperation.Delete, "Goodbye world."),
+                new TextDiffEntry(TextDiffOperation.Insert, "Hi world."),
+            ],
+            result.Entries);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_IgnoreWhitespace()
+    {
+        #region TextDiff_IgnoreWhitespace
+        var options = new TextDiffOptions { IgnoreWhitespace = true };
+
+        // The whitespace at the edges of a line is ignored...
+        Assert.False(TextDiff.ComputeDiff("    indented\n", "indented  \n", options).HasDifferences);
+
+        // ...but not the whitespace inside it
+        Assert.True(TextDiff.ComputeDiff("a  b\n", "a b\n", options).HasDifferences);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_IgnoreEndOfLine()
+    {
+        #region TextDiff_IgnoreEndOfLine
+        var options = new TextDiffOptions { IgnoreEndOfLine = true };
+
+        var result = TextDiff.ComputeDiff("one\r\ntwo\r\n", "one\ntwo\n", options);
+
+        Assert.False(result.HasDifferences);
+
+        // The entries hold the normalized text, not the original "\r\n"
+        Assert.Equal(
+            [
+                new TextDiffEntry(TextDiffOperation.Equal, "one\n"),
+                new TextDiffEntry(TextDiffOperation.Equal, "two\n"),
+                new TextDiffEntry(TextDiffOperation.Equal, ""),
+            ],
+            result.Entries);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_UnifiedDiff()
+    {
+        #region TextDiff_UnifiedDiffUsage
+        var oldText = "a\nb\nc\nd\ne\nf\ng\nh\n";
+        var newText = "a\nb\nC\nd\ne\nf\ng\nh\ni\n";
+
+        var patch = ToUnifiedDiff(oldText, newText, "old.txt", "new.txt", contextLines: 1);
+
+        Assert.Equal(
+            "--- old.txt\n" +
+            "+++ new.txt\n" +
+            "@@ -2,3 +2,3 @@\n" +
+            " b\n" +
+            "-c\n" +
+            "+C\n" +
+            " d\n" +
+            "@@ -8 +8,2 @@\n" +
+            " h\n" +
+            "+i\n",
+            patch);
+        #endregion
+    }
+
+    [Theory]
+    [InlineData("", "", "")]
+    [InlineData("", "a\n", "--- a\n+++ b\n@@ -0,0 +1 @@\n+a\n")]
+    [InlineData("a\n", "", "--- a\n+++ b\n@@ -1 +0,0 @@\n-a\n")]
+    [InlineData("a\nb\nc\nd\n", "x\na\nb\nc\nd\n", "--- a\n+++ b\n@@ -1,3 +1,4 @@\n+x\n a\n b\n c\n")]
+    [InlineData("a\nb", "a\nc", "--- a\n+++ b\n@@ -1,2 +1,2 @@\n a\n-b\n\\ No newline at end of file\n+c\n\\ No newline at end of file\n")]
+    [InlineData("a\nb\nc\nd\ne\nf\ng\nh\ni\nj\n", "A\nb\nc\nd\ne\nf\ng\nh\ni\nJ\n", "--- a\n+++ b\n@@ -1,4 +1,4 @@\n-a\n+A\n b\n c\n d\n@@ -7,4 +7,4 @@\n g\n h\n i\n-j\n+J\n")]
+    [InlineData("a\nb\nc\nd\ne\nf\ng\nh\n", "A\nb\nc\nd\ne\nf\ng\nH\n", "--- a\n+++ b\n@@ -1,8 +1,8 @@\n-a\n+A\n b\n c\n d\n e\n f\n g\n-h\n+H\n")]
+    public void DocumentationExample_UnifiedDiff_MatchesDiffUtils(string oldText, string newText, string expected)
+    {
+        Assert.Equal(expected, ToUnifiedDiff(oldText, newText));
+    }
+
+    #region TextDiff_UnifiedDiff
+    public static string ToUnifiedDiff(string oldText, string newText, string oldName = "a", string newName = "b", int contextLines = 3)
+    {
+        var result = TextDiff.ComputeDiff(oldText, newText);
+
+        // One item per line, with the number of the line in each text
+        var lines = new List<(char Prefix, string Text, int OldLine, int NewLine)>();
+        var oldLine = 1;
+        var newLine = 1;
+        foreach (var entry in result.Entries)
+        {
+            if (entry.Text.Length is 0)
+                continue; // The empty chunk after the last line terminator
+
+            lines.Add(entry.Operation switch
+            {
+                TextDiffOperation.Equal => (' ', entry.Text, oldLine++, newLine++),
+                TextDiffOperation.Delete => ('-', entry.Text, oldLine++, newLine),
+                _ => ('+', entry.Text, oldLine, newLine++),
+            });
+        }
+
+        var output = new StringBuilder();
+        var index = 0;
+        while (true)
+        {
+            var firstChange = lines.FindIndex(index, line => line.Prefix is not ' ');
+            if (firstChange < 0)
+                break;
+
+            // Changes separated by at most 2 × contextLines unchanged lines share a hunk
+            var lastChange = firstChange;
+            while (true)
+            {
+                var nextChange = lines.FindIndex(lastChange + 1, line => line.Prefix is not ' ');
+                if (nextChange < 0 || nextChange - lastChange - 1 > 2 * contextLines)
+                    break;
+
+                lastChange = nextChange;
+            }
+
+            var start = Math.Max(index, firstChange - contextLines);
+            var end = Math.Min(lines.Count, lastChange + contextLines + 1);
+            var hunk = lines.GetRange(start, end - start);
+
+            if (output.Length is 0)
+            {
+                output.Append("--- ").Append(oldName).Append('\n');
+                output.Append("+++ ").Append(newName).Append('\n');
+            }
+
+            var oldRange = FormatRange(hunk[0].OldLine, hunk.Count(line => line.Prefix is not '+'));
+            var newRange = FormatRange(hunk[0].NewLine, hunk.Count(line => line.Prefix is not '-'));
+            output.Append("@@ -").Append(oldRange).Append(" +").Append(newRange).Append(" @@\n");
+            foreach (var line in hunk)
+            {
+                output.Append(line.Prefix).Append(line.Text);
+                if (line.Text[^1] is not '\n')
+                {
+                    output.Append("\n\\ No newline at end of file\n");
+                }
+            }
+
+            index = end;
+        }
+
+        return output.ToString();
+
+        // An empty range gives the number of the line before it, and a count of 1 is omitted
+        static string FormatRange(int start, int count) => count switch
+        {
+            0 => string.Create(CultureInfo.InvariantCulture, $"{start - 1},0"),
+            1 => string.Create(CultureInfo.InvariantCulture, $"{start}"),
+            _ => string.Create(CultureInfo.InvariantCulture, $"{start},{count}"),
+        };
+    }
+    #endregion
+
+    [Fact]
+    public void DocumentationExample_HighlightChangedWords()
+    {
+        #region TextDiff_HighlightChangedWordsUsage
+        var html = HighlightChangedWords(
+            "The quick fox\njumps over\nthe dog\n",
+            "The slow fox\njumps over\nthe lazy dog & cat\n");
+
+        Assert.Equal(
+            "The <del>quick</del><ins>slow</ins> fox\n" +
+            "jumps over\n" +
+            "the <ins>lazy </ins>dog<ins> &amp; cat</ins>\n",
+            html);
+        #endregion
+    }
+
+    #region TextDiff_HighlightChangedWords
+    public static string HighlightChangedWords(string oldText, string newText)
+    {
+        var result = TextDiff.ComputeHierarchyDiff(oldText, newText, [TextChunker.Lines, TextChunker.Words]);
+
+        var output = new StringBuilder();
+        Append(result.Entries);
+        return output.ToString();
+
+        void Append(IReadOnlyList<TextDiffHierarchyEntry> entries)
+        {
+            var index = 0;
+            while (index < entries.Count)
+            {
+                var entry = entries[index];
+                switch (entry.Operation)
+                {
+                    case TextDiffHierarchyOperation.Equal:
+                        output.Append(WebUtility.HtmlEncode(entry.NewText));
+                        index++;
+                        break;
+
+                    case TextDiffHierarchyOperation.Replace:
+                        Append(entry.Children); // The word diff of the two lines
+                        index++;
+                        break;
+
+                    default:
+                        // Consecutive deleted (or inserted) chunks share one element
+                        var tag = entry.Operation is TextDiffHierarchyOperation.Delete ? "del" : "ins";
+                        output.Append('<').Append(tag).Append('>');
+                        while (index < entries.Count && entries[index].Operation == entry.Operation)
+                        {
+                            output.Append(WebUtility.HtmlEncode(entries[index].OldText ?? entries[index].NewText));
+                            index++;
+                        }
+
+                        output.Append("</").Append(tag).Append('>');
+                        break;
+                }
+            }
+        }
+    }
+    #endregion
 
     [Fact]
     public void ComputeDiff_IdenticalTexts_NoDifferences()
@@ -968,37 +1230,34 @@ public sealed class TextDiffTests
         Assert.True(result.HasDifferences);
     }
 
+    #region TextDiff_CustomChunker
+    // Splits after each '.' and the spaces that follow it, so the chunks concatenate back to the text
     private sealed class SentenceChunker : TextChunker
     {
         public override IEnumerable<string> Chunk(ReadOnlySpan<char> value)
         {
             var sentences = new List<string>();
-            var start = 0;
-
-            for (var i = 0; i < value.Length; i++)
+            while (!value.IsEmpty)
             {
-                if (value[i] == '.')
+                var end = value.IndexOf('.') + 1;
+                if (end is 0)
                 {
-                    var end = i + 1;
-                    while (end < value.Length && value[end] == ' ')
-                    {
-                        end++;
-                    }
-
-                    sentences.Add(value[start..end].ToString());
-                    start = end;
-                    i = end - 1;
+                    end = value.Length; // The last sentence has no '.'
                 }
-            }
 
-            if (start < value.Length)
-            {
-                sentences.Add(value[start..].ToString());
+                while (end < value.Length && value[end] == ' ')
+                {
+                    end++;
+                }
+
+                sentences.Add(value[..end].ToString());
+                value = value[end..];
             }
 
             return sentences;
         }
     }
+    #endregion
 
     // Line chunker preserves line endings in chunks
     [Fact]

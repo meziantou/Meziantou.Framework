@@ -264,4 +264,18 @@ public class TestAutoLinks
         // A tel: link without a number was a link to "tel:", and the marker of a quote was the character before a link
         Assert.Equal(expectedHtml, MarkdownConverter.ToHtml(markdown, new MarkdownPipelineBuilder().UseAutoLinks().Build()));
     }
+
+    [Fact]
+    public void DocumentationExample_AutoLinks()
+    {
+        #region MarkdownExtensions_UseAutoLinks
+        var markdown = "Visit www.example.com or https://example.org.";
+
+        var pipeline = new MarkdownPipelineBuilder().UseAutoLinks().Build();
+        Assert.Equal("<p>Visit <a href=\"http://www.example.com\">www.example.com</a> or <a href=\"https://example.org\">https://example.org</a>.</p>\n", MarkdownConverter.ToHtml(markdown, pipeline));
+
+        var httpsPipeline = new MarkdownPipelineBuilder().UseAutoLinks(new AutoLinkOptions { UseHttpsForWWWLinks = true }).Build();
+        Assert.Equal("<p>Visit <a href=\"https://www.example.com\">www.example.com</a> or <a href=\"https://example.org\">https://example.org</a>.</p>\n", MarkdownConverter.ToHtml(markdown, httpsPipeline));
+        #endregion
+    }
 }

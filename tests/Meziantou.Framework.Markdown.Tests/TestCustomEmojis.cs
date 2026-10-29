@@ -186,4 +186,35 @@ public class TestCustomEmojis
         var actual = MarkdownConverter.ToHtml("text :|", pipeline);
         Assert.Equal("<p>text 😐</p>\n", actual);
     }
+
+    [Fact]
+    public void DocumentationExample_Emojis()
+    {
+        #region MarkdownExtensions_UseEmojiAndSmiley
+        var pipeline = new MarkdownPipelineBuilder()
+            .UseEmojiAndSmiley()
+            .Build();
+
+        var html = MarkdownConverter.ToHtml("Well done :tada: :)", pipeline);
+        Assert.Equal("<p>Well done 🎉 😃</p>\n", html);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_CustomEmojis()
+    {
+        #region EmojiMapping_Custom
+        // Start from the default shortcodes to keep them, and add yours
+        var shortcodes = EmojiMapping.GetDefaultEmojiShortcodeToUnicode();
+        shortcodes[":shipit:"] = "🐿️";
+        var mapping = new EmojiMapping(shortcodes, EmojiMapping.GetDefaultSmileyToEmojiShortcode());
+
+        var pipeline = new MarkdownPipelineBuilder()
+            .UseEmojiAndSmiley(mapping)
+            .Build();
+
+        var html = MarkdownConverter.ToHtml(":shipit: :tada:", pipeline);
+        Assert.Equal("<p>🐿️ 🎉</p>\n", html);
+        #endregion
+    }
 }

@@ -1003,4 +1003,72 @@ public sealed class TestPipeTable
         var pipeline = new MarkdownPipelineBuilder().UsePipeTables().EnableTrackTrivia().Build();
         _ = MarkdownConverter.Parse(">n|\n-|\n|`\n>`\n", pipeline);
     }
+
+    [Fact]
+    public void DocumentationExample_PipeTables()
+    {
+        #region MarkdownExtensions_UsePipeTables
+        var pipeline = new MarkdownPipelineBuilder()
+            .UsePipeTables()
+            .Build();
+
+        var html = MarkdownConverter.ToHtml("""
+            | Name | Age |
+            |:-----|----:|
+            | Ann  | 32  |
+            """, pipeline);
+        Assert.Equal("""
+            <table>
+            <thead>
+            <tr>
+            <th style="text-align: left;">Name</th>
+            <th style="text-align: right;">Age</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+            <td style="text-align: left;">Ann</td>
+            <td style="text-align: right;">32</td>
+            </tr>
+            </tbody>
+            </table>
+
+            """.ReplaceLineEndings("\n"), html);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_PipeTablesGfmRules()
+    {
+        #region PipeTableOptions_UseGfmRules
+        // The body row has more cells than the header
+        var markdown = "a | b\n--|--\n1 | 2 | 3";
+
+        var permissive = MarkdownConverter.ToHtml(markdown, new MarkdownPipelineBuilder().UsePipeTables().Build());
+        Assert.Contains("<td>3</td>", permissive); // A third column is added
+
+        var gfm = MarkdownConverter.ToHtml(markdown, new MarkdownPipelineBuilder().UsePipeTables(new PipeTableOptions { UseGfmRules = true }).Build());
+        Assert.DoesNotContain("<td>3</td>", gfm); // The extra cell is dropped, as on GitHub
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_PipeTablesSyntaxTree()
+    {
+        #region Table_SyntaxTree
+        var pipeline = new MarkdownPipelineBuilder().UsePipeTables().Build();
+        var document = MarkdownConverter.Parse("| Name | Age |\n|:-----|----:|\n| Ann  | 32  |\n| Bob  | 41  |", pipeline);
+
+        var table = document.Descendants<Table>().Single();
+        Assert.Equal(TableColumnAlign.Right, table.ColumnDefinitions[1].Alignment);
+
+        var rows = table.Cast<TableRow>().ToList();
+        Assert.True(rows[0].IsHeader);
+
+        // A cell is a container block: its content is a paragraph
+        var cell = (TableCell)rows[2][0];
+        var text = ((ParagraphBlock)cell[0]).Inline!.FirstChild!.ToString();
+        Assert.Equal("Bob", text);
+        #endregion
+    }
 }

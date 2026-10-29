@@ -53,4 +53,13 @@ public class TestPlainText
     {
         TestParser.TestSpec(markdownText, expected, extensions, plainText: true, context: context);
     }
+
+    [Fact]
+    public void DocumentationExample_PlainText()
+    {
+        #region MarkdownConverter_ToPlainText
+        var text = MarkdownConverter.ToPlainText("# Title\n\nSome **bold** text and [a link](https://example.com).\n\n- First\n- Second");
+        Assert.Equal("Title\nSome bold text and a link.\nFirst\nSecond\n", text);
+        #endregion
+    }
 }

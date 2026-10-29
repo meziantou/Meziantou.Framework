@@ -35,4 +35,17 @@ public class TestConfigureNewLine
         var actual = MarkdownConverter.ToPlainText(markdownText, pipeline);
         Assert.Equal(expected, actual);
     }
+
+    [Fact]
+    public void DocumentationExample_ConfigureNewLine()
+    {
+        #region MarkdownExtensions_ConfigureNewLine
+        var pipeline = new MarkdownPipelineBuilder()
+            .ConfigureNewLine("\r\n")
+            .Build();
+
+        var html = MarkdownConverter.ToHtml("# Title\n\nSome text.", pipeline);
+        Assert.Equal("<h1>Title</h1>\r\n<p>Some text.</p>\r\n", html);
+        #endregion
+    }
 }

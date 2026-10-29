@@ -1235,4 +1235,41 @@ Text following the table.");
         }
         return text.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');
     }
+
+    [Fact]
+    public void DocumentationExample_NormalizeOptions()
+    {
+        #region NormalizeOptions_Usage
+        var markdown = "Title\n=====\n* First\n* Second";
+
+        Assert.Equal("# Title\n\n* First\n* Second", MarkdownConverter.Normalize(markdown).ReplaceLineEndings("\n"));
+
+        var options = new NormalizeOptions
+        {
+            ListItemCharacter = '-',      // null keeps the bullet of the source
+            EmptyLineAfterHeading = false,
+        };
+        Assert.Equal("# Title\n- First\n- Second", MarkdownConverter.Normalize(markdown, options).ReplaceLineEndings("\n"));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_NormalizeDocument()
+    {
+        #region NormalizeRenderer_Document
+        var pipeline = new MarkdownPipelineBuilder().Build();
+        var document = MarkdownConverter.Parse("Title\n=====\n\nSee [the docs](http://example.com).", pipeline);
+        foreach (var link in document.Descendants<LinkInline>())
+        {
+            link.Url = link.Url?.Replace("http://", "https://", StringComparison.Ordinal);
+        }
+
+        using var writer = new StringWriter();
+        var renderer = new NormalizeRenderer(writer);
+        pipeline.Setup(renderer);
+        renderer.Render(document);
+
+        Assert.Equal("# Title\n\nSee [the docs](https://example.com).", writer.ToString().ReplaceLineEndings("\n"));
+        #endregion
+    }
 }

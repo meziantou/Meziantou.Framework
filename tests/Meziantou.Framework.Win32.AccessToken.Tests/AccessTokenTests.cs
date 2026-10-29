@@ -354,4 +354,28 @@ public sealed class AccessTokenTests
             return false;
         }
     }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void IsLimitedTokenDocumentationExample()
+    {
+        #region AccessToken_IsLimitedToken
+        // true when an administrator runs the process without elevation (User Account Control)
+        var isLimited = AccessToken.IsLimitedToken();
+
+        using var token = AccessToken.OpenCurrentProcessToken(TokenAccessLevels.Query);
+        Assert.Equal(token.GetElevationType() == TokenElevationType.Limited, isLimited);
+        #endregion
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void DuplicateDocumentationExample()
+    {
+        #region AccessToken_Duplicate
+        // Duplicating a token requires the Duplicate access right
+        using var token = AccessToken.OpenCurrentProcessToken(TokenAccessLevels.Query | TokenAccessLevels.Duplicate);
+
+        using var impersonationToken = token.Duplicate(SecurityImpersonationLevel.SecurityImpersonation);
+        Assert.Equal(TokenType.TokenImpersonation, impersonationToken.GetTokenType());
+        #endregion
+    }
 }

@@ -233,4 +233,24 @@ public class AmsiContextTests
         using var session = context.CreateSession();
         Assert.False(session.Scan([0, 0, 0, 0], "EICAR").ShouldBlock());
     }
+
+    // Performs a real scan, so it needs a provider that is ready: hosted CI agents do not have one.
+    [Fact, RunIf(TestOperatingSystems.Windows), SkipIf(ContinuousIntegration = ContinuousIntegrationEnvironments.GitHubActions)]
+    public void AmsiContext_ScanDocumentationExample()
+    {
+        #region AmsiContext_ShouldBlock
+        using var context = AmsiContext.Create("MyApplication");
+
+        bool CanRun(string script)
+        {
+            var result = context.Scan(script, "script.ps1");
+
+            // ShouldBlock covers malware and the content that an administrator policy blocks
+            return !result.ShouldBlock();
+        }
+
+        Assert.True(CanRun("Write-Host 'Hello'"));
+        Assert.False(CanRun(@"X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*"));
+        #endregion
+    }
 }

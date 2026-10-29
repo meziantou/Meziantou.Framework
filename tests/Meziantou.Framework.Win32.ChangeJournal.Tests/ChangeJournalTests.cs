@@ -174,6 +174,50 @@ public class ChangeJournalTests
         Assert.True(entry.Attributes.HasFlag(FileAttributes.Directory));
     }
 
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void ReadChangesSinceLastRunDocumentationExample()
+    {
+        Retry(() =>
+        {
+            var path = Path.GetTempFileName();
+            var drive = new DriveInfo(Path.GetPathRoot(path) ?? throw new InvalidOperationException("Cannot determine drive root"));
+
+            #region ChangeJournal_ReadChangesSinceLastRun
+            using var changeJournal = ChangeJournal.Open(drive, unprivileged: true);
+
+            // Save these values when the application stops, for instance in a file
+            var savedJournalId = changeJournal.Data.ID;
+            var savedUsn = changeJournal.Data.NextUSN;
+
+            // A change made while the application is not running
+            File.AppendAllText(path, "new content");
+
+            // When the application starts again, read the records written since the saved position
+            changeJournal.RefreshJournalData();
+            var changedFiles = new HashSet<FileIdentifier>();
+            if (changeJournal.Data.ID != savedJournalId || savedUsn < changeJournal.Data.FirstUSN)
+            {
+                // The journal was recreated, or the records were purged: scan the files instead
+            }
+            else
+            {
+                foreach (var change in changeJournal.GetEntries(savedUsn, ChangeReason.All, returnOnlyOnClose: false, TimeSpan.Zero))
+                {
+                    // In unprivileged mode, the records have no name: identify the files by their reference number
+                    if (change is ChangeJournalEntryVersion2or3 entry)
+                    {
+                        changedFiles.Add(entry.ReferenceNumber);
+                    }
+                }
+            }
+
+            Assert.Contains(FileIdentifier.FromFile(path), changedFiles);
+            #endregion
+
+            File.Delete(path);
+        });
+    }
+
     private static string CreateTemporaryDirectory()
     {
         var directory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());

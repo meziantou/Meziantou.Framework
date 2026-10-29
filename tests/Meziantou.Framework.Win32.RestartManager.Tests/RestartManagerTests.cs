@@ -409,4 +409,28 @@ public class RestartManagerTests
             File.Delete(path);
         }
     }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void GetLockingProcessesDocumentationExample()
+    {
+        var path = Path.GetTempFileName();
+        using (File.Open(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+        {
+            #region RestartManager_GetLockingProcesses
+            using var session = RestartManager.CreateSession();
+            session.RegisterFile(path);
+
+            // Describe the applications and services that use the file
+            var applications = session.GetLockingProcesses();
+            foreach (var application in applications)
+            {
+                Console.WriteLine($"{application.ApplicationName} ({application.ProcessId}): {application.ApplicationType}, restartable: {application.IsRestartable}");
+            }
+
+            Assert.Contains(applications, application => application.ProcessId == Environment.ProcessId);
+            #endregion
+        }
+
+        File.Delete(path);
+    }
 }

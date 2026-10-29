@@ -1,0 +1,9 @@
+<UserControl xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- The DataContext is the view model that exposes the commands -->
+    <StackPanel>
+        <TextBox Text="{Binding FileName, UpdateSourceTrigger=PropertyChanged}" />
+        <Button Content="Save" Command="{Binding SaveCommand}" />
+        <Button Content="Open report" Command="{Binding OpenCommand}" CommandParameter="report.txt" />
+    </StackPanel>
+</UserControl>

@@ -33,6 +33,34 @@ public sealed class DispatcherExtensionsTests
         currentDispatcher.BeginInvokeShutdown(DispatcherPriority.Background);
     }
 
+    [Fact(Timeout = 95000)]
+    public async Task SwitchToDispatcherThreadDocumentationExample()
+    {
+        var dispatcherReady = new TaskCompletionSource<Dispatcher>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var thread = new Thread(() =>
+        {
+            dispatcherReady.SetResult(Dispatcher.CurrentDispatcher);
+            Dispatcher.Run();
+        })
+        {
+            IsBackground = true,
+        };
+        thread.Start();
+        var dispatcher = await dispatcherReady.Task.WaitAsync(TestContext.Current.CancellationToken);
+
+        #region DispatcherExtensions_SwitchToDispatcherThread
+        // Do the slow work on a thread-pool thread
+        var lines = await Task.Run(() => Enumerable.Range(1, 1000).Select(i => $"Line {i}").ToList());
+
+        // Continue on the thread of the dispatcher, usually Application.Current.Dispatcher, to update the controls
+        await dispatcher.SwitchToDispatcherThread();
+        Assert.True(dispatcher.CheckAccess());
+        #endregion
+
+        Assert.HasCount(1000, lines);
+        dispatcher.BeginInvokeShutdown(DispatcherPriority.Background);
+    }
+
     [Fact]
     public void DefaultAwaitableThrows()
     {

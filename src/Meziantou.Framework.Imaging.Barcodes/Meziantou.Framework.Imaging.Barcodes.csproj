@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Imaging.Barcodes</RootNamespace>
-    <Version>1.0.1</Version>
+    <Version>1.0.2</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>Renders and draws the QR codes and barcodes of Meziantou.Framework.Barcodes with Meziantou.Framework.Imaging: images in any format, or vector drawing on a canvas</Description>
     <PackageTags>qrcode, barcode, image, imaging, drawing, canvas, ocr-a, ocr-b, font, png, webp, jpeg</PackageTags>

@@ -59,6 +59,13 @@ There is no general
 guarantee of comparable file size, encoding speed or perceptual quality, and equal quality/effort numbers do not
 establish a matched comparison. Compare representative images at matched decoded quality for lossy output.
 
+Lossless encoding works on one frame at a time. Its working memory counts against `MaxLiveAllocationBytes`: a copy of
+the frame (4 bytes per pixel), the hash chains of the LZ77 parse (4 bytes per pixel, released before the output is
+written), the recorded parse (at most 2 bytes per pixel) and the compressed stream, whose buffer doubles as it grows.
+That is about 10 bytes per pixel, more for images that hardly compress. Effort 9 adds a second copy of the frame and
+keeps two streams to pick the smaller one. A 16,384 x 16,384 image needs more than the default 512 MiB: raise the limit
+to encode images of that size.
+
 ## Options
 
 | Option | What it does | Default |

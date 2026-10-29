@@ -4238,6 +4238,13 @@ The managed encoder makes its own prediction and entropy-coding decisions: lossl
 speed or perceptual-quality comparison with libwebp is guaranteed, and quality/effort numbers are not interchangeable
 between encoders. Compare representative images at matched decoded quality for a lossy size comparison.
 
+Lossless encoding works on one frame at a time. Its working memory counts against `MaxLiveAllocationBytes`: a copy of
+the frame (4 bytes per pixel), the hash chains of the LZ77 parse (4 bytes per pixel, released before the output is
+written), the recorded parse (at most 2 bytes per pixel) and the compressed stream, whose buffer doubles as it grows.
+That is about 10 bytes per pixel, more for images that hardly compress. Effort 9 adds a second copy of the frame and
+keeps two streams to pick the smaller one. A 16,384 x 16,384 image needs more than the default 512 MiB: raise the limit
+to encode images of that size.
+
 A still image streams to any destination. An animation (several frames, animation settings, or a writer without
 `ExpectedFrameCount = 1`) declares its size before its frames, so it needs a **seekable** destination: frames are written
 as they come and the RIFF size and alpha flag are patched at the end. Non-seekable streams are rejected with an

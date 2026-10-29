@@ -138,12 +138,12 @@ internal sealed class JpegXlModularTransform
                     image.MetaChannelCount += 2 - _channelCount;
                 }
 
-                for (var i = endChannel; i > _beginChannel; i--)
+                for (var i = _beginChannel + 1; i <= endChannel; i++)
                 {
                     image.Channels[i].Dispose();
-                    image.Channels.RemoveAt(i);
                 }
 
+                image.Channels.RemoveRange(_beginChannel + 1, endChannel - _beginChannel);
                 image.InsertChannel(0, _colorCount + _deltaCount, _channelCount, -1, -1);
                 break;
             }
@@ -326,10 +326,16 @@ internal sealed class JpegXlModularTransform
         var indexChannel = image.Channels[indexChannelPosition];
         var width = indexChannel.Width;
         var height = indexChannel.Height;
-        for (var i = 1; i < count; i++)
+        var channels = new JpegXlModularChannel[count - 1];
+        for (var i = 0; i < channels.Length; i++)
         {
-            image.InsertChannel(indexChannelPosition + 1, width, height, indexChannel.HorizontalShift, indexChannel.VerticalShift);
-            image.Channels[indexChannelPosition + 1].Allocate(scope);
+            channels[i] = new JpegXlModularChannel(width, height, indexChannel.HorizontalShift, indexChannel.VerticalShift);
+        }
+
+        image.InsertChannels(indexChannelPosition + 1, channels);
+        foreach (var channel in channels)
+        {
+            channel.Allocate(scope);
         }
 
         var paletteSamples = palette.Samples;
@@ -651,6 +657,7 @@ internal sealed class JpegXlModularTransform
 
         // Each channel keeps the averages; the residuals are new channels, right after the squeezed ones or at the end
         var offset = step.InPlace ? end + 1 : image.Channels.Count;
+        var residuals = new JpegXlModularChannel[step.ChannelCount];
         for (var c = begin; c <= end; c++)
         {
             var channel = image.Channels[c];
@@ -680,8 +687,10 @@ internal sealed class JpegXlModularTransform
                 height -= (height + 1) / 2;
             }
 
-            image.InsertChannel(offset + (c - begin), width, height, channel.HorizontalShift, channel.VerticalShift);
+            residuals[c - begin] = new JpegXlModularChannel(width, height, channel.HorizontalShift, channel.VerticalShift);
         }
+
+        image.InsertChannels(offset, residuals);
     }
 
     private static void UndoSqueeze(JpegXlModularImage image, SqueezeStep step, AllocationScope scope)
@@ -720,11 +729,12 @@ internal sealed class JpegXlModularTransform
             }
         }
 
-        for (var i = end - begin; i >= 0; i--)
+        for (var i = 0; i <= end - begin; i++)
         {
             image.Channels[offset + i].Dispose();
-            image.Channels.RemoveAt(offset + i);
         }
+
+        image.Channels.RemoveRange(offset, end - begin + 1);
     }
 
     private static void UndoHorizontalSqueeze(JpegXlModularChannel average, JpegXlModularChannel residual, AllocationScope scope)

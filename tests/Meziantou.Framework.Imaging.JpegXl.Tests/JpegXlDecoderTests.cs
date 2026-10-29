@@ -1249,6 +1249,138 @@ public sealed class JpegXlDecoderTests
     }
 
     /// <summary>
+    /// A palette of one color is a 1x1 meta-channel, whose shifts do not grow: each in-place squeeze keeps it and inserts an
+    /// empty residual right after it, moving the channels that follow. The squeezes are read up to the limit of moved
+    /// channels (2^22: 2895 squeezes) and rejected beyond it, before the samples are decoded.
+    /// </summary>
+    [Theory]
+    [InlineData(1, false)]
+    [InlineData(2895, false)]
+    [InlineData(2896, true)]
+    [InlineData(272 * 296, true)]
+    public void RepeatedSqueezesOfAPaletteAreBounded(int squeezeCount, bool rejected)
+    {
+        // The palette moves the image channel; then the k-th squeeze moves the k + 1 channels after the palette: 2895
+        // squeezes move 4,191,961 channels in all, 2896 move 4,194,857
+        Assert.Equal(4_194_304, JpegXlModularImage.MaxChannelMoves);
+
+        var squeezes = Enumerable.Repeat((Horizontal: true, InPlace: true, Begin: 0, Count: 1), squeezeCount).ToArray();
+        var data = WriteModularTransforms(withPalette: true, squeezes);
+        using var image = new JpegXlModularImage(8);
+        image.AddChannel(1, 1, 0, 0);
+        var reader = new JpegXlBitReader(data, 0, data.Length);
+        if (rejected)
+        {
+            var exception = Assert.Throws<UnsupportedImageFeatureException>(() => JpegXlModularDecoder.ReadTransforms(reader, image, TestContext.Current.CancellationToken));
+            Assert.Contains("too many channels", exception.Message, StringComparison.Ordinal);
+        }
+        else
+        {
+            JpegXlModularDecoder.ReadTransforms(reader, image, TestContext.Current.CancellationToken);
+            reader.EnsureNotOverrun();
+            Assert.HasCount(squeezeCount + 2, image.Channels);
+            Assert.Equal(squeezeCount + 1, image.MetaChannelCount);
+        }
+    }
+
+    /// <summary>
+    /// Squeezes that append their residuals move no channel: 1x1 channels, squeezed by blocks of 19 until their shifts reach
+    /// 31 (30 horizontal squeezes, as a squeeze needs both shifts at most 30, then 31 vertical ones), have 62 times as many
+    /// channels. 55 blocks (64,790 channels) are within the limit of 2^16 channels, 56 (65,968) are not.
+    /// </summary>
+    [Theory]
+    [InlineData(55, false)]
+    [InlineData(56, true)]
+    public void SqueezesThatAddTooManyChannelsAreRejected(int blockCount, bool rejected)
+    {
+        const int BlockSize = 19;
+        const int HorizontalSqueezes = 30;
+        const int SqueezesPerBlock = HorizontalSqueezes + 31;
+        var squeezes = new List<(bool Horizontal, bool InPlace, int Begin, int Count)>();
+        for (var block = 0; block < blockCount; block++)
+        {
+            for (var i = 0; i < SqueezesPerBlock; i++)
+            {
+                squeezes.Add((i < HorizontalSqueezes, false, block * BlockSize, BlockSize));
+            }
+        }
+
+        var data = WriteModularTransforms(withPalette: false, squeezes);
+        using var image = new JpegXlModularImage(8);
+        for (var i = 0; i < blockCount * BlockSize; i++)
+        {
+            image.AddChannel(1, 1, 0, 0);
+        }
+
+        var reader = new JpegXlBitReader(data, 0, data.Length);
+        if (rejected)
+        {
+            var exception = Assert.Throws<UnsupportedImageFeatureException>(() => JpegXlModularDecoder.ReadTransforms(reader, image, TestContext.Current.CancellationToken));
+            Assert.Contains("too many channels", exception.Message, StringComparison.Ordinal);
+        }
+        else
+        {
+            JpegXlModularDecoder.ReadTransforms(reader, image, TestContext.Current.CancellationToken);
+            reader.EnsureNotOverrun();
+            Assert.HasCount(blockCount * BlockSize * (SqueezesPerBlock + 1), image.Channels);
+        }
+    }
+
+    [Fact]
+    public void ReadingModularTransformsChecksCancellation()
+    {
+        var squeezes = Enumerable.Repeat((Horizontal: true, InPlace: true, Begin: 0, Count: 1), 1000).ToArray();
+        var data = WriteModularTransforms(withPalette: true, squeezes);
+        using var image = new JpegXlModularImage(8);
+        image.AddChannel(1, 1, 0, 0);
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+        var reader = new JpegXlBitReader(data, 0, data.Length);
+        Assert.Throws<OperationCanceledException>(() => JpegXlModularDecoder.ReadTransforms(reader, image, cancellation.Token));
+        Assert.Single(image.Channels);
+    }
+
+    /// <summary>
+    /// Writes the transforms of a Modular sub-bitstream: a palette of one color of the first channel, when asked, then
+    /// squeeze transforms of at most 296 steps each.
+    /// </summary>
+    private static byte[] WriteModularTransforms(bool withPalette, IReadOnlyList<(bool Horizontal, bool InPlace, int Begin, int Count)> squeezes)
+    {
+        const int MaxStepsPerTransform = 296;
+        var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(WriteModularTransforms));
+        using var writer = new LsbBitWriter(scope);
+        var squeezeTransformCount = (squeezes.Count + MaxStepsPerTransform - 1) / MaxStepsPerTransform;
+        writer.WriteU32((uint)(squeezeTransformCount + (withPalette ? 1 : 0)), 0, 0, 1, 0, 2, 4, 18, 8);
+        if (withPalette)
+        {
+            writer.WriteBits(1, 2);
+            writer.WriteU32(0, 0, 3, 8, 6, 72, 10, 1096, 13);
+            writer.WriteU32(1, 1, 0, 3, 0, 4, 0, 1, 13);
+            writer.WriteU32(1, 0, 8, 256, 10, 1280, 12, 5376, 16);
+            writer.WriteU32(0, 0, 0, 1, 8, 257, 10, 1281, 16);
+            writer.WriteBits(0, 4);
+        }
+
+        for (var first = 0; first < squeezes.Count; first += MaxStepsPerTransform)
+        {
+            var stepCount = Math.Min(MaxStepsPerTransform, squeezes.Count - first);
+            writer.WriteBits(2, 2);
+            writer.WriteU32((uint)stepCount, 0, 0, 1, 4, 9, 6, 41, 8);
+            for (var i = first; i < first + stepCount; i++)
+            {
+                var (horizontal, inPlace, begin, count) = squeezes[i];
+                writer.WriteBool(horizontal);
+                writer.WriteBool(inPlace);
+                writer.WriteU32((uint)begin, 0, 3, 8, 6, 72, 10, 1096, 13);
+                writer.WriteU32((uint)count, 1, 0, 2, 0, 3, 0, 4, 4);
+            }
+        }
+
+        writer.Finish();
+        return writer.WrittenSpan.ToArray();
+    }
+
+    /// <summary>
     /// The sRGB transfer function of the XYB output computes its power with polynomials: on every other float of the curved
     /// segment up to 1, and on a stride of the floats above it, the power is within 3e-7 of the exact one (relative) and the
     /// encoded sample within 4e-7 of the exact encoding, a negative sample is the opposite of the encoding of its opposite,

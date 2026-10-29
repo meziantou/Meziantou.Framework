@@ -21,10 +21,11 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </description></item>
 /// </list>
 /// <para>
-/// Memory (all <see cref="AllocationKind.Temporary"/>, from the writer scope): the ARGB image (transformed in place), the hash
-/// chains (4 bytes per pixel), the subresolution images, the recorded LZ77 tokens (two 32-bit words per pixel reserved for
-/// each spatial image) and the output bit stream. Each spatial image is parsed once; its tokens are replayed for statistics
-/// and then emission.
+/// Memory (all <see cref="AllocationKind.Temporary"/>, from the writer scope): the ARGB image (transformed in place), the
+/// subresolution images, the recorded LZ77 tokens, the output bit stream and, during the parse only, the hash chains (4 bytes
+/// per pixel and a table of up to 1 MiB). Each spatial image is parsed once; its tokens are replayed for statistics and then
+/// emission. A token is one 32-bit word, a backward reference or a run of literals, so the reserve is at most 2 bytes per
+/// pixel (<see cref="GetTokenCapacity"/>): 512 MiB at 16,384 x 16,384, within the maximum length of a buffer.
 /// </para>
 /// </remarks>
 internal sealed class Vp8LEncoder : IDisposable
@@ -35,6 +36,12 @@ internal sealed class Vp8LEncoder : IDisposable
     private const int NumLengthCodes = 24;
     private const int NumDistanceCodes = 40;
     private const int MaxDistance = 1048576 - 120;
+
+    // A token is one 32-bit word: the length minus 1 in the high 12 bits (0 for a run of literals), and the distance code
+    // minus 1 (1 to 1,048,576) or the number of literals minus 1 (1 to 1,048,576) in the low 20 bits
+    private const int TokenLengthShift = 20;
+    private const uint TokenValueMask = (1u << TokenLengthShift) - 1;
+    private const int MaxLiteralRun = 1 << TokenLengthShift;
 
     private static ReadOnlySpan<byte> CodeLengthCodeOrder => [17, 18, 0, 1, 2, 3, 4, 5, 16, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
 
@@ -104,16 +111,33 @@ internal sealed class Vp8LEncoder : IDisposable
         _buffers.Clear();
     }
 
+    /// <summary>Rents a zeroed buffer released when the encoder is disposed.</summary>
     private Span<uint> RentPixels(long count)
+    {
+        var buffer = RentScratch(count, out var pixels);
+        _buffers.Add(buffer);
+        return pixels;
+    }
+
+    /// <summary>Rents a zeroed buffer the caller releases.</summary>
+    private PooledBuffer RentScratch(long count, out Span<uint> pixels)
     {
         var bytes = count * sizeof(uint);
         if (bytes > CheckedSizes.MaxBufferLength)
             throw CheckedSizes.CreateOverflowException(_scope.Limits);
 
         var buffer = _scope.Rent((int)Math.Max(bytes, sizeof(uint)), AllocationKind.Temporary, clear: true);
-        _buffers.Add(buffer);
-        return unsafe(MemoryMarshal.Cast<byte, uint>(buffer.RawBuffer.AsSpan()))[..(int)count];
+        pixels = unsafe(MemoryMarshal.Cast<byte, uint>(buffer.RawBuffer.AsSpan()))[..(int)count];
+        return buffer;
     }
+
+    /// <summary>The number of tokens a parse of <paramref name="pixelCount"/> pixels can record.</summary>
+    /// <remarks>
+    /// A backward reference covers at least 3 pixels, and runs of literals are merged, so a run is followed by a reference
+    /// unless it is the last token or has the maximum length: there are at most (n + 1) / 2 tokens, plus one per 2^20 pixels
+    /// for the runs split at the maximum length.
+    /// </remarks>
+    internal static long GetTokenCapacity(int pixelCount) => ((pixelCount + 1L) / 2) + (pixelCount >> TokenLengthShift);
 
     private void EncodeMainImage(Span<uint> argb, int width, int height)
     {
@@ -807,7 +831,6 @@ internal sealed class Vp8LEncoder : IDisposable
 
     private void EncodeSpatialImageCore(ReadOnlySpan<uint> pixels, int width, bool isMainImage)
     {
-        var matcher = new Matcher(this, pixels, width);
         var candidates = !isMainImage || _effort < 3 ? [0] : _effort < 6 ? new[] { 0, 10 } : [0, 4, 6, 8, 10];
         var statistics = new Statistics[candidates.Length];
         for (var i = 0; i < candidates.Length; i++)
@@ -815,9 +838,17 @@ internal sealed class Vp8LEncoder : IDisposable
             statistics[i] = new Statistics(candidates[i]);
         }
 
-        // The parse is recorded once, then replayed for the statistics and for the output
-        var tokens = RentPixels(2L * Math.Max(pixels.Length, 1));
-        var tokenCount = matcher.Parse(tokens);
+        // The parse is recorded once, then replayed for the statistics and for the output. The hash chains are only needed
+        // by the parse: they are released before the output grows.
+        var tokens = RentPixels(GetTokenCapacity(pixels.Length));
+        var hashBits = Math.Clamp(BitOperations.Log2((uint)Math.Max(pixels.Length, 1)) + 1, 8, 18);
+        int tokenCount;
+        using (RentScratch(1 << hashBits, out var head))
+        using (RentScratch(Math.Max(pixels.Length, 1), out var previous))
+        {
+            tokenCount = new Matcher(this, pixels, width, hashBits, head, previous).Parse(tokens);
+        }
+
         var collector = new StatisticsSink(statistics);
         Replay(pixels, tokens, tokenCount, ref collector);
         var best = 0;
@@ -855,26 +886,38 @@ internal sealed class Vp8LEncoder : IDisposable
         Replay(pixels, tokens, tokenCount, ref emitter);
     }
 
-    /// <summary>Replays a recorded parse: pairs of (length, distance code), a zero length for a literal.</summary>
+    /// <summary>Replays a recorded parse: backward references and runs of literals.</summary>
     private static void Replay<TSink>(ReadOnlySpan<uint> pixels, ReadOnlySpan<uint> tokens, int count, ref TSink sink)
         where TSink : struct, ITokenSink
     {
         var position = 0;
-        for (var i = 0; i < count; i++)
+        foreach (var token in tokens[..count])
         {
-            var length = (int)tokens[2 * i];
-            if (length == 0)
+            var lengthField = (int)(token >> TokenLengthShift);
+            var value = (int)(token & TokenValueMask) + 1;
+            if (lengthField == 0)
             {
-                sink.Literal(pixels[position]);
-                position++;
+                foreach (var pixel in pixels.Slice(position, value))
+                {
+                    sink.Literal(pixel);
+                }
+
+                position += value;
             }
             else
             {
-                sink.Copy(length, (int)tokens[(2 * i) + 1], pixels.Slice(position, length));
+                var length = lengthField + 1;
+                sink.Copy(length, value, pixels.Slice(position, length));
                 position += length;
             }
         }
     }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static uint CreateCopyToken(int length, int distanceCode) => ((uint)(length - 1) << TokenLengthShift) | (uint)(distanceCode - 1);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static uint CreateLiteralRunToken(int count) => (uint)(count - 1);
 
     private PrefixCode WritePrefixCode(uint[] histogram)
     {
@@ -1291,17 +1334,17 @@ internal sealed class Vp8LEncoder : IDisposable
         private readonly Span<uint> _head;
         private readonly Span<uint> _previous;
 
-        public Matcher(Vp8LEncoder encoder, ReadOnlySpan<uint> pixels, int width)
+        public Matcher(Vp8LEncoder encoder, ReadOnlySpan<uint> pixels, int width, int hashBits, Span<uint> head, Span<uint> previous)
         {
             _encoder = encoder;
             _pixels = pixels;
             _width = width;
-            _hashBits = Math.Clamp(BitOperations.Log2((uint)Math.Max(pixels.Length, 1)) + 1, 8, 18);
-            _head = encoder.RentPixels(1 << _hashBits);
-            _previous = encoder.RentPixels(Math.Max(pixels.Length, 1));
+            _hashBits = hashBits;
+            _head = head;
+            _previous = previous;
         }
 
-        /// <summary>Parses the pixels into <paramref name="tokens"/> (pairs of length and distance code, a zero length for a literal).</summary>
+        /// <summary>Parses the pixels into <paramref name="tokens"/> (backward references and runs of literals, see <see cref="GetTokenCapacity"/>).</summary>
         /// <returns>The number of tokens.</returns>
         public int Parse(Span<uint> tokens)
         {
@@ -1322,6 +1365,7 @@ internal sealed class Vp8LEncoder : IDisposable
             var neighborCodes = NeighborCodes;
             var position = 0;
             var tokenCount = 0;
+            var literals = 0;
             var nextCheck = 0;
             var hasLookahead = false;
             (int Length, int Distance) lookahead = default;
@@ -1343,8 +1387,7 @@ internal sealed class Vp8LEncoder : IDisposable
                     if (lookahead.Length > length + 1)
                     {
                         hasLookahead = true;
-                        tokens[2 * tokenCount] = 0;
-                        tokenCount++;
+                        AddLiteral(tokens, ref tokenCount, ref literals);
                         position++;
                         continue;
                     }
@@ -1352,9 +1395,13 @@ internal sealed class Vp8LEncoder : IDisposable
 
                 if (length >= MinLength)
                 {
-                    tokens[2 * tokenCount] = (uint)length;
-                    tokens[(2 * tokenCount) + 1] = (uint)GetDistanceCode(distance, _width, neighborCodes);
-                    tokenCount++;
+                    if (literals > 0)
+                    {
+                        tokens[tokenCount++] = CreateLiteralRunToken(literals);
+                        literals = 0;
+                    }
+
+                    tokens[tokenCount++] = CreateCopyToken(length, GetDistanceCode(distance, _width, neighborCodes));
                     for (var i = 1; i < length; i++)
                     {
                         Insert(position + i);
@@ -1364,13 +1411,27 @@ internal sealed class Vp8LEncoder : IDisposable
                 }
                 else
                 {
-                    tokens[2 * tokenCount] = 0;
-                    tokenCount++;
+                    AddLiteral(tokens, ref tokenCount, ref literals);
                     position++;
                 }
             }
 
+            if (literals > 0)
+            {
+                tokens[tokenCount++] = CreateLiteralRunToken(literals);
+            }
+
             return tokenCount;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void AddLiteral(Span<uint> tokens, ref int tokenCount, ref int literals)
+        {
+            if (++literals == MaxLiteralRun)
+            {
+                tokens[tokenCount++] = CreateLiteralRunToken(literals);
+                literals = 0;
+            }
         }
 
         private int Hash(int position)

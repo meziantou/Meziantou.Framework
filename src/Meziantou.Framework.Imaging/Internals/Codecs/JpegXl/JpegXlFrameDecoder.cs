@@ -19,13 +19,15 @@ internal sealed class JpegXlFrameDecoder
     private readonly byte[] _data;
     private readonly AllocationScope _scope;
     private readonly CancellationToken _cancellationToken;
+    private readonly int _maxDegreeOfParallelism;
     private readonly JpegXlBitReader _reader = new();
     private bool _captureJpegCoefficients;
     private JpegCoefficientStore? _jpegCoefficients;
     private ushort[][]? _jpegQuantization;
 
-    private JpegXlFrameDecoder(JpegXlImageHeader image, JpegXlFrameHeader frame, JpegXlToc toc, byte[] data, JpegXlImageBuffer? lfFrame, AllocationScope scope, CancellationToken cancellationToken)
+    private JpegXlFrameDecoder(JpegXlImageHeader image, JpegXlFrameHeader frame, JpegXlToc toc, byte[] data, JpegXlImageBuffer? lfFrame, int maxDegreeOfParallelism, AllocationScope scope, CancellationToken cancellationToken)
     {
+        _maxDegreeOfParallelism = maxDegreeOfParallelism;
         _lfFrame = lfFrame;
         _image = image;
         _frame = frame;
@@ -53,16 +55,17 @@ internal sealed class JpegXlFrameDecoder
     /// <param name="toc">The table of contents of the frame.</param>
     /// <param name="data">The sections of the frame, one after the other from the start of the array.</param>
     /// <param name="lfFrame">The LF frame of the level above the one of the frame, when it was decoded: a frame may take its LF image from it.</param>
+    /// <param name="maxDegreeOfParallelism">The largest number of groups decoded at the same time (<see cref="ImageConfiguration.MaxDegreeOfParallelism"/>): the samples do not depend on it.</param>
     /// <param name="scope">The scope of the samples and of the working memory.</param>
     /// <param name="cancellationToken">The token checked between rows and sections.</param>
     /// <returns>
     /// The samples of the frame. Its Modular channels are the color channels of a Modular frame (one for a grayscale image
     /// that has no color transform, otherwise three), then the extra channels.
     /// </returns>
-    public static JpegXlDecodedFrame Decode(JpegXlImageHeader image, JpegXlFrameHeader frame, JpegXlToc toc, byte[] data, JpegXlImageBuffer? lfFrame, AllocationScope scope, CancellationToken cancellationToken)
+    public static JpegXlDecodedFrame Decode(JpegXlImageHeader image, JpegXlFrameHeader frame, JpegXlToc toc, byte[] data, JpegXlImageBuffer? lfFrame, int maxDegreeOfParallelism, AllocationScope scope, CancellationToken cancellationToken)
     {
         EnsureSupported(frame);
-        return new JpegXlFrameDecoder(image, frame, toc, data, lfFrame, scope, cancellationToken).Decode(frame.PassCount)!;
+        return new JpegXlFrameDecoder(image, frame, toc, data, lfFrame, maxDegreeOfParallelism, scope, cancellationToken).Decode(frame.PassCount)!;
     }
 
     /// <summary>
@@ -76,17 +79,18 @@ internal sealed class JpegXlFrameDecoder
     /// <param name="data">The sections of the frame; only the ones that are decoded are read.</param>
     /// <param name="passCount">The number of passes to decode: fewer than the frame has.</param>
     /// <param name="lfFrame">The LF frame of the level above the one of the frame, when it was decoded.</param>
+    /// <param name="maxDegreeOfParallelism">The largest number of groups decoded at the same time: the samples do not depend on it.</param>
     /// <param name="scope">The scope of the samples and of the working memory.</param>
     /// <param name="cancellationToken">The token checked between rows and sections.</param>
     /// <returns>
     /// The samples, or <see langword="null"/> when they would not show the image: a Modular frame whose color channels are
     /// coded in the groups and are not squeezed. An alpha channel that is not decoded yet and is not squeezed is opaque.
     /// </returns>
-    public static JpegXlDecodedFrame? DecodePartial(JpegXlImageHeader image, JpegXlFrameHeader frame, JpegXlToc toc, byte[] data, int passCount, JpegXlImageBuffer? lfFrame, AllocationScope scope, CancellationToken cancellationToken)
+    public static JpegXlDecodedFrame? DecodePartial(JpegXlImageHeader image, JpegXlFrameHeader frame, JpegXlToc toc, byte[] data, int passCount, JpegXlImageBuffer? lfFrame, int maxDegreeOfParallelism, AllocationScope scope, CancellationToken cancellationToken)
     {
         EnsureSupported(frame);
         ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(passCount, frame.PassCount);
-        return new JpegXlFrameDecoder(image, frame, toc, data, lfFrame, scope, cancellationToken).Decode(passCount);
+        return new JpegXlFrameDecoder(image, frame, toc, data, lfFrame, maxDegreeOfParallelism, scope, cancellationToken).Decode(passCount);
     }
 
     /// <summary>
@@ -105,7 +109,7 @@ internal sealed class JpegXlFrameDecoder
     public static JpegCoefficientStore DecodeJpegCoefficients(JpegXlImageHeader image, JpegXlFrameHeader frame, JpegXlToc toc, byte[] data, out ushort[][] quantization, AllocationScope scope, CancellationToken cancellationToken)
     {
         EnsureSupported(frame);
-        var decoder = new JpegXlFrameDecoder(image, frame, toc, data, lfFrame: null, scope, cancellationToken) { _captureJpegCoefficients = true };
+        var decoder = new JpegXlFrameDecoder(image, frame, toc, data, lfFrame: null, maxDegreeOfParallelism: 1, scope, cancellationToken) { _captureJpegCoefficients = true };
         decoder.Decode(frame.PassCount)?.Dispose();
         quantization = decoder._jpegQuantization!;
         return decoder._jpegCoefficients!;
@@ -208,7 +212,7 @@ internal sealed class JpegXlFrameDecoder
                 varDct?.ReadLfCoefficients(_reader, group, readModular);
                 var x = (int)(group % frame.LfGroupColumns) * (long)lfDimension;
                 var y = (int)(group / frame.LfGroupColumns) * (long)lfDimension;
-                DecodeGroup(modular, globalTree, x, y, lfDimension, minShift: 3, maxShift: int.MaxValue, streamIndex: 1 + lfGroupCount + group);
+                DecodeGroup(_reader, modular, globalTree, x, y, lfDimension, minShift: 3, maxShift: int.MaxValue, streamIndex: 1 + lfGroupCount + group);
                 varDct?.ReadHfMetadata(_reader, group, readModular);
                 EndSection();
             }
@@ -227,30 +231,20 @@ internal sealed class JpegXlFrameDecoder
 
             EndSection();
 
-            // The passes of a group are decoded one after the other, so that only its coefficients are kept
-            for (var group = 0; group < groupCount; group++)
+            // The passes of a group are decoded one after the other, so that only its coefficients are kept. The groups do
+            // not depend on each other: several workers may decode them, each with its own reader and memory
+            var workers = _captureJpegCoefficients ? 1 : JpegXlGroupWorkers.GetWorkerCount(_maxDegreeOfParallelism, groupCount, (long)frame.Width * frame.Height);
+            if (workers == 1)
             {
-                varDct?.BeginGroup(group);
-                for (var pass = 0; pass < passCount; pass++)
+                for (var group = 0; group < groupCount; group++)
                 {
-                    var (minShift, maxShift) = frame.GetModularShiftBracket(pass);
-                    BeginSection(2 + lfGroupCount + (pass * groupCount) + group);
-                    varDct?.ReadGroupPass(_reader, pass);
-                    var x = (int)(group % frame.GroupColumns) * (long)groupDimension;
-                    var y = (int)(group / frame.GroupColumns) * (long)groupDimension;
-                    var streamIndex = 1 + (3 * lfGroupCount) + QuantTableCount + (groupCount * pass) + group;
-                    DecodeGroup(modular, globalTree, x, y, groupDimension, minShift, maxShift, streamIndex);
-                    EndSection();
+                    DecodeGroupPasses(_reader, varDct, modular, globalTree, group, passCount);
                 }
-
-                if (_captureJpegCoefficients)
-                {
-                    varDct!.CaptureJpegGroup();
-                }
-                else
-                {
-                    varDct?.FinishGroup();
-                }
+            }
+            else
+            {
+                varDct?.PrepareGroups();
+                JpegXlGroupWorkers.Run(workers, groupCount, () => new GroupWorker(varDct), (worker, group) => DecodeGroupPasses(worker.Reader, worker.VarDct, modular, globalTree, group, passCount));
             }
 
             if (_captureJpegCoefficients)
@@ -262,7 +256,7 @@ internal sealed class JpegXlFrameDecoder
             }
 
             varDct?.UpsampleChroma();
-            varDct?.ApplyRestorationFilters();
+            varDct?.ApplyRestorationFilters(_maxDegreeOfParallelism);
 
             JpegXlModularDecoder.UndoTransforms(modular, _scope);
             if (isPartial && !isSqueezed)
@@ -324,6 +318,46 @@ internal sealed class JpegXlFrameDecoder
         }
     }
 
+    /// <summary>Decodes the passes of a group, then computes its samples (or keeps its coefficients).</summary>
+    private void DecodeGroupPasses(JpegXlBitReader reader, JpegXlVarDctDecoder? varDct, JpegXlModularImage modular, JpegXlMaTree? globalTree, int group, int passCount)
+    {
+        var frame = _frame;
+        var groupDimension = (int)frame.GroupDimension;
+        var lfGroupCount = (int)frame.LfGroupCount;
+        var groupCount = (int)frame.GroupCount;
+        varDct?.BeginGroup(group);
+        for (var pass = 0; pass < passCount; pass++)
+        {
+            var (minShift, maxShift) = frame.GetModularShiftBracket(pass);
+            BeginSection(reader, 2 + lfGroupCount + (pass * groupCount) + group);
+            varDct?.ReadGroupPass(reader, pass);
+            var x = (int)(group % frame.GroupColumns) * (long)groupDimension;
+            var y = (int)(group / frame.GroupColumns) * (long)groupDimension;
+            var streamIndex = 1 + (3 * lfGroupCount) + QuantTableCount + (groupCount * pass) + group;
+            DecodeGroup(reader, modular, globalTree, x, y, groupDimension, minShift, maxShift, streamIndex);
+            reader.EnsureNotOverrun();
+        }
+
+        if (_captureJpegCoefficients)
+        {
+            varDct!.CaptureJpegGroup();
+        }
+        else
+        {
+            varDct?.FinishGroup();
+        }
+    }
+
+    /// <summary>A worker that decodes groups: its reader, and the copy of the VarDCT decoder that holds its group.</summary>
+    private sealed class GroupWorker(JpegXlVarDctDecoder? varDct) : IDisposable
+    {
+        public JpegXlBitReader Reader { get; } = new();
+
+        public JpegXlVarDctDecoder? VarDct { get; } = varDct?.CreateGroupWorker();
+
+        public void Dispose() => VarDct?.Dispose();
+    }
+
     /// <summary>Reads the values of a quantization table that <c>HfGlobal</c> stores as a Modular image.</summary>
     private JpegXlModularImage ReadRawQuantTable(JpegXlMaTree? globalTree, int tableIndex, int width, int height, int lfGroupCount)
     {
@@ -350,7 +384,7 @@ internal sealed class JpegXlFrameDecoder
     /// Decodes the part of the Modular image coded in one group: the channels larger than a group, of the resolutions of
     /// the group, restricted to its rectangle. They form an image with its own header and transforms.
     /// </summary>
-    private void DecodeGroup(JpegXlModularImage full, JpegXlMaTree? globalTree, long x0, long y0, int dimension, int minShift, int maxShift, int streamIndex)
+    private void DecodeGroup(JpegXlBitReader reader, JpegXlModularImage full, JpegXlMaTree? globalTree, long x0, long y0, int dimension, int minShift, int maxShift, int streamIndex)
     {
         _cancellationToken.ThrowIfCancellationRequested();
         var groupDimension = (int)_frame.GroupDimension;
@@ -372,7 +406,7 @@ internal sealed class JpegXlFrameDecoder
         if (group.Channels.Count == 0)
             return;
 
-        JpegXlModularDecoder.Decode(_reader, group, streamIndex, globalTree, int.MaxValue, undoTransforms: true, _scope, _cancellationToken);
+        JpegXlModularDecoder.Decode(reader, group, streamIndex, globalTree, int.MaxValue, undoTransforms: true, _scope, _cancellationToken);
         var index = 0;
         for (var i = first; i < full.Channels.Count; i++)
         {
@@ -420,20 +454,22 @@ internal sealed class JpegXlFrameDecoder
         return width > 0 && height > 0;
     }
 
-    private void BeginSection(int index)
+    private void BeginSection(int index) => BeginSection(_reader, index);
+
+    private void BeginSection(JpegXlBitReader reader, int index)
     {
         // A frame of a single section is one bit stream: its parts follow each other without alignment
         if (_toc.Sizes.Length == 1)
         {
             if (index == 0)
             {
-                _reader.Reset(_data, 0, (int)_toc.Sizes[0]);
+                reader.Reset(_data, 0, (int)_toc.Sizes[0]);
             }
 
             return;
         }
 
-        _reader.Reset(_data, (int)_toc.Offsets[index], (int)_toc.Sizes[index]);
+        reader.Reset(_data, (int)_toc.Offsets[index], (int)_toc.Sizes[index]);
     }
 
     private void EndSection() => _reader.EnsureNotOverrun();

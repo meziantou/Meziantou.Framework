@@ -95,7 +95,7 @@ internal sealed class JpegXlDecoder : JpegXlDecodeObserver
         }
 
         var duration = header.HasAnimation ? new FrameDuration((long)frame.Duration * header.TicksPerSecondDenominator, header.TicksPerSecondNumerator) : FrameDuration.Zero;
-        using (var decoded = JpegXlFrameDecoder.Decode(header, frame, toc, sections.Data, _renderer?.GetLfFrame(frame.LfLevel), _context.Scope, _context.CancellationToken))
+        using (var decoded = JpegXlFrameDecoder.Decode(header, frame, toc, sections.Data, _renderer?.GetLfFrame(frame.LfLevel), _context.Configuration.MaxDegreeOfParallelism, _context.Scope, _context.CancellationToken))
         {
             if (isDisplayed && CanWriteSamplesAsStored(header, frame, decoded, canBeReferenced))
             {
@@ -104,7 +104,7 @@ internal sealed class JpegXlDecoder : JpegXlDecodeObserver
             }
             else
             {
-                _renderer ??= new JpegXlFrameRenderer(header, _context.Scope, _context.CancellationToken);
+                _renderer ??= new JpegXlFrameRenderer(header, _context.Scope, _context.CancellationToken, _context.Configuration.MaxDegreeOfParallelism);
                 using var canvas = _renderer.Render(decoded, frame, isDisplayed, _visibleFrameIndex, _invisibleFrameIndex);
                 if (canvas is null)
                     return true;
@@ -192,7 +192,7 @@ internal sealed class JpegXlDecoder : JpegXlDecodeObserver
 
         // An intermediate rendering decodes the frame once more: its pixels count like the ones of a frame that is not shown
         _context.Tracker.ChargeHiddenPixels((long)frame.Width * frame.Height);
-        using var decoded = JpegXlFrameDecoder.DecodePartial(header, frame, toc, sections.Data, passCount, _renderer?.GetLfFrame(frame.LfLevel), _context.Scope, _context.CancellationToken);
+        using var decoded = JpegXlFrameDecoder.DecodePartial(header, frame, toc, sections.Data, passCount, _renderer?.GetLfFrame(frame.LfLevel), _context.Configuration.MaxDegreeOfParallelism, _context.Scope, _context.CancellationToken);
         if (decoded is null)
             return;
 
@@ -205,7 +205,7 @@ internal sealed class JpegXlDecoder : JpegXlDecodeObserver
         }
         else
         {
-            _renderer ??= new JpegXlFrameRenderer(header, _context.Scope, _context.CancellationToken);
+            _renderer ??= new JpegXlFrameRenderer(header, _context.Scope, _context.CancellationToken, _context.Configuration.MaxDegreeOfParallelism);
             using var canvas = _renderer.Render(decoded, frame, isDisplayed: true, _visibleFrameIndex + 1, invisibleFrameIndex: 0, isIntermediate: true);
             if (canvas is null)
                 return;

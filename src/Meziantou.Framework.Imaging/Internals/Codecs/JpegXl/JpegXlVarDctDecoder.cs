@@ -113,6 +113,10 @@ internal sealed class JpegXlVarDctDecoder : IDisposable
     private int _groupWidth;
     private int _groupHeight;
 
+    // A copy of the decoder that decodes groups next to others (CreateGroupWorker): it shares the state of the frame and
+    // has its own memory for the group it decodes
+    private bool _isWorker;
+
     /// <param name="image">The image header.</param>
     /// <param name="frame">The frame header.</param>
     /// <param name="lfFrame">The LF frame that holds the LF image of the frame, when the frame does not store it itself.</param>
@@ -664,6 +668,70 @@ internal sealed class JpegXlVarDctDecoder : IDisposable
             }
         }
 
+        AllocateGroup();
+    }
+
+    /// <summary>
+    /// Computes the tables that the groups read and that are computed on first use (the matrices and the orders of the
+    /// transforms of the frame), so that several workers can decode groups (<see cref="CreateGroupWorker"/>).
+    /// </summary>
+    public void PrepareGroups()
+    {
+        Span<bool> used = stackalloc bool[JpegXlVarDctTables.TransformCount];
+        foreach (var info in _blockInfo!.Span[..(_blocksWide * _blocksHigh)])
+        {
+            if (info >= BlockFirst)
+            {
+                used[info - BlockFirst] = true;
+            }
+        }
+
+        for (var transform = 0; transform < used.Length; transform++)
+        {
+            if (!used[transform])
+                continue;
+
+            _matrices!.GetMatrix(JpegXlVarDctTables.QuantTable[transform]);
+            for (var pass = 0; pass < _frame.PassCount; pass++)
+            {
+                for (var c = 0; c < 3; c++)
+                {
+                    _orders!.GetOrder(pass, JpegXlVarDctTables.Order[transform], c);
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Creates a worker that decodes groups (<see cref="BeginGroup"/>, <see cref="ReadGroupPass"/>, <see cref="FinishGroup"/>)
+    /// next to the decoder and to other workers, once <see cref="PrepareGroups"/> is called: a copy that shares the state of
+    /// the frame, whose planes it writes in the rectangle of its groups, and has its own memory for the group it decodes.
+    /// Disposing it returns that memory only.
+    /// </summary>
+    public JpegXlVarDctDecoder CreateGroupWorker()
+    {
+        var worker = (JpegXlVarDctDecoder)MemberwiseClone();
+        worker._isWorker = true;
+        worker._coefficients = null;
+        worker._blockOffsets = null;
+        worker._nonZeros = null;
+        worker._codedChannels = null;
+        worker._work = null;
+        try
+        {
+            worker.AllocateGroup();
+            return worker;
+        }
+        catch
+        {
+            worker.Dispose();
+            throw;
+        }
+    }
+
+    /// <summary>Rents the memory of the group that is decoded.</summary>
+    private void AllocateGroup()
+    {
         _coefficients = Av1PooledArray<int>.Rent(_scope, 3L * GroupBlocks * GroupBlocks * 64, clear: false);
         _blockOffsets = Av1PooledArray<int>.Rent(_scope, GroupBlocks * GroupBlocks, clear: false);
         _nonZeros = Av1PooledArray<byte>.Rent(_scope, 3L * GroupBlocks * GroupBlocks, clear: false);
@@ -1153,7 +1221,8 @@ internal sealed class JpegXlVarDctDecoder : IDisposable
     }
 
     /// <summary>Applies the restoration filters of the frame to the samples, once every group is decoded and the channels have the size of the frame.</summary>
-    public void ApplyRestorationFilters()
+    /// <param name="maxDegreeOfParallelism">The largest number of bands of rows filtered at the same time.</param>
+    public void ApplyRestorationFilters(int maxDegreeOfParallelism)
     {
         var filter = _frame.RestorationFilter;
         if (!filter.IsGaborEnabled && filter.EpfIterations == 0)
@@ -1171,11 +1240,27 @@ internal sealed class JpegXlVarDctDecoder : IDisposable
         }
 
         // The Gabor-like filter and the steps of the edge-preserving filter, in one pass over the rows
-        JpegXlRestorationFilters.Apply(planes, stride, width, height, filter, blocks, _blocksWide, _scope, _cancellationToken);
+        var bands = JpegXlRestorationFilters.GetBandCount(width, height, maxDegreeOfParallelism);
+        JpegXlRestorationFilters.Apply(planes, stride, width, height, filter, blocks, _blocksWide, bands, _scope, _cancellationToken);
     }
 
     public void Dispose()
     {
+        if (_isWorker)
+        {
+            _coefficients?.Dispose();
+            _coefficients = null;
+            _blockOffsets?.Dispose();
+            _blockOffsets = null;
+            _nonZeros?.Dispose();
+            _nonZeros = null;
+            _codedChannels?.Dispose();
+            _codedChannels = null;
+            _work?.Dispose();
+            _work = null;
+            return;
+        }
+
         for (var c = 0; c < 3; c++)
         {
             _lf[c]?.Dispose();

@@ -58,7 +58,11 @@ public sealed class ImageConfiguration
     /// a tile decoded alongside other tiles. They take about 25% to 40% of the decoding time of a 3840x2160 image that uses
     /// CDEF, which then decodes about 1.3 to 1.45 times faster with 8 workers. Each worker needs its own rows, about 140
     /// bytes per pixel of the width of the frame, charged to <see cref="ImageResourceLimits.MaxLiveAllocationBytes"/>. The
-    /// other decoders (the HEVC in-loop filters of a HEIC image that is not a grid included), the encoders and the other
+    /// JPEG XL encoder, the JPEG XL decoder and <see cref="JpegXlTranscoder"/> use it as well: the groups of a frame of at least
+    /// 65,536 pixels (squares of 256x256 pixels, which the format codes independently) are encoded or decoded by up to this
+    /// many workers, each with its own working memory, and the restoration filters and the conversion of a decoded frame to
+    /// its color space are split into row bands; the bytes, the pixels and the errors are those of one worker. The other
+    /// decoders (the HEVC in-loop filters of a HEIC image that is not a grid included), the encoders and the other
     /// operations run on the calling thread.
     /// </para>
     /// <para>

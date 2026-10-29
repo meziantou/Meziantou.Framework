@@ -274,6 +274,38 @@ public sealed class JpegXlTranscoderTests
         Assert.Throws<ArgumentNullException>(() => new JpegXlTranscodeOptions { Configuration = null! });
     }
 
+    /// <summary>
+    /// The groups of a large JPEG file (600x300 pixels: six groups) are written by several workers when the configuration
+    /// allows it: the JPEG XL file is the one of a single worker, and it still rebuilds the JPEG file.
+    /// </summary>
+    [Fact]
+    public void FilesRecompressedByWorkersAreTheFilesOfOneWorker()
+    {
+        var pixels = new Rgb24[600 * 300];
+        for (var i = 0; i < pixels.Length; i++)
+        {
+            var noise = (byte)(((uint)i * 2654435761u) >> 24);
+            pixels[i] = new Rgb24((byte)(i % 600), (byte)((i / 600) + (noise >> 2)), noise);
+        }
+
+        using var image = Image.ImportPixelData<Rgb24>(pixels, 600, 300);
+        using var jpegStream = new MemoryStream();
+        image.Save(jpegStream, new JpegEncoder());
+        var jpeg = jpegStream.ToArray();
+        using var expected = new MemoryStream();
+        JpegXlTranscoder.RecompressJpeg(jpeg, expected);
+        foreach (var workers in (int[])[2, 4, 16])
+        {
+            using var recompressed = new MemoryStream();
+            JpegXlTranscoder.RecompressJpeg(jpeg, recompressed, new JpegXlTranscodeOptions { Configuration = new ImageConfiguration { MaxDegreeOfParallelism = workers } });
+            Assert.Equal(expected.ToArray(), recompressed.ToArray());
+        }
+
+        using var rebuilt = new MemoryStream();
+        JpegXlTranscoder.ReconstructJpeg(expected.ToArray(), rebuilt);
+        Assert.Equal(jpeg, rebuilt.ToArray());
+    }
+
     [Fact]
     public void AFileWithoutReconstructionDataIsNotRebuilt()
     {

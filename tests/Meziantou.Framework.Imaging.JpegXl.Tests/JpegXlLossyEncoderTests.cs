@@ -380,7 +380,7 @@ public sealed class JpegXlLossyEncoderTests
             using var third = Av1PooledArray<float>.Rent(scope, Width * Height, clear: false);
             sharpened.Span.CopyTo(second.Span);
             sharpened.Span.CopyTo(third.Span);
-            JpegXlRestorationFilters.ApplyGaborish([sharpened, second, third], Width, Width, Height, filter, scope, TestContext.Current.CancellationToken);
+            JpegXlRestorationFilters.ApplyGaborish([sharpened, second, third], Width, Width, Height, filter, bands: 1, scope, TestContext.Current.CancellationToken);
             // Away from the edges of the frame, where the mirror image of a slope is not a slope
             var worst = 0.0;
             for (var y = Radius + 1; y < Height - Radius - 1; y++)
@@ -461,6 +461,44 @@ public sealed class JpegXlLossyEncoderTests
             for (var x = 0; x < 4; x++)
             {
                 Assert.Equal(field[((y + 2) * BlocksWide) + x + 6], part[(y * 4) + x]);
+            }
+        }
+    }
+
+    /// <summary>
+    /// The cube root of the conversion to XYB is within 3e-7 relative of <see cref="MathF.Cbrt"/>, and a vector of values
+    /// has the roots of the values one by one, whatever the vector width.
+    /// </summary>
+    [Fact]
+    public void TheCubeRootOfTheConversionToXybIsTheCubeRoot()
+    {
+        var values = new List<float> { 0, float.Epsilon, 1e-31f, 7.888609e-31f, 1e-20f, 1e-10f, 0.0037930732f, 0.5f, 1, 2, 64, 1000, 1e10f, float.MaxValue };
+        for (var i = 0; i < 4096; i++)
+        {
+            values.Add(MathF.Pow(2, (i / 128f) - 24));
+        }
+
+        foreach (var value in values)
+        {
+            var root = JpegXlForwardColor.CubeRoot(value);
+            if (value < 7.888609e-31f)
+            {
+                Assert.Equal(0f, root);
+                continue;
+            }
+
+            var expected = MathF.Cbrt(value);
+            Assert.True(MathF.Abs(root - expected) <= 3e-7f * expected, $"{value}: {root}, {expected}");
+        }
+
+        var lanes = new float[System.Numerics.Vector<float>.Count];
+        for (var start = 0; start + lanes.Length <= values.Count; start += lanes.Length)
+        {
+            values.CopyTo(start, lanes, 0, lanes.Length);
+            var roots = JpegXlForwardColor.CubeRoot(new System.Numerics.Vector<float>(lanes));
+            for (var lane = 0; lane < lanes.Length; lane++)
+            {
+                Assert.Equal(JpegXlForwardColor.CubeRoot(lanes[lane]), roots[lane]);
             }
         }
     }

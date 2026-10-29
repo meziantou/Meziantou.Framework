@@ -696,6 +696,82 @@ public sealed class JpegXlEncoderTests
         }
     }
 
+    /// <summary>
+    /// The groups of a frame are coded by several workers when the configuration allows it (a frame of 600x300 pixels has
+    /// six groups and more than the 65,536 pixels that several workers need): the file is the one of a single worker, for
+    /// lossy and lossless output, the alpha channel that each group codes, and several passes.
+    /// </summary>
+    [Theory]
+    [InlineData(JpegXlCompression.Lossy, 0, false)]
+    [InlineData(JpegXlCompression.Lossy, 5, false)]
+    [InlineData(JpegXlCompression.Lossy, 8, false)]
+    [InlineData(JpegXlCompression.Lossy, 5, true)]
+    [InlineData(JpegXlCompression.Lossless, 0, false)]
+    [InlineData(JpegXlCompression.Lossless, 5, false)]
+    public void FilesWrittenByWorkersAreTheFilesOfOneWorker(JpegXlCompression compression, int effort, bool progressive)
+    {
+        var encoder = new JpegXlEncoder { Compression = compression, Effort = effort, Progressive = progressive };
+        using var image = CreateImage(600, 300, seed: 9);
+        var expected = Save(image, encoder);
+        var pixels = GetPixels(image.Frames[0]);
+        foreach (var workers in (int[])[2, 4, 16])
+        {
+            using var copy = Image.ImportPixelData<Rgba32>(pixels, 600, 300, configuration: new ImageConfiguration { MaxDegreeOfParallelism = workers });
+            Assert.Equal(expected, Save(copy, encoder));
+        }
+    }
+
+    /// <summary>
+    /// A failure of a worker is the failure of a sequential run: the one of the first group that fails, whichever worker
+    /// fails first, a cancellation included; every state a worker created is disposed.
+    /// </summary>
+    [Theory]
+    [InlineData(1)]
+    [InlineData(3)]
+    [InlineData(8)]
+    public void GroupWorkersFailWithTheErrorOfTheFirstFailingGroup(int workers)
+    {
+        var states = new System.Collections.Concurrent.ConcurrentBag<TrackedState>();
+        var exception = Assert.Throws<InvalidOperationException>(() => JpegXlGroupWorkers.Run(workers, 40, () => Track(states), (_, group) =>
+        {
+            if (group is 7 or 23 or 31)
+                throw new InvalidOperationException($"group {group}");
+        }));
+        Assert.Equal("group 7", exception.Message);
+        Assert.All(states, state => Assert.True(state.IsDisposed));
+
+        Assert.Throws<OperationCanceledException>(() => JpegXlGroupWorkers.Run(workers, 40, () => Track(states), (_, group) =>
+        {
+            if (group == 3)
+                throw new OperationCanceledException();
+
+            if (group == 30)
+                throw new InvalidOperationException($"group {group}");
+        }));
+        exception = Assert.Throws<InvalidOperationException>(() => JpegXlGroupWorkers.Run(workers, 40, () => Track(states), (_, group) =>
+        {
+            if (group == 3)
+                throw new InvalidOperationException($"group {group}");
+
+            if (group == 30)
+                throw new OperationCanceledException();
+        }));
+        Assert.Equal("group 3", exception.Message);
+        Assert.All(states, state => Assert.True(state.IsDisposed));
+
+        // Every group runs once
+        var runs = new int[40];
+        JpegXlGroupWorkers.Run(workers, runs.Length, group => Interlocked.Increment(ref runs[group]));
+        Assert.All(runs, count => Assert.Equal(1, count));
+
+        static TrackedState Track(System.Collections.Concurrent.ConcurrentBag<TrackedState> states)
+        {
+            var state = new TrackedState();
+            states.Add(state);
+            return state;
+        }
+    }
+
     /// <summary>Walks the boxes of a container (ISO/IEC 18181-2): a 32-bit big-endian size that includes the header, and a type.</summary>
     private static List<(string Type, byte[] Payload)> ReadBoxes(byte[] data)
     {
@@ -808,5 +884,12 @@ public sealed class JpegXlEncoderTests
         var pixels = new TPixel[frame.Width * frame.Height];
         frame.CopyPixelDataTo(pixels);
         return pixels;
+    }
+
+    private sealed class TrackedState : IDisposable
+    {
+        public bool IsDisposed { get; private set; }
+
+        public void Dispose() => IsDisposed = true;
     }
 }

@@ -21,6 +21,11 @@ namespace Meziantou.Framework.Imaging.Formats;
 /// <see cref="UnsupportedImageFeatureException"/> for another profile and for the PQ and HLG transfer functions.
 /// </para>
 /// <para>
+/// A frame of at least 65,536 pixels is coded by groups of 256x256 pixels, which up to
+/// <see cref="ImageConfiguration.MaxDegreeOfParallelism"/> workers of the configuration of the image encode at the same
+/// time; the output does not depend on the number of workers.
+/// </para>
+/// <para>
 /// A JPEG file is recompressed without loss by <see cref="JpegXlTranscoder"/>, not by this encoder, which stores pixels.
 /// </para>
 /// </remarks>

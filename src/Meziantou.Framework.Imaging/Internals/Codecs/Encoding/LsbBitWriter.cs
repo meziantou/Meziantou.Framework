@@ -52,6 +52,21 @@ internal sealed class LsbBitWriter : IDisposable
         }
     }
 
+    /// <summary>Appends whole bytes, when the stream is at a byte boundary (after <see cref="Finish"/>, for example).</summary>
+    /// <exception cref="InvalidOperationException">The stream is not at a byte boundary.</exception>
+    public void WriteAlignedBytes(ReadOnlySpan<byte> bytes)
+    {
+        if (_bitCount != 0)
+            throw new InvalidOperationException("The bit stream is not at a byte boundary.");
+
+        if (bytes.IsEmpty)
+            return;
+
+        Ensure(bytes.Length);
+        bytes.CopyTo(_buffer!.RawBuffer.AsSpan(_length));
+        _length += bytes.Length;
+    }
+
     /// <summary>Gets the written bytes (call <see cref="Finish"/> first).</summary>
     public ReadOnlySpan<byte> WrittenSpan => _buffer is null ? default : _buffer.RawBuffer.AsSpan(0, _length);
 

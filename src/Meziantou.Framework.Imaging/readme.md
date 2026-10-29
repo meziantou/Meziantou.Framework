@@ -461,10 +461,11 @@ writers support one operation at a time: overlapping calls throw `InvalidOperati
 by default (`ImageConfiguration.MaxDegreeOfParallelism = 1`); with more workers, only large resizes, transformations,
 convolutions, blurs, medians, unsharp masks, the `Pixelate`, `OilPaint` and `Flatten` effects and the `ImageSimilarity`
 comparisons (SSIM, PSNR, SSIMULACRA 2, Butteraugli) are split into row bands, the tiles of large HEIC and AVIF grids and
-the post-processing filters of large AVIF images (by row bands) are decoded concurrently, and the tiles of large HEIC and
-AVIF grids (`HeicEncoder.GridTileSize`, `AvifEncoder.GridTileSize`) are encoded concurrently, with results identical to
-the sequential ones (the same pixels, the same encoded bytes). A worker writes only its own rows, and the floating-point
-sums of the comparisons are made by bands of 64 rows whatever the number of workers, added in order.
+the post-processing filters of large AVIF images (by row bands) are decoded concurrently, the tiles of large HEIC and
+AVIF grids (`HeicEncoder.GridTileSize`, `AvifEncoder.GridTileSize`) are encoded concurrently, and the groups of large
+JPEG XL frames are encoded and decoded concurrently, with results identical to the sequential ones (the same pixels, the
+same encoded bytes). A worker writes only its own rows, and the floating-point sums of the comparisons are made by bands
+of 64 rows whatever the number of workers, added in order.
 
 ### Failure atomicity
 
@@ -4703,6 +4704,7 @@ public static string SaveJpegXl(string inputPath, string jxlPath, string lossyPa
 | JPEG recompression | A JPEG file recompressed by `cjxl` or by `JpegXlTranscoder` is decoded to pixels: YCbCr or RGB, subsampled chroma, the quantization tables of the file. `JpegXlTranscoder.ReconstructJpeg` rebuilds the JPEG file instead | `JpegXlTranscoder.RecompressJpeg` (not `Image.Save`: an image holds pixels) |
 | Animations | Exact durations (ticks over the tick rate), play count; frames smaller or larger than the image, the blend modes (replace, add, blend, alpha-weighted add, multiply) and the four reference frames are composed. A frame without duration is a layer of the next one, not a frame of the animation | Full frames, 1000 ticks per second (`DurationRounding`), play count; a frame without duration is rejected |
 | Orientation | The orientation of the image header is reported as `Metadata.Orientation`, never applied; the EXIF orientation tag is ignored, as the format requires | Stored in the image header |
+| Parallelism | With `ImageConfiguration.MaxDegreeOfParallelism` above 1, the groups of a frame of at least 65,536 pixels (256x256 pixels each) are decoded by up to that many workers, and the restoration filters and the color conversion of a frame run by row bands; the pixels and the errors are those of one worker. With 8 workers instead of one, a 3840x2160 lossy file decodes about 3.7 times faster and a lossless one about 5.5 times, on an Apple M5 Pro | The groups of a frame of at least 65,536 pixels are encoded by up to that many workers (lossy and lossless output, and `JpegXlTranscoder`); the bytes are those of one worker: with 8 workers instead of one, a 3840x2160 photo encodes about 4 times faster lossy (effort 5) and 6 times lossless, on an Apple M5 Pro |
 | Effort | n/a | `Effort` 0 to 9 (default 5). Lossless: 0 to 2 use a fixed color transform and predictor, 3 and above search them, 7 and above also try the weighted predictor; at every effort the samples are written with prefix codes or with ANS entropy coding, whichever is smaller; the pixels never depend on it. Lossy: 0 to 2 only use the 8x8 DCT and one quantization factor for the frame; 3 and above give each block its own quantization factor, choose between the 8x8 and the 16x16 DCT for each area, fit the chroma from luma factors of each tile and search how the alpha channel is predicted; 6 and above give the contexts of the coefficients more distributions; 7 and above also try the 16x8 and 8x16 DCTs; 8 and above the DCTs of up to 64x64 samples. It changes decisions, not the file size that `Quality` aims at |
 | Limits | Every frame is checked against the frame limits, shown or not; the pixels that are decoded without being shown (reference frames, layers, LF frames, the part of a frame outside the image, intermediate renderings) count toward `MaxTotalPixels`; decoded planes are charged to the memory budget | At most 1,073,741,824 pixels per side. Lossy output keeps 12 bytes per pixel of the frame it compresses, progressive lossless output 4 bytes per sample |
 

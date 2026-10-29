@@ -354,7 +354,11 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   (`JpegXlVarDctEncoder`) mirrors `JpegXlVarDctDecoder`: its forward DCT undoes the halving steps of the inverse DCT
   of the decoder in the opposite order, and its LF matrices and its color matrix are measured on, or inverted from,
   what the decoder computes (`JpegXlForwardTransform`, `JpegXlForwardColor`); a coefficient is written with the
-  context derivation the decoder reads it with (`JpegXlCoefficientContexts`). The forward DCT was a product by bases
+  context derivation the decoder reads it with (`JpegXlCoefficientContexts`). The vector paths of the encoder (Gaborish,
+  quantization, the terms of the adaptive quantization) do the operations of the scalar code in the same order, and the
+  sums stay scalar, so they leave the files unchanged; the conversion to XYB uses its own cube root
+  (`JpegXlForwardColor.CubeRoot`, three Newton steps, within 3e-7 of `MathF.Cbrt`), the same in the scalar and the vector
+  code, so the files do not depend on the vector width. The forward DCT was a product by bases
   measured on the decoder, O(N^2) per line: the halving one gives the same coefficients within 3e-8 and the same files
   but for a few bytes, with 2.4 to 3.2 times fewer instructions for the 64x64 and 8x8 transforms. The blocks of a VarDCT
   frame do not predict each other, so the encoder does not reconstruct what it writes; its decisions use float32 in a
@@ -1073,8 +1077,18 @@ thin public types over its `FontFace`.
   worker): the loop filter and CDEF are 25% of the decoding time of our default-effort output and 39% at quality 40,
   which decode 1.27x and 1.45x faster with 8 workers (the bound is ~1.5x). The HEVC in-loop filters stay sequential:
   deblocking and SAO are 3-6% of the decoding time of a single-picture HEIC at the default quality and 19% at quality 40,
-  too little to be worth splitting (camera HEIC files are grids, already decoded by tiles). Other decoding, encoding and
-  drawing stay sequential.
+  too little to be worth splitting (camera HEIC files are grids, already decoded by tiles). The JPEG XL encoder and
+  decoder code the groups of a frame of at least 65,536 pixels concurrently (`JpegXlGroupWorkers`): a worker is a copy of
+  `JpegXlVarDctEncoder` or `JpegXlVarDctDecoder` that shares the arrays of the frame, writes them only in the rectangle of
+  its group, and owns its working memory; what is computed on first use (matrices, orders, ranks) is computed before the
+  workers start; a group section is written in a writer of its own and appended in order (sections start at a byte
+  boundary); the counts of the entropy code are added up from one code per worker. The bytes, the pixels and the error
+  (the one of the first failing group) never depend on the worker count (`FilesWrittenByWorkersAreTheFilesOfOneWorker`,
+  `FramesDecodedByWorkersHaveThePixelsOfOneWorker`). The restoration filters of the decoder run by row bands
+  (`JpegXlRestorationFilters`), each with its own pipeline: they filter in place, so the rows a band reads around it (the
+  sum of the reaches of the filters, 7 rows at most) are copied before any band starts, and each filter of a band also
+  produces the rows around it that the next filters read (`RestorationFiltersMatchTheFiltersAppliedToTheWholeFrame`
+  splits frames down to bands of one row). Other decoding, encoding and drawing stay sequential.
 - Static row callbacks allocate nothing per row (`PerformanceContractTests`).
 - This repository builds with the updated memory-safety rules: wrap `MemoryMarshal`, `Unsafe` and `Vector*.LoadUnsafe` /
   `StoreUnsafe` calls in `unsafe(...)`, or in an `unsafe { }` block for a statement.

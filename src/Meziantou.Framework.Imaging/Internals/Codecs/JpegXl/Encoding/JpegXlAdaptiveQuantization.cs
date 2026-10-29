@@ -1,3 +1,6 @@
+using System.Numerics;
+using System.Runtime.InteropServices;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
@@ -51,6 +54,7 @@ internal static class JpegXlAdaptiveQuantization
     // The XYB gamma is 3; the one of the eye is around 2.6: one more cubic root in the differences brings the two closer
     private const float MatchGammaOffset = 0.019f;
     private const float DifferenceLimit = 0.2f;
+    private const float MaskedDifferenceOffset = 27.505837037000106f;
 
     private static readonly float MaskingMultiplier = MathF.Sqrt(211.66567973503678f * 1e8f);
 
@@ -81,22 +85,32 @@ internal static class JpegXlAdaptiveQuantization
         var cellsWide = (2 * blocksWide) + leadX + (blockX + blocksWide < frameBlocksWide ? 1 : 0);
         var cellsHigh = (2 * blocksHigh) + leadY + (blockY + blocksHigh < frameBlocksHigh ? 1 : 0);
         var cells = scratch[..(cellsWide * cellsHigh)];
+
+        // The masked differences of the four rows of samples of a row of cells, computed a vector at a time, then summed
+        // cell by cell in the order of the samples
+        var rowLength = cellsWide * 4;
+        Span<float> differences = 4 * rowLength <= 1024 ? stackalloc float[4 * rowLength] : new float[4 * rowLength];
         for (var cellY = 0; cellY < cellsHigh; cellY++)
         {
+            for (var row = 0; row < 4; row++)
+            {
+                var position = ((Margin + ((cellY - leadY) * 4) + row) * stride) + Margin - (leadX * 4);
+                GetMaskedDifferences(y, position, stride, differences.Slice(row * rowLength, rowLength));
+            }
+
             for (var cellX = 0; cellX < cellsWide; cellX++)
             {
-                var origin = ((Margin + ((cellY - leadY) * 4)) * stride) + Margin + ((cellX - leadX) * 4);
                 var column0 = 0f;
                 var column1 = 0f;
                 var column2 = 0f;
                 var column3 = 0f;
                 for (var row = 0; row < 4; row++)
                 {
-                    var position = origin + (row * stride);
-                    column0 += GetMaskedDifference(y, position, stride);
-                    column1 += GetMaskedDifference(y, position + 1, stride);
-                    column2 += GetMaskedDifference(y, position + 2, stride);
-                    column3 += GetMaskedDifference(y, position + 3, stride);
+                    var values = differences.Slice((row * rowLength) + (cellX * 4), 4);
+                    column0 += values[0];
+                    column1 += values[1];
+                    column2 += values[2];
+                    column3 += values[3];
                 }
 
                 cells[(cellY * cellsWide) + cellX] = (column0 + column1 + column2 + column3) * 0.25f;
@@ -133,7 +147,6 @@ internal static class JpegXlAdaptiveQuantization
 
         var multiplier = scale * dampen;
         var addend = (1.0f - dampen) * baseLevel;
-        Span<float> smallest = stackalloc float[4];
         for (var by = 0; by < blocksHigh; by++)
         {
             for (var bx = 0; bx < blocksWide; bx++)
@@ -148,17 +161,17 @@ internal static class JpegXlAdaptiveQuantization
                     var top = (cellY >= 1 ? cellY - 1 : cellY) * cellsWide;
                     var middle = cellY * cellsWide;
                     var bottom = (cellY + 1 < cellsHigh ? cellY + 1 : cellY) * cellsWide;
-                    smallest.Fill(float.MaxValue);
-                    StoreSmallest(cells[middle + cellX], smallest);
-                    StoreSmallest(cells[middle + left], smallest);
-                    StoreSmallest(cells[middle + right], smallest);
-                    StoreSmallest(cells[top + left], smallest);
-                    StoreSmallest(cells[top + cellX], smallest);
-                    StoreSmallest(cells[top + right], smallest);
-                    StoreSmallest(cells[bottom + left], smallest);
-                    StoreSmallest(cells[bottom + cellX], smallest);
-                    StoreSmallest(cells[bottom + right], smallest);
-                    masking += (weights[0] * smallest[0]) + (weights[1] * smallest[1]) + (weights[2] * smallest[2]) + (weights[3] * smallest[3]);
+                    var smallest = new Smallest();
+                    smallest.Add(cells[middle + cellX]);
+                    smallest.Add(cells[middle + left]);
+                    smallest.Add(cells[middle + right]);
+                    smallest.Add(cells[top + left]);
+                    smallest.Add(cells[top + cellX]);
+                    smallest.Add(cells[top + right]);
+                    smallest.Add(cells[bottom + left]);
+                    smallest.Add(cells[bottom + cellX]);
+                    smallest.Add(cells[bottom + right]);
+                    masking += (weights[0] * smallest.First) + (weights[1] * smallest.Second) + (weights[2] * smallest.Third) + (weights[3] * smallest.Fourth);
                 }
 
                 var origin = ((Margin + (by * 8)) * stride) + Margin + (bx * 8);
@@ -270,24 +283,84 @@ internal static class JpegXlAdaptiveQuantization
             difference = DifferenceLimit;
         }
 
-        const float Offset = 27.505837037000106f;
-        return 0.25f * MathF.Sqrt((difference * MaskingMultiplier) + Offset);
+        return 0.25f * MathF.Sqrt((difference * MaskingMultiplier) + MaskedDifferenceOffset);
     }
 
-    /// <summary>Inserts a value in four values sorted from the smallest, when it is smaller than the last one.</summary>
-    private static void StoreSmallest(float value, Span<float> smallest)
+    /// <summary>
+    /// Computes <see cref="GetMaskedDifference"/> for consecutive samples, a vector at a time: the same operations in the
+    /// same order, so the values are the same.
+    /// </summary>
+    private static void GetMaskedDifferences(ReadOnlySpan<float> samples, int position, int stride, Span<float> differences)
     {
-        if (float.IsNaN(value) || value >= smallest[3])
-            return;
-
-        var index = 3;
-        while (index > 0 && value < smallest[index - 1])
+        var i = 0;
+        if (Vector.IsHardwareAccelerated)
         {
-            smallest[index] = smallest[index - 1];
-            index--;
+            var quarter = new Vector<float>(0.25f);
+            var offset = new Vector<float>(MatchGammaOffset);
+            var limit = new Vector<float>(DifferenceLimit);
+            var multiplier = new Vector<float>(MaskingMultiplier);
+            var sqrtOffset = new Vector<float>(MaskedDifferenceOffset);
+            for (; i <= differences.Length - Vector<float>.Count; i += Vector<float>.Count)
+            {
+                var p = position + i;
+                var value = new Vector<float>(samples[p..]);
+                var mean = quarter * (new Vector<float>(samples[(p + stride)..]) + new Vector<float>(samples[(p - stride)..]) + new Vector<float>(samples[(p - 1)..]) + new Vector<float>(samples[(p + 1)..]));
+                var difference = GetGammaRatio(value + offset, invert: false) * (value - mean);
+                difference *= difference;
+                difference = Vector.ConditionalSelect(Vector.GreaterThanOrEqual(difference, limit), limit, difference);
+                (quarter * Vector.SquareRoot((difference * multiplier) + sqrtOffset)).CopyTo(differences[i..]);
+            }
         }
 
-        smallest[index] = value;
+        for (; i < differences.Length; i++)
+        {
+            differences[i] = GetMaskedDifference(samples, position + i, stride);
+        }
+    }
+
+    /// <summary><see cref="GetGammaRatio(float, bool)"/> on each element of a vector.</summary>
+    private static Vector<float> GetGammaRatio(Vector<float> value, bool invert)
+    {
+        value = Vector.Max(value, Vector<float>.Zero);
+        var squared = value * value;
+        var numerator = (new Vector<float>(RatioNumeratorMultiplier) * squared) + new Vector<float>(GammaEpsilon);
+        var denominator = (new Vector<float>(RatioDenominatorMultiplier) * value * squared) + new Vector<float>(RatioOffset);
+        return invert ? numerator / denominator : denominator / numerator;
+    }
+
+    /// <summary>
+    /// The four smallest of the values that are added, sorted from the smallest; a value that is not a number is not
+    /// added, and the values that are missing are <see cref="float.MaxValue"/>. Each value moves the four through minimums
+    /// and maximums, without a branch.
+    /// </summary>
+    [StructLayout(LayoutKind.Auto)]
+    private struct Smallest
+    {
+        public Smallest()
+        {
+            First = Second = Third = Fourth = float.MaxValue;
+        }
+
+        public float First { get; private set; }
+
+        public float Second { get; private set; }
+
+        public float Third { get; private set; }
+
+        public float Fourth { get; private set; }
+
+        public void Add(float value)
+        {
+            if (float.IsNaN(value))
+            {
+                value = float.PositiveInfinity;
+            }
+
+            Fourth = Math.Min(Fourth, Math.Max(Third, value));
+            Third = Math.Min(Third, Math.Max(Second, value));
+            Second = Math.Min(Second, Math.Max(First, value));
+            First = Math.Min(First, value);
+        }
     }
 
     /// <summary>The exponent of a block from its masking.</summary>
@@ -314,15 +387,36 @@ internal static class JpegXlAdaptiveQuantization
         const float Bias = 0.16f;
         const float Gamma = 0.1005613337192697f;
         var ratio = 0.0f;
+        Span<float> minus = stackalloc float[8];
+        Span<float> plus = stackalloc float[8];
         for (var dy = 0; dy < 8; dy++)
         {
             var position = origin + (dy * stride);
-            for (var dx = 0; dx < 8; dx++)
+            var dx = 0;
+            if (Vector.IsHardwareAccelerated)
+            {
+                // The ratios a vector at a time, added in the order of the samples below
+                for (; dx <= 8 - Vector<float>.Count; dx += Vector<float>.Count)
+                {
+                    var valueY = new Vector<float>(y[(position + dx)..]) + new Vector<float>(Bias);
+                    var valueX = new Vector<float>(x[(position + dx)..]);
+                    GetGammaRatio(valueY - valueX, invert: true).CopyTo(minus[dx..]);
+                    GetGammaRatio(valueY + valueX, invert: true).CopyTo(plus[dx..]);
+                }
+            }
+
+            for (; dx < 8; dx++)
             {
                 var valueY = y[position + dx] + Bias;
                 var valueX = x[position + dx];
-                ratio += GetGammaRatio(valueY - valueX, invert: true);
-                ratio += GetGammaRatio(valueY + valueX, invert: true);
+                minus[dx] = GetGammaRatio(valueY - valueX, invert: true);
+                plus[dx] = GetGammaRatio(valueY + valueX, invert: true);
+            }
+
+            for (dx = 0; dx < 8; dx++)
+            {
+                ratio += minus[dx];
+                ratio += plus[dx];
             }
         }
 

@@ -877,13 +877,15 @@ public sealed class JpegXlDecoderTests
     /// The restoration filters run as a pipeline over rings of rows; the result is the one of each filter applied to the
     /// whole frame after the previous one, computed here sample by sample from section J of the standard: every combination
     /// of filters, default and custom parameters, frames of one sample (mirrored several times) to several blocks, blocks
-    /// the edge-preserving filter leaves, and rows with padding after them.
+    /// the edge-preserving filter leaves, rows with padding after them, and frames split in bands of rows filtered at the
+    /// same time, down to bands of one row that read the rows of several bands around them.
     /// </summary>
     [Fact]
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void RestorationFiltersMatchTheFiltersAppliedToTheWholeFrame()
     {
         var random = new Random(186);
+        var bandRandom = new Random(187);
         var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(RestorationFiltersMatchTheFiltersAppliedToTheWholeFrame));
         for (var round = 0; round < 600; round++)
         {
@@ -917,6 +919,7 @@ public sealed class JpegXlDecoderTests
             }
 
             var expected = FilterWholeFrames(input, stride, width, height, filter, isGaborEnabled, iterations, inverseSigma, blocksWide);
+            var bands = round % 3 == 0 ? 1 : bandRandom.Next(2, height + 2);
             var planes = new Av1PooledArray<float>[3];
             try
             {
@@ -929,12 +932,12 @@ public sealed class JpegXlDecoderTests
                 if (round % 2 == 0 && isGaborEnabled)
                 {
                     // The Modular frames apply the two filters one after the other
-                    JpegXlRestorationFilters.ApplyGaborish(planes, stride, width, height, filter, scope, TestContext.Current.CancellationToken);
-                    JpegXlRestorationFilters.ApplyEdgePreservingFilter(planes, stride, width, height, filter, inverseSigma, blocksWide, scope, TestContext.Current.CancellationToken);
+                    JpegXlRestorationFilters.ApplyGaborish(planes, stride, width, height, filter, bands, scope, TestContext.Current.CancellationToken);
+                    JpegXlRestorationFilters.ApplyEdgePreservingFilter(planes, stride, width, height, filter, inverseSigma, blocksWide, bands, scope, TestContext.Current.CancellationToken);
                 }
                 else
                 {
-                    JpegXlRestorationFilters.Apply(planes, stride, width, height, filter, inverseSigma, blocksWide, scope, TestContext.Current.CancellationToken);
+                    JpegXlRestorationFilters.Apply(planes, stride, width, height, filter, inverseSigma, blocksWide, bands, scope, TestContext.Current.CancellationToken);
                 }
 
                 for (var c = 0; c < 3; c++)
@@ -1258,6 +1261,39 @@ public sealed class JpegXlDecoderTests
             }
 
             return worst;
+        }
+    }
+
+    /// <summary>
+    /// The groups of a frame are decoded by several workers when the configuration allows it (600x300 pixels: six groups,
+    /// more than the 65,536 pixels that several workers need), and so are the rows converted from XYB: the pixels are those
+    /// of a single worker, for VarDCT frames of one pass and of several, with an alpha channel, and for Modular frames.
+    /// </summary>
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void FramesDecodedByWorkersHaveThePixelsOfOneWorker(bool lossy, bool progressive)
+    {
+        var pixels = new Rgba32[600 * 300];
+        for (var y = 0; y < 300; y++)
+        {
+            for (var x = 0; x < 600; x++)
+            {
+                var noise = (byte)(((uint)((x * 73856093) ^ (y * 19349663)) * 2654435761u) >> 24);
+                pixels[(y * 600) + x] = new Rgba32((byte)(x + (noise >> 3)), (byte)((y * 2) + (x / 7)), noise, (byte)((x / 20) % 3 == 0 ? 255 : x + y));
+            }
+        }
+
+        using var image = Image.ImportPixelData<Rgba32>(pixels, 600, 300);
+        using var output = new MemoryStream();
+        image.Save(output, new Formats.JpegXlEncoder { Compression = lossy ? Formats.JpegXlCompression.Lossy : Formats.JpegXlCompression.Lossless, Progressive = progressive });
+        var data = output.ToArray();
+        using var expected = Image.Load<Rgba64>(data);
+        foreach (var workers in (int[])[2, 4, 16])
+        {
+            using var decoded = Image.Load<Rgba64>(data, new ImageDecodeOptions { Configuration = new ImageConfiguration { MaxDegreeOfParallelism = workers } });
+            Assert.Equal(GetPixels(expected.Frames[0]), GetPixels(decoded.Frames[0]));
         }
     }
 

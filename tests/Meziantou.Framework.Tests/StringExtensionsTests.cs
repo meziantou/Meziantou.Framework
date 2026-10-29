@@ -274,4 +274,107 @@ public class StringExtensionsTests
     {
         Assert.Throws<ArgumentException>(() => "abc".RemovePrefix("a", (StringComparison)42));
     }
+
+    [Fact]
+    public void Documentation_Comparisons()
+    {
+        #region StringExtensions_Comparisons
+        // Ordinal comparisons, with or without case
+        Assert.True("Content-Type".EqualsIgnoreCase("content-type"));
+        Assert.False("Content-Type".EqualsOrdinal("content-type"));
+        Assert.True("Content-Type: text/html".ContainsIgnoreCase("TEXT/HTML"));
+
+        // EqualsIgnoreCase and EqualsOrdinal accept null values
+        string? missing = null;
+        Assert.False(missing.EqualsIgnoreCase("value"));
+        Assert.True(missing.EqualsOrdinal(null));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_RemovePrefixAndSuffix()
+    {
+        #region StringExtensions_RemovePrefixAndSuffix
+        Assert.Equal("Home", "HomeController".RemoveSuffix("Controller", StringComparison.Ordinal));
+        Assert.Equal("Repository", "IRepository".RemovePrefix("I", StringComparison.Ordinal));
+
+        // Nothing is removed when the string does not start or end with the value
+        Assert.Equal("Repository", "Repository".RemoveSuffix("Controller", StringComparison.Ordinal));
+
+        // Choose the comparison, for instance to ignore case
+        Assert.Equal("Home", "HomeCONTROLLER".RemoveSuffix("Controller", StringComparison.OrdinalIgnoreCase));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Nullify()
+    {
+        #region StringExtensions_Nullify
+        // Turn empty (and optionally whitespace-only) strings into null
+        Assert.Null("".Nullify(trim: false));
+        Assert.Null("   ".Nullify(trim: true));
+        Assert.Equal("   ", "   ".Nullify(trim: false));
+
+        // With trim: true, the returned value is trimmed
+        Assert.Equal("value", "  value  ".Nullify(trim: true));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_RemoveDiacritics()
+    {
+        #region StringExtensions_RemoveDiacritics
+        Assert.Equal("Creme brulee a l'Ile-de-France", "Crème brûlée à l'Île-de-France".RemoveDiacritics());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_ReplaceAny()
+    {
+        #region StringExtensions_ReplaceAny
+        var invalidCharacters = SearchValues.Create(@"/\:*?");
+        Assert.Equal("reports_2024_q1_draft_", @"reports/2024\q1:draft?".ReplaceAny(invalidCharacters, '_'));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_SplitLines()
+    {
+        #region StringExtensions_SplitLines
+        var lines = new List<string>();
+        var separators = new List<string>();
+        foreach (var (line, separator) in "first\r\nsecond\nthird".SplitLines())
+        {
+            lines.Add(line.ToString());
+            separators.Add(separator.ToString());
+        }
+
+        Assert.Equal(["first", "second", "third"], lines);
+        Assert.Equal(["\r\n", "\n", ""], separators);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_SplitLinesMode()
+    {
+        #region StringExtensions_SplitLinesMode
+        var unicodeLines = new List<string>();
+        foreach (var line in "a\u2028b".SplitLines())
+        {
+            unicodeLines.Add(line.Line.ToString());
+        }
+
+        var standardLines = new List<string>();
+        foreach (var line in "a\u2028b".SplitLines(LineBreakMode.Standard))
+        {
+            standardLines.Add(line.Line.ToString());
+        }
+
+        // By default, Unicode line separators such as U+2028 also break lines
+        Assert.Equal(["a", "b"], unicodeLines);
+
+        // LineBreakMode.Standard only breaks lines on \r and \n
+        Assert.Equal(["a\u2028b"], standardLines);
+        #endregion
+    }
 }

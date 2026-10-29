@@ -32,6 +32,41 @@ public class AsyncLockTests
     }
 
     [Fact]
+    public void AsyncLock_TryLockExample()
+    {
+        #region AsyncLock_TryLock
+        var asyncLock = new AsyncLock();
+
+        // TryLock never waits: it returns false when the lock is already held
+        Assert.True(asyncLock.TryLock(out var lease));
+        using (lease)
+        {
+            Assert.False(asyncLock.TryLock(out _));
+        }
+
+        // Disposing the lease released the lock
+        Assert.True(asyncLock.TryLock(out var secondLease));
+        secondLease.Dispose();
+        #endregion
+    }
+
+    [Fact]
+    public async Task AsyncLock_CancellationExample()
+    {
+        #region AsyncLock_Cancellation
+        var asyncLock = new AsyncLock();
+        using (await asyncLock.LockAsync())
+        {
+            // Another caller gives up waiting for the lock when its token is canceled
+            using var cts = new CancellationTokenSource();
+            var waiting = asyncLock.LockAsync(cts.Token).AsTask();
+            await cts.CancelAsync();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await waiting);
+        }
+        #endregion
+    }
+
+    [Fact]
     public async Task Lock()
     {
         var asyncLock = new AsyncLock();

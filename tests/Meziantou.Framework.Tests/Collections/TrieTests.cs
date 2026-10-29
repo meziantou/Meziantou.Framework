@@ -116,4 +116,22 @@ public sealed class TrieTests
         Assert.False(trie.TryGetValue("hello", out _));
         Assert.Empty(trie.StartsWith("he"));
     }
+
+    [Fact]
+    public void Documentation_Usage()
+    {
+        #region Trie_Usage
+        var commands = new Trie<string>(ignoreCase: true);
+        commands.Add("status", "Show the working tree status");
+        commands.Add("stash", "Stash the changes");
+        commands.Add("commit", "Record changes");
+
+        Assert.True(commands.TryGetValue("COMMIT", out var description));
+        Assert.Equal("Record changes", description);
+
+        // Find all the keys that start with a prefix
+        var matches = commands.StartsWith("sta").Select(item => item.Key).Order(StringComparer.Ordinal);
+        Assert.Equal(["stash", "status"], matches);
+        #endregion
+    }
 }

@@ -122,4 +122,19 @@ public sealed class BTreeTests
 
         Assert.Throws<InvalidOperationException>(() => _ = enumerator.Current);
     }
+
+    [Fact]
+    public void Documentation_Usage()
+    {
+        #region BTree_Usage
+        var tree = new BTree<int>();
+        Assert.True(tree.Add(30));
+        Assert.True(tree.Add(10));
+        Assert.True(tree.Add(20));
+        Assert.False(tree.Add(10)); // Already present
+
+        Assert.True(tree.Contains(20));
+        Assert.Equal([10, 20, 30], tree);
+        #endregion
+    }
 }

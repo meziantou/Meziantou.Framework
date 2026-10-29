@@ -318,6 +318,27 @@ public sealed partial class ObservableCollectionTests : IDisposable
     }
 
     [Fact]
+    public void ConcurrentObservableCollection_RangeNotificationsExample()
+    {
+        #region ConcurrentObservableCollection_RangeNotifications
+        var collection = new ConcurrentObservableCollection<int>
+        {
+            // Raise one notification for AddRange and InsertRange instead of one per item
+            SupportRangeNotifications = true,
+        };
+
+        var notifications = new List<NotifyCollectionChangedEventArgs>();
+        collection.AsObservable.CollectionChanged += (sender, e) => notifications.Add(e);
+
+        collection.AddRange(1, 2, 3);
+
+        var notification = Assert.Single(notifications);
+        Assert.Equal(NotifyCollectionChangedAction.Add, notification.Action);
+        Assert.Equal([1, 2, 3], notification.NewItems!.Cast<int>().ToArray());
+        #endregion
+    }
+
+    [Fact]
     public void Add_HandlerModifyingTheCollectionRaisesTheNotificationsInOrder()
     {
         var collection = CreateCollection<int>();

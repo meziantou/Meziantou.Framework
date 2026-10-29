@@ -106,4 +106,20 @@ public sealed class StreamExtensionsTests
 
         public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
     }
+
+    [Fact]
+    public async Task Documentation_ReadAll()
+    {
+        #region StreamExtensions_ReadAll
+        using var stream = new MemoryStream([1, 2, 3, 4, 5]);
+
+        // Fill the buffer, unless the end of the stream is reached first
+        var header = new byte[2];
+        Assert.Equal(2, stream.TryReadAll(header));
+
+        // Read the rest of the stream
+        var rest = await stream.ReadToEndAsync();
+        Assert.Equal([3, 4, 5], rest);
+        #endregion
+    }
 }

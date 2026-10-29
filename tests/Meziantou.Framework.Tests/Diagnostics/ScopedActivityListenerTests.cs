@@ -6,6 +6,56 @@ namespace Meziantou.Framework.Tests.Diagnostics;
 
 public sealed class ScopedActivityListenerTests
 {
+    [Fact]
+    public void Documentation_Events()
+    {
+        #region ScopedActivityListener_Events
+        using var source = new ActivitySource("Sample.ScopedActivityListener.Events");
+        using var listener = new ScopedActivityListener(new() { SourceNames = ["Sample.ScopedActivityListener.Events"] });
+
+        var started = new List<string>();
+        var stopped = new List<string>();
+        listener.ActivityStarted += (_, e) => started.Add(e.Activity.OperationName);
+        listener.ActivityStopped += (_, e) => stopped.Add(e.Activity.OperationName);
+
+        using (source.StartActivity("Parent"))
+        {
+            source.StartActivity("Child")?.Dispose();
+        }
+
+        Assert.Equal(["Parent", "Child"], started);
+        Assert.Equal(["Child", "Parent"], stopped);
+
+        // Activities lists the stopped activities, in the order they stopped
+        Assert.Equal(["Child", "Parent"], listener.Activities.Select(activity => activity.OperationName));
+        #endregion
+    }
+
+#pragma warning disable xUnit1051
+    [Fact]
+    public async Task Documentation_GetActivitiesAsync()
+    {
+        #region ScopedActivityListener_GetActivitiesAsync
+        using var source = new ActivitySource("Sample.ScopedActivityListener.Stream");
+        using var listener = new ScopedActivityListener(new() { SourceNames = ["Sample.ScopedActivityListener.Stream"] });
+
+        source.StartActivity("First")?.Dispose();
+        source.StartActivity("Second")?.Dispose();
+
+        // The enumeration replays the captured activities, then waits for new ones until the listener is disposed
+        listener.Dispose();
+
+        var names = new List<string>();
+        await foreach (var activity in listener.GetActivitiesAsync())
+        {
+            names.Add(activity.OperationName);
+        }
+
+        Assert.Equal(["First", "Second"], names);
+        #endregion
+    }
+#pragma warning restore xUnit1051
+
     // Every test uses its own ActivitySource, and the listener is restricted to it, so the tests of this class can run in parallel
     private static ActivitySource CreateSource() => new("test-" + Guid.NewGuid().ToString("N"));
 

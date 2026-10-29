@@ -171,4 +171,23 @@ public sealed class MultiValueDictionaryTests
     {
         Assert.Throws<ArgumentNullException>(() => new MultiValueDictionary<string, int>(enumerable: null!, comparer: StringComparer.Ordinal));
     }
+
+    [Fact]
+    public void Documentation_Usage()
+    {
+        #region MultiValueDictionary_Usage
+        var headers = new MultiValueDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        headers.Add("Accept", "text/html");
+        headers.Add("accept", "application/json");
+        headers.AddRange("Cache-Control", ["no-cache", "no-store"]);
+
+        Assert.Equal(["text/html", "application/json"], headers["ACCEPT"]);
+        Assert.True(headers.Contains("Cache-Control", "no-store"));
+
+        // Remove one value, or the key and all its values
+        Assert.True(headers.Remove("Cache-Control", "no-cache"));
+        Assert.True(headers.Remove("Accept"));
+        Assert.Equal(["Cache-Control"], headers.Keys);
+        #endregion
+    }
 }

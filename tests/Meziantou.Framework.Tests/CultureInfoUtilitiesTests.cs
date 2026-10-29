@@ -39,4 +39,44 @@ public class CultureInfoUtilitiesTests
             }
         });
     }
+
+    [Fact]
+    public void Documentation_ToStringInvariant()
+    {
+        #region FormattableExtensions_ToStringInvariant
+        // Numbers, dates and any IFormattable, formatted with the invariant culture
+        Assert.Equal("1234.5", 1234.5.ToStringInvariant());
+        Assert.Equal("1,234.50", 1234.5m.ToStringInvariant("N2"));
+        Assert.Equal("2024-03-15", new DateOnly(2024, 3, 15).ToStringInvariant("yyyy-MM-dd"));
+        Assert.Equal("00:30:00", TimeSpan.FromMinutes(30).ToStringInvariant());
+        #endregion
+    }
+
+    [Fact, RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
+    public void Documentation_UseCulture()
+    {
+        #region CultureInfoUtilities_UseCulture
+        // Run code with another current culture, then restore the previous one
+        var formatted = CultureInfoUtilities.UseCulture("fr-FR", () => 1234.5.ToString("N1", CultureInfo.CurrentCulture));
+        Assert.Equal("1\u202f234,5", formatted);
+
+        // Compare cultures by language
+        var canadianFrench = CultureInfo.GetCultureInfo("fr-CA");
+        Assert.Equal("fr", canadianFrench.GetNeutralCulture().Name);
+        Assert.True(canadianFrench.NeutralEquals(CultureInfo.GetCultureInfo("fr-FR")));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Ordinals()
+    {
+        #region NumberExtensions_Ordinals
+        Assert.Equal("1st", NumberExtensions.ToEnglishOrdinal(1, CultureInfo.InvariantCulture));
+        Assert.Equal("22nd", NumberExtensions.ToEnglishOrdinal(22, CultureInfo.InvariantCulture));
+        Assert.Equal("13th", NumberExtensions.ToEnglishOrdinal(13, CultureInfo.InvariantCulture));
+
+        Assert.Equal("1er", NumberExtensions.ToFrenchOrdinal(1, CultureInfo.InvariantCulture));
+        Assert.Equal("2e", NumberExtensions.ToFrenchOrdinal(2, CultureInfo.InvariantCulture));
+        #endregion
+    }
 }

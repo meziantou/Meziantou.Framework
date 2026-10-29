@@ -106,4 +106,26 @@ public sealed class DebounceExtensionsTests
         public override TimeZoneInfo LocalTimeZone => inner.LocalTimeZone;
         public override long TimestampFrequency => inner.TimestampFrequency;
     }
+
+    [Fact]
+    public void Documentation_Debounce()
+    {
+        #region DebounceExtensions_Debounce
+        var timeProvider = new FakeTimeProvider();
+        var searches = new List<string>();
+        var search = DebounceExtensions.Debounce<string>(text => searches.Add(text), TimeSpan.FromMilliseconds(300), timeProvider);
+
+        // The user types quickly: each call restarts the countdown
+        search("m");
+        timeProvider.Advance(TimeSpan.FromMilliseconds(100));
+        search("me");
+        timeProvider.Advance(TimeSpan.FromMilliseconds(100));
+        search("mez");
+        Assert.Empty(searches);
+
+        // 300 ms after the last call, the action runs once, with the last arguments
+        timeProvider.Advance(TimeSpan.FromMilliseconds(300));
+        Assert.Equal(["mez"], searches);
+        #endregion
+    }
 }

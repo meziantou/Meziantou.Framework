@@ -195,6 +195,25 @@ public sealed class SynchronizedListTests
     }
 
     [Fact]
+    public void SynchronizedList_ExecuteWithResultExample()
+    {
+        #region SynchronizedList_ExecuteWithResult
+        var list = new SynchronizedList<string>(["a", "b"]);
+
+        // Read and update the list atomically, and return a value
+        var removed = list.Execute(items =>
+        {
+            var last = items[^1];
+            items.RemoveAt(items.Count - 1);
+            return last;
+        });
+
+        Assert.Equal("b", removed);
+        Assert.Equal(["a"], list);
+        #endregion
+    }
+
+    [Fact]
     public void Execute_ShouldRunActionOnUnderlyingList()
     {
         var list = new SynchronizedList<int>([1, 2, 3]);

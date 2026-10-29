@@ -3,6 +3,23 @@ namespace Meziantou.Framework.Tests;
 public class LoremIpsumGeneratorTests
 {
     [Fact]
+    public void Documentation_Generate()
+    {
+        #region LoremIpsumGenerator_Usage
+        var sentence = LoremIpsumGenerator.Sentence(wordCount: 5);
+        Assert.HasCount(5, sentence.Split(' '));
+        Assert.EndsWith(".", sentence);
+
+        // 3 sentences of 8 words
+        var paragraph = LoremIpsumGenerator.Paragraph(wordCount: 8, sentenceCount: 3);
+        Assert.HasCount(24, paragraph.Split(' '));
+
+        var paragraphs = LoremIpsumGenerator.Paragraphs(wordsPerSentence: 8, sentencesPerParagraph: 3, paragraphCount: 2);
+        Assert.HasCount(2, paragraphs);
+        #endregion
+    }
+
+    [Fact]
     public void Sentence_ShouldHaveExpectedShape()
     {
         var sentence = LoremIpsumGenerator.Sentence(wordCount: 4);

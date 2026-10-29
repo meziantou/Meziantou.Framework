@@ -5,6 +5,24 @@ namespace Meziantou.Framework.Tests.DataAnnotations;
 
 public sealed class AbsoluteUriAttributeTests
 {
+    [Fact]
+    public void Documentation_Validate()
+    {
+        #region AbsoluteUriAttribute_Validate
+        var attribute = new AbsoluteUriAttribute();
+
+        Assert.True(attribute.IsValid("https://www.example.com/"));
+        Assert.False(attribute.IsValid("images/logo.png"));
+
+        // null and values that are not strings are valid: add [Required] to reject null
+        Assert.True(attribute.IsValid(null));
+
+        var result = attribute.GetValidationResult("images/logo.png", new ValidationContext(new object()));
+        Assert.NotNull(result);
+        Assert.Equal("Uri 'images/logo.png' is not an absolute URI", result.ErrorMessage);
+        #endregion
+    }
+
     [Theory]
     [InlineData(null, true)]
     [InlineData("https://www.meziantou.net/", true)]

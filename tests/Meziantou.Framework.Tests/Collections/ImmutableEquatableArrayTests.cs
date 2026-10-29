@@ -322,4 +322,25 @@ public sealed class ImmutableEquatableArrayTests
         Assert.Equal("b", array[1]);
         Assert.Equal("c", array[2]);
     }
+
+    [Fact]
+    public void Documentation_Usage()
+    {
+        #region ImmutableEquatableArray_Usage
+        var first = new[] { "a", "b" }.ToImmutableEquatableArray();
+        var second = new List<string> { "a", "b" }.ToImmutableEquatableArray();
+
+        // Two arrays with the same items are equal and have the same hash code
+        Assert.Equal(first, second);
+        Assert.True(first == second);
+        Assert.Equal(first.GetHashCode(), second.GetHashCode());
+
+        // A record that contains the array gets value equality too
+        Assert.Equal(new Model("name", first), new Model("name", second));
+        #endregion
+    }
+
+    #region ImmutableEquatableArray_Record
+    private sealed record Model(string Name, ImmutableEquatableArray<string> Items);
+    #endregion
 }

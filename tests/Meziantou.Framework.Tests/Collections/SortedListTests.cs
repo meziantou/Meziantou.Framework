@@ -417,4 +417,22 @@ public sealed class SortedListTests
         var destination = new int[4];
         Assert.Throws<ArgumentOutOfRangeException>(() => list.CopyTo(0, destination.AsMemory(), list.Count + 1));
     }
+
+    [Fact]
+    public void Documentation_Usage()
+    {
+        #region SortedList_Usage
+        var scores = new SortedList<int>();
+        scores.Add(42);
+        scores.Add(7);
+        scores.Add(42);
+        scores.Add(19);
+
+        // Items are kept sorted, duplicates included, and can be read by index
+        Assert.Equal([7, 19, 42, 42], scores);
+        Assert.Equal(7, scores[0]);
+        Assert.Equal(2, scores.FirstIndexOf(42));
+        Assert.Equal(3, scores.LastIndexOf(42));
+        #endregion
+    }
 }

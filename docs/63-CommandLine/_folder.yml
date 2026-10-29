@@ -1,0 +1,2 @@
+title: CommandLine
+description: Read the arguments of a command-line application, quote arguments for Windows programs and cmd.exe, and ask yes/no questions in the console.

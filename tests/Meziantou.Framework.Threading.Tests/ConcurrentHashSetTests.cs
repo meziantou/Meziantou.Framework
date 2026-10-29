@@ -16,6 +16,22 @@ public class ConcurrentHashSetTests
     }
 
     [Fact]
+    public void ConcurrentHashSet_ComparerExample()
+    {
+        #region ConcurrentHashSet_Comparer
+        var set = new ConcurrentHashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        // Add returns false when the set already contains an equal value
+        Assert.True(set.Add("Alice"));
+        Assert.False(set.Add("ALICE"));
+
+        set.AddRange("Bob", "Charlie");
+        Assert.HasCount(3, set);
+        Assert.True(set.Remove("bob"));
+        #endregion
+    }
+
+    [Fact]
     public void TestConcurrentHashSet()
     {
         ConcurrentHashSet<int> set = [];

@@ -46,6 +46,68 @@ public sealed class TaskExtensionsTests
     }
 
     [Fact]
+    [SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly", Justification = "Awaiting the tuple consumes each ValueTask once")]
+    public async Task TaskExtensions_ValueTaskTupleExample()
+    {
+        #region TaskExtensions_ValueTaskTuple
+        static async ValueTask<int> GetCountAsync()
+        {
+            await Task.Yield();
+            return 42;
+        }
+
+        static ValueTask<string> GetNameAsync() => ValueTask.FromResult("value");
+
+        // Await a tuple of ValueTask<T>
+        var (count, name) = await (GetCountAsync(), GetNameAsync());
+        Assert.Equal(42, count);
+        Assert.Equal("value", name);
+
+        // Or call WhenAll explicitly
+        var results = await Meziantou.Framework.Threading.Tasks.TaskExtensions.WhenAll(GetCountAsync(), GetNameAsync());
+        Assert.Equal((42, "value"), results);
+        #endregion
+    }
+
+    [Fact]
+    public async Task TaskExtensions_WhenAllFailureExample()
+    {
+        #region TaskExtensions_WhenAllFailure
+        static async Task<int> SucceedAsync()
+        {
+            await Task.Yield();
+            return 1;
+        }
+
+        static async Task<int> FailAsync()
+        {
+            await Task.Yield();
+            throw new InvalidOperationException("Failed");
+        }
+
+        // Every task is awaited, then the first failure is thrown, as with Task.WhenAll
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(async () => await (SucceedAsync(), FailAsync()));
+        Assert.Equal("Failed", exception.Message);
+        #endregion
+    }
+
+    [Fact]
+    public void TaskExtensions_ForgetExample()
+    {
+        #region TaskExtensions_Forget
+        static async Task SendTelemetryAsync()
+        {
+            await Task.Yield();
+            throw new InvalidOperationException("The telemetry endpoint is unavailable");
+        }
+
+        // Start the task without awaiting it: its exception is observed, so it is never reported
+        // as an unobserved task exception
+        SendTelemetryAsync().Forget();
+        #endregion
+    }
+
+    [Fact]
     public async Task WhenAll()
     {
         var (a, b) = await (Task.FromResult(0), Task.FromResult("test"));

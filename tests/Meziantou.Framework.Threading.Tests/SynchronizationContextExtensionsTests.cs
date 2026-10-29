@@ -15,6 +15,27 @@ public sealed class SynchronizationContextExtensionsTests
     }
 
     [Fact]
+    public async Task SynchronizationContext_AwaitExample()
+    {
+        using var synchronizationContext = new DedicatedThreadSynchronizationContext();
+
+        #region SynchronizationContext_Await
+        async Task<int> ComputeAsync(SynchronizationContext uiContext)
+        {
+            // Do the work on the thread pool
+            var result = await Task.Run(() => 6 * 7).ConfigureAwait(false);
+
+            // Resume on the context, for instance the UI thread, before updating the controls
+            await uiContext;
+            return result;
+        }
+        #endregion
+
+        Assert.Equal(42, await ComputeAsync(synchronizationContext).WaitAsync(Timeout));
+        Assert.Equal(1, synchronizationContext.PostCount);
+    }
+
+    [Fact]
     public async Task GetAwaiter_PostsContinuationToSynchronizationContext()
     {
         using var synchronizationContext = new DedicatedThreadSynchronizationContext();

@@ -5,6 +5,21 @@ namespace Meziantou.Framework.Tests;
 public sealed class AssemblyUtilitiesTests
 {
     [Fact]
+    public void Documentation_Assembly()
+    {
+        #region AssemblyUtilities_Usage
+        var assembly = typeof(AssemblyUtilities).Assembly;
+
+        // The value of AssemblyInformationalVersionAttribute, or null when the assembly has none
+        var version = assembly.GetInformationalVersion();
+        Assert.NotNull(version);
+
+        // Throws an ArgumentException that lists the available resources instead of returning null
+        Assert.Throws<ArgumentException>(() => assembly.GetRequiredManifestResourceStream("missing.txt"));
+        #endregion
+    }
+
+    [Fact]
     public void GetLinkerTimestampUtc_ReturnsNullForADeterministicBuild()
     {
         var location = typeof(AssemblyUtilities).Assembly.Location;

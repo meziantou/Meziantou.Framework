@@ -225,4 +225,20 @@ public class ProcessExtensionsTests
             process.WaitForExit();
         }
     }
+
+    [Fact]
+    public void Documentation_ParentProcess()
+    {
+        #region ProcessExtensions_ParentProcess
+        using var currentProcess = Process.GetCurrentProcess();
+        if (OperatingSystem.IsWindows() || OperatingSystem.IsLinux())
+        {
+            int? parentId = currentProcess.GetParentProcessId();
+            Assert.NotNull(parentId);
+
+            using var parent = currentProcess.GetParentProcess();
+            Assert.NotNull(parent);
+        }
+        #endregion
+    }
 }

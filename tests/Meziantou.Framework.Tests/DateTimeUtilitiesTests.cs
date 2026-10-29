@@ -3,6 +3,28 @@ namespace Meziantou.Framework.Tests;
 public class DateTimeUtilitiesTests
 {
     [Fact]
+    public void Documentation_StartAndEnd()
+    {
+        #region DateTimeExtensions_StartAndEnd
+        var date = new DateTime(2026, 10, 29, 14, 30, 15, 250); // A Thursday
+
+        // StartOfWeek keeps the time of day
+        Assert.Equal(new DateTime(2026, 10, 26, 14, 30, 15, 250), date.StartOfWeek(DayOfWeek.Monday));
+
+        // StartOfMonth and StartOfYear return midnight, unless keepTime is true
+        Assert.Equal(new DateTime(2026, 10, 1), date.StartOfMonth());
+        Assert.Equal(new DateTime(2026, 10, 1, 14, 30, 15, 250), date.StartOfMonth(keepTime: true));
+        Assert.Equal(new DateTime(2026, 1, 1), date.StartOfYear());
+
+        // EndOfMonth returns midnight of the last day of the month
+        Assert.Equal(new DateTime(2026, 10, 31), date.EndOfMonth());
+
+        // TruncateMilliseconds removes everything below the second
+        Assert.Equal(new DateTime(2026, 10, 29, 14, 30, 15), date.TruncateMilliseconds());
+        #endregion
+    }
+
+    [Fact]
     public void StartOfWeek_01()
     {
         // Arrange

@@ -368,4 +368,43 @@ public class StringSearchUtilitiesTests
         foreach (var item in new[] { "Celene", "Celina", "Celine", "Selena", "Selene", "Selina", "Seline", "Suellen", "Xylina" })
             yield return new object[] { "Xalan", item };
     }
+
+    [Fact]
+    public void Documentation_Levenshtein()
+    {
+        #region StringSearchUtilities_Levenshtein
+        // The number of insertions, deletions and substitutions that turn one word into the other
+        Assert.Equal(3, StringSearchUtilities.Levenshtein("kitten", "sitting"));
+
+        // With a maximum distance, the computation stops early and returns maxDistance + 1
+        Assert.Equal(2, StringSearchUtilities.Levenshtein("kitten", "sitting", maxDistance: 1));
+
+        // Compare one word with many candidates
+        var commands = new[] { "build", "test", "publish" };
+        Assert.Equal([1, 4, 5], StringSearchUtilities.LevenshteinBatch("buid", commands));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Hamming()
+    {
+        #region StringSearchUtilities_Hamming
+        // The number of positions at which two strings of the same length differ
+        Assert.Equal(3, StringSearchUtilities.Hamming("karolin", "kathrin"));
+
+        // The number of different bits of two integers
+        Assert.Equal(2u, StringSearchUtilities.Hamming(0b1010u, 0b0110u));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Soundex()
+    {
+        #region StringSearchUtilities_Soundex
+        // Names that sound alike get the same code
+        Assert.Equal("R163", StringSearchUtilities.SoundexEnglish("Robert"));
+        Assert.Equal("R163", StringSearchUtilities.SoundexEnglish("Rupert"));
+        Assert.Equal(StringSearchUtilities.Metaphone("Smith"), StringSearchUtilities.Metaphone("Smyth"));
+        #endregion
+    }
 }

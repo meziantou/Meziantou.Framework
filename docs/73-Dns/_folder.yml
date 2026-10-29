@@ -1,0 +1,2 @@
+title: DNS
+description: Query DNS servers over UDP, TCP, TLS, HTTPS and QUIC, serve your own records, filter domains with block lists, and run a filtering DNS proxy.

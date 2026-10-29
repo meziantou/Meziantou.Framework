@@ -91,6 +91,119 @@ public sealed class NtpServerTests : IAsyncLifetime
         #endregion
     }
 
+    [Fact]
+    public async Task Documentation_QueryLocalServer()
+    {
+        #region NtpClient_GettingStarted
+        using var server = new NtpServer(new NtpServerOptions { Port = 0, BindAddress = IPAddress.Loopback });
+        await server.StartAsync();
+
+        var client = new NtpClient("127.0.0.1", new NtpClientOptions { Port = server.Port });
+        var response = await client.QueryAsync();
+
+        // The difference between the clock of the server and the local clock
+        var localTimeCorrected = DateTimeOffset.UtcNow + response.ClockOffset;
+
+        Assert.Equal(NtpVersion.V4, response.Version);
+        Assert.Equal(2, response.Stratum);
+        Assert.True(response.RoundTripDelay >= TimeSpan.Zero);
+        #endregion
+
+        Assert.True(Math.Abs((localTimeCorrected - DateTimeOffset.UtcNow).TotalSeconds) < 60);
+    }
+
+    [Fact]
+    public async Task Documentation_ClockOffset()
+    {
+        #region NtpClient_ClockOffset
+        // A server whose clock is one hour ahead of the local clock
+        var serverClock = new FakeTimeProvider(DateTimeOffset.UtcNow.AddHours(1));
+        using var server = new NtpServer(new NtpServerOptions
+        {
+            Port = 0,
+            BindAddress = IPAddress.Loopback,
+            TimeProvider = serverClock,
+        });
+        await server.StartAsync();
+
+        var client = new NtpClient("127.0.0.1", new NtpClientOptions { Port = server.Port });
+        var response = await client.QueryAsync();
+
+        Assert.InRange(response.ClockOffset, TimeSpan.FromMinutes(59), TimeSpan.FromMinutes(61));
+        Assert.Equal(serverClock.GetUtcNow(), response.TransmitTimestamp, TimeSpan.FromSeconds(1));
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_ClientOptions()
+    {
+        using var server = new NtpServer(new NtpServerOptions { Port = 0, BindAddress = IPAddress.Loopback });
+        await server.StartAsync(XunitCancellationToken);
+        var port = server.Port;
+
+        #region NtpClient_Options
+        var client = new NtpClient("127.0.0.1", new NtpClientOptions
+        {
+            Port = port,                         // 123 by default
+            Version = NtpVersion.V3,             // V4 by default
+            Timeout = TimeSpan.FromSeconds(10),  // per resolved address, 5 seconds by default
+        });
+
+        // Bounds the total duration, whatever the number of addresses the host name resolves to
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        var response = await client.QueryAsync(cts.Token);
+
+        // The server answers with the version of the request
+        Assert.Equal(NtpVersion.V3, response.Version);
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_ServerOptions()
+    {
+        #region NtpServer_Options
+        using var server = new NtpServer(new NtpServerOptions
+        {
+            Port = 0,
+            BindAddress = IPAddress.Loopback,
+
+            // Only when the machine has a reference clock attached, such as a GPS receiver
+            Stratum = 1,
+            ReferenceIdentifier = "GPS",
+            RootDispersion = TimeSpan.FromMilliseconds(5),
+
+            MaxRequestsPerSecond = 10, // per source address, 0 to disable
+        });
+        await server.StartAsync();
+
+        var client = new NtpClient("127.0.0.1", new NtpClientOptions { Port = server.Port });
+        var response = await client.QueryAsync();
+
+        Assert.Equal(1, response.Stratum);
+        Assert.Equal("GPS", response.ReferenceIdentifierText);
+        #endregion
+
+        Assert.True(Math.Abs((response.RootDispersion - TimeSpan.FromMilliseconds(5)).TotalMilliseconds) < 1);
+    }
+
+    [Fact]
+    public async Task Documentation_Timeout()
+    {
+        // A socket that receives the query and never answers
+        using var silentServer = new UdpClient(new IPEndPoint(IPAddress.Loopback, 0));
+        var port = ((IPEndPoint)silentServer.Client.LocalEndPoint!).Port;
+
+        #region NtpClient_Timeout
+        var client = new NtpClient("127.0.0.1", new NtpClientOptions
+        {
+            Port = port,
+            Timeout = TimeSpan.FromSeconds(1),
+        });
+
+        await Assert.ThrowsAsync<TimeoutException>(() => client.QueryAsync());
+        #endregion
+    }
+
     private static NtpClient CreateClient(NtpServer server, Action<NtpClientOptions>? configure = null)
     {
         var options = new NtpClientOptions { Port = server.Port, Timeout = TimeSpan.FromSeconds(2) };

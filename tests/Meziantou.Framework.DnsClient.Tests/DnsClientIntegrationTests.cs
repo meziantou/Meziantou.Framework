@@ -4,7 +4,14 @@ using System.Net;
 using Meziantou.Framework.DnsClient.Query;
 using Meziantou.Framework.DnsClient.Response;
 using Meziantou.Framework.DnsClient.Response.Records;
+using System.Net.Sockets;
+using Meziantou.Framework.DnsServer.Hosting;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Logging;
 using DnsResponseCode = Meziantou.Framework.DnsClient.Response.DnsResponseCode;
+using ServerHandler = Meziantou.Framework.DnsServer.Handler;
+using ServerProtocol = Meziantou.Framework.DnsServer.Protocol;
+using ServerRecords = Meziantou.Framework.DnsServer.Protocol.Records;
 
 namespace Meziantou.Framework.DnsClient.Tests;
 
@@ -605,5 +612,344 @@ public sealed class DnsClientIntegrationTests
 
         Assert.Equal(DnsResponseCode.NoError, response.Header.ResponseCode);
         Assert.NotEmpty(response.Answers);
+    }
+
+    // The tests below query a DNS server that runs on the loopback interface, so they do not depend on the network.
+    // They hold the examples of the documentation (docs/73-Dns).
+
+    [Fact]
+    public async Task Local_Query_ReturnsTheAddresses()
+    {
+        await using var server = await LocalDnsServer.StartAsync();
+        var serverAddress = server.Address;
+
+        #region DnsClient_GettingStarted
+        using var client = new DnsClient(serverAddress, DnsClientProtocol.Udp);
+        var response = await client.QueryAsync("www.example.com", DnsQueryType.A);
+
+        Assert.Equal(DnsResponseCode.NoError, response.Header.ResponseCode);
+        var addresses = response.Answers.OfType<DnsARecord>().Select(record => record.Address).ToList();
+        Assert.Equal([IPAddress.Parse("192.0.2.10")], addresses);
+        #endregion
+    }
+
+    [Fact]
+    public async Task Local_Query_ReadsTypedRecords()
+    {
+        await using var server = await LocalDnsServer.StartAsync();
+        using var client = new DnsClient(server.Address, DnsClientProtocol.Udp);
+
+        #region DnsClient_ReadRecords
+        var mxResponse = await client.QueryAsync("example.com", DnsQueryType.MX);
+        var mailServer = Assert.Single(mxResponse.Answers.OfType<DnsMxRecord>());
+        Assert.Equal((ushort)10, mailServer.Preference);
+        Assert.Equal("mail.example.com", mailServer.Exchange);
+        Assert.Equal(300u, mailServer.TimeToLive);
+
+        var txtResponse = await client.QueryAsync("example.com", DnsQueryType.TXT);
+        var txt = Assert.Single(txtResponse.Answers.OfType<DnsTxtRecord>());
+        Assert.Equal(["v=spf1 -all"], txt.Text);
+        #endregion
+    }
+
+    [Fact]
+    public async Task Local_Query_DescribesEveryRecordType()
+    {
+        await using var server = await LocalDnsServer.StartAsync();
+        using var client = new DnsClient(server.Address, DnsClientProtocol.Udp);
+
+        #region DnsClient_SwitchOnRecords
+        var response = await client.QueryAsync("example.com", DnsQueryType.ANY);
+
+        var lines = new List<string>();
+        foreach (var record in response.Answers)
+        {
+            lines.Add(record switch
+            {
+                DnsARecord a => $"A {a.Address}",
+                DnsMxRecord mx => $"MX {mx.Preference} {mx.Exchange}",
+                DnsTxtRecord txt => $"TXT {string.Join(" ", txt.Text)}",
+                DnsUnknownRecord unknown => $"{unknown.RecordType} ({unknown.Data.Length} bytes)",
+                _ => record.RecordType.ToString(),
+            });
+        }
+
+        Assert.Equal(["A 192.0.2.1", "MX 10 mail.example.com", "TXT v=spf1 -all"], lines);
+        #endregion
+    }
+
+    [Fact]
+    public async Task Local_Query_GetIPAddresses()
+    {
+        await using var server = await LocalDnsServer.StartAsync();
+        using var client = new DnsClient(server.Address, DnsClientProtocol.Udp);
+
+        #region DnsClient_GetIPAddresses
+        var ipv4 = await client.QueryAsync("www.example.com", DnsQueryType.A);
+        var ipv6 = await client.QueryAsync("www.example.com", DnsQueryType.AAAA);
+
+        var addresses = ipv4.Answers.Concat(ipv6.Answers).GetIPAddresses().ToList();
+        Assert.Equal([IPAddress.Parse("192.0.2.10"), IPAddress.Parse("2001:db8::10")], addresses);
+        #endregion
+    }
+
+    [Fact]
+    public async Task Local_Query_NameError()
+    {
+        await using var server = await LocalDnsServer.StartAsync();
+        using var client = new DnsClient(server.Address, DnsClientProtocol.Udp);
+
+        #region DnsClient_NameError
+        var response = await client.QueryAsync("missing.example.com", DnsQueryType.A);
+
+        // NXDOMAIN is an answer, not an exception
+        Assert.Equal(DnsResponseCode.NameError, response.Header.ResponseCode);
+        Assert.Empty(response.Answers);
+
+        // The SOA record of the zone says how long the absence may be cached
+        var soa = Assert.Single(response.Authorities.OfType<DnsSoaRecord>());
+        Assert.Equal(60u, soa.Minimum);
+        #endregion
+    }
+
+    [Fact]
+    public async Task Local_ReverseLookup()
+    {
+        await using var server = await LocalDnsServer.StartAsync();
+        using var client = new DnsClient(server.Address, DnsClientProtocol.Udp);
+
+        #region DnsClient_LocalReverseLookup
+        // Queries the PTR record of 10.2.0.192.in-addr.arpa
+        var response = await client.ReverseLookupAsync(IPAddress.Parse("192.0.2.10"));
+
+        var ptr = Assert.Single(response.Answers.OfType<DnsPtrRecord>());
+        Assert.Equal("www.example.com", ptr.DomainName);
+        #endregion
+    }
+
+    [Fact]
+    public async Task Local_Query_InternationalizedName()
+    {
+        await using var server = await LocalDnsServer.StartAsync();
+        using var client = new DnsClient(server.Address, DnsClientProtocol.Udp);
+
+        #region DnsClient_LocalIdn
+        // Sent as xn--bcher-kva.example.com
+        var response = await client.QueryAsync("bücher.example.com", DnsQueryType.A);
+
+        var record = Assert.Single(response.Answers.OfType<DnsARecord>());
+        Assert.Equal("xn--bcher-kva.example.com", record.Name);
+        #endregion
+    }
+
+    [Fact]
+    public async Task Local_SendAsync_CustomMessage()
+    {
+        await using var server = await LocalDnsServer.StartAsync();
+        using var client = new DnsClient(server.Address, DnsClientProtocol.Udp);
+
+        #region DnsClient_SendAsync
+        var query = new DnsQueryMessage
+        {
+            RecursionDesired = false,
+            EdnsOptions = new DnsEdnsOptions { UdpPayloadSize = 1400 },
+        };
+        query.Questions.Add(new DnsQuestion("www.example.com", DnsQueryType.AAAA));
+
+        var response = await client.SendAsync(query);
+
+        var record = Assert.Single(response.Answers.OfType<DnsAaaaRecord>());
+        Assert.Equal(IPAddress.Parse("2001:db8::10"), record.Address);
+        Assert.False(response.Header.RecursionDesired);
+        #endregion
+    }
+
+    [Fact]
+    public async Task Local_TruncatedAnswer_IsRetriedOverTcp()
+    {
+        await using var server = await LocalDnsServer.StartAsync();
+        var serverAddress = server.Address;
+
+        #region DnsClient_Truncation
+        using var client = new DnsClient(serverAddress, DnsClientProtocol.Udp);
+        var response = await client.QueryAsync("big.example.com", DnsQueryType.TXT);
+
+        // The answer does not fit in a UDP message: the client asked again over TCP
+        Assert.False(response.Header.IsTruncated);
+        Assert.HasCount(40, response.Answers);
+
+        using var udpOnlyClient = new DnsClient(serverAddress, DnsClientProtocol.Udp, new DnsClientOptions
+        {
+            RetryTruncatedOverTcp = false,
+        });
+        var truncatedResponse = await udpOnlyClient.QueryAsync("big.example.com", DnsQueryType.TXT);
+        Assert.True(truncatedResponse.Header.IsTruncated);
+        #endregion
+    }
+
+    [Fact]
+    public async Task Local_Query_Timeout()
+    {
+        await using var server = await LocalDnsServer.StartAsync();
+        var serverAddress = server.Address;
+
+        #region DnsClient_Timeout
+        // The server never answers queries for slow.example.com
+        using var client = new DnsClient(serverAddress, DnsClientProtocol.Udp, new DnsClientOptions
+        {
+            Timeout = TimeSpan.FromSeconds(1),
+        });
+
+        await Assert.ThrowsAsync<TimeoutException>(() => client.QueryAsync("slow.example.com", DnsQueryType.A));
+        #endregion
+    }
+
+    [Fact]
+    public async Task Local_Query_OverTcp()
+    {
+        await using var server = await LocalDnsServer.StartAsync();
+
+        using var client = new DnsClient(server.Address, DnsClientProtocol.Tcp);
+        var response = await client.QueryAsync("www.example.com", DnsQueryType.A);
+
+        Assert.Equal(IPAddress.Parse("192.0.2.10"), Assert.Single(response.Answers.OfType<DnsARecord>()).Address);
+    }
+
+    /// <summary>A DNS server on the loopback interface that answers UDP and TCP queries for a small example.com zone.</summary>
+    private sealed class LocalDnsServer : IAsyncDisposable
+    {
+        private static readonly ServerRecords.DnsSoaRecordData Soa = new()
+        {
+            PrimaryNameServer = "ns.example.com",
+            ResponsibleMailbox = "hostmaster.example.com",
+            Serial = 1,
+            Refresh = 3600,
+            Retry = 600,
+            Expire = 86400,
+            Minimum = 60,
+        };
+
+        private static readonly (string Name, ServerProtocol.DnsQueryType Type, ServerProtocol.DnsResourceRecordData Data)[] Zone =
+        [
+            ("example.com", ServerProtocol.DnsQueryType.A, new ServerRecords.DnsARecordData { Address = IPAddress.Parse("192.0.2.1") }),
+            ("example.com", ServerProtocol.DnsQueryType.MX, new ServerRecords.DnsMxRecordData { Preference = 10, Exchange = "mail.example.com" }),
+            ("example.com", ServerProtocol.DnsQueryType.TXT, new ServerRecords.DnsTxtRecordData { Text = ["v=spf1 -all"] }),
+            ("www.example.com", ServerProtocol.DnsQueryType.A, new ServerRecords.DnsARecordData { Address = IPAddress.Parse("192.0.2.10") }),
+            ("www.example.com", ServerProtocol.DnsQueryType.AAAA, new ServerRecords.DnsAaaaRecordData { Address = IPAddress.Parse("2001:db8::10") }),
+            ("xn--bcher-kva.example.com", ServerProtocol.DnsQueryType.A, new ServerRecords.DnsARecordData { Address = IPAddress.Parse("192.0.2.20") }),
+            ("10.2.0.192.in-addr.arpa", ServerProtocol.DnsQueryType.PTR, new ServerRecords.DnsPtrRecordData { DomainName = "www.example.com" }),
+            .. Enumerable.Range(0, 40).Select(i => ("big.example.com", ServerProtocol.DnsQueryType.TXT, (ServerProtocol.DnsResourceRecordData)new ServerRecords.DnsTxtRecordData { Text = [new string((char)('a' + (i % 26)), 100)] })),
+        ];
+
+        private readonly WebApplication _app;
+
+        private LocalDnsServer(WebApplication app, int port)
+        {
+            _app = app;
+            Address = "127.0.0.1:" + port.ToString(CultureInfo.InvariantCulture);
+        }
+
+        public string Address { get; }
+
+        public static async Task<LocalDnsServer> StartAsync()
+        {
+            const int MaxAttempts = 5;
+            for (var attempt = 1; ; attempt++)
+            {
+                // The UDP and TCP listeners share a port, which is probed then released: another process can take it
+                // in between, so the server is started again on another port when that happens.
+                int port;
+                using (var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
+                {
+                    socket.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                    port = ((IPEndPoint)socket.LocalEndPoint!).Port;
+                }
+
+                var builder = WebApplication.CreateBuilder();
+                builder.Logging.ClearProviders();
+                builder.AddDnsServer(options =>
+                {
+                    options.AddUdpListener(port, IPAddress.Loopback);
+                    options.AddTcpListener(port, IPAddress.Loopback);
+                });
+
+                var app = builder.Build();
+                app.MapDnsHandler(HandleAsync);
+                try
+                {
+                    await app.StartAsync();
+                    return new LocalDnsServer(app, port);
+                }
+                catch (Exception exception) when (attempt < MaxAttempts && IsAddressAlreadyInUse(exception))
+                {
+                    await app.DisposeAsync();
+                }
+            }
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            await _app.StopAsync();
+            await _app.DisposeAsync();
+        }
+
+        private static async ValueTask<ServerProtocol.DnsMessage> HandleAsync(ServerHandler.DnsRequestContext context, CancellationToken cancellationToken)
+        {
+            var response = context.CreateResponse();
+            response.IsAuthoritative = true;
+
+            var question = context.Query.Questions[0];
+            var name = question.Name.TrimEnd('.');
+            if (string.Equals(name, "slow.example.com", StringComparison.OrdinalIgnoreCase))
+            {
+                await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+            }
+
+            var records = Zone.Where(record => string.Equals(record.Name, name, StringComparison.OrdinalIgnoreCase)).ToList();
+            if (records.Count is 0)
+            {
+                response.ResponseCode = ServerProtocol.DnsResponseCode.NameError;
+            }
+
+            foreach (var record in records)
+            {
+                if (record.Type == question.Type || question.Type is ServerProtocol.DnsQueryType.ANY)
+                {
+                    response.Answers.Add(new ServerProtocol.DnsResourceRecord
+                    {
+                        Name = question.Name,
+                        Type = record.Type,
+                        Class = ServerProtocol.DnsQueryClass.IN,
+                        TimeToLive = 300,
+                        Data = record.Data,
+                    });
+                }
+            }
+
+            if (response.Answers.Count is 0)
+            {
+                response.Authorities.Add(new ServerProtocol.DnsResourceRecord
+                {
+                    Name = "example.com",
+                    Type = ServerProtocol.DnsQueryType.SOA,
+                    Class = ServerProtocol.DnsQueryClass.IN,
+                    TimeToLive = 60,
+                    Data = Soa,
+                });
+            }
+
+            return response;
+        }
+
+        private static bool IsAddressAlreadyInUse(Exception exception)
+        {
+            if (exception is SocketException { SocketErrorCode: SocketError.AddressAlreadyInUse })
+                return true;
+
+            if (exception.Message.Contains("address already in use", StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            return exception.InnerException is not null && IsAddressAlreadyInUse(exception.InnerException);
+        }
     }
 }

@@ -81,6 +81,375 @@ public sealed class DnsServerIntegrationTests
     }
 
     [Fact]
+    public async Task Documentation_GettingStarted()
+    {
+        var port = 0;
+
+        await using var app = await StartServerAsync(() =>
+        {
+            port = GetAvailableUdpPort();
+
+            #region DnsServer_GettingStarted
+            var builder = WebApplication.CreateBuilder();
+            builder.AddDnsServer(options =>
+            {
+                options.AddUdpListener(port, IPAddress.Loopback);
+                options.AddTcpListener(port, IPAddress.Loopback);
+            });
+
+            var app = builder.Build();
+            app.MapDnsHandler((context, cancellationToken) =>
+            {
+                var response = context.CreateResponse();
+                foreach (var question in context.Query.Questions)
+                {
+                    if (question.Type is DnsQueryType.A && string.Equals(question.Name, "www.example.com", StringComparison.OrdinalIgnoreCase))
+                    {
+                        response.Answers.Add(new DnsResourceRecord
+                        {
+                            Name = question.Name,
+                            Type = DnsQueryType.A,
+                            Class = DnsQueryClass.IN,
+                            TimeToLive = 300,
+                            Data = new DnsARecordData { Address = IPAddress.Parse("192.0.2.10") },
+                        });
+                    }
+                }
+
+                return ValueTask.FromResult(response);
+            });
+            #endregion
+
+            return app;
+        });
+
+        try
+        {
+            using var udpClient = new ClientDns.DnsClient($"127.0.0.1:{port}", ClientDns.DnsClientProtocol.Udp);
+            var udpResponse = await XUnitStaticHelpers.Retry(() => udpClient.QueryAsync("www.example.com", ClientDns.Query.DnsQueryType.A, XunitCancellationToken));
+            Assert.Equal(IPAddress.Parse("192.0.2.10"), Assert.Single(udpResponse.Answers.OfType<ClientDns.Response.Records.DnsARecord>()).Address);
+
+            using var tcpClient = new ClientDns.DnsClient($"127.0.0.1:{port}", ClientDns.DnsClientProtocol.Tcp);
+            var tcpResponse = await tcpClient.QueryAsync("www.example.com", ClientDns.Query.DnsQueryType.A, XunitCancellationToken);
+            Assert.Equal(IPAddress.Parse("192.0.2.10"), Assert.Single(tcpResponse.Answers.OfType<ClientDns.Response.Records.DnsARecord>()).Address);
+        }
+        finally
+        {
+            await app.StopAsync();
+        }
+    }
+
+    [Fact]
+    public async Task Documentation_Zone()
+    {
+        #region DnsServer_Zone
+        var soa = new DnsResourceRecord
+        {
+            Name = "example.com",
+            Type = DnsQueryType.SOA,
+            Class = DnsQueryClass.IN,
+            TimeToLive = 3600,
+            Data = new DnsSoaRecordData
+            {
+                PrimaryNameServer = "ns1.example.com",
+                ResponsibleMailbox = "hostmaster.example.com",
+                Serial = 2026102901,
+                Refresh = 7200,
+                Retry = 3600,
+                Expire = 1209600,
+                Minimum = 300, // how long resolvers may cache a negative answer
+            },
+        };
+
+        DnsResourceRecord[] records =
+        [
+            soa,
+            new() { Name = "example.com", Type = DnsQueryType.MX, Class = DnsQueryClass.IN, TimeToLive = 3600, Data = new DnsMxRecordData { Preference = 10, Exchange = "mail.example.com" } },
+            new() { Name = "www.example.com", Type = DnsQueryType.A, Class = DnsQueryClass.IN, TimeToLive = 3600, Data = new DnsARecordData { Address = IPAddress.Parse("192.0.2.10") } },
+            new() { Name = "www.example.com", Type = DnsQueryType.AAAA, Class = DnsQueryClass.IN, TimeToLive = 3600, Data = new DnsAaaaRecordData { Address = IPAddress.Parse("2001:db8::10") } },
+            new() { Name = "mail.example.com", Type = DnsQueryType.A, Class = DnsQueryClass.IN, TimeToLive = 3600, Data = new DnsARecordData { Address = IPAddress.Parse("192.0.2.25") } },
+        ];
+
+        DnsRequestDelegate handler = (context, cancellationToken) =>
+        {
+            var response = context.CreateResponse();
+            if (context.Query.Questions is not [var question])
+            {
+                response.ResponseCode = DnsResponseCode.FormError;
+                return ValueTask.FromResult(response);
+            }
+
+            var name = question.Name.TrimEnd('.');
+            if (!string.Equals(name, "example.com", StringComparison.OrdinalIgnoreCase) && !name.EndsWith(".example.com", StringComparison.OrdinalIgnoreCase))
+            {
+                // Not a name of this zone, and this server does not resolve other names
+                response.ResponseCode = DnsResponseCode.Refused;
+                return ValueTask.FromResult(response);
+            }
+
+            response.IsAuthoritative = true;
+            var recordsOfName = records.Where(record => string.Equals(record.Name, name, StringComparison.OrdinalIgnoreCase)).ToList();
+            foreach (var record in recordsOfName.Where(record => record.Type == question.Type))
+            {
+                response.Answers.Add(record);
+            }
+
+            if (response.Answers.Count is 0)
+            {
+                // NXDOMAIN when the name does not exist, NODATA (no error, no answer) when it only has other types
+                response.ResponseCode = recordsOfName.Count is 0 ? DnsResponseCode.NameError : DnsResponseCode.NoError;
+                response.Authorities.Add(soa);
+            }
+
+            return ValueTask.FromResult(response);
+        };
+        #endregion
+
+        var port = 0;
+        await using var app = await StartServerAsync(() =>
+        {
+            port = GetAvailableUdpPort();
+            var builder = WebApplication.CreateBuilder();
+            builder.AddDnsServer(options => options.AddUdpListener(port, IPAddress.Loopback));
+            builder.WebHost.UseUrls("http://127.0.0.1:0");
+            var app = builder.Build();
+            app.MapDnsHandler(handler);
+            return app;
+        });
+
+        try
+        {
+            using var client = new ClientDns.DnsClient($"127.0.0.1:{port}", ClientDns.DnsClientProtocol.Udp);
+
+            var www = await XUnitStaticHelpers.Retry(() => client.QueryAsync("WWW.example.com", ClientDns.Query.DnsQueryType.AAAA, XunitCancellationToken));
+            Assert.True(www.Header.IsAuthoritative);
+            Assert.Equal(IPAddress.Parse("2001:db8::10"), Assert.Single(www.Answers.OfType<ClientDns.Response.Records.DnsAaaaRecord>()).Address);
+
+            var missing = await client.QueryAsync("missing.example.com", ClientDns.Query.DnsQueryType.A, XunitCancellationToken);
+            Assert.Equal(ClientDns.Response.DnsResponseCode.NameError, missing.Header.ResponseCode);
+            Assert.Equal(300u, Assert.Single(missing.Authorities.OfType<ClientDns.Response.Records.DnsSoaRecord>()).Minimum);
+
+            var noData = await client.QueryAsync("www.example.com", ClientDns.Query.DnsQueryType.MX, XunitCancellationToken);
+            Assert.Equal(ClientDns.Response.DnsResponseCode.NoError, noData.Header.ResponseCode);
+            Assert.Empty(noData.Answers);
+            Assert.Single(noData.Authorities.OfType<ClientDns.Response.Records.DnsSoaRecord>());
+
+            var otherZone = await client.QueryAsync("example.org", ClientDns.Query.DnsQueryType.A, XunitCancellationToken);
+            Assert.Equal(ClientDns.Response.DnsResponseCode.Refused, otherZone.Header.ResponseCode);
+            Assert.False(otherZone.Header.IsAuthoritative);
+        }
+        finally
+        {
+            await app.StopAsync();
+        }
+    }
+
+    [Fact]
+    public async Task Documentation_RequestContext()
+    {
+        #region DnsServer_RequestContext
+        DnsRequestDelegate handler = (context, cancellationToken) =>
+        {
+            var response = context.CreateResponse();
+            foreach (var question in context.Query.Questions)
+            {
+                if (question.Type is DnsQueryType.TXT && string.Equals(question.Name, "whoami.example.com", StringComparison.OrdinalIgnoreCase))
+                {
+                    response.Answers.Add(new DnsResourceRecord
+                    {
+                        Name = question.Name,
+                        Type = DnsQueryType.TXT,
+                        Class = DnsQueryClass.IN,
+                        TimeToLive = 0, // must not be cached: it depends on the client
+                        Data = new DnsTxtRecordData
+                        {
+                            Text =
+                            [
+                                $"address={((IPEndPoint)context.RemoteEndPoint).Address}",
+                                $"protocol={context.Protocol}",
+                                $"dnssec-ok={context.Query.EdnsOptions?.DnssecOk ?? false}",
+                            ],
+                        },
+                    });
+                }
+            }
+
+            if (response.Answers.Count is 0)
+            {
+                response.ResponseCode = DnsResponseCode.NameError;
+            }
+
+            return ValueTask.FromResult(response);
+        };
+        #endregion
+
+        var port = 0;
+        await using var app = await StartServerAsync(() =>
+        {
+            port = GetAvailableUdpPort();
+            var builder = WebApplication.CreateBuilder();
+            builder.AddDnsServer(options =>
+            {
+                options.AddUdpListener(port, IPAddress.Loopback);
+                options.AddTcpListener(port, IPAddress.Loopback);
+            });
+            var app = builder.Build();
+            app.MapDnsHandler(handler);
+            return app;
+        });
+
+        try
+        {
+            using var udpClient = new ClientDns.DnsClient($"127.0.0.1:{port}", ClientDns.DnsClientProtocol.Udp, new ClientDns.DnsClientOptions { DnssecOk = true });
+            var udpResponse = await XUnitStaticHelpers.Retry(() => udpClient.QueryAsync("whoami.example.com", ClientDns.Query.DnsQueryType.TXT, XunitCancellationToken));
+            Assert.Equal(["address=127.0.0.1", "protocol=Udp", "dnssec-ok=True"], Assert.Single(udpResponse.Answers.OfType<ClientDns.Response.Records.DnsTxtRecord>()).Text);
+
+            using var tcpClient = new ClientDns.DnsClient($"127.0.0.1:{port}", ClientDns.DnsClientProtocol.Tcp);
+            var tcpResponse = await tcpClient.QueryAsync("whoami.example.com", ClientDns.Query.DnsQueryType.TXT, XunitCancellationToken);
+            Assert.Equal(["address=127.0.0.1", "protocol=Tcp", "dnssec-ok=False"], Assert.Single(tcpResponse.Answers.OfType<ClientDns.Response.Records.DnsTxtRecord>()).Text);
+        }
+        finally
+        {
+            await app.StopAsync();
+        }
+    }
+
+    [Fact]
+    public async Task Documentation_HandlerErrors()
+    {
+        #region DnsServer_HandlerErrors
+        Func<string, CancellationToken, Task<IPAddress>> lookupAddress = (name, cancellationToken) => throw new InvalidOperationException("The database is not available");
+
+        DnsRequestDelegate handler = async (context, cancellationToken) =>
+        {
+            var response = context.CreateResponse();
+            try
+            {
+                foreach (var question in context.Query.Questions.Where(question => question.Type is DnsQueryType.A))
+                {
+                    var address = await lookupAddress(question.Name, cancellationToken);
+                    response.Answers.Add(new DnsResourceRecord
+                    {
+                        Name = question.Name,
+                        Type = DnsQueryType.A,
+                        Class = DnsQueryClass.IN,
+                        TimeToLive = 60,
+                        Data = new DnsARecordData { Address = address },
+                    });
+                }
+            }
+            catch (InvalidOperationException)
+            {
+                // Without this, the exception is logged and the client gets no answer until it times out
+                response.Answers.Clear();
+                response.ResponseCode = DnsResponseCode.ServerFailure;
+            }
+
+            return response;
+        };
+        #endregion
+
+        var port = 0;
+        await using var app = await StartServerAsync(() =>
+        {
+            port = GetAvailableUdpPort();
+            var builder = WebApplication.CreateBuilder();
+            builder.AddDnsServer(options => options.AddUdpListener(port, IPAddress.Loopback));
+            builder.WebHost.UseUrls("http://127.0.0.1:0");
+            var app = builder.Build();
+            app.MapDnsHandler(handler);
+            return app;
+        });
+
+        try
+        {
+            using var client = new ClientDns.DnsClient($"127.0.0.1:{port}", ClientDns.DnsClientProtocol.Udp);
+            var response = await XUnitStaticHelpers.Retry(() => client.QueryAsync("www.example.com", ClientDns.Query.DnsQueryType.A, XunitCancellationToken));
+            Assert.Equal(ClientDns.Response.DnsResponseCode.ServerFailure, response.Header.ResponseCode);
+        }
+        finally
+        {
+            await app.StopAsync();
+        }
+    }
+
+    [Fact]
+    public async Task Udp_HandlerException_LeavesTheClientWithoutAnAnswer()
+    {
+        var port = 0;
+        await using var app = await StartServerAsync(() =>
+        {
+            port = GetAvailableUdpPort();
+            var builder = WebApplication.CreateBuilder();
+            builder.AddDnsServer(options => options.AddUdpListener(port, IPAddress.Loopback));
+            builder.WebHost.UseUrls("http://127.0.0.1:0");
+            var app = builder.Build();
+            app.MapDnsHandler((context, cancellationToken) => throw new InvalidOperationException("Handler failure"));
+            return app;
+        });
+
+        try
+        {
+            using var client = new ClientDns.DnsClient($"127.0.0.1:{port}", ClientDns.DnsClientProtocol.Udp, new ClientDns.DnsClientOptions { Timeout = TimeSpan.FromSeconds(2) });
+            await Assert.ThrowsAsync<TimeoutException>(() => client.QueryAsync("www.example.com", ClientDns.Query.DnsQueryType.A, XunitCancellationToken));
+        }
+        finally
+        {
+            await app.StopAsync();
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5359:Do Not Disable Certificate Validation")]
+    public async Task Documentation_DnsOverHttps()
+    {
+        using var certificate = CreateSelfSignedCertificate();
+
+        #region DnsServer_DnsOverHttpsLocal
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.ConfigureKestrel(kestrel =>
+        {
+            // Port 0: the system picks a free port
+            kestrel.Listen(IPAddress.Loopback, 0, listenOptions => listenOptions.UseHttps(certificate));
+        });
+        builder.AddDnsServer(options => { }); // DNS over HTTPS needs no DNS listener
+
+        await using var app = builder.Build();
+        app.MapDnsHandler((context, cancellationToken) =>
+        {
+            var response = context.CreateResponse();
+            response.Answers.Add(new DnsResourceRecord
+            {
+                Name = "www.example.com",
+                Type = DnsQueryType.A,
+                Class = DnsQueryClass.IN,
+                TimeToLive = 300,
+                Data = new DnsARecordData { Address = IPAddress.Parse("192.0.2.10") },
+            });
+            return ValueTask.FromResult(response);
+        });
+        app.MapDnsOverHttps("/dns-query");
+        await app.StartAsync();
+
+        var url = app.Urls.First() + "/dns-query"; // https://127.0.0.1:<port>/dns-query
+        #endregion
+
+        try
+        {
+            using var handler = new SocketsHttpHandler();
+            handler.SslOptions.RemoteCertificateValidationCallback = (sender, serverCertificate, chain, errors) => serverCertificate is not null && serverCertificate.GetCertHashString() == certificate.GetCertHashString();
+            using var client = new ClientDns.DnsClient(url, ClientDns.DnsClientProtocol.Https, new ClientDns.DnsClientOptions { HttpHandler = handler });
+
+            var response = await client.QueryAsync("www.example.com", ClientDns.Query.DnsQueryType.A, XunitCancellationToken);
+            Assert.Equal(IPAddress.Parse("192.0.2.10"), Assert.Single(response.Answers.OfType<ClientDns.Response.Records.DnsARecord>()).Address);
+        }
+        finally
+        {
+            await app.StopAsync();
+        }
+    }
+
+    [Fact]
     public async Task Tcp_SimpleQuery_ReturnsARecord()
     {
         var port = 0;

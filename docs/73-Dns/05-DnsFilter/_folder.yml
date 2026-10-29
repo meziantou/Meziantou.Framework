@@ -1,0 +1,2 @@
+title: DnsFilter
+description: Parse block lists and decide, for each DNS query, whether the domain is blocked, allowed or rewritten.

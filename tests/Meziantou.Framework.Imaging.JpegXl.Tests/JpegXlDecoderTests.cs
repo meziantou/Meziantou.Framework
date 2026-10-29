@@ -1198,6 +1198,57 @@ public sealed class JpegXlDecoderTests
     ];
 
     /// <summary>
+    /// Patches that each cover the whole of a 64x64 frame, stored in a few bytes, are read up to the area limit (16 times
+    /// the frame plus 2^20 samples: 272 patches) and rejected beyond it, before they are blended.
+    /// </summary>
+    [Theory]
+    [InlineData(1, false)]
+    [InlineData(272, false)]
+    [InlineData(273, true)]
+    [InlineData(8000, true)]
+    public void PatchesThatCoverTooLargeAnAreaAreRejected(int patchCount, bool rejected)
+    {
+        const int Size = 64;
+        Assert.Equal(272UL * Size * Size, (JpegXlPatchDictionary.MaxFrameCoverage * Size * Size) + JpegXlPatchDictionary.AreaAllowance);
+
+        var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(PatchesThatCoverTooLargeAnAreaAreRejected));
+        using var writer = new LsbBitWriter(scope);
+        using (var encoder = new JpegXlEntropyEncoder(10, new JpegXlHybridUintConfig(4, 0, 0), scope, JpegXlEntropyCoding.Ans))
+        {
+            // One source: the whole of reference frame 0, then its patches, all at the origin and without blending
+            encoder.Add(0, 1);
+            encoder.Add(1, 0);
+            encoder.Add(3, 0);
+            encoder.Add(3, 0);
+            encoder.Add(2, Size - 1);
+            encoder.Add(2, Size - 1);
+            encoder.Add(7, (uint)patchCount - 1);
+            for (var i = 0; i < patchCount; i++)
+            {
+                encoder.Add(i == 0 ? 4 : 6, 0);
+                encoder.Add(i == 0 ? 4 : 6, 0);
+                encoder.Add(5, JpegXlChannelBlending.ModeNone);
+            }
+
+            encoder.Write(writer);
+        }
+
+        writer.Finish();
+        var data = writer.WrittenSpan.ToArray();
+        var reader = new JpegXlBitReader(data, 0, data.Length);
+        if (rejected)
+        {
+            var exception = Assert.Throws<InvalidImageContentException>(() => JpegXlPatchDictionary.Read(reader, Size, Size, extraChannelCount: 0, scope));
+            Assert.Contains("too large an area", exception.Message, StringComparison.Ordinal);
+        }
+        else
+        {
+            using var patches = JpegXlPatchDictionary.Read(reader, Size, Size, extraChannelCount: 0, scope);
+            reader.EnsureNotOverrun();
+        }
+    }
+
+    /// <summary>
     /// The sRGB transfer function of the XYB output computes its power with polynomials: on every other float of the curved
     /// segment up to 1, and on a stride of the floats above it, the power is within 3e-7 of the exact one (relative) and the
     /// encoded sample within 4e-7 of the exact encoding, a negative sample is the opposite of the encoding of its opposite,

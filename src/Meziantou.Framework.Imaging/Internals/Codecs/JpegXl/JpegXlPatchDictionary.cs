@@ -5,8 +5,17 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// onto the frame at given positions, before its color transform. An encoder stores what repeats in an image, such as
 /// the letters of a text, once in a reference frame.
 /// </summary>
+/// <remarks>
+/// The reference decoder bounds the number of patches, not their size: a few bytes can describe a million patches that
+/// each cover the whole frame. The total area of the patches is bounded by <see cref="MaxFrameCoverage"/> times the area of
+/// the frame, plus <see cref="AreaAllowance"/> samples, so that blending them costs about as much as decoding the frame.
+/// An encoder stores what repeats once, so the patches of an image rarely cover more than the frame.
+/// </remarks>
 internal sealed class JpegXlPatchDictionary : IDisposable
 {
+    internal const int MaxFrameCoverage = 16;
+    internal const ulong AreaAllowance = 1UL << 20;
+
     private const int ContextCount = 10;
     private const int ContextReferenceCount = 0;
     private const int ContextReferenceFrame = 1;
@@ -144,6 +153,10 @@ internal sealed class JpegXlPatchDictionary : IDisposable
         if (sourceCount > maxSourceCount)
             throw JpegXlFormat.Invalid("a frame has too many patches.");
 
+        // A patch is inside the frame, so its area is at most that of the frame: the total stays far from overflowing
+        var areaLimit = (Math.Min((ulong)width * (ulong)height, 1UL << 40) * MaxFrameCoverage) + AreaAllowance;
+        ulong totalArea = 0;
+
         var patchLength = PatchFieldCount + _blendingsPerPatch;
         Span<int> source = stackalloc int[SourceFieldCount];
         Span<int> patch = stackalloc int[patchLength];
@@ -183,6 +196,10 @@ internal sealed class JpegXlPatchDictionary : IDisposable
 
                 if (x < 0 || y < 0 || x + source[3] > width || y + source[4] > height)
                     throw JpegXlFormat.Invalid("a patch is outside its frame.");
+
+                totalArea += (ulong)source[3] * (ulong)source[4];
+                if (totalArea > areaLimit)
+                    throw JpegXlFormat.Invalid("the patches of a frame cover too large an area.");
 
                 patch[0] = sourceIndex;
                 patch[1] = (int)x;

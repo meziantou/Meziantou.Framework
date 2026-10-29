@@ -11,14 +11,23 @@ namespace Meziantou.Framework.Imaging;
 /// remapped like the others.
 /// </para>
 /// <para>
+/// The adaptive mode clips the histogram of a tile in 256 bins whatever the depth, as MATLAB's <c>adapthisteq</c> and
+/// scikit-image's <c>equalize_adapthist</c> do by default, so that <see cref="ClipLimit"/> controls 16-bit frames as it
+/// controls their 8-bit versions. A bin of 16-bit samples covers 256 levels: the samples it keeps after the clip follow the
+/// histogram of its levels, and the samples it gets from the excess are spread evenly over its levels, so the mapping
+/// keeps every level. Without limit, the mapping is the one of the histogram of the 65,536 levels.
+/// </para>
+/// <para>
 /// The adaptive mode follows the contrast-limited adaptive histogram equalization of K. Zuiderveld ("Contrast Limited
 /// Adaptive Histogram Equalization", Graphics Gems IV, 1994): the mapping of a tile is
 /// <c>round(cdf(v) * max / n)</c>, where <c>n</c> is the number of counted samples of the tile, after its histogram is
 /// clipped, rounded to the nearest level. The tables are interpolated at the center of each pixel, ties rounded upward.
-/// On frames whose dimensions are multiples of the tile counts, the tables are those of OpenCV's <c>createCLAHE</c> with
-/// the same clip limit and tile grid, but OpenCV interpolates them at the top-left corner of each pixel: the results
-/// differ by a fraction of the difference between neighboring tiles, a few levels. OpenCV also pads the other frames by
-/// reflection to whole tiles, where the tiles of the library divide the frame as evenly as possible.
+/// On 8-bit frames whose dimensions are multiples of the tile counts, the tables are those of OpenCV's
+/// <c>createCLAHE</c> with the same clip limit and tile grid, but OpenCV interpolates them at the top-left corner of each
+/// pixel: the results differ by a fraction of the difference between neighboring tiles, a few levels. OpenCV also pads
+/// the other frames by reflection to whole tiles, where the tiles of the library divide the frame as evenly as possible.
+/// OpenCV clips 16-bit histograms in 65,536 bins, where the limit of a tile of fewer than <c>65,536 / ClipLimit</c>
+/// samples is one sample per level: most clip limits then give the same result.
 /// </para>
 /// </remarks>
 public sealed class HistogramEqualizationOptions
@@ -91,13 +100,14 @@ public sealed class HistogramEqualizationOptions
     } = 8;
 
     /// <summary>
-    /// Gets the contrast limit of the adaptive mode, as a multiple of the average bin height of a tile. Defaults to 2. A bin
-    /// of a tile of <c>n</c> counted samples holds at most <c>max(1, floor(ClipLimit * n / bins))</c> samples, where
-    /// <c>bins</c> is 256 or 65,536; the excess is spread over every bin as Zuiderveld does: each bin gets the same share,
-    /// then the remainder <c>r</c> of the division goes one sample at a time to every <c>max(1, floor(bins / r))</c>-th
-    /// bin, from bin 0. This is the clip limit of OpenCV's <c>createCLAHE</c>. <see cref="double.PositiveInfinity"/>
-    /// disables the limit (plain adaptive histogram
-    /// equalization). Ignored by the global mode.
+    /// Gets the contrast limit of the adaptive mode, as a multiple of the average bin height of a tile. Defaults to 2. The
+    /// histogram of a tile is clipped in 256 bins, each one 8-bit level or 256 16-bit levels: a bin of a tile of <c>n</c>
+    /// counted samples holds at most <c>max(1, floor(ClipLimit * n / 256))</c> samples; the excess is spread over every
+    /// bin as Zuiderveld does: each bin gets the same share, then the remainder <c>r</c> of the division goes one sample at
+    /// a time to every <c>max(1, floor(256 / r))</c>-th bin, from bin 0. For 8-bit samples, this is the clip limit of
+    /// OpenCV's <c>createCLAHE</c>. A tile of fewer than <c>256 / ClipLimit</c> samples is limited to one sample per bin,
+    /// so close clip limits can give the same result on small tiles. <see cref="double.PositiveInfinity"/> disables the
+    /// limit (plain adaptive histogram equalization). Ignored by the global mode.
     /// </summary>
     /// <exception cref="ArgumentOutOfRangeException">The value is not positive, or is not a number.</exception>
     public double ClipLimit

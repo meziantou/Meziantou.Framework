@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Globalization;
 using Meziantou.Framework.Fonts;
 using Meziantou.Framework.Pdf.Fonts;
 using Meziantou.Framework.Pdf.Objects;
@@ -446,4 +447,154 @@ public sealed class PdfFontTests
     }
 
     private static FontFace LoadFace(string path) => FontLoader.Load(File.ReadAllBytes(RepositoryPaths.Fonts / path), new PooledFontEnvironment(FontResourceLimits.Default, 64 * 1024 * 1024))[0];
+
+    [Fact]
+    public void Example_TextMethods()
+    {
+        using var directory = TemporaryDirectory.Create();
+        DrawReceipt(directory / "receipt.pdf");
+        DrawTextStyles(directory / "styles.pdf");
+        DrawParagraph(directory / "paragraph.pdf");
+        DrawEmbeddedText(RepositoryPaths.Fonts / "noto-sans" / "NotoSans-Regular.subset.ttf", directory / "embedded.pdf");
+
+        Assert.Equal("Corner Café\nCoffee 3.50 €\nCroissant 2.20 €\nOrange juice 4.10 €\nTotal 9.80 €", PdfDocument.Open(directory / "receipt.pdf").Pages[0].ExtractText());
+        Assert.All(PdfDocument.Open(directory / "paragraph.pdf").Pages[0].ExtractText().Split('\n'), line => Assert.True(PdfFont.GetStandardFont(PdfStandardFont.TimesRoman).GetTextWidth(line, 12) <= 260));
+        Assert.StartsWith("A text object shows several lines\nCharacter spacing", PdfDocument.Open(directory / "styles.pdf").Pages[0].ExtractText(), StringComparison.Ordinal);
+        Assert.Equal("Efficient office\nWAVE AVATAR\nPrice: 12 € — tax included", PdfDocument.Open(directory / "embedded.pdf").Pages[0].ExtractText());
+    }
+
+#pragma warning disable xUnit1013 // An example of the documentation, called by DocumentationImageTests
+    #region Pdf_DrawReceipt
+    public static void DrawReceipt(string outputPath)
+    {
+        var regular = PdfFont.GetStandardFont(PdfStandardFont.Helvetica);
+        var bold = PdfFont.GetStandardFont(PdfStandardFont.HelveticaBold);
+        (string Name, decimal Price)[] items = [("Coffee", 3.50m), ("Croissant", 2.20m), ("Orange juice", 4.10m)];
+
+        var document = new PdfDocument();
+        var builder = document.Pages.Add(new PdfSize(220, 170)).CreateContentBuilder();
+
+        // Centered: the text starts half its width before the center of the page
+        var title = "Corner Café";
+        builder.DrawText(title, bold, 16, (220 - bold.GetTextWidth(title, 16)) / 2, 140);
+
+        // One line per item: the name at the left margin, the price aligned on the right margin
+        var y = 110.0;
+        foreach (var (name, price) in items)
+        {
+            var amount = price.ToString("0.00 €", CultureInfo.InvariantCulture);
+            builder.DrawText(name, regular, 11, 20, y)
+                .DrawText(amount, regular, 11, 200 - regular.GetTextWidth(amount, 11), y);
+            y -= 18;
+        }
+
+        builder.SetLineWidth(0.5).MoveTo(20, y + 10).LineTo(200, y + 10).Stroke();
+        var total = items.Sum(item => item.Price).ToString("0.00 €", CultureInfo.InvariantCulture);
+        builder.DrawText("Total", bold, 12, 20, y - 8)
+            .DrawText(total, bold, 12, 200 - bold.GetTextWidth(total, 12), y - 8);
+
+        document.Save(outputPath);
+    }
+    #endregion
+#pragma warning restore xUnit1013
+
+#pragma warning disable xUnit1013 // An example of the documentation, called by DocumentationImageTests
+    #region Pdf_DrawTextStyles
+    public static void DrawTextStyles(string outputPath)
+    {
+        var font = PdfFont.GetStandardFont(PdfStandardFont.TimesRoman);
+        var document = new PdfDocument();
+        document.Pages.Add(new PdfSize(300, 170)).CreateContentBuilder()
+            .BeginText()
+            .SetFont(font, 14)
+            .SetTextLeading(22) // the distance between two baselines
+            .MoveTextPosition(20, 140) // the start of the first line
+            .ShowText("A text object shows several lines")
+            .SetCharacterSpacing(2).ShowTextOnNextLine("Character spacing").SetCharacterSpacing(0)
+            .SetWordSpacing(10).ShowTextOnNextLine("Word spacing between words").SetWordSpacing(0)
+            .SetHorizontalScaling(70).ShowTextOnNextLine("Horizontal scaling of 70%").SetHorizontalScaling(100)
+            .MoveToNextLine().ShowText("E = mc").SetTextRise(6).SetFont(font, 9).ShowText("2").SetTextRise(0).SetFont(font, 14)
+            .SetFont(font, 24).SetTextLeading(32).SetLineWidth(0.5).SetTextRenderingMode(PdfTextRenderingMode.Stroke).ShowTextOnNextLine("Outlined text")
+            .EndText();
+
+        document.Save(outputPath);
+    }
+    #endregion
+#pragma warning restore xUnit1013
+
+#pragma warning disable xUnit1013 // An example of the documentation, called by DocumentationImageTests
+    #region Pdf_DrawParagraph
+    public static void DrawParagraph(string outputPath)
+    {
+        var font = PdfFont.GetStandardFont(PdfStandardFont.TimesRoman);
+        var text = "The content builder shows each text where it is told to. To fill a column, measure the words, and start a new line before the word that does not fit.";
+        var fontSize = 12.0;
+        var maxWidth = 260.0;
+
+        var document = new PdfDocument();
+        var builder = document.Pages.Add(new PdfSize(300, 80)).CreateContentBuilder()
+            .BeginText()
+            .SetFont(font, fontSize)
+            .SetTextLeading(16)
+            .MoveTextPosition(20, 55);
+
+        var line = "";
+        foreach (var word in text.Split(' '))
+        {
+            var candidate = line.Length == 0 ? word : line + " " + word;
+            if (line.Length > 0 && font.GetTextWidth(candidate, fontSize) > maxWidth)
+            {
+                builder.ShowText(line).MoveToNextLine();
+                line = word;
+            }
+            else
+            {
+                line = candidate;
+            }
+        }
+
+        builder.ShowText(line).EndText();
+        document.Save(outputPath);
+    }
+    #endregion
+#pragma warning restore xUnit1013
+
+#pragma warning disable xUnit1013 // An example of the documentation, called by DocumentationImageTests
+    #region Pdf_DrawEmbeddedText
+    public static void DrawEmbeddedText(string fontPath, string outputPath)
+    {
+        // A TrueType or OpenType font file: the document embeds the glyphs it shows
+        var font = PdfFont.Load(fontPath);
+
+        var document = new PdfDocument();
+        document.Pages.Add(new PdfSize(300, 130)).CreateContentBuilder()
+            .DrawText("Efficient office", font, 26, 15, 90) // the "ffi" and "ff" ligatures of the font
+            .DrawText("WAVE AVATAR", font, 26, 15, 52) // kerning: the pairs "WA", "AV" and "TA" are tightened
+            .SetFillRgb(0.4, 0.4, 0.4)
+            .DrawText("Price: 12 € — tax included", font, 13, 15, 20);
+
+        document.Save(outputPath);
+    }
+    #endregion
+#pragma warning restore xUnit1013
+
+    [Fact]
+    public void Example_ChooseFont()
+    {
+        var fontPath = RepositoryPaths.Fonts / "noto-sans" / "NotoSans-Regular.subset.ttf";
+
+        Assert.Equal("Helvetica", ChooseFont("Café", fontPath).PostScriptName);
+        Assert.NotEqual("Helvetica", ChooseFont("Łódź", fontPath).PostScriptName);
+    }
+
+    private static PdfFont ChooseFont(string text, string fontPath)
+    {
+        #region Pdf_ChooseFont
+        // A standard font shows the characters of WinAnsiEncoding (Latin-1, the euro sign, the typographic quotes...)
+        var helvetica = PdfFont.GetStandardFont(PdfStandardFont.Helvetica);
+        var font = helvetica.CanEncode(text) ? helvetica : PdfFont.Load(fontPath);
+        #endregion
+
+        return font;
+    }
 }

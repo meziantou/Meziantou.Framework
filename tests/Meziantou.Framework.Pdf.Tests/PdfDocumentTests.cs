@@ -1075,4 +1075,435 @@ public sealed class PdfDocumentTests
         Assert.Equal(jpeg.ToArray(), stream.EncodedData.ToArray());
         Assert.HasCount(8 * 8 * 3, stream.GetDecodedData());
     }
+
+    [Fact]
+    public void Example_CreateCard()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var path = directory / "card.pdf";
+
+        CreateCard(path);
+
+        var document = PdfDocument.Open(path);
+        Assert.Equal("Welcome", document.Information.Title);
+        Assert.Equal(new PdfRectangle(0, 0, 300, 180), document.Pages[0].MediaBox);
+        Assert.Equal("Welcome\nYour first PDF document", document.Pages[0].ExtractText());
+    }
+
+#pragma warning disable xUnit1013 // An example of the documentation, called by DocumentationImageTests
+    #region Pdf_CreateCard
+    public static void CreateCard(string outputPath)
+    {
+        var document = new PdfDocument();
+        document.Information.Title = "Welcome";
+
+        // A page of 300 by 180 points (1 point is 1/72 inch); the origin is its lower-left corner
+        var page = document.Pages.Add(new PdfSize(300, 180));
+        var bold = PdfFont.GetStandardFont(PdfStandardFont.HelveticaBold);
+        var regular = PdfFont.GetStandardFont(PdfStandardFont.Helvetica);
+
+        page.CreateContentBuilder()
+            .SetFillRgb(0.13, 0.33, 0.62).Rectangle(0, 120, 300, 60).Fill() // a band at the top of the page
+            .SetFillGray(1).DrawText("Welcome", bold, 28, 20, 140) // x and y are the start of the baseline
+            .SetFillGray(0.2).DrawText("Your first PDF document", regular, 14, 20, 80)
+            .SetStrokeRgb(0.13, 0.33, 0.62).SetLineWidth(2).MoveTo(20, 65).LineTo(280, 65).Stroke();
+
+        document.Save(outputPath);
+    }
+    #endregion
+#pragma warning restore xUnit1013
+
+    [Fact]
+    public void Example_PageSizes()
+    {
+        #region Pdf_PageSizes
+        var document = new PdfDocument();
+        var letter = document.Pages.Add(PdfSize.Letter); // 8.5 x 11 inches: 612 x 792 points
+        var landscape = document.Pages.Add(PdfSize.A4.ToLandscape()); // 297 x 210 mm
+        var label = document.Pages.Add(PdfSize.FromMillimeters(100, 50));
+        var cover = document.Pages.Insert(0, PdfSize.A4); // the new first page
+
+        // The crop box is the region viewers show and print: here, the label without a margin of 18 points (1/4 inch)
+        label.CropBox = new PdfRectangle(18, 18, label.MediaBox.Width - 18, label.MediaBox.Height - 18);
+
+        // A page drawn in portrait, shown turned 90 degrees clockwise
+        letter.Rotation = 90;
+
+        document.Pages.RemoveAt(document.Pages.IndexOf(cover));
+        #endregion
+
+        var read = PdfDocument.Open(document.ToByteArray());
+        Assert.Equal(3, read.Pages.Count);
+        Assert.Equal(90, read.Pages[0].Rotation);
+        Assert.Equal(842, Math.Round(read.Pages[1].MediaBox.Width, MidpointRounding.AwayFromZero));
+        Assert.Equal(label.MediaBox.Width - 36, read.Pages[2].CropBox.Width, 5);
+        Assert.Equal(landscape.MediaBox.Height, read.Pages[1].MediaBox.Height, 5);
+    }
+
+    [Fact]
+    public void Example_SaveOptions()
+    {
+        var document = new PdfDocument();
+        document.Pages.Add(PdfSize.A4).CreateContentBuilder().DrawText("Hello", PdfFont.GetStandardFont(PdfStandardFont.Helvetica), 12, 50, 800);
+
+        #region Pdf_SaveOptions
+        // The default: compressed streams, object streams and a cross-reference stream (PDF 1.5 and later)
+        var compact = document.ToByteArray();
+
+        // A file for older readers: a cross-reference table and a PDF 1.4 header
+        var compatible = document.ToByteArray(new PdfSaveOptions { UseObjectStreams = false, Version = PdfVersion.Pdf14 });
+
+        // Content streams left as text, to read them in an editor
+        var readable = document.ToByteArray(new PdfSaveOptions { CompressStreams = false });
+        #endregion
+
+        Assert.Equal("Hello", PdfDocument.Open(compact).Pages[0].ExtractText());
+        Assert.StartsWith("%PDF-1.4", Encoding.ASCII.GetString(compatible), StringComparison.Ordinal);
+        Assert.Contains("xref", Encoding.ASCII.GetString(compatible), StringComparison.Ordinal);
+        Assert.Contains("(Hello) Tj", Encoding.ASCII.GetString(readable), StringComparison.Ordinal);
+        Assert.Equal("Hello", PdfDocument.Open(compatible).Pages[0].ExtractText());
+    }
+
+    [Fact]
+    public void Example_Metadata()
+    {
+        #region Pdf_Metadata
+        var document = new PdfDocument { Language = "en-US" };
+        document.Information.Title = "Quarterly report";
+        document.Information.Author = "Finance team";
+        document.Information.Subject = "The results of the third quarter";
+        document.Information.Keywords = "finance, report";
+        document.Information.CreationDate = new DateTimeOffset(2026, 10, 1, 9, 0, 0, TimeSpan.Zero);
+        document.Information.SetText("Department", "Finance"); // a custom entry
+        document.Pages.Add(PdfSize.A4);
+
+        // PDF 2.0 prefers the XMP metadata: write it from the information above
+        document.UpdateXmpMetadata();
+        var pdf = document.ToByteArray();
+
+        var read = PdfDocument.Open(pdf);
+        var title = read.Information.Title;
+        var department = read.Information.GetText("Department");
+        var xmp = read.GetXmpMetadata(); // the XMP packet: UTF-8 XML, or null
+        #endregion
+
+        Assert.Equal("Quarterly report", title);
+        Assert.Equal("Finance", department);
+        Assert.Equal("en-US", read.Language);
+        Assert.Equal(new DateTimeOffset(2026, 10, 1, 9, 0, 0, TimeSpan.Zero), read.Information.CreationDate);
+        Assert.Null(read.Information.Producer);
+        Assert.Contains("Quarterly report", Encoding.UTF8.GetString(xmp!), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Example_OutlineStyles()
+    {
+        var document = new PdfDocument();
+        var page = document.Pages.Add(PdfSize.A4);
+
+        #region Pdf_OutlineStyles
+        var summary = document.Outlines.Add("Summary", PdfDestination.FitHorizontally(page, top: 800));
+        summary.IsBold = true;
+        summary.Color = PdfColor.FromRgb(0.6, 0, 0); // an RGB color
+        summary.IsOpen = true; // its children are shown when the document is opened
+        summary.Children.Add("Key figures", PdfDestination.Xyz(page, left: 0, top: 600, zoom: 1.5));
+
+        // The outline is a list: items can be inserted, moved and removed
+        document.Outlines.Insert(0, new PdfOutlineItem("Cover", PdfDestination.Fit(page)) { IsItalic = true });
+        #endregion
+
+        var read = PdfDocument.Open(document.ToByteArray());
+        Assert.Equal(["Cover", "Summary"], read.Outlines.Select(item => item.Title));
+        Assert.True(read.Outlines[0].IsItalic);
+        Assert.True(read.Outlines[1].IsBold);
+        Assert.True(read.Outlines[1].IsOpen);
+        Assert.Equal(PdfColor.FromRgb(0.6, 0, 0), read.Outlines[1].Color);
+        Assert.Equal(1.5, read.Outlines[1].Children[0].Destination!.Zoom);
+    }
+
+    [Fact]
+    public void Example_ReadLinks()
+    {
+        var source = new PdfDocument();
+        var first = source.Pages.Add(PdfSize.A4);
+        var second = source.Pages.Add(PdfSize.A4);
+        source.Outlines.Add("Introduction", PdfDestination.Fit(first)).Children.Add("Details", PdfDestination.Fit(second));
+        first.Annotations.AddLink(new PdfRectangle(50, 50, 250, 80), PdfDestination.Fit(second));
+        first.Annotations.AddLink(new PdfRectangle(50, 100, 250, 130), new Uri("https://www.meziantou.net"));
+        var file = source.ToByteArray();
+
+        #region Pdf_ReadLinks
+        var document = PdfDocument.Open(file);
+
+        // The outline: a tree of items, each with its title and destination
+        var bookmarks = new List<string>();
+        foreach (var item in document.Outlines)
+        {
+            bookmarks.Add(item.Title);
+            bookmarks.AddRange(item.Children.Select(child => "  " + child.Title));
+        }
+
+        // The links of a page: a web address or a destination in the document
+        var targets = new List<string>();
+        foreach (var link in document.Pages[0].Annotations.OfType<PdfLinkAnnotation>())
+        {
+            if (link.Uri is not null)
+            {
+                targets.Add(link.Uri.AbsoluteUri);
+            }
+            else if (link.Destination is not null)
+            {
+                targets.Add("page " + (document.Pages.IndexOf(link.Destination.Page) + 1));
+            }
+        }
+        #endregion
+
+        Assert.Equal(["Introduction", "  Details"], bookmarks);
+        Assert.Equal(["page 2", "https://www.meziantou.net/"], targets);
+    }
+
+    [Fact]
+    public void Example_StampPages()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var input = directory / "card.pdf";
+        var output = directory / "approved.pdf";
+        CreateCard(input);
+
+        StampPages(input, output);
+
+        var page = PdfDocument.Open(output).Pages[0];
+        Assert.Equal("Welcome\nYour first PDF document\nAPPROVED", page.ExtractText());
+    }
+
+#pragma warning disable xUnit1013 // An example of the documentation, called by DocumentationImageTests
+    #region Pdf_StampPages
+    public static void StampPages(string inputPath, string outputPath)
+    {
+        var document = PdfDocument.Open(inputPath);
+        var font = PdfFont.GetStandardFont(PdfStandardFont.HelveticaBold);
+        var translucent = new PdfExtGState { FillAlpha = 0.4 };
+        var width = font.GetTextWidth("APPROVED", 40);
+
+        foreach (var page in document.Pages)
+        {
+            // The new content is painted over the content of the page, from the default graphics state
+            var box = page.CropBox;
+            page.CreateContentBuilder()
+                .SetGraphicsState(translucent)
+                .SetFillRgb(0.8, 0, 0)
+                .Translate(box.Left + (box.Width / 2), box.Bottom + (box.Height / 2)) // the center of the page
+                .Rotate(20)
+                .DrawText("APPROVED", font, 40, -width / 2, -14);
+        }
+
+        document.Save(outputPath);
+    }
+    #endregion
+#pragma warning restore xUnit1013
+
+    [Fact]
+    public void Example_SearchText()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var path = directory / "report.pdf";
+        var source = new PdfDocument();
+        var font = PdfFont.GetStandardFont(PdfStandardFont.Helvetica);
+        source.Pages.Add(PdfSize.A4).CreateContentBuilder().DrawText("Introduction", font, 12, 50, 800);
+        source.Pages.Add(PdfSize.A4).CreateContentBuilder().DrawText("Revenue grew by 12%", font, 12, 50, 800);
+        source.Pages.Add(PdfSize.A4).CreateContentBuilder().DrawText("Revenue by region", font, 12, 50, 800);
+        source.Save(path);
+
+        #region Pdf_SearchText
+        var document = PdfDocument.Open(path);
+
+        // The numbers of the pages whose text contains a word
+        var pages = new List<int>();
+        for (var i = 0; i < document.Pages.Count; i++)
+        {
+            var text = document.Pages[i].ExtractText();
+            if (text.Contains("revenue", StringComparison.OrdinalIgnoreCase))
+            {
+                pages.Add(i + 1);
+            }
+        }
+        #endregion
+
+        Assert.Equal([2, 3], pages);
+    }
+
+    [Fact]
+    public void Example_InspectFonts()
+    {
+        var source = new PdfDocument();
+        source.Pages.Add(PdfSize.A4).CreateContentBuilder()
+            .DrawText("Title", PdfFont.GetStandardFont(PdfStandardFont.HelveticaBold), 20, 50, 800)
+            .DrawText("Text", PdfFont.GetStandardFont(PdfStandardFont.TimesRoman), 12, 50, 760);
+        source.Pages.Add(PdfSize.A4).CreateContentBuilder().DrawText("Code", PdfFont.GetStandardFont(PdfStandardFont.Courier), 12, 50, 800);
+        var file = source.ToByteArray();
+
+        #region Pdf_InspectFonts
+        var document = PdfDocument.Open(file);
+
+        // The fonts of the resources of the pages: the /BaseFont of each font dictionary
+        var fonts = new SortedSet<string>(StringComparer.Ordinal);
+        foreach (var page in document.Pages)
+        {
+            if (page.Resources?.GetResolved("Font") is not PdfDictionary pageFonts)
+                continue;
+
+            foreach (var name in pageFonts.Keys)
+            {
+                if (pageFonts.GetResolved(name) is PdfDictionary font && font.GetName("BaseFont") is { } baseFont)
+                {
+                    fonts.Add(baseFont.Value);
+                }
+            }
+        }
+        #endregion
+
+        Assert.Equal(["Courier", "Helvetica-Bold", "Times-Roman"], fonts);
+    }
+
+    [Fact]
+    public async Task Example_DescribeUpload()
+    {
+        var valid = new PdfDocument();
+        valid.Pages.Add(PdfSize.A4);
+        valid.Pages.Add(PdfSize.A4);
+        var encrypted = new PdfDocument();
+        encrypted.Pages.Add(PdfSize.A4);
+        encrypted.Encryption = new PdfEncryption("secret", "owner");
+
+        Assert.Equal("2 pages", await DescribeUploadAsync(new MemoryStream(valid.ToByteArray()), XunitCancellationToken));
+        Assert.Equal("The document needs a password", await DescribeUploadAsync(new MemoryStream(encrypted.ToByteArray()), XunitCancellationToken));
+        Assert.Equal("The file is not a PDF document that can be read", await DescribeUploadAsync(new MemoryStream("Not a PDF file"u8.ToArray()), XunitCancellationToken));
+    }
+
+#pragma warning disable xUnit1013 // An example of the documentation, called by DocumentationImageTests
+    #region Pdf_DescribeUpload
+    public static async Task<string> DescribeUploadAsync(Stream upload, CancellationToken cancellationToken)
+    {
+        // Lower limits for the files of unknown users: 16 MiB per decoded stream
+        var options = new PdfReadOptions { MaxDecodedStreamLength = 16 * 1024 * 1024 };
+        try
+        {
+            var document = await PdfDocument.OpenAsync(upload, options, cancellationToken);
+            return $"{document.Pages.Count} pages";
+        }
+        catch (PdfPasswordException)
+        {
+            return "The document needs a password";
+        }
+        catch (PdfResourceLimitException)
+        {
+            return "The document is too large";
+        }
+        catch (PdfException)
+        {
+            // InvalidPdfContentException: not a PDF document, or damaged beyond repair
+            // UnsupportedPdfFeatureException: a feature the library does not support
+            return "The file is not a PDF document that can be read";
+        }
+    }
+    #endregion
+#pragma warning restore xUnit1013
+
+    [Fact]
+    public void Example_ChangePassword()
+    {
+        var source = new PdfDocument();
+        source.Pages.Add(PdfSize.A4).CreateContentBuilder().DrawText("Secret", PdfFont.GetStandardFont(PdfStandardFont.Helvetica), 12, 50, 800);
+        source.Encryption = new PdfEncryption("user password", "owner password");
+        var file = source.ToByteArray();
+
+        #region Pdf_ChangePassword
+        // The owner password opens the document with every permission
+        var document = PdfDocument.Open(file, new PdfReadOptions { Password = "owner password" });
+
+        // Saved without encryption...
+        document.Encryption = null;
+        var clear = document.ToByteArray();
+
+        // ...or with new passwords and another algorithm
+        document.Encryption = new PdfEncryption("new user password", "new owner password")
+        {
+            Algorithm = PdfEncryptionAlgorithm.AesWith128BitKey,
+        };
+        var protectedAgain = document.ToByteArray();
+        #endregion
+
+        Assert.True(document.IsEncrypted);
+        Assert.False(PdfDocument.Open(clear).IsEncrypted);
+        Assert.Equal("Secret", PdfDocument.Open(clear).Pages[0].ExtractText());
+        Assert.Throws<PdfPasswordException>(() => PdfDocument.Open(protectedAgain, new PdfReadOptions { Password = "user password" }));
+        Assert.Equal("Secret", PdfDocument.Open(protectedAgain, new PdfReadOptions { Password = "new user password" }).Pages[0].ExtractText());
+    }
+
+    [Fact]
+    public void Example_PdfA3Attachment()
+    {
+        var fontData = File.ReadAllBytes(TestHarness.RepositoryPaths.Fonts / "noto-sans" / "NotoSans-Regular.subset.ttf");
+        var invoiceXml = "<Invoice><Number>2026-001</Number></Invoice>"u8.ToArray();
+
+        #region Pdf_PdfA3Attachment
+        var font = PdfFont.Load(fontData);
+        var document = new PdfDocument { PdfAConformance = PdfAConformance.PdfA3B };
+        document.Information.Title = "Invoice 2026-001";
+        document.Pages.Add(PdfSize.A4).CreateContentBuilder().DrawText("Invoice 2026-001", font, 18, 60, 760);
+
+        // PDF/A-3 accepts embedded files of any format, with a MIME type and their relationship to the document
+        document.EmbeddedFiles.Add("invoice.xml", invoiceXml, new PdfEmbeddedFileOptions
+        {
+            Description = "The invoice as structured data",
+            MimeType = "application/xml",
+            Relationship = PdfAssociatedFileRelationship.Alternative,
+            ModificationDate = new DateTimeOffset(2026, 10, 29, 8, 0, 0, TimeSpan.Zero),
+        });
+
+        var pdf = document.ToByteArray();
+        #endregion
+
+        var read = PdfDocument.Open(pdf);
+        var file = Assert.Single(read.EmbeddedFiles);
+        Assert.Equal("invoice.xml", file.FileName);
+        Assert.Equal(PdfAssociatedFileRelationship.Alternative, file.Relationship);
+        Assert.Equal(invoiceXml, file.GetData());
+        Assert.Contains("<pdfaid:part>3</pdfaid:part>", Encoding.UTF8.GetString(read.GetXmpMetadata()!), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Example_TaggedLink()
+    {
+        var fontData = File.ReadAllBytes(TestHarness.RepositoryPaths.Fonts / "noto-sans" / "NotoSans-Regular.subset.ttf");
+
+        #region Pdf_TaggedLink
+        var font = PdfFont.Load(fontData);
+        var document = new PdfDocument { PdfUAConformance = PdfUAConformance.PdfUA1, Language = "en-US" };
+        document.Information.Title = "Contact";
+        var page = document.Pages.Add(PdfSize.A4);
+
+        // A type of the application, mapped to the standard type assistive technologies know
+        document.StructureTree.MapRole("Lead", "P");
+        var root = document.StructureTree.AddElement("Document");
+        var lead = root.AddElement("Lead");
+        var link = root.AddElement("Link");
+
+        // A link is both content and an annotation: the element holds both
+        var annotation = page.Annotations.AddLink(new PdfRectangle(60, 715, 200, 735), new Uri("https://www.meziantou.net"));
+        annotation.Contents = "The website of the author";
+        link.AddAnnotation(annotation);
+
+        page.CreateContentBuilder()
+            .BeginStructureElement(lead).DrawText("Contact the author", font, 14, 60, 760).EndMarkedContent()
+            .BeginStructureElement(link).DrawText("www.meziantou.net", font, 12, 60, 720).EndMarkedContent();
+
+        var pdf = document.ToByteArray();
+        #endregion
+
+        var read = PdfDocument.Open(pdf);
+        Assert.Equal("P", read.StructureTree.RoleMap["Lead"]);
+        Assert.Equal(["Lead", "Link"], Assert.Single(read.StructureTree.Elements).Children.Select(child => child.Type));
+        Assert.Equal("The website of the author", Assert.Single(read.Pages[0].Annotations).Contents);
+    }
 }

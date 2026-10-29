@@ -1,0 +1,2 @@
+title: Writing tests
+description: Validate values and files, choose the snapshot format, name the snapshot files and make snapshots deterministic.

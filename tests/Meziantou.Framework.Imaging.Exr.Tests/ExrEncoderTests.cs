@@ -273,6 +273,112 @@ public sealed class ExrEncoderTests
         Assert.InRange(back.Frames[0][2, 0].R, 0.1f - 1e-8f, 0.1f + 1e-8f);
     }
 
+    [Theory]
+    [InlineData(PixelFormat.RgbaFloat, OpenExrPixelType.Float)]
+    [InlineData(PixelFormat.RgbaFloat, OpenExrPixelType.Half)]
+    [InlineData(PixelFormat.RgbaHalf, OpenExrPixelType.Half)]
+    [InlineData(PixelFormat.RgbaHalf, OpenExrPixelType.Float)]
+    public void PremultipliedColorsAreRoundedOnceAndDividedByTheStoredAlpha(PixelFormat format, OpenExrPixelType pixelType)
+    {
+        // Any alpha: the color is multiplied by the alpha that is stored (rounded to the sample type), the product rounded
+        // to the sample type, then divided by the stored alpha when read. An alpha that rounds to a half 0 keeps its color.
+        const int Width = 61;
+        var random = new Random(42);
+        using var source = new Image<RgbaFloat>(Width, 3);
+        for (var y = 0; y < 3; y++)
+        {
+            for (var x = 0; x < Width; x++)
+            {
+                var alpha = x switch
+                {
+                    0 => 1e-8f,
+                    1 => 1.75f,
+                    2 => 3e-5f,
+                    _ => (float)random.NextDouble(),
+                };
+                source.Frames[0][x, y] = new RgbaFloat((float)((random.NextDouble() * 200) - 100), (float)random.NextDouble(), (float)(random.NextDouble() * 1e-3), alpha);
+            }
+        }
+
+        using var image = format == PixelFormat.RgbaHalf ? (Image)source.CloneAs<RgbaHalf>() : source.CloneAs<RgbaFloat>();
+        using var pixels = image.CloneAs<RgbaFloat>();
+        var data = Encode(image, new OpenExrEncoder { PixelType = pixelType, AllowBitDepthReduction = true });
+        using var back = Image.Load<RgbaFloat>(data);
+        var inexact = 0;
+        for (var y = 0; y < 3; y++)
+        {
+            for (var x = 0; x < Width; x++)
+            {
+                var pixel = pixels.Frames[0][x, y];
+                var actual = back.Frames[0][x, y];
+                double alpha = pixelType == OpenExrPixelType.Half ? (double)(Half)pixel.A : pixel.A;
+                Assert.Equal((float)alpha, actual.A);
+                Assert.Equal(Expected(pixel.R), actual.R);
+                Assert.Equal(Expected(pixel.G), actual.G);
+                Assert.Equal(Expected(pixel.B), actual.B);
+                if (actual != pixel)
+                {
+                    inexact++;
+                }
+
+                float Expected(float color)
+                {
+                    if (alpha == 0)
+                        return pixelType == OpenExrPixelType.Half ? (float)(Half)color : color;
+
+                    var stored = pixelType == OpenExrPixelType.Half ? (double)(Half)(color * alpha) : (float)(color * alpha);
+                    return (float)(stored / alpha);
+                }
+            }
+        }
+
+        // The round trip is not exact in general, but the product of two halves is exact in a float
+        Assert.Equal(format == PixelFormat.RgbaHalf && pixelType == OpenExrPixelType.Float, inexact == 0);
+    }
+
+    [Fact]
+    public void PremultipliedColorsBeyondTheRangeOfTheSampleTypeAreRejected()
+    {
+        // Alpha is not limited to [0, 1]: 60,000 is a half, but 60,000 × 2 is not
+        using var half = new Image<RgbaHalf>(2, 1);
+        half.Frames[0][1, 0] = new RgbaHalf((Half)1f, (Half)(-60000f), (Half)0f, (Half)2f);
+        AssertRejected(half, new OpenExrEncoder());
+        using (var wide = Image.Load<RgbaFloat>(Encode(half, new OpenExrEncoder { PixelType = OpenExrPixelType.Float })))
+        {
+            Assert.Equal(new RgbaFloat(1f, -60000f, 0f, 2f), wide.Frames[0][1, 0]);
+        }
+
+        // The same for float samples, and for half samples of floats whose alpha is rounded first
+        using var single = new Image<RgbaFloat>(2, 1);
+        single.Frames[0][1, 0] = new RgbaFloat(3e38f, 0f, 0f, 2f);
+        AssertRejected(single, new OpenExrEncoder());
+        single.Frames[0][1, 0] = new RgbaFloat(0f, 0f, 40000f, 1.9f);
+        AssertRejected(single, new OpenExrEncoder { PixelType = OpenExrPixelType.Half, AllowBitDepthReduction = true });
+
+        // A finite color multiplied by an alpha that is not finite would be lost
+        single.Frames[0][1, 0] = new RgbaFloat(0f, 0.5f, 0f, float.PositiveInfinity);
+        AssertRejected(single, new OpenExrEncoder());
+        single.Frames[0][1, 0] = new RgbaFloat(0.5f, 0f, 0f, float.NaN);
+        AssertRejected(single, new OpenExrEncoder());
+
+        // Colors that are not finite stay as they are, and a zero alpha does not multiply its colors
+        single.Frames[0][0, 0] = new RgbaFloat(float.PositiveInfinity, float.NaN, 0f, 2f);
+        single.Frames[0][1, 0] = new RgbaFloat(3e38f, -3e38f, 0f, 0f);
+        using var back = Image.Load<RgbaFloat>(Encode(single, new OpenExrEncoder()));
+        Assert.Equal(float.PositiveInfinity, back.Frames[0][0, 0].R);
+        Assert.True(float.IsNaN(back.Frames[0][0, 0].G));
+        Assert.Equal(single.Frames[0][1, 0], back.Frames[0][1, 0]);
+
+        static void AssertRejected(Image image, OpenExrEncoder encoder)
+        {
+            using var stream = new MemoryStream();
+            var exception = Assert.Throws<UnsupportedImageFeatureException>(() => image.Save(stream, encoder));
+            Assert.Equal(ImageFormat.OpenExr, exception.Format);
+            Assert.Contains("multiplied by its alpha", exception.Message, StringComparison.Ordinal);
+            Assert.Equal(0, stream.Length);
+        }
+    }
+
     private static List<(string Name, string Type, byte[] Value)> ReadAttributes(byte[] data, out int tableOffset)
     {
         var result = new List<(string, string, byte[])>();

@@ -11,9 +11,13 @@ namespace Meziantou.Framework.Imaging.Formats;
 /// <c>A</c> channel.
 /// </para>
 /// <para>
-/// Colors are multiplied by nonzero alpha before writing and divided by it when decoded, as OpenEXR stores premultiplied
-/// colors and the library holds straight colors. Rounding, underflow or overflow can change them: lossless compression
-/// preserves the stored samples, not necessarily the source pixels. A zero alpha keeps its colors without multiplication.
+/// Colors are multiplied by the alpha that is written (rounded to the sample type) when it is not 0, and divided by it
+/// when decoded, as OpenEXR stores premultiplied colors and the library holds straight colors. Rounding and underflow can
+/// change them: lossless compression preserves the stored samples, not necessarily the source pixels (<see cref="RgbaHalf"/>
+/// pixels written as <see cref="OpenExrPixelType.Float"/> samples come back exactly). A zero alpha keeps
+/// its colors without multiplication. Alpha is not limited to [0, 1]: a finite color that the multiplication takes beyond
+/// the range of the sample type, or that an alpha that is not finite makes infinite or not a number, is rejected with
+/// <see cref="UnsupportedImageFeatureException"/> before anything is written.
 /// </para>
 /// <para>
 /// By default, the samples are written as <see cref="OpenExrPixelType.Half"/> for

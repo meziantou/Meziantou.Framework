@@ -644,6 +644,132 @@ public sealed class AvifDecoderTests
         }).Build()));
     }
 
+    [Fact]
+    public void TheImagesOfAnImageThatIsBuiltAreCountedOnceForEachUse()
+    {
+        // An overlay of 127 uses of an overlay of 128 uses of one coded image: 1 + 127 x (1 + 128) = 16,384 images, from
+        // three items. One more use of the coded image is one image too many
+        HeifFileBuilder Overlays(bool extraUse)
+        {
+            var builder = new HeifFileBuilder { PrimaryItemId = 1 };
+            var size = builder.AddProperty(HeifFileBuilder.ImageSize(8, 6));
+            var configuration = builder.AddProperty(HeifFileBuilder.Av1Configuration(1, 0, 8, monochrome: false, 0, 0));
+            uint[] inputs = extraUse ? [.. Enumerable.Repeat(2u, 127), 3] : [.. Enumerable.Repeat(2u, 127)];
+            builder.AddItem(1, "iovl", OverlayDescriptor(8, 6, inputs.Length), size);
+            builder.AddItem(2, "iovl", OverlayDescriptor(8, 6, 128), size).IsHidden = true;
+            builder.AddItem(3, "av01", Payload, size, -configuration).IsHidden = true;
+            builder.References.Add(("dimg", 1, inputs));
+            builder.References.Add(("dimg", 2, [.. Enumerable.Repeat(3u, 128)]));
+            return builder;
+        }
+
+        var info = Image.Identify(Overlays(extraUse: false).Build());
+        Assert.Equal((8, 6), (info.Width, info.Height));
+
+        var data = Overlays(extraUse: true).Build();
+        Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(data));
+        Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(data, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan }));
+        Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(data).Dispose());
+    }
+
+    [Fact]
+    public void ATreeThatGrowsExponentiallyFromAFewItemsIsRejectedBeforeItIsExpanded()
+    {
+        // Eight overlays, each of 1,024 uses of the next one, then a coded image: 1,024^8 coded images from nine items
+        var builder = new HeifFileBuilder { PrimaryItemId = 1 };
+        var size = builder.AddProperty(HeifFileBuilder.ImageSize(8, 6));
+        var configuration = builder.AddProperty(HeifFileBuilder.Av1Configuration(1, 0, 8, monochrome: false, 0, 0));
+        for (var id = 1u; id <= 8; id++)
+        {
+            builder.AddItem(id, "iovl", OverlayDescriptor(8, 6, 1024), size).IsHidden = id is not 1;
+            builder.References.Add(("dimg", id, [.. Enumerable.Repeat(id + 1, 1024)]));
+        }
+
+        builder.AddItem(9, "av01", Payload, size, -configuration).IsHidden = true;
+        var data = builder.Build();
+        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(data));
+        Assert.Contains("16384", exception.Message, StringComparison.Ordinal);
+        Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(data).Dispose());
+    }
+
+    [Fact]
+    public void AnImageThatSeveralDerivationsUseIsAsDeepAsItsDeepestUse()
+    {
+        // Item 11 is seven identity derivations of the coded image 20 (items 11 to 17). Under the primary overlay, the
+        // tree has eight derivations; under the overlay 2 too, it has nine, even when the primary overlay used it first
+        HeifFileBuilder Tree(params uint[] inputs)
+        {
+            var builder = new HeifFileBuilder { PrimaryItemId = 1 };
+            var size = builder.AddProperty(HeifFileBuilder.ImageSize(8, 6));
+            var configuration = builder.AddProperty(HeifFileBuilder.Av1Configuration(1, 0, 8, monochrome: false, 0, 0));
+            builder.AddItem(1, "iovl", OverlayDescriptor(8, 6, inputs.Length), size);
+            builder.AddItem(2, "iovl", OverlayDescriptor(8, 6, 1), size).IsHidden = true;
+            builder.References.Add(("dimg", 1, inputs));
+            builder.References.Add(("dimg", 2, [11]));
+            for (var id = 11u; id <= 17; id++)
+            {
+                builder.AddItem(id, "iden", [], size).IsHidden = true;
+                builder.References.Add(("dimg", id, [id is 17 ? 20 : id + 1]));
+            }
+
+            builder.AddItem(20, "av01", Payload, size, -configuration).IsHidden = true;
+            return builder;
+        }
+
+        Assert.Equal(8, Image.Identify(Tree(11, 11).Build()).Width);
+        Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(Tree(2).Build()));
+        Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(Tree(11, 2).Build()));
+    }
+
+    [Fact]
+    public void AnImageThatSeveralDerivationsUseIsRenderedForEachUse()
+    {
+        // An overlay of the same coded image at two places, and of an identity derivation that mirrors it between them
+        using var source = HeifEncoderTestImages.CreateSmoothImage(8, 4, transparent: false);
+        using var stream = new MemoryStream();
+        source.Save(stream, new AvifEncoder { Compression = AvifCompression.Lossy, Effort = 0 });
+        var encoded = stream.ToArray();
+        var builder = HeifFileBuilder.From(encoded);
+        var coded = builder.Items.Single(item => item.Type == "av01");
+        coded.IsHidden = true;
+        var size = builder.AddProperty(HeifFileBuilder.ImageSize(8, 4));
+        var mirror = builder.AddProperty(HeifFileBuilder.Mirror(1));
+        builder.AddItem(100, "iovl", OverlayDescriptor(24, 4, (0, 0), (8, 0), (16, 0)), builder.AddProperty(HeifFileBuilder.ImageSize(24, 4)));
+        builder.AddItem(101, "iden", [], size, -mirror).IsHidden = true;
+        builder.References.Add(("dimg", 100, [coded.Id, 101, coded.Id]));
+        builder.References.Add(("dimg", 101, [coded.Id]));
+        builder.PrimaryItemId = 100;
+
+        using var expected = Image.Load<Rgba32>(encoded);
+        using var image = Image.Load<Rgba32>(builder.Build());
+        Assert.Equal((24, 4), (image.Width, image.Height));
+        for (var y = 0; y < 4; y++)
+        {
+            for (var x = 0; x < 8; x++)
+            {
+                Assert.Equal(expected.Frames[0][x, y], image.Frames[0][x, y]);
+                Assert.Equal(expected.Frames[0][7 - x, y], image.Frames[0][8 + x, y]);
+                Assert.Equal(expected.Frames[0][x, y], image.Frames[0][16 + x, y]);
+            }
+        }
+    }
+
+    // ISO/IEC 23008-12, section 6.6.2.2.2: version 0, 16-bit fields, a transparent fill color, the size of the canvas, then
+    // the offset of each input image
+    private static byte[] OverlayDescriptor(ushort width, ushort height, params (short X, short Y)[] offsets)
+    {
+        var parts = new List<byte[]> { new byte[2], new byte[8], HeifFileBuilder.U16(width), HeifFileBuilder.U16(height) };
+        foreach (var (x, y) in offsets)
+        {
+            parts.Add(HeifFileBuilder.U16(unchecked((ushort)x)));
+            parts.Add(HeifFileBuilder.U16(unchecked((ushort)y)));
+        }
+
+        return HeifFileBuilder.Concat([.. parts]);
+    }
+
+    private static byte[] OverlayDescriptor(ushort width, ushort height, int inputs) => OverlayDescriptor(width, height, [.. Enumerable.Repeat(((short)0, (short)0), inputs)]);
+
     [Theory]
     [InlineData(1)]
     [InlineData(2)]

@@ -9,8 +9,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </summary>
 /// <remarks>
 /// The tree is built when the <c>meta</c> box is read, before any item data: a derivation that refers to itself is not
-/// valid, and a tree deeper than <see cref="MaxDepth"/> is not supported. An item that several derivations use is a
-/// node of each of them: it is decoded once for each use.
+/// valid, and a tree deeper than <see cref="MaxDepth"/>, or of more than <see cref="MaxImages"/> images, is not
+/// supported. An item that several derivations use is one node, an input of each of them: it is built once, and it is
+/// decoded once for each use.
 /// </remarks>
 internal sealed class HeifImageNode
 {
@@ -19,6 +20,17 @@ internal sealed class HeifImageNode
 
     /// <summary>The number of input images of a derivation that are read: a bound on the work that a few bytes can ask for.</summary>
     public const int MaxInputs = 1024;
+
+    /// <summary>
+    /// The number of images of the tree, each counted once for each of its uses: a bound on the work that a few bytes can
+    /// ask for, since a few items that use each other several times describe a tree that grows exponentially with its depth.
+    /// </summary>
+    public const int MaxImages = 16_384;
+
+    // The number of derivations from the image to its deepest coded image (0 for a coded image), and the number of images
+    // of its tree, each counted once for each use
+    private int _height;
+    private int _imageCount = 1;
 
     private HeifImageNode(HeifImageNodeKind kind, HeifCodedImage image, HeifImageNode[] inputs)
     {
@@ -142,16 +154,30 @@ internal sealed class HeifImageNode
     /// <exception cref="InvalidImageContentException">The description of the image is inconsistent.</exception>
     /// <exception cref="UnsupportedImageFeatureException">The image uses a feature that is not supported.</exception>
     /// <exception cref="ImageResourceLimitException">The image exceeds a resource limit.</exception>
-    public static HeifImageNode Create(HeifCodecBinding binding, HeifMetaBox meta, ReadOnlySpan<byte> payload, HeifItem item, ImageResourceLimits limits) => Create(binding, meta, payload, item, limits, []);
+    /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> is canceled.</exception>
+    public static HeifImageNode Create(HeifCodecBinding binding, HeifMetaBox meta, ReadOnlySpan<byte> payload, HeifItem item, ImageResourceLimits limits, CancellationToken cancellationToken)
+        => Create(binding, meta, payload, item, new TreeBuilder(limits, cancellationToken));
 
-    private static HeifImageNode Create(HeifCodecBinding binding, HeifMetaBox meta, ReadOnlySpan<byte> payload, HeifItem item, ImageResourceLimits limits, List<HeifItem> ancestors)
+    private static HeifImageNode Create(HeifCodecBinding binding, HeifMetaBox meta, ReadOnlySpan<byte> payload, HeifItem item, TreeBuilder builder)
     {
+        var ancestors = builder.Ancestors;
         foreach (var ancestor in ancestors)
         {
             if (ReferenceEquals(ancestor, item))
                 throw binding.Invalid("a derived image is derived from itself.");
         }
 
+        // A node that is used again is the same image: only its depth under this use is new
+        if (builder.Nodes.TryGetValue(item, out var existing))
+        {
+            if (ancestors.Count + existing._height > MaxDepth)
+                throw binding.Unsupported($"The {binding.Name} image is derived through more than {MaxDepth} derivations.", "derivation depth");
+
+            return existing;
+        }
+
+        builder.CancellationToken.ThrowIfCancellationRequested();
+        var limits = builder.Limits;
         HeifImageNode node;
         if (binding.IsCodedItemType(item.Type) || (item.Type is HeifFormat.Grid && IsCodedGrid(binding, meta, item)))
         {
@@ -177,17 +203,31 @@ internal sealed class HeifImageNode
             // derivation allocates nothing of its own
             var image = HeifCodedImage.CreateDerivation(binding, meta, payload, item, limits, enforceLimits: item.Type is not HeifFormat.Iden);
             var inputs = new HeifImageNode[reference.ToItemIds.Length];
+            var height = 0;
+            var imageCount = 1;
             ancestors.Add(item);
             for (var i = 0; i < inputs.Length; i++)
             {
                 if (!meta.Items.TryGetValue(reference.ToItemIds[i], out var input) || input.Type is 0)
                     throw binding.Invalid("the input image of a derived image does not exist.");
 
-                inputs[i] = Create(binding, meta, payload, input, limits, ancestors);
+                var inputNode = Create(binding, meta, payload, input, builder);
+
+                // Every input counts its whole tree, whether it is used elsewhere or not: it is rendered for each use
+                imageCount += inputNode._imageCount;
+                if (imageCount > MaxImages)
+                    throw binding.Unsupported($"The {binding.Name} image is built from more than {MaxImages} images.", "derived image count");
+
+                height = Math.Max(height, inputNode._height);
+                inputs[i] = inputNode;
             }
 
             ancestors.RemoveAt(ancestors.Count - 1);
-            node = new HeifImageNode(item.Type switch { HeifFormat.Iden => HeifImageNodeKind.Identity, HeifFormat.Grid => HeifImageNodeKind.Grid, _ => HeifImageNodeKind.Overlay }, image, inputs);
+            node = new HeifImageNode(item.Type switch { HeifFormat.Iden => HeifImageNodeKind.Identity, HeifFormat.Grid => HeifImageNodeKind.Grid, _ => HeifImageNodeKind.Overlay }, image, inputs)
+            {
+                _height = height + 1,
+                _imageCount = imageCount,
+            };
 
             // The alpha plane of an image that is built is the one of its inputs: an auxiliary image of the derivation
             // would have to be built the same way
@@ -216,43 +256,43 @@ internal sealed class HeifImageNode
             }
         }
 
+        builder.Nodes.Add(item, node);
         return node;
     }
 
-    /// <summary>Visits the coded images of the tree, in the order they are rendered.</summary>
+    /// <summary>Visits the coded images of the tree once each, in the order they are first rendered.</summary>
     public void ForEachCoded(Action<HeifImageNode> action)
     {
-        if (Kind is HeifImageNodeKind.Coded)
+        ForEach(node =>
         {
-            action(this);
-            return;
-        }
-
-        foreach (var input in Inputs)
-        {
-            input.ForEachCoded(action);
-        }
+            if (node.Kind is HeifImageNodeKind.Coded)
+                action(node);
+        });
     }
 
-    /// <summary>Visits the images of the tree: an image, then its input images.</summary>
-    public void ForEach(Action<HeifImageNode> action)
-    {
-        action(this);
-        foreach (var input in Inputs)
-        {
-            input.ForEach(action);
-        }
-    }
+    /// <summary>Visits the images of the tree once each: an image, then its input images that were not visited yet.</summary>
+    public void ForEach(Action<HeifImageNode> action) => Visit(this, action, new HashSet<HeifImageNode>(ReferenceEqualityComparer.Instance));
 
-    /// <summary>Visits the derivations of the tree whose item has data: the grids and the overlays.</summary>
+    /// <summary>Visits the derivations of the tree whose item has data once each: the grids and the overlays.</summary>
     public void ForEachDescriptor(Action<HeifImageNode> action)
     {
-        if (Kind is HeifImageNodeKind.Grid or HeifImageNodeKind.Overlay)
-            action(this);
-
-        foreach (var input in Inputs)
+        ForEach(node =>
         {
-            input.ForEachDescriptor(action);
+            if (node.Kind is HeifImageNodeKind.Grid or HeifImageNodeKind.Overlay)
+                action(node);
+        });
+    }
+
+    // A node that was visited was visited with all its inputs
+    private static void Visit(HeifImageNode node, Action<HeifImageNode> action, HashSet<HeifImageNode> visited)
+    {
+        if (!visited.Add(node))
+            return;
+
+        action(node);
+        foreach (var input in node.Inputs)
+        {
+            Visit(input, action, visited);
         }
     }
 
@@ -323,6 +363,19 @@ internal sealed class HeifImageNode
 
             IsPremultiplied = true;
         }
+    }
+
+    // The state of the construction of a tree: the derivations from the image to the item being built, and the node of
+    // each item that was built
+    private sealed class TreeBuilder(ImageResourceLimits limits, CancellationToken cancellationToken)
+    {
+        public ImageResourceLimits Limits { get; } = limits;
+
+        public CancellationToken CancellationToken { get; } = cancellationToken;
+
+        public List<HeifItem> Ancestors { get; } = [];
+
+        public Dictionary<HeifItem, HeifImageNode> Nodes { get; } = new(ReferenceEqualityComparer.Instance);
     }
 
     // The transformative properties apply in the order of their association, each to the image that the previous ones give

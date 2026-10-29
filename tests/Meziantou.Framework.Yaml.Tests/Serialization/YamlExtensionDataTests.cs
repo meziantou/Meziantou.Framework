@@ -8,10 +8,13 @@ public sealed class YamlExtensionDataTests
     [Fact]
     public void ReadmeExample_ExtensionData()
     {
+        #region YamlExtensionDataAttribute_Deserialize
         var product = YamlSerializer.Deserialize<Product>("Id: 1\nColor: red\n");
 
         Assert.Equal(1, product!.Id);
         Assert.Equal("red", product.Extra!["Color"]);
+        Assert.Equal("Id: 1\nColor: red\n", YamlSerializer.Serialize(product)); // written back
+        #endregion
     }
 
     #region YamlExtensionDataAttribute_Usage

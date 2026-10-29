@@ -466,4 +466,29 @@ public class EmitterTests : YamlTest
         reloaded = YamlStream.Load(new StringReader(output));
         return output;
     }
+
+    [Fact]
+    public void Documentation_EmitEvents()
+    {
+        #region Emitter_Usage
+        using var writer = new StringWriter { NewLine = "\n" };
+        var emitter = new Emitter(writer);
+
+        emitter.Emit(new StreamStart());
+        emitter.Emit(new DocumentStart());
+        emitter.Emit(new MappingStart());
+        emitter.Emit(new Scalar("name"));
+        emitter.Emit(new Scalar("api"));
+        emitter.Emit(new Scalar("ports"));
+        emitter.Emit(new SequenceStart(anchor: null, tag: null, isImplicit: true, YamlStyle.Flow));
+        emitter.Emit(new Scalar("80"));
+        emitter.Emit(new Scalar("443"));
+        emitter.Emit(new SequenceEnd());
+        emitter.Emit(new MappingEnd());
+        emitter.Emit(new DocumentEnd(isImplicit: true));
+        emitter.Emit(new StreamEnd());
+
+        Assert.Equal("name: api\nports: [80, 443]\n", writer.ToString());
+        #endregion
+    }
 }

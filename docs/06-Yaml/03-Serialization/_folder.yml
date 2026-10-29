@@ -1,0 +1,2 @@
+title: Serialization
+description: Convert .NET objects to YAML and back, and control the names, the output format, polymorphism and references.

@@ -42,6 +42,115 @@ public class YamlNodeTest
     }
 
     [Fact]
+    public void Documentation_MultipleDocuments()
+    {
+        #region YamlStream_MultipleDocuments
+        var stream = YamlStream.Load(new StringReader("""
+            name: first
+            ---
+            name: second
+            """));
+
+        var names = new List<string>();
+        foreach (var document in stream)
+        {
+            var root = (YamlMapping)document.Contents!;
+            names.Add(((YamlValue)root["name"]!).Value);
+        }
+
+        Assert.Equal(["first", "second"], names);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Navigate()
+    {
+        #region YamlMapping_Navigate
+        var stream = YamlStream.Load(new StringReader("""
+            services:
+              web:
+                image: nginx
+                ports: [80, 443]
+              cache:
+                image: redis
+            """));
+
+        var services = (YamlMapping)((YamlMapping)stream[0].Contents!)["services"]!;
+
+        var images = new List<string>();
+        foreach (var (name, service) in services)
+        {
+            var image = ((YamlMapping)service!)["image"] as YamlValue;
+            images.Add($"{((YamlValue)name).Value}={image?.Value}");
+        }
+
+        Assert.Equal(["web=nginx", "cache=redis"], images);
+
+        var web = (YamlMapping)services["web"]!;
+        Assert.True(web.TryGetValue("ports", out var ports));
+        Assert.Equal(YamlStyle.Flow, ((YamlSequence)ports).Style);
+        Assert.Equal(["80", "443"], ((YamlSequence)ports).Select(port => ((YamlValue)port).Value));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Edit()
+    {
+        #region YamlMapping_Edit
+        var stream = YamlStream.Load(new StringReader("""
+            name: api
+            replicas: 2
+            ports:
+              - 80
+            """));
+
+        var root = (YamlMapping)stream[0].Contents!;
+        root["replicas"] = new YamlValue(3);
+        ((YamlSequence)root["ports"]!).Add(new YamlValue(443));
+        root.Remove("name");
+        root["image"] = new YamlValue("nginx");
+
+        using var writer = new StringWriter { NewLine = "\n" };
+        stream.WriteTo(writer);
+        Assert.Equal("""
+            replicas: 3
+            ports:
+              - 80
+              - 443
+            image: nginx
+
+            """, writer.ToString());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Create()
+    {
+        #region YamlMapping_Create
+        var ports = new YamlSequence { new YamlValue(80), new YamlValue(443) };
+        ports.Style = YamlStyle.Flow;
+
+        var root = new YamlMapping
+        {
+            { new YamlValue("name"), new YamlValue("api") },
+            { new YamlValue("ports"), ports },
+            { new YamlValue("debug"), new YamlValue(false) },
+        };
+
+        var stream = new YamlStream { new YamlDocument { Contents = root } };
+
+        using var writer = new StringWriter { NewLine = "\n" };
+        stream.WriteTo(writer);
+        Assert.Equal("""
+            name: api
+            ports: [80, 443]
+            debug: false
+
+            """, writer.ToString());
+        #endregion
+    }
+
+    [Fact]
     public void ReadYamlReference()
     {
         using var file = Utils.GetResourceStream("YamlReferenceCard.yaml");

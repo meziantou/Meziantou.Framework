@@ -30,6 +30,76 @@ public sealed class TorrentFileTests
         Assert.Equal(content, output.ToArray());
     }
 
+    [SuppressMessage("Security", "CA5350:Do Not Use Weak Cryptographic Algorithms", Justification = "BitTorrent v1 piece hashes are SHA-1.")]
+    [Fact]
+    public void Documentation_CreateTorrent()
+    {
+        #region TorrentFile_Create
+        var content = new byte[40_000]; // The file to share, such as File.ReadAllBytes("video.mp4")
+        var pieceLength = 16 * 1024;
+
+        // Each piece of the content is identified by its SHA-1 hash
+        var pieces = new List<byte>();
+        for (var offset = 0; offset < content.Length; offset += pieceLength)
+        {
+            var piece = content.AsSpan(offset, Math.Min(pieceLength, content.Length - offset));
+            pieces.AddRange(SHA1.HashData(piece));
+        }
+
+        var torrent = new TorrentFile
+        {
+            Announce = "https://tracker.example.com/announce",
+            CreatedBy = "MyApp",
+            CreationDate = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
+            Info = new TorrentInfo
+            {
+                Name = "video.mp4",
+                PieceLength = pieceLength,
+                Pieces = pieces.ToArray(),
+                Length = content.Length,
+            },
+        };
+
+        // Or WriteToAsync to save it, such as to File.Create("video.torrent")
+        var data = torrent.ToUtf8ByteArray();
+
+        var parsed = TorrentFile.Parse(data);
+        Assert.Equal("video.mp4", parsed.Info.Name);
+        Assert.Equal(torrent.GetInfoHashSha1(), parsed.GetInfoHashSha1());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_MultiFileTorrent()
+    {
+        #region TorrentFile_MultiFile
+        var data = "d4:infod5:filesld6:lengthi100e4:pathl6:images5:a.pngeed6:lengthi50e4:pathl9:readme.mdeee4:name7:project12:piece lengthi16384e6:pieces20:01234567890123456789ee"u8;
+        var torrent = TorrentFile.Parse(data);
+
+        // A torrent has either a Length (one file) or Files (a folder named Info.Name)
+        Assert.Null(torrent.Info.Length);
+        Assert.NotNull(torrent.Info.Files);
+
+        var files = torrent.Info.Files.Select(file => $"{torrent.Info.Name}/{string.Join('/', file.Path)} ({file.Length} bytes)");
+        Assert.Equal(["project/images/a.png (100 bytes)", "project/readme.md (50 bytes)"], files);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_TryParse()
+    {
+        #region TorrentFile_TryParse
+        // Not bencode
+        Assert.False(TorrentFile.TryParse("not a torrent"u8, out _));
+
+        // The 'info' dictionary has no 'piece length' and no 'pieces'
+        Assert.False(TorrentFile.TryParse("d4:infod6:lengthi1e4:name1:xee"u8, out _));
+
+        // A path segment that would leave the download folder
+        Assert.False(TorrentFile.TryParse("d4:infod5:filesld6:lengthi1e4:pathl2:..6:passwdeee4:name4:test12:piece lengthi16384e6:pieces20:01234567890123456789ee"u8, out _));
+        #endregion
+    }
+
     [Fact]
     public void Parse_SingleFileTorrent()
     {

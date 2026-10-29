@@ -91,6 +91,47 @@ public class CsvWriterTests
         #endregion
     }
 
+#pragma warning disable xUnit1051 // The documentation examples do not pass the test cancellation token
+    [Fact]
+    public async Task Documentation_WriteFile()
+    {
+        try
+        {
+            #region CsvWriter_WriteFile
+            await using (var writer = new StreamWriter("export.csv"))
+            {
+                var csvWriter = new CsvWriter(writer);
+                await csvWriter.WriteRowAsync("Name", "Age");
+                await csvWriter.WriteRowAsync("Alice", "30");
+            } // Disposing the StreamWriter flushes the data to the file
+
+            var content = await File.ReadAllTextAsync("export.csv");
+            Assert.Equal($"Name,Age{Environment.NewLine}Alice,30", content);
+            #endregion
+        }
+        finally
+        {
+            File.Delete("export.csv");
+        }
+    }
+#pragma warning restore xUnit1051
+
+    [Fact]
+    public async Task Documentation_Quoting()
+    {
+        #region CsvWriter_Quoting
+        using var writer = new StringWriter();
+        var csvWriter = new CsvWriter(writer) { EndOfLine = "\n" };
+
+        await csvWriter.WriteRowAsync("plain", "with,comma", "with \"quotes\"", "two\nlines", null, "");
+
+        Assert.Equal(""""
+            plain,"with,comma","with ""quotes""","two
+            lines",,
+            """", writer.ToString(), ignoreLineEndingDifferences: true);
+        #endregion
+    }
+
     [Fact]
     public async Task CsvWriterAsync_NoEscape()
     {

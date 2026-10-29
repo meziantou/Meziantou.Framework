@@ -47,6 +47,178 @@ public sealed class QueryBuilderTests
     }
 
     [Fact]
+    public void Documentation_GettingStarted()
+    {
+        #region QueryBuilder_GettingStarted
+        var queryBuilder = new QueryBuilder<Issue>();
+        queryBuilder.AddHandler("author", (issue, value) => issue.Author.Equals(value, StringComparison.OrdinalIgnoreCase));
+        queryBuilder.AddHandler("is", "open", issue => issue.IsOpen);
+        queryBuilder.AddHandler("is", "closed", issue => !issue.IsOpen);
+        queryBuilder.AddRangeHandler<int>("comments", (issue, range) => range.IsInRange(issue.Comments));
+        queryBuilder.SetTextFilterHandler((issue, text) => issue.Title.Contains(text, StringComparison.OrdinalIgnoreCase));
+
+        var issues = new[]
+        {
+            new Issue("Crash on startup", "alice", IsOpen: true, Comments: 5, new DateTime(2026, 1, 10)),
+            new Issue("Crash when saving", "bob", IsOpen: true, Comments: 0, new DateTime(2026, 2, 3)),
+            new Issue("Typo in the readme", "alice", IsOpen: false, Comments: 1, new DateTime(2026, 3, 15)),
+        };
+
+        var query = queryBuilder.Build("is:open author:alice crash");
+        Assert.Equal(["Crash on startup"], issues.Where(query.Evaluate).Select(issue => issue.Title));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Syntax()
+    {
+        #region QueryBuilder_Syntax
+        var queryBuilder = new QueryBuilder<Issue>();
+        queryBuilder.AddHandler("author", (issue, value) => issue.Author.Equals(value, StringComparison.OrdinalIgnoreCase));
+        queryBuilder.AddHandler("is", "open", issue => issue.IsOpen);
+        queryBuilder.AddHandler("is", "closed", issue => !issue.IsOpen);
+        queryBuilder.AddRangeHandler<int>("comments", (issue, range) => range.IsInRange(issue.Comments));
+        queryBuilder.AddRangeHandler<DateTime>("created", (issue, range) => range.IsInRange(issue.CreatedAt));
+        queryBuilder.SetTextFilterHandler((issue, text) => issue.Title.Contains(text, StringComparison.OrdinalIgnoreCase));
+
+        var issues = new[]
+        {
+            new Issue("Crash on startup", "alice", IsOpen: true, Comments: 5, new DateTime(2026, 1, 10)),
+            new Issue("Crash when saving", "bob", IsOpen: true, Comments: 0, new DateTime(2026, 2, 3)),
+            new Issue("Typo in the readme", "alice", IsOpen: false, Comments: 1, new DateTime(2026, 3, 15)),
+        };
+
+        string[] Search(string query) => [.. issues.Where(queryBuilder.Build(query).Evaluate).Select(issue => issue.Title)];
+
+        // Key-value terms
+        Assert.Equal(["Crash on startup", "Typo in the readme"], Search("author:alice"));
+        Assert.Equal(["Crash on startup", "Typo in the readme"], Search("Author=ALICE"));
+        Assert.Equal(["Crash when saving"], Search("author<>alice"));
+
+        // Free text, and quotes for text with spaces
+        Assert.Equal(["Crash on startup", "Crash when saving"], Search("crash"));
+        Assert.Equal(["Crash when saving"], Search("\"when saving\""));
+
+        // Terms separated by spaces must all match
+        Assert.Equal(["Crash when saving"], Search("crash author:bob"));
+
+        // NOT, -, OR and parentheses
+        Assert.Equal(["Crash when saving"], Search("NOT author:alice"));
+        Assert.Equal(["Crash when saving"], Search("-author:alice"));
+        Assert.Equal(["Crash when saving", "Typo in the readme"], Search("author:bob OR is:closed"));
+        Assert.Equal(["Crash on startup"], Search("is:open AND (author:alice OR comments>3)"));
+
+        // AND binds tighter than OR: this is author:bob OR (is:closed AND comments:0)
+        Assert.Equal(["Crash when saving"], Search("author:bob OR is:closed AND comments:0"));
+
+        // Comparisons and ranges, bounds included
+        Assert.Equal(["Crash on startup", "Typo in the readme"], Search("comments>=1"));
+        Assert.Equal(["Crash on startup", "Typo in the readme"], Search("comments:1..5"));
+        Assert.Equal(["Crash when saving", "Typo in the readme"], Search("comments:*..1"));
+        Assert.Equal(["Crash when saving", "Typo in the readme"], Search("created:2026-02-01..2026-03-31"));
+        Assert.Equal(["Crash on startup"], Search("created<2026-02-01"));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_RelativeDates()
+    {
+        #region QueryBuilder_RelativeDates
+        // Wednesday, March 18, 2026
+        var timeProvider = new FakeTimeProvider(new DateTimeOffset(2026, 3, 18, 10, 0, 0, TimeSpan.Zero));
+        var queryBuilder = new QueryBuilder<Issue>(timeProvider);
+        queryBuilder.AddRangeHandler<DateTime>("created", (issue, range) => range.IsInRange(issue.CreatedAt));
+
+        var issues = new[]
+        {
+            new Issue("Monday", "alice", IsOpen: true, Comments: 0, new DateTime(2026, 3, 16, 9, 0, 0, DateTimeKind.Utc)),
+            new Issue("March 1", "alice", IsOpen: true, Comments: 0, new DateTime(2026, 3, 1, 9, 0, 0, DateTimeKind.Utc)),
+            new Issue("February 20", "alice", IsOpen: true, Comments: 0, new DateTime(2026, 2, 20, 9, 0, 0, DateTimeKind.Utc)),
+            new Issue("New Year's Eve", "alice", IsOpen: true, Comments: 0, new DateTime(2025, 12, 31, 9, 0, 0, DateTimeKind.Utc)),
+        };
+
+        string[] Search(string query) => [.. issues.Where(queryBuilder.Build(query).Evaluate).Select(issue => issue.Title)];
+
+        // Weeks start on Monday
+        Assert.Equal(["Monday"], Search("created:this_week"));
+        Assert.Equal(["Monday", "March 1"], Search("created:\"this month\""));
+        Assert.Equal(["February 20"], Search("created:last_month"));
+        Assert.Equal(["New Year's Eve"], Search("created:last_year"));
+
+        // @today is the start of the current day in UTC
+        Assert.Equal(["Monday"], Search("created>=@today-1w"));
+        Assert.Equal(["March 1", "February 20"], Search("created:@today-4w..@today-2w"));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_CustomParser()
+    {
+        #region QueryBuilder_CustomParser
+        var queryBuilder = new QueryBuilder<Issue>();
+        queryBuilder.AddRangeHandler<int>(
+            "comments",
+            (issue, range) => range.IsInRange(issue.Comments),
+            (string value, out int result) =>
+            {
+                if (value.Equals("none", StringComparison.OrdinalIgnoreCase))
+                {
+                    result = 0;
+                    return true;
+                }
+
+                return int.TryParse(value, CultureInfo.InvariantCulture, out result);
+            });
+
+        var issue = new Issue("Crash when saving", "bob", IsOpen: true, Comments: 0, new DateTime(2026, 2, 3));
+        Assert.True(queryBuilder.Build("comments:none").Evaluate(issue));
+        Assert.True(queryBuilder.Build("comments:none..2").Evaluate(issue));
+        Assert.False(queryBuilder.Build("comments>none").Evaluate(issue));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_UnhandledProperty()
+    {
+        #region QueryBuilder_UnhandledProperty
+        var queryBuilder = new QueryBuilder<Issue>();
+        queryBuilder.SetTextFilterHandler((issue, text) => issue.Title.Contains(text, StringComparison.OrdinalIgnoreCase));
+
+        var item = new Issue("Support label:bug in the search", "alice", IsOpen: true, Comments: 0, new DateTime(2026, 1, 10));
+
+        // A key without a handler is searched as free text
+        Assert.True(queryBuilder.Build("label:bug").Evaluate(item));
+
+        // Unless an unhandled property handler decides
+        queryBuilder.SetUnhandledPropertyHandler((issue, propertyName, op, value) => false);
+        Assert.False(queryBuilder.Build("label:bug").Evaluate(item));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_UntrustedInput()
+    {
+        #region QueryBuilder_UntrustedInput
+        var queryBuilder = new QueryBuilder<Issue>();
+        queryBuilder.SetTextFilterHandler((issue, text) => issue.Title.Contains(text, StringComparison.OrdinalIgnoreCase));
+
+        var userInput = new string('(', 100_000) + "crash";
+
+        Query<Issue>? query;
+        try
+        {
+            query = queryBuilder.Build(userInput);
+        }
+        catch (QueryTooComplexException)
+        {
+            query = null; // Tell the user to simplify the query
+        }
+
+        Assert.Null(query);
+        #endregion
+    }
+
+    [Fact]
     public void FieldEquals_Byte()
     {
         var queryBuilder = new QueryBuilder<Sample>();
@@ -1537,5 +1709,9 @@ public sealed class QueryBuilderTests
 #pragma warning disable MA0048 // File name must match type name
 #region QueryBuilder_Person
 internal sealed record Person(string FullName, DateTime DateOfBirth);
+#endregion
+
+#region QueryBuilder_Issue
+internal sealed record Issue(string Title, string Author, bool IsOpen, int Comments, DateTime CreatedAt);
 #endregion
 #pragma warning restore MA0048

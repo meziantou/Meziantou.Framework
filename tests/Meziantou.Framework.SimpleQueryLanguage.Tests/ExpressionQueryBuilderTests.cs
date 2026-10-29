@@ -5,6 +5,48 @@ namespace Meziantou.Framework.SimpleQueryLanguage.Tests;
 public sealed class ExpressionQueryBuilderTests
 {
     [Fact]
+    public void Documentation_CustomHandler()
+    {
+        #region ExpressionQueryBuilder_CustomHandler
+        var queryBuilder = new ExpressionQueryBuilder<Customer>();
+        queryBuilder.AddHandler("is", value => value.Equals("adult", StringComparison.OrdinalIgnoreCase)
+            ? customer => customer.Age >= 18
+            : customer => false);
+
+        var customers = new[]
+        {
+            new Customer("John Doe", "john@example.com", 30, new DateTime(2024, 1, 1)),
+            new Customer("Johnny Smith", "johnny@example.com", 16, new DateTime(2024, 1, 1)),
+        };
+
+        var query = queryBuilder.Build("is:adult");
+        Assert.Equal(["John Doe"], query.Apply(customers.AsQueryable()).Select(customer => customer.FullName));
+
+        // <> negates the handler of ':'
+        query = queryBuilder.Build("is<>adult");
+        Assert.Equal(["Johnny Smith"], query.Apply(customers.AsQueryable()).Select(customer => customer.FullName));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Predicate()
+    {
+        #region ExpressionQuery_Predicate
+        var queryBuilder = new ExpressionQueryBuilder<Customer>();
+        queryBuilder.AddHandler<int>("age", customer => customer.Age);
+
+        // An empty query has no predicate: Apply returns the source unchanged
+        Assert.Null(queryBuilder.Build("").Predicate);
+
+        var predicate = queryBuilder.Build("age:18..65").Predicate;
+        Assert.NotNull(predicate);
+
+        var isWorkingAge = predicate.Compile();
+        Assert.True(isWorkingAge(new Customer("John Doe", "john@example.com", 30, new DateTime(2024, 1, 1))));
+        #endregion
+    }
+
+    [Fact]
     public void ReadmeExample_Usage()
     {
         #region ExpressionQueryBuilder_Usage

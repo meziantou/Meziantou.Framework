@@ -1,0 +1,2 @@
+title: SimpleQueryLanguage
+description: Turn search-box queries such as "author:alice AND comments>=2" into filters for in-memory objects or Entity Framework Core queries.

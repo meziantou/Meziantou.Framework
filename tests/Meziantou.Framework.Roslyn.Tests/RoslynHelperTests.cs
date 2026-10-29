@@ -103,6 +103,64 @@ public sealed class RoslynHelperTests
     }
 
     [Fact]
+    public void Documentation_HasAttribute()
+    {
+        #region Roslyn_HasAttribute
+        var compilation = CSharpCompilation.Create(
+            "Sample",
+            [CSharpSyntaxTree.ParseText("""
+                public class TagAttribute : System.Attribute { }
+                public sealed class ImportantTagAttribute : TagAttribute { }
+
+                [ImportantTag]
+                public class Sample { }
+                """)],
+            [MetadataReference.CreateFromFile(typeof(object).Assembly.Location)]);
+        var tagAttribute = compilation.GetTypeByMetadataName("TagAttribute");
+        var type = compilation.GetTypeByMetadataName("Sample")!;
+
+        // By default, an attribute that derives from TagAttribute matches too
+        Assert.True(type.HasAttribute(tagAttribute));
+        Assert.False(type.HasAttribute(tagAttribute, inherits: false));
+        Assert.Equal("ImportantTagAttribute", type.GetFirstAttribute(tagAttribute)?.AttributeClass?.Name);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_TryGetConstantValue()
+    {
+        #region Roslyn_TryGetConstantValue
+        var syntaxTree = CSharpSyntaxTree.ParseText("""
+            public class Sample
+            {
+                private readonly object _field = 3;
+
+                public void M()
+                {
+                    var value = 41;
+                    value = 42;
+                    object fromLocal = value;
+                    object fromField = _field;
+                }
+            }
+            """);
+        var compilation = CSharpCompilation.Create("Sample", [syntaxTree], [MetadataReference.CreateFromFile(typeof(object).Assembly.Location)]);
+        var semanticModel = compilation.GetSemanticModel(syntaxTree);
+        var initializers = syntaxTree.GetRoot().DescendantNodes().OfType<VariableDeclaratorSyntax>()
+            .ToDictionary(declarator => declarator.Identifier.ValueText, declarator => semanticModel.GetOperation(declarator.Initializer!.Value)!, StringComparer.Ordinal);
+
+        // "value" is a local whose last assignment before the read is 42
+        Assert.True(initializers["fromLocal"].TryGetConstantValue(out var localValue, CancellationToken.None));
+        Assert.Equal(42, localValue);
+        Assert.Equal(SpecialType.System_Int32, initializers["fromLocal"].GetActualType(CancellationToken.None)?.SpecialType);
+
+        // "_field" is a readonly field initialized to 3
+        Assert.True(initializers["fromField"].TryGetConstantValue(out var fieldValue, CancellationToken.None));
+        Assert.Equal(3, fieldValue);
+        #endregion
+    }
+
+    [Fact]
     public async Task ReadmeExample_CanReportDiagnostic()
     {
         var compilation = CreateCompilation("public class Sample;").AddSyntaxTrees(CSharpSyntaxTree.ParseText("public class GeneratedSample;", DefaultParseOptions, path: "GeneratedSample.g.cs"));

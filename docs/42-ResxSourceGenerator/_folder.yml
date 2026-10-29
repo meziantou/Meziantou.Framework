@@ -1,0 +1,2 @@
+title: ResxSourceGenerator
+description: Generate strongly-typed accessors for .resx files, with format methods for the strings that have placeholders.

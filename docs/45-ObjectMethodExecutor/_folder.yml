@@ -1,0 +1,2 @@
+title: ObjectMethodExecutor
+description: Invoke synchronous and asynchronous methods from their MethodInfo, and await any awaitable result.

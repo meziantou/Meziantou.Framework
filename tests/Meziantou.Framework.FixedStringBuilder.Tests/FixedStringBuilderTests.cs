@@ -30,11 +30,81 @@ public sealed partial class FixedStringBuilderTests
     }
 
     [Fact]
+    public void Documentation_Capacity()
+    {
+        #region FixedStringBuilder_Capacity
+        FixedStringBuilder8 code = "ABC";
+        Assert.Equal(3, code.Length);
+        Assert.Equal(8, FixedStringBuilder8.MaxLength);
+
+        // 9 characters do not fit in a FixedStringBuilder8
+        Assert.Throws<ArgumentException>(() => new FixedStringBuilder8("ABCDEFGHI"));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Formatting()
+    {
+#pragma warning disable MA0011 // The example calls ToString() without a format provider, as most callers do
+        #region FixedStringBuilder_Formatting
+        var quantity = 42;
+        FixedStringBuilder32 line = $"[{quantity:D5}] [{"A",3}] [{"B",-3}]";
+        Assert.Equal("[00042] [  A] [B  ]", line.ToString());
+        #endregion
+#pragma warning restore MA0011
+    }
+
+    [Fact]
+    public void Documentation_Equality()
+    {
+        #region FixedStringBuilder_Equality
+        FixedStringBuilder16 first = "Hello";
+        FixedStringBuilder16 second = "HELLO";
+
+        Assert.False(first == second);
+        Assert.True(first.Equals(second, StringComparison.OrdinalIgnoreCase));
+        Assert.True(first == "Hello"); // The string is converted to a FixedStringBuilder16
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_AsSpan()
+    {
+        #region FixedStringBuilder_AsSpan
+        FixedStringBuilder16 value = "Hello World";
+        ReadOnlySpan<char> span = value.AsSpan();
+
+        Assert.HasCount(11, span);
+        Assert.True(span.StartsWith("Hello", StringComparison.Ordinal));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_GenericCode()
+    {
+        #region FixedStringBuilder_GenericCode
+        Assert.Equal(8, GetMaxLength<FixedStringBuilder8>());
+        Assert.Equal(64, GetMaxLength<FixedStringBuilder64>());
+
+        var value = Create<FixedStringBuilder16>("Hello");
+        Assert.Equal(5, value.Length);
+
+        static int GetMaxLength<T>() where T : IFixedString => T.MaxLength;
+        static T Create<T>(string value) where T : IFixedString<T> => value;
+        #endregion
+    }
+
+    [Fact]
     public void ReadmeExample_CustomType()
     {
+        #region FixedStringBuilder_CustomTypeUsage
         FixedStringBuilder128 value = $"{new string('a', 100)}";
         Assert.Equal(100, value.Length);
+        Assert.Equal(128, FixedStringBuilder128.MaxLength);
+
+        // 129 characters do not fit
         Assert.Throws<ArgumentException>(() => value.AppendLiteral(new string('b', 29)));
+        #endregion
 
         FixedStringBuilder10 small = "0123456789";
         Assert.Equal("0123456789", small.ToString(null, null));

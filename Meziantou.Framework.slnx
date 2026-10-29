@@ -41,6 +41,7 @@
     <Project Path="samples/Meziantou.Framework.PostgreSqlServer.Samples/Meziantou.Framework.PostgreSqlServer.Samples.csproj" />
     <Project Path="samples/Meziantou.Framework.ProcessWrapper.Samples/Meziantou.Framework.ProcessWrapper.Samples.csproj" />
     <Project Path="samples/Meziantou.Framework.PublicApiGenerator.Samples/Meziantou.Framework.PublicApiGenerator.Samples.csproj" />
+    <Project Path="samples/Meziantou.Framework.Roslyn.Samples/Meziantou.Framework.Roslyn.Samples.csproj" />
     <Project Path="samples/Meziantou.Framework.Scheduling.RecurrenceRuleSample/Meziantou.Framework.Scheduling.RecurrenceRuleSample.csproj" />
     <Project Path="samples/Meziantou.Framework.SnapshotTesting.Samples/Meziantou.Framework.SnapshotTesting.Samples.csproj" />
     <Project Path="samples/Meziantou.Framework.StronglyTypedId.AssemblyDefaults.Samples/Meziantou.Framework.StronglyTypedId.AssemblyDefaults.Samples.csproj" />

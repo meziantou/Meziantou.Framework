@@ -15,6 +15,18 @@ public sealed class FastEnumInterceptorTests
         return method.Invoke(obj: null, parameters: arguments);
     }
 
+    [Fact]
+    public void Documentation_InterceptedCalls()
+    {
+        #region FastEnum_InterceptedCalls
+        // Plain System.Enum calls: with interceptors enabled, they run the generated code
+        Assert.Equal("Bravo", InterceptedColor.Bravo.ToString());
+        Assert.Equal("Alpha", Enum.GetName(InterceptedColor.Alpha));
+        Assert.True(Enum.IsDefined(InterceptedColor.Charlie));
+        Assert.Equal(["Alpha", "Bravo", "Charlie"], Enum.GetNames<InterceptedColor>());
+        #endregion
+    }
+
     [Theory]
     [InlineData(InterceptedColor.Alpha)]
     [InlineData(InterceptedColor.Charlie)]

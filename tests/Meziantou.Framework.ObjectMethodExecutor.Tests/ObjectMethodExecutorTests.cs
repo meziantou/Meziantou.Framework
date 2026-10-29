@@ -71,6 +71,31 @@ public sealed class ObjectMethodExecutorTests
     }
 
     [Fact]
+    public async Task Documentation_KnownReturnType()
+    {
+        #region ObjectMethodExecutor_KnownReturnType
+        var executor = ObjectMethodExecutor.Create(typeof(Sample).GetMethod(nameof(Sample.AsyncMethod))!);
+
+        // Execute returns the Task<int> returned by the method
+        var task = (Task<int>)executor.Execute(new Sample { Offset = 10 }, [1, 2])!;
+        Assert.Equal(13, await task);
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_DefaultValues()
+    {
+        #region ObjectMethodExecutor_DefaultValues
+        var methodInfo = typeof(Sample).GetMethod(nameof(Sample.AsyncMethod))!;
+        var executor = ObjectMethodExecutor.Create(methodInfo, parameterDefaultValues: [0, 100]);
+
+        // The caller has a value for the first parameter only
+        var parameters = new object?[] { 5, executor.GetDefaultValueForParameter(1) };
+        Assert.Equal(105, await executor.ExecuteAsync(new Sample(), parameters));
+        #endregion
+    }
+
+    [Fact]
     public void StaticSyncVoidTest()
     {
         var validator = new Validator();

@@ -42,8 +42,9 @@ public class CSharpCodeGeneratorTests
         var generatedCode = unit.ToCsharpString();
         #endregion
 
-        // The readme shows this output after the example.
-        Assert.Equal("""
+        // The readme and the documentation show this output after the example.
+        Assert.Equal(RemoveRegionDirectives("""
+            #region CodeDom_UsageOutput
             using System;
 
             namespace Demo
@@ -56,8 +57,154 @@ public class CSharpCodeGeneratorTests
                     }
                 }
             }
+            #endregion
 
-            """, generatedCode.ReplaceLineEndings("\n"));
+            """), generatedCode.ReplaceLineEndings("\n"));
+    }
+
+    [Fact]
+    public void Documentation_Statements()
+    {
+        #region CodeDom_Statements
+        var method = new MethodDeclaration("Sum")
+        {
+            Modifiers = Modifiers.Public | Modifiers.Static,
+            ReturnType = typeof(int),
+        };
+        var values = method.AddArgument("values", typeof(int[]));
+        method.Statements = [];
+
+        // Throws an ArgumentNullException when values is null
+        method.Statements.Add(values.CreateThrowIfNullStatement());
+
+        var total = method.Statements.Add(new VariableDeclarationStatement("total", typeof(int), 0));
+        var index = new VariableDeclarationStatement("i", typeof(int), 0);
+        method.Statements.Add(new IterationStatement
+        {
+            Initialization = index,
+            Condition = new BinaryExpression(BinaryOperator.LessThan, index, values.Member("Length")),
+            IncrementStatement = new UnaryExpression(UnaryOperator.PostIncrement, index),
+            Body = new AssignStatement(total, new BinaryExpression(BinaryOperator.Add, total, new ArrayIndexerExpression(values, index))),
+        });
+        method.Statements.Add(new ReturnStatement(total));
+        #endregion
+
+        Assert.Equal(RemoveRegionDirectives("""
+            #region CodeDom_StatementsOutput
+            public static int Sum(int[] values)
+            {
+                if ((values == null))
+                {
+                    throw new global::System.ArgumentNullException(nameof(values));
+                }
+
+                int total = 0;
+                for (int i = 0; (i < values.Length); (i++))
+                {
+                    total = (total + values[i]);
+                }
+
+                return total;
+            }
+            #endregion
+
+            """), method.ToCsharpString());
+    }
+
+    [Fact]
+    public void Documentation_Comments()
+    {
+        #region CodeDom_Comments
+        var method = new MethodDeclaration("Greet")
+        {
+            Modifiers = Modifiers.Public,
+            ReturnType = typeof(string),
+        };
+        var name = method.AddArgument("name", typeof(string));
+        method.XmlComments.AddSummary("Creates a greeting message.");
+        method.XmlComments.AddParam("name", "The name of the person to greet.");
+
+        var statement = new ReturnStatement(Expression.Add("Hello ", name));
+        statement.CommentsBefore.Add("Keep the message short");
+        method.Statements = statement;
+        #endregion
+
+        Assert.Equal(RemoveRegionDirectives("""
+            #region CodeDom_CommentsOutput
+            /// <summary>Creates a greeting message.</summary>
+            /// <param name="name">The name of the person to greet.</param>
+            public string Greet(string name)
+            {
+                // Keep the message short
+                return ("Hello " + name);
+            }
+            #endregion
+
+            """), method.ToCsharpString());
+    }
+
+    [Fact]
+    public void Documentation_NullableContext()
+    {
+        #region CodeDom_NullableContext
+        var unit = new CompilationUnit
+        {
+            NullableContext = NullableContext.Enable,
+        };
+        var type = unit.AddNamespace("Demo").AddType(new ClassDeclaration("Person"));
+        type.AddMember(new FieldDeclaration("_nickname", new TypeReference(typeof(string)).MakeNullable()));
+
+        Assert.Equal("""
+            #nullable enable
+            namespace Demo
+            {
+                class Person
+                {
+                    string? _nickname;
+                }
+            }
+
+            """, unit.ToCsharpString());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Visitor()
+    {
+        #region CodeDom_Visitor
+        var type = new ClassDeclaration("Sample");
+        type.AddMember(new MethodDeclaration("Write"));
+        type.AddMember(new PropertyDeclaration("Name", typeof(string)));
+        type.AddMember(new MethodDeclaration("Read"));
+
+        var collector = new MethodNameCollector();
+        collector.Visit(type);
+        Assert.Equal(["Write", "Read"], collector.Names);
+
+        // Sort the members: fields, properties, methods... then by name
+        DefaultFormatterVisitor.Instance.Visit(type);
+        Assert.Equal(["Name", "Read", "Write"], type.Members.Select(member => member.Name));
+        #endregion
+    }
+
+    #region CodeDom_CustomVisitor
+    private sealed class MethodNameCollector : Visitor
+    {
+        public List<string?> Names { get; } = [];
+
+        public override void VisitMethodDeclaration(MethodDeclaration methodDeclaration)
+        {
+            Names.Add(methodDeclaration.Name);
+            base.VisitMethodDeclaration(methodDeclaration);
+        }
+    }
+    #endregion
+
+    private static string RemoveRegionDirectives(string value)
+    {
+        var lines = value.ReplaceLineEndings("\n").Split('\n')
+            .Where(line => !line.StartsWith("#region", StringComparison.Ordinal) && !line.StartsWith("#endregion", StringComparison.Ordinal));
+        return string.Join('\n', lines);
     }
 
     [Fact]

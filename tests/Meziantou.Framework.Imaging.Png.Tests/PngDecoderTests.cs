@@ -394,6 +394,32 @@ public sealed class PngDecoderTests
     }
 
     [Fact]
+    public async Task MetadataAfterTheImageDataIsBoundedBeforeItIsBuffered()
+    {
+        // A 1 MB tEXt chunk after the image data, with a 4 KiB budget: loads fail from its header, without reading its data
+        var image = PngTestImage.CreateRandom(3, 2, 2, 8, transparency: false, seed: 8);
+        var data = image.Encode(interlaced: false, afterImageData: builder => builder.Chunk("tEXt", [.. "Comment"u8, 0, .. new byte[1_000_000]]));
+        var options = new ImageDecodeOptions { Configuration = new ImageConfiguration { Limits = new ImageResourceLimits { MaxMetadataBytes = 4096 } } };
+
+        Assert.Equal(new Size(3, 2), Image.Identify(data, new ImageIdentifyOptions { Configuration = options.Configuration }).Size);
+        Assert.Equal(1_000_008, Assert.Throws<ImageResourceLimitException>(() => Image.Load(data, options)).Requested);
+
+        await using (var stream = new TestInputStream(data) { Seekable = false, ForbidAsynchronousReads = true })
+        {
+            var exception = Assert.Throws<ImageResourceLimitException>(() => Image.Load(stream, options));
+            Assert.Equal(ImageResourceLimitKind.MetadataBytes, exception.Kind);
+            Assert.True(stream.BytesRead < 64 * 1024, $"{stream.BytesRead} bytes were read.");
+        }
+
+        await using (var stream = new TestInputStream(data) { Seekable = false, ForbidSynchronousReads = true })
+        {
+            var exception = await Assert.ThrowsAsync<ImageResourceLimitException>(() => Image.LoadAsync(stream, options, XunitCancellationToken));
+            Assert.Equal(ImageResourceLimitKind.MetadataBytes, exception.Kind);
+            Assert.True(stream.BytesRead < 64 * 1024, $"{stream.BytesRead} bytes were read.");
+        }
+    }
+
+    [Fact]
     public void InterlacedImagesAreShownPassByPass()
     {
         // IDAT chunks of 32 bytes: the passes are completed by different pieces of the data. Each rendering holds the

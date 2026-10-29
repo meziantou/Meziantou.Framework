@@ -1,5 +1,8 @@
 using System.Buffers.Binary;
+using System.Security.Cryptography;
+using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.Metadata;
+using Meziantou.Framework.Imaging.TestHarness.Streams;
 using Meziantou.Framework.Imaging.Tests.Codecs;
 
 namespace Meziantou.Framework.Imaging.Tests;
@@ -268,6 +271,72 @@ public sealed class PngIdentifyTests
         Assert.Equal(ImageResourceLimitKind.MetadataBytes, Assert.Throws<ImageResourceLimitException>(() => Image.Identify(bomb, CreateOptions(new ImageResourceLimits { MaxMetadataBytes = 65_536 }, ImageIdentifyMode.Header))).Kind);
     }
 
+    public static TheoryData<string> MetadataChunkTypes => ["tEXt", "zTXt", "iTXt", "iCCP", "eXIf"];
+
+    [Theory]
+    [MemberData(nameof(MetadataChunkTypes))]
+    public async Task MetadataChunksLargerThanTheMetadataBudgetFailBeforeTheyAreBuffered(string type)
+    {
+        // A 1 MB chunk with a 4 KiB budget fails from its header: the stream is not read past the first buffer
+        var payload = CreateMetadataPayload(type, 1_000_000);
+        var data = new SyntheticImages.PngBuilder().Header(2, 2).Chunk(type, payload).ImageData(2, 2).End().ToArray();
+        var options = CreateOptions(new ImageResourceLimits { MaxMetadataBytes = 4096 }, ImageIdentifyMode.Header);
+
+        AssertMetadataLimit(4096, payload.Length, Assert.Throws<ImageResourceLimitException>(() => Image.Identify(data, options)));
+
+        await using (var stream = new TestInputStream(data) { Seekable = false, ForbidAsynchronousReads = true })
+        {
+            AssertMetadataLimit(4096, payload.Length, Assert.Throws<ImageResourceLimitException>(() => Image.Identify(stream, options)));
+            Assert.True(stream.BytesRead < 64 * 1024, $"{stream.BytesRead} bytes were read.");
+        }
+
+        await using (var stream = new TestInputStream(data) { Seekable = false, ForbidSynchronousReads = true })
+        {
+            AssertMetadataLimit(4096, payload.Length, await Assert.ThrowsAsync<ImageResourceLimitException>(() => Image.IdentifyAsync(stream, options, XunitCancellationToken)));
+            Assert.True(stream.BytesRead < 64 * 1024, $"{stream.BytesRead} bytes were read.");
+        }
+
+        // The data of a chunk is checked before it is read: a declared length fails even when the input is truncated
+        var truncated = new SyntheticImages.PngBuilder().Header(2, 2).ToArray();
+        byte[] declared = [.. truncated, 0x40, 0, 0, 0, .. Encoding.ASCII.GetBytes(type)];
+        AssertMetadataLimit(ImageResourceLimits.DefaultMaxMetadataBytes, 1 << 30, Assert.Throws<ImageResourceLimitException>(() => Image.Identify(declared)));
+    }
+
+    [Fact]
+    public void MetadataChunksAreBoundedByWhatIsLeftOfTheBudget()
+    {
+        // The second chunk is checked against what the first one left (4096 - 3008), before it is buffered
+        var data = new SyntheticImages.PngBuilder().Header(2, 2).Text("Comment", new string('a', 3000)).Chunk("tEXt", CreateMetadataPayload("tEXt", 1_000_000)).ImageData(2, 2).End().ToArray();
+        var options = CreateOptions(new ImageResourceLimits { MaxMetadataBytes = 4096 }, ImageIdentifyMode.Header);
+        AssertMetadataLimit(4096, 3008 + 1_000_008, Assert.Throws<ImageResourceLimitException>(() => Image.Identify(data, options)));
+
+        // A small compressed chunk is buffered, then bounded while it is inflated
+        var compressed = new SyntheticImages.PngBuilder().Header(2, 2).Text("Comment", new string('a', 3000)).CompressedText("Comment", new byte[2000]).ImageData(2, 2).End().ToArray();
+        AssertMetadataLimit(4096, 3008 + 2000, Assert.Throws<ImageResourceLimitException>(() => Image.Identify(compressed, options)));
+        Assert.HasCount(2, Image.Identify(compressed, CreateOptions(new ImageResourceLimits { MaxMetadataBytes = 3008 + 2000 + 7 }, ImageIdentifyMode.Header)).Metadata.TextEntries);
+    }
+
+    [Fact]
+    public void SkippedMetadataChunksAreNotBoundedByTheBudget()
+    {
+        // A profile after a color description and a second eXIf chunk are not adopted: they are streamed, never buffered
+        var exif = new TiffBuilder(bigEndian: true).Ifd0(TiffBuilder.Short(ExifTiff.OrientationTag, 1)).Build();
+        var data = new SyntheticImages.PngBuilder()
+            .Header(2, 2)
+            .Chunk("cICP", [1, 13, 0, 1])
+            .Chunk("iCCP", CreateMetadataPayload("iCCP", 1_000_000))
+            .Chunk("eXIf", exif)
+            .Chunk("eXIf", CreateMetadataPayload("eXIf", 1_000_000))
+            .ImageData(2, 2)
+            .End()
+            .ToArray();
+
+        var metadata = Image.Identify(data, CreateOptions(new ImageResourceLimits { MaxMetadataBytes = exif.Length }, ImageIdentifyMode.FullScan)).Metadata;
+        Assert.NotNull(metadata.Cicp);
+        Assert.Null(metadata.IccProfile);
+        Assert.Equal(exif, metadata.ExifProfile?.Data.ToArray());
+    }
+
     [Fact]
     public void InvalidOrMismatchedPayloadsAreNotAdopted()
     {
@@ -305,6 +374,24 @@ public sealed class PngIdentifyTests
         {
             Assert.Throws<UnknownImageFormatException>(() => Image.Identify(data.AsSpan(0, length)));
         }
+    }
+
+    /// <summary>Creates the data of a metadata chunk whose text, profile or EXIF payload is about <paramref name="size"/> bytes.</summary>
+    private static byte[] CreateMetadataPayload(string type, int size) => type switch
+    {
+        "tEXt" => [.. "Comment"u8, 0, .. new byte[size]],
+        "zTXt" => [.. "Comment"u8, 0, 0, .. SyntheticImages.Zlib(RandomNumberGenerator.GetBytes(size))],
+        "iTXt" => [.. "Comment"u8, 0, 0, 0, 0, 0, .. new byte[size]],
+        "iCCP" => [.. "icc"u8, 0, 0, .. SyntheticImages.Zlib(RandomNumberGenerator.GetBytes(size))],
+        "eXIf" => [.. "MM\0*"u8, .. new byte[size]],
+        _ => throw new ArgumentOutOfRangeException(nameof(type), type, message: null),
+    };
+
+    private static void AssertMetadataLimit(long limit, long requested, ImageResourceLimitException exception)
+    {
+        Assert.Equal(ImageResourceLimitKind.MetadataBytes, exception.Kind);
+        Assert.Equal(limit, exception.Limit);
+        Assert.Equal(requested, exception.Requested);
     }
 
     private static ImageIdentifyOptions CreateOptions(ImageResourceLimits limits, ImageIdentifyMode mode) => new() { Mode = mode, Configuration = new ImageConfiguration { Limits = limits } };

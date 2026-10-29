@@ -27,7 +27,10 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// alpha chunks, frames outside the canvas, bitstream dimensions different from the canvas or frame, and invalid bitstream
 /// headers. Unknown chunks (and an <c>ANIM</c> chunk without the animation flag) are skipped; data after the RIFF size is not
 /// read. In the simple layouts every chunk after the image is skipped. The first <c>ICCP</c>, <c>EXIF</c> (a leading
-/// <c>Exif\0\0</c> is removed) and <c>XMP </c> chunks of an extended file are metadata, adopted when valid.
+/// <c>Exif\0\0</c> is removed) and <c>XMP </c> chunks of an extended file are metadata, adopted when valid. Such a chunk is
+/// buffered only when its payload fits the remaining <see cref="ImageResourceLimits.MaxMetadataBytes"/>, else it is an
+/// <see cref="ImageResourceLimitException"/> before any byte of it is buffered, even if it would be skipped as invalid;
+/// later occurrences are streamed, not checked. Only the 6 defined bytes of <c>ANIM</c> are buffered.
 /// </para>
 /// </remarks>
 internal sealed class WebPStructureParser : ImageParser<ImageInfo>
@@ -43,6 +46,9 @@ internal sealed class WebPStructureParser : ImageParser<ImageInfo>
 
     /// <summary>The length of the <c>VP8X</c> payload defined by the specification.</summary>
     public const int ExtendedHeaderLength = 10;
+
+    /// <summary>The length of the <c>ANIM</c> payload defined by the specification: background color and loop count.</summary>
+    public const int AnimationHeaderLength = 6;
 
     // Flags of the VP8X chunk
     public const byte AnimationFlag = 0x02;
@@ -398,15 +404,20 @@ internal sealed class WebPStructureParser : ImageParser<ImageInfo>
             if (_afterImageData)
                 throw Invalid("The WebP ANIM chunk appears after the first frame.");
 
-            if (size < 6)
+            if (size < AnimationHeaderLength)
                 throw Invalid("The WebP ANIM chunk is shorter than 6 bytes.");
 
-            return BufferMetadata(remaining, size, padded, ref consumed, static (parser, data) =>
-            {
-                parser._animSeen = true;
-                parser.BackgroundColor = BinaryPrimitives.ReadUInt32LittleEndian(data);
-                parser.LoopCount = BinaryPrimitives.ReadUInt16LittleEndian(data[4..]);
-            });
+            if (remaining.Length < ChunkHeaderLength + AnimationHeaderLength)
+                return ParseStatus.NeedMoreData(ChunkHeaderLength + AnimationHeaderLength);
+
+            var data = remaining.Slice(ChunkHeaderLength, AnimationHeaderLength);
+            _animSeen = true;
+            BackgroundColor = BinaryPrimitives.ReadUInt32LittleEndian(data);
+            LoopCount = BinaryPrimitives.ReadUInt16LittleEndian(data[4..]);
+
+            // The defined fields are read; the rest of the payload is skipped, not buffered
+            Advance(ref consumed, ChunkHeaderLength + AnimationHeaderLength);
+            return StartSkip(size - AnimationHeaderLength, padded);
         }
 
         if (fourCC.SequenceEqual("ANMF"u8))
@@ -786,9 +797,16 @@ internal sealed class WebPStructureParser : ImageParser<ImageInfo>
         return (lossy.Width, lossy.Height, false);
     }
 
+    /// <summary>
+    /// Buffers a metadata chunk (<c>ICCP</c>, <c>EXIF</c>, <c>XMP </c>) and processes it in one piece, when its payload fits
+    /// the remaining <see cref="ImageResourceLimits.MaxMetadataBytes"/>: the limit bounds the buffer before it is allocated.
+    /// The check does not charge (adoption charges what is retained). The chunk header is processed again when the parser
+    /// asks for more data, which checks again with the same counters.
+    /// </summary>
+    /// <exception cref="ImageResourceLimitException">The payload is larger than the remaining metadata budget.</exception>
     private ParseStatus BufferMetadata(ReadOnlySpan<byte> remaining, uint size, bool padded, ref int consumed, ChunkProcessor process)
     {
-        // Metadata payloads are processed in one piece (bounded by MaxEncodedBytes); adoption charges MaxMetadataBytes
+        _context.Tracker.EnsureMetadataBytesAvailable(size);
         var total = ChunkHeaderLength + (long)size;
         if (total > int.MaxValue)
             throw CheckedSizes.CreateOverflowException(_context.Limits);

@@ -28,6 +28,10 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// A <c>cICP</c> chunk takes precedence over <c>iCCP</c> (PNG third edition, section 4.3): the profile is then not
 /// adopted. Its matrix coefficients must be 0 (RGB), else the chunk is skipped; a narrow range is an
 /// <see cref="UnsupportedImageFeatureException"/>, since decoded samples are always full range.
+/// A metadata chunk that is read (<c>iCCP</c>, <c>eXIf</c>, <c>tEXt</c>, <c>zTXt</c>, <c>iTXt</c>) is buffered only when its
+/// data fits the remaining <see cref="ImageResourceLimits.MaxMetadataBytes"/>, else it is an
+/// <see cref="ImageResourceLimitException"/> before any byte of it is buffered, even if it would decompress to fewer bytes
+/// or be skipped as invalid. A skipped chunk (a duplicate, an <c>iCCP</c> after <c>cICP</c>) is streamed, not checked.
 /// CgBI rules (<see cref="IsAppleCgbi"/>): the chunk is recognized only before <c>IHDR</c> (elsewhere it is an unknown
 /// critical chunk); its length must be 4, the file must have 8-bit RGB or RGBA samples and only one <c>CgBI</c> chunk,
 /// otherwise it is <see cref="InvalidImageContentException"/>. An animated CgBI file and a CgBI file with a <c>tRNS</c>
@@ -493,8 +497,9 @@ internal sealed class PngStructureParser : ImageParser<ImageInfo>
 
                 return ChunkAction.Buffer;
 
+            // A profile after a color description is not adopted: it is skipped without being buffered
             case ChunkIccp:
-                return _seenIdat || _seenIccp ? ChunkAction.Stream : ChunkAction.Buffer;
+                return _seenIdat || _seenIccp || _metadata.Metadata.Cicp is not null ? ChunkAction.Stream : BufferMetadata(length);
 
             // The color description and the light levels precede the palette and the image data
             case ChunkCicp:
@@ -507,12 +512,12 @@ internal sealed class PngStructureParser : ImageParser<ImageInfo>
                 return _seenIdat || _seenClli || !Palette.IsEmpty || length != 8 ? ChunkAction.Stream : ChunkAction.Buffer;
 
             case ChunkExif:
-                return _seenExif ? ChunkAction.Stream : ChunkAction.Buffer;
+                return _seenExif ? ChunkAction.Stream : BufferMetadata(length);
 
             case ChunkText:
             case ChunkZtxt:
             case ChunkItxt:
-                return ChunkAction.Buffer;
+                return BufferMetadata(length);
 
             default:
                 // Bit 5 of the first type byte clear (uppercase) marks a critical chunk the decoder must understand
@@ -521,6 +526,19 @@ internal sealed class PngStructureParser : ImageParser<ImageInfo>
 
                 return ChunkAction.Stream;
         }
+    }
+
+    /// <summary>
+    /// Buffers a metadata chunk (<c>iCCP</c>, <c>eXIf</c>, <c>tEXt</c>, <c>zTXt</c>, <c>iTXt</c>) when its data fits the
+    /// remaining <see cref="ImageResourceLimits.MaxMetadataBytes"/>, so the limit bounds the buffer before it is allocated.
+    /// The check does not charge: what the chunk retains or decompresses is charged when it is adopted. The header is
+    /// processed again when the parser asks for more data, which checks again with the same counters.
+    /// </summary>
+    /// <exception cref="ImageResourceLimitException">The chunk data is larger than the remaining metadata budget.</exception>
+    private ChunkAction BufferMetadata(int length)
+    {
+        _context.Tracker.EnsureMetadataBytesAvailable(length);
+        return ChunkAction.Buffer;
     }
 
     private void ProcessBufferedChunk(uint type, ReadOnlySpan<byte> data)

@@ -34,4 +34,17 @@ public class TestReferralLinks
 
         Assert.Contains($"rel=\"{expected}\"", html);
     }
+
+    [Fact]
+    public void DocumentationExample_ReferralLinks()
+    {
+        #region MarkdownExtensions_UseReferralLinks
+        var pipeline = new MarkdownPipelineBuilder()
+            .UseReferralLinks("nofollow", "noopener", "noreferrer")
+            .Build();
+
+        var html = MarkdownConverter.ToHtml("[Example](https://example.com)", pipeline);
+        Assert.Equal("<p><a href=\"https://example.com\" rel=\"nofollow noopener noreferrer\">Example</a></p>\n", html);
+        #endregion
+    }
 }

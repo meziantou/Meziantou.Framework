@@ -203,4 +203,18 @@ public class TestCjkFriendlyEmphasis
             Assert.Equal(shouldBeClosable, isClose, message: "isClose (*)");
         }
     }
+
+    [Fact]
+    public void DocumentationExample_CjkFriendlyEmphasis()
+    {
+        #region MarkdownExtensions_UseCjkFriendlyEmphasis
+        var markdown = "**この文を強調できますか？**残念ながら。";
+
+        // CommonMark does not close the emphasis after the full-width question mark
+        Assert.Equal("<p>**この文を強調できますか？**残念ながら。</p>\n", MarkdownConverter.ToHtml(markdown));
+
+        var pipeline = new MarkdownPipelineBuilder().UseCjkFriendlyEmphasis().Build();
+        Assert.Equal("<p><strong>この文を強調できますか？</strong>残念ながら。</p>\n", MarkdownConverter.ToHtml(markdown, pipeline));
+        #endregion
+    }
 }

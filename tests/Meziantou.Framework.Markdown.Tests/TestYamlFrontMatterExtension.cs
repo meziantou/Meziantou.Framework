@@ -129,4 +129,37 @@ public class TestYamlFrontMatterExtension
         // No exception parsing and iterating through YAML front matter block lines
     }
 
+    [Fact]
+    public void DocumentationExample_ReadFrontMatter()
+    {
+        #region MarkdownExtensions_UseYamlFrontMatter
+        var pipeline = new MarkdownPipelineBuilder()
+            .UseYamlFrontMatter()
+            .Build();
+
+        var markdown = "---\ntitle: Getting started\ntags: [setup]\n---\n# Install the package";
+        var document = MarkdownConverter.Parse(markdown, pipeline);
+
+        // The front matter is a block of the document, without the --- lines
+        var frontMatter = document.Descendants<YamlFrontMatterBlock>().FirstOrDefault();
+        Assert.NotNull(frontMatter);
+        Assert.Equal("title: Getting started\ntags: [setup]", frontMatter.Lines.ToString());
+
+        // It is not written to the HTML
+        Assert.Equal("<h1>Install the package</h1>\n", document.ToHtml(pipeline));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_FrontMatterInMiddleOfDocument()
+    {
+        #region YamlFrontMatterExtension_AllowInMiddleOfDocument
+        var pipeline = new MarkdownPipelineBuilder()
+            .Use(new YamlFrontMatterExtension { AllowInMiddleOfDocument = true })
+            .Build();
+
+        var html = MarkdownConverter.ToHtml("First part\n---\ntitle: Second part\n---\nSecond part", pipeline);
+        Assert.Equal("<p>First part</p>\n<p>Second part</p>\n", html);
+        #endregion
+    }
 }

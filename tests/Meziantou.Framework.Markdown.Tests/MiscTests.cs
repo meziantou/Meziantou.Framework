@@ -4,8 +4,11 @@ using System.Text.RegularExpressions;
 
 using Meziantou.Framework.Markdown.Extensions.AutoLinks;
 using Meziantou.Framework.Markdown.Extensions.Tables;
+using Meziantou.Framework.Markdown.Helpers;
 using Meziantou.Framework.Markdown.Parsers;
 using Meziantou.Framework.Markdown.Parsers.Inlines;
+using Meziantou.Framework.Markdown.Renderers;
+using Meziantou.Framework.Markdown.Renderers.Html;
 using Meziantou.Framework.Markdown.Syntax;
 using Meziantou.Framework.Markdown.Syntax.Inlines;
 
@@ -1646,4 +1649,130 @@ Continued 3a</p>
         var pipeline = new MarkdownPipelineBuilder().UseJiraLinks(new Extensions.JiraLinks.JiraLinkOptions("http://your.company.abc")).Build();
         Assert.Equal(MarkdownConverter.ToHtml("> C-1", pipeline), MarkdownConverter.ToHtml(">C-1", pipeline));
     }
+
+    [Fact]
+    public void DocumentationExample_MentionExtension()
+    {
+        #region IMarkdownExtension_UseCustomExtension
+        var pipeline = new MarkdownPipelineBuilder()
+            .Use<MentionExtension>()
+            .Build();
+
+        var html = MarkdownConverter.ToHtml("Thanks @meziantou! Write to user@example.com.", pipeline);
+        Assert.Equal("<p>Thanks <a href=\"https://github.com/meziantou\">@meziantou</a>! Write to user@example.com.</p>\n", html);
+        #endregion
+    }
+
+    #region IMarkdownExtension_MentionExtension
+    // Turns "@name" into a link to the GitHub profile of the user
+    internal sealed class MentionExtension : IMarkdownExtension
+    {
+        public void Setup(MarkdownPipelineBuilder pipeline)
+        {
+            pipeline.InlineParsers.AddIfNotAlready(new MentionParser());
+        }
+
+        public void Setup(MarkdownPipeline pipeline, IMarkdownRenderer renderer)
+        {
+            // Nothing to do: a mention is a LinkInline, and every renderer already writes links
+        }
+    }
+
+    internal sealed class MentionParser : InlineParser
+    {
+        public MentionParser()
+        {
+            OpeningCharacters = ['@'];
+        }
+
+        public override bool Match(InlineProcessor processor, ref StringSlice slice)
+        {
+            // "user@example.com" is not a mention: the @ must start a word
+            if (slice.PeekCharExtra(-1).IsAlphaNumeric())
+                return false;
+
+            var start = slice.Start;
+            var current = slice.NextChar(); // Skips the @
+            while (current.IsAlphaNumeric() || current == '-')
+            {
+                current = slice.NextChar();
+            }
+
+            var name = slice.Text[(start + 1)..slice.Start];
+            if (name.Length == 0)
+                return false;
+
+            // The position of the inline in the source, when the pipeline computes them
+            var position = processor.GetSourcePosition(start, out var line, out var column);
+            var link = new LinkInline("https://github.com/" + name, title: "")
+            {
+                Span = new SourceSpan(position, position + name.Length),
+                Line = line,
+                Column = column,
+                IsClosed = true, // The parser must not add the next inlines into the link
+            };
+            link.AppendChild(new LiteralInline("@" + name));
+            processor.Inline = link;
+            return true;
+        }
+    }
+    #endregion
+
+    [Fact]
+    public void DocumentationExample_ReplaceRenderer()
+    {
+        #region HtmlObjectRenderer_ReplaceRenderer
+        var pipeline = new MarkdownPipelineBuilder()
+            .Use<ShiftHeadingsExtension>()
+            .Build();
+
+        // The page already has a <h1>: the headings of the content start at <h2>
+        var html = MarkdownConverter.ToHtml("# Title\n\n## Section", pipeline);
+        Assert.Equal("<h2>Title</h2>\n<h3>Section</h3>\n", html);
+        Assert.Equal("Title\nSection\n", MarkdownConverter.ToPlainText("# Title\n\n## Section", pipeline));
+        #endregion
+    }
+
+    #region HtmlObjectRenderer_ShiftHeadingsExtension
+    internal sealed class ShiftHeadingsExtension : IMarkdownExtension
+    {
+        public void Setup(MarkdownPipelineBuilder pipeline)
+        {
+        }
+
+        public void Setup(MarkdownPipeline pipeline, IMarkdownRenderer renderer)
+        {
+            // Called for each renderer: only change the HTML one
+            if (renderer is HtmlRenderer)
+            {
+                renderer.ObjectRenderers.Replace<HeadingRenderer>(new ShiftedHeadingRenderer());
+            }
+        }
+    }
+
+    internal sealed class ShiftedHeadingRenderer : HtmlObjectRenderer<HeadingBlock>
+    {
+        private static readonly string[] Tags = ["h2", "h3", "h4", "h5", "h6", "h6"];
+
+        protected override void Write(HtmlRenderer renderer, HeadingBlock obj)
+        {
+            var tag = Tags[Math.Clamp(obj.Level, 1, 6) - 1];
+
+            // ToPlainText uses the HTML renderer without the tags
+            if (renderer.EnableHtmlForBlock)
+            {
+                renderer.Write('<').Write(tag).WriteAttributes(obj).Write('>');
+            }
+
+            renderer.WriteLeafInline(obj);
+
+            if (renderer.EnableHtmlForBlock)
+            {
+                renderer.Write("</").Write(tag).Write('>');
+            }
+
+            renderer.EnsureLine();
+        }
+    }
+    #endregion
 }

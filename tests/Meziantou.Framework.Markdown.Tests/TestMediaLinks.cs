@@ -157,4 +157,20 @@ public class TestMediaLinks
         string html = MarkdownConverter.ToHtml(markdown, GetPipelineWithBootstrap());
         Assert.Equal(html, expected);
     }
+
+    [Fact]
+    public void DocumentationExample_MediaLinks()
+    {
+        #region MarkdownExtensions_UseMediaLinks
+        var pipeline = new MarkdownPipelineBuilder()
+            .UseMediaLinks(new MediaOptions { Width = "640", Height = "360" })
+            .Build();
+
+        var video = MarkdownConverter.ToHtml("![Demo](https://example.com/demo.mp4)", pipeline);
+        Assert.Equal("<p><video width=\"640\" height=\"360\" controls=\"\"><source type=\"video/mp4\" src=\"https://example.com/demo.mp4\"></source></video></p>\n", video);
+
+        var youTube = MarkdownConverter.ToHtml("![Talk](https://www.youtube.com/watch?v=dQw4w9WgXcQ)", pipeline);
+        Assert.Equal("<p><iframe src=\"https://www.youtube.com/embed/dQw4w9WgXcQ\" class=\"youtube\" width=\"640\" height=\"360\" frameborder=\"0\" allowfullscreen=\"\"></iframe></p>\n", youTube);
+        #endregion
+    }
 }

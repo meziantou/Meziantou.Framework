@@ -1162,4 +1162,57 @@ literal      ( 8, 2) 77-92
             .Replace("block", string.Empty, StringComparison.Ordinal)
             .Replace("inline", string.Empty, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void DocumentationExample_BlockPositions()
+    {
+        #region MarkdownObject_BlockPositions
+        var markdown = "# Title\n\nSome *text* here.";
+        var document = MarkdownConverter.Parse(markdown);
+
+        var paragraph = document.Descendants<ParagraphBlock>().Single();
+        Assert.Equal(2, paragraph.Line);   // Zero-based: the third line
+        Assert.Equal(0, paragraph.Column);
+        Assert.Equal(new SourceSpan(9, 25), paragraph.Span); // Start and End are both included
+        Assert.Equal("Some *text* here.", markdown.Substring(paragraph.Span.Start, paragraph.Span.Length));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_InlinePositions()
+    {
+        #region MarkdownPipelineBuilder_UsePreciseSourceLocation
+        var markdown = "# Title\n\nSome *text* here.";
+
+        // Without precise source location, inlines have no position
+        var emphasis = MarkdownConverter.Parse(markdown).Descendants<EmphasisInline>().Single();
+        Assert.Equal(new SourceSpan(0, 0), emphasis.Span);
+
+        var pipeline = new MarkdownPipelineBuilder()
+            .UsePreciseSourceLocation()
+            .Build();
+        emphasis = MarkdownConverter.Parse(markdown, pipeline).Descendants<EmphasisInline>().Single();
+        Assert.Equal(new SourceSpan(14, 19), emphasis.Span);
+        Assert.Equal("*text*", markdown.Substring(emphasis.Span.Start, emphasis.Span.Length));
+        Assert.Equal(2, emphasis.Line);
+        Assert.Equal(5, emphasis.Column);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_FindBlockAtPosition()
+    {
+        #region BlockExtensions_FindBlockAtPosition
+        var markdown = "# Title\n\n- First\n- Second\n";
+        var document = MarkdownConverter.Parse(markdown);
+
+        // For instance, the position of the caret in an editor
+        var caret = markdown.IndexOf("Second", StringComparison.Ordinal);
+
+        // The innermost block that contains the position
+        var block = document.FindBlockAtPosition(caret);
+        Assert.IsType<ParagraphBlock>(block);
+        Assert.IsType<ListItemBlock>(block!.Parent);
+        #endregion
+    }
 }

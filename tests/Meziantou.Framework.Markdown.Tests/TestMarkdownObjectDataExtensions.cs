@@ -39,4 +39,24 @@ public sealed class TestMarkdownObjectDataExtensions
         Assert.False(block.TryGetData<string>(key, out var output));
         Assert.Null(output);
     }
+
+    [Fact]
+    public void DocumentationExample_SetData()
+    {
+        #region MarkdownObjectDataExtensions_TypedKey
+        var sectionNumberKey = new DataKey<int>();
+
+        var document = MarkdownConverter.Parse("# Install\n\nText\n\n# Configure");
+        var number = 0;
+        foreach (var heading in document.Descendants<HeadingBlock>())
+        {
+            number++;
+            heading.SetData(sectionNumberKey, number);
+        }
+
+        var configure = document.Descendants<HeadingBlock>().Last();
+        Assert.Equal(2, configure.GetData(sectionNumberKey));
+        Assert.False(document[1].TryGetData(sectionNumberKey, out _)); // Nothing on the paragraph
+        #endregion
+    }
 }

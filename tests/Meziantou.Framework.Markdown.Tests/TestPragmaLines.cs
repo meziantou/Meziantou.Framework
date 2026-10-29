@@ -118,4 +118,30 @@ public class TestPragmaLines
 
         Assert.True(exampleCount > 900, message: $"{exampleCount} examples");
     }
+
+    [Fact]
+    public void DocumentationExample_PragmaLines()
+    {
+        #region MarkdownExtensions_UsePragmaLines
+        var pipeline = new MarkdownPipelineBuilder()
+            .UsePragmaLines()
+            .Build();
+
+        var html = MarkdownConverter.ToHtml("# Title\n\nSome text.\n\n- First\n- Second", pipeline);
+        Assert.Equal("<h1 id=\"pragma-line-0\">Title</h1>\n<p id=\"pragma-line-2\">Some text.</p>\n<ul id=\"pragma-line-4\">\n<li>First</li>\n<li id=\"pragma-line-5\">Second</li>\n</ul>\n", html);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_FindClosestLine()
+    {
+        #region BlockExtensions_FindClosestLine
+        var pipeline = new MarkdownPipelineBuilder().UsePragmaLines().Build();
+        var document = MarkdownConverter.Parse("# Title\n\nSome text.\n\n- First\n- Second", pipeline);
+
+        // The editor shows line 3 (zero-based), a blank line: scroll the preview to the closest element
+        var line = document.FindClosestLine(3);
+        Assert.Equal(4, line); // The element with the id "pragma-line-4"
+        #endregion
+    }
 }

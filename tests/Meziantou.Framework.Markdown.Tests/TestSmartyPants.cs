@@ -115,4 +115,34 @@ public class TestSmartyPants
         // "->" is a smiley: the "--" before it must not take its first '-'
         TestRoundtrip.RoundTrip(markdown, new MarkdownPipelineBuilder().UseEmojiAndSmiley().UseSmartyPants().DisableHtml());
     }
+
+    [Fact]
+    public void DocumentationExample_SmartyPants()
+    {
+        #region MarkdownExtensions_UseSmartyPants
+        var pipeline = new MarkdownPipelineBuilder()
+            .UseSmartyPants()
+            .Build();
+
+        var html = MarkdownConverter.ToHtml("\"Hello\" -- it's done... <<right>>", pipeline);
+        Assert.Equal("<p>&ldquo;Hello&rdquo; &ndash; it's done&hellip; &laquo;right&raquo;</p>\n", html);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_SmartyPantsOptions()
+    {
+        #region SmartyPantOptions_Mapping
+        var options = new SmartyPantOptions();
+        options.Mapping[SmartyPantType.LeftDoubleQuote] = "«&nbsp;";
+        options.Mapping[SmartyPantType.RightDoubleQuote] = "&nbsp;»";
+
+        var pipeline = new MarkdownPipelineBuilder()
+            .UseSmartyPants(options)
+            .Build();
+
+        var html = MarkdownConverter.ToHtml("\"Bonjour\"", pipeline);
+        Assert.Equal("<p>«&nbsp;Bonjour&nbsp;»</p>\n", html);
+        #endregion
+    }
 }

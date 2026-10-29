@@ -657,5 +657,35 @@ public class TestHtmlAttributes
         renderer.Write(document);
         return writer.ToString();
     }
-}
 
+    [Fact]
+    public void DocumentationExample_GenericAttributes()
+    {
+        #region MarkdownExtensions_UseGenericAttributes
+        var pipeline = new MarkdownPipelineBuilder()
+            .UseGenericAttributes()
+            .Build();
+
+        var html = MarkdownConverter.ToHtml("# Introduction {#intro .title}\n\nRead [the guide](guide.html){target=_blank}.", pipeline);
+        Assert.Equal("<h1 id=\"intro\" class=\"title\">Introduction</h1>\n<p>Read <a href=\"guide.html\" target=\"_blank\">the guide</a>.</p>\n", html);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_AttributesFromCode()
+    {
+        #region HtmlAttributes_FromCode
+        var pipeline = new MarkdownPipelineBuilder().Build();
+        var document = MarkdownConverter.Parse("> Prefer the async methods.", pipeline);
+
+        // Attributes can be set from code, with or without UseGenericAttributes
+        var quote = document.Descendants<QuoteBlock>().Single();
+        var attributes = quote.GetAttributes();
+        attributes.AddClass("note");
+        attributes.AddProperty("style", "border-left: 4px solid gray"); // Not filtered: the code is trusted
+
+        var html = document.ToHtml(pipeline);
+        Assert.Equal("<blockquote class=\"note\" style=\"border-left: 4px solid gray\">\n<p>Prefer the async methods.</p>\n</blockquote>\n", html);
+        #endregion
+    }
+}

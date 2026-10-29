@@ -129,4 +129,15 @@ public sealed partial class AssertMatchTests
 
     [GeneratedRegex("^sam", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
     private static partial Regex SamplePrefixRegex();
+
+    [Fact]
+    public void Documentation_Matches()
+    {
+        #region Assert_Matches
+        var version = "v2.10.3";
+
+        Assert.Matches(@"^v\d+\.\d+\.\d+$", version);   // the pattern comes first
+        Assert.DoesNotMatch("-preview", version);
+        #endregion
+    }
 }

@@ -444,4 +444,17 @@ public sealed class AssertAllTests
         AssertionsAssert.Equal(allSatisfy, allException is null);
         AssertionsAssert.Equal(allSatisfy, doesNotAllException is not null);
     }
+
+    [Fact]
+    public void Documentation_All()
+    {
+        #region Assert_All
+        List<int> numbers = [2, 4, 6];
+
+        Assert.All(numbers, n => n % 2 == 0);                         // a predicate
+        Assert.All(numbers, n => Assert.InRange(n, 1, 10));           // an assertion
+        Assert.All(numbers, (n, index) => Assert.Equal((index + 1) * 2, n));
+        Assert.DoesNotAll(numbers, n => n > 5);                       // at least one item does not match
+        #endregion
+    }
 }

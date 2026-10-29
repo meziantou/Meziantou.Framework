@@ -834,4 +834,24 @@ public sealed class AssertEqualUnorderedTests
 
         public override int GetHashCode() => Value;
     }
+
+    [Fact]
+    public async Task Documentation_AsyncSequences()
+    {
+        #region Assert_AsyncSequences
+        static async IAsyncEnumerable<int> GetValuesAsync()
+        {
+            for (var i = 1; i <= 3; i++)
+            {
+                await Task.Yield();
+                yield return i;
+            }
+        }
+
+        // Assertions on an IAsyncEnumerable<T> return a Task: await them
+        await Assert.Equal(new[] { 1, 2, 3 }, GetValuesAsync());
+        await Assert.HasCount(3, GetValuesAsync());
+        await Assert.Contains(new[] { 2, 3 }, GetValuesAsync());
+        #endregion
+    }
 }

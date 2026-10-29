@@ -1310,4 +1310,55 @@ public sealed class AssertContainsTests
 
         public int GetHashCode(char obj) => char.ToUpperInvariant(obj).GetHashCode();
     }
+
+    [Fact]
+    public void Documentation_Text()
+    {
+        #region Assert_Text
+        var message = "Hello, World!";
+
+        Assert.Contains("World", message);                        // ordinal comparison by default
+        Assert.Contains("world", message, ignoreCase: true);      // OrdinalIgnoreCase
+        Assert.Contains("WORLD", message, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Goodbye", message);
+
+        Assert.StartsWith("Hello", message);
+        Assert.EndsWith('!', message);
+        Assert.DoesNotStartWith("World", message);
+        Assert.DoesNotEndWith("?", message);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_CollectionItems()
+    {
+        #region Assert_CollectionItems
+        List<int> numbers = [1, 2, 3, 4];
+
+        Assert.Contains(3, numbers);                    // an item
+        Assert.DoesNotContain(5, numbers);
+        Assert.Contains(new[] { 2, 3 }, numbers);       // a subsequence: consecutive items, in order
+        Assert.StartsWith(new[] { 1, 2 }, numbers);
+        Assert.EndsWith(4, numbers);
+
+        Assert.Contains(numbers, n => n > 3);           // an item that matches a predicate
+        Assert.DoesNotContain(numbers, n => n > 10);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_DictionaryKeys()
+    {
+        #region Assert_DictionaryKeys
+        var ages = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Alice"] = 42,
+        };
+
+        // The dictionary looks the key up with its own comparer, and the assertion returns the value
+        var age = Assert.Contains("ALICE", ages);
+        Assert.Equal(42, age);
+        Assert.DoesNotContain("Bob", ages);
+        #endregion
+    }
 }

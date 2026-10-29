@@ -140,6 +140,125 @@ public sealed class FileLoggerProviderTests
     }
 
     [Fact]
+    public async Task DocumentationExample_RollingAndRetention()
+    {
+        #region FileLogger_RollingAndRetention
+        var logsDirectory = Directory.CreateTempSubdirectory("logs").FullName;
+        var timeProvider = new FakeTimeProvider(new DateTimeOffset(2024, 1, 2, 3, 4, 5, TimeSpan.Zero));
+        var options = new FileLoggerOptions
+        {
+            Directory = logsDirectory,
+            FileNamePrefix = "app-",
+            RollInterval = RollInterval.Daily,
+            MaxRetainedFiles = 2,
+            IncludeProcessIdInFileName = false,
+        };
+
+        await using (var provider = new FileLoggerProvider(options, timeProvider))
+        {
+            var logger = provider.CreateLogger("Sample");
+            for (var day = 0; day < 3; day++)
+            {
+                logger.LogInformation("Day {Day}", day);
+                timeProvider.Advance(TimeSpan.FromDays(1));
+            }
+        }
+
+        // One file per day; the file of the first day was deleted when the third one was created
+        var fileNames = Directory.GetFiles(logsDirectory).Select(path => Path.GetFileName(path)).Order(StringComparer.Ordinal).ToArray();
+        Assert.Equal(["app-2024-01-03.log", "app-2024-01-04.log"], fileNames);
+        #endregion
+
+        Directory.Delete(logsDirectory, recursive: true);
+    }
+
+    [Fact]
+    public async Task DocumentationExample_SimpleFormat()
+    {
+        #region FileLogger_SimpleFormat
+        var logsDirectory = Directory.CreateTempSubdirectory("logs").FullName;
+        var timeProvider = new FakeTimeProvider(new DateTimeOffset(2024, 1, 2, 3, 4, 5, TimeSpan.Zero));
+        var options = new FileLoggerOptions
+        {
+            Directory = logsDirectory,
+            IncludeScopes = true,
+            IncludeEventId = true,
+            UseShortCategoryName = true,
+        };
+
+        string? logFilePath;
+        await using (var provider = new FileLoggerProvider(options, timeProvider))
+        {
+            using var loggerFactory = LoggerFactory.Create(builder => builder.AddProvider(provider));
+            var logger = loggerFactory.CreateLogger("Sample.Program");
+            using (logger.BeginScope("Request {RequestId}", 42))
+            {
+                logger.LogWarning(new EventId(7, "Retry"), "Retrying {Url}", "https://example.com");
+            }
+
+            logFilePath = provider.LogFilePath;
+        }
+
+        // Disposing the provider writes the pending messages and closes the file
+        Assert.NotNull(logFilePath);
+        Assert.Equal(["[2024-01-02 03:04:05.000] [WARN] [Program] [EventId:7:Retry] => Request 42 Retrying https://example.com"], File.ReadAllLines(logFilePath));
+        #endregion
+
+        Directory.Delete(logsDirectory, recursive: true);
+    }
+
+    [Fact]
+    public async Task DocumentationExample_JsonFormat()
+    {
+        #region FileLogger_JsonFormat
+        var logsDirectory = Directory.CreateTempSubdirectory("logs").FullName;
+        var timeProvider = new FakeTimeProvider(new DateTimeOffset(2024, 1, 2, 3, 4, 5, TimeSpan.Zero));
+        var options = new FileLoggerOptions
+        {
+            Directory = logsDirectory,
+            FormatterName = FileFormatterNames.Json,
+            IncludeScopes = true,
+        };
+
+        string? logFilePath;
+        await using (var provider = new FileLoggerProvider(options, timeProvider))
+        {
+            var logger = provider.CreateLogger("Sample.Program");
+            using (logger.BeginScope("Request {RequestId}", 42))
+            {
+                logger.LogInformation("Hello {Name}", "world");
+            }
+
+            logFilePath = provider.LogFilePath;
+        }
+
+        Assert.NotNull(logFilePath);
+        Assert.Equal(["""{"Timestamp":"2024-01-02 03:04:05.000","LogLevel":"INFO","Category":"Sample.Program","Message":"Hello world","State":{"Name":"world","{OriginalFormat}":"Hello {Name}"},"Scopes":[{"Message":"Request 42","RequestId":42,"{OriginalFormat}":"Request {RequestId}"}]}"""], File.ReadAllLines(logFilePath));
+        #endregion
+
+        Directory.Delete(logsDirectory, recursive: true);
+    }
+
+    [Fact]
+    public async Task DocumentationExample_Queue()
+    {
+        using var tempDirectory = TemporaryDirectory.Create();
+        var options = new FileLoggerOptions { Directory = tempDirectory.FullPath };
+
+        #region FileLogger_Queue
+        options.MaxQueueLength = 10_000;
+        options.QueueFullMode = FileLoggerQueueFullMode.DropOldest; // Never block the threads that log
+        options.FlushInterval = TimeSpan.FromSeconds(5);
+        #endregion
+
+        await using var provider = new FileLoggerProvider(options);
+        provider.CreateLogger("Test").LogInformation("Queued message");
+        await provider.FlushAsync(TestContext.Current.CancellationToken);
+
+        Assert.Contains("Queued message", await ReadLogFileAsync(provider.LogFilePath));
+    }
+
+    [Fact]
     public async Task WritesLogToFile()
     {
         using var tempDirectory = TemporaryDirectory.Create();
@@ -445,7 +564,13 @@ public sealed class FileLoggerProviderTests
     public async Task FileFormatter_Example()
     {
         using var tempDirectory = TemporaryDirectory.Create();
-        await using var provider = new FileLoggerProvider(new FileLoggerOptions { Directory = tempDirectory.FullPath, Formatter = new CsvFileFormatter() });
+        var options = new FileLoggerOptions { Directory = tempDirectory.FullPath };
+
+        #region FileLogger_CustomFormatter
+        options.Formatter = new CsvFileFormatter();
+        #endregion
+
+        await using var provider = new FileLoggerProvider(options);
         provider.CreateLogger("Test").LogWarning("Hello");
         await provider.FlushAsync(TestContext.Current.CancellationToken);
 

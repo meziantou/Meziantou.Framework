@@ -1,0 +1,2 @@
+title: ChromiumTracing
+description: Write trace files in the Chromium trace event format, and view them on a timeline in a trace viewer.

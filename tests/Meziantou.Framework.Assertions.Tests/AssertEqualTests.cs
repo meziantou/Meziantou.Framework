@@ -1943,4 +1943,92 @@ public sealed class AssertEqualTests
             notEqual();
         }
     }
+
+    [Fact]
+    public void Documentation_FirstAssertions()
+    {
+        #region Assert_FirstAssertions
+        var names = "Alice,Bob,Charlie".Split(',');
+
+        Assert.HasCount(3, names);
+        Assert.Equal("Alice", names[0]);    // the expected value comes first...
+        Assert.Contains("Bob", names);      // ...including for Contains, StartsWith and EndsWith
+        Assert.StartsWith("Ch", names[2]);
+        Assert.DoesNotContain("Dave", names);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_ReturnedValues()
+    {
+        #region Assert_ReturnedValues
+        var settings = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["name"] = "Alice",
+            ["roles"] = new List<string> { "admin" },
+        };
+
+        // Assertions that check a value return it, typed after the check
+        var value = Assert.Contains("name", settings);           // the value of the key
+        var name = Assert.IsType<string>(value);                 // the value as a string
+        Assert.Equal("ALICE", name.ToUpperInvariant());
+
+        var roles = Assert.IsType<List<string>>(settings["roles"]);
+        var role = Assert.Single(roles);                         // the only item
+        Assert.Equal("admin", role);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_EqualValues()
+    {
+        #region Assert_EqualValues
+        long total = 42;
+        Assert.Equal(42, total);                     // numbers of different types are compared by value
+
+        var greeting = "Hello";
+        Assert.Equal("hello", greeting, ignoreCase: true);
+
+        var text = "first line\r\nsecond line";
+        Assert.Equal("first line\nsecond line", text, ignoreLineEndingDifferences: true);
+
+        Assert.NotEqual("Goodbye", greeting);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_EqualCollections()
+    {
+        #region Assert_EqualCollections
+        List<int> numbers = [1, 2, 3];
+        Assert.Equal(new[] { 1, 2, 3 }, numbers);    // item by item, whatever the collection types
+
+        // Nested collections are compared by content too
+        var matrix = new List<int[]> { new[] { 1, 2 }, new[] { 3 } };
+        Assert.Equal(new[] { new[] { 1, 2 }, new[] { 3 } }, matrix);
+
+        // Pass a comparer to choose how items are compared
+        var tags = new[] { "Admin", "User" };
+        Assert.Equal(new[] { "admin", "user" }, tags, StringComparer.OrdinalIgnoreCase);
+
+        // The order matters, unless you use EqualUnordered
+        Assert.NotEqual(new[] { 3, 2, 1 }, numbers);
+        Assert.EqualUnordered(new[] { 3, 2, 1 }, numbers);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_EqualApproximately()
+    {
+        #region Assert_EqualApproximately
+        var sum = 0.1 + 0.2;
+        Assert.NotEqual(0.3, sum);                       // 0.30000000000000004
+        Assert.Equal(0.3, sum, tolerance: 1e-9);         // |expected - actual| <= tolerance
+        Assert.Equal(3.14, Math.PI, precision: 2);       // both values rounded to 2 decimal places
+
+        var expected = new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc);
+        var actual = expected.AddMilliseconds(300);
+        Assert.Equal(expected, actual, TimeSpan.FromSeconds(1));
+        #endregion
+    }
 }

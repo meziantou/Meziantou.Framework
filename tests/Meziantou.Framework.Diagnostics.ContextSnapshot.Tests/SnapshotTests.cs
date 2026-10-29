@@ -67,6 +67,54 @@ public sealed class SnapshotTests(ITestOutputHelper testOutputHelper)
     }
 
     [Fact]
+    public void DocumentationExample_SelectParts()
+    {
+        #region ContextSnapshot_SelectParts
+        var snapshot = new ContextSnapshotBuilder()
+            .AddOperatingSystem()
+            .AddDotnetRuntime()
+            .AddProcessorCount()
+            .AddValue("Application.Version", "1.2.3")
+            .BuildSnapshot();
+
+        // The keys are sorted in ordinal order
+        Assert.Equal(["Application.Version", "Dotnet", "OperatingSystem", "ProcessorCount"], snapshot.Keys);
+        Assert.Equal("1.2.3", snapshot["Application.Version"]);
+
+        // Each value is an object you can read, or serialize with the rest of the snapshot
+        var operatingSystem = Assert.IsType<OperatingSystemSnapshot>(snapshot["OperatingSystem"]);
+        Assert.Equal(OperatingSystem.IsWindows(), operatingSystem.IsWindows);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_RedactEnvironmentVariables()
+    {
+        #region ContextSnapshot_RedactEnvironmentVariables
+        // By default, the value of a variable whose name contains TOKEN, SECRET, PASSWORD, API_KEY... is replaced by "***"
+        Assert.True(ContextSnapshotBuilder.IsSecretEnvironmentVariableName("GITHUB_TOKEN"));
+        Assert.True(ContextSnapshotBuilder.IsSecretEnvironmentVariableName("ConnectionStrings__Password"));
+        Assert.False(ContextSnapshotBuilder.IsSecretEnvironmentVariableName("ConnectionStrings__Default"));
+
+        // Extend the default rule to redact the connection strings too
+        var snapshot = new ContextSnapshotBuilder()
+            .AddEnvironmentVariables(EnvironmentVariableTarget.Process, name =>
+                ContextSnapshotBuilder.IsSecretEnvironmentVariableName(name) ||
+                name.StartsWith("ConnectionStrings__", StringComparison.OrdinalIgnoreCase))
+            .BuildSnapshot();
+
+        var variables = Assert.IsType<ImmutableSortedDictionary<string, object>>(snapshot["EnvironmentVariables.Process"]);
+        foreach (var (name, value) in variables)
+        {
+            if (name.StartsWith("ConnectionStrings__", StringComparison.OrdinalIgnoreCase))
+            {
+                Assert.Equal(ContextSnapshotBuilder.RedactedValue, value);
+            }
+        }
+        #endregion
+    }
+
+    [Fact]
     public void HasAppContextData()
     {
         var builder = new ContextSnapshotBuilder();

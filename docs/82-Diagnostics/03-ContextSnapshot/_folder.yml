@@ -1,0 +1,2 @@
+title: Context snapshot
+description: Capture the operating system, runtime, process, culture and environment of an application in one serializable object.

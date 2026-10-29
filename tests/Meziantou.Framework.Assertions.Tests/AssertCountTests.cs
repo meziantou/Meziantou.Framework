@@ -615,4 +615,36 @@ public sealed class AssertCountTests
             Actual: [1, 2, 3]
             """);
     }
+
+    [Fact]
+    public void Documentation_Counts()
+    {
+        #region Assert_Counts
+        List<string> empty = [];
+        List<int> numbers = [1, 2, 3, 4];
+
+        Assert.Empty(empty);
+        Assert.NotEmpty(numbers);
+        Assert.HasCount(4, numbers);                    // the count comes first
+        Assert.DoesNotHaveCount(3, numbers);
+        Assert.HasCountGreaterThan(2, numbers);         // numbers has more than 2 items
+        Assert.HasCountLessThanOrEqual(4, numbers);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_LazySequences()
+    {
+        #region Assert_LazySequences
+        // An endless sequence: the assertions read only the items they need
+        static IEnumerable<int> Naturals()
+        {
+            for (var i = 0; ; i++)
+                yield return i;
+        }
+
+        Assert.HasCountGreaterThan(3, Naturals());      // reads 4 items
+        Assert.Contains(new[] { 5, 6 }, Naturals());    // stops at the first match
+        #endregion
+    }
 }

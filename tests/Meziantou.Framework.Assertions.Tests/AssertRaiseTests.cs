@@ -1,3 +1,5 @@
+using System.Collections.ObjectModel;
+using System.ComponentModel;
 using AssertionsAssert = Meziantou.Framework.Assertions.Assert;
 
 namespace Meziantou.Framework.Assertions.Tests;
@@ -649,5 +651,44 @@ public sealed class AssertRaiseTests
     private sealed class CustomEventArgs(string value) : EventArgs
     {
         public string Value { get; } = value;
+    }
+
+    [Fact]
+    public void Documentation_Raise()
+    {
+        #region Assert_Raise
+        using var component = new Component();
+
+        // Attach a handler, run the action, detach the handler, and return the first event raised
+        var raised = Assert.Raise(
+            handler => component.Disposed += handler,
+            handler => component.Disposed -= handler,
+            () => component.Dispose());
+
+        Assert.Same(component, raised.Sender);
+        Assert.Same(EventArgs.Empty, raised.Arguments);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_RaiseGeneric()
+    {
+        #region Assert_RaiseGeneric
+        var collection = new ObservableCollection<string>();
+        var notifier = (INotifyPropertyChanged)collection;
+
+        // An event whose delegate is not an EventHandler<T>: adapt it with handler.Invoke
+        var raised = Assert.Raise<PropertyChangedEventArgs>(
+            handler => notifier.PropertyChanged += handler.Invoke,
+            handler => notifier.PropertyChanged -= handler.Invoke,
+            () => collection.Add("Alice"));
+
+        Assert.Equal("Count", raised.Arguments.PropertyName);
+
+        Assert.DoesNotRaise<PropertyChangedEventArgs>(
+            handler => notifier.PropertyChanged += handler.Invoke,
+            handler => notifier.PropertyChanged -= handler.Invoke,
+            () => _ = collection.Contains("Bob"));
+        #endregion
     }
 }

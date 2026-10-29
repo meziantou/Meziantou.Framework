@@ -1,0 +1,2 @@
+title: OpenTelemetryCollector
+description: Receive OTLP logs, traces and metrics in an ASP.NET Core application, handle them in code, or keep them in memory for tests.

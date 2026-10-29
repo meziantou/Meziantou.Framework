@@ -187,4 +187,18 @@ public sealed class AssertInRangeTests
             Actual:   NaN
             """);
     }
+
+    [Fact]
+    public void Documentation_InRange()
+    {
+        #region Assert_InRange
+        var percentage = 42;
+
+        Assert.InRange(percentage, 0, 100);         // the value comes first, then the inclusive bounds
+        Assert.NotInRange(percentage, 50, 100);
+
+        Assert.InRange("banana", "apple", "cherry", StringComparer.Ordinal);
+        Assert.NotInRange(double.NaN, double.MinValue, double.MaxValue);
+        #endregion
+    }
 }

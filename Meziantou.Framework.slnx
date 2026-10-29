@@ -33,6 +33,7 @@
     <Project Path="samples/Meziantou.Framework.HumanReadableSerializer.Html.Samples/Meziantou.Framework.HumanReadableSerializer.Html.Samples.csproj" />
     <Project Path="samples/Meziantou.Framework.Imaging.Samples/Meziantou.Framework.Imaging.Samples.csproj" />
     <Project Path="samples/Meziantou.Framework.InlineSnapshotTesting.Samples/Meziantou.Framework.InlineSnapshotTesting.Samples.csproj" />
+    <Project Path="samples/Meziantou.Framework.JavaScriptEngine.Samples/Meziantou.Framework.JavaScriptEngine.Samples.csproj" />
     <Project Path="samples/Meziantou.Framework.MediaTags.Samples/Meziantou.Framework.MediaTags.Samples.csproj" />
     <Project Path="samples/Meziantou.Framework.NodeJs.Samples/Meziantou.Framework.NodeJs.Samples.csproj" />
     <Project Path="samples/Meziantou.Framework.NtpClient.Samples/Meziantou.Framework.NtpClient.Samples.csproj" />

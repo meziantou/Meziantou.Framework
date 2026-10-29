@@ -9,12 +9,16 @@ using ValueTagAnalyzerType = Meziantou.Framework.TaggedValues.Analyzer.ValueTagA
 namespace Meziantou.Framework.Tests;
 
 /// <summary>
-/// The readme examples are compiled by samples/Meziantou.Framework.TaggedValues.Samples, which does not run the analyzer.
-/// These tests run it on them, and check that it reports the diagnostics named by their comments, and only those.
+/// The readme and documentation examples are compiled by samples/Meziantou.Framework.TaggedValues.Samples, which does not
+/// run the analyzer. These tests run it on them, and check that it reports the diagnostics named by their comments, and
+/// only those. The files of the Strict folder are analyzed with taggedvalues.strict = true, the files of the
+/// NamingConventions folder with taggedvalues.infer_tags_from_names = true, and the other files with the default options.
 /// </summary>
 public sealed partial class ReadmeExampleTests : TaggedValuesAnalyzerTestBase
 {
     private const string ResourcePrefix = "ReadmeSamples/";
+    private const string StrictFolder = "Strict";
+    private const string NamingConventionsFolder = "NamingConventions";
 
     // The implicit usings of the sample project
     private const string GlobalUsings = """
@@ -22,17 +26,20 @@ public sealed partial class ReadmeExampleTests : TaggedValuesAnalyzerTestBase
         global using System.Collections.Generic;
         global using System.IO;
         global using System.Linq;
+        global using System.Threading;
+        global using System.Threading.Tasks;
         global using Meziantou.Framework.TaggedValues;
         """;
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task ReadmeExample_ReportsTheDiagnosticsOfTheComments(bool strict)
+    [InlineData("")]
+    [InlineData(StrictFolder)]
+    [InlineData(NamingConventionsFolder)]
+    public async Task ReadmeExample_ReportsTheDiagnosticsOfTheComments(string folder)
     {
         var parseOptions = new CSharpParseOptions(LanguageVersion.Preview);
         var trees = GetSampleFiles()
-            .Where(file => file.Strict == strict)
+            .Where(file => file.Folder == folder)
             .Select(file => CSharpSyntaxTree.ParseText(file.Text, parseOptions, path: file.Name, cancellationToken: XunitCancellationToken))
             .ToList();
         Assert.NotEmpty(trees);
@@ -44,7 +51,7 @@ public sealed partial class ReadmeExampleTests : TaggedValuesAnalyzerTestBase
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, nullableContextOptions: NullableContextOptions.Enable));
         Assert.Empty(compilation.GetDiagnostics(XunitCancellationToken).Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
 
-        var analyzerOptions = new AnalyzerOptions([], new StrictModeOptionsProvider(strict));
+        var analyzerOptions = new AnalyzerOptions([], new SampleOptionsProvider(strict: folder is StrictFolder, inferTagsFromNames: folder is NamingConventionsFolder));
         var diagnostics = await compilation
             .WithAnalyzers([new ValueTagAnalyzerType()], analyzerOptions)
             .GetAnalyzerDiagnosticsAsync(XunitCancellationToken);
@@ -54,16 +61,20 @@ public sealed partial class ReadmeExampleTests : TaggedValuesAnalyzerTestBase
         Assert.Equal(expected, actual);
     }
 
-    private static List<(string Name, string Text, bool Strict)> GetSampleFiles()
+    // The folder of a file, when it selects the analyzer options, or an empty string
+    private static List<(string Name, string Text, string Folder)> GetSampleFiles()
     {
         var assembly = typeof(ReadmeExampleTests).Assembly;
-        var result = new List<(string Name, string Text, bool Strict)>();
+        var result = new List<(string Name, string Text, string Folder)>();
         foreach (var name in assembly.GetManifestResourceNames().Where(name => name.StartsWith(ResourcePrefix, StringComparison.Ordinal)))
         {
             using var stream = assembly.GetManifestResourceStream(name)!;
             using var reader = new StreamReader(stream);
             var path = name[ResourcePrefix.Length..].Replace('\\', '/');
-            result.Add((path, reader.ReadToEnd(), path.StartsWith("Strict/", StringComparison.Ordinal)));
+            var folder = path.StartsWith(StrictFolder + "/", StringComparison.Ordinal) ? StrictFolder
+                : path.StartsWith(NamingConventionsFolder + "/", StringComparison.Ordinal) ? NamingConventionsFolder
+                : "";
+            result.Add((path, reader.ReadToEnd(), folder));
         }
 
         return result;
@@ -115,9 +126,9 @@ public sealed partial class ReadmeExampleTests : TaggedValuesAnalyzerTestBase
     [GeneratedRegex("MFTV[0-9]{4}", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
     private static partial Regex DiagnosticIdRegex();
 
-    private sealed class StrictModeOptionsProvider(bool strict) : AnalyzerConfigOptionsProvider
+    private sealed class SampleOptionsProvider(bool strict, bool inferTagsFromNames) : AnalyzerConfigOptionsProvider
     {
-        private readonly StrictModeOptions _options = new(strict);
+        private readonly SampleOptions _options = new(strict, inferTagsFromNames);
 
         public override AnalyzerConfigOptions GlobalOptions => _options;
 
@@ -126,11 +137,16 @@ public sealed partial class ReadmeExampleTests : TaggedValuesAnalyzerTestBase
         public override AnalyzerConfigOptions GetOptions(AdditionalText textFile) => _options;
     }
 
-    private sealed class StrictModeOptions(bool strict) : AnalyzerConfigOptions
+    private sealed class SampleOptions(bool strict, bool inferTagsFromNames) : AnalyzerConfigOptions
     {
         public override bool TryGetValue(string key, [NotNullWhen(true)] out string? value)
         {
-            value = key == "taggedvalues.strict" ? (strict ? "true" : "false") : null;
+            value = key switch
+            {
+                "taggedvalues.strict" => strict ? "true" : "false",
+                "taggedvalues.infer_tags_from_names" => inferTagsFromNames ? "true" : "false",
+                _ => null,
+            };
             return value is not null;
         }
     }

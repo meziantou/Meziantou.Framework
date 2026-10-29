@@ -353,6 +353,67 @@ public sealed class WebPDecoderTests
         Assert.Null(image.Metadata.ExifProfile);
     }
 
+    public static TheoryData<string> MetadataChunkTypes => ["ICCP", "EXIF", "XMP "];
+
+    [Theory]
+    [MemberData(nameof(MetadataChunkTypes))]
+    public async Task MetadataChunksLargerThanTheMetadataBudgetFailBeforeTheyAreBuffered(string fourCC)
+    {
+        // A 1 MB chunk with a 4 KiB budget fails from its header: the stream is not read past the first buffer
+        var data = ExtendedStill(Chunk(fourCC, new byte[1_000_000]));
+        var configuration = new ImageConfiguration { Limits = new ImageResourceLimits { MaxMetadataBytes = 4096 } };
+        var identify = new ImageIdentifyOptions { Configuration = configuration };
+        var load = new ImageDecodeOptions { Configuration = configuration };
+
+        AssertMetadataLimit(4096, 1_000_000, Assert.Throws<ImageResourceLimitException>(() => Image.Identify(data, identify)));
+        AssertMetadataLimit(4096, 1_000_000, Assert.Throws<ImageResourceLimitException>(() => Image.Load(data, load)));
+
+        await using (var stream = new TestInputStream(data) { Seekable = false, ForbidAsynchronousReads = true })
+        {
+            AssertMetadataLimit(4096, 1_000_000, Assert.Throws<ImageResourceLimitException>(() => Image.Identify(stream, identify)));
+            Assert.True(stream.BytesRead < 64 * 1024, $"{stream.BytesRead} bytes were read.");
+        }
+
+        await using (var stream = new TestInputStream(data) { Seekable = false, ForbidSynchronousReads = true })
+        {
+            AssertMetadataLimit(4096, 1_000_000, await Assert.ThrowsAsync<ImageResourceLimitException>(() => Image.LoadAsync(stream, load, XunitCancellationToken)));
+            Assert.True(stream.BytesRead < 64 * 1024, $"{stream.BytesRead} bytes were read.");
+        }
+
+        // The payload is checked before it is read: a declared size fails even when the input is truncated
+        byte[] declared = [.. "RIFF"u8, .. BitConverter.GetBytes(uint.MaxValue - 8), .. "WEBP"u8, .. Chunk("VP8X", new byte[10]), .. Encoding.ASCII.GetBytes(fourCC), .. BitConverter.GetBytes(1u << 30)];
+        AssertMetadataLimit(ImageResourceLimits.DefaultMaxMetadataBytes, 1 << 30, Assert.Throws<ImageResourceLimitException>(() => Image.Identify(declared)));
+    }
+
+    [Fact]
+    public void MetadataChunksAreBoundedByWhatIsLeftOfTheBudgetAndRepeatedChunksAreNotBuffered()
+    {
+        // The XMP packet is checked against what the profile left (4096 - 3000), before it is buffered
+        var icc = Chunk("ICCP", new byte[3000]);
+        var data = ExtendedStill(icc, Chunk("XMP ", new byte[2000]));
+        var options = new ImageIdentifyOptions { Configuration = new ImageConfiguration { Limits = new ImageResourceLimits { MaxMetadataBytes = 4096 } } };
+        AssertMetadataLimit(4096, 5000, Assert.Throws<ImageResourceLimitException>(() => Image.Identify(data, options)));
+
+        // A second EXIF chunk is not adopted: it is streamed, never buffered, so it does not need the budget
+        byte[] exif = [0x49, 0x49, 0x2A, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
+        var repeated = ExtendedStill(Chunk("EXIF", exif), Chunk("EXIF", new byte[1_000_000]));
+        var metadata = Image.Identify(repeated, new ImageIdentifyOptions { Configuration = new ImageConfiguration { Limits = new ImageResourceLimits { MaxMetadataBytes = exif.Length } } }).Metadata;
+        Assert.Equal(exif, metadata.ExifProfile?.Data.ToArray());
+    }
+
+    [Fact]
+    public void OnlyTheDefinedBytesOfTheAnimChunkAreBuffered()
+    {
+        // 1 MB after the 6 defined bytes of ANIM: buffering the chunk would exceed the 256 KiB live allocation limit
+        var data = Animation(1, 1, background: [1, 2, 3, 4], loopCount: 3, [(0, 0, 1, 1, new[] { new Rgba32(1, 2, 3, 255) }, Blend: false, Dispose: false, Duration: 10)], animationTrailingBytes: 1_000_000);
+        var options = new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan, Configuration = new ImageConfiguration { Limits = new ImageResourceLimits { MaxLiveAllocationBytes = 256 * 1024 } } };
+
+        using var stream = new TestInputStream(data) { Seekable = false };
+        var info = Image.Identify(stream, options);
+        Assert.Equal(1, info.FrameCount);
+        Assert.Equal(3, info.Animation?.TotalPlays);
+    }
+
     [Fact]
     public void AnimatedFilesAreNotPresentedAsStills()
     {
@@ -483,12 +544,12 @@ public sealed class WebPDecoderTests
         return Assert.Single(reader.Chunks, chunk => chunk.FourCC == "VP8L").Data.ToArray();
     }
 
-    private static byte[] Animation(int width, int height, byte[] background, int loopCount, (int X, int Y, int Width, int Height, Rgba32[] Pixels, bool Blend, bool Dispose, int Duration)[] frames)
+    private static byte[] Animation(int width, int height, byte[] background, int loopCount, (int X, int Y, int Width, int Height, Rgba32[] Pixels, bool Blend, bool Dispose, int Duration)[] frames, int animationTrailingBytes = 0)
     {
         var chunks = new List<byte[]>
         {
             Chunk("VP8X", [0x12, 0, 0, 0, .. UInt24(width - 1), .. UInt24(height - 1)]),
-            Chunk("ANIM", [.. background, (byte)loopCount, (byte)(loopCount >> 8)]),
+            Chunk("ANIM", [.. background, (byte)loopCount, (byte)(loopCount >> 8), .. new byte[animationTrailingBytes]]),
         };
         foreach (var frame in frames)
         {
@@ -498,6 +559,32 @@ public sealed class WebPDecoderTests
 
         var body = chunks.SelectMany(chunk => chunk).ToArray();
         return [.. "RIFF"u8, .. BitConverter.GetBytes((uint)(body.Length + 4)), .. "WEBP"u8, .. body];
+    }
+
+    /// <summary>An extended 1x1 still image (VP8X, the given chunks, VP8L); the VP8X flags declare the metadata chunks.</summary>
+    private static byte[] ExtendedStill(params byte[][] chunks)
+    {
+        var flags = 0;
+        foreach (var chunk in chunks)
+        {
+            flags |= Encoding.ASCII.GetString(chunk, 0, 4) switch
+            {
+                "ICCP" => WebPStructureParser.IccFlag,
+                "EXIF" => WebPStructureParser.ExifFlag,
+                "XMP " => WebPStructureParser.XmpFlag,
+                _ => 0,
+            };
+        }
+
+        byte[] body = [.. Chunk("VP8X", [(byte)flags, 0, 0, 0, .. UInt24(0), .. UInt24(0)]), .. chunks.SelectMany(chunk => chunk), .. Chunk("VP8L", Vp8L([new Rgba32(1, 2, 3, 255)], 1, 1))];
+        return [.. "RIFF"u8, .. BitConverter.GetBytes((uint)(body.Length + 4)), .. "WEBP"u8, .. body];
+    }
+
+    private static void AssertMetadataLimit(long limit, long requested, ImageResourceLimitException exception)
+    {
+        Assert.Equal(ImageResourceLimitKind.MetadataBytes, exception.Kind);
+        Assert.Equal(limit, exception.Limit);
+        Assert.Equal(requested, exception.Requested);
     }
 
     private static byte[] Chunk(string fourCC, byte[] payload)

@@ -95,6 +95,18 @@ internal sealed class InputResourceTracker
         MetadataBytes = Charge(MetadataBytes, count, Limits.MaxMetadataBytes, ImageResourceLimitKind.MetadataBytes);
     }
 
+    /// <summary>
+    /// Checks that metadata bytes fit the remaining metadata budget, without charging them: a codec bounds a payload with it
+    /// before buffering, and charges what it retains or decompresses later.
+    /// </summary>
+    /// <param name="count">The number of bytes (non-negative).</param>
+    /// <exception cref="ImageResourceLimitException">The limit would be exceeded; the counter is unchanged.</exception>
+    public void EnsureMetadataBytesAvailable(long count)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
+        _ = Charge(MetadataBytes, count, Limits.MaxMetadataBytes, ImageResourceLimitKind.MetadataBytes);
+    }
+
     private static long Charge(long current, long count, long limit, ImageResourceLimitKind kind)
     {
         // Saturating addition: the requested value is reported even when it would overflow

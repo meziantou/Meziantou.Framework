@@ -1,4 +1,7 @@
-﻿namespace Meziantou.Framework.Globbing.Tests;
+﻿using System.IO.Enumeration;
+
+namespace Meziantou.Framework.Globbing.Tests;
+
 public sealed class GlobCollectionTests
 {
     [Fact]
@@ -11,6 +14,162 @@ public sealed class GlobCollectionTests
         Assert.Collection(globs,
             item => Assert.Equal(a, item),
             item => Assert.Equal(b, item));
+    }
+
+    [Fact]
+    public void DocumentationExample_IncludeExclude()
+    {
+        #region GlobCollection_IncludeExclude
+        GlobCollection globs =
+        [
+            Glob.Parse("**/*.cs", GlobDialect.Standard),
+            Glob.Parse("!**/obj/**", GlobDialect.Standard),
+        ];
+
+        Assert.True(globs.IsMatch("src/Program.cs"));
+        Assert.False(globs.IsMatch("src/obj/Debug/AssemblyInfo.cs"));
+        Assert.False(globs.IsMatch("readme.md"));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_ExcludeWins()
+    {
+        #region GlobCollection_ExcludeWins
+        // The order does not matter: a path that matches an exclude pattern is excluded
+        GlobCollection globs =
+        [
+            Glob.Parse("!*.log", GlobDialect.Standard),
+            Glob.Parse("*", GlobDialect.Standard),
+            Glob.Parse("important.log", GlobDialect.Standard),
+        ];
+
+        Assert.True(globs.IsMatch("readme.md"));
+        Assert.False(globs.IsMatch("important.log"));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_ExcludeDirectoryContent()
+    {
+        #region GlobCollection_ExcludeDirectoryContent
+        // '!obj/' excludes the directory itself, not the files it holds
+        GlobCollection directoryOnly = [Glob.Parse("**/*", GlobDialect.Standard), Glob.Parse("!obj/", GlobDialect.Standard)];
+        Assert.True(directoryOnly.IsMatch("obj/project.assets.json"));
+
+        // '!obj/**' excludes everything below the directory
+        GlobCollection content = [Glob.Parse("**/*", GlobDialect.Standard), Glob.Parse("!obj/**", GlobDialect.Standard)];
+        Assert.False(content.IsMatch("obj/project.assets.json"));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_EnumerateFiles()
+    {
+        #region GlobCollection_EnumerateFilesWithExclusions
+        using var rootDirectory = TemporaryDirectory.Create();
+        rootDirectory.CreateEmptyFile("src/App/Program.cs");
+        rootDirectory.CreateEmptyFile("src/App/obj/Debug/AssemblyInfo.cs");
+        rootDirectory.CreateEmptyFile("tests/AppTests.cs");
+
+        GlobCollection globs =
+        [
+            Glob.Parse("src/**/*.cs", GlobDialect.Standard),
+            Glob.Parse("!**/obj/**", GlobDialect.Standard),
+        ];
+
+        var files = globs.EnumerateFiles(rootDirectory.FullPath).ToList();
+        Assert.Equal([Path.Combine(rootDirectory.FullPath, "src", "App", "Program.cs")], files);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_ParseGitIgnore()
+    {
+        #region GlobCollection_ParseGitIgnore
+        var gitIgnore = GlobCollection.ParseGitIgnore("""
+            # Build output
+            bin/
+            obj/
+            *.log
+            !important.log
+            """);
+
+        // IsMatch returns true when the path is ignored
+        Assert.True(gitIgnore.IsMatch("src/App/bin/Debug/App.dll"));
+        Assert.True(gitIgnore.IsMatch("trace.log"));
+        Assert.False(gitIgnore.IsMatch("important.log"));
+        Assert.False(gitIgnore.IsMatch("src/App/Program.cs"));
+        #endregion
+    }
+
+    [Fact]
+    public async Task DocumentationExample_LoadGitIgnore()
+    {
+        #region GlobCollection_LoadGitIgnoreAsync
+        using var rootDirectory = TemporaryDirectory.Create();
+        var path = rootDirectory.CreateTextFile(".gitignore", "bin/\nobj/\n");
+
+        var gitIgnore = await GlobCollection.LoadGitIgnoreAsync(path);
+
+        Assert.True(gitIgnore.IsMatch("src/App/obj/project.assets.json"));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_GitIgnoreRules()
+    {
+        #region GlobCollection_GitIgnoreRules
+        // The last pattern that matches a path decides
+        var lastMatchWins = GlobCollection.ParseGitIgnore("""
+            *.log
+            !important.log
+            """);
+        Assert.False(lastMatchWins.IsMatch("important.log"));
+
+        // A file cannot be re-included when its directory is ignored
+        var directoryIgnored = GlobCollection.ParseGitIgnore("""
+            bin/
+            !bin/keep.txt
+            """);
+        Assert.True(directoryIgnored.IsMatch("bin/keep.txt"));
+
+        // Ignore the content of the directory instead of the directory itself
+        var contentIgnored = GlobCollection.ParseGitIgnore("""
+            /bin/*
+            !/bin/keep.txt
+            """);
+        Assert.False(contentIgnored.IsMatch("bin/keep.txt"));
+        Assert.True(contentIgnored.IsMatch("bin/App.dll"));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_EnumerateFilesNotIgnored()
+    {
+        #region GlobCollection_EnumerateFilesNotIgnored
+        using var rootDirectory = TemporaryDirectory.Create();
+        rootDirectory.CreateEmptyFile("src/Program.cs");
+        rootDirectory.CreateEmptyFile("src/bin/App.dll");
+        rootDirectory.CreateEmptyFile("trace.log");
+
+        var gitIgnore = GlobCollection.ParseGitIgnore("""
+            bin/
+            *.log
+            """);
+
+        // Skip the ignored files, and do not visit the ignored directories
+        var files = new FileSystemEnumerable<string>(
+            rootDirectory.FullPath,
+            (ref FileSystemEntry entry) => entry.ToFullPath(),
+            new EnumerationOptions { RecurseSubdirectories = true })
+        {
+            ShouldIncludePredicate = (ref FileSystemEntry entry) => !entry.IsDirectory && !gitIgnore.IsMatch(ref entry),
+            ShouldRecursePredicate = (ref FileSystemEntry entry) => !gitIgnore.IsMatch(ref entry),
+        };
+
+        Assert.Equal([Path.Combine(rootDirectory.FullPath, "src", "Program.cs")], files.ToList());
+        #endregion
     }
 
     [Fact]

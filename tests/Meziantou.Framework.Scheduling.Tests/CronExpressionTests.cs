@@ -854,4 +854,108 @@ public sealed class CronExpressionTests
             Assert.Equal(expectedOccurrences[i], actualList[i]);
         }
     }
+
+    [Fact]
+    public void DocumentationExample_Formats()
+    {
+        #region CronExpression_Formats
+        // 5 fields: minute hour day-of-month month day-of-week
+        var weekdays = CronExpression.Parse("30 9 * * MON-FRI");
+
+        // 6 fields start with the seconds, 7 fields end with the year
+        Assert.Equal(weekdays, CronExpression.Parse("0 30 9 * * 1-5"));
+        Assert.Equal(weekdays, CronExpression.Parse("0 30 9 * * MON-FRI *"));
+
+        // Predefined schedules
+        Assert.Equal(CronExpression.Parse("0 0 * * *"), CronExpression.Parse("@daily"));
+
+        var occurrences = weekdays.GetNextOccurrences(new DateTime(2024, 01, 05, 12, 00, 00)).Take(2);
+        Assert.Equal(
+            [
+                new DateTime(2024, 01, 08, 09, 30, 00), // Monday
+                new DateTime(2024, 01, 09, 09, 30, 00),
+            ],
+            occurrences);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_SpecialValues()
+    {
+        #region CronExpression_SpecialValues
+        var start = new DateTime(2024, 02, 01);
+
+        // The last day of the month
+        Assert.Equal(new DateTime(2024, 02, 29, 18, 00, 00), CronExpression.Parse("0 18 L * *").GetNextOccurrence(start));
+
+        // The weekday nearest to the 17th (Saturday, February 17, 2024)
+        Assert.Equal(new DateTime(2024, 02, 16, 09, 00, 00), CronExpression.Parse("0 9 17W * *").GetNextOccurrence(start));
+
+        // The last Friday of the month
+        Assert.Equal(new DateTime(2024, 02, 23, 09, 00, 00), CronExpression.Parse("0 9 * * 5L").GetNextOccurrence(start));
+
+        // The second Tuesday of the month
+        Assert.Equal(new DateTime(2024, 02, 13, 09, 00, 00), CronExpression.Parse("0 9 * * TUE#2").GetNextOccurrence(start));
+
+        // Every 2 hours from 22:00 to 02:00: a range can wrap around the end of the field
+        Assert.Equal(
+            [new DateTime(2024, 02, 01, 00, 00, 00), new DateTime(2024, 02, 01, 02, 00, 00), new DateTime(2024, 02, 01, 22, 00, 00)],
+            CronExpression.Parse("0 22-2/2 * * *").GetNextOccurrences(start).Take(3));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_TryParse()
+    {
+        #region CronExpression_TryParse
+        Assert.True(CronExpression.TryParse("*/5 * * * *", out var cron));
+        Assert.Equal("*/5 * * * *", cron.ToString());
+
+        // The minutes go from 0 to 59
+        Assert.False(CronExpression.TryParse("60 * * * *", out _));
+        Assert.Throws<FormatException>(() => CronExpression.Parse("60 * * * *"));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_Delay()
+    {
+        #region CronExpression_Delay
+        var cron = CronExpression.Parse("0 */15 * * * *");
+        var now = new DateTimeOffset(2024, 01, 01, 10, 05, 00, TimeSpan.Zero); // DateTimeOffset.UtcNow
+
+        // The instant of the next occurrence, evaluated in UTC
+        var next = cron.GetNextOccurrence(now, TimeZoneInfo.Utc);
+        Assert.NotNull(next);
+
+        var delay = next.Value - now;
+        Assert.Equal(TimeSpan.FromMinutes(10), delay);
+        #endregion
+    }
+
+#if !INVARIANT_GLOBALIZATION_MODE_ENABLED
+    // IANA identifiers need ICU on Windows
+    [Fact]
+    public void DocumentationExample_TimeZone()
+    {
+        #region CronExpression_TimeZone
+        var cron = CronExpression.Parse("0 9 * * *");
+        var timeZone = TimeZoneInfo.FindSystemTimeZoneById("Europe/Paris");
+
+        var occurrences = cron.GetNextOccurrences(new DateTime(2024, 03, 30), timeZone).Take(3);
+
+        // 09:00 in Paris, before and after the switch to summer time
+        Assert.Equal(
+            [
+                new DateTimeOffset(2024, 03, 30, 09, 00, 00, TimeSpan.FromHours(1)),
+                new DateTimeOffset(2024, 03, 31, 09, 00, 00, TimeSpan.FromHours(2)),
+                new DateTimeOffset(2024, 04, 01, 09, 00, 00, TimeSpan.FromHours(2)),
+            ],
+            occurrences);
+
+        // A time zone identifier works too
+        Assert.Equal(occurrences, cron.GetNextOccurrences(new DateTime(2024, 03, 30), "Europe/Paris").Take(3));
+        #endregion
+    }
+#endif
 }

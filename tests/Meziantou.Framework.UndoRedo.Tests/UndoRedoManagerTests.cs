@@ -1188,6 +1188,198 @@ public sealed class UndoRedoManagerTests
         }
     }
 
+    [Fact]
+    public async Task DocumentationExample_GettingStarted()
+    {
+        #region UndoRedo_GettingStarted
+        var manager = new UndoRedoManager();
+        var document = new List<string>();
+
+        // Each recorded action runs immediately and becomes one undo step
+        await manager.RecordActionAsync(
+            execute: () => document.Add("Hello"),
+            unexecute: () => document.RemoveAt(document.Count - 1));
+        await manager.RecordActionAsync(
+            execute: () => document.Add("World"),
+            unexecute: () => document.RemoveAt(document.Count - 1));
+        Assert.Equal(["Hello", "World"], document);
+
+        await manager.UndoAsync();
+        Assert.Equal(["Hello"], document);
+        Assert.True(manager.CanUndo);
+        Assert.True(manager.CanRedo);
+
+        // Recording a new action clears the redo history
+        await manager.RecordActionAsync(
+            execute: () => document.Add("Everyone"),
+            unexecute: () => document.RemoveAt(document.Count - 1));
+        Assert.Equal(["Hello", "Everyone"], document);
+        Assert.False(manager.CanRedo);
+        #endregion
+    }
+
+    [Fact]
+    public async Task DocumentationExample_History()
+    {
+        #region UndoRedo_History
+        var manager = new UndoRedoManager();
+        var shapes = new List<string>();
+
+        await manager.RecordActionAsync(new UndoRedoDelegateAction(() => shapes.Add("circle"), () => shapes.Remove("circle")) { Description = "Add circle" });
+        await manager.RecordActionAsync(new UndoRedoDelegateAction(() => shapes.Add("square"), () => shapes.Remove("square")) { Description = "Add square" });
+        await manager.UndoAsync();
+
+        // The most recent action comes first
+        Assert.Equal(["Add circle"], manager.UndoableActions.Select(action => action.Description));
+        Assert.Equal(["Add square"], manager.RedoableActions.Select(action => action.Description));
+        #endregion
+    }
+
+    [Fact]
+    public async Task DocumentationExample_Notifications()
+    {
+        #region UndoRedo_Notifications
+        var manager = new UndoRedoManager();
+        var changedProperties = new List<string?>();
+        var historyChanges = 0;
+        manager.PropertyChanged += (sender, e) => changedProperties.Add(e.PropertyName);
+        manager.HistoryChanged += (sender, e) => historyChanges++;
+
+        await manager.RecordActionAsync(() => { }, () => { });
+
+        // Refresh the Undo and Redo commands of the UI from these notifications
+        Assert.Contains(nameof(UndoRedoManager.CanUndo), changedProperties);
+        Assert.Contains(nameof(UndoRedoManager.UndoableActions), changedProperties);
+        Assert.Equal(1, historyChanges);
+        #endregion
+    }
+
+    [Fact]
+    public async Task DocumentationExample_DeferredTransaction()
+    {
+        #region UndoRedoTransaction_Deferred
+        var manager = new UndoRedoManager();
+        var list = new List<int>();
+
+        await using (var transaction = manager.CreateTransaction())
+        {
+            await manager.RecordActionAsync(() => list.Add(1), () => list.Remove(1));
+
+            // In the default Deferred mode, the actions run when the transaction is committed
+            Assert.Empty(list);
+
+            await transaction.CommitAsync();
+        }
+
+        Assert.Equal([1], list);
+        #endregion
+    }
+
+    [Fact]
+    public async Task DocumentationExample_ImmediateTransaction()
+    {
+        #region UndoRedoTransaction_Immediate
+        var manager = new UndoRedoManager();
+        var list = new List<int>();
+
+        await using (var transaction = manager.CreateTransaction(TransactionExecutionMode.Immediate))
+        {
+            await manager.RecordActionAsync(() => list.Add(1), () => list.Remove(1));
+            await manager.RecordActionAsync(() => list.Add(2), () => list.Remove(2));
+
+            // In Immediate mode, the actions run as they are recorded
+            Assert.Equal([1, 2], list);
+
+            // Rolling back reverts them, and nothing is added to the history
+            await transaction.RollbackAsync();
+        }
+
+        Assert.Empty(list);
+        Assert.False(manager.CanUndo);
+        #endregion
+    }
+
+    [Fact]
+    public async Task DocumentationExample_TransactionNotCommitted()
+    {
+        #region UndoRedoTransaction_NotCommitted
+        var manager = new UndoRedoManager();
+        var list = new List<int>();
+
+        static void Validate(List<int> values)
+        {
+            if (values.Sum() > 10)
+                throw new InvalidOperationException("The total cannot exceed 10");
+        }
+
+        try
+        {
+            await using var transaction = manager.CreateTransaction(TransactionExecutionMode.Immediate);
+            await manager.RecordActionAsync(() => list.Add(4), () => list.Remove(4));
+            await manager.RecordActionAsync(() => list.Add(8), () => list.Remove(8));
+            Validate(list); // throws, so CommitAsync is never called
+            await transaction.CommitAsync();
+        }
+        catch (InvalidOperationException)
+        {
+        }
+
+        // Disposing the transaction without committing it rolled it back
+        Assert.Empty(list);
+        Assert.False(manager.CanUndo);
+        #endregion
+    }
+
+    [Fact]
+    public async Task DocumentationExample_Merge()
+    {
+        #region UndoRedoManager_Merge
+        var manager = new UndoRedoManager();
+        var document = new StringBuilder();
+
+        await manager.RecordActionAsync(new InsertTextAction(document, "Hel"));
+        await manager.RecordActionAsync(new InsertTextAction(document, "lo") { AllowToMergeWithPrevious = true });
+        Assert.Equal("Hello", document.ToString());
+
+        // Both insertions are a single undo step
+        Assert.Single(manager.UndoableActions);
+        await manager.UndoAsync();
+        Assert.Equal("", document.ToString());
+        #endregion
+    }
+
+    #region UndoRedoActionBase_MergeAction
+    internal sealed class InsertTextAction(StringBuilder document, string text) : UndoRedoActionBase
+    {
+        private string _text = text;
+
+        protected override ValueTask ExecuteCoreAsync(CancellationToken cancellationToken)
+        {
+            document.Append(_text);
+            return ValueTask.CompletedTask;
+        }
+
+        protected override ValueTask UnExecuteCoreAsync(CancellationToken cancellationToken)
+        {
+            document.Remove(document.Length - _text.Length, _text.Length);
+            return ValueTask.CompletedTask;
+        }
+
+        public override ValueTask<bool> TryToMergeAsync(IUndoRedoAction followingAction, CancellationToken cancellationToken = default)
+        {
+            if (followingAction is InsertTextAction other)
+            {
+                // The following text is already in the document (or, in a Deferred transaction, neither text is):
+                // take it over so that UnExecuteCoreAsync removes both texts
+                _text += other._text;
+                return ValueTask.FromResult(true);
+            }
+
+            return ValueTask.FromResult(false);
+        }
+    }
+    #endregion
+
     #region UndoRedoActionBase_CustomAction
     internal sealed class AddItemAction(IList<int> list, int value) : UndoRedoActionBase
     {

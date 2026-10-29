@@ -3417,4 +3417,158 @@ public sealed class InternetCalendarTests
         AssertVTimeZoneMatchesTimeZone(ics, timeZone, year, year + 4);
     }
 #endif
+
+    [Fact]
+    public void DocumentationExample_WriteEvent()
+    {
+        #region InternetCalendar_WriteEvent
+        var calendar = new InternetCalendar();
+        calendar.Events.Add(new Event
+        {
+            Id = "4c6a8f2e@example.com",
+            DateTimeStamp = new DateTime(2024, 01, 01, 00, 00, 00, DateTimeKind.Utc),
+            Start = new DateTime(2024, 01, 08, 09, 00, 00, DateTimeKind.Utc),
+            End = new DateTime(2024, 01, 08, 09, 30, 00, DateTimeKind.Utc),
+            Summary = "Weekly meeting",
+            Status = EventStatus.Confirmed,
+            RecurrenceRule = RecurrenceRule.Parse("FREQ=WEEKLY;BYDAY=MO;COUNT=10"),
+            Organizer = new Organizer { Address = new InternetCalendarUserAddress("john@example.com") },
+            Attendees =
+            {
+                new Attendee { Address = new InternetCalendarUserAddress("jane@example.com") },
+            },
+        });
+
+        // The content lines end with CRLF, as RFC 5545 requires
+        Assert.Equal("""
+            BEGIN:VCALENDAR
+            VERSION:2.0
+            PRODID:-//Meziantou//Meziantou.Framework.Scheduling//EN
+            BEGIN:VEVENT
+            UID:4c6a8f2e@example.com
+            STATUS:CONFIRMED
+            ORGANIZER:mailto:john@example.com
+            ATTENDEE:mailto:jane@example.com
+            DTSTAMP:20240101T000000Z
+            DTSTART:20240108T090000Z
+            DTEND:20240108T093000Z
+            RRULE:FREQ=WEEKLY;COUNT=10;BYDAY=MO
+            SUMMARY:Weekly meeting
+            END:VEVENT
+            END:VCALENDAR
+
+            """, calendar.ToIcs().ReplaceLineEndings("\n"));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_AllDayEvent()
+    {
+        #region InternetCalendar_AllDayEvent
+        var @event = new Event
+        {
+            Summary = "Conference",
+            IsAllDay = true,
+            Start = new DateTime(2024, 06, 10),
+            End = new DateTime(2024, 06, 13), // exclusive: the event lasts June 10, 11 and 12
+        };
+        @event.AdditionalProperties["LOCATION"] = "Paris";
+
+        var calendar = new InternetCalendar();
+        calendar.Events.Add(@event);
+
+        var ics = calendar.ToIcs();
+        Assert.Contains("DTSTART;VALUE=DATE:20240610\r\n", ics);
+        Assert.Contains("DTEND;VALUE=DATE:20240613\r\n", ics);
+        Assert.Contains("LOCATION:Paris\r\n", ics);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_Stream()
+    {
+        #region InternetCalendar_Stream
+        var calendar = new InternetCalendar();
+        calendar.Events.Add(new Event { Summary = "Lunch", Start = new DateTime(2024, 01, 02, 12, 00, 00, DateTimeKind.Utc) });
+
+        // Write UTF-8 to a stream, such as a file or an HTTP response
+        using var stream = new MemoryStream();
+        calendar.ToIcs(stream);
+
+        // Read it back
+        stream.Position = 0;
+        var parsed = InternetCalendar.Parse(stream);
+        Assert.Equal("Lunch", Assert.Single(parsed.Events).Summary);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_UnknownProperties()
+    {
+        #region InternetCalendar_UnknownProperties
+        var calendar = InternetCalendar.Parse("""
+            BEGIN:VCALENDAR
+            VERSION:2.0
+            PRODID:-//Example//Example//EN
+            BEGIN:VEVENT
+            UID:1@example.com
+            DTSTAMP:20240101T000000Z
+            DTSTART:20240102T080000Z
+            LOCATION:Room 101
+            X-MICROSOFT-CDO-BUSYSTATUS:OOF
+            CATEGORIES:WORK,PLANNING
+            END:VEVENT
+            END:VCALENDAR
+            """);
+
+        var @event = Assert.Single(calendar.Events);
+
+        // A single TEXT value without parameters
+        Assert.Equal("Room 101", @event.AdditionalProperties["LOCATION"]);
+        Assert.Equal("OOF", @event.AdditionalProperties["X-MICROSOFT-CDO-BUSYSTATUS"]);
+
+        // Anything else is kept verbatim, and written back as is
+        var categories = Assert.Single(@event.RawProperties);
+        Assert.Equal("CATEGORIES", categories.Name);
+        Assert.Equal("WORK,PLANNING", categories.Value);
+        #endregion
+    }
+
+#if !INVARIANT_GLOBALIZATION_MODE_ENABLED
+    // IANA identifiers need ICU on Windows
+    [Fact]
+    public void DocumentationExample_RecurringEvent()
+    {
+        #region InternetCalendar_RecurringEvent
+        var calendar = InternetCalendar.Parse("""
+            BEGIN:VCALENDAR
+            VERSION:2.0
+            PRODID:-//Example//Example//EN
+            BEGIN:VEVENT
+            UID:2@example.com
+            DTSTAMP:20240101T000000Z
+            DTSTART;TZID=Europe/Paris:20240325T090000
+            DTEND;TZID=Europe/Paris:20240325T100000
+            RRULE:FREQ=WEEKLY;COUNT=3
+            SUMMARY:Stand-up
+            END:VEVENT
+            END:VCALENDAR
+            """);
+
+        var @event = Assert.Single(calendar.Events);
+        Assert.NotNull(@event.RecurrenceRule);
+        Assert.NotNull(@event.TimeZone);
+
+        // Start is a wall-clock time in the time zone of the event
+        var occurrences = @event.RecurrenceRule.GetNextOccurrences(@event.Start, @event.TimeZone);
+        Assert.Equal(
+            [
+                new DateTimeOffset(2024, 03, 25, 09, 00, 00, TimeSpan.FromHours(1)),
+                new DateTimeOffset(2024, 04, 01, 09, 00, 00, TimeSpan.FromHours(2)),
+                new DateTimeOffset(2024, 04, 08, 09, 00, 00, TimeSpan.FromHours(2)),
+            ],
+            occurrences);
+        #endregion
+    }
+#endif
 }

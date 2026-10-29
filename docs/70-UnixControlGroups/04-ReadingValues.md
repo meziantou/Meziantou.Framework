@@ -1,0 +1,106 @@
+---
+title: Reading values
+description: Read the limits, the current usage and the statistics of a control group, and handle the absent values.
+---
+
+## Values that can be absent
+
+A getter that reads a kernel file returns a `CGroupValue<T>` rather than a nullable value, because a value can be
+absent for different reasons, which call for different decisions. "The memory controller is not enabled" and "the memory
+is unlimited" must not be confused by code that decides whether to apply its own limit.
+
+<!-- ref:../../tests/Meziantou.Framework.Unix.ControlGroups.Tests/CGroup2Tests.cs;region=CGroup2_ReadValues;format=md-fenced-code-block;dedent=true -->
+```csharp
+var parent = CGroup2.Root.CreateOrGetChild("myapp-values");
+parent.SetControllers("memory");
+var worker = parent.CreateOrGetChild("worker");
+
+// memory.max holds "max": there is no limit
+var memoryMax = worker.GetMemoryMax();
+Assert.Equal(CGroupValueState.NotConfigured, memoryMax.State);
+Assert.Equal("max", memoryMax.RawValue);
+
+worker.SetMemoryMax(512L * 1024 * 1024);
+memoryMax = worker.GetMemoryMax();
+Assert.Equal(CGroupValueState.Configured, memoryMax.State);
+Assert.Equal(512L * 1024 * 1024, memoryMax.Value);
+
+// The pids controller is not enabled on the parent, so pids.max does not exist
+var pidsMax = worker.GetPidsMax();
+Assert.Equal(CGroupValueState.Unavailable, pidsMax.State);
+Assert.False(pidsMax.TryGetValue(out _));
+Assert.Equal(long.MaxValue, pidsMax.GetValueOrDefault(long.MaxValue));
+
+worker.Delete();
+parent.Delete();
+```
+<!-- endref -->
+
+`State` tells what the file holds:
+
+| `State` | Meaning |
+| --- | --- |
+| `Configured` | The file holds a value: `Value` returns it |
+| `NotConfigured` | The file holds no limit (`max`) |
+| `Unavailable` | The file does not exist: the controller is not enabled on the parent, or the kernel does not support the feature |
+| `Invalid` | The file holds content the library does not understand; `RawValue` keeps it |
+
+Read the value the way that fits your code:
+
+- `switch` on `State` when the cases call for different actions.
+- `TryGetValue` when only a value matters.
+- `GetValueOrDefault(fallback)` when a fallback is good enough.
+- `Value` throws an `InvalidOperationException` when the state is not `Configured`.
+
+`RawValue` gives the content of the file without its surrounding whitespace, or `null` when the file does not exist.
+
+## Limits and usage
+
+| Getter | Returns |
+| --- | --- |
+| `GetCpuWeight()` | The CPU weight |
+| `GetCpuMax()` | A `CpuMax`: `MaxMicroseconds`, `null` when unlimited, and `PeriodMicroseconds`. The state is never `NotConfigured`, because the period is meaningful without a limit |
+| `GetMemoryMax()`, `GetMemoryHigh()`, `GetMemoryLow()`, `GetMemoryMin()`, `GetSwapMax()` | The memory limits, in bytes |
+| `GetMemoryCurrent()` | The memory the group uses, in bytes |
+| `GetPidsMax()`, `GetPidsCurrent()` | The process limit and the current number of processes |
+| `GetCpusetCpus()`, `GetCpusetCpusEffective()`, `GetCpusetMems()`, `GetCpusetMemsEffective()` | The CPUs and memory nodes |
+| `GetCpusetPartition()` | The partition type |
+| `GetHugeTlbMax(pageSize)`, `GetHugeTlbCurrent(pageSize)`, `GetHugeTlbEventsMax(pageSize)` | The huge page limit, usage and refused allocations |
+
+## Statistics
+
+`GetCpuStat` and `GetMemoryStat` read the statistics of the group:
+
+<!-- ref:../../tests/Meziantou.Framework.Unix.ControlGroups.Tests/CGroup2Tests.cs;region=CGroup2_Statistics;format=md-fenced-code-block;dedent=true -->
+```csharp
+var group = CGroup2.Root.CreateOrGetChild("myapp-statistics");
+
+// TryGetValue when only a value matters
+if (group.GetCpuStat().TryGetValue(out var cpuStat))
+{
+    var cpuTime = TimeSpan.FromMicroseconds(cpuStat.UsageMicroseconds);
+    Assert.True(cpuTime >= TimeSpan.Zero);
+}
+
+// GetValueOrDefault when a fallback is good enough
+var memoryInBytes = group.GetMemoryCurrent().GetValueOrDefault(0);
+Assert.True(memoryInBytes >= 0);
+
+group.Delete();
+```
+<!-- endref -->
+
+- `CpuStat` gives the CPU time the processes used, in microseconds: `UsageMicroseconds`, split into
+  `UserMicroseconds` and `SystemMicroseconds`. `NumberOfPeriods`, `NumberOfThrottled` and `ThrottledMicroseconds` tell
+  how often and how long the CPU limit throttled the group; they are `null` when the kernel does not report them, such as
+  when the `cpu` controller is not enabled.
+- `MemoryStat` details the memory of the group in bytes, such as `Anon` (the memory the processes allocated), `File`
+  (the file cache), `Kernel` and `Sock`, and counts events such as `PageFault` and `PageMajorFault`.
+- A statistic the running kernel does not report is `null`.
+
+To watch a group, read these values periodically: the CPU time grows, so the difference between two readings divided
+by the elapsed time gives the CPU usage.
+
+## Numbers
+
+Numbers are read and written with the invariant culture, whatever the culture of the application.

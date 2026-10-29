@@ -7,4 +7,8 @@
     <ProjectReference Include="../../src/Meziantou.Framework.NodeJs/Meziantou.Framework.NodeJs.csproj" />
     <ProjectReference Include="../../src/Meziantou.Framework.TemporaryDirectory/Meziantou.Framework.TemporaryDirectory.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- The modules called by the documentation examples, which use the output directory as the working directory -->
+    <None Update="scripts/**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

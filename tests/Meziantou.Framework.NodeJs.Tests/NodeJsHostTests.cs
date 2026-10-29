@@ -34,6 +34,217 @@ public sealed partial class NodeJsHostTests
     }
 
     [Fact]
+    public async Task DocumentationExample_CallModule()
+    {
+        SkipIfNodeIsNotInstalled();
+
+        #region NodeJs_CallModule
+        await using var node = await NodeJsHost.StartAsync(new NodeJsHostOptions
+        {
+            // The folder of the JavaScript files, copied to the output directory of the application
+            WorkingDirectory = Path.Combine(AppContext.BaseDirectory, "scripts"),
+        });
+
+        var slug = await node.InvokeAsync<string>("./slug.mjs", "slugify", ["Hello, World!"]);
+        Assert.Equal("hello-world", slug);
+        #endregion
+    }
+
+    [Fact]
+    public async Task DocumentationExample_Evaluate()
+    {
+        SkipIfNodeIsNotInstalled();
+
+        #region NodeJs_Evaluate
+        await using var node = await NodeJsHost.StartAsync();
+
+        // The code is the body of an async function: return a value, and await promises
+        var answer = await node.EvaluateAsync("await new Promise(resolve => setTimeout(resolve, 10)); return 6 * 7;");
+        Assert.Equal(42, answer.GetInt32());
+
+        // Pass values in the args array instead of inserting them in the code
+        var length = await node.EvaluateAsync<int>("return args[0].length;", ["hello"]);
+        Assert.Equal(5, length);
+
+        // require is available, and the values stored on globalThis persist across calls
+        await node.EvaluateVoidAsync("globalThis.path = require('node:path');");
+        var joined = await node.EvaluateAsync<string>("return path.posix.join(...args);", ["docs", "index.md"]);
+        Assert.Equal("docs/index.md", joined);
+
+        // undefined is returned as null
+        var nothing = await node.EvaluateAsync("const unused = 1;");
+        Assert.Equal(JsonValueKind.Null, nothing.ValueKind);
+        #endregion
+    }
+
+    [Fact]
+    public async Task DocumentationExample_ModuleSpecifiers()
+    {
+        SkipIfNodeIsNotInstalled();
+
+        #region NodeJs_ModuleSpecifiers
+        var scripts = Path.Combine(AppContext.BaseDirectory, "scripts");
+        await using var node = await NodeJsHost.StartAsync(new NodeJsHostOptions { WorkingDirectory = scripts });
+
+        // A path relative to the working directory starts with ./ or ../ and includes the extension
+        var slug = await node.InvokeAsync<string>("./slug.mjs", "slugify", ["Modules and exports"]);
+        Assert.Equal("modules-and-exports", slug);
+
+        // An export that is not a function returns its value
+        var separator = await node.InvokeAsync<string>("./slug.mjs", "separator");
+        Assert.Equal("-", separator);
+
+        // null calls the default export, and the promise it returns is awaited
+        var greeting = await node.InvokeAsync<string>("./greet.mjs", exportName: null, ["World"]);
+        Assert.Equal("Hello, World!", greeting);
+
+        // A CommonJS module
+        var total = await node.InvokeAsync<int>("./cart.cjs", "total", [new[] { new { Price = 3, Quantity = 2 }, new { Price = 5, Quantity = 1 } }]);
+        Assert.Equal(11, total);
+
+        // A file: URL (or an absolute path), and a built-in module
+        var fromUrl = await node.InvokeAsync<string>(new Uri(Path.Combine(scripts, "greet.mjs")).AbsoluteUri, exportName: null, ["file"]);
+        Assert.Equal("Hello, file!", fromUrl);
+        var extension = await node.InvokeAsync<string>("node:path", "extname", ["index.html"]);
+        Assert.Equal(".html", extension);
+        #endregion
+    }
+
+    [Fact]
+    public async Task DocumentationExample_ResultConversions()
+    {
+        SkipIfNodeIsNotInstalled();
+
+        #region NodeJs_ResultConversions
+        await using var node = await NodeJsHost.StartAsync();
+
+        var counts = await node.EvaluateAsync<Dictionary<string, int>>("return new Map([['a', 1], ['b', 2]]);");
+        Assert.Equal(2, counts!["b"]);
+
+        var tags = await node.EvaluateAsync<HashSet<string>>("return new Set(['a', 'b']);");
+        Assert.True(tags!.SetEquals(["a", "b"]));
+
+        var bytes = await node.EvaluateAsync<byte[]>("return new Uint8Array([1, 2, 3]);");
+        Assert.Equal(new byte[] { 1, 2, 3 }, bytes);
+
+        var date = await node.EvaluateAsync<DateTimeOffset>("return new Date(Date.UTC(2026, 0, 15));");
+        Assert.Equal(new DateTimeOffset(2026, 1, 15, 0, 0, 0, TimeSpan.Zero), date);
+
+        var ratio = await node.EvaluateAsync<double>("return 0 / 0;");
+        Assert.True(double.IsNaN(ratio));
+        #endregion
+    }
+
+    [Fact]
+    public async Task DocumentationExample_CreateInstance()
+    {
+        SkipIfNodeIsNotInstalled();
+
+        #region NodeJs_CreateInstance
+        await using var node = await NodeJsHost.StartAsync();
+
+        // new URL(...): the instance stays in the Node.js process
+        await using var url = await node.CreateInstanceAsync("node:url", "URL", ["https://example.com/docs?page=2"]);
+
+        // A member that is not a function returns its value
+        var hostname = await url.InvokeAsync<string>("hostname");
+        Assert.Equal("example.com", hostname);
+
+        // Code that receives the reference can change the value
+        await node.EvaluateVoidAsync("args[0].searchParams.set('page', '3');", [url]);
+
+        // The JSON representation of the value: URL.toJSON returns the address
+        var address = await url.GetValueAsync<string>();
+        Assert.Equal("https://example.com/docs?page=3", address);
+        #endregion
+    }
+
+    [Fact]
+    public async Task DocumentationExample_ProcessOptions()
+    {
+        SkipIfNodeIsNotInstalled();
+
+        #region NodeJs_ProcessOptions
+        var output = new ConcurrentQueue<string>();
+        var options = new NodeJsHostOptions
+        {
+            WorkingDirectory = Path.Combine(AppContext.BaseDirectory, "scripts"),
+            StartupTimeout = TimeSpan.FromMinutes(1),
+
+            // Each line written by console.log or console.error
+            StandardOutputReceived = output.Enqueue,
+            StandardErrorReceived = output.Enqueue,
+        };
+        options.NodeArguments.Add("--max-old-space-size=4096");
+        options.EnvironmentVariables["APP_ENVIRONMENT"] = "Development";
+
+        await using var node = await NodeJsHost.StartAsync(options);
+        var environment = await node.EvaluateAsync<string>("console.log('started'); return process.env.APP_ENVIRONMENT;");
+        Assert.Equal("Development", environment);
+        #endregion
+    }
+
+    [Fact]
+    public async Task DocumentationExample_JavaScriptErrors()
+    {
+        SkipIfNodeIsNotInstalled();
+
+        #region NodeJs_JavaScriptErrors
+        await using var node = await NodeJsHost.StartAsync();
+
+        var exception = await Assert.ThrowsAsync<NodeJsException>(() => node.InvokeAsync("node:fs/promises", "readFile", ["missing-file.txt"]));
+        Assert.Equal("Error", exception.JavaScriptErrorName);
+        Assert.Equal("ENOENT", exception.JavaScriptErrorCode);
+        Assert.NotNull(exception.JavaScriptStack);
+        Assert.Null(exception.ExitCode); // The process is still running
+
+        // The cause of the error is the inner exception
+        var withCause = await Assert.ThrowsAsync<NodeJsException>(() => node.EvaluateAsync("throw new Error('Cannot render the page', { cause: new TypeError('The title is not a string') });"));
+        Assert.Contains("Cannot render the page", withCause.Message);
+        var cause = Assert.IsType<NodeJsException>(withCause.InnerException);
+        Assert.Equal("TypeError", cause.JavaScriptErrorName);
+        #endregion
+    }
+
+    [Fact]
+    public async Task DocumentationExample_ProcessExit()
+    {
+        SkipIfNodeIsNotInstalled();
+
+        #region NodeJs_ProcessExit
+        await using var node = await NodeJsHost.StartAsync();
+
+        var exception = await Assert.ThrowsAsync<NodeJsException>(() => node.EvaluateVoidAsync("process.exit(3);"));
+        Assert.Equal(3, exception.ExitCode);
+
+        // The host cannot run code anymore
+        var next = await Assert.ThrowsAsync<NodeJsException>(() => node.EvaluateAsync("return 1;"));
+        Assert.Equal(3, next.ExitCode);
+        #endregion
+    }
+
+    [Fact]
+    public async Task DocumentationExample_UnresponsiveTimeout()
+    {
+        SkipIfNodeIsNotInstalled();
+
+        #region NodeJs_UnresponsiveTimeout
+        await using var node = await NodeJsHost.StartAsync(new NodeJsHostOptions
+        {
+            // Kill the process when a canceled call blocks its event loop for more than 2 seconds
+            UnresponsiveTimeout = TimeSpan.FromSeconds(2),
+        });
+
+        using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => node.EvaluateVoidAsync("while (true) { }", cancellationTokenSource.Token));
+
+        // The loop keeps running once the call is canceled, and blocks the other calls until the process is killed
+        var exception = await Assert.ThrowsAsync<NodeJsException>(() => node.EvaluateAsync("return 1;"));
+        Assert.Null(exception.ExitCode);
+        #endregion
+    }
+
+    [Fact]
     public async Task Evaluate_ReturnsValue()
     {
         await using var node = await StartNodeAsync();

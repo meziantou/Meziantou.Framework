@@ -366,6 +366,108 @@ public sealed class WebPDecoderTests
         Assert.Equal(ImageColorModel.Rgba, full.ColorModel);
     }
 
+    [Fact]
+    public void SparseMetaPrefixCodesBuildTablesOnlyForTheUsedGroups()
+    {
+        // The entropy image uses the meta codes 65535 and 3 only: the 65,534 other groups are read, but their tables are
+        // not built (all the groups take 2.6 MB of handles and 1.3 MB of tables)
+        var data = SparseMetaPrefixCodeStream(invalidUnusedGroup: false);
+        var scope = new AllocationScope(new ImageResourceLimits());
+        using (var pixels = Vp8LDecoder.DecodeImageStream(scope, data, 0, data.Length, width: 8, height: 1, XunitCancellationToken))
+        {
+            Assert.Equal(
+                [0x80AABBCCu, 0x80AABBCCu, 0x80AABBCCu, 0x80AABBCCu, 0xFF112233u, 0xFF112233u, 0xFF112233u, 0xFF112233u],
+                Enumerable.Range(0, 8).Select(i => BitConverter.ToUInt32(pixels.Memory.Span.Slice(i * sizeof(uint), sizeof(uint)))));
+        }
+
+        Assert.InRange(scope.GetDiagnostics().PeakLiveBytes, 0, 1024 * 1024);
+    }
+
+    [Fact]
+    public void UnusedMetaPrefixCodeGroupsAreValidated()
+    {
+        var data = SparseMetaPrefixCodeStream(invalidUnusedGroup: true);
+        var scope = new AllocationScope(new ImageResourceLimits());
+        var exception = Assert.Throws<InvalidImageContentException>(() => Vp8LDecoder.DecodeImageStream(scope, data, 0, data.Length, width: 8, height: 1, XunitCancellationToken).Dispose());
+        Assert.Contains("not complete", exception.Message);
+    }
+
+    /// <summary>
+    /// A headerless 8x1 VP8L image stream with a 2x1 entropy image (blocks of 4 pixels) holding the meta codes 65535 and 3:
+    /// group 65535 is <c>0x80AABBCC</c>, group 3 <c>0xFF112233</c>, and the other groups are single-symbol codes, or, for
+    /// group 0, an incomplete distance code.
+    /// </summary>
+    private static byte[] SparseMetaPrefixCodeStream(bool invalidUnusedGroup)
+    {
+        using var writer = new LsbBitWriter(new AllocationScope(new ImageResourceLimits()));
+        writer.WriteBits(0, 1); // no transform
+        writer.WriteBits(0, 1); // no color cache
+        writer.WriteBits(1, 1); // meta prefix codes
+        writer.WriteBits(0, 3); // 4x4 blocks
+
+        // Entropy image: no color cache; green {3, 255} and red {0, 255} are one-bit codes (the smaller symbol is bit 0)
+        writer.WriteBits(0, 1);
+        WriteSimpleCode(writer, 3, 255);
+        WriteSimpleCode(writer, 0, 255);
+        WriteSimpleCode(writer, 0);
+        WriteSimpleCode(writer, 0);
+        WriteSimpleCode(writer, 0);
+        writer.WriteBits(1, 1); // pixel 0: green 255
+        writer.WriteBits(1, 1); // pixel 0: red 255
+        writer.WriteBits(0, 1); // pixel 1: green 3
+        writer.WriteBits(0, 1); // pixel 1: red 0
+
+        for (var group = 0; group <= 0xFFFF; group++)
+        {
+            var (alpha, red, green, blue) = group switch
+            {
+                0xFFFF => (0x80, 0xAA, 0xBB, 0xCC),
+                3 => (0xFF, 0x11, 0x22, 0x33),
+                _ => (0, 0, 0, 0),
+            };
+            WriteSimpleCode(writer, green);
+            WriteSimpleCode(writer, red);
+            WriteSimpleCode(writer, blue);
+            WriteSimpleCode(writer, alpha);
+            if (invalidUnusedGroup && group == 0)
+            {
+                // Normal code: the code-length code gives the lengths 0 and 1 one bit each, then the 40 distance symbols
+                // all get the length 1 (40 one-bit codes do not make a complete tree)
+                writer.WriteBits(0, 1);
+                writer.WriteBits(0, 4); // 4 code-length code lengths, for the symbols 17, 18, 0 and 1
+                writer.WriteBits(0, 3);
+                writer.WriteBits(0, 3);
+                writer.WriteBits(1, 3);
+                writer.WriteBits(1, 3);
+                writer.WriteBits(0, 1); // no maximum symbol count
+                for (var symbol = 0; symbol < 40; symbol++)
+                {
+                    writer.WriteBits(1, 1);
+                }
+            }
+            else
+            {
+                WriteSimpleCode(writer, 0);
+            }
+        }
+
+        // The 8 pixels use single-symbol codes only: they take no bit
+        writer.WriteBits(0, 32);
+        writer.Finish();
+        return writer.WrittenSpan.ToArray();
+
+        static void WriteSimpleCode(LsbBitWriter writer, params ReadOnlySpan<int> symbols)
+        {
+            writer.WriteBits(1, 1);
+            writer.WriteBits((uint)symbols.Length - 1, 1);
+            writer.WriteBits(1, 1); // 8-bit first symbol
+            foreach (var symbol in symbols)
+            {
+                writer.WriteBits((uint)symbol, 8);
+            }
+        }
+    }
+
     private static byte[] Encode(Image image)
     {
         using var stream = new MemoryStream();

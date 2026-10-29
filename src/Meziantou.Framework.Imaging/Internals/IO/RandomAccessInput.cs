@@ -1,3 +1,5 @@
+using Microsoft.Win32.SafeHandles;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
@@ -11,6 +13,11 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// An input never grows: <see cref="Length"/> is known when it is created. It holds no per-operation state, so an
 /// <see cref="ImageCollection"/> can keep one input open and give every operation its own limits, accounting and
 /// allocation scope through a <see cref="RandomAccessSource"/>.
+/// </para>
+/// <para>
+/// <see cref="Read"/> is thread-safe, so the entries of a collection can be decoded concurrently: memory and file inputs
+/// read at an offset without any shared position, and a stream input serializes its seek-then-read pairs. Disposing an
+/// input waits for the stream read in progress; a later read throws <see cref="ObjectDisposedException"/>.
 /// </para>
 /// <para>
 /// Reads are synchronous on purpose: a random-access decoder issues many small reads whose offsets depend on the bytes
@@ -37,6 +44,11 @@ internal abstract class RandomAccessInput : IDisposable
     /// <returns>The input.</returns>
     /// <exception cref="ArgumentException">The stream is not seekable.</exception>
     public static RandomAccessInput Create(Stream stream, long origin, bool ownsStream) => new StreamInput(stream, origin, ownsStream);
+
+    /// <summary>Creates an input over a file opened for reading, read at an offset so that concurrent reads do not share a position.</summary>
+    /// <param name="handle">The file handle; the input takes ownership.</param>
+    /// <returns>The input.</returns>
+    public static RandomAccessInput Create(SafeFileHandle handle) => new FileInput(handle);
 
     /// <summary>
     /// Creates an input over bytes the caller keeps pinned until it disposes the input: a synchronous decode reads the
@@ -119,11 +131,42 @@ internal abstract class RandomAccessInput : IDisposable
         }
     }
 
+    private sealed class FileInput(SafeFileHandle handle) : RandomAccessInput
+    {
+        public override long Length { get; } = RandomAccess.GetLength(handle);
+
+        public override void Read(long offset, Span<byte> destination)
+        {
+            // A closed handle throws ObjectDisposedException, and a read in progress keeps the handle alive until it returns
+            while (!destination.IsEmpty)
+            {
+                var read = RandomAccess.Read(handle, destination, offset);
+                if (read is 0)
+                    throw new EndOfStreamException();
+
+                destination = destination[read..];
+                offset += read;
+            }
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                handle.Dispose();
+            }
+
+            base.Dispose(disposing);
+        }
+    }
+
     private sealed class StreamInput : RandomAccessInput
     {
+        private readonly Lock _lock = new();
         private readonly Stream _stream;
         private readonly long _origin;
         private readonly bool _ownsStream;
+        private bool _disposed;
 
         public StreamInput(Stream stream, long origin, bool ownsStream)
         {
@@ -141,15 +184,28 @@ internal abstract class RandomAccessInput : IDisposable
 
         public override void Read(long offset, Span<byte> destination)
         {
-            _stream.Position = _origin + offset;
-            _stream.ReadExactly(destination);
+            // The position of the stream is shared: a concurrent read must not seek between this seek and this read
+            lock (_lock)
+            {
+                ObjectDisposedException.ThrowIf(_disposed, this);
+                _stream.Position = _origin + offset;
+                _stream.ReadExactly(destination);
+            }
         }
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing && _ownsStream)
+            if (disposing)
             {
-                _stream.Dispose();
+                // Waits for the read in progress, so the stream is never disposed or reused by its owner under a read
+                lock (_lock)
+                {
+                    _disposed = true;
+                    if (_ownsStream)
+                    {
+                        _stream.Dispose();
+                    }
+                }
             }
 
             base.Dispose(disposing);

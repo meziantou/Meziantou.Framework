@@ -297,7 +297,10 @@ or icon sizes by accident.
   nothing is resized or converted implicitly.
 - `ImageCollectionEntry.Decode` (or `Decode<TPixel>`) reads and decodes exactly one entry, with its own limits and
   allocation scope, and returns a normal independently owned `Image`. A cursor representation carries its hotspot on
-  the frame of that image.
+  the frame of that image. The entries of a loaded collection can be decoded from several threads at once: a file or
+  in-memory collection reads at an offset, and a stream collection serializes its reads of the stream. Disposing the
+  collection during a decode waits for the read in progress, and the decode then completes or throws
+  `ObjectDisposedException`. Editing and saving a collection are not thread-safe.
 - A loaded collection keeps its input open until it is disposed: a path stays open, a stream must be seekable and is
   seeked freely (its position afterward is unspecified), and a span is copied once. Loading is synchronous by design (a
   random-access decoder issues many small dependent reads); `Image.LoadAsync` and `Image.IdentifyAsync` do work on these

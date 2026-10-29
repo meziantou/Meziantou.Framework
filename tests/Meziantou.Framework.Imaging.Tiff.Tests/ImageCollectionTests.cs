@@ -321,6 +321,123 @@ public sealed class ImageCollectionTests
         }
     }
 
+    [Fact]
+    public async Task EntriesOfAStreamCollectionAreDecodedConcurrentlyWithoutInterleavingReads()
+    {
+        using var stream = new InterleavingStream(ThreePages()) { GateTimeout = TimeSpan.FromSeconds(1) };
+        using var collection = ImageCollection.Load(stream);
+        var first = collection[0];
+        var second = collection[1];
+
+        // The first decode stops between its seek and its read; the second one then gets the gate timeout to slip in
+        stream.Arm();
+        var firstDecode = StartOnDedicatedThread(() => DecodePixels(first));
+        Assert.True(stream.GateEntered.Wait(TimeSpan.FromSeconds(30)));
+        var secondDecode = StartOnDedicatedThread(() => DecodePixels(second));
+
+        Assert.Equal([new Gray8(1)], await firstDecode);
+        Assert.Equal([new Gray8(2)], await secondDecode);
+        Assert.False(stream.Interleaved);
+    }
+
+    [Fact]
+    public async Task DisposingAStreamCollectionWaitsForTheReadInProgress()
+    {
+        using var stream = new InterleavingStream(ThreePages()) { GateTimeout = TimeSpan.FromSeconds(30) };
+        var collection = ImageCollection.Load(stream);
+        var entry = collection[0];
+
+        stream.Arm();
+        var decode = StartOnDedicatedThread(() =>
+        {
+            try
+            {
+                return DecodePixels(entry);
+            }
+            catch (ObjectDisposedException)
+            {
+                return null;
+            }
+        });
+
+        Assert.True(stream.GateEntered.Wait(TimeSpan.FromSeconds(30)));
+        var dispose = StartOnDedicatedThread(() =>
+        {
+            collection.Dispose();
+            return true;
+        });
+
+        await Task.WhenAny(dispose, Task.Delay(TimeSpan.FromMilliseconds(200)));
+        Assert.False(dispose.IsCompleted);
+
+        stream.Release();
+        await dispose;
+        var readsWhenDisposed = stream.ReadCount;
+
+        // The decode either finished with the read in progress or failed on its next one, without touching the stream
+        var pixels = await decode;
+        if (pixels is not null)
+        {
+            Assert.Equal([new Gray8(1)], pixels);
+        }
+
+        Assert.Equal(readsWhenDisposed, stream.ReadCount);
+        Assert.False(stream.Interleaved);
+        Assert.False(stream.IsDisposed);
+        Assert.Throws<ObjectDisposedException>(() => entry.Decode());
+    }
+
+    [Fact]
+    public void EntriesOfAFileCollectionAreDecodedConcurrently()
+    {
+        var directory = FullPath.FromFileSystemInfo(Directory.CreateTempSubdirectory("image-collection-tests"));
+        try
+        {
+            const int PageCount = 8;
+            var builder = new TiffFileBuilder();
+            var expected = new Gray8[PageCount][];
+            for (var page = 0; page < PageCount; page++)
+            {
+                var width = page + 3;
+                var samples = new byte[width * 4];
+                for (var i = 0; i < samples.Length; i++)
+                {
+                    samples[i] = (byte)((page * 31) + i);
+                }
+
+                builder.AddPage(new TiffPageSpec { Width = width, Height = 4, RowsPerStrip = 1, Samples = samples });
+                expected[page] = [.. samples.Select(value => new Gray8(value))];
+            }
+
+            var path = directory / "document.tif";
+            File.WriteAllBytes(path, builder.Build());
+            using var collection = ImageCollection.Load(path);
+            var entries = collection.Entries.ToArray();
+            var results = new Gray8[PageCount * 16][];
+            Parallel.For(0, results.Length, new ParallelOptions { MaxDegreeOfParallelism = 8 }, i => results[i] = DecodePixels(entries[i % PageCount]));
+
+            for (var i = 0; i < results.Length; i++)
+            {
+                Assert.Equal(expected[i % PageCount], results[i]);
+            }
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    private static Gray8[] DecodePixels(ImageCollectionEntry entry)
+    {
+        using var image = entry.Decode<Gray8>();
+        var pixels = new Gray8[image.Width * image.Height];
+        image.Frames[0].CopyPixelDataTo(pixels);
+        return pixels;
+    }
+
+    private static Task<T> StartOnDedicatedThread<T>(Func<T> func)
+        => Task.Factory.StartNew(func, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+
     private static byte[] TwoPixelPage() => new TiffFileBuilder()
         .AddPage(new TiffPageSpec { Width = 2, Height = 1, Samples = [1, 2] })
         .Build();
@@ -334,5 +451,104 @@ public sealed class ImageCollectionTests
         }
 
         return builder.Build();
+    }
+
+    /// <summary>
+    /// A seekable stream that stops the first thread to seek once it is armed, until another thread touches the stream,
+    /// <see cref="Release"/> is called, or the gate timeout elapses. Any access by another thread while that thread is
+    /// between its seek and the end of its read is recorded as an interleaving.
+    /// </summary>
+    private sealed class InterleavingStream(byte[] data) : Stream
+    {
+        private readonly ManualResetEventSlim _release = new();
+        private long _position;
+        private int _gateThreadId = -1;
+        private int _readCount;
+        private volatile bool _interleaved;
+        private volatile bool _disposed;
+
+        public required TimeSpan GateTimeout { get; init; }
+
+        public ManualResetEventSlim GateEntered { get; } = new();
+
+        public bool Interleaved => _interleaved;
+
+        public bool IsDisposed => _disposed;
+
+        public int ReadCount => Volatile.Read(ref _readCount);
+
+        public override bool CanRead => true;
+
+        public override bool CanSeek => true;
+
+        public override bool CanWrite => false;
+
+        public override long Length => data.Length;
+
+        public override long Position
+        {
+            get => _position;
+            set
+            {
+                CheckInterleaving();
+                _position = value;
+                if (Interlocked.CompareExchange(ref _gateThreadId, Environment.CurrentManagedThreadId, 0) is 0)
+                {
+                    GateEntered.Set();
+                    _release.Wait(GateTimeout);
+                }
+            }
+        }
+
+        public void Arm() => Volatile.Write(ref _gateThreadId, 0);
+
+        public void Release() => _release.Set();
+
+        public override int Read(byte[] buffer, int offset, int count) => Read(buffer.AsSpan(offset, count));
+
+        public override int Read(Span<byte> buffer)
+        {
+            CheckInterleaving();
+            Interlocked.Increment(ref _readCount);
+            var count = (int)Math.Min(buffer.Length, Math.Max(0, data.Length - _position));
+            data.AsSpan((int)_position, count).CopyTo(buffer);
+            _position += count;
+
+            // The gate holds for one seek-then-read operation only
+            Interlocked.CompareExchange(ref _gateThreadId, -1, Environment.CurrentManagedThreadId);
+            return count;
+        }
+
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+        public override void Flush()
+        {
+        }
+
+        public override void SetLength(long value) => throw new NotSupportedException();
+
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _disposed = true;
+                _release.Dispose();
+                GateEntered.Dispose();
+            }
+
+            base.Dispose(disposing);
+        }
+
+        private void CheckInterleaving()
+        {
+            var gateThreadId = Volatile.Read(ref _gateThreadId);
+            if (gateThreadId > 0 && gateThreadId != Environment.CurrentManagedThreadId)
+            {
+                _interleaved = true;
+                _release.Set();
+            }
+        }
     }
 }

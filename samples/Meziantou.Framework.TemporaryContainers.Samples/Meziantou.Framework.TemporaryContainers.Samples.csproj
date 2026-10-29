@@ -5,6 +5,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- TestFrameworkExamples.cs shows the containers in xUnit tests -->
+    <PackageReference Include="xunit.v3.assert" Version="4.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Extensions.Logging.Xunit.v3\Meziantou.Extensions.Logging.Xunit.v3.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.TemporaryContainers\Meziantou.Framework.TemporaryContainers.csproj" />
   </ItemGroup>
 </Project>

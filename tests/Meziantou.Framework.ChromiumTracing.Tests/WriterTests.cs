@@ -1,4 +1,6 @@
+using System.Diagnostics;
 using System.IO.Compression;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -1082,6 +1084,278 @@ public sealed partial class WriterTests
             });
             #endregion
         }
+    }
+
+    [Fact]
+    public async Task Documentation_WriteToStream()
+    {
+        #region ChromiumTracing_WriteToStream
+        using var stream = new MemoryStream();
+        await using (var writer = new ChromiumTracingWriter(stream)) // the constructor does not dispose the stream
+        {
+            await writer.WriteEventAsync(new ChromiumTracingInstantEvent
+            {
+                Name = "Started",
+                Timestamp = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                Scope = ChromiumTracingInstantEventScope.Process,
+                ProcessId = 1,
+                ThreadId = 1,
+            });
+        }
+
+        // Disposing the writer closes the JSON array. Timestamps are in microseconds.
+        Assert.Equal("""
+            [
+            {"ph":"i","s":"p","name":"Started","ts":63902822400000000,"pid":1,"tid":1}
+            ]
+            """, Encoding.UTF8.GetString(stream.ToArray()));
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_MeasureOperation()
+    {
+        #region ChromiumTracing_MeasureOperation
+        using var stream = new MemoryStream();
+        await using (var writer = new ChromiumTracingWriter(stream))
+        {
+            var start = DateTimeOffset.UtcNow;
+            var stopwatch = Stopwatch.StartNew();
+
+            // ... the operation to measure ...
+
+            await writer.WriteEventAsync(new ChromiumTracingCompleteEvent
+            {
+                Name = "Compile",
+                Category = "build",
+                Timestamp = start,
+                Duration = stopwatch.Elapsed,
+                ProcessId = Environment.ProcessId,
+                ThreadId = Environment.CurrentManagedThreadId,
+            });
+        }
+
+        using var trace = JsonDocument.Parse(stream.ToArray());
+        Assert.Equal(["X"], trace.RootElement.EnumerateArray().Select(item => item.GetProperty("ph").GetString()).ToArray());
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_NestedDurationEvents()
+    {
+        #region ChromiumTracing_NestedDurationEvents
+        using var stream = new MemoryStream();
+        await using (var writer = new ChromiumTracingWriter(stream))
+        {
+            var start = DateTimeOffset.UtcNow;
+
+            // The events of a thread must be ordered: an End event closes the last Begin event of the thread
+            await writer.WriteEventAsync(new ChromiumTracingDurationBeginEvent { Name = "Build", Timestamp = start, ProcessId = 1, ThreadId = 1 });
+            await writer.WriteEventAsync(new ChromiumTracingDurationBeginEvent { Name = "Restore", Timestamp = start.AddMilliseconds(10), ProcessId = 1, ThreadId = 1 });
+            await writer.WriteEventAsync(new ChromiumTracingDurationEndEvent { Timestamp = start.AddMilliseconds(40), ProcessId = 1, ThreadId = 1 });
+            await writer.WriteEventAsync(new ChromiumTracingDurationEndEvent { Timestamp = start.AddMilliseconds(100), ProcessId = 1, ThreadId = 1 });
+        }
+
+        using var trace = JsonDocument.Parse(stream.ToArray());
+        Assert.Equal(["B", "B", "E", "E"], trace.RootElement.EnumerateArray().Select(item => item.GetProperty("ph").GetString()).ToArray());
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_InstantAndCounterEvents()
+    {
+        #region ChromiumTracing_InstantAndCounterEvents
+        using var stream = new MemoryStream();
+        await using (var writer = new ChromiumTracingWriter(stream))
+        {
+            var start = DateTimeOffset.UtcNow;
+
+            await writer.WriteEventAsync(new ChromiumTracingInstantEvent
+            {
+                Name = "Cache cleared",
+                Timestamp = start,
+                Scope = ChromiumTracingInstantEventScope.Global, // a line across the whole timeline
+                ProcessId = 1,
+                ThreadId = 1,
+            });
+
+            // Each argument of a counter event is a series of the same chart
+            await writer.WriteEventAsync(new ChromiumTracingCounterEvent
+            {
+                Name = "Cache",
+                Timestamp = start,
+                ProcessId = 1,
+                Arguments = new Dictionary<string, object?>(StringComparer.Ordinal) { ["hits"] = 0, ["misses"] = 0 },
+            });
+            await writer.WriteEventAsync(new ChromiumTracingCounterEvent
+            {
+                Name = "Cache",
+                Timestamp = start.AddSeconds(1),
+                ProcessId = 1,
+                Arguments = new Dictionary<string, object?>(StringComparer.Ordinal) { ["hits"] = 120, ["misses"] = 8 },
+            });
+        }
+
+        using var trace = JsonDocument.Parse(stream.ToArray());
+        Assert.Equal(["i", "C", "C"], trace.RootElement.EnumerateArray().Select(item => item.GetProperty("ph").GetString()).ToArray());
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_OverlappingAsyncEvents()
+    {
+        #region ChromiumTracing_OverlappingAsyncEvents
+        using var stream = new MemoryStream();
+        await using (var writer = new ChromiumTracingWriter(stream))
+        {
+            var start = DateTimeOffset.UtcNow;
+
+            // Two downloads run at the same time: the Id tells them apart
+            await writer.WriteEventAsync(new ChromiumTracingAsyncBeginEvent { Name = "Download", Category = "http", Id = 1, Timestamp = start, ProcessId = 1 });
+            await writer.WriteEventAsync(new ChromiumTracingAsyncBeginEvent { Name = "Download", Category = "http", Id = 2, Timestamp = start.AddMilliseconds(5), ProcessId = 1 });
+            await writer.WriteEventAsync(new ChromiumTracingAsyncInstantEvent { Name = "Headers received", Category = "http", Id = 1, Timestamp = start.AddMilliseconds(20), ProcessId = 1 });
+            await writer.WriteEventAsync(new ChromiumTracingAsyncEndEvent { Name = "Download", Category = "http", Id = 2, Timestamp = start.AddMilliseconds(50), ProcessId = 1 });
+            await writer.WriteEventAsync(new ChromiumTracingAsyncEndEvent { Name = "Download", Category = "http", Id = 1, Timestamp = start.AddMilliseconds(80), ProcessId = 1 });
+        }
+
+        using var trace = JsonDocument.Parse(stream.ToArray());
+        Assert.Equal(["b", "b", "n", "e", "e"], trace.RootElement.EnumerateArray().Select(item => item.GetProperty("ph").GetString()).ToArray());
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_ObjectLifecycle()
+    {
+        #region ChromiumTracing_ObjectLifecycle
+        using var stream = new MemoryStream();
+        await using (var writer = new ChromiumTracingWriter(stream))
+        {
+            var start = DateTimeOffset.UtcNow;
+
+            await writer.WriteEventAsync(new ChromiumTracingObjectCreatedEvent { Name = "Connection", Id = "connection-1", Timestamp = start, ProcessId = 1 });
+            await writer.WriteEventAsync(new ChromiumTracingObjectSnapshotEvent
+            {
+                Name = "Connection",
+                Id = "connection-1",
+                Timestamp = start.AddMilliseconds(10),
+                ProcessId = 1,
+                Arguments = new Dictionary<string, object?>(StringComparer.Ordinal) { ["state"] = "open" },
+            });
+            await writer.WriteEventAsync(new ChromiumTracingObjectDestroyedEvent { Name = "Connection", Id = "connection-1", Timestamp = start.AddMilliseconds(30), ProcessId = 1 });
+        }
+
+        using var trace = JsonDocument.Parse(stream.ToArray());
+        Assert.Equal(["N", "O", "D"], trace.RootElement.EnumerateArray().Select(item => item.GetProperty("ph").GetString()).ToArray());
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_NameProcessesAndThreads()
+    {
+        #region ChromiumTracing_NameProcessesAndThreads
+        using var stream = new MemoryStream();
+        await using (var writer = new ChromiumTracingWriter(stream))
+        {
+            await writer.WriteEventAsync(ChromiumTracingMetadataEvent.ProcessName(pid: 1, "Build server"));
+            await writer.WriteEventAsync(ChromiumTracingMetadataEvent.ProcessSortIndex(pid: 1, index: 0));
+            await writer.WriteEventAsync(ChromiumTracingMetadataEvent.ThreadName(pid: 1, tid: 1, "Main thread"));
+            await writer.WriteEventAsync(ChromiumTracingMetadataEvent.ThreadName(pid: 1, tid: 2, "Worker"));
+        }
+
+        using var trace = JsonDocument.Parse(stream.ToArray());
+        Assert.Equal(
+            ["process_name", "process_sort_index", "thread_name", "thread_name"],
+            trace.RootElement.EnumerateArray().Select(item => item.GetProperty("name").GetString()).ToArray());
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_CommonProperties()
+    {
+        #region ChromiumTracing_CommonProperties
+        using var stream = new MemoryStream();
+        await using (var writer = new ChromiumTracingWriter(stream))
+        {
+            await writer.WriteEventAsync(new ChromiumTracingCompleteEvent
+            {
+                Name = "Parse",
+                Category = "compiler,frontend",                    // several categories, separated by commas
+                Timestamp = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                Duration = TimeSpan.FromMilliseconds(1.5),
+                ProcessId = 1,
+                ThreadId = 2,
+                ColorName = "good",                                // a color name of the trace viewer
+                StackTrace = ["Program.Main", "Compiler.Parse"],
+                Arguments = new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["file"] = "Program.cs",
+                    ["lines"] = 120,
+                },
+            });
+        }
+
+        Assert.Equal("""
+            [
+            {"ph":"X","dur":1500,"name":"Parse","cat":"compiler,frontend","ts":63902822400000000,"pid":1,"tid":2,"cname":"good","stack":["Program.Main","Compiler.Parse"],"args":{"file":"Program.cs","lines":120}}
+            ]
+            """, Encoding.UTF8.GetString(stream.ToArray()));
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_CustomArgumentTypes()
+    {
+        #region ChromiumTracing_CustomArgumentTypes
+        using var stream = new MemoryStream();
+
+        // Combine a JsonSerializerContext that knows the type with the built-in one
+        await using (var writer = new ChromiumTracingWriter(stream, DocumentationJsonContext.Default))
+        {
+            await writer.WriteEventAsync(new ChromiumTracingInstantEvent
+            {
+                Name = "Request",
+                Arguments = new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["request"] = new RequestInfo { Method = "GET", Path = "/orders" },
+                },
+            });
+        }
+
+        using var trace = JsonDocument.Parse(stream.ToArray());
+        Assert.Equal("/orders", trace.RootElement[0].GetProperty("args").GetProperty("request").GetProperty("Path").GetString());
+        #endregion
+    }
+
+    #region ChromiumTracing_CustomArgumentTypesContext
+    public sealed class RequestInfo
+    {
+        public string? Method { get; set; }
+        public string? Path { get; set; }
+    }
+
+    [JsonSerializable(typeof(RequestInfo))]
+    [JsonSourceGenerationOptions(RespectNullableAnnotations = true, RespectRequiredConstructorParameters = true)]
+    public sealed partial class DocumentationJsonContext : JsonSerializerContext
+    {
+    }
+    #endregion
+
+    [Fact]
+    public async Task Documentation_GzipStream()
+    {
+        #region ChromiumTracing_GzipStream
+        using var stream = new MemoryStream();
+        await using (var writer = ChromiumTracingWriter.CreateGzip(stream, CompressionLevel.Optimal))
+        {
+            await writer.WriteEventAsync(new ChromiumTracingInstantEvent { Name = "Compressed" });
+        }
+
+        // The writer disposes the GZipStream it created, but not the stream it wraps
+        stream.Position = 0;
+        await using var decompressed = new GZipStream(stream, CompressionMode.Decompress);
+        using var trace = await JsonDocument.ParseAsync(decompressed);
+        Assert.Equal("Compressed", trace.RootElement[0].GetProperty("name").GetString());
+        #endregion
     }
 
     // Runs a readme example that writes events to the writer it is given, and returns the phases of the written events

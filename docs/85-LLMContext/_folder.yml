@@ -1,0 +1,2 @@
+title: LLMContext
+description: Detect whether the application runs inside an AI coding agent or an LLM tool, from its environment variables.

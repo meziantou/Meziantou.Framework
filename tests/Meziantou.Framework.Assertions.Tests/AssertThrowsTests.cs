@@ -1,3 +1,4 @@
+using System.Globalization;
 using AssertionsAssert = Meziantou.Framework.Assertions.Assert;
 
 namespace Meziantou.Framework.Assertions.Tests;
@@ -708,5 +709,44 @@ public sealed class AssertThrowsTests
 
             return null;
         }
+    }
+
+    [Fact]
+    public void Documentation_Throws()
+    {
+        #region Assert_Throws
+        // The exact type, returned so you can check it
+        var exception = Assert.Throws<FormatException>(() => int.Parse("abc", CultureInfo.InvariantCulture));
+        Assert.Contains("abc", exception.Message);
+
+        static void Greet(string? name) => ArgumentException.ThrowIfNullOrEmpty(name);
+
+        // An ArgumentException, or a derived type, and its ParamName
+        Assert.Throws<ArgumentException>("name", () => Greet(""));
+        Assert.Throws<ArgumentNullException>("name", () => Greet(null));
+
+        // Throws expects the exact type, ThrowsAny accepts a derived type
+        Assert.ThrowsAny<ArgumentException>(() => Greet(null));
+
+        Assert.DoesNotThrow(() => int.Parse("42", CultureInfo.InvariantCulture));
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_ThrowsAsync()
+    {
+        #region Assert_ThrowsAsync
+        static async Task<int> LoadAsync()
+        {
+            await Task.Yield();
+            throw new InvalidOperationException("Not connected");
+        }
+
+        // The delegate returns a Task: the assertion awaits it, and you await the assertion
+        var exception = await Assert.Throws<InvalidOperationException>(() => LoadAsync());
+        Assert.Equal("Not connected", exception.Message);
+
+        await Assert.DoesNotThrow(() => Task.CompletedTask);
+        #endregion
     }
 }

@@ -1,5 +1,7 @@
+using System.Collections.Concurrent;
 using System.Globalization;
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Meziantou.Extensions.Logging.InMemory;
 using Meziantou.Extensions.Logging.Xunit.v3;
@@ -626,6 +628,279 @@ public sealed class MockTests(ITestOutputHelper testOutputHelper)
         Assert.Empty(configuration.Providers);
     }
 
+    [Fact]
+    public async Task Documentation_RouteParameters()
+    {
+        #region HttpClientMock_RouteParameters
+        await using var mock = new HttpClientMock();
+        mock.MapGet("/users/{id}", (string id) => "user " + id);        // a route parameter
+        mock.MapGet("/search", (string q) => "results for " + q);       // bound from the query string
+
+        using var httpClient = mock.CreateHttpClient();
+        Assert.Equal("user 42", await httpClient.GetStringAsync(new Uri("/users/42", UriKind.Relative)));
+        Assert.Equal("results for dotnet", await httpClient.GetStringAsync(new Uri("/search?q=dotnet", UriKind.Relative)));
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_MatchQueryString()
+    {
+        #region HttpClientMock_MatchQueryString
+        await using var mock = new HttpClientMock();
+        mock.MapGet("/todos", () => "all");
+        mock.MapGet("/todos?status=done", () => "done");
+        mock.MapGet("/todos?status=open&sort=date", () => "open, by date");
+
+        using var httpClient = mock.CreateHttpClient();
+        Assert.Equal("done", await httpClient.GetStringAsync(new Uri("/todos?status=done", UriKind.Relative)));
+
+        // The order of the parameters does not matter
+        Assert.Equal("open, by date", await httpClient.GetStringAsync(new Uri("/todos?sort=date&status=open", UriKind.Relative)));
+
+        // A query string that no route matches exactly falls back to the route without a query string
+        Assert.Equal("all", await httpClient.GetStringAsync(new Uri("/todos?status=open", UriKind.Relative)));
+        Assert.Equal("all", await httpClient.GetStringAsync(new Uri("/todos", UriKind.Relative)));
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_MatchAbsoluteUrl()
+    {
+        #region HttpClientMock_MatchAbsoluteUrl
+        await using var mock = new HttpClientMock();
+        mock.MapGet("https://api.example.com/status", () => "api");
+        mock.MapGet("https://www.example.com/status", () => "www");
+        mock.MapGet("http://www.example.com/status", () => "www over http");
+        mock.MapGet("/status", () => "any other host");
+
+        using var httpClient = mock.CreateHttpClient();
+        Assert.Equal("api", await httpClient.GetStringAsync(new Uri("https://api.example.com/status")));
+        Assert.Equal("www", await httpClient.GetStringAsync(new Uri("https://www.example.com/status")));
+        Assert.Equal("www over http", await httpClient.GetStringAsync(new Uri("http://www.example.com/status")));
+        Assert.Equal("any other host", await httpClient.GetStringAsync(new Uri("https://cdn.example.com/status")));
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_RawContent()
+    {
+        #region HttpClientMock_RawContent
+        await using var mock = new HttpClientMock();
+        mock.MapGet("/users/1", () => Results.Extensions.RawJson("""{"id":1,"name":"John"}"""));
+        mock.MapGet("/users/2", () => Results.Extensions.RawJson("""{"error":"not found"}""", statusCode: 404));
+        mock.MapGet("/feed", () => Results.Extensions.RawXml("<feed />"));
+
+        using var httpClient = mock.CreateHttpClient();
+        using var response = await httpClient.GetAsync(new Uri("/users/2", UriKind.Relative));
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.Equal("application/json", response.Content.Headers.ContentType?.MediaType);
+        Assert.Equal("""{"error":"not found"}""", await response.Content.ReadAsStringAsync());
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_RequestDelegate()
+    {
+        #region HttpClientMock_RequestDelegate
+        await using var mock = new HttpClientMock();
+        mock.MapGet("/report", async context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status200OK;
+            context.Response.ContentType = "text/csv";
+            context.Response.Headers.ETag = "\"v1\"";
+            await context.Response.WriteAsync("id,name\n1,John\n", context.RequestAborted);
+        });
+
+        using var httpClient = mock.CreateHttpClient();
+        using var response = await httpClient.GetAsync(new Uri("/report", UriKind.Relative));
+        Assert.Equal("text/csv", response.Content.Headers.ContentType?.MediaType);
+        Assert.Equal("\"v1\"", response.Headers.ETag?.Tag);
+        Assert.Equal("id,name\n1,John\n", await response.Content.ReadAsStringAsync());
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_ReadRequestBody()
+    {
+        #region HttpClientMock_ReadRequestBody
+        await using var mock = new HttpClientMock();
+
+        // The body of a POST request is bound to a parameter of a complex type, as in a minimal API
+        mock.MapPost("/todos", (Dictionary<string, string> todo) => Results.Created("/todos/1", new { id = 1, title = todo["title"] }));
+
+        using var httpClient = mock.CreateHttpClient();
+        using var response = await httpClient.PostAsJsonAsync(new Uri("/todos", UriKind.Relative), new { title = "Write the documentation" });
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        Assert.Equal("/todos/1", response.Headers.Location?.OriginalString);
+        Assert.Equal("""{"id":1,"title":"Write the documentation"}""", await response.Content.ReadAsStringAsync());
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_ForwardUnknownRequests()
+    {
+        #region HttpClientMock_ForwardUnknownRequests
+        // The upstream server is another mock here, so the example does not depend on the network
+        await using var upstream = new HttpClientMock();
+        upstream.MapGet("https://example.com/users", () => "users from the upstream server");
+        upstream.MapGet("https://example.com/orders", () => "orders from the upstream server");
+        using var upstreamHttpClient = upstream.CreateHttpClient();
+
+        await using var mock = new HttpClientMock();
+        mock.MapGet("https://example.com/users", () => "mocked users");
+        mock.ForwardUnknownRequestsToUpstream(upstreamHttpClient);
+
+        using var httpClient = mock.CreateHttpClient();
+        Assert.Equal("mocked users", await httpClient.GetStringAsync(new Uri("https://example.com/users")));
+        Assert.Equal("orders from the upstream server", await httpClient.GetStringAsync(new Uri("https://example.com/orders")));
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_SequenceOfResponses()
+    {
+        #region HttpClientMock_SequenceOfResponses
+        await using var mock = new HttpClientMock();
+
+        // The first call fails and the next ones succeed, to test the retry logic of the code under test
+        mock.MapGet("/flaky", (RequestCounter counter) => counter.Get() is 1 ? Results.StatusCode(503) : Results.Ok("success"));
+
+        using var httpClient = mock.CreateHttpClient();
+        using var first = await httpClient.GetAsync(new Uri("/flaky", UriKind.Relative));
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, first.StatusCode);
+
+        using var second = await httpClient.GetAsync(new Uri("/flaky", UriKind.Relative));
+        Assert.Equal(HttpStatusCode.OK, second.StatusCode);
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_TotalCount()
+    {
+        #region HttpClientMock_TotalCount
+        await using var mock = new HttpClientMock();
+        mock.MapGet("/status", () => "ok");
+        mock.MapPost("/events", () => Results.Accepted());
+
+        using var httpClient = mock.CreateHttpClient();
+        _ = await httpClient.GetStringAsync(new Uri("/status", UriKind.Relative));
+        using var response = await httpClient.PostAsync(new Uri("/events", UriKind.Relative), content: null);
+
+        // RequestCounter is a singleton of the mock's service provider
+        var counter = mock.Application.Services.GetRequiredService<RequestCounter>();
+        Assert.Equal(2, counter.TotalCount);
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_CaptureRequests()
+    {
+        #region HttpClientMock_CaptureRequests
+        await using var mock = new HttpClientMock();
+        var authorizationHeaders = new ConcurrentQueue<string>();
+        mock.MapGet("/me", (HttpRequest request) =>
+        {
+            authorizationHeaders.Enqueue(request.Headers.Authorization.ToString());
+            return "John";
+        });
+
+        using var httpClient = mock.CreateHttpClient();
+        httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "token");
+        _ = await httpClient.GetStringAsync(new Uri("/me", UriKind.Relative));
+
+        Assert.Equal(["Bearer token"], authorizationHeaders.ToArray());
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_NamedClients()
+    {
+        #region HttpClientMock_NamedClients
+        await using var mock = new HttpClientMock();
+        mock.MapGet("https://api.example.com/user", () => "John");
+
+        var services = new ServiceCollection();
+        services.AddHttpClient("api");
+        services.AddHttpClient("other");
+        services.AddHttpClientMock(builder => builder
+            .AddHttpClientMock("api", mock)
+            .ThrowOnUnknownHttpClient());
+
+        await using var serviceProvider = services.BuildServiceProvider();
+        var httpClientFactory = serviceProvider.GetRequiredService<IHttpClientFactory>();
+
+        using var apiClient = httpClientFactory.CreateClient("api");
+        Assert.Equal("John", await apiClient.GetStringAsync(new Uri("https://api.example.com/user")));
+
+        // No mock is registered for "other": creating it throws instead of sending real requests
+        Assert.Throws<InvalidOperationException>(() => httpClientFactory.CreateClient("other"));
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_TypedClient()
+    {
+        #region HttpClientMock_TypedClient
+        await using var mock = new HttpClientMock();
+        mock.MapGet("https://weather.example.com/forecast", () => "sunny");
+
+        var services = new ServiceCollection();
+        services.AddHttpClient<WeatherClient>(httpClient => httpClient.BaseAddress = new Uri("https://weather.example.com"));
+        services.AddHttpClientMock(builder => builder.AddHttpClientMock<WeatherClient>(mock));
+
+        await using var serviceProvider = services.BuildServiceProvider();
+        var weatherClient = serviceProvider.GetRequiredService<WeatherClient>();
+        Assert.Equal("sunny", await weatherClient.GetForecastAsync());
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_ConfigureLoggingLevel()
+    {
+        #region HttpClientMock_ConfigureLoggingLevel
+        using var loggerProvider = new XUnitLoggerProvider(TestContext.Current.TestOutputHelper);
+        await using var mock = new HttpClientMock(logging =>
+        {
+            logging.AddProvider(loggerProvider);
+            logging.SetMinimumLevel(LogLevel.Trace);
+        });
+        #endregion
+
+        mock.MapGet("/", () => "ok");
+        using var httpClient = mock.CreateHttpClient();
+        Assert.Equal("ok", await httpClient.GetStringAsync(new Uri("/", UriKind.Relative)));
+    }
+
+    [Fact]
+    public async Task Documentation_ConfigurePrimaryHandler()
+    {
+        #region HttpClientMock_ConfigurePrimaryHandler
+        await using var mock = new HttpClientMock();
+        mock.MapGet("https://weather.example.com/forecast", () => "rainy");
+
+        var services = new ServiceCollection();
+        services.AddHttpClient<WeatherClient>(httpClient => httpClient.BaseAddress = new Uri("https://weather.example.com"))
+            .ConfigurePrimaryHttpMessageHandler(() => mock.CreateHttpMessageHandler());
+
+        await using var serviceProvider = services.BuildServiceProvider();
+        Assert.Equal("rainy", await serviceProvider.GetRequiredService<WeatherClient>().GetForecastAsync());
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_LogToTestOutput()
+    {
+        #region HttpClientMock_LogToTestOutput
+        // The logs of the mock are written to the output of the current xUnit test
+        using var loggerProvider = new XUnitLoggerProvider(TestContext.Current.TestOutputHelper);
+        await using var mock = new HttpClientMock(loggerProvider);
+        mock.MapGet("/", () => "ok");
+
+        using var httpClient = mock.CreateHttpClient();
+        Assert.Equal("ok", await httpClient.GetStringAsync(new Uri("/", UriKind.Relative)));
+        #endregion
+    }
+
     private static async Task ExpectString(HttpClientMock mock, string url, string expectedValue)
     {
         using var client = mock.CreateHttpClient();
@@ -639,6 +914,13 @@ public sealed class MockTests(ITestOutputHelper testOutputHelper)
         using var response = await client.GetAsync(url, TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
+
+    #region HttpClientMock_TypedClientClass
+    public sealed class WeatherClient(HttpClient httpClient)
+    {
+        public Task<string> GetForecastAsync() => httpClient.GetStringAsync(new Uri("/forecast", UriKind.Relative));
+    }
+    #endregion
 
     private sealed class SampleClient(HttpClient httpClient)
     {

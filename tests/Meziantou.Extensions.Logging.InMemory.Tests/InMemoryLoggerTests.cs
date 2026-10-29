@@ -115,6 +115,62 @@ public sealed partial class InMemoryLoggerTests
         #endregion
     }
 
+    [Fact]
+    public void DocumentationExample_Scopes()
+    {
+        #region InMemoryLogger_Scopes
+        var logger = InMemoryLogger.CreateLogger("sample");
+        using (logger.BeginScope("Processing order {OrderId}", 42))
+        {
+            logger.LogInformation("Item {ItemId} shipped", "A-1");
+        }
+
+        var log = Assert.Single(logger.Logs);
+        Assert.Equal("Processing order 42", Assert.Single(log.Scopes)?.ToString());
+
+        // The parameters are searched in the message first, then in the scopes
+        Assert.True(log.TryGetParameterValue("ItemId", out var itemId));
+        Assert.Equal("A-1", itemId);
+        Assert.True(log.TryGetParameterValue("OrderId", out var orderId));
+        Assert.Equal(42, orderId);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_SharedCollection()
+    {
+        #region InMemoryLogger_SharedCollection
+        var logs = new InMemoryLogCollection();
+        var orderLogger = InMemoryLogger.CreateLogger("Orders", logs);
+        var paymentLogger = InMemoryLogger.CreateLogger("Payments", logs);
+
+        orderLogger.LogInformation("Order created");
+        paymentLogger.LogWarning("Payment declined");
+
+        Assert.HasCount(2, logs);
+        Assert.Equal("Payments", Assert.Single(logs.Warnings).Category);
+
+        // Forget the entries logged so far, for instance after the setup of a test
+        logs.Clear();
+        Assert.Empty(logs);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_ToString()
+    {
+        #region InMemoryLogger_ToString
+        var logger = InMemoryLogger.CreateLogger("sample");
+        logger.LogWarning("Disk {Drive} is almost full", "C:");
+
+        // ToString describes the entry: use it in assertion messages, or to inspect the entries in the debugger
+        Assert.Equal("""
+            [sample] Warning: Disk C: is almost full
+              => [{"Key":"Drive","Value":"C:"},{"Key":"{OriginalFormat}","Value":"Disk {Drive} is almost full"}]
+            """, Assert.Single(logger.Logs).ToString());
+        #endregion
+    }
+
     [Theory]
     [InlineData(LogLevel.Trace)]
     [InlineData(LogLevel.Debug)]

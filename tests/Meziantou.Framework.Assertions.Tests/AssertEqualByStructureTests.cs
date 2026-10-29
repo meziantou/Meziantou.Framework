@@ -1325,4 +1325,65 @@ public sealed class AssertEqualByStructureTests
         public double Ratio { get; set; }
         public int? Optional { get; set; }
     }
+
+    [Fact]
+    public void Documentation_Equivalent()
+    {
+        #region Assert_Equivalent
+        var actual = new { Name = "Alice", Age = 42, Roles = new List<string> { "admin", "user" } };
+
+        // Another type with the same public members: values are compared member by member
+        var expected = new { Name = "Alice", Age = 42L, Roles = new[] { "admin", "user" } };
+        Assert.Equivalent(expected, actual);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_EquivalentMissingMember()
+    {
+        #region Assert_EquivalentMissingMember
+        var expected = new { Name = "Alice" };
+        var actual = new { Name = "Alice", Age = 42 };
+
+        // Every member must have a counterpart: an extra member in actual fails the assertion
+        var exception = Assert.Throws<AssertionException>(() => Assert.Equivalent(expected, actual));
+        Assert.Equal("""
+            Assert.Equivalent() assertion failed.
+            Expected expression: expected
+            Actual expression:   actual
+            Path: $.Age
+            Reason: Actual member is unexpected.
+            Expected: <missing>
+            Actual:   42
+            """, exception.Message);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_EquivalentOptions()
+    {
+        #region Assert_EquivalentOptions
+        var expected = new { Name = "alice", Roles = new[] { "admin", "user" } };
+        var actual = new { name = "ALICE", roles = new[] { "user", "admin" } };
+
+        Assert.NotEquivalent(expected, actual);
+        Assert.Equivalent(expected, actual, new EquivalentOptions
+        {
+            IgnoreCollectionOrder = true,
+            IgnoreMemberNameCase = true,
+            IgnoreStringCase = true,
+        });
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_EquivalentJson()
+    {
+        #region Assert_EquivalentJson
+        var actual = JsonNode.Parse("""{ "name": "Alice", "roles": ["admin"] }""");
+
+        // JSON is compared by content: the order of the properties does not matter
+        Assert.Equivalent(JsonNode.Parse("""{ "roles": ["admin"], "name": "Alice" }"""), actual);
+        #endregion
+    }
 }

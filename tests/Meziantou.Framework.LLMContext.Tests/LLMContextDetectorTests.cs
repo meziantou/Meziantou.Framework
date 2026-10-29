@@ -14,6 +14,29 @@ public sealed class LLMContextDetectorTests
         #endregion
     }
 
+    [Fact]
+    public void DocumentationExample_ListContexts()
+    {
+        #region LLMContextDetector_ListContexts
+        // Several contexts can be detected at once, for instance an agent started from another one
+        foreach (LLMContextKind context in LLMContextDetector.Detect())
+        {
+            string name = context switch
+            {
+                LLMContextKind.ClaudeCode => "Claude Code",
+                LLMContextKind.GitHubCopilot => "GitHub Copilot",
+                LLMContextKind.GenericAgent => "an agent",
+                _ => context.ToString(),
+            };
+
+            Assert.NotEmpty(name);
+        }
+
+        // IsLLMContext is true when Detect finds at least one context
+        Assert.Equal(LLMContextDetector.Detect().Count > 0, LLMContextDetector.IsLLMContext());
+        #endregion
+    }
+
     public static TheoryData<LLMContextKind, string, string> DetectionRules()
     {
         return new()

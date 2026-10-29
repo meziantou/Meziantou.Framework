@@ -23,6 +23,7 @@
     <Project Path="samples/Meziantou.Framework.Assertions.Samples/Meziantou.Framework.Assertions.Samples.csproj" />
     <Project Path="samples/Meziantou.Framework.CommandLine.Samples/Meziantou.Framework.CommandLine.Samples.csproj" />
     <Project Path="samples/Meziantou.Framework.Diagnostics.MemoryDump.Samples/Meziantou.Framework.Diagnostics.MemoryDump.Samples.csproj" />
+    <Project Path="samples/Meziantou.Framework.DiffEngine.Samples/Meziantou.Framework.DiffEngine.Samples.csproj" />
     <Project Path="samples/Meziantou.Framework.DnsClient.Samples/Meziantou.Framework.DnsClient.Samples.csproj" />
     <Project Path="samples/Meziantou.Framework.DnsServer.Samples/Meziantou.Framework.DnsServer.Samples.csproj" />
     <Project Path="samples/Meziantou.Framework.FastEnumGenerator.Samples/Meziantou.Framework.FastEnumGenerator.Samples.csproj" />

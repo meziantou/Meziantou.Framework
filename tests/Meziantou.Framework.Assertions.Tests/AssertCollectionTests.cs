@@ -209,4 +209,17 @@ public sealed class AssertCollectionTests
         Verify(15, actual => AssertionsAssert.Collection(actual, At(0), At(1), At(2), At(3), At(4), At(5), At(6), At(7), At(8), At(9), At(10), At(11), At(12), At(13), At(14)));
         Verify(16, actual => AssertionsAssert.Collection(actual, At(0), At(1), At(2), At(3), At(4), At(5), At(6), At(7), At(8), At(9), At(10), At(11), At(12), At(13), At(14), At(15)));
     }
+
+    [Fact]
+    public void Documentation_Collection()
+    {
+        #region Assert_Collection
+        List<string> users = ["Alice", "Bob"];
+
+        // One inspector per item, in order: the collection must have exactly as many items
+        Assert.Collection(users,
+            user => Assert.Equal("Alice", user),
+            user => Assert.StartsWith("B", user));
+        #endregion
+    }
 }

@@ -565,4 +565,18 @@ public sealed class AssertSetTests
             }
         }
     }
+
+    [Fact]
+    public void Documentation_Sets()
+    {
+        #region Assert_Sets
+        var allowed = new HashSet<string>(StringComparer.Ordinal) { "read", "write", "delete" };
+        string[] granted = ["read", "write"];
+
+        Assert.Subset(allowed, granted);                // every item of granted is in allowed
+        Assert.ProperSubset(allowed, granted);          // ...and allowed has more items
+        Assert.Superset(granted, allowed);              // every item of granted is in allowed
+        Assert.NotProperSuperset(allowed, granted);
+        #endregion
+    }
 }

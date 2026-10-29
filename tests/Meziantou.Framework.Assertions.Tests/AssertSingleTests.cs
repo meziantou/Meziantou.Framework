@@ -284,4 +284,18 @@ public sealed class AssertSingleTests
 
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
     }
+
+    [Fact]
+    public void Documentation_Single()
+    {
+        #region Assert_Single
+        List<string> users = ["Alice", "Bob", "Charlie"];
+
+        var user = Assert.Single(users, name => name.Length == 3);      // the only item that matches
+        Assert.Equal("Bob", user);
+
+        var admin = Assert.Single(new[] { "root" });                    // the only item
+        Assert.Equal("root", admin);
+        #endregion
+    }
 }

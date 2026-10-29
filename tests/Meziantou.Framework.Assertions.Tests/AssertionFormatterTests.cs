@@ -758,4 +758,43 @@ public sealed class AssertionFormatterTests
             return FormatReadOnlySpanValue(value, highlightedIndex);
         }
     }
+
+    [Fact]
+    public void Documentation_FailureMessage()
+    {
+        #region Assert_FailureMessage
+        var expected = "Hello, World!";
+        var actual = "Hello, world!";
+
+        var exception = Assert.Throws<AssertionException>(() => Assert.Equal(expected, actual, message: "greeting"));
+        Assert.Equal("""
+            Assert.Equal() assertion failed.
+            Message: greeting
+            Expected expression: expected
+            Actual expression:   actual
+            Index of first difference: 7
+            Expected: "Hello, W̲orld!"
+            Actual:   "Hello, w̲orld!"
+            """, exception.Message);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_CollectionFailureMessage()
+    {
+        #region Assert_CollectionFailureMessage
+        int[] expected = [1, 2, 3];
+        List<int> actual = [1, 5, 3];
+
+        var exception = Assert.Throws<AssertionException>(() => Assert.Equal(expected, actual));
+        Assert.Equal("""
+            Assert.Equal() assertion failed: Item at index 1 differs.
+            Expected expression: expected
+            Actual expression:   actual
+            Index of first difference: 1
+            Expected: [1, 2̲, 3]
+            Actual:   [1, 5̲, 3]
+            """, exception.Message);
+        #endregion
+    }
 }

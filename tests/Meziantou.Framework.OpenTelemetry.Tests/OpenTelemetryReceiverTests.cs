@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Globalization;
 using System.IO.Compression;
 using System.Net;
@@ -16,6 +17,9 @@ using Microsoft.Extensions.Time.Testing;
 using OpenTelemetry.Proto.Collector.Logs.V1;
 using OpenTelemetry.Proto.Collector.Metrics.V1;
 using OpenTelemetry.Proto.Collector.Trace.V1;
+using OpenTelemetry.Proto.Common.V1;
+using OpenTelemetry.Proto.Logs.V1;
+using OpenTelemetry.Proto.Trace.V1;
 
 namespace Meziantou.Framework.OpenTelemetryCollector.Tests;
 
@@ -1007,6 +1011,304 @@ public sealed class OpenTelemetryReceiverTests
         Assert.Equal("", default(OpenTelemetryHandlerContext).Method);
     }
 
+    [Fact]
+    public async Task Documentation_AssertOnReceivedLogs()
+    {
+        #region OpenTelemetryCollectorInMemory_AssertOnReceivedLogs
+        // Host the receiver in memory, with the ASP.NET Core test server
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseTestServer();
+        builder.Services.AddInMemoryOpenTelemetryReceiver();
+
+        await using var app = builder.Build();
+        app.MapOpenTelemetryReceiverEndpoints();
+        await app.StartAsync();
+
+        // Send an OTLP/HTTP export request, as the OTLP exporter of an application does
+        var exportRequest = new ExportLogsServiceRequest
+        {
+            ResourceLogs =
+            {
+                new ResourceLogs
+                {
+                    ScopeLogs =
+                    {
+                        new ScopeLogs
+                        {
+                            LogRecords =
+                            {
+                                new LogRecord
+                                {
+                                    Body = new AnyValue { StringValue = "Order shipped" },
+                                    Attributes = { new KeyValue { Key = "order.id", Value = new AnyValue { IntValue = 42 } } },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        };
+
+        using var httpClient = app.GetTestClient();
+        using var content = new ByteArrayContent(exportRequest.ToByteArray());
+        content.Headers.ContentType = new MediaTypeHeaderValue("application/x-protobuf");
+        using var response = await httpClient.PostAsync(new Uri("/v1/logs", UriKind.Relative), content);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        // Read what the receiver stored: one item per export request
+        var receiver = app.Services.GetRequiredService<InMemoryOpenTelemetryHandler>();
+        var item = Assert.Single(receiver.Logs.OfType<OpenTelemetryLogsItem>());
+        Assert.Equal("POST /v1/logs", item.Method);
+
+        var logRecord = item.Request.ResourceLogs.SelectMany(r => r.ScopeLogs).SelectMany(s => s.LogRecords).Single();
+        Assert.Equal("Order shipped", logRecord.Body.StringValue);
+        Assert.Equal(42, logRecord.Attributes.Single(attribute => attribute.Key == "order.id").Value.IntValue);
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_OtlpJson()
+    {
+        #region OpenTelemetryCollector_OtlpJson
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseTestServer();
+        builder.Services.AddInMemoryOpenTelemetryReceiver();
+
+        await using var app = builder.Build();
+        app.MapOpenTelemetryReceiverEndpoints();
+        await app.StartAsync();
+
+        // OTLP/JSON: trace and span ids are hexadecimal strings
+        using var httpClient = app.GetTestClient();
+        using var content = new StringContent("""
+            {"resourceSpans":[{"scopeSpans":[{"spans":[
+              {"traceId":"5b8efff798038103d269b633813fc60c","spanId":"eee19b7ec3c1b174","name":"GET /orders"}
+            ]}]}]}
+            """, Encoding.UTF8, "application/json");
+        using var response = await httpClient.PostAsync(new Uri("/v1/traces", UriKind.Relative), content);
+
+        // The response uses the encoding of the request
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("application/json", response.Content.Headers.ContentType?.MediaType);
+
+        var receiver = app.Services.GetRequiredService<InMemoryOpenTelemetryHandler>();
+        var span = receiver.Traces.OfType<OpenTelemetryTracesItem>()
+            .SelectMany(item => item.Request.ResourceSpans)
+            .SelectMany(resourceSpans => resourceSpans.ScopeSpans)
+            .SelectMany(scopeSpans => scopeSpans.Spans)
+            .Single();
+        Assert.Equal("GET /orders", span.Name);
+        Assert.Equal("5b8efff798038103d269b633813fc60c", Convert.ToHexStringLower(span.TraceId.Span));
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_ConfigureEndpoints()
+    {
+        #region OpenTelemetryCollector_ConfigureEndpoints
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseTestServer();
+        builder.Services.AddInMemoryOpenTelemetryReceiver(options =>
+        {
+            options.HttpLogsEndpoint = "/otlp/v1/logs";
+            options.HttpTracesEndpoint = "/otlp/v1/traces";
+            options.HttpMetricsEndpoint = null;   // null: the endpoint is not mapped
+            options.EnableGrpcEndpoints = false;  // no gRPC services
+        });
+
+        await using var app = builder.Build();
+        app.MapOpenTelemetryReceiverEndpoints();
+        await app.StartAsync();
+
+        using var httpClient = app.GetTestClient();
+        using var logsContent = new ByteArrayContent(new ExportLogsServiceRequest().ToByteArray());
+        using var logsResponse = await httpClient.PostAsync(new Uri("/otlp/v1/logs", UriKind.Relative), logsContent);
+        Assert.Equal(HttpStatusCode.OK, logsResponse.StatusCode);
+
+        using var metricsContent = new ByteArrayContent(new ExportMetricsServiceRequest().ToByteArray());
+        using var metricsResponse = await httpClient.PostAsync(new Uri("/v1/metrics", UriKind.Relative), metricsContent);
+        Assert.Equal(HttpStatusCode.NotFound, metricsResponse.StatusCode);
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_GrpcExport()
+    {
+        #region OpenTelemetryCollector_GrpcExport
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseTestServer();
+        builder.Services.AddInMemoryOpenTelemetryReceiver();
+
+        await using var app = builder.Build();
+        app.MapOpenTelemetryReceiverEndpoints();
+        await app.StartAsync();
+
+        // The gRPC client classes are generated from the OTLP protos, in the same namespaces as the messages
+        using var channel = GrpcChannel.ForAddress("http://localhost", new GrpcChannelOptions { HttpHandler = app.GetTestServer().CreateHandler() });
+        var client = new TraceService.TraceServiceClient(channel);
+        _ = await client.ExportAsync(new ExportTraceServiceRequest { ResourceSpans = { new ResourceSpans() } });
+
+        var receiver = app.Services.GetRequiredService<InMemoryOpenTelemetryHandler>();
+        var item = Assert.Single(receiver.Traces);
+        Assert.Equal("/opentelemetry.proto.collector.trace.v1.TraceService/Export", item.Method);
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_UseCustomHandler()
+    {
+        #region OpenTelemetryCollector_UseCustomHandler
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseTestServer();
+
+        // The handler is registered as a singleton, and gets its dependencies from the service provider
+        builder.Services.AddOpenTelemetryReceiver<SpanNameCollector>();
+
+        await using var app = builder.Build();
+        app.MapOpenTelemetryReceiverEndpoints();
+        await app.StartAsync();
+
+        var exportRequest = new ExportTraceServiceRequest
+        {
+            ResourceSpans = { new ResourceSpans { ScopeSpans = { new ScopeSpans { Spans = { new Span { Name = "GET /orders" } } } } } },
+        };
+
+        using var httpClient = app.GetTestClient();
+        using var content = new ByteArrayContent(exportRequest.ToByteArray());
+        content.Headers.ContentType = new MediaTypeHeaderValue("application/x-protobuf");
+        using var response = await httpClient.PostAsync(new Uri("/v1/traces", UriKind.Relative), content);
+
+        Assert.Equal(["GET /orders"], app.Services.GetRequiredService<SpanNameCollector>().SpanNames.ToArray());
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_UnitTestHandler()
+    {
+        #region OpenTelemetryCollector_UnitTestHandler
+        var scopeLogs = new ScopeLogs();
+        for (var i = 0; i < 105; i++)
+        {
+            scopeLogs.LogRecords.Add(new LogRecord());
+        }
+
+        var exportRequest = new ExportLogsServiceRequest { ResourceLogs = { new ResourceLogs { ScopeLogs = { scopeLogs } } } };
+
+        // Call the handler directly, without hosting the receiver
+        var partialSuccess = new OpenTelemetryPartialSuccess();
+        var context = new OpenTelemetryHandlerContext(OpenTelemetryTransport.Http, "POST /v1/logs", partialSuccess);
+        await new DropOversizedLogsHandler().HandleLogsAsync(context, exportRequest, CancellationToken.None);
+
+        Assert.Equal(5, partialSuccess.RejectedCount);
+        Assert.Equal("The storage quota is exceeded", partialSuccess.ErrorMessage);
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_InMemoryHandlerRetention()
+    {
+        #region OpenTelemetryCollectorInMemory_RetentionAndTime
+        var timeProvider = new FakeTimeProvider(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));
+        var receiver = new InMemoryOpenTelemetryHandler(new InMemoryOpenTelemetryHandlerOptions { MaximumLogCount = 2 }, timeProvider);
+        var context = new OpenTelemetryHandlerContext(OpenTelemetryTransport.Http, "POST /v1/logs", new OpenTelemetryPartialSuccess());
+
+        foreach (var message in new[] { "first", "second", "third" })
+        {
+            var exportRequest = new ExportLogsServiceRequest
+            {
+                ResourceLogs = { new ResourceLogs { ScopeLogs = { new ScopeLogs { LogRecords = { new LogRecord { Body = new AnyValue { StringValue = message } } } } } } },
+            };
+
+            await receiver.HandleLogsAsync(context, exportRequest, CancellationToken.None);
+            timeProvider.Advance(TimeSpan.FromSeconds(1));
+        }
+
+        // Only the 2 most recent export requests are kept
+        var items = receiver.Logs.OfType<OpenTelemetryLogsItem>().ToList();
+        Assert.Equal(["second", "third"], items.Select(item => item.Request.ResourceLogs[0].ScopeLogs[0].LogRecords[0].Body.StringValue).ToArray());
+
+        // ReceivedAt comes from the TimeProvider
+        Assert.Equal(new DateTimeOffset(2026, 1, 1, 0, 0, 1, TimeSpan.Zero), items[0].ReceivedAt);
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_RegisterSampler()
+    {
+        #region OpenTelemetryCollector_AddSampler
+        var builder = WebApplication.CreateBuilder();
+        builder.Services.AddInMemoryOpenTelemetryReceiver(options =>
+        {
+            options.Samplers.Add(new KeepOnlyNonEmptyRequestsSampler());
+        });
+        #endregion
+
+        builder.WebHost.UseTestServer();
+        await using var app = builder.Build();
+        app.MapOpenTelemetryReceiverEndpoints();
+        await app.StartAsync(XunitCancellationToken);
+        using var httpClient = app.GetTestClient();
+
+        using var emptyResponse = await PostAsync(httpClient, "/v1/logs", new ExportLogsServiceRequest());
+        Assert.Equal(HttpStatusCode.OK, emptyResponse.StatusCode);
+        var receiver = app.Services.GetRequiredService<InMemoryOpenTelemetryHandler>();
+        Assert.Empty(receiver.Logs);
+
+        await SendLogsAsync(httpClient, "not empty");
+        Assert.Single(receiver.Logs);
+    }
+
+    [Fact]
+    public async Task Documentation_TailSampling()
+    {
+        #region OpenTelemetryCollector_TailSamplingByRootSpan
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseTestServer();
+        builder.Services.AddInMemoryOpenTelemetryReceiver(options =>
+        {
+            // Keep only the traces of the checkout requests
+            options.Samplers.Add(new OpenTelemetryTailSampler
+            {
+                MaxTraceDuration = TimeSpan.FromSeconds(30),
+                ShouldSample = static (context, _) => ValueTask.FromResult(context.RootSpan?.Name is "POST /checkout"),
+            });
+        });
+
+        await using var app = builder.Build();
+        app.MapOpenTelemetryReceiverEndpoints();
+        await app.StartAsync();
+        using var httpClient = app.GetTestClient();
+
+        var checkoutTraceId = ByteString.CopyFrom(Convert.FromHexString("5b8efff798038103d269b633813fc60c"));
+        var checkoutRootSpanId = ByteString.CopyFrom(Convert.FromHexString("eee19b7ec3c1b174"));
+        var healthTraceId = ByteString.CopyFrom(Convert.FromHexString("0af7651916cd43dd8448eb211c80319c"));
+
+        Span[] spans =
+        [
+            // A child span arrives first: its trace is buffered until the root span, which has no parent span id, arrives
+            new Span { TraceId = checkoutTraceId, SpanId = ByteString.CopyFrom(Convert.FromHexString("0102030405060708")), ParentSpanId = checkoutRootSpanId, Name = "SELECT cart" },
+            new Span { TraceId = checkoutTraceId, SpanId = checkoutRootSpanId, Name = "POST /checkout" },
+            new Span { TraceId = healthTraceId, SpanId = ByteString.CopyFrom(Convert.FromHexString("b7ad6b7169203331")), Name = "GET /health" },
+        ];
+
+        foreach (var span in spans)
+        {
+            var exportRequest = new ExportTraceServiceRequest { ResourceSpans = { new ResourceSpans { ScopeSpans = { new ScopeSpans { Spans = { span } } } } } };
+            using var content = new ByteArrayContent(exportRequest.ToByteArray());
+            content.Headers.ContentType = new MediaTypeHeaderValue("application/x-protobuf");
+            using var response = await httpClient.PostAsync(new Uri("/v1/traces", UriKind.Relative), content);
+            response.EnsureSuccessStatusCode();
+        }
+
+        // The spans of the checkout trace are dispatched together, in one export request; the health check trace is dropped
+        var receiver = app.Services.GetRequiredService<InMemoryOpenTelemetryHandler>();
+        var item = Assert.Single(receiver.Traces.OfType<OpenTelemetryTracesItem>());
+        Assert.Equal(
+            ["SELECT cart", "POST /checkout"],
+            item.Request.ResourceSpans.SelectMany(r => r.ScopeSpans).SelectMany(s => s.Spans).Select(s => s.Name).ToArray());
+        #endregion
+    }
+
     private static async Task WaitForAsync(Func<bool> condition)
     {
         for (var i = 0; i < 200; i++)
@@ -1165,6 +1467,29 @@ public sealed class OpenTelemetryReceiverTests
             var count = request.ResourceLogs.Sum(resourceLogs => resourceLogs.ScopeLogs.Sum(scopeLogs => scopeLogs.LogRecords.Count));
             return Math.Max(0, count - MaxLogRecordsPerRequest);
         }
+    }
+    #endregion
+
+    #region OpenTelemetryCollector_SpanNameCollector
+    public sealed class SpanNameCollector : OpenTelemetryHandler
+    {
+        public ConcurrentQueue<string> SpanNames { get; } = new();
+
+        public override ValueTask HandleTracesAsync(OpenTelemetryHandlerContext context, ExportTraceServiceRequest request, CancellationToken cancellationToken)
+        {
+            foreach (var span in request.ResourceSpans.SelectMany(r => r.ScopeSpans).SelectMany(s => s.Spans))
+            {
+                SpanNames.Enqueue(span.Name);
+            }
+
+            return ValueTask.CompletedTask;
+        }
+
+        public override ValueTask HandleLogsAsync(OpenTelemetryHandlerContext context, ExportLogsServiceRequest request, CancellationToken cancellationToken)
+            => ValueTask.CompletedTask;
+
+        public override ValueTask HandleMetricsAsync(OpenTelemetryHandlerContext context, ExportMetricsServiceRequest request, CancellationToken cancellationToken)
+            => ValueTask.CompletedTask;
     }
     #endregion
 

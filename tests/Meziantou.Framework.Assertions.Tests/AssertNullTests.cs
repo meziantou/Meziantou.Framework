@@ -122,4 +122,20 @@ public sealed class AssertNullTests
     }
 
     private static string? FindName(string? name) => name;
+
+    [Fact]
+    public void Documentation_NullAndNotNull()
+    {
+        #region Assert_NullAndNotNull
+        static string? FindUser(int id) => id == 1 ? "Alice" : null;
+
+        Assert.Null(FindUser(2));
+
+        var user = Assert.NotNull(FindUser(1));     // returns the value as a non-nullable string
+        Assert.Equal("ALICE", user.ToUpperInvariant());
+
+        Assert.True(char.IsUpper(user[0]));
+        Assert.False(string.IsNullOrWhiteSpace(user));
+        #endregion
+    }
 }

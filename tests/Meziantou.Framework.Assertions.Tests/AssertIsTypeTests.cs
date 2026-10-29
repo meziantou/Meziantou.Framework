@@ -135,4 +135,20 @@ public sealed class AssertIsTypeTests
             Actual value: "Hello"
             """);
     }
+
+    [Fact]
+    public void Documentation_Types()
+    {
+        #region Assert_Types
+        object value = new List<int> { 1, 2 };
+
+        var list = Assert.IsType<List<int>>(value);                 // exactly this type, and returned as it
+        Assert.HasCount(2, list);
+        Assert.IsNotType<int[]>(value);
+
+        var items = Assert.IsAssignableTo<IEnumerable<int>>(value); // value is IEnumerable<int>
+        Assert.Contains(2, items);
+        Assert.IsNotAssignableTo<string>(value);
+        #endregion
+    }
 }

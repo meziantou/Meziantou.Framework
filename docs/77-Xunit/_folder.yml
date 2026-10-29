@@ -1,0 +1,2 @@
+title: Xunit
+description: Run or skip xUnit.v3 tests depending on the operating system, the globalization mode, the CI server or the Windows user.

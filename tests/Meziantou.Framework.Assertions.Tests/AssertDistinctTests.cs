@@ -400,4 +400,16 @@ public sealed class AssertDistinctTests
         public int GetHashCode(object obj) => obj.GetHashCode();
     }
 
+    [Fact]
+    public void Documentation_Distinct()
+    {
+        #region Assert_Distinct
+        string[] ids = ["a", "b", "c"];
+        string[] tags = ["dotnet", "DotNet"];
+
+        Assert.Distinct(ids);
+        Assert.Distinct(tags);
+        Assert.NotDistinct(tags, StringComparer.OrdinalIgnoreCase);
+        #endregion
+    }
 }

@@ -381,7 +381,7 @@ public abstract partial class Image : IDisposable
         ThrowIfDisposed();
         encoder ??= ImageEncoder.FromPath(path);
         using var writer = ImageWriterCore.Create(path, CreateSaveOptions(encoder), PixelFormat, asynchronous: false);
-        WriteTo(writer);
+        WriteTo(writer, _poster, _frames);
     }
 
     /// <summary>Encodes the image to a stream, starting at its current position. The stream is left open.</summary>
@@ -397,7 +397,7 @@ public abstract partial class Image : IDisposable
         ArgumentNullException.ThrowIfNull(encoder);
         ThrowIfDisposed();
         using var writer = ImageWriterCore.Create(stream, CreateSaveOptions(encoder), PixelFormat);
-        WriteTo(writer);
+        WriteTo(writer, _poster, _frames);
     }
 
     /// <summary>Asynchronously encodes the image to a file, with the same atomic-publication guarantees as <see cref="Save(string, ImageEncoder?)"/>.</summary>
@@ -414,7 +414,7 @@ public abstract partial class Image : IDisposable
         ThrowIfDisposed();
         encoder ??= ImageEncoder.FromPath(path);
         var options = CreateSaveOptions(encoder);
-        return SaveCoreAsync(path, options, cancellationToken);
+        return SaveCoreAsync(path, options, _poster, _frames, cancellationToken);
     }
 
     /// <summary>Asynchronously encodes the image to a stream, starting at its current position. The stream is left open.</summary>
@@ -431,7 +431,7 @@ public abstract partial class Image : IDisposable
         ArgumentNullException.ThrowIfNull(encoder);
         ThrowIfDisposed();
         var options = CreateSaveOptions(encoder);
-        return SaveCoreAsync(stream, options, cancellationToken);
+        return SaveCoreAsync(stream, options, _poster, _frames, cancellationToken);
     }
 
     /// <summary>
@@ -651,6 +651,50 @@ public abstract partial class Image : IDisposable
         }
     }
 
+    /// <summary>Encodes one frame of this image to a file, as a still image (see <see cref="ImageFrame.Save(string, ImageEncoder?)"/>).</summary>
+    /// <param name="frame">An attached frame of this image (a displayed frame or the poster frame).</param>
+    /// <param name="path">The validated destination path.</param>
+    /// <param name="encoder">The resolved encoder.</param>
+    internal void SaveFrame(ImageFrame frame, string path, ImageEncoder encoder)
+    {
+        using var writer = ImageWriterCore.Create(path, CreateFrameSaveOptions(encoder), PixelFormat, asynchronous: false);
+        WriteTo(writer, poster: null, [frame]);
+    }
+
+    /// <summary>Encodes one frame of this image to a stream, as a still image (see <see cref="ImageFrame.Save(Stream, ImageEncoder)"/>).</summary>
+    /// <param name="frame">An attached frame of this image (a displayed frame or the poster frame).</param>
+    /// <param name="stream">The validated destination stream.</param>
+    /// <param name="encoder">The encoder.</param>
+    internal void SaveFrame(ImageFrame frame, Stream stream, ImageEncoder encoder)
+    {
+        using var writer = ImageWriterCore.Create(stream, CreateFrameSaveOptions(encoder), PixelFormat);
+        WriteTo(writer, poster: null, [frame]);
+    }
+
+    /// <summary>Asynchronously encodes one frame of this image to a file, as a still image. Validation is synchronous.</summary>
+    /// <param name="frame">An attached frame of this image (a displayed frame or the poster frame).</param>
+    /// <param name="path">The validated destination path.</param>
+    /// <param name="encoder">The resolved encoder.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <returns>A task that completes when the file has been published.</returns>
+    internal Task SaveFrameAsync(ImageFrame frame, string path, ImageEncoder encoder, CancellationToken cancellationToken)
+    {
+        var options = CreateFrameSaveOptions(encoder);
+        return SaveCoreAsync(path, options, poster: null, [frame], cancellationToken);
+    }
+
+    /// <summary>Asynchronously encodes one frame of this image to a stream, as a still image. Validation is synchronous.</summary>
+    /// <param name="frame">An attached frame of this image (a displayed frame or the poster frame).</param>
+    /// <param name="stream">The validated destination stream.</param>
+    /// <param name="encoder">The encoder.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <returns>A task that completes when the frame has been written.</returns>
+    internal Task SaveFrameAsync(ImageFrame frame, Stream stream, ImageEncoder encoder, CancellationToken cancellationToken)
+    {
+        var options = CreateFrameSaveOptions(encoder);
+        return SaveCoreAsync(stream, options, poster: null, [frame], cancellationToken);
+    }
+
     /// <summary>
     /// Validates that the image can be saved with <paramref name="encoder"/> (static outputs reject
     /// animated images, only animated PNG stores a poster) and creates the writer options of an eager save.
@@ -658,27 +702,39 @@ public abstract partial class Image : IDisposable
     private ImageWriterOptions CreateSaveOptions(ImageEncoder encoder)
     {
         _ = ImageOutputCapabilities.ForImage(encoder, this);
-        return new ImageWriterOptions(_size)
-        {
-            Encoder = encoder,
-            ExpectedFrameCount = _frames.Count,
-            Metadata = _metadata,
-            Animation = _animation,
-            Configuration = _configuration,
-            LeaveOpen = true,
-        };
+        return CreateWriterOptions(encoder, _frames.Count, _animation);
     }
 
-    /// <summary>Writes the poster frame and every displayed frame, then completes the output (disposing the writer aborts it on failure).</summary>
-    private void WriteTo(ImageWriterCore writer)
+    /// <summary>
+    /// Validates that one frame can be saved as a still image with <paramref name="encoder"/> and creates the writer options:
+    /// the image-wide metadata, one frame, no animation settings and no poster, as the save of <see cref="CloneFrame(int)"/>.
+    /// </summary>
+    private ImageWriterOptions CreateFrameSaveOptions(ImageEncoder encoder)
     {
-        writer.PreflightFrames(_poster, _frames);
-        if (_poster is not null)
+        _ = ImageOutputCapabilities.ForStillImage(encoder, _size);
+        return CreateWriterOptions(encoder, frameCount: 1, animation: null);
+    }
+
+    private ImageWriterOptions CreateWriterOptions(ImageEncoder encoder, int frameCount, AnimationMetadata? animation) => new(_size)
+    {
+        Encoder = encoder,
+        ExpectedFrameCount = frameCount,
+        Metadata = _metadata,
+        Animation = animation,
+        Configuration = _configuration,
+        LeaveOpen = true,
+    };
+
+    /// <summary>Writes the poster frame and every displayed frame, then completes the output (disposing the writer aborts it on failure).</summary>
+    private static void WriteTo(ImageWriterCore writer, ImageFrame? poster, IReadOnlyList<ImageFrame> frames)
+    {
+        writer.PreflightFrames(poster, frames);
+        if (poster is not null)
         {
-            writer.WritePosterFrame(_poster);
+            writer.WritePosterFrame(poster);
         }
 
-        foreach (var frame in _frames)
+        foreach (var frame in frames)
         {
             writer.WriteFrame(frame);
         }
@@ -686,15 +742,15 @@ public abstract partial class Image : IDisposable
         writer.Complete();
     }
 
-    private async Task WriteToAsync(ImageWriterCore writer, CancellationToken cancellationToken)
+    private static async Task WriteToAsync(ImageWriterCore writer, ImageFrame? poster, IReadOnlyList<ImageFrame> frames, CancellationToken cancellationToken)
     {
-        writer.PreflightFrames(_poster, _frames);
-        if (_poster is not null)
+        writer.PreflightFrames(poster, frames);
+        if (poster is not null)
         {
-            await writer.WritePosterFrameAsync(_poster, cancellationToken).ConfigureAwait(false);
+            await writer.WritePosterFrameAsync(poster, cancellationToken).ConfigureAwait(false);
         }
 
-        foreach (var frame in _frames)
+        foreach (var frame in frames)
         {
             await writer.WriteFrameAsync(frame, cancellationToken).ConfigureAwait(false);
         }
@@ -702,23 +758,23 @@ public abstract partial class Image : IDisposable
         await writer.CompleteAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    private async Task SaveCoreAsync(string path, ImageWriterOptions options, CancellationToken cancellationToken)
+    private async Task SaveCoreAsync(string path, ImageWriterOptions options, ImageFrame? poster, IReadOnlyList<ImageFrame> frames, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         var writer = ImageWriterCore.Create(path, options, PixelFormat, asynchronous: true);
         await using (writer.ConfigureAwait(false))
         {
-            await WriteToAsync(writer, cancellationToken).ConfigureAwait(false);
+            await WriteToAsync(writer, poster, frames, cancellationToken).ConfigureAwait(false);
         }
     }
 
-    private async Task SaveCoreAsync(Stream stream, ImageWriterOptions options, CancellationToken cancellationToken)
+    private async Task SaveCoreAsync(Stream stream, ImageWriterOptions options, ImageFrame? poster, IReadOnlyList<ImageFrame> frames, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         var writer = ImageWriterCore.Create(stream, options, PixelFormat);
         await using (writer.ConfigureAwait(false))
         {
-            await WriteToAsync(writer, cancellationToken).ConfigureAwait(false);
+            await WriteToAsync(writer, poster, frames, cancellationToken).ConfigureAwait(false);
         }
     }
 
@@ -729,7 +785,7 @@ public abstract partial class Image : IDisposable
             throw new ArgumentException("The stream must be readable.", nameof(stream));
     }
 
-    private static void ValidateWritableStream(Stream stream)
+    internal static void ValidateWritableStream(Stream stream)
     {
         ArgumentNullException.ThrowIfNull(stream);
         if (!stream.CanWrite)

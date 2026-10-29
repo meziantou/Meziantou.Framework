@@ -130,12 +130,28 @@ internal sealed class ImageOutputCapabilities
         ArgumentNullException.ThrowIfNull(image);
         var capabilities = Resolve(encoder, image.Frames.Count, image.IsAnimated);
         if (image.IsAnimated && !capabilities.IsAnimated)
-            throw new UnsupportedImageFeatureException($"The image is animated ({image.Frames.Count} frame(s){(image.PosterFrame is null ? "" : ", a poster frame")}, animation settings) but {capabilities.Name} output stores a single still image. Extract a frame with CloneFrame, remove the animation settings of a single-frame image, or select an animated output.", capabilities.Format, "Animation");
+            throw new UnsupportedImageFeatureException($"The image is animated ({image.Frames.Count} frame(s){(image.PosterFrame is null ? "" : ", a poster frame")}, animation settings) but {capabilities.Name} output stores a single still image. Save one frame with ImageFrame.Save (or extract it with CloneFrame), remove the animation settings of a single-frame image, or select an animated output.", capabilities.Format, "Animation");
 
         if (image.PosterFrame is not null && !capabilities.SupportsPosterFrame)
-            throw new UnsupportedImageFeatureException($"The image has a separate poster frame, which only animated PNG output can store. Remove it with RemovePosterFrame or extract it with ClonePosterFrame.", capabilities.Format, "Poster frame");
+            throw new UnsupportedImageFeatureException($"The image has a separate poster frame, which only animated PNG output can store. Remove it with RemovePosterFrame, or save it alone with PosterFrame.Save.", capabilities.Format, "Poster frame");
 
         capabilities.EnsureRepresentable(image.Size, image.Animation);
+        return capabilities;
+    }
+
+    /// <summary>
+    /// Resolves and validates the constraints of the save of one frame as a still image (<see cref="ImageFrame.Save(string, ImageEncoder?)"/>):
+    /// one displayed frame, no animation settings and no poster, as for an image extracted with <see cref="Image.CloneFrame(int)"/>.
+    /// </summary>
+    /// <param name="encoder">The encoder.</param>
+    /// <param name="canvasSize">The size of the frame.</param>
+    /// <returns>The capabilities.</returns>
+    /// <exception cref="UnsupportedImageFeatureException">The canvas cannot be represented by the format.</exception>
+    public static ImageOutputCapabilities ForStillImage(ImageEncoder encoder, Size canvasSize)
+    {
+        ArgumentNullException.ThrowIfNull(encoder);
+        var capabilities = Resolve(encoder, frameCount: 1, hasAnimation: false);
+        capabilities.EnsureRepresentable(canvasSize, animation: null);
         return capabilities;
     }
 

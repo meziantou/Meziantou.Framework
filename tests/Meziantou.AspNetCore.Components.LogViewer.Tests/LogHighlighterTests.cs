@@ -185,6 +185,44 @@ public class LogHighlighterTests
         Assert.Equal("a &lt;b&gt; c", LogHighlighter.Highlight("a <b> c", highlighters: null, "scope").Value);
     }
 
+    [Fact]
+    public void Documentation_CustomHighlighter()
+    {
+        var result = Highlight("Fixed in #42 and #7, see http://example.com", new IssueLogHighlighter(), new UrlLogHighlighter());
+        Assert.Equal("Fixed in <a scope class='log-message-match-link' target='_blank' rel='noopener noreferrer' href='https://example.com/issues/42' title='Issue 42'>#42</a> and <a scope class='log-message-match-link' target='_blank' rel='noopener noreferrer' href='https://example.com/issues/7' title='Issue 7'>#7</a>, see <a scope class='log-message-match-link' target='_blank' rel='noopener noreferrer' href='http://example.com'>http://example.com</a>", result);
+    }
+
+    #region LogHighlighter_Custom
+    // Turns "#42" into a link to issue 42
+    public sealed class IssueLogHighlighter : ILogHighlighter
+    {
+        public IEnumerable<LogHighlighterResult> Process(string text)
+        {
+            var index = text.IndexOf('#', StringComparison.Ordinal);
+            while (index >= 0)
+            {
+                var end = index + 1;
+                while (end < text.Length && char.IsAsciiDigit(text[end]))
+                {
+                    end++;
+                }
+
+                if (end > index + 1)
+                {
+                    var number = text[(index + 1)..end];
+                    yield return new LogHighlighterResult(index, end - index, Priority: 1)
+                    {
+                        Link = "https://example.com/issues/" + number,
+                        Title = "Issue " + number,
+                    };
+                }
+
+                index = text.IndexOf('#', end, StringComparison.Ordinal);
+            }
+        }
+    }
+    #endregion
+
     private sealed class FakeLogHighlighter(params LogHighlighterResult[] results) : ILogHighlighter
     {
         public IEnumerable<LogHighlighterResult> Process(string text) => results;

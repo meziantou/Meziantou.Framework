@@ -1,0 +1,50 @@
+@using System.ComponentModel
+@using System.ComponentModel.DataAnnotations
+
+<EditForm Model="contact" OnValidSubmit="Save">
+    <DataAnnotationsValidator />
+    <GenericForm @bind-Model="contact" EditorClass="form-control" />
+    <button type="submit">Save</button>
+</EditForm>
+
+@code {
+    private Contact contact = new();
+
+    private void Save()
+    {
+        // contact contains the values the user entered
+    }
+
+    public sealed class Contact
+    {
+        [Required]
+        [Display(Name = "Full name", Order = 1, Prompt = "Jane Doe")]
+        public string? Name { get; set; }
+
+        [DataType(DataType.EmailAddress)]
+        [Display(Order = 2)]
+        public string? Email { get; set; }
+
+        [DataType(DataType.Date)]
+        public DateTime? BirthDate { get; set; }
+
+        public ContactKind Kind { get; set; }
+
+        public bool Subscribed { get; set; }
+
+        [Editor(typeof(InputTextArea), typeof(InputBase<>))]
+        public string? Notes { get; set; }
+
+        [Editable(false)]
+        public Guid Id { get; set; } = Guid.NewGuid(); // Not shown in the form
+
+        public DateTimeOffset CreatedAt { get; } = DateTimeOffset.UtcNow; // Read-only: not shown either
+    }
+
+    public enum ContactKind
+    {
+        Personal,
+        [Display(Name = "Work contact")]
+        Work,
+    }
+}

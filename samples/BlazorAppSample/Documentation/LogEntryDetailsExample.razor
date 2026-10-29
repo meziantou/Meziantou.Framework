@@ -1,0 +1,14 @@
+<LogEntryDetails Data="@request" Format="LogDetailsDisplayFormat.Json" CanChangeDisplayFormat="false" MaxDepth="3" />
+
+@code {
+    private readonly Dictionary<string, object> request = new(StringComparer.Ordinal)
+    {
+        ["Method"] = "GET",
+        ["Path"] = "/api/orders",
+        ["StatusCode"] = 200,
+        ["Headers"] = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["Accept"] = "application/json",
+        },
+    };
+}

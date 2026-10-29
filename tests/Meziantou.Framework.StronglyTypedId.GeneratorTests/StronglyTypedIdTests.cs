@@ -2,10 +2,18 @@
 #pragma warning disable IDE0250 // Make struct readonly
 #pragma warning disable MA0182 // Unused internal type
 using System.ComponentModel;
+using System.Net;
 using System.Numerics;
 using System.Reflection;
 using System.Text;
 using Meziantou.Framework.Annotations;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using Microsoft.Extensions.Configuration;
 using MongoDB.Bson;
 using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
@@ -81,6 +89,233 @@ public sealed partial class StronglyTypedIdTests
         static T GetValue<T>(IStronglyTypedId<T> id) => id.Value;
         #endregion
     }
+
+    [Fact]
+    public void Docs_Usage()
+    {
+        #region StronglyTypedId_Usage
+        var id = ProjectId.FromInt32(42);
+        Assert.Equal(42, id.Value);
+        Assert.Equal("42", id.ValueAsString);
+        Assert.Equal("ProjectId { Value = 42 }", id.ToString());
+
+        // Two ids are equal when their values are equal
+        Assert.Equal(ProjectId.FromInt32(42), id);
+
+        Assert.Equal(id, ProjectId.Parse("42"));
+        Assert.True(ProjectId.TryParse("42", out var parsed));
+        Assert.Equal(id, parsed);
+        Assert.False(ProjectId.TryParse("abc", out _));
+        #endregion
+    }
+
+    [Fact]
+    public void Docs_DeclarationKinds()
+    {
+        #region StronglyTypedId_DeclarationKindsUsage
+        var sku = Sku.FromString("ABC-123");
+        Assert.Equal("ABC-123", sku.Value);
+
+        var trackingNumber = TrackingNumber.FromInt64(1234567890);
+        Assert.Equal(1234567890L, trackingNumber.Value);
+        #endregion
+    }
+
+    [Fact]
+    public void Docs_Validation()
+    {
+        #region StronglyTypedId_ValidationUsage
+        Assert.Equal(42, OrderNumber.FromInt32(42).Value);
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => OrderNumber.FromInt32(0));
+
+        // TryParse returns false when the constructor throws, and Parse throws a FormatException
+        Assert.False(OrderNumber.TryParse("0", out _));
+        Assert.Throws<FormatException>(() => OrderNumber.Parse("0"));
+
+        // The default value of a struct does not call the constructor
+        Assert.Equal(0, default(OrderNumber).Value);
+        #endregion
+    }
+
+    [Fact]
+    public void Docs_ToStringAsValue()
+    {
+        #region StronglyTypedId_ToStringAsValueUsage
+        var number = InvoiceNumber.FromInt32(1042);
+        Assert.Equal("1042", number.ToString());
+        Assert.Equal("Invoice 1042", $"Invoice {number}");
+        #endregion
+    }
+
+    [Fact]
+    public void Docs_StringComparison()
+    {
+        #region StronglyTypedId_StringComparisonUsage
+        var code = CountryCode.FromString("fr");
+        Assert.Equal(CountryCode.FromString("FR"), code);
+        Assert.Equal(CountryCode.FromString("FR").GetHashCode(), code.GetHashCode());
+
+        // The value is kept as it was created
+        Assert.Equal("fr", code.Value);
+        #endregion
+    }
+
+    [Fact]
+    public void Docs_DisableConverters()
+    {
+        Assert.Null(typeof(TagId).GetCustomAttribute<Newtonsoft.Json.JsonConverterAttribute>());
+        Assert.Null(typeof(TagId).GetCustomAttribute<MongoDB.Bson.Serialization.Attributes.BsonSerializerAttribute>());
+        Assert.NotNull(typeof(TagId).GetCustomAttribute<System.Text.Json.Serialization.JsonConverterAttribute>());
+        Assert.NotNull(typeof(TagId).GetCustomAttribute<TypeConverterAttribute>());
+    }
+
+    [Fact]
+    public void Docs_SystemTextJson()
+    {
+        #region StronglyTypedId_SystemTextJson
+        var line = new OrderLine(ProductId.FromGuid(new Guid("0f8fad5b-d9cb-469f-a165-70867728950e")), ProjectId.FromInt32(42), Quantity: 3);
+
+        var json = System.Text.Json.JsonSerializer.Serialize(line);
+        Assert.Equal("""{"ProductId":"0f8fad5b-d9cb-469f-a165-70867728950e","ProjectId":42,"Quantity":3}""", json);
+
+        var deserialized = System.Text.Json.JsonSerializer.Deserialize<OrderLine>(json);
+        Assert.Equal(line, deserialized);
+        #endregion
+    }
+
+    [Fact]
+    public void Docs_SystemTextJsonDictionaryKey()
+    {
+        #region StronglyTypedId_SystemTextJsonDictionaryKey
+        var budgets = new Dictionary<ProjectId, decimal> { [ProjectId.FromInt32(42)] = 1500m };
+
+        var json = System.Text.Json.JsonSerializer.Serialize(budgets);
+        Assert.Equal("""{"42":1500}""", json);
+
+        var deserialized = System.Text.Json.JsonSerializer.Deserialize<Dictionary<ProjectId, decimal>>(json);
+        Assert.Equal(1500m, deserialized![ProjectId.FromInt32(42)]);
+        #endregion
+    }
+
+    [Fact]
+    public void Docs_SystemTextJsonObjectForm()
+    {
+        #region StronglyTypedId_SystemTextJsonObjectForm
+        // An object with a "Value" property is also accepted; the other properties are ignored
+        var id = System.Text.Json.JsonSerializer.Deserialize<ProjectId>("""{"Value":42,"Name":"Documentation"}""");
+        Assert.Equal(ProjectId.FromInt32(42), id);
+        #endregion
+    }
+
+    [Fact]
+    public void Docs_NewtonsoftJson()
+    {
+        #region StronglyTypedId_NewtonsoftJson
+        var line = new OrderLine(ProductId.FromGuid(new Guid("0f8fad5b-d9cb-469f-a165-70867728950e")), ProjectId.FromInt32(42), Quantity: 3);
+
+        var json = Newtonsoft.Json.JsonConvert.SerializeObject(line);
+        Assert.Equal("""{"ProductId":"0f8fad5b-d9cb-469f-a165-70867728950e","ProjectId":42,"Quantity":3}""", json);
+
+        var deserialized = Newtonsoft.Json.JsonConvert.DeserializeObject<OrderLine>(json);
+        Assert.Equal(line, deserialized);
+        #endregion
+    }
+
+    [Fact]
+    public void Docs_MongoDB()
+    {
+        #region StronglyTypedId_MongoDB
+        var project = new ProjectDocument { Id = ProjectId.FromInt32(42), Name = "Documentation" };
+
+        var document = project.ToBsonDocument();
+        Assert.Equal(42, document["_id"].AsInt32);
+
+        var deserialized = BsonSerializer.Deserialize<ProjectDocument>(document);
+        Assert.Equal(ProjectId.FromInt32(42), deserialized.Id);
+        #endregion
+    }
+
+    [Fact]
+    public void Docs_TypeConverter()
+    {
+        #region StronglyTypedId_TypeConverter
+        var converter = TypeDescriptor.GetConverter(typeof(ProjectId));
+
+        Assert.Equal(ProjectId.FromInt32(42), converter.ConvertFromInvariantString("42"));
+        Assert.Equal(ProjectId.FromInt32(42), converter.ConvertFrom(42));
+        Assert.Equal("42", converter.ConvertToInvariantString(ProjectId.FromInt32(42)));
+        #endregion
+    }
+
+    [Fact]
+    public void Docs_BindConfiguration()
+    {
+        #region StronglyTypedId_BindConfiguration
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Import:DefaultProject"] = "42",
+                ["Import:ArchivedProjects:0"] = "7",
+                ["Import:ArchivedProjects:1"] = "8",
+            })
+            .Build();
+
+        // The configuration binder converts the strings with the generated TypeConverter
+        var options = configuration.GetSection("Import").Get<ImportOptions>();
+        Assert.Equal(ProjectId.FromInt32(42), options!.DefaultProject);
+        Assert.Equal([ProjectId.FromInt32(7), ProjectId.FromInt32(8)], options.ArchivedProjects);
+        #endregion
+    }
+
+#pragma warning disable xUnit1051 // Calls to methods which accept CancellationToken should use TestContext.Current.CancellationToken
+    [Fact]
+    public async Task Docs_AspNetCoreMinimalApi()
+    {
+        #region StronglyTypedId_AspNetCoreMinimalApi
+        var builder = WebApplication.CreateSlimBuilder();
+        builder.WebHost.UseTestServer(); // Runs the application in memory
+        await using var app = builder.Build();
+
+        // Route and query string values are parsed with the generated TryParse method
+        app.MapGet("/projects/{id}", (ProjectId id) => $"Project {id.Value}");
+        app.MapGet("/projects", (ProjectId? owner) => owner is { } value ? $"Projects of {value.Value}" : "All projects");
+        await app.StartAsync();
+
+        using var client = app.GetTestClient();
+        Assert.Equal("Project 42", await client.GetStringAsync(new Uri("/projects/42", UriKind.Relative)));
+        Assert.Equal("Projects of 7", await client.GetStringAsync(new Uri("/projects?owner=7", UriKind.Relative)));
+        Assert.Equal("All projects", await client.GetStringAsync(new Uri("/projects", UriKind.Relative)));
+
+        // A value that cannot be parsed is rejected
+        using var response = await client.GetAsync(new Uri("/projects/abc", UriKind.Relative));
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        #endregion
+    }
+
+    [Fact]
+    public async Task Docs_EntityFrameworkCore()
+    {
+        #region StronglyTypedId_EntityFrameworkCore
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<ProjectsContext>().UseSqlite(connection).Options;
+
+        await using (var context = new ProjectsContext(options))
+        {
+            await context.Database.EnsureCreatedAsync();
+            context.Projects.Add(new Project { Id = ProjectId.FromInt32(42), Name = "Documentation" });
+            await context.SaveChangesAsync();
+        }
+
+        await using (var context = new ProjectsContext(options))
+        {
+            // The id in the query is converted to its value
+            var project = await context.Projects.SingleAsync(p => p.Id == ProjectId.FromInt32(42));
+            Assert.Equal("Documentation", project.Name);
+        }
+        #endregion
+    }
+#pragma warning restore xUnit1051
 
     public static TheoryData<Type, string, object> GetData()
     {
@@ -1188,5 +1423,83 @@ public sealed partial class StronglyTypedIdTests
     #region StronglyTypedId_Comparable
     [StronglyTypedId<int>]
     public partial struct Priority : IComparable { }
+    #endregion
+
+    #region StronglyTypedId_DeclarationKinds
+    [StronglyTypedId<string>]
+    public sealed partial class Sku { }
+
+    [StronglyTypedId<long>]
+    public partial record struct TrackingNumber { }
+    #endregion
+
+    #region StronglyTypedId_Validation
+    [StronglyTypedId<int>]
+    public partial struct OrderNumber
+    {
+        // The generator uses this constructor instead of generating one
+        private OrderNumber(int value)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
+            _value = value;
+        }
+    }
+    #endregion
+
+    #region StronglyTypedId_ToStringAsValue
+    [StronglyTypedId<int>(GenerateToStringAsRecord = false)]
+    public partial struct InvoiceNumber { }
+    #endregion
+
+    #region StronglyTypedId_StringComparison
+    [StronglyTypedId<string>(StringComparison = StringComparison.OrdinalIgnoreCase)]
+    public partial struct CountryCode { }
+    #endregion
+
+    #region StronglyTypedId_DisableConverters
+    [StronglyTypedId<int>(generateNewtonsoftJsonConverter: false, generateMongoDBBsonSerialization: false)]
+    public partial struct TagId { }
+    #endregion
+
+    #region StronglyTypedId_JsonModel
+    public sealed record OrderLine(ProductId ProductId, ProjectId ProjectId, int Quantity);
+    #endregion
+
+    #region StronglyTypedId_MongoDBModel
+    public sealed class ProjectDocument
+    {
+        public ProjectId Id { get; set; }
+        public string? Name { get; set; }
+    }
+    #endregion
+
+    #region StronglyTypedId_BindConfigurationModel
+    public sealed class ImportOptions
+    {
+        public ProjectId DefaultProject { get; set; }
+        public IList<ProjectId> ArchivedProjects { get; } = [];
+    }
+    #endregion
+
+    #region StronglyTypedId_EntityFrameworkCoreModel
+    public sealed class Project
+    {
+        public ProjectId Id { get; set; }
+        public required string Name { get; set; }
+    }
+
+    // Stores a ProjectId as its int value
+    public sealed class ProjectIdConverter() : ValueConverter<ProjectId, int>(id => id.Value, value => ProjectId.FromInt32(value));
+
+    public sealed class ProjectsContext(DbContextOptions<ProjectsContext> options) : DbContext(options)
+    {
+        public DbSet<Project> Projects => Set<Project>();
+
+        protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+        {
+            // Applies the converter to every ProjectId property of the model
+            configurationBuilder.Properties<ProjectId>().HaveConversion<ProjectIdConverter>();
+        }
+    }
     #endregion
 }

@@ -7825,10 +7825,272 @@ public sealed class PublicApiGeneratorTests
         Assert.Throws<ArgumentException>(() => PublicApi.Aggregate([]));
     }
 
-    private static async Task<PublicApiAssembly> ReadAssembly(string source)
+    private const string InternalSymbolsSource = """
+        using System.Diagnostics.CodeAnalysis;
+
+        namespace Demo;
+
+        public class PublicType
+        {
+            private int _private;
+            internal string? InternalField;
+            private protected int _privateProtected;
+
+            internal PublicType() { }
+            public PublicType(int value) { }
+
+            public int ReadOnlyOutside { get; internal set; }
+            internal int InternalGetter { get; private set; }
+            protected internal int ProtectedInternal { get; set; }
+            private protected int PrivateProtected { get; set; }
+
+            internal event EventHandler? InternalEvent;
+
+            [MemberNotNull(nameof(InternalField), nameof(_private))]
+            internal void EnsureInitialized() => InternalField = "";
+            private void PrivateMethod() { }
+            private protected void PrivateProtectedMethod() { }
+
+            internal class NestedInternal
+            {
+                public void Run() { }
+            }
+
+            private class NestedPrivate { }
+            private protected class NestedPrivateProtected { }
+        }
+
+        internal interface IInternal
+        {
+            void Run();
+        }
+
+        internal sealed class InternalType : IInternal, IDisposable
+        {
+            void IInternal.Run() { }
+            public void Dispose() { }
+
+            public sealed class NestedPublic { }
+        }
+
+        internal static class InternalExtensions
+        {
+            internal static int Twice(this int value) => value * 2;
+        }
+
+        public class Base
+        {
+            internal void Hidden() { }
+            internal class Nested { }
+        }
+
+        public class Derived : Base
+        {
+            internal new void Hidden() { }
+            internal new class Nested { }
+        }
+
+        file class FileLocal { }
+        """;
+
+    [Fact]
+    public async Task Model_IncludeInternalSymbols()
+    {
+        var assembly = await ReadAssembly(InternalSymbolsSource, new PublicApiReadOptions { IncludeInternalSymbols = true });
+        InlineSnapshot.Validate(DumpModel(assembly), """
+            T:Demo.Base
+                public class Base
+            M:Demo.Base.#ctor
+                public Base()
+            M:Demo.Base.Hidden
+                internal void Hidden()
+            T:Demo.Base.Nested
+                internal class Nested
+            M:Demo.Base.Nested.#ctor
+                public Nested()
+            T:Demo.Derived
+                public class Derived : Demo.Base
+            M:Demo.Derived.#ctor
+                public Derived()
+            M:Demo.Derived.Hidden
+                internal new void Hidden()
+            T:Demo.Derived.Nested
+                internal new class Nested
+            M:Demo.Derived.Nested.#ctor
+                public Nested()
+            T:Demo.IInternal
+                internal interface IInternal
+            M:Demo.IInternal.Run
+                void Run()
+            T:Demo.InternalExtensions
+                internal static class InternalExtensions
+            M:Demo.InternalExtensions.Twice(System.Int32)
+                internal static int Twice(this int value)
+            T:Demo.InternalType
+                internal sealed class InternalType : Demo.IInternal, System.IDisposable
+            M:Demo.InternalType.#ctor
+                public InternalType()
+            M:Demo.InternalType.Dispose
+                public void Dispose()
+            M:Demo.InternalType.Demo#IInternal#Run
+                void Demo.IInternal.Run()
+            T:Demo.InternalType.NestedPublic
+                public sealed class NestedPublic
+            M:Demo.InternalType.NestedPublic.#ctor
+                public NestedPublic()
+            T:Demo.PublicType
+                public class PublicType
+            F:Demo.PublicType.InternalField
+                internal string? InternalField
+            P:Demo.PublicType.InternalGetter
+                internal int InternalGetter { get; }
+            P:Demo.PublicType.ProtectedInternal
+                protected internal int ProtectedInternal { get; set; }
+            P:Demo.PublicType.ReadOnlyOutside
+                public int ReadOnlyOutside { get; internal set; }
+            E:Demo.PublicType.InternalEvent
+                internal event System.EventHandler? InternalEvent
+            M:Demo.PublicType.#ctor
+                internal PublicType()
+            M:Demo.PublicType.#ctor(System.Int32)
+                public PublicType(int value)
+            M:Demo.PublicType.EnsureInitialized
+                [System.Diagnostics.CodeAnalysis.MemberNotNull(new string[] { "InternalField" })]
+                internal void EnsureInitialized()
+            T:Demo.PublicType.NestedInternal
+                internal class NestedInternal
+            M:Demo.PublicType.NestedInternal.#ctor
+                public NestedInternal()
+            M:Demo.PublicType.NestedInternal.Run
+                public void Run()
+            """);
+
+        var property = (PublicApiProperty)assembly.FindSymbolByDocumentationId("P:Demo.PublicType.ReadOnlyOutside")!;
+        Assert.Equal(PublicApiAccessibility.Public, property.Accessibility);
+        Assert.Equal(PublicApiAccessibility.Public, property.GetMethod!.Accessibility);
+        Assert.Equal(PublicApiAccessibility.Internal, property.SetMethod!.Accessibility);
+        Assert.Equal("public int ReadOnlyOutside { get; internal set; }", PublicApiFormatter.Format(property).Text);
+        Assert.Equal("public int ReadOnlyOutside { get => throw null; internal set { } }", PublicApiFormatter.Format(property, new PublicApiFormattingOptions { Style = PublicApiDeclarationStyle.Compilable }).Text);
+
+        // The private setter is not part of the model
+        var internalGetter = (PublicApiProperty)assembly.FindSymbolByDocumentationId("P:Demo.PublicType.InternalGetter")!;
+        Assert.Equal(PublicApiAccessibility.Internal, internalGetter.Accessibility);
+        Assert.Null(internalGetter.SetMethod);
+        Assert.Equal("internal int InternalGetter { get; }", PublicApiFormatter.Format(internalGetter).Text);
+
+        Assert.Equal(PublicApiAccessibility.ProtectedInternal, assembly.FindSymbolByDocumentationId("P:Demo.PublicType.ProtectedInternal")!.Accessibility);
+        Assert.Null(assembly.FindSymbolByDocumentationId("P:Demo.PublicType.PrivateProtected"));
+        Assert.Null(assembly.FindSymbolByDocumentationId("F:Demo.PublicType._private"));
+        Assert.Null(assembly.FindSymbolByDocumentationId("F:Demo.PublicType._privateProtected"));
+        Assert.Null(assembly.FindSymbolByDocumentationId("M:Demo.PublicType.PrivateMethod"));
+        Assert.Null(assembly.FindSymbolByDocumentationId("M:Demo.PublicType.PrivateProtectedMethod"));
+        Assert.Null(assembly.FindType("Demo.PublicType+NestedPrivate"));
+        Assert.Null(assembly.FindType("Demo.PublicType+NestedPrivateProtected"));
+        Assert.Equal(PublicApiAccessibility.Internal, assembly.FindSymbolByDocumentationId("M:Demo.PublicType.#ctor")!.Accessibility);
+        Assert.Equal(PublicApiAccessibility.Internal, assembly.FindSymbolByDocumentationId("F:Demo.PublicType.InternalField")!.Accessibility);
+        Assert.Equal(PublicApiAccessibility.Internal, assembly.FindSymbolByDocumentationId("E:Demo.PublicType.InternalEvent")!.Accessibility);
+
+        // MemberNotNull keeps the internal members it names
+        var ensureInitialized = assembly.FindSymbolByDocumentationId("M:Demo.PublicType.EnsureInitialized")!;
+        var memberNotNull = Assert.Single(ensureInitialized.Attributes, attribute => attribute.AttributeType.Name is "MemberNotNullAttribute");
+        Assert.Equal(["InternalField"], ((System.Collections.Immutable.ImmutableArray<PublicApiAttributeArgument>)memberNotNull.ConstructorArguments[0].Value!).Select(argument => argument.Value));
+
+        var nestedInternal = assembly.FindType("Demo.PublicType+NestedInternal")!;
+        Assert.Equal(PublicApiAccessibility.Internal, nestedInternal.Accessibility);
+        Assert.Equal("internal class NestedInternal", PublicApiFormatter.Format(nestedInternal, new PublicApiFormattingOptions { QualifyTypeNames = false }).Text);
+
+        // Internal interfaces, and the explicit implementations of their members, are part of the model
+        var internalType = assembly.FindType("Demo.InternalType")!;
+        Assert.Equal(PublicApiAccessibility.Internal, internalType.Accessibility);
+        Assert.Equal(["Demo.IInternal", "System.IDisposable"], internalType.Interfaces.Select(type => type.ToString()));
+        var run = (PublicApiMethod)assembly.FindSymbolByDocumentationId("M:Demo.InternalType.Demo#IInternal#Run")!;
+        Assert.True(run.IsExplicitInterfaceImplementation);
+        Assert.Equal("M:Demo.IInternal.Run", Assert.Single(run.ExplicitInterfaceImplementations).DocumentationId);
+        Assert.Equal(PublicApiAccessibility.Public, assembly.FindType("Demo.InternalType+NestedPublic")!.Accessibility);
+        Assert.Equal("internal interface IInternal", PublicApiFormatter.Format(assembly.FindType("Demo.IInternal")!, new PublicApiFormattingOptions { QualifyTypeNames = false }).Text);
+
+        // Hiding an internal member of a base type declared in the same assembly requires the new modifier
+        Assert.True(((PublicApiMember)assembly.FindSymbolByDocumentationId("M:Demo.Derived.Hidden")!).IsNew);
+        Assert.True(assembly.FindType("Demo.Derived+Nested")!.IsNew);
+        Assert.Equal("internal new void Hidden()", PublicApiFormatter.Format(assembly.FindSymbolByDocumentationId("M:Demo.Derived.Hidden")!).Text);
+
+        // Types generated by the compiler, such as the embedded NullableAttribute or the file-local types, are excluded
+        Assert.All(assembly.GetAllTypes(), type => Assert.False(type.IsCompilerGenerated));
+        Assert.DoesNotContain(assembly.GetAllTypes(), type => type.Name.Contains('<', StringComparison.Ordinal) || type.Name.Contains("FileLocal", StringComparison.Ordinal));
+        Assert.Null(assembly.FindType("System.Runtime.CompilerServices.NullableAttribute"));
+        Assert.Null(assembly.FindType("Microsoft.CodeAnalysis.EmbeddedAttribute"));
+    }
+
+    [Fact]
+    public async Task Model_IncludeInternalSymbols_Disabled()
+    {
+        var assembly = await ReadAssembly(InternalSymbolsSource);
+        InlineSnapshot.Validate(DumpModel(assembly), """
+            T:Demo.Base
+                public class Base
+            M:Demo.Base.#ctor
+                public Base()
+            T:Demo.Derived
+                public class Derived : Demo.Base
+            M:Demo.Derived.#ctor
+                public Derived()
+            T:Demo.PublicType
+                public class PublicType
+            P:Demo.PublicType.ProtectedInternal
+                protected internal int ProtectedInternal { get; set; }
+            P:Demo.PublicType.ReadOnlyOutside
+                public int ReadOnlyOutside { get; }
+            M:Demo.PublicType.#ctor(System.Int32)
+                public PublicType(int value)
+            """);
+
+        var property = (PublicApiProperty)assembly.FindSymbolByDocumentationId("P:Demo.PublicType.ReadOnlyOutside")!;
+        Assert.Null(property.SetMethod);
+        Assert.Equal("public int ReadOnlyOutside { get; }", PublicApiFormatter.Format(property).Text);
+        Assert.Null(assembly.FindType("Demo.PublicType+NestedInternal"));
+        Assert.Null(assembly.FindType("Demo.InternalType"));
+        Assert.Null(assembly.FindSymbolByDocumentationId("M:Demo.Derived.Hidden"));
+        Assert.Null(assembly.FindSymbolByDocumentationId("M:Demo.PublicType.EnsureInitialized"));
+    }
+
+    [Fact]
+    public async Task Aggregate_IncludeInternalSymbols()
+    {
+        const string Source = """
+            namespace Demo;
+
+            internal sealed class Sample
+            {
+            #if NET10_0_OR_GREATER
+                public int Value { get; internal set; }
+                internal void Net10Only() { }
+            #else
+                public int Value { get; set; }
+            #endif
+            }
+            """;
+
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        var net8 = PublicApi.ReadAssembly(await CompileSource(temporaryDirectory, "net8_0", "net8.0", Source), new PublicApiReadOptions { IncludeInternalSymbols = true });
+        var net10 = PublicApi.ReadAssembly(await CompileSource(temporaryDirectory, "net10_0", "net10.0", Source), new PublicApiReadOptions { IncludeInternalSymbols = true });
+        var aggregate = PublicApi.Aggregate([net8, net10]);
+
+        var sample = aggregate.FindSymbolByDocumentationId("T:Demo.Sample")!;
+        Assert.True(sample.IsAvailableInAllTargetFrameworks);
+        Assert.Equal(["net10.0"], aggregate.FindSymbolByDocumentationId("M:Demo.Sample.Net10Only")!.TargetFrameworks);
+
+        // The accessibility of the setter is part of the declaration
+        var value = aggregate.FindSymbolByDocumentationId("P:Demo.Sample.Value")!;
+        Assert.True(value.IsAvailableInAllTargetFrameworks);
+        Assert.Equal(
+            ["net8.0: public int Value { get; set; }", "net10.0: public int Value { get; internal set; }"],
+            value.Variants.Select(variant => $"{string.Join(", ", variant.TargetFrameworks)}: {PublicApiFormatter.Format(variant.Symbol).Text}"));
+    }
+
+    private static async Task<PublicApiAssembly> ReadAssembly(string source, PublicApiReadOptions? options = null)
     {
         await using var temporaryDirectory = TemporaryDirectory.Create();
-        return PublicApi.ReadAssembly(await CompileSource(temporaryDirectory, "net10.0", source));
+        return PublicApi.ReadAssembly(await CompileSource(temporaryDirectory, "net10.0", source), options);
     }
 
     private static Task<FullPath> CompileSource(TemporaryDirectory temporaryDirectory, string targetFramework, string source)

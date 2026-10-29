@@ -20,6 +20,7 @@ internal sealed partial class PublicApiMetadataReader : IDisposable
     private readonly PEReader _peReader;
     private readonly MetadataReader _metadataReader;
     private readonly PublicApiReadOptions _options;
+    private readonly bool _includeInternalSymbols;
     private readonly string? _assemblyDirectory;
     private readonly RawTypeProvider _typeProvider;
     private readonly InheritedMemberResolver _inheritedMemberResolver;
@@ -36,6 +37,7 @@ internal sealed partial class PublicApiMetadataReader : IDisposable
         _peReader = peReader;
         _metadataReader = peReader.GetMetadataReader();
         _options = options;
+        _includeInternalSymbols = options.IncludeInternalSymbols;
         _assemblyDirectory = assemblyDirectory;
 
         var moduleDefinition = _metadataReader.GetModuleDefinition();
@@ -51,7 +53,7 @@ internal sealed partial class PublicApiMetadataReader : IDisposable
         }
 
         _typeProvider = new RawTypeProvider(_assemblyName ?? _moduleName, GetCoreLibraryName(), IsValueTypeDefinition, GetUnderlyingEnumType);
-        _inheritedMemberResolver = new InheritedMemberResolver(_metadataReader, assemblyDirectory);
+        _inheritedMemberResolver = new InheritedMemberResolver(_metadataReader, assemblyDirectory, _includeInternalSymbols);
     }
 
     // The directory of the assembly is used to read the enums and the base types declared in the referenced assemblies that are next to it
@@ -75,7 +77,7 @@ internal sealed partial class PublicApiMetadataReader : IDisposable
             if (!typeDefinition.GetDeclaringType().IsNil)
                 continue;
 
-            if (!IsExternallyVisible(typeDefinition.Attributes))
+            if (!IsVisibleTopLevelType(typeDefinition))
                 continue;
 
             if (string.Equals(_metadataReader.GetString(typeDefinition.Name), "<Module>", StringComparison.Ordinal))
@@ -303,33 +305,63 @@ internal sealed partial class PublicApiMetadataReader : IDisposable
         return _usesUpdatedMemorySafetyRules && HasAttribute(attributes, RequiresUnsafeAttributeFullName);
     }
 
-    private static bool IsExternallyVisible(TypeAttributes attributes)
+    // A symbol is visible when it is visible outside the assembly (public, protected or protected internal),
+    // or when it is internal and the options include the internal symbols. private and private protected symbols are never visible.
+    private bool IsVisibleTopLevelType(TypeDefinition typeDefinition)
     {
-        return (attributes & TypeAttributes.VisibilityMask) == TypeAttributes.Public;
+        return (typeDefinition.Attributes & TypeAttributes.VisibilityMask) switch
+        {
+            TypeAttributes.Public => true,
+            TypeAttributes.NotPublic => _includeInternalSymbols && !IsCompilerGeneratedType(typeDefinition),
+            _ => false,
+        };
     }
 
-    private static bool IsExternallyVisibleNested(TypeAttributes attributes)
+    private bool IsVisibleNestedType(TypeDefinition typeDefinition)
     {
-        return (attributes & TypeAttributes.VisibilityMask) is TypeAttributes.NestedPublic or TypeAttributes.NestedFamily or TypeAttributes.NestedFamORAssem;
+        return (typeDefinition.Attributes & TypeAttributes.VisibilityMask) switch
+        {
+            TypeAttributes.NestedPublic or TypeAttributes.NestedFamily or TypeAttributes.NestedFamORAssem => true,
+            TypeAttributes.NestedAssembly => _includeInternalSymbols && !IsCompilerGeneratedType(typeDefinition),
+            _ => false,
+        };
     }
 
-    private static bool IsExternallyVisible(MethodAttributes attributes)
+    // The compiler generates internal types, such as the embedded NullableAttribute, <PrivateImplementationDetails> or the types declared with the file modifier
+    private bool IsCompilerGeneratedType(TypeDefinition typeDefinition)
     {
-        return (attributes & MethodAttributes.MemberAccessMask) is MethodAttributes.Public or MethodAttributes.Family or MethodAttributes.FamORAssem;
+        return _metadataReader.GetString(typeDefinition.Name).Contains('<', StringComparison.Ordinal) ||
+               HasAttribute(typeDefinition.GetCustomAttributes(), "System.Runtime.CompilerServices.CompilerGeneratedAttribute");
     }
 
-    private static bool IsExternallyVisible(FieldAttributes attributes)
+    private bool IsVisible(MethodAttributes attributes)
     {
-        return (attributes & FieldAttributes.FieldAccessMask) is FieldAttributes.Public or FieldAttributes.Family or FieldAttributes.FamORAssem;
+        return (attributes & MethodAttributes.MemberAccessMask) switch
+        {
+            MethodAttributes.Public or MethodAttributes.Family or MethodAttributes.FamORAssem => true,
+            MethodAttributes.Assembly => _includeInternalSymbols,
+            _ => false,
+        };
     }
 
-    private bool IsExternallyVisible(TypeDefinition typeDefinition)
+    private bool IsVisible(FieldAttributes attributes)
+    {
+        return (attributes & FieldAttributes.FieldAccessMask) switch
+        {
+            FieldAttributes.Public or FieldAttributes.Family or FieldAttributes.FamORAssem => true,
+            FieldAttributes.Assembly => _includeInternalSymbols,
+            _ => false,
+        };
+    }
+
+    // A nested type is visible when it and all its declaring types are visible
+    private bool IsVisible(TypeDefinition typeDefinition)
     {
         var declaringTypeHandle = typeDefinition.GetDeclaringType();
         if (declaringTypeHandle.IsNil)
-            return IsExternallyVisible(typeDefinition.Attributes);
+            return IsVisibleTopLevelType(typeDefinition);
 
-        return IsExternallyVisibleNested(typeDefinition.Attributes) && IsExternallyVisible(_metadataReader.GetTypeDefinition(declaringTypeHandle));
+        return IsVisibleNestedType(typeDefinition) && IsVisible(_metadataReader.GetTypeDefinition(declaringTypeHandle));
     }
 
     private static PublicApiAccessibility GetAccessibility(TypeAttributes attributes)

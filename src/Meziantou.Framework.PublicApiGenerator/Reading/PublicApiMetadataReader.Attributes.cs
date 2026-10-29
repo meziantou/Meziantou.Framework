@@ -98,7 +98,7 @@ internal sealed partial class PublicApiMetadataReader
                 if (!_metadataReader.StringComparer.Equals(field.Name, memberName))
                     continue;
 
-                if (IsExternallyVisible(field.Attributes))
+                if (IsVisible(field.Attributes))
                     return false;
 
                 isFound = true;
@@ -111,7 +111,7 @@ internal sealed partial class PublicApiMetadataReader
                     continue;
 
                 var accessors = property.GetAccessors();
-                if (IsExternallyVisibleAccessor(accessors.Getter) || IsExternallyVisibleAccessor(accessors.Setter))
+                if (IsVisibleAccessor(accessors.Getter) || IsVisibleAccessor(accessors.Setter))
                     return false;
 
                 isFound = true;
@@ -125,9 +125,9 @@ internal sealed partial class PublicApiMetadataReader
 
         return false;
 
-        bool IsExternallyVisibleAccessor(MethodDefinitionHandle accessorHandle)
+        bool IsVisibleAccessor(MethodDefinitionHandle accessorHandle)
         {
-            return !accessorHandle.IsNil && IsExternallyVisible(_metadataReader.GetMethodDefinition(accessorHandle).Attributes);
+            return !accessorHandle.IsNil && IsVisible(_metadataReader.GetMethodDefinition(accessorHandle).Attributes);
         }
     }
 

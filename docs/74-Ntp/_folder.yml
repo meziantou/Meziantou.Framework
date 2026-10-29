@@ -1,2 +1,5 @@
 title: NTP
 description: Read the time of an NTP server and the offset of the local clock, or serve the time of the machine over NTP.
+packageIds:
+- Meziantou.Framework.NtpClient
+- Meziantou.Framework.NtpServer

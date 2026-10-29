@@ -1,2 +1,4 @@
 title: ProcessWrapper
 description: Run processes with a fluent API, stream or capture their output, pipe them together, limit their resources and replace them in tests.
+packageIds:
+- Meziantou.Framework.ProcessWrapper

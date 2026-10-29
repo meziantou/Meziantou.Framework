@@ -1,2 +1,4 @@
 title: Scheduling
 description: Compute the occurrences of recurrence rules (RFC 5545) and cron expressions, across time zones, and read and write iCalendar events.
+packageIds:
+- Meziantou.Framework.Scheduling

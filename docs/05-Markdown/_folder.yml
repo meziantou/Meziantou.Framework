@@ -1,2 +1,4 @@
 title: Markdown
 description: A CommonMark compliant, extensible Markdown processor for .NET, with a syntax tree, HTML rendering and roundtrip.
+packageIds:
+- Meziantou.Framework.Markdown

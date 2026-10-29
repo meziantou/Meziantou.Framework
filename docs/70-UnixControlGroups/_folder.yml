@@ -1,2 +1,4 @@
 title: Unix control groups
 description: Create Linux control groups (cgroups v2), limit the CPU, memory, IO and processes of a group of processes, and read their usage.
+packageIds:
+- Meziantou.Framework.Unix.ControlGroups

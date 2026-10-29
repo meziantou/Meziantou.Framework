@@ -1,2 +1,6 @@
 title: Logging
 description: ILogger providers that write to files, keep the entries in memory for tests, or write to the xUnit.net test output.
+packageIds:
+- Meziantou.Extensions.Logging.FileLogger
+- Meziantou.Extensions.Logging.InMemory
+- Meziantou.Extensions.Logging.Xunit.v3

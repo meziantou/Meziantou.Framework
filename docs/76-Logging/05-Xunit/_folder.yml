@@ -1,2 +1,4 @@
 title: xUnit.net logger
 description: Write the logs of the code under test to the xUnit.net v3 test output.
+packageIds:
+- Meziantou.Extensions.Logging.Xunit.v3

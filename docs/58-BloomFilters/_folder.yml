@@ -1,2 +1,4 @@
 title: BloomFilters
 description: In-memory Bloom filters and counting Bloom filters, safe to update from several threads.
+packageIds:
+- Meziantou.Framework.BloomFilters

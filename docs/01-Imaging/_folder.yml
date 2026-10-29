@@ -1,2 +1,4 @@
 title: Imaging
 description: A fully managed .NET library to read, write, process and draw images, with no native dependency.
+packageIds:
+- Meziantou.Framework.Imaging

@@ -1,2 +1,4 @@
 title: Shell scripts
 description: Parse sh, bash, zsh, PowerShell and cmd scripts, read their commands and expressions, and edit them.
+packageIds:
+- Meziantou.Framework.Language.Shell

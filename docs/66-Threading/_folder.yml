@@ -1,2 +1,4 @@
 title: Threading
 description: Asynchronous locks, signals, thread-safe collections and task helpers for concurrent .NET code.
+packageIds:
+- Meziantou.Framework.Threading

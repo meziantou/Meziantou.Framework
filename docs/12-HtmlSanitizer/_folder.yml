@@ -1,2 +1,4 @@
 title: HtmlSanitizer
 description: Remove the dangerous parts of untrusted HTML fragments before you show them in your pages.
+packageIds:
+- Meziantou.Framework.HtmlSanitizer

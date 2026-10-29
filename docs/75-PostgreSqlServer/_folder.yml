@@ -1,2 +1,4 @@
 title: PostgreSqlServer
 description: A server that speaks the PostgreSQL wire protocol, so PostgreSQL clients can query your .NET code.
+packageIds:
+- Meziantou.Framework.PostgreSqlServer

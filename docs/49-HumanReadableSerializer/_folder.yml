@@ -1,2 +1,5 @@
 title: HumanReadableSerializer
 description: Write any object as readable, indented, culture-invariant text, for snapshots, logs and diffs.
+packageIds:
+- Meziantou.Framework.HumanReadableSerializer
+- Meziantou.Framework.HumanReadableSerializer.Html

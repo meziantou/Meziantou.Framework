@@ -1,2 +1,4 @@
 title: AnsiFormatting
 description: Detect, remove and parse the ANSI escape sequences that color and style terminal output.
+packageIds:
+- Meziantou.Framework.AnsiFormatting

@@ -1,2 +1,7 @@
 title: Caching
 description: Cache the responses of an HttpClient following the HTTP caching rules, in memory, in SQLite or in Redis.
+packageIds:
+- Meziantou.Framework.Http.Caching
+- Meziantou.Framework.Http.Caching.InMemory
+- Meziantou.Framework.Http.Caching.Redis
+- Meziantou.Framework.Http.Caching.Sqlite

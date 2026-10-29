@@ -1,2 +1,6 @@
 title: Extensions
 description: Compare images by their pixels, PDF documents page by page, and source generator output with dedicated packages.
+packageIds:
+- Meziantou.Framework.SnapshotTesting.Imaging
+- Meziantou.Framework.SnapshotTesting.Pdf
+- Meziantou.Framework.SnapshotTesting.Roslyn

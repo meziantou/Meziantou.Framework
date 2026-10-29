@@ -1,2 +1,4 @@
 title: HTTP Basic authentication
 description: Authenticate requests with a username and a password, validated by your code or by ASP.NET Core Identity.
+packageIds:
+- Meziantou.AspNetCore.Authentication.HttpBasic

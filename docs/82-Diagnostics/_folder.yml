@@ -1,2 +1,5 @@
 title: Diagnostics
 description: Capture a snapshot of the execution context of a process, and write a memory dump of the current process.
+packageIds:
+- Meziantou.Framework.Diagnostics.ContextSnapshot
+- Meziantou.Framework.Diagnostics.MemoryDump

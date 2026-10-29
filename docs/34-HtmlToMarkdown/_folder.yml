@@ -1,2 +1,5 @@
 title: HTML to Markdown
 description: Convert HTML fragments to Markdown, from .NET code or from the command line.
+packageIds:
+- Meziantou.Framework.HtmlToMarkdown
+- Meziantou.Framework.HtmlToMarkdown.Tool

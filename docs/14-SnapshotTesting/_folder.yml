@@ -1,2 +1,8 @@
 title: Snapshot testing
 description: Validate objects, documents, images and generated code against snapshot files stored next to your tests.
+packageIds:
+- Meziantou.Framework.SnapshotTesting
+- Meziantou.Framework.SnapshotTesting.Imaging
+- Meziantou.Framework.SnapshotTesting.Pdf
+- Meziantou.Framework.SnapshotTesting.Roslyn
+- Meziantou.Framework.SnapshotTesting.Tool

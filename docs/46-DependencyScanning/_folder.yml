@@ -1,2 +1,5 @@
 title: DependencyScanning
 description: Find the dependencies declared in a repository, across package ecosystems, and update their versions in place.
+packageIds:
+- Meziantou.Framework.DependencyScanning
+- Meziantou.Framework.DependencyScanning.Tool

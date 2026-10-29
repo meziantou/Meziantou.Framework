@@ -1,2 +1,12 @@
 title: Language
 description: Parse CSS, INI, JSON, TOML, XML, regular expressions and shell scripts into syntax trees that keep every character, report diagnostics, and edit text without reformatting it.
+packageIds:
+- Meziantou.Framework.Language
+- Meziantou.Framework.Language.Css
+- Meziantou.Framework.Language.Ini
+- Meziantou.Framework.Language.Json
+- Meziantou.Framework.Language.Regex
+- Meziantou.Framework.Language.Shell
+- Meziantou.Framework.Language.Toml
+- Meziantou.Framework.Language.Tool
+- Meziantou.Framework.Language.Xml

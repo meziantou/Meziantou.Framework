@@ -1,2 +1,4 @@
 title: WPF
 description: Commands, enum markup extensions, a boolean converter, dispatcher and window helpers for WPF applications.
+packageIds:
+- Meziantou.Framework.WPF

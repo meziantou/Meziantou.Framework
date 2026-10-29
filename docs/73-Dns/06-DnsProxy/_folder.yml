@@ -1,2 +1,4 @@
 title: DnsProxy
 description: Run a DNS proxy that blocks domains with filter lists, answers your own records, caches, and forwards the other queries to encrypted upstream resolvers.
+packageIds:
+- Meziantou.DnsProxy

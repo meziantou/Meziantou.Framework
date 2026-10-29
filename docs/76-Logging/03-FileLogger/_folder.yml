@@ -1,2 +1,4 @@
 title: File logger
 description: Write the logs of an application to files, with rolling, retention and compression.
+packageIds:
+- Meziantou.Extensions.Logging.FileLogger

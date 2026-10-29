@@ -1,2 +1,4 @@
 title: DiffEngine
 description: Find the diff tools installed on the machine and build the command line that compares two files.
+packageIds:
+- Meziantou.Framework.DiffEngine

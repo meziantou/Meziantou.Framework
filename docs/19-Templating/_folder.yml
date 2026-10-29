@@ -1,2 +1,6 @@
 title: Templating
 description: Generate text, source code and HTML emails from templates whose code blocks are C#.
+packageIds:
+- Meziantou.Framework.Templating
+- Meziantou.Framework.Templating.Html
+- Meziantou.Framework.Templating.Tool

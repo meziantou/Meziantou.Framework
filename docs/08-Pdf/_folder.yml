@@ -1,2 +1,4 @@
 title: PDF
 description: A fully managed .NET library to create, read, modify, render and sign PDF documents.
+packageIds:
+- Meziantou.Framework.Pdf

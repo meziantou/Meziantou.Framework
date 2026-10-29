@@ -20,9 +20,10 @@ const string StepBom = "bom";
 const string StepSnippets = "snippets";
 const string StepPublicSuffix = "public-suffix";
 const string StepValidateTestProjects = "validate-testprojects";
+const string StepDocs = "docs";
 const string AnalyzerRulesSectionMarker = "<!-- analyzer-rules -->";
-string[] defaultSteps = [StepReadme, StepTrimmable, StepSlnx, StepTemplates, StepSnippets, StepPublicSuffix, StepBom];
-string[] knownSteps = [StepReadme, StepTrimmable, StepSlnx, StepTemplates, StepSnippets, StepPublicSuffix, StepBom, StepValidateTestProjects];
+string[] defaultSteps = [StepReadme, StepTrimmable, StepSlnx, StepTemplates, StepSnippets, StepDocs, StepPublicSuffix, StepBom];
+string[] knownSteps = [StepReadme, StepTrimmable, StepSlnx, StepTemplates, StepSnippets, StepDocs, StepPublicSuffix, StepBom, StepValidateTestProjects];
 var updatedFiles = new ConcurrentQueue<string>();
 var outputPath = "slnx";
 var selectedSteps = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -35,8 +36,8 @@ for (var i = 0; i < args.Length; i++)
             Console.WriteLine("Usage: dotnet run ./eng/update-all.cs [-- --step <name>] [--output-path <path>]");
             Console.WriteLine("Runs source generation/update steps.");
             Console.WriteLine("Available step names:");
-            Console.WriteLine("  readme, trimmable, slnx, templates, snippets, public-suffix, bom, validate-testprojects, all");
-            Console.WriteLine("Default order: readme -> trimmable -> slnx -> templates -> snippets -> public-suffix -> bom");
+            Console.WriteLine("  readme, trimmable, slnx, templates, snippets, docs, public-suffix, bom, validate-testprojects, all");
+            Console.WriteLine("Default order: readme -> trimmable -> slnx -> templates -> snippets -> docs -> public-suffix -> bom");
             return 0;
 
         case "--output-path" when i + 1 < args.Length:
@@ -96,6 +97,12 @@ if (ShouldRunStep(StepSnippets))
 {
     Console.WriteLine("[update-all] Running snippets");
     tasks.Add(Task.Run(() => RunUpdateSnippetsStep(rootPath)));
+}
+
+if (ShouldRunStep(StepDocs))
+{
+    Console.WriteLine("[update-all] Running docs");
+    tasks.Add(Task.Run(() => RunValidateDocumentationPackageIdsStep(rootPath)));
 }
 
 await Task.WhenAll(tasks);
@@ -990,6 +997,133 @@ void RunValidateTestProjectsConfigurationStep(FullPath rootPath)
     }
 }
 
+// Each section of the documentation lists the NuGet packages it documents in the 'packageIds' of its _folder.yml file.
+// A group can narrow the list of its parent. Every package of src/ must be documented by exactly one section.
+void RunValidateDocumentationPackageIdsStep(FullPath rootPath)
+{
+    const string FolderFileName = "_folder.yml";
+    const string PackageIdsKey = "packageIds:";
+
+    var docsRootPath = rootPath / "docs";
+    var packageIds = Directory.EnumerateFiles(rootPath / "src", "*.csproj", SearchOption.AllDirectories)
+        .Where(IsPackableProject)
+        .ToDictionary(path => Path.GetFileNameWithoutExtension(path), path => FullPath.FromPath(path), StringComparer.Ordinal);
+
+    var declaredPackageIds = new Dictionary<FullPath, string[]>();
+    var sectionsByPackageId = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+
+    // Parents first, so a group can be checked against the list of its parent
+    var folders = Directory.EnumerateDirectories(docsRootPath, "*", SearchOption.AllDirectories)
+        .Select(FullPath.FromPath)
+        .Where(path => !path.MakePathRelativeTo(docsRootPath).Replace('\\', '/').Split('/').Contains("images", StringComparer.Ordinal))
+        .OrderBy(path => path.MakePathRelativeTo(docsRootPath).Count(c => c is '/' or '\\'))
+        .ThenBy(path => path.Value, StringComparer.Ordinal);
+
+    foreach (var folder in folders)
+    {
+        var isSection = folder.Parent == docsRootPath;
+        var folderFile = folder / FolderFileName;
+        var relativePath = folderFile.MakePathRelativeTo(rootPath).Replace('\\', '/');
+        var ids = File.Exists(folderFile) ? ParsePackageIds(relativePath, File.ReadAllLines(folderFile)) : null;
+        if (ids is null)
+        {
+            if (isSection)
+            {
+                ReportError(relativePath, $"a section must list the NuGet packages it documents in '{PackageIdsKey}'");
+            }
+
+            continue;
+        }
+
+        declaredPackageIds[folder] = ids;
+        foreach (var duplicate in ids.GroupBy(id => id, StringComparer.Ordinal).Where(group => group.Count() > 1))
+        {
+            ReportError(relativePath, $"'{duplicate.Key}' is listed more than once");
+        }
+
+        foreach (var id in ids.Distinct(StringComparer.Ordinal))
+        {
+            if (!packageIds.ContainsKey(id))
+            {
+                ReportError(relativePath, $"'{id}' is not a packable project of src/");
+            }
+
+            if (isSection)
+            {
+                if (!sectionsByPackageId.TryGetValue(id, out var sections))
+                {
+                    sections = [];
+                    sectionsByPackageId[id] = sections;
+                }
+
+                sections.Add(relativePath);
+            }
+        }
+
+        if (!isSection)
+        {
+            var parent = folder.Parent;
+            while (parent != docsRootPath && !declaredPackageIds.ContainsKey(parent))
+            {
+                parent = parent.Parent;
+            }
+
+            if (declaredPackageIds.TryGetValue(parent, out var parentIds))
+            {
+                foreach (var id in ids.Except(parentIds, StringComparer.Ordinal))
+                {
+                    ReportError(relativePath, $"'{id}' is not listed by the parent folder; a group can only narrow the packages of its parent");
+                }
+            }
+        }
+    }
+
+    foreach (var (id, csprojPath) in packageIds.OrderBy(item => item.Key, StringComparer.Ordinal))
+    {
+        if (!sectionsByPackageId.TryGetValue(id, out var sections))
+        {
+            ReportError(csprojPath.MakePathRelativeTo(rootPath).Replace('\\', '/'), $"the package '{id}' is not documented: add it to the '{PackageIdsKey}' of the _folder.yml file of its section in docs/");
+        }
+        else if (sections.Count > 1)
+        {
+            foreach (var section in sections)
+            {
+                ReportError(section, $"'{id}' is listed by several sections ({string.Join(", ", sections)}); keep it in one section");
+            }
+        }
+    }
+
+    string[]? ParsePackageIds(string relativePath, string[] lines)
+    {
+        var index = Array.FindIndex(lines, line => line.StartsWith(PackageIdsKey, StringComparison.Ordinal));
+        if (index < 0)
+            return null;
+
+        if (!string.IsNullOrWhiteSpace(lines[index][PackageIdsKey.Length..]))
+        {
+            ReportError(relativePath, $"write '{PackageIdsKey}' as a block list, one '- <id>' line per package");
+            return [];
+        }
+
+        var ids = lines.Skip(index + 1)
+            .TakeWhile(line => line.StartsWith("- ", StringComparison.Ordinal))
+            .Select(line => line[2..].Trim())
+            .ToArray();
+        if (ids.Length is 0)
+        {
+            ReportError(relativePath, $"'{PackageIdsKey}' is empty; remove it or list at least one package");
+        }
+
+        return ids;
+    }
+
+    void ReportError(string relativePath, string message)
+    {
+        Console.Error.WriteLine($"ERROR: {relativePath}: {message}");
+        updatedFiles.Enqueue(relativePath);
+    }
+}
+
 async Task RunUpdateReadmeStep(FullPath rootPath)
 {
     var srcRootPath = rootPath / "src";
@@ -1018,9 +1152,7 @@ async Task RunUpdateReadmeStep(FullPath rootPath)
 
         foreach (var csproj in csprojFiles)
         {
-            var doc = XDocument.Load(csproj);
-            var isPackable = doc.Root?.Descendants("IsPackable").FirstOrDefault()?.Value;
-            if (string.Equals(isPackable, "False", StringComparison.OrdinalIgnoreCase))
+            if (!IsPackableProject(csproj))
             {
                 continue;
             }
@@ -1812,6 +1944,13 @@ static int RunProcessAndReturnExitCode(FullPath workingDirectory, string fileNam
     using var process = Process.Start(psi)!;
     process.WaitForExit();
     return process.ExitCode;
+}
+
+static bool IsPackableProject(string csprojPath)
+{
+    var doc = XDocument.Load(csprojPath);
+    var isPackable = doc.Root?.Descendants("IsPackable").FirstOrDefault()?.Value;
+    return !string.Equals(isPackable, "False", StringComparison.OrdinalIgnoreCase);
 }
 
 static FullPath GetRepositoryRoot()

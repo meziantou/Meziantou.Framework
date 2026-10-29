@@ -1,2 +1,4 @@
 title: TOML
 description: Read and write TOML 1.1 in .NET, as typed objects, as a document model or as a lossless syntax tree.
+packageIds:
+- Meziantou.Framework.Toml

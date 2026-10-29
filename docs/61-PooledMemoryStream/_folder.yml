@@ -1,2 +1,4 @@
 title: PooledMemoryStream
 description: A MemoryStream backed by pooled byte arrays that also implements IBufferWriter<byte>.
+packageIds:
+- Meziantou.Framework.PooledMemoryStream

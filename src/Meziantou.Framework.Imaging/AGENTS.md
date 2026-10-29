@@ -1060,8 +1060,21 @@ thin public types over its `FontFace`.
   (`HeifEncoderSession.EncodeTiles`): each worker has encoders of its own, created with the session and charged to its
   scope, and the coded tiles are appended in tile order, so the file is byte-identical to one worker's
   (`HeicEncoderTests`, `AvifEncoderTests`). A worker codes its next tile with the same encoders after a `Reset`, which
-  must code it as a new encoder would (`HevcEncoder.Reset`, `Av1Encoder.Reset`). Other decoding, encoding and drawing
-  stay sequential.
+  must code it as a new encoder would (`HevcEncoder.Reset`, `Av1Encoder.Reset`). The AV1 post-processing filters
+  (`Av1PostFilter.Apply`) of a frame of at least 65,536 pixels run by bands of whole groups of 16 luma rows
+  (`Av1PostFilter.GetBandRow`), one stage after the other: the loop filter one pass at a time (an edge reads at most half
+  the transform block on each side, so the edges of different rows of a pass never share a sample), CDEF from copies of
+  the 2 unfiltered rows on each side of every band edge (`Av1Cdef.SaveBandEdge`), the upscaling by rows and the loop
+  restoration by stripes (a stripe reads only its own rows and the saved deblocked boundaries). Each worker rents its own
+  rows and scratch. The tiles of a grid that several workers decode filter their frames on their own worker
+  (`AvifDecoder.DecodeImage`), so the threads never multiply; a single item, or a grid decoded by one worker, gets the
+  configured count. `Av1PostFilter.TestIgnoreMinimumSize` makes `Av1DecoderConformanceTests` decode every vector by 2, 3
+  and 16 workers against the reference digests. Measured on 3840x2160 single-frame files (Release, net11.0, M5 Pro, one
+  worker): the loop filter and CDEF are 25% of the decoding time of our default-effort output and 39% at quality 40,
+  which decode 1.27x and 1.45x faster with 8 workers (the bound is ~1.5x). The HEVC in-loop filters stay sequential:
+  deblocking and SAO are 3-6% of the decoding time of a single-picture HEIC at the default quality and 19% at quality 40,
+  too little to be worth splitting (camera HEIC files are grids, already decoded by tiles). Other decoding, encoding and
+  drawing stay sequential.
 - Static row callbacks allocate nothing per row (`PerformanceContractTests`).
 - This repository builds with the updated memory-safety rules: wrap `MemoryMarshal`, `Unsafe` and `Vector*.LoadUnsafe` /
   `StoreUnsafe` calls in `unsafe(...)`, or in an `unsafe { }` block for a statement.

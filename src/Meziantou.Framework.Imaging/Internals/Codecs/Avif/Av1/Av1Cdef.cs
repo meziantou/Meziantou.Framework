@@ -16,6 +16,9 @@ internal static class Av1Cdef
     /// <summary>The number of rows of the unfiltered copy of a band: 8 rows, and 2 rows above and below.</summary>
     public const int SourceRows = 12;
 
+    // The rows of the copy of the edge of a band of each plane: 2 rows above the edge and 2 rows below it
+    private const int BandEdgeRows = 4;
+
     // The taps of a sample: 4 primary taps and 8 secondary taps
     private const int TapCount = 12;
 
@@ -36,6 +39,44 @@ internal static class Av1Cdef
     /// block whose direction is not known yet, which receives it.
     /// </param>
     public static void Apply(Av1FrameBuffer frame, Av1FrameState state, Span<ushort> source, CancellationToken cancellationToken, Span<int> directions = default)
+        => ApplyRows(frame, state, source, default, default, 0, frame.Header.MiRows, cancellationToken, directions);
+
+    /// <summary>Returns the number of samples of the copies of <see cref="SaveBandEdge"/>: 2 rows above and 2 rows below the edge of a band, for each plane.</summary>
+    public static int GetBandEdgeLength(Av1FrameBuffer frame) => frame.Sequence.PlaneCount * BandEdgeRows * frame.GetPlane(0).Stride;
+
+    /// <summary>
+    /// Copies the unfiltered rows around the edge of two bands of <see cref="ApplyRows"/> at the row of blocks
+    /// <paramref name="row"/>, before either band is filtered: the 2 rows of each plane above the edge, then the 2 rows below
+    /// it.
+    /// </summary>
+    public static void SaveBandEdge(Av1FrameBuffer frame, int row, Span<ushort> edge)
+    {
+        var lumaStride = frame.GetPlane(0).Stride;
+        for (var plane = 0; plane < frame.Sequence.PlaneCount; plane++)
+        {
+            var buffer = frame.GetPlane(plane);
+            var stride = buffer.Stride;
+            var y = (row * Av1Constants.MiSize) >> (plane > 0 ? frame.Sequence.SubsamplingY : 0);
+            var planeEdge = edge.Slice(plane * BandEdgeRows * lumaStride, BandEdgeRows * lumaStride);
+            buffer.Samples.Slice((y - 2) * stride, Math.Min(BandEdgeRows, buffer.AllocatedHeight - y + 2) * stride).CopyTo(planeEdge);
+        }
+    }
+
+    /// <summary>
+    /// Filters the rows of blocks from <paramref name="rowStart"/> to <paramref name="rowEnd"/> (two even rows) of the planes
+    /// of <paramref name="frame"/>, while other bands may be filtered concurrently: the unfiltered rows of the neighbouring
+    /// bands come from the copies of <see cref="SaveBandEdge"/>.
+    /// </summary>
+    /// <param name="frame">The deblocked frame.</param>
+    /// <param name="state">The block-level state of the frame.</param>
+    /// <param name="source">Scratch for the unfiltered rows: <see cref="SourceRows"/> rows of the stride of the luma plane, for each plane.</param>
+    /// <param name="above">The copy of <see cref="SaveBandEdge"/> at <paramref name="rowStart"/>; empty for the first band.</param>
+    /// <param name="below">The copy of <see cref="SaveBandEdge"/> at <paramref name="rowEnd"/>; empty for the last band.</param>
+    /// <param name="rowStart">The first row of blocks.</param>
+    /// <param name="rowEnd">The row of blocks after the band.</param>
+    /// <param name="cancellationToken">The cancellation token of the operation.</param>
+    /// <param name="directions">The direction cache of <see cref="Apply"/>.</param>
+    public static void ApplyRows(Av1FrameBuffer frame, Av1FrameState state, Span<ushort> source, ReadOnlySpan<ushort> above, ReadOnlySpan<ushort> below, int rowStart, int rowEnd, CancellationToken cancellationToken, Span<int> directions = default)
     {
         var header = frame.Header;
         var sequence = frame.Sequence;
@@ -48,11 +89,12 @@ internal static class Av1Cdef
         var flags = state.Flags;
         var miCols = header.MiCols;
         var miRows = header.MiRows;
-        for (var r = 0; r < miRows; r += 2)
+        for (var r = rowStart; r < rowEnd; r += 2)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            // The unfiltered rows of the band: rows 0 and 1 are the two rows above it, saved from the previous band
+            // The unfiltered rows of the band: rows 0 and 1 are the two rows above it, saved from the previous band, and the
+            // two rows below it belong to the next band
             for (var plane = 0; plane < planeCount; plane++)
             {
                 var subY = plane > 0 ? sequence.SubsamplingY : 0;
@@ -61,11 +103,20 @@ internal static class Av1Cdef
                 var h = 8 >> subY;
                 var y0 = (r * Av1Constants.MiSize) >> subY;
                 var planeSource = source.Slice(plane * sourceLength, sourceLength);
-                if (r > 0)
+                if (r > rowStart)
+                {
                     planeSource.Slice(h * stride, 2 * stride).CopyTo(planeSource);
+                }
+                else if (!above.IsEmpty)
+                {
+                    above.Slice(plane * BandEdgeRows * lumaStride, 2 * stride).CopyTo(planeSource);
+                }
 
                 var rows = Math.Min(h + 2, buffer.AllocatedHeight - y0);
-                buffer.Samples.Slice(y0 * stride, rows * stride).CopyTo(planeSource[(2 * stride)..]);
+                var bandRows = r + 2 >= rowEnd && !below.IsEmpty ? Math.Min(rows, h) : rows;
+                buffer.Samples.Slice(y0 * stride, bandRows * stride).CopyTo(planeSource[(2 * stride)..]);
+                if (bandRows < rows)
+                    below.Slice((plane * BandEdgeRows * lumaStride) + (2 * stride), (rows - bandRows) * stride).CopyTo(planeSource[((2 + bandRows) * stride)..]);
             }
 
             for (var c = 0; c < miCols; c += 2)

@@ -84,7 +84,7 @@ internal sealed partial class AvifDecoder : HeifDecodeObserver
         var movie = structure.Movie ?? throw new InvalidOperationException("The AVIF file is not an image sequence.");
         var sink = _sink!;
         sink.BeginFrame(duration);
-        _colorDecoder ??= new Av1Decoder(_context.Scope, _context.Tracker);
+        _colorDecoder ??= new Av1Decoder(_context.Scope, _context.Tracker) { MaxDegreeOfParallelism = _context.Configuration.MaxDegreeOfParallelism };
         using var colorImage = DecodeSample(_colorDecoder, color, movie.Color);
         structure.SetBitstreamColorDescription(colorImage.Format);
         AvifPlanarImage? alphaImage = null;
@@ -92,7 +92,7 @@ internal sealed partial class AvifDecoder : HeifDecodeObserver
         {
             if (alpha is not null)
             {
-                _alphaDecoder ??= new Av1Decoder(_context.Scope, _context.Tracker);
+                _alphaDecoder ??= new Av1Decoder(_context.Scope, _context.Tracker) { MaxDegreeOfParallelism = _context.Configuration.MaxDegreeOfParallelism };
                 alphaImage = DecodeSample(_alphaDecoder, alpha, movie.Alpha!);
             }
 
@@ -130,12 +130,12 @@ internal sealed partial class AvifDecoder : HeifDecodeObserver
 
         // An image that the edit list leaves out: it is decoded for the images that refer to it, and counts toward the
         // pixel limit like a frame of the bitstream that is not shown
-        _colorDecoder ??= new Av1Decoder(_context.Scope, _context.Tracker);
+        _colorDecoder ??= new Av1Decoder(_context.Scope, _context.Tracker) { MaxDegreeOfParallelism = _context.Configuration.MaxDegreeOfParallelism };
         using var colorImage = DecodeSample(_colorDecoder, color, movie.Color);
         structure.SetBitstreamColorDescription(colorImage.Format);
         if (alpha is not null)
         {
-            _alphaDecoder ??= new Av1Decoder(_context.Scope, _context.Tracker);
+            _alphaDecoder ??= new Av1Decoder(_context.Scope, _context.Tracker) { MaxDegreeOfParallelism = _context.Configuration.MaxDegreeOfParallelism };
             using var alphaImage = DecodeSample(_alphaDecoder, alpha, movie.Alpha!);
         }
 
@@ -176,7 +176,7 @@ internal sealed partial class AvifDecoder : HeifDecodeObserver
         {
             if (!image.IsGrid)
             {
-                var frame = DecodePreparedTile(image, PrepareTile(structure, image, 0), _context.Tracker);
+                var frame = DecodePreparedTile(image, PrepareTile(structure, image, 0), _context.Tracker, _context.Configuration.MaxDegreeOfParallelism);
                 if (frame.Header.FilmGrain is null)
                 {
                     try
@@ -193,11 +193,13 @@ internal sealed partial class AvifDecoder : HeifDecodeObserver
             }
             else
             {
+                // The tiles decoded at once filter their frames on their own worker: the threads would multiply otherwise
+                var filterWorkers = HeifGridTiles.GetWorkerCount(_context, image) is 1 ? _context.Configuration.MaxDegreeOfParallelism : 1;
                 HeifGridTiles.Decode(
                     _context,
                     image,
                     index => PrepareTile(structure, image, index),
-                    (tile, tracker) => DecodePreparedTile(image, tile, tracker),
+                    (tile, tracker) => DecodePreparedTile(image, tile, tracker, filterWorkers),
                     static frame => frame.Release(),
                     ConsumeTile);
             }
@@ -240,9 +242,9 @@ internal sealed partial class AvifDecoder : HeifDecodeObserver
 
     // Decodes a prepared coded item and checks its frame against the file. It uses no state of the decoder: the tiles of a
     // grid are decoded on several threads.
-    private Av1FrameBuffer DecodePreparedTile(HeifCodedImage image, in PreparedTile tile, InputResourceTracker tracker)
+    private Av1FrameBuffer DecodePreparedTile(HeifCodedImage image, in PreparedTile tile, InputResourceTracker tracker, int maxDegreeOfParallelism)
     {
-        var frame = DecodeCodedItem(tile, tracker);
+        var frame = DecodeCodedItem(tile, tracker, maxDegreeOfParallelism);
         try
         {
             var plane = frame.GetPlane(0);
@@ -304,10 +306,10 @@ internal sealed partial class AvifDecoder : HeifDecodeObserver
     // Decodes the frame of a coded item: the reference state of the decoder is released, the frame is kept by the caller.
     // A layered item holds a frame per spatial layer: the frame of the selected layer is the image, or the frame of the
     // highest layer of the operating point, which the lower layers only help to decode or to show progressively
-    private Av1FrameBuffer DecodeCodedItem(in PreparedTile tile, InputResourceTracker tracker)
+    private Av1FrameBuffer DecodeCodedItem(in PreparedTile tile, InputResourceTracker tracker, int maxDegreeOfParallelism)
     {
         var layer = tile.Layer;
-        using var decoder = new Av1Decoder(_context.Scope, tracker, tile.OperatingPoint);
+        using var decoder = new Av1Decoder(_context.Scope, tracker, tile.OperatingPoint) { MaxDegreeOfParallelism = maxDegreeOfParallelism };
         if (layer is { } selected)
             decoder.MaxSpatialLayer = selected;
 

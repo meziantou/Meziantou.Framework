@@ -161,6 +161,7 @@ key2 = 456
     [Fact]
     public void ReadmeExample_ArrayOfTables()
     {
+        #region TomlSerializer_WriteArrayOfTables
         var toml = TomlSerializer.Serialize(new Config { Package = [new Package { Name = "core" }, new Package { Name = "tools" }] });
 
         Assert.Equal("""
@@ -171,6 +172,7 @@ key2 = 456
             Name = "tools"
 
             """, toml);
+        #endregion
     }
 
     [Fact]
@@ -200,24 +202,29 @@ key2 = 456
     [Fact]
     public void ReadmeExample_Populate()
     {
+        #region TomlObjectCreationHandling_PopulateRead
         var configuration = TomlSerializer.Deserialize<ReleaserConfiguration>("Channels = [\"beta\"]");
 
         Assert.Equal(["stable", "beta"], configuration!.Channels);
+        #endregion
     }
 
     [Fact]
     public void ReadmeExample_SingleOrArray()
     {
+        #region TomlSingleOrArray_Read
         var single = TomlSerializer.Deserialize<PackagingConfiguration>("rid = \"win-x64\"");
         var array = TomlSerializer.Deserialize<PackagingConfiguration>("rid = [\"win-x64\", \"linux-x64\"]");
 
         Assert.Equal(["win-x64"], single!.RuntimeIdentifiers);
         Assert.Equal(["win-x64", "linux-x64"], array!.RuntimeIdentifiers);
+        #endregion
     }
 
     [Fact]
     public void ReadmeExample_FormattingAttributes()
     {
+        #region TomlFormattingAttributes_Write
         var toml = TomlSerializer.Serialize(new FormattedConfig
         {
             Package = [new Package { Name = "core" }],
@@ -231,11 +238,13 @@ key2 = 456
             Name = "core"
 
             """, toml);
+        #endregion
     }
 
     [Fact]
     public void ReadmeExample_Attributes()
     {
+        #region TomlAttributes_Read
         var database = TomlSerializer.Deserialize<DatabaseConfig>("Host = \"localhost\"\nport_number = 5432");
         var endpoint = TomlSerializer.Deserialize<Endpoint>("Host = \"localhost\"\nPort = 80");
 
@@ -243,13 +252,16 @@ key2 = 456
         Assert.Equal("Host = \"localhost\"\nport_number = 5432\n", TomlSerializer.Serialize(database));
         Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<DatabaseConfig>("port_number = 5432"));
         Assert.Equal(80, endpoint!.Port);
+        #endregion
     }
 
     [Fact]
     public void ReadmeExample_LifecycleCallbacks()
     {
+        #region TomlLifecycleCallbacks_Read
         Assert.Equal(8080, TomlSerializer.Deserialize<ValidatedConfig>("")!.Port);
         Assert.Throws<InvalidOperationException>(() => TomlSerializer.Deserialize<ValidatedConfig>("Port = 0"));
+        #endregion
     }
 
     [Fact]
@@ -283,15 +295,18 @@ key2 = 456
     [Fact]
     public void ReadmeExample_ExtensionData()
     {
+        #region TomlExtensionData_Read
         var config = TomlSerializer.Deserialize<ExtensibleConfig>("Name = \"app\"\nversion = 2");
 
         Assert.Equal("app", config!.Name);
         Assert.Equal(2L, config.Extra!["version"]);
+        #endregion
     }
 
     [Fact]
     public void ReadmeExample_Polymorphism()
     {
+        #region TomlPolymorphism_Read
         var shelter = TomlSerializer.Deserialize<Dictionary<string, List<Animal>>>("""
             [[animals]]
             kind = "cat"
@@ -308,6 +323,7 @@ key2 = 456
         Assert.True(Assert.IsType<Cat>(animals[0]).Indoor);
         Assert.Equal("Labrador", Assert.IsType<Dog>(animals[1]).Breed);
         Assert.Equal("Rex", animals[1].Name);
+        #endregion
     }
 
     [Fact]
@@ -468,7 +484,138 @@ key2 = 456
         ], events);
         #endregion
     }
+
+    [Fact]
+    public void Documentation_DatesAndTimes()
+    {
+        #region TomlSerializer_DatesAndTimes
+        var meeting = new Meeting(new DateOnly(2026, 10, 29), new TimeOnly(9, 30), new DateTime(2026, 10, 1, 8, 0, 0, DateTimeKind.Utc));
+
+        var toml = TomlSerializer.Serialize(meeting);
+        Assert.Equal("""
+            Day = 2026-10-29
+            Start = 09:30:00
+            CreatedAt = 2026-10-01T08:00:00Z
+
+            """, toml);
+
+        Assert.Equal(meeting, TomlSerializer.Deserialize<Meeting>(toml));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_ExceptionLocation()
+    {
+        #region TomlException_Location
+        var toml = """
+            Host = "example.com"
+            Port = "https"
+            """;
+
+        var options = new TomlSerializerOptions { SourceName = "server.toml" };
+        var exception = Assert.Throws<TomlException>(() => TomlSerializer.Deserialize<ServerConfig>(toml, options));
+        Assert.Equal("server.toml", exception.SourceName);
+        Assert.Equal(2, exception.Line);
+        Assert.Equal(8, exception.Column);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_UntrustedInput()
+    {
+        #region TomlSerializerOptions_UntrustedInput
+        var options = new TomlSerializerOptions
+        {
+            MaxInputLength = 64 * 1024, // characters for a string, bytes for a Stream
+            MaxDepth = 16,
+            UnmappedMemberHandling = TomlUnmappedMemberHandling.Disallow,
+        };
+
+        var toml = """
+            Host = "example.com"
+            Timeout = 30
+            """;
+
+        var success = TomlSerializer.TryDeserialize<ServerConfig>(toml, out var config, options);
+        Assert.False(success); // Timeout is not a member of ServerConfig
+        Assert.Null(config);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_AllowHexEscapes()
+    {
+        #region TomlStringStylePreferences_AllowHexEscapes
+        var value = new Dictionary<string, string> { ["prompt"] = "\u001B[1m>\u001B[0m" };
+
+        // By default, control characters use \uXXXX escapes, which TOML 1.0 readers accept
+        Assert.Equal("""
+            prompt = "\u001B[1m>\u001B[0m"
+
+            """, TomlSerializer.Serialize(value));
+
+        // The TOML 1.1 escapes are shorter, but TOML 1.0 readers reject them
+        var options = new TomlSerializerOptions
+        {
+            StringStylePreferences = new TomlStringStylePreferences { AllowHexEscapes = true },
+        };
+        Assert.Equal("""
+            prompt = "\e[1m>\e[0m"
+
+            """, TomlSerializer.Serialize(value, options));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_EditDocumentAndKeepComments()
+    {
+        #region TomlTable_EditAndKeepComments
+        var options = new TomlSerializerOptions { MetadataStore = new TomlMetadataStore() };
+        var document = TomlSerializer.Deserialize<TomlTable>("""
+            # Server settings
+            [server]
+            host = "localhost" # the public name
+            port = 8080
+            """, options)!;
+
+        var server = (TomlTable)document["server"];
+        server["port"] = 443L;
+
+        var toml = TomlSerializer.Serialize(document, options);
+        Assert.Equal("""
+            # Server settings
+            [server]
+            host = "localhost" # the public name
+            port = 443
+
+            """, toml);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_TomlDateTime()
+    {
+        #region TomlDateTime_Kind
+        var table = TomlSerializer.Deserialize<TomlTable>("""
+            released = 1979-05-27
+            updated = 1979-05-27T07:32:00.50-07:00
+            """)!;
+
+        var released = (TomlDateTime)table["released"];
+        Assert.Equal(TomlDateTimeKind.LocalDate, released.Kind);
+        Assert.Equal("1979-05-27", released.ToString());
+
+        var updated = (TomlDateTime)table["updated"];
+        Assert.Equal(TomlDateTimeKind.OffsetDateTimeByNumber, updated.Kind);
+        Assert.Equal(TimeSpan.FromHours(-7), updated.DateTime.Offset);
+        Assert.Equal("1979-05-27T07:32:00.50-07:00", updated.ToString()); // The precision of the seconds is kept
+        #endregion
+    }
 }
+
+#region TomlSerializer_Meeting
+public sealed record Meeting(DateOnly Day, TimeOnly Start, DateTime CreatedAt);
+#endregion
 
 #region TomlSerializer_Person
 public sealed record Person(string Name, int Age);

@@ -5,7 +5,7 @@ description: A CommonMark compliant, extensible Markdown processor for .NET, wit
 
 `Meziantou.Framework.Markdown` parses Markdown and converts it to HTML in .NET. It follows the
 [CommonMark](https://commonmark.org/) specification, and its extensions add the syntaxes that CommonMark does not define,
-such as tables, alerts, footnotes and task lists. The library is derived from [Markdig](https://github.com/xoofx/markdig).
+such as tables, alerts, footnotes and task lists.
 
 ## What you can do with it
 
@@ -54,4 +54,3 @@ adds both the parser of its syntax and the renderer of its elements.
 - [Getting started](02-GettingStarted.md): install the package and convert your first document.
 - [Extensions](04-Extensions/01-Overview.md): the syntaxes you can enable.
 - [Security](10-Security.md): what to do before you render Markdown written by your users.
-- [Coming from Markdig](11-ComingFromMarkdig.md): the differences with the library this one is derived from.

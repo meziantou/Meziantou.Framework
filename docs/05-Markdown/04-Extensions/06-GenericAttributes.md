@@ -45,7 +45,7 @@ Assert.Equal("<p data-id=\"1\">Text</p>\n", html);
 ```
 <!-- endref -->
 
-`_ => true` allows every attribute, as Markdig does.
+`_ => true` allows every attribute.
 
 ## Set attributes from code
 

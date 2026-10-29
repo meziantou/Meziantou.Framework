@@ -170,7 +170,15 @@ internal static class HeifMovieFragment
                 var flags = box.ReadUInt32() & 0xFFFFFF;
                 var count = box.ReadUInt32();
                 if ((flags & DataOffsetPresent) is not 0)
-                    next = checked(baseOffset + box.ReadInt32());
+                {
+                    // The base is a valid offset: a positive data offset may take it past the largest one, a negative one
+                    // before the start of the file
+                    var dataOffset = box.ReadInt32();
+                    if (dataOffset > 0 ? baseOffset > long.MaxValue - dataOffset : baseOffset + dataOffset < 0)
+                        throw binding.Invalid("the data offset of a track run is out of range.");
+
+                    next = baseOffset + dataOffset;
+                }
 
                 if ((flags & FirstSampleFlagsPresent) is not 0)
                     box.ReadUInt32();

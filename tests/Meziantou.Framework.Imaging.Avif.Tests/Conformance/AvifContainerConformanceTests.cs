@@ -542,6 +542,23 @@ public sealed class AvifContainerConformanceTests
         AssertSameFrame(GoldenCorpus.Default.Get("avif/lossless-rgb8"), 0, image);
     }
 
+    [Theory]
+    [InlineData(long.MaxValue, 1L)]
+    [InlineData((long.MaxValue / 2) + 1, (long.MaxValue / 2) + 1)]
+    public void ItemWhoseExtentLengthsAddUpPastTheLargestLengthIsInvalidContent(long firstLength, long secondLength)
+    {
+        // Each length fits in the 8-byte field of the 'iloc' box, the length of the item does not: the file is rejected
+        // when the 'iloc' box is read, before the data of the item is charged or buffered
+        var builder = HeifFileBuilder.From(GoldenCorpus.Default.Get("avif/lossless-rgb8").ReadInput());
+        var exif = builder.AddItem(100, "Exif", HeifFileBuilder.ExifItemData([0x49, 0x49, 0x2A, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00]));
+        exif.ExtentOverride = [(0, firstLength), (0, secondLength)];
+        builder.References.Add(("cdsc", 100, [1]));
+        var data = builder.Build();
+        Assert.Throws<InvalidImageContentException>(() => Image.Identify(data, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan }));
+        Assert.Throws<InvalidImageContentException>(() => Image.Load(data).Dispose());
+        Assert.Throws<InvalidImageContentException>(() => Image.Identify(data));
+    }
+
     // -----------------------------------------------------------------------------------------------------------------
     // Layered images: the a1op, lsel and a1lx properties around the payloads of the layered fixtures
     // -----------------------------------------------------------------------------------------------------------------

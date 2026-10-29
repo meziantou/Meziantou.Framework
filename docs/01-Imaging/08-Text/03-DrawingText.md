@@ -263,7 +263,8 @@ public static double DrawTitleCard(string fontPath, string iconPath, string outp
   indent, a fixed line height and the placeholders. The widths of the outline pens are not scaled. A text is made
   smaller, never larger.
 - The text fits when none of it is cut, no line is wider than the box and its lines are not taller. Lines are wrapped
-  at the width of the box, as the options say.
+  at the width of the box, as the options say. A [vertical text](04-TextLayout.md#vertical-text) turns the box: its
+  columns are wrapped at the height of the box, and they fit when they are not wider than the box together.
 - Finding the factor creates up to fifteen layouts. A text that does not fit at `minimumScale` (0.1 by default) is laid
   out at that scale and cut as the options say.
 - `RichTextBuilder.AppendPlaceholder(width, height, baseline, style)` is one character of the text: it moves with the

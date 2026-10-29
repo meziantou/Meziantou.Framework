@@ -24,6 +24,11 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <para>
 /// About 30 planes of the size of the frame are live at the peak (120 bytes per pixel).
 /// </para>
+/// <para>
+/// Large planes are processed by up to <see cref="ImageConfiguration.MaxDegreeOfParallelism"/> workers, by row bands: every
+/// value of the map is computed as by one worker. The 3-norm is summed by bands of <see cref="RowBands.SumBandRows"/> rows
+/// whose sums are added in order (<see cref="RowBands.Sum"/>), so it does not depend on the number of workers either.
+/// </para>
 /// </remarks>
 internal static class ButteraugliCalculator
 {
@@ -57,25 +62,28 @@ internal static class ButteraugliCalculator
 
     /// <exception cref="ImageResourceLimitException">The planes exceed the allocation limit.</exception>
     /// <exception cref="OperationCanceledException">The token was canceled.</exception>
-    public static ButteraugliDistance Compute(AllocationScope scope, PixelSource expected, PixelSource actual, CancellationToken cancellationToken)
+    public static ButteraugliDistance Compute(AllocationScope scope, PixelSource expected, PixelSource actual, int maxDegreeOfParallelism, CancellationToken cancellationToken)
     {
         using var arena = new FloatPlaneArena(scope);
         var opaque = expected.IsOpaque(cancellationToken) && actual.IsOpaque(cancellationToken);
-        var diffmap = ComputeDiffmap(arena, expected, actual, background: 0f, cancellationToken);
+        var diffmap = ComputeDiffmap(arena, expected, actual, background: 0f, maxDegreeOfParallelism, cancellationToken);
         if (!opaque)
         {
-            var white = ComputeDiffmap(arena, expected, actual, background: 1f, cancellationToken);
-            var values = diffmap.Span;
-            var whiteValues = white.Span;
-            for (var i = 0; i < values.Length; i++)
+            var white = ComputeDiffmap(arena, expected, actual, background: 1f, maxDegreeOfParallelism, cancellationToken);
+            RowBands.For(diffmap.Size, maxDegreeOfParallelism, (start, end) =>
             {
-                values[i] = Math.Max(values[i], whiteValues[i]);
-            }
+                var values = diffmap.GetRows(start, end);
+                var whiteValues = white.GetRows(start, end);
+                for (var i = 0; i < values.Length; i++)
+                {
+                    values[i] = Math.Max(values[i], whiteValues[i]);
+                }
+            });
 
             arena.Release(white);
         }
 
-        return new ButteraugliDistance(ComputeMax(diffmap.Span), ComputePNorm3(diffmap.Span));
+        return new ButteraugliDistance(ComputeMax(diffmap.Span), ComputePNorm3(diffmap, maxDegreeOfParallelism));
     }
 
     private static double ComputeMax(ReadOnlySpan<float> diffmap)
@@ -89,27 +97,35 @@ internal static class ButteraugliCalculator
         return max;
     }
 
-    private static double ComputePNorm3(ReadOnlySpan<float> diffmap)
+    private static double ComputePNorm3(FloatPlane diffmap, int maxDegreeOfParallelism)
     {
         const double P = 3;
-        double sum3 = 0, sum6 = 0, sum12 = 0;
-        foreach (var value in diffmap)
+        Span<double> sums = stackalloc double[3];
+        RowBands.Sum(diffmap.Size, maxDegreeOfParallelism, sums, (start, end, bandSums) =>
         {
-            double d1 = value;
-            var d = d1 * d1 * d1;
-            sum3 += d;
-            d *= d;
-            sum6 += d;
-            d *= d;
-            sum12 += d;
-        }
+            double sum3 = 0, sum6 = 0, sum12 = 0;
+            foreach (var value in diffmap.GetRows(start, end))
+            {
+                double d1 = value;
+                var d = d1 * d1 * d1;
+                sum3 += d;
+                d *= d;
+                sum6 += d;
+                d *= d;
+                sum12 += d;
+            }
 
-        var onePerPixels = 1.0 / diffmap.Length;
-        var v = Math.Pow(onePerPixels * sum3, 1.0 / P) + Math.Pow(onePerPixels * sum6, 1.0 / (P * 2)) + Math.Pow(onePerPixels * sum12, 1.0 / (P * 4));
+            bandSums[0] += sum3;
+            bandSums[1] += sum6;
+            bandSums[2] += sum12;
+        });
+
+        var onePerPixels = 1.0 / ((double)diffmap.Width * diffmap.Height);
+        var v = Math.Pow(onePerPixels * sums[0], 1.0 / P) + Math.Pow(onePerPixels * sums[1], 1.0 / (P * 2)) + Math.Pow(onePerPixels * sums[2], 1.0 / (P * 4));
         return v / 3.0;
     }
 
-    private static FloatPlane ComputeDiffmap(FloatPlaneArena arena, PixelSource expected, PixelSource actual, float background, CancellationToken cancellationToken)
+    private static FloatPlane ComputeDiffmap(FloatPlaneArena arena, PixelSource expected, PixelSource actual, float background, int maxDegreeOfParallelism, CancellationToken cancellationToken)
     {
         var width = expected.Width;
         var height = expected.Height;
@@ -118,7 +134,7 @@ internal static class ButteraugliCalculator
         LinearRgbLoader.Load(expected, background, rgb0, cancellationToken);
         LinearRgbLoader.Load(actual, background, rgb1, cancellationToken);
         if (width >= MinimumSize && height >= MinimumSize)
-            return ComputeDiffmap(arena, rgb0, rgb1, cancellationToken);
+            return ComputeDiffmap(arena, rgb0, rgb1, maxDegreeOfParallelism, cancellationToken);
 
         // ButteraugliDiffmapSmall: the frame is centered in an 8×8 (at least) frame that repeats its edges
         var scaledWidth = Math.Max(MinimumSize, width);
@@ -129,7 +145,7 @@ internal static class ButteraugliCalculator
         var scaled1 = Extend(arena, rgb1, scaledWidth, scaledHeight, xBorder, yBorder);
         arena.Release(rgb0);
         arena.Release(rgb1);
-        var scaledDiffmap = ComputeDiffmap(arena, scaled0, scaled1, cancellationToken);
+        var scaledDiffmap = ComputeDiffmap(arena, scaled0, scaled1, maxDegreeOfParallelism, cancellationToken);
         var diffmap = arena.Rent(width, height);
         for (var y = 0; y < height; y++)
         {
@@ -164,7 +180,7 @@ internal static class ButteraugliCalculator
     }
 
     /// <summary>ButteraugliComparator::Diffmap: the full-resolution map, mixed with the map of the frames downsampled by 2.</summary>
-    private static FloatPlane ComputeDiffmap(FloatPlaneArena arena, FloatPlane[] rgb0, FloatPlane[] rgb1, CancellationToken cancellationToken)
+    private static FloatPlane ComputeDiffmap(FloatPlaneArena arena, FloatPlane[] rgb0, FloatPlane[] rgb1, int maxDegreeOfParallelism, CancellationToken cancellationToken)
     {
         var width = rgb0[0].Width;
         var height = rgb0[0].Height;
@@ -172,15 +188,15 @@ internal static class ButteraugliCalculator
         FloatPlane[]? sub1 = null;
         if ((width + 1) / 2 >= MinimumSize && (height + 1) / 2 >= MinimumSize)
         {
-            sub0 = SubSample2x(arena, rgb0);
-            sub1 = SubSample2x(arena, rgb1);
+            sub0 = SubSample2x(arena, rgb0, maxDegreeOfParallelism);
+            sub1 = SubSample2x(arena, rgb1, maxDegreeOfParallelism);
         }
 
-        var diffmap = ComputeOpsinDiffmap(arena, rgb0, rgb1, cancellationToken);
+        var diffmap = ComputeOpsinDiffmap(arena, rgb0, rgb1, maxDegreeOfParallelism, cancellationToken);
         if (sub0 is not null && sub1 is not null)
         {
-            var subDiffmap = ComputeOpsinDiffmap(arena, sub0, sub1, cancellationToken);
-            AddSupersampled2x(subDiffmap, 0.5f, diffmap);
+            var subDiffmap = ComputeOpsinDiffmap(arena, sub0, sub1, maxDegreeOfParallelism, cancellationToken);
+            AddSupersampled2x(subDiffmap, 0.5f, diffmap, maxDegreeOfParallelism);
             arena.Release(subDiffmap);
         }
 
@@ -188,105 +204,121 @@ internal static class ButteraugliCalculator
     }
 
     /// <summary>Computes the map of one scale. The planes of both frames are released.</summary>
-    private static FloatPlane ComputeOpsinDiffmap(FloatPlaneArena arena, FloatPlane[] rgb0, FloatPlane[] rgb1, CancellationToken cancellationToken)
+    private static FloatPlane ComputeOpsinDiffmap(FloatPlaneArena arena, FloatPlane[] rgb0, FloatPlane[] rgb1, int maxDegreeOfParallelism, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var xyb0 = OpsinDynamicsImage(arena, rgb0);
+        var xyb0 = OpsinDynamicsImage(arena, rgb0, maxDegreeOfParallelism);
         arena.Release(rgb0);
-        var pi0 = SeparateFrequencies(arena, xyb0);
+        var pi0 = SeparateFrequencies(arena, xyb0, maxDegreeOfParallelism);
 
         cancellationToken.ThrowIfCancellationRequested();
-        var xyb1 = OpsinDynamicsImage(arena, rgb1);
+        var xyb1 = OpsinDynamicsImage(arena, rgb1, maxDegreeOfParallelism);
         arena.Release(rgb1);
-        var pi1 = SeparateFrequencies(arena, xyb1);
+        var pi1 = SeparateFrequencies(arena, xyb1, maxDegreeOfParallelism);
 
         cancellationToken.ThrowIfCancellationRequested();
-        return DiffmapPsychoImage(arena, pi0, pi1);
+        return DiffmapPsychoImage(arena, pi0, pi1, maxDegreeOfParallelism);
     }
 
-    private static FloatPlane[] SubSample2x(FloatPlaneArena arena, FloatPlane[] input)
+    private static FloatPlane[] SubSample2x(FloatPlaneArena arena, FloatPlane[] input, int maxDegreeOfParallelism)
     {
         var width = input[0].Width;
         var height = input[0].Height;
         var outWidth = (width + 1) / 2;
         var outHeight = (height + 1) / 2;
         var output = arena.Rent(3, outWidth, outHeight);
-        for (var c = 0; c < 3; c++)
+
+        // An output row adds its two input rows in the order of a loop over the input rows
+        RowBands.For(output[0].Size, maxDegreeOfParallelism, (start, end) =>
         {
-            var source = input[c].Span;
-            var destination = output[c].Span;
-            for (var y = 0; y < height; y++)
+            for (var c = 0; c < 3; c++)
             {
-                for (var x = 0; x < width; x++)
+                var source = input[c].Span;
+                var destination = output[c].Span;
+                for (var y = 2 * start; y < Math.Min(height, 2 * end); y++)
                 {
-                    destination[(y / 2) * outWidth + (x / 2)] += 0.25f * source[y * width + x];
+                    for (var x = 0; x < width; x++)
+                    {
+                        destination[(y / 2) * outWidth + (x / 2)] += 0.25f * source[y * width + x];
+                    }
                 }
-            }
 
-            if ((width & 1) != 0)
-            {
-                for (var y = 0; y < outHeight; y++)
+                if ((width & 1) != 0)
                 {
-                    destination[y * outWidth + outWidth - 1] *= 2.0f;
+                    for (var y = start; y < end; y++)
+                    {
+                        destination[y * outWidth + outWidth - 1] *= 2.0f;
+                    }
                 }
-            }
 
-            if ((height & 1) != 0)
-            {
-                for (var x = 0; x < outWidth; x++)
+                if ((height & 1) != 0 && end == outHeight)
                 {
-                    destination[(outHeight - 1) * outWidth + x] *= 2.0f;
+                    for (var x = 0; x < outWidth; x++)
+                    {
+                        destination[(outHeight - 1) * outWidth + x] *= 2.0f;
+                    }
                 }
             }
-        }
+        });
 
         return output;
     }
 
-    private static void AddSupersampled2x(FloatPlane source, float weight, FloatPlane destination)
+    private static void AddSupersampled2x(FloatPlane source, float weight, FloatPlane destination, int maxDegreeOfParallelism)
     {
         // There are fewer errors in the more averaged frames: a heuristic scaler accounts for it
         const double HeuristicMixingValue = 0.3;
         var width = destination.Width;
         var sourceWidth = source.Width;
-        var sourceValues = source.Span;
-        var values = destination.Span;
-        for (var y = 0; y < destination.Height; y++)
+        RowBands.For(destination.Size, maxDegreeOfParallelism, (start, end) =>
         {
-            for (var x = 0; x < width; x++)
+            var sourceValues = source.Span;
+            var values = destination.Span;
+            for (var y = start; y < end; y++)
             {
-                ref var value = ref values[y * width + x];
-                value = (float)(value * (1.0 - HeuristicMixingValue * weight));
-                value += weight * sourceValues[(y / 2) * sourceWidth + (x / 2)];
+                for (var x = 0; x < width; x++)
+                {
+                    ref var value = ref values[y * width + x];
+                    value = (float)(value * (1.0 - HeuristicMixingValue * weight));
+                    value += weight * sourceValues[(y / 2) * sourceWidth + (x / 2)];
+                }
             }
-        }
+        });
     }
 
-    private static FloatPlane[] OpsinDynamicsImage(FloatPlaneArena arena, FloatPlane[] rgb)
+    private static FloatPlane[] OpsinDynamicsImage(FloatPlaneArena arena, FloatPlane[] rgb, int maxDegreeOfParallelism)
     {
         const float Sigma = 1.2f;
-        const float Min = 1e-4f;
-        const float Min01 = 1.7557483643287353f;
-        const float Min2 = 12.226454707163354f;
 
         var width = rgb[0].Width;
         var height = rgb[0].Height;
         var blurred = arena.Rent(3, width, height);
         for (var c = 0; c < 3; c++)
         {
-            ButteraugliBlur.Blur(arena, rgb[c], Sigma, blurred[c]);
+            ButteraugliBlur.Blur(arena, rgb[c], Sigma, blurred[c], maxDegreeOfParallelism);
         }
 
         var xyb = arena.Rent(3, width, height);
-        var red = rgb[0].Span;
-        var green = rgb[1].Span;
-        var blue = rgb[2].Span;
-        var blurredRed = blurred[0].Span;
-        var blurredGreen = blurred[1].Span;
-        var blurredBlue = blurred[2].Span;
-        var outX = xyb[0].Span;
-        var outY = xyb[1].Span;
-        var outB = xyb[2].Span;
+        RowBands.For(rgb[0].Size, maxDegreeOfParallelism, (start, end) => ToOpsinDynamics(rgb, blurred, xyb, start, end));
+        arena.Release(blurred);
+        return xyb;
+    }
+
+    private static void ToOpsinDynamics(FloatPlane[] rgb, FloatPlane[] blurred, FloatPlane[] xyb, int start, int end)
+    {
+        const float Min = 1e-4f;
+        const float Min01 = 1.7557483643287353f;
+        const float Min2 = 12.226454707163354f;
+
+        var red = rgb[0].GetRows(start, end);
+        var green = rgb[1].GetRows(start, end);
+        var blue = rgb[2].GetRows(start, end);
+        var blurredRed = blurred[0].GetRows(start, end);
+        var blurredGreen = blurred[1].GetRows(start, end);
+        var blurredBlue = blurred[2].GetRows(start, end);
+        var outX = xyb[0].GetRows(start, end);
+        var outY = xyb[1].GetRows(start, end);
+        var outB = xyb[2].GetRows(start, end);
         for (var i = 0; i < red.Length; i++)
         {
             // The sensitivity comes from the derivative of the gamma of the blurred frame
@@ -307,9 +339,6 @@ internal static class ButteraugliCalculator
             outY[i] = curMixed0 + curMixed1;
             outB[i] = curMixed2;
         }
-
-        arena.Release(blurred);
-        return xyb;
     }
 
     private static void OpsinAbsorbance(float in0, float in1, float in2, bool clamp, out float out0, out float out1, out float out2)
@@ -347,7 +376,7 @@ internal static class ButteraugliCalculator
         return RetMul * (float)Math.Log2(biased) + RetAdd;
     }
 
-    private static PsychoImage SeparateFrequencies(FloatPlaneArena arena, FloatPlane[] xyb)
+    private static PsychoImage SeparateFrequencies(FloatPlaneArena arena, FloatPlane[] xyb, int maxDegreeOfParallelism)
     {
         const float SigmaLf = 7.15593339443f;
         const float SigmaHf = 3.22489901262f;
@@ -355,17 +384,25 @@ internal static class ButteraugliCalculator
 
         var width = xyb[0].Width;
         var height = xyb[0].Height;
+        var size = xyb[0].Size;
 
         // SeparateLFAndMF: the XYB planes become the medium frequencies
         var lf = arena.Rent(3, width, height);
         var mf = xyb;
         for (var i = 0; i < 3; i++)
         {
-            ButteraugliBlur.Blur(arena, xyb[i], SigmaLf, lf[i]);
-            Subtract(mf[i].Span, lf[i].Span);
+            ButteraugliBlur.Blur(arena, xyb[i], SigmaLf, lf[i], maxDegreeOfParallelism);
         }
 
-        XybLowFreqToVals(lf);
+        RowBands.For(size, maxDegreeOfParallelism, (start, end) =>
+        {
+            for (var i = 0; i < 3; i++)
+            {
+                Subtract(mf[i].GetRows(start, end), lf[i].GetRows(start, end));
+            }
+
+            XybLowFreqToVals(lf, start, end);
+        });
 
         // SeparateMFAndHF
         var hf = arena.Rent(2, width, height);
@@ -373,49 +410,57 @@ internal static class ButteraugliCalculator
         {
             if (i is 2)
             {
-                ButteraugliBlur.Blur(arena, mf[i], SigmaHf, mf[i]);
+                ButteraugliBlur.Blur(arena, mf[i], SigmaHf, mf[i], maxDegreeOfParallelism);
                 break;
             }
 
             mf[i].Span.CopyTo(hf[i].Span);
-            ButteraugliBlur.Blur(arena, mf[i], SigmaHf, mf[i]);
-            var mfValues = mf[i].Span;
-            var hfValues = hf[i].Span;
-            for (var j = 0; j < mfValues.Length; j++)
+            ButteraugliBlur.Blur(arena, mf[i], SigmaHf, mf[i], maxDegreeOfParallelism);
+            var channel = i;
+            RowBands.For(size, maxDegreeOfParallelism, (start, end) =>
             {
-                hfValues[j] -= mfValues[j];
-                mfValues[j] = i is 0 ? RemoveRangeAroundZero(0.29f, mfValues[j]) : AmplifyRangeAroundZero(0.1f, mfValues[j]);
-            }
+                var mfValues = mf[channel].GetRows(start, end);
+                var hfValues = hf[channel].GetRows(start, end);
+                for (var j = 0; j < mfValues.Length; j++)
+                {
+                    hfValues[j] -= mfValues[j];
+                    mfValues[j] = channel is 0 ? RemoveRangeAroundZero(0.29f, mfValues[j]) : AmplifyRangeAroundZero(0.1f, mfValues[j]);
+                }
+            });
         }
 
         // Suppress red-green by intensity change in the high frequencies
-        SuppressXByY(hf[1].Span, hf[0].Span);
+        RowBands.For(size, maxDegreeOfParallelism, (start, end) => SuppressXByY(hf[1].GetRows(start, end), hf[0].GetRows(start, end)));
 
         // SeparateHFAndUHF
         var uhf = arena.Rent(2, width, height);
         for (var i = 0; i < 2; i++)
         {
             hf[i].Span.CopyTo(uhf[i].Span);
-            ButteraugliBlur.Blur(arena, hf[i], SigmaUhf, hf[i]);
-            var hfValues = hf[i].Span;
-            var uhfValues = uhf[i].Span;
-            for (var j = 0; j < hfValues.Length; j++)
+            ButteraugliBlur.Blur(arena, hf[i], SigmaUhf, hf[i], maxDegreeOfParallelism);
+            var channel = i;
+            RowBands.For(size, maxDegreeOfParallelism, (start, end) =>
             {
-                if (i is 0)
+                var hfValues = hf[channel].GetRows(start, end);
+                var uhfValues = uhf[channel].GetRows(start, end);
+                for (var j = 0; j < hfValues.Length; j++)
                 {
-                    var hfValue = hfValues[j];
-                    var uhfValue = uhfValues[j] - hfValue;
-                    hfValues[j] = RemoveRangeAroundZero(1.5f, hfValue);
-                    uhfValues[j] = RemoveRangeAroundZero(0.04f, uhfValue);
+                    if (channel is 0)
+                    {
+                        var hfValue = hfValues[j];
+                        var uhfValue = uhfValues[j] - hfValue;
+                        hfValues[j] = RemoveRangeAroundZero(1.5f, hfValue);
+                        uhfValues[j] = RemoveRangeAroundZero(0.04f, uhfValue);
+                    }
+                    else
+                    {
+                        var hfValue = MaximumClamp(hfValues[j], 28.4691806922f);
+                        var uhfValue = MaximumClamp(uhfValues[j] - hfValue, 5.19175294647f);
+                        uhfValues[j] = uhfValue * 2.69313763794f;
+                        hfValues[j] = AmplifyRangeAroundZero(0.132f, hfValue * 2.155f);
+                    }
                 }
-                else
-                {
-                    var hfValue = MaximumClamp(hfValues[j], 28.4691806922f);
-                    var uhfValue = MaximumClamp(uhfValues[j] - hfValue, 5.19175294647f);
-                    uhfValues[j] = uhfValue * 2.69313763794f;
-                    hfValues[j] = AmplifyRangeAroundZero(0.132f, hfValue * 2.155f);
-                }
-            }
+            });
         }
 
         return new PsychoImage(lf, mf, hf, uhf);
@@ -430,15 +475,15 @@ internal static class ButteraugliCalculator
     }
 
     /// <summary>Converts the low-frequency XYB to the "vals" space, where a squared difference is a distance.</summary>
-    private static void XybLowFreqToVals(FloatPlane[] lf)
+    private static void XybLowFreqToVals(FloatPlane[] lf, int start, int end)
     {
         const float XMul = 33.832837186260f;
         const float YMul = 14.458268100570f;
         const float BMul = 49.87984651440f;
         const float YToBMul = -0.362267051518f;
-        var x = lf[0].Span;
-        var y = lf[1].Span;
-        var b = lf[2].Span;
+        var x = lf[0].GetRows(start, end);
+        var y = lf[1].GetRows(start, end);
+        var b = lf[2].GetRows(start, end);
         for (var i = 0; i < x.Length; i++)
         {
             b[i] = (YToBMul * y[i] + b[i]) * BMul;
@@ -477,57 +522,67 @@ internal static class ButteraugliCalculator
     /// <summary>Makes the area around zero more important (doubles it up to the limit).</summary>
     private static float AmplifyRangeAroundZero(float w, float x) => x > w ? x + w : x < -w ? x - w : x + x;
 
-    private static FloatPlane DiffmapPsychoImage(FloatPlaneArena arena, PsychoImage pi0, PsychoImage pi1)
+    private static FloatPlane DiffmapPsychoImage(FloatPlaneArena arena, PsychoImage pi0, PsychoImage pi1, int maxDegreeOfParallelism)
     {
         var width = pi0.Lf[0].Width;
         var height = pi0.Lf[0].Height;
+        var size = pi0.Lf[0].Size;
 
         // The planes are released as soon as their last term is added; the terms of each sum keep the order of libjxl
         var blockDiffDc = arena.Rent(3, width, height);
-        for (var c = 0; c < 3; c++)
+        RowBands.For(size, maxDegreeOfParallelism, (start, end) =>
         {
-            SetL2Diff(pi0.Lf[c].Span, pi1.Lf[c].Span, (float)Wmul[6 + c], blockDiffDc[c].Span);
-        }
+            for (var c = 0; c < 3; c++)
+            {
+                SetL2Diff(pi0.Lf[c].GetRows(start, end), pi1.Lf[c].GetRows(start, end), (float)Wmul[6 + c], blockDiffDc[c].GetRows(start, end));
+            }
+        });
 
         arena.Release(pi0.Lf);
         arena.Release(pi1.Lf);
 
         var mask0 = arena.Rent(width, height);
         var mask1 = arena.Rent(width, height);
-        CombineChannelsForMasking(pi0.Hf, pi0.Uhf, mask0.Span);
-        CombineChannelsForMasking(pi1.Hf, pi1.Uhf, mask1.Span);
+        RowBands.For(size, maxDegreeOfParallelism, (start, end) =>
+        {
+            CombineChannelsForMasking(pi0.Hf, pi0.Uhf, mask0.GetRows(start, end), start, end);
+            CombineChannelsForMasking(pi1.Hf, pi1.Uhf, mask1.GetRows(start, end), start, end);
+        });
 
         var blockDiffAc = arena.Rent(3, width, height);
         var padded = arena.Rent(width + 2 * ButteraugliMalta.Padding, height + 2 * ButteraugliMalta.Padding);
-        ButteraugliMalta.AddDiffMap(lowFrequency: false, pi0.Uhf[1], pi1.Uhf[1], WUhfMalta, WUhfMalta, Norm1Uhf, padded, blockDiffAc[1]);
-        ButteraugliMalta.AddDiffMap(lowFrequency: false, pi0.Uhf[0], pi1.Uhf[0], WUhfMaltaX, WUhfMaltaX, Norm1UhfX, padded, blockDiffAc[0]);
+        ButteraugliMalta.AddDiffMap(lowFrequency: false, pi0.Uhf[1], pi1.Uhf[1], WUhfMalta, WUhfMalta, Norm1Uhf, padded, blockDiffAc[1], maxDegreeOfParallelism);
+        ButteraugliMalta.AddDiffMap(lowFrequency: false, pi0.Uhf[0], pi1.Uhf[0], WUhfMaltaX, WUhfMaltaX, Norm1UhfX, padded, blockDiffAc[0], maxDegreeOfParallelism);
         arena.Release(pi0.Uhf);
         arena.Release(pi1.Uhf);
-        ButteraugliMalta.AddDiffMap(lowFrequency: true, pi0.Hf[1], pi1.Hf[1], WHfMalta, WHfMalta, Norm1Hf, padded, blockDiffAc[1]);
-        ButteraugliMalta.AddDiffMap(lowFrequency: true, pi0.Hf[0], pi1.Hf[0], WHfMaltaX, WHfMaltaX, Norm1HfX, padded, blockDiffAc[0]);
-        ButteraugliMalta.AddDiffMap(lowFrequency: true, pi0.Mf[1], pi1.Mf[1], WMfMalta, WMfMalta, Norm1Mf, padded, blockDiffAc[1]);
-        ButteraugliMalta.AddDiffMap(lowFrequency: true, pi0.Mf[0], pi1.Mf[0], WMfMaltaX, WMfMaltaX, Norm1MfX, padded, blockDiffAc[0]);
+        ButteraugliMalta.AddDiffMap(lowFrequency: true, pi0.Hf[1], pi1.Hf[1], WHfMalta, WHfMalta, Norm1Hf, padded, blockDiffAc[1], maxDegreeOfParallelism);
+        ButteraugliMalta.AddDiffMap(lowFrequency: true, pi0.Hf[0], pi1.Hf[0], WHfMaltaX, WHfMaltaX, Norm1HfX, padded, blockDiffAc[0], maxDegreeOfParallelism);
+        ButteraugliMalta.AddDiffMap(lowFrequency: true, pi0.Mf[1], pi1.Mf[1], WMfMalta, WMfMalta, Norm1Mf, padded, blockDiffAc[1], maxDegreeOfParallelism);
+        ButteraugliMalta.AddDiffMap(lowFrequency: true, pi0.Mf[0], pi1.Mf[0], WMfMaltaX, WMfMaltaX, Norm1MfX, padded, blockDiffAc[0], maxDegreeOfParallelism);
         arena.Release(padded);
 
-        for (var c = 0; c < 3; c++)
+        RowBands.For(size, maxDegreeOfParallelism, (start, end) =>
         {
-            // No blue channel error accumulated at high frequencies
-            if (c < 2)
+            for (var c = 0; c < 3; c++)
             {
-                L2DiffAsymmetric(pi0.Hf[c].Span, pi1.Hf[c].Span, (float)Wmul[c], (float)Wmul[c], blockDiffAc[c].Span);
-            }
+                // No blue channel error accumulated at high frequencies
+                if (c < 2)
+                {
+                    L2DiffAsymmetric(pi0.Hf[c].GetRows(start, end), pi1.Hf[c].GetRows(start, end), (float)Wmul[c], (float)Wmul[c], blockDiffAc[c].GetRows(start, end));
+                }
 
-            L2Diff(pi0.Mf[c].Span, pi1.Mf[c].Span, (float)Wmul[3 + c], blockDiffAc[c].Span);
-        }
+                L2Diff(pi0.Mf[c].GetRows(start, end), pi1.Mf[c].GetRows(start, end), (float)Wmul[3 + c], blockDiffAc[c].GetRows(start, end));
+            }
+        });
 
         arena.Release(pi0.Hf);
         arena.Release(pi1.Hf);
         arena.Release(pi0.Mf);
         arena.Release(pi1.Mf);
 
-        var mask = Mask(arena, mask0, mask1, blockDiffAc[1].Span);
+        var mask = Mask(arena, mask0, mask1, blockDiffAc[1], maxDegreeOfParallelism);
         var diffmap = arena.Rent(width, height);
-        CombineChannelsToDiffmap(mask.Span, blockDiffDc, blockDiffAc, diffmap.Span);
+        RowBands.For(size, maxDegreeOfParallelism, (start, end) => CombineChannelsToDiffmap(mask.GetRows(start, end), blockDiffDc, blockDiffAc, diffmap.GetRows(start, end), start, end));
         arena.Release(mask);
         arena.Release(blockDiffDc);
         arena.Release(blockDiffAc);
@@ -584,16 +639,16 @@ internal static class ButteraugliCalculator
         }
     }
 
-    private static void CombineChannelsForMasking(FloatPlane[] hf, FloatPlane[] uhf, Span<float> output)
+    private static void CombineChannelsForMasking(FloatPlane[] hf, FloatPlane[] uhf, Span<float> output, int start, int end)
     {
         // Only X and Y are involved in masking: B is less important at high frequencies
         const float Mul0 = 2.5f;
         const float Mul1 = 0.4f;
         const float Mul2 = 0.4f;
-        var yHf = hf[1].Span;
-        var yUhf = uhf[1].Span;
-        var xHf = hf[0].Span;
-        var xUhf = uhf[0].Span;
+        var yHf = hf[1].GetRows(start, end);
+        var yUhf = uhf[1].GetRows(start, end);
+        var xHf = hf[0].GetRows(start, end);
+        var xUhf = uhf[0].GetRows(start, end);
         for (var i = 0; i < output.Length; i++)
         {
             var xDiff = (xUhf[i] + xHf[i]) * Mul0;
@@ -603,7 +658,7 @@ internal static class ButteraugliCalculator
     }
 
     /// <summary>Computes the masking from the activity of both frames, and adds the difference of the masks to <paramref name="diffAc"/>.</summary>
-    private static FloatPlane Mask(FloatPlaneArena arena, FloatPlane mask0, FloatPlane mask1, Span<float> diffAc)
+    private static FloatPlane Mask(FloatPlaneArena arena, FloatPlane mask0, FloatPlane mask1, FloatPlane diffAc, int maxDegreeOfParallelism)
     {
         const float Mul = 6.19424080439f;
         const float Bias = 12.61050594197f;
@@ -612,20 +667,28 @@ internal static class ButteraugliCalculator
 
         var width = mask0.Width;
         var height = mask0.Height;
-        DiffPrecompute(mask0.Span, Mul, Bias);
-        DiffPrecompute(mask1.Span, Mul, Bias);
+        var size = mask0.Size;
+        RowBands.For(size, maxDegreeOfParallelism, (start, end) =>
+        {
+            DiffPrecompute(mask0.GetRows(start, end), Mul, Bias);
+            DiffPrecompute(mask1.GetRows(start, end), Mul, Bias);
+        });
         var blurred0 = arena.Rent(width, height);
         var blurred1 = arena.Rent(width, height);
-        ButteraugliBlur.Blur(arena, mask0, Radius, blurred0);
-        FuzzyErosion(blurred0.Span, mask0.Span, width, height);
-        ButteraugliBlur.Blur(arena, mask1, Radius, blurred1);
-        var values0 = blurred0.Span;
-        var values1 = blurred1.Span;
-        for (var i = 0; i < diffAc.Length; i++)
+        ButteraugliBlur.Blur(arena, mask0, Radius, blurred0, maxDegreeOfParallelism);
+        RowBands.For(size, maxDegreeOfParallelism, (start, end) => FuzzyErosion(blurred0.Span, mask0.Span, width, height, start, end));
+        ButteraugliBlur.Blur(arena, mask1, Radius, blurred1, maxDegreeOfParallelism);
+        RowBands.For(size, maxDegreeOfParallelism, (start, end) =>
         {
-            var diff = values0[i] - values1[i];
-            diffAc[i] += MaskToErrorMul * diff * diff;
-        }
+            var values0 = blurred0.GetRows(start, end);
+            var values1 = blurred1.GetRows(start, end);
+            var values = diffAc.GetRows(start, end);
+            for (var i = 0; i < values.Length; i++)
+            {
+                var diff = values0[i] - values1[i];
+                values[i] += MaskToErrorMul * diff * diff;
+            }
+        });
 
         arena.Release(blurred0);
         arena.Release(blurred1);
@@ -645,10 +708,10 @@ internal static class ButteraugliCalculator
     }
 
     /// <summary>Looks for smooth areas near the area of degradation: if they are generally smooth, there is no masking.</summary>
-    private static void FuzzyErosion(ReadOnlySpan<float> from, Span<float> to, int width, int height)
+    private static void FuzzyErosion(ReadOnlySpan<float> from, Span<float> to, int width, int height, int start, int end)
     {
         const int Step = 3;
-        for (var y = 0; y < height; y++)
+        for (var y = start; y < end; y++)
         {
             for (var x = 0; x < width; x++)
             {
@@ -740,14 +803,14 @@ internal static class ButteraugliCalculator
         return retval * retval;
     }
 
-    private static void CombineChannelsToDiffmap(ReadOnlySpan<float> mask, FloatPlane[] blockDiffDc, FloatPlane[] blockDiffAc, Span<float> result)
+    private static void CombineChannelsToDiffmap(ReadOnlySpan<float> mask, FloatPlane[] blockDiffDc, FloatPlane[] blockDiffAc, Span<float> result, int start, int end)
     {
-        var dc0 = blockDiffDc[0].Span;
-        var dc1 = blockDiffDc[1].Span;
-        var dc2 = blockDiffDc[2].Span;
-        var ac0 = blockDiffAc[0].Span;
-        var ac1 = blockDiffAc[1].Span;
-        var ac2 = blockDiffAc[2].Span;
+        var dc0 = blockDiffDc[0].GetRows(start, end);
+        var dc1 = blockDiffDc[1].GetRows(start, end);
+        var dc2 = blockDiffDc[2].GetRows(start, end);
+        var ac0 = blockDiffAc[0].GetRows(start, end);
+        var ac1 = blockDiffAc[1].GetRows(start, end);
+        var ac2 = blockDiffAc[2].GetRows(start, end);
         for (var i = 0; i < result.Length; i++)
         {
             var value = mask[i];

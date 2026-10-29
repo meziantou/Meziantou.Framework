@@ -27,6 +27,12 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// hardware. The ring of the last <see cref="WindowSize"/> rows of both images and the statistics of every column are
 /// rented in one buffer from the scope.
 /// </para>
+/// <para>
+/// The scores of the windows are added by bands of <see cref="RowBands.SumBandRows"/> rows of windows, and the sums of the
+/// bands are added in order. <see cref="Compute"/> splits the bands between up to
+/// <see cref="ImageConfiguration.MaxDegreeOfParallelism"/> workers, each with an accumulator that starts at the first row of
+/// its first window, so the result does not depend on the number of workers.
+/// </para>
 /// </remarks>
 internal sealed class SsimAccumulator : IDisposable
 {
@@ -48,9 +54,10 @@ internal sealed class SsimAccumulator : IDisposable
     private readonly int _windowWidth;
     private readonly int _windowHeight;
     private readonly int _ringLength;
-    private readonly double[] _channelSsimSums = new double[ChannelCount];
+    private readonly int _firstWindowRow;
+    private readonly int _rowLimit;
+    private readonly double[] _bandSums;
     private PooledBuffer? _buffer;
-    private long _windowCount;
     private int _rowCount;
 
     /// <summary>Rents the row ring and the column statistics of two images of the given size.</summary>
@@ -59,6 +66,16 @@ internal sealed class SsimAccumulator : IDisposable
     /// <param name="height">The height of the images.</param>
     /// <exception cref="ImageResourceLimitException">The buffer exceeds the allocation limit.</exception>
     public SsimAccumulator(AllocationScope scope, int width, int height)
+        : this(scope, width, height, firstWindowRow: 0, windowRowEnd: GetWindowRowCount(height), bandSums: null)
+    {
+    }
+
+    /// <summary>
+    /// Rents the row ring and the column statistics of an accumulator of the windows whose first row is in
+    /// <c>[firstWindowRow, windowRowEnd)</c>: it is given the rows from <paramref name="firstWindowRow"/> to the last row of
+    /// the last window, and adds the scores of the windows to the sums of their bands in <paramref name="bandSums"/>.
+    /// </summary>
+    private SsimAccumulator(AllocationScope scope, int width, int height, int firstWindowRow, int windowRowEnd, double[]? bandSums)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(width);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(height);
@@ -67,6 +84,9 @@ internal sealed class SsimAccumulator : IDisposable
         _height = height;
         _windowWidth = Math.Min(WindowSize, width);
         _windowHeight = Math.Min(WindowSize, height);
+        _firstWindowRow = firstWindowRow;
+        _rowLimit = windowRowEnd - firstWindowRow + _windowHeight - 1;
+        _bandSums = bandSums ?? new double[GetBandCount(height) * ChannelCount];
 
         // The ring holds bytes and the statistics ints; the ring length is a multiple of 4, which keeps the ints aligned.
         // Each window statistic is at most 7 × 7 × 255 × 255 = 3 186 225, so int is enough.
@@ -91,7 +111,7 @@ internal sealed class SsimAccumulator : IDisposable
         if (actualRow.Length != _width)
             throw new ArgumentException("The row does not have the width of the image.", nameof(actualRow));
 
-        if (_rowCount == _height)
+        if (_rowCount == _rowLimit)
             throw new InvalidOperationException("All the rows of the image have already been added.");
 
         var rowLength = _width * ChannelCount;
@@ -125,8 +145,89 @@ internal sealed class SsimAccumulator : IDisposable
         if (_rowCount != _height)
             throw new InvalidOperationException("Not all the rows of the image have been added.");
 
-        var colorSsim = (_channelSsimSums[0] / _windowCount + _channelSsimSums[1] / _windowCount + _channelSsimSums[2] / _windowCount) / 3;
-        var alphaSsim = _channelSsimSums[AlphaChannel] / _windowCount;
+        return ComputeMeanSsim(_bandSums, _width, _height);
+    }
+
+    /// <summary>
+    /// Computes the score of two frames of the same size, leased by the caller, with up to
+    /// <paramref name="maxDegreeOfParallelism"/> workers.
+    /// </summary>
+    /// <exception cref="ImageResourceLimitException">The buffers exceed the allocation limit.</exception>
+    /// <exception cref="OperationCanceledException">The token was canceled between two rows.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">A floating-point sample is outside [0, 1] or is not a number.</exception>
+    public static double Compute(AllocationScope scope, PixelStorage expected, PixelFormat expectedFormat, PixelStorage actual, PixelFormat actualFormat, int maxDegreeOfParallelism, CancellationToken cancellationToken)
+    {
+        var width = expected.Width;
+        var height = expected.Height;
+        var windowRows = GetWindowRowCount(height);
+        var bands = GetBandCount(height);
+        var workers = Math.Min(RowBands.GetWorkerCount(new Size(width, height), maxDegreeOfParallelism), bands);
+        var bandSums = new double[bands * ChannelCount];
+        using var frames = new ComparedFrames(scope, expected, expectedFormat, actual, actualFormat, workers);
+        var accumulators = new SsimAccumulator?[workers];
+        try
+        {
+            for (var worker = 0; worker < workers; worker++)
+            {
+                var (first, end) = GetWindowRows(worker);
+                accumulators[worker] = new SsimAccumulator(scope, width, height, first, end, bandSums);
+            }
+
+            if (workers is 1)
+            {
+                AddRows(0);
+            }
+            else
+            {
+                RowBands.RunParallelInBandOrder(workers, AddRows);
+            }
+        }
+        finally
+        {
+            foreach (var accumulator in accumulators)
+            {
+                accumulator?.Dispose();
+            }
+        }
+
+        return ComputeMeanSsim(bandSums, width, height);
+
+        (int First, int End) GetWindowRows(int worker)
+            => (RowBands.GetBandStart(bands, worker, workers) * RowBands.SumBandRows, Math.Min(windowRows, RowBands.GetBandStart(bands, worker + 1, workers) * RowBands.SumBandRows));
+
+        void AddRows(int worker)
+        {
+            var accumulator = accumulators[worker]!;
+            var (first, end) = GetWindowRows(worker);
+            var lastRow = end + accumulator._windowHeight - 1;
+            for (var y = first; y < lastRow; y++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                accumulator.AddRow(frames.GetExpectedRow(worker, y), frames.GetActualRow(worker, y));
+            }
+        }
+    }
+
+    /// <summary>Gets the number of rows of windows: the windows that fit inside the image, moved one row at a time.</summary>
+    private static int GetWindowRowCount(int height) => height - Math.Min(WindowSize, height) + 1;
+
+    private static int GetBandCount(int height) => (GetWindowRowCount(height) + RowBands.SumBandRows - 1) / RowBands.SumBandRows;
+
+    /// <summary>Adds up the sums of the bands in order, and computes the mean scores.</summary>
+    private static double ComputeMeanSsim(double[] bandSums, int width, int height)
+    {
+        Span<double> sums = stackalloc double[ChannelCount];
+        for (var i = 0; i < bandSums.Length; i += ChannelCount)
+        {
+            for (var channel = 0; channel < ChannelCount; channel++)
+            {
+                sums[channel] += bandSums[i + channel];
+            }
+        }
+
+        var windowCount = (long)GetWindowRowCount(height) * (width - Math.Min(WindowSize, width) + 1);
+        var colorSsim = (sums[0] / windowCount + sums[1] / windowCount + sums[2] / windowCount) / 3;
+        var alphaSsim = sums[AlphaChannel] / windowCount;
         return Math.Min(colorSsim, alphaSsim);
     }
 
@@ -182,7 +283,9 @@ internal sealed class SsimAccumulator : IDisposable
         var c1 = C1 * count * count;
         var c2 = C2 * varianceScale;
 
-        var ssimSums = _channelSsimSums.AsSpan();
+        // The window row whose last row was just added: its scores go to the sums of its band
+        var windowRow = _firstWindowRow + _rowCount - _windowHeight;
+        var ssimSums = _bandSums.AsSpan(windowRow / RowBands.SumBandRows * ChannelCount, ChannelCount);
         for (var x = 0; x < _width; x++)
         {
             var entering = columns.Slice(x * ValuesPerColumn, ValuesPerColumn);
@@ -215,8 +318,6 @@ internal sealed class SsimAccumulator : IDisposable
                     var variances = count * ((long)statistics[2] + statistics[3]) - meanSquares;
                     ssimSums[channel] += (2 * meanProduct + c1) * (2 * covariance + c2) / ((meanSquares + c1) * (variances + c2));
                 }
-
-                _windowCount++;
             }
         }
     }

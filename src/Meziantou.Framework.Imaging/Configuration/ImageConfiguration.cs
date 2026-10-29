@@ -41,7 +41,14 @@ public sealed class ImageConfiguration
     /// of a large frame (at least 65,536 output pixels and 32 rows per worker; nearest-neighbor resizing excepted) are split
     /// into at most this many bands processed concurrently, the calling thread included. The result is identical whatever
     /// the value. Each worker needs its own row scratch, charged to the image's
-    /// <see cref="ImageResourceLimits.MaxLiveAllocationBytes"/> budget. The HEIC and AVIF decoders use it too: the tiles of a
+    /// <see cref="ImageResourceLimits.MaxLiveAllocationBytes"/> budget. The
+    /// <see cref="ImageProcessingExtensions.Pixelate(Image, int, CancellationToken)"/>,
+    /// <see cref="ImageProcessingExtensions.OilPaint(Image, int, int, CancellationToken)"/> and
+    /// <see cref="ImageProcessingExtensions.Flatten(Image, Rgba64, CancellationToken)"/> effects split the rows the same way
+    /// (the bands of the pixelation start on a row of blocks, and those of the oil painting are at least as tall as its
+    /// window). The comparisons of <see cref="ImageSimilarity"/> (SSIM, PSNR, SSIMULACRA 2 and Butteraugli) use the value of
+    /// the image of the expected frame: their floating-point sums are made by bands of 64 rows, added in order, so their
+    /// results do not depend on it either. The HEIC and AVIF decoders use it too: the tiles of a
     /// grid of at least 65,536 samples are decoded by up to this many workers, each holding the decoder and the picture of its
     /// tile, with the pixels and the errors of a decoding by one worker. The HEIC and AVIF encoders code the tiles of such a
     /// grid (<see cref="Formats.HeicEncoder.GridTileSize"/>, <see cref="Formats.AvifEncoder.GridTileSize"/>) by up to this

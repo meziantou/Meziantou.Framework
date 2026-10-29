@@ -607,14 +607,15 @@ internal sealed class HeifStructureParser : ImageParser<ImageInfo>
         if (plan.Xmp is not null)
             AddItem(plan.Xmp, isMetadata: true);
 
+        // Compared before each addition: the extents of several items may add up past the largest length
         long total = 0;
         foreach (var capture in _captures)
         {
-            total = checked(total + capture.Length);
-        }
+            if (capture.Length > _context.Limits.MaxEncodedBytes - total)
+                throw new ImageResourceLimitException(ImageResourceLimitKind.EncodedBytes, _context.Limits.MaxEncodedBytes, capture.Length > long.MaxValue - total ? null : total + capture.Length);
 
-        if (total > _context.Limits.MaxEncodedBytes)
-            throw new ImageResourceLimitException(ImageResourceLimitKind.EncodedBytes, _context.Limits.MaxEncodedBytes, total);
+            total += capture.Length;
+        }
 
         FillItemData(meta, metaPayload);
 

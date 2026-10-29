@@ -32,7 +32,7 @@ internal sealed class HeifItem
     /// <summary>Gets the properties associated with the item, in order: the 1-based index of the property in <c>ipco</c> and whether it is essential.</summary>
     public List<(int Index, bool IsEssential)> Properties { get; } = [];
 
-    /// <summary>Gets the number of bytes of the item data.</summary>
+    /// <summary>Gets the number of bytes of the item data; the <c>iloc</c> box is rejected when it does not fit in a <see cref="long"/>.</summary>
     public long DataLength
     {
         get
@@ -40,7 +40,7 @@ internal sealed class HeifItem
             long length = 0;
             foreach (var extent in Extents)
             {
-                length = checked(length + extent.Length);
+                length += extent.Length;
             }
 
             return length;

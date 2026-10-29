@@ -949,6 +949,28 @@ public sealed class AvifDecoderTests
     }
 
     [Theory]
+    [InlineData((ulong)long.MaxValue, 1)]
+    [InlineData((ulong)long.MaxValue - 10, 100)]
+    [InlineData(0UL, -1)]
+    public void TrackRunWhoseDataOffsetIsOutOfRangeIsInvalidContent(ulong baseDataOffset, int dataOffset)
+    {
+        // The base data offset of the track fragment and the data offset of its run are each valid, the offset of the
+        // first sample they make up is past the largest offset or before the start of the file. A header identification
+        // stops before the fragments
+        var builder = Sequence(frames: 1);
+        var fragment = new HeifFileBuilder.Fragment();
+        var track = new HeifFileBuilder.TrackFragment(1) { Base = HeifFileBuilder.FragmentBase.Explicit, BaseDataOffsetOverride = baseDataOffset, DataOffsetOverride = dataOffset };
+        track.Samples.Add((Payload, 100));
+        fragment.Tracks.Add(track);
+        builder.Fragments.Add(fragment);
+        var data = builder.Build();
+        Assert.Throws<InvalidImageContentException>(() => Image.Identify(data, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan }));
+        Assert.Throws<InvalidImageContentException>(() => Image.Load(data).Dispose());
+        var header = Image.Identify(data);
+        Assert.Equal((8, 6), (header.Width, header.Height));
+    }
+
+    [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public void EditThatEndsBeforeTheLastImageShowsThePartOfTheTrackItCovers(bool repeating)

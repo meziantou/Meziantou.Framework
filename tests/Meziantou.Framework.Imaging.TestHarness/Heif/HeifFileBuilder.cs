@@ -384,7 +384,7 @@ public sealed class HeifFileBuilder
 
                     // tfhd: the base of the data offsets, and the default duration of the samples
                     var flags = track.Base switch { FragmentBase.MovieFragment => 0x020000, FragmentBase.Explicit => 0x000001, _ => 0 } | (track.UseDefaultDuration ? 0x000008 : 0);
-                    parts.Add(FullBox("tfhd", 0, flags, U32(track.TrackId), track.Base == FragmentBase.Explicit ? U64((ulong)mediaStart) : [], track.UseDefaultDuration ? U32(track.Samples[0].Duration) : []));
+                    parts.Add(FullBox("tfhd", 0, flags, U32(track.TrackId), track.Base == FragmentBase.Explicit ? U64(track.BaseDataOffsetOverride ?? (ulong)mediaStart) : [], track.UseDefaultDuration ? U32(track.Samples[0].Duration) : []));
                     if (!track.OmitDecodeTime)
                         parts.Add(FullBox("tfdt", 1, 0, U64(track.DecodeTime ?? decodeTimes.GetValueOrDefault(track.TrackId))));
 
@@ -392,7 +392,7 @@ public sealed class HeifFileBuilder
                     // the media data for an explicit base. Without either flag the base of a track fragment that is not
                     // the first one is the end of the data of the previous one, and its run has no offset
                     var hasOffset = track.Base != FragmentBase.Implicit || t == 0;
-                    var dataOffset = track.Base == FragmentBase.Explicit ? position : mediaStart - movieFragmentStart + position;
+                    var dataOffset = track.DataOffsetOverride ?? (track.Base == FragmentBase.Explicit ? position : mediaStart - movieFragmentStart + position);
                     var first = 0;
                     for (var run = 0; run < track.RunCount; run++)
                     {
@@ -666,10 +666,12 @@ public sealed class HeifFileBuilder
 
         Add("iloc", () =>
         {
-            // Version 1 when an item is stored in idat (the construction method field); 4-byte offsets and lengths, no base offset
+            // Version 1 when an item is stored in idat (the construction method field); 4-byte offsets and lengths (8-byte when
+            // an overridden extent does not fit in 4 bytes), no base offset
             var located = items.Where(item => item.Storage != ItemStorage.None || item.ExtentOverride is not null).ToList();
             var version = located.Any(item => item.Storage == ItemStorage.ItemData || item.ConstructionMethodOverride is not null) ? 1 : 0;
-            var entries = new List<byte[]> { new byte[] { 0x44, 0x00 }, U16((ushort)located.Count) };
+            var isLarge = located.Any(item => item.ExtentOverride?.Any(extent => extent.Offset > uint.MaxValue || extent.Length > uint.MaxValue) is true);
+            var entries = new List<byte[]> { new byte[] { isLarge ? (byte)0x88 : (byte)0x44, 0x00 }, U16((ushort)located.Count) };
             foreach (var item in located)
             {
                 var list = item.ExtentOverride ?? [.. extents[item].Select(extent => (item.Storage == ItemStorage.ItemData ? extent.Offset : extent.Offset + mediaStart, extent.Length))];
@@ -681,8 +683,8 @@ public sealed class HeifFileBuilder
                 entries.Add(U16((ushort)list.Count));
                 foreach (var (offset, length) in list)
                 {
-                    entries.Add(U32((uint)offset));
-                    entries.Add(U32((uint)length));
+                    entries.Add(isLarge ? U64((ulong)offset) : U32((uint)offset));
+                    entries.Add(isLarge ? U64((ulong)length) : U32((uint)length));
                 }
             }
 
@@ -941,6 +943,12 @@ public sealed class HeifFileBuilder
 
         /// <summary>Gets or sets the composition time offset written for every sample, or <see langword="null"/> for none.</summary>
         public int? CompositionOffset { get; set; }
+
+        /// <summary>Gets or sets the base data offset written to the <c>tfhd</c> box of an <see cref="FragmentBase.Explicit"/> base instead of the computed one.</summary>
+        public ulong? BaseDataOffsetOverride { get; set; }
+
+        /// <summary>Gets or sets the data offset written to the first <c>trun</c> box instead of the computed one.</summary>
+        public int? DataOffsetOverride { get; set; }
     }
 
     /// <summary>Where the data of an item is stored.</summary>

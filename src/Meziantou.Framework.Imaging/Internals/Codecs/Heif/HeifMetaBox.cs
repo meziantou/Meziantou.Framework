@@ -148,6 +148,7 @@ internal sealed class HeifMetaBox
                 throw binding.Invalid("the 'iloc' box declares more extents than it has.");
 
             item.Extents.EnsureCapacity(extentCount);
+            ulong itemLength = 0;
             for (var j = 0; j < extentCount; j++)
             {
                 if (indexSize > 0)
@@ -158,6 +159,11 @@ internal sealed class HeifMetaBox
                 if (baseOffset > long.MaxValue || extentOffset > (ulong)long.MaxValue - baseOffset || extentLength > long.MaxValue)
                     throw binding.Invalid("the location of an item is out of range.");
 
+                // The extents may each fit while the data of the item they make up does not
+                if (extentLength > (ulong)long.MaxValue - itemLength)
+                    throw binding.Invalid("the length of the data of an item is out of range.");
+
+                itemLength += extentLength;
                 item.Extents.Add(((long)(baseOffset + extentOffset), (long)extentLength));
             }
         }

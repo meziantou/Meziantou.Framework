@@ -417,6 +417,72 @@ public sealed class JpegXlTranscoderTests
     }
 
     [Fact]
+    public async Task InvalidArgumentsAreRefusedBeforeAnyInputIsReadOrOutputIsWritten()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var jpeg = GoldenCorpus.Default.Get("jpeg/progressive-420-partial-mcu").ReadInput();
+        using var recompressed = new MemoryStream();
+        JpegXlTranscoder.RecompressJpeg(jpeg, recompressed);
+        var jpegXl = recompressed.ToArray();
+
+        // A destination that cannot be written: nothing is read from the input
+        using var notWritable = new TestInputStream([]);
+        using var jpegInput = new TestInputStream(jpeg);
+        using var jpegXlInput = new TestInputStream(jpegXl);
+        Assert.Throws<ArgumentNullException>("destination", () => JpegXlTranscoder.RecompressJpeg(jpegInput, null!));
+        Assert.Throws<ArgumentException>("destination", () => JpegXlTranscoder.RecompressJpeg(jpeg, notWritable));
+        Assert.Throws<ArgumentException>("destination", () => JpegXlTranscoder.RecompressJpeg(jpegInput, notWritable));
+        await Assert.Throws<ArgumentException>("destination", () => JpegXlTranscoder.RecompressJpegAsync(jpegInput, notWritable, cancellationToken: cancellationToken));
+        Assert.Throws<ArgumentException>("destination", () => JpegXlTranscoder.ReconstructJpeg(jpegXl, notWritable));
+        Assert.Throws<ArgumentException>("destination", () => JpegXlTranscoder.ReconstructJpeg(jpegXlInput, notWritable));
+        await Assert.Throws<ArgumentException>("destination", () => JpegXlTranscoder.ReconstructJpegAsync(jpegXlInput, notWritable, cancellationToken: cancellationToken));
+        Assert.Throws<ArgumentException>("destination", () => JpegXlTranscoder.TryReconstructJpeg(jpegXl, notWritable));
+        Assert.Throws<ArgumentException>("destination", () => JpegXlTranscoder.TryReconstructJpeg(jpegXlInput, notWritable));
+        await Assert.Throws<ArgumentException>("destination", () => JpegXlTranscoder.TryReconstructJpegAsync(jpegXlInput, notWritable, cancellationToken: cancellationToken));
+        Assert.Equal(0, jpegInput.BytesRead);
+        Assert.Equal(0, jpegXlInput.BytesRead);
+
+        // A source that cannot be read: nothing is written to the destination
+        using var notReadable = new TestOutputStream();
+        using var output = new TestOutputStream();
+        Assert.Throws<ArgumentNullException>("jpeg", () => JpegXlTranscoder.RecompressJpeg((Stream)null!, output));
+        Assert.Throws<ArgumentException>("jpegXl", () => JpegXlTranscoder.HasJpegReconstructionData(notReadable));
+        await Assert.Throws<ArgumentException>("jpegXl", () => JpegXlTranscoder.HasJpegReconstructionDataAsync(notReadable, cancellationToken: cancellationToken));
+        Assert.Throws<ArgumentException>("jpeg", () => JpegXlTranscoder.RecompressJpeg(notReadable, output));
+        await Assert.Throws<ArgumentException>("jpeg", () => JpegXlTranscoder.RecompressJpegAsync(notReadable, output, cancellationToken: cancellationToken));
+        Assert.Throws<ArgumentException>("jpegXl", () => JpegXlTranscoder.ReconstructJpeg(notReadable, output));
+        await Assert.Throws<ArgumentException>("jpegXl", () => JpegXlTranscoder.ReconstructJpegAsync(notReadable, output, cancellationToken: cancellationToken));
+        Assert.Throws<ArgumentException>("jpegXl", () => JpegXlTranscoder.TryReconstructJpeg(notReadable, output));
+        await Assert.Throws<ArgumentException>("jpegXl", () => JpegXlTranscoder.TryReconstructJpegAsync(notReadable, output, cancellationToken: cancellationToken));
+        Assert.Equal(0, output.BytesWritten);
+
+        // Empty paths: refused before the source is opened (it does not exist) or the destination is created
+        var directory = Directory.CreateTempSubdirectory("mfi-jxl-transcoder-");
+        try
+        {
+            var missingPath = Path.Combine(directory.FullName, "missing");
+            var destinationPath = Path.Combine(directory.FullName, "destination");
+            Assert.Throws<ArgumentException>("jpegXlPath", () => JpegXlTranscoder.HasJpegReconstructionData(""));
+            Assert.Throws<ArgumentNullException>("destinationPath", () => JpegXlTranscoder.RecompressJpeg(missingPath, null!));
+            Assert.Throws<ArgumentException>("destinationPath", () => JpegXlTranscoder.RecompressJpeg(missingPath, ""));
+            await Assert.Throws<ArgumentException>("destinationPath", () => JpegXlTranscoder.RecompressJpegAsync(missingPath, "", cancellationToken: cancellationToken));
+            Assert.Throws<ArgumentException>("destinationPath", () => JpegXlTranscoder.ReconstructJpeg(missingPath, ""));
+            await Assert.Throws<ArgumentException>("destinationPath", () => JpegXlTranscoder.ReconstructJpegAsync(missingPath, "", cancellationToken: cancellationToken));
+            Assert.Throws<ArgumentException>("destinationPath", () => JpegXlTranscoder.TryReconstructJpeg(missingPath, ""));
+            Assert.Throws<ArgumentException>("jpegPath", () => JpegXlTranscoder.RecompressJpeg("", destinationPath));
+            await Assert.Throws<ArgumentException>("jpegPath", () => JpegXlTranscoder.RecompressJpegAsync("", destinationPath, cancellationToken: cancellationToken));
+            Assert.Throws<ArgumentException>("jpegXlPath", () => JpegXlTranscoder.ReconstructJpeg("", destinationPath));
+            await Assert.Throws<ArgumentException>("jpegXlPath", () => JpegXlTranscoder.ReconstructJpegAsync("", destinationPath, cancellationToken: cancellationToken));
+            Assert.Throws<ArgumentException>("jpegXlPath", () => JpegXlTranscoder.TryReconstructJpeg("", destinationPath));
+            Assert.Empty(directory.GetFileSystemInfos());
+        }
+        finally
+        {
+            directory.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
     public void DamagedReconstructionDataAreRefusedOrGiveAFile()
     {
         var jpeg = GoldenCorpus.Default.Get("jpeg/progressive-422-odd-restart").ReadInput();

@@ -8,14 +8,20 @@ id is expected, a customer id compared with an invoice id, meters added to feet.
 declarations that hold such values, and the analyzer bundled with the package reports when values with different tags
 are compared, assigned, passed, returned, or combined.
 
-## Why tags instead of wrapper types
+## Tags or strongly-typed ids
 
-A common fix for these bugs is to wrap each kind of id in its own type, such as `readonly record struct OrderId(Guid Value)`.
-It works, but every serializer, ORM mapping, model binder and API contract then has to learn about the new types.
+Another way to prevent these bugs is to give each kind of id its own type, such as an `OrderId` struct that wraps a
+`Guid`: the compiler then rejects a project id passed where an order id is expected. The
+`Meziantou.Framework.StronglyTypedId` package generates such types from an attribute, `[StronglyTypedId<Guid>]`, with
+their equality members and converters for several serializers.
 
 A tag does not change the type. The value stays a `Guid`, an `int` or a `string`, so there is nothing to change in
-serializers, ORMs, or APIs. The attribute exists only for the analyzer: it does not change what the code does at run
-time.
+serializers, ORMs, model binders, or API contracts, and you can tag existing code one declaration at a time. The
+attribute exists only for the analyzer: it does not change what the code does at run time.
+
+Prefer strongly-typed ids when you control the types and want the compiler itself to enforce them. Prefer tags when
+changing the type of a value costs too much, for instance in a public API, a database mapping, or a large existing code
+base, and for values that are not ids, such as units and keys.
 
 ## What you can do with it
 

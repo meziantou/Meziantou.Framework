@@ -170,6 +170,27 @@ public class YamlReferenceHandlingTests
     }
 
     [Fact]
+    public void Documentation_PreserveMinimal()
+    {
+        #region YamlReferenceHandling_PreserveMinimalOutput
+        var shared = new Section { Timeout = 1 };
+        var options = new YamlSerializerOptions { ReferenceHandling = YamlReferenceHandling.PreserveMinimal };
+
+        var yaml = YamlSerializer.Serialize(new Config { First = shared, Second = shared }, options);
+        Assert.Equal("""
+            First: &id001
+              Timeout: 1
+              Retries: 0
+            Second: *id001
+
+            """, yaml);
+
+        var config = YamlSerializer.Deserialize<Config>(yaml, options);
+        Assert.Same(config!.First, config.Second);
+        #endregion
+    }
+
+    [Fact]
     public void ReadmeExample_MergeKeys()
     {
         #region YamlReferenceHandling_MergeKeys

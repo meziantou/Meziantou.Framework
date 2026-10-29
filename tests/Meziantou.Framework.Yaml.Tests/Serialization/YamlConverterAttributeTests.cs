@@ -15,6 +15,48 @@ public sealed class YamlConverterAttributeTests
         Assert.Equal(new Uri("../relative", UriKind.Relative), YamlSerializer.Deserialize<Uri>("../relative", options));
     }
 
+    [Fact]
+    public void Documentation_ScalarConverter()
+    {
+        #region YamlConverter_ScalarUsage
+        var room = YamlSerializer.Deserialize<Room>("Name: Office\nTarget: 21.5C\n");
+        Assert.Equal(21.5, room!.Target.Celsius);
+
+        Assert.Equal("Name: Office\nTarget: 21.5C\n", YamlSerializer.Serialize(room));
+        Assert.Throws<YamlException>(() => YamlSerializer.Deserialize<Room>("Target: warm"));
+        #endregion
+    }
+
+    #region YamlConverter_Scalar
+    [YamlConverter(typeof(TemperatureConverter))]
+    internal readonly record struct Temperature(double Celsius);
+
+    internal sealed class TemperatureConverter : YamlConverter<Temperature>
+    {
+        public override Temperature Read(YamlReader reader)
+        {
+            var text = reader.GetScalarValue(); // Throws when the value is not a scalar
+            if (!text.EndsWith('C', StringComparison.Ordinal) || !double.TryParse(text.AsSpan(0, text.Length - 1), NumberStyles.Float, CultureInfo.InvariantCulture, out var celsius))
+                throw new YamlException(reader.SourceName, reader.Start, reader.End, $"'{text}' is not a temperature.");
+
+            reader.Read(); // Move past the value
+            return new Temperature(celsius);
+        }
+
+        public override void Write(YamlWriter writer, Temperature value)
+        {
+            writer.WriteString(value.Celsius.ToString(CultureInfo.InvariantCulture) + "C");
+        }
+    }
+
+    internal sealed class Room
+    {
+        public string? Name { get; set; }
+
+        public Temperature Target { get; set; }
+    }
+    #endregion
+
     #region YamlConverter_Create
     internal sealed class UriConverter : YamlConverter<Uri>
     {

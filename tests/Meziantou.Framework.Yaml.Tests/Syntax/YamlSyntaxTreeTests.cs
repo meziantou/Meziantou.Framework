@@ -40,6 +40,32 @@ public class YamlSyntaxTreeTests
         #endregion
     }
 
+    [Fact]
+    public void Documentation_EditValue()
+    {
+        #region YamlSyntaxTree_EditValue
+        var yaml = """
+            # deployment settings
+            replicas: 3 # keep in sync with the chart
+            image: nginx
+            """;
+
+        // Without trivia, the tokens are the significant ones: Key, Scalar, Value, Scalar, ...
+        var tokens = YamlSyntaxTree.Parse(yaml, new YamlSyntaxOptions { IncludeTrivia = false }).Tokens;
+        var keyIndex = tokens.ToList().FindIndex(token => token.Kind is YamlSyntaxKind.Scalar && token.Text == "replicas");
+        var value = tokens[keyIndex + 2];
+        Assert.Equal(YamlSyntaxKind.Scalar, value.Kind);
+
+        // Replace the text of the value only: the comments and the layout are kept
+        var updated = string.Concat(yaml.AsSpan(0, value.Span.Start.Index), "5", yaml.AsSpan(value.Span.End.Index));
+        Assert.Equal("""
+            # deployment settings
+            replicas: 5 # keep in sync with the chart
+            image: nginx
+            """, updated);
+        #endregion
+    }
+
     public static TheoryData<string> RoundTripCases { get; } =
     [
         "# comment\nroot:\n  key: value\n\nlist:\n  - a\n  - b\n",

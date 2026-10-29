@@ -95,10 +95,13 @@ public class YamlSerializerApiTests
     [Fact]
     public void ReadmeExample_Polymorphism()
     {
-        var animal = YamlSerializer.Deserialize<Animal>("$type: dog\nName: Rex\n");
+        #region YamlPolymorphism_RoundTrip
+        var yaml = YamlSerializer.Serialize<Animal>(new Dog { Name = "Rex" });
+        Assert.Equal("$type: dog\nName: Rex\n", yaml);
 
+        var animal = YamlSerializer.Deserialize<Animal>(yaml);
         Assert.Equal("Rex", Assert.IsType<Dog>(animal).Name);
-        Assert.Equal("$type: dog\nName: Rex\n", YamlSerializer.Serialize<Animal>(new Dog { Name = "Rex" }));
+        #endregion
     }
 
     #region YamlPolymorphicAttribute_Usage
@@ -170,6 +173,221 @@ public class YamlSerializerApiTests
 
         Assert.Throws<YamlException>(() => YamlSerializer.Deserialize<Product>("Id: &id 1", options));
         Assert.Throws<YamlException>(() => YamlSerializer.Deserialize<Product>("Price: 10", options));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_Files()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var path = directory.GetFullPath("product.yaml");
+
+        SaveProduct(path, new Product { Id = 1, DisplayName = "Sample product" });
+        Assert.Equal("Sample product", LoadProduct(path)!.DisplayName);
+    }
+
+    #region YamlSerializer_Files
+    private static void SaveProduct(string path, Product product)
+    {
+        using var stream = File.Create(path);
+        YamlSerializer.Serialize(stream, product); // Written as UTF-8
+    }
+
+    private static Product? LoadProduct(string path)
+    {
+        using var stream = File.OpenRead(path);
+        return YamlSerializer.Deserialize<Product>(stream);
+    }
+    #endregion
+
+    [Fact]
+    public void Documentation_OptionsWith()
+    {
+        #region YamlSerializerOptions_With
+        var strict = YamlSerializerOptions.Default with
+        {
+            UnmappedMemberHandling = YamlUnmappedMemberHandling.Disallow,
+        };
+
+        Assert.Equal(1, YamlSerializer.Deserialize<Product>("Id: 1\nPrice: 10")!.Id); // Price is ignored
+        Assert.Throws<YamlException>(() => YamlSerializer.Deserialize<Product>("Id: 1\nPrice: 10", strict));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_WriteIndented()
+    {
+        #region YamlSerializerOptions_WriteIndented
+        var product = new Product { Id = 1, DisplayName = "Table", Tags = ["new", "sale"] };
+
+        var yaml = YamlSerializer.Serialize(product, new YamlSerializerOptions { WriteIndented = false });
+        Assert.Equal("{Id: 1, name: Table, Tags: [new, sale]}\n", yaml);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_BlockSequences()
+    {
+        #region YamlSerializerOptions_BlockSequences
+        var value = new
+        {
+            Tags = new[] { "new", "sale" },
+            Items = new[] { new { Id = 1, Name = "first" } },
+        };
+
+        Assert.Equal("""
+            Tags:
+              - new
+              - sale
+            Items:
+              - Id: 1
+                Name: first
+
+            """, YamlSerializer.Serialize(value));
+
+        var options = new YamlSerializerOptions
+        {
+            IndentBlockSequences = false,
+            BlockSequenceMappingStyle = YamlSequenceItemStyle.Expanded,
+        };
+
+        Assert.Equal("""
+            Tags:
+            - new
+            - sale
+            Items:
+            -
+              Id: 1
+              Name: first
+
+            """, YamlSerializer.Serialize(value, options));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_AmbiguousStrings()
+    {
+        #region YamlSerializerOptions_AmbiguousStrings
+        var yaml = YamlSerializer.Serialize(new { A = "yes", B = "123", C = "true", D = "plain" });
+        Assert.Equal("""
+            A: yes
+            B: "123"
+            C: "true"
+            D: plain
+
+            """, yaml);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_LiteralStrings()
+    {
+        #region YamlSerializerOptions_LiteralStrings
+        var options = new YamlSerializerOptions
+        {
+            ScalarStylePreferences = new YamlScalarStylePreferences { StringStyle = ScalarStyle.Literal },
+        };
+
+        var yaml = YamlSerializer.Serialize(new { Script = "echo one\necho two\n" }, options);
+        Assert.Equal("""
+            Script: |
+              echo one
+              echo two
+
+            """, yaml);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_StringStyleAttribute()
+    {
+        #region YamlStringStyleAttribute_Serialize
+        var yaml = YamlSerializer.Serialize(new Job { Script = "echo one\necho two", Name = "build" });
+        Assert.Equal("""
+            Script: |-
+              echo one
+              echo two
+            Name: build
+
+            """, yaml);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_NumberHandling()
+    {
+        #region YamlNumberHandlingAttribute_Serialize
+        var yaml = YamlSerializer.Serialize(new Server { Port = 8080 });
+        Assert.Equal("Port: \"8080\"\n", yaml);
+
+        Assert.Equal(8080, YamlSerializer.Deserialize<Server>(yaml)!.Port);
+        #endregion
+
+        Assert.Equal(1, YamlSerializer.Deserialize<Product>("Id: \"1\"")!.Id);
+    }
+
+    #region YamlNumberHandlingAttribute_Usage
+    internal sealed class Server
+    {
+        [YamlNumberHandling(YamlNumberHandling.WriteAsString)]
+        public int Port { get; set; }
+    }
+    #endregion
+
+    [Fact]
+    public void Documentation_Record()
+    {
+        #region YamlSerializer_RecordDeserialize
+        var endpoint = YamlSerializer.Deserialize<Endpoint>("Url: https://example.com");
+        Assert.Equal(30, endpoint!.Timeout);
+
+        Assert.Throws<YamlException>(() => YamlSerializer.Deserialize<Endpoint>("Timeout: 10")); // Url is missing
+        #endregion
+    }
+
+    #region YamlSerializer_Record
+    internal sealed record Endpoint(string Url, int Timeout = 30);
+    #endregion
+
+    [Fact]
+    public void Documentation_Untyped()
+    {
+        #region YamlSerializer_Untyped
+        var value = YamlSerializer.Deserialize<object>("""
+            name: api
+            replicas: 3
+            ports: [80, 443]
+            """);
+
+        var root = Assert.IsType<Dictionary<object, object?>>(value);
+        Assert.Equal("api", root["name"]);
+        Assert.Equal(3L, root["replicas"]);
+        var ports = Assert.IsType<List<object?>>(root["ports"]);
+        Assert.Equal(443L, ports[1]);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_ExceptionLocation()
+    {
+        #region YamlException_Location
+        static string? Validate(string yaml)
+        {
+            try
+            {
+                YamlSerializer.Deserialize<Product>(yaml);
+                return null;
+            }
+            catch (YamlException exception)
+            {
+                // Line and Column are zero-based
+                return $"line {exception.Start.Line + 1}, column {exception.Start.Column + 1}";
+            }
+        }
+
+        Assert.Null(Validate("Id: 1"));
+        Assert.Equal("line 2, column 7", Validate("Id: 1\nTags: 3"));
+        Assert.Equal("line 1, column 5", Validate("Id: [1"));
         #endregion
     }
 

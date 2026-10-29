@@ -27,6 +27,28 @@ public sealed class YamlMergeKeyTests
     }
 
     [Fact]
+    public void Documentation_MergeAlias()
+    {
+        #region YamlMergeKey_Defaults
+        var yaml = """
+            defaults: &defaults
+              timeout: 30
+              retries: 2
+
+            prod:
+              <<: *defaults
+              timeout: 60   # wins over the merged value
+            """;
+
+        var options = new YamlSerializerOptions { ReferenceHandling = YamlReferenceHandling.Preserve };
+        var config = YamlSerializer.Deserialize<Dictionary<string, Dictionary<string, int>>>(yaml, options);
+
+        Assert.Equal(60, config!["prod"]["timeout"]);
+        Assert.Equal(2, config["prod"]["retries"]);
+        #endregion
+    }
+
+    [Fact]
     public void Deserialize_Object_ShouldApplyMergeKey()
     {
         var yaml =

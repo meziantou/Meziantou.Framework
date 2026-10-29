@@ -304,8 +304,8 @@ public sealed class TextLayout
     /// <summary>Lays out a text with one style at the largest size, up to the size of the style, at which it fits a box.</summary>
     /// <param name="text">The text.</param>
     /// <param name="style">The fonts, the size and the other settings of the text. Its size is the largest one the text is given.</param>
-    /// <param name="width">The width of the box, in pixels: lines are wrapped and aligned at it. Positive, or <see cref="double.PositiveInfinity"/> for a text that is only fitted to a height.</param>
-    /// <param name="height">The height of the box, in pixels. Positive, or <see cref="double.PositiveInfinity"/> for a text that is only fitted to a width.</param>
+    /// <param name="width">The width of the box, in pixels: lines are wrapped and aligned at it, unless the text is vertical. Positive, or <see cref="double.PositiveInfinity"/> for a text that is only fitted to a height.</param>
+    /// <param name="height">The height of the box, in pixels: the columns of a vertical text are wrapped and aligned at it. Positive, or <see cref="double.PositiveInfinity"/> for a text that is only fitted to a width.</param>
     /// <param name="options">How the text is wrapped and aligned, or <see langword="null"/> for <see cref="TextLayoutOptions.Default"/>. Its <see cref="TextLayoutOptions.MaxWidth"/> and <see cref="TextLayoutOptions.MaxHeight"/> are replaced by the box.</param>
     /// <param name="minimumScale">The smallest fraction of its size the text is given, more than 0 and up to 1: a text that does not fit at that size is laid out at it, and cut as the options say.</param>
     /// <returns>The layout; <see cref="Scale"/> is the fraction of its size the text has.</returns>
@@ -335,7 +335,9 @@ public sealed class TextLayout
     /// <paramref name="width"/> (a word that cannot be broken can be) and its lines are not taller than
     /// <paramref name="height"/>. Lines are wrapped at <paramref name="width"/> as <paramref name="options"/> say:
     /// with <see cref="TextWrapping.NoWrap"/> or <see cref="TextLayoutOptions.MaxLines"/>, the text is fitted on the
-    /// lines it is allowed. The factor is found by trying the one the box is to the text as it is laid out at its
+    /// lines it is allowed. In a vertical <see cref="TextLayoutOptions.WritingMode"/>, the box is turned: the lines are
+    /// columns, wrapped at <paramref name="height"/>, and they fit when they are not wider than <paramref name="width"/>
+    /// together. The factor is found by trying the one the box is to the text as it is laid out at its
     /// sizes (the exact factor of a text whose lines stay the same), then by halving twelve times the range between
     /// a factor that fits and one that does not, each time with a whole layout: it is the largest one of those that
     /// were tried and fit, within 1/4096 of the range from <paramref name="minimumScale"/> to 1. A text that does not
@@ -343,8 +345,8 @@ public sealed class TextLayout
     /// </para>
     /// </remarks>
     /// <param name="text">The text and its spans.</param>
-    /// <param name="width">The width of the box, in pixels: lines are wrapped and aligned at it. Positive, or <see cref="double.PositiveInfinity"/>.</param>
-    /// <param name="height">The height of the box, in pixels. Positive, or <see cref="double.PositiveInfinity"/>.</param>
+    /// <param name="width">The width of the box, in pixels: lines are wrapped and aligned at it, unless the text is vertical. Positive, or <see cref="double.PositiveInfinity"/>.</param>
+    /// <param name="height">The height of the box, in pixels: the columns of a vertical text are wrapped and aligned at it. Positive, or <see cref="double.PositiveInfinity"/>.</param>
     /// <param name="options">How the text is wrapped and aligned, or <see langword="null"/> for <see cref="TextLayoutOptions.Default"/>. Its <see cref="TextLayoutOptions.MaxWidth"/> and <see cref="TextLayoutOptions.MaxHeight"/> are replaced by the box.</param>
     /// <param name="minimumScale">The smallest fraction of their sizes the styles are given, more than 0 and up to 1.</param>
     /// <returns>The layout.</returns>
@@ -424,7 +426,11 @@ public sealed class TextLayout
 
         bool TryFit(double scale, out TextLayoutData result)
         {
-            result = TextLayoutEngine.Create(text, spans, options, scale, width, double.PositiveInfinity);
+            // The lines are wrapped at the box and may take any room across it, which is then measured: the
+            // columns of a vertical text are wrapped at its height and follow each other along its width
+            result = options.WritingMode == TextWritingMode.Horizontal
+                ? TextLayoutEngine.Create(text, spans, options, scale, width, double.PositiveInfinity)
+                : TextLayoutEngine.Create(text, spans, options, scale, double.PositiveInfinity, height);
             return !result.IsTruncated && result.Width <= width && result.Height <= height;
         }
     }

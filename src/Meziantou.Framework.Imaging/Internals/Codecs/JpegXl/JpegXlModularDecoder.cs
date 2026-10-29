@@ -32,14 +32,7 @@ internal static class JpegXlModularDecoder
 
         var useGlobalTree = reader.ReadBool();
         image.WeightedPredictor = JpegXlWeightedPredictorHeader.Read(reader);
-        var transformCount = (int)reader.ReadU32(0, 0, 1, 0, 2, 4, 18, 8);
-        for (var i = 0; i < transformCount; i++)
-        {
-            var transform = JpegXlModularTransform.Read(reader);
-            reader.EnsureNotOverrun();
-            transform.ApplyToChannelList(image);
-            image.Transforms.Add(transform);
-        }
+        ReadTransforms(reader, image, cancellationToken);
 
         // The channels coded here: every meta-channel, then the channels of the image up to the first one that is too large
         var codedChannelCount = 0;
@@ -105,6 +98,23 @@ internal static class JpegXlModularDecoder
         if (undoTransforms)
         {
             UndoTransforms(image, scope);
+        }
+    }
+
+    /// <summary>
+    /// Reads the transforms of a sub-bitstream and changes the channels of <paramref name="image"/> to those that are coded.
+    /// </summary>
+    /// <exception cref="UnsupportedImageFeatureException">The transforms add too many channels (see <see cref="JpegXlModularImage"/>).</exception>
+    public static void ReadTransforms(JpegXlBitReader reader, JpegXlModularImage image, CancellationToken cancellationToken)
+    {
+        var transformCount = (int)reader.ReadU32(0, 0, 1, 0, 2, 4, 18, 8);
+        for (var i = 0; i < transformCount; i++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var transform = JpegXlModularTransform.Read(reader);
+            reader.EnsureNotOverrun();
+            transform.ApplyToChannelList(image);
+            image.Transforms.Add(transform);
         }
     }
 

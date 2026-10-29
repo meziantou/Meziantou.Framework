@@ -106,6 +106,152 @@ public sealed class CodeOwnersParserTests
     }
 
     [Fact]
+    public void DocumentationExample_ReadFile()
+    {
+        var directory = Directory.CreateTempSubdirectory();
+        try
+        {
+            var filePath = Path.Combine(directory.FullName, "CODEOWNERS");
+            File.WriteAllText(filePath, """
+                # Default owners of the repository
+                * @org/maintainers
+
+                # The documentation team owns the docs folder
+                /docs/ @org/docs-team docs@example.com
+                """);
+
+            #region CodeOwners_ReadFile
+            string content = File.ReadAllText(filePath); // For instance, .github/CODEOWNERS
+            CodeOwnersFile file = CodeOwnersFile.Parse(content, CodeOwnersDialect.GitHub);
+
+            // Comments and blank lines are not entries
+            Assert.HasCount(2, file.Entries);
+
+            CodeOwnersEntry docs = file.Entries[1];
+            Assert.Equal("/docs/", docs.Pattern);
+            Assert.Equal(["org/docs-team", "docs@example.com"], docs.Owners.Select(owner => owner.Name));
+            #endregion
+        }
+        finally
+        {
+            directory.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public void DocumentationExample_UnownedPattern()
+    {
+        #region CodeOwners_UnownedPattern
+        var file = CodeOwnersFile.Parse("""
+            * @org/maintainers
+            /generated/ # Nobody owns the generated files
+            """, CodeOwnersDialect.GitHub);
+
+        CodeOwnersEntry generated = file.Entries[1];
+        Assert.Equal("/generated/", generated.Pattern);
+        Assert.Empty(generated.Owners);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_EscapedPattern()
+    {
+        #region CodeOwners_EscapedPattern
+        var file = CodeOwnersFile.Parse("""
+            /docs/User\ Guide.md @docs-team
+            \#notes.txt @user1
+            """, CodeOwnersDialect.GitHub);
+
+        // The backslashes are removed from the pattern
+        Assert.Equal("/docs/User Guide.md", file.Entries[0].Pattern);
+        Assert.Equal("#notes.txt", file.Entries[1].Pattern);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_ToString()
+    {
+        #region CodeOwners_ToString
+        var file = CodeOwnersFile.Parse("""
+            [Docs][2] @docs-team
+            /docs/User\ Guide.md @writer docs@example.com
+            """, CodeOwnersDialect.GitLab);
+
+        CodeOwnersEntry entry = file.Entries[0];
+        Assert.Equal("/docs/User Guide.md", entry.Pattern);
+
+        // ToString writes the values back in the CODEOWNERS syntax, escaping the pattern again
+        Assert.Equal("""/docs/User\ Guide.md @writer docs@example.com""", entry.ToString());
+        Assert.Equal("@writer", entry.Owners[0].ToString());
+        Assert.Equal("[Docs][2] @docs-team", entry.Section?.ToString());
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_Dialects()
+    {
+        #region CodeOwners_Dialects
+        const string Content = """
+            [Docs]
+            *.md @docs-team
+            """;
+
+        // GitHub reads "[Docs]" as a pattern, with no owners
+        var github = CodeOwnersFile.Parse(Content, CodeOwnersDialect.GitHub);
+        Assert.Equal(["[Docs]", "*.md"], github.Entries.Select(entry => entry.Pattern));
+
+        // GitLab reads it as the header of a section
+        var gitlab = CodeOwnersFile.Parse(Content, CodeOwnersDialect.GitLab);
+        CodeOwnersEntry entry = Assert.Single(gitlab.Entries);
+        Assert.Equal("*.md", entry.Pattern);
+        Assert.Equal("Docs", entry.Section?.Name);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_SectionDefaultOwners()
+    {
+        #region CodeOwners_SectionDefaultOwners
+        var file = CodeOwnersFile.Parse("""
+            [Backend][2] @backend-team
+            *.cs
+            /src/Api/ @api-team
+
+            ^[Docs] @@maintainers
+            *.md
+            """, CodeOwnersDialect.GitLab);
+
+        // A pattern without owners gets the default owners of its section
+        Assert.Equal("backend-team", file.Entries[0].Owners[0].Name);
+        Assert.Equal("api-team", file.Entries[1].Owners[0].Name);
+
+        CodeOwnersSection backend = file.Entries[0].Section!;
+        Assert.Equal("Backend", backend.Name);
+        Assert.Equal(2, backend.RequiredReviewerCount);
+        Assert.True(backend.IsMandatory);
+
+        // "^" makes the section optional
+        CodeOwnersEntry markdown = file.Entries[2];
+        Assert.True(markdown.IsOptional);
+        Assert.Equal(CodeOwnerType.Role, markdown.Owners[0].Type);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_ErrorKinds()
+    {
+        #region CodeOwners_InvalidOwner
+        var isValid = CodeOwnersFile.TryParse("*.md @docs-team docs-team", CodeOwnersDialect.GitHub, out _, out CodeOwnersParseError error);
+
+        // An owner must start with '@' or be an email address
+        Assert.False(isValid);
+        Assert.Equal(CodeOwnersParseErrorKind.InvalidOwner, error.Kind);
+        Assert.Equal(1, error.LineNumber);
+        Assert.Equal(17, error.LinePosition);
+        #endregion
+    }
+
+    [Fact]
     public void ParseEmptyCodeOwners()
     {
         var actual = CodeOwnersFile.Parse("", CodeOwnersDialect.GitLab).Entries;

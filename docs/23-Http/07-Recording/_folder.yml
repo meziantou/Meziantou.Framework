@@ -1,0 +1,2 @@
+title: Recording
+description: Record the HTTP traffic of a test once, then replay it without calling the real service.

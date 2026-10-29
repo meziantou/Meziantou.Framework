@@ -1,0 +1,2 @@
+title: Server-side request forgery
+description: Stop an HttpClient that fetches user-supplied URLs from reaching internal hosts.

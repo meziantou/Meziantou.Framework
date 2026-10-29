@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Diagnostics.Metrics;
 using System.Net;
 using System.Net.Sockets;
@@ -241,6 +242,62 @@ public sealed class ServerSideRequestForgeryConnectPipelineTests
         }
 
         Assert.NotNull(rejection);
+        #endregion
+    }
+
+    [Fact]
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The HttpClient disposes the handlers")]
+    public async Task Documentation_Logging()
+    {
+        using var loggerProvider = new InMemoryLoggerProvider();
+        var logger = loggerProvider.CreateLogger("Ssrf");
+
+        #region ServerSideRequestForgery_Logging
+        var options = new ServerSideRequestForgeryOptions
+        {
+            // Every rejection is logged as a warning
+            Logger = logger,
+        };
+        #endregion
+
+        using var httpClient = new HttpClient(new ServerSideRequestForgeryClientHandler(new SocketsHttpHandler { UseProxy = false }, options), disposeHandler: true);
+        await Assert.ThrowsAsync<HttpRequestException>(() => httpClient.GetAsync(new Uri("https://127.0.0.1/?token=secret")));
+
+        var warning = Assert.Single(loggerProvider.Logs.Warnings);
+        Assert.Equal("Rejected request to https://127.0.0.1:443. All resolved IP addresses were unsafe.", warning.Message);
+    }
+
+    [Fact]
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The HttpClient disposes the handlers")]
+    public async Task Documentation_Metrics()
+    {
+        #region ServerSideRequestForgery_Metrics
+        var reasons = new ConcurrentQueue<string?>();
+        using var listener = new MeterListener();
+        listener.InstrumentPublished = (instrument, meterListener) =>
+        {
+            if (instrument.Meter.Name is "Meziantou.Framework.Http.ServerSideRequestForgery")
+            {
+                meterListener.EnableMeasurementEvents(instrument);
+            }
+        };
+        listener.SetMeasurementEventCallback<long>((_, _, tags, _) =>
+        {
+            foreach (var tag in tags)
+            {
+                if (tag.Key is "reason")
+                {
+                    reasons.Enqueue(tag.Value as string);
+                }
+            }
+        });
+        listener.Start();
+
+        var options = new ServerSideRequestForgeryOptions();
+        using var httpClient = new HttpClient(new ServerSideRequestForgeryClientHandler(new SocketsHttpHandler { UseProxy = false }, options), disposeHandler: true);
+        await Assert.ThrowsAsync<HttpRequestException>(() => httpClient.GetAsync(new Uri("https://127.0.0.1/")));
+
+        Assert.Contains("all_resolved_addresses_unsafe", reasons);
         #endregion
     }
 

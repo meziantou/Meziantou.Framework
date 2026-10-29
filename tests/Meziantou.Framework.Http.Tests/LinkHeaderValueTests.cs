@@ -39,6 +39,52 @@ public sealed class LinkHeaderValueTests
     }
 
     [Fact]
+    public void Documentation_Parameters()
+    {
+        #region LinkHeaderValue_Parameters
+        var links = LinkHeaderValue.Parse("<https://example.com/chapter2>; REL=\"next last\"; title=\"Chapter \\\"2\\\"\"; hreflang=en");
+        var link = Assert.Single(links);
+
+        // The names of the parameters are lowercased, and quoted values are unescaped
+        Assert.Equal(["rel", "title", "hreflang"], link.Parameters.Select(parameter => parameter.Key));
+        Assert.Equal("Chapter \"2\"", link.GetParameterValue("Title"));
+
+        // Rel holds the whole value; GetLink matches each of its space-separated relation types
+        Assert.Equal("next last", link.Rel);
+        Assert.Same(link, links.GetLink("last"));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_ResolveRelativeUrl()
+    {
+        #region LinkHeaderValue_ResolveRelativeUrl
+        using var request = new HttpRequestMessage(HttpMethod.Get, "https://api.example.com/items?page=1");
+        using var response = new HttpResponseMessage { RequestMessage = request };
+        response.Headers.Add("Link", "</items?page=2>; rel=next");
+
+        // Url is the target as written in the header. Resolve a relative target against the request URI.
+        var next = response.Headers.EnumerateLinkHeaders().GetLinkUrl("next");
+        Assert.NotNull(next);
+        var nextUri = new Uri(response.RequestMessage.RequestUri!, next);
+        Assert.Equal(new Uri("https://api.example.com/items?page=2"), nextUri);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_LenientParsing()
+    {
+        #region LinkHeaderValue_LenientParsing
+        // An element that is not a link-value is skipped, and the following ones are still read
+        var links = LinkHeaderValue.Parse("not-a-link, </a>; rel=first, , </b>; rel=second");
+        Assert.Equal(["/a", "/b"], links.Select(link => link.Url));
+
+        // A header without a link-value yields no link
+        Assert.Empty(LinkHeaderValue.Parse("rel=next"));
+        #endregion
+    }
+
+    [Fact]
     public void LinkHeaderValue_Parse()
     {
         var result = LinkHeaderValue.Parse("<sample>; rel=abc, <plop>; rel\t=\"d\\\"e;f,\"; title = test title; abc");

@@ -1,0 +1,2 @@
+title: Http
+description: Add HTTP caching, HSTS, SSRF protection and record-and-replay to HttpClient, and parse Link headers and htpasswd files.

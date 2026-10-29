@@ -6,6 +6,28 @@ namespace Meziantou.Framework.Http.Caching.Tests;
 public sealed class UnsafeMethodInvalidationTests
 {
     [Fact]
+    public async Task Documentation_Invalidation()
+    {
+        await using var context = new HttpTestContext();
+        context.AddResponse(HttpStatusCode.OK, "before", ("Cache-Control", "max-age=3600"));
+        context.AddResponse(HttpStatusCode.NoContent);
+        context.AddResponse(HttpStatusCode.OK, "after", ("Cache-Control", "max-age=3600"));
+        var httpClient = context.HttpClient;
+
+        #region HttpCaching_Invalidation
+        // The server answers with Cache-Control: max-age=3600
+        Assert.Equal("before", await httpClient.GetStringAsync("https://example.com/items/1"));
+
+        // A successful DELETE removes the stored responses of https://example.com/items/1
+        using var deleteResponse = await httpClient.DeleteAsync("https://example.com/items/1");
+        Assert.Equal(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+
+        // The next GET is sent to the server
+        Assert.Equal("after", await httpClient.GetStringAsync("https://example.com/items/1"));
+        #endregion
+    }
+
+    [Fact]
     public async Task WhenPostSucceedsThenInvalidatesTargetUri()
     {
         await using var context = new HttpTestContext();

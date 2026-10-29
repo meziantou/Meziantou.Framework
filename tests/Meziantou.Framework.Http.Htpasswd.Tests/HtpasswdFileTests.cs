@@ -31,6 +31,49 @@ public sealed class HtpasswdFileTests
     }
 
     [Fact]
+    public void Documentation_FileFormat()
+    {
+        #region HtpasswdFile_FileFormat
+        var htpasswd = HtpasswdFile.Parse("""
+            # One entry per line: <username>:<hash>
+            alice:{SHA}W6ph5Mm5Pz8GgiULbPgzG37mj9g=
+
+            a line without a separator
+            alice:{SHA}5en6G6MezRroT3XKqkdPOmY/BfQ=
+            """);
+
+        // Comments, blank lines and malformed lines are skipped, and the first entry of a user wins
+        Assert.Equal(1, htpasswd.Count);
+        Assert.Equal(["alice"], htpasswd.Usernames);
+        Assert.True(htpasswd.VerifyCredentials("alice", "password"));
+
+        // User names are case-sensitive, and an unknown user is rejected like a wrong password
+        Assert.False(htpasswd.VerifyCredentials("Alice", "password"));
+        Assert.False(htpasswd.VerifyCredentials("bob", "password"));
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_LoadFile()
+    {
+        var path = Path.GetTempFileName();
+        try
+        {
+            await File.WriteAllTextAsync(path, "alice:$2y$10$bXuOalpYagnenorrJU65m.z5VzYstr4rBZl2WUHNwhGjItODNoDrG", XunitCancellationToken);
+            var cancellationToken = XunitCancellationToken;
+
+            #region HtpasswdFile_LoadAsync
+            var htpasswd = await HtpasswdFile.LoadAsync(path, cancellationToken);
+            Assert.True(htpasswd.VerifyCredentials("alice", "password"));
+            #endregion
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
     public void Parse_String_ShouldPopulateEntries()
     {
         const string Content = """

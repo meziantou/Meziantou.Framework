@@ -1,0 +1,2 @@
+title: Caching
+description: Cache the responses of an HttpClient following the HTTP caching rules, in memory, in SQLite or in Redis.

@@ -802,6 +802,27 @@ public sealed class HstsClientHandlerTests
     }
 
     [Fact]
+    public async Task Documentation_LearnFromHeader()
+    {
+        // The server answers every request with this header
+        var innerHandler = new MockHttpMessageHandler("max-age=31536000; includeSubDomains");
+        var cancellationToken = XunitCancellationToken;
+
+        #region HstsClientHandler_LearnFromHeader
+        var policies = new HstsDomainPolicyCollection(includePreloadDomains: false);
+        using var client = new HttpClient(new HstsClientHandler(innerHandler, policies), disposeHandler: true);
+
+        // The HTTPS response carries "Strict-Transport-Security: max-age=31536000; includeSubDomains"
+        using var response1 = await client.GetAsync(new Uri("https://example.com/"), cancellationToken);
+        Assert.True(policies.MustUpgradeRequest("www.example.com"));
+
+        // From now on, the requests to the host and its subdomains are sent over HTTPS
+        using var response2 = await client.GetAsync(new Uri("http://www.example.com/page"), cancellationToken);
+        Assert.Equal(new Uri("https://www.example.com/page"), response2.RequestMessage?.RequestUri);
+        #endregion
+    }
+
+    [Fact]
     public async Task CanBeRegisteredWithAddHttpMessageHandler()
     {
         var hsts = new HstsDomainPolicyCollection(includePreloadDomains: false);

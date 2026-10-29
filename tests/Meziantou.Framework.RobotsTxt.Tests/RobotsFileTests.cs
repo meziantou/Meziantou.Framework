@@ -73,6 +73,211 @@ public sealed class RobotsFileTests
         #endregion
     }
 
+#pragma warning disable xUnit1051 // The documentation examples do not pass the test cancellation token
+    [Fact]
+    public async Task Documentation_ParseStream()
+    {
+        #region RobotsFile_ParseStream
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes("""
+            User-agent: *
+            Disallow: /admin/
+            """));
+
+        var robots = await RobotsFile.ParseAsync(stream);
+
+        Assert.False(robots.IsAllowed("MyCrawler", "/admin/users"));
+        #endregion
+    }
+#pragma warning restore xUnit1051
+
+    [Fact]
+    public void Documentation_UserAgentGroups()
+    {
+        #region RobotsFile_UserAgentGroups
+        var robots = RobotsFile.Parse("""
+            User-agent: *
+            Disallow: /
+
+            User-agent: MyCrawler
+            User-agent: OtherCrawler
+            Disallow: /private/
+            Crawl-delay: 2
+            """);
+
+        // The exact match wins over the catch-all group, case-insensitively
+        Assert.True(robots.IsAllowed("mycrawler", "/products"));
+        Assert.False(robots.IsAllowed("mycrawler", "/private/data"));
+        Assert.Equal(TimeSpan.FromSeconds(2), robots.GetCrawlDelay("OtherCrawler"));
+
+        // Any other agent gets the catch-all group
+        Assert.False(robots.IsAllowed("SomeBot", "/products"));
+        Assert.Null(robots.GetCrawlDelay("SomeBot"));
+
+        // The user agent is a product token, not a full User-Agent header value
+        Assert.False(robots.IsAllowed("MyCrawler/2.1 (+https://example.com/bot)", "/products"));
+
+        var group = robots.GetGroup("MyCrawler");
+        Assert.NotNull(group);
+        Assert.Equal(["MyCrawler", "OtherCrawler"], group.UserAgents);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_NoMatchingGroup()
+    {
+        #region RobotsFile_NoMatchingGroup
+        var robots = RobotsFile.Parse("""
+            User-agent: OtherCrawler
+            Disallow: /
+            """);
+
+        // No group applies to MyCrawler: everything is allowed
+        Assert.Null(robots.GetGroup("MyCrawler"));
+        Assert.True(robots.IsAllowed("MyCrawler", "/anything"));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_MergedGroups()
+    {
+        #region RobotsFile_MergedGroups
+        var robots = RobotsFile.Parse("""
+            User-agent: MyCrawler
+            Disallow: /a/
+
+            User-agent: MyCrawler
+            Disallow: /b/
+            """);
+
+        // Both groups name MyCrawler: their rules are merged
+        Assert.HasCount(2, robots.Groups);
+        var group = robots.GetGroup("MyCrawler");
+        Assert.NotNull(group);
+        Assert.HasCount(2, group.Rules);
+        Assert.False(robots.IsAllowed("MyCrawler", "/a/page"));
+        Assert.False(robots.IsAllowed("MyCrawler", "/b/page"));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_RulePrecedence()
+    {
+        #region RobotsGroup_RulePrecedence
+        var robots = RobotsFile.Parse("""
+            User-agent: *
+            Disallow: /docs/
+            Allow: /docs/public/
+            Allow: /shop
+            Disallow: /shop
+            """);
+
+        // The longest matching rule wins
+        Assert.False(robots.IsAllowed("MyCrawler", "/docs/internal"));
+        Assert.True(robots.IsAllowed("MyCrawler", "/docs/public/guide"));
+
+        // Allow wins over a Disallow of the same length
+        Assert.True(robots.IsAllowed("MyCrawler", "/shop/cart"));
+
+        // A path that no rule matches is allowed
+        Assert.True(robots.IsAllowed("MyCrawler", "/about"));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_EmptyDisallow()
+    {
+        #region RobotsGroup_EmptyDisallow
+        var robots = RobotsFile.Parse("""
+            User-agent: *
+            Disallow:
+            """);
+
+        // An empty Disallow allows everything
+        Assert.True(robots.IsAllowed("MyCrawler", "/"));
+        Assert.True(robots.IsAllowed("MyCrawler", "/any/page"));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_PathMatching()
+    {
+        #region RobotsFile_PathMatching
+        var robots = RobotsFile.Parse("""
+            User-agent: *
+            Disallow: /search
+            Disallow: /*?sessionid=
+            """);
+
+        // A rule is a prefix of the path, compared case-sensitively
+        Assert.False(robots.IsAllowed("MyCrawler", "/search"));
+        Assert.False(robots.IsAllowed("MyCrawler", "/search-results"));
+        Assert.True(robots.IsAllowed("MyCrawler", "/Search"));
+
+        // The query string is part of what the rules match
+        Assert.False(robots.IsAllowed("MyCrawler", "/products?sessionid=42"));
+        Assert.False(robots.IsAllowed("MyCrawler", new Uri("https://example.com/products?sessionid=42")));
+        Assert.True(robots.IsAllowed("MyCrawler", new Uri("https://example.com/products")));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_InspectRules()
+    {
+        #region RobotsFile_InspectRules
+        var robots = RobotsFile.Parse("""
+            User-agent: *
+            Disallow: /private/
+            Allow: /private/public/
+            """);
+
+        var rules = robots.Groups[0].Rules.Select(rule => $"{rule.Kind}: {rule.Value}");
+        Assert.Equal(["Disallow: /private/", "Allow: /private/public/"], rules);
+
+        var rule = robots.Groups[0].Rules[0];
+        Assert.True(rule.Matches("/private/data"));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_GroupBoundaries()
+    {
+        #region RobotsFile_GroupBoundaries
+        var robots = RobotsFile.Parse("""
+            Disallow: /ignored/
+
+            User-agent: MyCrawler
+            # A comment line does not end the group
+            Disallow: /private/
+            User-agent: OtherCrawler
+            Disallow: /tmp/
+            """);
+
+        // The rule before the first User-agent line belongs to no group
+        Assert.True(robots.IsAllowed("MyCrawler", "/ignored/page"));
+
+        // A User-agent line after rules starts a new group
+        Assert.HasCount(2, robots.Groups);
+        Assert.False(robots.IsAllowed("MyCrawler", "/private/page"));
+        Assert.True(robots.IsAllowed("MyCrawler", "/tmp/page"));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_InvalidCrawlDelay()
+    {
+        #region RobotsFile_InvalidCrawlDelay
+        var robots = RobotsFile.Parse("""
+            User-agent: *
+            Crawl-delay: soon
+            """);
+
+        Assert.Null(robots.GetCrawlDelay("MyCrawler"));
+        var error = Assert.Single(robots.ParseErrors);
+        Assert.Equal(RobotsParseErrorKind.InvalidCrawlDelay, error.Kind);
+        Assert.Equal(2, error.LineNumber);
+        #endregion
+    }
+
     // -------------------------------------------------------------------------
     // Parsing
     // -------------------------------------------------------------------------

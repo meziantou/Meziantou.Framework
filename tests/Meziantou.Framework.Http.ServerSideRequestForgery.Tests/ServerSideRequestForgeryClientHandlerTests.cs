@@ -19,6 +19,66 @@ public sealed class ServerSideRequestForgeryClientHandlerTests
         Assert.IsType<ServerSideRequestForgeryException>(exception.InnerException);
         #endregion
     }
+
+    [Fact]
+    public async Task Documentation_AllowInternalHost()
+    {
+        using var server = new LoopbackHttpServer();
+        var port = server.Port;
+
+        #region ServerSideRequestForgery_AllowInternalHost
+        var options = new ServerSideRequestForgeryOptions();
+
+        // Allow one internal service, reached over plain HTTP. The rest of 127.0.0.0/8 stays blocked.
+        options.SafeSchemes.Add("http");
+        options.SafeIpNetworks.Add(IPNetwork.Parse("127.0.0.1/32"));
+
+        var handler = new ServerSideRequestForgeryClientHandler(new SocketsHttpHandler { UseProxy = false }, options);
+        using var httpClient = new HttpClient(handler, disposeHandler: true);
+
+        var text = await httpClient.GetStringAsync(new Uri($"http://127.0.0.1:{port}/"));
+        Assert.Equal("ok", text);
+        #endregion
+
+        Assert.Equal(1, server.AcceptedConnectionCount);
+    }
+
+    [Fact]
+    public async Task Documentation_RejectHttp3()
+    {
+        #region ServerSideRequestForgery_RejectHttp3
+        var options = new ServerSideRequestForgeryOptions();
+        var handler = new ServerSideRequestForgeryClientHandler(new SocketsHttpHandler { UseProxy = false }, options);
+        using var httpClient = new HttpClient(handler, disposeHandler: true);
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, new Uri("https://example.com/"))
+        {
+            Version = HttpVersion.Version30,
+        };
+
+        // Rejected before the request reaches SocketsHttpHandler, so the exception is not wrapped
+        await Assert.ThrowsAsync<ServerSideRequestForgeryException>(() => httpClient.SendAsync(request));
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_RejectProxy()
+    {
+        #region ServerSideRequestForgery_RejectProxy
+        var options = new ServerSideRequestForgeryOptions();
+        var innerHandler = new SocketsHttpHandler
+        {
+            UseProxy = true,
+            Proxy = new WebProxy("http://127.0.0.1:8080", BypassOnLocal: false),
+        };
+        var handler = new ServerSideRequestForgeryClientHandler(innerHandler, options);
+        using var httpClient = new HttpClient(handler, disposeHandler: true);
+
+        // The proxy would choose the destination: the connection is refused instead of being validated against the proxy address
+        var exception = await Assert.ThrowsAsync<HttpRequestException>(() => httpClient.GetAsync(new Uri("https://example.invalid/")));
+        Assert.IsType<ServerSideRequestForgeryException>(exception.InnerException);
+        #endregion
+    }
 #pragma warning restore CA2000
 
     [Theory]

@@ -43,6 +43,9 @@ WebAssembly.
 | `InputDateTime<TValue>`, `InputEnumSelect<TEnum>`, `InputGuid<TValue>`, `InputUrl<TValue>` | Edit dates with a time, enums, GUIDs and URLs in an `EditForm` | [Input components](06-InputComponents.md) |
 | `AnchorNavigation` | Scroll to the element named by the `#fragment` of the URL | [Anchor navigation](10-AnchorNavigation.md) |
 
+The `LogViewer` component, which displays log entries, comes in its own package,
+`Meziantou.AspNetCore.Components.LogViewer`; see [Log viewer](11-LogViewer/01-Overview.md).
+
 ## Services
 
 | Service | Registration | Use it to | Page |

@@ -11,11 +11,11 @@ dotnet add package Meziantou.AspNetCore.Components.LogViewer
 ```
 
 The types are in the `Meziantou.AspNetCore.Components` namespace, like the other
-[Blazor components](../07-BlazorComponents/01-Overview.md).
+[Blazor components](../01-Overview.md).
 
 ## Display entries
 
-<!-- ref:../../../samples/BlazorAppSample/ReadmeExamples/LogViewerBasicExample.razor;format=md-fenced-code-block -->
+<!-- ref:../../../../samples/BlazorAppSample/ReadmeExamples/LogViewerBasicExample.razor;format=md-fenced-code-block -->
 ```razor
 @page "/logs"
 @using Meziantou.AspNetCore.Components

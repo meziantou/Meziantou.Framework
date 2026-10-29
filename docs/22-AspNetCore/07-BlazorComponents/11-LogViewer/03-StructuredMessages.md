@@ -6,7 +6,7 @@ description: Log objects instead of strings, display them as a table or as JSON,
 `Message` accepts any object. A message that is not a `string` is rendered as a structured payload, which the user can
 view as a table or as JSON:
 
-<!-- ref:../../../samples/BlazorAppSample/ReadmeExamples/LogViewerStructuredMessageExample.razor;format=md-fenced-code-block -->
+<!-- ref:../../../../samples/BlazorAppSample/ReadmeExamples/LogViewerStructuredMessageExample.razor;format=md-fenced-code-block -->
 ```razor
 <LogViewer Entries="@logEntries" />
 
@@ -55,7 +55,7 @@ failing the serialization.
 
 The details are rendered by the `LogEntryDetails` component, which you can use without a log viewer:
 
-<!-- ref:../../../samples/BlazorAppSample/Documentation/LogEntryDetailsExample.razor;format=md-fenced-code-block -->
+<!-- ref:../../../../samples/BlazorAppSample/Documentation/LogEntryDetailsExample.razor;format=md-fenced-code-block -->
 ```razor
 <LogEntryDetails Data="@request" Format="LogDetailsDisplayFormat.Json" CanChangeDisplayFormat="false" MaxDepth="3" />
 

@@ -17,8 +17,8 @@ Pages, and Blazor components. Each package is independent: install only the ones
 | `Meziantou.AspNetCore.Authentication.HttpBasic` | An authentication handler for HTTP Basic, with your own credential check or with ASP.NET Core Identity | [HTTP Basic authentication](05-HttpBasicAuthentication/01-Overview.md) |
 | `Meziantou.AspNetCore.Mvc` | Tag helpers for MVC and Razor Pages: conditional rendering, inlined CSS, scripts and images, deferred content, `datetime` attributes | [MVC tag helpers](06-MvcTagHelpers.md) |
 | `Meziantou.AspNetCore.Components` | Blazor components (repeater, data grid, infinite scrolling, generated forms, inputs) and browser services (clipboard, query string, time zone) | [Blazor components](07-BlazorComponents/01-Overview.md) |
-| `Meziantou.AspNetCore.Components.LogViewer` | A Blazor component that displays log entries with highlighting, ANSI colors, structured payloads and nested entries | [Log viewer](08-LogViewer/01-Overview.md) |
-| `Meziantou.AspNetCore.Components.WebAssembly` | A message handler that sets the browser fetch options (cache, credentials, mode) of every `HttpClient` request in Blazor WebAssembly | [Browser fetch options](09-BrowserFetchOptions.md) |
+| `Meziantou.AspNetCore.Components.LogViewer` | A Blazor component that displays log entries with highlighting, ANSI colors, structured payloads and nested entries | [Log viewer](07-BlazorComponents/11-LogViewer/01-Overview.md) |
+| `Meziantou.AspNetCore.Components.WebAssembly` | A message handler that sets the browser fetch options (cache, credentials, mode) of every `HttpClient` request in Blazor WebAssembly | [Browser fetch options](08-BrowserFetchOptions.md) |
 
 ## Which package do I need?
 

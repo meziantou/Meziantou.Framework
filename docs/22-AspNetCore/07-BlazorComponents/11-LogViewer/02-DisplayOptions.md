@@ -3,7 +3,7 @@ title: Display options
 description: Show absolute or relative timestamps, choose their formats, and hide line numbers in the log viewer.
 ---
 
-<!-- ref:../../../samples/BlazorAppSample/Documentation/LogViewerDisplayOptionsExample.razor;format=md-fenced-code-block -->
+<!-- ref:../../../../samples/BlazorAppSample/Documentation/LogViewerDisplayOptionsExample.razor;format=md-fenced-code-block -->
 ```razor
 <LogViewer Entries="@entries"
            TimestampDisplayFormat="TimestampDisplayFormat.RelativeTimeStartingAtZero"

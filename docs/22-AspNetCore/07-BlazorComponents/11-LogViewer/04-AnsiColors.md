@@ -6,7 +6,7 @@ description: Display the colors and styles of console output, written as ANSI es
 Console tools color their output with ANSI escape sequences. The log viewer parses the SGR sequences of string
 messages and renders their colors and styles, instead of showing the escape characters:
 
-<!-- ref:../../../tests/Meziantou.AspNetCore.Components.LogViewer.Tests/LogViewerComponentTests.cs;region=LogEntry_AnsiMessage;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../../../tests/Meziantou.AspNetCore.Components.LogViewer.Tests/LogViewerComponentTests.cs;region=LogEntry_AnsiMessage;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var entry = new LogEntry
 {

@@ -6,7 +6,7 @@ description: Group log entries in a tree, such as the steps of a request, and ch
 An entry can contain other entries in `Children`, to any depth. An entry with children gets a button that expands or
 collapses them:
 
-<!-- ref:../../../samples/BlazorAppSample/ReadmeExamples/LogViewerNestedLogsExample.razor;format=md-fenced-code-block -->
+<!-- ref:../../../../samples/BlazorAppSample/ReadmeExamples/LogViewerNestedLogsExample.razor;format=md-fenced-code-block -->
 ```razor
 <LogViewer Entries="@logEntries" />
 

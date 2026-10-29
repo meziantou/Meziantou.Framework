@@ -1,0 +1,2 @@
+title: JSONPath
+description: Query System.Text.Json documents and custom object models with standard JSONPath (RFC 9535).

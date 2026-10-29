@@ -825,4 +825,142 @@ public class HtmlSanitizerTests
 
         Assert.Equal(expectedResult, sanitizer.SanitizeHtmlFragment(html));
     }
+
+    [Fact]
+    public void DocumentationExample_SanitizeComment()
+    {
+        #region HtmlSanitizer_SanitizeComment
+        var sanitizer = new HtmlSanitizer();
+
+        var comment = """<p onclick="steal()">Nice <b>post</b>! <a href="javascript:alert(1)">Click</a> <img src="cat.png" onerror="alert(1)"><script>alert(2)</script></p>""";
+        var safeHtml = sanitizer.SanitizeHtmlFragment(comment);
+
+        Assert.Equal("""<p>Nice <b>post</b>! <a href="">Click</a> <img src="cat.png"></p>""", safeHtml);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_DefaultAttributes()
+    {
+        #region HtmlSanitizer_DefaultAttributes
+        var sanitizer = new HtmlSanitizer();
+
+        var result = sanitizer.SanitizeHtmlFragment("<p id='intro' class='note' title='Tip' aria-label='Tip' onclick='alert(1)' style='color:red'>x</p>");
+        Assert.Equal("""<p class="note" title="Tip" aria-label="Tip">x</p>""", result);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_ForeignContent()
+    {
+        #region HtmlSanitizer_ForeignContent
+        var sanitizer = new HtmlSanitizer();
+        sanitizer.ValidElements.Add("svg");
+
+        // SVG and MathML elements are always unwrapped: only their text is kept
+        var result = sanitizer.SanitizeHtmlFragment("<p><svg onload='alert(1)'><text>Hello</text></svg></p>");
+        Assert.Equal("<p>Hello</p>", result);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_AllowElements()
+    {
+        #region HtmlSanitizer_AllowElements
+        var sanitizer = new HtmlSanitizer();
+        var html = "<details open><summary>More</summary><p>Text</p></details>";
+
+        // details and summary are not allowed by default, so they are unwrapped
+        Assert.Equal("More<p>Text</p>", sanitizer.SanitizeHtmlFragment(html));
+
+        sanitizer.ValidElements.Add("details");
+        sanitizer.ValidElements.Add("summary");
+        Assert.Equal("""<details open=""><summary>More</summary><p>Text</p></details>""", sanitizer.SanitizeHtmlFragment(html));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_RestrictElements()
+    {
+        #region HtmlSanitizer_RestrictElements
+        // Only keep inline formatting and links
+        var sanitizer = new HtmlSanitizer();
+        sanitizer.ValidElements.Clear();
+        sanitizer.ValidElements.UnionWith(["a", "b", "br", "code", "em", "i", "strong"]);
+
+        var result = sanitizer.SanitizeHtmlFragment("<h1>Title</h1><p>Some <b>bold</b> text<img src='https://example.com/a.png'></p>");
+        Assert.Equal("TitleSome <b>bold</b> text", result);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_StyleIsNotSanitized()
+    {
+        #region HtmlSanitizer_StyleIsNotSanitized
+        var sanitizer = new HtmlSanitizer();
+        sanitizer.ValidAttributes.Add("style");
+
+        // The CSS is kept as is, including the URL that it loads
+        var result = sanitizer.SanitizeHtmlFragment("<p style='background:url(https://tracker.example/pixel)'>x</p>");
+        Assert.Equal("""<p style="background:url(https://tracker.example/pixel)">x</p>""", result);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_UrlKinds()
+    {
+        #region HtmlSanitizer_UrlKinds
+        var sanitizer = new HtmlSanitizer();
+
+        // Relative URLs and the allowed schemes are kept
+        Assert.Equal("""<a href="/account/settings">x</a>""", sanitizer.SanitizeHtmlFragment("<a href='/account/settings'>x</a>"));
+        Assert.Equal("""<a href="mailto:user@example.com">x</a>""", sanitizer.SanitizeHtmlFragment("<a href='mailto:user@example.com'>x</a>"));
+
+        // data: URLs are kept only for base64-encoded images, videos and audio
+        Assert.Equal("""<img src="data:image/png;base64,iVBORw0KGgo=">""", sanitizer.SanitizeHtmlFragment("<img src='data:image/png;base64,iVBORw0KGgo='>"));
+        Assert.Equal("""<img src="">""", sanitizer.SanitizeHtmlFragment("<img src='data:image/svg+xml;base64,PHN2Zz4='>"));
+
+        // Any other scheme empties the attribute, and the element is kept
+        Assert.Equal("""<a href="">x</a>""", sanitizer.SanitizeHtmlFragment("<a href='vbscript:msgbox(1)'>x</a>"));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_EncodedUrls()
+    {
+        #region HtmlSanitizer_EncodedUrls
+        var sanitizer = new HtmlSanitizer();
+
+        // The value is validated once decoded, as the browser reads it
+        Assert.Equal("""<a href="">x</a>""", sanitizer.SanitizeHtmlFragment("<a href='java&#115;cript:alert(1)'>x</a>"));
+        Assert.Equal("""<a href="https://example.com/?a=1&amp;b=2">x</a>""", sanitizer.SanitizeHtmlFragment("<a href='https://example.com/?a=1&amp;b=2'>x</a>"));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_Idempotent()
+    {
+        #region HtmlSanitizer_Idempotent
+        var sanitizer = new HtmlSanitizer();
+
+        // object is not allowed: unwrapping it would put a link in a link, so the inner link is unwrapped too
+        var once = sanitizer.SanitizeHtmlFragment("<a href='https://a.example'>x<object><a href='https://b.example'>y</a></object></a>");
+        Assert.Equal("""<a href="https://a.example">xy</a>""", once);
+
+        // The output is read back as the same elements, so sanitizing it again changes nothing
+        Assert.Equal(once, sanitizer.SanitizeHtmlFragment(once));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_TemplateExpressions()
+    {
+        #region HtmlSanitizer_TemplateExpressions
+        var sanitizer = new HtmlSanitizer();
+
+        // Text is kept as text: a client-side framework that compiles this markup as a template would evaluate it
+        var result = sanitizer.SanitizeHtmlFragment("<p>{{constructor.constructor('alert(1)')()}}</p>");
+        Assert.Equal("<p>{{constructor.constructor('alert(1)')()}}</p>", result);
+        #endregion
+    }
 }

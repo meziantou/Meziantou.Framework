@@ -67,6 +67,26 @@ public sealed class MarkdownRoundTrippingTests
         HtmlNormalizer.AssertEquivalent(testCase.Html, roundTrippedHtml);
     }
 
+    [Fact]
+    public void DocumentationExample_RoundTrip()
+    {
+        #region HtmlToMarkdown_RoundTrip
+        var markdown = HtmlToMarkdown.Convert("<table><tr><th>Name</th><th>Price</th></tr><tr><td>Apple</td><td><del>1.50</del> 1.20</td></tr></table>");
+        Assert.Equal("""
+            | Name | Price |
+            | --- | --- |
+            | Apple | ~~1.50~~ 1.20 |
+            """, markdown);
+
+        // Pipe tables and strikethrough are extensions of CommonMark: enable them to render the Markdown
+        var pipeline = new MarkdownPipelineBuilder()
+            .UseAdvancedExtensions()
+            .Build();
+        var html = MarkdownConverter.ToHtml(markdown, pipeline);
+        Assert.Contains("<td><del>1.50</del> 1.20</td>", html, StringComparison.Ordinal);
+        #endregion
+    }
+
     private static bool ShouldSkip(MarkdownSpecTestCase testCase)
     {
         // CommonMark.md contains the full CommonMark spec. We test those separately

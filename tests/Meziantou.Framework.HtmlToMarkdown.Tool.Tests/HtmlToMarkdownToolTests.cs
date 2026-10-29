@@ -2,6 +2,22 @@ namespace Meziantou.Framework.HtmlToMarkdownTool.Tests;
 
 public sealed class HtmlToMarkdownToolTests(ITestOutputHelper testOutputHelper)
 {
+    // The example of the documentation: converting Examples/page.html must produce Examples/page.md
+    [Fact]
+    public async Task DocumentationExample()
+    {
+        var examplesPath = FullPath.FromPath(AppContext.BaseDirectory) / "Examples";
+        await using var temp = TemporaryDirectory.Create();
+        var outputPath = temp.GetFullPath("page.md");
+
+        var console = new ConsoleHelper(testOutputHelper);
+        var result = await Program.MainImpl(["--input", (examplesPath / "page.html").ToString(), "--output", outputPath.ToString()], console.ConfigureConsole);
+
+        Assert.Equal(0, result);
+        Assert.Equal(string.Empty, console.Error);
+        Assert.Equal(await File.ReadAllTextAsync(examplesPath / "page.md", XunitCancellationToken), await File.ReadAllTextAsync(outputPath, XunitCancellationToken));
+    }
+
     [Fact]
     public async Task ConvertStdinToStdout()
     {

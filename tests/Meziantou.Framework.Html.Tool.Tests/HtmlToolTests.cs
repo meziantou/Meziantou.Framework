@@ -8,6 +8,29 @@ public class HtmlToolTests(ITestOutputHelper testOutputHelper)
         Assert.Equal(expectedContent, content);
     }
 
+    // The examples of the documentation: the tool updates Examples/<name>/index.html, which must match index.expected.html
+    [Theory]
+    [InlineData("ReplaceValue", new[] { "replace-value", "--xpath", "//meta[@name='version']/@content | //span[@id='version']", "--new-value", "1.2.0" })]
+    [InlineData("AppendVersion", new[] { "append-version" })]
+    [InlineData("InlineResources", new[] { "inline-resources", "--resource-patterns", "*.css" })]
+    public async Task DocumentationExample(string name, string[] args)
+    {
+        var examplePath = FullPath.FromPath(AppContext.BaseDirectory) / "Examples" / name;
+        await using var temp = TemporaryDirectory.Create();
+        foreach (var file in Directory.EnumerateFiles(examplePath, "*", SearchOption.AllDirectories))
+        {
+            var destination = temp.FullPath / FullPath.FromPath(file).MakePathRelativeTo(examplePath);
+            destination.CreateParentDirectory();
+            File.Copy(file, destination);
+        }
+
+        var console = new ConsoleHelper(testOutputHelper);
+        var result = await Program.MainImpl([.. args, "--single-file", temp.GetFullPath("index.html")], console.ConfigureConsole);
+
+        Assert.Equal(0, result);
+        await ContentEquals(temp.GetFullPath("index.html"), await File.ReadAllTextAsync(examplePath / "index.expected.html", XunitCancellationToken));
+    }
+
     [Fact]
     public async Task AppendVersion_SingleFile()
     {

@@ -11,7 +11,7 @@ namespace Meziantou.Framework.Imaging.Formats;
 /// </para>
 /// <para>
 /// JPEG stores exactly one frame: animated images and images with a poster frame are rejected with an
-/// <see cref="UnsupportedImageFeatureException"/>; use <see cref="Image.CloneFrame(int)"/> to export one frame explicitly.
+/// <see cref="UnsupportedImageFeatureException"/>; use <see cref="ImageFrame.Save(string, ImageEncoder?)"/> to save one frame explicitly.
 /// </para>
 /// <para>
 /// Losses beyond the inherent lossy compression require explicit settings: non-opaque pixels require

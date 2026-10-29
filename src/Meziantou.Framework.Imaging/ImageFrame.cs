@@ -1,4 +1,5 @@
 using Meziantou.Framework.Imaging.Drawing;
+using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.Metadata;
 
@@ -175,6 +176,91 @@ public abstract class ImageFrame
         action(new DrawingCanvas(session), state);
     }
 
+    /// <summary>
+    /// Encodes this frame to a file as a still image, without copying its pixels. The file is written to a temporary file in
+    /// the same directory and published only after encoding succeeds; on failure an existing file at <paramref name="path"/>
+    /// is left unchanged.
+    /// </summary>
+    /// <remarks>
+    /// The output is the one of <c>image.CloneFrame(index).Save(path, encoder)</c> (or of <see cref="Image.ClonePosterFrame"/>
+    /// for the poster frame): the pixels and the metadata of this frame (duration, cursor hotspot) with the metadata of its
+    /// image, and no animation settings and no poster. The rules that prevent a silent loss apply to the frame as they apply
+    /// to that image: for example, alpha needs <see cref="JpegEncoder.BackgroundColor"/> to be written to JPEG.
+    /// </remarks>
+    /// <param name="path">The destination path.</param>
+    /// <param name="encoder">
+    /// The encoder, or <see langword="null"/> to select it from the file extension, as <see cref="Image.Save(string, ImageEncoder?)"/> does.
+    /// </param>
+    /// <exception cref="ArgumentNullException"><paramref name="path"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="path"/> is empty, or <paramref name="encoder"/> is <see langword="null"/> and the extension is not recognized.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The frame cannot be encoded without a loss that the encoder settings do not allow (alpha, precision, metadata, canvas size).</exception>
+    /// <exception cref="InvalidOperationException">A pixel lease is active on this frame.</exception>
+    /// <exception cref="IOException">An I/O error occurred.</exception>
+    /// <exception cref="ObjectDisposedException">The frame is no longer attached to a live image.</exception>
+    public void Save(string path, ImageEncoder? encoder = null)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(path);
+        EnsureNotLeased();
+        encoder ??= ImageEncoder.FromPath(path);
+        OwnerImage.SaveFrame(this, path, encoder);
+    }
+
+    /// <summary>Encodes this frame to a stream as a still image, without copying its pixels, starting at the current position of the stream. The stream is left open.</summary>
+    /// <remarks>The output is the one of <see cref="Save(string, ImageEncoder?)"/>.</remarks>
+    /// <param name="stream">The writable destination stream.</param>
+    /// <param name="encoder">The encoder. Required, as a stream has no file name to infer the format from.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="stream"/> or <paramref name="encoder"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="stream"/> is not writable, or not seekable and the output needs to seek (TIFF, ANI, compressed OpenEXR).</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The frame cannot be encoded without a loss that the encoder settings do not allow.</exception>
+    /// <exception cref="InvalidOperationException">A pixel lease is active on this frame.</exception>
+    /// <exception cref="IOException">An I/O error occurred.</exception>
+    /// <exception cref="ObjectDisposedException">The frame is no longer attached to a live image.</exception>
+    public void Save(Stream stream, ImageEncoder encoder)
+    {
+        Image.ValidateWritableStream(stream);
+        ArgumentNullException.ThrowIfNull(encoder);
+        EnsureNotLeased();
+        OwnerImage.SaveFrame(this, stream, encoder);
+    }
+
+    /// <summary>Asynchronously encodes this frame to a file as a still image, with the output and the atomic-publication guarantees of <see cref="Save(string, ImageEncoder?)"/>.</summary>
+    /// <param name="path">The destination path.</param>
+    /// <param name="encoder">The encoder, or <see langword="null"/> to select it from the file extension.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests. On cancellation, no file is published.</param>
+    /// <returns>A task that completes when the file has been published.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="path"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="path"/> is empty, or <paramref name="encoder"/> is <see langword="null"/> and the extension is not recognized.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The frame cannot be encoded without a loss that the encoder settings do not allow.</exception>
+    /// <exception cref="InvalidOperationException">A pixel lease is active on this frame.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    /// <exception cref="ObjectDisposedException">The frame is no longer attached to a live image.</exception>
+    public Task SaveAsync(string path, ImageEncoder? encoder = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(path);
+        EnsureNotLeased();
+        encoder ??= ImageEncoder.FromPath(path);
+        return OwnerImage.SaveFrameAsync(this, path, encoder, cancellationToken);
+    }
+
+    /// <summary>Asynchronously encodes this frame to a stream as a still image, starting at the current position of the stream. The stream is left open.</summary>
+    /// <param name="stream">The writable destination stream.</param>
+    /// <param name="encoder">The encoder.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <returns>A task that completes when the frame has been written.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="stream"/> or <paramref name="encoder"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="stream"/> is not writable, or not seekable and the output needs to seek.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The frame cannot be encoded without a loss that the encoder settings do not allow.</exception>
+    /// <exception cref="InvalidOperationException">A pixel lease is active on this frame.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    /// <exception cref="ObjectDisposedException">The frame is no longer attached to a live image.</exception>
+    public Task SaveAsync(Stream stream, ImageEncoder encoder, CancellationToken cancellationToken = default)
+    {
+        Image.ValidateWritableStream(stream);
+        ArgumentNullException.ThrowIfNull(encoder);
+        EnsureNotLeased();
+        return OwnerImage.SaveFrameAsync(this, stream, encoder, cancellationToken);
+    }
+
     /// <summary>Converts a paint color to the pixel type of the frame (see <see cref="DrawingKernels.ConvertColor{TPixel}"/>).</summary>
     internal abstract DrawingColor ConvertDrawingColor(Rgba64 color);
 
@@ -271,6 +357,14 @@ public abstract class ImageFrame
             ThrowDetached();
 
         return storage;
+    }
+
+    /// <summary>Validates that the pixels of an attached frame can be read now, before a save creates any output.</summary>
+    /// <exception cref="ObjectDisposedException">The frame is no longer attached to a live image.</exception>
+    /// <exception cref="InvalidOperationException">A pixel lease is active on this frame.</exception>
+    private void EnsureNotLeased()
+    {
+        using var lease = GetStorage().AcquireLease();
     }
 
     private DrawingSession BeginDrawing(CancellationToken cancellationToken)

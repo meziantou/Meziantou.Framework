@@ -127,8 +127,8 @@ using var image = Image.Load("animation.gif");          // every displayed frame
 image.Resize(new ResizeOptions(320, 240));               // all frames, atomically
 image.Save("thumbnail.png", new PngEncoder());           // APNG, because the image is animated
 
-using var frame = image.CloneFrame(0);                    // JPEG stores one frame: export it explicitly
-frame.Save("first.jpg", new JpegEncoder { Quality = 85, BackgroundColor = new Rgba32(255, 255, 255) });
+image.Frames[0].Save("first.jpg",                         // JPEG stores one frame: export it explicitly
+    new JpegEncoder { Quality = 85, BackgroundColor = new Rgba32(255, 255, 255) });
 ```
 <!-- endref -->
 
@@ -207,7 +207,8 @@ public state: editing, removing or reordering frames can never leave stale encod
   creates default settings (infinite loop); removing frames down to one keeps them, so the image stays animated until
   `Animation` is set to `null` (allowed only with one frame and no poster).
 - Static outputs (static PNG, JPEG) reject animated images with `UnsupportedImageFeatureException` instead of silently
-  saving the first frame; export a frame explicitly with `CloneFrame`.
+  saving the first frame; save a frame explicitly with `Frames[i].Save` (or `PosterFrame.Save`), or extract it with
+  `CloneFrame` to edit it apart from the animation.
 
 **Posters and playback**. APNG can store a default image that is *not* part of the animation:
 decoders that do not support APNG show it, APNG players skip it. It is exposed as `PosterFrame`, excluded from
@@ -633,8 +634,9 @@ public static void ConvertToGray16(string inputPath, string outputPath)
 public static void ExportFrameAsJpeg(string animatedPath, int frameIndex, string jpegPath)
 {
     using var animation = Image.Load(animatedPath);
-    using var frame = animation.CloneFrame(frameIndex);
-    frame.Save(jpegPath, new JpegEncoder
+
+    // The frame is saved as a still image, without copying its pixels
+    animation.Frames[frameIndex].Save(jpegPath, new JpegEncoder
     {
         Quality = 85,
         BackgroundColor = new Rgba32(255, 255, 255),
@@ -3932,6 +3934,14 @@ anything else throws
 `ArgumentException`, the `.jpx`, `.jpf`, `.jph` and `.jhc` extensions included (these files are read, not written). An eager save validates the whole image against the output (animation, poster,
 durations, alpha, precision, metadata) before writing anything.
 
+`ImageFrame.Save` and `SaveAsync` (to a path or a stream) save one frame, a displayed frame or the poster frame, as a
+still image without copying its pixels: the output is the one of `CloneFrame(i).Save` (or `ClonePosterFrame().Save`),
+with the metadata of the frame (duration, cursor hotspot) and of its image, and no animation settings or poster. The
+same rules apply, before any output: alpha to JPEG needs `BackgroundColor`, 16 bits to an 8-bit output need
+`AllowBitDepthReduction`, and metadata the output cannot store follows `MetadataHandling`. A frame that is leased throws
+`InvalidOperationException`, and one that was removed or replaced, or whose image is disposed, throws
+`ObjectDisposedException`.
+
 OpenEXR and TIFF store floating-point samples: `OpenExrEncoder` writes `RgbaFloat` and `RgbaHalf` images as they are, and
 `TiffEncoder` writes them as 32-bit floats (see [TIFF and BigTIFF](#tiff-and-bigtiff)) with `TiffPixelLayout.Auto` and a
 compression that is not `TiffCompression.Jpeg`. Elsewhere an `RgbaFloat` or `RgbaHalf` image, writer or collection entry
@@ -4147,7 +4157,7 @@ public static void SaveSmallestPng(string inputPath, string outputPath)
 | Chroma subsampling | 4:4:4, 4:2:2, 4:2:0, 4:4:0, 4:1:1 and any integral sampling ratio (libjpeg-turbo-compatible triangle filters for factor 2, replication otherwise) | `Auto` (= 4:2:0 for color), 4:4:4, 4:2:2, 4:2:0; box-filter downsampling, canvas padded to whole MCUs by edge replication; ignored for gray formats |
 | Restart markers | Sequential and progressive scans, sequence checked | Not written |
 | Metadata (EXIF, XMP, ICC, JFIF density, COM) | Bounded; ICC reassembled from APP2 chunks; segments after the scans included | APP1 EXIF (orientation and dimensions reconciled; at most 65,527 bytes), APP1 standard XMP (at most 65,504 bytes), APP2 ICC in up to 255 chunks, JFIF density, COM for `Comment` entries; anything else follows `MetadataHandling` (`Strip` writes only the JFIF segment) |
-| Animated images, posters | — | Rejected with `UnsupportedImageFeatureException` before any output; export a frame with `CloneFrame` |
+| Animated images, posters | — | Rejected with `UnsupportedImageFeatureException` before any output; save a frame with `Frames[i].Save` |
 | CMYK/YCCK (four components) | Identified; loaded only with `CmykConversion`, otherwise `UnsupportedImageFeatureException` | Not supported |
 | Lossless with arithmetic coding (SOF11), hierarchical, sample precisions other than 8 and 12 bits in a frame that is not lossless, non-integral sampling | Not supported (`UnsupportedImageFeatureException`, also from `Identify`) | Not supported |
 
@@ -4231,7 +4241,7 @@ arrives, the encoder writes bounded bands to any destination.
 public static void SaveQoi(string inputPath, string qoiPath, string linearQoiPath, string pngPath)
 {
     using var image = Image.Load(inputPath);
-    using var frame = image.CloneFrame(0); // QOI stores one still image
+    var frame = image.Frames[0]; // QOI stores one still image
     frame.Save(qoiPath, new QoiEncoder { AllowBitDepthReduction = true });
 
     // A QOI colorspace of 1 (linear samples) is reported as a label, never applied: other formats cannot store it, so
@@ -4262,7 +4272,7 @@ format-specific choices explicit.
 public static void SaveAssetFormats(string inputPath, string bmpPath, string tgaPath, string pnmPath)
 {
     using var image = Image.Load(inputPath);
-    using var frame = image.CloneFrame(0); // BMP, TGA and Netpbm store one still image
+    var frame = image.Frames[0]; // BMP, TGA and Netpbm store one still image
 
     // BMP: 32-bit with an explicit alpha mask for pixel formats with alpha, 24-bit otherwise. Forcing 24-bit discards
     // alpha, so it needs a background color.
@@ -4289,7 +4299,7 @@ quantizer of [`Quantize`](#color-reduction), or a fixed palette); `Indexed4` and
 public static void SaveIndexedBmp(string inputPath, string outputPath)
 {
     using var image = Image.Load(inputPath);
-    using var frame = image.CloneFrame(0);
+    var frame = image.Frames[0];
 
     // 8-bit indexes, run-length encoded (BI_RLE8). The palette holds the colors of the frame exactly when there are at
     // most 256 of them; AllowColorReduction accepts a deterministic palette for the other frames, here with dithering.
@@ -4867,7 +4877,7 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | Area | Behavior |
 | --- | --- |
 | JPEG decoding | Lossless with arithmetic coding (SOF11), hierarchical (SOF5–7, SOF13–15, DHP, EXP), JPEG-LS, sample precisions other than 8 and 12 bits in a frame that is not lossless, heights defined by DNL, other component counts than 1, 3 or 4, non-integral sampling ratios: `UnsupportedImageFeatureException` (also from `Identify`). CMYK/YCCK (four components): identified, but loaded only with `CmykConversion` (an ICC conversion to RGB; `UnsupportedImageFeatureException` otherwise, and for a file without CMYK profile when no profile is assumed). Scaled and region decoding: not available |
-| JPEG encoding | Baseline or progressive 8-bit Huffman only: no arithmetic, lossless, 12-bit, RGB, CMYK or restart markers; the progression of the progressive process is fixed, and the baseline process has no optimized Huffman tables. One frame: animated images and posters are rejected (export one with `CloneFrame`); alpha requires `BackgroundColor`; `Rgba64`/`Gray16` require `AllowBitDepthReduction` |
+| JPEG encoding | Baseline or progressive 8-bit Huffman only: no arithmetic, lossless, 12-bit, RGB, CMYK or restart markers; the progression of the progressive process is fixed, and the baseline process has no optimized Huffman tables. One frame: animated images and posters are rejected (save one with `Frames[i].Save`); alpha requires `BackgroundColor`; `Rgba64`/`Gray16` require `AllowBitDepthReduction` |
 | GIF decoding | Plain-text extensions (they require text rendering) are `UnsupportedImageFeatureException`; other unknown extensions (XMP and ICC application extensions included) are skipped; the background color index is never painted (cleared areas are transparent black) |
 | GIF encoding | Lossy by design: at most 256 colors per frame (deterministic quantization, optional dithering), one transparent index (alpha thresholded or flattened, never partial); a local color table per frame, also with a shared palette (no global color table); full-canvas frames (no delta rectangles); comments only (no ICC, EXIF, XMP or resolution); at most 65,535 pixels per side, 655.35 s per frame and 65,536 plays |
 | WebP decoding | VP8 interframes and frames that are not shown (never produced by WebP encoders): `UnsupportedImageFeatureException`; the `ANIM` background color is a hint and is never painted (disposed areas are transparent black); metadata of simple-layout files and text/resolution do not exist in WebP |

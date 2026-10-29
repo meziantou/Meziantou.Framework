@@ -804,8 +804,9 @@ internal static class Examples
     public static void ExportFrameAsJpeg(string animatedPath, int frameIndex, string jpegPath)
     {
         using var animation = Image.Load(animatedPath);
-        using var frame = animation.CloneFrame(frameIndex);
-        frame.Save(jpegPath, new JpegEncoder
+
+        // The frame is saved as a still image, without copying its pixels
+        animation.Frames[frameIndex].Save(jpegPath, new JpegEncoder
         {
             Quality = 85,
             BackgroundColor = new Rgba32(255, 255, 255),
@@ -856,7 +857,7 @@ internal static class Examples
     public static void SaveQoi(string inputPath, string qoiPath, string linearQoiPath, string pngPath)
     {
         using var image = Image.Load(inputPath);
-        using var frame = image.CloneFrame(0); // QOI stores one still image
+        var frame = image.Frames[0]; // QOI stores one still image
         frame.Save(qoiPath, new QoiEncoder { AllowBitDepthReduction = true });
 
         // A QOI colorspace of 1 (linear samples) is reported as a label, never applied: other formats cannot store it, so
@@ -874,7 +875,7 @@ internal static class Examples
     public static void SaveAssetFormats(string inputPath, string bmpPath, string tgaPath, string pnmPath)
     {
         using var image = Image.Load(inputPath);
-        using var frame = image.CloneFrame(0); // BMP, TGA and Netpbm store one still image
+        var frame = image.Frames[0]; // BMP, TGA and Netpbm store one still image
 
         // BMP: 32-bit with an explicit alpha mask for pixel formats with alpha, 24-bit otherwise. Forcing 24-bit discards
         // alpha, so it needs a background color.
@@ -992,7 +993,7 @@ internal static class Examples
     public static void SaveIndexedBmp(string inputPath, string outputPath)
     {
         using var image = Image.Load(inputPath);
-        using var frame = image.CloneFrame(0);
+        var frame = image.Frames[0];
 
         // 8-bit indexes, run-length encoded (BI_RLE8). The palette holds the colors of the frame exactly when there are at
         // most 256 of them; AllowColorReduction accepts a deterministic palette for the other frames, here with dithering.

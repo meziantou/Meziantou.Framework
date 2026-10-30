@@ -26,7 +26,8 @@ internal sealed class AvifPictureEncoder : HeifPictureEncoder
             settings.Lossless,
             settings.Quality,
             settings.Effort,
-            settings.KeyFrameInterval));
+            settings.KeyFrameInterval,
+            settings.MaxDegreeOfParallelism));
         Description = new AvifStreamDescription(_encoder.Sequence);
     }
 

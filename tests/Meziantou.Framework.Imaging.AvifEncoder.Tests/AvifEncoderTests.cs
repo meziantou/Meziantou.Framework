@@ -457,6 +457,32 @@ public sealed class AvifEncoderTests
         Assert.Equal(GetBytes(transparent), GetBytes(decoded));
     }
 
+    [Theory]
+    [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(16)]
+    public void TheTilesOfAFrameAreCodedByWorkersAsByOne(int workers)
+    {
+        // A frame wider than 4096 samples has two columns of AV1 tiles, which workers code, in the color image and in the
+        // alpha plane: lossless, and lossy at an effort whose tiles are written once the frame is filtered
+        using var image = CreateSmoothImage(4160, 64, transparent: true);
+        using var withWorkers = WithWorkers(image, workers);
+        var lossless = new AvifEncoder { Effort = 0 };
+        var expected = Encode(image, lossless);
+        Assert.Equal(expected, Encode(withWorkers, lossless));
+        var lossy = new AvifEncoder { Compression = AvifCompression.Lossy, Effort = 0 };
+        Assert.Equal(Encode(image, lossy), Encode(withWorkers, lossy));
+
+        using var decoded = Image.Load<Rgba32>(expected);
+        Assert.Equal(GetBytes(image), GetBytes(decoded));
+
+        // A grid of such frames: the workers code the tiles of the grid, and each frame its AV1 tiles on its own worker
+        using var tall = CreateSmoothImage(4160, 128, transparent: false);
+        using var tallWithWorkers = WithWorkers(tall, workers);
+        var grid = new AvifEncoder { Compression = AvifCompression.Lossy, GridTileSize = new Size(4160, 64), Effort = 0 };
+        Assert.Equal(Encode(tall, grid), Encode(tallWithWorkers, grid));
+    }
+
     [Fact]
     public void AGridOfSubsampledChromaNeedsEvenSizes()
     {

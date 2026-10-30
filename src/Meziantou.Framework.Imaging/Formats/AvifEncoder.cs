@@ -30,6 +30,13 @@ namespace Meziantou.Framework.Imaging.Formats;
 /// content light level, the mastering display color volume and the pixel
 /// aspect ratio (<c>clli</c>, <c>mdcv</c> and <c>pasp</c> boxes). AVIF has no text or resolution field.
 /// </para>
+/// <para>
+/// A frame is coded in the fewest AV1 tiles that the format allows: one tile up to 4096 pixels of width and 9,437,184
+/// pixels of area. With <see cref="ImageConfiguration.MaxDegreeOfParallelism"/> above 1 (the configuration of the saved
+/// image), the tiles of a larger frame of at least 65,536 pixels are coded by up to that many workers, each with buffers
+/// of its own (charged to <see cref="ImageResourceLimits.MaxLiveAllocationBytes"/>), except for a lossless frame of
+/// screen content that copies blocks; the output is byte-identical to the one of one worker.
+/// </para>
 /// </remarks>
 public sealed class AvifEncoder : ImageEncoder
 {

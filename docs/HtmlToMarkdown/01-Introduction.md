@@ -31,7 +31,7 @@ is escaped, so that a `*` or a `#` of the HTML stays a character and does not st
 The output follows [CommonMark](https://commonmark.org/), and uses the common extensions for what CommonMark does not
 have: pipe tables, task lists, strikethrough and definition lists.
 
-`HtmlToMarkdown` and its options are in the [Meziantou.Framework](cref:Meziantou.Framework) namespace.
+`HtmlToMarkdown` and its options are in the [Meziantou.Framework](cref:Meziantou.Framework.HtmlToMarkdown!N:Meziantou.Framework) namespace.
 
 ## Next steps
 

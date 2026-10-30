@@ -26,4 +26,4 @@ is not already used, for instance by adding a number. A slug is never a security
 
 ## Namespaces
 
-`Slug`, `SlugOptions` and `CasingTransformation` are in the [Meziantou.Framework](cref:Meziantou.Framework) namespace.
+`Slug`, `SlugOptions` and `CasingTransformation` are in the [Meziantou.Framework](cref:Meziantou.Framework.Slug!N:Meziantou.Framework) namespace.

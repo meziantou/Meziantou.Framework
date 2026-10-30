@@ -26,4 +26,4 @@ time of the time provider, so a `RelativeDate` that you keep and display again l
 
 ## Namespaces
 
-`RelativeDate`, `ILocalizationProvider` and `LocalizationProvider` are in the [Meziantou.Framework](cref:Meziantou.Framework) namespace.
+`RelativeDate`, `ILocalizationProvider` and `LocalizationProvider` are in the [Meziantou.Framework](cref:Meziantou.Framework.RelativeDate!N:Meziantou.Framework) namespace.

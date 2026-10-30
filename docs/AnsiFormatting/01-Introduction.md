@@ -28,5 +28,5 @@ style.
 
 ## Namespaces
 
-`AnsiTextProcessor` is in the [Meziantou.Framework](cref:Meziantou.Framework) namespace. The types of the parsed text (`AnsiText`, `AnsiTextRun`,
+`AnsiTextProcessor` is in the [Meziantou.Framework](cref:Meziantou.Framework.AnsiFormatting!N:Meziantou.Framework) namespace. The types of the parsed text (`AnsiText`, `AnsiTextRun`,
 `AnsiStyle`, `AnsiColor` and `AnsiColorKind`) are nested in `AnsiTextProcessor`.

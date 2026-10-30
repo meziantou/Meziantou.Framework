@@ -17,7 +17,7 @@ a few arguments, or build a command line for another program, without adding mor
 
 ## Namespace
 
-All the types are in the [Meziantou.Framework](cref:Meziantou.Framework) namespace:
+All the types are in the [Meziantou.Framework](cref:Meziantou.Framework.CommandLine!N:Meziantou.Framework) namespace:
 
 | Type | Contains |
 | --- | --- |

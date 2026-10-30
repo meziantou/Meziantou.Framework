@@ -156,20 +156,14 @@ public readonly struct AffineTransform : IEquatable<AffineTransform>
     /// <param name="next">The transformation applied after this one.</param>
     /// <returns>The combined transformation.</returns>
     /// <exception cref="ArgumentException">A coefficient of the result is not a finite number.</exception>
-    public AffineTransform Then(AffineTransform next) => new(
-        (next.M11 * M11) + (next.M21 * M12),
-        (next.M12 * M11) + (next.M22 * M12),
-        (next.M11 * M21) + (next.M21 * M22),
-        (next.M12 * M21) + (next.M22 * M22),
-        ((next.M11 * OffsetX) + (next.M21 * OffsetY)) + next.OffsetX,
-        ((next.M12 * OffsetX) + (next.M22 * OffsetY)) + next.OffsetY);
+    public AffineTransform Then(AffineTransform next) => Compose(this, next, nameof(next));
 
     /// <summary>Gets the transformation that applies a first one, then a second one.</summary>
     /// <param name="first">The transformation applied first.</param>
     /// <param name="second">The transformation applied to the result of the first one.</param>
     /// <returns>The combined transformation.</returns>
     /// <exception cref="ArgumentException">A coefficient of the result is not a finite number.</exception>
-    public static AffineTransform Multiply(AffineTransform first, AffineTransform second) => first.Then(second);
+    public static AffineTransform Multiply(AffineTransform first, AffineTransform second) => Compose(first, second, nameof(second));
 
     /// <summary>Gets the transformation that undoes this one.</summary>
     /// <param name="inverse">The inverse transformation, or the identity when there is none.</param>
@@ -260,13 +254,27 @@ public readonly struct AffineTransform : IEquatable<AffineTransform>
     /// <param name="right">The transformation applied to the result of the first one.</param>
     /// <returns>The combined transformation.</returns>
     /// <exception cref="ArgumentException">A coefficient of the result is not a finite number.</exception>
-    public static AffineTransform operator *(AffineTransform left, AffineTransform right) => left.Then(right);
+    public static AffineTransform operator *(AffineTransform left, AffineTransform right) => Compose(left, right, nameof(right));
 
     /// <summary>Gets the horizontal coordinate of a transformed point. The sums are evaluated in this order wherever a point is transformed.</summary>
     internal double TransformX(double x, double y) => ((M11 * x) + (M21 * y)) + OffsetX;
 
     /// <summary>Gets the vertical coordinate of a transformed point.</summary>
     internal double TransformY(double x, double y) => ((M12 * x) + (M22 * y)) + OffsetY;
+
+    private static AffineTransform Compose(AffineTransform first, AffineTransform second, string paramName)
+    {
+        var m11 = (second.M11 * first.M11) + (second.M21 * first.M12);
+        var m12 = (second.M12 * first.M11) + (second.M22 * first.M12);
+        var m21 = (second.M11 * first.M21) + (second.M21 * first.M22);
+        var m22 = (second.M12 * first.M21) + (second.M22 * first.M22);
+        var offsetX = ((second.M11 * first.OffsetX) + (second.M21 * first.OffsetY)) + second.OffsetX;
+        var offsetY = ((second.M12 * first.OffsetX) + (second.M22 * first.OffsetY)) + second.OffsetY;
+        if (!double.IsFinite(m11) || !double.IsFinite(m12) || !double.IsFinite(m21) || !double.IsFinite(m22) || !double.IsFinite(offsetX) || !double.IsFinite(offsetY))
+            throw new ArgumentException("A coefficient of the combined transformation is not a finite number.", paramName);
+
+        return new AffineTransform(m11, m12, m21, m22, offsetX, offsetY);
+    }
 
     private static void EnsureFinite(double value, string paramName)
     {

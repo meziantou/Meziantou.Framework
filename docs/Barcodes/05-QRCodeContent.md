@@ -1,6 +1,6 @@
 ---
 title: QR code content
-description: Build the text of QR codes that phones act on: Wi-Fi networks, contacts, email, phone calls, SMS, places, events, authenticators and payments.
+description: "Build the text of QR codes that phones act on: Wi-Fi networks, contacts, email, phone calls, SMS, places, events, authenticators and payments."
 ---
 
 A phone that scans a QR code acts on its text when it recognizes a format: it joins a Wi-Fi network, adds a contact,

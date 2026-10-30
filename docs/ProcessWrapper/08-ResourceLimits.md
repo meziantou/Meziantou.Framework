@@ -35,7 +35,7 @@ resumed once the limits are applied, so it never runs without them.
 
 ## Windows Job Objects
 
-`WithWindowsJobObject` gives access to the `JobObject` (in the [Meziantou.Framework.Win32](cref:Meziantou.Framework.Win32) namespace) for the settings that
+`WithWindowsJobObject` gives access to the `JobObject` (in the [Meziantou.Framework.Win32](cref:Meziantou.Framework.Win32.Jobs!N:Meziantou.Framework.Win32) namespace) for the settings that
 `ProcessLimits` does not cover:
 
 <!-- ref:../../samples/Meziantou.Framework.ProcessWrapper.Samples/ReadmeExamples.cs;region=ProcessWrapper_WindowsJobObject;format=md-fenced-code-block;dedent=true -->

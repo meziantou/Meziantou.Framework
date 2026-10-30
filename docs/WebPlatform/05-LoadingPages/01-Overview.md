@@ -1,6 +1,6 @@
 ---
 title: Loading pages
-description: Turn a document into a page with a browsing context: a window, a viewport, an event loop, and the resources the page needs.
+description: "Turn a document into a page with a browsing context: a window, a viewport, an event loop, and the resources the page needs."
 ---
 
 A parsed document is only a tree. A `BrowsingContext` turns it into a page, as a tab of a browser: it has a `Window`, a

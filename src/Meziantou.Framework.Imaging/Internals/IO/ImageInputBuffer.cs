@@ -58,6 +58,36 @@ internal sealed class ImageInputBuffer : IDisposable, IAsyncDisposable
     }
 
     /// <summary>
+    /// Creates the input of a decode, whose first buffer is sized by <see cref="GetDecodeCapacity"/>. Sizing a file reads
+    /// its length, which can fail: a stream the library opened is then disposed, since no input took it over.
+    /// </summary>
+    /// <param name="stream">The source stream.</param>
+    /// <param name="ownsStream">Whether the library opened the stream.</param>
+    /// <param name="disposeStream">Whether the input disposes the stream (at least <paramref name="ownsStream"/>).</param>
+    /// <param name="context">The operation context.</param>
+    /// <returns>The input.</returns>
+    public static ImageInputBuffer CreateForDecode(Stream stream, bool ownsStream, bool disposeStream, ImageCodecContext context)
+    {
+        Debug.Assert(disposeStream || !ownsStream);
+        int capacity;
+        try
+        {
+            capacity = GetDecodeCapacity(stream, ownsStream, context);
+        }
+        catch
+        {
+            if (ownsStream)
+            {
+                stream.Dispose();
+            }
+
+            throw;
+        }
+
+        return new ImageInputBuffer(stream, disposeStream, context, capacity);
+    }
+
+    /// <summary>
     /// Gets the capacity of the first buffer of a decode. A stream the library owns is a file opened by a path overload,
     /// which has no buffer of its own (<see cref="ImageIO.OpenFile"/>), so every fill is a read call: its first buffer holds
     /// up to <see cref="MaxFileCapacity"/> bytes, bounded by the rest of the file and the encoded-byte limit. Other streams,
@@ -67,7 +97,7 @@ internal sealed class ImageInputBuffer : IDisposable, IAsyncDisposable
     /// <param name="ownsStream">Whether the library opened the stream.</param>
     /// <param name="context">The operation context.</param>
     /// <returns>The capacity, never less than <see cref="DefaultCapacity"/>.</returns>
-    public static int GetDecodeCapacity(Stream stream, bool ownsStream, ImageCodecContext context)
+    private static int GetDecodeCapacity(Stream stream, bool ownsStream, ImageCodecContext context)
     {
         ArgumentNullException.ThrowIfNull(stream);
         ArgumentNullException.ThrowIfNull(context);

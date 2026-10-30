@@ -17,7 +17,7 @@ The [introduction](01-Introduction.md#packages) lists every package. The types a
 
 | Package | Namespace |
 | --- | --- |
-| `Meziantou.Framework.Http`, `.Hsts`, `.Htpasswd` | [Meziantou.Framework.Http](cref:Meziantou.Framework.Http) |
+| `Meziantou.Framework.Http`, `.Hsts`, `.Htpasswd` | [Meziantou.Framework.Http](cref:Meziantou.Framework.Http!N:Meziantou.Framework.Http) |
 | `Meziantou.Framework.Http.Caching` | [Meziantou.Framework.Http.Caching](cref:Meziantou.Framework.Http.Caching) |
 | `Meziantou.Framework.Http.Caching.InMemory`, `.Sqlite`, `.Redis` | [Meziantou.Framework.Http.Caching.InMemory](cref:Meziantou.Framework.Http.Caching.InMemory), `.Sqlite`, `.Redis` |
 | `Meziantou.Framework.Http.Recording` | [Meziantou.Framework.Http.Recording](cref:Meziantou.Framework.Http.Recording) |

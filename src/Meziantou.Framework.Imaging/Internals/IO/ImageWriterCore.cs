@@ -109,6 +109,9 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
     /// <summary>Gets the temporary file path of a path writer (tests only).</summary>
     internal string? TemporaryPath => _file?.TemporaryPath;
 
+    /// <summary>Gets the atomic output of a path writer (tests only).</summary>
+    internal AtomicFileOutput? FileOutput => _file;
+
     /// <summary>Creates a writer over a caller stream.</summary>
     /// <exception cref="ArgumentException">No encoder, or the options are invalid for the output.</exception>
     public static ImageWriterCore Create(Stream stream, ImageWriterOptions options, PixelFormat pixelFormat)
@@ -116,7 +119,17 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
         ArgumentNullException.ThrowIfNull(stream);
         var snapshot = CreateSnapshot(options, encoder: null);
         var (capabilities, session, scope) = Prepare(snapshot, pixelFormat, stream);
-        return new ImageWriterCore(snapshot, capabilities, pixelFormat, session, scope, stream, ownsStream: !snapshot.LeaveOpen, file: null);
+        try
+        {
+            return new ImageWriterCore(snapshot, capabilities, pixelFormat, session, scope, stream, ownsStream: !snapshot.LeaveOpen, file: null);
+        }
+        catch
+        {
+            // Reading the start position of a seekable output can fail. The caller stream is left as is, like when the
+            // options are rejected: the writer was not created, so it did not take the stream over
+            session.Dispose();
+            throw;
+        }
     }
 
     /// <summary>Creates a writer publishing a file atomically. The encoder is inferred from the extension when not specified.</summary>
@@ -127,18 +140,19 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
         ArgumentNullException.ThrowIfNull(options);
         var snapshot = CreateSnapshot(options, options.Encoder ?? ImageEncoder.FromPath(path));
         var (capabilities, session, scope) = Prepare(snapshot, pixelFormat, stream: null);
-        AtomicFileOutput file;
+        AtomicFileOutput? file = null;
         try
         {
             file = AtomicFileOutput.Create(path, asynchronous);
+            return new ImageWriterCore(snapshot, capabilities, pixelFormat, session, scope, file.Stream, ownsStream: true, file);
         }
         catch
         {
+            // No writer took the session and the temporary file over
+            file?.Abort();
             session.Dispose();
             throw;
         }
-
-        return new ImageWriterCore(snapshot, capabilities, pixelFormat, session, scope, file.Stream, ownsStream: true, file);
     }
 
     /// <summary>
@@ -282,7 +296,7 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
             }
             catch
             {
-                Fault();
+                await FaultAsync().ConfigureAwait(false);
                 throw;
             }
         }
@@ -763,7 +777,7 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
         }
         catch
         {
-            Fault();
+            await FaultAsync().ConfigureAwait(false);
             throw;
         }
         finally
@@ -867,11 +881,26 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
 
     private void Fault()
     {
-        _state = WriterState.Faulted;
-        ReleaseSession();
+        MarkFaulted();
 
         // A failed path output is never published: delete the temporary file now (the destination is untouched)
         _file?.Abort();
+    }
+
+    /// <summary>The asynchronous counterpart of <see cref="Fault"/>, used by the asynchronous operations.</summary>
+    private async ValueTask FaultAsync()
+    {
+        MarkFaulted();
+        if (_file is not null)
+        {
+            await _file.AbortAsync().ConfigureAwait(false);
+        }
+    }
+
+    private void MarkFaulted()
+    {
+        _state = WriterState.Faulted;
+        ReleaseSession();
     }
 
     private void ReleaseSession()

@@ -1,4 +1,5 @@
 using Meziantou.Framework.Imaging.Formats;
+using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.TestHarness.Fixtures;
 using Meziantou.Framework.Imaging.TestHarness.Golden;
 using Meziantou.Framework.Imaging.TestHarness.Streams;
@@ -516,6 +517,62 @@ public sealed class JpegXlTranscoderTests
     }
 
     /// <summary>
+    /// The list of identifiers of the reconstruction data may give from one to four components, and libjxl only rebuilds
+    /// the files of one component (gray) or three (color): a description of two or four components is refused before
+    /// anything is written, and three components of other identifiers are still rebuilt.
+    /// </summary>
+    [Theory]
+    [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(4)]
+    public void TheReconstructionDataDescribeOneOrThreeComponents(int componentCount)
+    {
+        var jpeg = GoldenCorpus.Default.Get("jpeg/baseline-420").ReadInput();
+        using var recompressed = new MemoryStream();
+        JpegXlTranscoder.RecompressJpeg(jpeg, recompressed);
+        var boxes = SplitBoxes(recompressed.ToArray());
+        var index = boxes.FindIndex(box => box.Type == "jbrd");
+        var payload = boxes[index].Bytes[8..];
+        var data = JpegXlJpegReconstructionData.Read(payload, payload.Length, new InputResourceTracker(ImageConfiguration.Default.Limits));
+        var model = data.Model;
+        Assert.Equal([1, 2, 3], model.Components.Select(component => component.Id));
+
+        // The identifiers 1, 2 and 4 are not those of a known layout: the box lists them, as it lists 1 and 2, or 1 to 4
+        model.Components[2] = model.Components[2] with { Id = 4 };
+        if (componentCount == 2)
+        {
+            model.Components.RemoveAt(2);
+            foreach (var scan in model.Scans)
+            {
+                scan.Components.RemoveAll(component => component.Component == 2);
+            }
+        }
+        else if (componentCount == 4)
+        {
+            model.Components.Add(new JpegBitstreamComponent(5, model.Components[2].QuantizationTable));
+        }
+
+        var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(TheReconstructionDataDescribeOneOrThreeComponents));
+        var description = JpegXlJpegReconstructionData.Write(model, [.. data.ApplicationSegments.Select(segment => segment.Kind)], brotliQuality: 11, scope);
+        boxes[index] = ("jbrd", JpegXlTestFiles.Box("jbrd", description));
+        var file = Join(boxes);
+        using var output = new MemoryStream();
+        if (componentCount == 3)
+        {
+            Assert.True(JpegXlTranscoder.TryReconstructJpeg(file, output));
+            using var rebuilt = Image.Load(output.ToArray());
+            using var original = Image.Load(jpeg);
+            Assert.Equal(original.Width, rebuilt.Width);
+            Assert.Equal(original.Height, rebuilt.Height);
+        }
+        else
+        {
+            Assert.Throws<InvalidImageContentException>(() => JpegXlTranscoder.TryReconstructJpeg(file, output));
+            Assert.Equal(0, output.Length);
+        }
+    }
+
+    /// <summary>
     /// The data that rebuild the JPEG file may follow the codestream, which no encoder writes: the file is rebuilt all the
     /// same, from a stream that cannot seek as from memory, whether the codestream is in one box (the library) or in
     /// several (cjxl), and with the metadata boxes on either side.
@@ -654,6 +711,55 @@ public sealed class JpegXlTranscoderTests
         Assert.Throws<ImageResourceLimitException>(() => JpegXlTranscoder.RecompressJpeg(jpeg, output, options));
         Assert.Throws<ImageResourceLimitException>(() => JpegXlTranscoder.ReconstructJpeg(recompressed.ToArray(), output, options));
         Assert.Equal(0, output.Length);
+    }
+
+    /// <summary>
+    /// The reader of the recompressor loads the entropy-coded data ahead of the bits it reads: a read fails only where a bit
+    /// is missing, at the end of the file or at a marker, and 16 bits of ones are never a code. The decoder of the library
+    /// refuses these files before the reader sees them, so the reader is called directly.
+    /// </summary>
+    [Theory]
+    [InlineData("jpeg/baseline-422-odd-restart")]
+    [InlineData("jpeg/progressive-gray-odd-refinement")]
+    [InlineData("jpeg/progressive-422-odd-restart")]
+    public void TheEntropyCodedDataOfAJpegFileEndWhereABitIsMissing(string id)
+    {
+        var jpeg = GoldenCorpus.Default.Get(id).ReadInput();
+        var position = 2;
+        while (jpeg[position + 1] != 0xDA)
+        {
+            position += 2 + ((jpeg[position + 2] << 8) | jpeg[position + 3]);
+        }
+
+        var dataStart = position + 2 + ((jpeg[position + 2] << 8) | jpeg[position + 3]);
+        var dataEnd = dataStart;
+        while (jpeg[dataEnd] != 0xFF || jpeg[dataEnd + 1] == 0)
+        {
+            dataEnd++;
+        }
+
+        // Every cut that leaves the last byte of the first interval out, by the end of the file or by a marker
+        for (var end = dataStart; end < dataEnd; end++)
+        {
+            if (end > dataStart && jpeg[end - 1] == 0xFF)
+                continue;
+
+            AssertReadFails([.. jpeg.AsSpan(0, end)], "the data of a scan are truncated.");
+            AssertReadFails([.. jpeg.AsSpan(0, end), 0xFF, 0xD9], "the data of a scan end before its last block.");
+        }
+
+        // The first code of the scan replaced by ones: 16 of them are not a code, and fewer are cut short like any code
+        AssertReadFails([.. jpeg.AsSpan(0, dataStart), 0xFF, 0x00, 0xFF, 0x00, .. jpeg.AsSpan(dataStart)], "a code of the data of a scan is not in its Huffman table.");
+        AssertReadFails([.. jpeg.AsSpan(0, dataStart), 0xFF, 0x00, 0xFF, 0x00], "a code of the data of a scan is not in its Huffman table.");
+        AssertReadFails([.. jpeg.AsSpan(0, dataStart), 0xFF, 0x00], "the data of a scan are truncated.");
+        AssertReadFails([.. jpeg.AsSpan(0, dataStart), 0xFF, 0x00, 0xFF, 0xD9], "the data of a scan end before its last block.");
+
+        static void AssertReadFails(byte[] file, string message)
+        {
+            var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(TheEntropyCodedDataOfAJpegFileEndWhereABitIsMissing));
+            var exception = Assert.Throws<InvalidImageContentException>(() => JpegBitstreamReader.Read(file, scope, CancellationToken.None, out _));
+            Assert.Equal("The JPEG file is invalid: " + message, exception.Message);
+        }
     }
 
     private static void AssertRoundTrips(byte[] jpeg, string context)

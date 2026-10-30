@@ -294,11 +294,14 @@ internal sealed class TextLayoutEngine
             Shape(paragraph, item);
         }
 
+        // A negative indent is a hanging indent: the first line starts at the edge and the lines after it are indented
+        // by its magnitude. Every line stays in the box of the layout.
+        var firstLineIndent = _options.FirstLineIndent * _scale;
         var from = paragraph.Start;
         var isFirst = true;
         do
         {
-            var indent = isFirst ? _options.FirstLineIndent * _scale : 0;
+            var indent = Math.Max(isFirst ? firstLineIndent : -firstLineIndent, 0);
             var to = paragraph.End;
             var isHyphenated = false;
             if (_wraps && from < paragraph.End)

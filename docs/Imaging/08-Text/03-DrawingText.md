@@ -134,7 +134,7 @@ wrapped line does not count in its width.
 | --- | --- | --- |
 | `MaxWidth` | No limit | The width lines are wrapped at and aligned in |
 | `Alignment` | `Start` | `Start`, `Center`, `End`, or `Justify`, which widens U+0020 spaces and U+00A0 no-break spaces on each line but the last one of a paragraph; lines without expandable spaces stay start-aligned |
-| `FirstLineIndent` | 0 | The indent of the first line of each paragraph; negative for a hanging indent |
+| `FirstLineIndent` | 0 | The indent of the first line of each paragraph; negative for a hanging indent, which indents the lines after the first one instead |
 | `LineHeight` | The fonts' height | A fixed height for every line, the glyphs centered in it |
 | `TabSize` | 8 | The distance between two tabulation stops, in spaces |
 | `Wrapping` | `Wrap` | `NoWrap` breaks lines only at the line breaks of the text |

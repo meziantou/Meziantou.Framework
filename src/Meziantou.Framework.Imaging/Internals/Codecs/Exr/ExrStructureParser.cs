@@ -24,6 +24,13 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// between two chunks are skipped, and bytes after the last one are not read. Every chunk is read, so a truncated file
 /// is an error.
 /// </para>
+/// <para>
+/// A writer that stops before it patches the offset table leaves entries that point before the end of the table (zeros,
+/// usually). Leniently, such a table is rebuilt the way OpenEXR does: the chunks follow the table without a gap, scan
+/// lines in the order of the <c>lineOrder</c> attribute (increasing for random order) and tiles in any order, each
+/// identified by its coordinates. The entries that are valid must give the offsets of their chunks, and a missing or
+/// repeated chunk is still an error.
+/// </para>
 /// </remarks>
 internal sealed class ExrStructureParser : ImageParser<ImageInfo>
 {
@@ -41,6 +48,8 @@ internal sealed class ExrStructureParser : ImageParser<ImageInfo>
     private long _tableEntries;
     private long _cursor;
     private long _chargedAttribute = -1;
+    private long _tableEnd;
+    private bool _isRebuildingTable;
     private PooledBuffer? _offsets;
     private PooledBuffer? _order;
     private ImageInfo? _result;
@@ -328,9 +337,10 @@ internal sealed class ExrStructureParser : ImageParser<ImageInfo>
         {
             var offset = BinaryPrimitives.ReadUInt64LittleEndian(remaining[(8 * i)..]);
             var index = (int)_tableEntries;
-            if (offset > long.MaxValue)
+            if (offset > long.MaxValue && !_context.IsLenient)
                 throw ExrFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"the offset of the chunk {index} is {offset}."));
 
+            // A negative offset is before the end of the table: an entry the lenient decoding rebuilds
             offsets[index] = (long)offset;
             order[index] = index;
             _tableEntries++;
@@ -341,6 +351,15 @@ internal sealed class ExrStructureParser : ImageParser<ImageInfo>
 
     private void SortOffsets()
     {
+        _tableEnd = _position;
+        if (_context.IsLenient && Offsets.ContainsAnyInRange(long.MinValue, _position - 1))
+        {
+            // The chunks are found by walking them: the table keeps the entries to check, and the order marks the chunks seen
+            _isRebuildingTable = true;
+            Order.Clear();
+            return;
+        }
+
         var offsets = Offsets;
         offsets.Sort(Order);
         for (var i = 0; i < offsets.Length; i++)
@@ -355,6 +374,9 @@ internal sealed class ExrStructureParser : ImageParser<ImageInfo>
 
     private ParseStatus ReadChunk(ReadOnlySpan<byte> remaining, ref int consumed)
     {
+        if (_isRebuildingTable)
+            return ReadRebuiltChunk(remaining, ref consumed);
+
         var target = Offsets[(int)_cursor];
         var index = Order[(int)_cursor];
         if (_position < target)
@@ -377,6 +399,46 @@ internal sealed class ExrStructureParser : ImageParser<ImageInfo>
         if (expected != index)
             throw ExrFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"the chunk at the offset {target} is the chunk {expected}, but the offset table gives it to the chunk {index}."));
 
+        return ReadChunkData(remaining, ref consumed, headerLength, index);
+    }
+
+    /// <summary>
+    /// Reads the next chunk of a file whose offset table is rebuilt: it starts where the one before it ends, and its
+    /// coordinates say which chunk it is.
+    /// </summary>
+    private ParseStatus ReadRebuiltChunk(ReadOnlySpan<byte> remaining, ref int consumed)
+    {
+        var header = Header;
+        var headerLength = header.IsTiled ? ExrFormat.TileChunkHeaderLength : ExrFormat.ScanLineChunkHeaderLength;
+        if (remaining.Length < headerLength)
+            return ParseStatus.NeedMoreData(headerLength);
+
+        var position = (int)_cursor;
+        var index = (int)(header.IsTiled ? GetTileIndex(remaining, position) : GetScanLineIndex(remaining, position));
+        if (!header.IsTiled)
+        {
+            // OpenEXR rebuilds a table of scan lines from chunks stored in their line order, increasing for a random order
+            var expected = header.LineOrder == ExrLineOrder.DecreasingY ? header.ChunkCount - 1 - _cursor : _cursor;
+            if (index != expected)
+                throw ExrFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"the offset table is incomplete and the chunk at the offset {_position} is the chunk {index}; the chunks after the table must be in their line order, which puts the chunk {expected} there."));
+        }
+        else if (Order[index] != 0)
+        {
+            throw ExrFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"the offset table is incomplete and the chunk {index} is stored twice."));
+        }
+
+        var declared = Offsets[index];
+        if (declared >= _tableEnd && declared != _position)
+            throw ExrFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"the offset table is incomplete and gives the offset {declared} to the chunk {index}, which is at the offset {_position}."));
+
+        Order[index] = 1;
+        return ReadChunkData(remaining, ref consumed, headerLength, index);
+    }
+
+    /// <summary>Reads the size and the data of the chunk whose coordinates start <paramref name="remaining"/>.</summary>
+    private ParseStatus ReadChunkData(ReadOnlySpan<byte> remaining, ref int consumed, int headerLength, int index)
+    {
+        var header = Header;
         var size = BinaryPrimitives.ReadInt32LittleEndian(remaining[(headerLength - 4)..]);
         if (size < 0 || size > int.MaxValue - headerLength)
             throw ExrFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"the chunk {index} has the size {size}."));

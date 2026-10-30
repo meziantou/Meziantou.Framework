@@ -119,3 +119,7 @@ store a page exactly or reject it with an [UnsupportedImageFeatureException](cre
 - Old-style JPEG compression, L\*a\*b\* data, planar storage of several samples and 64-bit floating-point samples are
   rejected with an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException). Compressed data is never repaired: a damaged strip is an
   [InvalidImageContentException](cref:Meziantou.Framework.Imaging.InvalidImageContentException), never a page completed with white.
+- Some writers store one `BitsPerSample` value for all the samples, extra values, or no byte counts for a page of one
+  uncompressed strip. These files are rejected by default; the
+  [lenient decoding](../05-LoadingAndSaving/08-ErrorHandling.md#accept-the-files-browsers-accept) reads them the way
+  libtiff and Apple ImageIO do.

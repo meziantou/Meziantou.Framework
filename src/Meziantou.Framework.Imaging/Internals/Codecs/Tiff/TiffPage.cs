@@ -46,10 +46,13 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </remarks>
 internal sealed class TiffPage
 {
-    private TiffPage(TiffDirectory directory, int index)
+    private readonly bool _isLenient;
+
+    private TiffPage(TiffDirectory directory, int index, bool isLenient)
     {
         Directory = directory;
         Index = index;
+        _isLenient = isLenient;
     }
 
     /// <summary>Gets the directory this page was resolved from.</summary>
@@ -230,7 +233,7 @@ internal sealed class TiffPage
     {
         ArgumentNullException.ThrowIfNull(directory);
         ArgumentNullException.ThrowIfNull(context);
-        var page = new TiffPage(directory, index);
+        var page = new TiffPage(directory, index, context.IsLenient);
         page.ResolveGeometry(context);
         page.ResolveSamples();
         page.ResolveCompression();
@@ -264,8 +267,14 @@ internal sealed class TiffPage
 
         SamplesPerPixel = (int)samplesPerPixel;
 
-        // The default of TIFF is one bit per sample: bilevel data
-        var bits = Directory.TryReadUnsignedArray(TiffFormat.BitsPerSampleTag, SamplesPerPixel) ?? [.. Enumerable.Repeat(1UL, SamplesPerPixel)];
+        // The default of TIFF is one bit per sample: bilevel data. Leniently, one value is the width of every sample, as
+        // libtiff, Pillow and Apple ImageIO read it
+        var bits = TryReadPerSampleValues(TiffFormat.BitsPerSampleTag) ?? [.. Enumerable.Repeat(1UL, SamplesPerPixel)];
+        if (_isLenient && bits.Length == 1 && SamplesPerPixel > 1)
+        {
+            bits = [.. Enumerable.Repeat(bits[0], SamplesPerPixel)];
+        }
+
         if (bits.Length != SamplesPerPixel)
             throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} declares {bits.Length} BitsPerSample values for {SamplesPerPixel} samples per pixel."));
 
@@ -375,7 +384,7 @@ internal sealed class TiffPage
     private int ResolveSampleFormat()
     {
         // Some writers store one value for all the samples: the values that are present must agree
-        var formats = Directory.TryReadUnsignedArray(TiffFormat.SampleFormatTag, SamplesPerPixel);
+        var formats = TryReadPerSampleValues(TiffFormat.SampleFormatTag);
         if (formats is null or [])
             return TiffFormat.SampleFormatUnsignedInteger;
 
@@ -394,6 +403,18 @@ internal sealed class TiffPage
         }
 
         return (int)result;
+    }
+
+    /// <summary>
+    /// Reads a tag that has a value per sample. Leniently, the values past the number of samples are ignored, as libtiff,
+    /// Pillow and Apple ImageIO do; strictly, they are an error.
+    /// </summary>
+    private ulong[]? TryReadPerSampleValues(ushort tag)
+    {
+        if (_isLenient && Directory.Find(tag) is { } field && field.Count > (ulong)SamplesPerPixel)
+            return Directory.ReadLeadingUnsignedValues(field, SamplesPerPixel);
+
+        return Directory.TryReadUnsignedArray(tag, SamplesPerPixel);
     }
 
     private string GetSampleFormatName() => SampleFormat switch
@@ -631,10 +652,28 @@ internal sealed class TiffPage
         var blockCount = (long)BlocksAcross * BlocksDown;
         var offsetsField = Directory.Find(offsetsTag)!.Value;
         BlockOffsets = Directory.ReadUnsignedArray(offsetsField, blockCount);
-        if (Directory.Find(byteCountsTag) is not { } byteCountsField)
-            throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} declares {(IsTiled ? "TileOffsets" : "StripOffsets")} without the matching byte counts."));
 
-        BlockByteCounts = Directory.ReadUnsignedArray(byteCountsField, blockCount);
+        // Leniently, the one uncompressed block of a page is as long as its geometry says when the byte counts are missing
+        // or, for a strip, too small, as libtiff, Pillow and Apple ImageIO read it: these bytes are in the file, and a block
+        // that runs past its end is still an error. Byte counts beyond the number of blocks are ignored, as they all do
+        var hasGeometricLength = _isLenient && blockCount == 1 && Compression == TiffFormat.CompressionNone && YCbCr is null;
+        if (Directory.Find(byteCountsTag) is not { } byteCountsField)
+        {
+            if (!hasGeometricLength)
+                throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} declares {(IsTiled ? "TileOffsets" : "StripOffsets")} without the matching byte counts."));
+
+            BlockByteCounts = [(ulong)blockLength];
+            return;
+        }
+
+        BlockByteCounts = _isLenient && byteCountsField.Count > (ulong)blockCount
+            ? Directory.ReadLeadingUnsignedValues(byteCountsField, (int)blockCount)
+            : Directory.ReadUnsignedArray(byteCountsField, blockCount);
+
+        if (hasGeometricLength && !IsTiled && BlockByteCounts[0] < (ulong)blockLength)
+        {
+            BlockByteCounts[0] = (ulong)blockLength;
+        }
     }
 
     private void ResolveMetadata(ImageCodecContext context)

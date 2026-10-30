@@ -79,3 +79,6 @@ rounding and alpha conversion.
   and `Y` (layers, depth) are rejected with an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException).
 - The decoder reads the full-resolution level of mipmaps and ripmaps; the lower levels and the preview image are not
   read.
+- A file whose writer stopped before patching its offset table (zeros in the table) is rejected by default; the
+  [lenient decoding](../05-LoadingAndSaving/08-ErrorHandling.md#accept-the-files-browsers-accept) rebuilds the table
+  from the chunks, as OpenEXR does, when they are all there.

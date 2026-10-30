@@ -505,6 +505,79 @@ public sealed class ApngDecoderTests
     }
 
     [Fact]
+    public void LenientDecodingPlaysTheFramesOfAnAnimationShorterThanDeclared()
+    {
+        // acTL declares three frames and two follow: Chromium, Firefox, WebKit, Apple ImageIO and FFmpeg play the two frames
+        var data = new ApngTestBuilder(3, 2, 3).Frame(Full(R)).Frame(ApngTestBuilder.Rgba(1, 1, W), 1, 1, delayNumerator: 3, delayDenominator: 100).ToArray();
+        Assert.Equal("The APNG file has 2 frames but acTL declares 3.", Assert.Throws<InvalidImageContentException>(() => Image.Load(data)).Message);
+        Assert.Throws<InvalidImageContentException>(() => Image.Identify(data, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan }));
+
+        var lenient = new ImageConfiguration { DecodingStrictness = DecodingStrictness.Lenient };
+        using (var image = Image.Load<Rgba32>(data, new ImageDecodeOptions { Configuration = lenient }))
+        {
+            Assert.HasCount(2, image.Frames);
+            Assert.Null(image.PosterFrame);
+            Assert.NotNull(image.Animation);
+            Assert.Equal([R, R, R, R, W, R], GetPixels(image.Frames[1]));
+            Assert.Equal(new FrameDuration(3, 100), image.Frames[1].Metadata.Duration);
+        }
+
+        // The header only knows the declared count; a full scan counts the frames present
+        Assert.Equal(3, Image.Identify(data, new ImageIdentifyOptions { Configuration = lenient }).FrameCount);
+        var scanned = Image.Identify(data, new ImageIdentifyOptions { Configuration = lenient, Mode = ImageIdentifyMode.FullScan });
+        Assert.Equal(2, scanned.FrameCount);
+        Assert.Equal(true, scanned.IsAnimated);
+
+        using (var reader = Image.OpenReader<Rgba32>(new MemoryStream(data), new ImageReaderOptions { Configuration = lenient }))
+        {
+            using (var first = reader.ReadFrame())
+            {
+                Assert.Equal([R, R, R, R, R, R], GetPixels(first!.Frames[0]));
+            }
+
+            using (var second = reader.ReadFrame())
+            {
+                Assert.Equal([R, R, R, R, W, R], GetPixels(second!.Frames[0]));
+            }
+
+            Assert.Null(reader.ReadFrame());
+        }
+
+        // The frames present are charged as usual
+        var twoFrames = new ImageConfiguration { DecodingStrictness = DecodingStrictness.Lenient, Limits = new ImageResourceLimits { MaxFrames = 2 } };
+        var oneFrame = new ImageConfiguration { DecodingStrictness = DecodingStrictness.Lenient, Limits = new ImageResourceLimits { MaxFrames = 1 } };
+        using (var image = Image.Load<Rgba32>(data, new ImageDecodeOptions { Configuration = twoFrames }))
+        {
+            Assert.HasCount(2, image.Frames);
+        }
+
+        Assert.Throws<ImageResourceLimitException>(() => Image.Load(data, new ImageDecodeOptions { Configuration = oneFrame }));
+        Assert.Throws<ImageResourceLimitException>(() => Image.Identify(data, new ImageIdentifyOptions { Configuration = oneFrame, Mode = ImageIdentifyMode.FullScan }));
+
+        // A separate poster is not a frame: one frame present of three declared
+        var poster = new ApngTestBuilder(3, 2, 3).Poster(Full(W)).Frame(Full(G)).ToArray();
+        Assert.Throws<InvalidImageContentException>(() => Image.Load(poster));
+        using (var image = Image.Load<Rgba32>(poster, new ImageDecodeOptions { Configuration = lenient }))
+        {
+            Assert.HasCount(1, image.Frames);
+            Assert.Equal([W, W, W, W, W, W], GetPixels(image.PosterFrame!));
+            Assert.Equal([G, G, G, G, G, G], GetPixels(image.Frames[0]));
+        }
+    }
+
+    [Fact]
+    public void LenientDecodingStillRejectsTheOtherFrameCountMismatches()
+    {
+        // No frame at all (the browsers disagree: blank, an invented black frame) and more frames than declared (FFmpeg
+        // plays them, the browsers and Apple ImageIO stop at the declared count) are not repaired
+        var lenient = new ImageDecodeOptions { Configuration = new ImageConfiguration { DecodingStrictness = DecodingStrictness.Lenient } };
+        var posterOnly = new ApngTestBuilder(3, 2, 2).Poster(Full(W)).ToArray();
+        var more = new ApngTestBuilder(3, 2, 2).Frame(Full(R)).Frame(Full(G)).Frame(Full(B)).ToArray();
+        Assert.Equal("The APNG file has 0 frames but acTL declares 2.", Assert.Throws<InvalidImageContentException>(() => Image.Load(posterOnly, lenient)).Message);
+        Assert.Equal("The APNG file has more frames than the 2 declared by acTL.", Assert.Throws<InvalidImageContentException>(() => Image.Load(more, lenient)).Message);
+    }
+
+    [Fact]
     public void FrameLimitsSelectAPrefixWithoutExaminingTheRest()
     {
         // The input stops 3 bytes into the third fcTL: a two-frame prefix ends at that chunk header and never reads the rest

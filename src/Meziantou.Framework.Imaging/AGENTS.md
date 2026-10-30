@@ -61,6 +61,14 @@ rendering also changes the images of the pages (`DocumentationImageTests`).
   | Invalid argument / invalid state / use after dispose | `ArgumentException` family / `InvalidOperationException` / `ObjectDisposedException` |
   | I/O failure, cancellation | `IOException` and `OperationCanceledException`, propagated unchanged |
 
+- **Lenient decoding is opt-in and listed.** `ImageConfiguration.DecodingStrictness` defaults to `Strict`, and the
+  structure parsers and decoders read it through `ImageCodecContext.IsLenient`. A repair is accepted only when the
+  reference decoders of the format (and the browsers, for web formats) agree on its result, measured on a fixture, never
+  assumed. It is deterministic, keeps every resource limit and its accounting unchanged, and never invents pixels: a
+  deviation whose repair would guess samples stays an `InvalidImageContentException` in both modes. Each repair has a
+  row in the "Lenient decoding" table of `readme.md` and a note on the page of its format, and a test that loads the
+  fixture in both modes (strict rejects it, lenient gives the reference result). Identify, eager loads, readers and
+  collections share the parsers, so they accept the same files.
 - **Validate before doing anything.** Argument and pixel-type validation happens before any I/O or allocation; keep the
   existing validation order when changing a member.
 - **Resource limits** (`ImageResourceLimits`) are enforced incrementally, before allocating or consuming. They are

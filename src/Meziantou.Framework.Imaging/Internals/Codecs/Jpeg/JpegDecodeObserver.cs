@@ -11,7 +11,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// order; <see cref="OnHeaderComplete"/> once, when the first SOS marker is reached (before its <see cref="OnSegment"/>);
 /// for each scan, <see cref="OnSegment"/> (SOS) then <see cref="OnEntropyData"/> with the raw entropy-coded bytes (byte
 /// stuffing and RSTn markers included, unmodified) and <see cref="OnScanEnd"/>; finally <see cref="OnEnd"/> at EOI.
-/// Payload spans exclude the marker and length bytes and are only valid during the call.
+/// Payload spans exclude the marker and length bytes and are only valid during the call. In lenient decoding, the input
+/// of a complete frame may end without EOI marker: <see cref="OnScanEndAtEndOfInput"/> then ends the last scan when the
+/// input ends in its entropy-coded data, and <see cref="OnEnd"/> follows.
 /// </remarks>
 internal abstract class JpegDecodeObserver : IImageDecodeObserver
 {
@@ -29,6 +31,16 @@ internal abstract class JpegDecodeObserver : IImageDecodeObserver
 
     /// <returns><see langword="true"/> to continue the walk; <see langword="false"/> to stop.</returns>
     public virtual bool OnScanEnd() => true;
+
+    /// <summary>Ends the last scan when the input ends in its entropy-coded data (lenient decoding of a file without EOI marker).</summary>
+    /// <returns><see langword="true"/> to continue the walk; <see langword="false"/> to stop.</returns>
+    public virtual bool OnScanEndAtEndOfInput() => OnScanEnd();
+
+    /// <summary>
+    /// Gets a value indicating whether the datastream is embedded in another format (a strip or a tile of a TIFF page),
+    /// which is decoded strictly whatever the configuration.
+    /// </summary>
+    public virtual bool IsEmbedded => false;
 
     public virtual void OnEnd(JpegStructureParser structure)
     {

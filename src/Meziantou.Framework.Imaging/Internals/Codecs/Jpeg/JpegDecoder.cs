@@ -42,6 +42,13 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// (streamed frames, the other rows being zero).
 /// </description></item>
 /// <item><description>
+/// Lenient decoding (<see cref="ImageCodecContext.IsLenient"/>, JPEG files only): a restart marker of a sequential or a
+/// lossless scan whose number is 3 to 5 after the expected one is read as the expected marker
+/// (<see cref="JpegScanDecoder.AcceptsGarbledRestartNumbers"/>); Apple ImageIO rejects such a marker in a progressive
+/// scan, so it stays an error there. The structure parser also ends a complete frame of Huffman-coded scans that has no
+/// EOI marker (<see cref="JpegDecodeObserver.OnScanEndAtEndOfInput"/>).
+/// </description></item>
+/// <item><description>
 /// The image (one frame, duration zero) ends at EOI after <see cref="DecodedFrameSink.UpdateMetadata"/>, so reader frames
 /// carry the metadata found after the scans like eager loads. EXIF orientation is metadata only: pixels are never rotated.
 /// </description></item>
@@ -239,10 +246,19 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
         scan.Feed(data);
     }
 
-    public override bool OnScanEnd()
+    public override bool IsEmbedded => _receiver is not null;
+
+    // Lenient decoding applies to JPEG files, not to the datastreams of another format
+    private bool IsLenient => _context.IsLenient && _receiver is null;
+
+    public override bool OnScanEnd() => EndScan(endOfInput: false);
+
+    public override bool OnScanEndAtEndOfInput() => EndScan(endOfInput: true);
+
+    private bool EndScan(bool endOfInput)
     {
         var scan = _scan ?? throw new InvalidOperationException("No JPEG scan was started.");
-        scan.Finish();
+        scan.Finish(endOfInput);
         _scan = null;
         foreach (var scanComponent in _scanComponents)
         {
@@ -547,8 +563,8 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
         var reader = _reader ?? throw new InvalidOperationException("The JPEG decoder state is not allocated.");
         _scanComponents = scanComponents;
         _scan = _arithmetic
-            ? new JpegArithmeticSequentialScanDecoder(scanComponents, reader, _mcusX, _mcusY, _restartInterval, _streaming ? OnMcuRowDecoded : null, _context.CancellationToken)
-            : new JpegSequentialScanDecoder(scanComponents, reader, _mcusX, _mcusY, _restartInterval, _streaming ? OnMcuRowDecoded : null, _context.CancellationToken);
+            ? new JpegArithmeticSequentialScanDecoder(scanComponents, reader, _mcusX, _mcusY, _restartInterval, _streaming ? OnMcuRowDecoded : null, _context.CancellationToken) { AcceptsGarbledRestartNumbers = IsLenient }
+            : new JpegSequentialScanDecoder(scanComponents, reader, _mcusX, _mcusY, _restartInterval, _streaming ? OnMcuRowDecoded : null, _context.CancellationToken) { AcceptsGarbledRestartNumbers = IsLenient };
         PrepareFastAc(scanComponents);
     }
 
@@ -588,7 +604,7 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
         _scanCount++;
         var reader = _reader ?? throw new InvalidOperationException("The JPEG decoder state is not allocated.");
         _scanComponents = scanComponents;
-        _scan = new JpegLosslessScanDecoder(scanComponents, reader, _mcusX, _mcusY, _restartInterval, predictor: parameters[0], pointTransform: parameters[2] & 0x0F, _streaming ? OnMcuRowDecoded : null, _context.CancellationToken);
+        _scan = new JpegLosslessScanDecoder(scanComponents, reader, _mcusX, _mcusY, _restartInterval, predictor: parameters[0], pointTransform: parameters[2] & 0x0F, _streaming ? OnMcuRowDecoded : null, _context.CancellationToken) { AcceptsGarbledRestartNumbers = IsLenient };
     }
 
     /// <summary>

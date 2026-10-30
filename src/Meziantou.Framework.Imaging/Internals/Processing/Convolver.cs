@@ -152,27 +152,18 @@ internal static class Convolver
         RowBands.RunParallel(workers, band => ConvolveBand<TSample>(storage, plan, alpha, band, observer, cancellationToken));
     }
 
-    /// <summary>Loads the rows that a band reads above its first row and below its last one (absent rows contribute nothing and are not loaded).</summary>
+    /// <summary>
+    /// Loads the image rows that a band reads above its first row and below its last one, once each however many positions
+    /// read them (absent rows contribute nothing and are not loaded).
+    /// </summary>
     private static void LoadHalos<TSample>(PixelStorage storage, ConvolutionPlan plan, WorkingAlpha alpha, int band)
         where TSample : unmanaged
     {
         var scratch = plan.GetScratch(band);
-        var start = plan.GetBandStart(band);
-        var end = plan.GetBandStart(band + 1);
-        var centerY = plan.CenterY;
-        for (var i = 0; i < centerY; i++)
+        var halo = scratch.Halo;
+        for (var i = 0; i < halo.RowCount; i++)
         {
-            var above = plan.MapRow(start - centerY + i);
-            if (above >= 0)
-            {
-                LoadRow<TSample>(storage, above, plan, alpha, scratch, scratch.GetTopHaloOffset(i));
-            }
-
-            var below = plan.MapRow(end + i);
-            if (below >= 0)
-            {
-                LoadRow<TSample>(storage, below, plan, alpha, scratch, scratch.GetBottomHaloOffset(i));
-            }
+            LoadRow<TSample>(storage, halo.GetImageRow(i), plan, alpha, scratch, scratch.GetHaloRowOffset(i));
         }
     }
 
@@ -402,10 +393,10 @@ internal static class Convolver
     private static int GetRowOffset(ConvolutionPlan plan, ConvolutionScratch scratch, int source, int start, int end)
     {
         if (source < start)
-            return plan.MapRow(source) < 0 ? -1 : scratch.GetTopHaloOffset(source - (start - plan.CenterY));
+            return scratch.GetTopHaloOffset(source - (start - plan.CenterY));
 
         if (source >= end)
-            return plan.MapRow(source) < 0 ? -1 : scratch.GetBottomHaloOffset(source - end);
+            return scratch.GetBottomHaloOffset(source - end);
 
         return scratch.GetRingRowOffset(source);
     }

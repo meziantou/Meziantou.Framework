@@ -7,9 +7,10 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </summary>
 /// <remarks>
 /// <para>
-/// A worker needs the ring of the rows of its band (as many as the kernel has rows), the rows it reads above and below its
-/// band (the halos, loaded before any row is rewritten) and one accumulator row. All of it is rented up front, charged to
-/// the scope of the image, before any pixel changes.
+/// A worker needs the ring of the rows of its band (as many as the kernel has rows, at most the rows of the band), the
+/// image rows it reads above and below its band (the halo, loaded before any row is rewritten, one row per image row
+/// however many positions the edge mode maps to it) and one accumulator row. All of it is rented up front, charged to the
+/// scope of the image, before any pixel changes, for as many workers as fit the allocation limit.
 /// </para>
 /// <para>
 /// A separable plan (<see cref="RowWeights"/>: the Gaussian blur, the unsharp mask, and the matrices that
@@ -248,39 +249,96 @@ internal sealed class ConvolutionPlan : IDisposable
     /// <summary>Gets the maximum sample value: 255 or 65,535, or 1 for floating-point samples (<see cref="WorkingSamples.GetMaxValue"/>).</summary>
     public int MaxValue { get; }
 
-    /// <summary>Gets the number of workers (and row bands) of each frame (<see cref="RowBands.GetWorkerCount"/>).</summary>
-    public int Workers { get; }
+    /// <summary>
+    /// Gets the number of workers (and row bands) of each frame: <see cref="RowBands.GetWorkerCount"/>, lowered by
+    /// <see cref="Prepare"/> to the largest number whose scratch fits the allocation limit (at least 1).
+    /// </summary>
+    public int Workers { get; private set; }
 
     /// <summary>Gets the number of bytes of scratch storage rented by <see cref="Prepare"/> (pool capacity, as charged).</summary>
     public long ScratchBytes { get; private set; }
 
-    /// <summary>Rents the scratch of every worker. Called once per operation, before any pixel changes.</summary>
-    /// <exception cref="ImageResourceLimitException">The scratch exceeds the allocation limit; the plan must still be disposed.</exception>
+    /// <summary>
+    /// Rents the scratch of every worker. Called once per operation, before any pixel changes. When the scratch of
+    /// <see cref="Workers"/> workers exceeds the allocation limit, fewer workers are used (the result does not depend on
+    /// their number): the largest number whose scratch fits, or one.
+    /// </summary>
+    /// <exception cref="ImageResourceLimitException">The scratch of one worker exceeds the allocation limit; the plan must still be disposed.</exception>
     public void Prepare(AllocationScope scope)
     {
         var before = scope.LiveBytes;
-        var rowLength = (long)Size.Width * Channels;
-        var paddedLength = ((long)Size.Width + KernelWidth - 1) * Channels;
-
-        // A separable plan loads each row padded for its row weights, then filters it into a ring or halo row
-        var inputLength = _rowWeights is null ? 0 : ((long)Size.Width + _rowWeights.Length - 1) * Channels;
-        _scratch = new ConvolutionScratch?[Workers];
-        for (var worker = 0; worker < Workers; worker++)
+        var workers = Workers;
+        var layouts = GetBandLayouts(workers);
+        while (workers > 1 && !Fits(scope, GetScratchBytes(scope, layouts)))
         {
-            _scratch[worker] = ConvolutionScratch.Create(scope, paddedLength, rowLength, KernelHeight, CenterY, inputLength, KernelCount);
+            workers--;
+            layouts = GetBandLayouts(workers);
+        }
+
+        Workers = workers;
+        _scratch = new ConvolutionScratch?[workers];
+        for (var worker = 0; worker < workers; worker++)
+        {
+            var (ringSize, halo) = layouts[worker];
+            _scratch[worker] = ConvolutionScratch.Create(scope, PaddedLength, RowLength, ringSize, halo, InputLength, KernelCount);
         }
 
         ScratchBytes = scope.LiveBytes - before;
+
+        static bool Fits(AllocationScope scope, long bytes) => bytes >= 0 && CheckedSizes.TryAdd(scope.LiveBytes, bytes, out var live) && live <= scope.Limit;
     }
+
+    /// <summary>
+    /// Gets the number of bytes that <see cref="Prepare"/> charges for the scratch of <paramref name="workers"/> workers
+    /// (pool capacity), or -1 when a buffer exceeds the maximum length.
+    /// </summary>
+    internal long GetScratchBytes(AllocationScope scope, int workers) => GetScratchBytes(scope, GetBandLayouts(workers));
+
+    /// <summary>
+    /// Gets the ring size and the halo of every band of <paramref name="workers"/> bands: the ring holds the rows of the band
+    /// that the kernel reads (at most the kernel height), the halo the image rows it reads outside its range.
+    /// </summary>
+    internal (int RingSize, ConvolutionHalo Halo)[] GetBandLayouts(int workers)
+    {
+        var height = Size.Height;
+        var layouts = new (int RingSize, ConvolutionHalo Halo)[workers];
+        for (var band = 0; band < workers; band++)
+        {
+            var start = RowBands.GetBandStart(height, band, workers);
+            var end = RowBands.GetBandStart(height, band + 1, workers);
+            layouts[band] = (Math.Min(KernelHeight, Math.Max(end - start, 1)), ConvolutionHalo.Create(start, end, CenterY, height, EdgeMode));
+        }
+
+        return layouts;
+    }
+
+    private long GetScratchBytes(AllocationScope scope, (int RingSize, ConvolutionHalo Halo)[] layouts)
+    {
+        var total = 0L;
+        foreach (var (ringSize, halo) in layouts)
+        {
+            var length = ConvolutionScratch.GetLength(PaddedLength, RowLength, ringSize, halo.RowCount, InputLength, KernelCount);
+            if (length < 0 || !CheckedSizes.TryMultiply(Math.Max(length, 1), sizeof(double), out var bytes) || bytes > CheckedSizes.MaxBufferLength || !CheckedSizes.TryAdd(total, scope.GetChargedSize(bytes), out total))
+                return -1;
+        }
+
+        return total;
+    }
+
+    /// <summary>Gets the number of doubles of an output row.</summary>
+    private long RowLength => (long)Size.Width * Channels;
+
+    /// <summary>Gets the number of doubles of a working row padded for the kernel.</summary>
+    private long PaddedLength => ((long)Size.Width + KernelWidth - 1) * Channels;
+
+    /// <summary>Gets the number of doubles of the working row that a separable plan loads padded for its row weights, then filters into a ring or halo row (0 otherwise).</summary>
+    private long InputLength => _rowWeights is null ? 0 : ((long)Size.Width + _rowWeights.Length - 1) * Channels;
 
     /// <summary>Gets the row buffers of a worker, between 0 and <see cref="Workers"/> - 1.</summary>
     public ConvolutionScratch GetScratch(int worker) => _scratch[worker]!;
 
     /// <summary>Gets the first row of a band (the bands split the rows into <see cref="Workers"/> contiguous ranges).</summary>
     public int GetBandStart(int band) => RowBands.GetBandStart(Size.Height, band, Workers);
-
-    /// <summary>Gets the image row read for row <paramref name="y"/>, which may be outside the image, or -1 when it contributes nothing.</summary>
-    public int MapRow(int y) => MapIndex(y, Size.Height, EdgeMode);
 
     /// <summary>Gets the image column read for column <paramref name="x"/>, which may be outside the image, or -1 when it contributes nothing.</summary>
     public int MapColumn(int x) => MapIndex(x, Size.Width, EdgeMode);

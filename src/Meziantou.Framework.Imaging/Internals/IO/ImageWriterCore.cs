@@ -109,6 +109,9 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
     /// <summary>Gets the temporary file path of a path writer (tests only).</summary>
     internal string? TemporaryPath => _file?.TemporaryPath;
 
+    /// <summary>Gets the atomic output of a path writer (tests only).</summary>
+    internal AtomicFileOutput? FileOutput => _file;
+
     /// <summary>Creates a writer over a caller stream.</summary>
     /// <exception cref="ArgumentException">No encoder, or the options are invalid for the output.</exception>
     public static ImageWriterCore Create(Stream stream, ImageWriterOptions options, PixelFormat pixelFormat)
@@ -282,7 +285,7 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
             }
             catch
             {
-                Fault();
+                await FaultAsync().ConfigureAwait(false);
                 throw;
             }
         }
@@ -763,7 +766,7 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
         }
         catch
         {
-            Fault();
+            await FaultAsync().ConfigureAwait(false);
             throw;
         }
         finally
@@ -867,11 +870,26 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
 
     private void Fault()
     {
-        _state = WriterState.Faulted;
-        ReleaseSession();
+        MarkFaulted();
 
         // A failed path output is never published: delete the temporary file now (the destination is untouched)
         _file?.Abort();
+    }
+
+    /// <summary>The asynchronous counterpart of <see cref="Fault"/>, used by the asynchronous operations.</summary>
+    private async ValueTask FaultAsync()
+    {
+        MarkFaulted();
+        if (_file is not null)
+        {
+            await _file.AbortAsync().ConfigureAwait(false);
+        }
+    }
+
+    private void MarkFaulted()
+    {
+        _state = WriterState.Faulted;
+        ReleaseSession();
     }
 
     private void ReleaseSession()

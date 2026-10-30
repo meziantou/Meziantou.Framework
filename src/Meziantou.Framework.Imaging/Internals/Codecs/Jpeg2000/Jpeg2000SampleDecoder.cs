@@ -41,6 +41,7 @@ internal sealed class Jpeg2000SampleDecoder : Jpeg2000DecodeObserver
         var siz = structure.Siz;
         var coding = Jpeg2000TileCoding.Resolve(siz, structure.MainHeader, tile.Headers, structure.Capabilities);
         using var geometry = Jpeg2000TileGeometry.Create(_context.Scope, siz, coding, tile.Index);
+        // One worker: the format that embeds the codestream decides the parallelism of its blocks
         _tileDecoder ??= new Jpeg2000TileDecoder(_context);
         structure.AddTools(_tileDecoder.Decode(siz, coding, geometry, tile));
 

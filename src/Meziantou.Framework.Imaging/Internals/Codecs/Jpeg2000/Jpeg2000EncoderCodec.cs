@@ -126,7 +126,17 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
     /// </description></item>
     /// <item><description>
     /// The output only depends on the pixels and on the settings: integers on the reversible path, single-precision
-    /// additions, products and one truncation on the irreversible one, no parallelism, no date and no version string.
+    /// additions, products and one truncation on the irreversible one, no date and no version string.
+    /// </description></item>
+    /// <item><description>
+    /// Parallelism (<see cref="Jpeg2000Workers"/>): an image of at least <see cref="RowBands.MinPixelsForParallelism"/>
+    /// pixels is coded by up to <see cref="ImageConfiguration.MaxDegreeOfParallelism"/> workers. The rows of a component
+    /// are read by bands, the wavelet transformation is split by strips of columns and by rows, and the code-blocks are
+    /// coded by batches: in a batch, the worker <c>w</c> of <c>n</c> codes the code-blocks <c>w</c>, <c>w + n</c>... with
+    /// its own block coder, into its own buffer, and the codeword segments are then appended in the order of the
+    /// code-blocks. A codeword segment only depends on the coefficients of its code-block (the arithmetic coder starts and
+    /// ends in it), and the quantization parameters and the packets are chosen and written once every code-block is coded,
+    /// as with one worker: the bytes never depend on the number of workers.
     /// </description></item>
     /// </list>
     /// </remarks>
@@ -167,6 +177,12 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
         private readonly float[] _bandSteps;
         private readonly int[] _bandExponents;
         private readonly int[] _bandMantissas;
+
+        // The workers that code the code-blocks (the first one has the coder and the scratch of the session), the scratch
+        // of each worker, and the code-blocks of a batch: null with one worker
+        private readonly BlockCoder[]? _coders;
+        private readonly Av1PooledArray<int>[]? _workerScratch;
+        private readonly Av1PooledArray<int>? _batch;
         private Av1PooledArray<Piece>? _pieces;
         private int _pieceCount;
         private ImageFrame? _frame;
@@ -215,7 +231,10 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
             Av1PooledArray<int>? plane = null;
             Av1PooledArray<int>? scratch = null;
             Av1PooledArray<int>? blockSamples = null;
+            BlockCoder[]? coders = null;
+            Av1PooledArray<int>? batch = null;
             var blockData = new PooledPayloadWriter[_componentCount];
+            var workers = Jpeg2000Workers.GetWorkerCount(options.Configuration.MaxDegreeOfParallelism, (long)_width * _height, _geometry.Blocks.Length);
             try
             {
                 blockEncoder = new Jpeg2000Tier1Encoder(_scope);
@@ -230,6 +249,19 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
                 plane = Av1PooledArray<int>.Rent(_scope, (long)_width * _height, clear: false, AllocationKind.Temporary);
                 scratch = Av1PooledArray<int>.Rent(_scope, Jpeg2000Dwt.GetScratchLength(_width, _height), clear: false, AllocationKind.Temporary);
                 blockSamples = Av1PooledArray<int>.Rent(_scope, Jpeg2000Tier1Tables.MaxSamples, clear: false, AllocationKind.Temporary);
+                if (workers > 1)
+                {
+                    // Everything the workers use is rented here: the first worker has the coder and the scratch of the
+                    // session, and each worker has a buffer for the codeword segments of its code-blocks
+                    coders = new BlockCoder[workers];
+                    coders[0] = new BlockCoder(_scope, blockEncoder, blockSamples, scratch);
+                    for (var w = 1; w < workers; w++)
+                    {
+                        coders[w] = BlockCoder.Create(_scope, scratch.Length);
+                    }
+
+                    batch = Av1PooledArray<int>.Rent(_scope, 2L * BlocksPerCall * workers, clear: false, AllocationKind.Temporary);
+                }
             }
             catch
             {
@@ -241,13 +273,23 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
                 plane?.Dispose();
                 scratch?.Dispose();
                 blockSamples?.Dispose();
+                batch?.Dispose();
                 foreach (var writer in blockData)
                 {
                     writer?.Dispose();
                 }
 
+                foreach (var coder in coders ?? [])
+                {
+                    coder?.Dispose();
+                }
+
                 throw;
             }
+
+            _coders = coders;
+            _workerScratch = coders is null ? null : [.. coders.Select(coder => coder.Scratch)];
+            _batch = batch;
 
             _blockEncoder = blockEncoder;
             _head = head;
@@ -299,7 +341,7 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
                     return false;
 
                 case Step.Blocks:
-                    if (EncodeBlocks())
+                    if (_coders is null ? EncodeBlocks() : EncodeBlocksByWorkers())
                     {
                         _component++;
                         _step = _component < _componentCount ? Step.Transform : Step.Assemble;
@@ -343,6 +385,12 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
                 _plane.Dispose();
                 _scratch.Dispose();
                 _blockSamples.Dispose();
+                _batch?.Dispose();
+                foreach (var coder in _coders ?? [])
+                {
+                    coder.Dispose();
+                }
+
                 _pieces?.Dispose();
                 _pieces = null;
                 foreach (var writer in _blockData)
@@ -403,21 +451,63 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
             var frame = _frame ?? throw new InvalidOperationException("No frame was begun.");
             var component = _component;
             var width = _width;
-            var plane = _plane.Span[..(width * _height)];
+            var height = _height;
+            var plane = _plane.Span[..(width * height)];
+            var coders = _coders;
             using (var lease = frame.GetStorage().AcquireLease())
             {
-                for (var y = 0; y < _height; y++)
+                if (coders is null)
                 {
-                    if ((y & 63) == 0)
+                    for (var y = 0; y < height; y++)
                     {
-                        CancellationToken.ThrowIfCancellationRequested();
-                    }
+                        if ((y & 63) == 0)
+                        {
+                            CancellationToken.ThrowIfCancellationRequested();
+                        }
 
-                    ReadComponentRow(lease.GetRowBytes(y), component, plane.Slice(y * width, width));
+                        ReadComponentRow(lease.GetRowBytes(y), component, plane.Slice(y * width, width));
+                    }
+                }
+                else
+                {
+                    // Each row of the plane is computed from its row of pixels alone. The lease is held while the workers
+                    // read the rows of the leased storage
+                    var storage = lease.Storage;
+                    var cancellationToken = CancellationToken;
+                    var bands = Jpeg2000Workers.GetBandCount(coders.Length, (long)width * height, height, RowBands.MinRowsPerBand);
+                    Jpeg2000Workers.RunBands(bands, band =>
+                    {
+                        var rows = _plane.Span;
+                        for (int y = Jpeg2000Workers.GetBandStart(height, band, bands), end = Jpeg2000Workers.GetBandStart(height, band + 1, bands); y < end; y++)
+                        {
+                            if ((y & 63) == 0)
+                            {
+                                cancellationToken.ThrowIfCancellationRequested();
+                            }
+
+                            ReadComponentRow(storage.GetRowSpanCore(y), component, rows.Slice(y * width, width));
+                        }
+                    });
                 }
             }
 
-            var resolutions = _geometry.Resolutions.AsSpan(_geometry.Components[component].FirstResolution, _levels + 1);
+            var firstResolution = _geometry.Components[component].FirstResolution;
+            if (coders is not null)
+            {
+                var levels = new ArraySegment<Jpeg2000ResolutionGeometry>(_geometry.Resolutions, firstResolution, _levels + 1);
+                if (IsReversible(component))
+                {
+                    Jpeg2000Dwt.ForwardReversible(_plane, width, levels, _workerScratch!, coders.Length);
+                }
+                else
+                {
+                    Jpeg2000Dwt.ForwardIrreversible(_plane, width, levels, _workerScratch!, coders.Length);
+                }
+
+                return;
+            }
+
+            var resolutions = _geometry.Resolutions.AsSpan(firstResolution, _levels + 1);
             if (IsReversible(component))
             {
                 Jpeg2000Dwt.ForwardReversible(plane, width, resolutions, _scratch.Span);
@@ -524,11 +614,6 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
             var tileComponent = _geometry.Components[component];
             var firstBand = _geometry.Resolutions[tileComponent.FirstResolution].FirstBand;
             var bandCount = (3 * _levels) + 1;
-            var isReversible = IsReversible(component);
-            var stride = _width;
-            var plane = _plane.Span;
-            var coefficients = unsafe(MemoryMarshal.Cast<int, float>(plane));
-            var samples = _blockSamples.Span;
             var records = _blocks.Span;
             var output = _blockData[component];
             var budget = BlocksPerCall;
@@ -547,34 +632,126 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
                     return false;
 
                 var index = band.FirstBlock + _block++;
-                ref readonly var block = ref _geometry.Blocks[index];
-                int width = block.Width;
-                int height = block.Height;
-                var origin = ((band.PlaneY + block.Y) * stride) + band.PlaneX + block.X;
-                if (isReversible)
-                {
-                    for (var y = 0; y < height; y++)
-                    {
-                        ToSignMagnitude(plane.Slice(origin + (y * stride), width), samples.Slice(y * width, width));
-                    }
-                }
-                else
-                {
-                    var step = _bandSteps[(GetStepTable(component) * bandCount) + (_band - firstBand)];
-                    for (var y = 0; y < height; y++)
-                    {
-                        Quantize(coefficients.Slice(origin + (y * stride), width), samples.Slice(y * width, width), step);
-                    }
-                }
-
                 ref var record = ref records[index];
                 record.Offset = output.Length;
-                record.BitPlanes = (byte)_blockEncoder.Encode(samples, width, height, band.Orientation, output, out record.Length);
+                record.BitPlanes = (byte)EncodeBlock(_blockEncoder, _blockSamples.Span, output, _band, index, out record.Length);
                 ref var maximum = ref _bandBitPlanes[(component * bandCount) + (_band - firstBand)];
                 maximum = Math.Max(maximum, record.BitPlanes);
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Codes the next batch of code-blocks of the current component by several workers, then appends their codeword
+        /// segments in their order: the bytes of <see cref="EncodeBlocks"/>.
+        /// </summary>
+        /// <returns><see langword="true"/> once every code-block of the component is coded.</returns>
+        private bool EncodeBlocksByWorkers()
+        {
+            var cancellationToken = CancellationToken;
+            cancellationToken.ThrowIfCancellationRequested();
+            var coders = _coders!;
+            var component = _component;
+            var tileComponent = _geometry.Components[component];
+            var firstBand = _geometry.Resolutions[tileComponent.FirstResolution].FirstBand;
+            var bandCount = (3 * _levels) + 1;
+            var endBand = firstBand + bandCount;
+
+            // The batch: the sub-band and the index of each code-block
+            var batch = _batch!.Span;
+            var capacity = batch.Length / 2;
+            var count = 0;
+            while (count < capacity && SkipCodedBands(endBand))
+            {
+                batch[2 * count] = _band;
+                batch[(2 * count) + 1] = _geometry.Bands[_band].FirstBlock + _block++;
+                count++;
+            }
+
+            foreach (var coder in coders)
+            {
+                coder.Output.Reset();
+            }
+
+            // The worker w codes the code-blocks w, w + n...: its buffer holds their segments in that order, and the offset
+            // of each segment in it is kept in its record until the segments are appended
+            Jpeg2000Workers.RunInterleaved(coders.Length, count, (w, k) =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var coder = coders[w];
+                var items = _batch.Span;
+                var index = items[(2 * k) + 1];
+                ref var record = ref _blocks.Span[index];
+                record.Offset = coder.Output.Length;
+                record.BitPlanes = (byte)EncodeBlock(coder.Encoder, coder.Samples.Span, coder.Output, items[2 * k], index, out record.Length);
+            });
+
+            var records = _blocks.Span;
+            var output = _blockData[component];
+            for (var k = 0; k < count; k++)
+            {
+                var band = batch[2 * k];
+                ref var record = ref records[batch[(2 * k) + 1]];
+                var segment = coders[k % coders.Length].Output.WrittenSpan.Slice(record.Offset, record.Length);
+                record.Offset = output.Length;
+                output.Write(segment);
+                ref var maximum = ref _bandBitPlanes[(component * bandCount) + (band - firstBand)];
+                maximum = Math.Max(maximum, record.BitPlanes);
+            }
+
+            return !SkipCodedBands(endBand);
+        }
+
+        /// <summary>Moves past the sub-bands whose code-blocks are all coded.</summary>
+        /// <returns><see langword="true"/> while a code-block of the component is left.</returns>
+        private bool SkipCodedBands(int endBand)
+        {
+            while (_band < endBand)
+            {
+                ref readonly var band = ref _geometry.Bands[_band];
+                if (_block < band.BlocksWide * band.BlocksHigh)
+                    return true;
+
+                _band++;
+                _block = 0;
+            }
+
+            return false;
+        }
+
+        /// <summary>Quantizes a code-block of the current component and codes it.</summary>
+        /// <returns>The number of coded bit-planes: 0 when every coefficient is zero, and nothing is written.</returns>
+        private int EncodeBlock(Jpeg2000Tier1Encoder encoder, Span<int> samples, PooledPayloadWriter output, int bandIndex, int index, out int length)
+        {
+            var component = _component;
+            var firstBand = _geometry.Resolutions[_geometry.Components[component].FirstResolution].FirstBand;
+            var bandCount = (3 * _levels) + 1;
+            var stride = _width;
+            var plane = _plane.Span;
+            ref readonly var band = ref _geometry.Bands[bandIndex];
+            ref readonly var block = ref _geometry.Blocks[index];
+            int width = block.Width;
+            int height = block.Height;
+            var origin = ((band.PlaneY + block.Y) * stride) + band.PlaneX + block.X;
+            if (IsReversible(component))
+            {
+                for (var y = 0; y < height; y++)
+                {
+                    ToSignMagnitude(plane.Slice(origin + (y * stride), width), samples.Slice(y * width, width));
+                }
+            }
+            else
+            {
+                var coefficients = unsafe(MemoryMarshal.Cast<int, float>(plane));
+                var step = _bandSteps[(GetStepTable(component) * bandCount) + (bandIndex - firstBand)];
+                for (var y = 0; y < height; y++)
+                {
+                    Quantize(coefficients.Slice(origin + (y * stride), width), samples.Slice(y * width, width), step);
+                }
+            }
+
+            return encoder.Encode(samples, width, height, band.Orientation, output, out length);
         }
 
         /// <summary>Chooses the quantization parameters, then writes the headers and the packet headers and lists the pieces of the output.</summary>
@@ -1067,6 +1244,71 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
             }
 
             _pieces.Span[_pieceCount++] = new Piece { Source = source, Offset = offset, Length = length };
+        }
+
+        /// <summary>
+        /// The state of a worker that codes code-blocks: its block coder, the coefficients of its code-block, the scratch of
+        /// its share of the wavelet transformation, and the codeword segments it coded in the current batch.
+        /// </summary>
+        private sealed class BlockCoder : IDisposable
+        {
+            private readonly bool _ownsCoder;
+
+            /// <summary>Initializes a worker that uses the coder, the coefficients and the scratch of the session.</summary>
+            public BlockCoder(AllocationScope scope, Jpeg2000Tier1Encoder encoder, Av1PooledArray<int> samples, Av1PooledArray<int> scratch)
+                : this(encoder, samples, scratch, new PooledPayloadWriter(scope), ownsCoder: false)
+            {
+            }
+
+            private BlockCoder(Jpeg2000Tier1Encoder encoder, Av1PooledArray<int> samples, Av1PooledArray<int> scratch, PooledPayloadWriter output, bool ownsCoder)
+            {
+                Encoder = encoder;
+                Samples = samples;
+                Scratch = scratch;
+                Output = output;
+                _ownsCoder = ownsCoder;
+            }
+
+            public Jpeg2000Tier1Encoder Encoder { get; }
+
+            public Av1PooledArray<int> Samples { get; }
+
+            public Av1PooledArray<int> Scratch { get; }
+
+            public PooledPayloadWriter Output { get; }
+
+            /// <summary>Creates a worker with a coder, coefficients and a scratch of its own.</summary>
+            public static BlockCoder Create(AllocationScope scope, long scratchLength)
+            {
+                Jpeg2000Tier1Encoder? encoder = null;
+                Av1PooledArray<int>? samples = null;
+                Av1PooledArray<int>? scratch = null;
+                try
+                {
+                    encoder = new Jpeg2000Tier1Encoder(scope);
+                    samples = Av1PooledArray<int>.Rent(scope, Jpeg2000Tier1Tables.MaxSamples, clear: false, AllocationKind.Temporary);
+                    scratch = Av1PooledArray<int>.Rent(scope, scratchLength, clear: false, AllocationKind.Temporary);
+                    return new BlockCoder(encoder, samples, scratch, new PooledPayloadWriter(scope), ownsCoder: true);
+                }
+                catch
+                {
+                    encoder?.Dispose();
+                    samples?.Dispose();
+                    scratch?.Dispose();
+                    throw;
+                }
+            }
+
+            public void Dispose()
+            {
+                Output.Dispose();
+                if (_ownsCoder)
+                {
+                    Encoder.Dispose();
+                    Samples.Dispose();
+                    Scratch.Dispose();
+                }
+            }
         }
 
         /// <summary>What the block coder produced for one code-block.</summary>

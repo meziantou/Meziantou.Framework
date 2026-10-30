@@ -231,6 +231,16 @@ internal sealed class Jpeg2000HtBlockDecoder : IDisposable
         return tools;
     }
 
+    /// <summary>
+    /// Rents the flags of the HT SigProp pass now, so that no code-block rents them later: a worker of a tile has all its
+    /// memory before the work starts (<see cref="Jpeg2000Workers"/>).
+    /// </summary>
+    /// <exception cref="ImageResourceLimitException">The flags exceed the live-allocation limit.</exception>
+    public void RentSignificancePropagationFlags()
+    {
+        _neighbors ??= Av1PooledArray<byte>.Rent(_scope, NeighborsLength, clear: false);
+    }
+
     public void Dispose()
     {
         _magnitudes.Dispose();

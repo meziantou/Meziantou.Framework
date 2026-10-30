@@ -266,7 +266,7 @@ internal sealed class JpegXlFrameDecoder
                     var channel = modular.Channels.Count == modularColorChannelCount + _image.ExtraChannels.Length ? modular.Channels[modularColorChannelCount + i] : null;
                     if (channel is not null && _image.ExtraChannels[i].Type == JpegXlExtraChannelInfo.TypeAlpha && (channel.Width > groupDimension || channel.Height > groupDimension))
                     {
-                        channel.Samples.Fill((1 << _image.ExtraChannels[i].BitDepth.BitsPerSample) - 1);
+                        channel.Samples.Fill(_image.ExtraChannels[i].BitDepth.One);
                     }
                 }
             }

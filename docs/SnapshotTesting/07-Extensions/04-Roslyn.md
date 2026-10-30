@@ -4,7 +4,7 @@ description: Test source generators, syntax rewriters and analyzers with a singl
 ---
 
 `Meziantou.Framework.SnapshotTesting.Roslyn` serializes Roslyn objects, so testing a source generator, a syntax rewriter or
-an analyzer is a single `Snapshot.Validate` call. Generated code is stored as `.cs` files that you can read and diff.
+an analyzer is a single [Snapshot.Validate](cref:Meziantou.Framework.SnapshotTesting.Snapshot.Validate) call. Generated code is stored as `.cs` files that you can read and diff.
 
 ```bash
 dotnet add package Meziantou.Framework.SnapshotTesting.Roslyn
@@ -12,7 +12,7 @@ dotnet add package Meziantou.Framework.SnapshotTesting.Roslyn
 
 ## Set up
 
-Call `AddRoslyn()` on `SnapshotSettings.Default` in a module initializer (`AddRoslyn` is in the
+Call [AddRoslyn()](cref:Meziantou.Framework.SnapshotTesting.Roslyn.SnapshotSettingsRoslynExtensions.AddRoslyn) on [SnapshotSettings.Default](cref:Meziantou.Framework.SnapshotTesting.SnapshotSettings.Default) in a module initializer ([AddRoslyn](cref:Meziantou.Framework.SnapshotTesting.Roslyn.SnapshotSettingsRoslynExtensions.AddRoslyn) is in the
 [Meziantou.Framework.SnapshotTesting.Roslyn](cref:Meziantou.Framework.SnapshotTesting.Roslyn) namespace):
 
 <!-- ref:../../../tests/Meziantou.Framework.SnapshotTesting.Roslyn.Tests/RoslynSnapshotSerializerTests.cs;region=SnapshotSettings_AddRoslyn;format=md-fenced-code-block;dedent=true -->
@@ -76,7 +76,7 @@ partial class Customer
 A run usually produces several files, so the snapshots are numbered: `MyTests_GenerateCode_0.verified.cs`,
 `MyTests_GenerateCode_1.verified.cs`, `MyTests_GenerateCode_2.verified.txt`, ... Adding a generated source shifts the
 files that come after it in hint-name order. A run that generated no source and reported no diagnostic has nothing to
-compare, and fails with a `SnapshotException`.
+compare, and fails with a [SnapshotException](cref:Meziantou.Framework.SnapshotTesting.SnapshotException).
 
 The snapshot files are `.cs` files in your test project: the package keeps them out of the compilation (see
 [Snapshots and the build](../03-WritingTests/03-SnapshotFiles.md#snapshots-and-the-build)).
@@ -151,7 +151,7 @@ Sample.cs(3,10): warning MY0001: Do not use this method
 ## Roslyn values inside other snapshots
 
 Roslyn values nested inside another object are written by the human-readable serializer, which would otherwise dump their
-object graph. `AddRoslyn()` registers converters for them:
+object graph. [AddRoslyn()](cref:Meziantou.Framework.SnapshotTesting.Roslyn.SnapshotSettingsRoslynExtensions.AddRoslyn) registers converters for them:
 
 | Type | Written as |
 | --- | --- |

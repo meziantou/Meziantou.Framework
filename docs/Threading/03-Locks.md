@@ -5,7 +5,7 @@ description: Protect a resource in asynchronous code with AsyncLock and AsyncRea
 
 ## Exclusive access with AsyncLock
 
-`AsyncLock` gives exclusive access to a resource, like the `lock` statement, but the critical section can contain
+[AsyncLock](cref:Meziantou.Framework.Threading.AsyncLock) gives exclusive access to a resource, like the `lock` statement, but the critical section can contain
 `await`:
 
 <!-- ref:../../tests/Meziantou.Framework.Threading.Tests/AsyncLockTests.cs;region=AsyncLock_Usage;format=md-fenced-code-block;dedent=true -->
@@ -29,8 +29,8 @@ Assert.Equal(3, counter);
 ```
 <!-- endref -->
 
-- Waiters acquire the lock in the order they called `LockAsync`.
-- The lock is not reentrant: calling `LockAsync` again from inside the critical section waits for a release that never
+- Waiters acquire the lock in the order they called [LockAsync](cref:Meziantou.Framework.Threading.AsyncLock.LockAsync).
+- The lock is not reentrant: calling [LockAsync](cref:Meziantou.Framework.Threading.AsyncLock.LockAsync) again from inside the critical section waits for a release that never
   comes. Keep the code that needs the lock in one place rather than nesting acquisitions.
 - Only the first disposal of a lease releases the lock. Disposing the same lease again, or a copy of a disposed lease,
   does nothing.
@@ -39,7 +39,7 @@ Assert.Equal(3, counter);
 
 ### Acquire the lock only if it is free
 
-`TryLock` never waits. It returns `false` when the lock is held, and gives a lease to dispose when it returns `true`:
+[TryLock](cref:Meziantou.Framework.Threading.AsyncLock.TryLock) never waits. It returns `false` when the lock is held, and gives a lease to dispose when it returns `true`:
 
 <!-- ref:../../tests/Meziantou.Framework.Threading.Tests/AsyncLockTests.cs;region=AsyncLock_TryLock;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -60,7 +60,7 @@ secondLease.Dispose();
 
 ### Stop waiting for the lock
 
-Pass a `CancellationToken` to `LockAsync` to give up waiting. A canceled wait throws an `OperationCanceledException` and
+Pass a `CancellationToken` to [LockAsync](cref:Meziantou.Framework.Threading.AsyncLock.LockAsync) to give up waiting. A canceled wait throws an `OperationCanceledException` and
 does not acquire the lock:
 
 <!-- ref:../../tests/Meziantou.Framework.Threading.Tests/AsyncLockTests.cs;region=AsyncLock_Cancellation;format=md-fenced-code-block;dedent=true -->
@@ -79,7 +79,7 @@ using (await asyncLock.LockAsync())
 
 ## Readers and writers with AsyncReaderWriterLock
 
-When most accesses only read the resource, `AsyncReaderWriterLock` lets several readers in at the same time, and gives
+When most accesses only read the resource, [AsyncReaderWriterLock](cref:Meziantou.Framework.Threading.AsyncReaderWriterLock) lets several readers in at the same time, and gives
 writers exclusive access:
 
 <!-- ref:../../tests/Meziantou.Framework.Threading.Tests/AsyncReaderWriterLockTests.cs;region=AsyncReaderWriterLock_Usage;format=md-fenced-code-block;dedent=true -->
@@ -110,7 +110,7 @@ Assert.Equal([2, 2], await Task.WhenAll(ReadAsync(), ReadAsync()));
 ```
 <!-- endref -->
 
-- `ReaderLockAsync` and `WriterLockAsync` return a releaser; dispose it to release the lock. Both accept a
+- [ReaderLockAsync](cref:Meziantou.Framework.Threading.AsyncReaderWriterLock.ReaderLockAsync) and [WriterLockAsync](cref:Meziantou.Framework.Threading.AsyncReaderWriterLock.WriterLockAsync) return a releaser; dispose it to release the lock. Both accept a
   `CancellationToken`.
 - Writers have priority: once a writer waits, new readers queue behind it, so a steady stream of readers cannot starve
   the writers.
@@ -140,18 +140,18 @@ Assert.Equal(2, semaphore.CurrentCount);
 
 | Method | Returns | Disposing it more than once |
 | --- | --- | --- |
-| `DisposableWait`, `DisposableWaitAsync` | An `IDisposable` | Releases the semaphore once |
-| `DisposableWaitUnsafe`, `DisposableWaitUnsafeAsync` | A `SemaphoreDisposer` struct | Releases the semaphore again for each copy |
+| [DisposableWait](cref:Meziantou.Framework.Threading.SemaphoreSlimExtensions.DisposableWait), [DisposableWaitAsync](cref:Meziantou.Framework.Threading.SemaphoreSlimExtensions.DisposableWaitAsync) | An `IDisposable` | Releases the semaphore once |
+| [DisposableWaitUnsafe](cref:Meziantou.Framework.Threading.SemaphoreSlimExtensions.DisposableWaitUnsafe), [DisposableWaitUnsafeAsync](cref:Meziantou.Framework.Threading.SemaphoreSlimExtensions.DisposableWaitUnsafeAsync) | A [SemaphoreDisposer](cref:Meziantou.Framework.Threading.SemaphoreSlimExtensions.SemaphoreDisposer) struct | Releases the semaphore again for each copy |
 
 The unsafe variants avoid allocating an object, but every copy of the struct releases the semaphore: dispose exactly one
-copy, exactly once. Prefer `DisposableWait` and `DisposableWaitAsync` unless the allocation matters. All of them accept a
+copy, exactly once. Prefer [DisposableWait](cref:Meziantou.Framework.Threading.SemaphoreSlimExtensions.DisposableWait) and [DisposableWaitAsync](cref:Meziantou.Framework.Threading.SemaphoreSlimExtensions.DisposableWaitAsync) unless the allocation matters. All of them accept a
 `CancellationToken`.
 
 ## Choose a lock
 
 | You need | Use |
 | --- | --- |
-| Exclusive access, with `await` inside | `AsyncLock` |
-| Many readers or one writer, with `await` inside | `AsyncReaderWriterLock` |
-| Up to N callers at the same time | `SemaphoreSlim` with `DisposableWaitAsync` |
-| One caller at a time per key | `KeyedAsyncLock<TKey>`, or `KeyedLock<TKey>` for synchronous code. See [Keyed locks](04-KeyedLocks.md) |
+| Exclusive access, with `await` inside | [AsyncLock](cref:Meziantou.Framework.Threading.AsyncLock) |
+| Many readers or one writer, with `await` inside | [AsyncReaderWriterLock](cref:Meziantou.Framework.Threading.AsyncReaderWriterLock) |
+| Up to N callers at the same time | `SemaphoreSlim` with [DisposableWaitAsync](cref:Meziantou.Framework.Threading.SemaphoreSlimExtensions.DisposableWaitAsync) |
+| One caller at a time per key | [KeyedAsyncLock\<TKey\>](cref:Meziantou.Framework.Threading.KeyedAsyncLock{TKey}), or [KeyedLock\<TKey\>](cref:Meziantou.Framework.Threading.KeyedLock{TKey}) for synchronous code. See [Keyed locks](04-KeyedLocks.md) |

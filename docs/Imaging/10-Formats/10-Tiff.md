@@ -3,7 +3,7 @@ title: TIFF and BigTIFF
 description: Read and write TIFF documents of one or several pages, compressed without loss, as JPEG or as bilevel scans.
 ---
 
-TIFF is the format of scanned documents, multi-page files and imaging pipelines. `TiffEncoder` writes every page without
+TIFF is the format of scanned documents, multi-page files and imaging pipelines. [TiffEncoder](cref:Meziantou.Framework.Imaging.Formats.TiffEncoder) writes every page without
 loss by default, compressed with Deflate, in a layout that follows the pixel format. **It needs a seekable
 destination.**
 
@@ -16,11 +16,11 @@ destination.**
 | Compression | None, Deflate, LZW, PackBits, CCITT (modified Huffman, Group 3, Group 4), JPEG, JPEG 2000 | None, Deflate (default), LZW, PackBits, CCITT for bilevel pages, JPEG |
 | Metadata | Resolution, orientation, ICC profile, XMP | The same |
 
-`Image.Load` reads the first page. Floating-point pages load as `RgbaHalf` (16 bits) or `RgbaFloat`.
+[Image.Load](cref:Meziantou.Framework.Imaging.Image.Load) reads the first page. Floating-point pages load as [RgbaHalf](cref:Meziantou.Framework.Imaging.RgbaHalf) (16 bits) or [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat).
 
 ## Write a document of several pages
 
-A document is an `ImageCollection` of pages, whose sizes and pixel formats may differ. `Image.Save` writes a document of
+A document is an [ImageCollection](cref:Meziantou.Framework.Imaging.ImageCollection) of pages, whose sizes and pixel formats may differ. [Image.Save](cref:Meziantou.Framework.Imaging.Image.Save) writes a document of
 one page:
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_TiffPages;format=md-fenced-code-block;dedent=true -->
@@ -48,7 +48,7 @@ public static Size WriteAndReadTiffDocument(string inputPath, string documentPat
 ```
 <!-- endref -->
 
-Loading a collection reads the structure of the document only; a page is decoded when you call `Decode`. See
+Loading a collection reads the structure of the document only; a page is decoded when you call [Decode](cref:Meziantou.Framework.Imaging.ImageCollectionEntry.Decode). See
 [Pages and representations](../04-Concepts/03-PagesAndRepresentations.md). An animated image is rejected: the pages of a
 document are not animation frames.
 
@@ -77,48 +77,48 @@ public static void SaveScanAsBilevel(string inputPath, string tiffPath, string p
 ```
 <!-- endref -->
 
-See [Binarization](../06-Processing/09-Binarization.md). A bilevel page loads back as `Gray8`, with one bit per component.
+See [Binarization](../06-Processing/09-Binarization.md). A bilevel page loads back as [Gray8](cref:Meziantou.Framework.Imaging.Gray8), with one bit per component.
 
 ## Options
 
 | Option | What it does | Default |
 | --- | --- | --- |
-| `Compression` | `None`, `Deflate`, `Lzw`, `PackBits`, `CcittModifiedHuffman`, `CcittGroup3`, `CcittGroup4` or `Jpeg` (lossy) | `Deflate` |
-| `PixelLayout` | `Auto` follows the pixel format; `Bilevel` writes one bit per pixel; `Indexed` writes a palette of at most 256 colors | `Auto` |
-| `JpegQuality` | The quality of `Jpeg` compression, as `JpegEncoder.Quality` | 90 |
-| `JpegChromaSubsampling` | The chroma subsampling of `Jpeg` compression | `Auto` (4:2:0) |
-| `BigTiff` | Writes a BigTIFF (64-bit offsets), which fewer readers accept | `false` |
-| `BigEndian` | Writes big-endian instead of little-endian files; the pixels are the same | `false` |
-| `RowsPerStrip` | The rows of a strip; 0 chooses strips of about 64 KiB of samples | 0 |
-| `MetadataHandling` | What to do with metadata TIFF cannot store | `Strict` |
+| [Compression](cref:Meziantou.Framework.Imaging.Formats.TiffEncoder.Compression) | [None](cref:Meziantou.Framework.Imaging.Formats.TiffCompression.None), [Deflate](cref:Meziantou.Framework.Imaging.Formats.TiffCompression.Deflate), [Lzw](cref:Meziantou.Framework.Imaging.Formats.TiffCompression.Lzw), [PackBits](cref:Meziantou.Framework.Imaging.Formats.TiffCompression.PackBits), [CcittModifiedHuffman](cref:Meziantou.Framework.Imaging.Formats.TiffCompression.CcittModifiedHuffman), [CcittGroup3](cref:Meziantou.Framework.Imaging.Formats.TiffCompression.CcittGroup3), [CcittGroup4](cref:Meziantou.Framework.Imaging.Formats.TiffCompression.CcittGroup4) or [Jpeg](cref:Meziantou.Framework.Imaging.Formats.TiffCompression.Jpeg) (lossy) | [Deflate](cref:Meziantou.Framework.Imaging.Formats.TiffCompression.Deflate) |
+| [PixelLayout](cref:Meziantou.Framework.Imaging.Formats.TiffEncoder.PixelLayout) | [Auto](cref:Meziantou.Framework.Imaging.Formats.TiffPixelLayout.Auto) follows the pixel format; [Bilevel](cref:Meziantou.Framework.Imaging.Formats.TiffPixelLayout.Bilevel) writes one bit per pixel; [Indexed](cref:Meziantou.Framework.Imaging.Formats.TiffPixelLayout.Indexed) writes a palette of at most 256 colors | [Auto](cref:Meziantou.Framework.Imaging.Formats.TiffPixelLayout.Auto) |
+| [JpegQuality](cref:Meziantou.Framework.Imaging.Formats.TiffEncoder.JpegQuality) | The quality of [Jpeg](cref:Meziantou.Framework.Imaging.Formats.TiffCompression.Jpeg) compression, as [JpegEncoder.Quality](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.Quality) | 90 |
+| [JpegChromaSubsampling](cref:Meziantou.Framework.Imaging.Formats.JpegChromaSubsampling) | The chroma subsampling of [Jpeg](cref:Meziantou.Framework.Imaging.Formats.TiffCompression.Jpeg) compression | [Auto](cref:Meziantou.Framework.Imaging.Formats.JpegChromaSubsampling.Auto) (4:2:0) |
+| [BigTiff](cref:Meziantou.Framework.Imaging.Formats.TiffEncoder.BigTiff) | Writes a BigTIFF (64-bit offsets), which fewer readers accept | `false` |
+| [BigEndian](cref:Meziantou.Framework.Imaging.Formats.TiffEncoder.BigEndian) | Writes big-endian instead of little-endian files; the pixels are the same | `false` |
+| [RowsPerStrip](cref:Meziantou.Framework.Imaging.Formats.TiffEncoder.RowsPerStrip) | The rows of a strip; 0 chooses strips of about 64 KiB of samples | 0 |
+| [MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling) | What to do with metadata TIFF cannot store | [Strict](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling.Strict) |
 
 ## Exact or rejected
 
-`TiffEncoder` has no background color, no bit-depth reduction and no color reduction: the bilevel and palette layouts
-store a page exactly or reject it with an `UnsupportedImageFeatureException` before anything of the page is written.
+[TiffEncoder](cref:Meziantou.Framework.Imaging.Formats.TiffEncoder) has no background color, no bit-depth reduction and no color reduction: the bilevel and palette layouts
+store a page exactly or reject it with an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException) before anything of the page is written.
 
-- `Bilevel` rejects a pixel that is not opaque and exactly black or white; `Indexed` rejects a page with more than 256
+- [Bilevel](cref:Meziantou.Framework.Imaging.Formats.TiffPixelLayout.Bilevel) rejects a pixel that is not opaque and exactly black or white; [Indexed](cref:Meziantou.Framework.Imaging.Formats.TiffPixelLayout.Indexed) rejects a page with more than 256
   colors or a pixel that is not opaque.
-- The CCITT compressions require `PixelLayout = Bilevel`, and `Jpeg` requires `Auto`: another combination throws an
+- The CCITT compressions require `PixelLayout = Bilevel`, and [Jpeg](cref:Meziantou.Framework.Imaging.Formats.TiffCompression.Jpeg) requires [Auto](cref:Meziantou.Framework.Imaging.Formats.JpegChromaSubsampling.Auto): another combination throws an
   `ArgumentException`.
-- `Jpeg` is the only lossy compression. It stores 8-bit samples without alpha: a 16-bit pixel format or a pixel that is
+- [Jpeg](cref:Meziantou.Framework.Imaging.Formats.TiffCompression.Jpeg) is the only lossy compression. It stores 8-bit samples without alpha: a 16-bit pixel format or a pixel that is
   not opaque is rejected.
 
 ## Pitfalls
 
 - The destination must be seekable: a directory stores the offsets of the strips it describes, which are only known once
   they are written. A non-seekable stream is rejected before anything is written; paths are always seekable.
-- EXIF blocks and text entries are not written: they follow `MetadataHandling`, which rejects them by default.
-- Floating-point pages are written as 32-bit floats with `PixelLayout = Auto` and any compression but `Jpeg`. A
+- EXIF blocks and text entries are not written: they follow [MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling), which rejects them by default.
+- Floating-point pages are written as 32-bit floats with `PixelLayout = Auto` and any compression but [Jpeg](cref:Meziantou.Framework.Imaging.Formats.TiffCompression.Jpeg). A
   floating-point page without an ICC profile is read as linear light, so the image must be labeled
-  `ColorTransferFunction.Linear` (the label of a new floating-point image) or have an ICC profile. See
+  [ColorTransferFunction.Linear](cref:Meziantou.Framework.Imaging.Metadata.ColorTransferFunction.Linear) (the label of a new floating-point image) or have an ICC profile. See
   [Pixel formats](../04-Concepts/05-PixelFormats.md).
-- CMYK pages load only with `ImageDecodeOptions.CmykConversion`, which converts them to RGB (see
+- CMYK pages load only with [ImageDecodeOptions.CmykConversion](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.CmykConversion), which converts them to RGB (see
   [Color management](../09-Color/03-ColorManagement.md)). CMYK is never written.
-- The orientation of a page is reported, never applied: call `AutoOrient`.
+- The orientation of a page is reported, never applied: call [AutoOrient](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoOrient).
 - Old-style JPEG compression, L\*a\*b\* data, planar storage of several samples and 64-bit floating-point samples are
-  rejected with an `UnsupportedImageFeatureException`. Compressed data is never repaired: a damaged strip is an
-  `InvalidImageContentException`, never a page completed with white.
+  rejected with an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException). Compressed data is never repaired: a damaged strip is an
+  [InvalidImageContentException](cref:Meziantou.Framework.Imaging.InvalidImageContentException), never a page completed with white.
 - Some writers store one `BitsPerSample` value for all the samples, extra values, or no byte counts for a page of one
   uncompressed strip. These files are rejected by default; the
   [lenient decoding](../05-LoadingAndSaving/08-ErrorHandling.md#accept-the-files-browsers-accept) reads them the way

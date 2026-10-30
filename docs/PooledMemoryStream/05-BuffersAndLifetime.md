@@ -52,5 +52,5 @@ for a larger stream, it returns `int.MaxValue`.
 
 ## Threads
 
-A `PooledMemoryStream` is not thread-safe, like a `MemoryStream`: use an instance from one thread at a time. The pool
+A [PooledMemoryStream](cref:Meziantou.Framework.PooledMemoryStream) is not thread-safe, like a `MemoryStream`: use an instance from one thread at a time. The pool
 the streams share is thread-safe, so streams used by different threads need no synchronization.

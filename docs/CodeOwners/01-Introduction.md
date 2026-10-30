@@ -21,7 +21,7 @@ reviewers from your own automation.
 ## Principles
 
 - **The dialect is explicit.** GitHub and GitLab do not accept the same syntax, so every parse takes a
-  `CodeOwnersDialect`. See [Choose the dialect](02-GettingStarted.md#choose-the-dialect).
+  [CodeOwnersDialect](cref:Meziantou.Framework.CodeOwners.CodeOwnersDialect). See [Choose the dialect](02-GettingStarted.md#choose-the-dialect).
 - **A file is valid or it is not.** Parsing stops at the first error: you get the error, never a partially parsed
   file.
 - **Values are copied out of the content.** A parsed file does not reference the string or the span it was parsed
@@ -36,12 +36,12 @@ All the types are in the [Meziantou.Framework.CodeOwners](cref:Meziantou.Framewo
 
 | Type | Contains |
 | --- | --- |
-| `CodeOwnersFile` | `Parse`, `TryParse` and the `Entries` of a file |
-| `CodeOwnersDialect` | `GitHub` or `GitLab` |
-| `CodeOwnersEntry` | A pattern, its owners and its section |
-| `CodeOwner` | An owner and its `CodeOwnerType` |
-| `CodeOwnersSection` | A GitLab section |
-| `CodeOwnersParseError`, `CodeOwnersParseErrorKind`, `CodeOwnersParseException` | Why and where a file is invalid |
+| [CodeOwnersFile](cref:Meziantou.Framework.CodeOwners.CodeOwnersFile) | [Parse](cref:Meziantou.Framework.CodeOwners.CodeOwnersFile.Parse), [TryParse](cref:Meziantou.Framework.CodeOwners.CodeOwnersFile.TryParse) and the [Entries](cref:Meziantou.Framework.CodeOwners.CodeOwnersFile.Entries) of a file |
+| [CodeOwnersDialect](cref:Meziantou.Framework.CodeOwners.CodeOwnersDialect) | [GitHub](cref:Meziantou.Framework.CodeOwners.CodeOwnersDialect.GitHub) or [GitLab](cref:Meziantou.Framework.CodeOwners.CodeOwnersDialect.GitLab) |
+| [CodeOwnersEntry](cref:Meziantou.Framework.CodeOwners.CodeOwnersEntry) | A pattern, its owners and its section |
+| [CodeOwner](cref:Meziantou.Framework.CodeOwners.CodeOwner) | An owner and its [CodeOwnerType](cref:Meziantou.Framework.CodeOwners.CodeOwnerType) |
+| [CodeOwnersSection](cref:Meziantou.Framework.CodeOwners.CodeOwnersSection) | A GitLab section |
+| [CodeOwnersParseError](cref:Meziantou.Framework.CodeOwners.CodeOwnersParseError), [CodeOwnersParseErrorKind](cref:Meziantou.Framework.CodeOwners.CodeOwnersParseErrorKind), [CodeOwnersParseException](cref:Meziantou.Framework.CodeOwners.CodeOwnersParseException) | Why and where a file is invalid |
 
 ## Next steps
 

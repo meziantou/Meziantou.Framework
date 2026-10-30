@@ -5,13 +5,13 @@ description: Detect whether the application runs inside an AI coding agent or an
 
 `Meziantou.Framework.LLMContext` tells whether the current process runs inside an AI coding agent or another LLM tool,
 such as Claude Code, Cursor, GitHub Copilot or Codex, and which one. These tools set environment variables in the
-commands they run, and the processes these commands start inherit them: `LLMContextDetector` recognizes those
+commands they run, and the processes these commands start inherit them: [LLMContextDetector](cref:Meziantou.Framework.LLMContext.LLMContextDetector) recognizes those
 variables.
 
 ## What you can do with it
 
-- **Detect an agent** with `LLMContextDetector.IsLLMContext`, and list the detected tools with
-  `LLMContextDetector.Detect`. See [Getting started](02-GettingStarted.md).
+- **Detect an agent** with [LLMContextDetector.IsLLMContext](cref:Meziantou.Framework.LLMContext.LLMContextDetector.IsLLMContext), and list the detected tools with
+  [LLMContextDetector.Detect](cref:Meziantou.Framework.LLMContext.LLMContextDetector.Detect). See [Getting started](02-GettingStarted.md).
 - **Know the variables** each tool is recognized by. See [Detection rules](03-DetectionRules.md).
 
 ## When to use it
@@ -28,7 +28,7 @@ remove these variables. And a process started by an agent, even indirectly, inhe
 
 ## Namespace
 
-`LLMContextDetector` and `LLMContextKind` are in the [Meziantou.Framework.LLMContext](cref:Meziantou.Framework.LLMContext) namespace.
+[LLMContextDetector](cref:Meziantou.Framework.LLMContext.LLMContextDetector) and [LLMContextKind](cref:Meziantou.Framework.LLMContext.LLMContextKind) are in the [Meziantou.Framework.LLMContext](cref:Meziantou.Framework.LLMContext) namespace.
 
 ## Next steps
 

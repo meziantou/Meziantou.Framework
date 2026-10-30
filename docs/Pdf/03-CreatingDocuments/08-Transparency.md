@@ -4,7 +4,7 @@ description: Paint with an opacity, blend colors with the colors under them, fad
 ---
 
 The transparency parameters have no operator of their own: they are set by a graphics state parameter dictionary,
-`PdfExtGState`, with `SetGraphicsState`. They last until the graphics state is restored.
+[PdfExtGState](cref:Meziantou.Framework.Pdf.PdfExtGState), with [SetGraphicsState](cref:Meziantou.Framework.Pdf.PdfContentBuilder.SetGraphicsState). They last until the graphics state is restored.
 
 <!-- ref:../../../tests/Meziantou.Framework.Pdf.Tests/PdfContentBuilderTests.cs;region=Pdf_DrawTransparency;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -47,35 +47,35 @@ public static void DrawTransparency(string outputPath)
 
 ## Opacity and blend modes
 
-- `FillAlpha` is the opacity of the fills, text and images, from 0 (transparent) to 1 (opaque); `StrokeAlpha` the
+- [FillAlpha](cref:Meziantou.Framework.Pdf.PdfExtGState.FillAlpha) is the opacity of the fills, text and images, from 0 (transparent) to 1 (opaque); [StrokeAlpha](cref:Meziantou.Framework.Pdf.PdfExtGState.StrokeAlpha) the
   opacity of the outlines.
-- `BlendMode` combines the colors with the colors under them: `Multiply` darkens, `Screen` lightens, and `Overlay`,
-  `Darken`, `Lighten`, `ColorDodge`, `ColorBurn`, `HardLight`, `SoftLight`, `Difference`, `Exclusion`, `Hue`,
-  `Saturation`, `Color` and `Luminosity` are the other blend modes of PDF.
-- The members of a `PdfExtGState` that are not set do not change the graphics state. It also sets the line style, the
-  overprint and the flatness. A `PdfExtGState` is immutable and does not belong to a document: create one for each
+- [BlendMode](cref:Meziantou.Framework.Pdf.PdfExtGState.BlendMode) combines the colors with the colors under them: [Multiply](cref:Meziantou.Framework.Pdf.PdfBlendMode.Multiply) darkens, [Screen](cref:Meziantou.Framework.Pdf.PdfBlendMode.Screen) lightens, and [Overlay](cref:Meziantou.Framework.Pdf.PdfBlendMode.Overlay),
+  [Darken](cref:Meziantou.Framework.Pdf.PdfBlendMode.Darken), [Lighten](cref:Meziantou.Framework.Pdf.PdfBlendMode.Lighten), [ColorDodge](cref:Meziantou.Framework.Pdf.PdfBlendMode.ColorDodge), [ColorBurn](cref:Meziantou.Framework.Pdf.PdfBlendMode.ColorBurn), [HardLight](cref:Meziantou.Framework.Pdf.PdfBlendMode.HardLight), [SoftLight](cref:Meziantou.Framework.Pdf.PdfBlendMode.SoftLight), [Difference](cref:Meziantou.Framework.Pdf.PdfBlendMode.Difference), [Exclusion](cref:Meziantou.Framework.Pdf.PdfBlendMode.Exclusion), [Hue](cref:Meziantou.Framework.Pdf.PdfBlendMode.Hue),
+  [Saturation](cref:Meziantou.Framework.Pdf.PdfBlendMode.Saturation), [Color](cref:Meziantou.Framework.Pdf.PdfBlendMode.Color) and [Luminosity](cref:Meziantou.Framework.Pdf.PdfBlendMode.Luminosity) are the other blend modes of PDF.
+- The members of a [PdfExtGState](cref:Meziantou.Framework.Pdf.PdfExtGState) that are not set do not change the graphics state. It also sets the line style, the
+  overprint and the flatness. A [PdfExtGState](cref:Meziantou.Framework.Pdf.PdfExtGState) is immutable and does not belong to a document: create one for each
   combination of parameters, and reuse it.
 
 ## Soft masks
 
 A soft mask gives an opacity to each point of what is painted, from a form that is a transparency group:
 
-- `PdfSoftMask.FromLuminosity` takes the opacity from the brightness of the group: white is opaque, black is
-  transparent, as the gradient of the example. The group must have a color space (`PdfTransparencyGroup.ColorSpace`).
-- `PdfSoftMask.FromAlpha` takes it from the opacity of the group.
-- `PdfSoftMask.None` removes the current soft mask.
+- [PdfSoftMask.FromLuminosity](cref:Meziantou.Framework.Pdf.PdfSoftMask.FromLuminosity) takes the opacity from the brightness of the group: white is opaque, black is
+  transparent, as the gradient of the example. The group must have a color space ([PdfTransparencyGroup.ColorSpace](cref:Meziantou.Framework.Pdf.PdfTransparencyGroup.ColorSpace)).
+- [PdfSoftMask.FromAlpha](cref:Meziantou.Framework.Pdf.PdfSoftMask.FromAlpha) takes it from the opacity of the group.
+- [PdfSoftMask.None](cref:Meziantou.Framework.Pdf.PdfSoftMask.None) removes the current soft mask.
 
-A transfer function can change the opacity the mask gives, and `FromLuminosity` takes the color the group is composited
+A transfer function can change the opacity the mask gives, and [FromLuminosity](cref:Meziantou.Framework.Pdf.PdfSoftMask.FromLuminosity) takes the color the group is composited
 on (black by default).
 
 ## Transparency groups
 
-A form created with a `PdfTransparencyGroup` is composited as one object: its objects are combined together first, then
+A form created with a [PdfTransparencyGroup](cref:Meziantou.Framework.Pdf.PdfTransparencyGroup) is composited as one object: its objects are combined together first, then
 the result is painted with the opacity and the blend mode of the graphics state. A logo whose shapes overlap painted at
 50% opacity is then evenly translucent, without darker overlaps.
 
-- `Isolated`: the group is composited on a transparent backdrop, not on what is under it.
-- `Knockout`: each object of the group replaces the objects of the group under it instead of being composited with them.
-- `ColorSpace`: the color space the colors are blended in.
+- [Isolated](cref:Meziantou.Framework.Pdf.PdfTransparencyGroup.Isolated): the group is composited on a transparent backdrop, not on what is under it.
+- [Knockout](cref:Meziantou.Framework.Pdf.PdfTransparencyGroup.Knockout): each object of the group replaces the objects of the group under it instead of being composited with them.
+- [ColorSpace](cref:Meziantou.Framework.Pdf.PdfTransparencyGroup.ColorSpace): the color space the colors are blended in.
 
 PDF/A-1 does not allow transparency: see [PDF/A](../08-AccessibilityAndArchiving/03-PdfA.md).

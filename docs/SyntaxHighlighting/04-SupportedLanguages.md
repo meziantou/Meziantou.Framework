@@ -3,8 +3,8 @@ title: Supported languages
 description: The languages the highlighter supports, their identifiers and aliases, and how to check an identifier.
 ---
 
-`Highlight` and `TryHighlight` take the identifier of a language or one of its aliases. They are case-insensitive.
-`IsSupported` checks an identifier, and `GetSupportedLanguages` returns every identifier and alias, in ordinal order:
+[Highlight](cref:Meziantou.Framework.SyntaxHighlighting.SyntaxHighlighter.Highlight) and [TryHighlight](cref:Meziantou.Framework.SyntaxHighlighting.SyntaxHighlighter.TryHighlight) take the identifier of a language or one of its aliases. They are case-insensitive.
+[IsSupported](cref:Meziantou.Framework.SyntaxHighlighting.SyntaxHighlighter.IsSupported) checks an identifier, and [GetSupportedLanguages](cref:Meziantou.Framework.SyntaxHighlighting.SyntaxHighlighter.GetSupportedLanguages) returns every identifier and alias, in ordinal order:
 
 <!-- ref:../../tests/Meziantou.Framework.SyntaxHighlighting.Tests/HighlighterTests.cs;region=SyntaxHighlighter_IsSupported;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -136,5 +136,5 @@ Assert.Contains("csharp", languages);
 ## Language identifiers from Markdown
 
 The identifiers are the names commonly written after the opening fence of a Markdown code block, such as `csharp` or
-`ts`, so you can pass that name as is. It comes from the author of the document: use `TryHighlight` and render the code
+`ts`, so you can pass that name as is. It comes from the author of the document: use [TryHighlight](cref:Meziantou.Framework.SyntaxHighlighting.SyntaxHighlighter.TryHighlight) and render the code
 as plain text when the language is not supported. See [Untrusted input](06-UntrustedInput.md#unknown-languages).

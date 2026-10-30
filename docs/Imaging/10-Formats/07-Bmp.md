@@ -3,7 +3,7 @@ title: BMP
 description: Read Windows and OS/2 bitmaps, and write 24-bit, 32-bit, indexed, run-length or 16-bit BMP files.
 ---
 
-BMP is the uncompressed bitmap format of Windows. `BmpEncoder` writes the most widely readable layouts by default, and
+BMP is the uncompressed bitmap format of Windows. [BmpEncoder](cref:Meziantou.Framework.Imaging.Formats.BmpEncoder) writes the most widely readable layouts by default, and
 the indexed, run-length and 16-bit layouts on request. Nothing is lost silently: a layout that drops alpha, colors or
 precision needs an explicit setting.
 
@@ -18,11 +18,11 @@ precision needs an explicit setting.
 | Metadata | Resolution | Resolution |
 
 A 32-bit file is transparent only when it declares an alpha mask: the fourth byte of a plain 32-bit file is padding, so
-such a file loads as opaque `Rgb24`.
+such a file loads as opaque [Rgb24](cref:Meziantou.Framework.Imaging.Rgb24).
 
 ## Save a BMP file
 
-By default (`BmpPixelLayout.Auto`), pixel formats with alpha are written as 32-bit with an explicit alpha mask, and the
+By default ([BmpPixelLayout.Auto](cref:Meziantou.Framework.Imaging.Formats.BmpPixelLayout.Auto)), pixel formats with alpha are written as 32-bit with an explicit alpha mask, and the
 others as 24-bit. Another layout is chosen explicitly, with the settings for what it drops:
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_SaveAssetFormats;format=md-fenced-code-block;dedent=true -->
@@ -50,7 +50,7 @@ public static void SaveAssetFormats(string inputPath, string bmpPath, string tga
 ## Write an indexed bitmap
 
 The indexed layouts store the colors of the image exactly when the palette can hold them (2, 16 or 256 colors), and reject
-the image otherwise, unless `AllowColorReduction` is set. `Indexed4` and `Indexed8` can be run-length encoded:
+the image otherwise, unless [AllowColorReduction](cref:Meziantou.Framework.Imaging.Formats.BmpEncoder.AllowColorReduction) is set. [Indexed4](cref:Meziantou.Framework.Imaging.Formats.BmpPixelLayout.Indexed4) and [Indexed8](cref:Meziantou.Framework.Imaging.Formats.BmpPixelLayout.Indexed8) can be run-length encoded:
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_SaveBmpIndexed;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -75,32 +75,32 @@ public static void SaveIndexedBmp(string inputPath, string outputPath)
 ```
 <!-- endref -->
 
-A BMP palette has no alpha, so an image with pixels that are not opaque needs `BackgroundColor`. Run-length output is
+A BMP palette has no alpha, so an image with pixels that are not opaque needs [BackgroundColor](cref:Meziantou.Framework.Imaging.Formats.BmpEncoder.BackgroundColor). Run-length output is
 lossless, but can be larger than uncompressed output.
 
 ## Options
 
 | Option | What it does | Default |
 | --- | --- | --- |
-| `PixelLayout` | `Auto`, `Bgr24`, `Bgra32`, `Indexed1`, `Indexed4`, `Indexed8`, `Bgr565` or `Bgr555` | `Auto` |
-| `Compression` | `RunLength` encodes `Indexed4` and `Indexed8` bottom-up layouts | `None` |
-| `RowOrder` | `BottomUp` or `TopDown` | `BottomUp` |
-| `BackgroundColor` | The opaque color pixels that are not opaque are composited over, by every layout but `Bgra32`; `null` rejects them | `null` |
-| `AllowBitDepthReduction` | Lets 16-bit pixel formats be rounded to 8 bits, and any pixel format to the 5 or 6 bits of the 16-bit layouts | `false` |
-| `AllowColorReduction` | Lets an indexed layout reduce the colors that do not fit its palette | `false` |
-| `Quantization` | How the colors are reduced: number of colors, dithering, fixed palette (see [Color reduction](../06-Processing/08-ColorReduction.md)) | 256 colors (limited by the layout), no dithering |
-| `MetadataHandling` | What to do with metadata BMP cannot store | `Strict` |
+| [PixelLayout](cref:Meziantou.Framework.Imaging.Formats.BmpEncoder.PixelLayout) | [Auto](cref:Meziantou.Framework.Imaging.Formats.BmpPixelLayout.Auto), [Bgr24](cref:Meziantou.Framework.Imaging.Formats.BmpPixelLayout.Bgr24), [Bgra32](cref:Meziantou.Framework.Imaging.Bgra32), [Indexed1](cref:Meziantou.Framework.Imaging.Formats.BmpPixelLayout.Indexed1), [Indexed4](cref:Meziantou.Framework.Imaging.Formats.BmpPixelLayout.Indexed4), [Indexed8](cref:Meziantou.Framework.Imaging.Formats.BmpPixelLayout.Indexed8), [Bgr565](cref:Meziantou.Framework.Imaging.Bgr565) or [Bgr555](cref:Meziantou.Framework.Imaging.Formats.BmpPixelLayout.Bgr555) | [Auto](cref:Meziantou.Framework.Imaging.Formats.BmpPixelLayout.Auto) |
+| [Compression](cref:Meziantou.Framework.Imaging.Formats.BmpEncoder.Compression) | [RunLength](cref:Meziantou.Framework.Imaging.Formats.BmpCompression.RunLength) encodes [Indexed4](cref:Meziantou.Framework.Imaging.Formats.BmpPixelLayout.Indexed4) and [Indexed8](cref:Meziantou.Framework.Imaging.Formats.BmpPixelLayout.Indexed8) bottom-up layouts | [None](cref:Meziantou.Framework.Imaging.Formats.BmpCompression.None) |
+| [RowOrder](cref:Meziantou.Framework.Imaging.Formats.BmpEncoder.RowOrder) | [BottomUp](cref:Meziantou.Framework.Imaging.Formats.BmpRowOrder.BottomUp) or [TopDown](cref:Meziantou.Framework.Imaging.Formats.BmpRowOrder.TopDown) | [BottomUp](cref:Meziantou.Framework.Imaging.Formats.BmpRowOrder.BottomUp) |
+| [BackgroundColor](cref:Meziantou.Framework.Imaging.Formats.BmpEncoder.BackgroundColor) | The opaque color pixels that are not opaque are composited over, by every layout but [Bgra32](cref:Meziantou.Framework.Imaging.Bgra32); `null` rejects them | `null` |
+| [AllowBitDepthReduction](cref:Meziantou.Framework.Imaging.Formats.BmpEncoder.AllowBitDepthReduction) | Lets 16-bit pixel formats be rounded to 8 bits, and any pixel format to the 5 or 6 bits of the 16-bit layouts | `false` |
+| [AllowColorReduction](cref:Meziantou.Framework.Imaging.Formats.BmpEncoder.AllowColorReduction) | Lets an indexed layout reduce the colors that do not fit its palette | `false` |
+| [Quantization](cref:Meziantou.Framework.Imaging.Formats.BmpEncoder.Quantization) | How the colors are reduced: number of colors, dithering, fixed palette (see [Color reduction](../06-Processing/08-ColorReduction.md)) | 256 colors (limited by the layout), no dithering |
+| [MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling) | What to do with metadata BMP cannot store | [Strict](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling.Strict) |
 
-`MaxColors` and `Dithering` are obsolete aliases of `Quantization.MaxColors` and `Quantization.Dithering`.
+[MaxColors](cref:Meziantou.Framework.Imaging.Formats.BmpEncoder.MaxColors) and [Dithering](cref:Meziantou.Framework.Imaging.Formats.BmpEncoder.Dithering) are obsolete aliases of `Quantization.MaxColors` and `Quantization.Dithering`.
 
 ## Pitfalls
 
 - BMP stores one frame: save one frame of an animation with `image.Frames[i].Save`.
-- `Compression = RunLength` with another layout than `Indexed4` or `Indexed8`, or with top-down rows, throws an
+- `Compression = RunLength` with another layout than [Indexed4](cref:Meziantou.Framework.Imaging.Formats.BmpPixelLayout.Indexed4) or [Indexed8](cref:Meziantou.Framework.Imaging.Formats.BmpPixelLayout.Indexed8), or with top-down rows, throws an
   `ArgumentException`.
-- BMP stores no ICC profile, EXIF, XMP, orientation or text: they follow `MetadataHandling`, which rejects them by
+- BMP stores no ICC profile, EXIF, XMP, orientation or text: they follow [MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling), which rejects them by
   default. Embedded ICC profiles of V4 and V5 headers are not read.
 - The decoder rejects embedded JPEG or PNG payloads, OS/2 Huffman compression, 2-bit files and channels wider than 8 bits
-  with an `UnsupportedImageFeatureException`. Run-length data is read strictly: a run past its row or a missing
-  end-of-bitmap marker is an `InvalidImageContentException`.
+  with an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException). Run-length data is read strictly: a run past its row or a missing
+  end-of-bitmap marker is an [InvalidImageContentException](cref:Meziantou.Framework.Imaging.InvalidImageContentException).
 - The indexed layouts keep one byte per pixel of working memory while they encode.

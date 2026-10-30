@@ -5,7 +5,7 @@ description: Count the requests the mock received, capture what the client sent,
 
 ## Count the requests
 
-`RequestCounter` counts the requests the mock received, in total and per endpoint. It is a service of the mock: get it
+[RequestCounter](cref:Meziantou.Framework.RequestCounter) counts the requests the mock received, in total and per endpoint. It is a service of the mock: get it
 from `Application.Services` to check the number of calls once the code under test has run.
 
 <!-- ref:../../tests/Meziantou.Framework.HttpClientMock.Tests/MockTests.cs;region=HttpClientMock_TotalCount;format=md-fenced-code-block;dedent=true -->
@@ -24,11 +24,11 @@ Assert.Equal(2, counter.TotalCount);
 ```
 <!-- endref -->
 
-`TotalCount` counts every request, including the ones that match no endpoint.
+[TotalCount](cref:Meziantou.Framework.RequestCounter.TotalCount) counts every request, including the ones that match no endpoint.
 
 ## Return a different response on each call
 
-A handler can take the `RequestCounter` as a parameter. `Get()` returns the number of requests received by the endpoint
+A handler can take the [RequestCounter](cref:Meziantou.Framework.RequestCounter) as a parameter. [Get()](cref:Meziantou.Framework.RequestCounter.Get) returns the number of requests received by the endpoint
 that handles the current request:
 
 <!-- ref:../../tests/Meziantou.Framework.HttpClientMock.Tests/MockTests.cs;region=HttpClientMock_SequenceOfResponses;format=md-fenced-code-block;dedent=true -->
@@ -47,7 +47,7 @@ Assert.Equal(HttpStatusCode.OK, second.StatusCode);
 ```
 <!-- endref -->
 
-A request is counted before its handler runs: in the handler, `Get()` returns `1` for the first request. A request whose
+A request is counted before its handler runs: in the handler, [Get()](cref:Meziantou.Framework.RequestCounter.Get) returns `1` for the first request. A request whose
 handler throws is counted too.
 
 `Get(HttpContext)` and `Get(Endpoint)` return the count of another endpoint, from the `HttpContext` of one of its requests

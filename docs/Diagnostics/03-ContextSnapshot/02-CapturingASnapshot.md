@@ -5,7 +5,7 @@ description: Pick the information to capture, add values of your own, read the r
 
 ## Pick the information you need
 
-`AddDefault` adds everything. To keep the snapshot small, or to avoid information you do not want to collect, call
+[AddDefault](cref:Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder.AddDefault) adds everything. To keep the snapshot small, or to avoid information you do not want to collect, call
 the `Add*` methods you need instead. Each one adds one key to the snapshot and returns the builder, so the calls can
 be chained:
 
@@ -28,11 +28,11 @@ Assert.Equal(OperatingSystem.IsWindows(), operatingSystem.IsWindows);
 ```
 <!-- endref -->
 
-- `BuildSnapshot` returns an `IReadOnlyDictionary<string, object?>`. The keys are sorted in ordinal order, so two
+- [BuildSnapshot](cref:Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder.BuildSnapshot) returns an `IReadOnlyDictionary<string, object?>`. The keys are sorted in ordinal order, so two
   snapshots serialized to JSON can be compared line by line.
-- Each value is a snapshot object, such as `OperatingSystemSnapshot`, or a plain value such as a number or a string.
+- Each value is a snapshot object, such as [OperatingSystemSnapshot](cref:Meziantou.Framework.Diagnostics.ContextSnapshot.OperatingSystemSnapshot), or a plain value such as a number or a string.
   The keys and the types are listed in [What a snapshot contains](03-WhatASnapshotContains.md).
-- `BuildSnapshot` can be called several times. Each call returns a new dictionary; the builder keeps its values.
+- [BuildSnapshot](cref:Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder.BuildSnapshot) can be called several times. Each call returns a new dictionary; the builder keeps its values.
 
 ## Add your own values
 
@@ -45,15 +45,15 @@ application, and values that your serializer can write.
 
 ## Information that is not in AddDefault
 
-Two methods are not called by `AddDefault`:
+Two methods are not called by [AddDefault](cref:Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder.AddDefault):
 
 | Method | Key | Content |
 | --- | --- | --- |
-| `AddDotnetRuntime` | `Dotnet` | The runtime identifier, the framework description, and whether the runtime is Mono |
-| `AddCommonAppContext` | `AppContext.<name>` | A fixed list of well-known `AppContext` switches and data, only those that are set |
+| [AddDotnetRuntime](cref:Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder.AddDotnetRuntime) | `Dotnet` | The runtime identifier, the framework description, and whether the runtime is Mono |
+| [AddCommonAppContext](cref:Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder.AddCommonAppContext) | `AppContext.<name>` | A fixed list of well-known `AppContext` switches and data, only those that are set |
 
-`AddDefault` calls `AddAppContextData`, which already adds every `AppContext` switch and data value of the process, so
-`AddCommonAppContext` is only useful without `AddDefault`. `AddAppContextData` reads the private fields of
+[AddDefault](cref:Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder.AddDefault) calls [AddAppContextData](cref:Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder.AddAppContextData), which already adds every `AppContext` switch and data value of the process, so
+[AddCommonAppContext](cref:Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder.AddCommonAppContext) is only useful without [AddDefault](cref:Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder.AddDefault). [AddAppContextData](cref:Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder.AddAppContextData) reads the private fields of
 `AppContext` by reflection; when they are not found, it adds nothing.
 
 ## Serialize the snapshot
@@ -80,7 +80,7 @@ var json = JsonSerializer.Serialize(snapshot, new JsonSerializerOptions
 ```
 <!-- endref -->
 
-Add a `JsonStringEnumConverter` to write the enumeration values, such as `OSArchitecture` or `DriveType`, as names:
+Add a `JsonStringEnumConverter` to write the enumeration values, such as [OSArchitecture](cref:Meziantou.Framework.Diagnostics.ContextSnapshot.OperatingSystemSnapshot.OSArchitecture) or [DriveType](cref:Meziantou.Framework.Diagnostics.ContextSnapshot.DriveSnapshot.DriveType), as names:
 without it, they are written as numbers. The values are declared as `object`, so the serializer writes each one with
 the properties of its actual type.
 

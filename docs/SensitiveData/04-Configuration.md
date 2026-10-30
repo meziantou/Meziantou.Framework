@@ -3,13 +3,13 @@ title: Configuration
 description: Bind secrets from the configuration to SensitiveData properties, and convert strings with the type converter.
 ---
 
-`SensitiveData<char>` has a type converter that creates it from a string. The configuration binder of
+[SensitiveData\<char\>](cref:Meziantou.Framework.SensitiveData{T}) has a type converter that creates it from a string. The configuration binder of
 `Microsoft.Extensions.Configuration` uses it, so a secret read from `appsettings.json`, an environment variable or a
-vault binds directly to a `SensitiveData<char>` property.
+vault binds directly to a [SensitiveData\<char\>](cref:Meziantou.Framework.SensitiveData{T}) property.
 
 ## Bind an options class
 
-Declare the secret as a `SensitiveData<char>` property:
+Declare the secret as a [SensitiveData\<char\>](cref:Meziantou.Framework.SensitiveData{T}) property:
 
 <!-- ref:../../tests/Meziantou.Framework.SensitiveData.Tests/SensitiveDataTests.cs;region=SensitiveData_ConfigurationOptions;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -40,10 +40,10 @@ Assert.Equal("my-api-key", options.ApiKey.RevealToString());
 <!-- endref -->
 
 Logging or serializing the options object no longer shows the key. The configuration providers still hold the
-original string: `SensitiveData<char>` protects the copy your application passes around, not the
+original string: [SensitiveData\<char\>](cref:Meziantou.Framework.SensitiveData{T}) protects the copy your application passes around, not the
 configuration source.
 
-The options object owns the `SensitiveData<char>` instances it holds. With the options pattern, the options usually live as
+The options object owns the [SensitiveData\<char\>](cref:Meziantou.Framework.SensitiveData{T}) instances it holds. With the options pattern, the options usually live as
 long as the application, and so do the secrets they hold.
 
 ## Use the type converter
@@ -63,8 +63,8 @@ Assert.Throws<NotSupportedException>(() => converter.ConvertToInvariantString(se
 ```
 <!-- endref -->
 
-- A string converts to a `SensitiveData<char>`.
-- Converting a `SensitiveData<T>` to a string throws a `NotSupportedException`, so a component that converts values
+- A string converts to a [SensitiveData\<char\>](cref:Meziantou.Framework.SensitiveData{T}).
+- Converting a [SensitiveData\<T\>](cref:Meziantou.Framework.SensitiveData{T}) to a string throws a `NotSupportedException`, so a component that converts values
   to strings for display cannot reveal the contents by accident.
-- Only `SensitiveData<char>` converts from a string. The converter of another element type, such as
-  `SensitiveData<byte>`, reports that it cannot convert from a string.
+- Only [SensitiveData\<char\>](cref:Meziantou.Framework.SensitiveData{T}) converts from a string. The converter of another element type, such as
+  [SensitiveData\<byte\>](cref:Meziantou.Framework.SensitiveData{T}), reports that it cannot convert from a string.

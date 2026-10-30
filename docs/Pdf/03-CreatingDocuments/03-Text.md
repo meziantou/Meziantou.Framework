@@ -3,12 +3,12 @@ title: Text
 description: Show text with the standard fonts, measure it to center, align and wrap it, and change the spacing, the scaling and the rendering of the glyphs.
 ---
 
-`DrawText` shows a line of text at a position, with a font and a size. The text is painted with the fill color, and the
+[DrawText](cref:Meziantou.Framework.Pdf.PdfContentBuilder.DrawText) shows a line of text at a position, with a font and a size. The text is painted with the fill color, and the
 position is the start of its baseline.
 
 ## Align text
 
-The builder places a text where it is told to: center or align it to the right by measuring it with `GetTextWidth`:
+The builder places a text where it is told to: center or align it to the right by measuring it with [GetTextWidth](cref:Meziantou.Framework.Pdf.PdfFont.GetTextWidth):
 
 <!-- ref:../../../tests/Meziantou.Framework.Pdf.Tests/PdfFontTests.cs;region=Pdf_DrawReceipt;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -47,9 +47,9 @@ public static void DrawReceipt(string outputPath)
 
 ![A receipt with the centered title Corner Café, three items with their prices aligned on the right, a rule, and the total in bold](images/DrawReceipt.png)
 
-- `GetTextWidth` returns the width of a text at a font size, in points, without the character and word spacing. It
+- [GetTextWidth](cref:Meziantou.Framework.Pdf.PdfFont.GetTextWidth) returns the width of a text at a font size, in points, without the character and word spacing. It
   throws `ArgumentException` when a character has no glyph in the font.
-- `Ascent`, `Descent` and `CapHeight` give the vertical metrics of the font, in thousandths of the font size: the height
+- [Ascent](cref:Meziantou.Framework.Pdf.PdfFont.Ascent), [Descent](cref:Meziantou.Framework.Pdf.PdfFont.Descent) and [CapHeight](cref:Meziantou.Framework.Pdf.PdfFont.CapHeight) give the vertical metrics of the font, in thousandths of the font size: the height
   of the capital letters of a 16-point text is `font.CapHeight * 16 / 1000`, to center a text vertically in a box.
 
 ## Wrap a paragraph
@@ -96,16 +96,16 @@ public static void DrawParagraph(string outputPath)
 
 ![A paragraph of three lines of serif text, wrapped to the width of the page](images/DrawParagraph.png)
 
-A text object (`BeginText` to `EndText`) shows several texts with the same font: `SetTextLeading` sets the distance
-between the lines, `MoveTextPosition` moves to the start of a line, and `MoveToNextLine` goes down by the leading.
+A text object ([BeginText](cref:Meziantou.Framework.Pdf.PdfContentBuilder.BeginText) to [EndText](cref:Meziantou.Framework.Pdf.PdfContentBuilder.EndText)) shows several texts with the same font: [SetTextLeading](cref:Meziantou.Framework.Pdf.PdfContentBuilder.SetTextLeading) sets the distance
+between the lines, [MoveTextPosition](cref:Meziantou.Framework.Pdf.PdfContentBuilder.MoveTextPosition) moves to the start of a line, and [MoveToNextLine](cref:Meziantou.Framework.Pdf.PdfContentBuilder.MoveToNextLine) goes down by the leading.
 
 ## The standard fonts
 
-`PdfFont.GetStandardFont` returns one of the 14 standard fonts: Times, Helvetica and Courier in four styles each, Symbol
+[PdfFont.GetStandardFont](cref:Meziantou.Framework.Pdf.PdfFont.GetStandardFont) returns one of the 14 standard fonts: Times, Helvetica and Courier in four styles each, Symbol
 and ZapfDingbats. PDF readers have them, so the document does not embed them and stays small.
 
 They show the characters of `WinAnsiEncoding`, the Latin characters of Western European languages and a few symbols
-(the euro sign, the typographic quotes and dashes); Symbol and ZapfDingbats have their own characters. `CanEncode` tells
+(the euro sign, the typographic quotes and dashes); Symbol and ZapfDingbats have their own characters. [CanEncode](cref:Meziantou.Framework.Pdf.PdfFont.CanEncode) tells
 whether a font can show a text. For other characters, or for PDF/A documents, which must embed their fonts, embed a
 font: see [Fonts](04-Fonts.md).
 
@@ -141,12 +141,12 @@ public static void DrawTextStyles(string outputPath)
 
 | Method | Effect |
 | --- | --- |
-| `SetCharacterSpacing` | Space added after each glyph |
-| `SetWordSpacing` | Space added after each space character (standard fonts only: an embedded font has no single-byte space) |
-| `SetHorizontalScaling` | Stretches or condenses the glyphs, in percent |
-| `SetTextRise` | Moves the baseline up (superscript) or down (subscript) |
-| `SetTextRenderingMode` | Fills, strokes or both; invisible text; text used as a clip |
-| `SetTextMatrix` | Places and transforms the text with a `PdfMatrix`, for a turned or slanted text |
+| [SetCharacterSpacing](cref:Meziantou.Framework.Pdf.PdfContentBuilder.SetCharacterSpacing) | Space added after each glyph |
+| [SetWordSpacing](cref:Meziantou.Framework.Pdf.PdfContentBuilder.SetWordSpacing) | Space added after each space character (standard fonts only: an embedded font has no single-byte space) |
+| [SetHorizontalScaling](cref:Meziantou.Framework.Pdf.PdfContentBuilder.SetHorizontalScaling) | Stretches or condenses the glyphs, in percent |
+| [SetTextRise](cref:Meziantou.Framework.Pdf.PdfContentBuilder.SetTextRise) | Moves the baseline up (superscript) or down (subscript) |
+| [SetTextRenderingMode](cref:Meziantou.Framework.Pdf.PdfContentBuilder.SetTextRenderingMode) | Fills, strokes or both; invisible text; text used as a clip |
+| [SetTextMatrix](cref:Meziantou.Framework.Pdf.PdfContentBuilder.SetTextMatrix) | Places and transforms the text with a [PdfMatrix](cref:Meziantou.Framework.Pdf.PdfMatrix), for a turned or slanted text |
 | `ShowText(segments)` | Texts with adjustments between them, in thousandths of the font size, for kerning or justification |
 
 The text state lasts until the end of the graphics state, not of the text object: reset what you changed, as the

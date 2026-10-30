@@ -62,7 +62,7 @@ Assert.Equal("""<ul><li><a href=/a>A</a><li><li><a href=/c class=important data-
 
 ## Documents with and without a browsing context
 
-`HtmlDocumentParser` and `XmlDocumentParser` create documents that are only trees: no window, no event loop, no computed
+[HtmlDocumentParser](cref:Meziantou.Framework.WebPlatform.HtmlDocumentParser) and [XmlDocumentParser](cref:Meziantou.Framework.WebPlatform.XmlDocumentParser) create documents that are only trees: no window, no event loop, no computed
 style and no layout. They are the fastest way to read or transform markup. Everything on the pages of this group works on
 them, except the features that need a page:
 
@@ -73,14 +73,14 @@ them, except the features that need a page:
 | The callbacks of mutation observers, the `load` events | The event loop of a browsing context |
 | Scripts and event handler attributes | A browsing context with a [script engine](../06-Scripting/01-Overview.md) |
 
-To get a document with a browsing context, navigate a `BrowsingContext` to the markup:
+To get a document with a browsing context, navigate a [BrowsingContext](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContext) to the markup:
 `context.Navigate("https://example.com/", _ => html)` returns the document.
 
 ## Naming
 
-The members have the names of the web API, adapted to the .NET guidelines: `querySelector` is `QuerySelector`,
-`innerHTML` is `InnerHtml`, `classList` is `ClassList`. Each element has its typed interface (`HtmlAnchorElement`,
-`HtmlInputElement`, `SvgCircleElement`...), with the reflected attributes as properties (`Href`, `Value`, `Disabled`).
+The members have the names of the web API, adapted to the .NET guidelines: `querySelector` is [QuerySelector](cref:Meziantou.Framework.WebPlatform.Dom.Element.QuerySelector),
+`innerHTML` is [InnerHtml](cref:Meziantou.Framework.WebPlatform.Dom.Element.InnerHtml), `classList` is [ClassList](cref:Meziantou.Framework.WebPlatform.Dom.Element.ClassList). Each element has its typed interface ([HtmlAnchorElement](cref:Meziantou.Framework.WebPlatform.Dom.HtmlAnchorElement),
+[HtmlInputElement](cref:Meziantou.Framework.WebPlatform.Dom.HtmlInputElement), [SvgCircleElement](cref:Meziantou.Framework.WebPlatform.Dom.SvgCircleElement)...), with the reflected attributes as properties ([Href](cref:Meziantou.Framework.WebPlatform.Dom.HtmlAnchorElement.Href), [Value](cref:Meziantou.Framework.WebPlatform.Dom.HtmlInputElement.Value), [Disabled](cref:Meziantou.Framework.WebPlatform.Dom.HtmlInputElement.Disabled)).
 
 ## In this section
 

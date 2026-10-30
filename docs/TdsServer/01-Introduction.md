@@ -33,17 +33,17 @@ A connection goes through two callbacks:
 You write the query handler yourself, or use the built-in **query engine**, which runs stored procedures mapped to
 .NET delegates and translates a subset of `SELECT` statements to LINQ queries over your `IQueryable` sources.
 
-The server runs either inside an ASP.NET Core application, on Kestrel, or on its own with the `TdsServer` class. See
+The server runs either inside an ASP.NET Core application, on Kestrel, or on its own with the [TdsServer](cref:Meziantou.Framework.Tds.TdsServer) class. See
 [Hosting the server](03-HostingTheServer.md).
 
 ## Namespaces
 
 | Namespace | Contains |
 | --- | --- |
-| [Meziantou.Framework.Tds](cref:Meziantou.Framework.Tds) | The standalone `TdsServer` and the server options (`TdsServerOptions`) |
-| [Meziantou.Framework.Tds.Handler](cref:Meziantou.Framework.Tds.Handler) | The authentication and query callbacks, their contexts and results (`TdsResultSet`, `TdsColumn`, …) |
-| [Meziantou.Framework.Tds.Hosting](cref:Meziantou.Framework.Tds.Hosting) | The ASP.NET Core integration (`AddTdsServer`, `MapTdsHandlers`, …) |
-| [Meziantou.Framework.Tds.QueryEngine](cref:Meziantou.Framework.Tds.QueryEngine) | The built-in query engine (`TdsQueryEngineOptions`, `TdsQueryEngine`) |
+| [Meziantou.Framework.Tds](cref:Meziantou.Framework.Tds) | The standalone [TdsServer](cref:Meziantou.Framework.Tds.TdsServer) and the server options ([TdsServerOptions](cref:Meziantou.Framework.Tds.TdsServerOptions)) |
+| [Meziantou.Framework.Tds.Handler](cref:Meziantou.Framework.Tds.Handler) | The authentication and query callbacks, their contexts and results ([TdsResultSet](cref:Meziantou.Framework.Tds.Handler.TdsResultSet), [TdsColumn](cref:Meziantou.Framework.Tds.Handler.TdsColumn), …) |
+| [Meziantou.Framework.Tds.Hosting](cref:Meziantou.Framework.Tds.Hosting) | The ASP.NET Core integration ([AddTdsServer](cref:Meziantou.Framework.Tds.Hosting.TdsServerBuilderExtensions.AddTdsServer), [MapTdsHandlers](cref:Meziantou.Framework.Tds.Hosting.TdsEndpointRouteBuilderExtensions.MapTdsHandlers), …) |
+| [Meziantou.Framework.Tds.QueryEngine](cref:Meziantou.Framework.Tds.QueryEngine) | The built-in query engine ([TdsQueryEngineOptions](cref:Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineOptions), [TdsQueryEngine](cref:Meziantou.Framework.Tds.QueryEngine.TdsQueryEngine)) |
 
 ## Next steps
 

@@ -36,14 +36,14 @@ them with this engine.
   create the JavaScript objects and functions that represent them. See
   [Exposing .NET objects](05-Interop/05-ExposingDotNetObjects.md).
 - No conversion of `Task` to promises or of promises to `Task`: settle the promises from your event loop, and read
-  their state with `TryGetPromiseState`. See [Async code and promises](06-AsyncAndPromises.md).
-- No conversion of .NET collections: build arrays with `CreateArray`, or exchange JSON. See
+  their state with [TryGetPromiseState](cref:Meziantou.Framework.JavaScriptEngine.JsObject.TryGetPromiseState). See [Async code and promises](06-AsyncAndPromises.md).
+- No conversion of .NET collections: build arrays with [CreateArray](cref:Meziantou.Framework.JavaScriptEngine.JsRealm.CreateArray), or exchange JSON. See
   [Objects and arrays](05-Interop/03-ObjectsAndArrays.md).
 
 ## Execution
 
 - **An interpreter.** The code is compiled to bytecode and interpreted; there is no JIT compilation to machine code.
-  Compile the scripts that run many times once, with `JsPreparedScript`.
+  Compile the scripts that run many times once, with [JsPreparedScript](cref:Meziantou.Framework.JavaScriptEngine.JsPreparedScript).
 - **One thread at a time per engine.** Use one engine per thread to run scripts in parallel. Engines share memory only
   through `SharedArrayBuffer`.
 - **No debugger.** There is no debugging protocol and no breakpoints; the errors give their location and their stack.

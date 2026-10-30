@@ -27,13 +27,13 @@ Assert.StartsWith("{", json);
 
 ## What it costs
 
-A snapshot is not free: `AddDefault` enumerates the loaded assemblies, the modules of the process, the drives and the
+A snapshot is not free: [AddDefault](cref:Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder.AddDefault) enumerates the loaded assemblies, the modules of the process, the drives and the
 environment variables. Some information comes from the operating system: on macOS, the CPU information comes from the
 `sysctl -a` command, and on Windows, some values come from WMI and the Windows Security Center. Capture a snapshot
 once, or when something goes wrong, not on every request. The CPU information is read once per process and reused.
 
 Each `Add*` method reads the values when you call it: the snapshot shows the state of the process at that moment,
-not when you call `BuildSnapshot`.
+not when you call [BuildSnapshot](cref:Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder.BuildSnapshot).
 
 ## Pages
 

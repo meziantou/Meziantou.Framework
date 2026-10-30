@@ -39,8 +39,8 @@ Assert.Equal("\u00E9\U0001F44D\U0001F3FD", UnicodeNormalization.Normalize(text))
 ```
 <!-- endref -->
 
-- `Unicode.EnumerateGraphemeClusters` gives the range of each cluster in the text. It does not allocate.
-- `UnicodeNormalization.Normalize` composes the letter and its accent into one code point. It gives the same result on
+- [Unicode.EnumerateGraphemeClusters](cref:Meziantou.Framework.Unicode.EnumerateGraphemeClusters) gives the range of each cluster in the text. It does not allocate.
+- [UnicodeNormalization.Normalize](cref:Meziantou.Framework.UnicodeNormalization.Normalize) composes the letter and its accent into one code point. It gives the same result on
   every platform, including in globalization-invariant mode.
 
 ## Next steps

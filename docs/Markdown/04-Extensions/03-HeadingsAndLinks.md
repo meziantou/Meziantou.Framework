@@ -5,7 +5,7 @@ description: Give headings an identifier, link text that looks like a URL, add r
 
 ## Heading identifiers
 
-`UseAutoIdentifiers` gives each heading an `id` computed from its text, so that a URL can link to a section
+[UseAutoIdentifiers](cref:Meziantou.Framework.Markdown.MarkdownExtensions.UseAutoIdentifiers) gives each heading an `id` computed from its text, so that a URL can link to a section
 (`page.html#getting-started`). A heading with the same text as a previous one gets a number. A link whose text is the
 text of a heading links to that heading, without a URL:
 
@@ -28,18 +28,18 @@ Assert.Equal("""
 
 A `{#id}` [attribute](06-GenericAttributes.md) replaces the computed identifier.
 
-The `AutoIdentifierOptions` flags (namespace [Meziantou.Framework.Markdown.Extensions.AutoIdentifiers](cref:Meziantou.Framework.Markdown.Extensions.AutoIdentifiers)) change how the
+The [AutoIdentifierOptions](cref:Meziantou.Framework.Markdown.Extensions.AutoIdentifiers.AutoIdentifierOptions) flags (namespace [Meziantou.Framework.Markdown.Extensions.AutoIdentifiers](cref:Meziantou.Framework.Markdown.Extensions.AutoIdentifiers)) change how the
 identifier is computed:
 
 | Option | Effect |
 | --- | --- |
-| `Default` | `AutoLink` and `AllowOnlyAscii` |
-| `AutoLink` | Links `[Heading text]` to the heading |
-| `AllowOnlyAscii` | Removes the accents and the other non-ASCII characters (`Été` becomes `ete`, `日本語 text` becomes `text`) |
-| `GitHub` | Computes the identifiers as GitHub does, which keeps the non-ASCII letters |
-| `None` | None of the above |
+| [Default](cref:Meziantou.Framework.Markdown.Extensions.AutoIdentifiers.AutoIdentifierOptions.Default) | [AutoLink](cref:Meziantou.Framework.Markdown.Extensions.AutoIdentifiers.AutoIdentifierOptions.AutoLink) and [AllowOnlyAscii](cref:Meziantou.Framework.Markdown.Extensions.AutoIdentifiers.AutoIdentifierOptions.AllowOnlyAscii) |
+| [AutoLink](cref:Meziantou.Framework.Markdown.Extensions.AutoIdentifiers.AutoIdentifierOptions.AutoLink) | Links `[Heading text]` to the heading |
+| [AllowOnlyAscii](cref:Meziantou.Framework.Markdown.Extensions.AutoIdentifiers.AutoIdentifierOptions.AllowOnlyAscii) | Removes the accents and the other non-ASCII characters (`Été` becomes `ete`, `日本語 text` becomes `text`) |
+| [GitHub](cref:Meziantou.Framework.Markdown.Extensions.AutoIdentifiers.AutoIdentifierOptions.GitHub) | Computes the identifiers as GitHub does, which keeps the non-ASCII letters |
+| [None](cref:Meziantou.Framework.Markdown.Extensions.AutoIdentifiers.AutoIdentifierOptions.None) | None of the above |
 
-Use `GitHub` when the documents are also displayed on GitHub, so that the links to their sections work on both:
+Use [GitHub](cref:Meziantou.Framework.Markdown.Extensions.AutoIdentifiers.AutoIdentifierOptions.GitHub) when the documents are also displayed on GitHub, so that the links to their sections work on both:
 
 <!-- ref:../../../tests/Meziantou.Framework.Markdown.Tests/TestCoreApi.cs;region=MarkdownExtensions_UseAutoIdentifiersGitHub;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -53,14 +53,14 @@ Assert.Equal("<h1 id=\"été-2024\">Été 2024!</h1>\n", MarkdownConverter.ToHtm
 ```
 <!-- endref -->
 
-`UseAdvancedExtensions` enables this extension with the default options. To use other options with it, call
-`UseAutoIdentifiers` first; see [Enable the common extensions at once](01-Overview.md#enable-the-common-extensions-at-once).
+[UseAdvancedExtensions](cref:Meziantou.Framework.Markdown.MarkdownExtensions.UseAdvancedExtensions) enables this extension with the default options. To use other options with it, call
+[UseAutoIdentifiers](cref:Meziantou.Framework.Markdown.MarkdownExtensions.UseAutoIdentifiers) first; see [Enable the common extensions at once](01-Overview.md#enable-the-common-extensions-at-once).
 
 ## Automatic links
 
-CommonMark only links URLs written between `<` and `>`. `UseAutoLinks` also links the text that starts with `http://`,
+CommonMark only links URLs written between `<` and `>`. [UseAutoLinks](cref:Meziantou.Framework.Markdown.MarkdownExtensions.UseAutoLinks) also links the text that starts with `http://`,
 `https://`, `ftp://`, `mailto:` or `www.`. A `www.` link gets the `http://` scheme, or `https://` with
-`UseHttpsForWWWLinks`:
+[UseHttpsForWWWLinks](cref:Meziantou.Framework.Markdown.Extensions.AutoLinks.AutoLinkOptions.UseHttpsForWWWLinks):
 
 <!-- ref:../../../tests/Meziantou.Framework.Markdown.Tests/TestAutoLinks.cs;region=MarkdownExtensions_UseAutoLinks;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -74,18 +74,18 @@ Assert.Equal("<p>Visit <a href=\"https://www.example.com\">www.example.com</a> o
 ```
 <!-- endref -->
 
-The options of `AutoLinkOptions` (namespace [Meziantou.Framework.Markdown.Extensions.AutoLinks](cref:Meziantou.Framework.Markdown.Extensions.AutoLinks)):
+The options of [AutoLinkOptions](cref:Meziantou.Framework.Markdown.Extensions.AutoLinks.AutoLinkOptions) (namespace [Meziantou.Framework.Markdown.Extensions.AutoLinks](cref:Meziantou.Framework.Markdown.Extensions.AutoLinks)):
 
 | Option | Default | Effect |
 | --- | --- | --- |
-| `UseHttpsForWWWLinks` | `false` | Prefixes `www.` links with `https://` instead of `http://` |
-| `AllowDomainWithoutPeriod` | `false` | Links domains without a period, such as `https://localhost` |
-| `OpenInNewWindow` | `false` | Adds `target="_blank"` to the links |
-| `ValidPreviousCharacters` | `*_~(` | The characters, other than whitespace, that can precede a link |
+| [UseHttpsForWWWLinks](cref:Meziantou.Framework.Markdown.Extensions.AutoLinks.AutoLinkOptions.UseHttpsForWWWLinks) | `false` | Prefixes `www.` links with `https://` instead of `http://` |
+| [AllowDomainWithoutPeriod](cref:Meziantou.Framework.Markdown.Extensions.AutoLinks.AutoLinkOptions.AllowDomainWithoutPeriod) | `false` | Links domains without a period, such as `https://localhost` |
+| [OpenInNewWindow](cref:Meziantou.Framework.Markdown.Parsers.LinkOptions.OpenInNewWindow) | `false` | Adds `target="_blank"` to the links |
+| [ValidPreviousCharacters](cref:Meziantou.Framework.Markdown.Extensions.AutoLinks.AutoLinkOptions.ValidPreviousCharacters) | `*_~(` | The characters, other than whitespace, that can precede a link |
 
 ## Rel attributes
 
-`UseReferralLinks` adds `rel` values to every link, for instance to tell search engines not to follow the links of user
+[UseReferralLinks](cref:Meziantou.Framework.Markdown.MarkdownExtensions.UseReferralLinks) adds `rel` values to every link, for instance to tell search engines not to follow the links of user
 content, or to keep the linked pages from accessing yours:
 
 <!-- ref:../../../tests/Meziantou.Framework.Markdown.Tests/TestReferralLinks.cs;region=MarkdownExtensions_UseReferralLinks;format=md-fenced-code-block;dedent=true -->
@@ -101,7 +101,7 @@ Assert.Equal("<p><a href=\"https://example.com\" rel=\"nofollow noopener norefer
 
 ## Jira links
 
-`UseJiraLinks` links the references to Jira issues, such as `PROJ-123`. The project key is made of uppercase ASCII
+[UseJiraLinks](cref:Meziantou.Framework.Markdown.MarkdownExtensions.UseJiraLinks) links the references to Jira issues, such as `PROJ-123`. The project key is made of uppercase ASCII
 letters and digits and starts with a letter; it is followed by `-` and the issue number. The reference must be preceded
 by a space, a `(` or the start of the text, and followed by a space, a `)` or the end of the text:
 
@@ -116,12 +116,12 @@ Assert.Equal("<p>Fixed by <a href=\"https://jira.example.com/browse/PROJ-123\" t
 ```
 <!-- endref -->
 
-The URL is `BaseUrl`, then `BasePath` (`/browse` by default), then the reference. Jira links open in a new window
-(`target="_blank"`) unless `OpenInNewWindow` is `false`.
+The URL is [BaseUrl](cref:Meziantou.Framework.Markdown.Extensions.JiraLinks.JiraLinkOptions.BaseUrl), then [BasePath](cref:Meziantou.Framework.Markdown.Extensions.JiraLinks.JiraLinkOptions.BasePath) (`/browse` by default), then the reference. Jira links open in a new window
+(`target="_blank"`) unless [OpenInNewWindow](cref:Meziantou.Framework.Markdown.Parsers.LinkOptions.OpenInNewWindow) is `false`.
 
 ## Embedded media
 
-`UseMediaLinks` turns the images whose URL is a video or an audio file into `<video>` and `<audio>` players, and the
+[UseMediaLinks](cref:Meziantou.Framework.Markdown.MarkdownExtensions.UseMediaLinks) turns the images whose URL is a video or an audio file into `<video>` and `<audio>` players, and the
 images that link to YouTube, Vimeo, Yandex Music or Odnoklassniki into the player of the site, in an `<iframe>`:
 
 <!-- ref:../../../tests/Meziantou.Framework.Markdown.Tests/TestMediaLinks.cs;region=MarkdownExtensions_UseMediaLinks;format=md-fenced-code-block;dedent=true -->
@@ -138,19 +138,19 @@ Assert.Equal("<p><iframe src=\"https://www.youtube.com/embed/dQw4w9WgXcQ\" class
 ```
 <!-- endref -->
 
-The options of `MediaOptions` (namespace [Meziantou.Framework.Markdown.Extensions.MediaLinks](cref:Meziantou.Framework.Markdown.Extensions.MediaLinks)):
+The options of [MediaOptions](cref:Meziantou.Framework.Markdown.Extensions.MediaLinks.MediaOptions) (namespace [Meziantou.Framework.Markdown.Extensions.MediaLinks](cref:Meziantou.Framework.Markdown.Extensions.MediaLinks)):
 
 | Option | Default | Effect |
 | --- | --- | --- |
-| `Width`, `Height` | `500`, `281` | The size of the players |
-| `AddControlsProperty` | `true` | Adds the `controls` attribute to `<video>` and `<audio>` |
-| `Class` | | The class of the players |
-| `ExtensionToMimeType` | Common audio and video formats | The file extensions that are played, and their MIME type |
-| `Hosts` | The sites above | The sites whose links become an `<iframe>`; `HostProviderBuilder.Create` creates one for another site |
+| [Width](cref:Meziantou.Framework.Markdown.Extensions.MediaLinks.MediaOptions.Width), [Height](cref:Meziantou.Framework.Markdown.Extensions.MediaLinks.MediaOptions.Height) | `500`, `281` | The size of the players |
+| [AddControlsProperty](cref:Meziantou.Framework.Markdown.Extensions.MediaLinks.MediaOptions.AddControlsProperty) | `true` | Adds the `controls` attribute to `<video>` and `<audio>` |
+| [Class](cref:Meziantou.Framework.Markdown.Extensions.MediaLinks.MediaOptions.Class) | | The class of the players |
+| [ExtensionToMimeType](cref:Meziantou.Framework.Markdown.Extensions.MediaLinks.MediaOptions.ExtensionToMimeType) | Common audio and video formats | The file extensions that are played, and their MIME type |
+| [Hosts](cref:Meziantou.Framework.Markdown.Extensions.MediaLinks.MediaOptions.Hosts) | The sites above | The sites whose links become an `<iframe>`; [HostProviderBuilder.Create](cref:Meziantou.Framework.Markdown.Extensions.MediaLinks.HostProviderBuilder.Create) creates one for another site |
 
 ## Non-ASCII URLs
 
-By default, the non-ASCII characters of URLs are percent-encoded. `UseNonAsciiNoEscape` writes them as they are:
+By default, the non-ASCII characters of URLs are percent-encoded. [UseNonAsciiNoEscape](cref:Meziantou.Framework.Markdown.MarkdownExtensions.UseNonAsciiNoEscape) writes them as they are:
 
 <!-- ref:../../../tests/Meziantou.Framework.Markdown.Tests/TestCoreApi.cs;region=MarkdownExtensions_UseNonAsciiNoEscape;format=md-fenced-code-block;dedent=true -->
 ```csharp

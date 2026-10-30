@@ -3,20 +3,20 @@ title: Databases
 description: Start Redis, PostgreSQL, MongoDB or SQL Server with a ready-made definition and get its connection string.
 ---
 
-`ContainerDefinition` has a factory method for each supported database. The definition it returns is already
+[ContainerDefinition](cref:Meziantou.Framework.TemporaryContainers.ContainerDefinition) has a factory method for each supported database. The definition it returns is already
 configured: the image, the published port, a strong random password where the database needs one, and the wait
 strategies that tell when the server accepts connections. The container it creates has a `GetConnectionString()`
 method.
 
 | Factory method | Default image | Port | Container type |
 | --- | --- | --- | --- |
-| `ContainerDefinition.CreateRedis()` | `redis:8.10` | 6379 | `RedisContainer` |
-| `ContainerDefinition.CreatePostgreSql()` | `postgres:18` | 5432 | `PostgreSqlContainer` |
-| `ContainerDefinition.CreateMongoDb()` | `mongo:8` | 27017 | `MongoDbContainer` |
-| `ContainerDefinition.CreateSqlServer()` | `mcr.microsoft.com/mssql/server:2025-latest` | 1433 | `SqlServerContainer` |
+| `ContainerDefinition.CreateRedis()` | `redis:8.10` | 6379 | [RedisContainer](cref:Meziantou.Framework.TemporaryContainers.RedisContainer) |
+| `ContainerDefinition.CreatePostgreSql()` | `postgres:18` | 5432 | [PostgreSqlContainer](cref:Meziantou.Framework.TemporaryContainers.PostgreSqlContainer) |
+| `ContainerDefinition.CreateMongoDb()` | `mongo:8` | 27017 | [MongoDbContainer](cref:Meziantou.Framework.TemporaryContainers.MongoDbContainer) |
+| `ContainerDefinition.CreateSqlServer()` | `mcr.microsoft.com/mssql/server:2025-latest` | 1433 | [SqlServerContainer](cref:Meziantou.Framework.TemporaryContainers.SqlServerContainer) |
 
 The connection strings point to `127.0.0.1` and the host port of the container, so call `GetConnectionString` after
-`StartAsync`: before, it throws an `InvalidOperationException`.
+[StartAsync](cref:Meziantou.Framework.TemporaryContainers.TemporaryContainer.StartAsync): before, it throws an `InvalidOperationException`.
 
 ## Redis
 
@@ -49,7 +49,7 @@ var connectionString = postgres.GetConnectionString(); // Host=127.0.0.1;Port=<p
 - The connection string is in the Npgsql format. It reads the user, the password and the database from the
   `POSTGRES_USER`, `POSTGRES_PASSWORD` and `POSTGRES_DB` variables of the definition, the variables the image uses to
   initialize the server. The user defaults to `postgres` and the database to the name of the user.
-- The password is generated; set `Password` to choose it.
+- The password is generated; set [Password](cref:Meziantou.Framework.TemporaryContainers.PostgreSqlContainerDefinition.Password) to choose it.
 
 ## MongoDB
 
@@ -65,7 +65,7 @@ var connectionString = mongo.GetConnectionString(enableJournaling: true); // mon
 ```
 <!-- endref -->
 
-- `RootUsername` and `RootPassword` set the `MONGO_INITDB_ROOT_USERNAME` and `MONGO_INITDB_ROOT_PASSWORD` variables.
+- [RootUsername](cref:Meziantou.Framework.TemporaryContainers.MongoDbContainerDefinition.RootUsername) and [RootPassword](cref:Meziantou.Framework.TemporaryContainers.MongoDbContainerDefinition.RootPassword) set the `MONGO_INITDB_ROOT_USERNAME` and `MONGO_INITDB_ROOT_PASSWORD` variables.
   The user is `root` and the password is generated unless you set them.
 - The connection string authenticates against the `admin` database. Journaling is off (`j=false`) unless you pass
   `enableJournaling: true`.
@@ -82,7 +82,7 @@ var connectionString = sqlServer.GetConnectionString(); // Server=127.0.0.1,<por
 <!-- endref -->
 
 - The definition accepts the end-user license agreement of the image (`ACCEPT_EULA=Y`) and generates a password that
-  meets the complexity rules of SQL Server. Set `SaPassword` to choose it.
+  meets the complexity rules of SQL Server. Set [SaPassword](cref:Meziantou.Framework.TemporaryContainers.SqlServerContainerDefinition.SaPassword) to choose it.
 - The connection string logs in as `sa` to the `master` database, with `Encrypt=True` and
   `TrustServerCertificate=True`, since the server uses a self-signed certificate.
 - Microsoft publishes the SQL Server image for x64 only: on an arm64 machine, it only runs where the runtime emulates
@@ -91,7 +91,7 @@ var connectionString = sqlServer.GetConnectionString(); // Server=127.0.0.1,<por
 ## Choose the image and the settings
 
 Each factory method has an overload that takes the image, to pin another version. The definition is a regular
-`ContainerDefinition`: add environment variables, mounts or wait strategies before you create the container. This
+[ContainerDefinition](cref:Meziantou.Framework.TemporaryContainers.ContainerDefinition): add environment variables, mounts or wait strategies before you create the container. This
 example shows all four databases, with the passwords set explicitly:
 
 <!-- ref:../../samples/Meziantou.Framework.TemporaryContainers.Samples/ReadmeExamples.cs;region=TemporaryContainers_DatabaseHelpers;format=md-fenced-code-block;dedent=true -->
@@ -125,5 +125,5 @@ The connection strings are built with a connection string builder, so a password
 
 ## Other databases and services
 
-Any other service is a `ContainerDefinition` with its image, its port and a wait strategy. See
+Any other service is a [ContainerDefinition](cref:Meziantou.Framework.TemporaryContainers.ContainerDefinition) with its image, its port and a wait strategy. See
 [Configuring a container](04-Configuration/01-Overview.md) and [Wait strategies](04-Configuration/06-WaitStrategies.md).

@@ -13,7 +13,7 @@ dotnet add package Meziantou.Framework.SyntaxHighlighting
 
 ## Highlight a snippet
 
-`SyntaxHighlighter.Highlight` takes the code and the identifier of its language, and returns HTML:
+[SyntaxHighlighter.Highlight](cref:Meziantou.Framework.SyntaxHighlighting.SyntaxHighlighter.Highlight) takes the code and the identifier of its language, and returns HTML:
 
 <!-- ref:../../tests/Meziantou.Framework.SyntaxHighlighting.Tests/HighlighterTests.cs;region=SyntaxHighlighter_Highlight;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -26,8 +26,8 @@ Assert.Equal("""<span class="hljs-keyword">public</span> <span class="hljs-keywo
 <!-- endref -->
 
 The identifier is case-insensitive, and each language has aliases, such as `cs` and `c#` for `csharp`. See
-[Supported languages](04-SupportedLanguages.md). `Highlight` throws a `NotSupportedException` for an identifier it does
-not know: use `TryHighlight` when the identifier comes from your users.
+[Supported languages](04-SupportedLanguages.md). [Highlight](cref:Meziantou.Framework.SyntaxHighlighting.SyntaxHighlighter.Highlight) throws a `NotSupportedException` for an identifier it does
+not know: use [TryHighlight](cref:Meziantou.Framework.SyntaxHighlighting.SyntaxHighlighter.TryHighlight) when the identifier comes from your users.
 
 ## Put it in a page
 

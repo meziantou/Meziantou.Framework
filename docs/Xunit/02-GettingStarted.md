@@ -55,9 +55,9 @@ public sealed class SampleTests
 <!-- endref -->
 
 - `RunIf(TestOperatingSystems.Windows | TestOperatingSystems.Linux)` runs the test on Windows or Linux, and skips it on
-  macOS. `TestOperatingSystems` is a flags enumeration: combine the values with `|`.
+  macOS. [TestOperatingSystems](cref:Meziantou.Xunit.TestOperatingSystems) is a flags enumeration: combine the values with `|`.
 - `SkipIf(WindowsGroups.Administrator)` does the opposite: the test runs, unless the condition matches.
-- The conditions without a constructor parameter, such as `ContinuousIntegration`, are set as named properties of the
+- The conditions without a constructor parameter, such as [ContinuousIntegration](cref:Meziantou.Xunit.ConditionalTestAttributeBase.ContinuousIntegration), are set as named properties of the
   attribute.
 
 The attributes work with `[Fact]` and `[Theory]` tests.

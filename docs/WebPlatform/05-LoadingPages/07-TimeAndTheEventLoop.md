@@ -3,7 +3,7 @@ title: Time and the event loop
 description: Run the tasks, the timers and the animation frames of a page, control its clock with a fake time provider, and bound the time it runs.
 ---
 
-Each top-level browsing context has an event loop (`BrowsingContext.EventLoop`), shared by its frames: the tasks, the
+Each top-level browsing context has an event loop ([BrowsingContext.EventLoop](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContext.EventLoop)), shared by its frames: the tasks, the
 microtasks, the timers and the animation frames of its documents run on it. Your application runs it when it wants: a
 page does nothing between two calls.
 
@@ -11,10 +11,10 @@ page does nothing between two calls.
 
 | Method | Runs |
 | --- | --- |
-| `RunUntilIdle()` | The tasks and the due timers, until nothing is left to run now |
-| `RunUntilIdleAsync()` | The same, and waits for the operations in progress: the network requests, the documents being loaded |
-| `WaitForNextTimerAsync()` | Waits until the next timer or animation frame is due; returns false when there is none |
-| `RunTask()` | One task |
+| [RunUntilIdle()](cref:Meziantou.Framework.WebPlatform.Dom.DomEventLoop.RunUntilIdle) | The tasks and the due timers, until nothing is left to run now |
+| [RunUntilIdleAsync()](cref:Meziantou.Framework.WebPlatform.Dom.DomEventLoop.RunUntilIdleAsync) | The same, and waits for the operations in progress: the network requests, the documents being loaded |
+| [WaitForNextTimerAsync()](cref:Meziantou.Framework.WebPlatform.Dom.DomEventLoop.WaitForNextTimerAsync) | Waits until the next timer or animation frame is due; returns false when there is none |
+| [RunTask()](cref:Meziantou.Framework.WebPlatform.Dom.DomEventLoop.RunTask) | One task |
 
 To run a page until it has nothing left to do, timers included:
 
@@ -57,7 +57,7 @@ the `CancellationToken` of these methods or a number of iterations.
 
 ## Control the clock
 
-`BrowsingContextOptions.TimeProvider` is the clock of the event loop: the timers, the animation frames, the CSS animations
+[BrowsingContextOptions.TimeProvider](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.TimeProvider) is the clock of the event loop: the timers, the animation frames, the CSS animations
 and transitions and `performance.now()` follow it. The clock of `Date` is the `TimeProvider` of the
 [script engine options](../06-Scripting/02-RunningJavaScript.md). With a fake clock, such as the `FakeTimeProvider` of
 Microsoft.Extensions.TimeProvider.Testing, tests run without waiting and give the same results every time:
@@ -95,5 +95,5 @@ A screenshot or a geometry API does not wait for them: the layout is computed wh
 ## Run the event loop on your own thread
 
 A host that runs a page on its own thread (as the Playwright server does) sets `EventLoop.WorkSignal`: the callback is
-invoked, from any thread, when a task or a timer is queued, so that the thread wakes up and calls `RunTask()` and
-`PromoteDueTimers()`. The callback must not run the event loop itself.
+invoked, from any thread, when a task or a timer is queued, so that the thread wakes up and calls [RunTask()](cref:Meziantou.Framework.WebPlatform.Dom.DomEventLoop.RunTask) and
+[PromoteDueTimers()](cref:Meziantou.Framework.WebPlatform.Dom.DomEventLoop.PromoteDueTimers). The callback must not run the event loop itself.

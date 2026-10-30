@@ -51,8 +51,8 @@ addresses of the DNS servers that resolve it, over UDP:
 
 ## Filter lists
 
-`Filters` lists the block lists. Each entry has a `Url` and a `Format` (`AutoDetect`, `Hosts`, `DomainsOnly` or
-`AdBlock`; see [Formats](../05-DnsFilter/02-FilterLists.md#formats)):
+`Filters` lists the block lists. Each entry has a `Url` and a `Format` ([AutoDetect](cref:Meziantou.Framework.DnsFilter.DnsFilterListFormat.AutoDetect), [Hosts](cref:Meziantou.Framework.DnsFilter.DnsFilterListFormat.Hosts), [DomainsOnly](cref:Meziantou.Framework.DnsFilter.DnsFilterListFormat.DomainsOnly) or
+[AdBlock](cref:Meziantou.Framework.DnsFilter.DnsFilterListFormat.AdBlock); see [Formats](../05-DnsFilter/02-FilterLists.md#formats)):
 
 ```bash
 Meziantou.DnsProxy --DnsProxy:Filters:0:Url=https://lists.example.net/ads.txt --DnsProxy:Filters:0:Format=AdBlock
@@ -133,7 +133,7 @@ The proxy forwards the DNSSEC OK flag of the client to the upstream, and returns
 `NSEC3`, `DS`, `DNSKEY`) to the client, so a validating client can check the answers itself. It never sets the AD
 flag, since it does not tell the client that it validated an answer.
 
-`DnssecValidationMode` (`None` by default) is passed to the upstream clients. With `Local`, they validate each answer
-locally, but the proxy does not use the result: a `Bogus` answer is still returned to the client. `Local` also sets the
-CD flag on the upstream queries, which asks the upstream resolvers not to validate. Keep the default `None` unless you
+[DnssecValidationMode](cref:Meziantou.Framework.DnsClient.DnssecValidationMode) ([None](cref:Meziantou.Framework.DnsClient.DnssecValidationMode.None) by default) is passed to the upstream clients. With [Local](cref:Meziantou.Framework.DnsClient.DnssecValidationMode.Local), they validate each answer
+locally, but the proxy does not use the result: a [Bogus](cref:Meziantou.Framework.DnsClient.Response.DnssecValidationStatus.Bogus) answer is still returned to the client. [Local](cref:Meziantou.Framework.DnsClient.DnssecValidationMode.Local) also sets the
+CD flag on the upstream queries, which asks the upstream resolvers not to validate. Keep the default [None](cref:Meziantou.Framework.DnsClient.DnssecValidationMode.None) unless you
 need the validation work for another reason.

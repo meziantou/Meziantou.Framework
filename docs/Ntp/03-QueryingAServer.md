@@ -5,7 +5,7 @@ description: Read the time, the clock offset and the delay from an NTP response,
 
 ## Measure the offset of the local clock
 
-`ClockOffset` is the difference between the clock of the server and the local clock: positive when the server is
+[ClockOffset](cref:Meziantou.Framework.Ntp.NtpResponse.ClockOffset) is the difference between the clock of the server and the local clock: positive when the server is
 ahead. Here the server answers from a clock one hour ahead:
 
 <!-- ref:../../tests/Meziantou.Framework.NtpServer.Tests/NtpServerTests.cs;region=NtpClient_ClockOffset;format=md-fenced-code-block;dedent=true -->
@@ -29,7 +29,7 @@ Assert.Equal(serverClock.GetUtcNow(), response.TransmitTimestamp, TimeSpan.FromS
 <!-- endref -->
 
 The offset is computed from the four timestamps of the exchange, as NTP defines it: it removes the time the packets
-spent on the network, assuming they took as long each way. `RoundTripDelay` is that network time; an asymmetric route
+spent on the network, assuming they took as long each way. [RoundTripDelay](cref:Meziantou.Framework.Ntp.NtpResponse.RoundTripDelay) is that network time; an asymmetric route
 makes the offset wrong by up to half of it, so prefer a server with a short delay.
 
 To get the time of the server from the local clock, add the offset: `DateTimeOffset.UtcNow + response.ClockOffset`.
@@ -38,17 +38,17 @@ To get the time of the server from the local clock, add the offset: `DateTimeOff
 
 | Property | Contains |
 | --- | --- |
-| `ClockOffset`, `RoundTripDelay` | Computed from the timestamps |
-| `OriginateTimestamp` | When the client sent the request, by the local clock |
-| `ReceiveTimestamp`, `TransmitTimestamp` | When the server received the request and sent the reply, by its clock |
-| `DestinationTimestamp` | When the client received the reply, by the local clock |
-| `Stratum` | The distance of the server from a reference clock: 1 for a server with an attached clock (GPS, atomic), 2 and more for servers that get the time from another server |
-| `RootDelay`, `RootDispersion` | The delay to the reference clock, and the maximum error the server claims for its own clock. Use `RootDispersion` as the error bound of the offset. |
-| `ReferenceIdentifier`, `ReferenceIdentifierText` | The source of the time: a clock name such as `GPS` for stratum 1 (`ReferenceIdentifierText`), an address for higher strata |
-| `ReferenceTimestamp` | When the clock of the server was last set, or `null` when it never was |
-| `LeapIndicator` | A leap second announcement, or `AlarmCondition` when the clock of the server is not synchronized |
-| `Version`, `PollInterval`, `Precision` | The protocol version of the reply, and information about the server clock (in log2 seconds) |
-| `IsKissOfDeath`, `KissCode` | A refusal of the server. See [Response validation](04-ResponseValidation.md#kiss-o-death-replies). |
+| [ClockOffset](cref:Meziantou.Framework.Ntp.NtpResponse.ClockOffset), [RoundTripDelay](cref:Meziantou.Framework.Ntp.NtpResponse.RoundTripDelay) | Computed from the timestamps |
+| [OriginateTimestamp](cref:Meziantou.Framework.Ntp.NtpResponse.OriginateTimestamp) | When the client sent the request, by the local clock |
+| [ReceiveTimestamp](cref:Meziantou.Framework.Ntp.NtpResponse.ReceiveTimestamp), [TransmitTimestamp](cref:Meziantou.Framework.Ntp.NtpResponse.TransmitTimestamp) | When the server received the request and sent the reply, by its clock |
+| [DestinationTimestamp](cref:Meziantou.Framework.Ntp.NtpResponse.DestinationTimestamp) | When the client received the reply, by the local clock |
+| [Stratum](cref:Meziantou.Framework.Ntp.NtpResponse.Stratum) | The distance of the server from a reference clock: 1 for a server with an attached clock (GPS, atomic), 2 and more for servers that get the time from another server |
+| [RootDelay](cref:Meziantou.Framework.Ntp.NtpResponse.RootDelay), [RootDispersion](cref:Meziantou.Framework.Ntp.NtpResponse.RootDispersion) | The delay to the reference clock, and the maximum error the server claims for its own clock. Use [RootDispersion](cref:Meziantou.Framework.Ntp.NtpResponse.RootDispersion) as the error bound of the offset. |
+| [ReferenceIdentifier](cref:Meziantou.Framework.Ntp.NtpResponse.ReferenceIdentifier), [ReferenceIdentifierText](cref:Meziantou.Framework.Ntp.NtpResponse.ReferenceIdentifierText) | The source of the time: a clock name such as `GPS` for stratum 1 ([ReferenceIdentifierText](cref:Meziantou.Framework.Ntp.NtpResponse.ReferenceIdentifierText)), an address for higher strata |
+| [ReferenceTimestamp](cref:Meziantou.Framework.Ntp.NtpResponse.ReferenceTimestamp) | When the clock of the server was last set, or `null` when it never was |
+| [LeapIndicator](cref:Meziantou.Framework.Ntp.NtpResponse.LeapIndicator) | A leap second announcement, or [AlarmCondition](cref:Meziantou.Framework.Ntp.NtpLeapIndicator.AlarmCondition) when the clock of the server is not synchronized |
+| `Version`, [PollInterval](cref:Meziantou.Framework.Ntp.NtpResponse.PollInterval), [Precision](cref:Meziantou.Framework.Ntp.NtpResponse.Precision) | The protocol version of the reply, and information about the server clock (in log2 seconds) |
+| [IsKissOfDeath](cref:Meziantou.Framework.Ntp.NtpResponse.IsKissOfDeath), [KissCode](cref:Meziantou.Framework.Ntp.NtpResponse.KissCode) | A refusal of the server. See [Response validation](04-ResponseValidation.md#kiss-o-death-replies). |
 
 The timestamps are `DateTimeOffset` values in UTC. NTP timestamps have 32 bits of seconds, so the client reads them in
 the range from 1968-01-20 to 2104-02-26, following RFC 5905.
@@ -75,24 +75,24 @@ Assert.Equal(NtpVersion.V3, response.Version);
 
 | Option | Default | Use |
 | --- | --- | --- |
-| `Port` | 123 | The port of the server. |
-| `Version` | `V4` | The NTP version of the request: `V3` or `V4`. |
-| `Timeout` | 5 seconds | How long to wait for a reply from each address. `Timeout.InfiniteTimeSpan` disables it. |
-| `ValidateResponse` | `true` | Rejects the replies that do not answer the request. See [Response validation](04-ResponseValidation.md). |
+| [Port](cref:Meziantou.Framework.Ntp.NtpClientOptions.Port) | 123 | The port of the server. |
+| `Version` | [V4](cref:Meziantou.Framework.Ntp.NtpVersion.V4) | The NTP version of the request: [V3](cref:Meziantou.Framework.Ntp.NtpVersion.V3) or [V4](cref:Meziantou.Framework.Ntp.NtpVersion.V4). |
+| [Timeout](cref:Meziantou.Framework.Ntp.NtpClientOptions.Timeout) | 5 seconds | How long to wait for a reply from each address. `Timeout.InfiniteTimeSpan` disables it. |
+| [ValidateResponse](cref:Meziantou.Framework.Ntp.NtpClientOptions.ValidateResponse) | `true` | Rejects the replies that do not answer the request. See [Response validation](04-ResponseValidation.md). |
 
 ## Host names with several addresses
 
-A host name is resolved at each `QueryAsync` call. The client queries its addresses in order, and returns the first
-valid reply. `Timeout` applies to each address, so a name with several addresses that do not answer can take
-`Timeout` times the number of addresses: pass a `CancellationToken` to bound the whole call, as above.
+A host name is resolved at each [QueryAsync](cref:Meziantou.Framework.Ntp.NtpClient.QueryAsync) call. The client queries its addresses in order, and returns the first
+valid reply. [Timeout](cref:Meziantou.Framework.Ntp.NtpClientOptions.Timeout) applies to each address, so a name with several addresses that do not answer can take
+[Timeout](cref:Meziantou.Framework.Ntp.NtpClientOptions.Timeout) times the number of addresses: pass a `CancellationToken` to bound the whole call, as above.
 
 ## Errors
 
-`QueryAsync` throws:
+[QueryAsync](cref:Meziantou.Framework.Ntp.NtpClient.QueryAsync) throws:
 
 | Exception | Cause |
 | --- | --- |
-| `TimeoutException` | No valid reply within `Timeout` (from every address). |
+| `TimeoutException` | No valid reply within [Timeout](cref:Meziantou.Framework.Ntp.NtpClientOptions.Timeout) (from every address). |
 | `OperationCanceledException` | The `CancellationToken` was canceled. |
 | `AggregateException` | Every address failed, for different reasons. |
 | `SocketException` | The host name could not be resolved, or the network failed. |

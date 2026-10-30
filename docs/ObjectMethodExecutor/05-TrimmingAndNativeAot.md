@@ -3,7 +3,7 @@ title: Trimming and Native AOT
 description: The executor relies on reflection and runtime code generation, so it is not compatible with trimming and Native AOT.
 ---
 
-`ObjectMethodExecutor` calls any method of any type: it reflects over the type of the method, compiles expression
+[ObjectMethodExecutor](cref:Meziantou.Framework.ObjectMethodExecutor) calls any method of any type: it reflects over the type of the method, compiles expression
 trees, and may construct generic types at run time, for instance to adapt an F# `Async<T>`. The class is marked with
 `[RequiresUnreferencedCode]` and `[RequiresDynamicCode]`, so the compiler warns where you use it in a project that is
 trimmed or published with Native AOT.

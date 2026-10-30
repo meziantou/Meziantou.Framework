@@ -5,7 +5,7 @@ description: Describe a recurrence rule in English or in French, and know what t
 
 ## Describe a rule
 
-`GetHumanText` describes a recurrence rule in words, to show it to a user:
+[GetHumanText](cref:Meziantou.Framework.Scheduling.RecurrenceRuleHumanizerExtensions.GetHumanText) describes a recurrence rule in words, to show it to a user:
 
 <!-- ref:../../tests/Meziantou.Framework.Scheduling.Tests/RecurrenceRuleTests.cs;region=RecurrenceRule_GetHumanTextEnglish;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -34,10 +34,10 @@ Assert.Null(RecurrenceRule.Parse("FREQ=DAILY").GetHumanText(CultureInfo.GetCultu
 | --- | --- |
 | `en`, `en-*` and the invariant culture | English |
 | `fr`, `fr-*`, such as `fr-CA` | French |
-| Any other culture | Not supported: `GetHumanText` returns `null` |
+| Any other culture | Not supported: [GetHumanText](cref:Meziantou.Framework.Scheduling.RecurrenceRuleHumanizerExtensions.GetHumanText) returns `null` |
 
 The language is read from the culture name, so the result is the same when the application runs in invariant
-globalization mode. `GetHumanText` also returns `null` for a class that derives from `RecurrenceRule` outside of the
+globalization mode. [GetHumanText](cref:Meziantou.Framework.Scheduling.RecurrenceRuleHumanizerExtensions.GetHumanText) also returns `null` for a class that derives from [RecurrenceRule](cref:Meziantou.Framework.Scheduling.RecurrenceRule) outside of the
 library.
 
 English always writes dates as month, day and year, and times with a 24-hour clock, whatever the region of the culture,

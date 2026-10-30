@@ -17,7 +17,7 @@ call returns.
 
 ## Create a size
 
-A `ByteSize` is a number of bytes, stored as a `long` in its `Value` property. Create it from bytes, or from a value in
+A [ByteSize](cref:Meziantou.Framework.ByteSize) is a number of bytes, stored as a `long` in its [Value](cref:Meziantou.Framework.ByteSize.Value) property. Create it from bytes, or from a value in
 a unit:
 
 <!-- ref:../../tests/Meziantou.Framework.ByteSize.Tests/ByteSizeTests.cs;region=ByteSize_Create;format=md-fenced-code-block;dedent=true -->
@@ -39,21 +39,21 @@ Assert.Equal(2, d.GetValue(ByteSizeUnit.MebiByte));
 ```
 <!-- endref -->
 
-- `FromBytes`, `FromKiloBytes`, `FromMegaBytes`, … `FromExaBytes` and `FromKibiBytes`, `FromMebiBytes`, …
-  `FromExbiBytes` accept integers and floating-point values. A fractional value is truncated to a whole number of bytes.
-- `From(value, unit)` takes the unit as a `ByteSizeUnit`.
-- `FromFileLength` takes a file path or a `FileInfo` and returns the length of the file.
+- [FromBytes](cref:Meziantou.Framework.ByteSize.FromBytes), [FromKiloBytes](cref:Meziantou.Framework.ByteSize.FromKiloBytes), [FromMegaBytes](cref:Meziantou.Framework.ByteSize.FromMegaBytes), … [FromExaBytes](cref:Meziantou.Framework.ByteSize.FromExaBytes) and [FromKibiBytes](cref:Meziantou.Framework.ByteSize.FromKibiBytes), [FromMebiBytes](cref:Meziantou.Framework.ByteSize.FromMebiBytes), …
+  [FromExbiBytes](cref:Meziantou.Framework.ByteSize.FromExbiBytes) accept integers and floating-point values. A fractional value is truncated to a whole number of bytes.
+- `From(value, unit)` takes the unit as a [ByteSizeUnit](cref:Meziantou.Framework.ByteSizeUnit).
+- [FromFileLength](cref:Meziantou.Framework.ByteSize.FromFileLength) takes a file path or a `FileInfo` and returns the length of the file.
 - `GetValue(unit)` returns the size in a unit, as a `double`.
-- `ByteSize.Zero`, `ByteSize.MinValue` and `ByteSize.MaxValue` are the zero size and the limits of a `long`.
+- [ByteSize.Zero](cref:Meziantou.Framework.ByteSize.Zero), [ByteSize.MinValue](cref:Meziantou.Framework.ByteSize.MinValue) and [ByteSize.MaxValue](cref:Meziantou.Framework.ByteSize.MaxValue) are the zero size and the limits of a `long`.
 
 ## Display a size
 
-`ToString` picks the best decimal unit: the largest unit in which the value is at least 1. See
+[ToString](cref:Meziantou.Framework.ByteSize.ToString) picks the best decimal unit: the largest unit in which the value is at least 1. See
 [Formatting and parsing](03-FormattingAndParsing.md) to use binary units, a given unit, or a number of decimals.
 
 ## Compare and compute
 
-`ByteSize` supports the comparison operators, `+`, `-`, and `*` and `/` by a `long`:
+[ByteSize](cref:Meziantou.Framework.ByteSize) supports the comparison operators, `+`, `-`, and `*` and `/` by a `long`:
 
 <!-- ref:../../tests/Meziantou.Framework.ByteSize.Tests/ByteSizeTests.cs;region=ByteSize_Arithmetic;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -75,11 +75,11 @@ Assert.Throws<OverflowException>(() => _ = ByteSize.MaxValue + ByteSize.FromByte
 ```
 <!-- endref -->
 
-- `Add`, `Subtract`, `Multiply` and `Divide` are the method forms of the operators.
+- [Add](cref:Meziantou.Framework.ByteSize.Add), [Subtract](cref:Meziantou.Framework.ByteSize.Subtract), [Multiply](cref:Meziantou.Framework.ByteSize.Multiply) and [Divide](cref:Meziantou.Framework.ByteSize.Divide) are the method forms of the operators.
 - `+`, `-` and `*` throw an `OverflowException` when the result does not fit in a `long`. `/` is an integer division.
-- `ByteSize` implements `IComparable<ByteSize>` and `IEquatable<ByteSize>`, so `Order`, `Max` and sorted collections
+- [ByteSize](cref:Meziantou.Framework.ByteSize) implements `IComparable<ByteSize>` and `IEquatable<ByteSize>`, so `Order`, `Max` and sorted collections
   work with it. Two sizes are equal when they have the same number of bytes: `FromKiloBytes(1)` equals `new ByteSize(1000)`.
 
 ## Next steps
 
-- [Formatting and parsing](03-FormattingAndParsing.md): format strings, cultures, and the text `Parse` accepts.
+- [Formatting and parsing](03-FormattingAndParsing.md): format strings, cultures, and the text [Parse](cref:Meziantou.Framework.ByteSize.Parse) accepts.

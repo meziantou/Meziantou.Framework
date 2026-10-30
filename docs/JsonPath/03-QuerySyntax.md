@@ -160,4 +160,4 @@ Assert.Equal("""[{"price":8},{"price":5}]""", Select("$..[0]"));
 ## Blank space
 
 Spaces, tabs and line breaks are allowed between segments and around the operators of a filter
-(`$ .store [?@.price < 10]`), but not at the start or the end of the query: `Parse` rejects `" $.a"`.
+(`$ .store [?@.price < 10]`), but not at the start or the end of the query: [Parse](cref:Meziantou.Framework.Json.JsonPath.Parse) rejects `" $.a"`.

@@ -5,7 +5,7 @@ description: Add XML documentation, line comments and nullable annotations to th
 
 ## XML documentation
 
-Types and members have `XmlComments`. `AddSummary`, `AddParam`, `AddTypeParam` and `AddReturn` add the common
+Types and members have `XmlComments`. [AddSummary](cref:Meziantou.Framework.CodeDom.XmlCommentCollection.AddSummary), [AddParam](cref:Meziantou.Framework.CodeDom.XmlCommentCollection.AddParam), [AddTypeParam](cref:Meziantou.Framework.CodeDom.XmlCommentCollection.AddTypeParam) and [AddReturn](cref:Meziantou.Framework.CodeDom.XmlCommentCollection.AddReturn) add the common
 elements, and `Add(XElement)` any other element. Statements have `CommentsBefore` and `CommentsAfter`, which write line
 comments:
 
@@ -40,14 +40,14 @@ public string Greet(string name)
 ```
 <!-- endref -->
 
-A `CommentStatement` is a comment on its own line among the statements. Expressions, declarations and other code objects
+A [CommentStatement](cref:Meziantou.Framework.CodeDom.CommentStatement) is a comment on its own line among the statements. Expressions, declarations and other code objects
 have `CommentsBefore` and `CommentsAfter` too. The comments of an expression are inline comments (`/* ... */`) by
 default; `Add(text, CommentType)` chooses the kind of each comment.
 
 ## Nullable reference types
 
-Set `NullableContext` on a compilation unit, a type, a member or a statement to write a `#nullable` directive, and use
-`MakeNullable()` to annotate a reference type:
+Set [NullableContext](cref:Meziantou.Framework.CodeDom.NullableContext) on a compilation unit, a type, a member or a statement to write a `#nullable` directive, and use
+[MakeNullable()](cref:Meziantou.Framework.CodeDom.TypeReference.MakeNullable) to annotate a reference type:
 
 <!-- ref:../../tests/Meziantou.Framework.CodeDom.Tests/CSharpCodeGeneratorTests.cs;region=CodeDom_NullableContext;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -72,6 +72,6 @@ Assert.Equal("""
 ```
 <!-- endref -->
 
-`NullableContext.Enable` writes `#nullable enable` and `Disable` writes `#nullable disable`. `Default` writes nothing. On
+[NullableContext.Enable](cref:Meziantou.Framework.CodeDom.NullableContext.Enable) writes `#nullable enable` and [Disable](cref:Meziantou.Framework.CodeDom.NullableContext.Disable) writes `#nullable disable`. [Default](cref:Meziantou.Framework.CodeDom.NullableContext.Default) writes nothing. On
 a type, a member or a statement, the opposite directive follows the object, so the setting applies to that object
 only.

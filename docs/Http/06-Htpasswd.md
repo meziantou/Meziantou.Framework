@@ -4,7 +4,7 @@ description: Parse an Apache htpasswd file and verify a user name and a password
 ---
 
 An htpasswd file stores user names and password hashes, one `<user>:<hash>` entry per line. It is the format of Apache
-HTTP basic authentication. `HtpasswdFile`, in the `Meziantou.Framework.Http.Htpasswd` package, reads it and verifies
+HTTP basic authentication. [HtpasswdFile](cref:Meziantou.Framework.Http.HtpasswdFile), in the `Meziantou.Framework.Http.Htpasswd` package, reads it and verifies
 credentials.
 
 ```bash
@@ -13,7 +13,7 @@ dotnet add package Meziantou.Framework.Http.Htpasswd
 
 ## Verify credentials
 
-Parse the content of the file, then call `VerifyCredentials` with the user name and the password to check:
+Parse the content of the file, then call [VerifyCredentials](cref:Meziantou.Framework.Http.HtpasswdFile.VerifyCredentials) with the user name and the password to check:
 
 <!-- ref:../../tests/Meziantou.Framework.Http.Htpasswd.Tests/HtpasswdFileTests.cs;region=HtpasswdFile_VerifyCredentials;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -29,13 +29,13 @@ Assert.True(isBobValid);
 ```
 <!-- endref -->
 
-`VerifyCredentials` returns `false` for an unknown user, a wrong password, and a password longer than 1024 characters:
+[VerifyCredentials](cref:Meziantou.Framework.Http.HtpasswdFile.VerifyCredentials) returns `false` for an unknown user, a wrong password, and a password longer than 1024 characters:
 the cost of the crypt algorithms grows quadratically with the length of the password, so a long one supplied by a
 client could tie up the server.
 
 ## Load a file
 
-`LoadAsync` reads a file, which is decoded as UTF-8 unless it starts with a byte order mark:
+[LoadAsync](cref:Meziantou.Framework.Http.HtpasswdFile.LoadAsync) reads a file, which is decoded as UTF-8 unless it starts with a byte order mark:
 
 <!-- ref:../../tests/Meziantou.Framework.Http.Htpasswd.Tests/HtpasswdFileTests.cs;region=HtpasswdFile_LoadAsync;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -44,7 +44,7 @@ Assert.True(htpasswd.VerifyCredentials("alice", "password"));
 ```
 <!-- endref -->
 
-Another overload reads a `TextReader`, and `Parse` also accepts a `ReadOnlySpan<char>`. The file is read once:
+Another overload reads a `TextReader`, and [Parse](cref:Meziantou.Framework.Http.HtpasswdFile.Parse) also accepts a `ReadOnlySpan<char>`. The file is read once:
 reload it to see later changes.
 
 ## How the file is read
@@ -75,7 +75,7 @@ Assert.False(htpasswd.VerifyCredentials("bob", "password"));
 - The user name is what comes before the first `:`, and the hash what comes after it. A line without a user name or
   without a hash is skipped.
 - When a user has several entries, the first one is used.
-- User names are case-sensitive. `Usernames` lists them, and `Count` gives the number of entries.
+- User names are case-sensitive. [Usernames](cref:Meziantou.Framework.Http.HtpasswdFile.Usernames) lists them, and [Count](cref:Meziantou.Framework.Http.HtpasswdFile.Count) gives the number of entries.
 
 ## Supported hash formats
 
@@ -110,4 +110,4 @@ Assert.True(htpasswd.VerifyCredentials("alice", "password"));
 
 This also applies to the hash formats the library does not implement, such as the traditional DES crypt
 (`htpasswd -d`): the stored hash itself would then be accepted as the password. Leave the option off unless the file
-really holds plaintext passwords. `AllowPlaintextPasswords` tells whether a parsed file has it on.
+really holds plaintext passwords. [AllowPlaintextPasswords](cref:Meziantou.Framework.Http.HtpasswdFile.AllowPlaintextPasswords) tells whether a parsed file has it on.

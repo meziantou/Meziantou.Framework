@@ -5,7 +5,7 @@ description: Evaluate JavaScript code with arguments, await promises, use requir
 
 ## Evaluate code
 
-`EvaluateAsync` runs code and returns its result:
+[EvaluateAsync](cref:Meziantou.Framework.NodeJs.NodeJsHost.EvaluateAsync) runs code and returns its result:
 
 <!-- ref:../../tests/Meziantou.Framework.NodeJs.Tests/NodeJsHostTests.cs;region=NodeJs_Evaluate;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -44,13 +44,13 @@ Assert.Equal(JsonValueKind.Null, nothing.ValueKind);
 
 ## Get a typed result
 
-The generic overloads deserialize the result, here `EvaluateAsync<int>` and `EvaluateAsync<string>`. The overloads
+The generic overloads deserialize the result, here [EvaluateAsync\<int\>](cref:Meziantou.Framework.NodeJs.NodeJsHost.EvaluateAsync) and [EvaluateAsync\<string\>](cref:Meziantou.Framework.NodeJs.NodeJsHost.EvaluateAsync). The overloads
 that take a `JsonTypeInfo<T>` work with trimming and Native AOT. See
 [Arguments and results](05-ArgumentsAndResults.md).
 
 ## Ignore the result
 
-`EvaluateVoidAsync` waits for the code to complete, and ignores its result: the result does not need to be
+[EvaluateVoidAsync](cref:Meziantou.Framework.NodeJs.NodeJsHost.EvaluateVoidAsync) waits for the code to complete, and ignores its result: the result does not need to be
 serializable. Use it for code that only has an effect, or that returns a value JSON cannot represent, such as a
 function, a class instance or a server:
 
@@ -65,6 +65,6 @@ To use such a value in later calls, keep a reference to it instead. See [Keeping
 
 ## Evaluate code or call a module
 
-Evaluating code suits a few lines. For more, put the code in a module and call its exports with `InvokeAsync`: the
+Evaluating code suits a few lines. For more, put the code in a module and call its exports with [InvokeAsync](cref:Meziantou.Framework.NodeJs.NodeJsHost.InvokeAsync): the
 module is loaded once, your editor and your linters check it, and you can test it with JavaScript tools. See
 [Calling modules](04-CallingModules.md).

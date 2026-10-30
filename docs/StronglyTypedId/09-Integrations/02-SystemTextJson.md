@@ -33,7 +33,7 @@ A `null` ID of a class type is written as `null` and read back as `null`.
 
 ## Use IDs as dictionary keys
 
-A dictionary keyed by an ID is written as a JSON object whose property names are the `ValueAsString` of the IDs:
+A dictionary keyed by an ID is written as a JSON object whose property names are the [ValueAsString](cref:Meziantou.Framework.IStronglyTypedId.ValueAsString) of the IDs:
 
 <!-- ref:../../../tests/Meziantou.Framework.StronglyTypedId.GeneratorTests/StronglyTypedIdTests.cs;region=StronglyTypedId_SystemTextJsonDictionaryKey;format=md-fenced-code-block;dedent=true -->
 ```csharp

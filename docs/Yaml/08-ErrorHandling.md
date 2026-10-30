@@ -5,8 +5,8 @@ description: Catch YAML errors, report the position of the problem, name the fil
 
 ## Catch YAML errors
 
-Every error of the content, from invalid YAML to a value that does not match its type, throws a `YamlException` or a
-derived class. `Start` and `End` give the position of the node at fault:
+Every error of the content, from invalid YAML to a value that does not match its type, throws a [YamlException](cref:Meziantou.Framework.Yaml.YamlException) or a
+derived class. [Start](cref:Meziantou.Framework.Yaml.YamlException.Start) and [End](cref:Meziantou.Framework.Yaml.YamlException.End) give the position of the node at fault:
 
 <!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlSerializerApiTests.cs;region=YamlException_Location;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -30,12 +30,12 @@ Assert.Equal("line 1, column 5", Validate("Id: [1"));
 ```
 <!-- endref -->
 
-- `Line` and `Column` start at `0`: add `1` to show them to a user. `Index` is the position of the character in the
+- [Line](cref:Meziantou.Framework.Yaml.Mark.Line) and [Column](cref:Meziantou.Framework.Yaml.Mark.Column) start at `0`: add `1` to show them to a user. [Index](cref:Meziantou.Framework.Yaml.Mark.Index) is the position of the character in the
   text.
-- `SyntaxErrorException` and `SemanticErrorException` derive from `YamlException` and report YAML that is not valid,
-  such as an unclosed `[` or an unsupported `%YAML` version. Catch `YamlException` to handle every error of the content.
+- [SyntaxErrorException](cref:Meziantou.Framework.Yaml.SyntaxErrorException) and [SemanticErrorException](cref:Meziantou.Framework.Yaml.SemanticErrorException) derive from [YamlException](cref:Meziantou.Framework.Yaml.YamlException) and report YAML that is not valid,
+  such as an unclosed `[` or an unsupported `%YAML` version. Catch [YamlException](cref:Meziantou.Framework.Yaml.YamlException) to handle every error of the content.
 - An exception thrown by a [callback](03-Serialization/06-ReadingBehavior.md#run-code-around-serialization) is wrapped
-  in a `YamlException`.
+  in a [YamlException](cref:Meziantou.Framework.Yaml.YamlException).
 
 Other exceptions report a problem in your code rather than in the YAML, and are not meant to be caught: a
 `NotSupportedException` for a type that cannot be serialized, an `InvalidOperationException` for an invalid
@@ -43,7 +43,7 @@ configuration of your types, such as two members with the same key.
 
 ## Name the file in the messages
 
-Set `SourceName`, typically to the path of the file, to start the messages with it:
+Set [SourceName](cref:Meziantou.Framework.Yaml.YamlSerializerOptions.SourceName), typically to the path of the file, to start the messages with it:
 
 <!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlSerializerApiTests.cs;region=YamlSerializerOptions_SourceName;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -54,12 +54,12 @@ Assert.Equal("config.yaml: (Lin: 0, Col: 4, Chr: 4) - (Lin: 0, Col: 4, Chr: 4): 
 ```
 <!-- endref -->
 
-The message gives the start and end positions as `(Lin, Col, Chr)`, from `0`. `YamlException.SourceName` returns the
+The message gives the start and end positions as `(Lin, Col, Chr)`, from `0`. [YamlException.SourceName](cref:Meziantou.Framework.Yaml.YamlException.SourceName) returns the
 name.
 
 ## Read without exceptions
 
-`TryDeserialize` returns `false` instead of throwing a `YamlException`:
+[TryDeserialize](cref:Meziantou.Framework.Yaml.YamlSerializer.TryDeserialize) returns `false` instead of throwing a [YamlException](cref:Meziantou.Framework.Yaml.YamlException):
 
 <!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlSerializerApiTests.cs;region=YamlSerializer_TryDeserialize;format=md-fenced-code-block;dedent=true -->
 ```csharp

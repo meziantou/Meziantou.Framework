@@ -41,8 +41,8 @@ builder.AddTdsServer(options =>
 
 - The certificate must contain its private key.
 - Relative paths are relative to the current directory of the process.
-- Configure one source only: PFX and PEM options together are an error, and so is `TlsPfxPassword` without
-  `TlsPfxPath` or one PEM path without the other.
+- Configure one source only: PFX and PEM options together are an error, and so is [TlsPfxPassword](cref:Meziantou.Framework.Tds.TdsServerOptions.TlsPfxPassword) without
+  [TlsPfxPath](cref:Meziantou.Framework.Tds.TdsServerOptions.TlsPfxPath) or one PEM path without the other.
 - The certificate is loaded when the server starts, so a missing file or a wrong password fails at startup with an
   `InvalidOperationException`, a `FileNotFoundException` or a `CryptographicException`.
 - Keep the PFX password out of the source code: read it from the configuration or a secret store.
@@ -51,7 +51,7 @@ The server uses TLS 1.2, the version `Microsoft.Data.SqlClient` negotiates with 
 
 ## Require encryption
 
-With a certificate, the server still accepts clients that do not encrypt. Set `RequireEncryption` to reject them:
+With a certificate, the server still accepts clients that do not encrypt. Set [RequireEncryption](cref:Meziantou.Framework.Tds.TdsServerOptions.RequireEncryption) to reject them:
 
 <!-- ref:../../samples/Meziantou.Framework.TdsServer.Samples/Examples.cs;region=TdsServer_RequireEncryption;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -65,14 +65,14 @@ builder.AddTdsServer(options =>
 ```
 <!-- endref -->
 
-`RequireEncryption` needs a certificate: without one, the server fails to start.
+[RequireEncryption](cref:Meziantou.Framework.Tds.TdsServerOptions.RequireEncryption) needs a certificate: without one, the server fails to start.
 
 ## What clients do
 
 The `Encrypt` keyword of the client's connection string and the configuration of the server decide whether a
 connection is encrypted:
 
-| Client | No certificate | Certificate | Certificate and `RequireEncryption` |
+| Client | No certificate | Certificate | Certificate and [RequireEncryption](cref:Meziantou.Framework.Tds.TdsServerOptions.RequireEncryption) |
 | --- | --- | --- | --- |
 | `Encrypt=True` (or `Mandatory`) | Fails | Encrypted | Encrypted |
 | `Encrypt=False` (or `Optional`) | Not encrypted | Only the login is encrypted | Encrypted |

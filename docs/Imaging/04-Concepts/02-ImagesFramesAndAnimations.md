@@ -3,7 +3,7 @@ title: Images, frames and animations
 description: An image is a list of full frames with exact durations; build animations and animated cursors.
 ---
 
-An `Image` holds one or more frames. Every frame is the complete picture a viewer shows at that point of the
+An [Image](cref:Meziantou.Framework.Imaging.Image) holds one or more frames. Every frame is the complete picture a viewer shows at that point of the
 animation, at the size of the image and in its pixel format. This page shows how to build an animation, set its
 timing and play count, and how posters and animated cursors fit in.
 
@@ -36,10 +36,10 @@ public static void BuildAnimation(string apngPath, string gifPath)
 ```
 <!-- endref -->
 
-- `image.Frames` lists the frames; `AppendFrame()` adds a frame whose pixels are all zero (transparent black) and
+- `image.Frames` lists the frames; [AppendFrame()](cref:Meziantou.Framework.Imaging.Image.AppendFrame) adds a frame whose pixels are all zero (transparent black) and
   whose duration is zero. `AppendFrame(frame)` and `InsertFrame(index, frame)` add a copy of an existing frame, which
   must have the size and the pixel format of the image: frames are never resized or converted implicitly.
-- `RemoveFrame` and `MoveFrame` edit the order. An image always keeps at least one frame.
+- [RemoveFrame](cref:Meziantou.Framework.Imaging.Image.RemoveFrame) and [MoveFrame](cref:Meziantou.Framework.Imaging.Image.MoveFrame) edit the order. An image always keeps at least one frame.
 - `Frames[i].Metadata.Duration` is the duration of the frame, and `Image.Animation.TotalPlays` the number of plays.
 - Every operation of the library, such as a resize, a rotation or a blur, applies to all the frames.
 
@@ -49,15 +49,15 @@ removing or reordering frames can never leave stale instructions behind.
 
 ## Still or animated
 
-`IsAnimated` is true when the image has several frames, a poster frame, or animation settings (`Animation` is not
+[IsAnimated](cref:Meziantou.Framework.Imaging.Image.IsAnimated) is true when the image has several frames, a poster frame, or animation settings ([Animation](cref:Meziantou.Framework.Imaging.Image.Animation) is not
 `null`):
 
 - Adding a second frame or a poster creates default settings: an infinite loop.
 - Removing frames down to one keeps the settings: the image is then a one-frame animation, and is saved as one. Set
-  `Animation` to `null` to make it a still image; this is allowed only with one frame and no poster.
+  [Animation](cref:Meziantou.Framework.Imaging.Image.Animation) to `null` to make it a still image; this is allowed only with one frame and no poster.
 - A format that stores one picture (JPEG, a static PNG) rejects an animated image with an
-  `UnsupportedImageFeatureException` instead of saving its first frame. Save the frame you want with
-  `Frames[index].Save`, which writes it as a still image (`CloneFrame` copies it into a new still image instead):
+  [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException) instead of saving its first frame. Save the frame you want with
+  `Frames[index].Save`, which writes it as a still image ([CloneFrame](cref:Meziantou.Framework.Imaging.Image.CloneFrame) copies it into a new still image instead):
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_ExportJpegFrame;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -79,19 +79,19 @@ public static void ExportFrameAsJpeg(string animatedPath, int frameIndex, string
 
 ## Durations
 
-A duration is a `FrameDuration`: an exact fraction of a second, not a floating-point number. The delays of GIF
+A duration is a [FrameDuration](cref:Meziantou.Framework.Imaging.FrameDuration): an exact fraction of a second, not a floating-point number. The delays of GIF
 (hundredths of a second), APNG (any fraction) and ANI (sixtieths of a second) are kept exactly, zero durations
 included, and no minimum delay is imposed the way some players do.
 
 | To | Use |
 | --- | --- |
-| Create a duration | `FrameDuration.FromMilliseconds(100)`, `new FrameDuration(1, 30)` (exactly 1/30 s), `FrameDuration.FromTimeSpan` |
-| Read it exactly | `Numerator` and `Denominator` |
-| Convert it | `ToTimeSpan()` (rounded to the nearest 100 ns tick) |
-| Display it | `TotalMilliseconds`, `TotalSeconds` (floating-point approximations) |
+| Create a duration | `FrameDuration.FromMilliseconds(100)`, `new FrameDuration(1, 30)` (exactly 1/30 s), [FrameDuration.FromTimeSpan](cref:Meziantou.Framework.Imaging.FrameDuration.FromTimeSpan) |
+| Read it exactly | [Numerator](cref:Meziantou.Framework.Imaging.FrameDuration.Numerator) and [Denominator](cref:Meziantou.Framework.Imaging.FrameDuration.Denominator) |
+| Convert it | [ToTimeSpan()](cref:Meziantou.Framework.Imaging.FrameDuration.ToTimeSpan) (rounded to the nearest 100 ns tick) |
+| Display it | [TotalMilliseconds](cref:Meziantou.Framework.Imaging.FrameDuration.TotalMilliseconds), [TotalSeconds](cref:Meziantou.Framework.Imaging.FrameDuration.TotalSeconds) (floating-point approximations) |
 
 When the output format cannot store a duration exactly, the `DurationRounding` setting of the encoder decides:
-`RequireExact` throws, `RoundToNearest` uses the nearest duration the format can store. The PNG encoder requires exact
+[RequireExact](cref:Meziantou.Framework.Imaging.Formats.FrameDurationRounding.RequireExact) throws, [RoundToNearest](cref:Meziantou.Framework.Imaging.Formats.FrameDurationRounding.RoundToNearest) uses the nearest duration the format can store. The PNG encoder requires exact
 durations by default; the GIF encoder rounds to the nearest hundredth of a second and the ANI encoder to the nearest
 sixtieth. A duration beyond the range of the format is always rejected, never clamped.
 
@@ -106,11 +106,11 @@ The animation settings are part of the structure of the image: options that remo
 ## Poster frames
 
 An APNG file can store a default image that is not part of the animation: programs that do not support APNG show it,
-and APNG players skip it. The library exposes it as `PosterFrame`:
+and APNG players skip it. The library exposes it as [PosterFrame](cref:Meziantou.Framework.Imaging.Image.PosterFrame):
 
 - It is not counted in `Frames.Count`, and is kept by loads and by the operations on the whole image, such as a
   resize.
-- `SetPosterFrame` sets it to a copy of a frame, `RemovePosterFrame` removes it, and `ClonePosterFrame` extracts it as a
+- [SetPosterFrame](cref:Meziantou.Framework.Imaging.Image.SetPosterFrame) sets it to a copy of a frame, [RemovePosterFrame](cref:Meziantou.Framework.Imaging.Image.RemovePosterFrame) removes it, and [ClonePosterFrame](cref:Meziantou.Framework.Imaging.Image.ClonePosterFrame) extracts it as a
   still image; `PosterFrame.Save` saves it as one.
 - Only animated PNG output can store a poster. Other formats reject an image that has one: remove it first.
 

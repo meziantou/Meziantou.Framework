@@ -27,19 +27,19 @@ without quoting them, killing the process when the operation is canceled, and ch
 
 ## Namespace
 
-The types are in the [Meziantou.Framework](cref:Meziantou.Framework) namespace. The main ones:
+The types are in the [Meziantou.Framework](cref:Meziantou.Framework.ProcessWrapper!N:Meziantou.Framework) namespace. The main ones:
 
 | Type | Contains |
 | --- | --- |
-| `ProcessWrapper` | The command to run, its configuration, and the methods that start it |
-| `ProcessInstance`, `BufferedProcessInstance` | A running process, to await or kill |
-| `ProcessResult`, `BufferedProcessResult` | The exit code and dates of a process that exited, and its output when buffered |
-| `ProcessExitCode` | An exit code |
-| `OutputTarget`, `InputSource` | Where the output goes, and where the input comes from |
-| `ProcessOutputCollection`, `ProcessOutput` | Captured output lines |
-| `ProcessPipe`, `ProcessPipeline` | Connections between processes |
-| `ProcessLimits` | The CPU, memory and process count limits |
-| `FakeProcess`, `FakeProcessFactory` | In-memory processes for tests |
+| [ProcessWrapper](cref:Meziantou.Framework.ProcessWrapper) | The command to run, its configuration, and the methods that start it |
+| [ProcessInstance](cref:Meziantou.Framework.ProcessInstance), [BufferedProcessInstance](cref:Meziantou.Framework.BufferedProcessInstance) | A running process, to await or kill |
+| [ProcessResult](cref:Meziantou.Framework.ProcessResult), [BufferedProcessResult](cref:Meziantou.Framework.BufferedProcessResult) | The exit code and dates of a process that exited, and its output when buffered |
+| [ProcessExitCode](cref:Meziantou.Framework.ProcessExitCode) | An exit code |
+| [OutputTarget](cref:Meziantou.Framework.OutputTarget), [InputSource](cref:Meziantou.Framework.InputSource) | Where the output goes, and where the input comes from |
+| [ProcessOutputCollection](cref:Meziantou.Framework.ProcessOutputCollection), [ProcessOutput](cref:Meziantou.Framework.ProcessOutput) | Captured output lines |
+| [ProcessPipe](cref:Meziantou.Framework.ProcessPipe), [ProcessPipeline](cref:Meziantou.Framework.ProcessPipeline) | Connections between processes |
+| [ProcessLimits](cref:Meziantou.Framework.ProcessLimits) | The CPU, memory and process count limits |
+| [FakeProcess](cref:Meziantou.Framework.FakeProcess), [FakeProcessFactory](cref:Meziantou.Framework.FakeProcessFactory) | In-memory processes for tests |
 
 ## Next steps
 

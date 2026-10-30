@@ -3,7 +3,7 @@ title: Converting entries
 description: Turn archived entries into HttpRequestMessage and HttpResponseMessage, and get the bytes of a body.
 ---
 
-`ToHttpRequestMessage` and `ToHttpResponseMessage` rebuild the messages of an archived entry, so you can replay a
+[ToHttpRequestMessage](cref:Meziantou.Framework.HttpArchive.HarEntryExtensions.ToHttpRequestMessage) and [ToHttpResponseMessage](cref:Meziantou.Framework.HttpArchive.HarEntryExtensions.ToHttpResponseMessage) rebuild the messages of an archived entry, so you can replay a
 request with `HttpClient`, or serve a recorded response from a test handler:
 
 <!-- ref:../../samples/Meziantou.Framework.Http.Samples/HttpArchiveExamples.cs;region=HarEntry_ConvertToHttpMessages;format=md-fenced-code-block;dedent=true -->
@@ -18,7 +18,7 @@ using var response = entry.ToHttpResponseMessage();
 ```
 <!-- endref -->
 
-Both methods exist on `HarEntry`, and on `HarRequest` and `HarResponse` directly. The messages are new objects: dispose
+Both methods exist on [HarEntry](cref:Meziantou.Framework.HttpArchive.HarEntry), and on [HarRequest](cref:Meziantou.Framework.HttpArchive.HarRequest) and [HarResponse](cref:Meziantou.Framework.HttpArchive.HarResponse) directly. The messages are new objects: dispose
 of them as usual.
 
 ## Requests
@@ -67,7 +67,7 @@ Assert.Equal(14, request.Content.Headers.ContentLength);
 
 ### Bodies
 
-The body comes from `PostData.Text`, as UTF-8. When the archive stored a form as `Params` instead, an
+The body comes from `PostData.Text`, as UTF-8. When the archive stored a form as [Params](cref:Meziantou.Framework.HttpArchive.HarPostData.Params) instead, an
 `application/x-www-form-urlencoded` body is rebuilt from them:
 
 <!-- ref:../../tests/Meziantou.Framework.HttpArchive.Tests/HarEntryExtensionsTests.cs;region=HarRequest_FormParams;format=md-fenced-code-block;dedent=true -->
@@ -94,12 +94,12 @@ Assert.Equal("user=someone%40example.com&remember=on", await request.Content!.Re
 ```
 <!-- endref -->
 
-- `Text` wins when the archive has both.
+- [Text](cref:Meziantou.Framework.HttpArchive.HarPostData.Text) wins when the archive has both.
 - A multipart body cannot be rebuilt from its parameters, because the archive does not hold the original boundary: it
   converts to an empty body.
-- A request without `PostData` has no content, unless the archive recorded entity headers for it; it then gets an
+- A request without [PostData](cref:Meziantou.Framework.HttpArchive.HarRequest.PostData) has no content, unless the archive recorded entity headers for it; it then gets an
   empty content that holds them.
-- `ToHttpRequestMessage` does not decode a body stored as base64: call `TryGetRawData` to get its bytes (see below).
+- [ToHttpRequestMessage](cref:Meziantou.Framework.HttpArchive.HarEntryExtensions.ToHttpRequestMessage) does not decode a body stored as base64: call [TryGetRawData](cref:Meziantou.Framework.HttpArchive.HarPostDataExtensions.TryGetRawData) to get its bytes (see below).
 
 ## Responses
 
@@ -138,13 +138,13 @@ Assert.Equal("image/png", response.Content.Headers.ContentType!.MediaType);
 - The status code, the reason phrase, the HTTP version and the headers are copied, with the same rules as for
   requests.
 - When the archive lists cookies but has no `Set-Cookie` header, one `Set-Cookie` header is built for each cookie,
-  with its path, domain, expiration, `HttpOnly` and `Secure` attributes.
-- The body comes from `Content.Text`. A body whose `Encoding` is `base64` is decoded; when the text is not valid
+  with its path, domain, expiration, [HttpOnly](cref:Meziantou.Framework.HttpArchive.HarCookie.HttpOnly) and [Secure](cref:Meziantou.Framework.HttpArchive.HarCookie.Secure) attributes.
+- The body comes from `Content.Text`. A body whose [Encoding](cref:Meziantou.Framework.HttpArchive.HarContent.Encoding) is `base64` is decoded; when the text is not valid
   base64, it is used as UTF-8 text instead. A response without text has an empty content.
 
 ## Get the bytes of a body
 
-`TryGetRawData` returns the bytes of a response body (`HarContent`) or of a request body (`HarPostData`):
+[TryGetRawData](cref:Meziantou.Framework.HttpArchive.HarPostDataExtensions.TryGetRawData) returns the bytes of a response body ([HarContent](cref:Meziantou.Framework.HttpArchive.HarContent)) or of a request body ([HarPostData](cref:Meziantou.Framework.HttpArchive.HarPostData)):
 
 <!-- ref:../../tests/Meziantou.Framework.HttpArchive.Tests/HarContentExtensionsTests.cs;region=HarContent_TryGetRawData;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -169,7 +169,7 @@ Assert.False(unknownEncoding.TryGetRawData(out _));
   base64 is invalid, and when the encoding is not `base64`. It never returns the undecoded text as the body.
 
 The HAR format has no encoding field for request bodies. `HarPostData.TryGetRawData` reads it from the
-`x-meziantou-encoding` custom field (`HarPostDataExtensions.DefaultEncodingExtensionName`), and you can pass the name
+`x-meziantou-encoding` custom field ([HarPostDataExtensions.DefaultEncodingExtensionName](cref:Meziantou.Framework.HttpArchive.HarPostDataExtensions.DefaultEncodingExtensionName)), and you can pass the name
 of another field:
 
 <!-- ref:../../tests/Meziantou.Framework.HttpArchive.Tests/HarEntryExtensionsTests.cs;region=HarPostData_TryGetRawData;format=md-fenced-code-block;dedent=true -->

@@ -7,7 +7,7 @@ The immutable collections of .NET compare by reference: two `ImmutableArray<T>` 
 record that contains one loses its value equality, which breaks caches keyed by the record, and the incremental
 pipelines of source generators.
 
-`ImmutableEquatableArray<T>`, `ImmutableEquatableSet<T>` and `ImmutableEquatableDictionary<TKey, TValue>` are immutable
+[ImmutableEquatableArray\<T\>](cref:Meziantou.Framework.Collections.ImmutableEquatableArray{T}), [ImmutableEquatableSet\<T\>](cref:Meziantou.Framework.Collections.ImmutableEquatableSet{T}) and [ImmutableEquatableDictionary\<TKey, TValue\>](cref:Meziantou.Framework.Collections.ImmutableEquatableDictionary{TKey,TValue}) are immutable
 collections that are equal when their items are equal:
 
 <!-- ref:../../../tests/Meziantou.Framework.Tests/Collections/ImmutableEquatableArrayTests.cs;region=ImmutableEquatableArray_Usage;format=md-fenced-code-block;dedent=true -->
@@ -35,9 +35,9 @@ private sealed record Model(string Name, ImmutableEquatableArray<string> Items);
 
 | Collection | Created with |
 | --- | --- |
-| `ImmutableEquatableArray<T>` | `ToImmutableEquatableArray()`, `ImmutableEquatableArray.Create`, `ImmutableEquatableArray<T>.Empty` |
-| `ImmutableEquatableSet<T>` | `ToImmutableEquatableSet()`, `ImmutableEquatableSet.Create`, `ImmutableEquatableSet<T>.Empty` |
-| `ImmutableEquatableDictionary<TKey, TValue>` | `ToImmutableEquatableDictionary()` from pairs, tuples or with key and value selectors, `ImmutableEquatableDictionary.Empty<TKey, TValue>()` |
+| [ImmutableEquatableArray\<T\>](cref:Meziantou.Framework.Collections.ImmutableEquatableArray{T}) | [ToImmutableEquatableArray()](cref:Meziantou.Framework.Collections.ImmutableEquatableArray.ToImmutableEquatableArray), [ImmutableEquatableArray.Create](cref:Meziantou.Framework.Collections.ImmutableEquatableArray.Create), [ImmutableEquatableArray\<T\>.Empty](cref:Meziantou.Framework.Collections.ImmutableEquatableArray{T}.Empty) |
+| [ImmutableEquatableSet\<T\>](cref:Meziantou.Framework.Collections.ImmutableEquatableSet{T}) | [ToImmutableEquatableSet()](cref:Meziantou.Framework.Collections.ImmutableEquatableSet.ToImmutableEquatableSet), [ImmutableEquatableSet.Create](cref:Meziantou.Framework.Collections.ImmutableEquatableSet.Create), [ImmutableEquatableSet\<T\>.Empty](cref:Meziantou.Framework.Collections.ImmutableEquatableSet{T}.Empty) |
+| [ImmutableEquatableDictionary\<TKey, TValue\>](cref:Meziantou.Framework.Collections.ImmutableEquatableDictionary{TKey,TValue}) | [ToImmutableEquatableDictionary()](cref:Meziantou.Framework.Collections.ImmutableEquatableDictionary.ToImmutableEquatableDictionary) from pairs, tuples or with key and value selectors, [ImmutableEquatableDictionary.Empty\<TKey, TValue\>()](cref:Meziantou.Framework.Collections.ImmutableEquatableDictionary.Empty) |
 
 The items, and the keys and values of the dictionary, must implement `IEquatable<T>`.
 

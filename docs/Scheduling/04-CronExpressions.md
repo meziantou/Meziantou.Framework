@@ -5,7 +5,7 @@ description: Parse cron expressions with 5, 6 or 7 fields, compute their next oc
 
 ## Parse an expression
 
-`CronExpression.Parse` reads an expression and throws a `FormatException` when it is not valid. `TryParse` returns
+[CronExpression.Parse](cref:Meziantou.Framework.Scheduling.CronExpression.Parse) reads an expression and throws a `FormatException` when it is not valid. [TryParse](cref:Meziantou.Framework.Scheduling.CronExpression.TryParse) returns
 `false` instead:
 
 <!-- ref:../../tests/Meziantou.Framework.Scheduling.Tests/CronExpressionTests.cs;region=CronExpression_TryParse;format=md-fenced-code-block;dedent=true -->
@@ -19,7 +19,7 @@ Assert.Throws<FormatException>(() => CronExpression.Parse("60 * * * *"));
 ```
 <!-- endref -->
 
-On .NET 7 and later, `CronExpression` implements `IParsable<CronExpression>` and `ISpanParsable<CronExpression>`, so
+On .NET 7 and later, [CronExpression](cref:Meziantou.Framework.Scheduling.CronExpression) implements `IParsable<CronExpression>` and `ISpanParsable<CronExpression>`, so
 generic code that parses values accepts it. `ToString` returns the text of the expression, without the spaces and tabs
 around it.
 
@@ -184,7 +184,7 @@ Pass the time zone in which the schedule is written, such as the time zone of th
 
 ## Equality
 
-Two expressions are equal (`Equals`, `==`) when their fields select the same values, whatever their text:
+Two expressions are equal ([Equals](cref:Meziantou.Framework.Scheduling.CronExpression.Equals), `==`) when their fields select the same values, whatever their text:
 `*/15 * * * *` equals `0,15,30,45 * * * *`, and `@daily` equals `0 0 * * *`. Expressions written with different special
-values, such as `0 0 29 2 *` and `0 0 L 2 *`, are not equal, even when they match the same dates. A `CronExpression` holds
+values, such as `0 0 29 2 *` and `0 0 L 2 *`, are not equal, even when they match the same dates. A [CronExpression](cref:Meziantou.Framework.Scheduling.CronExpression) holds
 no time zone.

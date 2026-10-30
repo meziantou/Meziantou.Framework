@@ -13,10 +13,10 @@ description: What the template engine, the HTML email templates and the command-
   templates: `include` adds a C# file. Run the templates separately and pass the text of one as an argument of another.
 - **No escape sequence for the delimiters.** Write a delimiter from an expression, or choose other delimiters. See
   [Change the delimiters](03-TemplateSyntax.md#change-the-delimiters).
-- **Restricted types.** The types of arguments, `OutputType` and the base class must be public, not nested and not
+- **Restricted types.** The types of arguments, [OutputType](cref:Meziantou.Framework.Templating.Template.OutputType) and the base class must be public, not nested and not
   generic. See [Passing arguments](04-PassingArguments.md#pass-values-of-your-own-types).
 - **`dynamic` code is never unloaded.** See [Avoid dynamic code](08-CompilationAndMemory.md#avoid-dynamic-code).
-- **A built template is frozen.** It cannot be loaded again or reconfigured: create a new `Template`.
+- **A built template is frozen.** It cannot be loaded again or reconfigured: create a new [Template](cref:Meziantou.Framework.Templating.Template).
 - **Indentation is kept.** The spaces in front of a statement block alone on its line are written. See
   [Line breaks](03-TemplateSyntax.md#line-breaks).
 - **Formatting depends on the writer.** Values are formatted with the culture of the writer, which is the current

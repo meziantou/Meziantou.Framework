@@ -4,7 +4,7 @@ description: Read and write PBM, PGM, PPM and PAM files, binary or plain, withou
 ---
 
 The Netpbm formats are minimal uncompressed formats for tools and test fixtures: PBM (portable bitmap, black and white),
-PGM (graymap), PPM (pixmap, RGB) and PAM (arbitrary map, here RGB with alpha). `PnmEncoder` always writes them without
+PGM (graymap), PPM (pixmap, RGB) and PAM (arbitrary map, here RGB with alpha). [PnmEncoder](cref:Meziantou.Framework.Imaging.Formats.PnmEncoder) always writes them without
 loss: the variant follows the pixel format of the image, and 16-bit images keep their 16 bits.
 
 ## What is read and written
@@ -43,7 +43,7 @@ public static void SaveAssetFormats(string inputPath, string bmpPath, string tga
 <!-- endref -->
 
 The plain forms write decimal samples, which a text editor and a diff can show. They have no alpha, and neither has a
-portable bitmap, so pixels that are not opaque need `BackgroundColor`:
+portable bitmap, so pixels that are not opaque need [BackgroundColor](cref:Meziantou.Framework.Imaging.Formats.PnmEncoder.BackgroundColor):
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/FormatExamples.cs;region=Imaging_SavePlainNetpbm;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -63,15 +63,15 @@ public static void SavePlainNetpbm(string inputPath, string outputPath)
 
 | Option | What it does | Default |
 | --- | --- | --- |
-| `Encoding` | `Binary`, or `Plain` (decimal samples, lines within 70 characters) | `Binary` |
-| `PixelLayout` | `Auto` follows the pixel format; `Bitmap` writes a portable bitmap | `Auto` |
-| `BackgroundColor` | The opaque color pixels that are not opaque are composited over when the output has no alpha; `null` rejects them | `null` |
-| `MetadataHandling` | What to do with metadata, which Netpbm cannot store | `Strict` |
+| [Encoding](cref:Meziantou.Framework.Imaging.Formats.PnmEncoder.Encoding) | [Binary](cref:Meziantou.Framework.Imaging.Formats.PnmEncoding.Binary), or [Plain](cref:Meziantou.Framework.Imaging.Formats.PnmEncoding.Plain) (decimal samples, lines within 70 characters) | [Binary](cref:Meziantou.Framework.Imaging.Formats.PnmEncoding.Binary) |
+| [PixelLayout](cref:Meziantou.Framework.Imaging.Formats.PnmEncoder.PixelLayout) | [Auto](cref:Meziantou.Framework.Imaging.Formats.PnmPixelLayout.Auto) follows the pixel format; [Bitmap](cref:Meziantou.Framework.Imaging.Formats.PnmPixelLayout.Bitmap) writes a portable bitmap | [Auto](cref:Meziantou.Framework.Imaging.Formats.PnmPixelLayout.Auto) |
+| [BackgroundColor](cref:Meziantou.Framework.Imaging.Formats.PnmEncoder.BackgroundColor) | The opaque color pixels that are not opaque are composited over when the output has no alpha; `null` rejects them | `null` |
+| [MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling) | What to do with metadata, which Netpbm cannot store | [Strict](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling.Strict) |
 
 ## Write a portable bitmap
 
 A portable bitmap stores one bit per pixel, and every pixel must be exactly black or exactly white: any other pixel throws
-an `UnsupportedImageFeatureException`, because the encoder never thresholds nor dithers. Binarize the image first:
+an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException), because the encoder never thresholds nor dithers. Binarize the image first:
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_Threshold;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -94,7 +94,7 @@ public static void SaveScanAsBilevel(string inputPath, string tiffPath, string p
 <!-- endref -->
 
 The thresholding methods are described in [Binarization](../06-Processing/09-Binarization.md). A portable bitmap loads
-back as `Gray8`, with one bit per component.
+back as [Gray8](cref:Meziantou.Framework.Imaging.Gray8), with one bit per component.
 
 ## Pitfalls
 
@@ -104,7 +104,7 @@ back as `Gray8`, with one bit per component.
 - Netpbm stores one frame: save one frame of an animation with `image.Frames[i].Save`. A file that holds several images is read
   as its first image.
 - Netpbm stores no metadata: an ICC profile, EXIF, XMP, an orientation, a resolution or text entries follow
-  `MetadataHandling`, which rejects them by default.
+  [MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling), which rejects them by default.
 - PAM tuple types other than the standard black and white, gray and RGB forms are rejected.
 - A comment written right after a number of the header, without a space (`4#comment`), is rejected. The
   [lenient mode](../05-LoadingAndSaving/08-ErrorHandling.md#accept-the-files-browsers-accept) reads it as Netpbm does:

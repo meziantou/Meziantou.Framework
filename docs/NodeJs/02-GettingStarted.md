@@ -18,7 +18,7 @@ check that the `node` executable is in the `PATH`:
 node --version
 ```
 
-When `node` is not in the `PATH`, set `NodeJsHostOptions.NodeExecutablePath`, as described in
+When `node` is not in the `PATH`, set [NodeJsHostOptions.NodeExecutablePath](cref:Meziantou.Framework.NodeJs.NodeJsHostOptions.NodeExecutablePath), as described in
 [Configuring the Node.js process](07-ConfiguringTheProcess.md#locate-nodejs).
 
 The examples of this documentation omit the `using` directives: they need `using Meziantou.Framework.NodeJs;`, and
@@ -42,11 +42,11 @@ Assert.Equal("cart has 3 items", text.GetString());
 ```
 <!-- endref -->
 
-- `NodeJsHost.StartAsync` starts the `node` process. The host is disposable: the `await using` declaration stops the
+- [NodeJsHost.StartAsync](cref:Meziantou.Framework.NodeJs.NodeJsHost.StartAsync) starts the `node` process. The host is disposable: the `await using` declaration stops the
   process.
-- `EvaluateAsync` runs the code as the body of an async function and returns the JSON representation of its result, as
+- [EvaluateAsync](cref:Meziantou.Framework.NodeJs.NodeJsHost.EvaluateAsync) runs the code as the body of an async function and returns the JSON representation of its result, as
   a `JsonElement`.
-- `InvokeAsync` imports a module and calls one of its exports with the arguments. `node:util` is a built-in module of
+- [InvokeAsync](cref:Meziantou.Framework.NodeJs.NodeJsHost.InvokeAsync) imports a module and calls one of its exports with the arguments. `node:util` is a built-in module of
   Node.js; the next example calls a file of your own.
 
 ## Call your own JavaScript
@@ -83,11 +83,11 @@ Assert.Equal("hello-world", slug);
 <!-- endref -->
 
 - A relative module path starts with `./` and includes the file extension. It is resolved from the working directory.
-- `InvokeAsync<string>` deserializes the result to a .NET type. See
+- [InvokeAsync\<string\>](cref:Meziantou.Framework.NodeJs.NodeJsHost.InvokeAsync) deserializes the result to a .NET type. See
   [Arguments and results](05-ArgumentsAndResults.md) for the types you can use, and for the overloads that work with
   trimming and Native AOT.
 - Start one host and reuse it for many calls: starting a process is slow, and a module is loaded once per process.
-  `NodeJsHost` is thread-safe.
+  [NodeJsHost](cref:Meziantou.Framework.NodeJs.NodeJsHost) is thread-safe.
 
 ## Next steps
 

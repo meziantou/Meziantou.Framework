@@ -5,7 +5,7 @@ description: HstsClientHandler follows redirects itself so that every hop is upg
 
 ## Why the handler follows redirects
 
-A redirect followed by the inner handler never goes back through `HstsClientHandler`: a redirect to an HSTS host
+A redirect followed by the inner handler never goes back through [HstsClientHandler](cref:Meziantou.Framework.Http.HstsClientHandler): a redirect to an HSTS host
 would be requested over HTTP. So the handler follows the redirects itself, and every hop is checked against the
 policies:
 
@@ -40,7 +40,7 @@ This happens on the first request, not in the constructor. Two consequences:
 
 - An inner handler shared with another `HttpClient` stops following redirects for that client too.
 - An inner handler that has already sent a request cannot be reconfigured: the first request through
-  `HstsClientHandler` throws an `InvalidOperationException`.
+  [HstsClientHandler](cref:Meziantou.Framework.Http.HstsClientHandler) throws an `InvalidOperationException`.
 
 ## Follow redirects without touching the inner handler
 

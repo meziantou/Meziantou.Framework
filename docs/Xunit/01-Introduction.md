@@ -28,7 +28,7 @@ Linux, a test that needs the culture data of the operating system in invariant g
 administrator rights. Do not use them to hide a test that fails for an unknown reason: a skipped test is easy to
 forget.
 
-To decide whether to skip a test from inside the test, call `Assert.XunitSkip` of
+To decide whether to skip a test from inside the test, call [Assert.XunitSkip](cref:Meziantou.Framework.Assertions.Assert.XunitSkip) of
 [Meziantou.Framework.Assertions](../Assertions/01-Introduction.md) instead.
 
 ## Namespace

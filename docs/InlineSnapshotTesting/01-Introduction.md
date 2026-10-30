@@ -4,7 +4,7 @@ description: Validate objects against snapshots written in the source code of yo
 ---
 
 `Meziantou.Framework.InlineSnapshotTesting` replaces long lists of assertions with a single call whose expected value is
-written in the test itself. `InlineSnapshot.Validate` serializes the value under test to readable text and compares it
+written in the test itself. [InlineSnapshot.Validate](cref:Meziantou.Framework.InlineSnapshotTesting.InlineSnapshot.Validate) serializes the value under test to readable text and compares it
 with the string you pass. When they differ, the test fails and shows the difference: either the change is a bug, or the
 snapshot must be updated, and the library can rewrite the string in your source file for you.
 

@@ -22,17 +22,17 @@ app.MapGet("/", () => "Hello World!");
 <!-- endref -->
 
 The application has its health checks, OpenAPI document and security middleware without a call to
-`UseMeziantouConventions` or `MapMeziantouDefaultEndpoints`.
+[UseMeziantouConventions](cref:Meziantou.AspNetCore.ServiceDefaults.MeziantouServiceDefaults.UseMeziantouConventions) or [MapMeziantouDefaultEndpoints](cref:Meziantou.AspNetCore.ServiceDefaults.MeziantouServiceDefaults.MapMeziantouDefaultEndpoints).
 
 ## How it works
 
 The generator uses C# interceptors: it replaces each `WebApplicationBuilder.Build()` call of the project with code that
 
-1. calls `TryUseMeziantouConventions()` on the builder,
+1. calls [TryUseMeziantouConventions()](cref:Meziantou.AspNetCore.ServiceDefaults.MeziantouServiceDefaults.TryUseMeziantouConventions) on the builder,
 2. calls `Build()`,
-3. calls `MapMeziantouDefaultEndpoints()` on the application, and returns it.
+3. calls [MapMeziantouDefaultEndpoints()](cref:Meziantou.AspNetCore.ServiceDefaults.MeziantouServiceDefaults.MapMeziantouDefaultEndpoints) on the application, and returns it.
 
-Because `MapMeziantouDefaultEndpoints` runs right after `Build()`, its middleware come before everything you add to the
+Because [MapMeziantouDefaultEndpoints](cref:Meziantou.AspNetCore.ServiceDefaults.MeziantouServiceDefaults.MapMeziantouDefaultEndpoints) runs right after `Build()`, its middleware come before everything you add to the
 application. The package enables the interceptors it needs in the project; there is nothing to configure.
 
 The generator does nothing when the project does not reference `Meziantou.AspNetCore.ServiceDefaults`. It only
@@ -40,8 +40,8 @@ intercepts `WebApplicationBuilder.Build()`: a host built with `Host.CreateApplic
 
 ## Configuring the defaults
 
-Call `UseMeziantouConventions` with your options before `Build()`. The generated code calls
-`TryUseMeziantouConventions`, which does nothing when the conventions are already registered, so your options are kept:
+Call [UseMeziantouConventions](cref:Meziantou.AspNetCore.ServiceDefaults.MeziantouServiceDefaults.UseMeziantouConventions) with your options before `Build()`. The generated code calls
+[TryUseMeziantouConventions](cref:Meziantou.AspNetCore.ServiceDefaults.MeziantouServiceDefaults.TryUseMeziantouConventions), which does nothing when the conventions are already registered, so your options are kept:
 
 <!-- ref:../../../tests/Meziantou.AspNetCore.ServiceDefaults.AutoRegister.GeneratorTests/Tests.cs;region=ServiceDefaultsAutoRegister_Configure;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -52,7 +52,7 @@ var app = builder.Build(); // Keeps these options: the generated code only adds 
 ```
 <!-- endref -->
 
-Calling `MapMeziantouDefaultEndpoints` yourself after `Build()` is harmless: the second call does nothing. It does not
+Calling [MapMeziantouDefaultEndpoints](cref:Meziantou.AspNetCore.ServiceDefaults.MeziantouServiceDefaults.MapMeziantouDefaultEndpoints) yourself after `Build()` is harmless: the second call does nothing. It does not
 move the middleware, though: they are already added by the generated code.
 
 See [Options](02-Options.md) for the available options.

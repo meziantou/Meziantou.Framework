@@ -29,17 +29,17 @@ public static void RotateAndFlip(string inputPath, string outputPath)
 <!-- endref -->
 
 These are exact pixel permutations: every sample, 16-bit low bits, floating-point values and alpha included, is
-copied unchanged. A quarter turn swaps the width and the height, and the axes of the pixel aspect ratio. `Flip` also
+copied unchanged. A quarter turn swaps the width and the height, and the axes of the pixel aspect ratio. [Flip](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Flip) also
 exists for one frame.
 
 ## Apply the EXIF orientation
 
 A camera or a phone often stores the pixels as the sensor read them, with an EXIF orientation that tells viewers how
-to turn them. `AutoOrient` applies that orientation to the pixels (all eight EXIF orientations: mirrors, rotations and
-the diagonal reflections), then sets it to `ExifOrientation.TopLeft`. It does nothing when the image is already
+to turn them. [AutoOrient](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoOrient) applies that orientation to the pixels (all eight EXIF orientations: mirrors, rotations and
+the diagonal reflections), then sets it to [ExifOrientation.TopLeft](cref:Meziantou.Framework.Imaging.Metadata.ExifOrientation.TopLeft). It does nothing when the image is already
 upright.
 
-The other operations work on the stored pixels and keep the orientation as it is. Call `AutoOrient` first, before a
+The other operations work on the stored pixels and keep the orientation as it is. Call [AutoOrient](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoOrient) first, before a
 crop, a resize or a rotation, so that they apply to what the viewer sees: a rotation of a photo that still has its
 orientation would be turned again by the viewers. See also [Handle phone photos](../03-Guides/05-HandlePhonePhotos.md)
 and [Metadata and orientation](../09-Color/02-MetadataAndOrientation.md).
@@ -47,7 +47,7 @@ and [Metadata and orientation](../09-Color/02-MetadataAndOrientation.md).
 ## Rotate by any angle
 
 `Rotate(degrees, options)` turns the image around its center. A positive angle turns clockwise. By default, the canvas
-grows to hold the whole turned image, and the corners it gains get `TransformOptions.BackgroundColor`:
+grows to hold the whole turned image, and the corners it gains get [TransformOptions.BackgroundColor](cref:Meziantou.Framework.Imaging.TransformOptions.BackgroundColor):
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_Straighten;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -68,7 +68,7 @@ of 360 degrees leaves the image unchanged.
 ## Skews and affine transformations
 
 `Skew(degreesX, degreesY)` leans the vertical lines of the image by one angle and its horizontal lines by another one,
-around its center. `Transform` applies an `AffineTransform`: any combination of translations, scalings, rotations and
+around its center. [Transform](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Transform) applies an [AffineTransform](cref:Meziantou.Framework.Imaging.AffineTransform): any combination of translations, scalings, rotations and
 skews:
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/ProcessingExamples.cs;region=Imaging_SkewAndTransform;format=md-fenced-code-block;dedent=true -->
@@ -93,15 +93,15 @@ public static void SkewAndTransform(string inputPath, string skewedPath, string 
 ```
 <!-- endref -->
 
-`AffineTransform` has the factories `CreateTranslation`, `CreateScale`, `CreateRotation` and `CreateSkew`, and `Then`
+[AffineTransform](cref:Meziantou.Framework.Imaging.AffineTransform) has the factories [CreateTranslation](cref:Meziantou.Framework.Imaging.AffineTransform.CreateTranslation), [CreateScale](cref:Meziantou.Framework.Imaging.AffineTransform.CreateScale), [CreateRotation](cref:Meziantou.Framework.Imaging.AffineTransform.CreateRotation) and [CreateSkew](cref:Meziantou.Framework.Imaging.AffineTransform.CreateSkew), and [Then](cref:Meziantou.Framework.Imaging.AffineTransform.Then)
 combines two transformations: the first one is applied, then the next one. Combine the transformations before calling
-`Transform`, so that the pixels are resampled once. The coordinates are those of the stored pixels: the image covers
+[Transform](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Transform), so that the pixels are resampled once. The coordinates are those of the stored pixels: the image covers
 `[0, width] x [0, height]`.
 
 ## Correct a perspective
 
-`Transform` also applies a `ProjectiveTransform`, the image seen in perspective.
-`ProjectiveTransform.CreateFromQuadrilateral` maps a rectangle to four points, such as the corners of a page in a
+[Transform](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Transform) also applies a [ProjectiveTransform](cref:Meziantou.Framework.Imaging.ProjectiveTransform), the image seen in perspective.
+[ProjectiveTransform.CreateFromQuadrilateral](cref:Meziantou.Framework.Imaging.ProjectiveTransform.CreateFromQuadrilateral) maps a rectangle to four points, such as the corners of a page in a
 photo; its inverse maps the page back to a rectangle:
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_FlattenPage;format=md-fenced-code-block;dedent=true -->
@@ -123,28 +123,28 @@ public static void FlattenPage(string inputPath, string outputPath, PointD topLe
 ```
 <!-- endref -->
 
-An `AffineTransform` converts implicitly to a `ProjectiveTransform`.
+An [AffineTransform](cref:Meziantou.Framework.Imaging.AffineTransform) converts implicitly to a [ProjectiveTransform](cref:Meziantou.Framework.Imaging.ProjectiveTransform).
 
 ## Transform options
 
-| `TransformOptions` | Default | Meaning |
+| [TransformOptions](cref:Meziantou.Framework.Imaging.TransformOptions) | Default | Meaning |
 | --- | --- | --- |
-| `CanvasMode` | `Expand` | `Expand` makes the smallest canvas that holds the whole transformed image, with the image centered in it. `Keep` keeps the size of the image, and `Explicit` uses `CanvasSize`: with these two, `Transform` applies the transformation as given and cuts what lands outside the canvas, and `Rotate` and `Skew` center the image on the canvas |
-| `CanvasSize` | - | The size of the canvas with `Explicit` |
-| `Filter` | `Bicubic` | The resampling filter, as for [resizing](03-Resizing.md). `NearestNeighbor` copies pixels without creating new colors |
-| `BackgroundColor` | Transparent black | The color beyond the edges of the image, into which the edges blend, and of the canvas the image does not cover |
-| `WorkingSpace` | `Encoded` | `Encoded` or `LinearSrgb`, as for resizing |
+| [CanvasMode](cref:Meziantou.Framework.Imaging.TransformOptions.CanvasMode) | [Expand](cref:Meziantou.Framework.Imaging.TransformCanvasMode.Expand) | [Expand](cref:Meziantou.Framework.Imaging.TransformCanvasMode.Expand) makes the smallest canvas that holds the whole transformed image, with the image centered in it. [Keep](cref:Meziantou.Framework.Imaging.TransformCanvasMode.Keep) keeps the size of the image, and [Explicit](cref:Meziantou.Framework.Imaging.TransformCanvasMode.Explicit) uses [CanvasSize](cref:Meziantou.Framework.Imaging.TransformOptions.CanvasSize): with these two, [Transform](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Transform) applies the transformation as given and cuts what lands outside the canvas, and [Rotate](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Rotate) and [Skew](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Skew) center the image on the canvas |
+| [CanvasSize](cref:Meziantou.Framework.Imaging.TransformOptions.CanvasSize) | - | The size of the canvas with [Explicit](cref:Meziantou.Framework.Imaging.TransformCanvasMode.Explicit) |
+| [Filter](cref:Meziantou.Framework.Imaging.TransformOptions.Filter) | [Bicubic](cref:Meziantou.Framework.Imaging.ResamplingFilter.Bicubic) | The resampling filter, as for [resizing](03-Resizing.md). [NearestNeighbor](cref:Meziantou.Framework.Imaging.ResamplingFilter.NearestNeighbor) copies pixels without creating new colors |
+| [BackgroundColor](cref:Meziantou.Framework.Imaging.TransformOptions.BackgroundColor) | Transparent black | The color beyond the edges of the image, into which the edges blend, and of the canvas the image does not cover |
+| [WorkingSpace](cref:Meziantou.Framework.Imaging.TransformOptions.WorkingSpace) | [Encoded](cref:Meziantou.Framework.Imaging.ResizeWorkingSpace.Encoded) | [Encoded](cref:Meziantou.Framework.Imaging.ResizeWorkingSpace.Encoded) or [LinearSrgb](cref:Meziantou.Framework.Imaging.ResizeWorkingSpace.LinearSrgb), as for resizing |
 
-A pixel format without alpha (`Rgb24`, `Gray8`, `Gray16`) needs an opaque `BackgroundColor` when the result shows it:
-otherwise the operation throws an `UnsupportedImageFeatureException`. A transformation that flattens the image to a
-line, or a perspective whose horizon crosses the image with an `Expand` canvas, throws an `ArgumentException`. The
+A pixel format without alpha ([Rgb24](cref:Meziantou.Framework.Imaging.Rgb24), [Gray8](cref:Meziantou.Framework.Imaging.Gray8), [Gray16](cref:Meziantou.Framework.Imaging.Gray16)) needs an opaque [BackgroundColor](cref:Meziantou.Framework.Imaging.TransformOptions.BackgroundColor) when the result shows it:
+otherwise the operation throws an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException). A transformation that flattens the image to a
+line, or a perspective whose horizon crosses the image with an [Expand](cref:Meziantou.Framework.Imaging.TransformCanvasMode.Expand) canvas, throws an `ArgumentException`. The
 canvas is checked against the [resource limits](../05-LoadingAndSaving/07-ResourceLimits.md) before anything is
 allocated, and the image is unchanged when an operation fails.
 
 ## Cursor hotspots
 
 The hotspot of a cursor frame (`Frames[i].Metadata.Hotspot`) follows the pixel it points at: quarter turns, mirrors
-and `AutoOrient` move it exactly, and rotations by any angle, skews and transformations move it to the pixel that
+and [AutoOrient](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoOrient) move it exactly, and rotations by any angle, skews and transformations move it to the pixel that
 contains the image of the center of its pixel. When that pixel leaves the canvas, the operation throws an
-`UnsupportedImageFeatureException` and leaves the image unchanged: set the hotspot to `null` or to a pixel that is kept
+[UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException) and leaves the image unchanged: set the hotspot to `null` or to a pixel that is kept
 first. See [ICO and CUR](../10-Formats/11-IcoAndCur.md).

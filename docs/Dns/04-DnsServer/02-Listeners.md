@@ -3,7 +3,7 @@ title: Listeners
 description: Listen over UDP, TCP, DNS over TLS, DNS over HTTPS and DNS over QUIC, and choose the ports and the addresses.
 ---
 
-Each `Add…Listener` call of `DnsServerOptions` adds an endpoint. An application can mix them, and use several of each
+Each `Add…Listener` call of [DnsServerOptions](cref:Meziantou.Framework.DnsServer.Hosting.DnsServerOptions) adds an endpoint. An application can mix them, and use several of each
 type:
 
 | Method | Transport | Usual port |
@@ -32,7 +32,7 @@ On Linux and macOS, ports below 1024, such as 53, need elevated privileges. Use 
 
 ## DNS over TLS
 
-`AddTlsListener` takes the certificate the server presents. Clients check it against the name they connect to:
+[AddTlsListener](cref:Meziantou.Framework.DnsServer.Hosting.DnsServerOptions.AddTlsListener) takes the certificate the server presents. Clients check it against the name they connect to:
 
 <!-- ref:../../../samples/Meziantou.Framework.DnsServer.Samples/ReadmeExamples.cs;region=DnsServer_DnsOverTls;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -44,12 +44,12 @@ builder.AddDnsServer(options =>
 ```
 <!-- endref -->
 
-The listener advertises the `dot` ALPN protocol (RFC 7858). `context.Protocol` is `Tls` for these queries, and `Tcp`
+The listener advertises the `dot` ALPN protocol (RFC 7858). `context.Protocol` is [Tls](cref:Meziantou.Framework.DnsServer.Handler.DnsServerProtocol.Tls) for these queries, and [Tcp](cref:Meziantou.Framework.DnsServer.Handler.DnsServerProtocol.Tcp)
 for plain TCP, so the handler can require encryption for some names.
 
 ## DNS over HTTPS
 
-DNS over HTTPS uses the HTTP endpoints of the application. `MapDnsOverHttps` maps the path, and the endpoint itself is
+DNS over HTTPS uses the HTTP endpoints of the application. [MapDnsOverHttps](cref:Meziantou.Framework.DnsServer.Hosting.DnsEndpointRouteBuilderExtensions.MapDnsOverHttps) maps the path, and the endpoint itself is
 an HTTPS endpoint of Kestrel:
 
 <!-- ref:../../../tests/Meziantou.Framework.DnsServer.Tests/DnsServerIntegrationTests.cs;region=DnsServer_DnsOverHttpsLocal;format=md-fenced-code-block;dedent=true -->
@@ -83,26 +83,26 @@ var url = app.Urls.First() + "/dns-query"; // https://127.0.0.1:<port>/dns-query
 ```
 <!-- endref -->
 
-- `MapDnsOverHttps` accepts `POST` requests with an `application/dns-message` body, and `GET` requests with the query
+- [MapDnsOverHttps](cref:Meziantou.Framework.DnsServer.Hosting.DnsEndpointRouteBuilderExtensions.MapDnsOverHttps) accepts `POST` requests with an `application/dns-message` body, and `GET` requests with the query
   in the `dns` parameter, base64url-encoded (RFC 8484).
 - A malformed message gets HTTP 400, a body of another content type HTTP 415, and a message larger than a DNS message
   can be HTTP 413.
 - The response has a `Cache-Control: max-age` header with the lowest TTL of its records; for an answer without
   records, the SOA minimum of the authority section caps it. A response without any TTL gets `no-store`.
-- `MapDnsOverHttps` returns an `IEndpointConventionBuilder`, so the usual endpoint conventions apply, such as
+- [MapDnsOverHttps](cref:Meziantou.Framework.DnsServer.Hosting.DnsEndpointRouteBuilderExtensions.MapDnsOverHttps) returns an `IEndpointConventionBuilder`, so the usual endpoint conventions apply, such as
   `RequireHost` or rate limiting.
-- `AddDnsServer` is still needed, even without listeners: it registers the services the endpoint uses.
+- [AddDnsServer](cref:Meziantou.Framework.DnsServer.Hosting.DnsServerBuilderExtensions.AddDnsServer) is still needed, even without listeners: it registers the services the endpoint uses.
 
 ### Kestrel endpoints
 
-TCP and DNS over TLS listeners are endpoints that `AddDnsServer` configures in code. When Kestrel has endpoints
+TCP and DNS over TLS listeners are endpoints that [AddDnsServer](cref:Meziantou.Framework.DnsServer.Hosting.DnsServerBuilderExtensions.AddDnsServer) configures in code. When Kestrel has endpoints
 configured in code, it ignores the URLs of the configuration (`ASPNETCORE_URLS`, `--urls`): configure the HTTP
 endpoints of the application in code too, with `ConfigureKestrel`, as above. When the application only has UDP or QUIC
 listeners, Kestrel keeps its default HTTP endpoint unless you configure one.
 
 ## DNS over QUIC
 
-`AddQuicListener` takes the certificate the server presents:
+[AddQuicListener](cref:Meziantou.Framework.DnsServer.Hosting.DnsServerOptions.AddQuicListener) takes the certificate the server presents:
 
 <!-- ref:../../../samples/Meziantou.Framework.DnsServer.Samples/ReadmeExamples.cs;region=DnsServer_DnsOverQuic;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -114,7 +114,7 @@ builder.AddDnsServer(options =>
 ```
 <!-- endref -->
 
-The listener advertises the `doq` ALPN protocol (RFC 9250), and accepts at most `MaxConcurrentQueriesPerConnection`
+The listener advertises the `doq` ALPN protocol (RFC 9250), and accepts at most [MaxConcurrentQueriesPerConnection](cref:Meziantou.Framework.DnsServer.Hosting.DnsServerOptions.MaxConcurrentQueriesPerConnection)
 streams at once per connection. QUIC needs support from the operating system: where it is missing, the server logs a
 warning and does not start its QUIC listeners; the other listeners run normally. `QuicListener.IsSupported` tells
 whether QUIC is available.

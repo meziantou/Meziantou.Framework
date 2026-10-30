@@ -5,12 +5,12 @@ description: Draw the same thing on every frame of an animation, or a different 
 
 An animation is a list of full frames (see
 [Images, frames and animations](../04-Concepts/02-ImagesFramesAndAnimations.md)), so drawing on it is drawing on its
-frames: all of them at once with `Image.Draw`, or one at a time with `ImageFrame.Draw`. The durations of the frames
+frames: all of them at once with [Image.Draw](cref:Meziantou.Framework.Imaging.Image.Draw), or one at a time with [ImageFrame.Draw](cref:Meziantou.Framework.Imaging.ImageFrame.Draw). The durations of the frames
 and the loop count are kept.
 
 ## Draw the same thing on every frame
 
-`Image.Draw` paints every frame and the poster frame identically. The callback runs once, whatever the number of
+[Image.Draw](cref:Meziantou.Framework.Imaging.Image.Draw) paints every frame and the poster frame identically. The callback runs once, whatever the number of
 frames:
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_DrawOnAnimation;format=md-fenced-code-block;dedent=true -->
@@ -42,7 +42,7 @@ allocates no closure. Every method of the canvas that takes a callback has the s
 
 ## Draw something different on each frame
 
-`ImageFrame.Draw` draws on one frame. Loop over `Frames` to give each frame its own drawing:
+[ImageFrame.Draw](cref:Meziantou.Framework.Imaging.ImageFrame.Draw) draws on one frame. Loop over [Frames](cref:Meziantou.Framework.Imaging.Image.Frames) to give each frame its own drawing:
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/DrawingExamples.cs;region=Imaging_DrawOnEachFrame;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -70,13 +70,13 @@ public static void DrawProgressBar(string inputPath, string outputPath)
 
 ![An animation alternating between a red and a blue square, with a progress bar at the bottom: half white on the red frame, entirely white on the blue frame](images/DrawProgressBar.png)
 
-- The poster frame of an APNG file (`PosterFrame`), the image that players that do not support animations show, is not
-  in `Frames`: draw on it separately when the image has one.
-- A frame can draw another frame of the same image with `DrawImage`, but not itself.
+- The poster frame of an APNG file ([PosterFrame](cref:Meziantou.Framework.Imaging.Image.PosterFrame)), the image that players that do not support animations show, is not
+  in [Frames](cref:Meziantou.Framework.Imaging.Image.Frames): draw on it separately when the image has one.
+- A frame can draw another frame of the same image with [DrawImage](cref:Meziantou.Framework.Imaging.Drawing.DrawingCanvas.DrawImage), but not itself.
 
 ## Long animations
 
-`Image.Load` decodes every frame in memory. To draw on a long animation with the memory of one frame, read it frame by
+[Image.Load](cref:Meziantou.Framework.Imaging.Image.Load) decodes every frame in memory. To draw on a long animation with the memory of one frame, read it frame by
 frame, draw on each frame and write it: see
 [Streaming readers and writers](../05-LoadingAndSaving/05-StreamingReadersAndWriters.md).
 

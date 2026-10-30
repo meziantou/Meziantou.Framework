@@ -3,13 +3,13 @@ title: The object model
 description: Parse ADF documents, find nodes and marks, build documents in code, write them as JSON, and keep unknown nodes.
 ---
 
-`AdfDocument` is a parsed ADF document: a tree of `AdfNode` objects, each with its `AdfMark` list. Use it to read a
+[AdfDocument](cref:Meziantou.Framework.AtlassianDataFormat.AdfDocument) is a parsed ADF document: a tree of [AdfNode](cref:Meziantou.Framework.AtlassianDataFormat.AdfNode) objects, each with its [AdfMark](cref:Meziantou.Framework.AtlassianDataFormat.AdfMark) list. Use it to read a
 document, to change what the conversion to Markdown sees, or to build a document for an Atlassian API.
 
 ## Read a document
 
-`AdfDocument.Parse` accepts the JSON as a `string`, a `JsonElement` or a `JsonNode`. `Content` holds the top-level
-nodes, and `Descendants` enumerates every node of the document, depth first:
+[AdfDocument.Parse](cref:Meziantou.Framework.AtlassianDataFormat.AdfDocument.Parse) accepts the JSON as a `string`, a `JsonElement` or a `JsonNode`. [Content](cref:Meziantou.Framework.AtlassianDataFormat.AdfDocument.Content) holds the top-level
+nodes, and [Descendants](cref:Meziantou.Framework.AtlassianDataFormat.AdfDocument.Descendants) enumerates every node of the document, depth first:
 
 <!-- ref:../../tests/Meziantou.Framework.AtlassianDataFormat.Tests/AdfDocumentTests.cs;region=AdfDocument_ObjectModel;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -40,21 +40,21 @@ Assert.Equal(AdfDocument.Parse(roundTripped).ToMarkdown(), markdown);
 ```
 <!-- endref -->
 
-Each node type has its class, such as `AdfParagraph`, `AdfHeading` or `AdfMention`, whose properties are the attributes
-of the node: `Level` for a heading, `Id` and `Text` for a mention. Every node has:
+Each node type has its class, such as [AdfParagraph](cref:Meziantou.Framework.AtlassianDataFormat.AdfParagraph), [AdfHeading](cref:Meziantou.Framework.AtlassianDataFormat.AdfHeading) or [AdfMention](cref:Meziantou.Framework.AtlassianDataFormat.AdfMention), whose properties are the attributes
+of the node: [Level](cref:Meziantou.Framework.AtlassianDataFormat.AdfHeading.Level) for a heading, [Id](cref:Meziantou.Framework.AtlassianDataFormat.AdfMention.Id) and [Text](cref:Meziantou.Framework.AtlassianDataFormat.AdfMention.Text) for a mention. Every node has:
 
 | Member | Content |
 | --- | --- |
-| `Kind` | The type of the node, as an `AdfNodeKind`. |
-| `Content` | The child nodes. Empty for a leaf node, such as `text` or `mention`. |
-| `Marks` | The marks of the node. Only text nodes, and a few others such as `media`, carry marks. |
-| `LocalId` | The identifier of the node in the document, when it has one. |
-| `DescendantsAndSelf()` | The node and all its descendants, depth first. |
-| `GetMark<T>()` | The first mark of type `T`, or `null`. |
+| [Kind](cref:Meziantou.Framework.AtlassianDataFormat.AdfNode.Kind) | The type of the node, as an [AdfNodeKind](cref:Meziantou.Framework.AtlassianDataFormat.AdfNodeKind). |
+| [Content](cref:Meziantou.Framework.AtlassianDataFormat.AdfNode.Content) | The child nodes. Empty for a leaf node, such as `text` or `mention`. |
+| [Marks](cref:Meziantou.Framework.AtlassianDataFormat.AdfNode.Marks) | The marks of the node. Only text nodes, and a few others such as `media`, carry marks. |
+| [LocalId](cref:Meziantou.Framework.AtlassianDataFormat.AdfNode.LocalId) | The identifier of the node in the document, when it has one. |
+| [DescendantsAndSelf()](cref:Meziantou.Framework.AtlassianDataFormat.AdfNode.DescendantsAndSelf) | The node and all its descendants, depth first. |
+| [GetMark\<T\>()](cref:Meziantou.Framework.AtlassianDataFormat.AdfNode.GetMark) | The first mark of type `T`, or `null`. |
 
 ## Find marks
 
-Marks format the text: `AdfStrongMark`, `AdfLinkMark`, `AdfTextColorMark`… Find the links of a document from the marks
+Marks format the text: [AdfStrongMark](cref:Meziantou.Framework.AtlassianDataFormat.AdfStrongMark), [AdfLinkMark](cref:Meziantou.Framework.AtlassianDataFormat.AdfLinkMark), [AdfTextColorMark](cref:Meziantou.Framework.AtlassianDataFormat.AdfTextColorMark)… Find the links of a document from the marks
 of its text nodes:
 
 <!-- ref:../../tests/Meziantou.Framework.AtlassianDataFormat.Tests/AdfDocumentTests.cs;region=AdfDocument_FindLinks;format=md-fenced-code-block;dedent=true -->
@@ -89,7 +89,7 @@ Assert.Equal(["https://example.com/design", "https://example.com/plan"], links);
 ## Build a document
 
 The properties of the nodes are `init` properties: build a document with object initializers, then write it with
-`ToJsonString`:
+[ToJsonString](cref:Meziantou.Framework.AtlassianDataFormat.AdfDocument.ToJsonString):
 
 <!-- ref:../../tests/Meziantou.Framework.AtlassianDataFormat.Tests/AdfDocumentTests.cs;region=AdfDocument_Build;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -107,15 +107,15 @@ Assert.Equal("""{"version":1,"type":"doc","content":[{"type":"heading","attrs":{
 ```
 <!-- endref -->
 
-- `ToJsonString(indented: true)` indents the JSON. `WriteTo` writes it to a `Utf8JsonWriter`, such as the body of an
+- `ToJsonString(indented: true)` indents the JSON. [WriteTo](cref:Meziantou.Framework.AtlassianDataFormat.AdfDocument.WriteTo) writes it to a `Utf8JsonWriter`, such as the body of an
   HTTP request.
-- `Version` is `1` by default, the only version of the format defined today.
+- [Version](cref:Meziantou.Framework.AtlassianDataFormat.AdfDocument.Version) is `1` by default, the only version of the format defined today.
 - The properties are init-only: to change a document, build a new tree from the nodes of the old one.
 
 ## Invalid documents
 
-`Parse` throws an `AdfException` when the value is not JSON, or when its root is not an object whose `type` is `doc`.
-`TryParse` returns `false` instead:
+[Parse](cref:Meziantou.Framework.AtlassianDataFormat.AdfDocument.Parse) throws an [AdfException](cref:Meziantou.Framework.AtlassianDataFormat.AdfException) when the value is not JSON, or when its root is not an object whose `type` is `doc`.
+[TryParse](cref:Meziantou.Framework.AtlassianDataFormat.AdfDocument.TryParse) returns `false` instead:
 
 <!-- ref:../../tests/Meziantou.Framework.AtlassianDataFormat.Tests/AdfDocumentTests.cs;region=AdfDocument_TryParse;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -135,8 +135,8 @@ such as level 1 for a heading, and a node of an unknown type is kept as an unkno
 
 ## Unknown nodes and marks
 
-A node whose type the library does not know is parsed as an `AdfUnknownNode`, with the `TypeName` and the `RawJson` of
-the node. A mark is parsed as an `AdfUnknownMark` the same way. They are written back unchanged, so a document
+A node whose type the library does not know is parsed as an [AdfUnknownNode](cref:Meziantou.Framework.AtlassianDataFormat.AdfUnknownNode), with the [TypeName](cref:Meziantou.Framework.AtlassianDataFormat.AdfUnknownNode.TypeName) and the [RawJson](cref:Meziantou.Framework.AtlassianDataFormat.AdfUnknownNode.RawJson) of
+the node. A mark is parsed as an [AdfUnknownMark](cref:Meziantou.Framework.AtlassianDataFormat.AdfUnknownMark) the same way. They are written back unchanged, so a document
 round-trips even when it uses types added after this version:
 
 <!-- ref:../../tests/Meziantou.Framework.AtlassianDataFormat.Tests/AdfDocumentTests.cs;region=AdfDocument_UnknownNodes;format=md-fenced-code-block;dedent=true -->
@@ -167,6 +167,6 @@ Nodes: `blockCard`, `blockquote`, `bodiedExtension`, `bulletList`, `caption`, `c
 Marks: `alignment`, `annotation`, `backgroundColor`, `border`, `breakout`, `code`, `em`, `indentation`, `link`,
 `strike`, `strong`, `subsup`, `textColor`, `underline`.
 
-The class of each type is its name in PascalCase with the `Adf` prefix, such as `AdfBulletList`, and `Mark` at the end
-for a mark, such as `AdfStrongMark`. Two marks are named after what they do: `em` is `AdfEmphasisMark` and `subsup` is
-`AdfSubSupMark`.
+The class of each type is its name in PascalCase with the `Adf` prefix, such as [AdfBulletList](cref:Meziantou.Framework.AtlassianDataFormat.AdfBulletList), and `Mark` at the end
+for a mark, such as [AdfStrongMark](cref:Meziantou.Framework.AtlassianDataFormat.AdfStrongMark). Two marks are named after what they do: `em` is [AdfEmphasisMark](cref:Meziantou.Framework.AtlassianDataFormat.AdfEmphasisMark) and `subsup` is
+[AdfSubSupMark](cref:Meziantou.Framework.AtlassianDataFormat.AdfSubSupMark).

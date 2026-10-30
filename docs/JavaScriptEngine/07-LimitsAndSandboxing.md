@@ -5,8 +5,8 @@ description: Bound the time, the work, the memory and the recursion of the scrip
 
 ## Limit the execution of the scripts
 
-`JsEngineOptions` sets the limits of each entry into JavaScript: a script run by `Execute`, a `Call` or a `Construct`
-from .NET, a job run by `RunJobs`. A script that exceeds a limit is stopped with a `JsTerminationException`:
+[JsEngineOptions](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions) sets the limits of each entry into JavaScript: a script run by [Execute](cref:Meziantou.Framework.JavaScriptEngine.JsRealm.Execute), a [Call](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.Call) or a [Construct](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.Construct)
+from .NET, a job run by [RunJobs](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.RunJobs). A script that exceeds a limit is stopped with a [JsTerminationException](cref:Meziantou.Framework.JavaScriptEngine.JsTerminationException):
 
 <!-- ref:../../tests/Meziantou.Framework.JavaScriptEngine.Tests/JsEngineTests.cs;region=JavaScriptEngine_Limits;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -35,14 +35,14 @@ Assert.Equal("RangeError", realm.Execute("function f() { return 1 + f(); } try {
 
 | Option | Limits | When exceeded |
 | --- | --- | --- |
-| `Timeout` | The duration of an entry. | `JsTerminationException`, `Reason` is `Timeout` |
-| `MaxStatements` | The work of an entry: the engine counts the iterations of the loops and the calls. | `JsTerminationException`, `Reason` is `StatementLimit` |
-| `MemoryLimit` | The bytes allocated by the thread during an entry (`GC.GetAllocatedBytesForCurrentThread`). | `JsTerminationException`, `Reason` is `MemoryLimit` |
-| `RegExpTimeout` | The duration of one regular expression match. | `JsTerminationException`, `Reason` is `Timeout` |
-| `RecursionLimit` | The depth of the calls, 10,000 by default. | A `RangeError`, which the script can catch |
+| `Timeout` | The duration of an entry. | [JsTerminationException](cref:Meziantou.Framework.JavaScriptEngine.JsTerminationException), [Reason](cref:Meziantou.Framework.JavaScriptEngine.JsTerminationException.Reason) is `Timeout` |
+| [MaxStatements](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.MaxStatements) | The work of an entry: the engine counts the iterations of the loops and the calls. | [JsTerminationException](cref:Meziantou.Framework.JavaScriptEngine.JsTerminationException), [Reason](cref:Meziantou.Framework.JavaScriptEngine.JsTerminationException.Reason) is [StatementLimit](cref:Meziantou.Framework.JavaScriptEngine.JsTerminationReason.StatementLimit) |
+| `MemoryLimit` | The bytes allocated by the thread during an entry (`GC.GetAllocatedBytesForCurrentThread`). | [JsTerminationException](cref:Meziantou.Framework.JavaScriptEngine.JsTerminationException), [Reason](cref:Meziantou.Framework.JavaScriptEngine.JsTerminationException.Reason) is `MemoryLimit` |
+| [RegExpTimeout](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.RegExpTimeout) | The duration of one regular expression match. | [JsTerminationException](cref:Meziantou.Framework.JavaScriptEngine.JsTerminationException), [Reason](cref:Meziantou.Framework.JavaScriptEngine.JsTerminationException.Reason) is `Timeout` |
+| [RecursionLimit](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.RecursionLimit) | The depth of the calls, 10,000 by default. | A `RangeError`, which the script can catch |
 
-- The limits are off by default, except `RecursionLimit`.
-- A `JsTerminationException` cannot be caught by JavaScript code: neither the `catch` nor the `finally` blocks of the
+- The limits are off by default, except [RecursionLimit](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.RecursionLimit).
+- A [JsTerminationException](cref:Meziantou.Framework.JavaScriptEngine.JsTerminationException) cannot be caught by JavaScript code: neither the `catch` nor the `finally` blocks of the
   script run. The realm can still run code afterwards, but the state that the stopped script left may be incomplete:
   discard the realm when the script is not trusted.
 - `MemoryLimit` counts what the thread allocates, not the memory that the script keeps: a script that allocates and
@@ -53,7 +53,7 @@ Assert.Equal("RangeError", realm.Execute("function f() { return 1 + f(); } try {
 
 ## Cancel a script
 
-The `CancellationToken` of the options stops the running script when it is canceled, from any thread, for instance
+The [CancellationToken](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.CancellationToken) of the options stops the running script when it is canceled, from any thread, for instance
 when the user cancels the operation or the request ends. A .NET function that works for a long time calls
 `engine.CheckInterrupt()` to check the limits and the cancellation while it runs:
 
@@ -88,7 +88,7 @@ life: once it is canceled, the engine stops every script at its next check, so c
 ## Forbid eval
 
 `eval`, `new Function(...)` and the constructors of the generator and async functions compile code given as a string.
-To forbid them, throw from `JsHost.EnsureCanCompileStrings`:
+To forbid them, throw from [JsHost.EnsureCanCompileStrings](cref:Meziantou.Framework.JavaScriptEngine.JsHost.EnsureCanCompileStrings):
 
 <!-- ref:../../samples/Meziantou.Framework.JavaScriptEngine.Samples/NoStringCompilationHost.cs;region=JavaScriptEngine_NoStringCompilationHost;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -117,7 +117,7 @@ Assert.Equal("EvalError,EvalError", realm.Execute("""
 ```
 <!-- endref -->
 
-The method receives the code and how it is compiled (`JsCompilationType`): it can also allow some of them, as a
+The method receives the code and how it is compiled ([JsCompilationType](cref:Meziantou.Framework.JavaScriptEngine.JsCompilationType)): it can also allow some of them, as a
 content security policy does.
 
 ## Run untrusted code
@@ -126,12 +126,12 @@ A realm has only the built-ins of ECMAScript. A script has no access to the file
 variables, the processes or the .NET types: it reaches your application only through the objects and functions you
 add. To run code you do not trust:
 
-- Set `Timeout`, `MaxStatements` and `MemoryLimit`, and a `CancellationToken` tied to the request.
+- Set [Timeout](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.Timeout), [MaxStatements](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.MaxStatements) and [MemoryLimit](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.MemoryLimit), and a [CancellationToken](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.CancellationToken) tied to the request.
 - Expose the smallest API you can, and validate every argument of your .NET functions as you would validate the input
   of a web API.
 - Give each user or tenant its own realm, or its own engine, so that a script cannot see or change what another one
   left in the global object or the built-ins.
 - Removing a global property, such as `eval`, does not remove the feature: the scripts can reach the constructors
   through the prototypes (`(function () {}).constructor`). Use the host methods instead, as above.
-- Catch `JsTerminationException` and `JsException` around the calls into JavaScript, and let the other exceptions,
+- Catch [JsTerminationException](cref:Meziantou.Framework.JavaScriptEngine.JsTerminationException) and [JsException](cref:Meziantou.Framework.JavaScriptEngine.JsException) around the calls into JavaScript, and let the other exceptions,
   which come from your .NET code, go to your error handling.

@@ -3,12 +3,12 @@ title: Resizing
 description: Resize an image or an animation, keep the aspect ratio, fill a box, letterbox, and choose the resampling filter.
 ---
 
-`Resize` resizes every frame of an image and its poster frame, in one operation: an animation keeps its frames, their
+[Resize](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Resize) resizes every frame of an image and its poster frame, in one operation: an animation keeps its frames, their
 durations and its loop count.
 
 ## Fit inside a box
 
-By default, `Resize` fits the image inside the size of its `ResizeOptions` and keeps the aspect ratio:
+By default, [Resize](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Resize) fits the image inside the size of its [ResizeOptions](cref:Meziantou.Framework.Imaging.ResizeOptions) and keeps the aspect ratio:
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_ResizeAnimation;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -28,7 +28,7 @@ A 400x200 image resized into 320x240 becomes 320x160. The image is enlarged when
 
 ## Fill a box exactly
 
-`ResizeMode.Cover` scales the image to cover the whole box and cuts what overflows. `Anchor` says which part is kept:
+[ResizeMode.Cover](cref:Meziantou.Framework.Imaging.ResizeMode.Cover) scales the image to cover the whole box and cuts what overflows. [Anchor](cref:Meziantou.Framework.Imaging.ResizeOptions.Anchor) says which part is kept:
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/ProcessingExamples.cs;region=Imaging_ResizeToFill;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -46,8 +46,8 @@ public static void ResizeToFill(string inputPath, string outputPath)
 
 ## Letterbox
 
-`ResizeMode.Pad` fits the image inside the box, then pads it to exactly the size of the box with `BackgroundColor`, the
-image placed at `Anchor`:
+[ResizeMode.Pad](cref:Meziantou.Framework.Imaging.ResizeMode.Pad) fits the image inside the box, then pads it to exactly the size of the box with [BackgroundColor](cref:Meziantou.Framework.Imaging.ResizeOptions.BackgroundColor), the
+image placed at [Anchor](cref:Meziantou.Framework.Imaging.ResizeOptions.Anchor):
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_Letterbox;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -66,26 +66,26 @@ public static void Letterbox(string inputPath, string outputPath)
 ```
 <!-- endref -->
 
-The padding is transparent black by default. A pixel format without alpha (`Rgb24`, `Gray8`, `Gray16`, the formats of
-most JPEG images) cannot store it: set an opaque `BackgroundColor`, or `Resize` throws an
-`UnsupportedImageFeatureException`. A centered image gets the extra pixel of an odd padding on its right or bottom
+The padding is transparent black by default. A pixel format without alpha ([Rgb24](cref:Meziantou.Framework.Imaging.Rgb24), [Gray8](cref:Meziantou.Framework.Imaging.Gray8), [Gray16](cref:Meziantou.Framework.Imaging.Gray16), the formats of
+most JPEG images) cannot store it: set an opaque [BackgroundColor](cref:Meziantou.Framework.Imaging.ResizeOptions.BackgroundColor), or [Resize](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Resize) throws an
+[UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException). A centered image gets the extra pixel of an odd padding on its right or bottom
 side. The padding never blends into the edges of the image.
 
 ## Modes
 
-| `Mode` | Result | Size of the result |
+| [Mode](cref:Meziantou.Framework.Imaging.ResizeOptions.Mode) | Result | Size of the result |
 | --- | --- | --- |
-| `Contain` (default) | Fits inside the box, keeps the aspect ratio | At most the box; one side matches it |
-| `Cover` | Covers the box, keeps the aspect ratio, cuts the overflow around `Anchor` | Exactly the box |
-| `Stretch` | Fills the box, changes the aspect ratio | Exactly the box |
-| `Pad` | Fits inside the box like `Contain`, then pads it at `Anchor` | Exactly the box |
-| `BoxPad` | Like `Pad`, but an image that already fits is only placed on the canvas, never enlarged | Exactly the box |
+| [Contain](cref:Meziantou.Framework.Imaging.ResizeMode.Contain) (default) | Fits inside the box, keeps the aspect ratio | At most the box; one side matches it |
+| [Cover](cref:Meziantou.Framework.Imaging.ResizeMode.Cover) | Covers the box, keeps the aspect ratio, cuts the overflow around [Anchor](cref:Meziantou.Framework.Imaging.ResizeOptions.Anchor) | Exactly the box |
+| [Stretch](cref:Meziantou.Framework.Imaging.ResizeMode.Stretch) | Fills the box, changes the aspect ratio | Exactly the box |
+| [Pad](cref:Meziantou.Framework.Imaging.ResizeMode.Pad) | Fits inside the box like [Contain](cref:Meziantou.Framework.Imaging.ResizeMode.Contain), then pads it at [Anchor](cref:Meziantou.Framework.Imaging.ResizeOptions.Anchor) | Exactly the box |
+| [BoxPad](cref:Meziantou.Framework.Imaging.ResizeMode.BoxPad) | Like [Pad](cref:Meziantou.Framework.Imaging.ResizeMode.Pad), but an image that already fits is only placed on the canvas, never enlarged | Exactly the box |
 
-`Anchor` is one of the nine `ResizeAnchor` positions (`Center` by default, `TopLeft`, `Top`, `TopRight`, `Left`,
-`Right`, `BottomLeft`, `Bottom`, `BottomRight`).
+[Anchor](cref:Meziantou.Framework.Imaging.ResizeOptions.Anchor) is one of the nine [ResizeAnchor](cref:Meziantou.Framework.Imaging.ResizeAnchor) positions ([Center](cref:Meziantou.Framework.Imaging.ResizeAnchor.Center) by default, [TopLeft](cref:Meziantou.Framework.Imaging.ResizeAnchor.TopLeft), [Top](cref:Meziantou.Framework.Imaging.ResizeAnchor.Top), [TopRight](cref:Meziantou.Framework.Imaging.ResizeAnchor.TopRight), [Left](cref:Meziantou.Framework.Imaging.ResizeAnchor.Left),
+[Right](cref:Meziantou.Framework.Imaging.ResizeAnchor.Right), [BottomLeft](cref:Meziantou.Framework.Imaging.ResizeAnchor.BottomLeft), [Bottom](cref:Meziantou.Framework.Imaging.ResizeAnchor.Bottom), [BottomRight](cref:Meziantou.Framework.Imaging.ResizeAnchor.BottomRight)).
 
-`AllowUpscaling = false` keeps `Contain`, `Pad` and `BoxPad` within the original size (a "max" resize), and makes
-`Cover` and `Stretch` throw an `ArgumentException` instead of enlarging. `AllowDownscaling = false` keeps `Contain` at
+`AllowUpscaling = false` keeps [Contain](cref:Meziantou.Framework.Imaging.ResizeMode.Contain), [Pad](cref:Meziantou.Framework.Imaging.ResizeMode.Pad) and [BoxPad](cref:Meziantou.Framework.Imaging.ResizeMode.BoxPad) within the original size (a "max" resize), and makes
+[Cover](cref:Meziantou.Framework.Imaging.ResizeMode.Cover) and [Stretch](cref:Meziantou.Framework.Imaging.ResizeMode.Stretch) throw an `ArgumentException` instead of enlarging. `AllowDownscaling = false` keeps [Contain](cref:Meziantou.Framework.Imaging.ResizeMode.Contain) at
 or above the original size (a "min" resize), and makes the other modes throw an `ArgumentException` instead of
 reducing.
 
@@ -94,19 +94,19 @@ the current size leaves the image unchanged.
 
 ## Resampling filters
 
-`Filter` chooses how the new pixels are computed from the old ones:
+[Filter](cref:Meziantou.Framework.Imaging.ResizeOptions.Filter) chooses how the new pixels are computed from the old ones:
 
 | Filter | Kernel | Radius | Interpolating |
 | --- | --- | --- | --- |
-| `NearestNeighbor` | The pixel that contains the center: no new color is created | - | yes |
-| `Box` | The average of the pixels in the footprint of the output pixel (exact for integer reductions) | 1/2 | yes |
-| `Bilinear` | Triangle | 1 | yes |
-| `Hermite` | Cubic, B = 0, C = 0 | 1 | yes |
-| `Bicubic` (default) | Catmull-Rom, cubic B = 0, C = 1/2 | 2 | yes |
-| `MitchellNetravali` | Cubic, B = C = 1/3 | 2 | no |
-| `Robidoux`, `RobidouxSharp` | Keys cubics | 2 | no |
-| `Spline` | Cubic B-spline, B = 1, C = 0 | 2 | no |
-| `Lanczos2`, `Lanczos3`, `Lanczos5`, `Lanczos8` | Sinc windowed by sinc, with 2, 3, 5 or 8 lobes | 2, 3, 5, 8 | yes |
+| [NearestNeighbor](cref:Meziantou.Framework.Imaging.ResamplingFilter.NearestNeighbor) | The pixel that contains the center: no new color is created | - | yes |
+| [Box](cref:Meziantou.Framework.Imaging.ResamplingFilter.Box) | The average of the pixels in the footprint of the output pixel (exact for integer reductions) | 1/2 | yes |
+| [Bilinear](cref:Meziantou.Framework.Imaging.ResamplingFilter.Bilinear) | Triangle | 1 | yes |
+| [Hermite](cref:Meziantou.Framework.Imaging.ResamplingFilter.Hermite) | Cubic, B = 0, C = 0 | 1 | yes |
+| [Bicubic](cref:Meziantou.Framework.Imaging.ResamplingFilter.Bicubic) (default) | Catmull-Rom, cubic B = 0, C = 1/2 | 2 | yes |
+| [MitchellNetravali](cref:Meziantou.Framework.Imaging.ResamplingFilter.MitchellNetravali) | Cubic, B = C = 1/3 | 2 | no |
+| [Robidoux](cref:Meziantou.Framework.Imaging.ResamplingFilter.Robidoux), [RobidouxSharp](cref:Meziantou.Framework.Imaging.ResamplingFilter.RobidouxSharp) | Keys cubics | 2 | no |
+| [Spline](cref:Meziantou.Framework.Imaging.ResamplingFilter.Spline) | Cubic B-spline, B = 1, C = 0 | 2 | no |
+| [Lanczos2](cref:Meziantou.Framework.Imaging.ResamplingFilter.Lanczos2), [Lanczos3](cref:Meziantou.Framework.Imaging.ResamplingFilter.Lanczos3), [Lanczos5](cref:Meziantou.Framework.Imaging.ResamplingFilter.Lanczos5), [Lanczos8](cref:Meziantou.Framework.Imaging.ResamplingFilter.Lanczos8) | Sinc windowed by sinc, with 2, 3, 5 or 8 lobes | 2, 3, 5, 8 | yes |
 
 The filters are sampled at the pixel centers, with the edges of the image repeated. When an image is reduced, the
 radius of the filter widens with the reduction. A non-interpolating filter also smooths an axis that keeps its size,
@@ -118,18 +118,18 @@ Colors are filtered premultiplied by alpha: the hidden color of a transparent pi
 and a pixel whose alpha becomes zero is transparent black. A frame whose pixels are all opaque stays opaque. 16-bit
 images are filtered with 16-bit precision, and the colors of floating-point samples are not clamped.
 
-`WorkingSpace` chooses the values that are averaged:
+[WorkingSpace](cref:Meziantou.Framework.Imaging.ResizeOptions.WorkingSpace) chooses the values that are averaged:
 
-- `ResizeWorkingSpace.Encoded` (default) filters the stored sample values, like most image tools.
-- `ResizeWorkingSpace.LinearSrgb` converts the samples to linear light first and back afterward, which gives more
+- [ResizeWorkingSpace.Encoded](cref:Meziantou.Framework.Imaging.ResizeWorkingSpace.Encoded) (default) filters the stored sample values, like most image tools.
+- [ResizeWorkingSpace.LinearSrgb](cref:Meziantou.Framework.Imaging.ResizeWorkingSpace.LinearSrgb) converts the samples to linear light first and back afterward, which gives more
   physically correct averages, for example for thin bright lines. An untagged image and an ICC profile recognized as
   sRGB or sGray use the sRGB transfer function; any other ICC profile is rejected rather than misinterpreted: convert
-  such an image first with `ConvertColorProfile` (see [Color management](../09-Color/03-ColorManagement.md)).
+  such an image first with [ConvertColorProfile](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ConvertColorProfile) (see [Color management](../09-Color/03-ColorManagement.md)).
 
 ## Cursors and metadata
 
 A cursor hotspot moves to `floor(x * newWidth / width)` horizontally, and likewise vertically, as Windows scales a
-cursor. A `Cover` resize that cuts the pixel of the hotspot throws an `UnsupportedImageFeatureException` and leaves
+cursor. A [Cover](cref:Meziantou.Framework.Imaging.ResizeMode.Cover) resize that cuts the pixel of the hotspot throws an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException) and leaves
 the image unchanged. The EXIF dimensions are updated and the EXIF thumbnail is removed.
 
 For thumbnails of many images and for large images, see also [Create thumbnails](../03-Guides/02-CreateThumbnails.md)

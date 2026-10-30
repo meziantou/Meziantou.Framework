@@ -50,7 +50,7 @@ public static void DrawEdges(string outputPath)
 - **Linear light**: `canvas.Compositing(CompositingSpace.LinearSrgb, callback)` mixes the paints with the pixels in
   linear light instead of on the stored values. Edges, translucent paints and shadows then mix light as light mixes:
   with sRGB samples, half of white over black is the gray 188 instead of 128, and a thin light line on a dark
-  background keeps its weight. `Blur` and `BlurBackdrop` blur light too: red next to green blurs to a yellow, not to a
+  background keeps its weight. [Blur](cref:Meziantou.Framework.Imaging.Drawing.DrawingCanvas.Blur) and [BlurBackdrop](cref:Meziantou.Framework.Imaging.Drawing.DrawingCanvas.BlurBackdrop) blur light too: red next to green blurs to a yellow, not to a
   dark olive.
 
 Hard edges and linear light combine, as in this sprite:
@@ -91,7 +91,7 @@ other matrix-based profiles, and gray ones). A profile that only has lookup tabl
 On a canvas of 8-bit samples, every draw call rounds its result to 8 bits, and many translucent drawings on top of each
 other, nested layers and filters accumulate those roundings. `canvas.HighPrecision(callback)` draws the callback on a
 copy of the pixels with 16-bit samples, then writes the result back: each color is rounded once. It costs 8 bytes per
-pixel the clip shows, for each frame, while the callback runs. On a canvas of 16-bit samples (`Rgba64`, for instance),
+pixel the clip shows, for each frame, while the callback runs. On a canvas of 16-bit samples ([Rgba64](cref:Meziantou.Framework.Imaging.Rgba64), for instance),
 the callback draws on the canvas itself.
 
 ## Make curves smoother
@@ -136,12 +136,12 @@ public static void DrawBrandColors(string inputPath, string outputPath)
 
 ![A landscape with a red label with rounded corners and a white outline at its top left](images/DrawBrandColors.png)
 
-- Inside the callback, a color is a color of the ICC profile: `IccProfile.Srgb` for the colors of CSS, of a design tool
-  or of `Colors`. It is converted to the color space of the image: its ICC profile, else its CICP color description,
+- Inside the callback, a color is a color of the ICC profile: [IccProfile.Srgb](cref:Meziantou.Framework.Imaging.Metadata.IccProfile.Srgb) for the colors of CSS, of a design tool
+  or of [Colors](cref:Meziantou.Framework.Imaging.Colors). It is converted to the color space of the image: its ICC profile, else its CICP color description,
   else sRGB. The red of sRGB is (234, 51, 35) on a Display P3 image, and looks the same on both.
 - What is converted is the colors the caller gives: solid brushes, the stops of gradients, the colors of shadows and of
-  `Clear`, the brushes of a text. What is already samples is not: images that are drawn (convert them with
-  `ConvertColorProfile` first), the glyphs a font draws with its own colors, the constants of a color matrix.
+  [Clear](cref:Meziantou.Framework.Imaging.Drawing.DrawingCanvas.Clear), the brushes of a text. What is already samples is not: images that are drawn (convert them with
+  [ConvertColorProfile](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ConvertColorProfile) first), the glyphs a font draws with its own colors, the constants of a color matrix.
 - A color the image cannot hold is clipped. On a grayscale image, a color becomes the gray of its luminance. An image of
   PQ or HLG samples is rejected.
 
@@ -155,8 +155,8 @@ See [Color management](../09-Color/03-ColorManagement.md) for the profiles of im
 - **Untouched pixels stay untouched.** A pixel a shape does not cover is not written, bit for bit, and a pixel covered
   entirely by an opaque color gets exactly that color.
 - **Frames without alpha stay opaque**, and a pixel that would stay fully transparent keeps its hidden color.
-- **Floating-point images** (`RgbaFloat`, `RgbaHalf`) are composited in double precision without clipping the colors, so
-  `Plus` adds light beyond white. Layers, patterns, filters, shadows and blurs read the pixels as 16-bit colors, and
+- **Floating-point images** ([RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat), [RgbaHalf](cref:Meziantou.Framework.Imaging.RgbaHalf)) are composited in double precision without clipping the colors, so
+  [Plus](cref:Meziantou.Framework.Imaging.Drawing.CompositeMode.Plus) adds light beyond white. Layers, patterns, filters, shadows and blurs read the pixels as 16-bit colors, and
   reject values outside the range from 0 to 1.
 - **Metadata.** The first shape that changes a pixel removes the EXIF thumbnail, which no longer matches the image.
   Everything else, cursor hotspots included, is kept.

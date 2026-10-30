@@ -27,18 +27,18 @@ The library implements the wire protocol of PostgreSQL, not a database. This pag
   `TimeZone`. `SET` commands reach the handler and change nothing.
 - **A value that does not match its column type closes the connection.** See
   [Column types](06-ReturningResults.md#column-types).
-- **Errors of `Describe` are not reported.** See [Answer Describe](05-HandlingQueries.md#answer-describe).
+- **Errors of [Describe](cref:Meziantou.Framework.PostgreSql.Handler.PostgreSqlQueryRequestType.Describe) are not reported.** See [Answer Describe](05-HandlingQueries.md#answer-describe).
 
 ## Authentication and encryption
 
 - **Passwords only**: cleartext, MD5 and SCRAM-SHA-256. No Kerberos (GSSAPI), SSPI, certificate or LDAP
   authentication, and no SCRAM channel binding (SCRAM-SHA-256-PLUS).
-- **The password must be known in clear** to call `ValidatePassword`: stored PostgreSQL password hashes cannot be used.
+- **The password must be known in clear** to call [ValidatePassword](cref:Meziantou.Framework.PostgreSql.Handler.PostgreSqlAuthenticationContext.ValidatePassword): stored PostgreSQL password hashes cannot be used.
 - **No encryption by default**: without a certificate, passwords (with the cleartext method) and data travel in clear.
   See [Encryption](07-Encryption.md).
 - **No direct TLS negotiation**, no GSSAPI encryption, no client certificates.
 
 ## Hosting
 
-- **A standalone server cannot be restarted** after `StopAsync`: create a new one.
-- **`MaxConcurrentConnections` only applies to the standalone server**; in ASP.NET Core, use the limits of Kestrel.
+- **A standalone server cannot be restarted** after [StopAsync](cref:Meziantou.Framework.PostgreSql.PostgreSqlServer.StopAsync): create a new one.
+- **[MaxConcurrentConnections](cref:Meziantou.Framework.PostgreSql.PostgreSqlServerOptions.MaxConcurrentConnections) only applies to the standalone server**; in ASP.NET Core, use the limits of Kestrel.

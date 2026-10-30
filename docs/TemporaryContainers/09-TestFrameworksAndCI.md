@@ -35,7 +35,7 @@ public async Task ApplyMigrations()
 ```
 <!-- endref -->
 
-Pass the cancellation token of the test to `StartAsync`, so a test that is canceled or times out stops waiting for the
+Pass the cancellation token of the test to [StartAsync](cref:Meziantou.Framework.TemporaryContainers.TemporaryContainer.StartAsync), so a test that is canceled or times out stops waiting for the
 container.
 
 ## A container per test class
@@ -169,11 +169,11 @@ On a build agent that is expected to run them, prefer to let them fail: a skippe
 - **Give the registry credentials** with the command line of the runtime (`docker login`), or in the `config.json` file
   of the `DOCKER_CONFIG` directory for the Docker Engine API runtime. See
   [Private registries](04-Configuration/02-Images.md#private-registries).
-- **Remove the leftovers.** On an agent that is reused between builds, call `CleanupAsync` when the tests start, and
+- **Remove the leftovers.** On an agent that is reused between builds, call [CleanupAsync](cref:Meziantou.Framework.TemporaryContainers.ContainerRuntime.CleanupAsync) when the tests start, and
   start a [reaper](07-Cleanup.md#remove-the-containers-as-soon-as-the-process-dies) so that a build that is canceled
   or times out removes its containers right away.
 - **Allow for slower machines.** A build agent shared with other jobs starts containers more slowly than a developer
-  machine: raise `StartupTimeout` rather than adding delays.
+  machine: raise [StartupTimeout](cref:Meziantou.Framework.TemporaryContainers.ContainerDefinition.StartupTimeout) rather than adding delays.
 - **Limit the number of containers at once.** Each container takes memory and CPU. When the tests start many
   containers, share them with fixtures or run the test classes that start them one at a time.
 - **Keep the logs.** Forward the container logs to the test output, so a failure on the agent can be diagnosed from the

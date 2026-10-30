@@ -5,7 +5,7 @@ description: Start and stop a projected file system, refresh the files whose con
 
 ## Start the file system
 
-Create the root folder, then call `Start`:
+Create the root folder, then call [Start](cref:Meziantou.Framework.Win32.ProjectedFileSystem.ProjectedFileSystemBase.Start):
 
 <!-- ref:../../../tests/Meziantou.Framework.Win32.ProjectedFileSystem.Tests/ProjectedFileSystemTests.cs;region=ProjectedFileSystem_Start;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -23,13 +23,13 @@ Assert.Equal("Nested file", File.ReadAllText(Path.Combine(rootPath, "folder", "n
 ```
 <!-- endref -->
 
-- The root folder must exist: `Start` throws a `FileNotFoundException` otherwise.
-- Use a new, empty folder each time you create an instance. `Start` marks the folder as the root of a new projection,
+- The root folder must exist: [Start](cref:Meziantou.Framework.Win32.ProjectedFileSystem.ProjectedFileSystemBase.Start) throws a `FileNotFoundException` otherwise.
+- Use a new, empty folder each time you create an instance. [Start](cref:Meziantou.Framework.Win32.ProjectedFileSystem.ProjectedFileSystemBase.Start) marks the folder as the root of a new projection,
   so a folder already used by a previous instance, even one of the same class that was stopped, is rejected with a
   `COMException` (`0x8007112B`).
-- Calling `Start` on a running instance does nothing.
+- Calling [Start](cref:Meziantou.Framework.Win32.ProjectedFileSystem.ProjectedFileSystemBase.Start) on a running instance does nothing.
 
-`Start` accepts options:
+[Start](cref:Meziantou.Framework.Win32.ProjectedFileSystem.ProjectedFileSystemBase.Start) accepts options:
 
 <!-- ref:../../../tests/Meziantou.Framework.Win32.ProjectedFileSystem.Tests/ProjectedFileSystemTests.cs;region=ProjectedFileSystem_StartOptions;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -53,15 +53,15 @@ vfs.Start(options);
 ```
 <!-- endref -->
 
-- `UseNegativePathCache` lets Windows remember the paths that do not exist, so it stops asking your class about them.
-  Call `ClearNegativePathCache` when a new file appears in your store.
-- `Notifications` subscribes to the operations that applications perform in the projection, for the whole root or for
+- [UseNegativePathCache](cref:Meziantou.Framework.Win32.ProjectedFileSystem.ProjectedFileSystemStartOptions.UseNegativePathCache) lets Windows remember the paths that do not exist, so it stops asking your class about them.
+  Call [ClearNegativePathCache](cref:Meziantou.Framework.Win32.ProjectedFileSystem.ProjectedFileSystemBase.ClearNegativePathCache) when a new file appears in your store.
+- [Notifications](cref:Meziantou.Framework.Win32.ProjectedFileSystem.ProjectedFileSystemStartOptions.Notifications) subscribes to the operations that applications perform in the projection, for the whole root or for
   a subfolder (`new Notification(path, types)`). The library does not expose the notifications to your class: it
   acknowledges them and lets the operations proceed.
 
 ## Stop the file system
 
-`Stop`, or `Dispose`, stops the projection. It waits for the requests in progress, then Windows stops calling your
+[Stop](cref:Meziantou.Framework.Win32.ProjectedFileSystem.ProjectedFileSystemBase.Stop), or [Dispose](cref:Meziantou.Framework.Win32.ProjectedFileSystem.ProjectedFileSystemBase.Dispose), stops the projection. It waits for the requests in progress, then Windows stops calling your
 class. The files that were read stay in the folder with their content, while the entries that only existed in the
 projection disappear from it.
 
@@ -71,7 +71,7 @@ application lists a folder or reads a new file.
 ## Refresh a file whose content changed
 
 Windows keeps a local copy of each file that was read, and serves the next reads from it. When the content changes in
-your store, the folder keeps showing the old content until you delete the local copy with the protected `DeleteFile`
+your store, the folder keeps showing the old content until you delete the local copy with the protected [DeleteFile](cref:Meziantou.Framework.Win32.ProjectedFileSystem.ProjectedFileSystemBase.DeleteFile)
 method. The next read then asks your class again:
 
 <!-- ref:../../../samples/Meziantou.Framework.Win32.ProjectedFileSystem.Samples/DictionaryFileSystem.cs;region=ProjectedFileSystem_Refresh;format=md-fenced-code-block;dedent=true -->
@@ -122,16 +122,16 @@ public sealed class DictionaryFileSystem(string rootFolder) : ProjectedFileSyste
 ```
 <!-- endref -->
 
-- `DeleteFile` returns `false`, with the reason in `failureReason`, when the local copy is in a state that the update
-  flags do not allow: `PRJ_UPDATE_NONE` only deletes placeholders, whether they were read or not. Add
-  `PRJ_UPDATE_ALLOW_DIRTY_METADATA`, `PRJ_UPDATE_ALLOW_DIRTY_DATA`, `PRJ_UPDATE_ALLOW_TOMBSTONE` or
-  `PRJ_UPDATE_ALLOW_READ_ONLY` to delete a file that an application changed, deleted or made read-only, and lose the
+- [DeleteFile](cref:Meziantou.Framework.Win32.ProjectedFileSystem.ProjectedFileSystemBase.DeleteFile) returns `false`, with the reason in `failureReason`, when the local copy is in a state that the update
+  flags do not allow: [PRJ\_UPDATE\_NONE](cref:Meziantou.Framework.Win32.ProjectedFileSystem.PRJ_UPDATE_TYPES.PRJ_UPDATE_NONE) only deletes placeholders, whether they were read or not. Add
+  [PRJ\_UPDATE\_ALLOW\_DIRTY\_METADATA](cref:Meziantou.Framework.Win32.ProjectedFileSystem.PRJ_UPDATE_TYPES.PRJ_UPDATE_ALLOW_DIRTY_METADATA), [PRJ\_UPDATE\_ALLOW\_DIRTY\_DATA](cref:Meziantou.Framework.Win32.ProjectedFileSystem.PRJ_UPDATE_TYPES.PRJ_UPDATE_ALLOW_DIRTY_DATA), [PRJ\_UPDATE\_ALLOW\_TOMBSTONE](cref:Meziantou.Framework.Win32.ProjectedFileSystem.PRJ_UPDATE_TYPES.PRJ_UPDATE_ALLOW_TOMBSTONE) or
+  [PRJ\_UPDATE\_ALLOW\_READ\_ONLY](cref:Meziantou.Framework.Win32.ProjectedFileSystem.PRJ_UPDATE_TYPES.PRJ_UPDATE_ALLOW_READ_ONLY) to delete a file that an application changed, deleted or made read-only, and lose the
   change.
-- `DeleteFile` and `ClearNegativePathCache` throw an `InvalidOperationException` when the file system is not started.
+- [DeleteFile](cref:Meziantou.Framework.Win32.ProjectedFileSystem.ProjectedFileSystemBase.DeleteFile) and [ClearNegativePathCache](cref:Meziantou.Framework.Win32.ProjectedFileSystem.ProjectedFileSystemBase.ClearNegativePathCache) throw an `InvalidOperationException` when the file system is not started.
 
 ## Read the state of a file
 
-`GetOnDiskFileState` tells what Windows stores locally for a path of a running projection:
+[GetOnDiskFileState](cref:Meziantou.Framework.Win32.ProjectedFileSystem.ProjectedFileSystemBase.GetOnDiskFileState) tells what Windows stores locally for a path of a running projection:
 
 <!-- ref:../../../tests/Meziantou.Framework.Win32.ProjectedFileSystem.Tests/ProjectedFileSystemTests.cs;region=ProjectedFileSystem_GetOnDiskFileState;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -140,10 +140,10 @@ Assert.True(state.HasFlag(PRJ_FILE_STATE.PRJ_FILE_STATE_HYDRATED_PLACEHOLDER)); 
 ```
 <!-- endref -->
 
-| `PRJ_FILE_STATE` | The local file is |
+| [PRJ\_FILE\_STATE](cref:Meziantou.Framework.Win32.ProjectedFileSystem.PRJ_FILE_STATE) | The local file is |
 | --- | --- |
-| `PRJ_FILE_STATE_PLACEHOLDER` | A placeholder whose content was not read |
-| `PRJ_FILE_STATE_HYDRATED_PLACEHOLDER` | A placeholder whose content was read and is stored locally |
-| `PRJ_FILE_STATE_DIRTY_PLACEHOLDER` | A placeholder whose metadata an application changed |
-| `PRJ_FILE_STATE_FULL` | A file that an application created or modified: ProjFS no longer manages it |
-| `PRJ_FILE_STATE_TOMBSTONE` | The marker of an item that an application deleted |
+| [PRJ\_FILE\_STATE\_PLACEHOLDER](cref:Meziantou.Framework.Win32.ProjectedFileSystem.PRJ_FILE_STATE.PRJ_FILE_STATE_PLACEHOLDER) | A placeholder whose content was not read |
+| [PRJ\_FILE\_STATE\_HYDRATED\_PLACEHOLDER](cref:Meziantou.Framework.Win32.ProjectedFileSystem.PRJ_FILE_STATE.PRJ_FILE_STATE_HYDRATED_PLACEHOLDER) | A placeholder whose content was read and is stored locally |
+| [PRJ\_FILE\_STATE\_DIRTY\_PLACEHOLDER](cref:Meziantou.Framework.Win32.ProjectedFileSystem.PRJ_FILE_STATE.PRJ_FILE_STATE_DIRTY_PLACEHOLDER) | A placeholder whose metadata an application changed |
+| [PRJ\_FILE\_STATE\_FULL](cref:Meziantou.Framework.Win32.ProjectedFileSystem.PRJ_FILE_STATE.PRJ_FILE_STATE_FULL) | A file that an application created or modified: ProjFS no longer manages it |
+| [PRJ\_FILE\_STATE\_TOMBSTONE](cref:Meziantou.Framework.Win32.ProjectedFileSystem.PRJ_FILE_STATE.PRJ_FILE_STATE_TOMBSTONE) | The marker of an item that an application deleted |

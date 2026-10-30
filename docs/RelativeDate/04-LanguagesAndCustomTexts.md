@@ -6,7 +6,7 @@ description: Write relative dates in the included languages, add a language, or 
 ## Choose the language
 
 The texts are included in Dutch, English, French, German, Italian, Japanese, Korean, Portuguese, Simplified Chinese,
-Spanish and Turkish. Pass the culture to `ToString`:
+Spanish and Turkish. Pass the culture to [ToString](cref:Meziantou.Framework.RelativeDate.ToString):
 
 <!-- ref:../../tests/Meziantou.Framework.RelativeDate.Tests/RelativeDateTests.cs;region=RelativeDate_Cultures;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -38,7 +38,7 @@ MSBuild property to keep only some languages, add the languages you display, or 
 
 ## Change the texts
 
-The texts come from `LocalizationProvider.Current`, an `ILocalizationProvider` used by every `RelativeDate`. Its
+The texts come from [LocalizationProvider.Current](cref:Meziantou.Framework.LocalizationProvider.Current), an [ILocalizationProvider](cref:Meziantou.Framework.ILocalizationProvider) used by every [RelativeDate](cref:Meziantou.Framework.RelativeDate). Its
 `GetString(name, culture)` method returns the text of a resource for a culture.
 
 To change some texts, write a provider that returns your texts and asks the previous provider for the others:
@@ -77,8 +77,8 @@ Assert.Equal("il y a 20 secondes", date.ToString(format: null, CultureInfo.GetCu
 ```
 <!-- endref -->
 
-`LocalizationProvider.Current` is global, and setting it to `null` throws an `ArgumentNullException`. Keep the previous
-provider to restore it: the built-in provider is not public, so `LocalizationProvider.Current`, read before you replace
+[LocalizationProvider.Current](cref:Meziantou.Framework.LocalizationProvider.Current) is global, and setting it to `null` throws an `ArgumentNullException`. Keep the previous
+provider to restore it: the built-in provider is not public, so [LocalizationProvider.Current](cref:Meziantou.Framework.LocalizationProvider.Current), read before you replace
 it, is the only way to reach it. In tests that change the provider, restore it in a `finally` block and do not run
 these tests in parallel with the others.
 

@@ -16,8 +16,8 @@ The examples of this documentation omit the `using` directives: they need `using
 
 ## Hash a password
 
-`Bcrypt.HashPassword` returns a string that contains the algorithm, its cost, a random salt and the hash. Store it, and
-give it back to `Bcrypt.Verify` when the user signs in:
+[Bcrypt.HashPassword](cref:Meziantou.Framework.Hashing.Bcrypt.HashPassword) returns a string that contains the algorithm, its cost, a random salt and the hash. Store it, and
+give it back to [Bcrypt.Verify](cref:Meziantou.Framework.Hashing.Bcrypt.Verify) when the user signs in:
 
 <!-- ref:../../tests/Meziantou.Framework.Hashing.Tests/BcryptTests.cs;region=Bcrypt_HashPassword;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -31,7 +31,7 @@ See [BCrypt](03-Bcrypt.md) to choose the cost, and [Argon2](04-Argon2.md) for th
 
 ## Hash data
 
-The hash functions take a `ReadOnlySpan<byte>` and return a new array. `Sha3.HashData` takes the size of the digest in
+The hash functions take a `ReadOnlySpan<byte>` and return a new array. [Sha3.HashData](cref:Meziantou.Framework.Hashing.Sha3.HashData) takes the size of the digest in
 bits:
 
 <!-- ref:../../tests/Meziantou.Framework.Hashing.Tests/KeccakTests.cs;region=Sha3_Usage;format=md-fenced-code-block;dedent=true -->
@@ -46,7 +46,7 @@ allocating an array. See [Cryptographic hashes](05-CryptographicHashes.md).
 
 ## Compute a checksum
 
-`Crc32.Compute` returns the CRC-32 as a `uint`. `Crc32.Append` continues it with the next part of the data:
+[Crc32.Compute](cref:Meziantou.Framework.Hashing.Crc32.Compute) returns the CRC-32 as a `uint`. [Crc32.Append](cref:Meziantou.Framework.Hashing.Crc32.Append) continues it with the next part of the data:
 
 <!-- ref:../../tests/Meziantou.Framework.Hashing.Tests/ChecksumTests.cs;region=Crc32_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp

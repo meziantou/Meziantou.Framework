@@ -8,7 +8,7 @@ factory replaces the processes with in-memory fakes that return the output and t
 
 ## Replace every process
 
-`ProcessWrapper.DefaultProcessFactory` creates the processes of every command that has no factory of its own:
+[ProcessWrapper.DefaultProcessFactory](cref:Meziantou.Framework.ProcessWrapper.DefaultProcessFactory) creates the processes of every command that has no factory of its own:
 
 <!-- ref:../../tests/Meziantou.Framework.ProcessWrapper.Tests/ProcessWrapperTests.cs;region=ProcessWrapper_DefaultProcessFactory;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -36,12 +36,12 @@ finally
 ```
 <!-- endref -->
 
-`DefaultProcessFactory` is global: restore it at the end of the test, as in the example, and do not run tests that change
+[DefaultProcessFactory](cref:Meziantou.Framework.ProcessWrapper.DefaultProcessFactory) is global: restore it at the end of the test, as in the example, and do not run tests that change
 it in parallel with tests that start processes.
 
 ## Replace the processes of one command
 
-`WithProcessFactory` sets the factory of one command, without affecting the others. Prefer it when the code under test
+[WithProcessFactory](cref:Meziantou.Framework.ProcessWrapper.WithProcessFactory) sets the factory of one command, without affecting the others. Prefer it when the code under test
 lets you configure the command:
 
 <!-- ref:../../tests/Meziantou.Framework.ProcessWrapper.Tests/ProcessWrapperTests.cs;region=ProcessWrapper_ProcessFactory;format=md-fenced-code-block;dedent=true -->
@@ -56,8 +56,8 @@ Assert.Equal("instance output", result.Output.StandardOutput.Single().Text);
 
 ## Fake processes
 
-`FakeProcess.Create` creates a process that exits as soon as it is started, with the exit code and output you give, as
-text (encoded in UTF-8) or as streams. `FakeProcessFactory` returns fake processes:
+[FakeProcess.Create](cref:Meziantou.Framework.FakeProcess.Create) creates a process that exits as soon as it is started, with the exit code and output you give, as
+text (encoded in UTF-8) or as streams. [FakeProcessFactory](cref:Meziantou.Framework.FakeProcessFactory) returns fake processes:
 
 - `new FakeProcessFactory(startInfo => ...)` calls the callback for each process, with the `ProcessStartInfo` the
   command would start.
@@ -90,8 +90,8 @@ Assert.Equal(["commit", "--message", "Fix \"quoted\" text"], startInfo.ArgumentL
 
 ## Control when a process exits
 
-`FakeProcess.CreatePending` creates a process that keeps running until you call `Complete`, optionally with another
-exit code. Use it to test code that does something while the process runs, or that kills it. `ReadInputAsText` returns
+[FakeProcess.CreatePending](cref:Meziantou.Framework.FakeProcess.CreatePending) creates a process that keeps running until you call [Complete](cref:Meziantou.Framework.FakeProcess.Complete), optionally with another
+exit code. Use it to test code that does something while the process runs, or that kills it. [ReadInputAsText](cref:Meziantou.Framework.FakeProcess.ReadInputAsText) returns
 what the command wrote to the standard input of the fake process:
 
 <!-- ref:../../tests/Meziantou.Framework.ProcessWrapper.Tests/ProcessWrapperTests.cs;region=ProcessWrapper_PendingFakeProcess;format=md-fenced-code-block;dedent=true -->
@@ -120,8 +120,8 @@ Killing a fake process completes it, with the exit code -1 when its configured e
 Interceptors change commands before they run, without changing the code that creates them: add an environment variable to
 every process, log the command lines, or redirect an executable in tests. There are two kinds:
 
-- An `IProcessWrapperInterceptor` receives the `ProcessWrapper`, and can call its `With*` and `Add*` methods.
-- An `IProcessStartInfoInterceptor` receives the `ProcessWrapper` and the `ProcessStartInfo` right before the process is
+- An [IProcessWrapperInterceptor](cref:Meziantou.Framework.IProcessWrapperInterceptor) receives the [ProcessWrapper](cref:Meziantou.Framework.ProcessWrapper), and can call its `With*` and `Add*` methods.
+- An [IProcessStartInfoInterceptor](cref:Meziantou.Framework.IProcessStartInfoInterceptor) receives the [ProcessWrapper](cref:Meziantou.Framework.ProcessWrapper) and the `ProcessStartInfo` right before the process is
   created, with the executable already resolved.
 
 <!-- ref:../../tests/Meziantou.Framework.ProcessWrapper.Tests/ProcessWrapperTests.cs;region=ProcessWrapper_InterceptorTypes;format=md-fenced-code-block;dedent=true -->
@@ -146,8 +146,8 @@ public sealed class SampleProcessStartInfoInterceptor : IProcessStartInfoInterce
 ```
 <!-- endref -->
 
-Register them for all commands with `ProcessWrapper.AddInterceptor`, which returns a registration to dispose, or for one
-command with `WithInterceptor`:
+Register them for all commands with [ProcessWrapper.AddInterceptor](cref:Meziantou.Framework.ProcessWrapper.AddInterceptor), which returns a registration to dispose, or for one
+command with [WithInterceptor](cref:Meziantou.Framework.ProcessWrapper.WithInterceptor):
 
 <!-- ref:../../tests/Meziantou.Framework.ProcessWrapper.Tests/ProcessWrapperTests.cs;region=ProcessWrapper_Interceptors;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -164,5 +164,5 @@ var result = await ProcessWrapper.Create("dotnet")
 
 - The global interceptors run before the interceptors of the command, in the order they were added.
 - They run each time the command is executed.
-- An `IProcessWrapperInterceptor` changes the `ProcessWrapper` itself, so its changes stay on the command after the
-  execution. An `IProcessStartInfoInterceptor` changes a copy made for one execution.
+- An [IProcessWrapperInterceptor](cref:Meziantou.Framework.IProcessWrapperInterceptor) changes the [ProcessWrapper](cref:Meziantou.Framework.ProcessWrapper) itself, so its changes stay on the command after the
+  execution. An [IProcessStartInfoInterceptor](cref:Meziantou.Framework.IProcessStartInfoInterceptor) changes a copy made for one execution.

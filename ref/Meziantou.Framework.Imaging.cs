@@ -524,6 +524,12 @@ namespace Meziantou.Framework.Imaging
         LinearSrgb = 1,
     }
 
+    public enum DecodingStrictness
+    {
+        Strict = 0,
+        Lenient = 1,
+    }
+
     public enum DitheringMode
     {
         None = 0,
@@ -866,6 +872,7 @@ namespace Meziantou.Framework.Imaging
 
     public sealed class ImageConfiguration
     {
+        public Meziantou.Framework.Imaging.DecodingStrictness DecodingStrictness { get => throw null; init { } }
         public static Meziantou.Framework.Imaging.ImageConfiguration Default { get => throw null; }
         public Meziantou.Framework.Imaging.ImageResourceLimits Limits { get => throw null; init { } }
         public int MaxDegreeOfParallelism { get => throw null; init { } }

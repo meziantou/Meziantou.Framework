@@ -4,7 +4,7 @@ description: Open the access token of a process, check its elevation and groups,
 ---
 
 An access token describes the security context of a process: the user, the groups, the privileges and the integrity
-level. `AccessToken` from the `Meziantou.Framework.Win32.AccessToken` package opens and reads it.
+level. [AccessToken](cref:Meziantou.Framework.Win32.AccessToken) from the `Meziantou.Framework.Win32.AccessToken` package opens and reads it.
 
 ```bash
 dotnet add package Meziantou.Framework.Win32.AccessToken
@@ -25,10 +25,10 @@ using var processToken = AccessToken.OpenProcessToken(process, TokenAccessLevels
 ```
 <!-- endref -->
 
-- `TokenAccessLevels.Query` is enough to read the token. Adjusting privileges needs `AdjustPrivileges`, and duplicating
-  the token needs `Duplicate`. Ask only for the rights you use: opening the token of a process that belongs to another
+- [TokenAccessLevels.Query](cref:Meziantou.Framework.Win32.TokenAccessLevels.Query) is enough to read the token. Adjusting privileges needs [AdjustPrivileges](cref:Meziantou.Framework.Win32.TokenAccessLevels.AdjustPrivileges), and duplicating
+  the token needs [Duplicate](cref:Meziantou.Framework.Win32.TokenAccessLevels.Duplicate). Ask only for the rights you use: opening the token of a process that belongs to another
   user, or that runs elevated, can fail with a `Win32Exception` (access denied).
-- `AccessToken` is disposable: it holds a handle to the token.
+- [AccessToken](cref:Meziantou.Framework.Win32.AccessToken) is disposable: it holds a handle to the token.
 
 ## Check whether the process is elevated
 
@@ -36,13 +36,13 @@ When User Account Control (UAC) is enabled, an administrator runs applications w
 Administrators group is disabled until the user elevates the application. The elevation type tells which token the
 process has:
 
-| `TokenElevationType` | Meaning |
+| [TokenElevationType](cref:Meziantou.Framework.Win32.TokenElevationType) | Meaning |
 | --- | --- |
-| `Default` | The token has no linked token, for instance because the user is not an administrator or UAC is disabled |
-| `Full` | The process is elevated |
-| `Limited` | An administrator runs the process without elevation |
+| [Default](cref:Meziantou.Framework.Win32.TokenElevationType.Default) | The token has no linked token, for instance because the user is not an administrator or UAC is disabled |
+| [Full](cref:Meziantou.Framework.Win32.TokenElevationType.Full) | The process is elevated |
+| [Limited](cref:Meziantou.Framework.Win32.TokenElevationType.Limited) | An administrator runs the process without elevation |
 
-`AccessToken.IsLimitedToken()` checks the last case for the current process:
+[AccessToken.IsLimitedToken()](cref:Meziantou.Framework.Win32.AccessToken.IsLimitedToken) checks the last case for the current process:
 
 <!-- ref:../../tests/Meziantou.Framework.Win32.AccessToken.Tests/AccessTokenTests.cs;region=AccessToken_IsLimitedToken;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -54,12 +54,12 @@ Assert.Equal(token.GetElevationType() == TokenElevationType.Limited, isLimited);
 ```
 <!-- endref -->
 
-`IsElevated()` returns `true` when the token is elevated.
+[IsElevated()](cref:Meziantou.Framework.Win32.AccessToken.IsElevated) returns `true` when the token is elevated.
 
 ## Check whether the user is an administrator
 
 A user is an administrator when the Administrators group is enabled in the token. When the token is limited, the
-group is only enabled in the elevated token that is linked to it, which `GetLinkedToken()` returns:
+group is only enabled in the elevated token that is linked to it, which [GetLinkedToken()](cref:Meziantou.Framework.Win32.AccessToken.GetLinkedToken) returns:
 
 <!-- ref:../../tests/Meziantou.Framework.Win32.AccessToken.Tests/AccessTokenTests.cs;region=AccessToken_IsAdministrator;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -98,7 +98,7 @@ bool IsAdministrator()
 ```
 <!-- endref -->
 
-- `GetLinkedToken()` returns `null` when the token has no linked token. In some logon sessions, such as the network
+- [GetLinkedToken()](cref:Meziantou.Framework.Win32.AccessToken.GetLinkedToken) returns `null` when the token has no linked token. In some logon sessions, such as the network
   logon of an SSH connection, Windows cannot provide it and the method throws a `Win32Exception`.
 - The linked token is disposable too.
 
@@ -150,20 +150,20 @@ Assert.Contains(token.EnumeratePrivileges(), privilege => privilege.Name == Priv
 
 | Method | Returns |
 | --- | --- |
-| `GetTokenType()` | `TokenPrimary` for the token of a process, `TokenImpersonation` for a token that a thread impersonates |
-| `GetElevationType()`, `IsElevated()` | The elevation of the token, see [above](#check-whether-the-process-is-elevated) |
-| `IsRestricted()` | Whether restricted security identifiers limit what the token can access |
-| `GetOwner()` | The security identifier that owns the objects the process creates |
-| `GetMandatoryIntegrityLevel()` | The integrity level; its `Sid` is `S-1-16-8192` for the medium level, `S-1-16-12288` for the high level |
-| `EnumerateGroups()` | The groups, with their `GroupSidAttributes` (`SE_GROUP_ENABLED`, `SE_GROUP_USE_FOR_DENY_ONLY`…) |
-| `EnumerateRestrictedSid()` | The restricted security identifiers |
-| `EnumeratePrivileges()` | The privileges, with their name and `PrivilegeAttribute` (`Enabled`, `EnabledByDefault`, `Removed`…) |
+| [GetTokenType()](cref:Meziantou.Framework.Win32.AccessToken.GetTokenType) | [TokenPrimary](cref:Meziantou.Framework.Win32.TokenType.TokenPrimary) for the token of a process, [TokenImpersonation](cref:Meziantou.Framework.Win32.TokenType.TokenImpersonation) for a token that a thread impersonates |
+| [GetElevationType()](cref:Meziantou.Framework.Win32.AccessToken.GetElevationType), [IsElevated()](cref:Meziantou.Framework.Win32.AccessToken.IsElevated) | The elevation of the token, see [above](#check-whether-the-process-is-elevated) |
+| [IsRestricted()](cref:Meziantou.Framework.Win32.AccessToken.IsRestricted) | Whether restricted security identifiers limit what the token can access |
+| [GetOwner()](cref:Meziantou.Framework.Win32.AccessToken.GetOwner) | The security identifier that owns the objects the process creates |
+| [GetMandatoryIntegrityLevel()](cref:Meziantou.Framework.Win32.AccessToken.GetMandatoryIntegrityLevel) | The integrity level; its [Sid](cref:Meziantou.Framework.Win32.SecurityIdentifier.Sid) is `S-1-16-8192` for the medium level, `S-1-16-12288` for the high level |
+| [EnumerateGroups()](cref:Meziantou.Framework.Win32.AccessToken.EnumerateGroups) | The groups, with their [GroupSidAttributes](cref:Meziantou.Framework.Win32.GroupSidAttributes) ([SE\_GROUP\_ENABLED](cref:Meziantou.Framework.Win32.GroupSidAttributes.SE_GROUP_ENABLED), [SE\_GROUP\_USE\_FOR\_DENY\_ONLY](cref:Meziantou.Framework.Win32.GroupSidAttributes.SE_GROUP_USE_FOR_DENY_ONLY)…) |
+| [EnumerateRestrictedSid()](cref:Meziantou.Framework.Win32.AccessToken.EnumerateRestrictedSid) | The restricted security identifiers |
+| [EnumeratePrivileges()](cref:Meziantou.Framework.Win32.AccessToken.EnumeratePrivileges) | The privileges, with their name and [PrivilegeAttribute](cref:Meziantou.Framework.Win32.PrivilegeAttribute) ([Enabled](cref:Meziantou.Framework.Win32.PrivilegeAttribute.Enabled), [EnabledByDefault](cref:Meziantou.Framework.Win32.PrivilegeAttribute.EnabledByDefault), [Removed](cref:Meziantou.Framework.Win32.PrivilegeAttribute.Removed)…) |
 
 ## Enable or disable a privilege
 
 A privilege allows an operation that access control does not cover, such as debugging another process or shutting
 down the machine. A token can only enable the privileges it holds, and most of them are disabled by default. Open the
-token with `AdjustPrivileges`:
+token with [AdjustPrivileges](cref:Meziantou.Framework.Win32.TokenAccessLevels.AdjustPrivileges):
 
 <!-- ref:../../samples/Meziantou.Framework.Win32.AccessTokenConsole/ReadmeExamples.cs;region=AccessToken_ManagePrivileges;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -183,17 +183,17 @@ token.DisableAllPrivileges();
 ```
 <!-- endref -->
 
-- `Privileges` contains the names of the Windows privileges as constants: `SE_DEBUG_NAME` (`SeDebugPrivilege`),
-  `SE_BACKUP_NAME`, `SE_SHUTDOWN_NAME`, and so on.
-- The methods throw a `Win32Exception` when the token does not hold the privilege. `SE_DEBUG_NAME` is only granted to
+- [Privileges](cref:Meziantou.Framework.Win32.Privileges) contains the names of the Windows privileges as constants: [SE\_DEBUG\_NAME](cref:Meziantou.Framework.Win32.Privileges.SE_DEBUG_NAME) (`SeDebugPrivilege`),
+  [SE\_BACKUP\_NAME](cref:Meziantou.Framework.Win32.Privileges.SE_BACKUP_NAME), [SE\_SHUTDOWN\_NAME](cref:Meziantou.Framework.Win32.Privileges.SE_SHUTDOWN_NAME), and so on.
+- The methods throw a `Win32Exception` when the token does not hold the privilege. [SE\_DEBUG\_NAME](cref:Meziantou.Framework.Win32.Privileges.SE_DEBUG_NAME) is only granted to
   administrators, so this example needs an elevated process.
-- `RemovePrivilege` removes the privilege from the token: it cannot be enabled again in this process.
+- [RemovePrivilege](cref:Meziantou.Framework.Win32.AccessToken.RemovePrivilege) removes the privilege from the token: it cannot be enabled again in this process.
 - The changes apply to the token, so to the whole process, not only to the current thread.
 
 ## Work with security identifiers
 
-`SecurityIdentifier` represents a user or a group. Create the identifiers of well-known accounts with
-`FromWellKnown`, and compare them with `==`:
+[SecurityIdentifier](cref:Meziantou.Framework.Win32.SecurityIdentifier) represents a user or a group. Create the identifiers of well-known accounts with
+[FromWellKnown](cref:Meziantou.Framework.Win32.SecurityIdentifier.FromWellKnown), and compare them with `==`:
 
 <!-- ref:../../tests/Meziantou.Framework.Win32.AccessToken.Tests/AccessTokenTests.cs;region=AccessToken_SecurityIdentifiers;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -212,16 +212,16 @@ Assert.Equal("S-1-16-12288", highIntegrity.Sid);
 ```
 <!-- endref -->
 
-- `Sid` is the string form of the identifier, such as `S-1-5-32-544`. Compare identifiers with it, or with `==`, never
+- [Sid](cref:Meziantou.Framework.Win32.SecurityIdentifier.Sid) is the string form of the identifier, such as `S-1-5-32-544`. Compare identifiers with it, or with `==`, never
   with their name.
-- `Name`, `Domain` and `FullName` (`Domain\Name`) are looked up the first time they are read. The names are localized
-  (the Administrators group has another name on a French Windows), and the lookup may query a domain controller. `Name`
-  and `Domain` are `null` when the account cannot be resolved.
-- `ToString()` returns the full name when it is available, and the `Sid` otherwise.
+- [Name](cref:Meziantou.Framework.Win32.SecurityIdentifier.Name), [Domain](cref:Meziantou.Framework.Win32.SecurityIdentifier.Domain) and [FullName](cref:Meziantou.Framework.Win32.SecurityIdentifier.FullName) (`Domain\Name`) are looked up the first time they are read. The names are localized
+  (the Administrators group has another name on a French Windows), and the lookup may query a domain controller. [Name](cref:Meziantou.Framework.Win32.SecurityIdentifier.Name)
+  and [Domain](cref:Meziantou.Framework.Win32.SecurityIdentifier.Domain) are `null` when the account cannot be resolved.
+- `ToString()` returns the full name when it is available, and the [Sid](cref:Meziantou.Framework.Win32.SecurityIdentifier.Sid) otherwise.
 
 ## Duplicate a token
 
-`Duplicate` creates an impersonation token from the token, at the impersonation level you choose:
+[Duplicate](cref:Meziantou.Framework.Win32.AccessToken.Duplicate) creates an impersonation token from the token, at the impersonation level you choose:
 
 <!-- ref:../../tests/Meziantou.Framework.Win32.AccessToken.Tests/AccessTokenTests.cs;region=AccessToken_Duplicate;format=md-fenced-code-block;dedent=true -->
 ```csharp

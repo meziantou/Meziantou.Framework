@@ -32,7 +32,7 @@ and generates the serialization code at build time for NativeAOT and trimmed app
 ## Supported YAML
 
 The library implements **YAML 1.2**. A document that declares `%YAML 1.1`, `%YAML 1.2` or a later 1.x version is read
-with the YAML 1.2 rules; other versions throw a `SemanticErrorException`. Streams of several documents, `%TAG`
+with the YAML 1.2 rules; other versions throw a [SemanticErrorException](cref:Meziantou.Framework.Yaml.SemanticErrorException). Streams of several documents, `%TAG`
 directives, block and flow collections, the five scalar styles (plain, single-quoted, double-quoted, literal and
 folded), anchors, aliases, merge keys, tags and comments are supported.
 
@@ -42,10 +42,10 @@ The library has four layers. Use the highest one that does what you need:
 
 | To | Use | Page |
 | --- | --- | --- |
-| Convert YAML to your own types and back | `YamlSerializer` | [Serialization](03-Serialization/01-Overview.md) |
-| Read or change a document without a type for it | `YamlStream`, `YamlMapping`, `YamlSequence`, `YamlValue` | [Document object model](05-DocumentObjectModel.md) |
-| Edit a file while keeping its comments and layout, or report positions | `YamlSyntaxTree` | [Syntax tree](06-SyntaxTree.md) |
-| Process a stream of parsing events, or write events | `Parser`, `EventReader`, `Emitter` | [Parser and emitter](07-ParserAndEmitter.md) |
+| Convert YAML to your own types and back | [YamlSerializer](cref:Meziantou.Framework.Yaml.YamlSerializer) | [Serialization](03-Serialization/01-Overview.md) |
+| Read or change a document without a type for it | [YamlStream](cref:Meziantou.Framework.Yaml.Model.YamlStream), [YamlMapping](cref:Meziantou.Framework.Yaml.Model.YamlMapping), [YamlSequence](cref:Meziantou.Framework.Yaml.Model.YamlSequence), [YamlValue](cref:Meziantou.Framework.Yaml.Model.YamlValue) | [Document object model](05-DocumentObjectModel.md) |
+| Edit a file while keeping its comments and layout, or report positions | [YamlSyntaxTree](cref:Meziantou.Framework.Yaml.Syntax.YamlSyntaxTree) | [Syntax tree](06-SyntaxTree.md) |
+| Process a stream of parsing events, or write events | [Parser](cref:Meziantou.Framework.Yaml.Parser), [EventReader](cref:Meziantou.Framework.Yaml.EventReader), [Emitter](cref:Meziantou.Framework.Yaml.Emitter) | [Parser and emitter](07-ParserAndEmitter.md) |
 
 The layers work together: a member of a serialized class can hold a document node, and a node converts to and from an
 object.
@@ -54,9 +54,9 @@ object.
 
 | Namespace | Contains |
 | --- | --- |
-| [Meziantou.Framework.Yaml](cref:Meziantou.Framework.Yaml) | `YamlSerializer`, `YamlSerializerOptions`, `YamlException`, the parser, the event reader and the emitter |
-| [Meziantou.Framework.Yaml.Serialization](cref:Meziantou.Framework.Yaml.Serialization) | The attributes, converters, `YamlReader`, `YamlWriter` and `YamlSerializerContext` |
-| [Meziantou.Framework.Yaml.Model](cref:Meziantou.Framework.Yaml.Model) | The document object model: `YamlStream`, `YamlDocument`, `YamlMapping`, `YamlSequence`, `YamlValue` |
+| [Meziantou.Framework.Yaml](cref:Meziantou.Framework.Yaml) | [YamlSerializer](cref:Meziantou.Framework.Yaml.YamlSerializer), [YamlSerializerOptions](cref:Meziantou.Framework.Yaml.YamlSerializerOptions), [YamlException](cref:Meziantou.Framework.Yaml.YamlException), the parser, the event reader and the emitter |
+| [Meziantou.Framework.Yaml.Serialization](cref:Meziantou.Framework.Yaml.Serialization) | The attributes, converters, [YamlReader](cref:Meziantou.Framework.Yaml.Serialization.YamlReader), [YamlWriter](cref:Meziantou.Framework.Yaml.Serialization.YamlWriter) and [YamlSerializerContext](cref:Meziantou.Framework.Yaml.Serialization.YamlSerializerContext) |
+| [Meziantou.Framework.Yaml.Model](cref:Meziantou.Framework.Yaml.Model) | The document object model: [YamlStream](cref:Meziantou.Framework.Yaml.Model.YamlStream), [YamlDocument](cref:Meziantou.Framework.Yaml.Model.YamlDocument), [YamlMapping](cref:Meziantou.Framework.Yaml.Model.YamlMapping), [YamlSequence](cref:Meziantou.Framework.Yaml.Model.YamlSequence), [YamlValue](cref:Meziantou.Framework.Yaml.Model.YamlValue) |
 | [Meziantou.Framework.Yaml.Syntax](cref:Meziantou.Framework.Yaml.Syntax) | The syntax tree |
 | [Meziantou.Framework.Yaml.Events](cref:Meziantou.Framework.Yaml.Events) | The parsing events |
 | [Meziantou.Framework.Yaml.Schemas](cref:Meziantou.Framework.Yaml.Schemas) | The schemas that resolve untagged scalars |

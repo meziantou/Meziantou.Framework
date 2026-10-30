@@ -15,7 +15,7 @@ The examples of this documentation omit the `using` directives: they need `using
 
 ## Compare two texts
 
-`TextDiff.ComputeDiff` compares two texts line by line:
+[TextDiff.ComputeDiff](cref:Meziantou.Framework.TextDiff.ComputeDiff) compares two texts line by line:
 
 <!-- ref:../../tests/Meziantou.Framework.TextDiff.Tests/TextDiffTests.cs;region=TextDiff_BasicUsage;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -36,16 +36,16 @@ Assert.Equal(
 ```
 <!-- endref -->
 
-- `HasDifferences` tells whether the texts differ.
-- `Entries` holds every line of both texts, in order, with what happened to it. The second line changed: a change is
+- [HasDifferences](cref:Meziantou.Framework.TextDiffResult.HasDifferences) tells whether the texts differ.
+- [Entries](cref:Meziantou.Framework.TextDiffResult.Entries) holds every line of both texts, in order, with what happened to it. The second line changed: a change is
   the deletion of the old line followed by the insertion of the new one.
 - Each line keeps its line terminator (`\n` here), so the entries concatenate back to the texts. The last line of the
   texts has none.
 
 ## Compare words or characters
 
-The comparison works on chunks, which are lines by default. To find the changed words or characters, set `Chunker` to
-`TextChunker.Words` or `TextChunker.Characters`; the other options ignore the casing, the whitespace and the line
+The comparison works on chunks, which are lines by default. To find the changed words or characters, set [Chunker](cref:Meziantou.Framework.TextDiffOptions.Chunker) to
+[TextChunker.Words](cref:Meziantou.Framework.TextChunker.Words) or [TextChunker.Characters](cref:Meziantou.Framework.TextChunker.Characters); the other options ignore the casing, the whitespace and the line
 terminators:
 
 <!-- ref:../../tests/Meziantou.Framework.TextDiff.Tests/TextDiffTests.cs;region=TextDiff_ChunkingAndComparison;format=md-fenced-code-block;dedent=true -->

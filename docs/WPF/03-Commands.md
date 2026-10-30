@@ -3,8 +3,8 @@ title: Commands
 description: Bind buttons and menu items to synchronous and asynchronous methods of a view model with DelegateCommand.
 ---
 
-A WPF button or menu item runs an `ICommand`. `DelegateCommand.Create` creates one from the methods of a view model: one
-that runs the action, and optionally one that tells whether the action is available. It returns an `IDelegateCommand`,
+A WPF button or menu item runs an `ICommand`. [DelegateCommand.Create](cref:Meziantou.Framework.WPF.DelegateCommand.Create) creates one from the methods of a view model: one
+that runs the action, and optionally one that tells whether the action is available. It returns an [IDelegateCommand](cref:Meziantou.Framework.WPF.IDelegateCommand),
 an `ICommand` that can also raise `CanExecuteChanged`.
 
 ## Create a command
@@ -110,10 +110,10 @@ the exception is rethrown on the dispatcher, where your code cannot catch it; it
 
 ## Update the state of the command
 
-WPF does not know when the result of `canExecute` changes. Call `RaiseCanExecuteChanged` when a value it depends on
+WPF does not know when the result of `canExecute` changes. Call [RaiseCanExecuteChanged](cref:Meziantou.Framework.WPF.IDelegateCommand.RaiseCanExecuteChanged) when a value it depends on
 changes, as the setter of `FileName` does in the example above: the bound controls then call `CanExecute` again.
 
-`RaiseCanExecuteChanged` can be called from any thread. The command raises `CanExecuteChanged` on the thread of the
+[RaiseCanExecuteChanged](cref:Meziantou.Framework.WPF.IDelegateCommand.RaiseCanExecuteChanged) can be called from any thread. The command raises `CanExecuteChanged` on the thread of the
 dispatcher where it was created, or of the dispatcher of the application when it was created on a thread without a
 dispatcher. When it is called from another thread, the event is posted to that dispatcher, and raised later. Without
 any dispatcher, for instance in a unit test, the event is raised immediately on the calling thread.

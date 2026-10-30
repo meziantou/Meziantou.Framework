@@ -62,7 +62,7 @@ Assert.True(robots.IsAllowed("MyCrawler", new Uri("https://example.com/products"
 - `Disallow: /search` blocks `/search-results` too. End the pattern with `/` or `$` to block less.
 - The comparison is case-sensitive and character by character: the parser does not decode percent-encoded characters,
   so write the path as your crawler requests it.
-- The query string is part of the path. With a `Uri`, `IsAllowed` checks its path and query; with a relative `Uri`, it
+- The query string is part of the path. With a `Uri`, [IsAllowed](cref:Meziantou.Framework.RobotsTxt.RobotsFile.IsAllowed) checks its path and query; with a relative `Uri`, it
   checks the original string.
 
 ## Wildcards and end anchors
@@ -107,8 +107,8 @@ To block everything, write `Disallow: /`.
 
 ## Read the rules
 
-`RobotsGroup.Rules` lists the rules of a group in file order. Each `RobotsRule` has a `Kind` (`Allow` or `Disallow`),
-the pattern as written in `Value`, and a `Matches` method that tests a path against the pattern alone:
+[RobotsGroup.Rules](cref:Meziantou.Framework.RobotsTxt.RobotsGroup.Rules) lists the rules of a group in file order. Each [RobotsRule](cref:Meziantou.Framework.RobotsTxt.RobotsRule) has a [Kind](cref:Meziantou.Framework.RobotsTxt.RobotsRule.Kind) (`Allow` or `Disallow`),
+the pattern as written in [Value](cref:Meziantou.Framework.RobotsTxt.RobotsRule.Value), and a [Matches](cref:Meziantou.Framework.RobotsTxt.RobotsRule.Matches) method that tests a path against the pattern alone:
 
 <!-- ref:../../tests/Meziantou.Framework.RobotsTxt.Tests/RobotsFileTests.cs;region=RobotsFile_InspectRules;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -126,5 +126,5 @@ Assert.True(rule.Matches("/private/data"));
 ```
 <!-- endref -->
 
-`RobotsGroup.IsAllowed` applies the precedence above to the rules of one group, and `RobotsFile.IsAllowed` selects the
+[RobotsGroup.IsAllowed](cref:Meziantou.Framework.RobotsTxt.RobotsGroup.IsAllowed) applies the precedence above to the rules of one group, and [RobotsFile.IsAllowed](cref:Meziantou.Framework.RobotsTxt.RobotsFile.IsAllowed) selects the
 group of the user agent first.

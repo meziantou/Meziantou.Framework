@@ -1478,6 +1478,15 @@ internal static class Examples
     }
     #endregion
 
+    /// <summary>Accepting the deviations that browsers and reference decoders accept.</summary>
+    #region Imaging_LenientDecoding
+    public static Image LoadLeniently(string path)
+    {
+        var configuration = new ImageConfiguration { DecodingStrictness = DecodingStrictness.Lenient };
+        return Image.Load(path, new ImageDecodeOptions { Configuration = configuration });
+    }
+    #endregion
+
     /// <summary>Metadata editing with explicit save policies.</summary>
     #region Imaging_EditMetadata
     public static void EditMetadata(string path)

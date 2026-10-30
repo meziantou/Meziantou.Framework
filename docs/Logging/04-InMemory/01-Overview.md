@@ -32,14 +32,14 @@ Assert.Empty(singleTypedLogger.Logs);
 
 There are two ways to create a logger:
 
-- `InMemoryLogger.CreateLogger(category)` and `InMemoryLogger.CreateLogger<T>()` create a single logger with a
-  collection of its own. They return an `IInMemoryLogger` or an `IInMemoryLogger<T>`, which are an `ILogger` or an
-  `ILogger<T>` with a `Logs` property.
-- `InMemoryLoggerProvider` is an `ILoggerProvider`: every logger it creates writes to the same collection,
+- `InMemoryLogger.CreateLogger(category)` and [InMemoryLogger.CreateLogger\<T\>()](cref:Meziantou.Extensions.Logging.InMemory.InMemoryLogger.CreateLogger) create a single logger with a
+  collection of its own. They return an [IInMemoryLogger](cref:Meziantou.Extensions.Logging.InMemory.IInMemoryLogger) or an [IInMemoryLogger\<T\>](cref:Meziantou.Extensions.Logging.InMemory.IInMemoryLogger{T}), which are an `ILogger` or an
+  `ILogger<T>` with a [Logs](cref:Meziantou.Extensions.Logging.InMemory.IInMemoryLogger.Logs) property.
+- [InMemoryLoggerProvider](cref:Meziantou.Extensions.Logging.InMemory.InMemoryLoggerProvider) is an `ILoggerProvider`: every logger it creates writes to the same collection,
   `provider.Logs`. Use it with a logger factory, a host or a web application. See
   [Testing an application](03-ApplicationTests.md).
 
-The category of `CreateLogger<T>()` is the full name of `T`, as with `ILogger<T>`.
+The category of [CreateLogger\<T\>()](cref:Meziantou.Extensions.Logging.InMemory.InMemoryLoggerProvider.CreateLogger) is the full name of `T`, as with `ILogger<T>`.
 
 The logger accepts every level but `LogLevel.None`. When it is created by a logger factory or a host, the filters of
 the logging configuration apply as for any provider.

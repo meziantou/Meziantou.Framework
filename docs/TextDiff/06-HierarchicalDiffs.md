@@ -5,7 +5,7 @@ description: Find the changed lines, then the changed words inside them, then th
 
 A line diff tells you which lines changed, not what changed in them. A hierarchical diff does both: it compares the
 texts with a first chunker, then compares each changed chunk again with the next chunker, and so on. Pass the
-chunkers to `TextDiff.ComputeHierarchyDiff`, the coarsest first:
+chunkers to [TextDiff.ComputeHierarchyDiff](cref:Meziantou.Framework.TextDiff.ComputeHierarchyDiff), the coarsest first:
 
 <!-- ref:../../tests/Meziantou.Framework.TextDiff.Tests/TextDiffTests.cs;region=TextDiff_HierarchyDiff;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -30,29 +30,29 @@ Assert.Equal(["brave", " "], insertedWords);
 ```
 <!-- endref -->
 
-The result is a `TextDiffHierarchyResult`. Its `Entries` are the chunks of the first level (lines here), and its
-`HasDifferences` tells whether the texts differ.
+The result is a [TextDiffHierarchyResult](cref:Meziantou.Framework.TextDiffHierarchyResult). Its [Entries](cref:Meziantou.Framework.TextDiffHierarchyResult.Entries) are the chunks of the first level (lines here), and its
+[HasDifferences](cref:Meziantou.Framework.TextDiffHierarchyResult.HasDifferences) tells whether the texts differ.
 
 ## The entries
 
-A `TextDiffHierarchyEntry` has an `Operation`, an `OldText`, a `NewText` and `Children`. The operations
-(`TextDiffHierarchyOperation`) are those of a [simple diff](03-ReadingTheResult.md), plus one:
+A [TextDiffHierarchyEntry](cref:Meziantou.Framework.TextDiffHierarchyEntry) has an [Operation](cref:Meziantou.Framework.TextDiffHierarchyEntry.Operation), an [OldText](cref:Meziantou.Framework.TextDiffHierarchyEntry.OldText), a [NewText](cref:Meziantou.Framework.TextDiffHierarchyEntry.NewText) and [Children](cref:Meziantou.Framework.TextDiffHierarchyEntry.Children). The operations
+([TextDiffHierarchyOperation](cref:Meziantou.Framework.TextDiffHierarchyOperation)) are those of a [simple diff](03-ReadingTheResult.md), plus one:
 
-| Operation | `OldText` | `NewText` | `Children` |
+| Operation | [OldText](cref:Meziantou.Framework.TextDiffHierarchyEntry.OldText) | [NewText](cref:Meziantou.Framework.TextDiffHierarchyEntry.NewText) | [Children](cref:Meziantou.Framework.TextDiffHierarchyEntry.Children) |
 | --- | --- | --- | --- |
-| `Equal` | The chunk in the old text | The chunk in the new text | Empty |
-| `Delete` | The chunk in the old text | `null` | Empty |
-| `Insert` | `null` | The chunk in the new text | Empty |
-| `Replace` | The chunk in the old text | The chunk in the new text | The diff of the two chunks with the next chunker |
+| [Equal](cref:Meziantou.Framework.TextDiffHierarchyOperation.Equal) | The chunk in the old text | The chunk in the new text | Empty |
+| [Delete](cref:Meziantou.Framework.TextDiffHierarchyOperation.Delete) | The chunk in the old text | `null` | Empty |
+| [Insert](cref:Meziantou.Framework.TextDiffHierarchyOperation.Insert) | `null` | The chunk in the new text | Empty |
+| [Replace](cref:Meziantou.Framework.TextDiffHierarchyOperation.Replace) | The chunk in the old text | The chunk in the new text | The diff of the two chunks with the next chunker |
 
-The children are entries too: a `Replace` child of a line holds the diff of two words with the next chunker, if there
-is one. The last chunker never produces `Replace` entries, only `Equal`, `Delete` and `Insert` ones.
+The children are entries too: a [Replace](cref:Meziantou.Framework.TextDiffHierarchyOperation.Replace) child of a line holds the diff of two words with the next chunker, if there
+is one. The last chunker never produces [Replace](cref:Meziantou.Framework.TextDiffHierarchyOperation.Replace) entries, only [Equal](cref:Meziantou.Framework.TextDiffHierarchyOperation.Equal), [Delete](cref:Meziantou.Framework.TextDiffHierarchyOperation.Delete) and [Insert](cref:Meziantou.Framework.TextDiffHierarchyOperation.Insert) ones.
 
 ## How the changed chunks are paired
 
-Between two `Equal` entries, the diff pairs the deleted and the inserted chunks in order: the first deleted line with the
-first inserted line, the second with the second, and so on. Each pair becomes a `Replace` entry. When one side has
-more chunks than the other, the extra chunks are `Delete` or `Insert` entries.
+Between two [Equal](cref:Meziantou.Framework.TextDiffHierarchyOperation.Equal) entries, the diff pairs the deleted and the inserted chunks in order: the first deleted line with the
+first inserted line, the second with the second, and so on. Each pair becomes a [Replace](cref:Meziantou.Framework.TextDiffHierarchyOperation.Replace) entry. When one side has
+more chunks than the other, the extra chunks are [Delete](cref:Meziantou.Framework.TextDiffHierarchyOperation.Delete) or [Insert](cref:Meziantou.Framework.TextDiffHierarchyOperation.Insert) entries.
 
 The pairing is positional: when a line is deleted and another one is inserted at the same place, they are compared word
 by word even if they have nothing in common. Their children are then mostly deletions and insertions.
@@ -65,7 +65,7 @@ by word even if they have nothing in common. Their children are then mostly dele
 - `[TextChunker.Words, TextChunker.Characters]` suits a text without lines, such as a title or a description.
 
 The levels can include your own [chunkers](04-Chunking.md#write-your-own-chunker). At least two chunkers are required;
-use `ComputeDiff` for one level. `ComputeHierarchyDiff` ignores `TextDiffOptions.Chunker`, but uses the algorithm and
+use [ComputeDiff](cref:Meziantou.Framework.TextDiff.ComputeDiff) for one level. [ComputeHierarchyDiff](cref:Meziantou.Framework.TextDiff.ComputeHierarchyDiff) ignores [TextDiffOptions.Chunker](cref:Meziantou.Framework.TextDiffOptions.Chunker), but uses the algorithm and
 the [comparison options](05-ComparisonOptions.md) for every level.
 
 A hierarchical diff is also the efficient way to compare long texts character by character: the character diff only

@@ -4,7 +4,7 @@ description: An asynchronous undo/redo framework based on the command pattern, w
 ---
 
 `Meziantou.Framework.UndoRedo` adds undo and redo to an application, such as an editor or a form. Each change the user
-makes is an action that knows how to apply itself and how to revert itself. `UndoRedoManager` runs the actions, keeps
+makes is an action that knows how to apply itself and how to revert itself. [UndoRedoManager](cref:Meziantou.Framework.UndoRedo.UndoRedoManager) runs the actions, keeps
 them in a history, and reverts or reapplies them when the user asks to undo or redo.
 
 ## What you can do with it
@@ -22,10 +22,10 @@ them in a history, and reverts or reapplies them when the user asks to undo or r
 - **Asynchronous.** Applying and reverting an action return a `ValueTask` and accept a `CancellationToken`, so an
   action can save a file or call a service. Synchronous delegates are accepted too.
 - **One action, one state.** An action is applied or reverted in turn, never twice in a row: the manager never applies
-  an applied action, and `UndoRedoActionBase` throws when it would happen.
+  an applied action, and [UndoRedoActionBase](cref:Meziantou.Framework.UndoRedo.UndoRedoActionBase) throws when it would happen.
 - **All or nothing.** A transaction that fails while applying its actions reverts the ones that already ran. A
   transaction that is not committed is rolled back.
-- **Single-threaded.** `UndoRedoManager` is not thread-safe: use it from one logical flow, such as the UI thread.
+- **Single-threaded.** [UndoRedoManager](cref:Meziantou.Framework.UndoRedo.UndoRedoManager) is not thread-safe: use it from one logical flow, such as the UI thread.
 
 ## Namespace
 

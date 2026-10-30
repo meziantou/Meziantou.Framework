@@ -13,8 +13,8 @@ dotnet add package Meziantou.Framework.Http.Caching
 dotnet add package Meziantou.Framework.Http.Caching.InMemory
 ```
 
-`HttpCachingDelegateHandler`, `HttpCachingOptions` and `IHttpCacheStore` are in the [Meziantou.Framework.Http.Caching](cref:Meziantou.Framework.Http.Caching)
-namespace, and `InMemoryHttpCacheStore` in [Meziantou.Framework.Http.Caching.InMemory](cref:Meziantou.Framework.Http.Caching.InMemory).
+[HttpCachingDelegateHandler](cref:Meziantou.Framework.Http.Caching.HttpCachingDelegateHandler), [HttpCachingOptions](cref:Meziantou.Framework.Http.Caching.HttpCachingOptions) and [IHttpCacheStore](cref:Meziantou.Framework.Http.Caching.IHttpCacheStore) are in the [Meziantou.Framework.Http.Caching](cref:Meziantou.Framework.Http.Caching)
+namespace, and [InMemoryHttpCacheStore](cref:Meziantou.Framework.Http.Caching.InMemory.InMemoryHttpCacheStore) in [Meziantou.Framework.Http.Caching.InMemory](cref:Meziantou.Framework.Http.Caching.InMemory).
 
 ## Add the cache to an HttpClient
 
@@ -44,7 +44,7 @@ Assert.NotNull(response2.Headers.Age); // Served from the cache
 - The responses the server does not allow to store, such as `Cache-Control: no-store`, are returned unchanged and not
   stored. See [Freshness and validation](04-FreshnessAndValidation.md).
 
-`HttpCachingDelegateHandler` is a `DelegatingHandler`: the handler that sends the requests is its inner handler, usually
+[HttpCachingDelegateHandler](cref:Meziantou.Framework.Http.Caching.HttpCachingDelegateHandler) is a `DelegatingHandler`: the handler that sends the requests is its inner handler, usually
 a `SocketsHttpHandler`. Pass it to the constructor when you create the `HttpClient` yourself: without an inner handler,
 the first request fails with an `InvalidOperationException` ("The inner handler has not been assigned").
 

@@ -39,24 +39,24 @@ A log file is named `{FileNamePrefix}{timestamp}-{processId}{FileNameExtension}`
 
 | Option | Default | Description |
 | --- | --- | --- |
-| `FileNamePrefix` | `""` | Text at the start of the name |
-| `FileNameExtension` | `.log` | Extension of the name, including the dot |
-| `IncludeProcessIdInFileName` | `true` | Add `-{processId}` after the timestamp |
+| [FileNamePrefix](cref:Meziantou.Extensions.Logging.FileLoggerOptions.FileNamePrefix) | `""` | Text at the start of the name |
+| [FileNameExtension](cref:Meziantou.Extensions.Logging.FileLoggerOptions.FileNameExtension) | `.log` | Extension of the name, including the dot |
+| [IncludeProcessIdInFileName](cref:Meziantou.Extensions.Logging.FileLoggerOptions.IncludeProcessIdInFileName) | `true` | Add `-{processId}` after the timestamp |
 
-The timestamp is the time at which the file is created, in UTC, with the precision of `RollInterval`: `yyyy-MM-dd-HH`
-for `Hourly`, `yyyy-MM-dd` for `Daily`, `yyyy-MM` for `Monthly`, and `yyyy-MM-dd-HH-mm-ss` for `None`. As the timestamp
+The timestamp is the time at which the file is created, in UTC, with the precision of [RollInterval](cref:Meziantou.Extensions.Logging.RollInterval): `yyyy-MM-dd-HH`
+for [Hourly](cref:Meziantou.Extensions.Logging.RollInterval.Hourly), `yyyy-MM-dd` for [Daily](cref:Meziantou.Extensions.Logging.RollInterval.Daily), `yyyy-MM` for [Monthly](cref:Meziantou.Extensions.Logging.RollInterval.Monthly), and `yyyy-MM-dd-HH-mm-ss` for [None](cref:Meziantou.Extensions.Logging.RollInterval.None). As the timestamp
 comes first, ordering the files by name orders them chronologically.
 
 When the name is already used, for instance by another process or because the file was rolled on its size, a suffix is
-added before the extension: `_001`, `_002`, and so on. Without `Append`, every file is new, so two providers never
+added before the extension: `_001`, `_002`, and so on. Without [Append](cref:Meziantou.Extensions.Logging.FileLoggerOptions.Append), every file is new, so two providers never
 write to the same file. A compressed file also gets the extension of its algorithm: see [Compression](04-Compression.md).
 
 ## Start a new file
 
 | Option | Default | A new file is created |
 | --- | --- | --- |
-| `RollInterval` | `None` | When the hour, the day or the month changes (`Hourly`, `Daily`, `Monthly`) |
-| `MaxFileSizeInBytes` | `null` (no limit) | When the next message would make the file bigger than the limit |
+| [RollInterval](cref:Meziantou.Extensions.Logging.RollInterval) | [None](cref:Meziantou.Extensions.Logging.RollInterval.None) | When the hour, the day or the month changes ([Hourly](cref:Meziantou.Extensions.Logging.RollInterval.Hourly), [Daily](cref:Meziantou.Extensions.Logging.RollInterval.Daily), [Monthly](cref:Meziantou.Extensions.Logging.RollInterval.Monthly)) |
+| [MaxFileSizeInBytes](cref:Meziantou.Extensions.Logging.FileLoggerOptions.MaxFileSizeInBytes) | `null` (no limit) | When the next message would make the file bigger than the limit |
 
 - The periods are in UTC. A message goes to the file of the period in which it was logged, even when the background
   thread writes it after the period ended.
@@ -66,14 +66,14 @@ write to the same file. A compressed file also gets the extension of its algorit
 
 ## Keep the last files
 
-`MaxRetainedFiles` deletes the oldest files each time a new file is created, so that at most that many files remain.
+[MaxRetainedFiles](cref:Meziantou.Extensions.Logging.FileLoggerOptions.MaxRetainedFiles) deletes the oldest files each time a new file is created, so that at most that many files remain.
 The default is `null`: no file is deleted.
 
 The retention policy only considers the files whose name matches the options of the provider: its prefix and
-extension, with or without compression. When `IncludeProcessIdInFileName` is `true` (the default), it also only
+extension, with or without compression. When [IncludeProcessIdInFileName](cref:Meziantou.Extensions.Logging.FileLoggerOptions.IncludeProcessIdInFileName) is `true` (the default), it also only
 considers the files that have the identifier of the current process in their name. That keeps it from deleting the
 files that another process writes in the same directory, but also means **the files of the previous runs of the
-application are never deleted**. Set `IncludeProcessIdInFileName` to `false`, as in the example above, to limit the
+application are never deleted**. Set [IncludeProcessIdInFileName](cref:Meziantou.Extensions.Logging.FileLoggerOptions.IncludeProcessIdInFileName) to `false`, as in the example above, to limit the
 number of files across restarts.
 
 The file being written is never deleted, and a file that cannot be deleted, for instance because another process uses
@@ -81,7 +81,7 @@ it, is left in place.
 
 ## Append to an existing file
 
-By default, the provider creates a new file every time it starts. `Append` reuses an existing file instead:
+By default, the provider creates a new file every time it starts. [Append](cref:Meziantou.Extensions.Logging.FileLoggerOptions.Append) reuses an existing file instead:
 
 <!-- ref:../../../tests/Meziantou.Extensions.Logging.FileLogger.Tests/FileLoggerProviderTests.cs;region=FileLogger_Append;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -93,9 +93,9 @@ options.IncludeProcessIdInFileName = false; // Required to reuse the file after 
 
 A file is reused only when its name is the one the provider computes when it starts, so the name must be stable:
 
-- `RollInterval` must be set: with `RollInterval.None`, the name contains the seconds, so it changes on every start.
-- `IncludeProcessIdInFileName` must be `false`, as the identifier of the process changes on every start.
+- [RollInterval](cref:Meziantou.Extensions.Logging.RollInterval) must be set: with [RollInterval.None](cref:Meziantou.Extensions.Logging.RollInterval.None), the name contains the seconds, so it changes on every start.
+- [IncludeProcessIdInFileName](cref:Meziantou.Extensions.Logging.FileLoggerOptions.IncludeProcessIdInFileName) must be `false`, as the identifier of the process changes on every start.
 
-With the default values of these two options, a new file is created on every start even when `Append` is `true`. A
-file that another process is writing, or that already reached `MaxFileSizeInBytes`, is not reused either: the next name
-is used. `Append` is ignored when the files are compressed as they are written.
+With the default values of these two options, a new file is created on every start even when [Append](cref:Meziantou.Extensions.Logging.FileLoggerOptions.Append) is `true`. A
+file that another process is writing, or that already reached [MaxFileSizeInBytes](cref:Meziantou.Extensions.Logging.FileLoggerOptions.MaxFileSizeInBytes), is not reused either: the next name
+is used. [Append](cref:Meziantou.Extensions.Logging.FileLoggerOptions.Append) is ignored when the files are compressed as they are written.

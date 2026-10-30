@@ -3,8 +3,8 @@ title: Matching requests
 description: Match requests by method, path, route parameters and query string, and by scheme, host and port with absolute URLs.
 ---
 
-Each `Map*` method maps one HTTP method: `MapGet`, `MapPost`, `MapPut`, `MapPatch`, `MapDelete`, `MapHead` and
-`MapOptions`. The first argument is the URL to match; the second is the handler, either a delegate whose parameters
+Each `Map*` method maps one HTTP method: [MapGet](cref:Meziantou.Framework.HttpClientMock.MapGet), [MapPost](cref:Meziantou.Framework.HttpClientMock.MapPost), [MapPut](cref:Meziantou.Framework.HttpClientMock.MapPut), [MapPatch](cref:Meziantou.Framework.HttpClientMock.MapPatch), [MapDelete](cref:Meziantou.Framework.HttpClientMock.MapDelete), [MapHead](cref:Meziantou.Framework.HttpClientMock.MapHead) and
+[MapOptions](cref:Meziantou.Framework.HttpClientMock.MapOptions). The first argument is the URL to match; the second is the handler, either a delegate whose parameters
 are bound as in a minimal API, or a `RequestDelegate` that takes the `HttpContext`.
 
 ## Paths and route parameters
@@ -92,8 +92,8 @@ A URL with a fragment (`#section`) is rejected with an `ArgumentException`: the 
 
 ## Use the full ASP.NET Core routing
 
-The `Application` property returns the `WebApplication` that runs the mock. Use it for what the `Map*` methods do not
+The [Application](cref:Meziantou.Framework.HttpClientMock.Application) property returns the `WebApplication` that runs the mock. Use it for what the `Map*` methods do not
 cover, such as `Application.MapFallback(...)` or `Application.MapMethods(...)` with several methods. Endpoints mapped
-on `Application` directly do not get the scheme and query string matching described above.
+on [Application](cref:Meziantou.Framework.HttpClientMock.Application) directly do not get the scheme and query string matching described above.
 
 Every `Map*` method returns the `IEndpointConventionBuilder` of the endpoint, as in ASP.NET Core.

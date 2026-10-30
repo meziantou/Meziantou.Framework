@@ -5,7 +5,7 @@ description: Catch the errors of the scripts, find where they were thrown, and t
 
 ## Catch the errors of a script
 
-An error that a script does not catch is thrown to .NET as a `JsException`:
+An error that a script does not catch is thrown to .NET as a [JsException](cref:Meziantou.Framework.JavaScriptEngine.JsException):
 
 <!-- ref:../../../tests/Meziantou.Framework.JavaScriptEngine.Tests/JsEngineTests.cs;region=JavaScriptEngine_CatchErrors;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -31,24 +31,24 @@ Assert.Equal(42, exception.Value.AsNumber());
 ```
 <!-- endref -->
 
-- `Value` is the thrown value. A script can throw any value, not only errors: check its kind before you read it.
+- [Value](cref:Meziantou.Framework.JavaScriptEngine.JsException.Value) is the thrown value. A script can throw any value, not only errors: check its kind before you read it.
 - `Message` describes the thrown value without running code of the script: the `name` and the `message` of an error
   (`RangeError: The order has no id`), or `Uncaught` and the value for anything else (`Uncaught 42`).
-- `Location` is the position of the `throw` (or of the operation that failed), with the URL given to `Execute`. Lines
+- [Location](cref:Meziantou.Framework.JavaScriptEngine.JsException.Location) is the position of the `throw` (or of the operation that failed), with the URL given to [Execute](cref:Meziantou.Framework.JavaScriptEngine.JsRealm.Execute). Lines
   and columns are 1-based.
-- `GetErrorStack` returns the `stack` of an error object. Its first frame is where the error object was created
+- [GetErrorStack](cref:Meziantou.Framework.JavaScriptEngine.JsObject.GetErrorStack) returns the `stack` of an error object. Its first frame is where the error object was created
   (`new RangeError(...)`), which can differ from the position of the `throw`.
 
-The same exception comes from `JsEngine.Call`, `JsEngine.Construct`, and from the conversions that run code of the
+The same exception comes from [JsEngine.Call](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.Call), [JsEngine.Construct](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.Construct), and from the conversions that run code of the
 script, such as `engine.ToString` calling a `toString` method that throws.
 
 ## The exceptions of the engine
 
 | Exception | When |
 | --- | --- |
-| `JsException` | A script threw a value that it did not catch, or the code is not valid (a `SyntaxError`). |
-| `JsSyntaxErrorException` | `JsPreparedScript.Parse` got a script that is not valid. See [Scripts](02-Scripts.md#check-the-syntax-of-a-script). |
-| `JsTerminationException` | A limit stopped the script, or it was canceled. See [Limits and sandboxing](../07-LimitsAndSandboxing.md). |
+| [JsException](cref:Meziantou.Framework.JavaScriptEngine.JsException) | A script threw a value that it did not catch, or the code is not valid (a [SyntaxError](cref:Meziantou.Framework.JavaScriptEngine.JsErrorType.SyntaxError)). |
+| [JsSyntaxErrorException](cref:Meziantou.Framework.JavaScriptEngine.JsSyntaxErrorException) | [JsPreparedScript.Parse](cref:Meziantou.Framework.JavaScriptEngine.JsPreparedScript.Parse) got a script that is not valid. See [Scripts](02-Scripts.md#check-the-syntax-of-a-script). |
+| [JsTerminationException](cref:Meziantou.Framework.JavaScriptEngine.JsTerminationException) | A limit stopped the script, or it was canceled. See [Limits and sandboxing](../07-LimitsAndSandboxing.md). |
 
 ## Throw a JavaScript error from .NET
 
@@ -79,16 +79,16 @@ Assert.Equal("TypeError: Invalid age: abc", realm.Execute("try { parseAge('abc')
 ```
 <!-- endref -->
 
-- `JsErrorType` gives the native error types: `Error`, `TypeError`, `RangeError`, `SyntaxError`, `ReferenceError`,
-  `EvalError` and `UriError`. Prefer the type that a built-in would throw: `TypeError` for an argument of the wrong
-  type, `RangeError` for a value out of range.
+- [JsErrorType](cref:Meziantou.Framework.JavaScriptEngine.JsErrorType) gives the native error types: [Error](cref:Meziantou.Framework.JavaScriptEngine.JsErrorType.Error), [TypeError](cref:Meziantou.Framework.JavaScriptEngine.JsErrorType.TypeError), [RangeError](cref:Meziantou.Framework.JavaScriptEngine.JsErrorType.RangeError), [SyntaxError](cref:Meziantou.Framework.JavaScriptEngine.JsErrorType.SyntaxError), [ReferenceError](cref:Meziantou.Framework.JavaScriptEngine.JsErrorType.ReferenceError),
+  [EvalError](cref:Meziantou.Framework.JavaScriptEngine.JsErrorType.EvalError) and [UriError](cref:Meziantou.Framework.JavaScriptEngine.JsErrorType.UriError). Prefer the type that a built-in would throw: [TypeError](cref:Meziantou.Framework.JavaScriptEngine.JsErrorType.TypeError) for an argument of the wrong
+  type, [RangeError](cref:Meziantou.Framework.JavaScriptEngine.JsErrorType.RangeError) for a value out of range.
 - `realm.CreateError` creates the error object without throwing it, for instance to reject a promise.
 - To throw any other value, throw `new JsException(value)`.
 
 ## Exceptions that are not JavaScript errors
 
 Any other .NET exception thrown by a .NET function is not a JavaScript error. The script cannot catch it: it goes
-through the script, without running its `catch` blocks, to the code that called `Execute`:
+through the script, without running its `catch` blocks, to the code that called [Execute](cref:Meziantou.Framework.JavaScriptEngine.JsRealm.Execute):
 
 <!-- ref:../../../tests/Meziantou.Framework.JavaScriptEngine.Tests/JsEngineTests.cs;region=JavaScriptEngine_DotNetExceptions;format=md-fenced-code-block;dedent=true -->
 ```csharp

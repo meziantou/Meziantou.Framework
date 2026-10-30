@@ -20,13 +20,13 @@ definition.Labels.Add("com.example.suite", "integration");
 
 | Setting | Effect |
 | --- | --- |
-| `Entrypoint` | Replaces the entrypoint of the image. Each item is one argument. |
-| `Command` | The command passed to the entrypoint, one argument per item. |
-| `Environment` | The environment variables. `Add` replaces a variable that is already set; `GetValue`, `Contains` and `Remove` read and remove them. |
-| `User` | The user the container runs as (`name`, `uid` or `uid:gid`). |
-| `WorkingDirectory` | The working directory inside the container. |
-| `Hostname` | The hostname of the container. |
-| `Labels` | Labels added to the container, for your own tools. |
+| [Entrypoint](cref:Meziantou.Framework.TemporaryContainers.ContainerDefinition.Entrypoint) | Replaces the entrypoint of the image. Each item is one argument. |
+| [Command](cref:Meziantou.Framework.TemporaryContainers.ContainerDefinition.Command) | The command passed to the entrypoint, one argument per item. |
+| [Environment](cref:Meziantou.Framework.TemporaryContainers.ContainerDefinition.Environment) | The environment variables. [Add](cref:Meziantou.Framework.TemporaryContainers.ContainerEnvironmentCollection.Add) replaces a variable that is already set; [GetValue](cref:Meziantou.Framework.TemporaryContainers.ContainerEnvironmentCollection.GetValue), [Contains](cref:Meziantou.Framework.TemporaryContainers.ContainerEnvironmentCollection.Contains) and [Remove](cref:Meziantou.Framework.TemporaryContainers.ContainerEnvironmentCollection.Remove) read and remove them. |
+| [User](cref:Meziantou.Framework.TemporaryContainers.ContainerDefinition.User) | The user the container runs as (`name`, `uid` or `uid:gid`). |
+| [WorkingDirectory](cref:Meziantou.Framework.TemporaryContainers.ContainerDefinition.WorkingDirectory) | The working directory inside the container. |
+| [Hostname](cref:Meziantou.Framework.TemporaryContainers.ContainerDefinition.Hostname) | The hostname of the container. |
+| [Labels](cref:Meziantou.Framework.TemporaryContainers.ContainerDefinition.Labels) | Labels added to the container, for your own tools. |
 
 Each argument is passed as is, without a shell: to use shell syntax (`&&`, variables), run a shell as in the example.
 
@@ -44,8 +44,8 @@ definition.Resources.ReadOnlyRootFilesystem = true;
 ```
 <!-- endref -->
 
-- `MemoryLimit` is in bytes, and `CpuLimit` is a number of CPUs, which can be fractional.
-- `ReadOnlyRootFilesystem` makes the file system of the image read-only. Mount a [tmpfs](05-VolumesAndMounts.md) where
+- [MemoryLimit](cref:Meziantou.Framework.TemporaryContainers.ContainerResourceOptions.MemoryLimit) is in bytes, and [CpuLimit](cref:Meziantou.Framework.TemporaryContainers.ContainerResourceOptions.CpuLimit) is a number of CPUs, which can be fractional.
+- [ReadOnlyRootFilesystem](cref:Meziantou.Framework.TemporaryContainers.ContainerResourceOptions.ReadOnlyRootFilesystem) makes the file system of the image read-only. Mount a [tmpfs](05-VolumesAndMounts.md) where
   the service needs to write.
 
 ## Network
@@ -65,5 +65,5 @@ The library does not create networks: create the network with the runtime first,
 
 ## Runtime differences
 
-Apple's `container` cannot set `Hostname` or `Network.Alias`. See [Container runtimes](../06-Runtimes.md) for the other
+Apple's `container` cannot set [Hostname](cref:Meziantou.Framework.TemporaryContainers.ContainerDefinition.Hostname) or `Network.Alias`. See [Container runtimes](../06-Runtimes.md) for the other
 differences.

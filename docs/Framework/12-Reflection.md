@@ -8,7 +8,7 @@ marked with `RequiresUnreferencedCode`, so the trim analyzer warns when you call
 
 ## Call private members
 
-`ReflectionDynamicObject` wraps an object, or a type, in a `dynamic` object that reaches its private members. Use it in
+[ReflectionDynamicObject](cref:Meziantou.Framework.ReflectionDynamicObject) wraps an object, or a type, in a `dynamic` object that reaches its private members. Use it in
 tests, or to call a member of a library that is not public:
 
 <!-- ref:../../tests/Meziantou.Framework.Tests/ReflectionDynamicObjectTests.cs;region=ReflectionDynamicObject_PrivateMembers;format=md-fenced-code-block;dedent=true -->
@@ -56,7 +56,7 @@ private sealed class Counter
 
 - Wrap an instance to reach its fields, properties, indexers and methods, public or not, including the ones declared by
   its base types.
-- Wrap a `Type` to reach its static members, and to create an instance with `CreateInstance`. `CreateInstance` tries the
+- Wrap a `Type` to reach its static members, and to create an instance with [CreateInstance](cref:Meziantou.Framework.ReflectionDynamicObject.CreateInstance). [CreateInstance](cref:Meziantou.Framework.ReflectionDynamicObject.CreateInstance) tries the
   public constructors that have as many parameters as the arguments, and throws an `ArgumentException` when none of them
   accepts them.
 - The values are `dynamic`: cast them when an overload must be chosen, as in `(string)counterType.Name`.
@@ -79,7 +79,7 @@ Assert.True(method.GetParameters()[1].HasCustomAttribute<ParamArrayAttribute>())
 ```
 <!-- endref -->
 
-`HasCustomAttribute` exists for `Type`, `MemberInfo`, `ParameterInfo`, `Module` and `Assembly`, with the attribute type as
+[HasCustomAttribute](cref:Meziantou.Framework.CustomAttributeExtensions.HasCustomAttribute) exists for `Type`, `MemberInfo`, `ParameterInfo`, `Module` and `Assembly`, with the attribute type as
 a generic argument or as a `Type`. It does not search the base types unless you pass `inherit: true`.
 
 ## Read assembly information
@@ -97,12 +97,12 @@ Assert.Throws<ArgumentException>(() => assembly.GetRequiredManifestResourceStrea
 ```
 <!-- endref -->
 
-- `GetInformationalVersion` returns the value of `AssemblyInformationalVersionAttribute`, the version you usually show in
+- [GetInformationalVersion](cref:Meziantou.Framework.AssemblyUtilities.GetInformationalVersion) returns the value of `AssemblyInformationalVersionAttribute`, the version you usually show in
   an "About" screen, or `null` when the assembly has none.
 - `GetRequiredManifestResourceStream(name)` and `GetRequiredManifestResourceStream(type, name)` return an embedded
   resource, like `Assembly.GetManifestResourceStream`, but throw an `ArgumentException` that lists the available resource
   names instead of returning `null`. The overload with a type looks for the resource in the namespace of the type.
-- `GetLinkerTimestampUtc` reads the build date stored in the header of the file. Deterministic builds, the default of
+- [GetLinkerTimestampUtc](cref:Meziantou.Framework.AssemblyUtilities.GetLinkerTimestampUtc) reads the build date stored in the header of the file. Deterministic builds, the default of
   the .NET SDK, store a hash there instead of a date: the method then returns `null`.
 
 ## Inspect types and methods
@@ -125,13 +125,13 @@ Assert.Null(ReflectionUtilities.GetImplicitConversion(42, typeof(long)));
 ```
 <!-- endref -->
 
-- `IsNullableOfT` tells whether a type is a `Nullable<T>`, such as `int?`.
-- `IsFlagsEnum` tells whether a type is an enum marked with `[Flags]`. It returns `false` for any other type.
+- [IsNullableOfT](cref:Meziantou.Framework.ReflectionUtilities.IsNullableOfT) tells whether a type is a `Nullable<T>`, such as `int?`.
+- [IsFlagsEnum](cref:Meziantou.Framework.ReflectionUtilities.IsFlagsEnum) tells whether a type is an enum marked with `[Flags]`. It returns `false` for any other type.
 - `GetImplicitConversion(value, targetType)` returns the `op_Implicit` operator that the type of the value declares to
   convert it to the target type, or `null`. It does not see operators declared by the target type, nor the conversions
   built into the language.
 
-`GetMethodLocation` finds the source file and the first line of a method, from the portable PDB of its assembly, embedded
+[GetMethodLocation](cref:Meziantou.Framework.ReflectionUtilities.GetMethodLocation) finds the source file and the first line of a method, from the portable PDB of its assembly, embedded
 or next to the file:
 
 <!-- ref:../../tests/Meziantou.Framework.Tests/ReflectionUtilitiesTests.cs;region=ReflectionUtilities_GetMethodLocation;format=md-fenced-code-block;dedent=true -->
@@ -147,11 +147,11 @@ Assert.True(location.Value.SequencePoint.StartLine > 0);
 <!-- endref -->
 
 It returns `null` when the assembly has no file, as in a single-file or Native AOT application, when the PDB cannot be
-found, or when the method has no source information. `GetMethodLocationAsync` reads the assembly file asynchronously.
+found, or when the method has no source information. [GetMethodLocationAsync](cref:Meziantou.Framework.ReflectionUtilities.GetMethodLocationAsync) reads the assembly file asynchronously.
 
 ## Parse enums
 
-`EnumExtensions` adds `Parse` and `TryParse` to every enum type, with the case sensitivity as a parameter. They accept a
+[EnumExtensions](cref:Meziantou.Framework.EnumExtensions) adds [Parse](cref:Meziantou.Framework.EnumExtensions.Parse) and [TryParse](cref:Meziantou.Framework.EnumExtensions.TryParse) to every enum type, with the case sensitivity as a parameter. They accept a
 string or a `ReadOnlySpan<char>`:
 
 <!-- ref:../../tests/Meziantou.Framework.Tests/ReflectionUtilitiesTests.cs;region=EnumExtensions_Parse;format=md-fenced-code-block;dedent=true -->
@@ -170,7 +170,7 @@ combinations of names of a `[Flags]` enum.
 
 ## Combine expressions
 
-`AndAlso`, `OrElse` and `Negate` combine `Expression<Func<T, bool>>` predicates into a new predicate, for instance to
+[AndAlso](cref:Meziantou.Framework.ExpressionExtensions.AndAlso), [OrElse](cref:Meziantou.Framework.ExpressionExtensions.OrElse) and [Negate](cref:Meziantou.Framework.ExpressionExtensions.Negate) combine `Expression<Func<T, bool>>` predicates into a new predicate, for instance to
 build a query filter from optional criteria:
 
 <!-- ref:../../tests/Meziantou.Framework.Tests/ExpressionExtensions.cs;region=ExpressionExtensions_Combine;format=md-fenced-code-block;dedent=true -->
@@ -195,7 +195,7 @@ provider can translate, not an invocation of the original expressions.
 
 ## Evaluate a property path
 
-`DataBinder.Eval` reads a value from a path of properties given as a string, such as a path read from a template:
+[DataBinder.Eval](cref:Meziantou.Framework.DataBinder.Eval) reads a value from a path of properties given as a string, such as a path read from a template:
 
 <!-- ref:../../tests/Meziantou.Framework.Tests/DataBinderTests.cs;region=DataBinder_Eval;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -223,16 +223,16 @@ Assert.Equal("Order #42", DataBinder.Eval(order, "Number", "Order #{0}"));
 - The parts of the path are separated by dots. Property names are case-insensitive.
 - An index is written between `[]` or `()`: a number for arrays and lists, a number or a quoted string for any type with
   an indexer, such as a dictionary.
-- `Eval` returns `null` when the container or an intermediate value is `null`. A property that does not exist throws an
+- [Eval](cref:Meziantou.Framework.DataBinder.Eval) returns `null` when the container or an intermediate value is `null`. A property that does not exist throws an
   `ArgumentException`.
 - The overload with a format returns a string: an empty string for `null`, otherwise the value formatted with
   `string.Format` and the current culture.
-- `GetPropertyValue` and `GetIndexedPropertyValue` evaluate one part of a path.
+- [GetPropertyValue](cref:Meziantou.Framework.DataBinder.GetPropertyValue) and [GetIndexedPropertyValue](cref:Meziantou.Framework.DataBinder.GetIndexedPropertyValue) evaluate one part of a path.
 
 ## Walk an object graph
 
-`ObjectGraphVisitor` walks an object and everything it references: the values of its public properties and the items of
-its collections, recursively. Derive from it and override `VisitValue`, called once for every object, or `VisitProperty`,
+[ObjectGraphVisitor](cref:Meziantou.Framework.ObjectGraphVisitor) walks an object and everything it references: the values of its public properties and the items of
+its collections, recursively. Derive from it and override [VisitValue](cref:Meziantou.Framework.ObjectGraphVisitor.VisitValue), called once for every object, or [VisitProperty](cref:Meziantou.Framework.ObjectGraphVisitor.VisitProperty),
 called for every property with its value:
 
 <!-- ref:../../tests/Meziantou.Framework.Tests/ObjectGraphVisitorTests.cs;region=ObjectGraphVisitor_StringCollector;format=md-fenced-code-block;dedent=true -->

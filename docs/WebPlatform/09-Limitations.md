@@ -8,7 +8,7 @@ The library implements most of the web platform, but it is not a complete browse
 ## Display and input
 
 - **No window.** The pages are rendered into images: your application takes the screenshots and plays the user with
-  `BrowsingContext.Input` (see [User input](05-LoadingPages/06-UserInput.md)). There is no pinch zoom.
+  [BrowsingContext.Input](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContext.Input) (see [User input](05-LoadingPages/06-UserInput.md)). There is no pinch zoom.
 - **Layout.** The layout engine is internal: its results are read through the web APIs (CSSOM View, the computed styles,
   the observers). The features that are not implemented are listed in the
   [readme of the package](https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/readme.md#limitations).
@@ -18,7 +18,7 @@ The library implements most of the web platform, but it is not a complete browse
 ## Media and network
 
 - **Audio and video are not decoded.** The media elements run on a media backend that your application provides
-  (`BrowsingContextOptions.MediaBackend`); without it, they have no media. The media controls and Encrypted Media are not
+  ([BrowsingContextOptions.MediaBackend](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.MediaBackend)); without it, they have no media. The media controls and Encrypted Media are not
   implemented.
 - **No downloads**, and the third-party cookies are not blocked.
 - **Nothing is fetched** without a [document loader](05-LoadingPages/02-NetworkRequests.md), and no script runs without a
@@ -33,7 +33,7 @@ The library implements most of the web platform, but it is not a complete browse
 
 ## Experimental APIs
 
-The members that implement proposals that no specification defines yet (such as `Element.StreamAppendHtml()`) have the
+The members that implement proposals that no specification defines yet (such as [Element.StreamAppendHtml()](cref:Meziantou.Framework.WebPlatform.Dom.Element.StreamAppendHtml)) have the
 `[Experimental]` attribute: using them reports an error with a diagnostic per feature (`WEBPLATEXP0002`...), which you
 suppress to use them (`<NoWarn>$(NoWarn);WEBPLATEXP0002</NoWarn>`). They may change or be removed when the proposal
 changes.

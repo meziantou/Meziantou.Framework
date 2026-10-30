@@ -5,7 +5,7 @@ description: Start the Playwright server in your process or in an ASP.NET Core a
 
 ## Start the server
 
-`PlaywrightServer` listens on a TCP port of its own. `StartAsync` starts it and `WsEndpoint` is the address the clients
+[PlaywrightServer](cref:Meziantou.Framework.WebPlatform.Playwright.PlaywrightServer) listens on a TCP port of its own. [StartAsync](cref:Meziantou.Framework.WebPlatform.Playwright.PlaywrightServer.StartAsync) starts it and [WsEndpoint](cref:Meziantou.Framework.WebPlatform.Playwright.PlaywrightServer.WsEndpoint) is the address the clients
 connect to:
 
 <!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Playwright.Tests/PlaywrightServerTests.cs;region=PlaywrightServer_Connect;format=md-fenced-code-block;dedent=true -->
@@ -29,20 +29,20 @@ var screenshot = await page.ScreenshotAsync();
 ```
 <!-- endref -->
 
-| `PlaywrightServerOptions` | Default | Effect |
+| [PlaywrightServerOptions](cref:Meziantou.Framework.WebPlatform.Playwright.PlaywrightServerOptions) | Default | Effect |
 | --- | --- | --- |
-| `BindAddress`, `Port`, `Path` | loopback, a free port, `/` | Where the server listens |
-| `DocumentLoader` | none | The network requests of the pages (see below) |
-| `ScriptEngineOptions` | the default limits | The [limits of the scripts](../06-Scripting/04-RunningUntrustedPages.md) |
-| `UseSystemFonts` | false | The pages can use the fonts installed on the machine |
-| `BrowserName` | `chromium` | The name of the browser reported to the clients |
-| `AllowAnyClientVersion` | false | Accepts the clients of another version of Playwright |
-| `MaxConnections` | none | The number of clients connected at the same time |
+| [BindAddress](cref:Meziantou.Framework.WebPlatform.Playwright.PlaywrightServerOptions.BindAddress), [Port](cref:Meziantou.Framework.WebPlatform.Playwright.PlaywrightServerOptions.Port), [Path](cref:Meziantou.Framework.WebPlatform.Playwright.PlaywrightServerOptions.Path) | loopback, a free port, `/` | Where the server listens |
+| [DocumentLoader](cref:Meziantou.Framework.WebPlatform.Dom.DocumentLoader) | none | The network requests of the pages (see below) |
+| [ScriptEngineOptions](cref:Meziantou.Framework.WebPlatform.Playwright.PlaywrightServerOptions.ScriptEngineOptions) | the default limits | The [limits of the scripts](../06-Scripting/04-RunningUntrustedPages.md) |
+| [UseSystemFonts](cref:Meziantou.Framework.WebPlatform.Playwright.PlaywrightServerOptions.UseSystemFonts) | false | The pages can use the fonts installed on the machine |
+| [BrowserName](cref:Meziantou.Framework.WebPlatform.Playwright.PlaywrightServerOptions.BrowserName) | `chromium` | The name of the browser reported to the clients |
+| [AllowAnyClientVersion](cref:Meziantou.Framework.WebPlatform.Playwright.PlaywrightServerOptions.AllowAnyClientVersion) | false | Accepts the clients of another version of Playwright |
+| [MaxConnections](cref:Meziantou.Framework.WebPlatform.Playwright.PlaywrightServerOptions.MaxConnections) | none | The number of clients connected at the same time |
 
 ## Let the pages use the network
 
 By default, nothing is fetched: the pages only use the content of `SetContentAsync()` and the responses of the routes
-(`page.RouteAsync()`). Set a `DocumentLoader` to let them load documents and resources:
+(`page.RouteAsync()`). Set a [DocumentLoader](cref:Meziantou.Framework.WebPlatform.Dom.DocumentLoader) to let them load documents and resources:
 
 <!-- ref:../../../samples/Meziantou.Framework.WebPlatform.Playwright.Samples/ReadmeExamples.cs;region=PlaywrightServer_AllowNetworkRequests;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -93,10 +93,10 @@ await app.RunAsync();
 ```
 <!-- endref -->
 
-`PlaywrightServer.IsCompatibleClient` checks the version of the client from its `User-Agent` header before the connection
+[PlaywrightServer.IsCompatibleClient](cref:Meziantou.Framework.WebPlatform.Playwright.PlaywrightServer.IsCompatibleClient) checks the version of the client from its `User-Agent` header before the connection
 is accepted.
 
 ## Security
 
 The scripts of the pages run in the process of the server, and a client can make the server request any URL that the
-`DocumentLoader` allows. Expose the server to trusted clients only: the default `BindAddress` is the loopback address.
+[DocumentLoader](cref:Meziantou.Framework.WebPlatform.Dom.DocumentLoader) allows. Expose the server to trusted clients only: the default [BindAddress](cref:Meziantou.Framework.WebPlatform.Playwright.PlaywrightServerOptions.BindAddress) is the loopback address.

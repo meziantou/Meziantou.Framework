@@ -3,7 +3,7 @@ title: Hash algorithms
 description: Choose the hash algorithm of a filter, and the limits of the 32-bit algorithms and of Adler-32.
 ---
 
-Each hash algorithm has its factory method, on `BloomFilter` and on `CountingBloomFilter`:
+Each hash algorithm has its factory method, on [BloomFilter](cref:Meziantou.Framework.BloomFilters.BloomFilter) and on [CountingBloomFilter](cref:Meziantou.Framework.BloomFilters.CountingBloomFilter):
 
 | Factory method | Hash | Width |
 | --- | --- | --- |

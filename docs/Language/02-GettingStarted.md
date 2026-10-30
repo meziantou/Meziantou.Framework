@@ -17,7 +17,7 @@ It brings `Meziantou.Framework.Language`, the package every language shares.
 
 ## Parse a document
 
-`JsonSyntaxTree.ParseText` parses a string. The tree keeps every character, comments and trailing commas included, so
+[JsonSyntaxTree.ParseText](cref:Meziantou.Framework.Language.Json.JsonSyntaxTree.ParseText) parses a string. The tree keeps every character, comments and trailing commas included, so
 writing it back gives the input exactly:
 
 <!-- ref:../../tests/Meziantou.Framework.Language.Json.Tests/JsonSyntaxTreeTests.cs;region=JsonSyntaxTree_Overview;format=md-fenced-code-block;dedent=true -->
@@ -38,11 +38,11 @@ Assert.Equal(tree.GetText().Text, tree.GetRoot().ToFullString());
 ```
 <!-- endref -->
 
-`GetText()` returns the text the tree was parsed from, and `GetRoot()` the root node: a `JsonDocumentSyntax`.
-`ToFullString()` writes a node back as text, with its whitespace and comments. To write it to a file or a stream, pass a
-`TextWriter` to `WriteTo`.
+[GetText()](cref:Meziantou.Framework.Language.SyntaxTree.GetText) returns the text the tree was parsed from, and [GetRoot()](cref:Meziantou.Framework.Language.Json.JsonSyntaxTree.GetRoot) the root node: a [JsonDocumentSyntax](cref:Meziantou.Framework.Language.Json.JsonDocumentSyntax).
+[ToFullString()](cref:Meziantou.Framework.Language.SyntaxNode.ToFullString) writes a node back as text, with its whitespace and comments. To write it to a file or a stream, pass a
+`TextWriter` to [WriteTo](cref:Meziantou.Framework.Language.SyntaxNode.WriteTo).
 
-Pass the path of the file as the second argument of `ParseText`: the tree keeps it in `FilePath`, so you can report
+Pass the path of the file as the second argument of [ParseText](cref:Meziantou.Framework.Language.Json.JsonSyntaxTree.ParseText): the tree keeps it in [FilePath](cref:Meziantou.Framework.Language.SyntaxTree.FilePath), so you can report
 problems with the file they come from.
 
 ## Read a value
@@ -62,7 +62,7 @@ See [Nodes and tokens](03-Concepts/02-NodesAndTokens.md) to walk a tree and find
 
 ## Report the problems
 
-Parsing never throws: invalid text gives a tree too, and `GetDiagnostics()` says what is wrong and where. Lines and
+Parsing never throws: invalid text gives a tree too, and [GetDiagnostics()](cref:Meziantou.Framework.Language.SyntaxTree.GetDiagnostics) says what is wrong and where. Lines and
 columns are zero-based:
 
 <!-- ref:../../tests/Meziantou.Framework.Language.Json.Tests/JsonSyntaxTreeTests.cs;region=JsonSyntaxTree_Diagnostics;format=md-fenced-code-block;dedent=true -->
@@ -82,7 +82,7 @@ See [Diagnostics](03-Concepts/05-Diagnostics.md).
 
 ## Change a value
 
-Trees are immutable: `ReplaceNode` returns a new root, in which only the replaced node differs. The rest of the text,
+Trees are immutable: [ReplaceNode](cref:Meziantou.Framework.Language.SyntaxNodeExtensions.ReplaceNode) returns a new root, in which only the replaced node differs. The rest of the text,
 spaces and comments included, is kept as it was:
 
 <!-- ref:../../tests/Meziantou.Framework.Language.Json.Tests/JsonSyntaxTreeTests.cs;region=JsonSyntaxTree_Editing;format=md-fenced-code-block;dedent=true -->
@@ -96,7 +96,7 @@ Assert.Equal("""{ "version": "2.0.0", "other": 1 }""", updated.ToFullString());
 ```
 <!-- endref -->
 
-`SyntaxFactory` builds new nodes, and writes them so that they read back as the value you gave. See
+[SyntaxFactory](cref:Meziantou.Framework.Language.Json.SyntaxFactory) builds new nodes, and writes them so that they read back as the value you gave. See
 [Editing trees](03-Concepts/06-EditingTrees.md).
 
 ## Next steps

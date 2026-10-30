@@ -5,7 +5,7 @@ description: Pass the arguments of the method, and keep default values with the 
 
 ## Pass the arguments
 
-`Execute` and `ExecuteAsync` take the arguments as an `object?[]`, with exactly one entry per parameter of the method, in
+[Execute](cref:Meziantou.Framework.ObjectMethodExecutor.Execute) and [ExecuteAsync](cref:Meziantou.Framework.ObjectMethodExecutor.ExecuteAsync) take the arguments as an `object?[]`, with exactly one entry per parameter of the method, in
 order. A wrong number of arguments throws an `ArgumentException`. For a method without parameters, `null` and an empty
 array are both accepted.
 
@@ -28,6 +28,6 @@ Assert.Equal(105, await executor.ExecuteAsync(new Sample(), parameters));
 ```
 <!-- endref -->
 
-The executor never reads these values: they are only stored for the caller. `Create` throws an `ArgumentException` when
-the array does not have one entry per parameter, and `GetDefaultValueForParameter` throws an
+The executor never reads these values: they are only stored for the caller. [Create](cref:Meziantou.Framework.ObjectMethodExecutor.Create) throws an `ArgumentException` when
+the array does not have one entry per parameter, and [GetDefaultValueForParameter](cref:Meziantou.Framework.ObjectMethodExecutor.GetDefaultValueForParameter) throws an
 `InvalidOperationException` when the executor was created without default values.

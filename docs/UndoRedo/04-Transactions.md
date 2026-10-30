@@ -28,11 +28,11 @@ Assert.Empty(list);
 ```
 <!-- endref -->
 
-- `CreateTransaction` opens a transaction. The actions recorded with `RecordActionAsync` until it is completed belong to
+- [CreateTransaction](cref:Meziantou.Framework.UndoRedo.UndoRedoManager.CreateTransaction) opens a transaction. The actions recorded with [RecordActionAsync](cref:Meziantou.Framework.UndoRedo.UndoRedoManager.RecordActionAsync) until it is completed belong to
   it.
-- `CommitAsync` adds the transaction to the undo history as one step. A transaction without actions adds nothing.
-- `UndoAsync` reverts the actions of the transaction, most recent first, and `RedoAsync` applies them again, in order.
-- Set `Description` on the transaction to label the step in the undo history.
+- [CommitAsync](cref:Meziantou.Framework.UndoRedo.UndoRedoTransaction.CommitAsync) adds the transaction to the undo history as one step. A transaction without actions adds nothing.
+- [UndoAsync](cref:Meziantou.Framework.UndoRedo.UndoRedoManager.UndoAsync) reverts the actions of the transaction, most recent first, and [RedoAsync](cref:Meziantou.Framework.UndoRedo.UndoRedoManager.RedoAsync) applies them again, in order.
+- Set [Description](cref:Meziantou.Framework.UndoRedo.UndoRedoTransaction.Description) on the transaction to label the step in the undo history.
 
 **A transaction must be committed to be kept.** Disposing it without committing it rolls it back, so an exception that
 leaves the `using` block discards the changes instead of recording half of them:
@@ -66,19 +66,19 @@ Assert.False(manager.CanUndo);
 ```
 <!-- endref -->
 
-While a transaction is open, `CanUndo` and `CanRedo` are `false`, and `UndoAsync`, `RedoAsync` and `Clear` throw an
-`InvalidOperationException`. `TransactionDepth` gives the number of open transactions.
+While a transaction is open, [CanUndo](cref:Meziantou.Framework.UndoRedo.UndoRedoManager.CanUndo) and [CanRedo](cref:Meziantou.Framework.UndoRedo.UndoRedoManager.CanRedo) are `false`, and [UndoAsync](cref:Meziantou.Framework.UndoRedo.UndoRedoManager.UndoAsync), [RedoAsync](cref:Meziantou.Framework.UndoRedo.UndoRedoManager.RedoAsync) and [Clear](cref:Meziantou.Framework.UndoRedo.UndoRedoManager.Clear) throw an
+`InvalidOperationException`. [TransactionDepth](cref:Meziantou.Framework.UndoRedo.UndoRedoManager.TransactionDepth) gives the number of open transactions.
 
 ## Choose when the actions run
 
-`CreateTransaction` takes a `TransactionExecutionMode`:
+[CreateTransaction](cref:Meziantou.Framework.UndoRedo.UndoRedoManager.CreateTransaction) takes a [TransactionExecutionMode](cref:Meziantou.Framework.UndoRedo.TransactionExecutionMode):
 
 | Mode | When the actions run | When an action fails |
 | --- | --- | --- |
-| `Deferred` (default) | When the transaction is committed | The actions that already ran are reverted, and the exception is thrown by `CommitAsync` |
-| `Immediate` | As they are recorded | The failing action is not part of the transaction; the ones recorded before it stay applied until you roll back |
+| [Deferred](cref:Meziantou.Framework.UndoRedo.TransactionExecutionMode.Deferred) (default) | When the transaction is committed | The actions that already ran are reverted, and the exception is thrown by [CommitAsync](cref:Meziantou.Framework.UndoRedo.UndoRedoTransaction.CommitAsync) |
+| [Immediate](cref:Meziantou.Framework.UndoRedo.TransactionExecutionMode.Immediate) | As they are recorded | The failing action is not part of the transaction; the ones recorded before it stay applied until you roll back |
 
-In `Deferred` mode, the document does not change until the commit, so code that reads it between two recordings sees the
+In [Deferred](cref:Meziantou.Framework.UndoRedo.TransactionExecutionMode.Deferred) mode, the document does not change until the commit, so code that reads it between two recordings sees the
 state from before the transaction:
 
 <!-- ref:../../tests/Meziantou.Framework.UndoRedo.Tests/UndoRedoManagerTests.cs;region=UndoRedoTransaction_Deferred;format=md-fenced-code-block;dedent=true -->
@@ -100,7 +100,7 @@ Assert.Equal([1], list);
 ```
 <!-- endref -->
 
-Use `Immediate` when the code that records an action needs the result of the previous one. `RollbackAsync` reverts what
+Use [Immediate](cref:Meziantou.Framework.UndoRedo.TransactionExecutionMode.Immediate) when the code that records an action needs the result of the previous one. [RollbackAsync](cref:Meziantou.Framework.UndoRedo.UndoRedoTransaction.RollbackAsync) reverts what
 already ran:
 
 <!-- ref:../../tests/Meziantou.Framework.UndoRedo.Tests/UndoRedoManagerTests.cs;region=UndoRedoTransaction_Immediate;format=md-fenced-code-block;dedent=true -->
@@ -130,7 +130,7 @@ Assert.False(manager.CanUndo);
 A transaction can be opened while another one is open. When the inner transaction is committed, it becomes one action of
 the outer transaction, and the outer transaction is recorded as a single undo step when it is committed in turn.
 
-- A nested transaction must use the mode of the transaction it is nested in: `CreateTransaction` throws an
+- A nested transaction must use the mode of the transaction it is nested in: [CreateTransaction](cref:Meziantou.Framework.UndoRedo.UndoRedoManager.CreateTransaction) throws an
   `InvalidOperationException` otherwise.
 - Complete the transactions from the innermost out: committing or rolling back a transaction while a transaction nested
   in it is open throws an `InvalidOperationException`.
@@ -141,5 +141,5 @@ the outer transaction, and the outer transaction is recorded as a single undo st
   fixed.
 - Reverting the actions that already ran can fail too. Then an `AggregateException` holds both the original failure and
   the failure of the revert, and the actions that could not be reverted stay applied.
-- `IsCompleted` tells whether the transaction was committed or rolled back. Completing it a second time throws an
+- [IsCompleted](cref:Meziantou.Framework.UndoRedo.UndoRedoTransaction.IsCompleted) tells whether the transaction was committed or rolled back. Completing it a second time throws an
   `InvalidOperationException`.

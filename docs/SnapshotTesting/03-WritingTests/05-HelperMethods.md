@@ -3,7 +3,7 @@ title: Helper methods
 description: Wrap Snapshot.Validate in your own assertion methods and keep the snapshots next to the tests.
 ---
 
-Wrap `Snapshot.Validate` in a helper method to share settings or preparation between tests. Forward the caller
+Wrap [Snapshot.Validate](cref:Meziantou.Framework.SnapshotTesting.Snapshot.Validate) in a helper method to share settings or preparation between tests. Forward the caller
 information, so that the snapshots are stored next to the test file rather than next to the helper:
 
 <!-- ref:../../../tests/Meziantou.Framework.SnapshotTesting.Tests/SnapshotTests.cs;region=Snapshot_HelperMethod;format=md-fenced-code-block;dedent=true -->
@@ -48,10 +48,10 @@ No custom naming or path strategy is needed.
 - **The folder** comes from `[CallerFilePath]`, which is the file that declares the helper unless the helper forwards it.
 - **The line** given by `[CallerLineNumber]` numbers the calls of a test. Forward it, so that a test that calls the helper
   several times gets one snapshot per call (see [Several assertions in one test](04-NamingSnapshots.md#several-assertions-in-one-test)).
-  Otherwise, give each call its own name with `Snapshot.TestContext`.
+  Otherwise, give each call its own name with [Snapshot.TestContext](cref:Meziantou.Framework.SnapshotTesting.Snapshot.TestContext).
 
 ## Asynchronous helpers
 
-A helper can be `async` and await before calling `Snapshot.Validate` when the test framework exposes the running test.
+A helper can be `async` and await before calling [Snapshot.Validate](cref:Meziantou.Framework.SnapshotTesting.Snapshot.Validate) when the test framework exposes the running test.
 Under xUnit v2 and MSTest, the test method must still be on the call stack: await inside the helper after the call to
-`Snapshot.Validate`, not before.
+[Snapshot.Validate](cref:Meziantou.Framework.SnapshotTesting.Snapshot.Validate), not before.

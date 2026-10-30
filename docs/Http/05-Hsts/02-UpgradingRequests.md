@@ -5,7 +5,7 @@ description: Add HstsClientHandler to an HttpClient, learn the policies of the h
 
 ## Upgrade the requests of an HttpClient
 
-Create an `HstsClientHandler` with the handler that sends the requests and the collection of policies to apply:
+Create an [HstsClientHandler](cref:Meziantou.Framework.Http.HstsClientHandler) with the handler that sends the requests and the collection of policies to apply:
 
 <!-- ref:../../../samples/Meziantou.Framework.Http.HstsSample/ReadmeExamples.cs;region=HstsClientHandler_UpgradePreloadedHost;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -27,7 +27,7 @@ of a parent domain that includes the subdomains. The handler then replaces the s
 
 The other requests, including `https` ones, are sent unchanged.
 
-The constructors that take no collection use `HstsDomainPolicyCollection.Default`, a collection shared by the whole
+The constructors that take no collection use [HstsDomainPolicyCollection.Default](cref:Meziantou.Framework.Http.HstsDomainPolicyCollection.Default), a collection shared by the whole
 process. See [The shared collection](03-ManagingPolicies.md#the-shared-collection).
 
 ## Learn policies from the Strict-Transport-Security header

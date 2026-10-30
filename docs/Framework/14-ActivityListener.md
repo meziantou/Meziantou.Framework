@@ -3,7 +3,7 @@ title: Capturing activities
 description: Capture the System.Diagnostics activities started by a piece of code, for instance to check the traces of a library in a test.
 ---
 
-`ScopedActivityListener` (in the [Meziantou.Framework.Diagnostics](cref:Meziantou.Framework!N:Meziantou.Framework.Diagnostics) namespace) captures the `Activity` instances started by
+[ScopedActivityListener](cref:Meziantou.Framework.Diagnostics.ScopedActivityListener) (in the [Meziantou.Framework.Diagnostics](cref:Meziantou.Framework!N:Meziantou.Framework.Diagnostics) namespace) captures the `Activity` instances started by
 the current code, and only by it. Use it in tests to check that code is traced as expected, even when other tests run in
 parallel.
 
@@ -29,31 +29,31 @@ Assert.True(activity.Duration > TimeSpan.Zero);
 - The listener captures the activities started by the asynchronous flow that created it, from its creation to its
   disposal: the code that follows it, including the tasks that code starts. Activities started by other
   threads or other tests are ignored.
-- `Activities` lists the captured activities once they are stopped, in the order they stopped. An activity that is still
+- [Activities](cref:Meziantou.Framework.Diagnostics.ScopedActivityListener.Activities) lists the captured activities once they are stopped, in the order they stopped. An activity that is still
   running when the listener is disposed is never reported.
 - The activities are live objects: their tags, status and duration are final once they are stopped.
 - Dispose the listener to stop listening.
 
 ## Options
 
-Pass a `ScopedActivityListenerOptions` to the constructor:
+Pass a [ScopedActivityListenerOptions](cref:Meziantou.Framework.Diagnostics.ScopedActivityListenerOptions) to the constructor:
 
 | Property | Default | Effect |
 | --- | --- | --- |
-| `SourceNames` | All sources | The names of the `ActivitySource` to listen to, compared ordinally. Use an empty string for the activities created with `new Activity(name)` |
-| `ShouldListenTo` | All sources | A predicate that chooses the sources. It replaces `SourceNames` when both are set |
-| `SamplingResult` | `AllData` | The sampling decision returned for the activities of the scope |
-| `CaptureChildActivities` | `true` | Also captures the activities whose parent is captured, even when they run outside the asynchronous flow |
-| `MaxActivityCount` | `int.MaxValue` | The number of stopped activities kept in `Activities`. When the limit is reached, the oldest are dropped |
+| [SourceNames](cref:Meziantou.Framework.Diagnostics.ScopedActivityListenerOptions.SourceNames) | All sources | The names of the `ActivitySource` to listen to, compared ordinally. Use an empty string for the activities created with `new Activity(name)` |
+| [ShouldListenTo](cref:Meziantou.Framework.Diagnostics.ScopedActivityListenerOptions.ShouldListenTo) | All sources | A predicate that chooses the sources. It replaces [SourceNames](cref:Meziantou.Framework.Diagnostics.ScopedActivityListenerOptions.SourceNames) when both are set |
+| [SamplingResult](cref:Meziantou.Framework.Diagnostics.ScopedActivityListenerOptions.SamplingResult) | `AllData` | The sampling decision returned for the activities of the scope |
+| [CaptureChildActivities](cref:Meziantou.Framework.Diagnostics.ScopedActivityListenerOptions.CaptureChildActivities) | `true` | Also captures the activities whose parent is captured, even when they run outside the asynchronous flow |
+| [MaxActivityCount](cref:Meziantou.Framework.Diagnostics.ScopedActivityListenerOptions.MaxActivityCount) | `int.MaxValue` | The number of stopped activities kept in [Activities](cref:Meziantou.Framework.Diagnostics.ScopedActivityListener.Activities). When the limit is reached, the oldest are dropped |
 
-- `ShouldListenTo` is evaluated once per source and its result is cached by the runtime: it must only depend on the
+- [ShouldListenTo](cref:Meziantou.Framework.Diagnostics.ScopedActivityListenerOptions.ShouldListenTo) is evaluated once per source and its result is cached by the runtime: it must only depend on the
   source, not on the current code.
 - `AllDataAndRecorded` sets the `Recorded` flag of the activities, which is sent to other services in the `traceparent`
   header and changes their own sampling decisions.
 
 While the listener exists, every matching source has a listener for the whole process. Libraries that check
 `ActivitySource.HasListeners`, such as `HttpClient` or ASP.NET Core, switch to their instrumented code: `HttpClient`, for
-instance, sends the `traceparent` header for the requests made in the scope. Set `SourceNames` to listen to the sources
+instance, sends the `traceparent` header for the requests made in the scope. Set [SourceNames](cref:Meziantou.Framework.Diagnostics.ScopedActivityListenerOptions.SourceNames) to listen to the sources
 you need only.
 
 ## React when an activity starts or stops
@@ -81,13 +81,13 @@ Assert.Equal(["Child", "Parent"], listener.Activities.Select(activity => activit
 ```
 <!-- endref -->
 
-- `ActivityStarted` and `ActivityStopped` are raised synchronously, on the thread that starts or stops the activity.
-  `ActivityEventArgs.Activity` is the activity. In `ActivityStarted`, its tags, status and duration are not set yet.
+- [ActivityStarted](cref:Meziantou.Framework.Diagnostics.ScopedActivityListener.ActivityStarted) and [ActivityStopped](cref:Meziantou.Framework.Diagnostics.ScopedActivityListener.ActivityStopped) are raised synchronously, on the thread that starts or stops the activity.
+  [ActivityEventArgs.Activity](cref:Meziantou.Framework.Diagnostics.ActivityEventArgs.Activity) is the activity. In [ActivityStarted](cref:Meziantou.Framework.Diagnostics.ScopedActivityListener.ActivityStarted), its tags, status and duration are not set yet.
 - An exception thrown by a handler is ignored, so a failing handler cannot break the code being observed.
 
 ## Stream the activities
 
-`GetActivitiesAsync` returns the activities already captured, then each activity as it stops, until the listener is
+[GetActivitiesAsync](cref:Meziantou.Framework.Diagnostics.ScopedActivityListener.GetActivitiesAsync) returns the activities already captured, then each activity as it stops, until the listener is
 disposed or the cancellation token is canceled:
 
 <!-- ref:../../tests/Meziantou.Framework.Tests/Diagnostics/ScopedActivityListenerTests.cs;region=ScopedActivityListener_GetActivitiesAsync;format=md-fenced-code-block;dedent=true -->

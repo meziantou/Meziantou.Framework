@@ -23,18 +23,18 @@ public static void ConvertFile(string inputPath, string outputPath)
 ```
 <!-- endref -->
 
-- `Image.Load` detects the format of the input from its content: a PNG file named `photo.jpg` loads as a PNG image.
+- [Image.Load](cref:Meziantou.Framework.Imaging.Image.Load) detects the format of the input from its content: a PNG file named `photo.jpg` loads as a PNG image.
 - `Save(path)` chooses the encoder from the extension of the output, with its default settings: `.png`, `.apng`,
   `.gif`, `.jpg`, `.webp`, `.avif`, `.heic`, `.jxl`, `.tif`, `.bmp` and the others listed in
   [Saving images](../05-LoadingAndSaving/04-SavingImages.md). An unknown extension throws an `ArgumentException`.
-- The image is checked against the format before anything is written. When the output would lose something, `Save`
-  throws an `UnsupportedImageFeatureException` and no file is created.
+- The image is checked against the format before anything is written. When the output would lose something, [Save](cref:Meziantou.Framework.Imaging.Image.Save)
+  throws an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException) and no file is created.
 
 ## Choose the encoder and its settings
 
-Pass an encoder to `Save` to choose the format and its settings, whatever the extension. The encoders are in the
-[Meziantou.Framework.Imaging.Formats](cref:Meziantou.Framework.Imaging.Formats) namespace: `JpegEncoder`, `PngEncoder`, `WebPEncoder`, `GifEncoder`,
-`AvifEncoder`, `HeicEncoder` and one per format. An encoder is also the only way to save to a stream, which has no
+Pass an encoder to [Save](cref:Meziantou.Framework.Imaging.Image.Save) to choose the format and its settings, whatever the extension. The encoders are in the
+[Meziantou.Framework.Imaging.Formats](cref:Meziantou.Framework.Imaging.Formats) namespace: [JpegEncoder](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder), [PngEncoder](cref:Meziantou.Framework.Imaging.Formats.PngEncoder), [WebPEncoder](cref:Meziantou.Framework.Imaging.Formats.WebPEncoder), [GifEncoder](cref:Meziantou.Framework.Imaging.Formats.GifEncoder),
+[AvifEncoder](cref:Meziantou.Framework.Imaging.Formats.AvifEncoder), [HeicEncoder](cref:Meziantou.Framework.Imaging.Formats.HeicEncoder) and one per format. An encoder is also the only way to save to a stream, which has no
 extension.
 
 The default encoder of an extension is not always what you want:
@@ -52,11 +52,11 @@ choice:
 
 | The image has | Formats that cannot store it | Setting |
 | --- | --- | --- |
-| Transparency | JPEG | `BackgroundColor`: the opaque color that transparent pixels are blended on |
+| Transparency | JPEG | [BackgroundColor](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.BackgroundColor): the opaque color that transparent pixels are blended on |
 | 16-bit samples | JPEG, GIF, WebP, QOI, AVIF and HEIC (12 bits at most), and others | `AllowBitDepthReduction` on the encoders that have it (JPEG, WebP, AVIF, HEIC, QOI...); GIF reduces the colors to a palette anyway |
 | Several frames (an animation) | JPEG, BMP, QOI, static PNG... | Save one frame: `image.Frames[i].Save(...)` |
-| Metadata (EXIF, XMP, ICC profile, text) | GIF, BMP, QOI, TGA, Netpbm, and partly the others | `MetadataHandling = MetadataHandling.DiscardUnsupported` drops what the format cannot store; `Strip` writes none |
-| Floating-point samples (OpenEXR) | Every format but OpenEXR and TIFF | `FloatingPointConversion`: how the samples are reduced to integers |
+| Metadata (EXIF, XMP, ICC profile, text) | GIF, BMP, QOI, TGA, Netpbm, and partly the others | `MetadataHandling = MetadataHandling.DiscardUnsupported` drops what the format cannot store; [Strip](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling.Strip) writes none |
+| Floating-point samples (OpenEXR) | Every format but OpenEXR and TIFF | [FloatingPointConversion](cref:Meziantou.Framework.Imaging.Formats.ImageEncoder.FloatingPointConversion): how the samples are reduced to integers |
 
 For example, to export one frame of an animation as a JPEG file:
 
@@ -78,15 +78,15 @@ public static void ExportFrameAsJpeg(string animatedPath, int frameIndex, string
 ```
 <!-- endref -->
 
-`MetadataHandling.DiscardUnsupported` and `Strip` may drop the orientation and the color profile, which change how the
-pixels look: a photo can turn sideways or lose its colors. Apply them to the pixels before saving with `AutoOrient` and
-`ConvertColorProfile` (see [Strip or edit metadata](08-StripOrEditMetadata.md)). The metadata that each format stores is
+[MetadataHandling.DiscardUnsupported](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling.DiscardUnsupported) and [Strip](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling.Strip) may drop the orientation and the color profile, which change how the
+pixels look: a photo can turn sideways or lose its colors. Apply them to the pixels before saving with [AutoOrient](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoOrient) and
+[ConvertColorProfile](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ConvertColorProfile) (see [Strip or edit metadata](08-StripOrEditMetadata.md)). The metadata that each format stores is
 listed in [Metadata and orientation](../09-Color/02-MetadataAndOrientation.md).
 
 ## Change the pixel format
 
 Some conversions change the pixels themselves, not only the file: a grayscale copy, or the removal of the alpha channel.
-`CloneAs<TPixel>` converts to another pixel format, and its `PixelConversionOptions` say how to remove alpha and what to
+[CloneAs\<TPixel\>](cref:Meziantou.Framework.Imaging.Image.CloneAs) converts to another pixel format, and its [PixelConversionOptions](cref:Meziantou.Framework.Imaging.PixelConversionOptions) say how to remove alpha and what to
 do with a color profile that cannot describe the new pixels:
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_ConvertPrecision;format=md-fenced-code-block;dedent=true -->
@@ -105,7 +105,7 @@ public static void ConvertToGray16(string inputPath, string outputPath)
 ```
 <!-- endref -->
 
-`Gray16` keeps the 16-bit precision of the source, and PNG stores it as it is. See
+[Gray16](cref:Meziantou.Framework.Imaging.Gray16) keeps the 16-bit precision of the source, and PNG stores it as it is. See
 [Pixel formats](../04-Concepts/05-PixelFormats.md).
 
 ## Convert a whole folder
@@ -157,11 +157,11 @@ public static IReadOnlyList<string> ConvertFolderToJpeg(string inputDirectory, s
 <!-- endref -->
 
 - `FrameLimit = 1` stops decoding after the first frame of an animation: the rest of the file is not read. The image
-  keeps its animation settings, so `Animation = null` makes it a still image, after `RemovePosterFrame` removes the
+  keeps its animation settings, so `Animation = null` makes it a still image, after [RemovePosterFrame](cref:Meziantou.Framework.Imaging.Image.RemovePosterFrame) removes the
   default image of an APNG file, if any.
-- `CmykConversionOptions.Default` converts the CMYK JPEG files of print workflows to sRGB. Without it, they throw an
-  `UnsupportedImageFeatureException`. The other images are not affected.
-- `ImageException` is the base class of the content errors: an unknown format, a corrupted file, an unsupported feature
+- [CmykConversionOptions.Default](cref:Meziantou.Framework.Imaging.CmykConversionOptions.Default) converts the CMYK JPEG files of print workflows to sRGB. Without it, they throw an
+  [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException). The other images are not affected.
+- [ImageException](cref:Meziantou.Framework.Imaging.ImageException) is the base class of the content errors: an unknown format, a corrupted file, an unsupported feature
   and an exceeded resource limit. I/O errors are not caught: they are not a problem of the file.
 - A failed save leaves nothing behind: a path output is written to a temporary file, renamed only when it is complete.
 

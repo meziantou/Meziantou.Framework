@@ -5,13 +5,13 @@ description: The container images found in Dockerfiles, Docker Compose files and
 
 ## Image names and versions
 
-Images are reported as `DockerImage`, wherever they come from (Dockerfiles, Docker Compose, Kubernetes, GitHub Actions,
+Images are reported as [DockerImage](cref:Meziantou.Framework.DependencyScanning.DependencyType.DockerImage), wherever they come from (Dockerfiles, Docker Compose, Kubernetes, GitHub Actions,
 Azure Pipelines):
 
 - The tag is the part after the last `:` that follows the last `/`, so `localhost:5000/image:1.0` is reported as
   `localhost:5000/image` version `1.0`.
 - An image pinned by digest (`image@sha256:...` or `image:tag@sha256:...`) is reported with the digest as its version.
-  This version is not updatable, and the digest and the tag are in `Dependency.Metadata` under the `digest` and `tag`
+  This version is not updatable, and the digest and the tag are in [Dependency.Metadata](cref:Meziantou.Framework.DependencyScanning.Dependency.Metadata) under the `digest` and `tag`
   keys.
 - A name or a version that contains a variable reference, such as `image: node:${NODE_VERSION}`, is reported with a
   location that is not updatable.
@@ -46,7 +46,7 @@ Assert.False(sdk.VersionLocation?.IsUpdatable);
 
 ## Dockerfiles
 
-`DockerfileDependencyScanner` reads the images of `FROM`, `COPY --from`, `RUN --mount=...,from=` and `# syntax=`.
+[DockerfileDependencyScanner](cref:Meziantou.Framework.DependencyScanning.Scanners.DockerfileDependencyScanner) reads the images of `FROM`, `COPY --from`, `RUN --mount=...,from=` and `# syntax=`.
 
 - Only references with a tag or a digest are reported (except `# syntax=`), so that build stage names are not mistaken
   for images.
@@ -58,13 +58,13 @@ Assert.False(sdk.VersionLocation?.IsUpdatable);
 
 ## Docker Compose
 
-`DockerComposeDependencyScanner` reads `services.<name>.image` in `compose.yaml`, `compose.yml`,
+[DockerComposeDependencyScanner](cref:Meziantou.Framework.DependencyScanning.Scanners.DockerComposeDependencyScanner) reads `services.<name>.image` in `compose.yaml`, `compose.yml`,
 `docker-compose.yaml`, `docker-compose.yml`, and their `compose.*.yaml` and `docker-compose.*.yml` variants. The image
 of a service that has a `build` section is the name given to the image built from source, so it is not reported.
 
 ## Kubernetes
 
-`KubernetesDependencyScanner` reads the images of `containers`, `initContainers` and `ephemeralContainers` in the YAML
+[KubernetesDependencyScanner](cref:Meziantou.Framework.DependencyScanning.Scanners.KubernetesDependencyScanner) reads the images of `containers`, `initContainers` and `ephemeralContainers` in the YAML
 manifests of `Pod`, `PodTemplate`, `Deployment`, `StatefulSet`, `DaemonSet`, `ReplicaSet`, `ReplicationController`,
 `Job` and `CronJob` objects, including `List` objects and files with several documents.
 
@@ -73,9 +73,9 @@ manifests of `Pod`, `PodTemplate`, `Deployment`, `StatefulSet`, `DaemonSet`, `Re
 
 ## Helm charts
 
-`HelmChartDependencyScanner` reads `Chart.yaml`, and `requirements.yaml` for apiVersion v1 charts, and reports their
-dependencies as `HelmChart`. `HelmChartLockFileDependencyScanner` reads `Chart.lock` and `requirements.lock`.
+[HelmChartDependencyScanner](cref:Meziantou.Framework.DependencyScanning.Scanners.HelmChartDependencyScanner) reads `Chart.yaml`, and `requirements.yaml` for apiVersion v1 charts, and reports their
+dependencies as [HelmChart](cref:Meziantou.Framework.DependencyScanning.DependencyType.HelmChart). [HelmChartLockFileDependencyScanner](cref:Meziantou.Framework.DependencyScanning.Scanners.HelmChartLockFileDependencyScanner) reads `Chart.lock` and `requirements.lock`.
 
-- The name is the chart `name`. The `repository` and `alias` values are in `Dependency.Metadata` under the `repository`
+- The name is the chart `name`. The `repository` and `alias` values are in [Dependency.Metadata](cref:Meziantou.Framework.DependencyScanning.Dependency.Metadata) under the `repository`
   and `alias` keys.
 - The entries of the lock files are not updatable, as they record a digest of the dependencies.

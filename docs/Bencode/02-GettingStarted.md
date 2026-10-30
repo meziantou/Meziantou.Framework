@@ -16,8 +16,8 @@ The examples of this documentation omit the `using` directives: they need `using
 
 ## Read a torrent file
 
-`TorrentFile.ParseAsync` reads a `.torrent` file from a stream. Its properties give the tracker, the name of the
-content and its info-hash, and `WriteToAsync` writes it back:
+[TorrentFile.ParseAsync](cref:Meziantou.Framework.Bencode.Torrent.TorrentFile.ParseAsync) reads a `.torrent` file from a stream. Its properties give the tracker, the name of the
+content and its info-hash, and [WriteToAsync](cref:Meziantou.Framework.Bencode.Torrent.TorrentFile.WriteToAsync) writes it back:
 
 <!-- ref:../../tests/Meziantou.Framework.Bencode.Tests/TorrentFileTests.cs;region=TorrentFile_ParseAndWrite;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -37,12 +37,12 @@ await torrent.WriteToAsync(output, canonical: true);
 ```
 <!-- endref -->
 
-`GetInfoHashSha1` returns the BitTorrent v1 info-hash, the identifier that trackers, peers and magnet links use. See
+[GetInfoHashSha1](cref:Meziantou.Framework.Bencode.Torrent.TorrentFile.GetInfoHashSha1) returns the BitTorrent v1 info-hash, the identifier that trackers, peers and magnet links use. See
 [Torrent files](05-TorrentFiles.md).
 
 ## Decode bencode data
 
-For any other bencode data, `BencodeDocument.Parse` returns the root value. Cast it, or match it, to the type of value
+For any other bencode data, [BencodeDocument.Parse](cref:Meziantou.Framework.Bencode.BencodeDocument.Parse) returns the root value. Cast it, or match it, to the type of value
 you expect:
 
 <!-- ref:../../tests/Meziantou.Framework.Bencode.Tests/BencodeDocumentTests.cs;region=BencodeDocument_ReadValues;format=md-fenced-code-block;dedent=true -->
@@ -73,7 +73,7 @@ static string Describe(BencodeValue value) => value switch
 ```
 <!-- endref -->
 
-Dictionary keys are `BencodeString` values, created from the bytes of the key. See
+Dictionary keys are [BencodeString](cref:Meziantou.Framework.Bencode.BencodeString) values, created from the bytes of the key. See
 [Reading bencode](03-ReadingBencode.md).
 
 ## Next steps

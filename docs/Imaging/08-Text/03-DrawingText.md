@@ -3,7 +3,7 @@ title: Drawing text
 description: Draw a string, place it by a point of its box, wrap paragraphs, style parts of a text and fit it in a box.
 ---
 
-Text is drawn in two steps: `TextLayout.Create` lays out the text (it finds its glyphs, their positions and its
+Text is drawn in two steps: [TextLayout.Create](cref:Meziantou.Framework.Imaging.Typography.TextLayout.Create) lays out the text (it finds its glyphs, their positions and its
 lines), then `canvas.FillText` draws the layout. Because the layout is what is drawn, it is also what you measure to
 size an image or to place a text.
 
@@ -42,9 +42,9 @@ public static void DrawLabel(string fontPath, string outputPath)
 - `TextLayout.Create(text, font, size)` lays out a text of one font. The size is in pixels per em, not in points.
 - A line break of the text (`\n`, `\r\n` and the other Unicode line breaks) starts a new paragraph. Without a maximum
   width, each paragraph is one line.
-- The origin of `FillText` is the top-left corner of the layout. Its first baseline is `layout.Baseline` below it.
-- `FillText` fills the glyphs with a brush; `StrokeText` strokes their outlines with a pen, and `TextLayout.ToPath`
-  gives them as a `VectorPath`, to use the text as any other shape.
+- The origin of [FillText](cref:Meziantou.Framework.Imaging.Drawing.DrawingCanvas.FillText) is the top-left corner of the layout. Its first baseline is `layout.Baseline` below it.
+- [FillText](cref:Meziantou.Framework.Imaging.Drawing.DrawingCanvas.FillText) fills the glyphs with a brush; [StrokeText](cref:Meziantou.Framework.Imaging.Drawing.DrawingCanvas.StrokeText) strokes their outlines with a pen, and [TextLayout.ToPath](cref:Meziantou.Framework.Imaging.Typography.TextLayout.ToPath)
+  gives them as a [VectorPath](cref:Meziantou.Framework.Imaging.Drawing.VectorPath), to use the text as any other shape.
 - `canvas.FillText(brush, text, font, size, origin)` is a shortcut that creates a layout on each call. Create the
   layout yourself to measure the text or to draw it more than once.
 
@@ -53,7 +53,7 @@ data. Drawing it then allocates nothing. Layouts, styles, options and rich texts
 
 ## Place a text
 
-`GetOrigin` gives the origin to draw a layout at so that a point of its box lands on an anchor: a corner, the middle of
+[GetOrigin](cref:Meziantou.Framework.Imaging.Typography.TextLayout.GetOrigin) gives the origin to draw a layout at so that a point of its box lands on an anchor: a corner, the middle of
 a side, the center, or a point of the first baseline. Another overload aligns the box in a rectangle:
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_PlaceText;format=md-fenced-code-block;dedent=true -->
@@ -87,18 +87,18 @@ public static void DrawPayButton(string fontPath, string outputPath)
 
 ![A gray Total caption on the left and a larger black amount, 42.00, on the right, both on the same baseline, above a blue button whose white Pay now label is centered](images/DrawPayButton.png)
 
-| `TextBounds` | The box that is placed | Use it to |
+| [TextBounds](cref:Meziantou.Framework.Imaging.Typography.TextBounds) | The box that is placed | Use it to |
 | --- | --- | --- |
-| `Layout` (the default) | The advances of the glyphs and the ascents and descents of the fonts | Line up texts, whatever their letters |
-| `Ink` | What is drawn (`layout.InkBounds`) | Center a text by its visible shape, such as a label in a button or a digit in a circle |
+| [Layout](cref:Meziantou.Framework.Imaging.Typography.TextBounds.Layout) (the default) | The advances of the glyphs and the ascents and descents of the fonts | Line up texts, whatever their letters |
+| [Ink](cref:Meziantou.Framework.Imaging.Typography.TextBounds.Ink) | What is drawn (`layout.InkBounds`) | Center a text by its visible shape, such as a label in a button or a digit in a circle |
 
-`TextVerticalAnchor.Baseline` puts the first baseline on the anchor, whatever box is measured: use it to put texts of
+[TextVerticalAnchor.Baseline](cref:Meziantou.Framework.Imaging.Typography.TextVerticalAnchor.Baseline) puts the first baseline on the anchor, whatever box is measured: use it to put texts of
 several sizes on one line, as the caption and the amount above.
 
 ## Wrap a paragraph
 
-`TextLayoutOptions` say how the lines are wrapped and aligned. A `TextStyle` holds how the text is set, and a
-`RichText` gives each part of a text its own style:
+[TextLayoutOptions](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions) say how the lines are wrapped and aligned. A [TextStyle](cref:Meziantou.Framework.Imaging.Typography.TextStyle) holds how the text is set, and a
+[RichText](cref:Meziantou.Framework.Imaging.Typography.RichText) gives each part of a text its own style:
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_DrawParagraph;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -127,46 +127,46 @@ public static void DrawParagraph(string fontPath, string outputPath)
 
 ![A justified paragraph of four lines in black, with the word Unicode in red and underlined](images/DrawParagraph.png)
 
-With `MaxWidth`, lines are wrapped where the Unicode line breaking algorithm allows it. The white space that ends a
+With [MaxWidth](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions.MaxWidth), lines are wrapped where the Unicode line breaking algorithm allows it. The white space that ends a
 wrapped line does not count in its width.
 
 | Option | Default | What it does |
 | --- | --- | --- |
-| `MaxWidth` | No limit | The width lines are wrapped at and aligned in |
-| `Alignment` | `Start` | `Start`, `Center`, `End`, or `Justify`, which widens U+0020 spaces and U+00A0 no-break spaces on each line but the last one of a paragraph; lines without expandable spaces stay start-aligned |
-| `FirstLineIndent` | 0 | The indent of the first line of each paragraph; negative for a hanging indent, which indents the lines after the first one instead |
-| `LineHeight` | The fonts' height | A fixed height for every line, the glyphs centered in it |
-| `TabSize` | 8 | The distance between two tabulation stops, in spaces |
-| `Wrapping` | `Wrap` | `NoWrap` breaks lines only at the line breaks of the text |
-| `WordBreak` | `Normal` | `BreakAll` also breaks between any two letters; `KeepAll` does not break between ideographs |
-| `LineBreak` | `Normal` | How strictly Chinese and Japanese punctuation is kept off the start and the end of a line |
-| `OverflowWrap` | `Normal` | `Anywhere` cuts a word that is wider than `MaxWidth` between two characters |
+| [MaxWidth](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions.MaxWidth) | No limit | The width lines are wrapped at and aligned in |
+| [Alignment](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions.Alignment) | [Start](cref:Meziantou.Framework.Imaging.Typography.TextAlignment.Start) | [Start](cref:Meziantou.Framework.Imaging.Typography.TextAlignment.Start), [Center](cref:Meziantou.Framework.Imaging.Typography.TextAlignment.Center), [End](cref:Meziantou.Framework.Imaging.Typography.TextAlignment.End), or [Justify](cref:Meziantou.Framework.Imaging.Typography.TextAlignment.Justify), which widens U+0020 spaces and U+00A0 no-break spaces on each line but the last one of a paragraph; lines without expandable spaces stay start-aligned |
+| [FirstLineIndent](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions.FirstLineIndent) | 0 | The indent of the first line of each paragraph; negative for a hanging indent, which indents the lines after the first one instead |
+| [LineHeight](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions.LineHeight) | The fonts' height | A fixed height for every line, the glyphs centered in it |
+| [TabSize](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions.TabSize) | 8 | The distance between two tabulation stops, in spaces |
+| [Wrapping](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions.Wrapping) | [Wrap](cref:Meziantou.Framework.Imaging.Typography.TextWrapping.Wrap) | [NoWrap](cref:Meziantou.Framework.Imaging.Typography.TextWrapping.NoWrap) breaks lines only at the line breaks of the text |
+| [WordBreak](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions.WordBreak) | `Normal` | [BreakAll](cref:Meziantou.Framework.Imaging.Typography.TextWordBreak.BreakAll) also breaks between any two letters; [KeepAll](cref:Meziantou.Framework.Imaging.Typography.TextWordBreak.KeepAll) does not break between ideographs |
+| [LineBreak](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions.LineBreak) | `Normal` | How strictly Chinese and Japanese punctuation is kept off the start and the end of a line |
+| [OverflowWrap](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions.OverflowWrap) | `Normal` | [Anywhere](cref:Meziantou.Framework.Imaging.Typography.TextOverflowWrap.Anywhere) cuts a word that is wider than [MaxWidth](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions.MaxWidth) between two characters |
 
-`Start` and `End` follow the direction of each paragraph: see [Text layout](04-TextLayout.md) for right-to-left text,
+[Start](cref:Meziantou.Framework.Imaging.Typography.TextAlignment.Start) and [End](cref:Meziantou.Framework.Imaging.Typography.TextAlignment.End) follow the direction of each paragraph: see [Text layout](04-TextLayout.md) for right-to-left text,
 vertical lines and hyphenation.
 
 ## Style parts of a text
 
-`RichTextBuilder.Append` adds a part of the text with its style. A span is not a word or a line: the layout wraps the
+[RichTextBuilder.Append](cref:Meziantou.Framework.Imaging.Typography.RichTextBuilder.Append) adds a part of the text with its style. A span is not a word or a line: the layout wraps the
 whole text, and the letters of two spans that only differ by what is painted are shaped together, so they still kern
-and join. A `TextStyle` has a `FontStack` (a `Font` converts to one) and a size, and optionally:
+and join. A [TextStyle](cref:Meziantou.Framework.Imaging.Typography.TextStyle) has a [FontStack](cref:Meziantou.Framework.Imaging.Typography.FontStack) (a [Font](cref:Meziantou.Framework.Imaging.Typography.Font) converts to one) and a size, and optionally:
 
 | Property | What it does |
 | --- | --- |
-| `Brush` | The paint of the text; without it, the brush given to `FillText` |
-| `BackgroundBrush` | A rectangle behind the text of the style on each line, from the ascent to the descent of its font: a highlight |
-| `Outline` | A pen that strokes the glyphs after they are filled; with `PenAlignment.Outside`, the stroke is around the glyphs |
-| `Decorations` and `DecorationBrush` | Underline, strikethrough and overline, drawn with the metrics of the font, and their paint |
-| `LetterSpacing` and `WordSpacing` | Space added after each character and to each space, in pixels; negative to tighten |
-| `Features` | OpenType features to turn on or off: `new FontFeature("smcp")`, `new FontFeature("liga", 0)` |
-| `Synthesis`, `Language`, `Hyphenator` | See [Text layout](04-TextLayout.md) |
+| [Brush](cref:Meziantou.Framework.Imaging.Drawing.Brush) | The paint of the text; without it, the brush given to [FillText](cref:Meziantou.Framework.Imaging.Drawing.DrawingCanvas.FillText) |
+| [BackgroundBrush](cref:Meziantou.Framework.Imaging.Typography.TextStyle.BackgroundBrush) | A rectangle behind the text of the style on each line, from the ascent to the descent of its font: a highlight |
+| [Outline](cref:Meziantou.Framework.Imaging.Typography.TextStyle.Outline) | A pen that strokes the glyphs after they are filled; with [PenAlignment.Outside](cref:Meziantou.Framework.Imaging.Drawing.PenAlignment.Outside), the stroke is around the glyphs |
+| [Decorations](cref:Meziantou.Framework.Imaging.Typography.TextStyle.Decorations) and [DecorationBrush](cref:Meziantou.Framework.Imaging.Typography.TextStyle.DecorationBrush) | Underline, strikethrough and overline, drawn with the metrics of the font, and their paint |
+| [LetterSpacing](cref:Meziantou.Framework.Imaging.Typography.TextStyle.LetterSpacing) and [WordSpacing](cref:Meziantou.Framework.Imaging.Typography.TextStyle.WordSpacing) | Space added after each character and to each space, in pixels; negative to tighten |
+| [Features](cref:Meziantou.Framework.Imaging.Typography.TextStyle.Features) | OpenType features to turn on or off: `new FontFeature("smcp")`, `new FontFeature("liga", 0)` |
+| [Synthesis](cref:Meziantou.Framework.Imaging.Typography.TextStyle.Synthesis), [Language](cref:Meziantou.Framework.Imaging.Typography.TextStyle.Language), [Hyphenator](cref:Meziantou.Framework.Hyphenator) | See [Text layout](04-TextLayout.md) |
 
-`FillText` paints the backgrounds of the whole layout first, then the text, then the outlines: a background never
-hides a glyph. `StrokeText` and `ToPath` leave the backgrounds out.
+[FillText](cref:Meziantou.Framework.Imaging.Drawing.DrawingCanvas.FillText) paints the backgrounds of the whole layout first, then the text, then the outlines: a background never
+hides a glyph. [StrokeText](cref:Meziantou.Framework.Imaging.Drawing.DrawingCanvas.StrokeText) and [ToPath](cref:Meziantou.Framework.Imaging.Typography.TextLayout.ToPath) leave the backgrounds out.
 
 ## Cut a text that is too long
 
-`MaxLines` and `MaxHeight` keep the first lines of a text (the first line is always kept), and `Trimming` ends the
+[MaxLines](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions.MaxLines) and [MaxHeight](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions.MaxHeight) keep the first lines of a text (the first line is always kept), and [Trimming](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions.Trimming) ends the
 last one with an ellipsis:
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/TextExamples.cs;region=Imaging_TrimText;format=md-fenced-code-block;dedent=true -->
@@ -202,15 +202,15 @@ public static bool DrawProductCard(string fontPath, string outputPath)
 
 ![A card with the title Wireless headphones and a gray description cut after two lines, ending with an ellipsis](images/DrawProductCard.png)
 
-- `TextTrimming.Word` ends the line after the last word that leaves room for the ellipsis, `Character` after the last
+- [TextTrimming.Word](cref:Meziantou.Framework.Imaging.Typography.TextTrimming.Word) ends the line after the last word that leaves room for the ellipsis, [Character](cref:Meziantou.Framework.Imaging.Typography.TextTrimming.Character) after the last
   character. Without trimming, the lines that do not fit are left out.
-- `Ellipsis` replaces the ellipsis (U+2026, or three periods when the font does not have it).
-- With `Wrapping = NoWrap`, trimming also cuts a line that is wider than `MaxWidth`.
-- `IsTruncated` says that a part of the text is not in the layout.
+- [Ellipsis](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions.Ellipsis) replaces the ellipsis (U+2026, or three periods when the font does not have it).
+- With `Wrapping = NoWrap`, trimming also cuts a line that is wider than [MaxWidth](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions.MaxWidth).
+- [IsTruncated](cref:Meziantou.Framework.Imaging.Typography.TextLayout.IsTruncated) says that a part of the text is not in the layout.
 
 ## Fit a text in a box
 
-`TextLayout.CreateToFit` lays out a text at the largest size, up to the size of its styles, at which it fits a box:
+[TextLayout.CreateToFit](cref:Meziantou.Framework.Imaging.Typography.TextLayout.CreateToFit) lays out a text at the largest size, up to the size of its styles, at which it fits a box:
 a title that fills a card, a label that never overflows its button. A placeholder leaves room in a line for something
 that is not text, such as an icon:
 

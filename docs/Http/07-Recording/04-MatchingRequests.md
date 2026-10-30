@@ -8,7 +8,7 @@ recording with the same fingerprint. Two requests match when their fingerprints 
 
 ## The default fingerprint
 
-`DefaultHttpRequestMatcher` builds the fingerprint from:
+[DefaultHttpRequestMatcher](cref:Meziantou.Framework.Http.Recording.DefaultHttpRequestMatcher) builds the fingerprint from:
 
 - the method, compared case-insensitively;
 - the scheme and the host, compared case-insensitively, and the port when it is not the default one;
@@ -40,7 +40,7 @@ var options = new HttpRecordingOptions
 
 ## Write your own matcher
 
-Implement `IHttpRequestMatcher` for any other rule. `ComputeFingerprint` receives an `HttpRecordingEntry`, which carries
+Implement [IHttpRequestMatcher](cref:Meziantou.Framework.Http.Recording.IHttpRequestMatcher) for any other rule. [ComputeFingerprint](cref:Meziantou.Framework.Http.Recording.IHttpRequestMatcher.ComputeFingerprint) receives an [HttpRecordingEntry](cref:Meziantou.Framework.Http.Recording.HttpRecordingEntry), which carries
 the method, the URI, the headers and the body of the request, both when a recording is loaded and when a request is
 looked up. This matcher ignores the query string and the body:
 
@@ -58,7 +58,7 @@ public sealed class PathOnlyRequestMatcher : IHttpRequestMatcher
 ```
 <!-- endref -->
 
-Set it in `RequestMatcher`, both when recording and when replaying:
+Set it in [RequestMatcher](cref:Meziantou.Framework.Http.Recording.HttpRecordingOptions.RequestMatcher), both when recording and when replaying:
 
 <!-- ref:../../../tests/Meziantou.Framework.Http.Recording.Tests/HttpRecordingHandlerTests.cs;region=HttpRecording_UseCustomRequestMatcher;format=md-fenced-code-block;dedent=true -->
 ```csharp

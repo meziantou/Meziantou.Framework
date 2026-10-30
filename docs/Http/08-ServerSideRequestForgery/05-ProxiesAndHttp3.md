@@ -44,8 +44,8 @@ not validated at all. Two requests can use HTTP/3:
 - a request whose `VersionPolicy` is `RequestVersionOrHigher`, whatever its version: the server only has to answer with
   an `Alt-Svc` header naming an HTTP/3 endpoint, on any host and port, for the next request to go there over QUIC.
 
-`ServerSideRequestForgeryClientHandler` rejects every request whose `Version` is 3.0 or higher, or whose
-`VersionPolicy` is `RequestVersionOrHigher`, with a `ServerSideRequestForgeryException`:
+[ServerSideRequestForgeryClientHandler](cref:Meziantou.Framework.Http.ServerSideRequestForgery.ServerSideRequestForgeryClientHandler) rejects every request whose `Version` is 3.0 or higher, or whose
+`VersionPolicy` is `RequestVersionOrHigher`, with a [ServerSideRequestForgeryException](cref:Meziantou.Framework.Http.ServerSideRequestForgery.ServerSideRequestForgeryException):
 
 <!-- ref:../../../tests/Meziantou.Framework.Http.ServerSideRequestForgery.Tests/ServerSideRequestForgeryClientHandlerTests.cs;region=ServerSideRequestForgery_RejectHttp3;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -67,7 +67,7 @@ The defaults of `HttpClient` (version 1.1, `RequestVersionOrLower`) pass, and HT
 a `Version` of 2.0. The check is on the version only, not on the scheme, because a plain HTTP request can be redirected
 to HTTPS below the handler.
 
-When you call `ConfigureSsrf` without `ServerSideRequestForgeryClientHandler`, nothing rejects these requests. Rule
+When you call [ConfigureSsrf](cref:Meziantou.Framework.Http.ServerSideRequestForgery.SocketHttpHandlerServerSideRequestForgeryExtensions.ConfigureSsrf) without [ServerSideRequestForgeryClientHandler](cref:Meziantou.Framework.Http.ServerSideRequestForgery.ServerSideRequestForgeryClientHandler), nothing rejects these requests. Rule
 HTTP/3 out another way: the `DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_HTTP3SUPPORT=0` environment variable, the
 matching `AppContext` switch, or `HttpClient.DefaultRequestVersion` and `HttpClient.DefaultVersionPolicy` on every
 client.

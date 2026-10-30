@@ -9,7 +9,7 @@ document whose shape you don't know, to build one by code, or to change a few va
 
 ## Read a document
 
-Deserialize to `TomlTable`, then read the values by key:
+Deserialize to [TomlTable](cref:Meziantou.Framework.Toml.Model.TomlTable), then read the values by key:
 
 <!-- ref:../../tests/Meziantou.Framework.Toml.Tests/BasicTests.cs;region=TomlTable_Read;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -32,16 +32,16 @@ Assert.Equal(8000L, firstPort);
 
 | TOML | .NET |
 | --- | --- |
-| Table, inline table | `TomlTable`, which implements `IDictionary<string, object>` |
-| Array | `TomlArray`, which implements `IList<object?>` |
-| Array of tables | `TomlTableArray`, a list of `TomlTable` |
+| Table, inline table | [TomlTable](cref:Meziantou.Framework.Toml.Model.TomlTable), which implements `IDictionary<string, object>` |
+| Array | [TomlArray](cref:Meziantou.Framework.Toml.Model.TomlArray), which implements `IList<object?>` |
+| Array of tables | [TomlTableArray](cref:Meziantou.Framework.Toml.Model.TomlTableArray), a list of [TomlTable](cref:Meziantou.Framework.Toml.Model.TomlTable) |
 | String | `string` |
 | Integer | `long` |
 | Float | `double` |
 | Boolean | `bool` |
-| Date, time, date-time | `TomlDateTime` |
+| Date, time, date-time | [TomlDateTime](cref:Meziantou.Framework.Toml.TomlDateTime) |
 
-`TomlTable`, `TomlArray` and `TomlTableArray` derive from `TomlObject`. A member of your own types typed as one of them,
+[TomlTable](cref:Meziantou.Framework.Toml.Model.TomlTable), [TomlArray](cref:Meziantou.Framework.Toml.Model.TomlArray) and [TomlTableArray](cref:Meziantou.Framework.Toml.Model.TomlTableArray) derive from [TomlObject](cref:Meziantou.Framework.Toml.Model.TomlObject). A member of your own types typed as one of them,
 or as `object`, receives this model; see [Serializing objects](04-Serialization/02-SerializingObjects.md#dictionaries).
 
 ## Build a document
@@ -82,13 +82,13 @@ Assert.Equal("""
 <!-- endref -->
 
 - `new TomlTable(inline: true)` is written as an inline table (`{name = "Ada"}`); other tables get a `[header]`.
-- The keys of a `TomlTable` are written as they are: a key that contains a dot is quoted, never expanded into nested
+- The keys of a [TomlTable](cref:Meziantou.Framework.Toml.Model.TomlTable) are written as they are: a key that contains a dot is quoted, never expanded into nested
   tables.
 
 ## Dates and times
 
-`TomlDateTime` keeps what the document says: the kind of value (`OffsetDateTimeByZ`, `OffsetDateTimeByNumber`,
-`LocalDateTime`, `LocalDate` or `LocalTime`) and the number of digits of the fractional seconds:
+[TomlDateTime](cref:Meziantou.Framework.Toml.TomlDateTime) keeps what the document says: the kind of value ([OffsetDateTimeByZ](cref:Meziantou.Framework.Toml.TomlDateTimeKind.OffsetDateTimeByZ), [OffsetDateTimeByNumber](cref:Meziantou.Framework.Toml.TomlDateTimeKind.OffsetDateTimeByNumber),
+[LocalDateTime](cref:Meziantou.Framework.Toml.TomlDateTimeKind.LocalDateTime), [LocalDate](cref:Meziantou.Framework.Toml.TomlDateTimeKind.LocalDate) or [LocalTime](cref:Meziantou.Framework.Toml.TomlDateTimeKind.LocalTime)) and the number of digits of the fractional seconds:
 
 <!-- ref:../../tests/Meziantou.Framework.Toml.Tests/BasicTests.cs;region=TomlDateTime_Kind;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -108,13 +108,13 @@ Assert.Equal("1979-05-27T07:32:00.50-07:00", updated.ToString()); // The precisi
 ```
 <!-- endref -->
 
-`DateTime` returns the value as a `DateTimeOffset`. A local value has no offset: two `TomlDateTime` values are equal when
+[DateTime](cref:Meziantou.Framework.Toml.TomlDateTime.DateTime) returns the value as a `DateTimeOffset`. A local value has no offset: two [TomlDateTime](cref:Meziantou.Framework.Toml.TomlDateTime) values are equal when
 they have the same kind and the same date, time or instant, whatever their precision.
 
 ## Edit a file and keep its comments
 
 Reading a document into the model drops its comments and its layout. To keep them, read and write with the same
-`TomlMetadataStore`: it records the comments and the style of each value, and the writer puts them back:
+[TomlMetadataStore](cref:Meziantou.Framework.Toml.Serialization.TomlMetadataStore): it records the comments and the style of each value, and the writer puts them back:
 
 <!-- ref:../../tests/Meziantou.Framework.Toml.Tests/BasicTests.cs;region=TomlTable_EditAndKeepComments;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -146,7 +146,7 @@ work on the [syntax tree](08-SyntaxTreeAndParser.md) instead.
 ## Comments and source locations
 
 The store keeps the comments, the source location and the way each value was written. Read them with
-`TryGetProperties`:
+[TryGetProperties](cref:Meziantou.Framework.Toml.Serialization.TomlMetadataStore.TryGetProperties):
 
 <!-- ref:../../tests/Meziantou.Framework.Toml.Tests/BasicTests.cs;region=TomlMetadataStore_Read;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -167,5 +167,5 @@ Assert.Equal(TomlPropertyDisplayKind.StringLiteral, property.DisplayKind);
 ```
 <!-- endref -->
 
-`DisplayKind` says how the value was written, for example a literal string or a hexadecimal integer: the writer uses it
+[DisplayKind](cref:Meziantou.Framework.Toml.Model.TomlPropertyMetadata.DisplayKind) says how the value was written, for example a literal string or a hexadecimal integer: the writer uses it
 to write the value the same way.

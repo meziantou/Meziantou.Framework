@@ -4,7 +4,7 @@ description: Whitespace and comments, which token they belong to, and the differ
 ---
 
 Trivia is the text that does not change what a document means: whitespace, line breaks and comments. It is not a node of
-its own: each token carries the trivia in front of it, `LeadingTrivia`, and the trivia after it, `TrailingTrivia`.
+its own: each token carries the trivia in front of it, [LeadingTrivia](cref:Meziantou.Framework.Language.SyntaxToken.LeadingTrivia), and the trivia after it, [TrailingTrivia](cref:Meziantou.Framework.Language.SyntaxToken.TrailingTrivia).
 
 ## Span and FullSpan
 
@@ -12,8 +12,8 @@ A node or a token has two spans, and two ways to be written as text:
 
 | Member | Covers |
 | --- | --- |
-| `Span`, `ToString()` | The node, without the trivia of its first and last tokens |
-| `FullSpan`, `ToFullString()` | The node and all its trivia |
+| [Span](cref:Meziantou.Framework.Language.SyntaxNode.Span), [ToString()](cref:Meziantou.Framework.Language.SyntaxNode.ToString) | The node, without the trivia of its first and last tokens |
+| [FullSpan](cref:Meziantou.Framework.Language.SyntaxNode.FullSpan), [ToFullString()](cref:Meziantou.Framework.Language.SyntaxNode.ToFullString) | The node and all its trivia |
 
 <!-- ref:../../../tests/Meziantou.Framework.Language.Json.Tests/JsonSyntaxTreeTests.cs;region=JsonSyntaxTree_SpanAndFullSpan;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -41,8 +41,8 @@ Assert.Equal([SyntaxKind.WhitespaceTrivia, SyntaxKind.SingleLineCommentTrivia, S
 ```
 <!-- endref -->
 
-Use `Span` to point at a node, to underline it in an editor or report its position, and `FullSpan` to replace or remove
-it with its comments. `GetLeadingTrivia()` and `GetTrailingTrivia()` return the trivia of the first and of the last
+Use [Span](cref:Meziantou.Framework.Language.SyntaxNode.Span) to point at a node, to underline it in an editor or report its position, and [FullSpan](cref:Meziantou.Framework.Language.SyntaxNode.FullSpan) to replace or remove
+it with its comments. [GetLeadingTrivia()](cref:Meziantou.Framework.Language.SyntaxNode.GetLeadingTrivia) and [GetTrailingTrivia()](cref:Meziantou.Framework.Language.SyntaxNode.GetTrailingTrivia) return the trivia of the first and of the last
 token of a node.
 
 ## Which token a trivia belongs to
@@ -55,7 +55,7 @@ Each language decides where whitespace is trivia and which token it goes to:
 - **INI**: comment lines, and the whitespace around keys, section names and values, are trivia.
 - **CSS**: whitespace and comments are trivia. Whitespace still has a meaning between two selectors, where it is the
   descendant combinator. See [CSS](../08-Css.md#selectors).
-- **XML**: whitespace inside a tag is trivia; whitespace between tags is text, an `XmlTextSyntax` node, because it is
+- **XML**: whitespace inside a tag is trivia; whitespace between tags is text, an [XmlTextSyntax](cref:Meziantou.Framework.Language.Xml.XmlTextSyntax) node, because it is
   content an application may read. See [XML](../05-Xml.md#whitespace-and-text).
 - **Regular expressions**: a pattern has no trivia, except `(?#…)` comments, and whitespace and `#` comments in
   extended mode. See [Regular expressions](../09-Regex/03-OptionsAndCaptures.md#comments-and-extended-mode).
@@ -81,7 +81,7 @@ Assert.Equal("  // the name of the thing\n  ", obj.Members[0].NameToken.LeadingT
 
 ## Read the comments
 
-`DescendantTrivia()` returns every trivia below a node, in the order of the text; filter it by kind. CSS, regular
+[DescendantTrivia()](cref:Meziantou.Framework.Language.SyntaxNode.DescendantTrivia) returns every trivia below a node, in the order of the text; filter it by kind. CSS, regular
 expressions and shell scripts also have a `DescendantComments()` extension method:
 
 <!-- ref:../../../tests/Meziantou.Framework.Language.Shell.Tests/ShellSyntaxTreeTests.cs;region=ShellSyntaxTree_Comments;format=md-fenced-code-block;dedent=true -->

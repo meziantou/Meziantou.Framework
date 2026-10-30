@@ -45,23 +45,23 @@ await downstream;
 ```
 <!-- endref -->
 
-`WithInputStream` takes an `InputSource`:
+[WithInputStream](cref:Meziantou.Framework.ProcessWrapper.WithInputStream) takes an [InputSource](cref:Meziantou.Framework.InputSource):
 
 | Source | Created with |
 | --- | --- |
-| A string, encoded in UTF-8 | `InputSource.FromText`, or the string |
-| Bytes | `InputSource.FromBytes`, or a `byte[]` or `ReadOnlyMemory<byte>` |
-| A file | `InputSource.FromFile` |
-| A `Stream` | `InputSource.FromStream`, or the stream |
-| A `TextReader`, encoded in UTF-8 | `InputSource.FromTextReader`, or the reader |
-| The output of another process | `InputSource.FromProcessPipe`, or a `ProcessPipe` |
+| A string, encoded in UTF-8 | [InputSource.FromText](cref:Meziantou.Framework.InputSource.FromText), or the string |
+| Bytes | [InputSource.FromBytes](cref:Meziantou.Framework.InputSource.FromBytes), or a `byte[]` or `ReadOnlyMemory<byte>` |
+| A file | [InputSource.FromFile](cref:Meziantou.Framework.InputSource.FromFile) |
+| A `Stream` | [InputSource.FromStream](cref:Meziantou.Framework.InputSource.FromStream), or the stream |
+| A `TextReader`, encoded in UTF-8 | [InputSource.FromTextReader](cref:Meziantou.Framework.InputSource.FromTextReader), or the reader |
+| The output of another process | [InputSource.FromProcessPipe](cref:Meziantou.Framework.InputSource.FromProcessPipe), or a [ProcessPipe](cref:Meziantou.Framework.ProcessPipe) |
 
 The standard input is closed once the whole source is written, so a process that reads until the end of its input
-exits. Without `WithInputStream`, the standard input is not redirected.
+exits. Without [WithInputStream](cref:Meziantou.Framework.ProcessWrapper.WithInputStream), the standard input is not redirected.
 
 ## Connect two processes
 
-A `ProcessPipe` connects the output of one process to the input of another one, as in the last example above. Add the
+A [ProcessPipe](cref:Meziantou.Framework.ProcessPipe) connects the output of one process to the input of another one, as in the last example above. Add the
 pipe as an output target of the first process, and as the input source of the second one. Start the reading process
 first, or at the same time: the pipe buffers the data written in advance, up to `maxBufferSize` bytes (64 KB by
 default), then waits for the reader to consume it.
@@ -87,7 +87,7 @@ foreach (var line in result.Output.StandardOutput)
 <!-- endref -->
 
 - The standard output of each command goes to the standard input of the next one.
-- `ExecuteAsync` and `ExecuteBufferedAsync` on the pipeline start every command and return the result of the last one.
-  With `ExecuteBufferedAsync`, the output is the output of the last command.
+- [ExecuteAsync](cref:Meziantou.Framework.ProcessWrapper.ExecuteAsync) and [ExecuteBufferedAsync](cref:Meziantou.Framework.ProcessWrapper.ExecuteBufferedAsync) on the pipeline start every command and return the result of the last one.
+  With [ExecuteBufferedAsync](cref:Meziantou.Framework.ProcessWrapper.ExecuteBufferedAsync), the output is the output of the last command.
 - The validation of every command applies: the pipeline fails when any command fails. See
   [Exit codes and errors](06-ExitCodesAndErrors.md).

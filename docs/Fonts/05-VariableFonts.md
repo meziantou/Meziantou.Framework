@@ -8,7 +8,7 @@ metrics and the positions of its layout tables continuously.
 
 ## Get an instance
 
-`FontFace.Axes` describes the axes, and `WithCoordinates` gives the face of an instance from the value of each axis:
+[FontFace.Axes](cref:Meziantou.Framework.Fonts.FontFace.Axes) describes the axes, and [WithCoordinates](cref:Meziantou.Framework.Fonts.FontFace.WithCoordinates) gives the face of an instance from the value of each axis:
 
 <!-- ref:../../tests/Meziantou.Framework.Imaging.Tests/FontTests.cs;region=Fonts_VariableFont;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -31,25 +31,25 @@ With the variable Noto Sans, the letter `o` is 605 units wide in the default ins
 weight 900.
 
 - The values are 16.16 fixed-point numbers in the units of the axis: shift a weight of 700 by 16 bits (`700 << 16`).
-- `WithCoordinates` takes one value per axis, in the order of `Axes`; an axis without a value stays at its default, and
+- [WithCoordinates](cref:Meziantou.Framework.Fonts.FontFace.WithCoordinates) takes one value per axis, in the order of [Axes](cref:Meziantou.Framework.Fonts.FontFace.Axes); an axis without a value stays at its default, and
   a value out of range is brought to the nearest end.
-- The face of an instance shares the bytes of the font and is cheap to create. It is a `FontFace` like any other: decode
-  its outlines, read its metrics and shape text with it. `Instance` gives its coordinates; it is `null` for the default
+- The face of an instance shares the bytes of the font and is cheap to create. It is a [FontFace](cref:Meziantou.Framework.Fonts.FontFace) like any other: decode
+  its outlines, read its metrics and shape text with it. [Instance](cref:Meziantou.Framework.Fonts.FontFace.Instance) gives its coordinates; it is `null` for the default
   instance.
 - A font that does not vary has no axis.
 
 ## Axes and named instances
 
-| `FontAxisRecord` | Description |
+| [FontAxisRecord](cref:Meziantou.Framework.Fonts.FontAxisRecord) | Description |
 | --- | --- |
-| `Tag` | The tag of the axis, such as `wght`, `wdth`, `slnt`, `ital` or `opsz`, as a big-endian integer: compare it with `ShapingFeature.ToTag("wght")` |
-| `Minimum`, `Default`, `Maximum` | The range of the axis and its default value |
-| `IsHidden` | The font asks that the axis is not shown to users |
-| `NameId` | The name of the axis: `FontFace.GetName(NameId)` |
+| [Tag](cref:Meziantou.Framework.Fonts.FontAxisRecord.Tag) | The tag of the axis, such as `wght`, `wdth`, `slnt`, `ital` or `opsz`, as a big-endian integer: compare it with `ShapingFeature.ToTag("wght")` |
+| [Minimum](cref:Meziantou.Framework.Fonts.FontAxisRecord.Minimum), [Default](cref:Meziantou.Framework.Fonts.FontAxisRecord.Default), [Maximum](cref:Meziantou.Framework.Fonts.FontAxisRecord.Maximum) | The range of the axis and its default value |
+| [IsHidden](cref:Meziantou.Framework.Fonts.FontAxisRecord.IsHidden) | The font asks that the axis is not shown to users |
+| [NameId](cref:Meziantou.Framework.Fonts.FontAxisRecord.NameId) | The name of the axis: `FontFace.GetName(NameId)` |
 
-`NamedInstances` lists the instances the font names, such as "Light" or "Bold Condensed": `Coordinates` are the values
-to pass to `WithCoordinates`, and `NameId` their name.
+[NamedInstances](cref:Meziantou.Framework.Fonts.FontFace.NamedInstances) lists the instances the font names, such as "Light" or "Bold Condensed": [Coordinates](cref:Meziantou.Framework.Fonts.FontInstanceRecord.Coordinates) are the values
+to pass to [WithCoordinates](cref:Meziantou.Framework.Fonts.FontFace.WithCoordinates), and [NameId](cref:Meziantou.Framework.Fonts.FontAxisRecord.NameId) their name.
 
 To choose instances by their axis tags without handling coordinates, use
 [the variable fonts of Meziantou.Framework.Imaging](../Imaging/08-Text/02-Fonts.md#variable-fonts)
-(`Font.WithVariations`).
+([Font.WithVariations](cref:Meziantou.Framework.Imaging.Typography.Font.WithVariations)).

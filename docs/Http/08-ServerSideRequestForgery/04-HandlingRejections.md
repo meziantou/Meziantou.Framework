@@ -6,7 +6,7 @@ description: The exceptions a rejected request throws, the warnings it logs and 
 ## Exceptions
 
 A request rejected when its connection is opened throws an `HttpRequestException` whose `InnerException` is a
-`ServerSideRequestForgeryException`:
+[ServerSideRequestForgeryException](cref:Meziantou.Framework.Http.ServerSideRequestForgery.ServerSideRequestForgeryException):
 
 <!-- ref:../../../tests/Meziantou.Framework.Http.ServerSideRequestForgery.Tests/ServerSideRequestForgeryConnectPipelineTests.cs;region=ServerSideRequestForgery_CatchRejection;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -25,8 +25,8 @@ Assert.NotNull(rejection);
 ```
 <!-- endref -->
 
-A request that may use HTTP/3 is rejected by `ServerSideRequestForgeryClientHandler` before it reaches the
-`SocketsHttpHandler`, so its `ServerSideRequestForgeryException` is not wrapped:
+A request that may use HTTP/3 is rejected by [ServerSideRequestForgeryClientHandler](cref:Meziantou.Framework.Http.ServerSideRequestForgery.ServerSideRequestForgeryClientHandler) before it reaches the
+`SocketsHttpHandler`, so its [ServerSideRequestForgeryException](cref:Meziantou.Framework.Http.ServerSideRequestForgery.ServerSideRequestForgeryException) is not wrapped:
 
 <!-- ref:../../../tests/Meziantou.Framework.Http.ServerSideRequestForgery.Tests/ServerSideRequestForgeryClientHandlerTests.cs;region=ServerSideRequestForgery_RejectHttp3;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -63,7 +63,7 @@ The reason is the tag of the metric below; the HTTP/3 rejection has none.
 
 ## Logging
 
-Set `Logger` to log every rejection as a warning:
+Set [Logger](cref:Meziantou.Framework.Http.ServerSideRequestForgery.ServerSideRequestForgeryOptions.Logger) to log every rejection as a warning:
 
 <!-- ref:../../../tests/Meziantou.Framework.Http.ServerSideRequestForgery.Tests/ServerSideRequestForgeryConnectPipelineTests.cs;region=ServerSideRequestForgery_Logging;format=md-fenced-code-block;dedent=true -->
 ```csharp

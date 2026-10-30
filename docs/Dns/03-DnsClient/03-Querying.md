@@ -3,12 +3,12 @@ title: Querying
 description: Query a record type, read typed records, handle NXDOMAIN, look up an IP address, and send custom query messages.
 ---
 
-The examples query a server that holds a small `example.com` zone. `client` is a `DnsClient`; see
+The examples query a server that holds a small `example.com` zone. `client` is a [DnsClient](cref:Meziantou.Framework.DnsClient.DnsClient); see
 [Protocols](02-Protocols.md) to create one.
 
 ## Read typed records
 
-`QueryAsync` takes a name and a `DnsQueryType`, and returns a `DnsResponseMessage`. Each record of `Answers` has the
+[QueryAsync](cref:Meziantou.Framework.DnsClient.DnsClient.QueryAsync) takes a name and a [DnsQueryType](cref:Meziantou.Framework.DnsClient.Query.DnsQueryType), and returns a [DnsResponseMessage](cref:Meziantou.Framework.DnsClient.Response.DnsResponseMessage). Each record of [Answers](cref:Meziantou.Framework.DnsClient.Response.DnsResponseMessage.Answers) has the
 type of its data: filter with `OfType`:
 
 <!-- ref:../../../tests/Meziantou.Framework.DnsClient.Tests/DnsClientIntegrationTests.cs;region=DnsClient_ReadRecords;format=md-fenced-code-block;dedent=true -->
@@ -25,8 +25,8 @@ Assert.Equal(["v=spf1 -all"], txt.Text);
 ```
 <!-- endref -->
 
-Every record has a `Name`, a `RecordType`, a `RecordClass`, a `TimeToLive` (in seconds) and a `DataLength`. A
-`QueryAsync` overload takes a `DnsQueryClass` for the classes other than `IN`.
+Every record has a [Name](cref:Meziantou.Framework.DnsClient.Response.DnsRecord.Name), a [RecordType](cref:Meziantou.Framework.DnsClient.Response.DnsRecord.RecordType), a [RecordClass](cref:Meziantou.Framework.DnsClient.Response.DnsRecord.RecordClass), a [TimeToLive](cref:Meziantou.Framework.DnsClient.Response.DnsRecord.TimeToLive) (in seconds) and a [DataLength](cref:Meziantou.Framework.DnsClient.Response.DnsRecord.DataLength). A
+[QueryAsync](cref:Meziantou.Framework.DnsClient.DnsClient.QueryAsync) overload takes a [DnsQueryClass](cref:Meziantou.Framework.DnsClient.Query.DnsQueryClass) for the classes other than [IN](cref:Meziantou.Framework.DnsClient.Query.DnsQueryClass.IN).
 
 ### Typed record classes
 
@@ -34,17 +34,17 @@ The records are in the [Meziantou.Framework.DnsClient.Response.Records](cref:Mez
 
 | Record types | Class |
 | --- | --- |
-| A, AAAA | `DnsARecord`, `DnsAaaaRecord` (`Address`) |
-| CNAME, DNAME, NS, PTR | `DnsCnameRecord`, `DnsDnameRecord`, `DnsNsRecord`, `DnsPtrRecord` |
-| MX, SRV, URI | `DnsMxRecord`, `DnsSrvRecord`, `DnsUriRecord` |
-| TXT | `DnsTxtRecord` (`Text`: the character strings of the record) |
-| SOA | `DnsSoaRecord` |
-| CAA, TLSA, SSHFP | `DnsCaaRecord`, `DnsTlsaRecord`, `DnsSshfpRecord` |
-| SVCB, HTTPS | `DnsSvcbRecord` (`Priority`, `TargetName`, `Parameters`) |
-| NAPTR, LOC, HINFO, RP | `DnsNaptrRecord`, `DnsLocRecord`, `DnsHinfoRecord`, `DnsRpRecord` |
-| DNSKEY, DS, RRSIG, NSEC, NSEC3, NSEC3PARAM | `DnsDnskeyRecord`, `DnsDsRecord`, `DnsRrsigRecord`, `DnsNsecRecord`, `DnsNsec3Record`, `DnsNsec3ParamRecord` |
-| OPT (in `AdditionalRecords`) | `DnsOptRecord` |
-| Any other type | `DnsUnknownRecord` (`Data`: the raw RDATA) |
+| A, AAAA | [DnsARecord](cref:Meziantou.Framework.DnsClient.Response.Records.DnsARecord), [DnsAaaaRecord](cref:Meziantou.Framework.DnsClient.Response.Records.DnsAaaaRecord) (`Address`) |
+| CNAME, DNAME, NS, PTR | [DnsCnameRecord](cref:Meziantou.Framework.DnsClient.Response.Records.DnsCnameRecord), [DnsDnameRecord](cref:Meziantou.Framework.DnsClient.Response.Records.DnsDnameRecord), [DnsNsRecord](cref:Meziantou.Framework.DnsClient.Response.Records.DnsNsRecord), [DnsPtrRecord](cref:Meziantou.Framework.DnsClient.Response.Records.DnsPtrRecord) |
+| MX, SRV, URI | [DnsMxRecord](cref:Meziantou.Framework.DnsClient.Response.Records.DnsMxRecord), [DnsSrvRecord](cref:Meziantou.Framework.DnsClient.Response.Records.DnsSrvRecord), [DnsUriRecord](cref:Meziantou.Framework.DnsClient.Response.Records.DnsUriRecord) |
+| TXT | [DnsTxtRecord](cref:Meziantou.Framework.DnsClient.Response.Records.DnsTxtRecord) (`Text`: the character strings of the record) |
+| SOA | [DnsSoaRecord](cref:Meziantou.Framework.DnsClient.Response.Records.DnsSoaRecord) |
+| CAA, TLSA, SSHFP | [DnsCaaRecord](cref:Meziantou.Framework.DnsClient.Response.Records.DnsCaaRecord), [DnsTlsaRecord](cref:Meziantou.Framework.DnsClient.Response.Records.DnsTlsaRecord), [DnsSshfpRecord](cref:Meziantou.Framework.DnsClient.Response.Records.DnsSshfpRecord) |
+| SVCB, HTTPS | [DnsSvcbRecord](cref:Meziantou.Framework.DnsClient.Response.Records.DnsSvcbRecord) ([Priority](cref:Meziantou.Framework.DnsClient.Response.Records.DnsSvcbRecord.Priority), [TargetName](cref:Meziantou.Framework.DnsClient.Response.Records.DnsSvcbRecord.TargetName), [Parameters](cref:Meziantou.Framework.DnsClient.Response.Records.DnsSvcbRecord.Parameters)) |
+| NAPTR, LOC, HINFO, RP | [DnsNaptrRecord](cref:Meziantou.Framework.DnsClient.Response.Records.DnsNaptrRecord), [DnsLocRecord](cref:Meziantou.Framework.DnsClient.Response.Records.DnsLocRecord), [DnsHinfoRecord](cref:Meziantou.Framework.DnsClient.Response.Records.DnsHinfoRecord), [DnsRpRecord](cref:Meziantou.Framework.DnsClient.Response.Records.DnsRpRecord) |
+| DNSKEY, DS, RRSIG, NSEC, NSEC3, NSEC3PARAM | [DnsDnskeyRecord](cref:Meziantou.Framework.DnsClient.Response.Records.DnsDnskeyRecord), [DnsDsRecord](cref:Meziantou.Framework.DnsClient.Response.Records.DnsDsRecord), [DnsRrsigRecord](cref:Meziantou.Framework.DnsClient.Response.Records.DnsRrsigRecord), [DnsNsecRecord](cref:Meziantou.Framework.DnsClient.Response.Records.DnsNsecRecord), [DnsNsec3Record](cref:Meziantou.Framework.DnsClient.Response.Records.DnsNsec3Record), [DnsNsec3ParamRecord](cref:Meziantou.Framework.DnsClient.Response.Records.DnsNsec3ParamRecord) |
+| OPT (in [AdditionalRecords](cref:Meziantou.Framework.DnsClient.Response.DnsResponseMessage.AdditionalRecords)) | [DnsOptRecord](cref:Meziantou.Framework.DnsClient.Response.Records.DnsOptRecord) |
+| Any other type | [DnsUnknownRecord](cref:Meziantou.Framework.DnsClient.Response.Records.DnsUnknownRecord) ([Data](cref:Meziantou.Framework.DnsClient.Response.Records.DnsUnknownRecord.Data): the raw RDATA) |
 
 A `switch` on the record handles several types at once:
 
@@ -71,7 +71,7 @@ Assert.Equal(["A 192.0.2.1", "MX 10 mail.example.com", "TXT v=spf1 -all"], lines
 
 ## Get the IP addresses of a name
 
-A and AAAA are separate queries. `GetIPAddresses` (and `GetIPv4Addresses`, `GetIPv6Addresses`) collects the addresses
+A and AAAA are separate queries. [GetIPAddresses](cref:Meziantou.Framework.DnsClient.Response.DnsRecordExtensions.GetIPAddresses) (and [GetIPv4Addresses](cref:Meziantou.Framework.DnsClient.Response.DnsRecordExtensions.GetIPv4Addresses), [GetIPv6Addresses](cref:Meziantou.Framework.DnsClient.Response.DnsRecordExtensions.GetIPv6Addresses)) collects the addresses
 of a list of records, in order:
 
 <!-- ref:../../../tests/Meziantou.Framework.DnsClient.Tests/DnsClientIntegrationTests.cs;region=DnsClient_GetIPAddresses;format=md-fenced-code-block;dedent=true -->
@@ -106,22 +106,22 @@ Assert.Equal(60u, soa.Minimum);
 ```
 <!-- endref -->
 
-| `DnsResponseCode` | Meaning |
+| [DnsResponseCode](cref:Meziantou.Framework.DnsClient.Response.DnsResponseCode) | Meaning |
 | --- | --- |
-| `NoError` | The query succeeded. With no answers, the name exists but has no record of that type (NODATA). |
-| `NameError` | NXDOMAIN: the name does not exist. |
-| `ServerFailure` | The server could not answer, for instance because an upstream server failed. |
-| `Refused` | The server does not answer this query, for instance because it does not serve this zone or this client. |
-| `FormError`, `NotImplemented` | The server did not understand the query. |
-| `BadVersion` and the other values above 15 | Extended codes, carried in the OPT record (EDNS). |
+| [NoError](cref:Meziantou.Framework.DnsClient.Response.DnsResponseCode.NoError) | The query succeeded. With no answers, the name exists but has no record of that type (NODATA). |
+| [NameError](cref:Meziantou.Framework.DnsClient.Response.DnsResponseCode.NameError) | NXDOMAIN: the name does not exist. |
+| [ServerFailure](cref:Meziantou.Framework.DnsClient.Response.DnsResponseCode.ServerFailure) | The server could not answer, for instance because an upstream server failed. |
+| [Refused](cref:Meziantou.Framework.DnsClient.Response.DnsResponseCode.Refused) | The server does not answer this query, for instance because it does not serve this zone or this client. |
+| [FormError](cref:Meziantou.Framework.DnsClient.Response.DnsResponseCode.FormError), [NotImplemented](cref:Meziantou.Framework.DnsClient.Response.DnsResponseCode.NotImplemented) | The server did not understand the query. |
+| [BadVersion](cref:Meziantou.Framework.DnsClient.Response.DnsResponseCode.BadVersion) and the other values above 15 | Extended codes, carried in the OPT record (EDNS). |
 
-The `Header` also holds the flags of the response: `IsAuthoritative` (the answer comes from the zone itself),
-`IsTruncated`, `RecursionAvailable`, `AuthenticatedData` (see [DNSSEC](04-Dnssec.md)), and the record counts.
-`Authorities` and `AdditionalRecords` hold the other sections of the response.
+The [Header](cref:Meziantou.Framework.DnsClient.Response.DnsResponseMessage.Header) also holds the flags of the response: [IsAuthoritative](cref:Meziantou.Framework.DnsClient.Response.DnsResponseHeader.IsAuthoritative) (the answer comes from the zone itself),
+[IsTruncated](cref:Meziantou.Framework.DnsClient.Response.DnsResponseHeader.IsTruncated), [RecursionAvailable](cref:Meziantou.Framework.DnsClient.Response.DnsResponseHeader.RecursionAvailable), [AuthenticatedData](cref:Meziantou.Framework.DnsClient.Response.DnsResponseHeader.AuthenticatedData) (see [DNSSEC](04-Dnssec.md)), and the record counts.
+[Authorities](cref:Meziantou.Framework.DnsClient.Response.DnsResponseMessage.Authorities) and [AdditionalRecords](cref:Meziantou.Framework.DnsClient.Response.DnsResponseMessage.AdditionalRecords) hold the other sections of the response.
 
 ## Look up the name of an IP address
 
-`ReverseLookupAsync` queries the PTR record of an IPv4 or IPv6 address, under `in-addr.arpa` or `ip6.arpa`:
+[ReverseLookupAsync](cref:Meziantou.Framework.DnsClient.DnsClient.ReverseLookupAsync) queries the PTR record of an IPv4 or IPv6 address, under `in-addr.arpa` or `ip6.arpa`:
 
 <!-- ref:../../../tests/Meziantou.Framework.DnsClient.Tests/DnsClientIntegrationTests.cs;region=DnsClient_LocalReverseLookup;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -150,7 +150,7 @@ Assert.Equal("xn--bcher-kva.example.com", record.Name);
 
 ## Send a custom query message
 
-`SendAsync` sends a `DnsQueryMessage` you build, to set the flags yourself:
+[SendAsync](cref:Meziantou.Framework.DnsClient.DnsClient.SendAsync) sends a [DnsQueryMessage](cref:Meziantou.Framework.DnsClient.Query.DnsQueryMessage) you build, to set the flags yourself:
 
 <!-- ref:../../../tests/Meziantou.Framework.DnsClient.Tests/DnsClientIntegrationTests.cs;region=DnsClient_SendAsync;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -169,11 +169,11 @@ Assert.False(response.Header.RecursionDesired);
 ```
 <!-- endref -->
 
-- `RecursionDesired` is `true` by default; set it to `false` to query an authoritative server without recursion.
-- `CheckingDisabled` sets the CD flag, which asks a validating resolver to return the answer even when DNSSEC
+- [RecursionDesired](cref:Meziantou.Framework.DnsClient.Query.DnsQueryMessage.RecursionDesired) is `true` by default; set it to `false` to query an authoritative server without recursion.
+- [CheckingDisabled](cref:Meziantou.Framework.DnsClient.Query.DnsQueryMessage.CheckingDisabled) sets the CD flag, which asks a validating resolver to return the answer even when DNSSEC
   validation fails.
-- `EdnsOptions` sets the OPT record. When it is `null`, the client adds one with its options, unless `EnableEdns` is
+- [EdnsOptions](cref:Meziantou.Framework.DnsClient.Query.DnsQueryMessage.EdnsOptions) sets the OPT record. When it is `null`, the client adds one with its options, unless [EnableEdns](cref:Meziantou.Framework.DnsClient.DnsClientOptions.EnableEdns) is
   `false`.
-- `Id` is the transaction ID. When it is `null`, the client picks a random one.
+- [Id](cref:Meziantou.Framework.DnsClient.Query.DnsQueryMessage.Id) is the transaction ID. When it is `null`, the client picks a random one.
 - The client does not modify the message: it applies its options to a copy, so you can send the same message several
   times or with several clients.

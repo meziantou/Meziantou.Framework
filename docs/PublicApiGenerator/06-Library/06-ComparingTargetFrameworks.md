@@ -5,7 +5,7 @@ description: Combine the builds of an assembly for several target frameworks, an
 
 ## Aggregate the builds
 
-`PublicApi.Aggregate` combines the models of the builds of an assembly for several target frameworks. Symbols are
+[PublicApi.Aggregate](cref:Meziantou.Framework.PublicApiGenerator.PublicApi.Aggregate) combines the models of the builds of an assembly for several target frameworks. Symbols are
 matched by documentation ID: each aggregated symbol lists the target frameworks that declare it and its distinct
 declarations (its variants).
 
@@ -35,21 +35,21 @@ foreach (var type in aggregate.Types)
 <!-- endref -->
 
 - Read each build with [`PublicApi.ReadAssembly`](03-ReadingTheApiModel.md#read-an-assembly), with its target framework.
-- The assemblies must have the same name and distinct target frameworks; otherwise `Aggregate` throws an
+- The assemblies must have the same name and distinct target frameworks; otherwise [Aggregate](cref:Meziantou.Framework.PublicApiGenerator.PublicApi.Aggregate) throws an
   `ArgumentException`.
-- `Types` lists the top-level types; each `PublicApiAggregatedSymbol` has its `Members` and `NestedTypes`.
-  `FindSymbolByDocumentationId` finds a symbol, and `GetAssembly` returns the model of one target framework.
+- [Types](cref:Meziantou.Framework.PublicApiGenerator.PublicApiAggregatedAssembly.Types) lists the top-level types; each [PublicApiAggregatedSymbol](cref:Meziantou.Framework.PublicApiGenerator.PublicApiAggregatedSymbol) has its [Members](cref:Meziantou.Framework.PublicApiGenerator.PublicApiAggregatedSymbol.Members) and [NestedTypes](cref:Meziantou.Framework.PublicApiGenerator.PublicApiAggregatedSymbol.NestedTypes).
+  [FindSymbolByDocumentationId](cref:Meziantou.Framework.PublicApiGenerator.PublicApiAggregatedAssembly.FindSymbolByDocumentationId) finds a symbol, and [GetAssembly](cref:Meziantou.Framework.PublicApiGenerator.PublicApiAggregatedAssembly.GetAssembly) returns the model of one target framework.
 
 ## What differs
 
-- `IsAvailableInAllTargetFrameworks` is `false` for a symbol that some target frameworks do not declare, and
-  `TargetFrameworks` lists the ones that do.
-- `Differences` tells what differs between the declarations of the symbol: its kind, accessibility, modifiers,
-  signature, nullability, constraints, attributes, inheritance, value or parameter names (`PublicApiSymbolDifferences`
-  is a flags enum). It is `None` when all the target frameworks that declare the symbol share the same declaration.
-- `Variants` lists the distinct declarations. Each variant has the target frameworks that share it and keeps the symbol
-  of each of them, with its own metadata provenance; its `Symbol`, the symbol of its first target framework, is the one
-  to format. `GetSymbol` on the aggregated symbol returns the symbol of one target framework.
+- [IsAvailableInAllTargetFrameworks](cref:Meziantou.Framework.PublicApiGenerator.PublicApiAggregatedSymbol.IsAvailableInAllTargetFrameworks) is `false` for a symbol that some target frameworks do not declare, and
+  [TargetFrameworks](cref:Meziantou.Framework.PublicApiGenerator.PublicApiAggregatedSymbol.TargetFrameworks) lists the ones that do.
+- [Differences](cref:Meziantou.Framework.PublicApiGenerator.PublicApiAggregatedSymbol.Differences) tells what differs between the declarations of the symbol: its kind, accessibility, modifiers,
+  signature, nullability, constraints, attributes, inheritance, value or parameter names ([PublicApiSymbolDifferences](cref:Meziantou.Framework.PublicApiGenerator.PublicApiSymbolDifferences)
+  is a flags enum). It is [None](cref:Meziantou.Framework.PublicApiGenerator.PublicApiSymbolDifferences.None) when all the target frameworks that declare the symbol share the same declaration.
+- [Variants](cref:Meziantou.Framework.PublicApiGenerator.PublicApiAggregatedSymbol.Variants) lists the distinct declarations. Each variant has the target frameworks that share it and keeps the symbol
+  of each of them, with its own metadata provenance; its [Symbol](cref:Meziantou.Framework.PublicApiGenerator.PublicApiSymbolVariant.Symbol), the symbol of its first target framework, is the one
+  to format. [GetSymbol](cref:Meziantou.Framework.PublicApiGenerator.PublicApiAggregatedSymbol.GetSymbol) on the aggregated symbol returns the symbol of one target framework.
 
 Declarations are compared using the structured model: two symbols with the same documentation ID belong to different
 variants when their return types, nullable annotations, constraints, modifiers, attributes, constant values or base

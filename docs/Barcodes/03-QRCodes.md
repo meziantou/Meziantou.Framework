@@ -7,9 +7,9 @@ description: Create standard QR codes, Micro QR codes and rectangular Micro QR c
 
 | Kind | Method | Size in modules | Standard |
 | --- | --- | --- | --- |
-| Standard QR code | `QRCode.Create` | 21×21 to 177×177 (versions 1 to 40) | ISO/IEC 18004 |
-| Micro QR code | `QRCode.CreateMicroQR` | 11×11 to 17×17 (versions M1 to M4) | ISO/IEC 18004 |
-| Rectangular Micro QR code (rMQR) | `QRCode.CreateRMQR` | Rectangular, wider than high | ISO/IEC 23941 |
+| Standard QR code | [QRCode.Create](cref:Meziantou.Framework.Barcodes.QRCode.Create) | 21×21 to 177×177 (versions 1 to 40) | ISO/IEC 18004 |
+| Micro QR code | [QRCode.CreateMicroQR](cref:Meziantou.Framework.Barcodes.QRCode.CreateMicroQR) | 11×11 to 17×17 (versions M1 to M4) | ISO/IEC 18004 |
+| Rectangular Micro QR code (rMQR) | [QRCode.CreateRMQR](cref:Meziantou.Framework.Barcodes.QRCode.CreateRMQR) | Rectangular, wider than high | ISO/IEC 23941 |
 
 <!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/QRCodeTests.cs;region=QRCode_Create;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -56,10 +56,10 @@ more redundancy, so the same data takes a larger code:
 
 | Level | Recovers about |
 | --- | --- |
-| `ErrorCorrectionLevel.L` | 7% |
-| `ErrorCorrectionLevel.M` | 15% (the default of `Create` and `CreateRMQR`) |
-| `ErrorCorrectionLevel.Q` | 25% |
-| `ErrorCorrectionLevel.H` | 30% |
+| [ErrorCorrectionLevel.L](cref:Meziantou.Framework.Barcodes.ErrorCorrectionLevel.L) | 7% |
+| [ErrorCorrectionLevel.M](cref:Meziantou.Framework.Barcodes.ErrorCorrectionLevel.M) | 15% (the default of [Create](cref:Meziantou.Framework.Barcodes.QRCode.Create) and [CreateRMQR](cref:Meziantou.Framework.Barcodes.QRCode.CreateRMQR)) |
+| [ErrorCorrectionLevel.Q](cref:Meziantou.Framework.Barcodes.ErrorCorrectionLevel.Q) | 25% |
+| [ErrorCorrectionLevel.H](cref:Meziantou.Framework.Barcodes.ErrorCorrectionLevel.H) | 30% |
 
 <!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/QRCodeTests.cs;region=QRCode_ErrorCorrectionLevel;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -78,12 +78,12 @@ var highPng = high.ToPng(new QRCodePngOptions { ModuleSize = 4 });
 ![A QR code of version 2, with low error correction](images/ErrorCorrectionLow.png)
 ![The same data in a larger QR code of version 4, with high error correction](images/ErrorCorrectionHigh.png)
 
-- Use `H` when a logo covers the middle of the code (see [the logo of the SVG renderer](06-SvgAndPng.md#add-a-logo)),
+- Use [H](cref:Meziantou.Framework.Barcodes.ErrorCorrectionLevel.H) when a logo covers the middle of the code (see [the logo of the SVG renderer](06-SvgAndPng.md#add-a-logo)),
   or when the printed code can get dirty or scratched.
-- Not every kind supports every level. Micro QR versions M2 and M3 support `L` and `M`, M4 supports `L`, `M` and `Q`,
-  and M1 only detects errors (its `ErrorCorrectionLevel` is reported as `L`). `CreateMicroQR` uses `L` by default.
-  rMQR codes support `M` and `H` only.
-- `QRCode.ErrorCorrectionLevel` gives the level the code was built with, and `Version` its version.
+- Not every kind supports every level. Micro QR versions M2 and M3 support [L](cref:Meziantou.Framework.Barcodes.ErrorCorrectionLevel.L) and [M](cref:Meziantou.Framework.Barcodes.ErrorCorrectionLevel.M), M4 supports [L](cref:Meziantou.Framework.Barcodes.ErrorCorrectionLevel.L), [M](cref:Meziantou.Framework.Barcodes.ErrorCorrectionLevel.M) and [Q](cref:Meziantou.Framework.Barcodes.ErrorCorrectionLevel.Q),
+  and M1 only detects errors (its [ErrorCorrectionLevel](cref:Meziantou.Framework.Barcodes.ErrorCorrectionLevel) is reported as [L](cref:Meziantou.Framework.Barcodes.ErrorCorrectionLevel.L)). [CreateMicroQR](cref:Meziantou.Framework.Barcodes.QRCode.CreateMicroQR) uses [L](cref:Meziantou.Framework.Barcodes.ErrorCorrectionLevel.L) by default.
+  rMQR codes support [M](cref:Meziantou.Framework.Barcodes.ErrorCorrectionLevel.M) and [H](cref:Meziantou.Framework.Barcodes.ErrorCorrectionLevel.H) only.
+- [QRCode.ErrorCorrectionLevel](cref:Meziantou.Framework.Barcodes.QRCode.ErrorCorrectionLevel) gives the level the code was built with, and [Version](cref:Meziantou.Framework.Barcodes.QRCode.Version) its version.
 
 ## How the data is encoded
 
@@ -93,7 +93,7 @@ The whole text is encoded in one mode, the most compact one that can hold all it
 - Uppercase letters, digits, the space and `$%*+-./:` (the alphanumeric mode) take fewer bits than other characters.
 - A text whose characters are all double-byte Shift JIS characters, such as Japanese kanji and kana, is encoded in
   the kanji mode.
-- Any other text is encoded as UTF-8. `Create` also takes bytes, encoded as they are.
+- Any other text is encoded as UTF-8. [Create](cref:Meziantou.Framework.Barcodes.QRCode.Create) also takes bytes, encoded as they are.
 
 <!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/QRCodeTests.cs;region=QRCode_EncodingModes;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -117,7 +117,7 @@ Data too long for the largest version throws an `InvalidOperationException`; emp
 
 ## Read the modules
 
-A `QRCode` is a grid of modules: `Width` columns and `Height` rows (`Size` is the side of a square code), and the
+A [QRCode](cref:Meziantou.Framework.Barcodes.QRCode) is a grid of modules: [Width](cref:Meziantou.Framework.Barcodes.QRCode.Width) columns and [Height](cref:Meziantou.Framework.Barcodes.QRCode.Height) rows ([Size](cref:Meziantou.Framework.Barcodes.QRCode.Size) is the side of a square code), and the
 indexer tells whether a module is dark. Use it to render the code your own way:
 
 <!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/QRCodeTests.cs;region=QRCode_Modules;format=md-fenced-code-block;dedent=true -->

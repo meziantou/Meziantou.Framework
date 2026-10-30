@@ -3,7 +3,7 @@ title: Rule syntax
 description: Write Adblock-style DNS rules - patterns, exceptions, priorities, and the $important, $badfilter, $denyallow and $dnstype modifiers.
 ---
 
-The `AdBlock` format is the syntax of DNS filter lists for ad blockers: a pattern, optionally preceded by `@@` for an
+The [AdBlock](cref:Meziantou.Framework.DnsFilter.DnsFilterListFormat.AdBlock) format is the syntax of DNS filter lists for ad blockers: a pattern, optionally preceded by `@@` for an
 exception, and optionally followed by `$` and comma-separated modifiers.
 
 ## Patterns
@@ -88,7 +88,7 @@ Assert.Equal("@@||safe.cdn.example.com^$important", result.MatchingRule?.Origina
 <!-- endref -->
 
 Within a level, a rule with `$dnsrewrite` wins over a plain block, then the more specific rule wins.
-`MatchingRule` is the rule that decided, which helps to understand why a domain is blocked.
+[MatchingRule](cref:Meziantou.Framework.DnsFilter.DnsFilterResult.MatchingRule) is the rule that decided, which helps to understand why a domain is blocked.
 
 ## Disable a rule of another list
 
@@ -149,8 +149,8 @@ Assert.False(engine.Evaluate("example.com", DnsFilterQueryType.A).IsMatched);
 <!-- endref -->
 
 - `$dnstype=A|AAAA` applies to A and AAAA queries only; `$dnstype=~HTTPS` to every type except HTTPS.
-- Types are names (`AAAA`) or numbers (`65`, `TYPE65`), so types without a name in `DnsFilterQueryType` work too: pass
-  the query type as a number cast to `DnsFilterQueryType` to `Evaluate`.
+- Types are names ([AAAA](cref:Meziantou.Framework.DnsFilter.DnsFilterQueryType.AAAA)) or numbers (`65`, `TYPE65`), so types without a name in [DnsFilterQueryType](cref:Meziantou.Framework.DnsFilter.DnsFilterQueryType) work too: pass
+  the query type as a number cast to [DnsFilterQueryType](cref:Meziantou.Framework.DnsFilter.DnsFilterQueryType) to [Evaluate](cref:Meziantou.Framework.DnsFilter.DnsFilterEngine.Evaluate).
 
 ## Supported modifiers
 

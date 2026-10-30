@@ -17,13 +17,13 @@ Most rules come with a code fix: apply it from the light bulb of your IDE, or fi
 
 | Id | Reports |
 | --- | --- |
-| `MFAS0048` | An assertion that returns a `Task`, such as an assertion on an `IAsyncEnumerable<T>` or `Throws` with an asynchronous delegate, that is not awaited. It never runs |
+| `MFAS0048` | An assertion that returns a `Task`, such as an assertion on an `IAsyncEnumerable<T>` or [Throws](cref:Meziantou.Framework.Assertions.Assert.Throws) with an asynchronous delegate, that is not awaited. It never runs |
 | `MFAS0057` | A delegate that returns an awaitable the assertion does not await, such as a `ValueTask<T>`. Wrap the call in an `async` lambda |
 | `MFAS0049` | An assertion that always produces the same result, such as `Assert.True(true)` or a value compared with itself |
-| `MFAS0002` | `Assert.ReferenceEquals` instead of `Assert.Same` |
-| `MFAS0003` | `Assert.IsType` with a static or abstract type: no value is exactly of such a type |
-| `MFAS0008`, `MFAS0009` | `Assert.Null` or `Assert.NotNull` with a non-nullable value type, which is never `null` |
-| `MFAS0010`, `MFAS0011` | `Assert.Same` or `Assert.NotSame` with a value type, which is boxed into a new object on each call |
+| `MFAS0002` | `Assert.ReferenceEquals` instead of [Assert.Same](cref:Meziantou.Framework.Assertions.Assert.Same) |
+| `MFAS0003` | [Assert.IsType](cref:Meziantou.Framework.Assertions.Assert.IsType) with a static or abstract type: no value is exactly of such a type |
+| `MFAS0008`, `MFAS0009` | [Assert.Null](cref:Meziantou.Framework.Assertions.Assert.Null) or [Assert.NotNull](cref:Meziantou.Framework.Assertions.Assert.NotNull) with a non-nullable value type, which is never `null` |
+| `MFAS0010`, `MFAS0011` | [Assert.Same](cref:Meziantou.Framework.Assertions.Assert.Same) or [Assert.NotSame](cref:Meziantou.Framework.Assertions.Assert.NotSame) with a value type, which is boxed into a new object on each call |
 
 ## Argument order
 
@@ -33,7 +33,7 @@ Most rules come with a code fix: apply it from the light bulb of your IDE, or fi
 
 ## Specialized assertions
 
-A specialized assertion writes a better failure message than `Assert.True` or `Assert.Equal` on a derived value: it
+A specialized assertion writes a better failure message than [Assert.True](cref:Meziantou.Framework.Assertions.Assert.True) or [Assert.Equal](cref:Meziantou.Framework.Assertions.Assert.Equal) on a derived value: it
 shows the collection, the text or the range, not only `false`.
 
 | Instead of | Write | Id |
@@ -62,12 +62,12 @@ shows the collection, the text or the range, not only `false`.
 | `Assert.True(0 <= value && value <= 10)` | `Assert.InRange(value, 0, 10)` | `MFAS0039` |
 | `Assert.True(set.IsProperSubsetOf(other))` | `Assert.ProperSubset(other, set)` | `MFAS0041` |
 | `Assert.True(!condition)` | `Assert.False(condition)` | `MFAS0045` |
-| `Assert.True(false)` | `Assert.Fail()` | `MFAS0050` |
+| `Assert.True(false)` | [Assert.Fail()](cref:Meziantou.Framework.Assertions.Assert.Fail) | `MFAS0050` |
 
 Each rule that rewrites `Assert.True(...)` has a twin for the negated form, `Assert.False(...)`, which suggests the
-negative assertion: `DoesNotContain`, `DoesNotStartWith`, `DoesNotEndWith`, `DoesNotMatch`, `DoesNotAll`, `Empty`,
-`NotEqual`, `NotSame`, `NotNull`, `IsNotAssignableTo`, `IsNotType`, `NotInRange`, `NotProperSubset` or
-`NotProperSuperset` (`MFAS0007`, `MFAS0013`, `MFAS0015`, `MFAS0017`, `MFAS0019`, `MFAS0021`, `MFAS0023`, `MFAS0025`,
+negative assertion: [DoesNotContain](cref:Meziantou.Framework.Assertions.Assert.DoesNotContain), [DoesNotStartWith](cref:Meziantou.Framework.Assertions.Assert.DoesNotStartWith), [DoesNotEndWith](cref:Meziantou.Framework.Assertions.Assert.DoesNotEndWith), [DoesNotMatch](cref:Meziantou.Framework.Assertions.Assert.DoesNotMatch), [DoesNotAll](cref:Meziantou.Framework.Assertions.Assert.DoesNotAll), [Empty](cref:Meziantou.Framework.Assertions.Assert.Empty),
+[NotEqual](cref:Meziantou.Framework.Assertions.Assert.NotEqual), [NotSame](cref:Meziantou.Framework.Assertions.Assert.NotSame), [NotNull](cref:Meziantou.Framework.Assertions.Assert.NotNull), [IsNotAssignableTo](cref:Meziantou.Framework.Assertions.Assert.IsNotAssignableTo), [IsNotType](cref:Meziantou.Framework.Assertions.Assert.IsNotType), [NotInRange](cref:Meziantou.Framework.Assertions.Assert.NotInRange), [NotProperSubset](cref:Meziantou.Framework.Assertions.Assert.NotProperSubset) or
+[NotProperSuperset](cref:Meziantou.Framework.Assertions.Assert.NotProperSuperset) (`MFAS0007`, `MFAS0013`, `MFAS0015`, `MFAS0017`, `MFAS0019`, `MFAS0021`, `MFAS0023`, `MFAS0025`,
 `MFAS0027`, `MFAS0029`, `MFAS0032`, `MFAS0034`, `MFAS0036`, `MFAS0038`, `MFAS0040`, `MFAS0042`, `MFAS0044`,
 `MFAS0047`). The same goes for
 `Assert.Empty(list.Where(...))` (`MFAS0052`), `Assert.DoesNotContain(list, x => x == 42)` (`MFAS0055`), and

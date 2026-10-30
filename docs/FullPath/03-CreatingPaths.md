@@ -5,7 +5,7 @@ description: Create a FullPath from a string, a FileSystemInfo or a well-known f
 
 ## From a string
 
-`FullPath.FromPath` converts a string to a `FullPath`. A relative path is resolved against the current directory, and
+[FullPath.FromPath](cref:Meziantou.Framework.FullPath.FromPath) converts a string to a [FullPath](cref:Meziantou.Framework.FullPath). A relative path is resolved against the current directory, and
 the result is normalized:
 
 <!-- ref:../../tests/Meziantou.Framework.FullPath.Tests/FullPathTests.cs;region=FullPath_Normalization;format=md-fenced-code-block;dedent=true -->
@@ -24,12 +24,12 @@ Assert.Equal("logs", logs.Name);
 Convert a string as soon as it enters the application, for instance a command-line argument: the path is then resolved
 against the current directory of that moment, and later changes of `Environment.CurrentDirectory` do not affect it.
 
-`FromPath` validates the path like `Path.GetFullPath` does: an invalid path, such as one that contains a null
+[FromPath](cref:Meziantou.Framework.FullPath.FromPath) validates the path like `Path.GetFullPath` does: an invalid path, such as one that contains a null
 character, throws an `ArgumentException`.
 
 ## Combine paths
 
-The `/` operator appends a relative path to a `FullPath`. `FullPath.Combine` does the same with several segments, and
+The `/` operator appends a relative path to a [FullPath](cref:Meziantou.Framework.FullPath). [FullPath.Combine](cref:Meziantou.Framework.FullPath.Combine) does the same with several segments, and
 the `+` operator appends text to the last segment:
 
 <!-- ref:../../tests/Meziantou.Framework.FullPath.Tests/FullPathTests.cs;region=FullPath_Combine;format=md-fenced-code-block;dedent=true -->
@@ -51,15 +51,15 @@ Assert.Equal(FullPath.FromPath(absolutePath), root / absolutePath);
 ```
 <!-- endref -->
 
-- The result is normalized like the result of `FromPath`: the right operand can contain `..` segments.
+- The result is normalized like the result of [FromPath](cref:Meziantou.Framework.FullPath.FromPath): the right operand can contain `..` segments.
 - Like `Path.Combine`, the `/` operator returns the right operand when it is a rooted path, and ignores the left one.
-  When the right operand comes from a user, check the result with `IsChildOf`: see
+  When the right operand comes from a user, check the result with [IsChildOf](cref:Meziantou.Framework.FullPath.IsChildOf): see
   [Keep a path inside a folder](05-ComparingPaths.md#keep-a-path-inside-a-folder).
-- `FullPath.Combine` also accepts a string as the first segment.
+- [FullPath.Combine](cref:Meziantou.Framework.FullPath.Combine) also accepts a string as the first segment.
 
 ## From a FileInfo or a DirectoryInfo
 
-`FullPath.FromFileSystemInfo` takes a `FileInfo`, a `DirectoryInfo` or any `FileSystemInfo`. It returns the empty
+[FullPath.FromFileSystemInfo](cref:Meziantou.Framework.FullPath.FromFileSystemInfo) takes a `FileInfo`, a `DirectoryInfo` or any `FileSystemInfo`. It returns the empty
 path for `null`.
 
 ## Well-known folders
@@ -80,18 +80,18 @@ Assert.Equal(current / "output", fromInfo);
 
 | Method | Equivalent string API |
 | --- | --- |
-| `FullPath.CurrentDirectory()` | `Environment.CurrentDirectory` |
-| `FullPath.GetTempPath()` | `Path.GetTempPath()` |
+| [FullPath.CurrentDirectory()](cref:Meziantou.Framework.FullPath.CurrentDirectory) | `Environment.CurrentDirectory` |
+| [FullPath.GetTempPath()](cref:Meziantou.Framework.FullPath.GetTempPath) | `Path.GetTempPath()` |
 | `FullPath.GetFolderPath(folder)` and `FullPath.GetFolderPath(folder, option)` | `Environment.GetFolderPath` |
 | `FullPath.GetKnownFolderPath(knownFolder)` | `SHGetKnownFolderPath`, on Windows only: see [Known folders](09-PlatformSpecificFeatures.md#known-folders) |
 
 `Environment.GetFolderPath` returns an empty string for a folder that does not exist on the current platform, so
-`FullPath.GetFolderPath` returns the empty path: check `IsEmpty` before you use the result. Unlike `Path.GetTempPath()`,
-`FullPath.GetTempPath()` has no trailing separator.
+[FullPath.GetFolderPath](cref:Meziantou.Framework.FullPath.GetFolderPath) returns the empty path: check [IsEmpty](cref:Meziantou.Framework.FullPath.IsEmpty) before you use the result. Unlike `Path.GetTempPath()`,
+[FullPath.GetTempPath()](cref:Meziantou.Framework.FullPath.GetTempPath) has no trailing separator.
 
 ## Create a temporary file
 
-`FullPath.CreateTempFile` creates an empty file with a unique name and returns its path:
+[FullPath.CreateTempFile](cref:Meziantou.Framework.FullPath.CreateTempFile) creates an empty file with a unique name and returns its path:
 
 <!-- ref:../../tests/Meziantou.Framework.FullPath.Tests/FullPathTests.cs;region=FullPath_CreateTempFile;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -116,7 +116,7 @@ Assert.Equal(".csv", report.Extension);
 
 ## The empty path
 
-`FullPath.Empty`, which is also `default(FullPath)`, represents the absence of a path:
+[FullPath.Empty](cref:Meziantou.Framework.FullPath.Empty), which is also `default(FullPath)`, represents the absence of a path:
 
 <!-- ref:../../tests/Meziantou.Framework.FullPath.Tests/FullPathTests.cs;region=FullPath_Empty;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -132,10 +132,10 @@ Assert.True(FullPath.FromFileSystemInfo(null).IsEmpty);
 ```
 <!-- endref -->
 
-- An empty string gives the empty path, not the current directory. Use `FullPath.CurrentDirectory()` or
+- An empty string gives the empty path, not the current directory. Use [FullPath.CurrentDirectory()](cref:Meziantou.Framework.FullPath.CurrentDirectory) or
   `FullPath.FromPath(".")` for the current directory.
-- `Name`, `Extension`, `Value` and the conversion to `string` return an empty string; `Parent` and `WithExtension`
+- [Name](cref:Meziantou.Framework.FullPath.Name), [Extension](cref:Meziantou.Framework.FullPath.Extension), `Value` and the conversion to `string` return an empty string; [Parent](cref:Meziantou.Framework.FullPath.Parent) and [WithExtension](cref:Meziantou.Framework.FullPath.WithExtension)
   return the empty path.
-- Combining the empty path with a relative path gives a path in the current directory. Check `IsEmpty` before you
+- Combining the empty path with a relative path gives a path in the current directory. Check [IsEmpty](cref:Meziantou.Framework.FullPath.IsEmpty) before you
   combine a path that can be empty.
-- `MakePathRelativeTo` and `IsChildOf` throw an `InvalidOperationException` on an empty path.
+- [MakePathRelativeTo](cref:Meziantou.Framework.FullPath.MakePathRelativeTo) and [IsChildOf](cref:Meziantou.Framework.FullPath.IsChildOf) throw an `InvalidOperationException` on an empty path.

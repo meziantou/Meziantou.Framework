@@ -11,13 +11,13 @@ Add the `Meziantou.Framework.Assertions` package to your test project:
 dotnet add package Meziantou.Framework.Assertions
 ```
 
-The package contains the `Assert` class and the [analyzers](11-AnalyzerRules.md): they are enabled as soon as the
+The package contains the [Assert](cref:Meziantou.Framework.Assertions.Assert) class and the [analyzers](11-AnalyzerRules.md): they are enabled as soon as the
 package is referenced.
 
 ## Use it as the Assert class
 
-Test projects usually import the namespace of their test framework, whose `Assert` class would hide this one. Add a
-global alias so that `Assert` means `Meziantou.Framework.Assertions.Assert` in the whole project. In the project file:
+Test projects usually import the namespace of their test framework, whose [Assert](cref:Meziantou.Framework.Assertions.Assert) class would hide this one. Add a
+global alias so that [Assert](cref:Meziantou.Framework.Assertions.Assert) means [Meziantou.Framework.Assertions.Assert](cref:Meziantou.Framework.Assertions.Assert) in the whole project. In the project file:
 
 ```xml
 <ItemGroup>
@@ -33,8 +33,8 @@ global using Assert = Meziantou.Framework.Assertions.Assert;
 ```
 <!-- endref -->
 
-The examples of this documentation use this alias. Without it, write `Meziantou.Framework.Assertions.Assert` or add
-`using Meziantou.Framework.Assertions;` to the files that use it, and make sure no other `Assert` class is in scope.
+The examples of this documentation use this alias. Without it, write [Meziantou.Framework.Assertions.Assert](cref:Meziantou.Framework.Assertions.Assert) or add
+`using Meziantou.Framework.Assertions;` to the files that use it, and make sure no other [Assert](cref:Meziantou.Framework.Assertions.Assert) class is in scope.
 
 ## Write your first assertions
 
@@ -50,9 +50,9 @@ Assert.DoesNotContain("Dave", names);
 ```
 <!-- endref -->
 
-The expected value always comes first. This is the order of `Assert.Equal`, and it is kept for the assertions that
-search for a value: `Contains`, `DoesNotContain`, `StartsWith`, `EndsWith`, and the count assertions such as
-`HasCount`. When the order is wrong, the failure message labels the values the wrong way round; the analyzer reports
+The expected value always comes first. This is the order of [Assert.Equal](cref:Meziantou.Framework.Assertions.Assert.Equal), and it is kept for the assertions that
+search for a value: [Contains](cref:Meziantou.Framework.Assertions.Assert.Contains), [DoesNotContain](cref:Meziantou.Framework.Assertions.Assert.DoesNotContain), [StartsWith](cref:Meziantou.Framework.Assertions.Assert.StartsWith), [EndsWith](cref:Meziantou.Framework.Assertions.Assert.EndsWith), and the count assertions such as
+[HasCount](cref:Meziantou.Framework.Assertions.Assert.HasCount). When the order is wrong, the failure message labels the values the wrong way round; the analyzer reports
 a constant passed as the actual value (`MFAS0001`).
 
 Every assertion takes an optional `message`, written at the top of the failure message. The expressions of the

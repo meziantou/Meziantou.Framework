@@ -17,7 +17,7 @@ To run the DNS proxy instead, install the tool. See [Running the proxy](06-DnsPr
 
 ## Query a DNS server
 
-Create a `DnsClient` with the address of the server and the transport, then call `QueryAsync` with a name and a record
+Create a [DnsClient](cref:Meziantou.Framework.DnsClient.DnsClient) with the address of the server and the transport, then call [QueryAsync](cref:Meziantou.Framework.DnsClient.DnsClient.QueryAsync) with a name and a record
 type. `serverAddress` is the address of the server, such as `"192.0.2.53"` or `"127.0.0.1:5053"`:
 
 <!-- ref:../../tests/Meziantou.Framework.DnsClient.Tests/DnsClientIntegrationTests.cs;region=DnsClient_GettingStarted;format=md-fenced-code-block;dedent=true -->
@@ -33,15 +33,15 @@ Assert.Equal([IPAddress.Parse("192.0.2.10")], addresses);
 
 - The types are in the [Meziantou.Framework.DnsClient](cref:Meziantou.Framework.DnsClient), [Meziantou.Framework.DnsClient.Query](cref:Meziantou.Framework.DnsClient.Query),
   [Meziantou.Framework.DnsClient.Response](cref:Meziantou.Framework.DnsClient.Response) and [Meziantou.Framework.DnsClient.Response.Records](cref:Meziantou.Framework.DnsClient.Response.Records) namespaces.
-- `Answers` holds typed records: `DnsARecord`, `DnsMxRecord`, `DnsTxtRecord`, ... See
+- [Answers](cref:Meziantou.Framework.DnsClient.Response.DnsResponseMessage.Answers) holds typed records: [DnsARecord](cref:Meziantou.Framework.DnsClient.Response.Records.DnsARecord), [DnsMxRecord](cref:Meziantou.Framework.DnsClient.Response.Records.DnsMxRecord), [DnsTxtRecord](cref:Meziantou.Framework.DnsClient.Response.Records.DnsTxtRecord), ... See
   [Querying](03-DnsClient/03-Querying.md).
-- `DnsClient` is disposable. Reuse one instance for many queries: it resolves the address of the server once, and over
+- [DnsClient](cref:Meziantou.Framework.DnsClient.DnsClient) is disposable. Reuse one instance for many queries: it resolves the address of the server once, and over
   DNS over HTTPS it keeps its HTTP connections open.
 - The other transports take a host name or a URL. See [Protocols](03-DnsClient/02-Protocols.md).
 
 ## Answer DNS queries
 
-The server runs in an ASP.NET Core application. `AddDnsServer` adds the listeners, and `MapDnsHandler` registers the
+The server runs in an ASP.NET Core application. [AddDnsServer](cref:Meziantou.Framework.DnsServer.Hosting.DnsServerBuilderExtensions.AddDnsServer) adds the listeners, and [MapDnsHandler](cref:Meziantou.Framework.DnsServer.Hosting.DnsEndpointRouteBuilderExtensions.MapDnsHandler) registers the
 callback that answers every query. Here, `port` is the port to listen on (53 is the standard one):
 
 <!-- ref:../../tests/Meziantou.Framework.DnsServer.Tests/DnsServerIntegrationTests.cs;region=DnsServer_GettingStarted;format=md-fenced-code-block;dedent=true -->
@@ -79,7 +79,7 @@ app.MapDnsHandler((context, cancellationToken) =>
 
 - The types are in the [Meziantou.Framework.DnsServer.Hosting](cref:Meziantou.Framework.DnsServer.Hosting), [Meziantou.Framework.DnsServer.Handler](cref:Meziantou.Framework.DnsServer.Handler),
   [Meziantou.Framework.DnsServer.Protocol](cref:Meziantou.Framework.DnsServer.Protocol) and [Meziantou.Framework.DnsServer.Protocol.Records](cref:Meziantou.Framework.DnsServer.Protocol.Records) namespaces.
-- `CreateResponse` copies the ID, the question and the flags of the query, so the handler only adds the records.
+- [CreateResponse](cref:Meziantou.Framework.DnsServer.Handler.DnsRequestContext.CreateResponse) copies the ID, the question and the flags of the query, so the handler only adds the records.
 - Run the application with `app.Run()` or `await app.StartAsync()`. See [DnsServer](04-DnsServer/01-Overview.md).
 
 ## Use the client and the server in the same file

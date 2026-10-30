@@ -16,7 +16,7 @@ The examples of this documentation omit the `using` directives. The first ones o
 
 ## Convert Markdown to HTML
 
-`MarkdownConverter.ToHtml` converts a Markdown string to HTML:
+[MarkdownConverter.ToHtml](cref:Meziantou.Framework.Markdown.MarkdownConverter.ToHtml) converts a Markdown string to HTML:
 
 <!-- ref:../../tests/Meziantou.Framework.Markdown.Tests/TestCoreApi.cs;region=MarkdownConverter_ToHtml;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -31,7 +31,7 @@ copied to the output: read [Security](10-Security.md) before you render Markdown
 ## Enable extensions
 
 Tables, task lists, footnotes and the other syntaxes that CommonMark does not define come from extensions. Build a
-pipeline that enables them, and pass it to `ToHtml`:
+pipeline that enables them, and pass it to [ToHtml](cref:Meziantou.Framework.Markdown.MarkdownConverter.ToHtml):
 
 <!-- ref:../../tests/Meziantou.Framework.Markdown.Tests/TestCoreApi.cs;region=MarkdownConverter_Pipeline;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -44,12 +44,12 @@ Assert.StartsWith("<table>", html);
 ```
 <!-- endref -->
 
-`UseAdvancedExtensions` enables the most common extensions at once. Build the pipeline once and reuse it: it is
+[UseAdvancedExtensions](cref:Meziantou.Framework.Markdown.MarkdownExtensions.UseAdvancedExtensions) enables the most common extensions at once. Build the pipeline once and reuse it: it is
 immutable and can be shared between threads. [Extensions](04-Extensions/01-Overview.md) lists all the extensions.
 
 ## Read the syntax tree
 
-`MarkdownConverter.Parse` returns the syntax tree of the document. Use it to find elements, such as the headings and the
+[MarkdownConverter.Parse](cref:Meziantou.Framework.Markdown.MarkdownConverter.Parse) returns the syntax tree of the document. Use it to find elements, such as the headings and the
 links:
 
 <!-- ref:../../tests/Meziantou.Framework.Markdown.Tests/TestCoreApi.cs;region=MarkdownConverter_SyntaxTree;format=md-fenced-code-block;dedent=true -->

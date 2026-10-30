@@ -3,7 +3,7 @@ title: ASP.NET Core Identity
 description: Check HTTP Basic credentials against ASP.NET Core Identity users, with its lockout, confirmation and two-factor rules.
 ---
 
-`AddHttpBasicIdentity<TUser>` validates the username and the password with the `SignInManager<TUser>` of ASP.NET Core
+[AddHttpBasicIdentity\<TUser\>](cref:Meziantou.AspNetCore.Authentication.HttpBasic.HttpBasicAuthenticationIdentityExtensions.AddHttpBasicIdentity) validates the username and the password with the `SignInManager<TUser>` of ASP.NET Core
 Identity:
 
 <!-- ref:../../../samples/Meziantou.AspNetCore.Samples/HttpBasicExamples.cs;region=HttpBasic_IdentityIntegration;format=md-fenced-code-block;dedent=true -->
@@ -38,7 +38,7 @@ meet the confirmation requirements of `IdentityOptions.SignIn` (`RequireConfirme
 
 ## Account lockout
 
-`AddHttpBasicIdentity<TUser>` does not record failed attempts by default, so Identity's lockout never triggers,
+[AddHttpBasicIdentity\<TUser\>](cref:Meziantou.AspNetCore.Authentication.HttpBasic.HttpBasicAuthenticationIdentityExtensions.AddHttpBasicIdentity) does not record failed attempts by default, so Identity's lockout never triggers,
 whatever `IdentityOptions.Lockout` says. Pass `lockoutOnFailure: true` to record them:
 
 <!-- ref:../../../samples/Meziantou.AspNetCore.Samples/HttpBasicExamples.cs;region=HttpBasic_LockoutOnFailure;format=md-fenced-code-block;dedent=true -->
@@ -66,10 +66,10 @@ client (the `Identity.TwoFactorRememberMe` cookie) does not exempt the account.
 
 The client gets a plain `401 Unauthorized`, as for a wrong password, so the response does not reveal that the password
 was right. The rejection does not count as a failed attempt for lockout. Give the scripts and services that act for
-these accounts their own credentials, such as scoped and revocable API keys validated by `AddHttpBasic` or by another
+these accounts their own credentials, such as scoped and revocable API keys validated by [AddHttpBasic](cref:Meziantou.AspNetCore.Authentication.HttpBasic.HttpBasicAuthenticationExtensions.AddHttpBasic) or by another
 scheme.
 
-If you accept the risk, `AllowTwoFactorEnabledAccounts` authenticates these accounts with their password alone:
+If you accept the risk, [AllowTwoFactorEnabledAccounts](cref:Meziantou.AspNetCore.Authentication.HttpBasic.HttpBasicAuthenticationOptions.AllowTwoFactorEnabledAccounts) authenticates these accounts with their password alone:
 
 <!-- ref:../../../samples/Meziantou.AspNetCore.Samples/HttpBasicExamples.cs;region=HttpBasic_AllowTwoFactorEnabledAccounts;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -80,7 +80,7 @@ builder.Services
 <!-- endref -->
 
 > [!WARNING]
-> With `AllowTwoFactorEnabledAccounts`, anyone who knows the password of a two-factor account can use the endpoint
+> With [AllowTwoFactorEnabledAccounts](cref:Meziantou.AspNetCore.Authentication.HttpBasic.HttpBasicAuthenticationOptions.AllowTwoFactorEnabledAccounts), anyone who knows the password of a two-factor account can use the endpoint
 > without the second factor. Only enable it when the resources behind the Basic scheme do not need that protection, or
 > when an authorization policy requires evidence of multi-factor authentication by other means.
 

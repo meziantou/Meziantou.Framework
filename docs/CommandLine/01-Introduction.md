@@ -21,9 +21,9 @@ All the types are in the [Meziantou.Framework](cref:Meziantou.Framework.CommandL
 
 | Type | Contains |
 | --- | --- |
-| `CommandLineParser` | The parser and the arguments it read |
-| `CommandLineBuilder` | The methods that quote and escape arguments for Windows programs and `cmd.exe` |
-| `Prompt` | The yes/no prompt |
+| [CommandLineParser](cref:Meziantou.Framework.CommandLineParser) | The parser and the arguments it read |
+| [CommandLineBuilder](cref:Meziantou.Framework.CommandLineBuilder) | The methods that quote and escape arguments for Windows programs and `cmd.exe` |
+| [Prompt](cref:Meziantou.Framework.Prompt) | The yes/no prompt |
 
 ## Next steps
 

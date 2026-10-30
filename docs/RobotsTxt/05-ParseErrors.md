@@ -4,7 +4,7 @@ description: Find the lines of a robots.txt file that the parser skipped, and wh
 ---
 
 The parser is lenient: it never throws on the content of a file. A line it cannot use is skipped, and recorded in
-`ParseErrors` so you can audit the file:
+[ParseErrors](cref:Meziantou.Framework.RobotsTxt.RobotsFile.ParseErrors) so you can audit the file:
 
 <!-- ref:../../tests/Meziantou.Framework.RobotsTxt.Tests/RobotsFileTests.cs;region=RobotsFile_ParseErrors;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -19,16 +19,16 @@ Assert.Equal(["2: UnknownDirective => Host: example.com", "3: MalformedLine => t
 ```
 <!-- endref -->
 
-Each `RobotsParseError` has the 1-based `LineNumber`, the raw text of the `Line` (comment and whitespace included),
-and the `Kind` of problem:
+Each [RobotsParseError](cref:Meziantou.Framework.RobotsTxt.RobotsParseError) has the 1-based [LineNumber](cref:Meziantou.Framework.RobotsTxt.RobotsParseError.LineNumber), the raw text of the [Line](cref:Meziantou.Framework.RobotsTxt.RobotsParseError.Line) (comment and whitespace included),
+and the [Kind](cref:Meziantou.Framework.RobotsTxt.RobotsParseError.Kind) of problem:
 
 | Kind | Cause |
 | --- | --- |
-| `MalformedLine` | The line has no `:` between a directive and its value. |
-| `UnknownDirective` | The directive is not `User-agent`, `Allow`, `Disallow`, `Crawl-delay` or `Sitemap`. |
-| `InvalidCrawlDelay` | The value of `Crawl-delay` is not a non-negative number. |
+| [MalformedLine](cref:Meziantou.Framework.RobotsTxt.RobotsParseErrorKind.MalformedLine) | The line has no `:` between a directive and its value. |
+| [UnknownDirective](cref:Meziantou.Framework.RobotsTxt.RobotsParseErrorKind.UnknownDirective) | The directive is not `User-agent`, `Allow`, `Disallow`, `Crawl-delay` or `Sitemap`. |
+| [InvalidCrawlDelay](cref:Meziantou.Framework.RobotsTxt.RobotsParseErrorKind.InvalidCrawlDelay) | The value of `Crawl-delay` is not a non-negative number. |
 
-`ParseErrors` is empty when every line is valid. Blank lines and comments are not errors.
+[ParseErrors](cref:Meziantou.Framework.RobotsTxt.RobotsFile.ParseErrors) is empty when every line is valid. Blank lines and comments are not errors.
 
 ## Invalid crawl delays
 

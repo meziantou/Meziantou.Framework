@@ -3,7 +3,7 @@ title: Parsing documents
 description: Parse HTML from strings, bytes and streams with the right encoding, report the parse errors, parse fragments and XML.
 ---
 
-`HtmlDocumentParser` implements the parsing algorithm of the HTML Standard: it builds the same tree as a browser for any
+[HtmlDocumentParser](cref:Meziantou.Framework.WebPlatform.HtmlDocumentParser) implements the parsing algorithm of the HTML Standard: it builds the same tree as a browser for any
 input, valid or not. It never throws on invalid markup.
 
 ## Parse a string
@@ -70,19 +70,19 @@ Assert.Equal("Café", link.TextContent);
 ```
 <!-- endref -->
 
-`HtmlDocumentParser` instances have the options and the overloads `Parse(string)`, `Parse(ReadOnlySpan<byte>)`,
-`Parse(Stream)`, `ParseAsync(string)` and `ParseAsync(Stream)`. The `HtmlParserOptions` are:
+[HtmlDocumentParser](cref:Meziantou.Framework.WebPlatform.HtmlDocumentParser) instances have the options and the overloads `Parse(string)`, `Parse(ReadOnlySpan<byte>)`,
+`Parse(Stream)`, `ParseAsync(string)` and `ParseAsync(Stream)`. The [HtmlParserOptions](cref:Meziantou.Framework.WebPlatform.HtmlParserOptions) are:
 
 | Option | Default | Effect |
 | --- | --- | --- |
 | `Url` | `about:blank` | The URL of the document, which resolves the relative URLs (`Href`, `Src`...) |
-| `TransportEncoding` | none | The encoding given by the transport, such as the `charset` of the `Content-Type` header: it wins over the document |
-| `DefaultEncoding` | `windows-1252` | The encoding of a document whose encoding cannot be determined |
-| `EncodingDetector` | `EncodingDetector.Default` | Guesses the encoding of a document that declares none; null disables the detection |
-| `ParseErrorHandler` | none | Called for each parse error (see below) |
-| `ScriptingEnabled` | false | Parses `<noscript>` as a browser with scripting enabled does (as text). Scripts never run in a parsed document |
-| `AllowDeclarativeShadowRoots` | true | `<template shadowrootmode>` creates a shadow root |
-| `CustomElementRegistry` | none | The registry that defines the custom elements the parser creates |
+| [TransportEncoding](cref:Meziantou.Framework.WebPlatform.HtmlParserOptions.TransportEncoding) | none | The encoding given by the transport, such as the `charset` of the `Content-Type` header: it wins over the document |
+| [DefaultEncoding](cref:Meziantou.Framework.WebPlatform.HtmlParserOptions.DefaultEncoding) | `windows-1252` | The encoding of a document whose encoding cannot be determined |
+| [EncodingDetector](cref:Meziantou.Framework.WebPlatform.EncodingDetector) | [EncodingDetector.Default](cref:Meziantou.Framework.WebPlatform.EncodingDetector.Default) | Guesses the encoding of a document that declares none; null disables the detection |
+| [ParseErrorHandler](cref:Meziantou.Framework.WebPlatform.HtmlParserOptions.ParseErrorHandler) | none | Called for each parse error (see below) |
+| [ScriptingEnabled](cref:Meziantou.Framework.WebPlatform.HtmlParserOptions.ScriptingEnabled) | false | Parses `<noscript>` as a browser with scripting enabled does (as text). Scripts never run in a parsed document |
+| [AllowDeclarativeShadowRoots](cref:Meziantou.Framework.WebPlatform.HtmlParserOptions.AllowDeclarativeShadowRoots) | true | `<template shadowrootmode>` creates a shadow root |
+| [CustomElementRegistry](cref:Meziantou.Framework.WebPlatform.Dom.CustomElementRegistry) | none | The registry that defines the custom elements the parser creates |
 
 ## Report the parse errors
 
@@ -104,7 +104,7 @@ Assert.Equal((1, 3), (errors[0].Line, errors[0].Column));
 ```
 <!-- endref -->
 
-Each `HtmlParseError` has the `Code` of the HTML Standard, the `Line` and the `Column`, and the `Offset` of the character
+Each [HtmlParseError](cref:Meziantou.Framework.WebPlatform.HtmlParseError) has the [Code](cref:Meziantou.Framework.WebPlatform.HtmlParseError.Code) of the HTML Standard, the [Line](cref:Meziantou.Framework.WebPlatform.HtmlParseError.Line) and the [Column](cref:Meziantou.Framework.WebPlatform.HtmlParseError.Column), and the [Offset](cref:Meziantou.Framework.WebPlatform.HtmlParseError.Offset) of the character
 in the input (in UTF-16 code units). Tracking the positions costs nothing when there is no handler.
 
 ## Parse a fragment
@@ -129,12 +129,12 @@ Assert.Equal("<td>c</td><td>d</td><td>e</td>", row.InnerHtml);
 ```
 <!-- endref -->
 
-`InnerHtml`, `OuterHtml` and `InsertAdjacentHtml` parse the markup in the context of the element. To insert markup that
-comes from users, use `SetHtml` instead: see [Sanitizing HTML](06-SanitizingHtml.md).
+[InnerHtml](cref:Meziantou.Framework.WebPlatform.Dom.Element.InnerHtml), [OuterHtml](cref:Meziantou.Framework.WebPlatform.Dom.Element.OuterHtml) and [InsertAdjacentHtml](cref:Meziantou.Framework.WebPlatform.Dom.Element.InsertAdjacentHtml) parse the markup in the context of the element. To insert markup that
+comes from users, use [SetHtml](cref:Meziantou.Framework.WebPlatform.Dom.Element.SetHtml) instead: see [Sanitizing HTML](06-SanitizingHtml.md).
 
 ## Parse XML
 
-`XmlDocumentParser.ParseDocument` parses an XML document: XHTML, SVG, feeds or any other XML vocabulary. The elements are
+[XmlDocumentParser.ParseDocument](cref:Meziantou.Framework.WebPlatform.XmlDocumentParser.ParseDocument) parses an XML document: XHTML, SVG, feeds or any other XML vocabulary. The elements are
 in their namespaces, and the XHTML elements get their typed interfaces.
 
 <!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/Xml/XmlParserTests.cs;region=WebPlatform_ParseXml;format=md-fenced-code-block;dedent=true -->
@@ -159,11 +159,11 @@ Assert.Equal("parsererror", invalid.DocumentElement!.LocalName);
 ```
 <!-- endref -->
 
-- `XmlParserOptions.ContentType` is the type of the document: `application/xml` (the default), `text/xml`,
+- [XmlParserOptions.ContentType](cref:Meziantou.Framework.WebPlatform.XmlParserOptions.ContentType) is the type of the document: `application/xml` (the default), `text/xml`,
   `application/xhtml+xml` or `image/svg+xml`. `Url` is its URL.
-- Use `GetElementsByTagNameNS` and the namespace-aware members (`NamespaceUri`, `LocalName`) with XML: element names are
+- Use [GetElementsByTagNameNS](cref:Meziantou.Framework.WebPlatform.Dom.Element.GetElementsByTagNameNS) and the namespace-aware members ([NamespaceUri](cref:Meziantou.Framework.WebPlatform.Dom.Element.NamespaceUri), [LocalName](cref:Meziantou.Framework.WebPlatform.Dom.Element.LocalName)) with XML: element names are
   case-sensitive.
-- `XmlSerializer` writes a node back as XML (`new XmlSerializer().SerializeToString(node)`).
+- [XmlSerializer](cref:Meziantou.Framework.WebPlatform.Dom.XmlSerializer) writes a node back as XML (`new XmlSerializer().SerializeToString(node)`).
 
 ## Documents and browsing contexts
 

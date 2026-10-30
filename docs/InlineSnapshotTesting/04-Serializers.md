@@ -3,7 +3,7 @@ title: Serializers
 description: Configure how values are written in inline snapshots, use JSON, or write your own serializer.
 ---
 
-The serializer converts the value under test to the text of the snapshot. By default, `InlineSnapshot` uses the
+The serializer converts the value under test to the text of the snapshot. By default, [InlineSnapshot](cref:Meziantou.Framework.InlineSnapshotTesting.InlineSnapshot) uses the
 human-readable serializer
 ([`Meziantou.Framework.HumanReadableSerializer`](https://www.nuget.org/packages/Meziantou.Framework.HumanReadableSerializer)),
 which writes objects as readable, YAML-like text and suits most cases.
@@ -14,7 +14,7 @@ headers are registered.
 
 ## Configure the human-readable serializer
 
-`WithSerializer` takes a function that changes the options of the serializer. The options are a copy, so the change only
+[WithSerializer](cref:Meziantou.Framework.InlineSnapshotTesting.InlineSnapshot.WithSerializer) takes a function that changes the options of the serializer. The options are a copy, so the change only
 applies to this assertion:
 
 <!-- ref:../../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/InlineSnapshotTests.cs;region=InlineSnapshot_ConfigureSerializer;format=md-fenced-code-block;dedent=true -->
@@ -198,7 +198,7 @@ InlineSnapshot
 
 ## Use System.Text.Json
 
-`JsonSnapshotSerializer` writes the value as indented JSON with `System.Text.Json`:
+[JsonSnapshotSerializer](cref:Meziantou.Framework.InlineSnapshotTesting.Serialization.JsonSnapshotSerializer) writes the value as indented JSON with `System.Text.Json`:
 
 <!-- ref:../../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/InlineSnapshotTests.cs;region=InlineSnapshot_JsonSerializer;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -221,7 +221,7 @@ escape non-ASCII characters, and show `null` values even where the nullable anno
 
 ## Write your own serializer
 
-Derive from `SnapshotSerializer` and implement `Serialize`:
+Derive from [SnapshotSerializer](cref:Meziantou.Framework.InlineSnapshotTesting.Serialization.SnapshotSerializer) and implement [Serialize](cref:Meziantou.Framework.InlineSnapshotTesting.Serialization.SnapshotSerializer.Serialize):
 
 <!-- ref:../../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/InlineSnapshotTests.cs;region=InlineSnapshot_CustomSerializer;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -249,4 +249,4 @@ InlineSnapshot
 ```
 <!-- endref -->
 
-Set `SnapshotSerializer` in the settings to use it for every test.
+Set [SnapshotSerializer](cref:Meziantou.Framework.InlineSnapshotTesting.Serialization.SnapshotSerializer) in the settings to use it for every test.

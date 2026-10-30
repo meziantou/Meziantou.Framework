@@ -3,8 +3,8 @@ title: Protection
 description: How the contents are protected on each platform, and what the type does not protect against.
 ---
 
-`SensitiveData<T>` stores its contents in native memory, outside the managed heap: the garbage collector never moves
-or copies them, and `Dispose` can clear them. While the contents are not revealed, they are protected in a way that
+[SensitiveData\<T\>](cref:Meziantou.Framework.SensitiveData{T}) stores its contents in native memory, outside the managed heap: the garbage collector never moves
+or copies them, and [Dispose](cref:Meziantou.Framework.SensitiveData{T}.Dispose) can clear them. While the contents are not revealed, they are protected in a way that
 depends on the platform.
 
 ## Protection by platform
@@ -46,6 +46,6 @@ Failing to apply or to lift the protection throws an exception: the contents are
 - **Code that reveals the contents.** Any code that has the instance can call a `Reveal` method. The type prevents
   accidents, not intentional disclosure.
 - **A debugger or a memory dump taken during a reveal.** The contents are in clear for the duration of the reveal.
-- **The copies you make.** The string returned by `RevealToString`, the array returned by `RevealToArray`, and the value
-  passed to `Create` are ordinary managed objects. See
+- **The copies you make.** The string returned by [RevealToString](cref:Meziantou.Framework.SensitiveData.RevealToString), the array returned by [RevealToArray](cref:Meziantou.Framework.SensitiveData{T}.RevealToArray), and the value
+  passed to [Create](cref:Meziantou.Framework.SensitiveData.Create) are ordinary managed objects. See
   [Choose a reveal method](03-RevealingTheContents.md#choose-a-reveal-method).

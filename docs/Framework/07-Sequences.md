@@ -21,11 +21,11 @@ Assert.Empty(missing.EmptyIfNull());
 ```
 <!-- endref -->
 
-- `WhereNotNull` removes the `null` values of a sequence of reference types or of nullable value types, and returns a
+- [WhereNotNull](cref:Meziantou.Framework.EnumerableExtensions.WhereNotNull) removes the `null` values of a sequence of reference types or of nullable value types, and returns a
   sequence of non-nullable items, so the compiler knows the items are not `null`.
-- `WhereNotNullOrEmpty` and `WhereNotNullOrWhiteSpace` filter sequences of strings.
+- [WhereNotNullOrEmpty](cref:Meziantou.Framework.EnumerableExtensions.WhereNotNullOrEmpty) and [WhereNotNullOrWhiteSpace](cref:Meziantou.Framework.EnumerableExtensions.WhereNotNullOrWhiteSpace) filter sequences of strings.
 - The same three methods exist for `IAsyncEnumerable<T>`.
-- `EmptyIfNull` returns an empty sequence for `null`, to loop over an optional collection without a check.
+- [EmptyIfNull](cref:Meziantou.Framework.EnumerableExtensions.EmptyIfNull) returns an empty sequence for `null`, to loop over an optional collection without a check.
 
 ## Check a sequence
 
@@ -42,11 +42,11 @@ Assert.Equal(TimeSpan.FromMinutes(3), new[] { TimeSpan.FromMinutes(1), TimeSpan.
 ```
 <!-- endref -->
 
-- `IsDistinct` and `IsDistinctBy` tell whether a sequence has duplicates, with an optional comparer. They stop at the
+- [IsDistinct](cref:Meziantou.Framework.EnumerableExtensions.IsDistinct) and [IsDistinctBy](cref:Meziantou.Framework.EnumerableExtensions.IsDistinctBy) tell whether a sequence has duplicates, with an optional comparer. They stop at the
   first duplicate.
-- `IndexOf` and `LongIndexOf` return the position of an item in any sequence, or -1.
-- `ContainsIgnoreCase` looks for a string with an ordinal case-insensitive comparison.
-- `Sum` and `Average` add up and average `TimeSpan` values.
+- [IndexOf](cref:Meziantou.Framework.EnumerableExtensions.IndexOf) and [LongIndexOf](cref:Meziantou.Framework.EnumerableExtensions.LongIndexOf) return the position of an item in any sequence, or -1.
+- [ContainsIgnoreCase](cref:Meziantou.Framework.EnumerableExtensions.ContainsIgnoreCase) looks for a string with an ordinal case-insensitive comparison.
+- [Sum](cref:Meziantou.Framework.EnumerableExtensions.Sum) and [Average](cref:Meziantou.Framework.EnumerableExtensions.Average) add up and average `TimeSpan` values.
 
 ## Update a collection
 
@@ -64,9 +64,9 @@ Assert.Equal(["A", "b", "C"], names);
 ```
 <!-- endref -->
 
-- `AddRange` adds items to any `ICollection<T>`, and `RemoveAll` removes the items that match a predicate.
-- `Replace` replaces an item of an `IList<T>`, and throws an `ArgumentOutOfRangeException` when it is not in the list.
-  `AddOrReplace` adds the new item when the old one is not in the list.
+- [AddRange](cref:Meziantou.Framework.EnumerableExtensions.AddRange) adds items to any `ICollection<T>`, and [RemoveAll](cref:Meziantou.Framework.EnumerableExtensions.RemoveAll) removes the items that match a predicate.
+- [Replace](cref:Meziantou.Framework.EnumerableExtensions.Replace) replaces an item of an `IList<T>`, and throws an `ArgumentOutOfRangeException` when it is not in the list.
+  [AddOrReplace](cref:Meziantou.Framework.EnumerableExtensions.AddOrReplace) adds the new item when the old one is not in the list.
 - `EnqueueRange` adds several items to a `Queue<T>` or a `ConcurrentQueue<T>`.
 
 ## Update a dictionary
@@ -84,8 +84,8 @@ Assert.Equal(10, cache["hello"]);
 ```
 <!-- endref -->
 
-`GetOrAdd` returns the value of a key, and adds it when the key is missing, from a value or a factory. The factory runs
-only when the key is missing. `TryUpdate` changes the value of an existing key, and returns `false` when the key is
+[GetOrAdd](cref:Meziantou.Framework.DictionaryExtensions.GetOrAdd) returns the value of a key, and adds it when the key is missing, from a value or a factory. The factory runs
+only when the key is missing. [TryUpdate](cref:Meziantou.Framework.DictionaryExtensions.TryUpdate) changes the value of an existing key, and returns `false` when the key is
 missing.
 
 ## Loop asynchronously
@@ -112,18 +112,18 @@ Assert.Equal([1, 2, 3, 4, 5, 6], processed.Order());
 ```
 <!-- endref -->
 
-- `ForEachAsync` awaits the action for each item, one item after the other. Overloads give the action the index of the
+- [ForEachAsync](cref:Meziantou.Framework.EnumerableExtensions.ForEachAsync) awaits the action for each item, one item after the other. Overloads give the action the index of the
   item and a `CancellationToken`.
-- `ParallelForEachAsync` runs the action for several items at the same time, at most `degreeOfParallelism` at once
+- [ParallelForEachAsync](cref:Meziantou.Framework.EnumerableExtensions.ParallelForEachAsync) runs the action for several items at the same time, at most `degreeOfParallelism` at once
   (the number of processors by default). The items are not processed in order.
-- `ForEach` is the synchronous loop, with or without the index.
+- [ForEach](cref:Meziantou.Framework.EnumerableExtensions.ForEach) is the synchronous loop, with or without the index.
 
-`ToAsyncEnumerable` turns an `IEnumerable<T>` into an `IAsyncEnumerable<T>`, for an API that only accepts the latter.
+[ToAsyncEnumerable](cref:Meziantou.Framework.EnumerableExtensions.ToAsyncEnumerable) turns an `IEnumerable<T>` into an `IAsyncEnumerable<T>`, for an API that only accepts the latter.
 
 ## Enumerate once
 
 An `IEnumerable<T>` can be expensive to enumerate: a database query, a file read line by line, a generator.
-`CachedEnumerable.Create` enumerates the source once, the first time, and replays the items it has already read:
+[CachedEnumerable.Create](cref:Meziantou.Framework.CachedEnumerable.Create) enumerates the source once, the first time, and replays the items it has already read:
 
 <!-- ref:../../tests/Meziantou.Framework.Tests/CachedEnumerableTests.cs;region=CachedEnumerable_Create;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -147,7 +147,7 @@ Assert.Equal(1, enumerationCount);
 - Dispose the cached sequence to dispose the enumerator of the source. There is also an overload for
   `IAsyncEnumerable<T>`, which returns an `IAsyncDisposable`.
 
-To find code that enumerates a sequence twice, wrap it with `AsEnumerableOnce`. A second enumeration throws:
+To find code that enumerates a sequence twice, wrap it with [AsEnumerableOnce](cref:Meziantou.Framework.EnumerableExtensions.AsEnumerableOnce). A second enumeration throws:
 
 <!-- ref:../../tests/Meziantou.Framework.Tests/EnumerableTests.cs;region=EnumerableExtensions_AsEnumerableOnce;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -159,11 +159,11 @@ Assert.Throws<InvalidOperationException>(() => once.Sum());
 ```
 <!-- endref -->
 
-`ToOnlyEnumerable` hides the type of a collection behind an iterator, so the code that receives it cannot cast it back to
+[ToOnlyEnumerable](cref:Meziantou.Framework.EnumerableExtensions.ToOnlyEnumerable) hides the type of a collection behind an iterator, so the code that receives it cannot cast it back to
 a list and change it.
 
 ## Sort in parallel
 
-`ParallelSort` and `ParallelStableSort` sort an array, a `List<T>` or a `Span<T>` on several threads, with an optional
-comparer and degree of parallelism. `ParallelStableSort` keeps the order of equal items. They help with large
+[ParallelSort](cref:Meziantou.Framework.SpanExtensions.ParallelSort) and [ParallelStableSort](cref:Meziantou.Framework.SpanExtensions.ParallelStableSort) sort an array, a `List<T>` or a `Span<T>` on several threads, with an optional
+comparer and degree of parallelism. [ParallelStableSort](cref:Meziantou.Framework.SpanExtensions.ParallelStableSort) keeps the order of equal items. They help with large
 collections; for small ones, `Array.Sort` or `List<T>.Sort` is enough.

@@ -32,7 +32,7 @@ Assert.Equal("value", d);
 
 ## Await a tuple of value tasks
 
-Tuples of up to seven `ValueTask<T>` or `ValueTask` can be awaited the same way. `TaskExtensions.WhenAll` does the same
+Tuples of up to seven `ValueTask<T>` or `ValueTask` can be awaited the same way. [TaskExtensions.WhenAll](cref:Meziantou.Framework.Threading.Tasks.TaskExtensions.WhenAll) does the same
 with method arguments, and returns a `ValueTask` of the tuple of results:
 
 <!-- ref:../../tests/Meziantou.Framework.Threading.Tests/TaskExtensionsTests.cs;region=TaskExtensions_ValueTaskTuple;format=md-fenced-code-block;dedent=true -->
@@ -56,8 +56,8 @@ Assert.Equal((42, "value"), results);
 ```
 <!-- endref -->
 
-- `System.Threading.Tasks` also has a `TaskExtensions` class, so calling `TaskExtensions.WhenAll` needs the full name
-  `Meziantou.Framework.Threading.Tasks.TaskExtensions` when both namespaces are imported.
+- `System.Threading.Tasks` also has a `TaskExtensions` class, so calling [TaskExtensions.WhenAll](cref:Meziantou.Framework.Threading.Tasks.TaskExtensions.WhenAll) needs the full name
+  [Meziantou.Framework.Threading.Tasks.TaskExtensions](cref:Meziantou.Framework.Threading.Tasks.TaskExtensions) when both namespaces are imported.
 - The CA2012 analyzer ("Use ValueTasks correctly") reports the value tasks of an awaited tuple, even though awaiting the
   tuple consumes each of them once. Suppress it where you await such a tuple.
 - Tuples of value tasks have no `ConfigureAwait` method.
@@ -67,7 +67,7 @@ Assert.Equal((42, "value"), results);
 Awaiting a tuple behaves like `Task.WhenAll`: every task is awaited, even when one of them fails, and then:
 
 - If at least one task failed, awaiting the tuple throws the first failure. The task returned by
-  `TaskExtensions.WhenAll` carries all of them.
+  [TaskExtensions.WhenAll](cref:Meziantou.Framework.Threading.Tasks.TaskExtensions.WhenAll) carries all of them.
 - Otherwise, if at least one task was canceled, awaiting the tuple throws an `OperationCanceledException`.
 
 <!-- ref:../../tests/Meziantou.Framework.Threading.Tests/TaskExtensionsTests.cs;region=TaskExtensions_WhenAllFailure;format=md-fenced-code-block;dedent=true -->
@@ -92,7 +92,7 @@ Assert.Equal("Failed", exception.Message);
 
 ## Fire and forget a task
 
-`Forget` lets a task run without awaiting it. Its exception, if any, is observed, so it is never reported as an
+[Forget](cref:Meziantou.Framework.Threading.Tasks.TaskExtensions.Forget) lets a task run without awaiting it. Its exception, if any, is observed, so it is never reported as an
 unobserved task exception:
 
 <!-- ref:../../tests/Meziantou.Framework.Threading.Tests/TaskExtensionsTests.cs;region=TaskExtensions_Forget;format=md-fenced-code-block;dedent=true -->
@@ -109,7 +109,7 @@ SendTelemetryAsync().Forget();
 ```
 <!-- endref -->
 
-`Forget` discards the exception: log it inside the task when you need to know about it.
+[Forget](cref:Meziantou.Framework.Threading.Tasks.TaskExtensions.Forget) discards the exception: log it inside the task when you need to know about it.
 
 ## Resume on a SynchronizationContext
 

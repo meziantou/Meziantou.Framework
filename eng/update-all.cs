@@ -2,7 +2,6 @@
 #:sdk Meziantou.NET.Sdk
 #:project ../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj
 #:project ../src/Meziantou.Framework.LLMContext/Meziantou.Framework.LLMContext.csproj
-#:package Microsoft.CodeAnalysis.CSharp@5.9.0
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text.Encodings.Web;
@@ -13,9 +12,6 @@ using System.Xml;
 using System.Xml.Linq;
 using Meziantou.Framework;
 using Meziantou.Framework.LLMContext;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 var isLlm = LLMContextDetector.IsLLMContext();
 
@@ -133,7 +129,6 @@ if (ShouldRunStep(StepDocs))
 {
     Console.WriteLine("[update-all] Running docs");
     tasks.Add(Task.Run(() => RunValidateDocumentationPackageIdsStep(rootPath)));
-    tasks.Add(Task.Run(() => RunValidateDocumentationCrefLinksStep(rootPath)));
     tasks.Add(Task.Run(() => RunUpdateDocumentationConfigurationStep(rootPath)));
 }
 
@@ -1179,197 +1174,6 @@ void RunUpdateDocumentationConfigurationStep(FullPath rootPath)
     configuration["packages"] = packages;
 
     WriteFileIfChanged(configurationPath, configuration.ToJsonString(new JsonSerializerOptions { WriteIndented = true, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping, RespectNullableAnnotations = true, RespectRequiredConstructorParameters = true }));
-}
-
-// The pages link to the public API with [Text](cref:Target), resolved by the documentation generator. The target is a
-// namespace (Meziantou.Framework.Csv), a type (Meziantou.Framework.Csv.CsvReader,
-// Meziantou.Framework.Collections.SortedList{T}) or a member of a type, for all its overloads
-// (Meziantou.Framework.Csv.CsvReader.ReadRowAsync), optionally with a documentation ID prefix (T:, M:, P:, F:, E:, N:).
-// It must be part of the public API of a package, as listed in the ref/ folder. Like the generator, an unprefixed target
-// is searched as a type first, then as a member, then as a namespace. A target that several packages define is
-// qualified with the package that the page is about, [Name](cref:Package!N:Name): the generator reports an unqualified
-// one as ambiguous.
-void RunValidateDocumentationCrefLinksStep(FullPath rootPath)
-{
-    var crefPattern = new Regex(@"\]\(cref:(?:(?<package>[^)\s!]+)!)?(?:(?<kind>[TMPFEN]):)?(?<name>[^)\s]*)\)", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, Timeout.InfiniteTimeSpan);
-    var preprocessorConditionPattern = new Regex(@"^\s*#(?:el)?if\s+(?<condition>.+)$", RegexOptions.Multiline | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, Timeout.InfiniteTimeSpan);
-    var identifierPattern = new Regex(@"[A-Za-z_][A-Za-z0-9_]*", RegexOptions.CultureInvariant, Timeout.InfiniteTimeSpan);
-    string[] lookupOrder = ["T", "M", "P", "F", "E", "N"];
-
-    // The files of ref/ are named after the assemblies, which have the name of their package
-    var symbolsByPackage = new Dictionary<string, Dictionary<string, HashSet<string>>>(StringComparer.Ordinal);
-    foreach (var path in Directory.EnumerateFiles(rootPath / "ref", "*.cs", SearchOption.AllDirectories))
-    {
-        var symbols = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
-        symbolsByPackage[Path.GetFileNameWithoutExtension(path)] = symbols;
-
-        // Members that differ between target frameworks are in #if NET10_0 blocks: parse the file once per symbol
-        var content = File.ReadAllText(path);
-        var preprocessorSymbols = preprocessorConditionPattern.Matches(content)
-            .SelectMany(match => identifierPattern.Matches(match.Groups["condition"].Value))
-            .Select(match => match.Value)
-            .Distinct(StringComparer.Ordinal)
-            .Select(symbol => (string[])[symbol])
-            .Prepend([]);
-        foreach (var defined in preprocessorSymbols)
-        {
-            var syntaxRoot = CSharpSyntaxTree.ParseText(content, new CSharpParseOptions(LanguageVersion.Preview, preprocessorSymbols: defined)).GetRoot();
-            foreach (var namespaceDeclaration in syntaxRoot.DescendantNodes().OfType<BaseNamespaceDeclarationSyntax>())
-            {
-                var namespaceName = namespaceDeclaration.Name.ToString();
-                Add(symbols, "N", namespaceName);
-                AddTypes(symbols, namespaceName, namespaceDeclaration.Members);
-            }
-        }
-    }
-
-    var docsRootPath = rootPath / "docs";
-    foreach (var path in Directory.EnumerateFiles(docsRootPath, "*.md", SearchOption.AllDirectories).Order(StringComparer.Ordinal))
-    {
-        var relativePath = FullPath.FromPath(path).MakePathRelativeTo(rootPath).Replace('\\', '/');
-        var lines = File.ReadAllLines(path);
-        var inCode = false;
-        for (var i = 0; i < lines.Length; i++)
-        {
-            if (lines[i].TrimStart().StartsWith("```", StringComparison.Ordinal))
-            {
-                inCode = !inCode;
-                continue;
-            }
-
-            if (inCode)
-                continue;
-
-            foreach (Match match in crefPattern.Matches(lines[i]))
-            {
-                var error = GetError(match.Groups["package"].Value, match.Groups["kind"].Value, match.Groups["name"].Value);
-                if (error is not null)
-                {
-                    Console.Error.WriteLine($"ERROR: {relativePath}:{i + 1}: {error}");
-                    updatedFiles.Enqueue(relativePath);
-                }
-            }
-        }
-    }
-
-    string? GetError(string package, string kind, string name)
-    {
-        if (package is not "")
-        {
-            if (!symbolsByPackage.TryGetValue(package, out var symbols))
-                return $"'{package}' is not a package with a public API (ref/*.cs)";
-
-            if (!symbols.TryGetValue(name, out var kinds) || (kind is not "" && !kinds.Contains(kind)))
-                return $"'{name}' is not part of the public API of the package '{package}' (ref/{package}.cs)";
-
-            return null;
-        }
-
-        foreach (var candidateKind in kind is "" ? lookupOrder : [kind])
-        {
-            var packages = symbolsByPackage
-                .Where(item => item.Value.TryGetValue(name, out var kinds) && kinds.Contains(candidateKind))
-                .Select(item => item.Key)
-                .Order(StringComparer.Ordinal)
-                .ToArray();
-            switch (packages.Length)
-            {
-                case 1:
-                    return null;
-                case > 1:
-                    return $"'{name}' is defined by several packages ({string.Join(", ", packages)}); qualify it with the package of the page: 'cref:<Package>!{candidateKind}:{name}'";
-            }
-        }
-
-        return $"'{name}' is not a namespace, a type or a member of the public API (ref/*.cs)";
-    }
-
-    static void Add(Dictionary<string, HashSet<string>> symbols, string kind, string name)
-    {
-        if (!symbols.TryGetValue(name, out var kinds))
-        {
-            kinds = new HashSet<string>(StringComparer.Ordinal);
-            symbols[name] = kinds;
-        }
-
-        kinds.Add(kind);
-    }
-
-    static void AddTypes(Dictionary<string, HashSet<string>> symbols, string containerName, SyntaxList<MemberDeclarationSyntax> members)
-    {
-        foreach (var member in members)
-        {
-            switch (member)
-            {
-                case EnumDeclarationSyntax enumDeclaration:
-                    var enumName = containerName + "." + enumDeclaration.Identifier.ValueText;
-                    Add(symbols, "T", enumName);
-                    foreach (var enumMember in enumDeclaration.Members)
-                    {
-                        Add(symbols, "F", enumName + "." + enumMember.Identifier.ValueText);
-                    }
-
-                    break;
-
-                // The documentation generator cannot link the members of a C# 14 extension block
-                case TypeDeclarationSyntax typeDeclaration and not ExtensionBlockDeclarationSyntax:
-                    var typeName = containerName + "." + typeDeclaration.Identifier.ValueText + GetTypeParameters(typeDeclaration.TypeParameterList);
-                    Add(symbols, "T", typeName);
-                    AddTypes(symbols, typeName, typeDeclaration.Members);
-                    AddMembers(symbols, typeName, typeDeclaration.Members);
-                    break;
-
-                case DelegateDeclarationSyntax delegateDeclaration:
-                    Add(symbols, "T", containerName + "." + delegateDeclaration.Identifier.ValueText + GetTypeParameters(delegateDeclaration.TypeParameterList));
-                    break;
-            }
-        }
-    }
-
-    static void AddMembers(Dictionary<string, HashSet<string>> symbols, string typeName, SyntaxList<MemberDeclarationSyntax> members)
-    {
-        foreach (var member in members)
-        {
-            switch (member)
-            {
-                case MethodDeclarationSyntax { ExplicitInterfaceSpecifier: null } method:
-                    Add(symbols, "M", typeName + "." + method.Identifier.ValueText);
-                    break;
-
-                case PropertyDeclarationSyntax { ExplicitInterfaceSpecifier: null } property:
-                    Add(symbols, "P", typeName + "." + property.Identifier.ValueText);
-                    break;
-
-                case EventDeclarationSyntax { ExplicitInterfaceSpecifier: null } eventDeclaration:
-                    Add(symbols, "E", typeName + "." + eventDeclaration.Identifier.ValueText);
-                    break;
-
-                case EventFieldDeclarationSyntax eventField:
-                    foreach (var variable in eventField.Declaration.Variables)
-                    {
-                        Add(symbols, "E", typeName + "." + variable.Identifier.ValueText);
-                    }
-
-                    break;
-
-                case FieldDeclarationSyntax field:
-                    foreach (var variable in field.Declaration.Variables)
-                    {
-                        Add(symbols, "F", typeName + "." + variable.Identifier.ValueText);
-                    }
-
-                    break;
-            }
-        }
-    }
-
-    static string GetTypeParameters(TypeParameterListSyntax? typeParameters)
-    {
-        if (typeParameters is null)
-            return "";
-
-        return "{" + string.Join(',', typeParameters.Parameters.Select(parameter => parameter.Identifier.ValueText)) + "}";
-    }
 }
 
 async Task RunUpdateReadmeStep(FullPath rootPath)

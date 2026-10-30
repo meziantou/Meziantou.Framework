@@ -98,7 +98,7 @@ public static class DocumentationExamples
     public static ContainerDefinition CommandAndEnvironment()
     {
         #region TemporaryContainers_CommandAndEnvironment
-        var definition = new ContainerDefinition(ImageSource.FromRegistry("alpine:3.22"));
+        var definition = new ContainerDefinition(ImageSource.FromRegistry("alpine:3.24"));
         definition.Entrypoint.Add("/bin/sh"); // replaces the entrypoint of the image
         definition.Command.AddRange(["-c", "echo started && sleep 3600"]);
         definition.Environment.Add("APP_MODE", "test"); // adds or replaces a variable

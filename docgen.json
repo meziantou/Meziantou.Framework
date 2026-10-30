@@ -5,7 +5,17 @@
     "title": "Meziantou.Framework",
     "description": "Documentation of the Meziantou.Framework libraries.",
     "logo": "docs/logo.svg",
-    "favicon": "docs/logo.svg"
+    "favicon": "docs/logo.svg",
+    "headerLinks": [
+      {
+        "text": "Sponsor",
+        "url": "https://github.com/sponsors/meziantou"
+      },
+      {
+        "text": "GitHub",
+        "url": "https://github.com/meziantou/Meziantou.Framework"
+      }
+    ]
   },
   "output": "artifacts/docs",
   "content": {

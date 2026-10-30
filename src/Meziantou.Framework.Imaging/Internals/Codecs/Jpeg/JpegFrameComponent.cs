@@ -138,20 +138,29 @@ internal sealed class JpegFrameComponent : IDisposable
         _bandCount = bandCount;
     }
 
-    /// <summary>Allocates the coefficients of a progressive frame (zero).</summary>
+    /// <summary>Gets the number of block rows of the coefficient grid: every block row of a progressive frame, or the rows of a ring.</summary>
+    public int CoefficientBlockRows { get; private set; }
+
+    /// <summary>
+    /// Allocates the coefficients of a progressive frame (zero), or a ring of the coefficients of <paramref name="mcusY"/>
+    /// MCU rows of a sequential frame whose blocks are transformed after their MCU rows are decoded (block row <c>r</c> is in
+    /// row <c>r % CoefficientBlockRows</c> of the ring).
+    /// </summary>
     /// <param name="scope">The scope charged with the coefficients (decoder state).</param>
     /// <param name="mcusX">The number of MCUs per MCU row of the frame.</param>
-    /// <param name="mcusY">The number of MCU rows of the frame.</param>
+    /// <param name="mcusY">The number of MCU rows of the frame, or of the ring.</param>
     /// <param name="limits">The limits (for the overflow report).</param>
-    public void AllocateCoefficients(AllocationScope scope, int mcusX, int mcusY, ImageResourceLimits limits)
+    /// <param name="clear">Whether the coefficients start at zero: a ring is cleared block by block as it is decoded.</param>
+    public void AllocateCoefficients(AllocationScope scope, int mcusX, int mcusY, ImageResourceLimits limits, bool clear = true)
     {
         var blocksPerLine = (long)mcusX * HorizontalSampling;
         var length = blocksPerLine * mcusY * VerticalSampling * 64 * sizeof(short);
         if (length > CheckedSizes.MaxBufferLength)
             throw CheckedSizes.CreateOverflowException(limits);
 
-        _coefficients = scope.Rent((int)length, AllocationKind.DecoderState, clear: true);
+        _coefficients = scope.Rent((int)length, AllocationKind.DecoderState, clear);
         _coefficientBlocksPerLine = (int)blocksPerLine;
+        CoefficientBlockRows = mcusY * VerticalSampling;
     }
 
     /// <summary>

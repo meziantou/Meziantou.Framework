@@ -712,6 +712,85 @@ public sealed class JpegProgressiveDecoderTests
         }
     }
 
+    [Theory]
+    [InlineData("4:2:0", ColorStandard, 0, 8)]
+    [InlineData("4:4:4", ColorSpectral, 3, 8)]
+    [InlineData("gray", GrayStandard, 0, 8)]
+    [InlineData("4:1:1", ColorStandard, 1, 8)]
+    [InlineData("mixed-chroma", ColorDeep, 2, 12)]
+    [InlineData("gray", GrayDeep, 0, 12)]
+    public void FramesReconstructedByWorkersHaveThePixelsOfTheContract(string layout, string script, int restartInterval, int precision)
+    {
+        // 259x301 pixels (more than 65,536: several workers transform the coefficients at EOI and write the rows), whose last
+        // MCU row and column are partial, Huffman and arithmetic coded; 2, 3 and 16 workers make batches of 8 to 32 MCU rows
+        var image = JpegTestImage.CreateRandom(259, 301, Layouts[layout], seed: layout.Length + script.Length + precision, acDensity: 0.3, precision: precision);
+        var expected = image.GetExpectedPixels();
+        foreach (var options in new[] { Progressive(script, restartInterval), Arithmetic(script, restartInterval) })
+        {
+            var data = image.Encode(options);
+            foreach (var workers in (int[])[1, 2, 3, 16])
+            {
+                using var decoded = Image.Load(data, WorkerOptions(workers));
+                AssertPixels(expected, decoded, $"{layout} {precision} bits, {(options.Arithmetic ? "arithmetic" : "Huffman")}, {workers} workers");
+            }
+        }
+    }
+
+    [Fact]
+    public void RenderingsOfWorkersAreTheImagesOfTheScansSoFar()
+    {
+        var image = JpegTestImage.CreateRandom(259, 301, Layouts["4:2:0"], seed: 47, acDensity: 0.3);
+        var scans = JpegTestProgressiveScan.ParseScript(ColorStandard);
+        var data = image.Encode(new JpegTestEncodeOptions { Progression = scans, RestartInterval = 6 });
+        using var reader = Image.OpenReader<Rgb24>(new MemoryStream(data), new ImageReaderOptions { Configuration = new ImageConfiguration { MaxDegreeOfParallelism = 4 } });
+        using var destination = new Image<Rgb24>(259, 301);
+        for (var completed = 1; completed <= scans.Length; completed++)
+        {
+            Assert.NotNull(reader.ReadFrameRefinementInto(destination));
+            AssertPixels(Approximate(image, scans[..completed]).GetExpectedPixels(), destination, $"{completed} scans");
+        }
+
+        Assert.True(reader.ReadFrameRefinementInto(destination)!.IsFinal);
+        AssertPixels(image.GetExpectedPixels(), destination, "frame");
+    }
+
+    [Fact]
+    public async Task CancellationDuringTheReconstructionStopsTheWorkers()
+    {
+        var data = JpegTestImage.CreateRandom(259, 301, Layouts["4:2:0"], seed: 48).Encode(Progressive(ColorStandard));
+        var codec = new CapturingJpegCodec();
+        using var registry = ImageCodecRegistry.Override(new ImageCodecRegistry([codec]));
+        using var cancellation = new CancellationTokenSource();
+        codec.BeforeEnd = cancellation.Cancel;
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => Image.LoadAsync(new MemoryStream(data), WorkerOptions(4), cancellation.Token));
+        Assert.Equal(0, codec.LastContext!.Scope.LiveBytes);
+    }
+
+    [Fact]
+    public void WorkersChargeTheirPlanesToTheLiveAllocationLimit()
+    {
+        var data = JpegTestImage.CreateRandom(259, 301, Layouts["4:2:0"], seed: 49).Encode(Progressive(ColorStandard));
+        var one = GetPeak(data, 1, long.MaxValue);
+        var four = GetPeak(data, 4, long.MaxValue);
+        Assert.True(four > one, $"{four} bytes with 4 workers, {one} with one");
+        Assert.Equal(four, GetPeak(data, 4, four));
+        foreach (var (workers, limit) in new[] { (4, four - 1), (4, one), (1, one - 1) })
+        {
+            var exception = Assert.Throws<ImageResourceLimitException>(() => Image.Load<Rgb24>(data, Limited(workers, limit)));
+            Assert.Equal(ImageResourceLimitKind.LiveAllocationBytes, exception.Kind);
+        }
+
+        static long GetPeak(byte[] data, int workers, long limit)
+        {
+            using var decoded = Image.Load<Rgb24>(data, Limited(workers, limit));
+            var scope = decoded.Owner.Scope;
+            Assert.Equal(0, scope.GetLiveBytes(AllocationKind.DecoderState));
+            return scope.GetDiagnostics().PeakLiveBytes;
+        }
+
+        static ImageDecodeOptions Limited(int workers, long limit) => new() { Configuration = new ImageConfiguration { MaxDegreeOfParallelism = workers, Limits = new ImageResourceLimits { MaxLiveAllocationBytes = limit } } };
+    }
+
     [Fact]
     public void ResourceLimitsApplyToDecoding()
     {
@@ -937,6 +1016,8 @@ public sealed class JpegProgressiveDecoderTests
 
         return result;
     }
+
+    private static ImageDecodeOptions WorkerOptions(int workers) => new() { Configuration = new ImageConfiguration { MaxDegreeOfParallelism = workers } };
 
     private static byte[] Remove(byte[] data, int offset, int count) => [.. data.AsSpan(0, offset), .. data.AsSpan(offset + count)];
 

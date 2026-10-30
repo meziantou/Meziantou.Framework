@@ -893,12 +893,75 @@ public sealed class JpegEncoderTests
     [Theory]
     [InlineData(JpegEncodingProcess.Baseline)]
     [InlineData(JpegEncodingProcess.Progressive)]
-    public async Task CancellationDuringEncodingFaultsTheWriter(JpegEncodingProcess process)
+    public void FilesWrittenByWorkersAreTheFilesOfOneWorker(JpegEncodingProcess process)
+    {
+        // 301x259 pixels (more than 65,536: several workers transform the MCU rows), whose last MCU row and column are
+        // partial; 2, 3 and 16 workers make batches of 8 to 32 MCU rows, coded in the order of one worker
+        foreach (var format in new[] { PixelFormat.Rgb24, PixelFormat.Rgba64, PixelFormat.Gray8 })
+        {
+            var pixels = JpegTestPatterns.ToFormat(JpegTestPatterns.PhotoLike(301, 259, seed: 11), format, LowBits);
+            foreach (var subsampling in format == PixelFormat.Gray8 ? new[] { JpegChromaSubsampling.Auto } : AllSubsamplings)
+            {
+                var encoder = new JpegEncoder { Quality = 85, ChromaSubsampling = subsampling, Process = process, AllowBitDepthReduction = true };
+                var expected = EncodeWithWorkers(pixels, format, encoder, workers: 1);
+                AssertMatchesModel(expected, JpegTestPatterns.ToEncodedSamples(pixels, background: null), encoder, $"{format} {subsampling}");
+                foreach (var workers in (int[])[2, 3, 16])
+                {
+                    Assert.Equal(expected, EncodeWithWorkers(pixels, format, encoder, workers));
+                }
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(JpegEncodingProcess.Baseline)]
+    [InlineData(JpegEncodingProcess.Progressive)]
+    public void TheBuffersOfTheWorkersAreBudgetedBeforeAnyOutput(JpegEncodingProcess process)
+    {
+        // Every worker has its rows of samples, and a baseline batch its coefficients: all rented with the writer
+        using var image = Rgb(JpegTestPatterns.PhotoLike(640, 480, seed: 3));
+        var encoder = new JpegEncoder { ChromaSubsampling = JpegChromaSubsampling.Ratio444, Process = process };
+        var one = GetPeak(1, long.MaxValue);
+        var four = GetPeak(4, long.MaxValue);
+        Assert.True(four > one, $"{four} bytes with 4 workers, {one} with one");
+        Assert.Equal(four, GetPeak(4, four));
+        foreach (var (workers, limit) in new[] { (4, four - 1), (4, one), (1, one - 1) })
+        {
+            using var stream = new TestOutputStream();
+            var configuration = new ImageConfiguration { MaxDegreeOfParallelism = workers, Limits = new ImageResourceLimits { MaxLiveAllocationBytes = limit } };
+            var exception = Assert.Throws<ImageResourceLimitException>(() =>
+            {
+                using var writer = Image.CreateWriter<Rgb24>(stream, new ImageWriterOptions(640, 480) { Encoder = encoder, Configuration = configuration });
+                writer.WriteFrame(image.Frames[0]);
+                writer.Complete();
+            });
+            Assert.Equal(ImageResourceLimitKind.LiveAllocationBytes, exception.Kind);
+        }
+
+        long GetPeak(int workers, long limit)
+        {
+            using var stream = new TestOutputStream();
+            var configuration = new ImageConfiguration { MaxDegreeOfParallelism = workers, Limits = new ImageResourceLimits { MaxLiveAllocationBytes = limit } };
+            using var writer = Image.CreateWriter<Rgb24>(stream, new ImageWriterOptions(640, 480) { Encoder = encoder, Configuration = configuration });
+            writer.WriteFrame(image.Frames[0]);
+            writer.Complete();
+            Assert.Equal(0, writer.Core.Scope.LiveBytes);
+            return writer.Core.Scope.GetDiagnostics().PeakLiveBytes;
+        }
+    }
+
+    [Theory]
+    [InlineData(JpegEncodingProcess.Baseline, 1)]
+    [InlineData(JpegEncodingProcess.Progressive, 1)]
+    [InlineData(JpegEncodingProcess.Baseline, 4)]
+    [InlineData(JpegEncodingProcess.Progressive, 4)]
+    public async Task CancellationDuringEncodingFaultsTheWriter(JpegEncodingProcess process, int workers)
     {
         using var image = Rgb(JpegTestPatterns.PhotoLike(800, 600, seed: 2));
         using var source = CancellationTokenSource.CreateLinkedTokenSource(XunitCancellationToken);
         using var stream = new TestOutputStream { CancellationSource = source, CancelAtPosition = 70_000 };
-        await using var writer = Image.CreateWriter<Rgb24>(stream, new ImageWriterOptions(800, 600) { Encoder = new JpegEncoder { Quality = 100, ChromaSubsampling = JpegChromaSubsampling.Ratio444, Process = process } });
+        var configuration = new ImageConfiguration { MaxDegreeOfParallelism = workers };
+        await using var writer = Image.CreateWriter<Rgb24>(stream, new ImageWriterOptions(800, 600) { Encoder = new JpegEncoder { Quality = 100, ChromaSubsampling = JpegChromaSubsampling.Ratio444, Process = process }, Configuration = configuration });
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => writer.WriteFrameAsync(image.Frames[0], source.Token).AsTask());
         Assert.InRange(stream.BytesWritten, 70_000, 800 * 600 * 3);
         Assert.Equal(0, writer.Core.Scope.LiveBytes);
@@ -1135,6 +1198,22 @@ public sealed class JpegEncoderTests
     internal static byte[] Encode(RawPixelBuffer pixels, PixelFormat format, JpegEncoder encoder)
     {
         using var image = EncoderSources.CreateImage(pixels, format);
+        return Encode(image, encoder);
+    }
+
+    /// <summary>Encodes pixels saved from an image whose configuration allows <paramref name="workers"/> workers.</summary>
+    private static byte[] EncodeWithWorkers(RawPixelBuffer pixels, PixelFormat format, JpegEncoder encoder, int workers)
+    {
+        var bytes = RawImport.ToPixelBytes(pixels, format);
+        var configuration = new ImageConfiguration { MaxDegreeOfParallelism = workers };
+        using Image image = format switch
+        {
+            PixelFormat.Rgb24 => Image.ImportPixelBytes<Rgb24>(bytes, pixels.Width, pixels.Height, configuration: configuration),
+            PixelFormat.Rgba64 => Image.ImportPixelBytes<Rgba64>(bytes, pixels.Width, pixels.Height, configuration: configuration),
+            PixelFormat.Gray8 => Image.ImportPixelBytes<Gray8>(bytes, pixels.Width, pixels.Height, configuration: configuration),
+            _ => throw new ArgumentOutOfRangeException(nameof(format), format, message: null),
+        };
+
         return Encode(image, encoder);
     }
 

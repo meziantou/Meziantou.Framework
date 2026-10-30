@@ -33,4 +33,4 @@ of bytes of the unit.
 
 ## Namespaces
 
-`ByteSize` and `ByteSizeUnit` are in the [Meziantou.Framework](cref:Meziantou.Framework) namespace.
+`ByteSize` and `ByteSizeUnit` are in the [Meziantou.Framework](cref:Meziantou.Framework.ByteSize!N:Meziantou.Framework) namespace.

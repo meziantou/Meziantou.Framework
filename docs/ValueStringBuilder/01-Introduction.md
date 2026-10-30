@@ -30,7 +30,7 @@ constraints of a `ref struct`: it cannot be stored in a field of a class, captur
 
 ## Namespace
 
-`ValueStringBuilder` is in the [Meziantou.Framework](cref:Meziantou.Framework) namespace.
+`ValueStringBuilder` is in the [Meziantou.Framework](cref:Meziantou.Framework.ValueStringBuilder!N:Meziantou.Framework) namespace.
 
 ## Next steps
 

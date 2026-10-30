@@ -9,7 +9,7 @@ description: Install the package, create an executor from a MethodInfo, and call
 dotnet add package Meziantou.Framework.ObjectMethodExecutor
 ```
 
-`ObjectMethodExecutor` is in the [Meziantou.Framework](cref:Meziantou.Framework) namespace. The examples of this documentation omit the `using`
+`ObjectMethodExecutor` is in the [Meziantou.Framework](cref:Meziantou.Framework.ObjectMethodExecutor!N:Meziantou.Framework) namespace. The examples of this documentation omit the `using`
 directives, and check their results with assertions such as `Assert.Equal`.
 
 ## Call a method

@@ -46,7 +46,7 @@ that do access it say so, such as `CreateParentDirectory`, `CreateTempFile` or t
 
 ## Namespace
 
-All the types are in the [Meziantou.Framework](cref:Meziantou.Framework) namespace:
+All the types are in the [Meziantou.Framework](cref:Meziantou.Framework.FullPath!N:Meziantou.Framework) namespace:
 
 | Type | Contains |
 | --- | --- |

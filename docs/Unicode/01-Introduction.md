@@ -36,7 +36,7 @@ rules of a language are not available.
 | `Meziantou.Framework.Unicode` | Everything above |
 | `Meziantou.Framework.Unicode.Dictionaries` | The word lists of Chinese, Japanese, Thai, Lao, Khmer and Burmese, and the engines that find the words of these languages |
 
-The types are in the [Meziantou.Framework](cref:Meziantou.Framework) namespace.
+The types are in the [Meziantou.Framework](cref:Meziantou.Framework.Unicode!N:Meziantou.Framework) namespace.
 
 ## Principles
 

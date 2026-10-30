@@ -12,7 +12,7 @@ with them.
 dotnet add package Meziantou.Framework.Unicode.Dictionaries
 ```
 
-The package depends on `Meziantou.Framework.Unicode`, and its types are in the [Meziantou.Framework](cref:Meziantou.Framework) namespace too.
+The package depends on `Meziantou.Framework.Unicode`, and its types are in the [Meziantou.Framework](cref:Meziantou.Framework.Unicode.Dictionaries!N:Meziantou.Framework) namespace too.
 
 ## Wrap text
 

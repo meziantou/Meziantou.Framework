@@ -18,11 +18,11 @@ of a URL already seen.
 
 ## What you can do with it
 
-- **Add values and test them** with `BloomFilter`. See [Getting started](02-GettingStarted.md).
+- **Add values and test them** with [BloomFilter](cref:Meziantou.Framework.BloomFilters.BloomFilter). See [Getting started](02-GettingStarted.md).
 - **Size a filter** for a number of values and a false positive probability, or set its size yourself. See
   [Sizing a filter](03-SizingAFilter.md).
 - **Add values of several types**, many at once or from several threads. See [Adding values](04-AddingValues.md).
-- **Remove values and count them** with `CountingBloomFilter`. See
+- **Remove values and count them** with [CountingBloomFilter](cref:Meziantou.Framework.BloomFilters.CountingBloomFilter). See
   [Counting Bloom filters](05-CountingBloomFilters.md).
 - **Choose the hash algorithm.** See [Hash algorithms](06-HashAlgorithms.md).
 
@@ -32,12 +32,12 @@ The types are in the [Meziantou.Framework.BloomFilters](cref:Meziantou.Framework
 
 | Type | Contains |
 | --- | --- |
-| `BloomFilter` | The factory methods of Bloom filters, one per hash algorithm |
-| `BloomFilterSize` | The size of a Bloom filter: its number of bits and of hash functions |
-| `IBloomFilter` | The methods of a Bloom filter, whatever its hash algorithm |
-| `CountingBloomFilter` | The factory methods of counting Bloom filters |
-| `CountingBloomFilterSize` | The size of a counting Bloom filter: its number of counters and of hash functions |
-| `ICountingBloomFilter` | The methods of a counting Bloom filter, whatever its hash algorithm |
+| [BloomFilter](cref:Meziantou.Framework.BloomFilters.BloomFilter) | The factory methods of Bloom filters, one per hash algorithm |
+| [BloomFilterSize](cref:Meziantou.Framework.BloomFilters.BloomFilterSize) | The size of a Bloom filter: its number of bits and of hash functions |
+| [IBloomFilter](cref:Meziantou.Framework.BloomFilters.IBloomFilter) | The methods of a Bloom filter, whatever its hash algorithm |
+| [CountingBloomFilter](cref:Meziantou.Framework.BloomFilters.CountingBloomFilter) | The factory methods of counting Bloom filters |
+| [CountingBloomFilterSize](cref:Meziantou.Framework.BloomFilters.CountingBloomFilterSize) | The size of a counting Bloom filter: its number of counters and of hash functions |
+| [ICountingBloomFilter](cref:Meziantou.Framework.BloomFilters.ICountingBloomFilter) | The methods of a counting Bloom filter, whatever its hash algorithm |
 
 ## Next steps
 

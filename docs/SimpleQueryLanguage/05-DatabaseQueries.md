@@ -3,7 +3,7 @@ title: Database queries
 description: Build expression trees from queries so Entity Framework Core and other LINQ providers filter in the database.
 ---
 
-`ExpressionQueryBuilder<T>` reads the same syntax as `QueryBuilder<T>`, but its handlers are expressions. The query
+[ExpressionQueryBuilder\<T\>](cref:Meziantou.Framework.SimpleQueryLanguage.ExpressionQueryBuilder{T}) reads the same syntax as [QueryBuilder\<T\>](cref:Meziantou.Framework.SimpleQueryLanguage.QueryBuilder{T}), but its handlers are expressions. The query
 becomes an `Expression<Func<T, bool>>` that Entity Framework Core translates to SQL, so the database does the
 filtering:
 
@@ -49,7 +49,7 @@ internal sealed record Customer(string FullName, string Email, int Age, DateTime
 ```
 <!-- endref -->
 
-`Apply` adds a `Where` to any `IQueryable<T>`. On an Entity Framework Core `DbSet`, run the result as usual, for
+[Apply](cref:Meziantou.Framework.SimpleQueryLanguage.ExpressionQuery{T}.Apply) adds a `Where` to any `IQueryable<T>`. On an Entity Framework Core `DbSet`, run the result as usual, for
 instance with `await query.Apply(dbContext.Customers).ToListAsync()`.
 
 ## Kinds of handlers
@@ -104,14 +104,14 @@ Write expressions the provider can translate: Entity Framework Core cannot trans
 
 ## Free text and unknown keys
 
-- `SetFreeTextHandler` receives the text of a term without a key and returns an expression, such as a `Contains` on
+- [SetFreeTextHandler](cref:Meziantou.Framework.SimpleQueryLanguage.ExpressionQueryBuilder{T}.SetFreeTextHandler) receives the text of a term without a key and returns an expression, such as a `Contains` on
   several columns. Without it, free text matches nothing.
-- `SetUnhandledPropertyHandler` receives the key, the operator and the value of a term whose key has no handler. Return
+- [SetUnhandledPropertyHandler](cref:Meziantou.Framework.SimpleQueryLanguage.ExpressionQueryBuilder{T}.SetUnhandledPropertyHandler) receives the key, the operator and the value of a term whose key has no handler. Return
   an expression, or `null` to search the term as free text, which is also what happens without this handler.
 
 ## The predicate
 
-`Predicate` returns the expression the query built, to combine it with your own filters or to compile it for objects
+[Predicate](cref:Meziantou.Framework.SimpleQueryLanguage.ExpressionQuery{T}.Predicate) returns the expression the query built, to combine it with your own filters or to compile it for objects
 in memory. It is `null` for an empty query, which matches everything:
 
 <!-- ref:../../tests/Meziantou.Framework.SimpleQueryLanguage.Tests/ExpressionQueryBuilderTests.cs;region=ExpressionQuery_Predicate;format=md-fenced-code-block;dedent=true -->
@@ -130,5 +130,5 @@ Assert.True(isWorkingAge(new Customer("John Doe", "john@example.com", 30, new Da
 ```
 <!-- endref -->
 
-`Build` throws a `QueryTooComplexException` for a query too complex to evaluate, as `QueryBuilder<T>.Build` does; see
+[Build](cref:Meziantou.Framework.SimpleQueryLanguage.ExpressionQueryBuilder{T}.Build) throws a [QueryTooComplexException](cref:Meziantou.Framework.SimpleQueryLanguage.QueryTooComplexException) for a query too complex to evaluate, as [QueryBuilder\<T\>.Build](cref:Meziantou.Framework.SimpleQueryLanguage.QueryBuilder{T}.Build) does; see
 [Queries from users](04-InMemoryQueries.md#queries-from-users).

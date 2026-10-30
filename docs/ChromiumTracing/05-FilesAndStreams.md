@@ -50,7 +50,7 @@ The factory methods choose who disposes the stream:
 
 ## Compress the trace
 
-Traces of long runs can be large. `CreateGzip` compresses the trace with GZip as it is written. The compression level
+Traces of long runs can be large. [CreateGzip](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingWriter.CreateGzip) compresses the trace with GZip as it is written. The compression level
 is `CompressionLevel.Fastest` by default (`CompressionLevel` is in the `System.IO.Compression` namespace):
 
 <!-- ref:../../tests/Meziantou.Framework.ChromiumTracing.Tests/WriterTests.cs;region=ChromiumTracing_Compression;format=md-fenced-code-block;dedent=true -->
@@ -90,14 +90,14 @@ Assert.Equal("Compressed", trace.RootElement[0].GetProperty("name").GetString())
 
 ## Write from several threads
 
-`WriteEventAsync` can be called from several threads at the same time. The writes are serialized, and each event is
+[WriteEventAsync](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingWriter.WriteEventAsync) can be called from several threads at the same time. The writes are serialized, and each event is
 written whole, so the trace stays a valid document. The events are written in the order the calls get the writer, not
 in the order of their timestamps: the format does not require the events to be sorted.
 
 ## Errors
 
-- `WriteEventAsync` serializes the event before writing it: when the serialization fails, for instance for an
+- [WriteEventAsync](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingWriter.WriteEventAsync) serializes the event before writing it: when the serialization fails, for instance for an
   [argument of an unknown type](04-EventProperties.md#arguments), nothing is written and the trace stays valid.
-- `WriteEventAsync` throws an `ObjectDisposedException` once the writer is disposed.
+- [WriteEventAsync](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingWriter.WriteEventAsync) throws an `ObjectDisposedException` once the writer is disposed.
 - Disposing the writer twice does nothing the second time. When the closing bracket cannot be written, the stream is
   still disposed if the writer owns it.

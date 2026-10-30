@@ -15,7 +15,7 @@ The examples of this documentation omit the `using` directives: they need `using
 
 ## Write and read a stream
 
-Use a `PooledMemoryStream` like a `MemoryStream`, and dispose it to give its blocks back to the pool:
+Use a [PooledMemoryStream](cref:Meziantou.Framework.PooledMemoryStream) like a `MemoryStream`, and dispose it to give its blocks back to the pool:
 
 <!-- ref:../../tests/Meziantou.Framework.PooledMemoryStream.Tests/PooledMemoryStreamTests.cs;region=PooledMemoryStream_BasicUsage;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -34,7 +34,7 @@ Assert.Equal("Hello, World!", reader.ReadToEnd());
 `Read`, `Write`, `Seek`, `Position`, `Length`, `SetLength` and their asynchronous versions behave as they do on a
 `MemoryStream`. Disposing the `StreamReader` here disposes the stream too.
 
-Always dispose a `PooledMemoryStream`, with `using` or `await using`. A stream that is not disposed never returns its
+Always dispose a [PooledMemoryStream](cref:Meziantou.Framework.PooledMemoryStream), with `using` or `await using`. A stream that is not disposed never returns its
 blocks: the garbage collector reclaims them, but the next streams have to allocate new ones.
 
 ## Copy the contents

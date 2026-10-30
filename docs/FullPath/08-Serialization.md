@@ -5,7 +5,7 @@ description: Read and write FullPath values in JSON with System.Text.Json, inclu
 
 ## JSON
 
-`FullPath` is serialized as a JSON string by `FullPathJsonConverter`. The converter is declared on the type, so there
+[FullPath](cref:Meziantou.Framework.FullPath) is serialized as a JSON string by [FullPathJsonConverter](cref:Meziantou.Framework.FullPathJsonConverter). The converter is declared on the type, so there
 is nothing to register:
 
 <!-- ref:../../tests/Meziantou.Framework.FullPath.Tests/FullPathTests.cs;region=FullPath_Json;format=md-fenced-code-block;dedent=true -->
@@ -31,7 +31,7 @@ Assert.True(JsonSerializer.Deserialize<FullPath>("\"\"").IsEmpty);
 
 ## Source generator, trimming and NativeAOT
 
-The converter works with the `System.Text.Json` source generator. Declare a `FullPath` property like any other:
+The converter works with the `System.Text.Json` source generator. Declare a [FullPath](cref:Meziantou.Framework.FullPath) property like any other:
 
 <!-- ref:../../tests/Meziantou.Framework.FullPath.Tests/FullPathTests.cs;region=FullPath_JsonSourceGenerator;format=md-fenced-code-block;dedent=true -->
 ```csharp

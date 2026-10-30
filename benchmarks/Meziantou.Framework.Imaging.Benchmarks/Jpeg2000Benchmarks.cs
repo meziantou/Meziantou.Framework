@@ -23,6 +23,12 @@ namespace Meziantou.Framework.Imaging.Benchmarks;
 /// of 4x1024 code-blocks). These inputs are small: the workload measures the decoder on its own corpus and says nothing
 /// about photographs.
 /// </para>
+/// <para>
+/// <see cref="Workers"/> sets <see cref="ImageConfiguration.MaxDegreeOfParallelism"/> of the decodings and of the images
+/// that are encoded: the code-blocks of a tile of at least 65,536 pixels are decoded and coded by several workers, and the
+/// wavelet and component transformations are split by rows and strips of columns. The 3840x2160 workloads are the
+/// representative large images of that parallelism (one tile, as the encoder of the library writes it).
+/// </para>
 /// </remarks>
 [Config(typeof(WorkloadConfig))]
 public class Jpeg2000Benchmarks : IDisposable
@@ -37,9 +43,16 @@ public class Jpeg2000Benchmarks : IDisposable
         ("jp2/ht-tiles.j2c", 33, 17),
     ];
 
+    private const int LargeWidth = 3840;
+    private const int LargeHeight = 2160;
+
     private static readonly Jpeg2000Encoder Lossy = new() { Compression = Jpeg2000Compression.Lossy };
     private readonly MemoryStream _output = new();
     private Image<Rgb24> _photo = null!;
+    private Image<Rgb24> _photo4K = null!;
+    private ImageDecodeOptions _decodeOptions = null!;
+    private byte[] _lossless4K = null!;
+    private byte[] _lossy4K = null!;
     private byte[] _lossless = null!;
     private byte[] _lossy = null!;
     private byte[] _lossless12 = null!;
@@ -49,11 +62,21 @@ public class Jpeg2000Benchmarks : IDisposable
 
     private static int Height => BenchmarkInputs.ServiceHeight;
 
+    /// <summary>Gets or sets <see cref="ImageConfiguration.MaxDegreeOfParallelism"/> (1 is the default configuration).</summary>
+    [Params(1, 8)]
+    public int Workers { get; set; } = 1;
+
     [GlobalSetup]
     public void Setup()
     {
         var source = unsafe(System.Runtime.InteropServices.MemoryMarshal.Cast<byte, Rgb24>(BenchmarkPixels.Rgb24(Width, Height, seed: 5))).ToArray();
-        _photo = Image.ImportPixelData<Rgb24>(source, Width, Height);
+        var configuration = new ImageConfiguration { MaxDegreeOfParallelism = Workers };
+        _decodeOptions = new ImageDecodeOptions { Configuration = configuration };
+        _photo = Image.ImportPixelData<Rgb24>(source, Width, Height, configuration: configuration);
+        var source4K = unsafe(System.Runtime.InteropServices.MemoryMarshal.Cast<byte, Rgb24>(BenchmarkPixels.Rgb24(LargeWidth, LargeHeight, seed: 7))).ToArray();
+        _photo4K = Image.ImportPixelData<Rgb24>(source4K, LargeWidth, LargeHeight, configuration: configuration);
+        _lossless4K = Encode(_photo4K, new Jpeg2000Encoder());
+        _lossy4K = Encode(_photo4K, Lossy);
         _lossless = Encode(_photo, new Jpeg2000Encoder());
         _lossy = Encode(_photo, Lossy);
         var (twelveBit, expected) = EncodeTwelveBitGradients();
@@ -64,6 +87,8 @@ public class Jpeg2000Benchmarks : IDisposable
         WorkloadChecks.RequireLossless(_lossless, source);
         WorkloadChecks.RequirePsnr(_lossy, source, minimum: 35);
         WorkloadChecks.RequireLossless(_lossless12, expected);
+        WorkloadChecks.RequireLossless(_lossless4K, source4K);
+        WorkloadChecks.RequirePsnr(_lossy4K, source4K, minimum: 35);
         for (var i = 0; i < _highThroughput.Length; i++)
         {
             using var image = Image.Load(_highThroughput[i]);
@@ -76,13 +101,14 @@ public class Jpeg2000Benchmarks : IDisposable
     public void Cleanup()
     {
         _photo?.Dispose();
+        _photo4K?.Dispose();
     }
 
     [Benchmark]
     [Workload("1024x768 lossless JPEG 2000 (5-3, RCT) -> Rgb24")]
     public int DecodeLossless()
     {
-        using var image = Image.Load<Rgb24>(_lossless);
+        using var image = Image.Load<Rgb24>(_lossless, _decodeOptions);
         return image.Width;
     }
 
@@ -90,7 +116,7 @@ public class Jpeg2000Benchmarks : IDisposable
     [Workload("1024x768 lossy JPEG 2000 (9-7, ICT, q90) -> Rgb24")]
     public int DecodeLossy()
     {
-        using var image = Image.Load<Rgb24>(_lossy);
+        using var image = Image.Load<Rgb24>(_lossy, _decodeOptions);
         return image.Width;
     }
 
@@ -98,7 +124,7 @@ public class Jpeg2000Benchmarks : IDisposable
     [Workload("1024x768 lossless 12-bit gradients JPEG 2000 (5-3, RCT, opaque RGBA) -> Rgba64")]
     public int DecodeLossless12Bit()
     {
-        using var image = Image.Load(_lossless12);
+        using var image = Image.Load(_lossless12, _decodeOptions);
         return image.Width;
     }
 
@@ -109,11 +135,27 @@ public class Jpeg2000Benchmarks : IDisposable
         var width = 0;
         foreach (var input in _highThroughput)
         {
-            using var image = Image.Load(input);
+            using var image = Image.Load(input, _decodeOptions);
             width += image.Width;
         }
 
         return width;
+    }
+
+    [Benchmark]
+    [Workload("3840x2160 lossless JPEG 2000 (5-3, RCT) -> Rgb24")]
+    public int DecodeLossless4K()
+    {
+        using var image = Image.Load<Rgb24>(_lossless4K, _decodeOptions);
+        return image.Width;
+    }
+
+    [Benchmark]
+    [Workload("3840x2160 lossy JPEG 2000 (9-7, ICT, q90) -> Rgb24")]
+    public int DecodeLossy4K()
+    {
+        using var image = Image.Load<Rgb24>(_lossy4K, _decodeOptions);
+        return image.Width;
     }
 
     [Benchmark]
@@ -123,6 +165,14 @@ public class Jpeg2000Benchmarks : IDisposable
     [Benchmark]
     [Workload("1024x768 Rgb24 -> lossy JPEG 2000 (9-7, ICT, q90)", ReturnsOutputBytes = true)]
     public long EncodeLossy() => ImageWorkloads.Encode(_photo, Lossy, _output);
+
+    [Benchmark]
+    [Workload("3840x2160 Rgb24 -> lossless JPEG 2000 (5-3, RCT)", ReturnsOutputBytes = true)]
+    public long EncodeLossless4K() => ImageWorkloads.Encode(_photo4K, new Jpeg2000Encoder(), _output);
+
+    [Benchmark]
+    [Workload("3840x2160 Rgb24 -> lossy JPEG 2000 (9-7, ICT, q90)", ReturnsOutputBytes = true)]
+    public long EncodeLossy4K() => ImageWorkloads.Encode(_photo4K, Lossy, _output);
 
     public void Dispose()
     {

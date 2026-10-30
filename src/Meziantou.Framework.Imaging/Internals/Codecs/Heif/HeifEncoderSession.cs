@@ -72,6 +72,8 @@ internal sealed class HeifEncoderSession : ImageEncoderSession
     private int _frameIndex;
     private int _movieOffset;
     private int _mediaSizeOffset;
+    private int _colorConfigurationOffset;
+    private int _alphaConfigurationOffset;
     private long _firstSampleOffset;
     private bool _completing;
     private HeifPictureEncoder? _color;
@@ -171,7 +173,12 @@ internal sealed class HeifEncoderSession : ImageEncoderSession
         {
             var scope = options.Scope;
             HeifPictureSettings? alphaSettings = null;
-            var colorSettings = new HeifPictureSettings(codedWidth, codedHeight, bitDepth, monochrome, subsamplingX, subsamplingY, primaries, transfer, matrix, fullRange, StillPicture: !_isSequence, lossless, settings.Quality, settings.Effort, settings.KeyFrameInterval);
+
+            // The workers of a picture: none of its own when several workers code the tiles of a grid, so that the threads
+            // do not multiply
+            var gridWorkers = IsGrid ? HeifGridTiles.GetWorkerCount(options.Configuration.MaxDegreeOfParallelism, new Size(_tileWidth, _tileHeight), _gridColumns * _gridRows) : 1;
+            var pictureWorkers = gridWorkers > 1 ? 1 : options.Configuration.MaxDegreeOfParallelism;
+            var colorSettings = new HeifPictureSettings(codedWidth, codedHeight, bitDepth, monochrome, subsamplingX, subsamplingY, primaries, transfer, matrix, fullRange, StillPicture: !_isSequence, lossless, settings.Quality, settings.Effort, settings.KeyFrameInterval, pictureWorkers, settings.AutoTiling);
             _color = binding.CreatePictureEncoder(scope, colorSettings);
 
             // The pictures of the stream may be larger than the image, which is then their clean aperture: the alpha plane
@@ -182,7 +189,7 @@ internal sealed class HeifEncoderSession : ImageEncoderSession
             {
                 // The alpha plane: a monochrome image in full range, always lossless. Its key frames are the ones of
                 // the color planes
-                alphaSettings = new HeifPictureSettings(_codedSize.Width, _codedSize.Height, bitDepth, Monochrome: true, SubsamplingX: 1, SubsamplingY: 1, Av1Constants.CpUnspecified, Av1Constants.TcUnspecified, Av1Constants.McUnspecified, FullRange: true, StillPicture: !_isSequence, Lossless: true, Quality: 100, settings.Effort, settings.KeyFrameInterval);
+                alphaSettings = new HeifPictureSettings(_codedSize.Width, _codedSize.Height, bitDepth, Monochrome: true, SubsamplingX: 1, SubsamplingY: 1, Av1Constants.CpUnspecified, Av1Constants.TcUnspecified, Av1Constants.McUnspecified, FullRange: true, StillPicture: !_isSequence, Lossless: true, Quality: 100, settings.Effort, settings.KeyFrameInterval, pictureWorkers, settings.AutoTiling);
                 _alpha = binding.CreatePictureEncoder(scope, alphaSettings.Value);
             }
 
@@ -202,11 +209,10 @@ internal sealed class HeifEncoderSession : ImageEncoderSession
                 _tileLengths = Av1PooledArray<int>.Rent(scope, 2L * _gridColumns * _gridRows, clear: true, AllocationKind.Temporary);
 
                 // The encoders and the rows of the workers that code the tiles of a batch with the ones of the session
-                var workers = HeifGridTiles.GetWorkerCount(options.Configuration.MaxDegreeOfParallelism, new Size(_tileWidth, _tileHeight), _gridColumns * _gridRows);
-                if (workers > 1)
+                if (gridWorkers > 1)
                 {
-                    _tileEncoders = new TileEncoder[workers - 1];
-                    _tileErrors = new ExceptionDispatchInfo?[workers];
+                    _tileEncoders = new TileEncoder[gridWorkers - 1];
+                    _tileErrors = new ExceptionDispatchInfo?[gridWorkers];
                     for (var k = 0; k < _tileEncoders.Length; k++)
                     {
                         _tileEncoders[k] = TileEncoder.Create(binding, scope, colorSettings, alphaSettings, (int)rowBytes);
@@ -693,12 +699,16 @@ internal sealed class HeifEncoderSession : ImageEncoderSession
         var colorPayload = color.Payload.Span;
         _colorTiles!.Write(colorPayload);
         lengths[_tileIndex] = colorPayload.Length;
+
+        // The tiles share the configuration of the encoders of the session, whichever worker codes them
+        _color!.Description.RecordCodedPicture(colorPayload.Length);
         color.Reset();
         if (_isTransparent)
         {
             var alphaPayload = alpha!.Payload.Span;
             _alphaTiles!.Write(alphaPayload);
             lengths[count + _tileIndex] = alphaPayload.Length;
+            _alpha!.Description.RecordCodedPicture(alphaPayload.Length);
             alpha.Reset();
         }
 
@@ -837,12 +847,17 @@ internal sealed class HeifEncoderSession : ImageEncoderSession
         var alpha = _isTransparent || _isSequence ? _alpha : null;
         var colorPayload = color.Payload;
         var alphaPayload = alpha?.Payload ?? default;
+
+        // The configurations are written once the pictures they describe are coded: the items of the first image of a
+        // sequence get the configuration of the tracks when the sequence is complete
+        color.Description.RecordCodedPicture(colorPayload.Length);
+        alpha?.Description.RecordCodedPicture(alphaPayload.Length);
         _pieces.Clear();
         if (_frameIndex is 0)
         {
             var prefix = _prefix!;
             prefix.Reset();
-            (_movieOffset, _mediaSizeOffset) = HeifFileWriter.WritePrefix(
+            (_movieOffset, _mediaSizeOffset, _colorConfigurationOffset, _alphaConfigurationOffset) = HeifFileWriter.WritePrefix(
                 prefix,
                 _binding,
                 new HeifFileWriter.StillImage
@@ -894,10 +909,25 @@ internal sealed class HeifEncoderSession : ImageEncoderSession
         movie.Reset();
         WriteMovie(_movieReservation, worstCase: false);
         output.AddPatch(_movieOffset, movie.WrittenSpan);
+
+        // The first image is the first sample of the tracks: its items have the configuration of the tracks, which may
+        // describe larger pictures than the first one (an HEVC level). A configuration box has the same size whatever the
+        // pictures it describes. The patches are copies: the buffer of the moov box is reused
+        PatchConfiguration(output, movie, _colorConfigurationOffset, _color!.Description);
+        if (_alphaConfigurationOffset >= 0)
+            PatchConfiguration(output, movie, _alphaConfigurationOffset, _alpha!.Description);
+
         Span<byte> size = stackalloc byte[8];
         BinaryPrimitives.WriteUInt64BigEndian(size, (ulong)(output.TotalBytes - (_mediaSizeOffset - 8)));
         output.AddPatch(_mediaSizeOffset, size);
         _completing = false;
+    }
+
+    private static void PatchConfiguration(ImageOutputBuffer output, PooledPayloadWriter buffer, int offset, HeifStreamDescription description)
+    {
+        buffer.Reset();
+        description.WriteConfigurationBox(new HeifBoxWriter(buffer));
+        output.AddPatch(offset, buffer.WrittenSpan);
     }
 
     private void WriteMovie(int reservation, bool worstCase)

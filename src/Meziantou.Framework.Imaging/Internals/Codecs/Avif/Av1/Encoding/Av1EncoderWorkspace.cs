@@ -48,6 +48,34 @@ internal sealed class Av1EncoderWorkspace : IDisposable
     private Av1PooledArray<int>? _copyHeads;
     private Av1PooledArray<int>? _copyNext;
     private readonly byte[] _copyCells = new byte[16 * 16];
+    private readonly bool _ownsSource = true;
+
+    /// <summary>
+    /// Rents the buffers of the search of a worker that encodes tiles of the frames of <paramref name="shared"/> at the same
+    /// time as it: the source planes are the ones of <paramref name="shared"/>, which the workers only read; the search
+    /// state, the records and the tape are its own.
+    /// </summary>
+    /// <exception cref="ImageResourceLimitException">The buffers exceed the live-allocation limit.</exception>
+    public Av1EncoderWorkspace(AllocationScope scope, Av1EncoderWorkspace shared)
+    {
+        ArgumentNullException.ThrowIfNull(scope);
+        ArgumentNullException.ThrowIfNull(shared);
+        _scope = scope;
+        _ownsSource = false;
+        shared._source.CopyTo(_source, 0);
+        try
+        {
+            _contexts = Av1PooledArray<byte>.Rent(scope, (1 + (2 * Levels)) * ContextSnapshotLength, clear: false, AllocationKind.Temporary);
+            _pixels = Av1PooledArray<ushort>.Rent(scope, PixelSnapshotKinds * GetPixelOffset(Levels), clear: false, AllocationKind.Temporary);
+            _coefficients = Av1PooledArray<int>.Rent(scope, 2 * 64 * 64, clear: false, AllocationKind.Temporary);
+            _records = Av1PooledArray<int>.Rent(scope, InitialRecordCapacity, clear: false, AllocationKind.Temporary);
+        }
+        catch
+        {
+            Dispose();
+            throw;
+        }
+    }
 
     /// <summary>Rents the buffers for frames of <paramref name="width"/> x <paramref name="height"/> samples.</summary>
     /// <exception cref="ImageResourceLimitException">The buffers exceed the live-allocation limit.</exception>
@@ -257,7 +285,9 @@ internal sealed class Av1EncoderWorkspace : IDisposable
     {
         for (var i = 0; i < _source.Length; i++)
         {
-            _source[i]?.Dispose();
+            if (_ownsSource)
+                _source[i]?.Dispose();
+
             _source[i] = null;
             _saved[i]?.Dispose();
             _saved[i] = null;

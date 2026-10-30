@@ -5,7 +5,7 @@ description: What the HTTP cache does not do - synchronous requests, request coa
 
 ## No synchronous requests
 
-`IHttpCacheStore` is asynchronous, so there is no synchronous path through the cache. `HttpClient.Send` throws a
+[IHttpCacheStore](cref:Meziantou.Framework.Http.Caching.IHttpCacheStore) is asynchronous, so there is no synchronous path through the cache. `HttpClient.Send` throws a
 `NotSupportedException` rather than sending the request to the server without caching it. Use `SendAsync`, `GetAsync`,
 `PostAsync` and the other asynchronous methods.
 
@@ -29,8 +29,8 @@ full response is not used to answer a range request.
 ## No eviction
 
 The stores have no size limit and no eviction policy: an entry stays until a request replaces or invalidates it, or
-until `PruneObsoleteEntriesAsync` removes it once it is obsolete. A cache that receives many distinct URLs keeps
-growing; prune it from time to time, and bound the size of each response with `MaximumResponseSize`. See
+until [PruneObsoleteEntriesAsync](cref:Meziantou.Framework.Http.Caching.IHttpCacheStore.PruneObsoleteEntriesAsync) removes it once it is obsolete. A cache that receives many distinct URLs keeps
+growing; prune it from time to time, and bound the size of each response with [MaximumResponseSize](cref:Meziantou.Framework.Http.Caching.HttpCachingOptions.MaximumResponseSize). See
 [Cache stores](03-CacheStores.md#removing-obsolete-entries) and [Options](09-Options.md).
 
 ## Only GET and HEAD

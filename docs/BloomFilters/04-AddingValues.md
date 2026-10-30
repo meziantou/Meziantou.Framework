@@ -47,17 +47,17 @@ A value is hashed from its bytes, so its type is part of it:
 
 | Filter | `AddRange` overloads |
 | --- | --- |
-| `BloomFilterXXHash128`, `BloomFilterXXHash64` | `long`, `ulong` |
-| `BloomFilterXXHash32` | `int`, `uint` |
-| `CountingBloomFilterXXHash128`, `CountingBloomFilterXXHash64` | `long`, `ulong` |
-| `CountingBloomFilterXXHash32` | `int`, `uint` |
+| [BloomFilterXXHash128](cref:Meziantou.Framework.BloomFilters.BloomFilterXXHash128), [BloomFilterXXHash64](cref:Meziantou.Framework.BloomFilters.BloomFilterXXHash64) | `long`, `ulong` |
+| [BloomFilterXXHash32](cref:Meziantou.Framework.BloomFilters.BloomFilterXXHash32) | `int`, `uint` |
+| [CountingBloomFilterXXHash128](cref:Meziantou.Framework.BloomFilters.CountingBloomFilterXXHash128), [CountingBloomFilterXXHash64](cref:Meziantou.Framework.BloomFilters.CountingBloomFilterXXHash64) | `long`, `ulong` |
+| [CountingBloomFilterXXHash32](cref:Meziantou.Framework.BloomFilters.CountingBloomFilterXXHash32) | `int`, `uint` |
 
-The factory methods return these concrete types (`BloomFilter.CreateXXHash128` returns a `BloomFilterXXHash128`), so
+The factory methods return these concrete types ([BloomFilter.CreateXXHash128](cref:Meziantou.Framework.BloomFilters.BloomFilter.CreateXXHash128) returns a [BloomFilterXXHash128](cref:Meziantou.Framework.BloomFilters.BloomFilterXXHash128)), so
 `AddRange` is available on the variable they initialize. For the other filters and types, call `Add` in a loop.
 
 ## Use a filter from several threads
 
-`Add`, `MayContain` and `GetEstimateCount` can be called from several threads at the same time, without a lock: the
+`Add`, `MayContain` and [GetEstimateCount](cref:Meziantou.Framework.BloomFilters.BloomFilter.GetEstimateCount) can be called from several threads at the same time, without a lock: the
 bits are set with atomic operations, so no value added concurrently is lost.
 
 <!-- ref:../../tests/Meziantou.Framework.BloomFilters.Tests/BloomFilterTests.cs;region=BloomFilter_Concurrency;format=md-fenced-code-block;dedent=true -->
@@ -80,6 +80,6 @@ returned, `MayContain` returns `true` for that value. The counters of a
 
 ## Write code that works with any filter
 
-The filters implement `IBloomFilter`, and the counting filters `ICountingBloomFilter`, which declare `Add` and
+The filters implement [IBloomFilter](cref:Meziantou.Framework.BloomFilters.IBloomFilter), and the counting filters [ICountingBloomFilter](cref:Meziantou.Framework.BloomFilters.ICountingBloomFilter), which declare `Add` and
 `MayContain` for every supported type. Declare your fields and parameters with these interfaces when the hash algorithm
 is a configuration choice.

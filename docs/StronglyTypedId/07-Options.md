@@ -119,7 +119,7 @@ option has no effect on other underlying types, nor on [sorting](03-DeclaringIds
 
 By default, `ToString()` returns the name of the type and the value, like a record: `ProjectId { Value = 42 }`. It
 makes logs and debugger views clear about what the number is. Set `GenerateToStringAsRecord` to `false` to return
-the value only, the same text as `ValueAsString`:
+the value only, the same text as [ValueAsString](cref:Meziantou.Framework.IStronglyTypedId.ValueAsString):
 
 <!-- ref:../../tests/Meziantou.Framework.StronglyTypedId.GeneratorTests/StronglyTypedIdTests.cs;region=StronglyTypedId_ToStringAsValue;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -137,4 +137,4 @@ Assert.Equal("Invoice 1042", $"Invoice {number}");
 <!-- endref -->
 
 String interpolation without a format uses `ToString()` too. To build URLs or messages from the value whatever this
-option, use `ValueAsString` or a format such as `$"{id:D}"`.
+option, use [ValueAsString](cref:Meziantou.Framework.IStronglyTypedId.ValueAsString) or a format such as `$"{id:D}"`.

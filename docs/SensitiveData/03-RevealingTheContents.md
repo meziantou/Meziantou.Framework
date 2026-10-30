@@ -3,7 +3,7 @@ title: Revealing the contents
 description: Get the secret as a string, an array or a span, use it without keeping a copy, clone it and dispose it.
 ---
 
-The contents of a `SensitiveData<T>` are protected while they are not in use. Each `Reveal` method lifts the
+The contents of a [SensitiveData\<T\>](cref:Meziantou.Framework.SensitiveData{T}) are protected while they are not in use. Each `Reveal` method lifts the
 protection, copies or hands out the contents, and applies the protection again before it returns.
 
 ## Choose a reveal method
@@ -37,24 +37,24 @@ secret.RevealAndUse(arg: length, static (span, expectedLength) =>
 
 | Method | Gives | The copy |
 | --- | --- | --- |
-| `GetLength()` | The number of elements | None: the contents are not revealed |
+| [GetLength()](cref:Meziantou.Framework.SensitiveData{T}.GetLength) | The number of elements | None: the contents are not revealed |
 | `RevealInto(destination)` | The contents, copied to a buffer you provide | Lives in your buffer: you can clear it |
-| `RevealToArray()` | A new array | Lives until the garbage collector reclaims it, unless you clear it |
-| `RevealToString()` | A new string, for a `SensitiveData<char>` | Lives until the garbage collector reclaims it, and cannot be cleared |
+| [RevealToArray()](cref:Meziantou.Framework.SensitiveData{T}.RevealToArray) | A new array | Lives until the garbage collector reclaims it, unless you clear it |
+| [RevealToString()](cref:Meziantou.Framework.SensitiveData.RevealToString) | A new string, for a [SensitiveData\<char\>](cref:Meziantou.Framework.SensitiveData{T}) | Lives until the garbage collector reclaims it, and cannot be cleared |
 | `RevealAndUse(arg, callback)` | A `ReadOnlySpan<T>` over the contents, for the duration of the callback | None |
 
 Prefer the methods at the end of the list that make no copy, or a copy you control:
 
-- `RevealAndUse` passes the contents to the callback without copying them. Pass the state the callback needs in `arg`,
+- [RevealAndUse](cref:Meziantou.Framework.SensitiveData{T}.RevealAndUse) passes the contents to the callback without copying them. Pass the state the callback needs in `arg`,
   so the callback can be a `static` lambda that captures nothing. Do not keep the span after the callback returns: the
   contents are protected again.
-- `RevealInto` copies the contents to a buffer, such as a `stackalloc` span or an array rented from a pool, which you
-  clear when you are done (`CryptographicOperations.ZeroMemory`). The buffer must hold at least `GetLength()`
+- [RevealInto](cref:Meziantou.Framework.SensitiveData{T}.RevealInto) copies the contents to a buffer, such as a `stackalloc` span or an array rented from a pool, which you
+  clear when you are done (`CryptographicOperations.ZeroMemory`). The buffer must hold at least [GetLength()](cref:Meziantou.Framework.SensitiveData{T}.GetLength)
   elements, or the method throws an `ArgumentException`. It returns the number of elements written.
-- `RevealToString` and `RevealToArray` are convenient for APIs that only take a `string` or an array, such as a
+- [RevealToString](cref:Meziantou.Framework.SensitiveData.RevealToString) and [RevealToArray](cref:Meziantou.Framework.SensitiveData{T}.RevealToArray) are convenient for APIs that only take a `string` or an array, such as a
   connection string builder or an HTTP header. The copy then lives as long as the API keeps it.
 
-An exception thrown by the `RevealAndUse` callback still lets the contents be protected again, and the instance stays
+An exception thrown by the [RevealAndUse](cref:Meziantou.Framework.SensitiveData{T}.RevealAndUse) callback still lets the contents be protected again, and the instance stays
 usable.
 
 ## Clone and dispose
@@ -73,18 +73,18 @@ Assert.Equal("my-password", copy.RevealToString());
 ```
 <!-- endref -->
 
-- `Clone` creates an independent `SensitiveData<T>` with its own copy of the contents: disposing one does not affect the
+- [Clone](cref:Meziantou.Framework.SensitiveData{T}.Clone) creates an independent [SensitiveData\<T\>](cref:Meziantou.Framework.SensitiveData{T}) with its own copy of the contents: disposing one does not affect the
   other.
-- `Dispose` clears the memory that holds the contents and releases it. Every method then throws an
-  `ObjectDisposedException`. Calling `Dispose` more than once is allowed.
+- [Dispose](cref:Meziantou.Framework.SensitiveData{T}.Dispose) clears the memory that holds the contents and releases it. Every method then throws an
+  `ObjectDisposedException`. Calling [Dispose](cref:Meziantou.Framework.SensitiveData{T}.Dispose) more than once is allowed.
 - An instance that is never disposed is cleared when the garbage collector finalizes it, at a time you do not control.
   Dispose instances as soon as you no longer need them.
 
 ## Use an instance from several threads
 
-The methods of `SensitiveData<T>` can be called from several threads at the same time: reveals are serialized, so the
-contents are never protected again while another thread is still reading them. `Dispose` waits for a reveal running on
+The methods of [SensitiveData\<T\>](cref:Meziantou.Framework.SensitiveData{T}) can be called from several threads at the same time: reveals are serialized, so the
+contents are never protected again while another thread is still reading them. [Dispose](cref:Meziantou.Framework.SensitiveData{T}.Dispose) waits for a reveal running on
 another thread to finish before it clears the contents.
 
-A `RevealAndUse` callback can call another method of the same instance, such as `RevealInto` or `Clone`: the contents
+A [RevealAndUse](cref:Meziantou.Framework.SensitiveData{T}.RevealAndUse) callback can call another method of the same instance, such as [RevealInto](cref:Meziantou.Framework.SensitiveData{T}.RevealInto) or [Clone](cref:Meziantou.Framework.SensitiveData{T}.Clone): the contents
 stay readable until the outermost reveal ends.

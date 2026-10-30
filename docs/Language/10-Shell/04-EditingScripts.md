@@ -5,8 +5,8 @@ description: Replace a word or a command, quote arguments for a shell, rename a 
 
 ## Replace a word
 
-`ReplaceNode` returns a new script in which only the replaced node differs. A replacement takes nothing from the node it
-replaces: use `WithTriviaFrom` to keep the whitespace and comments around it:
+[ReplaceNode](cref:Meziantou.Framework.Language.SyntaxNodeExtensions.ReplaceNode) returns a new script in which only the replaced node differs. A replacement takes nothing from the node it
+replaces: use [WithTriviaFrom](cref:Meziantou.Framework.Language.SyntaxNodeExtensions.WithTriviaFrom) to keep the whitespace and comments around it:
 
 <!-- ref:../../../tests/Meziantou.Framework.Language.Shell.Tests/ShellSyntaxTreeTests.cs;region=ShellSyntaxTree_ReplaceNode;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -20,11 +20,11 @@ Assert.Equal("echo   new    # keep this", updated.ToFullString());
 ```
 <!-- endref -->
 
-`ShellWordSyntax.WithText` rewrites a word as a single literal and keeps its own trivia. `ReplaceToken`, `ReplaceTrivia`,
-`RemoveNode` and the `With…` method of each part of a node work the same way. See
+[ShellWordSyntax.WithText](cref:Meziantou.Framework.Language.Shell.ShellWordSyntax.WithText) rewrites a word as a single literal and keeps its own trivia. [ReplaceToken](cref:Meziantou.Framework.Language.SyntaxNodeExtensions.ReplaceToken), [ReplaceTrivia](cref:Meziantou.Framework.Language.SyntaxNodeExtensions.ReplaceTrivia),
+[RemoveNode](cref:Meziantou.Framework.Language.SyntaxNodeExtensions.RemoveNode) and the `With…` method of each part of a node work the same way. See
 [Editing trees](../03-Concepts/06-EditingTrees.md).
 
-To edit by text, use `WithChanges`, which parses the script again:
+To edit by text, use [WithChanges](cref:Meziantou.Framework.Language.Shell.ShellSyntaxTree.WithChanges), which parses the script again:
 
 <!-- ref:../../../tests/Meziantou.Framework.Language.Shell.Tests/ShellSyntaxTreeTests.cs;region=ShellSyntaxTree_WithChanges;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -37,7 +37,7 @@ Assert.Equal("echo new", updated.GetRoot().ToFullString());
 
 ## Build a command
 
-`SyntaxFactory.Command` builds a command from strings, and quotes each argument only when the dialect requires it:
+[SyntaxFactory.Command](cref:Meziantou.Framework.Language.Shell.SyntaxFactory.Command) builds a command from strings, and quotes each argument only when the dialect requires it:
 
 <!-- ref:../../../tests/Meziantou.Framework.Language.Shell.Tests/ShellSyntaxTreeTests.cs;region=ShellSyntaxTree_SyntaxFactory;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -47,7 +47,7 @@ Assert.Equal("echo 'two words' plain", command.ToFullString());
 ```
 <!-- endref -->
 
-`SyntaxFactory.Word` and `QuotedString` build a single argument the same way. Each dialect has its own quoting rules, so
+[SyntaxFactory.Word](cref:Meziantou.Framework.Language.Shell.SyntaxFactory.Word) and [QuotedString](cref:Meziantou.Framework.Language.Shell.SyntaxFactory.QuotedString) build a single argument the same way. Each dialect has its own quoting rules, so
 build the command for the shell that will run it.
 
 ## Rename a command
@@ -111,7 +111,7 @@ Assert.Equal("make build\necho finished\n", edited.ToFullString());
 
 ## Compare scripts
 
-`IsEquivalentTo` compares two trees by their structure, ignoring whitespace and comments:
+[IsEquivalentTo](cref:Meziantou.Framework.Language.Shell.ShellSyntaxTree.IsEquivalentTo) compares two trees by their structure, ignoring whitespace and comments:
 
 <!-- ref:../../../tests/Meziantou.Framework.Language.Shell.Tests/ShellSyntaxTreeTests.cs;region=ShellSyntaxTree_IsEquivalentTo;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -122,5 +122,5 @@ Assert.True(a.IsEquivalentTo(b));
 ```
 <!-- endref -->
 
-`GetChanges` returns what differs between two trees, with the text they have in common at the start and at the end of a
+[GetChanges](cref:Meziantou.Framework.Language.Shell.ShellSyntaxTree.GetChanges) returns what differs between two trees, with the text they have in common at the start and at the end of a
 change left out.

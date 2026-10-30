@@ -27,15 +27,15 @@ The library works with the files of the cgroup file system (`/sys/fs/cgroup`): i
   calls that are not guarded by `OperatingSystem.IsLinux()`.
 - **cgroups v2**, mounted at `/sys/fs/cgroup`, which is the default on current distributions. cgroups v1 is not
   supported.
-- **Linux 4.5 or later.** Some features need a later kernel: threads (`AssociateThread`, `GetThreads`) need 4.14, the
-  freezer (`Freeze`, `Unfreeze`, `IsFrozen`) 5.2, and `Kill` 5.14. The statistics the kernel reports also vary by
+- **Linux 4.5 or later.** Some features need a later kernel: threads ([AssociateThread](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.AssociateThread), [GetThreads](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.GetThreads)) need 4.14, the
+  freezer ([Freeze](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.Freeze), [Unfreeze](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.Unfreeze), [IsFrozen](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.IsFrozen)) 5.2, and [Kill](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.Kill) 5.14. The statistics the kernel reports also vary by
   version.
 - **Permissions.** Creating control groups and changing their limits usually needs root, or a part of the hierarchy
   delegated to the user, such as the one systemd delegates to a service.
 
 ## How control groups work
 
-- Control groups form a tree, whose root is `/sys/fs/cgroup`. `CGroup2.Root` represents it, and each `CGroup2` is a
+- Control groups form a tree, whose root is `/sys/fs/cgroup`. [CGroup2.Root](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.Root) represents it, and each [CGroup2](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2) is a
   folder of that tree.
 - A **controller** handles one resource: `cpu`, `memory`, `io`, `pids`, `cpuset`, `hugetlb`. A controller is enabled
   on a control group for its **children**: to limit the memory of a group, enable `memory` on its parent.

@@ -24,7 +24,7 @@ public sealed record Person(string Name, int Age);
 ```
 <!-- endref -->
 
-`TomlSerializer.Serialize` writes it as TOML, and `TomlSerializer.Deserialize` reads it back:
+[TomlSerializer.Serialize](cref:Meziantou.Framework.Toml.TomlSerializer.Serialize) writes it as TOML, and [TomlSerializer.Deserialize](cref:Meziantou.Framework.Toml.TomlSerializer.Deserialize) reads it back:
 
 <!-- ref:../../tests/Meziantou.Framework.Toml.Tests/BasicTests.cs;region=TomlSerializer_SerializeAndDeserialize;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -46,7 +46,7 @@ Assert.Equal(new Person("Ada", 37), person);
 
 ## Read a configuration file
 
-`Deserialize` and `Serialize` also take a `Stream` (UTF-8), a `TextReader` or a `TextWriter`:
+[Deserialize](cref:Meziantou.Framework.Toml.TomlSerializer.Deserialize) and [Serialize](cref:Meziantou.Framework.Toml.TomlSerializer.Serialize) also take a `Stream` (UTF-8), a `TextReader` or a `TextWriter`:
 
 <!-- ref:../../samples/Meziantou.Framework.Toml.Samples/ReadmeSnippets.cs;region=TomlSerializer_Files;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -63,8 +63,8 @@ Nested objects become tables, and collections of objects become arrays of tables
 
 ## Handle invalid input
 
-A document that is not valid TOML, or does not match your type, throws a `TomlException` that gives the line and the
-column of the error. When invalid input is expected, for example a file written by a user, `TryDeserialize` returns
+A document that is not valid TOML, or does not match your type, throws a [TomlException](cref:Meziantou.Framework.Toml.TomlException) that gives the line and the
+column of the error. When invalid input is expected, for example a file written by a user, [TryDeserialize](cref:Meziantou.Framework.Toml.TomlSerializer.TryDeserialize) returns
 `false` instead:
 
 <!-- ref:../../tests/Meziantou.Framework.Toml.Tests/BasicTests.cs;region=TomlSerializer_TryDeserialize;format=md-fenced-code-block;dedent=true -->

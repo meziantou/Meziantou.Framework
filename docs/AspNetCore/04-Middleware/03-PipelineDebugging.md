@@ -28,25 +28,25 @@ app.Run();
 ```
 <!-- endref -->
 
-- `AddMiddlewarePipelineDebugging` registers the capture. Without it, `MapMiddlewarePipelineDebugEndpoint` throws an
+- [AddMiddlewarePipelineDebugging](cref:Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebuggingServiceCollectionExtensions.AddMiddlewarePipelineDebugging) registers the capture. Without it, [MapMiddlewarePipelineDebugEndpoint](cref:Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebuggingWebApplicationExtensions.MapMiddlewarePipelineDebugEndpoint) throws an
   `InvalidOperationException`, in every environment.
-- `MapMiddlewarePipelineDebugEndpoint` maps `GET /_debug/pipeline`, which returns the snapshot as JSON. Pass `pattern`
+- [MapMiddlewarePipelineDebugEndpoint](cref:Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebuggingWebApplicationExtensions.MapMiddlewarePipelineDebugEndpoint) maps `GET /_debug/pipeline`, which returns the snapshot as JSON. Pass `pattern`
   to use another route.
-- `GetMiddlewarePipelineDebugSnapshot` returns the same snapshot from code. Its `ToString()` renders the pipeline and
+- [GetMiddlewarePipelineDebugSnapshot](cref:Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebuggingWebApplicationExtensions.GetMiddlewarePipelineDebugSnapshot) returns the same snapshot from code. Its `ToString()` renders the pipeline and
   the endpoints as an indented text tree.
 
-The snapshot is also available from dependency injection: inject `MiddlewarePipelineDebugInfoProvider` and call
-`GetSnapshot()`.
+The snapshot is also available from dependency injection: inject [MiddlewarePipelineDebugInfoProvider](cref:Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugInfoProvider) and call
+[GetSnapshot()](cref:Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugInfoProvider.GetSnapshot).
 
 ## What a snapshot contains
 
 | Member | Content |
 | --- | --- |
-| `IsPipelineCaptured` | `false` until the host has built the pipeline |
-| `Pipeline.Middlewares` | The middleware, in order: `Name`, `DelegateType` and `DelegateMethod` of the registration, and `Branches` |
-| `Endpoints` | Every endpoint: `DisplayName`, `EndpointType`, `RoutePattern`, `Order`, `HttpMethods`, and the `Endpoint` itself |
+| [IsPipelineCaptured](cref:Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugSnapshot.IsPipelineCaptured) | `false` until the host has built the pipeline |
+| `Pipeline.Middlewares` | The middleware, in order: [Name](cref:Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugMiddleware.Name), [DelegateType](cref:Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugMiddleware.DelegateType) and [DelegateMethod](cref:Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugMiddleware.DelegateMethod) of the registration, and [Branches](cref:Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugMiddleware.Branches) |
+| [Endpoints](cref:Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugSnapshot.Endpoints) | Every endpoint: [DisplayName](cref:Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugEndpoint.DisplayName), [EndpointType](cref:Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugEndpoint.EndpointType), [RoutePattern](cref:Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugEndpoint.RoutePattern), [Order](cref:Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugEndpoint.Order), [HttpMethods](cref:Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugEndpoint.HttpMethods), and the [Endpoint](cref:Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugEndpoint.Endpoint) itself |
 
-`Endpoint` is not serialized: it is `null` on a snapshot read back from the JSON of the debug endpoint, and only set on
+[Endpoint](cref:Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugEndpoint.Endpoint) is not serialized: it is `null` on a snapshot read back from the JSON of the debug endpoint, and only set on
 a snapshot created in the process.
 
 ## What is captured
@@ -64,7 +64,7 @@ and method of the delegate: a name is never guessed, so the name you see belongs
 
 ## When to read the snapshot
 
-The pipeline is captured while the host builds it. Before that, `IsPipelineCaptured` is `false` and the pipeline is
+The pipeline is captured while the host builds it. Before that, [IsPipelineCaptured](cref:Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebugSnapshot.IsPipelineCaptured) is `false` and the pipeline is
 empty. This includes an `IHostedService`, which starts before the web host: read the snapshot after the application
 has started, for instance in a request or in `IHostApplicationLifetime.ApplicationStarted`.
 
@@ -85,6 +85,6 @@ The route is registered in every environment, so the returned builder can always
 
 ## Trimming and Native AOT
 
-`MapMiddlewarePipelineDebugEndpoint` serializes the snapshot with reflection-based JSON serialization, so it is not
+[MapMiddlewarePipelineDebugEndpoint](cref:Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebuggingWebApplicationExtensions.MapMiddlewarePipelineDebugEndpoint) serializes the snapshot with reflection-based JSON serialization, so it is not
 compatible with trimming or Native AOT (it is annotated with `RequiresUnreferencedCode` and `RequiresDynamicCode`). In
-such an application, use `GetMiddlewarePipelineDebugSnapshot` and its `ToString()` instead.
+such an application, use [GetMiddlewarePipelineDebugSnapshot](cref:Meziantou.AspNetCore.Diagnostics.MiddlewarePipelineDebuggingWebApplicationExtensions.GetMiddlewarePipelineDebugSnapshot) and its `ToString()` instead.

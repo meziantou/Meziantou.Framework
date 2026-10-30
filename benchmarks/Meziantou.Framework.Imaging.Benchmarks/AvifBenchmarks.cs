@@ -169,4 +169,69 @@ public class AvifBenchmarks : IDisposable
         if (image.Width != width || image.Height != height || image.Frames.Count != frames)
             throw new InvalidOperationException($"Unexpected AVIF input: {image.Width}x{image.Height}, {image.Frames.Count} frame(s).");
     }
+
+    /// <summary>
+    /// The AV1 tiles of a frame decoded and encoded by <see cref="Workers"/> workers
+    /// (<see cref="ImageConfiguration.MaxDegreeOfParallelism"/>), with and without <see cref="AvifEncoder.AutoTiling"/>. The
+    /// input is a 3840x2160 photo-like still, coded lossy at effort 0: in 4x2 tiles with the setting, the layout that libavif's
+    /// <c>--autotiling</c> chooses for that size, and in one tile without it (of which workers only share the
+    /// post-processing filters of the decoder).
+    /// </summary>
+    [Config(typeof(WorkloadConfig))]
+    public class Tiles : IDisposable
+    {
+        private const int Width = 3840;
+        private const int Height = 2160;
+        private readonly MemoryStream _output = new();
+        private byte[] _encoded = null!;
+        private ImageDecodeOptions _options = null!;
+        private AvifEncoder _encoder = null!;
+        private Image<Rgb24> _photo = null!;
+
+        /// <summary>Gets or sets <see cref="ImageConfiguration.MaxDegreeOfParallelism"/> (1 is the default configuration).</summary>
+        [Params(1, 8)]
+        public int Workers { get; set; } = 1;
+
+        /// <summary>Gets or sets <see cref="AvifEncoder.AutoTiling"/> (off by default).</summary>
+        [Params(false, true)]
+        public bool AutoTiling { get; set; }
+
+        [GlobalSetup]
+        public void Setup()
+        {
+            var configuration = new ImageConfiguration { MaxDegreeOfParallelism = Workers };
+            _options = new ImageDecodeOptions { Configuration = configuration };
+            _encoder = new AvifEncoder { Compression = AvifCompression.Lossy, Effort = 0, AutoTiling = AutoTiling };
+            _photo = Image.ImportPixelBytes<Rgb24>(BenchmarkPixels.Rgb24(Width, Height, seed: 23), Width, Height, configuration: configuration);
+            ImageWorkloads.Encode(_photo, _encoder, _output);
+            _encoded = _output.ToArray();
+
+            // Untimed gate: the input is what the workloads say
+            using var image = Image.Load(_encoded);
+            if (image.Width != Width || image.Height != Height)
+                throw new InvalidOperationException($"Unexpected AVIF input: {image.Width}x{image.Height}.");
+        }
+
+        [GlobalCleanup]
+        public void Cleanup() => _photo?.Dispose();
+
+        [Benchmark]
+        [Workload("3840x2160 lossy AVIF 4:2:0 (4x2 AV1 tiles with AutoTiling, one tile otherwise) -> Rgb24")]
+        public int Decode()
+        {
+            using var image = Image.Load<Rgb24>(_encoded, _options);
+            return image.Width;
+        }
+
+        [Benchmark]
+        [Workload("3840x2160 Rgb24 -> lossy AVIF q75 4:2:0 (4x2 AV1 tiles with AutoTiling, one tile otherwise), effort 0", ReturnsOutputBytes = true)]
+        public long Encode() => ImageWorkloads.Encode(_photo, _encoder, _output);
+
+        public void Dispose()
+        {
+            Cleanup();
+            _output.Dispose();
+            GC.SuppressFinalize(this);
+        }
+    }
 }

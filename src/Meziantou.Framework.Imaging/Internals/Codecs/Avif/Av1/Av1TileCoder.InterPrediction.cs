@@ -73,7 +73,7 @@ internal ref partial struct Av1TileCoder
             }
 
             if (!someUseIntra && (predW < num4x4W * 4 || predH < num4x4H * 4))
-                _state.Tools |= Av1Tools.SubBlockChromaPrediction;
+                _scratch.Tools |= Av1Tools.SubBlockChromaPrediction;
 
             if (someUseIntra)
             {
@@ -176,7 +176,7 @@ internal ref partial struct Av1TileCoder
             GetReferencePlane(plane, refFrame, out var reference, out var lastX, out var lastY, out var xScale, out var yScale);
             if (useWarp is not 0)
             {
-                _state.Tools |= useWarp is 1 ? Av1Tools.LocalWarp : Av1Tools.GlobalWarp;
+                _scratch.Tools |= useWarp is 1 ? Av1Tools.LocalWarp : Av1Tools.GlobalWarp;
                 if (useWarp is 1)
                 {
                     for (var i = 0; i < 6; i++)

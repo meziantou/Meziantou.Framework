@@ -4,18 +4,18 @@ description: Compare texts line by line, word by word, character by character, o
 ---
 
 A diff compares chunks: it splits both texts into chunks, then matches the chunks that are equal. The chunks decide how
-precise the result is. Set the chunker in `TextDiffOptions.Chunker`:
+precise the result is. Set the chunker in [TextDiffOptions.Chunker](cref:Meziantou.Framework.TextDiffOptions.Chunker):
 
 | Chunker | Chunks | Use it for |
 | --- | --- | --- |
-| `TextChunker.Lines` (default) | One line, with its line terminator | Source code, configuration files, logs |
-| `TextChunker.Words` | Runs of non-whitespace and runs of whitespace | Prose, one-line values |
-| `TextChunker.Characters` | One `char` | Short strings, such as identifiers or names |
-| Your own `TextChunker` | Whatever you choose: sentences, CSV fields, tokens | Texts with their own structure |
+| [TextChunker.Lines](cref:Meziantou.Framework.TextChunker.Lines) (default) | One line, with its line terminator | Source code, configuration files, logs |
+| [TextChunker.Words](cref:Meziantou.Framework.TextChunker.Words) | Runs of non-whitespace and runs of whitespace | Prose, one-line values |
+| [TextChunker.Characters](cref:Meziantou.Framework.TextChunker.Characters) | One `char` | Short strings, such as identifiers or names |
+| Your own [TextChunker](cref:Meziantou.Framework.TextChunker) | Whatever you choose: sentences, CSV fields, tokens | Texts with their own structure |
 
 ## Lines
 
-`TextChunker.Lines` cuts after each line terminator (`\n`, `\r\n`, `\r`, and the Unicode separators `\u0085`, ` `
+[TextChunker.Lines](cref:Meziantou.Framework.TextChunker.Lines) cuts after each line terminator (`\n`, `\r\n`, `\r`, and the Unicode separators `\u0085`, ` `
 and ` `) and keeps the terminator at the end of its chunk:
 
 <!-- ref:../../tests/Meziantou.Framework.TextDiff.Tests/TextDiffTests.cs;region=TextDiff_LineChunks;format=md-fenced-code-block;dedent=true -->
@@ -36,7 +36,7 @@ lets the chunks concatenate back to the text. Two consequences:
 
 ## Words
 
-`TextChunker.Words` alternates between runs of non-whitespace and runs of whitespace, so the whitespace is kept in its
+[TextChunker.Words](cref:Meziantou.Framework.TextChunker.Words) alternates between runs of non-whitespace and runs of whitespace, so the whitespace is kept in its
 own chunks:
 
 <!-- ref:../../tests/Meziantou.Framework.TextDiff.Tests/TextDiffTests.cs;region=TextDiff_WordDiff;format=md-fenced-code-block;dedent=true -->
@@ -63,7 +63,7 @@ Line terminators are whitespace, so a word chunker also cuts at the end of each 
 
 ## Characters
 
-`TextChunker.Characters` gives one chunk per `char`. Chunks are UTF-16 code units, not what the user sees as a
+[TextChunker.Characters](cref:Meziantou.Framework.TextChunker.Characters) gives one chunk per `char`. Chunks are UTF-16 code units, not what the user sees as a
 character: an emoji or another character outside the Basic Multilingual Plane is two chunks, and a letter followed by a
 combining accent is two chunks too.
 
@@ -73,7 +73,7 @@ words that changed.
 
 ## Write your own chunker
 
-Derive from `TextChunker` and override `Chunk`. This chunker cuts after each sentence:
+Derive from [TextChunker](cref:Meziantou.Framework.TextChunker) and override [Chunk](cref:Meziantou.Framework.TextChunker.Chunk). This chunker cuts after each sentence:
 
 <!-- ref:../../tests/Meziantou.Framework.TextDiff.Tests/TextDiffTests.cs;region=TextDiff_CustomChunker;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -127,6 +127,6 @@ Assert.Equal(
 - **Keep every character.** The chunks must concatenate back to the text exactly; otherwise the entries cannot rebuild
   the texts.
 - **Put the separators in the chunks.** Above, the spaces after a period belong to the sentence before them. Where you
-  put them changes what compares equal: with `IgnoreWhitespace`, the whitespace at the edges of a chunk is ignored.
-- `Chunk` receives a `ReadOnlySpan<char>`, so collect the chunks in a list and return it.
-- A derived class that does not override `Chunk` splits into lines.
+  put them changes what compares equal: with [IgnoreWhitespace](cref:Meziantou.Framework.TextDiffOptions.IgnoreWhitespace), the whitespace at the edges of a chunk is ignored.
+- [Chunk](cref:Meziantou.Framework.TextChunker.Chunk) receives a `ReadOnlySpan<char>`, so collect the chunks in a list and return it.
+- A derived class that does not override [Chunk](cref:Meziantou.Framework.TextChunker.Chunk) splits into lines.

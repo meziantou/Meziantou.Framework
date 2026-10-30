@@ -3,7 +3,7 @@ title: Infinite scrolling
 description: Load more items when the user reaches the end of a list, page through an API, reset the list, and use it in tables and scrollable containers.
 ---
 
-`InfiniteScrolling<T>` asks for more items when the end of the list becomes visible:
+[InfiniteScrolling\<T\>](cref:Meziantou.AspNetCore.Components.InfiniteScrolling{T}) asks for more items when the end of the list becomes visible:
 
 <!-- ref:../../../samples/BlazorAppSample/Pages/InfiniteScrollingDemo.razor;format=md-fenced-code-block -->
 ```razor
@@ -30,20 +30,20 @@ description: Load more items when the user reaches the end of a list, page throu
 ```
 <!-- endref -->
 
-`ItemsProvider` receives an `InfiniteScrollingItemsProviderRequest` and returns the next items:
+[ItemsProvider](cref:Meziantou.AspNetCore.Components.InfiniteScrolling{T}.ItemsProvider) receives an [InfiniteScrollingItemsProviderRequest](cref:Meziantou.AspNetCore.Components.InfiniteScrollingItemsProviderRequest) and returns the next items:
 
-- `StartIndex` is the number of items already loaded, which is the index of the first item to return.
-- `CancellationToken` is canceled when the list is reset or the component is disposed. Pass it to your API calls.
+- [StartIndex](cref:Meziantou.AspNetCore.Components.InfiniteScrollingItemsProviderRequest.StartIndex) is the number of items already loaded, which is the index of the first item to return.
+- [CancellationToken](cref:Meziantou.AspNetCore.Components.InfiniteScrollingItemsProviderRequest.CancellationToken) is canceled when the list is reset or the component is disposed. Pass it to your API calls.
 - Return an empty sequence when there is nothing left: the component stops asking.
 
-`LoadingTemplate` is displayed while a request is running. Only one request runs at a time.
+[LoadingTemplate](cref:Meziantou.AspNetCore.Components.InfiniteScrolling{T}.LoadingTemplate) is displayed while a request is running. Only one request runs at a time.
 
 The component watches the end of the list with an `IntersectionObserver` in the browser, so it only works once the
 component is interactive.
 
 ## Load pages from an API
 
-Compute the page from `StartIndex`:
+Compute the page from [StartIndex](cref:Meziantou.AspNetCore.Components.InfiniteScrollingItemsProviderRequest.StartIndex):
 
 <!-- ref:../../../samples/BlazorAppSample/Pages/InfiniteScrollingPaginationDemo.razor;format=md-fenced-code-block -->
 ```razor
@@ -78,7 +78,7 @@ Compute the page from `StartIndex`:
 
 ## Reset the list
 
-Call `RefreshDataAsync` to discard the loaded items and start again from index 0, for instance when a search filter
+Call [RefreshDataAsync](cref:Meziantou.AspNetCore.Components.InfiniteScrolling{T}.RefreshDataAsync) to discard the loaded items and start again from index 0, for instance when a search filter
 changes. The running request is canceled:
 
 <!-- ref:../../../samples/BlazorAppSample/Pages/InfiniteScrollingSearchDemo.razor;format=md-fenced-code-block -->
@@ -123,12 +123,12 @@ changes. The running request is canceled:
 ```
 <!-- endref -->
 
-Assigning another delegate to `ItemsProvider` also clears the items.
+Assigning another delegate to [ItemsProvider](cref:Meziantou.AspNetCore.Components.InfiniteScrolling{T}.ItemsProvider) also clears the items.
 
 ## In a table or a scrollable container
 
 The component renders an element after the last item to detect when the end is visible. It is a `<div>` by default;
-set `LastItemIndicatorElement` when the items are in an element that only accepts some children, such as `tr` in a
+set [LastItemIndicatorElement](cref:Meziantou.AspNetCore.Components.InfiniteScrolling{T}.LastItemIndicatorElement) when the items are in an element that only accepts some children, such as `tr` in a
 `<table>`. The end of the list is detected in the closest ancestor that scrolls (its `overflow` is not `visible`), so
 the component also works in a scrollable container, vertically or horizontally:
 

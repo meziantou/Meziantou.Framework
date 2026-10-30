@@ -1,3 +1,4 @@
+using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.TestHarness.Adapters;
 using Meziantou.Framework.Imaging.TestHarness.Fixtures;
 using Meziantou.Framework.Imaging.TestHarness.Golden;
@@ -26,6 +27,8 @@ public sealed class Jpeg2000DecoderConformanceTests
     public static TheoryData<string> FixturesWithBoxesAfterTheCodestream => [.. Valid.Where(FixtureTraits.HasBoxesAfterTheCodestream).Select(fixture => fixture.Id)];
 
     public static TheoryData<string> Fixtures => [.. Valid.Select(fixture => fixture.Id)];
+
+    public static TheoryData<string> AllFixtures => [.. GoldenCorpus.Default.GetIds(format: "jp2")];
 
     [Fact]
     public void FixturesCoverTheDecoderFeatures()
@@ -140,6 +143,47 @@ public sealed class Jpeg2000DecoderConformanceTests
         var expectedMean = Math.Min(justifiedMean, Math.Ceiling(Math.Round((mean + 0.01) * 100, 6, MidpointRounding.AwayFromZero)) / 100);
         Assert.True(policy.MaxAbsoluteError == expectedMax && Math.Abs(policy.MaxMeanAbsoluteError - expectedMean) < 1e-9,
             string.Create(CultureInfo.InvariantCulture, $"The policy of '{id}' (max {policy.MaxAbsoluteError}, mean {policy.MaxMeanAbsoluteError}) is not the one derived from the measured disagreement (max {expectedMax}, mean {expectedMean}). Update LibraryJp2Measurements in tools/Meziantou.Framework.Imaging.CorpusGenerator/Jp2Corpus.cs and regenerate: {measurement}"));
+    }
+
+    /// <summary>
+    /// Every fixture of the corpus, the invalid and unsupported ones included, decoded by several workers whatever its size
+    /// (<see cref="Jpeg2000Workers.TestIgnoreMinimumSize"/>): the code-blocks of every code-block style, of the HT block
+    /// coder, of layers, precincts, tiles and regions of interest, and the transformations split down to one row or strip
+    /// per worker, give the pixels or the error of one worker.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(AllFixtures))]
+    public void FixturesDecodedByWorkersGiveThePixelsOfOneWorker(string id)
+    {
+        var data = GoldenCorpus.Default.Get(id).ReadInput();
+        var expected = Decode(data, workers: 1);
+        Jpeg2000Workers.TestIgnoreMinimumSize = true;
+        try
+        {
+            foreach (var workers in (int[])[2, 3, 16])
+            {
+                Assert.True(expected.SequenceEqual(Decode(data, workers)), $"{id}: {workers} workers decode something else.");
+            }
+        }
+        finally
+        {
+            Jpeg2000Workers.TestIgnoreMinimumSize = false;
+        }
+
+        static byte[] Decode(byte[] data, int workers)
+        {
+            try
+            {
+                using var image = Image.Load<Rgba64>(data, new ImageDecodeOptions { Configuration = new ImageConfiguration { MaxDegreeOfParallelism = workers } });
+                var pixels = new Rgba64[image.Width * image.Height];
+                image.Frames[0].CopyPixelDataTo(pixels);
+                return unsafe(System.Runtime.InteropServices.MemoryMarshal.AsBytes(pixels.AsSpan())).ToArray();
+            }
+            catch (ImageException exception)
+            {
+                return System.Text.Encoding.UTF8.GetBytes($"{exception.GetType().Name}: {exception.Message}");
+            }
+        }
     }
 
     [Theory]

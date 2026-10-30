@@ -19,6 +19,13 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// Bits after the last MCU of an interval or of the scan (fill bits, extra bytes) and a restart marker after the last MCU of
 /// the scan are ignored. The subclasses validate the coded values.
 /// </para>
+/// <para>
+/// Lenient decoding (<see cref="AcceptsGarbledRestartNumbers"/>): a restart marker that ends a complete interval but whose
+/// number is 3 to 5 after the expected one is read as the expected marker, as libjpeg-turbo, FFmpeg and Apple ImageIO
+/// read it in a sequential scan; the next marker is expected after the expected one. A number one or two away from the
+/// expected one stays an error: libjpeg-turbo and ImageIO then take the marker for a lost or a spurious one, and give
+/// other pixels than FFmpeg.
+/// </para>
 /// </remarks>
 internal abstract class JpegScanDecoder
 {
@@ -108,6 +115,12 @@ internal abstract class JpegScanDecoder
     /// <summary>Gets a value indicating whether every MCU of the scan was decoded.</summary>
     public bool IsComplete => _mcu >= _totalMcus;
 
+    /// <summary>
+    /// Gets a value indicating whether a restart marker whose number is 3 to 5 after the expected one is read as the
+    /// expected marker (lenient decoding) instead of being an error.
+    /// </summary>
+    public bool AcceptsGarbledRestartNumbers { get; init; }
+
     /// <summary>Gets the entropy reader of the scan.</summary>
     protected JpegEntropyReader Reader => _reader;
 
@@ -159,7 +172,10 @@ internal abstract class JpegScanDecoder
     }
 
     /// <summary>Decodes the rest of the scan at the end of its entropy-coded data.</summary>
-    public void Finish()
+    /// <param name="endOfInput">
+    /// Whether the data ends with the input instead of at a marker (lenient decoding of a file without EOI marker).
+    /// </param>
+    public void Finish(bool endOfInput = false)
     {
         if (_pendingMarkerByte)
             throw Invalid("The JPEG entropy-coded data ends with an incomplete marker.");
@@ -167,7 +183,7 @@ internal abstract class JpegScanDecoder
         _reader.MarkEndOfSegment();
         DecodeAvailable(endOfSegment: true);
         if (_mcu < _totalMcus)
-            throw Invalid("The JPEG scan ends before its last MCU: a restart marker is missing.");
+            throw Invalid(endOfInput ? "The JPEG data ends before the last MCU of its last scan." : "The JPEG scan ends before its last MCU: a restart marker is missing.");
     }
 
     private static ReadOnlySpan<byte> StuffedByte => [0xFF];
@@ -274,13 +290,13 @@ internal abstract class JpegScanDecoder
         if (_mcu >= _totalMcus)
             return;
 
-        if (index != _expectedRestart)
+        if (index != _expectedRestart && !(AcceptsGarbledRestartNumbers && ((index - _expectedRestart) & 7) is >= 3 and <= 5))
             throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG restart marker RST{index} is out of sequence (RST{_expectedRestart} expected)."));
 
         _reader.Reset();
         OnRestart();
         _intervalRemaining = _restartInterval;
-        _expectedRestart = (index + 1) & 7;
+        _expectedRestart = (_expectedRestart + 1) & 7;
     }
 
     private void AppendData(ReadOnlySpan<byte> data)

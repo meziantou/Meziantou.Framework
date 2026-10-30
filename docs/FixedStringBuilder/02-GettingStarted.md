@@ -18,10 +18,10 @@ The types are in the [Meziantou.Framework.FixedStringBuilder](cref:Meziantou.Fra
 
 | Type | Maximum number of characters |
 | --- | --- |
-| `FixedStringBuilder8` | 8 |
-| `FixedStringBuilder16` | 16 |
-| `FixedStringBuilder32` | 32 |
-| `FixedStringBuilder64` | 64 |
+| [FixedStringBuilder8](cref:Meziantou.Framework.FixedStringBuilder.FixedStringBuilder8) | 8 |
+| [FixedStringBuilder16](cref:Meziantou.Framework.FixedStringBuilder.FixedStringBuilder16) | 16 |
+| [FixedStringBuilder32](cref:Meziantou.Framework.FixedStringBuilder.FixedStringBuilder32) | 32 |
+| [FixedStringBuilder64](cref:Meziantou.Framework.FixedStringBuilder.FixedStringBuilder64) | 64 |
 
 Choose the smallest type that fits the longest value: every value has the size of its capacity, whatever its length.
 For another capacity, [generate your own type](04-CustomCapacities.md).

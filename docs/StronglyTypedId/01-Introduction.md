@@ -30,7 +30,7 @@ URL.
   Entity Framework Core. See [Integrations](09-Integrations/01-Overview.md).
 - **Configure the generated code** per type or for the whole assembly. See [Options](07-Options.md) and
   [Assembly-wide defaults](08-AssemblyDefaults.md).
-- **Write code that works with any ID** through the `IStronglyTypedId` interfaces. See
+- **Write code that works with any ID** through the [IStronglyTypedId](cref:Meziantou.Framework.IStronglyTypedId) interfaces. See
   [The interfaces package](10-Interfaces.md).
 
 ## Principles
@@ -50,7 +50,7 @@ URL.
 | Package | Contains | Namespace |
 | --- | --- | --- |
 | `Meziantou.Framework.StronglyTypedId` | The source generator, its analyzer and the attributes | `Meziantou.Framework.Annotations` |
-| `Meziantou.Framework.StronglyTypedId.Interfaces` | `IStronglyTypedId` and `IStronglyTypedId<T>` (optional) | [Meziantou.Framework](cref:Meziantou.Framework) |
+| `Meziantou.Framework.StronglyTypedId.Interfaces` | [IStronglyTypedId](cref:Meziantou.Framework.IStronglyTypedId) and [IStronglyTypedId\<T\>](cref:Meziantou.Framework.IStronglyTypedId{T}) (optional) | [Meziantou.Framework](cref:Meziantou.Framework.StronglyTypedId.Interfaces!N:Meziantou.Framework) |
 
 ## Next steps
 

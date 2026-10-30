@@ -1,0 +1,653 @@
+{
+  "$schema": "https://raw.githubusercontent.com/meziantou/Meziantou.DocumentationGenerator/main/schema/docgen.schema.json",
+  "version": 1,
+  "site": {
+    "title": "Meziantou.Framework",
+    "description": "Documentation of the Meziantou.Framework libraries.",
+    "logo": "docs/logo.svg",
+    "favicon": "docs/logo.svg",
+    "headerLinks": [
+      {
+        "text": "Sponsor",
+        "url": "https://github.com/sponsors/meziantou"
+      },
+      {
+        "text": "GitHub",
+        "url": "https://github.com/meziantou/Meziantou.Framework"
+      }
+    ]
+  },
+  "output": "artifacts/docs",
+  "content": {
+    "root": "docs",
+    "exclude": [
+      "**/AGENTS.md"
+    ],
+    "editUrl": "https://github.com/meziantou/Meziantou.Framework/edit/main/docs/{path}"
+  },
+  "references": [
+    {
+      "id": "Microsoft.AspNetCore.App.Ref",
+      "version": "10.0.14"
+    },
+    {
+      "id": "Microsoft.CodeAnalysis.Common",
+      "version": "5.9.0"
+    },
+    {
+      "id": "Microsoft.CodeAnalysis.CSharp",
+      "version": "5.9.0"
+    },
+    {
+      "id": "Microsoft.NETCore.App.Ref",
+      "version": "10.0.14"
+    }
+  ],
+  "diagnostics": {
+    "severity": {
+      "DG2007": "none"
+    }
+  },
+  "packages": [
+    {
+      "id": "Meziantou.AspNetCore.Authentication.HttpBasic",
+      "version": "2.0.4"
+    },
+    {
+      "id": "Meziantou.AspNetCore.Components.LogViewer",
+      "version": "2.0.9"
+    },
+    {
+      "id": "Meziantou.AspNetCore.Components.WebAssembly",
+      "version": "2.1.5"
+    },
+    {
+      "id": "Meziantou.AspNetCore.Components",
+      "version": "3.0.12"
+    },
+    {
+      "id": "Meziantou.AspNetCore.Mvc",
+      "version": "3.0.2"
+    },
+    {
+      "id": "Meziantou.AspNetCore.ServiceDefaults.AutoRegister",
+      "version": "2.0.2"
+    },
+    {
+      "id": "Meziantou.AspNetCore.ServiceDefaults",
+      "version": "2.0.15"
+    },
+    {
+      "id": "Meziantou.AspNetCore",
+      "version": "2.0.2"
+    },
+    {
+      "id": "Meziantou.DnsProxy",
+      "version": "2.0.9"
+    },
+    {
+      "id": "Meziantou.Extensions.Logging.FileLogger",
+      "version": "3.0.8"
+    },
+    {
+      "id": "Meziantou.Extensions.Logging.InMemory",
+      "version": "2.0.9"
+    },
+    {
+      "id": "Meziantou.Extensions.Logging.Xunit.v3",
+      "version": "3.0.11"
+    },
+    {
+      "id": "Meziantou.Framework.AnsiFormatting",
+      "version": "2.0.4"
+    },
+    {
+      "id": "Meziantou.Framework.Assertions",
+      "version": "2.0.12"
+    },
+    {
+      "id": "Meziantou.Framework.AtlassianDataFormat.Tool",
+      "version": "1.0.13"
+    },
+    {
+      "id": "Meziantou.Framework.AtlassianDataFormat",
+      "version": "1.0.3"
+    },
+    {
+      "id": "Meziantou.Framework.Avatar",
+      "version": "2.1.5"
+    },
+    {
+      "id": "Meziantou.Framework.Barcodes",
+      "version": "1.0.1"
+    },
+    {
+      "id": "Meziantou.Framework.Bencode",
+      "version": "2.0.4"
+    },
+    {
+      "id": "Meziantou.Framework.BloomFilters",
+      "version": "2.0.11"
+    },
+    {
+      "id": "Meziantou.Framework.ByteSize",
+      "version": "5.0.1"
+    },
+    {
+      "id": "Meziantou.Framework.ChromiumTracing",
+      "version": "2.0.5"
+    },
+    {
+      "id": "Meziantou.Framework.CodeDom",
+      "version": "6.0.3"
+    },
+    {
+      "id": "Meziantou.Framework.CodeOwners",
+      "version": "7.0.3"
+    },
+    {
+      "id": "Meziantou.Framework.CommandLine",
+      "version": "4.0.3"
+    },
+    {
+      "id": "Meziantou.Framework.Csv",
+      "version": "5.0.3"
+    },
+    {
+      "id": "Meziantou.Framework.DependencyScanning.Tool",
+      "version": "2.0.28"
+    },
+    {
+      "id": "Meziantou.Framework.DependencyScanning",
+      "version": "3.0.27"
+    },
+    {
+      "id": "Meziantou.Framework.Diagnostics.ContextSnapshot",
+      "version": "2.0.12"
+    },
+    {
+      "id": "Meziantou.Framework.Diagnostics.MemoryDump",
+      "version": "1.0.4"
+    },
+    {
+      "id": "Meziantou.Framework.DiffEngine",
+      "version": "2.0.14"
+    },
+    {
+      "id": "Meziantou.Framework.DnsClient",
+      "version": "2.0.6"
+    },
+    {
+      "id": "Meziantou.Framework.DnsFilter",
+      "version": "2.0.4"
+    },
+    {
+      "id": "Meziantou.Framework.DnsServer",
+      "version": "2.1.5"
+    },
+    {
+      "id": "Meziantou.Framework.EmbeddedConstantsGenerator",
+      "version": "1.0.4"
+    },
+    {
+      "id": "Meziantou.Framework.FastEnumGenerator",
+      "version": "4.0.3"
+    },
+    {
+      "id": "Meziantou.Framework.FixedStringBuilder.Generator",
+      "version": "2.0.6"
+    },
+    {
+      "id": "Meziantou.Framework.FixedStringBuilder",
+      "version": "2.0.6"
+    },
+    {
+      "id": "Meziantou.Framework.Fonts",
+      "version": "1.0.5"
+    },
+    {
+      "id": "Meziantou.Framework.FullPath",
+      "version": "3.0.14"
+    },
+    {
+      "id": "Meziantou.Framework.Globbing",
+      "version": "5.0.8"
+    },
+    {
+      "id": "Meziantou.Framework.Hashing",
+      "version": "1.0.0"
+    },
+    {
+      "id": "Meziantou.Framework.Html.Tool",
+      "version": "2.0.17"
+    },
+    {
+      "id": "Meziantou.Framework.HtmlSanitizer",
+      "version": "3.1.8"
+    },
+    {
+      "id": "Meziantou.Framework.HtmlToMarkdown.Tool",
+      "version": "1.0.17"
+    },
+    {
+      "id": "Meziantou.Framework.HtmlToMarkdown",
+      "version": "2.0.16"
+    },
+    {
+      "id": "Meziantou.Framework.Http.Caching.InMemory",
+      "version": "2.0.11"
+    },
+    {
+      "id": "Meziantou.Framework.Http.Caching.Redis",
+      "version": "2.0.18"
+    },
+    {
+      "id": "Meziantou.Framework.Http.Caching.Sqlite",
+      "version": "2.0.12"
+    },
+    {
+      "id": "Meziantou.Framework.Http.Caching",
+      "version": "2.0.11"
+    },
+    {
+      "id": "Meziantou.Framework.Http.Hsts",
+      "version": "2.1.9"
+    },
+    {
+      "id": "Meziantou.Framework.Http.Htpasswd",
+      "version": "2.0.6"
+    },
+    {
+      "id": "Meziantou.Framework.Http.Recording",
+      "version": "3.0.4"
+    },
+    {
+      "id": "Meziantou.Framework.Http.ServerSideRequestForgery",
+      "version": "2.0.8"
+    },
+    {
+      "id": "Meziantou.Framework.Http",
+      "version": "2.0.3"
+    },
+    {
+      "id": "Meziantou.Framework.HttpArchive",
+      "version": "2.0.5"
+    },
+    {
+      "id": "Meziantou.Framework.HttpClientMock",
+      "version": "2.1.5"
+    },
+    {
+      "id": "Meziantou.Framework.HumanReadableSerializer.Html",
+      "version": "1.0.5"
+    },
+    {
+      "id": "Meziantou.Framework.HumanReadableSerializer",
+      "version": "4.0.10"
+    },
+    {
+      "id": "Meziantou.Framework.Imaging.Barcodes",
+      "version": "1.0.2"
+    },
+    {
+      "id": "Meziantou.Framework.Imaging",
+      "version": "1.2.5"
+    },
+    {
+      "id": "Meziantou.Framework.InlineSnapshotTesting",
+      "version": "6.0.20"
+    },
+    {
+      "id": "Meziantou.Framework.JavaScriptEngine",
+      "version": "1.0.5"
+    },
+    {
+      "id": "Meziantou.Framework.JsonPath",
+      "version": "3.0.8"
+    },
+    {
+      "id": "Meziantou.Framework.LLMContext",
+      "version": "2.0.3"
+    },
+    {
+      "id": "Meziantou.Framework.Language.Css",
+      "version": "1.0.4"
+    },
+    {
+      "id": "Meziantou.Framework.Language.Ini",
+      "version": "1.0.5"
+    },
+    {
+      "id": "Meziantou.Framework.Language.Json",
+      "version": "4.0.7"
+    },
+    {
+      "id": "Meziantou.Framework.Language.Regex",
+      "version": "4.0.6"
+    },
+    {
+      "id": "Meziantou.Framework.Language.Shell",
+      "version": "3.0.5"
+    },
+    {
+      "id": "Meziantou.Framework.Language.Toml",
+      "version": "2.0.5"
+    },
+    {
+      "id": "Meziantou.Framework.Language.Tool",
+      "version": "1.0.12"
+    },
+    {
+      "id": "Meziantou.Framework.Language.Xml",
+      "version": "4.0.6"
+    },
+    {
+      "id": "Meziantou.Framework.Language",
+      "version": "1.1.5"
+    },
+    {
+      "id": "Meziantou.Framework.Markdown",
+      "version": "1.0.5"
+    },
+    {
+      "id": "Meziantou.Framework.MediaTags",
+      "version": "2.1.4"
+    },
+    {
+      "id": "Meziantou.Framework.NodeJs",
+      "version": "1.0.3"
+    },
+    {
+      "id": "Meziantou.Framework.NtpClient",
+      "version": "3.0.2"
+    },
+    {
+      "id": "Meziantou.Framework.NtpServer",
+      "version": "3.0.3"
+    },
+    {
+      "id": "Meziantou.Framework.NuGetPackageValidation.Tool",
+      "version": "2.0.19"
+    },
+    {
+      "id": "Meziantou.Framework.NuGetPackageValidation",
+      "version": "2.0.17"
+    },
+    {
+      "id": "Meziantou.Framework.ObjectMethodExecutor",
+      "version": "2.0.4"
+    },
+    {
+      "id": "Meziantou.Framework.OpenTelemetryCollector.InMemory",
+      "version": "2.1.6"
+    },
+    {
+      "id": "Meziantou.Framework.OpenTelemetryCollector",
+      "version": "3.0.6"
+    },
+    {
+      "id": "Meziantou.Framework.Pdf",
+      "version": "1.0.3"
+    },
+    {
+      "id": "Meziantou.Framework.PooledMemoryStream",
+      "version": "2.0.8"
+    },
+    {
+      "id": "Meziantou.Framework.PostgreSqlServer",
+      "version": "2.0.2"
+    },
+    {
+      "id": "Meziantou.Framework.ProcessWrapper",
+      "version": "2.0.10"
+    },
+    {
+      "id": "Meziantou.Framework.PublicApiGenerator.MSBuild",
+      "version": "2.0.22"
+    },
+    {
+      "id": "Meziantou.Framework.PublicApiGenerator.Tool",
+      "version": "2.0.22"
+    },
+    {
+      "id": "Meziantou.Framework.PublicApiGenerator",
+      "version": "2.0.14"
+    },
+    {
+      "id": "Meziantou.Framework.RelativeDate",
+      "version": "4.0.5"
+    },
+    {
+      "id": "Meziantou.Framework.ResxSourceGenerator",
+      "version": "2.0.4"
+    },
+    {
+      "id": "Meziantou.Framework.RobotsTxt",
+      "version": "2.0.6"
+    },
+    {
+      "id": "Meziantou.Framework.Roslyn",
+      "version": "1.2.2"
+    },
+    {
+      "id": "Meziantou.Framework.Scheduling",
+      "version": "4.1.5"
+    },
+    {
+      "id": "Meziantou.Framework.SensitiveData",
+      "version": "2.0.11"
+    },
+    {
+      "id": "Meziantou.Framework.SimpleQueryLanguage",
+      "version": "2.0.6"
+    },
+    {
+      "id": "Meziantou.Framework.SingleInstance",
+      "version": "3.1.2"
+    },
+    {
+      "id": "Meziantou.Framework.Slug",
+      "version": "2.0.5"
+    },
+    {
+      "id": "Meziantou.Framework.SnapshotTesting.Imaging",
+      "version": "1.0.5"
+    },
+    {
+      "id": "Meziantou.Framework.SnapshotTesting.Pdf",
+      "version": "1.0.2"
+    },
+    {
+      "id": "Meziantou.Framework.SnapshotTesting.Roslyn",
+      "version": "1.0.17"
+    },
+    {
+      "id": "Meziantou.Framework.SnapshotTesting.Tool",
+      "version": "2.0.16"
+    },
+    {
+      "id": "Meziantou.Framework.SnapshotTesting",
+      "version": "3.1.17"
+    },
+    {
+      "id": "Meziantou.Framework.StronglyTypedId.Interfaces",
+      "version": "4.0.2"
+    },
+    {
+      "id": "Meziantou.Framework.StronglyTypedId",
+      "version": "3.0.8"
+    },
+    {
+      "id": "Meziantou.Framework.SyntaxHighlighting",
+      "version": "1.0.6"
+    },
+    {
+      "id": "Meziantou.Framework.TaggedValues",
+      "version": "1.0.3"
+    },
+    {
+      "id": "Meziantou.Framework.TdsServer",
+      "version": "2.0.17"
+    },
+    {
+      "id": "Meziantou.Framework.Templating.Html",
+      "version": "4.0.6"
+    },
+    {
+      "id": "Meziantou.Framework.Templating.Tool",
+      "version": "2.0.17"
+    },
+    {
+      "id": "Meziantou.Framework.Templating",
+      "version": "4.0.6"
+    },
+    {
+      "id": "Meziantou.Framework.TemporaryContainers",
+      "version": "1.1.11"
+    },
+    {
+      "id": "Meziantou.Framework.TemporaryDirectory",
+      "version": "3.0.14"
+    },
+    {
+      "id": "Meziantou.Framework.TextDiff",
+      "version": "3.0.5"
+    },
+    {
+      "id": "Meziantou.Framework.Threading",
+      "version": "3.1.7"
+    },
+    {
+      "id": "Meziantou.Framework.Toml",
+      "version": "1.0.3"
+    },
+    {
+      "id": "Meziantou.Framework.TypeConverter",
+      "version": "4.0.4"
+    },
+    {
+      "id": "Meziantou.Framework.UndoRedo",
+      "version": "4.0.2"
+    },
+    {
+      "id": "Meziantou.Framework.Unicode.Dictionaries",
+      "version": "1.0.2"
+    },
+    {
+      "id": "Meziantou.Framework.Unicode",
+      "version": "2.0.13"
+    },
+    {
+      "id": "Meziantou.Framework.Unix.ControlGroups",
+      "version": "2.0.3"
+    },
+    {
+      "id": "Meziantou.Framework.Uri",
+      "version": "2.0.20"
+    },
+    {
+      "id": "Meziantou.Framework.ValueStopwatch",
+      "version": "3.0.3"
+    },
+    {
+      "id": "Meziantou.Framework.ValueStringBuilder",
+      "version": "3.0.4"
+    },
+    {
+      "id": "Meziantou.Framework.Versioning",
+      "version": "3.0.5"
+    },
+    {
+      "id": "Meziantou.Framework.WPF",
+      "version": "4.0.2"
+    },
+    {
+      "id": "Meziantou.Framework.WebPlatform.Imaging",
+      "version": "1.0.3"
+    },
+    {
+      "id": "Meziantou.Framework.WebPlatform.JavaScript",
+      "version": "1.0.4"
+    },
+    {
+      "id": "Meziantou.Framework.WebPlatform.PdfRendering",
+      "version": "1.0.1"
+    },
+    {
+      "id": "Meziantou.Framework.WebPlatform.Playwright.Tool",
+      "version": "1.0.1"
+    },
+    {
+      "id": "Meziantou.Framework.WebPlatform.Playwright",
+      "version": "1.0.1"
+    },
+    {
+      "id": "Meziantou.Framework.WebPlatform.Wasmtime",
+      "version": "1.0.2"
+    },
+    {
+      "id": "Meziantou.Framework.WebPlatform",
+      "version": "1.0.5"
+    },
+    {
+      "id": "Meziantou.Framework.Win32.AccessToken",
+      "version": "3.0.9"
+    },
+    {
+      "id": "Meziantou.Framework.Win32.Amsi",
+      "version": "3.0.8"
+    },
+    {
+      "id": "Meziantou.Framework.Win32.ChangeJournal",
+      "version": "5.0.5"
+    },
+    {
+      "id": "Meziantou.Framework.Win32.CredentialManager",
+      "version": "3.0.8"
+    },
+    {
+      "id": "Meziantou.Framework.Win32.Dialogs",
+      "version": "4.0.7"
+    },
+    {
+      "id": "Meziantou.Framework.Win32.Jobs",
+      "version": "4.0.7"
+    },
+    {
+      "id": "Meziantou.Framework.Win32.Lsa",
+      "version": "3.0.9"
+    },
+    {
+      "id": "Meziantou.Framework.Win32.MarkOfTheWeb",
+      "version": "2.0.8"
+    },
+    {
+      "id": "Meziantou.Framework.Win32.PerceivedType",
+      "version": "4.0.5"
+    },
+    {
+      "id": "Meziantou.Framework.Win32.ProjectedFileSystem",
+      "version": "3.0.10"
+    },
+    {
+      "id": "Meziantou.Framework.Win32.RecentDocuments",
+      "version": "2.0.8"
+    },
+    {
+      "id": "Meziantou.Framework.Win32.RestartManager",
+      "version": "4.0.8"
+    },
+    {
+      "id": "Meziantou.Framework.Yaml",
+      "version": "2.0.10"
+    },
+    {
+      "id": "Meziantou.Framework",
+      "version": "6.0.16"
+    },
+    {
+      "id": "Meziantou.Xunit",
+      "version": "2.0.5"
+    }
+  ]
+}

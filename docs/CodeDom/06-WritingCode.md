@@ -5,8 +5,8 @@ description: Write a code object as C# text, walk and change the tree with visit
 
 ## Write C# code
 
-`ToCsharpString()` writes any code object with the default settings. `CSharpCodeGenerator` writes it to a `string`, a
-`TextWriter` or an `IndentedTextWriter`, so you can write a file without building the whole text in memory:
+[ToCsharpString()](cref:Meziantou.Framework.CodeDom.CodeObject.ToCsharpString) writes any code object with the default settings. [CSharpCodeGenerator](cref:Meziantou.Framework.CodeDom.CSharpCodeGenerator) writes it to a `string`, a
+`TextWriter` or an [IndentedTextWriter](cref:Meziantou.Framework.CodeDom.IndentedTextWriter), so you can write a file without building the whole text in memory:
 
 <!-- ref:../../tests/Meziantou.Framework.CodeDom.Tests/CSharpCodeGeneratorTests.cs;region=CSharpCodeGenerator_Example;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -29,11 +29,11 @@ Assert.Equal("""
 <!-- endref -->
 
 The generator writes `\n` line endings and indents with four spaces. To use other settings, create an
-`IndentedTextWriter` with the indentation and line ending you want, and pass it to `Write`.
+[IndentedTextWriter](cref:Meziantou.Framework.CodeDom.IndentedTextWriter) with the indentation and line ending you want, and pass it to [Write](cref:Meziantou.Framework.CodeDom.CSharpCodeGenerator.Write).
 
 ## Walk the tree
 
-Every code object has a `Parent`, set when the object is added to a collection or assigned to a property. An object
+Every code object has a [Parent](cref:Meziantou.Framework.CodeDom.CodeObject.Parent), set when the object is added to a collection or assigned to a property. An object
 has only one parent: assigning an object that already belongs to another parent throws an `ArgumentException`, so create
 a new object for each place.
 
@@ -49,12 +49,12 @@ Assert.Same(unit, ns.Parent);
 ```
 <!-- endref -->
 
-`SelfOrAnscestorOfType<T>()` and `AnscestorOfType<T>()` find the closest parent of a type, such as the type that declares
+[SelfOrAnscestorOfType\<T\>()](cref:Meziantou.Framework.CodeDom.Extensions.SelfOrAnscestorOfType) and [AnscestorOfType\<T\>()](cref:Meziantou.Framework.CodeDom.Extensions.AnscestorOfType) find the closest parent of a type, such as the type that declares
 a method.
 
 ## Visitors
 
-`Visitor` visits every object of a tree. Derive from it and override the `Visit*` method of the objects you are
+[Visitor](cref:Meziantou.Framework.CodeDom.Visitor) visits every object of a tree. Derive from it and override the `Visit*` method of the objects you are
 interested in, and call the base method to keep visiting their children:
 
 <!-- ref:../../tests/Meziantou.Framework.CodeDom.Tests/CSharpCodeGeneratorTests.cs;region=CodeDom_CustomVisitor;format=md-fenced-code-block;dedent=true -->
@@ -89,10 +89,10 @@ Assert.Equal(["Name", "Read", "Write"], type.Members.Select(member => member.Nam
 ```
 <!-- endref -->
 
-`DefaultFormatterVisitor.Instance` is a visitor that sorts the members of classes, structs and interfaces by kind, then by
+[DefaultFormatterVisitor.Instance](cref:Meziantou.Framework.CodeDom.DefaultFormatterVisitor.Instance) is a visitor that sorts the members of classes, structs and interfaces by kind, then by
 name. Run it before writing the code to get a stable order, whatever the order in which the members were added.
 
 ## Attach data
 
-`Data` is a dictionary on every code object, that the generator ignores. Use it to keep information from your model on
+[Data](cref:Meziantou.Framework.CodeDom.CodeObject.Data) is a dictionary on every code object, that the generator ignores. Use it to keep information from your model on
 the objects you create, for instance to find them again in a visitor.

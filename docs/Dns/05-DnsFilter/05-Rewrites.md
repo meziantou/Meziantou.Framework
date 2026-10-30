@@ -3,8 +3,8 @@ title: Rewrites
 description: Answer a query with an address, a CNAME, another record or a response code with $dnsrewrite, and turn the result into a DNS response.
 ---
 
-A `$dnsrewrite` rule does not block: it tells the caller what to answer. The result has `Action` set to `Rewrite`,
-and `Rewrite` describes the answer:
+A `$dnsrewrite` rule does not block: it tells the caller what to answer. The result has [Action](cref:Meziantou.Framework.DnsFilter.DnsFilterResult.Action) set to [Rewrite](cref:Meziantou.Framework.DnsFilter.DnsFilterAction.Rewrite),
+and [Rewrite](cref:Meziantou.Framework.DnsFilter.DnsFilterAction.Rewrite) describes the answer:
 
 <!-- ref:../../../tests/Meziantou.Framework.DnsFilter.Tests/DnsFilterEngineTests.cs;region=DnsFilter_DnsRewrite;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -57,27 +57,27 @@ Assert.Equal("10 mx.example.com", Rewrite("mail.example.com")?.Value);
 ```
 <!-- endref -->
 
-| Value | `ResponseCode` | `RecordType` | `Value` |
+| Value | [ResponseCode](cref:Meziantou.Framework.DnsFilter.DnsFilterRewriteRule.ResponseCode) | [RecordType](cref:Meziantou.Framework.DnsFilter.DnsFilterRewriteRule.RecordType) | `Value` |
 | --- | --- | --- | --- |
-| An IPv4 address, `$dnsrewrite=192.168.1.5` | `NoError` | `A` | The address |
-| An IPv6 address, `$dnsrewrite=fd00::5` | `NoError` | `AAAA` | The address |
-| A domain, `$dnsrewrite=example.net` | `NoError` | `CNAME` | The domain |
-| A response code, `$dnsrewrite=REFUSED` | `Refused` | `null` | `null` |
+| An IPv4 address, `$dnsrewrite=192.168.1.5` | [NoError](cref:Meziantou.Framework.DnsFilter.DnsFilterRewriteResponseCode.NoError) | [A](cref:Meziantou.Framework.DnsFilter.DnsFilterQueryType.A) | The address |
+| An IPv6 address, `$dnsrewrite=fd00::5` | [NoError](cref:Meziantou.Framework.DnsFilter.DnsFilterRewriteResponseCode.NoError) | [AAAA](cref:Meziantou.Framework.DnsFilter.DnsFilterQueryType.AAAA) | The address |
+| A domain, `$dnsrewrite=example.net` | [NoError](cref:Meziantou.Framework.DnsFilter.DnsFilterRewriteResponseCode.NoError) | [CNAME](cref:Meziantou.Framework.DnsFilter.DnsFilterQueryType.CNAME) | The domain |
+| A response code, `$dnsrewrite=REFUSED` | [Refused](cref:Meziantou.Framework.DnsFilter.DnsFilterRewriteResponseCode.Refused) | `null` | `null` |
 | `code;type;value`, `$dnsrewrite=NOERROR;MX;10 mx.example.com` | The code | The type | The value, as text |
 
 The response codes are `NOERROR`, `NXDOMAIN`, `REFUSED` and `SERVFAIL`. In the full form, the type and the value can be
-empty, for instance `NXDOMAIN;;`. The value of an `A`, `AAAA`, `CNAME`, `PTR`, `NS` or `DNAME` rewrite is checked when
+empty, for instance `NXDOMAIN;;`. The value of an [A](cref:Meziantou.Framework.DnsFilter.DnsFilterQueryType.A), [AAAA](cref:Meziantou.Framework.DnsFilter.DnsFilterQueryType.AAAA), [CNAME](cref:Meziantou.Framework.DnsFilter.DnsFilterQueryType.CNAME), [PTR](cref:Meziantou.Framework.DnsFilter.DnsFilterQueryType.PTR), [NS](cref:Meziantou.Framework.DnsFilter.DnsFilterQueryType.NS) or [DNAME](cref:Meziantou.Framework.DnsFilter.DnsFilterQueryType.DNAME) rewrite is checked when
 the list is parsed, and a rule with an invalid value is skipped; the value of the other types is kept as text.
 
 ## Answer the query
 
-The engine only describes the answer: the caller builds the DNS response. For a `Rewrite` result:
+The engine only describes the answer: the caller builds the DNS response. For a [Rewrite](cref:Meziantou.Framework.DnsFilter.DnsFilterAction.Rewrite) result:
 
 1. Set the response code from `Rewrite.ResponseCode`.
-2. When `RecordType` is set and matches the question (or the question is `ANY`), add a record of that type with
-   `Value` as its data: parse the address for `A` and `AAAA`, use the name for `CNAME`, and parse the text for the
+2. When [RecordType](cref:Meziantou.Framework.DnsFilter.DnsFilterRewriteRule.RecordType) is set and matches the question (or the question is [ANY](cref:Meziantou.Framework.DnsFilter.DnsFilterQueryType.ANY)), add a record of that type with
+   `Value` as its data: parse the address for [A](cref:Meziantou.Framework.DnsFilter.DnsFilterQueryType.A) and [AAAA](cref:Meziantou.Framework.DnsFilter.DnsFilterQueryType.AAAA), use the name for [CNAME](cref:Meziantou.Framework.DnsFilter.DnsFilterQueryType.CNAME), and parse the text for the
    other types.
-3. When `RecordType` is set but differs from the question, answer with the response code and no record: the name
+3. When [RecordType](cref:Meziantou.Framework.DnsFilter.DnsFilterRewriteRule.RecordType) is set but differs from the question, answer with the response code and no record: the name
    exists, with no record of the queried type.
 
 For a `Block` result, answer the way your clients expect. `Meziantou.DnsProxy` answers NXDOMAIN; answering `0.0.0.0`

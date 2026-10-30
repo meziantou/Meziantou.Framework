@@ -24,7 +24,7 @@ the enum type. The markup extension throws an `InvalidOperationException` when t
 ## Show localized names
 
 To show readable or translated names, put a `[Display]` attribute (from `System.ComponentModel.DataAnnotations`) on the
-members of the enum. Its `Name` is the text to show, or, with `ResourceType`, the name of a static property of that type
+members of the enum. Its [Name](cref:Meziantou.Framework.WPF.LocalizedEnumValue.Name) is the text to show, or, with `ResourceType`, the name of a static property of that type
 that returns the text, such as the properties of a resource file:
 
 <!-- ref:../../samples/Meziantou.Framework.WPF.EnumComboBox/Week.cs;region=LocalizedEnumValuesExtension_Enum;format=md-fenced-code-block;dedent=true -->
@@ -49,7 +49,7 @@ public enum Week
 ```
 <!-- endref -->
 
-`LocalizedEnumValues` returns a `LocalizedEnumValue` for each member. Show its `Name`, and select its `Value`:
+`LocalizedEnumValues` returns a [LocalizedEnumValue](cref:Meziantou.Framework.WPF.LocalizedEnumValue) for each member. Show its [Name](cref:Meziantou.Framework.WPF.LocalizedEnumValue.Name), and select its [Value](cref:Meziantou.Framework.WPF.LocalizedEnumValue.Value):
 
 <!-- ref:../../samples/Meziantou.Framework.WPF.EnumComboBox/Examples/LocalizedEnumValuesExample.xaml;format=md-fenced-code-block;language=xml -->
 ```xml
@@ -63,8 +63,8 @@ public enum Week
 ```
 <!-- endref -->
 
-- `Name` is the name of the `[Display]` attribute, read from the resources each time it is read, so it follows the
-  current UI culture. A member without the attribute, or with an attribute that has no `Name`, shows the member name.
-- `Value` is the enum value: with `SelectedValuePath="Value"`, bind `SelectedValue` to a property of the enum type.
-- `ToString()` returns the `Name`, so the control shows it even without `DisplayMemberPath`.
+- [Name](cref:Meziantou.Framework.WPF.LocalizedEnumValue.Name) is the name of the `[Display]` attribute, read from the resources each time it is read, so it follows the
+  current UI culture. A member without the attribute, or with an attribute that has no [Name](cref:Meziantou.Framework.WPF.LocalizedEnumValue.Name), shows the member name.
+- [Value](cref:Meziantou.Framework.WPF.LocalizedEnumValue.Value) is the enum value: with `SelectedValuePath="Value"`, bind `SelectedValue` to a property of the enum type.
+- `ToString()` returns the [Name](cref:Meziantou.Framework.WPF.LocalizedEnumValue.Name), so the control shows it even without `DisplayMemberPath`.
 - The list of an enum type is created once and shared by every control that uses it.

@@ -37,7 +37,7 @@ public static void DrawWatermark(string fontPath, string inputPath, string outpu
 
 ![A landscape with the word DRAFT written three times in translucent white, along a rising diagonal](../08-Text/images/DrawWatermark.png)
 
-- `TextLayout.Create` shapes the text once, with the font and the size; the example sizes it from the width of the image,
+- [TextLayout.Create](cref:Meziantou.Framework.Imaging.Typography.TextLayout.Create) shapes the text once, with the font and the size; the example sizes it from the width of the image,
   so the watermark keeps its proportions on images of any size. Fonts are loaded from files: see
   [Fonts](../08-Text/02-Fonts.md).
 - The alpha of the brush (110 out of 255) makes the text translucent.
@@ -73,17 +73,17 @@ public static void AddLogoWatermark(string inputPath, string logoPath, string ou
 
 - The logo is resized to the image, so that it covers the same part of a small and of a large picture. Use a logo with a
   transparent background, such as a PNG file: its transparent pixels stay transparent.
-- `DrawImage` draws a frame of another image at a position, and its `opacity` (from 0 to 1) fades it. At a position on
+- [DrawImage](cref:Meziantou.Framework.Imaging.Drawing.DrawingCanvas.DrawImage) draws a frame of another image at a position, and its `opacity` (from 0 to 1) fades it. At a position on
   whole pixels, the pixels of the logo are not interpolated. Other overloads stretch the image to a rectangle, draw a
   part of it, or place it with a transformation.
 - The logo is drawn as it is stored: no color profile is applied. Convert the logo and the image to the same color
   space first when they have different profiles (see [Color management](../09-Color/03-ColorManagement.md)).
 - An image that is not yet upright (a photo with an EXIF orientation) gets the logo in the wrong corner: call
-  `AutoOrient` before drawing.
+  [AutoOrient](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoOrient) before drawing.
 
 ## Watermark an animation
 
-`Image.Draw` draws on every frame of the image, so both examples work on animated GIF, APNG and WebP files: the watermark
+[Image.Draw](cref:Meziantou.Framework.Imaging.Image.Draw) draws on every frame of the image, so both examples work on animated GIF, APNG and WebP files: the watermark
 is painted identically on each frame, and the durations and the loop count are kept. The output format must store
 animations. See [Drawing on animations](../07-Drawing/07-DrawingOnAnimations.md).
 

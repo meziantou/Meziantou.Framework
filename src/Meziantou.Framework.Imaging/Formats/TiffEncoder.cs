@@ -138,6 +138,13 @@ public sealed class TiffEncoder : ImageEncoder
     /// close to <see cref="DefaultStripBytes"/>, so that encoding one page needs a bounded amount of memory whatever the
     /// size of the page. Ignored by <see cref="TiffCompression.Jpeg"/>, which writes each page as one strip.
     /// </summary>
+    /// <remarks>
+    /// With <see cref="ImageConfiguration.MaxDegreeOfParallelism"/> above 1 (the configuration of the saved image), the
+    /// LZW and Deflate strips of a page of at least 65,536 pixels are compressed by up to that many workers, one strip each
+    /// at a time: the file is byte-identical to the one of one worker, and each worker holds a strip and its compressed
+    /// bytes, charged to <see cref="ImageResourceLimits.MaxLiveAllocationBytes"/>. A page stored as one strip is
+    /// compressed by one worker.
+    /// </remarks>
     /// <exception cref="ArgumentOutOfRangeException">The value is negative.</exception>
     public int RowsPerStrip
     {

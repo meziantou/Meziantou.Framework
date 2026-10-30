@@ -4,7 +4,7 @@ description: How the one or two characters of an avatar are chosen from the name
 ---
 
 The text of an avatar, its bigram, has one or two graphemes. The generator chooses it from the name, unless you set
-`AvatarOptions.Bigram`.
+[AvatarOptions.Bigram](cref:Meziantou.Framework.AvatarOptions.Bigram).
 
 ## How the initials are chosen
 
@@ -44,7 +44,7 @@ and combining marks without a base letter, are skipped. A name with nothing visi
 
 ## Choose the initials yourself
 
-Set `Bigram` to use your own text, for instance initials stored in the user profile:
+Set [Bigram](cref:Meziantou.Framework.AvatarOptions.Bigram) to use your own text, for instance initials stored in the user profile:
 
 <!-- ref:../../tests/Meziantou.Framework.Avatar.Tests/AvatarGeneratorTests.cs;region=AvatarGenerator_ExplicitBigram;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -61,7 +61,7 @@ static string GetBackground(string svg) => svg.Split("fill=\"")[1].Split('"')[0]
 
 ![A round avatar with the letter A, in the same color as the avatar of Ada Lovelace](images/ExplicitBigram.svg)
 
-- `Bigram` must contain one or two graphemes, without whitespace. Surrounding whitespace is trimmed. Another value
+- [Bigram](cref:Meziantou.Framework.AvatarOptions.Bigram) must contain one or two graphemes, without whitespace. Surrounding whitespace is trimmed. Another value
   throws an `ArgumentException`.
-- `Bigram` does not change the color: the color always comes from the name. See [Stable colors](06-StableColors.md).
+- [Bigram](cref:Meziantou.Framework.AvatarOptions.Bigram) does not change the color: the color always comes from the name. See [Stable colors](06-StableColors.md).
 - By default, screen readers announce the bigram. See [Accessibility](05-Accessibility.md).

@@ -3,7 +3,7 @@ title: Shapes and paths
 description: Draw rectangles, ellipses, polygons, arcs and curves, build paths, read SVG path data, and combine, grow, measure and cut paths.
 ---
 
-The canvas fills and strokes the common shapes directly. Any other shape is a `VectorPath`: built once, then drawn,
+The canvas fills and strokes the common shapes directly. Any other shape is a [VectorPath](cref:Meziantou.Framework.Imaging.Drawing.VectorPath): built once, then drawn,
 transformed, combined or measured as many times as needed.
 
 ## Draw simple shapes
@@ -44,17 +44,17 @@ public static void DrawBasicShapes(string outputPath)
 | Shape | Fill | Stroke |
 | --- | --- | --- |
 | Whole canvas | `Fill(brush)` | |
-| Rectangle | `FillRectangle` | `StrokeRectangle` |
-| Rounded rectangle | `FillRoundedRectangle` | `StrokeRoundedRectangle` |
-| Ellipse, circle | `FillEllipse`, `FillCircle` | `StrokeEllipse`, `StrokeCircle` |
-| Slice of a disk, arc | `FillPie` | `StrokeArc` |
-| Polygon | `FillPolygon` | `StrokePolygon` |
-| Line, polyline | | `StrokeLine`, `StrokePolyline` |
-| Bézier curve | | `StrokeBezier` (one or two control points) |
-| Curve through points | `FillClosedCurve` | `StrokeCurve`, `StrokeClosedCurve` |
+| Rectangle | [FillRectangle](cref:Meziantou.Framework.Imaging.Drawing.DrawingCanvas.FillRectangle) | [StrokeRectangle](cref:Meziantou.Framework.Imaging.Drawing.DrawingCanvas.StrokeRectangle) |
+| Rounded rectangle | [FillRoundedRectangle](cref:Meziantou.Framework.Imaging.Drawing.DrawingCanvas.FillRoundedRectangle) | [StrokeRoundedRectangle](cref:Meziantou.Framework.Imaging.Drawing.DrawingCanvas.StrokeRoundedRectangle) |
+| Ellipse, circle | [FillEllipse](cref:Meziantou.Framework.Imaging.Drawing.DrawingCanvas.FillEllipse), [FillCircle](cref:Meziantou.Framework.Imaging.Drawing.DrawingCanvas.FillCircle) | [StrokeEllipse](cref:Meziantou.Framework.Imaging.Drawing.DrawingCanvas.StrokeEllipse), [StrokeCircle](cref:Meziantou.Framework.Imaging.Drawing.DrawingCanvas.StrokeCircle) |
+| Slice of a disk, arc | [FillPie](cref:Meziantou.Framework.Imaging.Drawing.DrawingCanvas.FillPie) | [StrokeArc](cref:Meziantou.Framework.Imaging.Drawing.DrawingCanvas.StrokeArc) |
+| Polygon | [FillPolygon](cref:Meziantou.Framework.Imaging.Drawing.DrawingCanvas.FillPolygon) | [StrokePolygon](cref:Meziantou.Framework.Imaging.Drawing.DrawingCanvas.StrokePolygon) |
+| Line, polyline | | [StrokeLine](cref:Meziantou.Framework.Imaging.Drawing.DrawingCanvas.StrokeLine), [StrokePolyline](cref:Meziantou.Framework.Imaging.Drawing.DrawingCanvas.StrokePolyline) |
+| Bézier curve | | [StrokeBezier](cref:Meziantou.Framework.Imaging.Drawing.DrawingCanvas.StrokeBezier) (one or two control points) |
+| Curve through points | [FillClosedCurve](cref:Meziantou.Framework.Imaging.Drawing.DrawingCanvas.FillClosedCurve) | [StrokeCurve](cref:Meziantou.Framework.Imaging.Drawing.DrawingCanvas.StrokeCurve), [StrokeClosedCurve](cref:Meziantou.Framework.Imaging.Drawing.DrawingCanvas.StrokeClosedCurve) |
 | Any path | `Fill(brush, path)` | `Stroke(pen, path)` |
 
-- The radius of a rounded rectangle is limited to half its sides. A `CornerRadii` gives each corner its own radius (a
+- The radius of a rounded rectangle is limited to half its sides. A [CornerRadii](cref:Meziantou.Framework.Imaging.Drawing.CornerRadii) gives each corner its own radius (a
   tab, a speech bubble; zero for a square corner); when the radii of the two corners of a side add up to more than the
   side, every radius is reduced by the same factor, as CSS does.
 - A slice or an arc starts at an angle and turns by a sweep, in degrees from the positive x axis, clockwise on the
@@ -62,8 +62,8 @@ public static void DrawBasicShapes(string outputPath)
 
 ## Draw a curve through points
 
-`StrokeCurve` draws a smooth curve that goes through a list of points, such as the line of a chart. `StrokeClosedCurve`
-and `FillClosedCurve` go back from the last point to the first one.
+[StrokeCurve](cref:Meziantou.Framework.Imaging.Drawing.DrawingCanvas.StrokeCurve) draws a smooth curve that goes through a list of points, such as the line of a chart. [StrokeClosedCurve](cref:Meziantou.Framework.Imaging.Drawing.DrawingCanvas.StrokeClosedCurve)
+and [FillClosedCurve](cref:Meziantou.Framework.Imaging.Drawing.DrawingCanvas.FillClosedCurve) go back from the last point to the first one.
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_DrawChart;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -108,11 +108,11 @@ public static void DrawChart(string outputPath)
 The curve is made of cubic Bézier curves from each point to the next one; at each point, it has the direction of the
 line between the points around it. The `tension` says how far it keeps that direction: 0.5 (the default) is a
 Catmull-Rom spline, 0 gives straight segments, and 1 the roundest curve. Where the points turn sharply, the curve can go
-beyond them. `CurveTo`, `AddCurve` and `AddClosedCurve` add the same curves to a path.
+beyond them. [CurveTo](cref:Meziantou.Framework.Imaging.Drawing.VectorPathBuilder.CurveTo), [AddCurve](cref:Meziantou.Framework.Imaging.Drawing.VectorPathBuilder.AddCurve) and [AddClosedCurve](cref:Meziantou.Framework.Imaging.Drawing.VectorPathBuilder.AddClosedCurve) add the same curves to a path.
 
 ## Build a path
 
-A `VectorPathBuilder` adds segments to a path, then `Build` returns it:
+A [VectorPathBuilder](cref:Meziantou.Framework.Imaging.Drawing.VectorPathBuilder) adds segments to a path, then [Build](cref:Meziantou.Framework.Imaging.Drawing.VectorPathBuilder.Build) returns it:
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/DrawingExamples.cs;region=Imaging_DrawPathBuilder;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -145,20 +145,20 @@ public static void DrawPin(string outputPath)
 
 | Method | Adds |
 | --- | --- |
-| `MoveTo` | Starts a new contour at a point |
-| `LineTo` | A straight segment |
-| `QuadraticBezierTo`, `CubicBezierTo` | A Bézier curve with one or two control points |
-| `ArcTo` | An arc of an ellipse (see below) |
-| `CurveTo` | A smooth curve through points, from the current point |
-| `Close` | A straight segment back to the start of the contour, and closes it |
-| `AddRectangle`, `AddRoundedRectangle`, `AddEllipse`, `AddCircle`, `AddPolygon` | A closed contour of that shape |
-| `AddArc`, `AddPie` | An open arc around a center, or the closed slice between an arc and its center |
-| `AddCurve`, `AddClosedCurve` | A smooth curve through points |
+| [MoveTo](cref:Meziantou.Framework.Imaging.Drawing.VectorPathBuilder.MoveTo) | Starts a new contour at a point |
+| [LineTo](cref:Meziantou.Framework.Imaging.Drawing.VectorPathBuilder.LineTo) | A straight segment |
+| [QuadraticBezierTo](cref:Meziantou.Framework.Imaging.Drawing.VectorPathBuilder.QuadraticBezierTo), [CubicBezierTo](cref:Meziantou.Framework.Imaging.Drawing.VectorPathBuilder.CubicBezierTo) | A Bézier curve with one or two control points |
+| [ArcTo](cref:Meziantou.Framework.Imaging.Drawing.VectorPathBuilder.ArcTo) | An arc of an ellipse (see below) |
+| [CurveTo](cref:Meziantou.Framework.Imaging.Drawing.VectorPathBuilder.CurveTo) | A smooth curve through points, from the current point |
+| [Close](cref:Meziantou.Framework.Imaging.Drawing.VectorPathBuilder.Close) | A straight segment back to the start of the contour, and closes it |
+| [AddRectangle](cref:Meziantou.Framework.Imaging.Drawing.VectorPathBuilder.AddRectangle), [AddRoundedRectangle](cref:Meziantou.Framework.Imaging.Drawing.VectorPathBuilder.AddRoundedRectangle), [AddEllipse](cref:Meziantou.Framework.Imaging.Drawing.VectorPathBuilder.AddEllipse), [AddCircle](cref:Meziantou.Framework.Imaging.Drawing.VectorPathBuilder.AddCircle), [AddPolygon](cref:Meziantou.Framework.Imaging.Drawing.VectorPathBuilder.AddPolygon) | A closed contour of that shape |
+| [AddArc](cref:Meziantou.Framework.Imaging.Drawing.VectorPathBuilder.AddArc), [AddPie](cref:Meziantou.Framework.Imaging.Drawing.VectorPathBuilder.AddPie) | An open arc around a center, or the closed slice between an arc and its center |
+| [AddCurve](cref:Meziantou.Framework.Imaging.Drawing.VectorPathBuilder.AddCurve), [AddClosedCurve](cref:Meziantou.Framework.Imaging.Drawing.VectorPathBuilder.AddClosedCurve) | A smooth curve through points |
 
 A path holds any number of contours. An open contour is closed by a straight segment when it is filled, and gets the
 caps of the pen when it is stroked.
 
-`ArcTo` comes in two forms:
+[ArcTo](cref:Meziantou.Framework.Imaging.Drawing.VectorPathBuilder.ArcTo) comes in two forms:
 
 - The arc of SVG paths: the radii and the rotation of the ellipse, the large-arc and direction flags, and the end
   point. Radii too small to reach the end point are enlarged.
@@ -170,7 +170,7 @@ transformed.
 
 ## Choose what is inside: fill rules
 
-When contours overlap or a contour crosses itself, the `FillRule` decides what is inside:
+When contours overlap or a contour crosses itself, the [FillRule](cref:Meziantou.Framework.Imaging.Drawing.FillRule) decides what is inside:
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/DrawingExamples.cs;region=Imaging_DrawFillRules;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -207,15 +207,15 @@ public static void DrawFillRules(string outputPath)
 
 ![Two orange five-pointed stars outlined in blue: the left one is filled entirely, the right one has an empty pentagon in its middle](images/DrawFillRules.png)
 
-- `FillRule.NonZero` (the default) fills everything the contours wind around.
-- `FillRule.EvenOdd` makes a hole wherever an even number of contours overlap. It is the simplest way to cut a hole in
+- [FillRule.NonZero](cref:Meziantou.Framework.Imaging.Drawing.FillRule.NonZero) (the default) fills everything the contours wind around.
+- [FillRule.EvenOdd](cref:Meziantou.Framework.Imaging.Drawing.FillRule.EvenOdd) makes a hole wherever an even number of contours overlap. It is the simplest way to cut a hole in
   a shape, as the map pin above does.
 
-`Fill`, `FillPolygon`, `FillClosedCurve` and `Clip` take a fill rule.
+[Fill](cref:Meziantou.Framework.Imaging.Drawing.DrawingCanvas.Fill), [FillPolygon](cref:Meziantou.Framework.Imaging.Drawing.DrawingCanvas.FillPolygon), [FillClosedCurve](cref:Meziantou.Framework.Imaging.Drawing.DrawingCanvas.FillClosedCurve) and [Clip](cref:Meziantou.Framework.Imaging.Drawing.DrawingCanvas.Clip) take a fill rule.
 
 ## Use SVG path data
 
-`VectorPath.ParseSvgPathData` reads the `d` attribute of an SVG `path` element, the format icons come in:
+[VectorPath.ParseSvgPathData](cref:Meziantou.Framework.Imaging.Drawing.VectorPath.ParseSvgPathData) reads the `d` attribute of an SVG `path` element, the format icons come in:
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_DrawIcon;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -248,13 +248,13 @@ public static string DrawIcon(string outputPath)
 - Every command is supported (`M L H V C S Q T A Z`, absolute and relative), with the grammar of SVG, in the
   coordinates of the canvas (Y grows downward, as in SVG).
 - The whole text must be valid: an error throws a `FormatException` that gives its position, where a browser would
-  draw what comes before it. `TryParseSvgPathData` returns `false` instead.
-- `ToSvgPathData` writes a path in the same format, with absolute coordinates. Lines and curves read back exactly, arcs
+  draw what comes before it. [TryParseSvgPathData](cref:Meziantou.Framework.Imaging.Drawing.VectorPath.TryParseSvgPathData) returns `false` instead.
+- [ToSvgPathData](cref:Meziantou.Framework.Imaging.Drawing.VectorPath.ToSvgPathData) writes a path in the same format, with absolute coordinates. Lines and curves read back exactly, arcs
   to a few units in the last place.
 
 ## Combine paths
 
-`Combine` returns the outline of what two paths fill, combined by a `PathCombineMode`:
+[Combine](cref:Meziantou.Framework.Imaging.Drawing.VectorPath.Combine) returns the outline of what two paths fill, combined by a [PathCombineMode](cref:Meziantou.Framework.Imaging.Drawing.PathCombineMode):
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/DrawingExamples.cs;region=Imaging_CombinePaths;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -287,12 +287,12 @@ public static void DrawCombinedPaths(string outputPath)
 
 | Mode | Keeps |
 | --- | --- |
-| `Union` | What one of the paths fills |
-| `Intersect` | What both paths fill |
-| `Exclude` | What the first path fills and the second one does not |
-| `Xor` | What only one of the paths fills |
+| [Union](cref:Meziantou.Framework.Imaging.Drawing.PathCombineMode.Union) | What one of the paths fills |
+| [Intersect](cref:Meziantou.Framework.Imaging.Drawing.PathCombineMode.Intersect) | What both paths fill |
+| [Exclude](cref:Meziantou.Framework.Imaging.Drawing.PathCombineMode.Exclude) | What the first path fills and the second one does not |
+| [Xor](cref:Meziantou.Framework.Imaging.Drawing.PathCombineMode.Xor) | What only one of the paths fills |
 
-`Simplify` returns the outline of what one path fills: a path that crosses itself, or whose contours overlap, becomes
+[Simplify](cref:Meziantou.Framework.Imaging.Drawing.VectorPath.Simplify) returns the outline of what one path fills: a path that crosses itself, or whose contours overlap, becomes
 the boundary of its area. The result of both is made of closed contours that do not cross: the outer ones turn
 clockwise on the image and the holes the other way, so both fill rules paint the same pixels.
 
@@ -341,8 +341,8 @@ public static void DrawSticker(string outputPath)
 - `Offset(distance)` moves the outline of a shape outward by a distance, or inward when it is negative: a margin around
   a shape, an outline at a distance of it, a shape that fits inside another one. Every side moves by the distance, a
   hole gets smaller when the shape grows, and what is narrower than twice the distance disappears when it shrinks. The
-  `LineJoin` gives the shape of the corners that move away (`Miter` by default; with `Round`, the result is everything
-  within the distance of the shape). Curves stay round. The result is made of straight segments, as with `Combine`.
+  [LineJoin](cref:Meziantou.Framework.Imaging.Drawing.LineJoin) gives the shape of the corners that move away ([Miter](cref:Meziantou.Framework.Imaging.Drawing.LineJoin.Miter) by default; with [Round](cref:Meziantou.Framework.Imaging.Drawing.LineJoin.Round), the result is everything
+  within the distance of the shape). Curves stay round. The result is made of straight segments, as with [Combine](cref:Meziantou.Framework.Imaging.Drawing.VectorPath.Combine).
 - `RoundCorners(radius)` replaces each corner between two straight segments by an arc of that radius: a polygon, a star
   or an arrow with soft corners. Corners where a curve or an arc starts or ends are kept, and the result stays smooth
   when it is enlarged.
@@ -391,18 +391,18 @@ public static void DrawRoute(string outputPath)
 | Member | Gives |
 | --- | --- |
 | `Contains(point, fillRule)` | Whether a point is inside: what a fill paints |
-| `GetLength()` | The length of the path |
-| `TryGetPointAtDistance` | The point at a distance along the path, and the direction of the path there |
-| `TryGetClosestPoint` | The point of the path nearest to a position, and its distance along the path: where a click falls on a line |
-| `Bounds`, `GetTightBounds()` | The box of the points and control points, and the box the path really reaches |
+| [GetLength()](cref:Meziantou.Framework.Imaging.Drawing.VectorPath.GetLength) | The length of the path |
+| [TryGetPointAtDistance](cref:Meziantou.Framework.Imaging.Drawing.VectorPath.TryGetPointAtDistance) | The point at a distance along the path, and the direction of the path there |
+| [TryGetClosestPoint](cref:Meziantou.Framework.Imaging.Drawing.VectorPath.TryGetClosestPoint) | The point of the path nearest to a position, and its distance along the path: where a click falls on a line |
+| [Bounds](cref:Meziantou.Framework.Imaging.Drawing.VectorPath.Bounds), [GetTightBounds()](cref:Meziantou.Framework.Imaging.Drawing.VectorPath.GetTightBounds) | The box of the points and control points, and the box the path really reaches |
 | `GetBounds(pen)` | A box that contains what a pen paints, without computing the stroke |
 | `Widen(pen)` | The path a pen paints when it strokes the path: fill it with the non-zero rule |
-| `EnumerateSegments()` | The segments of the path, as the builder methods that add them, without allocating |
-| `Reverse()` | The path followed from its end |
+| [EnumerateSegments()](cref:Meziantou.Framework.Imaging.Drawing.VectorPath.EnumerateSegments) | The segments of the path, as the builder methods that add them, without allocating |
+| [Reverse()](cref:Meziantou.Framework.Imaging.Drawing.VectorPath.Reverse) | The path followed from its end |
 | `Trim(start, end)` | The part of the path between two distances: a line drawn progressively, the arc of a gauge |
 | `Transform(transform)` | The path moved, turned or scaled: curves stay curves, so it stays smooth when enlarged |
 
-With `Widen`, the other members answer for a stroke too: the exact bounds of a stroke are the tight bounds of the
+With [Widen](cref:Meziantou.Framework.Imaging.Drawing.VectorPath.Widen), the other members answer for a stroke too: the exact bounds of a stroke are the tight bounds of the
 widened path, and a click is on a line when the widened path contains it. The widened path is made of overlapping
-pieces; `Simplify` turns it into one outline. Lengths and positions are measured on the path as it is drawn, with its
+pieces; [Simplify](cref:Meziantou.Framework.Imaging.Drawing.VectorPath.Simplify) turns it into one outline. Lengths and positions are measured on the path as it is drawn, with its
 curves replaced by short chords: transform a path before cutting it, not after.

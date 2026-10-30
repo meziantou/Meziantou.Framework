@@ -34,7 +34,7 @@ recurring events:
 | End | A number of occurrences (`COUNT`) or an end date (`UNTIL`) | A year field, at most |
 | Interoperability | iCalendar files, calendar applications | Unix cron and job schedulers |
 
-Both types implement `IRecurrenceRule`, so the methods that compute occurrences, such as `GetNextOccurrence`, work with
+Both types implement [IRecurrenceRule](cref:Meziantou.Framework.Scheduling.IRecurrenceRule), so the methods that compute occurrences, such as [GetNextOccurrence](cref:Meziantou.Framework.Scheduling.RecurrenceRuleExtensions.GetNextOccurrence), work with
 either.
 
 ## Principles

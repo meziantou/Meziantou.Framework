@@ -26,7 +26,7 @@ match in a `<span>` whose class names its scope, such as a keyword, a string or 
 HTML-encoded text. The highlighter does not parse the code into a syntax tree: to analyze code, see
 [Language](../Language/01-Introduction.md).
 
-`SyntaxHighlighter` and `HighlightOptions`, in the [Meziantou.Framework.SyntaxHighlighting](cref:Meziantou.Framework.SyntaxHighlighting) namespace, are the whole
+[SyntaxHighlighter](cref:Meziantou.Framework.SyntaxHighlighting.SyntaxHighlighter) and [HighlightOptions](cref:Meziantou.Framework.SyntaxHighlighting.HighlightOptions), in the [Meziantou.Framework.SyntaxHighlighting](cref:Meziantou.Framework.SyntaxHighlighting) namespace, are the whole
 API.
 
 ## Next steps

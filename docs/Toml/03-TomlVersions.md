@@ -45,7 +45,7 @@ Assert.Equal("""
 ## Write the TOML 1.1 escapes
 
 By default, control characters in strings and keys are written with `\uXXXX` escapes. Set
-`TomlStringStylePreferences.AllowHexEscapes` to use the shorter TOML 1.1 escapes, `\e` and `\xHH`, when every reader of
+[TomlStringStylePreferences.AllowHexEscapes](cref:Meziantou.Framework.Toml.TomlStringStylePreferences.AllowHexEscapes) to use the shorter TOML 1.1 escapes, `\e` and `\xHH`, when every reader of
 your files supports TOML 1.1:
 
 <!-- ref:../../tests/Meziantou.Framework.Toml.Tests/BasicTests.cs;region=TomlStringStylePreferences_AllowHexEscapes;format=md-fenced-code-block;dedent=true -->

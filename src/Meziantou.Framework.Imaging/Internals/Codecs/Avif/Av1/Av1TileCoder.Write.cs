@@ -670,8 +670,8 @@ internal ref partial struct Av1TileCoder
         var ptype = plane > 0 ? 1 : 0;
         var quant = _scratch.Quant;
 
-        var aboveLevel = _state.GetAboveLevelContext(plane);
-        var aboveDc = _state.GetAboveDcContext(plane);
+        var aboveLevel = _scratch.GetAboveLevelContext(plane);
+        var aboveDc = _scratch.GetAboveDcContext(plane);
         var leftLevel = _scratch.GetLeftLevelContext(plane);
         var leftDc = _scratch.GetLeftDcContext(plane);
         var maxX4 = plane > 0 ? _miCols >> _subX : _miCols;

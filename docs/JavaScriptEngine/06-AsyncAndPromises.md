@@ -32,16 +32,16 @@ Assert.Equal(60, result.AsNumber());
 ```
 <!-- endref -->
 
-- Call `RunJobs` after each script and each call from .NET that can start asynchronous work, as a browser runs its
+- Call [RunJobs](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.RunJobs) after each script and each call from .NET that can start asynchronous work, as a browser runs its
   microtasks after each task.
-- `TryGetPromiseState` reads the state of a promise (`Pending`, `Fulfilled` or `Rejected`), its result or its
+- [TryGetPromiseState](cref:Meziantou.Framework.JavaScriptEngine.JsObject.TryGetPromiseState) reads the state of a promise ([Pending](cref:Meziantou.Framework.JavaScriptEngine.JsPromiseState.Pending), [Fulfilled](cref:Meziantou.Framework.JavaScriptEngine.JsPromiseState.Fulfilled) or [Rejected](cref:Meziantou.Framework.JavaScriptEngine.JsPromiseState.Rejected)), its result or its
   rejection reason, and whether a handler is attached. It returns false when the object is not a promise.
-- A promise that stays `Pending` after `RunJobs` waits for something outside of the engine, such as the .NET task
+- A promise that stays [Pending](cref:Meziantou.Framework.JavaScriptEngine.JsPromiseState.Pending) after [RunJobs](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.RunJobs) waits for something outside of the engine, such as the .NET task
   below.
 - `engine.EnqueueJob` adds a .NET action to the queue, after the jobs already in it.
 
-When a job throws, the exception goes to `JsHost.ReportJobException`. The default implementation rethrows it: it comes
-out of `RunJobs`, and the other jobs stay in the queue for the next call.
+When a job throws, the exception goes to [JsHost.ReportJobException](cref:Meziantou.Framework.JavaScriptEngine.JsHost.ReportJobException). The default implementation rethrows it: it comes
+out of [RunJobs](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.RunJobs), and the other jobs stay in the queue for the next call.
 
 ## Await a .NET task from a script
 
@@ -115,16 +115,16 @@ static async Task<string> ReadTextAsync(string name)
 
 - `engine.Construct` of the `Promise` constructor of the realm, with a .NET executor, gives the resolving functions of
   the promise.
-- The tasks complete on other threads, but the engine is called only from the loop: `Call` resolves or rejects the
-  promise, and `RunJobs` runs the code that waited for it.
+- The tasks complete on other threads, but the engine is called only from the loop: [Call](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.Call) resolves or rejects the
+  promise, and [RunJobs](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.RunJobs) runs the code that waited for it.
 - Reject a promise with an error object (`realm.CreateError`), so that the script gets a `message` and a `stack`.
 
 The engine has no timers: to provide `setTimeout`, keep the callbacks and their due times in your event loop, and call
-them with `engine.Call` when they are due, followed by `RunJobs`.
+them with `engine.Call` when they are due, followed by [RunJobs](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.RunJobs).
 
 ## Report unhandled rejections
 
-A `JsHost` receives the events of the engine that the specification leaves to the host. `PromiseRejectionTracker` is
+A [JsHost](cref:Meziantou.Framework.JavaScriptEngine.JsHost) receives the events of the engine that the specification leaves to the host. [PromiseRejectionTracker](cref:Meziantou.Framework.JavaScriptEngine.JsHost.PromiseRejectionTracker) is
 called when a promise is rejected without a handler, and when a handler is attached to it later:
 
 <!-- ref:../../samples/Meziantou.Framework.JavaScriptEngine.Samples/RejectionTrackingHost.cs;region=JavaScriptEngine_RejectionTrackingHost;format=md-fenced-code-block;dedent=true -->
@@ -174,14 +174,14 @@ Assert.Equal("Error: forgotten", engine.ToString(reason));
 
 ## Integrate with an event loop
 
-A host that has its own event loop, such as a browser, overrides more methods of `JsHost`:
+A host that has its own event loop, such as a browser, overrides more methods of [JsHost](cref:Meziantou.Framework.JavaScriptEngine.JsHost):
 
-- `EnqueueGenericJob` and `EnqueueTimeoutJob` receive the jobs that the engine does not put in the promise queue: the
+- [EnqueueGenericJob](cref:Meziantou.Framework.JavaScriptEngine.JsHost.EnqueueGenericJob) and [EnqueueTimeoutJob](cref:Meziantou.Framework.JavaScriptEngine.JsHost.EnqueueTimeoutJob) receive the jobs that the engine does not put in the promise queue: the
   cleanup callbacks of `FinalizationRegistry`, the results and the timeouts of `Atomics.waitAsync`.
-  `EnqueueGenericJob` can be called from any thread. The host runs each job later with `JsHostJob.Run()`, on the
-  thread of the engine. By default, the engine keeps them and `RunJobs` runs them, the timeout jobs once their delay
-  has elapsed on the `TimeProvider` of the options.
-- `MakeJobCallback` and `CallJobCallback` capture a state of the host when a callback is registered (by `then`...) and
+  [EnqueueGenericJob](cref:Meziantou.Framework.JavaScriptEngine.JsHost.EnqueueGenericJob) can be called from any thread. The host runs each job later with [JsHostJob.Run()](cref:Meziantou.Framework.JavaScriptEngine.JsHostJob.Run), on the
+  thread of the engine. By default, the engine keeps them and [RunJobs](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.RunJobs) runs them, the timeout jobs once their delay
+  has elapsed on the [TimeProvider](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.TimeProvider) of the options.
+- [MakeJobCallback](cref:Meziantou.Framework.JavaScriptEngine.JsHost.MakeJobCallback) and [CallJobCallback](cref:Meziantou.Framework.JavaScriptEngine.JsHost.CallJobCallback) capture a state of the host when a callback is registered (by `then`...) and
   restore it when the callback runs.
 - `engine.EnterNestedJobQueue()` sends the new jobs to a separate queue until the returned scope is disposed, for a
   nested event loop.

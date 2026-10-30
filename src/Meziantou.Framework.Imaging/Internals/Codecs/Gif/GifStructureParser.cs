@@ -21,6 +21,12 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// An empty logical screen, an unknown block, an invalid Graphic Control Extension or LZW code size, a missing image, and
 /// truncation (including a missing trailer) are <see cref="InvalidImageContentException"/>. Comment extensions become
 /// <c>Comment</c> text entries (Latin-1).
+/// <para>
+/// Lenient decoding (<see cref="ImageCodecContext.IsLenient"/>) accepts what FFmpeg, ImageMagick, Pillow and Apple ImageIO
+/// agree on: the end of the input after a complete block ends the file like the trailer, <c>0x00</c> bytes where a block
+/// is expected are skipped when only the trailer or the end of the input follows them, and plain-text extensions are
+/// skipped without rendering their text (a Graphic Control Extension before one applies to the next image).
+/// </para>
 /// </remarks>
 internal sealed class GifStructureParser : ImageParser<ImageInfo>
 {
@@ -42,6 +48,7 @@ internal sealed class GifStructureParser : ImageParser<ImageInfo>
     private int _lastDisposal;
     private bool _transparencyPossible;
     private bool _anyTransparentIndex;
+    private bool _strayZeros;
     private ImageInfo? _result;
 
     public GifStructureParser(ImageCodecContext context, StructureWalk walk, GifDecodeObserver? observer = null)
@@ -139,7 +146,21 @@ internal sealed class GifStructureParser : ImageParser<ImageInfo>
                 case State.Block:
                 {
                     if (remaining.IsEmpty)
-                        return ParseStatus.NeedMoreData(1);
+                    {
+                        if (!_context.IsLenient)
+                            return ParseStatus.NeedMoreData(1);
+
+                        // Lenient: the end of the input after a complete block ends the file like the trailer
+                        if (!isEndOfInput)
+                            return ParseStatus.NeedMoreDataOrEnd(1);
+
+                        OnTrailer();
+                        return ParseStatus.Complete;
+                    }
+
+                    // Lenient: stray 0x00 bytes may only be followed by the trailer or the end of the input
+                    if (_strayZeros && remaining[0] is not (0x00 or 0x3B))
+                        throw InvalidBlockIntroducer(0x00);
 
                     switch (remaining[0])
                     {
@@ -190,8 +211,16 @@ internal sealed class GifStructureParser : ImageParser<ImageInfo>
                             OnTrailer();
                             return ParseStatus.Complete;
 
+                        case 0x00 when _context.IsLenient:
+                        {
+                            var zeros = remaining.IndexOfAnyExcept((byte)0x00);
+                            consumed += zeros < 0 ? remaining.Length : zeros;
+                            _strayZeros = true;
+                            break;
+                        }
+
                         default:
-                            throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The GIF block introducer 0x{remaining[0]:X2} is not valid."));
+                            throw InvalidBlockIntroducer(remaining[0]);
                     }
 
                     break;
@@ -292,6 +321,7 @@ internal sealed class GifStructureParser : ImageParser<ImageInfo>
             0xF9 => BlockKind.GraphicControl,
             0xFE => BlockKind.Comment,
             0xFF => BlockKind.Application,
+            0x01 when _context.IsLenient => BlockKind.Unknown, // skipped without rendering its text; a pending Graphic Control Extension applies to the next image
             0x01 => throw new UnsupportedImageFeatureException("GIF plain text extensions require text rendering and are not supported.", ImageFormat.Gif, "GIF plain text extension"),
             _ => BlockKind.Unknown,
         };
@@ -471,6 +501,8 @@ internal sealed class GifStructureParser : ImageParser<ImageInfo>
             _metadata.Metadata,
             mode);
     }
+
+    private static InvalidImageContentException InvalidBlockIntroducer(byte introducer) => Invalid(string.Create(CultureInfo.InvariantCulture, $"The GIF block introducer 0x{introducer:X2} is not valid."));
 
     private static InvalidImageContentException Invalid(string message) => new(message, ImageFormat.Gif);
 }

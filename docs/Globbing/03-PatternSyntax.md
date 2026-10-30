@@ -3,7 +3,7 @@ title: Pattern syntax
 description: The wildcards of a glob pattern, and how files, directories, hidden names, escapes and invalid patterns are handled.
 ---
 
-This page describes the syntax of `GlobDialect.Standard`. The other dialects change some of these rules: see
+This page describes the syntax of [GlobDialect.Standard](cref:Meziantou.Framework.Globbing.GlobDialect.Standard). The other dialects change some of these rules: see
 [Dialects](04-Dialects.md).
 
 ## Wildcards
@@ -64,15 +64,15 @@ Assert.True(directories.IsMatch("src/App/"));
 ```
 <!-- endref -->
 
-When you match a path, say what it is with a `PathItemType`, or end the path with a separator for a directory. A path
-without a trailing separator and without a `PathItemType` is a file. [Enumerating files](06-EnumeratingFiles.md) passes
+When you match a path, say what it is with a [PathItemType](cref:Meziantou.Framework.Globbing.PathItemType), or end the path with a separator for a directory. A path
+without a trailing separator and without a [PathItemType](cref:Meziantou.Framework.Globbing.PathItemType) is a file. [Enumerating files](06-EnumeratingFiles.md) passes
 the right kind for each entry.
 
 ## Names that start with a dot
 
 On Linux and macOS, a name that starts with a dot, such as `.git` or `.vscode`, is hidden. The wildcards `*`, `?`,
 `[...]` and `**` do not match such a name, unless the pattern writes the dot or you set
-`GlobOptions.MatchLeadingDot`:
+[GlobOptions.MatchLeadingDot](cref:Meziantou.Framework.Globbing.GlobOptions.MatchLeadingDot):
 
 <!-- ref:../../tests/Meziantou.Framework.Globbing.Tests/GlobTests.cs;region=Glob_LeadingDot;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -87,12 +87,12 @@ Assert.True(Glob.Parse("**/*.json", GlobDialect.Standard, GlobOptions.MatchLeadi
 ```
 <!-- endref -->
 
-Only the standard dialect reads `MatchLeadingDot`: the other dialects always match a leading dot, as git, MSBuild and
+Only the standard dialect reads [MatchLeadingDot](cref:Meziantou.Framework.Globbing.GlobOptions.MatchLeadingDot): the other dialects always match a leading dot, as git, MSBuild and
 `fnmatch` do.
 
 ## Ignore the case
 
-`GlobOptions.IgnoreCase` compares the characters as `StringComparison.OrdinalIgnoreCase` does. In a range, a character
+[GlobOptions.IgnoreCase](cref:Meziantou.Framework.Globbing.GlobOptions.IgnoreCase) compares the characters as `StringComparison.OrdinalIgnoreCase` does. In a range, a character
 matches when it, its lowercase form or its uppercase form is in the range: `[a-z]` matches `Q`. Combine the options
 with `|`: `GlobOptions.IgnoreCase | GlobOptions.MatchLeadingDot`.
 
@@ -124,8 +124,8 @@ cannot start with `..`, and a `..` cannot follow a `**`.
 
 ## Invalid patterns
 
-`Glob.Parse` throws an `ArgumentException` when the pattern is invalid, for instance when a bracket or a brace is not
-closed, or a range is reversed (`[z-a]`). Use `Glob.TryParse` for a pattern that comes from a user or a configuration
+[Glob.Parse](cref:Meziantou.Framework.Globbing.Glob.Parse) throws an `ArgumentException` when the pattern is invalid, for instance when a bracket or a brace is not
+closed, or a range is reversed (`[z-a]`). Use [Glob.TryParse](cref:Meziantou.Framework.Globbing.Glob.TryParse) for a pattern that comes from a user or a configuration
 file:
 
 <!-- ref:../../tests/Meziantou.Framework.Globbing.Tests/GlobTests.cs;region=Glob_TryParse;format=md-fenced-code-block;dedent=true -->

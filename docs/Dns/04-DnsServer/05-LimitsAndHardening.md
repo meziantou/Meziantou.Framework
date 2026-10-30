@@ -5,7 +5,7 @@ description: Set the UDP response size, the idle timeouts and the concurrency li
 
 ## Options
 
-All the limits are properties of `DnsServerOptions`:
+All the limits are properties of [DnsServerOptions](cref:Meziantou.Framework.DnsServer.Hosting.DnsServerOptions):
 
 <!-- ref:../../../samples/Meziantou.Framework.DnsServer.Samples/ReadmeExamples.cs;region=DnsServer_Limits;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -33,10 +33,10 @@ builder.AddDnsServer(options =>
 
 | Option | Default | Effect |
 | --- | --- | --- |
-| `MaxUdpResponseSize` | 1232 bytes | The largest UDP response. Between 512 and 65535. |
-| `TcpIdleTimeout` | 30 seconds | Closes a TCP or DNS over TLS connection that sends no complete query for that long. `Timeout.InfiniteTimeSpan` disables it. |
-| `QuicIdleTimeout` | 30 seconds | Closes an idle DNS over QUIC connection. |
-| `MaxConcurrentQueriesPerConnection` | 16 | How many queries a TCP, TLS or QUIC connection can have in progress at once. Further queries wait. |
+| [MaxUdpResponseSize](cref:Meziantou.Framework.DnsServer.Hosting.DnsServerOptions.MaxUdpResponseSize) | 1232 bytes | The largest UDP response. Between 512 and 65535. |
+| [TcpIdleTimeout](cref:Meziantou.Framework.DnsServer.Hosting.DnsServerOptions.TcpIdleTimeout) | 30 seconds | Closes a TCP or DNS over TLS connection that sends no complete query for that long. `Timeout.InfiniteTimeSpan` disables it. |
+| [QuicIdleTimeout](cref:Meziantou.Framework.DnsServer.Hosting.DnsServerOptions.QuicIdleTimeout) | 30 seconds | Closes an idle DNS over QUIC connection. |
+| [MaxConcurrentQueriesPerConnection](cref:Meziantou.Framework.DnsServer.Hosting.DnsServerOptions.MaxConcurrentQueriesPerConnection) | 16 | How many queries a TCP, TLS or QUIC connection can have in progress at once. Further queries wait. |
 
 To cap the number of connections, set the limit of Kestrel, which also covers the HTTP endpoints of the application:
 
@@ -49,8 +49,8 @@ builder.WebHost.ConfigureKestrel(kestrel => kestrel.Limits.MaxConcurrentConnecti
 ## Response size
 
 A UDP response is limited to the payload size the client advertises in its EDNS record, clamped between 512 bytes and
-`MaxUdpResponseSize`; without EDNS, 512 bytes. A larger response is truncated, with the TC flag set, so the client asks
-again over TCP. Keeping `MaxUdpResponseSize` small also limits how much traffic a spoofed query can make the server
+[MaxUdpResponseSize](cref:Meziantou.Framework.DnsServer.Hosting.DnsServerOptions.MaxUdpResponseSize); without EDNS, 512 bytes. A larger response is truncated, with the TC flag set, so the client asks
+again over TCP. Keeping [MaxUdpResponseSize](cref:Meziantou.Framework.DnsServer.Hosting.DnsServerOptions.MaxUdpResponseSize) small also limits how much traffic a spoofed query can make the server
 send to its victim.
 
 TCP, TLS, QUIC and HTTPS responses can be up to 65535 bytes, the limit of a DNS message; a larger response is
@@ -62,9 +62,9 @@ Before the handler runs, the server:
 
 - drops messages that have the QR flag set, which are responses rather than queries (RFC 5625), so two servers cannot
   be made to answer each other indefinitely;
-- answers a message it cannot parse with `FormError` (HTTP 400 for DNS over HTTPS), so the client does not wait for a
+- answers a message it cannot parse with [FormError](cref:Meziantou.Framework.DnsServer.Protocol.DnsResponseCode.FormError) (HTTP 400 for DNS over HTTPS), so the client does not wait for a
   timeout;
-- answers an EDNS version other than 0 with `BadVersion` (RFC 6891);
+- answers an EDNS version other than 0 with [BadVersion](cref:Meziantou.Framework.DnsServer.Protocol.DnsResponseCode.BadVersion) (RFC 6891);
 - limits decompressed names to 255 bytes and requires compression pointers to point backwards, so a crafted message
   cannot expand without limit;
 - for DNS over HTTPS, rejects bodies larger than a DNS message before reading them.

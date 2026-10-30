@@ -49,15 +49,8 @@ internal sealed class TiffBlockReader : IDisposable
     private readonly TiffPage _page;
     private readonly JpegBlockReceiver? _jpegReceiver;
     private readonly Jpeg2000BlockReceiver? _jpeg2000Receiver;
-    private PooledBuffer? _block;
-    private PooledBuffer? _units;
-    private PooledBuffer? _changes;
+    private readonly Workspace _workspace;
     private PooledBuffer? _jpegRow;
-    private PooledBuffer? _predictorRow;
-    private TiffLzwDecoder? _lzw;
-#if NET11_0_OR_GREATER
-    private ZLibDecoder? _zlib;
-#endif
 
     public TiffBlockReader(RandomAccessSource source, TiffPage page)
     {
@@ -65,6 +58,7 @@ internal sealed class TiffBlockReader : IDisposable
         ArgumentNullException.ThrowIfNull(page);
         _source = source;
         _page = page;
+        _workspace = new Workspace(source.Scope);
         if (page.IsJpeg)
         {
             _jpegReceiver = new JpegBlockReceiver(page);
@@ -86,34 +80,171 @@ internal sealed class TiffBlockReader : IDisposable
         if (TryGetStoredRows(index, rowCount, out var rows))
             return rows;
 
-        _block ??= _source.Scope.Rent(page.BlockRowLength * page.BlockHeight, AllocationKind.DecoderState, clear: false);
-        var destination = _block.Span[..(rowCount * page.BlockRowLength)];
-        if (page.IsJpeg)
+        if (page.IsJpeg || page.IsJpeg2000)
         {
-            DecodeJpeg(index, rowCount, _block.RawBuffer, handler: null);
-            return destination;
+            var buffer = _workspace.GetBlock(page);
+            if (page.IsJpeg)
+            {
+                DecodeJpeg(index, rowCount, buffer.RawBuffer, handler: null);
+            }
+            else
+            {
+                DecodeJpeg2000(index, rowCount, buffer.RawBuffer);
+            }
+
+            return buffer.Span[..(rowCount * page.BlockRowLength)];
         }
 
-        if (page.IsJpeg2000)
+        var block = Fetch(index, rowCount, _workspace);
+        try
         {
-            DecodeJpeg2000(index, rowCount, _block.RawBuffer);
-            return destination;
+            Decompress(block, _workspace);
         }
+        finally
+        {
+            // The compressed bytes are released before the predictors rent their row, as they always were
+            block.Dispose();
+        }
+
+        return Finish(block, _workspace);
+    }
+
+    /// <summary>
+    /// Gets a value indicating whether the blocks of a page are worth decoding by several workers: the LZW, Deflate and
+    /// CCITT blocks. Uncompressed and PackBits blocks cost about what copying them costs (1 and 2.4 ms for a 3840x2160 RGB
+    /// page, against 70 to 100 ms for LZW and Deflate), which handing them to workers does not save. The JPEG and JPEG 2000
+    /// datastreams are decoded on the calling thread by the decoders of those formats.
+    /// </summary>
+    public static bool CanDecodeInParallel(TiffPage page)
+    {
+        ArgumentNullException.ThrowIfNull(page);
+        return page.IsDeflate || page.IsCcitt || page.Compression == TiffFormat.CompressionLzw;
+    }
+
+    /// <summary>
+    /// Gets the number of bytes charged for the working memory a worker needs to decode any block of a page: what
+    /// <see cref="Workspace.Prepare"/> rents, and the copy of the largest compressed block.
+    /// </summary>
+    public static long GetWorkerBytes(TiffPage page, AllocationScope scope)
+    {
+        ArgumentNullException.ThrowIfNull(page);
+        ArgumentNullException.ThrowIfNull(scope);
+
+        // A buffer that cannot be rented makes the decoding of the first block fail: it is left to one worker
+        var unitsLength = page.YCbCr?.GetStoredLength(page.BlockWidth, page.BlockHeight) ?? 0;
+        var changesLength = page.IsCcitt ? TiffCcittDecoder.GetChangeListLength(page.BlockWidth) * 2 * sizeof(int) : 0;
+        if (unitsLength > CheckedSizes.MaxBufferLength || changesLength > CheckedSizes.MaxBufferLength)
+            return long.MaxValue;
+
+        var bytes = scope.GetChargedSize((long)page.BlockRowLength * page.BlockHeight);
+        if (unitsLength > 0)
+        {
+            bytes += scope.GetChargedSize(unitsLength);
+        }
+
+        if (changesLength > 0)
+        {
+            bytes += scope.GetChargedSize(changesLength);
+        }
+
+        if (page.Predictor == TiffFormat.PredictorFloatingPoint)
+        {
+            bytes += scope.GetChargedSize(page.BlockRowLength);
+        }
+
+        if (page.Compression == TiffFormat.CompressionLzw)
+        {
+            bytes += scope.GetChargedSize(TiffLzwDecoder.StateLength);
+        }
+
+        if (page.Compression != TiffFormat.CompressionNone)
+        {
+            // The compressed bytes are copied when the input is a stream, when their bits are reversed, and for the Deflate
+            // decompressor of .NET 10: counted whenever the block is compressed
+            var decodedLength = page.YCbCr is { } units ? units.GetStoredLength(page.BlockWidth, page.BlockHeight) : (long)page.BlockRowLength * page.BlockHeight;
+            var largest = 0UL;
+            foreach (var count in page.BlockByteCounts)
+            {
+                largest = Math.Max(largest, count);
+            }
+
+            var copyLength = (long)Math.Min(largest, (ulong)GetCompressedReadLimit(page, decodedLength));
+            if (copyLength > CheckedSizes.MaxBufferLength)
+                return long.MaxValue;
+
+            bytes += scope.GetChargedSize(copyLength);
+        }
+
+        return bytes;
+    }
+
+    /// <summary>
+    /// Reads what the decoding of a block needs from the input, on the calling thread: the rows of an uncompressed block,
+    /// or the compressed bytes (charged to the encoded-byte limit, and copied when they are not in memory). The rest of
+    /// the work (<see cref="Decompress(in FetchedBlock, Workspace)"/> and <see cref="Finish"/>) reads nothing else from
+    /// the input and charges nothing.
+    /// </summary>
+    /// <param name="index">The index of the block.</param>
+    /// <param name="rowCount">The number of rows of the block that belong to the page.</param>
+    /// <param name="workspace">The working memory the block is decoded with.</param>
+    /// <returns>The block, which the caller disposes.</returns>
+    public FetchedBlock Fetch(int index, int rowCount, Workspace workspace)
+    {
+        ArgumentNullException.ThrowIfNull(workspace);
+        var page = _page;
+        _ = workspace.GetBlock(page);
 
         // A tile is always stored in full, even when it extends past the bottom edge of the page; a strip is not
         var storedRows = page.IsTiled ? page.BlockHeight : rowCount;
-        var conversion = page.YCbCr;
-        var stored = conversion is null
-            ? _block.Span[..(storedRows * page.BlockRowLength)]
-            : RentUnits(conversion.GetStoredLength(page.BlockWidth, storedRows));
-        Decompress(index, storedRows, stored);
+        var stored = GetStored(storedRows, workspace);
+        if (page.Compression == TiffFormat.CompressionNone)
+        {
+            var (offset, storedLength) = GetStoredRange(index);
+            if (storedLength < stored.Length)
+                throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {page.Index} declares {storedLength} bytes for the uncompressed block {index}; its geometry needs {stored.Length}."));
+
+            _source.Read(offset, stored);
+            if (page.IsLeastSignificantBitFirst)
+            {
+                ReverseBits(stored);
+            }
+
+            return new FetchedBlock(index, rowCount, storedRows, 0, 0, Copy: null);
+        }
+
+        var (compressedOffset, compressedLength) = ReadCompressed(index, stored.Length, out var copy);
+        return new FetchedBlock(index, rowCount, storedRows, compressedOffset, compressedLength, copy);
+    }
+
+    /// <summary>
+    /// Decompresses a fetched block into the working memory: on any thread, with a workspace no other thread uses. A
+    /// workspace prepared by <see cref="Workspace.Prepare"/> rents nothing.
+    /// </summary>
+    public void Decompress(scoped in FetchedBlock block, Workspace workspace)
+    {
+        ArgumentNullException.ThrowIfNull(workspace);
+        if (_page.Compression == TiffFormat.CompressionNone)
+            return;
+
+        var compressed = block.Copy is { } copy ? copy.Span : GetCompressedInPlace(block);
+        DecompressBlock(block.Index, block.StoredRows, compressed, block.Copy, GetStored(block.StoredRows, workspace), workspace);
+    }
+
+    /// <summary>Undoes the predictors and the sample transformations of a decompressed block, like <see cref="Decompress(in FetchedBlock, Workspace)"/>.</summary>
+    /// <returns>The rows of the block, valid until the workspace decodes another block.</returns>
+    public ReadOnlySpan<byte> Finish(scoped in FetchedBlock block, Workspace workspace)
+    {
+        ArgumentNullException.ThrowIfNull(workspace);
+        var page = _page;
+        var storedRows = block.StoredRows;
+        var stored = GetStored(storedRows, workspace);
         if (page.Predictor == TiffFormat.PredictorHorizontalDifferencing)
         {
             UndoHorizontalDifferencing(stored, storedRows);
         }
         else if (page.Predictor == TiffFormat.PredictorFloatingPoint)
         {
-            UndoFloatingPointDifferencing(stored, storedRows);
+            UndoFloatingPointDifferencing(stored, storedRows, workspace);
         }
 
         if (page.IsSigned)
@@ -121,7 +252,8 @@ internal sealed class TiffBlockReader : IDisposable
             ToUnsigned(stored, page.BitsPerSample, page.IsBigEndian);
         }
 
-        conversion?.Convert(stored, destination, page.BlockWidth, rowCount);
+        var destination = workspace.GetBlock(page).Span[..(block.RowCount * page.BlockRowLength)];
+        page.YCbCr?.Convert(stored, destination, page.BlockWidth, block.RowCount);
         return destination;
     }
 
@@ -138,24 +270,14 @@ internal sealed class TiffBlockReader : IDisposable
         DecodeJpeg(index, rowCount, buffer: null, handler);
     }
 
+    /// <summary>Gets the working memory of the reader, which <see cref="ReadBlock"/> decodes with.</summary>
+    public Workspace OwnWorkspace => _workspace;
+
     public void Dispose()
     {
-        _block?.Dispose();
-        _block = null;
-#if NET11_0_OR_GREATER
-        _zlib?.Dispose();
-        _zlib = null;
-#endif
-        _units?.Dispose();
-        _units = null;
-        _changes?.Dispose();
-        _changes = null;
+        _workspace.Dispose();
         _jpegRow?.Dispose();
         _jpegRow = null;
-        _predictorRow?.Dispose();
-        _predictorRow = null;
-        _lzw?.Dispose();
-        _lzw = null;
     }
 
     private static byte[] CreateReversedBits()
@@ -175,19 +297,31 @@ internal sealed class TiffBlockReader : IDisposable
         return table;
     }
 
-    private Span<byte> RentUnits(long length)
+    /// <summary>Gets the largest number of compressed bytes read for a block of <paramref name="decodedLength"/> bytes.</summary>
+    private static long GetCompressedReadLimit(TiffPage page, long decodedLength)
     {
-        if (length > CheckedSizes.MaxBufferLength)
-            throw CheckedSizes.CreateOverflowException(_source.Limits);
+        // The largest expansions are far below 16 times: about 6 for fax rows of isolated pixels (6 bits per pixel, and an
+        // end-of-line code per row), 1.5 for LZW and 2 for PackBits data that never repeats, about 6.5 for a JPEG block
+        // whose every coefficient has the longest code. A JPEG datastream also carries tables and application segments
+        return (decodedLength * MaxCompressionExpansion) + (page.IsJpeg || page.IsJpeg2000 ? MaxJpegOverhead : MaxBlockOverhead);
+    }
 
-        if (_units is null || _units.Length < length)
-        {
-            _units?.Dispose();
-            _units = null;
-            _units = _source.Scope.Rent((int)length, AllocationKind.DecoderState, clear: false);
-        }
+    /// <summary>Gets the buffer the stored samples of a block are decompressed into: the rows of the block, or its YCbCr data units.</summary>
+    private Span<byte> GetStored(int storedRows, Workspace workspace)
+    {
+        var page = _page;
+        return page.YCbCr is { } conversion
+            ? workspace.GetUnits(conversion.GetStoredLength(page.BlockWidth, storedRows), _source.Limits)
+            : workspace.GetBlock(page).Span[..(storedRows * page.BlockRowLength)];
+    }
 
-        return _units.Span[..(int)length];
+    /// <summary>Gets the compressed bytes of a fetched block that are read where they are, in an input held in memory (already charged by <see cref="Fetch"/>).</summary>
+    private ReadOnlySpan<byte> GetCompressedInPlace(in FetchedBlock block)
+    {
+        if (!_source.TryGetSpan(block.Offset, block.Length, out var compressed, charge: false))
+            throw new InvalidOperationException("The compressed bytes of the block are not in memory.");
+
+        return compressed;
     }
 
     private (long Offset, long Length) GetStoredRange(int index)
@@ -212,21 +346,17 @@ internal sealed class TiffBlockReader : IDisposable
     /// The buffer that holds the bytes, which the caller disposes, or <see langword="null"/> when they are the bytes of an
     /// input held in memory: they are only copied when they must be changed (bit order) or the input is a stream.
     /// </param>
-    /// <returns>The compressed bytes.</returns>
-    private ReadOnlySpan<byte> ReadCompressed(int index, long decodedLength, out PooledBuffer? copy)
+    /// <returns>The range of the compressed bytes in the input (charged to the encoded-byte limit).</returns>
+    private (long Offset, int Length) ReadCompressed(int index, long decodedLength, out PooledBuffer? copy)
     {
         var (offset, storedLength) = GetStoredRange(index);
         if (storedLength == 0)
             throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {_page.Index} declares an empty compressed block {index}."));
 
-        // The largest expansions are far below 16 times: about 6 for fax rows of isolated pixels (6 bits per pixel, and an
-        // end-of-line code per row), 1.5 for LZW and 2 for PackBits data that never repeats, about 6.5 for a JPEG block
-        // whose every coefficient has the longest code. A JPEG datastream also carries tables and application segments
-        var needed = (decodedLength * MaxCompressionExpansion) + (_page.IsJpeg || _page.IsJpeg2000 ? MaxJpegOverhead : MaxBlockOverhead);
-        var length = Math.Min(storedLength, needed);
+        var length = Math.Min(storedLength, GetCompressedReadLimit(_page, decodedLength));
         copy = null;
-        if (!_page.IsLeastSignificantBitFirst && CanDecompressInPlace && _source.TryGetSpan(offset, length, out var stored))
-            return stored;
+        if (!_page.IsLeastSignificantBitFirst && CanDecompressInPlace && _source.TryGetSpan(offset, length, out _))
+            return (offset, (int)length);
 
         copy = _source.ReadToBuffer(offset, length);
         if (_page.IsLeastSignificantBitFirst)
@@ -234,7 +364,18 @@ internal sealed class TiffBlockReader : IDisposable
             ReverseBits(copy.Span);
         }
 
-        return copy.Span;
+        return (offset, (int)length);
+    }
+
+    /// <summary>Gets the compressed bytes of a block for the JPEG and JPEG 2000 decoders, which run on the calling thread.</summary>
+    private ReadOnlySpan<byte> ReadCompressedBytes(int index, long decodedLength, out PooledBuffer? copy)
+    {
+        var (offset, length) = ReadCompressed(index, decodedLength, out copy);
+        if (copy is not null)
+            return copy.Span;
+
+        _source.TryGetSpan(offset, length, out var compressed, charge: false);
+        return compressed;
     }
 
 #if NET11_0_OR_GREATER
@@ -250,7 +391,7 @@ internal sealed class TiffBlockReader : IDisposable
 
     /// <summary>
     /// Gets the rows of an uncompressed block that needs no change straight from an input held in memory, with the checks
-    /// of <see cref="Decompress"/>.
+    /// of <see cref="Fetch"/>.
     /// </summary>
     /// <returns><see langword="false"/> when the block is read into the buffer of the reader.</returns>
     private bool TryGetStoredRows(int index, int rowCount, out ReadOnlySpan<byte> rows)
@@ -279,36 +420,19 @@ internal sealed class TiffBlockReader : IDisposable
         }
     }
 
-    /// <summary>Fills <paramref name="destination"/> with the stored samples of a block.</summary>
-    private void Decompress(int index, int rowCount, Span<byte> destination)
+    /// <summary>Fills <paramref name="destination"/> with the stored samples of a compressed block.</summary>
+    private void DecompressBlock(int index, int rowCount, ReadOnlySpan<byte> compressed, PooledBuffer? copy, Span<byte> destination, Workspace workspace)
     {
         var page = _page;
-        if (page.Compression == TiffFormat.CompressionNone)
-        {
-            var (offset, storedLength) = GetStoredRange(index);
-            if (storedLength < destination.Length)
-                throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {page.Index} declares {storedLength} bytes for the uncompressed block {index}; its geometry needs {destination.Length}."));
-
-            _source.Read(offset, destination);
-            if (page.IsLeastSignificantBitFirst)
-            {
-                ReverseBits(destination);
-            }
-
-            return;
-        }
-
-        var compressed = ReadCompressed(index, destination.Length, out var copy);
-        using var owner = copy;
         if (page.IsDeflate)
         {
-            Inflate(compressed, copy, destination, index);
+            Inflate(compressed, copy, destination, index, workspace);
             return;
         }
 
         if (page.IsCcitt)
         {
-            DecodeFax(compressed, destination, rowCount, index);
+            DecodeFax(compressed, destination, rowCount, index, workspace);
             return;
         }
 
@@ -318,8 +442,7 @@ internal sealed class TiffBlockReader : IDisposable
             if (TiffLzwDecoder.UsesOldBitOrder(compressed))
                 throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The LZW data of the TIFF block {index} of page {page.Index} uses the bit order of TIFF 5.0 drafts (least significant bit first), which is not supported."), "Compression: LZW with the old bit order");
 
-            _lzw ??= new TiffLzwDecoder(_source.Scope);
-            if (!_lzw.TryDecode(compressed, destination, out written))
+            if (!workspace.GetLzw().TryDecode(compressed, destination, out written))
                 throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The LZW data of the TIFF block {index} of page {page.Index} is malformed: a code refers to a string that was not defined."));
         }
         else
@@ -335,29 +458,37 @@ internal sealed class TiffBlockReader : IDisposable
     /// <param name="copy">The buffer that holds them, or <see langword="null"/> when they are the bytes of the input (.NET 11 only).</param>
     /// <param name="destination">The rows of the block.</param>
     /// <param name="index">The index of the block.</param>
-    private void Inflate(ReadOnlySpan<byte> compressed, PooledBuffer? copy, Span<byte> destination, int index)
+    /// <param name="workspace">The working memory of the decompression.</param>
+    private void Inflate(ReadOnlySpan<byte> compressed, PooledBuffer? copy, Span<byte> destination, int index, Workspace workspace)
     {
 #if NET11_0_OR_GREATER
-        if (TryInflate(compressed, destination))
+        if (TryInflate(compressed, destination, workspace))
             return;
 
         // The stream path defines the errors: it reads the block again and reports how it fails
+#else
+        _ = workspace;
 #endif
         if (copy is not null)
         {
-            InflateStream(copy, destination, index);
+            using var buffer = new MemoryStream(copy.RawBuffer, 0, copy.Length, writable: false);
+            InflateStream(buffer, destination, index);
             return;
         }
 
-        // The stream reads a buffer
-        using var buffer = _source.Scope.Rent(compressed.Length, AllocationKind.DecoderState, clear: false);
-        compressed.CopyTo(buffer.Span);
-        InflateStream(buffer, destination, index);
+        // The stream reads the bytes where they are, pinned until it is done: nothing is rented, whatever thread decodes
+        unsafe
+        {
+            fixed (byte* pointer = compressed)
+            {
+                using var input = new UnmanagedMemoryStream(pointer, compressed.Length);
+                InflateStream(input, destination, index);
+            }
+        }
     }
 
-    private void InflateStream(PooledBuffer compressed, Span<byte> destination, int index)
+    private void InflateStream(Stream input, Span<byte> destination, int index)
     {
-        using var input = new MemoryStream(compressed.RawBuffer, 0, compressed.Length, writable: false);
         using var zlib = new ZLibStream(input, CompressionMode.Decompress);
         try
         {
@@ -384,9 +515,9 @@ internal sealed class TiffBlockReader : IDisposable
     /// same input at every step, so it fills the block exactly when the stream path does.
     /// </summary>
     /// <returns><see langword="false"/> when the block is malformed or too short (the stream path then reports it).</returns>
-    private bool TryInflate(ReadOnlySpan<byte> compressed, Span<byte> destination)
+    private static bool TryInflate(ReadOnlySpan<byte> compressed, Span<byte> destination, Workspace workspace)
     {
-        var decoder = _zlib ??= new ZLibDecoder();
+        var decoder = workspace.GetZLib();
         decoder.Reset();
         var written = 0;
         var position = 0;
@@ -420,15 +551,11 @@ internal sealed class TiffBlockReader : IDisposable
     }
 #endif
 
-    private void DecodeFax(ReadOnlySpan<byte> compressed, Span<byte> destination, int rowCount, int index)
+    private void DecodeFax(ReadOnlySpan<byte> compressed, Span<byte> destination, int rowCount, int index, Workspace workspace)
     {
         var page = _page;
         var listLength = TiffCcittDecoder.GetChangeListLength(page.BlockWidth);
-        if (listLength * 2 * sizeof(int) > CheckedSizes.MaxBufferLength)
-            throw CheckedSizes.CreateOverflowException(_source.Limits);
-
-        _changes ??= _source.Scope.Rent((int)(listLength * 2 * sizeof(int)), AllocationKind.DecoderState, clear: false);
-        var lists = unsafe(MemoryMarshal.Cast<byte, int>(_changes.Span));
+        var lists = unsafe(MemoryMarshal.Cast<byte, int>(workspace.GetChangeLists(listLength, _source.Limits).Span));
         var error = TiffCcittDecoder.Decode(compressed, destination, page.BlockWidth, rowCount, page.Compression, page.IsTwoDimensionalFax, lists[..(int)listLength], lists.Slice((int)listLength, (int)listLength));
         if (error is null)
             return;
@@ -538,12 +665,11 @@ internal sealed class TiffBlockReader : IDisposable
     /// <summary>
     /// Undoes the floating-point predictor of TIFF Technical Note 3 row by row, over the stored (padded) width of the block.
     /// </summary>
-    private void UndoFloatingPointDifferencing(Span<byte> block, int rowCount)
+    private void UndoFloatingPointDifferencing(Span<byte> block, int rowCount, Workspace workspace)
     {
         var page = _page;
         var rowLength = page.BlockRowLength;
-        _predictorRow ??= _source.Scope.Rent(rowLength, AllocationKind.DecoderState, clear: false);
-        var scratch = _predictorRow.Span[..rowLength];
+        var scratch = workspace.GetPredictorRow(rowLength).Span[..rowLength];
         for (var row = 0; row < rowCount; row++)
         {
             UndoFloatingPointDifferencing(block.Slice(row * rowLength, rowLength), scratch, page.SamplesPerPixel, page.BitsPerSample / 8, page.IsBigEndian);
@@ -597,7 +723,7 @@ internal sealed class TiffBlockReader : IDisposable
     {
         var page = _page;
         var receiver = _jpegReceiver!;
-        var compressed = ReadCompressed(index, (long)rowCount * page.BlockRowLength, out var copy);
+        var compressed = ReadCompressedBytes(index, (long)rowCount * page.BlockRowLength, out var copy);
         using var owner = copy;
         if (handler is not null && page.DecodedBitsPerSample == 16)
         {
@@ -643,7 +769,7 @@ internal sealed class TiffBlockReader : IDisposable
     {
         var page = _page;
         var receiver = _jpeg2000Receiver!;
-        var compressed = ReadCompressed(index, (long)rowCount * page.BlockRowLength, out var copy);
+        var compressed = ReadCompressedBytes(index, (long)rowCount * page.BlockRowLength, out var copy);
         using var owner = copy;
         receiver.Begin(index, rowCount, buffer);
         try
@@ -717,6 +843,139 @@ internal sealed class TiffBlockReader : IDisposable
 
         InvalidImageContentException InvalidTables()
             => TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEGTables tag of the TIFF page {_page.Index} is not a JPEG datastream of table specifications."));
+    }
+
+    /// <summary>
+    /// A block whose input <see cref="Fetch"/> read: its rows are in the workspace when it is not compressed, else its
+    /// compressed bytes are at <see cref="Offset"/> in an input held in memory, or in <see cref="Copy"/>.
+    /// </summary>
+    /// <param name="Index">The index of the block.</param>
+    /// <param name="RowCount">The number of rows of the block that belong to the page.</param>
+    /// <param name="StoredRows">The number of rows the block stores (a tile is stored in full).</param>
+    /// <param name="Offset">The offset of the compressed bytes in the input.</param>
+    /// <param name="Length">The number of compressed bytes read.</param>
+    /// <param name="Copy">The compressed bytes, when they are copied; disposed with the block.</param>
+    public readonly record struct FetchedBlock(int Index, int RowCount, int StoredRows, long Offset, int Length, PooledBuffer? Copy) : IDisposable
+    {
+        public void Dispose() => Copy?.Dispose();
+    }
+
+    /// <summary>
+    /// The working memory of the decoding of one block at a time: the rows of the block, its YCbCr data units, the change
+    /// lists of fax rows, the row of the floating-point predictor, and the LZW and Deflate decoders. The reader rents it as
+    /// its blocks need it; each worker of a page has one, which <see cref="Prepare"/> rents whole on the calling thread.
+    /// </summary>
+    public sealed class Workspace : IDisposable
+    {
+        private readonly AllocationScope _scope;
+        private PooledBuffer? _block;
+        private PooledBuffer? _units;
+        private PooledBuffer? _changes;
+        private PooledBuffer? _predictorRow;
+        private TiffLzwDecoder? _lzw;
+#if NET11_0_OR_GREATER
+        private ZLibDecoder? _zlib;
+#endif
+
+        public Workspace(AllocationScope scope)
+        {
+            ArgumentNullException.ThrowIfNull(scope);
+            _scope = scope;
+        }
+
+        /// <summary>
+        /// Rents what the decoding of any block of a page needs (<see cref="GetWorkerBytes"/> bytes at most, the copy of the
+        /// compressed bytes excluded), so that decoding a block rents nothing.
+        /// </summary>
+        public void Prepare(TiffPage page, ImageResourceLimits limits)
+        {
+            ArgumentNullException.ThrowIfNull(page);
+            ArgumentNullException.ThrowIfNull(limits);
+            _ = GetBlock(page);
+            if (page.YCbCr is { } conversion)
+            {
+                _ = GetUnits(conversion.GetStoredLength(page.BlockWidth, page.BlockHeight), limits);
+            }
+
+            if (page.IsCcitt)
+            {
+                _ = GetChangeLists(TiffCcittDecoder.GetChangeListLength(page.BlockWidth), limits);
+            }
+
+            if (page.Predictor == TiffFormat.PredictorFloatingPoint)
+            {
+                _ = GetPredictorRow(page.BlockRowLength);
+            }
+
+            if (page.Compression == TiffFormat.CompressionLzw)
+            {
+                _ = GetLzw();
+            }
+
+#if NET11_0_OR_GREATER
+            if (page.IsDeflate)
+            {
+                _ = GetZLib();
+            }
+#endif
+        }
+
+        /// <summary>Gets the rows of a block.</summary>
+        public PooledBuffer GetBlock(TiffPage page) => _block ??= _scope.Rent(page.BlockRowLength * page.BlockHeight, AllocationKind.DecoderState, clear: false);
+
+        /// <summary>Gets the YCbCr data units of a block.</summary>
+        public Span<byte> GetUnits(long length, ImageResourceLimits limits)
+        {
+            if (length > CheckedSizes.MaxBufferLength)
+                throw CheckedSizes.CreateOverflowException(limits);
+
+            if (_units is null || _units.Length < length)
+            {
+                _units?.Dispose();
+                _units = null;
+                _units = _scope.Rent((int)length, AllocationKind.DecoderState, clear: false);
+            }
+
+            return _units.Span[..(int)length];
+        }
+
+        /// <summary>Gets the two change lists of fax rows, of <paramref name="listLength"/> entries each.</summary>
+        public PooledBuffer GetChangeLists(long listLength, ImageResourceLimits limits)
+        {
+            if (listLength * 2 * sizeof(int) > CheckedSizes.MaxBufferLength)
+                throw CheckedSizes.CreateOverflowException(limits);
+
+            return _changes ??= _scope.Rent((int)(listLength * 2 * sizeof(int)), AllocationKind.DecoderState, clear: false);
+        }
+
+        /// <summary>Gets the scratch row of the floating-point predictor.</summary>
+        public PooledBuffer GetPredictorRow(int rowLength) => _predictorRow ??= _scope.Rent(rowLength, AllocationKind.DecoderState, clear: false);
+
+        /// <summary>Gets the LZW decoder.</summary>
+        public TiffLzwDecoder GetLzw() => _lzw ??= new TiffLzwDecoder(_scope);
+
+#if NET11_0_OR_GREATER
+        /// <summary>Gets the Deflate decoder, reused by every block.</summary>
+        public ZLibDecoder GetZLib() => _zlib ??= new ZLibDecoder();
+#endif
+
+        public void Dispose()
+        {
+            _block?.Dispose();
+            _block = null;
+#if NET11_0_OR_GREATER
+            _zlib?.Dispose();
+            _zlib = null;
+#endif
+            _units?.Dispose();
+            _units = null;
+            _changes?.Dispose();
+            _changes = null;
+            _predictorRow?.Dispose();
+            _predictorRow = null;
+            _lzw?.Dispose();
+            _lzw = null;
+        }
     }
 
     /// <summary>Receives the samples of the JPEG 2000 codestream of one block and checks its components against the page.</summary>

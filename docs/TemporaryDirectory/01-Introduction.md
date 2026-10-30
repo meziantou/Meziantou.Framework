@@ -3,8 +3,8 @@ title: Introduction
 description: Disposable temporary folders and files, with unique names, private permissions and reliable deletion.
 ---
 
-`Meziantou.Framework.TemporaryDirectory` provides two types: `TemporaryDirectory`, a unique empty folder, and
-`TemporaryFile`, a unique file. Both are deleted when you dispose them, so a `using` statement is enough to clean up
+`Meziantou.Framework.TemporaryDirectory` provides two types: [TemporaryDirectory](cref:Meziantou.Framework.TemporaryDirectory), a unique empty folder, and
+[TemporaryFile](cref:Meziantou.Framework.TemporaryFile), a unique file. Both are deleted when you dispose them, so a `using` statement is enough to clean up
 after a test, a build step or any work that needs scratch space on disk.
 
 ## What you can do with it
@@ -28,7 +28,7 @@ after a test, a build step or any work that needs scratch space on disk.
 
 ## Namespace
 
-`TemporaryDirectory` and `TemporaryFile` are in the [Meziantou.Framework](cref:Meziantou.Framework) namespace, as `FullPath` is.
+[TemporaryDirectory](cref:Meziantou.Framework.TemporaryDirectory) and [TemporaryFile](cref:Meziantou.Framework.TemporaryFile) are in the [Meziantou.Framework](cref:Meziantou.Framework.TemporaryDirectory!N:Meziantou.Framework) namespace, as [FullPath](cref:Meziantou.Framework.FullPath) is.
 
 ## Next steps
 

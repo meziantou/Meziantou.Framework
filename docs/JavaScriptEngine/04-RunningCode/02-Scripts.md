@@ -29,7 +29,7 @@ Assert.Equal(2, realm.Execute("counter").AsNumber());
   return a value.
 - The `var` and `function` declarations of a script are properties of the global object; its `let`, `const` and
   `class` declarations are global bindings, also visible to the next scripts of the realm.
-- `Execute` returns when the script ends. The callbacks of the promises it creates run later, from `RunJobs`: see
+- [Execute](cref:Meziantou.Framework.JavaScriptEngine.JsRealm.Execute) returns when the script ends. The callbacks of the promises it creates run later, from [RunJobs](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.RunJobs): see
   [Async code and promises](../06-AsyncAndPromises.md).
 
 To read the result, see [Values](../05-Interop/02-Values.md).
@@ -38,7 +38,7 @@ To read the result, see [Values](../05-Interop/02-Values.md).
 
 ## Reuse a compiled script
 
-`JsPreparedScript.Parse` parses and compiles a script once. The result is immutable: it runs in any realm of any
+[JsPreparedScript.Parse](cref:Meziantou.Framework.JavaScriptEngine.JsPreparedScript.Parse) parses and compiles a script once. The result is immutable: it runs in any realm of any
 engine, on any thread. Use it for the scripts that run many times, such as the same user script for each request:
 
 <!-- ref:../../../tests/Meziantou.Framework.JavaScriptEngine.Tests/JsEngineTests.cs;region=JavaScriptEngine_PreparedScript;format=md-fenced-code-block;dedent=true -->
@@ -64,7 +64,7 @@ Assert.Equal([55, 89, 144, 233], results);
 ```
 <!-- endref -->
 
-`Parse` reports the syntax errors of the whole script. The body of a nested function is compiled on its first call,
+[Parse](cref:Meziantou.Framework.JavaScriptEngine.JsPreparedScript.Parse) reports the syntax errors of the whole script. The body of a nested function is compiled on its first call,
 once for all the engines.
 
 When the script is a part of a larger document, such as an inline script of an HTML page, pass its position in the
@@ -72,7 +72,7 @@ document (`lineOffset` and `columnOffset`): the locations of the errors are then
 
 ## Check the syntax of a script
 
-`JsPreparedScript.TryParse` reports a syntax error without throwing, with its position. Use it to validate a script
+[JsPreparedScript.TryParse](cref:Meziantou.Framework.JavaScriptEngine.JsPreparedScript.TryParse) reports a syntax error without throwing, with its position. Use it to validate a script
 before you save it:
 
 <!-- ref:../../../tests/Meziantou.Framework.JavaScriptEngine.Tests/JsEngineTests.cs;region=JavaScriptEngine_ValidateScript;format=md-fenced-code-block;dedent=true -->
@@ -89,7 +89,7 @@ Assert.Equal(7, error.Column);
 ```
 <!-- endref -->
 
-- `Line` and `Column` are 1-based; the column counts UTF-16 code units.
-- `JsPreparedScript.Parse` throws the same error as a `JsSyntaxErrorException`.
-- `realm.Execute(string)` does not throw a `JsSyntaxErrorException`: a script that is not valid throws a `JsException`
+- [Line](cref:Meziantou.Framework.JavaScriptEngine.JsSyntaxErrorException.Line) and [Column](cref:Meziantou.Framework.JavaScriptEngine.JsSyntaxErrorException.Column) are 1-based; the column counts UTF-16 code units.
+- [JsPreparedScript.Parse](cref:Meziantou.Framework.JavaScriptEngine.JsPreparedScript.Parse) throws the same error as a [JsSyntaxErrorException](cref:Meziantou.Framework.JavaScriptEngine.JsSyntaxErrorException).
+- `realm.Execute(string)` does not throw a [JsSyntaxErrorException](cref:Meziantou.Framework.JavaScriptEngine.JsSyntaxErrorException): a script that is not valid throws a [JsException](cref:Meziantou.Framework.JavaScriptEngine.JsException)
   whose value is a `SyntaxError`, as in JavaScript.

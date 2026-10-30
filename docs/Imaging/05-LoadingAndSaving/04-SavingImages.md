@@ -3,7 +3,7 @@ title: Saving images
 description: Save to a file or a stream, choose the format and its settings, handle what the format cannot store.
 ---
 
-`Save` encodes an image to a file or a stream. This page shows how the format is chosen, what is checked before
+[Save](cref:Meziantou.Framework.Imaging.Image.Save) encodes an image to a file or a stream. This page shows how the format is chosen, what is checked before
 anything is written, and how to tell the library what to do with what the format cannot store.
 
 ## Choose the format from the extension
@@ -59,7 +59,7 @@ for every image, from any thread. Each format page lists the settings of its enc
 
 A save checks the whole image against the output before writing anything: the animation, the poster frame, the
 durations, the alpha, the precision and the metadata. When the format cannot store the image as it is, the save throws
-an `UnsupportedImageFeatureException` and writes nothing:
+an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException) and writes nothing:
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/LoadingExamples.cs;region=Imaging_SaveValidation;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -80,31 +80,31 @@ public static bool TrySaveAsJpeg(Image image, string path)
 ```
 <!-- endref -->
 
-The exception names the format and the feature (`Format`, `Feature`). The settings that allow a conversion are on the
+The exception names the format and the feature ([Format](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException.Format), [Feature](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException.Feature)). The settings that allow a conversion are on the
 encoder:
 
 | The image has | The output cannot store it | Setting |
 | --- | --- | --- |
 | Several frames | JPEG, a static PNG, and the other still formats | None: save one frame with `image.Frames[i].Save(...)` |
-| A poster frame | Every format but animated PNG | None: remove it with `RemovePosterFrame` |
+| A poster frame | Every format but animated PNG | None: remove it with [RemovePosterFrame](cref:Meziantou.Framework.Imaging.Image.RemovePosterFrame) |
 | A duration the format cannot represent | GIF, APNG, ANI, … | `DurationRounding` |
 | Transparency | JPEG, BMP layouts other than 32-bit, … | `BackgroundColor` |
 | 16-bit samples | JPEG, WebP, QOI, BMP, TGA, … | `AllowBitDepthReduction` |
-| Floating-point samples | Every format but OpenEXR and TIFF | `FloatingPointConversion` |
-| Metadata | Depends on the format | `MetadataHandling` |
+| Floating-point samples | Every format but OpenEXR and TIFF | [FloatingPointConversion](cref:Meziantou.Framework.Imaging.Formats.ImageEncoder.FloatingPointConversion) |
+| Metadata | Depends on the format | [MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling) |
 
 The complete list is in [Pixel formats](../04-Concepts/05-PixelFormats.md#nothing-is-lost-silently).
 
 ## Metadata
 
-`ImageEncoder.MetadataHandling` decides what happens to metadata the output format cannot store, such as an ICC profile
+[ImageEncoder.MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.ImageEncoder.MetadataHandling) decides what happens to metadata the output format cannot store, such as an ICC profile
 in a GIF file, an EXIF orientation in a BMP file or a cursor hotspot in a PNG file:
 
 | Value | Effect |
 | --- | --- |
-| `MetadataHandling.Strict` (default) | Throws an `UnsupportedImageFeatureException` |
-| `MetadataHandling.DiscardUnsupported` | Drops what the format cannot store, writes the rest |
-| `MetadataHandling.Strip` | Writes no optional metadata |
+| [MetadataHandling.Strict](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling.Strict) (default) | Throws an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException) |
+| [MetadataHandling.DiscardUnsupported](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling.DiscardUnsupported) | Drops what the format cannot store, writes the rest |
+| [MetadataHandling.Strip](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling.Strip) | Writes no optional metadata |
 
 The animation settings and the frame durations are never affected. A malformed EXIF, ICC or XMP payload that you set
 yourself is rejected when you save. Which format stores what is described in
@@ -112,10 +112,10 @@ yourself is rejected when you save. Which format stores what is described in
 
 ## Floating-point images
 
-`RgbaFloat` and `RgbaHalf` images are stored by the OpenEXR encoder with the
+[RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat) and [RgbaHalf](cref:Meziantou.Framework.Imaging.RgbaHalf) images are stored by the OpenEXR encoder with the
 [sample type and alpha conversion](../10-Formats/17-OpenExr.md) of OpenEXR, and by the TIFF encoder as 32-bit
-floats (with `TiffPixelLayout.Auto` and a compression other than JPEG). Every other encoder rejects them before writing,
-unless `ImageEncoder.FloatingPointConversion` gives the options of their reduction to 16-bit integers: a tone mapping
+floats (with [TiffPixelLayout.Auto](cref:Meziantou.Framework.Imaging.Formats.TiffPixelLayout.Auto) and a compression other than JPEG). Every other encoder rejects them before writing,
+unless [ImageEncoder.FloatingPointConversion](cref:Meziantou.Framework.Imaging.Formats.ImageEncoder.FloatingPointConversion) gives the options of their reduction to 16-bit integers: a tone mapping
 for the highlights, or clipping. See
 [Pixel formats](../04-Concepts/05-PixelFormats.md#floating-point-and-high-dynamic-range).
 
@@ -126,7 +126,7 @@ the encoding succeeded. On a failure or a cancellation, an existing file at the 
 temporary file is deleted, so a reader of the destination never sees a half-written image. The library does not flush
 the file to the disk (`fsync`): the publication is atomic, but it is not guaranteed to survive a crash of the machine.
 
-The same holds for `SaveAsync`, for `ImageCollection.Save` and for the [writers](05-StreamingReadersAndWriters.md) that
+The same holds for [SaveAsync](cref:Meziantou.Framework.Imaging.Image.SaveAsync), for [ImageCollection.Save](cref:Meziantou.Framework.Imaging.ImageCollection.Save) and for the [writers](05-StreamingReadersAndWriters.md) that
 write to a path.
 
 ## Save to a stream
@@ -152,4 +152,4 @@ public static async Task<byte[]> EncodeAsPngAsync(Image image, CancellationToken
 - A stream is written as the encoding goes: after a failure, the bytes already written remain, and nothing is
   finalized. Write to a `MemoryStream` or a temporary file first when the destination must not receive a partial
   image.
-- `SaveAsync` writes with asynchronous I/O and accepts a `CancellationToken`.
+- [SaveAsync](cref:Meziantou.Framework.Imaging.Image.SaveAsync) writes with asynchronous I/O and accepts a `CancellationToken`.

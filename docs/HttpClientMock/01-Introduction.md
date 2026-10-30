@@ -3,8 +3,8 @@ title: Introduction
 description: An in-memory HTTP server, defined with minimal API handlers, that replaces the services an HttpClient calls in tests.
 ---
 
-`Meziantou.Framework.HttpClientMock` provides `HttpClientMock`, a mock HTTP server for testing code that uses
-`HttpClient`. You describe the responses with the same handlers as in an ASP.NET Core minimal API (`MapGet`, `MapPost`,
+`Meziantou.Framework.HttpClientMock` provides [HttpClientMock](cref:Meziantou.Framework.HttpClientMock), a mock HTTP server for testing code that uses
+`HttpClient`. You describe the responses with the same handlers as in an ASP.NET Core minimal API ([MapGet](cref:Meziantou.Framework.HttpClientMock.MapGet), [MapPost](cref:Meziantou.Framework.HttpClientMock.MapPost),
 `Results.Ok`, route parameters, parameter binding), and the mock gives you an `HttpClient` or an `HttpMessageHandler`
 that sends the requests to it.
 
@@ -27,7 +27,7 @@ opened and no request leaves the process, unless you ask the mock to forward it.
 
 ## When to use it
 
-Use `HttpClientMock` when a test needs to decide what the remote service answers: an error, a timeout-prone endpoint
+Use [HttpClientMock](cref:Meziantou.Framework.HttpClientMock) when a test needs to decide what the remote service answers: an error, a timeout-prone endpoint
 that fails once, an edge case that the real service rarely returns. The handlers are code, so a response can depend on
 the request or on the calls made before.
 
@@ -37,8 +37,8 @@ HSTS handlers, are described in the [Http](../Http/01-Introduction.md) section.
 
 ## Namespace
 
-`HttpClientMock`, `RequestCounter`, `HttpMockServiceBuilder` and the extension methods of the package are in the
-[Meziantou.Framework](cref:Meziantou.Framework) namespace. The handlers use the ASP.NET Core types of `Microsoft.AspNetCore.Http`, such as
+[HttpClientMock](cref:Meziantou.Framework.HttpClientMock), [RequestCounter](cref:Meziantou.Framework.RequestCounter), [HttpMockServiceBuilder](cref:Meziantou.Framework.HttpMockServiceBuilder) and the extension methods of the package are in the
+[Meziantou.Framework](cref:Meziantou.Framework.HttpClientMock!N:Meziantou.Framework) namespace. The handlers use the ASP.NET Core types of `Microsoft.AspNetCore.Http`, such as
 `Results` and `HttpContext`.
 
 ## Next steps

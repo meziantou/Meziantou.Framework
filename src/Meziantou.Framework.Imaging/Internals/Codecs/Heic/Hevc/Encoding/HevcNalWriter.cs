@@ -70,6 +70,26 @@ internal static class HevcNalWriter
         return WriteNalUnit(output, nalUnitType, temporalId, rbsp);
     }
 
+    /// <summary>Gets the number of emulation prevention bytes that the escaping of <paramref name="rbsp"/> inserts, when the byte that precedes it is not zero.</summary>
+    public static int CountEmulationPreventionBytes(ReadOnlySpan<byte> rbsp)
+    {
+        var count = 0;
+        var position = 0;
+        while (true)
+        {
+            // The same search as WriteEscaped
+            var index = rbsp[position..].IndexOf((ReadOnlySpan<byte>)[0, 0]);
+            if (index < 0 || position + index + 2 >= rbsp.Length)
+                return count;
+
+            position += index + 2;
+            if (rbsp[position] <= 3)
+            {
+                count++;
+            }
+        }
+    }
+
     // Clause 7.4.2.3: a byte equal to 3 is inserted before a byte of the payload that is at most 3 and follows two bytes
     // equal to 0. The byte that follows an inserted byte starts a new search: the two zero bytes before it do not count
     // anymore, and it counts itself when it is zero. A byte equal to 3 is also appended to a payload that ends with a

@@ -1,12 +1,17 @@
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
-/// The working buffers of the block decoding process, of a size that does not depend on the frame: the left context of a
-/// superblock row, the coefficients and the residual of a transform block, the color maps of a palette block and the flags
-/// of the blocks decoded in a superblock. Rented once by the decoder and reused by every tile.
+/// The working buffers of the block decoding process of a tile: the left context of a superblock row, the coefficients and
+/// the residual of a transform block, the color maps of a palette block and the flags of the blocks decoded in a
+/// superblock, of a size that does not depend on the frame, and the above context of the tiles
+/// (<see cref="PrepareAboveContext"/>), one entry per 4x4 column of the frame. Rented once by the decoder and reused by
+/// every tile; each worker that decodes tiles at the same time as the others has its own.
 /// </summary>
 internal sealed class Av1TileScratch : IDisposable
 {
+    /// <summary>The number of entries that an above context line has beyond the frame, for the blocks that cross its right edge.</summary>
+    public const int AboveContextMargin = 32;
+
     /// <summary>The number of 4x4 blocks of a side of the largest superblock.</summary>
     public const int SuperblockSize4 = 32;
 
@@ -21,6 +26,11 @@ internal sealed class Av1TileScratch : IDisposable
     private readonly Av1PooledArray<int> _coefficients;
     private readonly Av1PooledArray<byte> _bytes;
     private readonly Av1PooledArray<ushort> _palette;
+    private readonly Av1PooledArray<byte>?[] _aboveLevelContext = new Av1PooledArray<byte>?[3];
+    private readonly Av1PooledArray<byte>?[] _aboveDcContext = new Av1PooledArray<byte>?[3];
+    private Av1PooledArray<ushort>? _abovePaletteColors;
+    private Av1PooledArray<byte>? _aboveSegPredContext;
+    private int _aboveMiCols = -1;
 
     public Av1TileScratch(AllocationScope scope)
     {
@@ -36,6 +46,9 @@ internal sealed class Av1TileScratch : IDisposable
             throw;
         }
     }
+
+    /// <summary>Gets or sets the coding tools used by the blocks coded with this scratch so far: a diagnostic.</summary>
+    public Av1Tools Tools { get; set; }
 
     private static int QuantLength => 1024;
 
@@ -98,10 +111,73 @@ internal sealed class Av1TileScratch : IDisposable
     /// <summary>Gets the palette of the block being decoded for a plane: 8 colors.</summary>
     public Span<ushort> GetPaletteColors(int plane) => _palette.Span.Slice((2 * SuperblockSize4 * Av1Constants.PaletteColors) + (plane * Av1Constants.PaletteColors), Av1Constants.PaletteColors);
 
+    /// <summary>Gets <c>AboveLevelContext[ plane ]</c>, indexed by the 4x4 column of the plane.</summary>
+    public Span<byte> GetAboveLevelContext(int plane) => GetAbove(_aboveLevelContext[plane]);
+
+    /// <summary>Gets <c>AboveDcContext[ plane ]</c>, indexed by the 4x4 column of the plane.</summary>
+    public Span<byte> GetAboveDcContext(int plane) => GetAbove(_aboveDcContext[plane]);
+
+    /// <summary>Gets <c>AboveSegPredContext</c>.</summary>
+    public Span<byte> AboveSegPredContext => GetAbove(_aboveSegPredContext);
+
+    /// <summary>
+    /// Gets the palette colors of the blocks of the row above: for the luma then the U palette, 8 colors per 4x4 luma column.
+    /// The palette colors are only read from the block above and the block to the left: they are stored for one row of
+    /// blocks, and one column of a superblock (<see cref="GetLeftPaletteColors"/>).
+    /// </summary>
+    public Span<ushort> AbovePaletteColors => GetAbove(_abovePaletteColors);
+
+    /// <summary>
+    /// Rents the above context of the tiles of a frame of <paramref name="miCols"/> 4x4 luma columns, unless it has that size
+    /// already: each line has <see cref="AboveContextMargin"/> more entries, for the blocks that cross the right edge of the
+    /// frame. A tile clears the columns it reads before its first block, so a tile only reads what it wrote.
+    /// </summary>
+    /// <exception cref="ImageResourceLimitException">The buffers exceed the live-allocation limit.</exception>
+    public void PrepareAboveContext(AllocationScope scope, int miCols)
+    {
+        if (miCols == _aboveMiCols)
+            return;
+
+        DisposeAboveContext();
+        var length = miCols + AboveContextMargin;
+        _abovePaletteColors = Av1PooledArray<ushort>.Rent(scope, 2L * Av1Constants.PaletteColors * length);
+        _aboveSegPredContext = Av1PooledArray<byte>.Rent(scope, length);
+        for (var plane = 0; plane < 3; plane++)
+        {
+            _aboveLevelContext[plane] = Av1PooledArray<byte>.Rent(scope, length);
+            _aboveDcContext[plane] = Av1PooledArray<byte>.Rent(scope, length);
+        }
+
+        _aboveMiCols = miCols;
+    }
+
     public void Dispose()
     {
         _coefficients?.Dispose();
         _bytes?.Dispose();
         _palette?.Dispose();
+        DisposeAboveContext();
+    }
+
+    private static Span<T> GetAbove<T>(Av1PooledArray<T>? array)
+        where T : unmanaged
+    {
+        return (array ?? throw new ObjectDisposedException(nameof(Av1TileScratch))).Span;
+    }
+
+    private void DisposeAboveContext()
+    {
+        _abovePaletteColors?.Dispose();
+        _aboveSegPredContext?.Dispose();
+        _abovePaletteColors = null;
+        _aboveSegPredContext = null;
+        for (var plane = 0; plane < 3; plane++)
+        {
+            _aboveLevelContext[plane]?.Dispose();
+            _aboveDcContext[plane]?.Dispose();
+            _aboveLevelContext[plane] = _aboveDcContext[plane] = null;
+        }
+
+        _aboveMiCols = -1;
     }
 }

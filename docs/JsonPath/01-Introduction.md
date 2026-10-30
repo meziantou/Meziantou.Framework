@@ -25,9 +25,9 @@ queries such as `$.store.book[?@.price < 10].title`. It implements the JSONPath 
 - **Standard JSONPath.** The library follows RFC 9535 and is tested against the
   [JSONPath Compliance Test Suite](https://github.com/jsonpath-standard/jsonpath-compliance-test-suite). Queries written
   for other JSONPath dialects may need changes; see [Limitations](09-Limitations.md).
-- **Invalid queries are rejected.** `JsonPath.Parse` throws on a query that is not well-formed and valid, instead of
+- **Invalid queries are rejected.** [JsonPath.Parse](cref:Meziantou.Framework.Json.JsonPath.Parse) throws on a query that is not well-formed and valid, instead of
   guessing what it means.
-- **Parse once, evaluate many times.** A `JsonPath` is immutable and thread-safe: keep it and reuse it for any number of
+- **Parse once, evaluate many times.** A [JsonPath](cref:Meziantou.Framework.Json.JsonPath) is immutable and thread-safe: keep it and reuse it for any number of
   documents, from any thread.
 - **Results keep the document order.** The matches are returned in the order the query selects them, each with the
   normalized path that leads to it.
@@ -36,7 +36,7 @@ queries such as `$.store.book[?@.price < 10].title`. It implements the JSONPath 
 
 | Namespace | Contains |
 | --- | --- |
-| [Meziantou.Framework.Json](cref:Meziantou.Framework.Json) | `JsonPath`, the results, the evaluation modes, the extension methods and the navigator for custom object models |
+| [Meziantou.Framework.Json](cref:Meziantou.Framework.Json) | [JsonPath](cref:Meziantou.Framework.Json.JsonPath), the results, the evaluation modes, the extension methods and the navigator for custom object models |
 | `System.Text.Json` and `System.Text.Json.Nodes` | The JSON types the queries are evaluated on: `JsonDocument`, `JsonElement`, `JsonNode` |
 
 ## Next steps

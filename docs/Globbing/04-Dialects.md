@@ -3,19 +3,19 @@ title: Dialects
 description: Choose the syntax of your patterns, the standard one or the ones of git, MSBuild and POSIX fnmatch.
 ---
 
-Every pattern is parsed in a dialect, the second argument of `Glob.Parse`. Use `GlobDialect.Standard` for patterns
+Every pattern is parsed in a dialect, the second argument of [Glob.Parse](cref:Meziantou.Framework.Globbing.Glob.Parse). Use [GlobDialect.Standard](cref:Meziantou.Framework.Globbing.GlobDialect.Standard) for patterns
 you write, and the dialect of the tool your users know when you read their patterns: a `.gitignore` file, an MSBuild
 item, a shell pattern.
 
 | Dialect | Follows | Use it for |
 | --- | --- | --- |
-| `Standard` | The syntax of [Pattern syntax](03-PatternSyntax.md) | Your own patterns, and configuration files of your application |
-| `Git` | gitignore(5) and git's wildmatch | `.gitignore` entries and other git patterns |
-| `MSBuild` | MSBuild item specs | The `Include` and `Exclude` patterns of a project file |
-| `Posix` | `fnmatch(3)` without flags | Patterns that match any string, not only paths |
-| `PosixPath` | `fnmatch(3)` with `FNM_PATHNAME` | Shell-like path patterns |
+| [Standard](cref:Meziantou.Framework.Globbing.GlobDialect.Standard) | The syntax of [Pattern syntax](03-PatternSyntax.md) | Your own patterns, and configuration files of your application |
+| [Git](cref:Meziantou.Framework.Globbing.GlobDialect.Git) | gitignore(5) and git's wildmatch | `.gitignore` entries and other git patterns |
+| [MSBuild](cref:Meziantou.Framework.Globbing.GlobDialect.MSBuild) | MSBuild item specs | The `Include` and `Exclude` patterns of a project file |
+| [Posix](cref:Meziantou.Framework.Globbing.GlobDialect.Posix) | `fnmatch(3)` without flags | Patterns that match any string, not only paths |
+| [PosixPath](cref:Meziantou.Framework.Globbing.GlobDialect.PosixPath) | `fnmatch(3)` with `FNM_PATHNAME` | Shell-like path patterns |
 
-The `Git`, `MSBuild`, `Posix` and `PosixPath` dialects are tested against the results of git, MSBuild and `fnmatch`.
+The [Git](cref:Meziantou.Framework.Globbing.GlobDialect.Git), [MSBuild](cref:Meziantou.Framework.Globbing.GlobDialect.MSBuild), [Posix](cref:Meziantou.Framework.Globbing.GlobDialect.Posix) and [PosixPath](cref:Meziantou.Framework.Globbing.GlobDialect.PosixPath) dialects are tested against the results of git, MSBuild and `fnmatch`.
 They differ from these tools on purpose in a few points:
 
 - Characters are compared as UTF-16 code units. git compares the bytes of their UTF-8 encoding, so `?` matches `é` here
@@ -25,9 +25,9 @@ They differ from these tools on purpose in a few points:
 
 ## Compare the dialects
 
-| Syntax | `Standard` | `Git` | `MSBuild` | `Posix`, `PosixPath` |
+| Syntax | [Standard](cref:Meziantou.Framework.Globbing.GlobDialect.Standard) | [Git](cref:Meziantou.Framework.Globbing.GlobDialect.Git) | [MSBuild](cref:Meziantou.Framework.Globbing.GlobDialect.MSBuild) | [Posix](cref:Meziantou.Framework.Globbing.GlobDialect.Posix), [PosixPath](cref:Meziantou.Framework.Globbing.GlobDialect.PosixPath) |
 | --- | --- | --- | --- | --- |
-| `*`, `?` | Yes | Yes | Yes | Yes, and they match a `/` in `Posix` |
+| `*`, `?` | Yes | Yes | Yes | Yes, and they match a `/` in [Posix](cref:Meziantou.Framework.Globbing.GlobDialect.Posix) |
 | `**` | Yes | Yes | Yes | Read as `*` |
 | `[abc]`, `[a-z]`, `[!abc]` | Yes | Yes | No, plain text | Yes |
 | `[^abc]` | No | Yes | No | Yes |
@@ -36,11 +36,11 @@ They differ from these tools on purpose in a few points:
 | `{abc,123}` | Yes | No, plain text | No, plain text | No, plain text |
 | A leading `!` negates the pattern | Yes | Yes | No, plain text | No, plain text |
 | Escape | `\x` | `\x` | `%XX` | `\x` |
-| Path separators | `/` | `/` | `/` and `\` | `/` in `PosixPath`, none in `Posix` |
-| Wildcards match a leading dot | With `MatchLeadingDot` | Yes | Yes | Yes |
+| Path separators | `/` | `/` | `/` and `\` | `/` in [PosixPath](cref:Meziantou.Framework.Globbing.GlobDialect.PosixPath), none in [Posix](cref:Meziantou.Framework.Globbing.GlobDialect.Posix) |
+| Wildcards match a leading dot | With [MatchLeadingDot](cref:Meziantou.Framework.Globbing.GlobOptions.MatchLeadingDot) | Yes | Yes | Yes |
 
 The supported character classes are `alnum`, `alpha`, `blank`, `cntrl`, `digit`, `graph`, `lower`, `print`, `punct`,
-`space`, `upper` and `xdigit`. With `GlobOptions.IgnoreCase`, `upper` and `lower` match a letter of either case.
+`space`, `upper` and `xdigit`. With [GlobOptions.IgnoreCase](cref:Meziantou.Framework.Globbing.GlobOptions.IgnoreCase), `upper` and `lower` match a letter of either case.
 
 ## Git
 
@@ -68,7 +68,7 @@ Assert.True(Glob.Parse("{a,b}.txt", GlobDialect.Git).IsMatch("{a,b}.txt"));
   below it.
 - `.` and `..` are ordinary names, so a pattern that contains them never matches.
 
-To read a whole `.gitignore` file, with its comments and the order of its entries, use `GlobCollection.ParseGitIgnore`
+To read a whole `.gitignore` file, with its comments and the order of its entries, use [GlobCollection.ParseGitIgnore](cref:Meziantou.Framework.Globbing.GlobCollection.ParseGitIgnore)
 instead of parsing each line: see [Reading .gitignore files](08-GitIgnore.md).
 
 ## MSBuild
@@ -113,8 +113,8 @@ Assert.True(Glob.Parse("[^a]*", GlobDialect.Posix).IsMatch("Readme"));
 ```
 <!-- endref -->
 
-- `Posix` matches a plain string: `*`, `?` and the bracket expressions match a `/` too. It matches a file and a
+- [Posix](cref:Meziantou.Framework.Globbing.GlobDialect.Posix) matches a plain string: `*`, `?` and the bracket expressions match a `/` too. It matches a file and a
   directory alike.
-- `PosixPath` only matches a `/` with a `/` of the pattern, and every `/` counts, including a leading one.
+- [PosixPath](cref:Meziantou.Framework.Globbing.GlobDialect.PosixPath) only matches a `/` with a `/` of the pattern, and every `/` counts, including a leading one.
 - A `[` that does not open a complete bracket expression is an ordinary character.
 - A collating symbol can be a range bound: `[[.-.]-0]`.

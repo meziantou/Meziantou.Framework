@@ -20,11 +20,11 @@ internal static class HevcTestDecoder
     }
 
     /// <summary>Decodes every picture of a byte stream (Annex B), in output order.</summary>
-    public static List<DecodedPicture> Decode(ReadOnlyMemory<byte> annexB, AllocationScope scope, out HevcTools tools, HevcInLoopFilters inLoopFilters = HevcInLoopFilters.All, int nalLengthSize = 4)
+    public static List<DecodedPicture> Decode(ReadOnlyMemory<byte> annexB, AllocationScope scope, out HevcTools tools, HevcInLoopFilters inLoopFilters = HevcInLoopFilters.All, int nalLengthSize = 4, int maxDegreeOfParallelism = 1)
     {
         var accessUnits = ReferenceHevcStream.GroupAccessUnits(ReferenceHevcStream.SplitAnnexB(annexB));
         var pictures = new List<DecodedPicture>();
-        using var decoder = new HevcDecoder(scope) { InLoopFilters = inLoopFilters };
+        using var decoder = new HevcDecoder(scope) { InLoopFilters = inLoopFilters, MaxDegreeOfParallelism = maxDegreeOfParallelism };
         foreach (var accessUnit in accessUnits)
         {
             var data = ReferenceHevcStream.ToLengthPrefixed(accessUnit, nalLengthSize);

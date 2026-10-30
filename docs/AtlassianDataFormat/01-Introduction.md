@@ -23,8 +23,8 @@ kept as they are.
 
 ## Namespace
 
-Every type is in the [Meziantou.Framework.AtlassianDataFormat](cref:Meziantou.Framework.AtlassianDataFormat) namespace: `AdfToMarkdown`, `AdfToMarkdownOptions`,
-`AdfDocument`, `AdfNode` and its derived types, and `AdfMark` and its derived types.
+Every type is in the [Meziantou.Framework.AtlassianDataFormat](cref:Meziantou.Framework.AtlassianDataFormat) namespace: [AdfToMarkdown](cref:Meziantou.Framework.AtlassianDataFormat.AdfToMarkdown), [AdfToMarkdownOptions](cref:Meziantou.Framework.AtlassianDataFormat.AdfToMarkdownOptions),
+[AdfDocument](cref:Meziantou.Framework.AtlassianDataFormat.AdfDocument), [AdfNode](cref:Meziantou.Framework.AtlassianDataFormat.AdfNode) and its derived types, and [AdfMark](cref:Meziantou.Framework.AtlassianDataFormat.AdfMark) and its derived types.
 
 ## Next steps
 

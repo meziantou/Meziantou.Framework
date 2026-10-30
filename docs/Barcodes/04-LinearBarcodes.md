@@ -5,8 +5,8 @@ description: Create Code 39, Code 93, Code 128, EAN-8, EAN-13, UPC-A, Codabar an
 
 ## Create a barcode
 
-Each symbology has its own method on `Barcode`. The result has the `Type`, the `Width` in modules, the `Height` (1: a
-linear barcode is one row of modules) and the `Text` printed under the bars:
+Each symbology has its own method on [Barcode](cref:Meziantou.Framework.Barcodes.Barcode). The result has the [Type](cref:Meziantou.Framework.Barcodes.Barcode.Type), the [Width](cref:Meziantou.Framework.Barcodes.Barcode.Width) in modules, the [Height](cref:Meziantou.Framework.Barcodes.Barcode.Height) (1: a
+linear barcode is one row of modules) and the [Text](cref:Meziantou.Framework.Barcodes.Barcode.Text) printed under the bars:
 
 <!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/BarCodeAdditionalTypesTests.cs;region=Barcode_Create;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -45,14 +45,14 @@ shipping label often uses Code 128.
 
 | Symbology | Method | Data |
 | --- | --- | --- |
-| Code 39 | `CreateCode39` | Uppercase letters, digits and `-. $/+%`; an optional Mod 43 check character (`includeChecksum`) |
-| Code 93 | `CreateCode93` | Any ASCII character: the characters outside the base set are encoded with the extended encoding |
-| Code 128 | `CreateCode128` | The printable ASCII characters (code set B); runs of digits switch to the denser code set C |
-| EAN-8 | `CreateEan8` | 7 digits, or 8 with the check digit |
-| EAN-13 | `CreateEan13` | 12 digits, or 13 with the check digit |
-| UPC-A | `CreateUpcA` | 11 digits, or 12 with the check digit |
-| Codabar | `CreateCodabar` | Digits and `-$:/.+`, between a start and a stop character (`A`, `B`, `C` or `D`) |
-| ITF (Interleaved 2 of 5) | `CreateItf` | An even number of digits |
+| Code 39 | [CreateCode39](cref:Meziantou.Framework.Barcodes.Barcode.CreateCode39) | Uppercase letters, digits and `-. $/+%`; an optional Mod 43 check character (`includeChecksum`) |
+| Code 93 | [CreateCode93](cref:Meziantou.Framework.Barcodes.Barcode.CreateCode93) | Any ASCII character: the characters outside the base set are encoded with the extended encoding |
+| Code 128 | [CreateCode128](cref:Meziantou.Framework.Barcodes.Barcode.CreateCode128) | The printable ASCII characters (code set B); runs of digits switch to the denser code set C |
+| EAN-8 | [CreateEan8](cref:Meziantou.Framework.Barcodes.Barcode.CreateEan8) | 7 digits, or 8 with the check digit |
+| EAN-13 | [CreateEan13](cref:Meziantou.Framework.Barcodes.Barcode.CreateEan13) | 12 digits, or 13 with the check digit |
+| UPC-A | [CreateUpcA](cref:Meziantou.Framework.Barcodes.Barcode.CreateUpcA) | 11 digits, or 12 with the check digit |
+| Codabar | [CreateCodabar](cref:Meziantou.Framework.Barcodes.Barcode.CreateCodabar) | Digits and `-$:/.+`, between a start and a stop character (`A`, `B`, `C` or `D`) |
+| ITF (Interleaved 2 of 5) | [CreateItf](cref:Meziantou.Framework.Barcodes.Barcode.CreateItf) | An even number of digits |
 
 For free text, prefer Code 128: it encodes letters of both cases and is compact, especially for digits.
 
@@ -74,7 +74,7 @@ var png = barcode.ToPng(new BarcodePngOptions { ModuleHeight = 60 });
 
 ![An EAN-13 barcode followed by a 5-digit add-on](images/Ean13WithAddOn.png)
 
-`Text` is what is printed under the bars: it includes the characters the barcode adds (the check digit, then a space
+[Text](cref:Meziantou.Framework.Barcodes.Barcode.Text) is what is printed under the bars: it includes the characters the barcode adds (the check digit, then a space
 and the add-on; the Mod 43 check character of Code 39 when it is included; the start and stop characters of Codabar),
 and not the start and stop characters of Code 39 and Code 93.
 

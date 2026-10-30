@@ -14,7 +14,7 @@ dotnet add package Meziantou.Framework.SnapshotTesting.Pdf
 
 ## Set up
 
-Call `AddPdf()` on `SnapshotSettings.Default` in a module initializer (`AddPdf` is in the
+Call [AddPdf()](cref:Meziantou.Framework.SnapshotTesting.Pdf.SnapshotSettingsPdfExtensions.AddPdf) on [SnapshotSettings.Default](cref:Meziantou.Framework.SnapshotTesting.SnapshotSettings.Default) in a module initializer ([AddPdf](cref:Meziantou.Framework.SnapshotTesting.Pdf.SnapshotSettingsPdfExtensions.AddPdf) is in the
 [Meziantou.Framework.SnapshotTesting.Pdf](cref:Meziantou.Framework.SnapshotTesting.Pdf) namespace):
 
 <!-- ref:../../../tests/Meziantou.Framework.SnapshotTesting.Pdf.Tests/SnapshotConfiguration.cs;region=SnapshotTestingPdf_Setup;format=md-fenced-code-block;dedent=true -->
@@ -30,7 +30,7 @@ internal static class SnapshotConfiguration
 ```
 <!-- endref -->
 
-Then validate documents as the bytes of a file (`byte[]` or `Stream`) with `SnapshotType.Pdf`, or as a `PdfDocument`:
+Then validate documents as the bytes of a file (`byte[]` or `Stream`) with [SnapshotType.Pdf](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.Pdf), or as a [PdfDocument](cref:Meziantou.Framework.Pdf.PdfDocument):
 
 <!-- ref:../../../tests/Meziantou.Framework.SnapshotTesting.Pdf.Tests/PdfSnapshotTests.cs;region=SnapshotTestingPdf_ValidateBytes;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -51,16 +51,16 @@ Snapshot.Validate(bytes, SnapshotType.Pdf);
 ```
 <!-- endref -->
 
-`AddPdf()` registers:
+[AddPdf()](cref:Meziantou.Framework.SnapshotTesting.Pdf.SnapshotSettingsPdfExtensions.AddPdf) registers:
 
-- **A serializer** for `PdfDocument` values, and for `byte[]` and `Stream` values validated as `SnapshotType.Pdf`. Data
+- **A serializer** for [PdfDocument](cref:Meziantou.Framework.Pdf.PdfDocument) values, and for `byte[]` and `Stream` values validated as [SnapshotType.Pdf](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.Pdf). Data
   that is not a PDF document is stored as it is, in a `.pdf` file.
-- **The image comparer** of [`Meziantou.Framework.SnapshotTesting.Imaging`](02-Images.md) for `SnapshotType.Png`, so the
-  pages are compared by their pixels. A comparer already registered for PNG snapshots, for instance by `AddImaging()`,
+- **The image comparer** of [`Meziantou.Framework.SnapshotTesting.Imaging`](02-Images.md) for [SnapshotType.Png](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.Png), so the
+  pages are compared by their pixels. A comparer already registered for PNG snapshots, for instance by [AddImaging()](cref:Meziantou.Framework.SnapshotTesting.Imaging.SnapshotSettingsImagingExtensions.AddImaging),
   is kept.
 
 To register the serializer without the comparer, call `Serializers.AddPdfSerializer()`, with optional
-`PdfSnapshotSettings`.
+[PdfSnapshotSettings](cref:Meziantou.Framework.SnapshotTesting.Pdf.PdfSnapshotSettings).
 
 ## Snapshot files
 
@@ -103,7 +103,7 @@ not by the fonts of the system, so the pages render the same on every machine.
 
 ## Settings
 
-Pass `PdfSnapshotSettings` to `AddPdf` to change the rendering of the pages and the content of the JSON file:
+Pass [PdfSnapshotSettings](cref:Meziantou.Framework.SnapshotTesting.Pdf.PdfSnapshotSettings) to [AddPdf](cref:Meziantou.Framework.SnapshotTesting.Pdf.SnapshotSettingsPdfExtensions.AddPdf) to change the rendering of the pages and the content of the JSON file:
 
 <!-- ref:../../../tests/Meziantou.Framework.SnapshotTesting.Pdf.Tests/PdfSnapshotTests.cs;region=SnapshotTestingPdf_Settings;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -120,22 +120,22 @@ Snapshot.Validate(document, SnapshotType.Pdf, settings);
 
 | Property | Default | Description |
 | --- | --- | --- |
-| `Dpi` | `72` | The resolution the pages are rendered at, in dots per inch |
-| `RenderAnnotations` | `true` | Draws the appearances of the annotations on the pages |
-| `UseSystemFonts` | `false` | Replaces the fonts the document does not embed by the fonts of the system. The rendering then depends on the machine |
-| `Password` | `null` | The user or owner password of an encrypted document |
-| `Metadata` | `DocumentInformation` | The optional parts of the JSON file |
+| [Dpi](cref:Meziantou.Framework.SnapshotTesting.Pdf.PdfSnapshotSettings.Dpi) | `72` | The resolution the pages are rendered at, in dots per inch |
+| [RenderAnnotations](cref:Meziantou.Framework.SnapshotTesting.Pdf.PdfSnapshotSettings.RenderAnnotations) | `true` | Draws the appearances of the annotations on the pages |
+| [UseSystemFonts](cref:Meziantou.Framework.SnapshotTesting.Pdf.PdfSnapshotSettings.UseSystemFonts) | `false` | Replaces the fonts the document does not embed by the fonts of the system. The rendering then depends on the machine |
+| [Password](cref:Meziantou.Framework.SnapshotTesting.Pdf.PdfSnapshotSettings.Password) | `null` | The user or owner password of an encrypted document |
+| [Metadata](cref:Meziantou.Framework.SnapshotTesting.Pdf.PdfSnapshotSettings.Metadata) | [DocumentInformation](cref:Meziantou.Framework.SnapshotTesting.Pdf.PdfSnapshotMetadata.DocumentInformation) | The optional parts of the JSON file |
 
-`Metadata` is a combination of `PdfSnapshotMetadata` flags:
+[Metadata](cref:Meziantou.Framework.SnapshotTesting.Pdf.PdfSnapshotSettings.Metadata) is a combination of [PdfSnapshotMetadata](cref:Meziantou.Framework.SnapshotTesting.Pdf.PdfSnapshotMetadata) flags:
 
 | Flag | Adds |
 | --- | --- |
-| `DocumentInformation` | The title, author, subject, keywords, creator, producer, language, conformance and encryption |
-| `Dates` | The creation and modification dates |
+| [DocumentInformation](cref:Meziantou.Framework.SnapshotTesting.Pdf.PdfSnapshotMetadata.DocumentInformation) | The title, author, subject, keywords, creator, producer, language, conformance and encryption |
+| [Dates](cref:Meziantou.Framework.SnapshotTesting.Pdf.PdfSnapshotMetadata.Dates) | The creation and modification dates |
 | `Text` | The text of every page, one entry per line |
-| `Outlines` | The bookmarks |
-| `Annotations` | The subtype, rectangle and contents of the annotations, and the URI of links |
-| `All` | Everything above |
+| [Outlines](cref:Meziantou.Framework.SnapshotTesting.Pdf.PdfSnapshotMetadata.Outlines) | The bookmarks |
+| [Annotations](cref:Meziantou.Framework.SnapshotTesting.Pdf.PdfSnapshotMetadata.Annotations) | The subtype, rectangle and contents of the annotations, and the URI of links |
+| [All](cref:Meziantou.Framework.SnapshotTesting.Pdf.PdfSnapshotMetadata.All) | Everything above |
 
 The dates are not written by default: generators usually set them to the current time, so they change every time a
 document is generated. When you include them, scrub them: the JSON file is a text snapshot, so the

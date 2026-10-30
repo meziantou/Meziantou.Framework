@@ -3,14 +3,14 @@ title: Network requests
 description: Let pages load documents and resources over HTTP, from memory or from the disk, and filter the requests of untrusted pages.
 ---
 
-Nothing is fetched unless the browsing context has a `DocumentLoader`. With a loader, the browsing context loads the
+Nothing is fetched unless the browsing context has a [DocumentLoader](cref:Meziantou.Framework.WebPlatform.Dom.DocumentLoader). With a loader, the browsing context loads the
 documents of the navigations and of the `iframe` elements, the style sheets (`<link rel=stylesheet>`, `@import`), the
 images, the fonts, and, with a script engine, the scripts and the requests of `fetch()`, `XMLHttpRequest`, `WebSocket` and
 `EventSource`.
 
 ## Load pages over HTTP
 
-`DocumentLoader.Create()` returns a loader that sends HTTP requests:
+[DocumentLoader.Create()](cref:Meziantou.Framework.WebPlatform.Dom.DocumentLoader.Create) returns a loader that sends HTTP requests:
 
 <!-- ref:../../../samples/Meziantou.Framework.WebPlatform.Samples/ReadmeExamples.cs;region=WebPlatform_AllowNetworkRequests;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -29,14 +29,14 @@ var document = context.Document;
 
 - Without an argument, the loader uses a shared `HttpClient` that decompresses the responses. Pass your own
   `HttpClient` to `DocumentLoader.Create(httpClient)` to set a proxy, a timeout or a handler; it should not store cookies
-  itself (`UseCookies = false`) when the browsing context has a `CookieJar`.
+  itself (`UseCookies = false`) when the browsing context has a [CookieJar](cref:Meziantou.Framework.WebPlatform.Dom.CookieJar).
 - The redirects are followed (up to 20), the `Referer` header is sent as a browser sends it, and the cookies of the
-  `CookieJar` are sent and stored.
+  [CookieJar](cref:Meziantou.Framework.WebPlatform.Dom.CookieJar) are sent and stored.
 - Only the `http:` and `https:` URLs are requested. The `data:` and `blob:` URLs are handled by the library.
 
 ## Protect your network from untrusted pages
 
-`DocumentLoader.Create()` requests any URL that a page navigates to or references. With an untrusted page, the requests
+[DocumentLoader.Create()](cref:Meziantou.Framework.WebPlatform.Dom.DocumentLoader.Create) requests any URL that a page navigates to or references. With an untrusted page, the requests
 can reach the services of your private network (server-side request forgery). Use a loader that filters the requests:
 
 <!-- ref:../../../samples/Meziantou.Framework.WebPlatform.Samples/ReadmeExamples.cs;region=WebPlatform_SameHostLoader;format=md-fenced-code-block;dedent=true -->
@@ -56,14 +56,14 @@ internal sealed class SameHostLoader(string host) : DocumentLoader
 ```
 <!-- endref -->
 
-A null result is a network error, as is an exception thrown by the loader. `DocumentRequest` describes the request: its
-`Url`, `Method`, `Headers` and `Body`, its `Destination` (a document, a style sheet, an image, a script...), the `Origin`
-of the document that makes it (null when your application navigates), its `Referrer`, and the `BrowsingContext` it is
+A null result is a network error, as is an exception thrown by the loader. [DocumentRequest](cref:Meziantou.Framework.WebPlatform.Dom.DocumentRequest) describes the request: its
+[Url](cref:Meziantou.Framework.WebPlatform.Dom.DocumentRequest.Url), [Method](cref:Meziantou.Framework.WebPlatform.Dom.DocumentRequest.Method), [Headers](cref:Meziantou.Framework.WebPlatform.Dom.DocumentRequest.Headers) and [Body](cref:Meziantou.Framework.WebPlatform.Dom.DocumentRequest.Body), its [Destination](cref:Meziantou.Framework.WebPlatform.Dom.DocumentRequest.Destination) (a document, a style sheet, an image, a script...), the [Origin](cref:Meziantou.Framework.WebPlatform.Dom.DocumentRequest.Origin)
+of the document that makes it (null when your application navigates), its [Referrer](cref:Meziantou.Framework.WebPlatform.Dom.DocumentRequest.Referrer), and the [BrowsingContext](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContext) it is
 for.
 
 ## Serve pages from memory or from the disk
 
-A loader can return anything: the files of a folder, the pages of a cache, or test pages. Return a `DocumentResource`
+A loader can return anything: the files of a folder, the pages of a cache, or test pages. Return a [DocumentResource](cref:Meziantou.Framework.WebPlatform.Dom.DocumentResource)
 with the content, the status code and the headers:
 
 <!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/Dom/BrowsingContextTests.cs;region=WebPlatform_InMemoryLoader;format=md-fenced-code-block;dedent=true -->
@@ -130,7 +130,7 @@ Assert.Equal(bytes, script.ContentBytes?.ToArray());
   200-299 range is a network error.
 - The library reads the headers that change the document: `Content-Security-Policy`, `Referrer-Policy`, `Refresh`,
   `Link` (preloads), `X-Frame-Options`, `Content-Language`... The other headers are ignored.
-- `RemainingContentBytes` streams a body that arrives over time: the HTML of a navigation is parsed as its chunks arrive.
+- [RemainingContentBytes](cref:Meziantou.Framework.WebPlatform.Dom.DocumentResource.RemainingContentBytes) streams a body that arrives over time: the HTML of a navigation is parsed as its chunks arrive.
 
 The requests are canceled when the navigation is aborted (another navigation, the removal of the `iframe`) and when the
 browsing context is disposed: pass the `CancellationToken` to your I/O.

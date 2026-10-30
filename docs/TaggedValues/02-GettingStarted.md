@@ -11,14 +11,14 @@ Add the `Meziantou.Framework.TaggedValues` package to your project:
 dotnet add package Meziantou.Framework.TaggedValues
 ```
 
-The package contains the `[ValueTag]` attribute, and a Roslyn analyzer with its code fixes for C#. The analyzer runs
+The package contains the [\[ValueTag\]](cref:Meziantou.Framework.TaggedValues.ValueTagAttribute) attribute, and a Roslyn analyzer with its code fixes for C#. The analyzer runs
 during the build and in the IDE: there is nothing to register.
 
 The examples of this documentation omit the `using` directives: they need `using Meziantou.Framework.TaggedValues;`.
 
 ## Tag your ids
 
-Add `[ValueTag]` to the properties, fields and parameters that hold ids. The analyzer then reports the places where a
+Add [\[ValueTag\]](cref:Meziantou.Framework.TaggedValues.ValueTagAttribute) to the properties, fields and parameters that hold ids. The analyzer then reports the places where a
 value with one tag meets a value with another tag:
 
 <!-- ref:../../samples/Meziantou.Framework.TaggedValues.Samples/Order.cs;region=TaggedValues_Overview;format=md-fenced-code-block;dedent=true -->

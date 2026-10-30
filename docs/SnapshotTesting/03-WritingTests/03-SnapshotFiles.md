@@ -11,13 +11,13 @@ Snapshots are stored in a `__snapshots__` folder next to the source file of the 
 - when a snapshot does not match, the new content is written to the *actual* file:
   `__snapshots__/SampleTests_ValidateUser.actual.txt`.
 
-The folder comes from the `[CallerFilePath]` of the call to `Snapshot.Validate`: the path of the source file, as the
+The folder comes from the `[CallerFilePath]` of the call to [Snapshot.Validate](cref:Meziantou.Framework.SnapshotTesting.Snapshot.Validate): the path of the source file, as the
 compiler saw it. When your build uses deterministic paths (`/_/src/...`), the package registers the source roots of the
 project from its MSBuild files, so the path is mapped back to the folder on disk. You can also register a mapping
 yourself with `Snapshot.RegisterSourceRootMapping(mappedPath, realPath)`.
 
-To store the snapshots somewhere else, set `SnapshotSettings.SnapshotPathStrategy` to a function that returns the full
-path of the verified file from a `SnapshotPathContext` (the source file, the class and method names, the extension,
+To store the snapshots somewhere else, set [SnapshotSettings.SnapshotPathStrategy](cref:Meziantou.Framework.SnapshotTesting.SnapshotSettings.SnapshotPathStrategy) to a function that returns the full
+path of the verified file from a [SnapshotPathContext](cref:Meziantou.Framework.SnapshotTesting.SnapshotPathContext) (the source file, the class and method names, the extension,
 the index of the file, ...). See [Settings](../04-Settings.md).
 
 ## The lifetime of an actual file
@@ -39,7 +39,7 @@ optional suffix, `.verified.` or `.actual.`, and the extension of the [snapshot 
 | Part | Example | When |
 | --- | --- | --- |
 | Test name | `SampleTests_ValidateUser` | Always |
-| `~<ordinal>` | `SampleTests_ValidateUser~2` | The second, third, ... call to `Snapshot.Validate` in the same test |
+| `~<ordinal>` | `SampleTests_ValidateUser~2` | The second, third, ... call to [Snapshot.Validate](cref:Meziantou.Framework.SnapshotTesting.Snapshot.Validate) in the same test |
 | `_<index>` | `SampleTests_ValidateUser_0`, `_1` | One assertion that produces several files, such as the pages of a PDF document |
 | Marker and extension | `.verified.txt`, `.actual.png` | Always |
 
@@ -51,7 +51,7 @@ Names are made safe for every file system:
 - Only letters, digits, `-`, `_` and `.` are kept. Any other character (a space, a parenthesis, a quote, a `/`) is
   replaced with `_`, and a stable hash of the original name is added, so that `Case_a/b` and `Case_a?b` do not claim the
   same file. The hash does not depend on where the repository is checked out.
-- A hash is also added when the name is too long (more than `SnapshotSettings.MaxSnapshotFileNameLength` characters, 128
+- A hash is also added when the name is too long (more than [SnapshotSettings.MaxSnapshotFileNameLength](cref:Meziantou.Framework.SnapshotTesting.SnapshotSettings.MaxSnapshotFileNameLength) characters, 128
   by default, or more than the 255 UTF-8 bytes most file systems accept), when it ends with `.verified` or `.actual`,
   and when the part before its first `.` is a Windows device name (`CON`, `PRN`, `AUX`, `NUL`, `COM0`-`COM9`,
   `LPT0`-`LPT9`, in any case).
@@ -62,8 +62,8 @@ Names are made safe for every file system:
 
 A file whose name only differs from the snapshot name by case (the test `ValidateUrl` was renamed `ValidateURL`) is still
 found on a case-insensitive file system, the default on Windows and macOS, but not on Linux. The assertion reports it,
-even when the content matches, and renames the file when the update strategy allows updates (`Overwrite`,
-`OverwriteWithoutFailure`, `MergeTool` or `MergeToolSync`).
+even when the content matches, and renames the file when the update strategy allows updates ([Overwrite](cref:Meziantou.Framework.SnapshotTesting.SnapshotUpdateStrategy.Overwrite),
+[OverwriteWithoutFailure](cref:Meziantou.Framework.SnapshotTesting.SnapshotUpdateStrategy.OverwriteWithoutFailure), [MergeTool](cref:Meziantou.Framework.SnapshotTesting.MergeTool) or [MergeToolSync](cref:Meziantou.Framework.SnapshotTesting.SnapshotUpdateStrategy.MergeToolSync)).
 
 When the type of a call changes, the snapshot file with the old extension is normally deleted or reported. When the test
 has several calls, such a file may be the snapshot of a call that did not run, so it is kept: remove it yourself when the

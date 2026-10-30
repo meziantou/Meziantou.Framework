@@ -14,7 +14,7 @@ dotnet add package Meziantou.Framework.Win32.ChangeJournal
 
 ## Get the last record of a file
 
-`ChangeJournal.GetEntry` returns the last record written for a file or a directory:
+[ChangeJournal.GetEntry](cref:Meziantou.Framework.Win32.ChangeJournal.GetEntry) returns the last record written for a file or a directory:
 
 <!-- ref:../../tests/Meziantou.Framework.Win32.ChangeJournal.Tests/ChangeJournalTests.cs;region=ChangeJournal_GetEntry;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -24,8 +24,8 @@ Assert.Equal(Path.GetFileName(path), entry.Name);
 ```
 <!-- endref -->
 
-Its `UniqueSequenceNumber` is the position of that record in the journal: comparing it with a saved value tells
-whether the file changed since then. `FileIdentifier.FromFile` returns the identifier of a file, which stays the same
+Its [UniqueSequenceNumber](cref:Meziantou.Framework.Win32.ChangeJournalEntryVersion2or3.UniqueSequenceNumber) is the position of that record in the journal: comparing it with a saved value tells
+whether the file changed since then. [FileIdentifier.FromFile](cref:Meziantou.Framework.Win32.FileIdentifier.FromFile) returns the identifier of a file, which stays the same
 when the file is renamed or moved on the volume.
 
 ## Read the records of a volume
@@ -57,20 +57,20 @@ Assert.NotEmpty(names);
 
 - `unprivileged: false` reads the journal with the regular control code, which requires administrator rights. Pass
   `unprivileged: true` to read it from a process that is not elevated. In that mode, Windows returns the records
-  without the name of the file: `Name` is empty, so identify the files by their `ReferenceNumber`, as in
+  without the name of the file: [Name](cref:Meziantou.Framework.Win32.ChangeJournalEntryVersion2or3.Name) is empty, so identify the files by their [ReferenceNumber](cref:Meziantou.Framework.Win32.ChangeJournalEntryVersion2or3.ReferenceNumber), as in
   [Read the changes since the last run](#read-the-changes-since-the-last-run).
-- `ChangeReason` filters the records: `ChangeReason.All`, or a combination such as
+- [ChangeReason](cref:Meziantou.Framework.Win32.ChangeReason) filters the records: [ChangeReason.All](cref:Meziantou.Framework.Win32.ChangeReason.All), or a combination such as
   `ChangeReason.FileCreate | ChangeReason.FileDelete`. With `returnOnlyOnClose: true`, only the records written when the
   last handle to the file is closed are returned, which summarize the changes made while the file was open.
 - `TimeSpan.Zero` stops at the end of the journal. Any other timeout waits for new records, see
   [Watch the changes](#watch-the-changes).
-- The records are `ChangeJournalEntryVersion2or3` instances, with the `Name`, `Reason`, `Attributes`, `TimeStamp`,
-  `ReferenceNumber` and `ParentReferenceNumber` of the file. `ChangeJournalEntryVersion4` records describe the ranges of
+- The records are [ChangeJournalEntryVersion2or3](cref:Meziantou.Framework.Win32.ChangeJournalEntryVersion2or3) instances, with the [Name](cref:Meziantou.Framework.Win32.ChangeJournalEntryVersion2or3.Name), [Reason](cref:Meziantou.Framework.Win32.ChangeJournalEntryVersion2or3.Reason), [Attributes](cref:Meziantou.Framework.Win32.ChangeJournalEntryVersion2or3.Attributes), [TimeStamp](cref:Meziantou.Framework.Win32.ChangeJournalEntryVersion2or3.TimeStamp),
+  [ReferenceNumber](cref:Meziantou.Framework.Win32.ChangeJournalEntryVersion2or3.ReferenceNumber) and [ParentReferenceNumber](cref:Meziantou.Framework.Win32.ChangeJournalEntryVersion2or3.ParentReferenceNumber) of the file. [ChangeJournalEntryVersion4](cref:Meziantou.Framework.Win32.ChangeJournalEntryVersion4) records describe the ranges of
   a file that were modified; the volume only writes them when the tracking of the modified ranges is enabled.
-- A record gives the name of the file, not its path. Use `ParentReferenceNumber` to find its directory.
-- `Entries` enumerates every record, like `GetEntries(ChangeReason.All, returnOnlyOnClose: false, TimeSpan.Zero)`.
+- A record gives the name of the file, not its path. Use [ParentReferenceNumber](cref:Meziantou.Framework.Win32.ChangeJournalEntryVersion2or3.ParentReferenceNumber) to find its directory.
+- [Entries](cref:Meziantou.Framework.Win32.ChangeJournal.Entries) enumerates every record, like `GetEntries(ChangeReason.All, returnOnlyOnClose: false, TimeSpan.Zero)`.
 
-`ChangeJournal` is disposable: it holds a handle to the volume.
+[ChangeJournal](cref:Meziantou.Framework.Win32.ChangeJournal) is disposable: it holds a handle to the volume.
 
 ## Read the changes since the last run
 
@@ -112,14 +112,14 @@ Assert.Contains(FileIdentifier.FromFile(path), changedFiles);
 ```
 <!-- endref -->
 
-- The example reads the journal without administrator rights, so the records have no name. `FileIdentifier.FromFile`
+- The example reads the journal without administrator rights, so the records have no name. [FileIdentifier.FromFile](cref:Meziantou.Framework.Win32.FileIdentifier.FromFile)
   returns the reference number of a file from its path, to compare with the records.
-- `Data` describes the journal when it was opened, and `RefreshJournalData` reads it again. `ID` identifies the journal,
-  `FirstUSN` is the oldest record still in the journal and `NextUSN` the position of the next record.
-- `Usn` wraps the 64-bit value of a position: store its `Value`, and create it again with `new Usn(value)`.
-- `GetEntries` throws an `ArgumentOutOfRangeException` when the position is outside the journal.
+- [Data](cref:Meziantou.Framework.Win32.ChangeJournal.Data) describes the journal when it was opened, and [RefreshJournalData](cref:Meziantou.Framework.Win32.ChangeJournal.RefreshJournalData) reads it again. [ID](cref:Meziantou.Framework.Win32.JournalData.ID) identifies the journal,
+  [FirstUSN](cref:Meziantou.Framework.Win32.JournalData.FirstUSN) is the oldest record still in the journal and [NextUSN](cref:Meziantou.Framework.Win32.JournalData.NextUSN) the position of the next record.
+- [Usn](cref:Meziantou.Framework.Win32.Usn) wraps the 64-bit value of a position: store its [Value](cref:Meziantou.Framework.Win32.Usn.Value), and create it again with `new Usn(value)`.
+- [GetEntries](cref:Meziantou.Framework.Win32.ChangeJournal.GetEntries) throws an `ArgumentOutOfRangeException` when the position is outside the journal.
 
-To read the records written after a record of a file, start from its `UniqueSequenceNumber`:
+To read the records written after a record of a file, start from its [UniqueSequenceNumber](cref:Meziantou.Framework.Win32.ChangeJournalEntryVersion2or3.UniqueSequenceNumber):
 
 <!-- ref:../../tests/Meziantou.Framework.Win32.ChangeJournal.Tests/ChangeJournalTests.cs;region=ChangeJournal_GetEntriesFromUsn;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -169,12 +169,12 @@ changeJournal.Delete();
 ```
 <!-- endref -->
 
-- `Create` creates the journal, or changes the maximum size and the allocation delta of the existing one. When a volume
+- [Create](cref:Meziantou.Framework.Win32.ChangeJournal.Create) creates the journal, or changes the maximum size and the allocation delta of the existing one. When a volume
   has no journal, `Data.IsActive` is `false` and reading records throws a `Win32Exception`.
-- `EnableTrackModifiedRanges` makes the volume write `ChangeJournalEntryVersion4` records, with the ranges of the files
+- [EnableTrackModifiedRanges](cref:Meziantou.Framework.Win32.ChangeJournal.EnableTrackModifiedRanges) makes the volume write [ChangeJournalEntryVersion4](cref:Meziantou.Framework.Win32.ChangeJournalEntryVersion4) records, with the ranges of the files
   that were modified. `chunkSize` is the granularity of the ranges, and only the files of at least `fileSizeThreshold`
   bytes are tracked.
-- `Delete` deletes the journal and waits until the deletion completes. Windows has to visit every file of the volume, so
+- [Delete](cref:Meziantou.Framework.Win32.ChangeJournal.Delete) deletes the journal and waits until the deletion completes. Windows has to visit every file of the volume, so
   it can take a long time; `Delete(waitForCompletion: false)` starts the deletion and returns. While the deletion runs,
   the other operations on the journal fail.
 - Other applications, such as backup tools and search indexers, may rely on the journal: think twice before deleting it

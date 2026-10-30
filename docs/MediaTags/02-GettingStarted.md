@@ -15,8 +15,8 @@ The examples of this documentation omit the `using` directives: they need `using
 
 ## Read the tags of a file
 
-`MediaFile.ReadTags` detects the format of the file and returns a result. Check `IsSuccess`, then read the tags from
-`Value`:
+[MediaFile.ReadTags](cref:Meziantou.Framework.MediaTags.MediaFile.ReadTags) detects the format of the file and returns a result. Check [IsSuccess](cref:Meziantou.Framework.MediaTags.MediaTagResult{T}.IsSuccess), then read the tags from
+[Value](cref:Meziantou.Framework.MediaTags.MediaTagResult{T}.Value):
 
 <!-- ref:../../tests/Meziantou.Framework.MediaTags.Tests/FlacTests.cs;region=MediaFile_ReadTags;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -31,11 +31,11 @@ Assert.Equal("Test Artist", tags.Artist);
 ```
 <!-- endref -->
 
-When the file cannot be read, `Error` and `ErrorMessage` tell why. See [Errors](03-ReadingTags.md#errors).
+When the file cannot be read, [Error](cref:Meziantou.Framework.MediaTags.MediaTagResult{T}.Error) and [ErrorMessage](cref:Meziantou.Framework.MediaTags.MediaTagResult{T}.ErrorMessage) tell why. See [Errors](03-ReadingTags.md#errors).
 
 ## Change a tag
 
-`MediaFile.WriteTags` replaces all the tags of the file with the ones you give. To change one field, read the tags,
+[MediaFile.WriteTags](cref:Meziantou.Framework.MediaTags.MediaFile.WriteTags) replaces all the tags of the file with the ones you give. To change one field, read the tags,
 change them, and write them back:
 
 <!-- ref:../../samples/Meziantou.Framework.MediaTags.Samples/ReadmeExamples.cs;region=MediaFile_UpdateTags;format=md-fenced-code-block;dedent=true -->
@@ -65,7 +65,7 @@ if (!writeResult.IsSuccess)
 ```
 <!-- endref -->
 
-Writing a new `MediaTagInfo` instead would remove every field it does not set. See
+Writing a new [MediaTagInfo](cref:Meziantou.Framework.MediaTags.MediaTagInfo) instead would remove every field it does not set. See
 [Writing tags](04-WritingTags.md).
 
 ## Next steps

@@ -40,13 +40,13 @@ Assert.Equal("2.0.0", v2.NextMajorVersion().ToString());
 ```
 <!-- endref -->
 
-- `Major`, `Minor` and `Patch` are the three numbers.
-- `PrereleaseLabels` holds the dot-separated identifiers after `-`, and `IsPrerelease` tells whether there is any.
-- `Metadata` holds the dot-separated identifiers after `+`, and `HasMetadata` tells whether there is any.
+- [Major](cref:Meziantou.Framework.Versioning.SemanticVersion.Major), [Minor](cref:Meziantou.Framework.Versioning.SemanticVersion.Minor) and [Patch](cref:Meziantou.Framework.Versioning.SemanticVersion.Patch) are the three numbers.
+- [PrereleaseLabels](cref:Meziantou.Framework.Versioning.SemanticVersion.PrereleaseLabels) holds the dot-separated identifiers after `-`, and [IsPrerelease](cref:Meziantou.Framework.Versioning.SemanticVersion.IsPrerelease) tells whether there is any.
+- [Metadata](cref:Meziantou.Framework.Versioning.SemanticVersion.Metadata) holds the dot-separated identifiers after `+`, and [HasMetadata](cref:Meziantou.Framework.Versioning.SemanticVersion.HasMetadata) tells whether there is any.
 
 ## Validation and formatting
 
-`Parse` and `TryParse` accept the Semantic Versioning 2.0.0 syntax, and nothing else:
+[Parse](cref:Meziantou.Framework.Versioning.SemanticVersion.Parse) and [TryParse](cref:Meziantou.Framework.Versioning.SemanticVersion.TryParse) accept the Semantic Versioning 2.0.0 syntax, and nothing else:
 
 <!-- ref:../../tests/Meziantou.Framework.Versioning.Tests/SemanticVersionTests.cs;region=SemanticVersion_ParseAndFormat;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -71,8 +71,8 @@ Assert.Equal(["sha", "5114f85"], prerelease.Metadata);
 - A `v` or `V` prefix is accepted, as in Git tags such as `v1.2.3`. `ToString` never writes it.
 - The three numbers are required, and numbers have no leading zero. Prerelease and metadata identifiers are made of
   ASCII letters, digits and `-`, and are not empty.
-- `Parse` throws an `ArgumentException` for an invalid version; `TryParse` returns `false`. Both have a
-  `ReadOnlySpan<char>` overload, and `SemanticVersion` implements `IParsable<SemanticVersion>` and
+- [Parse](cref:Meziantou.Framework.Versioning.SemanticVersion.Parse) throws an `ArgumentException` for an invalid version; [TryParse](cref:Meziantou.Framework.Versioning.SemanticVersion.TryParse) returns `false`. Both have a
+  `ReadOnlySpan<char>` overload, and [SemanticVersion](cref:Meziantou.Framework.Versioning.SemanticVersion) implements `IParsable<SemanticVersion>` and
   `ISpanParsable<SemanticVersion>`.
 - The constructors validate the labels too and throw an `ArgumentException` for an invalid one, and a negative number
   throws an `ArgumentOutOfRangeException`. One overload takes the prerelease labels and the metadata as dot-separated

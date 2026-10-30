@@ -30,15 +30,15 @@ var xmp = read.GetXmpMetadata(); // the XMP packet: UTF-8 XML, or null
 
 ## The document information
 
-`PdfDocument.Information` reads and writes the document information dictionary:
+[PdfDocument.Information](cref:Meziantou.Framework.Pdf.PdfDocument.Information) reads and writes the document information dictionary:
 
-- `Title`, `Author`, `Subject`, `Keywords`, `Creator` (the application that created the original document) and
-  `Producer` (the application that converted it to PDF).
-- `CreationDate` and `ModificationDate`: `null` when they are missing or are not valid dates.
-- `GetText` and `SetText` read and write any other entry, such as a custom one.
+- [Title](cref:Meziantou.Framework.Pdf.PdfDocumentInformation.Title), [Author](cref:Meziantou.Framework.Pdf.PdfDocumentInformation.Author), [Subject](cref:Meziantou.Framework.Pdf.PdfDocumentInformation.Subject), [Keywords](cref:Meziantou.Framework.Pdf.PdfDocumentInformation.Keywords), [Creator](cref:Meziantou.Framework.Pdf.PdfDocumentInformation.Creator) (the application that created the original document) and
+  [Producer](cref:Meziantou.Framework.Pdf.PdfDocumentInformation.Producer) (the application that converted it to PDF).
+- [CreationDate](cref:Meziantou.Framework.Pdf.PdfDocumentInformation.CreationDate) and [ModificationDate](cref:Meziantou.Framework.Pdf.PdfDocumentInformation.ModificationDate): `null` when they are missing or are not valid dates.
+- [GetText](cref:Meziantou.Framework.Pdf.PdfDocumentInformation.GetText) and [SetText](cref:Meziantou.Framework.Pdf.PdfDocumentInformation.SetText) read and write any other entry, such as a custom one.
 
 Setting a value to `null` removes the entry. The library sets none of them by itself, not even the dates or the producer,
-so that the same document gives the same file: set `CreationDate` and `ModificationDate` when you want them.
+so that the same document gives the same file: set [CreationDate](cref:Meziantou.Framework.Pdf.PdfDocumentInformation.CreationDate) and [ModificationDate](cref:Meziantou.Framework.Pdf.PdfDocumentInformation.ModificationDate) when you want them.
 
 ## XMP metadata
 
@@ -47,24 +47,24 @@ that other tools read too.
 
 | Method | Does |
 | --- | --- |
-| `UpdateXmpMetadata` | Replaces the XMP metadata with a packet built from `Information`: title, author, subject, keywords, producer, creator tool and dates |
-| `GetXmpMetadata` | Returns the packet (UTF-8 XML), or `null` when the document has none |
-| `SetXmpMetadata` | Sets a packet you wrote |
-| `RemoveXmpMetadata` | Removes it |
+| [UpdateXmpMetadata](cref:Meziantou.Framework.Pdf.PdfDocument.UpdateXmpMetadata) | Replaces the XMP metadata with a packet built from [Information](cref:Meziantou.Framework.Pdf.PdfDocument.Information): title, author, subject, keywords, producer, creator tool and dates |
+| [GetXmpMetadata](cref:Meziantou.Framework.Pdf.PdfDocument.GetXmpMetadata) | Returns the packet (UTF-8 XML), or `null` when the document has none |
+| [SetXmpMetadata](cref:Meziantou.Framework.Pdf.PdfDocument.SetXmpMetadata) | Sets a packet you wrote |
+| [RemoveXmpMetadata](cref:Meziantou.Framework.Pdf.PdfDocument.RemoveXmpMetadata) | Removes it |
 
-Call `UpdateXmpMetadata` after the information is set: it does not follow later changes. A PDF/A document gets its XMP
+Call [UpdateXmpMetadata](cref:Meziantou.Framework.Pdf.PdfDocument.UpdateXmpMetadata) after the information is set: it does not follow later changes. A PDF/A document gets its XMP
 metadata from the information when it is saved, with the identification of its level: see
 [PDF/A](../08-AccessibilityAndArchiving/03-PdfA.md).
 
 ## Language
 
-`PdfDocument.Language` is the natural language of the document, a BCP 47 tag such as `en-US` or `fr-FR`. Screen readers
+[PdfDocument.Language](cref:Meziantou.Framework.Pdf.PdfDocument.Language) is the natural language of the document, a BCP 47 tag such as `en-US` or `fr-FR`. Screen readers
 use it to choose their pronunciation, and PDF/UA requires it. An element of the structure tree can have a language of
 its own: see [Tagged PDF and PDF/UA](../08-AccessibilityAndArchiving/02-TaggedPdfAndPdfUA.md).
 
 ## Version
 
-`PdfDocument.Version` is the version of the document: the version of the header of the file, or the version of the
+[PdfDocument.Version](cref:Meziantou.Framework.Pdf.PdfDocument.Version) is the version of the document: the version of the header of the file, or the version of the
 catalog when it is later. It can be set; a save raises it when the document or the options need a later version (AES-256
-encryption needs PDF 2.0, for instance). `PdfVersion` has the versions from `Pdf14` to `Pdf20`, and `TryParse` reads a
+encryption needs PDF 2.0, for instance). [PdfVersion](cref:Meziantou.Framework.Pdf.PdfVersion) has the versions from [Pdf14](cref:Meziantou.Framework.Pdf.PdfVersion.Pdf14) to [Pdf20](cref:Meziantou.Framework.Pdf.PdfVersion.Pdf20), and [TryParse](cref:Meziantou.Framework.Pdf.PdfVersion.TryParse) reads a
 version written as in a header, such as `1.7`.

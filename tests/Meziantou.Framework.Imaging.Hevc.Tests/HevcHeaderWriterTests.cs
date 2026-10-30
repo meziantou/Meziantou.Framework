@@ -376,6 +376,71 @@ public sealed class HevcHeaderWriterTests
     }
 
     [Fact]
+    public void TheLevelHoldsTheLargestCodedPicture()
+    {
+        // The limits of the edition V11 (01/2026), computed by hand. Clause A.4.1, item g: a picture fits in the coded
+        // picture buffer, CpbVclFactor (Table A.10) x MaxCPB (Table A.8) bits. Clause A.4.2, item g, for the profiles that
+        // are not still picture profiles: at most FormatCapabilityFactor x Max( PicSizeInSamplesY, MaxLumaSr / 300 ) /
+        // ( MinCrBase x MinCrScaleFactor ) bytes (Tables A.9 and A.10). The Main tier first, then the High tier
+        (HevcProfile Profile, int Width, int Height, long Length, int LevelIdc, bool TierFlag)[] cases =
+        [
+            // Nothing coded yet: the size of the pictures only
+            (HevcProfile.Main, 192, 192, 0, 30, false),
+            (HevcProfile.MainStillPicture, 8192, 4320, 0, 180, false),
+
+            // Main Still Picture has no minimum compression ratio: 1,000 x 350 bits at level 1, 1,000 x 1,500 at level 2
+            (HevcProfile.MainStillPicture, 192, 192, 43_750, 30, false),
+            (HevcProfile.MainStillPicture, 192, 192, 43_751, 60, false),
+
+            // Main: 1.5 x 36,864 / 2 bytes at levels 1, 2 and 2.1, 1.5 x 55,296 / 2 at level 3, 1.5 x 110,592 / 2 at level 3.1
+            (HevcProfile.Main, 192, 192, 27_648, 30, false),
+            (HevcProfile.Main, 192, 192, 27_649, 90, false),
+            (HevcProfile.Main, 192, 192, 41_472, 90, false),
+            (HevcProfile.Main, 192, 192, 41_473, 93, false),
+
+            // 1920x1080 at level 4 and 4.1: 1.5 x 2,073,600 / 4 bytes. Levels 5 to 6 have a larger MinCrBase (6 and 8) for
+            // the same picture: level 6.1 (2,139,095,040 / 300 samples, MinCrBase 8) is the next one that holds more
+            (HevcProfile.Main, 1920, 1080, 777_600, 120, false),
+            (HevcProfile.Main, 1920, 1080, 777_601, 183, false),
+            (HevcProfile.Main, 1920, 1080, 1_336_934, 183, false),
+            (HevcProfile.Main, 1920, 1080, 1_336_935, 186, false),
+
+            // Level 7.2 of the Main tier holds 1.5 x 17,112,760,320 / 300 / 6 bytes. The High tier has a smaller
+            // MinCrBase (4), but fR is 1 / 960 from level 7: its largest picture is at level 7.2, 1.5 x 17,112,760,320 /
+            // 960 / 4 bytes
+            (HevcProfile.Main, 1920, 1080, 14_260_633, 216, false),
+            (HevcProfile.Main, 1920, 1080, 14_260_634, 255, true),
+
+            // Main 4:4:4 Intra: CpbVclFactor 2,000, FormatCapabilityFactor 3.0, MinCrScaleFactor 0.5
+            (HevcProfile.Main444Intra, 192, 192, 87_500, 30, false),
+            (HevcProfile.Main444Intra, 192, 192, 87_501, 60, false),
+            (HevcProfile.Main444Intra, 192, 192, 110_592, 60, false),
+            (HevcProfile.Main444Intra, 192, 192, 110_593, 90, false),
+
+            // Monochrome: CpbVclFactor 667, FormatCapabilityFactor 1.0
+            (HevcProfile.Monochrome, 192, 192, 18_432, 30, false),
+            (HevcProfile.Monochrome, 192, 192, 18_433, 90, false),
+
+            // A still picture larger than the coded picture buffer of every level of the Main tier (960,000,000 bits at
+            // level 7.2): the High tier, 1,600,000,000 bits at level 6.3, then level 8.5
+            (HevcProfile.MainStillPicture, 8192, 4320, 120_000_000, 216, false),
+            (HevcProfile.MainStillPicture, 8192, 4320, 120_000_001, 189, true),
+            (HevcProfile.MainStillPicture, 8192, 4320, 800_000_000, 216, true),
+            (HevcProfile.MainStillPicture, 8192, 4320, 800_000_001, 255, true),
+        ];
+        foreach (var (profile, width, height, length, levelIdc, tierFlag) in cases)
+        {
+            Assert.Equal((levelIdc, tierFlag), HevcLevels.GetLevel(profile, width, height, length), $"{profile} {width}x{height}, {length} bytes");
+        }
+
+        // The parameters of a sequence announce it
+        var parameters = HevcSequenceParameters.Create(CreateSettings(192, 192, 8, 1, SequenceKind.Still));
+        Assert.Equal(HevcProfile.MainStillPicture, parameters.Profile);
+        Assert.Equal((30, false), (parameters.GeneralLevelIdc, parameters.GeneralTierFlag));
+        Assert.Equal((60, false), ((parameters with { MaxPictureLength = 43_751 }).GeneralLevelIdc, (parameters with { MaxPictureLength = 43_751 }).GeneralTierFlag));
+    }
+
+    [Fact]
     public void PictureParameterSetsAreReadBack()
     {
         var sps420 = ParseSps(HevcSequenceParameters.Create(CreateSettings(64, 64, 8, 1, SequenceKind.Inter)));

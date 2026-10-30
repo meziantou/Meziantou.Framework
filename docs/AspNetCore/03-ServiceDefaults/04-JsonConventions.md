@@ -43,7 +43,7 @@ invalid state.
 
 ## Changing the conventions
 
-`ConfigureJsonOptions` runs after the conventions, so it can add converters or override any setting:
+[ConfigureJsonOptions](cref:Meziantou.AspNetCore.ServiceDefaults.MeziantouServiceDefaultsOptions.ConfigureJsonOptions) runs after the conventions, so it can add converters or override any setting:
 
 <!-- ref:../../../tests/Meziantou.AspNetCore.ServiceDefaults.Tests/ServiceDefaultTests.cs;region=ServiceDefaults_ConfigureOptions;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -60,4 +60,4 @@ builder.UseMeziantouConventions(options =>
 <!-- endref -->
 
 Dictionary keys are camelCased too: a dictionary whose keys are identifiers, such as product codes, is written with
-its first letter lowercased. Set `DictionaryKeyPolicy` to `null` in `ConfigureJsonOptions` to keep the keys unchanged.
+its first letter lowercased. Set `DictionaryKeyPolicy` to `null` in [ConfigureJsonOptions](cref:Meziantou.AspNetCore.ServiceDefaults.MeziantouServiceDefaultsOptions.ConfigureJsonOptions) to keep the keys unchanged.

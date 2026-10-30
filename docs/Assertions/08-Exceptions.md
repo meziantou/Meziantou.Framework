@@ -34,7 +34,7 @@ Assert.DoesNotThrow(() => int.Parse("42", CultureInfo.InvariantCulture));
 - A delegate that returns a value, such as `() => int.Parse(text)` or `() => sut.Value`, is accepted: the value is
   discarded.
 - `Throws(typeof(T), action)` and `ThrowsAny(typeof(T), action)` take the type as an argument.
-- A request to skip an xUnit test, thrown by `Assert.XunitSkip`, goes through the assertion unchanged, unless its exact
+- A request to skip an xUnit test, thrown by [Assert.XunitSkip](cref:Meziantou.Framework.Assertions.Assert.XunitSkip), goes through the assertion unchanged, unless its exact
   exception type is the one expected.
 
 ## Asynchronous code
@@ -63,17 +63,17 @@ await Assert.DoesNotThrow(() => Task.CompletedTask);
   (`MFAS0057`), and an assertion whose task is never awaited (`MFAS0048`): such an assertion never runs.
 - To check an exception thrown synchronously by an asynchronous method, before it returns its task, discard the task
   explicitly: `Assert.Throws<ArgumentNullException>(() => _ = sut.LoadAsync(null))`.
-- `ThrowsAsync<T>` and `ThrowsAnyAsync<T>` are also available for a `Func<Task>`.
+- [ThrowsAsync\<T\>](cref:Meziantou.Framework.Assertions.Assert.ThrowsAsync) and [ThrowsAnyAsync\<T\>](cref:Meziantou.Framework.Assertions.Assert.ThrowsAnyAsync) are also available for a `Func<Task>`.
 
 ## Check that code does not throw
 
 `Assert.DoesNotThrow(action)` passes when the delegate completes. When it throws, the assertion fails, and the
-exception is available as the `InnerException` of the `AssertionException`. As for `Throws`, a delegate that returns a
+exception is available as the `InnerException` of the [AssertionException](cref:Meziantou.Framework.Assertions.AssertionException). As for [Throws](cref:Meziantou.Framework.Assertions.Assert.Throws), a delegate that returns a
 `Task` or a `ValueTask` is awaited, and a delegate that returns a value is accepted.
 
 - `DoesNotThrow<T>(action)` only fails for an exception exactly of type `T`: any other exception propagates unchanged
   and fails the test as usual.
 - `DoesNotThrowAny<T>(action)` fails for an exception of type `T` or a derived type.
 
-Most tests do not need `DoesNotThrow`: an exception thrown by the test fails it anyway. Use it to make the intent of a
+Most tests do not need [DoesNotThrow](cref:Meziantou.Framework.Assertions.Assert.DoesNotThrow): an exception thrown by the test fails it anyway. Use it to make the intent of a
 test explicit, or to get an assertion failure with the expression of the delegate.

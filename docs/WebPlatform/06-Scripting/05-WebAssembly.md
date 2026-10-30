@@ -44,12 +44,12 @@ Assert.Equal("5", document.QuerySelector("output")!.TextContent);
   supported.
 - The features of WebAssembly 3.0 are enabled (reference types, garbage collection types, exceptions, tail calls, memory64,
   multiple memories, SIMD), except the threads.
-- The running code is interrupted by the limits of the script engine, such as `Timeout`.
+- The running code is interrupted by the limits of the script engine, such as [Timeout](cref:Meziantou.Framework.WebPlatform.JavaScript.JavaScriptScriptEngineOptions.Timeout).
 
-`WasmtimeRuntimeOptions` sets the size of the stack of the WebAssembly code (`MaxStackSize`, 512 KiB by default: a
-deeper recursion throws a `RangeError`), the largest size of a memory (`MaxMemorySize`: the memories are .NET arrays,
+[WasmtimeRuntimeOptions](cref:Meziantou.Framework.WebPlatform.Wasmtime.WasmtimeRuntimeOptions) sets the size of the stack of the WebAssembly code ([MaxStackSize](cref:Meziantou.Framework.WebPlatform.Wasmtime.WasmtimeRuntimeOptions.MaxStackSize), 512 KiB by default: a
+deeper recursion throws a `RangeError`), the largest size of a memory ([MaxMemorySize](cref:Meziantou.Framework.WebPlatform.Wasmtime.WasmtimeRuntimeOptions.MaxMemorySize): the memories are .NET arrays,
 shared with the `ArrayBuffer` objects of the scripts), and how often the running code checks whether it must stop
-(`InterruptionCheckInterval`, 10 ms by default).
+([InterruptionCheckInterval](cref:Meziantou.Framework.WebPlatform.Wasmtime.WasmtimeRuntimeOptions.InterruptionCheckInterval), 10 ms by default).
 
 Wasmtime is a native library: it comes with the `Wasmtime` package, a dependency of
 `Meziantou.Framework.WebPlatform.Wasmtime`.

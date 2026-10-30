@@ -53,7 +53,7 @@ Assert.False(ProjectId.TryParse("abc", out _));
 
 - `FromInt32` creates an ID. The name of the method follows the underlying type: `FromGuid`, `FromString`,
   `FromInt64`... The constructor is private.
-- `Value` is the underlying value, and `ValueAsString` the value formatted with the invariant culture.
+- `Value` is the underlying value, and [ValueAsString](cref:Meziantou.Framework.IStronglyTypedId.ValueAsString) the value formatted with the invariant culture.
 - `ToString()` shows the type and the value, like a record. You can get the bare value instead: see
   [Options](07-Options.md#format-tostring-as-the-value).
 - Equality compares the values, and `Parse` and `TryParse` read the string representation.

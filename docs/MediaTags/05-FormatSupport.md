@@ -7,17 +7,17 @@ description: Which fields each audio format stores, and what each format does wh
 
 | Field | MP3 | OGG / Opus | FLAC | MP4 | WAV / AIFF |
 | --- | --- | --- | --- | --- | --- |
-| `Title`, `Artist`, `Album`, `AlbumArtist`, `Genre`, `Year` | yes | yes | yes | yes | yes |
-| `TrackNumber`, `TrackTotal`, `DiscNumber`, `DiscTotal` | yes | yes | yes | yes <sup>1</sup> | yes |
-| `Comment`, `Lyrics`, `Composer`, `Conductor`, `Copyright`, `Isrc` | yes | yes | yes | yes | yes |
-| `Bpm`, `IsCompilation` | yes | yes | yes | yes <sup>1</sup> | yes |
-| `Duration` | read and written <sup>2</sup> | read only | read only | read only | read and written <sup>2</sup> |
-| `Pictures` | yes | yes | yes | front cover only | yes |
-| `ReplayGain` | yes | yes | yes | yes | yes |
+| [Title](cref:Meziantou.Framework.MediaTags.MediaTagInfo.Title), [Artist](cref:Meziantou.Framework.MediaTags.MediaTagInfo.Artist), [Album](cref:Meziantou.Framework.MediaTags.MediaTagInfo.Album), [AlbumArtist](cref:Meziantou.Framework.MediaTags.MediaTagInfo.AlbumArtist), [Genre](cref:Meziantou.Framework.MediaTags.MediaTagInfo.Genre), [Year](cref:Meziantou.Framework.MediaTags.MediaTagInfo.Year) | yes | yes | yes | yes | yes |
+| [TrackNumber](cref:Meziantou.Framework.MediaTags.MediaTagInfo.TrackNumber), [TrackTotal](cref:Meziantou.Framework.MediaTags.MediaTagInfo.TrackTotal), [DiscNumber](cref:Meziantou.Framework.MediaTags.MediaTagInfo.DiscNumber), [DiscTotal](cref:Meziantou.Framework.MediaTags.MediaTagInfo.DiscTotal) | yes | yes | yes | yes <sup>1</sup> | yes |
+| [Comment](cref:Meziantou.Framework.MediaTags.MediaTagInfo.Comment), [Lyrics](cref:Meziantou.Framework.MediaTags.MediaTagInfo.Lyrics), [Composer](cref:Meziantou.Framework.MediaTags.MediaTagInfo.Composer), [Conductor](cref:Meziantou.Framework.MediaTags.MediaTagInfo.Conductor), [Copyright](cref:Meziantou.Framework.MediaTags.MediaTagInfo.Copyright), [Isrc](cref:Meziantou.Framework.MediaTags.MediaTagInfo.Isrc) | yes | yes | yes | yes | yes |
+| [Bpm](cref:Meziantou.Framework.MediaTags.MediaTagInfo.Bpm), [IsCompilation](cref:Meziantou.Framework.MediaTags.MediaTagInfo.IsCompilation) | yes | yes | yes | yes <sup>1</sup> | yes |
+| [Duration](cref:Meziantou.Framework.MediaTags.MediaTagInfo.Duration) | read and written <sup>2</sup> | read only | read only | read only | read and written <sup>2</sup> |
+| [Pictures](cref:Meziantou.Framework.MediaTags.MediaTagInfo.Pictures) | yes | yes | yes | front cover only | yes |
+| [ReplayGain](cref:Meziantou.Framework.MediaTags.MediaTagInfo.ReplayGain) | yes | yes | yes | yes | yes |
 | `MusicBrainz*` | yes | yes | yes | yes | yes |
-| `CustomFields` | yes | yes | yes | yes | yes <sup>3</sup> |
+| [CustomFields](cref:Meziantou.Framework.MediaTags.MediaTagInfo.CustomFields) | yes | yes | yes | yes | yes <sup>3</sup> |
 
-<sup>1</sup> MP4 stores these values in 16 bits. A value above 65535 is refused with `MediaTagError.InvalidTagData`
+<sup>1</sup> MP4 stores these values in 16 bits. A value above 65535 is refused with [MediaTagError.InvalidTagData](cref:Meziantou.Framework.MediaTags.MediaTagError.InvalidTagData)
 rather than wrapped.
 
 <sup>2</sup> Stored in a `TLEN` frame. A duration computed from the audio is not written; see
@@ -30,14 +30,14 @@ rather than wrapped.
 - Tags are written as an ID3v2 tag, and an ID3v1 tag at the end of the file unless
   [`WriteId3v1Tag`](04-WritingTags.md#write-options) is `false`. ID3v1 truncates each field to 30 Latin-1 characters.
 - The ID3v2 frames this library does not read, such as the publisher, the sort names, ratings, `UFID`, `PRIV` or the
-  `COMM` frames of iTunes, are copied from the existing ID3v2.3 or ID3v2.4 tag. `RemoveTags` removes them too.
+  `COMM` frames of iTunes, are copied from the existing ID3v2.3 or ID3v2.4 tag. [RemoveTags](cref:Meziantou.Framework.MediaTags.MediaFile.RemoveTags) removes them too.
 - A file with only an ID3v1 tag is read.
 
 ## OGG Vorbis, OGG Opus and FLAC
 
 - Tags are Vorbis comments. A comment name cannot contain `=`: writing a custom field with such a name fails with
-  `InvalidTagData`.
-- A comment whose value cannot be parsed, such as `TRACKNUMBER=A1`, is read into `CustomFields`, so writing the tags
+  [InvalidTagData](cref:Meziantou.Framework.MediaTags.MediaTagError.InvalidTagData).
+- A comment whose value cannot be parsed, such as `TRACKNUMBER=A1`, is read into [CustomFields](cref:Meziantou.Framework.MediaTags.MediaTagInfo.CustomFields), so writing the tags
   back keeps it.
 - Multiplexed and chained OGG streams, such as a video stream next to the audio or several concatenated streams, are
   refused rather than rewritten.

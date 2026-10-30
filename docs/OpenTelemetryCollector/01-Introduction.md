@@ -25,18 +25,18 @@ Use them to collect telemetry in your own service, or in tests, to check what an
 
 | Package | Main types |
 | --- | --- |
-| `Meziantou.Framework.OpenTelemetryCollector` | `OpenTelemetryHandler`, `OpenTelemetrySampler`, `OpenTelemetryTailSampler`, `OpenTelemetryReceiverOptions` |
-| `Meziantou.Framework.OpenTelemetryCollector.InMemory` | `InMemoryOpenTelemetryHandler`, `InMemoryOpenTelemetryHandlerOptions` |
+| `Meziantou.Framework.OpenTelemetryCollector` | [OpenTelemetryHandler](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryHandler), [OpenTelemetrySampler](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetrySampler), [OpenTelemetryTailSampler](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTailSampler), [OpenTelemetryReceiverOptions](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryReceiverOptions) |
+| `Meziantou.Framework.OpenTelemetryCollector.InMemory` | [InMemoryOpenTelemetryHandler](cref:Meziantou.Framework.OpenTelemetryCollector.InMemory.InMemoryOpenTelemetryHandler), [InMemoryOpenTelemetryHandlerOptions](cref:Meziantou.Framework.OpenTelemetryCollector.InMemory.InMemoryOpenTelemetryHandlerOptions) |
 
 The in-memory package references the main one.
 
 ## Namespaces
 
-- [Meziantou.Framework.OpenTelemetryCollector](cref:Meziantou.Framework.OpenTelemetryCollector): the handlers, samplers, options, and the `AddOpenTelemetryReceiver` and
-  `MapOpenTelemetryReceiverEndpoints` extension methods.
-- [Meziantou.Framework.OpenTelemetryCollector.InMemory](cref:Meziantou.Framework.OpenTelemetryCollector.InMemory): the in-memory receiver and `AddInMemoryOpenTelemetryReceiver`.
-- `OpenTelemetry.Proto.*`: the OTLP messages that the handlers receive, such as `ExportLogsServiceRequest` in
-  [OpenTelemetry.Proto.Collector.Logs.V1](cref:OpenTelemetry.Proto.Collector.Logs.V1) and `LogRecord` in [OpenTelemetry.Proto.Logs.V1](cref:OpenTelemetry.Proto.Logs.V1). See
+- [Meziantou.Framework.OpenTelemetryCollector](cref:Meziantou.Framework.OpenTelemetryCollector): the handlers, samplers, options, and the [AddOpenTelemetryReceiver](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryServiceCollectionExtensions.AddOpenTelemetryReceiver) and
+  [MapOpenTelemetryReceiverEndpoints](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryEndpointRouteBuilderExtensions.MapOpenTelemetryReceiverEndpoints) extension methods.
+- [Meziantou.Framework.OpenTelemetryCollector.InMemory](cref:Meziantou.Framework.OpenTelemetryCollector.InMemory): the in-memory receiver and [AddInMemoryOpenTelemetryReceiver](cref:Meziantou.Framework.OpenTelemetryCollector.InMemory.OpenTelemetryCollectorInMemoryServiceCollectionExtensions.AddInMemoryOpenTelemetryReceiver).
+- `OpenTelemetry.Proto.*`: the OTLP messages that the handlers receive, such as [ExportLogsServiceRequest](cref:OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceRequest) in
+  [OpenTelemetry.Proto.Collector.Logs.V1](cref:OpenTelemetry.Proto.Collector.Logs.V1) and [LogRecord](cref:OpenTelemetry.Proto.Logs.V1.LogRecord) in [OpenTelemetry.Proto.Logs.V1](cref:OpenTelemetry.Proto.Logs.V1). See
   [the available fields](04-CustomHandlers.md#available-fields).
 
 ## Next steps

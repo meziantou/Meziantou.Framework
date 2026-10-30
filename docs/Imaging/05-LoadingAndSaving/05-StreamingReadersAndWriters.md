@@ -3,7 +3,7 @@ title: Streaming readers and writers
 description: Read and write animations one frame at a time, with memory bounded by one frame whatever their length.
 ---
 
-`Image.Load` decodes every frame of an animation into memory. For a long animation, or a service that must keep its
+[Image.Load](cref:Meziantou.Framework.Imaging.Image.Load) decodes every frame of an animation into memory. For a long animation, or a service that must keep its
 memory bounded, read and write the frames one at a time instead: a reader decodes the next frame when you ask for it,
 and a writer encodes each frame as you give it. Memory stays bounded by about one frame of decoder or encoder state,
 plus the images you keep.
@@ -41,13 +41,13 @@ public static async Task StreamingResizeAsync(Stream input, Stream output, Cance
 ```
 <!-- endref -->
 
-`Image.OpenReader<TPixel>` and `Image.CreateWriter<TPixel>` take a path or a stream, and have asynchronous forms
-(`OpenReaderAsync`, `ReadFrameAsync`, `WriteFrameAsync`, `CompleteAsync`). Readers and writers are disposable, also with
+[Image.OpenReader\<TPixel\>](cref:Meziantou.Framework.Imaging.Image.OpenReader) and [Image.CreateWriter\<TPixel\>](cref:Meziantou.Framework.Imaging.Image.CreateWriter) take a path or a stream, and have asynchronous forms
+([OpenReaderAsync](cref:Meziantou.Framework.Imaging.Image.OpenReaderAsync), [ReadFrameAsync](cref:Meziantou.Framework.Imaging.ImageReader{TPixel}.ReadFrameAsync), [WriteFrameAsync](cref:Meziantou.Framework.Imaging.ImageWriter{TPixel}.WriteFrameAsync), [CompleteAsync](cref:Meziantou.Framework.Imaging.ImageWriter{TPixel}.CompleteAsync)). Readers and writers are disposable, also with
 `await using`.
 
 ## Reuse one image for every frame
 
-`ReadFrame` returns a new image for each frame, which you dispose. `ReadFrameInto` writes the next frame into an image
+[ReadFrame](cref:Meziantou.Framework.Imaging.ImageReader{TPixel}.ReadFrame) returns a new image for each frame, which you dispose. [ReadFrameInto](cref:Meziantou.Framework.Imaging.ImageReader{TPixel}.ReadFrameInto) writes the next frame into an image
 you own instead, so that nothing is allocated per frame:
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_ReadFrameInto;format=md-fenced-code-block;dedent=true -->
@@ -92,37 +92,37 @@ hotspot and metadata are replaced with those of the frame read.
 
 | Member | Does |
 | --- | --- |
-| `Info` | What the header says: format, canvas size, frame count when the header declares it (`null` for GIF), animation settings and metadata |
-| `ReadPosterFrame()` | Returns the APNG poster frame, or `null`. Allowed once, before the first frame |
-| `ReadFrame()` | Returns the next frame as a still image you own, or `null` at the end of the animation |
+| [Info](cref:Meziantou.Framework.Imaging.ImageReader{TPixel}.Info) | What the header says: format, canvas size, frame count when the header declares it (`null` for GIF), animation settings and metadata |
+| [ReadPosterFrame()](cref:Meziantou.Framework.Imaging.ImageReader{TPixel}.ReadPosterFrame) | Returns the APNG poster frame, or `null`. Allowed once, before the first frame |
+| [ReadFrame()](cref:Meziantou.Framework.Imaging.ImageReader{TPixel}.ReadFrame) | Returns the next frame as a still image you own, or `null` at the end of the animation |
 | `ReadFrameInto(image)` | Overwrites your image with the next frame; returns `false` at the end, and leaves the image unchanged |
 | `ReadFrameRefinementInto(image)` | Writes the next rendering of a progressive frame (JPEG XL, progressive JPEG, interlaced PNG), then the frame itself: see [Show an image while it downloads](06-ShowImagesWhileTheyDownload.md) |
-| `FramesRead` | The number of frames read so far |
+| [FramesRead](cref:Meziantou.Framework.Imaging.ImageReader{TPixel}.FramesRead) | The number of frames read so far |
 
-- `null` or `false` always means that the animation ended cleanly, or that `ImageReaderOptions.FrameLimit` was reached.
-  A truncated or malformed input throws an `InvalidImageContentException`; it is never reported as an end.
+- `null` or `false` always means that the animation ended cleanly, or that [ImageReaderOptions.FrameLimit](cref:Meziantou.Framework.Imaging.ImageReaderOptions.FrameLimit) was reached.
+  A truncated or malformed input throws an [InvalidImageContentException](cref:Meziantou.Framework.Imaging.InvalidImageContentException); it is never reported as an end.
 - After an error in the data, a limit, an I/O error or a cancellation, the reader is faulted: later calls throw an
   `InvalidOperationException`. An invalid argument leaves it usable.
 - The images a reader returns are independent: they stay valid after the reader is disposed. They are charged to the
   [allocation limit](07-ResourceLimits.md) of the reader until you dispose them.
 - TIFF, ICO and CUR files are rejected: their entries are pages or sizes, not frames (use
   [`ImageCollection`](../04-Concepts/03-PagesAndRepresentations.md)). ANI files are rejected too, because the order of
-  their frames is only known once the whole file is read (use `Image.Load`).
+  their frames is only known once the whole file is read (use [Image.Load](cref:Meziantou.Framework.Imaging.Image.Load)).
 
 ## Writers
 
-A writer receives an optional poster frame (`WritePosterFrame`, animated PNG only, before the first frame), then each
-frame (`WriteFrame`), then **`Complete`, which is mandatory**. Disposing a writer that was not completed aborts the
+A writer receives an optional poster frame ([WritePosterFrame](cref:Meziantou.Framework.Imaging.ImageWriter{TPixel}.WritePosterFrame), animated PNG only, before the first frame), then each
+frame ([WriteFrame](cref:Meziantou.Framework.Imaging.ImageWriter{TPixel}.WriteFrame)), then **[Complete](cref:Meziantou.Framework.Imaging.ImageWriter{TPixel}.Complete), which is mandatory**. Disposing a writer that was not completed aborts the
 output: a file is not published, and a stream is left without the end of the image.
 
-`ImageWriterOptions` gives the canvas size, and optionally the encoder (required for a stream; for a path, the
+[ImageWriterOptions](cref:Meziantou.Framework.Imaging.ImageWriterOptions) gives the canvas size, and optionally the encoder (required for a stream; for a path, the
 [extension](04-SavingImages.md#choose-the-format-from-the-extension) chooses it), the animation settings, the metadata,
 the configuration and the number of frames. The writer copies the options when it is created, and checks the metadata
 against the format before it writes anything.
 
-Some formats need to know the number of frames in advance (`ExpectedFrameCount`), or need a destination that can seek:
+Some formats need to know the number of frames in advance ([ExpectedFrameCount](cref:Meziantou.Framework.Imaging.ImageWriterOptions.ExpectedFrameCount)), or need a destination that can seek:
 
-| Output | `ExpectedFrameCount` | Destination |
+| Output | [ExpectedFrameCount](cref:Meziantou.Framework.Imaging.ImageWriterOptions.ExpectedFrameCount) | Destination |
 | --- | --- | --- |
 | PNG and APNG | Required | Any |
 | AVIF, HEIC | Required | Seekable for an animation |
@@ -133,7 +133,7 @@ Some formats need to know the number of frames in advance (`ExpectedFrameCount`)
 | TIFF | Optional, one frame | Seekable |
 | JPEG, JPEG 2000, QOI, BMP, TGA, Netpbm, ICO and CUR | Optional, one frame | Any |
 
-`Complete` checks that at least one frame was written and that the count matches `ExpectedFrameCount`. An error found
+[Complete](cref:Meziantou.Framework.Imaging.ImageWriter{TPixel}.Complete) checks that at least one frame was written and that the count matches [ExpectedFrameCount](cref:Meziantou.Framework.Imaging.ImageWriterOptions.ExpectedFrameCount). An error found
 before any work, such as a frame of the wrong size or a duration the format cannot store, leaves the writer usable; a
 failure once the encoding started faults it.
 
@@ -142,8 +142,8 @@ failure once the encoding started faults it.
 - A reader starts at the current position of the stream and consumes what it reads; a writer starts at the current
   position too. Streams that cannot seek are supported, except as the destinations listed above.
 - Your stream is left open when the reader or the writer is disposed, unless you set `LeaveOpen = false` on
-  `ImageReaderOptions` or `ImageWriterOptions`. With `LeaveOpen = false`, a reader owns the stream even when opening it
+  [ImageReaderOptions](cref:Meziantou.Framework.Imaging.ImageReaderOptions) or [ImageWriterOptions](cref:Meziantou.Framework.Imaging.ImageWriterOptions). With `LeaveOpen = false`, a reader owns the stream even when opening it
   fails.
 - With a path, the reader or the writer opens and closes the file itself. A writer to a path publishes the file
-  [atomically](04-SavingImages.md#files-are-published-atomically) when `Complete` succeeds.
+  [atomically](04-SavingImages.md#files-are-published-atomically) when [Complete](cref:Meziantou.Framework.Imaging.ImageWriter{TPixel}.Complete) succeeds.
 - A reader or a writer supports one call at a time: overlapping calls throw an `InvalidOperationException`.

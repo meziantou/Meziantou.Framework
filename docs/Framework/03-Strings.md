@@ -19,7 +19,7 @@ Assert.True(missing.EqualsOrdinal(null));
 ```
 <!-- endref -->
 
-`EqualsIgnoreCase` and `ContainsIgnoreCase` use `StringComparison.OrdinalIgnoreCase`, and `EqualsOrdinal` uses
+[EqualsIgnoreCase](cref:Meziantou.Framework.StringExtensions.EqualsIgnoreCase) and [ContainsIgnoreCase](cref:Meziantou.Framework.StringExtensions.ContainsIgnoreCase) use `StringComparison.OrdinalIgnoreCase`, and [EqualsOrdinal](cref:Meziantou.Framework.StringExtensions.EqualsOrdinal) uses
 `StringComparison.Ordinal`. The comparison is the same whatever the current culture, which is what identifiers, file
 extensions, HTTP headers or configuration keys need.
 
@@ -38,7 +38,7 @@ Assert.Equal("Home", "HomeCONTROLLER".RemoveSuffix("Controller", StringCompariso
 ```
 <!-- endref -->
 
-`RemovePrefix` and `RemoveSuffix` remove one occurrence, only when the string starts or ends with it. The overloads
+[RemovePrefix](cref:Meziantou.Framework.StringExtensions.RemovePrefix) and [RemoveSuffix](cref:Meziantou.Framework.StringExtensions.RemoveSuffix) remove one occurrence, only when the string starts or ends with it. The overloads
 without a `StringComparison` use an ordinal comparison. With a culture-sensitive comparison, the part removed is the
 part that matched, which can be longer or shorter than the value you pass.
 
@@ -56,7 +56,7 @@ Assert.Equal("value", "  value  ".Nullify(trim: true));
 ```
 <!-- endref -->
 
-`Nullify` returns `null` for `null` and empty strings. With `trim: true`, it trims the string first, so a string that
+[Nullify](cref:Meziantou.Framework.StringExtensions.Nullify) returns `null` for `null` and empty strings. With `trim: true`, it trims the string first, so a string that
 contains only white space also gives `null`, and any other string is returned trimmed.
 
 ## Remove diacritics
@@ -67,7 +67,7 @@ Assert.Equal("Creme brulee a l'Ile-de-France", "Crème brûlée à l'Île-de-Fra
 ```
 <!-- endref -->
 
-`RemoveDiacritics` removes the accents and other combining marks, for instance to build a URL slug or to search without
+[RemoveDiacritics](cref:Meziantou.Framework.StringExtensions.RemoveDiacritics) removes the accents and other combining marks, for instance to build a URL slug or to search without
 accents. It also works when the application runs in invariant globalization mode.
 
 ## Replace several characters
@@ -79,7 +79,7 @@ Assert.Equal("reports_2024_q1_draft_", @"reports/2024\q1:draft?".ReplaceAny(inva
 ```
 <!-- endref -->
 
-`ReplaceAny` replaces every character of a `SearchValues<char>` with the same character, and returns the original
+[ReplaceAny](cref:Meziantou.Framework.StringExtensions.ReplaceAny) replaces every character of a `SearchValues<char>` with the same character, and returns the original
 string when there is nothing to replace. Create the `SearchValues<char>` once, in a `static readonly` field, when you
 call it often.
 
@@ -100,11 +100,11 @@ Assert.Equal(["\r\n", "\n", ""], separators);
 ```
 <!-- endref -->
 
-`SplitLines` enumerates the lines of a `string` or a `ReadOnlySpan<char>` without allocating: each line is a
+[SplitLines](cref:Meziantou.Framework.StringExtensions.SplitLines) enumerates the lines of a `string` or a `ReadOnlySpan<char>` without allocating: each line is a
 `ReadOnlySpan<char>`, with the line break that ended it (empty for the last line). Call `ToString` on a line only when
 you need to keep it. A text that ends with a line break does not produce an empty last line.
 
-`\r\n` is one line break. Choose the other characters that end a line with `LineBreakMode`:
+`\r\n` is one line break. Choose the other characters that end a line with [LineBreakMode](cref:Meziantou.Framework.LineBreakMode):
 
 <!-- ref:../../tests/Meziantou.Framework.Tests/StringExtensionsTests.cs;region=StringExtensions_SplitLinesMode;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -128,11 +128,11 @@ Assert.Equal(["a\u2028b"], standardLines);
 ```
 <!-- endref -->
 
-| `LineBreakMode` | Line breaks |
+| [LineBreakMode](cref:Meziantou.Framework.LineBreakMode) | Line breaks |
 | --- | --- |
-| `Standard` | `\r`, `\n` |
-| `Unicode` (default) | `\r`, `\n`, `\u0085` (next line), ` ` (line separator), ` ` (paragraph separator) |
-| `UnicodeWithLegacyControls` | The Unicode ones, plus `\v` (vertical tab) and `\f` (form feed) |
+| [Standard](cref:Meziantou.Framework.LineBreakMode.Standard) | `\r`, `\n` |
+| [Unicode](cref:Meziantou.Framework.LineBreakMode.Unicode) (default) | `\r`, `\n`, `\u0085` (next line), ` ` (line separator), ` ` (paragraph separator) |
+| [UnicodeWithLegacyControls](cref:Meziantou.Framework.LineBreakMode.UnicodeWithLegacyControls) | The Unicode ones, plus `\v` (vertical tab) and `\f` (form feed) |
 
 ## StringBuilder helpers
 
@@ -152,8 +152,8 @@ Assert.True(sb.StartsWith("apple"));
 ```
 <!-- endref -->
 
-`StartsWith` and `EndsWith` check the content of a `StringBuilder` without creating a string, and `TrimStart`,
-`TrimEnd` and `Trim` remove a repeated character at its ends. To append values formatted with the invariant culture,
+[StartsWith](cref:Meziantou.Framework.StringBuilderExtensions.StartsWith) and [EndsWith](cref:Meziantou.Framework.StringBuilderExtensions.EndsWith) check the content of a `StringBuilder` without creating a string, and [TrimStart](cref:Meziantou.Framework.StringBuilderExtensions.TrimStart),
+[TrimEnd](cref:Meziantou.Framework.StringBuilderExtensions.TrimEnd) and [Trim](cref:Meziantou.Framework.StringBuilderExtensions.Trim) remove a repeated character at its ends. To append values formatted with the invariant culture,
 see [Formatting and cultures](04-FormattingAndCultures.md#append-invariant-values).
 
 ## Escape Markdown
@@ -171,7 +171,7 @@ Assert.Equal("`` `code` ``", MarkdownBuilder.CreateCodeSpan("`code`"));
 ```
 <!-- endref -->
 
-- `MarkdownBuilder.Escape` adds a backslash before every ASCII punctuation character, so the text is displayed as is
+- [MarkdownBuilder.Escape](cref:Meziantou.Framework.MarkdownBuilder.Escape) adds a backslash before every ASCII punctuation character, so the text is displayed as is
   instead of being interpreted as Markdown.
-- `MarkdownBuilder.CreateCodeSpan` creates an inline code span. It uses more backticks than the longest run of backticks
+- [MarkdownBuilder.CreateCodeSpan](cref:Meziantou.Framework.MarkdownBuilder.CreateCodeSpan) creates an inline code span. It uses more backticks than the longest run of backticks
   in the content, and adds spaces when the content starts or ends with a backtick.

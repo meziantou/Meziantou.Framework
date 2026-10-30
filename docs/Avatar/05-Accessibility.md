@@ -25,14 +25,14 @@ Assert.DoesNotContain("aria-label", decorative);
 
 ## Announce the full name
 
-Set `AccessibleLabel` to the text to announce, usually the full name, so the avatar is announced as "Ada Lovelace"
+Set [AccessibleLabel](cref:Meziantou.Framework.AvatarOptions.AccessibleLabel) to the text to announce, usually the full name, so the avatar is announced as "Ada Lovelace"
 rather than "AL". Use it when the avatar is shown alone, such as in a list of participants or on a profile button.
 
-The characters that XML forbids are removed from `AccessibleLabel`, like from the name, so you can pass a name typed
+The characters that XML forbids are removed from [AccessibleLabel](cref:Meziantou.Framework.AvatarOptions.AccessibleLabel), like from the name, so you can pass a name typed
 by a user.
 
 ## Hide a decorative avatar
 
-Set `IsDecorative` to `true` when the name is displayed next to the avatar, such as in a comment header: the name would
+Set [IsDecorative](cref:Meziantou.Framework.AvatarOptions.IsDecorative) to `true` when the name is displayed next to the avatar, such as in a comment header: the name would
 otherwise be announced twice. The SVG then has `aria-hidden="true"` instead of a role and a label, and
-`AccessibleLabel` is ignored.
+[AccessibleLabel](cref:Meziantou.Framework.AvatarOptions.AccessibleLabel) is ignored.

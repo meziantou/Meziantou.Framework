@@ -16,7 +16,7 @@ The types are in three namespaces: [Meziantou.Framework.Threading](cref:Mezianto
 
 ## Protect a resource in asynchronous code
 
-The `lock` statement cannot contain an `await`. `AsyncLock` can: only one caller at a time runs the code inside the
+The `lock` statement cannot contain an `await`. [AsyncLock](cref:Meziantou.Framework.Threading.AsyncLock) can: only one caller at a time runs the code inside the
 `using` block, and the others wait asynchronously.
 
 <!-- ref:../../tests/Meziantou.Framework.Threading.Tests/AsyncLockTests.cs;region=AsyncLock_Usage;format=md-fenced-code-block;dedent=true -->
@@ -40,7 +40,7 @@ Assert.Equal(3, counter);
 ```
 <!-- endref -->
 
-- `LockAsync` returns a lease once the lock is acquired. Disposing the lease, at the end of the `using` block, releases
+- [LockAsync](cref:Meziantou.Framework.Threading.AsyncLock.LockAsync) returns a lease once the lock is acquired. Disposing the lease, at the end of the `using` block, releases
   the lock.
 - Without the lock, the three calls could read the same value of `counter` before any of them writes it back.
 
@@ -68,5 +68,5 @@ The tasks run concurrently: awaiting the tuple waits for all of them, like `Task
 
 ## Next steps
 
-- [Locks](03-Locks.md): reader-writer locks, `TryLock`, cancellation and `SemaphoreSlim`.
+- [Locks](03-Locks.md): reader-writer locks, [TryLock](cref:Meziantou.Framework.Threading.AsyncLock.TryLock), cancellation and `SemaphoreSlim`.
 - [Awaiting tasks](08-AwaitingTasks.md): `ValueTask` tuples, failures, and fire-and-forget.

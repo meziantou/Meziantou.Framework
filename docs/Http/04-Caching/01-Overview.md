@@ -3,7 +3,7 @@ title: Overview
 description: What the HTTP cache of Meziantou.Framework.Http.Caching does, its packages, and the pages of this group.
 ---
 
-`Meziantou.Framework.Http.Caching` adds a cache to an `HttpClient`. `HttpCachingDelegateHandler` is a
+`Meziantou.Framework.Http.Caching` adds a cache to an `HttpClient`. [HttpCachingDelegateHandler](cref:Meziantou.Framework.Http.Caching.HttpCachingDelegateHandler) is a
 `DelegatingHandler`: it stores the responses the server allows to store, serves them while they are fresh, revalidates
 them with conditional requests once they are stale, and removes them when a request changes the resource. It follows
 the HTTP caching rules (RFC 7234, since obsoleted by RFC 9111), the `immutable` directive (RFC 8246), `stale-if-error`
@@ -11,14 +11,14 @@ the HTTP caching rules (RFC 7234, since obsoleted by RFC 9111), the `immutable` 
 
 ## Packages
 
-The cache stores its entries in an `IHttpCacheStore`. Each store has its own package:
+The cache stores its entries in an [IHttpCacheStore](cref:Meziantou.Framework.Http.Caching.IHttpCacheStore). Each store has its own package:
 
 | Package | Store | Where the entries live |
 | --- | --- | --- |
-| `Meziantou.Framework.Http.Caching` | | The handler and the `IHttpCacheStore` interface |
-| `Meziantou.Framework.Http.Caching.InMemory` | `InMemoryHttpCacheStore` | In memory, with an optional JSON file to keep them between runs |
-| `Meziantou.Framework.Http.Caching.Sqlite` | `SqliteHttpCacheStore` | In a SQLite database |
-| `Meziantou.Framework.Http.Caching.Redis` | `RedisHttpCacheStore` | In a Redis database |
+| `Meziantou.Framework.Http.Caching` | | The handler and the [IHttpCacheStore](cref:Meziantou.Framework.Http.Caching.IHttpCacheStore) interface |
+| `Meziantou.Framework.Http.Caching.InMemory` | [InMemoryHttpCacheStore](cref:Meziantou.Framework.Http.Caching.InMemory.InMemoryHttpCacheStore) | In memory, with an optional JSON file to keep them between runs |
+| `Meziantou.Framework.Http.Caching.Sqlite` | [SqliteHttpCacheStore](cref:Meziantou.Framework.Http.Caching.Sqlite.SqliteHttpCacheStore) | In a SQLite database |
+| `Meziantou.Framework.Http.Caching.Redis` | [RedisHttpCacheStore](cref:Meziantou.Framework.Http.Caching.Redis.RedisHttpCacheStore) | In a Redis database |
 
 You can also write your own store. See [Cache stores](03-CacheStores.md).
 

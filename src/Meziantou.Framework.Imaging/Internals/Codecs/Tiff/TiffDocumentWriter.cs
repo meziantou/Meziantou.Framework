@@ -24,6 +24,11 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// in as many calls as it needs: its memory is the one of a JPEG file.
 /// </para>
 /// <para>
+/// With several workers (<see cref="ImageConfiguration.MaxDegreeOfParallelism"/>), LZW and Deflate strips are compressed
+/// by batches of one strip per worker, each into an output of its own, and appended in order, one per call: the file and
+/// its flushes are those of one worker, and the memory is one strip and its compressed bytes per worker.
+/// </para>
+/// <para>
 /// Nothing is lost silently. The bilevel and palette layouts store a page exactly or reject it, and so does a layout
 /// without alpha given a pixel that is not opaque: <see cref="PreparePage"/> reads the whole frame before anything of
 /// the page is written.
@@ -59,6 +64,8 @@ internal sealed class TiffDocumentWriter : IDisposable
     private long _nextPointerOffset = -1;
     private PageState _page;
     private int _rowsWritten;
+    private StripWorkers? _workers;
+    private bool _workersChosen;
 
     /// <summary>Creates the writer of a document.</summary>
     /// <param name="encoder">The encoder settings.</param>
@@ -250,6 +257,9 @@ internal sealed class TiffDocumentWriter : IDisposable
 
         _page = new PageState(frame, size, pixelFormat, layout, metadata, (int)rowLength, rowsPerStrip, prepared.Palette, prepared.PaletteIndexes);
         _rowsWritten = 0;
+        _workers?.Dispose();
+        _workers = null;
+        _workersChosen = false;
         _stripOffsets.Clear();
         _stripByteCounts.Clear();
         if (isJpeg)
@@ -283,6 +293,15 @@ internal sealed class TiffDocumentWriter : IDisposable
         ArgumentNullException.ThrowIfNull(output);
         if (_jpeg is not null)
             return EncodeJpeg(output, cancellationToken);
+
+        if (!_workersChosen)
+        {
+            _workersChosen = true;
+            _workers = CreateWorkers(output);
+        }
+
+        if (_workers is not null)
+            return EncodeStripOfWorkers(output, _workers, cancellationToken);
 
         var rows = Math.Min(_page.RowsPerStrip, _page.Size.Height - _rowsWritten);
         var rowLength = _page.RowLength;
@@ -323,12 +342,7 @@ internal sealed class TiffDocumentWriter : IDisposable
                 break;
 
             default:
-                using (var destination = new BufferWriterStream(output))
-                using (var zlib = new ZLibStream(destination, CompressionLevel.Optimal, leaveOpen: true))
-                {
-                    zlib.Write(stored);
-                }
-
+                Deflate(stored, output);
                 break;
         }
 
@@ -352,6 +366,8 @@ internal sealed class TiffDocumentWriter : IDisposable
 
     public void Dispose()
     {
+        _workers?.Dispose();
+        _workers = null;
         _strip?.Dispose();
         _strip = null;
         _converted?.Dispose();
@@ -364,6 +380,158 @@ internal sealed class TiffDocumentWriter : IDisposable
         _jpeg = null;
         _prepared = null;
         _page = default;
+    }
+
+    private static void Deflate(ReadOnlySpan<byte> stored, ImageOutputBuffer output)
+    {
+        using var destination = new BufferWriterStream(output);
+        using var zlib = new ZLibStream(destination, CompressionLevel.Optimal, leaveOpen: true);
+        zlib.Write(stored);
+    }
+
+    /// <summary>
+    /// Gets the largest number of bytes a strip of <paramref name="length"/> bytes is compressed to, when its strips are
+    /// compressed by several workers (LZW and Deflate).
+    /// </summary>
+    /// <remarks>
+    /// A Deflate block is stored, or coded with the fixed codes when they are shorter than its own: at most 9 bits per byte
+    /// (a literal of 9 bits, or a match of 3 bytes coded with 25 bits at most), and a few bytes per block of at least 16,383
+    /// symbols, with the 6 bytes of the zlib wrapper; the bound adds a margin to that. The bit writer of LZW asks for 4,096
+    /// bytes of room when it starts.
+    /// </remarks>
+    private long GetMaxCompressedLength(long length) => _compression == TiffFormat.CompressionLzw
+        ? TiffLzwEncoder.GetMaxEncodedLength(length) + 4096
+        : length + (length / 8) + (length / 1024) + 1024;
+
+    /// <summary>
+    /// Chooses whether the strips of the current page are compressed by several workers
+    /// (<see cref="ImageConfiguration.MaxDegreeOfParallelism"/>): LZW and Deflate strips of a page of at least
+    /// <see cref="RowBands.MinPixelsForParallelism"/> pixels and two strips, and as many workers as the live bytes the scope
+    /// has left can give their memory to, after the growth of the output buffer one worker would cause. Uncompressed,
+    /// PackBits and CCITT strips cost about what serializing them costs.
+    /// </summary>
+    /// <returns>The workers, or <see langword="null"/> for one worker.</returns>
+    private StripWorkers? CreateWorkers(ImageOutputBuffer output)
+    {
+        var page = _page;
+        var stripCount = (page.Size.Height + page.RowsPerStrip - 1) / page.RowsPerStrip;
+        if (_configuration.MaxDegreeOfParallelism <= 1 || _compression is not (TiffFormat.CompressionLzw or TiffFormat.CompressionAdobeDeflate) || stripCount < 2 || (long)page.Size.Width * page.Size.Height < RowBands.MinPixelsForParallelism)
+            return null;
+
+        var stripLength = (long)page.RowLength * page.RowsPerStrip;
+        var compressedLength = GetMaxCompressedLength(stripLength);
+        if (compressedLength > CheckedSizes.MaxBufferLength)
+            return null;
+
+        // One worker rents the table of LZW with its first strip, and grows the output buffer to hold the bytes written
+        // between two flushes (the old and the new buffer are live together while it grows): the other workers need a strip,
+        // a table and an output of their own, and the first one an output
+        var encoderBytes = _compression == TiffFormat.CompressionLzw ? _scope.GetChargedSize(TiffLzwEncoder.StateLength) : 0;
+        var outputBytes = _scope.GetChargedSize(compressedLength);
+        var workerBytes = _scope.GetChargedSize(stripLength) + encoderBytes + outputBytes;
+        var oneWorkerBytes = (_lzw is null ? encoderBytes : 0) + (3 * _scope.GetChargedSize(output.FlushThreshold + compressedLength));
+        var available = _scope.Limit - _scope.LiveBytes - oneWorkerBytes - outputBytes;
+        if (available < workerBytes)
+            return null;
+
+        var workers = (int)Math.Min(1 + (available / workerBytes), Math.Min(_configuration.MaxDegreeOfParallelism, stripCount));
+        var created = new StripWorkers(workers);
+        try
+        {
+            for (var i = 0; i < workers; i++)
+            {
+                // The first worker uses the strip and the table of the writer
+                if (i == 0)
+                {
+                    created.Strips[i] = _strip!;
+                    created.Encoders[i] = _compression == TiffFormat.CompressionLzw ? _lzw ??= new TiffLzwEncoder(_scope) : null;
+                }
+                else
+                {
+                    created.Strips[i] = _scope.Rent((int)stripLength, AllocationKind.Temporary, clear: false);
+                    created.Encoders[i] = _compression == TiffFormat.CompressionLzw ? new TiffLzwEncoder(_scope) : null;
+                }
+
+                var compressed = new ImageOutputBuffer(_scope);
+                created.Outputs[i] = compressed;
+                _ = compressed.GetSpan((int)compressedLength);
+            }
+        }
+        catch
+        {
+            created.Dispose();
+            throw;
+        }
+
+        return created;
+    }
+
+    /// <summary>
+    /// Writes the next strip of a page whose strips several workers compress: the rows of a batch of one strip per worker
+    /// are serialized on this thread, the workers compress them, each into an output of its own, and the strips are
+    /// appended in order, one per call, so the file and its flushes are the ones of one worker.
+    /// </summary>
+    private bool EncodeStripOfWorkers(ImageOutputBuffer output, StripWorkers workers, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (workers.Next == workers.Count)
+        {
+            var rowLength = _page.RowLength;
+            var row = _rowsWritten;
+            var count = 0;
+            using (var lease = _page.Frame.GetStorage().AcquireLease())
+            {
+                while (count < workers.Strips.Length && row < _page.Size.Height)
+                {
+                    var rows = Math.Min(_page.RowsPerStrip, _page.Size.Height - row);
+                    var stored = workers.Strips[count].Span;
+                    for (var i = 0; i < rows; i++)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        SerializeRow(lease.GetRowBytes(row + i), stored.Slice(i * rowLength, rowLength));
+                    }
+
+                    workers.Rows[count] = rows;
+                    row += rows;
+                    count++;
+                }
+            }
+
+            workers.Count = 0;
+            workers.Next = 0;
+            var compression = _compression;
+            RowBands.RunParallelInBandOrder(count, worker =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var compressed = workers.Outputs[worker];
+                compressed.FlushTo(Stream.Null);
+                var stored = workers.Strips[worker].Span[..(workers.Rows[worker] * rowLength)];
+                if (compression == TiffFormat.CompressionLzw)
+                {
+                    workers.Encoders[worker]!.Encode(stored, compressed);
+                }
+                else
+                {
+                    Deflate(stored, compressed);
+                }
+            });
+
+            workers.Count = count;
+        }
+
+        var strip = workers.Next++;
+        var start = output.TotalBytes;
+        _stripOffsets.Add((ulong)start);
+        output.Write(workers.Outputs[strip].WrittenMemory.Span);
+        _stripByteCounts.Add((ulong)(output.TotalBytes - start));
+        _rowsWritten += workers.Rows[strip];
+        if (HasPendingRows)
+            return false;
+
+        // The memory of the workers is released before the directory is written, as one worker's would be
+        workers.Dispose();
+        _workers = null;
+        return true;
     }
 
     private void EnsureBuffer(ref PooledBuffer? buffer, int length)
@@ -963,6 +1131,44 @@ internal sealed class TiffDocumentWriter : IDisposable
 
     [StructLayout(LayoutKind.Auto)]
     private readonly record struct PageState(ImageFrame Frame, Size Size, PixelFormat PixelFormat, TiffSampleLayout Layout, MetadataWritePlan Metadata, int RowLength, int RowsPerStrip, ulong[]? Palette, Dictionary<ulong, byte>? PaletteIndexes);
+
+    /// <summary>
+    /// The memory of the workers that compress the strips of a page: a strip, an LZW table and an output each (the first
+    /// worker uses the strip and the table of the writer), and the strips of the current batch.
+    /// </summary>
+    private sealed class StripWorkers(int count) : IDisposable
+    {
+        public PooledBuffer[] Strips { get; } = new PooledBuffer[count];
+
+        public TiffLzwEncoder?[] Encoders { get; } = new TiffLzwEncoder?[count];
+
+        public ImageOutputBuffer[] Outputs { get; } = new ImageOutputBuffer[count];
+
+        public int[] Rows { get; } = new int[count];
+
+        /// <summary>Gets or sets the number of strips of the batch.</summary>
+        public int Count { get; set; }
+
+        /// <summary>Gets or sets the strip of the batch that is appended next.</summary>
+        public int Next { get; set; }
+
+        public void Dispose()
+        {
+            for (var i = 0; i < Strips.Length; i++)
+            {
+                if (i > 0)
+                {
+                    Strips[i]?.Dispose();
+                    Encoders[i]?.Dispose();
+                }
+
+                Outputs[i]?.Dispose();
+                Strips[i] = null!;
+                Encoders[i] = null;
+                Outputs[i] = null!;
+            }
+        }
+    }
 
     /// <summary>What <see cref="PreparePage"/> found in a frame, kept until the page of that frame begins.</summary>
     private sealed class PreparedPage(ImageFrame frame, PixelFormat pixelFormat, TiffSampleLayout layout)

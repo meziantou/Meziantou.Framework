@@ -20,17 +20,17 @@ var options = new HttpRecordingOptions
 ```
 <!-- endref -->
 
-- `HeaderRemovalSanitizer` removes the named headers, compared case-insensitively, from the request and the response.
+- [HeaderRemovalSanitizer](cref:Meziantou.Framework.Http.Recording.HeaderRemovalSanitizer) removes the named headers, compared case-insensitively, from the request and the response.
   It does not touch the URI or the bodies.
-- `UriQueryParameterSanitizer` replaces the value of the named query string parameters with `***`.
+- [UriQueryParameterSanitizer](cref:Meziantou.Framework.Http.Recording.UriQueryParameterSanitizer) replaces the value of the named query string parameters with `***`.
 - Credentials in the URI (`https://user:password@host/`) are always removed, without a sanitizer.
 
-The sanitizers run in the order of the `Sanitizers` list. There are none by default.
+The sanitizers run in the order of the [Sanitizers](cref:Meziantou.Framework.Http.Recording.HttpRecordingOptions.Sanitizers) list. There are none by default.
 
 ## Rewrite a body
 
-Implement `IHttpRecordingSanitizer` to change anything else. `Sanitize` receives the `HttpRecordingEntry` and changes it
-in place; `RequestBody` and `ResponseBody` are the bodies as bytes. This sanitizer replaces a known secret, such as a
+Implement [IHttpRecordingSanitizer](cref:Meziantou.Framework.Http.Recording.IHttpRecordingSanitizer) to change anything else. [Sanitize](cref:Meziantou.Framework.Http.Recording.IHttpRecordingSanitizer.Sanitize) receives the [HttpRecordingEntry](cref:Meziantou.Framework.Http.Recording.HttpRecordingEntry) and changes it
+in place; [RequestBody](cref:Meziantou.Framework.Http.Recording.HttpRecordingEntry.RequestBody) and [ResponseBody](cref:Meziantou.Framework.Http.Recording.HttpRecordingEntry.ResponseBody) are the bodies as bytes. This sanitizer replaces a known secret, such as a
 token read from the test configuration, in the response bodies:
 
 <!-- ref:../../../tests/Meziantou.Framework.Http.Recording.Tests/HttpRecordingHandlerTests.cs;region=HttpRecording_ResponseBodySanitizer;format=md-fenced-code-block;dedent=true -->

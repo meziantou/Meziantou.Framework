@@ -6,7 +6,7 @@ description: Create objects and arrays for the scripts, read the objects they re
 ## Create objects and arrays
 
 `realm.CreateObject` creates an empty object, and `realm.CreateArray` an array of values. Set their properties with
-`SetProperty`, or define them with `DefineProperty` to choose their attributes:
+[SetProperty](cref:Meziantou.Framework.JavaScriptEngine.JsObject.SetProperty), or define them with [DefineProperty](cref:Meziantou.Framework.JavaScriptEngine.JsObject.DefineProperty) to choose their attributes:
 
 <!-- ref:../../../tests/Meziantou.Framework.JavaScriptEngine.Tests/JsEngineTests.cs;region=JavaScriptEngine_CreateObjects;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -31,9 +31,9 @@ Assert.Equal("1.0", realm.Execute("settings.version").AsString());
 ```
 <!-- endref -->
 
-- `SetProperty` assigns a property, as `obj.name = value` does. It returns false when the assignment fails, for
+- [SetProperty](cref:Meziantou.Framework.JavaScriptEngine.JsObject.SetProperty) assigns a property, as `obj.name = value` does. It returns false when the assignment fails, for
   instance on a read-only property.
-- `DefineProperty` takes a `JsPropertyDescriptor`: `JsPropertyDescriptor.Data(value, writable, enumerable,
+- [DefineProperty](cref:Meziantou.Framework.JavaScriptEngine.JsObject.DefineProperty) takes a [JsPropertyDescriptor](cref:Meziantou.Framework.JavaScriptEngine.JsPropertyDescriptor): `JsPropertyDescriptor.Data(value, writable, enumerable,
   configurable)` for a value, `JsPropertyDescriptor.Accessor(getter, setter, enumerable, configurable)` for a getter and
   a setter, which are functions (see [Functions](04-Functions.md)). It returns false when the property cannot be
   defined.
@@ -69,14 +69,14 @@ using (engine.Enter())
 ```
 <!-- endref -->
 
-- `GetProperty` reads a property through the prototype chain, as `obj.name` does: it calls getters, and the traps of
+- [GetProperty](cref:Meziantou.Framework.JavaScriptEngine.JsObject.GetProperty) reads a property through the prototype chain, as `obj.name` does: it calls getters, and the traps of
   a `Proxy`. A missing property is `undefined`.
-- `TryGetOwnProperty` reads the descriptor of an own property without calling its getter.
-- `GetOwnPropertyKeys` returns the keys of the own properties in the order of JavaScript: the array indexes, then the
+- [TryGetOwnProperty](cref:Meziantou.Framework.JavaScriptEngine.JsObject.TryGetOwnProperty) reads the descriptor of an own property without calling its getter.
+- [GetOwnPropertyKeys](cref:Meziantou.Framework.JavaScriptEngine.JsObject.GetOwnPropertyKeys) returns the keys of the own properties in the order of JavaScript: the array indexes, then the
   strings in creation order, then the symbols. It includes the properties that are not enumerable.
-- `ContainsProperty` tests a property of the object or of its prototypes, as `key in obj` does.
-- An array is a `JsArray`: `Length` is its length, and its elements are the properties `"0"`, `"1"`...
-- `DeleteProperty`, `GetPrototype`, `SetPrototype` and `PreventObjectExtensions` do what `delete`,
+- [ContainsProperty](cref:Meziantou.Framework.JavaScriptEngine.JsObject.ContainsProperty) tests a property of the object or of its prototypes, as `key in obj` does.
+- An array is a [JsArray](cref:Meziantou.Framework.JavaScriptEngine.JsArray): [Length](cref:Meziantou.Framework.JavaScriptEngine.JsArray.Length) is its length, and its elements are the properties `"0"`, `"1"`...
+- [DeleteProperty](cref:Meziantou.Framework.JavaScriptEngine.JsObject.DeleteProperty), [GetPrototype](cref:Meziantou.Framework.JavaScriptEngine.JsObject.GetPrototype), [SetPrototype](cref:Meziantou.Framework.JavaScriptEngine.JsObject.SetPrototype) and [PreventObjectExtensions](cref:Meziantou.Framework.JavaScriptEngine.JsObject.PreventObjectExtensions) do what `delete`,
   `Object.getPrototypeOf`, `Object.setPrototypeOf` and `Object.preventExtensions` do.
 
 ## Create properties on first use
@@ -105,9 +105,9 @@ Assert.Equal(1, created);
 ```
 <!-- endref -->
 
-`DefineLazyAccessorProperty` does the same for a getter and a setter. Each method has an overload that passes a state
+[DefineLazyAccessorProperty](cref:Meziantou.Framework.JavaScriptEngine.JsObject.DefineLazyAccessorProperty) does the same for a getter and a setter. Each method has an overload that passes a state
 to a static factory, so the properties do not allocate a closure each. When you define hundreds of properties on an
-object, call `ReserveProperties` first.
+object, call [ReserveProperties](cref:Meziantou.Framework.JavaScriptEngine.JsObject.ReserveProperties) first.
 
 ## Exchange data as JSON
 

@@ -31,8 +31,8 @@ public static void CreateThumbnails(IReadOnlyList<string> inputPaths, string out
 
 | Thread-safe | Not thread-safe |
 | --- | --- |
-| The static methods: `Load`, `Identify`, `DetectFormat`, … | An `Image` and its frames, while any thread changes them or holds a [lease](04-OwnershipAndLifetimes.md#leases) |
-| The immutable types: configurations, limits, options, encoders, `MetadataBlob`, profiles, brushes, pens, paths | A reader or a writer: one call at a time |
+| The static methods: [Load](cref:Meziantou.Framework.Imaging.Image.Load), [Identify](cref:Meziantou.Framework.Imaging.Image.Identify), [DetectFormat](cref:Meziantou.Framework.Imaging.Image.DetectFormat), … | An [Image](cref:Meziantou.Framework.Imaging.Image) and its frames, while any thread changes them or holds a [lease](04-OwnershipAndLifetimes.md#leases) |
+| The immutable types: configurations, limits, options, encoders, [MetadataBlob](cref:Meziantou.Framework.Imaging.Metadata.MetadataBlob), profiles, brushes, pens, paths | A reader or a writer: one call at a time |
 
 An image supports one operation at a time: do not use it from another thread while one thread changes it or holds a
 lease on it, and every pixel access holds one. Readers and writers detect overlapping calls and throw an
@@ -41,17 +41,21 @@ when several threads share an image, synchronize them yourself.
 
 ## Parallelism inside an operation
 
-By default, an operation runs on the calling thread only (`ImageConfiguration.MaxDegreeOfParallelism` is 1). With a
+By default, an operation runs on the calling thread only ([ImageConfiguration.MaxDegreeOfParallelism](cref:Meziantou.Framework.Imaging.ImageConfiguration.MaxDegreeOfParallelism) is 1). With a
 higher value, large resizes, transformations, convolutions, blurs, medians and unsharp masks split their rows into
-bands processed concurrently, and the tiles of large HEIC and AVIF grids are decoded and encoded concurrently. The
-result is identical to the sequential one: the same pixels and the same encoded bytes.
+bands processed concurrently, and the decoders and encoders of JPEG, TIFF, OpenEXR, JPEG 2000, JPEG XL, AVIF and HEIC
+split the independent parts of large images (rows, strips, chunks, code-blocks, groups, tiles) between threads. The
+result is identical to the sequential one: the same pixels, the same encoded bytes and the same error. Each thread
+needs memory of its own, counted by
+[ImageResourceLimits.MaxLiveAllocationBytes](cref:Meziantou.Framework.Imaging.ImageResourceLimits.MaxLiveAllocationBytes),
+so a limit that fits one thread may not fit several.
 
 Keep the default in a service that already processes several images at once: the bound applies to each operation, so
 `n` concurrent operations can use up to `n` times that many threads. See [Performance](../11-Performance.md).
 
 ## Geometry changes are all or nothing
 
-`Crop`, `AutoCrop`, `Resize`, `Pad`, `ExtendCanvas`, `Rotate`, `Skew`, `Transform` and `AutoOrient` apply to every
+[Crop](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Crop), [AutoCrop](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoCrop), [Resize](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Resize), [Pad](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Pad), [ExtendCanvas](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ExtendCanvas), [Rotate](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Rotate), [Skew](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Skew), [Transform](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Transform) and [AutoOrient](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoOrient) apply to every
 frame and to the poster in one transaction. If they fail before the end, because of a limit, an allocation failure or a
 cancellation, the image is unchanged: its size, pixels, frames and their order, cursor hotspots and metadata:
 
@@ -78,16 +82,16 @@ needs memory for both, within the allocation limit of the image.
 
 ## Pixel edits can be partial
 
-The operations that change pixels in place write as they go: `Flip`, `Grayscale`, `Convolve` and the blurs and
-sharpening, `Equalize`, `AutoLevels`, `Draw`, your own row callbacks, and `ReadFrameInto` of a reader. If they fail or
+The operations that change pixels in place write as they go: [Flip](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Flip), [Grayscale](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Grayscale), [Convolve](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Convolve) and the blurs and
+sharpening, [Equalize](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Equalize), [AutoLevels](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoLevels), [Draw](cref:Meziantou.Framework.Imaging.Image.Draw), your own row callbacks, and [ReadFrameInto](cref:Meziantou.Framework.Imaging.ImageReader{TPixel}.ReadFrameInto) of a reader. If they fail or
 are canceled, some rows or frames may already be updated, but the image stays valid and you can dispose it, keep
 editing it or save it.
 
-- `Convolve`, `GaussianBlur`, `BoxBlur`, `MedianBlur`, `Sharpen`, `Equalize` and `AutoLevels` allocate their working
+- [Convolve](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Convolve), [GaussianBlur](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.GaussianBlur), [BoxBlur](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.BoxBlur), [MedianBlur](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.MedianBlur), [Sharpen](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Sharpen), [Equalize](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Equalize) and [AutoLevels](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoLevels) allocate their working
   memory first: exceeding the allocation limit leaves the image unchanged.
-- In a `Draw` callback, the shapes already drawn stay drawn.
+- In a [Draw](cref:Meziantou.Framework.Imaging.Image.Draw) callback, the shapes already drawn stay drawn.
 
-When you need all or nothing for a pixel edit, work on a `Clone()` and keep the original until the edit succeeds.
+When you need all or nothing for a pixel edit, work on a [Clone()](cref:Meziantou.Framework.Imaging.Image.Clone) and keep the original until the edit succeeds.
 
 ## Cancellation
 

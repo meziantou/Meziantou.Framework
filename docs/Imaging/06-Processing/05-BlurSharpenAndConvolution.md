@@ -35,17 +35,17 @@ public static void CleanUpScan(string inputPath, string cleanedPath, string back
 ```
 <!-- endref -->
 
-- The threshold of `Sharpen` keeps flat areas and their noise as they are, while the details get more contrast. Its
+- The threshold of [Sharpen](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Sharpen) keeps flat areas and their noise as they are, while the details get more contrast. Its
   result is clamped to the range of the samples: the ringing beyond black and white is clipped, except for the colors
   of floating-point samples.
-- `GaussianBlur`, `BoxBlur` and `Sharpen` take an edge mode and a working space, as a convolution does (see below).
-  `MedianBlur` takes an edge mode and filters every sample, alpha included, as stored: it computes nothing, it only
+- [GaussianBlur](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.GaussianBlur), [BoxBlur](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.BoxBlur) and [Sharpen](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Sharpen) take an edge mode and a working space, as a convolution does (see below).
+  [MedianBlur](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.MedianBlur) takes an edge mode and filters every sample, alpha included, as stored: it computes nothing, it only
   picks one of the samples.
 
 ## Apply a convolution matrix
 
-`Convolve` replaces every sample by the weighted sum of the same sample of the neighboring pixels: sharpening,
-blurring, embossing and edge detection are all matrices. A `ConvolutionKernel` has odd dimensions, its middle weight
+[Convolve](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Convolve) replaces every sample by the weighted sum of the same sample of the neighboring pixels: sharpening,
+blurring, embossing and edge detection are all matrices. A [ConvolutionKernel](cref:Meziantou.Framework.Imaging.ConvolutionKernel) has odd dimensions, its middle weight
 is the one of the pixel itself, and its weights are given row by row:
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_Convolve;format=md-fenced-code-block;dedent=true -->
@@ -72,24 +72,24 @@ public static void SharpenAndDetectEdges(string inputPath, string sharpenedPath,
 <!-- endref -->
 
 The matrix is applied as written: the top-left weight multiplies the top-left neighbor (it is not flipped), and the
-weights are used as given. Divide them by their sum to keep the overall brightness. `ConvolutionKernel` has the
-published matrices `SobelX`, `SobelY`, `ScharrX`, `ScharrY`, `PrewittX`, `PrewittY` (horizontal and vertical
-gradients), `Laplacian3x3`, `Laplacian5x5`, `LaplacianOfGaussian`, `Emboss` and `Sharpen3x3`.
+weights are used as given. Divide them by their sum to keep the overall brightness. [ConvolutionKernel](cref:Meziantou.Framework.Imaging.ConvolutionKernel) has the
+published matrices [SobelX](cref:Meziantou.Framework.Imaging.ConvolutionKernel.SobelX), [SobelY](cref:Meziantou.Framework.Imaging.ConvolutionKernel.SobelY), [ScharrX](cref:Meziantou.Framework.Imaging.ConvolutionKernel.ScharrX), [ScharrY](cref:Meziantou.Framework.Imaging.ConvolutionKernel.ScharrY), [PrewittX](cref:Meziantou.Framework.Imaging.ConvolutionKernel.PrewittX), [PrewittY](cref:Meziantou.Framework.Imaging.ConvolutionKernel.PrewittY) (horizontal and vertical
+gradients), [Laplacian3x3](cref:Meziantou.Framework.Imaging.ConvolutionKernel.Laplacian3x3), [Laplacian5x5](cref:Meziantou.Framework.Imaging.ConvolutionKernel.Laplacian5x5), [LaplacianOfGaussian](cref:Meziantou.Framework.Imaging.ConvolutionKernel.LaplacianOfGaussian), [Emboss](cref:Meziantou.Framework.Imaging.ConvolutionKernel.Emboss) and [Sharpen3x3](cref:Meziantou.Framework.Imaging.ConvolutionKernel.Sharpen3x3).
 
-`ConvolutionOptions` chooses:
+[ConvolutionOptions](cref:Meziantou.Framework.Imaging.ConvolutionOptions) chooses:
 
 | Option | Default | Meaning |
 | --- | --- | --- |
-| `EdgeMode` | `Clamp` | The pixels read outside the image: `Clamp` (the nearest edge pixel), `Mirror` (the image reflected about its border), `Wrap` (the image tiled) or `Zero` (transparent black) |
-| `PreserveAlpha` | `false` | By default, colors are filtered premultiplied by alpha and alpha is filtered too, so that hidden colors never bleed. A matrix whose weights add up to zero then turns every pixel transparent: set `true` to filter the colors as stored and keep alpha |
-| `WorkingSpace` | `Encoded` | `Encoded` filters the stored values; `LinearSrgb` filters linear light, as for [resizing](03-Resizing.md) |
-| `Bias` | 0 | Added to every color sum, as a fraction of the range: 0.5 shows the negative sums of a gradient or an emboss as darker than mid-gray instead of black |
+| [EdgeMode](cref:Meziantou.Framework.Imaging.ConvolutionOptions.EdgeMode) | [Clamp](cref:Meziantou.Framework.Imaging.ConvolutionEdgeMode.Clamp) | The pixels read outside the image: [Clamp](cref:Meziantou.Framework.Imaging.ConvolutionEdgeMode.Clamp) (the nearest edge pixel), [Mirror](cref:Meziantou.Framework.Imaging.ConvolutionEdgeMode.Mirror) (the image reflected about its border), [Wrap](cref:Meziantou.Framework.Imaging.ConvolutionEdgeMode.Wrap) (the image tiled) or [Zero](cref:Meziantou.Framework.Imaging.ConvolutionEdgeMode.Zero) (transparent black) |
+| [PreserveAlpha](cref:Meziantou.Framework.Imaging.ConvolutionOptions.PreserveAlpha) | `false` | By default, colors are filtered premultiplied by alpha and alpha is filtered too, so that hidden colors never bleed. A matrix whose weights add up to zero then turns every pixel transparent: set `true` to filter the colors as stored and keep alpha |
+| [WorkingSpace](cref:Meziantou.Framework.Imaging.ConvolutionOptions.WorkingSpace) | [Encoded](cref:Meziantou.Framework.Imaging.ConvolutionWorkingSpace.Encoded) | [Encoded](cref:Meziantou.Framework.Imaging.ConvolutionWorkingSpace.Encoded) filters the stored values; [LinearSrgb](cref:Meziantou.Framework.Imaging.ConvolutionWorkingSpace.LinearSrgb) filters linear light, as for [resizing](03-Resizing.md) |
+| [Bias](cref:Meziantou.Framework.Imaging.ConvolutionOptions.Bias) | 0 | Added to every color sum, as a fraction of the range: 0.5 shows the negative sums of a gradient or an emboss as darker than mid-gray instead of black |
 
 The sums are computed in double precision at the storage precision, then rounded and clamped to the range of the
 samples: negative sums become 0. A separable matrix, whose weights are the products of a row and a column of weights
 (a box, a binomial, Sobel), is applied as two passes, rows then columns: its cost grows with the sum of its
 dimensions instead of their product.
-`ConvolutionKernel.CreateSeparable(rowWeights, columnWeights)` makes one, and `IsSeparable` tells whether a matrix is
+`ConvolutionKernel.CreateSeparable(rowWeights, columnWeights)` makes one, and [IsSeparable](cref:Meziantou.Framework.Imaging.ConvolutionKernel.IsSeparable) tells whether a matrix is
 one.
 
 ## Detect edges
@@ -109,23 +109,23 @@ public static void DetectEdges(string inputPath, string edgesPath)
 ```
 <!-- endref -->
 
-| `EdgeDetector` | Strength of an edge |
+| [EdgeDetector](cref:Meziantou.Framework.Imaging.EdgeDetector) | Strength of an edge |
 | --- | --- |
-| `Sobel`, `Scharr`, `Prewitt` | The magnitude of the horizontal and vertical gradients |
-| `Kirsch`, `Robinson` | The largest response of the eight directions of a compass |
-| `Laplacian3x3`, `Laplacian5x5`, `LaplacianOfGaussian` | The absolute value of a Laplacian |
+| [Sobel](cref:Meziantou.Framework.Imaging.EdgeDetector.Sobel), [Scharr](cref:Meziantou.Framework.Imaging.EdgeDetector.Scharr), [Prewitt](cref:Meziantou.Framework.Imaging.EdgeDetector.Prewitt) | The magnitude of the horizontal and vertical gradients |
+| [Kirsch](cref:Meziantou.Framework.Imaging.EdgeDetector.Kirsch), [Robinson](cref:Meziantou.Framework.Imaging.EdgeDetector.Robinson) | The largest response of the eight directions of a compass |
+| [Laplacian3x3](cref:Meziantou.Framework.Imaging.EdgeDetector.Laplacian3x3), [Laplacian5x5](cref:Meziantou.Framework.Imaging.EdgeDetector.Laplacian5x5), [LaplacianOfGaussian](cref:Meziantou.Framework.Imaging.EdgeDetector.LaplacianOfGaussian) | The absolute value of a Laplacian |
 
-By default, `DetectEdges` converts every frame to grayscale first, which gives white edges on black; with
-`grayscale: false`, every color has its own edges. Alpha is kept. The edge mode `Clamp` (default) finds no edge along
-the border of the image, and `Zero` reads black beyond it.
+By default, [DetectEdges](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.DetectEdges) converts every frame to grayscale first, which gives white edges on black; with
+`grayscale: false`, every color has its own edges. Alpha is kept. The edge mode [Clamp](cref:Meziantou.Framework.Imaging.ConvolutionEdgeMode.Clamp) (default) finds no edge along
+the border of the image, and [Zero](cref:Meziantou.Framework.Imaging.ConvolutionEdgeMode.Zero) reads black beyond it.
 
 ## Precision and cost
 
 16-bit images are filtered with 16-bit precision, and the colors of floating-point images are not clamped. The working
-memory is charged to the allocation limit of the image. `Convolve`, the blurs and `Sharpen` rent it before any pixel
+memory is charged to the allocation limit of the image. [Convolve](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Convolve), the blurs and [Sharpen](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Sharpen) rent it before any pixel
 changes, so an exceeded [limit](../05-LoadingAndSaving/07-ResourceLimits.md) leaves the image unchanged. The EXIF
 thumbnail, now stale, is removed.
 
-The cost of `GaussianBlur` grows with its deviation, the cost of `BoxBlur` does not depend on its radius, and the cost
+The cost of [GaussianBlur](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.GaussianBlur) grows with its deviation, the cost of [BoxBlur](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.BoxBlur) does not depend on its radius, and the cost
 of a matrix grows with its number of non-zero weights, unless it is separable. Large frames can be split between
 several threads: see [Performance](../11-Performance.md).

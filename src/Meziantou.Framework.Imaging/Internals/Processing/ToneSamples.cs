@@ -560,7 +560,8 @@ internal static class ToneSamples
 
     /// <summary>
     /// Computes the luma of stored pixels, with the result of <see cref="Read"/> followed by <see cref="ComputeLuma"/>; the
-    /// samples are only written for the pixels whose luma is not computed from the stored bytes directly.
+    /// samples are only written for the pixels whose luma is not computed from the stored bytes directly, at the offset of
+    /// their pixel: the samples of the other pixels are left unchanged.
     /// </summary>
     /// <param name="format">The pixel format.</param>
     /// <param name="pixels">The stored pixels, at least <c>luma.Length</c> of them.</param>
@@ -580,7 +581,7 @@ internal static class ToneSamples
 
         if (done < luma.Length)
         {
-            var rest = samples[..(4 * (luma.Length - done))];
+            var rest = samples[(4 * done)..(4 * luma.Length)];
             Read(format, pixels[(done * PixelFormats.GetBytesPerPixel(format))..], rest);
             ComputeLuma(rest, luma[done..]);
         }

@@ -5,7 +5,7 @@ description: Render GitHub alerts, custom containers, definition lists, figures,
 
 ## Alerts
 
-`UseAlertBlocks` renders the alerts of GitHub: a quote whose first line is `[!NOTE]`, `[!TIP]`, `[!IMPORTANT]`,
+[UseAlertBlocks](cref:Meziantou.Framework.Markdown.MarkdownExtensions.UseAlertBlocks) renders the alerts of GitHub: a quote whose first line is `[!NOTE]`, `[!TIP]`, `[!IMPORTANT]`,
 `[!WARNING]` or `[!CAUTION]`. The alert is a `<div>` with the classes `markdown-alert` and `markdown-alert-<kind>`, and a
 title with the icon of GitHub:
 
@@ -44,7 +44,7 @@ list items. An alert is never accepted inside another alert.
 
 ## Custom containers
 
-`UseCustomContainers` renders the blocks fenced by `:::` as a `<div>` whose class is the word after the opening fence,
+[UseCustomContainers](cref:Meziantou.Framework.Markdown.MarkdownExtensions.UseCustomContainers) renders the blocks fenced by `:::` as a `<div>` whose class is the word after the opening fence,
 and the text between `::` as a `<span>`. Give the `<span>` a class with an [attribute](06-GenericAttributes.md):
 
 <!-- ref:../../../tests/Meziantou.Framework.Markdown.Tests/TestCoreApi.cs;region=MarkdownExtensions_UseCustomContainers;format=md-fenced-code-block;dedent=true -->
@@ -59,13 +59,13 @@ Assert.Equal("<div class=\"warning\"><p>Check the settings first.</p>\n</div>\n<
 ```
 <!-- endref -->
 
-The text after the class on the opening line is not rendered, and is available as `CustomContainer.Arguments` in the
+The text after the class on the opening line is not rendered, and is available as [CustomContainer.Arguments](cref:Meziantou.Framework.Markdown.Extensions.CustomContainers.CustomContainer.Arguments) in the
 [syntax tree](../05-SyntaxTree.md). As with fenced code blocks, the fence can be longer than three `:`, and the closing
 fence must have the same length.
 
 ## Definition lists
 
-`UseDefinitionLists` renders a term followed by lines that start with `:` as a definition list:
+[UseDefinitionLists](cref:Meziantou.Framework.Markdown.MarkdownExtensions.UseDefinitionLists) renders a term followed by lines that start with `:` as a definition list:
 
 <!-- ref:../../../tests/Meziantou.Framework.Markdown.Tests/TestCoreApi.cs;region=MarkdownExtensions_UseDefinitionLists;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -82,10 +82,10 @@ A term can have several definitions, and a definition can contain several paragr
 
 ## Figures, footers and citations
 
-- `UseFigures` renders the blocks between `^^^` lines as a `<figure>`. The text after the closing `^^^` is the
+- [UseFigures](cref:Meziantou.Framework.Markdown.MarkdownExtensions.UseFigures) renders the blocks between `^^^` lines as a `<figure>`. The text after the closing `^^^` is the
   `<figcaption>`.
-- `UseFooters` renders the lines that start with `^^` as a `<footer>`.
-- `UseCitations` renders the text between `""` and `""` as a `<cite>`.
+- [UseFooters](cref:Meziantou.Framework.Markdown.MarkdownExtensions.UseFooters) renders the lines that start with `^^` as a `<footer>`.
+- [UseCitations](cref:Meziantou.Framework.Markdown.MarkdownExtensions.UseCitations) renders the text between `""` and `""` as a `<cite>`.
 
 <!-- ref:../../../tests/Meziantou.Framework.Markdown.Tests/TestCoreApi.cs;region=MarkdownExtensions_UseFiguresFootersAndCitations;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -108,7 +108,7 @@ Assert.Equal("<p>As described in <cite>The Art of Computer Programming</cite>.</
 
 ## Footnotes
 
-`UseFootnotes` renders the `[^label]` references as numbered links to the notes, and the `[^label]: text` definitions
+[UseFootnotes](cref:Meziantou.Framework.Markdown.MarkdownExtensions.UseFootnotes) renders the `[^label]` references as numbered links to the notes, and the `[^label]: text` definitions
 as a list at the end of the document, with links back to the references:
 
 <!-- ref:../../../tests/Meziantou.Framework.Markdown.Tests/TestCoreApi.cs;region=MarkdownExtensions_UseFootnotes;format=md-fenced-code-block;dedent=true -->
@@ -137,7 +137,7 @@ The notes are numbered in the order of their first reference, whatever their lab
 
 ## Task lists
 
-`UseTaskLists` renders the items that start with `[ ]` or `[x]` as disabled checkboxes:
+[UseTaskLists](cref:Meziantou.Framework.Markdown.MarkdownExtensions.UseTaskLists) renders the items that start with `[ ]` or `[x]` as disabled checkboxes:
 
 <!-- ref:../../../tests/Meziantou.Framework.Markdown.Tests/TestCoreApi.cs;region=MarkdownExtensions_UseTaskLists;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -156,12 +156,12 @@ Assert.Equal("""
 ```
 <!-- endref -->
 
-In the syntax tree, the checkbox is a `TaskList` inline (namespace [Meziantou.Framework.Markdown.Extensions.TaskLists](cref:Meziantou.Framework.Markdown.Extensions.TaskLists))
-whose `Checked` property gives its state.
+In the syntax tree, the checkbox is a [TaskList](cref:Meziantou.Framework.Markdown.Extensions.TaskLists.TaskList) inline (namespace [Meziantou.Framework.Markdown.Extensions.TaskLists](cref:Meziantou.Framework.Markdown.Extensions.TaskLists))
+whose [Checked](cref:Meziantou.Framework.Markdown.Extensions.TaskLists.TaskList.Checked) property gives its state.
 
 ## Alphabetical and roman lists
 
-CommonMark ordered lists are numbered with digits. `UseListExtras` adds lists numbered with letters (`a.`, `A.`) and
+CommonMark ordered lists are numbered with digits. [UseListExtras](cref:Meziantou.Framework.Markdown.MarkdownExtensions.UseListExtras) adds lists numbered with letters (`a.`, `A.`) and
 roman numerals (`i.`, `I.`), rendered with the `type` attribute of `<ol>`:
 
 <!-- ref:../../../tests/Meziantou.Framework.Markdown.Tests/TestCoreApi.cs;region=MarkdownExtensions_UseListExtras;format=md-fenced-code-block;dedent=true -->
@@ -177,7 +177,7 @@ Assert.Equal("<ol type=\"i\">\n<li>First</li>\n<li>Second</li>\n</ol>\n", Markdo
 
 ## Mathematics
 
-`UseMathematics` reads the formulas between `$` (inline) and between `$$` lines (block). It does not render them: it
+[UseMathematics](cref:Meziantou.Framework.Markdown.MarkdownExtensions.UseMathematics) reads the formulas between `$` (inline) and between `$$` lines (block). It does not render them: it
 writes them with the `math` class and the `\(…\)` and `\[…\]` delimiters, which [MathJax](https://www.mathjax.org/)
 and [KaTeX](https://katex.org/) find and render in the browser:
 
@@ -194,7 +194,7 @@ Assert.Equal("<p>The area is <span class=\"math\">\\(\\pi r^2\\)</span>:</p>\n<d
 
 ## Diagrams
 
-`UseDiagrams` writes the code blocks of the `mermaid` language as `<pre class="mermaid">` and the ones of the `nomnoml`
+[UseDiagrams](cref:Meziantou.Framework.Markdown.MarkdownExtensions.UseDiagrams) writes the code blocks of the `mermaid` language as `<pre class="mermaid">` and the ones of the `nomnoml`
 language as `<div class="nomnoml">`, which [Mermaid](https://mermaid.js.org/) and [nomnoml](https://nomnoml.com/) find
 and draw in the browser:
 

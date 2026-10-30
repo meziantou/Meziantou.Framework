@@ -341,6 +341,181 @@ public sealed class Av1EncoderRoundTripTests
             Assert.True(tools.HasFlag(Av1Tools.NewMotionVector), $"{name}: no motion vector is coded");
     }
 
+    public static TheoryData<int, int, string, string, int, int, int, int, bool, int> TiledCases() => new()
+    {
+        // Width, height, format, content, quality (-1 is lossless), effort, log2 of the tile columns and rows, deferred
+        // symbols, and the number of tiles. Lossy efforts 0 to 2 restore loops, so their tiles are written once the frame
+        // is filtered. 3 columns of superblocks in 4 columns of tiles are 3 columns of tiles
+        { 256, 128, "420", "photo", 60, 0, 2, 1, false, 8 },
+        { 256, 128, "420", "photo", 60, 5, 1, 1, false, 4 },
+        { 256, 128, "420", "photo", 60, 5, 1, 1, true, 4 },
+        { 256, 128, "420", "blocks", 70, 5, 2, 0, false, 4 },
+        { 200, 136, "444", "photo", -1, 0, 1, 1, false, 4 },
+        { 192, 128, "400", "photo", -1, 5, 2, 1, false, 6 },
+        { 4160, 70, "420", "gradient", -1, 0, 0, 0, false, 2 },
+    };
+
+    /// <summary>
+    /// The tiles of a frame are coded by up to <see cref="Av1EncoderSettings.MaxDegreeOfParallelism"/> workers: the bytes
+    /// are the ones of one worker, for every layout of the tiles (the fewest that a frame wider than 4096 samples has, or
+    /// more), lossless and lossy, with the symbols written with the blocks or after the frame is filtered, for a key frame
+    /// and for the inter frames that follow it. The last pass codes the tiles from the last one, each by the worker of
+    /// its index modulo 3 (<see cref="Av1TileWorkers.TestReverseOrder"/>).
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(TiledCases))]
+    public void TilesEncodedByWorkersAreTheTilesOfOneWorker(int width, int height, string format, string content, int quality, int effort, int tileColsLog2, int tileRowsLog2, bool defersSymbols, int tileCount)
+    {
+        const int FrameCount = 3;
+        var name = $"tiles-{width}x{height}-{format}-{content}-q{quality}-e{effort}-{tileColsLog2}x{tileRowsLog2}-{defersSymbols}";
+        var expected = Encode(workers: 1, reverse: false, out var tiles);
+        Assert.Equal(tileCount, tiles);
+        Av1PostFilter.TestIgnoreMinimumSize = true;
+        try
+        {
+            foreach (var workers in (int[])[2, 3, 16])
+            {
+                Assert.Equal(expected, Encode(workers, reverse: false, out _));
+            }
+
+            Assert.Equal(expected, Encode(workers: 3, reverse: true, out _));
+        }
+        finally
+        {
+            Av1PostFilter.TestIgnoreMinimumSize = false;
+        }
+
+        string[] Encode(int workers, bool reverse, out int frameTiles)
+        {
+            var lossless = quality < 0;
+            var monochrome = format is "400";
+            var subsamplingX = format is "420" ? 1 : 0;
+            var scope = AllocationScope.Create(ImageConfiguration.Default, name);
+            var settings = new Av1EncoderSettings(width, height, 8, monochrome, subsamplingX, subsamplingX, ColorPrimaries: 1, TransferCharacteristics: 13, MatrixCoefficients: lossless && format is "444" ? 0 : 6, FullRange: true, ChromaSamplePosition: 0, StillPicture: false, lossless, Math.Max(quality, 0), effort, KeyFrameInterval: 0, workers, tileColsLog2, tileRowsLog2);
+            using var encoder = new Av1Encoder(scope, settings) { DefersSymbols = defersSymbols };
+            using var decoder = new Av1Decoder(scope);
+            var payloads = new string[FrameCount];
+            frameTiles = 0;
+            Av1TileWorkers.TestReverseOrder = reverse;
+            try
+            {
+                for (var index = 0; index < FrameCount; index++)
+                {
+                    for (var plane = 0; plane < (monochrome ? 1 : 3); plane++)
+                    {
+                        var buffer = encoder.GetSourcePlane(plane);
+                        var samples = content is "photo" ? CreateFrame("pan", index, buffer.Width, buffer.Height, plane > 0 ? subsamplingX : 0, plane > 0 ? subsamplingX : 0, 8, seed: plane + 5) : CreateSamples(content, buffer.Width, buffer.Height, 8, seed: plane + index);
+                        for (var y = 0; y < buffer.Height; y++)
+                        {
+                            samples.AsSpan(y * buffer.Width, buffer.Width).CopyTo(buffer.GetRow(y));
+                        }
+                    }
+
+                    encoder.BeginFrame();
+                    while (!encoder.Encode(XunitCancellationToken))
+                    {
+                    }
+
+                    var payload = encoder.Payload.ToArray();
+                    payloads[index] = Convert.ToHexString(payload);
+
+                    // The stream decodes to the reconstruction of the encoder
+                    decoder.SetInput(payload, 0, payload.Length);
+                    var frame = decoder.DecodeNextOutputFrame(XunitCancellationToken);
+                    Assert.NotNull(frame);
+                    try
+                    {
+                        frameTiles = frame.Header.TileCount;
+                        for (var plane = 0; plane < frame.PlaneCount; plane++)
+                        {
+                            for (var y = 0; y < frame.GetPlane(plane).Height; y++)
+                            {
+                                Assert.True(encoder.Reconstruction.GetPlane(plane).GetRow(y).SequenceEqual(frame.GetPlane(plane).GetRow(y)), $"{name}, {workers} workers: row {y} of plane {plane} of frame {index} is not the row that the encoder reconstructed");
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        frame.Release();
+                    }
+                }
+            }
+            finally
+            {
+                Av1TileWorkers.TestReverseOrder = false;
+            }
+
+            return payloads;
+        }
+    }
+
+    [Fact]
+    public void TileWorkersOfTheEncoderAreChargedToTheScopeAndObserveTheCancellation()
+    {
+        var settings = new Av1EncoderSettings(256, 128, 8, Monochrome: false, 1, 1, 1, 13, 6, FullRange: true, ChromaSamplePosition: 0, StillPicture: true, Lossless: false, Quality: 60, Effort: 0, MaxDegreeOfParallelism: 4, MinTileColsLog2: 1, MinTileRowsLog2: 1);
+        Av1PostFilter.TestIgnoreMinimumSize = true;
+        try
+        {
+            var one = MeasurePeak(settings with { MaxDegreeOfParallelism = 1 }, ImageConfiguration.Default.Limits);
+            var four = MeasurePeak(settings, ImageConfiguration.Default.Limits);
+            Assert.True(four > one, $"{four} bytes with 4 workers, {one} with one.");
+
+            // The limit that one worker fits
+            var scope = new AllocationScope(new ImageResourceLimits { MaxLiveAllocationBytes = one }, name: nameof(TileWorkersOfTheEncoderAreChargedToTheScopeAndObserveTheCancellation));
+            using (var encoder = new Av1Encoder(scope, settings))
+            {
+                encoder.BeginFrame();
+                Assert.Throws<ImageResourceLimitException>(() => EncodeFrame(encoder, XunitCancellationToken));
+            }
+
+            Assert.Equal(0, scope.LiveBytes);
+
+            // A cancellation while the workers code the tiles: the second tile cancels the token as it starts
+            var canceled = AllocationScope.Create(ImageConfiguration.Default, nameof(TileWorkersOfTheEncoderAreChargedToTheScopeAndObserveTheCancellation));
+            using (var encoder = new Av1Encoder(canceled, settings))
+            {
+                using var cancellation = new CancellationTokenSource();
+                encoder.BeginFrame();
+                Av1TileWorkers.TestTileStarting = tile =>
+                {
+                    if (tile is 1)
+                    {
+                        cancellation.Cancel();
+                    }
+                };
+
+                Assert.Throws<OperationCanceledException>(() => EncodeFrame(encoder, cancellation.Token));
+            }
+
+            Assert.Equal(0, canceled.LiveBytes);
+        }
+        finally
+        {
+            Av1PostFilter.TestIgnoreMinimumSize = false;
+            Av1TileWorkers.TestTileStarting = null;
+        }
+
+        static long MeasurePeak(Av1EncoderSettings settings, ImageResourceLimits limits)
+        {
+            var scope = new AllocationScope(limits, name: nameof(TileWorkersOfTheEncoderAreChargedToTheScopeAndObserveTheCancellation));
+            using (var encoder = new Av1Encoder(scope, settings))
+            {
+                encoder.BeginFrame();
+                EncodeFrame(encoder, XunitCancellationToken);
+            }
+
+            Assert.Equal(0, scope.LiveBytes);
+            return scope.GetDiagnostics().PeakLiveBytes;
+        }
+
+        static void EncodeFrame(Av1Encoder encoder, CancellationToken cancellationToken)
+        {
+            while (!encoder.Encode(cancellationToken))
+            {
+            }
+        }
+    }
+
     [Fact]
     public void KeyFramesFollowTheInterval()
     {

@@ -17,6 +17,11 @@ namespace Meziantou.Framework.Imaging.Formats;
 /// The ICC profile must be a grayscale profile or a matrix-based RGB profile, the only ones a JP2 file allows; any other
 /// profile follows <see cref="ImageEncoder.MetadataHandling"/>. A codestream stores no metadata at all.
 /// </para>
+/// <para>
+/// With <see cref="ImageConfiguration.MaxDegreeOfParallelism"/> above 1 (the configuration of the saved image), an image
+/// of at least 65,536 pixels is transformed and its code-blocks are coded by up to that many workers; the bytes are those
+/// of one worker.
+/// </para>
 /// </remarks>
 public sealed class Jpeg2000Encoder : ImageEncoder
 {

@@ -5,7 +5,7 @@ description: Associate several values with a key, search keys by prefix, suggest
 
 ## Several values per key
 
-`MultiValueDictionary<TKey, TValue>` associates a list of values with each key:
+[MultiValueDictionary\<TKey, TValue\>](cref:Meziantou.Framework.Collections.MultiValueDictionary{TKey,TValue}) associates a list of values with each key:
 
 <!-- ref:../../../tests/Meziantou.Framework.Tests/Collections/MultiValueDictionaryTests.cs;region=MultiValueDictionary_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -24,15 +24,15 @@ Assert.Equal(["Cache-Control"], headers.Keys);
 ```
 <!-- endref -->
 
-- `Add` adds a value to the values of a key, and `AddRange` adds several. A key exists as long as it has values.
-- The indexer returns the values of a key as an `IReadOnlyCollection<TValue>`. Use `TryGetValue` when the key may be
+- [Add](cref:Meziantou.Framework.Collections.MultiValueDictionary{TKey,TValue}.Add) adds a value to the values of a key, and [AddRange](cref:Meziantou.Framework.Collections.MultiValueDictionary{TKey,TValue}.AddRange) adds several. A key exists as long as it has values.
+- The indexer returns the values of a key as an `IReadOnlyCollection<TValue>`. Use [TryGetValue](cref:Meziantou.Framework.Collections.MultiValueDictionary{TKey,TValue}.TryGetValue) when the key may be
   missing.
 - `Remove(key, value)` removes one value, and `Remove(key)` removes the key and all its values.
-- `Contains(key, value)`, `ContainsKey` and `ContainsValue` check the content.
+- `Contains(key, value)`, [ContainsKey](cref:Meziantou.Framework.Collections.MultiValueDictionary{TKey,TValue}.ContainsKey) and [ContainsValue](cref:Meziantou.Framework.Collections.MultiValueDictionary{TKey,TValue}.ContainsValue) check the content.
 
 ## Prefix search
 
-`Trie<TValue>` stores values by key, and finds all the keys that start with a prefix:
+[Trie\<TValue\>](cref:Meziantou.Framework.Collections.Trie{TValue}) stores values by key, and finds all the keys that start with a prefix:
 
 <!-- ref:../../../tests/Meziantou.Framework.Tests/Collections/TrieTests.cs;region=Trie_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -50,12 +50,12 @@ Assert.Equal(["stash", "status"], matches);
 ```
 <!-- endref -->
 
-Pass `ignoreCase: true` to the constructor to compare keys without case. `StartsWith` returns the key-value pairs whose
+Pass `ignoreCase: true` to the constructor to compare keys without case. [StartsWith](cref:Meziantou.Framework.Collections.Trie{TValue}.StartsWith) returns the key-value pairs whose
 key starts with the prefix.
 
 ## Ranked completions
 
-`PruningRadixTree` stores terms with a frequency, and returns the most frequent terms that start with a prefix, for
+[PruningRadixTree](cref:Meziantou.Framework.Collections.PruningRadixTree) stores terms with a frequency, and returns the most frequent terms that start with a prefix, for
 search boxes and command palettes:
 
 <!-- ref:../../../tests/Meziantou.Framework.Tests/Collections/PruningRadixTreeTests.cs;region=PruningRadixTree_GetTopTermsByPrefix;format=md-fenced-code-block;dedent=true -->
@@ -70,7 +70,7 @@ Assert.Equal([KeyValuePair.Create("car", 10L), KeyValuePair.Create("cat", 7L)], 
 ```
 <!-- endref -->
 
-- `GetTopTermsByPrefix` returns at most `topK` terms, the most frequent first. Its `out` parameter receives the
+- [GetTopTermsByPrefix](cref:Meziantou.Framework.Collections.PruningRadixTree.GetTopTermsByPrefix) returns at most `topK` terms, the most frequent first. Its `out` parameter receives the
   frequency of the prefix itself when it is also a term, and 0 otherwise.
 - The tree skips the branches whose frequencies cannot reach the results, so the lookup stays fast with many terms.
   Pass `pruning: false` to visit every branch.
@@ -78,7 +78,7 @@ Assert.Equal([KeyValuePair.Create("car", 10L), KeyValuePair.Create("cat", 7L)], 
 
 ## Lists of key-value pairs
 
-`UnsafeListDictionary<TKey, TValue>` is a dictionary backed by a list. `Add` does not check whether the key already
+[UnsafeListDictionary\<TKey, TValue\>](cref:Meziantou.Framework.Collections.UnsafeListDictionary{TKey,TValue}) is a dictionary backed by a list. [Add](cref:Meziantou.Framework.Collections.UnsafeListDictionary{TKey,TValue}.Add) does not check whether the key already
 exists, which makes it cheap to build a list of pairs you know are unique, for instance to serialize them:
 
 <!-- ref:../../../tests/Meziantou.Framework.Tests/Collections/UnsafeListDictionaryTests.cs;region=UnsafeListDictionary_Usage;format=md-fenced-code-block;dedent=true -->

@@ -38,7 +38,16 @@ internal sealed class ExrChunkDecompressor : IDisposable
     /// <param name="destination">Receives the uncompressed data (its length is the size of the chunk the header gives).</param>
     /// <param name="layout">The geometry of the chunk.</param>
     /// <exception cref="InvalidImageContentException">The data are malformed.</exception>
-    public void Decompress(ReadOnlySpan<byte> stored, Span<byte> destination, in ExrChunkLayout layout)
+    public void Decompress(ReadOnlySpan<byte> stored, Span<byte> destination, in ExrChunkLayout layout) => Decompress(stored, default, destination, layout);
+
+    /// <summary>Decompresses a chunk whose stored data are in a buffer of the scope, which the zlib stream reads without a copy.</summary>
+    /// <param name="stored">The stored data of the chunk.</param>
+    /// <param name="destination">Receives the uncompressed data (its length is the size of the chunk the header gives).</param>
+    /// <param name="layout">The geometry of the chunk.</param>
+    /// <exception cref="InvalidImageContentException">The data are malformed.</exception>
+    public void Decompress(ArraySegment<byte> stored, Span<byte> destination, in ExrChunkLayout layout) => Decompress(stored.AsSpan(), stored, destination, layout);
+
+    private void Decompress(ReadOnlySpan<byte> stored, ArraySegment<byte> storedArray, Span<byte> destination, in ExrChunkLayout layout)
     {
         // Stored data of the size of the uncompressed data are the uncompressed data, whatever the compression (section 1.5)
         if (stored.Length == destination.Length)
@@ -66,7 +75,7 @@ internal sealed class ExrChunkDecompressor : IDisposable
             case ExrCompressionMethod.Zips or ExrCompressionMethod.Zip:
             {
                 var scratch = _scratch!.Span[..destination.Length];
-                Inflate(stored, scratch);
+                Inflate(stored, storedArray, scratch);
                 ExrPredictor.Decode(scratch, destination);
                 break;
             }
@@ -78,7 +87,7 @@ internal sealed class ExrChunkDecompressor : IDisposable
             case ExrCompressionMethod.Pxr24:
             {
                 var scratch = _scratch!.Span[..ExrPxr24.GetInflatedLength(layout)];
-                Inflate(stored, scratch);
+                Inflate(stored, storedArray, scratch);
                 ExrPxr24.Decode(scratch, destination, layout);
                 break;
             }
@@ -102,8 +111,14 @@ internal sealed class ExrChunkDecompressor : IDisposable
         _piz?.Dispose();
     }
 
-    private void Inflate(ReadOnlySpan<byte> stored, Span<byte> destination)
+    private void Inflate(ReadOnlySpan<byte> stored, ArraySegment<byte> storedArray, Span<byte> destination)
     {
+        if (storedArray.Array is not null)
+        {
+            ExrZlib.Inflate(storedArray, destination);
+            return;
+        }
+
         // The zlib stream reads a buffer
         using var copy = _scope.Rent(stored.Length, AllocationKind.DecoderState, clear: false);
         stored.CopyTo(copy.Span);

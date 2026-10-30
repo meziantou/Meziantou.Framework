@@ -3,7 +3,7 @@ title: Configuration
 description: Choose the allowed schemes, the blocked and allowed networks, how mixed DNS answers are handled and which address is used.
 ---
 
-`ServerSideRequestForgeryOptions` holds the policy. Its collections start with safe defaults, and the example below
+[ServerSideRequestForgeryOptions](cref:Meziantou.Framework.Http.ServerSideRequestForgery.ServerSideRequestForgeryOptions) holds the policy. Its collections start with safe defaults, and the example below
 adds to them rather than replacing them:
 
 <!-- ref:../../../tests/Meziantou.Framework.Http.ServerSideRequestForgery.Tests/ServerSideRequestForgeryOptionsTests.cs;region=ServerSideRequestForgery_Usage;format=md-fenced-code-block;dedent=true -->
@@ -27,18 +27,18 @@ using var httpClient = new HttpClient(handler, disposeHandler: true);
 
 | Option | Default | Meaning |
 | --- | --- | --- |
-| `SafeSchemes` | `https`, `wss` | The schemes a request may use, compared case-insensitively. |
-| `UnsafeIpNetworks` | See below | The networks a connection must not reach. |
-| `SafeIpNetworks` | Empty | The networks a connection may reach even when `UnsafeIpNetworks` contains them. |
-| `DisallowMixedSafeAndUnsafeIpAddresses` | `true` | Reject a host name that resolves to both allowed and blocked addresses. |
-| `ResolutionStrategy` | `PreferIpv4` | Which allowed address to connect to. |
-| `Logger` | `NullLogger.Instance` | Where rejections are logged. See [Handling rejections](04-HandlingRejections.md). |
+| [SafeSchemes](cref:Meziantou.Framework.Http.ServerSideRequestForgery.ServerSideRequestForgeryOptions.SafeSchemes) | `https`, `wss` | The schemes a request may use, compared case-insensitively. |
+| [UnsafeIpNetworks](cref:Meziantou.Framework.Http.ServerSideRequestForgery.ServerSideRequestForgeryOptions.UnsafeIpNetworks) | See below | The networks a connection must not reach. |
+| [SafeIpNetworks](cref:Meziantou.Framework.Http.ServerSideRequestForgery.ServerSideRequestForgeryOptions.SafeIpNetworks) | Empty | The networks a connection may reach even when [UnsafeIpNetworks](cref:Meziantou.Framework.Http.ServerSideRequestForgery.ServerSideRequestForgeryOptions.UnsafeIpNetworks) contains them. |
+| [DisallowMixedSafeAndUnsafeIpAddresses](cref:Meziantou.Framework.Http.ServerSideRequestForgery.ServerSideRequestForgeryOptions.DisallowMixedSafeAndUnsafeIpAddresses) | `true` | Reject a host name that resolves to both allowed and blocked addresses. |
+| [ResolutionStrategy](cref:Meziantou.Framework.Http.ServerSideRequestForgery.ServerSideRequestForgeryOptions.ResolutionStrategy) | [PreferIpv4](cref:Meziantou.Framework.Http.ServerSideRequestForgery.IpAddressResolutionStrategy.PreferIpv4) | Which allowed address to connect to. |
+| [Logger](cref:Meziantou.Framework.Http.ServerSideRequestForgery.ServerSideRequestForgeryOptions.Logger) | `NullLogger.Instance` | Where rejections are logged. See [Handling rejections](04-HandlingRejections.md). |
 
 The options are read on every connection, after the handler is created.
 
 ## Allowed schemes
 
-`SafeSchemes` contains `https` and `wss`. A request with another scheme, `http` included, is rejected. Call `Clear()`
+[SafeSchemes](cref:Meziantou.Framework.Http.ServerSideRequestForgery.ServerSideRequestForgeryOptions.SafeSchemes) contains `https` and `wss`. A request with another scheme, `http` included, is rejected. Call `Clear()`
 first to define the list from scratch:
 
 <!-- ref:../../../tests/Meziantou.Framework.Http.ServerSideRequestForgery.Tests/ServerSideRequestForgeryOptionsTests.cs;region=ServerSideRequestForgery_ClearDefaults;format=md-fenced-code-block;dedent=true -->
@@ -51,7 +51,7 @@ options.SafeSchemes.Add("https");
 
 ## Blocked networks
 
-`UnsafeIpNetworks` starts with the ranges that are not public destinations:
+[UnsafeIpNetworks](cref:Meziantou.Framework.Http.ServerSideRequestForgery.ServerSideRequestForgeryOptions.UnsafeIpNetworks) starts with the ranges that are not public destinations:
 
 | Networks | What they are |
 | --- | --- |
@@ -73,7 +73,7 @@ your internal services.
 
 ## Allow an internal host
 
-`SafeIpNetworks` takes precedence: an address it contains is allowed even when `UnsafeIpNetworks` contains it too. Use
+[SafeIpNetworks](cref:Meziantou.Framework.Http.ServerSideRequestForgery.ServerSideRequestForgeryOptions.SafeIpNetworks) takes precedence: an address it contains is allowed even when [UnsafeIpNetworks](cref:Meziantou.Framework.Http.ServerSideRequestForgery.ServerSideRequestForgeryOptions.UnsafeIpNetworks) contains it too. Use
 it to reach one internal service without opening the range around it:
 
 <!-- ref:../../../tests/Meziantou.Framework.Http.ServerSideRequestForgery.Tests/ServerSideRequestForgeryClientHandlerTests.cs;region=ServerSideRequestForgery_AllowInternalHost;format=md-fenced-code-block;dedent=true -->
@@ -92,12 +92,12 @@ Assert.Equal("ok", text);
 ```
 <!-- endref -->
 
-Keep the entries narrow: a broad network in `SafeIpNetworks` silently re-opens every blocked address it covers.
+Keep the entries narrow: a broad network in [SafeIpNetworks](cref:Meziantou.Framework.Http.ServerSideRequestForgery.ServerSideRequestForgeryOptions.SafeIpNetworks) silently re-opens every blocked address it covers.
 
 ## Host names with mixed addresses
 
 A host name can resolve to several addresses, some allowed and some blocked. With
-`DisallowMixedSafeAndUnsafeIpAddresses` set to `true` (the default), such a host is rejected: a DNS answer that mixes
+[DisallowMixedSafeAndUnsafeIpAddresses](cref:Meziantou.Framework.Http.ServerSideRequestForgery.ServerSideRequestForgeryOptions.DisallowMixedSafeAndUnsafeIpAddresses) set to `true` (the default), such a host is rejected: a DNS answer that mixes
 a public and a private address can be an attempt to reach an internal host. Set it to `false` to drop the blocked addresses and connect to
 one of the others.
 
@@ -105,22 +105,22 @@ A host name whose addresses are all blocked is always rejected.
 
 ## Choose the address to connect to
 
-`ResolutionStrategy` picks the address among the allowed ones:
+[ResolutionStrategy](cref:Meziantou.Framework.Http.ServerSideRequestForgery.ServerSideRequestForgeryOptions.ResolutionStrategy) picks the address among the allowed ones:
 
 | Strategy | Address |
 | --- | --- |
-| `IpAddressResolutionStrategy.PreferIpv4` (default) | The first IPv4 address, or the first address when there is none |
-| `IpAddressResolutionStrategy.Ipv4Only` | The first IPv4 address; a host with none is rejected |
-| `IpAddressResolutionStrategy.Ipv6Only` | The first IPv6 address; a host with none is rejected |
-| `IpAddressResolutionStrategy.Random` | A random address |
-| `IpAddressResolutionStrategy.RoundRobin` | Each address in turn, one connection after the other |
+| [IpAddressResolutionStrategy.PreferIpv4](cref:Meziantou.Framework.Http.ServerSideRequestForgery.IpAddressResolutionStrategy.PreferIpv4) (default) | The first IPv4 address, or the first address when there is none |
+| [IpAddressResolutionStrategy.Ipv4Only](cref:Meziantou.Framework.Http.ServerSideRequestForgery.IpAddressResolutionStrategy.Ipv4Only) | The first IPv4 address; a host with none is rejected |
+| [IpAddressResolutionStrategy.Ipv6Only](cref:Meziantou.Framework.Http.ServerSideRequestForgery.IpAddressResolutionStrategy.Ipv6Only) | The first IPv6 address; a host with none is rejected |
+| [IpAddressResolutionStrategy.Random](cref:Meziantou.Framework.Http.ServerSideRequestForgery.IpAddressResolutionStrategy.Random) | A random address |
+| [IpAddressResolutionStrategy.RoundRobin](cref:Meziantou.Framework.Http.ServerSideRequestForgery.IpAddressResolutionStrategy.RoundRobin) | Each address in turn, one connection after the other |
 
 When the connection to the chosen address fails, the strategy is asked again among the addresses that remain, so its
-constraint holds: `Ipv4Only` never falls back to IPv6, and `PreferIpv4` tries IPv6 only once every IPv4 address failed.
+constraint holds: [Ipv4Only](cref:Meziantou.Framework.Http.ServerSideRequestForgery.IpAddressResolutionStrategy.Ipv4Only) never falls back to IPv6, and [PreferIpv4](cref:Meziantou.Framework.Http.ServerSideRequestForgery.IpAddressResolutionStrategy.PreferIpv4) tries IPv6 only once every IPv4 address failed.
 
-To implement another rule, derive from `IpAddressResolutionStrategy` and override `ResolveAsync`. It receives the
+To implement another rule, derive from [IpAddressResolutionStrategy](cref:Meziantou.Framework.Http.ServerSideRequestForgery.IpAddressResolutionStrategy) and override [ResolveAsync](cref:Meziantou.Framework.Http.ServerSideRequestForgery.IpAddressResolutionStrategy.ResolveAsync). It receives the
 allowed addresses and the options, and returns the address to connect to. Returning an address that is not in the list
-rejects the request, and so does throwing a `ServerSideRequestForgeryException`.
+rejects the request, and so does throwing a [ServerSideRequestForgeryException](cref:Meziantou.Framework.Http.ServerSideRequestForgery.ServerSideRequestForgeryException).
 
 ## Name resolution
 

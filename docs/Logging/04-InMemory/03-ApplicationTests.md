@@ -5,7 +5,7 @@ description: Collect the logs of a service collection, a host or an ASP.NET Core
 
 ## Register the provider
 
-Add an `InMemoryLoggerProvider` to the logging builder, then read `provider.Logs`: it collects the entries of every
+Add an [InMemoryLoggerProvider](cref:Meziantou.Extensions.Logging.InMemory.InMemoryLoggerProvider) to the logging builder, then read `provider.Logs`: it collects the entries of every
 logger the application creates.
 
 <!-- ref:../../../tests/Meziantou.Extensions.Logging.InMemory.Tests/InMemoryLoggerTests.cs;region=InMemoryLoggerProvider_Example;format=md-fenced-code-block;dedent=true -->

@@ -741,7 +741,7 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
 
         if (value is CssPreservedToken { Token: var token } preserved && preserved.End >= source.Length)
         {
-            var escapedEof = text.EndsWith('\\', StringComparison.Ordinal) && closers.Length == 0 && CountTrailingBackslashes(text) % 2 == 1;
+            var escapedEof = text.EndsWith('\\', StringComparison.Ordinal) && CountTrailingBackslashes(text) % 2 == 1;
             switch (token.Type)
             {
                 case CssTokenType.String or CssTokenType.BadString:
@@ -752,7 +752,7 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
                         text = text[..^1];
                     }
 
-                    if (!text.EndsWith(quote, StringComparison.Ordinal) || text.Length == 1 || escapedEof)
+                    if (!text.EndsWith(quote, StringComparison.Ordinal) || text.Length == 1 || escapedEof || preserved.Start == source.Length - 1)
                     {
                         text += quote;
                     }

@@ -843,6 +843,23 @@ public sealed class AvifDecoderTests
         Assert.NotEqual(expected.Message, other.Message);
     }
 
+    [Theory]
+    [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(16)]
+    public void TheTilesOfAFrameAreDecodedByWorkersAsByOne(int workers)
+    {
+        // A frame wider than 4096 samples has two columns of AV1 tiles, in the color image and in the alpha plane
+        using var source = HeifEncoderTestImages.CreateSmoothImage(4160, 64, transparent: true);
+        using var stream = new MemoryStream();
+        source.Save(stream, new AvifEncoder { Compression = AvifCompression.Lossy, Effort = 0 });
+        var data = stream.ToArray();
+        using var expected = Image.Load(data);
+        using var image = Image.Load(data, WithWorkers(workers));
+        Assert.Equal((4160, 64), (image.Width, image.Height));
+        Assert.Equal(ImageSnapshots.CaptureFrame(expected.Frames[0]).ToArray(), ImageSnapshots.CaptureFrame(image.Frames[0]).ToArray());
+    }
+
     // A temporal unit with a temporal delimiter and no frame
     private static byte[] TemporalDelimiter => [0x12, 0x00];
 

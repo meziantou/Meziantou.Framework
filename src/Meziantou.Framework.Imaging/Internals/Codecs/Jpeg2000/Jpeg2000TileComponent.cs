@@ -59,6 +59,9 @@ internal sealed class Jpeg2000TileComponent : IDisposable
     /// <summary>Gets the plane as integers: the coefficients of the reversible transformation, then the samples.</summary>
     public Span<int> Samples => _plane is null ? [] : _plane.Span;
 
+    /// <summary>Gets the array of the plane, once <see cref="AllocatePlane"/> rented it.</summary>
+    public Av1PooledArray<int>? Plane => _plane;
+
     /// <summary>Gets the plane as floating-point numbers: the coefficients of the irreversible transformation.</summary>
     public Span<float> Coefficients => unsafe(MemoryMarshal.Cast<int, float>(Samples));
 

@@ -25,11 +25,13 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </remarks>
 internal sealed class TiffLzwEncoder : IDisposable
 {
+    /// <summary>The number of bytes of the string table, rented from the scope.</summary>
+    public const int StateLength = CodesOffset + (SlotCount * sizeof(ushort));
+
     // Twice the number of table codes: the table is at most half full, so a probe sequence stays short
     private const int SlotCount = 2 * TiffLzwDecoder.MaxCodes;
     private const int KeysOffset = 0;
     private const int CodesOffset = KeysOffset + (SlotCount * sizeof(int));
-    private const int StateLength = CodesOffset + (SlotCount * sizeof(ushort));
 
     // The table is cleared when the next code would be this one (TIFF 6.0: "as soon as we use entry 4094")
     private const int ClearAtCode = TiffLzwDecoder.MaxCodes - 2;
@@ -44,6 +46,13 @@ internal sealed class TiffLzwEncoder : IDisposable
         ArgumentNullException.ThrowIfNull(scope);
         _state = scope.Rent(StateLength, AllocationKind.Temporary, clear: false);
     }
+
+    /// <summary>
+    /// Gets the largest number of bytes a strip of <paramref name="length"/> bytes is compressed to: at most one code of 12
+    /// bits per byte, a clear code each time the table is full (every 3,836 codes) and at the start, and the end of
+    /// information code.
+    /// </summary>
+    public static long GetMaxEncodedLength(long length) => ((((length + (length / 3836) + 3) * TiffLzwDecoder.MaxCodeSize) + 7) / 8) + 1;
 
     /// <summary>Compresses one strip.</summary>
     /// <param name="source">The bytes of the strip.</param>

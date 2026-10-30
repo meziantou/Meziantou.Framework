@@ -9,8 +9,8 @@ whether each one includes its subdomains. The list is compiled into the assembly
 one.
 
 A collection created with `includePreloadDomains: true`, the default, applies it. That includes
-`HstsDomainPolicyCollection.Default`. The preloaded policies never expire: `HstsDomainPolicy.IsPreloaded` is `true` and
-`ExpiresAt` is `DateTimeOffset.MaxValue` for them.
+[HstsDomainPolicyCollection.Default](cref:Meziantou.Framework.Http.HstsDomainPolicyCollection.Default). The preloaded policies never expire: [HstsDomainPolicy.IsPreloaded](cref:Meziantou.Framework.Http.HstsDomainPolicy.IsPreloaded) is `true` and
+[ExpiresAt](cref:Meziantou.Framework.Http.HstsDomainPolicy.ExpiresAt) is `DateTimeOffset.MaxValue` for them.
 
 ## How the list is loaded
 
@@ -36,7 +36,7 @@ Assert.False(policies.TryGetPolicy("www.example.com", out _));
 ## Turn the list off for the application
 
 An application that never wants the list can turn it off with a feature switch in its project file. No collection
-loads it then, `HstsDomainPolicyCollection.Default` included, even with `includePreloadDomains: true`:
+loads it then, [HstsDomainPolicyCollection.Default](cref:Meziantou.Framework.Http.HstsDomainPolicyCollection.Default) included, even with `includePreloadDomains: true`:
 
 ```xml
 <ItemGroup>

@@ -3,13 +3,13 @@ title: Introduction
 description: What the ByteSize struct does, and the decimal and binary units it supports.
 ---
 
-`Meziantou.Framework.ByteSize` provides `ByteSize`, a struct that holds a number of bytes, such as the size of a file, a
+`Meziantou.Framework.ByteSize` provides [ByteSize](cref:Meziantou.Framework.ByteSize), a struct that holds a number of bytes, such as the size of a file, a
 download or a memory limit. It turns `1536000` into `1.54MB` or `1.46MiB` for display, reads `10MB` from a
 configuration file, and compares and adds sizes.
 
 ## Decimal and binary units
 
-`ByteSize` supports two families of units:
+[ByteSize](cref:Meziantou.Framework.ByteSize) supports two families of units:
 
 | Decimal units | Value | Binary units | Value |
 | --- | --- | --- | --- |
@@ -20,7 +20,7 @@ configuration file, and compares and adds sizes.
 | `PB` (petabyte) | 1,000⁵ bytes | `PiB` (pebibyte) | 1,024⁵ bytes |
 | `EB` (exabyte) | 1,000⁶ bytes | `EiB` (exbibyte) | 1,024⁶ bytes |
 
-`B` is a byte. The `ByteSizeUnit` enum has one member per unit, from `Byte` to `ExbiByte`, and its value is the number
+`B` is a byte. The [ByteSizeUnit](cref:Meziantou.Framework.ByteSizeUnit) enum has one member per unit, from [Byte](cref:Meziantou.Framework.ByteSizeUnit.Byte) to [ExbiByte](cref:Meziantou.Framework.ByteSizeUnit.ExbiByte), and its value is the number
 of bytes of the unit.
 
 ## What you can do with it
@@ -33,4 +33,4 @@ of bytes of the unit.
 
 ## Namespaces
 
-`ByteSize` and `ByteSizeUnit` are in the [Meziantou.Framework](cref:Meziantou.Framework) namespace.
+[ByteSize](cref:Meziantou.Framework.ByteSize) and [ByteSizeUnit](cref:Meziantou.Framework.ByteSizeUnit) are in the [Meziantou.Framework](cref:Meziantou.Framework.ByteSize!N:Meziantou.Framework) namespace.

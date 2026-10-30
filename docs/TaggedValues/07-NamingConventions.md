@@ -63,5 +63,5 @@ public sealed class CustomerService
 - Two types with the same name in different namespaces give their `Id` the same tag, for instance `Sales.Order.Id` and
   `Billing.Order.Id`. The analyzer reports it ([MFTV0006](09-Rules/07-MFTV0006.md)): add an explicit tag to at least
   one of them.
-- A `[ValueTag]` attribute that declares the tag the convention already infers is redundant
+- A [\[ValueTag\]](cref:Meziantou.Framework.TaggedValues.ValueTagAttribute) attribute that declares the tag the convention already infers is redundant
   ([MFTV0007](09-Rules/08-MFTV0007.md)): the code fix removes it.

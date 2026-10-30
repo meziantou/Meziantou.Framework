@@ -26,6 +26,12 @@ internal sealed class ImageCodecContext
 
     public ImageResourceLimits Limits => Configuration.Limits;
 
+    /// <summary>
+    /// Gets a value indicating whether the decoders accept the documented deviations from the specifications
+    /// (<see cref="DecodingStrictness.Lenient"/>). A repair never bypasses a resource limit and never invents pixels.
+    /// </summary>
+    public bool IsLenient => Configuration.DecodingStrictness == DecodingStrictness.Lenient;
+
     /// <summary>Gets the per-input limit accounting (frames, pixels, encoded bytes, metadata bytes).</summary>
     public InputResourceTracker Tracker { get; }
 

@@ -17,15 +17,15 @@ Assert.True(ok);
 ```
 <!-- endref -->
 
-- `HashPassword` generates a random salt for each call: hashing the same password twice gives two different strings.
-- `Verify` reads the revision, the work factor and the salt from the hash, so it needs no other parameter.
+- [HashPassword](cref:Meziantou.Framework.Hashing.Bcrypt.HashPassword) generates a random salt for each call: hashing the same password twice gives two different strings.
+- [Verify](cref:Meziantou.Framework.Hashing.Bcrypt.Verify) reads the revision, the work factor and the salt from the hash, so it needs no other parameter.
 - Both methods also take the password as a `ReadOnlySpan<char>`.
 
 ## Choose the work factor
 
 The work factor (the cost) is a power of two: each increment doubles the time it takes to hash and to verify a
-password. It ranges from `Bcrypt.MinWorkFactor` (4) to `Bcrypt.MaxWorkFactor` (31), and the default is
-`Bcrypt.DefaultWorkFactor` (11). Choose the highest value your servers can afford for each sign-in, and raise it as
+password. It ranges from [Bcrypt.MinWorkFactor](cref:Meziantou.Framework.Hashing.Bcrypt.MinWorkFactor) (4) to [Bcrypt.MaxWorkFactor](cref:Meziantou.Framework.Hashing.Bcrypt.MaxWorkFactor) (31), and the default is
+[Bcrypt.DefaultWorkFactor](cref:Meziantou.Framework.Hashing.Bcrypt.DefaultWorkFactor) (11). Choose the highest value your servers can afford for each sign-in, and raise it as
 hardware gets faster.
 
 <!-- ref:../../tests/Meziantou.Framework.Hashing.Tests/BcryptTests.cs;region=Bcrypt_RevisionAndWorkFactor;format=md-fenced-code-block;dedent=true -->
@@ -40,7 +40,7 @@ Assert.True(shouldRehash);
 ```
 <!-- endref -->
 
-`NeedsRehash` returns `true` when a hash was created with another work factor or another revision than the ones you
+[NeedsRehash](cref:Meziantou.Framework.Hashing.Bcrypt.NeedsRehash) returns `true` when a hash was created with another work factor or another revision than the ones you
 pass.
 
 ## Upgrade the stored hashes
@@ -67,7 +67,7 @@ Assert.Equal(12, Bcrypt.ParseHash(storedHash).WorkFactor);
 ```
 <!-- endref -->
 
-To find the hashes that use an old revision or a low work factor, read them with `ParseHash`, or `TryParseHash` for
+To find the hashes that use an old revision or a low work factor, read them with [ParseHash](cref:Meziantou.Framework.Hashing.Bcrypt.ParseHash), or [TryParseHash](cref:Meziantou.Framework.Hashing.Bcrypt.TryParseHash) for
 values that may not be BCrypt hashes:
 
 <!-- ref:../../tests/Meziantou.Framework.Hashing.Tests/BcryptTests.cs;region=Bcrypt_ParseHash;format=md-fenced-code-block;dedent=true -->
@@ -84,26 +84,26 @@ Assert.False(Bcrypt.TryParseHash("not a hash", out _));
 ```
 <!-- endref -->
 
-`ParseHash` throws a `FormatException` when the value is not a BCrypt hash.
+[ParseHash](cref:Meziantou.Framework.Hashing.Bcrypt.ParseHash) throws a `FormatException` when the value is not a BCrypt hash.
 
 ## Revisions
 
-| `BcryptVersion` | Prefix | Support |
+| [BcryptVersion](cref:Meziantou.Framework.Hashing.BcryptVersion) | Prefix | Support |
 | --- | --- | --- |
-| `Revision2` | `$2$` | Verified only: salts cannot be generated |
-| `Revision2A` | `$2a$` | Hashed and verified |
-| `Revision2B` | `$2b$` | Hashed and verified; the default |
-| `Revision2Y` | `$2y$` | Hashed and verified; identical to `$2b$` |
-| `Revision2X` | `$2x$` | Read by `ParseHash` only |
+| [Revision2](cref:Meziantou.Framework.Hashing.BcryptVersion.Revision2) | `$2$` | Verified only: salts cannot be generated |
+| [Revision2A](cref:Meziantou.Framework.Hashing.BcryptVersion.Revision2A) | `$2a$` | Hashed and verified |
+| [Revision2B](cref:Meziantou.Framework.Hashing.BcryptVersion.Revision2B) | `$2b$` | Hashed and verified; the default |
+| [Revision2Y](cref:Meziantou.Framework.Hashing.BcryptVersion.Revision2Y) | `$2y$` | Hashed and verified; identical to `$2b$` |
+| [Revision2X](cref:Meziantou.Framework.Hashing.BcryptVersion.Revision2X) | `$2x$` | Read by [ParseHash](cref:Meziantou.Framework.Hashing.Bcrypt.ParseHash) only |
 
 `$2x$` exists only to reproduce a sign-extension bug of an old implementation, which this library does not emulate.
 Hashing or verifying a `$2x$` hash throws a `NotSupportedException` rather than silently mis-verifying the passwords that
-contain non-ASCII characters. Use `ParseHash` to find those hashes, and ask the users to reset their password.
+contain non-ASCII characters. Use [ParseHash](cref:Meziantou.Framework.Hashing.Bcrypt.ParseHash) to find those hashes, and ask the users to reset their password.
 
 ## Generate the salt yourself
 
 `HashPassword(password, salt)` hashes with a salt you provide, which makes the result reproducible. Generate the salt
-with `GenerateSalt`: it contains the revision and the work factor.
+with [GenerateSalt](cref:Meziantou.Framework.Hashing.Bcrypt.GenerateSalt): it contains the revision and the work factor.
 
 <!-- ref:../../tests/Meziantou.Framework.Hashing.Tests/BcryptTests.cs;region=Bcrypt_GenerateSalt;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -118,13 +118,13 @@ Assert.True(Bcrypt.Verify("my password", hash));
 ```
 <!-- endref -->
 
-`HashPassword` throws a `FormatException` when the salt is not valid.
+[HashPassword](cref:Meziantou.Framework.Hashing.Bcrypt.HashPassword) throws a `FormatException` when the salt is not valid.
 
 ## Password length
 
-BCrypt processes the password as UTF-8 and only uses its first 72 bytes (`Bcrypt.MaxPasswordLengthInBytes`). Two
+BCrypt processes the password as UTF-8 and only uses its first 72 bytes ([Bcrypt.MaxPasswordLengthInBytes](cref:Meziantou.Framework.Hashing.Bcrypt.MaxPasswordLengthInBytes)). Two
 passwords that share their first 72 bytes verify against the same hash. A character outside ASCII takes 2 to 4 bytes,
 so the limit can be reached with fewer than 72 characters.
 
-A password that contains an unpaired surrogate cannot be encoded as UTF-8: `HashPassword` throws an
-`ArgumentException`, and `Verify` returns `false`.
+A password that contains an unpaired surrogate cannot be encoded as UTF-8: [HashPassword](cref:Meziantou.Framework.Hashing.Bcrypt.HashPassword) throws an
+`ArgumentException`, and [Verify](cref:Meziantou.Framework.Hashing.Bcrypt.Verify) returns `false`.

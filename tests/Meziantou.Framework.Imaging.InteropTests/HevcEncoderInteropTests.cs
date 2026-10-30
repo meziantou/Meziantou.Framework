@@ -108,6 +108,14 @@ public sealed class HevcEncoderInteropTests
         // (clause A.4.1, item b): TAppDecoder checks that their coding tree blocks have 32 samples at least (item d)
         data.Add(1, 8, false, "still", 4224, 9, 2, 60);
         data.Add(3, 8, true, "sequence", 8448, 8, 1, 100);
+
+        // Rows of coding tree blocks that are substreams of the wavefront, with their entry points ("-wpp"): lossy (written
+        // after the picture is filtered) and lossless (written as they are searched), one and two coding tree blocks wide
+        data.Add(1, 8, false, "still-wpp", 200, 136, 7, 45);
+        data.Add(3, 10, true, "still-wpp", 136, 104, 6, 100);
+        data.Add(2, 8, false, "sequence-wpp", 72, 200, 3, 50);
+        data.Add(0, 12, true, "intra-wpp", 64, 136, 2, 100);
+        data.Add(1, 8, false, "still-wpp", 120, 300, 0, 85);
         return data;
     }
 
@@ -126,6 +134,8 @@ public sealed class HevcEncoderInteropTests
             _ => "444",
         };
         var name = string.Create(CultureInfo.InvariantCulture, $"{format}-{bitDepth}bit-{width}x{height}-{kind}-{(lossless ? "lossless" : "q" + quality.ToString(CultureInfo.InvariantCulture))}-e{effort}");
+        var wavefront = kind.EndsWith("-wpp", StringComparison.Ordinal);
+        kind = wavefront ? kind[..^4] : kind;
         var artifacts = InteropSettings.GetArtifactsDirectory(nameof(HevcEncoderInteropTests));
         var work = artifacts / "work" / name;
         Directory.CreateDirectory(work);
@@ -143,7 +153,7 @@ public sealed class HevcEncoderInteropTests
                 "interval" => 2,
                 _ => 0,
             };
-            var settings = new HevcEncoderSettings(width, height, bitDepth, chromaFormatIdc, ColourPrimaries: 1, TransferCharacteristics: 13, MatrixCoeffs: chromaFormatIdc is 3 ? 0 : 6, FullRange: true, ChromaSampleLocType: 0, StillPicture: kind is "still", lossless, quality, effort, keyFrameInterval);
+            var settings = new HevcEncoderSettings(width, height, bitDepth, chromaFormatIdc, ColourPrimaries: 1, TransferCharacteristics: 13, MatrixCoeffs: chromaFormatIdc is 3 ? 0 : 6, FullRange: true, ChromaSampleLocType: 0, StillPicture: kind is "still", lossless, quality, effort, keyFrameInterval, wavefront);
             var encoded = Encode(name, settings, pictureCount, cancellationToken);
             var stream = work / "stream.hevc";
             await File.WriteAllBytesAsync(stream, encoded.ByteStream, cancellationToken);
@@ -192,7 +202,7 @@ public sealed class HevcEncoderInteropTests
             // The headers as a third implementation reads them
             var trace = await ffmpeg.TraceHeadersAsync(stream, "hevc", cancellationToken);
             var profile = GetProfile(chromaFormatIdc, bitDepth, kind);
-            CheckTrace(trace, profile, sps, kind, problems);
+            CheckTrace(trace, profile, sps, kind, wavefront, problems);
             if (GetProfileName(encoded.Profile) != profile)
             {
                 problems.Add($"the encoder announces the profile '{GetProfileName(encoded.Profile)}' instead of '{profile}'");
@@ -322,7 +332,7 @@ public sealed class HevcEncoderInteropTests
     /// The profile, the tier, the level and the constraint flags that <c>trace_headers</c> reads in the video parameter set
     /// and in the sequence parameter set, against Annex A; the NAL unit types; and the sample format of the pictures.
     /// </summary>
-    private static void CheckTrace(string trace, string profile, HevcSequenceParameterSet sps, string kind, List<string> problems)
+    private static void CheckTrace(string trace, string profile, HevcSequenceParameterSet sps, string kind, bool wavefront, List<string> problems)
     {
         var (profileIdc, compatibility, flags) = GetProfileIndication(profile);
         Expect("general_profile_space", 0);
@@ -368,6 +378,7 @@ public sealed class HevcEncoderInteropTests
         Expect("bit_depth_chroma_minus8", sps.BitDepth - 8);
         Expect("sps_max_dec_pic_buffering_minus1[0]", kind is "sequence" or "interval" ? 1 : 0);
         Expect("video_full_range_flag", 1);
+        Expect("entropy_coding_sync_enabled_flag", wavefront ? 1 : 0);
 
         // None of the tools that a decoder in use may not have
         Expect("pcm_enabled_flag", 0);

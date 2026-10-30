@@ -5,8 +5,8 @@ description: Replace a part of a pattern, build a pattern by code, rename a grou
 
 ## Replace a part of a pattern
 
-`ReplaceNode` returns a new pattern in which only the replaced node differs. A replacement takes nothing from the node it
-replaces: use `WithTriviaFrom` to keep the whitespace and comments of extended mode in front of it:
+[ReplaceNode](cref:Meziantou.Framework.Language.SyntaxNodeExtensions.ReplaceNode) returns a new pattern in which only the replaced node differs. A replacement takes nothing from the node it
+replaces: use [WithTriviaFrom](cref:Meziantou.Framework.Language.SyntaxNodeExtensions.WithTriviaFrom) to keep the whitespace and comments of extended mode in front of it:
 
 <!-- ref:../../../tests/Meziantou.Framework.Language.Regex.Tests/RegexSyntaxTreeTests.cs;region=RegexSyntaxTree_ReplaceNode;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -21,10 +21,10 @@ Assert.Equal("a   z # keep this\n", tree.GetRoot().ReplaceNode(second, replaceme
 ```
 <!-- endref -->
 
-`ReplaceToken`, `ReplaceTrivia`, `RemoveNode` and the `With…` method of each part of a node work the same way. See
+[ReplaceToken](cref:Meziantou.Framework.Language.SyntaxNodeExtensions.ReplaceToken), [ReplaceTrivia](cref:Meziantou.Framework.Language.SyntaxNodeExtensions.ReplaceTrivia), [RemoveNode](cref:Meziantou.Framework.Language.SyntaxNodeExtensions.RemoveNode) and the `With…` method of each part of a node work the same way. See
 [Editing trees](../03-Concepts/06-EditingTrees.md).
 
-To edit by text, use `WithChanges`, which parses the pattern again. A tree read by `ParseJavaScriptLiteral` stays a
+To edit by text, use [WithChanges](cref:Meziantou.Framework.Language.Regex.RegexSyntaxTree.WithChanges), which parses the pattern again. A tree read by [ParseJavaScriptLiteral](cref:Meziantou.Framework.Language.Regex.RegexSyntaxTree.ParseJavaScriptLiteral) stays a
 literal: its slashes and its flags are kept.
 
 <!-- ref:../../../tests/Meziantou.Framework.Language.Regex.Tests/RegexSyntaxTreeTests.cs;region=RegexSyntaxTree_WithChanges;format=md-fenced-code-block;dedent=true -->
@@ -38,7 +38,7 @@ Assert.Equal("ab*c", updated.GetText().Text);
 
 ## Build a pattern
 
-`SyntaxFactory` creates nodes, and escapes a character only when the dialect requires it:
+[SyntaxFactory](cref:Meziantou.Framework.Language.Regex.SyntaxFactory) creates nodes, and escapes a character only when the dialect requires it:
 
 <!-- ref:../../../tests/Meziantou.Framework.Language.Regex.Tests/RegexSyntaxTreeTests.cs;region=RegexSyntaxTree_SyntaxFactory;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -51,7 +51,7 @@ Assert.Equal(@"^\d{1,3}\.", pattern.ToFullString());
 ```
 <!-- endref -->
 
-`SyntaxFactory.LiteralText` builds the literals of a whole string, escaped for a dialect.
+[SyntaxFactory.LiteralText](cref:Meziantou.Framework.Language.Regex.SyntaxFactory.LiteralText) builds the literals of a whole string, escaped for a dialect.
 
 ## Rewrite a pattern
 
@@ -110,7 +110,7 @@ Assert.Equal("b", found.ToFullString());
 
 ## Compare patterns
 
-`IsEquivalentTo` compares two trees by their structure, ignoring the whitespace and comments of extended mode. Trees of
+[IsEquivalentTo](cref:Meziantou.Framework.Language.Regex.RegexSyntaxTree.IsEquivalentTo) compares two trees by their structure, ignoring the whitespace and comments of extended mode. Trees of
 different dialects, or parsed with different options, are never equivalent, since the same characters read differently:
 
 <!-- ref:../../../tests/Meziantou.Framework.Language.Regex.Tests/RegexSyntaxTreeTests.cs;region=RegexSyntaxTree_IsEquivalentTo;format=md-fenced-code-block;dedent=true -->
@@ -123,5 +123,5 @@ Assert.True(spaced.IsEquivalentTo(tight));
 ```
 <!-- endref -->
 
-`GetChanges` returns what differs between two trees, with the text they have in common at the start and at the end of a
+[GetChanges](cref:Meziantou.Framework.Language.Regex.RegexSyntaxTree.GetChanges) returns what differs between two trees, with the text they have in common at the start and at the end of a
 change left out.

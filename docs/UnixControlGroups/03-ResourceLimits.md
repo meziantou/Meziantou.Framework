@@ -4,7 +4,7 @@ description: Limit the CPU time, CPU set, memory, swap, IO, number of processes 
 ---
 
 The limits of a control group apply to all its processes together. A limit needs its controller, which you enable on the
-**parent** of the control group with `SetControllers`: see [How control groups work](01-Introduction.md#how-control-groups-work).
+**parent** of the control group with [SetControllers](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.SetControllers): see [How control groups work](01-Introduction.md#how-control-groups-work).
 
 <!-- ref:../../tests/Meziantou.Framework.Unix.ControlGroups.Tests/CGroup2Tests.cs;region=CGroup2_ResourceLimits;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -35,7 +35,7 @@ parent.Delete();
 ```
 <!-- endref -->
 
-Passing `null` to a method that sets one limit, such as `SetMemoryMax` or `SetPidsMax`, removes the limit: the kernel
+Passing `null` to a method that sets one limit, such as [SetMemoryMax](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.SetMemoryMax) or [SetPidsMax](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.SetPidsMax), removes the limit: the kernel
 file then holds `max`.
 
 ## CPU
@@ -46,7 +46,7 @@ Controller: `cpu`.
 | --- | --- |
 | `SetCpuWeight(weight)` | The share of CPU time relative to the sibling control groups, from 1 to 10000 (100 by default), when the CPU is busy |
 | `SetCpuMax(maxMicroseconds, periodMicroseconds = 100000)` | At most `maxMicroseconds` of CPU time per period: `200_000, 100_000` is 2 CPUs, `50_000, 100_000` half of one. `null` removes the limit and sets the period |
-| `RemoveCpuMax()` | Removes the limit and keeps the period |
+| [RemoveCpuMax()](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.RemoveCpuMax) | Removes the limit and keeps the period |
 
 The weight shares the CPU only when processes compete for it; the maximum applies even when the CPU is idle.
 
@@ -89,9 +89,9 @@ worker.RemoveIoMax(major: 8, minor: 0);
 ```
 <!-- endref -->
 
-`SetIoMax` sets the limits of a device in bytes per second and in operations per second. Each call changes only the
+[SetIoMax](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.SetIoMax) sets the limits of a device in bytes per second and in operations per second. Each call changes only the
 limits you pass: a limit you leave `null` keeps its current value, which is no limit until you set one. Passing no limit
-at all removes the limits of the device, as `RemoveIoMax` does.
+at all removes the limits of the device, as [RemoveIoMax](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.RemoveIoMax) does.
 
 ## CPU set
 
@@ -116,17 +116,17 @@ Console.WriteLine($"Effective CPUs: {string.Join(", ", effectiveCpus)}");
 ```
 <!-- endref -->
 
-- `SetCpusetCpus` and `SetCpusetMems` take numbers; `SetCpusetCpusRaw` and `SetCpusetMemsRaw` take the kernel format,
+- [SetCpusetCpus](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.SetCpusetCpus) and [SetCpusetMems](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.SetCpusetMems) take numbers; [SetCpusetCpusRaw](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.SetCpusetCpusRaw) and [SetCpusetMemsRaw](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.SetCpusetMemsRaw) take the kernel format,
   such as `0-3,6,8-10`.
-- `GetCpusetCpus` returns what you set, `GetCpusetCpusEffective` what the control group can use, which its parent can
+- [GetCpusetCpus](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.GetCpusetCpus) returns what you set, [GetCpusetCpusEffective](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.GetCpusetCpusEffective) what the control group can use, which its parent can
   restrict further. An empty list means the group uses the CPUs of its parent.
-- `SetCpusetPartition` sets the partition type: `member`, `root` or `isolated`.
+- [SetCpusetPartition](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.SetCpusetPartition) sets the partition type: `member`, `root` or `isolated`.
 
 ## Huge pages
 
 Controller: `hugetlb`. The methods take the page size as the kernel names it, such as `2MB` or `1GB`:
-`SetHugeTlbMax(pageSize, bytes)` limits the use of huge pages of that size, `GetHugeTlbCurrent` and `GetHugeTlbMax` read
-the usage and the limit, and `GetHugeTlbEventsMax` counts the allocations the limit refused. The page sizes depend on
+`SetHugeTlbMax(pageSize, bytes)` limits the use of huge pages of that size, [GetHugeTlbCurrent](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.GetHugeTlbCurrent) and [GetHugeTlbMax](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.GetHugeTlbMax) read
+the usage and the limit, and [GetHugeTlbEventsMax](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.GetHugeTlbEventsMax) counts the allocations the limit refused. The page sizes depend on
 the processor and on the kernel configuration: a size the kernel does not provide is reported as unavailable.
 
 ## Limits are hierarchical

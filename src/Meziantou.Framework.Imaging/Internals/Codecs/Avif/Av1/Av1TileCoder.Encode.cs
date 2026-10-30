@@ -1560,8 +1560,20 @@ internal ref partial struct Av1TileCoder
         else
         {
             GetQuantizers(plane, out var dcQuantizer, out var acQuantizer);
+            var denominator = Av1Reconstruction.GetDequantizationDenominator(txSz);
             Av1ForwardTransform.Forward(residual, coefficients, txSz, planeTxType);
-            Av1Quantizer.Quantize(coefficients, coefficients, dcQuantizer, acQuantizer, Av1Reconstruction.GetDequantizationDenominator(txSz), _bitDepth, _decisions.QuantizerRounding);
+            if (_decisions.OptimizeLevels)
+            {
+                // The residual is no longer needed: it holds the levels, which the optimization compares with the coefficients
+                var levels = residual[..count];
+                Av1Quantizer.Quantize(coefficients, levels, dcQuantizer, acQuantizer, denominator, _bitDepth, _decisions.QuantizerRounding);
+                OptimizeLevels(plane, startX, startY, txSz, lumaTxType, planeTxType, coefficients, levels, dcQuantizer, acQuantizer, denominator);
+                levels.CopyTo(coefficients);
+            }
+            else
+            {
+                Av1Quantizer.Quantize(coefficients, coefficients, dcQuantizer, acQuantizer, denominator, _bitDepth, _decisions.QuantizerRounding);
+            }
         }
 
         // The record: the levels in scan order, up to the last one that is not zero

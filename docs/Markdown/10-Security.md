@@ -1,6 +1,6 @@
 ---
 title: Security
-description: Render Markdown written by your users safely: disable raw HTML, filter attributes, sanitize the output and limit the nesting depth.
+description: "Render Markdown written by your users safely: disable raw HTML, filter attributes, sanitize the output and limit the nesting depth."
 ---
 
 Markdown is often written by users: comments, descriptions, messages. CommonMark lets the author write raw HTML and any

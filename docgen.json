@@ -1,0 +1,14 @@
+{
+  "$schema": "https://raw.githubusercontent.com/meziantou/Meziantou.DocumentationGenerator/main/schema/docgen.schema.json",
+  "version": 1,
+  "site": {
+    "title": "Meziantou.Framework",
+    "description": "Documentation of the Meziantou.Framework libraries."
+  },
+  "output": "artifacts/docs",
+  "content": {
+    "root": "docs",
+    "exclude": [ "**/AGENTS.md" ],
+    "editUrl": "https://github.com/meziantou/Meziantou.Framework/edit/main/docs/{path}"
+  }
+}

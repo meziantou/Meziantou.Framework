@@ -8,6 +8,13 @@
         "Meziantou.FileReferencer"
       ],
       "rollForward": false
+    },
+    "meziantou.documentationgenerator": {
+      "version": "0.2.0",
+      "commands": [
+        "Meziantou.DocumentationGenerator"
+      ],
+      "rollForward": false
     }
   }
 }

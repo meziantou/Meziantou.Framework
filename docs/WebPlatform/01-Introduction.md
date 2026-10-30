@@ -1,6 +1,6 @@
 ---
 title: Introduction
-description: A browser engine for .NET, in managed code: HTML, CSS, the DOM, layout, scripts, screenshots and PDF.
+description: "A browser engine for .NET, in managed code: HTML, CSS, the DOM, layout, scripts, screenshots and PDF."
 ---
 
 `Meziantou.Framework.WebPlatform` implements the web platform in .NET. It parses HTML, XML, SVG, MathML and CSS exactly

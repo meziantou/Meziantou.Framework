@@ -778,11 +778,20 @@ internal sealed class JpegBitstreamReader : IDisposable
     }
 
     /// <summary>The bits of the entropy-coded data, most significant bit first, without the zero byte that follows each byte 0xFF.</summary>
+    /// <remarks>
+    /// The bytes are loaded ahead into a buffer, up to the first one that is not data (a marker or the end of the file): a
+    /// read fails only when it needs a bit that is not there, with the error of that byte, as when the bytes were loaded one
+    /// at a time.
+    /// </remarks>
     private ref struct BitReader
     {
         private readonly ReadOnlySpan<byte> _data;
+
+        // The position of the next byte to load into the buffer
         private int _position;
-        private int _current;
+
+        // The low _bitCount bits are the bits that are not read, most significant bit first
+        private ulong _buffer;
         private int _bitCount;
 
         public BitReader(ReadOnlySpan<byte> data, int position)
@@ -792,40 +801,93 @@ internal sealed class JpegBitstreamReader : IDisposable
         }
 
         /// <summary>Gets the position of the byte that follows the last one a bit was read from.</summary>
-        public readonly int Position => _position;
-
-        /// <summary>Gets the number of bits of the current byte that are not read.</summary>
-        public readonly int PendingBitCount => _bitCount;
-
-        public int ReadBits(int count)
+        public readonly int Position
         {
-            var value = 0;
-            for (var i = 0; i < count; i++)
+            get
             {
-                if (_bitCount == 0)
+                // The whole bytes of the buffer are not read: each one took two bytes of the file when it is 0xFF
+                var position = _position;
+                for (var i = 0; i < _bitCount >> 3; i++)
                 {
-                    if (_position >= _data.Length)
-                        throw Invalid("the data of a scan are truncated.");
-
-                    _current = _data[_position++];
-                    if (_current == 0xFF)
-                    {
-                        // A byte 0xFF of the data is followed by a zero byte; anything else is a marker
-                        if (_position >= _data.Length || _data[_position] != 0)
-                            throw Invalid("the data of a scan end before its last block.");
-
-                        _position++;
-                    }
-
-                    _bitCount = 8;
+                    position -= (byte)(_buffer >> (8 * i)) == 0xFF ? 2 : 1;
                 }
 
-                _bitCount--;
-                value = (value << 1) | ((_current >> _bitCount) & 1);
+                return position;
+            }
+        }
+
+        /// <summary>Gets the number of bits of the current byte that are not read.</summary>
+        public readonly int PendingBitCount => _bitCount & 7;
+
+        /// <summary>Reads <paramref name="count"/> bits, from 1 to 16.</summary>
+        public int ReadBits(int count)
+        {
+            if (_bitCount < count)
+            {
+                Fill();
+                if (_bitCount < count)
+                    throw EndOfData();
             }
 
-            return value;
+            _bitCount -= count;
+            return (int)(_buffer >> _bitCount) & ((1 << count) - 1);
         }
+
+        /// <summary>Gets the next <paramref name="count"/> bits, from 1 to 16, without reading them.</summary>
+        /// <returns><see langword="false"/> when the data end before them.</returns>
+        public bool TryPeekBits(int count, out int value)
+        {
+            if (_bitCount < count)
+            {
+                Fill();
+                if (_bitCount < count)
+                {
+                    value = 0;
+                    return false;
+                }
+            }
+
+            value = (int)(_buffer >> (_bitCount - count)) & ((1 << count) - 1);
+            return true;
+        }
+
+        /// <summary>Reads <paramref name="count"/> bits that <see cref="TryPeekBits"/> returned.</summary>
+        public void SkipBits(int count) => _bitCount -= count;
+
+        private void Fill()
+        {
+            var data = _data;
+            var position = _position;
+            var buffer = _buffer;
+            var bitCount = _bitCount;
+            while (bitCount <= 56 && position < data.Length)
+            {
+                var value = data[position];
+                if (value == 0xFF)
+                {
+                    // A byte 0xFF of the data is followed by a zero byte; anything else is a marker
+                    if (position + 1 >= data.Length || data[position + 1] != 0)
+                        break;
+
+                    position += 2;
+                }
+                else
+                {
+                    position++;
+                }
+
+                buffer = (buffer << 8) | value;
+                bitCount += 8;
+            }
+
+            _position = position;
+            _buffer = buffer;
+            _bitCount = bitCount;
+        }
+
+        /// <summary>The error of the byte where the data end: the end of the file, or a marker.</summary>
+        private readonly InvalidImageContentException EndOfData()
+            => _position >= _data.Length ? Invalid("the data of a scan are truncated.") : Invalid("the data of a scan end before its last block.");
 
         /// <summary>Reads a value of <paramref name="size"/> bits whose first bit tells the sign (section F.2.2.1).</summary>
         public int ReadExtended(int size)
@@ -841,18 +903,30 @@ internal sealed class JpegBitstreamReader : IDisposable
         public bool TryReadMarker(out int marker)
         {
             marker = 0;
-            if (_bitCount != 0 || _position + 1 >= _data.Length || _data[_position] != 0xFF)
+            if (PendingBitCount != 0)
                 return false;
 
-            marker = _data[_position + 1];
-            _position += 2;
+            var position = Position;
+            if (position + 1 >= _data.Length || _data[position] != 0xFF)
+                return false;
+
+            marker = _data[position + 1];
+            _position = position + 2;
+            _buffer = 0;
+            _bitCount = 0;
             return true;
         }
     }
 
     /// <summary>A Huffman table: the codes of each length are consecutive, and the first code of a length follows the last one of the length before (section F.2.2.3).</summary>
+    /// <remarks>Codes of at most <see cref="LookupBits"/> bits are resolved by one lookup, as in <see cref="JpegHuffmanTable"/>.</remarks>
     private sealed class HuffmanDecoder
     {
+        private const int LookupBits = 9;
+        private const int MaxCodeLength = 16;
+
+        // (code length << 8) | value, or 0 when the code is longer than LookupBits or is not a code of the table
+        private readonly ushort[] _lookup = new ushort[1 << LookupBits];
         private readonly int[] _minCode = new int[17];
         private readonly int[] _maxCode = new int[17];
         private readonly int[] _firstValue = new int[17];
@@ -894,11 +968,46 @@ internal sealed class JpegBitstreamReader : IDisposable
                     throw Invalid("a Huffman table has the same symbol twice.");
             }
 
+            // The codes are a prefix code: the bit patterns that start with a code of at most LookupBits bits do not overlap
+            for (var length = 1; length <= LookupBits; length++)
+            {
+                for (var shortCode = decoder._minCode[length]; shortCode <= decoder._maxCode[length]; shortCode++)
+                {
+                    var entry = (ushort)((length << 8) | decoder._values[decoder._firstValue[length] + shortCode - decoder._minCode[length]]);
+                    var shift = LookupBits - length;
+                    decoder._lookup.AsSpan(shortCode << shift, 1 << shift).Fill(entry);
+                }
+            }
+
             return decoder;
         }
 
         public int Decode(ref BitReader bits)
         {
+            if (bits.TryPeekBits(MaxCodeLength, out var peek))
+            {
+                var entry = _lookup[peek >> (MaxCodeLength - LookupBits)];
+                if (entry != 0)
+                {
+                    bits.SkipBits(entry >> 8);
+                    return entry & 0xFF;
+                }
+
+                // No code of at most LookupBits bits starts the bits
+                for (var length = LookupBits + 1; length <= MaxCodeLength; length++)
+                {
+                    var longCode = peek >> (MaxCodeLength - length);
+                    if (longCode <= _maxCode[length])
+                    {
+                        bits.SkipBits(length);
+                        return _values[_firstValue[length] + longCode - _minCode[length]];
+                    }
+                }
+
+                throw Invalid("a code of the data of a scan is not in its Huffman table.");
+            }
+
+            // The data end before the longest code: one bit at a time, so that the error is the one of the bit that is missing
             var code = 0;
             for (var length = 1; length <= 16; length++)
             {

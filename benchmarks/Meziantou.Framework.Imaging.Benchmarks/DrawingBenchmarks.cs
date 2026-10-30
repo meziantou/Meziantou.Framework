@@ -308,6 +308,14 @@ public class DrawingBenchmarks : IDisposable
     }
 
     [Benchmark]
+    [Workload("Blur 32 of a circle of radius 150")]
+    public int BlurLarge()
+    {
+        _image.Draw(static canvas => canvas.Blur(32, static canvas => canvas.FillCircle(new Rgba32(250, 120, 0), new PointD(600, 400), 150)));
+        return _image.Width;
+    }
+
+    [Benchmark]
     [Workload("Blur 1.5 of the whole 1024x768 canvas: blur of the backdrop")]
     public int BlurBackdrop()
     {

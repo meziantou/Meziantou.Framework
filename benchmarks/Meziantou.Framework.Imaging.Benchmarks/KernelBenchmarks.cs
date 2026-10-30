@@ -19,6 +19,12 @@ public class KernelBenchmarks : IDisposable
     private readonly double[] _block = new double[64];
     private readonly byte[] _samples = new byte[8 * 64];
     private readonly AllocationScope _scope = new(new ImageResourceLimits());
+    private readonly ushort[] _luma = new ushort[2048];
+    private readonly ushort[] _cb = new ushort[2048];
+    private readonly ushort[] _cr = new ushort[2048];
+    private readonly ushort[] _alpha = new ushort[2048];
+    private readonly byte[] _widePixels = new byte[2048 * 8];
+    private HeifYuvConverter _heifConverter = null!;
     private PaletteQuantizer _quantizer = null!;
     private int[] _colors = null!;
 
@@ -55,6 +61,19 @@ public class KernelBenchmarks : IDisposable
         {
             _colors[i] = random.Next(1 << 24);
         }
+
+        // A row of a 10-bit image with a 10-bit alpha plane (BT.709, limited range), converted to Rgba64 pixels
+        for (var i = 0; i < _luma.Length; i++)
+        {
+            _luma[i] = (ushort)random.Next(64, 941);
+            _cb[i] = (ushort)random.Next(64, 961);
+            _cr[i] = (ushort)random.Next(64, 961);
+            _alpha[i] = (ushort)random.Next(1024);
+        }
+
+        var color = new HeifBitstreamFormat(10, false, 0, 0, Av1Constants.CspUnknown, Av1Constants.McBt709, false, ColorDescriptionPresent: true, 1, 1);
+        var alpha = new HeifBitstreamFormat(10, IsMonochrome: true, 0, 0, Av1Constants.CspUnknown, Av1Constants.McIdentity, true, ColorDescriptionPresent: false, 2, 2);
+        _heifConverter = new HeifYuvConverter(AvifBinding.Instance, color, Av1Constants.McBt709, fullRange: false, alpha, PixelFormat.Rgba64);
     }
 
     [GlobalCleanup]
@@ -137,6 +156,12 @@ public class KernelBenchmarks : IDisposable
 
         return sum;
     }
+
+    [Benchmark]
+    public void HeifYuvRgba64AlphaScalar() => _heifConverter.ConvertRowScalar(_luma, _cb, _cr, _alpha, _widePixels);
+
+    [Benchmark]
+    public void HeifYuvRgba64Alpha() => _heifConverter.ConvertRow(_luma, _cb, _cr, _alpha, _widePixels);
 
     public void Dispose()
     {

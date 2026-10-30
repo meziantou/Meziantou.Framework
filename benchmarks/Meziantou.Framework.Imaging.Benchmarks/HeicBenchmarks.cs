@@ -14,7 +14,7 @@ namespace Meziantou.Framework.Imaging.Benchmarks;
 /// cameras write their photos (tiles decoded one by one, then assembled and converted). These inputs are small: the workloads measure the decoder on its
 /// own corpus and say nothing about photographs. The corpus has no large 10-bit stream: the 10-bit still is the 512x384
 /// photo-like still of the encoder workloads, written by the encoder of the library (lossy 4:2:0, effort 0), and decoded to
-/// its 16-bit pixels. The 3840x2160 still with rows of the wavefront is written by the encoder of the library (lossy 4:2:0,
+/// its 16-bit pixels, opaque and with the opaque, translucent and transparent areas of a 10-bit alpha plane. The 3840x2160 still with rows of the wavefront is written by the encoder of the library (lossy 4:2:0,
 /// effort 0), whose large still images have them by default, as x265 writes its streams: the decoder decodes its rows, and
 /// the tiles of the grid, with <see cref="Workers"/> workers.
 /// </summary>
@@ -40,6 +40,7 @@ public class HeicBenchmarks : IDisposable
     private byte[] _still444 = null!;
     private byte[] _animation = null!;
     private byte[] _still10Bit = null!;
+    private byte[] _still10BitAlpha = null!;
     private byte[] _grid = null!;
     private byte[] _wavefront = null!;
     private Image<Rgb24> _photo = null!;
@@ -115,6 +116,21 @@ public class HeicBenchmarks : IDisposable
             if (decoded.PixelFormat is not (PixelFormat.Rgb48 or PixelFormat.Rgba64))
                 throw new InvalidOperationException($"Unexpected 10-bit HEIC input: {decoded.PixelFormat}.");
         }
+
+        using (var translucent = Image.ImportPixelData<Rgba64>(BenchmarkPixels.Rgba64(EncodedWidth, EncodedHeight, seed: 21, alpha: true), EncodedWidth, EncodedHeight))
+        {
+            ImageWorkloads.Encode(translucent, new HeicEncoder { Compression = HeicCompression.Lossy, BitDepth = 10, Effort = 0 }, _output);
+        }
+
+        _still10BitAlpha = _output.ToArray();
+        Require(_still10BitAlpha, EncodedWidth, EncodedHeight, frames: 1);
+        using (var decoded = Image.Load<Rgba64>(_still10BitAlpha))
+        {
+            var pixels = new Rgba64[EncodedWidth * EncodedHeight];
+            decoded.Frames[0].CopyPixelDataTo(pixels);
+            if (!pixels.Any(pixel => pixel.A is not (0 or ushort.MaxValue)) || !pixels.Any(pixel => pixel.A is 0) || !pixels.Any(pixel => pixel.A is ushort.MaxValue))
+                throw new InvalidOperationException("Unexpected 10-bit HEIC input: the alpha plane is not opaque, translucent and transparent.");
+        }
     }
 
     [GlobalCleanup]
@@ -169,6 +185,14 @@ public class HeicBenchmarks : IDisposable
     public int DecodeStill10Bit()
     {
         using var image = Image.Load<Rgba64>(_still10Bit);
+        return image.Width;
+    }
+
+    [Benchmark]
+    [Workload("512x384 lossy 10-bit HEIC 4:2:0 with a 10-bit alpha plane -> Rgba64")]
+    public int DecodeStill10BitAlpha()
+    {
+        using var image = Image.Load<Rgba64>(_still10BitAlpha);
         return image.Width;
     }
 

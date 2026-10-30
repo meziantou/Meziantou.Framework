@@ -73,6 +73,7 @@ internal sealed class HeifYuvConverter
     private readonly long _cYR;
     private readonly long _cYB;
     private readonly int _alphaMax;
+    private readonly int _alphaBitDepth;
     private readonly bool _alphaFullRange;
     private readonly int _alphaOffset;
     private readonly long _cAlpha;
@@ -103,6 +104,10 @@ internal sealed class HeifYuvConverter
     private readonly int _crG;
     private readonly int _cbB;
     private readonly int _crB;
+
+    // The output maximum is q * alphaMax + r (ConvertWideAlpha)
+    private readonly int _alphaQuotient;
+    private readonly int _alphaRemainder;
 
     /// <summary>Creates the converter of an image.</summary>
     /// <param name="binding">The format of the file, which errors report.</param>
@@ -222,6 +227,9 @@ internal sealed class HeifYuvConverter
         if (alpha is { } alphaFormat)
         {
             _alphaMax = (1 << alphaFormat.BitDepth) - 1;
+            _alphaBitDepth = alphaFormat.BitDepth;
+            _alphaQuotient = _outputMax / _alphaMax;
+            _alphaRemainder = _outputMax % _alphaMax;
 
             // An alpha plane uses the full range (ISO/IEC 23000-22, section 7.3.5.2): only a plane that states the
             // limited range is expanded, not one whose codec infers that range from the absence of a description
@@ -252,27 +260,36 @@ internal sealed class HeifYuvConverter
         WideMatrix,
     }
 
+    // The alpha conversions of ConvertRowVectorWideAlpha
+    private enum AlphaKind
+    {
+        Copy,
+        FullRange,
+        LimitedRange,
+    }
+
     // The vector paths convert with the integer operations of the scalar path, when every product and every sum of the
     // conversion fits in 32 bits: ConvertRowVector produces 8-bit pixels (Gray8, Rgb24 and Rgba32), from samples of 8 bits for
-    // a monochrome image and an alpha plane, which are copied in full range; ConvertRowVectorWide produces Rgba64 pixels of
-    // an image without alpha
+    // a monochrome image and an alpha plane, which are copied in full range; ConvertRowVectorWide and ConvertRowVectorWideAlpha
+    // produce Rgba64 pixels of a matrix, with alpha planes of any bit depth. The decoders produce 8-bit pixels only when every
+    // plane has 8 bits: the 8-bit pixels of deeper alpha planes are left to the scalar path, whose test would cost the vector
+    // path of 8-bit alpha planes about 3%
     private VectorKind GetVectorKind(bool hasAlpha)
     {
-        if (_isPremultiplied || _usesTransfer)
+        if (_isPremultiplied || _usesTransfer || (hasAlpha && !CanConvertAlphaVector()))
             return VectorKind.None;
 
-        // The largest magnitudes of a centered luma, chroma and alpha sample
+        // The largest magnitudes of a centered luma and chroma sample
         long lumaMagnitude = Math.Max(_yOffset, _max - _yOffset);
         long chromaMagnitude = Math.Max(_cOffset, _max - _cOffset);
         if (_outputMax is not 255)
-            return hasAlpha ? VectorKind.None : GetWideVectorKind(lumaMagnitude, chromaMagnitude);
+            return GetWideVectorKind(lumaMagnitude, chromaMagnitude);
 
         if ((_monochrome && _max is not 255) || (hasAlpha && _alphaMax is not 255))
             return VectorKind.None;
 
-        long alphaMagnitude = Math.Max(_alphaOffset, _alphaMax - _alphaOffset);
         const long Limit = int.MaxValue - Half;
-        if (Math.Abs(_cY) * lumaMagnitude > Limit || Math.Abs(_cAlpha) * alphaMagnitude > Limit)
+        if (Math.Abs(_cY) * lumaMagnitude > Limit)
             return VectorKind.None;
 
         if (_monochrome)
@@ -303,6 +320,25 @@ internal sealed class HeifYuvConverter
         var high = ((cY >> 8) * lumaMagnitude) + (chromaHigh * chromaMagnitude);
         var low = (255 * (lumaMagnitude + (2 * chromaMagnitude))) + Half;
         return low <= int.MaxValue && high + (low >> 8) + 1 <= int.MaxValue ? VectorKind.WideMatrix : VectorKind.None;
+    }
+
+    // The operations of ConvertAlpha and ConvertWideAlpha fit in 32 bits. In full range, the sum t = s * r + alphaMax / 2 and
+    // t + ( t >> n ) + 1. In limited range, the product of the coefficient for 8-bit pixels, and for Rgba64 pixels the split
+    // of the coefficient of GetWideVectorKind
+    private bool CanConvertAlphaVector()
+    {
+        if (_alphaFullRange)
+        {
+            var sum = ((long)_alphaMax * _alphaRemainder) + (_alphaMax / 2);
+            return sum + (sum >> _alphaBitDepth) + 1 <= int.MaxValue;
+        }
+
+        long magnitude = Math.Max(_alphaOffset, _alphaMax - _alphaOffset);
+        if (_outputMax is 255)
+            return (_cAlpha * magnitude) + Half <= int.MaxValue;
+
+        var low = (255 * magnitude) + Half;
+        return _cAlpha <= int.MaxValue && low <= int.MaxValue && ((_cAlpha >> 8) * magnitude) + (low >> 8) + 1 <= int.MaxValue;
     }
 
     /// <summary>Verifies that samples that use the matrix coefficients can be converted.</summary>
@@ -568,7 +604,12 @@ internal sealed class HeifYuvConverter
         var start = 0;
         if (_vectorKind is not VectorKind.None && Vector128.IsHardwareAccelerated)
         {
-            start = _vectorKind is not VectorKind.WideMatrix ? ConvertRowVector(y, u, v, alpha, destination) : alpha.IsEmpty ? ConvertRowVectorWide(y, u, v, destination) : 0;
+            start = _vectorKind switch
+            {
+                VectorKind.WideMatrix when alpha.IsEmpty => ConvertRowVectorWide(y, u, v, destination),
+                VectorKind.WideMatrix => ConvertRowVectorWideAlpha(y, u, v, alpha, destination),
+                _ => ConvertRowVector(y, u, v, alpha, destination),
+            };
         }
 
         ConvertRowScalar(y, u, v, alpha, destination, start);
@@ -660,22 +701,45 @@ internal sealed class HeifYuvConverter
     {
         var width = y.Length;
         var coefficients = new WideCoefficients((int)_cY, _yOffset, _cOffset, _cbR, _crR, _cbG, _crG, _cbB, _crB);
+        var opaque = Vector128.Create(65535u);
         var x = 0;
         for (; x <= width - 8; x += 8)
         {
             var (yLow, yHigh) = Vector128.Widen(Vector128.Create(y[x..]));
             var (uLow, uHigh) = Vector128.Widen(Vector128.Create(u[x..]));
             var (vLow, vHigh) = Vector128.Widen(Vector128.Create(v[x..]));
-            ConvertWidePixels(yLow, uLow, vLow, coefficients, destination[(8 * x)..]);
-            ConvertWidePixels(yHigh, uHigh, vHigh, coefficients, destination[((8 * x) + 32)..]);
+            ConvertWidePixels(yLow, uLow, vLow, opaque, coefficients, destination[(8 * x)..]);
+            ConvertWidePixels(yHigh, uHigh, vHigh, opaque, coefficients, destination[((8 * x) + 32)..]);
         }
 
         return x;
     }
 
-    // Four Rgba64 pixels of ConvertRowVectorWide, opaque
+    // ConvertRowVectorWide with an alpha plane (ConvertWideAlpha). A method of its own: with both loops in one method, the
+    // loop of opaque rows keeps its coefficients in memory and costs about 6% more
+    private int ConvertRowVectorWideAlpha(ReadOnlySpan<ushort> y, ReadOnlySpan<ushort> u, ReadOnlySpan<ushort> v, ReadOnlySpan<ushort> alpha, Span<byte> destination)
+    {
+        var width = y.Length;
+        var coefficients = new WideCoefficients((int)_cY, _yOffset, _cOffset, _cbR, _crR, _cbG, _crG, _cbB, _crB);
+        var alphaKind = _alphaFullRange ? (_alphaMax == _outputMax ? AlphaKind.Copy : AlphaKind.FullRange) : AlphaKind.LimitedRange;
+        var alphaCoefficients = new AlphaCoefficients(alphaKind, _alphaQuotient, _alphaRemainder, _alphaMax / 2, _alphaBitDepth, _alphaOffset, (int)_cAlpha);
+        var x = 0;
+        for (; x <= width - 8; x += 8)
+        {
+            var (yLow, yHigh) = Vector128.Widen(Vector128.Create(y[x..]));
+            var (uLow, uHigh) = Vector128.Widen(Vector128.Create(u[x..]));
+            var (vLow, vHigh) = Vector128.Widen(Vector128.Create(v[x..]));
+            var (alphaLow, alphaHigh) = Vector128.Widen(Vector128.Create(alpha[x..]));
+            ConvertWidePixels(yLow, uLow, vLow, ConvertWideAlpha(alphaLow, alphaCoefficients), coefficients, destination[(8 * x)..]);
+            ConvertWidePixels(yHigh, uHigh, vHigh, ConvertWideAlpha(alphaHigh, alphaCoefficients), coefficients, destination[((8 * x) + 32)..]);
+        }
+
+        return x;
+    }
+
+    // Four Rgba64 pixels of ConvertRowVectorWide
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void ConvertWidePixels(Vector128<uint> y, Vector128<uint> u, Vector128<uint> v, in WideCoefficients coefficients, Span<byte> destination)
+    private static void ConvertWidePixels(Vector128<uint> y, Vector128<uint> u, Vector128<uint> v, Vector128<uint> alpha, in WideCoefficients coefficients, Span<byte> destination)
     {
         var luma = y.AsInt32() - Vector128.Create(coefficients.YOffset);
         var cb = u.AsInt32() - Vector128.Create(coefficients.COffset);
@@ -686,9 +750,9 @@ internal sealed class HeifYuvConverter
         var g = ConvertWideComponent(lumaHigh, lumaLow, cb, cr, coefficients.CbG, coefficients.CrG);
         var b = ConvertWideComponent(lumaHigh, lumaLow, cb, cr, coefficients.CbB, coefficients.CrB);
 
-        // R and G, then B and an opaque A, in the 32-bit lanes: a pixel is the 64-bit lane of both
+        // R and G, then B and A, in the 32-bit lanes: a pixel is the 64-bit lane of both
         var (redGreenFirst, redGreenSecond) = Vector128.Widen(r | (g << 16));
-        var (blueAlphaFirst, blueAlphaSecond) = Vector128.Widen(b | Vector128.Create(0xFFFF0000u));
+        var (blueAlphaFirst, blueAlphaSecond) = Vector128.Widen(b | (alpha << 16));
         (redGreenFirst | (blueAlphaFirst << 32)).AsByte().CopyTo(destination);
         (redGreenSecond | (blueAlphaSecond << 32)).AsByte().CopyTo(destination[16..]);
     }
@@ -718,6 +782,31 @@ internal sealed class HeifYuvConverter
             return sample;
 
         return ClipToByte(((Vector128.Create((int)_cAlpha) * (sample.AsInt32() - Vector128.Create(_alphaOffset))) + Vector128.Create((int)Half)) >> 16);
+    }
+
+    // The 16-bit alpha of ConvertRowVectorWideAlpha, with the 32-bit operations of CanConvertAlphaVector. In full range, the
+    // samples themselves for a 16-bit plane, otherwise ( s * 65535 + alphaMax / 2 ) / alphaMax, which is s * q + t / alphaMax
+    // with t = s * r + alphaMax / 2 (65535 = q * alphaMax + r). The maximum is 2^n - 1, and t / ( 2^n - 1 ) is
+    // ( t + ( t >> n ) + 1 ) >> n for every t below 2^n * ( 2^n - 1 ): t is at most alphaMax * ( alphaMax - 1 ) + alphaMax / 2.
+    // In limited range, the coefficient is split as the ones of ConvertRowVectorWide
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<uint> ConvertWideAlpha(Vector128<uint> sample, in AlphaCoefficients coefficients)
+    {
+        switch (coefficients.Kind)
+        {
+            case AlphaKind.Copy:
+                return sample;
+
+            case AlphaKind.FullRange:
+                var sum = (sample * (uint)coefficients.Remainder) + Vector128.Create((uint)coefficients.Rounding);
+                return (sample * (uint)coefficients.Quotient) + ((sum + (sum >>> coefficients.BitDepth) + Vector128<uint>.One) >>> coefficients.BitDepth);
+
+            default:
+                var centered = sample.AsInt32() - Vector128.Create(coefficients.Offset);
+                var high = centered * (coefficients.Coefficient >> 8);
+                var low = (centered * (coefficients.Coefficient & 255)) + Vector128.Create((int)Half);
+                return Vector128.Min(Vector128.Max((high + (low >> 8)) >> 8, Vector128<int>.Zero), Vector128.Create(65535)).AsUInt32();
+        }
     }
 
     private static Vector128<uint> ClipToByte(Vector128<int> value) => Vector128.Min(Vector128.Max(value, Vector128<int>.Zero), Vector128.Create(255)).AsUInt32();
@@ -888,4 +977,8 @@ internal sealed class HeifYuvConverter
     // The coefficients of ConvertRowVectorWide, in locals of the loop
     [StructLayout(LayoutKind.Auto)]
     private readonly record struct WideCoefficients(int Y, int YOffset, int COffset, int CbR, int CrR, int CbG, int CrG, int CbB, int CrB);
+
+    // The coefficients of ConvertWideAlpha, in locals of the loop
+    [StructLayout(LayoutKind.Auto)]
+    private readonly record struct AlphaCoefficients(AlphaKind Kind, int Quotient, int Remainder, int Rounding, int BitDepth, int Offset, int Coefficient);
 }

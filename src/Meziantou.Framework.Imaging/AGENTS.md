@@ -1175,9 +1175,15 @@ thin public types over its `FontFace`.
     The entry points and the errors are then checked in substream order, as the sequential decoding does. When a slice
     segment ends before its last entry point (kvazaar), the blocks decoded past its end are reset to their
     `BeginPicture` state (`HevcPictureState.ClearCodingTreeBlocks`). Slices or slice segments that each hold one tile or
-    row, and the in-loop filters, stay sequential. The encoder writes no tiles and no wavefront by default; the internal
-    `HevcEncoderSettings.Wavefront` switch (`HeicPictureEncoder.TestWavefront`) writes one at about 0% size cost, for
-    tests and benchmarks. `HevcDecoder.TestIgnoreMinimumSize` makes `HevcDecoderConformanceTests` decode the tile and
+    row, and the in-loop filters, stay sequential. The encoder writes no tiles. `HeicPictureEncoder` turns on
+    `HevcEncoderSettings.Wavefront` (one substream and entry point per CTB row) for a still picture of at least
+    `RowBands.MinPixelsForParallelism` samples with 2+ CTB rows and columns, so that our own files decode in parallel;
+    never for grid tiles (`HeifPictureSettings.GridTile`: the tiles are already decoded one per worker) nor for the
+    pictures of a sequence. On a 3840x2160 photo at effort 5 and equal PSNR it costs +0.63% at quality 30, +0.10% at 50 and
+    nothing from 75 up (-0.02% at 75, +0.002% at 90, -0.06% lossless); a near-flat synthetic image whose file is 28 KB
+    pays +1.9% at quality 50 (one entry point per row weighs more in a tiny file). There is no public opt-out (the user's call).
+    `HeicPictureEncoder.TestWavefront` forces it on every picture, for the test that decodes a grid of wavefront tiles.
+    `HevcDecoder.TestIgnoreMinimumSize` makes `HevcDecoderConformanceTests` decode the tile and
     wavefront vectors by 2, 3 and 16 workers.
 
   Other decoding, encoding and drawing stay sequential.

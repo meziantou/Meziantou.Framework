@@ -1559,6 +1559,48 @@ public sealed class HeicEncoderTests
         }
     }
 
+    [Theory]
+    [InlineData(256, 256, HeicCompression.Lossy, true)] // 65,536 samples: decoders decode the rows concurrently
+    [InlineData(256, 256, HeicCompression.Lossless, true)]
+    [InlineData(255, 256, HeicCompression.Lossless, false)] // fewer samples than the decoders decode concurrently
+    [InlineData(2048, 32, HeicCompression.Lossless, false)] // one row of coding tree blocks
+    [InlineData(2048, 33, HeicCompression.Lossless, true)]
+    [InlineData(32, 2048, HeicCompression.Lossless, false)] // one column of coding tree blocks
+    [InlineData(33, 2048, HeicCompression.Lossy, true)]
+    public void TheRowsOfALargeStillPictureAreSubstreamsOfTheWavefront(int width, int height, HeicCompression compression, bool wavefront)
+    {
+        using var image = CreateImage(width, height, seed: width + height, transparent: true);
+        var data = Encode(image, new HeicEncoder { Compression = compression, Effort = 0 });
+        var reader = ReferenceHeif.Parse(data);
+
+        // entropy_coding_sync_enabled_flag (ITU-T H.265, clause 7.4.3.3), for the color image and for the alpha plane
+        Assert.Equal(wavefront, UsesWavefront(reader.PrimaryItem!.HevcConfiguration!));
+        Assert.Equal(wavefront, UsesWavefront(reader.AlphaItem!.HevcConfiguration!));
+        using var decoded = Image.Load<Rgba32>(data);
+        using var decodedByWorkers = Image.Load<Rgba32>(data, new ImageDecodeOptions { Configuration = new ImageConfiguration { MaxDegreeOfParallelism = 4 } });
+        Assert.Equal(GetBytes(decoded), GetBytes(decodedByWorkers));
+        if (compression is HeicCompression.Lossless)
+        {
+            Assert.Equal(GetBytes(image), GetBytes(decoded));
+        }
+    }
+
+    [Fact]
+    public void TheTilesOfAGridAndThePicturesOfASequenceHaveNoWavefront()
+    {
+        // Decoders decode the tiles of a grid concurrently, and the pictures of a sequence are predicted from one another
+        using var image = CreateImage(512, 256, seed: 3, transparent: false);
+        var reader = ReferenceHeif.Parse(Encode(image, new HeicEncoder { GridTileSize = new Size(256, 256), Effort = 0 }));
+        var tiles = reader.GetGridTiles(reader.PrimaryItem!);
+        Assert.HasCount(2, tiles);
+        Assert.All(tiles, tile => Assert.False(UsesWavefront(tile.HevcConfiguration!)));
+
+        using var frame = CreateImage(512, 256, seed: 4, transparent: false);
+        image.AppendFrame(frame.Frames[0]);
+        reader = ReferenceHeif.Parse(Encode(image, new HeicEncoder { Effort = 0 }));
+        Assert.False(UsesWavefront(reader.ColorTrack!.HevcConfiguration!));
+    }
+
     [Fact]
     public void ImagesLargerThanThePicturesOfTheFormatAreRejected()
     {
@@ -1965,6 +2007,12 @@ public sealed class HeicEncoderTests
             (_, 10) => (4, RangeExtensions, intra ? "110000101" : "110000001"),
             _ => (4, RangeExtensions, intra ? "100000101" : "100000001"),
         };
+    }
+
+    private static bool UsesWavefront(ReferenceHeif.HevcConfiguration configuration)
+    {
+        var unit = configuration.Arrays.Single(array => array.NalUnitType is ReferenceHevcStream.NalPps).NalUnits[0];
+        return HevcPictureParameterSet.ParseRbsp(ReferenceHevcStream.GetRbsp(unit.Span)).EntropyCodingSyncEnabledFlag;
     }
 
     private static int[] GetNalUnitTypes(ReferenceHeif.HevcConfiguration configuration, byte[] data)

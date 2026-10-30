@@ -158,6 +158,12 @@ public sealed class HeicEncoderInteropTests
         yield return new("lossy-420-8-201x137", SourceKind.Rgb8, 201, 137, new HeicEncoder { Compression = HeicCompression.Lossy, Quality = 60 });
         yield return new("lossy-422-10-alpha-200x136", SourceKind.Rgba16, 200, 136, new HeicEncoder { Compression = HeicCompression.Lossy, Quality = 80, BitDepth = 10, ChromaSubsampling = HeicChromaSubsampling.Ratio422 });
 
+        // Images large enough for the rows of coding tree blocks to be substreams of the wavefront, with their entry points
+        yield return new("wavefront-lossy-420-8-alpha-321x241", SourceKind.Rgba8, 321, 241, new HeicEncoder { Compression = HeicCompression.Lossy, Effort = 2 });
+        yield return new("wavefront-lossy-444-10-288x240", SourceKind.Rgb16, 288, 240, new HeicEncoder { Compression = HeicCompression.Lossy, Quality = 40, BitDepth = 10, ChromaSubsampling = HeicChromaSubsampling.Ratio444, Effort = 4 });
+        yield return new("wavefront-lossless-444-8-320x208", SourceKind.Rgb8, 320, 208, new HeicEncoder { Effort = 1 });
+        yield return new("wavefront-lossless-400-12-257x256", SourceKind.Gray16, 257, 256, new HeicEncoder { BitDepth = 12, Effort = 0 });
+
         // Pictures of level 5 and of level 6, by their width (ITU-T H.265, clause A.4.1), whose coding tree blocks have 32
         // samples at least
         yield return new("lossy-420-8-4226x9-level-5", SourceKind.Rgb8, 4226, 9, new HeicEncoder { Compression = HeicCompression.Lossy, Quality = 70, Effort = 2 });
@@ -616,6 +622,8 @@ public sealed class HeicEncoderInteropTests
     [InlineData("lossy-422-12", SourceKind.Rgb16, 64, 48, HeicCompression.Lossy, HeicChromaSubsampling.Ratio422, 12, "informative")]
     [InlineData("lossy-444-12-alpha", SourceKind.Rgba16, 64, 48, HeicCompression.Lossy, HeicChromaSubsampling.Ratio444, 12, "informative")]
     [InlineData("lossy-gray", SourceKind.Gray8, 64, 48, HeicCompression.Lossy, HeicChromaSubsampling.Auto, 8, "matrix")]
+    [InlineData("lossy-420-wavefront", SourceKind.Rgb8, 320, 240, HeicCompression.Lossy, HeicChromaSubsampling.Ratio420, 8, "measured")]
+    [InlineData("lossless-alpha-wavefront", SourceKind.Rgba8, 320, 240, HeicCompression.Lossless, HeicChromaSubsampling.Auto, 8, "exact")]
     public async Task StillImagesDecodeWithAppleImageIO(string label, SourceKind kind, int width, int height, HeicCompression compression, HeicChromaSubsampling subsampling, int bitDepth, string expectation)
     {
         // Apple ImageIO exists only on macOS: skipped elsewhere locally; required (never skipped) in the CI interop job (macOS)

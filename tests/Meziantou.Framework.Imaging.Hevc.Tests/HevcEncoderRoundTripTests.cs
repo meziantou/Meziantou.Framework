@@ -388,6 +388,58 @@ public sealed class HevcEncoderRoundTripTests
         }
     }
 
+    // Width, height, format, quality (negative for lossless), effort and number of pictures
+    public static TheoryData<int, int, string, int, int, int> WavefrontCases => new()
+    {
+        // Lossy: the slice segment data are written once the picture is deblocked, with the sample adaptive offset
+        { 300, 170, "420", 60, 5, 1 },
+        { 72, 260, "400", 30, 8, 1 },
+        { 130, 70, "422", 80, 0, 1 },
+
+        // Lossless: each coding tree unit is written once it is searched
+        { 300, 170, "444", -1, 2, 1 },
+        { 40, 140, "420", -1, 4, 1 },
+
+        // P pictures
+        { 120, 140, "420", 50, 4, 3 },
+        { 200, 100, "422", -1, 6, 2 },
+    };
+
+    [Theory]
+    [MemberData(nameof(WavefrontCases))]
+    public void RowsOfTheWavefrontDecodeToTheReconstructionOfTheEncoder(int width, int height, string format, int quality, int effort, int pictureCount)
+    {
+        var name = $"{width}x{height}-{format}-{quality}-e{effort}-{pictureCount}";
+        var scope = AllocationScope.Create(ImageConfiguration.Default, name);
+        var settings = HevcEncoderTestSession.CreateSettings(width, height, 8, format, quality < 0, Math.Max(quality, 0), effort, stillPicture: pictureCount is 1) with { Wavefront = true };
+        var session = new HevcEncoderTestSession(settings);
+        session.Encode(scope, pictureCount, (index, plane, planeWidth, planeHeight) => pictureCount is 1
+            ? HevcEncoderTestSession.CreateSamples("photo", planeWidth, planeHeight, 8, seed: (plane * 7919) + width + (31 * height))
+            : HevcEncoderTestSession.CreateFrame("pan", index, planeWidth, planeHeight, plane is 0 ? 1 : session.SubWidthC, plane is 0 ? 1 : session.SubHeightC, 8, seed: (plane * 7919) + width), XunitCancellationToken);
+        var plain = Encode(name, width, height, 8, format, pictureCount is 1 ? "photo" : "pan", quality, effort, pictureCount);
+        TestContext.Current.TestOutputHelper?.WriteLine(string.Create(CultureInfo.InvariantCulture, $"{name}: {session.PayloadLength} bytes with the wavefront, {plain.PayloadLength} without, {session.GetPsnr():F2} and {plain.GetPsnr():F2} dB"));
+        HevcDecoder.TestIgnoreMinimumSize = true;
+        try
+        {
+            foreach (var workers in (int[])[1, 2, 3, 16])
+            {
+                var decoded = HevcTestDecoder.Decode(session.ToByteStream(), scope, out var tools, maxDegreeOfParallelism: workers);
+                AssertDecodesToTheReconstruction(session, decoded, $"{name} by {workers} workers");
+                Assert.True(tools.HasFlag(HevcTools.Wavefront), $"{name}: the rows are not substreams of the wavefront.");
+            }
+        }
+        finally
+        {
+            HevcDecoder.TestIgnoreMinimumSize = false;
+        }
+
+        // A lossless picture is still its source
+        for (var index = 0; quality < 0 && index < pictureCount; index++)
+        {
+            AssertReconstructionIsTheSource(session, index, name);
+        }
+    }
+
     [Fact]
     public void TheAccessUnitsDecodeAsTheSamplesOfAFile()
     {

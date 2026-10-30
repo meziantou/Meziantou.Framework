@@ -542,6 +542,79 @@ public sealed class AvifContainerConformanceTests
         AssertSameFrame(GoldenCorpus.Default.Get("avif/lossless-rgb8"), 0, image);
     }
 
+    [Fact]
+    public void MediaDataBoxesBeforeTheMetaBoxAreKeptUntilTheItemsAreKnown()
+    {
+        // ISO/IEC 14496-12, section 6.2.3: the order of the top-level boxes is free. Several media data boxes precede the
+        // 'meta' box: an empty one, one larger than the first buffer of the walk, and the one of the item, with a 64-bit size
+        var fixture = GoldenCorpus.Default.Get("avif/lossless-rgb8");
+        var builder = HeifFileBuilder.From(fixture.ReadInput());
+        builder.ExtraBoxes["empty"] = HeifFileBuilder.Box(HeifFileBuilder.MediaDataBox);
+        builder.ExtraBoxes["filler"] = HeifFileBuilder.Box(HeifFileBuilder.MediaDataBox, new byte[200_000]);
+        builder.LargeSizeBoxes.Add(HeifFileBuilder.MediaDataBox);
+        builder.Layout.Clear();
+        builder.Layout.Add(HeifFileBuilder.FileTypeBox);
+        builder.Layout.Add("empty");
+        builder.Layout.Add("filler");
+        builder.Layout.Add(HeifFileBuilder.MediaDataBox);
+        builder.Layout.Add(HeifFileBuilder.MetaBox);
+        var data = builder.Build();
+        Assert.Equal(["ftyp", "mdat", "mdat", "mdat", "meta"], ReferenceHeif.Parse(data).TopLevelBoxes.Select(box => box.Type).ToArray());
+
+        using var image = Image.Load(data);
+        AssertSameFrame(fixture, 0, image);
+        Assert.Equal(1, Image.Identify(data, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan }).FrameCount);
+    }
+
+    [Theory]
+    [InlineData(0L, false)]
+    [InlineData(1L, true)]
+    public void MediaDataBoxBeforeTheMetaBoxLargerThanABufferIsAResourceLimit(long excess, bool isLimit)
+    {
+        // A media data box that precedes the 'meta' box is kept until the items are known. One whose payload does not fit a
+        // buffer is rejected when its header is read, before any of its data is buffered; one that fits is read until the
+        // input ends
+        var builder = HeifFileBuilder.From(GoldenCorpus.Default.Get("avif/lossless-rgb8").ReadInput());
+        builder.Layout.Clear();
+        builder.Layout.Add(HeifFileBuilder.FileTypeBox);
+        var payloadLength = (ulong)Array.MaxLength + (ulong)excess;
+        var data = HeifFileBuilder.Concat(builder.Build(), HeifFileBuilder.U32(1), HeifFileBuilder.Ascii(HeifFileBuilder.MediaDataBox), HeifFileBuilder.U64(payloadLength + 16), new byte[100_000]);
+
+        if (isLimit)
+        {
+            var exception = Assert.Throws<ImageResourceLimitException>(() => Image.Load(data).Dispose());
+            Assert.Equal(ImageResourceLimitKind.LiveAllocationBytes, exception.Kind);
+            Assert.Throws<ImageResourceLimitException>(() => Image.Identify(data, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan }));
+        }
+        else
+        {
+            Assert.Throws<InvalidImageContentException>(() => Image.Load(data).Dispose());
+            Assert.Throws<InvalidImageContentException>(() => Image.Identify(data, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan }));
+        }
+
+        // A header identification does not keep the media data
+        Assert.Throws<InvalidImageContentException>(() => Image.Identify(data));
+    }
+
+    [Fact]
+    public void MediaDataBoxThatExtendsToTheEndBeforeTheMetaBoxIsNotKept()
+    {
+        // A media data box with a size of 0 extends to the end of the file: no 'meta' box can follow it, so its data is not
+        // kept. The walk reads it to the end of the input with a live allocation limit smaller than the box
+        var builder = HeifFileBuilder.From(GoldenCorpus.Default.Get("avif/lossless-rgb8").ReadInput());
+        builder.MediaDataPrefix = new byte[1_000_000];
+        builder.MediaDataExtendsToEnd = true;
+        builder.Layout.Clear();
+        builder.Layout.Add(HeifFileBuilder.FileTypeBox);
+        builder.Layout.Add(HeifFileBuilder.MediaDataBox);
+        builder.Layout.Add(HeifFileBuilder.MetaBox);
+        var data = builder.Build();
+        var options = new ImageDecodeOptions { Configuration = new ImageConfiguration { Limits = new ImageResourceLimits { MaxLiveAllocationBytes = 512 * 1024 } } };
+
+        Assert.Throws<InvalidImageContentException>(() => Image.Load(data, options).Dispose());
+        Assert.Throws<InvalidImageContentException>(() => Image.Load(data).Dispose());
+    }
+
     [Theory]
     [InlineData(long.MaxValue, 1L)]
     [InlineData((long.MaxValue / 2) + 1, (long.MaxValue / 2) + 1)]

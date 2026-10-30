@@ -3,7 +3,7 @@
   "isRoot": true,
   "tools": {
     "meziantou.filereferencer": {
-      "version": "1.0.6",
+      "version": "1.0.8",
       "commands": [
         "Meziantou.FileReferencer"
       ],

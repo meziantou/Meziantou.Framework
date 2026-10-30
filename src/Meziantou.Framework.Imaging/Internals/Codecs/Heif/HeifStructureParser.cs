@@ -437,10 +437,11 @@ internal sealed class HeifStructureParser : ImageParser<ImageInfo>
         }
 
         // Media data that precede the 'meta' box, or the 'moov' box of an image sequence, are kept until the items or the
-        // samples they hold are known
-        if (type is HeifFormat.Mdat && !IsResolved && _walk is not StructureWalk.Header)
+        // samples they hold are known. A box that extends to the end of the file is not kept: no 'meta' or 'moov' box can
+        // follow it. A box larger than a buffer cannot be kept (the buffer throws ImageResourceLimitException)
+        if (type is HeifFormat.Mdat && !IsResolved && _walk is not StructureWalk.Header && payloadLength is not long.MaxValue)
         {
-            _retained.Add((_position, new WebPPayloadBuffer(_context.Scope, Math.Min(payloadLength, CheckedSizes.MaxBufferLength))));
+            _retained.Add((_position, new WebPPayloadBuffer(_context.Scope, payloadLength)));
             _isRetaining = true;
         }
 

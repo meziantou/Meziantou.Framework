@@ -157,7 +157,12 @@ internal sealed class HevcEncoder : IDisposable
         }
     }
 
-    /// <summary>Gets the parameters of the sequence: its profile and its level, the size of the coded pictures and the size of the pictures that a decoder outputs.</summary>
+    /// <summary>
+    /// Gets the parameters of the sequence: its profile, the size of the coded pictures and the size of the pictures that a
+    /// decoder outputs. Its level, and the one of <see cref="VideoParameterSet"/> and <see cref="SequenceParameterSet"/>,
+    /// only holds the size of the pictures: the level of a stream that holds its coded pictures as well is known once they
+    /// are coded (<see cref="HeicStreamDescription.RecordCodedPicture"/>).
+    /// </summary>
     public HevcSequenceParameters Parameters { get; }
 
     /// <summary>Gets the NAL unit of the video parameter set: its header and its payload, with the emulation prevention bytes.</summary>

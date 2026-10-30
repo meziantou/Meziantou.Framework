@@ -72,6 +72,8 @@ internal sealed class HeifEncoderSession : ImageEncoderSession
     private int _frameIndex;
     private int _movieOffset;
     private int _mediaSizeOffset;
+    private int _colorConfigurationOffset;
+    private int _alphaConfigurationOffset;
     private long _firstSampleOffset;
     private bool _completing;
     private HeifPictureEncoder? _color;
@@ -693,12 +695,16 @@ internal sealed class HeifEncoderSession : ImageEncoderSession
         var colorPayload = color.Payload.Span;
         _colorTiles!.Write(colorPayload);
         lengths[_tileIndex] = colorPayload.Length;
+
+        // The tiles share the configuration of the encoders of the session, whichever worker codes them
+        _color!.Description.RecordCodedPicture(colorPayload.Length);
         color.Reset();
         if (_isTransparent)
         {
             var alphaPayload = alpha!.Payload.Span;
             _alphaTiles!.Write(alphaPayload);
             lengths[count + _tileIndex] = alphaPayload.Length;
+            _alpha!.Description.RecordCodedPicture(alphaPayload.Length);
             alpha.Reset();
         }
 
@@ -837,12 +843,17 @@ internal sealed class HeifEncoderSession : ImageEncoderSession
         var alpha = _isTransparent || _isSequence ? _alpha : null;
         var colorPayload = color.Payload;
         var alphaPayload = alpha?.Payload ?? default;
+
+        // The configurations are written once the pictures they describe are coded: the items of the first image of a
+        // sequence get the configuration of the tracks when the sequence is complete
+        color.Description.RecordCodedPicture(colorPayload.Length);
+        alpha?.Description.RecordCodedPicture(alphaPayload.Length);
         _pieces.Clear();
         if (_frameIndex is 0)
         {
             var prefix = _prefix!;
             prefix.Reset();
-            (_movieOffset, _mediaSizeOffset) = HeifFileWriter.WritePrefix(
+            (_movieOffset, _mediaSizeOffset, _colorConfigurationOffset, _alphaConfigurationOffset) = HeifFileWriter.WritePrefix(
                 prefix,
                 _binding,
                 new HeifFileWriter.StillImage
@@ -894,10 +905,25 @@ internal sealed class HeifEncoderSession : ImageEncoderSession
         movie.Reset();
         WriteMovie(_movieReservation, worstCase: false);
         output.AddPatch(_movieOffset, movie.WrittenSpan);
+
+        // The first image is the first sample of the tracks: its items have the configuration of the tracks, which may
+        // describe larger pictures than the first one (an HEVC level). A configuration box has the same size whatever the
+        // pictures it describes. The patches are copies: the buffer of the moov box is reused
+        PatchConfiguration(output, movie, _colorConfigurationOffset, _color!.Description);
+        if (_alphaConfigurationOffset >= 0)
+            PatchConfiguration(output, movie, _alphaConfigurationOffset, _alpha!.Description);
+
         Span<byte> size = stackalloc byte[8];
         BinaryPrimitives.WriteUInt64BigEndian(size, (ulong)(output.TotalBytes - (_mediaSizeOffset - 8)));
         output.AddPatch(_mediaSizeOffset, size);
         _completing = false;
+    }
+
+    private static void PatchConfiguration(ImageOutputBuffer output, PooledPayloadWriter buffer, int offset, HeifStreamDescription description)
+    {
+        buffer.Reset();
+        description.WriteConfigurationBox(new HeifBoxWriter(buffer));
+        output.AddPatch(offset, buffer.WrittenSpan);
     }
 
     private void WriteMovie(int reservation, bool worstCase)

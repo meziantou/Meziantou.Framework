@@ -4,7 +4,7 @@ using Meziantou.Framework.Imaging.Metadata;
 
 namespace Meziantou.Framework.Imaging.Samples;
 
-/// <summary>Examples of the documentation site (docs/01-Imaging/03-Guides), run by DocumentationExampleTests.</summary>
+/// <summary>Examples of the documentation site (docs/Imaging/03-Guides), run by DocumentationExampleTests.</summary>
 internal static class GuideExamples
 {
     /// <summary>A thumbnail of a photo: upright, fitted to a box without enlarging, sRGB and without metadata.</summary>

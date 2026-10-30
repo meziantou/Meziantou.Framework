@@ -770,18 +770,18 @@ public class AvatarGeneratorTests
     private const string UpdateDocumentationImagesVariable = "MEZIANTOU_AVATAR_UPDATE_DOCS_IMAGES";
 
     /// <summary>
-    /// Compares an avatar with the image of the documentation (docs/59-Avatar/images). With the environment variable
+    /// Compares an avatar with the image of the documentation (docs/Avatar/images). With the environment variable
     /// <see cref="UpdateDocumentationImagesVariable"/> set to 1, a missing or different image is written instead.
     /// </summary>
     private static void AssertDocumentationImage(string name, string svg)
     {
-        var path = Path.Combine(GetRepositoryRoot(), "docs", "59-Avatar", "images", name + ".svg");
+        var path = Path.Combine(GetRepositoryRoot(), "docs", "Avatar", "images", name + ".svg");
         if (File.Exists(path) && string.Equals(File.ReadAllText(path), svg, StringComparison.Ordinal))
             return;
 
         if (Environment.GetEnvironmentVariable(UpdateDocumentationImagesVariable) is not "1")
         {
-            Assert.Fail($"docs/59-Avatar/images/{name}.svg is missing or different. Run the test with the environment variable {UpdateDocumentationImagesVariable}=1 to write the image, look at it, and commit it.");
+            Assert.Fail($"docs/Avatar/images/{name}.svg is missing or different. Run the test with the environment variable {UpdateDocumentationImagesVariable}=1 to write the image, look at it, and commit it.");
         }
 
         // The test runs for each target framework at the same time: publish the file with a rename

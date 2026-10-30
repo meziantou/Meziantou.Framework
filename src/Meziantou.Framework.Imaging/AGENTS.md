@@ -309,6 +309,10 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
     makes its inputs smaller at equal quality, and stays out otherwise: the Limitations row of the readme lists the
     tools that were measured and left out, with their figures. Measure before and after with the report (it takes a
     filter on the names of its inputs), and add an input when the tool needs content that the report does not have.
+  - The optimization of the levels (`Av1TileCoder.LevelOptimization.cs`, from effort 6) costs a candidate with its own
+    model of the coefficient syntax: the rate of each coded position and of the positions whose contexts read its level.
+    In Debug builds an assertion compares the change of the model with the change of the rate of `WriteCoeffs`: a change
+    to the coefficient syntax or to its contexts must be made in both, and the round-trip tests catch a mismatch.
   - A frame of a sequence that is not a key frame is an inter frame whose only reference is the previous frame
     (`LAST_FRAME`; every slot is refreshed by every frame). An inter block is written from the motion vector stack that
     `FindMvStack` builds, like a decoder: the stack reads which blocks of the frame are written, so the search marks

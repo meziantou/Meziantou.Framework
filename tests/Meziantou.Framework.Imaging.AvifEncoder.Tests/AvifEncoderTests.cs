@@ -859,16 +859,21 @@ public sealed class AvifEncoderTests
         Assert.True(psnr >= 34, string.Create(CultureInfo.InvariantCulture, $"PSNR {psnr:F2} dB"));
     }
 
-    [Fact]
-    public void QualityTradesSizeForFidelity()
+    [Theory]
+    [InlineData(0)]
+    [InlineData(5)]
+    [InlineData(9)]
+    public void QualityTradesSizeForFidelity(int effort)
     {
+        // Each effort keeps the order of the quality scale: the search and the optimization of the levels never make a
+        // higher quality smaller or less faithful
         using var image = CreateSmoothImage(96, 64, transparent: false);
         var source = GetBytes(image);
         var previousSize = int.MaxValue;
         var previousError = -1.0;
         foreach (var quality in new[] { 100, 80, 50, 20, 0 })
         {
-            var data = Encode(image, new AvifEncoder { Compression = AvifCompression.Lossy, Quality = quality });
+            var data = Encode(image, new AvifEncoder { Compression = AvifCompression.Lossy, Quality = quality, Effort = effort });
             using var decoded = Image.Load<Rgba32>(data);
             var actual = GetBytes(decoded);
             double error = 0;
@@ -878,7 +883,7 @@ public sealed class AvifEncoderTests
             }
 
             Assert.HasCountLessThan(previousSize, data);
-            Assert.True(error > previousError, string.Create(CultureInfo.InvariantCulture, $"quality {quality}: error {error}, the previous quality {previousError}"));
+            Assert.True(error > previousError, string.Create(CultureInfo.InvariantCulture, $"effort {effort}, quality {quality}: error {error}, the previous quality {previousError}"));
             previousSize = data.Length;
             previousError = error;
         }

@@ -28,9 +28,9 @@ logger to assert on the entries, and the xUnit.net logger to read them when a te
 
 | Package | Namespace |
 | --- | --- |
-| `Meziantou.Extensions.Logging.FileLogger` | `Meziantou.Extensions.Logging` |
-| `Meziantou.Extensions.Logging.InMemory` | `Meziantou.Extensions.Logging.InMemory` |
-| `Meziantou.Extensions.Logging.Xunit.v3` | `Meziantou.Extensions.Logging.Xunit.v3` |
+| `Meziantou.Extensions.Logging.FileLogger` | [Meziantou.Extensions.Logging](cref:Meziantou.Extensions.Logging) |
+| `Meziantou.Extensions.Logging.InMemory` | [Meziantou.Extensions.Logging.InMemory](cref:Meziantou.Extensions.Logging.InMemory) |
+| `Meziantou.Extensions.Logging.Xunit.v3` | [Meziantou.Extensions.Logging.Xunit.v3](cref:Meziantou.Extensions.Logging.Xunit.v3) |
 
 `LoggerFactory`, `ILogger` and the `LogInformation` extension methods are in the `Microsoft.Extensions.Logging`
 namespace.

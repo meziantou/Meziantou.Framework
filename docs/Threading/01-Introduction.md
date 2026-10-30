@@ -38,9 +38,9 @@ asynchronous code, a few thread-safe collections, and helpers that make awaiting
 
 | Namespace | Contains |
 | --- | --- |
-| `Meziantou.Framework.Threading` | `AsyncLock`, `AsyncReaderWriterLock`, `KeyedLock<TKey>`, `KeyedAsyncLock<TKey>`, `AsyncAutoResetEvent`, `ResettableCancellationTokenSource`, `MonoThreadedTaskScheduler`, `MixedConsumerProducer`, and the `SemaphoreSlim` and `SynchronizationContext` extensions |
-| `Meziantou.Framework.Threading.Tasks` | `TaskExtensions`: awaiting tuples of tasks, `WhenAll` for `ValueTask`, `Forget` |
-| `Meziantou.Framework.Collections.Concurrent` | `ConcurrentHashSet<T>`, `SynchronizedList<T>`, `ConcurrentObservableCollection<T>` |
+| [Meziantou.Framework.Threading](cref:Meziantou.Framework.Threading) | `AsyncLock`, `AsyncReaderWriterLock`, `KeyedLock<TKey>`, `KeyedAsyncLock<TKey>`, `AsyncAutoResetEvent`, `ResettableCancellationTokenSource`, `MonoThreadedTaskScheduler`, `MixedConsumerProducer`, and the `SemaphoreSlim` and `SynchronizationContext` extensions |
+| [Meziantou.Framework.Threading.Tasks](cref:Meziantou.Framework.Threading.Tasks) | `TaskExtensions`: awaiting tuples of tasks, `WhenAll` for `ValueTask`, `Forget` |
+| [Meziantou.Framework.Collections.Concurrent](cref:Meziantou.Framework.Collections.Concurrent) | `ConcurrentHashSet<T>`, `SynchronizedList<T>`, `ConcurrentObservableCollection<T>` |
 
 ## Next steps
 

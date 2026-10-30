@@ -59,7 +59,7 @@ remote Docker daemon.
 
 ## Namespace
 
-Every type is in the `Meziantou.Framework.TemporaryContainers` namespace.
+Every type is in the [Meziantou.Framework.TemporaryContainers](cref:Meziantou.Framework.TemporaryContainers) namespace.
 
 ## Next steps
 

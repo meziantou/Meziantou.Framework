@@ -32,11 +32,11 @@ The in-memory package references the main one.
 
 ## Namespaces
 
-- `Meziantou.Framework.OpenTelemetryCollector`: the handlers, samplers, options, and the `AddOpenTelemetryReceiver` and
+- [Meziantou.Framework.OpenTelemetryCollector](cref:Meziantou.Framework.OpenTelemetryCollector): the handlers, samplers, options, and the `AddOpenTelemetryReceiver` and
   `MapOpenTelemetryReceiverEndpoints` extension methods.
-- `Meziantou.Framework.OpenTelemetryCollector.InMemory`: the in-memory receiver and `AddInMemoryOpenTelemetryReceiver`.
+- [Meziantou.Framework.OpenTelemetryCollector.InMemory](cref:Meziantou.Framework.OpenTelemetryCollector.InMemory): the in-memory receiver and `AddInMemoryOpenTelemetryReceiver`.
 - `OpenTelemetry.Proto.*`: the OTLP messages that the handlers receive, such as `ExportLogsServiceRequest` in
-  `OpenTelemetry.Proto.Collector.Logs.V1` and `LogRecord` in `OpenTelemetry.Proto.Logs.V1`. See
+  [OpenTelemetry.Proto.Collector.Logs.V1](cref:OpenTelemetry.Proto.Collector.Logs.V1) and `LogRecord` in [OpenTelemetry.Proto.Logs.V1](cref:OpenTelemetry.Proto.Logs.V1). See
   [the available fields](04-CustomHandlers.md#available-fields).
 
 ## Next steps

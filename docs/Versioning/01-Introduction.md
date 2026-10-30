@@ -24,5 +24,5 @@ Use `SemanticVersion` for the versions of packages, APIs and releases that follo
 
 ## Namespaces
 
-`SemanticVersion`, `SemanticVersionExtensions` and `SemanticVersionRange` are in the `Meziantou.Framework.Versioning`
+`SemanticVersion`, `SemanticVersionExtensions` and `SemanticVersionRange` are in the [Meziantou.Framework.Versioning](cref:Meziantou.Framework.Versioning)
 namespace.

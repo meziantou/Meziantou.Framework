@@ -5,7 +5,7 @@ description: Load YAML documents as a tree of nodes, navigate and change them, c
 
 The document object model represents YAML as a tree of nodes, without a .NET type for its content. Use it to read a few
 values of a document, to process documents whose shape varies, or to change a document and write it back. Its types
-are in the `Meziantou.Framework.Yaml.Model` namespace.
+are in the [Meziantou.Framework.Yaml.Model](cref:Meziantou.Framework.Yaml.Model) namespace.
 
 | Type | Represents |
 | --- | --- |

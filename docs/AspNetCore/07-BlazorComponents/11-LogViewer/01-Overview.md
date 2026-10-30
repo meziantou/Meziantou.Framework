@@ -10,7 +10,7 @@ of a job, or of a request, with highlighting and expandable details.
 dotnet add package Meziantou.AspNetCore.Components.LogViewer
 ```
 
-The types are in the `Meziantou.AspNetCore.Components` namespace, like the other
+The types are in the [Meziantou.AspNetCore.Components](cref:Meziantou.AspNetCore.Components) namespace, like the other
 [Blazor components](../01-Overview.md).
 
 ## Display entries

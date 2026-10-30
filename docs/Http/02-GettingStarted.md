@@ -17,11 +17,11 @@ The [introduction](01-Introduction.md#packages) lists every package. The types a
 
 | Package | Namespace |
 | --- | --- |
-| `Meziantou.Framework.Http`, `.Hsts`, `.Htpasswd` | `Meziantou.Framework.Http` |
-| `Meziantou.Framework.Http.Caching` | `Meziantou.Framework.Http.Caching` |
-| `Meziantou.Framework.Http.Caching.InMemory`, `.Sqlite`, `.Redis` | `Meziantou.Framework.Http.Caching.InMemory`, `.Sqlite`, `.Redis` |
-| `Meziantou.Framework.Http.Recording` | `Meziantou.Framework.Http.Recording` |
-| `Meziantou.Framework.Http.ServerSideRequestForgery` | `Meziantou.Framework.Http.ServerSideRequestForgery` |
+| `Meziantou.Framework.Http`, `.Hsts`, `.Htpasswd` | [Meziantou.Framework.Http](cref:Meziantou.Framework.Http) |
+| `Meziantou.Framework.Http.Caching` | [Meziantou.Framework.Http.Caching](cref:Meziantou.Framework.Http.Caching) |
+| `Meziantou.Framework.Http.Caching.InMemory`, `.Sqlite`, `.Redis` | [Meziantou.Framework.Http.Caching.InMemory](cref:Meziantou.Framework.Http.Caching.InMemory), `.Sqlite`, `.Redis` |
+| `Meziantou.Framework.Http.Recording` | [Meziantou.Framework.Http.Recording](cref:Meziantou.Framework.Http.Recording) |
+| `Meziantou.Framework.Http.ServerSideRequestForgery` | [Meziantou.Framework.Http.ServerSideRequestForgery](cref:Meziantou.Framework.Http.ServerSideRequestForgery) |
 
 The examples of this documentation omit the `using` directives.
 

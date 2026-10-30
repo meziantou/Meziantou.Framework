@@ -5,8 +5,8 @@ description: Parse TOML into a lossless syntax tree for formatters and linters, 
 
 The serializer and the document model give you the values of a document. Tools that work on the text itself, such as a
 formatter, a linter or an editor feature, need more: where each value is, its comments, and its exact spelling. The
-types of this page are in the `Meziantou.Framework.Toml.Parsing` namespace, and the nodes of the tree in
-`Meziantou.Framework.Toml.Syntax`.
+types of this page are in the [Meziantou.Framework.Toml.Parsing](cref:Meziantou.Framework.Toml.Parsing) namespace, and the nodes of the tree in
+[Meziantou.Framework.Toml.Syntax](cref:Meziantou.Framework.Toml.Syntax).
 
 | You want to | Use |
 | --- | --- |

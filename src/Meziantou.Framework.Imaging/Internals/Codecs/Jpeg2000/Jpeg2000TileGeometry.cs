@@ -151,7 +151,7 @@ internal sealed class Jpeg2000TileGeometry : IDisposable
                     var quantizationIndex = r == 0 ? 0 : (3 * (r - 1)) + 1 + b;
                     quantization.GetStep(quantizationIndex, out var exponent, out var mantissa);
                     var gain = (isHighX ? 1 : 0) + (isHighY ? 1 : 0);
-                    band.BitPlanes = Math.Max(0, quantization.GuardBits + exponent - 1) + coding.RegionShifts[c];
+                    band.BitPlanes = Jpeg2000TileCoding.GetBitPlanes(quantization.GuardBits, exponent, coding.RegionShifts[c]);
                     band.HalfStepSize = (float)Math.ScaleB(1 + (mantissa / 2048.0), size.Precision + gain - exponent - 1);
 
                     // Equation B-17 and B-18

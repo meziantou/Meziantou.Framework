@@ -38,8 +38,8 @@ folder, and updates them to the latest versions published on NuGet, npm, Docker 
 
 ## Namespaces
 
-The types are in the `Meziantou.Framework.DependencyScanning` namespace, and the built-in scanners in
-`Meziantou.Framework.DependencyScanning.Scanners`:
+The types are in the [Meziantou.Framework.DependencyScanning](cref:Meziantou.Framework.DependencyScanning) namespace, and the built-in scanners in
+[Meziantou.Framework.DependencyScanning.Scanners](cref:Meziantou.Framework.DependencyScanning.Scanners):
 
 | Type | Contains |
 | --- | --- |

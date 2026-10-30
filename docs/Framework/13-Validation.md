@@ -3,7 +3,7 @@ title: Validation attributes
 description: Validate that a string is an absolute URI, and validate the items of a collection, with data annotations.
 ---
 
-The `Meziantou.Framework.DataAnnotations` namespace contains two validation attributes. They work wherever data
+The [Meziantou.Framework.DataAnnotations](cref:Meziantou.Framework.DataAnnotations) namespace contains two validation attributes. They work wherever data
 annotations are checked: `Validator.TryValidateObject`, ASP.NET Core model validation, or options validation with
 `ValidateDataAnnotations`.
 

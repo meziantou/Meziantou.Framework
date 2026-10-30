@@ -15,7 +15,7 @@ dotnet add package Meziantou.Framework.SnapshotTesting.Pdf
 ## Set up
 
 Call `AddPdf()` on `SnapshotSettings.Default` in a module initializer (`AddPdf` is in the
-`Meziantou.Framework.SnapshotTesting.Pdf` namespace):
+[Meziantou.Framework.SnapshotTesting.Pdf](cref:Meziantou.Framework.SnapshotTesting.Pdf) namespace):
 
 <!-- ref:../../../tests/Meziantou.Framework.SnapshotTesting.Pdf.Tests/SnapshotConfiguration.cs;region=SnapshotTestingPdf_Setup;format=md-fenced-code-block;dedent=true -->
 ```csharp

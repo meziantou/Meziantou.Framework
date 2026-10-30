@@ -27,8 +27,8 @@ The packages generate symbols; they do not read them from photos or scans. See [
 
 | Package | Namespace | Contains |
 | --- | --- | --- |
-| `Meziantou.Framework.Barcodes` | `Meziantou.Framework.Barcodes` | QR codes, barcodes, content helpers, SVG, PNG and text renderers |
-| `Meziantou.Framework.Imaging.Barcodes` | `Meziantou.Framework.Imaging.Barcodes` | Rendering to images and drawing on a canvas, OCR fonts |
+| `Meziantou.Framework.Barcodes` | [Meziantou.Framework.Barcodes](cref:Meziantou.Framework.Barcodes) | QR codes, barcodes, content helpers, SVG, PNG and text renderers |
+| `Meziantou.Framework.Imaging.Barcodes` | [Meziantou.Framework.Imaging.Barcodes](cref:Meziantou.Framework.Imaging.Barcodes) | Rendering to images and drawing on a canvas, OCR fonts |
 
 `Meziantou.Framework.Barcodes` writes PNG files on its own. Add `Meziantou.Framework.Imaging.Barcodes` only when you
 need another format, effects such as gradients, or to draw a code on an existing image.

@@ -4,7 +4,7 @@ description: "Read and write CSS values as objects with the CSS Typed OM: number
 ---
 
 The [CSS Typed OM](https://drafts.css-houdini.org/css-typed-om-1/) exposes the values of the properties as objects
-instead of strings, in the `Meziantou.Framework.WebPlatform.Css.TypedOm` namespace. The factory functions of the `CSS`
+instead of strings, in the [Meziantou.Framework.WebPlatform.Css.TypedOm](cref:Meziantou.Framework.WebPlatform.Css.TypedOm) namespace. The factory functions of the `CSS`
 namespace of the browsers (`CSS.px()`, `CSS.em()`...) are the static methods of the
 `Meziantou.Framework.WebPlatform.Css.Om.Css` class; the example below imports it as `CssFactory`:
 

@@ -32,7 +32,7 @@ reviewers from your own automation.
 
 ## Namespace
 
-All the types are in the `Meziantou.Framework.CodeOwners` namespace:
+All the types are in the [Meziantou.Framework.CodeOwners](cref:Meziantou.Framework.CodeOwners) namespace:
 
 | Type | Contains |
 | --- | --- |

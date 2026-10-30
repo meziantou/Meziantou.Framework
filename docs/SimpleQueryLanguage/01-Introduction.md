@@ -33,8 +33,8 @@ Both builders read the same syntax.
 
 ## Namespace
 
-The builders and the queries are in the `Meziantou.Framework.SimpleQueryLanguage` namespace. `RangeSyntax<T>`, the
-value of a range handler, is in `Meziantou.Framework.SimpleQueryLanguage.Ranges`.
+The builders and the queries are in the [Meziantou.Framework.SimpleQueryLanguage](cref:Meziantou.Framework.SimpleQueryLanguage) namespace. `RangeSyntax<T>`, the
+value of a range handler, is in [Meziantou.Framework.SimpleQueryLanguage.Ranges](cref:Meziantou.Framework.SimpleQueryLanguage.Ranges).
 
 ## Next steps
 

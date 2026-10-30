@@ -6,7 +6,7 @@ description: Load a block list into a rule set, evaluate domains with the engine
 `Meziantou.Framework.DnsFilter` reads DNS filter lists (hosts files, lists of domains, and Adblock-style rules such as
 `||ads.example.com^`) and evaluates domains against them. It does not send or answer DNS queries: call it from a DNS
 server handler, a proxy, or any code that must decide whether a domain is allowed. `Meziantou.DnsProxy` uses it this
-way. The types are in the `Meziantou.Framework.DnsFilter` namespace.
+way. The types are in the [Meziantou.Framework.DnsFilter](cref:Meziantou.Framework.DnsFilter) namespace.
 
 ## Evaluate a domain
 

@@ -15,7 +15,7 @@ dotnet add package Meziantou.Framework.SnapshotTesting.Imaging
 ## Set up
 
 Call `AddImaging()` on `SnapshotSettings.Default` in a module initializer (`AddImaging` is in the
-`Meziantou.Framework.SnapshotTesting.Imaging` namespace):
+[Meziantou.Framework.SnapshotTesting.Imaging](cref:Meziantou.Framework.SnapshotTesting.Imaging) namespace):
 
 <!-- ref:../../../tests/Meziantou.Framework.SnapshotTesting.Imaging.Tests/SnapshotConfiguration.cs;region=SnapshotTestingImaging_Setup;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -30,7 +30,7 @@ internal static class SnapshotConfiguration
 ```
 <!-- endref -->
 
-Then validate images, as `Image` objects or as the bytes of a file (`Image` is in the `Meziantou.Framework.Imaging`
+Then validate images, as `Image` objects or as the bytes of a file (`Image` is in the [Meziantou.Framework.Imaging](cref:Meziantou.Framework.Imaging)
 namespace):
 
 <!-- ref:../../../tests/Meziantou.Framework.SnapshotTesting.Imaging.Tests/SampleTests.cs;region=SnapshotTestingImaging_Validate;format=md-fenced-code-block;dedent=true -->

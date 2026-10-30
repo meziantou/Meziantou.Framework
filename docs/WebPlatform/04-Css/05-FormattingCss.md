@@ -5,7 +5,7 @@ description: Write a style sheet, a rule or a declaration block minified, indent
 
 `ToCss(formatter)` writes a style sheet (`CssStyleSheet`), a rule (`CssRule`) or a declaration block
 (`CssStyleDeclaration`, such as the `Style` of an element) with a formatter of the
-`Meziantou.Framework.WebPlatform.Formatting` namespace. `ToCss(TextWriter, formatter)` writes it to a `TextWriter`:
+[Meziantou.Framework.WebPlatform.Formatting](cref:Meziantou.Framework.WebPlatform.Formatting) namespace. `ToCss(TextWriter, formatter)` writes it to a `TextWriter`:
 
 <!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/Formatting/CssFormatterTests.cs;region=WebPlatform_FormatCss;format=md-fenced-code-block;dedent=true -->
 ```csharp

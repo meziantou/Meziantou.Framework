@@ -36,15 +36,15 @@ internal sealed class Jpeg2000TileCoding
     /// <summary>Gets the features the parameters use.</summary>
     public Jpeg2000Tools Tools { get; }
 
-    /// <summary>Gets the number of magnitude bit-planes of a sub-band, without the shift of the region of interest (equation E-2).</summary>
-    /// <param name="component">The component.</param>
-    /// <param name="bandIndex">The index of the sub-band: 0 for the LL sub-band, then the HL, LH and HH sub-bands of each resolution level from the lowest.</param>
-    public int GetBitPlanes(int component, int bandIndex)
-    {
-        var quantization = Quantizations[component];
-        quantization.GetStep(bandIndex, out var exponent, out _);
-        return Math.Max(0, quantization.GuardBits + exponent - 1);
-    }
+    /// <summary>
+    /// Gets the number of magnitude bit-planes of a sub-band (equation E-2), raised by the shift of the region of interest
+    /// (H.2). The validation of the parameters and the partition of the tile both use it, so that a sub-band is never
+    /// decoded with more bit-planes than were checked.
+    /// </summary>
+    /// <param name="guardBits">The number of guard bits of the quantization.</param>
+    /// <param name="exponent">The exponent of the quantization step of the sub-band.</param>
+    /// <param name="regionShift">The shift of the region of interest of the component; 0 when there is none.</param>
+    public static int GetBitPlanes(int guardBits, int exponent, int regionShift) => Math.Max(0, guardBits + exponent - 1) + regionShift;
 
     /// <summary>Resolves and validates the parameters of a tile.</summary>
     /// <param name="siz">The SIZ marker segment.</param>
@@ -188,7 +188,7 @@ internal sealed class Jpeg2000TileCoding
             if (exponent < 0)
                 throw Jpeg2000Format.Invalid(string.Create(CultureInfo.InvariantCulture, $"the derived quantization of the component {component} gives a negative exponent to a sub-band."));
 
-            var bitPlanes = quantization.GuardBits + exponent - 1 + regionShift;
+            var bitPlanes = GetBitPlanes(quantization.GuardBits, exponent, regionShift);
             if (bitPlanes > Jpeg2000Format.MaxBitPlanes)
                 throw Jpeg2000Format.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The JPEG 2000 codestream codes {bitPlanes} magnitude bit-planes for a sub-band; at most {Jpeg2000Format.MaxBitPlanes} are supported."), "bit-planes");
         }

@@ -22,7 +22,7 @@ The other packages are installed the same way: `Meziantou.AspNetCore`, `Mezianto
 ## Set up a web application
 
 Call `UseMeziantouConventions` on the builder, then `MapMeziantouDefaultEndpoints` on the application (both are in
-the `Meziantou.AspNetCore.ServiceDefaults` namespace):
+the [Meziantou.AspNetCore.ServiceDefaults](cref:Meziantou.AspNetCore.ServiceDefaults) namespace):
 
 <!-- ref:../../samples/Meziantou.AspNetCore.Samples/ServiceDefaultsExamples.cs;region=ServiceDefaults_BasicSetup;format=md-fenced-code-block;dedent=true -->
 ```csharp

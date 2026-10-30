@@ -6,7 +6,7 @@ description: Draw antialiased shapes, paths, gradients, images and effects on an
 The library draws vector graphics on images: shapes and paths filled with colors, gradients, images or patterns,
 outlines drawn with pens, transformations, clips, layers, shadows, masks and filters. Edges are antialiased with the
 exact area of each pixel a shape covers, and the result is the same on every platform. The drawing types are in the
-`Meziantou.Framework.Imaging.Drawing` namespace; text has its own section, [Text](../08-Text/01-Overview.md).
+[Meziantou.Framework.Imaging.Drawing](cref:Meziantou.Framework.Imaging.Drawing) namespace; text has its own section, [Text](../08-Text/01-Overview.md).
 
 ## Draw on an image
 

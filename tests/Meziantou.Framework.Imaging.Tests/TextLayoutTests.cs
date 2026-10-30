@@ -242,6 +242,43 @@ public sealed class TextLayoutTests
     }
 
     [Fact]
+    public void TheTabulationsThatEndAWrappedLineHang()
+    {
+        // "A B" is 32 pixels, a tabulation stop every 32 pixels: the tabulation after it goes to 64 pixels, more than
+        // the width, but it hangs like a space, so the line still ends after it.
+        var options = new TextLayoutOptions { MaxWidth = 40, TabSize = 4 };
+        var layout = TextLayout.Create("A B\tCCC", Style, options);
+        Assert.Equal(
+            new[] { new TextLine(0, 4, 0, 0, 32, 16, 13, false), new TextLine(4, 3, 0, 16, 36, 16, 13, false) },
+            layout.Lines);
+
+        // Several tabulations, and tabulations mixed with spaces, hang together.
+        layout = TextLayout.Create("A B\t\tCCC", Style, options);
+        Assert.Equal(
+            new[] { new TextLine(0, 5, 0, 0, 32, 16, 13, false), new TextLine(5, 3, 0, 16, 36, 16, 13, false) },
+            layout.Lines);
+        layout = TextLayout.Create("A B \tCCC", Style, options);
+        Assert.Equal(
+            new[] { new TextLine(0, 5, 0, 0, 32, 16, 13, false), new TextLine(5, 3, 0, 16, 36, 16, 13, false) },
+            layout.Lines);
+        layout = TextLayout.Create("A B\t CCC", Style, options);
+        Assert.Equal(
+            new[] { new TextLine(0, 5, 0, 0, 32, 16, 13, false), new TextLine(5, 3, 0, 16, 36, 16, 13, false) },
+            layout.Lines);
+
+        // A tabulation inside the line counts in its width: "A\tB" is 40 pixels, and the B goes to the next line.
+        layout = TextLayout.Create("A\tB B", Style, new TextLayoutOptions { MaxWidth = 40, TabSize = 4 });
+        Assert.Equal(
+            new[] { new TextLine(0, 4, 0, 0, 40, 16, 13, false), new TextLine(4, 1, 0, 16, 8, 16, 13, false) },
+            layout.Lines);
+
+        // A line that is cut before an ellipsis also ends after the tabulation: "A B" and the ellipsis are 40 pixels.
+        layout = TextLayout.Create("A B\tCCC", new TextStyle(Extended, 16), new TextLayoutOptions { MaxWidth = 44, TabSize = 4, Wrapping = TextWrapping.NoWrap, Trimming = TextTrimming.Word, Ellipsis = "B" });
+        Assert.True(layout.IsTruncated);
+        AssertRectangles(layout, new PointD(0, 0), A(0, 0), B(24, 0), B(32, 0));
+    }
+
+    [Fact]
     public void AWordThatIsTooWideOverflowsOrIsCut()
     {
         // Four A are 64 pixels. By default a word is not cut; it can be, where no other break is possible.

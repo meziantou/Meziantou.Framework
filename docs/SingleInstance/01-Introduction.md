@@ -31,7 +31,7 @@ The running editor opens the file in a new tab.
 
 ## Namespace
 
-The types are in the `Meziantou.Framework` namespace:
+The types are in the [Meziantou.Framework](cref:Meziantou.Framework) namespace:
 
 | Type | Contains |
 | --- | --- |

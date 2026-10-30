@@ -69,7 +69,7 @@ Start from `CreateResponse()`, then fill the sections:
 - `AdditionalRecords`: extra records, such as the addresses of the name servers.
 
 Each record is a `DnsResourceRecord` with a `Name`, a `Type`, a `Class` (`IN`), a `TimeToLive` in seconds, and a
-`Data` object of the matching type, from the `Meziantou.Framework.DnsServer.Protocol.Records` namespace:
+`Data` object of the matching type, from the [Meziantou.Framework.DnsServer.Protocol.Records](cref:Meziantou.Framework.DnsServer.Protocol.Records) namespace:
 `DnsARecordData`, `DnsAaaaRecordData`, `DnsCnameRecordData`, `DnsMxRecordData`, `DnsTxtRecordData`, `DnsSoaRecordData`,
 `DnsSrvRecordData`, `DnsPtrRecordData`, `DnsNsRecordData`, `DnsCaaRecordData`, `DnsSvcbRecordData` (SVCB and HTTPS),
 the DNSSEC records (`DnsDnskeyRecordData`, `DnsRrsigRecordData`, ...), and `DnsUnknownRecordData` for raw data of any

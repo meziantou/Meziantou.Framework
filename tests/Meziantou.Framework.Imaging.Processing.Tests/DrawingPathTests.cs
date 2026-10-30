@@ -1507,6 +1507,51 @@ public sealed class DrawingPathTests
         Assert.Equal(2, circle.Widen(pen).Simplify().EnumerateSegments().Count(segment => segment.Kind == PathSegmentKind.Close));
     }
 
+    [Fact]
+    public void APathThatCrossesItselfEverywhereIsCutUntilNoSegmentsCross()
+    {
+        // 200 sides that cross in thousands of places: the first pass makes many more segments than the path has, and
+        // its cuts, moved to the grid, make segments meet that the next pass cuts
+        var random = new Random(0);
+        var path = new VectorPathBuilder().AddPolygon([.. Enumerable.Range(0, 200).Select(_ => new PointD(random.NextDouble() * 100, random.NextDouble() * 100))]).Build();
+        var outline = path.Simplify(cancellationToken: Ct);
+        Assert.Equal(outline.ToSvgPathData(), outline.Simplify(cancellationToken: Ct).ToSvgPathData());
+        AssertOutlineFillsThePath(path, outline);
+        Assert.Equal(outline.ToSvgPathData(), Internals.PathCombiner.Combine(path, second: null, PathCombineMode.Union, FillRule.NonZero, maxPasses: 2, Ct).ToSvgPathData());
+
+        // Snapped when the passes are spent: an outline that does not cross either
+        AssertOutlineFillsThePath(path, Internals.PathCombiner.Combine(path, second: null, PathCombineMode.Union, FillRule.NonZero, maxPasses: 1, Ct));
+        AssertOutlineFillsThePath(path, Internals.PathCombiner.Combine(path, second: null, PathCombineMode.Union, FillRule.NonZero, maxPasses: 0, Ct));
+        var bow = new VectorPathBuilder().AddPolygon([new PointD(0, 0), new PointD(10, 10), new PointD(10, 0), new PointD(0, 10)]).Build();
+        Assert.Equal("M0 0 L5 5 L0 10 Z M10 0 L10 10 L5 5 Z", Internals.PathCombiner.Combine(bow, second: null, PathCombineMode.Union, FillRule.NonZero, maxPasses: 0, Ct).ToSvgPathData());
+    }
+
+    [Fact]
+    public void SegmentsAlmostOnTheSameLineAreSnappedWhenCuttingThemDoesNotEnd()
+    {
+        // Thin triangles whose long sides are almost on the same line: each cut turns a piece across its neighbors far
+        // from the cut, and every pass makes more cuts than the one before
+        var random = new Random(0);
+        var builder = new VectorPathBuilder();
+        for (var i = 0; i < 50; i++)
+        {
+            var start = 50 + (random.NextDouble() * 0.01);
+            builder.MoveTo(0, start).LineTo(100, start + (random.NextDouble() * 0.2)).LineTo(100, 60 + (i * 0.001)).Close();
+        }
+
+        var path = builder.Build();
+        AssertOutlineFillsThePath(path, path.Simplify(cancellationToken: Ct));
+        AssertOutlineFillsThePath(path, path.Simplify(FillRule.EvenOdd, Ct), FillRule.EvenOdd);
+        var other = new VectorPathBuilder().AddRectangle(new RectangleD(20, 40, 60, 15)).Build();
+        var expected = RenderFill(path, FillRule.NonZero);
+        var inOther = RenderFill(other, FillRule.NonZero);
+        var intersection = RenderFill(path.Combine(other, PathCombineMode.Intersect, cancellationToken: Ct), FillRule.EvenOdd);
+        for (var i = 0; i < expected.Length; i++)
+        {
+            Assert.InRange(intersection[i], Math.Min(expected[i], inOther[i]) - 2, Math.Min(expected[i], inOther[i]) + 2, message: $"pixel ({i % 100}, {i / 100})");
+        }
+    }
+
     [Theory]
     [InlineData(PathCombineMode.Union)]
     [InlineData(PathCombineMode.Intersect)]
@@ -2035,6 +2080,83 @@ public sealed class DrawingPathTests
     }
 
     /// <summary>Checks that two drawings give the same pixels, to one level of gray: the same shape described in two ways.</summary>
+    /// <summary>Asserts that an outline paints what a path paints, with both fill rules, and that its edges only meet at their ends.</summary>
+    private static void AssertOutlineFillsThePath(VectorPath path, VectorPath outline, FillRule fillRule = FillRule.NonZero)
+    {
+        AssertEdgesOnlyMeetAtTheirEnds(outline);
+        var expected = RenderFill(path, fillRule);
+        var nonZero = RenderFill(outline, FillRule.NonZero);
+        var evenOdd = RenderFill(outline, FillRule.EvenOdd);
+        Assert.Contains(expected, sample => sample != 0);
+        for (var i = 0; i < expected.Length; i++)
+        {
+            Assert.InRange(nonZero[i], expected[i] - 2, expected[i] + 2, message: $"pixel ({i % 100}, {i / 100})");
+            Assert.InRange(evenOdd[i], expected[i] - 2, expected[i] + 2, message: $"pixel ({i % 100}, {i / 100}), even-odd");
+        }
+    }
+
+    /// <summary>Asserts that no two edges of an outline, whose vertices are on the grid of 1/1024 of a pixel, cross, overlap, or have an end on the other one.</summary>
+    private static void AssertEdgesOnlyMeetAtTheirEnds(VectorPath outline)
+    {
+        var edges = new List<(long X0, long Y0, long X1, long Y1)>();
+        (long X, long Y) start = default;
+        (long X, long Y) current = default;
+        foreach (var segment in outline.EnumerateSegments())
+        {
+            var point = ((long)Math.Round(segment.Point.X * 1024, MidpointRounding.AwayFromZero), (long)Math.Round(segment.Point.Y * 1024, MidpointRounding.AwayFromZero));
+            switch (segment.Kind)
+            {
+                case PathSegmentKind.MoveTo:
+                    start = current = point;
+                    break;
+
+                case PathSegmentKind.LineTo:
+                    edges.Add((current.X, current.Y, point.Item1, point.Item2));
+                    current = point;
+                    break;
+
+                case PathSegmentKind.Close:
+                    edges.Add((current.X, current.Y, start.X, start.Y));
+                    current = start;
+                    break;
+            }
+        }
+
+        edges.Sort((a, b) => Math.Min(a.X0, a.X1).CompareTo(Math.Min(b.X0, b.X1)));
+        for (var i = 0; i < edges.Count; i++)
+        {
+            var a = edges[i];
+            for (var j = i + 1; j < edges.Count && Math.Min(edges[j].X0, edges[j].X1) <= Math.Max(a.X0, a.X1); j++)
+            {
+                var b = edges[j];
+                if (Math.Min(b.Y0, b.Y1) > Math.Max(a.Y0, a.Y1) || Math.Max(b.Y0, b.Y1) < Math.Min(a.Y0, a.Y1))
+                    continue;
+
+                var isSame = (a.X0, a.Y0, a.X1, a.Y1) == (b.X0, b.Y0, b.X1, b.Y1) || (a.X0, a.Y0, a.X1, a.Y1) == (b.X1, b.Y1, b.X0, b.Y0);
+                var crosses = Side(a, b.X0, b.Y0) * Side(a, b.X1, b.Y1) < 0 && Side(b, a.X0, a.Y0) * Side(b, a.X1, a.Y1) < 0;
+                Assert.False(isSame || crosses || IsInside(a, b.X0, b.Y0) || IsInside(a, b.X1, b.Y1) || IsInside(b, a.X0, a.Y0) || IsInside(b, a.X1, a.Y1), $"edges {a} and {b}");
+            }
+        }
+
+        static int Side((long X0, long Y0, long X1, long Y1) edge, long x, long y)
+            => (((Int128)(edge.X1 - edge.X0) * (y - edge.Y0)) - ((Int128)(edge.Y1 - edge.Y0) * (x - edge.X0))).CompareTo(Int128.Zero);
+
+        static bool IsInside((long X0, long Y0, long X1, long Y1) edge, long x, long y)
+        {
+            if (Side(edge, x, y) != 0 || (x, y) == (edge.X0, edge.Y0) || (x, y) == (edge.X1, edge.Y1))
+                return false;
+
+            return Math.Min(edge.X0, edge.X1) <= x && x <= Math.Max(edge.X0, edge.X1) && Math.Min(edge.Y0, edge.Y1) <= y && y <= Math.Max(edge.Y0, edge.Y1);
+        }
+    }
+
+    private static int[] RenderFill(VectorPath path, FillRule fillRule)
+    {
+        using var image = new Image<Gray8>(100, 100, new Gray8(0));
+        image.Draw(canvas => canvas.Fill(White, path, fillRule), Ct);
+        return DrawingTestSupport.ReadSamples(image.Frames[0]);
+    }
+
     private static void AssertClosePixels(DrawingAction first, DrawingAction second)
     {
         var expected = Render(first);

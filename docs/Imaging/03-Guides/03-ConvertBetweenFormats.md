@@ -33,7 +33,7 @@ public static void ConvertFile(string inputPath, string outputPath)
 ## Choose the encoder and its settings
 
 Pass an encoder to `Save` to choose the format and its settings, whatever the extension. The encoders are in the
-`Meziantou.Framework.Imaging.Formats` namespace: `JpegEncoder`, `PngEncoder`, `WebPEncoder`, `GifEncoder`,
+[Meziantou.Framework.Imaging.Formats](cref:Meziantou.Framework.Imaging.Formats) namespace: `JpegEncoder`, `PngEncoder`, `WebPEncoder`, `GifEncoder`,
 `AvifEncoder`, `HeicEncoder` and one per format. An encoder is also the only way to save to a stream, which has no
 extension.
 

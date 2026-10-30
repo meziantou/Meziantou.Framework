@@ -100,6 +100,10 @@ internal static class BoundedInflater
                 output.Write(chunk.AsSpan(0, read));
             }
 
+            // A finished inflater stops reading its source: unread bytes follow the final block (more than its read-ahead)
+            if (source.Available != 0)
+                return null;
+
             // The checksum ends a complete datastream; bytes after its final block do not match it
             Span<byte> checksum = stackalloc byte[4];
             BinaryPrimitives.WriteUInt32BigEndian(checksum, Adler32.Compute(output.WrittenSpan));

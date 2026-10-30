@@ -28,7 +28,7 @@ after a test, a build step or any work that needs scratch space on disk.
 
 ## Namespace
 
-`TemporaryDirectory` and `TemporaryFile` are in the `Meziantou.Framework` namespace, as `FullPath` is.
+`TemporaryDirectory` and `TemporaryFile` are in the [Meziantou.Framework](cref:Meziantou.Framework) namespace, as `FullPath` is.
 
 ## Next steps
 

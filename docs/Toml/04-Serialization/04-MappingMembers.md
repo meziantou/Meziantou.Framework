@@ -3,7 +3,7 @@ title: Mapping members
 description: Rename, ignore, include and require members, choose the constructor, fill existing values, run callbacks, and keep unknown keys.
 ---
 
-Attributes on your types change how their members map to keys. They are in the `Meziantou.Framework.Toml.Serialization`
+Attributes on your types change how their members map to keys. They are in the [Meziantou.Framework.Toml.Serialization](cref:Meziantou.Framework.Toml.Serialization)
 namespace.
 
 ## Rename, ignore and require members

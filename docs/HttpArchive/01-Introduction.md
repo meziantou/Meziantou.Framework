@@ -47,7 +47,7 @@ Every object also has a `Comment` and an `ExtensionData` dictionary that holds t
 
 ## Namespace
 
-Every type is in the `Meziantou.Framework.HttpArchive` namespace.
+Every type is in the [Meziantou.Framework.HttpArchive](cref:Meziantou.Framework.HttpArchive) namespace.
 
 ## Next steps
 

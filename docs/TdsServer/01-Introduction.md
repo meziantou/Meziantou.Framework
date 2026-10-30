@@ -40,10 +40,10 @@ The server runs either inside an ASP.NET Core application, on Kestrel, or on its
 
 | Namespace | Contains |
 | --- | --- |
-| `Meziantou.Framework.Tds` | The standalone `TdsServer` and the server options (`TdsServerOptions`) |
-| `Meziantou.Framework.Tds.Handler` | The authentication and query callbacks, their contexts and results (`TdsResultSet`, `TdsColumn`, …) |
-| `Meziantou.Framework.Tds.Hosting` | The ASP.NET Core integration (`AddTdsServer`, `MapTdsHandlers`, …) |
-| `Meziantou.Framework.Tds.QueryEngine` | The built-in query engine (`TdsQueryEngineOptions`, `TdsQueryEngine`) |
+| [Meziantou.Framework.Tds](cref:Meziantou.Framework.Tds) | The standalone `TdsServer` and the server options (`TdsServerOptions`) |
+| [Meziantou.Framework.Tds.Handler](cref:Meziantou.Framework.Tds.Handler) | The authentication and query callbacks, their contexts and results (`TdsResultSet`, `TdsColumn`, …) |
+| [Meziantou.Framework.Tds.Hosting](cref:Meziantou.Framework.Tds.Hosting) | The ASP.NET Core integration (`AddTdsServer`, `MapTdsHandlers`, …) |
+| [Meziantou.Framework.Tds.QueryEngine](cref:Meziantou.Framework.Tds.QueryEngine) | The built-in query engine (`TdsQueryEngineOptions`, `TdsQueryEngine`) |
 
 ## Next steps
 

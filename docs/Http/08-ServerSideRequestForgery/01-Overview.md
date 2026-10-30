@@ -30,4 +30,4 @@ It also rejects what it cannot validate: connections through a proxy, and reques
 
 ## Namespace
 
-Every type is in the `Meziantou.Framework.Http.ServerSideRequestForgery` namespace.
+Every type is in the [Meziantou.Framework.Http.ServerSideRequestForgery](cref:Meziantou.Framework.Http.ServerSideRequestForgery) namespace.

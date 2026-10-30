@@ -13,7 +13,7 @@ dotnet add package Meziantou.AspNetCore.Components.WebAssembly
 ```
 
 Add the handler to the client in `Program.cs`. `DefaultBrowserOptionsMessageHandler` is in the
-`Meziantou.AspNetCore.Components.WebAssembly` namespace, and `BrowserRequestCache` in
+[Meziantou.AspNetCore.Components.WebAssembly](cref:Meziantou.AspNetCore.Components.WebAssembly) namespace, and `BrowserRequestCache` in
 `Microsoft.AspNetCore.Components.WebAssembly.Http`:
 
 <!-- ref:../../samples/BlazorAppSample/ReadmeExamples/ComponentsReadmeExamples.cs;region=DefaultBrowserOptionsMessageHandler_Usage;format=md-fenced-code-block;dedent=true -->

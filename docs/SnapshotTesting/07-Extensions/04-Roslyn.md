@@ -13,7 +13,7 @@ dotnet add package Meziantou.Framework.SnapshotTesting.Roslyn
 ## Set up
 
 Call `AddRoslyn()` on `SnapshotSettings.Default` in a module initializer (`AddRoslyn` is in the
-`Meziantou.Framework.SnapshotTesting.Roslyn` namespace):
+[Meziantou.Framework.SnapshotTesting.Roslyn](cref:Meziantou.Framework.SnapshotTesting.Roslyn) namespace):
 
 <!-- ref:../../../tests/Meziantou.Framework.SnapshotTesting.Roslyn.Tests/RoslynSnapshotSerializerTests.cs;region=SnapshotSettings_AddRoslyn;format=md-fenced-code-block;dedent=true -->
 ```csharp

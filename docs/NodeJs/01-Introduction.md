@@ -42,7 +42,7 @@ The JavaScript code runs with the permissions of your application: only run code
 
 ## Namespaces
 
-All the types are in the `Meziantou.Framework.NodeJs` namespace. Results are returned as `JsonElement`
+All the types are in the [Meziantou.Framework.NodeJs](cref:Meziantou.Framework.NodeJs) namespace. Results are returned as `JsonElement`
 (`System.Text.Json`) or deserialized to your types, and arguments are `JsonNode` values (`System.Text.Json.Nodes`) or
 objects serialized using reflection.
 

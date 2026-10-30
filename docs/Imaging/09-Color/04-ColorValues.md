@@ -3,7 +3,7 @@ title: Color values
 description: Convert single colors between RGB, CIELAB, Oklch, HSL and other spaces, read CSS notations and compare colors.
 ---
 
-Single colors have value types of their own, in the `Meziantou.Framework.Imaging` namespace. Use them to build a
+Single colors have value types of their own, in the [Meziantou.Framework.Imaging](cref:Meziantou.Framework.Imaging) namespace. Use them to build a
 palette, find a lighter tint, measure how different two colors look, or read the colors of a style sheet. They are
 immutable `readonly struct`s of `double` components, and their operations allocate nothing except the strings they
 format.

@@ -225,7 +225,7 @@ The function is called for each match, one after the other: the next match waits
 
 ## Runes of UTF-8 bytes
 
-`EnumerateRunesFromUtf8`, in the `Meziantou.Framework.Text` namespace, decodes UTF-8 bytes into `Rune` values without
+`EnumerateRunesFromUtf8`, in the [Meziantou.Framework.Text](cref:Meziantou.Framework.Text) namespace, decodes UTF-8 bytes into `Rune` values without
 converting them to a string first:
 
 <!-- ref:../../tests/Meziantou.Framework.Tests/Text/Utf8ExtensionsTests.cs;region=Utf8Extensions_EnumerateRunesFromUtf8;format=md-fenced-code-block;dedent=true -->

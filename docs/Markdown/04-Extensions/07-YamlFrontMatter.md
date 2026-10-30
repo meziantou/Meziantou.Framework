@@ -7,7 +7,7 @@ description: Read the YAML metadata at the top of a document, such as its title,
 
 Many tools put metadata at the top of a Markdown file, between two `---` lines: the title of the page, its date, its
 tags. Without the extension, CommonMark renders these lines as text and a horizontal rule. `UseYamlFrontMatter` reads
-them as a `YamlFrontMatterBlock` (namespace `Meziantou.Framework.Markdown.Extensions.Yaml`), which is not rendered:
+them as a `YamlFrontMatterBlock` (namespace [Meziantou.Framework.Markdown.Extensions.Yaml](cref:Meziantou.Framework.Markdown.Extensions.Yaml)), which is not rendered:
 
 <!-- ref:../../../tests/Meziantou.Framework.Markdown.Tests/TestYamlFrontMatterExtension.cs;region=MarkdownExtensions_UseYamlFrontMatter;format=md-fenced-code-block;dedent=true -->
 ```csharp

@@ -67,7 +67,7 @@ Assert.Equal("2", value?.ToString());
 ```
 <!-- endref -->
 
-`JsonPath` is in the `Meziantou.Framework.Json` namespace. The results are nodes of the tree, so you can replace them.
+`JsonPath` is in the [Meziantou.Framework.Json](cref:Meziantou.Framework.Json) namespace. The results are nodes of the tree, so you can replace them.
 
 ## Edit a document
 

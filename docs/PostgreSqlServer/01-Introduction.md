@@ -40,9 +40,9 @@ The server runs on its own with the `PostgreSqlServer` class, or inside an ASP.N
 
 | Namespace | Contains |
 | --- | --- |
-| `Meziantou.Framework.PostgreSql` | The standalone `PostgreSqlServer` and the options (`PostgreSqlServerOptions`) |
-| `Meziantou.Framework.PostgreSql.Handler` | The callbacks, their contexts and results (`PostgreSqlResultSet`, `PostgreSqlColumn`, ...) |
-| `Meziantou.Framework.PostgreSql.Hosting` | The ASP.NET Core integration (`AddPostgreSqlServer`, `MapPostgreSqlHandlers`, ...) |
+| [Meziantou.Framework.PostgreSql](cref:Meziantou.Framework.PostgreSql) | The standalone `PostgreSqlServer` and the options (`PostgreSqlServerOptions`) |
+| [Meziantou.Framework.PostgreSql.Handler](cref:Meziantou.Framework.PostgreSql.Handler) | The callbacks, their contexts and results (`PostgreSqlResultSet`, `PostgreSqlColumn`, ...) |
+| [Meziantou.Framework.PostgreSql.Hosting](cref:Meziantou.Framework.PostgreSql.Hosting) | The ASP.NET Core integration (`AddPostgreSqlServer`, `MapPostgreSqlHandlers`, ...) |
 
 ## Next steps
 

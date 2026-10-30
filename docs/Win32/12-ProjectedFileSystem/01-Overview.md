@@ -16,7 +16,7 @@ the ProjFS callbacks.
 dotnet add package Meziantou.Framework.Win32.ProjectedFileSystem
 ```
 
-The types are in the `Meziantou.Framework.Win32.ProjectedFileSystem` namespace.
+The types are in the [Meziantou.Framework.Win32.ProjectedFileSystem](cref:Meziantou.Framework.Win32.ProjectedFileSystem) namespace.
 
 ## Requirements
 

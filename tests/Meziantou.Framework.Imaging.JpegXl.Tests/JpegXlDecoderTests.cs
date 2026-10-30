@@ -873,6 +873,87 @@ public sealed class JpegXlDecoderTests
         }
     }
 
+    public static TheoryData<long, int, bool> ModularTreeNodeLimits => new()
+    {
+        // The limit of a local tree is 1024 plus the samples of the channels; a tree has an odd number of nodes
+        { 1025, 1025, true },
+        { 1025, 1027, false },
+        { 1026, 1027, true },
+        { 1026, 1029, false },
+        { 0, 1, true },
+        { 0, 3, false },
+        { 2, 3, true },
+        { 2, 5, false },
+    };
+
+    /// <summary>
+    /// Like libjxl and jxl-oxide, the decoder reads a node while the nodes already read are not more than the limit: a tree
+    /// may have one node more than the limit. The trees are valid combs (each decision splits the values its parent leaves on
+    /// its right), far from the height limit, so only the node count can reject them.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(ModularTreeNodeLimits))]
+    public void ModularTreeNodeCountIsLimited(long maxNodeCount, int nodeCount, bool isAccepted)
+    {
+        var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(ModularTreeNodeCountIsLimited));
+        var decisionCount = nodeCount / 2;
+        var leafCount = decisionCount + 1;
+        using var writer = new LsbBitWriter(scope);
+        using (var tree = new JpegXlEntropyEncoder(JpegXlMaTree.TreeContextCount, new JpegXlHybridUintConfig(4, 0, 0), scope))
+        {
+            // Breadth-first order: each decision is followed by its left leaf and by the next decision, the last one by two leaves
+            for (var i = 0; i < decisionCount; i++)
+            {
+                if (i > 0)
+                {
+                    AddLeaf(tree);
+                }
+
+                tree.Add(1, 2 + 1);
+                tree.Add(0, (uint)(2 * i) + 1);
+            }
+
+            AddLeaf(tree);
+            if (decisionCount > 0)
+            {
+                AddLeaf(tree);
+            }
+
+            tree.Write(writer);
+        }
+
+        using (var samples = new JpegXlEntropyEncoder(leafCount, new JpegXlHybridUintConfig(4, 1, 0), scope))
+        {
+            samples.Add(0, 0);
+            samples.Write(writer);
+        }
+
+        writer.Finish();
+        var data = writer.WrittenSpan.ToArray();
+        var reader = new JpegXlBitReader(data, 0, data.Length);
+        if (isAccepted)
+        {
+            using var tree = JpegXlMaTree.Read(reader, scope, maxNodeCount);
+            reader.EnsureNotOverrun();
+            Assert.Equal(nodeCount, tree.NodeCount);
+            Assert.Equal(leafCount, tree.LeafCount);
+        }
+        else
+        {
+            var exception = Assert.Throws<InvalidImageContentException>(() => JpegXlMaTree.Read(reader, scope, maxNodeCount).Dispose());
+            Assert.Contains("more nodes than its image allows", exception.Message, StringComparison.Ordinal);
+        }
+
+        static void AddLeaf(JpegXlEntropyEncoder tree)
+        {
+            tree.Add(1, 0);
+            tree.Add(2, 0);
+            tree.Add(3, 0);
+            tree.Add(4, 0);
+            tree.Add(5, 0);
+        }
+    }
+
     /// <summary>
     /// The restoration filters run as a pipeline over rings of rows; the result is the one of each filter applied to the
     /// whole frame after the previous one, computed here sample by sample from section J of the standard: every combination

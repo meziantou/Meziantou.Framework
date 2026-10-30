@@ -50,7 +50,7 @@ To use this `Assert` class when you write `Assert`, add a global alias. See
 ## Namespace
 
 `Assert`, `AssertionException`, `EquivalentOptions`, `FormatterOptions` and `RaisedEvent<TEventArgs>` are in the
-`Meziantou.Framework.Assertions` namespace.
+[Meziantou.Framework.Assertions](cref:Meziantou.Framework.Assertions) namespace.
 
 ## Related libraries
 

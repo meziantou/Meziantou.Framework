@@ -36,7 +36,7 @@ queries such as `$.store.book[?@.price < 10].title`. It implements the JSONPath 
 
 | Namespace | Contains |
 | --- | --- |
-| `Meziantou.Framework.Json` | `JsonPath`, the results, the evaluation modes, the extension methods and the navigator for custom object models |
+| [Meziantou.Framework.Json](cref:Meziantou.Framework.Json) | `JsonPath`, the results, the evaluation modes, the extension methods and the navigator for custom object models |
 | `System.Text.Json` and `System.Text.Json.Nodes` | The JSON types the queries are evaluated on: `JsonDocument`, `JsonElement`, `JsonNode` |
 
 ## Next steps

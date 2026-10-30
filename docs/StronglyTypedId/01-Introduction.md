@@ -50,7 +50,7 @@ URL.
 | Package | Contains | Namespace |
 | --- | --- | --- |
 | `Meziantou.Framework.StronglyTypedId` | The source generator, its analyzer and the attributes | `Meziantou.Framework.Annotations` |
-| `Meziantou.Framework.StronglyTypedId.Interfaces` | `IStronglyTypedId` and `IStronglyTypedId<T>` (optional) | `Meziantou.Framework` |
+| `Meziantou.Framework.StronglyTypedId.Interfaces` | `IStronglyTypedId` and `IStronglyTypedId<T>` (optional) | [Meziantou.Framework](cref:Meziantou.Framework) |
 
 ## Next steps
 

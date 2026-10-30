@@ -46,7 +46,7 @@ The library works with the files of the cgroup file system (`/sys/fs/cgroup`): i
 
 ## Namespace
 
-Every type is in the `Meziantou.Framework.Unix.ControlGroups` namespace.
+Every type is in the [Meziantou.Framework.Unix.ControlGroups](cref:Meziantou.Framework.Unix.ControlGroups) namespace.
 
 ## Next steps
 

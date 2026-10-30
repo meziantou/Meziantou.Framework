@@ -13,8 +13,8 @@ dotnet add package Meziantou.Framework.Win32.MarkOfTheWeb
 
 The other packages are listed in the [introduction](01-Introduction.md#packages).
 
-The types are in the `Meziantou.Framework.Win32` namespace, except those of the projected file system, which are in
-`Meziantou.Framework.Win32.ProjectedFileSystem`. The examples of this documentation omit the `using` directives.
+The types are in the [Meziantou.Framework.Win32](cref:Meziantou.Framework.Win32) namespace, except those of the projected file system, which are in
+[Meziantou.Framework.Win32.ProjectedFileSystem](cref:Meziantou.Framework.Win32.ProjectedFileSystem). The examples of this documentation omit the `using` directives.
 
 ## Windows only
 

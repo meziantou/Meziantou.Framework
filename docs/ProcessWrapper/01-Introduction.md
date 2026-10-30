@@ -27,7 +27,7 @@ without quoting them, killing the process when the operation is canceled, and ch
 
 ## Namespace
 
-The types are in the `Meziantou.Framework` namespace. The main ones:
+The types are in the [Meziantou.Framework](cref:Meziantou.Framework) namespace. The main ones:
 
 | Type | Contains |
 | --- | --- |

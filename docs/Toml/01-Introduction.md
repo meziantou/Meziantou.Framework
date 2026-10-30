@@ -38,11 +38,11 @@ too. See [TOML 1.0 and 1.1](03-TomlVersions.md).
 
 | Namespace | Contains |
 | --- | --- |
-| `Meziantou.Framework.Toml` | `TomlSerializer`, `TomlSerializerOptions`, `TomlTypeInfo<T>`, `TomlDateTime`, `TomlException`, the naming policies |
-| `Meziantou.Framework.Toml.Serialization` | The attributes, `TomlSerializerContext`, the converters, `TomlReader`, `TomlWriter`, `TomlMetadataStore` |
-| `Meziantou.Framework.Toml.Model` | The document model: `TomlTable`, `TomlArray`, `TomlTableArray` |
-| `Meziantou.Framework.Toml.Parsing` | `SyntaxParser`, `TomlLexer`, `TomlParser` |
-| `Meziantou.Framework.Toml.Syntax` | The syntax tree: `DocumentSyntax`, `KeyValueSyntax`, `SyntaxVisitor`, the diagnostics |
+| [Meziantou.Framework.Toml](cref:Meziantou.Framework.Toml) | `TomlSerializer`, `TomlSerializerOptions`, `TomlTypeInfo<T>`, `TomlDateTime`, `TomlException`, the naming policies |
+| [Meziantou.Framework.Toml.Serialization](cref:Meziantou.Framework.Toml.Serialization) | The attributes, `TomlSerializerContext`, the converters, `TomlReader`, `TomlWriter`, `TomlMetadataStore` |
+| [Meziantou.Framework.Toml.Model](cref:Meziantou.Framework.Toml.Model) | The document model: `TomlTable`, `TomlArray`, `TomlTableArray` |
+| [Meziantou.Framework.Toml.Parsing](cref:Meziantou.Framework.Toml.Parsing) | `SyntaxParser`, `TomlLexer`, `TomlParser` |
+| [Meziantou.Framework.Toml.Syntax](cref:Meziantou.Framework.Toml.Syntax) | The syntax tree: `DocumentSyntax`, `KeyValueSyntax`, `SyntaxVisitor`, the diagnostics |
 
 The serializer has its own attributes: the `System.Text.Json.Serialization` attributes, such as `[JsonPropertyName]`,
 are not recognized.

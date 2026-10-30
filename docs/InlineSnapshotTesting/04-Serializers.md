@@ -67,7 +67,7 @@ InlineSnapshot
 
 ### Format JSON, XML and form content
 
-Formatters rewrite values in a readable form. Their options are in the `Meziantou.Framework.HumanReadable.ValueFormatters`
+Formatters rewrite values in a readable form. Their options are in the [Meziantou.Framework.HumanReadable.ValueFormatters](cref:Meziantou.Framework.HumanReadable.ValueFormatters)
 namespace:
 
 <!-- ref:../../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/InlineSnapshotTests.cs;region=InlineSnapshot_Formatters;format=md-fenced-code-block;dedent=true -->

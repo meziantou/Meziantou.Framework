@@ -42,7 +42,7 @@ public sealed class ServerConfig
 ```
 <!-- endref -->
 
-`TomlSerializerContext` and the attributes are in the `Meziantou.Framework.Toml.Serialization` namespace.
+`TomlSerializerContext` and the attributes are in the [Meziantou.Framework.Toml.Serialization](cref:Meziantou.Framework.Toml.Serialization) namespace.
 
 ## Use the context
 

@@ -115,7 +115,7 @@ Assert.Equal("Title\nSection\n", MarkdownConverter.ToPlainText("# Title\n\n## Se
 ```
 <!-- endref -->
 
-- `HtmlObjectRenderer<T>` (namespace `Meziantou.Framework.Markdown.Renderers.Html`) is the base class of the HTML object
+- `HtmlObjectRenderer<T>` (namespace [Meziantou.Framework.Markdown.Renderers.Html](cref:Meziantou.Framework.Markdown.Renderers.Html)) is the base class of the HTML object
   renderers. `WriteAttributes` writes the [attributes](04-Extensions/06-GenericAttributes.md) of the element, and
   `WriteLeafInline` or `WriteChildren` write its content.
 - `Replace<T>`, `InsertBefore<T>` and `Find<T>` of `ObjectRenderers` work on the existing renderers by type. Some

@@ -477,6 +477,7 @@ public sealed class VectorPath
     /// <returns>The outline; an empty path when nothing is kept.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="other"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="mode"/> is not a defined <see cref="PathCombineMode"/>, or <paramref name="fillRule"/> is not a defined <see cref="FillRule"/>.</exception>
+    /// <exception cref="InvalidOperationException">The segments of the paths could not be cut so that they only meet at their ends: no outline is returned rather than a wrong one.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
     public VectorPath Combine(VectorPath other, PathCombineMode mode, FillRule fillRule = FillRule.NonZero, CancellationToken cancellationToken = default)
     {
@@ -503,6 +504,7 @@ public sealed class VectorPath
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns>The outline; an empty path when the path fills nothing.</returns>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="fillRule"/> is not a defined <see cref="FillRule"/>.</exception>
+    /// <exception cref="InvalidOperationException">The segments of the path could not be cut so that they only meet at their ends: no outline is returned rather than a wrong one.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
     public VectorPath Simplify(FillRule fillRule = FillRule.NonZero, CancellationToken cancellationToken = default)
     {
@@ -608,6 +610,7 @@ public sealed class VectorPath
     /// <paramref name="fillRule"/> is not defined, <paramref name="miterLimit"/> is not between 1 and 1048576, or the
     /// result goes beyond the largest coordinate (16777216).
     /// </exception>
+    /// <exception cref="InvalidOperationException">The segments of the path could not be cut so that they only meet at their ends: no outline is returned rather than a wrong one.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
     public VectorPath Offset(double distance, LineJoin join = LineJoin.Miter, double miterLimit = 4, FillRule fillRule = FillRule.NonZero, CancellationToken cancellationToken = default)
     {

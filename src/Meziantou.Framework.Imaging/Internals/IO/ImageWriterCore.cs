@@ -116,7 +116,17 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
         ArgumentNullException.ThrowIfNull(stream);
         var snapshot = CreateSnapshot(options, encoder: null);
         var (capabilities, session, scope) = Prepare(snapshot, pixelFormat, stream);
-        return new ImageWriterCore(snapshot, capabilities, pixelFormat, session, scope, stream, ownsStream: !snapshot.LeaveOpen, file: null);
+        try
+        {
+            return new ImageWriterCore(snapshot, capabilities, pixelFormat, session, scope, stream, ownsStream: !snapshot.LeaveOpen, file: null);
+        }
+        catch
+        {
+            // Reading the start position of a seekable output can fail. The caller stream is left as is, like when the
+            // options are rejected: the writer was not created, so it did not take the stream over
+            session.Dispose();
+            throw;
+        }
     }
 
     /// <summary>Creates a writer publishing a file atomically. The encoder is inferred from the extension when not specified.</summary>
@@ -127,18 +137,19 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
         ArgumentNullException.ThrowIfNull(options);
         var snapshot = CreateSnapshot(options, options.Encoder ?? ImageEncoder.FromPath(path));
         var (capabilities, session, scope) = Prepare(snapshot, pixelFormat, stream: null);
-        AtomicFileOutput file;
+        AtomicFileOutput? file = null;
         try
         {
             file = AtomicFileOutput.Create(path, asynchronous);
+            return new ImageWriterCore(snapshot, capabilities, pixelFormat, session, scope, file.Stream, ownsStream: true, file);
         }
         catch
         {
+            // No writer took the session and the temporary file over
+            file?.Abort();
             session.Dispose();
             throw;
         }
-
-        return new ImageWriterCore(snapshot, capabilities, pixelFormat, session, scope, file.Stream, ownsStream: true, file);
     }
 
     /// <summary>

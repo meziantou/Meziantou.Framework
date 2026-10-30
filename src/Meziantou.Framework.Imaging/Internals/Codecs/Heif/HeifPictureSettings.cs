@@ -32,6 +32,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// Whether the codec splits a picture into independent parts from its size (the AV1 tiles of <c>AvifEncoder.AutoTiling</c>),
 /// so that workers can code and decode them at once; the fewest parts otherwise.
 /// </param>
+/// <param name="GridTile">Whether the pictures are the tiles of a grid, which decoders decode concurrently.</param>
 [StructLayout(LayoutKind.Auto)]
 internal readonly record struct HeifPictureSettings(
     int Width,
@@ -50,4 +51,5 @@ internal readonly record struct HeifPictureSettings(
     int Effort,
     int KeyFrameInterval,
     int MaxDegreeOfParallelism = 1,
-    bool AutoTiling = false);
+    bool AutoTiling = false,
+    bool GridTile = false);

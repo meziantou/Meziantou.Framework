@@ -189,8 +189,9 @@ public sealed class HeicDecodingTests
     }
 
     /// <summary>
-    /// An image whose rows of coding tree blocks are substreams of the wavefront, as x265 writes them: the rows of a large
-    /// image are decoded by the workers, and a grid of such tiles by one worker per tile, with the pixels of one worker.
+    /// An image whose rows of coding tree blocks are substreams of the wavefront, as the encoder writes a large still image
+    /// (and x265 its streams): the rows of the image are decoded by the workers, and a grid of such tiles, which the
+    /// encoder writes only for the tests, by one worker per tile, with the pixels of one worker.
     /// </summary>
     [Theory]
     [InlineData(2)]
@@ -211,14 +212,13 @@ public sealed class HeicDecodingTests
         }
 
         using var source = Image.ImportPixelData<Rgb24>(pixels, Width, Height);
-        byte[] still;
+        using var output = new MemoryStream();
+        source.Save(output, new HeicEncoder { Compression = HeicCompression.Lossy, Quality = 60, Effort = 1 });
+        var still = output.ToArray();
         byte[] grid;
         Internals.HeicPictureEncoder.TestWavefront = true;
         try
         {
-            using var output = new MemoryStream();
-            source.Save(output, new HeicEncoder { Compression = HeicCompression.Lossy, Quality = 60, Effort = 1 });
-            still = output.ToArray();
             output.SetLength(0);
             source.Save(output, new HeicEncoder { Compression = HeicCompression.Lossy, Quality = 60, Effort = 1, GridTileSize = new Size(192, 160) });
             grid = output.ToArray();

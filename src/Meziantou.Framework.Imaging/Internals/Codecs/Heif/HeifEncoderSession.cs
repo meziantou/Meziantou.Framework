@@ -178,7 +178,7 @@ internal sealed class HeifEncoderSession : ImageEncoderSession
             // do not multiply
             var gridWorkers = IsGrid ? HeifGridTiles.GetWorkerCount(options.Configuration.MaxDegreeOfParallelism, new Size(_tileWidth, _tileHeight), _gridColumns * _gridRows) : 1;
             var pictureWorkers = gridWorkers > 1 ? 1 : options.Configuration.MaxDegreeOfParallelism;
-            var colorSettings = new HeifPictureSettings(codedWidth, codedHeight, bitDepth, monochrome, subsamplingX, subsamplingY, primaries, transfer, matrix, fullRange, StillPicture: !_isSequence, lossless, settings.Quality, settings.Effort, settings.KeyFrameInterval, pictureWorkers, settings.AutoTiling);
+            var colorSettings = new HeifPictureSettings(codedWidth, codedHeight, bitDepth, monochrome, subsamplingX, subsamplingY, primaries, transfer, matrix, fullRange, StillPicture: !_isSequence, lossless, settings.Quality, settings.Effort, settings.KeyFrameInterval, pictureWorkers, settings.AutoTiling, GridTile: IsGrid);
             _color = binding.CreatePictureEncoder(scope, colorSettings);
 
             // The pictures of the stream may be larger than the image, which is then their clean aperture: the alpha plane
@@ -189,7 +189,7 @@ internal sealed class HeifEncoderSession : ImageEncoderSession
             {
                 // The alpha plane: a monochrome image in full range, always lossless. Its key frames are the ones of
                 // the color planes
-                alphaSettings = new HeifPictureSettings(_codedSize.Width, _codedSize.Height, bitDepth, Monochrome: true, SubsamplingX: 1, SubsamplingY: 1, Av1Constants.CpUnspecified, Av1Constants.TcUnspecified, Av1Constants.McUnspecified, FullRange: true, StillPicture: !_isSequence, Lossless: true, Quality: 100, settings.Effort, settings.KeyFrameInterval, pictureWorkers, settings.AutoTiling);
+                alphaSettings = new HeifPictureSettings(_codedSize.Width, _codedSize.Height, bitDepth, Monochrome: true, SubsamplingX: 1, SubsamplingY: 1, Av1Constants.CpUnspecified, Av1Constants.TcUnspecified, Av1Constants.McUnspecified, FullRange: true, StillPicture: !_isSequence, Lossless: true, Quality: 100, settings.Effort, settings.KeyFrameInterval, pictureWorkers, settings.AutoTiling, GridTile: IsGrid);
                 _alpha = binding.CreatePictureEncoder(scope, alphaSettings.Value);
             }
 

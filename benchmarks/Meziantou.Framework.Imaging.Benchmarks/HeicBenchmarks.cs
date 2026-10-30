@@ -2,7 +2,6 @@ using BenchmarkDotNet.Attributes;
 using Meziantou.Framework.Imaging.Benchmarks.Infrastructure;
 using Meziantou.Framework.Imaging.Benchmarks.Workloads;
 using Meziantou.Framework.Imaging.Formats;
-using Meziantou.Framework.Imaging.Internals;
 
 namespace Meziantou.Framework.Imaging.Benchmarks;
 
@@ -16,8 +15,8 @@ namespace Meziantou.Framework.Imaging.Benchmarks;
 /// own corpus and say nothing about photographs. The corpus has no large 10-bit stream: the 10-bit still is the 512x384
 /// photo-like still of the encoder workloads, written by the encoder of the library (lossy 4:2:0, effort 0), and decoded to
 /// its 16-bit pixels. The 3840x2160 still with rows of the wavefront is written by the encoder of the library (lossy 4:2:0,
-/// effort 0) with <see cref="HeicPictureEncoder.TestWavefront"/>, as x265 writes its streams by default: the decoder
-/// decodes its rows, and the tiles of the grid, with <see cref="Workers"/> workers.
+/// effort 0), whose large still images have them by default, as x265 writes its streams: the decoder decodes its rows, and
+/// the tiles of the grid, with <see cref="Workers"/> workers.
 /// </summary>
 /// <remarks>
 /// The encoder is far slower than the decoder, and than the encoders of the other formats: its inputs are a 512x384
@@ -96,15 +95,7 @@ public class HeicBenchmarks : IDisposable
         // A large still whose rows are substreams of the wavefront: several workers decode it to the pixels of one
         using (var large = Image.ImportPixelBytes<Rgb24>(BenchmarkPixels.Rgb24(WavefrontWidth, WavefrontHeight, seed: 37), WavefrontWidth, WavefrontHeight))
         {
-            HeicPictureEncoder.TestWavefront = true;
-            try
-            {
-                ImageWorkloads.Encode(large, new HeicEncoder { Compression = HeicCompression.Lossy, Effort = 0 }, _output);
-            }
-            finally
-            {
-                HeicPictureEncoder.TestWavefront = false;
-            }
+            ImageWorkloads.Encode(large, new HeicEncoder { Compression = HeicCompression.Lossy, Effort = 0 }, _output);
         }
 
         _wavefront = _output.ToArray();

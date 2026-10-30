@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using Meziantou.Framework.Imaging.Formats;
@@ -29,9 +30,22 @@ internal sealed class ExrEncoderCodec : ImageEncoderCodec
     /// name order, then compressed; a compressed chunk that is not
     /// smaller than its samples is stored uncompressed (compression notes, section 1.5). The private state is one chunk of
     /// samples, its compressed copy and the offset table: memory does not depend on the height beyond the table.
+    /// <para>
+    /// With several workers (<see cref="ImageConfiguration.MaxDegreeOfParallelism"/>, at least two chunks and
+    /// <see cref="RowBands.MinPixelsForParallelism"/> pixels), the chunks are coded by batches: the workers convert and
+    /// compress the chunks of a batch at once, each into a buffer of its own, and the chunks are written one per
+    /// <see cref="Encode"/> call, in order. A chunk reads only its own rows of the frame and its compression starts afresh, so
+    /// the bytes and the offsets are those of one worker. Each worker has its own chunk of samples, and the batch the coded
+    /// chunks. The samples of the frame are checked by bands of rows (<see cref="RowBands.RunParallelInBandOrder"/>), so the
+    /// error is the one of its first sample out of range.
+    /// </para>
     /// </remarks>
     private sealed class Session : ImageEncoderSession
     {
+        // A batch holds at least two chunks per worker, and at least 1 MiB of samples per worker (chunks of one scan line)
+        private const int ChunksPerWorker = 2;
+        private const int BatchBytesPerWorker = 1 << 20;
+
         private readonly int _width;
         private readonly int _height;
         private readonly ExrCompressionMethod _compression;
@@ -51,6 +65,12 @@ internal sealed class ExrEncoderCodec : ImageEncoderCodec
         private PooledBuffer? _offsets;
         private PooledBuffer? _predicted;
         private ExrPiz? _piz;
+        private ChunkState?[]? _workers;
+        private PooledBuffer?[]? _batch;
+        private int[]? _batchLengths;
+        private Exception?[]? _failures;
+        private int _batchStart;
+        private int _batchCount;
         private ImageFrame? _frame;
         private Step _step;
         private int _chunk;
@@ -96,7 +116,15 @@ internal sealed class ExrEncoderCodec : ImageEncoderCodec
                 _plan = PixelConversionPlan.Create(source, PixelFormat.RgbaFloat, format: ImageFormat.OpenExr);
             }
 
-            // Every buffer is rented before any output
+            var workers = GetWorkerCount(options.Configuration.MaxDegreeOfParallelism, _chunkCount, (long)_width * _height);
+            var batchChunks = 0;
+            if (workers > 1)
+            {
+                var bytes = Math.Max((long)ChunksPerWorker * workers * dataLength, (long)BatchBytesPerWorker * workers);
+                batchChunks = (int)Math.Min(bytes / dataLength, _chunkCount);
+            }
+
+            // Every buffer is rented before any output: those of the first worker, then those of the others and the batch
             var scope = options.Scope;
             try
             {
@@ -108,7 +136,11 @@ internal sealed class ExrEncoderCodec : ImageEncoderCodec
                 _data = scope.Rent((int)dataLength, AllocationKind.Temporary, clear: false);
                 if (_compression != ExrCompressionMethod.None)
                 {
-                    _stored = scope.Rent((int)dataLength, AllocationKind.Temporary, clear: false);
+                    if (workers == 1)
+                    {
+                        _stored = scope.Rent((int)dataLength, AllocationKind.Temporary, clear: false);
+                    }
+
                     _offsets = scope.Rent(_chunkCount * sizeof(long), AllocationKind.Temporary, clear: false);
                 }
 
@@ -119,6 +151,11 @@ internal sealed class ExrEncoderCodec : ImageEncoderCodec
                 else if (_compression != ExrCompressionMethod.None)
                 {
                     _predicted = scope.Rent((int)dataLength, AllocationKind.Temporary, clear: false);
+                }
+
+                if (workers > 1)
+                {
+                    RentWorkers(scope, workers, batchChunks, (int)dataLength);
                 }
             }
             catch
@@ -141,12 +178,30 @@ internal sealed class ExrEncoderCodec : ImageEncoderCodec
             if (!_validatesSamples)
                 return;
 
-            // A finite sample that the reduction to half, or the multiplication by alpha, takes beyond the range of the sample
-            // type would become an infinity (or not a number, for an alpha that is not finite)
             using var lease = frame.GetStorage().AcquireLease();
-            for (var y = 0; y < lease.Height; y++)
+            var storage = lease.Storage;
+            var height = lease.Height;
+            if (_workers is not { } workers)
             {
-                var pixels = GetRow(lease, y);
+                ValidateRows(storage, _floats, 0, height);
+                return;
+            }
+
+            // The rows are split in bands, one per worker with its own row of floats: the error is the one of the first band
+            // that fails, whose first failing sample is the first one of the frame
+            var bands = Math.Min(workers.Length, height);
+            RowBands.RunParallelInBandOrder(bands, band => ValidateRows(storage, workers[band]!.Floats, RowBands.GetBandStart(height, band, bands), RowBands.GetBandStart(height, band + 1, bands)));
+        }
+
+        /// <summary>
+        /// Checks the samples of rows of a frame: a finite sample that the reduction to half, or the multiplication by alpha,
+        /// takes beyond the range of the sample type would become an infinity (or not a number, for an alpha that is not finite).
+        /// </summary>
+        private void ValidateRows(PixelStorage storage, PooledBuffer? floats, int start, int end)
+        {
+            for (var y = start; y < end; y++)
+            {
+                var pixels = GetRow(storage.GetRowSpanCore(y), floats);
                 for (var i = 0; i < pixels.Length; i++)
                 {
                     var sample = pixels[i];
@@ -229,6 +284,26 @@ internal sealed class ExrEncoderCodec : ImageEncoderCodec
                 _predicted = null;
                 _piz?.Dispose();
                 _piz = null;
+                if (_workers is not null)
+                {
+                    for (var worker = 1; worker < _workers.Length; worker++)
+                    {
+                        _workers[worker]?.Dispose();
+                    }
+
+                    _workers = null;
+                }
+
+                if (_batch is not null)
+                {
+                    foreach (var buffer in _batch)
+                    {
+                        buffer?.Dispose();
+                    }
+
+                    _batch = null;
+                }
+
                 _frame = null;
             }
 
@@ -315,15 +390,80 @@ internal sealed class ExrEncoderCodec : ImageEncoderCodec
 
         private int GetDataLength(int chunk) => _width * GetLineCount(chunk) * _channels.Length * ExrFormat.GetBytesPerSample(_pixelType);
 
+        /// <summary>
+        /// Gets the number of workers that code the chunks of an image: several for at least two chunks and
+        /// <see cref="RowBands.MinPixelsForParallelism"/> pixels, at most one per chunk.
+        /// </summary>
+        private static int GetWorkerCount(int maxDegreeOfParallelism, int chunkCount, long pixelCount)
+        {
+            if (maxDegreeOfParallelism <= 1 || chunkCount < 2 || pixelCount < RowBands.MinPixelsForParallelism)
+                return 1;
+
+            return Math.Min(maxDegreeOfParallelism, chunkCount);
+        }
+
+        /// <summary>Rents the state of the workers other than the first one, and the buffers of the coded chunks of a batch.</summary>
+        private void RentWorkers(AllocationScope scope, int workers, int batchChunks, int dataLength)
+        {
+            // The first worker has the state of one worker, which the session disposes
+            _workers = new ChunkState?[workers];
+            _workers[0] = new ChunkState { Floats = _floats, Data = _data, Predicted = _predicted, Piz = _piz };
+            for (var worker = 1; worker < workers; worker++)
+            {
+                var state = new ChunkState();
+                _workers[worker] = state;
+                if (_plan is not null)
+                {
+                    state.Floats = scope.Rent(_width * 16, AllocationKind.Temporary, clear: false);
+                }
+
+                state.Data = scope.Rent(dataLength, AllocationKind.Temporary, clear: false);
+                if (_compression == ExrCompressionMethod.Piz)
+                {
+                    state.Piz = new ExrPiz(scope, dataLength, encoder: true);
+                }
+                else if (_compression != ExrCompressionMethod.None)
+                {
+                    state.Predicted = scope.Rent(dataLength, AllocationKind.Temporary, clear: false);
+                }
+            }
+
+            _batch = new PooledBuffer?[batchChunks];
+            _batchLengths = new int[batchChunks];
+            _failures = new Exception?[batchChunks];
+            for (var i = 0; i < batchChunks; i++)
+            {
+                _batch[i] = scope.Rent(dataLength, AllocationKind.Temporary, clear: false);
+            }
+        }
+
         private void WriteChunk(ImageOutputBuffer output)
         {
             var y0 = _chunk * _linesPerChunk;
-            var lines = GetLineCount(_chunk);
-            var data = _data!.Span[..GetDataLength(_chunk)];
-            FillChunk(y0, lines, data);
+            ReadOnlySpan<byte> stored;
+            if (_batch is null)
+            {
+                var lines = GetLineCount(_chunk);
+                var data = _data!.Span[..GetDataLength(_chunk)];
+                using (var lease = _frame!.GetStorage().AcquireLease())
+                {
+                    FillChunk(lease.Storage, _floats, y0, lines, data);
+                }
 
-            var layout = new ExrChunkLayout(_channels, _width, y0, lines);
-            var stored = Compress(data, layout);
+                var length = Compress(_predicted, _piz, data, new ExrChunkLayout(_channels, _width, y0, lines), _stored);
+                stored = length < 0 ? data : _stored!.Span[..length];
+            }
+            else
+            {
+                if (_chunk == _batchStart + _batchCount)
+                {
+                    CodeBatch();
+                }
+
+                var slot = _chunk - _batchStart;
+                stored = _batch[slot]!.Span[.._batchLengths![slot]];
+            }
+
             if (_offsets is not null)
             {
                 BinaryPrimitives.WriteInt64LittleEndian(_offsets.Span[(_chunk * sizeof(long))..], output.TotalBytes - _fileStart);
@@ -338,15 +478,96 @@ internal sealed class ExrEncoderCodec : ImageEncoderCodec
             CancellationToken.ThrowIfCancellationRequested();
         }
 
-        /// <summary>Lays out the samples of the lines of a chunk: for each line, each channel in name order.</summary>
-        private void FillChunk(int y0, int lines, Span<byte> data)
+        /// <summary>
+        /// Codes the next chunks with the workers, each into its buffer of the batch: the error is the one of the first chunk
+        /// that fails, a cancellation first.
+        /// </summary>
+        private void CodeBatch()
         {
-            using var lease = _frame!.GetStorage().AcquireLease();
+            var workers = _workers!;
+            var batch = _batch!;
+            var lengths = _batchLengths!;
+            var failures = _failures!;
+            var first = _chunk;
+            var count = Math.Min(batch.Length, _chunkCount - first);
+            _batchStart = first;
+            _batchCount = 0;
+            Array.Clear(failures, 0, count);
+            var cancellationToken = CancellationToken;
+            var next = -1;
+            var firstFailure = int.MaxValue;
+            using (var lease = _frame!.GetStorage().AcquireLease())
+            {
+                var storage = lease.Storage;
+                RowBands.RunParallel(Math.Min(workers.Length, count), worker =>
+                {
+                    var state = workers[worker]!;
+                    while (true)
+                    {
+                        var k = Interlocked.Increment(ref next);
+                        if (k >= count || k > Volatile.Read(ref firstFailure))
+                            return;
+
+                        try
+                        {
+                            cancellationToken.ThrowIfCancellationRequested();
+                            var chunk = first + k;
+                            var y0 = chunk * _linesPerChunk;
+                            var lines = GetLineCount(chunk);
+                            var data = state.Data!.Span[..GetDataLength(chunk)];
+                            FillChunk(storage, state.Floats, y0, lines, data);
+                            var slot = batch[k]!;
+                            var length = Compress(state.Predicted, state.Piz, data, new ExrChunkLayout(_channels, _width, y0, lines), slot);
+                            if (length < 0)
+                            {
+                                data.CopyTo(slot.Span);
+                                length = data.Length;
+                            }
+
+                            lengths[k] = length;
+                        }
+                        catch (Exception exception)
+                        {
+                            failures[k] = exception;
+                            var current = Volatile.Read(ref firstFailure);
+                            while (k < current)
+                            {
+                                var previous = Interlocked.CompareExchange(ref firstFailure, k, current);
+                                if (previous == current)
+                                    break;
+
+                                current = previous;
+                            }
+                        }
+                    }
+                });
+            }
+
+            for (var k = 0; k < count; k++)
+            {
+                if (failures[k] is OperationCanceledException canceled)
+                {
+                    ExceptionDispatchInfo.Throw(canceled);
+                }
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+            if (firstFailure != int.MaxValue)
+            {
+                ExceptionDispatchInfo.Throw(failures[firstFailure]!);
+            }
+
+            _batchCount = count;
+        }
+
+        /// <summary>Lays out the samples of the lines of a chunk: for each line, each channel in name order.</summary>
+        private void FillChunk(PixelStorage storage, PooledBuffer? floats, int y0, int lines, Span<byte> data)
+        {
             var sampleSize = ExrFormat.GetBytesPerSample(_pixelType);
             var position = 0;
             for (var line = 0; line < lines; line++)
             {
-                var pixels = GetRow(lease, y0 + line);
+                var pixels = GetRow(storage.GetRowSpanCore(y0 + line), floats);
                 for (var c = 0; c < _channels.Length; c++)
                 {
                     var component = _components[c];
@@ -370,16 +591,15 @@ internal sealed class ExrEncoderCodec : ImageEncoderCodec
             }
         }
 
-        /// <summary>Gets the pixels of a row as <see cref="PixelFormat.RgbaFloat"/> samples.</summary>
-        private ReadOnlySpan<float> GetRow(in PixelLease lease, int y)
+        /// <summary>Gets the pixels of a row as <see cref="PixelFormat.RgbaFloat"/> samples, converted in <paramref name="floats"/> when the frame has another format.</summary>
+        private ReadOnlySpan<float> GetRow(Span<byte> source, PooledBuffer? floats)
         {
-            var source = lease.GetRowBytes(y);
             if (_plan is null)
                 return unsafe(MemoryMarshal.Cast<byte, float>(source));
 
-            var floats = _floats!.Span[..(_width * 16)];
-            _plan.ConvertRow(source, floats);
-            return unsafe(MemoryMarshal.Cast<byte, float>(floats));
+            var row = floats!.Span[..(_width * 16)];
+            _plan.ConvertRow(source, row);
+            return unsafe(MemoryMarshal.Cast<byte, float>(row));
         }
 
         /// <summary>Gets the alpha the file stores: the alpha rounded to the sample type, which the decoder divides the colors by.</summary>
@@ -401,38 +621,60 @@ internal sealed class ExrEncoderCodec : ImageEncoderCodec
             return value;
         }
 
-        /// <summary>Compresses a chunk; data that do not shrink are stored as they are (section 1.5).</summary>
-        private ReadOnlySpan<byte> Compress(ReadOnlySpan<byte> data, in ExrChunkLayout layout)
+        /// <summary>
+        /// Compresses a chunk into <paramref name="stored"/>, whose length is the largest chunk of samples: the length of the
+        /// compressed data, or -1 when the data do not shrink and are stored as they are (section 1.5).
+        /// </summary>
+        private int Compress(PooledBuffer? predictedBuffer, ExrPiz? piz, ReadOnlySpan<byte> data, in ExrChunkLayout layout, PooledBuffer? stored)
         {
             if (_compression == ExrCompressionMethod.None)
-                return data;
+                return -1;
 
-            var stored = _stored!;
             int length;
             switch (_compression)
             {
                 case ExrCompressionMethod.Rle:
                 {
-                    var predicted = _predicted!.Span[..data.Length];
+                    var predicted = predictedBuffer!.Span[..data.Length];
                     ExrPredictor.Encode(data, predicted);
-                    length = ExrRle.Encode(predicted, stored.Span[..data.Length]);
+                    length = ExrRle.Encode(predicted, stored!.Span[..data.Length]);
                     break;
                 }
 
                 case ExrCompressionMethod.Zips or ExrCompressionMethod.Zip:
                 {
-                    var predicted = _predicted!.Span[..data.Length];
+                    var predicted = predictedBuffer!.Span[..data.Length];
                     ExrPredictor.Encode(data, predicted);
-                    length = ExrZlib.Deflate(predicted, stored);
+                    length = ExrZlib.Deflate(predicted, stored!);
                     break;
                 }
 
                 default:
-                    length = _piz!.Compress(data, stored.Span, layout);
+                    length = piz!.Compress(data, stored!.Span, layout);
                     break;
             }
 
-            return length < 0 || length >= data.Length ? data : stored.Span[..length];
+            return length < 0 || length >= data.Length ? -1 : length;
+        }
+    }
+
+    /// <summary>The working memory of a worker that codes chunks: a row of floats, a chunk of samples, and the compressor's.</summary>
+    private sealed class ChunkState : IDisposable
+    {
+        public PooledBuffer? Floats { get; set; }
+
+        public PooledBuffer? Data { get; set; }
+
+        public PooledBuffer? Predicted { get; set; }
+
+        public ExrPiz? Piz { get; set; }
+
+        public void Dispose()
+        {
+            Floats?.Dispose();
+            Data?.Dispose();
+            Predicted?.Dispose();
+            Piz?.Dispose();
         }
     }
 }

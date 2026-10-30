@@ -359,6 +359,13 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
     brand of the file (`HeicBinding.WriteFileTypeBrands`, from the color images only).
   - A sequence is IDR pictures and P pictures that refer to the previous picture, in output order: the encoder writes no
     composition offsets. The parameter sets are in the configuration record (`hvc1`), never in the samples.
+  - The level is the lowest one of the Main tier, then of the High tier, that holds the size of the pictures and the
+    size of the largest coded picture (`HevcLevels`: the coded picture buffer of clause A.4.1, and the minimum
+    compression ratio of clause A.4.2 for the video profiles, at any picture rate of the level). It is only known once
+    the pictures are coded: the session records each coded picture (`HeifStreamDescription.RecordCodedPicture`), and
+    `HeicStreamDescription` rewrites the video and sequence parameter sets of its configuration record when the level
+    rises. The items of the first image of a sequence get the configuration of the tracks when the sequence completes
+    (the size of an `hvcC` box does not depend on the level).
   - `HeifRgbConverter` computes subsampled chroma where the codec puts it: at the luma samples of even columns for HEVC
     (`HeifCodecBinding.HasCositedChromaColumns`), between two columns for AV1. The video usability information always
     states the range, the color description and the chroma sample location.

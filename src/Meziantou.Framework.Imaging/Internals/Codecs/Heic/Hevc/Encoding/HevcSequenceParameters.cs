@@ -276,13 +276,23 @@ internal readonly record struct HevcSequenceParameters(
     }
 
     /// <summary>
-    /// Gets <c>general_level_idc</c>: 30 times the number of the lowest level of Table A.8 that holds the pictures, or
-    /// 255 (level 8.5) when no level does.
+    /// Gets the number of bytes of the largest coded picture of the bitstream: the sum of <c>NumBytesInNalUnit</c> of the
+    /// NAL units that a decoder is given for it. 0, the default, before any picture is coded: the level then only holds
+    /// the size of the pictures.
     /// </summary>
-    public int GeneralLevelIdc => HevcLevels.GetLevelIdc(PicWidthInLumaSamples, PicHeightInLumaSamples);
+    public long MaxPictureLength { get; init; }
 
-    /// <summary>Gets <c>general_tier_flag</c>: the Main tier, or 1 with level 8.5 (clause A.4.1).</summary>
-    public bool GeneralTierFlag => HevcLevels.GetTierFlag(GeneralLevelIdc);
+    /// <summary>
+    /// Gets <c>general_level_idc</c>: 30 times the number of the lowest level of Tables A.8 and A.9 that holds the pictures
+    /// and their coded sizes (<see cref="HevcLevels.GetLevel"/>), or 255 (level 8.5) when no level does.
+    /// </summary>
+    public int GeneralLevelIdc => HevcLevels.GetLevel(Profile, PicWidthInLumaSamples, PicHeightInLumaSamples, MaxPictureLength).LevelIdc;
+
+    /// <summary>
+    /// Gets <c>general_tier_flag</c>: the Main tier, the High tier when the coded pictures are too large for every level of
+    /// the Main tier, and 1 with level 8.5 (clause A.4.1).
+    /// </summary>
+    public bool GeneralTierFlag => HevcLevels.GetLevel(Profile, PicWidthInLumaSamples, PicHeightInLumaSamples, MaxPictureLength).TierFlag;
 
     /// <summary>
     /// Gets whether the values are those of a bitstream that the encoder can write and that conforms to the profile and

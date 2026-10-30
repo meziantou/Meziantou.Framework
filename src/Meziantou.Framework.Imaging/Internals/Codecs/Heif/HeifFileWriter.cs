@@ -95,9 +95,13 @@ internal static class HeifFileWriter
     /// <param name="movieReservation">The number of bytes to reserve for the <c>moov</c> box of an image sequence, or -1 for a still image.</param>
     /// <param name="colorTileLengths">For a grid, the number of bytes of each coded color tile, in row-major order.</param>
     /// <param name="alphaTileLengths">For a grid with an alpha plane, the number of bytes of each coded alpha tile.</param>
-    /// <returns>For an image sequence, the position of the reserved bytes and of the size of the <c>mdat</c> box.</returns>
+    /// <returns>
+    /// For an image sequence, the position of the reserved bytes and of the size of the <c>mdat</c> box. The position of the
+    /// configuration box of the color image and of the alpha plane (-1 without alpha plane), which a sequence replaces by
+    /// the configuration of its tracks once every image is written: the first image is the first sample of the tracks.
+    /// </returns>
     /// <exception cref="UnsupportedImageFeatureException">The file would exceed 4 GiB, or has more tiles than item identifiers.</exception>
-    public static (int MovieOffset, int MediaSizeOffset) WritePrefix(PooledPayloadWriter output, HeifCodecBinding binding, StillImage image, int movieReservation = -1, ReadOnlySpan<int> colorTileLengths = default, ReadOnlySpan<int> alphaTileLengths = default)
+    public static (int MovieOffset, int MediaSizeOffset, int ColorConfigurationOffset, int AlphaConfigurationOffset) WritePrefix(PooledPayloadWriter output, HeifCodecBinding binding, StillImage image, int movieReservation = -1, ReadOnlySpan<int> colorTileLengths = default, ReadOnlySpan<int> alphaTileLengths = default)
     {
         var isSequence = movieReservation >= 0;
         var writer = new HeifBoxWriter(output);
@@ -257,7 +261,7 @@ internal static class HeifFileWriter
             writer.EndBox(box);
         }
 
-        WriteItemProperties(writer, binding, image, alphaItemId);
+        var (colorConfigurationOffset, alphaConfigurationOffset) = WriteItemProperties(writer, binding, image, alphaItemId);
         writer.EndBox(meta);
 
         var movieOffset = 0;
@@ -328,7 +332,7 @@ internal static class HeifFileWriter
                 WriteGridDescriptor(writer, grid, image.Width, image.Height);
         }
 
-        return (movieOffset, mediaSizeOffset);
+        return (movieOffset, mediaSizeOffset, colorConfigurationOffset, alphaConfigurationOffset);
 
         static void Locate(HeifBoxWriter writer, ReadOnlySpan<int> extentOffsets, ReadOnlySpan<int> lengths, int slot, ref long offset)
         {
@@ -875,7 +879,7 @@ internal static class HeifFileWriter
     // properties that a reader must understand to display the item are marked essential.
     // A grid has the properties that describe the image (its size, its colors, its transformations), and its tiles the
     // ones that describe their coded data (their size and their AV1 configuration)
-    private static void WriteItemProperties(HeifBoxWriter writer, HeifCodecBinding binding, StillImage image, int alphaItemId)
+    private static (int ColorConfigurationOffset, int AlphaConfigurationOffset) WriteItemProperties(HeifBoxWriter writer, HeifCodecBinding binding, StillImage image, int alphaItemId)
     {
         const int Essential = 0x80;
         var grid = image.Grid;
@@ -918,6 +922,7 @@ internal static class HeifFileWriter
             colorTile[colorTileCount++] = (byte)index;
 
         // The configuration describes coded data: the one of the tiles of a grid
+        var colorConfigurationOffset = writer.Length;
         image.Color.WriteConfigurationBox(writer);
         index++;
         if (grid is null)
@@ -989,6 +994,7 @@ internal static class HeifFileWriter
         }
 
         var mirrorIndex = axis >= 0 ? index : 0;
+        var alphaConfigurationOffset = -1;
         if (image.Alpha is { } alphaStream)
         {
             WritePixelInformation(writer, alphaStream);
@@ -996,6 +1002,7 @@ internal static class HeifFileWriter
             if (grid is not null)
                 alphaTile[alphaTileCount++] = (byte)index;
 
+            alphaConfigurationOffset = writer.Length;
             alphaStream.WriteConfigurationBox(writer);
             index++;
             if (grid is null)
@@ -1046,6 +1053,7 @@ internal static class HeifFileWriter
 
         writer.EndBox(box);
         writer.EndBox(iprp);
+        return (colorConfigurationOffset, alphaConfigurationOffset);
 
         static void WriteAssociations(HeifBoxWriter writer, int itemId, ReadOnlySpan<byte> associations)
         {

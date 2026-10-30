@@ -390,8 +390,8 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   but for a few bytes, with 2.4 to 3.2 times fewer instructions for the 64x64 and 8x8 transforms. The blocks of a VarDCT
   frame do not predict each other, so the encoder does not reconstruct what it writes; its decisions use float32 in a
   fixed order. `JpegXlEntropyCodeBuilder` clusters the contexts of the streams that share a code. Every Modular
-  sub-stream, of a lossless frame or of a lossy one (LF image, block fields, alpha channel), goes through
-  `JpegXlEntropyEncoder`, which writes the smaller of prefix codes and ANS at every effort
+  sub-stream coded group by group, of a lossless frame below the effort 3 or of a lossy one (LF image, block fields,
+  alpha channel), goes through `JpegXlEntropyEncoder`, which writes the smaller of prefix codes and ANS at every effort
   (`JpegXlEntropyCoding.Smallest`, decided from the token counts): a prefix code spends one bit per sample at least,
   which made a constant channel larger than the colors, and the description of an ANS distribution is longer than a
   small group. The effort only selects what is searched; `jxl-quality` shows the sizes per effort. A change of the
@@ -408,6 +408,42 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
     7,105/65535 on the macOS wallpaper thumbnails). It reads the colorants of a synthetic version 4 profile with a D65
     `wtpt` and no `chad` as adapted from D65, unlike djxl, the library and its own handling of Apple's real profiles.
     Compare the pixels in gamut only.
+- **Lossless JPEG XL tools** (`JpegXlLosslessFrameEncoder`, from the effort 3; below it, `JpegXlModularEncoder` codes each
+  group with a leaf per channel, as the progressive output, the alpha channel of a lossy frame and its LF image still
+  do). One tree and one entropy code for the whole frame are in `LfGlobal` and every group uses them, so the
+  distributions are written once; the transform (palette or color transform) is declared in the global data, the
+  palette channel is coded there (the tree splits on the sub-bitstream first). The tree is learned per channel from rows
+  sampled in every group (`JpegXlTreeLearner`: properties quantized to ranges at sample quantiles plus -1 and 0, the leaf
+  that saves the most bits split first, each leaf with the predictor that suits it); `JpegXlTreeCoder` computes the
+  properties and residuals with the helpers of `JpegXlModularDecoder`, so the encoder cannot drift from the decoder.
+  `JpegXlModularEntropyCode` clusters the contexts (up to 256), gives each cluster the hybrid integer configuration that
+  codes its values in the fewest bits (counted as fine tokens, from which the token of every candidate configuration
+  follows), and keeps the smaller of prefix codes and ANS. `JpegXlLz77Parser` finds copies with a hash chain and the left
+  and above distances, priced with the token costs of a first count without copies; the code with copies is kept only
+  when its estimated size is smaller. The samples are computed twice (counted, then written) instead of being kept,
+  so the memory is the samples of the tree and one group per worker. Decisions that were measured (2026-10-30, 12
+  images: photographs, screenshots rendered by WebPlatform, charts, text, repeated tiles; cjxl 0.12.0 at the same effort,
+  one thread):
+  - Size against cjxl (geometric mean): effort 3 0.77, 5 0.67, 7 0.69, 9 0.79 (before: 1.07, 1.61, 1.70, 1.94).
+    Photographs are within 3 % of cjxl at every effort; screenshots and graphics are 2 to 80 % smaller, mostly from
+    LZ77 (-27 to -57 % on screenshots at the effort 7) and the palette. CPU time is 2.2 times the one of cjxl at the
+    efforts 3 and 5, 2.9 times at 7 and the same at 9. The scratch harness (a project referencing the library that
+    encodes PNG inputs at each effort, checks the round trip, runs `cjxl -d 0 -e N --num_threads=0` under
+    `/usr/bin/time`, and decodes every output with djxl and jxl-oxide) is not committed: rerun it before changing a
+    constant of `JpegXlLosslessFrameEncoder.Settings`.
+  - *Palette*: up to 64 colors always; above, the palette unless the trial (a tree of 32 leaves learned on 32K samples
+    of each transform) estimates it 25 % larger (`PaletteTrialMargin`). The trial underestimates the palette: palettes
+    estimated 16 % larger wrote 0 to 28 % smaller screenshots; a photograph (14,535 colors) and smooth gradient tiles
+    (3,801 colors) were 2.3 and 3 times larger with one. The indexes do not get the weighted predictor (it made them larger).
+  - *Samples*: 16K, 32K, 64K per channel at efforts 3 to 5; doubling them gains 0.3 to 1 %, for the time of the learning.
+    More leaves than 128 per channel made screenshots up to 4 % larger: the cost of a split (`SplitCost`) does not count
+    the distribution a new context may need.
+  - *Small frames*: a frame of one group is also coded with a leaf per channel, which wins below a few thousand samples
+    (the tree, the transform and the distributions cost a few dozen bytes).
+  - *Interoperability*: when the global data code no channel (several groups, no palette) and the code uses ANS,
+    jxl-oxide 0.12.6 reads the state of the ANS coder there and libjxl does not: the encoder writes an empty stream (the
+    initial state) after the global header, which both read. Only frames of several groups show it
+    (`LearnedTreesDecodeExactlyInLibJxlAndJxlOxide`); the corpus fixtures are a single group.
 - **Lossy JPEG XL quality tools** (`JpegXlVarDctEncoder`). Each one is kept or left out on measurements, not on what
   other encoders do: file size at equal PSNR, SSIM, MS-SSIM, XPSNR and VMAF (FFmpeg and the `vmaf` tool on djxl output)
   over photographs of several sizes, with cjxl at its efforts 3 and 7 as the yardstick. Measure again before changing a

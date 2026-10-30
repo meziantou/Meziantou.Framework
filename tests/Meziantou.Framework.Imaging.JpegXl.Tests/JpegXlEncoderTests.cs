@@ -697,6 +697,142 @@ public sealed class JpegXlEncoderTests
     }
 
     /// <summary>
+    /// From the effort 3, a lossless frame is coded with a tree learned from its samples, a palette or a color transform, and,
+    /// from the effort 5, copies of previous values: screenshots (few colors, repeated glyphs), tiles of smooth gradients
+    /// and noise, in every kind of pixel format, are decoded exactly, and the workers write the file of one worker.
+    /// </summary>
+    [Theory]
+    [InlineData("screenshot", PixelFormat.Rgb24)]
+    [InlineData("screenshot", PixelFormat.Rgba32)]
+    [InlineData("screenshot", PixelFormat.Gray8)]
+    [InlineData("screenshot", PixelFormat.Rgba64)]
+    [InlineData("tiles", PixelFormat.Rgb24)]
+    [InlineData("tiles", PixelFormat.Gray16)]
+    [InlineData("noise", PixelFormat.Rgba32)]
+    [InlineData("noise", PixelFormat.Gray16)]
+    public void LearnedTreesRoundTripExactly(string kind, PixelFormat format)
+    {
+        using var source = CreateContent(kind, 520, 280, seed: 3);
+        using var image = ConvertTo(source, format);
+        var expected = GetBytes(image, format);
+        var pixels = GetPixels(source.Frames[0]);
+        foreach (var effort in (int[])[3, 5, 7, 9])
+        {
+            var encoder = new JpegXlEncoder { Effort = effort };
+            var data = Save(image, encoder);
+            using (var decoded = Image.Load(data))
+            {
+                Assert.True(expected.AsSpan().SequenceEqual(GetBytes(decoded, format)), $"{kind} {format}, effort {effort}: the decoded samples differ.");
+            }
+
+            using var copy = Image.ImportPixelData<Rgba32>(pixels, source.Width, source.Height, configuration: new ImageConfiguration { MaxDegreeOfParallelism = 4 });
+            using var converted = ConvertTo(copy, format);
+            Assert.Equal(data, Save(converted, encoder));
+        }
+    }
+
+    /// <summary>
+    /// What the learned tree is for: a screenshot is coded with a palette and copies of its repeated glyphs, tiles of
+    /// gradients with a tree that tells the tiles apart and copies of the tiles; both are much smaller than with a leaf per
+    /// channel (the efforts below 3), and more effort is not larger.
+    /// </summary>
+    [Theory]
+    [InlineData("screenshot", 0.5)]
+    [InlineData("tiles", 0.25)]
+    public void ScreenshotsAndRepeatedTilesAreSmallerWithALearnedTree(string kind, double maxRatio)
+    {
+        using var image = CreateContent(kind, 600, 400, seed: 8);
+        using var opaque = image.CloneAs<Rgb24>();
+        var simple = Save(opaque, new JpegXlEncoder { Effort = 2 }).Length;
+        var learned = Save(opaque, new JpegXlEncoder { Effort = 5 }).Length;
+        var most = Save(opaque, new JpegXlEncoder { Effort = 9 }).Length;
+        Assert.True(learned <= simple * maxRatio, $"{kind}: effort 5 writes {learned} bytes, effort 2 writes {simple} bytes.");
+        Assert.True(most <= learned * 1.02, $"{kind}: effort 9 writes {most} bytes, effort 5 writes {learned} bytes.");
+    }
+
+    /// <summary>
+    /// The entropy code of a learned tree: dozens of contexts in clusters, a configuration of hybrid integers per cluster,
+    /// and copies of previous values found in a stream that repeats itself, at distances that are and are not among the
+    /// short distances of a two-dimensional stream; the decoder reads the values back.
+    /// </summary>
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void TheModularEntropyCodeIsReadBackWithClustersConfigurationsAndCopies()
+    {
+        const int ContextCount = 48;
+        const int RowLength = 40;
+        var random = new Random(12);
+        var values = new ulong[20_000];
+        for (var i = 0; i < values.Length; i++)
+        {
+            var context = random.Next(ContextCount);
+            uint value = (i % 2000) switch
+            {
+                // Repeated runs: the row above, a value far back, and the same value
+                < 300 when i >= 4000 => (uint)values[i - RowLength],
+                < 600 when i >= 4000 => (uint)values[i - 3999],
+                < 700 => 5,
+                // A value of its own in a third of the contexts, geometric values or large uniform values in the others
+                _ when context % 3 == 0 => (uint)(context / 3),
+                _ when context % 3 == 1 => (uint)(-(1 << (context % 24 / 2)) * Math.Log(1 - random.NextDouble())),
+                _ => (uint)random.Next(1 << 18),
+            };
+            values[i] = ((ulong)context << 32) | value;
+        }
+
+        var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(TheModularEntropyCodeIsReadBackWithClustersConfigurationsAndCopies));
+        using var literal = new JpegXlModularEntropyCode(ContextCount, 256, searchConfigs: true, useLz77: false, scope);
+        using (var counter = literal.CreateCounter())
+        {
+            foreach (var value in values)
+            {
+                counter.Add((int)(value >> 32), (uint)value);
+            }
+
+            literal.AddCounts(counter);
+        }
+
+        var parser = new JpegXlLz77Parser(literal.GetTokenCosts(), maxChain: 32);
+        literal.Build();
+        using var code = new JpegXlModularEntropyCode(ContextCount, 256, searchConfigs: true, useLz77: true, scope);
+        using (var counter = code.CreateCounter())
+        {
+            var sink = new CountingSink(counter);
+            parser.Parse(values, RowLength, ref sink);
+            code.AddCounts(counter);
+            Assert.True(sink.CopyCount > 0);
+        }
+
+        code.Build();
+        Assert.True(code.ClusterCount > 8, $"{code.ClusterCount} clusters.");
+        Assert.True(code.EstimatedBits < literal.EstimatedBits, $"{code.EstimatedBits} bits with copies, {literal.EstimatedBits} bits without.");
+
+        using var writer = new LsbBitWriter(scope);
+        code.WriteDescription(writer);
+        using (var stream = new JpegXlEntropyCodeBuilder.StreamBuffer(scope))
+        {
+            var sink = new WritingSink(code, stream);
+            parser.Parse(values, RowLength, ref sink);
+            code.WriteStream(stream, writer);
+        }
+
+        writer.Finish();
+        var data = writer.WrittenSpan.ToArray();
+        var reader = new JpegXlBitReader(data, 0, data.Length);
+        using var read = JpegXlEntropyCode.Read(reader, ContextCount, scope);
+        Assert.True(read.IsLz77Enabled);
+        using var decoder = new JpegXlEntropyDecoder(read, scope);
+        decoder.Begin(reader);
+        foreach (var value in values)
+        {
+            Assert.Equal((uint)value, decoder.Read(reader, (int)(value >> 32), RowLength));
+        }
+
+        decoder.EnsureFinalState();
+        reader.EnsureNotOverrun();
+    }
+
+    /// <summary>
     /// The groups of a frame are coded by several workers when the configuration allows it (a frame of 600x300 pixels has
     /// six groups and more than the 65,536 pixels that several workers need): the file is the one of a single worker, for
     /// lossy and lossless output, the alpha channel that each group codes, and several passes.
@@ -707,7 +843,9 @@ public sealed class JpegXlEncoderTests
     [InlineData(JpegXlCompression.Lossy, 8, false)]
     [InlineData(JpegXlCompression.Lossy, 5, true)]
     [InlineData(JpegXlCompression.Lossless, 0, false)]
+    [InlineData(JpegXlCompression.Lossless, 3, false)]
     [InlineData(JpegXlCompression.Lossless, 5, false)]
+    [InlineData(JpegXlCompression.Lossless, 9, false)]
     public void FilesWrittenByWorkersAreTheFilesOfOneWorker(JpegXlCompression compression, int effort, bool progressive)
     {
         var encoder = new JpegXlEncoder { Compression = compression, Effort = effort, Progressive = progressive };
@@ -853,6 +991,120 @@ public sealed class JpegXlEncoderTests
             converted.Frames[frame].CopyPixelBytesTo(bytes);
             return bytes;
         }
+    }
+
+    /// <summary>
+    /// A screenshot (text of a few glyphs in three colors with four levels of coverage on a light background, buttons, and a
+    /// gradient band that gives it more than 64 colors), tiles of four gradient patterns, or the noisy test image.
+    /// </summary>
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    private static Image<Rgba32> CreateContent(string kind, int width, int height, int seed)
+    {
+        if (kind == "noise")
+            return CreateImage(width, height, seed);
+
+        var random = new Random(seed);
+        var pixels = new Rgba32[width * height];
+        if (kind == "tiles")
+        {
+            for (var y = 0; y < height; y++)
+            {
+                for (var x = 0; x < width; x++)
+                {
+                    var tile = (((x / 64) * 7) + ((y / 48) * 3)) % 4;
+                    var (u, v) = (x % 64, y % 48);
+                    var inside = ((u - 32) * (u - 32)) + ((v - 24) * (v - 24)) < 300;
+                    pixels[(y * width) + x] = inside
+                        ? new Rgba32((byte)(u * 4), (byte)(v * 5), (byte)(tile * 60), 255)
+                        : u < 2 || v < 2 ? new Rgba32(40, 40, 40, 255) : new Rgba32((byte)(tile * 50), 120, (byte)(200 - (tile * 30)), 255);
+                }
+            }
+
+            return Image.ImportPixelData<Rgba32>(pixels, width, height);
+        }
+
+        var background = new Rgba32(245, 247, 250, 255);
+        pixels.AsSpan().Fill(background);
+        var glyphs = new byte[12][];
+        for (var i = 0; i < glyphs.Length; i++)
+        {
+            glyphs[i] = new byte[7 * 10];
+            for (var j = 0; j < glyphs[i].Length; j++)
+            {
+                glyphs[i][j] = (byte)Math.Max(0, random.Next(-3, 5));
+            }
+        }
+
+        Rgba32[] inks = [new(20, 24, 31, 255), new(9, 105, 218, 255), new(207, 34, 46, 255)];
+        for (var x = 0; x < width; x++)
+        {
+            for (var y = 0; y < Math.Min(20, height); y++)
+            {
+                pixels[(y * width) + x] = new Rgba32((byte)(30 + (x * 200 / width)), 41, 59, 255);
+            }
+        }
+
+        for (var line = 0; (line * 14) + 30 < height - 10; line++)
+        {
+            var ink = inks[line % 3 == 2 ? random.Next(inks.Length) : 0];
+            var x = 10;
+            while (x + 8 < width - 10)
+            {
+                var length = random.Next(2, 9);
+                for (var i = 0; i < length && x + 8 < width - 10; i++, x += 8)
+                {
+                    var glyph = glyphs[random.Next(glyphs.Length)];
+                    for (var gy = 0; gy < 10; gy++)
+                    {
+                        for (var gx = 0; gx < 7; gx++)
+                        {
+                            var coverage = glyph[(gy * 7) + gx];
+                            ref var pixel = ref pixels[(((line * 14) + 30 + gy) * width) + x + gx];
+                            pixel = new Rgba32(Mix(background.R, ink.R, coverage), Mix(background.G, ink.G, coverage), Mix(background.B, ink.B, coverage), 255);
+                        }
+                    }
+                }
+
+                x += 8;
+            }
+
+            if (line % 5 == 4)
+            {
+                for (var by = 0; by < 12; by++)
+                {
+                    for (var bx = width - 70; bx < width - 12; bx++)
+                    {
+                        pixels[(((line * 14) + 29 + by) * width) + bx] = new Rgba32(37, 99, 235, 255);
+                    }
+                }
+            }
+        }
+
+        return Image.ImportPixelData<Rgba32>(pixels, width, height);
+
+        static byte Mix(byte from, byte to, int coverage) => (byte)(from + ((to - from) * coverage / 4));
+    }
+
+    /// <summary>Counts what the LZ77 parser finds.</summary>
+    private struct CountingSink(JpegXlModularEntropyCode.Counter counter) : JpegXlLz77Parser.IStreamSink
+    {
+        public int CopyCount { get; private set; }
+
+        public readonly void AddValue(int context, uint value) => counter.Add(context, value);
+
+        public void AddCopy(int context, int length, uint distance)
+        {
+            CopyCount++;
+            counter.AddCopy(context, length, distance);
+        }
+    }
+
+    /// <summary>Adds what the LZ77 parser finds to a stream.</summary>
+    private readonly struct WritingSink(JpegXlModularEntropyCode code, JpegXlEntropyCodeBuilder.StreamBuffer stream) : JpegXlLz77Parser.IStreamSink
+    {
+        public void AddValue(int context, uint value) => code.Add(stream, context, value);
+
+        public void AddCopy(int context, int length, uint distance) => code.AddCopy(stream, context, length, distance);
     }
 
     /// <summary>Flat areas, gradients, noise, translucent and fully transparent pixels with defined colors.</summary>

@@ -399,7 +399,7 @@ internal static class JpegXlModularDecoder
     /// Computes the four properties that a previous channel gives each sample of a row: its value, and its difference with
     /// the gradient of its own neighbors, each with its magnitude. They are written every <paramref name="stride"/> values.
     /// </summary>
-    private static void ComputeReferenceProperties(JpegXlModularChannel other, int y, Span<int> destination, int stride)
+    internal static void ComputeReferenceProperties(JpegXlModularChannel other, int y, Span<int> destination, int stride)
     {
         var width = other.Width;
         var samples = other.Samples;
@@ -535,7 +535,7 @@ internal static class JpegXlModularDecoder
     /// properties that are constant for them (the channel and the sub-bitstream) are replaced with the child they select.
     /// </summary>
     /// <returns>The number of nodes of the copy.</returns>
-    private static int Specialize(ReadOnlySpan<JpegXlMaTreeNode> source, Span<JpegXlMaTreeNode> destination, Span<int> pending, int channelIndex, int streamIndex)
+    internal static int Specialize(ReadOnlySpan<JpegXlMaTreeNode> source, Span<JpegXlMaTreeNode> destination, Span<int> pending, int channelIndex, int streamIndex)
     {
         var count = 1;
         pending[0] = Resolve(source, 0, channelIndex, streamIndex);

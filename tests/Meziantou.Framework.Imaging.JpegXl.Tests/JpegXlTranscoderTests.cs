@@ -713,6 +713,55 @@ public sealed class JpegXlTranscoderTests
         Assert.Equal(0, output.Length);
     }
 
+    /// <summary>
+    /// The reader of the recompressor loads the entropy-coded data ahead of the bits it reads: a read fails only where a bit
+    /// is missing, at the end of the file or at a marker, and 16 bits of ones are never a code. The decoder of the library
+    /// refuses these files before the reader sees them, so the reader is called directly.
+    /// </summary>
+    [Theory]
+    [InlineData("jpeg/baseline-422-odd-restart")]
+    [InlineData("jpeg/progressive-gray-odd-refinement")]
+    [InlineData("jpeg/progressive-422-odd-restart")]
+    public void TheEntropyCodedDataOfAJpegFileEndWhereABitIsMissing(string id)
+    {
+        var jpeg = GoldenCorpus.Default.Get(id).ReadInput();
+        var position = 2;
+        while (jpeg[position + 1] != 0xDA)
+        {
+            position += 2 + ((jpeg[position + 2] << 8) | jpeg[position + 3]);
+        }
+
+        var dataStart = position + 2 + ((jpeg[position + 2] << 8) | jpeg[position + 3]);
+        var dataEnd = dataStart;
+        while (jpeg[dataEnd] != 0xFF || jpeg[dataEnd + 1] == 0)
+        {
+            dataEnd++;
+        }
+
+        // Every cut that leaves the last byte of the first interval out, by the end of the file or by a marker
+        for (var end = dataStart; end < dataEnd; end++)
+        {
+            if (end > dataStart && jpeg[end - 1] == 0xFF)
+                continue;
+
+            AssertReadFails([.. jpeg.AsSpan(0, end)], "the data of a scan are truncated.");
+            AssertReadFails([.. jpeg.AsSpan(0, end), 0xFF, 0xD9], "the data of a scan end before its last block.");
+        }
+
+        // The first code of the scan replaced by ones: 16 of them are not a code, and fewer are cut short like any code
+        AssertReadFails([.. jpeg.AsSpan(0, dataStart), 0xFF, 0x00, 0xFF, 0x00, .. jpeg.AsSpan(dataStart)], "a code of the data of a scan is not in its Huffman table.");
+        AssertReadFails([.. jpeg.AsSpan(0, dataStart), 0xFF, 0x00, 0xFF, 0x00], "a code of the data of a scan is not in its Huffman table.");
+        AssertReadFails([.. jpeg.AsSpan(0, dataStart), 0xFF, 0x00], "the data of a scan are truncated.");
+        AssertReadFails([.. jpeg.AsSpan(0, dataStart), 0xFF, 0x00, 0xFF, 0xD9], "the data of a scan end before its last block.");
+
+        static void AssertReadFails(byte[] file, string message)
+        {
+            var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(TheEntropyCodedDataOfAJpegFileEndWhereABitIsMissing));
+            var exception = Assert.Throws<InvalidImageContentException>(() => JpegBitstreamReader.Read(file, scope, CancellationToken.None, out _));
+            Assert.Equal("The JPEG file is invalid: " + message, exception.Message);
+        }
+    }
+
     private static void AssertRoundTrips(byte[] jpeg, string context)
     {
         using var recompressed = new MemoryStream();

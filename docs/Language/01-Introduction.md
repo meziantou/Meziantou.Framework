@@ -59,10 +59,10 @@ gives you a tree to read and edit the text, with the same model as the other lan
 
 | Namespace | Contains |
 | --- | --- |
-| `Meziantou.Framework.Language` | What every language shares: `SyntaxTree`, `SyntaxNode`, `SyntaxToken`, `SyntaxTrivia`, the lists, `SourceText`, `TextSpan`, `TextChange`, `Location`, `Diagnostic`, `SyntaxAnnotation`, and the editing extension methods (`ReplaceNode`, `RemoveNode`, …) |
+| [Meziantou.Framework.Language](cref:Meziantou.Framework.Language) | What every language shares: `SyntaxTree`, `SyntaxNode`, `SyntaxToken`, `SyntaxTrivia`, the lists, `SourceText`, `TextSpan`, `TextChange`, `Location`, `Diagnostic`, `SyntaxAnnotation`, and the editing extension methods (`ReplaceNode`, `RemoveNode`, …) |
 | `Meziantou.Framework.Language.<Language>` | The tree, the nodes, the options, the visitors, `SyntaxKind`, `SyntaxFactory` and `SyntaxFacts` of one language, such as `Meziantou.Framework.Language.Json` |
 
-Each language namespace is a child of `Meziantou.Framework.Language`, so a file that has
+Each language namespace is a child of [Meziantou.Framework.Language](cref:Meziantou.Framework.Language), so a file that has
 `using Meziantou.Framework.Language.Json;` can use the shared types without a second `using` directive. The examples of
 this documentation omit the `using` directives.
 

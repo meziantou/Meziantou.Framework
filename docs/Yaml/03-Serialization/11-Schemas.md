@@ -46,7 +46,7 @@ and a string that the reader would take for another type is quoted: see
 ## Schema classes
 
 The schema classes `FailsafeSchema`, `JsonSchema`, `CoreSchema` and `ExtendedSchema`, in the
-`Meziantou.Framework.Yaml.Schemas` namespace, derive from `SchemaBase` and implement `IYamlSchema`. They expand and
+[Meziantou.Framework.Yaml.Schemas](cref:Meziantou.Framework.Yaml.Schemas) namespace, derive from `SchemaBase` and implement `IYamlSchema`. They expand and
 shorten tags, hold the rules that resolve scalars, and register tags. A `YamlValue` of the
 [document object model](../05-DocumentObjectModel.md) takes one to choose the tag of its value. To build another schema,
 derive from one of them and override `PrepareScalarRules`. The serializer itself selects its schema with

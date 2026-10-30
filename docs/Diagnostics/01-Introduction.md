@@ -32,9 +32,9 @@ The packages are independent: install only the one you need.
 
 ## Namespaces
 
-- `ContextSnapshotBuilder` and the snapshot types are in the `Meziantou.Framework.Diagnostics.ContextSnapshot`
+- `ContextSnapshotBuilder` and the snapshot types are in the [Meziantou.Framework.Diagnostics.ContextSnapshot](cref:Meziantou.Framework.Diagnostics.ContextSnapshot)
   namespace.
-- `MemoryDump` and `MemoryDumpType` are in the `Meziantou.Framework.Diagnostics` namespace.
+- `MemoryDump` and `MemoryDumpType` are in the [Meziantou.Framework.Diagnostics](cref:Meziantou.Framework.Diagnostics) namespace.
 
 ## Next steps
 

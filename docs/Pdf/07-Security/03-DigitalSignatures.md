@@ -4,7 +4,7 @@ description: Sign a document with a certificate (PAdES B-B), add a time stamp (P
 ---
 
 A signature proves that the signed bytes of a document did not change since it was signed, and binds them to the
-certificate of the signer. The types are in the `Meziantou.Framework.Pdf.Signing` namespace.
+certificate of the signer. The types are in the [Meziantou.Framework.Pdf.Signing](cref:Meziantou.Framework.Pdf.Signing) namespace.
 
 ## Sign a document
 

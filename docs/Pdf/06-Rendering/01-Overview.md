@@ -4,7 +4,7 @@ description: Render the pages of a document to images for previews and thumbnail
 ---
 
 `PdfRenderer` draws a page to an image of `Meziantou.Framework.Imaging`, which can then be saved to PNG, JPEG, WebP and
-the other formats it writes, resized or drawn on. The types are in the `Meziantou.Framework.Pdf.Rendering` namespace.
+the other formats it writes, resized or drawn on. The types are in the [Meziantou.Framework.Pdf.Rendering](cref:Meziantou.Framework.Pdf.Rendering) namespace.
 
 <!-- ref:../../../tests/Meziantou.Framework.Pdf.Tests/PdfRendererTests.cs;region=PdfRendering_RenderPage;format=md-fenced-code-block;dedent=true -->
 ```csharp

@@ -57,16 +57,16 @@ The library is split into packages, so that an application only references what 
 
 | Namespace | Contains |
 | --- | --- |
-| `Meziantou.Framework.WebPlatform` | The parsers: `HtmlDocumentParser`, `XmlDocumentParser` and their options |
-| `Meziantou.Framework.WebPlatform.Dom` | Browsing contexts, documents, nodes and elements, events, the document loader, cookies |
-| `Meziantou.Framework.WebPlatform.Formatting` | The HTML and CSS formatters |
-| `Meziantou.Framework.WebPlatform.Css.Om` | Style sheets, rules and declarations (the CSSOM) |
-| `Meziantou.Framework.WebPlatform.Css.Selectors` | The parsed selectors |
-| `Meziantou.Framework.WebPlatform.Css.TypedOm` | CSS values as objects |
-| `Meziantou.Framework.WebPlatform.JavaScript` | The JavaScript script engine |
-| `Meziantou.Framework.WebPlatform.Imaging` | The rendering backend, the screenshots and the printing to images |
-| `Meziantou.Framework.WebPlatform.PdfRendering` | The printing to PDF |
-| `Meziantou.Framework.WebPlatform.Playwright` | The Playwright server |
+| [Meziantou.Framework.WebPlatform](cref:Meziantou.Framework.WebPlatform) | The parsers: `HtmlDocumentParser`, `XmlDocumentParser` and their options |
+| [Meziantou.Framework.WebPlatform.Dom](cref:Meziantou.Framework.WebPlatform.Dom) | Browsing contexts, documents, nodes and elements, events, the document loader, cookies |
+| [Meziantou.Framework.WebPlatform.Formatting](cref:Meziantou.Framework.WebPlatform.Formatting) | The HTML and CSS formatters |
+| [Meziantou.Framework.WebPlatform.Css.Om](cref:Meziantou.Framework.WebPlatform.Css.Om) | Style sheets, rules and declarations (the CSSOM) |
+| [Meziantou.Framework.WebPlatform.Css.Selectors](cref:Meziantou.Framework.WebPlatform.Css.Selectors) | The parsed selectors |
+| [Meziantou.Framework.WebPlatform.Css.TypedOm](cref:Meziantou.Framework.WebPlatform.Css.TypedOm) | CSS values as objects |
+| [Meziantou.Framework.WebPlatform.JavaScript](cref:Meziantou.Framework.WebPlatform.JavaScript) | The JavaScript script engine |
+| [Meziantou.Framework.WebPlatform.Imaging](cref:Meziantou.Framework.WebPlatform.Imaging) | The rendering backend, the screenshots and the printing to images |
+| [Meziantou.Framework.WebPlatform.PdfRendering](cref:Meziantou.Framework.WebPlatform.PdfRendering) | The printing to PDF |
+| [Meziantou.Framework.WebPlatform.Playwright](cref:Meziantou.Framework.WebPlatform.Playwright) | The Playwright server |
 
 ## Next steps
 

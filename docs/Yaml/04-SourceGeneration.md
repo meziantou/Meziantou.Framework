@@ -21,7 +21,7 @@ run time only. Keep it when you do not publish with NativeAOT or trimming and th
 ## Declare a context
 
 Declare a `partial` class that derives from `YamlSerializerContext`, and add `[YamlSerializable]` for each type you
-serialize or deserialize directly. Both are in the `Meziantou.Framework.Yaml.Serialization` namespace. This context
+serialize or deserialize directly. Both are in the [Meziantou.Framework.Yaml.Serialization](cref:Meziantou.Framework.Yaml.Serialization) namespace. This context
 handles the `Product` class of [Getting started](02-GettingStarted.md#serialize-a-class):
 
 <!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlSerializerSourceGenerationTests.cs;region=YamlSerializerContext_Declare;format=md-fenced-code-block;dedent=true -->

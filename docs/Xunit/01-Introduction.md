@@ -33,7 +33,7 @@ To decide whether to skip a test from inside the test, call `Assert.XunitSkip` o
 
 ## Namespace
 
-The attributes and the enumerations are in the `Meziantou.Xunit` namespace.
+The attributes and the enumerations are in the [Meziantou.Xunit](cref:Meziantou.Xunit) namespace.
 
 ## Next steps
 

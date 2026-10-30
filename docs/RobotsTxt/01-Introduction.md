@@ -35,7 +35,7 @@ is reported as a parse error and skipped.
 
 ## Namespace
 
-Every type is in the `Meziantou.Framework.RobotsTxt` namespace: `RobotsFile`, `RobotsGroup`, `RobotsRule`,
+Every type is in the [Meziantou.Framework.RobotsTxt](cref:Meziantou.Framework.RobotsTxt) namespace: `RobotsFile`, `RobotsGroup`, `RobotsRule`,
 `RobotsRuleKind`, `RobotsParseError` and `RobotsParseErrorKind`.
 
 ## Next steps

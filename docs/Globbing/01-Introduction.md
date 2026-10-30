@@ -33,7 +33,7 @@ specs and POSIX `fnmatch`.
 
 ## Namespaces
 
-Every type is in the `Meziantou.Framework.Globbing` namespace: `Glob`, `GlobCollection`, `GlobDialect`, `GlobOptions`
+Every type is in the [Meziantou.Framework.Globbing](cref:Meziantou.Framework.Globbing) namespace: `Glob`, `GlobCollection`, `GlobDialect`, `GlobOptions`
 and the `IsMatch` and `EnumerateFiles` extension methods.
 
 ## Next steps

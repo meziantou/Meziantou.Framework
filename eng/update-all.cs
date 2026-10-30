@@ -103,6 +103,7 @@ if (ShouldRunStep(StepDocs))
 {
     Console.WriteLine("[update-all] Running docs");
     tasks.Add(Task.Run(() => RunValidateDocumentationPackageIdsStep(rootPath)));
+    tasks.Add(Task.Run(() => RunValidateDocumentationCrefLinksStep(rootPath)));
 }
 
 await Task.WhenAll(tasks);
@@ -1121,6 +1122,47 @@ void RunValidateDocumentationPackageIdsStep(FullPath rootPath)
     {
         Console.Error.WriteLine($"ERROR: {relativePath}: {message}");
         updatedFiles.Enqueue(relativePath);
+    }
+}
+
+// The pages link to namespaces with [Name](cref:Name). The target must be a namespace of the public API of a package,
+// as listed in the ref/ folder.
+void RunValidateDocumentationCrefLinksStep(FullPath rootPath)
+{
+    var namespacePattern = new Regex(@"^namespace\s+(?<name>[A-Za-z0-9_.]+)", RegexOptions.Multiline | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, Timeout.InfiniteTimeSpan);
+    var crefPattern = new Regex(@"\]\(cref:(?<target>[^)\s]*)\)", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, Timeout.InfiniteTimeSpan);
+
+    var namespaces = Directory.EnumerateFiles(rootPath / "ref", "*.cs", SearchOption.AllDirectories)
+        .SelectMany(path => namespacePattern.Matches(File.ReadAllText(path)).Select(match => match.Groups["name"].Value))
+        .ToHashSet(StringComparer.Ordinal);
+
+    var docsRootPath = rootPath / "docs";
+    foreach (var path in Directory.EnumerateFiles(docsRootPath, "*.md", SearchOption.AllDirectories).Order(StringComparer.Ordinal))
+    {
+        var relativePath = FullPath.FromPath(path).MakePathRelativeTo(rootPath).Replace('\\', '/');
+        var lines = File.ReadAllLines(path);
+        var inCode = false;
+        for (var i = 0; i < lines.Length; i++)
+        {
+            if (lines[i].TrimStart().StartsWith("```", StringComparison.Ordinal))
+            {
+                inCode = !inCode;
+                continue;
+            }
+
+            if (inCode)
+                continue;
+
+            foreach (Match match in crefPattern.Matches(lines[i]))
+            {
+                var target = match.Groups["target"].Value;
+                if (!namespaces.Contains(target))
+                {
+                    Console.Error.WriteLine($"ERROR: {relativePath}:{i + 1}: 'cref:{target}' is not a namespace of the public API (ref/*.cs)");
+                    updatedFiles.Enqueue(relativePath);
+                }
+            }
+        }
     }
 }
 

@@ -6,7 +6,7 @@ description: Parse YAML into tokens that keep the comments and the whitespace, w
 `YamlSyntaxTree` is the lossless representation of a YAML text: it keeps every character, including the comments, the
 whitespace and the line breaks, and gives the position of every token. Use it for tools that must not disturb a file,
 such as a linter, a formatter, or a program that changes one value of a configuration file. Its types are in the
-`Meziantou.Framework.Yaml.Syntax` namespace.
+[Meziantou.Framework.Yaml.Syntax](cref:Meziantou.Framework.Yaml.Syntax) namespace.
 
 ## Parse a text
 

@@ -136,7 +136,7 @@ Assert.Equal("<blockquote class=\"blockquote\">\n<p>A quote</p>\n</blockquote>\n
 
 ## Read a table from the tree
 
-A table is a `Table` block (namespace `Meziantou.Framework.Markdown.Extensions.Tables`) that contains `TableRow` blocks,
+A table is a `Table` block (namespace [Meziantou.Framework.Markdown.Extensions.Tables](cref:Meziantou.Framework.Markdown.Extensions.Tables)) that contains `TableRow` blocks,
 which contain `TableCell` blocks. `ColumnDefinitions` gives the alignment of each column:
 
 <!-- ref:../../../tests/Meziantou.Framework.Markdown.Tests/TestPipeTable.cs;region=Table_SyntaxTree;format=md-fenced-code-block;dedent=true -->

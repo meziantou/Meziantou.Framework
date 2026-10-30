@@ -29,7 +29,7 @@ them in a history, and reverts or reapplies them when the user asks to undo or r
 
 ## Namespace
 
-Every type is in the `Meziantou.Framework.UndoRedo` namespace.
+Every type is in the [Meziantou.Framework.UndoRedo](cref:Meziantou.Framework.UndoRedo) namespace.
 
 ## Next steps
 

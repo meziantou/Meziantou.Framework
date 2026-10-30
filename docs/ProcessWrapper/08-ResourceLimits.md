@@ -35,7 +35,7 @@ resumed once the limits are applied, so it never runs without them.
 
 ## Windows Job Objects
 
-`WithWindowsJobObject` gives access to the `JobObject` (in the `Meziantou.Framework.Win32` namespace) for the settings that
+`WithWindowsJobObject` gives access to the `JobObject` (in the [Meziantou.Framework.Win32](cref:Meziantou.Framework.Win32) namespace) for the settings that
 `ProcessLimits` does not cover:
 
 <!-- ref:../../samples/Meziantou.Framework.ProcessWrapper.Samples/ReadmeExamples.cs;region=ProcessWrapper_WindowsJobObject;format=md-fenced-code-block;dedent=true -->
@@ -58,7 +58,7 @@ The callback runs on Windows only. Using `WithWindowsJobObject` on another opera
 
 ## Linux control groups
 
-`WithLinuxControlGroup` gives access to the `CGroup2` (in the `Meziantou.Framework.Unix.ControlGroups` namespace):
+`WithLinuxControlGroup` gives access to the `CGroup2` (in the [Meziantou.Framework.Unix.ControlGroups](cref:Meziantou.Framework.Unix.ControlGroups) namespace):
 
 <!-- ref:../../samples/Meziantou.Framework.ProcessWrapper.Samples/ReadmeExamples.cs;region=ProcessWrapper_LinuxControlGroup;format=md-fenced-code-block;dedent=true -->
 ```csharp

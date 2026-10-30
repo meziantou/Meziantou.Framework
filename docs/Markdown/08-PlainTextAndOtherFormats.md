@@ -24,7 +24,7 @@ Assert.Equal("Title\nSome bold text and a link.\nFirst\nSecond\n", text);
 
 `MarkdownConverter.Normalize` parses the Markdown and writes it back in a consistent style: `#` headings instead of
 underlined ones, one blank line between blocks. `NormalizeOptions` (namespace
-`Meziantou.Framework.Markdown.Renderers.Normalize`) changes the style:
+[Meziantou.Framework.Markdown.Renderers.Normalize](cref:Meziantou.Framework.Markdown.Renderers.Normalize)) changes the style:
 
 <!-- ref:../../tests/Meziantou.Framework.Markdown.Tests/TestNormalize.cs;region=NormalizeOptions_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -59,7 +59,7 @@ formatting, see [Keep the formatting](07-EditingDocuments.md#keep-the-formatting
 A renderer converts the tree to an output format. To write another format, such as a terminal output or another markup
 language:
 
-1. Derive a class from `TextRendererBase<T>` (namespace `Meziantou.Framework.Markdown.Renderers`) for a text format, or
+1. Derive a class from `TextRendererBase<T>` (namespace [Meziantou.Framework.Markdown.Renderers](cref:Meziantou.Framework.Markdown.Renderers)) for a text format, or
    implement `IMarkdownRenderer`.
 2. Add one object renderer per element type to `ObjectRenderers`: a class derived from
    `MarkdownObjectRenderer<TRenderer, TObject>` whose `Write` method writes the element, and calls
@@ -68,6 +68,6 @@ language:
    `MarkdownConverter.Convert(markdown, renderer, pipeline)`.
 
 The HTML, normalize and roundtrip renderers are built this way: their object renderers, in the
-`Meziantou.Framework.Markdown.Renderers.Html`, `.Normalize` and `.Roundtrip` namespaces, are examples to start from. To
+[Meziantou.Framework.Markdown.Renderers.Html](cref:Meziantou.Framework.Markdown.Renderers.Html), `.Normalize` and `.Roundtrip` namespaces, are examples to start from. To
 change how the HTML renderer writes one element, replace its object renderer instead; see
 [Writing extensions](09-WritingExtensions.md#change-how-an-element-is-rendered).

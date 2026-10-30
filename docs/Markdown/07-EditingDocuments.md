@@ -102,7 +102,7 @@ Assert.Equal("# Title\n\nSee [the docs](https://example.com).", writer.ToString(
 
 The parser drops the characters that do not change the meaning of the document: extra spaces, the style of a heading,
 the line endings. With trivia tracking, it keeps them in the tree, and `RoundtripRenderer` (namespace
-`Meziantou.Framework.Markdown.Renderers.Roundtrip`) writes the document back exactly as it was:
+[Meziantou.Framework.Markdown.Renderers.Roundtrip](cref:Meziantou.Framework.Markdown.Renderers.Roundtrip)) writes the document back exactly as it was:
 
 <!-- ref:../../tests/Meziantou.Framework.Markdown.Tests/TestCoreApi.cs;region=MarkdownConverter_Roundtrip;format=md-fenced-code-block;dedent=true -->
 ```csharp

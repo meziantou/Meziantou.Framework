@@ -97,7 +97,7 @@ Assert.Equal("<p>Well done 🎉 😃</p>\n", html);
 <!-- endref -->
 
 To add shortcodes, or to replace the list, create an `EmojiMapping` (namespace
-`Meziantou.Framework.Markdown.Extensions.Emoji`) from a dictionary of shortcodes and a dictionary of smileys:
+[Meziantou.Framework.Markdown.Extensions.Emoji](cref:Meziantou.Framework.Markdown.Extensions.Emoji)) from a dictionary of shortcodes and a dictionary of smileys:
 
 <!-- ref:../../../tests/Meziantou.Framework.Markdown.Tests/TestCustomEmojis.cs;region=EmojiMapping_Custom;format=md-fenced-code-block;dedent=true -->
 ```csharp

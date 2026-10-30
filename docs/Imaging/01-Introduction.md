@@ -51,11 +51,11 @@ The library favors predictable results over guesses:
 
 | Namespace | Contains |
 | --- | --- |
-| `Meziantou.Framework.Imaging` | Images, frames, pixel formats, loading and saving, processing, configuration |
-| `Meziantou.Framework.Imaging.Formats` | The encoders and their settings (`PngEncoder`, `JpegEncoder`, …) |
-| `Meziantou.Framework.Imaging.Metadata` | EXIF, XMP, ICC profiles, orientation, color descriptions |
-| `Meziantou.Framework.Imaging.Drawing` | The canvas, brushes, pens and paths |
-| `Meziantou.Framework.Imaging.Typography` | Fonts and text layout |
+| [Meziantou.Framework.Imaging](cref:Meziantou.Framework.Imaging) | Images, frames, pixel formats, loading and saving, processing, configuration |
+| [Meziantou.Framework.Imaging.Formats](cref:Meziantou.Framework.Imaging.Formats) | The encoders and their settings (`PngEncoder`, `JpegEncoder`, …) |
+| [Meziantou.Framework.Imaging.Metadata](cref:Meziantou.Framework.Imaging.Metadata) | EXIF, XMP, ICC profiles, orientation, color descriptions |
+| [Meziantou.Framework.Imaging.Drawing](cref:Meziantou.Framework.Imaging.Drawing) | The canvas, brushes, pens and paths |
+| [Meziantou.Framework.Imaging.Typography](cref:Meziantou.Framework.Imaging.Typography) | Fonts and text layout |
 
 ## Next steps
 

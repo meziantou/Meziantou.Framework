@@ -3,7 +3,7 @@ title: Concurrent collections
 description: Share a set or a list between threads with ConcurrentHashSet and SynchronizedList, and run several list operations atomically.
 ---
 
-The collections are in the `Meziantou.Framework.Collections.Concurrent` namespace. To bind a collection to a UI control,
+The collections are in the [Meziantou.Framework.Collections.Concurrent](cref:Meziantou.Framework.Collections.Concurrent) namespace. To bind a collection to a UI control,
 see [Observable collection](07-ObservableCollection.md).
 
 ## A thread-safe set with ConcurrentHashSet

@@ -26,7 +26,7 @@ The writer only writes traces; it does not read them.
 
 ## Namespace
 
-Every type is in the `Meziantou.Framework.ChromiumTracing` namespace. The package is compatible with trimming and native
+Every type is in the [Meziantou.Framework.ChromiumTracing](cref:Meziantou.Framework.ChromiumTracing) namespace. The package is compatible with trimming and native
 AOT: events are serialized with source-generated JSON metadata.
 
 ## Next steps

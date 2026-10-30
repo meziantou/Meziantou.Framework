@@ -32,10 +32,10 @@ foreach (var link in document.Descendants<LinkInline>())
 
 The tree has two kinds of elements, both derived from `MarkdownObject`:
 
-- **Blocks** (`Block`, namespace `Meziantou.Framework.Markdown.Syntax`) are the structure of the document. A
+- **Blocks** (`Block`, namespace [Meziantou.Framework.Markdown.Syntax](cref:Meziantou.Framework.Markdown.Syntax)) are the structure of the document. A
   `ContainerBlock`, such as a list or a quote, contains other blocks. A `LeafBlock`, such as a paragraph or a heading,
   contains text: its `Inline` property holds the inlines of that text.
-- **Inlines** (`Inline`, namespace `Meziantou.Framework.Markdown.Syntax.Inlines`) are the content of the text. A
+- **Inlines** (`Inline`, namespace [Meziantou.Framework.Markdown.Syntax.Inlines](cref:Meziantou.Framework.Markdown.Syntax.Inlines)) are the content of the text. A
   `ContainerInline`, such as an emphasis or a link, contains other inlines. A `LeafInline`, such as a literal or a code
   span, does not.
 

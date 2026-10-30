@@ -35,7 +35,7 @@ Assert.Equal(2, standalone.CssRules.Count);
 <!-- endref -->
 
 - The rules are typed: `CssStyleRule` (a selector and declarations), `CssMediaRule`, `CssImportRule`, `CssFontFaceRule`,
-  `CssKeyframesRule`, `CssLayerBlockRule`, `CssContainerRule`, `CssSupportsRule`... in the `Meziantou.Framework.WebPlatform.Css.Om`
+  `CssKeyframesRule`, `CssLayerBlockRule`, `CssContainerRule`, `CssSupportsRule`... in the [Meziantou.Framework.WebPlatform.Css.Om](cref:Meziantou.Framework.WebPlatform.Css.Om)
   namespace.
 - The object model is what a browser keeps: the comments, the invalid rules and the declarations of unsupported
   properties are dropped, and the values are serialized (`#2563eb` reads as `rgb(37, 99, 235)`).
@@ -47,7 +47,7 @@ Assert.Equal(2, standalone.CssRules.Count);
 ## Inspect the selectors
 
 The selectors of the rules are parsed: `CssStyleRule.Selectors` is a `SelectorList` of the
-`Meziantou.Framework.WebPlatform.Css.Selectors` namespace. Walk it to list the classes, the IDs or the elements a style
+[Meziantou.Framework.WebPlatform.Css.Selectors](cref:Meziantou.Framework.WebPlatform.Css.Selectors) namespace. Walk it to list the classes, the IDs or the elements a style
 sheet uses, or parse a selector once with `SelectorList.Parse` to match it many times:
 
 <!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/Css/SelectorObjectModelTests.cs;region=WebPlatform_SelectorObjectModel;format=md-fenced-code-block;dedent=true -->

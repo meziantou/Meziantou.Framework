@@ -57,7 +57,7 @@ Assert.Equal("Hello <u>world</u>", markdown);
 ```
 <!-- endref -->
 
-`Document` is in the `Meziantou.Framework.WebPlatform.Dom` namespace. The other options are:
+`Document` is in the [Meziantou.Framework.WebPlatform.Dom](cref:Meziantou.Framework.WebPlatform.Dom) namespace. The other options are:
 
 - Convert with `Strip` or `StripKeepContent`: no raw HTML is written (other than the `<br>` of the table cells), so the
   Markdown holds no element and no attribute of the input. The links and the images are still written with their URLs as they are, `javascript:` included: the

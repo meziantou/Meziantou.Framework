@@ -156,7 +156,7 @@ Assert.Equal("""
 ```
 <!-- endref -->
 
-In the syntax tree, the checkbox is a `TaskList` inline (namespace `Meziantou.Framework.Markdown.Extensions.TaskLists`)
+In the syntax tree, the checkbox is a `TaskList` inline (namespace [Meziantou.Framework.Markdown.Extensions.TaskLists](cref:Meziantou.Framework.Markdown.Extensions.TaskLists))
 whose `Checked` property gives its state.
 
 ## Alphabetical and roman lists

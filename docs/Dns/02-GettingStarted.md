@@ -31,8 +31,8 @@ Assert.Equal([IPAddress.Parse("192.0.2.10")], addresses);
 ```
 <!-- endref -->
 
-- The types are in the `Meziantou.Framework.DnsClient`, `Meziantou.Framework.DnsClient.Query`,
-  `Meziantou.Framework.DnsClient.Response` and `Meziantou.Framework.DnsClient.Response.Records` namespaces.
+- The types are in the [Meziantou.Framework.DnsClient](cref:Meziantou.Framework.DnsClient), [Meziantou.Framework.DnsClient.Query](cref:Meziantou.Framework.DnsClient.Query),
+  [Meziantou.Framework.DnsClient.Response](cref:Meziantou.Framework.DnsClient.Response) and [Meziantou.Framework.DnsClient.Response.Records](cref:Meziantou.Framework.DnsClient.Response.Records) namespaces.
 - `Answers` holds typed records: `DnsARecord`, `DnsMxRecord`, `DnsTxtRecord`, ... See
   [Querying](03-DnsClient/03-Querying.md).
 - `DnsClient` is disposable. Reuse one instance for many queries: it resolves the address of the server once, and over
@@ -77,8 +77,8 @@ app.MapDnsHandler((context, cancellationToken) =>
 ```
 <!-- endref -->
 
-- The types are in the `Meziantou.Framework.DnsServer.Hosting`, `Meziantou.Framework.DnsServer.Handler`,
-  `Meziantou.Framework.DnsServer.Protocol` and `Meziantou.Framework.DnsServer.Protocol.Records` namespaces.
+- The types are in the [Meziantou.Framework.DnsServer.Hosting](cref:Meziantou.Framework.DnsServer.Hosting), [Meziantou.Framework.DnsServer.Handler](cref:Meziantou.Framework.DnsServer.Handler),
+  [Meziantou.Framework.DnsServer.Protocol](cref:Meziantou.Framework.DnsServer.Protocol) and [Meziantou.Framework.DnsServer.Protocol.Records](cref:Meziantou.Framework.DnsServer.Protocol.Records) namespaces.
 - `CreateResponse` copies the ID, the question and the flags of the query, so the handler only adds the records.
 - Run the application with `app.Run()` or `await app.StartAsync()`. See [DnsServer](04-DnsServer/01-Overview.md).
 

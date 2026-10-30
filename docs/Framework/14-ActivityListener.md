@@ -3,7 +3,7 @@ title: Capturing activities
 description: Capture the System.Diagnostics activities started by a piece of code, for instance to check the traces of a library in a test.
 ---
 
-`ScopedActivityListener` (in the `Meziantou.Framework.Diagnostics` namespace) captures the `Activity` instances started by
+`ScopedActivityListener` (in the [Meziantou.Framework.Diagnostics](cref:Meziantou.Framework.Diagnostics) namespace) captures the `Activity` instances started by
 the current code, and only by it. Use it in tests to check that code is traced as expected, even when other tests run in
 parallel.
 

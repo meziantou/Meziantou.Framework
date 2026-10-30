@@ -25,7 +25,7 @@ app.Run();
 ```
 <!-- endref -->
 
-The extension methods are in the `Meziantou.AspNetCore.ServiceDefaults` namespace. `UseMeziantouConventions` works on
+The extension methods are in the [Meziantou.AspNetCore.ServiceDefaults](cref:Meziantou.AspNetCore.ServiceDefaults) namespace. `UseMeziantouConventions` works on
 any `IHostApplicationBuilder`; `MapMeziantouDefaultEndpoints` extends `WebApplication`.
 
 ## What the builder gets

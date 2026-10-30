@@ -37,7 +37,7 @@ so update them together.
 | Installed fonts | Windows, macOS and Linux |
 | Other | Subsets of TrueType and CFF outlines, AFM files |
 
-The types are in the `Meziantou.Framework.Fonts` namespace.
+The types are in the [Meziantou.Framework.Fonts](cref:Meziantou.Framework.Fonts) namespace.
 
 ## Principles
 

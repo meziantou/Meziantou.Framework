@@ -5,7 +5,7 @@ description: Read a TOML document without declaring a type, build one by code, a
 
 The document model represents a TOML document with tables and arrays, without a type of your own. Use it to read a
 document whose shape you don't know, to build one by code, or to change a few values of a file. Its types are in the
-`Meziantou.Framework.Toml.Model` namespace.
+[Meziantou.Framework.Toml.Model](cref:Meziantou.Framework.Toml.Model) namespace.
 
 ## Read a document
 

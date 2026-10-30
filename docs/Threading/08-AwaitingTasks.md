@@ -3,8 +3,8 @@ title: Awaiting tasks
 description: Await a tuple of tasks or value tasks and get their results, understand failures, fire and forget a task, and resume on a SynchronizationContext.
 ---
 
-The task helpers are extension methods in the `Meziantou.Framework.Threading.Tasks` namespace, except the
-`SynchronizationContext` awaiter, which is in `Meziantou.Framework.Threading`.
+The task helpers are extension methods in the [Meziantou.Framework.Threading.Tasks](cref:Meziantou.Framework.Threading.Tasks) namespace, except the
+`SynchronizationContext` awaiter, which is in [Meziantou.Framework.Threading](cref:Meziantou.Framework.Threading).
 
 ## Await a tuple of tasks
 

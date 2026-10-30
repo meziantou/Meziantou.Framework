@@ -7,7 +7,7 @@ description: Write a document or a node back as HTML, minified, indented, with f
 
 `InnerHtml` and `OuterHtml` return the markup of an element, and `Document.GetHtml()` the markup of a whole document, as
 a browser serializes them. `ToHtml(formatter)` writes a node with a formatter of the
-`Meziantou.Framework.WebPlatform.Formatting` namespace, and `ToHtml(TextWriter, formatter)` writes it to a `TextWriter`
+[Meziantou.Framework.WebPlatform.Formatting](cref:Meziantou.Framework.WebPlatform.Formatting) namespace, and `ToHtml(TextWriter, formatter)` writes it to a `TextWriter`
 without building a string:
 
 <!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/Dom/BrowsingContextTests.cs;region=WebPlatform_UpdateDom;format=md-fenced-code-block;dedent=true -->

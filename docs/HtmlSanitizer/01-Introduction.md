@@ -38,7 +38,7 @@ The guarantees, and what the sanitizer cannot protect you from, are listed in
 
 ## Namespace
 
-`HtmlSanitizer` and `UrlSanitizer` are in the `Meziantou.Framework.Sanitizers` namespace.
+`HtmlSanitizer` and `UrlSanitizer` are in the [Meziantou.Framework.Sanitizers](cref:Meziantou.Framework.Sanitizers) namespace.
 
 | Type | Use it to |
 | --- | --- |

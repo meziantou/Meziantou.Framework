@@ -19,7 +19,7 @@ splits and quotes the data, and you convert the values to the types you need.
 
 ## Namespace
 
-Every type is in the `Meziantou.Framework.Csv` namespace: `CsvReader`, `CsvRow`, `CsvColumn` and `CsvWriter`.
+Every type is in the [Meziantou.Framework.Csv](cref:Meziantou.Framework.Csv) namespace: `CsvReader`, `CsvRow`, `CsvColumn` and `CsvWriter`.
 
 ## Next steps
 

@@ -33,8 +33,8 @@ shows both.
 - **Keep CI strict**: snapshots are never updated on a build server, in a continuous testing runner or when the tests
   are run by an LLM agent. See [Continuous integration](10-ContinuousIntegration.md).
 
-All the types are in the `Meziantou.Framework.InlineSnapshotTesting` namespace, and the serializers in
-`Meziantou.Framework.InlineSnapshotTesting.Serialization`.
+All the types are in the [Meziantou.Framework.InlineSnapshotTesting](cref:Meziantou.Framework.InlineSnapshotTesting) namespace, and the serializers in
+[Meziantou.Framework.InlineSnapshotTesting.Serialization](cref:Meziantou.Framework.InlineSnapshotTesting.Serialization).
 
 ## Inline snapshots or file snapshots
 

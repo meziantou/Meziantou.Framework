@@ -54,12 +54,12 @@ object.
 
 | Namespace | Contains |
 | --- | --- |
-| `Meziantou.Framework.Yaml` | `YamlSerializer`, `YamlSerializerOptions`, `YamlException`, the parser, the event reader and the emitter |
-| `Meziantou.Framework.Yaml.Serialization` | The attributes, converters, `YamlReader`, `YamlWriter` and `YamlSerializerContext` |
-| `Meziantou.Framework.Yaml.Model` | The document object model: `YamlStream`, `YamlDocument`, `YamlMapping`, `YamlSequence`, `YamlValue` |
-| `Meziantou.Framework.Yaml.Syntax` | The syntax tree |
-| `Meziantou.Framework.Yaml.Events` | The parsing events |
-| `Meziantou.Framework.Yaml.Schemas` | The schemas that resolve untagged scalars |
+| [Meziantou.Framework.Yaml](cref:Meziantou.Framework.Yaml) | `YamlSerializer`, `YamlSerializerOptions`, `YamlException`, the parser, the event reader and the emitter |
+| [Meziantou.Framework.Yaml.Serialization](cref:Meziantou.Framework.Yaml.Serialization) | The attributes, converters, `YamlReader`, `YamlWriter` and `YamlSerializerContext` |
+| [Meziantou.Framework.Yaml.Model](cref:Meziantou.Framework.Yaml.Model) | The document object model: `YamlStream`, `YamlDocument`, `YamlMapping`, `YamlSequence`, `YamlValue` |
+| [Meziantou.Framework.Yaml.Syntax](cref:Meziantou.Framework.Yaml.Syntax) | The syntax tree |
+| [Meziantou.Framework.Yaml.Events](cref:Meziantou.Framework.Yaml.Events) | The parsing events |
+| [Meziantou.Framework.Yaml.Schemas](cref:Meziantou.Framework.Yaml.Schemas) | The schemas that resolve untagged scalars |
 
 ## Next steps
 

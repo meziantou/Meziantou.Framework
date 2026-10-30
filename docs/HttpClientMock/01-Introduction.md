@@ -38,7 +38,7 @@ HSTS handlers, are described in the [Http](../Http/01-Introduction.md) section.
 ## Namespace
 
 `HttpClientMock`, `RequestCounter`, `HttpMockServiceBuilder` and the extension methods of the package are in the
-`Meziantou.Framework` namespace. The handlers use the ASP.NET Core types of `Microsoft.AspNetCore.Http`, such as
+[Meziantou.Framework](cref:Meziantou.Framework) namespace. The handlers use the ASP.NET Core types of `Microsoft.AspNetCore.Http`, such as
 `Results` and `HttpContext`.
 
 ## Next steps

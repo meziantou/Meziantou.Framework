@@ -19,7 +19,7 @@ When the project references it, every ID implements:
 | `IStronglyTypedId` | `string ValueAsString { get; }` and `Type UnderlyingType { get; }` |
 | `IStronglyTypedId<T>` | `T Value { get; }`, where `T` is the underlying type, and the members of `IStronglyTypedId` |
 
-The interfaces are in the `Meziantou.Framework` namespace. You do not change the declaration of the IDs: the generator
+The interfaces are in the [Meziantou.Framework](cref:Meziantou.Framework) namespace. You do not change the declaration of the IDs: the generator
 adds the interfaces when it finds them.
 
 ## Use an ID without knowing its type

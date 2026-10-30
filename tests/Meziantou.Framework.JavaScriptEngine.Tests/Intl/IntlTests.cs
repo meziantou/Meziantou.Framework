@@ -408,6 +408,108 @@ public sealed class IntlTests
             """));
     }
 
+    [Theory]
+    [InlineData("grapheme", @"e\u0301\uD83C\uDDEB\uD83C\uDDF7a", "[2,4,1]")]
+    [InlineData("grapheme", @"\uD800a\uDC00", "[1,1,1]")]
+    [InlineData("word", @"Hi \uD83D\uDE00!", "[2,1,2,1]")]
+    [InlineData("word", @"\u0E27\u0E31\u0E14\u0E44\u0E17\u0E23", "[3,3]")]
+    [InlineData("sentence", @"Hi! \uD83D\uDE00 Bye.", "[4,7]")]
+    public void Segmenter_RecordsAndContainingUseUtf16Indices(string granularity, string escapedInput, string expectedLengths)
+    {
+        Assert.Equal("true", Evaluate($$"""
+            const input = "{{escapedInput}}";
+            const segments = new Intl.Segmenter("en", { granularity: "{{granularity}}" }).segment(input);
+            const records = [...segments];
+            const lengths = {{expectedLengths}};
+            let index = 0;
+            let valid = records.length === lengths.length;
+            for (let i = 0; i < records.length; i++) {
+                const record = records[i];
+                valid &&= record.input === input && record.index === index
+                    && record.segment === input.slice(index, index + lengths[i])
+                    && Object.hasOwn(record, "isWordLike") === ("{{granularity}}" === "word");
+                for (let offset = 0; offset < lengths[i]; offset++) {
+                    const contained = segments.containing(index + offset);
+                    valid &&= contained.index === record.index && contained.segment === record.segment
+                        && contained.input === input && contained.isWordLike === record.isWordLike;
+                }
+                index += lengths[i];
+            }
+            valid && index === input.length && segments.containing(input.length) === undefined
+            """));
+    }
+
+    [Theory]
+    [InlineData("undefined", "abc")]
+    [InlineData("NaN", "abc")]
+    [InlineData("-0.5", "abc")]
+    [InlineData("2.9", "abc")]
+    [InlineData("'4'", "def")]
+    [InlineData("({ valueOf() { return 4; } })", "def")]
+    [InlineData("-1", "undefined")]
+    [InlineData("7", "undefined")]
+    [InlineData("Infinity", "undefined")]
+    [InlineData("-Infinity", "undefined")]
+    public void Segmenter_ContainingCoercesIndex(string index, string expected)
+    {
+        Assert.Equal(expected, Evaluate($$"""
+            const segments = new Intl.Segmenter("en", { granularity: "word" }).segment("abc def");
+            segments.containing({{index}})?.segment
+            """));
+    }
+
+    [Theory]
+    [InlineData("grapheme")]
+    [InlineData("word")]
+    [InlineData("sentence")]
+    public void Segmenter_EmptyInput(string granularity)
+    {
+        Assert.Equal("0|true|true|true", Evaluate($$"""
+            const segments = new Intl.Segmenter("en", { granularity: "{{granularity}}" }).segment("");
+            const iterator = segments[Symbol.iterator]();
+            [Array.from(segments).length, segments.containing(0) === undefined,
+                iterator.next().done, iterator.next().done].join("|")
+            """));
+    }
+
+    [Fact]
+    public void Segmenter_IteratorsAndRecordsAreIndependent()
+    {
+        Assert.Equal("true", Evaluate("""
+            const segmenter = new Intl.Segmenter("en", { granularity: "word" });
+            const segments = segmenter.segment("abc def");
+            const first = segments[Symbol.iterator]();
+            const second = segments[Symbol.iterator]();
+            const record = first.next().value;
+            record.segment = "changed";
+            record.index = 100;
+            const contained = segments.containing(0);
+            contained.segment = "also changed";
+            const other = segmenter.segment("xyz")[Symbol.iterator]().next().value;
+            const secondRecord = second.next().value;
+            const remaining = Array.from(first, record => record.segment).join("");
+            second.next();
+            second.next();
+            const end = second.next();
+            record !== secondRecord && secondRecord.segment === "abc" && secondRecord.index === 0
+                && segments.containing(0).segment === "abc" && other.input === "xyz"
+                && remaining === " def" && end.done && end.value === undefined && second.next().done
+            """));
+    }
+
+    [Fact]
+    public void Segmenter_WordLikeRecordsAndPropertyDescriptors()
+    {
+        Assert.Equal("true", Evaluate("""
+            const records = [...new Intl.Segmenter("en", { granularity: "word" }).segment("abc 123!")];
+            records.map(record => record.isWordLike).join() === "true,false,true,false"
+                && records.every(record => Object.getPrototypeOf(record) === Object.prototype
+                    && Object.keys(record).join() === "segment,index,input,isWordLike"
+                    && Object.values(Object.getOwnPropertyDescriptors(record)).every(descriptor =>
+                        descriptor.writable && descriptor.enumerable && descriptor.configurable))
+            """));
+    }
+
     /// <summary>
     /// Replays random texts whose words were recorded with V8 (node 24, ICU 78): see <c>Corpus/SegmenterV8.md</c>. Each
     /// line has the text and, for each segment, its length and whether it is word-like.

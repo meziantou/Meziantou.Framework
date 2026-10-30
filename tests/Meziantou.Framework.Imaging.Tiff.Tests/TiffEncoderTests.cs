@@ -3,6 +3,7 @@ using System.IO.Compression;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Imaging.TestHarness.Streams;
+using Meziantou.Framework.Imaging.Tests.Conformance.Hardening;
 
 namespace Meziantou.Framework.Imaging.Tests;
 
@@ -1013,6 +1014,192 @@ public sealed class TiffEncoderTests
         Assert.Equal(new Rgb24(255, 0, 0), ((Image<Rgb24>)decoded).Frames[0][0, 1]);
     }
 
+    [Theory]
+    [InlineData(TiffCompression.Lzw, "rgba32", 7)]
+    [InlineData(TiffCompression.Lzw, "rgba32", 0)]
+    [InlineData(TiffCompression.Deflate, "rgba32", 7)]
+    [InlineData(TiffCompression.Deflate, "rgba64", 7)]
+    [InlineData(TiffCompression.Lzw, "rgba64-big-endian", 7)]
+    [InlineData(TiffCompression.Deflate, "float", 7)]
+    [InlineData(TiffCompression.Lzw, "float", 0)]
+    [InlineData(TiffCompression.Lzw, "indexed", 7)]
+    [InlineData(TiffCompression.Deflate, "noise", 7)]
+    [InlineData(TiffCompression.PackBits, "rgba32", 7)]
+    [InlineData(TiffCompression.None, "rgba32", 7)]
+    [InlineData(TiffCompression.CcittGroup4, "bilevel", 7)]
+    public void StripsCompressedByWorkersAreTheFileOfOneWorker(TiffCompression compression, string pixels, int rowsPerStrip)
+    {
+        var encoder = new TiffEncoder
+        {
+            Compression = compression,
+            RowsPerStrip = rowsPerStrip,
+            BigEndian = pixels == "rgba64-big-endian",
+            PixelLayout = pixels switch
+            {
+                "indexed" => TiffPixelLayout.Indexed,
+                "bilevel" => TiffPixelLayout.Bilevel,
+                _ => TiffPixelLayout.Auto,
+            },
+        };
+
+        var (expected, peak) = SaveWithWorkers(pixels, encoder, workers: 1);
+        foreach (var workers in new[] { 2, 3, 16 })
+        {
+            var (file, workerPeak) = SaveWithWorkers(pixels, encoder, workers);
+            Assert.Equal(expected, file);
+
+            // Each worker rents a strip and an output: the LZW and Deflate strips are compressed by workers, the others, which
+            // cost about what serializing them costs, by one
+            if (compression is TiffCompression.Lzw or TiffCompression.Deflate)
+            {
+                Assert.InRange(workerPeak, peak + 1, long.MaxValue);
+            }
+            else
+            {
+                Assert.Equal(peak, workerPeak);
+            }
+        }
+
+        // The pages of a document are written the same way
+        using var page = CreateWorkerImage(pixels, ImageConfiguration.Default);
+        using var pages = ImageCollection.Create(ImageCollectionKind.Pages, new ImageConfiguration { MaxDegreeOfParallelism = 16 });
+        pages.Add(page);
+        pages.Add(page);
+        using var stream = new MemoryStream();
+        pages.Save(stream, encoder);
+        using var reloaded = ImageCollection.Load(stream.ToArray());
+        using var first = reloaded[0].Decode();
+        using var second = reloaded[1].Decode();
+        using var single = Image.Load(expected);
+        Assert.Equal(GetPixelBytes(single), GetPixelBytes(first));
+        Assert.Equal(GetPixelBytes(single), GetPixelBytes(second));
+    }
+
+    [Theory]
+    [InlineData(TiffCompression.Lzw)]
+    [InlineData(TiffCompression.Deflate)]
+    public void WorkersCompressWithinTheAllocationLimitOfOneWorker(TiffCompression compression)
+    {
+        // At the smallest limit one worker writes the document with, the workers write it too, with the same bytes; below it,
+        // they fail as one worker does. The strips of 100 rows make the writer, not the copy of the page, the largest need
+        using var page = CreateWorkerImage("rgba32", ImageConfiguration.Default);
+        var encoder = new TiffEncoder { Compression = compression, RowsPerStrip = 100 };
+        var low = 0L;
+        var high = 64L << 20;
+        while (high - low > 1)
+        {
+            var middle = (low + high) / 2;
+            try
+            {
+                SaveDocument(workers: 1, middle);
+                high = middle;
+            }
+            catch (ImageResourceLimitException)
+            {
+                low = middle;
+            }
+        }
+
+        var expected = SaveDocument(workers: 1, high);
+        var failure = Assert.Throws<ImageResourceLimitException>(() => SaveDocument(workers: 1, low));
+        foreach (var workers in new[] { 2, 16 })
+        {
+            Assert.Equal(expected, SaveDocument(workers, high));
+            Assert.Equal(failure.Message, Assert.Throws<ImageResourceLimitException>(() => SaveDocument(workers, low)).Message);
+
+            // A limit that leaves room for some workers only writes the same document
+            Assert.Equal(expected, SaveDocument(workers, high + (512 << 10)));
+        }
+
+        byte[] SaveDocument(int workers, long limit)
+        {
+            using var pages = ImageCollection.Create(ImageCollectionKind.Pages, new ImageConfiguration { MaxDegreeOfParallelism = workers, Limits = new ImageResourceLimits { MaxLiveAllocationBytes = limit } });
+            pages.Add(page);
+            using var stream = new MemoryStream();
+            pages.Save(stream, encoder);
+            return stream.ToArray();
+        }
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(16)]
+    public async Task ACancellationWhileWorkersCompressTheStripsIsReported(int workers)
+    {
+        // The destination cancels the encoding once it receives its first bytes, between two strips
+        using var image = CreateWorkerImage("rgba32", new ImageConfiguration { MaxDegreeOfParallelism = workers });
+        using var cancellation = new CancellationTokenSource();
+        await using var stream = new CancellingStream(cancellation);
+        await Assert.ThrowsAny<OperationCanceledException>(() => image.SaveAsync(stream, new TiffEncoder { Compression = TiffCompression.Lzw, RowsPerStrip = 7 }, cancellation.Token));
+        Assert.InRange(stream.Length, 1, 300 * 230 * 4);
+    }
+
+    /// <summary>Saves an image of <see cref="CreateWorkerImage"/>, and measures the most live bytes of its scopes, which must all be released.</summary>
+    private static (byte[] File, long PeakLiveBytes) SaveWithWorkers(string pixels, TiffEncoder encoder, int workers)
+    {
+        using var audit = new PoolAudit();
+        byte[] file;
+        using (var image = CreateWorkerImage(pixels, new ImageConfiguration { MaxDegreeOfParallelism = workers }))
+        {
+            file = Save(image, encoder);
+        }
+
+        var peak = audit.Scopes.Sum(static scope => scope.GetDiagnostics().PeakLiveBytes);
+        audit.AssertClean(string.Create(CultureInfo.InvariantCulture, $"an encoding by {workers} workers"));
+        return (file, peak);
+    }
+
+    /// <summary>
+    /// An image of 300x230 pixels: more than the 65,536 pixels from which strips are compressed by several workers, and a last
+    /// strip of 6 rows with strips of 7 rows.
+    /// </summary>
+    private static Image CreateWorkerImage(string pixels, ImageConfiguration configuration)
+    {
+        const int Width = 300;
+        const int Height = 230;
+        using var pattern = CreatePattern(Width, Height);
+        var colors = new Rgba32[Width * Height];
+        pattern.Frames[0].CopyPixelDataTo(colors);
+        switch (pixels)
+        {
+            case "rgba32":
+                return Image.ImportPixelData<Rgba32>(colors, Width, Height, configuration: configuration);
+
+            case "rgba64" or "rgba64-big-endian":
+                return Image.ImportPixelData<Rgba64>([.. colors.Select(static (color, i) => new Rgba64((ushort)((color.R * 257) + (i % 251)), (ushort)(color.G * 251), (ushort)(color.B * 7), (ushort)((color.A * 257) - (i % 7))))], Width, Height, configuration: configuration);
+
+            case "float":
+                var floats = Image.ImportPixelData<RgbaFloat>([.. colors.Select(static (color, i) => new RgbaFloat(color.R / 255f, color.G / 97f, -color.B / 31f, (i % 5) / 4f))], Width, Height, configuration: configuration);
+                floats.Metadata.TransferFunction = ColorTransferFunction.Linear;
+                return floats;
+
+            case "indexed":
+                return Image.ImportPixelData<Rgb24>([.. colors.Select(static color => new Rgb24((byte)(color.R & 0xE0), (byte)(color.G & 0xC0), (byte)(color.B & 0xE0)))], Width, Height, configuration: configuration);
+
+            case "noise":
+                // Strips that Deflate stores rather than compresses
+                var noise = new byte[Width * Height * 3];
+                var state = 977u;
+                for (var i = 0; i < noise.Length; i++)
+                {
+                    state = (state * 1664525) + 1013904223;
+                    noise[i] = (byte)(state >> 24);
+                }
+
+                return Image.ImportPixelBytes<Rgb24>(noise, Width, Height, configuration: configuration);
+
+            default:
+                return Image.ImportPixelData<Gray8>([.. colors.Select(static color => new Gray8(color.R >= 128 ? (byte)255 : (byte)0))], Width, Height, configuration: configuration);
+        }
+    }
+
+    private static byte[] GetPixelBytes(Image image)
+    {
+        var bytes = new byte[image.Width * image.Height * PixelFormats.GetBytesPerPixel(image.PixelFormat)];
+        image.Frames[0].CopyPixelBytesTo(bytes);
+        return bytes;
+    }
+
     /// <summary>A floating-point image of <see cref="SpecialSingles"/>: gray pixels have three equal colors, and opaque pixels an alpha of exactly 1.</summary>
     private static Image<RgbaFloat> CreateFloatingPointPattern(int width, int height, bool gray, bool opaque)
     {
@@ -1128,5 +1315,30 @@ public sealed class TiffEncoderTests
         source.Save(stream, encoder);
         stream.Position = 0;
         return Image.Load(stream);
+    }
+
+    /// <summary>A seekable destination that cancels a token once it receives bytes.</summary>
+    private sealed class CancellingStream(CancellationTokenSource cancellation) : MemoryStream
+    {
+        public override void Write(ReadOnlySpan<byte> buffer)
+        {
+            base.Write(buffer);
+            cancellation.Cancel();
+        }
+
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            base.Write(buffer, offset, count);
+            cancellation.Cancel();
+        }
+
+        public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            await base.WriteAsync(buffer, cancellationToken);
+            await cancellation.CancelAsync();
+        }
+
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            => WriteAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
     }
 }

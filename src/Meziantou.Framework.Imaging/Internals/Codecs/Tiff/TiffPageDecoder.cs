@@ -3,7 +3,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <summary>
 /// Decodes the pixels of one TIFF page into an image: strips or tiles are read one block row at a time, expanded to the
 /// lossless working representation of the page (<see cref="TiffRowExpander"/>) and written row by row, so the memory of
-/// a decode depends on the block geometry and never on the size of the page or of the document.
+/// a decode depends on the block geometry and never on the size of the page or of the document. LZW, Deflate and CCITT
+/// blocks are decompressed by batches of one block per worker (<see cref="TiffBlockWorkers"/>) and written in order.
 /// </summary>
 /// <remarks>
 /// A CMYK page is only decoded when the request carries a <see cref="CmykConversionOptions"/>: its rows are converted to
@@ -66,13 +67,15 @@ internal static class TiffPageDecoder
 
     private static void DecodeStrips(RandomAccessSource source, TiffPage page, DecodedFrameSink sink, TiffBlockReader reader, TiffRowExpander expander, Span<byte> expanded)
     {
+        // The workers are given the live bytes that are left once everything else of the decoding is rented
+        using var workers = TiffBlockWorkers.Create(source, page, reader);
         using var lease = sink.LeaseCurrentFrame();
         for (var block = 0; block < page.BlocksDown; block++)
         {
             source.Context.CancellationToken.ThrowIfCancellationRequested();
             var firstRow = block * page.BlockHeight;
             var rowCount = Math.Min(page.BlockHeight, page.Size.Height - firstRow);
-            var stored = reader.ReadBlock(block, rowCount);
+            var stored = workers is null ? reader.ReadBlock(block, rowCount) : workers.Next(block);
             for (var row = 0; row < rowCount; row++)
             {
                 WriteRow(sink, lease, firstRow + row, expander, stored.Slice(row * page.BlockRowLength, page.BlockRowLength), expanded);
@@ -104,6 +107,7 @@ internal static class TiffPageDecoder
             throw CheckedSizes.CreateOverflowException(source.Limits);
 
         using var band = source.Scope.Rent((int)bandLength, AllocationKind.DecoderState, clear: false);
+        using var workers = TiffBlockWorkers.Create(source, page, reader);
         using var lease = sink.LeaseCurrentFrame();
         for (var blockRow = 0; blockRow < page.BlocksDown; blockRow++)
         {
@@ -112,7 +116,8 @@ internal static class TiffPageDecoder
             var rowCount = Math.Min(page.BlockHeight, page.Size.Height - firstRow);
             for (var blockColumn = 0; blockColumn < page.BlocksAcross; blockColumn++)
             {
-                var tile = reader.ReadBlock((blockRow * page.BlocksAcross) + blockColumn, rowCount);
+                var index = (blockRow * page.BlocksAcross) + blockColumn;
+                var tile = workers is null ? reader.ReadBlock(index, rowCount) : workers.Next(index);
                 var firstColumn = blockColumn * page.BlockWidth;
                 var columnCount = Math.Min(page.BlockWidth, page.Size.Width - firstColumn);
                 var copyLength = (int)((((long)columnCount * bitsPerPixel) + 7) / 8);

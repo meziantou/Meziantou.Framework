@@ -3074,7 +3074,7 @@ of their characters and were not compared with a font.
   right, as Mongolian is. Everything that is said of the width of a horizontal line is then said of the height of a
   vertical one: `MaxHeight` is where lines are wrapped and what they are aligned in, `MaxWidth` is the room the lines
   must fit, `LineHeight` is the width of a line, `Alignment` places a line from its top, and `FirstLineIndent` moves
-  the first line of a paragraph down. `Width` and `Height` stay the size of the layout on the image.
+  the indented lines of a paragraph down. `Width` and `Height` stay the size of the layout on the image.
   - `Orientation` says which characters are upright. By default (`Mixed`), each character is set as the Unicode
     Standard says (the Vertical_Orientation property, UAX #50): ideographs, kana, Hangul syllables, emoji and most
     symbols are upright, one under the other; the letters of the scripts that are written in horizontal lines
@@ -3120,7 +3120,8 @@ of their characters and were not compared with a font.
 - **Alignment.** Lines are aligned in `MaxWidth`, or in the width of the widest line without it. `Justify` stretches
   each line to that width by widening U+0020 spaces and U+00A0 no-break spaces, except the last line of a paragraph.
   A line without these spaces stays start-aligned: there is no inter-character justification for CJK text.
-  `FirstLineIndent` indents the first line of each paragraph, and `TabSize` sets the tabulation stops.
+  `FirstLineIndent` indents the first line of each paragraph; a negative value is a hanging indent, which leaves the
+  first line at the edge and indents the lines after it. `TabSize` sets the tabulation stops.
 - **Fitting.** `MaxLines` and `MaxHeight` cut the text (the first line is always kept); `Trimming` ends the last line
   with an ellipsis after the last character or the last word that leaves room for it, and also trims a line that is
   wider than `MaxWidth` when lines are not wrapped. `IsTruncated` says that a part of the text is not in the layout.

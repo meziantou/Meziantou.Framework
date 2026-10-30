@@ -998,6 +998,50 @@ public sealed class TextLayoutTests
     }
 
     [Fact]
+    public void ANegativeFirstLineIndentIsAHangingIndent()
+    {
+        // The first line of each paragraph starts at the edge, and the lines after it are indented: the indent counts
+        // in the width that is left for them, and every line is in the box of the layout.
+        var layout = TextLayout.Create("A A A\nA", Style, new TextLayoutOptions { MaxWidth = 45, FirstLineIndent = -10 });
+        Assert.Equal(3, layout.LineCount);
+        Assert.Equal((0, 10, 0), (layout.Lines[0].X, layout.Lines[1].X, layout.Lines[2].X));
+        Assert.Equal(40, layout.Width);
+        AssertRectangles(layout, new PointD(0, 0), A(0, 0), A(24, 0), A(10, 16), A(0, 32));
+        Assert.Equal(RectangleD.FromLTRB(2, 1, 40 - 2, 32 + 13), layout.InkBounds);
+        Assert.Equal(new RectangleD(10, 16, 0, 16), layout.GetCaretRectangle(4));
+        Assert.Equal(new TextHit(1, 4, 1, isTrailing: false, isInside: true), layout.HitTest(new PointD(11, 20)));
+        Assert.Equal(new TextHit(1, 4, 1, isTrailing: false, isInside: false), layout.HitTest(new PointD(5, 20)));
+
+        // Without a width to wrap at, a paragraph is one line, which the hanging indent leaves at the edge.
+        layout = TextLayout.Create("A A\nA", Style, new TextLayoutOptions { FirstLineIndent = -10 });
+        Assert.Equal((0, 0), (layout.Lines[0].X, layout.Lines[1].X));
+        Assert.Equal(40, layout.Width);
+        Assert.Equal(2, layout.InkBounds.Left);
+
+        // The indent is on the side the paragraph starts from, and alignment places a line in the room it leaves.
+        foreach (var (alignment, direction, expected) in ((TextAlignment, TextDirection, double[])[])
+            [
+                (TextAlignment.Start, TextDirection.LeftToRight, [0, 10, 0]),
+                (TextAlignment.Center, TextDirection.LeftToRight, [2.5, 19.5, 14.5]),
+                (TextAlignment.End, TextDirection.LeftToRight, [5, 29, 29]),
+                (TextAlignment.Start, TextDirection.RightToLeft, [5, 19, 29]),
+                (TextAlignment.Center, TextDirection.RightToLeft, [2.5, 9.5, 14.5]),
+                (TextAlignment.End, TextDirection.RightToLeft, [0, 0, 0]),
+            ])
+        {
+            layout = TextLayout.Create("A A A\nA", Style, new TextLayoutOptions { MaxWidth = 45, FirstLineIndent = -10, Alignment = alignment, Direction = direction });
+            Assert.Equal(expected, layout.Lines.Select(line => line.X));
+            Assert.All(layout.Lines, line => Assert.True(line.X >= 0 && line.X + line.Width <= 45));
+        }
+
+        // In a vertical layout, the lines after the first one are moved down.
+        layout = TextLayout.Create("A A A\nA", Style, new TextLayoutOptions { WritingMode = TextWritingMode.VerticalRightToLeft, Orientation = TextOrientation.Sideways, MaxHeight = 45, FirstLineIndent = -10 });
+        Assert.Equal((0, 10, 0), (layout.Lines[0].Y, layout.Lines[1].Y, layout.Lines[2].Y));
+        Assert.Equal(40, layout.Height);
+        Assert.True(layout.InkBounds.Top >= 0);
+    }
+
+    [Fact]
     public void TheNumberOfLinesIsLimitedByTheConfigurationOfTheFont()
     {
         var font = FontTestSupport.Load(FontSamples.Boxes(), new FontLoadOptions { Configuration = new ImageConfiguration { Limits = new ImageResourceLimits { MaxTextLines = 2 } } });

@@ -45,29 +45,22 @@ public static void SaveWebP(string photoPath, string webpPath, string animatedPa
 ```
 <!-- endref -->
 
-Lossy output uses 4:2:0 chroma subsampling, and keeps alpha losslessly unless [AlphaQuality](cref:Meziantou.Framework.Imaging.Formats.WebPEncoder.AlphaQuality) is below 100. Lossless
-output keeps every 8-bit sample, including the colors of fully transparent pixels, unless [NearLossless](cref:Meziantou.Framework.Imaging.Formats.WebPEncoder.NearLossless) is below 100.
+Lossy output uses 4:2:0 chroma subsampling, and keeps alpha losslessly unless `AlphaQuality` is below 100. Lossless
+output keeps every 8-bit sample, including the colors of fully transparent pixels, unless `NearLossless` is below 100.
 
 At effort 2 and above, lossy encoding tries 4x4 luma prediction. The modes are stored in the VP8 first partition, at
 most 524,287 bytes. When they do not fit, which only happens for very large detailed images (photographs of about 40
-megapixels and more at high quality), the frame is encoded once more with a budget for the mode bits: the macroblocks where 4x4 prediction gains
-least switch to cheaper modes, spread over the whole image. The quantizer stays the same, so the decoded quality
-decreases gradually with the image size instead of dropping at a threshold, and every size up to 16,383 x 16,383 fits.
+megapixels and more at high quality), the frame is encoded once more with a budget for the mode bits: the macroblocks
+where 4x4 prediction gains least switch to cheaper modes, spread over the whole image. The quantizer stays the same, so
+the decoded quality decreases gradually with the image size instead of dropping at a threshold, and every size up to
+16,383 x 16,383 fits.
 
 The managed encoder makes its own prediction and entropy-coding decisions: lossless output uses one prefix-code group
 (no spatial entropy image), and lossy output uses one quantizer for the frame (no adaptive quantization) and one token
-partition. It is not libwebp, and its [Quality](cref:Meziantou.Framework.Imaging.Formats.WebPEncoder.Quality) scale is not `cwebp -q`. Measured against cwebp 1.5.0 with its default
-settings (which adapt the quantizer to the content) on six photographs, lossy output is about 6% smaller at equal luma
-PSNR, the same size at equal SSIM, and 2% larger at equal SSIMULACRA 2 on average (18% larger on the most textured
-photograph); on a synthetic user-interface image it is 9-24% smaller. The same decoded quality needs a higher [Quality](cref:Meziantou.Framework.Imaging.Formats.WebPEncoder.Quality)
-here:
-
-| `cwebp -q` | 10 | 25 | 50 | 75 | 90 | 95 |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| [Quality](cref:Meziantou.Framework.Imaging.Formats.WebPEncoder.Quality) of equal luma PSNR (photographs) | 41 | 54 | 70 | 80 | 93 | 97 |
-
-These are averages: the correspondence varies with the content, and no comparison is guaranteed for a given image.
-Compare representative images at matched decoded quality for a lossy size comparison.
+partition. It is not libwebp, and its [Quality](cref:Meziantou.Framework.Imaging.Formats.WebPEncoder.Quality) scale is not `cwebp -q`: the
+same decoded quality usually needs a higher [Quality](cref:Meziantou.Framework.Imaging.Formats.WebPEncoder.Quality) here, and the gap varies
+with the content. To match the output of another encoder, compare representative images at matched decoded quality,
+not at equal quality numbers.
 
 Hidden colors cost almost nothing in lossy output: the fully transparent areas are filled with one value that the
 prediction reproduces. The alpha filter (none, horizontal, vertical or gradient) is the one whose lossless stream is
@@ -87,8 +80,8 @@ to encode images of that size.
 | [Compression](cref:Meziantou.Framework.Imaging.Formats.WebPEncoder.Compression) | [Lossless](cref:Meziantou.Framework.Imaging.Formats.WebPCompression.Lossless) or [Lossy](cref:Meziantou.Framework.Imaging.Formats.WebPCompression.Lossy) | [Lossless](cref:Meziantou.Framework.Imaging.Formats.WebPCompression.Lossless) |
 | [Quality](cref:Meziantou.Framework.Imaging.Formats.WebPEncoder.Quality) | 0 (smallest) to 100 (best) for lossy output; 100 is still lossy. Ignored by lossless output | 75 |
 | [Effort](cref:Meziantou.Framework.Imaging.Formats.WebPEncoder.Effort) | 0 (fastest, largest) to 9 (slowest, smallest): trades encoding time for size, never changes lossless pixels | 5 |
-| [AlphaQuality](cref:Meziantou.Framework.Imaging.Formats.WebPEncoder.AlphaQuality) | Lossy output: 0 (2 alpha levels) to 100 (exact alpha); fewer levels are kept only when they compress smaller, and fully transparent and opaque pixels stay exact | 100 |
-| [NearLossless](cref:Meziantou.Framework.Imaging.Formats.WebPEncoder.NearLossless) | Lossless output: 0 (each color component within 16 of the source) to 100 (exact); rounds the colors of edges and texture, keeps smooth areas, alpha and the image border exact | 100 |
+| `AlphaQuality` | Lossy output: 0 (2 alpha levels) to 100 (exact alpha); fewer levels are kept only when they compress smaller, and fully transparent and opaque pixels stay exact | 100 |
+| `NearLossless` | Lossless output: 0 (each color component within 16 of the source) to 100 (exact); rounds the colors of edges and texture, keeps smooth areas, alpha and the image border exact | 100 |
 | [ClearTransparentColors](cref:Meziantou.Framework.Imaging.Formats.WebPEncoder.ClearTransparentColors) | Replaces the color of fully transparent pixels with transparent black, which usually makes the file smaller | `false` |
 | [AllowBitDepthReduction](cref:Meziantou.Framework.Imaging.Formats.WebPEncoder.AllowBitDepthReduction) | Lets 16-bit pixel formats be rounded to 8 bits | `false` |
 | [DurationRounding](cref:Meziantou.Framework.Imaging.Formats.WebPEncoder.DurationRounding) | [RoundToNearest](cref:Meziantou.Framework.Imaging.Formats.FrameDurationRounding.RoundToNearest) rounds durations to the nearest millisecond; [RequireExact](cref:Meziantou.Framework.Imaging.Formats.FrameDurationRounding.RequireExact) throws | [RoundToNearest](cref:Meziantou.Framework.Imaging.Formats.FrameDurationRounding.RoundToNearest) |

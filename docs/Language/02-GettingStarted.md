@@ -7,7 +7,7 @@ This page uses JSON. Every language works the same way: replace `Json` by the na
 
 ## Install the package
 
-Add the package of the language you parse to a project that targets .NET 10 or later:
+Add the package of the language you parse to a project:
 
 ```bash
 dotnet add package Meziantou.Framework.Language.Json

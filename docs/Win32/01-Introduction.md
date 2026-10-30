@@ -7,7 +7,7 @@ The `Meziantou.Framework.Win32.*` packages give .NET applications access to Wind
 library does not cover. Each package wraps one Windows API behind a small, typed .NET API: you never declare a P/Invoke
 or a COM interface yourself.
 
-The packages are **Windows-only**. They compile in any .NET 10 or later project, but their methods only work when the
+The packages are **Windows-only**. They compile in any .NET project, but their methods only work when the
 application runs on Windows. See [Getting started](02-GettingStarted.md) for how to call them from a cross-platform
 application.
 

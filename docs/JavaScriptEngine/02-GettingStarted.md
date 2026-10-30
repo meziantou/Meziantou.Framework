@@ -5,7 +5,7 @@ description: Install the package, run a script, expose a .NET function and handl
 
 ## Install the package
 
-Add the `Meziantou.Framework.JavaScriptEngine` package to a project that targets .NET 10 or later:
+Add the `Meziantou.Framework.JavaScriptEngine` package to a project:
 
 ```bash
 dotnet add package Meziantou.Framework.JavaScriptEngine

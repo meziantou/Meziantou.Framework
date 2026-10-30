@@ -3,6 +3,7 @@ using Meziantou.Framework.Imaging.CorpusGenerator.Common;
 using Meziantou.Framework.Imaging.Drawing;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Internals;
+using Meziantou.Framework.Imaging.TestHarness.Streams;
 using Meziantou.Framework.Imaging.Typography;
 
 namespace Meziantou.Framework.Imaging.Tests;
@@ -527,7 +528,10 @@ public sealed class PerformanceContractTests
     private static long MeasureSequentialPeak(byte[] input, string format, bool reuseDestination)
     {
         using var tracking = new AllocationTracking();
-        using (var source = new MemoryStream(input, writable: false))
+
+        // The read buffer of a seekable stream is bounded by its length, so a shorter input buffers less: a non-seekable
+        // stream keeps the same buffer whatever the frame count
+        using (var source = new TestInputStream(input) { Seekable = false })
         using (var output = new MemoryStream())
         using (var reader = Image.OpenReader<Rgba32>(source))
         {

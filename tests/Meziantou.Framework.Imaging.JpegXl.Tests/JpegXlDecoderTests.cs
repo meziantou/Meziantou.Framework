@@ -1480,6 +1480,165 @@ public sealed class JpegXlDecoderTests
         }
     }
 
+    /// <summary>
+    /// The samples of a channel become numbers where 1 is the largest integer: integers up to 31 bits are scaled by their
+    /// depth, and floating-point samples of 16 to 32 bits are the numbers their bits encode, subnormal numbers included.
+    /// </summary>
+    [Theory]
+    [InlineData(8, 0, 0, 0x0000_0000u)]
+    [InlineData(8, 0, 255, 0x3F80_0000u)]
+    [InlineData(31, 0, int.MaxValue, 0x3F80_0000u)]
+    [InlineData(32, 8, 0x3E80_0000, 0x3E80_0000u)]
+    [InlineData(16, 5, 0x3C00, 0x3F80_0000u)]
+    [InlineData(16, 5, 0xC000, 0xC000_0000u)]
+    [InlineData(16, 5, 0x8000, 0x8000_0000u)]
+    [InlineData(16, 5, 0x7BFF, 0x477F_E000u)]
+    [InlineData(16, 5, 0x0001, 0x3380_0000u)]
+    [InlineData(16, 5, 0x0200, 0x3800_0000u)]
+    [InlineData(16, 5, 0x7C00, 0x4780_0000u)]
+    [InlineData(16, 8, 0x3E80, 0x3E80_0000u)]
+    [InlineData(24, 7, 0x3D_0000, 0x3E80_0000u)]
+    [InlineData(24, 8, 0x00_0001, 0x0000_0100u)]
+    public void SamplesAreConvertedAccordingToTheirBitDepth(int bitsPerSample, int exponentBits, int sample, uint expectedBits)
+    {
+        var depth = new JpegXlBitDepth(bitsPerSample, exponentBits);
+        var result = new float[1];
+        depth.ToSingle([sample], result);
+        Assert.Equal(expectedBits, BitConverter.SingleToUInt32Bits(result[0]));
+
+        depth.ToSingle([depth.One], result);
+        Assert.Equal(1f, result[0]);
+    }
+
+    /// <summary>
+    /// A frame is blended over the one below with the second alpha channel of the image, which the feature policy ignores:
+    /// that channel can be stored as floating-point numbers or as 31-bit integers, and it weights the colors by 0.25.
+    /// </summary>
+    [Theory]
+    [InlineData(32, 8, 0x3F80_0000, 0x3E80_0000)]
+    [InlineData(16, 5, 0x3C00, 0x3400)]
+    [InlineData(16, 8, 0x3F80, 0x3E80)]
+    [InlineData(24, 7, 0x3F_0000, 0x3D_0000)]
+    [InlineData(31, 0, int.MaxValue, 536_870_912)]
+    [InlineData(16, 0, 65_535, 16_384)]
+    public void FramesAreBlendedWithAnExtraChannelOfAnyDepth(int bitsPerSample, int exponentBits, int one, int quarter)
+    {
+        var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(FramesAreBlendedWithAnExtraChannelOfAnyDepth));
+        using var writer = new LsbBitWriter(scope);
+
+        // An 8x8 sRGB image with two extra channels: the 8-bit alpha channel of the image, then an alpha channel of the depth under test
+        writer.WriteBits(0x0AFF, 16);
+        writer.WriteBool(true);
+        writer.WriteBits(0, 5);
+        writer.WriteBits(0, 3);
+        writer.WriteBits(0, 5);
+        writer.WriteBool(false);
+        writer.WriteBool(false);
+        writer.WriteBool(false);
+        writer.WriteU32(8, 8, 0, 10, 0, 12, 0, 1, 6);
+        writer.WriteBool(false);
+        writer.WriteU32(2, 0, 0, 1, 0, 2, 4, 1, 12);
+        writer.WriteBool(true);
+        writer.WriteBool(false);
+        writer.WriteEnum(JpegXlExtraChannelInfo.TypeAlpha);
+        writer.WriteBool(exponentBits != 0);
+        if (exponentBits != 0)
+        {
+            writer.WriteU32((uint)bitsPerSample, 32, 0, 16, 0, 24, 0, 1, 6);
+            writer.WriteBits((uint)exponentBits - 1, 4);
+        }
+        else
+        {
+            writer.WriteU32((uint)bitsPerSample, 8, 0, 10, 0, 12, 0, 1, 6);
+        }
+
+        writer.WriteU32(0, 0, 0, 3, 0, 4, 0, 1, 3);
+        writer.WriteU32(0, 0, 0, 0, 4, 16, 5, 48, 10);
+        writer.WriteBool(false);
+        writer.WriteBool(false);
+        writer.WriteBool(true);
+        writer.WriteU64(0);
+        writer.WriteBool(true);
+        writer.ZeroPadToByte();
+
+        // A red frame kept as reference 0, then a blue frame blended over it with the second alpha channel
+        WriteFrame(isLast: false, red: 200, blue: 0, secondAlpha: one);
+        WriteFrame(isLast: true, red: 0, blue: 200, secondAlpha: quarter);
+        writer.Finish();
+
+        using var image = Image.Load<Rgba32>(writer.WrittenSpan.ToArray());
+        var pixels = new Rgba32[64];
+        image.Frames[0].CopyPixelDataTo(pixels);
+        Assert.All(pixels, pixel => Assert.Equal(new Rgba32(150, 0, 50, 255), pixel));
+
+        void WriteFrame(bool isLast, int red, int blue, int secondAlpha)
+        {
+            // A Modular frame of one group, without restoration filters
+            writer.WriteBool(false);
+            writer.WriteBits(JpegXlFrameHeader.TypeRegular, 2);
+            writer.WriteBool(true);
+            writer.WriteU64(0);
+            writer.WriteBool(false);
+            writer.WriteBits(0, 2);
+            writer.WriteBits(0, 2);
+            writer.WriteBits(0, 2);
+            writer.WriteBits(1, 2);
+            writer.WriteU32(1, 1, 0, 2, 0, 3, 0, 4, 3);
+            writer.WriteBool(false);
+            if (isLast)
+            {
+                // The colors are blended with the extra channel 1 over the reference 0
+                writer.WriteU32(JpegXlBlendingInfo.ModeBlend, 0, 0, 1, 0, 2, 0, 3, 2);
+                writer.WriteU32(1, 0, 0, 1, 0, 2, 0, 3, 3);
+                writer.WriteBool(false);
+                writer.WriteBits(0, 2);
+            }
+            else
+            {
+                writer.WriteU32(JpegXlBlendingInfo.ModeReplace, 0, 0, 1, 0, 2, 0, 3, 2);
+            }
+
+            writer.WriteU32(JpegXlBlendingInfo.ModeReplace, 0, 0, 1, 0, 2, 0, 3, 2);
+            writer.WriteU32(JpegXlBlendingInfo.ModeReplace, 0, 0, 1, 0, 2, 0, 3, 2);
+            writer.WriteBool(isLast);
+            if (!isLast)
+            {
+                // Saved as reference 0, after its color transform
+                writer.WriteBits(0, 2);
+                writer.WriteBool(false);
+            }
+
+            writer.WriteU32(0, 0, 0, 0, 4, 16, 5, 48, 10);
+            writer.WriteBool(false);
+            writer.WriteBool(false);
+            writer.WriteBits(0, 2);
+            writer.WriteU64(0);
+            writer.WriteU64(0);
+
+            // The only section: LfGlobal with the default LF dequantization, no global tree, and the whole image
+            using var section = new LsbBitWriter(scope);
+            section.WriteBool(true);
+            section.WriteBool(false);
+            using (var modular = new JpegXlModularImage(8))
+            {
+                int[] samples = [red, 0, blue, 255, secondAlpha];
+                foreach (var sample in samples)
+                {
+                    modular.AddChannel(8, 8, 0, 0);
+                    var channel = modular.Channels[^1];
+                    channel.Allocate(scope);
+                    channel.Samples.Fill(sample);
+                }
+
+                JpegXlModularEncoder.Encode(section, modular, colorChannelCount: 3, effort: 1, scope, TestContext.Current.CancellationToken);
+            }
+
+            section.Finish();
+            JpegXlHeaderWriter.WriteToc(writer, [section.WrittenSpan.Length]);
+            writer.WriteAlignedBytes(section.WrittenSpan);
+        }
+    }
+
     private static Rgba64[] GetPixels(ImageFrame<Rgba64> frame)
     {
         var pixels = new Rgba64[frame.Width * frame.Height];

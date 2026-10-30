@@ -5,7 +5,7 @@ description: Install the package, create a document, read its text back and rend
 
 ## Install the package
 
-Add the `Meziantou.Framework.Pdf` package to a project that targets .NET 10 or later:
+Add the `Meziantou.Framework.Pdf` package to a project:
 
 ```bash
 dotnet add package Meziantou.Framework.Pdf

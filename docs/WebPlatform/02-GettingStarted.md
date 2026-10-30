@@ -5,7 +5,7 @@ description: Install the package, parse and query a page, read its computed styl
 
 ## Install the package
 
-Add the `Meziantou.Framework.WebPlatform` package to a project that targets .NET 10 or later:
+Add the `Meziantou.Framework.WebPlatform` package to a project:
 
 ```bash
 dotnet add package Meziantou.Framework.WebPlatform

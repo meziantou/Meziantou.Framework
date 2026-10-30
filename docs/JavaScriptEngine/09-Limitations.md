@@ -52,4 +52,3 @@ them with this engine.
 
 ## Platform
 
-- .NET 10 and later only.

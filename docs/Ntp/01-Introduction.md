@@ -10,7 +10,7 @@ NTP (Network Time Protocol) is how computers get the time from a server. Two pac
 | `Meziantou.Framework.NtpClient` | Ask an NTP server for the time, and compute the offset of the local clock and the round-trip delay. See [Querying a server](03-QueryingAServer.md). |
 | `Meziantou.Framework.NtpServer` | Answer NTP queries with the time of the machine, or of any `TimeProvider`, for instance in tests. See [Running a server](05-RunningAServer.md). |
 
-Both are in the [Meziantou.Framework.Ntp](cref:Meziantou.Framework.Ntp) namespace, target .NET 10 and later, and are compatible with trimming.
+Both are in the [Meziantou.Framework.Ntp](cref:Meziantou.Framework.Ntp) namespace and are compatible with trimming.
 
 ## What you can do with them
 

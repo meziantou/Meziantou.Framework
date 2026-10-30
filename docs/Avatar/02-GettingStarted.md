@@ -5,7 +5,7 @@ description: Install the package, generate an avatar from a name and use it in a
 
 ## Install the package
 
-Add the `Meziantou.Framework.Avatar` package to a project that targets .NET 10 or later:
+Add the `Meziantou.Framework.Avatar` package to a project:
 
 ```bash
 dotnet add package Meziantou.Framework.Avatar

@@ -5,7 +5,7 @@ description: Install the packages, add the OTLP endpoints to an ASP.NET Core app
 
 ## Install the packages
 
-Add the packages to an ASP.NET Core project, or a test project, that targets .NET 10 or later. The in-memory receiver
+Add the packages to an ASP.NET Core project, or a test project. The in-memory receiver
 brings the main package with it:
 
 ```bash

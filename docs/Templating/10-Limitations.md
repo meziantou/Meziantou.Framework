@@ -5,7 +5,6 @@ description: What the template engine, the HTML email templates and the command-
 
 ## General
 
-- **.NET 10 and later only.**
 - **No trimming and no NativeAOT.** Templates are compiled and loaded while the application runs, which needs the C#
   compiler and the JIT compiler.
 - **No sandbox.** The code of a template runs with the permissions of your application. Never compile a template written

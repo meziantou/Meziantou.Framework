@@ -13,8 +13,6 @@ third-party assembly, or in a build script.
 dotnet tool install --global Meziantou.Framework.PublicApiGenerator.Tool
 ```
 
-The tool runs on .NET 10 or later.
-
 ## Generate the API files
 
 Pass the assembly with `--input` and the output directory with `--output`:

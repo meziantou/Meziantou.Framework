@@ -5,7 +5,7 @@ description: Install the package, sanitize a fragment of user HTML, and insert t
 
 ## Install the package
 
-Add the `Meziantou.Framework.HtmlSanitizer` package to a project that targets .NET 10 or later:
+Add the `Meziantou.Framework.HtmlSanitizer` package to a project:
 
 ```bash
 dotnet add package Meziantou.Framework.HtmlSanitizer

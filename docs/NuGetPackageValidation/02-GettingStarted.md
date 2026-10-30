@@ -24,7 +24,7 @@ non-zero code when a package is not valid. See [Command-line tool](07-CommandLin
 
 ## Validate from code
 
-Add the `Meziantou.Framework.NuGetPackageValidation` package to a project that targets .NET 10 or later:
+Add the `Meziantou.Framework.NuGetPackageValidation` package to a project:
 
 ```bash
 dotnet add package Meziantou.Framework.NuGetPackageValidation

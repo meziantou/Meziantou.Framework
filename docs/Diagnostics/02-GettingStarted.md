@@ -5,7 +5,7 @@ description: Install a package, capture a snapshot of the execution context as J
 
 ## Install the packages
 
-Add the package you need to a project that targets .NET 10 or later:
+Add the package you need to a project:
 
 ```bash
 dotnet add package Meziantou.Framework.Diagnostics.ContextSnapshot

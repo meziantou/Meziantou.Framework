@@ -234,8 +234,7 @@ internal sealed class JpegXlFrameRenderer : IDisposable
                 _cancellationToken.ThrowIfCancellationRequested();
                 var channel = colorChannelCount + i;
                 buffer.Allocate(channel, _scope);
-                var scale = 1f / ((1 << _image.ExtraChannels[i].BitDepth.BitsPerSample) - 1);
-                AddModularChannel(decoded.Modular.Channels[decoded.ModularColorChannelCount + i], buffer, channel, scale, deferUpsampling ? 1 : frame.ExtraChannelUpsampling[i]);
+                AddModularChannel(decoded.Modular.Channels[decoded.ModularColorChannelCount + i], buffer, channel, _image.ExtraChannels[i].BitDepth, deferUpsampling ? 1 : frame.ExtraChannelUpsampling[i]);
             }
 
             owned = null;
@@ -331,12 +330,7 @@ internal sealed class JpegXlFrameRenderer : IDisposable
                 }
                 else
                 {
-                    var scale = 1f / ((1 << _image.BitDepth.BitsPerSample) - 1);
-                    var source = decoded.Modular.Channels[c].Samples;
-                    for (var i = 0; i < length; i++)
-                    {
-                        target[i] = source[i] * scale;
-                    }
+                    _image.BitDepth.ToSingle(decoded.Modular.Channels[c].Samples[..length], target);
                 }
             }
 
@@ -377,21 +371,17 @@ internal sealed class JpegXlFrameRenderer : IDisposable
     }
 
     /// <summary>Converts a Modular channel to floating-point samples, upsampled to the size of the frame.</summary>
-    private void AddModularChannel(JpegXlModularChannel source, JpegXlImageBuffer buffer, int channel, float scale, int upsampling)
+    private void AddModularChannel(JpegXlModularChannel source, JpegXlImageBuffer buffer, int channel, JpegXlBitDepth depth, int upsampling)
     {
         if (upsampling == 1)
         {
-            CopyScaled(source, buffer, channel, scale);
+            Convert(source, buffer, channel, depth);
             return;
         }
 
         using var samples = Av1PooledArray<float>.Rent(_scope, (long)source.Width * source.Height, clear: false);
         var values = samples.Span[..(source.Width * source.Height)];
-        var integers = source.Samples;
-        for (var i = 0; i < values.Length; i++)
-        {
-            values[i] = integers[i] * scale;
-        }
+        depth.ToSingle(source.Samples[..values.Length], values);
 
         JpegXlUpsampler.Upsample(values, source.Width, source.Width, source.Height, upsampling, GetKernels(upsampling), buffer.GetRow(channel, 0, buffer.Height), buffer.Width, buffer.Height, _cancellationToken);
     }
@@ -402,16 +392,12 @@ internal sealed class JpegXlFrameRenderer : IDisposable
         return _upsamplingKernels[index] ??= JpegXlUpsampler.CreateKernels(factor, _image.TransformData);
     }
 
-    private static void CopyScaled(JpegXlModularChannel source, JpegXlImageBuffer buffer, int channel, float scale)
+    private static void Convert(JpegXlModularChannel source, JpegXlImageBuffer buffer, int channel, JpegXlBitDepth depth)
     {
         for (var y = 0; y < buffer.Height; y++)
         {
-            var input = source.GetRow(y);
             var output = buffer.GetRow(channel, y);
-            for (var x = 0; x < output.Length; x++)
-            {
-                output[x] = input[x] * scale;
-            }
+            depth.ToSingle(source.GetRow(y)[..output.Length], output);
         }
     }
 

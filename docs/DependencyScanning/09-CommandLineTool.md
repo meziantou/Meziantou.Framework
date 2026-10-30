@@ -4,7 +4,7 @@ description: List the dependencies of a repository, find the ones that can be up
 ---
 
 `Meziantou.Framework.DependencyScanning.Tool` scans a folder with the library, then asks the registries for newer
-versions and writes them in the files. It needs .NET 10 or later.
+versions and writes them in the files.
 
 ## Install the tool
 

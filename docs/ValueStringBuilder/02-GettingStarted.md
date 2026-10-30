@@ -5,7 +5,7 @@ description: Install the package, build a string in a stack buffer, read the con
 
 ## Install the package
 
-Add the `Meziantou.Framework.ValueStringBuilder` package to a project that targets .NET 10 or later:
+Add the `Meziantou.Framework.ValueStringBuilder` package to a project:
 
 ```bash
 dotnet add package Meziantou.Framework.ValueStringBuilder

@@ -4,7 +4,7 @@ description: Render a template file from the command line, to the console or to 
 ---
 
 `Meziantou.Framework.Templating.Tool` renders a template file without writing code: use it in scripts and builds to
-generate source code or configuration files. It needs .NET 10 or later.
+generate source code or configuration files.
 
 ## Install the tool
 

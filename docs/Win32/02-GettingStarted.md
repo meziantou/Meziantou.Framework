@@ -5,7 +5,7 @@ description: Install a Win32 package, find its namespace, and call it safely fro
 
 ## Install a package
 
-Add the package you need to a project that targets .NET 10 or later, for instance:
+Add the package you need to a project, for instance:
 
 ```bash
 dotnet add package Meziantou.Framework.Win32.MarkOfTheWeb
@@ -18,9 +18,9 @@ The types are in the [Meziantou.Framework.Win32](cref:Meziantou.Framework.Win32)
 
 ## Windows only
 
-The packages target `net10.0`, not `net10.0-windows`: a cross-platform library or application can reference them. Their
-methods only work on Windows, and the types are annotated with `[SupportedOSPlatform]`, so the platform compatibility
-analyzer (CA1416) reports the calls that are not guarded.
+The packages do not target a Windows-specific framework (`-windows`): a cross-platform library or
+application can reference them. Their methods only work on Windows, and the types are annotated with
+`[SupportedOSPlatform]`, so the platform compatibility analyzer (CA1416) reports the calls that are not guarded.
 
 Check the operating system before calling a package from code that can run elsewhere:
 

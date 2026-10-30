@@ -1217,17 +1217,21 @@ image. `Equalize` and `AutoLevels` remap the levels from such histograms, in pla
 - **Adaptive equalization** (`HistogramEqualizationMode.Adaptive`, CLAHE) equalizes each tile of a grid
   (`TileCountX` and `TileCountY`, 8 by default) with its histogram clipped at `ClipLimit` times the average bin height
   (2 by default; the excess is spread over every bin, as Zuiderveld does), and blends the mappings of the four nearest
-  tiles bilinearly at each pixel center. The tables are those of OpenCV's `createCLAHE` with the same settings; OpenCV
-  interpolates them at the corner of each pixel, which moves its results by a few levels.
+  tiles bilinearly at each pixel center. The histogram is clipped in 256 bins whatever the depth, as MATLAB and
+  scikit-image do, so the clip limit of a 16-bit frame acts as on its 8-bit version: a bin of 16-bit samples covers 256
+  levels, whose mapping follows the histogram of these levels. On 8-bit frames, the tables are those of OpenCV's
+  `createCLAHE` with the same settings; OpenCV interpolates them at the corner of each pixel, which moves its results by a
+  few levels. OpenCV clips 16-bit histograms in 65,536 bins, where the limit of the tiles of fewer than 65,536 /
+  `ClipLimit` samples is one sample per level, the same for most clip limits.
 - **Auto-levels** (`AutoLevels`) stretches the levels between two percentiles of the histogram (`LowPercentile` and
   `HighPercentile`, 0 and 100 by default: the darkest and the brightest levels present) linearly to the whole range.
 
 `HistogramColorMode.Luminance`, the default, remaps the luma and adds its change to the red, green and blue samples,
 which keeps the chroma and so the hues (except where a sample is clamped); `PerChannel` remaps each channel from its
 own histogram, which also neutralizes a color cast. Every computation is on the stored samples at the storage
-precision, with one bin per level (256, or 65,536 for 16-bit formats), in exact integer arithmetic except the bilinear
-blend of CLAHE (IEEE doubles): the results are the same on every platform. Fully transparent pixels are not counted,
-but they are remapped. Floating-point formats have no discrete levels and are rejected
+precision, with one bin per level (256, or 65,536 for 16-bit formats; 256 bins for the clip of CLAHE), in exact integer
+arithmetic except the bilinear blend of CLAHE (IEEE doubles): the results are the same on every platform. Fully
+transparent pixels are not counted, but they are remapped. Floating-point formats have no discrete levels and are rejected
 (`UnsupportedImageFeatureException`): convert them to `Rgba64` first. Each frame is processed alone by default;
 `ShareHistogramAcrossFrames` gives every frame of an animation the mapping of their combined histograms, so that it does
 not flicker. The tables (up to 25 MiB for 8 x 8 tiles of 16-bit samples remapped per channel) are charged to the image.

@@ -5,7 +5,6 @@ description: Install the ASP.NET Core packages, set up the service defaults of a
 
 ## Prerequisites
 
-- A project that targets .NET 10 or later.
 - An ASP.NET Core application for the server packages, or a Blazor application for the component packages.
 
 ## Install a package

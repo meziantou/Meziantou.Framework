@@ -5,7 +5,7 @@ description: Install the package you need, add its handler to an HttpClient, or 
 
 ## Install a package
 
-Each feature is its own package. Add the ones you need to a project that targets .NET 10 or later:
+Each feature is its own package. Add the ones you need to a project:
 
 ```bash
 dotnet add package Meziantou.Framework.Http.Caching

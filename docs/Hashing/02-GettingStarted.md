@@ -5,7 +5,7 @@ description: Install the package, hash a password, compute a SHA-3 digest and a 
 
 ## Install the package
 
-Add the `Meziantou.Framework.Hashing` package to a project that targets .NET 10 or later:
+Add the `Meziantou.Framework.Hashing` package to a project:
 
 ```bash
 dotnet add package Meziantou.Framework.Hashing

@@ -5,7 +5,7 @@ description: Install the package, highlight a snippet, put it in a page, and add
 
 ## Install the package
 
-Add the `Meziantou.Framework.SyntaxHighlighting` package to a project that targets .NET 10 or later:
+Add the `Meziantou.Framework.SyntaxHighlighting` package to a project:
 
 ```bash
 dotnet add package Meziantou.Framework.SyntaxHighlighting

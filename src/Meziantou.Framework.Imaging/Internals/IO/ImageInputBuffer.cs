@@ -10,7 +10,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <remarks>
 /// <para>
 /// The buffer is rented from the operation's <see cref="AllocationScope"/> (decoder state). It grows only up to the largest
-/// contiguous request of a parser (bounded structures such as one metadata segment). No byte beyond
+/// contiguous request of a parser (bounded structures such as one metadata segment, or the whole input of a random-access
+/// format). Growth doubles the capacity, but never beyond the bytes that can still be read: the encoded-byte limit, and the
+/// remaining length of a seekable stream. No byte beyond
 /// <see cref="ImageResourceLimits.MaxEncodedBytes"/> is buffered, so the parser examines exactly the same bytes as with an
 /// in-memory span. Consumed bytes are charged to the per-input tracker. Bytes read ahead are consumed from the caller's
 /// stream: eager APIs do not rewind.
@@ -216,7 +218,7 @@ internal sealed class ImageInputBuffer : IDisposable, IAsyncDisposable
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(minimum);
         if (_buffer is null)
         {
-            _buffer = _context.Scope.Rent(Math.Max(minimum, InitialCapacity), AllocationKind.DecoderState, clear: false);
+            _buffer = _context.Scope.Rent(Math.Max(minimum, (int)Math.Min(Array.MaxLength, LimitCapacity(InitialCapacity))), AllocationKind.DecoderState, clear: false);
             return;
         }
 
@@ -230,7 +232,9 @@ internal sealed class ImageInputBuffer : IDisposable, IAsyncDisposable
         }
         else
         {
-            var capacity = (int)Math.Min(Array.MaxLength, Math.Max(minimum, (long)_buffer.Length * 2));
+            // The old and new buffers are both charged while the bytes are copied, and the new one stays charged until the
+            // end of the decode (a whole-input format decodes from it), so the doubling never exceeds what can still be read
+            var capacity = (int)Math.Min(Array.MaxLength, Math.Max(minimum, LimitCapacity((long)_buffer.Length * 2)));
             var larger = _context.Scope.Rent(capacity, AllocationKind.DecoderState, clear: false);
             _buffer.Span[_start.._end].CopyTo(larger.Span);
             _buffer.Dispose();
@@ -239,6 +243,27 @@ internal sealed class ImageInputBuffer : IDisposable, IAsyncDisposable
 
         _end -= _start;
         _start = 0;
+    }
+
+    /// <summary>
+    /// Bounds a speculative capacity by the largest capacity that can ever be filled from the start of the unconsumed bytes:
+    /// every byte the encoded-byte limit still allows, and when the stream reports its length, the rest of the stream plus
+    /// one byte. That byte lets the read that finds the end of the stream use the same buffer instead of growing it, so a
+    /// capacity one byte short of the bound takes the bound. The length is only a hint: once a stream is read past the length
+    /// it reported, it is ignored and the buffer doubles again.
+    /// </summary>
+    /// <param name="capacity">The capacity the buffer would have without a bound.</param>
+    /// <returns>The bounded capacity, at least 1.</returns>
+    private long LimitCapacity(long capacity)
+    {
+        var bound = _context.Limits.MaxEncodedBytes - Position;
+        if (_stream.CanSeek && _stream.Length - _stream.Position is > 0 and var remaining)
+        {
+            bound = Math.Min(bound, BufferedLength + remaining + 1);
+        }
+
+        bound = Math.Max(1, bound);
+        return capacity >= bound - 1 ? bound : capacity;
     }
 
     /// <summary>Gets the number of bytes that can be read into the buffer without exceeding the buffer or the encoded-byte limit.</summary>

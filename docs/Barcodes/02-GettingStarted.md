@@ -5,7 +5,7 @@ description: Install the package, generate a QR code and a barcode, and save the
 
 ## Install the package
 
-Add the `Meziantou.Framework.Barcodes` package to a project that targets .NET 10 or later:
+Add the `Meziantou.Framework.Barcodes` package to a project:
 
 ```bash
 dotnet add package Meziantou.Framework.Barcodes

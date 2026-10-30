@@ -27,8 +27,8 @@ strings, and the canonical encoding sorts them by their bytes, so a given dictio
 
 ## Namespaces
 
-The document model is in the `Meziantou.Framework.Bencode` namespace. The torrent model (`TorrentFile`,
-`TorrentInfo`, `TorrentInfoFile`, `TorrentNode`) is in `Meziantou.Framework.Bencode.Torrent`.
+The document model is in the [Meziantou.Framework.Bencode](cref:Meziantou.Framework.Bencode) namespace. The torrent model (`TorrentFile`,
+`TorrentInfo`, `TorrentInfoFile`, `TorrentNode`) is in [Meziantou.Framework.Bencode.Torrent](cref:Meziantou.Framework.Bencode.Torrent).
 
 ## Next steps
 

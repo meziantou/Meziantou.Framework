@@ -12,7 +12,7 @@ frameworks, or format declarations for a documentation site.
 dotnet add package Meziantou.Framework.PublicApiGenerator
 ```
 
-The package targets .NET 10 and later. All the types are in the `Meziantou.Framework.PublicApiGenerator` namespace; the
+The package targets .NET 10 and later. All the types are in the [Meziantou.Framework.PublicApiGenerator](cref:Meziantou.Framework.PublicApiGenerator) namespace; the
 examples of these pages omit the `using` directive.
 
 The entry point is the static `PublicApi` class:

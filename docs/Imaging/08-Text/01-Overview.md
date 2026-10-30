@@ -8,7 +8,7 @@ The library draws text with fonts it reads itself: TrueType, OpenType, WOFF and 
 shape of the [drawing API](../07-Drawing/01-Overview.md). Nothing comes from the operating system unless you ask for an
 installed font, so a text gives the same pixels on every machine.
 
-The text types are in the `Meziantou.Framework.Imaging.Typography` namespace:
+The text types are in the [Meziantou.Framework.Imaging.Typography](cref:Meziantou.Framework.Imaging.Typography) namespace:
 
 | Type | What it is |
 | --- | --- |

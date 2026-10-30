@@ -45,7 +45,7 @@ Assert.Equal(3, counter.Count);
 By default, a walker visits the nodes only. Pass `SyntaxWalkerDepth.Token` or `SyntaxWalkerDepth.Trivia` to its
 constructor to visit the tokens, or the tokens and their trivia, too, with `VisitToken` and `VisitTrivia`.
 
-`SyntaxWalker`, in `Meziantou.Framework.Language`, walks the tree of any language. It has no method per node type: it
+`SyntaxWalker`, in [Meziantou.Framework.Language](cref:Meziantou.Framework.Language), walks the tree of any language. It has no method per node type: it
 visits nodes, tokens and trivia, which is enough for code shared by several languages:
 
 <!-- ref:../../../tests/Meziantou.Framework.Language.Tests/SyntaxTreeInvariantTests.cs;region=SyntaxWalker_TokenCounter;format=md-fenced-code-block;dedent=true -->

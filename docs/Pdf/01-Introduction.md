@@ -42,10 +42,10 @@ and macOS, and in trimmed and NativeAOT applications.
 
 | Namespace | Contains |
 | --- | --- |
-| `Meziantou.Framework.Pdf` | Documents, pages, the content builder, fonts, images, metadata, outline, encryption, conformance |
-| `Meziantou.Framework.Pdf.Objects` | The object model: `PdfDictionary`, `PdfArray`, `PdfStream`, `PdfName`... |
-| `Meziantou.Framework.Pdf.Rendering` | `PdfRenderer` and its options |
-| `Meziantou.Framework.Pdf.Signing` | `PdfSigner`, `PdfSignatureVerifier` and their options |
+| [Meziantou.Framework.Pdf](cref:Meziantou.Framework.Pdf) | Documents, pages, the content builder, fonts, images, metadata, outline, encryption, conformance |
+| [Meziantou.Framework.Pdf.Objects](cref:Meziantou.Framework.Pdf.Objects) | The object model: `PdfDictionary`, `PdfArray`, `PdfStream`, `PdfName`... |
+| [Meziantou.Framework.Pdf.Rendering](cref:Meziantou.Framework.Pdf.Rendering) | `PdfRenderer` and its options |
+| [Meziantou.Framework.Pdf.Signing](cref:Meziantou.Framework.Pdf.Signing) | `PdfSigner`, `PdfSignatureVerifier` and their options |
 
 The library uses `Meziantou.Framework.Imaging` for the images (decoding, color profiles, the rendered pages) and
 `Meziantou.Framework.Fonts` for the fonts it embeds; both are installed with the package.

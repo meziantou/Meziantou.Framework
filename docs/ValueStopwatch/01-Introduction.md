@@ -29,7 +29,7 @@ it across an `await`. It is immutable, so copying it is safe: the copy measures 
 
 ## Namespace
 
-`ValueStopwatch` is in the `Meziantou.Framework` namespace.
+`ValueStopwatch` is in the [Meziantou.Framework](cref:Meziantou.Framework) namespace.
 
 ## Next steps
 

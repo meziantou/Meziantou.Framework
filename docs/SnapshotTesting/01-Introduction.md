@@ -45,7 +45,7 @@ The verified files are part of your code: commit them, and review their changes 
 | `Meziantou.Framework.SnapshotTesting.Roslyn` | Snapshots of source generator results, syntax trees and diagnostics. See [Roslyn](07-Extensions/04-Roslyn.md) |
 | `Meziantou.Framework.SnapshotTesting.Tool` | A .NET tool that approves the actual files. See [The approval tool](06-UpdatingSnapshots/03-ApprovalTool.md) |
 
-All the types of the main package are in the `Meziantou.Framework.SnapshotTesting` namespace.
+All the types of the main package are in the [Meziantou.Framework.SnapshotTesting](cref:Meziantou.Framework.SnapshotTesting) namespace.
 
 ## File snapshots or inline snapshots
 

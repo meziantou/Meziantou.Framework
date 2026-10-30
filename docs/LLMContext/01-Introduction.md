@@ -28,7 +28,7 @@ remove these variables. And a process started by an agent, even indirectly, inhe
 
 ## Namespace
 
-`LLMContextDetector` and `LLMContextKind` are in the `Meziantou.Framework.LLMContext` namespace.
+`LLMContextDetector` and `LLMContextKind` are in the [Meziantou.Framework.LLMContext](cref:Meziantou.Framework.LLMContext) namespace.
 
 ## Next steps
 

@@ -23,12 +23,12 @@ which does not support them everywhere (macOS among others). The `Sha3` type of 
 
 - The implementations are tested against the test vectors of their specifications, but they have not been audited.
 - The package replaces `Meziantou.Framework.Bcrypt`: the BCrypt types keep their names, in the
-  `Meziantou.Framework.Hashing` namespace.
+  [Meziantou.Framework.Hashing](cref:Meziantou.Framework.Hashing) namespace.
 - `Crc32` and `Adler32` use the vector and CRC instructions of the processor when they are available.
 
 ## Namespace
 
-Every type is in the `Meziantou.Framework.Hashing` namespace.
+Every type is in the [Meziantou.Framework.Hashing](cref:Meziantou.Framework.Hashing) namespace.
 
 ## Next steps
 

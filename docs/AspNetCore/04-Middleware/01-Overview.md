@@ -14,7 +14,7 @@ description: The middleware and diagnostics of the Meziantou.AspNetCore package.
 dotnet add package Meziantou.AspNetCore
 ```
 
-`UseNoCache` is in the `Meziantou.AspNetCore` namespace; the debugging types are in `Meziantou.AspNetCore.Diagnostics`.
+`UseNoCache` is in the [Meziantou.AspNetCore](cref:Meziantou.AspNetCore) namespace; the debugging types are in [Meziantou.AspNetCore.Diagnostics](cref:Meziantou.AspNetCore.Diagnostics).
 
 The [service defaults](../03-ServiceDefaults/01-Overview.md) already add the no-cache middleware: you don't need to call
 `UseNoCache` in an application that uses them.

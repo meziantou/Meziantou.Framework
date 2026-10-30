@@ -35,7 +35,7 @@ that walks a music library does not need a `try` block for each file.
 
 ## Namespace
 
-Every type is in the `Meziantou.Framework.MediaTags` namespace: `MediaFile`, `MediaTagInfo`, `MediaPicture`,
+Every type is in the [Meziantou.Framework.MediaTags](cref:Meziantou.Framework.MediaTags) namespace: `MediaFile`, `MediaTagInfo`, `MediaPicture`,
 `ReplayGainInfo`, `MediaTagWriteOptions` and the result types.
 
 ## Next steps

@@ -10,9 +10,9 @@ save them in any format the library writes, draw them on existing images, and pa
 dotnet add package Meziantou.Framework.Imaging.Barcodes
 ```
 
-The types are in the `Meziantou.Framework.Imaging.Barcodes` namespace. The examples also use the
-`Meziantou.Framework.Barcodes`, `Meziantou.Framework.Imaging`, `Meziantou.Framework.Imaging.Drawing` and
-`Meziantou.Framework.Imaging.Formats` namespaces.
+The types are in the [Meziantou.Framework.Imaging.Barcodes](cref:Meziantou.Framework.Imaging.Barcodes) namespace. The examples also use the
+[Meziantou.Framework.Barcodes](cref:Meziantou.Framework.Barcodes), [Meziantou.Framework.Imaging](cref:Meziantou.Framework.Imaging), [Meziantou.Framework.Imaging.Drawing](cref:Meziantou.Framework.Imaging.Drawing) and
+[Meziantou.Framework.Imaging.Formats](cref:Meziantou.Framework.Imaging.Formats) namespaces.
 
 ## Render a code as an image
 

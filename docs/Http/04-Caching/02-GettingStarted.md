@@ -13,8 +13,8 @@ dotnet add package Meziantou.Framework.Http.Caching
 dotnet add package Meziantou.Framework.Http.Caching.InMemory
 ```
 
-`HttpCachingDelegateHandler`, `HttpCachingOptions` and `IHttpCacheStore` are in the `Meziantou.Framework.Http.Caching`
-namespace, and `InMemoryHttpCacheStore` in `Meziantou.Framework.Http.Caching.InMemory`.
+`HttpCachingDelegateHandler`, `HttpCachingOptions` and `IHttpCacheStore` are in the [Meziantou.Framework.Http.Caching](cref:Meziantou.Framework.Http.Caching)
+namespace, and `InMemoryHttpCacheStore` in [Meziantou.Framework.Http.Caching.InMemory](cref:Meziantou.Framework.Http.Caching.InMemory).
 
 ## Add the cache to an HttpClient
 

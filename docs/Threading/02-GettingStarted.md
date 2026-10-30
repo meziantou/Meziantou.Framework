@@ -11,8 +11,8 @@ Add the `Meziantou.Framework.Threading` package to a project that targets .NET 1
 dotnet add package Meziantou.Framework.Threading
 ```
 
-The types are in three namespaces: `Meziantou.Framework.Threading`, `Meziantou.Framework.Threading.Tasks` and
-`Meziantou.Framework.Collections.Concurrent`. See [Introduction](01-Introduction.md#namespaces) for what each contains.
+The types are in three namespaces: [Meziantou.Framework.Threading](cref:Meziantou.Framework.Threading), [Meziantou.Framework.Threading.Tasks](cref:Meziantou.Framework.Threading.Tasks) and
+[Meziantou.Framework.Collections.Concurrent](cref:Meziantou.Framework.Collections.Concurrent). See [Introduction](01-Introduction.md#namespaces) for what each contains.
 
 ## Protect a resource in asynchronous code
 
@@ -46,7 +46,7 @@ Assert.Equal(3, counter);
 
 ## Await several tasks and get their results
 
-With the `Meziantou.Framework.Threading.Tasks` namespace, a tuple of tasks can be awaited directly. The result is a
+With the [Meziantou.Framework.Threading.Tasks](cref:Meziantou.Framework.Threading.Tasks) namespace, a tuple of tasks can be awaited directly. The result is a
 tuple of the results, which you can deconstruct:
 
 <!-- ref:../../tests/Meziantou.Framework.Threading.Tests/TaskExtensionsTests.cs;region=TaskExtensions_WhenAll;format=md-fenced-code-block;dedent=true -->

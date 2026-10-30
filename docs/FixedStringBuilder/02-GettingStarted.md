@@ -11,7 +11,7 @@ Add the `Meziantou.Framework.FixedStringBuilder` package to your project:
 dotnet add package Meziantou.Framework.FixedStringBuilder
 ```
 
-The types are in the `Meziantou.Framework.FixedStringBuilder` namespace. The examples of this documentation omit the
+The types are in the [Meziantou.Framework.FixedStringBuilder](cref:Meziantou.Framework.FixedStringBuilder) namespace. The examples of this documentation omit the
 `using` directives, and check their results with assertions such as `Assert.Equal`.
 
 ## Choose a capacity

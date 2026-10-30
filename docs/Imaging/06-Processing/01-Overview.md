@@ -4,7 +4,7 @@ description: Crop, resize, rotate, blur, adjust the colors, reduce to a palette 
 ---
 
 The processing operations are extension methods of `Image` and `ImageFrame` (`ImageProcessingExtensions`, in the
-`Meziantou.Framework.Imaging` namespace). They change the image in place: clone it first with `Clone()` to keep the
+[Meziantou.Framework.Imaging](cref:Meziantou.Framework.Imaging) namespace). They change the image in place: clone it first with `Clone()` to keep the
 original.
 
 ## The operations

@@ -9,7 +9,7 @@ description: Install the package, build a compilation unit, and write it as C# c
 dotnet add package Meziantou.Framework.CodeDom
 ```
 
-The types are in the `Meziantou.Framework.CodeDom` namespace. The examples of this documentation omit the `using`
+The types are in the [Meziantou.Framework.CodeDom](cref:Meziantou.Framework.CodeDom) namespace. The examples of this documentation omit the `using`
 directives, and check their results with assertions such as `Assert.Equal`.
 
 ## Build a file

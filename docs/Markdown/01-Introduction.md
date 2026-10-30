@@ -39,14 +39,14 @@ adds both the parser of its syntax and the renderer of its elements.
 
 | Namespace | Contains |
 | --- | --- |
-| `Meziantou.Framework.Markdown` | `MarkdownConverter`, the pipeline and its builder, the extension methods (`UsePipeTables`, …) |
-| `Meziantou.Framework.Markdown.Syntax` | The document and the blocks (`HeadingBlock`, `ParagraphBlock`, `ListBlock`, …), positions |
-| `Meziantou.Framework.Markdown.Syntax.Inlines` | The inlines (`LiteralInline`, `EmphasisInline`, `LinkInline`, …) |
-| `Meziantou.Framework.Markdown.Renderers` | `HtmlRenderer` and the base classes of the renderers |
-| `Meziantou.Framework.Markdown.Renderers.Html` | The HTML renderer of each element, and `HtmlAttributes` |
-| `Meziantou.Framework.Markdown.Renderers.Normalize` | `NormalizeRenderer` and `NormalizeOptions` |
-| `Meziantou.Framework.Markdown.Renderers.Roundtrip` | `RoundtripRenderer` |
-| `Meziantou.Framework.Markdown.Parsers` | The block and inline parsers, to write your own |
+| [Meziantou.Framework.Markdown](cref:Meziantou.Framework.Markdown) | `MarkdownConverter`, the pipeline and its builder, the extension methods (`UsePipeTables`, …) |
+| [Meziantou.Framework.Markdown.Syntax](cref:Meziantou.Framework.Markdown.Syntax) | The document and the blocks (`HeadingBlock`, `ParagraphBlock`, `ListBlock`, …), positions |
+| [Meziantou.Framework.Markdown.Syntax.Inlines](cref:Meziantou.Framework.Markdown.Syntax.Inlines) | The inlines (`LiteralInline`, `EmphasisInline`, `LinkInline`, …) |
+| [Meziantou.Framework.Markdown.Renderers](cref:Meziantou.Framework.Markdown.Renderers) | `HtmlRenderer` and the base classes of the renderers |
+| [Meziantou.Framework.Markdown.Renderers.Html](cref:Meziantou.Framework.Markdown.Renderers.Html) | The HTML renderer of each element, and `HtmlAttributes` |
+| [Meziantou.Framework.Markdown.Renderers.Normalize](cref:Meziantou.Framework.Markdown.Renderers.Normalize) | `NormalizeRenderer` and `NormalizeOptions` |
+| [Meziantou.Framework.Markdown.Renderers.Roundtrip](cref:Meziantou.Framework.Markdown.Renderers.Roundtrip) | `RoundtripRenderer` |
+| [Meziantou.Framework.Markdown.Parsers](cref:Meziantou.Framework.Markdown.Parsers) | The block and inline parsers, to write your own |
 | `Meziantou.Framework.Markdown.Extensions.*` | One namespace per extension, with its options and its syntax elements (`Tables`, `Yaml`, …) |
 
 ## Next steps

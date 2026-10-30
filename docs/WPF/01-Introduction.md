@@ -24,7 +24,7 @@ is in the `Meziantou.Framework.Threading` package. See
 
 ## Namespace
 
-The types are in the `Meziantou.Framework.WPF` namespace:
+The types are in the [Meziantou.Framework.WPF](cref:Meziantou.Framework.WPF) namespace:
 
 | Type | Contains |
 | --- | --- |

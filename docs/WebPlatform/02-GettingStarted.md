@@ -11,9 +11,9 @@ Add the `Meziantou.Framework.WebPlatform` package to a project that targets .NET
 dotnet add package Meziantou.Framework.WebPlatform
 ```
 
-The examples of this documentation omit the `using` directives. The parser is in the `Meziantou.Framework.WebPlatform`
+The examples of this documentation omit the `using` directives. The parser is in the [Meziantou.Framework.WebPlatform](cref:Meziantou.Framework.WebPlatform)
 namespace, and the DOM types (`Document`, `HtmlAnchorElement`, `BrowsingContext`...) are in
-`Meziantou.Framework.WebPlatform.Dom`; see [Namespaces](01-Introduction.md#namespaces) for the others.
+[Meziantou.Framework.WebPlatform.Dom](cref:Meziantou.Framework.WebPlatform.Dom); see [Namespaces](01-Introduction.md#namespaces) for the others.
 
 ## Parse and query a page
 

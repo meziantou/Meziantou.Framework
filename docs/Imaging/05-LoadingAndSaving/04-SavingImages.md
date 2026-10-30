@@ -51,7 +51,7 @@ image.Frames[0].Save("first.jpg",                         // JPEG stores one fra
 ```
 <!-- endref -->
 
-The encoders are in the `Meziantou.Framework.Imaging.Formats` namespace. They are immutable: create one and reuse it
+The encoders are in the [Meziantou.Framework.Imaging.Formats](cref:Meziantou.Framework.Imaging.Formats) namespace. They are immutable: create one and reuse it
 for every image, from any thread. Each format page lists the settings of its encoder: see
 [Supported formats](../10-Formats/01-Overview.md).
 

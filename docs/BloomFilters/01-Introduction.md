@@ -28,7 +28,7 @@ of a URL already seen.
 
 ## Namespace
 
-The types are in the `Meziantou.Framework.BloomFilters` namespace:
+The types are in the [Meziantou.Framework.BloomFilters](cref:Meziantou.Framework.BloomFilters) namespace:
 
 | Type | Contains |
 | --- | --- |

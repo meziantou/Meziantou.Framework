@@ -22,7 +22,7 @@ public sealed class UpperCaseStringConverter : TomlConverter<string>
 <!-- endref -->
 
 For open generic types, or types chosen at runtime, derive from `TomlConverterFactory`, which creates the converter of
-each type. The converter types are in the `Meziantou.Framework.Toml.Serialization` namespace.
+each type. The converter types are in the [Meziantou.Framework.Toml.Serialization](cref:Meziantou.Framework.Toml.Serialization) namespace.
 
 ## Register a converter
 

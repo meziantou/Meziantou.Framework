@@ -30,7 +30,7 @@ Every record has a `Name`, a `RecordType`, a `RecordClass`, a `TimeToLive` (in s
 
 ### Typed record classes
 
-The records are in the `Meziantou.Framework.DnsClient.Response.Records` namespace:
+The records are in the [Meziantou.Framework.DnsClient.Response.Records](cref:Meziantou.Framework.DnsClient.Response.Records) namespace:
 
 | Record types | Class |
 | --- | --- |

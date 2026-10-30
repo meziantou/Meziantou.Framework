@@ -3,7 +3,7 @@ title: Screenshots
 description: Take a screenshot of the viewport, the full page, an element or an area, as an image, a PNG or a JPEG file.
 ---
 
-The `TakeScreenshot` extension methods of the `Meziantou.Framework.WebPlatform.Imaging` namespace draw the current state of
+The `TakeScreenshot` extension methods of the [Meziantou.Framework.WebPlatform.Imaging](cref:Meziantou.Framework.WebPlatform.Imaging) namespace draw the current state of
 a page. Load the page and its resources first:
 
 <!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Imaging.Tests/DocumentationImageTests.cs;region=WebPlatformImaging_PageScreenshot;format=md-fenced-code-block;dedent=true -->

@@ -31,7 +31,7 @@ event handlers (`onclick`…), the attributes that hold a URL, `style`, `data-*`
 frameworks (`x-init`, `hx-get`…) can run a script or cover the page. [Security](../10-Security.md) gives the full list.
 
 When the Markdown is trusted, pass a filter to allow more attributes. `GenericAttributesExtension.IsSafeAttributeName`
-(namespace `Meziantou.Framework.Markdown.Extensions.GenericAttributes`) is the default filter:
+(namespace [Meziantou.Framework.Markdown.Extensions.GenericAttributes](cref:Meziantou.Framework.Markdown.Extensions.GenericAttributes)) is the default filter:
 
 <!-- ref:../../../tests/Meziantou.Framework.Markdown.Tests/TestCoreApi.cs;region=MarkdownConverter_GenericAttributesFilter;format=md-fenced-code-block;dedent=true -->
 ```csharp

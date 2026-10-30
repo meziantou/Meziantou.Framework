@@ -25,7 +25,7 @@ not fit throws an `ArgumentException`: the types never truncate.
 
 | Package | Contains |
 | --- | --- |
-| `Meziantou.Framework.FixedStringBuilder` | The built-in types and the `IFixedString` interfaces, in the `Meziantou.Framework.FixedStringBuilder` namespace. |
+| `Meziantou.Framework.FixedStringBuilder` | The built-in types and the `IFixedString` interfaces, in the [Meziantou.Framework.FixedStringBuilder](cref:Meziantou.Framework.FixedStringBuilder) namespace. |
 | `Meziantou.Framework.FixedStringBuilder.Generator` | A source generator that creates a type of any capacity from a `partial struct`, and its analyzer. |
 
 ## Next steps

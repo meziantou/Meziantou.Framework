@@ -6,8 +6,8 @@ description: Read YAML as a stream of parsing events without building a tree, an
 The parser turns YAML into a sequence of events: the start and end of the stream, of each document, mapping and
 sequence, and the scalars and aliases between them. The emitter does the opposite. This is the lowest layer of the
 library: it builds no tree, so it suits large documents and code that only needs a few values. `Parser`,
-`EventReader` and `Emitter` are in the `Meziantou.Framework.Yaml` namespace, and the events in
-`Meziantou.Framework.Yaml.Events`.
+`EventReader` and `Emitter` are in the [Meziantou.Framework.Yaml](cref:Meziantou.Framework.Yaml) namespace, and the events in
+[Meziantou.Framework.Yaml.Events](cref:Meziantou.Framework.Yaml.Events).
 
 ## Read events
 

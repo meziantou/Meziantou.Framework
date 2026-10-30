@@ -48,7 +48,7 @@ about 60 npm packages compared with Chromium.
 
 ## Namespace
 
-Every type is in the `Meziantou.Framework.JavaScriptEngine` namespace.
+Every type is in the [Meziantou.Framework.JavaScriptEngine](cref:Meziantou.Framework.JavaScriptEngine) namespace.
 
 ## Next steps
 

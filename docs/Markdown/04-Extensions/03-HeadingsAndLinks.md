@@ -28,7 +28,7 @@ Assert.Equal("""
 
 A `{#id}` [attribute](06-GenericAttributes.md) replaces the computed identifier.
 
-The `AutoIdentifierOptions` flags (namespace `Meziantou.Framework.Markdown.Extensions.AutoIdentifiers`) change how the
+The `AutoIdentifierOptions` flags (namespace [Meziantou.Framework.Markdown.Extensions.AutoIdentifiers](cref:Meziantou.Framework.Markdown.Extensions.AutoIdentifiers)) change how the
 identifier is computed:
 
 | Option | Effect |
@@ -74,7 +74,7 @@ Assert.Equal("<p>Visit <a href=\"https://www.example.com\">www.example.com</a> o
 ```
 <!-- endref -->
 
-The options of `AutoLinkOptions` (namespace `Meziantou.Framework.Markdown.Extensions.AutoLinks`):
+The options of `AutoLinkOptions` (namespace [Meziantou.Framework.Markdown.Extensions.AutoLinks](cref:Meziantou.Framework.Markdown.Extensions.AutoLinks)):
 
 | Option | Default | Effect |
 | --- | --- | --- |
@@ -138,7 +138,7 @@ Assert.Equal("<p><iframe src=\"https://www.youtube.com/embed/dQw4w9WgXcQ\" class
 ```
 <!-- endref -->
 
-The options of `MediaOptions` (namespace `Meziantou.Framework.Markdown.Extensions.MediaLinks`):
+The options of `MediaOptions` (namespace [Meziantou.Framework.Markdown.Extensions.MediaLinks](cref:Meziantou.Framework.Markdown.Extensions.MediaLinks)):
 
 | Option | Default | Effect |
 | --- | --- | --- |

@@ -5,7 +5,7 @@ description: Read and change the dictionaries, arrays and streams of a document 
 
 A PDF file is a graph of objects: dictionaries, arrays, streams, names, strings, numbers and references between them. The
 high-level members (`Pages`, `Information`, `Annotations`...) read and write these objects; anything they do not cover
-can be done with the objects themselves. The types are in the `Meziantou.Framework.Pdf.Objects` namespace.
+can be done with the objects themselves. The types are in the [Meziantou.Framework.Pdf.Objects](cref:Meziantou.Framework.Pdf.Objects) namespace.
 
 ## Read objects
 

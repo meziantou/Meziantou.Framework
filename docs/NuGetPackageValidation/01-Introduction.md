@@ -33,8 +33,8 @@ fail when a package does not follow them.
 
 ## Namespace
 
-The types are in the `Meziantou.Framework.NuGetPackageValidation` namespace. The package path is a `FullPath`, from the
-`Meziantou.Framework` namespace:
+The types are in the [Meziantou.Framework.NuGetPackageValidation](cref:Meziantou.Framework.NuGetPackageValidation) namespace. The package path is a `FullPath`, from the
+[Meziantou.Framework](cref:Meziantou.Framework) namespace:
 
 | Type | Contains |
 | --- | --- |

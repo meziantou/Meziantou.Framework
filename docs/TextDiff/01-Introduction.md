@@ -38,7 +38,7 @@ place and an insertion at its new place.
 
 ## Namespace
 
-Every type is in the `Meziantou.Framework` namespace: `TextDiff`, `TextDiffOptions`, `TextChunker`, `TextDiffResult`,
+Every type is in the [Meziantou.Framework](cref:Meziantou.Framework) namespace: `TextDiff`, `TextDiffOptions`, `TextChunker`, `TextDiffResult`,
 `TextDiffEntry` and the hierarchy types.
 
 ## Next steps

@@ -48,7 +48,7 @@ either.
 
 ## Namespace
 
-Every type is in the `Meziantou.Framework.Scheduling` namespace.
+Every type is in the [Meziantou.Framework.Scheduling](cref:Meziantou.Framework.Scheduling) namespace.
 
 ## Next steps
 

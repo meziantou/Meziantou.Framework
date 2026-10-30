@@ -11,7 +11,7 @@ username and a password in the `Authorization` header of every request, and the 
 dotnet add package Meziantou.AspNetCore.Authentication.HttpBasic
 ```
 
-The types are in the `Meziantou.AspNetCore.Authentication.HttpBasic` namespace.
+The types are in the [Meziantou.AspNetCore.Authentication.HttpBasic](cref:Meziantou.AspNetCore.Authentication.HttpBasic) namespace.
 
 > [!WARNING]
 > HTTP Basic sends the password on every request, encoded with Base64, which is not encryption. Serve these endpoints

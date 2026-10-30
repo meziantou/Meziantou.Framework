@@ -3,7 +3,7 @@ title: Overview
 description: Choose the collection that fits your data, from circular buffers to tries and equatable immutable collections.
 ---
 
-The collections are in the `Meziantou.Framework.Collections` namespace. They complement the collections of .NET for
+The collections are in the [Meziantou.Framework.Collections](cref:Meziantou.Framework.Collections) namespace. They complement the collections of .NET for
 needs that come up regularly.
 
 | Collection | Use it to | Page |

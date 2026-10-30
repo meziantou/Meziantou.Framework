@@ -22,7 +22,7 @@ to use them.
 
 ## Namespace
 
-`DiffTools`, `DiffTool` and `ResolvedTool` are in the `Meziantou.Framework.DiffEngine` namespace.
+`DiffTools`, `DiffTool` and `ResolvedTool` are in the [Meziantou.Framework.DiffEngine](cref:Meziantou.Framework.DiffEngine) namespace.
 
 ## Next steps
 

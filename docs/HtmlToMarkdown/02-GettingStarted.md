@@ -94,7 +94,7 @@ Assert.Equal("""
 ```
 <!-- endref -->
 
-`HtmlDocumentParser` is in the `Meziantou.Framework.WebPlatform` namespace. The
+`HtmlDocumentParser` is in the [Meziantou.Framework.WebPlatform](cref:Meziantou.Framework.WebPlatform) namespace. The
 [command-line tool](07-CommandLineTool.md) does this for you.
 
 ## Next steps

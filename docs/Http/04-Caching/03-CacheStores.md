@@ -46,7 +46,7 @@ await cacheStore.SaveToFileAsync(cacheFilePath);
 ## SQLite
 
 `SqliteHttpCacheStore` keeps the entries in a SQLite database. Install `Meziantou.Framework.Http.Caching.Sqlite`; the
-store is in the `Meziantou.Framework.Http.Caching.Sqlite` namespace and `SqliteConnectionStringBuilder` in
+store is in the [Meziantou.Framework.Http.Caching.Sqlite](cref:Meziantou.Framework.Http.Caching.Sqlite) namespace and `SqliteConnectionStringBuilder` in
 `Microsoft.Data.Sqlite`:
 
 <!-- ref:../../../tests/Meziantou.Framework.Http.Caching.Tests/PersistenceProvidersTests.cs;region=HttpCaching_SqliteStore;format=md-fenced-code-block;dedent=true -->
@@ -79,7 +79,7 @@ using var response = await httpClient.GetAsync("https://example.com/data");
 ## Redis
 
 `RedisHttpCacheStore` keeps the entries in Redis. Install `Meziantou.Framework.Http.Caching.Redis`; the store is in the
-`Meziantou.Framework.Http.Caching.Redis` namespace and takes an `IConnectionMultiplexer` from `StackExchange.Redis`:
+[Meziantou.Framework.Http.Caching.Redis](cref:Meziantou.Framework.Http.Caching.Redis) namespace and takes an `IConnectionMultiplexer` from `StackExchange.Redis`:
 
 <!-- ref:../../../samples/Meziantou.Framework.Http.Samples/HttpCachingExamples.cs;region=HttpCaching_RedisStore;format=md-fenced-code-block;dedent=true -->
 ```csharp

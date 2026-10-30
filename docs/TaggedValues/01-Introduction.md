@@ -51,7 +51,7 @@ base, and for values that are not ids, such as units and keys.
 
 ## Namespaces
 
-`ValueTagAttribute` is in the `Meziantou.Framework.TaggedValues` namespace. It is the only type of the package.
+`ValueTagAttribute` is in the [Meziantou.Framework.TaggedValues](cref:Meziantou.Framework.TaggedValues) namespace. It is the only type of the package.
 
 ## Next steps
 

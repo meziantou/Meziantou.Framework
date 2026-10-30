@@ -34,7 +34,7 @@ when the stream is disposed, ready for the next stream.
 
 ## Namespace
 
-The types are in the `Meziantou.Framework` namespace:
+The types are in the [Meziantou.Framework](cref:Meziantou.Framework) namespace:
 
 | Type | Contains |
 | --- | --- |

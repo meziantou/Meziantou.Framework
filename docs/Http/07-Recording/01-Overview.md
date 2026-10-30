@@ -25,4 +25,4 @@ no flaky dependency, and the same responses every time.
 
 ## Namespace
 
-Every type is in the `Meziantou.Framework.Http.Recording` namespace.
+Every type is in the [Meziantou.Framework.Http.Recording](cref:Meziantou.Framework.Http.Recording) namespace.

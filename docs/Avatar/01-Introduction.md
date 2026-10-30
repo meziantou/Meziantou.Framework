@@ -32,7 +32,7 @@ background. Use them for the users, teams or projects that have no picture.
 
 ## Namespace
 
-The types are in the `Meziantou.Framework` namespace:
+The types are in the [Meziantou.Framework](cref:Meziantou.Framework) namespace:
 
 | Type | Contains |
 | --- | --- |

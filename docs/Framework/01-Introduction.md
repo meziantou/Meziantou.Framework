@@ -27,14 +27,14 @@ learning the others.
 
 ## Namespaces
 
-Most helpers are in the `Meziantou.Framework` namespace. The others are in:
+Most helpers are in the [Meziantou.Framework](cref:Meziantou.Framework) namespace. The others are in:
 
 | Namespace | Contains |
 | --- | --- |
-| `Meziantou.Framework.Collections` | The collections |
-| `Meziantou.Framework.DataAnnotations` | The validation attributes |
-| `Meziantou.Framework.Diagnostics` | `ScopedActivityListener` |
-| `Meziantou.Framework.Text` | UTF-8 helpers |
+| [Meziantou.Framework.Collections](cref:Meziantou.Framework.Collections) | The collections |
+| [Meziantou.Framework.DataAnnotations](cref:Meziantou.Framework.DataAnnotations) | The validation attributes |
+| [Meziantou.Framework.Diagnostics](cref:Meziantou.Framework.Diagnostics) | `ScopedActivityListener` |
+| [Meziantou.Framework.Text](cref:Meziantou.Framework.Text) | UTF-8 helpers |
 
 Most helpers are extension methods: once the namespace is imported, they appear on the types they extend, such as
 `string`, `IEnumerable<T>`, `Stream` or `Process`.

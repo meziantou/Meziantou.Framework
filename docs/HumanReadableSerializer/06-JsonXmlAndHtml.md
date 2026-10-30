@@ -37,14 +37,14 @@ Assert.Equal("""
 
 | Method | Media types | Options |
 | --- | --- | --- |
-| `AddJsonFormatter(JsonFormatterOptions?)` | `application/json`, `text/json`, `*+json` | `WriteIndented` (default `true`), `OrderProperties` (default `false`), `FormatAsStandardObject` (default `false`) |
-| `AddXmlFormatter(XmlFormatterOptions?)` | `application/xml`, `text/xml`, `*+xml` | `WriteIndented` (default `true`), `OrderAttributes` (default `false`) |
-| `AddUrlEncodedFormFormatter(UrlEncodedFormFormatterOptions?)` | `application/x-www-form-urlencoded` | `OrderProperties`, `UnescapeValues` and `PrettyFormat` (default `true`) |
+| `AddJsonFormatter(JsonFormatterOptions?)` | `application/json`, `text/json`, `*+json` | [WriteIndented](cref:Meziantou.Framework.HumanReadable.ValueFormatters.JsonFormatterOptions.WriteIndented) (default `true`), [OrderProperties](cref:Meziantou.Framework.HumanReadable.ValueFormatters.JsonFormatterOptions.OrderProperties) (default `false`), [FormatAsStandardObject](cref:Meziantou.Framework.HumanReadable.ValueFormatters.JsonFormatterOptions.FormatAsStandardObject) (default `false`) |
+| `AddXmlFormatter(XmlFormatterOptions?)` | `application/xml`, `text/xml`, `*+xml` | [WriteIndented](cref:Meziantou.Framework.HumanReadable.ValueFormatters.XmlFormatterOptions.WriteIndented) (default `true`), [OrderAttributes](cref:Meziantou.Framework.HumanReadable.ValueFormatters.XmlFormatterOptions.OrderAttributes) (default `false`) |
+| `AddUrlEncodedFormFormatter(UrlEncodedFormFormatterOptions?)` | `application/x-www-form-urlencoded` | [OrderProperties](cref:Meziantou.Framework.HumanReadable.ValueFormatters.UrlEncodedFormFormatterOptions.OrderProperties), [UnescapeValues](cref:Meziantou.Framework.HumanReadable.ValueFormatters.UrlEncodedFormFormatterOptions.UnescapeValues) and [PrettyFormat](cref:Meziantou.Framework.HumanReadable.ValueFormatters.UrlEncodedFormFormatterOptions.PrettyFormat) (default `true`) |
 
 Without a formatter, the value is written as it is. A value that cannot be parsed, such as invalid JSON, is written as it
 is too.
 
-`FormatAsStandardObject` writes the JSON as the serializer writes objects, without braces and quotes:
+[FormatAsStandardObject](cref:Meziantou.Framework.HumanReadable.ValueFormatters.JsonFormatterOptions.FormatAsStandardObject) writes the JSON as the serializer writes objects, without braces and quotes:
 
 <!-- ref:../../tests/Meziantou.Framework.HumanReadableSerializer.Tests/HumanReadableSerializerOptionsTests.cs;region=HumanReadableSerializer_JsonAsObject;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -99,9 +99,9 @@ escaped again, and `<br/>` becomes `<br>`. Two HTML values that differ only by t
 
 | Option | Description |
 | --- | --- |
-| `OrderAttributes` | Sorts the attributes of each element by namespace and name |
-| `AttributeQuote` | `HtmlAttributeQuote.DoubleQuote` (the default) or `HtmlAttributeQuote.SimpleQuote` |
-| `RedactContentSecurityPolicyNonce` | Replaces the value of the `nonce` attributes with `[redacted]`, as a nonce changes on every response |
+| [OrderAttributes](cref:Meziantou.Framework.HumanReadable.ValueFormatters.HtmlFormatterOptions.OrderAttributes) | Sorts the attributes of each element by namespace and name |
+| [AttributeQuote](cref:Meziantou.Framework.HumanReadable.ValueFormatters.HtmlFormatterOptions.AttributeQuote) | [HtmlAttributeQuote.DoubleQuote](cref:Meziantou.Framework.HumanReadable.ValueFormatters.HtmlAttributeQuote.DoubleQuote) (the default) or [HtmlAttributeQuote.SimpleQuote](cref:Meziantou.Framework.HumanReadable.ValueFormatters.HtmlAttributeQuote.SimpleQuote) |
+| [RedactContentSecurityPolicyNonce](cref:Meziantou.Framework.HumanReadable.ValueFormatters.HtmlFormatterOptions.RedactContentSecurityPolicyNonce) | Replaces the value of the `nonce` attributes with `[redacted]`, as a nonce changes on every response |
 
 A value that contains a doctype or an `html`, `head` or `body` tag is parsed as a document, and keeps these elements:
 
@@ -126,7 +126,7 @@ it. A value that cannot be formatted is written as it is.
 
 ## Other media types
 
-`AddFormatter(mediaType, formatter)` registers a `ValueFormatter` for any media type. A formatter overrides
-`Format(writer, value, options)` and writes the value with the `HumanReadableTextWriter`. The `ValueFormatter`
-constants name the media types the serializer recognizes: `JsonMediaTypeName`, `XmlMediaTypeName`,
-`HtmlMediaTypeName`, `WwwFormUrlEncodedMediaTypeName`, `CssMediaTypeName` and `JavascriptMediaTypeName`.
+`AddFormatter(mediaType, formatter)` registers a [ValueFormatter](cref:Meziantou.Framework.HumanReadable.ValueFormatters.ValueFormatter) for any media type. A formatter overrides
+`Format(writer, value, options)` and writes the value with the [HumanReadableTextWriter](cref:Meziantou.Framework.HumanReadable.HumanReadableTextWriter). The [ValueFormatter](cref:Meziantou.Framework.HumanReadable.ValueFormatters.ValueFormatter)
+constants name the media types the serializer recognizes: [JsonMediaTypeName](cref:Meziantou.Framework.HumanReadable.ValueFormatters.ValueFormatter.JsonMediaTypeName), [XmlMediaTypeName](cref:Meziantou.Framework.HumanReadable.ValueFormatters.ValueFormatter.XmlMediaTypeName),
+[HtmlMediaTypeName](cref:Meziantou.Framework.HumanReadable.ValueFormatters.ValueFormatter.HtmlMediaTypeName), [WwwFormUrlEncodedMediaTypeName](cref:Meziantou.Framework.HumanReadable.ValueFormatters.ValueFormatter.WwwFormUrlEncodedMediaTypeName), [CssMediaTypeName](cref:Meziantou.Framework.HumanReadable.ValueFormatters.ValueFormatter.CssMediaTypeName) and [JavascriptMediaTypeName](cref:Meziantou.Framework.HumanReadable.ValueFormatters.ValueFormatter.JavascriptMediaTypeName).

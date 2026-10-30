@@ -10,7 +10,10 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <para>The steps, for each paragraph (the text between two mandatory line breaks):</para>
 /// <list type="number">
 /// <item><description>
-/// <b>Direction.</b> The Unicode Bidirectional Algorithm (UAX #9) gives each character an embedding level.
+/// <b>Direction.</b> The Unicode Bidirectional Algorithm (UAX #9) gives each character an embedding level. Its
+/// paragraphs end at a paragraph separator (a line feed, a carriage return, a next line or U+2029): the paragraphs
+/// that a vertical tab, a form feed or a line separator end are parts of one paragraph of the algorithm, which gives
+/// them its direction.
 /// </description></item>
 /// <item><description>
 /// <b>Items.</b> The paragraph is cut where the level, the script, the font or what a style changes for shaping
@@ -37,6 +40,10 @@ namespace Meziantou.Framework.Imaging.Internals;
 internal sealed class TextLayoutEngine
 {
     private const int SoftHyphen = 0x00AD;
+
+    // The line breaks that are paragraph separators of the bidirectional algorithm (class B, rule P1): a line feed, a
+    // carriage return, a next line and a paragraph separator.
+    private static readonly System.Buffers.SearchValues<char> BidiParagraphSeparators = System.Buffers.SearchValues.Create("\n\r\u0085\u2029");
 
     private static readonly uint Vert = ShapingFeature.ToTag("vert");
     private static readonly uint Vrt2 = ShapingFeature.ToTag("vrt2");
@@ -95,6 +102,13 @@ internal sealed class TextLayoutEngine
     private long _glyphCount;
     private bool _isTruncated;
     private bool _hasMissingGlyphs;
+
+    // The paragraph of the bidirectional algorithm being laid out: the text up to the next paragraph separator. A
+    // vertical tab, a form feed and a line separator end a line, not this paragraph.
+    private int _bidiStart = -1;
+    private int _bidiEnd;
+    private byte[] _bidiLevels = [];
+    private byte _bidiLevel;
 
     private TextLayoutEngine(string text, TextSpan[] spans, TextLayoutOptions options, double scale, double maxWidth, double maxHeight)
     {
@@ -215,6 +229,25 @@ internal sealed class TextLayoutEngine
         };
     }
 
+    /// <summary>
+    /// Gives the level of the paragraph to the white space and the formatting characters that end the text of a
+    /// paragraph, before its line break, as rule L1 does at the end of a line.
+    /// </summary>
+    private static void ResetTrailingWhiteSpaceLevels(ReadOnlySpan<char> content, byte level, Span<byte> levels)
+    {
+        var start = content.Length;
+        while (start > 0 && Rune.DecodeLastFromUtf16(content[..start], out var rune, out var length) == System.Buffers.OperationStatus.Done
+            && UnicodeProperties.GetBidiClass(rune.Value) is UnicodeBidirectionalCategory.WhiteSpace or UnicodeBidirectionalCategory.BoundaryNeutral
+                or UnicodeBidirectionalCategory.FirstStrongIsolate or UnicodeBidirectionalCategory.LeftToRightIsolate or UnicodeBidirectionalCategory.RightToLeftIsolate or UnicodeBidirectionalCategory.PopDirectionalIsolate
+                or UnicodeBidirectionalCategory.LeftToRightEmbedding or UnicodeBidirectionalCategory.RightToLeftEmbedding or UnicodeBidirectionalCategory.LeftToRightOverride or UnicodeBidirectionalCategory.RightToLeftOverride
+                or UnicodeBidirectionalCategory.PopDirectionalFormat)
+        {
+            start -= length;
+        }
+
+        levels[start..content.Length].Fill(level);
+    }
+
     /// <summary>Lays out a paragraph.</summary>
     /// <returns><see langword="false"/> when the layout is full: the rest of the text is not laid out.</returns>
     private bool LayoutParagraph(Paragraph paragraph)
@@ -226,8 +259,20 @@ internal sealed class TextLayoutEngine
             TextDirection.RightToLeft => UnicodeBidiDirection.RightToLeft,
             _ => UnicodeBidiDirection.Auto,
         };
-        paragraph.Levels = new byte[content.Length];
-        paragraph.Level = (byte)UnicodeBidi.ResolveLevels(content, direction, paragraph.Levels);
+        // The levels come from the paragraph of the bidirectional algorithm the paragraph is part of: the text after a
+        // line break that does not separate paragraphs keeps the direction of the text before it.
+        if (_bidiStart < 0 || paragraph.Start > _bidiEnd)
+        {
+            var end = _text.AsSpan(paragraph.Start).IndexOfAny(BidiParagraphSeparators);
+            _bidiStart = paragraph.Start;
+            _bidiEnd = end < 0 ? _text.Length : paragraph.Start + end;
+            _bidiLevels = new byte[_bidiEnd - _bidiStart];
+            _bidiLevel = (byte)UnicodeBidi.ResolveLevels(_text.AsSpan(_bidiStart, _bidiEnd - _bidiStart), direction, _bidiLevels);
+        }
+
+        paragraph.Level = _bidiLevel;
+        paragraph.Levels = _bidiLevels.AsSpan(paragraph.Start - _bidiStart, content.Length).ToArray();
+        ResetTrailingWhiteSpaceLevels(content, paragraph.Level, paragraph.Levels);
         if (_isVertical && _orientation == TextOrientation.Upright)
         {
             // Upright text is laid out from the top, whatever its script
@@ -249,11 +294,14 @@ internal sealed class TextLayoutEngine
             Shape(paragraph, item);
         }
 
+        // A negative indent is a hanging indent: the first line starts at the edge and the lines after it are indented
+        // by its magnitude. Every line stays in the box of the layout.
+        var firstLineIndent = _options.FirstLineIndent * _scale;
         var from = paragraph.Start;
         var isFirst = true;
         do
         {
-            var indent = isFirst ? _options.FirstLineIndent * _scale : 0;
+            var indent = Math.Max(isFirst ? firstLineIndent : -firstLineIndent, 0);
             var to = paragraph.End;
             var isHyphenated = false;
             if (_wraps && from < paragraph.End)

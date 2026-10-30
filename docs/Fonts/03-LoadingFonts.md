@@ -5,7 +5,7 @@ description: Load fonts from files, streams and memory, bound the work of hostil
 
 ## Load a font
 
-`FontLoader` reads a whole font file into memory: the tables of a font refer to each other by offsets, and a face reads
+[FontLoader](cref:Meziantou.Framework.Fonts.FontLoader) reads a whole font file into memory: the tables of a font refer to each other by offsets, and a face reads
 them in place.
 
 | Method | Reads |
@@ -14,7 +14,7 @@ them in place.
 | `FontLoader.Load(Stream, environment)` | A stream, to its end |
 | `FontLoader.LoadAsync(Stream, environment, useEmbeddedBitmaps, cancellationToken)` | A stream, asynchronously |
 
-The result is an array of `FontFace`: one for a font, one per font of a collection. The faces of a collection share the
+The result is an array of [FontFace](cref:Meziantou.Framework.Fonts.FontFace): one for a font, one per font of a collection. The faces of a collection share the
 bytes of the file.
 
 - What every use of the font needs is validated when it is loaded: the table directory, the required tables, their
@@ -26,11 +26,11 @@ bytes of the file.
 
 ## The environment
 
-The font code takes what it needs from its caller through a `FontEnvironment`: the limits of its work
-(`FontResourceLimits`), and the allocators of its temporary buffers. A face keeps its environment
+The font code takes what it needs from its caller through a [FontEnvironment](cref:Meziantou.Framework.Fonts.FontEnvironment): the limits of its work
+([FontResourceLimits](cref:Meziantou.Framework.Fonts.FontResourceLimits)), and the allocators of its temporary buffers. A face keeps its environment
 (`FontFace.Data.Environment`), and the operations on the face rent their buffers from it.
 
-`PooledFontEnvironment` is the environment of an application that has no allocator of its own: the temporary buffers
+[PooledFontEnvironment](cref:Meziantou.Framework.Fonts.PooledFontEnvironment) is the environment of an application that has no allocator of its own: the temporary buffers
 are rented from the shared array pool, and the bytes the buffers of one operation hold at the same time are bounded by
 `maxLiveAllocationBytes`. Create one environment and reuse it for every font.
 
@@ -39,26 +39,26 @@ are rented from the shared array pool, and the bytes the buffers of one operatio
 A font is untrusted input, like an image: its composite glyphs can refer to each other and its subroutines call each
 other, to describe an outline far larger than the file, and its lookups can multiply glyphs. The limits bound this work:
 
-| `FontResourceLimits` | Default | What it bounds |
+| [FontResourceLimits](cref:Meziantou.Framework.Fonts.FontResourceLimits) | Default | What it bounds |
 | --- | --- | --- |
-| `MaxEncodedBytes` | 256 MiB | The bytes read from a font file |
-| `MaxFontBytes` | 256 MiB | The bytes a font keeps in memory, checked before a WOFF or WOFF2 file is expanded |
-| `MaxGlyphComplexity` | 1,000,000 | The elementary operations (outline points, components, charstring operators, instructions) to produce one glyph |
-| `MaxTextGlyphs` | 1,000,000 | The glyphs of a shaped text |
+| [MaxEncodedBytes](cref:Meziantou.Framework.Fonts.FontResourceLimits.MaxEncodedBytes) | 256 MiB | The bytes read from a font file |
+| [MaxFontBytes](cref:Meziantou.Framework.Fonts.FontResourceLimits.MaxFontBytes) | 256 MiB | The bytes a font keeps in memory, checked before a WOFF or WOFF2 file is expanded |
+| [MaxGlyphComplexity](cref:Meziantou.Framework.Fonts.FontResourceLimits.MaxGlyphComplexity) | 1,000,000 | The elementary operations (outline points, components, charstring operators, instructions) to produce one glyph |
+| [MaxTextGlyphs](cref:Meziantou.Framework.Fonts.FontResourceLimits.MaxTextGlyphs) | 1,000,000 | The glyphs of a shaped text |
 
 The limit of the temporary buffers is the `maxLiveAllocationBytes` of the environment. Lower the limits when you accept
 fonts from users.
 
 ## Errors
 
-The exceptions of the font code derive from `FontException`:
+The exceptions of the font code derive from [FontException](cref:Meziantou.Framework.Fonts.FontException):
 
 | Exception | When |
 | --- | --- |
-| `UnknownFontFormatException` | The data does not start with the signature of a font format |
-| `InvalidFontException` | The font does not follow the rules of its format |
-| `UnsupportedFontFeatureException` | A valid font uses a feature that is not supported; `Feature` names it |
-| `FontResourceLimitException` | A limit is exceeded; `Kind`, `Limit` and `Requested` say which and by how much |
+| [UnknownFontFormatException](cref:Meziantou.Framework.Fonts.UnknownFontFormatException) | The data does not start with the signature of a font format |
+| [InvalidFontException](cref:Meziantou.Framework.Fonts.InvalidFontException) | The font does not follow the rules of its format |
+| [UnsupportedFontFeatureException](cref:Meziantou.Framework.Fonts.UnsupportedFontFeatureException) | A valid font uses a feature that is not supported; [Feature](cref:Meziantou.Framework.Fonts.UnsupportedFontFeatureException.Feature) names it |
+| [FontResourceLimitException](cref:Meziantou.Framework.Fonts.FontResourceLimitException) | A limit is exceeded; [Kind](cref:Meziantou.Framework.Fonts.FontResourceLimitException.Kind), [Limit](cref:Meziantou.Framework.Fonts.FontResourceLimitException.Limit) and [Requested](cref:Meziantou.Framework.Fonts.FontResourceLimitException.Requested) say which and by how much |
 
 <!-- ref:../../tests/Meziantou.Framework.Imaging.Tests/FontTests.cs;region=Fonts_LoadErrors;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -74,5 +74,5 @@ Assert.Equal(FontResourceLimitKind.EncodedBytes, exception.Kind);
 ```
 <!-- endref -->
 
-A glyph is validated when it is decoded: `DecodeOutline` and the shaping of a text can also throw
-`InvalidFontException` and `FontResourceLimitException` for a font that loaded without error.
+A glyph is validated when it is decoded: [DecodeOutline](cref:Meziantou.Framework.Fonts.FontFace.DecodeOutline) and the shaping of a text can also throw
+[InvalidFontException](cref:Meziantou.Framework.Fonts.InvalidFontException) and [FontResourceLimitException](cref:Meziantou.Framework.Fonts.FontResourceLimitException) for a font that loaded without error.

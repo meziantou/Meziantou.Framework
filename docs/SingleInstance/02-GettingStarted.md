@@ -53,18 +53,18 @@ else
 - The application id is a GUID that identifies the application. Every process of the application must use the same
   one, and no other application may use it: generate it once, for instance with `[guid]::NewGuid()` in PowerShell or
   `uuidgen`, and write it in the code.
-- Subscribe to `NewInstance` before calling `StartApplication`. `StartApplication` starts listening for
+- Subscribe to [NewInstance](cref:Meziantou.Framework.SingleInstance.NewInstance) before calling [StartApplication](cref:Meziantou.Framework.SingleInstance.StartApplication). [StartApplication](cref:Meziantou.Framework.SingleInstance.StartApplication) starts listening for
   notifications, so a notification that arrives before the handler is attached is lost.
-- `StartApplication` returns `true` in the first instance. The application runs as usual and receives the arguments of
-  the next instances in `NewInstance`.
-- In the other instances, `StartApplication` returns `false`. `NotifyFirstInstance` sends the arguments to the first
+- [StartApplication](cref:Meziantou.Framework.SingleInstance.StartApplication) returns `true` in the first instance. The application runs as usual and receives the arguments of
+  the next instances in [NewInstance](cref:Meziantou.Framework.SingleInstance.NewInstance).
+- In the other instances, [StartApplication](cref:Meziantou.Framework.SingleInstance.StartApplication) returns `false`. [NotifyFirstInstance](cref:Meziantou.Framework.SingleInstance.NotifyFirstInstance) sends the arguments to the first
   instance, then the process exits.
-- Keep the `SingleInstance` object alive, and do not dispose it, for as long as the application runs. Disposing it stops
+- Keep the [SingleInstance](cref:Meziantou.Framework.SingleInstance) object alive, and do not dispose it, for as long as the application runs. Disposing it stops
   the notifications.
 
 ## Detect a running instance only
 
-When the first instance does not need the arguments of the next ones, set `StartServer` to `false`: `StartApplication`
+When the first instance does not need the arguments of the next ones, set [StartServer](cref:Meziantou.Framework.SingleInstance.StartServer) to `false`: [StartApplication](cref:Meziantou.Framework.SingleInstance.StartApplication)
 then only tells whether another instance is running, and no notification server is started.
 
 <!-- ref:../../samples/SingleInstanceConsoleAppSample/SingleInstanceExamples.cs;region=SingleInstance_DetectOnly;format=md-fenced-code-block;dedent=true -->
@@ -86,11 +86,11 @@ return 0;
 ```
 <!-- endref -->
 
-An instance started with `StartServer = false` cannot receive notifications: `NotifyFirstInstance` returns `false` in
+An instance started with `StartServer = false` cannot receive notifications: [NotifyFirstInstance](cref:Meziantou.Framework.SingleInstance.NotifyFirstInstance) returns `false` in
 the next instances.
 
 ## Next steps
 
 - [Receiving notifications](03-ReceivingNotifications.md): the content of the notification, the thread it is raised
   on, and what happens when the first instance does not answer.
-- [How it works](04-HowItWorks.md): the scope of an instance and the lifetime of the `SingleInstance` object.
+- [How it works](04-HowItWorks.md): the scope of an instance and the lifetime of the [SingleInstance](cref:Meziantou.Framework.SingleInstance) object.

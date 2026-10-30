@@ -5,8 +5,8 @@ description: Parse RFC 5545 recurrence rules, enumerate their occurrences, write
 
 ## Parse a rule
 
-`RecurrenceRule.Parse` and `RecurrenceRule.TryParse` read the value of an `RRULE` property, such as
-`FREQ=WEEKLY;BYDAY=MO,WE;COUNT=10`. The parser follows RFC 5545 section 3.3.10 strictly, and `TryParse` tells why a rule
+[RecurrenceRule.Parse](cref:Meziantou.Framework.Scheduling.RecurrenceRule.Parse) and [RecurrenceRule.TryParse](cref:Meziantou.Framework.Scheduling.RecurrenceRule.TryParse) read the value of an `RRULE` property, such as
+`FREQ=WEEKLY;BYDAY=MO,WE;COUNT=10`. The parser follows RFC 5545 section 3.3.10 strictly, and [TryParse](cref:Meziantou.Framework.Scheduling.RecurrenceRule.TryParse) tells why a rule
 is rejected:
 
 <!-- ref:../../tests/Meziantou.Framework.Scheduling.Tests/RecurrenceRuleTests.cs;region=RecurrenceRule_InvalidRule;format=md-fenced-code-block;dedent=true -->
@@ -104,7 +104,7 @@ A date that does not exist, such as February 30 or February 29 of a common year,
 
 ## The start of the series
 
-The date passed to `GetNextOccurrences` is the start of the series, the `DTSTART` of the event, not the date to search
+The date passed to [GetNextOccurrences](cref:Meziantou.Framework.Scheduling.RecurrenceRule.GetNextOccurrences) is the start of the series, the `DTSTART` of the event, not the date to search
 from. `COUNT` counts the occurrences from it, and `INTERVAL` and the periods are aligned on it. Passing `DateTime.Now`
 starts a new series at every call, so a rule such as `FREQ=WEEKLY;INTERVAL=2;COUNT=10` would give other dates each time.
 
@@ -130,7 +130,7 @@ Assert.Equal(
 ```
 <!-- endref -->
 
-`GetNextOccurrence` returns the first occurrence, or `null` when the series has none. For the next occurrence after a
+[GetNextOccurrence](cref:Meziantou.Framework.Scheduling.RecurrenceRuleExtensions.GetNextOccurrence) returns the first occurrence, or `null` when the series has none. For the next occurrence after a
 date, filter the occurrences the same way:
 
 <!-- ref:../../tests/Meziantou.Framework.Scheduling.Tests/RecurrenceRuleTests.cs;region=RecurrenceRule_NextOccurrence;format=md-fenced-code-block;dedent=true -->
@@ -154,7 +154,7 @@ Assert.Null(rule.GetNextOccurrences(dtStart).Where(occurrence => occurrence > af
 
 ## End the series
 
-`COUNT` ends the series after a number of occurrences, `UNTIL` after a date. A rule with neither never ends: `IsForever`
+`COUNT` ends the series after a number of occurrences, `UNTIL` after a date. A rule with neither never ends: [IsForever](cref:Meziantou.Framework.Scheduling.RecurrenceRule.IsForever)
 returns `true`.
 
 `UNTIL` can be a date or a date-time:
@@ -179,9 +179,9 @@ returns `true`.
   ```
   <!-- endref -->
 
-- A floating date-time, `UNTIL=20240110T100000`, is a wall-clock time, like a date. Both give an `EndDate` whose `Kind`
+- A floating date-time, `UNTIL=20240110T100000`, is a wall-clock time, like a date. Both give an [EndDate](cref:Meziantou.Framework.Scheduling.RecurrenceRule.EndDate) whose `Kind`
   is `Unspecified`.
-- A UTC date-time, `UNTIL=20240110T100000Z`, or one with an offset, is an instant: `EndDate` is a `Utc` value.
+- A UTC date-time, `UNTIL=20240110T100000Z`, or one with an offset, is an instant: [EndDate](cref:Meziantou.Framework.Scheduling.RecurrenceRule.EndDate) is a `Utc` value.
 
 An instant bounds the occurrences of a start date whose `Kind` is `Utc` or `Local`, or of a `DateTimeOffset`, by
 instant; it bounds the occurrences of an `Unspecified` start date by wall clock. A wall-clock `UNTIL` always bounds them
@@ -212,15 +212,15 @@ Assert.Equal(
 
 | Property | Rule part |
 | --- | --- |
-| `Interval` | `INTERVAL`; at least 1 |
-| `Occurrences` | `COUNT`; not negative |
-| `EndDate` | `UNTIL` |
-| `WeekStart` | `WKST` |
-| `BySeconds`, `ByMinutes`, `ByHours`, `ByMonths`, `ByMonthDays`, `BySetPositions` | The `BY…` rule parts |
+| [Interval](cref:Meziantou.Framework.Scheduling.RecurrenceRule.Interval) | `INTERVAL`; at least 1 |
+| [Occurrences](cref:Meziantou.Framework.Scheduling.RecurrenceRule.Occurrences) | `COUNT`; not negative |
+| [EndDate](cref:Meziantou.Framework.Scheduling.RecurrenceRule.EndDate) | `UNTIL` |
+| [WeekStart](cref:Meziantou.Framework.Scheduling.RecurrenceRule.WeekStart) | `WKST` |
+| [BySeconds](cref:Meziantou.Framework.Scheduling.RecurrenceRule.BySeconds), [ByMinutes](cref:Meziantou.Framework.Scheduling.RecurrenceRule.ByMinutes), [ByHours](cref:Meziantou.Framework.Scheduling.RecurrenceRule.ByHours), [ByMonths](cref:Meziantou.Framework.Scheduling.RecurrenceRule.ByMonths), [ByMonthDays](cref:Meziantou.Framework.Scheduling.RecurrenceRule.ByMonthDays), [BySetPositions](cref:Meziantou.Framework.Scheduling.RecurrenceRule.BySetPositions) | The `BY…` rule parts |
 
-- `Occurrences` and `EndDate` cannot both be set: setting one while the other has a value throws an
+- [Occurrences](cref:Meziantou.Framework.Scheduling.RecurrenceRule.Occurrences) and [EndDate](cref:Meziantou.Framework.Scheduling.RecurrenceRule.EndDate) cannot both be set: setting one while the other has a value throws an
   `InvalidOperationException`.
-- Setting `EndDate` replaces a date with a date-time, which is an exact bound.
+- Setting [EndDate](cref:Meziantou.Framework.Scheduling.RecurrenceRule.EndDate) replaces a date with a date-time, which is an exact bound.
 - The values of the `BY…` lists are checked when the enumeration of the occurrences starts, which throws an
   `InvalidOperationException` for a value such as `ByHours = [24]`.
 - The rule is read when the enumeration starts: changing it does not change an enumeration in progress.

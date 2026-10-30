@@ -5,7 +5,7 @@ description: Paint linear and radial gradients and meshes, repeat a cell as a ti
 
 ## Gradients
 
-A shading (`PdfShading`) is a smooth change of color. `PaintShading` paints it over the whole clipping region: clip to a
+A shading ([PdfShading](cref:Meziantou.Framework.Pdf.PdfShading)) is a smooth change of color. [PaintShading](cref:Meziantou.Framework.Pdf.PdfContentBuilder.PaintShading) paints it over the whole clipping region: clip to a
 shape first.
 
 <!-- ref:../../../tests/Meziantou.Framework.Pdf.Tests/PdfContentBuilderTests.cs;region=Pdf_DrawGradients;format=md-fenced-code-block;dedent=true -->
@@ -44,24 +44,24 @@ public static void DrawGradients(string outputPath)
 
 | Shading | The color changes |
 | --- | --- |
-| `PdfShading.Axial` | Along a line, between two points |
-| `PdfShading.Radial` | Between two circles |
-| `PdfShading.FunctionBased` | With the position, by a function of two inputs |
-| `PdfShading.TriangleMesh`, `LatticeMesh` | Between the colors of the vertices of triangles |
-| `PdfShading.CoonsPatchMesh`, `TensorPatchMesh` | Inside patches bounded by Bézier curves (`PdfPatch`) |
+| [PdfShading.Axial](cref:Meziantou.Framework.Pdf.PdfShading.Axial) | Along a line, between two points |
+| [PdfShading.Radial](cref:Meziantou.Framework.Pdf.PdfShading.Radial) | Between two circles |
+| [PdfShading.FunctionBased](cref:Meziantou.Framework.Pdf.PdfShading.FunctionBased) | With the position, by a function of two inputs |
+| [PdfShading.TriangleMesh](cref:Meziantou.Framework.Pdf.PdfShading.TriangleMesh), [LatticeMesh](cref:Meziantou.Framework.Pdf.PdfShading.LatticeMesh) | Between the colors of the vertices of triangles |
+| [PdfShading.CoonsPatchMesh](cref:Meziantou.Framework.Pdf.PdfShading.CoonsPatchMesh), [TensorPatchMesh](cref:Meziantou.Framework.Pdf.PdfShading.TensorPatchMesh) | Inside patches bounded by Bézier curves ([PdfPatch](cref:Meziantou.Framework.Pdf.PdfPatch)) |
 
 - An axial or a radial shading stops at its ends; `extendStart` and `extendEnd` continue its first and last colors.
-- The colors come from a function (`PdfFunction`). `PdfFunction.Gradient` creates one from stops, a position from 0 to
+- The colors come from a function ([PdfFunction](cref:Meziantou.Framework.Pdf.PdfFunction)). [PdfFunction.Gradient](cref:Meziantou.Framework.Pdf.PdfFunction.Gradient) creates one from stops, a position from 0 to
   1 and a color; all the colors must be in the same color space (gray, RGB or CMYK), the color space of the shading.
-  The other functions are `Exponential` (between two colors), `Stitching` (functions side by side), `Sampled` (a table
-  of values) and `PostScript` (a small program).
-- `Background` paints the area outside the shading when the shading is used in a pattern, and `AntiAlias` asks the
+  The other functions are [Exponential](cref:Meziantou.Framework.Pdf.PdfFunction.Exponential) (between two colors), [Stitching](cref:Meziantou.Framework.Pdf.PdfFunction.Stitching) (functions side by side), [Sampled](cref:Meziantou.Framework.Pdf.PdfFunction.Sampled) (a table
+  of values) and [PostScript](cref:Meziantou.Framework.Pdf.PdfFunction.PostScript) (a small program).
+- [Background](cref:Meziantou.Framework.Pdf.PdfShading.Background) paints the area outside the shading when the shading is used in a pattern, and [AntiAlias](cref:Meziantou.Framework.Pdf.PdfShading.AntiAlias) asks the
   readers to smooth it.
 
 ## Patterns
 
 A pattern is a color that repeats a drawing or follows a gradient. It fills shapes and text, and outlines them, with
-`SetFillPattern` and `SetStrokePattern`:
+[SetFillPattern](cref:Meziantou.Framework.Pdf.PdfContentBuilder.SetFillPattern) and [SetStrokePattern](cref:Meziantou.Framework.Pdf.PdfContentBuilder.SetStrokePattern):
 
 <!-- ref:../../../tests/Meziantou.Framework.Pdf.Tests/PdfContentBuilderTests.cs;region=Pdf_DrawPatterns;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -96,11 +96,11 @@ public static void DrawPatterns(string outputPath)
 
 ![A blue checkerboard, red and green diagonal stripes, and the word PDF filled with a gradient from blue to pink](images/DrawPatterns.png)
 
-- `CreateTilingPattern` creates a tiling pattern: a cell drawn once with its own content builder, repeated every
+- [CreateTilingPattern](cref:Meziantou.Framework.Pdf.PdfDocument.CreateTilingPattern) creates a tiling pattern: a cell drawn once with its own content builder, repeated every
   `xStep` and `yStep` points. A colored pattern sets its own colors; an uncolored one (`isColored: false`) is a shape,
-  painted with the color given to `SetFillPattern`, so one pattern serves for every color.
-- `PdfShadingPattern` uses a shading as a color, so that a gradient can fill text or outline a shape.
+  painted with the color given to [SetFillPattern](cref:Meziantou.Framework.Pdf.PdfContentBuilder.SetFillPattern), so one pattern serves for every color.
+- [PdfShadingPattern](cref:Meziantou.Framework.Pdf.PdfShadingPattern) uses a shading as a color, so that a gradient can fill text or outline a shape.
 - A pattern is positioned in the coordinates of the page, not in those of the current transformation: its matrix
-  (`matrix` of `CreateTilingPattern`, of `PdfShadingPattern`) moves, turns or scales it, as the stripes of the example.
+  (`matrix` of [CreateTilingPattern](cref:Meziantou.Framework.Pdf.PdfDocument.CreateTilingPattern), of [PdfShadingPattern](cref:Meziantou.Framework.Pdf.PdfShadingPattern)) moves, turns or scales it, as the stripes of the example.
 - A tiling pattern belongs to its document, like a form. Shadings, functions and shading patterns do not belong to a
   document: create them once, and use them in several documents.

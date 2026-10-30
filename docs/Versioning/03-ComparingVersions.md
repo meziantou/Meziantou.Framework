@@ -5,7 +5,7 @@ description: Compare and sort versions with the Semantic Versioning precedence, 
 
 ## Compare and sort versions
 
-`SemanticVersion` implements `IComparable<SemanticVersion>`, `IEquatable<SemanticVersion>` and the comparison
+[SemanticVersion](cref:Meziantou.Framework.Versioning.SemanticVersion) implements `IComparable<SemanticVersion>`, `IEquatable<SemanticVersion>` and the comparison
 operators:
 
 <!-- ref:../../tests/Meziantou.Framework.Versioning.Tests/SemanticVersionTests.cs;region=SemanticVersion_Compare;format=md-fenced-code-block;dedent=true -->
@@ -37,7 +37,7 @@ The order is the precedence of Semantic Versioning 2.0.0:
 
 ## Compute the next version
 
-The `SemanticVersionExtensions` methods return the next stable version:
+The [SemanticVersionExtensions](cref:Meziantou.Framework.Versioning.SemanticVersionExtensions) methods return the next stable version:
 
 <!-- ref:../../tests/Meziantou.Framework.Versioning.Tests/SemanticVersionTests.cs;region=SemanticVersion_NextVersions;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -59,9 +59,9 @@ Assert.Equal("2.0.0", rc.NextMajorVersion().ToString());
 ```
 <!-- endref -->
 
-- `NextPatchVersion` increments the patch number of a stable version, and removes the labels of a prerelease:
+- [NextPatchVersion](cref:Meziantou.Framework.Versioning.SemanticVersionExtensions.NextPatchVersion) increments the patch number of a stable version, and removes the labels of a prerelease:
   `1.2.3-beta` is followed by `1.2.3`.
-- `NextMinorVersion` returns the smallest stable version that is greater and whose patch number is 0.
-- `NextMajorVersion` returns the smallest stable version that is greater and whose minor and patch numbers are 0.
+- [NextMinorVersion](cref:Meziantou.Framework.Versioning.SemanticVersionExtensions.NextMinorVersion) returns the smallest stable version that is greater and whose patch number is 0.
+- [NextMajorVersion](cref:Meziantou.Framework.Versioning.SemanticVersionExtensions.NextMajorVersion) returns the smallest stable version that is greater and whose minor and patch numbers are 0.
 - The result never has prerelease labels or metadata. A number that would exceed `int.MaxValue` throws an
   `OverflowException`.

@@ -3,7 +3,7 @@ title: Introduction
 description: Validate objects, documents, images and generated code against snapshot files stored next to your tests.
 ---
 
-`Meziantou.Framework.SnapshotTesting` replaces long lists of assertions with a single call. `Snapshot.Validate` serializes
+`Meziantou.Framework.SnapshotTesting` replaces long lists of assertions with a single call. [Snapshot.Validate](cref:Meziantou.Framework.SnapshotTesting.Snapshot.Validate) serializes
 the value under test and compares the result with a file committed next to the test, the *snapshot*. When the value
 changes, the test fails and shows the difference: either the change is a bug, or you approve the new snapshot.
 
@@ -39,7 +39,7 @@ The verified files are part of your code: commit them, and review their changes 
 
 | Package | Contains |
 | --- | --- |
-| `Meziantou.Framework.SnapshotTesting` | `Snapshot.Validate`, the settings, the serializers of objects, byte arrays and streams, the scrubbers and the merge tools |
+| `Meziantou.Framework.SnapshotTesting` | [Snapshot.Validate](cref:Meziantou.Framework.SnapshotTesting.Snapshot.Validate), the settings, the serializers of objects, byte arrays and streams, the scrubbers and the merge tools |
 | `Meziantou.Framework.SnapshotTesting.Imaging` | Image snapshots compared by their pixels, exactly or by similarity. See [Images](07-Extensions/02-Images.md) |
 | `Meziantou.Framework.SnapshotTesting.Pdf` | PDF snapshots stored as one PNG image per page and a JSON file of metadata. See [PDF documents](07-Extensions/03-Pdf.md) |
 | `Meziantou.Framework.SnapshotTesting.Roslyn` | Snapshots of source generator results, syntax trees and diagnostics. See [Roslyn](07-Extensions/04-Roslyn.md) |

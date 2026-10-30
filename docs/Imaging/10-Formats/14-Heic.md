@@ -4,7 +4,7 @@ description: Read the photos of phones and cameras, and write HEIC images and im
 ---
 
 HEIC stores HEVC (H.265) images in the HEIF container: it is the format of the photos of Apple devices and of many
-cameras. The library has its own HEVC decoder and encoder. `HeicEncoder` is **lossless by default**, and lossless files
+cameras. The library has its own HEVC decoder and encoder. [HeicEncoder](cref:Meziantou.Framework.Imaging.Formats.HeicEncoder) is **lossless by default**, and lossless files
 are large and opened by fewer readers: choose lossy 4:2:0 output for files that other devices must open.
 
 ## What is read and written
@@ -17,13 +17,13 @@ are large and opened by fewer readers: choose lossy 4:2:0 output for files that 
 | Geometry | Clean aperture applied; orientation reported | Orientation of still images |
 | Metadata | ICC profile, EXIF, XMP, CICP color description | The same |
 
-8-bit files load as `Rgb24`, `Rgba32` with alpha, or `Gray8`; deeper files load as `Rgb48`, `Rgba64` or `Gray16`, their
+8-bit files load as [Rgb24](cref:Meziantou.Framework.Imaging.Rgb24), [Rgba32](cref:Meziantou.Framework.Imaging.Rgba32) with alpha, or [Gray8](cref:Meziantou.Framework.Imaging.Gray8); deeper files load as [Rgb48](cref:Meziantou.Framework.Imaging.Rgb48), [Rgba64](cref:Meziantou.Framework.Imaging.Rgba64) or [Gray16](cref:Meziantou.Framework.Imaging.Gray16), their
 samples scaled to 16 bits exactly.
 
 ## Load a phone photo
 
 A camera stores the image as the sensor reads it, and the rotation as a property of the file: it is reported in
-`Metadata.Orientation`, and `AutoOrient` applies it. The ICC profile (Display P3 on recent phones) and the EXIF block
+`Metadata.Orientation`, and [AutoOrient](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoOrient) applies it. The ICC profile (Display P3 on recent phones) and the EXIF block
 are kept:
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_LoadHeic;format=md-fenced-code-block;dedent=true -->
@@ -87,29 +87,29 @@ decode.
 
 | Option | What it does | Default |
 | --- | --- | --- |
-| `Compression` | `Lossless` or `Lossy` | `Lossless` |
-| `Quality` | 0 (smallest) to 100 (best) for lossy output | 75 |
-| `Effort` | 0 (fastest, largest) to 9 (slowest, smallest): trades encoding time for size, never changes lossless pixels | 5 |
-| `ChromaSubsampling` | `Auto` (4:2:0), `Ratio420`, `Ratio422` or `Ratio444`, for lossy output | `Auto` |
-| `BitDepth` | 8, 10 or 12; `null` keeps the depth of the pixel format. A value for a 16-bit pixel format allows rounding to it | `null` |
-| `AllowBitDepthReduction` | Lets 16-bit pixel formats be rounded to 12 bits when `BitDepth` is not set | `false` |
-| `ClearTransparentColors` | Replaces the color of fully transparent pixels with black, which makes the file smaller | `false` |
-| `GridTileSize` | Cuts a still image larger than a tile into tiles coded separately (64 to 65,528 pixels per side); cameras use 512 x 512 | `null` |
-| `KeyFrameInterval` | The number of images from a key frame to the next in a sequence; 0 makes the first image the only key frame | 0 |
-| `DurationRounding` | `RequireExact` stores durations exactly or throws; `RoundToNearest` rounds them to microseconds when they need it | `RequireExact` |
-| `MetadataHandling` | What to do with metadata HEIC cannot store (text, resolution) | `Strict` |
+| [Compression](cref:Meziantou.Framework.Imaging.Formats.HeicEncoder.Compression) | [Lossless](cref:Meziantou.Framework.Imaging.Formats.HeicCompression.Lossless) or [Lossy](cref:Meziantou.Framework.Imaging.Formats.HeicCompression.Lossy) | [Lossless](cref:Meziantou.Framework.Imaging.Formats.HeicCompression.Lossless) |
+| [Quality](cref:Meziantou.Framework.Imaging.Formats.HeicEncoder.Quality) | 0 (smallest) to 100 (best) for lossy output | 75 |
+| [Effort](cref:Meziantou.Framework.Imaging.Formats.HeicEncoder.Effort) | 0 (fastest, largest) to 9 (slowest, smallest): trades encoding time for size, never changes lossless pixels | 5 |
+| [ChromaSubsampling](cref:Meziantou.Framework.Imaging.Formats.HeicEncoder.ChromaSubsampling) | [Auto](cref:Meziantou.Framework.Imaging.Formats.HeicChromaSubsampling.Auto) (4:2:0), [Ratio420](cref:Meziantou.Framework.Imaging.Formats.HeicChromaSubsampling.Ratio420), [Ratio422](cref:Meziantou.Framework.Imaging.Formats.HeicChromaSubsampling.Ratio422) or [Ratio444](cref:Meziantou.Framework.Imaging.Formats.HeicChromaSubsampling.Ratio444), for lossy output | [Auto](cref:Meziantou.Framework.Imaging.Formats.HeicChromaSubsampling.Auto) |
+| [BitDepth](cref:Meziantou.Framework.Imaging.Formats.HeicEncoder.BitDepth) | 8, 10 or 12; `null` keeps the depth of the pixel format. A value for a 16-bit pixel format allows rounding to it | `null` |
+| [AllowBitDepthReduction](cref:Meziantou.Framework.Imaging.Formats.HeicEncoder.AllowBitDepthReduction) | Lets 16-bit pixel formats be rounded to 12 bits when [BitDepth](cref:Meziantou.Framework.Imaging.Formats.HeicEncoder.BitDepth) is not set | `false` |
+| [ClearTransparentColors](cref:Meziantou.Framework.Imaging.Formats.HeicEncoder.ClearTransparentColors) | Replaces the color of fully transparent pixels with black, which makes the file smaller | `false` |
+| [GridTileSize](cref:Meziantou.Framework.Imaging.Formats.HeicEncoder.GridTileSize) | Cuts a still image larger than a tile into tiles coded separately (64 to 65,528 pixels per side); cameras use 512 x 512 | `null` |
+| [KeyFrameInterval](cref:Meziantou.Framework.Imaging.Formats.HeicEncoder.KeyFrameInterval) | The number of images from a key frame to the next in a sequence; 0 makes the first image the only key frame | 0 |
+| [DurationRounding](cref:Meziantou.Framework.Imaging.Formats.HeicEncoder.DurationRounding) | [RequireExact](cref:Meziantou.Framework.Imaging.Formats.FrameDurationRounding.RequireExact) stores durations exactly or throws; [RoundToNearest](cref:Meziantou.Framework.Imaging.Formats.FrameDurationRounding.RoundToNearest) rounds them to microseconds when they need it | [RequireExact](cref:Meziantou.Framework.Imaging.Formats.FrameDurationRounding.RequireExact) |
+| [MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling) | What to do with metadata HEIC cannot store (text, resolution) | [Strict](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling.Strict) |
 
-The quality scale is not the one of `AvifEncoder`: at the same number, a HEIC file is closer to its source and larger.
+The quality scale is not the one of [AvifEncoder](cref:Meziantou.Framework.Imaging.Formats.AvifEncoder): at the same number, a HEIC file is closer to its source and larger.
 
 ## Pitfalls
 
-- `Save("photo.heic")` is lossless: pass a `HeicEncoder` with `Compression = HeicCompression.Lossy` for photos.
-- HEIC stores at most 12 bits: `Rgba64` and `Gray16` images throw unless `BitDepth` or `AllowBitDepthReduction` is set.
+- `Save("photo.heic")` is lossless: pass a [HeicEncoder](cref:Meziantou.Framework.Imaging.Formats.HeicEncoder) with `Compression = HeicCompression.Lossy` for photos.
+- HEIC stores at most 12 bits: [Rgba64](cref:Meziantou.Framework.Imaging.Rgba64) and [Gray16](cref:Meziantou.Framework.Imaging.Gray16) images throw unless [BitDepth](cref:Meziantou.Framework.Imaging.Formats.HeicEncoder.BitDepth) or [AllowBitDepthReduction](cref:Meziantou.Framework.Imaging.Formats.HeicEncoder.AllowBitDepthReduction) is set.
 - An image sequence needs a seekable destination and a known frame count, and stores no orientation. A still image
   goes to any stream.
-- Encoding a large image takes time: a lower `Effort` encodes faster. With `GridTileSize` and
-  `ImageConfiguration.MaxDegreeOfParallelism` above 1, the tiles are coded concurrently, and the file is identical.
+- Encoding a large image takes time: a lower [Effort](cref:Meziantou.Framework.Imaging.Formats.HeicEncoder.Effort) encodes faster. With [GridTileSize](cref:Meziantou.Framework.Imaging.Formats.HeicEncoder.GridTileSize) and
+  [ImageConfiguration.MaxDegreeOfParallelism](cref:Meziantou.Framework.Imaging.ImageConfiguration.MaxDegreeOfParallelism) above 1, the tiles are coded concurrently, and the file is identical.
 - A side is at most 65,528 pixels, and a still image at most 4 GiB.
 - Premultiplied alpha, bit depths above 12 bits and the screen content, multilayer and 3D extensions of HEVC are
-  rejected with an `UnsupportedImageFeatureException`. Only the base layer of a layered stream is decoded.
+  rejected with an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException). Only the base layer of a layered stream is decoded.
 - HEVC is covered by patents in many countries: check the licensing terms that apply to what you distribute.

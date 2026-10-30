@@ -867,6 +867,119 @@ public sealed class IccColorTransformTests
         Assert.Equal(255, without[4]);
     }
 
+    [Fact]
+    public void Version4PerceptualReferenceMediumBlackIsMappedByBlackPointCompensationOnly()
+    {
+        // The perceptual tables of a version 4 profile give device black the black of the perceptual reference medium,
+        // L* = 3.1373 (ICC White Paper 26); version 2 tables usually give it L* = 0, and so do matrix-based profiles.
+        // With compensation, the estimated black points map one to the other in both directions. Without it, nothing
+        // adjusts them, whatever the versions: the reference medium black stays a dark gray in a version 2 or
+        // matrix-based destination, and the darkest grays of such a source are clipped to the device black of a version
+        // 4 one. ICC White Paper 26 recommends against connecting version 2 and version 4 perceptual tables, and says
+        // that without compensation the reference medium black is left unchanged.
+        var version4 = PerceptualPrinter(version: 4, perceptualBlack: 3.1373);
+        var version2 = PerceptualPrinter(version: 2, perceptualBlack: 0);
+        ushort[] samples = [0, 257, 1028, 4112, 16448, 65535];
+
+        // Expected values: LittleCMS 2.17 (double precision, no optimization), which reads the same tables. Tolerance:
+        // 24 units of 16 bits (a tenth of an 8-bit level; the differences measured are at most 13), for the interpolation
+        // of the tables; the reference medium black moves black by more than 2000 units
+        AssertClose([0, 253, 994, 4046, 17381, 65533], Convert(version4, version2, compensation: true));
+        AssertClose([3, 265, 1067, 4186, 15533, 65533], Convert(version2, version4, compensation: true));
+        AssertClose([5, 368, 1431, 5055, 16114, 65535], Convert(version4, IccProfile.SrgbGray, compensation: true));
+        AssertClose([3, 190, 731, 3156, 16820, 65533], Convert(IccProfile.SrgbGray, version4, compensation: true));
+
+        // Without compensation toward a version 2 destination, LittleCMS does not adjust the black either
+        AssertClose([2060, 2312, 3053, 6046, 17989, 65533], Convert(version4, version2, compensation: false));
+
+        // LittleCMS forces compensation for a version 4 destination with the perceptual and saturation intents; here
+        // the expected values are those of the tables alone (computed outside the library from their formulas): the
+        // lightness 3.1373 + 96.8627 * device in sGray, and the lightness 100 * device of version 2 in version 4
+        AssertClose([2927, 3246, 4096, 6657, 16654, 65535], Convert(version4, IccProfile.SrgbGray, compensation: false));
+        AssertClose([0, 0, 0, 2123, 14858, 65535], Convert(version2, version4, compensation: false));
+
+        ushort[] Convert(IccProfile source, IccProfile destination, bool compensation)
+        {
+            var result = new ushort[samples.Length];
+            IccColorTransform.Create(source, destination, new IccColorTransformOptions { Intent = IccRenderingIntent.Perceptual, BlackPointCompensation = compensation }).Convert(samples, result);
+            return result;
+        }
+
+        static void AssertClose(ushort[] expected, ushort[] actual)
+        {
+            Assert.HasCount(expected.Length, actual);
+            for (var i = 0; i < expected.Length; i++)
+            {
+                Assert.True(Math.Abs(expected[i] - actual[i]) <= 24, $"Sample {i}: expected {expected[i]}, got {actual[i]} ([{string.Join(", ", actual)}]).");
+            }
+        }
+    }
+
+    /// <summary>
+    /// A monochrome output profile with <c>lut16Type</c> tables and the CIEXYZ connection space, whose encoding is the same
+    /// in versions 2 and 4. The perceptual tables give device black the lightness <paramref name="perceptualBlack"/>, the
+    /// media-relative colorimetric tables L* = 10; both are linear in lightness. The tables from the connection space put
+    /// a grid point at the black lightness, so that the darkest colors are not blurred by the interpolation.
+    /// </summary>
+    private static IccProfile PerceptualPrinter(int version, double perceptualBlack)
+    {
+        return new IccProfile(new MetadataBlob(IccTestProfiles.BuildBytes(
+            "GRAY",
+            "XYZ ",
+            [
+                ("A2B0", ToConnectionSpace(perceptualBlack)),
+                ("B2A0", FromConnectionSpace(perceptualBlack)),
+                ("A2B1", ToConnectionSpace(10)),
+                ("B2A1", FromConnectionSpace(10)),
+            ],
+            data =>
+            {
+                data[8] = (byte)version;
+                data[9] = version == 2 ? (byte)0x10 : (byte)0x40;
+                "prtr"u8.CopyTo(data.AsSpan(12));
+            })));
+
+        // XYZ is encoded with 1 at 0x8000
+        static double Encode(double value) => value * 32768 / 65535;
+
+        static byte[] ToConnectionSpace(double black)
+            => IccTestProfiles.Lut16(1, 3, 255, gray =>
+            {
+                var y = Luminance(black + ((100 - black) * gray[0]));
+                return [Encode(0.9642 * y), Encode(y), Encode(0.8249 * y)];
+            });
+
+        static byte[] FromConnectionSpace(double black)
+        {
+            // The input table of Y gives the grid coordinate of its lightness, linear between grid points 0 (L* = 0), 1 (of
+            // 33: the black, or L* = 1), 32 (L* = 100) and the largest encoded Y
+            double[] lightnesses = [0, black > 0 ? black : 1, 100, Lightness(65535 / 32768.0)];
+            double[] coordinates = [0, 1 / 32.0, 31 / 32.0, 1];
+            return IccTestProfiles.Lut16(
+                3,
+                1,
+                33,
+                xyz => [Math.Clamp((Interpolate(xyz[1], coordinates, lightnesses) - black) / (100 - black), 0, 1)],
+                inputEntries: 4096,
+                inputTable: (channel, input) => channel == 1 ? Interpolate(Lightness(input * 65535 / 32768), lightnesses, coordinates) : input);
+        }
+
+        static double Interpolate(double value, double[] from, double[] to)
+        {
+            var segment = 1;
+            while (segment < from.Length - 1 && value > from[segment])
+            {
+                segment++;
+            }
+
+            return to[segment - 1] + ((value - from[segment - 1]) / (from[segment] - from[segment - 1]) * (to[segment] - to[segment - 1]));
+        }
+
+        static double Lightness(double y) => y > 216.0 / 24389 ? (116 * Math.Cbrt(y)) - 16 : y * 24389 / 27;
+
+        static double Luminance(double lightness) => lightness > 8 ? Math.Pow((lightness + 16) / 116, 3) : lightness * 27 / 24389;
+    }
+
     private static ReadOnlySpan<byte> GetTag(IccProfile profile, string signature)
     {
         var data = profile.Data.Span;

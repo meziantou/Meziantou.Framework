@@ -3,7 +3,7 @@ title: HTML emails
 description: Generate the HTML of an email with encoded values, a subject and embedded images.
 ---
 
-`Meziantou.Framework.Templating.Html` adds `HtmlEmailTemplate`, a template for the HTML body of an email. It uses `{{` and
+`Meziantou.Framework.Templating.Html` adds [HtmlEmailTemplate](cref:Meziantou.Framework.Templating.HtmlEmailTemplate), a template for the HTML body of an email. It uses `{{` and
 `}}` as delimiters, which do not clash with HTML, and adds blocks that encode values, capture the subject of the message
 and list its embedded images.
 
@@ -49,7 +49,7 @@ Assert.Equal("logo.png", Assert.Single(metadata.ContentIdentifiers));
 
 ## Syntax
 
-`HtmlEmailTemplate` supports every block of [Template syntax](../03-TemplateSyntax.md), with `{{` and `}}`
+[HtmlEmailTemplate](cref:Meziantou.Framework.Templating.HtmlEmailTemplate) supports every block of [Template syntax](../03-TemplateSyntax.md), with `{{` and `}}`
 instead of `<%` and `%>`, and adds the following ones:
 
 | Block | Writes |
@@ -67,9 +67,9 @@ The keywords are case-sensitive and must be followed by a space: `{{#htmlName}}`
 
 ## Use it in a server
 
-`HtmlEmailTemplate` compiles to `dynamic` code unless `OutputType` is set, and a template that uses `dynamic` is never
+[HtmlEmailTemplate](cref:Meziantou.Framework.Templating.HtmlEmailTemplate) compiles to `dynamic` code unless [OutputType](cref:Meziantou.Framework.Templating.Template.OutputType) is set, and a template that uses `dynamic` is never
 unloaded, even when disposed. An application that compiles templates as it runs, for instance one per tenant or on every
-change of a file, should set `OutputType` and give every argument a type:
+change of a file, should set [OutputType](cref:Meziantou.Framework.Templating.Template.OutputType) and give every argument a type:
 
 <!-- ref:../../../tests/Meziantou.Framework.Templating.Html.Tests/EmailTemplateTest.cs;region=HtmlEmailTemplate_TypedOutput;format=md-fenced-code-block;dedent=true -->
 ```csharp

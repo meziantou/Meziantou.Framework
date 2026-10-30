@@ -5,7 +5,7 @@ description: Find the fonts installed on Windows, macOS and Linux, or in directo
 
 ## Find an installed font
 
-`SystemFontCollection.Default` is an index of the fonts installed on the machine. `Match` finds the face of a family
+[SystemFontCollection.Default](cref:Meziantou.Framework.Fonts.SystemFontCollection.Default) is an index of the fonts installed on the machine. [Match](cref:Meziantou.Framework.Fonts.SystemFontCollection.Match) finds the face of a family
 that is the closest to a weight and an italic, and the descriptor gives the file to load:
 
 <!-- ref:../../samples/Meziantou.Framework.Fonts.Samples/Program.cs;region=Fonts_SystemFontCollection;format=md-fenced-code-block;dedent=true -->
@@ -21,14 +21,14 @@ if (fonts.Match("Arial", weight: 700, isItalic: false) is { } face)
 ```
 <!-- endref -->
 
-- The fonts are scanned the first time `Default` is read, once per process. Only the tables that describe a face are
+- The fonts are scanned the first time [Default](cref:Meziantou.Framework.Fonts.SystemFontCollection.Default) is read, once per process. Only the tables that describe a face are
   read, not the glyphs. A font installed later is not seen.
-- `Match` uses the font matching of CSS: the normal width first, then the style, then the weight. The weight is from 1
+- [Match](cref:Meziantou.Framework.Fonts.SystemFontCollection.Match) uses the font matching of CSS: the normal width first, then the style, then the weight. The weight is from 1
   to 1000 (400 is normal, 700 bold); an italic face is preferred when `isItalic` is set, then an oblique face, then an
   upright one. It returns `null` when no font has the family: another family is never used instead.
 - A variable font matches the weights and the widths of its axes; choosing the instance is up to you (see
   [Variable fonts](05-VariableFonts.md)).
-- `GetFamily` gives every face of a family, and `FindByName` finds a face by its full name or its PostScript name, as
+- [GetFamily](cref:Meziantou.Framework.Fonts.SystemFontCollection.GetFamily) gives every face of a family, and [FindByName](cref:Meziantou.Framework.Fonts.SystemFontCollection.FindByName) finds a face by its full name or its PostScript name, as
   the `local()` function of CSS does. Names are compared without case, in every language of the fonts.
 - The file of a descriptor may have changed or been removed since the scan: loading it can fail.
 
@@ -38,7 +38,7 @@ the directories of the fontconfig configuration and in the XDG font directories.
 
 ## Find a font that has a character
 
-`SystemFontDescriptor.Covers` tells whether a face has a glyph for a character, to choose a fallback font:
+[SystemFontDescriptor.Covers](cref:Meziantou.Framework.Fonts.SystemFontDescriptor.Covers) tells whether a face has a glyph for a character, to choose a fallback font:
 
 <!-- ref:../../samples/Meziantou.Framework.Fonts.Samples/Program.cs;region=Fonts_Coverage;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -49,12 +49,12 @@ Console.WriteLine($"U+1F600: {emojiFont?.FamilyName ?? "no installed font"}");
 ```
 <!-- endref -->
 
-The characters of a face are read from its file the first time `Covers` asks for one, and kept with the collection
+The characters of a face are read from its file the first time [Covers](cref:Meziantou.Framework.Fonts.SystemFontDescriptor.Covers) asks for one, and kept with the collection
 within a bounded amount of memory: scanning the fonts reads none of them.
 
 ## Use the fonts of a directory
 
-`SystemFontCollection.Create` indexes the fonts of directories (and their subdirectories) and of font files, such as the
+[SystemFontCollection.Create](cref:Meziantou.Framework.Fonts.SystemFontCollection.Create) indexes the fonts of directories (and their subdirectories) and of font files, such as the
 fonts your application ships:
 
 <!-- ref:../../tests/Meziantou.Framework.Imaging.Tests/FontTests.cs;region=Fonts_FontDirectory;format=md-fenced-code-block;dedent=true -->

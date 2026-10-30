@@ -23,7 +23,7 @@ Assert.True(CryptographicOperations.FixedTimeEquals(hash, other));
 ```
 <!-- endref -->
 
-`Argon2.DeriveBytes` returns the tag (the hash) as a new array of `outputLength` bytes. An overload writes it into a
+[Argon2.DeriveBytes](cref:Meziantou.Framework.Hashing.Argon2.DeriveBytes) returns the tag (the hash) as a new array of `outputLength` bytes. An overload writes it into a
 `Span<byte>` instead: the length of the span is the length of the tag.
 
 Unlike [BCrypt](03-Bcrypt.md), the result is only the tag: the package has no string format that also contains the
@@ -36,16 +36,16 @@ first difference.
 
 | Parameter | Meaning | Allowed values |
 | --- | --- | --- |
-| `type` | The variant: `Argon2Type.Argon2id`, `Argon2i` or `Argon2d` | Use `Argon2id` unless you have a reason not to |
+| `type` | The variant: [Argon2Type.Argon2id](cref:Meziantou.Framework.Hashing.Argon2Type.Argon2id), [Argon2i](cref:Meziantou.Framework.Hashing.Argon2Type.Argon2i) or [Argon2d](cref:Meziantou.Framework.Hashing.Argon2Type.Argon2d) | Use [Argon2id](cref:Meziantou.Framework.Hashing.Argon2Type.Argon2id) unless you have a reason not to |
 | `password` | The password, as bytes | Any length |
 | `salt` | Random data, different for each password | 16 random bytes are recommended |
-| `parallelism` | The number of lanes | 1 to `Argon2.MaxParallelism` |
+| `parallelism` | The number of lanes | 1 to [Argon2.MaxParallelism](cref:Meziantou.Framework.Hashing.Argon2.MaxParallelism) |
 | `memorySizeInKiB` | The memory to use, in kibibytes | At least 8 times `parallelism` |
 | `passes` | The number of passes over the memory | At least 1 |
-| `outputLength` | The length of the tag, in bytes | At least `Argon2.MinOutputLength` (4) |
+| `outputLength` | The length of the tag, in bytes | At least [Argon2.MinOutputLength](cref:Meziantou.Framework.Hashing.Argon2.MinOutputLength) (4) |
 | `secret` | A secret value (a pepper), kept outside the database | Usually empty |
 | `associatedData` | Data bound to the tag | Usually empty |
-| `version` | `Argon2Version.Version13` (RFC 9106, the default) or `Version10` | Keep the default |
+| `version` | [Argon2Version.Version13](cref:Meziantou.Framework.Hashing.Argon2Version.Version13) (RFC 9106, the default) or [Version10](cref:Meziantou.Framework.Hashing.Argon2Version.Version10) | Keep the default |
 
 A parameter outside its range throws an `ArgumentOutOfRangeException`.
 

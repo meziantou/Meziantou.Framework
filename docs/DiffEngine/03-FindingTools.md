@@ -17,11 +17,11 @@ For each tool, the executable is searched for, in this order:
    extension of `PATHEXT`.
 
 Tools are only found on Windows, Linux and macOS. The search reads the file system on each call: when you look for a
-tool many times, keep the `ResolvedTool` you get.
+tool many times, keep the [ResolvedTool](cref:Meziantou.Framework.DiffEngine.ResolvedTool) you get.
 
 ## Point to an executable
 
-Set `DiffEngine_<Tool>`, where `<Tool>` is the name of a `DiffTool` value, to the path of the executable or to the
+Set `DiffEngine_<Tool>`, where `<Tool>` is the name of a [DiffTool](cref:Meziantou.Framework.DiffEngine.DiffTool) value, to the path of the executable or to the
 folder that contains it. Environment variables in the value are expanded, surrounding quotes are removed, and `*`
 matches any folder name:
 
@@ -33,8 +33,8 @@ export DiffEngine_VisualStudioCode="$HOME/tools/vscode/bin"
 When the variable is set, the installation folders and `PATH` are not searched for that tool. If the executable cannot
 be found at that path:
 
-- `TryFindByName` throws an `InvalidOperationException` that names the variable, so a typo is not silently ignored;
-- `TryFindByExtension` skips that tool and keeps looking at the others.
+- [TryFindByName](cref:Meziantou.Framework.DiffEngine.DiffTools.TryFindByName) throws an `InvalidOperationException` that names the variable, so a typo is not silently ignored;
+- [TryFindByExtension](cref:Meziantou.Framework.DiffEngine.DiffTools.TryFindByExtension) skips that tool and keeps looking at the others.
 
 ## Swap the sides of the diff
 
@@ -45,37 +45,37 @@ By default, `GetArguments(tempFile, targetFile)` puts the new content on the lef
 export DiffEngine_TargetOnLeft=true
 ```
 
-The variable is read each time `GetArguments` is called.
+The variable is read each time [GetArguments](cref:Meziantou.Framework.DiffEngine.ResolvedTool.GetArguments) is called.
 
 ## Supported tools
 
-| `DiffTool` | Windows | Linux | macOS | Binary extensions |
+| [DiffTool](cref:Meziantou.Framework.DiffEngine.DiffTool) | Windows | Linux | macOS | Binary extensions |
 | --- | :---: | :---: | :---: | --- |
-| `MsWordDiff` | ✔️ | | | `.doc`, `.docx` (no text) |
-| `MsExcelDiff` | ✔️ | | | `.xls`, `.xlsx` (no text) |
-| `BeyondCompare` | ✔️ | ✔️ | ✔️ | |
-| `P4Merge` | ✔️ | ✔️ | ✔️ | |
-| `Kaleidoscope` | | | ✔️ | |
-| `DeltaWalker` | ✔️ | | ✔️ | |
-| `WinMerge` | ✔️ | | | `.bin`, `.svg`, `.bmp`, `.gif`, `.ico`, `.jpg`, `.jpeg`, `.png`, `.tif`, `.tiff`, `.webp` |
-| `TortoiseMerge` | ✔️ | | | |
-| `TortoiseGitMerge` | ✔️ | | | |
-| `TortoiseGitIDiff` | ✔️ | | | |
-| `TortoiseIDiff` | ✔️ | | | |
-| `KDiff3` | ✔️ | ✔️ | ✔️ | |
-| `TkDiff` | | | ✔️ | |
-| `Guiffy` | ✔️ | | ✔️ | |
-| `ExamDiff` | ✔️ | | | |
-| `Diffinity` | ✔️ | | | |
-| `Rider` | ✔️ | ✔️ | ✔️ | `.svg` |
-| `Vim` | ✔️ | ✔️ | ✔️ | |
-| `Neovim` | ✔️ | ✔️ | ✔️ | |
-| `AraxisMerge` | ✔️ | | ✔️ | |
-| `Meld` | ✔️ | ✔️ | ✔️ | |
-| `SublimeMerge` | ✔️ | ✔️ | ✔️ | |
-| `VisualStudioCode` | ✔️ | ✔️ | ✔️ | `.svg`, `.bin` |
-| `VisualStudio` | ✔️ | | | `.svg` |
-| `Cursor` | ✔️ | ✔️ | ✔️ | `.svg`, `.bin` |
+| [MsWordDiff](cref:Meziantou.Framework.DiffEngine.DiffTool.MsWordDiff) | ✔️ | | | `.doc`, `.docx` (no text) |
+| [MsExcelDiff](cref:Meziantou.Framework.DiffEngine.DiffTool.MsExcelDiff) | ✔️ | | | `.xls`, `.xlsx` (no text) |
+| [BeyondCompare](cref:Meziantou.Framework.DiffEngine.DiffTool.BeyondCompare) | ✔️ | ✔️ | ✔️ | |
+| [P4Merge](cref:Meziantou.Framework.DiffEngine.DiffTool.P4Merge) | ✔️ | ✔️ | ✔️ | |
+| [Kaleidoscope](cref:Meziantou.Framework.DiffEngine.DiffTool.Kaleidoscope) | | | ✔️ | |
+| [DeltaWalker](cref:Meziantou.Framework.DiffEngine.DiffTool.DeltaWalker) | ✔️ | | ✔️ | |
+| [WinMerge](cref:Meziantou.Framework.DiffEngine.DiffTool.WinMerge) | ✔️ | | | `.bin`, `.svg`, `.bmp`, `.gif`, `.ico`, `.jpg`, `.jpeg`, `.png`, `.tif`, `.tiff`, `.webp` |
+| [TortoiseMerge](cref:Meziantou.Framework.DiffEngine.DiffTool.TortoiseMerge) | ✔️ | | | |
+| [TortoiseGitMerge](cref:Meziantou.Framework.DiffEngine.DiffTool.TortoiseGitMerge) | ✔️ | | | |
+| [TortoiseGitIDiff](cref:Meziantou.Framework.DiffEngine.DiffTool.TortoiseGitIDiff) | ✔️ | | | |
+| [TortoiseIDiff](cref:Meziantou.Framework.DiffEngine.DiffTool.TortoiseIDiff) | ✔️ | | | |
+| [KDiff3](cref:Meziantou.Framework.DiffEngine.DiffTool.KDiff3) | ✔️ | ✔️ | ✔️ | |
+| [TkDiff](cref:Meziantou.Framework.DiffEngine.DiffTool.TkDiff) | | | ✔️ | |
+| [Guiffy](cref:Meziantou.Framework.DiffEngine.DiffTool.Guiffy) | ✔️ | | ✔️ | |
+| [ExamDiff](cref:Meziantou.Framework.DiffEngine.DiffTool.ExamDiff) | ✔️ | | | |
+| [Diffinity](cref:Meziantou.Framework.DiffEngine.DiffTool.Diffinity) | ✔️ | | | |
+| [Rider](cref:Meziantou.Framework.DiffEngine.DiffTool.Rider) | ✔️ | ✔️ | ✔️ | `.svg` |
+| [Vim](cref:Meziantou.Framework.DiffEngine.DiffTool.Vim) | ✔️ | ✔️ | ✔️ | |
+| [Neovim](cref:Meziantou.Framework.DiffEngine.DiffTool.Neovim) | ✔️ | ✔️ | ✔️ | |
+| [AraxisMerge](cref:Meziantou.Framework.DiffEngine.DiffTool.AraxisMerge) | ✔️ | | ✔️ | |
+| [Meld](cref:Meziantou.Framework.DiffEngine.DiffTool.Meld) | ✔️ | ✔️ | ✔️ | |
+| [SublimeMerge](cref:Meziantou.Framework.DiffEngine.DiffTool.SublimeMerge) | ✔️ | ✔️ | ✔️ | |
+| [VisualStudioCode](cref:Meziantou.Framework.DiffEngine.DiffTool.VisualStudioCode) | ✔️ | ✔️ | ✔️ | `.svg`, `.bin` |
+| [VisualStudio](cref:Meziantou.Framework.DiffEngine.DiffTool.VisualStudio) | ✔️ | | | `.svg` |
+| [Cursor](cref:Meziantou.Framework.DiffEngine.DiffTool.Cursor) | ✔️ | ✔️ | ✔️ | `.svg`, `.bin` |
 
-Every tool supports text, except `MsWordDiff` and `MsExcelDiff`. The table is in the order `TryFindByExtension` tries
+Every tool supports text, except [MsWordDiff](cref:Meziantou.Framework.DiffEngine.DiffTool.MsWordDiff) and [MsExcelDiff](cref:Meziantou.Framework.DiffEngine.DiffTool.MsExcelDiff). The table is in the order [TryFindByExtension](cref:Meziantou.Framework.DiffEngine.DiffTools.TryFindByExtension) tries
 the tools.

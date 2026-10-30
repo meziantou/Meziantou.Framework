@@ -28,9 +28,9 @@ To change every document that a pipeline parses, change the tree in the
 
 ## Add and remove elements
 
-Blocks and inlines are created with their constructors and added to their parent: a `ContainerBlock` is a list of
-blocks, and `ContainerInline.AppendChild` adds an inline. `Remove()` removes an element from its parent, and
-`ReplaceBy` replaces it:
+Blocks and inlines are created with their constructors and added to their parent: a [ContainerBlock](cref:Meziantou.Framework.Markdown.Syntax.ContainerBlock) is a list of
+blocks, and [ContainerInline.AppendChild](cref:Meziantou.Framework.Markdown.Syntax.Inlines.ContainerInline.AppendChild) adds an inline. [Remove()](cref:Meziantou.Framework.Markdown.Syntax.Block.Remove) removes an element from its parent, and
+[ReplaceBy](cref:Meziantou.Framework.Markdown.Syntax.Block.ReplaceBy) replaces it:
 
 <!-- ref:../../tests/Meziantou.Framework.Markdown.Tests/TestCoreApi.cs;region=MarkdownDocument_AddAndRemoveBlocks;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -58,9 +58,9 @@ Assert.Equal("<h1>Release notes</h1>\n<p>First version.</p>\n<p>Thanks to <stron
 ```
 <!-- endref -->
 
-- **Copy the list before removing elements in a loop.** `Descendants` walks the tree while you change it: call
+- **Copy the list before removing elements in a loop.** [Descendants](cref:Meziantou.Framework.Markdown.Syntax.MarkdownObjectExtensions.Descendants) walks the tree while you change it: call
   `ToList()` first, as above.
-- **Inlines live in leaf blocks.** A new `ParagraphBlock` or `HeadingBlock` needs an `Inline` container for its text.
+- **Inlines live in leaf blocks.** A new [ParagraphBlock](cref:Meziantou.Framework.Markdown.Syntax.ParagraphBlock) or [HeadingBlock](cref:Meziantou.Framework.Markdown.Syntax.HeadingBlock) needs an [Inline](cref:Meziantou.Framework.Markdown.Syntax.Inlines.Inline) container for its text.
 - **Positions are not updated.** The new elements have no position, and the others keep the position they had in the
   source.
 
@@ -70,13 +70,13 @@ Two renderers write Markdown:
 
 | Renderer | Output | Use it to |
 | --- | --- | --- |
-| `NormalizeRenderer` | Markdown in a consistent style: `#` headings, one blank line between blocks | Clean up or generate Markdown |
-| `RoundtripRenderer` | The source exactly as it was parsed, with your changes | Change a file that people edit, without reformatting it |
+| [NormalizeRenderer](cref:Meziantou.Framework.Markdown.Renderers.Normalize.NormalizeRenderer) | Markdown in a consistent style: `#` headings, one blank line between blocks | Clean up or generate Markdown |
+| [RoundtripRenderer](cref:Meziantou.Framework.Markdown.Renderers.Roundtrip.RoundtripRenderer) | The source exactly as it was parsed, with your changes | Change a file that people edit, without reformatting it |
 
 ### Normalize the document
 
-`MarkdownConverter.Normalize` converts a Markdown string to normalized Markdown. To normalize a document you changed,
-create a `NormalizeRenderer` and set it up with the pipeline:
+[MarkdownConverter.Normalize](cref:Meziantou.Framework.Markdown.MarkdownConverter.Normalize) converts a Markdown string to normalized Markdown. To normalize a document you changed,
+create a [NormalizeRenderer](cref:Meziantou.Framework.Markdown.Renderers.Normalize.NormalizeRenderer) and set it up with the pipeline:
 
 <!-- ref:../../tests/Meziantou.Framework.Markdown.Tests/TestNormalize.cs;region=NormalizeRenderer_Document;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -101,7 +101,7 @@ Assert.Equal("# Title\n\nSee [the docs](https://example.com).", writer.ToString(
 ### Keep the formatting (roundtrip)
 
 The parser drops the characters that do not change the meaning of the document: extra spaces, the style of a heading,
-the line endings. With trivia tracking, it keeps them in the tree, and `RoundtripRenderer` (namespace
+the line endings. With trivia tracking, it keeps them in the tree, and [RoundtripRenderer](cref:Meziantou.Framework.Markdown.Renderers.Roundtrip.RoundtripRenderer) (namespace
 [Meziantou.Framework.Markdown.Renderers.Roundtrip](cref:Meziantou.Framework.Markdown.Renderers.Roundtrip)) writes the document back exactly as it was:
 
 <!-- ref:../../tests/Meziantou.Framework.Markdown.Tests/TestCoreApi.cs;region=MarkdownConverter_Roundtrip;format=md-fenced-code-block;dedent=true -->
@@ -119,11 +119,11 @@ Assert.Equal(markdown, output); // Same as markdown when nothing changed
 ```
 <!-- endref -->
 
-`Parse(markdown, trackTrivia: true)` uses a pipeline without extensions. To use extensions, call `EnableTrackTrivia()`
+`Parse(markdown, trackTrivia: true)` uses a pipeline without extensions. To use extensions, call [EnableTrackTrivia()](cref:Meziantou.Framework.Markdown.MarkdownExtensions.EnableTrackTrivia)
 on the builder.
 
-The trivia is stored in the tree: blank lines in `Block.LinesBefore` and `Block.LinesAfter`, and the other characters in
-the properties named `Trivia…` (`TriviaBefore`, `TriviaAfter`…) of the blocks and the inlines. These properties are
+The trivia is stored in the tree: blank lines in [Block.LinesBefore](cref:Meziantou.Framework.Markdown.Syntax.Block.LinesBefore) and [Block.LinesAfter](cref:Meziantou.Framework.Markdown.Syntax.Block.LinesAfter), and the other characters in
+the properties named `Trivia…` ([TriviaBefore](cref:Meziantou.Framework.Markdown.Syntax.Block.TriviaBefore), [TriviaAfter](cref:Meziantou.Framework.Markdown.Syntax.Block.TriviaAfter)…) of the blocks and the inlines. These properties are
 only filled when trivia tracking is enabled.
 
 Values also keep their source text, in the properties named `Unescaped…`, and the roundtrip renderer writes this text

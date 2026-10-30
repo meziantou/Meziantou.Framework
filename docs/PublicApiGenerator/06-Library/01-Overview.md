@@ -15,16 +15,16 @@ dotnet add package Meziantou.Framework.PublicApiGenerator
 All the types are in the [Meziantou.Framework.PublicApiGenerator](cref:Meziantou.Framework.PublicApiGenerator) namespace; the examples of these
 pages omit the `using` directive.
 
-The entry point is the static `PublicApi` class:
+The entry point is the static [PublicApi](cref:Meziantou.Framework.PublicApiGenerator.PublicApi) class:
 
 | Method | Returns |
 | --- | --- |
-| `PublicApi.Generate` | The API files, in memory. |
-| `PublicApi.GenerateToDirectory` | Nothing: it writes the API files to a directory. |
-| `PublicApi.ReadAssembly` | A `PublicApiAssembly`: the model of the public API of one assembly. |
-| `PublicApi.Aggregate` | A `PublicApiAggregatedAssembly`: the models of the builds of an assembly for several target frameworks, combined. |
+| [PublicApi.Generate](cref:Meziantou.Framework.PublicApiGenerator.PublicApi.Generate) | The API files, in memory. |
+| [PublicApi.GenerateToDirectory](cref:Meziantou.Framework.PublicApiGenerator.PublicApi.GenerateToDirectory) | Nothing: it writes the API files to a directory. |
+| [PublicApi.ReadAssembly](cref:Meziantou.Framework.PublicApiGenerator.PublicApi.ReadAssembly) | A [PublicApiAssembly](cref:Meziantou.Framework.PublicApiGenerator.PublicApiAssembly): the model of the public API of one assembly. |
+| [PublicApi.Aggregate](cref:Meziantou.Framework.PublicApiGenerator.PublicApi.Aggregate) | A [PublicApiAggregatedAssembly](cref:Meziantou.Framework.PublicApiGenerator.PublicApiAggregatedAssembly): the models of the builds of an assembly for several target frameworks, combined. |
 
-`PublicApiFormatter` formats the symbols of the model as C# declarations.
+[PublicApiFormatter](cref:Meziantou.Framework.PublicApiGenerator.PublicApiFormatter) formats the symbols of the model as C# declarations.
 
 ## Pages of this group
 

@@ -59,12 +59,12 @@ arguments:
 - The exit code is `0` when every package is valid, and `1` otherwise. It is also `1` when the arguments are invalid,
   such as an unknown rule.
 - `--only-report-errors` leaves the valid packages out of the output, which keeps the log of a large build short.
-- `HelpText` and `FileName` are `null` when the error has none.
+- [HelpText](cref:Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationError.HelpText) and [FileName](cref:Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationError.FileName) are `null` when the error has none.
 
 ## Choose the rules
 
 Without options, the tool applies the [default rules](03-Rules.md#default-rules). `--rules` replaces them, and
-`--excluded-rules` removes rules. Both take the rule names of `NuGetPackageValidationRules`, separated by `,` or `;`, and
+`--excluded-rules` removes rules. Both take the rule names of [NuGetPackageValidationRules](cref:Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationRules), separated by `,` or `;`, and
 `default` stands for the default rules:
 
 ```bash
@@ -79,7 +79,7 @@ The names are case-sensitive, as written in `--help`.
 
 ## Ignore some errors
 
-`--excluded-rule-ids` ignores [error codes](04-ErrorCodes.md) without removing their rule, like `ExcludedRuleIds` in
+`--excluded-rule-ids` ignores [error codes](04-ErrorCodes.md) without removing their rule, like [ExcludedRuleIds](cref:Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationOptions.ExcludedRuleIds) in
 code:
 
 ```bash
@@ -91,7 +91,7 @@ Excluding `119` or `120` also skips the download of the source files of the symb
 
 ## Authenticate the requests
 
-The `Symbols` rule downloads the source files that Source Link points to. For a private GitHub repository, these
+The [Symbols](cref:Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationRules.Symbols) rule downloads the source files that Source Link points to. For a private GitHub repository, these
 downloads need a token:
 
 ```bash

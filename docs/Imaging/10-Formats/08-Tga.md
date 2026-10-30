@@ -3,7 +3,7 @@ title: TGA
 description: Read and write Truevision TGA files, uncompressed or run-length, and detect a format without a signature.
 ---
 
-TGA (Truevision TGA) is a simple format of asset pipelines and game tools. `TgaEncoder` writes true-color and grayscale
+TGA (Truevision TGA) is a simple format of asset pipelines and game tools. [TgaEncoder](cref:Meziantou.Framework.Imaging.Formats.TgaEncoder) writes true-color and grayscale
 images, uncompressed or run-length encoded, without loss for 8-bit pixels.
 
 ## What is read and written
@@ -44,28 +44,28 @@ public static ImageFormat SaveTga(string inputPath, string tgaPath)
 
 | Option | What it does | Default |
 | --- | --- | --- |
-| `Compression` | `RunLength` writes run-length packets, which never cross a row; `None` writes uncompressed rows, the most widely readable output | `None` |
-| `AllowBitDepthReduction` | Lets 16-bit pixel formats be rounded to 8 bits | `false` |
-| `MetadataHandling` | What to do with metadata, which TGA cannot store | `Strict` |
+| [Compression](cref:Meziantou.Framework.Imaging.Formats.TgaEncoder.Compression) | [RunLength](cref:Meziantou.Framework.Imaging.Formats.TgaCompression.RunLength) writes run-length packets, which never cross a row; [None](cref:Meziantou.Framework.Imaging.Formats.TgaCompression.None) writes uncompressed rows, the most widely readable output | [None](cref:Meziantou.Framework.Imaging.Formats.TgaCompression.None) |
+| [AllowBitDepthReduction](cref:Meziantou.Framework.Imaging.Formats.TgaEncoder.AllowBitDepthReduction) | Lets 16-bit pixel formats be rounded to 8 bits | `false` |
+| [MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling) | What to do with metadata, which TGA cannot store | [Strict](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling.Strict) |
 
-The `.tga`, `.icb`, `.vda` and `.vst` extensions select `TgaEncoder` with its defaults.
+The `.tga`, `.icb`, `.vda` and `.vst` extensions select [TgaEncoder](cref:Meziantou.Framework.Imaging.Formats.TgaEncoder) with its defaults.
 
 ## TGA has no signature
 
 Every other format starts with a signature; a TGA file is recognized from a plausible 18-byte header, and only after
-every other format. `Image.DetectFormat` therefore needs `Image.FormatDetectionPrefixLength` (18) bytes, as in the
+every other format. [Image.DetectFormat](cref:Meziantou.Framework.Imaging.Image.DetectFormat) therefore needs [Image.FormatDetectionPrefixLength](cref:Meziantou.Framework.Imaging.Image.FormatDetectionPrefixLength) (18) bytes, as in the
 example above.
 
 ## Pitfalls
 
 - TGA stores one frame: save one frame of an animation with `image.Frames[i].Save`.
 - TGA stores no metadata: an ICC profile, EXIF, XMP, an orientation, a resolution or text entries follow
-  `MetadataHandling`, which rejects them by default.
+  [MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling), which rejects them by default.
 - A side is at most 65,535 pixels.
 - The optional TGA 2.0 footer is at the end of the file, so the decoder reads a stream to its end: nothing can follow a
   TGA file on the same stream.
 - A file without a footer is a TGA 1.0 file, whose trailing bytes mean nothing: a file cut after its pixel data is a
   valid file, so truncation is only detected inside the pixel data.
-- Premultiplied alpha, which the extension area can declare, is rejected with an `UnsupportedImageFeatureException`.
+- Premultiplied alpha, which the extension area can declare, is rejected with an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException).
 - A 16-bit grayscale file is read as an 8-bit gray sample and an attribute byte (gray and alpha when the descriptor
   declares 8 alpha bits), never as a 16-bit luminance.

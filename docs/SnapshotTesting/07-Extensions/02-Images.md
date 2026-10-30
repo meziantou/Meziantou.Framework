@@ -14,7 +14,7 @@ dotnet add package Meziantou.Framework.SnapshotTesting.Imaging
 
 ## Set up
 
-Call `AddImaging()` on `SnapshotSettings.Default` in a module initializer (`AddImaging` is in the
+Call [AddImaging()](cref:Meziantou.Framework.SnapshotTesting.Imaging.SnapshotSettingsImagingExtensions.AddImaging) on [SnapshotSettings.Default](cref:Meziantou.Framework.SnapshotTesting.SnapshotSettings.Default) in a module initializer ([AddImaging](cref:Meziantou.Framework.SnapshotTesting.Imaging.SnapshotSettingsImagingExtensions.AddImaging) is in the
 [Meziantou.Framework.SnapshotTesting.Imaging](cref:Meziantou.Framework.SnapshotTesting.Imaging) namespace):
 
 <!-- ref:../../../tests/Meziantou.Framework.SnapshotTesting.Imaging.Tests/SnapshotConfiguration.cs;region=SnapshotTestingImaging_Setup;format=md-fenced-code-block;dedent=true -->
@@ -30,7 +30,7 @@ internal static class SnapshotConfiguration
 ```
 <!-- endref -->
 
-Then validate images, as `Image` objects or as the bytes of a file (`Image` is in the [Meziantou.Framework.Imaging](cref:Meziantou.Framework.Imaging)
+Then validate images, as [Image](cref:Meziantou.Framework.Imaging.Image) objects or as the bytes of a file ([Image](cref:Meziantou.Framework.Imaging.Image) is in the [Meziantou.Framework.Imaging](cref:Meziantou.Framework.Imaging)
 namespace):
 
 <!-- ref:../../../tests/Meziantou.Framework.SnapshotTesting.Imaging.Tests/SampleTests.cs;region=SnapshotTestingImaging_Validate;format=md-fenced-code-block;dedent=true -->
@@ -54,10 +54,10 @@ public sealed class SampleTests
 ```
 <!-- endref -->
 
-`AddImaging()` registers:
+[AddImaging()](cref:Meziantou.Framework.SnapshotTesting.Imaging.SnapshotSettingsImagingExtensions.AddImaging) registers:
 
-- **A serializer for `Image` values**, saved in the format of the snapshot type: `SnapshotType.Png`, `Jpeg`, `Bmp`,
-  `Tiff`, `Webp`, `Gif`, `Ico`, `Avif`, `Heic`, `JpegXl` or `Jpeg2000`, or `"cur"`, `"ani"`, `"qoi"`, `"tga"` or
+- **A serializer for [Image](cref:Meziantou.Framework.Imaging.Image) values**, saved in the format of the snapshot type: [SnapshotType.Png](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.Png), [Jpeg](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.Jpeg), [Bmp](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.Bmp),
+  [Tiff](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.Tiff), [Webp](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.Webp), [Gif](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.Gif), [Ico](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.Ico), [Avif](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.Avif), [Heic](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.Heic), [JpegXl](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.JpegXl) or [Jpeg2000](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.Jpeg2000), or `"cur"`, `"ani"`, `"qoi"`, `"tga"` or
   `"pnm"`. Every format but GIF and JPEG is written lossless and keeps the pixels exactly. GIF keeps at most 256 colors
   and stores transparency as on or off, and JPEG uses the highest quality. 16-bit samples are kept by PNG, TIFF, PNM,
   JPEG XL and JPEG 2000, reduced to 12 bits by AVIF and HEIC, and to 8 bits by the other formats. Metadata the format
@@ -65,13 +65,13 @@ public sealed class SampleTests
 - **The image comparer** for every format that Meziantou.Framework.Imaging decodes, under each of its file extensions:
   PNG and APNG, JPEG, GIF, WebP, BMP, TIFF, ICO, CUR, ANI, QOI, TGA, PNM (PBM, PGM, PPM and PAM), AVIF, HEIC, JPEG XL and
   JPEG 2000.
-- **A converter** that writes `Rgba32` colors as `#RRGGBBAA` in text snapshots.
+- **A converter** that writes [Rgba32](cref:Meziantou.Framework.Imaging.Rgba32) colors as `#RRGGBBAA` in text snapshots.
 
 Prefer PNG for image snapshots: it is lossless, compact, and diff tools display it.
 
 ## Register the comparer only
 
-To compare image files by their pixels without the serializer of `Image` values, register the comparer alone:
+To compare image files by their pixels without the serializer of [Image](cref:Meziantou.Framework.Imaging.Image) values, register the comparer alone:
 
 <!-- ref:../../../tests/Meziantou.Framework.SnapshotTesting.Imaging.Tests/ImageSnapshotTests.cs;region=SnapshotTestingImaging_AddImageComparer;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -99,7 +99,7 @@ with several frames, it names the first frame that does not match.
 ## Allow small differences
 
 Rendering can differ slightly between platforms, for instance in antialiasing or font hinting. Pass
-`ImageComparisonSettings` with thresholds to accept images that are close enough:
+[ImageComparisonSettings](cref:Meziantou.Framework.SnapshotTesting.Imaging.ImageComparisonSettings) with thresholds to accept images that are close enough:
 
 <!-- ref:../../../tests/Meziantou.Framework.SnapshotTesting.Imaging.Tests/ImageSnapshotTests.cs;region=SnapshotTestingImaging_Thresholds;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -128,18 +128,18 @@ settings.AddImaging(new ImageComparisonSettings
 <!-- endref -->
 
 Every configured check must pass for every frame, and the failure message reports all the checks that failed. The
-measures are those of `ImageSimilarity` in Meziantou.Framework.Imaging (see
+measures are those of [ImageSimilarity](cref:Meziantou.Framework.Imaging.ImageSimilarity) in Meziantou.Framework.Imaging (see
 [Comparing images](../../Imaging/06-Processing/10-ComparingImages.md)); samples of more than 8 bits are rounded to 8
 bits.
 
 | Setting | Measure | Passes when |
 | --- | --- | --- |
-| `SimilarityThreshold` | SSIM, the mean structural similarity over 7×7 windows, from 0 (different) to 1 (identical) | The score is at least the threshold |
-| `PsnrThreshold` | The peak signal-to-noise ratio in decibels, infinite for identical images | The ratio is at least the threshold |
-| `Ssimulacra2Threshold` | The SSIMULACRA 2 score of libjxl: 100 for identical images, about 90 when the difference is not visible | The score is at least the threshold |
-| `ButteraugliThreshold` | The largest Butteraugli distance of libjxl: 0 for identical images, below about 1 when the difference is not visible | The distance is at most the threshold |
-| `DHashThreshold` | The distance between the 64-bit difference hashes, from 0 to 64 | The distance is at most the threshold |
-| `PHashThreshold` | The distance between the 64-bit perceptual hashes, from 0 to 64 | The distance is at most the threshold |
+| [SimilarityThreshold](cref:Meziantou.Framework.SnapshotTesting.Imaging.ImageComparisonSettings.SimilarityThreshold) | SSIM, the mean structural similarity over 7×7 windows, from 0 (different) to 1 (identical) | The score is at least the threshold |
+| [PsnrThreshold](cref:Meziantou.Framework.SnapshotTesting.Imaging.ImageComparisonSettings.PsnrThreshold) | The peak signal-to-noise ratio in decibels, infinite for identical images | The ratio is at least the threshold |
+| [Ssimulacra2Threshold](cref:Meziantou.Framework.SnapshotTesting.Imaging.ImageComparisonSettings.Ssimulacra2Threshold) | The SSIMULACRA 2 score of libjxl: 100 for identical images, about 90 when the difference is not visible | The score is at least the threshold |
+| [ButteraugliThreshold](cref:Meziantou.Framework.SnapshotTesting.Imaging.ImageComparisonSettings.ButteraugliThreshold) | The largest Butteraugli distance of libjxl: 0 for identical images, below about 1 when the difference is not visible | The distance is at most the threshold |
+| [DHashThreshold](cref:Meziantou.Framework.SnapshotTesting.Imaging.ImageComparisonSettings.DHashThreshold) | The distance between the 64-bit difference hashes, from 0 to 64 | The distance is at most the threshold |
+| [PHashThreshold](cref:Meziantou.Framework.SnapshotTesting.Imaging.ImageComparisonSettings.PHashThreshold) | The distance between the 64-bit perceptual hashes, from 0 to 64 | The distance is at most the threshold |
 
 Choose the measure by the kind of difference you accept:
 
@@ -173,6 +173,6 @@ Snapshot.Validate(icoBytes, SnapshotType.Ico, settings);
 ```
 <!-- endref -->
 
-Register a comparer for `SnapshotType.Png` too (`AddImageComparer` or `AddImaging`), so that the frames are compared by
+Register a comparer for [SnapshotType.Png](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.Png) too ([AddImageComparer](cref:Meziantou.Framework.SnapshotTesting.Imaging.SnapshotComparerCollectionImageComparerExtensions.AddImageComparer) or [AddImaging](cref:Meziantou.Framework.SnapshotTesting.Imaging.SnapshotSettingsImagingExtensions.AddImaging)), so that the frames are compared by
 their pixels: the compressed bytes of a PNG file depend on the zlib of the runtime, and a runtime update could otherwise
 make every frame differ. Data that is not a GIF or ICO file is left to the next serializer.

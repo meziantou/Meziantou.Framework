@@ -183,6 +183,132 @@ public sealed class ExrDecoderTests
         }
     }
 
+    // The lenient rebuilds of the offset table are the ones OpenEXR 3.3.11 makes, through ImageMagick 7.1.2 and
+    // exrmaketiled: the same pixels as the complete table. Apple ImageIO rejects every incomplete table
+
+    public static TheoryData<string> RebuiltTables => ["zeros", "last zero", "middle zero", "before the table", "negative", "decreasing", "random", "tiles", "levels"];
+
+    [Theory]
+    [MemberData(nameof(RebuiltTables))]
+    public void LenientDecodingRebuildsAnIncompleteOffsetTable(string name)
+    {
+        var (data, size) = name switch
+        {
+            "zeros" => (FourLines(builder => builder.Offsets = [0, 0, 0, 0]), new Size(2, 4)),
+            "last zero" => (FourLines(builder => builder.Offsets = [.. Offsets(builder)[..3], 0]), new Size(2, 4)),
+            "middle zero" => (FourLines(builder => builder.Offsets = [Offsets(builder)[0], 0, .. Offsets(builder)[2..]]), new Size(2, 4)),
+            "before the table" => (FourLines(builder => builder.Offsets = [Offsets(builder)[0], 1, .. Offsets(builder)[2..]]), new Size(2, 4)),
+            "negative" => (FourLines(builder => builder.Offsets = [Offsets(builder)[0], -5, .. Offsets(builder)[2..]]), new Size(2, 4)),
+            "decreasing" => (FourLines(builder =>
+            {
+                builder.Set("lineOrder", "lineOrder", [1]);
+                builder.FileOrder = [3, 2, 1, 0];
+                builder.Offsets = [0, 0, 0, 0];
+            }), new Size(2, 4)),
+            "random" => (FourLines(builder =>
+            {
+                builder.Set("lineOrder", "lineOrder", [2]);
+                builder.Offsets = [0, 0, 0, 0];
+                builder.Trailer = new byte[] { 1, 2, 3 };
+            }), new Size(2, 4)),
+            "tiles" => (Tiles(builder =>
+            {
+                builder.FileOrder = [3, 1, 2, 0];
+                builder.Offsets = [0, 0, 0, 0];
+            }), new Size(4, 4)),
+            _ => (MipmapLevels(builder =>
+            {
+                builder.FileOrder = [4, 2, 0, 3, 1];
+                builder.Offsets = [0, 0, 0, 0, 0];
+            }), new Size(3, 3)),
+        };
+
+        Assert.Throws<InvalidImageContentException>(() => Image.Load(data));
+        Assert.Throws<InvalidImageContentException>(() => Image.Identify(data, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan }));
+
+        using (var image = Image.Load<RgbaHalf>(data, LenientOptions))
+        {
+            Assert.Equal(size, image.Size);
+            for (var y = 0; y < size.Height; y++)
+            {
+                for (var x = 0; x < size.Width; x++)
+                {
+                    Assert.Equal(ExpectedSample(name, x, y), image.Frames[0][x, y].R);
+                }
+            }
+        }
+
+        var info = Image.Identify(data, new ImageIdentifyOptions { Configuration = LenientConfiguration, Mode = ImageIdentifyMode.FullScan });
+        Assert.Equal(size, info.Size);
+        Assert.Equal(1, info.FrameCount);
+
+        using var reader = Image.OpenReader<RgbaHalf>(new MemoryStream(data), new ImageReaderOptions { Configuration = LenientConfiguration });
+        using var frame = reader.ReadFrame();
+        Assert.NotNull(frame);
+        Assert.Equal(ExpectedSample(name, size.Width - 1, size.Height - 1), frame.Frames[0][size.Width - 1, size.Height - 1].R);
+
+        static Half ExpectedSample(string name, int x, int y) => name switch
+        {
+            "tiles" => (Half)((y * 4) + x),
+            "levels" => (Half)((y * 3) + x),
+            _ => (Half)((y + 1) * (x == 0 ? 1 : 10)),
+        };
+    }
+
+    [Fact]
+    public void LenientDecodingDoesNotRebuildATableFromMisplacedOrMissingChunks()
+    {
+        // OpenEXR rejects them too: scan lines out of their line order, a gap between two chunks, a missing or repeated
+        // chunk, a truncated one, and valid entries that disagree with the chunks
+        AssertRejectedInBothModes(FourLines(builder => (builder.FileOrder, builder.Offsets) = ([2, 0, 3, 1], [0, 0, 0, 0])));
+        AssertRejectedInBothModes(FourLines(builder =>
+        {
+            builder.Set("lineOrder", "lineOrder", [1]);
+            builder.Offsets = [0, 0, 0, 0];
+        }));
+        AssertRejectedInBothModes(FourLines(builder =>
+        {
+            builder.Set("lineOrder", "lineOrder", [2]);
+            (builder.FileOrder, builder.Offsets) = ([2, 0, 3, 1], [0, 0, 0, 0]);
+        }));
+        AssertRejectedInBothModes(FourLines(builder => (builder.Offsets, builder.GapBefore[2]) = ([0, 0, 0, 0], 5)));
+        AssertRejectedInBothModes(FourLines(builder => (builder.Offsets, builder.OffsetCount) = ([0, 0, 0, 0], 4), lineCount: 3));
+        AssertRejectedInBothModes(FourLines(builder => (builder.Offsets, builder.Chunks[2]) = ([0, 0, 0, 0], new ExrChunk([1], ExrFileBuilder.Halves(7f, 7f)))));
+        AssertRejectedInBothModes(FourLines(builder => builder.Offsets = [0, .. Offsets(builder)[1..2], Offsets(builder)[3], Offsets(builder)[2]]));
+        AssertRejectedInBothModes(FourLines(builder =>
+        {
+            builder.FileOrder = [3, 2, 1, 0];
+            builder.Offsets = [0, .. Offsets(builder)[1..]];
+        }));
+        AssertRejectedInBothModes(Tiles(builder => (builder.Chunks[2], builder.Offsets) = (builder.Chunks[1], [0, 0, 0, 0])));
+        AssertRejectedInBothModes(FourLines(builder => builder.Offsets = [0, 0, 0, 0])[..^1]);
+
+        // OpenEXR rebuilds a table whose entry is past the end of the file; the input is read forward without knowing its
+        // length, so that entry is a truncated file, in both modes
+        AssertRejectedInBothModes(FourLines(builder => builder.Offsets = [.. Offsets(builder)[..2], 100_000, Offsets(builder)[3]]));
+
+        static void AssertRejectedInBothModes(byte[] data)
+        {
+            Assert.Throws<InvalidImageContentException>(() => Image.Load(data));
+            Assert.Throws<InvalidImageContentException>(() => Image.Load(data, LenientOptions));
+            Assert.Throws<InvalidImageContentException>(() => Image.Identify(data, new ImageIdentifyOptions { Configuration = LenientConfiguration, Mode = ImageIdentifyMode.FullScan }));
+        }
+    }
+
+    [Fact]
+    public void LenientDecodingKeepsTheResourceLimits()
+    {
+        var data = FourLines(builder => builder.Offsets = [0, 0, 0, 0]);
+        using (Image.Load(data, Lenient(new ImageResourceLimits { MaxEncodedBytes = data.Length, MaxFramePixels = 8 })))
+        {
+        }
+
+        Assert.Equal(ImageResourceLimitKind.EncodedBytes, Assert.Throws<ImageResourceLimitException>(() => Image.Load(data, Lenient(new ImageResourceLimits { MaxEncodedBytes = data.Length - 1 }))).Kind);
+        Assert.Equal(ImageResourceLimitKind.FramePixels, Assert.Throws<ImageResourceLimitException>(() => Image.Load(data, Lenient(new ImageResourceLimits { MaxFramePixels = 7 }))).Kind);
+
+        static ImageDecodeOptions Lenient(ImageResourceLimits limits) => new() { Configuration = new ImageConfiguration { DecodingStrictness = DecodingStrictness.Lenient, Limits = limits } };
+    }
+
     [Fact]
     public void TilesAreDecodedFromTheFirstLevelAndTheOtherLevelsAreSkipped()
     {
@@ -456,6 +582,51 @@ public sealed class ExrDecoderTests
             var bytes = new byte[image.Width * image.Height * 8];
             image.Frames[0].CopyPixelBytesTo(bytes);
             return bytes;
+        }
+    }
+
+    [Fact]
+    public void ChunksOfARebuiltOffsetTableAreDecodedByWorkersAsByOne()
+    {
+        // The lenient decoding finds the chunks by walking them, so the workers' batches cannot read ahead to the offset of a
+        // later chunk: the pixels, and the error of the first chunk that fails, are still those of one worker
+        ExrChannelDescription[] colors = [ExrChannelDescription.Half("B"), ExrChannelDescription.Half("G"), ExrChannelDescription.Half("R")];
+        var garbage = Enumerable.Range(0, 1000).Select(i => (byte)(i * 37)).ToArray();
+        foreach (var tiled in (bool[])[false, true])
+        {
+            var complete = WorkerFile(Zip, tiled, colors);
+            complete.GapBefore.Clear();
+            var expected = DecodePixels(complete.Build(), workers: 1, fromStream: false);
+            complete.Offsets = new long[complete.Chunks.Count];
+            var rebuilt = complete.Build();
+            Assert.Throws<InvalidImageContentException>(() => Image.Load(rebuilt));
+
+            var corrupt = WorkerFile(Zip, tiled, colors);
+            corrupt.GapBefore.Clear();
+            corrupt.Offsets = new long[corrupt.Chunks.Count];
+            corrupt.Chunks[5] = new ExrChunk(corrupt.Chunks[5].Coordinates, garbage);
+            var corrupted = corrupt.Build();
+            var error = Assert.Throws<InvalidImageContentException>(() => Load(corrupted, workers: 1, fromStream: false)).Message;
+            foreach (var workers in (int[])[1, 2, 16])
+            {
+                foreach (var fromStream in (bool[])[false, true])
+                {
+                    using (var image = Load(rebuilt, workers, fromStream))
+                    {
+                        var bytes = new byte[expected.Length];
+                        image.Frames[0].CopyPixelBytesTo(bytes);
+                        Assert.Equal(expected, bytes);
+                    }
+
+                    Assert.Equal(error, Assert.Throws<InvalidImageContentException>(() => Load(corrupted, workers, fromStream)).Message);
+                }
+            }
+        }
+
+        static Image Load(byte[] data, int workers, bool fromStream)
+        {
+            var options = new ImageDecodeOptions { Configuration = new ImageConfiguration { MaxDegreeOfParallelism = workers, DecodingStrictness = DecodingStrictness.Lenient } };
+            return fromStream ? Image.Load(new MemoryStream(data), options) : Image.Load(data, options);
         }
     }
 
@@ -824,6 +995,75 @@ public sealed class ExrDecoderTests
         }
 
         return stream.ToArray();
+    }
+
+    private static readonly ImageConfiguration LenientConfiguration = new() { DecodingStrictness = DecodingStrictness.Lenient };
+
+    private static readonly ImageDecodeOptions LenientOptions = new() { Configuration = LenientConfiguration };
+
+    /// <summary>A 2x4 scan-line file, one line per chunk: the samples of the line y are y + 1 and 10 (y + 1).</summary>
+    private static byte[] FourLines(Action<ExrFileBuilder> change, int lineCount = 4)
+    {
+        var builder = ExrFileBuilder.ScanLines(2, 4, None, HalfChannel("R"));
+        for (var y = 0; y < lineCount; y++)
+        {
+            builder.AddScanLineChunk(y, ExrFileBuilder.Halves(y + 1, 10 * (y + 1)));
+        }
+
+        change(builder);
+        return builder.Build();
+    }
+
+    /// <summary>A 4x4 file of 2x2 tiles of one level: the sample of the pixel (x, y) is 4y + x.</summary>
+    private static byte[] Tiles(Action<ExrFileBuilder> change)
+    {
+        var builder = new ExrFileBuilder { VersionField = 2 | 0x200 };
+        foreach (var attribute in ExrFileBuilder.ScanLines(4, 4, None, HalfChannel("R")).Attributes)
+        {
+            builder.Attributes.Add(attribute);
+        }
+
+        builder.Set("tiles", "tiledesc", ExrFileBuilder.TileDescription(2, 2, levelMode: 0, roundingMode: 0));
+        for (var tileY = 0; tileY < 2; tileY++)
+        {
+            for (var tileX = 0; tileX < 2; tileX++)
+            {
+                var top = 2 * tileY;
+                var left = 2 * tileX;
+                builder.AddTile(tileX, tileY, 0, 0, ExrFileBuilder.Halves((4 * top) + left, (4 * top) + left + 1, (4 * (top + 1)) + left, (4 * (top + 1)) + left + 1));
+            }
+        }
+
+        change(builder);
+        return builder.Build();
+    }
+
+    /// <summary>A 3x3 file of 2x2 tiles with mipmap levels: the sample of the pixel (x, y) of the first level is 3y + x.</summary>
+    private static byte[] MipmapLevels(Action<ExrFileBuilder> change)
+    {
+        var builder = new ExrFileBuilder { VersionField = 2 | 0x200 };
+        foreach (var attribute in ExrFileBuilder.ScanLines(3, 3, None, HalfChannel("R")).Attributes)
+        {
+            builder.Attributes.Add(attribute);
+        }
+
+        builder.Set("tiles", "tiledesc", ExrFileBuilder.TileDescription(2, 2, levelMode: 1, roundingMode: 0));
+        builder.AddTile(0, 0, 0, 0, ExrFileBuilder.Halves(0f, 1f, 3f, 4f));
+        builder.AddTile(1, 0, 0, 0, ExrFileBuilder.Halves(2f, 5f));
+        builder.AddTile(0, 1, 0, 0, ExrFileBuilder.Halves(6f, 7f));
+        builder.AddTile(1, 1, 0, 0, ExrFileBuilder.Halves(8f));
+        builder.AddTile(0, 0, 1, 1, ExrFileBuilder.Halves(100f));
+        change(builder);
+        return builder.Build();
+    }
+
+    /// <summary>Gets the offsets of the chunks of a builder, as its table would give them.</summary>
+    private static long[] Offsets(ExrFileBuilder builder)
+    {
+        var data = builder.Build();
+        var entries = builder.OffsetCount ?? builder.Chunks.Count;
+        var tableStart = data.Length - builder.Chunks.Sum(static chunk => (4 * chunk.Coordinates.Count) + 4 + chunk.Data.Length) - builder.Trailer.Length - builder.GapBefore.Values.Sum() - (8 * entries);
+        return [.. Enumerable.Range(0, entries).Select(i => BinaryPrimitives.ReadInt64LittleEndian(data.AsSpan(tableStart + (8 * i))))];
     }
 
     /// <summary>A scan-line file of HALF channels without compression: the samples of each line, channel after channel in name order.</summary>

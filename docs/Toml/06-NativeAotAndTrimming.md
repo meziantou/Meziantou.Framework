@@ -9,8 +9,8 @@ such an application.
 
 ## Use source-generated metadata
 
-Declare a `TomlSerializerContext` for your types, and call the overloads that take a `TomlTypeInfo<T>` or the context.
-The overloads that take a `TomlSerializerOptions` are the reflection-based ones:
+Declare a [TomlSerializerContext](cref:Meziantou.Framework.Toml.Serialization.TomlSerializerContext) for your types, and call the overloads that take a [TomlTypeInfo\<T\>](cref:Meziantou.Framework.Toml.TomlTypeInfo{T}) or the context.
+The overloads that take a [TomlSerializerOptions](cref:Meziantou.Framework.Toml.TomlSerializerOptions) are the reflection-based ones:
 
 <!-- ref:../../tests/Meziantou.Framework.Toml.Tests/BasicTests.cs;region=TomlSerializerContext_Use;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -42,9 +42,9 @@ An application that only uses source-generated metadata can turn reflection-base
 
 - The property is a feature switch of the trimmer: the reflection-based code is removed from the trimmed output.
 - It defaults to `false` when `PublishAot` or `NativeAot` is `true`. Set it explicitly to override that.
-- It is published as the `Meziantou.Framework.Toml.TomlSerializer.IsReflectionEnabledByDefault` runtime configuration
+- It is published as the [Meziantou.Framework.Toml.TomlSerializer.IsReflectionEnabledByDefault](cref:Meziantou.Framework.Toml.TomlSerializer.IsReflectionEnabledByDefault) runtime configuration
   option. It can also be set with `AppContext.SetSwitch` before the serializer is first used.
-- `TomlSerializer.IsReflectionEnabledByDefault` returns the value in effect.
+- [TomlSerializer.IsReflectionEnabledByDefault](cref:Meziantou.Framework.Toml.TomlSerializer.IsReflectionEnabledByDefault) returns the value in effect.
 
 When reflection is disabled, typed serialization needs a context. The built-in scalar types and the
 [document model](07-DocumentModel.md) keep working without one.

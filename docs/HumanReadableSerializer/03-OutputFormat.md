@@ -68,7 +68,7 @@ public properties.
 
 The keys of a `Dictionary<TKey, TValue>` are written in enumeration order. The keys of the hash-based collections that
 have no meaningful order, `Hashtable`, `HybridDictionary` and `StringDictionary`, are always sorted, so the output does
-not change from one process to the next. Set `DictionaryKeyOrder` to sort the keys of every dictionary; see
+not change from one process to the next. Set [DictionaryKeyOrder](cref:Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions.DictionaryKeyOrder) to sort the keys of every dictionary; see
 [Members](04-Members.md#order-members-and-dictionary-keys).
 
 ## Invisible characters and line endings
@@ -95,14 +95,14 @@ Assert.Equal("Name: Ada \r\nNotes:\r\n  line1\tend\r\n  line2", HumanReadableSer
 ```
 <!-- endref -->
 
-- `ShowInvisibleCharactersInValues` writes the control characters as their Unicode control pictures (`␉` for a tab,
+- [ShowInvisibleCharactersInValues](cref:Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions.ShowInvisibleCharactersInValues) writes the control characters as their Unicode control pictures (`␉` for a tab,
   `␊` for a line feed), and a space as `␠` at the start or the end of a line. The other invisible characters, such as a
   no-break space, a zero-width character, a soft hyphen or a bidirectional mark, are written as their code point, for
   instance `<U+00A0>`. Use it when two snapshots differ only by whitespace.
-- `NewLine` is `"\n"` by default on every platform. Set it to `"\r\n"` for Windows line endings; line breaks inside
+- [NewLine](cref:Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions.NewLine) is `"\n"` by default on every platform. Set it to `"\r\n"` for Windows line endings; line breaks inside
   values are rewritten too. Other values throw an `ArgumentException`.
 
 ## Depth and cycles
 
-`MaxDepth` (64 by default) limits how deep objects and collections can be nested. A deeper value, or an object graph
-with a cycle, throws a `HumanReadableSerializerException` instead of running out of stack.
+[MaxDepth](cref:Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions.MaxDepth) (64 by default) limits how deep objects and collections can be nested. A deeper value, or an object graph
+with a cycle, throws a [HumanReadableSerializerException](cref:Meziantou.Framework.HumanReadable.HumanReadableSerializerException) instead of running out of stack.

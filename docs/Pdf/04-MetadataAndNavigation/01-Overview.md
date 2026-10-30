@@ -4,14 +4,14 @@ description: Describe a document with its title, author and XMP metadata, help r
 ---
 
 Besides its pages, a document carries what describes it and what helps readers move in it. The members of
-`PdfDocument` read and write them, for a document you create as for a document you open:
+[PdfDocument](cref:Meziantou.Framework.Pdf.PdfDocument) read and write them, for a document you create as for a document you open:
 
 | To | Use | Page |
 | --- | --- | --- |
-| Give a title, an author, keywords, dates, a language | `Information`, `Language`, the XMP metadata | [Metadata](02-Metadata.md) |
-| Add bookmarks | `Outlines` | [Outline and links](03-OutlineAndLinks.md) |
+| Give a title, an author, keywords, dates, a language | [Information](cref:Meziantou.Framework.Pdf.PdfDocument.Information), [Language](cref:Meziantou.Framework.Pdf.PdfDocument.Language), the XMP metadata | [Metadata](02-Metadata.md) |
+| Add bookmarks | [Outlines](cref:Meziantou.Framework.Pdf.PdfDocument.Outlines) | [Outline and links](03-OutlineAndLinks.md) |
 | Link to a page or a website | `PdfPage.Annotations.AddLink` | [Outline and links](03-OutlineAndLinks.md) |
-| Attach files to the document or to a page | `EmbeddedFiles`, `PdfPage.Annotations.AddFileAttachment` | [Embedded files](04-EmbeddedFiles.md) |
+| Attach files to the document or to a page | [EmbeddedFiles](cref:Meziantou.Framework.Pdf.PdfDocument.EmbeddedFiles), `PdfPage.Annotations.AddFileAttachment` | [Embedded files](04-EmbeddedFiles.md) |
 
 The changes are written when the document is saved, by a full or an incremental save: see
 [Modifying documents](../05-ReadingAndModifying/04-ModifyingDocuments.md).

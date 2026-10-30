@@ -41,9 +41,9 @@ await writer.WriteEventAsync(new ChromiumTracingCompleteEvent
 <!-- endref -->
 
 - `ChromiumTracingWriter.Create(path)` creates the file, or overwrites it.
-- `WriteEventAsync` writes one event. A complete event, as here, is an operation with a start time and a duration: the
+- [WriteEventAsync](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingWriter.WriteEventAsync) writes one event. A complete event, as here, is an operation with a start time and a duration: the
   viewer shows it as a box on the row of its process and thread.
-- `ProcessId` and `ThreadId` choose the row. They do not have to be real process and thread identifiers: any numbers that
+- [ProcessId](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingEvent.ProcessId) and [ThreadId](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingEvent.ThreadId) choose the row. They do not have to be real process and thread identifiers: any numbers that
   group the events the way you want to see them work.
 - The writer is `IAsyncDisposable` only: declare it with `await using`. Disposing it closes the JSON array and the file.
 

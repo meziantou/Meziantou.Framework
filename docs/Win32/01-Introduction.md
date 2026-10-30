@@ -38,18 +38,18 @@ application.
 
 | Package | Main types | Page |
 | --- | --- | --- |
-| `Meziantou.Framework.Win32.AccessToken` | `AccessToken`, `SecurityIdentifier`, `Privileges` | [Access tokens](03-AccessTokens.md) |
-| `Meziantou.Framework.Win32.Amsi` | `AmsiContext`, `AmsiSession`, `AmsiResult` | [Antimalware scanning](04-AntimalwareScanning.md) |
-| `Meziantou.Framework.Win32.ChangeJournal` | `ChangeJournal`, `ChangeJournalEntry`, `Usn` | [Change journal](05-ChangeJournal.md) |
-| `Meziantou.Framework.Win32.CredentialManager` | `CredentialManager`, `Credential` | [Credential Manager](06-CredentialManager.md) |
-| `Meziantou.Framework.Win32.Dialogs` | `OpenFolderDialog` | [Folder dialog](07-FolderDialog.md) |
-| `Meziantou.Framework.Win32.Jobs` | `JobObject`, `JobObjectLimits` | [Job objects](08-JobObjects.md) |
-| `Meziantou.Framework.Win32.Lsa` | `LsaPrivateData` | [LSA private data](09-LsaPrivateData.md) |
-| `Meziantou.Framework.Win32.MarkOfTheWeb` | `MarkOfTheWeb`, `ZoneIdentifier`, `UrlZone` | [Mark of the Web](10-MarkOfTheWeb.md) |
-| `Meziantou.Framework.Win32.PerceivedType` | `Perceived`, `PerceivedType` | [Perceived types](11-PerceivedTypes.md) |
-| `Meziantou.Framework.Win32.ProjectedFileSystem` | `ProjectedFileSystemBase`, `ProjectedFileSystemEntry` | [Projected file system](12-ProjectedFileSystem/01-Overview.md) |
-| `Meziantou.Framework.Win32.RecentDocuments` | `RecentDocuments` | [Recent documents](13-RecentDocuments.md) |
-| `Meziantou.Framework.Win32.RestartManager` | `RestartManager`, `RestartManagerProcessInfo` | [Restart Manager](14-RestartManager.md) |
+| `Meziantou.Framework.Win32.AccessToken` | [AccessToken](cref:Meziantou.Framework.Win32.AccessToken), [SecurityIdentifier](cref:Meziantou.Framework.Win32.SecurityIdentifier), [Privileges](cref:Meziantou.Framework.Win32.Privileges) | [Access tokens](03-AccessTokens.md) |
+| `Meziantou.Framework.Win32.Amsi` | [AmsiContext](cref:Meziantou.Framework.Win32.AmsiContext), [AmsiSession](cref:Meziantou.Framework.Win32.AmsiSession), [AmsiResult](cref:Meziantou.Framework.Win32.AmsiResult) | [Antimalware scanning](04-AntimalwareScanning.md) |
+| `Meziantou.Framework.Win32.ChangeJournal` | [ChangeJournal](cref:Meziantou.Framework.Win32.ChangeJournal), [ChangeJournalEntry](cref:Meziantou.Framework.Win32.ChangeJournalEntry), [Usn](cref:Meziantou.Framework.Win32.Usn) | [Change journal](05-ChangeJournal.md) |
+| `Meziantou.Framework.Win32.CredentialManager` | [CredentialManager](cref:Meziantou.Framework.Win32.CredentialManager), [Credential](cref:Meziantou.Framework.Win32.Credential) | [Credential Manager](06-CredentialManager.md) |
+| `Meziantou.Framework.Win32.Dialogs` | [OpenFolderDialog](cref:Meziantou.Framework.Win32.OpenFolderDialog) | [Folder dialog](07-FolderDialog.md) |
+| `Meziantou.Framework.Win32.Jobs` | [JobObject](cref:Meziantou.Framework.Win32.JobObject), [JobObjectLimits](cref:Meziantou.Framework.Win32.JobObjectLimits) | [Job objects](08-JobObjects.md) |
+| `Meziantou.Framework.Win32.Lsa` | [LsaPrivateData](cref:Meziantou.Framework.Win32.LsaPrivateData) | [LSA private data](09-LsaPrivateData.md) |
+| `Meziantou.Framework.Win32.MarkOfTheWeb` | [MarkOfTheWeb](cref:Meziantou.Framework.Win32.MarkOfTheWeb), [ZoneIdentifier](cref:Meziantou.Framework.Win32.ZoneIdentifier), [UrlZone](cref:Meziantou.Framework.Win32.UrlZone) | [Mark of the Web](10-MarkOfTheWeb.md) |
+| `Meziantou.Framework.Win32.PerceivedType` | [Perceived](cref:Meziantou.Framework.Win32.Perceived), [PerceivedType](cref:Meziantou.Framework.Win32.PerceivedType) | [Perceived types](11-PerceivedTypes.md) |
+| `Meziantou.Framework.Win32.ProjectedFileSystem` | [ProjectedFileSystemBase](cref:Meziantou.Framework.Win32.ProjectedFileSystem.ProjectedFileSystemBase), [ProjectedFileSystemEntry](cref:Meziantou.Framework.Win32.ProjectedFileSystem.ProjectedFileSystemEntry) | [Projected file system](12-ProjectedFileSystem/01-Overview.md) |
+| `Meziantou.Framework.Win32.RecentDocuments` | [RecentDocuments](cref:Meziantou.Framework.Win32.RecentDocuments) | [Recent documents](13-RecentDocuments.md) |
+| `Meziantou.Framework.Win32.RestartManager` | [RestartManager](cref:Meziantou.Framework.Win32.RestartManager), [RestartManagerProcessInfo](cref:Meziantou.Framework.Win32.RestartManagerProcessInfo) | [Restart Manager](14-RestartManager.md) |
 
 Each package is independent: install only the ones you need. WPF applications can also use the
 [WPF](../WPF/01-Introduction.md) package, which provides commands, markup extensions and converters.

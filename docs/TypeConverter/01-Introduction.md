@@ -16,10 +16,10 @@ arguments. `"42"` becomes an `int`, `"yes"` a `bool`, `"friday"` a `DayOfWeek`, 
   [Supported conversions](03-SupportedConversions.md).
 - **Read values from a dictionary** and convert them. See
   [Getting started](02-GettingStarted.md#read-values-from-a-dictionary).
-- **Change a conversion** by deriving from `DefaultConverter`, or write your own `IConverter`. See
+- **Change a conversion** by deriving from [DefaultConverter](cref:Meziantou.Framework.DefaultConverter), or write your own [IConverter](cref:Meziantou.Framework.IConverter). See
   [Custom conversions](04-CustomConversions.md).
 
 ## Namespaces
 
-`ConvertUtilities`, `DefaultConverter`, `IConverter`, `ByteArrayToStringFormat` and `DictionaryExtensions` are in the
-[Meziantou.Framework](cref:Meziantou.Framework) namespace.
+[ConvertUtilities](cref:Meziantou.Framework.ConvertUtilities), [DefaultConverter](cref:Meziantou.Framework.DefaultConverter), [IConverter](cref:Meziantou.Framework.IConverter), [ByteArrayToStringFormat](cref:Meziantou.Framework.ByteArrayToStringFormat) and [DictionaryExtensions](cref:Meziantou.Framework.TypeConverter!T:Meziantou.Framework.DictionaryExtensions) are in the
+[Meziantou.Framework](cref:Meziantou.Framework.TypeConverter!N:Meziantou.Framework) namespace.

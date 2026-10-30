@@ -36,7 +36,7 @@ public sealed class Product
 ```
 <!-- endref -->
 
-`YamlSerializer.Serialize` writes an instance as YAML, and `YamlSerializer.Deserialize` reads it back:
+[YamlSerializer.Serialize](cref:Meziantou.Framework.Yaml.YamlSerializer.Serialize) writes an instance as YAML, and [YamlSerializer.Deserialize](cref:Meziantou.Framework.Yaml.YamlSerializer.Deserialize) reads it back:
 
 <!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlSerializerApiTests.cs;region=YamlSerializer_SerializeAndDeserialize;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -66,8 +66,8 @@ Assert.Equal("Sample product", product!.DisplayName);
 ```
 <!-- endref -->
 
-- The public properties are written in their declaration order. `PropertyNamingPolicy` converts their names, here to
-  kebab case; `[YamlPropertyName]` sets the name of one property and wins over the policy.
+- The public properties are written in their declaration order. [PropertyNamingPolicy](cref:Meziantou.Framework.Yaml.YamlSerializerOptions.PropertyNamingPolicy) converts their names, here to
+  kebab case; [\[YamlPropertyName\]](cref:Meziantou.Framework.Yaml.Serialization.YamlPropertyNameAttribute) sets the name of one property and wins over the policy.
 - The array is written as a block sequence, indented under its key.
 - Reading accepts the same options. A key that matches no property is skipped by default.
 
@@ -91,8 +91,8 @@ Assert.Equal("Sample product", name);
 ```
 <!-- endref -->
 
-A `YamlStream` holds every document of the text; each document contains mappings (`YamlMapping`), sequences
-(`YamlSequence`) and scalars (`YamlValue`). See [Document object model](05-DocumentObjectModel.md).
+A [YamlStream](cref:Meziantou.Framework.Yaml.Model.YamlStream) holds every document of the text; each document contains mappings ([YamlMapping](cref:Meziantou.Framework.Yaml.Model.YamlMapping)), sequences
+([YamlSequence](cref:Meziantou.Framework.Yaml.Model.YamlSequence)) and scalars ([YamlValue](cref:Meziantou.Framework.Yaml.Model.YamlValue)). See [Document object model](05-DocumentObjectModel.md).
 
 ## Next steps
 

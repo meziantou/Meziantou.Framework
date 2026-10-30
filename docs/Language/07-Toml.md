@@ -22,7 +22,7 @@ This package and [`Meziantou.Framework.Toml`](../Toml/01-Introduction.md) both r
 | Edit a file and keep everything you do not change exactly as written: quotes, number formats, layout | This package |
 | Report the problems of a file with their positions, in an editor or a linter | This package, or the syntax tree of `Meziantou.Framework.Toml`: see [Syntax tree, lexer and parser](../Toml/08-SyntaxTreeAndParser.md) |
 | Work on TOML with the same model as JSON, XML, INI and the other languages here | This package |
-| Check that a file uses only TOML 1.0 | This package, with `TomlVersion.V1_0` |
+| Check that a file uses only TOML 1.0 | This package, with [TomlVersion.V1\_0](cref:Meziantou.Framework.Language.Toml.TomlVersion.V1_0) |
 
 The two packages have their own types: a node of one cannot be used with the other.
 
@@ -47,37 +47,37 @@ Assert.Equal(8000L, ((TomlIntegerSyntax)ports.Elements[0]).Value);
 
 ## The shape of a tree
 
-A `TomlDocumentSyntax` holds its `Entries` in the order of the text:
+A [TomlDocumentSyntax](cref:Meziantou.Framework.Language.Toml.TomlDocumentSyntax) holds its [Entries](cref:Meziantou.Framework.Language.Toml.TomlDocumentSyntax.Entries) in the order of the text:
 
-- a `TomlTableSyntax` is a table header, `[server]` or `[[products]]`; `IsArrayOfTables` tells them apart;
-- a `TomlPropertySyntax` is a key/value pair, `host = "localhost"`, with its `Key` and its `Value`;
-- a `TomlSkippedTextSyntax` is a line the parser could not read.
+- a [TomlTableSyntax](cref:Meziantou.Framework.Language.Toml.TomlTableSyntax) is a table header, `[server]` or `[[products]]`; [IsArrayOfTables](cref:Meziantou.Framework.Language.Toml.TomlTableSyntax.IsArrayOfTables) tells them apart;
+- a [TomlPropertySyntax](cref:Meziantou.Framework.Language.Toml.TomlPropertySyntax) is a key/value pair, `host = "localhost"`, with its [Key](cref:Meziantou.Framework.Language.Toml.TomlPropertySyntax.Key) and its `Value`;
+- a [TomlSkippedTextSyntax](cref:Meziantou.Framework.Language.Toml.TomlSkippedTextSyntax) is a line the parser could not read.
 
 The entries are flat, as in the text: a table header is followed by its key/value pairs rather than being their parent.
-`TomlTableSyntax.Properties` gathers the pairs under a header, and `TomlDocumentSyntax.RootProperties` the pairs before
+[TomlTableSyntax.Properties](cref:Meziantou.Framework.Language.Toml.TomlTableSyntax.Properties) gathers the pairs under a header, and [TomlDocumentSyntax.RootProperties](cref:Meziantou.Framework.Language.Toml.TomlDocumentSyntax.RootProperties) the pairs before
 the first header.
 
-A key is a `TomlKeySyntax`, with the parts of a dotted key and the dots between them. Its `Names` are the names without
+A key is a [TomlKeySyntax](cref:Meziantou.Framework.Language.Toml.TomlKeySyntax), with the parts of a dotted key and the dots between them. Its [Names](cref:Meziantou.Framework.Language.Toml.TomlKeySyntax.Names) are the names without
 their quotes and escapes, so `site."google.com"` has the names `site` and `google.com`.
 
 | Value node | Example | `Value` |
 | --- | --- | --- |
-| `TomlStringSyntax` | `"basic"`, `'literal'`, `"""multi-line"""`, `'''multi-line'''` | `string` |
-| `TomlIntegerSyntax` | `42`, `-17`, `1_000`, `0xDEADBEEF`, `0o755`, `0b1101` | `long` |
-| `TomlFloatSyntax` | `3.14`, `6.626e-34`, `inf`, `nan` | `double` |
-| `TomlBooleanSyntax` | `true`, `false` | `bool` |
-| `TomlDateTimeSyntax` | `1979-05-27T07:32:00Z`, `1979-05-27T07:32:00`, `1979-05-27`, `07:32:00` | `DateTimeOffset`, `DateTime`, `DateOnly`, `TimeOnly` |
-| `TomlArraySyntax` | `[1, 2, 3]` | `Elements`, a separated list of values |
-| `TomlInlineTableSyntax` | `{ x = 1, y = 2 }` | `Properties`, a separated list of key/value pairs |
-| `TomlSkippedValueSyntax` | A value that is missing or could not be read | — |
+| [TomlStringSyntax](cref:Meziantou.Framework.Language.Toml.TomlStringSyntax) | `"basic"`, `'literal'`, `"""multi-line"""`, `'''multi-line'''` | `string` |
+| [TomlIntegerSyntax](cref:Meziantou.Framework.Language.Toml.TomlIntegerSyntax) | `42`, `-17`, `1_000`, `0xDEADBEEF`, `0o755`, `0b1101` | `long` |
+| [TomlFloatSyntax](cref:Meziantou.Framework.Language.Toml.TomlFloatSyntax) | `3.14`, `6.626e-34`, `inf`, `nan` | `double` |
+| [TomlBooleanSyntax](cref:Meziantou.Framework.Language.Toml.TomlBooleanSyntax) | `true`, `false` | `bool` |
+| [TomlDateTimeSyntax](cref:Meziantou.Framework.Language.Toml.TomlDateTimeSyntax) | `1979-05-27T07:32:00Z`, `1979-05-27T07:32:00`, `1979-05-27`, `07:32:00` | `DateTimeOffset`, `DateTime`, `DateOnly`, `TimeOnly` |
+| [TomlArraySyntax](cref:Meziantou.Framework.Language.Toml.TomlArraySyntax) | `[1, 2, 3]` | [Elements](cref:Meziantou.Framework.Language.Toml.TomlArraySyntax.Elements), a separated list of values |
+| [TomlInlineTableSyntax](cref:Meziantou.Framework.Language.Toml.TomlInlineTableSyntax) | `{ x = 1, y = 2 }` | [Properties](cref:Meziantou.Framework.Language.Toml.TomlInlineTableSyntax.Properties), a separated list of key/value pairs |
+| [TomlSkippedValueSyntax](cref:Meziantou.Framework.Language.Toml.TomlSkippedValueSyntax) | A value that is missing or could not be read | — |
 
 Whitespace and comments up to the end of a line belong to the token that ends the line, and the rest to the next token,
 so a comment on its own line goes with the entry below it.
 
 ## Read values by key
 
-A table can be written with a header, with dotted keys, or as an inline table, and the three can be mixed. `GetValue`
-finds the value of a key whichever way it is written, and `GetKeyValues()` returns every key/value pair of the document
+A table can be written with a header, with dotted keys, or as an inline table, and the three can be mixed. [GetValue](cref:Meziantou.Framework.Language.Toml.TomlDocumentSyntax.GetValue)
+finds the value of a key whichever way it is written, and [GetKeyValues()](cref:Meziantou.Framework.Language.Toml.TomlDocumentSyntax.GetKeyValues) returns every key/value pair of the document
 with its full key:
 
 <!-- ref:../../tests/Meziantou.Framework.Language.Toml.Tests/TomlSyntaxTreeTests.cs;region=TomlSyntaxTree_ReadValuesByKey;format=md-fenced-code-block;dedent=true -->
@@ -103,8 +103,8 @@ Assert.Equal(["dependencies.serde", "dependencies.serde.version", "dependencies.
 ```
 <!-- endref -->
 
-Each `TomlKeyValue` has the `Names` of its full key, its `Value`, the `Property` that defines it, the tokens that write
-each name in `Parts`, and the `Table` header it is under, which tells apart the tables of an array of tables. A pair whose
+Each [TomlKeyValue](cref:Meziantou.Framework.Language.Toml.TomlKeyValue) has the [Names](cref:Meziantou.Framework.Language.Toml.TomlKeyValue.Names) of its full key, its `Value`, the [Property](cref:Meziantou.Framework.Language.Toml.TomlKeyValue.Property) that defines it, the tokens that write
+each name in [Parts](cref:Meziantou.Framework.Language.Toml.TomlKeyValue.Parts), and the `Table` header it is under, which tells apart the tables of an array of tables. A pair whose
 value is an inline table comes before the pairs of that table. Values in arrays are not returned, as they have no key of
 their own. A list pattern reads the pairs of a table:
 
@@ -143,7 +143,7 @@ Assert.Equal("port = 9090 # the port\n", updated.ToFullString());
 ```
 <!-- endref -->
 
-`SyntaxFactory` builds new nodes. Keys are quoted when they cannot be bare, strings are escaped, and floats always read
+[SyntaxFactory](cref:Meziantou.Framework.Language.Toml.SyntaxFactory) builds new nodes. Keys are quoted when they cannot be bare, strings are escaped, and floats always read
 back as floats:
 
 <!-- ref:../../tests/Meziantou.Framework.Language.Toml.Tests/TomlSyntaxTreeTests.cs;region=TomlSyntaxTree_SyntaxFactory;format=md-fenced-code-block;dedent=true -->
@@ -162,12 +162,12 @@ Assert.Equal("""
 ```
 <!-- endref -->
 
-- Every entry of a document ends its line. `TomlDocument`, `AddEntries`, and the edits that put an entry in front of
-  another (`ReplaceNode`, `InsertNodesAfter`, `InsertNodesBefore`, a rewriter) add a line feed to an entry that does not
+- Every entry of a document ends its line. [TomlDocument](cref:Meziantou.Framework.Language.Toml.SyntaxFactory.TomlDocument), [AddEntries](cref:Meziantou.Framework.Language.Toml.TomlDocumentSyntax.AddEntries), and the edits that put an entry in front of
+  another ([ReplaceNode](cref:Meziantou.Framework.Language.SyntaxNodeExtensions.ReplaceNode), [InsertNodesAfter](cref:Meziantou.Framework.Language.SyntaxNodeExtensions.InsertNodesAfter), [InsertNodesBefore](cref:Meziantou.Framework.Language.SyntaxNodeExtensions.InsertNodesBefore), a rewriter) add a line feed to an entry that does not
   end with one.
-- `AddElements` and `AddProperties` lay out new items the way the array or the inline table already is: on its line, or
+- [AddElements](cref:Meziantou.Framework.Language.Toml.TomlArraySyntax.AddElements) and [AddProperties](cref:Meziantou.Framework.Language.Toml.TomlInlineTableSyntax.AddProperties) lay out new items the way the array or the inline table already is: on its line, or
   one per line.
-- `SyntaxFactory.ParseValue` reads a single value written as text, the easiest way to get a literal or a multi-line
+- [SyntaxFactory.ParseValue](cref:Meziantou.Framework.Language.Toml.SyntaxFactory.ParseValue) reads a single value written as text, the easiest way to get a literal or a multi-line
   string written exactly as you want.
 - The factory methods refuse what TOML cannot hold rather than write a document that does not read back: a lone
   surrogate in a string, whitespace other than spaces and tabs, a comment with a control character, or a key/value pair
@@ -175,7 +175,7 @@ Assert.Equal("""
 
 ## TOML versions
 
-`TomlParseOptions.Version` chooses the version of the specification. TOML 1.1, the default, adds line breaks and a
+[TomlParseOptions.Version](cref:Meziantou.Framework.Language.Toml.TomlParseOptions.Version) chooses the version of the specification. TOML 1.1, the default, adds line breaks and a
 trailing comma in inline tables, the `\e` and `\xHH` escape sequences, and times without seconds. Parsing as TOML 1.0
 reports each of them as `TOML0013`, and reads them the same way otherwise:
 
@@ -189,9 +189,9 @@ Assert.Equal("TOML0013", tree.GetDiagnostics().Single().Id);
 ```
 <!-- endref -->
 
-`TomlParseOptions.MaxDepth`, 128 by default, limits how deeply arrays and inline tables nest. A deeper one is kept whole
+[TomlParseOptions.MaxDepth](cref:Meziantou.Framework.Language.Toml.TomlParseOptions.MaxDepth), 128 by default, limits how deeply arrays and inline tables nest. A deeper one is kept whole
 as skipped text and reported once. Nesting deeper than the stack can hold is reported the same way, whatever
-`MaxDepth` says.
+[MaxDepth](cref:Meziantou.Framework.Language.Toml.TomlParseOptions.MaxDepth) says.
 
 ## Diagnostics
 
@@ -221,7 +221,7 @@ Assert.Equal(["TOML0020 (1,0): The key 'a' is already defined."], messages);
 | `TOML0009` | An invalid escape sequence, or one that is not a Unicode scalar value |
 | `TOML0010` | A control character, or whitespace TOML does not allow, such as a non-breaking space |
 | `TOML0011` | A carriage return not followed by a line feed |
-| `TOML0012` | Arrays and inline tables nested deeper than `MaxDepth` |
+| `TOML0012` | Arrays and inline tables nested deeper than [MaxDepth](cref:Meziantou.Framework.Language.Toml.TomlParseOptions.MaxDepth) |
 | `TOML0013` | A TOML 1.1 feature when parsing as TOML 1.0 |
 | `TOML0020` | A key defined twice |
 | `TOML0021` | A table defined twice |
@@ -230,7 +230,7 @@ Assert.Equal(["TOML0020 (1,0): The key 'a' is already defined."], messages);
 | `TOML0024` | A dotted key that adds to a table a header already defined |
 
 The diagnostics from `TOML0020` depend on the whole document rather than on one node: the tree works them out from its
-root when it is first asked. A tree made from an edited root, with `WithRoot` or `Create`, parses its text again, so a
+root when it is first asked. A tree made from an edited root, with [WithRoot](cref:Meziantou.Framework.Language.Toml.TomlSyntaxTree.WithRoot) or [Create](cref:Meziantou.Framework.Language.Toml.TomlSyntaxTree.Create), parses its text again, so a
 duplicate an edit removed is no longer reported, and one it added is.
 
 ### Mistakes
@@ -245,11 +245,11 @@ the rest of the document into one array.
 A few valid TOML values do not fit the .NET types: the year 0 and a leap second (`:60`) are reported as `TOML0006`, an
 offset further from UTC than ±14:00 is read as the same instant in UTC, and a fraction of a second is truncated to
 seven digits. Line breaks in multi-line strings are read as line feeds. The `Value` of a node in error is a best guess:
-check `ContainsDiagnostics` before you rely on it.
+check [ContainsDiagnostics](cref:Meziantou.Framework.Language.SyntaxNode.ContainsDiagnostics) before you rely on it.
 
 ## Walk a tree
 
-`TomlSyntaxWalker`, `TomlSyntaxVisitor` and `TomlSyntaxRewriter` have a method per node type, such as `VisitTomlTable`
+[TomlSyntaxWalker](cref:Meziantou.Framework.Language.Toml.TomlSyntaxWalker), [TomlSyntaxVisitor](cref:Meziantou.Framework.Language.Toml.TomlSyntaxVisitor) and [TomlSyntaxRewriter](cref:Meziantou.Framework.Language.Toml.TomlSyntaxRewriter) have a method per node type, such as `VisitTomlTable`
 and `VisitTomlInteger`:
 
 <!-- ref:../../tests/Meziantou.Framework.Language.Toml.Tests/TomlSyntaxTreeTests.cs;region=TomlSyntaxRewriter_DoubleIntegers;format=md-fenced-code-block;dedent=true -->

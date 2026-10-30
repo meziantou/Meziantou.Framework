@@ -5,7 +5,7 @@ description: Load a .gitignore file, check which paths it ignores, and list the 
 
 ## Check whether a path is ignored
 
-`GlobCollection.ParseGitIgnore` reads the content of a `.gitignore` file. `IsMatch` then returns `true` for the paths
+[GlobCollection.ParseGitIgnore](cref:Meziantou.Framework.Globbing.GlobCollection.ParseGitIgnore) reads the content of a `.gitignore` file. [IsMatch](cref:Meziantou.Framework.Globbing.GlobCollection.IsMatch) then returns `true` for the paths
 that git ignores:
 
 <!-- ref:../../tests/Meziantou.Framework.Globbing.Tests/GlobCollectionTests.cs;region=GlobCollection_ParseGitIgnore;format=md-fenced-code-block;dedent=true -->
@@ -37,7 +37,7 @@ The content is read as git reads it:
 
 ## Load a file
 
-`LoadGitIgnoreAsync` reads a file, a `Stream` or a `TextReader`:
+[LoadGitIgnoreAsync](cref:Meziantou.Framework.Globbing.GlobCollection.LoadGitIgnoreAsync) reads a file, a `Stream` or a `TextReader`:
 
 <!-- ref:../../tests/Meziantou.Framework.Globbing.Tests/GlobCollectionTests.cs;region=GlobCollection_LoadGitIgnoreAsync;format=md-fenced-code-block;dedent=true -->
 ```csharp

@@ -27,6 +27,7 @@ public sealed class DefaultsTests
         Assert.Equal(100_000, limits.MaxTextLines);
         Assert.Same(limits, ImageConfiguration.Default.Limits);
         Assert.Equal(1, ImageConfiguration.Default.MaxDegreeOfParallelism);
+        Assert.Equal(DecodingStrictness.Strict, ImageConfiguration.Default.DecodingStrictness);
     }
 
     [Fact]
@@ -47,6 +48,7 @@ public sealed class DefaultsTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new ImageResourceLimits { MaxTextLines = 0 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new ImageConfiguration { MaxDegreeOfParallelism = 0 });
         Assert.Throws<ArgumentNullException>(() => new ImageConfiguration { Limits = null! });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ImageConfiguration { DecodingStrictness = (DecodingStrictness)2 });
     }
 
     [Fact]

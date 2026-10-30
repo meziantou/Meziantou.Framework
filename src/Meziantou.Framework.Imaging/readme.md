@@ -84,6 +84,7 @@ copied from code that compiles, and most of them also run in the test suite.
   - [Streaming readers and writers](#streaming-readers-and-writers)
   - [Saving files](#saving-files)
   - [Errors](#errors)
+  - [Lenient decoding](#lenient-decoding)
 - [Format reference](#format-reference)
   - [PNG and APNG](#png-and-apng)
   - [GIF](#gif)
@@ -3077,13 +3078,15 @@ of their characters and were not compared with a font.
 - **Direction.** Each paragraph is ordered by the Unicode Bidirectional Algorithm (UAX #9): left-to-right and
   right-to-left text can be mixed, mirrored characters are mirrored, and each line is put in display order.
   `Direction` imposes the base direction of the paragraphs; by default it is the one of their first strong character.
+  A vertical tab, a form feed and U+2028 end a line, not the direction: the text after them keeps the direction of
+  the text before them, which only a line feed, a carriage return, U+0085 or U+2029 resets.
   `Alignment` is relative to it: `Start` is the left of a left-to-right paragraph and the right of a right-to-left one.
 - **Vertical text.** With `WritingMode = VerticalRightToLeft`, lines go from the top to the bottom and follow each
   other to the left, as Chinese, Japanese and Korean are set; with `VerticalLeftToRight` they follow each other to the
   right, as Mongolian is. Everything that is said of the width of a horizontal line is then said of the height of a
   vertical one: `MaxHeight` is where lines are wrapped and what they are aligned in, `MaxWidth` is the room the lines
   must fit, `LineHeight` is the width of a line, `Alignment` places a line from its top, and `FirstLineIndent` moves
-  the first line of a paragraph down. `Width` and `Height` stay the size of the layout on the image.
+  the indented lines of a paragraph down. `Width` and `Height` stay the size of the layout on the image.
   - `Orientation` says which characters are upright. By default (`Mixed`), each character is set as the Unicode
     Standard says (the Vertical_Orientation property, UAX #50): ideographs, kana, Hangul syllables, emoji and most
     symbols are upright, one under the other; the letters of the scripts that are written in horizontal lines
@@ -3129,7 +3132,8 @@ of their characters and were not compared with a font.
 - **Alignment.** Lines are aligned in `MaxWidth`, or in the width of the widest line without it. `Justify` stretches
   each line to that width by widening U+0020 spaces and U+00A0 no-break spaces, except the last line of a paragraph.
   A line without these spaces stays start-aligned: there is no inter-character justification for CJK text.
-  `FirstLineIndent` indents the first line of each paragraph, and `TabSize` sets the tabulation stops.
+  `FirstLineIndent` indents the first line of each paragraph; a negative value is a hanging indent, which leaves the
+  first line at the edge and indents the lines after it. `TabSize` sets the tabulation stops.
 - **Fitting.** `MaxLines` and `MaxHeight` cut the text (the first line is always kept); `Trimming` ends the last line
   with an ellipsis after the last character or the last word that leaves room for it, and also trims a line that is
   wider than `MaxWidth` when lines are not wrapped. `IsTruncated` says that a part of the text is not in the layout.
@@ -3709,7 +3713,12 @@ public static Image LoadCmykJpeg(string path)
   ISO 18619): the black of the source is the color of its device black (for a CMYK output profile, of the inks its
   perceptual table gives for black); the black of a table-based destination is read from the round trip of a
   lightness ramp through the profile. It changes nothing when both blacks are black, as between two display
-  profiles, and never applies to the absolute colorimetric intent.
+  profiles, and never applies to the absolute colorimetric intent. The perceptual and saturation tables of a version 4
+  profile give black the lightness of the perceptual reference medium (L* = 3.1373), where version 2 tables and
+  matrix-based profiles usually give it 0: the compensation maps one to the other, and without it nothing does (black
+  becomes a dark gray from a version 4 table to a version 2 or matrix-based profile, and the darkest grays become black
+  the other way). The ICC recommends against connecting version 2 and version 4 perceptual tables. LittleCMS
+  compensates a version 4 destination for these intents even when asked not to; the library does what the option says.
 
 A malformed profile is an `InvalidImageContentException`; a valid profile of another kind (version 5, device link,
 abstract, named color, other data color spaces), or one that cannot be a destination (no table from the connection
@@ -3839,7 +3848,7 @@ allocation limit.
 For forward-only parsing, `MaxEncodedBytes` bounds the prefix examined; the input length is enough for that limit.
 When parsing stops early (`Identify` in header mode or `FrameLimit`), the remaining bytes need not fit the limit.
 A stream only reports its end by returning no byte, so when the format needs the end of the input (the
-TGA trailer, the last sample of a plain Netpbm raster, a TIFF, an icon or an animated cursor buffered whole, an input shorter than the detection
+TGA trailer, the last sample of a plain Netpbm raster, a GIF without trailer in lenient decoding, a TIFF, an icon or an animated cursor buffered whole, an input shorter than the detection
 prefix) and every byte the limit allows was read, one more byte is read and discarded to tell an input that ends there from
 a longer one. It is the only byte ever read past the limit, and it is never decoded.
 
@@ -4022,7 +4031,7 @@ Content errors derive from `ImageException`:
 | --- | --- |
 | `UnknownImageFormatException` | The signature is not recognized. |
 | `InvalidImageContentException` (`Format`) | Malformed, inconsistent or truncated data; also a malformed caller-supplied EXIF/ICC/XMP payload at save time. |
-| `UnsupportedImageFeatureException` (`Format`, `Feature`) | A valid but unsupported feature (hierarchical JPEG, a CMYK JPEG loaded without `CmykConversion`, GIF plain text...), or an operation that would lose animation, alpha, precision, metadata, a cursor hotspot, a poster or a profile without an explicit setting, or a duration/play count the output cannot represent. |
+| `UnsupportedImageFeatureException` (`Format`, `Feature`) | A valid but unsupported feature (hierarchical JPEG, a CMYK JPEG loaded without `CmykConversion`, GIF plain text unless the decoding is lenient...), or an operation that would lose animation, alpha, precision, metadata, a cursor hotspot, a poster or a profile without an explicit setting, or a duration/play count the output cannot represent. |
 | `ImageResourceLimitException` (`Kind`, `Limit`, `Requested`) | A configured limit was exceeded. |
 
 Other failures use the standard exceptions: `ArgumentException` (invalid arguments, mismatched frames),
@@ -4060,6 +4069,43 @@ public static Image? TryLoad(string path, ImageConfiguration configuration)
 }
 ```
 <!-- endref -->
+
+### Lenient decoding
+
+By default (`DecodingStrictness.Strict`), a file that deviates from its specification is an
+`InvalidImageContentException`. `ImageConfiguration.DecodingStrictness = DecodingStrictness.Lenient` accepts the
+deviations listed below, which the reference decoders and the browsers accept, and repairs them the way they do. It
+applies to identification, eager loads, sequential readers and collections alike.
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_LenientDecoding;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static Image LoadLeniently(string path)
+{
+    var configuration = new ImageConfiguration { DecodingStrictness = DecodingStrictness.Lenient };
+    return Image.Load(path, new ImageDecodeOptions { Configuration = configuration });
+}
+```
+<!-- endref -->
+
+- The resource limits are the same in both modes: a repair is charged and bounded like the rest of the file.
+- A repair never invents pixels: a deviation that could only be repaired by guessing samples is still rejected.
+- Only the deviations of the table are accepted; every other malformed file is rejected as in strict mode.
+
+| Format | Deviation | Lenient behavior |
+| --- | --- | --- |
+| PNG | A grayscale or RGB `tRNS` chunk shorter than its color key (2 or 6 bytes) | The chunk is ignored: the image has no color key, as in libpng, FFmpeg, Apple ImageIO and the browsers. A key that is too long and palette alphas past the palette or before `PLTE` are still rejected (the decoders disagree on them) |
+| PNG | An APNG with fewer frames than `acTL` declares, one at least | The animation is the frames present, as the browsers, Apple ImageIO and FFmpeg play it; a header identification still reports the declared count. More frames than declared, or none, are still rejected (the decoders disagree on them) |
+| GIF | No trailer (`0x3B`): the input ends after a complete block | The file ends there, as at the trailer, like FFmpeg, ImageMagick, Pillow and Apple ImageIO. An input that ends inside a block or an image is still truncated |
+| GIF | `0x00` bytes where a block is expected, followed only by the trailer or the end of the input | Skipped. Followed by another block, they are still rejected: Apple ImageIO and FFmpeg stop there, while ImageMagick and Pillow decode the next images |
+| GIF | Plain-text extension | Skipped, without rendering its text and without a frame; a Graphic Control Extension before it applies to the next image (delay, transparent index and disposal), as in FFmpeg, ImageMagick, Pillow and Apple ImageIO |
+| JPEG | A restart marker whose number is 3 to 5 after the expected one, in a sequential or lossless scan | Read as the expected marker, and the next one is expected after it, when the data of its interval is complete: the pixels of the file with the right number, as libjpeg-turbo, FFmpeg and Apple ImageIO give. A number one or two away (which these decoders resolve in different ways) and any wrong number in a progressive scan (which ImageIO rejects) are still rejected. JPEG files only: the JPEG strips and tiles of a TIFF page stay strict |
+| JPEG | No EOI marker, or only its first byte, after the last scan | The image ends with the input when the frame is complete (every component coded by a scan, and every coefficient coded to its last bit in a progressive frame) and its last scan has all its MCUs: the pixels of the file with its EOI marker, as libjpeg-turbo, FFmpeg and Apple ImageIO give. A full `Identify` accepts the file once the scan headers make the frame complete, since it does not decode the scans. A file cut inside a scan, or after a scan that leaves bits of the frame uncoded, and an arithmetic-coded frame (whose missing bytes read as zeros) still need the marker. JPEG files only |
+| Netpbm | A `#` comment right after the digits of a header token (`4#comment` for the width) | The comment ends the token, and the line feed or carriage return that ends the comment delimits it (a binary raster starts after it), as Netpbm, ImageMagick and FFmpeg read it and as the Netpbm specification describes comments. Pillow and Apple ImageIO reject these headers or join the digits around the comment |
+| TIFF | One `BitsPerSample` value for several samples | The value is the width of every sample |
+| TIFF | More `BitsPerSample` or `SampleFormat` values than samples | The values past the number of samples are ignored, even when they differ |
+| TIFF | More `StripByteCounts` or `TileByteCounts` values than blocks | The values past the number of blocks are ignored |
+| TIFF | A page of one uncompressed strip or tile (not YCbCr) without byte counts, or one strip whose byte count is smaller than its rows | The block is read for the length of its rows (a full tile); a block that runs past the end of the file is still rejected |
+| OpenEXR | An offset table with entries before its own end (zeros, typically: a writer that stopped before patching the table) | The table is rebuilt from the chunks, which must follow it without a gap: scan lines in their line order (increasing for random order), tiles in any order; the valid entries must give the offsets of their chunks, and a missing, repeated or truncated chunk is still rejected |
 
 ## Format reference
 
@@ -4169,14 +4215,14 @@ public static void SaveSmallestPng(string inputPath, string outputPath)
 
 | Feature | Decoding | Encoding |
 | --- | --- | --- |
-| Grayscale 1/2/4/8/16-bit | Sub-byte samples scaled exactly to `Gray8`; 16-bit kept in `Gray16`; a `tRNS` key gives `La16`/`La32` | `Gray8` → gray 8, `Gray16` → gray 16 (all 16 bits kept), `La16`/`La32` → gray with alpha 8/16, `Rgb48` → RGB 16; `PngOptimization.MinimumSize`: every bit depth, and a `tRNS` key, for the gray pixels of any pixel format |
-| RGB / RGBA 8/16-bit, gray+alpha | 16-bit precision preserved, gray+alpha expanded to RGBA | `Rgb24` → RGB 8, `Rgba32`/`Bgra32` → RGBA 8, `Rgba64` → RGBA 16; fixed mapping, no data-dependent reduction; `PngOptimization.MinimumSize` chooses the layout from the pixels instead (RGB 16, gray+alpha 8/16, 8-bit samples of 16-bit pixel formats, RGB with a `tRNS` key), exactly |
+| Grayscale 1/2/4/8/16-bit | Sub-byte samples scaled exactly to `Gray8`; 16-bit kept in `Gray16`; a `tRNS` key gives `La16`/`La32`; a key of the wrong length is rejected (a short one is ignored by [lenient decoding](#lenient-decoding)) | `Gray8` → gray 8, `Gray16` → gray 16 (all 16 bits kept), `La16`/`La32` → gray with alpha 8/16, `Rgb48` → RGB 16; `PngOptimization.MinimumSize`: every bit depth, and a `tRNS` key, for the gray pixels of any pixel format |
+| RGB / RGBA 8/16-bit, gray+alpha | 16-bit precision preserved, gray+alpha expanded to RGBA; an RGB `tRNS` key of the wrong length is rejected (a short one is ignored by [lenient decoding](#lenient-decoding)) | `Rgb24` → RGB 8, `Rgba32`/`Bgra32` → RGBA 8, `Rgba64` → RGBA 16; fixed mapping, no data-dependent reduction; `PngOptimization.MinimumSize` chooses the layout from the pixels instead (RGB 16, gray+alpha 8/16, 8-bit samples of 16-bit pixel formats, RGB with a `tRNS` key), exactly |
 | Palette + `tRNS` | 1/2/4/8-bit, partial `tRNS`, out-of-range indices rejected | `PngPixelLayout.Indexed`, from any pixel format: exact palette of at most 256 colors with per-entry alpha (`tRNS` only for the entries that are not opaque), smallest bit depth, one palette per file; reducing colors only with `AllowColorReduction` (`Quantization`), and selected automatically only by `PngOptimization.MinimumSize` (which keeps 8-bit indexes when they compress smaller, and in an animation) |
 | Adam7 interlacing | Empty passes, pass rows scattered directly into the frame (no intermediate image); with `ReadFrameRefinementInto`, a rendering of the passes completed by each piece of the data, every other pixel taking the value of the top left pixel of its block in them (the passes are then decoded into an image of the decoder, from which the renderings and the frame are written) | Option; pass rows gathered from the frame storage, empty passes have no scanline |
 | Filters | All five; invalid types rejected | Adaptive minimum-sum-of-absolute-differences heuristic, or one fixed type for every scanline; indexed output uses type 0 (None) instead of the heuristic, as the specification recommends; `PngOptimization.MinimumSize` compresses every strategy and keeps the smallest |
 | zlib datastream | Truncation, extra data, Adler-32 and expansion (bounded by the image size) validated; streamed with bounded memory | BCL zlib at the four `CompressionLevel` values (`PngOptimization.MinimumSize` tries `Fastest`, `Optimal` and `SmallestSize`); `IDAT` chunks of at most 32 KiB, streamed in bounded bands |
 | Metadata (`iCCP`, `cICP`, `mDCV`, `cLLI`, `eXIf`, XMP `iTXt`, `tEXt`/`zTXt`/`iTXt`, `pHYs`) | Bounded; metadata after `IDAT` included; a chunk that is read (`iCCP`, `eXIf`, `tEXt`, `zTXt`, `iTXt`) and whose data is larger than what is left of `MaxMetadataBytes` fails with `ImageResourceLimitException` before it is buffered, even when it would decompress to fewer bytes or be skipped as invalid; a `cICP` chunk takes precedence over `iCCP` (the profile is not adopted, nor buffered when it follows `cICP`), one whose matrix coefficients are not 0 is skipped, and narrow-range samples are rejected with `UnsupportedImageFeatureException` | Written before `IDAT`; `cICP` (matrix coefficients 0, full range) when no ICC profile is written; typed orientation and canvas reconciled into EXIF; incompatible ICC profiles and invalid text entries follow `MetadataHandling`; long texts compressed |
-| APNG animations | Full-canvas displayed frames from one compositor (SOURCE/OVER blending with an exact rounding contract at 8 and 16 bits, NONE/BACKGROUND/PREVIOUS disposal; BACKGROUND clears to transparent black), every color type and bit depth, Adam7 frame regions, partial rectangles, split `fdAT` chunks, exact rational delays, total plays; control-data errors are never reported as a clean end or a still image | Every displayed frame written as a full-canvas `SOURCE` frame (the changed region with `PngOptimization.MinimumSize`) with freshly computed control data, so decoded delta/disposal/blend data never survives an edit; exact delays (`RequireExact`, default) or `RoundToNearest` (nearest 16-bit fraction, ties to the longer delay); writers require `ExpectedFrameCount` and stream to non-seekable outputs |
+| APNG animations | Full-canvas displayed frames from one compositor (SOURCE/OVER blending with an exact rounding contract at 8 and 16 bits, NONE/BACKGROUND/PREVIOUS disposal; BACKGROUND clears to transparent black), every color type and bit depth, Adam7 frame regions, partial rectangles, split `fdAT` chunks, exact rational delays, total plays; control-data errors are never reported as a clean end or a still image; a frame count that differs from `acTL` is rejected (fewer frames are accepted by [lenient decoding](#lenient-decoding)) | Every displayed frame written as a full-canvas `SOURCE` frame (the changed region with `PngOptimization.MinimumSize`) with freshly computed control data, so decoded delta/disposal/blend data never survives an edit; exact delays (`RequireExact`, default) or `RoundToNearest` (nearest 16-bit fraction, ties to the longer delay); writers require `ExpectedFrameCount` and stream to non-seekable outputs |
 | APNG poster frame | `PosterFrame`, excluded from `Frames.Count`; a default image with an `fcTL` is frame zero | The `IDAT` image without a preceding `fcTL`, written once before frame zero, not counted in `num_frames` |
 | APNG delta-rectangle optimization | — | `PngOptimization.MinimumSize`: the region that changed, `SOURCE` or exact `OVER` blending, and the disposal of the previous frame, chosen per frame by compressing the candidates |
 | Apple CgBI (iOS-optimized PNG, as `xcrun pngcrush -iphone` writes them) | Decoded by default: a `CgBI` chunk before `IHDR` marks 8-bit BGR or premultiplied BGRA samples in a raw deflate datastream (no zlib header or Adler-32), whose end is still validated; the channels are swapped and the colors un-premultiplied to `round(c × 255 / a)`, the values Apple ImageIO gives. Un-premultiplying is lossy for low alpha values: a color with an alpha of `a` was stored with `a + 1` levels, so an alpha of 1 only leaves 0 and 255. `iCCP` and `zTXt` chunks may be raw deflate too. A premultiplied color above its alpha, a truncated datastream, another `CgBI` chunk, or samples that are not 8-bit RGB or RGBA are `InvalidImageContentException`; an animated CgBI file or one with a `tRNS` key is `UnsupportedImageFeatureException`. A `CgBI` chunk after `IHDR` is an unknown critical chunk | Never written |
@@ -4196,7 +4242,8 @@ public static void SaveSmallestPng(string inputPath, string outputPath)
 | Dithering | — | `Quantization.Dithering`: every `DitheringMode` (error diffusion and ordered), deterministic integer arithmetic, quantized frames only. `GifEncoder.Dithering` and `GifDithering` are obsolete aliases |
 | Loop extension (NETSCAPE2.0, ANIMEXTS1.0) | `L` repetitions → `TotalPlays = L + 1`, `0` → infinite, none → one play; the last extension wins; exact hundredth-second delays | NETSCAPE2.0 with `TotalPlays - 1` repetitions (none for one play, at most 65,536 plays); delays to the nearest hundredth (ties up) or exact (`RequireExact`), beyond 655.35 s rejected, never clamped |
 | Comment extension | `Comment` text entries, Latin-1 (readers see those before the first image) | `Comment` entries only, Latin-1, any length; ICC, EXIF, XMP and resolution follow `MetadataHandling` |
-| Plain-text extension | Not supported (`UnsupportedImageFeatureException`) | — |
+| Plain-text extension | Not supported (`UnsupportedImageFeatureException`); skipped without its text in [lenient decoding](#lenient-decoding) | — |
+| Trailer and block introducers | A missing trailer and a byte that does not start a block are `InvalidImageContentException`; [lenient decoding](#lenient-decoding) accepts a missing trailer and `0x00` bytes before the end | Always written |
 | Other application extensions (XMP, ICC...) | Skipped | — |
 
 ### JPEG
@@ -4209,10 +4256,10 @@ public static void SaveSmallestPng(string inputPath, string outputPath)
 | Progressive Huffman (SOF2) | DC and AC first and refinement scans, spectral selection, EOB runs, successive approximation, restart intervals, partial progressions, every sampling layout and color model of the sequential decoder; scan parameters validated from the scan headers (also by a full `Identify`). Not row-streamed: the 16-bit coefficients of the whole image (about 2 bytes per sample and component) are kept until the end of the image. `ReadFrameRefinementInto` renders the coefficients decoded so far after each scan, once every component has its DC coefficients (`Downsampling` is 8 until an AC scan) | `JpegEncodingProcess.Progressive`: the quantized coefficients of the baseline output (so the same decoded pixels), in ten scans for a color image and six for a grayscale one: the DC coefficients without their lowest bit, the AC coefficients 1-5 of the luminance without their two lowest bits, the chrominance (Cr, then Cb) without its lowest bit, the AC coefficients 6-63 of the luminance, then the missing bits (luminance bit 1, DC bit 0, chrominance bit 0, luminance bit 0). The Huffman tables of each scan are computed from its own symbols (each scan is coded twice), which the end-of-band runs require and which usually makes the file smaller than the baseline one; no restart markers. Not streamed by MCU rows: the 16-bit coefficients of the whole image are kept until the last scan and charged to the writer |
 | 12-bit samples | Extended sequential and progressive frames with a sample precision of 12 bits (a baseline frame that declares 12 bits is read as an extended sequential one, as common decoders do): DC differences of up to 15 bits and AC coefficients of up to 14 bits, the same inverse DCT, upsampling filters and color conversion at the precision of the samples (level shift and chroma center 2048, range 0-4095), then each sample `s` scaled to 16 bits as `(s * 65535 + 2047) / 4095`, so that 0 and 4095 are exact. `ImageInfo.BitsPerComponent` is 12; grayscale loads as `Gray16`, the other color models as `Rgb48`; CMYK and YCCK inks are scaled, then converted by the 16-bit ICC conversion. Decodes like libjpeg-turbo within three units of a 12-bit sample | Not supported |
 | Lossless (SOF3) | The lossless process of T.81 Annex H, Huffman coded: samples of any precision from 2 to 16 bits, the seven predictors, the point transform (the output is multiplied back by `2^Pt`, so its low bits are zero), restart intervals, interleaved and non-interleaved scans, subsampled components (the samples that complete an MCU are decoded and removed). Every sample is decoded exactly. 8-bit samples load as `Gray8`/`Rgb24`; any other precision `P` loads as `Gray16`, or `Rgb48`, each sample `s` scaled to 16 bits as `(s * 65535 + (2^P - 1) / 2) / (2^P - 1)`, which keeps every sample distinct, 0 and the largest one exact, and a 16-bit sample unchanged; `ImageInfo.BitsPerComponent` is `P`. The components mean what they mean in the other frames: three components are YCbCr (converted to RGB, with subsampled chroma upsampled by the same filters) unless the file says RGB, which is what lossless encoders write. A predictor outside 1-7, a point transform that leaves no bit, a restart interval that is not a whole number of MCU rows, a difference category above 16 and a sample that does not fit in its `P - Pt` bits are `InvalidImageContentException`. Streamed with three MCU rows of decoder state, an MCU row being one to four lines. The lossless process with arithmetic coding (SOF11) is `UnsupportedImageFeatureException` | Not supported |
-| Arithmetic coding | Sequential (SOF9) and progressive (SOF10) frames, of 8-bit or 12-bit samples and every color model, sampling layout and scan structure of the Huffman-coded frames (they hold the same coefficients, so they decode to the same pixels): DC and AC conditioning tables (DAC: bounds `0 <= L <= U <= 15`, threshold `1 <= Kx <= 63`, the defaults `L = 0`, `U = 1`, `Kx = 5` otherwise), statistics that start again at each restart marker; a scan uses the conditioning defined when it starts, and a DAC segment that defines no table is read (the JPEG reference software writes one before the scans that use no conditioning). Invalid conditioning tables, magnitudes beyond those of the sample precision and runs of zeros past the end of a block or of a band are `InvalidImageContentException`. Entropy-coded data that ends early is not detected: an encoder may omit the final zero bytes of a segment, so the missing bytes read as zeros (T.81 D.2.6) and decode to something, as in other decoders; a file that is cut is still invalid (no EOI marker). The decoder buffers up to 4 KiB per block of an MCU before decoding it, since arithmetic coding has no small bound on the size of a block | Not supported |
+| Arithmetic coding | Sequential (SOF9) and progressive (SOF10) frames, of 8-bit or 12-bit samples and every color model, sampling layout and scan structure of the Huffman-coded frames (they hold the same coefficients, so they decode to the same pixels): DC and AC conditioning tables (DAC: bounds `0 <= L <= U <= 15`, threshold `1 <= Kx <= 63`, the defaults `L = 0`, `U = 1`, `Kx = 5` otherwise), statistics that start again at each restart marker; a scan uses the conditioning defined when it starts, and a DAC segment that defines no table is read (the JPEG reference software writes one before the scans that use no conditioning). Invalid conditioning tables, magnitudes beyond those of the sample precision and runs of zeros past the end of a block or of a band are `InvalidImageContentException`. Entropy-coded data that ends early is not detected: an encoder may omit the final zero bytes of a segment, so the missing bytes read as zeros (T.81 D.2.6) and decode to something, as in other decoders; a file that is cut is still invalid (no EOI marker), also in lenient decoding. The decoder buffers up to 4 KiB per block of an MCU before decoding it, since arithmetic coding has no small bound on the size of a block | Not supported |
 | Color models | Grayscale (`Gray8`), JFIF full-range YCbCr and RGB (Adobe transform 0 or `R`,`G`,`B` identifiers) to `Rgb24`; CMYK and YCCK (four components) to `Rgb24` through the ICC conversion of `CmykConversionOptions`, see [Color management](#color-management) | The layout follows the pixel format, never the data: gray formats → one grayscale component, color formats → JFIF full-range YCbCr (BT.601); JFIF APP0 always written, no Adobe APP14. Non-opaque pixels require `BackgroundColor`; `Rgba64`/`Gray16` require `AllowBitDepthReduction` |
 | Chroma subsampling | 4:4:4, 4:2:2, 4:2:0, 4:4:0, 4:1:1 and any integral sampling ratio (libjpeg-turbo-compatible triangle filters for factor 2, replication otherwise) | `Auto` (= 4:2:0 for color), 4:4:4, 4:2:2, 4:2:0; box-filter downsampling, canvas padded to whole MCUs by edge replication; ignored for gray formats |
-| Restart markers | Sequential and progressive scans, sequence checked | Not written |
+| Restart markers | Sequential and progressive scans, sequence checked ([lenient decoding](#lenient-decoding) reads a garbled number in a sequential or lossless scan) | Not written |
 | Parallelism | With `ImageConfiguration.MaxDegreeOfParallelism` above 1, a frame of at least 65,536 pixels is reconstructed by up to that many workers: the inverse DCT, the chroma upsampling and the color conversion of batches of MCU rows (4 per worker), from the coefficients that the calling thread decodes in order (a sequential Huffman frame keeps the coefficients of one batch; a progressive frame has those of the whole image at its end). The rows of a frame coded in several sequential scans are written by the workers too. The entropy-coded data (restart intervals included), the arithmetic-coded sequential frames, the lossless frames and the JPEG data of a TIFF page are decoded by one worker. The pixels, the rows shown for a truncated frame and the errors are those of one worker; each worker has its own rows, and a batch its samples and coefficients, charged to `MaxLiveAllocationBytes`. The entropy decoding is 35% (4:2:0) to 50% (grayscale) of the decoding time of a 3840x2160 photo, which bounds the speedup to about 2 to 2.3 times | The color conversion, the forward DCT and the quantization of batches of MCU rows (4 per worker) of a frame of at least 65,536 pixels (`MaxDegreeOfParallelism` of the saved image or of the writer); the entropy coding stays on the calling thread and the bytes are those of one worker. The buffers of every worker, and the coefficients of a baseline batch, are charged to `MaxLiveAllocationBytes` when the encoding starts. Progressive output gains less: the scans are coded twice from the coefficients, by one worker |
 | Metadata (EXIF, XMP, ICC, JFIF density, COM) | Bounded; ICC reassembled from APP2 chunks; segments after the scans included | APP1 EXIF (orientation and dimensions reconciled; at most 65,527 bytes), APP1 standard XMP (at most 65,504 bytes), APP2 ICC in up to 255 chunks, JFIF density, COM for `Comment` entries; anything else follows `MetadataHandling` (`Strip` writes only the JFIF segment) |
 | Animated images, posters | — | Rejected with `UnsupportedImageFeatureException` before any output; save a frame with `Frames[i].Save` |
@@ -4241,19 +4288,35 @@ public static void SaveProgressiveJpeg(string sourcePath, string jpegPath)
 
 `WebPEncoder.Compression` chooses the bitstream for every frame: `Lossless` (the
 default) keeps every 8-bit sample, including the colors of fully transparent pixels (`ClearTransparentColors` opts into
-transparent black); `Lossy` is VP8 with 4:2:0 chroma, controlled by `Quality` (0-100), and keeps alpha losslessly.
-`Effort` (0-9, default 5) trades encoding time for size and never changes lossless pixels. Gray images are stored as RGB;
-16-bit images need `AllowBitDepthReduction`.
+transparent black); `Lossy` is VP8 with 4:2:0 chroma, controlled by `Quality` (0-100), and keeps alpha losslessly unless
+`AlphaQuality` is below 100. `NearLossless` (below 100) lets lossless output round the colors of edges and texture by a
+bounded amount. `Effort` (0-9, default 5) trades encoding time for size and never changes lossless pixels. Gray images
+are stored as RGB; 16-bit images need `AllowBitDepthReduction`.
 
-Lossy output first tries 4x4 luma prediction from effort 2. If the modes exceed the VP8 first-partition limit
-(524,287 bytes), it retries with 16x16 prediction only, at the same quantizer. This can change the decoded quality and
-file size; `Quality` is not a target distortion guarantee. If that partition still does not fit, encoding throws
-`UnsupportedImageFeatureException`: use lossless output or reduce the image dimensions.
+At effort 2 and above, lossy encoding tries 4x4 luma prediction. The modes are stored in the VP8 first partition, at
+most 524,287 bytes. When they do not fit, which only happens for very large detailed images (photographs of about 40
+megapixels and more at high quality), the frame is encoded once more with a budget for the mode bits: the macroblocks where 4x4 prediction gains
+least switch to cheaper modes, spread over the whole image. The quantizer stays the same, so the decoded quality
+decreases gradually with the image size instead of dropping at a threshold, and every size up to 16,383 x 16,383 fits.
 
 The managed encoder makes its own prediction and entropy-coding decisions: lossless output uses one prefix-code group
-(no spatial entropy image), and lossy output uses one quantizer for the frame and one token partition. It is not libwebp. No general file-size,
-speed or perceptual-quality comparison with libwebp is guaranteed, and quality/effort numbers are not interchangeable
-between encoders. Compare representative images at matched decoded quality for a lossy size comparison.
+(no spatial entropy image), and lossy output uses one quantizer for the frame (no adaptive quantization) and one token
+partition. It is not libwebp, and its `Quality` scale is not `cwebp -q`. Measured against cwebp 1.5.0 with its default
+settings (which adapt the quantizer to the content) on six photographs, lossy output is about 6% smaller at equal luma
+PSNR, the same size at equal SSIM, and 2% larger at equal SSIMULACRA 2 on average (18% larger on the most textured
+photograph); on a synthetic user-interface image it is 9-24% smaller. The same decoded quality needs a higher `Quality`
+here:
+
+| `cwebp -q` | 10 | 25 | 50 | 75 | 90 | 95 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `Quality` of equal luma PSNR (photographs) | 41 | 54 | 70 | 80 | 93 | 97 |
+
+These are averages: the correspondence varies with the content, and no comparison is guaranteed for a given image.
+Compare representative images at matched decoded quality for a lossy size comparison.
+
+Hidden colors cost almost nothing in lossy output: the fully transparent areas are filled with one value that the
+prediction reproduces. The alpha filter (none, horizontal, vertical or gradient) is the one whose lossless stream is
+smallest.
 
 Lossless encoding works on one frame at a time. Its working memory counts against `MaxLiveAllocationBytes`: a copy of
 the frame (4 bytes per pixel), the hash chains of the LZ77 parse (4 bytes per pixel, released before the output is
@@ -4442,7 +4505,7 @@ animation.
 | Feature | Decoding | Encoding |
 | --- | --- | --- |
 | Magic numbers | `P1` to `P6` (plain and binary PBM, PGM, PPM) and `P7` (PAM) | `P5`/`P6` (binary) or `P2`/`P3` (plain, `PnmEncoding.Plain`), and `P7` for pixel formats with alpha: the variant follows the pixel format. `P4`, or `P1` when plain, only with `PnmPixelLayout.Bitmap`. An encoder never looks at the extension; `Save(path)` without an encoder maps `.pbm` to `PnmPixelLayout.Bitmap` |
-| Header | White space and `#` comments between tokens, exactly one white-space byte before a binary raster, `ENDHDR` for PAM; bounded at 65,536 bytes; illegal values are `InvalidImageContentException` | — |
+| Header | White space and `#` comments between tokens, exactly one white-space byte before a binary raster, `ENDHDR` for PAM; bounded at 65,536 bytes; illegal values and a comment right after the digits of a token are `InvalidImageContentException` (the comment ends the token in [lenient decoding](#lenient-decoding)) | — |
 | Tuple types | `BLACKANDWHITE`, `GRAYSCALE`, `RGB` and their `_ALPHA` forms, inferred from `DEPTH` when `TUPLTYPE` is absent; others are not supported | `RGB_ALPHA` for pixel formats with alpha |
 | Samples | 8 or 16 bits (big-endian); a sample above `MAXVAL` is `InvalidImageContentException`; a set PBM bit is black, while a PAM `BLACKANDWHITE` sample is an intensity | `MAXVAL` 255 or 65,535, so the output is always lossless (no bit-depth setting). A portable bitmap is lossless too: one bit per pixel, a set bit is black, and a pixel that is not exactly black or white (once composited over `BackgroundColor`) is `UnsupportedImageFeatureException` (binarize the image first with `Threshold`, see [Binarization](#binarization)); it is read back as `Gray8` with one bit per component |
 | Plain rasters | Decimal samples with comments allowed; a prefix of a plain raster can be a complete raster with a smaller last sample, so truncation is not detectable there | Lines within 70 characters; PAM has no plain form, so alpha then needs `BackgroundColor`, as it does for a portable bitmap. A plain portable bitmap has one digit per pixel, without separators |
@@ -4483,6 +4546,13 @@ the offsets of the strips it describes.
   more compressed bytes are read than a block of its size can need (16 times its size, and room for the tables of a
   JPEG datastream), whatever its byte count declares: many blocks that point at the same bytes cost no more than
   their pixels.
+- **Malformed directories.** `BitsPerSample` values in another number than the samples, more `SampleFormat` values than
+  samples (fewer are accepted when they agree), byte counts in another number than the strips or tiles, missing byte
+  counts and an uncompressed block shorter than its rows are `InvalidImageContentException`. The lenient decoding reads some of them the way libtiff, Pillow and
+  Apple ImageIO all do (see [Lenient decoding](#lenient-decoding)); the ones they disagree on stay rejected: two
+  `BitsPerSample` values for three samples, fewer byte counts than blocks, several strips or tiles without byte counts,
+  a short tile, a short strip among several, and compressed blocks without byte counts (their length is not given by
+  their rows).
 - **CCITT.** A white run is the sample 0, and `PhotometricInterpretation` says what 0 displays as, as for any bilevel
   data. The encoder writes `WhiteIsZero` pages; Group 3 is written in one dimension, with an end-of-line code before
   each row and no fill bits, and Group 4 strips end with the end-of-facsimile-block sequence.
@@ -4961,7 +5031,10 @@ public static Image<Rgba32> ConvertOpenExr(string exrPath, string pizPath)
 `Image.Identify` reads the header: its `Header` mode stops before the offset table, and `FullScan` walks every chunk (its
 coordinates and size) without decompressing it. Every chunk is read, so a file that is cut is
 `InvalidImageContentException`; a chunk that is not at the offset the table gives, that carries the coordinates of
-another chunk, or that overlaps the next one is an error too. A typed load into an integer pixel format converts the
+another chunk, or that overlaps the next one is an error too, and so is an offset table with entries before its own end
+(zeros left by a writer that stopped before patching it). The lenient decoding rebuilds such a table from the chunks as
+OpenEXR does (see [Lenient decoding](#lenient-decoding)); an entry past the end of the file stays a truncated file,
+since the input is read forward without knowing its length. A typed load into an integer pixel format converts the
 whole image like `CloneAs` does: samples outside [0, 1] are rejected unless the conversion clips or tone maps them, and
 the peak of a tone mapping is the one of the image.
 
@@ -4973,7 +5046,7 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | --- | --- |
 | JPEG decoding | Lossless with arithmetic coding (SOF11), hierarchical (SOF5–7, SOF13–15, DHP, EXP), JPEG-LS, sample precisions other than 8 and 12 bits in a frame that is not lossless, heights defined by DNL, other component counts than 1, 3 or 4, non-integral sampling ratios: `UnsupportedImageFeatureException` (also from `Identify`). CMYK/YCCK (four components): identified, but loaded only with `CmykConversion` (an ICC conversion to RGB; `UnsupportedImageFeatureException` otherwise, and for a file without CMYK profile when no profile is assumed). Scaled and region decoding: not available |
 | JPEG encoding | Baseline or progressive 8-bit Huffman only: no arithmetic, lossless, 12-bit, RGB, CMYK or restart markers; the progression of the progressive process is fixed, and the baseline process has no optimized Huffman tables. One frame: animated images and posters are rejected (save one with `Frames[i].Save`); alpha requires `BackgroundColor`; `Rgba64`/`Gray16` require `AllowBitDepthReduction` |
-| GIF decoding | Plain-text extensions (they require text rendering) are `UnsupportedImageFeatureException`; other unknown extensions (XMP and ICC application extensions included) are skipped; the background color index is never painted (cleared areas are transparent black) |
+| GIF decoding | Plain-text extensions (they require text rendering) are `UnsupportedImageFeatureException` (skipped without their text in [lenient decoding](#lenient-decoding)); other unknown extensions (XMP and ICC application extensions included) are skipped; the background color index is never painted (cleared areas are transparent black) |
 | GIF encoding | Lossy by design: at most 256 colors per frame (deterministic quantization, optional dithering), one transparent index (alpha thresholded or flattened, never partial); a local color table per frame, also with a shared palette (no global color table); full-canvas frames (no delta rectangles); comments only (no ICC, EXIF, XMP or resolution); at most 65,535 pixels per side, 655.35 s per frame and 65,536 plays |
 | WebP decoding | VP8 interframes and frames that are not shown (never produced by WebP encoders): `UnsupportedImageFeatureException`; the `ANIM` background color is a hint and is never painted (disposed areas are transparent black); metadata of simple-layout files and text/resolution do not exist in WebP |
 | WebP encoding | 8-bit RGB(A) only (gray written as RGB, 16-bit after explicit reduction); lossy output is 4:2:0 and not pixel-exact; animations are full-canvas frames (no delta rectangles or blending) and need a seekable destination (no spooling to non-seekable streams); at most 16,383 (lossy) or 16,384 (lossless) pixels per side, 16,777,215 ms per frame, 65,535 plays and 4 GiB per file |

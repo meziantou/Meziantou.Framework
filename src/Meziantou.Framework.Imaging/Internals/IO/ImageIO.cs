@@ -100,8 +100,10 @@ internal static class ImageIO
     {
         options ??= ImageIdentifyOptions.Default;
         var context = new ImageCodecContext(options.Configuration, "Identify", CancellationToken.None);
-        var origin = stream.CanSeek ? stream.Position : 0;
         using var input = new ImageInputBuffer(stream, ownsStream, context);
+
+        // Read once the input owns the stream: reading the position can fail, and an owned stream must still be disposed
+        var origin = stream.CanSeek ? stream.Position : 0;
         var codec = ImageInputPump.Detect(ImageCodecRegistry.Current, input, context);
         if (TryCreateRandomAccessSource(codec, stream, origin, context) is { } source)
             return codec.IdentifyRandomAccess(source, options.Mode, context);
@@ -134,8 +136,10 @@ internal static class ImageIO
     {
         options ??= ImageDecodeOptions.Default;
         var context = new ImageCodecContext(options.Configuration, "Image", CancellationToken.None);
+        using var input = ImageInputBuffer.CreateForDecode(stream, ownsStream, disposeStream: ownsStream, context);
+
+        // Read once the input owns the stream: reading the position can fail, and an owned stream must still be disposed
         var origin = stream.CanSeek ? stream.Position : 0;
-        using var input = new ImageInputBuffer(stream, ownsStream, context, ImageInputBuffer.GetDecodeCapacity(stream, ownsStream, context));
         var codec = ImageInputPump.Detect(ImageCodecRegistry.Current, input, context);
         if (TryCreateRandomAccessSource(codec, stream, origin, context) is { } source)
             return codec.DecodeRandomAccess(source, ImageDecodeRequest.Create(options, pixelFormat), context);
@@ -154,7 +158,7 @@ internal static class ImageIO
     {
         options ??= ImageDecodeOptions.Default;
         var context = new ImageCodecContext(options.Configuration, "Image", cancellationToken);
-        var input = new ImageInputBuffer(stream, ownsStream, context, ImageInputBuffer.GetDecodeCapacity(stream, ownsStream, context));
+        var input = ImageInputBuffer.CreateForDecode(stream, ownsStream, disposeStream: ownsStream, context);
         await using (input.ConfigureAwait(false))
         {
             cancellationToken.ThrowIfCancellationRequested();

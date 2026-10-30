@@ -27,7 +27,7 @@ Assert.Equal("""{"error":"not found"}""", await response.Content.ReadAsStringAsy
 ```
 <!-- endref -->
 
-- `RawJson` sends the content with the `application/json` content type, and `RawXml` with `text/xml`.
+- [RawJson](cref:Meziantou.Framework.ResultExtensions.RawJson) sends the content with the `application/json` content type, and [RawXml](cref:Meziantou.Framework.ResultExtensions.RawXml) with `text/xml`.
 - Both take an optional `statusCode`, `200` by default, and an optional `encoding`.
 
 ## Status codes and headers
@@ -82,7 +82,7 @@ A handler can also take the `HttpRequest`, to read headers or the raw body. To c
 
 A mock can answer some requests itself and send the others to the real service:
 
-- `ForwardUnknownRequestsToUpstream()` forwards every request that no endpoint matches.
+- [ForwardUnknownRequestsToUpstream()](cref:Meziantou.Framework.HttpClientMock.ForwardUnknownRequestsToUpstream) forwards every request that no endpoint matches.
 - `Results.Extensions.ForwardToUpstream()`, returned by a handler, forwards the request of that endpoint.
 
 <!-- ref:../../tests/Meziantou.Framework.HttpClientMock.Tests/MockTests.cs;region=HttpClientMock_ForwardUnknownRequests;format=md-fenced-code-block;dedent=true -->

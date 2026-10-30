@@ -84,7 +84,7 @@ With `--input`, the standard input is not read.
 
 ## Set the formatting options
 
-Each option of `HtmlToMarkdownOptions` has a command-line option, with the same values and the same defaults:
+Each option of [HtmlToMarkdownOptions](cref:Meziantou.Framework.HtmlToMarkdownOptions) has a command-line option, with the same values and the same defaults:
 
 ```bash
 Meziantou.Framework.HtmlToMarkdown.Tool --input page.html --heading-style Setext --emphasis-marker Underscore --emoji-shortcode-mode GitHub
@@ -92,16 +92,16 @@ Meziantou.Framework.HtmlToMarkdown.Tool --input page.html --heading-style Setext
 
 | Option | Values | Library option |
 | --- | --- | --- |
-| `--emphasis-marker` | `Asterisk` (default), `Underscore` | `EmphasisMarker` |
-| `--heading-style` | `Atx` (default), `Setext` | `HeadingStyle` |
-| `--code-block-style` | `Fenced` (default), `Indented` | `CodeBlockStyle` |
-| `--code-block-fence-character` | `` ` `` (default), `~` | `CodeBlockFenceCharacter` |
-| `--unordered-list-marker` | `-` (default), `*`, `+` | `UnorderedListMarker` |
-| `--thematic-break` | The text of a horizontal rule, `---` by default | `ThematicBreak` |
-| `--line-break-style` | `TrailingSpaces` (default), `Backslash` | `LineBreakStyle` |
-| `--simple-punctuation` | A flag: replaces the typographic punctuation with ASCII characters | `UseSimplePunctuation` |
-| `--emoji-shortcode-mode` | `None` (default), `GitHub`, `Unicode` | `EmojiShortcodeMode` |
-| `--unknown-element-handling` | `PassThrough` (default), `Strip`, `StripKeepContent` | `UnknownElementHandling` |
+| `--emphasis-marker` | `Asterisk` (default), `Underscore` | [EmphasisMarker](cref:Meziantou.Framework.EmphasisMarker) |
+| `--heading-style` | `Atx` (default), `Setext` | [HeadingStyle](cref:Meziantou.Framework.HeadingStyle) |
+| `--code-block-style` | `Fenced` (default), `Indented` | [CodeBlockStyle](cref:Meziantou.Framework.CodeBlockStyle) |
+| `--code-block-fence-character` | `` ` `` (default), `~` | [CodeBlockFenceCharacter](cref:Meziantou.Framework.HtmlToMarkdownOptions.CodeBlockFenceCharacter) |
+| `--unordered-list-marker` | `-` (default), `*`, `+` | [UnorderedListMarker](cref:Meziantou.Framework.HtmlToMarkdownOptions.UnorderedListMarker) |
+| `--thematic-break` | The text of a horizontal rule, `---` by default | [ThematicBreak](cref:Meziantou.Framework.HtmlToMarkdownOptions.ThematicBreak) |
+| `--line-break-style` | `TrailingSpaces` (default), `Backslash` | [LineBreakStyle](cref:Meziantou.Framework.LineBreakStyle) |
+| `--simple-punctuation` | A flag: replaces the typographic punctuation with ASCII characters | [UseSimplePunctuation](cref:Meziantou.Framework.HtmlToMarkdownOptions.UseSimplePunctuation) |
+| `--emoji-shortcode-mode` | `None` (default), `GitHub`, `Unicode` | [EmojiShortcodeMode](cref:Meziantou.Framework.EmojiShortcodeMode) |
+| `--unknown-element-handling` | `PassThrough` (default), `Strip`, `StripKeepContent` | [UnknownElementHandling](cref:Meziantou.Framework.UnknownElementHandling) |
 
 [Formatting options](04-FormattingOptions.md) and [Unknown elements](05-UnknownElementsAndUntrustedHtml.md) describe
 what they do. Quote the characters that your shell reads, such as `` ` `` and `*`: `--unordered-list-marker "*"`.

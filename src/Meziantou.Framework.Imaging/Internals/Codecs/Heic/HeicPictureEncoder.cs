@@ -44,7 +44,7 @@ internal sealed class HeicPictureEncoder : HeifPictureEncoder
             TestWavefront));
         try
         {
-            Description = new HeicStreamDescription(_encoder.Parameters, _encoder.VideoParameterSet.Span, _encoder.SequenceParameterSet.Span, _encoder.PictureParameterSet.Span);
+            Description = new HeicStreamDescription(scope, _encoder.Parameters, _encoder.VideoParameterSet.Span, _encoder.SequenceParameterSet.Span, _encoder.PictureParameterSet.Span);
         }
         catch
         {

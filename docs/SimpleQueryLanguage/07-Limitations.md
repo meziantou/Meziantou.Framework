@@ -11,9 +11,9 @@ description: What the library does not do, so you can plan around it.
 - **No syntax errors to report.** A malformed query is read as text, so there is no error position to show the user;
   see [Malformed queries](03-QuerySyntax.md#malformed-queries).
 - **Size limits.** Deeply nested queries, and queries whose `OR` groups expand too much, throw a
-  `QueryTooComplexException`; see [Queries from users](04-InMemoryQueries.md#queries-from-users).
+  [QueryTooComplexException](cref:Meziantou.Framework.SimpleQueryLanguage.QueryTooComplexException); see [Queries from users](04-InMemoryQueries.md#queries-from-users).
 - **Dates in UTC.** Date keywords and relative dates use UTC days; there is no time zone option.
 - **Database string handlers use `Contains`.** For an exact match or another operator on a string column, register a
   [custom expression](05-DatabaseQueries.md#custom-expressions).
-- **No comparisons on enums in database queries.** `ExpressionQueryBuilder<T>` only supports equality for enum
+- **No comparisons on enums in database queries.** [ExpressionQueryBuilder\<T\>](cref:Meziantou.Framework.SimpleQueryLanguage.ExpressionQueryBuilder{T}) only supports equality for enum
   properties.

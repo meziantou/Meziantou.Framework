@@ -15,8 +15,8 @@ The examples of this documentation omit the `using` directives: they need `using
 
 ## Parse a file and check a path
 
-`RobotsFile.Parse` reads the content of a `robots.txt` file. `IsAllowed` then tells whether a user agent may fetch a
-path, `GetCrawlDelay` returns the delay that applies to it, and `Sitemaps` lists the sitemap URLs of the file:
+[RobotsFile.Parse](cref:Meziantou.Framework.RobotsTxt.RobotsFile.Parse) reads the content of a `robots.txt` file. [IsAllowed](cref:Meziantou.Framework.RobotsTxt.RobotsFile.IsAllowed) then tells whether a user agent may fetch a
+path, [GetCrawlDelay](cref:Meziantou.Framework.RobotsTxt.RobotsFile.GetCrawlDelay) returns the delay that applies to it, and [Sitemaps](cref:Meziantou.Framework.RobotsTxt.RobotsFile.Sitemaps) lists the sitemap URLs of the file:
 
 <!-- ref:../../tests/Meziantou.Framework.RobotsTxt.Tests/RobotsFileTests.cs;region=RobotsFile_Parse;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -38,13 +38,13 @@ Assert.Equal(["https://example.com/sitemap.xml"], robots.Sitemaps);
 
 - The user agent is the product token of your crawler, such as `Googlebot`, not the full `User-Agent` header. See
   [User-agent groups](03-UserAgentGroups.md).
-- The path includes the query string, if any. `IsAllowed` also accepts a `Uri`, and then checks its path and query.
-- `GetCrawlDelay` returns `null` when the group has no `Crawl-delay` directive. The library does not wait for you:
+- The path includes the query string, if any. [IsAllowed](cref:Meziantou.Framework.RobotsTxt.RobotsFile.IsAllowed) also accepts a `Uri`, and then checks its path and query.
+- [GetCrawlDelay](cref:Meziantou.Framework.RobotsTxt.RobotsFile.GetCrawlDelay) returns `null` when the group has no `Crawl-delay` directive. The library does not wait for you:
   your crawler applies the delay.
 
 ## Parse from a stream
 
-`RobotsFile.ParseAsync` reads a `Stream` or a `TextReader`, such as the body of the response to a request for
+[RobotsFile.ParseAsync](cref:Meziantou.Framework.RobotsTxt.RobotsFile.ParseAsync) reads a `Stream` or a `TextReader`, such as the body of the response to a request for
 `/robots.txt`:
 
 <!-- ref:../../tests/Meziantou.Framework.RobotsTxt.Tests/RobotsFileTests.cs;region=RobotsFile_ParseStream;format=md-fenced-code-block;dedent=true -->

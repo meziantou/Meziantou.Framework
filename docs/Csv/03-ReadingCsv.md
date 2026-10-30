@@ -3,7 +3,7 @@ title: Reading CSV
 description: Read rows with or without a header row, get values by position or name, change the separator and quote, and handle short rows.
 ---
 
-`CsvReader.ReadRowAsync` reads the next row and returns `null` at the end of the data. Read the rows in a loop:
+[CsvReader.ReadRowAsync](cref:Meziantou.Framework.Csv.CsvReader.ReadRowAsync) reads the next row and returns `null` at the end of the data. Read the rows in a loop:
 
 <!-- ref:../../tests/Meziantou.Framework.Csv.Tests/CsvReaderTests.cs;region=CsvReader_ReadRowAsync;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -20,12 +20,12 @@ Assert.Equal(["John is 30 years old", "Jane is 25 years old"], lines);
 ```
 <!-- endref -->
 
-Test the `null` returned by `ReadRowAsync` to find the end of the data rather than `EndOfStream`: when its buffer is
-empty, `EndOfStream` asks the underlying `TextReader` synchronously, so it can block.
+Test the `null` returned by [ReadRowAsync](cref:Meziantou.Framework.Csv.CsvReader.ReadRowAsync) to find the end of the data rather than [EndOfStream](cref:Meziantou.Framework.Csv.CsvReader.EndOfStream): when its buffer is
+empty, [EndOfStream](cref:Meziantou.Framework.Csv.CsvReader.EndOfStream) asks the underlying `TextReader` synchronously, so it can block.
 
 ## Rows without a header
 
-`HasHeaderRow` is `false` by default: every row is data, and values are read by position:
+[HasHeaderRow](cref:Meziantou.Framework.Csv.CsvReader.HasHeaderRow) is `false` by default: every row is data, and values are read by position:
 
 <!-- ref:../../tests/Meziantou.Framework.Csv.Tests/CsvReaderTests.cs;region=CsvReader_ReadWithoutHeader;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -50,8 +50,8 @@ Assert.Equal(["Alice, 30, New York", "Bob, 25, London"], lines);
 
 ## Rows with a header
 
-Set `HasHeaderRow` to `true` to read the names of the columns from the first row. `ReadRowAsync` does not return that
-row. A value can then be read by position, by column name or by `CsvColumn`:
+Set [HasHeaderRow](cref:Meziantou.Framework.Csv.CsvReader.HasHeaderRow) to `true` to read the names of the columns from the first row. [ReadRowAsync](cref:Meziantou.Framework.Csv.CsvReader.ReadRowAsync) does not return that
+row. A value can then be read by position, by column name or by [CsvColumn](cref:Meziantou.Framework.Csv.CsvColumn):
 
 <!-- ref:../../tests/Meziantou.Framework.Csv.Tests/CsvReaderTests.cs;region=CsvReader_ReadWithHeader;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -84,12 +84,12 @@ Assert.Null(await csvReader.ReadRowAsync());
 ```
 <!-- endref -->
 
-- `Columns` lists the columns, with their `Name` and `Index`. It is `null` when there is no header row.
+- [Columns](cref:Meziantou.Framework.Csv.CsvRow.Columns) lists the columns, with their [Name](cref:Meziantou.Framework.Csv.CsvColumn.Name) and [Index](cref:Meziantou.Framework.Csv.CsvColumn.Index). It is `null` when there is no header row.
 - Column names are compared with an ordinal, case-sensitive comparison. When two columns have the same name, the name
   gives the value of the first one.
 - Reading a value by name throws an `InvalidOperationException` when the reader has no header row.
 
-`Values` holds the values of the row, in order.
+[Values](cref:Meziantou.Framework.Csv.CsvRow.Values) holds the values of the row, in order.
 
 ## Short rows and blank lines
 
@@ -125,7 +125,7 @@ does not add an empty row.
 
 ## A row as a dictionary
 
-`CsvRow` implements `IReadOnlyDictionary<string, string?>`, keyed by column name. Pass a row to code that expects a
+[CsvRow](cref:Meziantou.Framework.Csv.CsvRow) implements `IReadOnlyDictionary<string, string?>`, keyed by column name. Pass a row to code that expects a
 dictionary:
 
 <!-- ref:../../tests/Meziantou.Framework.Csv.Tests/CsvReaderTests.cs;region=CsvRow_AsDictionary;format=md-fenced-code-block;dedent=true -->
@@ -146,7 +146,7 @@ The dictionary has one entry per column of the header row, even when the row is 
 
 ## Separators and quotes
 
-`Separator` is `,` and `Quote` is `"` by default. Change them to read other formats, such as tab-separated values:
+[Separator](cref:Meziantou.Framework.Csv.CsvReader.Separator) is `,` and [Quote](cref:Meziantou.Framework.Csv.CsvReader.Quote) is `"` by default. Change them to read other formats, such as tab-separated values:
 
 <!-- ref:../../tests/Meziantou.Framework.Csv.Tests/CsvReaderTests.cs;region=CsvReader_CustomSeparatorAndQuote;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -165,7 +165,7 @@ Assert.Equal("Tab\tand 'quote'", row["Comment"]);
 ```
 <!-- endref -->
 
-Set `Quote` to `null` when the data has no quoted values: every quote character is then part of a value.
+Set [Quote](cref:Meziantou.Framework.Csv.CsvReader.Quote) to `null` when the data has no quoted values: every quote character is then part of a value.
 
 ## Quoted values
 
@@ -200,9 +200,9 @@ The reader counts what it reads, which helps report where bad data is:
 
 | Property | Value |
 | --- | --- |
-| `RowNumber` | The 0-based index of the row just returned. The header row counts: the first data row after a header is row 1. |
-| `LineNumber` | The number of line terminators read so far, including those inside quoted values: the physical line in the input. |
-| `ColumnNumber` | The number of characters read since the start of the current row. It is a character position, not a column index. |
+| [RowNumber](cref:Meziantou.Framework.Csv.CsvReader.RowNumber) | The 0-based index of the row just returned. The header row counts: the first data row after a header is row 1. |
+| [LineNumber](cref:Meziantou.Framework.Csv.CsvReader.LineNumber) | The number of line terminators read so far, including those inside quoted values: the physical line in the input. |
+| [ColumnNumber](cref:Meziantou.Framework.Csv.CsvReader.ColumnNumber) | The number of characters read since the start of the current row. It is a character position, not a column index. |
 
 <!-- ref:../../tests/Meziantou.Framework.Csv.Tests/CsvReaderTests.cs;region=CsvReader_RowNumber;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -225,6 +225,6 @@ Assert.Equal(["Row 2: invalid age 'unknown'"], errors);
 
 ## Custom rows and columns
 
-`CsvReader` calls the protected virtual methods `CreateColumn` and `CreateRow` to create each column of the header and
-each row. Override them in a derived class to return your own types derived from `CsvColumn` and `CsvRow`, for
+[CsvReader](cref:Meziantou.Framework.Csv.CsvReader) calls the protected virtual methods [CreateColumn](cref:Meziantou.Framework.Csv.CsvReader.CreateColumn) and [CreateRow](cref:Meziantou.Framework.Csv.CsvReader.CreateRow) to create each column of the header and
+each row. Override them in a derived class to return your own types derived from [CsvColumn](cref:Meziantou.Framework.Csv.CsvColumn) and [CsvRow](cref:Meziantou.Framework.Csv.CsvRow), for
 instance a row with typed properties.

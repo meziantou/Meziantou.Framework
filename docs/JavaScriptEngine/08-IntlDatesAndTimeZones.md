@@ -5,8 +5,8 @@ description: Choose the default locale and time zone of the scripts, control the
 
 ## Set the default locale and time zone
 
-`DefaultLocale` is the locale of `Intl` and of the `toLocaleString` methods when a script does not give one, and
-`TimeZone` is the local time zone of `Date`, `Intl.DateTimeFormat` and `Temporal`:
+[DefaultLocale](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.DefaultLocale) is the locale of `Intl` and of the `toLocaleString` methods when a script does not give one, and
+[TimeZone](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.TimeZone) is the local time zone of `Date`, `Intl.DateTimeFormat` and `Temporal`:
 
 <!-- ref:../../tests/Meziantou.Framework.JavaScriptEngine.Tests/JsEngineTests.cs;region=JavaScriptEngine_Locale;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -24,18 +24,18 @@ Assert.Equal("29 octobre 2026", realm.Execute("new Date(Date.UTC(2026, 9, 29, 12
 ```
 <!-- endref -->
 
-- `DefaultLocale` is a BCP 47 language tag, `en-US` by default. A tag that is not valid, or that matches no locale of
+- [DefaultLocale](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.DefaultLocale) is a BCP 47 language tag, `en-US` by default. A tag that is not valid, or that matches no locale of
   the data, is replaced by `en-US`.
-- `TimeZone` is an IANA identifier, such as `Europe/Paris`. When it is null, the engine uses the local time zone of
-  the `TimeProvider`, and maps a Windows identifier to its IANA identifier; an unknown time zone is UTC. An identifier
+- [TimeZone](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.TimeZone) is an IANA identifier, such as `Europe/Paris`. When it is null, the engine uses the local time zone of
+  the [TimeProvider](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.TimeProvider), and maps a Windows identifier to its IANA identifier; an unknown time zone is UTC. An identifier
   that is not a time zone of the database, such as an offset, throws an `InvalidOperationException` when a script first
   uses the local time zone.
 - Set both explicitly on a server: otherwise, the scripts depend on the settings of the machine they run on.
 
 ## Control the clock
 
-`TimeProvider` is the clock of `Date.now()`, `new Date()` and `Temporal.Now`, and gives the local time zone when
-`TimeZone` is not set. Give a fixed clock to make the results of the scripts reproducible, for instance in tests:
+[TimeProvider](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.TimeProvider) is the clock of `Date.now()`, `new Date()` and `Temporal.Now`, and gives the local time zone when
+[TimeZone](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.TimeZone) is not set. Give a fixed clock to make the results of the scripts reproducible, for instance in tests:
 
 <!-- ref:../../samples/Meziantou.Framework.JavaScriptEngine.Samples/FixedTimeProvider.cs;region=JavaScriptEngine_FixedTimeProvider;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -62,7 +62,7 @@ Assert.Equal(8, realm.Execute("new Date().getHours()").AsNumber());
 ```
 <!-- endref -->
 
-The same `TimeProvider` measures the delays of the timeout jobs of the engine (`Atomics.waitAsync`).
+The same [TimeProvider](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.TimeProvider) measures the delays of the timeout jobs of the engine (`Atomics.waitAsync`).
 
 ## The same results on every machine
 

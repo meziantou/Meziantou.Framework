@@ -95,6 +95,97 @@ public sealed class PnmCodecTests
         Assert.Throws<InvalidImageContentException>(() => Image.Load(Bytes("P5\n2 1\n255#comment\n", [32, 1])));
     }
 
+    public static TheoryData<InputVariant> ReaderVariants => [.. InputVariants.ReaderVariants];
+
+    /// <summary>
+    /// Headers whose tokens are ended by a comment, with the pixels Netpbm 11.10.5, ImageMagick 7.1.2 and FFmpeg 6.1.2 decode:
+    /// the line feed or carriage return that ends the comment delimits the token (the raster starts after it).
+    /// </summary>
+    private static (byte[] Data, int Width, Rgba32[] Pixels)[] HeaderTokensEndedByComments()
+    {
+        byte[] gray = [10, 20, 30, 40, 50, 60, 70, 80];
+        var grayPixels = gray.Select(value => new Rgba32(value, value, value)).ToArray();
+        var bk = new Rgba32(0, 0, 0);
+        var wh = new Rgba32(255, 255, 255);
+        return
+        [
+            (Bytes("P5\n4#c\n2\n255\n", gray), 4, grayPixels),
+            (Bytes("P5\n4 2#c\n255\n", gray), 4, grayPixels),
+            (Bytes("P5\n4 2\n255#c\n", gray), 4, grayPixels),
+            (Bytes("P5\n4 2\n255#c\r", gray), 4, grayPixels),
+            (Bytes("P5\n4 2\n255#c\r\n", gray), 4, [new(10, 10, 10), .. grayPixels[..^1]]), // the line feed is the first sample
+            (Bytes("P2\n4#c\n2\n255\n10 20 30 40\n50 60 70 80\n", []), 4, grayPixels),
+            (Bytes("P6\n2#c\n1\n255#x\n", [1, 2, 3, 4, 5, 6]), 2, [new(1, 2, 3), new(4, 5, 6)]),
+            (Bytes("P4\n8#c\n2\n", [0xA5, 0x5A]), 8, [bk, wh, bk, wh, wh, bk, wh, bk, wh, bk, wh, bk, bk, wh, bk, wh]),
+
+            // Not the digits 1 and 6 of one width: 1x6, whose raster starts with the bytes "1\n"
+            (Bytes("P4\n1#c\n6 1\n", [0x80, 0x00, 0x80, 0x00]), 1, [wh, wh, bk, wh, bk, wh]),
+        ];
+    }
+
+    [Fact]
+    public void LenientDecodingEndsAHeaderTokenAtAComment()
+    {
+        var lenient = new ImageConfiguration { DecodingStrictness = DecodingStrictness.Lenient };
+        foreach (var (data, width, pixels) in HeaderTokensEndedByComments())
+        {
+            var exception = Assert.Throws<InvalidImageContentException>(() => Image.Load(data));
+            Assert.Equal("A Netpbm comment interrupts a header token; a token must be followed by white space.", exception.Message);
+
+            var size = new Size(width, pixels.Length / width);
+            Assert.Equal(size, Image.Identify(data, new ImageIdentifyOptions { Configuration = lenient }).Size);
+            Assert.Equal(1, Image.Identify(data, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan, Configuration = lenient }).FrameCount);
+            using var image = Image.Load<Rgba32>(data, new ImageDecodeOptions { Configuration = lenient });
+            Assert.Equal(size, image.Size);
+            Assert.Equal(pixels, GetPixels(image.Frames[0]));
+        }
+
+        // A comment that splits the digits of MAXVAL ends it too: MAXVAL 25, then the raster starts with "5", above it
+        Assert.Throws<InvalidImageContentException>(() => Image.Load(Bytes("P5\n4 2\n25#c\n5\n", new byte[8]), new ImageDecodeOptions { Configuration = lenient }));
+    }
+
+    [Theory]
+    [MemberData(nameof(ReaderVariants))]
+    public async Task LenientReadersEndAHeaderTokenAtAComment(InputVariant variant)
+    {
+        var lenient = new ImageConfiguration { DecodingStrictness = DecodingStrictness.Lenient };
+        foreach (var (data, width, pixels) in HeaderTokensEndedByComments())
+        {
+            using (var image = await InputVariants.LoadAsync<Rgba32>(variant, data, ImageFormat.Pnm, new ImageDecodeOptions { Configuration = lenient }, XunitCancellationToken))
+            {
+                Assert.Equal(pixels, GetPixels(image.Frames[0]));
+            }
+
+            await InputVariants.ReadAsync<Rgba32, int>(variant, data, ImageFormat.Pnm, new ImageReaderOptions { Configuration = lenient }, async (reader, asynchronous) =>
+            {
+                Assert.Equal(width, reader.Info.Size.Width);
+                using var frame = asynchronous ? await reader.ReadFrameAsync(XunitCancellationToken) : reader.ReadFrame();
+                Assert.NotNull(frame);
+                Assert.Equal(pixels, GetPixels(frame.Frames[0]));
+                Assert.Null(asynchronous ? await reader.ReadFrameAsync(XunitCancellationToken) : reader.ReadFrame());
+                return 0;
+            }, XunitCancellationToken);
+        }
+    }
+
+    [Fact]
+    public void LenientDecodingKeepsTheHeaderLimits()
+    {
+        var data = Bytes("P5\n4#c\n2\n255\n", [10, 20, 30, 40, 50, 60, 70, 80]);
+        using (Image.Load(data, Options(new ImageResourceLimits { MaxWidth = 4 })))
+        {
+        }
+
+        Assert.Equal(ImageResourceLimitKind.Width, Assert.Throws<ImageResourceLimitException>(() => Image.Load(data, Options(new ImageResourceLimits { MaxWidth = 3 }))).Kind);
+
+        // The comment counts in the bounded header length as any other comment
+        var comment = new string('c', 70_000);
+        var exception = Assert.Throws<InvalidImageContentException>(() => Image.Load(Bytes($"P5\n1#{comment}\n1\n255\n", [7]), Options(new ImageResourceLimits())));
+        Assert.Contains("header is longer", exception.Message, StringComparison.Ordinal);
+
+        static ImageDecodeOptions Options(ImageResourceLimits limits) => new() { Configuration = new ImageConfiguration { DecodingStrictness = DecodingStrictness.Lenient, Limits = limits } };
+    }
+
     [Fact]
     public void PamHeadersAreValidated()
     {

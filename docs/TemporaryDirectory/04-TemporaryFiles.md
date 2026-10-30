@@ -5,7 +5,7 @@ description: Create a temporary file with a generated name, a name of your choic
 
 ## Create a temporary file
 
-`TemporaryFile.Create` creates an empty file and returns a `TemporaryFile` that deletes it when disposed. It has three
+[TemporaryFile.Create](cref:Meziantou.Framework.TemporaryFile.Create) creates an empty file and returns a [TemporaryFile](cref:Meziantou.Framework.TemporaryFile) that deletes it when disposed. It has three
 overloads:
 
 <!-- ref:../../tests/Meziantou.Framework.TemporaryDirectory.Tests/TemporaryDirectoryTests.cs;region=TemporaryFile_Create;format=md-fenced-code-block;dedent=true -->
@@ -24,7 +24,7 @@ using var atPath = TemporaryFile.Create(FullPath.Combine(Path.GetTempPath(), $"c
 
 | Overload | Where the file is created | What disposal deletes |
 | --- | --- | --- |
-| `Create()` | In a `MezTF` folder of the temporary folder, with a generated `.tmp` name | The file |
+| [Create()](cref:Meziantou.Framework.TemporaryFile.Create) | In a `MezTF` folder of the temporary folder, with a generated `.tmp` name | The file |
 | `Create(string fileNameOrPath)` with a relative path | In a new unique folder of `MezTF`, with the name you choose | The file and the unique folder |
 | `Create(string fileNameOrPath)` with a rooted path, or `Create(FullPath)` | At the path you choose | The file |
 
@@ -58,7 +58,7 @@ Assert.False(Directory.Exists(filePath.Parent));
 ```
 <!-- endref -->
 
-`TemporaryFile` converts implicitly to `string`, to `FullPath` and to `FileInfo`, so the instance itself can be passed to
+[TemporaryFile](cref:Meziantou.Framework.TemporaryFile) converts implicitly to `string`, to [FullPath](cref:Meziantou.Framework.FullPath) and to `FileInfo`, so the instance itself can be passed to
 `File.WriteAllText` or to any API that takes a path.
 
 ## Create the file at a given path
@@ -88,5 +88,5 @@ Assert.False(File.Exists(path));
 When you need several files, or files whose names you do not control, use a
 [temporary directory](03-TemporaryDirectories.md): every file in it is deleted with it.
 
-To create a file with a unique name that you delete yourself, use `FullPath.CreateTempFile`: see
+To create a file with a unique name that you delete yourself, use [FullPath.CreateTempFile](cref:Meziantou.Framework.FullPath.CreateTempFile): see
 [Create a temporary file](../FullPath/03-CreatingPaths.md#create-a-temporary-file).

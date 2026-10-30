@@ -43,6 +43,8 @@ public sealed class GifDecoderTests
 
     private static readonly FrameDuration[] CompositingDurations = [new(1, 10), FrameDuration.Zero, new(7, 100), FrameDuration.Zero, new(1, 50), new(65535, 100)];
 
+    private static readonly ImageConfiguration LenientConfiguration = new() { DecodingStrictness = DecodingStrictness.Lenient };
+
     public static TheoryData<InputVariant> Variants => [.. InputVariants.All];
 
     public static TheoryData<InputVariant> ReaderVariants => [.. InputVariants.ReaderVariants];
@@ -523,6 +525,163 @@ public sealed class GifDecoderTests
 
             Assert.Fail("The truncated input ended cleanly.");
         }
+    }
+
+    public static TheoryData<string> LenientEndings => ["no trailer", "graphic control without image", "zeros before the trailer", "zeros without trailer"];
+
+    [Theory]
+    [MemberData(nameof(LenientEndings))]
+    public async Task LenientDecodingAcceptsTheEndsOfFileTheReferenceDecodersAccept(string ending)
+    {
+        // FFmpeg, ImageMagick, Pillow and Apple ImageIO decode these files as if they ended with the trailer
+        var withoutTrailer = CreateCompositingAnimation()[..^1];
+        byte[] data = ending switch
+        {
+            "no trailer" => withoutTrailer,
+            "graphic control without image" => [.. withoutTrailer, 0x21, 0xF9, 4, 0, 30, 0, 0, 0],
+            "zeros before the trailer" => [.. withoutTrailer, 0, 0, 0, 0x3B],
+            _ => [.. withoutTrailer, 0],
+        };
+
+        Assert.Throws<InvalidImageContentException>(() => Image.Load(data));
+        Assert.Throws<InvalidImageContentException>(() => Image.Identify(data, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan }));
+
+        var info = Image.Identify(data, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan, Configuration = LenientConfiguration });
+        Assert.Equal(CompositingFrames.Length, info.FrameCount);
+        Assert.True(info.IsAnimated);
+        foreach (var variant in InputVariants.All)
+        {
+            using var image = await InputVariants.LoadAsync<Rgba32>(variant, data, ImageFormat.Gif, new ImageDecodeOptions { Configuration = LenientConfiguration }, XunitCancellationToken);
+            Assert.Equal(CompositingFrames.Length, image.Frames.Count);
+            for (var i = 0; i < CompositingFrames.Length; i++)
+            {
+                Assert.Equal(CompositingFrames[i], GetPixels(image.Frames[i]));
+                Assert.Equal(CompositingDurations[i], image.Frames[i].Metadata.Duration);
+            }
+        }
+
+        foreach (var variant in InputVariants.ReaderVariants)
+        {
+            await InputVariants.ReadAsync<Rgba32, int>(variant, data, ImageFormat.Gif, new ImageReaderOptions { Configuration = LenientConfiguration }, async (reader, asynchronous) =>
+            {
+                for (var i = 0; i < CompositingFrames.Length; i++)
+                {
+                    using var frame = asynchronous ? await reader.ReadFrameAsync(XunitCancellationToken) : reader.ReadFrame();
+                    Assert.NotNull(frame);
+                    Assert.Equal(CompositingFrames[i], GetPixels(frame.Frames[0]));
+                    Assert.Equal(CompositingDurations[i], frame.Frames[0].Metadata.Duration);
+                }
+
+                Assert.Null(asynchronous ? await reader.ReadFrameAsync(XunitCancellationToken) : reader.ReadFrame());
+                return 0;
+            }, XunitCancellationToken);
+        }
+    }
+
+    [Fact]
+    public async Task LenientDecodingKeepsTheLimitsOfAFileWithoutTrailer()
+    {
+        var data = CreateCompositingAnimation()[..^1];
+
+        // The end of the input is found without reading past it: a limit equal to the length is enough for every input
+        foreach (var variant in InputVariants.All)
+        {
+            using (await InputVariants.LoadAsync(variant, data, ImageFormat.Gif, Options(new ImageResourceLimits { MaxEncodedBytes = data.Length }), XunitCancellationToken))
+            {
+            }
+
+            var bytes = await Assert.ThrowsAsync<ImageResourceLimitException>(() => InputVariants.LoadAsync(variant, data, ImageFormat.Gif, Options(new ImageResourceLimits { MaxEncodedBytes = data.Length - 1 }), XunitCancellationToken));
+            Assert.Equal(ImageResourceLimitKind.EncodedBytes, bytes.Kind);
+        }
+
+        using (Image.Load(data, Options(new ImageResourceLimits { MaxFrames = CompositingFrames.Length })))
+        {
+        }
+
+        var frames = Assert.Throws<ImageResourceLimitException>(() => Image.Load(data, Options(new ImageResourceLimits { MaxFrames = CompositingFrames.Length - 1 })));
+        Assert.Equal(ImageResourceLimitKind.Frames, frames.Kind);
+        var scanned = Assert.Throws<ImageResourceLimitException>(() => Image.Identify(data, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan, Configuration = Configuration(new ImageResourceLimits { MaxFrames = CompositingFrames.Length - 1 }) }));
+        Assert.Equal(ImageResourceLimitKind.Frames, scanned.Kind);
+
+        static ImageConfiguration Configuration(ImageResourceLimits limits) => new() { DecodingStrictness = DecodingStrictness.Lenient, Limits = limits };
+
+        static ImageDecodeOptions Options(ImageResourceLimits limits) => new() { Configuration = Configuration(limits) };
+    }
+
+    [Fact]
+    public void LenientDecodingStillRejectsTruncatedImagesAndStrayBytesBetweenImages()
+    {
+        var full = CreateCompositingAnimation();
+        var options = new ImageDecodeOptions { Configuration = LenientConfiguration };
+
+        // The data ends inside the last image (its block terminator or its LZW data is missing)
+        foreach (var length in new[] { full.Length - 2, full.Length - 4, full.Length / 2 })
+        {
+            Assert.Throws<InvalidImageContentException>(() => Image.Load(full.AsSpan(0, length), options));
+        }
+
+        // Apple ImageIO and FFmpeg stop at a stray byte between two images while ImageMagick and Pillow skip it: rejected
+        var between = CreateCompositingBuilder(images: 1).Raw([0]).GraphicControl(0, 5).Image(0, 0, 1, 1, [2], 3).ToArray();
+        var exception = Assert.Throws<InvalidImageContentException>(() => Image.Load(between, options));
+        Assert.Equal("The GIF block introducer 0x00 is not valid.", exception.Message);
+        Assert.Throws<InvalidImageContentException>(() => Image.Identify(between, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan, Configuration = LenientConfiguration }));
+
+        // Only 0x00 bytes are skipped, and a file without image is still invalid
+        Assert.Throws<InvalidImageContentException>(() => Image.Load([.. full[..^1], 0x42, 0x3B], options));
+        Assert.Throws<InvalidImageContentException>(() => Image.Load(new GifTestBuilder(2, 1, Palette).ToArray(trailer: false), options));
+    }
+
+    [Fact]
+    public async Task LenientDecodingSkipsPlainTextExtensions()
+    {
+        // The Graphic Control Extension before a plain-text extension applies to the next image (its delay, transparent
+        // index and disposal), as in FFmpeg, ImageMagick, Pillow and Apple ImageIO; the text is never rendered
+        var data = new GifTestBuilder(2, 1, Palette)
+            .Loop(0)
+            .GraphicControl(0, 10)
+            .Image(0, 0, 2, 1, [0, 1], 3)
+            .GraphicControl(2, 50, transparentIndex: 7)
+            .Extension(0x01, [0, 0, 0, 0, 2, 0, 1, 0, 1, 1, 1, 0], [(byte)'h', (byte)'i'])
+            .Image(0, 0, 2, 1, [7, 2], 3)
+            .GraphicControl(0, 10)
+            .Image(1, 0, 1, 1, [3], 3)
+            .ToArray();
+        Rgba32[][] expected = [[R, G], [R, B], [T, W]];
+        FrameDuration[] durations = [new(1, 10), new(1, 2), new(1, 10)];
+
+        Assert.Equal("GIF plain text extension", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(data)).Feature);
+
+        Assert.Equal(3, Image.Identify(data, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan, Configuration = LenientConfiguration }).FrameCount);
+        using (var image = Image.Load<Rgba32>(data, new ImageDecodeOptions { Configuration = LenientConfiguration }))
+        {
+            Assert.Equal(expected.Length, image.Frames.Count);
+            for (var i = 0; i < expected.Length; i++)
+            {
+                Assert.Equal(expected[i], GetPixels(image.Frames[i]));
+                Assert.Equal(durations[i], image.Frames[i].Metadata.Duration);
+            }
+        }
+
+        await using (var reader = Image.OpenReader<Rgba32>(new MemoryStream(data), new ImageReaderOptions { Configuration = LenientConfiguration }))
+        {
+            for (var i = 0; i < expected.Length; i++)
+            {
+                using var frame = await reader.ReadFrameAsync(XunitCancellationToken);
+                Assert.NotNull(frame);
+                Assert.Equal(expected[i], GetPixels(frame.Frames[0]));
+                Assert.Equal(durations[i], frame.Frames[0].Metadata.Duration);
+            }
+
+            Assert.Null(await reader.ReadFrameAsync(XunitCancellationToken));
+        }
+
+        // A plain-text extension is not a frame: the frame limit counts the images only
+        using (Image.Load(data, new ImageDecodeOptions { Configuration = new ImageConfiguration { DecodingStrictness = DecodingStrictness.Lenient, Limits = new ImageResourceLimits { MaxFrames = 3 } } }))
+        {
+        }
+
+        var limit = Assert.Throws<ImageResourceLimitException>(() => Image.Load(data, new ImageDecodeOptions { Configuration = new ImageConfiguration { DecodingStrictness = DecodingStrictness.Lenient, Limits = new ImageResourceLimits { MaxFrames = 2 } } }));
+        Assert.Equal(ImageResourceLimitKind.Frames, limit.Kind);
     }
 
     [Fact]

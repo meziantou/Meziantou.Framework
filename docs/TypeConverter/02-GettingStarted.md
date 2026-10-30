@@ -17,7 +17,7 @@ call returns.
 
 ## Convert a value
 
-`ConvertUtilities` has two families of methods:
+[ConvertUtilities](cref:Meziantou.Framework.ConvertUtilities) has two families of methods:
 
 <!-- ref:../../tests/Meziantou.Framework.TypeConverter.Tests/ConvertUtilitiesTests.cs;region=TypeConverter_GettingStarted;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -35,11 +35,11 @@ Assert.Equal(3.5, value);
 ```
 <!-- endref -->
 
-- `TryChangeType` returns `true` and the converted value, or `false` when the value cannot be converted. Use it when
+- [TryChangeType](cref:Meziantou.Framework.ConvertUtilities.TryChangeType) returns `true` and the converted value, or `false` when the value cannot be converted. Use it when
   you need to know whether the conversion succeeded, for instance to report an invalid configuration value.
-- `ChangeType` returns the converted value, or the default value you pass when the conversion fails. Without a default
+- [ChangeType](cref:Meziantou.Framework.ConvertUtilities.ChangeType) returns the converted value, or the default value you pass when the conversion fails. Without a default
   value, it returns the default of the type (`0`, `null`, …).
-- Both have a generic overload, `TryChangeType<T>` and `ChangeType<T>`, and an overload that takes the target type as a
+- Both have a generic overload, [TryChangeType\<T\>](cref:Meziantou.Framework.ConvertUtilities.TryChangeType) and [ChangeType\<T\>](cref:Meziantou.Framework.ConvertUtilities.ChangeType), and an overload that takes the target type as a
   `Type`.
 - `null` and `DBNull.Value` convert to `null` for reference types and nullable types. For other value types, the
   conversion fails.
@@ -71,7 +71,7 @@ current culture: the same text can then give different values on machines with d
 
 ## Read values from a dictionary
 
-`GetValueOrDefault` and `TryGetValueOrDefault` read a value from an `IReadOnlyDictionary<TKey, TValue>` and convert it:
+[GetValueOrDefault](cref:Meziantou.Framework.DictionaryExtensions.GetValueOrDefault) and [TryGetValueOrDefault](cref:Meziantou.Framework.DictionaryExtensions.TryGetValueOrDefault) read a value from an `IReadOnlyDictionary<TKey, TValue>` and convert it:
 
 <!-- ref:../../tests/Meziantou.Framework.TypeConverter.Tests/DictionaryExtensionsTests.cs;region=TypeConverter_DictionaryExtensions;format=md-fenced-code-block;dedent=true -->
 ```csharp

@@ -42,10 +42,10 @@ Blazor. A value that cannot be parsed shows a validation message.
 
 ## Dates with a time
 
-`InputDateTime<TValue>` renders `<input type="datetime-local">` for a `DateTime`, a `DateTimeOffset`, or their
+[InputDateTime\<TValue\>](cref:Meziantou.AspNetCore.Components.InputDateTime{TValue}) renders `<input type="datetime-local">` for a `DateTime`, a `DateTimeOffset`, or their
 nullable versions. The browser input has no seconds, so values are truncated to the minute.
 
-A `datetime-local` input has no time zone. For a `DateTimeOffset`, set `Offset` to say in which offset the user types;
+A `datetime-local` input has no time zone. For a `DateTimeOffset`, set [Offset](cref:Meziantou.AspNetCore.Components.InputDateTime{TValue}.Offset) to say in which offset the user types;
 without it, the offset of the machine that runs the component is used, which is the offset of the **server** with
 Blazor Server. Get the user's offset with [`TimeZoneService`](09-TimeZones.md):
 
@@ -79,27 +79,27 @@ Blazor Server. Get the user's offset with [`TimeZoneService`](09-TimeZones.md):
 ```
 <!-- endref -->
 
-`Offset` is only used to read what the user types; it has no effect on a `DateTime`.
+[Offset](cref:Meziantou.AspNetCore.Components.InputDateTime{TValue}.Offset) is only used to read what the user types; it has no effect on a `DateTime`.
 
 ## Enums
 
-`InputEnumSelect<TEnum>` renders a `<select>` with an option per enum value. The text of an option is the
+[InputEnumSelect\<TEnum\>](cref:Meziantou.AspNetCore.Components.InputEnumSelect{TEnum}) renders a `<select>` with an option per enum value. The text of an option is the
 `[Display(Name = "...")]` of the member, or its name.
 
-For a nullable enum, an empty option comes first, so `null` can be selected; its text is `EmptyOptionText` (empty by
+For a nullable enum, an empty option comes first, so `null` can be selected; its text is [EmptyOptionText](cref:Meziantou.AspNetCore.Components.InputEnumSelect{TEnum}.EmptyOptionText) (empty by
 default).
 
 ## GUIDs
 
-`InputGuid<TValue>` renders a text input for a `Guid` or a `Guid?`. A value that is not a GUID shows
-`ParsingErrorMessage`, `The {0} field must be a valid GUID.` by default, where `{0}` is the field name.
+[InputGuid\<TValue\>](cref:Meziantou.AspNetCore.Components.InputGuid{TValue}) renders a text input for a `Guid` or a `Guid?`. A value that is not a GUID shows
+[ParsingErrorMessage](cref:Meziantou.AspNetCore.Components.InputGuid{TValue}.ParsingErrorMessage), `The {0} field must be a valid GUID.` by default, where `{0}` is the field name.
 
 ## URLs
 
-`InputUrl<TValue>` renders `<input type="url">` for a `string` or a `Uri`. A `Uri` accepts absolute and relative URLs.
-A value that cannot be parsed shows `ParsingErrorMessage`, `The {0} field must be a valid URL.` by default.
+[InputUrl\<TValue\>](cref:Meziantou.AspNetCore.Components.InputUrl{TValue}) renders `<input type="url">` for a `string` or a `Uri`. A `Uri` accepts absolute and relative URLs.
+A value that cannot be parsed shows [ParsingErrorMessage](cref:Meziantou.AspNetCore.Components.InputUrl{TValue}.ParsingErrorMessage), `The {0} field must be a valid URL.` by default.
 
 URLs with the `javascript:`, `vbscript:` or `data:` scheme are always rejected, even when the value is set without the
 browser's validation. A value from this input can be rendered in an `href` without becoming a script.
 
-`InputGuid` and `InputUrl` expose the rendered `<input>` as `Element`, for instance to give it the focus.
+[InputGuid](cref:Meziantou.AspNetCore.Components.InputGuid{TValue}) and [InputUrl](cref:Meziantou.AspNetCore.Components.InputUrl{TValue}) expose the rendered `<input>` as [Element](cref:Meziantou.AspNetCore.Components.InputGuid{TValue}.Element), for instance to give it the focus.

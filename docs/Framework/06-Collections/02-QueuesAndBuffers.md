@@ -5,7 +5,7 @@ description: Keep a fixed number of items, add and remove items at both ends, ke
 
 ## Circular buffer
 
-`CircularBuffer<T>` holds at most `Capacity` items. With `AllowOverwrite`, adding to a full buffer removes the item at the
+[CircularBuffer\<T\>](cref:Meziantou.Framework.Collections.CircularBuffer{T}) holds at most [Capacity](cref:Meziantou.Framework.Collections.CircularBuffer{T}.Capacity) items. With [AllowOverwrite](cref:Meziantou.Framework.Collections.CircularBuffer{T}.AllowOverwrite), adding to a full buffer removes the item at the
 other end:
 
 <!-- ref:../../../tests/Meziantou.Framework.Tests/Collections/CircularBufferTests.cs;region=CircularBuffer_AllowOverwrite;format=md-fenced-code-block;dedent=true -->
@@ -21,7 +21,7 @@ Assert.Equal([2, 3, 4], buffer);
 ```
 <!-- endref -->
 
-Without `AllowOverwrite`, adding to a full buffer throws an `InvalidOperationException`:
+Without [AllowOverwrite](cref:Meziantou.Framework.Collections.CircularBuffer{T}.AllowOverwrite), adding to a full buffer throws an `InvalidOperationException`:
 
 <!-- ref:../../../tests/Meziantou.Framework.Tests/Collections/CircularBufferTests.cs;region=CircularBuffer_Full;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -39,17 +39,17 @@ Assert.Equal([2, 3], buffer);
 ```
 <!-- endref -->
 
-- `AddLast` and `AddFirst` add an item at one end. When the buffer is full and `AllowOverwrite` is `true`, `AddLast`
-  overwrites the first item and `AddFirst` the last one.
-- `RemoveFirst` and `RemoveLast` remove and return an item, and throw an `InvalidOperationException` when the buffer is
+- [AddLast](cref:Meziantou.Framework.Collections.CircularBuffer{T}.AddLast) and [AddFirst](cref:Meziantou.Framework.Collections.CircularBuffer{T}.AddFirst) add an item at one end. When the buffer is full and [AllowOverwrite](cref:Meziantou.Framework.Collections.CircularBuffer{T}.AllowOverwrite) is `true`, [AddLast](cref:Meziantou.Framework.Collections.CircularBuffer{T}.AddLast)
+  overwrites the first item and [AddFirst](cref:Meziantou.Framework.Collections.CircularBuffer{T}.AddFirst) the last one.
+- [RemoveFirst](cref:Meziantou.Framework.Collections.CircularBuffer{T}.RemoveFirst) and [RemoveLast](cref:Meziantou.Framework.Collections.CircularBuffer{T}.RemoveLast) remove and return an item, and throw an `InvalidOperationException` when the buffer is
   empty.
-- The indexer reads an item by its position, from the first item. You can change `Capacity` after the buffer is created.
+- The indexer reads an item by its position, from the first item. You can change [Capacity](cref:Meziantou.Framework.Collections.CircularBuffer{T}.Capacity) after the buffer is created.
 
 Use it for the last N log lines, measurements or events.
 
 ## Double-ended queue
 
-`DoubleEndedQueue<T>` grows as needed, and adds and removes items at both ends:
+[DoubleEndedQueue\<T\>](cref:Meziantou.Framework.Collections.DoubleEndedQueue{T}) grows as needed, and adds and removes items at both ends:
 
 <!-- ref:../../../tests/Meziantou.Framework.Tests/Collections/DoubleEndedQueueTests.cs;region=DoubleEndedQueue_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -65,12 +65,12 @@ Assert.Equal("c", queue.RemoveLast());
 ```
 <!-- endref -->
 
-The constructor takes the initial capacity. `RemoveFirst` and `RemoveLast` throw an `InvalidOperationException` when the
+The constructor takes the initial capacity. [RemoveFirst](cref:Meziantou.Framework.Collections.DoubleEndedQueue{T}.RemoveFirst) and [RemoveLast](cref:Meziantou.Framework.Collections.DoubleEndedQueue{T}.RemoveLast) throw an `InvalidOperationException` when the
 queue is empty.
 
 ## Most recent items
 
-`LimitList<T>` keeps at most a number of items, and drops the item at the other end when you add one to a full list:
+[LimitList\<T\>](cref:Meziantou.Framework.Collections.LimitList{T}) keeps at most a number of items, and drops the item at the other end when you add one to a full list:
 
 <!-- ref:../../../tests/Meziantou.Framework.Tests/Collections/LimitListTests.cs;region=LimitList_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -85,13 +85,13 @@ Assert.Equal(["d.txt", "c.txt", "b.txt"], recentFiles);
 ```
 <!-- endref -->
 
-`AddFirst` drops the last item, and `AddLast` drops the first one. Unlike `CircularBuffer<T>`, a full `LimitList<T>`
-never throws. It also supports `Remove`, `RemoveAt`, `RemoveFirst`, `RemoveLast` and setting an item by index.
+[AddFirst](cref:Meziantou.Framework.Collections.LimitList{T}.AddFirst) drops the last item, and [AddLast](cref:Meziantou.Framework.Collections.LimitList{T}.AddLast) drops the first one. Unlike [CircularBuffer\<T\>](cref:Meziantou.Framework.Collections.CircularBuffer{T}), a full [LimitList\<T\>](cref:Meziantou.Framework.Collections.LimitList{T})
+never throws. It also supports `Remove`, [RemoveAt](cref:Meziantou.Framework.Collections.LimitList{T}.RemoveAt), [RemoveFirst](cref:Meziantou.Framework.Collections.LimitList{T}.RemoveFirst), [RemoveLast](cref:Meziantou.Framework.Collections.LimitList{T}.RemoveLast) and setting an item by index.
 
 ## Append-only collection
 
-`AppendOnlyCollection<T>` is a collection you can only add to. Adding is thread-safe, and reading — the indexer,
-`Count`, enumeration, `Contains`, `Find` and `TryFind` — needs no lock, even while other threads add items:
+[AppendOnlyCollection\<T\>](cref:Meziantou.Framework.Collections.AppendOnlyCollection{T}) is a collection you can only add to. Adding is thread-safe, and reading — the indexer,
+[Count](cref:Meziantou.Framework.Collections.AppendOnlyCollection{T}.Count), enumeration, [Contains](cref:Meziantou.Framework.Collections.AppendOnlyCollection{T}.Contains), [Find](cref:Meziantou.Framework.Collections.AppendOnlyCollection{T}.Find) and [TryFind](cref:Meziantou.Framework.Collections.AppendOnlyCollection{T}.TryFind) — needs no lock, even while other threads add items:
 
 <!-- ref:../../../tests/Meziantou.Framework.Tests/Collections/AppendOnlyCollectionTests.cs;region=AppendOnlyCollection_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp

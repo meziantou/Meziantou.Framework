@@ -7,13 +7,13 @@ Choose the simplest way that does what you need:
 
 | You want to | Use |
 | --- | --- |
-| Change the elements of every document, such as adding a class to the images | The `DocumentProcessed` event |
+| Change the elements of every document, such as adding a class to the images | The [DocumentProcessed](cref:Meziantou.Framework.Markdown.MarkdownPipelineBuilder.DocumentProcessed) event |
 | Change how an element is written to HTML | An extension that replaces an object renderer |
 | Add a syntax that Markdown does not have | An extension with a parser |
 
 ## Process the document after parsing
 
-`DocumentProcessed` runs after each parse, before the document is returned or rendered. Change the tree there, for
+[DocumentProcessed](cref:Meziantou.Framework.Markdown.MarkdownPipelineBuilder.DocumentProcessed) runs after each parse, before the document is returned or rendered. Change the tree there, for
 every document that the pipeline parses:
 
 <!-- ref:../../tests/Meziantou.Framework.Markdown.Tests/TestCoreApi.cs;region=MarkdownPipelineBuilder_DocumentProcessed;format=md-fenced-code-block;dedent=true -->
@@ -37,24 +37,24 @@ Assert.Equal("<p><img src=\"logo.png\" loading=\"lazy\" alt=\"Logo\" /></p>\n", 
 ```
 <!-- endref -->
 
-Subscribe to the event before `Build`. The handler runs for each parse: it must be thread-safe when the pipeline is
+Subscribe to the event before [Build](cref:Meziantou.Framework.Markdown.MarkdownPipelineBuilder.Build). The handler runs for each parse: it must be thread-safe when the pipeline is
 shared between threads.
 
 ## Write an extension
 
-An extension implements `IMarkdownExtension`, which has two `Setup` methods:
+An extension implements [IMarkdownExtension](cref:Meziantou.Framework.Markdown.IMarkdownExtension), which has two [Setup](cref:Meziantou.Framework.Markdown.IMarkdownExtension.Setup) methods:
 
-- `Setup(MarkdownPipelineBuilder)` runs once, in `Build`. Add or change parsers there (`BlockParsers`, `InlineParsers`),
-  or subscribe to `DocumentProcessed`.
+- `Setup(MarkdownPipelineBuilder)` runs once, in [Build](cref:Meziantou.Framework.Markdown.MarkdownPipelineBuilder.Build). Add or change parsers there ([BlockParsers](cref:Meziantou.Framework.Markdown.MarkdownPipelineBuilder.BlockParsers), [InlineParsers](cref:Meziantou.Framework.Markdown.MarkdownPipelineBuilder.InlineParsers)),
+  or subscribe to [DocumentProcessed](cref:Meziantou.Framework.Markdown.MarkdownPipelineBuilder.DocumentProcessed).
 - `Setup(MarkdownPipeline, IMarkdownRenderer)` runs for each renderer that the pipeline sets up: the renderers of
-  `ToHtml`, `ToPlainText` and `Normalize`, and the renderers you pass to `pipeline.Setup`. Add or replace object
+  [ToHtml](cref:Meziantou.Framework.Markdown.MarkdownConverter.ToHtml), [ToPlainText](cref:Meziantou.Framework.Markdown.MarkdownConverter.ToPlainText) and [Normalize](cref:Meziantou.Framework.Markdown.MarkdownConverter.Normalize), and the renderers you pass to `pipeline.Setup`. Add or replace object
   renderers there, after checking the type of the renderer.
 
-Enable it with `Use<TExtension>()`, or `Use(extension)` for an instance with options.
+Enable it with [Use\<TExtension\>()](cref:Meziantou.Framework.Markdown.MarkdownExtensions.Use), or `Use(extension)` for an instance with options.
 
 ## Change how an element is rendered
 
-Each element type has an object renderer in `ObjectRenderers`. Replace it to write the element differently. For
+Each element type has an object renderer in [ObjectRenderers](cref:Meziantou.Framework.Markdown.Renderers.IMarkdownRenderer.ObjectRenderers). Replace it to write the element differently. For
 instance, to start the headings at `<h2>` in a page that already has a `<h1>`:
 
 <!-- ref:../../tests/Meziantou.Framework.Markdown.Tests/MiscTests.cs;region=HtmlObjectRenderer_ShiftHeadingsExtension;format=md-fenced-code-block;dedent=true -->
@@ -115,17 +115,17 @@ Assert.Equal("Title\nSection\n", MarkdownConverter.ToPlainText("# Title\n\n## Se
 ```
 <!-- endref -->
 
-- `HtmlObjectRenderer<T>` (namespace [Meziantou.Framework.Markdown.Renderers.Html](cref:Meziantou.Framework.Markdown.Renderers.Html)) is the base class of the HTML object
-  renderers. `WriteAttributes` writes the [attributes](04-Extensions/06-GenericAttributes.md) of the element, and
-  `WriteLeafInline` or `WriteChildren` write its content.
-- `Replace<T>`, `InsertBefore<T>` and `Find<T>` of `ObjectRenderers` work on the existing renderers by type. Some
-  renderers have settings that are enough without replacing them, such as `Rel` on `LinkInlineRenderer` or `GetTag` on
-  `EmphasisInlineRenderer`.
+- [HtmlObjectRenderer\<T\>](cref:Meziantou.Framework.Markdown.Renderers.Html.HtmlObjectRenderer{TObject}) (namespace [Meziantou.Framework.Markdown.Renderers.Html](cref:Meziantou.Framework.Markdown.Renderers.Html)) is the base class of the HTML object
+  renderers. [WriteAttributes](cref:Meziantou.Framework.Markdown.Renderers.HtmlRenderer.WriteAttributes) writes the [attributes](04-Extensions/06-GenericAttributes.md) of the element, and
+  [WriteLeafInline](cref:Meziantou.Framework.Markdown.Renderers.TextRendererBase{T}.WriteLeafInline) or [WriteChildren](cref:Meziantou.Framework.Markdown.Renderers.RendererBase.WriteChildren) write its content.
+- [Replace\<T\>](cref:Meziantou.Framework.Markdown.Helpers.OrderedList{T}.Replace), [InsertBefore\<T\>](cref:Meziantou.Framework.Markdown.Helpers.OrderedList{T}.InsertBefore) and [Find\<T\>](cref:Meziantou.Framework.Markdown.Helpers.OrderedList{T}.Find) of [ObjectRenderers](cref:Meziantou.Framework.Markdown.Renderers.RendererBase.ObjectRenderers) work on the existing renderers by type. Some
+  renderers have settings that are enough without replacing them, such as [Rel](cref:Meziantou.Framework.Markdown.Renderers.Html.Inlines.LinkInlineRenderer.Rel) on [LinkInlineRenderer](cref:Meziantou.Framework.Markdown.Renderers.Html.Inlines.LinkInlineRenderer) or [GetTag](cref:Meziantou.Framework.Markdown.Renderers.Html.Inlines.EmphasisInlineRenderer.GetTag) on
+  [EmphasisInlineRenderer](cref:Meziantou.Framework.Markdown.Renderers.Html.Inlines.EmphasisInlineRenderer).
 
 ## Add a syntax
 
 A parser reads your syntax and creates elements in the tree. An inline parser declares the characters that can start
-its syntax in `OpeningCharacters`; `Match` is called at each of them, reads the text from the `StringSlice`, and
+its syntax in [OpeningCharacters](cref:Meziantou.Framework.Markdown.Parsers.ParserBase{TProcessor}.OpeningCharacters); [Match](cref:Meziantou.Framework.Markdown.Parsers.InlineParser.Match) is called at each of them, reads the text from the [StringSlice](cref:Meziantou.Framework.Markdown.Helpers.StringSlice), and
 returns `true` after creating an inline. This extension turns `@name` into a link to a GitHub profile:
 
 <!-- ref:../../tests/Meziantou.Framework.Markdown.Tests/MiscTests.cs;region=IMarkdownExtension_MentionExtension;format=md-fenced-code-block;dedent=true -->
@@ -196,14 +196,14 @@ Assert.Equal("<p>Thanks <a href=\"https://github.com/meziantou\">@meziantou</a>!
 ```
 <!-- endref -->
 
-- The mention is a `LinkInline`: every renderer already writes links. A new element type needs an object renderer for
+- The mention is a [LinkInline](cref:Meziantou.Framework.Markdown.Syntax.Inlines.LinkInline): every renderer already writes links. A new element type needs an object renderer for
   each renderer you use.
-- `processor.Inline` receives the new inline. Set `IsClosed` on a container inline so that the next inlines are not
+- `processor.Inline` receives the new inline. Set [IsClosed](cref:Meziantou.Framework.Markdown.Syntax.Inlines.Inline.IsClosed) on a container inline so that the next inlines are not
   added into it.
 - Set the position of the inline from `processor.GetSourcePosition`; it is only computed when the pipeline uses
   [precise source locations](06-SourcePositions.md#positions-of-inlines).
-- Parsers run in the order of the list: `InsertBefore<T>` gives yours priority over an existing parser that uses the same
+- Parsers run in the order of the list: [InsertBefore\<T\>](cref:Meziantou.Framework.Markdown.Helpers.OrderedList{T}.InsertBefore) gives yours priority over an existing parser that uses the same
   opening character.
 
-Block parsers derive from `BlockParser`, and fenced blocks from `FencedBlockParserBase<T>`. The extensions of the
+Block parsers derive from [BlockParser](cref:Meziantou.Framework.Markdown.Parsers.BlockParser), and fenced blocks from [FencedBlockParserBase\<T\>](cref:Meziantou.Framework.Markdown.Parsers.FencedBlockParserBase{T}). The extensions of the
 library, in the `Meziantou.Framework.Markdown.Extensions` namespaces, are complete examples of both.

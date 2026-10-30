@@ -4,7 +4,7 @@ description: Store, read, list and delete passwords and tokens in the Windows Cr
 ---
 
 The Windows Credential Manager stores the credentials of the current user, protected by Windows. Applications use it to
-remember a password or an API token without writing it to a file. `CredentialManager` from the
+remember a password or an API token without writing it to a file. [CredentialManager](cref:Meziantou.Framework.Win32.CredentialManager) from the
 `Meziantou.Framework.Win32.CredentialManager` package reads and writes it.
 
 ```bash
@@ -44,9 +44,9 @@ CredentialManager.DeleteCredential(applicationName: "CredentialManagerTests");
 - The application name identifies the credential: it is the "Internet or network address" shown by the Credential
   Manager of the Control Panel. Prefix it with the name of your application, such as `MyApp:https://api.example.com`,
   so it does not collide with the credentials of other applications.
-- `WriteCredential` replaces the credential that has the same name and type.
-- `ReadCredential` returns `null` when the credential does not exist.
-- `DeleteCredential` throws a `Win32Exception` when the credential does not exist. `TryDeleteCredential` returns `false`
+- [WriteCredential](cref:Meziantou.Framework.Win32.CredentialManager.WriteCredential) replaces the credential that has the same name and type.
+- [ReadCredential](cref:Meziantou.Framework.Win32.CredentialManager.ReadCredential) returns `null` when the credential does not exist.
+- [DeleteCredential](cref:Meziantou.Framework.Win32.CredentialManager.DeleteCredential) throws a `Win32Exception` when the credential does not exist. [TryDeleteCredential](cref:Meziantou.Framework.Win32.CredentialManager.TryDeleteCredential) returns `false`
   instead:
 
 <!-- ref:../../samples/Meziantou.Framework.Win32.CredentialManagerConsole/CredentialManagerExamples.cs;region=CredentialManager_TryDelete;format=md-fenced-code-block;dedent=true -->
@@ -63,33 +63,33 @@ if (!CredentialManager.TryDeleteCredential("MyApp:https://api.example.com"))
 
 The `persistence` argument tells how long Windows keeps the credential:
 
-| `CredentialPersistence` | The credential is kept |
+| [CredentialPersistence](cref:Meziantou.Framework.Win32.CredentialPersistence) | The credential is kept |
 | --- | --- |
-| `Session` | Until the user logs off |
-| `LocalMachine` | On this computer, across the logon sessions of the user |
-| `Enterprise` | Across the logon sessions, and roams with the profile of the user when the domain uses roaming profiles |
+| [Session](cref:Meziantou.Framework.Win32.CredentialPersistence.Session) | Until the user logs off |
+| [LocalMachine](cref:Meziantou.Framework.Win32.CredentialPersistence.LocalMachine) | On this computer, across the logon sessions of the user |
+| [Enterprise](cref:Meziantou.Framework.Win32.CredentialPersistence.Enterprise) | Across the logon sessions, and roams with the profile of the user when the domain uses roaming profiles |
 
 ### Limits
 
-`WriteCredential` throws an `ArgumentOutOfRangeException` when:
+[WriteCredential](cref:Meziantou.Framework.Win32.CredentialManager.WriteCredential) throws an `ArgumentOutOfRangeException` when:
 
 - the secret is longer than 2,560 bytes, that is 1,280 characters (it is stored as UTF-16),
 - the comment is longer than 255 characters,
-- the type is not `CredentialType.Generic` (the default) or `CredentialType.DomainPassword`.
+- the type is not [CredentialType.Generic](cref:Meziantou.Framework.Win32.CredentialType.Generic) (the default) or [CredentialType.DomainPassword](cref:Meziantou.Framework.Win32.CredentialType.DomainPassword).
 
 ## Credential types
 
-Each overload has a variant with a `CredentialType`. `Generic` credentials are the ones an application stores for its
-own use. `DomainPassword` credentials are used by Windows itself to connect to the servers of the network. The
-credentials of different types are distinct: reading, writing or deleting a credential uses the `Generic` type unless
+Each overload has a variant with a [CredentialType](cref:Meziantou.Framework.Win32.CredentialType). [Generic](cref:Meziantou.Framework.Win32.CredentialType.Generic) credentials are the ones an application stores for its
+own use. [DomainPassword](cref:Meziantou.Framework.Win32.CredentialType.DomainPassword) credentials are used by Windows itself to connect to the servers of the network. The
+credentials of different types are distinct: reading, writing or deleting a credential uses the [Generic](cref:Meziantou.Framework.Win32.CredentialType.Generic) type unless
 you pass another one.
 
-`Credential.Password` is the secret decoded as a UTF-16 string. A credential written by another application can contain
-arbitrary bytes: `Credential.Secret` returns them exactly as Windows stores them.
+[Credential.Password](cref:Meziantou.Framework.Win32.Credential.Password) is the secret decoded as a UTF-16 string. A credential written by another application can contain
+arbitrary bytes: [Credential.Secret](cref:Meziantou.Framework.Win32.Credential.Secret) returns them exactly as Windows stores them.
 
 ## List the credentials
 
-`EnumerateCredentials` returns the credentials of the user whose name matches a filter, which supports the `*`
+[EnumerateCredentials](cref:Meziantou.Framework.Win32.CredentialManager.EnumerateCredentials) returns the credentials of the user whose name matches a filter, which supports the `*`
 wildcard. Without a filter, or with `"*"`, it returns them all:
 
 <!-- ref:../../samples/Meziantou.Framework.Win32.CredentialManagerConsole/CredentialManagerExamples.cs;region=CredentialManager_Enumerate;format=md-fenced-code-block;dedent=true -->
@@ -106,7 +106,7 @@ It returns an empty list when no credential matches.
 
 ## Ask the user for credentials
 
-`PromptForCredentials` shows the Windows credential dialog, and returns what the user typed:
+[PromptForCredentials](cref:Meziantou.Framework.Win32.CredentialManager.PromptForCredentials) shows the Windows credential dialog, and returns what the user typed:
 
 <!-- ref:../../samples/Meziantou.Framework.Win32.CredentialManagerConsole/CredentialManagerExamples.cs;region=CredentialManager_Prompt;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -131,12 +131,12 @@ if (result is not null)
 
 - The method returns `null` when the user cancels the dialog.
 - `owner` is the handle of the parent window. `userName` and `password` fill the fields of the dialog.
-- `saveCredential` shows the "Remember my credentials" checkbox unchecked (`Unselected`), checked (`Selected`), or hides
-  it (`Hidden`). `CredentialResult.CredentialSaved` tells whether the user checked it. The prompt does not store
+- `saveCredential` shows the "Remember my credentials" checkbox unchecked ([Unselected](cref:Meziantou.Framework.Win32.CredentialSaveOption.Unselected)), checked ([Selected](cref:Meziantou.Framework.Win32.CredentialSaveOption.Selected)), or hides
+  it ([Hidden](cref:Meziantou.Framework.Win32.CredentialSaveOption.Hidden)). [CredentialResult.CredentialSaved](cref:Meziantou.Framework.Win32.CredentialResult.CredentialSaved) tells whether the user checked it. The prompt does not store
   anything: write the credential yourself.
 - `error: CredentialErrorCode.LogonFailure` shows the dialog with a message saying that the previous credentials were
   wrong, so the user can try again.
-- `CredentialResult` gives the `UserName`, the `Password`, and the `Domain` when the user typed a name such as
+- [CredentialResult](cref:Meziantou.Framework.Win32.CredentialResult) gives the [UserName](cref:Meziantou.Framework.Win32.CredentialResult.UserName), the [Password](cref:Meziantou.Framework.Win32.CredentialResult.Password), and the [Domain](cref:Meziantou.Framework.Win32.CredentialResult.Domain) when the user typed a name such as
   `DOMAIN\user`.
 
 A console application can ask in the console instead:
@@ -159,5 +159,5 @@ if (result is not null)
 
 - The secret is returned as a `string`: it cannot be cleared from memory once you are done with it, and it stays
   readable in a memory dump until the garbage collector reuses its memory.
-- `ToString()` of `Credential` and `CredentialResult` masks the password, so logging these objects does not leak it.
+- `ToString()` of [Credential](cref:Meziantou.Framework.Win32.Credential) and [CredentialResult](cref:Meziantou.Framework.Win32.CredentialResult) masks the password, so logging these objects does not leak it.
 - Any process that runs as the same user can read the credentials of this user.

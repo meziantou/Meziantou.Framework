@@ -24,7 +24,7 @@ internal sealed record Issue(string Title, string Author, bool IsOpen, int Comme
 ```
 <!-- endref -->
 
-Create a `QueryBuilder<Issue>`, register what each key means, and build the query the user typed:
+Create a [QueryBuilder\<Issue\>](cref:Meziantou.Framework.SimpleQueryLanguage.QueryBuilder{T}), register what each key means, and build the query the user typed:
 
 <!-- ref:../../tests/Meziantou.Framework.SimpleQueryLanguage.Tests/QueryBuilderTests.cs;region=QueryBuilder_GettingStarted;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -53,11 +53,11 @@ Assert.Equal(["Crash on startup"], issues.Where(query.Evaluate).Select(issue => 
 - `crash` has no key: it is free text, passed to the text filter.
 - Terms separated by spaces must all match.
 
-`Build` parses the query once. Keep the `Query<Issue>` and call `Evaluate` for each object.
+[Build](cref:Meziantou.Framework.SimpleQueryLanguage.QueryBuilder{T}.Build) parses the query once. Keep the [Query\<Issue\>](cref:Meziantou.Framework.SimpleQueryLanguage.Query{T}) and call [Evaluate](cref:Meziantou.Framework.SimpleQueryLanguage.Query{T}.Evaluate) for each object.
 
 ## Filter a database query
 
-To filter an Entity Framework Core `DbSet`, use `ExpressionQueryBuilder<T>`: its handlers are expressions that the
+To filter an Entity Framework Core `DbSet`, use [ExpressionQueryBuilder\<T\>](cref:Meziantou.Framework.SimpleQueryLanguage.ExpressionQueryBuilder{T}): its handlers are expressions that the
 database can run. See [Database queries](05-DatabaseQueries.md).
 
 ## Next steps

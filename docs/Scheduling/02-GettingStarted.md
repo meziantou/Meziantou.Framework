@@ -37,9 +37,9 @@ else
 ```
 <!-- endref -->
 
-- `TryParse` returns `false` and the reason in `error` when the rule is not valid. `Parse` throws a `FormatException`
+- [TryParse](cref:Meziantou.Framework.Scheduling.RecurrenceRule.TryParse) returns `false` and the reason in `error` when the rule is not valid. [Parse](cref:Meziantou.Framework.Scheduling.RecurrenceRule.Parse) throws a `FormatException`
   instead.
-- The date you pass to `GetNextOccurrences` is the start of the series, the `DTSTART` of an iCalendar event: the first
+- The date you pass to [GetNextOccurrences](cref:Meziantou.Framework.Scheduling.RecurrenceRule.GetNextOccurrences) is the start of the series, the `DTSTART` of an iCalendar event: the first
   occurrences are computed from it, and the time of the occurrences comes from it. It is not "now": see
   [The start of the series](03-RecurrenceRules.md#the-start-of-the-series).
 - `COUNT=10` ends the series after 10 occurrences. A rule without `COUNT` or `UNTIL` never ends: take the occurrences you

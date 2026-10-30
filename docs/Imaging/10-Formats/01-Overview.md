@@ -29,17 +29,17 @@ is read, what is written, how to save with its encoder and its options, and the 
 
 What a format cannot store is never dropped silently: saving an animation as JPEG, transparency to a format without
 it, 16-bit samples to an 8-bit format or metadata the format has no place for throws an
-`UnsupportedImageFeatureException`, unless a setting of the encoder allows the conversion. See
+[UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException), unless a setting of the encoder allows the conversion. See
 [Saving images](../05-LoadingAndSaving/04-SavingImages.md). What the codecs do not support is listed in
 [Limitations](../12-Limitations.md).
 
 ## Detection by content
 
-`Image.Load`, `Image.Identify` and the readers detect the format from the first bytes of the data, never from the file
-name: a PNG file named `photo.jpg` loads as a PNG. `Image.DetectFormat` returns the format of a prefix of the data, and
-needs `Image.FormatDetectionPrefixLength` (18) bytes to recognize every format: TGA has no signature, so it is
+[Image.Load](cref:Meziantou.Framework.Imaging.Image.Load), [Image.Identify](cref:Meziantou.Framework.Imaging.Image.Identify) and the readers detect the format from the first bytes of the data, never from the file
+name: a PNG file named `photo.jpg` loads as a PNG. [Image.DetectFormat](cref:Meziantou.Framework.Imaging.Image.DetectFormat) returns the format of a prefix of the data, and
+needs [Image.FormatDetectionPrefixLength](cref:Meziantou.Framework.Imaging.Image.FormatDetectionPrefixLength) (18) bytes to recognize every format: TGA has no signature, so it is
 recognized from its whole header, and checked last. Data that no format recognizes throws an
-`UnknownImageFormatException`. See [Identifying images](../05-LoadingAndSaving/03-IdentifyingImages.md).
+[UnknownImageFormatException](cref:Meziantou.Framework.Imaging.UnknownImageFormatException). See [Identifying images](../05-LoadingAndSaving/03-IdentifyingImages.md).
 
 ## Extensions of `Save(path)`
 
@@ -48,26 +48,26 @@ recognized from its whole header, and checked last. Data that no format recogniz
 
 | Extension | Encoder | Output |
 | --- | --- | --- |
-| `.png` | `PngEncoder` | PNG, or APNG when the image is animated |
+| `.png` | [PngEncoder](cref:Meziantou.Framework.Imaging.Formats.PngEncoder) | PNG, or APNG when the image is animated |
 | `.apng` | `PngEncoder { AnimationMode = PngAnimationMode.Animated }` | Always APNG |
-| `.gif` | `GifEncoder` | GIF |
-| `.jpg`, `.jpeg` | `JpegEncoder` | Baseline JPEG, quality 90 |
-| `.webp` | `WebPEncoder` | Lossless WebP |
-| `.qoi` | `QoiEncoder` | QOI |
-| `.bmp`, `.dib` | `BmpEncoder` | 24-bit, or 32-bit with alpha |
-| `.tga`, `.icb`, `.vda`, `.vst` | `TgaEncoder` | Uncompressed TGA |
-| `.pnm`, `.pam`, `.ppm`, `.pgm` | `PnmEncoder` | The Netpbm variant of the pixel format (PGM, PPM or PAM) |
+| `.gif` | [GifEncoder](cref:Meziantou.Framework.Imaging.Formats.GifEncoder) | GIF |
+| `.jpg`, `.jpeg` | [JpegEncoder](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder) | Baseline JPEG, quality 90 |
+| `.webp` | [WebPEncoder](cref:Meziantou.Framework.Imaging.Formats.WebPEncoder) | Lossless WebP |
+| `.qoi` | [QoiEncoder](cref:Meziantou.Framework.Imaging.Formats.QoiEncoder) | QOI |
+| `.bmp`, `.dib` | [BmpEncoder](cref:Meziantou.Framework.Imaging.Formats.BmpEncoder) | 24-bit, or 32-bit with alpha |
+| `.tga`, `.icb`, `.vda`, `.vst` | [TgaEncoder](cref:Meziantou.Framework.Imaging.Formats.TgaEncoder) | Uncompressed TGA |
+| `.pnm`, `.pam`, `.ppm`, `.pgm` | [PnmEncoder](cref:Meziantou.Framework.Imaging.Formats.PnmEncoder) | The Netpbm variant of the pixel format (PGM, PPM or PAM) |
 | `.pbm` | `PnmEncoder { PixelLayout = PnmPixelLayout.Bitmap }` | A portable bitmap, from black and white pixels only |
-| `.tif`, `.tiff` | `TiffEncoder` | Deflate-compressed TIFF |
-| `.ico` | `IcoEncoder` | Icon |
+| `.tif`, `.tiff` | [TiffEncoder](cref:Meziantou.Framework.Imaging.Formats.TiffEncoder) | Deflate-compressed TIFF |
+| `.ico` | [IcoEncoder](cref:Meziantou.Framework.Imaging.Formats.IcoEncoder) | Icon |
 | `.cur` | `IcoEncoder { Kind = IconKind.Cursor }` | Cursor |
-| `.ani` | `AniEncoder` | Animated cursor |
-| `.avif`, `.avifs` | `AvifEncoder` | Lossless AVIF |
-| `.heic`, `.heif`, `.heics`, `.heifs` | `HeicEncoder` | Lossless HEIC |
-| `.jxl` | `JpegXlEncoder` | Lossless JPEG XL |
-| `.jp2` | `Jpeg2000Encoder` | Lossless JP2 file |
+| `.ani` | [AniEncoder](cref:Meziantou.Framework.Imaging.Formats.AniEncoder) | Animated cursor |
+| `.avif`, `.avifs` | [AvifEncoder](cref:Meziantou.Framework.Imaging.Formats.AvifEncoder) | Lossless AVIF |
+| `.heic`, `.heif`, `.heics`, `.heifs` | [HeicEncoder](cref:Meziantou.Framework.Imaging.Formats.HeicEncoder) | Lossless HEIC |
+| `.jxl` | [JpegXlEncoder](cref:Meziantou.Framework.Imaging.Formats.JpegXlEncoder) | Lossless JPEG XL |
+| `.jp2` | [Jpeg2000Encoder](cref:Meziantou.Framework.Imaging.Formats.Jpeg2000Encoder) | Lossless JP2 file |
 | `.j2k`, `.j2c`, `.jpc` | `Jpeg2000Encoder { Container = Jpeg2000Container.Codestream }` | Lossless JPEG 2000 codestream |
-| `.exr` | `OpenExrEncoder` | ZIP-compressed OpenEXR |
+| `.exr` | [OpenExrEncoder](cref:Meziantou.Framework.Imaging.Formats.OpenExrEncoder) | ZIP-compressed OpenEXR |
 
 Any other extension throws an `ArgumentException`, including `.jpx`, `.jpf`, `.jph` and `.jhc`: those JPEG 2000 files
 are read, not written. Note that WebP, AVIF, HEIC, JPEG XL and JPEG 2000 are lossless by default, which makes large
@@ -80,7 +80,7 @@ files from photos: pass an encoder with lossy compression for them.
   the format of the photos of phones: read it, and convert it to share it (see
   [Handling phone photos](../03-Guides/05-HandlePhonePhotos.md)).
 - **Graphics, screenshots, logos and transparency**: PNG, or lossless WebP. An image with few colors gets smaller as
-  an indexed PNG; `PngOptimization.MinimumSize` searches the smallest lossless PNG.
+  an indexed PNG; [PngOptimization.MinimumSize](cref:Meziantou.Framework.Imaging.Formats.PngOptimization.MinimumSize) searches the smallest lossless PNG.
 - **Animations**: GIF is read everywhere but has 256 colors per frame and no partial transparency. APNG and lossless
   WebP keep every color and alpha value; lossy WebP and AVIF image sequences are smaller. See
   [Processing animated images](../03-Guides/04-ProcessAnimatedImages.md).

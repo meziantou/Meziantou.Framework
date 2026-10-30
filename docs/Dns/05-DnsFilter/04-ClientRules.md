@@ -5,13 +5,13 @@ description: Apply rules to some clients only, by IP address, network, name or t
 
 The same list can apply different rules to different clients: block more for the children's devices, or exempt a
 server. The engine does not know the clients: pass what you know about the one that sent the query, in a
-`DnsClientInfo`, to `Evaluate`.
+[DnsClientInfo](cref:Meziantou.Framework.DnsFilter.DnsClientInfo), to [Evaluate](cref:Meziantou.Framework.DnsFilter.DnsFilterEngine.Evaluate).
 
-| `DnsClientInfo` property | Used by |
+| [DnsClientInfo](cref:Meziantou.Framework.DnsFilter.DnsClientInfo) property | Used by |
 | --- | --- |
-| `Address` | `$client` with an IP address or a network |
-| `Name` | `$client` with a name |
-| `Tags` | `$ctag` |
+| [Address](cref:Meziantou.Framework.DnsFilter.DnsClientInfo.Address) | `$client` with an IP address or a network |
+| [Name](cref:Meziantou.Framework.DnsFilter.DnsClientInfo.Name) | `$client` with a name |
+| [Tags](cref:Meziantou.Framework.DnsFilter.DnsClientInfo.Tags) | `$ctag` |
 
 A rule scoped on clients does not match when the client information it needs is missing: with
 `engine.Evaluate(domain)`, `$client` and `$ctag` rules never apply.
@@ -37,7 +37,7 @@ Assert.False(engine.Evaluate("example.com", DnsFilterQueryType.A, otherClient).I
 
 ## By name
 
-`$client` also takes names. The engine compares them with `DnsClientInfo.Name`; it does not resolve them. Quote a name
+`$client` also takes names. The engine compares them with [DnsClientInfo.Name](cref:Meziantou.Framework.DnsFilter.DnsClientInfo.Name); it does not resolve them. Quote a name
 that contains spaces or separators, and separate the values with `|`:
 
 <!-- ref:../../../tests/Meziantou.Framework.DnsFilter.Tests/DnsFilterEngineTests.cs;region=DnsFilter_ClientName;format=md-fenced-code-block;dedent=true -->

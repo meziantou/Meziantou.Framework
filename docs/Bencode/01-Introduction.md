@@ -17,18 +17,18 @@ Bencode has four kinds of values:
 
 | Kind | Encoding | Example | Type |
 | --- | --- | --- | --- |
-| Integer | `i<digits>e` | `i42e` | `BencodeInteger` |
-| String | `<length>:<bytes>` | `4:spam` | `BencodeString` |
-| List | `l<values>e` | `l4:spami42ee` | `BencodeList` |
-| Dictionary | `d<key><value>…e` | `d3:cow3:mooe` | `BencodeDictionary` |
+| Integer | `i<digits>e` | `i42e` | [BencodeInteger](cref:Meziantou.Framework.Bencode.BencodeInteger) |
+| String | `<length>:<bytes>` | `4:spam` | [BencodeString](cref:Meziantou.Framework.Bencode.BencodeString) |
+| List | `l<values>e` | `l4:spami42ee` | [BencodeList](cref:Meziantou.Framework.Bencode.BencodeList) |
+| Dictionary | `d<key><value>…e` | `d3:cow3:mooe` | [BencodeDictionary](cref:Meziantou.Framework.Bencode.BencodeDictionary) |
 
 A string is a sequence of bytes, not necessarily text: the piece hashes of a torrent are binary. Dictionary keys are
 strings, and the canonical encoding sorts them by their bytes, so a given dictionary always encodes to the same bytes.
 
 ## Namespaces
 
-The document model is in the [Meziantou.Framework.Bencode](cref:Meziantou.Framework.Bencode) namespace. The torrent model (`TorrentFile`,
-`TorrentInfo`, `TorrentInfoFile`, `TorrentNode`) is in [Meziantou.Framework.Bencode.Torrent](cref:Meziantou.Framework.Bencode.Torrent).
+The document model is in the [Meziantou.Framework.Bencode](cref:Meziantou.Framework.Bencode) namespace. The torrent model ([TorrentFile](cref:Meziantou.Framework.Bencode.Torrent.TorrentFile),
+[TorrentInfo](cref:Meziantou.Framework.Bencode.Torrent.TorrentInfo), [TorrentInfoFile](cref:Meziantou.Framework.Bencode.Torrent.TorrentInfoFile), [TorrentNode](cref:Meziantou.Framework.Bencode.Torrent.TorrentNode)) is in [Meziantou.Framework.Bencode.Torrent](cref:Meziantou.Framework.Bencode.Torrent).
 
 ## Next steps
 

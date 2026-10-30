@@ -29,14 +29,14 @@ unthrottled password oracle. See [Account lockout](03-AspNetCoreIdentity.md#acco
 
 ## Compare secrets safely
 
-In your own `ValidateCredentials` delegate, do not store plain passwords: compare a hash, for instance with
+In your own [ValidateCredentials](cref:Meziantou.AspNetCore.Authentication.HttpBasic.HttpBasicAuthenticationOptions.ValidateCredentials) delegate, do not store plain passwords: compare a hash, for instance with
 `PasswordHasher<TUser>` or the key derivation functions of .NET. The handler answers every rejection with the same
 `401 Unauthorized`, so returning `null` for an unknown user and for a wrong password does not tell the client which one
 was wrong.
 
 ## Limit the payload
 
-`MaxCredentialLength` (4096 characters by default) bounds the size of the Base64 payload before it is decoded. Lower it
+[MaxCredentialLength](cref:Meziantou.AspNetCore.Authentication.HttpBasic.HttpBasicAuthenticationOptions.MaxCredentialLength) (4096 characters by default) bounds the size of the Base64 payload before it is decoded. Lower it
 when your usernames and passwords are short.
 
 ## Log carefully

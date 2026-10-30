@@ -8,8 +8,8 @@ what it contains and remove what must not leave the machine.
 
 ## Secrets in environment variables
 
-Environment variables often hold secrets: access tokens, passwords, connection strings. `AddEnvironmentVariables`,
-and therefore `AddDefault`, replaces the value of a variable by `ContextSnapshotBuilder.RedactedValue` (`***`) when its
+Environment variables often hold secrets: access tokens, passwords, connection strings. [AddEnvironmentVariables](cref:Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder.AddEnvironmentVariables),
+and therefore [AddDefault](cref:Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder.AddDefault), replaces the value of a variable by [ContextSnapshotBuilder.RedactedValue](cref:Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder.RedactedValue) (`***`) when its
 name looks like a secret. You can change the rule:
 
 <!-- ref:../../../tests/Meziantou.Framework.Diagnostics.ContextSnapshot.Tests/SnapshotTests.cs;region=ContextSnapshot_RedactEnvironmentVariables;format=md-fenced-code-block;dedent=true -->
@@ -37,7 +37,7 @@ foreach (var (name, value) in variables)
 ```
 <!-- endref -->
 
-- The default rule, `ContextSnapshotBuilder.IsSecretEnvironmentVariableName`, redacts a variable whose name contains,
+- The default rule, [ContextSnapshotBuilder.IsSecretEnvironmentVariableName](cref:Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder.IsSecretEnvironmentVariableName), redacts a variable whose name contains,
   ignoring case, one of `TOKEN`, `SECRET`, `PASSWORD`, `PASSWD`, `PWD`, `APIKEY`, `API_KEY`, `ACCESS_KEY`,
   `PRIVATE_KEY`, `CREDENTIAL` or `SESSION`.
 - `AddEnvironmentVariables(target, shouldRedact)` takes your own rule: it is called with the name of each variable,
@@ -46,14 +46,14 @@ foreach (var (name, value) in variables)
 - The rule only looks at names. It also redacts variables that are not secrets, such as `PWD` and `OLDPWD`, the current
   and previous directories in a Unix shell, or the `*_SESSION_*` variables of a desktop session.
 
-`AddDefault` uses the default rule. To use your own rule with `AddDefault`, call `AddEnvironmentVariables` after it, for
+[AddDefault](cref:Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder.AddDefault) uses the default rule. To use your own rule with [AddDefault](cref:Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder.AddDefault), call [AddEnvironmentVariables](cref:Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder.AddEnvironmentVariables) after it, for
 each target (`Process`, `User` and `Machine`): adding a key that already exists replaces its value.
 
 ## Name-based redaction is best effort
 
 A secret stored in a variable with an unremarkable name, such as `DATABASE_URL` or `ConnectionStrings__Default`, is
 captured as is. Add the names your application uses to the rule, or leave the environment variables out of the
-snapshot: build it with the `Add*` methods you need instead of `AddDefault`.
+snapshot: build it with the `Add*` methods you need instead of [AddDefault](cref:Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder.AddDefault).
 
 ## Other information to consider
 
@@ -64,6 +64,6 @@ Only environment variables are redacted. The rest of the snapshot is captured as
 - **Paths** that contain the user name: the current directory, the special folders, the location of the assemblies and
   the modules.
 - The `AppContext` switches and data, which hold the configuration of the runtime.
-- The values you add yourself with `AddValue`.
+- The values you add yourself with [AddValue](cref:Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder.AddValue).
 
 Treat a snapshot like a log file that contains this information: store it and share it accordingly.

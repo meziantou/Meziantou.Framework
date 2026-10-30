@@ -5,10 +5,10 @@ description: Protect documents with passwords and permissions, and sign them so 
 
 | To | Use | Page |
 | --- | --- | --- |
-| Require a password to open a document, or restrict printing and copying | `PdfDocument.Encryption` | [Encryption](02-Encryption.md) |
-| Open an encrypted document | `PdfReadOptions.Password` | [Encryption](02-Encryption.md) |
-| Prove who approved a document, and that it did not change since | `PdfSigner` | [Digital signatures](03-DigitalSignatures.md) |
-| Check the signatures of a document | `PdfSignatureVerifier` | [Digital signatures](03-DigitalSignatures.md) |
+| Require a password to open a document, or restrict printing and copying | [PdfDocument.Encryption](cref:Meziantou.Framework.Pdf.PdfDocument.Encryption) | [Encryption](02-Encryption.md) |
+| Open an encrypted document | [PdfReadOptions.Password](cref:Meziantou.Framework.Pdf.PdfReadOptions.Password) | [Encryption](02-Encryption.md) |
+| Prove who approved a document, and that it did not change since | [PdfSigner](cref:Meziantou.Framework.Pdf.Signing.PdfSigner) | [Digital signatures](03-DigitalSignatures.md) |
+| Check the signatures of a document | [PdfSignatureVerifier](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureVerifier) | [Digital signatures](03-DigitalSignatures.md) |
 
 Encryption and signatures protect different things. Encryption hides the content from those who do not have the
 password; its permissions are honored by the readers, not enforced by the file. A signature does not hide anything: it

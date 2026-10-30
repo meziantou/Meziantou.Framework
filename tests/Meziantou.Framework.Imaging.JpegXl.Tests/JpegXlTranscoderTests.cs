@@ -1,4 +1,5 @@
 using Meziantou.Framework.Imaging.Formats;
+using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.TestHarness.Fixtures;
 using Meziantou.Framework.Imaging.TestHarness.Golden;
 using Meziantou.Framework.Imaging.TestHarness.Streams;
@@ -513,6 +514,62 @@ public sealed class JpegXlTranscoderTests
         }
 
         Assert.True(failures > length / 2, $"{failures} of {length} damaged files were refused.");
+    }
+
+    /// <summary>
+    /// The list of identifiers of the reconstruction data may give from one to four components, and libjxl only rebuilds
+    /// the files of one component (gray) or three (color): a description of two or four components is refused before
+    /// anything is written, and three components of other identifiers are still rebuilt.
+    /// </summary>
+    [Theory]
+    [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(4)]
+    public void TheReconstructionDataDescribeOneOrThreeComponents(int componentCount)
+    {
+        var jpeg = GoldenCorpus.Default.Get("jpeg/baseline-420").ReadInput();
+        using var recompressed = new MemoryStream();
+        JpegXlTranscoder.RecompressJpeg(jpeg, recompressed);
+        var boxes = SplitBoxes(recompressed.ToArray());
+        var index = boxes.FindIndex(box => box.Type == "jbrd");
+        var payload = boxes[index].Bytes[8..];
+        var data = JpegXlJpegReconstructionData.Read(payload, payload.Length, new InputResourceTracker(ImageConfiguration.Default.Limits));
+        var model = data.Model;
+        Assert.Equal([1, 2, 3], model.Components.Select(component => component.Id));
+
+        // The identifiers 1, 2 and 4 are not those of a known layout: the box lists them, as it lists 1 and 2, or 1 to 4
+        model.Components[2] = model.Components[2] with { Id = 4 };
+        if (componentCount == 2)
+        {
+            model.Components.RemoveAt(2);
+            foreach (var scan in model.Scans)
+            {
+                scan.Components.RemoveAll(component => component.Component == 2);
+            }
+        }
+        else if (componentCount == 4)
+        {
+            model.Components.Add(new JpegBitstreamComponent(5, model.Components[2].QuantizationTable));
+        }
+
+        var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(TheReconstructionDataDescribeOneOrThreeComponents));
+        var description = JpegXlJpegReconstructionData.Write(model, [.. data.ApplicationSegments.Select(segment => segment.Kind)], brotliQuality: 11, scope);
+        boxes[index] = ("jbrd", JpegXlTestFiles.Box("jbrd", description));
+        var file = Join(boxes);
+        using var output = new MemoryStream();
+        if (componentCount == 3)
+        {
+            Assert.True(JpegXlTranscoder.TryReconstructJpeg(file, output));
+            using var rebuilt = Image.Load(output.ToArray());
+            using var original = Image.Load(jpeg);
+            Assert.Equal(original.Width, rebuilt.Width);
+            Assert.Equal(original.Height, rebuilt.Height);
+        }
+        else
+        {
+            Assert.Throws<InvalidImageContentException>(() => JpegXlTranscoder.TryReconstructJpeg(file, output));
+            Assert.Equal(0, output.Length);
+        }
     }
 
     /// <summary>

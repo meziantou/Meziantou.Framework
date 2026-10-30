@@ -20,6 +20,12 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// comments and white space cannot make the walk unbounded.
 /// </para>
 /// <para>
+/// A comment that follows the digits of a header token without white space is invalid, except in lenient decoding
+/// (<see cref="ImageCodecContext.IsLenient"/>): the comment then ends the token, and the line feed or carriage return that
+/// ends the comment is the white space that delimits it (for the last token, the raster starts after it), as Netpbm,
+/// ImageMagick and FFmpeg read it and as the Netpbm specification describes comments.
+/// </para>
+/// <para>
 /// Netpbm files may concatenate several images. This version reads the first one and stops: the bytes after its raster are
 /// never read, and a concatenation is never reported as an animation.
 /// </para>
@@ -260,6 +266,12 @@ internal sealed class PnmStructureParser : ImageParser<ImageInfo>
                 if (value is (byte)'\n' or (byte)'\r')
                 {
                     _inComment = false;
+
+                    // Lenient: the line feed or carriage return that ends a comment interrupting a token delimits it
+                    if (_inNumber)
+                    {
+                        StoreToken();
+                    }
                 }
 
                 continue;
@@ -267,7 +279,7 @@ internal sealed class PnmStructureParser : ImageParser<ImageInfo>
 
             if (value == (byte)'#')
             {
-                if (_inNumber)
+                if (_inNumber && !_context.IsLenient)
                     throw PnmFormat.Invalid("A Netpbm comment interrupts a header token; a token must be followed by white space.");
 
                 _inComment = true;

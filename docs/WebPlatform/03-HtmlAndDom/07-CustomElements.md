@@ -4,7 +4,7 @@ description: Define custom elements with .NET classes, react to their lifecycle 
 ---
 
 A custom element is an element whose behavior you define, as `customElements.define()` does in a browser. In .NET, a
-`CustomElement` subclass is attached to each element, and its virtual methods are the lifecycle callbacks:
+[CustomElement](cref:Meziantou.Framework.WebPlatform.Dom.CustomElement) subclass is attached to each element, and its virtual methods are the lifecycle callbacks:
 
 <!-- ref:../../../samples/Meziantou.Framework.WebPlatform.Samples/ReadmeExamples.cs;region=WebPlatform_CustomElement;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -47,28 +47,28 @@ Console.WriteLine(greeting.TextContent); // Hello Grace
 
 | JavaScript | .NET |
 | --- | --- |
-| `class X extends HTMLElement` | A `CustomElement` created by the factory of `new CustomElementConstructor(element => ...)` |
-| `this` | `CustomElement.Element`; `HtmlElement.CustomElement` returns the `CustomElement` of an element |
-| `connectedCallback()`, `disconnectedCallback()`, `adoptedCallback()`, `attributeChangedCallback()`, `connectedMoveCallback()` | The virtual methods of `CustomElement` |
-| `formAssociatedCallback()`, `formResetCallback()`, `formDisabledCallback()`, `formStateRestoreCallback()` | The virtual methods of `CustomElement`, called when `FormAssociated` is true |
-| `static observedAttributes`, `static formAssociated`, `static disabledFeatures` | `CustomElementConstructor.ObservedAttributes`, `FormAssociated`, `DisabledFeatures` |
+| `class X extends HTMLElement` | A [CustomElement](cref:Meziantou.Framework.WebPlatform.Dom.CustomElement) created by the factory of `new CustomElementConstructor(element => ...)` |
+| `this` | [CustomElement.Element](cref:Meziantou.Framework.WebPlatform.Dom.CustomElement.Element); [HtmlElement.CustomElement](cref:Meziantou.Framework.WebPlatform.Dom.HtmlElement.CustomElement) returns the [CustomElement](cref:Meziantou.Framework.WebPlatform.Dom.CustomElement) of an element |
+| `connectedCallback()`, `disconnectedCallback()`, `adoptedCallback()`, `attributeChangedCallback()`, `connectedMoveCallback()` | The virtual methods of [CustomElement](cref:Meziantou.Framework.WebPlatform.Dom.CustomElement) |
+| `formAssociatedCallback()`, `formResetCallback()`, `formDisabledCallback()`, `formStateRestoreCallback()` | The virtual methods of [CustomElement](cref:Meziantou.Framework.WebPlatform.Dom.CustomElement), called when [FormAssociated](cref:Meziantou.Framework.WebPlatform.Dom.CustomElementConstructor.FormAssociated) is true |
+| `static observedAttributes`, `static formAssociated`, `static disabledFeatures` | [CustomElementConstructor.ObservedAttributes](cref:Meziantou.Framework.WebPlatform.Dom.CustomElementConstructor.ObservedAttributes), [FormAssociated](cref:Meziantou.Framework.WebPlatform.Dom.CustomElementConstructor.FormAssociated), [DisabledFeatures](cref:Meziantou.Framework.WebPlatform.Dom.CustomElementConstructor.DisabledFeatures) |
 | `customElements.define(name, C, { extends: "button" })` | `registry.Define(name, constructor, new ElementDefinitionOptions { Extends = "button" })` |
 | `customElements.whenDefined(name)` | `registry.WhenDefined(name)`, a `Task` |
 
-The element is not a subclass of `HtmlElement`: it is created by the library (an `HtmlElement`, or the interface of the
-extended element for a customized built-in element such as `HtmlButtonElement`), and the `CustomElement` is attached to
+The element is not a subclass of [HtmlElement](cref:Meziantou.Framework.WebPlatform.Dom.HtmlElement): it is created by the library (an [HtmlElement](cref:Meziantou.Framework.WebPlatform.Dom.HtmlElement), or the interface of the
+extended element for a customized built-in element such as [HtmlButtonElement](cref:Meziantou.Framework.WebPlatform.Dom.HtmlButtonElement)), and the [CustomElement](cref:Meziantou.Framework.WebPlatform.Dom.CustomElement) is attached to
 it. This keeps the identity of the elements that are upgraded after they were parsed.
 
 ## Rules of the constructor
 
 The factory runs as the body of a JavaScript constructor after `super()`. As in JavaScript, the element must not get
-attributes or children there: do this work in `ConnectedCallback`. `Element.AttachInternals()` returns the
-`ElementInternals` of the element: its form value (`SetFormValue`), its validity, its default accessibility semantics, and
-its custom states (`States`, matched by the `:state()` pseudo-class).
+attributes or children there: do this work in [ConnectedCallback](cref:Meziantou.Framework.WebPlatform.Dom.CustomElement.ConnectedCallback). `Element.AttachInternals()` returns the
+[ElementInternals](cref:Meziantou.Framework.WebPlatform.Dom.ElementInternals) of the element: its form value ([SetFormValue](cref:Meziantou.Framework.WebPlatform.Dom.ElementInternals.SetFormValue)), its validity, its default accessibility semantics, and
+its custom states ([States](cref:Meziantou.Framework.WebPlatform.Dom.ElementInternals.States), matched by the `:state()` pseudo-class).
 
 ## Registries
 
-`Window.CustomElements` is the global registry of a window: custom elements need a browsing context, or a registry given
-to the parser with `HtmlParserOptions.CustomElementRegistry`. Scoped registries (`new CustomElementRegistry()`) define
+[Window.CustomElements](cref:Meziantou.Framework.WebPlatform.Dom.Window.CustomElements) is the global registry of a window: custom elements need a browsing context, or a registry given
+to the parser with [HtmlParserOptions.CustomElementRegistry](cref:Meziantou.Framework.WebPlatform.HtmlParserOptions.CustomElementRegistry). Scoped registries (`new CustomElementRegistry()`) define
 elements for a part of the document only. The scripts of a page can define custom elements too, with
 `customElements.define()`, when the browsing context has a [script engine](../06-Scripting/01-Overview.md).

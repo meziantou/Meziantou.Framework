@@ -6239,9 +6239,20 @@ public sealed class VectorizedKernelTests
                 ToneSamples.ComputeLuma(expected, actualLuma);
                 Assert.Equal(expectedLuma, actualLuma);
 
+                // The samples written by the scalar tail are at the offset of their pixel, the others are left unchanged
                 Array.Clear(actualLuma);
-                ToneSamples.ReadLuma(format, pixels, new ushort[4 * width], actualLuma);
+                var lumaSamples = new ushort[4 * width];
+                Array.Fill(lumaSamples, (ushort)0xA5A5);
+                ToneSamples.ReadLuma(format, pixels, lumaSamples, actualLuma);
                 Assert.Equal(expectedLuma, actualLuma);
+                for (var x = 0; x < width; x++)
+                {
+                    var pixelSamples = lumaSamples.AsSpan(4 * x, 4);
+                    if (!pixelSamples.SequenceEqual(expected.AsSpan(4 * x, 4)))
+                    {
+                        Assert.Equal([0xA5A5, 0xA5A5, 0xA5A5, 0xA5A5], pixelSamples.ToArray());
+                    }
+                }
 
                 // Colors written back over the stored pixels, whose alpha is kept
                 var colors = new ushort[4 * width];

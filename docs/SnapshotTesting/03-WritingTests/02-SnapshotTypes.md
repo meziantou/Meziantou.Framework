@@ -3,8 +3,8 @@ title: Snapshot types
 description: Store a value as text, JSON, SVG, PNG or any other format, and understand how each format is compared.
 ---
 
-A `SnapshotType` gives the format of a snapshot: the extension of its file and, for some serializers, how the value is
-written. Without a type, a value is stored as text (`SnapshotType.Default`, a `.txt` file).
+A [SnapshotType](cref:Meziantou.Framework.SnapshotTesting.SnapshotType) gives the format of a snapshot: the extension of its file and, for some serializers, how the value is
+written. Without a type, a value is stored as text ([SnapshotType.Default](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.Default), a `.txt` file).
 
 ## Validate a file in its own format
 
@@ -22,11 +22,11 @@ Snapshot.Validate(svgText, SnapshotType.Svg);
 
 A type also converts from a string, which is the extension of the file: `Snapshot.Validate(spec, "yaml")` stores a
 `.yaml` file. `SnapshotType.Create("cs")` does the same, and `SnapshotType.Create(type, mimeType, displayName)` also
-sets the `MimeType` and `DisplayName` of the type. A leading dot is ignored, and `jpg` and `tif` are the same types as
+sets the [MimeType](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.MimeType) and [DisplayName](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.DisplayName) of the type. A leading dot is ignored, and `jpg` and `tif` are the same types as
 `jpeg` and `tiff`.
 
-The built-in types are `Default` (`txt`), `Svg`, `Png`, `Bmp`, `Jpeg`, `Tiff`, `Webp`, `Gif`, `Ico`, `Avif`, `Heic`,
-`JpegXl` (`jxl`), `Jpeg2000` (`jp2`), `Pdf`, and `None`, a snapshot without a format, stored as a `.bin` file.
+The built-in types are [Default](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.Default) (`txt`), [Svg](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.Svg), [Png](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.Png), [Bmp](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.Bmp), [Jpeg](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.Jpeg), [Tiff](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.Tiff), [Webp](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.Webp), [Gif](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.Gif), [Ico](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.Ico), [Avif](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.Avif), [Heic](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.Heic),
+[JpegXl](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.JpegXl) (`jxl`), [Jpeg2000](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.Jpeg2000) (`jp2`), [Pdf](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.Pdf), and [None](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.None), a snapshot without a format, stored as a `.bin` file.
 
 ## How each format is compared
 

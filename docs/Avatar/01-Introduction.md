@@ -32,14 +32,14 @@ background. Use them for the users, teams or projects that have no picture.
 
 ## Namespace
 
-The types are in the [Meziantou.Framework](cref:Meziantou.Framework) namespace:
+The types are in the [Meziantou.Framework](cref:Meziantou.Framework.Avatar!N:Meziantou.Framework) namespace:
 
 | Type | Contains |
 | --- | --- |
-| `AvatarGenerator` | The `CreateSvg` methods |
-| `AvatarOptions` | The shape, the size, the palette, the initials and the accessibility options |
-| `AvatarShape` | `Round`, `Square` and `RoundedSquare` |
-| `AvatarColorPair` | A background color and a foreground color |
+| [AvatarGenerator](cref:Meziantou.Framework.AvatarGenerator) | The [CreateSvg](cref:Meziantou.Framework.AvatarGenerator.CreateSvg) methods |
+| [AvatarOptions](cref:Meziantou.Framework.AvatarOptions) | The shape, the size, the palette, the initials and the accessibility options |
+| [AvatarShape](cref:Meziantou.Framework.AvatarShape) | [Round](cref:Meziantou.Framework.AvatarShape.Round), [Square](cref:Meziantou.Framework.AvatarShape.Square) and [RoundedSquare](cref:Meziantou.Framework.AvatarShape.RoundedSquare) |
+| [AvatarColorPair](cref:Meziantou.Framework.AvatarColorPair) | A background color and a foreground color |
 
 ## Next steps
 

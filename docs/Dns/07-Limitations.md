@@ -10,12 +10,12 @@ description: What the DNS packages do not do, so you can plan around it.
 - **No cache.** Every call sends a query. Cache the answers yourself, for their TTL.
 - **No retry after a timeout.** Only a truncated UDP answer is sent again, over TCP. See
   [Errors and timeouts](03-DnsClient/05-ErrorsAndTimeouts.md).
-- **No zone transfers or dynamic updates.** `DnsQueryType.AXFR` and `IXFR`, and the `Notify` and `Update` opcodes, can
-  be sent with `SendAsync`, but the client reads one response message: it does not support multi-message transfers.
+- **No zone transfers or dynamic updates.** [DnsQueryType.AXFR](cref:Meziantou.Framework.DnsClient.Query.DnsQueryType.AXFR) and [IXFR](cref:Meziantou.Framework.DnsClient.Query.DnsQueryType.IXFR), and the [Notify](cref:Meziantou.Framework.DnsClient.Query.DnsOpCode.Notify) and [Update](cref:Meziantou.Framework.DnsClient.Query.DnsOpCode.Update) opcodes, can
+  be sent with [SendAsync](cref:Meziantou.Framework.DnsClient.DnsClient.SendAsync), but the client reads one response message: it does not support multi-message transfers.
 - **No TSIG or SIG(0)** authentication of messages, and no DNS cookies.
 - **DNSSEC validation** supports the algorithms 8, 10, 13 and 14 only. See [DNSSEC](03-DnsClient/04-Dnssec.md).
 - **No custom certificate validation** for DNS over TLS and DNS over QUIC: the certificate must be trusted by the
-  machine. For DNS over HTTPS, set `HttpHandler`.
+  machine. For DNS over HTTPS, set [HttpHandler](cref:Meziantou.Framework.DnsClient.DnsClientOptions.HttpHandler).
 
 ## DnsServer
 

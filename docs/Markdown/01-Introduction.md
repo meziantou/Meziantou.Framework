@@ -27,25 +27,25 @@ such as tables, alerts, footnotes and task lists.
 
 A conversion has two steps:
 
-1. A **parser** reads the Markdown text and builds a `MarkdownDocument`: a tree of blocks (headings, paragraphs, lists,
+1. A **parser** reads the Markdown text and builds a [MarkdownDocument](cref:Meziantou.Framework.Markdown.Syntax.MarkdownDocument): a tree of blocks (headings, paragraphs, lists,
    tables...) whose leaves contain inlines (text, emphasis, links, code...).
 2. A **renderer** walks the tree and writes the output: HTML, plain text, normalized Markdown or the original Markdown.
 
-A `MarkdownPipeline` holds the parsers and the renderer settings, and the extensions it enables. You build it once with
-a `MarkdownPipelineBuilder`, and pass it to every call. Parse and render a document with the same pipeline: an extension
+A [MarkdownPipeline](cref:Meziantou.Framework.Markdown.MarkdownPipeline) holds the parsers and the renderer settings, and the extensions it enables. You build it once with
+a [MarkdownPipelineBuilder](cref:Meziantou.Framework.Markdown.MarkdownPipelineBuilder), and pass it to every call. Parse and render a document with the same pipeline: an extension
 adds both the parser of its syntax and the renderer of its elements.
 
 ## Namespaces
 
 | Namespace | Contains |
 | --- | --- |
-| [Meziantou.Framework.Markdown](cref:Meziantou.Framework.Markdown) | `MarkdownConverter`, the pipeline and its builder, the extension methods (`UsePipeTables`, …) |
-| [Meziantou.Framework.Markdown.Syntax](cref:Meziantou.Framework.Markdown.Syntax) | The document and the blocks (`HeadingBlock`, `ParagraphBlock`, `ListBlock`, …), positions |
-| [Meziantou.Framework.Markdown.Syntax.Inlines](cref:Meziantou.Framework.Markdown.Syntax.Inlines) | The inlines (`LiteralInline`, `EmphasisInline`, `LinkInline`, …) |
-| [Meziantou.Framework.Markdown.Renderers](cref:Meziantou.Framework.Markdown.Renderers) | `HtmlRenderer` and the base classes of the renderers |
-| [Meziantou.Framework.Markdown.Renderers.Html](cref:Meziantou.Framework.Markdown.Renderers.Html) | The HTML renderer of each element, and `HtmlAttributes` |
-| [Meziantou.Framework.Markdown.Renderers.Normalize](cref:Meziantou.Framework.Markdown.Renderers.Normalize) | `NormalizeRenderer` and `NormalizeOptions` |
-| [Meziantou.Framework.Markdown.Renderers.Roundtrip](cref:Meziantou.Framework.Markdown.Renderers.Roundtrip) | `RoundtripRenderer` |
+| [Meziantou.Framework.Markdown](cref:Meziantou.Framework.Markdown) | [MarkdownConverter](cref:Meziantou.Framework.Markdown.MarkdownConverter), the pipeline and its builder, the extension methods ([UsePipeTables](cref:Meziantou.Framework.Markdown.MarkdownExtensions.UsePipeTables), …) |
+| [Meziantou.Framework.Markdown.Syntax](cref:Meziantou.Framework.Markdown.Syntax) | The document and the blocks ([HeadingBlock](cref:Meziantou.Framework.Markdown.Syntax.HeadingBlock), [ParagraphBlock](cref:Meziantou.Framework.Markdown.Syntax.ParagraphBlock), [ListBlock](cref:Meziantou.Framework.Markdown.Syntax.ListBlock), …), positions |
+| [Meziantou.Framework.Markdown.Syntax.Inlines](cref:Meziantou.Framework.Markdown.Syntax.Inlines) | The inlines ([LiteralInline](cref:Meziantou.Framework.Markdown.Syntax.Inlines.LiteralInline), [EmphasisInline](cref:Meziantou.Framework.Markdown.Syntax.Inlines.EmphasisInline), [LinkInline](cref:Meziantou.Framework.Markdown.Syntax.Inlines.LinkInline), …) |
+| [Meziantou.Framework.Markdown.Renderers](cref:Meziantou.Framework.Markdown.Renderers) | [HtmlRenderer](cref:Meziantou.Framework.Markdown.Renderers.HtmlRenderer) and the base classes of the renderers |
+| [Meziantou.Framework.Markdown.Renderers.Html](cref:Meziantou.Framework.Markdown.Renderers.Html) | The HTML renderer of each element, and [HtmlAttributes](cref:Meziantou.Framework.Markdown.Renderers.Html.HtmlAttributes) |
+| [Meziantou.Framework.Markdown.Renderers.Normalize](cref:Meziantou.Framework.Markdown.Renderers.Normalize) | [NormalizeRenderer](cref:Meziantou.Framework.Markdown.Renderers.Normalize.NormalizeRenderer) and [NormalizeOptions](cref:Meziantou.Framework.Markdown.Renderers.Normalize.NormalizeOptions) |
+| [Meziantou.Framework.Markdown.Renderers.Roundtrip](cref:Meziantou.Framework.Markdown.Renderers.Roundtrip) | [RoundtripRenderer](cref:Meziantou.Framework.Markdown.Renderers.Roundtrip.RoundtripRenderer) |
 | [Meziantou.Framework.Markdown.Parsers](cref:Meziantou.Framework.Markdown.Parsers) | The block and inline parsers, to write your own |
 | `Meziantou.Framework.Markdown.Extensions.*` | One namespace per extension, with its options and its syntax elements (`Tables`, `Yaml`, …) |
 

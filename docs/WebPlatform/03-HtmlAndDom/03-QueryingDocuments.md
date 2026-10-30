@@ -37,17 +37,17 @@ Assert.Equal("blue", color);
 ```
 <!-- endref -->
 
-- `QuerySelector<T>` returns the first element that matches **and** is a `T`: it skips the matching elements of another
+- [QuerySelector\<T\>](cref:Meziantou.Framework.WebPlatform.Dom.Element.QuerySelector) returns the first element that matches **and** is a `T`: it skips the matching elements of another
   type.
 - `Matches(selector)` tests an element, and `Closest(selector)` returns the nearest ancestor (or the element) that
   matches.
-- An invalid selector throws a `DomException` whose `Name` is `SyntaxError`.
-- `GetElementById`, `GetElementsByTagName`, `GetElementsByClassName` and `GetElementsByName` are available too. The
+- An invalid selector throws a [DomException](cref:Meziantou.Framework.WebPlatform.Dom.DomException) whose [Name](cref:Meziantou.Framework.WebPlatform.Dom.DomException.Name) is `SyntaxError`.
+- [GetElementById](cref:Meziantou.Framework.WebPlatform.Dom.Document.GetElementById), [GetElementsByTagName](cref:Meziantou.Framework.WebPlatform.Dom.Document.GetElementsByTagName), [GetElementsByClassName](cref:Meziantou.Framework.WebPlatform.Dom.Document.GetElementsByClassName) and [GetElementsByName](cref:Meziantou.Framework.WebPlatform.Dom.Document.GetElementsByName) are available too. The
   collections they return are live: they follow the changes of the document.
 
 ## LINQ and tree walks
 
-The DOM collections (`NodeList`, `HtmlCollection`, `NamedNodeMap`, `DomTokenList`) are read-only lists, so LINQ works on
+The DOM collections ([NodeList](cref:Meziantou.Framework.WebPlatform.Dom.NodeList), [HtmlCollection](cref:Meziantou.Framework.WebPlatform.Dom.HtmlCollection), [NamedNodeMap](cref:Meziantou.Framework.WebPlatform.Dom.NamedNodeMap), [DomTokenList](cref:Meziantou.Framework.WebPlatform.Dom.DomTokenList)) are read-only lists, so LINQ works on
 them directly. The tree walks return lazy sequences, as in LINQ to XML:
 
 <!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/Dom/LinqHelperTests.cs;region=WebPlatform_TreeWalks;format=md-fenced-code-block;dedent=true -->
@@ -77,21 +77,21 @@ Assert.Equal(["B"], document.Body.Descendants<Element>().Where(element => elemen
 
 | Method | Nodes |
 | --- | --- |
-| `Descendants()`, `Descendants<T>()` | The descendants, in tree order |
-| `DescendantsAndSelf()`, `DescendantsAndSelf<T>()` | The node, then its descendants |
-| `Ancestors()`, `Ancestors<T>()` | The ancestors, from the parent to the root |
-| `AncestorsAndSelf()`, `AncestorsAndSelf<T>()` | The node, then its ancestors |
+| [Descendants()](cref:Meziantou.Framework.WebPlatform.Dom.Node.Descendants), [Descendants\<T\>()](cref:Meziantou.Framework.WebPlatform.Dom.Node.Descendants) | The descendants, in tree order |
+| [DescendantsAndSelf()](cref:Meziantou.Framework.WebPlatform.Dom.Node.DescendantsAndSelf), [DescendantsAndSelf\<T\>()](cref:Meziantou.Framework.WebPlatform.Dom.Node.DescendantsAndSelf) | The node, then its descendants |
+| [Ancestors()](cref:Meziantou.Framework.WebPlatform.Dom.Node.Ancestors), [Ancestors\<T\>()](cref:Meziantou.Framework.WebPlatform.Dom.Node.Ancestors) | The ancestors, from the parent to the root |
+| [AncestorsAndSelf()](cref:Meziantou.Framework.WebPlatform.Dom.Node.AncestorsAndSelf), [AncestorsAndSelf\<T\>()](cref:Meziantou.Framework.WebPlatform.Dom.Node.AncestorsAndSelf) | The node, then its ancestors |
 
 - The walks follow the live tree: a change made during the enumeration is visible to it. The ancestors stop at the root
   of the tree, and do not go from a shadow root to its host.
-- `QuerySelector` and `QuerySelectorAll` also work on any `IEnumerable<Node>`: they search the descendants of each node,
+- [QuerySelector](cref:Meziantou.Framework.WebPlatform.Dom.NodeEnumerableExtensions.QuerySelector) and [QuerySelectorAll](cref:Meziantou.Framework.WebPlatform.Dom.NodeEnumerableExtensions.QuerySelectorAll) also work on any `IEnumerable<Node>`: they search the descendants of each node,
   return the results in the order of the sequence, and return an element found from several nodes once.
-- Parse a selector once with `SelectorList.Parse` when you match it against many elements: see
+- Parse a selector once with [SelectorList.Parse](cref:Meziantou.Framework.WebPlatform.Css.Selectors.SelectorList.Parse) when you match it against many elements: see
   [Style sheets](../04-Css/03-StyleSheets.md#inspect-the-selectors).
 
 ## XPath
 
-`Document.Evaluate` evaluates an XPath 1.0 expression, as `document.evaluate()` does in a browser:
+[Document.Evaluate](cref:Meziantou.Framework.WebPlatform.Dom.Document.Evaluate) evaluates an XPath 1.0 expression, as `document.evaluate()` does in a browser:
 
 <!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/XPath/XPathTests.cs;region=WebPlatform_XPath;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -119,13 +119,13 @@ Assert.Equal(87, total);
 ```
 <!-- endref -->
 
-The `type` argument is one of the constants of `XPathResult`: `FirstOrderedNodeType` (read `SingleNodeValue`),
-`OrderedNodeSnapshotType` (read `SnapshotLength` and `SnapshotItem`), `NumberType`, `StringType`, `BooleanType`, or the
-iterator types. In an XML document, pass an `IXPathNSResolver` to resolve the namespace prefixes of the expression.
+The `type` argument is one of the constants of [XPathResult](cref:Meziantou.Framework.WebPlatform.Dom.XPathResult): [FirstOrderedNodeType](cref:Meziantou.Framework.WebPlatform.Dom.XPathResult.FirstOrderedNodeType) (read [SingleNodeValue](cref:Meziantou.Framework.WebPlatform.Dom.XPathResult.SingleNodeValue)),
+[OrderedNodeSnapshotType](cref:Meziantou.Framework.WebPlatform.Dom.XPathResult.OrderedNodeSnapshotType) (read [SnapshotLength](cref:Meziantou.Framework.WebPlatform.Dom.XPathResult.SnapshotLength) and [SnapshotItem](cref:Meziantou.Framework.WebPlatform.Dom.XPathResult.SnapshotItem)), [NumberType](cref:Meziantou.Framework.WebPlatform.Dom.XPathResult.NumberType), [StringType](cref:Meziantou.Framework.WebPlatform.Dom.XPathResult.StringType), [BooleanType](cref:Meziantou.Framework.WebPlatform.Dom.XPathResult.BooleanType), or the
+iterator types. In an XML document, pass an [IXPathNSResolver](cref:Meziantou.Framework.WebPlatform.Dom.IXPathNSResolver) to resolve the namespace prefixes of the expression.
 
 ## Text and attributes
 
-- `TextContent` is the text of the node and its descendants, as written in the markup. `InnerText` is the text as
+- [TextContent](cref:Meziantou.Framework.WebPlatform.Dom.Node.TextContent) is the text of the node and its descendants, as written in the markup. [InnerText](cref:Meziantou.Framework.WebPlatform.Dom.HtmlElement.InnerText) is the text as
   rendered, with the line breaks of the layout; it needs a browsing context to apply the styles.
-- `GetAttribute`, `HasAttribute` and `Attributes` read the attributes. The typed properties (`HtmlAnchorElement.Href`,
-  `HtmlImageElement.Src`) return the URL resolved against the URL of the document.
+- [GetAttribute](cref:Meziantou.Framework.WebPlatform.Dom.Element.GetAttribute), [HasAttribute](cref:Meziantou.Framework.WebPlatform.Dom.Element.HasAttribute) and [Attributes](cref:Meziantou.Framework.WebPlatform.Dom.Element.Attributes) read the attributes. The typed properties ([HtmlAnchorElement.Href](cref:Meziantou.Framework.WebPlatform.Dom.HtmlAnchorElement.Href),
+  [HtmlImageElement.Src](cref:Meziantou.Framework.WebPlatform.Dom.HtmlImageElement.Src)) return the URL resolved against the URL of the document.

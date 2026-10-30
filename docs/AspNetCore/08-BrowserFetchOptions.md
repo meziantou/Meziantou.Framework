@@ -5,14 +5,14 @@ description: Set the browser cache, credentials and request mode of every HttpCl
 
 In Blazor WebAssembly, `HttpClient` sends requests with the `fetch` API of the browser, and each request can carry
 fetch options: whether the browser cache is used, whether cookies are sent, and the CORS mode.
-`DefaultBrowserOptionsMessageHandler`, from `Meziantou.AspNetCore.Components.WebAssembly`, sets these options on every
+[DefaultBrowserOptionsMessageHandler](cref:Meziantou.AspNetCore.Components.WebAssembly.DefaultBrowserOptionsMessageHandler), from `Meziantou.AspNetCore.Components.WebAssembly`, sets these options on every
 request of a client.
 
 ```bash
 dotnet add package Meziantou.AspNetCore.Components.WebAssembly
 ```
 
-Add the handler to the client in `Program.cs`. `DefaultBrowserOptionsMessageHandler` is in the
+Add the handler to the client in `Program.cs`. [DefaultBrowserOptionsMessageHandler](cref:Meziantou.AspNetCore.Components.WebAssembly.DefaultBrowserOptionsMessageHandler) is in the
 [Meziantou.AspNetCore.Components.WebAssembly](cref:Meziantou.AspNetCore.Components.WebAssembly) namespace, and `BrowserRequestCache` in
 `Microsoft.AspNetCore.Components.WebAssembly.Http`:
 
@@ -41,15 +41,15 @@ To create an `HttpClient` without `IHttpClientFactory`, pass the inner handler t
 
 | Property | Fetch option | Fetch default when not set |
 | --- | --- | --- |
-| `DefaultBrowserRequestCache` | `cache` | `default` |
-| `DefaultBrowserRequestCredentials` | `credentials` | `same-origin` |
-| `DefaultBrowserRequestMode` | `mode` | `cors` |
+| [DefaultBrowserRequestCache](cref:Meziantou.AspNetCore.Components.WebAssembly.DefaultBrowserOptionsMessageHandler.DefaultBrowserRequestCache) | `cache` | `default` |
+| [DefaultBrowserRequestCredentials](cref:Meziantou.AspNetCore.Components.WebAssembly.DefaultBrowserOptionsMessageHandler.DefaultBrowserRequestCredentials) | `credentials` | `same-origin` |
+| [DefaultBrowserRequestMode](cref:Meziantou.AspNetCore.Components.WebAssembly.DefaultBrowserOptionsMessageHandler.DefaultBrowserRequestMode) | `mode` | `cors` |
 
 Only the properties you set are sent to the browser. A property left unset adds nothing to the request, so the
 default of the fetch API applies. In the example above, only the `cache` option is set: cookies and the CORS mode are
 not changed.
 
-Set `DefaultBrowserRequestCredentials` to `BrowserRequestCredentials.Include` to send cookies with cross-origin
+Set [DefaultBrowserRequestCredentials](cref:Meziantou.AspNetCore.Components.WebAssembly.DefaultBrowserOptionsMessageHandler.DefaultBrowserRequestCredentials) to `BrowserRequestCredentials.Include` to send cookies with cross-origin
 requests. It applies to every request of the client, to any origin: only use it on a client dedicated to a single
 trusted API.
 
@@ -71,5 +71,5 @@ Use the handler for the default of the client, and `SetBrowserRequestCache`, `Se
 
 Before version 2.1.0, the handler sent every option, using the default enum value for the ones you did not set:
 `credentials: "omit"` and `mode: "same-origin"` were applied even when only the cache was configured, which broke
-cookie authentication and cross-origin requests. If you relied on that behavior, set `DefaultBrowserRequestCredentials`
-and `DefaultBrowserRequestMode` explicitly.
+cookie authentication and cross-origin requests. If you relied on that behavior, set [DefaultBrowserRequestCredentials](cref:Meziantou.AspNetCore.Components.WebAssembly.DefaultBrowserOptionsMessageHandler.DefaultBrowserRequestCredentials)
+and [DefaultBrowserRequestMode](cref:Meziantou.AspNetCore.Components.WebAssembly.DefaultBrowserOptionsMessageHandler.DefaultBrowserRequestMode) explicitly.

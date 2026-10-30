@@ -40,11 +40,11 @@ Assert.Equal("""
 ```
 <!-- endref -->
 
-- `WriteToConsole` writes to `Console.Out`, `WriteTo` to any `TextWriter`, and `ToConsoleString` returns the text.
+- [WriteToConsole](cref:Meziantou.Framework.Barcodes.QRCodeConsoleRenderer.WriteToConsole) writes to `Console.Out`, [WriteTo](cref:Meziantou.Framework.Barcodes.QRCodeConsoleRenderer.WriteTo) to any `TextWriter`, and [ToConsoleString](cref:Meziantou.Framework.Barcodes.QRCodeConsoleRenderer.ToConsoleString) returns the text.
 - The blocks are drawn in the color of the text, for the dark modules. On a terminal with a dark background, set
-  `InvertColors`: the blocks then draw the light modules and the quiet zone, so that the code is dark on light.
-- `QuietZoneModules` is 2 by default. With the default sizes, a module is one character wide and half a line high,
-  which is about square in most terminals. `ModuleWidth` repeats each module in characters and `ModuleHeight` in half
+  [InvertColors](cref:Meziantou.Framework.Barcodes.QRCodeConsoleOptions.InvertColors): the blocks then draw the light modules and the quiet zone, so that the code is dark on light.
+- [QuietZoneModules](cref:Meziantou.Framework.Barcodes.QRCodeConsoleOptions.QuietZoneModules) is 2 by default. With the default sizes, a module is one character wide and half a line high,
+  which is about square in most terminals. [ModuleWidth](cref:Meziantou.Framework.Barcodes.QRCodeConsoleOptions.ModuleWidth) repeats each module in characters and [ModuleHeight](cref:Meziantou.Framework.Barcodes.QRCodeConsoleOptions.ModuleHeight) in half
   lines: increase both together to get a larger code that stays square.
 - The terminal must use a font that has the block characters, and display the output in UTF-8.
 

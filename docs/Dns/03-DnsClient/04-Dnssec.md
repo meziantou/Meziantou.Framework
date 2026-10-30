@@ -10,13 +10,13 @@ on the way. The client offers three levels:
 | --- | --- | --- |
 | Nothing | (default) | The answer, without signatures. |
 | Signatures | `DnssecOk = true` | The answer with its RRSIG records, and the AD flag of the resolver. You check the signatures yourself, or trust the resolver. |
-| Local validation | `DnssecValidationMode = DnssecValidationMode.Local` | The client checks the chain of trust from the root anchors, and reports the result in `DnssecValidationResult`. |
+| Local validation | `DnssecValidationMode = DnssecValidationMode.Local` | The client checks the chain of trust from the root anchors, and reports the result in [DnssecValidationResult](cref:Meziantou.Framework.DnsClient.Response.DnssecValidationResult). |
 
 The examples use `dns.example.net` for the resolver you use; it must return DNSSEC records (most public resolvers do).
 
 ## Request the signatures
 
-`DnssecOk` sets the DNSSEC OK (DO) flag of the EDNS record, so the resolver adds the RRSIG records to the answer.
+[DnssecOk](cref:Meziantou.Framework.DnsClient.DnsClientOptions.DnssecOk) sets the DNSSEC OK (DO) flag of the EDNS record, so the resolver adds the RRSIG records to the answer.
 `Header.AuthenticatedData` is the AD flag: the resolver says that it validated the answer:
 
 <!-- ref:../../../samples/Meziantou.Framework.DnsClient.Samples/ReadmeExamples.cs;region=DnsClient_DnssecRecords;format=md-fenced-code-block;dedent=true -->
@@ -42,12 +42,12 @@ foreach (var signature in response.Answers.OfType<DnsRrsigRecord>())
 The AD flag is only as trustworthy as the resolver and the path to it: anyone who can modify the response can set it.
 Rely on it only over an encrypted transport to a resolver you trust, or validate locally.
 
-To read the keys and the delegation records themselves, query them: `DnsQueryType.DNSKEY` returns `DnsDnskeyRecord`,
-`DnsQueryType.DS` returns `DnsDsRecord`, and NSEC and NSEC3 records come with negative answers.
+To read the keys and the delegation records themselves, query them: [DnsQueryType.DNSKEY](cref:Meziantou.Framework.DnsClient.Query.DnsQueryType.DNSKEY) returns [DnsDnskeyRecord](cref:Meziantou.Framework.DnsClient.Response.Records.DnsDnskeyRecord),
+[DnsQueryType.DS](cref:Meziantou.Framework.DnsClient.Query.DnsQueryType.DS) returns [DnsDsRecord](cref:Meziantou.Framework.DnsClient.Response.Records.DnsDsRecord), and NSEC and NSEC3 records come with negative answers.
 
 ## Validate locally
 
-With `DnssecValidationMode.Local`, the client validates every response: it checks the signatures of the answer, then
+With [DnssecValidationMode.Local](cref:Meziantou.Framework.DnsClient.DnssecValidationMode.Local), the client validates every response: it checks the signatures of the answer, then
 queries the DNSKEY and DS records of each zone up to the root, and compares the root keys with the trust anchors:
 
 <!-- ref:../../../samples/Meziantou.Framework.DnsClient.Samples/ReadmeExamples.cs;region=DnsClient_LocalDnssecValidation;format=md-fenced-code-block;dedent=true -->
@@ -81,18 +81,18 @@ switch (validation.Status)
 ```
 <!-- endref -->
 
-| `DnssecValidationStatus` | Meaning |
+| [DnssecValidationStatus](cref:Meziantou.Framework.DnsClient.Response.DnssecValidationStatus) | Meaning |
 | --- | --- |
-| `Secure` | The answer is signed by a chain of trust that starts at the trust anchors, and it answers the question that was asked. |
-| `Insecure` | The zone is provably unsigned: a signed parent proves that it has no DS record. |
-| `Bogus` | Validation failed: a signature is wrong or expired, a record is missing, or a denial of existence does not hold. |
-| `Indeterminate` | Validation could not be completed, for instance because a query of the chain failed or an algorithm is not supported. |
-| `NotValidated` | Local validation is off. |
+| [Secure](cref:Meziantou.Framework.DnsClient.Response.DnssecValidationStatus.Secure) | The answer is signed by a chain of trust that starts at the trust anchors, and it answers the question that was asked. |
+| [Insecure](cref:Meziantou.Framework.DnsClient.Response.DnssecValidationStatus.Insecure) | The zone is provably unsigned: a signed parent proves that it has no DS record. |
+| [Bogus](cref:Meziantou.Framework.DnsClient.Response.DnssecValidationStatus.Bogus) | Validation failed: a signature is wrong or expired, a record is missing, or a denial of existence does not hold. |
+| [Indeterminate](cref:Meziantou.Framework.DnsClient.Response.DnssecValidationStatus.Indeterminate) | Validation could not be completed, for instance because a query of the chain failed or an algorithm is not supported. |
+| [NotValidated](cref:Meziantou.Framework.DnsClient.Response.DnssecValidationStatus.NotValidated) | Local validation is off. |
 
-- The client does not reject a `Bogus` response: it returns it with the status. Decide what to do with it, usually
+- The client does not reject a [Bogus](cref:Meziantou.Framework.DnsClient.Response.DnssecValidationStatus.Bogus) response: it returns it with the status. Decide what to do with it, usually
   treat it as a failure.
-- `Issues` explains the status: each `DnssecValidationIssue` has a `Code` (`SignatureExpired`, `MissingDs`,
-  `DigestMismatch`, ...), a `Message`, and the `Name` and `RecordType` concerned.
+- [Issues](cref:Meziantou.Framework.DnsClient.Response.DnssecValidationResult.Issues) explains the status: each [DnssecValidationIssue](cref:Meziantou.Framework.DnsClient.Response.DnssecValidationIssue) has a [Code](cref:Meziantou.Framework.DnsClient.Response.DnssecValidationIssue.Code) ([SignatureExpired](cref:Meziantou.Framework.DnsClient.Response.DnssecValidationIssueCode.SignatureExpired), [MissingDs](cref:Meziantou.Framework.DnsClient.Response.DnssecValidationIssueCode.MissingDs),
+  [DigestMismatch](cref:Meziantou.Framework.DnsClient.Response.DnssecValidationIssueCode.DigestMismatch), ...), a [Message](cref:Meziantou.Framework.DnsClient.Response.DnssecValidationIssue.Message), and the [Name](cref:Meziantou.Framework.DnsClient.Response.DnssecValidationIssue.Name) and [RecordType](cref:Meziantou.Framework.DnsClient.Response.DnssecValidationIssue.RecordType) concerned.
 - Negative answers (NXDOMAIN and NODATA) are validated too, with their NSEC or NSEC3 proofs.
 
 ### How it works
@@ -100,19 +100,19 @@ switch (validation.Status)
 - Local validation sets the DO flag, so the resolver returns the signatures, and the CD (checking disabled) flag, so it
   returns the records even when its own validation fails: the client wants to judge for itself.
 - The chain queries go to the same server, over the same transport, as the query. A validation sends at most 48 of
-  them; past that, the status is `Indeterminate` with the issue `QueryBudgetExceeded`.
-- `Timeout` covers the query and its whole validation, chain queries included: raise it when you validate locally. A
+  them; past that, the status is [Indeterminate](cref:Meziantou.Framework.DnsClient.Response.DnssecValidationStatus.Indeterminate) with the issue [QueryBudgetExceeded](cref:Meziantou.Framework.DnsClient.Response.DnssecValidationIssueCode.QueryBudgetExceeded).
+- [Timeout](cref:Meziantou.Framework.DnsClient.DnsClientOptions.Timeout) covers the query and its whole validation, chain queries included: raise it when you validate locally. A
   validation that runs out of time throws `TimeoutException`.
 - It requires EDNS: creating a client with `EnableEdns = false` and local validation throws `ArgumentException`.
 - The supported signature algorithms are RSA/SHA-256 (8), RSA/SHA-512 (10), ECDSA P-256/SHA-256 (13) and ECDSA
   P-384/SHA-384 (14); the supported DS digests are SHA-1 (1), SHA-256 (2) and SHA-384 (4). A zone signed only with
-  another algorithm validates as `Indeterminate`.
-- Signature validity periods are checked against `TimeProvider`, the system clock by default. A wrong clock makes valid
+  another algorithm validates as [Indeterminate](cref:Meziantou.Framework.DnsClient.Response.DnssecValidationStatus.Indeterminate).
+- Signature validity periods are checked against [TimeProvider](cref:Meziantou.Framework.DnsClient.DnsClientOptions.TimeProvider), the system clock by default. A wrong clock makes valid
   signatures look expired or not yet valid.
 
 ### Trust anchors
 
-`DnssecTrustAnchors` defaults to `DnssecTrustAnchors.Root`, the IANA root key digests that ship with the library.
+[DnssecTrustAnchors](cref:Meziantou.Framework.DnsClient.DnssecTrustAnchors) defaults to [DnssecTrustAnchors.Root](cref:Meziantou.Framework.DnsClient.DnssecTrustAnchors.Root), the IANA root key digests that ship with the library.
 Replace the list to validate against your own anchors, for instance in a test environment with its own signed root;
-each `DnssecTrustAnchor` is a DS record: a name, a key tag, an algorithm, a digest type and a digest. The root anchors
+each [DnssecTrustAnchor](cref:Meziantou.Framework.DnsClient.DnssecTrustAnchor) is a DS record: a name, a key tag, an algorithm, a digest type and a digest. The root anchors
 change only when the root key is rolled over; update the package to get a new one.

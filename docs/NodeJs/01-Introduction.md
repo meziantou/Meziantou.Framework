@@ -25,14 +25,14 @@ code, without writing a web service around it.
 
 ## How it works
 
-`NodeJsHost` starts the `node` executable and communicates with it using JSON messages over a private local socket (a
+[NodeJsHost](cref:Meziantou.Framework.NodeJs.NodeJsHost) starts the `node` executable and communicates with it using JSON messages over a private local socket (a
 named pipe on Windows, a Unix domain socket elsewhere). This has a few consequences:
 
 - **Node.js must be installed.** The package does not include it: it uses Node.js 16.9 or later, found in the `PATH` or
   at the path you set. Returning `BigInt` values requires Node.js 21 or later. See
   [Configuring the Node.js process](07-ConfiguringTheProcess.md).
 - **The code runs in another process.** A JavaScript error, or the exit of the Node.js process, fails the calls with a
-  `NodeJsException`, not your application. See [Handling errors](08-HandlingErrors.md).
+  [NodeJsException](cref:Meziantou.Framework.NodeJs.NodeJsException), not your application. See [Handling errors](08-HandlingErrors.md).
 - **Data crosses the boundary as JSON.** Arguments and results are serialized, and JavaScript code cannot call back into
   .NET.
 - **The process belongs to the host.** It exits when the host is disposed, and everything it keeps (global variables,
@@ -48,12 +48,12 @@ objects serialized using reflection.
 
 | Type | Use |
 | --- | --- |
-| `NodeJsHost` | Starts a Node.js process and runs code in it |
-| `NodeJsHostOptions` | The path of `node`, the working directory, timeouts, worker threads… |
-| `NodeJsHostPool` | Runs calls on several Node.js processes |
-| `JSValue` | An argument that JSON cannot represent, such as `undefined` or a `BigInt` |
-| `JSReference` | A value kept in the Node.js process |
-| `NodeJsException` | A JavaScript error, or a failure of the Node.js process |
+| [NodeJsHost](cref:Meziantou.Framework.NodeJs.NodeJsHost) | Starts a Node.js process and runs code in it |
+| [NodeJsHostOptions](cref:Meziantou.Framework.NodeJs.NodeJsHostOptions) | The path of `node`, the working directory, timeouts, worker threads… |
+| [NodeJsHostPool](cref:Meziantou.Framework.NodeJs.NodeJsHostPool) | Runs calls on several Node.js processes |
+| [JSValue](cref:Meziantou.Framework.NodeJs.JSValue) | An argument that JSON cannot represent, such as `undefined` or a `BigInt` |
+| [JSReference](cref:Meziantou.Framework.NodeJs.JSReference) | A value kept in the Node.js process |
+| [NodeJsException](cref:Meziantou.Framework.NodeJs.NodeJsException) | A JavaScript error, or a failure of the Node.js process |
 
 ## Next steps
 

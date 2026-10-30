@@ -19,7 +19,7 @@ var text = document.Pages[0].ExtractText();
 | `PdfDocument.Open(stream)`, `OpenAsync(stream)` | A stream, read to its end; it is not closed |
 | `PdfDocument.Open(byte[])`, `Open(ReadOnlyMemory<byte>)` | Bytes in memory, which the document keeps: they must not change while the document is used |
 
-Every method takes `PdfReadOptions`. A document supports one operation at a time: do not use it from several threads at
+Every method takes [PdfReadOptions](cref:Meziantou.Framework.Pdf.PdfReadOptions). A document supports one operation at a time: do not use it from several threads at
 once.
 
 ## Encrypted documents
@@ -48,8 +48,8 @@ var canCopy = read.Permissions.HasFlag(PdfPermissions.CopyContent);
 
 - Without a password, the empty password is tried: many encrypted documents have an empty user password, and open
   without one.
-- A wrong password throws `PdfPasswordException`.
-- `IsEncrypted` tells whether the file was encrypted, and `Permissions` what the password allows. The library does not
+- A wrong password throws [PdfPasswordException](cref:Meziantou.Framework.Pdf.PdfPasswordException).
+- [IsEncrypted](cref:Meziantou.Framework.Pdf.PdfDocument.IsEncrypted) tells whether the file was encrypted, and [Permissions](cref:Meziantou.Framework.Pdf.PdfDocument.Permissions) what the password allows. The library does not
   enforce the permissions: an application that shows or prints documents for users decides what it lets them do.
 
 See [Encryption](../07-Security/02-Encryption.md) to remove or change the passwords.
@@ -58,22 +58,22 @@ See [Encryption](../07-Security/02-Encryption.md) to remove or change the passwo
 
 | Option | Default | Limits |
 | --- | --- | --- |
-| `Password` | The empty password | The user or the owner password of an encrypted document |
-| `MaxDecodedStreamLength` | 256 MiB | The length of the decoded data of one stream, checked as it is decoded |
-| `MaxNestingDepth` | 256 | The depth of nested arrays and dictionaries |
+| [Password](cref:Meziantou.Framework.Pdf.PdfReadOptions.Password) | The empty password | The user or the owner password of an encrypted document |
+| [MaxDecodedStreamLength](cref:Meziantou.Framework.Pdf.PdfReadOptions.MaxDecodedStreamLength) | 256 MiB | The length of the decoded data of one stream, checked as it is decoded |
+| [MaxNestingDepth](cref:Meziantou.Framework.Pdf.PdfReadOptions.MaxNestingDepth) | 256 | The depth of nested arrays and dictionaries |
 
-A file beyond a limit throws `PdfResourceLimitException`. Lower the limits for the files of untrusted users: see
+A file beyond a limit throws [PdfResourceLimitException](cref:Meziantou.Framework.Pdf.PdfResourceLimitException). Lower the limits for the files of untrusted users: see
 [Errors and limits](06-ErrorsAndLimits.md).
 
 ## Repaired files
 
 Many files in circulation are damaged: they were truncated, edited by hand, or written by a tool with bugs. The reader
 accepts what PDF viewers accept, and when the cross-reference information of a file is wrong, it rebuilds it by scanning
-the file. `IsRepaired` is then `true`.
+the file. [IsRepaired](cref:Meziantou.Framework.Pdf.PdfDocument.IsRepaired) is then `true`.
 
 - A repaired document is read and saved in full like any other, but it cannot be saved incrementally.
 - A reference to an object that does not exist is the null object, as the specification says.
 - A damaged compressed stream gives the data before the damage. A stream that cannot be decoded at all throws when its
   data is read.
 
-A file that cannot be repaired throws `InvalidPdfContentException`.
+A file that cannot be repaired throws [InvalidPdfContentException](cref:Meziantou.Framework.Pdf.InvalidPdfContentException).

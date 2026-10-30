@@ -3,7 +3,7 @@ title: Equivalence
 description: Compare two objects member by member, whatever their types, including collections, dictionaries and JSON.
 ---
 
-`Equivalent` compares two objects by walking their public properties and fields, recursively. The two objects do not
+[Equivalent](cref:Meziantou.Framework.Assertions.Assert.Equivalent) compares two objects by walking their public properties and fields, recursively. The two objects do not
 need to have the same type: an anonymous object can describe the expected state of an entity, a DTO or a record.
 
 <!-- ref:../../tests/Meziantou.Framework.Assertions.Tests/AssertEqualByStructureTests.cs;region=Assert_Equivalent;format=md-fenced-code-block;dedent=true -->
@@ -67,7 +67,7 @@ Assert.Equal("""
 
 ## Options
 
-`EquivalentOptions` relaxes the comparison:
+[EquivalentOptions](cref:Meziantou.Framework.Assertions.EquivalentOptions) relaxes the comparison:
 
 <!-- ref:../../tests/Meziantou.Framework.Assertions.Tests/AssertEqualByStructureTests.cs;region=Assert_EquivalentOptions;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -86,15 +86,15 @@ Assert.Equivalent(expected, actual, new EquivalentOptions
 
 | Option | Effect |
 | --- | --- |
-| `IgnoreCollectionOrder` | Collections, including JSON arrays, match regardless of the order of their items |
-| `IgnoreMemberNameCase` | Members whose names differ only by case are paired. Members with the same name are paired first |
-| `IgnoreStringCase` | Strings are compared ignoring case, including dictionary keys, JSON strings and property names, and the content of a `StringBuilder` |
+| [IgnoreCollectionOrder](cref:Meziantou.Framework.Assertions.EquivalentOptions.IgnoreCollectionOrder) | Collections, including JSON arrays, match regardless of the order of their items |
+| [IgnoreMemberNameCase](cref:Meziantou.Framework.Assertions.EquivalentOptions.IgnoreMemberNameCase) | Members whose names differ only by case are paired. Members with the same name are paired first |
+| [IgnoreStringCase](cref:Meziantou.Framework.Assertions.EquivalentOptions.IgnoreStringCase) | Strings are compared ignoring case, including dictionary keys, JSON strings and property names, and the content of a `StringBuilder` |
 
-`NotEquivalent` takes the same options, and fails exactly when `Equivalent` would pass.
+[NotEquivalent](cref:Meziantou.Framework.Assertions.Assert.NotEquivalent) takes the same options, and fails exactly when [Equivalent](cref:Meziantou.Framework.Assertions.Assert.Equivalent) would pass.
 
 ## Equivalent or Equal
 
-Use `Equal` when the type defines the equality you want to test, such as a value object, a string or a collection of
-numbers. Use `Equivalent` to check the state of an object whose type has no equality, or when the expected value is
+Use [Equal](cref:Meziantou.Framework.Assertions.Assert.Equal) when the type defines the equality you want to test, such as a value object, a string or a collection of
+numbers. Use [Equivalent](cref:Meziantou.Framework.Assertions.Assert.Equivalent) to check the state of an object whose type has no equality, or when the expected value is
 easier to write as another type, such as an anonymous object. To validate a large object graph and keep the expected
 state in a file, consider [snapshot testing](../SnapshotTesting/01-Introduction.md).

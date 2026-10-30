@@ -3,57 +3,57 @@ title: Pixel formats
 description: The sixteen pixel formats, which one a file loads as, how to convert, and how alpha and precision are kept.
 ---
 
-Every image stores its pixels in one pixel format, such as `Rgba32` or `Gray16`. This page lists the formats, tells
+Every image stores its pixels in one pixel format, such as [Rgba32](cref:Meziantou.Framework.Imaging.Rgba32) or [Gray16](cref:Meziantou.Framework.Imaging.Gray16). This page lists the formats, tells
 which one a file loads as, and shows how to convert between them without losing information by accident.
 
 ## The formats
 
 | Format | Bytes per pixel | Holds |
 | --- | --- | --- |
-| `Rgba32` | 4 | 8-bit red, green, blue and alpha: the usual choice for color images |
-| `Bgra32` | 4 | The same, in blue, green, red, alpha order, for APIs that expect it |
-| `Rgb24` | 3 | 8-bit color without alpha |
-| `Rgba64` | 8 | 16-bit color and alpha |
-| `Rgb48` | 6 | 16-bit color without alpha |
-| `Gray8` | 1 | 8-bit gray levels |
-| `Gray16` | 2 | 16-bit gray levels |
-| `La16` | 2 | 8-bit gray and alpha |
-| `La32` | 4 | 16-bit gray and alpha |
-| `A8` | 1 | An alpha mask: no color, its pixels read as black with their alpha |
-| `Argb32` | 4 | 8-bit color and alpha in alpha, red, green, blue order, for APIs that expect it |
-| `Abgr32` | 4 | 8-bit color and alpha in alpha, blue, green, red order, for APIs that expect it |
-| `Bgr565` | 2 | 5-bit red and blue and 6-bit green packed in 16 bits, for display buffers |
-| `Rgba1010102` | 4 | 10-bit color and 2-bit alpha packed in 32 bits, for GPU and HDR display buffers |
-| `RgbaHalf` | 8 | Half-precision floating-point color and alpha, in linear light |
-| `RgbaFloat` | 16 | Single-precision floating-point color and alpha, in linear light |
+| [Rgba32](cref:Meziantou.Framework.Imaging.Rgba32) | 4 | 8-bit red, green, blue and alpha: the usual choice for color images |
+| [Bgra32](cref:Meziantou.Framework.Imaging.Bgra32) | 4 | The same, in blue, green, red, alpha order, for APIs that expect it |
+| [Rgb24](cref:Meziantou.Framework.Imaging.Rgb24) | 3 | 8-bit color without alpha |
+| [Rgba64](cref:Meziantou.Framework.Imaging.Rgba64) | 8 | 16-bit color and alpha |
+| [Rgb48](cref:Meziantou.Framework.Imaging.Rgb48) | 6 | 16-bit color without alpha |
+| [Gray8](cref:Meziantou.Framework.Imaging.Gray8) | 1 | 8-bit gray levels |
+| [Gray16](cref:Meziantou.Framework.Imaging.Gray16) | 2 | 16-bit gray levels |
+| [La16](cref:Meziantou.Framework.Imaging.La16) | 2 | 8-bit gray and alpha |
+| [La32](cref:Meziantou.Framework.Imaging.La32) | 4 | 16-bit gray and alpha |
+| [A8](cref:Meziantou.Framework.Imaging.A8) | 1 | An alpha mask: no color, its pixels read as black with their alpha |
+| [Argb32](cref:Meziantou.Framework.Imaging.Argb32) | 4 | 8-bit color and alpha in alpha, red, green, blue order, for APIs that expect it |
+| [Abgr32](cref:Meziantou.Framework.Imaging.Abgr32) | 4 | 8-bit color and alpha in alpha, blue, green, red order, for APIs that expect it |
+| [Bgr565](cref:Meziantou.Framework.Imaging.Bgr565) | 2 | 5-bit red and blue and 6-bit green packed in 16 bits, for display buffers |
+| [Rgba1010102](cref:Meziantou.Framework.Imaging.Rgba1010102) | 4 | 10-bit color and 2-bit alpha packed in 32 bits, for GPU and HDR display buffers |
+| [RgbaHalf](cref:Meziantou.Framework.Imaging.RgbaHalf) | 8 | Half-precision floating-point color and alpha, in linear light |
+| [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat) | 16 | Single-precision floating-point color and alpha, in linear light |
 
 Alpha is always straight (not premultiplied), and 16-bit samples and packed values are in the native byte order of the
 machine.
-`PixelFormats` describes each format (`HasAlpha`, `HasColor`, `IsGrayscale`, `IsFloatingPoint`, `GetBytesPerPixel`, …).
+[PixelFormats](cref:Meziantou.Framework.Imaging.PixelFormats) describes each format ([HasAlpha](cref:Meziantou.Framework.Imaging.PixelFormats.HasAlpha), [HasColor](cref:Meziantou.Framework.Imaging.PixelFormats.HasColor), [IsGrayscale](cref:Meziantou.Framework.Imaging.PixelFormats.IsGrayscale), [IsFloatingPoint](cref:Meziantou.Framework.Imaging.PixelFormats.IsFloatingPoint), [GetBytesPerPixel](cref:Meziantou.Framework.Imaging.PixelFormats.GetBytesPerPixel), …).
 
 ## `Image` and `Image<TPixel>`
 
-`Image.Load` returns an `Image` whose `PixelFormat` is the smallest format that holds the file without loss. It is an
-`Image<TPixel>` underneath, which you can test with a type pattern. Examples:
+[Image.Load](cref:Meziantou.Framework.Imaging.Image.Load) returns an [Image](cref:Meziantou.Framework.Imaging.Image) whose [PixelFormat](cref:Meziantou.Framework.Imaging.PixelFormat) is the smallest format that holds the file without loss. It is an
+[Image\<TPixel\>](cref:Meziantou.Framework.Imaging.Image{TPixel}) underneath, which you can test with a type pattern. Examples:
 
-| Source | Untyped `Load` gives |
+| Source | Untyped [Load](cref:Meziantou.Framework.Imaging.Image.Load) gives |
 | --- | --- |
-| 8-bit PNG with alpha, palettes, GIF | `Rgba32` |
-| 16-bit PNG | `Gray16`, `Rgb48` or `Rgba64` |
-| Gray PNG with alpha | `La16` or `La32` |
-| JPEG | `Gray8` or `Rgb24` (`Gray16` or `Rgb48` for samples of more than 8 bits) |
-| OpenEXR, floating-point TIFF pages | `RgbaHalf` or `RgbaFloat` |
+| 8-bit PNG with alpha, palettes, GIF | [Rgba32](cref:Meziantou.Framework.Imaging.Rgba32) |
+| 16-bit PNG | [Gray16](cref:Meziantou.Framework.Imaging.Gray16), [Rgb48](cref:Meziantou.Framework.Imaging.Rgb48) or [Rgba64](cref:Meziantou.Framework.Imaging.Rgba64) |
+| Gray PNG with alpha | [La16](cref:Meziantou.Framework.Imaging.La16) or [La32](cref:Meziantou.Framework.Imaging.La32) |
+| JPEG | [Gray8](cref:Meziantou.Framework.Imaging.Gray8) or [Rgb24](cref:Meziantou.Framework.Imaging.Rgb24) ([Gray16](cref:Meziantou.Framework.Imaging.Gray16) or [Rgb48](cref:Meziantou.Framework.Imaging.Rgb48) for samples of more than 8 bits) |
+| OpenEXR, floating-point TIFF pages | [RgbaHalf](cref:Meziantou.Framework.Imaging.RgbaHalf) or [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat) |
 
-`Image.Identify` tells the format before decoding (`ImageInfo.PixelFormat`): see
+[Image.Identify](cref:Meziantou.Framework.Imaging.Image.Identify) tells the format before decoding ([ImageInfo.PixelFormat](cref:Meziantou.Framework.Imaging.ImageInfo.PixelFormat)): see
 [Identifying images](../05-LoadingAndSaving/03-IdentifyingImages.md).
 
-When your code works on pixels of a known type, load in that type with `Image.Load<TPixel>`, or convert with
-`CloneAs<TPixel>`. A type that is not one of the sixteen formats throws a `NotSupportedException` before anything is
+When your code works on pixels of a known type, load in that type with [Image.Load\<TPixel\>](cref:Meziantou.Framework.Imaging.Image.Load), or convert with
+[CloneAs\<TPixel\>](cref:Meziantou.Framework.Imaging.Image.CloneAs). A type that is not one of the sixteen formats throws a `NotSupportedException` before anything is
 read.
 
 ## Convert between formats
 
-`CloneAs<TPixel>` returns a converted copy, and `Load<TPixel>` converts while loading:
+[CloneAs\<TPixel\>](cref:Meziantou.Framework.Imaging.Image.CloneAs) returns a converted copy, and [Load\<TPixel\>](cref:Meziantou.Framework.Imaging.Image.Load) converts while loading:
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_ConvertPrecision;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -73,28 +73,28 @@ public static void ConvertToGray16(string inputPath, string outputPath)
 
 - 8 to 16 bits is exact; 16 to 8 bits rounds to the nearest value. A 16-bit conversion never goes through 8 bits.
 - Color to gray uses the Rec. 709 luma of the encoded values.
-- Gray to RGBA and back, opaque `Rgb48` to `Rgba64` and back, and an alpha mask to any format with alpha and back are
+- Gray to RGBA and back, opaque [Rgb48](cref:Meziantou.Framework.Imaging.Rgb48) to [Rgba64](cref:Meziantou.Framework.Imaging.Rgba64) and back, and an alpha mask to any format with alpha and back are
   exact.
 - A conversion never converts colors between color spaces: the ICC profile of the image is kept when it can still
-  describe the pixels. `DiscardIncompatibleColorProfile` drops a profile that cannot, such as an RGB profile on gray
+  describe the pixels. [DiscardIncompatibleColorProfile](cref:Meziantou.Framework.Imaging.PixelConversionOptions.DiscardIncompatibleColorProfile) drops a profile that cannot, such as an RGB profile on gray
   pixels. To convert colors, see [Color management](../09-Color/03-ColorManagement.md).
 
 ## Nothing is lost silently
 
-An operation that would lose information throws an `UnsupportedImageFeatureException`, unless you say how to convert:
+An operation that would lose information throws an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException), unless you say how to convert:
 
 | Loss | Control |
 | --- | --- |
-| Alpha, when converting or loading into a format without alpha | `PixelConversionOptions.BackgroundColor`: the pixels are composited over it. Opaque pixels never need one. |
-| Alpha, when saving JPEG, BMP in a layout other than 32-bit, plain Netpbm or a portable bitmap | The `BackgroundColor` of the encoder |
-| Partial alpha, when saving GIF (one transparent color) | `GifEncoder.AlphaMode`: a threshold (the default) or compositing over a background |
+| Alpha, when converting or loading into a format without alpha | [PixelConversionOptions.BackgroundColor](cref:Meziantou.Framework.Imaging.PixelConversionOptions.BackgroundColor): the pixels are composited over it. Opaque pixels never need one. |
+| Alpha, when saving JPEG, BMP in a layout other than 32-bit, plain Netpbm or a portable bitmap | The [BackgroundColor](cref:Meziantou.Framework.Imaging.PixelConversionOptions.BackgroundColor) of the encoder |
+| Partial alpha, when saving GIF (one transparent color) | [GifEncoder.AlphaMode](cref:Meziantou.Framework.Imaging.Formats.GifEncoder.AlphaMode): a threshold (the default) or compositing over a background |
 | 16-bit precision, when saving JPEG, WebP, QOI, BMP or TGA | `AllowBitDepthReduction` on the encoder |
 | 16-bit precision, when saving AVIF or HEIC (at most 12 bits) | `BitDepth` or `AllowBitDepthReduction` on the encoder |
-| 16-bit precision, when loading or converting | Request the narrower type explicitly (`Load<Rgba32>`, `CloneAs<Gray8>`) |
-| Colors beyond the palette, when saving an indexed PNG or BMP | `AllowColorReduction` on the encoder. GIF always reduces each frame to 256 colors, deterministically: see [Color reduction](../06-Processing/08-ColorReduction.md) |
-| Floating-point samples outside the range of the destination | `PixelConversionOptions.OutOfRangeSamples` or `ToneMapping` |
-| Floating-point samples, when saving a format that stores integers | `ImageEncoder.FloatingPointConversion` |
-| Metadata the output cannot store | `ImageEncoder.MetadataHandling`: see [Saving images](../05-LoadingAndSaving/04-SavingImages.md) |
+| 16-bit precision, when loading or converting | Request the narrower type explicitly ([Load\<Rgba32\>](cref:Meziantou.Framework.Imaging.Image.Load), [CloneAs\<Gray8\>](cref:Meziantou.Framework.Imaging.Image.CloneAs)) |
+| Colors beyond the palette, when saving an indexed PNG or BMP | [AllowColorReduction](cref:Meziantou.Framework.Imaging.Formats.PngEncoder.AllowColorReduction) on the encoder. GIF always reduces each frame to 256 colors, deterministically: see [Color reduction](../06-Processing/08-ColorReduction.md) |
+| Floating-point samples outside the range of the destination | [PixelConversionOptions.OutOfRangeSamples](cref:Meziantou.Framework.Imaging.PixelConversionOptions.OutOfRangeSamples) or [ToneMapping](cref:Meziantou.Framework.Imaging.PixelConversionOptions.ToneMapping) |
+| Floating-point samples, when saving a format that stores integers | [ImageEncoder.FloatingPointConversion](cref:Meziantou.Framework.Imaging.Formats.ImageEncoder.FloatingPointConversion) |
+| Metadata the output cannot store | [ImageEncoder.MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.ImageEncoder.MetadataHandling): see [Saving images](../05-LoadingAndSaving/04-SavingImages.md) |
 
 For example, a JPEG stores neither alpha nor 16-bit samples nor every kind of metadata, so exporting a frame of any
 image to JPEG sets the three controls:
@@ -119,9 +119,9 @@ public static void ExportFrameAsJpeg(string animatedPath, int frameIndex, string
 
 ## Compact formats
 
-`La16`, `La32`, `Rgb48` and `A8` hold what many images need in less memory: a gray image with alpha in half the memory
-of `Rgba32` or `Rgba64`, 16-bit color without alpha in three quarters of the memory of `Rgba64`, an alpha mask in one
-byte per pixel. A conversion to `A8` keeps the alpha of the source and drops its color:
+[La16](cref:Meziantou.Framework.Imaging.La16), [La32](cref:Meziantou.Framework.Imaging.La32), [Rgb48](cref:Meziantou.Framework.Imaging.Rgb48) and [A8](cref:Meziantou.Framework.Imaging.A8) hold what many images need in less memory: a gray image with alpha in half the memory
+of [Rgba32](cref:Meziantou.Framework.Imaging.Rgba32) or [Rgba64](cref:Meziantou.Framework.Imaging.Rgba64), 16-bit color without alpha in three quarters of the memory of [Rgba64](cref:Meziantou.Framework.Imaging.Rgba64), an alpha mask in one
+byte per pixel. A conversion to [A8](cref:Meziantou.Framework.Imaging.A8) keeps the alpha of the source and drops its color:
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_CompactFormats;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -141,18 +141,18 @@ public static Image<A8> ExtractAlphaMask(string inputPath, string maskPath)
 ```
 <!-- endref -->
 
-Every processing operation and the drawing canvas accept these formats, except `Flatten` on an `A8` mask, which has no
+Every processing operation and the drawing canvas accept these formats, except [Flatten](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Flatten) on an [A8](cref:Meziantou.Framework.Imaging.A8) mask, which has no
 color to hold the result. The PNG and TIFF encoders store them as they are (a mask as black gray with alpha); the other
-encoders receive a copy widened without loss to `Rgba32` or `Rgba64`, then apply their own rules, such as the
+encoders receive a copy widened without loss to [Rgba32](cref:Meziantou.Framework.Imaging.Rgba32) or [Rgba64](cref:Meziantou.Framework.Imaging.Rgba64), then apply their own rules, such as the
 background color a JPEG needs for pixels that are not opaque.
 
 ## Formats for other APIs
 
-`Argb32`, `Abgr32`, `Bgr565` and `Rgba1010102` exist to exchange pixel buffers with graphics and display APIs without
-copying them in another layout. `Bgr565` has blue in its low bits (`DXGI_FORMAT_B5G6R5_UNORM`, Android `RGB_565`), and
-`Rgba1010102` red in its low bits and alpha in its two high bits (`DXGI_FORMAT_R10G10B10A2_UNORM`, Android
-`RGBA_1010102`). No file loads in these formats: import a buffer with `Image.ImportPixelData`, or convert an image with
-`CloneAs`.
+[Argb32](cref:Meziantou.Framework.Imaging.Argb32), [Abgr32](cref:Meziantou.Framework.Imaging.Abgr32), [Bgr565](cref:Meziantou.Framework.Imaging.Bgr565) and [Rgba1010102](cref:Meziantou.Framework.Imaging.Rgba1010102) exist to exchange pixel buffers with graphics and display APIs without
+copying them in another layout. [Bgr565](cref:Meziantou.Framework.Imaging.Bgr565) has blue in its low bits (`DXGI_FORMAT_B5G6R5_UNORM`, Android `RGB_565`), and
+[Rgba1010102](cref:Meziantou.Framework.Imaging.Rgba1010102) red in its low bits and alpha in its two high bits (`DXGI_FORMAT_R10G10B10A2_UNORM`, Android
+`RGBA_1010102`). No file loads in these formats: import a buffer with [Image.ImportPixelData](cref:Meziantou.Framework.Imaging.Image.ImportPixelData), or convert an image with
+[CloneAs](cref:Meziantou.Framework.Imaging.Image.CloneAs).
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_InteropFormats;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -170,22 +170,22 @@ public static Image<Rgba1010102> ConvertDisplayBuffer(ReadOnlySpan<Bgr565> frame
 ```
 <!-- endref -->
 
-- A packed component converts to the nearest sample of the other formats, and back exactly from 8 bits (`Bgr565`) or
-  16 bits (`Rgba1010102`). Converting to a packed format keeps fewer levels: 32 or 64 per color for `Bgr565`, 1024 per
-  color and 4 for the alpha for `Rgba1010102`.
-- Every operation, the drawing canvas and every encoder accept them. They work on `Rgba32` (for `Argb32` and
-  `Abgr32`), `Rgb24` (for `Bgr565`) or `Rgba64` (for `Rgba1010102`) and store the result back, in a temporary copy of each
+- A packed component converts to the nearest sample of the other formats, and back exactly from 8 bits ([Bgr565](cref:Meziantou.Framework.Imaging.Bgr565)) or
+  16 bits ([Rgba1010102](cref:Meziantou.Framework.Imaging.Rgba1010102)). Converting to a packed format keeps fewer levels: 32 or 64 per color for [Bgr565](cref:Meziantou.Framework.Imaging.Bgr565), 1024 per
+  color and 4 for the alpha for [Rgba1010102](cref:Meziantou.Framework.Imaging.Rgba1010102).
+- Every operation, the drawing canvas and every encoder accept them. They work on [Rgba32](cref:Meziantou.Framework.Imaging.Rgba32) (for [Argb32](cref:Meziantou.Framework.Imaging.Argb32) and
+  [Abgr32](cref:Meziantou.Framework.Imaging.Abgr32)), [Rgb24](cref:Meziantou.Framework.Imaging.Rgb24) (for [Bgr565](cref:Meziantou.Framework.Imaging.Bgr565)) or [Rgba64](cref:Meziantou.Framework.Imaging.Rgba64) (for [Rgba1010102](cref:Meziantou.Framework.Imaging.Rgba1010102)) and store the result back, in a temporary copy of each
   frame, so prefer one of these formats for a long series of edits.
 
 ## Floating-point and high dynamic range
 
-`RgbaHalf` and `RgbaFloat` hold linear light, where 1 is the reference white: a component above 1 is a highlight, a
+[RgbaHalf](cref:Meziantou.Framework.Imaging.RgbaHalf) and [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat) hold linear light, where 1 is the reference white: a component above 1 is a highlight, a
 negative one is outside the gamut of the primaries, and alpha is a coverage from 0 to 1. OpenEXR files and the
-floating-point pages of TIFF files load in these formats; `Load<RgbaFloat>` converts any other file.
+floating-point pages of TIFF files load in these formats; [Load\<RgbaFloat\>](cref:Meziantou.Framework.Imaging.Image.Load) converts any other file.
 
 Integer formats cannot hold values outside [0, 1], so a conversion to them throws on such samples unless you compress
 the highlights with a tone mapping or clip them. Encoders work the same way: only OpenEXR and TIFF store floating-point
-samples, and the others need `FloatingPointConversion`:
+samples, and the others need [FloatingPointConversion](cref:Meziantou.Framework.Imaging.Formats.ImageEncoder.FloatingPointConversion):
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_FloatingPoint;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -210,14 +210,14 @@ public static Image<Rgba64> ToneMapHighlights(Image<RgbaFloat> hdr, string pngPa
 
 | Conversion | Result |
 | --- | --- |
-| Integer to `RgbaFloat` | Exact, and back to the same integer for every sample |
-| Integer to `RgbaHalf` | Exact back for 8-bit samples, not for 16-bit ones (a half has 11 significant bits) |
-| `RgbaHalf` to `RgbaFloat` | Exact |
-| `RgbaFloat` to `RgbaHalf` | Nearest; a finite sample beyond ±65,504 is rejected unless `OutOfRangeSamples` is `Clip` |
-| Floating point to integer | A sample outside [0, 1] is rejected unless `ToneMapping` is set or `OutOfRangeSamples` is `Clip`; a sample that is not a number is always rejected |
+| Integer to [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat) | Exact, and back to the same integer for every sample |
+| Integer to [RgbaHalf](cref:Meziantou.Framework.Imaging.RgbaHalf) | Exact back for 8-bit samples, not for 16-bit ones (a half has 11 significant bits) |
+| [RgbaHalf](cref:Meziantou.Framework.Imaging.RgbaHalf) to [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat) | Exact |
+| [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat) to [RgbaHalf](cref:Meziantou.Framework.Imaging.RgbaHalf) | Nearest; a finite sample beyond ±65,504 is rejected unless [OutOfRangeSamples](cref:Meziantou.Framework.Imaging.PixelConversionOptions.OutOfRangeSamples) is [Clip](cref:Meziantou.Framework.Imaging.OutOfRangeSampleHandling.Clip) |
+| Floating point to integer | A sample outside [0, 1] is rejected unless [ToneMapping](cref:Meziantou.Framework.Imaging.PixelConversionOptions.ToneMapping) is set or [OutOfRangeSamples](cref:Meziantou.Framework.Imaging.PixelConversionOptions.OutOfRangeSamples) is [Clip](cref:Meziantou.Framework.Imaging.OutOfRangeSampleHandling.Clip); a sample that is not a number is always rejected |
 
 Every check runs on every frame before anything is allocated. A conversion keeps the transfer function label of its
-source: an sRGB `Rgba64` image becomes sRGB-encoded floats, not linear light. See
+source: an sRGB [Rgba64](cref:Meziantou.Framework.Imaging.Rgba64) image becomes sRGB-encoded floats, not linear light. See
 [Color management](../09-Color/03-ColorManagement.md) and [OpenEXR](../10-Formats/17-OpenExr.md).
 
 ## See also

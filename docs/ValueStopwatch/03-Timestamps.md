@@ -3,7 +3,7 @@ title: Timestamps
 description: Read the high-resolution timestamp and compute the time elapsed between two timestamps.
 ---
 
-`ValueStopwatch` also exposes the timestamps it is built on. A timestamp is a `long`, so you can store it anywhere,
+[ValueStopwatch](cref:Meziantou.Framework.ValueStopwatch) also exposes the timestamps it is built on. A timestamp is a `long`, so you can store it anywhere,
 for instance in an array or in a field updated with `Interlocked`, and compute durations later:
 
 <!-- ref:../../tests/Meziantou.Framework.ValueStopwatch.Tests/ValueStopwatchTest.cs;region=ValueStopwatch_Timestamps;format=md-fenced-code-block;dedent=true -->
@@ -20,7 +20,7 @@ Assert.Equal(TimeSpan.FromSeconds(1), ValueStopwatch.GetElapsedTime(0, Stopwatch
 ```
 <!-- endref -->
 
-- `ValueStopwatch.GetTimestamp()` returns the current value of the high-resolution counter, like
+- [ValueStopwatch.GetTimestamp()](cref:Meziantou.Framework.ValueStopwatch.GetTimestamp) returns the current value of the high-resolution counter, like
   `Stopwatch.GetTimestamp()`.
 - `ValueStopwatch.GetElapsedTime(startTimestamp, endTimestamp)` converts the difference between two timestamps to a
   `TimeSpan`, using `Stopwatch.Frequency`, like `Stopwatch.GetElapsedTime(startTimestamp, endTimestamp)`.

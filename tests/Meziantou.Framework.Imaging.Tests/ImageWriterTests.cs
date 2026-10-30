@@ -652,6 +652,62 @@ public sealed class ImageWriterTests
         }
     }
 
+    [Theory]
+    [InlineData("frame-failure", false)]
+    [InlineData("frame-failure", true)]
+    [InlineData("complete-failure", false)]
+    [InlineData("complete-failure", true)]
+    public async Task FaultedPathWritersAbortTheOutputLikeTheFailedOperation(string failure, bool asynchronous)
+    {
+        using var codecs = TestCodecs.UseAll(out _, out var png, out _, out _);
+        var directory = TestFiles.CreateDirectory();
+        try
+        {
+            var path = directory / "image.png";
+            await File.WriteAllTextAsync(path, "previous content", XunitCancellationToken);
+            var frames = StreamImages.CreateFrames(Width, Height, 2);
+            png.FailAt = failure == "frame-failure" ? (1, 1) : null;
+            png.FailOnComplete = failure == "complete-failure";
+            var writer = Image.CreateWriter<Rgba32>(path, new ImageWriterOptions(Width, Height) { ExpectedFrameCount = 2 });
+            var output = writer.Core.FileOutput!;
+            var temporary = output.TemporaryPath;
+            await Write(writer, frames[0], asynchronous);
+            await Assert.ThrowsAsync<InjectedEncoderException>(async () =>
+            {
+                await Write(writer, frames[1], asynchronous);
+                await Complete(writer, asynchronous);
+            });
+
+            // The asynchronous operations close and delete the temporary file asynchronously, the synchronous ones synchronously
+            Assert.True(output.IsAborted);
+            Assert.Equal(asynchronous, output.IsAbortedAsynchronously);
+            Assert.False(output.IsPublished);
+            Assert.False(File.Exists(temporary));
+            Assert.Throws<InvalidOperationException>(() => writer.Complete());
+            await Assert.ThrowsAsync<InvalidOperationException>(async () => await writer.CompleteAsync(XunitCancellationToken));
+
+            // Disposal does not clean up again: the deleted name is no longer owned by the writer
+            await File.WriteAllTextAsync(temporary, "not ours", XunitCancellationToken);
+            if (asynchronous)
+            {
+                await writer.DisposeAsync();
+            }
+            else
+            {
+                writer.Dispose();
+            }
+
+            Assert.Equal(asynchronous, output.IsAbortedAsynchronously);
+            Assert.Equal("not ours", await File.ReadAllTextAsync(temporary, XunitCancellationToken));
+            Assert.Equal("previous content", await File.ReadAllTextAsync(path, XunitCancellationToken));
+            Array.ForEach(frames, frame => frame.Dispose());
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
     [Fact]
     public void PathWritersInferTheEncoderFromTheExtensionUnlessOneIsGiven()
     {
@@ -706,6 +762,20 @@ public sealed class ImageWriterTests
         }
     }
 
+    [Fact]
+    public void StreamWritersReleaseTheSessionWhenTheStartPositionCannotBeRead()
+    {
+        // TIFF reads the position of the output when the writer is created: it patches the offsets of the structure at completion
+        var tiff = new TestStreamEncoder(ImageFormat.Tiff);
+        using var codecs = TestCodecs.Use(decoder: null, tiff);
+        using var stream = new UnreadablePositionStream();
+        Assert.Throws<IOException>(() => Image.CreateWriter<Rgba32>(stream, new ImageWriterOptions(Width, Height) { Encoder = new TiffEncoder(), LeaveOpen = false }));
+        Assert.True(tiff.LastSession.IsDisposed);
+
+        // The writer was not created, so it did not take the stream over
+        Assert.False(stream.IsDisposed);
+    }
+
     private static async Task Write(ImageWriter<Rgba32> writer, Image<Rgba32> frame, bool asynchronous)
     {
         if (asynchronous)
@@ -727,6 +797,23 @@ public sealed class ImageWriterTests
         else
         {
             writer.Complete();
+        }
+    }
+
+    private sealed class UnreadablePositionStream : MemoryStream
+    {
+        public bool IsDisposed { get; private set; }
+
+        public override long Position
+        {
+            get => throw new IOException("Injected position failure.");
+            set => throw new IOException("Injected position failure.");
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            IsDisposed = true;
+            base.Dispose(disposing);
         }
     }
 }

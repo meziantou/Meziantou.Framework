@@ -9,8 +9,8 @@ when they fail.
 
 ## Crop to a rectangle
 
-`Crop` keeps a `Rectangle` of the canvas. `ExtendCanvas` does the opposite: it makes the canvas larger and places the
-image on it at one of nine `ResizeAnchor` positions:
+[Crop](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Crop) keeps a [Rectangle](cref:Meziantou.Framework.Imaging.Rectangle) of the canvas. [ExtendCanvas](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ExtendCanvas) does the opposite: it makes the canvas larger and places the
+image on it at one of nine [ResizeAnchor](cref:Meziantou.Framework.Imaging.ResizeAnchor) positions:
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/ProcessingExamples.cs;region=Imaging_CropAndExtendCanvas;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -29,13 +29,13 @@ public static void CropAndExtendCanvas(string inputPath, string outputPath)
 ```
 <!-- endref -->
 
-- The rectangle of `Crop` must not be empty and must be entirely inside the canvas: it is never clamped, and a
+- The rectangle of [Crop](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Crop) must not be empty and must be entirely inside the canvas: it is never clamped, and a
   rectangle that reaches outside throws an `ArgumentOutOfRangeException`. Compute it from `image.Width` and
   `image.Height`.
 - The coordinates are those of the stored pixels. A photo whose EXIF orientation says it is shown turned is cropped as
-  stored: call `AutoOrient` first to crop what the viewer sees. See
+  stored: call [AutoOrient](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoOrient) first to crop what the viewer sees. See
   [Rotate, flip and transform](04-RotateFlipAndTransform.md).
-- Each dimension given to `ExtendCanvas` must be at least that of the image (use `Crop` to make it smaller). A centered
+- Each dimension given to [ExtendCanvas](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ExtendCanvas) must be at least that of the image (use [Crop](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Crop) to make it smaller). A centered
   image gets the extra pixel of an odd padding on its right or bottom side.
 
 ## Add a border
@@ -59,16 +59,16 @@ public static void Letterbox(string inputPath, string outputPath)
 ```
 <!-- endref -->
 
-The new area of `Pad` and `ExtendCanvas` is transparent black by default. A pixel format without alpha (`Rgb24`,
-`Gray8`, `Gray16`, the formats of most JPEG images) cannot store it: pass an opaque color, or the operation throws an
-`UnsupportedImageFeatureException`. The `Resize` call of this example is described in [Resizing](03-Resizing.md).
+The new area of [Pad](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Pad) and [ExtendCanvas](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ExtendCanvas) is transparent black by default. A pixel format without alpha ([Rgb24](cref:Meziantou.Framework.Imaging.Rgb24),
+[Gray8](cref:Meziantou.Framework.Imaging.Gray8), [Gray16](cref:Meziantou.Framework.Imaging.Gray16), the formats of most JPEG images) cannot store it: pass an opaque color, or the operation throws an
+[UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException). The [Resize](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Resize) call of this example is described in [Resizing](03-Resizing.md).
 
 ## Trim the background
 
-`AutoCrop` removes the uniform background around the content of an image, such as the margin of a product photo or of
-a scan, and returns whether the image changed. `AnalyzeAutoCrop` runs the detection alone and never changes the image:
-its `AutoCropAnalysis` tells whether it found content (`Success`), where (`Bounds`) and on which background color
-(`BackgroundColor`). Pass the analysis to `AutoCrop` to apply it, to this image or to another image of the same size:
+[AutoCrop](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoCrop) removes the uniform background around the content of an image, such as the margin of a product photo or of
+a scan, and returns whether the image changed. [AnalyzeAutoCrop](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AnalyzeAutoCrop) runs the detection alone and never changes the image:
+its [AutoCropAnalysis](cref:Meziantou.Framework.Imaging.AutoCropAnalysis) tells whether it found content ([Success](cref:Meziantou.Framework.Imaging.AutoCropAnalysis.Success)), where ([Bounds](cref:Meziantou.Framework.Imaging.AutoCropAnalysis.Bounds)) and on which background color
+([BackgroundColor](cref:Meziantou.Framework.Imaging.AutoCropAnalysis.BackgroundColor)). Pass the analysis to [AutoCrop](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoCrop) to apply it, to this image or to another image of the same size:
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_AutoCrop;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -97,28 +97,28 @@ public static bool TrimBackground(string inputPath, string outputPath)
 The detection works in two steps:
 
 1. **The background** is the most frequent color of the one-pixel outer border of the image, over every frame and the
-   poster. The border is accepted when it has fewer than `ColorThreshold` distinct colors. Otherwise, the detection is
+   poster. The border is accepted when it has fewer than [ColorThreshold](cref:Meziantou.Framework.Imaging.AutoCropOptions.ColorThreshold) distinct colors. Otherwise, the detection is
    retried once with half the threshold, without the outer 5% of the image on each side.
 2. **The content** is the bounding box of the pixels that are not background, over every frame and the poster, so that
    an animation is cropped the same way on every frame. It must be at least 3x3 pixels.
 
 | Option | Default | Meaning |
 | --- | --- | --- |
-| `ColorThreshold` | 35 | The largest color difference, on the 8-bit scale and weighted by luma, at which a pixel is still background. Also the number of distinct border colors below which the border is accepted |
-| `BucketThreshold` | not set | For noisy and JPEG backgrounds: the border is also accepted when this fraction of its pixels have about the same brightness as the background. 0.945 is a good start |
-| `PaddingX`, `PaddingY` | 0 | A margin to keep around the content, in pixels, made of the original pixels |
-| `PaddingMode` | `Expand` | Where the margin reaches outside the canvas: `Expand` enlarges the canvas and fills the new area with the background color, `Contain` clamps the margin to the canvas |
-| `AnalyzeWeights` | `false` | Measures on which side the content is heavier (`WeightX` and `WeightY`, from -1 to 1) and moves the margin that way |
+| [ColorThreshold](cref:Meziantou.Framework.Imaging.AutoCropOptions.ColorThreshold) | 35 | The largest color difference, on the 8-bit scale and weighted by luma, at which a pixel is still background. Also the number of distinct border colors below which the border is accepted |
+| [BucketThreshold](cref:Meziantou.Framework.Imaging.AutoCropOptions.BucketThreshold) | not set | For noisy and JPEG backgrounds: the border is also accepted when this fraction of its pixels have about the same brightness as the background. 0.945 is a good start |
+| [PaddingX](cref:Meziantou.Framework.Imaging.AutoCropOptions.PaddingX), [PaddingY](cref:Meziantou.Framework.Imaging.AutoCropOptions.PaddingY) | 0 | A margin to keep around the content, in pixels, made of the original pixels |
+| [PaddingMode](cref:Meziantou.Framework.Imaging.AutoCropOptions.PaddingMode) | [Expand](cref:Meziantou.Framework.Imaging.AutoCropPaddingMode.Expand) | Where the margin reaches outside the canvas: [Expand](cref:Meziantou.Framework.Imaging.AutoCropPaddingMode.Expand) enlarges the canvas and fills the new area with the background color, [Contain](cref:Meziantou.Framework.Imaging.AutoCropPaddingMode.Contain) clamps the margin to the canvas |
+| [AnalyzeWeights](cref:Meziantou.Framework.Imaging.AutoCropOptions.AnalyzeWeights) | `false` | Measures on which side the content is heavier ([WeightX](cref:Meziantou.Framework.Imaging.AutoCropAnalysis.WeightX) and [WeightY](cref:Meziantou.Framework.Imaging.AutoCropAnalysis.WeightY), from -1 to 1) and moves the margin that way |
 
 Fully transparent pixels are all equal, whatever color they hide, so a transparent margin is trimmed like an opaque
-one. When the image has no uniform border or no content, `AnalyzeAutoCrop` returns an analysis whose `Success` is
-`false`, and `AutoCrop` returns `false` without changing the image.
+one. When the image has no uniform border or no content, [AnalyzeAutoCrop](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AnalyzeAutoCrop) returns an analysis whose [Success](cref:Meziantou.Framework.Imaging.AutoCropAnalysis.Success) is
+`false`, and [AutoCrop](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoCrop) returns `false` without changing the image.
 
-On an `Image<TPixel>`, `AnalyzeAutoCrop` returns an `AutoCropAnalysis<TPixel>`, whose `BackgroundColor` is a pixel of
-the image as stored; on an `Image`, it is the same color as an `Rgba64`.
+On an [Image\<TPixel\>](cref:Meziantou.Framework.Imaging.Image{TPixel}), [AnalyzeAutoCrop](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AnalyzeAutoCrop) returns an [AutoCropAnalysis\<TPixel\>](cref:Meziantou.Framework.Imaging.AutoCropAnalysis{TPixel}), whose [BackgroundColor](cref:Meziantou.Framework.Imaging.AutoCropAnalysis.BackgroundColor) is a pixel of
+the image as stored; on an [Image](cref:Meziantou.Framework.Imaging.Image), it is the same color as an [Rgba64](cref:Meziantou.Framework.Imaging.Rgba64).
 
 ## Cursors
 
 A cursor hotspot moves with the pixel it points at. A crop or an auto-crop that would remove that pixel throws an
-`UnsupportedImageFeatureException` and leaves the image unchanged: set the hotspot (`Frames[i].Metadata.Hotspot`) to
+[UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException) and leaves the image unchanged: set the hotspot (`Frames[i].Metadata.Hotspot`) to
 `null` or to a pixel that is kept first.

@@ -81,7 +81,13 @@ internal struct Av1EncoderDecisions
     /// </summary>
     public int MotionStep;
 
-    /// <summary>Whether the motion search refines a motion vector to a half then to a quarter of a sample.</summary>
+    /// <summary>
+    /// Whether the motion search refines a motion vector to a half then to a quarter of a sample, by the sum of the absolute
+    /// differences of the prediction. A comparison by the Hadamard transform of the differences (SATD) and a refinement to
+    /// an eighth of a sample (<c>allow_high_precision_mv</c>) were measured on the sequences of the avif-quality report and
+    /// left out: neither made them smaller at equal quality, and both took about 15% more encoding time (the AVIF encoding
+    /// limitations of the readme give the figures).
+    /// </summary>
     public bool SubpelMotion;
 
     /// <summary>The number of motion vectors of the stack that the NEARMV mode is evaluated with: 1 to 3.</summary>

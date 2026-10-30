@@ -1334,6 +1334,117 @@ public sealed class ConvolutionTests
         }
     }
 
+    /// <summary>
+    /// The medians of 32-bit floating-point samples are counted in two trees (the high 16 bits of every sample, then the
+    /// low 16 bits of the group of the median), and a radius of 1 sorts its windows: both give the sample of the middle
+    /// rank of a sorted window, for samples spread over every value, in a single group, along a gradient that changes
+    /// groups every few pixels, or among a few groups.
+    /// </summary>
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void AFloatingPointMedianIsTheSampleOfTheMiddleRankOfItsWindow(int distribution)
+    {
+        const int Width = 37;
+        const int Height = 23;
+        var random = new Random(3754 + distribution);
+        var source = new RgbaFloat[Width * Height];
+        float[] groups = [-2.5f, 0.1f, 0.75f, 1e30f];
+        for (var i = 0; i < source.Length; i++)
+        {
+            var samples = new float[4];
+            for (var c = 0; c < 4; c++)
+            {
+                samples[c] = distribution switch
+                {
+                    // Any bits: negative numbers, zeros of both signs, subnormals, infinities, NaN of both signs
+                    0 => BitConverter.UInt32BitsToSingle((uint)random.NextInt64(0, 1L << 32)),
+
+                    // The 65,536 floats from 0.5 that share their high 16 bits
+                    1 => BitConverter.UInt32BitsToSingle(0x3F00_0000u + (uint)random.Next(65536)),
+
+                    // A gradient with a little noise
+                    2 => ((float)(i % Width) / Width) + (float)(random.NextDouble() * 0.01),
+
+                    // A few groups, with any low bits
+                    _ => BitConverter.UInt32BitsToSingle((BitConverter.SingleToUInt32Bits(groups[random.Next(groups.Length)]) & 0xFFFF_0000u) | (uint)random.Next(65536)),
+                };
+            }
+
+            source[i] = new RgbaFloat(samples[0], samples[1], samples[2], samples[3]);
+        }
+
+        foreach (var radius in new[] { 1, 2, 3, 6 })
+        {
+            foreach (var mode in Enum.GetValues<ConvolutionEdgeMode>())
+            {
+                using var image = Image.ImportPixelData<RgbaFloat>(source, Width, Height);
+                image.MedianBlur(radius, mode, Ct);
+                var actual = CopyAll(image.Frames[0]);
+                for (var y = 0; y < Height; y++)
+                {
+                    for (var x = 0; x < Width; x++)
+                    {
+                        for (var c = 0; c < 4; c++)
+                        {
+                            var expected = ReferenceFloatMedian(source, Width, Height, x, y, c, radius, mode);
+                            Assert.Equal(expected, BitConverter.SingleToUInt32Bits(GetSample(actual[(y * Width) + x], c)), string.Create(CultureInfo.InvariantCulture, $"radius {radius}, {mode}, pixel ({x}, {y}), sample {c}"));
+                        }
+                    }
+                }
+            }
+        }
+
+        static float GetSample(RgbaFloat pixel, int channel) => channel switch
+        {
+            0 => pixel.R,
+            1 => pixel.G,
+            2 => pixel.B,
+            _ => pixel.A,
+        };
+
+        // The bits of the sample of rank (n - 1) / 2 of the window, in the order of numbers (-0 below +0, every sample
+        // that is not a number above the infinities), a sample that is not a number coming back positive
+        static uint ReferenceFloatMedian(RgbaFloat[] source, int width, int height, int x, int y, int channel, int radius, ConvolutionEdgeMode mode)
+        {
+            var window = new List<uint>();
+            for (var j = -radius; j <= radius; j++)
+            {
+                for (var i = -radius; i <= radius; i++)
+                {
+                    var sx = MapIndex(x + i, width, mode);
+                    var sy = MapIndex(y + j, height, mode);
+                    var bits = sx < 0 || sy < 0 ? 0u : BitConverter.SingleToUInt32Bits(GetSample(source[(sy * width) + sx], channel));
+                    window.Add(float.IsNaN(BitConverter.UInt32BitsToSingle(bits)) ? bits & 0x7FFF_FFFFu : bits);
+                }
+            }
+
+            window.Sort((a, b) => OrderKey(a).CompareTo(OrderKey(b)));
+            return window[(window.Count - 1) / 2];
+        }
+
+        static uint OrderKey(uint bits) => (bits & 0x8000_0000u) != 0 ? ~bits : bits | 0x8000_0000u;
+
+        static int MapIndex(int index, int length, ConvolutionEdgeMode mode)
+        {
+            if (index >= 0 && index < length)
+                return index;
+
+            var period = 2 * length;
+            var mirrored = ((index % period) + period) % period;
+            return mode switch
+            {
+                ConvolutionEdgeMode.Clamp => index < 0 ? 0 : length - 1,
+                ConvolutionEdgeMode.Mirror => mirrored < length ? mirrored : period - 1 - mirrored,
+                ConvolutionEdgeMode.Wrap => ((index % length) + length) % length,
+                _ => -1,
+            };
+        }
+    }
+
     [Fact]
     public void AMedianAppliesToEveryFrameOrToOneAndValidatesItsArguments()
     {

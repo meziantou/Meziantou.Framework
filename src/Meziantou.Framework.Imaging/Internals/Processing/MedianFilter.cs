@@ -15,12 +15,19 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// above the positive infinity.
 /// </para>
 /// <para>
-/// Keys of up to 16 bits are counted in one histogram per sample of a pixel, as a tree of 16 counters per level of 4 bits
-/// (2 levels for 8-bit samples, 4 for 16-bit ones): adding or removing a key updates one counter per level, and the median
-/// is found by walking down the tree, at most 16 counters per level. The window moves along the rows in alternate
-/// directions and steps down at their ends, so that every step removes and adds one row or one column of the window: the
-/// time per sample grows with the radius, not with its square. 32-bit keys (<see cref="RgbaFloat"/>) are gathered and
-/// sorted for every window.
+/// Keys are counted in one histogram per sample of a pixel, as a tree of 16 counters per level of 4 bits (2 levels for
+/// 8-bit samples, 4 for 16-bit ones): adding or removing a key updates one counter per level, and the median is found by
+/// walking down the tree, at most 16 counters per level. The window moves along the rows in alternate directions and
+/// steps down at their ends, so that every step removes and adds one row or one column of the window: the time per sample
+/// grows with the radius, not with its square.
+/// </para>
+/// <para>
+/// 32-bit keys (<see cref="RgbaFloat"/>) are counted in two such trees of 16 bits. The first one counts the high 16 bits
+/// of every key of the window, which gives the group of keys the median is in and its rank in the group. The second one
+/// counts the low 16 bits of the keys of one group only (the <c>active</c> group of the sample), which gives the median.
+/// When the median moves to another group, the second tree is rebuilt from the keys of the window: that costs the square
+/// of the radius, but only when the median changes groups (65,536 keys per group: for numbers between 0.5 and 1, a group
+/// spans 1/256). A window of 9 keys (a radius of 1) is sorted instead: that is faster.
 /// </para>
 /// <para>
 /// The frame is rewritten in place, band by band, with the ring and the halos of the convolution
@@ -144,17 +151,37 @@ internal static class MedianFilter
             }
         }
 
-        if (workers == 1)
+        // The histograms of the keys: the loops are compiled for each size of key
+        if (typeof(TSample) == typeof(byte))
         {
-            FilterBand<TSample>(storage, plan, 0, cancellationToken);
+            FilterBands<TSample, NarrowHistograms>(storage, plan, cancellationToken);
+        }
+        else if (typeof(TSample) == typeof(float))
+        {
+            FilterBands<TSample, SplitHistograms>(storage, plan, cancellationToken);
+        }
+        else
+        {
+            FilterBands<TSample, WideHistograms>(storage, plan, cancellationToken);
+        }
+    }
+
+    private static void FilterBands<TSample, THistograms>(PixelStorage storage, MedianPlan plan, CancellationToken cancellationToken)
+        where TSample : unmanaged
+        where THistograms : struct, IHistograms
+    {
+        if (plan.Workers == 1)
+        {
+            FilterBand<TSample, THistograms>(storage, plan, 0, cancellationToken);
             return;
         }
 
-        RowBands.RunParallel(workers, band => FilterBand<TSample>(storage, plan, band, cancellationToken));
+        RowBands.RunParallel(plan.Workers, band => FilterBand<TSample, THistograms>(storage, plan, band, cancellationToken));
     }
 
-    private static void FilterBand<TSample>(PixelStorage storage, MedianPlan plan, int band, CancellationToken cancellationToken)
+    private static void FilterBand<TSample, THistograms>(PixelStorage storage, MedianPlan plan, int band, CancellationToken cancellationToken)
         where TSample : unmanaged
+        where THistograms : struct, IHistograms
     {
         var keys = plan.GetKeys(band);
         var counts = plan.GetCounts(band);
@@ -167,6 +194,10 @@ internal static class MedianFilter
         var output = keys.Slice((diameter + (2 * radius)) * plan.PaddedLength, width * channels);
         var rank = ((diameter * diameter) - 1) / 2;
         Span<int> rows = diameter <= 1024 ? stackalloc int[diameter] : new int[diameter];
+
+        // The group of keys each low-bits tree counts (32-bit keys), none yet
+        Span<int> active = stackalloc int[channels];
+        active.Fill(-1);
 
         // The rows of the band in the window of its first row
         for (var y = start; y <= start + radius && y < end; y++)
@@ -183,7 +214,7 @@ internal static class MedianFilter
                     cancellationToken.ThrowIfCancellationRequested();
                 }
 
-                if (!plan.UsesHistograms)
+                if (plan.SortsWindows)
                 {
                     if (y > start && y + radius < end)
                     {
@@ -198,10 +229,10 @@ internal static class MedianFilter
                     GetWindowRows(plan, start, end, y, rows);
                     for (var j = 0; j < diameter; j++)
                     {
-                        Count(plan, counts, keys.Slice(rows[j], diameter * channels), 1);
+                        Count<THistograms>(plan, counts, active, keys.Slice(rows[j], diameter * channels), 1);
                     }
 
-                    FilterRow(plan, keys, counts, rows, output, rank, rightward: true);
+                    FilterRow<THistograms>(plan, keys, counts, active, rows, output, rank, rightward: true);
                 }
                 else
                 {
@@ -210,15 +241,15 @@ internal static class MedianFilter
                     var rightward = ((y - start) & 1) == 0;
                     var column = rightward ? 0 : (width - 1) * channels;
                     GetWindowRows(plan, start, end, y - 1, rows);
-                    Count(plan, counts, keys.Slice(rows[0] + column, diameter * channels), -1);
+                    Count<THistograms>(plan, counts, active, keys.Slice(rows[0] + column, diameter * channels), -1);
                     if (y + radius < end)
                     {
                         LoadRow<TSample>(storage, y + radius, plan, GetRingRow(plan, keys, y + radius));
                     }
 
                     GetWindowRows(plan, start, end, y, rows);
-                    Count(plan, counts, keys.Slice(rows[diameter - 1] + column, diameter * channels), 1);
-                    FilterRow(plan, keys, counts, rows, output, rank, rightward);
+                    Count<THistograms>(plan, counts, active, keys.Slice(rows[diameter - 1] + column, diameter * channels), 1);
+                    FilterRow<THistograms>(plan, keys, counts, active, rows, output, rank, rightward);
                 }
 
                 var samples = unsafe(MemoryMarshal.Cast<byte, TSample>(storage.GetRowSpanCore(y)));
@@ -231,7 +262,7 @@ internal static class MedianFilter
         finally
         {
             // The scratch serves the next frame
-            if (plan.UsesHistograms)
+            if (!plan.SortsWindows)
             {
                 counts.Clear();
             }
@@ -243,13 +274,13 @@ internal static class MedianFilter
     /// histograms are (the first or the last one): each step removes the column that leaves the window and adds the one
     /// that enters it.
     /// </summary>
-    private static void FilterRow(MedianPlan plan, Span<uint> keys, Span<int> counts, ReadOnlySpan<int> rows, Span<uint> output, int rank, bool rightward)
+    private static void FilterRow<THistograms>(MedianPlan plan, Span<uint> keys, Span<int> counts, Span<int> active, ReadOnlySpan<int> rows, Span<uint> output, int rank, bool rightward)
+        where THistograms : struct, IHistograms
     {
         var width = plan.Size.Width;
         var channels = plan.Channels;
         var diameter = plan.Diameter;
         var histogramLength = plan.HistogramLength;
-        var wide = plan.KeyBits == 16;
         for (var step = 0; step < width; step++)
         {
             var x = rightward ? step : width - 1 - step;
@@ -268,8 +299,8 @@ internal static class MedianFilter
                         var added = keys[rows[j] + entering + c];
                         if (removed != added)
                         {
-                            Update(counts, c * histogramLength, wide, removed, -1);
-                            Update(counts, c * histogramLength, wide, added, 1);
+                            THistograms.Update(counts, c * histogramLength, active, c, removed, -1);
+                            THistograms.Update(counts, c * histogramLength, active, c, added, 1);
                         }
                     }
                 }
@@ -277,13 +308,13 @@ internal static class MedianFilter
 
             for (var c = 0; c < channels; c++)
             {
-                output[(x * channels) + c] = Select(counts, c * histogramLength, wide, rank);
+                output[(x * channels) + c] = THistograms.Select(plan, keys, counts, active, rows, x, c, rank);
             }
         }
     }
 
-    /// <summary>Sets the medians of a row by sorting the keys of every window (32-bit keys).</summary>
-    private static void SortWindows(MedianPlan plan, Span<uint> keys, ReadOnlySpan<int> rows, Span<uint> window, Span<uint> output, int rank)
+    /// <summary>Sets the medians of a row by sorting the keys of every window (small windows of 32-bit keys).</summary>
+    private static void SortWindows(MedianPlan plan, ReadOnlySpan<uint> keys, ReadOnlySpan<int> rows, Span<uint> window, Span<uint> output, int rank)
     {
         var channels = plan.Channels;
         var diameter = plan.Diameter;
@@ -308,54 +339,46 @@ internal static class MedianFilter
     }
 
     /// <summary>Adds (<paramref name="delta"/> 1) or removes (-1) the keys of consecutive pixels to the histograms of their samples.</summary>
-    private static void Count(MedianPlan plan, Span<int> counts, ReadOnlySpan<uint> keys, int delta)
+    private static void Count<THistograms>(MedianPlan plan, Span<int> counts, ReadOnlySpan<int> active, ReadOnlySpan<uint> keys, int delta)
+        where THistograms : struct, IHistograms
     {
         var channels = plan.Channels;
-        var wide = plan.KeyBits == 16;
         for (var i = 0; i < keys.Length; i += channels)
         {
             for (var c = 0; c < channels; c++)
             {
-                Update(counts, c * plan.HistogramLength, wide, keys[i + c], delta);
+                THistograms.Update(counts, c * plan.HistogramLength, active, c, keys[i + c], delta);
             }
         }
     }
 
-    /// <summary>
-    /// Adds <paramref name="delta"/> to the counter of the key at every level of the histogram at
-    /// <paramref name="histogram"/>: levels of 16, 256 (8-bit keys), then 4096 and 65,536 counters (16-bit keys).
-    /// </summary>
+    /// <summary>Adds <paramref name="delta"/> to the counter of a 16-bit key at every level of the tree at <paramref name="histogram"/>: levels of 16, 256, 4096 and 65,536 counters.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void Update(Span<int> counts, int histogram, bool wide, uint key, int delta)
+    private static void UpdateWide(Span<int> counts, int histogram, uint key, int delta)
     {
-        if (wide)
-        {
-            counts[histogram + (int)(key >> 12)] += delta;
-            counts[histogram + 16 + (int)(key >> 8)] += delta;
-            counts[histogram + 272 + (int)(key >> 4)] += delta;
-            counts[histogram + 4368 + (int)key] += delta;
-        }
-        else
-        {
-            counts[histogram + (int)(key >> 4)] += delta;
-            counts[histogram + 16 + (int)key] += delta;
-        }
+        counts[histogram + (int)(key >> 12)] += delta;
+        counts[histogram + 16 + (int)(key >> 8)] += delta;
+        counts[histogram + 272 + (int)(key >> 4)] += delta;
+        counts[histogram + 4368 + (int)key] += delta;
     }
 
-    /// <summary>Gets the key of rank <paramref name="rank"/> (from 0) of the histogram at <paramref name="histogram"/>, walking down its levels (16 counters at most per level).</summary>
-    private static uint Select(Span<int> counts, int histogram, bool wide, int rank)
+    /// <summary>
+    /// Gets the key of rank <paramref name="rank"/> (from 0) of the tree at <paramref name="histogram"/>, walking down its
+    /// levels (16 counters at most per level), and the rank of the key among the keys equal to it.
+    /// </summary>
+    private static uint SelectInTree(Span<int> counts, int histogram, int levels, int rank, out int residual)
     {
+        var remaining = rank;
         var node = 0;
         var offset = histogram;
         var size = 16;
-        var levels = wide ? 4 : 2;
         for (var level = 0; level < levels; level++)
         {
             var first = offset + (node * 16);
             var digit = 0;
-            while (rank >= counts[first + digit])
+            while (remaining >= counts[first + digit])
             {
-                rank -= counts[first + digit];
+                remaining -= counts[first + digit];
                 digit++;
             }
 
@@ -364,7 +387,100 @@ internal static class MedianFilter
             size *= 16;
         }
 
+        residual = remaining;
         return (uint)node;
+    }
+
+    /// <summary>The histograms of the keys of one size.</summary>
+    private interface IHistograms
+    {
+        /// <summary>Adds <paramref name="delta"/> to the counters of a key of sample <paramref name="channel"/> in the histogram at <paramref name="histogram"/>.</summary>
+        static abstract void Update(Span<int> counts, int histogram, ReadOnlySpan<int> active, int channel, uint key, int delta);
+
+        /// <summary>Gets the key of rank <paramref name="rank"/> of sample <paramref name="channel"/> of the window whose first column is <paramref name="x"/>.</summary>
+        static abstract uint Select(MedianPlan plan, ReadOnlySpan<uint> keys, Span<int> counts, Span<int> active, ReadOnlySpan<int> rows, int x, int channel, int rank);
+    }
+
+    /// <summary>8-bit keys: a tree of 2 levels.</summary>
+    private readonly struct NarrowHistograms : IHistograms
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Update(Span<int> counts, int histogram, ReadOnlySpan<int> active, int channel, uint key, int delta)
+        {
+            counts[histogram + (int)(key >> 4)] += delta;
+            counts[histogram + 16 + (int)key] += delta;
+        }
+
+        public static uint Select(MedianPlan plan, ReadOnlySpan<uint> keys, Span<int> counts, Span<int> active, ReadOnlySpan<int> rows, int x, int channel, int rank)
+            => SelectInTree(counts, channel * plan.HistogramLength, 2, rank, out _);
+    }
+
+    /// <summary>16-bit keys: a tree of 4 levels.</summary>
+    private readonly struct WideHistograms : IHistograms
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Update(Span<int> counts, int histogram, ReadOnlySpan<int> active, int channel, uint key, int delta)
+            => UpdateWide(counts, histogram, key, delta);
+
+        public static uint Select(MedianPlan plan, ReadOnlySpan<uint> keys, Span<int> counts, Span<int> active, ReadOnlySpan<int> rows, int x, int channel, int rank)
+            => SelectInTree(counts, channel * plan.HistogramLength, 4, rank, out _);
+    }
+
+    /// <summary>
+    /// 32-bit keys: a tree of their high 16 bits (the group of the key), followed by a tree of the low 16 bits of the keys
+    /// of the active group of the sample only.
+    /// </summary>
+    private readonly struct SplitHistograms : IHistograms
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Update(Span<int> counts, int histogram, ReadOnlySpan<int> active, int channel, uint key, int delta)
+        {
+            var high = key >> 16;
+            UpdateWide(counts, histogram, high, delta);
+            if ((int)high == active[channel])
+            {
+                UpdateWide(counts, histogram + MedianPlan.WideTreeLength, key & 0xFFFF, delta);
+            }
+        }
+
+        /// <summary>
+        /// Gets the group of the key from the first tree, then its low 16 bits from the second one, rebuilt from the window
+        /// when it counts another group.
+        /// </summary>
+        public static uint Select(MedianPlan plan, ReadOnlySpan<uint> keys, Span<int> counts, Span<int> active, ReadOnlySpan<int> rows, int x, int channel, int rank)
+        {
+            var histogram = channel * plan.HistogramLength;
+            var group = SelectInTree(counts, histogram, 4, rank, out var residual);
+            var low = histogram + MedianPlan.WideTreeLength;
+            if ((int)group != active[channel])
+            {
+                // Remove the keys of the previous group and add those of the new one, in a single pass over the window
+                var previous = (uint)active[channel];
+                var channels = plan.Channels;
+                var diameter = plan.Diameter;
+                for (var j = 0; j < rows.Length; j++)
+                {
+                    var window = keys.Slice(rows[j] + (x * channels) + channel, ((diameter - 1) * channels) + 1);
+                    for (var i = 0; i < window.Length; i += channels)
+                    {
+                        var key = window[i];
+                        var high = key >> 16;
+                        if (high == group)
+                        {
+                            UpdateWide(counts, low, key & 0xFFFF, 1);
+                        }
+                        else if (high == previous)
+                        {
+                            UpdateWide(counts, low, key & 0xFFFF, -1);
+                        }
+                    }
+                }
+
+                active[channel] = (int)group;
+            }
+
+            return (group << 16) | SelectInTree(counts, low, 4, residual, out _);
+        }
     }
 
     /// <summary>Sets the positions in the key scratch of the padded rows of the window of row <paramref name="y"/>, from the top one.</summary>

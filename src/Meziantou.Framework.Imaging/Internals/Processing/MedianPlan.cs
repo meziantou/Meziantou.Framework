@@ -9,11 +9,14 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <remarks>
 /// A worker keeps, in rentals charged to the scope of the image before any pixel changes, the keys of the rows of its band
 /// that the window reads (a ring as tall as the window), of the rows it reads above and below its band (the halos, loaded
-/// before any row is rewritten), of the output row, and either one histogram per sample of a pixel (keys of up to 16 bits)
-/// or the keys of one window (32-bit keys, which are sorted).
+/// before any row is rewritten), of the output row, and one histogram per sample of a pixel (two trees of 16 bits for
+/// 32-bit keys), or the keys of one window when they are sorted (<see cref="SortsWindows"/>).
 /// </remarks>
 internal sealed class MedianPlan : IDisposable
 {
+    /// <summary>The number of counters of a tree of 16-bit keys: 16 per level of 4 bits.</summary>
+    internal const int WideTreeLength = 16 + 256 + 4096 + 65536;
+
     private PooledBuffer?[] _keys = [];
     private PooledBuffer?[] _counts = [];
 
@@ -52,11 +55,22 @@ internal sealed class MedianPlan : IDisposable
     /// <summary>Gets the number of bits of the sample keys: 8, 16 or 32 (<see cref="MedianFilter.ToKey"/>).</summary>
     public int KeyBits { get; }
 
-    /// <summary>Gets a value indicating whether the median is found in histograms (keys of up to 16 bits) rather than by sorting the window.</summary>
-    public bool UsesHistograms => KeyBits <= 16;
+    /// <summary>
+    /// Gets a value indicating whether the median of every window is found by sorting its keys rather than in histograms:
+    /// 32-bit keys of the smallest windows (9 keys), for which sorting is faster.
+    /// </summary>
+    public bool SortsWindows => KeyBits == 32 && Radius == 1;
 
-    /// <summary>Gets the number of counters of the histogram of one sample: 16 per level of 4 bits of the keys (<see cref="MedianFilter"/>).</summary>
-    public int HistogramLength => KeyBits == 8 ? 16 + 256 : 16 + 256 + 4096 + 65536;
+    /// <summary>
+    /// Gets the number of counters of the histogram of one sample: 16 per level of 4 bits of the keys, and two trees of
+    /// 16 bits for 32-bit keys (<see cref="MedianFilter"/>).
+    /// </summary>
+    public int HistogramLength => KeyBits switch
+    {
+        8 => 16 + 256,
+        16 => WideTreeLength,
+        _ => 2 * WideTreeLength,
+    };
 
     /// <summary>Gets the number of workers (and row bands) of each frame.</summary>
     public int Workers { get; }
@@ -78,7 +92,7 @@ internal sealed class MedianPlan : IDisposable
         if (!CheckedSizes.TryMultiply(paddedLength, (long)Diameter + (2L * Radius), out var rows) || !CheckedSizes.TryAdd(rows, (long)Size.Width * Channels, out var keys))
             throw CheckedSizes.CreateOverflowException(scope.Limits);
 
-        var counts = UsesHistograms ? (long)HistogramLength * Channels : (long)Diameter * Diameter;
+        var counts = SortsWindows ? (long)Diameter * Diameter : (long)HistogramLength * Channels;
         _keys = new PooledBuffer?[Workers];
         _counts = new PooledBuffer?[Workers];
         for (var worker = 0; worker < Workers; worker++)
@@ -93,7 +107,7 @@ internal sealed class MedianPlan : IDisposable
     /// <summary>Gets the key rows of a worker: the ring, the top halo, the bottom halo and the output row.</summary>
     public Span<uint> GetKeys(int worker) => unsafe(MemoryMarshal.Cast<byte, uint>((_keys[worker] ?? throw new ObjectDisposedException(nameof(MedianPlan))).Span));
 
-    /// <summary>Gets the histograms of a worker (one per sample of a pixel), or the keys of one window to sort (32-bit keys).</summary>
+    /// <summary>Gets the histograms of a worker (one per sample of a pixel), or the keys of one window to sort (<see cref="SortsWindows"/>).</summary>
     public Span<int> GetCounts(int worker) => unsafe(MemoryMarshal.Cast<byte, int>((_counts[worker] ?? throw new ObjectDisposedException(nameof(MedianPlan))).Span));
 
     /// <summary>Gets the first row of a band.</summary>

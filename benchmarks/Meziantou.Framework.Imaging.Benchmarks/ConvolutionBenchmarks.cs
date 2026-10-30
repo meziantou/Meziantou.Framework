@@ -28,6 +28,7 @@ public class ConvolutionBenchmarks
     private Image<Rgba32> _rgba32 = null!;
     private Image<Rgba64> _rgba64 = null!;
     private Image<Rgba32> _opaque32 = null!;
+    private Image<RgbaFloat> _float = null!;
 
     /// <summary>Gets or sets <see cref="ImageConfiguration.MaxDegreeOfParallelism"/> (1 is the default configuration).</summary>
     [Params(1, 2, 4)]
@@ -40,6 +41,7 @@ public class ConvolutionBenchmarks
         _rgba32 = Image.ImportPixelData<Rgba32>(BenchmarkInputs.ResizeRgba32Source, BenchmarkInputs.ResizeWidth, BenchmarkInputs.ResizeHeight, configuration: configuration);
         _rgba64 = Image.ImportPixelData<Rgba64>(BenchmarkInputs.ResizeRgba64Source, BenchmarkInputs.ResizeWidth, BenchmarkInputs.ResizeHeight, configuration: configuration);
         _opaque32 = Image.ImportPixelData<Rgba32>(BenchmarkInputs.ResizeRgba32OpaqueSource, BenchmarkInputs.ResizeWidth, BenchmarkInputs.ResizeHeight, configuration: configuration);
+        _float = _rgba64.CloneAs<RgbaFloat>();
     }
 
     [GlobalCleanup]
@@ -48,6 +50,7 @@ public class ConvolutionBenchmarks
         _rgba32?.Dispose();
         _rgba64?.Dispose();
         _opaque32?.Dispose();
+        _float?.Dispose();
     }
 
     [Benchmark(Baseline = true)]
@@ -89,6 +92,10 @@ public class ConvolutionBenchmarks
     [Benchmark]
     [Workload("1920x1080 Rgba32 Gaussian blur, deviation 8 (49 weights per direction)")]
     public int GaussianBlur8() => Blur(_rgba32, 8);
+
+    [Benchmark]
+    [Workload("1920x1080 Rgba32 Gaussian blur, deviation 32 (193 weights per direction)")]
+    public int GaussianBlur32() => Blur(_rgba32, 32);
 
     [Benchmark]
     [Workload("1920x1080 opaque Rgba32 Gaussian blur, deviation 2 (13 weights per direction)")]
@@ -137,6 +144,18 @@ public class ConvolutionBenchmarks
     [Benchmark]
     [Workload("1920x1080 Rgba64 median, radius 2 (5x5)")]
     public int Median2Rgba64() => Filter(_rgba64, image => image.MedianBlur(2));
+
+    [Benchmark]
+    [Workload("1920x1080 RgbaFloat median, radius 1 (3x3)")]
+    public int Median1Float() => Filter(_float, image => image.MedianBlur(1));
+
+    [Benchmark]
+    [Workload("1920x1080 RgbaFloat median, radius 5 (11x11)")]
+    public int Median5Float() => Filter(_float, image => image.MedianBlur(5));
+
+    [Benchmark]
+    [Workload("1920x1080 RgbaFloat median, radius 15 (31x31)")]
+    public int Median15Float() => Filter(_float, image => image.MedianBlur(15));
 
     private static int Filter(Image source, Action<Image> filter)
     {

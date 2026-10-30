@@ -1033,9 +1033,11 @@ an opaque frame keeps its alpha.
 it: isolated specks disappear and edges stay sharp. Every sample, alpha included, is filtered on its own as stored;
 nothing is computed or rounded, and there is no working space (a transfer function keeps the order of the samples).
 Floating-point samples are ordered as numbers, `-0` below `+0`, and every sample that is not a number above the
-infinities (it comes back with a positive sign). Samples of up to 16 bits (the integer formats and `RgbaHalf`) are
-counted in histograms, and the time per pixel grows with the radius; `RgbaFloat` samples are sorted for every pixel,
-and it grows with its square.
+infinities (it comes back with a positive sign). The samples are counted in histograms, and the time per pixel grows
+with the radius. For `RgbaFloat` samples, a second histogram counts the samples whose 16 high bits are those of the
+median: it is rebuilt from the whole window, a cost that grows with the square of the radius, each time the median
+moves to other high bits (for samples between 0.5 and 1, these groups span 1/256). With a radius of 1, the 9
+`RgbaFloat` samples of each window are sorted.
 
 The box blur and the median give the samples of `cv2.blur` and `cv2.medianBlur` of OpenCV for the same edges, and the
 unsharp mask those of the same formula over `cv2.GaussianBlur` (the tests keep some of them). ImageMagick 7.1 agrees

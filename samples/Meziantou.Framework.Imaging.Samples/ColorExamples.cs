@@ -2,7 +2,7 @@ using Meziantou.Framework.Imaging.Metadata;
 
 namespace Meziantou.Framework.Imaging.Samples;
 
-/// <summary>Examples of the documentation site (docs/01-Imaging/09-Color), run by DocumentationExampleTests.</summary>
+/// <summary>Examples of the documentation site (docs/Imaging/09-Color), run by DocumentationExampleTests.</summary>
 internal static class ColorExamples
 {
     /// <summary>The EXIF orientation is reported by the decoder, and applied to the pixels on request.</summary>

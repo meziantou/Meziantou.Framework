@@ -1,4 +1,4 @@
-// The examples of the documentation (docs/77-Xunit). This project only compiles them: the test classes are nested in
+// The examples of the documentation (docs/Xunit). This project only compiles them: the test classes are nested in
 // this class so that each one can be read on its own.
 using Meziantou.Xunit;
 using Xunit;

@@ -13,7 +13,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/Meziantou.Framework.JavaScriptEngine/Meziantou.Framework.JavaScriptEngine.csproj" />
-    <!-- The classes of the documentation site (docs/11-JavaScriptEngine), run by JsEngineTests.cs -->
+    <!-- The classes of the documentation site (docs/JavaScriptEngine), run by JsEngineTests.cs -->
     <ProjectReference Include="../../samples/Meziantou.Framework.JavaScriptEngine.Samples/Meziantou.Framework.JavaScriptEngine.Samples.csproj" />
   </ItemGroup>
 </Project>

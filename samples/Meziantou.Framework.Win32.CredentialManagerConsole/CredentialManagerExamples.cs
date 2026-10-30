@@ -1,6 +1,6 @@
 namespace Meziantou.Framework.Win32.CredentialManagerConsole;
 
-// Examples of the documentation (docs/71-Win32). They read or change the credentials of the user, or show a prompt,
+// Examples of the documentation (docs/Win32). They read or change the credentials of the user, or show a prompt,
 // so they are compiled in CI to keep the documentation in sync with the API, but not run.
 public static class CredentialManagerExamples
 {

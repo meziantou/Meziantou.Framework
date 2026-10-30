@@ -3,7 +3,7 @@ using Meziantou.Framework.Imaging.Metadata;
 
 namespace Meziantou.Framework.Imaging.Samples;
 
-/// <summary>Examples of the documentation site (docs/01-Imaging/10-Formats), run by DocumentationExampleTests.</summary>
+/// <summary>Examples of the documentation site (docs/Imaging/10-Formats), run by DocumentationExampleTests.</summary>
 internal static class FormatExamples
 {
     /// <summary>GIF output: how alpha and colors are reduced.</summary>

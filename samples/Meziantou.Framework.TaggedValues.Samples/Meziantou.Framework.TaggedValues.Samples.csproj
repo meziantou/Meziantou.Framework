@@ -1,7 +1,7 @@
 <Project Sdk="Meziantou.NET.Sdk">
 
   <!--
-    The examples of the readme of Meziantou.Framework.TaggedValues and of docs/16-TaggedValues. The analyzer does not run
+    The examples of the readme of Meziantou.Framework.TaggedValues and of docs/TaggedValues. The analyzer does not run
     on this project: the examples contain the diagnostics they document, and
     tests/Meziantou.Framework.TaggedValues.Analyzer.Tests checks that the analyzer reports the diagnostics written in
     their comments. The files of the Strict and NamingConventions folders are analyzed with the option of the same name.

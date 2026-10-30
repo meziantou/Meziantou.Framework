@@ -6,7 +6,7 @@ using Xunit.Sdk;
 namespace Meziantou.Framework.WebPlatform.Imaging.Tests;
 
 /// <summary>
-/// Renders the images of the documentation site (docs/10-WebPlatform/*/images): each test runs an example of the
+/// Renders the images of the documentation site (docs/WebPlatform/*/images): each test runs an example of the
 /// documentation, and compares its pixels with the committed PNG. With the environment variable
 /// <see cref="UpdateVariable"/> set to 1, a missing or different image is written instead (see docs/AGENTS.md).
 /// </summary>
@@ -16,7 +16,7 @@ public sealed class DocumentationImageTests
     private const string Rendering = "07-Rendering";
     private const string LoadingPages = "05-LoadingPages";
 
-    private static readonly string DocumentationRoot = Path.Combine(TestPaths.Root, "docs", "10-WebPlatform");
+    private static readonly string DocumentationRoot = Path.Combine(TestPaths.Root, "docs", "WebPlatform");
 
     [Fact]
     public void PageScreenshot()

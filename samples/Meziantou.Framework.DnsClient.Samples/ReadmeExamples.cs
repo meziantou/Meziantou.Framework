@@ -69,7 +69,7 @@ internal static class ReadmeExamples
         #endregion
     }
 
-    // The examples below are in the documentation (docs/73-Dns). dns.example.net stands for the resolver you use.
+    // The examples below are in the documentation (docs/Dns). dns.example.net stands for the resolver you use.
 
     public static void Protocols()
     {

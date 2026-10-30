@@ -3,7 +3,9 @@
   "version": 1,
   "site": {
     "title": "Meziantou.Framework",
-    "description": "Documentation of the Meziantou.Framework libraries."
+    "description": "Documentation of the Meziantou.Framework libraries.",
+    "logo": "docs/logo.svg",
+    "favicon": "docs/logo.svg"
   },
   "output": "artifacts/docs",
   "content": {

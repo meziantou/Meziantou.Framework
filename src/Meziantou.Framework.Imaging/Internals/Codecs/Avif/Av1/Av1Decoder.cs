@@ -146,7 +146,7 @@ internal sealed class Av1Decoder : IDisposable
                     if (!_seenFrameHeader)
                         throw Av1Errors.Invalid("a tile group has no frame header.");
 
-                    output = ReadTileGroup(payloadOffset, obu.PayloadLength, cancellationToken);
+                    output = ReadTileGroup(payloadOffset, obu.PayloadLength, isFrameObu: false, cancellationToken);
                     break;
                 case Av1Constants.ObuTileList:
                     throw Av1Errors.Unsupported("large scale tile decoding");
@@ -252,7 +252,7 @@ internal sealed class Av1Decoder : IDisposable
         if (headerBytes > obu.PayloadLength)
             throw Av1Errors.Truncated();
 
-        return ReadTileGroup(payloadOffset + headerBytes, obu.PayloadLength - headerBytes, cancellationToken);
+        return ReadTileGroup(payloadOffset + headerBytes, obu.PayloadLength - headerBytes, isFrameObu: true, cancellationToken);
     }
 
     private Av1FrameBuffer ShowExistingFrame(Av1FrameHeader header)
@@ -283,13 +283,19 @@ internal sealed class Av1Decoder : IDisposable
     }
 
     // Section 5.11.1 "General tile group OBU syntax"
-    private Av1FrameBuffer? ReadTileGroup(int offset, int length, CancellationToken cancellationToken)
+    private Av1FrameBuffer? ReadTileGroup(int offset, int length, bool isFrameObu, CancellationToken cancellationToken)
     {
         var frame = _coding.CurrentFrame!;
         var header = frame.Header;
         var tileCount = header.TileCount;
         var reader = new Av1BitReader(_data.AsSpan(offset, length));
         var tileStartAndEndPresent = tileCount > 1 && reader.ReadFlag();
+
+        // Section 6.10.1 "General tile group OBU semantics": the tile group of a frame OBU has no tile positions, so it
+        // holds every tile of the frame. A tile group OBU can hold a part of the tiles.
+        if (tileStartAndEndPresent && isFrameObu)
+            throw Av1Errors.Invalid("the tile group of a frame OBU has tile start and end positions.");
+
         var tgStart = 0;
         var tgEnd = tileCount - 1;
         if (tileStartAndEndPresent)

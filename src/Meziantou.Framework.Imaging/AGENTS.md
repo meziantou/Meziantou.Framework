@@ -476,6 +476,27 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
       at least;
     - the field is computed from the image once: the encoder does not decode the frame to measure it and refine
       the field.
+- **WebP lossless encoder** (`Vp8LEncoder` and its partial files). The transforms of a frame are chosen by measurement
+  (`RankConfigurations`: each candidate is encoded at effort 2 into `LsbBitWriter.CreateCounter`), the main image is
+  parsed a second time against a cost model from effort 5 (`Vp8LEncoder.CostModel.cs`), and an entropy image splits the
+  prefix codes from effort 3 (`Vp8LEncoder.EntropyImage.cs`). `cwebp -lossless -exact -z <effort> -metadata none` (in the
+  prebuilt tools, not used by the tests) is the yardstick, and `cwebp -v` prints the transforms it chose. Measured on
+  screenshots, UI icons, photographs, smooth graphics, gradients and synthetic images (2026-10, against the encoder with
+  one group and fixed transforms): effort 3 -8.7 %, effort 5 -11.4 % (0.99 x the size of `cwebp -z 5`), effort 9
+  -10.1 %, for 1.3x, 2.3x and 7x the CPU time. What decided the design:
+  - Screenshots and flat graphics are 30 % smaller without the predictor (subtract green alone): their repetitions are
+    exact and backward references find them. Images where fewer than half the pixels repeat a neighbor always lose
+    without it, so the candidate is skipped there (`IsFlat`).
+  - A color table loses to the predictor (on the colors or on the indexes) on smooth ramps of up to 256 colors, by 2 to
+    4 times; with 16 colors or fewer the bundled indexes win below effort 7.
+  - Predictor tiles of 16 and 64 pixels differ by 2 % at most, so effort 5 tries one size.
+  - The second parse is most of the CPU time: committing references of 128 pixels or more (below effort 9) and not
+    searching the hash chains while a match of 16 pixels is known removed 40 % of it for 0.4 % of size.
+  - Ranking without the second parse can misrank text images, where the cost model gains more with a color table:
+    effort 9 encodes the two best candidates fully. Rank on a sample (bands of 64 rows, a quarter of a large image):
+    whole-image ranking gained 0.3 %.
+  Measure CPU time per thread (`clock_gettime(CLOCK_THREAD_CPUTIME_ID)`), not wall time: other sessions load this
+  machine and wall times varied 3x between identical runs.
 - **Progressive reading.** `ImageReader.ReadFrameRefinementInto` is the only way to see a frame before it is complete.
   The walker stops at the lengths the decoder asks for (the end of the sections of a stage); an intermediate rendering
   decodes the sections again from the buffered payload (`JpegXlFrameDecoder.DecodePartial`), never changes the state of

@@ -589,7 +589,11 @@ public sealed class WebPEncoderTests
     [InlineData("short-repeats", 509, 67, 3)]
     [InlineData("short-repeats", 509, 67, 9)]
     [InlineData("long-repeats", 300, 200, 5)]
+    [InlineData("long-repeats", 300, 200, 9)]
+    [InlineData("runs", 5000, 7, 5)] // references longer than 4,096 pixels and taken whole by the second parse
+    [InlineData("runs", 5000, 7, 9)]
     [InlineData("single-pixel", 1, 1, 5)]
+    [InlineData("single-pixel", 1, 1, 9)]
     public void LosslessTokensRoundTrip(string pattern, int width, int height, int effort)
     {
         var source = CreateArgb(pattern, width, height);
@@ -623,13 +627,183 @@ public sealed class WebPEncoderTests
         Assert.True(peak <= 16L * Width * Height, $"peak live bytes: {peak}");
     }
 
+    [Fact]
+    public void LosslessWorkingMemoryIsBoundedAtTheHighestEffort()
+    {
+        // Effort 9 adds the second parse (the arrivals, 4 bytes per pixel, while the hash chains are held), the histograms
+        // of the tiles of the entropy image (at most 8 bytes per pixel, after the parses) and the ranking of the
+        // configurations (a copy of the image and the state of one encoding into a counting writer): the peak stays that of
+        // effort 5
+        const int Width = 512;
+        const int Height = 512;
+        foreach (var pattern in new[] { "noise", "long-repeats", "mixed" })
+        {
+            var argb = CreateArgb(pattern, Width, Height);
+            var scope = new AllocationScope(ImageResourceLimits.Default);
+            using var writer = new LsbBitWriter(scope);
+            Vp8LEncoder.Encode(scope, writer, argb, Width, Height, effort: 9, CancellationToken.None);
+            writer.Finish();
+
+            var peak = scope.GetDiagnostics().PeakLiveBytes;
+            Assert.True(peak <= 16L * Width * Height, $"{pattern}: peak live bytes: {peak}");
+        }
+    }
+
+    [Theory]
+    [InlineData("ramp", "Palette", 0, 3)]
+    [InlineData("ramp", "PredictedPalette", 2, 5)]
+    [InlineData("ramp", "PredictedPalette", 6, 9)]
+    [InlineData("graphics", "Palette", 0, 5)]
+    [InlineData("graphics", "PredictedPalette", 4, 5)] // 16 colors or fewer: the predictor applies to the bundled indexes
+    [InlineData("graphics", "SubtractGreen", 0, 3)]
+    [InlineData("gradient", "Spatial", 2, 5)]
+    [InlineData("gradient", "Spatial", 3, 9)]
+    [InlineData("gradient", "Spatial", 6, 0)]
+    [InlineData("gradient", "SubtractGreen", 0, 9)]
+    [InlineData("mixed", "Spatial", 5, 5)]
+    [InlineData("mixed", "SubtractGreen", 0, 7)]
+    public void LosslessConfigurationsRoundTrip(string pattern, string mode, int bits, int effort)
+    {
+        const int Width = 157;
+        const int Height = 131;
+        var source = CreateArgb(pattern, Width, Height);
+        var argb = source.ToArray();
+        var configuration = new Vp8LConfiguration(Enum.Parse<Vp8LTransformMode>(mode), bits, EntropyPredictors: effort >= 6);
+        var scope = new AllocationScope(ImageResourceLimits.Default);
+        using var writer = new LsbBitWriter(scope);
+        Vp8LEncoder.Encode(scope, writer, argb, Width, Height, effort, CancellationToken.None, configuration);
+        writer.Finish();
+
+        var decoded = ReferenceVp8L.Decode(writer.WrittenSpan);
+        Assert.True(source.AsSpan().SequenceEqual(decoded.Argb));
+
+        // Transforms: 0 predictor, 1 color, 2 subtract green, 3 color indexing
+        var structure = ReferenceVp8L.Describe(writer.WrittenSpan);
+        int[] expected = configuration.Mode switch
+        {
+            Vp8LTransformMode.Palette => [3],
+            Vp8LTransformMode.PredictedPalette => [3, 0],
+            Vp8LTransformMode.Spatial => effort >= 3 ? [2, 0, 1] : [2, 0],
+            _ => [2],
+        };
+
+        Assert.Equal(expected, structure.Transforms);
+        Assert.Equal(expected.Contains(0) ? bits : 0, structure.PredictorBits);
+    }
+
+    [Fact]
+    public void LosslessEntropyImageSplitsRegionsWithDifferentStatistics()
+    {
+        // Noise on the left, flat graphics on the right: from effort 3, the two halves get prefix codes of their own
+        const int Width = 256;
+        const int Height = 192;
+        var source = CreateArgb("mixed", Width, Height);
+        var sizes = new long[2];
+        foreach (var effort in new[] { 2, 3 })
+        {
+            var scope = new AllocationScope(ImageResourceLimits.Default);
+            using var writer = new LsbBitWriter(scope);
+            Vp8LEncoder.Encode(scope, writer, source.ToArray(), Width, Height, effort, CancellationToken.None, new Vp8LConfiguration(Vp8LTransformMode.SubtractGreen, 0, EntropyPredictors: false));
+            writer.Finish();
+
+            Assert.True(source.AsSpan().SequenceEqual(ReferenceVp8L.Decode(writer.WrittenSpan).Argb));
+            var structure = ReferenceVp8L.Describe(writer.WrittenSpan);
+            if (effort == 2)
+            {
+                Assert.Equal(1, structure.GroupCount);
+            }
+            else
+            {
+                Assert.True(structure.GroupCount > 1, $"groups: {structure.GroupCount}");
+                Assert.True(structure.PrefixBits is >= 2 and <= 9, $"prefix bits: {structure.PrefixBits}");
+            }
+
+            sizes[effort - 2] = writer.WrittenSpan.Length;
+        }
+
+        Assert.True(sizes[1] < sizes[0], $"one group: {sizes[0]} bytes, entropy image: {sizes[1]} bytes");
+    }
+
+    [Theory]
+    [InlineData("alpha-ramp", "Palette")] // 256 colors along a smooth ramp: predicting the indexes or the colors wins
+    [InlineData("blocks", "Spatial")] // flat blocks of 300 colors: the pixels as they are win
+    public void LosslessRankingAvoidsTheFixedChoiceWhenItIsLarger(string pattern, string fixedMode)
+    {
+        const int Width = 256;
+        const int Height = 128;
+        var source = CreateArgb(pattern, Width, Height);
+        var scope = new AllocationScope(ImageResourceLimits.Default);
+        var ranked = Vp8LEncoder.RankConfigurations(scope, source, Width, Height, effort: 5, CancellationToken.None);
+        Assert.NotEqual(Enum.Parse<Vp8LTransformMode>(fixedMode), ranked[0].Mode);
+
+        var chosen = EncodeSize(ranked[0]);
+        var fixedChoice = EncodeSize(new Vp8LConfiguration(Enum.Parse<Vp8LTransformMode>(fixedMode), 5, EntropyPredictors: false));
+        Assert.True(chosen < fixedChoice, $"{ranked[0]}: {chosen} bits, {fixedMode}: {fixedChoice} bits");
+
+        long EncodeSize(Vp8LConfiguration configuration)
+        {
+            using var counter = LsbBitWriter.CreateCounter(scope);
+            Vp8LEncoder.Encode(scope, counter, source.ToArray(), Width, Height, effort: 5, CancellationToken.None, configuration);
+            return counter.BitCount;
+        }
+    }
+
+    [Fact]
+    public void LosslessCandidatesFollowTheEffortAndTheImage()
+    {
+        // Below effort 3: one fixed choice
+        Assert.Equal([new Vp8LConfiguration(Vp8LTransformMode.Palette, 0, false)], Vp8LEncoder.GetCandidates(2, 200, flat: true));
+        Assert.Equal([new Vp8LConfiguration(Vp8LTransformMode.Spatial, 6, false)], Vp8LEncoder.GetCandidates(0, 257, flat: true));
+
+        // 16 colors or fewer: bundled color indexing below effort 7
+        Assert.Equal([new Vp8LConfiguration(Vp8LTransformMode.Palette, 0, false)], Vp8LEncoder.GetCandidates(5, 16, flat: true));
+        Assert.Contains(Vp8LEncoder.GetCandidates(7, 16, flat: true), c => c.Mode == Vp8LTransformMode.Spatial);
+
+        // The pixels as they are only for flat images
+        Assert.DoesNotContain(Vp8LEncoder.GetCandidates(5, 257, flat: false), c => c.Mode == Vp8LTransformMode.SubtractGreen);
+        Assert.Contains(Vp8LEncoder.GetCandidates(5, 257, flat: true), c => c.Mode == Vp8LTransformMode.SubtractGreen);
+
+        // Effort 9: four tile sizes, each with both predictor criteria
+        var spatial = Vp8LEncoder.GetCandidates(9, 257, flat: false);
+        Assert.HasCount(8, spatial);
+        Assert.All(spatial, c => Assert.Equal(Vp8LTransformMode.Spatial, c.Mode));
+    }
+
+    [Fact]
+    public void CountingBitWriterMeasuresTheStreamWithoutStoringIt()
+    {
+        const int Width = 120;
+        const int Height = 90;
+        var source = CreateArgb("mixed", Width, Height);
+        var scope = new AllocationScope(ImageResourceLimits.Default);
+        using var writer = new LsbBitWriter(scope);
+        using var counter = LsbBitWriter.CreateCounter(scope);
+        Vp8LEncoder.Encode(scope, writer, source.ToArray(), Width, Height, effort: 5, CancellationToken.None);
+        Vp8LEncoder.Encode(scope, counter, source.ToArray(), Width, Height, effort: 5, CancellationToken.None);
+        Assert.Equal(writer.BitCount, counter.BitCount);
+
+        writer.Finish();
+        counter.Finish();
+        Assert.Equal(writer.Length, counter.Length);
+        Assert.True(counter.WrittenSpan.IsEmpty);
+    }
+
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     private static uint[] CreateArgb(string pattern, int width, int height)
     {
         var random = new Random(width ^ (height << 16));
         var argb = new uint[width * height];
+        uint[] colors = [0xFFFAFAFA, 0xFF1E1E1E, 0xFFDC2828, 0xFF2878DC, 0xFFFAC81E, 0xFF3CAA50];
+        var tile = new uint[300];
+        for (var i = 0; i < tile.Length; i++)
+        {
+            tile[i] = 0xFF000000u | (uint)random.Next(1 << 24);
+        }
+
         for (var i = 0; i < argb.Length; i++)
         {
+            var x = i % width;
+            var y = i / width;
             argb[i] = pattern switch
             {
                 "noise" or "single-pixel" => (uint)random.Next() | ((uint)random.Next(2) << 31),
@@ -637,6 +811,17 @@ public sealed class WebPEncoderTests
                 // Runs of 3 or 4 repeated colors between new ones: alternating literals and short backward references
                 "short-repeats" => i % 7 < 3 ? (uint)random.Next() : argb[i - 3 - (i % 7 == 6 ? 1 : 0)],
                 "long-repeats" => i < width || i % 97 == 0 ? (uint)random.Next() : argb[i - width],
+                "runs" => (uint)(i / 6000) * 0x01030507u,
+
+                // 120 colors along a ramp that shifts every 3 rows
+                "ramp" => 0xFF000000u | ((uint)(((x + (y / 3)) / 6) % 120) * 0x020103u),
+
+                // 6 flat colors: blocks, lines and glyph-like dots
+                "graphics" => colors[(x / 16) + (y / 12) % 5 == 1 ? 2 + (x / 16 % 4) : y % 24 < 12 && x % 9 < 6 && (x / 9 + y / 24) % 3 != 0 ? 1 : 0],
+                "gradient" => 0xFF000000u | ((uint)(x * 255 / (width - 1)) << 16) | ((uint)(y * 255 / (height - 1)) << 8) | (uint)((x + y) & 0xFF),
+                "mixed" => x < width / 2 ? 0xFF000000u | (uint)random.Next(1 << 24) : colors[(x / 9 + y / 24) % 3 == 0 ? 1 : 0],
+                "alpha-ramp" => 0x001E78DCu | ((uint)(x * 255 / (width - 1)) << 24),
+                "blocks" => tile[(((x / 16) * 7) + ((y / 16) * 13)) % 300],
                 _ => throw new ArgumentOutOfRangeException(nameof(pattern)),
             };
         }

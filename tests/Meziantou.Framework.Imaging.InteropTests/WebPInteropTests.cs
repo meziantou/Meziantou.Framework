@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Diagnostics.CodeAnalysis;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.Metadata;
@@ -14,7 +15,8 @@ namespace Meziantou.Framework.Imaging.InteropTests;
 /// WebP interoperability with the libwebp reference tools (<c>dwebp</c>, <c>webpmux</c> and <c>anim_dump</c>)
 /// and FFmpeg's own WebP decoders (libavcodec <c>webp</c> and <c>vp8</c>, independent of libwebp):
 /// <list type="bullet">
-/// <item><description>lossless output of every corpus reference decodes exactly in dwebp and FFmpeg, hidden colors included;</description></item>
+/// <item><description>lossless output of every corpus reference decodes exactly in dwebp and FFmpeg, hidden colors included, and so
+/// does the output of images that lead the encoder to each of its choices of transforms and to meta prefix codes;</description></item>
 /// <item><description>lossy output is decoded to identical YUV planes by dwebp and FFmpeg (two independent VP8 decoders), with an
 /// exact alpha plane, and the library decodes it within one unit of dwebp;</description></item>
 /// <item><description>animations written with seek-and-patch (path and seekable stream, save and writer) are read by webpmux
@@ -52,6 +54,37 @@ public sealed class WebPInteropTests
             var info = await libwebp.GetInfoAsync(path, XunitCancellationToken);
             Assert.Equal((source.Width, source.Height), (info.Width, info.Height));
         }
+    }
+
+    [Theory]
+    [InlineData("mixed", 3)] // noise beside flat graphics: an entropy image
+    [InlineData("mixed", 9)]
+    [InlineData("ramp", 5)] // 120 colors: color indexing, predicted or not
+    [InlineData("ramp", 9)]
+    [InlineData("alpha-ramp", 5)] // 256 alpha levels: the predictor on the indexes or on the colors
+    [InlineData("gradient", 3)] // more than 256 colors: the predictor on tiles of 8 to 64 pixels
+    [InlineData("gradient", 9)]
+    [InlineData("blocks", 5)] // flat blocks of 300 colors: subtract green alone
+    [InlineData("blocks", 9)]
+    public async Task LosslessEncoderChoicesDecodeExactlyInLibWebPAndFFmpeg(string pattern, int effort)
+    {
+        // Images that lead the encoder to its alternative transforms, meta prefix codes and cost-model parse
+        var libwebp = await RequiredTools.LibWebPAsync();
+        var ffmpeg = await RequiredTools.FFmpegAsync();
+        const int Width = 203;
+        const int Height = 151;
+        var pixels = CreatePattern(pattern, Width, Height);
+        using var image = Image.ImportPixelData<Rgba32>(pixels, Width, Height);
+        var source = GetBytes(image);
+        var path = await SaveAsync(image, new WebPEncoder { Effort = effort }, $"lossless-{pattern}-e{effort}");
+        var context = $"{pattern} effort {effort}";
+
+        var (width, height, rgba) = await libwebp.DecodeAsync(path, XunitCancellationToken);
+        Assert.Equal((Width, Height), (width, height));
+        Assert.True(source.AsSpan().SequenceEqual(rgba), $"{context}: dwebp {libwebp.Version} decodes different samples.");
+
+        var frames = await ffmpeg.DecodeToRawFramesAsync(path, "rgba", Width, Height, XunitCancellationToken);
+        Assert.True(source.AsSpan().SequenceEqual(Assert.Single(frames)), $"{context}: FFmpeg {ffmpeg.Version} decodes different samples.");
     }
 
     [Theory]
@@ -322,6 +355,37 @@ public sealed class WebPInteropTests
                 Assert.True(Math.Abs(expected[i + c] - actual[i + c]) <= maxError, $"{context}: pixel {i / 4} channel {c} is {actual[i + c]}, expected {expected[i + c]} (max error {maxError}).");
             }
         }
+    }
+
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    private static Rgba32[] CreatePattern(string pattern, int width, int height)
+    {
+        var random = new Random(42);
+        var colors = new Rgba32[300];
+        for (var i = 0; i < colors.Length; i++)
+        {
+            colors[i] = new Rgba32((byte)random.Next(256), (byte)random.Next(256), (byte)random.Next(256), 255);
+        }
+
+        var pixels = new Rgba32[width * height];
+        for (var y = 0; y < height; y++)
+        {
+            for (var x = 0; x < width; x++)
+            {
+                var level = (byte)(((x + (y / 3)) / 6 % 120) * 2);
+                pixels[(y * width) + x] = pattern switch
+                {
+                    "mixed" => x < width / 2 ? new Rgba32((byte)random.Next(256), (byte)random.Next(256), (byte)random.Next(256), 255) : (x / 9 + y / 24) % 3 == 0 ? new Rgba32(30, 30, 30, 255) : new Rgba32(250, 250, 250, 255),
+                    "ramp" => new Rgba32(level, (byte)(255 - level), (byte)(64 + (level / 2)), 255),
+                    "alpha-ramp" => new Rgba32(30, 120, 220, (byte)(x * 255 / (width - 1))),
+                    "gradient" => new Rgba32((byte)(x * 255 / (width - 1)), (byte)(y * 255 / (height - 1)), (byte)(x + y), 255),
+                    "blocks" => colors[(((x / 16) * 7) + ((y / 16) * 13)) % colors.Length],
+                    _ => throw new ArgumentOutOfRangeException(nameof(pattern)),
+                };
+            }
+        }
+
+        return pixels;
     }
 
     private static async Task<FullPath> SaveAsync(Image image, WebPEncoder encoder, string name)

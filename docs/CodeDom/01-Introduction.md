@@ -58,7 +58,7 @@ to compose and to refactor than string concatenation, and the output is always w
 
 ## Principles
 
-- **A tree of objects.** Every element is a `CodeObject` with a `Parent`. Adding an object to a collection or assigning
+- **A tree of objects.** Every element is a [CodeObject](cref:Meziantou.Framework.CodeDom.CodeObject) with a [Parent](cref:Meziantou.Framework.CodeDom.CodeObject.Parent). Adding an object to a collection or assigning
   it to a property attaches it to the tree.
 - **Conversions keep the code short.** A `Type`, a `string`, a number, a `bool` or an enum converts to the matching
   type reference or literal, and a member declaration or an argument to a reference to it.

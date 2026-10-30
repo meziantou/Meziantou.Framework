@@ -10,7 +10,7 @@ path, how long should it wait between requests, and where are the sitemaps.
 
 ## What you can do with it
 
-- **Check a path** for a user agent with `IsAllowed`, from a path string or a `Uri`. See
+- **Check a path** for a user agent with [IsAllowed](cref:Meziantou.Framework.RobotsTxt.RobotsFile.IsAllowed), from a path string or a `Uri`. See
   [Getting started](02-GettingStarted.md).
 - **Find the group** of directives that applies to a crawler: an exact user-agent match wins over the `*` group, and
   groups that name the same agent are merged. See [User-agent groups](03-UserAgentGroups.md).
@@ -35,8 +35,8 @@ is reported as a parse error and skipped.
 
 ## Namespace
 
-Every type is in the [Meziantou.Framework.RobotsTxt](cref:Meziantou.Framework.RobotsTxt) namespace: `RobotsFile`, `RobotsGroup`, `RobotsRule`,
-`RobotsRuleKind`, `RobotsParseError` and `RobotsParseErrorKind`.
+Every type is in the [Meziantou.Framework.RobotsTxt](cref:Meziantou.Framework.RobotsTxt) namespace: [RobotsFile](cref:Meziantou.Framework.RobotsTxt.RobotsFile), [RobotsGroup](cref:Meziantou.Framework.RobotsTxt.RobotsGroup), [RobotsRule](cref:Meziantou.Framework.RobotsTxt.RobotsRule),
+[RobotsRuleKind](cref:Meziantou.Framework.RobotsTxt.RobotsRuleKind), [RobotsParseError](cref:Meziantou.Framework.RobotsTxt.RobotsParseError) and [RobotsParseErrorKind](cref:Meziantou.Framework.RobotsTxt.RobotsParseErrorKind).
 
 ## Next steps
 

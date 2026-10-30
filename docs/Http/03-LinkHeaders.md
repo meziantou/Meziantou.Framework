@@ -4,7 +4,7 @@ description: Parse RFC 8288 Link header values, find a link by relation type, re
 ---
 
 A `Link` header (RFC 8288) lists links related to a response: the next page of a collection, a resource to preload,
-the canonical URL of a document. `LinkHeaderValue`, in the `Meziantou.Framework.Http` package, parses it.
+the canonical URL of a document. [LinkHeaderValue](cref:Meziantou.Framework.Http.LinkHeaderValue), in the `Meziantou.Framework.Http` package, parses it.
 
 ```bash
 dotnet add package Meziantou.Framework.Http
@@ -12,8 +12,8 @@ dotnet add package Meziantou.Framework.Http
 
 ## Read the links of a response
 
-`EnumerateLinkHeaders` parses every `Link` header of a response, or of any `HttpHeaders`, and returns one
-`LinkHeaderValue` per link:
+[EnumerateLinkHeaders](cref:Meziantou.Framework.Http.LinkHeaderValueExtensions.EnumerateLinkHeaders) parses every `Link` header of a response, or of any `HttpHeaders`, and returns one
+[LinkHeaderValue](cref:Meziantou.Framework.Http.LinkHeaderValue) per link:
 
 <!-- ref:../../tests/Meziantou.Framework.Http.Tests/LinkHeaderValueTests.cs;region=LinkHeaderValue_EnumerateLinkHeaders;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -30,13 +30,13 @@ Assert.Equal(["next: /items?page=2", "last: /items?page=5"], links);
 ```
 <!-- endref -->
 
-`LinkHeaderValue.Parse` does the same from an `HttpResponseMessage`, an `HttpHeaders`, a `string` or a
+[LinkHeaderValue.Parse](cref:Meziantou.Framework.Http.LinkHeaderValue.Parse) does the same from an `HttpResponseMessage`, an `HttpHeaders`, a `string` or a
 `ReadOnlySpan<char>`. A header can hold several links separated by commas, and a response can have several `Link`
 headers: the links of all of them are returned, in order.
 
 ## Find a link by relation type
 
-`GetLink` returns the first link of a relation type, and `GetLinkUrl` its URL, or `null` when there is none:
+[GetLink](cref:Meziantou.Framework.Http.LinkHeaderValueExtensions.GetLink) returns the first link of a relation type, and [GetLinkUrl](cref:Meziantou.Framework.Http.LinkHeaderValueExtensions.GetLinkUrl) its URL, or `null` when there is none:
 
 <!-- ref:../../tests/Meziantou.Framework.Http.Tests/LinkHeaderValueTests.cs;region=LinkHeaderValue_GetLinkUrl;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -51,7 +51,7 @@ The relation type is compared case-insensitively. A link can declare several rel
 
 ## Resolve the URL of a link
 
-`Url` is the target as written between `<` and `>`. It is often relative: resolve it against the URI of the request
+[Url](cref:Meziantou.Framework.Http.LinkHeaderValue.Url) is the target as written between `<` and `>`. It is often relative: resolve it against the URI of the request
 before following it:
 
 <!-- ref:../../tests/Meziantou.Framework.Http.Tests/LinkHeaderValueTests.cs;region=LinkHeaderValue_ResolveRelativeUrl;format=md-fenced-code-block;dedent=true -->
@@ -70,7 +70,7 @@ Assert.Equal(new Uri("https://api.example.com/items?page=2"), nextUri);
 
 ## Read the parameters of a link
 
-`Parameters` lists the parameters of a link in order, and `GetParameterValue` returns the value of one, or `null` when
+[Parameters](cref:Meziantou.Framework.Http.LinkHeaderValue.Parameters) lists the parameters of a link in order, and [GetParameterValue](cref:Meziantou.Framework.Http.LinkHeaderValue.GetParameterValue) returns the value of one, or `null` when
 the link does not have it:
 
 <!-- ref:../../tests/Meziantou.Framework.Http.Tests/LinkHeaderValueTests.cs;region=LinkHeaderValue_Parse;format=md-fenced-code-block;dedent=true -->
@@ -81,10 +81,10 @@ Assert.Equal("style", link?.GetParameterValue("as"));
 ```
 <!-- endref -->
 
-- Parameter names are lowercased, and `GetParameterValue` compares them case-insensitively.
+- Parameter names are lowercased, and [GetParameterValue](cref:Meziantou.Framework.Http.LinkHeaderValue.GetParameterValue) compares them case-insensitively.
 - A quoted value is unquoted and unescaped (`\"` becomes `"`). An unquoted value is trimmed.
 - A parameter without a value (`; crossorigin`) has an empty value.
-- `Rel` is the value of the `rel` parameter, or an empty string when there is none.
+- [Rel](cref:Meziantou.Framework.Http.LinkHeaderValue.Rel) is the value of the `rel` parameter, or an empty string when there is none.
 
 <!-- ref:../../tests/Meziantou.Framework.Http.Tests/LinkHeaderValueTests.cs;region=LinkHeaderValue_Parameters;format=md-fenced-code-block;dedent=true -->
 ```csharp

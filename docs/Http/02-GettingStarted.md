@@ -40,7 +40,7 @@ using var response = await client.GetAsync("http://github.com");
 ```
 <!-- endref -->
 
-Every request sent by this client goes through `HstsClientHandler` before it reaches the network. With
+Every request sent by this client goes through [HstsClientHandler](cref:Meziantou.Framework.Http.HstsClientHandler) before it reaches the network. With
 `disposeHandler: true`, disposing the client disposes the handlers.
 
 A handler is a link of a chain: its inner handler can itself be a `DelegatingHandler`. Each page says what a handler

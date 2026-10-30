@@ -5,7 +5,7 @@ description: Write a new version or name at the location found by the scan, and 
 
 ## Update a version
 
-`Dependency.UpdateVersionAsync` writes a new version where the scan found the current one. Only that text changes: the
+[Dependency.UpdateVersionAsync](cref:Meziantou.Framework.DependencyScanning.Dependency.UpdateVersionAsync) writes a new version where the scan found the current one. Only that text changes: the
 rest of the file keeps its formatting:
 
 <!-- ref:../../tests/Meziantou.Framework.DependencyScanning.Tests/DependencyScannerTests.cs;region=DependencyScanning_UpdateVersion;format=md-fenced-code-block;dedent=true -->
@@ -40,10 +40,10 @@ Assert.Equal("13.0.1", dependency.Version);
 ```
 <!-- endref -->
 
-- Check `VersionLocation?.IsUpdatable` first. `UpdateVersionAsync` throws an `InvalidOperationException` when the
+- Check `VersionLocation?.IsUpdatable` first. [UpdateVersionAsync](cref:Meziantou.Framework.DependencyScanning.Dependency.UpdateVersionAsync) throws an `InvalidOperationException` when the
   dependency has no version location or when the location is not updatable, such as an entry of a lock file. See
   [Updatable or not](05-SupportedFiles/01-Overview.md#rules-shared-by-the-scanners).
-- `Dependency.Name` and `Dependency.Version` keep the values found by the scan. Scan again to read the file as it is now.
+- [Dependency.Name](cref:Meziantou.Framework.DependencyScanning.Dependency.Name) and [Dependency.Version](cref:Meziantou.Framework.DependencyScanning.Dependency.Version) keep the values found by the scan. Scan again to read the file as it is now.
 - The new value is written as text: pass a value that has the format of the file, such as `^2.0.0` to keep an npm
   range. A value that the file cannot hold, such as a line break in a line of text or a control character in an XML
   file, throws an `ArgumentException`.
@@ -73,8 +73,8 @@ The library writes the value it is given: choosing the new version, for instance
 
 ## Update a name
 
-`Dependency.UpdateNameAsync` replaces the name, for instance to move to a renamed package or to another registry. It
-follows the same rules as `UpdateVersionAsync`, with `NameLocation`.
+[Dependency.UpdateNameAsync](cref:Meziantou.Framework.DependencyScanning.Dependency.UpdateNameAsync) replaces the name, for instance to move to a renamed package or to another registry. It
+follows the same rules as [UpdateVersionAsync](cref:Meziantou.Framework.DependencyScanning.Dependency.UpdateVersionAsync), with [NameLocation](cref:Meziantou.Framework.DependencyScanning.Dependency.NameLocation).
 
 The name and the version can be updated in any order, even when they share a line or a value, such as `FROM node:18`:
 each location follows the changes made by the other one.
@@ -82,7 +82,7 @@ each location follows the changes made by the other one.
 ## An update never writes blindly
 
 Before it writes, an update checks that the file still holds the expected value at the location, and throws a
-`DependencyScannerException` without changing the file otherwise:
+[DependencyScannerException](cref:Meziantou.Framework.DependencyScanning.DependencyScannerException) without changing the file otherwise:
 
 <!-- ref:../../tests/Meziantou.Framework.DependencyScanning.Tests/DependencyScannerTests.cs;region=DependencyScanning_UpdateModifiedFile;format=md-fenced-code-block;dedent=true -->
 ```csharp

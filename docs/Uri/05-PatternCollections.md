@@ -3,13 +3,13 @@ title: Pattern collections
 description: Match a URL against a list of patterns, find the pattern that matches and read its groups.
 ---
 
-A `UrlPatternCollection` holds a list of patterns and matches a URL against each of them in turn, for instance to find
+A [UrlPatternCollection](cref:Meziantou.Framework.UrlPatternCollection) holds a list of patterns and matches a URL against each of them in turn, for instance to find
 the route of a request or to apply a list of allowed URLs.
 
 ## Match a URL against several patterns
 
-Add patterns as `UrlPattern` instances, pattern strings or `UrlPatternInit` values. `IsMatch` tells whether any
-pattern matches, `FindPattern` returns the first pattern that matches, and `Match` returns the result of the first
+Add patterns as [UrlPattern](cref:Meziantou.Framework.UrlPattern) instances, pattern strings or [UrlPatternInit](cref:Meziantou.Framework.UrlPatternInit) values. [IsMatch](cref:Meziantou.Framework.UrlPatternCollection.IsMatch) tells whether any
+pattern matches, [FindPattern](cref:Meziantou.Framework.UrlPatternCollection.FindPattern) returns the first pattern that matches, and [Match](cref:Meziantou.Framework.UrlPatternCollection.Match) returns the result of the first
 pattern that matches:
 
 <!-- ref:../../tests/Meziantou.Framework.Uri.Tests/UrlPatternCollectionTests.cs;region=UrlPatternCollection_Example;format=md-fenced-code-block;dedent=true -->
@@ -65,8 +65,8 @@ Assert.Equal("v2", apiResult.Pathname.Groups["version"]);
 ```
 <!-- endref -->
 
-Every overload of `UrlPattern` exists on the collection: a string, a relative string with its base URL, a `Uri` or a
-`UrlPatternInit`. `FindPattern` and `Match` return `null` when no pattern matches.
+Every overload of [UrlPattern](cref:Meziantou.Framework.UrlPattern) exists on the collection: a string, a relative string with its base URL, a `Uri` or a
+[UrlPatternInit](cref:Meziantou.Framework.UrlPatternInit). [FindPattern](cref:Meziantou.Framework.UrlPatternCollection.FindPattern) and [Match](cref:Meziantou.Framework.UrlPatternCollection.Match) return `null` when no pattern matches.
 
 ## Order the patterns
 
@@ -86,13 +86,13 @@ Assert.Null(routes.FindPattern("https://example.com/authors/123"));
 ```
 <!-- endref -->
 
-The `Add` overloads that take a string or a `UrlPatternInit` return the pattern they create, so you can compare it with
-the result of `FindPattern` to know which one matched.
+The [Add](cref:Meziantou.Framework.UrlPatternCollection.Add) overloads that take a string or a [UrlPatternInit](cref:Meziantou.Framework.UrlPatternInit) return the pattern they create, so you can compare it with
+the result of [FindPattern](cref:Meziantou.Framework.UrlPatternCollection.FindPattern) to know which one matched.
 
 ## Edit the collection
 
-`UrlPatternCollection` implements `IReadOnlyList<UrlPattern>` (`Count`, the indexer and enumeration) and has `Add`,
-`Remove`, `Contains` and `Clear`.
+[UrlPatternCollection](cref:Meziantou.Framework.UrlPatternCollection) implements `IReadOnlyList<UrlPattern>` ([Count](cref:Meziantou.Framework.UrlPatternCollection.Count), the indexer and enumeration) and has [Add](cref:Meziantou.Framework.UrlPatternCollection.Add),
+[Remove](cref:Meziantou.Framework.UrlPatternCollection.Remove), [Contains](cref:Meziantou.Framework.UrlPatternCollection.Contains) and [Clear](cref:Meziantou.Framework.UrlPatternCollection.Clear).
 Matching tries every pattern until one matches, so its cost grows with the number of patterns.
 
 The collection is not synchronized: build it first, then match from as many threads as you need, but do not add or

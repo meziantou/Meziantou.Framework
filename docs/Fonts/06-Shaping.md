@@ -8,7 +8,7 @@ places the marks and kerns the pairs. A renderer draws the glyphs of shaping, no
 
 ## Shape a run
 
-`TextShaper.AddText` puts the characters of a text in a `GlyphBuffer`, and `TextShaper.Shape` replaces them with the
+[TextShaper.AddText](cref:Meziantou.Framework.Fonts.TextShaper.AddText) puts the characters of a text in a [GlyphBuffer](cref:Meziantou.Framework.Fonts.GlyphBuffer), and [TextShaper.Shape](cref:Meziantou.Framework.Fonts.TextShaper.Shape) replaces them with the
 glyphs of the font and their positions:
 
 <!-- ref:../../tests/Meziantou.Framework.Imaging.Tests/TextShaperTests.cs;region=Fonts_Shape;format=md-fenced-code-block;dedent=true -->
@@ -42,7 +42,7 @@ For each glyph, the buffer has:
 - `Info[i].Glyph`, the glyph to draw, and `Info[i].Cluster`, the index of the first character of its cluster in the text.
   The glyphs that shaping ties together (a ligature, a letter and its marks) share a cluster: a caret, a selection or a
   line break never separates them.
-- `Positions[i].XAdvance` and `YAdvance`, how far the pen moves after the glyph, and `XOffset` and `YOffset`, where the
+- `Positions[i].XAdvance` and [YAdvance](cref:Meziantou.Framework.Fonts.GlyphPosition.YAdvance), how far the pen moves after the glyph, and [XOffset](cref:Meziantou.Framework.Fonts.GlyphPosition.XOffset) and [YOffset](cref:Meziantou.Framework.Fonts.GlyphPosition.YOffset), where the
   glyph is drawn from the pen. They are in font units.
 
 `Info[i].IsUnsafeToBreak` marks the glyphs before which the text cannot be broken without shaping both parts again:
@@ -52,7 +52,7 @@ what the font did there depends on the characters on both sides, such as joined 
 
 Draw each glyph at the pen position plus its offset, then move the pen by its advance. This example shapes Arabic text,
 and draws its glyphs with the drawing API of [Meziantou.Framework.Imaging](../Imaging/07-Drawing/01-Overview.md),
-through an `OutlineSink` that adds the outlines to a path (see [Glyphs](04-Glyphs.md#decode-an-outline)):
+through an [OutlineSink](cref:Meziantou.Framework.Fonts.OutlineSink) that adds the outlines to a path (see [Glyphs](04-Glyphs.md#decode-an-outline)):
 
 <!-- ref:../../tests/Meziantou.Framework.Imaging.Tests/Documentation/DocumentationImageTests.cs;region=Fonts_PathSink;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -118,22 +118,22 @@ The glyphs of a right-to-left run are given in the order they are drawn, from th
 
 A run has one font, one script, one language and one direction. Split a text into runs before shaping it:
 
-- the script runs of `Unicode.EnumerateScriptRuns` (see [Scripts](../Unicode/04-Scripts.md#split-a-text-into-runs-of-one-script));
-- the levels of `UnicodeBidi`, a run having one level (see [Bidirectional text](../Unicode/11-BidirectionalText.md));
+- the script runs of [Unicode.EnumerateScriptRuns](cref:Meziantou.Framework.Unicode.EnumerateScriptRuns) (see [Scripts](../Unicode/04-Scripts.md#split-a-text-into-runs-of-one-script));
+- the levels of [UnicodeBidi](cref:Meziantou.Framework.UnicodeBidi), a run having one level (see [Bidirectional text](../Unicode/11-BidirectionalText.md));
 - the characters the font has: give the others to another font.
 
-| Parameter of `Shape` | Description |
+| Parameter of [Shape](cref:Meziantou.Framework.Fonts.TextShaper.Shape) | Description |
 | --- | --- |
-| `script` | The `UnicodeScript` of the run: it selects the shaping model and the script of the layout tables |
+| `script` | The [UnicodeScript](cref:Meziantou.Framework.UnicodeScript) of the run: it selects the shaping model and the script of the layout tables |
 | `languages` | The OpenType tags of the language, by order of preference: `OpenTypeLanguage.GetTags("ar")`; empty for the default language system |
 | `isRightToLeft` | The run is laid out from right to left |
 | `features` | The features to turn on or off, besides the default ones |
 | `isVertical` | The run is laid out from top to bottom, its glyphs upright, with the vertical forms of the font |
 | `scratch` | The working storage that measures the outlines of a font without vertical origins, for a vertical run |
-| `cache` | A `ShapingCache` the runs of a layout share; `Trim` it before keeping it for the next layout |
+| `cache` | A [ShapingCache](cref:Meziantou.Framework.Fonts.ShapingCache) the runs of a layout share; [Trim](cref:Meziantou.Framework.Fonts.ShapingCache.Trim) it before keeping it for the next layout |
 | `areCharactersMirrored` | The characters of a right-to-left run are already replaced by their mirrored forms |
 
-When a run is a part of a longer text, give the characters around it with `GlyphBuffer.SetContext`: the letters of a
+When a run is a part of a longer text, give the characters around it with [GlyphBuffer.SetContext](cref:Meziantou.Framework.Fonts.GlyphBuffer.SetContext): the letters of a
 joining script take the forms they have in the whole text.
 
 ## Features
@@ -143,8 +143,8 @@ The features applied to every horizontal run are the ones the OpenType specifica
 `abvm`, `blwm`, `mark`, `mkmk`, `curs`, `dist` and `kern` for positioning. Complex scripts add the features of their
 shaping model.
 
-A `ShapingFeature` turns a feature on (1) or off (0), or selects an alternate (a larger value), for the whole run or for
-the clusters between `Start` and `End`:
+A [ShapingFeature](cref:Meziantou.Framework.Fonts.ShapingFeature) turns a feature on (1) or off (0), or selects an alternate (a larger value), for the whole run or for
+the clusters between [Start](cref:Meziantou.Framework.Fonts.ShapingFeature.Start) and [End](cref:Meziantou.Framework.Fonts.ShapingFeature.End):
 
 - `new ShapingFeature("liga", 0)` turns the ligatures off;
 - `new ShapingFeature("smcp")` turns the small capitals on;
@@ -152,6 +152,6 @@ the clusters between `Start` and `End`:
 
 ## Limits
 
-The glyphs of a shaped text are bounded by `FontResourceLimits.MaxTextGlyphs`, and the work of the lookups of the font
-is in proportion with the text: a font cannot make shaping run without end. `Shape` throws `InvalidFontException` for a
-malformed layout table, and `FontResourceLimitException` when the glyphs exceed the limit.
+The glyphs of a shaped text are bounded by [FontResourceLimits.MaxTextGlyphs](cref:Meziantou.Framework.Fonts.FontResourceLimits.MaxTextGlyphs), and the work of the lookups of the font
+is in proportion with the text: a font cannot make shaping run without end. [Shape](cref:Meziantou.Framework.Fonts.TextShaper.Shape) throws [InvalidFontException](cref:Meziantou.Framework.Fonts.InvalidFontException) for a
+malformed layout table, and [FontResourceLimitException](cref:Meziantou.Framework.Fonts.FontResourceLimitException) when the glyphs exceed the limit.

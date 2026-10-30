@@ -20,9 +20,9 @@ optional build metadata.
 ## SemanticVersion or System.Version
 
 `System.Version` has up to four numbers and no labels: it cannot hold `2.0.0-rc.1`, and it orders `1.0` before `1.0.0`.
-Use `SemanticVersion` for the versions of packages, APIs and releases that follow Semantic Versioning.
+Use [SemanticVersion](cref:Meziantou.Framework.Versioning.SemanticVersion) for the versions of packages, APIs and releases that follow Semantic Versioning.
 
 ## Namespaces
 
-`SemanticVersion`, `SemanticVersionExtensions` and `SemanticVersionRange` are in the [Meziantou.Framework.Versioning](cref:Meziantou.Framework.Versioning)
+[SemanticVersion](cref:Meziantou.Framework.Versioning.SemanticVersion), [SemanticVersionExtensions](cref:Meziantou.Framework.Versioning.SemanticVersionExtensions) and [SemanticVersionRange](cref:Meziantou.Framework.Versioning.SemanticVersionRange) are in the [Meziantou.Framework.Versioning](cref:Meziantou.Framework.Versioning)
 namespace.

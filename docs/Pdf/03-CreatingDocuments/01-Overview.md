@@ -60,11 +60,11 @@ document.Pages.RemoveAt(document.Pages.IndexOf(cover));
 ```
 <!-- endref -->
 
-- `PdfSize` has the common sizes (`A3`, `A4`, `A5`, `Letter`, `Legal`), `FromMillimeters`, and `ToLandscape`, which
+- [PdfSize](cref:Meziantou.Framework.Pdf.PdfSize) has the common sizes ([A3](cref:Meziantou.Framework.Pdf.PdfSize.A3), [A4](cref:Meziantou.Framework.Pdf.PdfSize.A4), [A5](cref:Meziantou.Framework.Pdf.PdfSize.A5), [Letter](cref:Meziantou.Framework.Pdf.PdfSize.Letter), [Legal](cref:Meziantou.Framework.Pdf.PdfSize.Legal)), [FromMillimeters](cref:Meziantou.Framework.Pdf.PdfSize.FromMillimeters), and [ToLandscape](cref:Meziantou.Framework.Pdf.PdfSize.ToLandscape), which
   puts the greater dimension in the width.
-- The media box (`MediaBox`) is the size of the page. The crop box (`CropBox`) is the region viewers show and print; it
+- The media box ([MediaBox](cref:Meziantou.Framework.Pdf.PdfPage.MediaBox)) is the size of the page. The crop box ([CropBox](cref:Meziantou.Framework.Pdf.PdfPage.CropBox)) is the region viewers show and print; it
   is the media box unless it is set.
-- `Rotation` turns the page clockwise when it is shown, by 0, 90, 180 or 270 degrees. The content keeps its coordinates.
+- [Rotation](cref:Meziantou.Framework.Pdf.PdfPage.Rotation) turns the page clockwise when it is shown, by 0, 90, 180 or 270 degrees. The content keeps its coordinates.
 
 ## Coordinates
 
@@ -72,31 +72,31 @@ Positions and sizes are in points, 1/72 inch: an A4 page is 595 by 842 points, a
 the lower-left corner of the page, x grows to the right and y upward, so the top of a page is at its height. Text is
 positioned by the start of its baseline.
 
-The transformation of the graphics state changes these coordinates for what follows: `Translate`, `Rotate` (degrees,
-counterclockwise), `Scale` and `Transform` (any `PdfMatrix`). See
+The transformation of the graphics state changes these coordinates for what follows: [Translate](cref:Meziantou.Framework.Pdf.PdfContentBuilder.Translate), [Rotate](cref:Meziantou.Framework.Pdf.PdfContentBuilder.Rotate) (degrees,
+counterclockwise), [Scale](cref:Meziantou.Framework.Pdf.PdfContentBuilder.Scale) and [Transform](cref:Meziantou.Framework.Pdf.PdfContentBuilder.Transform) (any [PdfMatrix](cref:Meziantou.Framework.Pdf.PdfMatrix)). See
 [Shapes and colors](02-ShapesAndColors.md#move-turn-and-clip).
 
 ## The content builder
 
-`PdfPage.CreateContentBuilder` returns a builder that appends a content stream to the page. Its methods write the
+[PdfPage.CreateContentBuilder](cref:Meziantou.Framework.Pdf.PdfPage.CreateContentBuilder) returns a builder that appends a content stream to the page. Its methods write the
 operators of PDF, and return the builder so that the calls can be chained. The fonts, images, forms and patterns it uses
 are added to the resources of the page.
 
 - **The graphics state** holds the current colors, line style, transformation, clip, font and transparency.
-  `SaveGraphicsState` saves it, and `RestoreGraphicsState` goes back to it: wrap the changes that apply to one part of
-  the page between them. `GraphicsStateDepth` is the number of saves not restored yet.
-- **The builder checks the structure.** The text operators are only allowed between `BeginText` and `EndText`, a text is
-  shown only once a font is set, and `RestoreGraphicsState` and `EndMarkedContent` need a matching call: a mistake
+  [SaveGraphicsState](cref:Meziantou.Framework.Pdf.PdfContentBuilder.SaveGraphicsState) saves it, and [RestoreGraphicsState](cref:Meziantou.Framework.Pdf.PdfContentBuilder.RestoreGraphicsState) goes back to it: wrap the changes that apply to one part of
+  the page between them. [GraphicsStateDepth](cref:Meziantou.Framework.Pdf.PdfContentBuilder.GraphicsStateDepth) is the number of saves not restored yet.
+- **The builder checks the structure.** The text operators are only allowed between [BeginText](cref:Meziantou.Framework.Pdf.PdfContentBuilder.BeginText) and [EndText](cref:Meziantou.Framework.Pdf.PdfContentBuilder.EndText), a text is
+  shown only once a font is set, and [RestoreGraphicsState](cref:Meziantou.Framework.Pdf.PdfContentBuilder.RestoreGraphicsState) and [EndMarkedContent](cref:Meziantou.Framework.Pdf.PdfContentBuilder.EndMarkedContent) need a matching call: a mistake
   throws `InvalidOperationException` when it is made, instead of writing a file that readers reject.
 - **The content of a page can be extended.** When the page already has content, a new builder wraps it between a save
   and a restore of the graphics state first, so that the new content starts from the default state. See
   [Modifying documents](../05-ReadingAndModifying/04-ModifyingDocuments.md).
-- **Operators without a method** can be written with `AppendRawContent`, which the builder does not check, and marked
-  content with `BeginMarkedContent`, `MarkPoint` and `EndMarkedContent`.
+- **Operators without a method** can be written with [AppendRawContent](cref:Meziantou.Framework.Pdf.PdfContentBuilder.AppendRawContent), which the builder does not check, and marked
+  content with [BeginMarkedContent](cref:Meziantou.Framework.Pdf.PdfContentBuilder.BeginMarkedContent), [MarkPoint](cref:Meziantou.Framework.Pdf.PdfContentBuilder.MarkPoint) and [EndMarkedContent](cref:Meziantou.Framework.Pdf.PdfContentBuilder.EndMarkedContent).
 
 ## Save the document
 
-`Save` writes the document to a file or a stream, `SaveAsync` to a stream, and `ToByteArray` to an array. The save
+[Save](cref:Meziantou.Framework.Pdf.PdfDocument.Save) writes the document to a file or a stream, [SaveAsync](cref:Meziantou.Framework.Pdf.PdfDocument.SaveAsync) to a stream, and [ToByteArray](cref:Meziantou.Framework.Pdf.PdfDocument.ToByteArray) to an array. The save
 writes the objects that can be reached from the catalog, so the objects of a removed page are not written. The options
 choose how the file is written:
 
@@ -115,9 +115,9 @@ var readable = document.ToByteArray(new PdfSaveOptions { CompressStreams = false
 
 | Option | Default | Effect |
 | --- | --- | --- |
-| `CompressStreams` | `true` | Compresses the streams that have no filter with `FlateDecode` |
-| `UseObjectStreams` | `true` | Writes the objects in object streams with a cross-reference stream (PDF 1.5); `false` writes a cross-reference table |
-| `Version` | `null` | The version of the header; `null` for the version of the document, raised to what the options need |
+| [CompressStreams](cref:Meziantou.Framework.Pdf.PdfSaveOptions.CompressStreams) | `true` | Compresses the streams that have no filter with `FlateDecode` |
+| [UseObjectStreams](cref:Meziantou.Framework.Pdf.PdfSaveOptions.UseObjectStreams) | `true` | Writes the objects in object streams with a cross-reference stream (PDF 1.5); `false` writes a cross-reference table |
+| [Version](cref:Meziantou.Framework.Pdf.PdfSaveOptions.Version) | `null` | The version of the header; `null` for the version of the document, raised to what the options need |
 
 The output depends only on the document and the options: the library writes no date, no random value and not its own
 version (`Information.Producer` is empty unless you set it), so a test can compare the files it writes.

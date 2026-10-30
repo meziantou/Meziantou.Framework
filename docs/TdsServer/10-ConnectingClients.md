@@ -47,9 +47,9 @@ Assert.Equal("Reporting", context.ApplicationName);
 | Keyword | Use |
 | --- | --- |
 | `Server` / `Data Source` | `host,port`, with a comma. Without a port, the client uses 1433. Named instances (`host\name`) need the SQL Server Browser service, which the server does not provide. |
-| `User ID`, `Password` | Sent to the authentication handler (`UserName`, `Password`). |
+| `User ID`, `Password` | Sent to the authentication handler ([UserName](cref:Meziantou.Framework.Tds.Handler.TdsAuthenticationContext.UserName), `Password`). |
 | `Initial Catalog` / `Database` | Sent to the authentication handler (`Database`). The database the client sees after the login is the one the handler returns. |
-| `Application Name` | Sent to the authentication handler (`ApplicationName`). |
+| `Application Name` | Sent to the authentication handler ([ApplicationName](cref:Meziantou.Framework.Tds.Handler.TdsAuthenticationContext.ApplicationName)). |
 | `Encrypt` | `Optional` to connect to a server without a certificate. See [Encryption](09-Encryption.md). |
 | `TrustServerCertificate` | `True` to accept a self-signed certificate, in tests. |
 | `Connect Timeout`, `Command Timeout` | As with SQL Server. A command timeout cancels the request on the server. |
@@ -105,7 +105,7 @@ Assert.Equal("Alice", name);
 ```
 <!-- endref -->
 
-The query handler receives the name in `ProcedureName` and the parameters in `Parameters`. With the
+The query handler receives the name in [ProcedureName](cref:Meziantou.Framework.Tds.Handler.TdsQueryContext.ProcedureName) and the parameters in [Parameters](cref:Meziantou.Framework.Tds.Handler.TdsQueryContext.Parameters). With the
 [query engine](07-QueryEngine.md#stored-procedures), the call runs the delegate registered under that name.
 
 ## What clients see

@@ -3,7 +3,7 @@ title: Clipboard
 description: Copy text to the clipboard and read it from a Blazor component, and handle the browser refusing access.
 ---
 
-`ClipboardService` reads and writes text with the clipboard API of the browser. Register it with
+[ClipboardService](cref:Meziantou.AspNetCore.Components.ClipboardService) reads and writes text with the clipboard API of the browser. Register it with
 `builder.Services.AddClipboard()`, then inject it:
 
 <!-- ref:../../../samples/BlazorAppSample/Examples/ClipboardServiceExample.razor;format=md-fenced-code-block -->
@@ -22,11 +22,11 @@ description: Copy text to the clipboard and read it from a Blazor component, and
 <!-- endref -->
 
 - `WriteTextAsync(text)` copies the text.
-- `ReadTextAsync()` returns the text of the clipboard.
+- [ReadTextAsync()](cref:Meziantou.AspNetCore.Components.ClipboardService.ReadTextAsync) returns the text of the clipboard.
 
 ## When the browser refuses
 
-The browser decides whether a page can use the clipboard. `WriteTextAsync` throws a `JSException` when it refuses:
+The browser decides whether a page can use the clipboard. [WriteTextAsync](cref:Meziantou.AspNetCore.Components.ClipboardService.WriteTextAsync) throws a `JSException` when it refuses:
 the page is not in a secure context (HTTPS or `localhost`), the clipboard permission is denied, or the call does not
 come from a user gesture such as a click. Catch it to tell the user, instead of reporting a copy that did not happen:
 

@@ -5,7 +5,7 @@ description: Change the tags of a file without losing the others, write a retagg
 
 ## Writing replaces the tags
 
-`MediaFile.WriteTags` does not merge: the `MediaTagInfo` you write becomes the whole tag, and a field left `null` is
+[MediaFile.WriteTags](cref:Meziantou.Framework.MediaTags.MediaFile.WriteTags) does not merge: the [MediaTagInfo](cref:Meziantou.Framework.MediaTags.MediaTagInfo) you write becomes the whole tag, and a field left `null` is
 removed from the file:
 
 <!-- ref:../../tests/Meziantou.Framework.MediaTags.Tests/FlacTests.cs;region=MediaFile_WriteReplacesTheTags;format=md-fenced-code-block;dedent=true -->
@@ -22,7 +22,7 @@ Assert.Null(written.Artist); // The file had an artist: it is removed
 ```
 <!-- endref -->
 
-So writing a new `MediaTagInfo` to a file deletes everything it does not set:
+So writing a new [MediaTagInfo](cref:Meziantou.Framework.MediaTags.MediaTagInfo) to a file deletes everything it does not set:
 
 <!-- ref:../../samples/Meziantou.Framework.MediaTags.Samples/ReadmeExamples.cs;region=MediaFile_ReplaceTags;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -62,20 +62,20 @@ if (!writeResult.IsSuccess)
 ```
 <!-- endref -->
 
-- `Pictures` and `CustomFields` are collections: clear them, or add and remove items.
-- The properties check their values: setting `Year` outside 0 to 9999, or a negative track number, disc number or
-  `Bpm`, throws an `ArgumentOutOfRangeException`.
-- `Format` is ignored when writing: the format comes from the file.
-- A `Duration` the library computed from the audio is not written as a tag, so it cannot override the audio on a later
+- [Pictures](cref:Meziantou.Framework.MediaTags.MediaTagInfo.Pictures) and [CustomFields](cref:Meziantou.Framework.MediaTags.MediaTagInfo.CustomFields) are collections: clear them, or add and remove items.
+- The properties check their values: setting [Year](cref:Meziantou.Framework.MediaTags.MediaTagInfo.Year) outside 0 to 9999, or a negative track number, disc number or
+  [Bpm](cref:Meziantou.Framework.MediaTags.MediaTagInfo.Bpm), throws an `ArgumentOutOfRangeException`.
+- [Format](cref:Meziantou.Framework.MediaTags.MediaTagInfo.Format) is ignored when writing: the format comes from the file.
+- A [Duration](cref:Meziantou.Framework.MediaTags.MediaTagInfo.Duration) the library computed from the audio is not written as a tag, so it cannot override the audio on a later
   read. A duration read from a tag, or one you set, is written by the formats that store it.
 
-Some data is kept even though `MediaTagInfo` does not show it: the ID3v2 frames and the MP4 items this library does not
+Some data is kept even though [MediaTagInfo](cref:Meziantou.Framework.MediaTags.MediaTagInfo) does not show it: the ID3v2 frames and the MP4 items this library does not
 read, such as the publisher or the sort names, are copied from the existing tag. See
 [Format support](05-FormatSupport.md).
 
 ## A safe replacement
 
-`WriteTags` writes the new file next to the original, and replaces the original only once the new content has been
+[WriteTags](cref:Meziantou.Framework.MediaTags.MediaFile.WriteTags) writes the new file next to the original, and replaces the original only once the new content has been
 written in full and flushed to disk. If anything fails, the original file is left as it was, and the result says
 why. The file keeps its permissions, and a symbolic link is written through to its target.
 
@@ -112,7 +112,7 @@ When the result is a failure, discard what was written to the output stream: it 
 
 ## Remove the tags
 
-`MediaFile.RemoveTags` removes every tag this library can write, including the ID3v2 frames it does not read:
+[MediaFile.RemoveTags](cref:Meziantou.Framework.MediaTags.MediaFile.RemoveTags) removes every tag this library can write, including the ID3v2 frames it does not read:
 
 <!-- ref:../../samples/Meziantou.Framework.MediaTags.Samples/ReadmeExamples.cs;region=MediaFile_RemoveTags;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -128,7 +128,7 @@ if (!result.IsSuccess)
 
 ## Write options
 
-`MediaTagWriteOptions` controls the tags of MP3 files:
+[MediaTagWriteOptions](cref:Meziantou.Framework.MediaTags.MediaTagWriteOptions) controls the tags of MP3 files:
 
 <!-- ref:../../samples/Meziantou.Framework.MediaTags.Samples/ReadmeExamples.cs;region=MediaFile_WriteOptions;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -146,11 +146,11 @@ MediaFile.WriteTags("song.mp3", tags, options);
 
 | Option | Default | Effect |
 | --- | --- | --- |
-| `WriteId3v1Tag` | `true` | Appends an ID3v1 tag to MP3 files, for players that read nothing else. ID3v1 stores at most 30 Latin-1 characters per field, so it truncates what the ID3v2 tag holds in full. |
-| `Id3v2PaddingSize` | `1024` | The number of empty bytes after the ID3v2 tag, so another tagger can grow it without rewriting the file. `0` gives the smallest tag; a negative value throws. |
+| [WriteId3v1Tag](cref:Meziantou.Framework.MediaTags.MediaTagWriteOptions.WriteId3v1Tag) | `true` | Appends an ID3v1 tag to MP3 files, for players that read nothing else. ID3v1 stores at most 30 Latin-1 characters per field, so it truncates what the ID3v2 tag holds in full. |
+| [Id3v2PaddingSize](cref:Meziantou.Framework.MediaTags.MediaTagWriteOptions.Id3v2PaddingSize) | `1024` | The number of empty bytes after the ID3v2 tag, so another tagger can grow it without rewriting the file. `0` gives the smallest tag; a negative value throws. |
 
 ## When writing fails
 
-`WriteTags` returns the same errors as `ReadTags`; see [Errors](03-ReadingTags.md#errors). `InvalidTagData` means the
+[WriteTags](cref:Meziantou.Framework.MediaTags.MediaFile.WriteTags) returns the same errors as [ReadTags](cref:Meziantou.Framework.MediaTags.MediaFile.ReadTags); see [Errors](03-ReadingTags.md#errors). [InvalidTagData](cref:Meziantou.Framework.MediaTags.MediaTagError.InvalidTagData) means the
 tags cannot be stored in the format of the file, such as a track number above 65535 in an MP4 file, or a Vorbis custom
 field whose name contains `=`.

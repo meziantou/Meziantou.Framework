@@ -5,7 +5,7 @@ description: Give pages cookies, local storage and the other stores of the brows
 
 ## Cookies
 
-Without a `CookieJar`, the pages have no cookies. Give the browsing contexts a jar: the document loader sends its cookies
+Without a [CookieJar](cref:Meziantou.Framework.WebPlatform.Dom.CookieJar), the pages have no cookies. Give the browsing contexts a jar: the document loader sends its cookies
 and stores the cookies of the responses, and the pages read and write it with `document.cookie` and `cookieStore`.
 
 <!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/Dom/CookieJarTests.cs;region=WebPlatform_Cookies;format=md-fenced-code-block;dedent=true -->
@@ -31,16 +31,16 @@ Assert.Equal(["lang", "session", "theme"], names);
   the cookie prefixes and the public suffixes. Third-party cookies are not blocked.
 - Several browsing contexts can share a jar, as the tabs of a browser share their cookies.
 - `SetCookie(url, header)` adds a cookie as a `Set-Cookie` header does (to sign a session in before loading a page);
-  `GetCookies(url)` and `GetCookies()` list them, `Remove` and `Clear` delete them.
+  `GetCookies(url)` and [GetCookies()](cref:Meziantou.Framework.WebPlatform.Dom.CookieJar.GetCookies) list them, [Remove](cref:Meziantou.Framework.WebPlatform.Dom.CookieJar.Remove) and [Clear](cref:Meziantou.Framework.WebPlatform.Dom.CookieJar.Clear) delete them.
 - Create the jar with the `TimeProvider` of the browsing context (`new CookieJar(timeProvider)`) so that the cookies
   expire with its clock.
-- To keep the persistent cookies between runs, derive from `CookiePersistence` (`LoadCookies`, `SetCookie`, `RemoveCookie`,
-  `ClearAll`) and give it to the jar: `new CookieJar(persistence, timeProvider)`. The jar keeps the cookies in memory and
+- To keep the persistent cookies between runs, derive from [CookiePersistence](cref:Meziantou.Framework.WebPlatform.Dom.CookiePersistence) ([LoadCookies](cref:Meziantou.Framework.WebPlatform.Dom.CookiePersistence.LoadCookies), [SetCookie](cref:Meziantou.Framework.WebPlatform.Dom.CookiePersistence.SetCookie), [RemoveCookie](cref:Meziantou.Framework.WebPlatform.Dom.CookiePersistence.RemoveCookie),
+  [ClearAll](cref:Meziantou.Framework.WebPlatform.Dom.CookiePersistence.ClearAll)) and give it to the jar: `new CookieJar(persistence, timeProvider)`. The jar keeps the cookies in memory and
   reports each change.
 
 ## Local storage and session storage
 
-`window.localStorage` keeps its items in a `StorageShed`. By default, each browsing context created by your application
+`window.localStorage` keeps its items in a [StorageShed](cref:Meziantou.Framework.WebPlatform.Dom.StorageShed). By default, each browsing context created by your application
 has its own; give the same shed to several browsing contexts to share the items of an origin:
 
 <!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/WebStorageTests.cs;region=WebPlatform_LocalStorage;format=md-fenced-code-block;dedent=true -->
@@ -57,8 +57,8 @@ Assert.Equal([new("theme", "dark")], storage.GetItems("https://example.com"));
 <!-- endref -->
 
 - The items are kept per origin, with a quota of 5 Mi characters per origin (`new StorageShed(quota)` sets another one).
-  `GetOrigins`, `GetItems`, `SetItem` and `Clear` read and change them from .NET.
-- To keep the items between runs, derive from `WebStoragePersistence` and give it to the shed:
+  [GetOrigins](cref:Meziantou.Framework.WebPlatform.Dom.StorageShed.GetOrigins), [GetItems](cref:Meziantou.Framework.WebPlatform.Dom.StorageShed.GetItems), [SetItem](cref:Meziantou.Framework.WebPlatform.Dom.StorageShed.SetItem) and [Clear](cref:Meziantou.Framework.WebPlatform.Dom.StorageShed.Clear) read and change them from .NET.
+- To keep the items between runs, derive from [WebStoragePersistence](cref:Meziantou.Framework.WebPlatform.Dom.WebStoragePersistence) and give it to the shed:
   `new StorageShed(persistence)`.
 - `window.sessionStorage` belongs to the top-level browsing context, and is always kept in memory.
 
@@ -68,9 +68,9 @@ The other storage APIs of the browsers keep their data in backends that you can 
 
 | Option | Store | Default |
 | --- | --- | --- |
-| `IndexedDB` | `indexedDB` | `InMemoryIndexedDBBackend`, per browsing context created by the application |
-| `CacheStorage` | `caches` (the Cache API) | In memory |
-| `FileSystem` | The origin private file system (`navigator.storage.getDirectory()`) | In memory |
-| `ServiceWorkers` | The registrations of the service workers | In memory |
+| [IndexedDB](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.IndexedDB) | `indexedDB` | [InMemoryIndexedDBBackend](cref:Meziantou.Framework.WebPlatform.Dom.InMemoryIndexedDBBackend), per browsing context created by the application |
+| [CacheStorage](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.CacheStorage) | `caches` (the Cache API) | In memory |
+| [FileSystem](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.FileSystem) | The origin private file system (`navigator.storage.getDirectory()`) | In memory |
+| [ServiceWorkers](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.ServiceWorkers) | The registrations of the service workers | In memory |
 
 These stores are used by the scripts of the pages: they need a [script engine](../06-Scripting/01-Overview.md).

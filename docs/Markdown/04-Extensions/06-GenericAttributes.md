@@ -5,7 +5,7 @@ description: Add identifiers, classes and HTML attributes to blocks and inlines 
 
 ## Add attributes in Markdown
 
-`UseGenericAttributes` reads attributes written between `{` and `}` after a block or an inline: `#id` sets the
+[UseGenericAttributes](cref:Meziantou.Framework.Markdown.MarkdownExtensions.UseGenericAttributes) reads attributes written between `{` and `}` after a block or an inline: `#id` sets the
 identifier, `.class` adds a class, and `name=value` adds an attribute. Put them at the end of a heading or a paragraph,
 at the end of the opening fence of a code block, or right after a link, an image or a code span:
 
@@ -21,7 +21,7 @@ Assert.Equal("<h1 id=\"intro\" class=\"title\">Introduction</h1>\n<p>Read <a hre
 <!-- endref -->
 
 Write a value that contains spaces between quotes: `{title="A long title"}`. Enable this extension after the others:
-it changes the parsers that they add. `UseAdvancedExtensions` enables it last.
+it changes the parsers that they add. [UseAdvancedExtensions](cref:Meziantou.Framework.Markdown.MarkdownExtensions.UseAdvancedExtensions) enables it last.
 
 ## Choose the allowed attributes
 
@@ -30,7 +30,7 @@ By default, only the identifier, the classes and the attributes that describe th
 event handlers (`onclick`…), the attributes that hold a URL, `style`, `data-*` and the directives of client-side
 frameworks (`x-init`, `hx-get`…) can run a script or cover the page. [Security](../10-Security.md) gives the full list.
 
-When the Markdown is trusted, pass a filter to allow more attributes. `GenericAttributesExtension.IsSafeAttributeName`
+When the Markdown is trusted, pass a filter to allow more attributes. [GenericAttributesExtension.IsSafeAttributeName](cref:Meziantou.Framework.Markdown.Extensions.GenericAttributes.GenericAttributesExtension.IsSafeAttributeName)
 (namespace [Meziantou.Framework.Markdown.Extensions.GenericAttributes](cref:Meziantou.Framework.Markdown.Extensions.GenericAttributes)) is the default filter:
 
 <!-- ref:../../../tests/Meziantou.Framework.Markdown.Tests/TestCoreApi.cs;region=MarkdownConverter_GenericAttributesFilter;format=md-fenced-code-block;dedent=true -->
@@ -49,8 +49,8 @@ Assert.Equal("<p data-id=\"1\">Text</p>\n", html);
 
 ## Set attributes from code
 
-`GetAttributes()` returns the `HtmlAttributes` of any element of the [syntax tree](../05-SyntaxTree.md), and creates
-them when the element has none. The HTML renderer writes them, with or without `UseGenericAttributes`, and the filter
+[GetAttributes()](cref:Meziantou.Framework.Markdown.Renderers.Html.HtmlAttributesExtensions.GetAttributes) returns the [HtmlAttributes](cref:Meziantou.Framework.Markdown.Renderers.Html.HtmlAttributes) of any element of the [syntax tree](../05-SyntaxTree.md), and creates
+them when the element has none. The HTML renderer writes them, with or without [UseGenericAttributes](cref:Meziantou.Framework.Markdown.MarkdownExtensions.UseGenericAttributes), and the filter
 does not apply to them:
 
 <!-- ref:../../../tests/Meziantou.Framework.Markdown.Tests/TestHtmlAttributes.cs;region=HtmlAttributes_FromCode;format=md-fenced-code-block;dedent=true -->
@@ -69,8 +69,8 @@ Assert.Equal("<blockquote class=\"note\" style=\"border-left: 4px solid gray\">\
 ```
 <!-- endref -->
 
-`HtmlAttributes` has `Id`, `Classes` and `Properties`, and the `AddClass`, `AddProperty` and `AddPropertyIfNotExist`
-methods. `TryGetAttributes()` returns `null` instead of creating them. To set attributes on every document, change the
+[HtmlAttributes](cref:Meziantou.Framework.Markdown.Renderers.Html.HtmlAttributes) has [Id](cref:Meziantou.Framework.Markdown.Renderers.Html.HtmlAttributes.Id), [Classes](cref:Meziantou.Framework.Markdown.Renderers.Html.HtmlAttributes.Classes) and [Properties](cref:Meziantou.Framework.Markdown.Renderers.Html.HtmlAttributes.Properties), and the [AddClass](cref:Meziantou.Framework.Markdown.Renderers.Html.HtmlAttributes.AddClass), [AddProperty](cref:Meziantou.Framework.Markdown.Renderers.Html.HtmlAttributes.AddProperty) and [AddPropertyIfNotExist](cref:Meziantou.Framework.Markdown.Renderers.Html.HtmlAttributes.AddPropertyIfNotExist)
+methods. [TryGetAttributes()](cref:Meziantou.Framework.Markdown.Renderers.Html.HtmlAttributesExtensions.TryGetAttributes) returns `null` instead of creating them. To set attributes on every document, change the
 tree in [`DocumentProcessed`](../09-WritingExtensions.md#process-the-document-after-parsing).
 
 To write the attributes back to the Markdown source, see

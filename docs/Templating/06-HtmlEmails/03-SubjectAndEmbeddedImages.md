@@ -3,8 +3,8 @@ title: Subject and embedded images
 description: Capture the subject of an email in the template, and list the images to attach to the message.
 ---
 
-An email needs more than its HTML body: a subject, and the images that the body shows. `HtmlEmailTemplate` returns them
-in an `HtmlEmailMetadata`, so the template stays the single place that describes the email.
+An email needs more than its HTML body: a subject, and the images that the body shows. [HtmlEmailTemplate](cref:Meziantou.Framework.Templating.HtmlEmailTemplate) returns them
+in an [HtmlEmailMetadata](cref:Meziantou.Framework.Templating.HtmlEmailMetadata), so the template stays the single place that describes the email.
 
 ## Capture the subject
 
@@ -23,7 +23,7 @@ Assert.Equal("Meziantou", metadata.Title);
 ```
 <!-- endref -->
 
-`Title` is plain text, ready to use as the subject of the message: the HTML that the section contains is decoded.
+[Title](cref:Meziantou.Framework.Templating.HtmlEmailMetadata.Title) is plain text, ready to use as the subject of the message: the HTML that the section contains is decoded.
 
 <!-- ref:../../../tests/Meziantou.Framework.Templating.Html.Tests/EmailTemplateTest.cs;region=HtmlEmailTemplate_TitleIsPlainText;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -38,7 +38,7 @@ Assert.Equal("Your Fish & Chips order", metadata.Title);
 ```
 <!-- endref -->
 
-- A section that is never ended makes the run fail with a `TemplateException` that names it:
+- A section that is never ended makes the run fail with a [TemplateException](cref:Meziantou.Framework.Templating.TemplateException) that names it:
 
 <!-- ref:../../../tests/Meziantou.Framework.Templating.Html.Tests/EmailTemplateTest.cs;region=HtmlEmailTemplate_UnclosedSection;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -51,8 +51,8 @@ Assert.Equal("The template is invalid: no end_section directive for 'title'.", e
 <!-- endref -->
 
 - `{{@end_section}}` ends the last section that was started; `{{@end_section title}}` ends the section with that name.
-- `Title` is `null` when the template has no `title` section. Sections with other names are written to the HTML, but
-  `HtmlEmailMetadata` does not return their content.
+- [Title](cref:Meziantou.Framework.Templating.HtmlEmailMetadata.Title) is `null` when the template has no `title` section. Sections with other names are written to the HTML, but
+  [HtmlEmailMetadata](cref:Meziantou.Framework.Templating.HtmlEmailMetadata) does not return their content.
 
 ## Embed images
 
@@ -72,8 +72,8 @@ Assert.Equal("logo.png", Assert.Single(metadata.ContentIdentifiers));
 <!-- endref -->
 
 - The name is text, not a C# expression: `{{cid logo.png}}` refers to the identifier `logo.png`.
-- `ContentIdentifiers` lists the names in the order they appear, once per `cid` block.
+- [ContentIdentifiers](cref:Meziantou.Framework.Templating.HtmlEmailMetadata.ContentIdentifiers) lists the names in the order they appear, once per `cid` block.
 - The name is URL-encoded in the HTML. Prefer names made of letters, digits, dots and dashes, which are written as is.
 
-The library does not send emails. When you build the message, attach each image of `ContentIdentifiers` with this
+The library does not send emails. When you build the message, attach each image of [ContentIdentifiers](cref:Meziantou.Framework.Templating.HtmlEmailMetadata.ContentIdentifiers) with this
 content identifier, for instance as a `LinkedResource` whose `ContentId` is the name, with `System.Net.Mail`.

@@ -7,12 +7,12 @@ description: Move processes and threads into a control group, list them, freeze,
 
 | Member | What it does |
 | --- | --- |
-| `CGroup2.Root` | The root control group, `/sys/fs/cgroup` |
+| [CGroup2.Root](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.Root) | The root control group, `/sys/fs/cgroup` |
 | `CreateOrGetChild(name)` | Creates a child control group, or returns the existing one |
 | `GetChild(name)` | Returns an existing child control group, or `null` |
-| `Exists()` | Tells whether the control group still exists |
-| `Name`, `Parent` | The name of the control group and its parent, `null` for the root |
-| `Delete()` | Deletes the control group |
+| [Exists()](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.Exists) | Tells whether the control group still exists |
+| [Name](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.Name), [Parent](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.Parent) | The name of the control group and its parent, `null` for the root |
+| [Delete()](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.Delete) | Deletes the control group |
 
 A name is a single folder name: an empty name, `.`, `..` or a name containing `/` throws an `ArgumentException`, so a
 name cannot leave the parent control group.
@@ -23,7 +23,7 @@ name cannot leave the parent control group.
   afterward start in the same control group.
 - `AssociateThread(tid)` moves a single thread, within the rules of the thread mode of the kernel (Linux 4.14 or
   later).
-- `GetProcesses()` and `GetThreads()` list the process and thread identifiers of the control group.
+- [GetProcesses()](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.GetProcesses) and [GetThreads()](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.GetThreads) list the process and thread identifiers of the control group.
 
 A process belongs to exactly one control group: moving it removes it from the previous one.
 
@@ -50,23 +50,23 @@ group.Delete();
 ```
 <!-- endref -->
 
-- `Freeze` stops all the processes of the control group and of its descendants, until `Unfreeze`. The kernel freezes
-  them asynchronously: `IsFrozen` returns `true` once it is done.
-- `IsFrozen` returns `false` on a kernel without the freezer.
-- `Kill` kills all the processes of the control group and of its descendants. It is the reliable way to stop a job,
+- [Freeze](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.Freeze) stops all the processes of the control group and of its descendants, until [Unfreeze](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.Unfreeze). The kernel freezes
+  them asynchronously: [IsFrozen](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.IsFrozen) returns `true` once it is done.
+- [IsFrozen](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.IsFrozen) returns `false` on a kernel without the freezer.
+- [Kill](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.Kill) kills all the processes of the control group and of its descendants. It is the reliable way to stop a job,
   including the processes it started and those that left its process tree.
 
 ## Delete a control group
 
-`Delete` removes a control group that has no process and no child control group: it throws an `IOException` otherwise.
+[Delete](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.Delete) removes a control group that has no process and no child control group: it throws an `IOException` otherwise.
 Kill the processes and wait for them to exit, delete the children, then delete the group.
 
 ## Enable controllers
 
 | Method | What it does |
 | --- | --- |
-| `GetAvailableControllers()` | The controllers the control group can enable for its children, which its parent enabled |
-| `GetEnabledControllers()` | The controllers enabled for its children |
+| [GetAvailableControllers()](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.GetAvailableControllers) | The controllers the control group can enable for its children, which its parent enabled |
+| [GetEnabledControllers()](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.GetEnabledControllers) | The controllers enabled for its children |
 | `SetControllers(names)` | Enables controllers for the children; a name prefixed with `-`, such as `-io`, disables one |
 
 A control group other than the root cannot enable controllers such as `memory` or `io` while it contains processes: move

@@ -7,11 +7,11 @@ Each language has three base classes, named after it, with a `Visit…` method p
 
 | Class | Does | Use it to |
 | --- | --- | --- |
-| `JsonSyntaxWalker` | Visits a node and everything below it | Collect or count things, check a document |
-| `JsonSyntaxVisitor`, `JsonSyntaxVisitor<TResult>` | Calls the `Visit…` method of the type of a node, and does not go into its children | Compute a result from a node, choosing what to visit yourself |
-| `JsonSyntaxRewriter` | Visits every node and builds a new tree from the nodes you return | Change every node of a kind in one pass |
+| [JsonSyntaxWalker](cref:Meziantou.Framework.Language.Json.JsonSyntaxWalker) | Visits a node and everything below it | Collect or count things, check a document |
+| [JsonSyntaxVisitor](cref:Meziantou.Framework.Language.Json.JsonSyntaxVisitor), [JsonSyntaxVisitor\<TResult\>](cref:Meziantou.Framework.Language.Json.JsonSyntaxVisitor{TResult}) | Calls the `Visit…` method of the type of a node, and does not go into its children | Compute a result from a node, choosing what to visit yourself |
+| [JsonSyntaxRewriter](cref:Meziantou.Framework.Language.Json.JsonSyntaxRewriter) | Visits every node and builds a new tree from the nodes you return | Change every node of a kind in one pass |
 
-Replace `Json` with your language: `XmlSyntaxWalker`, `CssSyntaxRewriter`, `ShellSyntaxVisitor`, and so on.
+Replace `Json` with your language: [XmlSyntaxWalker](cref:Meziantou.Framework.Language.Xml.XmlSyntaxWalker), [CssSyntaxRewriter](cref:Meziantou.Framework.Language.Css.CssSyntaxRewriter), [ShellSyntaxVisitor](cref:Meziantou.Framework.Language.Shell.ShellSyntaxVisitor), and so on.
 
 ## Walk a tree
 
@@ -42,10 +42,10 @@ Assert.Equal(3, counter.Count);
 ```
 <!-- endref -->
 
-By default, a walker visits the nodes only. Pass `SyntaxWalkerDepth.Token` or `SyntaxWalkerDepth.Trivia` to its
-constructor to visit the tokens, or the tokens and their trivia, too, with `VisitToken` and `VisitTrivia`.
+By default, a walker visits the nodes only. Pass [SyntaxWalkerDepth.Token](cref:Meziantou.Framework.Language.SyntaxWalkerDepth.Token) or [SyntaxWalkerDepth.Trivia](cref:Meziantou.Framework.Language.SyntaxWalkerDepth.Trivia) to its
+constructor to visit the tokens, or the tokens and their trivia, too, with [VisitToken](cref:Meziantou.Framework.Language.SyntaxWalker.VisitToken) and [VisitTrivia](cref:Meziantou.Framework.Language.SyntaxWalker.VisitTrivia).
 
-`SyntaxWalker`, in [Meziantou.Framework.Language](cref:Meziantou.Framework.Language), walks the tree of any language. It has no method per node type: it
+[SyntaxWalker](cref:Meziantou.Framework.Language.SyntaxWalker), in [Meziantou.Framework.Language](cref:Meziantou.Framework.Language), walks the tree of any language. It has no method per node type: it
 visits nodes, tokens and trivia, which is enough for code shared by several languages:
 
 <!-- ref:../../../tests/Meziantou.Framework.Language.Tests/SyntaxTreeInvariantTests.cs;region=SyntaxWalker_TokenCounter;format=md-fenced-code-block;dedent=true -->
@@ -99,6 +99,6 @@ The `Visit…` methods of a rewriter return `SyntaxNode?`. Cast the result of `V
 
 ## Visit without recursing
 
-A visitor calls the method that matches the type of a node, and that is all: its `DefaultVisit` does nothing. Use it
-when you decide which children to visit, or derive from `JsonSyntaxVisitor<TResult>` to return a value from each
+A visitor calls the method that matches the type of a node, and that is all: its [DefaultVisit](cref:Meziantou.Framework.Language.Json.JsonSyntaxVisitor.DefaultVisit) does nothing. Use it
+when you decide which children to visit, or derive from [JsonSyntaxVisitor\<TResult\>](cref:Meziantou.Framework.Language.Json.JsonSyntaxVisitor{TResult}) to return a value from each
 method.

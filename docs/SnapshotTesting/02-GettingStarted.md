@@ -16,7 +16,7 @@ directives: they need `using Meziantou.Framework.SnapshotTesting;`.
 
 ## Write a test
 
-Call `Snapshot.Validate` with the value to check, where you would write your assertions:
+Call [Snapshot.Validate](cref:Meziantou.Framework.SnapshotTesting.Snapshot.Validate) with the value to check, where you would write your assertions:
 
 <!-- ref:../../tests/Meziantou.Framework.SnapshotTesting.Tests/SnapshotTests.cs;region=Snapshot_BasicUsage;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -69,7 +69,7 @@ them but fail for everyone else. See [Snapshot files](03-WritingTests/03-Snapsho
 
 ## Validate a file in its own format
 
-Pass a `SnapshotType` to store the value with its own extension. Here a PNG image and an SVG document:
+Pass a [SnapshotType](cref:Meziantou.Framework.SnapshotTesting.SnapshotType) to store the value with its own extension. Here a PNG image and an SVG document:
 
 <!-- ref:../../tests/Meziantou.Framework.SnapshotTesting.Tests/SnapshotTests.cs;region=Snapshot_TypedSnapshots;format=md-fenced-code-block;dedent=true -->
 ```csharp

@@ -5,7 +5,7 @@ description: Find the processes that lock a file, describe them, and shut them d
 
 When a file cannot be deleted or overwritten because another process has it open, the Windows Restart Manager tells
 which processes use it, and can close them and start them again. Installers use it to update files that running
-applications hold. `RestartManager` from the `Meziantou.Framework.Win32.RestartManager` package wraps it.
+applications hold. [RestartManager](cref:Meziantou.Framework.Win32.RestartManager) from the `Meziantou.Framework.Win32.RestartManager` package wraps it.
 
 ```bash
 dotnet add package Meziantou.Framework.Win32.RestartManager
@@ -96,11 +96,11 @@ foreach (var process in processes)
 ```
 <!-- endref -->
 
-`RestartManager` is disposable: disposing it ends the session.
+[RestartManager](cref:Meziantou.Framework.Win32.RestartManager) is disposable: disposing it ends the session.
 
 ### Describe the applications
 
-`GetProcessesLockingResources` returns `Process` instances. `GetLockingProcesses` returns what the Restart Manager
+[GetProcessesLockingResources](cref:Meziantou.Framework.Win32.RestartManager.GetProcessesLockingResources) returns `Process` instances. [GetLockingProcesses](cref:Meziantou.Framework.Win32.RestartManager.GetLockingProcesses) returns what the Restart Manager
 knows about each application: its name, its type, its status, and whether it can be restarted. It also reports the
 applications that have already exited:
 
@@ -122,17 +122,17 @@ Assert.Contains(applications, application => application.ProcessId == Environmen
 
 | Property | Description |
 | --- | --- |
-| `ProcessId`, `StartTime` | The process. Windows reuses process identifiers, so only both together identify a process |
-| `ApplicationName` | The friendly name of the application |
-| `ApplicationType` | `MainWindow`, `OtherWindow`, `Service`, `Explorer`, `Console`, `Critical` or `Unknown` |
-| `ServiceShortName` | The short name of the service, or an empty string for another kind of process |
-| `Status` | Whether the application is running, was stopped or restarted by the session, or failed to stop or restart |
-| `IsRestartable` | Whether the Restart Manager can restart the application after shutting it down |
-| `TerminalServicesSessionId` | The session of the user that runs the process |
+| [ProcessId](cref:Meziantou.Framework.Win32.RestartManagerProcessInfo.ProcessId), [StartTime](cref:Meziantou.Framework.Win32.RestartManagerProcessInfo.StartTime) | The process. Windows reuses process identifiers, so only both together identify a process |
+| [ApplicationName](cref:Meziantou.Framework.Win32.RestartManagerProcessInfo.ApplicationName) | The friendly name of the application |
+| [ApplicationType](cref:Meziantou.Framework.Win32.RestartManagerProcessInfo.ApplicationType) | [MainWindow](cref:Meziantou.Framework.Win32.RestartManagerApplicationType.MainWindow), [OtherWindow](cref:Meziantou.Framework.Win32.RestartManagerApplicationType.OtherWindow), [Service](cref:Meziantou.Framework.Win32.RestartManagerApplicationType.Service), [Explorer](cref:Meziantou.Framework.Win32.RestartManagerApplicationType.Explorer), [Console](cref:Meziantou.Framework.Win32.RestartManagerApplicationType.Console), [Critical](cref:Meziantou.Framework.Win32.RestartManagerApplicationType.Critical) or [Unknown](cref:Meziantou.Framework.Win32.RestartManagerApplicationType.Unknown) |
+| [ServiceShortName](cref:Meziantou.Framework.Win32.RestartManagerProcessInfo.ServiceShortName) | The short name of the service, or an empty string for another kind of process |
+| [Status](cref:Meziantou.Framework.Win32.RestartManagerProcessInfo.Status) | Whether the application is running, was stopped or restarted by the session, or failed to stop or restart |
+| [IsRestartable](cref:Meziantou.Framework.Win32.RestartManagerProcessInfo.IsRestartable) | Whether the Restart Manager can restart the application after shutting it down |
+| [TerminalServicesSessionId](cref:Meziantou.Framework.Win32.RestartManagerProcessInfo.TerminalServicesSessionId) | The session of the user that runs the process |
 
 ### Join a session
 
-Another process, such as a secondary installer, can join a session with its `SessionKey` to register its own files:
+Another process, such as a secondary installer, can join a session with its [SessionKey](cref:Meziantou.Framework.Win32.RestartManager.SessionKey) to register its own files:
 
 <!-- ref:../../tests/Meziantou.Framework.Win32.RestartManager.Tests/RestartManagerTests.cs;region=RestartManager_JoinSession;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -175,15 +175,15 @@ session.Restart(percentComplete =>
 ```
 <!-- endref -->
 
-- Check `RebootReason` first. It reflects the last call to `IsResourcesLocked`, `GetProcessesLockingResources` or
-  `GetLockingProcesses`. When it is not `None`, shutting the applications down cannot free the files, for instance
+- Check [RebootReason](cref:Meziantou.Framework.Win32.RestartManager.RebootReason) first. It reflects the last call to [IsResourcesLocked](cref:Meziantou.Framework.Win32.RestartManager.IsResourcesLocked), [GetProcessesLockingResources](cref:Meziantou.Framework.Win32.RestartManager.GetProcessesLockingResources) or
+  [GetLockingProcesses](cref:Meziantou.Framework.Win32.RestartManager.GetLockingProcesses). When it is not [None](cref:Meziantou.Framework.Win32.RestartManagerRebootReason.None), shutting the applications down cannot free the files, for instance
   because a critical process or a process of another user holds them: ask the user to restart the computer instead.
-- `RestartManagerShutdownType.ForceShutdown` forces the applications and services that do not respond to shut down
+- [RestartManagerShutdownType.ForceShutdown](cref:Meziantou.Framework.Win32.RestartManagerShutdownType.ForceShutdown) forces the applications and services that do not respond to shut down
   after a timeout (30 seconds for the applications, 20 seconds for the services).
-  `RestartManagerShutdownType.ShutdownOnlyRegistered` only shuts the applications down when all of them registered for
+  [RestartManagerShutdownType.ShutdownOnlyRegistered](cref:Meziantou.Framework.Win32.RestartManagerShutdownType.ShutdownOnlyRegistered) only shuts the applications down when all of them registered for
   restart with `RegisterApplicationRestart`; otherwise nothing is shut down. Pass at least one of them.
-- `Restart` starts again the applications that were shut down and that registered for restart.
-- `Shutdown` and `Restart` block until they complete. The progress callback receives the percentage completed; it is
-  called by Windows and must not throw. To stop the operation, call `CancelCurrentTask` from another thread. Only the
-  session created with `CreateSession` can cancel, not a session joined with `JoinSession`.
+- [Restart](cref:Meziantou.Framework.Win32.RestartManager.Restart) starts again the applications that were shut down and that registered for restart.
+- [Shutdown](cref:Meziantou.Framework.Win32.RestartManager.Shutdown) and [Restart](cref:Meziantou.Framework.Win32.RestartManager.Restart) block until they complete. The progress callback receives the percentage completed; it is
+  called by Windows and must not throw. To stop the operation, call [CancelCurrentTask](cref:Meziantou.Framework.Win32.RestartManager.CancelCurrentTask) from another thread. Only the
+  session created with [CreateSession](cref:Meziantou.Framework.Win32.RestartManager.CreateSession) can cancel, not a session joined with [JoinSession](cref:Meziantou.Framework.Win32.RestartManager.JoinSession).
 - The methods throw a `Win32Exception` when the Restart Manager fails.

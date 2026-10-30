@@ -3,14 +3,14 @@ title: Dump types
 description: Choose between a normal, heap, triage and full dump, depending on what you need to investigate.
 ---
 
-The `dumpType` parameter of `Write` and `WriteAsync` chooses what the dump contains, and therefore its size:
+The `dumpType` parameter of [Write](cref:Meziantou.Framework.Diagnostics.MemoryDump.Write) and [WriteAsync](cref:Meziantou.Framework.Diagnostics.MemoryDump.WriteAsync) chooses what the dump contains, and therefore its size:
 
-| `MemoryDumpType` | Content | Use it to |
+| [MemoryDumpType](cref:Meziantou.Framework.Diagnostics.MemoryDumpType) | Content | Use it to |
 | --- | --- | --- |
-| `Normal` | Module and thread lists, all stacks, and exception information | See what every thread is doing: a deadlock, a hang, thread pool starvation |
-| `WithHeap` | Same as `Normal`, plus handle information and all memory except mapped images | Also inspect the managed objects: a memory leak, the state of an object |
-| `Triage` | Same as `Normal`, with personally identifiable information such as paths and passwords removed | Send the stacks to someone else |
-| `Full` | All the memory of the process, including module images | Keep everything, when you cannot reproduce the problem. This is the default |
+| [Normal](cref:Meziantou.Framework.Diagnostics.MemoryDumpType.Normal) | Module and thread lists, all stacks, and exception information | See what every thread is doing: a deadlock, a hang, thread pool starvation |
+| [WithHeap](cref:Meziantou.Framework.Diagnostics.MemoryDumpType.WithHeap) | Same as [Normal](cref:Meziantou.Framework.Diagnostics.MemoryDumpType.Normal), plus handle information and all memory except mapped images | Also inspect the managed objects: a memory leak, the state of an object |
+| [Triage](cref:Meziantou.Framework.Diagnostics.MemoryDumpType.Triage) | Same as [Normal](cref:Meziantou.Framework.Diagnostics.MemoryDumpType.Normal), with personally identifiable information such as paths and passwords removed | Send the stacks to someone else |
+| [Full](cref:Meziantou.Framework.Diagnostics.MemoryDumpType.Full) | All the memory of the process, including module images | Keep everything, when you cannot reproduce the problem. This is the default |
 
 The types match the `DumpType` enumeration of `Microsoft.Diagnostics.NETCore.Client` and the `--normal`, `--withheap`,
 `--triage` and `--full` options of `createdump`, the tool of the .NET runtime that writes the dumps on Linux and macOS.

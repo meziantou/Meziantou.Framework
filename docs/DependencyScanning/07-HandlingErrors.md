@@ -12,7 +12,7 @@ the failure are kept.
 
 ## Get notified of the failures
 
-Set `ScannerOptions.OnFileScanFailed` to receive the path of the file and the exception:
+Set [ScannerOptions.OnFileScanFailed](cref:Meziantou.Framework.DependencyScanning.ScannerOptions.OnFileScanFailed) to receive the path of the file and the exception:
 
 <!-- ref:../../samples/DependencyScannerSample/ReadmeExamples.cs;region=DependencyScanner_CustomOptions;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -45,7 +45,7 @@ The callback can be called concurrently from several threads, as files are scann
 
 ## Stop at the first failure
 
-An exception thrown by `OnFileScanFailed` stops the scan, and the scan method throws it. Use it to fail fast:
+An exception thrown by [OnFileScanFailed](cref:Meziantou.Framework.DependencyScanning.ScannerOptions.OnFileScanFailed) stops the scan, and the scan method throws it. Use it to fail fast:
 
 <!-- ref:../../samples/DependencyScannerSample/ReadmeExamples.cs;region=DependencyScanner_ErrorHandling;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -60,12 +60,12 @@ var options = new ScannerOptions
 
 | Cause | Result |
 | --- | --- |
-| A file cannot be opened, read or parsed | The file is skipped and `OnFileScanFailed` is called |
-| `OnFileScanFailed` throws | The scan stops and the scan method throws the exception |
+| A file cannot be opened, read or parsed | The file is skipped and [OnFileScanFailed](cref:Meziantou.Framework.DependencyScanning.ScannerOptions.OnFileScanFailed) is called |
+| [OnFileScanFailed](cref:Meziantou.Framework.DependencyScanning.ScannerOptions.OnFileScanFailed) throws | The scan stops and the scan method throws the exception |
 | The `onDependencyFound` callback throws | The scan stops and the scan method throws the exception |
 | The cancellation token is canceled | The scan method throws an `OperationCanceledException` |
-| The folder passed to `ScanDirectoryAsync` does not exist | The scan method throws |
+| The folder passed to [ScanDirectoryAsync](cref:Meziantou.Framework.DependencyScanning.DependencyScanner.ScanDirectoryAsync) does not exist | The scan method throws |
 
-`ScanFileAsync`, `ScanFilesAsync` and `ScanDirectoryAsync` behave the same way, and `ScanFileAsync` returns the
-dependencies found before the failure. The `ScanFileAsync` overloads that scan content held in memory take no options,
+[ScanFileAsync](cref:Meziantou.Framework.DependencyScanning.DependencyScanner.ScanFileAsync), [ScanFilesAsync](cref:Meziantou.Framework.DependencyScanning.DependencyScanner.ScanFilesAsync) and [ScanDirectoryAsync](cref:Meziantou.Framework.DependencyScanning.DependencyScanner.ScanDirectoryAsync) behave the same way, and [ScanFileAsync](cref:Meziantou.Framework.DependencyScanning.DependencyScanner.ScanFileAsync) returns the
+dependencies found before the failure. The [ScanFileAsync](cref:Meziantou.Framework.DependencyScanning.DependencyScanner.ScanFileAsync) overloads that scan content held in memory take no options,
 so they skip a failure silently.

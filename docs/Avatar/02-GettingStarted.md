@@ -15,7 +15,7 @@ The examples of this documentation omit the `using` directives: they need `using
 
 ## Generate an avatar
 
-`AvatarGenerator.CreateSvg` returns the SVG of the avatar of a name, as a string:
+[AvatarGenerator.CreateSvg](cref:Meziantou.Framework.AvatarGenerator.CreateSvg) returns the SVG of the avatar of a name, as a string:
 
 <!-- ref:../../tests/Meziantou.Framework.Avatar.Tests/AvatarGeneratorTests.cs;region=AvatarGenerator_CreateSvg;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -31,7 +31,7 @@ By default, the avatar is a circle of 64 by 64 pixels. The initials come from th
 the colors are picked from a palette of 11 color pairs using a hash of the name. The `aria-label` attribute gives the
 text that screen readers announce.
 
-`CreateSvg` throws an `ArgumentException` when the name is `null`, empty or only whitespace.
+[CreateSvg](cref:Meziantou.Framework.AvatarGenerator.CreateSvg) throws an `ArgumentException` when the name is `null`, empty or only whitespace.
 
 ## Use the avatar
 
@@ -63,7 +63,7 @@ Assert.Equal("<Ada> & Lovelace", document.DocumentElement!.GetAttribute("aria-la
 ```
 <!-- endref -->
 
-The same applies to `AvatarOptions.AccessibleLabel`. An explicit `AvatarOptions.Bigram` that contains a character
+The same applies to [AvatarOptions.AccessibleLabel](cref:Meziantou.Framework.AvatarOptions.AccessibleLabel). An explicit [AvatarOptions.Bigram](cref:Meziantou.Framework.AvatarOptions.Bigram) that contains a character
 forbidden by XML is rejected with an `ArgumentException` instead, because it comes from your code, not from a user.
 
 ## Next steps

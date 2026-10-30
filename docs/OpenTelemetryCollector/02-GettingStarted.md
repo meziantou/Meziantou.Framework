@@ -31,18 +31,18 @@ app.Run();
 ```
 <!-- endref -->
 
-- `AddInMemoryOpenTelemetryReceiver` registers a handler that keeps every export request in memory. To handle the
-  requests in code, register your own handler with `AddOpenTelemetryReceiver<T>`. See
+- [AddInMemoryOpenTelemetryReceiver](cref:Meziantou.Framework.OpenTelemetryCollector.InMemory.OpenTelemetryCollectorInMemoryServiceCollectionExtensions.AddInMemoryOpenTelemetryReceiver) registers a handler that keeps every export request in memory. To handle the
+  requests in code, register your own handler with [AddOpenTelemetryReceiver\<T\>](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryServiceCollectionExtensions.AddOpenTelemetryReceiver). See
   [Custom handlers](04-CustomHandlers.md).
-- `MapOpenTelemetryReceiverEndpoints` maps the OTLP/HTTP endpoints, `POST /v1/logs`, `POST /v1/traces` and
+- [MapOpenTelemetryReceiverEndpoints](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryEndpointRouteBuilderExtensions.MapOpenTelemetryReceiverEndpoints) maps the OTLP/HTTP endpoints, `POST /v1/logs`, `POST /v1/traces` and
   `POST /v1/metrics`, and the OTLP/gRPC services. See [Endpoints](05-Endpoints.md).
 
 Point the OTLP exporter of an application to this address, and its logs, traces and metrics reach the receiver.
 
 ## Receive an export request
 
-The OTLP exporters send export requests: an `ExportLogsServiceRequest`, an `ExportTraceServiceRequest` or an
-`ExportMetricsServiceRequest`, encoded with Protobuf or JSON. This test hosts the receiver on the in-memory ASP.NET Core
+The OTLP exporters send export requests: an [ExportLogsServiceRequest](cref:OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceRequest), an [ExportTraceServiceRequest](cref:OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceRequest) or an
+[ExportMetricsServiceRequest](cref:OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceRequest), encoded with Protobuf or JSON. This test hosts the receiver on the in-memory ASP.NET Core
 test server, sends a request as an exporter does, and reads what the receiver stored:
 
 <!-- ref:../../tests/Meziantou.Framework.OpenTelemetry.Tests/OpenTelemetryReceiverTests.cs;region=OpenTelemetryCollectorInMemory_AssertOnReceivedLogs;format=md-fenced-code-block;dedent=true -->

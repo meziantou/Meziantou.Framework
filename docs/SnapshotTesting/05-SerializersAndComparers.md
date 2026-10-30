@@ -4,11 +4,11 @@ description: Configure how values are written to snapshot files and how files ar
 ---
 
 An assertion runs in two steps. The *serializers* convert the value to the content of one or more snapshot files, then
-the *comparers* decide whether each file matches its verified file. Both are configured on `SnapshotSettings`.
+the *comparers* decide whether each file matches its verified file. Both are configured on [SnapshotSettings](cref:Meziantou.Framework.SnapshotTesting.SnapshotSettings).
 
 ## The default serializers
 
-`SnapshotSettings.Serializers` starts with three serializers:
+[SnapshotSettings.Serializers](cref:Meziantou.Framework.SnapshotTesting.SnapshotSettings.Serializers) starts with three serializers:
 
 - **Objects** are written as readable, YAML-like text by the human-readable serializer
   ([`Meziantou.Framework.HumanReadableSerializer`](https://www.nuget.org/packages/Meziantou.Framework.HumanReadableSerializer)).
@@ -20,7 +20,7 @@ the *comparers* decide whether each file matches its verified file. Both are con
 
 ## Configure how objects are written
 
-`ConfigureHumanReadableSerializer` changes the options of the human-readable serializer of a settings instance:
+[ConfigureHumanReadableSerializer](cref:Meziantou.Framework.SnapshotTesting.SnapshotSettingsHumanReadableSerializerExtensions.ConfigureHumanReadableSerializer) changes the options of the human-readable serializer of a settings instance:
 
 <!-- ref:../../tests/Meziantou.Framework.SnapshotTesting.Tests/SnapshotTests.cs;region=Snapshot_ConfigureSerializer;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -45,19 +45,19 @@ Name: John
 ```
 <!-- endref -->
 
-The options are those of `HumanReadableSerializerOptions`: order properties and dictionary keys, ignore members by name,
+The options are those of [HumanReadableSerializerOptions](cref:Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions): order properties and dictionary keys, ignore members by name,
 by type or when they throw, format JSON, XML and URL-encoded values (and HTML, with the
 `Meziantou.Framework.HumanReadableSerializer.Html` package), show invisible characters, and scrub values.
 The [inline snapshot serializer page](../InlineSnapshotTesting/04-Serializers.md) shows more of them; they work the
-same way here. `AddConverter` adds a `HumanReadableConverter` that writes a type your way.
+same way here. [AddConverter](cref:Meziantou.Framework.SnapshotTesting.SnapshotSettingsHumanReadableSerializerExtensions.AddConverter) adds a [HumanReadableConverter](cref:Meziantou.Framework.HumanReadable.HumanReadableConverter) that writes a type your way.
 
-`ConfigureHumanReadableSerializer` only affects the settings instance it is called on. Call it on a copy
-(`SnapshotSettings.Default with { }`) for one test, or on `SnapshotSettings.Default` in a
+[ConfigureHumanReadableSerializer](cref:Meziantou.Framework.SnapshotTesting.SnapshotSettingsHumanReadableSerializerExtensions.ConfigureHumanReadableSerializer) only affects the settings instance it is called on. Call it on a copy
+(`SnapshotSettings.Default with { }`) for one test, or on [SnapshotSettings.Default](cref:Meziantou.Framework.SnapshotTesting.SnapshotSettings.Default) in a
 [module initializer](04-Settings.md#configure-every-test) for every test.
 
 ## Write your own serializer
 
-Implement `ISnapshotSerializer` to store a type in its own format. `TrySerialize` receives the requested snapshot type
+Implement [ISnapshotSerializer](cref:Meziantou.Framework.SnapshotTesting.ISnapshotSerializer) to store a type in its own format. [TrySerialize](cref:Meziantou.Framework.SnapshotTesting.ISnapshotSerializer.TrySerialize) receives the requested snapshot type
 and the value, and returns `false` for the values it does not handle:
 
 <!-- ref:../../tests/Meziantou.Framework.SnapshotTesting.Tests/SnapshotTests.cs;region=Snapshot_CustomSerializer;format=md-fenced-code-block;dedent=true -->
@@ -80,7 +80,7 @@ public sealed class CsvSnapshotSerializer : ISnapshotSerializer
 ```
 <!-- endref -->
 
-- A `SerializedSnapshot` is a list of `SnapshotData`, each one the extension and the bytes of a file. A serializer that
+- A [SerializedSnapshot](cref:Meziantou.Framework.SnapshotTesting.SerializedSnapshot) is a list of [SnapshotData](cref:Meziantou.Framework.SnapshotTesting.SnapshotData), each one the extension and the bytes of a file. A serializer that
   returns several files produces `Name_0`, `Name_1`, ... (see [File names](03-WritingTests/03-SnapshotFiles.md#file-names)).
 - The serializers are tried from the last one added to the first: a serializer you add takes precedence over the
   built-in ones. The human-readable serializer, the first one, accepts every value.
@@ -91,15 +91,15 @@ public sealed class CsvSnapshotSerializer : ISnapshotSerializer
 
 | Format | Comparison |
 | --- | --- |
-| `SnapshotType.Default` (`txt`), `Svg`, and every known text format (`json`, `yaml`, `xml`, `html`, `cs`, `csv`, ...) | The text, without regard to line endings and a leading UTF-8 byte order mark |
+| [SnapshotType.Default](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.Default) (`txt`), [Svg](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.Svg), and every known text format (`json`, `yaml`, `xml`, `html`, `cs`, `csv`, ...) | The text, without regard to line endings and a leading UTF-8 byte order mark |
 | Any other format (`png`, `pdf`, `bin`, ...) | The bytes |
 
-A text format without its own comparer uses the comparer registered for `SnapshotType.Default`, and any other format
-uses the one registered for `SnapshotType.None`.
+A text format without its own comparer uses the comparer registered for [SnapshotType.Default](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.Default), and any other format
+uses the one registered for [SnapshotType.None](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.None).
 
 ## Write your own comparer
 
-Implement `ISnapshotComparer` and register it for a snapshot type with `Comparers.Set`. Implement
+Implement [ISnapshotComparer](cref:Meziantou.Framework.SnapshotTesting.ISnapshotComparer) and register it for a snapshot type with `Comparers.Set`. Implement
 `Equals(expected, actual, out mismatchReason)` to explain a mismatch: the reason is shown under the changed file in the
 failure message.
 

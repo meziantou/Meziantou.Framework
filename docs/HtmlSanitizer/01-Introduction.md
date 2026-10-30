@@ -38,12 +38,12 @@ The guarantees, and what the sanitizer cannot protect you from, are listed in
 
 ## Namespace
 
-`HtmlSanitizer` and `UrlSanitizer` are in the [Meziantou.Framework.Sanitizers](cref:Meziantou.Framework.Sanitizers) namespace.
+[HtmlSanitizer](cref:Meziantou.Framework.Sanitizers.HtmlSanitizer) and [UrlSanitizer](cref:Meziantou.Framework.Sanitizers.UrlSanitizer) are in the [Meziantou.Framework.Sanitizers](cref:Meziantou.Framework.Sanitizers) namespace.
 
 | Type | Use it to |
 | --- | --- |
-| `HtmlSanitizer` | Sanitize an HTML fragment, and configure its allowed elements, attributes and URL attributes |
-| `UrlSanitizer` | Check a single URL or a `srcset` value |
+| [HtmlSanitizer](cref:Meziantou.Framework.Sanitizers.HtmlSanitizer) | Sanitize an HTML fragment, and configure its allowed elements, attributes and URL attributes |
+| [UrlSanitizer](cref:Meziantou.Framework.Sanitizers.UrlSanitizer) | Check a single URL or a `srcset` value |
 
 ## Next steps
 

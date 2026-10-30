@@ -24,14 +24,14 @@ Assert.DoesNotContain(numbers, n => n > 10);
 <!-- endref -->
 
 - `Contains(item, collection)` looks for an item. Without a comparer, an `ICollection<T>`, such as a `HashSet<T>`
-  created with a case-insensitive comparer, decides with its own `Contains`, like `Enumerable.Contains`. Pass an
+  created with a case-insensitive comparer, decides with its own [Contains](cref:Meziantou.Framework.Assertions.Assert.Contains), like `Enumerable.Contains`. Pass an
   `IEqualityComparer<T>` to choose how items are compared.
 - When the expected value is a sequence of the item type, such as an `int[]` in a `List<int>`, it is a
-  **subsequence**: the collection must contain these items, consecutive and in order. `StartsWith` and `EndsWith`
+  **subsequence**: the collection must contain these items, consecutive and in order. [StartsWith](cref:Meziantou.Framework.Assertions.Assert.StartsWith) and [EndsWith](cref:Meziantou.Framework.Assertions.Assert.EndsWith)
   check a prefix or a suffix the same way, and also accept a single item.
 - `Contains(collection, predicate)` looks for an item that matches a predicate. The collection comes first, as there is
   no expected value.
-- When `DoesNotContain` fails, the message shows the index where the item was found.
+- When [DoesNotContain](cref:Meziantou.Framework.Assertions.Assert.DoesNotContain) fails, the message shows the index where the item was found.
 
 ## Dictionaries
 
@@ -102,7 +102,7 @@ Assert.Contains(new[] { 5, 6 }, Naturals());    // stops at the first match
 <!-- endref -->
 
 When a sequence is longer than the count the assertion needed to read, the failure message reports its count as a
-lower bound (`at least N`). `All` reads a sequence once, and `Collection` reads at most one item past its inspectors.
+lower bound (`at least N`). [All](cref:Meziantou.Framework.Assertions.Assert.All) reads a sequence once, and [Collection](cref:Meziantou.Framework.Assertions.Assert.Collection) reads at most one item past its inspectors.
 
 ## The single item
 
@@ -118,7 +118,7 @@ Assert.Equal("root", admin);
 ```
 <!-- endref -->
 
-`Single` fails when the collection is empty or has more than one item, or, with a predicate, when no item or more than
+[Single](cref:Meziantou.Framework.Assertions.Assert.Single) fails when the collection is empty or has more than one item, or, with a predicate, when no item or more than
 one item matches. It returns the item.
 
 ## Every item
@@ -142,7 +142,7 @@ Assert.DoesNotAll(numbers, n => n > 5);                       // at least one it
 
 ## Each item in order
 
-`Collection` runs one inspector per item, in order. It fails when the collection has more or fewer items than
+[Collection](cref:Meziantou.Framework.Assertions.Assert.Collection) runs one inspector per item, in order. It fails when the collection has more or fewer items than
 inspectors:
 
 <!-- ref:../../tests/Meziantou.Framework.Assertions.Tests/AssertCollectionTests.cs;region=Assert_Collection;format=md-fenced-code-block;dedent=true -->
@@ -169,7 +169,7 @@ Assert.NotDistinct(tags, StringComparer.OrdinalIgnoreCase);
 ```
 <!-- endref -->
 
-`Distinct` checks that no item appears twice, and `NotDistinct` that at least one does. Both accept an
+[Distinct](cref:Meziantou.Framework.Assertions.Assert.Distinct) checks that no item appears twice, and [NotDistinct](cref:Meziantou.Framework.Assertions.Assert.NotDistinct) that at least one does. Both accept an
 `IEqualityComparer<T>`.
 
 ## Sets
@@ -195,8 +195,8 @@ Assert.NotProperSuperset(allowed, granted);
 | `ProperSuperset(expectedSubset, actual)` | a superset, and `actual` has an item that `expectedSubset` does not |
 | `NotProperSuperset(expectedSubset, actual)` | not a proper superset |
 
-A `null` `actual` fails `Subset`, `ProperSubset`, `Superset` and `ProperSuperset`, and passes `NotProperSubset` and
-`NotProperSuperset`. Without a comparer, a set passed as `actual`, such as a `HashSet<T>`, compares the items with its
+A `null` `actual` fails [Subset](cref:Meziantou.Framework.Assertions.Assert.Subset), [ProperSubset](cref:Meziantou.Framework.Assertions.Assert.ProperSubset), [Superset](cref:Meziantou.Framework.Assertions.Assert.Superset) and [ProperSuperset](cref:Meziantou.Framework.Assertions.Assert.ProperSuperset), and passes [NotProperSubset](cref:Meziantou.Framework.Assertions.Assert.NotProperSubset) and
+[NotProperSuperset](cref:Meziantou.Framework.Assertions.Assert.NotProperSuperset). Without a comparer, a set passed as `actual`, such as a `HashSet<T>`, compares the items with its
 own comparer.
 
 ## Async sequences
@@ -222,6 +222,6 @@ await Assert.Contains(new[] { 2, 3 }, GetValuesAsync());
 ```
 <!-- endref -->
 
-`Equal`, `NotEqual`, `EqualUnordered`, `Empty`, `NotEmpty`, `Single`, `All`, `Distinct`, `NotDistinct`, the count
-assertions, and the subsequence forms of `Contains`, `DoesNotContain`, `StartsWith` and `EndsWith` accept an
-`IAsyncEnumerable<T>`. `Equal` compares it with another async sequence or with a regular collection.
+[Equal](cref:Meziantou.Framework.Assertions.Assert.Equal), [NotEqual](cref:Meziantou.Framework.Assertions.Assert.NotEqual), [EqualUnordered](cref:Meziantou.Framework.Assertions.Assert.EqualUnordered), [Empty](cref:Meziantou.Framework.Assertions.Assert.Empty), [NotEmpty](cref:Meziantou.Framework.Assertions.Assert.NotEmpty), [Single](cref:Meziantou.Framework.Assertions.Assert.Single), [All](cref:Meziantou.Framework.Assertions.Assert.All), [Distinct](cref:Meziantou.Framework.Assertions.Assert.Distinct), [NotDistinct](cref:Meziantou.Framework.Assertions.Assert.NotDistinct), the count
+assertions, and the subsequence forms of [Contains](cref:Meziantou.Framework.Assertions.Assert.Contains), [DoesNotContain](cref:Meziantou.Framework.Assertions.Assert.DoesNotContain), [StartsWith](cref:Meziantou.Framework.Assertions.Assert.StartsWith) and [EndsWith](cref:Meziantou.Framework.Assertions.Assert.EndsWith) accept an
+`IAsyncEnumerable<T>`. [Equal](cref:Meziantou.Framework.Assertions.Assert.Equal) compares it with another async sequence or with a regular collection.

@@ -159,4 +159,4 @@ A `ValueTag` comment that cannot be parsed, or that does not tag a local variabl
 reported ([MFTV0005](09-Rules/06-MFTV0005.md)). This includes a comment on a field, inside an initializer, at the end of
 a line, before a statement that declares no variable, in the type arguments of a field, a parameter, or a generic
 method, and in the type arguments of a type that is neither a collection, a dictionary, nor a wrapper, such as
-`Tuple<Guid, Guid>`. Use the `[ValueTag]` attribute on fields, properties, parameters, and return values.
+`Tuple<Guid, Guid>`. Use the [\[ValueTag\]](cref:Meziantou.Framework.TaggedValues.ValueTagAttribute) attribute on fields, properties, parameters, and return values.

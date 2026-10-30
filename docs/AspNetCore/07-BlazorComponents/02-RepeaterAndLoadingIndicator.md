@@ -5,7 +5,7 @@ description: Render a list with item, separator, empty and loading templates, an
 
 ## Render a list
 
-`Repeater<T>` renders `ItemTemplate` for each item of `Items`, with `ItemSeparatorTemplate` between two items:
+[Repeater\<T\>](cref:Meziantou.AspNetCore.Components.Repeater{T}) renders [ItemTemplate](cref:Meziantou.AspNetCore.Components.Repeater{T}.ItemTemplate) for each item of [Items](cref:Meziantou.AspNetCore.Components.Repeater{T}.Items), with [ItemSeparatorTemplate](cref:Meziantou.AspNetCore.Components.Repeater{T}.ItemSeparatorTemplate) between two items:
 
 <!-- ref:../../../samples/BlazorAppSample/ReadmeExamples/RepeaterExample.razor;format=md-fenced-code-block -->
 ```razor
@@ -24,25 +24,25 @@ description: Render a list with item, separator, empty and loading templates, an
 ```
 <!-- endref -->
 
-`T` is inferred from `Items`. Set it explicitly (`<Repeater T="Person">`) when the compiler cannot infer it.
+`T` is inferred from [Items](cref:Meziantou.AspNetCore.Components.Repeater{T}.Items). Set it explicitly (`<Repeater T="Person">`) when the compiler cannot infer it.
 
 | Parameter | Rendered when |
 | --- | --- |
-| `LoadingTemplate` | `Items` is `null`: the data is not loaded yet |
-| `EmptyTemplate` | `Items` is empty. It replaces the container and the items |
-| `ItemTemplate` | For each item; the item is the `context` (rename it with `Context="..."`) |
-| `ItemSeparatorTemplate` | Between two items |
-| `RepeaterContainerTemplate` | Around all the items. By default, the items are rendered without a container |
+| [LoadingTemplate](cref:Meziantou.AspNetCore.Components.Repeater{T}.LoadingTemplate) | [Items](cref:Meziantou.AspNetCore.Components.Repeater{T}.Items) is `null`: the data is not loaded yet |
+| [EmptyTemplate](cref:Meziantou.AspNetCore.Components.Repeater{T}.EmptyTemplate) | [Items](cref:Meziantou.AspNetCore.Components.Repeater{T}.Items) is empty. It replaces the container and the items |
+| [ItemTemplate](cref:Meziantou.AspNetCore.Components.Repeater{T}.ItemTemplate) | For each item; the item is the `context` (rename it with `Context="..."`) |
+| [ItemSeparatorTemplate](cref:Meziantou.AspNetCore.Components.Repeater{T}.ItemSeparatorTemplate) | Between two items |
+| [RepeaterContainerTemplate](cref:Meziantou.AspNetCore.Components.Repeater{T}.RepeaterContainerTemplate) | Around all the items. By default, the items are rendered without a container |
 
-Keep `Items` `null` until the data is loaded, then assign it: the repeater switches from the loading template to the
+Keep [Items](cref:Meziantou.AspNetCore.Components.Repeater{T}.Items) `null` until the data is loaded, then assign it: the repeater switches from the loading template to the
 items or to the empty template.
 
-`Items` is enumerated once per render. A lazy sequence, such as a LINQ query, is materialized into a list first, so its
+[Items](cref:Meziantou.AspNetCore.Components.Repeater{T}.Items) is enumerated once per render. A lazy sequence, such as a LINQ query, is materialized into a list first, so its
 work does not run twice.
 
 ## Wrap the items in a container
 
-`RepeaterContainerTemplate` receives the rendered items as its context. Use it for markup that must only appear when
+[RepeaterContainerTemplate](cref:Meziantou.AspNetCore.Components.Repeater{T}.RepeaterContainerTemplate) receives the rendered items as its context. Use it for markup that must only appear when
 there are items, such as a table:
 
 <!-- ref:../../../samples/BlazorAppSample/Pages/RepeaterDemo.razor;format=md-fenced-code-block -->
@@ -94,12 +94,12 @@ there are items, such as a table:
 ```
 <!-- endref -->
 
-When the list is empty, the `EmptyTemplate` replaces the whole container, so there is no table with an empty body.
-Without an `EmptyTemplate`, an empty list renders the container with no items.
+When the list is empty, the [EmptyTemplate](cref:Meziantou.AspNetCore.Components.Repeater{T}.EmptyTemplate) replaces the whole container, so there is no table with an empty body.
+Without an [EmptyTemplate](cref:Meziantou.AspNetCore.Components.Repeater{T}.EmptyTemplate), an empty list renders the container with no items.
 
 ## Show a loading indicator
 
-`LoadingIndicator` renders `LoadingTemplate` while `IsLoading` is `true`, and its content otherwise:
+[LoadingIndicator](cref:Meziantou.AspNetCore.Components.LoadingIndicator) renders [LoadingTemplate](cref:Meziantou.AspNetCore.Components.LoadingIndicator.LoadingTemplate) while [IsLoading](cref:Meziantou.AspNetCore.Components.LoadingIndicator.IsLoading) is `true`, and its content otherwise:
 
 <!-- ref:../../../samples/BlazorAppSample/Documentation/LoadingIndicatorExample.razor;format=md-fenced-code-block -->
 ```razor
@@ -124,4 +124,4 @@ Without an `EmptyTemplate`, an empty list renders the container with no items.
 ```
 <!-- endref -->
 
-Without a `LoadingTemplate`, it renders `LoadingText` (`Loading...` by default) in a `<div>`.
+Without a [LoadingTemplate](cref:Meziantou.AspNetCore.Components.LoadingIndicator.LoadingTemplate), it renders [LoadingText](cref:Meziantou.AspNetCore.Components.LoadingIndicator.LoadingText) (`Loading...` by default) in a `<div>`.

@@ -5,7 +5,7 @@ description: Include some paths and exclude others with a GlobCollection, and en
 
 ## Include and exclude paths
 
-A `GlobCollection` matches a path when at least one of its patterns includes it and none excludes it. A pattern that
+A [GlobCollection](cref:Meziantou.Framework.Globbing.GlobCollection) matches a path when at least one of its patterns includes it and none excludes it. A pattern that
 starts with a `!` is an exclude pattern:
 
 <!-- ref:../../tests/Meziantou.Framework.Globbing.Tests/GlobCollectionTests.cs;region=GlobCollection_IncludeExclude;format=md-fenced-code-block;dedent=true -->
@@ -23,9 +23,9 @@ Assert.False(globs.IsMatch("readme.md"));
 <!-- endref -->
 
 - Create the collection with a collection expression, as above, or with `new GlobCollection(glob1, glob2)`.
-- The `Mode` property of a `Glob` tells whether it includes (`GlobMode.Include`) or excludes (`GlobMode.Exclude`)
+- The [Mode](cref:Meziantou.Framework.Globbing.Glob.Mode) property of a [Glob](cref:Meziantou.Framework.Globbing.Glob) tells whether it includes ([GlobMode.Include](cref:Meziantou.Framework.Globbing.GlobMode.Include)) or excludes ([GlobMode.Exclude](cref:Meziantou.Framework.Globbing.GlobMode.Exclude))
   paths. On its own, an exclude pattern still matches the paths it describes: the exclusion happens in the collection.
-- A collection can hold other collections, since both implement `IGlobEvaluatable`.
+- A collection can hold other collections, since both implement [IGlobEvaluatable](cref:Meziantou.Framework.Globbing.IGlobEvaluatable).
 
 ## Exclude patterns always win
 
@@ -71,7 +71,7 @@ Assert.False(content.IsMatch("obj/project.assets.json"));
 
 ## Enumerate the files of a collection
 
-`EnumerateFiles` and `EnumerateFileSystemEntries` work on a collection as on a single pattern:
+[EnumerateFiles](cref:Meziantou.Framework.Globbing.GlobExtensions.EnumerateFiles) and [EnumerateFileSystemEntries](cref:Meziantou.Framework.Globbing.GlobExtensions.EnumerateFileSystemEntries) work on a collection as on a single pattern:
 
 <!-- ref:../../tests/Meziantou.Framework.Globbing.Tests/GlobCollectionTests.cs;region=GlobCollection_EnumerateFilesWithExclusions;format=md-fenced-code-block;dedent=true -->
 ```csharp

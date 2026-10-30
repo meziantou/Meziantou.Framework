@@ -5,8 +5,8 @@ description: What the library does not do, so you can plan around it.
 
 - **Audio formats only.** There is no support for video files, images, or audio formats other than those of the
   [Introduction](01-Introduction.md#supported-formats), such as WMA or APE tags.
-- **One set of fields.** `MediaTagInfo` exposes the common fields; the frames and items of a format that the library
-  does not read are kept when writing, but you cannot read or change them, except the text fields of `CustomFields`.
+- **One set of fields.** [MediaTagInfo](cref:Meziantou.Framework.MediaTags.MediaTagInfo) exposes the common fields; the frames and items of a format that the library
+  does not read are kept when writing, but you cannot read or change them, except the text fields of [CustomFields](cref:Meziantou.Framework.MediaTags.MediaTagInfo.CustomFields).
 - **Writing replaces.** There is no merge: read the tags before writing them; see
   [Writing replaces the tags](04-WritingTags.md#writing-replaces-the-tags).
 - **No OGG multiplexing.** Multiplexed and chained OGG streams are refused when writing.

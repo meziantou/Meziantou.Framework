@@ -4,12 +4,12 @@ description: Bind a collection that background threads modify to a WPF or Window
 ---
 
 UI controls require the change notifications of the collection they display to be raised on the UI thread.
-`ConcurrentObservableCollection<T>` can be modified from any thread, and exposes in `AsObservable` a view of the
+[ConcurrentObservableCollection\<T\>](cref:Meziantou.Framework.Collections.Concurrent.ConcurrentObservableCollection{T}) can be modified from any thread, and exposes in [AsObservable](cref:Meziantou.Framework.Collections.Concurrent.ConcurrentObservableCollection{T}.AsObservable) a view of the
 collection whose notifications are raised on the UI thread.
 
 ## Bind the collection to a control
 
-Bind the control to `AsObservable`, and modify the collection itself from any thread:
+Bind the control to [AsObservable](cref:Meziantou.Framework.Collections.Concurrent.ConcurrentObservableCollection{T}.AsObservable), and modify the collection itself from any thread:
 
 <!-- ref:../../samples/Meziantou.Framework.WPF.CollectionSamples/ConcurrentObservableCollectionReadmeExamples.cs;region=ConcurrentObservableCollection_Bind;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -22,7 +22,7 @@ await Task.Run(() => collection.Add("Item from a background thread"));
 ```
 <!-- endref -->
 
-- `AsObservable` returns an `IReadOnlyObservableCollection<T>`: a read-only list that implements
+- [AsObservable](cref:Meziantou.Framework.Collections.Concurrent.ConcurrentObservableCollection{T}.AsObservable) returns an [IReadOnlyObservableCollection\<T\>](cref:Meziantou.Framework.Collections.Concurrent.IReadOnlyObservableCollection{T}): a read-only list that implements
   `INotifyCollectionChanged` and `INotifyPropertyChanged`. It reflects the changes made to the collection.
 - The parameterless constructor uses the `SynchronizationContext` of the thread that creates the collection, so create
   it on the UI thread. When that thread has no synchronization context, the notifications are raised on the thread pool.
@@ -39,12 +39,12 @@ var collection = new ConcurrentObservableCollection<string>(synchronizationConte
 
 When the collection is modified on the thread of that context, the notifications are raised synchronously. Otherwise,
 they are posted to the context. The WPF and Windows Forms contexts are recognized by their thread. To support another
-context bound to a single thread, derive from the collection and override `IsOnSynchronizationContextThread`.
+context bound to a single thread, derive from the collection and override [IsOnSynchronizationContextThread](cref:Meziantou.Framework.Collections.Concurrent.ConcurrentObservableCollection{T}.IsOnSynchronizationContextThread).
 
 ## Add several items with one notification
 
-`AddRange` and `InsertRange` raise one notification per item by default, because most UI controls, including the WPF
-ones, do not support notifications that contain several items. Set `SupportRangeNotifications` to `true` when your
+[AddRange](cref:Meziantou.Framework.Collections.Concurrent.ConcurrentObservableCollection{T}.AddRange) and [InsertRange](cref:Meziantou.Framework.Collections.Concurrent.ConcurrentObservableCollection{T}.InsertRange) raise one notification per item by default, because most UI controls, including the WPF
+ones, do not support notifications that contain several items. Set [SupportRangeNotifications](cref:Meziantou.Framework.Collections.Concurrent.ConcurrentObservableCollection{T}.SupportRangeNotifications) to `true` when your
 control supports them:
 
 <!-- ref:../../tests/Meziantou.Framework.Threading.Tests/ObservableCollectionTests.cs;region=ConcurrentObservableCollection_RangeNotifications;format=md-fenced-code-block;dedent=true -->
@@ -66,13 +66,13 @@ Assert.Equal([1, 2, 3], notification.NewItems!.Cast<int>().ToArray());
 ```
 <!-- endref -->
 
-The collection also provides `Insert`, `Remove`, `RemoveAt`, `Clear`, the indexer, `Sort` and `StableSort`.
+The collection also provides [Insert](cref:Meziantou.Framework.Collections.Concurrent.ConcurrentObservableCollection{T}.Insert), [Remove](cref:Meziantou.Framework.Collections.Concurrent.ConcurrentObservableCollection{T}.Remove), [RemoveAt](cref:Meziantou.Framework.Collections.Concurrent.ConcurrentObservableCollection{T}.RemoveAt), [Clear](cref:Meziantou.Framework.Collections.Concurrent.ConcurrentObservableCollection{T}.Clear), the indexer, [Sort](cref:Meziantou.Framework.Collections.Concurrent.ConcurrentObservableCollection{T}.Sort) and [StableSort](cref:Meziantou.Framework.Collections.Concurrent.ConcurrentObservableCollection{T}.StableSort).
 
 ## How notifications are raised
 
 - All the notifications of an operation are queued before any of them is raised, and they are never raised recursively.
   A handler that modifies the collection gets the notifications of its own change after the ones already queued, so
-  `AsObservable` ends up in the same state as the collection.
+  [AsObservable](cref:Meziantou.Framework.Collections.Concurrent.ConcurrentObservableCollection{T}.AsObservable) ends up in the same state as the collection.
 - The notifications are raised after the internal lock is released, so a handler can wait for another thread that
   modifies the collection without deadlocking.
 - A handler that throws does not prevent the other notifications from being raised. The exception is rethrown to the code

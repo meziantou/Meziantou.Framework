@@ -5,7 +5,7 @@ description: Find the script of a character, the scripts a shared character is u
 
 ## Get the script of a character
 
-`UnicodeScripts` gives the script of a code point (the `Script` property of the standard), the scripts a shared
+[UnicodeScripts](cref:Meziantou.Framework.UnicodeScripts) gives the script of a code point (the `Script` property of the standard), the scripts a shared
 character is used with (`Script_Extensions`), and the names of the scripts:
 
 <!-- ref:../../tests/Meziantou.Framework.Unicode.Tests/UnicodeTests.cs;region=Unicode_Scripts;format=md-fenced-code-block;dedent=true -->
@@ -26,15 +26,15 @@ Assert.Equal(UnicodeScript.Greek, script);
 ```
 <!-- endref -->
 
-- Digits, punctuation and spaces are of the `Common` script, and combining marks of the `Inherited` script: they are
+- Digits, punctuation and spaces are of the [Common](cref:Meziantou.Framework.UnicodeScript.Common) script, and combining marks of the [Inherited](cref:Meziantou.Framework.UnicodeScript.Inherited) script: they are
   used with many scripts. `Script_Extensions` narrows them down when the standard knows which scripts use them, such as
   the prolonged sound mark of Japanese, used with Hiragana and Katakana.
-- `GetIso15924Code` gives the four-letter code of ISO 15924 (`Latn`), and `TryParseScript` accepts these codes and the
-  names of the standard (`Greek`).
+- [GetIso15924Code](cref:Meziantou.Framework.UnicodeScripts.GetIso15924Code) gives the four-letter code of ISO 15924 (`Latn`), and [TryParseScript](cref:Meziantou.Framework.UnicodeScripts.TryParseScript) accepts these codes and the
+  names of the standard ([Greek](cref:Meziantou.Framework.UnicodeScript.Greek)).
 
 ## Split a text into runs of one script
 
-A font or a shaping engine works on runs of one script. `Unicode.EnumerateScriptRuns` splits a text into such runs, with
+A font or a shaping engine works on runs of one script. [Unicode.EnumerateScriptRuns](cref:Meziantou.Framework.Unicode.EnumerateScriptRuns) splits a text into such runs, with
 the rules of [UAX #24](https://www.unicode.org/reports/tr24/):
 
 <!-- ref:../../tests/Meziantou.Framework.Unicode.Tests/UnicodeTests.cs;region=Unicode_ScriptRuns;format=md-fenced-code-block;dedent=true -->
@@ -52,7 +52,7 @@ Assert.Equal(["gamma (: Latin", "\u03B3: Greek", ") is: Latin"], runs);
 
 - Combining marks follow their base, and spaces and punctuation follow the text before them.
 - `Script_Extensions` are honored, and both brackets of a pair are in the same run.
-- Each `UnicodeScriptRun` has the `Index` and the `Length` of the run in the text, and its `Script`.
+- Each [UnicodeScriptRun](cref:Meziantou.Framework.UnicodeScriptRun) has the [Index](cref:Meziantou.Framework.UnicodeScriptRun.Index) and the [Length](cref:Meziantou.Framework.UnicodeScriptRun.Length) of the run in the text, and its `Script`.
 
-To find out whether a user name mixes scripts in a suspicious way, use `Unicode.IsMixedScript`: see
+To find out whether a user name mixes scripts in a suspicious way, use [Unicode.IsMixedScript](cref:Meziantou.Framework.Unicode.IsMixedScript): see
 [Look-alike characters](13-LookAlikeCharacters.md#detect-mixed-scripts).

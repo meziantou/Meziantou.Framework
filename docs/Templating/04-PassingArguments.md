@@ -8,7 +8,7 @@ its name and its type, then pass the values when you run the template.
 
 ## Pass values by position
 
-`Run(params object?[])` passes the values in the order of `Arguments`:
+`Run(params object?[])` passes the values in the order of [Arguments](cref:Meziantou.Framework.Templating.Template.Arguments):
 
 <!-- ref:../../tests/Meziantou.Framework.Templating.Tests/TemplateTest.cs;region=Template_Parameters;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -47,7 +47,7 @@ Assert.Equal("Hello Meziantou!", result);
 <!-- endref -->
 
 An argument that has no value in the dictionary gets the default value of its type (`null`, `0`, `false`, …). Set
-`ThrowOnMissingArgument` to get a `TemplateException` that names the argument instead, so that a typo in a key does not
+[ThrowOnMissingArgument](cref:Meziantou.Framework.Templating.Template.ThrowOnMissingArgument) to get a [TemplateException](cref:Meziantou.Framework.Templating.TemplateException) that names the argument instead, so that a typo in a key does not
 silently produce a wrong document:
 
 <!-- ref:../../tests/Meziantou.Framework.Templating.Tests/TemplateTest.cs;region=Template_ThrowOnMissingArgument;format=md-fenced-code-block;dedent=true -->

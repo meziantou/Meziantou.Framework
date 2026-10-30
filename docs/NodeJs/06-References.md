@@ -6,8 +6,8 @@ description: Keep a class instance, a function or any value that cannot be conve
 ## Keep a value
 
 Some values cannot be converted to JSON, or must be reused across calls: a class instance, a `Map`, a database client, a
-function… `InvokeReferenceAsync` and `EvaluateReferenceAsync` keep the result in the Node.js process and return a
-`JSReference` to it, instead of its JSON representation:
+function… [InvokeReferenceAsync](cref:Meziantou.Framework.NodeJs.NodeJsHost.InvokeReferenceAsync) and [EvaluateReferenceAsync](cref:Meziantou.Framework.NodeJs.NodeJsHost.EvaluateReferenceAsync) keep the result in the Node.js process and return a
+[JSReference](cref:Meziantou.Framework.NodeJs.JSReference) to it, instead of its JSON representation:
 
 <!-- ref:../../tests/Meziantou.Framework.NodeJs.Tests/NodeJsHostTests.cs;region=JSReference_Example;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -25,16 +25,16 @@ Assert.Equal("b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9",
 ```
 <!-- endref -->
 
-- `InvokeAsync`, `InvokeVoidAsync` and `InvokeReferenceAsync` on the reference call a method of the value, with the
+- [InvokeAsync](cref:Meziantou.Framework.NodeJs.JSReference.InvokeAsync), [InvokeVoidAsync](cref:Meziantou.Framework.NodeJs.JSReference.InvokeVoidAsync) and [InvokeReferenceAsync](cref:Meziantou.Framework.NodeJs.JSReference.InvokeReferenceAsync) on the reference call a method of the value, with the
   value as `this`. When the member is not a function, its value is returned. Pass `null` as the method name to call the
   value itself, when it is a function.
-- A `JSReference` converts implicitly to `JsonNode`, so it can be an argument of any call, or be nested in a
+- A [JSReference](cref:Meziantou.Framework.NodeJs.JSReference) converts implicitly to `JsonNode`, so it can be an argument of any call, or be nested in a
   `JsonObject` or a `JsonArray` argument. The function receives the value itself.
 - The reference is disposable: dispose it once you no longer need the value, so Node.js can collect it.
 
 ## Create an instance of a class
 
-`CreateInstanceAsync` creates an instance of an exported class (`new`), and keeps it in the process. On a reference, it
+[CreateInstanceAsync](cref:Meziantou.Framework.NodeJs.JSReference.CreateInstanceAsync) creates an instance of an exported class (`new`), and keeps it in the process. On a reference, it
 creates an instance of a class that is a member of the value or, when you pass `null`, of the referenced class:
 
 <!-- ref:../../tests/Meziantou.Framework.NodeJs.Tests/NodeJsHostTests.cs;region=NodeJs_CreateInstance;format=md-fenced-code-block;dedent=true -->
@@ -57,7 +57,7 @@ Assert.Equal("https://example.com/docs?page=3", address);
 ```
 <!-- endref -->
 
-`GetValueAsync` returns the JSON representation of the value, or deserializes it, as for the result of a call. When the
+[GetValueAsync](cref:Meziantou.Framework.NodeJs.JSReference.GetValueAsync) returns the JSON representation of the value, or deserializes it, as for the result of a call. When the
 value is a promise, it is awaited.
 
 ## All the operations
@@ -90,10 +90,10 @@ JsonElement value = await client.GetValueAsync();
 
 - The value is kept until the reference is disposed or the process exits.
 - A reference can only be used with the process that created it. Once the process exits, the calls that use it fail with
-  a `NodeJsException` whose `ExitCode` is set. See [Handling errors](08-HandlingErrors.md).
+  a [NodeJsException](cref:Meziantou.Framework.NodeJs.NodeJsException) whose [ExitCode](cref:Meziantou.Framework.NodeJs.NodeJsException.ExitCode) is set. See [Handling errors](08-HandlingErrors.md).
 - With a pool, a reference is bound to the process that created it, and the calls of the pool whose arguments contain
   it run on that process. With worker threads, the value is kept by the worker thread that created it, and is lost when
   this worker thread exits. A call cannot use references kept by different processes or worker threads. See
   [Running calls in parallel](10-ParallelCalls.md).
-- A `JSReference` can only be used in the arguments of a call. It cannot be a member of an object serialized using
+- A [JSReference](cref:Meziantou.Framework.NodeJs.JSReference) can only be used in the arguments of a call. It cannot be a member of an object serialized using
   reflection, and a `JsonNode` created from it cannot be serialized or cloned.

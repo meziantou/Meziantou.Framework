@@ -45,7 +45,7 @@ A response is stored when all these conditions hold:
   - `500` is only stored when the response says how long it is fresh (`max-age` or a future `Expires`), or has
     `Cache-Control: public` or `private`;
   - any other status code, `206 Partial Content` included, is never stored.
-- The response is not larger than `MaximumResponseSize`, and `ShouldCacheResponse` accepts it. See
+- The response is not larger than [MaximumResponseSize](cref:Meziantou.Framework.Http.Caching.HttpCachingOptions.MaximumResponseSize), and [ShouldCacheResponse](cref:Meziantou.Framework.Http.Caching.HttpCachingOptions.ShouldCacheResponse) accepts it. See
   [Options](09-Options.md).
 
 The response is returned to the caller whether it is stored or not.

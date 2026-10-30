@@ -41,29 +41,29 @@ number 18456 and the message `Login failed for user 'app'.`
 
 ## What the handler receives
 
-`TdsAuthenticationContext` holds the login sent by the client:
+[TdsAuthenticationContext](cref:Meziantou.Framework.Tds.Handler.TdsAuthenticationContext) holds the login sent by the client:
 
 | Property | Value |
 | --- | --- |
-| `UserName`, `Password` | The SQL login (`User ID` and `Password` in the connection string), or `null` when missing |
+| [UserName](cref:Meziantou.Framework.Tds.Handler.TdsAuthenticationContext.UserName), `Password` | The SQL login (`User ID` and `Password` in the connection string), or `null` when missing |
 | `Database` | The requested database (`Initial Catalog` or `Database`), or `null` |
-| `ApplicationName` | The `Application Name` of the connection string, or the default name of the client |
-| `RemoteEndPoint` | The address and port of the client |
-| `AuthenticationToken` | The SSPI data of the login packet, Base64-encoded, or `null` when the client sent none |
+| [ApplicationName](cref:Meziantou.Framework.Tds.Handler.TdsAuthenticationContext.ApplicationName) | The `Application Name` of the connection string, or the default name of the client |
+| [RemoteEndPoint](cref:Meziantou.Framework.Tds.Handler.TdsAuthenticationContext.RemoteEndPoint) | The address and port of the client |
+| [AuthenticationToken](cref:Meziantou.Framework.Tds.Handler.TdsAuthenticationContext.AuthenticationToken) | The SSPI data of the login packet, Base64-encoded, or `null` when the client sent none |
 
 The server does not run an SSPI exchange: integrated Windows authentication and Microsoft Entra ID authentication are
-not supported. `AuthenticationToken` only exposes the first SSPI message, for custom schemes.
+not supported. [AuthenticationToken](cref:Meziantou.Framework.Tds.Handler.TdsAuthenticationContext.AuthenticationToken) only exposes the first SSPI message, for custom schemes.
 
 Without TLS, the password travels with the obfuscation of the TDS protocol only, which anyone on the network can
 reverse. See [Encryption](09-Encryption.md).
 
 ## Accept a login
 
-`TdsAuthenticationResult.Success` accepts the connection. Both of its parameters are optional:
+[TdsAuthenticationResult.Success](cref:Meziantou.Framework.Tds.Handler.TdsAuthenticationResult.Success) accepts the connection. Both of its parameters are optional:
 
 - `database`: the database reported to the client after the login.
 - `userContext`: a `ClaimsPrincipal` that represents the user. The server attaches it to the connection, and every
-  query of the connection gets it in `TdsQueryContext.UserContext`. The [query engine](07-QueryEngine.md) passes it to
+  query of the connection gets it in [TdsQueryContext.UserContext](cref:Meziantou.Framework.Tds.Handler.TdsQueryContext.UserContext). The [query engine](07-QueryEngine.md) passes it to
   the query roots, the stored procedures and the authorization callback, so you can filter data per user.
 
 ## Reject a login
@@ -74,5 +74,5 @@ number SQL Server uses for failed logins, the state to 1 and the class to 14; pa
 `errorClass` to change them.
 
 The handler runs for every connection, before its first query: keep it fast. An exception thrown by the handler
-closes the connection without a login error, so the client only sees a broken connection: return `Fail` instead. Its
+closes the connection without a login error, so the client only sees a broken connection: return [Fail](cref:Meziantou.Framework.Tds.Handler.TdsAuthenticationResult.Fail) instead. Its
 `CancellationToken` is canceled when the server stops.

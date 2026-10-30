@@ -17,7 +17,7 @@ call returns.
 
 ## Format a date
 
-`RelativeDate.Get` takes the date, and `ToString` writes it relative to now:
+[RelativeDate.Get](cref:Meziantou.Framework.RelativeDate.Get) takes the date, and [ToString](cref:Meziantou.Framework.RelativeDate.ToString) writes it relative to now:
 
 <!-- ref:../../tests/Meziantou.Framework.RelativeDate.Tests/RelativeDateTests.cs;region=RelativeDate_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -32,16 +32,16 @@ Assert.Equal("il y a 5 minutes", relativeDateInFrench);
 <!-- endref -->
 
 `ToString(format, formatProvider)` takes the culture of the text as its format provider. Without a provider (`null`, or
-`ToString()`), the text uses `CultureInfo.CurrentUICulture`, the culture of the user interface, and not
+[ToString()](cref:Meziantou.Framework.RelativeDate.ToString)), the text uses `CultureInfo.CurrentUICulture`, the culture of the user interface, and not
 `CultureInfo.CurrentCulture`. The only formats are `null`, an empty string and `"G"`, which all give the same text;
 any other format throws a `FormatException`.
 
-`RelativeDate` implements `IFormattable`, so `string.Format` and interpolated strings with a culture pass that culture
+[RelativeDate](cref:Meziantou.Framework.RelativeDate) implements `IFormattable`, so `string.Format` and interpolated strings with a culture pass that culture
 to it. See [Languages and custom texts](04-LanguagesAndCustomTexts.md).
 
 ## Dates and their kind
 
-`RelativeDate` needs to know the instant a date represents:
+[RelativeDate](cref:Meziantou.Framework.RelativeDate) needs to know the instant a date represents:
 
 <!-- ref:../../tests/Meziantou.Framework.RelativeDate.Tests/RelativeDateTests.cs;region=RelativeDate_DateKinds;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -67,12 +67,12 @@ Assert.Throws<ArgumentException>(() => _ = RelativeDate.Get(unspecified, timePro
 - A `DateTime` with the `Unspecified` kind throws an `ArgumentException`. Dates read from a database or parsed from
   text often have this kind: call `DateTime.SpecifyKind` with the kind they really have before you pass them.
 
-Two `RelativeDate` values are equal, and compare, by their instant. They implement `IComparable<RelativeDate>` and the
+Two [RelativeDate](cref:Meziantou.Framework.RelativeDate) values are equal, and compare, by their instant. They implement `IComparable<RelativeDate>` and the
 comparison operators, so you can sort them.
 
 ## Use a time provider
 
-By default, now is `TimeProvider.System`. Pass another `TimeProvider` to `RelativeDate.Get` to control the clock, for
+By default, now is `TimeProvider.System`. Pass another `TimeProvider` to [RelativeDate.Get](cref:Meziantou.Framework.RelativeDate.Get) to control the clock, for
 instance a `FakeTimeProvider` from the `Microsoft.Extensions.TimeProvider.Testing` package in a test:
 
 <!-- ref:../../tests/Meziantou.Framework.RelativeDate.Tests/RelativeDateTests.cs;region=RelativeDate_Example;format=md-fenced-code-block;dedent=true -->

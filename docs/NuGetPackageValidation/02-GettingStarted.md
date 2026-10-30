@@ -33,7 +33,7 @@ dotnet add package Meziantou.Framework.NuGetPackageValidation
 The examples of this documentation omit the `using` directives: they need
 `using Meziantou.Framework;` and `using Meziantou.Framework.NuGetPackageValidation;`.
 
-Pass the path of the package to `NuGetPackageValidator.ValidateAsync`. Without other arguments, it applies the default
+Pass the path of the package to [NuGetPackageValidator.ValidateAsync](cref:Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidator.ValidateAsync). Without other arguments, it applies the default
 rules:
 
 <!-- ref:../../samples/Meziantou.Framework.NuGetPackageValidation.Samples/ReadmeExamples.cs;region=NuGetPackageValidator_BasicValidation;format=md-fenced-code-block;dedent=true -->
@@ -59,8 +59,8 @@ else
 ```
 <!-- endref -->
 
-- `IsValid` is `true` when the package has no error.
-- `Errors` lists the problems found. A missing file or a file that is not a NuGet package is reported as an error too
+- [IsValid](cref:Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationResult.IsValid) is `true` when the package has no error.
+- [Errors](cref:Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationResult.Errors) lists the problems found. A missing file or a file that is not a NuGet package is reported as an error too
   (error codes `1` and `2`), not as an exception.
 - When a `.snupkg` file with the same name is next to the package, the symbol rule reads the symbols from it.
 
@@ -86,7 +86,7 @@ Assert.Equal("81 - lib/net6.0/samplelib.dll: Assembly is not optimized", error.T
 ```
 <!-- endref -->
 
-`ErrorCode` identifies the problem: [Error codes](04-ErrorCodes.md) lists them all. `HelpText` and `FileName` are `null`
+[ErrorCode](cref:Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationError.ErrorCode) identifies the problem: [Error codes](04-ErrorCodes.md) lists them all. [HelpText](cref:Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationError.HelpText) and [FileName](cref:Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationError.FileName) are `null`
 when the rule has nothing to add.
 
 ## Next steps

@@ -16,7 +16,7 @@ The DNS packages cover both sides of the protocol, plus filtering:
 
 The client and the server support the same transports:
 
-| Transport | `DnsClientProtocol` / `DnsServerProtocol` | Default port | Standard |
+| Transport | [DnsClientProtocol](cref:Meziantou.Framework.DnsClient.DnsClientProtocol) / [DnsServerProtocol](cref:Meziantou.Framework.DnsServer.Handler.DnsServerProtocol) | Default port | Standard |
 | --- | --- | --- | --- |
 | UDP | `Udp` | 53 | RFC 1035 |
 | TCP | `Tcp` | 53 | RFC 7766 |

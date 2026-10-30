@@ -5,7 +5,7 @@ description: Derive from ProjectedFileSystemBase, return the entries of each fol
 
 ## Derive from ProjectedFileSystemBase
 
-A provider overrides two methods: `GetEntriesAsync` returns the files and folders of a folder, and `OpenReadAsync`
+A provider overrides two methods: [GetEntriesAsync](cref:Meziantou.Framework.Win32.ProjectedFileSystem.ProjectedFileSystemBase.GetEntriesAsync) returns the files and folders of a folder, and [OpenReadAsync](cref:Meziantou.Framework.Win32.ProjectedFileSystem.ProjectedFileSystemBase.OpenReadAsync)
 returns the content of a file:
 
 <!-- ref:../../../tests/Meziantou.Framework.Win32.ProjectedFileSystem.Tests/TestFileSystems/MyVirtualFileSystem.cs;region=ProjectedFileSystem_MyVirtualFileSystem;format=md-fenced-code-block;dedent=true -->
@@ -111,7 +111,7 @@ Assert.Equal("MyFolder", folder.Name);
 ```
 <!-- endref -->
 
-- The length of a file must be the exact size of the content that `OpenReadAsync` returns: Windows creates the file
+- The length of a file must be the exact size of the content that [OpenReadAsync](cref:Meziantou.Framework.Win32.ProjectedFileSystem.ProjectedFileSystemBase.OpenReadAsync) returns: Windows creates the file
   with this size. When the stream is shorter, reading the file fails with an `IOException` instead of returning
   truncated content.
 - Return the entries in any order: the base class sorts them and applies the search pattern of the application that
@@ -120,12 +120,12 @@ Assert.Equal("MyFolder", folder.Name);
 
 ## Content
 
-`OpenReadAsync` returns a new stream positioned at the start of the content, or `null` when the file does not exist.
+[OpenReadAsync](cref:Meziantou.Framework.Win32.ProjectedFileSystem.ProjectedFileSystemBase.OpenReadAsync) returns a new stream positioned at the start of the content, or `null` when the file does not exist.
 The base class disposes the stream.
 
-Windows can ask for the content of a file in several ranges: `OpenReadAsync` is then called for each range, and the
+Windows can ask for the content of a file in several ranges: [OpenReadAsync](cref:Meziantou.Framework.Win32.ProjectedFileSystem.ProjectedFileSystemBase.OpenReadAsync) is then called for each range, and the
 base class moves to the start of the range. The stream does not need to be seekable: the base class then reads and
-skips the bytes before the range, which is slower for large files. The data is copied in chunks of `BufferSize` bytes,
+skips the bytes before the range, which is slower for large files. The data is copied in chunks of [BufferSize](cref:Meziantou.Framework.Win32.ProjectedFileSystem.ProjectedFileSystemBase.BufferSize) bytes,
 4,096 by default, which a derived class can change.
 
 Both methods return a `ValueTask`, so they can be asynchronous, for instance to query a database or a remote service.
@@ -133,6 +133,6 @@ Both methods return a `ValueTask`, so they can be asynchronous, for instance to 
 ## Get the entry of a path
 
 When Windows needs the metadata of a single file or folder, the base class calls the virtual `GetEntryAsync(path)`
-method. Its default implementation lists the parent folder with `GetEntriesAsync` and looks for the name. Override it
+method. Its default implementation lists the parent folder with [GetEntriesAsync](cref:Meziantou.Framework.Win32.ProjectedFileSystem.ProjectedFileSystemBase.GetEntriesAsync) and looks for the name. Override it
 when your store can find an entry directly, for instance in a large folder. It returns `null` when the path does not
 exist.

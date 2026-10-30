@@ -3,7 +3,7 @@ title: The default policy
 description: The elements, attributes, URLs, comments and text that a new HtmlSanitizer keeps, unwraps or removes.
 ---
 
-A new `HtmlSanitizer` is configured for user content: formatted text, lists, tables, links and images. This page lists
+A new [HtmlSanitizer](cref:Meziantou.Framework.Sanitizers.HtmlSanitizer) is configured for user content: formatted text, lists, tables, links and images. This page lists
 what it keeps. The next pages show how to change it.
 
 ## Elements
@@ -12,8 +12,8 @@ Each element of the fragment is handled in one of three ways:
 
 | The element is | What happens | Elements |
 | --- | --- | --- |
-| In `BlockedElements`, or an element whose content is text rather than markup | Removed with its content | `script` and `style`; always `iframe`, `noembed`, `noframes`, `noscript`, `plaintext`, `textarea`, `title` and `xmp` |
-| An HTML element in `ValidElements` | Kept, with its attributes and its content sanitized | See the list below |
+| In [BlockedElements](cref:Meziantou.Framework.Sanitizers.HtmlSanitizer.BlockedElements), or an element whose content is text rather than markup | Removed with its content | `script` and `style`; always `iframe`, `noembed`, `noframes`, `noscript`, `plaintext`, `textarea`, `title` and `xmp` |
+| An HTML element in [ValidElements](cref:Meziantou.Framework.Sanitizers.HtmlSanitizer.ValidElements) | Kept, with its attributes and its content sanitized | See the list below |
 | Anything else | Unwrapped: the tag is dropped, the content is kept and sanitized | `form`, `input`, `object`, `svg`, `math`, custom elements, … |
 
 <!-- ref:../../tests/Meziantou.Framework.HtmlSanitizer.Tests/HtmlSanitizerTests.cs;region=HtmlSanitizer_ElementHandling;format=md-fenced-code-block;dedent=true -->
@@ -44,7 +44,7 @@ browser never puts it, such as a link in a link. See [Allowed elements](04-Allow
 
 ## Attributes
 
-An attribute is kept when its name is in `ValidAttributes` or starts with a prefix of `ValidAttributePrefixes`. Every
+An attribute is kept when its name is in [ValidAttributes](cref:Meziantou.Framework.Sanitizers.HtmlSanitizer.ValidAttributes) or starts with a prefix of [ValidAttributePrefixes](cref:Meziantou.Framework.Sanitizers.HtmlSanitizer.ValidAttributePrefixes). Every
 other attribute is removed, including `id`, `name`, `style` and every event handler (`onclick`, `onerror`, …):
 
 <!-- ref:../../tests/Meziantou.Framework.HtmlSanitizer.Tests/HtmlSanitizerTests.cs;region=HtmlSanitizer_DefaultAttributes;format=md-fenced-code-block;dedent=true -->
@@ -92,7 +92,7 @@ See [URLs](06-Urls.md) for the details and for `srcset`.
 ## Comments
 
 Comments are removed: downlevel-hidden conditional comments (`<!--[if IE]><script>...</script><![endif]-->`) are
-executed by legacy browsers. Set `AllowComments` to keep them:
+executed by legacy browsers. Set [AllowComments](cref:Meziantou.Framework.Sanitizers.HtmlSanitizer.AllowComments) to keep them:
 
 <!-- ref:../../tests/Meziantou.Framework.HtmlSanitizer.Tests/HtmlSanitizerTests.cs;region=HtmlSanitizer_AllowComments;format=md-fenced-code-block;dedent=true -->
 ```csharp

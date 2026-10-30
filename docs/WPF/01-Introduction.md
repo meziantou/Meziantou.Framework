@@ -8,7 +8,7 @@ most applications write again in every project.
 
 ## What you can do with it
 
-- **Bind buttons and menus to methods of a view model**, synchronous or asynchronous, with `DelegateCommand`. See
+- **Bind buttons and menus to methods of a view model**, synchronous or asynchronous, with [DelegateCommand](cref:Meziantou.Framework.WPF.DelegateCommand). See
   [Commands](03-Commands.md).
 - **Fill a list or a combo box with the values of an enum**, with display names from the `[Display]` attribute. See
   [Enum values](04-EnumValues.md).
@@ -18,7 +18,7 @@ most applications write again in every project.
   [Dispatcher](06-Dispatcher.md).
 - **Close a window with the Escape key**. See [Closing on Escape](07-CloseOnEscape.md).
 
-The collection that can be updated from any thread while it is bound to a control, `ConcurrentObservableCollection<T>`,
+The collection that can be updated from any thread while it is bound to a control, [ConcurrentObservableCollection\<T\>](cref:Meziantou.Framework.Collections.Concurrent.ConcurrentObservableCollection{T}),
 is in the `Meziantou.Framework.Threading` package. See
 [Observable collection](../Threading/07-ObservableCollection.md).
 
@@ -28,11 +28,11 @@ The types are in the [Meziantou.Framework.WPF](cref:Meziantou.Framework.WPF) nam
 
 | Type | Contains |
 | --- | --- |
-| `DelegateCommand`, `IDelegateCommand` | Commands that call delegates |
-| `EnumValuesExtension`, `LocalizedEnumValuesExtension`, `LocalizedEnumValue` | Markup extensions that list the values of an enum |
-| `BooleanToValueConverter` | A value converter for booleans |
-| `DispatcherExtensions` | `SwitchToDispatcherThread` |
-| `WindowUtilities` | The `CloseOnEscapeKeyDown` attached property |
+| [DelegateCommand](cref:Meziantou.Framework.WPF.DelegateCommand), [IDelegateCommand](cref:Meziantou.Framework.WPF.IDelegateCommand) | Commands that call delegates |
+| [EnumValuesExtension](cref:Meziantou.Framework.WPF.EnumValuesExtension), [LocalizedEnumValuesExtension](cref:Meziantou.Framework.WPF.LocalizedEnumValuesExtension), [LocalizedEnumValue](cref:Meziantou.Framework.WPF.LocalizedEnumValue) | Markup extensions that list the values of an enum |
+| [BooleanToValueConverter](cref:Meziantou.Framework.WPF.BooleanToValueConverter) | A value converter for booleans |
+| [DispatcherExtensions](cref:Meziantou.Framework.WPF.DispatcherExtensions) | [SwitchToDispatcherThread](cref:Meziantou.Framework.WPF.DispatcherExtensions.SwitchToDispatcherThread) |
+| [WindowUtilities](cref:Meziantou.Framework.WPF.WindowUtilities) | The `CloseOnEscapeKeyDown` attached property |
 
 ## Next steps
 

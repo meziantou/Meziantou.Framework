@@ -53,15 +53,15 @@ Assert.Throws<ArgumentException>(() => value.AppendLiteral(new string('b', 29)))
 
 | Member | Description |
 | --- | --- |
-| `MaxLength` | The capacity given to the attribute (`static`). |
-| `Length` | The number of characters of the value. |
+| [MaxLength](cref:Meziantou.Framework.FixedStringBuilder.IFixedString.MaxLength) | The capacity given to the attribute (`static`). |
+| [Length](cref:Meziantou.Framework.FixedStringBuilder.IFixedString.Length) | The number of characters of the value. |
 | Constructor `(string value)` and implicit conversion from `string` | Create a value. Throw an `ArgumentException` when the string is too long. |
 | Interpolated string handler members (`AppendLiteral`, `AppendFormatted`) | Build the value from an interpolated string, and append to it. |
 | `AsSpan()` | The characters as a `ReadOnlySpan<char>`. |
-| `Clear()`, `Clear(bool zeroBuffer)` | Reset the value. See [Clear](03-WorkingWithFixedStrings.md#clear). |
+| [Clear()](cref:Meziantou.Framework.FixedStringBuilder.IFixedString.Clear), `Clear(bool zeroBuffer)` | Reset the value. See [Clear](03-WorkingWithFixedStrings.md#clear). |
 | `Equals`, `GetHashCode`, `==`, `!=` | Ordinal equality. `Equals(T, StringComparison)` uses another comparison. |
 | `ToString()`, `TryFormat` | Create a `string`, or copy the characters into a span. |
 
-The type implements `IEquatable<T>` and `ISpanFormattable`, and `IFixedString<T>` when the project references the
+The type implements `IEquatable<T>` and `ISpanFormattable`, and [IFixedString\<T\>](cref:Meziantou.Framework.FixedStringBuilder.IFixedString{T}) when the project references the
 `Meziantou.Framework.FixedStringBuilder` package. The generator reports its errors through an analyzer: see
 [Diagnostics](05-Diagnostics.md).

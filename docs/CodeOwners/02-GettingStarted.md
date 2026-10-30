@@ -15,7 +15,7 @@ The examples of this documentation omit the `using` directives: they need `using
 
 ## Parse a file
 
-Read the content of the file and pass it to `CodeOwnersFile.Parse`, with the dialect of the host of the repository:
+Read the content of the file and pass it to [CodeOwnersFile.Parse](cref:Meziantou.Framework.CodeOwners.CodeOwnersFile.Parse), with the dialect of the host of the repository:
 
 <!-- ref:../../tests/Meziantou.Framework.CodeOwners.Tests/CodeOwnersParserTests.cs;region=CodeOwners_ReadFile;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -32,20 +32,20 @@ Assert.Equal(["org/docs-team", "docs@example.com"], docs.Owners.Select(owner => 
 <!-- endref -->
 
 - The parser takes the content, not a path: read the file yourself.
-- `Entries` holds one `CodeOwnersEntry` per pattern line, in the order of the file. Comments and blank lines are not
+- [Entries](cref:Meziantou.Framework.CodeOwners.CodeOwnersFile.Entries) holds one [CodeOwnersEntry](cref:Meziantou.Framework.CodeOwners.CodeOwnersEntry) per pattern line, in the order of the file. Comments and blank lines are not
   entries.
-- Each entry has a `Pattern` and its `Owners`. A username or a team is stored without its leading `@`.
+- Each entry has a [Pattern](cref:Meziantou.Framework.CodeOwners.CodeOwnersEntry.Pattern) and its [Owners](cref:Meziantou.Framework.CodeOwners.CodeOwnersEntry.Owners). A username or a team is stored without its leading `@`.
 
-`Parse` throws a `CodeOwnersParseException` when the file is invalid. Use `TryParse` to get `false` instead: see
+[Parse](cref:Meziantou.Framework.CodeOwners.CodeOwnersFile.Parse) throws a [CodeOwnersParseException](cref:Meziantou.Framework.CodeOwners.CodeOwnersParseException) when the file is invalid. Use [TryParse](cref:Meziantou.Framework.CodeOwners.CodeOwnersFile.TryParse) to get `false` instead: see
 [Handling errors](05-HandlingErrors.md).
 
 ## Choose the dialect
 
 The two hosts do not read the same file the same way:
 
-- `CodeOwnersDialect.GitHub` reads a pattern and its owners on each line. A line that starts with `[` is a pattern, as
+- [CodeOwnersDialect.GitHub](cref:Meziantou.Framework.CodeOwners.CodeOwnersDialect.GitHub) reads a pattern and its owners on each line. A line that starts with `[` is a pattern, as
   `[` opens a character class.
-- `CodeOwnersDialect.GitLab` adds sections: a line such as `[Docs]` or `^[Docs]` starts a section, and the owners can be
+- [CodeOwnersDialect.GitLab](cref:Meziantou.Framework.CodeOwners.CodeOwnersDialect.GitLab) adds sections: a line such as `[Docs]` or `^[Docs]` starts a section, and the owners can be
   roles such as `@@maintainer`.
 
 The same content can give different entries:

@@ -5,7 +5,7 @@ description: Catch or test for an invalid CODEOWNERS file, read the kind and the
 
 ## Catch the exception
 
-`Parse` throws a `CodeOwnersParseException` when the file is invalid. Its `Error` says what is wrong and where, and its
+[Parse](cref:Meziantou.Framework.CodeOwners.CodeOwnersFile.Parse) throws a [CodeOwnersParseException](cref:Meziantou.Framework.CodeOwners.CodeOwnersParseException) when the file is invalid. Its [Error](cref:Meziantou.Framework.CodeOwners.CodeOwnersParseException.Error) says what is wrong and where, and its
 message describes both:
 
 <!-- ref:../../tests/Meziantou.Framework.CodeOwners.Tests/CodeOwnersParserTests.cs;region=CodeOwners_ParseException;format=md-fenced-code-block;dedent=true -->
@@ -23,8 +23,8 @@ next one.
 
 ## Test without throwing
 
-Use `TryParse` when an invalid file is expected, for instance in a tool that checks pull requests. The overload with a
-`CodeOwnersParseError` reports the same error as the exception, without allocating one:
+Use [TryParse](cref:Meziantou.Framework.CodeOwners.CodeOwnersFile.TryParse) when an invalid file is expected, for instance in a tool that checks pull requests. The overload with a
+[CodeOwnersParseError](cref:Meziantou.Framework.CodeOwners.CodeOwnersParseError) reports the same error as the exception, without allocating one:
 
 <!-- ref:../../tests/Meziantou.Framework.CodeOwners.Tests/CodeOwnersParserTests.cs;region=CodeOwners_TryParse;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -41,12 +41,12 @@ else
 ```
 <!-- endref -->
 
-When `TryParse` returns `false`, the file is `null`: no method returns a partially parsed file. When it returns `true`,
-the error is `default`, whose `Kind` is `None`.
+When [TryParse](cref:Meziantou.Framework.CodeOwners.CodeOwnersFile.TryParse) returns `false`, the file is `null`: no method returns a partially parsed file. When it returns `true`,
+the error is `default`, whose [Kind](cref:Meziantou.Framework.CodeOwners.CodeOwnersParseError.Kind) is [None](cref:Meziantou.Framework.CodeOwners.CodeOwnersParseErrorKind.None).
 
 ## Read the error
 
-`CodeOwnersParseError` has the `Kind` of the error and its location. `LineNumber` and `LinePosition` start at 1, and
+[CodeOwnersParseError](cref:Meziantou.Framework.CodeOwners.CodeOwnersParseError) has the [Kind](cref:Meziantou.Framework.CodeOwners.CodeOwnersParseError.Kind) of the error and its location. [LineNumber](cref:Meziantou.Framework.CodeOwners.CodeOwnersParseError.LineNumber) and [LinePosition](cref:Meziantou.Framework.CodeOwners.CodeOwnersParseError.LinePosition) start at 1, and
 `ToString` returns them with a description:
 
 <!-- ref:../../tests/Meziantou.Framework.CodeOwners.Tests/CodeOwnersParserTests.cs;region=CodeOwners_InvalidOwner;format=md-fenced-code-block;dedent=true -->
@@ -61,20 +61,20 @@ Assert.Equal(17, error.LinePosition);
 ```
 <!-- endref -->
 
-| `CodeOwnersParseErrorKind` | Cause |
+| [CodeOwnersParseErrorKind](cref:Meziantou.Framework.CodeOwners.CodeOwnersParseErrorKind) | Cause |
 | --- | --- |
-| `UnterminatedSectionHeader` | A section header has no closing `]` on its line (GitLab only) |
-| `UnterminatedRequiredReviewerCount` | A required reviewer count, as in `[Name][2]`, has no closing `]` (GitLab only) |
-| `InvalidRequiredReviewerCount` | A required reviewer count is not a positive integer (GitLab only) |
-| `EmptyOwner` | An owner is a lone `@` |
-| `InvalidOwner` | An owner is neither `@name` nor an email address, a username contains `@`, or a role is unknown |
+| [UnterminatedSectionHeader](cref:Meziantou.Framework.CodeOwners.CodeOwnersParseErrorKind.UnterminatedSectionHeader) | A section header has no closing `]` on its line (GitLab only) |
+| [UnterminatedRequiredReviewerCount](cref:Meziantou.Framework.CodeOwners.CodeOwnersParseErrorKind.UnterminatedRequiredReviewerCount) | A required reviewer count, as in `[Name][2]`, has no closing `]` (GitLab only) |
+| [InvalidRequiredReviewerCount](cref:Meziantou.Framework.CodeOwners.CodeOwnersParseErrorKind.InvalidRequiredReviewerCount) | A required reviewer count is not a positive integer (GitLab only) |
+| [EmptyOwner](cref:Meziantou.Framework.CodeOwners.CodeOwnersParseErrorKind.EmptyOwner) | An owner is a lone `@` |
+| [InvalidOwner](cref:Meziantou.Framework.CodeOwners.CodeOwnersParseErrorKind.InvalidOwner) | An owner is neither `@name` nor an email address, a username contains `@`, or a role is unknown |
 
-The section errors only exist in the GitLab dialect: with `CodeOwnersDialect.GitHub`, a line that starts with `[` is a
+The section errors only exist in the GitLab dialect: with [CodeOwnersDialect.GitHub](cref:Meziantou.Framework.CodeOwners.CodeOwnersDialect.GitHub), a line that starts with `[` is a
 pattern. The lines end with `\n`, `\r\n` or `\r`, and the location counts all of them.
 
 ## Parse a span
 
-`Parse` and both `TryParse` overloads also accept a `ReadOnlySpan<char>`, so content read into a buffer does not have to
+[Parse](cref:Meziantou.Framework.CodeOwners.CodeOwnersFile.Parse) and both [TryParse](cref:Meziantou.Framework.CodeOwners.CodeOwnersFile.TryParse) overloads also accept a `ReadOnlySpan<char>`, so content read into a buffer does not have to
 be turned into a `string` first:
 
 <!-- ref:../../tests/Meziantou.Framework.CodeOwners.Tests/CodeOwnersParserTests.cs;region=CodeOwners_ParseSpan;format=md-fenced-code-block;dedent=true -->
@@ -88,5 +88,5 @@ Assert.Equal("*.md", file.Entries[0].Pattern);
 ```
 <!-- endref -->
 
-The parsed `CodeOwnersFile` never references the span: every value it exposes is copied out of it, so the buffer can be
+The parsed [CodeOwnersFile](cref:Meziantou.Framework.CodeOwners.CodeOwnersFile) never references the span: every value it exposes is copied out of it, so the buffer can be
 reused. Error positions are relative to the start of the span.

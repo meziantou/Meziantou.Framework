@@ -29,7 +29,7 @@ Assert.Equal("700", style.GetPropertyValue("font-weight"));
 ## What needs a browsing context
 
 The style sheets and the `style` attributes are parsed in every document, so you can read and edit them in a document
-parsed by `HtmlDocumentParser`. The cascade needs a window and a viewport: the computed styles, the media queries and the
+parsed by [HtmlDocumentParser](cref:Meziantou.Framework.WebPlatform.HtmlDocumentParser). The cascade needs a window and a viewport: the computed styles, the media queries and the
 layout only exist in the documents of a [browsing context](../05-LoadingPages/01-Overview.md). The style sheets of the
 `<link rel=stylesheet>` elements and of the `@import` rules are fetched by the document loader of the browsing context.
 

@@ -14,7 +14,7 @@ dotnet add package Meziantou.Framework.Diagnostics.MemoryDump
 
 ## Capture the execution context
 
-`ContextSnapshotBuilder` collects the information, and `BuildSnapshot` returns it as a dictionary that you can
+[ContextSnapshotBuilder](cref:Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder) collects the information, and [BuildSnapshot](cref:Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder.BuildSnapshot) returns it as a dictionary that you can
 serialize with `System.Text.Json`:
 
 <!-- ref:../../tests/Meziantou.Framework.Diagnostics.ContextSnapshot.Tests/SnapshotTests.cs;region=ContextSnapshot_Serialize;format=md-fenced-code-block;dedent=true -->
@@ -35,7 +35,7 @@ var json = JsonSerializer.Serialize(snapshot, new JsonSerializerOptions
 ```
 <!-- endref -->
 
-- `AddDefault` adds everything the package knows how to capture. You can also pick the parts you need: see
+- [AddDefault](cref:Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder.AddDefault) adds everything the package knows how to capture. You can also pick the parts you need: see
   [Capturing a snapshot](03-ContextSnapshot/02-CapturingASnapshot.md).
 - `JsonStringEnumConverter` writes enumeration values, such as the architecture or the platform, as names instead of
   numbers.
@@ -44,7 +44,7 @@ var json = JsonSerializer.Serialize(snapshot, new JsonSerializerOptions
 
 ## Write a memory dump
 
-`MemoryDump.Write` writes a dump of the current process to a file:
+[MemoryDump.Write](cref:Meziantou.Framework.Diagnostics.MemoryDump.Write) writes a dump of the current process to a file:
 
 <!-- ref:../../samples/Meziantou.Framework.Diagnostics.MemoryDump.Samples/ReadmeExamples.cs;region=MemoryDump_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -56,7 +56,7 @@ await MemoryDump.WriteAsync("app.dmp", MemoryDumpType.WithHeap, cancellationToke
 ```
 <!-- endref -->
 
-- The default dump is a full dump, as large as the memory of the process. `MemoryDumpType.WithHeap` is smaller and
+- The default dump is a full dump, as large as the memory of the process. [MemoryDumpType.WithHeap](cref:Meziantou.Framework.Diagnostics.MemoryDumpType.WithHeap) is smaller and
   enough to inspect the managed heap. See [Dump types](04-MemoryDump/02-DumpTypes.md).
 - The example needs `using Meziantou.Framework.Diagnostics;`.
 - On Linux and macOS, the operating system can prevent the process from being dumped. On macOS in particular, an

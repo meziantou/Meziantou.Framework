@@ -3,12 +3,12 @@ title: Version ranges
 description: Parse NuGet and npm version ranges, create ranges, and check whether a version satisfies them.
 ---
 
-A `SemanticVersionRange` is an interval of versions: an optional minimum and an optional maximum, each inclusive or
+A [SemanticVersionRange](cref:Meziantou.Framework.Versioning.SemanticVersionRange) is an interval of versions: an optional minimum and an optional maximum, each inclusive or
 exclusive. `Satisfies(version)` tells whether a version is in the range.
 
 ## NuGet ranges
 
-`ParseNuGet` and `TryParseNuGet` read the range syntax of NuGet package references:
+[ParseNuGet](cref:Meziantou.Framework.Versioning.SemanticVersionRange.ParseNuGet) and [TryParseNuGet](cref:Meziantou.Framework.Versioning.SemanticVersionRange.TryParseNuGet) read the range syntax of NuGet package references:
 
 <!-- ref:../../tests/Meziantou.Framework.Versioning.Tests/SemanticVersionRangeTests.cs;region=SemanticVersionRange_NuGet;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -42,7 +42,7 @@ Assert.False(SemanticVersionRange.TryParseNuGet("[1.0.0, 2.0.0", out _));
 
 ## npm ranges
 
-`ParseNpm` and `TryParseNpm` read the range syntax of npm `package.json` files:
+[ParseNpm](cref:Meziantou.Framework.Versioning.SemanticVersionRange.ParseNpm) and [TryParseNpm](cref:Meziantou.Framework.Versioning.SemanticVersionRange.TryParseNpm) read the range syntax of npm `package.json` files:
 
 <!-- ref:../../tests/Meziantou.Framework.Versioning.Tests/SemanticVersionRangeTests.cs;region=SemanticVersionRange_Npm;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -74,12 +74,12 @@ Assert.False(SemanticVersionRange.TryParseNpm("^1.0.0 || ^2.0.0", out _));
 | `1.0.0 - 2.0.0` | Hyphen range: `>=1.0.0 <=2.0.0` |
 | `*`, `1.x`, `1.2.x` | Any version, any 1.x.x version, any 1.2.x version |
 
-A `SemanticVersionRange` is a single interval, so a union such as `^1.0.0 || ^2.0.0` cannot be represented: `TryParseNpm`
-returns `false`, and the `FormatException` of `ParseNpm` says so.
+A [SemanticVersionRange](cref:Meziantou.Framework.Versioning.SemanticVersionRange) is a single interval, so a union such as `^1.0.0 || ^2.0.0` cannot be represented: [TryParseNpm](cref:Meziantou.Framework.Versioning.SemanticVersionRange.TryParseNpm)
+returns `false`, and the `FormatException` of [ParseNpm](cref:Meziantou.Framework.Versioning.SemanticVersionRange.ParseNpm) says so.
 
 ## Prerelease versions
 
-`Satisfies` compares the version with the bounds using the [Semantic Versioning precedence](03-ComparingVersions.md),
+[Satisfies](cref:Meziantou.Framework.Versioning.SemanticVersionRange.Satisfies) compares the version with the bounds using the [Semantic Versioning precedence](03-ComparingVersions.md),
 and nothing else. A prerelease version is in a range when it is between the bounds:
 
 <!-- ref:../../tests/Meziantou.Framework.Versioning.Tests/SemanticVersionRangeTests.cs;region=SemanticVersionRange_Prerelease;format=md-fenced-code-block;dedent=true -->
@@ -92,8 +92,8 @@ Assert.True(range.Satisfies(SemanticVersion.Parse("2.0.0-beta")));
 ```
 <!-- endref -->
 
-npm and NuGet apply extra rules to prerelease versions when they resolve a dependency; `Satisfies` does not. To keep
-only stable versions, check `IsPrerelease` before you call it.
+npm and NuGet apply extra rules to prerelease versions when they resolve a dependency; [Satisfies](cref:Meziantou.Framework.Versioning.SemanticVersionRange.Satisfies) does not. To keep
+only stable versions, check [IsPrerelease](cref:Meziantou.Framework.Versioning.SemanticVersion.IsPrerelease) before you call it.
 
 ## Create a range
 
@@ -113,8 +113,8 @@ Assert.True(SemanticVersionRange.All.Satisfies(SemanticVersion.Parse("0.0.1-alph
 ```
 <!-- endref -->
 
-- `Exact`, `GreaterThan`, `GreaterThanOrEqual`, `LessThan` and `LessThanOrEqual` create a range with one or two bounds.
-- `SemanticVersionRange.All` contains every version.
-- `MinVersion`, `MaxVersion`, `IsMinInclusive` and `IsMaxInclusive` return the bounds. A bound is `null` when the range
+- [Exact](cref:Meziantou.Framework.Versioning.SemanticVersionRange.Exact), [GreaterThan](cref:Meziantou.Framework.Versioning.SemanticVersionRange.GreaterThan), [GreaterThanOrEqual](cref:Meziantou.Framework.Versioning.SemanticVersionRange.GreaterThanOrEqual), [LessThan](cref:Meziantou.Framework.Versioning.SemanticVersionRange.LessThan) and [LessThanOrEqual](cref:Meziantou.Framework.Versioning.SemanticVersionRange.LessThanOrEqual) create a range with one or two bounds.
+- [SemanticVersionRange.All](cref:Meziantou.Framework.Versioning.SemanticVersionRange.All) contains every version.
+- [MinVersion](cref:Meziantou.Framework.Versioning.SemanticVersionRange.MinVersion), [MaxVersion](cref:Meziantou.Framework.Versioning.SemanticVersionRange.MaxVersion), [IsMinInclusive](cref:Meziantou.Framework.Versioning.SemanticVersionRange.IsMinInclusive) and [IsMaxInclusive](cref:Meziantou.Framework.Versioning.SemanticVersionRange.IsMaxInclusive) return the bounds. A bound is `null` when the range
   has no limit on that side.
-- `ToString` writes the range in the NuGet format, and `*` for `All`. Two ranges are equal when their bounds are equal.
+- `ToString` writes the range in the NuGet format, and `*` for [All](cref:Meziantou.Framework.Versioning.SemanticVersionRange.All). Two ranges are equal when their bounds are equal.

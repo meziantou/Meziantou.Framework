@@ -10,12 +10,12 @@ one of these approaches:
 | --- | --- |
 | An object whose properties are .NET functions | A few functions grouped in a namespace object, such as `app.log(...)`. See [Objects and arrays](03-ObjectsAndArrays.md) and [Functions](04-Functions.md). |
 | A constructor and a prototype, with host objects as instances | A .NET class that the scripts create with `new` and whose instances share their methods. |
-| A class derived from `JsHostObject` | An object whose properties are computed by .NET on each access, such as a view of a dictionary. |
+| A class derived from [JsHostObject](cref:Meziantou.Framework.JavaScriptEngine.JsHostObject) | An object whose properties are computed by .NET on each access, such as a view of a dictionary. |
 
 ## Expose a class
 
 A JavaScript class is a constructor whose `prototype` property holds the methods of its instances. Each instance is a
-`JsHostObject` whose `Target` is the .NET object:
+[JsHostObject](cref:Meziantou.Framework.JavaScriptEngine.JsHostObject) whose [Target](cref:Meziantou.Framework.JavaScriptEngine.JsHostObject.Target) is the .NET object:
 
 <!-- ref:../../../tests/Meziantou.Framework.JavaScriptEngine.Tests/JsEngineTests.cs;region=JavaScriptEngine_ExposeClass;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -69,7 +69,7 @@ Assert.Equal("TypeError", realm.Execute("try { TextBuilder.prototype.append.call
 
 ## Implement an object in .NET
 
-A class derived from `JsHostObject` can override the internal methods of the object: how its properties are read,
+A class derived from [JsHostObject](cref:Meziantou.Framework.JavaScriptEngine.JsHostObject) can override the internal methods of the object: how its properties are read,
 written, enumerated and deleted. This object exposes a dictionary, read on each access, as read-only properties:
 
 <!-- ref:../../../samples/Meziantou.Framework.JavaScriptEngine.Samples/ReadOnlyDictionaryObject.cs;region=JavaScriptEngine_ReadOnlyDictionaryObject;format=md-fenced-code-block;dedent=true -->
@@ -122,17 +122,17 @@ Assert.Equal("TypeError", realm.Execute("'use strict'; try { env.REGION = 'us'; 
 ```
 <!-- endref -->
 
-- The methods to override are the internal methods of the specification: `GetOwnPropertyCore`,
-  `DefineOwnPropertyCore`, `HasPropertyCore`, `GetCore`, `SetCore`, `DeleteCore`, `OwnPropertyKeysCore`,
-  `GetPrototypeOfCore`, `SetPrototypeOfCore`, `IsExtensibleCore` and `PreventExtensionsCore`. Their default
+- The methods to override are the internal methods of the specification: [GetOwnPropertyCore](cref:Meziantou.Framework.JavaScriptEngine.JsHostObject.GetOwnPropertyCore),
+  [DefineOwnPropertyCore](cref:Meziantou.Framework.JavaScriptEngine.JsHostObject.DefineOwnPropertyCore), [HasPropertyCore](cref:Meziantou.Framework.JavaScriptEngine.JsHostObject.HasPropertyCore), [GetCore](cref:Meziantou.Framework.JavaScriptEngine.JsHostObject.GetCore), [SetCore](cref:Meziantou.Framework.JavaScriptEngine.JsHostObject.SetCore), [DeleteCore](cref:Meziantou.Framework.JavaScriptEngine.JsHostObject.DeleteCore), [OwnPropertyKeysCore](cref:Meziantou.Framework.JavaScriptEngine.JsHostObject.OwnPropertyKeysCore),
+  [GetPrototypeOfCore](cref:Meziantou.Framework.JavaScriptEngine.JsHostObject.GetPrototypeOfCore), [SetPrototypeOfCore](cref:Meziantou.Framework.JavaScriptEngine.JsHostObject.SetPrototypeOfCore), [IsExtensibleCore](cref:Meziantou.Framework.JavaScriptEngine.JsHostObject.IsExtensibleCore) and [PreventExtensionsCore](cref:Meziantou.Framework.JavaScriptEngine.JsHostObject.PreventExtensionsCore). Their default
   implementations are the ones of an ordinary object.
-- The ordinary versions stay available to an override: `OrdinaryGetOwnProperty`, `OrdinaryDefineOwnProperty`,
-  `OrdinaryDelete` and `OrdinaryOwnPropertyKeys`.
-- The ordinary `[[Get]]`, `[[Set]]` and `[[HasProperty]]` use `GetOwnPropertyCore`: overriding it is often enough to
+- The ordinary versions stay available to an override: [OrdinaryGetOwnProperty](cref:Meziantou.Framework.JavaScriptEngine.JsHostObject.OrdinaryGetOwnProperty), [OrdinaryDefineOwnProperty](cref:Meziantou.Framework.JavaScriptEngine.JsHostObject.OrdinaryDefineOwnProperty),
+  [OrdinaryDelete](cref:Meziantou.Framework.JavaScriptEngine.JsHostObject.OrdinaryDelete) and [OrdinaryOwnPropertyKeys](cref:Meziantou.Framework.JavaScriptEngine.JsHostObject.OrdinaryOwnPropertyKeys).
+- The ordinary `[[Get]]`, `[[Set]]` and `[[HasProperty]]` use [GetOwnPropertyCore](cref:Meziantou.Framework.JavaScriptEngine.JsHostObject.GetOwnPropertyCore): overriding it is often enough to
   make a property readable.
-- Set `HasCallInternalMethod` and override `CallCore` to make the object callable (it is then not a constructor).
+- Set [HasCallInternalMethod](cref:Meziantou.Framework.JavaScriptEngine.JsHostObject.HasCallInternalMethod) and override [CallCore](cref:Meziantou.Framework.JavaScriptEngine.JsHostObject.CallCore) to make the object callable (it is then not a constructor).
 - A derived class that overrides none of the methods that read or write properties can pass
   `hasOrdinaryInternalMethods: true` to the protected constructor: the engine then uses the fast paths of the ordinary
   objects for its properties.
 
-A `JsHostObject` with a `Target` keeps the .NET object alive as long as the scripts reference the JavaScript object.
+A [JsHostObject](cref:Meziantou.Framework.JavaScriptEngine.JsHostObject) with a [Target](cref:Meziantou.Framework.JavaScriptEngine.JsHostObject.Target) keeps the .NET object alive as long as the scripts reference the JavaScript object.

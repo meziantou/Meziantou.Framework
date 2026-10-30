@@ -11,8 +11,8 @@ description: What the library does not do, so you can plan around it.
 - **No work limit and no cancellation.** A diff runs to completion however long it takes, and there is no
   `CancellationToken`. Diffs of large, unrelated texts can be slow, especially at the character level; see
   [Algorithms](07-Algorithms.md#cost).
-- **Ordinal comparisons only.** `IgnoreCase` uses ordinal case-insensitive rules; there is no culture-aware or
+- **Ordinal comparisons only.** [IgnoreCase](cref:Meziantou.Framework.TextDiffOptions.IgnoreCase) uses ordinal case-insensitive rules; there is no culture-aware or
   accent-insensitive comparison.
-- **Characters are UTF-16 code units.** `TextChunker.Characters` splits surrogate pairs and combining sequences into
+- **Characters are UTF-16 code units.** [TextChunker.Characters](cref:Meziantou.Framework.TextChunker.Characters) splits surrogate pairs and combining sequences into
   several chunks. See [Characters](04-Chunking.md#characters).
 - **Texts are strings.** Both texts are read into memory as `string`; there is no streaming or file API.

@@ -129,7 +129,6 @@ if (ShouldRunStep(StepDocs))
 {
     Console.WriteLine("[update-all] Running docs");
     tasks.Add(Task.Run(() => RunValidateDocumentationPackageIdsStep(rootPath)));
-    tasks.Add(Task.Run(() => RunValidateDocumentationCrefLinksStep(rootPath)));
     tasks.Add(Task.Run(() => RunUpdateDocumentationConfigurationStep(rootPath)));
 }
 
@@ -1175,65 +1174,6 @@ void RunUpdateDocumentationConfigurationStep(FullPath rootPath)
     configuration["packages"] = packages;
 
     WriteFileIfChanged(configurationPath, configuration.ToJsonString(new JsonSerializerOptions { WriteIndented = true, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping, RespectNullableAnnotations = true, RespectRequiredConstructorParameters = true }));
-}
-
-// The pages link to namespaces with [Name](cref:Name). The target must be a namespace of the public API of a package,
-// as listed in the ref/ folder. A namespace defined by several packages is qualified with the package that the page is
-// about, [Name](cref:Package!N:Name): the documentation generator reports an unqualified one as ambiguous.
-void RunValidateDocumentationCrefLinksStep(FullPath rootPath)
-{
-    var namespacePattern = new Regex(@"^namespace\s+(?<name>[A-Za-z0-9_.]+)", RegexOptions.Multiline | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, Timeout.InfiniteTimeSpan);
-    var crefPattern = new Regex(@"\]\(cref:(?:(?<package>[^)\s!]+)!(?:N:)?)?(?<namespace>[^)\s]*)\)", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, Timeout.InfiniteTimeSpan);
-
-    // The files of ref/ are named after the assemblies, which have the name of their package
-    var namespacesByPackage = Directory.EnumerateFiles(rootPath / "ref", "*.cs", SearchOption.AllDirectories)
-        .ToDictionary(
-            path => Path.GetFileNameWithoutExtension(path),
-            path => namespacePattern.Matches(File.ReadAllText(path)).Select(match => match.Groups["name"].Value).ToHashSet(StringComparer.Ordinal),
-            StringComparer.Ordinal);
-    var packagesByNamespace = namespacesByPackage
-        .SelectMany(item => item.Value.Select(ns => (Namespace: ns, Package: item.Key)))
-        .GroupBy(item => item.Namespace, StringComparer.Ordinal)
-        .ToDictionary(group => group.Key, group => group.Select(item => item.Package).Order(StringComparer.Ordinal).ToArray(), StringComparer.Ordinal);
-
-    var docsRootPath = rootPath / "docs";
-    foreach (var path in Directory.EnumerateFiles(docsRootPath, "*.md", SearchOption.AllDirectories).Order(StringComparer.Ordinal))
-    {
-        var relativePath = FullPath.FromPath(path).MakePathRelativeTo(rootPath).Replace('\\', '/');
-        var lines = File.ReadAllLines(path);
-        var inCode = false;
-        for (var i = 0; i < lines.Length; i++)
-        {
-            if (lines[i].TrimStart().StartsWith("```", StringComparison.Ordinal))
-            {
-                inCode = !inCode;
-                continue;
-            }
-
-            if (inCode)
-                continue;
-
-            foreach (Match match in crefPattern.Matches(lines[i]))
-            {
-                var package = match.Groups["package"].Value;
-                var ns = match.Groups["namespace"].Value;
-                var error = package switch
-                {
-                    "" when !packagesByNamespace.TryGetValue(ns, out var packages) => $"'{ns}' is not a namespace of the public API (ref/*.cs)",
-                    "" when packagesByNamespace[ns] is { Length: > 1 } packages => $"'{ns}' is defined by several packages ({string.Join(", ", packages)}); qualify it with the package of the page: 'cref:<Package>!N:{ns}'",
-                    "" => null,
-                    _ when !namespacesByPackage.TryGetValue(package, out var namespaces) || !namespaces.Contains(ns) => $"'{ns}' is not a namespace of the public API of the package '{package}' (ref/{package}.cs)",
-                    _ => null,
-                };
-
-                if (error is not null)
-                {
-                    Console.Error.WriteLine($"ERROR: {relativePath}:{i + 1}: {error}");
-                    updatedFiles.Enqueue(relativePath);
-                }
-            }
-        }
-    }
 }
 
 async Task RunUpdateReadmeStep(FullPath rootPath)

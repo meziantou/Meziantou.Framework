@@ -3,19 +3,19 @@ title: Introduction
 description: An Assert class for .NET tests whose failure messages show where values differ, with analyzers and code fixes.
 ---
 
-`Meziantou.Framework.Assertions` provides an `Assert` class for unit tests. Its assertions compare values, text,
+`Meziantou.Framework.Assertions` provides an [Assert](cref:Meziantou.Framework.Assertions.Assert) class for unit tests. Its assertions compare values, text,
 collections, types, exceptions and events, and their failure messages show the expressions you wrote, the values, and
 the item or character where they differ. The package also ships analyzers and code fixes that report weak or wrong
 assertions as you type, such as `Assert.True(list.Contains(item))` or an assertion that is never awaited.
 
-A failed assertion throws an `AssertionException`, which every test framework reports as a failure. The only part tied
-to a test framework is `Assert.XunitSkip`, which skips an xUnit.v3 test.
+A failed assertion throws an [AssertionException](cref:Meziantou.Framework.Assertions.AssertionException), which every test framework reports as a failure. The only part tied
+to a test framework is [Assert.XunitSkip](cref:Meziantou.Framework.Assertions.Assert.XunitSkip), which skips an xUnit.v3 test.
 
 ## Not the Assert class of your test framework
 
-`Meziantou.Framework.Assertions.Assert` is a class of its own, not the `Assert` class of your test framework. Many
+[Meziantou.Framework.Assertions.Assert](cref:Meziantou.Framework.Assertions.Assert) is a class of its own, not the [Assert](cref:Meziantou.Framework.Assertions.Assert) class of your test framework. Many
 method names are the same, but the rules are this library's, and one of them is easy to miss: **the expected value
-always comes first**, then the actual value, for every assertion, including `Contains`, `StartsWith` and `EndsWith`:
+always comes first**, then the actual value, for every assertion, including [Contains](cref:Meziantou.Framework.Assertions.Assert.Contains), [StartsWith](cref:Meziantou.Framework.Assertions.Assert.StartsWith) and [EndsWith](cref:Meziantou.Framework.Assertions.Assert.EndsWith):
 
 - `Assert.Equal(expected, actual)`
 - `Assert.Contains(expectedItemOrSubstring, actual)`
@@ -27,7 +27,7 @@ The analyzer reports a call where the constant is passed as the actual value (`M
 assertions without an expected value: `Assert.Contains(collection, predicate)`, `Assert.All(collection, assertion)` and
 `Assert.InRange(actual, low, high)` take the value under test first.
 
-To use this `Assert` class when you write `Assert`, add a global alias. See
+To use this [Assert](cref:Meziantou.Framework.Assertions.Assert) class when you write [Assert](cref:Meziantou.Framework.Assertions.Assert), add a global alias. See
 [Getting started](02-GettingStarted.md#use-it-as-the-assert-class).
 
 ## What you can do with it
@@ -49,7 +49,7 @@ To use this `Assert` class when you write `Assert`, add a global alias. See
 
 ## Namespace
 
-`Assert`, `AssertionException`, `EquivalentOptions`, `FormatterOptions` and `RaisedEvent<TEventArgs>` are in the
+[Assert](cref:Meziantou.Framework.Assertions.Assert), [AssertionException](cref:Meziantou.Framework.Assertions.AssertionException), [EquivalentOptions](cref:Meziantou.Framework.Assertions.EquivalentOptions), [FormatterOptions](cref:Meziantou.Framework.Assertions.FormatterOptions) and [RaisedEvent\<TEventArgs\>](cref:Meziantou.Framework.Assertions.RaisedEvent{TEventArgs}) are in the
 [Meziantou.Framework.Assertions](cref:Meziantou.Framework.Assertions) namespace.
 
 ## Related libraries
@@ -61,6 +61,6 @@ To use this `Assert` class when you write `Assert`, add a global alias. See
 
 ## Next steps
 
-- [Getting started](02-GettingStarted.md): install the package, set up the `Assert` alias and write your first
+- [Getting started](02-GettingStarted.md): install the package, set up the [Assert](cref:Meziantou.Framework.Assertions.Assert) alias and write your first
   assertions.
 - [Analyzer rules](11-AnalyzerRules.md): the mistakes the analyzers catch.

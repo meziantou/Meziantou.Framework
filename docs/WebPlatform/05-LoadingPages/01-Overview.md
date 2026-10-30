@@ -3,7 +3,7 @@ title: Loading pages
 description: "Turn a document into a page with a browsing context: a window, a viewport, an event loop, and the resources the page needs."
 ---
 
-A parsed document is only a tree. A `BrowsingContext` turns it into a page, as a tab of a browser: it has a `Window`, a
+A parsed document is only a tree. A [BrowsingContext](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContext) turns it into a page, as a tab of a browser: it has a [Window](cref:Meziantou.Framework.WebPlatform.Dom.Window), a
 viewport, an event loop, a session history, and, when you allow it, the network, the cookies, the scripts and the
 rendering. Navigate it to a URL to load a document:
 
@@ -33,7 +33,7 @@ Assert.Equal("News", document.QuerySelector("title")!.TextContent);
 | `Navigate(url)` | The document returned by the [document loader](02-NetworkRequests.md), from a task of the event loop |
 
 The URL of the document resolves its relative URLs and gives its origin, which the cookies, the storage and the security
-checks use. The navigation adds an entry to the session history, and the loaded document becomes `BrowsingContext.Document`.
+checks use. The navigation adds an entry to the session history, and the loaded document becomes [BrowsingContext.Document](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContext.Document).
 Before the first navigation, a browsing context has an `about:blank` document.
 
 ## Run the event loop
@@ -65,33 +65,33 @@ Use a browsing context from one thread at a time, the thread that runs its event
 
 ## Options
 
-`BrowsingContextOptions` decides what the pages can do. Everything is off by default:
+[BrowsingContextOptions](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions) decides what the pages can do. Everything is off by default:
 
 | Option | Allows |
 | --- | --- |
-| `DocumentLoader` | Network requests: documents, style sheets, images, frames, scripts, `fetch()` (see [Network requests](02-NetworkRequests.md)) |
-| `CookieJar`, `LocalStorage` | Cookies and storage (see [Cookies and storage](03-CookiesAndStorage.md)) |
-| `Viewport`, `UserAgent` | The size of the viewport and the emulated device (see [Viewport and devices](04-ViewportAndDevices.md)) |
-| `ScriptEngine`, `WebAssemblyRuntime` | Scripts and WebAssembly (see [Scripting](../06-Scripting/01-Overview.md)) |
-| `RenderingBackend` | Screenshots, printing, canvases and image decoding (see [Rendering](../07-Rendering/01-Overview.md)) |
-| `TimeProvider` | The clock of the event loop (see [Time and the event loop](07-TimeAndTheEventLoop.md)) |
-| `UseSystemFonts` | The fonts installed on the machine (see [Fonts](../07-Rendering/06-Fonts.md)) |
+| [DocumentLoader](cref:Meziantou.Framework.WebPlatform.Dom.DocumentLoader) | Network requests: documents, style sheets, images, frames, scripts, `fetch()` (see [Network requests](02-NetworkRequests.md)) |
+| [CookieJar](cref:Meziantou.Framework.WebPlatform.Dom.CookieJar), [LocalStorage](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.LocalStorage) | Cookies and storage (see [Cookies and storage](03-CookiesAndStorage.md)) |
+| [Viewport](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Viewport), [UserAgent](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.UserAgent) | The size of the viewport and the emulated device (see [Viewport and devices](04-ViewportAndDevices.md)) |
+| [ScriptEngine](cref:Meziantou.Framework.WebPlatform.Scripting.ScriptEngine), [WebAssemblyRuntime](cref:Meziantou.Framework.WebPlatform.WebAssembly.WebAssemblyRuntime) | Scripts and WebAssembly (see [Scripting](../06-Scripting/01-Overview.md)) |
+| [RenderingBackend](cref:Meziantou.Framework.WebPlatform.Rendering.RenderingBackend) | Screenshots, printing, canvases and image decoding (see [Rendering](../07-Rendering/01-Overview.md)) |
+| [TimeProvider](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.TimeProvider) | The clock of the event loop (see [Time and the event loop](07-TimeAndTheEventLoop.md)) |
+| [UseSystemFonts](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.UseSystemFonts) | The fonts installed on the machine (see [Fonts](../07-Rendering/06-Fonts.md)) |
 
-The callbacks of the options report what happens in the pages: `ConsoleMessage` and `UnhandledScriptError` for the
-scripts, `BrowsingContextCreated` and `BrowsingContextDestroyed` for the frames and the popups, `DocumentActivated` for
-the navigations, and `UserPromptHandler` answers `alert()`, `confirm()` and `prompt()`.
+The callbacks of the options report what happens in the pages: [ConsoleMessage](cref:Meziantou.Framework.WebPlatform.Scripting.ConsoleMessage) and [UnhandledScriptError](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.UnhandledScriptError) for the
+scripts, [BrowsingContextCreated](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.BrowsingContextCreated) and [BrowsingContextDestroyed](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.BrowsingContextDestroyed) for the frames and the popups, [DocumentActivated](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.DocumentActivated) for
+the navigations, and [UserPromptHandler](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.UserPromptHandler) answers `alert()`, `confirm()` and `prompt()`.
 
 ## Frames and popups
 
-The `iframe` elements get nested browsing contexts (`BrowsingContext.Children`, `HtmlIFrameElement.ContentDocument`),
+The `iframe` elements get nested browsing contexts ([BrowsingContext.Children](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContext.Children), [HtmlIFrameElement.ContentDocument](cref:Meziantou.Framework.WebPlatform.Dom.HtmlIFrameElement.ContentDocument)),
 which share the event loop and the options of their page. `window.open()` creates a popup: another top-level browsing
 context of the same group.
 
 ## Dispose the page
 
-`BrowsingContext.Dispose()` discards the page: its documents and the documents of its frames are destroyed, the pending
+[BrowsingContext.Dispose()](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContext.Dispose) discards the page: its documents and the documents of its frames are destroyed, the pending
 requests are canceled, and the pending tasks and timers are dropped. No event is fired: to run the `pagehide` and
-`unload` handlers first, call `TryClose()`, which closes the page as a user closes a tab.
+`unload` handlers first, call [TryClose()](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContext.TryClose), which closes the page as a user closes a tab.
 
 ## In this section
 

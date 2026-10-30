@@ -10,14 +10,14 @@ types of this page are in the [Meziantou.Framework.Toml.Parsing](cref:Meziantou.
 
 | You want to | Use |
 | --- | --- |
-| Read every character of a document, including comments and whitespace | `SyntaxParser` |
-| Read the tokens of a document | `TomlLexer` |
-| Read the structure of a document without building a tree or a model | `TomlParser` |
+| Read every character of a document, including comments and whitespace | [SyntaxParser](cref:Meziantou.Framework.Toml.Parsing.SyntaxParser) |
+| Read the tokens of a document | [TomlLexer](cref:Meziantou.Framework.Toml.Parsing.TomlLexer) |
+| Read the structure of a document without building a tree or a model | [TomlParser](cref:Meziantou.Framework.Toml.Parsing.TomlParser) |
 
 ## Parse a syntax tree
 
-`SyntaxParser.Parse` builds a tree that keeps every character of the input: `ToString()` returns the original text.
-Walk it with `Descendants()`:
+[SyntaxParser.Parse](cref:Meziantou.Framework.Toml.Parsing.SyntaxParser.Parse) builds a tree that keeps every character of the input: `ToString()` returns the original text.
+Walk it with [Descendants()](cref:Meziantou.Framework.Toml.Syntax.SyntaxNodeExtensions.Descendants):
 
 <!-- ref:../../tests/Meziantou.Framework.Toml.Tests/BasicTests.cs;region=SyntaxParser_Parse;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -38,27 +38,27 @@ Assert.Equal(["Ada"], values);
 ```
 <!-- endref -->
 
-- A `DocumentSyntax` holds the root `KeyValues` and the `Tables`. Every node has `LeadingTrivia` and `TrailingTrivia`,
+- A [DocumentSyntax](cref:Meziantou.Framework.Toml.Syntax.DocumentSyntax) holds the root [KeyValues](cref:Meziantou.Framework.Toml.Syntax.DocumentSyntax.KeyValues) and the [Tables](cref:Meziantou.Framework.Toml.Syntax.DocumentSyntax.Tables). Every node has [LeadingTrivia](cref:Meziantou.Framework.Toml.Syntax.SyntaxNode.LeadingTrivia) and [TrailingTrivia](cref:Meziantou.Framework.Toml.Syntax.SyntaxNode.TrailingTrivia),
   the comments and whitespace around it.
-- Derive from `SyntaxVisitor` to walk the tree, and use `Tokens()` to enumerate its tokens.
-- `DocumentSyntax.HasByteOrderMark` says whether the input started with a byte order mark.
+- Derive from [SyntaxVisitor](cref:Meziantou.Framework.Toml.Syntax.SyntaxVisitor) to walk the tree, and use [Tokens()](cref:Meziantou.Framework.Toml.Syntax.SyntaxNodeExtensions.Tokens) to enumerate its tokens.
+- [DocumentSyntax.HasByteOrderMark](cref:Meziantou.Framework.Toml.Syntax.DocumentSyntax.HasByteOrderMark) says whether the input started with a byte order mark.
 
 ### Errors
 
-`SyntaxParser.Parse` does not throw on invalid TOML: it collects the errors in `Diagnostics`, and `HasErrors` says whether
-there are any. `SyntaxParser.ParseStrict` throws a `TomlException` instead. The tree of an invalid document still keeps
-every character: the tokens the parser skips are kept as trivia, and an `InvalidSyntaxToken` holds the text found in
+[SyntaxParser.Parse](cref:Meziantou.Framework.Toml.Parsing.SyntaxParser.Parse) does not throw on invalid TOML: it collects the errors in [Diagnostics](cref:Meziantou.Framework.Toml.Syntax.DocumentSyntax.Diagnostics), and [HasErrors](cref:Meziantou.Framework.Toml.Syntax.DocumentSyntax.HasErrors) says whether
+there are any. [SyntaxParser.ParseStrict](cref:Meziantou.Framework.Toml.Parsing.SyntaxParser.ParseStrict) throws a [TomlException](cref:Meziantou.Framework.Toml.TomlException) instead. The tree of an invalid document still keeps
+every character: the tokens the parser skips are kept as trivia, and an [InvalidSyntaxToken](cref:Meziantou.Framework.Toml.Syntax.InvalidSyntaxToken) holds the text found in
 place of an expected token.
 
 ### Memory
 
 Each token and each trivia of the tree is an object with its own position, so a tree uses a lot of memory compared with
-the size of its input. `Diagnostics` keeps every error, so a document with many errors uses more. To read large or
-untrusted input, use `TomlSerializer` or `TomlParser` instead.
+the size of its input. [Diagnostics](cref:Meziantou.Framework.Toml.Syntax.DocumentSyntax.Diagnostics) keeps every error, so a document with many errors uses more. To read large or
+untrusted input, use [TomlSerializer](cref:Meziantou.Framework.Toml.TomlSerializer) or [TomlParser](cref:Meziantou.Framework.Toml.Parsing.TomlParser) instead.
 
 ## Read tokens and parse events
 
-`TomlLexer` returns the tokens of a document, and `TomlParser` returns parse events, such as the start of a table or a
+[TomlLexer](cref:Meziantou.Framework.Toml.Parsing.TomlLexer) returns the tokens of a document, and [TomlParser](cref:Meziantou.Framework.Toml.Parsing.TomlParser) returns parse events, such as the start of a table or a
 key, without building a tree. Both avoid allocations where they can:
 
 <!-- ref:../../tests/Meziantou.Framework.Toml.Tests/BasicTests.cs;region=TomlLexer_TomlParser;format=md-fenced-code-block;dedent=true -->
@@ -103,12 +103,12 @@ Assert.Equal(
 ```
 <!-- endref -->
 
-`TomlParser` returns the events in the order of the document: a table defined in several places, for example with
-dotted keys, produces several `PropertyName` and `StartTable` events with the same name.
+[TomlParser](cref:Meziantou.Framework.Toml.Parsing.TomlParser) returns the events in the order of the document: a table defined in several places, for example with
+dotted keys, produces several [PropertyName](cref:Meziantou.Framework.Toml.Parsing.TomlParseEventKind.PropertyName) and [StartTable](cref:Meziantou.Framework.Toml.Parsing.TomlParseEventKind.StartTable) events with the same name.
 
-`TomlParserOptions` sets:
+[TomlParserOptions](cref:Meziantou.Framework.Toml.Parsing.TomlParserOptions) sets:
 
-- the error mode: `Strict` throws on the first error, `Tolerant` collects the errors;
+- the error mode: [Strict](cref:Meziantou.Framework.Toml.Parsing.TomlParserMode.Strict) throws on the first error, [Tolerant](cref:Meziantou.Framework.Toml.Parsing.TomlParserMode.Tolerant) collects the errors;
 - whether escape sequences are decoded;
 - whether trivia is reported;
 - whether string values are created eagerly.

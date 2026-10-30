@@ -4,8 +4,8 @@ description: Read and write JPEG XL images and animations, lossless or lossy, pr
 ---
 
 JPEG XL stores lossless and lossy images and animations, up to 16 bits per sample. The library reads every JPEG XL file
-that does not use the features listed in [Limitations](../12-Limitations.md), and `JpegXlEncoder` writes lossless files
-by default. `JpegXlTranscoder` stores a JPEG file in a smaller JPEG XL file without any loss, and rebuilds it.
+that does not use the features listed in [Limitations](../12-Limitations.md), and [JpegXlEncoder](cref:Meziantou.Framework.Imaging.Formats.JpegXlEncoder) writes lossless files
+by default. [JpegXlTranscoder](cref:Meziantou.Framework.Imaging.JpegXlTranscoder) stores a JPEG file in a smaller JPEG XL file without any loss, and rebuilds it.
 
 Interoperability does not imply encoder parity with libjxl: the managed encoder makes its own coding decisions.
 There is no general guarantee of comparable file size, encoding speed or perceptual quality, and equal quality/effort
@@ -16,12 +16,12 @@ numbers do not establish a matched comparison. Measure representative images at 
 | | Reading | Writing |
 | --- | --- | --- |
 | Coding | Lossy (VarDCT) and lossless (Modular) frames; recompressed JPEG files | Lossless (default) or lossy |
-| Samples | Up to 16 bits, gray and color, alpha | Every pixel format at its own depth (`Gray8`, `Gray16`, `Rgb24`, `Rgba32`, `Bgra32`, `Rgba64`), lossless alpha |
+| Samples | Up to 16 bits, gray and color, alpha | Every pixel format at its own depth ([Gray8](cref:Meziantou.Framework.Imaging.Gray8), [Gray16](cref:Meziantou.Framework.Imaging.Gray16), [Rgb24](cref:Meziantou.Framework.Imaging.Rgb24), [Rgba32](cref:Meziantou.Framework.Imaging.Rgba32), [Bgra32](cref:Meziantou.Framework.Imaging.Bgra32), [Rgba64](cref:Meziantou.Framework.Imaging.Rgba64)), lossless alpha |
 | Animations | Composited into full frames with exact durations and the play count | Full frames, durations in milliseconds, play count |
 | Progressive | Renderings of a partial file | Progressive files on request |
 | Metadata | ICC profile, EXIF, XMP, enumerated color encodings, orientation | The same |
 
-8-bit files load as `Gray8`, `Rgb24` or `Rgba32`; deeper files as `Gray16`, `Rgb48` or `Rgba64`. The orientation of the
+8-bit files load as [Gray8](cref:Meziantou.Framework.Imaging.Gray8), [Rgb24](cref:Meziantou.Framework.Imaging.Rgb24) or [Rgba32](cref:Meziantou.Framework.Imaging.Rgba32); deeper files as [Gray16](cref:Meziantou.Framework.Imaging.Gray16), [Rgb48](cref:Meziantou.Framework.Imaging.Rgb48) or [Rgba64](cref:Meziantou.Framework.Imaging.Rgba64). The orientation of the
 image header is reported in `Metadata.Orientation`, never applied.
 
 ## Save a JPEG XL file
@@ -62,16 +62,16 @@ are written as they come, whatever their number.
 
 | Option | What it does | Default |
 | --- | --- | --- |
-| `Compression` | `Lossless` or `Lossy` | `Lossless` |
-| `Quality` | 0 (smallest) to 100 (best) for lossy output: 90 is barely distinguishable from the source, 100 is still lossy | 75 |
-| `Effort` | 0 (fastest, largest) to 9 (slowest, smallest): changes the decisions of the encoder, never lossless pixels nor the size `Quality` aims at | 5 |
-| `Progressive` | Writes a file that a reader can show at a lower resolution before it is complete; the file is larger | `false` |
-| `DurationRounding` | `RoundToNearest` rounds durations to the nearest millisecond; `RequireExact` throws | `RoundToNearest` |
-| `MetadataHandling` | What to do with metadata JPEG XL cannot store (text, resolution) | `Strict` |
+| [Compression](cref:Meziantou.Framework.Imaging.Formats.JpegXlEncoder.Compression) | [Lossless](cref:Meziantou.Framework.Imaging.Formats.JpegXlCompression.Lossless) or [Lossy](cref:Meziantou.Framework.Imaging.Formats.JpegXlCompression.Lossy) | [Lossless](cref:Meziantou.Framework.Imaging.Formats.JpegXlCompression.Lossless) |
+| [Quality](cref:Meziantou.Framework.Imaging.Formats.JpegXlEncoder.Quality) | 0 (smallest) to 100 (best) for lossy output: 90 is barely distinguishable from the source, 100 is still lossy | 75 |
+| [Effort](cref:Meziantou.Framework.Imaging.Formats.JpegXlEncoder.Effort) | 0 (fastest, largest) to 9 (slowest, smallest): changes the decisions of the encoder, never lossless pixels nor the size [Quality](cref:Meziantou.Framework.Imaging.Formats.JpegXlEncoder.Quality) aims at | 5 |
+| [Progressive](cref:Meziantou.Framework.Imaging.Formats.JpegXlEncoder.Progressive) | Writes a file that a reader can show at a lower resolution before it is complete; the file is larger | `false` |
+| [DurationRounding](cref:Meziantou.Framework.Imaging.Formats.JpegXlEncoder.DurationRounding) | [RoundToNearest](cref:Meziantou.Framework.Imaging.Formats.FrameDurationRounding.RoundToNearest) rounds durations to the nearest millisecond; [RequireExact](cref:Meziantou.Framework.Imaging.Formats.FrameDurationRounding.RequireExact) throws | [RoundToNearest](cref:Meziantou.Framework.Imaging.Formats.FrameDurationRounding.RoundToNearest) |
+| [MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling) | What to do with metadata JPEG XL cannot store (text, resolution) | [Strict](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling.Strict) |
 
 ## Show an image while it downloads
 
-`ReadFrameRefinementInto` renders a frame from the bytes received so far: coarse at first, then finer, then the frame
+[ReadFrameRefinementInto](cref:Meziantou.Framework.Imaging.ImageReader{TPixel}.ReadFrameRefinementInto) renders a frame from the bytes received so far: coarse at first, then finer, then the frame
 itself. A file that is not progressive, or another format, gives the frame at once:
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_ProgressiveRead;format=md-fenced-code-block;dedent=true -->
@@ -103,8 +103,8 @@ formats and for partial downloads.
 
 ## Recompress JPEG files without loss
 
-`JpegXlTranscoder.RecompressJpeg` stores the coefficients of a JPEG file in a JPEG XL file without decoding its pixels,
-and `TryReconstructJpeg` gives the JPEG file back, byte for byte. This is not `Image.Save`, which stores pixels:
+[JpegXlTranscoder.RecompressJpeg](cref:Meziantou.Framework.Imaging.JpegXlTranscoder.RecompressJpeg) stores the coefficients of a JPEG file in a JPEG XL file without decoding its pixels,
+and [TryReconstructJpeg](cref:Meziantou.Framework.Imaging.JpegXlTranscoder.TryReconstructJpeg) gives the JPEG file back, byte for byte. This is not [Image.Save](cref:Meziantou.Framework.Imaging.Image.Save), which stores pixels:
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_TranscodeJpeg;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -127,9 +127,9 @@ public static bool RecompressJpeg(string jpegPath, string jxlPath, string rebuil
 ```
 <!-- endref -->
 
-- `HasJpegReconstructionData` tells whether a JPEG XL file holds a JPEG file, without decoding it.
-  `TryReconstructJpeg` returns `false` for a file made from pixels, and `ReconstructJpeg` throws for it.
-- Files that a JPEG XL frame cannot hold exactly are rejected with an `UnsupportedImageFeatureException`: CMYK and YCCK
+- [HasJpegReconstructionData](cref:Meziantou.Framework.Imaging.JpegXlTranscoder.HasJpegReconstructionData) tells whether a JPEG XL file holds a JPEG file, without decoding it.
+  [TryReconstructJpeg](cref:Meziantou.Framework.Imaging.JpegXlTranscoder.TryReconstructJpeg) returns `false` for a file made from pixels, and [ReconstructJpeg](cref:Meziantou.Framework.Imaging.JpegXlTranscoder.ReconstructJpeg) throws for it.
+- Files that a JPEG XL frame cannot hold exactly are rejected with an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException): CMYK and YCCK
   files, 4:1:1 sampling, arithmetic-coded, lossless, hierarchical and 12-bit files, among others. Nothing is
   approximated.
 - The recompressed files are read by other JPEG XL decoders, and the library rebuilds the files that
@@ -140,5 +140,5 @@ public static bool RecompressJpeg(string jpegPath, string jxlPath, string rebuil
 - A frame of an animation without duration is rejected: JPEG XL defines it as a layer of the next frame.
 - Lossy output converts the samples to the XYB color space, which needs an enumerated color encoding (sRGB, linear,
   BT.709 or DCI, with sRGB, Display P3 or BT.2020 primaries) or an sRGB ICC profile. Another ICC profile, or the
-  PQ and HLG transfer functions, throws an `UnsupportedImageFeatureException`: write those images losslessly.
+  PQ and HLG transfer functions, throws an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException): write those images losslessly.
 - The decoder rejects floating-point samples, samples of more than 16 bits, premultiplied alpha and CMYK images.

@@ -14,7 +14,7 @@ and the restrictions differ between Windows, Linux and macOS.
 | Linux | The `createdump` tool of the .NET runtime, and the permission to attach to the process (see below) |
 | macOS | The `createdump` tool of the .NET runtime, and an executable signed with the `get-task-allow` entitlement (see below) |
 
-On the other operating systems, `Write` and `WriteAsync` throw `PlatformNotSupportedException`.
+On the other operating systems, [Write](cref:Meziantou.Framework.Diagnostics.MemoryDump.Write) and [WriteAsync](cref:Meziantou.Framework.Diagnostics.MemoryDump.WriteAsync) throw `PlatformNotSupportedException`.
 
 `createdump` ships with the .NET runtime. The package looks for it in the directory of the runtime, then in the
 directory of the application, where self-contained and single-file applications have it. When it is in neither,

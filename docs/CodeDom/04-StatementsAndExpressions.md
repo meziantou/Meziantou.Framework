@@ -5,7 +5,7 @@ description: Write the body of members with statements, expressions, type refere
 
 ## Expressions
 
-An `Expression` is a value: a literal, a reference to a variable or a member, an operation, a method call, an object
+An [Expression](cref:Meziantou.Framework.CodeDom.Expression) is a value: a literal, a reference to a variable or a member, an operation, a method call, an object
 creation... Expressions nest, and the generator writes the parentheses:
 
 <!-- ref:../../tests/Meziantou.Framework.CodeDom.Tests/CSharpCodeGeneratorTests.cs;region=Expression_Example;format=md-fenced-code-block;dedent=true -->
@@ -20,19 +20,19 @@ Assert.Equal("global::System.Console.WriteLine((42 + 10))", expr3.ToCsharpString
 
 | Class | Writes |
 | --- | --- |
-| `LiteralExpression` | `42`, `"text"`, `true`, `null`. Numbers, strings and `bool` values convert to it. |
-| `VariableReferenceExpression`, `ArgumentReferenceExpression` | A local variable or an argument. A `VariableDeclarationStatement` or a `MethodArgumentDeclaration` converts to it. |
-| `MemberReferenceExpression` | `target.Member`. A member declaration converts to `this.Member`. |
-| `ThisExpression`, `BaseExpression`, `ValueArgumentExpression` | `this`, `base`, `value`. |
-| `BinaryExpression`, `UnaryExpression` | An operator applied to one or two operands: `BinaryOperator`, `UnaryOperator`. |
-| `MethodInvokeExpression` | A method call, with generic arguments and `out` or `ref` arguments. |
-| `NewObjectExpression`, `NewArrayExpression` | `new T(...)` and `new T[...]`. |
-| `CastExpression`, `ConvertExpression`, `IsInstanceOfTypeExpression` | `(T)value`, `value as T`, `value is T`. |
-| `TypeOfExpression`, `NameofExpression`, `DefaultValueExpression` | `typeof(T)`, `nameof(x)`, `default(T)`. |
-| `ArrayIndexerExpression` | `array[index]`. |
-| `AwaitExpression` | `await value`. |
-| `TypeReferenceExpression` | A type, as the target of a static member. A `TypeReference` converts to it. |
-| `SnippetExpression` | Any C# code, written as is. |
+| [LiteralExpression](cref:Meziantou.Framework.CodeDom.LiteralExpression) | `42`, `"text"`, `true`, `null`. Numbers, strings and `bool` values convert to it. |
+| [VariableReferenceExpression](cref:Meziantou.Framework.CodeDom.VariableReferenceExpression), [ArgumentReferenceExpression](cref:Meziantou.Framework.CodeDom.ArgumentReferenceExpression) | A local variable or an argument. A [VariableDeclarationStatement](cref:Meziantou.Framework.CodeDom.VariableDeclarationStatement) or a [MethodArgumentDeclaration](cref:Meziantou.Framework.CodeDom.MethodArgumentDeclaration) converts to it. |
+| [MemberReferenceExpression](cref:Meziantou.Framework.CodeDom.MemberReferenceExpression) | `target.Member`. A member declaration converts to `this.Member`. |
+| [ThisExpression](cref:Meziantou.Framework.CodeDom.ThisExpression), [BaseExpression](cref:Meziantou.Framework.CodeDom.BaseExpression), [ValueArgumentExpression](cref:Meziantou.Framework.CodeDom.ValueArgumentExpression) | `this`, `base`, `value`. |
+| [BinaryExpression](cref:Meziantou.Framework.CodeDom.BinaryExpression), [UnaryExpression](cref:Meziantou.Framework.CodeDom.UnaryExpression) | An operator applied to one or two operands: [BinaryOperator](cref:Meziantou.Framework.CodeDom.BinaryOperator), [UnaryOperator](cref:Meziantou.Framework.CodeDom.UnaryOperator). |
+| [MethodInvokeExpression](cref:Meziantou.Framework.CodeDom.MethodInvokeExpression) | A method call, with generic arguments and `out` or `ref` arguments. |
+| [NewObjectExpression](cref:Meziantou.Framework.CodeDom.NewObjectExpression), [NewArrayExpression](cref:Meziantou.Framework.CodeDom.NewArrayExpression) | `new T(...)` and `new T[...]`. |
+| [CastExpression](cref:Meziantou.Framework.CodeDom.CastExpression), [ConvertExpression](cref:Meziantou.Framework.CodeDom.ConvertExpression), [IsInstanceOfTypeExpression](cref:Meziantou.Framework.CodeDom.IsInstanceOfTypeExpression) | `(T)value`, `value as T`, `value is T`. |
+| [TypeOfExpression](cref:Meziantou.Framework.CodeDom.TypeOfExpression), [NameofExpression](cref:Meziantou.Framework.CodeDom.NameofExpression), [DefaultValueExpression](cref:Meziantou.Framework.CodeDom.DefaultValueExpression) | `typeof(T)`, `nameof(x)`, `default(T)`. |
+| [ArrayIndexerExpression](cref:Meziantou.Framework.CodeDom.ArrayIndexerExpression) | `array[index]`. |
+| [AwaitExpression](cref:Meziantou.Framework.CodeDom.AwaitExpression) | `await value`. |
+| [TypeReferenceExpression](cref:Meziantou.Framework.CodeDom.TypeReferenceExpression) | A type, as the target of a static member. A [TypeReference](cref:Meziantou.Framework.CodeDom.TypeReference) converts to it. |
+| [SnippetExpression](cref:Meziantou.Framework.CodeDom.SnippetExpression) | Any C# code, written as is. |
 
 <!-- ref:../../tests/Meziantou.Framework.CodeDom.Tests/CSharpCodeGeneratorTests.cs;region=LiteralExpression_Example;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -92,32 +92,32 @@ Assert.Equal("new global::System.Text.StringBuilder(\"initial value\")", newObjW
 ```
 <!-- endref -->
 
-`Expression` has factory methods for the common cases: `Expression.Add`, `And` and `Or` chain several operands,
-`EqualsNull` and `NotEqualsNull` compare with `null`, `IsNullOrEmpty` calls `string.IsNullOrEmpty`, and `Null()`,
-`True()` and `False()` create the literals. The `Member` and `InvokeMethod` extension methods chain member accesses and
+[Expression](cref:Meziantou.Framework.CodeDom.Expression) has factory methods for the common cases: [Expression.Add](cref:Meziantou.Framework.CodeDom.Expression.Add), [And](cref:Meziantou.Framework.CodeDom.Expression.And) and [Or](cref:Meziantou.Framework.CodeDom.Expression.Or) chain several operands,
+[EqualsNull](cref:Meziantou.Framework.CodeDom.Expression.EqualsNull) and [NotEqualsNull](cref:Meziantou.Framework.CodeDom.Expression.NotEqualsNull) compare with `null`, [IsNullOrEmpty](cref:Meziantou.Framework.CodeDom.Expression.IsNullOrEmpty) calls `string.IsNullOrEmpty`, and [Null()](cref:Meziantou.Framework.CodeDom.Expression.Null),
+[True()](cref:Meziantou.Framework.CodeDom.Expression.True) and [False()](cref:Meziantou.Framework.CodeDom.Expression.False) create the literals. The [Member](cref:Meziantou.Framework.CodeDom.Expression.Member) and [InvokeMethod](cref:Meziantou.Framework.CodeDom.Extensions.InvokeMethod) extension methods chain member accesses and
 calls on any expression.
 
 ## Statements
 
-A `Statement` is an instruction of a method, a constructor or an accessor. The `Statements` of a member is a
-`StatementCollection`: `Add` attaches a statement and returns it, so a variable declaration can be referenced afterwards,
+A [Statement](cref:Meziantou.Framework.CodeDom.Statement) is an instruction of a method, a constructor or an accessor. The [Statements](cref:Meziantou.Framework.CodeDom.MethodDeclaration.Statements) of a member is a
+[StatementCollection](cref:Meziantou.Framework.CodeDom.StatementCollection): [Add](cref:Meziantou.Framework.CodeDom.StatementCollection.Add) attaches a statement and returns it, so a variable declaration can be referenced afterwards,
 and an expression converts to an expression statement.
 
 | Class | Writes |
 | --- | --- |
-| `VariableDeclarationStatement` | `T name = value;` |
-| `AssignStatement` | `target = value;` |
-| `ExpressionStatement` | An expression used as a statement, such as a method call. |
-| `ReturnStatement`, `YieldReturnStatement`, `YieldBreakStatement` | `return`, `yield return`, `yield break`. |
-| `ConditionStatement` | `if` with `TrueStatements` and `FalseStatements`. |
-| `IterationStatement`, `WhileStatement` | `for` and `while` loops. |
-| `ExitLoopStatement`, `GotoNextLoopIterationStatement` | `break` and `continue`. |
-| `TryCatchFinallyStatement` | `try`, `catch` clauses and `finally`. |
-| `ThrowStatement` | `throw`. |
-| `UsingStatement` | `using`. |
-| `AddEventHandlerStatement`, `RemoveEventHandlerStatement` | `+=` and `-=` on an event. |
-| `CommentStatement` | A line comment. |
-| `SnippetStatement` | Any C# code, written as is. |
+| [VariableDeclarationStatement](cref:Meziantou.Framework.CodeDom.VariableDeclarationStatement) | `T name = value;` |
+| [AssignStatement](cref:Meziantou.Framework.CodeDom.AssignStatement) | `target = value;` |
+| [ExpressionStatement](cref:Meziantou.Framework.CodeDom.ExpressionStatement) | An expression used as a statement, such as a method call. |
+| [ReturnStatement](cref:Meziantou.Framework.CodeDom.ReturnStatement), [YieldReturnStatement](cref:Meziantou.Framework.CodeDom.YieldReturnStatement), [YieldBreakStatement](cref:Meziantou.Framework.CodeDom.YieldBreakStatement) | `return`, `yield return`, `yield break`. |
+| [ConditionStatement](cref:Meziantou.Framework.CodeDom.ConditionStatement) | `if` with [TrueStatements](cref:Meziantou.Framework.CodeDom.ConditionStatement.TrueStatements) and [FalseStatements](cref:Meziantou.Framework.CodeDom.ConditionStatement.FalseStatements). |
+| [IterationStatement](cref:Meziantou.Framework.CodeDom.IterationStatement), [WhileStatement](cref:Meziantou.Framework.CodeDom.WhileStatement) | `for` and `while` loops. |
+| [ExitLoopStatement](cref:Meziantou.Framework.CodeDom.ExitLoopStatement), [GotoNextLoopIterationStatement](cref:Meziantou.Framework.CodeDom.GotoNextLoopIterationStatement) | `break` and `continue`. |
+| [TryCatchFinallyStatement](cref:Meziantou.Framework.CodeDom.TryCatchFinallyStatement) | `try`, `catch` clauses and `finally`. |
+| [ThrowStatement](cref:Meziantou.Framework.CodeDom.ThrowStatement) | `throw`. |
+| [UsingStatement](cref:Meziantou.Framework.CodeDom.UsingStatement) | `using`. |
+| [AddEventHandlerStatement](cref:Meziantou.Framework.CodeDom.AddEventHandlerStatement), [RemoveEventHandlerStatement](cref:Meziantou.Framework.CodeDom.RemoveEventHandlerStatement) | `+=` and `-=` on an event. |
+| [CommentStatement](cref:Meziantou.Framework.CodeDom.CommentStatement) | A line comment. |
+| [SnippetStatement](cref:Meziantou.Framework.CodeDom.SnippetStatement) | Any C# code, written as is. |
 
 <!-- ref:../../tests/Meziantou.Framework.CodeDom.Tests/CSharpCodeGeneratorTests.cs;region=CodeDom_Statements;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -167,12 +167,12 @@ public static int Sum(int[] values)
 ```
 <!-- endref -->
 
-`CreateThrowIfNullStatement` is an extension method of `MethodArgumentDeclaration` that writes the `null` check of an
+[CreateThrowIfNullStatement](cref:Meziantou.Framework.CodeDom.Extensions.CreateThrowIfNullStatement) is an extension method of [MethodArgumentDeclaration](cref:Meziantou.Framework.CodeDom.MethodArgumentDeclaration) that writes the `null` check of an
 argument.
 
 ## Type references
 
-A `TypeReference` designates a type. It converts from a `Type`, and can be created from a name, made generic, made an
+A [TypeReference](cref:Meziantou.Framework.CodeDom.TypeReference) designates a type. It converts from a `Type`, and can be created from a name, made generic, made an
 array or made nullable:
 
 <!-- ref:../../tests/Meziantou.Framework.CodeDom.Tests/TypeReferenceTests.cs;region=TypeReference_Example;format=md-fenced-code-block;dedent=true -->
@@ -187,10 +187,10 @@ Assert.Equal("System.Int32[]", intArray.ClrFullTypeName);
 ```
 <!-- endref -->
 
-A `TypeDeclaration` and a `TypeParameter` also convert to a `TypeReference`, so the types you generate can be used as
+A [TypeDeclaration](cref:Meziantou.Framework.CodeDom.TypeDeclaration) and a [TypeParameter](cref:Meziantou.Framework.CodeDom.TypeParameter) also convert to a [TypeReference](cref:Meziantou.Framework.CodeDom.TypeReference), so the types you generate can be used as
 the types of members.
 
 ## Snippets
 
-`SnippetExpression` and `SnippetStatement` write their text without any change. Use them for the constructs that have no
+[SnippetExpression](cref:Meziantou.Framework.CodeDom.SnippetExpression) and [SnippetStatement](cref:Meziantou.Framework.CodeDom.SnippetStatement) write their text without any change. Use them for the constructs that have no
 code object, such as a pattern or a lambda expression. The text is not validated: you are responsible for its syntax.

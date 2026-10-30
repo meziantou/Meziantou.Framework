@@ -9,8 +9,8 @@ rules of the level and writes what the level needs:
 
 | Property | Levels | Page |
 | --- | --- | --- |
-| `PdfDocument.PdfUAConformance` | `PdfUA1`, `PdfUA2` | [Tagged PDF and PDF/UA](02-TaggedPdfAndPdfUA.md) |
-| `PdfDocument.PdfAConformance` | `PdfA1B`, `PdfA1A`, `PdfA2B`, `PdfA2U`, `PdfA2A`, `PdfA3B`, `PdfA3U`, `PdfA3A`, `PdfA4`, `PdfA4E`, `PdfA4F` | [PDF/A](03-PdfA.md) |
+| [PdfDocument.PdfUAConformance](cref:Meziantou.Framework.Pdf.PdfDocument.PdfUAConformance) | [PdfUA1](cref:Meziantou.Framework.Pdf.PdfUAConformance.PdfUA1), [PdfUA2](cref:Meziantou.Framework.Pdf.PdfUAConformance.PdfUA2) | [Tagged PDF and PDF/UA](02-TaggedPdfAndPdfUA.md) |
+| [PdfDocument.PdfAConformance](cref:Meziantou.Framework.Pdf.PdfDocument.PdfAConformance) | [PdfA1B](cref:Meziantou.Framework.Pdf.PdfAConformance.PdfA1B), [PdfA1A](cref:Meziantou.Framework.Pdf.PdfAConformance.PdfA1A), [PdfA2B](cref:Meziantou.Framework.Pdf.PdfAConformance.PdfA2B), [PdfA2U](cref:Meziantou.Framework.Pdf.PdfAConformance.PdfA2U), [PdfA2A](cref:Meziantou.Framework.Pdf.PdfAConformance.PdfA2A), [PdfA3B](cref:Meziantou.Framework.Pdf.PdfAConformance.PdfA3B), [PdfA3U](cref:Meziantou.Framework.Pdf.PdfAConformance.PdfA3U), [PdfA3A](cref:Meziantou.Framework.Pdf.PdfAConformance.PdfA3A), [PdfA4](cref:Meziantou.Framework.Pdf.PdfAConformance.PdfA4), [PdfA4E](cref:Meziantou.Framework.Pdf.PdfAConformance.PdfA4E), [PdfA4F](cref:Meziantou.Framework.Pdf.PdfAConformance.PdfA4F) | [PDF/A](03-PdfA.md) |
 
 Both can be combined, for an accessible archived document: PDF/A-2a and PDF/UA-1 in the example of
 [Tagged PDF and PDF/UA](02-TaggedPdfAndPdfUA.md).

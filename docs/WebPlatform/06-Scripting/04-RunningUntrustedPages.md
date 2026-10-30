@@ -8,7 +8,7 @@ or make your server send requests. The engine and the browsing context give you 
 
 ## Bound the scripts
 
-`JavaScriptScriptEngineOptions` limits each entry into JavaScript (a script, an event listener, a timer callback):
+[JavaScriptScriptEngineOptions](cref:Meziantou.Framework.WebPlatform.JavaScript.JavaScriptScriptEngineOptions) limits each entry into JavaScript (a script, an event listener, a timer callback):
 
 <!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/JavaScriptScriptEngineTests.cs;region=WebPlatformJavaScript_Limits;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -37,22 +37,22 @@ Assert.NotNull(document.QuerySelector("p"));
 ```
 <!-- endref -->
 
-- `Timeout` (10 seconds by default), `MemoryLimit` (256 MB allocated by default), `RecursionLimit` (512 calls by
-  default), `RegexTimeout` (2 seconds by default) and `MaxStatements` (no limit by default) stop the script that exceeds
-  them, and report the error to `UnhandledScriptError`. The page goes on.
+- [Timeout](cref:Meziantou.Framework.WebPlatform.JavaScript.JavaScriptScriptEngineOptions.Timeout) (10 seconds by default), [MemoryLimit](cref:Meziantou.Framework.WebPlatform.JavaScript.JavaScriptScriptEngineOptions.MemoryLimit) (256 MB allocated by default), [RecursionLimit](cref:Meziantou.Framework.WebPlatform.JavaScript.JavaScriptScriptEngineOptions.RecursionLimit) (512 calls by
+  default), [RegexTimeout](cref:Meziantou.Framework.WebPlatform.JavaScript.JavaScriptScriptEngineOptions.RegexTimeout) (2 seconds by default) and [MaxStatements](cref:Meziantou.Framework.WebPlatform.JavaScript.JavaScriptScriptEngineOptions.MaxStatements) (no limit by default) stop the script that exceeds
+  them, and report the error to [UnhandledScriptError](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.UnhandledScriptError). The page goes on.
 - The engine has no access to .NET: the scripts only see the DOM, the web APIs and the JavaScript built-ins, and the
-  functions you add in `OnRealmCreated`.
+  functions you add in [OnRealmCreated](cref:Meziantou.Framework.WebPlatform.JavaScript.JavaScriptScriptEngine.OnRealmCreated).
 
 ## Bound the page
 
 The limits apply to each entry into JavaScript, not to the page: a page can start a timer every millisecond
 (`setInterval(f, 0)`) and keep the event loop busy forever. Bound the time you run it: pass a `CancellationToken` to
-`RunUntilIdleAsync()` and `WaitForNextTimerAsync()`, and stop waiting for the timers after a while. Then dispose the
+[RunUntilIdleAsync()](cref:Meziantou.Framework.WebPlatform.Dom.DomEventLoop.RunUntilIdleAsync) and [WaitForNextTimerAsync()](cref:Meziantou.Framework.WebPlatform.Dom.DomEventLoop.WaitForNextTimerAsync), and stop waiting for the timers after a while. Then dispose the
 browsing context.
 
 ## Filter the requests
 
-The scripts, the frames and the navigations request URLs through the `DocumentLoader`. `DocumentLoader.Create()` requests
+The scripts, the frames and the navigations request URLs through the [DocumentLoader](cref:Meziantou.Framework.WebPlatform.Dom.DocumentLoader). [DocumentLoader.Create()](cref:Meziantou.Framework.WebPlatform.Dom.DocumentLoader.Create) requests
 any URL, including the services of your private network: give untrusted pages a loader that filters the destinations
 (see [Network requests](../05-LoadingPages/02-NetworkRequests.md#protect-your-network-from-untrusted-pages)), or no
 loader at all.

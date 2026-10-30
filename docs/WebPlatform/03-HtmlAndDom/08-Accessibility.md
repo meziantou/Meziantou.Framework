@@ -3,7 +3,7 @@ title: Accessibility
 description: Read the role and the accessible name of the elements, as an accessibility tree exposes them, to check generated HTML.
 ---
 
-`Element.ComputedRole` and `Element.ComputedName` return the role and the accessible name that the accessibility tree of a
+[Element.ComputedRole](cref:Meziantou.Framework.WebPlatform.Dom.Element.ComputedRole) and [Element.ComputedName](cref:Meziantou.Framework.WebPlatform.Dom.Element.ComputedName) return the role and the accessible name that the accessibility tree of a
 browser exposes for an element: the values that the WebDriver commands *Get Computed Role* and *Get Computed Label*
 return. Use them to check that generated HTML is accessible:
 
@@ -32,7 +32,7 @@ Assert.Equal(("image", ""), (logo.ComputedRole, logo.ComputedName));
 ## Role
 
 The role is the first valid role of the `role` attribute (`img` is reported as `image`, `presentation` as `none`), else
-the role given by `ElementInternals` for a custom element, else the implicit role of the element: `heading`, `link` for
+the role given by [ElementInternals](cref:Meziantou.Framework.WebPlatform.Dom.ElementInternals) for a custom element, else the implicit role of the element: `heading`, `link` for
 an `a` with an `href`, `listitem`, `textbox`, `combobox`, `generic` for a `div` or a `span`... An empty string means
 that the element has no role (`head`, `br`).
 
@@ -50,5 +50,5 @@ collapsed and trimmed. The hidden nodes are not part of a name, unless `aria-lab
 
 The computation uses the computed styles: the generated content of `::before` and `::after`, `display: none` and
 `visibility: hidden`. Load the document in a browsing context, as above, to get the names a browser gives. In a document
-parsed by `HtmlDocumentParser`, only the `hidden` and `aria-hidden` attributes hide the nodes, and there is no generated
+parsed by [HtmlDocumentParser](cref:Meziantou.Framework.WebPlatform.HtmlDocumentParser), only the `hidden` and `aria-hidden` attributes hide the nodes, and there is no generated
 content.

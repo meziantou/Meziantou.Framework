@@ -14,4 +14,3 @@ description: What the library does not do, so you can plan around it.
   memory before writing it. `BencodeWriter` writes to an `IBufferWriter<byte>` as you go.
 - **Nesting depth of 64.** Deeper lists and dictionaries are refused with a `FormatException`.
 - **Integers fit in a `long`.** Larger bencode integers are refused.
-- **.NET 10 and later only.**

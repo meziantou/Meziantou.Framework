@@ -5,7 +5,7 @@ description: Install the package, read the rows of a CSV file by column name, an
 
 ## Install the package
 
-Add the `Meziantou.Framework.Csv` package to a project that targets .NET 10 or later:
+Add the `Meziantou.Framework.Csv` package to a project:
 
 ```bash
 dotnet add package Meziantou.Framework.Csv

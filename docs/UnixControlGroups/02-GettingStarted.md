@@ -5,7 +5,7 @@ description: Install the package, create a control group, limit its resources an
 
 ## Install the package
 
-Add the `Meziantou.Framework.Unix.ControlGroups` package to a project that targets .NET 10 or later:
+Add the `Meziantou.Framework.Unix.ControlGroups` package to a project:
 
 ```bash
 dotnet add package Meziantou.Framework.Unix.ControlGroups

@@ -12,4 +12,3 @@ description: What the library does not do, so you can plan around it.
 - **No OGG multiplexing.** Multiplexed and chained OGG streams are refused when writing.
 - **Seekable streams.** The stream methods need a stream that supports seeking.
 - **Synchronous.** The methods are synchronous; run them on a background thread in a UI application.
-- **.NET 10 and later only.**

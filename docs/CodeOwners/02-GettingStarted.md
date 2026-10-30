@@ -5,7 +5,7 @@ description: Install the package, parse the CODEOWNERS file of a repository and 
 
 ## Install the package
 
-Add the `Meziantou.Framework.CodeOwners` package to a project that targets .NET 10 or later:
+Add the `Meziantou.Framework.CodeOwners` package to a project:
 
 ```bash
 dotnet add package Meziantou.Framework.CodeOwners

@@ -17,4 +17,3 @@ description: What the library does not do, so you can plan around it.
   [custom expression](05-DatabaseQueries.md#custom-expressions).
 - **No comparisons on enums in database queries.** `ExpressionQueryBuilder<T>` only supports equality for enum
   properties.
-- **.NET 10 and later only.**

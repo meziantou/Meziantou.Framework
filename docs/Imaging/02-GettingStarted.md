@@ -5,7 +5,7 @@ description: Install the package, load an image, resize it and save it, then dra
 
 ## Install the package
 
-Add the `Meziantou.Framework.Imaging` package to a project that targets .NET 10 or later:
+Add the `Meziantou.Framework.Imaging` package to a project:
 
 ```bash
 dotnet add package Meziantou.Framework.Imaging

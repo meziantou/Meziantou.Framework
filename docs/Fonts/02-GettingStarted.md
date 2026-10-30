@@ -5,7 +5,7 @@ description: Install the package, load a font file, and read its names, metrics 
 
 ## Install the package
 
-Add the `Meziantou.Framework.Fonts` package to a project that targets .NET 10 or later:
+Add the `Meziantou.Framework.Fonts` package to a project:
 
 ```bash
 dotnet add package Meziantou.Framework.Fonts

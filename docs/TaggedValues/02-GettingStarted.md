@@ -12,7 +12,7 @@ dotnet add package Meziantou.Framework.TaggedValues
 ```
 
 The package contains the `[ValueTag]` attribute, and a Roslyn analyzer with its code fixes for C#. The analyzer runs
-during the build and in the IDE: there is nothing to register. It needs the compiler of the .NET 10 SDK or later.
+during the build and in the IDE: there is nothing to register.
 
 The examples of this documentation omit the `using` directives: they need `using Meziantou.Framework.TaggedValues;`.
 

@@ -5,7 +5,7 @@ description: Install the package, write an object as TOML, read it back, and rea
 
 ## Install the package
 
-Add the `Meziantou.Framework.Toml` package to a project that targets .NET 10 or later:
+Add the `Meziantou.Framework.Toml` package to a project:
 
 ```bash
 dotnet add package Meziantou.Framework.Toml

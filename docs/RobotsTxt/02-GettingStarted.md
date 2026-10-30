@@ -5,7 +5,7 @@ description: Install the package, parse a robots.txt file and check whether a cr
 
 ## Install the package
 
-Add the `Meziantou.Framework.RobotsTxt` package to a project that targets .NET 10 or later:
+Add the `Meziantou.Framework.RobotsTxt` package to a project:
 
 ```bash
 dotnet add package Meziantou.Framework.RobotsTxt

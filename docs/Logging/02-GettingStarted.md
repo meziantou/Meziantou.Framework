@@ -3,7 +3,7 @@ title: Getting started
 description: Install a logging package and write your first entries to a file, to memory, or to the test output.
 ---
 
-The packages target .NET 10 and later. The examples of this documentation omit the `using` directives: see
+The examples of this documentation omit the `using` directives: see
 [Namespaces](01-Introduction.md#namespaces).
 
 ## Write the logs of an application to files

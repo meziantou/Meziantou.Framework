@@ -15,4 +15,3 @@ description: What the library does not do, so you can plan around it.
   [Rows with a header](03-ReadingCsv.md#rows-with-a-header).
 - **No validation.** Rows can have any number of values. Check `row.Values.Count` when the data must have a fixed number
   of columns.
-- **.NET 10 and later only.**

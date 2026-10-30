@@ -5,7 +5,7 @@ description: Install the package, create paths, combine them and use them with t
 
 ## Install the package
 
-Add the `Meziantou.Framework.FullPath` package to a project that targets .NET 10 or later:
+Add the `Meziantou.Framework.FullPath` package to a project:
 
 ```bash
 dotnet add package Meziantou.Framework.FullPath

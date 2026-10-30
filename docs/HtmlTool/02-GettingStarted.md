@@ -11,7 +11,7 @@ Install it as a global tool:
 dotnet tool install --global Meziantou.Framework.Html.Tool
 ```
 
-The tool needs .NET 10 or later, and the ASP.NET Core runtime of the same version: the .NET SDK includes both. To pin
+The tool needs the ASP.NET Core runtime: the .NET SDK includes it. To pin
 the version of a repository, install it as a local tool instead (`dotnet new tool-manifest`, then
 `dotnet tool install Meziantou.Framework.Html.Tool`) and run it with `dotnet tool run meziantou.html`.
 

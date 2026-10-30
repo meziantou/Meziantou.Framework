@@ -5,7 +5,6 @@ description: Install the package, start a PostgreSQL container for a test, then 
 
 ## Prerequisites
 
-- A project that targets .NET 10 or later.
 - A container runtime on the machine: Docker, Podman, Apple's `container` (macOS) or `wslc` (Windows). Its daemon must
   be running; for instance, run `container system start` once for Apple's `container`. See
   [Container runtimes](06-Runtimes.md).

@@ -13,4 +13,3 @@ description: What the library does not do, so you can plan around it.
   node is allowed where you put it.
 - **Known nodes keep only their modeled attributes.** Writing a parsed document back drops the attributes the classes
   do not have; unknown nodes and marks are kept whole.
-- **.NET 10 and later only.**

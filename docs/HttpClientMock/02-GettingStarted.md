@@ -5,7 +5,7 @@ description: Install the package, map an endpoint, create an HttpClient that cal
 
 ## Install the package
 
-Add the `Meziantou.Framework.HttpClientMock` package to a test project that targets .NET 10 or later:
+Add the `Meziantou.Framework.HttpClientMock` package to a test project:
 
 ```bash
 dotnet add package Meziantou.Framework.HttpClientMock

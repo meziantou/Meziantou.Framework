@@ -31,7 +31,7 @@ Reference the package and set `PublicApiGeneratorOutputPath`, the only required 
 - A build that generates or checks the API files fails when `PublicApiGeneratorOutputPath` is not set.
 
 The files are written after the `Build` target, from the assembly the build produced. Design-time builds, such as the
-ones of your IDE, do not generate them. The MSBuild task is a .NET 10 assembly: use the .NET 10 SDK or later.
+ones of your IDE, do not generate them.
 
 ## Options
 

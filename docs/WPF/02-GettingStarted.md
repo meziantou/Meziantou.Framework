@@ -5,13 +5,13 @@ description: Install Meziantou.Framework.WPF in a WPF application and reference 
 
 ## Install the package
 
-Add the `Meziantou.Framework.WPF` package to a WPF application that targets .NET 10 or later:
+Add the `Meziantou.Framework.WPF` package to a WPF application:
 
 ```bash
 dotnet add package Meziantou.Framework.WPF
 ```
 
-The package targets `net10.0-windows`, so the project must target Windows and enable WPF:
+The package targets Windows, so the project must target Windows and enable WPF:
 
 ```xml
 <PropertyGroup>

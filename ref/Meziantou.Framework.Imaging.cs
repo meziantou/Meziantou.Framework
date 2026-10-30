@@ -3135,11 +3135,13 @@ namespace Meziantou.Framework.Imaging.Formats
     public sealed class WebPEncoder : Meziantou.Framework.Imaging.Formats.ImageEncoder
     {
         public bool AllowBitDepthReduction { get => throw null; init { } }
+        public int AlphaQuality { get => throw null; init { } }
         public bool ClearTransparentColors { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Formats.WebPCompression Compression { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Formats.FrameDurationRounding DurationRounding { get => throw null; init { } }
         public int Effort { get => throw null; init { } }
         public override Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
+        public int NearLossless { get => throw null; init { } }
         public int Quality { get => throw null; init { } }
     }
 }

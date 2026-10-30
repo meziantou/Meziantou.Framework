@@ -4278,19 +4278,35 @@ public static void SaveProgressiveJpeg(string sourcePath, string jpegPath)
 
 `WebPEncoder.Compression` chooses the bitstream for every frame: `Lossless` (the
 default) keeps every 8-bit sample, including the colors of fully transparent pixels (`ClearTransparentColors` opts into
-transparent black); `Lossy` is VP8 with 4:2:0 chroma, controlled by `Quality` (0-100), and keeps alpha losslessly.
-`Effort` (0-9, default 5) trades encoding time for size and never changes lossless pixels. Gray images are stored as RGB;
-16-bit images need `AllowBitDepthReduction`.
+transparent black); `Lossy` is VP8 with 4:2:0 chroma, controlled by `Quality` (0-100), and keeps alpha losslessly unless
+`AlphaQuality` is below 100. `NearLossless` (below 100) lets lossless output round the colors of edges and texture by a
+bounded amount. `Effort` (0-9, default 5) trades encoding time for size and never changes lossless pixels. Gray images
+are stored as RGB; 16-bit images need `AllowBitDepthReduction`.
 
-Lossy output first tries 4x4 luma prediction from effort 2. If the modes exceed the VP8 first-partition limit
-(524,287 bytes), it retries with 16x16 prediction only, at the same quantizer. This can change the decoded quality and
-file size; `Quality` is not a target distortion guarantee. If that partition still does not fit, encoding throws
-`UnsupportedImageFeatureException`: use lossless output or reduce the image dimensions.
+At effort 2 and above, lossy encoding tries 4x4 luma prediction. The modes are stored in the VP8 first partition, at
+most 524,287 bytes. When they do not fit, which only happens for very large detailed images (photographs of about 40
+megapixels and more at high quality), the frame is encoded once more with a budget for the mode bits: the macroblocks where 4x4 prediction gains
+least switch to cheaper modes, spread over the whole image. The quantizer stays the same, so the decoded quality
+decreases gradually with the image size instead of dropping at a threshold, and every size up to 16,383 x 16,383 fits.
 
 The managed encoder makes its own prediction and entropy-coding decisions: lossless output uses one prefix-code group
-(no spatial entropy image), and lossy output uses one quantizer for the frame and one token partition. It is not libwebp. No general file-size,
-speed or perceptual-quality comparison with libwebp is guaranteed, and quality/effort numbers are not interchangeable
-between encoders. Compare representative images at matched decoded quality for a lossy size comparison.
+(no spatial entropy image), and lossy output uses one quantizer for the frame (no adaptive quantization) and one token
+partition. It is not libwebp, and its `Quality` scale is not `cwebp -q`. Measured against cwebp 1.5.0 with its default
+settings (which adapt the quantizer to the content) on six photographs, lossy output is about 6% smaller at equal luma
+PSNR, the same size at equal SSIM, and 2% larger at equal SSIMULACRA 2 on average (18% larger on the most textured
+photograph); on a synthetic user-interface image it is 9-24% smaller. The same decoded quality needs a higher `Quality`
+here:
+
+| `cwebp -q` | 10 | 25 | 50 | 75 | 90 | 95 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `Quality` of equal luma PSNR (photographs) | 41 | 54 | 70 | 80 | 93 | 97 |
+
+These are averages: the correspondence varies with the content, and no comparison is guaranteed for a given image.
+Compare representative images at matched decoded quality for a lossy size comparison.
+
+Hidden colors cost almost nothing in lossy output: the fully transparent areas are filled with one value that the
+prediction reproduces. The alpha filter (none, horizontal, vertical or gradient) is the one whose lossless stream is
+smallest.
 
 Lossless encoding works on one frame at a time. Its working memory counts against `MaxLiveAllocationBytes`: a copy of
 the frame (4 bytes per pixel), the hash chains of the LZ77 parse (4 bytes per pixel, released before the output is

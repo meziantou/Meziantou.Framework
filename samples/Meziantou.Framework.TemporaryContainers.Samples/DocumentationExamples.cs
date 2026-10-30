@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Meziantou.Framework.TemporaryContainers.Samples;
 
-// The examples of docs/20-TemporaryContainers. They start containers, which needs a container runtime and pulls images,
+// The examples of docs/TemporaryContainers. They start containers, which needs a container runtime and pulls images,
 // so they are compiled but not run. The tests of TemporaryContainers cover the same calls.
 public static class DocumentationExamples
 {

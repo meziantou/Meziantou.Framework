@@ -977,6 +977,30 @@ public sealed class TiffCodecTests
         await InputVariants.AssertEncodedByteLimitBoundaryAsync(variant, TwoPages(), ImageFormat.Tiff, XunitCancellationToken);
     }
 
+    [Theory]
+    [MemberData(nameof(BufferedVariants))]
+    public async Task ABufferedInputJustAboveAGrowthBoundaryIsNotOverAllocated(InputVariant variant)
+    {
+        // The file is just above 64 KiB, a step of the doubling read buffer
+        var data = new TiffFileBuilder()
+            .AddPage(new TiffPageSpec { Width = 260, Height = 260, Samples = [.. Enumerable.Range(0, 260 * 260).Select(static value => (byte)value)] })
+            .Build();
+        var options = new ImageDecodeOptions { Configuration = new ImageConfiguration { Limits = new ImageResourceLimits { MaxEncodedBytes = data.Length } } };
+        var (expected, spanPeak) = await LoadMeasuringPeakAsync(InputVariant.Span, data, options);
+        var (actual, peak) = await LoadMeasuringPeakAsync(variant, data, options);
+        Assert.Equal(expected, actual);
+
+        // A span is decoded in place; a stream is buffered up to its length, never into a doubled buffer
+        Assert.InRange(peak - spanPeak, 0, Internals.SlabPool.Shared.GetRentCapacity(data.Length + 1));
+
+        static async Task<(byte[] Pixels, long PeakLiveBytes)> LoadMeasuringPeakAsync(InputVariant variant, byte[] data, ImageDecodeOptions options)
+        {
+            using var tracking = new Internals.AllocationTracking();
+            using var image = await InputVariants.LoadAsync(variant, data, ImageFormat.Tiff, options, XunitCancellationToken);
+            return (GetBytes(image), tracking.Scopes.Max(static scope => scope.GetDiagnostics().PeakLiveBytes));
+        }
+    }
+
     [Fact]
     public void ASequentialReaderRejectsTiffExplicitly()
     {

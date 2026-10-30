@@ -2,7 +2,7 @@ using System.Numerics;
 
 namespace Meziantou.Framework.Imaging.Samples;
 
-/// <summary>Examples of the documentation site (docs/01-Imaging/06-Processing), run by DocumentationExampleTests.</summary>
+/// <summary>Examples of the documentation site (docs/Imaging/06-Processing), run by DocumentationExampleTests.</summary>
 internal static class ProcessingExamples
 {
     /// <summary>Processes one frame of an animation and leaves the other frames as they are.</summary>

@@ -23,6 +23,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </remarks>
 internal sealed class ToneCurveMapper : IDisposable
 {
+    /// <summary>The number of bins of the histogram of a tile when it is clipped: one per level of 8-bit samples.</summary>
+    internal const int ClipBinCount = 256;
+
     private readonly PixelFormat _format;
     private readonly int _bytesPerPixel;
     private readonly int _width;
@@ -251,10 +254,15 @@ internal sealed class ToneCurveMapper : IDisposable
     }
 
     /// <summary>
-    /// The mapping of a tile of an adaptive equalization: the histogram is clipped (see
-    /// <see cref="HistogramEqualizationOptions.ClipLimit"/>), then <c>round(cdf(v) * max / n)</c>. A tile without counted
+    /// The mapping of a tile of an adaptive equalization: <c>round(cdf(v) * max / n)</c>, where the histogram is clipped in
+    /// <see cref="ClipBinCount"/> bins (see <see cref="HistogramEqualizationOptions.ClipLimit"/>). A tile without counted
     /// sample gives the identity.
     /// </summary>
+    /// <remarks>
+    /// With 8-bit samples, each bin is one level. With 16-bit samples, each bin covers 256 levels: the samples it keeps
+    /// after the clip follow the histogram of its levels, and the samples it gets from the excess are spread evenly over its
+    /// levels. Without clip, the mapping is that of the histogram of the levels.
+    /// </remarks>
     internal void BuildTileTable(Span<long> histogram, Span<ushort> table)
     {
         var total = Sum(histogram);
@@ -264,12 +272,54 @@ internal sealed class ToneCurveMapper : IDisposable
             return;
         }
 
-        ClipHistogram(histogram, total, _clipLimit);
-        var cumulative = 0L;
-        for (var level = 0; level < table.Length; level++)
+        var levelsPerBin = histogram.Length / ClipBinCount;
+        if (levelsPerBin == 1)
         {
-            cumulative += histogram[level];
-            table[level] = Scale(cumulative, _max, total);
+            ClipHistogram(histogram, total, _clipLimit);
+            var cumulative = 0L;
+            for (var level = 0; level < table.Length; level++)
+            {
+                cumulative += histogram[level];
+                table[level] = Scale(cumulative, _max, total);
+            }
+
+            return;
+        }
+
+        Span<long> counts = stackalloc long[2 * ClipBinCount];
+        var binCounts = counts[..ClipBinCount];
+        var clippedCounts = counts[ClipBinCount..];
+        for (var bin = 0; bin < ClipBinCount; bin++)
+        {
+            binCounts[bin] = Sum(histogram.Slice(bin * levelsPerBin, levelsPerBin));
+        }
+
+        binCounts.CopyTo(clippedCounts);
+        var limit = ClipHistogram(clippedCounts, total, _clipLimit);
+
+        // In units of 1 / (count * levelsPerBin) samples, the cdf of the i-th level of a bin of count samples is
+        // before * count * levelsPerBin + kept * fine * levelsPerBin + added * (i + 1) * count, where fine is the number
+        // of samples of the bin up to that level
+        var before = 0L;
+        for (var bin = 0; bin < ClipBinCount; bin++)
+        {
+            var count = (ulong)Math.Max(binCounts[bin], 1);
+            var kept = Math.Min(binCounts[bin], limit);
+            var added = clippedCounts[bin] - kept;
+            var unit = (UInt128)count * (uint)levelsPerBin;
+            var start = (UInt128)(ulong)before * unit;
+            var denominator = (UInt128)(ulong)total * unit;
+            var keptWeight = (UInt128)(ulong)kept * (uint)levelsPerBin;
+            var addedWeight = (UInt128)(ulong)added * count;
+            var fine = 0L;
+            for (var i = 0; i < levelsPerBin; i++)
+            {
+                var level = (bin * levelsPerBin) + i;
+                fine += histogram[level];
+                table[level] = Scale(start + (keptWeight * (ulong)fine) + (addedWeight * (uint)(i + 1)), _max, denominator);
+            }
+
+            before += clippedCounts[bin];
         }
     }
 
@@ -279,12 +329,13 @@ internal sealed class ToneCurveMapper : IDisposable
     /// <c>r</c> of the division is given one sample at a time to every <c>max(1, floor(bins / r))</c>-th bin, from bin 0.
     /// The total is kept.
     /// </summary>
-    internal static void ClipHistogram(Span<long> histogram, long total, double clipLimit)
+    /// <returns>The largest number of samples a bin keeps, or <see cref="long.MaxValue"/> when nothing is clipped.</returns>
+    internal static long ClipHistogram(Span<long> histogram, long total, double clipLimit)
     {
         var bins = histogram.Length;
         var limitValue = Math.Floor(clipLimit * total / bins);
         if (!(limitValue < total))
-            return;
+            return long.MaxValue;
 
         var limit = Math.Max(1L, (long)limitValue);
         var excess = 0L;
@@ -298,7 +349,7 @@ internal sealed class ToneCurveMapper : IDisposable
         }
 
         if (excess == 0)
-            return;
+            return limit;
 
         var share = excess / bins;
         var remainder = excess % bins;
@@ -318,6 +369,8 @@ internal sealed class ToneCurveMapper : IDisposable
                 histogram[level]++;
             }
         }
+
+        return limit;
     }
 
     /// <summary>
@@ -365,7 +418,11 @@ internal sealed class ToneCurveMapper : IDisposable
 
     /// <summary>Gets <c>round(numerator * max / denominator)</c>, ties upward, for a numerator from 0 to the denominator.</summary>
     private static ushort Scale(long numerator, int max, long denominator)
-        => (ushort)((((UInt128)(ulong)numerator * (uint)max * 2) + (ulong)denominator) / ((UInt128)(ulong)denominator * 2));
+        => Scale((UInt128)(ulong)numerator, max, (UInt128)(ulong)denominator);
+
+    /// <summary>Gets <c>round(numerator * max / denominator)</c>, ties upward, for a numerator from 0 to the denominator.</summary>
+    private static ushort Scale(UInt128 numerator, int max, UInt128 denominator)
+        => (ushort)(((numerator * (uint)max * 2) + denominator) / (denominator * 2));
 
     private static long Sum(ReadOnlySpan<long> histogram)
     {

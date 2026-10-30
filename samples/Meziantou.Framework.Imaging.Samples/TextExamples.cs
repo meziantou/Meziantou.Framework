@@ -3,7 +3,7 @@ using Meziantou.Framework.Imaging.Typography;
 
 namespace Meziantou.Framework.Imaging.Samples;
 
-/// <summary>Examples of the documentation site (docs/01-Imaging/08-Text), run by DocumentationExampleTests.</summary>
+/// <summary>Examples of the documentation site (docs/Imaging/08-Text), run by DocumentationExampleTests.</summary>
 internal static class TextExamples
 {
     /// <summary>A stack of fonts: Latin letters, Japanese ideographs and a color emoji in one line.</summary>

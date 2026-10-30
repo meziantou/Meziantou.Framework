@@ -2,7 +2,7 @@ using System.Runtime.Versioning;
 
 namespace Meziantou.Framework.Win32.Jobs.Samples;
 
-// Examples of the documentation (docs/71-Win32). They restrict the processes of a job, so they are compiled in CI to
+// Examples of the documentation (docs/Win32). They restrict the processes of a job, so they are compiled in CI to
 // keep the documentation in sync with the API, but not run.
 [SupportedOSPlatform("windows10.0.10240")]
 public static class JobObjectExamples

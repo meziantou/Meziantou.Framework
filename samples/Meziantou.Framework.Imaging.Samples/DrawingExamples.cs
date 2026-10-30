@@ -2,7 +2,7 @@ using Meziantou.Framework.Imaging.Drawing;
 
 namespace Meziantou.Framework.Imaging.Samples;
 
-/// <summary>Examples of the documentation site (docs/01-Imaging/07-Drawing), run by DocumentationExampleTests.</summary>
+/// <summary>Examples of the documentation site (docs/Imaging/07-Drawing), run by DocumentationExampleTests.</summary>
 internal static class DrawingExamples
 {
     /// <summary>The shapes a canvas fills and strokes directly, without a path.</summary>

@@ -8,7 +8,7 @@ using Xunit.Sdk;
 namespace Meziantou.Framework.Pdf.Tests.Documentation;
 
 /// <summary>
-/// Renders the images of the documentation site (docs/08-Pdf/*/images): each test runs an example that creates a
+/// Renders the images of the documentation site (docs/Pdf/*/images): each test runs an example that creates a
 /// document, renders its first page with <see cref="PdfRenderer"/>, and compares the pixels with the committed PNG. With
 /// the environment variable <see cref="UpdateVariable"/> set to 1, a missing or different image is written instead
 /// (see docs/AGENTS.md).
@@ -20,7 +20,7 @@ public sealed class DocumentationImageTests : IDisposable
     private const string ReadingAndModifying = "05-ReadingAndModifying";
     private const string Rendering = "06-Rendering";
 
-    private static readonly FullPath DocumentationRoot = RepositoryPaths.Root / "docs" / "08-Pdf";
+    private static readonly FullPath DocumentationRoot = RepositoryPaths.Root / "docs" / "Pdf";
     private static readonly FullPath RegularFont = RepositoryPaths.Fonts / "noto-sans" / "NotoSans-Regular.subset.ttf";
 
     // The bundled fonts replace the standard fonts: the pixels do not depend on the fonts of the machine
@@ -127,7 +127,7 @@ public sealed class DocumentationImageTests : IDisposable
         });
     }
 
-    /// <summary>Runs an example that writes an image, and compares it with docs/08-Pdf/<paramref name="group"/>/images/<paramref name="name"/>.png.</summary>
+    /// <summary>Runs an example that writes an image, and compares it with docs/Pdf/<paramref name="group"/>/images/<paramref name="name"/>.png.</summary>
     private void AssertImage(string group, string name, Action<string> draw)
     {
         var actualPath = GetPath(name + ".png");

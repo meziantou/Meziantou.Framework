@@ -1,4 +1,6 @@
+using System.Buffers.Binary;
 using System.IO.Compression;
+using Meziantou.Framework.Hashing;
 using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.TestHarness.Adapters;
 using Meziantou.Framework.Imaging.TestHarness.Streams;
@@ -207,6 +209,75 @@ public sealed class InputLayerTests
         Assert.Equal(40, endingInput.BufferedLength);
     }
 
+    [Theory]
+    [InlineData(300, false, long.MaxValue, 256, 512)] // Nothing tells the length: the buffer doubles
+    [InlineData(300, false, 300, 256, 300)] // The limit bounds the growth, and an input as long as the limit completes
+    [InlineData(300, false, 1000, 256, 512)] // A limit the doubling stays within does not change it
+    [InlineData(300, true, long.MaxValue, 256, 301)] // The known length bounds the growth, plus the byte that finds the end
+    [InlineData(300, true, 300, 256, 300)]
+    [InlineData(256, true, long.MaxValue, 128, 257)] // A doubling that reaches the end takes the byte that finds it
+    [InlineData(256, false, 256, 128, 256)]
+    [InlineData(40, true, long.MaxValue, 0, 41)] // A short input never needs the initial capacity
+    public async Task WholeInputGrowthIsBoundedByTheBytesThatCanStillBeRead(int length, bool seekable, long maxEncodedBytes, int previousCapacity, int expectedCapacity)
+    {
+        var data = Enumerable.Range(0, length).Select(value => (byte)value).ToArray();
+        foreach (var asynchronous in new[] { false, true })
+        {
+            var context = CreateContext(maxEncodedBytes);
+            using var stream = new TestInputStream(data) { Seekable = seekable, MaxBytesPerRead = 7, ForbidSynchronousReads = asynchronous, ForbidAsynchronousReads = !asynchronous };
+            using (var input = new ImageInputBuffer(stream, ownsStream: false, context, initialCapacity: 64))
+            {
+                using var parser = new WholeInputParser<int>(context, ImageFormat.Tiff, source => (int)source.Length);
+                var result = asynchronous ? await ImageInputPump.RunAsync(input, parser, context) : ImageInputPump.Run(input, parser, context);
+                Assert.Equal(length, result);
+                Assert.Equal(expectedCapacity, input.Capacity);
+
+                // The old and new buffers overlap while the bytes are copied, then only the new one stays charged
+                Assert.Equal(context.Scope.GetChargedSize(expectedCapacity), context.Scope.GetLiveBytes(AllocationKind.DecoderState));
+                Assert.Equal(context.Scope.GetChargedSize(previousCapacity) + context.Scope.GetChargedSize(expectedCapacity), context.Scope.GetDiagnostics().PeakLiveBytes);
+            }
+
+            Assert.Equal(0, context.Scope.LiveBytes);
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task WholeInputGrowthBoundedByTheLimitStillReportsALongerInput(bool seekable)
+    {
+        var data = new byte[300];
+        foreach (var asynchronous in new[] { false, true })
+        {
+            var context = CreateContext(299);
+            using var stream = new TestInputStream(data) { Seekable = seekable, ForbidSynchronousReads = asynchronous, ForbidAsynchronousReads = !asynchronous };
+            using var input = new ImageInputBuffer(stream, ownsStream: false, context, initialCapacity: 64);
+            using var parser = new WholeInputParser<int>(context, ImageFormat.Tiff, source => (int)source.Length);
+            var exception = asynchronous
+                ? await Assert.ThrowsAsync<ImageResourceLimitException>(async () => await ImageInputPump.RunAsync(input, parser, context))
+                : Assert.Throws<ImageResourceLimitException>(() => ImageInputPump.Run(input, parser, context));
+            Assert.Equal(ImageResourceLimitKind.EncodedBytes, exception.Kind);
+            Assert.Equal(299, exception.Limit);
+            Assert.Equal(300, exception.Requested);
+            Assert.Equal(299, input.Capacity);
+            Assert.Equal(300, stream.BytesRead);
+        }
+    }
+
+    [Fact]
+    public void BufferGrowsAgainWhenAStreamIsLongerThanItsReportedLength()
+    {
+        var data = Enumerable.Range(0, 200).Select(value => (byte)value).ToArray();
+        var context = CreateContext(long.MaxValue);
+        using var stream = new GrowingStream(data, reportedLength: 50);
+        using var input = new ImageInputBuffer(stream, ownsStream: false, context, initialCapacity: 64);
+        using var parser = new WholeInputParser<int>(context, ImageFormat.Tiff, source => (int)source.Length);
+        Assert.Equal(200, ImageInputPump.Run(input, parser, context));
+
+        // The first buffer holds the reported length and the byte that finds the end; past it, the buffer doubles
+        Assert.Equal(204, input.Capacity);
+    }
+
     [Fact]
     public void DetectionNeedsTheFullPrefixWithinTheLimit()
     {
@@ -267,6 +338,48 @@ public sealed class InputLayerTests
         var exception = Assert.Throws<ImageResourceLimitException>(() => BoundedInflater.TryInflateZlib(compressed, limited));
         Assert.Equal(ImageResourceLimitKind.MetadataBytes, exception.Kind);
         Assert.True(limited.MetadataBytes <= 10_000);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(4)]
+    [InlineData(5)]
+    [InlineData(100)]
+    [InlineData(4096)]
+    [InlineData(8192)]
+    [InlineData(8193)]
+    [InlineData(65_536)]
+    [InlineData(1_000_000)]
+    public void BoundedInflaterRejectsBytesAfterTheRawDeflateDatastream(int trailingLength)
+    {
+        var payload = Enumerable.Range(0, 20_000).Select(value => (byte)(value % 7)).ToArray();
+        var compressed = RawDeflate(payload);
+        var tracker = new InputResourceTracker(ImageResourceLimits.Default);
+        Assert.Equal(payload, BoundedInflater.TryInflateRawDeflate(compressed, tracker));
+        Assert.Equal(payload.Length, tracker.MetadataBytes);
+
+        // The bytes after the final block may exceed the read-ahead of the inflater, which then leaves them unread
+        var adler = new byte[4];
+        BinaryPrimitives.WriteUInt32BigEndian(adler, Adler32.Compute(payload));
+        foreach (var trailing in new[] { new byte[trailingLength], Enumerable.Range(0, trailingLength).Select(value => (byte)(adler[value % 4] ^ value)).ToArray() })
+        {
+            Assert.Null(BoundedInflater.TryInflateRawDeflate([.. compressed, .. trailing], new InputResourceTracker(ImageResourceLimits.Default)));
+            Assert.Null(BoundedInflater.TryInflateRawDeflate([.. compressed, .. adler, .. trailing], new InputResourceTracker(ImageResourceLimits.Default)));
+        }
+
+        Assert.Null(BoundedInflater.TryInflateRawDeflate([.. compressed, .. adler], new InputResourceTracker(ImageResourceLimits.Default)));
+        Assert.Null(BoundedInflater.TryInflateRawDeflate(compressed.AsSpan(0, compressed.Length - 1), new InputResourceTracker(ImageResourceLimits.Default)));
+
+        static byte[] RawDeflate(byte[] data)
+        {
+            var output = new MemoryStream();
+            using (var deflate = new DeflateStream(output, CompressionLevel.Optimal, leaveOpen: true))
+            {
+                deflate.Write(data);
+            }
+
+            return output.ToArray();
+        }
     }
 
     [Fact]
@@ -440,6 +553,12 @@ public sealed class InputLayerTests
         }
 
         public override int GetResult() => required;
+    }
+
+    /// <summary>A seekable stream that reports a shorter length than it has bytes, like a file that is still being written.</summary>
+    private sealed class GrowingStream(byte[] data, long reportedLength) : MemoryStream(data, writable: false)
+    {
+        public override long Length => reportedLength;
     }
 
     private sealed class FeedStream : Stream

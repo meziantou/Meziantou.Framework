@@ -363,6 +363,14 @@ internal sealed class Jpeg2000TileDecoder : IDisposable
     }
 
     /// <summary>
+    /// Gets the shift of the region of interest that the dequantization undoes. A coefficient of the region has a magnitude
+    /// of at least 2^s (H.2), which a magnitude of at most <see cref="Jpeg2000Format.MaxBitPlanes"/> bit-planes never
+    /// reaches when s is that number: every coefficient is then in the background and keeps its magnitude.
+    /// </summary>
+    /// <param name="regionShift">The shift of the region of interest; 0 when there is none.</param>
+    private static int GetStoredRegionShift(int regionShift) => regionShift < Jpeg2000Format.MaxBitPlanes ? regionShift : 0;
+
+    /// <summary>
     /// Dequantizes coefficients of the reversible path: the magnitude (twice the magnitude, from the block decoders) is
     /// divided by 2^s when it is at least 2^(s+1), s being the shift of the region of interest, then halved, and the sign
     /// is applied.
@@ -373,9 +381,10 @@ internal sealed class Jpeg2000TileDecoder : IDisposable
     internal static void StoreReversible(ReadOnlySpan<int> source, Span<int> destination, int regionShift)
     {
         destination = destination[..source.Length];
+        regionShift = GetStoredRegionShift(regionShift);
         var regionThreshold = regionShift == 0 ? int.MaxValue : 1 << (regionShift + 1);
         var i = 0;
-        if (Vector128.IsHardwareAccelerated && regionShift <= 30)
+        if (Vector128.IsHardwareAccelerated)
         {
             // The sign mask is 0 or -1: (m ^ mask) - mask is m or -m
             var thresholds = Vector128.Create(regionThreshold);
@@ -396,6 +405,7 @@ internal sealed class Jpeg2000TileDecoder : IDisposable
     /// <summary>The scalar reference of <see cref="StoreReversible"/>.</summary>
     internal static void StoreReversibleScalar(ReadOnlySpan<int> source, Span<int> destination, int regionShift)
     {
+        regionShift = GetStoredRegionShift(regionShift);
         var regionThreshold = regionShift == 0 ? int.MaxValue : 1 << (regionShift + 1);
         for (var x = 0; x < source.Length; x++)
         {
@@ -422,9 +432,10 @@ internal sealed class Jpeg2000TileDecoder : IDisposable
     internal static void StoreIrreversible(ReadOnlySpan<int> source, Span<float> destination, int regionShift, float halfStep)
     {
         destination = destination[..source.Length];
+        regionShift = GetStoredRegionShift(regionShift);
         var regionThreshold = regionShift == 0 ? int.MaxValue : 1 << (regionShift + 1);
         var i = 0;
-        if (Vector128.IsHardwareAccelerated && regionShift <= 30)
+        if (Vector128.IsHardwareAccelerated)
         {
             // The conversion to single precision rounds as the scalar one does, and the negation of the product is the
             // exchange of its sign bit
@@ -446,6 +457,7 @@ internal sealed class Jpeg2000TileDecoder : IDisposable
     /// <summary>The scalar reference of <see cref="StoreIrreversible"/>.</summary>
     internal static void StoreIrreversibleScalar(ReadOnlySpan<int> source, Span<float> destination, int regionShift, float halfStep)
     {
+        regionShift = GetStoredRegionShift(regionShift);
         var regionThreshold = regionShift == 0 ? int.MaxValue : 1 << (regionShift + 1);
         for (var x = 0; x < source.Length; x++)
         {

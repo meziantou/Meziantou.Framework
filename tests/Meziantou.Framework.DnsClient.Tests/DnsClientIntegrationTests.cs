@@ -615,7 +615,7 @@ public sealed class DnsClientIntegrationTests
     }
 
     // The tests below query a DNS server that runs on the loopback interface, so they do not depend on the network.
-    // They hold the examples of the documentation (docs/73-Dns).
+    // They hold the examples of the documentation (docs/Dns).
 
     [Fact]
     public async Task Local_Query_ReturnsTheAddresses()

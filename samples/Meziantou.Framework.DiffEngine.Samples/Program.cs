@@ -1,4 +1,4 @@
-// The examples of the documentation (docs/80-DiffEngine) are compiled in CI. They start a diff tool, so they do not
+// The examples of the documentation (docs/DiffEngine) are compiled in CI. They start a diff tool, so they do not
 // run in tests.
 using System.Diagnostics;
 using Meziantou.Framework.DiffEngine;

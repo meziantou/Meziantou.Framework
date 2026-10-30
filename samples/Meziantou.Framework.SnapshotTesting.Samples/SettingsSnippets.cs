@@ -1,6 +1,6 @@
 namespace Meziantou.Framework.SnapshotTesting.Samples;
 
-/// <summary>The examples of docs/14-SnapshotTesting that change the global settings, so they cannot run as tests.</summary>
+/// <summary>The examples of docs/SnapshotTesting that change the global settings, so they cannot run as tests.</summary>
 public static class SettingsSnippets
 {
     public static void ForceUpdateSnapshots()

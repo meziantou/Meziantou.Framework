@@ -2,7 +2,7 @@ using Meziantou.Extensions.Logging.Xunit.v3;
 using Meziantou.Framework.TemporaryContainers.Samples;
 using Xunit;
 
-// The xUnit examples of docs/20-TemporaryContainers. This project is not a test project: the tests are compiled but
+// The xUnit examples of docs/TemporaryContainers. This project is not a test project: the tests are compiled but
 // never discovered nor run. The documentation shows the fixtures and the test classes that use them as top-level types,
 // so they share this file.
 #pragma warning disable MA0048 // File name must match type name

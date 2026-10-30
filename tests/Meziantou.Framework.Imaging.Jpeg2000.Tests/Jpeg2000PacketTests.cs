@@ -267,11 +267,90 @@ public sealed class Jpeg2000PacketTests
         Assert.Equal((2L, 1L, 5L, 3L), (first.Components[1].X0, first.Components[1].Y0, first.Components[1].X1, first.Components[1].Y1));
     }
 
+    [Theory]
+    [InlineData(0, 0, 30)]
+    [InlineData(0, 1, 30)]
+    [InlineData(1, 0, 30)]
+    [InlineData(2, 0, 29)]
+    [InlineData(2, 2, 27)]
+    [InlineData(7, 24, 0)]
+    public void TheSubBandsHaveTheValidatedNumberOfBitPlanes(int guardBits, int exponent, int regionShift)
+    {
+        // E-2: guard bits and exponent give at most 30 bit-planes here, raised by the shift of the region of interest. With
+        // no guard bit and a zero exponent, the clamped count of the sub-band (0) is the one the validation checks.
+        var expected = Math.Max(0, guardBits + exponent - 1) + regionShift;
+        Assert.Equal(expected, Jpeg2000TileCoding.GetBitPlanes(guardBits, exponent, regionShift));
+
+        var siz = new Jpeg2000Siz(0, 8, 8, 0, 0, 8, 8, 0, 0, [new Jpeg2000ComponentSize(8, IsSigned: false, 1, 1)]);
+        var coding = Jpeg2000TileCoding.Resolve(siz, CreateHeaders(levels: 2, guardBits, exponent, regionShift), tile: null, capabilities: null);
+        using var geometry = Jpeg2000TileGeometry.Create(new AllocationScope(new ImageResourceLimits()), siz, coding, tileIndex: 0);
+        Assert.HasCount(7, geometry.Bands);
+        foreach (var band in geometry.Bands)
+        {
+            Assert.Equal(expected, band.BitPlanes);
+        }
+    }
+
+    [Theory]
+    [InlineData(0, 0, 31)]
+    [InlineData(0, 1, 31)]
+    [InlineData(1, 0, 31)]
+    [InlineData(2, 0, 30)]
+    [InlineData(0, 0, 255)]
+    [InlineData(7, 24, 1)]
+    public void MoreThanThirtyBitPlanesAreNotSupported(int guardBits, int exponent, int regionShift)
+    {
+        var siz = new Jpeg2000Siz(0, 8, 8, 0, 0, 8, 8, 0, 0, [new Jpeg2000ComponentSize(8, IsSigned: false, 1, 1)]);
+        var headers = CreateHeaders(levels: 2, guardBits, exponent, regionShift);
+        Assert.Equal("bit-planes", Assert.Throws<UnsupportedImageFeatureException>(() => Jpeg2000TileCoding.Resolve(siz, headers, tile: null, capabilities: null)).Feature);
+    }
+
+    [Fact]
+    public void NoCoefficientIsInTheRegionOfInterestOfTheLargestShift()
+    {
+        // H.2: with 30 bit-planes and a shift of 30, every magnitude is below 2^30: none is in the region of interest and
+        // none is divided by 2^30. The block decoders give twice the magnitude, the sign in the most significant bit.
+        int[] source = [0, 2, int.MinValue | 7, (1 << 30) | 3, int.MinValue | (1 << 30), int.MaxValue, 5, int.MinValue | 1, 1 << 29];
+        int[] expected = [0, 1, -3, (1 << 29) | 1, -(1 << 29), int.MaxValue >> 1, 2, 0, 1 << 28];
+        var scalar = new int[source.Length];
+        var vectorized = new int[source.Length];
+        Jpeg2000TileDecoder.StoreReversibleScalar(source, scalar, regionShift: 30);
+        Jpeg2000TileDecoder.StoreReversible(source, vectorized, regionShift: 30);
+        Assert.Equal(expected, scalar);
+        Assert.Equal(expected, vectorized);
+
+        var scalarSingles = new float[source.Length];
+        var vectorizedSingles = new float[source.Length];
+        Jpeg2000TileDecoder.StoreIrreversibleScalar(source, scalarSingles, regionShift: 30, halfStep: 0.5f);
+        Jpeg2000TileDecoder.StoreIrreversible(source, vectorizedSingles, regionShift: 30, halfStep: 0.5f);
+        float[] expectedSingles = [0f, 1f, -3.5f, ((1 << 30) | 3) * 0.5f, -(1 << 29), int.MaxValue * 0.5f, 2.5f, -0.5f, 1 << 28];
+        Assert.Equal(expectedSingles, scalarSingles);
+        Assert.Equal(expectedSingles, vectorizedSingles);
+
+        // One bit-plane fewer, the region of interest starts at 2^29: those magnitudes are divided by 2^29
+        Jpeg2000TileDecoder.StoreReversible(source, vectorized, regionShift: 29);
+        Assert.Equal([0, 1, -3, 1, -1, 1, 2, 0, 1 << 28], vectorized);
+    }
+
     private static Jpeg2000TileGeometry CreateGeometry(int xSize, int ySize, int xOffset, int yOffset, int levels, int blockExponent, byte[]? precincts)
     {
         var siz = new Jpeg2000Siz(0, xSize, ySize, xOffset, yOffset, xSize, ySize, 0, 0, [new Jpeg2000ComponentSize(8, IsSigned: false, 1, 1)]);
         var coding = Jpeg2000TileCoding.Resolve(siz, CreateHeaders(1, levels, blockExponent, precincts), tile: null, capabilities: null);
         return Jpeg2000TileGeometry.Create(new AllocationScope(new ImageResourceLimits()), siz, coding, tileIndex: 0);
+    }
+
+    private static Jpeg2000HeaderSet CreateHeaders(int levels, int guardBits, int exponent, int regionShift)
+    {
+        var bandCount = (3 * levels) + 1;
+        var exponents = new byte[bandCount];
+        exponents.AsSpan().Fill((byte)exponent);
+        var headers = new Jpeg2000HeaderSet(componentCount: 1)
+        {
+            CodingDefaults = new Jpeg2000CodingDefaults(mayUseSop: false, usesEph: false, Jpeg2000CodingDefaults.ProgressionLrcp, layers: 1, usesComponentTransform: false, new Jpeg2000CodingStyle(levels, 6, 6, codeBlockStyle: 0, isReversible: true, precinctSizes: null)),
+            Quantization = new Jpeg2000Quantization(Jpeg2000Quantization.StyleNone, guardBits, exponents, new ushort[bandCount]),
+        };
+        Assert.True(headers.TrySetRegionShift(0, regionShift));
+        return headers;
     }
 
     private static Jpeg2000HeaderSet CreateHeaders(int componentCount, int levels, int blockExponent, byte[]? precincts)

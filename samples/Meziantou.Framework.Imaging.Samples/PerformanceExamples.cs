@@ -2,7 +2,7 @@ using Meziantou.Framework.Imaging.Formats;
 
 namespace Meziantou.Framework.Imaging.Samples;
 
-/// <summary>Examples of the documentation site (docs/01-Imaging/11-Performance.md), run by DocumentationExampleTests.</summary>
+/// <summary>Examples of the documentation site (docs/Imaging/11-Performance.md), run by DocumentationExampleTests.</summary>
 internal static class PerformanceExamples
 {
     /// <summary>A batch tool that processes one large image at a time lets a resize use several threads.</summary>

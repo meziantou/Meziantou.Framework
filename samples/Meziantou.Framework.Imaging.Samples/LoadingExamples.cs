@@ -2,7 +2,7 @@ using Meziantou.Framework.Imaging.Formats;
 
 namespace Meziantou.Framework.Imaging.Samples;
 
-/// <summary>Examples of the documentation site (docs/01-Imaging/04-Concepts and 05-LoadingAndSaving), run by DocumentationExampleTests.</summary>
+/// <summary>Examples of the documentation site (docs/Imaging/04-Concepts and 05-LoadingAndSaving), run by DocumentationExampleTests.</summary>
 internal static class LoadingExamples
 {
     /// <summary>The same image loaded from a file, a stream and bytes in memory.</summary>

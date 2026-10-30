@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 
 namespace TdsServerSamples;
 
-// The examples of docs/18-TdsServer that need a fixed port, certificate files or a long-running host. CI compiles
+// The examples of docs/TdsServer that need a fixed port, certificate files or a long-running host. CI compiles
 // them but does not run them; the examples that can run are in tests/Meziantou.Framework.TdsServer.Tests.
 public static class Examples
 {

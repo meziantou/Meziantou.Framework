@@ -781,7 +781,7 @@ public sealed class JsEngineTests
         #endregion
     }
 
-    // The examples of the documentation site (docs/11-JavaScriptEngine)
+    // The examples of the documentation site (docs/JavaScriptEngine)
     [Fact]
     public void Documentation_HelloWorld()
     {

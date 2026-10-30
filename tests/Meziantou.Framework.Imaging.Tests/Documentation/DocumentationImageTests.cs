@@ -8,7 +8,7 @@ using Xunit.Sdk;
 namespace Meziantou.Framework.Imaging.Tests.Documentation;
 
 /// <summary>
-/// Renders the images of the documentation site (docs/01-Imaging/*/images): each test runs a drawing or text example of
+/// Renders the images of the documentation site (docs/Imaging/*/images): each test runs a drawing or text example of
 /// the samples with fixed inputs, and compares its pixels with the committed PNG. With the environment variable
 /// <see cref="UpdateVariable"/> set to 1, a missing or different image is written instead (see docs/AGENTS.md).
 /// </summary>
@@ -19,10 +19,10 @@ public sealed class DocumentationImageTests : IDisposable
     private const string Text = "08-Text";
     private const string LoadingAndSaving = "05-LoadingAndSaving";
 
-    private static readonly FullPath DocumentationRoot = RepositoryPaths.Root / "docs" / "01-Imaging";
+    private static readonly FullPath DocumentationRoot = RepositoryPaths.Root / "docs" / "Imaging";
 
     /// <summary>The images of the pages of Meziantou.Framework.Fonts, whose examples are tested here.</summary>
-    private static readonly FullPath FontsImages = RepositoryPaths.Root / "docs" / "37-Fonts" / "images";
+    private static readonly FullPath FontsImages = RepositoryPaths.Root / "docs" / "Fonts" / "images";
     private static readonly FullPath RegularFont = FixtureRoot.GetDirectory() / "fonts" / "noto-sans" / "NotoSans-Regular.subset.ttf";
 
     private readonly FullPath _directory = FullPath.GetTempPath() / "Meziantou.Framework.Imaging.Tests" / ("docs-images-" + Guid.NewGuid().ToString("N"));
@@ -373,7 +373,7 @@ public sealed class DocumentationImageTests : IDisposable
     }
     #endregion
 
-    /// <summary>Runs an example and compares the image it writes with docs/01-Imaging/<paramref name="group"/>/images/<paramref name="name"/>.png.</summary>
+    /// <summary>Runs an example and compares the image it writes with docs/Imaging/<paramref name="group"/>/images/<paramref name="name"/>.png.</summary>
     private void AssertImage(string group, string name, Action<string> draw) => AssertImage(DocumentationRoot / group / "images", name, draw);
 
     /// <summary>Runs an example and compares the image it writes with <paramref name="imagesDirectory"/>/<paramref name="name"/>.png.</summary>

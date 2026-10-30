@@ -4,7 +4,7 @@ using Xunit.Sdk;
 namespace Meziantou.Framework.Barcodes.Tests;
 
 /// <summary>
-/// Checks the images of the documentation site (docs/38-Barcodes/images): a test runs an example of the documentation,
+/// Checks the images of the documentation site (docs/Barcodes/images): a test runs an example of the documentation,
 /// and compares the pixels of the PNG it produces with the committed one. With the environment variable
 /// <see cref="UpdateVariable"/> set to 1, a missing or different image is written instead (see docs/AGENTS.md).
 /// </summary>
@@ -13,9 +13,9 @@ internal static class DocumentationImages
     private const string UpdateVariable = "MEZIANTOU_BARCODES_UPDATE_DOCS_IMAGES";
 
     private static readonly FullPath RepositoryRoot = FullPath.FromPath(AppContext.BaseDirectory).FindRequiredGitRepositoryRoot();
-    private static readonly FullPath ImagesDirectory = RepositoryRoot / "docs" / "38-Barcodes" / "images";
+    private static readonly FullPath ImagesDirectory = RepositoryRoot / "docs" / "Barcodes" / "images";
 
-    /// <summary>Compares a PNG file produced by an example with docs/38-Barcodes/images/<paramref name="name"/>.png.</summary>
+    /// <summary>Compares a PNG file produced by an example with docs/Barcodes/images/<paramref name="name"/>.png.</summary>
     public static void AssertPng(string name, byte[] png)
     {
         var expectedPath = ImagesDirectory / (name + ".png");

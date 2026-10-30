@@ -2,7 +2,7 @@ using System.Runtime.Versioning;
 
 namespace Meziantou.Framework.Unix.ControlGroups.Samples;
 
-// Examples of docs/70-UnixControlGroups that depend on the hardware of the machine (block devices, CPUs, memory nodes),
+// Examples of docs/UnixControlGroups that depend on the hardware of the machine (block devices, CPUs, memory nodes),
 // so they are compiled but not run. The other examples of the documentation are tests of ControlGroups.Tests.
 [SupportedOSPlatform("linux")]
 public static class DocumentationExamples

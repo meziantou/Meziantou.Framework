@@ -1051,6 +1051,7 @@ internal sealed class TextLayoutEngine
         isHyphenated = false;
         var withHyphens = _options.Hyphenation != TextHyphenation.None;
         var width = 0.0;
+        var contentWidth = 0.0;
         var previous = from;
         var lastFit = -1;
         var lastFitIsHyphenated = false;
@@ -1062,9 +1063,9 @@ internal sealed class TextLayoutEngine
             if (isSoftHyphen && !withHyphens)
                 continue;
 
-            width = Measure(paragraph, previous, candidate, width);
+            width = Measure(paragraph, previous, candidate, width, ref contentWidth);
             previous = candidate;
-            var lineWidth = width - MeasureTrailingSpaces(paragraph, from, candidate) + (isSoftHyphen ? MeasureHyphen(paragraph, candidate) : 0);
+            var lineWidth = contentWidth + (isSoftHyphen ? MeasureHyphen(paragraph, candidate) : 0);
             if (lineWidth <= available)
             {
                 lastFit = candidate;
@@ -1113,13 +1114,20 @@ internal sealed class TextLayoutEngine
         return width;
     }
 
-    /// <summary>Gets the advance of the white space that ends a range: at the end of a wrapped line, it hangs.</summary>
-    private double MeasureTrailingSpaces(Paragraph paragraph, int from, int to)
+    /// <summary>
+    /// Adds the advances of the characters of a range to a width, and keeps the width at the end of its last character
+    /// that is not white space: the white space that ends a wrapped line hangs. A tabulation has no stored advance, so
+    /// its width is only known from where it is.
+    /// </summary>
+    private double Measure(Paragraph paragraph, int from, int to, double width, ref double contentWidth)
     {
-        var width = 0.0;
-        for (var i = to - 1; i >= from && IsBreakingSpace(_text[i]); i--)
+        for (var i = from; i < to; i++)
         {
-            width += paragraph.Advances[i - paragraph.Start];
+            width = Measure(paragraph, i, i + 1, width);
+            if (!IsBreakingSpace(_text[i]) || IsInsideCombined(paragraph, i))
+            {
+                contentWidth = width;
+            }
         }
 
         return width;
@@ -1273,16 +1281,17 @@ internal sealed class TextLayoutEngine
         {
             var position = from;
             var width = 0.0;
+            var contentWidth = 0.0;
             var text = _text.AsSpan(0, to);
             while (position < to)
             {
                 var next = _options.Trimming == TextTrimming.Word
                     ? NextBreak(paragraph, position, to)
                     : GetUnitEnd(paragraph, text, position);
-                width = Measure(paragraph, position, next, width);
+                width = Measure(paragraph, position, next, width, ref contentWidth);
                 var item = FindItem(paragraph, next - 1) ?? FindItem(paragraph, from);
                 var ellipsis = item is null ? 0 : MeasureText(item, GetEllipsis(item));
-                if (width - MeasureTrailingSpaces(paragraph, from, next) + ellipsis > available)
+                if (contentWidth + ellipsis > available)
                     break;
 
                 best = next;

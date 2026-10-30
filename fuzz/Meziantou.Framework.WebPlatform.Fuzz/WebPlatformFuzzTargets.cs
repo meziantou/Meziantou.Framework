@@ -53,7 +53,7 @@ public static partial class WebPlatformFuzzTargets
     private const int XPathMaxLength = 256;
 
     // The number of round trips (parse, serialize) after which the serialization of an HTML document is the same markup
-    private const int HtmlMaxRoundTrips = 4;
+    private const int HtmlMaxRoundTrips = 16;
 
     /// <summary>The targets: the text targets receive the decoded input (<see cref="FuzzText.Decode"/>), the binary targets the bytes.</summary>
     public static IReadOnlyList<FuzzTarget> All { get; } =

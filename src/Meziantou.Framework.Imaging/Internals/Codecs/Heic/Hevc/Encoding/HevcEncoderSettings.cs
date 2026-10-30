@@ -25,6 +25,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// an entry point, which decoders can decode concurrently. The coding decisions are the same as without wavefront, apart
 /// from the rates, which are those of the context variables of the wavefront.
 /// </param>
+/// <param name="OptimizeQuantization">Whether lossy transform blocks search quantization rounding offsets using rate and distortion.</param>
 [StructLayout(LayoutKind.Auto)]
 internal readonly record struct HevcEncoderSettings(
     int Width,
@@ -41,4 +42,5 @@ internal readonly record struct HevcEncoderSettings(
     int Quality,
     int Effort,
     int KeyFrameInterval = 0,
-    bool Wavefront = false);
+    bool Wavefront = false,
+    bool OptimizeQuantization = false);

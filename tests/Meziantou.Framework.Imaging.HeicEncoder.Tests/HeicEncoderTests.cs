@@ -53,6 +53,7 @@ public sealed class HeicEncoderTests
         Assert.Equal(ImageFormat.Heic, encoder.Format);
         Assert.Equal(HeicCompression.Lossless, encoder.Compression);
         Assert.Equal(75, encoder.Quality);
+        Assert.False(encoder.OptimizeQuantization);
         Assert.Equal(5, encoder.Effort);
         Assert.Equal(HeicChromaSubsampling.Auto, encoder.ChromaSubsampling);
         Assert.Null(encoder.BitDepth);
@@ -651,6 +652,58 @@ public sealed class HeicEncoderTests
             Assert.True(error > previousError, string.Create(CultureInfo.InvariantCulture, $"quality {quality}: error {error}, the previous quality {previousError}"));
             previousSize = data.Length;
             previousError = error;
+        }
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public void OptimizedQuantizationIsUsedByTheContainer(bool lossless, bool grid)
+    {
+        using var image = CreateSmoothImage(96, 64, transparent: true);
+        var baselineEncoder = new HeicEncoder
+        {
+            Compression = lossless ? HeicCompression.Lossless : HeicCompression.Lossy,
+            Quality = 40,
+            Effort = 2,
+            GridTileSize = grid ? new Size(64, 64) : null,
+        };
+        var optimizedEncoder = new HeicEncoder
+        {
+            Compression = baselineEncoder.Compression,
+            Quality = baselineEncoder.Quality,
+            Effort = baselineEncoder.Effort,
+            GridTileSize = baselineEncoder.GridTileSize,
+            OptimizeQuantization = true,
+        };
+        var baseline = Encode(image, baselineEncoder);
+        var optimized = Encode(image, optimizedEncoder);
+        if (lossless)
+        {
+            Assert.Equal(baseline, optimized);
+        }
+        else
+        {
+            Assert.False(baseline.AsSpan().SequenceEqual(optimized));
+        }
+
+        var reader = ReferenceHeif.Parse(optimized);
+        var color = reader.PrimaryItem!;
+        foreach (var item in grid ? reader.GetGridTiles(color) : [color])
+        {
+            var configuration = item.HevcConfiguration!;
+            Assert.Equal((30, false), (configuration.LevelIdc, configuration.TierFlag));
+            AssertStream(configuration, StreamKind.Still, chromaFormat: lossless ? 3 : 1, bitDepth: 8, codedSize: grid ? (64, 64) : (96, 64));
+        }
+
+        using var decoded = Image.Load<Rgba32>(optimized);
+        Assert.Equal(image.Size, decoded.Size);
+        var source = GetBytes(image);
+        var actual = GetBytes(decoded);
+        for (var i = 3; i < source.Length; i += 4)
+        {
+            Assert.Equal(source[i], actual[i]);
         }
     }
 

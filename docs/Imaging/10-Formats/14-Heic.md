@@ -89,6 +89,7 @@ decode.
 | --- | --- | --- |
 | [Compression](cref:Meziantou.Framework.Imaging.Formats.HeicEncoder.Compression) | [Lossless](cref:Meziantou.Framework.Imaging.Formats.HeicCompression.Lossless) or [Lossy](cref:Meziantou.Framework.Imaging.Formats.HeicCompression.Lossy) | [Lossless](cref:Meziantou.Framework.Imaging.Formats.HeicCompression.Lossless) |
 | [Quality](cref:Meziantou.Framework.Imaging.Formats.HeicEncoder.Quality) | 0 (smallest) to 100 (best) for lossy output | 75 |
+| [OptimizeQuantization](cref:Meziantou.Framework.Imaging.Formats.HeicEncoder.OptimizeQuantization) | Searches several quantization rounding offsets per lossy transform block, balancing reconstructed error against estimated coded size; costs more encoding time | `false` |
 | [Effort](cref:Meziantou.Framework.Imaging.Formats.HeicEncoder.Effort) | 0 (fastest, largest) to 9 (slowest, smallest): trades encoding time for size, never changes lossless pixels | 5 |
 | [ChromaSubsampling](cref:Meziantou.Framework.Imaging.Formats.HeicEncoder.ChromaSubsampling) | [Auto](cref:Meziantou.Framework.Imaging.Formats.HeicChromaSubsampling.Auto) (4:2:0), [Ratio420](cref:Meziantou.Framework.Imaging.Formats.HeicChromaSubsampling.Ratio420), [Ratio422](cref:Meziantou.Framework.Imaging.Formats.HeicChromaSubsampling.Ratio422) or [Ratio444](cref:Meziantou.Framework.Imaging.Formats.HeicChromaSubsampling.Ratio444), for lossy output | [Auto](cref:Meziantou.Framework.Imaging.Formats.HeicChromaSubsampling.Auto) |
 | [BitDepth](cref:Meziantou.Framework.Imaging.Formats.HeicEncoder.BitDepth) | 8, 10 or 12; `null` keeps the depth of the pixel format. A value for a 16-bit pixel format allows rounding to it | `null` |
@@ -100,6 +101,18 @@ decode.
 | [MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling) | What to do with metadata HEIC cannot store (text, resolution) | [Strict](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling.Strict) |
 
 The quality scale is not the one of [AvifEncoder](cref:Meziantou.Framework.Imaging.Formats.AvifEncoder): at the same number, a HEIC file is closer to its source and larger.
+
+`OptimizeQuantization` is opt-in and does not change the quality-to-quantizer scale. It can change decoded lossy pixels,
+but never lossless pixels or alpha values. It searches block rounding offsets, not a coefficient trellis, and does not
+provide a target bit rate or file size. Image sequences still use I and P pictures, without B pictures.
+
+The HEVC profile follows the sample format and coding tools. The level is the lowest one of the Main tier that accommodates
+the coded dimensions and the largest coded picture, subject to the profile's coded-picture-buffer and minimum-compression
+constraints. Only if no Main-tier level suffices does the encoder try the High tier, then unrestricted level 8.5.
+A high level can therefore be necessary even for small dimensions, especially for lossless noise. A still-image grid
+bounds the dimensions of each coded picture; changing the level label alone would not make a constrained decoder compatible.
+Sequence playback rates come from frame durations in the container; this picture-based level selection does not impose
+a bit-rate or luma-sample-rate limit on playback.
 
 ## Pitfalls
 

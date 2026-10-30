@@ -49,6 +49,8 @@ internal static class HeicQualityReport
 
                 var full = new HeicEncoder { Compression = HeicCompression.Lossy, Quality = quality, ChromaSubsampling = HeicChromaSubsampling.Ratio444 };
                 AvifQualityReport.Report("lossy 4:4:4", $"q{quality} e5", pixels, width, height, runs, () => AvifQualityReport.Save(image, full));
+                var optimized = new HeicEncoder { Compression = HeicCompression.Lossy, Quality = quality, OptimizeQuantization = true };
+                AvifQualityReport.Report("lossy 4:2:0 optimized", $"q{quality} e5", pixels, width, height, runs, () => AvifQualityReport.Save(image, optimized));
                 var avif = new AvifEncoder { Compression = AvifCompression.Lossy, Quality = quality };
                 AvifQualityReport.Report("AVIF lossy 4:2:0", $"q{quality} e5", pixels, width, height, runs, () => AvifQualityReport.Save(image, avif));
             }

@@ -37,7 +37,7 @@ var screenshot = await page.ScreenshotAsync();
 ## How it works
 
 Each connection gets a browser, reported as `chromium` by default. Each browser context of Playwright runs its pages on
-its own thread, with its own script engine, cookies and storage; each page is a `BrowsingContext`, and each frame a nested
+its own thread, with its own script engine, cookies and storage; each page is a [BrowsingContext](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContext), and each frame a nested
 browsing context. The selectors (`GetByRole`, `GetByText`...), the actionability checks and the assertions are evaluated
 by the scripts of Playwright, injected in the pages as Playwright does, so they behave as in the browsers.
 
@@ -48,8 +48,8 @@ and the PDF with the [PDF printing](../07-Rendering/04-PdfOutput.md).
 ## Versions
 
 The protocol of Playwright changes with each minor version: the clients must have the major and minor versions of
-`PlaywrightServer.PlaywrightVersion`. The server rejects the other clients with an HTTP 428 response, as the Playwright
-server does; `PlaywrightServerOptions.AllowAnyClientVersion` accepts them anyway.
+[PlaywrightServer.PlaywrightVersion](cref:Meziantou.Framework.WebPlatform.Playwright.PlaywrightServer.PlaywrightVersion). The server rejects the other clients with an HTTP 428 response, as the Playwright
+server does; [PlaywrightServerOptions.AllowAnyClientVersion](cref:Meziantou.Framework.WebPlatform.Playwright.PlaywrightServerOptions.AllowAnyClientVersion) accepts them anyway.
 
 ## Not supported
 
@@ -58,7 +58,7 @@ server does; `PlaywrightServerOptions.AllowAnyClientVersion` accepts them anyway
   `toMatchAriaSnapshot()`, the WebSocket routes and the CDP sessions.
 - The WebP screenshots, and the files given by path to `SetInputFiles()`: give their content instead (`FilePayload`).
 - Geolocation, the permissions, `ignoreHTTPSErrors`, `proxy` and `bypassCSP` are ignored: the network options belong to the
-  `DocumentLoader`.
+  [DocumentLoader](cref:Meziantou.Framework.WebPlatform.Dom.DocumentLoader).
 
 See also the [limitations of the engine](../09-Limitations.md).
 

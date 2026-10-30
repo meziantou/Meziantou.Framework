@@ -9,7 +9,7 @@ description: Install the package, create an executor from a MethodInfo, and call
 dotnet add package Meziantou.Framework.ObjectMethodExecutor
 ```
 
-`ObjectMethodExecutor` is in the [Meziantou.Framework](cref:Meziantou.Framework.ObjectMethodExecutor!N:Meziantou.Framework) namespace. The examples of this documentation omit the `using`
+[ObjectMethodExecutor](cref:Meziantou.Framework.ObjectMethodExecutor) is in the [Meziantou.Framework](cref:Meziantou.Framework.ObjectMethodExecutor!N:Meziantou.Framework) namespace. The examples of this documentation omit the `using`
 directives, and check their results with assertions such as `Assert.Equal`.
 
 ## Call a method
@@ -55,14 +55,14 @@ else
 ```
 <!-- endref -->
 
-- `ObjectMethodExecutor.Create` inspects the method and compiles a delegate to call it. Create the executor once and
+- [ObjectMethodExecutor.Create](cref:Meziantou.Framework.ObjectMethodExecutor.Create) inspects the method and compiles a delegate to call it. Create the executor once and
   reuse it: the creation is the expensive part.
-- `IsMethodAsync` is `true` when the method returns an awaitable type.
-- `Execute` calls the method and returns its return value, or `null` for a `void` method.
-- `ExecuteAsync` returns an awaitable that completes with the result of the method once it is awaited.
+- [IsMethodAsync](cref:Meziantou.Framework.ObjectMethodExecutor.IsMethodAsync) is `true` when the method returns an awaitable type.
+- [Execute](cref:Meziantou.Framework.ObjectMethodExecutor.Execute) calls the method and returns its return value, or `null` for a `void` method.
+- [ExecuteAsync](cref:Meziantou.Framework.ObjectMethodExecutor.ExecuteAsync) returns an awaitable that completes with the result of the method once it is awaited.
 - The target is the instance; pass `null` for a static method.
 
-You can call `ExecuteAsync` for every method, even a synchronous one: the awaitable then completes with the return value.
+You can call [ExecuteAsync](cref:Meziantou.Framework.ObjectMethodExecutor.ExecuteAsync) for every method, even a synchronous one: the awaitable then completes with the return value.
 
 ## Next steps
 

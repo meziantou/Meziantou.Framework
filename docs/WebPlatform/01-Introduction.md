@@ -50,14 +50,14 @@ The library is split into packages, so that an application only references what 
   gives the same screenshot on Windows, Linux and macOS.
 - **The web API, with .NET names.** Every member that maps a member of the web API has the
   `[IdlMember(name, specUrl)]` attribute. The names follow the .NET guidelines: acronyms of 3 letters or more are
-  PascalCased and acronyms of 2 letters stay upper case (`innerHTML` is `InnerHtml`, `toJSON` is `ToJson`,
-  `getElementsByTagNameNS` is `GetElementsByTagNameNS`, `HTMLBRElement` is `HtmlBRElement`).
+  PascalCased and acronyms of 2 letters stay upper case (`innerHTML` is [InnerHtml](cref:Meziantou.Framework.WebPlatform.Dom.Element.InnerHtml), `toJSON` is `ToJson`,
+  `getElementsByTagNameNS` is [GetElementsByTagNameNS](cref:Meziantou.Framework.WebPlatform.Dom.Element.GetElementsByTagNameNS), `HTMLBRElement` is [HtmlBRElement](cref:Meziantou.Framework.WebPlatform.Dom.HtmlBRElement)).
 
 ## Namespaces
 
 | Namespace | Contains |
 | --- | --- |
-| [Meziantou.Framework.WebPlatform](cref:Meziantou.Framework.WebPlatform) | The parsers: `HtmlDocumentParser`, `XmlDocumentParser` and their options |
+| [Meziantou.Framework.WebPlatform](cref:Meziantou.Framework.WebPlatform) | The parsers: [HtmlDocumentParser](cref:Meziantou.Framework.WebPlatform.HtmlDocumentParser), [XmlDocumentParser](cref:Meziantou.Framework.WebPlatform.XmlDocumentParser) and their options |
 | [Meziantou.Framework.WebPlatform.Dom](cref:Meziantou.Framework.WebPlatform.Dom) | Browsing contexts, documents, nodes and elements, events, the document loader, cookies |
 | [Meziantou.Framework.WebPlatform.Formatting](cref:Meziantou.Framework.WebPlatform.Formatting) | The HTML and CSS formatters |
 | [Meziantou.Framework.WebPlatform.Css.Om](cref:Meziantou.Framework.WebPlatform.Css.Om) | Style sheets, rules and declarations (the CSSOM) |

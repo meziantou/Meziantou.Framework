@@ -13,7 +13,7 @@ Filters can call the five functions of RFC 9535:
 | `search(value, pattern)` | A string and a regular expression | True when a part of the string matches |
 | `value(query)` | A query | The value of the only node the query selects |
 
-Functions are only available in filters. There is no other function and no way to add one: `Parse` rejects an unknown
+Functions are only available in filters. There is no other function and no way to add one: [Parse](cref:Meziantou.Framework.Json.JsonPath.Parse) rejects an unknown
 function.
 
 ## Measure strings, arrays and objects
@@ -106,7 +106,7 @@ When the query selects no node or more than one, `value()` has no value and the 
 
 ## Type rules
 
-RFC 9535 gives each function argument and result a type, and `Parse` checks them:
+RFC 9535 gives each function argument and result a type, and [Parse](cref:Meziantou.Framework.Json.JsonPath.Parse) checks them:
 
 - `length()`, `match()` and `search()` take values: a literal, a singular query or a function that returns a value.
   `length(@.*)` is invalid; write `count(@.*)` or `length(value(@.*))`.

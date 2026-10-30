@@ -42,8 +42,24 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// (streamed frames, the other rows being zero).
 /// </description></item>
 /// <item><description>
+/// Lenient decoding (<see cref="ImageCodecContext.IsLenient"/>, JPEG files only): a restart marker of a sequential or a
+/// lossless scan whose number is 3 to 5 after the expected one is read as the expected marker
+/// (<see cref="JpegScanDecoder.AcceptsGarbledRestartNumbers"/>); Apple ImageIO rejects such a marker in a progressive
+/// scan, so it stays an error there. The structure parser also ends a complete frame of Huffman-coded scans that has no
+/// EOI marker (<see cref="JpegDecodeObserver.OnScanEndAtEndOfInput"/>).
+/// </description></item>
+/// <item><description>
 /// The image (one frame, duration zero) ends at EOI after <see cref="DecodedFrameSink.UpdateMetadata"/>, so reader frames
 /// carry the metadata found after the scans like eager loads. EXIF orientation is metadata only: pixels are never rotated.
+/// </description></item>
+/// <item><description>
+/// Parallelism: with <see cref="ImageConfiguration.MaxDegreeOfParallelism"/> above 1, a frame of at least
+/// <see cref="RowBands.MinPixelsForParallelism"/> pixels is reconstructed by several workers (<see cref="JpegReconstruction"/>):
+/// the progressive frames at EOI, and the Huffman-coded sequential frames whose first scan codes every component, by batches
+/// of MCU rows whose quantized coefficients the scan decoder keeps in a ring. The rows of the frames coded in several
+/// sequential scans are written by several workers. The entropy-coded data is always decoded by the calling thread, which
+/// also decodes the arithmetic-coded sequential frames, the lossless frames and the datastreams embedded in another format
+/// as one worker does. The pixels and the errors never depend on the number of workers.
 /// </description></item>
 /// <item><description>
 /// Four-component frames (CMYK, YCCK) are inks: no pixel format holds them, so they are decoded only when the request
@@ -113,6 +129,14 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
     private bool _hasAcCoefficients;
     private JpegEntropyReader? _reader;
     private JpegBandWriter? _writer;
+
+    // The writers of the workers that write bands at the same time, the first one being _writer; empty for one worker
+    private JpegBandWriter[] _writers = [];
+
+    // The number of workers that reconstruct the frame, and the reconstruction of a sequential frame decoded by several
+    private int _workers = 1;
+    private JpegReconstruction? _reconstruction;
+    private int _decodedRows;
     private int _precision;
     private JpegScanDecoder? _scan;
     private JpegScanDecoder.ScanComponent[] _scanComponents = [];
@@ -207,6 +231,9 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
         _maxVertical = maxVertical;
         _mcusX = (structure.Width + (_dataUnitSize * maxHorizontal) - 1) / (_dataUnitSize * maxHorizontal);
         _mcusY = (structure.Height + (_dataUnitSize * maxVertical) - 1) / (_dataUnitSize * maxVertical);
+
+        // The container of an embedded datastream receives the rows on the calling thread, one at a time
+        _workers = _receiver is null && !_lossless ? JpegReconstruction.GetWorkerCount(structure.Size, _mcusY, _context.Configuration.MaxDegreeOfParallelism) : 1;
         if (_receiver is not null)
         {
             _colorModel = _embeddedColorModel;
@@ -239,10 +266,19 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
         scan.Feed(data);
     }
 
-    public override bool OnScanEnd()
+    public override bool IsEmbedded => _receiver is not null;
+
+    // Lenient decoding applies to JPEG files, not to the datastreams of another format
+    private bool IsLenient => _context.IsLenient && _receiver is null;
+
+    public override bool OnScanEnd() => EndScan(endOfInput: false);
+
+    public override bool OnScanEndAtEndOfInput() => EndScan(endOfInput: true);
+
+    private bool EndScan(bool endOfInput)
     {
         var scan = _scan ?? throw new InvalidOperationException("No JPEG scan was started.");
-        scan.Finish();
+        scan.Finish(endOfInput);
         _scan = null;
         foreach (var scanComponent in _scanComponents)
         {
@@ -270,9 +306,20 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
         {
             // Streaming: the last MCU row (no lower neighbor) is still pending; several scans: every row is written now
             var writer = _writer!;
-            while (writer.BandsWritten < _mcusY)
+            if (_reconstruction is { } reconstruction)
             {
-                writer.WriteNextBand(_context.CancellationToken);
+                reconstruction.Reconstruct(_mcusY);
+            }
+            else if (_writers.Length > 1)
+            {
+                JpegBandWriter.WriteBands(_writers, _mcusY, _context.CancellationToken);
+            }
+            else
+            {
+                while (writer.BandsWritten < _mcusY)
+                {
+                    writer.WriteNextBand(_context.CancellationToken);
+                }
             }
 
             ReleaseDecoderState();
@@ -333,8 +380,8 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
     {
         // Planes, coefficients, entropy buffer and rows
         _scan = null;
-        _writer?.Dispose();
-        _writer = null;
+        _reconstruction = null;
+        DisposeWriters();
         _reader?.Dispose();
         _reader = null;
         foreach (var component in _components)
@@ -546,9 +593,21 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
         _scanCount++;
         var reader = _reader ?? throw new InvalidOperationException("The JPEG decoder state is not allocated.");
         _scanComponents = scanComponents;
+        if (_scanCount == 1 && _streaming && _workers > 1 && !_arithmetic)
+        {
+            // The blocks are transformed by the workers, a batch of MCU rows at a time
+            var quantization = new ushort[_components.Length][];
+            foreach (var scanComponent in scanComponents)
+            {
+                quantization[scanComponent.Component.Index] = scanComponent.Quantization;
+            }
+
+            _reconstruction = new JpegReconstruction(_components, _writers, quantization, _mcusY, JpegReconstruction.GetBatchRows(_workers, _mcusY), _context.CancellationToken);
+        }
+
         _scan = _arithmetic
-            ? new JpegArithmeticSequentialScanDecoder(scanComponents, reader, _mcusX, _mcusY, _restartInterval, _streaming ? OnMcuRowDecoded : null, _context.CancellationToken)
-            : new JpegSequentialScanDecoder(scanComponents, reader, _mcusX, _mcusY, _restartInterval, _streaming ? OnMcuRowDecoded : null, _context.CancellationToken);
+            ? new JpegArithmeticSequentialScanDecoder(scanComponents, reader, _mcusX, _mcusY, _restartInterval, _streaming ? OnMcuRowDecoded : null, _context.CancellationToken) { AcceptsGarbledRestartNumbers = IsLenient }
+            : new JpegSequentialScanDecoder(scanComponents, reader, _mcusX, _mcusY, _restartInterval, _streaming ? OnMcuRowDecoded : null, _context.CancellationToken, deferTransforms: _reconstruction is not null) { AcceptsGarbledRestartNumbers = IsLenient };
         PrepareFastAc(scanComponents);
     }
 
@@ -588,7 +647,7 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
         _scanCount++;
         var reader = _reader ?? throw new InvalidOperationException("The JPEG decoder state is not allocated.");
         _scanComponents = scanComponents;
-        _scan = new JpegLosslessScanDecoder(scanComponents, reader, _mcusX, _mcusY, _restartInterval, predictor: parameters[0], pointTransform: parameters[2] & 0x0F, _streaming ? OnMcuRowDecoded : null, _context.CancellationToken);
+        _scan = new JpegLosslessScanDecoder(scanComponents, reader, _mcusX, _mcusY, _restartInterval, predictor: parameters[0], pointTransform: parameters[2] & 0x0F, _streaming ? OnMcuRowDecoded : null, _context.CancellationToken) { AcceptsGarbledRestartNumbers = IsLenient };
     }
 
     /// <summary>
@@ -721,6 +780,8 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
         int writtenRows;
         if (_writer is { } writer && _streaming)
         {
+            // The rows that one worker would have written: every band but the last one decoded
+            _reconstruction?.Reconstruct(_decodedRows);
             writtenRows = Math.Min(structure.Height, writer.BandsWritten * _dataUnitSize * _maxVertical);
         }
         else if (_writer is null && _components.All(component => component.IsDecoded))
@@ -763,96 +824,115 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
     private void WriteCoefficients()
     {
         var scope = _context.Scope;
-        var bandCount = Math.Min(3, _mcusY);
+        var batchRows = JpegReconstruction.GetBatchRows(_workers, _mcusY);
+        var bandCount = _workers > 1 ? JpegReconstruction.GetPlaneBands(batchRows, _mcusY) : Math.Min(3, _mcusY);
         foreach (var component in _components)
         {
             component.AllocatePlane(scope, _mcusX, bandCount, _context.Limits);
         }
 
-        _writer = CreateRowWriter(scope);
-        var block = new double[64];
-        var scales = new double[64];
-        for (var row = 0; row < _mcusY; row++)
+        CreateRowWriters(scope, _workers);
+        var writer = _writer!;
+        if (_workers > 1)
         {
-            foreach (var component in _components)
+            var quantization = Array.ConvertAll(_components, component => component.LatchedQuantization!);
+            var reconstruction = new JpegReconstruction(_components, _writers, quantization, _mcusY, JpegReconstruction.GetBatchRows(_workers, _mcusY), _context.CancellationToken);
+            for (var row = 0; row < _mcusY; row = reconstruction.TransformedRows)
             {
-                TransformBlockRows(component, row, block, scales);
-            }
-
-            if (row > 0)
-            {
-                _writer.WriteNextBand(_context.CancellationToken);
+                reconstruction.Reconstruct(Math.Min(_mcusY, row + batchRows));
             }
         }
+        else
+        {
+            var block = new double[64];
+            var scales = new double[64];
+            for (var row = 0; row < _mcusY; row++)
+            {
+                foreach (var component in _components)
+                {
+                    JpegReconstruction.TransformMcuRow(component, row, component.LatchedQuantization!, block, scales);
+                }
 
-        _writer.WriteNextBand(_context.CancellationToken);
-        _writer.Dispose();
-        _writer = null;
+                if (row > 0)
+                {
+                    writer.WriteNextBand(_context.CancellationToken);
+                }
+            }
+
+            writer.WriteNextBand(_context.CancellationToken);
+        }
+
+        DisposeWriters();
         foreach (var component in _components)
         {
             component.ReleasePlane();
         }
     }
 
-    /// <summary>Dequantizes and transforms the blocks of one MCU row of a component into its sample plane.</summary>
-    private static void TransformBlockRows(JpegFrameComponent component, int mcuRow, double[] block, double[] scales)
+    private void DisposeWriters()
     {
-        var quantization = component.LatchedQuantization!;
-        for (var i = 0; i < 64; i++)
+        // The first writer of the workers is _writer
+        for (var i = 1; i < _writers.Length; i++)
         {
-            scales[i] = quantization[i];
+            _writers[i].Dispose();
         }
 
-        var stride = component.Stride;
-        var precision = component.Precision;
-        for (var blockRow = mcuRow * component.VerticalSampling; blockRow < (mcuRow + 1) * component.VerticalSampling; blockRow++)
-        {
-            var rowOffset = component.GetRowOffset(blockRow * 8);
-            for (var blockColumn = 0; blockColumn < component.CoefficientBlocksPerLine; blockColumn++)
-            {
-                var coefficients = component.GetCoefficients(blockRow, blockColumn);
-                var offset = rowOffset + (blockColumn * 8);
-                if (coefficients[1..].IndexOfAnyExcept((short)0) < 0)
-                {
-                    var dc = (long)coefficients[0] * quantization[0];
-                    if (precision > 8)
-                    {
-                        JpegIdct.TransformDeepDcOnly(dc, component.DeepSamples[offset..], stride, precision);
-                    }
-                    else
-                    {
-                        JpegIdct.TransformDcOnly(dc, component.Samples.AsSpan(offset), stride);
-                    }
-
-                    continue;
-                }
-
-                JpegIdct.Dequantize(coefficients, scales, block);
-
-                if (precision > 8)
-                {
-                    JpegIdct.TransformDeep(block, component.DeepSamples[offset..], stride, precision);
-                }
-                else
-                {
-                    JpegIdct.Transform(block, component.Samples.AsSpan(offset), stride, JpegIdct.IsSparse(coefficients));
-                }
-            }
-        }
+        _writer?.Dispose();
+        _writer = null;
+        _writers = [];
     }
 
     private void AllocateDecoderState(bool streaming)
     {
         var scope = _context.Scope;
         _streaming = streaming;
-        var bandCount = streaming ? Math.Min(3, _mcusY) : _mcusY;
+
+        // Several workers transform the blocks of a streamed Huffman-coded frame from a ring of coefficients, and write the
+        // rows of the frames coded in several scans
+        var deferred = streaming && _workers > 1 && !_arithmetic;
+        var batchRows = JpegReconstruction.GetBatchRows(_workers, _mcusY);
+        var bandCount = !streaming ? _mcusY : deferred ? JpegReconstruction.GetPlaneBands(batchRows, _mcusY) : Math.Min(3, _mcusY);
         foreach (var component in _components)
         {
             component.AllocatePlane(scope, _mcusX, bandCount, _context.Limits);
+            if (deferred)
+            {
+                component.AllocateCoefficients(scope, _mcusX, batchRows, _context.Limits, clear: false);
+            }
         }
 
         _reader = new JpegEntropyReader(scope, Math.Max(EntropyBufferCapacity, 2 * JpegScanDecoder.GetRequiredBufferCapacity(10, _precision, _arithmetic, _lossless)));
+        CreateRowWriters(scope, !streaming || deferred ? _workers : 1);
+    }
+
+    /// <summary>Creates the writer of the rows, and the ones of the other workers when several write them.</summary>
+    private void CreateRowWriters(AllocationScope scope, int count)
+    {
         _writer = CreateRowWriter(scope);
+        if (count == 1)
+            return;
+
+        var writers = new JpegBandWriter[count];
+        writers[0] = _writer;
+        try
+        {
+            for (var i = 1; i < count; i++)
+            {
+                writers[i] = CreateRowWriter(scope);
+            }
+        }
+        catch
+        {
+            foreach (var writer in writers)
+            {
+                writer?.Dispose();
+            }
+
+            _writer = null;
+            throw;
+        }
+
+        _writers = writers;
     }
 
     private JpegBandWriter CreateRowWriter(AllocationScope scope)
@@ -874,6 +954,18 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
     /// <summary>Streaming: once MCU row <paramref name="row"/> is decoded, the previous one has its lower context row and is written.</summary>
     private void OnMcuRowDecoded(int row)
     {
+        if (_reconstruction is { } reconstruction)
+        {
+            // The ring of coefficients is full: its rows are transformed, and the bands that have their lower context row are written
+            _decodedRows = row + 1;
+            if (_decodedRows - reconstruction.TransformedRows == reconstruction.BatchRows)
+            {
+                reconstruction.Reconstruct(_decodedRows);
+            }
+
+            return;
+        }
+
         if (row > 0)
         {
             _writer!.WriteNextBand(_context.CancellationToken);

@@ -47,8 +47,8 @@ value is at least 1; negative sizes use the same unit as their absolute value. A
 `ToString(ByteSizeUnit unit, IFormatProvider? formatProvider)` writes the value in the given unit, like the `kB`
 format.
 
-`ByteSize` implements `ISpanFormattable` and `IUtf8SpanFormattable`, so the format strings also work in interpolated
-strings, `string.Format`, and `TryFormat` into a `Span<char>` or a UTF-8 `Span<byte>`.
+[ByteSize](cref:Meziantou.Framework.ByteSize) implements `ISpanFormattable` and `IUtf8SpanFormattable`, so the format strings also work in interpolated
+strings, `string.Format`, and [TryFormat](cref:Meziantou.Framework.ByteSize.TryFormat) into a `Span<char>` or a UTF-8 `Span<byte>`.
 
 ### Cultures
 
@@ -59,7 +59,7 @@ parsed later.
 
 ## Parse a size
 
-`Parse` and `TryParse` read a number followed by an optional unit:
+[Parse](cref:Meziantou.Framework.ByteSize.Parse) and [TryParse](cref:Meziantou.Framework.ByteSize.TryParse) read a number followed by an optional unit:
 
 <!-- ref:../../tests/Meziantou.Framework.ByteSize.Tests/ByteSizeTests.cs;region=ByteSize_Parse;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -83,13 +83,13 @@ Assert.False(ByteSize.TryParse("100EB", CultureInfo.InvariantCulture, out _));
 - The number can be an integer or a decimal number, and spaces are allowed around it and before the unit.
 - Without a unit, the number is a number of bytes.
 - The unit is case-insensitive. `KB`, `kb` and `kB` are all kilobytes (1,000 bytes); only the `i` makes a binary unit.
-- A size that does not fit in a `long` is rejected: `TryParse` returns `false` and `Parse` throws a `FormatException`.
+- A size that does not fit in a `long` is rejected: [TryParse](cref:Meziantou.Framework.ByteSize.TryParse) returns `false` and [Parse](cref:Meziantou.Framework.ByteSize.Parse) throws a `FormatException`.
 - The number is parsed with the format provider: `1,5kB` is 1,500 bytes with the French culture. `TryParse(string,
   out ByteSize)` uses the current culture.
 - The `ReadOnlySpan<char>` overloads read a span, and the `ReadOnlySpan<byte>` overloads read UTF-8 text with the
   invariant number format.
 
-`ByteSize` implements `ISpanParsable<ByteSize>` and `IUtf8SpanParsable<ByteSize>`, so generic code that parses values
+[ByteSize](cref:Meziantou.Framework.ByteSize) implements `ISpanParsable<ByteSize>` and `IUtf8SpanParsable<ByteSize>`, so generic code that parses values
 through these interfaces accepts it.
 
 ### Rounding

@@ -5,8 +5,8 @@ description: Map characters to glyphs, read the metrics of a font and of its gly
 
 ## Map characters to glyphs
 
-A font draws glyphs, not characters. `MapCodePoint` gives the glyph of a character from the character map of the font,
-or 0, the missing glyph. `MapVariation` gives the glyph of a variation sequence, a character followed by a variation
+A font draws glyphs, not characters. [MapCodePoint](cref:Meziantou.Framework.Fonts.FontFace.MapCodePoint) gives the glyph of a character from the character map of the font,
+or 0, the missing glyph. [MapVariation](cref:Meziantou.Framework.Fonts.FontFace.MapVariation) gives the glyph of a variation sequence, a character followed by a variation
 selector.
 
 Mapping characters one by one is enough for simple scripts and monospaced text. For most text, shape it instead: the
@@ -14,25 +14,25 @@ font can replace, merge and move glyphs, which the character map does not say. S
 
 ## Read the metrics
 
-The metrics are in font units: divide them by `UnitsPerEm` and multiply them by the size of the text.
+The metrics are in font units: divide them by [UnitsPerEm](cref:Meziantou.Framework.Fonts.FontFace.UnitsPerEm) and multiply them by the size of the text.
 
-| Metrics | Members of `FontFace` |
+| Metrics | Members of [FontFace](cref:Meziantou.Framework.Fonts.FontFace) |
 | --- | --- |
-| Lines | `HorizontalAscender`, `HorizontalDescender`, `HorizontalLineGap`, `TypoAscender`, `TypoDescender`, `TypoLineGap`, `UseTypoMetrics`, `WinAscent`, `WinDescent` |
-| Letters | `CapHeight`, `XHeight`, `AverageCharWidth` |
-| Decorations | `UnderlinePosition`, `UnderlineThickness`, `StrikeoutPosition`, `StrikeoutSize`, `SubscriptYOffset`, `SuperscriptYOffset` |
-| Style | `Weight`, `WidthClass`, `IsItalic`, `ItalicAngle`, `IsMonospaced` |
-| Glyphs | `GetAdvanceWidth`, `GetLeftSideBearing`, `GetAdvanceHeight`, `GetTopSideBearing`, `GetVerticalOrigin`, `TryGetGlyphBounds` |
-| Vertical text | `HasVerticalMetrics`, `VerticalAscender`, `VerticalDescender`, `VerticalLineGap` |
-| Baselines | `TryGetBaseline`, `TryGetIdeographicCenter` |
-| Names | `FamilyName`, `SubfamilyName`, `PostScriptName`, `GetName`, `GetNames` |
+| Lines | [HorizontalAscender](cref:Meziantou.Framework.Fonts.FontFace.HorizontalAscender), [HorizontalDescender](cref:Meziantou.Framework.Fonts.FontFace.HorizontalDescender), [HorizontalLineGap](cref:Meziantou.Framework.Fonts.FontFace.HorizontalLineGap), [TypoAscender](cref:Meziantou.Framework.Fonts.FontFace.TypoAscender), [TypoDescender](cref:Meziantou.Framework.Fonts.FontFace.TypoDescender), [TypoLineGap](cref:Meziantou.Framework.Fonts.FontFace.TypoLineGap), [UseTypoMetrics](cref:Meziantou.Framework.Fonts.FontFace.UseTypoMetrics), [WinAscent](cref:Meziantou.Framework.Fonts.FontFace.WinAscent), [WinDescent](cref:Meziantou.Framework.Fonts.FontFace.WinDescent) |
+| Letters | [CapHeight](cref:Meziantou.Framework.Fonts.FontFace.CapHeight), [XHeight](cref:Meziantou.Framework.Fonts.FontFace.XHeight), [AverageCharWidth](cref:Meziantou.Framework.Fonts.FontFace.AverageCharWidth) |
+| Decorations | [UnderlinePosition](cref:Meziantou.Framework.Fonts.FontFace.UnderlinePosition), [UnderlineThickness](cref:Meziantou.Framework.Fonts.FontFace.UnderlineThickness), [StrikeoutPosition](cref:Meziantou.Framework.Fonts.FontFace.StrikeoutPosition), [StrikeoutSize](cref:Meziantou.Framework.Fonts.FontFace.StrikeoutSize), [SubscriptYOffset](cref:Meziantou.Framework.Fonts.FontFace.SubscriptYOffset), [SuperscriptYOffset](cref:Meziantou.Framework.Fonts.FontFace.SuperscriptYOffset) |
+| Style | [Weight](cref:Meziantou.Framework.Fonts.FontFace.Weight), [WidthClass](cref:Meziantou.Framework.Fonts.FontFace.WidthClass), [IsItalic](cref:Meziantou.Framework.Fonts.FontFace.IsItalic), [ItalicAngle](cref:Meziantou.Framework.Fonts.FontFace.ItalicAngle), [IsMonospaced](cref:Meziantou.Framework.Fonts.FontFace.IsMonospaced) |
+| Glyphs | [GetAdvanceWidth](cref:Meziantou.Framework.Fonts.FontFace.GetAdvanceWidth), [GetLeftSideBearing](cref:Meziantou.Framework.Fonts.FontFace.GetLeftSideBearing), [GetAdvanceHeight](cref:Meziantou.Framework.Fonts.FontFace.GetAdvanceHeight), [GetTopSideBearing](cref:Meziantou.Framework.Fonts.FontFace.GetTopSideBearing), [GetVerticalOrigin](cref:Meziantou.Framework.Fonts.FontFace.GetVerticalOrigin), [TryGetGlyphBounds](cref:Meziantou.Framework.Fonts.FontFace.TryGetGlyphBounds) |
+| Vertical text | [HasVerticalMetrics](cref:Meziantou.Framework.Fonts.FontFace.HasVerticalMetrics), [VerticalAscender](cref:Meziantou.Framework.Fonts.FontFace.VerticalAscender), [VerticalDescender](cref:Meziantou.Framework.Fonts.FontFace.VerticalDescender), [VerticalLineGap](cref:Meziantou.Framework.Fonts.FontFace.VerticalLineGap) |
+| Baselines | [TryGetBaseline](cref:Meziantou.Framework.Fonts.FontFace.TryGetBaseline), [TryGetIdeographicCenter](cref:Meziantou.Framework.Fonts.FontFace.TryGetIdeographicCenter) |
+| Names | [FamilyName](cref:Meziantou.Framework.Fonts.FontFace.FamilyName), [SubfamilyName](cref:Meziantou.Framework.Fonts.FontFace.SubfamilyName), [PostScriptName](cref:Meziantou.Framework.Fonts.FontFace.PostScriptName), [GetName](cref:Meziantou.Framework.Fonts.FontFace.GetName), [GetNames](cref:Meziantou.Framework.Fonts.FontFace.GetNames) |
 
-`TableTags` lists the tables of the font, and `TryGetTable` gives the bytes of any table, to read what the API does not
+[TableTags](cref:Meziantou.Framework.Fonts.FontFace.TableTags) lists the tables of the font, and [TryGetTable](cref:Meziantou.Framework.Fonts.FontFace.TryGetTable) gives the bytes of any table, to read what the API does not
 expose.
 
 ## Decode an outline
 
-`DecodeOutline` sends the outline of a glyph to an `OutlineSink`: a sequence of contours made of lines and quadratic or
+[DecodeOutline](cref:Meziantou.Framework.Fonts.FontFace.DecodeOutline) sends the outline of a glyph to an [OutlineSink](cref:Meziantou.Framework.Fonts.OutlineSink): a sequence of contours made of lines and quadratic or
 cubic curves, in font units, with the y axis going up. Write a sink for your renderer. This one writes the data of an SVG
 path:
 
@@ -89,39 +89,39 @@ static (string Path, GlyphBox Bounds) GetOutline(FontFace face, char character)
 For the letter `l` of Noto Sans, the path is `M173 0L85 0L85 -760L173 -760L173 0Z`, and the bounds go from (85, 0) to
 (173, 760).
 
-- A `GlyphScratch` is the working storage of the outlines, rented from an allocator of the environment. Keep one per
+- A [GlyphScratch](cref:Meziantou.Framework.Fonts.GlyphScratch) is the working storage of the outlines, rented from an allocator of the environment. Keep one per
   thread and reuse it: decoding the same glyphs again allocates nothing. Dispose it to return its storage.
-- A `GlyphBudget` counts the work of one glyph against `MaxGlyphComplexity`: create one per glyph.
+- A [GlyphBudget](cref:Meziantou.Framework.Fonts.GlyphBudget) counts the work of one glyph against [MaxGlyphComplexity](cref:Meziantou.Framework.Fonts.FontResourceLimits.MaxGlyphComplexity): create one per glyph.
 - A glyph without outline, such as a space, emits nothing.
-- `GlyphBoundsSink` is a sink that measures an outline: the smallest rectangle that contains its points and the control
+- [GlyphBoundsSink](cref:Meziantou.Framework.Fonts.GlyphBoundsSink) is a sink that measures an outline: the smallest rectangle that contains its points and the control
   points of its curves.
-- The `DecodeOutline` overload that takes a size uses the bitmaps of the font at that size when the font was loaded with
+- The [DecodeOutline](cref:Meziantou.Framework.Fonts.FontFace.DecodeOutline) overload that takes a size uses the bitmaps of the font at that size when the font was loaded with
   `useEmbeddedBitmaps`.
 
 ## Hint outlines
 
-At small sizes, an outline scaled exactly puts its edges across pixels. `GlyphHinter` decodes outlines fitted to the
+At small sizes, an outline scaled exactly puts its edges across pixels. [GlyphHinter](cref:Meziantou.Framework.Fonts.GlyphHinter) decodes outlines fitted to the
 pixel grid of a size:
 
-- `GlyphHinting.Light` aligns the outlines along the vertical axis, without the instructions of the font, for any
+- [GlyphHinting.Light](cref:Meziantou.Framework.Fonts.GlyphHinting.Light) aligns the outlines along the vertical axis, without the instructions of the font, for any
   outline format.
-- `GlyphHinting.Full` runs the TrueType instructions of the font. Instructions that break a rule of the specification
-  leave the glyph, or the font when they are in its programs, unhinted. `Hinting` gives the mode that is used: `Light`
+- [GlyphHinting.Full](cref:Meziantou.Framework.Fonts.GlyphHinting.Full) runs the TrueType instructions of the font. Instructions that break a rule of the specification
+  leave the glyph, or the font when they are in its programs, unhinted. [Hinting](cref:Meziantou.Framework.Fonts.GlyphHinter.Hinting) gives the mode that is used: [Light](cref:Meziantou.Framework.Fonts.GlyphHinting.Light)
   when the instructions of the font cannot be run.
 
-`GlyphHinter.Create` prepares a font at a size, and `DecodeOutline` gives the hinted outline of a glyph and its advance
+[GlyphHinter.Create](cref:Meziantou.Framework.Fonts.GlyphHinter.Create) prepares a font at a size, and [DecodeOutline](cref:Meziantou.Framework.Fonts.GlyphHinter.DecodeOutline) gives the hinted outline of a glyph and its advance
 in pixels. A hinter keeps the state of the programs of the font: use it for one operation at a time, and dispose it.
 
 ## Color glyphs
 
-Some fonts have glyphs with their own colors, such as emoji. `HasColorGlyphs` tells whether a font has some, and
-`IsColorGlyph` whether a glyph is one.
+Some fonts have glyphs with their own colors, such as emoji. [HasColorGlyphs](cref:Meziantou.Framework.Fonts.FontFace.HasColorGlyphs) tells whether a font has some, and
+[IsColorGlyph](cref:Meziantou.Framework.Fonts.FontFace.IsColorGlyph) whether a glyph is one.
 
-- `BuildColorGlyph` gives the display list of a glyph of a `COLR` table, with the colors of a palette: layers, paints,
-  gradients and compositions to draw. `PaletteCount`, `TryGetPaletteColor` and `GetPaletteType` read the palettes of the
+- [BuildColorGlyph](cref:Meziantou.Framework.Fonts.FontFace.BuildColorGlyph) gives the display list of a glyph of a `COLR` table, with the colors of a palette: layers, paints,
+  gradients and compositions to draw. [PaletteCount](cref:Meziantou.Framework.Fonts.FontFace.PaletteCount), [TryGetPaletteColor](cref:Meziantou.Framework.Fonts.FontFace.TryGetPaletteColor) and [GetPaletteType](cref:Meziantou.Framework.Fonts.FontFace.GetPaletteType) read the palettes of the
   `CPAL` table.
-- `TryGetBitmapGlyph` finds the image of a glyph of an `sbix` or `CBDT` table in the strike that suits a size: where its
-  data is in the font, its placement and its image format (`BitmapGlyph.Format`). Decoding the image is up to you; a
+- [TryGetBitmapGlyph](cref:Meziantou.Framework.Fonts.FontFace.TryGetBitmapGlyph) finds the image of a glyph of an `sbix` or `CBDT` table in the strike that suits a size: where its
+  data is in the font, its placement and its image format ([BitmapGlyph.Format](cref:Meziantou.Framework.Fonts.BitmapGlyph.Format)). Decoding the image is up to you; a
   renderer can also draw the outline of the glyph instead.
 
 To draw color glyphs without writing a renderer, use [the text API of Meziantou.Framework.Imaging](../Imaging/08-Text/02-Fonts.md#color-glyphs).

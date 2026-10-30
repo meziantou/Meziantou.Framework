@@ -60,7 +60,7 @@ internal static class Jpeg2000Dwt
     public static void InverseReversible(Span<int> plane, int stride, ReadOnlySpan<Jpeg2000ResolutionGeometry> resolutions, Span<int> scratch)
         => InverseReversibleCore(plane, stride, resolutions, scratch, Vector.IsHardwareAccelerated);
 
-    /// <summary>The scalar reference of <see cref="InverseReversible"/>.</summary>
+    /// <summary>The scalar reference of <see cref="InverseReversible(Span{int}, int, ReadOnlySpan{Jpeg2000ResolutionGeometry}, Span{int})"/>.</summary>
     internal static void InverseReversibleScalar(Span<int> plane, int stride, ReadOnlySpan<Jpeg2000ResolutionGeometry> resolutions, Span<int> scratch)
         => InverseReversibleCore(plane, stride, resolutions, scratch, useVectors: false);
 
@@ -70,50 +70,88 @@ internal static class Jpeg2000Dwt
         {
             ref readonly var lower = ref resolutions[r - 1];
             ref readonly var current = ref resolutions[r];
-            var width = current.Width;
-            var height = current.Height;
-            if (width == 0 || height == 0)
+            if (current.Width == 0 || current.Height == 0)
                 continue;
 
-            var lowWidth = lower.Width;
-            var lowHeight = lower.Height;
-            var parityX = (int)(current.X0 & 1);
-            var parityY = (int)(current.Y0 & 1);
-            var line = scratch[..width];
-            for (var y = 0; y < height; y++)
-            {
-                var row = plane.Slice(y * stride, width);
-                if (useVectors && width > 1)
-                {
-                    LiftReversibleSeparated(row[..lowWidth], row[lowWidth..], parityX);
-                    Interleave<int>(row, lowWidth, parityX, line, useVectors: true);
-                }
-                else
-                {
-                    Interleave<int>(row, lowWidth, parityX, line, useVectors: false);
-                    LiftReversible(line, parityX);
-                }
+            InverseReversibleRows(plane, stride, in lower, in current, scratch, 0, current.Height, useVectors);
+            InverseReversibleColumns(plane, stride, in lower, in current, scratch, 0, GetStripCount(current.Width), useVectors);
+        }
+    }
 
-                line.CopyTo(row);
+    /// <summary>
+    /// Rebuilds the samples of a tile-component from its sub-bands, with the reversible filter, by several workers: the
+    /// rows of a level are split into bands, then its strips of columns. A row, and a strip, is filtered as by one worker,
+    /// in a scratch of its worker, and never reads the samples of another one.
+    /// </summary>
+    /// <param name="plane">The plane of the tile-component.</param>
+    /// <param name="stride">The width of the plane.</param>
+    /// <param name="resolutions">The resolution levels of the tile-component, from the lowest.</param>
+    /// <param name="scratch">The scratch of each worker: at least <see cref="GetScratchLength"/> elements each.</param>
+    /// <param name="workers">The largest number of workers: at most the length of <paramref name="scratch"/>.</param>
+    public static void InverseReversible(Av1PooledArray<int> plane, int stride, ArraySegment<Jpeg2000ResolutionGeometry> resolutions, Av1PooledArray<int>[] scratch, int workers)
+    {
+        var useVectors = Vector.IsHardwareAccelerated;
+        for (var r = 1; r < resolutions.Count; r++)
+        {
+            var lower = resolutions[r - 1];
+            var current = resolutions[r];
+            if (current.Width == 0 || current.Height == 0)
+                continue;
+
+            RunRows(workers, in current, (band, start, end) => InverseReversibleRows(plane.Span, stride, in lower, in current, scratch[band].Span, start, end, useVectors));
+            RunStrips(workers, in current, (band, start, end) => InverseReversibleColumns(plane.Span, stride, in lower, in current, scratch[band].Span, start, end, useVectors));
+        }
+    }
+
+    // HOR_SR on the rows [first, end) of a level
+    private static void InverseReversibleRows(Span<int> plane, int stride, in Jpeg2000ResolutionGeometry lower, in Jpeg2000ResolutionGeometry current, Span<int> scratch, int first, int end, bool useVectors)
+    {
+        var width = current.Width;
+        var lowWidth = lower.Width;
+        var parityX = (int)(current.X0 & 1);
+        var line = scratch[..width];
+        for (var y = first; y < end; y++)
+        {
+            var row = plane.Slice(y * stride, width);
+            if (useVectors && width > 1)
+            {
+                LiftReversibleSeparated(row[..lowWidth], row[lowWidth..], parityX);
+                Interleave<int>(row, lowWidth, parityX, line, useVectors: true);
+            }
+            else
+            {
+                Interleave<int>(row, lowWidth, parityX, line, useVectors: false);
+                LiftReversible(line, parityX);
             }
 
-            var strip = Math.Min(ColumnStrip, width);
-            var columns = scratch.Slice(width, strip * height);
-            for (var x = 0; x < width; x += strip)
-            {
-                var count = Math.Min(strip, width - x);
-                if (useVectors && height > 1)
-                {
-                    LiftReversibleColumnsPipelined(plane, stride, x, count, height, lowHeight, parityY, columns, strip);
-                }
-                else
-                {
-                    GatherColumns(plane, stride, x, count, height, lowHeight, parityY, columns, strip);
-                    LiftReversibleColumns(columns, count, height, parityY, strip, useVectors);
-                }
+            line.CopyTo(row);
+        }
+    }
 
-                ScatterColumns(plane, stride, x, count, height, columns, strip);
+    // VER_SR on the strips of columns [firstStrip, endStrip) of a level
+    private static void InverseReversibleColumns(Span<int> plane, int stride, in Jpeg2000ResolutionGeometry lower, in Jpeg2000ResolutionGeometry current, Span<int> scratch, int firstStrip, int endStrip, bool useVectors)
+    {
+        var width = current.Width;
+        var height = current.Height;
+        var lowHeight = lower.Height;
+        var parityY = (int)(current.Y0 & 1);
+        var strip = Math.Min(ColumnStrip, width);
+        var columns = scratch.Slice(width, strip * height);
+        var endX = (int)Math.Min(width, (long)endStrip * strip);
+        for (var x = firstStrip * strip; x < endX; x += strip)
+        {
+            var count = Math.Min(strip, width - x);
+            if (useVectors && height > 1)
+            {
+                LiftReversibleColumnsPipelined(plane, stride, x, count, height, lowHeight, parityY, columns, strip);
             }
+            else
+            {
+                GatherColumns(plane, stride, x, count, height, lowHeight, parityY, columns, strip);
+                LiftReversibleColumns(columns, count, height, parityY, strip, useVectors);
+            }
+
+            ScatterColumns(plane, stride, x, count, height, columns, strip);
         }
     }
 
@@ -125,7 +163,7 @@ internal static class Jpeg2000Dwt
     public static void InverseIrreversible(Span<float> plane, int stride, ReadOnlySpan<Jpeg2000ResolutionGeometry> resolutions, Span<float> scratch)
         => InverseIrreversibleCore(plane, stride, resolutions, scratch, Vector.IsHardwareAccelerated);
 
-    /// <summary>The scalar reference of <see cref="InverseIrreversible"/>.</summary>
+    /// <summary>The scalar reference of <see cref="InverseIrreversible(Span{float}, int, ReadOnlySpan{Jpeg2000ResolutionGeometry}, Span{float})"/>.</summary>
     internal static void InverseIrreversibleScalar(Span<float> plane, int stride, ReadOnlySpan<Jpeg2000ResolutionGeometry> resolutions, Span<float> scratch)
         => InverseIrreversibleCore(plane, stride, resolutions, scratch, useVectors: false);
 
@@ -135,50 +173,81 @@ internal static class Jpeg2000Dwt
         {
             ref readonly var lower = ref resolutions[r - 1];
             ref readonly var current = ref resolutions[r];
-            var width = current.Width;
-            var height = current.Height;
-            if (width == 0 || height == 0)
+            if (current.Width == 0 || current.Height == 0)
                 continue;
 
-            var lowWidth = lower.Width;
-            var lowHeight = lower.Height;
-            var parityX = (int)(current.X0 & 1);
-            var parityY = (int)(current.Y0 & 1);
-            var line = scratch[..width];
-            for (var y = 0; y < height; y++)
-            {
-                var row = plane.Slice(y * stride, width);
-                if (useVectors && width > 1)
-                {
-                    LiftIrreversibleSeparated(row[..lowWidth], row[lowWidth..], parityX);
-                    Interleave<float>(row, lowWidth, parityX, line, useVectors: true);
-                }
-                else
-                {
-                    Interleave<float>(row, lowWidth, parityX, line, useVectors: false);
-                    LiftIrreversible(line, parityX);
-                }
+            InverseIrreversibleRows(plane, stride, in lower, in current, scratch, 0, current.Height, useVectors);
+            InverseIrreversibleColumns(plane, stride, in lower, in current, scratch, 0, GetStripCount(current.Width), useVectors);
+        }
+    }
 
-                line.CopyTo(row);
+    /// <summary>
+    /// Rebuilds the samples of a tile-component from its sub-bands, with the irreversible filter, by several workers, as
+    /// <see cref="InverseReversible(Av1PooledArray{int}, int, ArraySegment{Jpeg2000ResolutionGeometry}, Av1PooledArray{int}[], int)"/>
+    /// does: the plane and the scratches hold single-precision numbers.
+    /// </summary>
+    public static void InverseIrreversible(Av1PooledArray<int> plane, int stride, ArraySegment<Jpeg2000ResolutionGeometry> resolutions, Av1PooledArray<int>[] scratch, int workers)
+    {
+        var useVectors = Vector.IsHardwareAccelerated;
+        for (var r = 1; r < resolutions.Count; r++)
+        {
+            var lower = resolutions[r - 1];
+            var current = resolutions[r];
+            if (current.Width == 0 || current.Height == 0)
+                continue;
+
+            RunRows(workers, in current, (band, start, end) => InverseIrreversibleRows(AsSingle(plane), stride, in lower, in current, AsSingle(scratch[band]), start, end, useVectors));
+            RunStrips(workers, in current, (band, start, end) => InverseIrreversibleColumns(AsSingle(plane), stride, in lower, in current, AsSingle(scratch[band]), start, end, useVectors));
+        }
+    }
+
+    private static void InverseIrreversibleRows(Span<float> plane, int stride, in Jpeg2000ResolutionGeometry lower, in Jpeg2000ResolutionGeometry current, Span<float> scratch, int first, int end, bool useVectors)
+    {
+        var width = current.Width;
+        var lowWidth = lower.Width;
+        var parityX = (int)(current.X0 & 1);
+        var line = scratch[..width];
+        for (var y = first; y < end; y++)
+        {
+            var row = plane.Slice(y * stride, width);
+            if (useVectors && width > 1)
+            {
+                LiftIrreversibleSeparated(row[..lowWidth], row[lowWidth..], parityX);
+                Interleave<float>(row, lowWidth, parityX, line, useVectors: true);
+            }
+            else
+            {
+                Interleave<float>(row, lowWidth, parityX, line, useVectors: false);
+                LiftIrreversible(line, parityX);
             }
 
-            var strip = Math.Min(ColumnStrip, width);
-            var columns = scratch.Slice(width, strip * height);
-            for (var x = 0; x < width; x += strip)
-            {
-                var count = Math.Min(strip, width - x);
-                if (useVectors && height > 1)
-                {
-                    LiftIrreversibleColumnsPipelined(plane, stride, x, count, height, lowHeight, parityY, columns, strip);
-                }
-                else
-                {
-                    GatherColumns(plane, stride, x, count, height, lowHeight, parityY, columns, strip);
-                    LiftIrreversibleColumns(columns, count, height, parityY, strip, useVectors);
-                }
+            line.CopyTo(row);
+        }
+    }
 
-                ScatterColumns(plane, stride, x, count, height, columns, strip);
+    private static void InverseIrreversibleColumns(Span<float> plane, int stride, in Jpeg2000ResolutionGeometry lower, in Jpeg2000ResolutionGeometry current, Span<float> scratch, int firstStrip, int endStrip, bool useVectors)
+    {
+        var width = current.Width;
+        var height = current.Height;
+        var lowHeight = lower.Height;
+        var parityY = (int)(current.Y0 & 1);
+        var strip = Math.Min(ColumnStrip, width);
+        var columns = scratch.Slice(width, strip * height);
+        var endX = (int)Math.Min(width, (long)endStrip * strip);
+        for (var x = firstStrip * strip; x < endX; x += strip)
+        {
+            var count = Math.Min(strip, width - x);
+            if (useVectors && height > 1)
+            {
+                LiftIrreversibleColumnsPipelined(plane, stride, x, count, height, lowHeight, parityY, columns, strip);
             }
+            else
+            {
+                GatherColumns(plane, stride, x, count, height, lowHeight, parityY, columns, strip);
+                LiftIrreversibleColumns(columns, count, height, parityY, strip, useVectors);
+            }
+
+            ScatterColumns(plane, stride, x, count, height, columns, strip);
         }
     }
 
@@ -190,7 +259,7 @@ internal static class Jpeg2000Dwt
     public static void ForwardReversible(Span<int> plane, int stride, ReadOnlySpan<Jpeg2000ResolutionGeometry> resolutions, Span<int> scratch)
         => ForwardReversibleCore(plane, stride, resolutions, scratch, Vector.IsHardwareAccelerated);
 
-    /// <summary>The scalar reference of <see cref="ForwardReversible"/>.</summary>
+    /// <summary>The scalar reference of <see cref="ForwardReversible(Span{int}, int, ReadOnlySpan{Jpeg2000ResolutionGeometry}, Span{int})"/>.</summary>
     internal static void ForwardReversibleScalar(Span<int> plane, int stride, ReadOnlySpan<Jpeg2000ResolutionGeometry> resolutions, Span<int> scratch)
         => ForwardReversibleCore(plane, stride, resolutions, scratch, useVectors: false);
 
@@ -200,43 +269,77 @@ internal static class Jpeg2000Dwt
         {
             ref readonly var lower = ref resolutions[r - 1];
             ref readonly var current = ref resolutions[r];
-            var width = current.Width;
-            var height = current.Height;
-            if (width == 0 || height == 0)
+            if (current.Width == 0 || current.Height == 0)
                 continue;
 
-            var lowWidth = lower.Width;
-            var lowHeight = lower.Height;
-            var parityX = (int)(current.X0 & 1);
-            var parityY = (int)(current.Y0 & 1);
-
             // 2D_SD (F.4.2): the columns (VER_SD), then the rows (HOR_SD)
-            var strip = Math.Min(ColumnStrip, width);
-            var columns = scratch.Slice(width, strip * height);
-            for (var x = 0; x < width; x += strip)
-            {
-                var count = Math.Min(strip, width - x);
-                GatherRows(plane, stride, x, count, height, columns, strip);
-                LiftForwardReversibleColumns(columns, count, height, parityY, strip, useVectors);
-                ScatterColumnsDeinterleaved(plane, stride, x, count, height, lowHeight, parityY, columns, strip);
-            }
+            ForwardReversibleColumns(plane, stride, in lower, in current, scratch, 0, GetStripCount(current.Width), useVectors);
+            ForwardReversibleRows(plane, stride, in lower, in current, scratch, 0, current.Height, useVectors);
+        }
+    }
 
-            var line = scratch[..width];
-            for (var y = 0; y < height; y++)
+    /// <summary>
+    /// Decomposes the samples of a tile-component into its sub-bands, with the reversible filter, by several workers: the
+    /// strips of columns of a level are split into bands, then its rows, each filtered as by one worker.
+    /// </summary>
+    /// <param name="plane">The plane of the tile-component.</param>
+    /// <param name="stride">The width of the plane.</param>
+    /// <param name="resolutions">The resolution levels of the tile-component, from the lowest.</param>
+    /// <param name="scratch">The scratch of each worker: at least <see cref="GetScratchLength"/> elements each.</param>
+    /// <param name="workers">The largest number of workers: at most the length of <paramref name="scratch"/>.</param>
+    public static void ForwardReversible(Av1PooledArray<int> plane, int stride, ArraySegment<Jpeg2000ResolutionGeometry> resolutions, Av1PooledArray<int>[] scratch, int workers)
+    {
+        var useVectors = Vector.IsHardwareAccelerated;
+        for (var r = resolutions.Count - 1; r >= 1; r--)
+        {
+            var lower = resolutions[r - 1];
+            var current = resolutions[r];
+            if (current.Width == 0 || current.Height == 0)
+                continue;
+
+            RunStrips(workers, in current, (band, start, end) => ForwardReversibleColumns(plane.Span, stride, in lower, in current, scratch[band].Span, start, end, useVectors));
+            RunRows(workers, in current, (band, start, end) => ForwardReversibleRows(plane.Span, stride, in lower, in current, scratch[band].Span, start, end, useVectors));
+        }
+    }
+
+    private static void ForwardReversibleColumns(Span<int> plane, int stride, in Jpeg2000ResolutionGeometry lower, in Jpeg2000ResolutionGeometry current, Span<int> scratch, int firstStrip, int endStrip, bool useVectors)
+    {
+        var width = current.Width;
+        var height = current.Height;
+        var lowHeight = lower.Height;
+        var parityY = (int)(current.Y0 & 1);
+        var strip = Math.Min(ColumnStrip, width);
+        var columns = scratch.Slice(width, strip * height);
+        var endX = (int)Math.Min(width, (long)endStrip * strip);
+        for (var x = firstStrip * strip; x < endX; x += strip)
+        {
+            var count = Math.Min(strip, width - x);
+            GatherRows(plane, stride, x, count, height, columns, strip);
+            LiftForwardReversibleColumns(columns, count, height, parityY, strip, useVectors);
+            ScatterColumnsDeinterleaved(plane, stride, x, count, height, lowHeight, parityY, columns, strip);
+        }
+    }
+
+    private static void ForwardReversibleRows(Span<int> plane, int stride, in Jpeg2000ResolutionGeometry lower, in Jpeg2000ResolutionGeometry current, Span<int> scratch, int first, int end, bool useVectors)
+    {
+        var width = current.Width;
+        var lowWidth = lower.Width;
+        var parityX = (int)(current.X0 & 1);
+        var line = scratch[..width];
+        for (var y = first; y < end; y++)
+        {
+            var row = plane.Slice(y * stride, width);
+            if (useVectors && width > 1)
             {
-                var row = plane.Slice(y * stride, width);
-                if (useVectors && width > 1)
-                {
-                    Deinterleave<int>(row, lowWidth, parityX, line, useVectors: true);
-                    LiftForwardReversibleSeparated(line[..lowWidth], line[lowWidth..], parityX);
-                    line.CopyTo(row);
-                }
-                else
-                {
-                    row.CopyTo(line);
-                    LiftForwardReversible(line, parityX);
-                    Deinterleave<int>(line, lowWidth, parityX, row, useVectors: false);
-                }
+                Deinterleave<int>(row, lowWidth, parityX, line, useVectors: true);
+                LiftForwardReversibleSeparated(line[..lowWidth], line[lowWidth..], parityX);
+                line.CopyTo(row);
+            }
+            else
+            {
+                row.CopyTo(line);
+                LiftForwardReversible(line, parityX);
+                Deinterleave<int>(line, lowWidth, parityX, row, useVectors: false);
             }
         }
     }
@@ -249,7 +352,7 @@ internal static class Jpeg2000Dwt
     public static void ForwardIrreversible(Span<float> plane, int stride, ReadOnlySpan<Jpeg2000ResolutionGeometry> resolutions, Span<float> scratch)
         => ForwardIrreversibleCore(plane, stride, resolutions, scratch, Vector.IsHardwareAccelerated);
 
-    /// <summary>The scalar reference of <see cref="ForwardIrreversible"/>.</summary>
+    /// <summary>The scalar reference of <see cref="ForwardIrreversible(Span{float}, int, ReadOnlySpan{Jpeg2000ResolutionGeometry}, Span{float})"/>.</summary>
     internal static void ForwardIrreversibleScalar(Span<float> plane, int stride, ReadOnlySpan<Jpeg2000ResolutionGeometry> resolutions, Span<float> scratch)
         => ForwardIrreversibleCore(plane, stride, resolutions, scratch, useVectors: false);
 
@@ -259,43 +362,95 @@ internal static class Jpeg2000Dwt
         {
             ref readonly var lower = ref resolutions[r - 1];
             ref readonly var current = ref resolutions[r];
-            var width = current.Width;
-            var height = current.Height;
-            if (width == 0 || height == 0)
+            if (current.Width == 0 || current.Height == 0)
                 continue;
 
-            var lowWidth = lower.Width;
-            var lowHeight = lower.Height;
-            var parityX = (int)(current.X0 & 1);
-            var parityY = (int)(current.Y0 & 1);
-            var strip = Math.Min(ColumnStrip, width);
-            var columns = scratch.Slice(width, strip * height);
-            for (var x = 0; x < width; x += strip)
-            {
-                var count = Math.Min(strip, width - x);
-                GatherRows(plane, stride, x, count, height, columns, strip);
-                LiftForwardIrreversibleColumns(columns, count, height, parityY, strip, useVectors);
-                ScatterColumnsDeinterleaved(plane, stride, x, count, height, lowHeight, parityY, columns, strip);
-            }
+            ForwardIrreversibleColumns(plane, stride, in lower, in current, scratch, 0, GetStripCount(current.Width), useVectors);
+            ForwardIrreversibleRows(plane, stride, in lower, in current, scratch, 0, current.Height, useVectors);
+        }
+    }
 
-            var line = scratch[..width];
-            for (var y = 0; y < height; y++)
+    /// <summary>
+    /// Decomposes the samples of a tile-component into its sub-bands, with the irreversible filter, by several workers, as
+    /// <see cref="ForwardReversible(Av1PooledArray{int}, int, ArraySegment{Jpeg2000ResolutionGeometry}, Av1PooledArray{int}[], int)"/>
+    /// does: the plane and the scratches hold single-precision numbers.
+    /// </summary>
+    public static void ForwardIrreversible(Av1PooledArray<int> plane, int stride, ArraySegment<Jpeg2000ResolutionGeometry> resolutions, Av1PooledArray<int>[] scratch, int workers)
+    {
+        var useVectors = Vector.IsHardwareAccelerated;
+        for (var r = resolutions.Count - 1; r >= 1; r--)
+        {
+            var lower = resolutions[r - 1];
+            var current = resolutions[r];
+            if (current.Width == 0 || current.Height == 0)
+                continue;
+
+            RunStrips(workers, in current, (band, start, end) => ForwardIrreversibleColumns(AsSingle(plane), stride, in lower, in current, AsSingle(scratch[band]), start, end, useVectors));
+            RunRows(workers, in current, (band, start, end) => ForwardIrreversibleRows(AsSingle(plane), stride, in lower, in current, AsSingle(scratch[band]), start, end, useVectors));
+        }
+    }
+
+    private static void ForwardIrreversibleColumns(Span<float> plane, int stride, in Jpeg2000ResolutionGeometry lower, in Jpeg2000ResolutionGeometry current, Span<float> scratch, int firstStrip, int endStrip, bool useVectors)
+    {
+        var width = current.Width;
+        var height = current.Height;
+        var lowHeight = lower.Height;
+        var parityY = (int)(current.Y0 & 1);
+        var strip = Math.Min(ColumnStrip, width);
+        var columns = scratch.Slice(width, strip * height);
+        var endX = (int)Math.Min(width, (long)endStrip * strip);
+        for (var x = firstStrip * strip; x < endX; x += strip)
+        {
+            var count = Math.Min(strip, width - x);
+            GatherRows(plane, stride, x, count, height, columns, strip);
+            LiftForwardIrreversibleColumns(columns, count, height, parityY, strip, useVectors);
+            ScatterColumnsDeinterleaved(plane, stride, x, count, height, lowHeight, parityY, columns, strip);
+        }
+    }
+
+    private static void ForwardIrreversibleRows(Span<float> plane, int stride, in Jpeg2000ResolutionGeometry lower, in Jpeg2000ResolutionGeometry current, Span<float> scratch, int first, int end, bool useVectors)
+    {
+        var width = current.Width;
+        var lowWidth = lower.Width;
+        var parityX = (int)(current.X0 & 1);
+        var line = scratch[..width];
+        for (var y = first; y < end; y++)
+        {
+            var row = plane.Slice(y * stride, width);
+            if (useVectors && width > 1)
             {
-                var row = plane.Slice(y * stride, width);
-                if (useVectors && width > 1)
-                {
-                    Deinterleave<float>(row, lowWidth, parityX, line, useVectors: true);
-                    LiftForwardIrreversibleSeparated(line[..lowWidth], line[lowWidth..], parityX);
-                    line.CopyTo(row);
-                }
-                else
-                {
-                    row.CopyTo(line);
-                    LiftForwardIrreversible(line, parityX);
-                    Deinterleave<float>(line, lowWidth, parityX, row, useVectors: false);
-                }
+                Deinterleave<float>(row, lowWidth, parityX, line, useVectors: true);
+                LiftForwardIrreversibleSeparated(line[..lowWidth], line[lowWidth..], parityX);
+                line.CopyTo(row);
+            }
+            else
+            {
+                row.CopyTo(line);
+                LiftForwardIrreversible(line, parityX);
+                Deinterleave<float>(line, lowWidth, parityX, row, useVectors: false);
             }
         }
+    }
+
+    // The number of strips of ColumnStrip columns of a level
+    private static int GetStripCount(int width) => (width + ColumnStrip - 1) / ColumnStrip;
+
+    private static Span<float> AsSingle(Av1PooledArray<int> array) => unsafe(MemoryMarshal.Cast<int, float>(array.Span));
+
+    // Runs a pass on the rows of a level: in bands of at least RowBands.MinRowsPerBand rows, one per worker
+    private static void RunRows(int workers, in Jpeg2000ResolutionGeometry level, Action<int, int, int> rows)
+    {
+        var height = level.Height;
+        var bands = Jpeg2000Workers.GetBandCount(workers, (long)level.Width * height, height, RowBands.MinRowsPerBand);
+        Jpeg2000Workers.RunBands(bands, band => rows(band, Jpeg2000Workers.GetBandStart(height, band, bands), Jpeg2000Workers.GetBandStart(height, band + 1, bands)));
+    }
+
+    // Runs a pass on the strips of columns of a level: contiguous strips, one band per worker
+    private static void RunStrips(int workers, in Jpeg2000ResolutionGeometry level, Action<int, int, int> strips)
+    {
+        var count = GetStripCount(level.Width);
+        var bands = Jpeg2000Workers.GetBandCount(workers, (long)level.Width * level.Height, count, 1);
+        Jpeg2000Workers.RunBands(bands, band => strips(band, Jpeg2000Workers.GetBandStart(count, band, bands), Jpeg2000Workers.GetBandStart(count, band + 1, bands)));
     }
 
     /// <summary>The forward reversible 1D filter (1D_FILTD, F.4.8.1) on a signal whose first sample has the parity <paramref name="parity"/>.</summary>

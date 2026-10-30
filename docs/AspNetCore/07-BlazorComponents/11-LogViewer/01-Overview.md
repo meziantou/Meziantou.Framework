@@ -48,30 +48,30 @@ The types are in the [Meziantou.AspNetCore.Components](cref:Meziantou.AspNetCore
 ```
 <!-- endref -->
 
-`LogLevel` here is the `Meziantou.AspNetCore.Components.LogLevel` enum of the package (`Trace`, `Debug`,
-`Information`, `Warning`, `Error`, `Critical`), not the one of `Microsoft.Extensions.Logging`. Each level has its own
+[LogLevel](cref:Meziantou.AspNetCore.Components.LogLevel) here is the [Meziantou.AspNetCore.Components.LogLevel](cref:Meziantou.AspNetCore.Components.LogLevel) enum of the package ([Trace](cref:Meziantou.AspNetCore.Components.LogLevel.Trace), [Debug](cref:Meziantou.AspNetCore.Components.LogLevel.Debug),
+[Information](cref:Meziantou.AspNetCore.Components.LogLevel.Information), [Warning](cref:Meziantou.AspNetCore.Components.LogLevel.Warning), [Error](cref:Meziantou.AspNetCore.Components.LogLevel.Error), [Critical](cref:Meziantou.AspNetCore.Components.LogLevel.Critical)), not the one of `Microsoft.Extensions.Logging`. Each level has its own
 style.
 
 ## LogEntry
 
 | Property | Description |
 | --- | --- |
-| `Timestamp` | The date and time of the entry, a `DateTimeOffset` |
-| `LogLevel` | The severity |
-| `Message` | A `string`, displayed as text with [highlighting](05-Highlighters.md) and [ANSI colors](04-AnsiColors.md), or any other object, displayed as a [structured payload](03-StructuredMessages.md) |
-| `Children` | Child entries, shown when the entry is expanded; see [Nested entries](06-NestedEntries.md) |
-| `Expanded` | Whether the children are visible at first; `false` by default |
+| [Timestamp](cref:Meziantou.AspNetCore.Components.LogEntry.Timestamp) | The date and time of the entry, a `DateTimeOffset` |
+| [LogLevel](cref:Meziantou.AspNetCore.Components.LogLevel) | The severity |
+| [Message](cref:Meziantou.AspNetCore.Components.LogEntry.Message) | A `string`, displayed as text with [highlighting](05-Highlighters.md) and [ANSI colors](04-AnsiColors.md), or any other object, displayed as a [structured payload](03-StructuredMessages.md) |
+| [Children](cref:Meziantou.AspNetCore.Components.LogEntry.Children) | Child entries, shown when the entry is expanded; see [Nested entries](06-NestedEntries.md) |
+| [Expanded](cref:Meziantou.AspNetCore.Components.LogEntry.Expanded) | Whether the children are visible at first; `false` by default |
 
 ## Parameters
 
 | Parameter | Default | Description |
 | --- | --- | --- |
-| `Entries` | `null` | The entries. Nothing is rendered while it is `null` |
-| `TimestampDisplayFormat` | `FullDateTime` | How timestamps are shown; see [Display options](02-DisplayOptions.md) |
-| `DateTimeStringFormat` | `R` | The format of dates and times |
-| `TimeSpanStringFormat` | `G` | The format of relative times |
-| `ShowLineNumbers` | `true` | Shows a line number before each entry |
-| `LogHighlighters` | A `UrlLogHighlighter` | The highlighters applied to string messages |
+| [Entries](cref:Meziantou.AspNetCore.Components.LogViewer.Entries) | `null` | The entries. Nothing is rendered while it is `null` |
+| [TimestampDisplayFormat](cref:Meziantou.AspNetCore.Components.TimestampDisplayFormat) | [FullDateTime](cref:Meziantou.AspNetCore.Components.TimestampDisplayFormat.FullDateTime) | How timestamps are shown; see [Display options](02-DisplayOptions.md) |
+| [DateTimeStringFormat](cref:Meziantou.AspNetCore.Components.LogViewer.DateTimeStringFormat) | `R` | The format of dates and times |
+| [TimeSpanStringFormat](cref:Meziantou.AspNetCore.Components.LogViewer.TimeSpanStringFormat) | `G` | The format of relative times |
+| [ShowLineNumbers](cref:Meziantou.AspNetCore.Components.LogViewer.ShowLineNumbers) | `true` | Shows a line number before each entry |
+| [LogHighlighters](cref:Meziantou.AspNetCore.Components.LogViewer.LogHighlighters) | A [UrlLogHighlighter](cref:Meziantou.AspNetCore.Components.UrlLogHighlighter) | The highlighters applied to string messages |
 
 ## Selecting lines
 
@@ -80,8 +80,8 @@ the selection or removes it. Selected lines get the `selected` CSS class.
 
 ## Updating the entries
 
-The viewer takes a snapshot of `Entries` each time its parameters are set. To add entries, add them to the collection
+The viewer takes a snapshot of [Entries](cref:Meziantou.AspNetCore.Components.LogViewer.Entries) each time its parameters are set. To add entries, add them to the collection
 and render the parent component again (`StateHasChanged`): the expanded lines and the selection are kept. Assigning
 another collection resets them.
 
-The entries are tracked by reference: the same `LogEntry` instance must not appear twice in the tree.
+The entries are tracked by reference: the same [LogEntry](cref:Meziantou.AspNetCore.Components.LogEntry) instance must not appear twice in the tree.

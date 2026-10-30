@@ -45,7 +45,7 @@ static bool IsFromInternet(string path)
   | --- | --- |
   | [Antimalware scanning](04-AntimalwareScanning.md) | Windows 10 (`10.0.10240`) |
   | [Projected file system](12-ProjectedFileSystem/01-Overview.md) | Windows 10 version 1809 (`10.0.17763`) |
-  | `JobObject.SetIoLimits` of the [job objects](08-JobObjects.md) | Windows 10 (`10.0.10240`) |
+  | [JobObject.SetIoLimits](cref:Meziantou.Framework.Win32.JobObject.SetIoLimits) of the [job objects](08-JobObjects.md) | Windows 10 (`10.0.10240`) |
 
 - An application that only runs on Windows can declare it once instead, with `[assembly: SupportedOSPlatform("windows")]`
   or by targeting `net10.0-windows`.

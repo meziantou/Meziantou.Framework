@@ -6,7 +6,7 @@ description: What the public API generator does not do, and how to work around i
 - **It describes an API, it does not judge it.** The generator writes the current public API; it does not classify a
   change as breaking or not. Reviewers read the diff of the API files to decide.
 - **Removed types leave files behind** with the `OneFilePerNamespace` and `OneFilePerType` layouts: the MSBuild package,
-  the tool and `PublicApi.GenerateToDirectory` never delete a file. The verify mode reports these files. Delete the
+  the tool and [PublicApi.GenerateToDirectory](cref:Meziantou.Framework.PublicApiGenerator.PublicApi.GenerateToDirectory) never delete a file. The verify mode reports these files. Delete the
   directory before generating, or use the `SingleFile` layout. See
   [Removed types leave files behind](04-MSBuild.md#removed-types-leave-files-behind).
 - **The `new` modifier depends on the referenced assemblies.** It is not stored in metadata: when the assembly that

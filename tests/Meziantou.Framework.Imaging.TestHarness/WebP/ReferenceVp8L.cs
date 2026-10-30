@@ -45,7 +45,27 @@ public static class ReferenceVp8L
         if (reader.Read(3) != 0)
             throw new InvalidDataException("VP8L: version is not 0.");
 
-        return (width, height, alphaHint, DecodeImageStream(reader, width, height));
+        return (width, height, alphaHint, DecodeImageStream(reader, width, height, structure: null));
+    }
+
+    /// <summary>Decodes a <c>VP8L</c> chunk payload and describes how its image stream is coded.</summary>
+    /// <param name="payload">The chunk payload.</param>
+    /// <returns>The transforms and the coding of the main image.</returns>
+    public static Vp8LStructure Describe(ReadOnlySpan<byte> payload)
+    {
+        var reader = new BitReader(payload.ToArray());
+        if (reader.Read(8) != 0x2F)
+            throw new InvalidDataException("VP8L: bad signature.");
+
+        var width = (int)reader.Read(14) + 1;
+        var height = (int)reader.Read(14) + 1;
+        _ = reader.Read(1);
+        if (reader.Read(3) != 0)
+            throw new InvalidDataException("VP8L: version is not 0.");
+
+        var structure = new Vp8LStructure();
+        DecodeImageStream(reader, width, height, structure);
+        return structure;
     }
 
     /// <summary>Decodes a headerless VP8L image stream of a known size (the compressed data of an <c>ALPH</c> chunk).</summary>
@@ -53,9 +73,9 @@ public static class ReferenceVp8L
     /// <param name="width">The image width.</param>
     /// <param name="height">The image height.</param>
     /// <returns>The ARGB pixels.</returns>
-    public static uint[] DecodeImageStream(ReadOnlySpan<byte> data, int width, int height) => DecodeImageStream(new BitReader(data.ToArray()), width, height);
+    public static uint[] DecodeImageStream(ReadOnlySpan<byte> data, int width, int height) => DecodeImageStream(new BitReader(data.ToArray()), width, height, structure: null);
 
-    private static uint[] DecodeImageStream(BitReader reader, int width, int height)
+    private static uint[] DecodeImageStream(BitReader reader, int width, int height, Vp8LStructure? structure)
     {
         // Transforms, in order of appearance; inverted in reverse order
         var transforms = new List<(int Type, int Bits, uint[] Data, int XSize)>();
@@ -67,12 +87,19 @@ public static class ReferenceVp8L
             if (!seen.Add(type))
                 throw new InvalidDataException("VP8L: a transform is used twice.");
 
+            structure?.TransformList.Add(type);
+
             switch (type)
             {
                 case 0:
                 case 1:
                 {
                     var bits = (int)reader.Read(3) + 2;
+                    if (type == 0 && structure is not null)
+                    {
+                        structure.PredictorBits = bits;
+                    }
+
                     var data = DecodeEntropyCodedImage(reader, DivRoundUp(xsize, bits), DivRoundUp(height, bits));
                     transforms.Add((type, bits, data, xsize));
                     break;
@@ -98,7 +125,7 @@ public static class ReferenceVp8L
             }
         }
 
-        var pixels = DecodeSpatiallyCodedImage(reader, xsize, height, isMainImage: true);
+        var pixels = DecodeSpatiallyCodedImage(reader, xsize, height, isMainImage: true, structure);
         for (var i = transforms.Count - 1; i >= 0; i--)
         {
             var (type, bits, data, transformXSize) = transforms[i];
@@ -114,9 +141,9 @@ public static class ReferenceVp8L
         return pixels;
     }
 
-    private static uint[] DecodeEntropyCodedImage(BitReader reader, int width, int height) => DecodeSpatiallyCodedImage(reader, width, height, isMainImage: false);
+    private static uint[] DecodeEntropyCodedImage(BitReader reader, int width, int height) => DecodeSpatiallyCodedImage(reader, width, height, isMainImage: false, structure: null);
 
-    private static uint[] DecodeSpatiallyCodedImage(BitReader reader, int width, int height, bool isMainImage)
+    private static uint[] DecodeSpatiallyCodedImage(BitReader reader, int width, int height, bool isMainImage, Vp8LStructure? structure)
     {
         var cacheBits = 0;
         if (reader.Read(1) == 1)
@@ -134,6 +161,13 @@ public static class ReferenceVp8L
             prefixBits = (int)reader.Read(3) + 2;
             entropyImage = DecodeEntropyCodedImage(reader, DivRoundUp(width, prefixBits), DivRoundUp(height, prefixBits));
             groupCount = (int)entropyImage.Max(pixel => (pixel >> 8) & 0xFFFF) + 1;
+        }
+
+        if (structure is not null)
+        {
+            structure.ColorCacheBits = cacheBits;
+            structure.PrefixBits = prefixBits;
+            structure.GroupCount = groupCount;
         }
 
         var cacheSize = cacheBits == 0 ? 0 : 1 << cacheBits;

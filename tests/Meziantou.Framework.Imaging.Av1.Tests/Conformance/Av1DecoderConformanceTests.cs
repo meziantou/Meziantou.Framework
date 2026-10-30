@@ -74,7 +74,10 @@ public sealed class Av1DecoderConformanceTests
     /// <summary>
     /// Third pass, by several workers: the post-processing filters of each frame run by bands of rows, whatever the size of
     /// the frame (<see cref="Av1PostFilter.TestIgnoreMinimumSize"/>), so that the bands cut every vector, the last one
-    /// shorter than the others. The planes must still have the digests of the independent decoders.
+    /// shorter than the others, and the tiles of a tile group are decoded by workers. A last pass decodes the tiles from
+    /// the last one to the first one, each by the worker of its index modulo 3, with buffers that are not cleared
+    /// (<see cref="Av1TileWorkers.TestReverseOrder"/>): a tile must depend on no other tile, and on nothing that a worker
+    /// keeps from its previous tile. The planes must still have the digests of the independent decoders.
     /// </summary>
     [Theory]
     [MemberData(nameof(Vectors))]
@@ -87,11 +90,364 @@ public sealed class Av1DecoderConformanceTests
             {
                 AssertDecodedPlanes(id, AllocationScope.Create(ImageConfiguration.Default, id), workers);
             }
+
+            Av1TileWorkers.TestReverseOrder = true;
+            var dirty = new DirtySlabPool();
+            AssertDecodedPlanes(id, new AllocationScope(ImageConfiguration.Default.Limits, dirty.Pool, id), maxDegreeOfParallelism: 3);
+            dirty.AssertEveryRentalWasDirty(id);
+        }
+        finally
+        {
+            Av1PostFilter.TestIgnoreMinimumSize = false;
+            Av1TileWorkers.TestReverseOrder = false;
+        }
+    }
+
+    /// <summary>
+    /// The vectors whose tiles workers decode (<see cref="DecodedPlanesDoNotDependOnTheNumberOfWorkers"/>): tile groups of
+    /// several tiles, uniform and explicit tile sizes, superblocks of 64x64 and of 128x128, every chroma format, inter
+    /// frames, and frames that keep the distributions of a tile other than the first one (<c>context_update_tile_id</c>)
+    /// for the frames that follow them.
+    /// </summary>
+    [Fact]
+    public void TheVectorsHaveTilesThatWorkersDecode()
+    {
+        var headers = new List<(string Id, Av1FrameHeader Header, Av1SequenceHeader Sequence, int FrameCount)>();
+        foreach (var vector in GoldenCorpus.Default.Av1Vectors)
+        {
+            var frames = Decode(vector, AllocationScope.Create(ImageConfiguration.Default, vector.Id), decoder => { });
+            try
+            {
+                headers.AddRange(frames.Where(frame => frame.Frame.Header.TileCount > 1).Select(frame => (vector.Id, frame.Frame.Header, frame.Frame.Sequence, frames.Count)));
+            }
+            finally
+            {
+                Release(frames);
+            }
+        }
+
+        Assert.HasCountGreaterThanOrEqual(10, headers.Select(entry => entry.Id).Distinct(StringComparer.Ordinal).ToList());
+        Assert.Contains(headers, entry => IsExplicitSpacing(entry.Header.MiColStarts.AsSpan(0, entry.Header.TileCols + 1)));
+        Assert.Contains(headers, entry => entry.Header.TileRows > 1);
+        Assert.Contains(headers, entry => entry.Sequence.Use128x128Superblock);
+        Assert.Contains(headers, entry => !entry.Header.FrameIsIntra);
+        Assert.Equal([1, 3], headers.Select(entry => entry.Sequence.PlaneCount).Distinct().Order().ToArray());
+        Assert.Contains(headers, entry => entry.Sequence.SubsamplingX is 0 && entry.Sequence.PlaneCount is 3);
+        Assert.Contains(headers, entry => entry.FrameCount > 1 && !entry.Header.DisableFrameEndUpdateCdf && entry.Header.ContextUpdateTileId is not 0);
+
+        // Uniform spacing gives every tile but the last one the same width, and the last one no more
+        static bool IsExplicitSpacing(ReadOnlySpan<int> starts)
+        {
+            for (var i = 1; i < starts.Length - 1; i++)
+            {
+                if (starts[i + 1] - starts[i] > starts[1] - starts[0] || (i < starts.Length - 2 && starts[i + 1] - starts[i] != starts[1] - starts[0]))
+                    return true;
+            }
+
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// The tiles of a frame decoded by workers fail with the error of a sequential decoding: the error of the first tile
+    /// that fails, whichever tile a worker finishes first. The data of one or two tiles of the first frame of each vector
+    /// are overwritten, and the size of a tile is made larger than the data; the outcome (the error, or the digest of the
+    /// frames) of 16 workers, and of 3 workers that decode the tiles from the last one, is the outcome of one worker.
+    /// </summary>
+    [Theory]
+    [InlineData("av1/tiles-4x1-uniform-420-200x64", true)]
+    [InlineData("av1/tiles-4x1-explicit-420-264x64", true)]
+    [InlineData("av1/tiles-2x2-420-200x152", false)]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void TilesDecodedByWorkersFailWithTheErrorOfTheFirstFailingTile(string id, bool tilesFail)
+    {
+        var vector = GoldenCorpus.Default.GetAv1Vector(id);
+        var data = File.ReadAllBytes(GoldenCorpus.Default.RootDirectory / vector.Input.Path);
+        var (tiles, sizeFields, tileSizeBytes) = LocateTiles(data);
+        Assert.HasCount(4, tiles);
+
+        // A fill below 256 is that byte; above, the seed of random bytes
+        int[] fills = [0x00, 0xFF, 1000, 1001, 1002];
+        Av1PostFilter.TestIgnoreMinimumSize = true;
+        try
+        {
+            var single = new Dictionary<(int Tile, int Fill), string>();
+            foreach (var tile in Enumerable.Range(0, tiles.Count))
+            {
+                foreach (var fill in fills)
+                {
+                    single[(tile, fill)] = AssertSameOutcome(id, Fill(data, tiles[tile], fill));
+                }
+            }
+
+            var distinctErrors = 0;
+            for (var first = 0; first < tiles.Count; first++)
+            {
+                for (var second = first + 1; second < tiles.Count; second++)
+                {
+                    foreach (var firstFill in fills)
+                    {
+                        foreach (var secondFill in fills)
+                        {
+                            var outcome = AssertSameOutcome(id, Fill(Fill(data, tiles[first], firstFill), tiles[second], secondFill));
+                            var (firstOutcome, secondOutcome) = (single[(first, firstFill)], single[(second, secondFill)]);
+                            if (IsError(firstOutcome))
+                                Assert.Equal(firstOutcome, outcome, message: $"{id}: tiles {first} ({firstFill}) and {second} ({secondFill}).");
+
+                            if (IsError(firstOutcome) && IsError(secondOutcome) && firstOutcome != secondOutcome)
+                                distinctErrors++;
+                        }
+                    }
+                }
+            }
+
+            // A tile size that exceeds the data: the tiles before it are decoded, and their error comes first
+            for (var tile = 1; tile < sizeFields.Count; tile++)
+            {
+                var corrupted = Fill(data, (sizeFields[tile], tileSizeBytes), 0xFF);
+                var sizeError = AssertSameOutcome(id, corrupted);
+                Assert.True(IsError(sizeError));
+                foreach (var fill in fills)
+                {
+                    var outcome = AssertSameOutcome(id, Fill(corrupted, tiles[0], fill));
+                    if (IsError(single[(0, fill)]))
+                    {
+                        Assert.Equal(single[(0, fill)], outcome);
+                        if (sizeError != single[(0, fill)])
+                            distinctErrors++;
+                    }
+                }
+            }
+
+            // Failures that differ, where the first one decides the error. The tiles of some vectors decode whatever their
+            // data are: only the sizes of their tiles fail
+            Assert.Equal(tilesFail, distinctErrors > 0, message: $"{id}: {distinctErrors} pairs of failures that differ. Errors: {string.Join(" | ", single.Values.Where(IsError).Distinct(StringComparer.Ordinal))}");
         }
         finally
         {
             Av1PostFilter.TestIgnoreMinimumSize = false;
         }
+
+        static bool IsError(string outcome) => !outcome.StartsWith("frames:", StringComparison.Ordinal);
+
+        static byte[] Fill(byte[] data, (int Offset, int Length) range, int fill)
+        {
+            var copy = data.ToArray();
+            var target = copy.AsSpan(range.Offset, range.Length);
+            if (fill < 256)
+            {
+                target.Fill((byte)fill);
+            }
+            else
+            {
+                new Random(fill).NextBytes(target);
+            }
+
+            return copy;
+        }
+    }
+
+    [Fact]
+    public void TileWorkersThrowTheErrorOfTheFirstFailingTileAndACancellationFirst()
+    {
+        var failures = new[] { new InvalidImageContentException("tile 3"), new InvalidImageContentException("tile 6") };
+        foreach (var reverse in (bool[])[false, true])
+        {
+            Av1TileWorkers.TestReverseOrder = reverse;
+            try
+            {
+                foreach (var workers in (int[])[1, 2, 3, 16])
+                {
+                    var ran = new int[10];
+                    var exception = Assert.Throws<InvalidImageContentException>(() => Av1TileWorkers.Run(workers, 10, (worker, tile) =>
+                    {
+                        Assert.InRange(worker, 0, workers - 1);
+                        Interlocked.Increment(ref ran[tile]);
+                        switch (tile)
+                        {
+                            case 3:
+                                throw failures[0];
+                            case 6:
+                                throw failures[1];
+                        }
+                    }));
+
+                    Assert.Same(failures[0], exception);
+                    Assert.All(ran.Take(4), count => count is 1, $"{workers} workers: a tile before the first failing one did not run once.");
+                    Assert.All(ran, count => count <= 1, $"{workers} workers: a tile ran twice.");
+
+                    // A cancellation that a tile observes comes before the errors of the other tiles: tile 7 runs when the
+                    // tiles run from the last one, and may run with several workers
+                    var canceled = new OperationCanceledException();
+                    var failure = Assert.ThrowsAny<Exception>(() => Av1TileWorkers.Run(workers, 10, (worker, tile) =>
+                    {
+                        switch (tile)
+                        {
+                            case 2:
+                                throw failures[0];
+                            case 7:
+                                throw canceled;
+                        }
+                    }));
+
+                    if (reverse)
+                    {
+                        Assert.Same(canceled, failure);
+                    }
+                    else if (workers is 1)
+                    {
+                        Assert.Same(failures[0], failure);
+                    }
+                    else
+                    {
+                        Assert.True(ReferenceEquals(failure, canceled) || ReferenceEquals(failure, failures[0]), $"{workers} workers: {failure}");
+                    }
+                }
+            }
+            finally
+            {
+                Av1TileWorkers.TestReverseOrder = false;
+            }
+        }
+    }
+
+    [Fact]
+    public void TileWorkersAreChargedToTheScopeBeforeTheTilesStart()
+    {
+        // The state of every worker is rented on the calling thread: the peak of a decoding by 4 workers is the same at
+        // every run, above the one of a single worker, and a limit that only one worker fits fails before any output
+        var vector = GoldenCorpus.Default.GetAv1Vector("av1/tiles-2x2-420-200x152");
+        var data = File.ReadAllBytes(GoldenCorpus.Default.RootDirectory / vector.Input.Path);
+        Av1PostFilter.TestIgnoreMinimumSize = true;
+        try
+        {
+            var one = MeasurePeak(data, ImageConfiguration.Default.Limits, workers: 1);
+            var four = MeasurePeak(data, ImageConfiguration.Default.Limits, workers: 4);
+            Assert.True(four > one, $"{four} bytes with 4 workers, {one} with one.");
+            Assert.Equal(four, MeasurePeak(data, ImageConfiguration.Default.Limits, workers: 4));
+
+            var limits = new ImageResourceLimits { MaxLiveAllocationBytes = one };
+            Assert.Equal(one, MeasurePeak(data, limits, workers: 1));
+            var scope = new AllocationScope(limits, name: vector.Id);
+            Assert.Throws<ImageResourceLimitException>(() => Decode(data, scope, decoder => decoder.MaxDegreeOfParallelism = 4));
+            Assert.Equal(0, scope.LiveBytes);
+        }
+        finally
+        {
+            Av1PostFilter.TestIgnoreMinimumSize = false;
+        }
+
+        static long MeasurePeak(byte[] data, ImageResourceLimits limits, int workers)
+        {
+            var scope = new AllocationScope(limits, name: nameof(TileWorkersAreChargedToTheScopeBeforeTheTilesStart));
+            Release(Decode(data, scope, decoder => decoder.MaxDegreeOfParallelism = workers));
+            Assert.Equal(0, scope.LiveBytes);
+            return scope.GetDiagnostics().PeakLiveBytes;
+        }
+    }
+
+    [Fact]
+    public void TilesDecodedByWorkersObserveTheCancellation()
+    {
+        var vector = GoldenCorpus.Default.GetAv1Vector("av1/tiles-2x2-420-200x152");
+        var data = File.ReadAllBytes(GoldenCorpus.Default.RootDirectory / vector.Input.Path);
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+        Av1PostFilter.TestIgnoreMinimumSize = true;
+        try
+        {
+            var scope = AllocationScope.Create(ImageConfiguration.Default, vector.Id);
+            using var decoder = new Av1Decoder(scope) { MaxDegreeOfParallelism = 4 };
+            decoder.SetInput(data, 0, data.Length);
+            Assert.Throws<OperationCanceledException>(() => decoder.DecodeNextOutputFrame(cancellation.Token));
+        }
+        finally
+        {
+            Av1PostFilter.TestIgnoreMinimumSize = false;
+        }
+    }
+
+    // The outcome of the decoding of a stream, the same by one worker, by 16 workers and by 3 workers that decode the
+    // tiles from the last one: the error, or the digest of the planes of every frame
+    private static string AssertSameOutcome(string id, byte[] data)
+    {
+        var expected = GetOutcome(data, workers: 1);
+        Assert.Equal(expected, GetOutcome(data, workers: 16), message: $"{id}: 16 workers.");
+        Av1TileWorkers.TestReverseOrder = true;
+        try
+        {
+            Assert.Equal(expected, GetOutcome(data, workers: 3), message: $"{id}: 3 workers, from the last tile.");
+        }
+        finally
+        {
+            Av1TileWorkers.TestReverseOrder = false;
+        }
+
+        return expected;
+
+        static string GetOutcome(byte[] data, int workers)
+        {
+            var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(AssertSameOutcome));
+            try
+            {
+                var frames = Decode(data, scope, decoder => decoder.MaxDegreeOfParallelism = workers);
+                try
+                {
+                    return "frames: " + string.Join(", ", frames.Select(frame => string.Join('/', Enumerable.Range(0, frame.Frame.PlaneCount).Select(plane => ComputeDigest(CopyOutputPlanes(scope, frame.Frame)[plane], frame.Frame.Sequence.BitDepth)))));
+                }
+                finally
+                {
+                    Release(frames);
+                }
+            }
+            catch (ImageException exception)
+            {
+                return $"{exception.GetType().Name}: {exception.Message}";
+            }
+        }
+    }
+
+    // The tiles of the first frame of a stream that starts with a sequence header and a frame unit of one tile group: the
+    // offset and the length of the data of each tile, the offsets of the tile_size_minus_1 fields, and their size
+    private static (List<(int Offset, int Length)> Tiles, List<int> SizeFields, int TileSizeBytes) LocateTiles(byte[] data)
+    {
+        var units = ReferenceObuStream.ReadUnits(data);
+        var sequenceUnit = units.First(unit => unit.Type == ReferenceObuStream.SequenceHeader);
+        var sequence = Av1SequenceHeader.Parse(data.AsSpan(sequenceUnit.Offset + sequenceUnit.HeaderLength, sequenceUnit.PayloadLength), operatingPoint: 0);
+        var frameUnit = units.First(unit => unit.Type == ReferenceObuStream.Frame);
+        var obu = Av1ObuHeader.Read(data.AsSpan(frameUnit.Offset));
+        var payloadStart = frameUnit.Offset + frameUnit.HeaderLength;
+        var reader = new Av1BitReader(data.AsSpan(payloadStart, frameUnit.PayloadLength));
+        var header = Av1FrameHeaderParser.Parse(ref reader, sequence, obu, new Av1FrameBuffer?[Av1Constants.NumRefFrames], new bool[Av1Constants.NumRefFrames]);
+        Assert.True(header.FrameIsIntra);
+        reader.ByteAlign();
+
+        // tile_start_and_end_present_flag is 0 in a frame unit: one byte with the alignment
+        var position = payloadStart + reader.BytePosition + 1;
+        var end = payloadStart + frameUnit.PayloadLength;
+        var tiles = new List<(int Offset, int Length)>();
+        var sizeFields = new List<int>();
+        for (var tile = 0; tile < header.TileCount; tile++)
+        {
+            if (tile == header.TileCount - 1)
+            {
+                tiles.Add((position, end - position));
+                break;
+            }
+
+            sizeFields.Add(position);
+            var size = 1;
+            for (var i = 0; i < header.TileSizeBytes; i++)
+            {
+                size += data[position + i] << (8 * i);
+            }
+
+            position += header.TileSizeBytes;
+            tiles.Add((position, size));
+            position += size;
+        }
+
+        return (tiles, sizeFields, header.TileSizeBytes);
     }
 
     [Fact]

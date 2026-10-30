@@ -34,7 +34,7 @@ Assert.Equal("[===] \U0001F600 00042 1.50 0001", sb.ToString());
 
 ## Formatted values
 
-`AppendSpanFormattable` formats the value straight into the buffer, without creating an intermediate string. When the
+[AppendSpanFormattable](cref:Meziantou.Framework.ValueStringBuilder.AppendSpanFormattable) formats the value straight into the buffer, without creating an intermediate string. When the
 value does not fit in the remaining space, it falls back to `ToString(format, provider)`. `format` and `provider` are
 optional: `null` uses the default format and the current culture.
 

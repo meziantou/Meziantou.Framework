@@ -5,7 +5,7 @@ description: Start an NTP server, choose its address and its time source, descri
 
 ## Start a server
 
-`NtpServer` listens on UDP. `StartAsync` returns once the socket is bound; the server answers in the background until
+[NtpServer](cref:Meziantou.Framework.Ntp.NtpServer) listens on UDP. [StartAsync](cref:Meziantou.Framework.Ntp.NtpServer.StartAsync) returns once the socket is bound; the server answers in the background until
 it is disposed:
 
 <!-- ref:../../tests/Meziantou.Framework.NtpServer.Tests/NtpServerTests.cs;region=NtpServer_Start;format=md-fenced-code-block;dedent=true -->
@@ -18,14 +18,14 @@ Assert.NotEqual(0, server.Port); // The port the operating system assigned
 ```
 <!-- endref -->
 
-- `Port` is 0 by default: the system chooses a free port, and `server.Port` returns it. Set 123, the standard port, to
+- [Port](cref:Meziantou.Framework.Ntp.NtpServerOptions.Port) is 0 by default: the system chooses a free port, and `server.Port` returns it. Set 123, the standard port, to
   serve standard clients; on Linux and macOS, ports below 1024 need elevated privileges.
-- `StartAsync` throws when the port cannot be bound. It can be called only once: create another server to start again.
+- [StartAsync](cref:Meziantou.Framework.Ntp.NtpServer.StartAsync) throws when the port cannot be bound. It can be called only once: create another server to start again.
 - The server answers with the version of the request (3 or 4), and ignores packets that are not client requests.
 
 ## Choose the address
 
-`BindAddress` is `IPAddress.Any` by default: every IPv4 interface. Bind to the loopback address to serve only the local
+[BindAddress](cref:Meziantou.Framework.Ntp.NtpServerOptions.BindAddress) is `IPAddress.Any` by default: every IPv4 interface. Bind to the loopback address to serve only the local
 machine, for instance in tests:
 
 <!-- ref:../../tests/Meziantou.Framework.NtpServer.Tests/NtpServerTests.cs;region=NtpServer_Loopback;format=md-fenced-code-block;dedent=true -->
@@ -43,7 +43,7 @@ To serve IPv6 clients, start a server with `IPAddress.IPv6Any` or `IPAddress.IPv
 
 ## Choose the time source
 
-The server answers with `TimeProvider.GetUtcNow()` of `NtpServerOptions.TimeProvider`, the system clock by default. Any
+The server answers with `TimeProvider.GetUtcNow()` of [NtpServerOptions.TimeProvider](cref:Meziantou.Framework.Ntp.NtpServerOptions.TimeProvider), the system clock by default. Any
 `TimeProvider` works, such as `FakeTimeProvider` from the `Microsoft.Extensions.TimeProvider.Testing` package, to test
 a client at a fixed date:
 
@@ -96,14 +96,14 @@ Assert.Equal("GPS", response.ReferenceIdentifierText);
 
 | Option | Default | Use |
 | --- | --- | --- |
-| `Stratum` | 2 | 1 claims a reference clock attached to the machine. Clients prefer lower strata. |
-| `ReferenceIdentifier` | `LOCL` | Up to four ASCII characters naming the reference clock, such as `GPS` or `PPS`. |
-| `RootDispersion` | 100 ms | The maximum error of the clock. Clients use it as the error bound of the offset; zero claims a perfect clock. |
-| `MaxRequestsPerSecond` | 100 | See [Rate limiting](#rate-limiting). |
+| [Stratum](cref:Meziantou.Framework.Ntp.NtpServerOptions.Stratum) | 2 | 1 claims a reference clock attached to the machine. Clients prefer lower strata. |
+| [ReferenceIdentifier](cref:Meziantou.Framework.Ntp.NtpServerOptions.ReferenceIdentifier) | `LOCL` | Up to four ASCII characters naming the reference clock, such as `GPS` or `PPS`. |
+| [RootDispersion](cref:Meziantou.Framework.Ntp.NtpServerOptions.RootDispersion) | 100 ms | The maximum error of the clock. Clients use it as the error bound of the offset; zero claims a perfect clock. |
+| [MaxRequestsPerSecond](cref:Meziantou.Framework.Ntp.NtpServerOptions.MaxRequestsPerSecond) | 100 | See [Rate limiting](#rate-limiting). |
 
 ## Rate limiting
 
-The server answers at most `MaxRequestsPerSecond` requests per second from each source address. The first request over
+The server answers at most [MaxRequestsPerSecond](cref:Meziantou.Framework.Ntp.NtpServerOptions.MaxRequestsPerSecond) requests per second from each source address. The first request over
 the limit in a second gets a `RATE` Kiss-o'-Death reply, and the following ones are dropped, so the server cannot be
 used to send a flood of replies to a spoofed address. Set 0 to disable the limit.
 
@@ -113,8 +113,8 @@ the machine, not with `TimeProvider`, so a fake clock does not change it.
 
 ## Stop the server
 
-Dispose the server to stop it. `Completion` is a task that completes when the server stops, because it was disposed or
-because the token passed to `StartAsync` was canceled, and fails when the listen loop stops on an error:
+Dispose the server to stop it. [Completion](cref:Meziantou.Framework.Ntp.NtpServer.Completion) is a task that completes when the server stops, because it was disposed or
+because the token passed to [StartAsync](cref:Meziantou.Framework.Ntp.NtpServer.StartAsync) was canceled, and fails when the listen loop stops on an error:
 
 <!-- ref:../../tests/Meziantou.Framework.NtpServer.Tests/NtpServerTests.cs;region=NtpServer_Completion;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -129,7 +129,7 @@ await server.Completion; // completes on Dispose or cancellation, faults on an u
 ```
 <!-- endref -->
 
-Await or monitor `Completion` in a long-running host, so a server that stopped answering does not go unnoticed. An
+Await or monitor [Completion](cref:Meziantou.Framework.Ntp.NtpServer.Completion) in a long-running host, so a server that stopped answering does not go unnoticed. An
 error on a single datagram does not stop the server.
 
 ## Tracing

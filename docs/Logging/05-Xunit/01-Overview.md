@@ -21,7 +21,7 @@ The logger reads `TestContext.Current.TestOutputHelper` every time it writes. Th
 code whose lifetime is not tied to a single test, such as a host or a fixture shared by several tests: each entry goes
 to the test that is running. An entry logged while no test runs is dropped.
 
-The category of `CreateLogger<T>()` is the full name of `T`.
+The category of [CreateLogger\<T\>()](cref:Meziantou.Extensions.Logging.Xunit.v3.XUnitLogger.CreateLogger) is the full name of `T`.
 
 ## Write to a given test
 

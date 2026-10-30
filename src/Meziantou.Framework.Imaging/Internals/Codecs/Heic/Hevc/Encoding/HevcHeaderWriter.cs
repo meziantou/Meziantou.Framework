@@ -210,7 +210,7 @@ internal static class HevcHeaderWriter
         writer.WriteFlag(false); // weighted_bipred_flag
         writer.WriteFlag(parameters.TransquantBypassEnabled); // transquant_bypass_enabled_flag
         writer.WriteFlag(false); // tiles_enabled_flag
-        writer.WriteFlag(false); // entropy_coding_sync_enabled_flag
+        writer.WriteFlag(parameters.EntropyCodingSyncEnabled); // entropy_coding_sync_enabled_flag
 
         // A picture is one slice: no in-loop filter crosses a slice boundary
         writer.WriteFlag(false); // pps_loop_filter_across_slices_enabled_flag
@@ -263,7 +263,11 @@ internal static class HevcHeaderWriter
     /// <param name="sps">The active sequence parameter set, as a decoder reads it.</param>
     /// <param name="pps">The active picture parameter set, as a decoder reads it.</param>
     /// <param name="slice">The values of the syntax elements.</param>
-    public static void WriteSliceSegmentHeader(PooledPayloadWriter output, HevcSequenceParameterSet sps, HevcPictureParameterSet pps, in HevcSliceParameters slice)
+    /// <param name="entryPointOffsetsMinus1">
+    /// <c>entry_point_offset_minus1</c> of the rows of coding tree blocks of the wavefront that follow the first one, when
+    /// <c>entropy_coding_sync_enabled_flag</c> is 1.
+    /// </param>
+    public static void WriteSliceSegmentHeader(PooledPayloadWriter output, HevcSequenceParameterSet sps, HevcPictureParameterSet pps, in HevcSliceParameters slice, ReadOnlySpan<int> entryPointOffsetsMinus1 = default)
     {
         ArgumentNullException.ThrowIfNull(sps);
         ArgumentNullException.ThrowIfNull(pps);
@@ -273,7 +277,8 @@ internal static class HevcHeaderWriter
 
         // The syntax that the encoder does not produce
         Debug.Assert(!pps.DependentSliceSegmentsEnabledFlag && !pps.OutputFlagPresentFlag && pps.NumExtraSliceHeaderBits is 0 && !pps.ListsModificationPresentFlag);
-        Debug.Assert(!pps.WeightedPredFlag && !pps.ChromaQpOffsetListEnabledFlag && !pps.LoopFilterAcrossSlicesEnabledFlag && !pps.TilesEnabledFlag && !pps.EntropyCodingSyncEnabledFlag);
+        Debug.Assert(!pps.WeightedPredFlag && !pps.ChromaQpOffsetListEnabledFlag && !pps.LoopFilterAcrossSlicesEnabledFlag && !pps.TilesEnabledFlag);
+        Debug.Assert(pps.EntropyCodingSyncEnabledFlag || entryPointOffsetsMinus1.IsEmpty);
         Debug.Assert(!pps.SliceSegmentHeaderExtensionPresentFlag && !sps.LongTermRefPicsPresentFlag && pps.NumRefIdxL0DefaultActiveMinus1 is 0);
 
         var isIdr = slice.NalUnitType is HevcConstants.NalIdrNLp or HevcConstants.NalIdrWRadl;
@@ -348,6 +353,28 @@ internal static class HevcHeaderWriter
             {
                 writer.WriteSE(slice.SliceBetaOffsetDiv2); // slice_beta_offset_div2
                 writer.WriteSE(slice.SliceTcOffsetDiv2); // slice_tc_offset_div2
+            }
+        }
+
+        if (pps.EntropyCodingSyncEnabledFlag)
+        {
+            writer.WriteUE((uint)entryPointOffsetsMinus1.Length); // num_entry_point_offsets
+            if (!entryPointOffsetsMinus1.IsEmpty)
+            {
+                // Each offset has the bits of the largest one
+                var max = 0;
+                foreach (var offset in entryPointOffsetsMinus1)
+                {
+                    Debug.Assert(offset >= 0);
+                    max = Math.Max(max, offset);
+                }
+
+                var length = Math.Max(1, 32 - int.LeadingZeroCount(max));
+                writer.WriteUE((uint)(length - 1)); // offset_len_minus1
+                foreach (var offset in entryPointOffsetsMinus1)
+                {
+                    writer.WriteBits((uint)offset, length); // entry_point_offset_minus1
+                }
             }
         }
 

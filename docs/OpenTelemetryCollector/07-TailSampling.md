@@ -3,17 +3,17 @@ title: Tail sampling
 description: Buffer the spans of each trace until its root span arrives, keep or drop the whole trace, and bound the memory used by the buffer.
 ---
 
-`OpenTelemetryTailSampler` keeps or drops traces as a whole. It buffers the spans of each trace, by trace id, and
+[OpenTelemetryTailSampler](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTailSampler) keeps or drops traces as a whole. It buffers the spans of each trace, by trace id, and
 evaluates the trace when:
 
 - its root span, the span without a parent span id, is received;
-- or the trace has been buffered for `MaxTraceDuration` without receiving its root span.
+- or the trace has been buffered for [MaxTraceDuration](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTailSampler.MaxTraceDuration) without receiving its root span.
 
 The spans of a kept trace are then passed to the handlers together, in one export request.
 
 ## Keep some traces
 
-Add the tail sampler to `Samplers`, and give it a `ShouldSample` function that decides on a trace:
+Add the tail sampler to [Samplers](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryReceiverOptions.Samplers), and give it a [ShouldSample](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTailSampler.ShouldSample) function that decides on a trace:
 
 <!-- ref:../../tests/Meziantou.Framework.OpenTelemetry.Tests/OpenTelemetryReceiverTests.cs;region=OpenTelemetryCollector_TailSamplingByRootSpan;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -64,20 +64,20 @@ Assert.Equal(
 ```
 <!-- endref -->
 
-`ShouldSample` receives an `OpenTelemetryTailTraceContext`:
+[ShouldSample](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTailSampler.ShouldSample) receives an [OpenTelemetryTailTraceContext](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTailTraceContext):
 
 | Property | Description |
 | --- | --- |
-| `TraceId` | The trace id, in uppercase hexadecimal |
-| `Spans` | The buffered spans of the trace |
-| `RootSpan` | The root span, or `null` when the trace timed out without it |
-| `IsRootSpanObserved` | Whether the root span was received |
-| `TimedOut` | Whether the trace is evaluated because it reached `MaxTraceDuration` |
-| `FirstSpanReceivedAt` | When the first span of the trace was received |
-| `EvaluationTime` | When the trace is evaluated |
-| `HandlerContext` | The context of the last request that added spans to the trace |
+| [TraceId](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTailTraceContext.TraceId) | The trace id, in uppercase hexadecimal |
+| [Spans](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTailTraceContext.Spans) | The buffered spans of the trace |
+| [RootSpan](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTailTraceContext.RootSpan) | The root span, or `null` when the trace timed out without it |
+| [IsRootSpanObserved](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTailTraceContext.IsRootSpanObserved) | Whether the root span was received |
+| [TimedOut](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTailTraceContext.TimedOut) | Whether the trace is evaluated because it reached [MaxTraceDuration](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTailSampler.MaxTraceDuration) |
+| [FirstSpanReceivedAt](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTailTraceContext.FirstSpanReceivedAt) | When the first span of the trace was received |
+| [EvaluationTime](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTailTraceContext.EvaluationTime) | When the trace is evaluated |
+| [HandlerContext](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTailTraceContext.HandlerContext) | The context of the last request that added spans to the trace |
 
-Without a `ShouldSample` function, every trace is kept: the tail sampler then only groups the spans of each trace.
+Without a [ShouldSample](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTailSampler.ShouldSample) function, every trace is kept: the tail sampler then only groups the spans of each trace.
 
 The spans of the dispatched request keep their resource and instrumentation scope, grouped as the clients sent them.
 Spans without a trace id are dropped.
@@ -86,35 +86,35 @@ Spans without a trace id are dropped.
 
 | Property | Default | Description |
 | --- | --- | --- |
-| `MaxTraceDuration` | 2 minutes | How long a trace is buffered while waiting for its root span |
-| `MaxBufferedSpansPerTrace` | 5000 | How many spans a trace can buffer before `OverflowPolicy` applies |
-| `MaxBufferedSpans` | 100,000 | How many spans can be buffered over all traces |
-| `OverflowPolicy` | `DropWholeTrace` | What happens to a trace that exceeds `MaxBufferedSpansPerTrace` |
-| `SweepInterval` | A quarter of `MaxTraceDuration` | How often the buffered traces are checked for reaching `MaxTraceDuration` |
+| [MaxTraceDuration](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTailSampler.MaxTraceDuration) | 2 minutes | How long a trace is buffered while waiting for its root span |
+| [MaxBufferedSpansPerTrace](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTailSampler.MaxBufferedSpansPerTrace) | 5000 | How many spans a trace can buffer before [OverflowPolicy](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTailSampler.OverflowPolicy) applies |
+| [MaxBufferedSpans](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTailSampler.MaxBufferedSpans) | 100,000 | How many spans can be buffered over all traces |
+| [OverflowPolicy](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTailSampler.OverflowPolicy) | [DropWholeTrace](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTailBufferOverflowPolicy.DropWholeTrace) | What happens to a trace that exceeds [MaxBufferedSpansPerTrace](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTailSampler.MaxBufferedSpansPerTrace) |
+| [SweepInterval](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTailSampler.SweepInterval) | A quarter of [MaxTraceDuration](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTailSampler.MaxTraceDuration) | How often the buffered traces are checked for reaching [MaxTraceDuration](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTailSampler.MaxTraceDuration) |
 
 The durations and limits must be greater than zero.
 
 ## Traces that never complete
 
-A trace whose root span never arrives is evaluated once it has been buffered for `MaxTraceDuration`, with `TimedOut` set
-and `RootSpan` set to `null`. A background service checks the buffered traces every `SweepInterval`, so such traces are
+A trace whose root span never arrives is evaluated once it has been buffered for [MaxTraceDuration](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTailSampler.MaxTraceDuration), with [TimedOut](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTailTraceContext.TimedOut) set
+and [RootSpan](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTailTraceContext.RootSpan) set to `null`. A background service checks the buffered traces every [SweepInterval](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTailSampler.SweepInterval), so such traces are
 released even when no other request is received. The service uses the `TimeProvider` of the service collection.
 
 ## Bound the buffer
 
-`OverflowPolicy` applies to a trace that exceeds `MaxBufferedSpansPerTrace`:
+[OverflowPolicy](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTailSampler.OverflowPolicy) applies to a trace that exceeds [MaxBufferedSpansPerTrace](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTailSampler.MaxBufferedSpansPerTrace):
 
 | Value | Keeps |
 | --- | --- |
-| `DropWholeTrace` | Nothing: the whole trace is dropped |
-| `DropOldestSpans` | The newest spans |
-| `DropNewestSpans` | The oldest spans |
+| [DropWholeTrace](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTailBufferOverflowPolicy.DropWholeTrace) | Nothing: the whole trace is dropped |
+| [DropOldestSpans](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTailBufferOverflowPolicy.DropOldestSpans) | The newest spans |
+| [DropNewestSpans](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTailBufferOverflowPolicy.DropNewestSpans) | The oldest spans |
 
-`MaxBufferedSpans` is a separate limit, over all buffered traces. Reaching it evicts whole traces, largest first: a trace
-within `MaxBufferedSpansPerTrace` is never truncated because of other traffic, and new traces are still accepted when
+[MaxBufferedSpans](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTailSampler.MaxBufferedSpans) is a separate limit, over all buffered traces. Reaching it evicts whole traces, largest first: a trace
+within [MaxBufferedSpansPerTrace](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTailSampler.MaxBufferedSpansPerTrace) is never truncated because of other traffic, and new traces are still accepted when
 the buffer is full.
 
-A trace dropped as a whole, by `DropWholeTrace` or by an eviction, is remembered for `MaxTraceDuration`: the spans of the
+A trace dropped as a whole, by [DropWholeTrace](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTailBufferOverflowPolicy.DropWholeTrace) or by an eviction, is remembered for [MaxTraceDuration](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTailSampler.MaxTraceDuration): the spans of the
 same trace received later are dropped too, instead of being dispatched as a fragment of the trace.
 
 The spans dropped because a trace exceeded its own limit are reported to the client that sent them, as a
@@ -127,7 +127,7 @@ belong to traces buffered by earlier requests, not to the request that triggered
   spans of the requests they keep. It only applies to traces: logs and metrics go to the handlers directly.
 - Only one tail sampler can be added: a second one makes the receiver fail with an `InvalidOperationException`.
 - A trace is dispatched by the request that completes it, or by the background service, not by the requests that sent
-  its other spans. `ShouldSample` and the handlers receive `CancellationToken.None`, so a client that aborts its request
+  its other spans. [ShouldSample](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTailSampler.ShouldSample) and the handlers receive `CancellationToken.None`, so a client that aborts its request
   does not discard the spans that other requests buffered. The partial successes reported once the client got its
   response are ignored.
 - A handler that throws while a buffered trace is dispatched is logged and skipped: the failure never fails the request

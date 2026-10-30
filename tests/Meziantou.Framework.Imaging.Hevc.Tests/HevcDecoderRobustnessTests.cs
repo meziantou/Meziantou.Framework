@@ -1,4 +1,9 @@
+using System.Buffers.Binary;
+using System.Security.Cryptography;
+using System.Text;
 using Meziantou.Framework.Imaging.Internals;
+using Meziantou.Framework.Imaging.TestHarness.Fixtures;
+using Meziantou.Framework.Imaging.TestHarness.Golden;
 using Meziantou.Framework.Imaging.TestHarness.Hevc;
 using Meziantou.Framework.Imaging.Tests.Conformance.Hardening;
 
@@ -233,5 +238,381 @@ public sealed class HevcDecoderRobustnessTests
         }
 
         Assert.Null(audit.Verify());
+    }
+
+    // Vectors whose slice segments have several substreams that start at an entry point: tiles (uniform and explicit
+    // spacing, in-loop filters across them or not, inter pictures), rows of the wavefront (one or several slices, inter
+    // pictures), and both
+    public static TheoryData<string> SubstreamVectorIds => new()
+    {
+        "hevc/hm-tiles-2x2-inter-512x128",
+        "hevc/hm-tiles-explicit-ctb32-832x64",
+        "hevc/kvazaar-tiles-2x2-explicit-768x128",
+        "hevc/kvazaar-tiles-small-3x3-inter-192x192",
+        "hevc/x265-intra-wpp-ctb64-136x136",
+        "hevc/x265-intra-slices-3-wpp-64x96",
+        "hevc/kvazaar-wpp-inter-192x128",
+        "hevc/hm-wpp-slices-ctb32-444-96x96",
+    };
+
+    /// <summary>
+    /// Decodes NAL units by <paramref name="workers"/> workers, whatever the size of the pictures, and gives the digest of
+    /// every plane of every picture, or the type and the message of the exception of the decoder.
+    /// </summary>
+    private static string DecodeOutcome(IEnumerable<ReadOnlyMemory<byte>> units, int workers, ImageResourceLimits? limits = null, PoolAudit? audit = null, CancellationToken cancellationToken = default)
+    {
+        using var owned = audit is null ? new PoolAudit() : null;
+        audit ??= owned!;
+        var outcome = new StringBuilder();
+        HevcDecoder.TestIgnoreMinimumSize = true;
+        try
+        {
+            var scope = new AllocationScope(limits ?? ImageResourceLimits.Default, audit.Pool, nameof(HevcDecoderRobustnessTests));
+            using var decoder = new HevcDecoder(scope) { MaxDegreeOfParallelism = workers };
+            var data = ReferenceHevcStream.ToLengthPrefixed(units);
+            decoder.SetInput(data, 0, data.Length, nalLengthSize: 4);
+            decoder.EndOfSequence();
+            while (decoder.DecodeNextOutputPicture(cancellationToken) is { } picture)
+            {
+                try
+                {
+                    for (var plane = 0; plane < picture.PlaneCount; plane++)
+                    {
+                        var samples = picture.GetPlane(plane);
+                        using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+                        var bytes = new byte[2 * samples.Width];
+                        for (var y = 0; y < samples.Height; y++)
+                        {
+                            var row = samples.GetRow(y);
+                            for (var x = 0; x < row.Length; x++)
+                            {
+                                BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(2 * x), row[x]);
+                            }
+
+                            hash.AppendData(bytes);
+                        }
+
+                        outcome.Append(Convert.ToHexString(hash.GetHashAndReset())).Append(' ');
+                    }
+                }
+                finally
+                {
+                    picture.Release();
+                }
+            }
+        }
+        catch (Exception exception) when (exception is ImageException or OperationCanceledException)
+        {
+            outcome.Append(exception.GetType().Name).Append(": ").Append(exception.Message);
+        }
+        finally
+        {
+            HevcDecoder.TestIgnoreMinimumSize = false;
+        }
+
+        // Whatever the outcome, every buffer is returned
+        Assert.Null(audit.Verify());
+        return outcome.ToString();
+    }
+
+    private static IReadOnlyList<ReadOnlyMemory<byte>> GetVectorUnits(string id)
+    {
+        var corpus = GoldenCorpus.Default;
+        return ReferenceHevcStream.SplitAnnexB(File.ReadAllBytes(corpus.GetHevcVectorPath(corpus.GetHevcVector(id))));
+    }
+
+    /// <summary>
+    /// Damaged slice segments by several workers: a substream that fails, a slice segment that ends before its last entry
+    /// point, an entry point that is not where the substream before it ends. The workers decode the substreams from their
+    /// entry points, whatever happens before them; the pictures and the error are still those of one worker, the error of the
+    /// first substream that fails.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(SubstreamVectorIds))]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void ADamagedStreamDecodedByWorkersIsTheStreamDecodedByOneWorker(string id)
+    {
+        var units = GetVectorUnits(id);
+        var slices = Enumerable.Range(0, units.Count).Where(index => ReferenceHevcStream.GetNalUnitType(units[index].Span) < 32).ToArray();
+        var random = new Random(id.Length * 7919);
+        var outcomes = new Dictionary<string, int>(StringComparer.Ordinal);
+        Assert.Equal(DecodeOutcome(units, workers: 1), DecodeOutcome(units, workers: 16));
+        for (var iteration = 0; iteration < 150; iteration++)
+        {
+            var damaged = units.ToList();
+            for (var change = 0; change < 1 + (iteration % 3); change++)
+            {
+                var index = slices[random.Next(slices.Length)];
+                var bytes = damaged[index].ToArray();
+
+                // Mostly in the slice segment data, where the substreams are
+                var position = random.Next(random.Next(4) is 0 ? 2 : bytes.Length / 4, bytes.Length);
+                bytes[position] = random.Next(3) switch
+                {
+                    0 => (byte)random.Next(256),
+                    1 => (byte)(bytes[position] ^ (1 << random.Next(8))),
+                    _ => 0,
+                };
+                damaged[index] = bytes;
+            }
+
+            var expected = DecodeOutcome(damaged, workers: 1);
+            foreach (var workers in (int[])[2, 16])
+            {
+                Assert.Equal(expected, DecodeOutcome(damaged, workers), $"{id}: the damage {iteration} gives another outcome with {workers} workers.");
+            }
+
+            var kind = expected.Contains(':', StringComparison.Ordinal) ? expected[..expected.IndexOf(':', StringComparison.Ordinal)] : "decoded";
+            outcomes[kind] = outcomes.GetValueOrDefault(kind) + 1;
+        }
+
+        Assert.True(outcomes.GetValueOrDefault(nameof(InvalidImageContentException)) > 50, $"{id}: {string.Join(", ", outcomes.Select(pair => $"{pair.Key} {pair.Value}"))}");
+    }
+
+    /// <summary>
+    /// kvazaar writes one slice segment per row of the wavefront, with the entry points of the rows that follow it, beyond
+    /// its data. With <c>cabac_zero_words</c> after its trailing bits, the first of these entry points is inside the data:
+    /// a worker decodes the row that follows from the zero words, and fails, while the slice segment ends with its first
+    /// row. The next slice segment decodes that row: the state that the worker left in it is not the state of the picture.
+    /// </summary>
+    [Theory]
+    [InlineData("hevc/kvazaar-wpp-dependent-slices-128x192")]
+    [InlineData("hevc/kvazaar-wpp-one-ctb-wide-dependent-slices-48x256")]
+    public void ASliceSegmentThatEndsBeforeItsEntryPointsIsDecodedAsByOneWorker(string id)
+    {
+        var units = GetVectorUnits(id);
+        var expected = DecodeOutcome(units, workers: 1);
+        var padded = units.Select(unit =>
+        {
+            if (ReferenceHevcStream.GetNalUnitType(unit.Span) >= 32)
+                return unit;
+
+            // cabac_zero_word, with its emulation prevention byte
+            var bytes = new byte[unit.Length + (3 * 40)];
+            unit.Span.CopyTo(bytes);
+            for (var i = unit.Length; i < bytes.Length; i += 3)
+            {
+                bytes[i + 2] = 3;
+            }
+
+            return (ReadOnlyMemory<byte>)bytes;
+        }).ToList();
+        Assert.DoesNotContain("Exception", expected);
+        Assert.Equal(expected, DecodeOutcome(padded, workers: 1));
+        foreach (var workers in (int[])[2, 3, 16])
+        {
+            Assert.Equal(expected, DecodeOutcome(padded, workers), $"{id}: {workers} workers do not decode the pictures of one worker.");
+        }
+
+        // The first entry point moved into the data of the first row: a worker decodes the next row from data that are not
+        // its own, and writes the state of its blocks before it fails, or ends
+        var moved = units.Select(unit => IsFirstSliceSegmentOfPicture(unit) ? RewriteEntryPoint(units, unit, 0, value => value / 2) ?? unit : unit).ToList();
+        Assert.Equal(expected, DecodeOutcome(moved, workers: 1));
+        foreach (var workers in (int[])[2, 3, 16])
+        {
+            Assert.Equal(expected, DecodeOutcome(moved, workers), $"{id}: {workers} workers do not decode the pictures of one worker when the entry points are inside the data.");
+        }
+    }
+
+    /// <summary>
+    /// An entry point that is not where the substream before it ends: the workers decode the substream from the entry
+    /// point, and the error is still the one of one worker, which finds it where the substream before it ends.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(SubstreamVectorIds))]
+    public void AWrongEntryPointDecodedByWorkersIsTheErrorOfOneWorker(string id)
+    {
+        var units = GetVectorUnits(id);
+        var first = Enumerable.Range(0, units.Count).First(index => IsFirstSliceSegmentOfPicture(units[index]));
+        var errors = 0;
+        for (var entryPoint = 0; ; entryPoint++)
+        {
+            var found = false;
+            foreach (var delta in (int[])[-1, 1, 7])
+            {
+                if (RewriteEntryPoint(units, units[first], entryPoint, value => value + delta) is not { } rewritten)
+                    break;
+
+                found = true;
+                var damaged = units.ToList();
+                damaged[first] = rewritten;
+                var expected = DecodeOutcome(damaged, workers: 1);
+                errors += expected.Contains(nameof(InvalidImageContentException), StringComparison.Ordinal) ? 1 : 0;
+                foreach (var workers in (int[])[2, 16])
+                {
+                    Assert.Equal(expected, DecodeOutcome(damaged, workers), $"{id}: the entry point {entryPoint} moved by {delta} gives another outcome with {workers} workers.");
+                }
+            }
+
+            if (!found)
+                break;
+        }
+
+        Assert.True(errors > 0, $"{id}: no entry point is checked.");
+    }
+
+    private static bool IsFirstSliceSegmentOfPicture(ReadOnlyMemory<byte> unit) => ReferenceHevcStream.GetNalUnitType(unit.Span) < 32 && (unit.Span[2] & 0x80) is not 0;
+
+    // The first slice segment of a picture with one of its entry points rewritten in place, or null when it has no entry
+    // point at that index: the entry points are the last fields of the header, of offset_len_minus1 + 1 bits each, before
+    // the alignment bits
+    private static ReadOnlyMemory<byte>? RewriteEntryPoint(IReadOnlyList<ReadOnlyMemory<byte>> units, ReadOnlyMemory<byte> unit, int index, Func<int, int> rewrite)
+    {
+        var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(RewriteEntryPoint));
+        var sps = HevcSequenceParameterSet.ParseRbsp(ReferenceHevcStream.GetRbsp(units.First(nal => ReferenceHevcStream.GetNalUnitType(nal.Span) is 33).Span));
+        var pps = HevcPictureParameterSet.ParseRbsp(ReferenceHevcStream.GetRbsp(units.First(nal => ReferenceHevcStream.GetNalUnitType(nal.Span) is 34).Span));
+        using var layout = HevcPictureLayout.Create(scope, sps, pps);
+        var rbsp = ReferenceHevcStream.GetRbsp(unit.Span);
+        var header = HevcSliceSegmentHeader.Parse(rbsp, HevcNalUnitHeader.Read(unit.Span), layout, sliceHeader: null);
+        var entryPoints = header.EntryPointOffsetMinus1.ToArray();
+        Assert.False(pps.SliceSegmentHeaderExtensionPresentFlag);
+        if (index >= entryPoints.Length)
+            return null;
+
+        var alignment = (header.DataOffset * 8) - 1;
+        while (((rbsp[alignment >> 3] >> (7 - (alignment & 7))) & 1) is 0)
+        {
+            alignment--;
+        }
+
+        for (var length = 1; length <= 32; length++)
+        {
+            var start = alignment - (entryPoints.Length * length);
+            if (start < 0 || !entryPoints.Select((value, i) => ReadBits(rbsp, start + (i * length), length) == (uint)value).All(match => match))
+                continue;
+
+            WriteBits(rbsp, start + (index * length), length, (uint)Math.Clamp(rewrite(entryPoints[index]), 0, (int)Math.Min(int.MaxValue, (1L << length) - 1)));
+
+            // The header of the NAL unit, then the payload with its emulation prevention bytes
+            var nal = new List<byte> { unit.Span[0], unit.Span[1] };
+            var zeros = 0;
+            foreach (var value in rbsp)
+            {
+                if (zeros >= 2 && value <= 3)
+                {
+                    nal.Add(3);
+                    zeros = 0;
+                }
+
+                zeros = value is 0 ? zeros + 1 : 0;
+                nal.Add(value);
+            }
+
+            return nal.ToArray();
+        }
+
+        throw new InvalidOperationException("The entry points are not the last fields of the header.");
+
+        static uint ReadBits(byte[] data, int position, int count)
+        {
+            var value = 0u;
+            for (var i = 0; i < count; i++)
+            {
+                value = (value << 1) | (uint)((data[(position + i) >> 3] >> (7 - ((position + i) & 7))) & 1);
+            }
+
+            return value;
+        }
+
+        static void WriteBits(byte[] data, int position, int count, uint value)
+        {
+            for (var i = 0; i < count; i++)
+            {
+                var bit = (value >> (count - 1 - i)) & 1;
+                var index = (position + i) >> 3;
+                var mask = 1 << (7 - ((position + i) & 7));
+                data[index] = (byte)(bit is 0 ? data[index] & ~mask : data[index] | mask);
+            }
+        }
+    }
+
+    /// <summary>
+    /// A cancellation at any point of a decoding by several workers, before the workers start, while they decode, or after
+    /// them: the decoder throws <see cref="OperationCanceledException"/>, or outputs the pictures of a decoding without
+    /// cancellation, and returns every buffer.
+    /// </summary>
+    [Fact]
+    public void ACancellationStopsTheWorkers()
+    {
+        var units = GetVectorUnits("hevc/kvazaar-wpp-inter-192x128");
+        var expected = DecodeOutcome(units, workers: 1);
+        int rentals;
+        using (var counting = new PoolAudit())
+        {
+            counting.FailureInjector = _ => null;
+            Assert.Equal(expected, DecodeOutcome(units, workers: 16, audit: counting));
+            rentals = counting.Attempts;
+        }
+
+        var canceled = 0;
+        for (var rental = 1; rental <= rentals; rental++)
+        {
+            using var cancellation = new CancellationTokenSource();
+            using var audit = new PoolAudit();
+            var at = rental;
+            audit.FailureInjector = attempt =>
+            {
+                if (attempt == at)
+                {
+                    cancellation.Cancel();
+                }
+
+                return null;
+            };
+            var outcome = DecodeOutcome(units, workers: 16, audit: audit, cancellationToken: cancellation.Token);
+            var cancellationIndex = outcome.IndexOf(nameof(OperationCanceledException), StringComparison.Ordinal);
+            if (cancellationIndex >= 0)
+            {
+                // The pictures output before the cancellation are those of a decoding without cancellation
+                Assert.StartsWith(outcome[..cancellationIndex], expected, $"the cancellation at the rental {rental} outputs other pictures.");
+                canceled++;
+            }
+            else
+            {
+                Assert.Equal(expected, outcome, $"the cancellation at the rental {rental} gives another outcome.");
+            }
+        }
+
+        Assert.True(canceled > rentals / 2, $"{canceled} of {rentals} cancellations stop the decoder.");
+    }
+
+    /// <summary>
+    /// The memory of the workers is rented on the calling thread before they start: the smallest live-allocation limit that
+    /// a decoding by several workers needs does not depend on how the workers are scheduled, and one byte less always fails.
+    /// </summary>
+    [Fact]
+    public void TheWorkersAreWithinTheLiveAllocationLimit()
+    {
+        var units = GetVectorUnits("hevc/hm-tiles-2x2-inter-512x128");
+        var expected = DecodeOutcome(units, workers: 1);
+        var one = FindSmallestLimit(units, workers: 1);
+        var sixteen = FindSmallestLimit(units, workers: 16);
+        Assert.True(sixteen > one, $"16 workers need {sixteen} bytes, one worker {one}.");
+        for (var i = 0; i < 5; i++)
+        {
+            Assert.Equal(expected, DecodeOutcome(units, workers: 16, limits: new ImageResourceLimits { MaxLiveAllocationBytes = sixteen }));
+            Assert.Contains(nameof(ImageResourceLimitException), DecodeOutcome(units, workers: 16, limits: new ImageResourceLimits { MaxLiveAllocationBytes = sixteen - 1 }));
+        }
+
+        static long FindSmallestLimit(IReadOnlyList<ReadOnlyMemory<byte>> units, int workers)
+        {
+            long low = 0;
+            long high = 64L * 1024 * 1024;
+            while (low + 1 < high)
+            {
+                var middle = (low + high) / 2;
+                var outcome = DecodeOutcome(units, workers, limits: new ImageResourceLimits { MaxLiveAllocationBytes = middle });
+                if (outcome.Contains(nameof(ImageResourceLimitException), StringComparison.Ordinal))
+                {
+                    low = middle;
+                }
+                else
+                {
+                    high = middle;
+                }
+            }
+
+            return high;
+        }
     }
 }

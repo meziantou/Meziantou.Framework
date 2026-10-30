@@ -13,7 +13,7 @@ specs and POSIX `fnmatch`.
   system. See [Matching paths](05-MatchingPaths.md).
 - **Enumerate files**: list the files or the directories of a folder that match a pattern. Only the directories that
   can hold a match are visited. See [Enumerating files](06-EnumeratingFiles.md).
-- **Combine patterns**: include some paths and exclude others with a `GlobCollection`. See
+- **Combine patterns**: include some paths and exclude others with a [GlobCollection](cref:Meziantou.Framework.Globbing.GlobCollection). See
   [Combining patterns](07-CombiningPatterns.md).
 - **Read `.gitignore` files**: load the content of a `.gitignore` file and check which paths git ignores. See
   [Reading .gitignore files](08-GitIgnore.md).
@@ -22,19 +22,19 @@ specs and POSIX `fnmatch`.
 
 ## Principles
 
-- **A pattern is parsed once.** `Glob.Parse` validates the pattern and returns a `Glob` that you can reuse for as many
-  paths as you want. An invalid pattern throws, or makes `Glob.TryParse` return `false`, instead of
+- **A pattern is parsed once.** [Glob.Parse](cref:Meziantou.Framework.Globbing.Glob.Parse) validates the pattern and returns a [Glob](cref:Meziantou.Framework.Globbing.Glob) that you can reuse for as many
+  paths as you want. An invalid pattern throws, or makes [Glob.TryParse](cref:Meziantou.Framework.Globbing.Glob.TryParse) return `false`, instead of
   silently matching nothing.
-- **The dialect is explicit.** Every call to `Parse` names the dialect of the pattern. The same characters can mean
+- **The dialect is explicit.** Every call to [Parse](cref:Meziantou.Framework.Globbing.Glob.Parse) names the dialect of the pattern. The same characters can mean
   different things in two dialects: `{a,b}` is a choice in the standard syntax and plain text in a `.gitignore` file.
-- **Matching is a string operation.** `IsMatch` reads the path you give it; it never checks whether the file exists.
+- **Matching is a string operation.** [IsMatch](cref:Meziantou.Framework.Globbing.Glob.IsMatch) reads the path you give it; it never checks whether the file exists.
 - **Enumeration is built on `System.IO.Enumeration`.** The results are full paths, and the same `EnumerationOptions`
   apply.
 
 ## Namespaces
 
-Every type is in the [Meziantou.Framework.Globbing](cref:Meziantou.Framework.Globbing) namespace: `Glob`, `GlobCollection`, `GlobDialect`, `GlobOptions`
-and the `IsMatch` and `EnumerateFiles` extension methods.
+Every type is in the [Meziantou.Framework.Globbing](cref:Meziantou.Framework.Globbing) namespace: [Glob](cref:Meziantou.Framework.Globbing.Glob), [GlobCollection](cref:Meziantou.Framework.Globbing.GlobCollection), [GlobDialect](cref:Meziantou.Framework.Globbing.GlobDialect), [GlobOptions](cref:Meziantou.Framework.Globbing.GlobOptions)
+and the `IsMatch` and [EnumerateFiles](cref:Meziantou.Framework.Globbing.GlobExtensions.EnumerateFiles) extension methods.
 
 ## Next steps
 

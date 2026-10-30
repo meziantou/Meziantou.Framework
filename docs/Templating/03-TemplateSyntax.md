@@ -32,7 +32,7 @@ Assert.Equal("2 + 2 = 4", result);
 - A `null` value writes nothing.
 - Nothing is encoded: a value that contains `<` or `&` is written as is. To generate HTML, use
   [HTML emails](06-HtmlEmails/01-Overview.md), whose blocks encode values.
-- Numbers and dates are formatted with the culture of the writer. `Run` writes to a `StringWriter` that uses the current
+- Numbers and dates are formatted with the culture of the writer. [Run](cref:Meziantou.Framework.Templating.Template.Run) writes to a `StringWriter` that uses the current
   culture of the thread; to get the same text on every machine, write to a writer that uses the invariant culture:
 
 <!-- ref:../../tests/Meziantou.Framework.Templating.Tests/TemplateTest.cs;region=Template_RunWithWriter;format=md-fenced-code-block;dedent=true -->
@@ -71,7 +71,7 @@ Assert.Equal("""
 <!-- endref -->
 
 A statement block can also write to the output directly: the output is a parameter named `__output__` (the
-`OutputParameterName` property), and `__output__.Write(value)` writes a value.
+[OutputParameterName](cref:Meziantou.Framework.Templating.Template.OutputParameterName) property), and `__output__.Write(value)` writes a value.
 
 ## Declare members
 
@@ -101,11 +101,11 @@ The `+` must follow the delimiter immediately: `<% + ... %>` is a statement bloc
 | `using` | Imports a namespace or declares an alias, like `Usings.Add` |
 | `reference` | References an assembly by path; `alias=Name path` declares an extern alias |
 | `include` | Compiles a C# source file with the template |
-| `inherits` | Sets the base class of the generated class (`BaseClassFullTypeName`) |
+| `inherits` | Sets the base class of the generated class ([BaseClassFullTypeName](cref:Meziantou.Framework.Templating.Template.BaseClassFullTypeName)) |
 | `implements` | Adds interfaces, separated by commas, to the generated class |
 
 [Using code and libraries](05-UsingCodeAndLibraries.md) shows each of them. Other directives write nothing and change
-nothing, but your code can read them from `Blocks`; the [command-line tool](07-CommandLineTool.md) reads
+nothing, but your code can read them from [Blocks](cref:Meziantou.Framework.Templating.Template.Blocks); the [command-line tool](07-CommandLineTool.md) reads
 `outputextension` this way.
 
 ## Line breaks
@@ -146,7 +146,7 @@ your template appears in the output verbatim, look for a missing `%>`.
 
 ## Change the delimiters
 
-When the default delimiters appear in the text of your template, choose other ones. Set them before calling `Load`:
+When the default delimiters appear in the text of your template, choose other ones. Set them before calling [Load](cref:Meziantou.Framework.Templating.Template.Load):
 
 <!-- ref:../../tests/Meziantou.Framework.Templating.Tests/TemplateTest.cs;region=Template_CustomDelimiters;format=md-fenced-code-block;dedent=true -->
 ```csharp

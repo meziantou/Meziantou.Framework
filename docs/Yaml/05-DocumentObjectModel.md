@@ -9,18 +9,18 @@ are in the [Meziantou.Framework.Yaml.Model](cref:Meziantou.Framework.Yaml.Model)
 
 | Type | Represents |
 | --- | --- |
-| `YamlStream` | The whole text: a list of `YamlDocument` |
-| `YamlDocument` | One document; `Contents` is its root node |
-| `YamlMapping` | A mapping: an ordered list of key and value pairs, also usable as a dictionary |
-| `YamlSequence` | A sequence: a list of nodes |
-| `YamlValue` | A scalar; `Value` is its text |
+| [YamlStream](cref:Meziantou.Framework.Yaml.Model.YamlStream) | The whole text: a list of [YamlDocument](cref:Meziantou.Framework.Yaml.Model.YamlDocument) |
+| [YamlDocument](cref:Meziantou.Framework.Yaml.Model.YamlDocument) | One document; [Contents](cref:Meziantou.Framework.Yaml.Model.YamlDocument.Contents) is its root node |
+| [YamlMapping](cref:Meziantou.Framework.Yaml.Model.YamlMapping) | A mapping: an ordered list of key and value pairs, also usable as a dictionary |
+| [YamlSequence](cref:Meziantou.Framework.Yaml.Model.YamlSequence) | A sequence: a list of nodes |
+| [YamlValue](cref:Meziantou.Framework.Yaml.Model.YamlValue) | A scalar; [Value](cref:Meziantou.Framework.Yaml.Model.YamlValue.Value) is its text |
 
-`YamlMapping`, `YamlSequence` and `YamlValue` derive from `YamlElement`, which has an `Anchor` and a `Tag`. All the
-types derive from `YamlNode`.
+[YamlMapping](cref:Meziantou.Framework.Yaml.Model.YamlMapping), [YamlSequence](cref:Meziantou.Framework.Yaml.Model.YamlSequence) and [YamlValue](cref:Meziantou.Framework.Yaml.Model.YamlValue) derive from [YamlElement](cref:Meziantou.Framework.Yaml.Model.YamlElement), which has an [Anchor](cref:Meziantou.Framework.Yaml.Model.YamlElement.Anchor) and a [Tag](cref:Meziantou.Framework.Yaml.Model.YamlElement.Tag). All the
+types derive from [YamlNode](cref:Meziantou.Framework.Yaml.Model.YamlNode).
 
 ## Load a document
 
-`YamlStream.Load` reads a `TextReader`, such as a `StringReader` or a `StreamReader` over a file. Cast each node to
+[YamlStream.Load](cref:Meziantou.Framework.Yaml.Model.YamlStream.Load) reads a `TextReader`, such as a `StringReader` or a `StreamReader` over a file. Cast each node to
 its type to read it:
 
 <!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/YamlNodeTest.cs;region=YamlStream_Load;format=md-fenced-code-block;dedent=true -->
@@ -44,7 +44,7 @@ the options that limit this expansion: see [Reading untrusted YAML](09-Untrusted
 
 ## Read several documents
 
-A `YamlStream` holds every document of the text, in order:
+A [YamlStream](cref:Meziantou.Framework.Yaml.Model.YamlStream) holds every document of the text, in order:
 
 <!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/YamlNodeTest.cs;region=YamlStream_MultipleDocuments;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -67,8 +67,8 @@ Assert.Equal(["first", "second"], names);
 
 ## Navigate a document
 
-A `YamlMapping` enumerates its entries in document order, as key and value pairs. Its indexer, `TryGetValue`,
-`ContainsKey` and `Remove` accept a `string` key, and a `YamlElement` key for keys that are not plain strings:
+A [YamlMapping](cref:Meziantou.Framework.Yaml.Model.YamlMapping) enumerates its entries in document order, as key and value pairs. Its indexer, [TryGetValue](cref:Meziantou.Framework.Yaml.Model.YamlMapping.TryGetValue),
+[ContainsKey](cref:Meziantou.Framework.Yaml.Model.YamlMapping.ContainsKey) and [Remove](cref:Meziantou.Framework.Yaml.Model.YamlMapping.Remove) accept a `string` key, and a [YamlElement](cref:Meziantou.Framework.Yaml.Model.YamlElement) key for keys that are not plain strings:
 
 <!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/YamlNodeTest.cs;region=YamlMapping_Navigate;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -99,13 +99,13 @@ Assert.Equal(["80", "443"], ((YamlSequence)ports).Select(port => ((YamlValue)por
 ```
 <!-- endref -->
 
-A `YamlValue` holds the text of the scalar: `80` is the string `"80"`. To get a typed value, convert the node with
-[`ToObject<T>`](#convert-between-nodes-and-objects). `YamlMapping` and `YamlSequence` have a `Style`, `Block` or `Flow`,
-and `YamlValue` has a `Style` among the scalar styles (plain, quoted, literal, folded).
+A [YamlValue](cref:Meziantou.Framework.Yaml.Model.YamlValue) holds the text of the scalar: `80` is the string `"80"`. To get a typed value, convert the node with
+[`ToObject<T>`](#convert-between-nodes-and-objects). [YamlMapping](cref:Meziantou.Framework.Yaml.Model.YamlMapping) and [YamlSequence](cref:Meziantou.Framework.Yaml.Model.YamlSequence) have a `Style`, [Block](cref:Meziantou.Framework.Yaml.YamlStyle.Block) or [Flow](cref:Meziantou.Framework.Yaml.YamlStyle.Flow),
+and [YamlValue](cref:Meziantou.Framework.Yaml.Model.YamlValue) has a `Style` among the scalar styles (plain, quoted, literal, folded).
 
 ## Change a document and write it
 
-The collections are mutable: set, add, insert and remove entries, then write the stream with `WriteTo`:
+The collections are mutable: set, add, insert and remove entries, then write the stream with [WriteTo](cref:Meziantou.Framework.Yaml.Model.YamlNode.WriteTo):
 
 <!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/YamlNodeTest.cs;region=YamlMapping_Edit;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -137,16 +137,16 @@ Assert.Equal("""
 
 - `new YamlValue(value)` accepts a string, a number, a boolean, an enum or any other value, and writes it with the
   invariant culture.
-- `YamlMapping` is also a list: `Insert` adds an entry at a given position.
-- `WriteTo` writes to a `TextWriter`, or to an [emitter](07-ParserAndEmitter.md). `ToString` returns the YAML of a
+- [YamlMapping](cref:Meziantou.Framework.Yaml.Model.YamlMapping) is also a list: [Insert](cref:Meziantou.Framework.Yaml.Model.YamlMapping.Insert) adds an entry at a given position.
+- [WriteTo](cref:Meziantou.Framework.Yaml.Model.YamlNode.WriteTo) writes to a `TextWriter`, or to an [emitter](07-ParserAndEmitter.md). `ToString` returns the YAML of a
   node, trimmed.
 - The model keeps neither the comments nor the exact layout of the text: the output is written again from the nodes.
   To change a file while keeping them, use the [syntax tree](06-SyntaxTree.md#edit-a-file-without-changing-its-layout).
-- `DeepClone` copies a node and all its children.
+- [DeepClone](cref:Meziantou.Framework.Yaml.Model.YamlNode.DeepClone) copies a node and all its children.
 
 ## Create a document
 
-Create the nodes, put the root in a `YamlDocument`, and the document in a `YamlStream`:
+Create the nodes, put the root in a [YamlDocument](cref:Meziantou.Framework.Yaml.Model.YamlDocument), and the document in a [YamlStream](cref:Meziantou.Framework.Yaml.Model.YamlStream):
 
 <!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/YamlNodeTest.cs;region=YamlMapping_Create;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -177,7 +177,7 @@ The `Style` of a collection selects the block or the flow style (`[80, 443]`).
 
 ## Convert between nodes and objects
 
-`YamlNode.FromObject` serializes an object to a node, and `ToObject<T>` deserializes a node, with the same rules and
+[YamlNode.FromObject](cref:Meziantou.Framework.Yaml.Model.YamlNode.FromObject) serializes an object to a node, and [ToObject\<T\>](cref:Meziantou.Framework.Yaml.Model.YamlNode.ToObject) deserializes a node, with the same rules and
 options as the [serializer](03-Serialization/01-Overview.md):
 
 <!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlSerializerApiTests.cs;region=YamlNode_FromObject;format=md-fenced-code-block;dedent=true -->
@@ -190,6 +190,6 @@ Assert.Equal("Sample product", back!.DisplayName);
 ```
 <!-- endref -->
 
-A node can also be the type of a member of a serialized class: a `YamlMapping` member keeps a part of the document as
+A node can also be the type of a member of a serialized class: a [YamlMapping](cref:Meziantou.Framework.Yaml.Model.YamlMapping) member keeps a part of the document as
 it is, while the rest is bound to typed members. [Extension data](03-Serialization/06-ReadingBehavior.md#extra-keys)
 uses this to keep the unknown keys.

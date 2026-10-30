@@ -133,6 +133,6 @@ Literal `datetime` attributes are left unchanged:
 
 ## Writing your own inline tag helper
 
-The inline tag helpers derive from the public `InlineTagHelper` class. Derive from it to inline files in another
-element: its protected `GetFileContentAsync` and `GetFileContentBase64Async` methods read a web root file as text or as
+The inline tag helpers derive from the public [InlineTagHelper](cref:Meziantou.AspNetCore.Mvc.TagHelpers.InlineTagHelper) class. Derive from it to inline files in another
+element: its protected [GetFileContentAsync](cref:Meziantou.AspNetCore.Mvc.TagHelpers.InlineTagHelper.GetFileContentAsync) and [GetFileContentBase64Async](cref:Meziantou.AspNetCore.Mvc.TagHelpers.InlineTagHelper.GetFileContentBase64Async) methods read a web root file as text or as
 Base64, with the same cache and file watching.

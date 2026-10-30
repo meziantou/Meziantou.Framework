@@ -4,13 +4,15 @@ namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
 /// Writes a least-significant-bit-first bit stream (WebP lossless, JPEG XL) into a growable buffer rented from an
-/// allocation scope (<see cref="AllocationKind.Temporary"/>): the inverse of <see cref="Vp8LBitReader"/>.
+/// allocation scope (<see cref="AllocationKind.Temporary"/>): the inverse of <see cref="Vp8LBitReader"/>. A counting writer
+/// (<see cref="CreateCounter"/>) only counts the bits: it measures the size of a stream without storing it.
 /// </summary>
 internal sealed class LsbBitWriter : IDisposable
 {
     private const int InitialCapacity = 4096;
 
     private readonly AllocationScope _scope;
+    private readonly bool _countOnly;
     private PooledBuffer? _buffer;
     private int _length;
     private ulong _bits;
@@ -21,6 +23,15 @@ internal sealed class LsbBitWriter : IDisposable
         ArgumentNullException.ThrowIfNull(scope);
         _scope = scope;
     }
+
+    private LsbBitWriter(AllocationScope scope, bool countOnly)
+        : this(scope)
+    {
+        _countOnly = countOnly;
+    }
+
+    /// <summary>Creates a writer that counts the bits written to it without storing them (<see cref="WrittenSpan"/> stays empty).</summary>
+    public static LsbBitWriter CreateCounter(AllocationScope scope) => new(scope, countOnly: true);
 
     /// <summary>Gets the number of complete bytes written so far (pending bits excluded).</summary>
     public int Length => _length;
@@ -43,6 +54,14 @@ internal sealed class LsbBitWriter : IDisposable
     /// <summary>Pads the last byte with zero bits.</summary>
     public void Finish()
     {
+        if (_countOnly)
+        {
+            _length += (_bitCount + 7) / 8;
+            _bits = 0;
+            _bitCount = 0;
+            return;
+        }
+
         while (_bitCount > 0)
         {
             Ensure(1);
@@ -61,6 +80,12 @@ internal sealed class LsbBitWriter : IDisposable
 
         if (bytes.IsEmpty)
             return;
+
+        if (_countOnly)
+        {
+            _length += bytes.Length;
+            return;
+        }
 
         Ensure(bytes.Length);
         bytes.CopyTo(_buffer!.RawBuffer.AsSpan(_length));
@@ -81,6 +106,14 @@ internal sealed class LsbBitWriter : IDisposable
 
     private void Flush32()
     {
+        if (_countOnly)
+        {
+            _length += 4;
+            _bits >>= 32;
+            _bitCount -= 32;
+            return;
+        }
+
         Ensure(4);
         var data = _buffer!.RawBuffer;
         data[_length] = (byte)_bits;

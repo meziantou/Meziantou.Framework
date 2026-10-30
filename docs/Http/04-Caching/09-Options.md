@@ -3,7 +3,7 @@ title: Options
 description: Limit the size of the stored responses, choose which ones to store, control the clock of the cache, and observe the store failures.
 ---
 
-`HttpCachingOptions` configures a `HttpCachingDelegateHandler`. Pass it as the last argument of the constructor:
+[HttpCachingOptions](cref:Meziantou.Framework.Http.Caching.HttpCachingOptions) configures a [HttpCachingDelegateHandler](cref:Meziantou.Framework.Http.Caching.HttpCachingDelegateHandler). Pass it as the last argument of the constructor:
 
 <!-- ref:../../../tests/Meziantou.Framework.Http.Caching.Tests/AdvancedCachingTests.cs;region=HttpCaching_Options;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -20,15 +20,15 @@ var options = new HttpCachingOptions
 
 | Option | Default | What it does |
 | --- | --- | --- |
-| `MaximumResponseSize` | 5 MB (5,242,880 bytes) | The largest response stored, in bytes. `null` removes the limit |
-| `ShouldCacheResponse` | `null` | A predicate that can prevent storing a response |
-| `TimeProvider` | `TimeProvider.System` | The clock used to compute the age and the freshness of the responses |
-| `OnStoreError` | `null` | A callback invoked when the store fails |
+| [MaximumResponseSize](cref:Meziantou.Framework.Http.Caching.HttpCachingOptions.MaximumResponseSize) | 5 MB (5,242,880 bytes) | The largest response stored, in bytes. `null` removes the limit |
+| [ShouldCacheResponse](cref:Meziantou.Framework.Http.Caching.HttpCachingOptions.ShouldCacheResponse) | `null` | A predicate that can prevent storing a response |
+| [TimeProvider](cref:Meziantou.Framework.Http.Caching.HttpCachingOptions.TimeProvider) | `TimeProvider.System` | The clock used to compute the age and the freshness of the responses |
+| [OnStoreError](cref:Meziantou.Framework.Http.Caching.HttpCachingOptions.OnStoreError) | `null` | A callback invoked when the store fails |
 
 ## Limit the size of the stored responses
 
 The cache reads the body of a response to store it, so a large response costs memory and space in the store.
-`MaximumResponseSize` bounds that:
+[MaximumResponseSize](cref:Meziantou.Framework.Http.Caching.HttpCachingOptions.MaximumResponseSize) bounds that:
 
 - A response whose `Content-Length` is larger than the limit is not read by the cache at all.
 - A response without `Content-Length` is read up to the limit, then left unstored.
@@ -39,13 +39,13 @@ In every case, the caller receives the full response. Only the storage is skippe
 
 ## Choose which responses to store
 
-`ShouldCacheResponse` is called for each response the HTTP caching rules allow to store. When it returns `false`, the
+[ShouldCacheResponse](cref:Meziantou.Framework.Http.Caching.HttpCachingOptions.ShouldCacheResponse) is called for each response the HTTP caching rules allow to store. When it returns `false`, the
 response is not stored. It cannot make the cache store a response that the rules do not allow, such as one with
 `Cache-Control: no-store`.
 
 ## Control the clock
 
-The cache computes the age and the freshness of the responses with `TimeProvider`. Replace it with a
+The cache computes the age and the freshness of the responses with [TimeProvider](cref:Meziantou.Framework.Http.Caching.HttpCachingOptions.TimeProvider). Replace it with a
 `FakeTimeProvider` to test how your application behaves when responses become stale, without waiting:
 
 <!-- ref:../../../tests/Meziantou.Framework.Http.Caching.Tests/StaleResponseTests.cs;region=HttpCaching_TimeProvider;format=md-fenced-code-block;dedent=true -->
@@ -69,15 +69,15 @@ Assert.Equal("v2", await httpClient.GetStringAsync("https://example.com/data"));
 ```
 <!-- endref -->
 
-`PruneObsoleteEntriesAsync` does not use this clock: pass the time to the overload that takes one,
+[PruneObsoleteEntriesAsync](cref:Meziantou.Framework.Http.Caching.IHttpCacheStore.PruneObsoleteEntriesAsync) does not use this clock: pass the time to the overload that takes one,
 `PruneObsoleteEntriesAsync(timeProvider.GetUtcNow())`. See
 [Cache stores](03-CacheStores.md#removing-obsolete-entries).
 
 ## Observe store failures
 
-A failing `IHttpCacheStore` never fails the request. A lookup that throws is treated as a cache miss, and a write that
+A failing [IHttpCacheStore](cref:Meziantou.Framework.Http.Caching.IHttpCacheStore) never fails the request. A lookup that throws is treated as a cache miss, and a write that
 throws is skipped, so a Redis outage or a locked SQLite file degrades to no caching rather than to a broken
-`HttpClient`. Set `OnStoreError` to log these failures:
+`HttpClient`. Set [OnStoreError](cref:Meziantou.Framework.Http.Caching.HttpCachingOptions.OnStoreError) to log these failures:
 
 <!-- ref:../../../tests/Meziantou.Framework.Http.Caching.Tests/StoreFailureTests.cs;region=HttpCachingOptions_OnStoreError;format=md-fenced-code-block;dedent=true -->
 ```csharp

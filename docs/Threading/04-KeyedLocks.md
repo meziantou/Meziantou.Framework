@@ -9,7 +9,7 @@ serializing the whole application.
 
 ## In asynchronous code
 
-`KeyedAsyncLock<TKey>.LockAsync` waits asynchronously for the lock of a key and returns a lease that releases it:
+[KeyedAsyncLock\<TKey\>.LockAsync](cref:Meziantou.Framework.Threading.KeyedAsyncLock{TKey}.LockAsync) waits asynchronously for the lock of a key and returns a lease that releases it:
 
 <!-- ref:../../tests/Meziantou.Framework.Threading.Tests/KeyedAsyncLockTests.cs;region=KeyedAsyncLock_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -41,7 +41,7 @@ Assert.Equal(1, updateCounts["bob"]);
 
 ## In synchronous code
 
-`KeyedLock<TKey>.Lock` blocks the calling thread until the lock of the key is free, and returns an `IDisposable` that
+[KeyedLock\<TKey\>.Lock](cref:Meziantou.Framework.Threading.KeyedLock{TKey}.Lock) blocks the calling thread until the lock of the key is free, and returns an `IDisposable` that
 releases it:
 
 <!-- ref:../../tests/Meziantou.Framework.Threading.Tests/KeyedLockTests.cs;region=KeyedLock_Usage;format=md-fenced-code-block;dedent=true -->
@@ -66,9 +66,9 @@ Assert.Equal(1, updateCounts["bob"]);
 ```
 <!-- endref -->
 
-`KeyedLock<TKey>` is thread-affine: the returned object must be disposed on the thread that called `Lock`. Disposing it
+[KeyedLock\<TKey\>](cref:Meziantou.Framework.Threading.KeyedLock{TKey}) is thread-affine: the returned object must be disposed on the thread that called [Lock](cref:Meziantou.Framework.Threading.KeyedLock{TKey}.Lock). Disposing it
 on another thread throws a `SynchronizationLockException` and leaves the lock held. The critical section must therefore
-not contain an `await`; use `KeyedAsyncLock<TKey>` in asynchronous code.
+not contain an `await`; use [KeyedAsyncLock\<TKey\>](cref:Meziantou.Framework.Threading.KeyedAsyncLock{TKey}) in asynchronous code.
 
 ## Memory use
 

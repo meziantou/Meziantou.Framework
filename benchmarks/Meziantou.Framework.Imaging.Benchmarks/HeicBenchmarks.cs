@@ -14,7 +14,9 @@ namespace Meziantou.Framework.Imaging.Benchmarks;
 /// cameras write their photos (tiles decoded one by one, then assembled and converted). These inputs are small: the workloads measure the decoder on its
 /// own corpus and say nothing about photographs. The corpus has no large 10-bit stream: the 10-bit still is the 512x384
 /// photo-like still of the encoder workloads, written by the encoder of the library (lossy 4:2:0, effort 0), and decoded to
-/// its 16-bit pixels, opaque and with the opaque, translucent and transparent areas of a 10-bit alpha plane.
+/// its 16-bit pixels, opaque and with the opaque, translucent and transparent areas of a 10-bit alpha plane. The 3840x2160 still with rows of the wavefront is written by the encoder of the library (lossy 4:2:0,
+/// effort 0), whose large still images have them by default, as x265 writes its streams: the decoder decodes its rows, and
+/// the tiles of the grid, with <see cref="Workers"/> workers.
 /// </summary>
 /// <remarks>
 /// The encoder is far slower than the decoder, and than the encoders of the other formats: its inputs are a 512x384
@@ -31,6 +33,8 @@ public class HeicBenchmarks : IDisposable
     private const int GridRows = 6;
     private const int GridWidth = 3000;
     private const int GridHeight = 1280;
+    private const int WavefrontWidth = 3840;
+    private const int WavefrontHeight = 2160;
     private readonly MemoryStream _output = new();
     private byte[] _still420 = null!;
     private byte[] _still444 = null!;
@@ -38,8 +42,13 @@ public class HeicBenchmarks : IDisposable
     private byte[] _still10Bit = null!;
     private byte[] _still10BitAlpha = null!;
     private byte[] _grid = null!;
+    private byte[] _wavefront = null!;
     private Image<Rgb24> _photo = null!;
     private Image<Rgba32> _frames = null!;
+
+    /// <summary>Gets or sets <see cref="ImageConfiguration.MaxDegreeOfParallelism"/> of the decodings of the grid and of the wavefront still.</summary>
+    [Params(1, 8)]
+    public int Workers { get; set; } = 1;
 
     [GlobalSetup]
     public void Setup()
@@ -83,9 +92,28 @@ public class HeicBenchmarks : IDisposable
 
         _still10Bit = _output.ToArray();
         Require(_still10Bit, EncodedWidth, EncodedHeight, frames: 1);
+
+        // A large still whose rows are substreams of the wavefront: several workers decode it to the pixels of one
+        using (var large = Image.ImportPixelBytes<Rgb24>(BenchmarkPixels.Rgb24(WavefrontWidth, WavefrontHeight, seed: 37), WavefrontWidth, WavefrontHeight))
+        {
+            ImageWorkloads.Encode(large, new HeicEncoder { Compression = HeicCompression.Lossy, Effort = 0 }, _output);
+        }
+
+        _wavefront = _output.ToArray();
+        Require(_wavefront, WavefrontWidth, WavefrontHeight, frames: 1);
+        using (var one = Image.Load<Rgb24>(_wavefront))
+        using (var several = Image.Load<Rgb24>(_wavefront, WithWorkers(8)))
+        {
+            var expected = new Rgb24[WavefrontWidth * WavefrontHeight];
+            var actual = new Rgb24[WavefrontWidth * WavefrontHeight];
+            one.Frames[0].CopyPixelDataTo(expected);
+            several.Frames[0].CopyPixelDataTo(actual);
+            if (!expected.AsSpan().SequenceEqual(actual))
+                throw new InvalidOperationException("The wavefront still decodes to other pixels with several workers.");
+        }
         using (var decoded = Image.Load(_still10Bit))
         {
-            if (decoded.PixelFormat is not PixelFormat.Rgb48)
+            if (decoded.PixelFormat is not (PixelFormat.Rgb48 or PixelFormat.Rgba64))
                 throw new InvalidOperationException($"Unexpected 10-bit HEIC input: {decoded.PixelFormat}.");
         }
 
@@ -132,7 +160,15 @@ public class HeicBenchmarks : IDisposable
     [Workload("3000x1280 HEIC grid of 8x6 lossy 4:2:0 tiles -> Rgb24")]
     public int DecodeGrid()
     {
-        using var image = Image.Load<Rgb24>(_grid);
+        using var image = Image.Load<Rgb24>(_grid, WithWorkers(Workers));
+        return image.Width;
+    }
+
+    [Benchmark]
+    [Workload("3840x2160 lossy HEIC 4:2:0, rows of the wavefront -> Rgb24")]
+    public int DecodeWavefront()
+    {
+        using var image = Image.Load<Rgb24>(_wavefront, WithWorkers(Workers));
         return image.Width;
     }
 
@@ -205,6 +241,8 @@ public class HeicBenchmarks : IDisposable
         _output.Dispose();
         GC.SuppressFinalize(this);
     }
+
+    private static ImageDecodeOptions WithWorkers(int workers) => new() { Configuration = new ImageConfiguration { MaxDegreeOfParallelism = workers } };
 
     private static byte[] Wrap(string resourceName, int width, int height, int chromaFormatIdc) => HevcStreamContainer.Wrap(ReadResource(resourceName), width, height, bitDepth: 8, chromaFormatIdc);
 

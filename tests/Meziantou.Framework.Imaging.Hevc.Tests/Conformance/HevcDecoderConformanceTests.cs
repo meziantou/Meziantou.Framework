@@ -17,6 +17,8 @@ public sealed class HevcDecoderConformanceTests
 {
     public static TheoryData<string> SupportedVectors => [.. GoldenCorpus.Default.HevcVectors.Where(vector => !vector.HasFeatureKey("hevc.unsupported")).Select(vector => vector.Id)];
 
+    public static TheoryData<string> SubstreamVectors => [.. GoldenCorpus.Default.HevcVectors.Where(vector => !vector.HasFeatureKey("hevc.unsupported") && (vector.HasFeatureKey("hevc.tiles") || vector.HasFeatureKey("hevc.wpp"))).Select(vector => vector.Id)];
+
     public static TheoryData<string> UnsupportedVectors => [.. GoldenCorpus.Default.HevcVectors.Where(vector => vector.HasFeatureKey("hevc.unsupported")).Select(vector => vector.Id)];
 
     [Theory]
@@ -48,6 +50,42 @@ public sealed class HevcDecoderConformanceTests
         }
     }
 
+    /// <summary>
+    /// The vectors with tiles or rows of the wavefront, by several workers: the substreams of each slice segment that start
+    /// at an entry point are decoded concurrently whatever the size of the picture
+    /// (<see cref="HevcDecoder.TestIgnoreMinimumSize"/>). The planes must still have the digests of the reference decoders.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(SubstreamVectors))]
+    public void VectorsDecodeToTheSamePlanesWithSeveralWorkers(string id)
+    {
+        var corpus = GoldenCorpus.Default;
+        var vector = corpus.GetHevcVector(id);
+        var expected = Decode(corpus, vector, out var expectedTools);
+        HevcDecoder.TestIgnoreMinimumSize = true;
+        try
+        {
+            foreach (var workers in (int[])[2, 3, 16])
+            {
+                var pictures = Decode(corpus, vector, out var tools, workers);
+                Assert.Equal(expectedTools, tools, $"{id}: {workers} workers do not report the tools of one worker.");
+                Assert.HasCount(vector.Frames.Count, pictures, $"{id}: {workers} workers do not output the pictures of the reference decoders.");
+                for (var i = 0; i < pictures.Count; i++)
+                {
+                    for (var plane = 0; plane < pictures[i].Planes.Length; plane++)
+                    {
+                        Assert.Equal(vector.Frames[i].Planes[plane], GetPlaneDigest(pictures[i], plane), ignoreCase: true, message: $"{id}: the plane {plane} of the output picture {i} decoded by {workers} workers is not the plane of the reference decoders.");
+                        Assert.True(expected[i].Planes[plane].AsSpan().SequenceEqual(pictures[i].Planes[plane]), $"{id}: the plane {plane} of the output picture {i} decoded by {workers} workers is not the plane of one worker.");
+                    }
+                }
+            }
+        }
+        finally
+        {
+            HevcDecoder.TestIgnoreMinimumSize = false;
+        }
+    }
+
     [Theory]
     [MemberData(nameof(UnsupportedVectors))]
     public void VectorsOfUnsupportedFeaturesAreRejected(string id)
@@ -66,14 +104,14 @@ public sealed class HevcDecoderConformanceTests
         Assert.NotEmpty(UnsupportedVectors);
     }
 
-    internal static List<HevcTestDecoder.DecodedPicture> Decode(GoldenCorpus corpus, HevcVectorEntry vector, out HevcTools tools)
+    internal static List<HevcTestDecoder.DecodedPicture> Decode(GoldenCorpus corpus, HevcVectorEntry vector, out HevcTools tools, int maxDegreeOfParallelism = 1)
     {
         var data = File.ReadAllBytes(corpus.GetHevcVectorPath(vector));
         using var audit = new PoolAudit();
         List<HevcTestDecoder.DecodedPicture> pictures;
         try
         {
-            pictures = HevcTestDecoder.Decode(data, new AllocationScope(ImageResourceLimits.Default, audit.Pool, vector.Id), out tools);
+            pictures = HevcTestDecoder.Decode(data, new AllocationScope(ImageResourceLimits.Default, audit.Pool, vector.Id), out tools, maxDegreeOfParallelism: maxDegreeOfParallelism);
         }
         finally
         {

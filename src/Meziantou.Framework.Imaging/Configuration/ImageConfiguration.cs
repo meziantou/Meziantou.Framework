@@ -22,6 +22,28 @@ public sealed class ImageConfiguration
         }
     } = ImageResourceLimits.Default;
 
+    /// <summary>
+    /// Gets how the decoders treat files that deviate from their specification. Defaults to
+    /// <see cref="DecodingStrictness.Strict"/>, which rejects them with an <see cref="InvalidImageContentException"/>.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="DecodingStrictness.Lenient"/> accepts the deviations that the reference decoders and the browsers accept,
+    /// in identification, eager loads, sequential readers and collections alike. The resource limits are the same in both
+    /// modes. Encoders and the other operations ignore the value.
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="Imaging.DecodingStrictness"/>.</exception>
+    public DecodingStrictness DecodingStrictness
+    {
+        get;
+        init
+        {
+            if (!Enum.IsDefined(value))
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The decoding strictness is not valid.");
+
+            field = value;
+        }
+    }
+
     /// <summary>Gets the environment of the fonts loaded with this configuration.</summary>
     internal Internals.ImageFontEnvironment FontEnvironment => field ??= new Internals.ImageFontEnvironment(this);
 
@@ -61,9 +83,15 @@ public sealed class ImageConfiguration
     /// JPEG XL encoder, the JPEG XL decoder and <see cref="JpegXlTranscoder"/> use it as well: the groups of a frame of at least
     /// 65,536 pixels (squares of 256x256 pixels, which the format codes independently) are encoded or decoded by up to this
     /// many workers, each with its own working memory, and the restoration filters and the conversion of a decoded frame to
-    /// its color space are split into row bands; the bytes, the pixels and the errors are those of one worker. The other
-    /// decoders (the HEVC in-loop filters of a HEIC image that is not a grid included), the encoders and the other
-    /// operations run on the calling thread.
+    /// its color space are split into row bands; the bytes, the pixels and the errors are those of one worker. The codecs of
+    /// the other formats split the independent parts of a frame of at least 65,536 pixels the same way, with the bytes, the
+    /// pixels and the errors of one worker: the JPEG decoder and encoder transform batches of MCU rows (the entropy coding
+    /// stays on the calling thread), the TIFF decoder decompresses the LZW, Deflate and CCITT strips and tiles and the TIFF
+    /// encoder compresses the LZW and Deflate strips, the OpenEXR decoder and encoder process the chunks, the JPEG 2000
+    /// decoder and encoder code the code-blocks and split the wavelet transforms, the AVIF decoder and encoder code the tiles
+    /// of an AV1 frame that has several (unless the frame is a grid tile coded alongside other tiles), and the HEIC decoder
+    /// decodes the tiles and the rows of the wavefront of a picture that start at entry points. The other decoders (the HEVC
+    /// in-loop filters included), the encoders and the other operations run on the calling thread.
     /// </para>
     /// <para>
     /// Keep the default in services that already process several images concurrently: the bound applies per operation, so

@@ -3,7 +3,7 @@ title: Dependency injection
 description: Replace the default, named and typed clients of IHttpClientFactory with mocks, and fail on the clients you did not mock.
 ---
 
-When the code under test gets its clients from `IHttpClientFactory`, `AddHttpClientMock` replaces the handlers of the
+When the code under test gets its clients from `IHttpClientFactory`, [AddHttpClientMock](cref:Meziantou.Framework.ServicesCollectionExtensions.AddHttpClientMock) replaces the handlers of the
 clients you choose with mocks. The clients are still created by the factory, so their configuration, such as their base
 address, is kept.
 
@@ -70,7 +70,7 @@ public sealed class WeatherClient(HttpClient httpClient)
 ## Fail on clients without a mock
 
 By default, a client for which no mock is registered keeps its real handler and sends real HTTP requests.
-`ThrowOnUnknownHttpClient` makes the factory throw an `InvalidOperationException` when such a client is created, as in
+[ThrowOnUnknownHttpClient](cref:Meziantou.Framework.HttpMockServiceBuilder.ThrowOnUnknownHttpClient) makes the factory throw an `InvalidOperationException` when such a client is created, as in
 the named clients example, so a client you forgot to mock cannot reach the network. The message gives the name of the
 client and the names of the clients that have a mock.
 
@@ -80,7 +80,7 @@ The mock replaces the primary handler of the client, the one that sends the requ
 `ConfigurePrimaryHttpMessageHandler` is replaced too. The `DelegatingHandler`s added to the client, for instance with
 `AddHttpMessageHandler` or a resilience handler, still run in front of the mock, so a test also exercises them.
 
-To mock only one client without `AddHttpClientMock`, set its primary handler yourself:
+To mock only one client without [AddHttpClientMock](cref:Meziantou.Framework.ServicesCollectionExtensions.AddHttpClientMock), set its primary handler yourself:
 
 <!-- ref:../../tests/Meziantou.Framework.HttpClientMock.Tests/MockTests.cs;region=HttpClientMock_ConfigurePrimaryHandler;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -98,11 +98,11 @@ Assert.Equal("rainy", await serviceProvider.GetRequiredService<WeatherClient>().
 
 ## Choose mocks from the service provider
 
-An overload of `AddHttpClientMock` takes an `Action<IServiceProvider, HttpMockServiceBuilder>`, to choose the mocks
+An overload of [AddHttpClientMock](cref:Meziantou.Framework.ServicesCollectionExtensions.AddHttpClientMock) takes an `Action<IServiceProvider, HttpMockServiceBuilder>`, to choose the mocks
 from services registered in the container. The action runs each time the factory creates a handler.
 
 ## Test an ASP.NET Core application
 
-In an integration test of an ASP.NET Core application, call `AddHttpClientMock` where the test replaces the services of
+In an integration test of an ASP.NET Core application, call [AddHttpClientMock](cref:Meziantou.Framework.ServicesCollectionExtensions.AddHttpClientMock) where the test replaces the services of
 the application, for instance in `ConfigureTestServices` of `WebApplicationFactory<TEntryPoint>`. The application then
 calls the mocks instead of the real services.

@@ -210,8 +210,8 @@ internal sealed class WebPEncoderCodec : ImageEncoderCodec
 
             _encoded?.Dispose();
             _encoded = _lossless
-                ? EncodedFrame.EncodeLossless(Options.Scope, rgba, _width, _height, _encoder.Effort, CancellationToken)
-                : EncodedFrame.EncodeLossy(Options.Scope, rgba, _width, _height, hasAlpha, _encoder.Quality, _encoder.Effort, CancellationToken);
+                ? EncodedFrame.EncodeLossless(Options.Scope, rgba, _width, _height, _encoder.Effort, _encoder.NearLossless, CancellationToken)
+                : EncodedFrame.EncodeLossy(Options.Scope, rgba, _width, _height, hasAlpha, _encoder.Quality, _encoder.AlphaQuality, _encoder.Effort, CancellationToken);
             _anyAlpha |= hasAlpha;
             _pieces.Clear();
             var imageChunks = _encoded.GetChunks();
@@ -434,8 +434,10 @@ internal sealed class WebPEncoderCodec : ImageEncoderCodec
         private LsbBitWriter? _lossless;
         private PooledPayloadWriter? _lossy;
 
-        public static EncodedFrame EncodeLossless(AllocationScope scope, Span<byte> rgba, int width, int height, int effort, CancellationToken cancellationToken)
+        public static EncodedFrame EncodeLossless(AllocationScope scope, Span<byte> rgba, int width, int height, int effort, int nearLossless, CancellationToken cancellationToken)
         {
+            WebPNearLossless.Apply(scope, rgba, width, height, nearLossless, cancellationToken);
+
             // RGBA bytes become 0xAARRGGBB values in place
             var argb = unsafe(MemoryMarshal.Cast<byte, uint>(rgba));
             for (var i = 0; i < argb.Length; i++)
@@ -447,7 +449,7 @@ internal sealed class WebPEncoderCodec : ImageEncoderCodec
             var result = new EncodedFrame();
             try
             {
-                result._lossless = effort < 9 ? EncodeStream(scope, argb, width, height, effort, entropyPredictors: null, cancellationToken) : EncodeSmallestStream(scope, argb, width, height, cancellationToken);
+                result._lossless = effort < 9 ? EncodeStream(scope, argb, width, height, effort, configuration: null, cancellationToken) : EncodeSmallestStream(scope, argb, width, height, cancellationToken);
                 return result;
             }
             catch
@@ -457,40 +459,47 @@ internal sealed class WebPEncoderCodec : ImageEncoderCodec
             }
         }
 
-        /// <summary>Effort 9: neither predictor selection criterion is always smaller, so both are tried and the smaller stream is kept.</summary>
+        /// <summary>
+        /// Effort 9: the size estimates of the configurations are not exact, so the two estimated smallest are both encoded
+        /// and the smaller stream is kept.
+        /// </summary>
         private static LsbBitWriter EncodeSmallestStream(AllocationScope scope, Span<uint> argb, int width, int height, CancellationToken cancellationToken)
         {
+            var ranked = Vp8LEncoder.RankConfigurations(scope, argb, width, height, effort: 9, cancellationToken);
+            if (ranked.Length == 1)
+                return EncodeStream(scope, argb, width, height, effort: 9, ranked[0], cancellationToken);
+
             using var copy = scope.Rent(argb.Length * sizeof(uint), AllocationKind.Temporary, clear: false);
             var second = unsafe(MemoryMarshal.Cast<byte, uint>(copy.RawBuffer.AsSpan(0, argb.Length * sizeof(uint))));
             argb.CopyTo(second);
-            var entropy = EncodeStream(scope, argb, width, height, effort: 9, entropyPredictors: true, cancellationToken);
-            LsbBitWriter absolute;
+            var best = EncodeStream(scope, argb, width, height, effort: 9, ranked[0], cancellationToken);
+            LsbBitWriter other;
             try
             {
-                absolute = EncodeStream(scope, second, width, height, effort: 9, entropyPredictors: false, cancellationToken);
+                other = EncodeStream(scope, second, width, height, effort: 9, ranked[1], cancellationToken);
             }
             catch
             {
-                entropy.Dispose();
+                best.Dispose();
                 throw;
             }
 
-            if (absolute.Length < entropy.Length)
+            if (other.Length < best.Length)
             {
-                entropy.Dispose();
-                return absolute;
+                best.Dispose();
+                return other;
             }
 
-            absolute.Dispose();
-            return entropy;
+            other.Dispose();
+            return best;
         }
 
-        private static LsbBitWriter EncodeStream(AllocationScope scope, Span<uint> argb, int width, int height, int effort, bool? entropyPredictors, CancellationToken cancellationToken)
+        private static LsbBitWriter EncodeStream(AllocationScope scope, Span<uint> argb, int width, int height, int effort, Vp8LConfiguration? configuration, CancellationToken cancellationToken)
         {
             var writer = new LsbBitWriter(scope);
             try
             {
-                Vp8LEncoder.Encode(scope, writer, argb, width, height, effort, cancellationToken, entropyPredictors);
+                Vp8LEncoder.Encode(scope, writer, argb, width, height, effort, cancellationToken, configuration);
                 writer.Finish();
                 return writer;
             }
@@ -501,17 +510,18 @@ internal sealed class WebPEncoderCodec : ImageEncoderCodec
             }
         }
 
-        public static EncodedFrame EncodeLossy(AllocationScope scope, ReadOnlySpan<byte> rgba, int width, int height, bool hasAlpha, int quality, int effort, CancellationToken cancellationToken)
+        public static EncodedFrame EncodeLossy(AllocationScope scope, Span<byte> rgba, int width, int height, bool hasAlpha, int quality, int alphaQuality, int effort, CancellationToken cancellationToken)
         {
             var result = new EncodedFrame();
             try
             {
-                result._lossy = Vp8Encoder.Encode(scope, rgba, width, height, quality, effort, cancellationToken);
+                // The alpha comes first: the color encoder then sees the alpha the decoder will see
                 if (hasAlpha)
                 {
-                    (result._alpha, result._alphaHeader) = WebPAlphaEncoder.Encode(scope, rgba, width, height, effort, cancellationToken);
+                    (result._alpha, result._alphaHeader) = EncodeAlpha(scope, rgba, width, height, alphaQuality, effort, cancellationToken);
                 }
 
+                result._lossy = Vp8Encoder.Encode(scope, rgba, width, height, quality, effort, cancellationToken);
                 return result;
             }
             catch
@@ -519,6 +529,53 @@ internal sealed class WebPEncoderCodec : ImageEncoderCodec
                 result.Dispose();
                 throw;
             }
+        }
+
+        /// <summary>
+        /// Encodes the alpha values; below an alpha quality of 100, also with reduced levels, kept (and left in
+        /// <paramref name="rgba"/>) only when smaller: fewer levels can break ramps that compress well.
+        /// </summary>
+        private static (LsbBitWriter Bitstream, byte Header) EncodeAlpha(AllocationScope scope, Span<byte> rgba, int width, int height, int alphaQuality, int effort, CancellationToken cancellationToken)
+        {
+            var exact = WebPAlphaEncoder.Encode(scope, rgba, width, height, effort, levelsReduced: false, cancellationToken);
+            if (alphaQuality >= 100)
+                return exact;
+
+            var count = width * height;
+            using var saved = scope.Rent(count, AllocationKind.Temporary, clear: false);
+            var original = saved.RawBuffer.AsSpan(0, count);
+            for (var i = 0; i < count; i++)
+            {
+                original[i] = rgba[(i * 4) + 3];
+            }
+
+            (LsbBitWriter Bitstream, byte Header) reduced;
+            try
+            {
+                if (!WebPAlphaEncoder.QuantizeLevels(rgba, alphaQuality))
+                    return exact;
+
+                reduced = WebPAlphaEncoder.Encode(scope, rgba, width, height, effort, levelsReduced: true, cancellationToken);
+            }
+            catch
+            {
+                exact.Bitstream.Dispose();
+                throw;
+            }
+
+            if (reduced.Bitstream.Length < exact.Bitstream.Length)
+            {
+                exact.Bitstream.Dispose();
+                return reduced;
+            }
+
+            reduced.Bitstream.Dispose();
+            for (var i = 0; i < count; i++)
+            {
+                rgba[(i * 4) + 3] = original[i];
+            }
+
+            return exact;
         }
 
         /// <summary>Gets the chunks (headers, payloads and padding) in file order.</summary>

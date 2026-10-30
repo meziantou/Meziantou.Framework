@@ -5,7 +5,7 @@ description: Run calls concurrently, and run CPU-bound JavaScript code in parall
 
 ## Concurrent calls on one host
 
-`NodeJsHost` is thread-safe, and concurrent calls run concurrently in the Node.js process. Asynchronous code (I/O,
+[NodeJsHost](cref:Meziantou.Framework.NodeJs.NodeJsHost) is thread-safe, and concurrent calls run concurrently in the Node.js process. Asynchronous code (I/O,
 timers, promises) overlaps, but synchronous code runs one call at a time on the single event loop of the process. One
 host is enough for calls that mostly wait, such as calls that read files or send HTTP requests. For CPU-bound code, such
 as rendering or parsing documents, use worker threads or a pool of processes.
@@ -17,13 +17,13 @@ as rendering or parsing documents, use worker threads or a pool of processes.
 | A crash of the process | Fails all the calls | Fails all the calls | Fails the calls of that process, which is replaced |
 | A canceled call blocks the event loop | The process is killed | The worker thread is restarted | The process is killed and replaced |
 
-The last row applies when `UnresponsiveTimeout` is set (see
+The last row applies when [UnresponsiveTimeout](cref:Meziantou.Framework.NodeJs.NodeJsHostOptions.UnresponsiveTimeout) is set (see
 [Cancellation and timeouts](09-CancellationAndTimeouts.md)). Both can be combined: each process of a pool can run worker
 threads.
 
 ## Worker threads
 
-Set `WorkerThreads` to run the calls on several [worker threads](https://nodejs.org/api/worker_threads.html) of a single
+Set [WorkerThreads](cref:Meziantou.Framework.NodeJs.NodeJsHostOptions.WorkerThreads) to run the calls on several [worker threads](https://nodejs.org/api/worker_threads.html) of a single
 Node.js process:
 
 <!-- ref:../../samples/Meziantou.Framework.NodeJs.Samples/ReadmeExamples.cs;region=NodeJs_WorkerThreads;format=md-fenced-code-block;dedent=true -->
@@ -34,7 +34,7 @@ var results = await Task.WhenAll(documents.Select(document => node.InvokeAsync("
 <!-- endref -->
 
 - Each worker thread has its own connection with the host, so the calls do not go through the main thread.
-- Each call is sent to the worker thread with the fewest calls in progress. Set `MaxConcurrentCalls` to the number of
+- Each call is sent to the worker thread with the fewest calls in progress. Set [MaxConcurrentCalls](cref:Meziantou.Framework.NodeJs.NodeJsHostOptions.MaxConcurrentCalls) to the number of
   worker threads for CPU-bound code, so the calls wait in the host and run on the first worker thread that becomes
   available.
 
@@ -55,7 +55,7 @@ longer be used. Some APIs behave differently in a worker thread:
 
 ## A pool of processes
 
-`NodeJsHostPool` starts several Node.js processes, and sends each call to the process with the fewest calls in
+[NodeJsHostPool](cref:Meziantou.Framework.NodeJs.NodeJsHostPool) starts several Node.js processes, and sends each call to the process with the fewest calls in
 progress:
 
 <!-- ref:../../tests/Meziantou.Framework.NodeJs.Tests/NodeJsHostTests.cs;region=NodeJsHostPool_Example;format=md-fenced-code-block;dedent=true -->
@@ -72,13 +72,13 @@ Assert.Equal([7, 11], results.Select(result => result.GetInt32()));
 <!-- endref -->
 
 - The pool has the same calls as a host. `Environment.ProcessorCount` is a good size for CPU-bound code.
-- A process that exits is replaced the next time a process is selected. With `UnresponsiveTimeout`, a process blocked
+- A process that exits is replaced the next time a process is selected. With [UnresponsiveTimeout](cref:Meziantou.Framework.NodeJs.NodeJsHostOptions.UnresponsiveTimeout), a process blocked
   by a canceled call is also killed and replaced.
 - The options are copied when the pool starts, and are used for all the processes, including the ones that replace
   the processes that exit.
 
 Processes do not share state: the values stored on `globalThis` are only visible to the calls that run on the same
-process. Use `RunAsync` to run several calls on the same process:
+process. Use [RunAsync](cref:Meziantou.Framework.NodeJs.NodeJsHostPool.RunAsync) to run several calls on the same process:
 
 <!-- ref:../../samples/Meziantou.Framework.NodeJs.Samples/ReadmeExamples.cs;region=NodeJs_Pool;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -96,12 +96,12 @@ await pool.RunAsync(async host =>
 
 - The host passed to the callback must not be used once the callback completes.
 - A reference returned by the pool is bound to the process that created it. The calls of the pool whose arguments
-  contain a reference run on that process, without waiting in the pool: only the `MaxConcurrentCalls` limit of that
+  contain a reference run on that process, without waiting in the pool: only the [MaxConcurrentCalls](cref:Meziantou.Framework.NodeJs.NodeJsHostOptions.MaxConcurrentCalls) limit of that
   process applies. Once the process exits, they fail, even after the pool replaces the process.
 
 ## Limit the calls in progress
 
-`MaxConcurrentCalls` limits the number of calls that run at the same time in a process, including all its worker
+[MaxConcurrentCalls](cref:Meziantou.Framework.NodeJs.NodeJsHostOptions.MaxConcurrentCalls) limits the number of calls that run at the same time in a process, including all its worker
 threads. The other calls wait, without keeping a serialized copy of their arguments. By default, the number of calls is
 not limited.
 
@@ -111,6 +111,6 @@ not limited.
 - With worker threads, use the number of worker threads for CPU-bound code, so a call runs on the first worker thread
   that becomes available.
 - A canceled call no longer counts, even when its JavaScript code is still running.
-- A `RunAsync` callback counts as one call of the pool, and each call it makes on the host counts as one call of the
+- A [RunAsync](cref:Meziantou.Framework.NodeJs.NodeJsHostPool.RunAsync) callback counts as one call of the pool, and each call it makes on the host counts as one call of the
   host. The calls it makes on the pool instead of the host do not wait in the pool, as the callback already counts as a
   call.

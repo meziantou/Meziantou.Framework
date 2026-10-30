@@ -5,7 +5,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
 /// Decodes the blocks of one sequential Huffman scan (ITU-T T.81 section F.2): DC prediction, AC run-lengths,
-/// dequantization and the inverse DCT; the samples are written into the component planes.
+/// dequantization and the inverse DCT; the samples are written into the component planes. When the frame is reconstructed
+/// by several workers (<see cref="JpegReconstruction"/>), the quantized coefficients of each block are stored in the
+/// coefficient ring of its component instead, and transformed once their MCU row is decoded.
 /// </summary>
 /// <remarks>
 /// Validation (all <see cref="InvalidImageContentException"/>), besides the scan structure of <see cref="JpegScanDecoder"/>:
@@ -15,6 +17,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 internal sealed class JpegSequentialScanDecoder : JpegScanDecoder
 {
     private readonly double[] _block = new double[64];
+    private readonly bool _deferTransforms;
 
     /// <param name="components">The scan components with their tables, in scan order.</param>
     /// <param name="reader">The entropy reader (reset by this scan).</param>
@@ -23,13 +26,21 @@ internal sealed class JpegSequentialScanDecoder : JpegScanDecoder
     /// <param name="restartInterval">The restart interval in MCUs, or 0.</param>
     /// <param name="mcuRowDecoded">Called after each completed MCU row (block row for a non-interleaved scan) with its index.</param>
     /// <param name="cancellationToken">Checked after each MCU row.</param>
-    public JpegSequentialScanDecoder(ScanComponent[] components, JpegEntropyReader reader, int mcusPerLine, int mcuRows, int restartInterval, Action<int>? mcuRowDecoded, CancellationToken cancellationToken)
+    /// <param name="deferTransforms">Whether the quantized coefficients are stored in the coefficient rings of the components instead of being transformed.</param>
+    public JpegSequentialScanDecoder(ScanComponent[] components, JpegEntropyReader reader, int mcusPerLine, int mcuRows, int restartInterval, Action<int>? mcuRowDecoded, CancellationToken cancellationToken, bool deferTransforms = false)
         : base(components, reader, mcusPerLine, mcuRows, restartInterval, mcuRowDecoded, cancellationToken)
     {
+        _deferTransforms = deferTransforms;
     }
 
     protected override void DecodeBlock(ScanComponent scanComponent, int blockRow, int blockColumn)
     {
+        if (_deferTransforms)
+        {
+            DecodeCoefficients(scanComponent, blockRow, blockColumn);
+            return;
+        }
+
         // The destination is computed first: one value instead of two to keep alive through the loop
         var offset = scanComponent.Component.GetRowOffset(blockRow * 8) + (blockColumn * 8);
         var reader = Reader.GetCursor();
@@ -103,6 +114,72 @@ internal sealed class JpegSequentialScanDecoder : JpegScanDecoder
 
         // The DC coefficient is read back from the predictor: one value less to keep alive in the loop
         TransformBlock(scanComponent, offset, _block, scanComponent.Predictor, naturalIndexes != 0, JpegIdct.IsSparse(naturalIndexes));
+    }
+
+    /// <summary>
+    /// Decodes the next block like <see cref="DecodeBlock"/>, but stores its quantized coefficients (natural order) in the
+    /// coefficient ring of the component: the transform of <see cref="JpegReconstruction"/> gives the samples of
+    /// <see cref="JpegScanDecoder.TransformBlock(ScanComponent, int, double[], int, bool, bool)"/>.
+    /// </summary>
+    private void DecodeCoefficients(ScanComponent scanComponent, int blockRow, int blockColumn)
+    {
+        var component = scanComponent.Component;
+        var coefficients = component.GetCoefficients(blockRow % component.CoefficientBlockRows, blockColumn);
+        coefficients.Clear();
+        ref var block = ref unsafe(MemoryMarshal.GetReference(coefficients));
+        var reader = Reader.GetCursor();
+        var category = reader.DecodeHuffman(scanComponent.DcTable!);
+        if (category > MaxDcCategory)
+            throw CreateDcCategoryException();
+
+        var dc = scanComponent.Predictor + (category == 0 ? 0 : reader.ReceiveExtend(category));
+        if (dc is < short.MinValue or > short.MaxValue)
+            throw Invalid("The JPEG DC coefficient is out of range.");
+
+        scanComponent.Predictor = dc;
+        block = (short)dc;
+        var zigZagQuantization = scanComponent.ZigZagQuantization;
+        var acTable = scanComponent.AcTable!;
+        var fastAc = acTable.FastAc;
+        for (var k = 1; k < 64;)
+        {
+            var fast = reader.TryDecodeFastAc(fastAc);
+            if (fast != 0)
+            {
+                k += (fast >> 4) & 0x0F;
+                if (k > 63)
+                    throw CreateRunException();
+
+                // The natural index is at most 63 and the block has 64 coefficients; a magnitude of at most 14 bits fits
+                unsafe { Unsafe.Add(ref block, zigZagQuantization[k] & 63) = (short)(fast >> 8); }
+                k++;
+                continue;
+            }
+
+            var symbol = reader.DecodeHuffman(acTable);
+            var run = symbol >> 4;
+            var size = symbol & 0x0F;
+            if (size == 0)
+            {
+                if (run != 15)
+                    break; // EOB
+
+                k += 16; // ZRL
+                continue;
+            }
+
+            k += run;
+            if (k > 63)
+                throw CreateRunException();
+
+            if (size > MaxAcCategory)
+                throw CreateAcCategoryException();
+
+            unsafe { Unsafe.Add(ref block, zigZagQuantization[k] & 63) = (short)reader.ReceiveExtend(size); }
+            k++;
+        }
+
+        reader.Commit();
     }
 
     // The exceptions are created out of line, which keeps their message formatting out of the frame of DecodeBlock

@@ -4,14 +4,14 @@ description: Read and write QOI files, a simple lossless format for one 8-bit RG
 ---
 
 QOI (the "Quite OK Image" format) stores one lossless 8-bit RGB or RGBA still image, and nothing else: no animation and
-no metadata. `QoiEncoder` keeps every sample, including the colors of fully transparent pixels, and its output is
+no metadata. [QoiEncoder](cref:Meziantou.Framework.Imaging.Formats.QoiEncoder) keeps every sample, including the colors of fully transparent pixels, and its output is
 byte-identical to the one of the reference encoder.
 
 ## What is read and written
 
 | | Reading | Writing |
 | --- | --- | --- |
-| Pixels | 3 channels (loaded as `Rgb24`) or 4 channels (loaded as `Rgba32`) | 4 channels for pixel formats with alpha, 3 otherwise; gray images are stored as RGB |
+| Pixels | 3 channels (loaded as [Rgb24](cref:Meziantou.Framework.Imaging.Rgb24)) or 4 channels (loaded as [Rgba32](cref:Meziantou.Framework.Imaging.Rgba32)) | 4 channels for pixel formats with alpha, 3 otherwise; gray images are stored as RGB |
 | Colorspace field | Reported as `Metadata.TransferFunction` | Written from `Metadata.TransferFunction` |
 | Metadata | None | None |
 
@@ -40,16 +40,16 @@ public static void SaveQoi(string inputPath, string qoiPath, string linearQoiPat
 
 | Option | What it does | Default |
 | --- | --- | --- |
-| `AllowBitDepthReduction` | Lets 16-bit pixel formats be rounded to 8 bits | `false` |
-| `MetadataHandling` | What to do with metadata, which QOI cannot store | `Strict` |
+| [AllowBitDepthReduction](cref:Meziantou.Framework.Imaging.Formats.QoiEncoder.AllowBitDepthReduction) | Lets 16-bit pixel formats be rounded to 8 bits | `false` |
+| [MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling) | What to do with metadata, which QOI cannot store | [Strict](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling.Strict) |
 
 ## Pitfalls
 
-- QOI stores one frame: an animation, or an image with a poster frame, throws an `UnsupportedImageFeatureException`.
+- QOI stores one frame: an animation, or an image with a poster frame, throws an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException).
   Save one frame with `image.Frames[i].Save`.
 - QOI stores no metadata: an image with an ICC profile, EXIF, XMP, an orientation, a resolution or text entries throws
-  by default. Set `MetadataHandling` to `DiscardUnsupported` or `Strip`, after `AutoOrient` if the orientation matters.
+  by default. Set [MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling) to [DiscardUnsupported](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling.DiscardUnsupported) or [Strip](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling.Strip), after [AutoOrient](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoOrient) if the orientation matters.
 - A colorspace of 1 (linear samples) is a label, never applied: the pixels load as they are stored, labeled
-  `ColorTransferFunction.Linear`. Saving them to a format that cannot store the label follows `MetadataHandling`.
-  `MetadataHandling.Strip` writes a colorspace of 0.
-- 16-bit images need `AllowBitDepthReduction`.
+  [ColorTransferFunction.Linear](cref:Meziantou.Framework.Imaging.Metadata.ColorTransferFunction.Linear). Saving them to a format that cannot store the label follows [MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling).
+  [MetadataHandling.Strip](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling.Strip) writes a colorspace of 0.
+- 16-bit images need [AllowBitDepthReduction](cref:Meziantou.Framework.Imaging.Formats.QoiEncoder.AllowBitDepthReduction).

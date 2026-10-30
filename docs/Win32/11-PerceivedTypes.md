@@ -4,7 +4,7 @@ description: Classify a file as text, image, audio, video, compressed, document 
 ---
 
 Windows classifies file extensions into broad kinds, the perceived types: text, image, audio, video and so on. File
-Explorer uses them, for instance, to choose the columns of a folder of pictures. `Perceived` from the
+Explorer uses them, for instance, to choose the columns of a folder of pictures. [Perceived](cref:Meziantou.Framework.Win32.Perceived) from the
 `Meziantou.Framework.Win32.PerceivedType` package returns the perceived type of a file name or an extension.
 
 ```bash
@@ -34,26 +34,26 @@ Assert.Equal(PerceivedType.Audio, audio.PerceivedType);
 ```
 <!-- endref -->
 
-The result gives the `Extension`, the `PerceivedType`, and the `PerceivedTypeSource`, which tells how Windows knows the
+The result gives the [Extension](cref:Meziantou.Framework.Win32.Perceived.Extension), the [PerceivedType](cref:Meziantou.Framework.Win32.PerceivedType), and the [PerceivedTypeSource](cref:Meziantou.Framework.Win32.PerceivedTypeSource), which tells how Windows knows the
 type:
 
-| `PerceivedTypeSource` | The type comes from |
+| [PerceivedTypeSource](cref:Meziantou.Framework.Win32.PerceivedTypeSource) | The type comes from |
 | --- | --- |
-| `SoftCoded` | A file association in the registry |
-| `HardCoded` | The operating system, or `AddPerceived` |
-| `NativeSupport` | A codec provided with the operating system |
-| `GdiPlus` | The image formats of GDI+ |
-| `WmSdk` | The formats of Windows Media |
-| `ZipFolder` | The compressed folders of Windows |
-| `Undefined` | Nowhere: the extension has no perceived type |
+| [SoftCoded](cref:Meziantou.Framework.Win32.PerceivedTypeSource.SoftCoded) | A file association in the registry |
+| [HardCoded](cref:Meziantou.Framework.Win32.PerceivedTypeSource.HardCoded) | The operating system, or [AddPerceived](cref:Meziantou.Framework.Win32.Perceived.AddPerceived) |
+| [NativeSupport](cref:Meziantou.Framework.Win32.PerceivedTypeSource.NativeSupport) | A codec provided with the operating system |
+| [GdiPlus](cref:Meziantou.Framework.Win32.PerceivedTypeSource.GdiPlus) | The image formats of GDI+ |
+| [WmSdk](cref:Meziantou.Framework.Win32.PerceivedTypeSource.WmSdk) | The formats of Windows Media |
+| [ZipFolder](cref:Meziantou.Framework.Win32.PerceivedTypeSource.ZipFolder) | The compressed folders of Windows |
+| [Undefined](cref:Meziantou.Framework.Win32.PerceivedTypeSource.Undefined) | Nowhere: the extension has no perceived type |
 
-The types are `Text`, `Image`, `Audio`, `Video`, `Compressed`, `Document`, `System`, `Application`, `GameMedia` and
-`Contacts`. An extension that Windows does not know is `Unspecified`, and `Custom` is a type defined in the registry
+The types are [Text](cref:Meziantou.Framework.Win32.PerceivedType.Text), [Image](cref:Meziantou.Framework.Win32.PerceivedType.Image), [Audio](cref:Meziantou.Framework.Win32.PerceivedType.Audio), [Video](cref:Meziantou.Framework.Win32.PerceivedType.Video), [Compressed](cref:Meziantou.Framework.Win32.PerceivedType.Compressed), [Document](cref:Meziantou.Framework.Win32.PerceivedType.Document), [System](cref:Meziantou.Framework.Win32.PerceivedType.System), [Application](cref:Meziantou.Framework.Win32.PerceivedType.Application), [GameMedia](cref:Meziantou.Framework.Win32.PerceivedType.GameMedia) and
+[Contacts](cref:Meziantou.Framework.Win32.PerceivedType.Contacts). An extension that Windows does not know is [Unspecified](cref:Meziantou.Framework.Win32.PerceivedType.Unspecified), and [Custom](cref:Meziantou.Framework.Win32.PerceivedType.Custom) is a type defined in the registry
 that is not one of the others.
 
 The answer depends on the machine: Windows and the installed applications register the file associations, so the
 same extension can have a different type, or none, on another machine. An extension with no registered association is
-`Unspecified`.
+[Unspecified](cref:Meziantou.Framework.Win32.PerceivedType.Unspecified).
 
 ## Define the perceived type of an extension
 
@@ -70,13 +70,13 @@ Perceived.AddDefaultPerceivedTypes();
 ```
 <!-- endref -->
 
-- `AddPerceived` replaces the type of an extension for the current process only: it does not change the registry.
-- `AddDefaultPerceivedTypes` defines common development extensions: `.cs`, `.csproj`, `.sln`, `.xaml`, `.html`,
-  `.js`, `.css`, `.sql` and others as `Text`, and `.exe`, `.dll` and `.class` as `Application`.
+- [AddPerceived](cref:Meziantou.Framework.Win32.Perceived.AddPerceived) replaces the type of an extension for the current process only: it does not change the registry.
+- [AddDefaultPerceivedTypes](cref:Meziantou.Framework.Win32.Perceived.AddDefaultPerceivedTypes) defines common development extensions: `.cs`, `.csproj`, `.sln`, `.xaml`, `.html`,
+  `.js`, `.css`, `.sql` and others as [Text](cref:Meziantou.Framework.Win32.PerceivedType.Text), and `.exe`, `.dll` and `.class` as [Application](cref:Meziantou.Framework.Win32.PerceivedType.Application).
 - The extensions are compared without regard to case.
 
 ## Caching
 
-`GetPerceivedType` remembers the answers of Windows for the lifetime of the process, so a change of the file
+[GetPerceivedType](cref:Meziantou.Framework.Win32.Perceived.GetPerceivedType) remembers the answers of Windows for the lifetime of the process, so a change of the file
 associations is not seen until the application restarts. The cache is bounded: when the names come from untrusted
 input, such as uploaded files, unusual extensions do not make it grow without limit.

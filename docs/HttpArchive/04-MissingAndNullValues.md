@@ -35,15 +35,15 @@ Assert.Null(entries[1].Request);
 <!-- endref -->
 
 - A missing field keeps the default value of the property: `""` for most strings, an empty list for the collections,
-  an empty object for `HarEntry.Request`, `Response`, `Cache` and `Timings`, `1.2` for `HarLog.Version`.
+  an empty object for [HarEntry.Request](cref:Meziantou.Framework.HttpArchive.HarEntry.Request), [Response](cref:Meziantou.Framework.HttpArchive.HarEntry.Response), [Cache](cref:Meziantou.Framework.HttpArchive.HarEntry.Cache) and [Timings](cref:Meziantou.Framework.HttpArchive.HarEntry.Timings), `1.2` for [HarLog.Version](cref:Meziantou.Framework.HttpArchive.HarLog.Version).
 - An explicit `null` gives `null`, even for a collection or an object.
-- The optional fields of the format, such as `Comment`, `PostData` or `HarLog.Pages`, are `null` when they are
+- The optional fields of the format, such as `Comment`, [PostData](cref:Meziantou.Framework.HttpArchive.HarRequest.PostData) or [HarLog.Pages](cref:Meziantou.Framework.HttpArchive.HarLog.Pages), are `null` when they are
   missing.
 
 When you read an archive you did not create, check for `null` with `?.` and `??`, as the examples of this
 documentation do. When you write an archive, a `null` property is left out of the JSON.
 
-`ToHttpRequestMessage` and `ToHttpResponseMessage` accept these values: `null` headers, cookies or MIME types give a
+[ToHttpRequestMessage](cref:Meziantou.Framework.HttpArchive.HarEntryExtensions.ToHttpRequestMessage) and [ToHttpResponseMessage](cref:Meziantou.Framework.HttpArchive.HarEntryExtensions.ToHttpResponseMessage) accept these values: `null` headers, cookies or MIME types give a
 message without them. They throw an `InvalidOperationException` when the entry has no request or no response, or
 when the method or the URL of the request is `null`. A request also needs a method and an absolute URL: an empty
 method, or a URL that `Uri` cannot parse, throws like `new HttpMethod` and `new Uri` do. See

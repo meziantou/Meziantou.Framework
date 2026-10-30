@@ -5,7 +5,7 @@ description: Tag fields, properties, parameters and return values, declare union
 
 ## Tag a declaration
 
-`[ValueTag]` applies to fields, properties, parameters, and return values (`[return: ValueTag("OrderId")]`):
+[\[ValueTag\]](cref:Meziantou.Framework.TaggedValues.ValueTagAttribute) applies to fields, properties, parameters, and return values (`[return: ValueTag("OrderId")]`):
 
 <!-- ref:../../samples/Meziantou.Framework.TaggedValues.Samples/Tagging/Declarations.cs;region=TaggedValues_TagDeclarations;format=md-fenced-code-block;dedent=true -->
 ```csharp

@@ -5,7 +5,7 @@ description: Find log entries by level and content, read their parameters and sc
 
 ## Find entries
 
-`InMemoryLogCollection` is an `IEnumerable<InMemoryLogEntry>`, so the assertions and the LINQ methods that take a
+[InMemoryLogCollection](cref:Meziantou.Extensions.Logging.InMemory.InMemoryLogCollection) is an `IEnumerable<InMemoryLogEntry>`, so the assertions and the LINQ methods that take a
 collection work on it. It also has properties and methods for the common searches:
 
 <!-- ref:../../../tests/Meziantou.Extensions.Logging.InMemory.Tests/InMemoryLoggerTests.cs;region=InMemoryLogCollection_Example;format=md-fenced-code-block;dedent=true -->
@@ -29,10 +29,10 @@ Assert.Equal(LogLevel.Error, entry.LogLevel);
 
 | Member | Returns |
 | --- | --- |
-| `Traces`, `Debugs`, `Informations`, `Warnings`, `Errors`, `Criticals` | The entries of that level |
+| [Traces](cref:Meziantou.Extensions.Logging.InMemory.InMemoryLogCollection.Traces), [Debugs](cref:Meziantou.Extensions.Logging.InMemory.InMemoryLogCollection.Debugs), [Informations](cref:Meziantou.Extensions.Logging.InMemory.InMemoryLogCollection.Informations), [Warnings](cref:Meziantou.Extensions.Logging.InMemory.InMemoryLogCollection.Warnings), [Errors](cref:Meziantou.Extensions.Logging.InMemory.InMemoryLogCollection.Errors), [Criticals](cref:Meziantou.Extensions.Logging.InMemory.InMemoryLogCollection.Criticals) | The entries of that level |
 | `Find(predicate)` | The first matching entry, or `null` |
 | `Contains(predicate)` | Whether an entry matches |
-| `Count` | The number of entries |
+| [Count](cref:Meziantou.Extensions.Logging.InMemory.InMemoryLogCollection.Count) | The number of entries |
 
 The entries are in the order they were logged. The collection is thread-safe: code can log from several threads while a
 test enumerates it.
@@ -41,17 +41,17 @@ test enumerates it.
 
 | Property | Value |
 | --- | --- |
-| `Message` | The formatted message: `"User 123 logged in"` |
+| [Message](cref:Meziantou.Extensions.Logging.InMemory.InMemoryLogEntry.Message) | The formatted message: `"User 123 logged in"` |
 | `LogLevel` | The level |
-| `Category` | The category of the logger |
-| `EventId` | The event identifier passed to the log call |
-| `Exception` | The exception passed to the log call, or `null` |
-| `State` | The state passed to the log call: for a message template, the list of its parameters |
-| `Scopes` | The scopes that were active when the entry was logged, outermost first |
-| `CreatedAt` | The time at which the entry was logged, in UTC |
+| [Category](cref:Meziantou.Extensions.Logging.InMemory.InMemoryLogEntry.Category) | The category of the logger |
+| [EventId](cref:Meziantou.Extensions.Logging.InMemory.InMemoryLogEntry.EventId) | The event identifier passed to the log call |
+| [Exception](cref:Meziantou.Extensions.Logging.InMemory.InMemoryLogEntry.Exception) | The exception passed to the log call, or `null` |
+| [State](cref:Meziantou.Extensions.Logging.InMemory.InMemoryLogEntry.State) | The state passed to the log call: for a message template, the list of its parameters |
+| [Scopes](cref:Meziantou.Extensions.Logging.InMemory.InMemoryLogEntry.Scopes) | The scopes that were active when the entry was logged, outermost first |
+| [CreatedAt](cref:Meziantou.Extensions.Logging.InMemory.InMemoryLogEntry.CreatedAt) | The time at which the entry was logged, in UTC |
 
-`CreatedAt` comes from `TimeProvider.System`, or from the `TimeProvider` passed to `CreateLogger` or to the constructor
-of `InMemoryLoggerProvider`, so a test can control it.
+[CreatedAt](cref:Meziantou.Extensions.Logging.InMemory.InMemoryLogEntry.CreatedAt) comes from `TimeProvider.System`, or from the `TimeProvider` passed to [CreateLogger](cref:Meziantou.Extensions.Logging.InMemory.InMemoryLoggerProvider.CreateLogger) or to the constructor
+of [InMemoryLoggerProvider](cref:Meziantou.Extensions.Logging.InMemory.InMemoryLoggerProvider), so a test can control it.
 
 ## Read the parameters of the message
 
@@ -72,7 +72,7 @@ Assert.Equal(123, userId);
 
 ## Read the scopes
 
-`TryGetParameterValue` also looks for the parameter in the scopes:
+[TryGetParameterValue](cref:Meziantou.Extensions.Logging.InMemory.InMemoryLogEntry.TryGetParameterValue) also looks for the parameter in the scopes:
 
 <!-- ref:../../../tests/Meziantou.Extensions.Logging.InMemory.Tests/InMemoryLoggerTests.cs;region=InMemoryLogger_Scopes;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -104,7 +104,7 @@ Assert.Equal(42, orderId);
 
 ## Share a collection and clear it
 
-Pass the same `InMemoryLogCollection` to several loggers to collect their entries together. `Clear` removes the entries
+Pass the same [InMemoryLogCollection](cref:Meziantou.Extensions.Logging.InMemory.InMemoryLogCollection) to several loggers to collect their entries together. [Clear](cref:Meziantou.Extensions.Logging.InMemory.InMemoryLogCollection.Clear) removes the entries
 logged so far:
 
 <!-- ref:../../../tests/Meziantou.Extensions.Logging.InMemory.Tests/InMemoryLoggerTests.cs;region=InMemoryLogger_SharedCollection;format=md-fenced-code-block;dedent=true -->
@@ -125,12 +125,12 @@ Assert.Empty(logs);
 ```
 <!-- endref -->
 
-`InMemoryLoggerProvider` accepts a collection too, in its constructors.
+[InMemoryLoggerProvider](cref:Meziantou.Extensions.Logging.InMemory.InMemoryLoggerProvider) accepts a collection too, in its constructors.
 
 ## Show the entries in a failure message
 
 `ToString` describes an entry: its category, its level, its event identifier, its message, its exception, its state and
-its scopes serialized as JSON. `InMemoryLogCollection.ToString` describes every entry:
+its scopes serialized as JSON. [InMemoryLogCollection.ToString](cref:Meziantou.Extensions.Logging.InMemory.InMemoryLogCollection.ToString) describes every entry:
 
 <!-- ref:../../../tests/Meziantou.Extensions.Logging.InMemory.Tests/InMemoryLoggerTests.cs;region=InMemoryLogger_ToString;format=md-fenced-code-block;dedent=true -->
 ```csharp

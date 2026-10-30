@@ -5,7 +5,7 @@ description: Locate Node.js, set the working directory, the arguments and the en
 
 ## Set the options
 
-`NodeJsHostOptions` configures the Node.js process when the host starts:
+[NodeJsHostOptions](cref:Meziantou.Framework.NodeJs.NodeJsHostOptions) configures the Node.js process when the host starts:
 
 <!-- ref:../../tests/Meziantou.Framework.NodeJs.Tests/NodeJsHostTests.cs;region=NodeJs_ProcessOptions;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -30,32 +30,32 @@ Assert.Equal("Development", environment);
 
 | Option | Default | Use |
 | --- | --- | --- |
-| `NodeExecutablePath` | `node`, searched in the `PATH` | The path of the `node` executable |
-| `WorkingDirectory` | The current directory | The folder from which relative paths and npm packages are resolved |
-| `NodeArguments` | None | Additional arguments of `node`, such as `--max-old-space-size=4096` |
-| `EnvironmentVariables` | The variables of your application | Variables to set, or to remove with a `null` value |
-| `StartupTimeout` | 30 seconds | The maximum time to wait for the process to start, or `Timeout.InfiniteTimeSpan` |
-| `StandardOutputReceived`, `StandardErrorReceived` | Discarded | Callbacks that receive each line of the output |
-| `MaxConcurrentCalls` | Not limited | See [Running calls in parallel](10-ParallelCalls.md#limit-the-calls-in-progress) |
-| `WorkerThreads` | None | See [Running calls in parallel](10-ParallelCalls.md#worker-threads) |
-| `UnresponsiveTimeout` | Never killed | See [Cancellation and timeouts](09-CancellationAndTimeouts.md) |
+| [NodeExecutablePath](cref:Meziantou.Framework.NodeJs.NodeJsHostOptions.NodeExecutablePath) | `node`, searched in the `PATH` | The path of the `node` executable |
+| [WorkingDirectory](cref:Meziantou.Framework.NodeJs.NodeJsHostOptions.WorkingDirectory) | The current directory | The folder from which relative paths and npm packages are resolved |
+| [NodeArguments](cref:Meziantou.Framework.NodeJs.NodeJsHostOptions.NodeArguments) | None | Additional arguments of `node`, such as `--max-old-space-size=4096` |
+| [EnvironmentVariables](cref:Meziantou.Framework.NodeJs.NodeJsHostOptions.EnvironmentVariables) | The variables of your application | Variables to set, or to remove with a `null` value |
+| [StartupTimeout](cref:Meziantou.Framework.NodeJs.NodeJsHostOptions.StartupTimeout) | 30 seconds | The maximum time to wait for the process to start, or `Timeout.InfiniteTimeSpan` |
+| [StandardOutputReceived](cref:Meziantou.Framework.NodeJs.NodeJsHostOptions.StandardOutputReceived), [StandardErrorReceived](cref:Meziantou.Framework.NodeJs.NodeJsHostOptions.StandardErrorReceived) | Discarded | Callbacks that receive each line of the output |
+| [MaxConcurrentCalls](cref:Meziantou.Framework.NodeJs.NodeJsHostOptions.MaxConcurrentCalls) | Not limited | See [Running calls in parallel](10-ParallelCalls.md#limit-the-calls-in-progress) |
+| [WorkerThreads](cref:Meziantou.Framework.NodeJs.NodeJsHostOptions.WorkerThreads) | None | See [Running calls in parallel](10-ParallelCalls.md#worker-threads) |
+| [UnresponsiveTimeout](cref:Meziantou.Framework.NodeJs.NodeJsHostOptions.UnresponsiveTimeout) | Never killed | See [Cancellation and timeouts](09-CancellationAndTimeouts.md) |
 
 The options are copied when a host or a pool starts, so changing them afterwards has no effect on it. A zero or negative
-`StartupTimeout`, `UnresponsiveTimeout`, `MaxConcurrentCalls` or `WorkerThreads` throws an
+[StartupTimeout](cref:Meziantou.Framework.NodeJs.NodeJsHostOptions.StartupTimeout), [UnresponsiveTimeout](cref:Meziantou.Framework.NodeJs.NodeJsHostOptions.UnresponsiveTimeout), [MaxConcurrentCalls](cref:Meziantou.Framework.NodeJs.NodeJsHostOptions.MaxConcurrentCalls) or [WorkerThreads](cref:Meziantou.Framework.NodeJs.NodeJsHostOptions.WorkerThreads) throws an
 `ArgumentOutOfRangeException`.
 
 ## Locate Node.js
 
-By default, the `node` executable is searched in the `PATH`. When it is not found, `StartAsync` throws a
-`NodeJsException` that asks you to install Node.js or to set `NodeExecutablePath`. Set `NodeExecutablePath` when:
+By default, the `node` executable is searched in the `PATH`. When it is not found, [StartAsync](cref:Meziantou.Framework.NodeJs.NodeJsHost.StartAsync) throws a
+[NodeJsException](cref:Meziantou.Framework.NodeJs.NodeJsException) that asks you to install Node.js or to set [NodeExecutablePath](cref:Meziantou.Framework.NodeJs.NodeJsHostOptions.NodeExecutablePath). Set [NodeExecutablePath](cref:Meziantou.Framework.NodeJs.NodeJsHostOptions.NodeExecutablePath) when:
 
 - Node.js is installed in a folder that is not in the `PATH` of your application, which can happen with services and
   version managers.
 - Several versions are installed, and your code needs a specific one.
 - Your application ships its own copy of Node.js.
 
-Node.js 16.9 or later is required: older versions fail to start or fail some calls. `NodeVersion` gives the version of
-the process that runs (`process.version`, such as `v24.15.0`), and `ProcessId` its identifier.
+Node.js 16.9 or later is required: older versions fail to start or fail some calls. [NodeVersion](cref:Meziantou.Framework.NodeJs.NodeJsHost.NodeVersion) gives the version of
+the process that runs (`process.version`, such as `v24.15.0`), and [ProcessId](cref:Meziantou.Framework.NodeJs.NodeJsHost.ProcessId) its identifier.
 
 ## Working directory
 
@@ -66,7 +66,7 @@ depends on how the application is started. See [Calling modules](04-CallingModul
 ## Output
 
 The standard output and the standard error of the process, such as the output of `console.log` and `console.error`, are
-captured: each line is passed to `StandardOutputReceived` or `StandardErrorReceived`. Without a callback, the line is
+captured: each line is passed to [StandardOutputReceived](cref:Meziantou.Framework.NodeJs.NodeJsHostOptions.StandardOutputReceived) or [StandardErrorReceived](cref:Meziantou.Framework.NodeJs.NodeJsHostOptions.StandardErrorReceived). Without a callback, the line is
 discarded, so it does not appear in the console of your application. The exceptions thrown by the callbacks are
 ignored.
 

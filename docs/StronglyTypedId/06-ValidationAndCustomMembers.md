@@ -55,7 +55,7 @@ rather than an ID with the value `0`.
 
 The generator skips every member that the type already declares with the same signature. Write your own version of:
 
-- the `_value` field, `Value` and `ValueAsString`;
+- the `_value` field, `Value` and [ValueAsString](cref:Meziantou.Framework.IStronglyTypedId.ValueAsString);
 - the constructor that takes the underlying value;
 - `ToString()`, `GetHashCode()`, `Equals(object?)`, `Equals(T)`, `==` and `!=`;
 - `Parse` and `TryParse`, for `string`, `ReadOnlySpan<char>` and UTF-8 (`ReadOnlySpan<byte>`);

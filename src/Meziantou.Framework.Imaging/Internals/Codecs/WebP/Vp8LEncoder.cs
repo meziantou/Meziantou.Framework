@@ -12,23 +12,34 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <remarks>
 /// <para>Tools, by effort (0 fastest to 9 smallest):</para>
 /// <list type="bullet">
-/// <item><description>Images with at most 256 distinct colors use the color indexing transform (sorted color table, pixel bundling for 16 colors or fewer).</description></item>
-/// <item><description>Other images use subtract green, then the predictor transform (64x64 tiles): the select predictor everywhere at effort 0, otherwise the best of 4 modes (effort 1 and 2) or of the 14 modes per tile, chosen by the smallest sum of absolute residuals (entropy of the residuals from effort 6; at effort 9 the encoder tries both criteria and keeps the smaller stream), then (effort 3 and above) the color transform per tile, each multiplier chosen by the entropy of the transformed channel.</description></item>
+/// <item><description>
+/// The transforms (<see cref="Vp8LConfiguration"/>): below effort 3, the color indexing transform for at most 256 colors
+/// (sorted color table, pixel bundling for 16 colors or fewer), otherwise subtract green and the predictor transform on 64x64
+/// tiles. From effort 3, candidates (color indexing, color indexing with predicted indexes, the predictor on tiles of 8 to 64
+/// pixels, subtract green alone) are ranked by encoding them at effort 2 (<see cref="RankConfigurations"/>); effort 9
+/// encodes the two best and keeps the smaller stream.
+/// </description></item>
+/// <item><description>The predictor modes: the select predictor everywhere at effort 0, otherwise the best of 4 modes (effort 1 and 2) or of the 14 modes per tile, chosen by the smallest sum of absolute residuals (entropy of the residuals from effort 6; both criteria are candidates at effort 9), then (effort 3 and above) the color transform per tile, each multiplier chosen by the entropy of the transformed channel.</description></item>
 /// <item><description>
 /// The image data is parsed into literals and LZ77 backward references with hash chains (deeper chains and lazy matching
 /// with the effort), within the distance range of the format; the color cache size is chosen among candidates by the
-/// estimated entropy of the result. One prefix code group is used (no entropy image). Codes are length-limited Huffman codes.
+/// estimated entropy of the result. From effort 5 the main image is parsed again to minimize its estimated size under the
+/// statistics of the first parse (<c>Vp8LEncoder.CostModel.cs</c>). From effort 3 the main image can use several prefix
+/// code groups selected by an entropy image (<c>Vp8LEncoder.EntropyImage.cs</c>). Codes are length-limited Huffman codes.
 /// </description></item>
 /// </list>
 /// <para>
 /// Memory (all <see cref="AllocationKind.Temporary"/>, from the writer scope): the ARGB image (transformed in place), the
-/// subresolution images, the recorded LZ77 tokens, the output bit stream and, during the parse only, the hash chains (4 bytes
-/// per pixel and a table of up to 1 MiB). Each spatial image is parsed once; its tokens are replayed for statistics and then
-/// emission. A token is one 32-bit word, a backward reference or a run of literals, so the reserve is at most 2 bytes per
-/// pixel (<see cref="GetTokenCapacity"/>): 512 MiB at 16,384 x 16,384, within the maximum length of a buffer.
+/// subresolution images, the recorded LZ77 tokens, the output bit stream, during the parses only the hash chains (4 bytes per
+/// pixel and a table of up to 1 MiB) and, from effort 5, the arrivals of the second parse (4 bytes per pixel), the
+/// histograms of the tiles of the entropy image (at most 8 bytes per pixel), and, while the configurations are ranked, a
+/// copy of the image (or of a sample of it) with the state of one encoding into a counting writer. Each spatial image is
+/// parsed once (twice from effort 5); its tokens are replayed for statistics and then emission. A token is one 32-bit word,
+/// a backward reference or a run of literals, so the reserve is at most 2 bytes per pixel (<see cref="GetTokenCapacity"/>):
+/// 512 MiB at 16,384 x 16,384, within the maximum length of a buffer.
 /// </para>
 /// </remarks>
-internal sealed class Vp8LEncoder : IDisposable
+internal sealed partial class Vp8LEncoder : IDisposable
 {
     private const int MaxLength = 4096;
     private const int MinLength = 3;
@@ -52,6 +63,9 @@ internal sealed class Vp8LEncoder : IDisposable
     private readonly CancellationToken _cancellationToken;
     private readonly List<PooledBuffer> _buffers = [];
 
+    /// <summary>Gets a value indicating whether the encoder only measures a configuration (<see cref="RankConfigurations"/>): no entropy image.</summary>
+    private bool Ranking { get; init; }
+
     private Vp8LEncoder(AllocationScope scope, LsbBitWriter writer, int effort, bool entropyPredictors, CancellationToken cancellationToken)
     {
         _scope = scope;
@@ -69,12 +83,12 @@ internal sealed class Vp8LEncoder : IDisposable
     /// <param name="height">The height (1 to 16,384).</param>
     /// <param name="effort">The effort, 0 to 9.</param>
     /// <param name="cancellationToken">Checked between rows and passes.</param>
-    /// <param name="entropyPredictors">
-    /// Whether the predictor modes are chosen by the entropy of the residuals instead of their sum of absolute values;
-    /// <see langword="null"/> selects it from the effort (6 and above).
+    /// <param name="configuration">
+    /// The transforms; <see langword="null"/> selects the configuration estimated smallest (<see cref="RankConfigurations"/>).
     /// </param>
-    public static void Encode(AllocationScope scope, LsbBitWriter writer, Span<uint> argb, int width, int height, int effort, CancellationToken cancellationToken, bool? entropyPredictors = null)
+    public static void Encode(AllocationScope scope, LsbBitWriter writer, Span<uint> argb, int width, int height, int effort, CancellationToken cancellationToken, Vp8LConfiguration? configuration = null)
     {
+        var chosen = configuration ?? RankConfigurations(scope, argb, width, height, effort, cancellationToken)[0];
         var alphaIsUsed = false;
         foreach (var pixel in argb)
         {
@@ -90,15 +104,16 @@ internal sealed class Vp8LEncoder : IDisposable
         writer.WriteBits((uint)(height - 1), 14);
         writer.WriteBits(alphaIsUsed ? 1u : 0u, 1);
         writer.WriteBits(0, 3);
-        using var encoder = new Vp8LEncoder(scope, writer, effort, entropyPredictors ?? effort >= 6, cancellationToken);
-        encoder.EncodeMainImage(argb, width, height);
+        using var encoder = new Vp8LEncoder(scope, writer, effort, chosen.EntropyPredictors, cancellationToken);
+        encoder.EncodeMainImage(argb, width, height, chosen);
     }
 
     /// <summary>Encodes a headerless image stream of known dimensions (the lossless compression of an <c>ALPH</c> chunk).</summary>
     public static void EncodeImageStream(AllocationScope scope, LsbBitWriter writer, Span<uint> argb, int width, int height, int effort, CancellationToken cancellationToken)
     {
-        using var encoder = new Vp8LEncoder(scope, writer, effort, effort >= 6, cancellationToken);
-        encoder.EncodeMainImage(argb, width, height);
+        var configuration = RankConfigurations(scope, argb, width, height, effort, cancellationToken)[0];
+        using var encoder = new Vp8LEncoder(scope, writer, effort, configuration.EntropyPredictors, cancellationToken);
+        encoder.EncodeMainImage(argb, width, height, configuration);
     }
 
     public void Dispose()
@@ -139,11 +154,15 @@ internal sealed class Vp8LEncoder : IDisposable
     /// </remarks>
     internal static long GetTokenCapacity(int pixelCount) => ((pixelCount + 1L) / 2) + (pixelCount >> TokenLengthShift);
 
-    private void EncodeMainImage(Span<uint> argb, int width, int height)
+    private void EncodeMainImage(Span<uint> argb, int width, int height, Vp8LConfiguration configuration)
     {
-        if (TryBuildPalette(argb, out var palette))
+        if (configuration.Mode is Vp8LTransformMode.Palette or Vp8LTransformMode.PredictedPalette)
         {
-            // Color indexing: the color table (subtraction coded), then the bundled indexes
+            if (!TryBuildPalette(argb, out var palette))
+                throw new InvalidOperationException("The image has more than 256 colors.");
+
+            // Color indexing: the color table (subtraction coded), then the indexes, bundled for 16 colors or fewer (the size
+            // of the table sets the bundling); the predictor, when there is one, applies to the bundled indexes
             var size = palette.Length;
             var widthBits = size <= 2 ? 3 : size <= 4 ? 2 : size <= 16 ? 1 : 0;
             _writer.WriteBits(1, 1);
@@ -160,6 +179,11 @@ internal sealed class Vp8LEncoder : IDisposable
             var packedWidth = Vp8LDecoder.DivRoundUp(width, widthBits);
             var packed = RentPixels((long)packedWidth * height);
             PackIndexes(argb, width, height, palette, widthBits, packed, packedWidth);
+            if (configuration.Mode is Vp8LTransformMode.PredictedPalette)
+            {
+                ApplyPredictor(packed, packedWidth, height, configuration.TransformBits);
+            }
+
             _writer.WriteBits(0, 1);
             EncodeSpatialImage(packed, packedWidth, height, isMainImage: true);
             return;
@@ -169,11 +193,13 @@ internal sealed class Vp8LEncoder : IDisposable
         _writer.WriteBits(1, 1);
         _writer.WriteBits(2, 2);
         Vp8LTransforms.SubtractGreen(argb);
-        ApplyPredictor(argb, width, height);
-
-        if (_effort >= 3)
+        if (configuration.Mode is Vp8LTransformMode.Spatial)
         {
-            ApplyColorTransform(argb, width, height);
+            ApplyPredictor(argb, width, height, configuration.TransformBits);
+            if (_effort >= 3)
+            {
+                ApplyColorTransform(argb, width, height, configuration.TransformBits);
+            }
         }
 
         _writer.WriteBits(0, 1);
@@ -301,12 +327,11 @@ internal sealed class Vp8LEncoder : IDisposable
         }
     }
 
-    // 64x64 tiles: with a single prefix code group, larger tiles measured as small as or smaller than 16x16 and 32x32 ones
+    // The largest tiles of the predictor and color transforms: 64x64
     private const int TransformTileBits = 6;
 
-    private void ApplyPredictor(Span<uint> argb, int width, int height)
+    private void ApplyPredictor(Span<uint> argb, int width, int height, int bits)
     {
-        var bits = TransformTileBits;
         var tilesX = Vp8LDecoder.DivRoundUp(width, bits);
         var tilesY = Vp8LDecoder.DivRoundUp(height, bits);
         var modes = RentPixels((long)tilesX * tilesY);
@@ -617,9 +642,8 @@ internal sealed class Vp8LEncoder : IDisposable
         return Entropy(histogram[..256], count) + Entropy(histogram.Slice(256, 256), count) + Entropy(histogram.Slice(512, 256), count) + Entropy(histogram.Slice(768, 256), count);
     }
 
-    private void ApplyColorTransform(Span<uint> argb, int width, int height)
+    private void ApplyColorTransform(Span<uint> argb, int width, int height, int bits)
     {
-        var bits = TransformTileBits;
         var tilesX = Vp8LDecoder.DivRoundUp(width, bits);
         var tilesY = Vp8LDecoder.DivRoundUp(height, bits);
         var elements = RentPixels((long)tilesX * tilesY);
@@ -822,68 +846,229 @@ internal sealed class Vp8LEncoder : IDisposable
         return table;
     }
 
-    /// <summary>Writes a spatially coded image: color cache information, the meta prefix bit (main image only), one prefix code group and the LZ77-coded pixels.</summary>
+    /// <summary>
+    /// Writes a spatially coded image: the color cache information, the meta prefix codes (main image only: an entropy image
+    /// when it is estimated smaller than one group), the prefix code groups and the LZ77-coded pixels.
+    /// </summary>
     private void EncodeSpatialImage(ReadOnlySpan<uint> pixels, int width, int height, bool isMainImage)
     {
-        _ = height;
-        EncodeSpatialImageCore(pixels, width, isMainImage);
-    }
-
-    private void EncodeSpatialImageCore(ReadOnlySpan<uint> pixels, int width, bool isMainImage)
-    {
-        var candidates = !isMainImage || _effort < 3 ? [0] : _effort < 6 ? new[] { 0, 10 } : [0, 4, 6, 8, 10];
+        int[] candidates = !isMainImage || _effort < 3 ? [0] : _effort < 6 ? [0, 10] : [0, 4, 6, 8, 10];
         var statistics = new Statistics[candidates.Length];
         for (var i = 0; i < candidates.Length; i++)
         {
             statistics[i] = new Statistics(candidates[i]);
         }
 
-        // The parse is recorded once, then replayed for the statistics and for the output. The hash chains are only needed
-        // by the parse: they are released before the output grows.
-        var tokens = RentPixels(GetTokenCapacity(pixels.Length));
+        // The parse is recorded once, then replayed for the statistics and for the output. The hash chains of the main image
+        // are only needed by the parses: they are released before the output grows. A subresolution image is small: its
+        // tokens, hash chains and prefix codes share one buffer
         var hashBits = Math.Clamp(BitOperations.Log2((uint)Math.Max(pixels.Length, 1)) + 1, 8, 18);
+        var tokenCapacity = GetTokenCapacity(pixels.Length);
+        var chainLength = (1L << hashBits) + Math.Max(pixels.Length, 1);
+        var codeWords = isMainImage ? 0 : ((HistogramSize(0) * (sizeof(ushort) + 1)) + 3) / sizeof(uint);
+        using var tokenBuffer = RentScratch(tokenCapacity + (isMainImage ? 0 : chainLength + codeWords), out var tokenArea);
+        var tokens = tokenArea[..(int)tokenCapacity];
+        var codeArea = isMainImage ? default : unsafe(MemoryMarshal.AsBytes(tokenArea[(int)(tokenCapacity + chainLength)..]));
         int tokenCount;
-        using (RentScratch(1 << hashBits, out var head))
-        using (RentScratch(Math.Max(pixels.Length, 1), out var previous))
+        Statistics chosen;
+        PooledBuffer? chainBuffer = null;
+        try
         {
-            tokenCount = new Matcher(this, pixels, width, hashBits, head, previous).Parse(tokens);
-        }
-
-        var collector = new StatisticsSink(statistics);
-        Replay(pixels, tokens, tokenCount, ref collector);
-        var best = 0;
-        for (var i = 1; i < statistics.Length; i++)
-        {
-            if (statistics[i].EstimateBits() < statistics[best].EstimateBits())
+            Span<uint> chains;
+            if (isMainImage)
             {
-                best = i;
+                chainBuffer = RentScratch(chainLength, out chains);
+            }
+            else
+            {
+                chains = tokenArea.Slice((int)tokenCapacity, (int)chainLength);
+            }
+
+            var head = chains[..(1 << hashBits)];
+            var previous = chains[(1 << hashBits)..];
+            tokenCount = new Matcher(this, pixels, width, hashBits, head, previous).Parse(tokens);
+            var collector = new StatisticsSink(statistics);
+            Replay(pixels, tokens, tokenCount, ref collector);
+            chosen = statistics[0];
+            for (var i = 1; i < statistics.Length; i++)
+            {
+                if (statistics[i].EstimateBits() < chosen.EstimateBits())
+                {
+                    chosen = statistics[i];
+                }
+            }
+
+            if (isMainImage && CostModelRounds > 0)
+            {
+                tokenCount = ParseWithCostModel(pixels, width, previous, tokens, tokenCount, ref chosen);
             }
         }
+        finally
+        {
+            chainBuffer?.Dispose();
+        }
 
-        var chosen = statistics[best];
-        if (chosen.CacheBits > 0)
+        var cacheBits = chosen.CacheBits;
+        if (cacheBits > 0)
         {
             _writer.WriteBits(1, 1);
-            _writer.WriteBits((uint)chosen.CacheBits, 4);
+            _writer.WriteBits((uint)cacheBits, 4);
         }
         else
         {
             _writer.WriteBits(0, 1);
         }
 
+        var size = HistogramSize(cacheBits);
+        var total = new uint[size];
+        chosen.CopyTo(total);
+        using var plan = isMainImage && EntropyImageEnabled ? PlanEntropyImage(pixels, width, height, tokens[..tokenCount], cacheBits, total) : null;
         if (isMainImage)
         {
-            _writer.WriteBits(0, 1); // a single prefix code group
+            if (plan is null)
+            {
+                _writer.WriteBits(0, 1); // a single prefix code group
+            }
+            else
+            {
+                _writer.WriteBits(1, 1);
+                _writer.WriteBits((uint)(plan.Bits - 2), 3);
+                EncodeSpatialImage(plan.Image, plan.TilesX, plan.TilesY, isMainImage: false);
+            }
         }
 
-        var codes = new PrefixCode[5];
-        codes[0] = WritePrefixCode(chosen.Green);
-        codes[1] = WritePrefixCode(chosen.Red);
-        codes[2] = WritePrefixCode(chosen.Blue);
-        codes[3] = WritePrefixCode(chosen.Alpha);
-        codes[4] = WritePrefixCode(chosen.Distance);
-        var emitter = new EmitSink(_writer, codes, chosen.CacheBits);
-        Replay(pixels, tokens, tokenCount, ref emitter);
+        if (plan is null)
+        {
+            WriteGroupsAndPixels(pixels, width, tokens[..tokenCount], cacheBits, total, groupCount: 1, entropyImage: default, prefixBits: 0, codeArea);
+        }
+        else
+        {
+            WriteGroupsAndPixels(pixels, width, tokens[..tokenCount], cacheBits, plan.Histograms, plan.GroupCount, plan.Groups, plan.Bits, codeArea: default);
+        }
+    }
+
+    /// <summary>
+    /// Writes the five prefix codes of every group (<paramref name="histograms"/> holds <see cref="HistogramSize"/> entries per
+    /// group), then the pixels: literals (or color cache indexes) and backward references, each coded with the group of the
+    /// tile where it starts (<paramref name="entropyImage"/> gives the group of each tile of <c>2^prefixBits</c> pixels, and is
+    /// empty for a single group). The code lengths and codes go to <paramref name="codeArea"/> when it is large enough, to a
+    /// rented buffer otherwise.
+    /// </summary>
+    private void WriteGroupsAndPixels(ReadOnlySpan<uint> pixels, int width, ReadOnlySpan<uint> tokens, int cacheBits, ReadOnlySpan<uint> histograms, int groupCount, ReadOnlySpan<int> entropyImage, int prefixBits, Span<byte> codeArea)
+    {
+        var size = HistogramSize(cacheBits);
+        var greenSize = GreenAlphabetSize(cacheBits);
+        var codeBytes = groupCount * size * (sizeof(ushort) + 1);
+        using var codeBuffer = codeArea.Length >= codeBytes ? null : _scope.Rent(codeBytes, AllocationKind.Temporary, clear: true);
+        var area = codeBuffer is null ? codeArea[..codeBytes] : codeBuffer.RawBuffer.AsSpan(0, codeBytes);
+        var codes = unsafe(MemoryMarshal.Cast<byte, ushort>(area))[..(groupCount * size)];
+        var lengths = area.Slice(groupCount * size * sizeof(ushort), groupCount * size);
+        for (var group = 0; group < groupCount; group++)
+        {
+            _cancellationToken.ThrowIfCancellationRequested();
+            var offset = group * size;
+            foreach (var (start, length) in (ReadOnlySpan<(int, int)>)[(0, greenSize), (greenSize, NumLiteralCodes), (greenSize + NumLiteralCodes, NumLiteralCodes), (greenSize + (2 * NumLiteralCodes), NumLiteralCodes), (greenSize + (3 * NumLiteralCodes), NumDistanceCodes)])
+            {
+                WritePrefixCode(histograms.Slice(offset + start, length), lengths.Slice(offset + start, length), codes.Slice(offset + start, length));
+            }
+        }
+
+        var symbols = new SymbolWriter(_writer, codes, lengths);
+        var cache = new uint[cacheBits == 0 ? 0 : 1 << cacheBits];
+        var tilesX = entropyImage.IsEmpty ? 0 : Vp8LDecoder.DivRoundUp(width, prefixBits);
+        var position = 0;
+        var x = 0;
+        var y = 0;
+        var nextCheck = 0;
+        var groupOffset = 0;
+        foreach (var token in tokens)
+        {
+            if (position >= nextCheck)
+            {
+                _cancellationToken.ThrowIfCancellationRequested();
+                nextCheck = position + 65536;
+            }
+
+            var lengthField = (int)(token >> TokenLengthShift);
+            var value = (int)(token & TokenValueMask) + 1;
+            if (lengthField == 0)
+            {
+                foreach (var argb in pixels.Slice(position, value))
+                {
+                    if (tilesX != 0)
+                    {
+                        groupOffset = entropyImage[((y >> prefixBits) * tilesX) + (x >> prefixBits)] * size;
+                    }
+
+                    if (++x == width)
+                    {
+                        x = 0;
+                        y++;
+                    }
+
+                    if (cache.Length != 0)
+                    {
+                        var key = (int)Vp8LDecoder.ColorCacheHash(argb, cacheBits);
+                        if (cache[key] == argb)
+                        {
+                            symbols.Write(groupOffset + NumLiteralCodes + NumLengthCodes + key);
+                            continue;
+                        }
+
+                        cache[key] = argb;
+                    }
+
+                    symbols.Write(groupOffset + (int)((argb >> 8) & 0xFF));
+                    symbols.Write(groupOffset + greenSize + (int)((argb >> 16) & 0xFF));
+                    symbols.Write(groupOffset + greenSize + NumLiteralCodes + (int)(argb & 0xFF));
+                    symbols.Write(groupOffset + greenSize + (2 * NumLiteralCodes) + (int)(argb >> 24));
+                }
+
+                position += value;
+                continue;
+            }
+
+            var copyLength = lengthField + 1;
+            if (tilesX != 0)
+            {
+                groupOffset = entropyImage[((y >> prefixBits) * tilesX) + (x >> prefixBits)] * size;
+            }
+
+            var (lengthPrefix, lengthBits, lengthExtra) = GetPrefix(copyLength);
+            symbols.Write(groupOffset + NumLiteralCodes + lengthPrefix);
+            _writer.WriteBits((uint)lengthExtra, lengthBits);
+            var (distancePrefix, distanceBits, distanceExtra) = GetPrefix(value);
+            symbols.Write(groupOffset + greenSize + (3 * NumLiteralCodes) + distancePrefix);
+            _writer.WriteBits((uint)distanceExtra, distanceBits);
+            if (cache.Length != 0)
+            {
+                foreach (var argb in pixels.Slice(position, copyLength))
+                {
+                    cache[(int)Vp8LDecoder.ColorCacheHash(argb, cacheBits)] = argb;
+                }
+            }
+
+            position += copyLength;
+            x += copyLength;
+            if (x >= width)
+            {
+                y += x / width;
+                x %= width;
+            }
+        }
+
+    }
+
+    /// <summary>Writes the symbols of the prefix codes of the groups.</summary>
+    [StructLayout(LayoutKind.Auto)]
+    private readonly ref struct SymbolWriter(LsbBitWriter writer, ReadOnlySpan<ushort> codes, ReadOnlySpan<byte> lengths)
+    {
+        private readonly ReadOnlySpan<ushort> _codes = codes;
+        private readonly ReadOnlySpan<byte> _lengths = lengths;
+
+        /// <summary>Writes a symbol, given by its index in the histograms of all the groups.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Write(int index) => writer.WriteBits(_codes[index], _lengths[index]);
     }
 
     /// <summary>Replays a recorded parse: backward references and runs of literals.</summary>
@@ -919,7 +1104,8 @@ internal sealed class Vp8LEncoder : IDisposable
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static uint CreateLiteralRunToken(int count) => (uint)(count - 1);
 
-    private PrefixCode WritePrefixCode(uint[] histogram)
+    /// <summary>Writes the prefix code of a histogram and returns its code lengths and codes (zero lengths for a zero-bit code).</summary>
+    private void WritePrefixCode(ReadOnlySpan<uint> histogram, Span<byte> lengths, Span<ushort> codes)
     {
         var used = 0;
         int first = -1, second = -1;
@@ -939,8 +1125,8 @@ internal sealed class Vp8LEncoder : IDisposable
             }
         }
 
-        var lengths = new byte[histogram.Length];
-        var codes = new ushort[histogram.Length];
+        lengths.Clear();
+        codes.Clear();
         if (used == 0 || (used <= 2 && Math.Max(first, second) < 256))
         {
             // Simple code: one or two 8-bit symbols (an unused code is the single symbol 0)
@@ -964,19 +1150,20 @@ internal sealed class Vp8LEncoder : IDisposable
                 lengths[first] = 1;
                 lengths[second] = 1;
                 codes[second] = 1;
-                return new PrefixCode(lengths, codes);
             }
 
-            return new PrefixCode(new byte[histogram.Length], codes);
+            return;
         }
 
         CanonicalHuffmanBuilder.BuildLengths(histogram, Vp8LPrefixCodes.MaxCodeLength, lengths);
         CanonicalHuffmanBuilder.BuildCodes(lengths, codes);
         WriteNormalCodeLengths(lengths);
         if (used == 1)
-            return new PrefixCode(new byte[histogram.Length], codes); // a single leaf: no bit is written
-
-        return new PrefixCode(lengths, codes);
+        {
+            // A single leaf: no bit is written
+            lengths.Clear();
+            codes.Clear();
+        }
     }
 
     private void WriteNormalCodeLengths(ReadOnlySpan<byte> lengths)
@@ -1153,9 +1340,6 @@ internal sealed class Vp8LEncoder : IDisposable
 
     private static readonly byte[] NeighborCodes = BuildNeighborCodes();
 
-    [StructLayout(LayoutKind.Auto)]
-    private readonly record struct PrefixCode(byte[] Lengths, ushort[] Codes);
-
     /// <summary>Receives the parse: literals and backward references.</summary>
     private interface ITokenSink
     {
@@ -1173,7 +1357,7 @@ internal sealed class Vp8LEncoder : IDisposable
         {
             CacheBits = cacheBits;
             _cache = new uint[cacheBits == 0 ? 0 : 1 << cacheBits];
-            Green = new uint[NumLiteralCodes + NumLengthCodes + _cache.Length];
+            Green = new uint[GreenAlphabetSize(cacheBits)];
         }
 
         public int CacheBits { get; }
@@ -1228,6 +1412,16 @@ internal sealed class Vp8LEncoder : IDisposable
 
         public double EstimateBits() => Entropy(Green) + Entropy(Red) + Entropy(Blue) + Entropy(Alpha) + Entropy(Distance) + ExtraBits;
 
+        /// <summary>Copies the five histograms into the layout of <see cref="HistogramSize"/>.</summary>
+        public void CopyTo(Span<uint> histogram)
+        {
+            Green.CopyTo(histogram);
+            Red.CopyTo(histogram[Green.Length..]);
+            Blue.CopyTo(histogram[(Green.Length + NumLiteralCodes)..]);
+            Alpha.CopyTo(histogram[(Green.Length + (2 * NumLiteralCodes))..]);
+            Distance.CopyTo(histogram[(Green.Length + (3 * NumLiteralCodes))..]);
+        }
+
         private static double Entropy(uint[] histogram)
         {
             long total = 0;
@@ -1271,56 +1465,6 @@ internal sealed class Vp8LEncoder : IDisposable
             {
                 item.Copy(length, distanceCode, pixels);
             }
-        }
-    }
-
-    [StructLayout(LayoutKind.Auto)]
-    private readonly struct EmitSink(LsbBitWriter writer, PrefixCode[] codes, int cacheBits) : ITokenSink
-    {
-        private readonly uint[] _cache = new uint[cacheBits == 0 ? 0 : 1 << cacheBits];
-
-        public void Literal(uint argb)
-        {
-            if (_cache.Length != 0)
-            {
-                var key = (int)Vp8LDecoder.ColorCacheHash(argb, cacheBits);
-                if (_cache[key] == argb)
-                {
-                    Write(0, NumLiteralCodes + NumLengthCodes + key);
-                    return;
-                }
-
-                _cache[key] = argb;
-            }
-
-            Write(0, (int)((argb >> 8) & 0xFF));
-            Write(1, (int)((argb >> 16) & 0xFF));
-            Write(2, (int)(argb & 0xFF));
-            Write(3, (int)(argb >> 24));
-        }
-
-        public void Copy(int length, int distanceCode, ReadOnlySpan<uint> pixels)
-        {
-            var (lengthPrefix, lengthBits, lengthExtra) = GetPrefix(length);
-            Write(0, NumLiteralCodes + lengthPrefix);
-            writer.WriteBits((uint)lengthExtra, lengthBits);
-            var (distancePrefix, distanceBits, distanceExtra) = GetPrefix(distanceCode);
-            Write(4, distancePrefix);
-            writer.WriteBits((uint)distanceExtra, distanceBits);
-            if (_cache.Length != 0)
-            {
-                foreach (var argb in pixels)
-                {
-                    _cache[(int)Vp8LDecoder.ColorCacheHash(argb, cacheBits)] = argb;
-                }
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void Write(int code, int symbol)
-        {
-            var prefixCode = codes[code];
-            writer.WriteBits(prefixCode.Codes[symbol], prefixCode.Lengths[symbol]);
         }
     }
 

@@ -26,15 +26,15 @@ the feature. The others parse HTTP formats.
 
 | Package | Main types | Pages |
 | --- | --- | --- |
-| `Meziantou.Framework.Http` | `LinkHeaderValue` | [Link headers](03-LinkHeaders.md) |
-| `Meziantou.Framework.Http.Caching` | `HttpCachingDelegateHandler`, `IHttpCacheStore` | [Caching](04-Caching/01-Overview.md) |
-| `Meziantou.Framework.Http.Caching.InMemory` | `InMemoryHttpCacheStore` | [Caching](04-Caching/01-Overview.md) |
-| `Meziantou.Framework.Http.Caching.Sqlite` | `SqliteHttpCacheStore` | [Caching](04-Caching/01-Overview.md) |
-| `Meziantou.Framework.Http.Caching.Redis` | `RedisHttpCacheStore` | [Caching](04-Caching/01-Overview.md) |
-| `Meziantou.Framework.Http.Hsts` | `HstsClientHandler`, `HstsDomainPolicyCollection` | [HSTS](05-Hsts/01-Overview.md) |
-| `Meziantou.Framework.Http.Htpasswd` | `HtpasswdFile` | [Htpasswd files](06-Htpasswd.md) |
-| `Meziantou.Framework.Http.Recording` | `HttpRecordingHandler` | [Recording](07-Recording/01-Overview.md) |
-| `Meziantou.Framework.Http.ServerSideRequestForgery` | `ServerSideRequestForgeryClientHandler` | [Server-side request forgery](08-ServerSideRequestForgery/01-Overview.md) |
+| `Meziantou.Framework.Http` | [LinkHeaderValue](cref:Meziantou.Framework.Http.LinkHeaderValue) | [Link headers](03-LinkHeaders.md) |
+| `Meziantou.Framework.Http.Caching` | [HttpCachingDelegateHandler](cref:Meziantou.Framework.Http.Caching.HttpCachingDelegateHandler), [IHttpCacheStore](cref:Meziantou.Framework.Http.Caching.IHttpCacheStore) | [Caching](04-Caching/01-Overview.md) |
+| `Meziantou.Framework.Http.Caching.InMemory` | [InMemoryHttpCacheStore](cref:Meziantou.Framework.Http.Caching.InMemory.InMemoryHttpCacheStore) | [Caching](04-Caching/01-Overview.md) |
+| `Meziantou.Framework.Http.Caching.Sqlite` | [SqliteHttpCacheStore](cref:Meziantou.Framework.Http.Caching.Sqlite.SqliteHttpCacheStore) | [Caching](04-Caching/01-Overview.md) |
+| `Meziantou.Framework.Http.Caching.Redis` | [RedisHttpCacheStore](cref:Meziantou.Framework.Http.Caching.Redis.RedisHttpCacheStore) | [Caching](04-Caching/01-Overview.md) |
+| `Meziantou.Framework.Http.Hsts` | [HstsClientHandler](cref:Meziantou.Framework.Http.HstsClientHandler), [HstsDomainPolicyCollection](cref:Meziantou.Framework.Http.HstsDomainPolicyCollection) | [HSTS](05-Hsts/01-Overview.md) |
+| `Meziantou.Framework.Http.Htpasswd` | [HtpasswdFile](cref:Meziantou.Framework.Http.HtpasswdFile) | [Htpasswd files](06-Htpasswd.md) |
+| `Meziantou.Framework.Http.Recording` | [HttpRecordingHandler](cref:Meziantou.Framework.Http.Recording.HttpRecordingHandler) | [Recording](07-Recording/01-Overview.md) |
+| `Meziantou.Framework.Http.ServerSideRequestForgery` | [ServerSideRequestForgeryClientHandler](cref:Meziantou.Framework.Http.ServerSideRequestForgery.ServerSideRequestForgeryClientHandler) | [Server-side request forgery](08-ServerSideRequestForgery/01-Overview.md) |
 
 Each package is independent: install only the ones you need. The HAR files that the recording package reads and
 writes are described by the [HttpArchive](../HttpArchive/01-Introduction.md) package.

@@ -7,12 +7,12 @@ The cryptographic hash functions of the package come in two shapes:
 
 - Static `HashData` methods hash data in one call. Each one has an overload that returns a new array, and one that
   writes into a `Span<byte>` you provide.
-- `Shake` and `Blake2b` can also be instantiated, to append the data in several calls, for instance when it comes from a
+- [Shake](cref:Meziantou.Framework.Hashing.Shake) and [Blake2b](cref:Meziantou.Framework.Hashing.Blake2b) can also be instantiated, to append the data in several calls, for instance when it comes from a
   stream. Instances are not thread-safe.
 
 ## SHA-3
 
-`Sha3.HashData` computes SHA3-224, SHA3-256, SHA3-384 or SHA3-512, selected by the size of the digest in bits:
+[Sha3.HashData](cref:Meziantou.Framework.Hashing.Sha3.HashData) computes SHA3-224, SHA3-256, SHA3-384 or SHA3-512, selected by the size of the digest in bits:
 
 <!-- ref:../../tests/Meziantou.Framework.Hashing.Tests/KeccakTests.cs;region=Sha3_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -46,8 +46,8 @@ Assert.Equal(output, first.Concat(second).ToArray());
 ```
 <!-- endref -->
 
-With an instance, `AppendData` adds data and `Read` (or `ReadByte`) reads the next bytes of the output. The first read
-ends the input: `AppendData` then throws an `InvalidOperationException` until you call `Reset`, which discards the
+With an instance, [AppendData](cref:Meziantou.Framework.Hashing.Shake.AppendData) adds data and [Read](cref:Meziantou.Framework.Hashing.Shake.Read) (or [ReadByte](cref:Meziantou.Framework.Hashing.Shake.ReadByte)) reads the next bytes of the output. The first read
+ends the input: [AppendData](cref:Meziantou.Framework.Hashing.Shake.AppendData) then throws an `InvalidOperationException` until you call [Reset](cref:Meziantou.Framework.Hashing.Shake.Reset), which discards the
 input and the output.
 
 ## cSHAKE: separate the uses of a function
@@ -121,11 +121,11 @@ Assert.HasCount(32, kt128);
 <!-- endref -->
 
 The domain separation byte of TurboSHAKE ranges from `0x01` to `0x7F`, and defaults to
-`TurboShake.DefaultDomainSeparation` (`0x1F`). KangarooTwelve takes a customization string instead.
+[TurboShake.DefaultDomainSeparation](cref:Meziantou.Framework.Hashing.TurboShake.DefaultDomainSeparation) (`0x1F`). KangarooTwelve takes a customization string instead.
 
 ## BLAKE2b
 
-`Blake2b` computes BLAKE2b (RFC 7693), with a digest of 1 to 64 bytes (`Blake2b.MaxHashSize`, the default):
+[Blake2b](cref:Meziantou.Framework.Hashing.Blake2b) computes BLAKE2b (RFC 7693), with a digest of 1 to 64 bytes ([Blake2b.MaxHashSize](cref:Meziantou.Framework.Hashing.Blake2b.MaxHashSize), the default):
 
 <!-- ref:../../tests/Meziantou.Framework.Hashing.Tests/Blake2bTests.cs;region=Blake2b_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -140,6 +140,6 @@ Assert.Equal(digest, blake2b.GetHashAndReset());
 ```
 <!-- endref -->
 
-`GetHashAndReset` returns the digest of the appended data and restarts the computation, so the instance can hash other
+[GetHashAndReset](cref:Meziantou.Framework.Hashing.Blake2b.GetHashAndReset) returns the digest of the appended data and restarts the computation, so the instance can hash other
 data. Keyed hashing (BLAKE2b used as a message authentication code) is not supported: use [KMAC](#kmac-authenticate-a-message)
 instead.

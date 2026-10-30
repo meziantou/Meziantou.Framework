@@ -37,20 +37,20 @@ Assert.Equal(Path.Combine("config", "settings.json"), settings.MakePathRelativeT
 ```
 <!-- endref -->
 
-- `FullPath.FromFileSystemInfo` converts the `DirectoryInfo` that `Directory.CreateTempSubdirectory` returns.
-  `FullPath.FromPath` converts a string.
-- The `/` operator appends one or more segments to a path. It returns a new `FullPath`.
-- `Name` and `Parent` read the parts of the path, without accessing the file system.
-- `CreateParentDirectory` creates the folder that contains the file, and its own parents, when they do not exist.
-- `File.WriteAllText` takes a string: the `FullPath` converts to it implicitly.
+- [FullPath.FromFileSystemInfo](cref:Meziantou.Framework.FullPath.FromFileSystemInfo) converts the `DirectoryInfo` that `Directory.CreateTempSubdirectory` returns.
+  [FullPath.FromPath](cref:Meziantou.Framework.FullPath.FromPath) converts a string.
+- The `/` operator appends one or more segments to a path. It returns a new [FullPath](cref:Meziantou.Framework.FullPath).
+- [Name](cref:Meziantou.Framework.FullPath.Name) and [Parent](cref:Meziantou.Framework.FullPath.Parent) read the parts of the path, without accessing the file system.
+- [CreateParentDirectory](cref:Meziantou.Framework.FullPath.CreateParentDirectory) creates the folder that contains the file, and its own parents, when they do not exist.
+- `File.WriteAllText` takes a string: the [FullPath](cref:Meziantou.Framework.FullPath) converts to it implicitly.
 
 ## Store paths as FullPath
 
-Declare your fields, properties, parameters and return values as `FullPath` rather than `string`. The type then
+Declare your fields, properties, parameters and return values as [FullPath](cref:Meziantou.Framework.FullPath) rather than `string`. The type then
 documents that the value is an absolute path, and the conversion happens once, where the path enters the application:
 a command-line argument, a configuration value, a JSON document.
 
-The analyzer finds the strings that only ever hold a `FullPath`: see
+The analyzer finds the strings that only ever hold a [FullPath](cref:Meziantou.Framework.FullPath): see
 [Declaring FullPath instead of string](10-Analyzer/03-DeclaringFullPath.md).
 
 ## Next steps

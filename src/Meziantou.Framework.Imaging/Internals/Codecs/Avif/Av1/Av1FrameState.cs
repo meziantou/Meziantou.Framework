@@ -2,14 +2,14 @@ namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
 /// The block-level state of the AV1 frame being decoded: the arrays that the specification indexes by the position of a 4x4
-/// luma block (<c>MiSizes</c>, <c>YModes</c>, <c>Skips</c>, ...), the above context of the tiles, and the parameters of the
-/// post-processing filters that are read with the blocks (<c>cdef_idx</c> and the loop restoration units). The buffers are
-/// rented once and reused by the frames of the same geometry.
+/// luma block (<c>MiSizes</c>, <c>YModes</c>, <c>Skips</c>, ...) and the parameters of the post-processing filters that
+/// are read with the blocks (<c>cdef_idx</c> and the loop restoration units). The buffers are rented once and reused by the
+/// frames of the same geometry.
 /// </summary>
 /// <remarks>
 /// Only the arrays that are read at positions other than the block above and the block to the left are stored for the whole
-/// frame. The palette colors, which are only read from these two neighbors, are stored for one row of blocks
-/// (<see cref="AbovePaletteColors"/>) and one column of a superblock.
+/// frame: the above context of the tiles is in their scratch (<see cref="Av1TileScratch.PrepareAboveContext"/>). A tile
+/// writes the arrays at the positions of its own blocks only, and reads other positions only inside the tile.
 /// </remarks>
 internal sealed class Av1FrameState : IDisposable
 {
@@ -31,15 +31,10 @@ internal sealed class Av1FrameState : IDisposable
     /// <summary>The value of <see cref="RefFrames"/> for a block that is not decoded yet.</summary>
     public const sbyte RefFrameNotWritten = sbyte.MinValue;
 
-    /// <summary>The number of entries that an above context line has beyond the frame, for the blocks that cross its right edge.</summary>
-    public const int AboveContextMargin = 32;
-
     /// <summary>The number of values stored for a loop restoration unit: its type, 6 Wiener coefficients, the self-guided set and its 2 weights.</summary>
     public const int LoopRestorationUnitLength = 10;
 
     private readonly Av1PooledArray<byte>?[] _loopFilterTxSizes = new Av1PooledArray<byte>?[3];
-    private readonly Av1PooledArray<byte>?[] _aboveLevelContext = new Av1PooledArray<byte>?[3];
-    private readonly Av1PooledArray<byte>?[] _aboveDcContext = new Av1PooledArray<byte>?[3];
     private readonly Av1PooledArray<sbyte>?[] _loopRestorationUnits = new Av1PooledArray<sbyte>?[3];
     private readonly int[] _loopRestorationUnitRows = new int[3];
     private readonly int[] _loopRestorationUnitCols = new int[3];
@@ -57,11 +52,6 @@ internal sealed class Av1FrameState : IDisposable
     private Av1PooledArray<short>? _motionFieldMvs;
     private Av1FrameBuffer? _segmentationSource;
     private Av1PooledArray<sbyte>? _cdefIdx;
-    private Av1PooledArray<ushort>? _abovePaletteColors;
-    private Av1PooledArray<byte>? _aboveSegPredContext;
-
-    /// <summary>Gets or sets the coding tools used by the blocks decoded so far: a diagnostic.</summary>
-    public Av1Tools Tools { get; set; }
 
     /// <summary>Gets the number of 4x4 luma columns of the frame (<c>MiCols</c>).</summary>
     public int MiCols { get; private set; }
@@ -129,22 +119,8 @@ internal sealed class Av1FrameState : IDisposable
     /// <summary>Gets <c>cdef_idx</c>: one entry per 64x64 luma block, <see cref="CdefCols"/> entries per row; -1 when not coded.</summary>
     public Span<sbyte> CdefIdx => Get(_cdefIdx);
 
-    /// <summary>
-    /// Gets the palette colors of the blocks of the row above: for the luma then the U palette, 8 colors per 4x4 luma column.
-    /// </summary>
-    public Span<ushort> AbovePaletteColors => Get(_abovePaletteColors);
-
-    /// <summary>Gets <c>AboveSegPredContext</c>.</summary>
-    public Span<byte> AboveSegPredContext => Get(_aboveSegPredContext);
-
     /// <summary>Gets <c>LoopfilterTxSizes[ plane ]</c>: one entry per 4x4 block of the plane, <see cref="MiCols"/> entries per row.</summary>
     public Span<byte> GetLoopFilterTxSizes(int plane) => Get(_loopFilterTxSizes[plane]);
-
-    /// <summary>Gets <c>AboveLevelContext[ plane ]</c>, indexed by the 4x4 column of the plane.</summary>
-    public Span<byte> GetAboveLevelContext(int plane) => Get(_aboveLevelContext[plane]);
-
-    /// <summary>Gets <c>AboveDcContext[ plane ]</c>, indexed by the 4x4 column of the plane.</summary>
-    public Span<byte> GetAboveDcContext(int plane) => Get(_aboveDcContext[plane]);
 
     /// <summary>
     /// Gets the loop restoration units of a plane: <see cref="LoopRestorationUnitLength"/> values per unit
@@ -184,13 +160,9 @@ internal sealed class Av1FrameState : IDisposable
             _segmentIds = Rent<byte>(scope, count);
             _interTxSizes = Rent<byte>(scope, count);
             _cdefIdx = Rent<sbyte>(scope, (long)cdefCols * cdefRows);
-            _abovePaletteColors = Rent<ushort>(scope, 2L * Av1Constants.PaletteColors * (MiCols + AboveContextMargin));
-            _aboveSegPredContext = Rent<byte>(scope, MiCols + AboveContextMargin);
             for (var plane = 0; plane < 3; plane++)
             {
                 _loopFilterTxSizes[plane] = Rent<byte>(scope, count);
-                _aboveLevelContext[plane] = Rent<byte>(scope, MiCols + AboveContextMargin);
-                _aboveDcContext[plane] = Rent<byte>(scope, MiCols + AboveContextMargin);
             }
         }
 
@@ -258,18 +230,13 @@ internal sealed class Av1FrameState : IDisposable
         _interInfo = null;
         _segmentationSource = null;
         _cdefIdx?.Dispose();
-        _abovePaletteColors?.Dispose();
-        _aboveSegPredContext?.Dispose();
-        _miSizes = _yModes = _uvModes = _flags = _paletteSizes = _segmentIds = _interTxSizes = _aboveSegPredContext = null;
+        _miSizes = _yModes = _uvModes = _flags = _paletteSizes = _segmentIds = _interTxSizes = null;
         _deltaLfs = _cdefIdx = _refFrames = null;
-        _abovePaletteColors = null;
         for (var plane = 0; plane < 3; plane++)
         {
             _loopFilterTxSizes[plane]?.Dispose();
-            _aboveLevelContext[plane]?.Dispose();
-            _aboveDcContext[plane]?.Dispose();
             _loopRestorationUnits[plane]?.Dispose();
-            _loopFilterTxSizes[plane] = _aboveLevelContext[plane] = _aboveDcContext[plane] = null;
+            _loopFilterTxSizes[plane] = null;
             _loopRestorationUnits[plane] = null;
         }
 

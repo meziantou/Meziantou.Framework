@@ -129,11 +129,18 @@ internal sealed class JpegDeepRowWriter : JpegBandWriter
         }
 
         using var lease = _sink!.LeaseCurrentFrame();
+        WriteRows(lease.Storage, first, last);
+    }
+
+    protected override void WriteRows(PixelStorage storage, int first, int last)
+    {
         for (var y = first; y < last; y++)
         {
-            WriteRow(lease, y);
+            WriteRow(storage, y);
         }
     }
+
+    protected override PixelLease LeaseImage() => (_sink ?? throw new InvalidOperationException("The rows of an embedded JPEG datastream are handed to its container.")).LeaseCurrentFrame();
 
     protected override void Dispose(bool disposing)
     {
@@ -281,12 +288,12 @@ internal sealed class JpegDeepRowWriter : JpegBandWriter
         receiver.OnDeepRow(y, row);
     }
 
-    private void WriteRow(scoped in PixelLease lease, int y)
+    private void WriteRow(PixelStorage storage, int y)
     {
         var sink = _sink!;
         var identity = sink.Plan.IsIdentity;
         var length = _width * PixelFormats.GetBytesPerPixel(sink.SourcePixelFormat);
-        var rowBytes = identity ? lease.GetRowBytes(y)[..length] : _sourceRow!.RawBuffer.AsSpan(0, length);
+        var rowBytes = identity ? storage.GetRowSpanCore(y)[..length] : _sourceRow!.RawBuffer.AsSpan(0, length);
         var row = unsafe(MemoryMarshal.Cast<byte, ushort>(rowBytes));
         var max = _max;
         if (_components.Length == 1)
@@ -360,7 +367,7 @@ internal sealed class JpegDeepRowWriter : JpegBandWriter
 
         if (!identity)
         {
-            sink.WriteRow(lease, y, rowBytes);
+            sink.Plan.ConvertRow(rowBytes, storage.GetRowSpanCore(y));
         }
     }
 

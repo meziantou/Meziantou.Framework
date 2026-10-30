@@ -64,7 +64,7 @@ Assert.Equal("You sent: SELECT 1", message);
 ```
 <!-- endref -->
 
-- `AddTcpListener` adds an endpoint. Port `0` lets the system choose a free port, and `Ports` gives the port the server
+- [AddTcpListener](cref:Meziantou.Framework.Tds.TdsServerOptions.AddTcpListener) adds an endpoint. Port `0` lets the system choose a free port, and [Ports](cref:Meziantou.Framework.Tds.TdsServer.Ports) gives the port the server
   bound, which is what tests need. `bindAddress` defaults to the loopback address, so the server only accepts local
   connections.
 - The authentication handler accepts or rejects each login. See [Authentication](04-Authentication.md).

@@ -940,6 +940,90 @@ public sealed class PngDecoderTests
         Assert.Equal("PNG critical chunk CgBI", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(late)).Feature);
     }
 
+    public static TheoryData<byte, int> ShortColorKeys => new() { { 0, 0 }, { 0, 1 }, { 2, 0 }, { 2, 2 }, { 2, 4 }, { 2, 5 } };
+
+    [Theory]
+    [MemberData(nameof(ShortColorKeys))]
+    public void LenientDecodingIgnoresAColorKeyShorterThanItsColorType(byte colorType, int keyLength)
+    {
+        // libpng, FFmpeg, Apple ImageIO, Chromium, Firefox and WebKit ignore the chunk: the pixels are opaque, as without it
+        var gray = colorType == 0;
+        byte[] key = gray ? [0, 128] : [0, 0, 0, 255, 0, 0];
+        var source = gray
+            ? PngTestImage.Create(3, 1, 0, 8, [0, 128, 255], transparency: key[..keyLength])
+            : PngTestImage.Create(3, 1, 2, 8, [255, 0, 0, 0, 255, 0, 0, 0, 255], transparency: key[..keyLength]);
+        var data = source.Encode(interlaced: false);
+        Rgba32[] expected = gray
+            ? [new(0, 0, 0, 255), new(128, 128, 128, 255), new(255, 255, 255, 255)]
+            : [new(255, 0, 0, 255), new(0, 255, 0, 255), new(0, 0, 255, 255)];
+        var pixelFormat = gray ? PixelFormat.Gray8 : PixelFormat.Rgb24;
+
+        Assert.Equal("The tRNS chunk length is invalid for the color type.", Assert.Throws<InvalidImageContentException>(() => Image.Load(data)).Message);
+        Assert.Throws<InvalidImageContentException>(() => Image.Identify(data));
+
+        var lenient = new ImageConfiguration { DecodingStrictness = DecodingStrictness.Lenient };
+        using (var untyped = Image.Load(data, new ImageDecodeOptions { Configuration = lenient }))
+        {
+            Assert.Equal(pixelFormat, untyped.PixelFormat);
+        }
+
+        using (var image = Image.Load<Rgba32>(data, new ImageDecodeOptions { Configuration = lenient }))
+        {
+            var pixels = new Rgba32[3];
+            image.Frames[0].CopyPixelDataTo(pixels);
+            Assert.Equal(expected, pixels);
+        }
+
+        foreach (var mode in new[] { ImageIdentifyMode.Header, ImageIdentifyMode.FullScan })
+        {
+            var info = Image.Identify(data, new ImageIdentifyOptions { Configuration = lenient, Mode = mode });
+            Assert.Equal(pixelFormat, info.PixelFormat);
+            Assert.Equal(false, info.MayHaveTransparency);
+        }
+
+        using (var reader = Image.OpenReader<Rgba32>(new MemoryStream(data), new ImageReaderOptions { Configuration = lenient }))
+        {
+            Assert.Equal(pixelFormat, reader.Info.PixelFormat);
+            using var frame = reader.ReadFrame();
+            var pixels = new Rgba32[3];
+            frame!.Frames[0].CopyPixelDataTo(pixels);
+            Assert.Equal(expected, pixels);
+            Assert.Null(reader.ReadFrame());
+        }
+
+        // The ignored chunk counts toward the encoded bytes like any other
+        using (var atLimit = Image.Load(data, new ImageDecodeOptions { Configuration = new ImageConfiguration { DecodingStrictness = DecodingStrictness.Lenient, Limits = new ImageResourceLimits { MaxEncodedBytes = data.Length } } }))
+        {
+            Assert.Equal(pixelFormat, atLimit.PixelFormat);
+        }
+
+        var tooSmall = new ImageConfiguration { DecodingStrictness = DecodingStrictness.Lenient, Limits = new ImageResourceLimits { MaxEncodedBytes = data.Length - 1 } };
+        Assert.Throws<ImageResourceLimitException>(() => Image.Load(data, new ImageDecodeOptions { Configuration = tooSmall }));
+    }
+
+    public static TheoryData<string, byte[]> InvalidTransparencyChunks => new()
+    {
+        // The reference decoders disagree on these: libpng, Firefox, WebKit and Apple ImageIO ignore the chunk, while
+        // Chromium (and FFmpeg for a palette, Pillow for all of them) use its first entries
+        { "gray key too long", PngTestImage.Create(3, 1, 0, 8, [0, 128, 255], transparency: [0, 128, 0, 0]).Encode(interlaced: false) },
+        { "RGB key too long", PngTestImage.Create(3, 1, 2, 8, [255, 0, 0, 0, 255, 0, 0, 0, 255], transparency: [0, 0, 0, 255, 0, 0, 0, 0]).Encode(interlaced: false) },
+        { "palette alphas past the palette", new SyntheticImages.PngBuilder().Header(3, 1, 8, 3).Chunk("PLTE", [255, 0, 0, 0, 255, 0, 0, 0, 255]).Chunk("tRNS", [0, 128, 255, 64]).Chunk("IDAT", SyntheticImages.Zlib([0, 0, 1, 2])).End().ToArray() },
+
+        // Every decoder ignores it but Pillow, which applies it
+        { "palette alphas before PLTE", new SyntheticImages.PngBuilder().Header(3, 1, 8, 3).Chunk("tRNS", [0, 128]).Chunk("PLTE", [255, 0, 0, 0, 255, 0, 0, 0, 255]).Chunk("IDAT", SyntheticImages.Zlib([0, 0, 1, 2])).End().ToArray() },
+    };
+
+    [Theory]
+    [MemberData(nameof(InvalidTransparencyChunks))]
+    public void LenientDecodingStillRejectsTheOtherInvalidTransparencyChunks(string name, byte[] data)
+    {
+        _ = name;
+        var lenient = new ImageConfiguration { DecodingStrictness = DecodingStrictness.Lenient };
+        Assert.Throws<InvalidImageContentException>(() => Image.Load(data));
+        Assert.Throws<InvalidImageContentException>(() => Image.Load(data, new ImageDecodeOptions { Configuration = lenient }));
+        Assert.Throws<InvalidImageContentException>(() => Image.Identify(data, new ImageIdentifyOptions { Configuration = lenient }));
+    }
+
     private static byte[] CreateAppleCgbiFile(int width, int height, byte colorType, byte[] imageData)
         => new SyntheticImages.PngBuilder().Chunk("CgBI", [0x30, 0x00, 0x20, 0x02]).Header(width, height, colorType: colorType).Chunk("IDAT", imageData).End().ToArray();
 

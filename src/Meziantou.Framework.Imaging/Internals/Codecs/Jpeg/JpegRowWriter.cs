@@ -138,12 +138,19 @@ internal sealed class JpegRowWriter : JpegBandWriter
         else
         {
             using var lease = _sink!.LeaseCurrentFrame();
-            for (var y = first; y < last; y++)
-            {
-                WriteRow(lease, y);
-            }
+            WriteRows(lease.Storage, first, last);
         }
     }
+
+    protected override void WriteRows(PixelStorage storage, int first, int last)
+    {
+        for (var y = first; y < last; y++)
+        {
+            WriteRow(storage, y);
+        }
+    }
+
+    protected override PixelLease LeaseImage() => (_sink ?? throw new InvalidOperationException("The rows of an embedded JPEG datastream are handed to its container.")).LeaseCurrentFrame();
 
     protected override void Dispose(bool disposing)
     {
@@ -213,7 +220,7 @@ internal sealed class JpegRowWriter : JpegBandWriter
         receiver.OnRow(y, row);
     }
 
-    private void WriteRow(scoped in PixelLease lease, int y)
+    private void WriteRow(PixelStorage storage, int y)
     {
         var sink = _sink!;
         if (_components.Length == 1)
@@ -222,11 +229,11 @@ internal sealed class JpegRowWriter : JpegBandWriter
             var samples = _components[0].GetRow(y)[.._width];
             if (sink.Plan.IsIdentity)
             {
-                samples.CopyTo(lease.GetRowBytes(y));
+                samples.CopyTo(storage.GetRowSpanCore(y));
             }
             else
             {
-                sink.WriteRow(lease, y, samples);
+                sink.Plan.ConvertRow(samples, storage.GetRowSpanCore(y));
             }
 
             return;
@@ -236,7 +243,7 @@ internal sealed class JpegRowWriter : JpegBandWriter
         var c1 = GetSamples(_components[1], y);
         var c2 = GetSamples(_components[2], y);
         var identity = sink.Plan.IsIdentity;
-        var row = identity ? lease.GetRowBytes(y)[..(_width * 3)] : _sourceRow!.RawBuffer.AsSpan(0, _width * 3);
+        var row = identity ? storage.GetRowSpanCore(y)[..(_width * 3)] : _sourceRow!.RawBuffer.AsSpan(0, _width * 3);
         if (_inkConversion is not null)
         {
             var black = GetSamples(_components[3], y);
@@ -265,7 +272,7 @@ internal sealed class JpegRowWriter : JpegBandWriter
 
         if (!identity)
         {
-            sink.WriteRow(lease, y, row);
+            sink.Plan.ConvertRow(row, storage.GetRowSpanCore(y));
         }
     }
 

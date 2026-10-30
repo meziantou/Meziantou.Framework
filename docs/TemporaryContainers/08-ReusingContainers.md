@@ -20,7 +20,7 @@ await container.StartAsync(); // creates the container, or adopts the one anothe
 - The container is not removed on dispose, so the next run adopts it too, already started.
 - It is named after the reuse identifier, so two processes that start at the same time cannot both create one: the
   runtime rejects the second name, and that process adopts the container of the first one.
-- An adopted container keeps the ports it was created with, so `GetMappedPort` returns the same host port in every
+- An adopted container keeps the ports it was created with, so [GetMappedPort](cref:Meziantou.Framework.TemporaryContainers.TemporaryContainer.GetMappedPort) returns the same host port in every
   process.
 
 ## The definition must not change
@@ -54,4 +54,4 @@ await ContainerRuntime.Auto.CleanupAsync(new ContainerCleanupOptions
 ```
 <!-- endref -->
 
-Volumes work the same way: a `VolumeDefinition` with a `ReuseId` is kept on dispose and adopted by the next run.
+Volumes work the same way: a [VolumeDefinition](cref:Meziantou.Framework.TemporaryContainers.VolumeDefinition) with a [ReuseId](cref:Meziantou.Framework.TemporaryContainers.VolumeDefinition.ReuseId) is kept on dispose and adopted by the next run.

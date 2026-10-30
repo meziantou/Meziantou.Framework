@@ -59,8 +59,8 @@ internal static class AudioDecoder
     /// <summary>Rejects the audio whose resampled length does not fit in an <see cref="AudioBuffer"/>, before its samples are decoded.</summary>
     private static void CheckLength(long frames, double sourceRate, double targetRate)
     {
-        if (sourceRate <= 0)
-            throw new InvalidDataException($"The sample rate {sourceRate} of the audio is not valid");
+        if (sourceRate is < AudioBuffer.MinSampleRate or > AudioBuffer.MaxSampleRate)
+            throw new InvalidDataException($"The sample rate {sourceRate} of the audio is not between {AudioBuffer.MinSampleRate} and {AudioBuffer.MaxSampleRate}");
 
         var length = GetResampledLength(frames, sourceRate, targetRate);
         if (length * sizeof(float) > Array.MaxLength)

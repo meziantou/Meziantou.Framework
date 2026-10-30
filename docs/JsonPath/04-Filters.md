@@ -152,7 +152,7 @@ Assert.Equal("[]", Select("$[?@.value < @.missing || @.value > @.missing].id"));
 
 A query compared with `==` or `<` must be a *singular query*: one that selects at most one node, made of names and
 indexes only, such as `@.price`, `@['first name']` or `$.limits[0]`. A wildcard, a slice, a filter or `..` makes it
-non-singular, and `Parse` rejects the comparison. To compare one value selected by such a query, use
+non-singular, and [Parse](cref:Meziantou.Framework.Json.JsonPath.Parse) rejects the comparison. To compare one value selected by such a query, use
 [`value()`](05-Functions.md#use-the-value-of-a-query).
 
 Inside the brackets of a singular query, write no blank space: `@['a'] == 1` is valid, `@[ 'a' ] == 1` is not.

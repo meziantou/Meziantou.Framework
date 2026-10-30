@@ -4,7 +4,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
 /// Encodes pictures as an HEVC bitstream (Rec. ITU-T H.265): the parameter sets, which are final when the encoder is
-/// created, then one access unit for each picture, made of one slice segment.
+/// created, then one access unit for each picture, made of one slice segment. With <see cref="HevcEncoderSettings.Wavefront"/>,
+/// each row of coding tree blocks of the slice segment is a substream of the wavefront that starts at an entry point
+/// (<c>entropy_coding_sync_enabled_flag</c>), which decoders can decode concurrently.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -31,6 +33,12 @@ internal sealed class HevcEncoder : IDisposable
     private readonly HevcBinSink _sink = new();
     private readonly HevcPicture?[] _pictures = new HevcPicture?[2];
     private readonly bool _deferred;
+
+    // The wavefront: the context variables after the second coding tree unit of the last row, and where the substreams
+    // of the rows end in the payload of the slice segment
+    private readonly byte[] _contextsWpp = new byte[HevcContextLayout.Count];
+    private readonly List<int> _substreamEnds = [];
+    private HevcSliceParameters _slice;
     private PooledPayloadWriter? _parameterSets;
     private PooledPayloadWriter? _rbsp;
     private PooledPayloadWriter? _payload;
@@ -133,6 +141,7 @@ internal sealed class HevcEncoder : IDisposable
                 DeblockingFilterDisabled = _decisions.Lossless,
                 SignDataHidingEnabled = _decisions.SignDataHiding,
                 TransformSkipEnabled = _decisions.TransformSkip,
+                EntropyCodingSyncEnabled = settings.Wavefront,
             };
             HevcHeaderWriter.WritePictureParameterSet(_rbsp, _sps, pictureParameters);
             _pps = HevcPictureParameterSet.ParseRbsp(_rbsp.WrittenSpan);
@@ -157,7 +166,12 @@ internal sealed class HevcEncoder : IDisposable
         }
     }
 
-    /// <summary>Gets the parameters of the sequence: its profile and its level, the size of the coded pictures and the size of the pictures that a decoder outputs.</summary>
+    /// <summary>
+    /// Gets the parameters of the sequence: its profile, the size of the coded pictures and the size of the pictures that a
+    /// decoder outputs. Its level, and the one of <see cref="VideoParameterSet"/> and <see cref="SequenceParameterSet"/>,
+    /// only holds the size of the pictures: the level of a stream that holds its coded pictures as well is known once they
+    /// are coded (<see cref="HeicStreamDescription.RecordCodedPicture"/>).
+    /// </summary>
     public HevcSequenceParameters Parameters { get; }
 
     /// <summary>Gets the NAL unit of the video parameter set: its header and its payload, with the emulation prevention bytes.</summary>
@@ -245,7 +259,8 @@ internal sealed class HevcEncoder : IDisposable
                 return false;
 
             case Phase.Search:
-                CreateSliceCoder(cancellationToken).SearchCodingTreeUnits(_row, write: !_deferred);
+                BeginWavefrontRow(writing: !_deferred);
+                CreateSliceCoder(cancellationToken).SearchCodingTreeUnits(_row, write: !_deferred, WavefrontContexts);
                 if (++_row == _sps.PicHeightInCtbsY)
                 {
                     _row = 0;
@@ -264,7 +279,8 @@ internal sealed class HevcEncoder : IDisposable
                 return false;
 
             case Phase.Write:
-                CreateSliceCoder(cancellationToken).WriteCodingTreeUnits(_row);
+                BeginWavefrontRow(writing: true);
+                CreateSliceCoder(cancellationToken).WriteCodingTreeUnits(_row, WavefrontContexts);
                 if (++_row == _sps.PicHeightInCtbsY)
                 {
                     _phase = Phase.Finish;
@@ -306,6 +322,60 @@ internal sealed class HevcEncoder : IDisposable
         _rbsp = null;
         _parameterSets?.Dispose();
         _parameterSets = null;
+    }
+
+    private Span<byte> WavefrontContexts => _settings.Wavefront ? _contextsWpp : default;
+
+    // Clause 9.3.2: a row of the wavefront after the first one is a substream. The substream of the previous row ends
+    // with end_of_subset_one_bit and its alignment, and the context variables of the row are those after the second coding
+    // tree unit of the row above (the synchronization process), or the initial ones when the picture is one coding tree
+    // block wide
+    private void BeginWavefrontRow(bool writing)
+    {
+        if (!_settings.Wavefront || _row is 0)
+            return;
+
+        if (writing)
+        {
+            _sink.Encoder.EncodeTerminate(1); // end_of_subset_one_bit
+            _substreamEnds.Add(_rbsp!.Length);
+            _sink.Encoder.Initialize(_rbsp);
+        }
+
+        if (_sps.PicWidthInCtbsY > 1)
+        {
+            _contexts.LoadContexts(_contextsWpp);
+        }
+        else
+        {
+            _contexts.InitializeContexts(_header!.InitType, _header.SliceQpY);
+        }
+    }
+
+    // The slice segment header with the entry points of the substreams of the rows: an offset is a number of bytes of the
+    // NAL unit, emulation prevention bytes included. The last byte of a substream holds the bit that ends its arithmetic
+    // codeword, and is not zero: the emulation prevention bytes of a substream do not depend on what precedes it.
+    private void WriteEntryPoints()
+    {
+        var rbsp = _rbsp!;
+        var payload = _payload!;
+        var headerLength = _header!.DataOffset;
+        var offsets = new int[_substreamEnds.Count];
+        var start = headerLength;
+        for (var i = 0; i < offsets.Length; i++)
+        {
+            var end = _substreamEnds[i];
+            offsets[i] = end - start + HevcNalWriter.CountEmulationPreventionBytes(rbsp.WrittenSpan[start..end]) - 1;
+            start = end;
+        }
+
+        // The payload writer holds the slice segment data while the header is written again
+        payload.Reset();
+        payload.Write(rbsp.WrittenSpan[headerLength..]);
+        rbsp.Reset();
+        HevcHeaderWriter.WriteSliceSegmentHeader(rbsp, _sps, _pps, _slice, offsets);
+        rbsp.Write(payload.WrittenSpan);
+        payload.Reset();
     }
 
     private ReadOnlyMemory<byte> GetParameterSets() => (_parameterSets ?? throw new ObjectDisposedException(nameof(HevcEncoder))).WrittenMemory;
@@ -362,6 +432,8 @@ internal sealed class HevcEncoder : IDisposable
             FiveMinusMaxNumMergeCand = isKeyFrame ? 0 : 5 - _decisions.MergeCandidates,
         };
         rbsp.Reset();
+        _substreamEnds.Clear();
+        _slice = slice;
         HevcHeaderWriter.WriteSliceSegmentHeader(rbsp, _sps, _pps, slice);
         var nal = HevcNalUnitHeader.Read([(byte)(slice.NalUnitType << 1), 1]);
         var header = HevcSliceSegmentHeader.Parse(rbsp.WrittenSpan, nal, _layout!, sliceHeader: null);
@@ -431,6 +503,11 @@ internal sealed class HevcEncoder : IDisposable
             // The motion of the picture, for the pictures that refer to it: a picture of the encoder is used again
             picture.AllocateCollocatedMotion(_scope).Clear();
             state.StoreCollocatedMotion(picture, _sps);
+        }
+
+        if (_substreamEnds.Count > 0)
+        {
+            WriteEntryPoints();
         }
 
         // Clause 9.3.5.7: cabac_zero_words after a slice segment that has many bins for its size

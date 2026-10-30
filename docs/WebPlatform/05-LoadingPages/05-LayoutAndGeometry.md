@@ -41,26 +41,26 @@ Assert.Equal(300, sidebar.GetBoundingClientRect().Width);
 
 | API | Returns |
 | --- | --- |
-| `GetBoundingClientRect()`, `GetClientRects()` | The border box of an element in the viewport, transforms included, or the boxes of each fragment (the lines of an inline element) |
-| `OffsetLeft`, `OffsetTop`, `OffsetWidth`, `OffsetHeight`, `OffsetParent` | The position and the size of an element relative to its offset parent |
-| `ClientWidth`, `ClientHeight`, `ScrollWidth`, `ScrollHeight` | The size of the padding box and of the scrollable area |
+| [GetBoundingClientRect()](cref:Meziantou.Framework.WebPlatform.Dom.Element.GetBoundingClientRect), [GetClientRects()](cref:Meziantou.Framework.WebPlatform.Dom.Element.GetClientRects) | The border box of an element in the viewport, transforms included, or the boxes of each fragment (the lines of an inline element) |
+| [OffsetLeft](cref:Meziantou.Framework.WebPlatform.Dom.HtmlElement.OffsetLeft), [OffsetTop](cref:Meziantou.Framework.WebPlatform.Dom.HtmlElement.OffsetTop), [OffsetWidth](cref:Meziantou.Framework.WebPlatform.Dom.HtmlElement.OffsetWidth), [OffsetHeight](cref:Meziantou.Framework.WebPlatform.Dom.HtmlElement.OffsetHeight), [OffsetParent](cref:Meziantou.Framework.WebPlatform.Dom.HtmlElement.OffsetParent) | The position and the size of an element relative to its offset parent |
+| [ClientWidth](cref:Meziantou.Framework.WebPlatform.Dom.Element.ClientWidth), [ClientHeight](cref:Meziantou.Framework.WebPlatform.Dom.Element.ClientHeight), [ScrollWidth](cref:Meziantou.Framework.WebPlatform.Dom.Element.ScrollWidth), [ScrollHeight](cref:Meziantou.Framework.WebPlatform.Dom.Element.ScrollHeight) | The size of the padding box and of the scrollable area |
 | `ElementFromPoint(x, y)`, `ElementsFromPoint(x, y)` | The element at a point of the viewport, found by the hit testing of the browsers |
 | `Window.GetComputedStyle(element)` | The used values: `width: 50%` reads as a length in pixels |
-| `CheckVisibility()` | Whether the element is rendered and visible |
-| `InnerText` | The text as rendered, with the line breaks |
+| [CheckVisibility()](cref:Meziantou.Framework.WebPlatform.Dom.Element.CheckVisibility) | Whether the element is rendered and visible |
+| [InnerText](cref:Meziantou.Framework.WebPlatform.Dom.HtmlElement.InnerText) | The text as rendered, with the line breaks |
 
 The geometry is in CSS pixels. Changing the document, its styles or the viewport invalidates the layout, which runs again
 the next time a geometry API is called: read the geometry after a batch of changes, not between each change.
 
 ## Scrolling
 
-`Window.ScrollTo`, `Element.ScrollTo`, `Element.ScrollIntoView`, `ScrollTop` and `ScrollLeft` scroll the viewport and the
+[Window.ScrollTo](cref:Meziantou.Framework.WebPlatform.Dom.Window.ScrollTo), [Element.ScrollTo](cref:Meziantou.Framework.WebPlatform.Dom.Element.ScrollTo), [Element.ScrollIntoView](cref:Meziantou.Framework.WebPlatform.Dom.Element.ScrollIntoView), [ScrollTop](cref:Meziantou.Framework.WebPlatform.Dom.Element.ScrollTop) and [ScrollLeft](cref:Meziantou.Framework.WebPlatform.Dom.Element.ScrollLeft) scroll the viewport and the
 scroll containers, with the `scroll` events, the scroll snapping and the scroll anchoring. The user input scrolls too: the wheel, a panning touch and the keys (see
 [User input](06-UserInput.md)).
 
 ## Observers
 
-`ResizeObserver` and `IntersectionObserver` report the changes of size and of visibility of the elements, and the lazy
+[ResizeObserver](cref:Meziantou.Framework.WebPlatform.Dom.ResizeObserver) and [IntersectionObserver](cref:Meziantou.Framework.WebPlatform.Dom.IntersectionObserver) report the changes of size and of visibility of the elements, and the lazy
 loading of the images and frames (`loading="lazy"`) follows the viewport. They are run by the rendering updates of the
 event loop: run the event loop to get their callbacks (see [Time and the event loop](07-TimeAndTheEventLoop.md)).
 

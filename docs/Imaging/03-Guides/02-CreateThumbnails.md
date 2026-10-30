@@ -37,33 +37,33 @@ public static void CreateThumbnail(string inputPath, string outputPath)
 
 Each step matters:
 
-1. **`AutoOrient`** applies the orientation that the camera wrote in the metadata. Decoders report it
+1. **[AutoOrient](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoOrient)** applies the orientation that the camera wrote in the metadata. Decoders report it
    (`Metadata.Orientation`) and never move a pixel: without this step, a portrait photo becomes a sideways thumbnail
    once the metadata is removed. Turning the image first also makes the box apply to the upright image.
-2. **`Resize`** with `ResizeMode.Contain` fits the image inside 200x200 and keeps its aspect ratio: a 4000x3000 photo
+2. **[Resize](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Resize)** with [ResizeMode.Contain](cref:Meziantou.Framework.Imaging.ResizeMode.Contain) fits the image inside 200x200 and keeps its aspect ratio: a 4000x3000 photo
    becomes 200x150. With `AllowUpscaling = false`, an image that is already smaller than the box keeps its size instead
    of being enlarged and blurred.
-3. **`ConvertColorProfile`** converts the colors to sRGB. A photo labeled with a wider color space, such as the Display
+3. **[ConvertColorProfile](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ConvertColorProfile)** converts the colors to sRGB. A photo labeled with a wider color space, such as the Display
    P3 profile of a phone, would look dull once its profile is removed. An image without profile is already sRGB, and
    nothing is converted.
-4. **`Save`** with `MetadataHandling.Strip` writes no EXIF, XMP, text or ICC profile: the file is smaller, and the camera
+4. **[Save](cref:Meziantou.Framework.Imaging.Image.Save)** with [MetadataHandling.Strip](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling.Strip) writes no EXIF, XMP, text or ICC profile: the file is smaller, and the camera
    model, the date and the GPS position stay in the original.
 
-The example writes a JPEG file, which has no transparency and only 8-bit samples: `BackgroundColor` and
-`AllowBitDepthReduction` say how to store an image that has them. Without these settings, `Save` throws an
-`UnsupportedImageFeatureException` for such an image instead of losing information.
+The example writes a JPEG file, which has no transparency and only 8-bit samples: [BackgroundColor](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.BackgroundColor) and
+`AllowBitDepthReduction` say how to store an image that has them. Without these settings, [Save](cref:Meziantou.Framework.Imaging.Image.Save) throws an
+[UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException) for such an image instead of losing information.
 
 ## Fit, fill or letterbox
 
-The `Mode` of `ResizeOptions` decides how the image meets the box:
+The [Mode](cref:Meziantou.Framework.Imaging.ResizeOptions.Mode) of [ResizeOptions](cref:Meziantou.Framework.Imaging.ResizeOptions) decides how the image meets the box:
 
 | Mode | Result | Typical use |
 | --- | --- | --- |
-| `Contain` (default) | Fits inside the box, keeps the aspect ratio; the result may be smaller than the box on one side | Previews of any shape |
-| `Cover` | Fills the box exactly and cuts what overflows, around `Anchor` | Square tiles of a grid |
-| `Pad` | Fits inside the box, then pads to exactly its size with `BackgroundColor`, the image placed at `Anchor` | Tiles of one size that show the whole image |
-| `BoxPad` | Like `Pad`, but an image that already fits is only placed on the canvas, never enlarged | The same, for small images |
-| `Stretch` | Fills the box exactly and distorts the image | Rarely wanted |
+| [Contain](cref:Meziantou.Framework.Imaging.ResizeMode.Contain) (default) | Fits inside the box, keeps the aspect ratio; the result may be smaller than the box on one side | Previews of any shape |
+| [Cover](cref:Meziantou.Framework.Imaging.ResizeMode.Cover) | Fills the box exactly and cuts what overflows, around [Anchor](cref:Meziantou.Framework.Imaging.ResizeOptions.Anchor) | Square tiles of a grid |
+| [Pad](cref:Meziantou.Framework.Imaging.ResizeMode.Pad) | Fits inside the box, then pads to exactly its size with [BackgroundColor](cref:Meziantou.Framework.Imaging.ResizeOptions.BackgroundColor), the image placed at [Anchor](cref:Meziantou.Framework.Imaging.ResizeOptions.Anchor) | Tiles of one size that show the whole image |
+| [BoxPad](cref:Meziantou.Framework.Imaging.ResizeMode.BoxPad) | Like [Pad](cref:Meziantou.Framework.Imaging.ResizeMode.Pad), but an image that already fits is only placed on the canvas, never enlarged | The same, for small images |
+| [Stretch](cref:Meziantou.Framework.Imaging.ResizeMode.Stretch) | Fills the box exactly and distorts the image | Rarely wanted |
 
 A letterboxed thumbnail, with black bars and a white frame:
 
@@ -85,16 +85,16 @@ public static void Letterbox(string inputPath, string outputPath)
 <!-- endref -->
 
 The padding is transparent by default, which a pixel format without alpha (the RGB pixels of most JPEG images) cannot
-store: set an opaque `BackgroundColor`.
+store: set an opaque [BackgroundColor](cref:Meziantou.Framework.Imaging.ResizeOptions.BackgroundColor).
 
-`AllowUpscaling = false` keeps `Contain`, `Pad` and `BoxPad` within the size of the original (the padding modes still
-produce the size of the box). `Cover` and `Stretch` cannot honor it: they throw an `ArgumentException` when the image
-would have to be enlarged, so use `BoxPad` for tiles of one size that never enlarge a small image. See
+`AllowUpscaling = false` keeps [Contain](cref:Meziantou.Framework.Imaging.ResizeMode.Contain), [Pad](cref:Meziantou.Framework.Imaging.ResizeMode.Pad) and [BoxPad](cref:Meziantou.Framework.Imaging.ResizeMode.BoxPad) within the size of the original (the padding modes still
+produce the size of the box). [Cover](cref:Meziantou.Framework.Imaging.ResizeMode.Cover) and [Stretch](cref:Meziantou.Framework.Imaging.ResizeMode.Stretch) cannot honor it: they throw an `ArgumentException` when the image
+would have to be enlarged, so use [BoxPad](cref:Meziantou.Framework.Imaging.ResizeMode.BoxPad) for tiles of one size that never enlarge a small image. See
 [Resizing](../06-Processing/03-Resizing.md) for the anchors and the resampling filters.
 
 ## Thumbnails of animations
 
-`Resize` resizes every frame of an animation in one operation, and saving to a format that stores animations keeps the
+[Resize](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Resize) resizes every frame of an animation in one operation, and saving to a format that stores animations keeps the
 frames, their durations and the loop count:
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_ResizeAnimation;format=md-fenced-code-block;dedent=true -->
@@ -136,9 +136,9 @@ The thumbnail of a photo above throws on an animation, since JPEG stores one pic
 
 | Format | Encoder settings for a thumbnail | Transparency | Animation |
 | --- | --- | --- | --- |
-| JPEG | `Quality` (1 to 100, default 90); `BackgroundColor` for transparent images, `AllowBitDepthReduction` for 16-bit ones | No | No |
+| JPEG | `Quality` (1 to 100, default 90); [BackgroundColor](cref:Meziantou.Framework.Imaging.ResizeOptions.BackgroundColor) for transparent images, `AllowBitDepthReduction` for 16-bit ones | No | No |
 | WebP | `Compression = WebPCompression.Lossy` and `Quality` (0 to 100); `AllowBitDepthReduction` for 16-bit images | Yes, kept losslessly | Yes |
-| PNG | Lossless; `PixelLayout = PngPixelLayout.Indexed` with `AllowColorReduction` for a palette of at most 256 colors | Yes | Yes (APNG) |
+| PNG | Lossless; `PixelLayout = PngPixelLayout.Indexed` with [AllowColorReduction](cref:Meziantou.Framework.Imaging.Formats.PngEncoder.AllowColorReduction) for a palette of at most 256 colors | Yes | Yes (APNG) |
 | GIF | A palette of at most 256 colors per frame | On or off per pixel | Yes |
 
 Saving to a `.webp`, `.avif` or `.heic` path without an encoder writes a **lossless** file, which is much larger than a
@@ -148,14 +148,14 @@ suits drawings, icons and screenshots. See [Saving images](../05-LoadingAndSavin
 
 ## Keep or strip the metadata
 
-| `MetadataHandling` | What the thumbnail keeps |
+| [MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling) | What the thumbnail keeps |
 | --- | --- |
-| `Strict` (default) | All the metadata; `Save` throws when the format cannot store some of it |
-| `DiscardUnsupported` | The metadata the format can store; the rest is dropped |
-| `Strip` | No optional metadata: no EXIF, XMP, text, resolution, ICC profile or orientation |
+| [Strict](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling.Strict) (default) | All the metadata; [Save](cref:Meziantou.Framework.Imaging.Image.Save) throws when the format cannot store some of it |
+| [DiscardUnsupported](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling.DiscardUnsupported) | The metadata the format can store; the rest is dropped |
+| [Strip](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling.Strip) | No optional metadata: no EXIF, XMP, text, resolution, ICC profile or orientation |
 
-`Strip` also drops the orientation and the color profile, which change how viewers display the pixels: apply them to the
-pixels first with `AutoOrient` and `ConvertColorProfile`, as the example does. To keep the color profile and remove only
+[Strip](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling.Strip) also drops the orientation and the color profile, which change how viewers display the pixels: apply them to the
+pixels first with [AutoOrient](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoOrient) and [ConvertColorProfile](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ConvertColorProfile), as the example does. To keep the color profile and remove only
 the private data, see [Strip or edit metadata](08-StripOrEditMetadata.md).
 
 ## Many thumbnails

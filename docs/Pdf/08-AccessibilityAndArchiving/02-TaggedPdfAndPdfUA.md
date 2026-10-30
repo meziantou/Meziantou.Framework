@@ -38,16 +38,16 @@ var pdf = document.ToByteArray();
 ```
 <!-- endref -->
 
-- `StructureTree.AddElement` adds an element at the root of the tree, and `AddElement` of an element a child of it, in
+- `StructureTree.AddElement` adds an element at the root of the tree, and [AddElement](cref:Meziantou.Framework.Pdf.PdfStructureElement.AddElement) of an element a child of it, in
   reading order. The type is a standard structure type: `Document`, `Part`, `Sect`, `H1` to `H6`, `P`, `L` and `LI`
   (lists), `Table`, `TR`, `TH`, `TD`, `Figure`, `Link`...
-- `BeginStructureElement` starts the content of an element on a page, until the matching `EndMarkedContent`. It is
+- [BeginStructureElement](cref:Meziantou.Framework.Pdf.PdfContentBuilder.BeginStructureElement) starts the content of an element on a page, until the matching [EndMarkedContent](cref:Meziantou.Framework.Pdf.PdfContentBuilder.EndMarkedContent). It is
   available in the content of a page, not of a form or a pattern.
-- `BeginArtifact` marks content that is not part of the structure: page numbers (`Pagination`), headers and decorations
-  (`Layout`, `Background`), with `EndMarkedContent` at its end. Screen readers skip it.
-- `AlternateDescription` describes a figure, `ActualText` gives the text of content drawn otherwise, `Expansion` the
-  expansion of an abbreviation, `Language` the language of an element in another language than the document, and
-  `Title` a title of the element.
+- [BeginArtifact](cref:Meziantou.Framework.Pdf.PdfContentBuilder.BeginArtifact) marks content that is not part of the structure: page numbers ([Pagination](cref:Meziantou.Framework.Pdf.PdfArtifactType.Pagination)), headers and decorations
+  ([Layout](cref:Meziantou.Framework.Pdf.PdfArtifactType.Layout), [Background](cref:Meziantou.Framework.Pdf.PdfArtifactType.Background)), with [EndMarkedContent](cref:Meziantou.Framework.Pdf.PdfContentBuilder.EndMarkedContent) at its end. Screen readers skip it.
+- [AlternateDescription](cref:Meziantou.Framework.Pdf.PdfStructureElement.AlternateDescription) describes a figure, [ActualText](cref:Meziantou.Framework.Pdf.PdfStructureElement.ActualText) gives the text of content drawn otherwise, [Expansion](cref:Meziantou.Framework.Pdf.PdfStructureElement.Expansion) the
+  expansion of an abbreviation, [Language](cref:Meziantou.Framework.Pdf.PdfStructureElement.Language) the language of an element in another language than the document, and
+  [Title](cref:Meziantou.Framework.Pdf.PdfStructureElement.Title) a title of the element.
 
 ## Custom types and links
 
@@ -77,13 +77,13 @@ var pdf = document.ToByteArray();
 ```
 <!-- endref -->
 
-- `MapRole` maps a type of the application to a standard type, so that assistive technologies know what it is.
-  `RoleMap` lists the mappings.
-- A link is content (its text) and an annotation (the area that can be clicked): `AddAnnotation` puts the annotation in
-  the element of the link, and the annotation `Contents` describes it.
+- [MapRole](cref:Meziantou.Framework.Pdf.PdfStructureTree.MapRole) maps a type of the application to a standard type, so that assistive technologies know what it is.
+  [RoleMap](cref:Meziantou.Framework.Pdf.PdfStructureTree.RoleMap) lists the mappings.
+- A link is content (its text) and an annotation (the area that can be clicked): [AddAnnotation](cref:Meziantou.Framework.Pdf.PdfStructureElement.AddAnnotation) puts the annotation in
+  the element of the link, and the annotation [Contents](cref:Meziantou.Framework.Pdf.PdfAnnotation.Contents) describes it.
 
-`StructureTree.Exists` tells whether a document has a structure tree, and `Elements` and `Children` read it, with the
-`Type` of each element.
+`StructureTree.Exists` tells whether a document has a structure tree, and [Elements](cref:Meziantou.Framework.Pdf.PdfStructureTree.Elements) and [Children](cref:Meziantou.Framework.Pdf.PdfStructureElement.Children) read it, with the
+[Type](cref:Meziantou.Framework.Pdf.PdfStructureElement.Type) of each element.
 
 ## PDF/UA-1
 
@@ -99,7 +99,7 @@ reading order, every figure has an alternate description, and the headings are n
 PDF/UA-2 (ISO 14289-2) is based on PDF 2.0, so it is combined with PDF/A-4 only. The save checks that the structure tree
 has a single `Document` element and no `H` or `Note` element, puts the standard types of PDF 2.0 in the PDF 2.0
 namespace, and refuses the destinations that go to a page only: give them the structure element they show with
-`WithStructureElement`. The embedded files need a description.
+[WithStructureElement](cref:Meziantou.Framework.Pdf.PdfDestination.WithStructureElement). The embedded files need a description.
 
 <!-- ref:../../../tests/Meziantou.Framework.Pdf.Tests/PdfDocumentTests.cs;region=Pdf_PdfUA2;format=md-fenced-code-block;dedent=true -->
 ```csharp

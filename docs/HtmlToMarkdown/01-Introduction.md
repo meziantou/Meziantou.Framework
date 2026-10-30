@@ -23,7 +23,7 @@ line.
 
 ## How it works
 
-`HtmlToMarkdown.Convert` parses the HTML with the HTML parser of
+[HtmlToMarkdown.Convert](cref:Meziantou.Framework.HtmlToMarkdown.Convert) parses the HTML with the HTML parser of
 [Meziantou.Framework.WebPlatform](../WebPlatform/01-Introduction.md), as a browser does: invalid markup, missing end
 tags and entities are handled the same way. It then walks the tree and writes the Markdown of each element. The text
 is escaped, so that a `*` or a `#` of the HTML stays a character and does not start Markdown syntax.
@@ -31,7 +31,7 @@ is escaped, so that a `*` or a `#` of the HTML stays a character and does not st
 The output follows [CommonMark](https://commonmark.org/), and uses the common extensions for what CommonMark does not
 have: pipe tables, task lists, strikethrough and definition lists.
 
-`HtmlToMarkdown` and its options are in the [Meziantou.Framework](cref:Meziantou.Framework.HtmlToMarkdown!N:Meziantou.Framework) namespace.
+[HtmlToMarkdown](cref:Meziantou.Framework.HtmlToMarkdown) and its options are in the [Meziantou.Framework](cref:Meziantou.Framework.HtmlToMarkdown!N:Meziantou.Framework) namespace.
 
 ## Next steps
 

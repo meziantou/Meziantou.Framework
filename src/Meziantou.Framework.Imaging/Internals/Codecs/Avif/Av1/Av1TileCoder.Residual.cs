@@ -332,8 +332,8 @@ internal ref partial struct Av1TileCoder
         var ptype = plane > 0 ? 1 : 0;
         var quant = _scratch.Quant;
 
-        var aboveLevel = _state.GetAboveLevelContext(plane);
-        var aboveDc = _state.GetAboveDcContext(plane);
+        var aboveLevel = _scratch.GetAboveLevelContext(plane);
+        var aboveDc = _scratch.GetAboveDcContext(plane);
         var leftLevel = _scratch.GetLeftLevelContext(plane);
         var leftDc = _scratch.GetLeftDcContext(plane);
         var maxX4 = plane > 0 ? _miCols >> _subX : _miCols;
@@ -355,10 +355,10 @@ internal ref partial struct Av1TileCoder
 
             _planeTxType = ComputeTxType(plane, txSz, x4, y4);
             if (_planeTxType is Av1Constants.Idtx)
-                _state.Tools |= Av1Tools.IdentityTransform;
+                _scratch.Tools |= Av1Tools.IdentityTransform;
 
             if (Av1Tables.TxSizeSqrUp[txSz] is Av1Constants.Tx64x64)
-                _state.Tools |= Av1Tools.Transform64;
+                _scratch.Tools |= Av1Tools.Transform64;
 
             var scan = GetScan(txSz, _planeTxType);
             var txClass = GetTxClass(_planeTxType);
@@ -500,7 +500,7 @@ internal ref partial struct Av1TileCoder
     // The CDF selection of all_zero (section 8.3.2)
     private readonly int GetAllZeroContext(int plane, int txSz, int x4, int y4, int w4, int h4, int maxX4, int maxY4)
     {
-        var aboveLevel = _state.GetAboveLevelContext(plane);
+        var aboveLevel = _scratch.GetAboveLevelContext(plane);
         var leftLevel = _scratch.GetLeftLevelContext(plane);
         var w = Av1Tables.TxWidth[txSz];
         var h = Av1Tables.TxHeight[txSz];
@@ -540,7 +540,7 @@ internal ref partial struct Av1TileCoder
             return Math.Min(top, left) <= 3 ? 5 : 6;
         }
 
-        var aboveDc = _state.GetAboveDcContext(plane);
+        var aboveDc = _scratch.GetAboveDcContext(plane);
         var leftDc = _scratch.GetLeftDcContext(plane);
         var above = 0;
         var leftAny = 0;

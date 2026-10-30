@@ -5,8 +5,8 @@ description: Handle the received logs, traces and metrics in code, register seve
 
 ## Write a handler
 
-A handler derives from `OpenTelemetryHandler` and overrides `HandleLogsAsync`, `HandleTracesAsync` and
-`HandleMetricsAsync`. Each method receives one export request, as the client sent it:
+A handler derives from [OpenTelemetryHandler](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryHandler) and overrides [HandleLogsAsync](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryHandler.HandleLogsAsync), [HandleTracesAsync](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryHandler.HandleTracesAsync) and
+[HandleMetricsAsync](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryHandler.HandleMetricsAsync). Each method receives one export request, as the client sent it:
 
 <!-- ref:../../tests/Meziantou.Framework.OpenTelemetry.Tests/OpenTelemetryReceiverTests.cs;region=OpenTelemetryCollector_SpanNameCollector;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -33,7 +33,7 @@ public sealed class SpanNameCollector : OpenTelemetryHandler
 ```
 <!-- endref -->
 
-Register it with `AddOpenTelemetryReceiver<T>`:
+Register it with [AddOpenTelemetryReceiver\<T\>](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryServiceCollectionExtensions.AddOpenTelemetryReceiver):
 
 <!-- ref:../../tests/Meziantou.Framework.OpenTelemetry.Tests/OpenTelemetryReceiverTests.cs;region=OpenTelemetryCollector_UseCustomHandler;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -71,17 +71,17 @@ Assert.Equal(["GET /orders"], app.Services.GetRequiredService<SpanNameCollector>
 ## Several handlers
 
 Every registered handler receives every export request, one after the other, in the order of registration. A handler
-registered twice, with the same type through `AddOpenTelemetryReceiver<T>` or as the same instance through the factory
+registered twice, with the same type through [AddOpenTelemetryReceiver\<T\>](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryServiceCollectionExtensions.AddOpenTelemetryReceiver) or as the same instance through the factory
 overload, receives each request once.
 
 ## The context of a request
 
-`OpenTelemetryHandlerContext` describes the request being handled:
+[OpenTelemetryHandlerContext](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryHandlerContext) describes the request being handled:
 
-- `Transport`: `Http` or `Grpc`.
-- `Method`: the HTTP method and path, such as `POST /v1/logs`, or the gRPC method, such as
+- [Transport](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryHandlerContext.Transport): [Http](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTransport.Http) or [Grpc](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTransport.Grpc).
+- [Method](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryHandlerContext.Method): the HTTP method and path, such as `POST /v1/logs`, or the gRPC method, such as
   `/opentelemetry.proto.collector.logs.v1.LogsService/Export`.
-- `PartialSuccess`: reports the records the handler could not accept.
+- [PartialSuccess](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryHandlerContext.PartialSuccess): reports the records the handler could not accept.
 
 ## Report rejected records
 
@@ -129,7 +129,7 @@ public sealed class DropOversizedLogsHandler : OpenTelemetryHandler
 
 ## Unit test a handler
 
-The constructors of `OpenTelemetryHandlerContext` and `OpenTelemetryPartialSuccess` let a test call a handler directly,
+The constructors of [OpenTelemetryHandlerContext](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryHandlerContext) and [OpenTelemetryPartialSuccess](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryPartialSuccess) let a test call a handler directly,
 without hosting the endpoints:
 
 <!-- ref:../../tests/Meziantou.Framework.OpenTelemetry.Tests/OpenTelemetryReceiverTests.cs;region=OpenTelemetryCollector_UnitTestHandler;format=md-fenced-code-block;dedent=true -->
@@ -158,15 +158,15 @@ The OTLP messages are generated from a reduced copy of the OTLP Protobuf definit
 
 | Message | Fields |
 | --- | --- |
-| `ResourceLogs`, `ResourceSpans`, `ResourceMetrics` | `Resource`, `ScopeLogs` / `ScopeSpans` / `ScopeMetrics`, `SchemaUrl` |
-| `ScopeLogs`, `ScopeSpans`, `ScopeMetrics` | `Scope`, `LogRecords` / `Spans` / `Metrics`, `SchemaUrl` |
-| `Resource` | `Attributes` |
-| `InstrumentationScope` | `Name`, `Version`, `Attributes` |
-| `LogRecord` | `TimeUnixNano`, `Body`, `Attributes` |
-| `Span` | `TraceId`, `SpanId`, `ParentSpanId`, `Name` |
-| `Metric` | `Name`, `Description`, `Unit` |
-| `KeyValue` | `Key`, `Value` |
-| `AnyValue` | `StringValue`, `BoolValue`, `IntValue`, `DoubleValue`, `BytesValue` |
+| [ResourceLogs](cref:OpenTelemetry.Proto.Logs.V1.ResourceLogs), [ResourceSpans](cref:OpenTelemetry.Proto.Trace.V1.ResourceSpans), [ResourceMetrics](cref:OpenTelemetry.Proto.Metrics.V1.ResourceMetrics) | [Resource](cref:OpenTelemetry.Proto.Resource.V1.Resource), [ScopeLogs](cref:OpenTelemetry.Proto.Logs.V1.ScopeLogs) / [ScopeSpans](cref:OpenTelemetry.Proto.Trace.V1.ScopeSpans) / [ScopeMetrics](cref:OpenTelemetry.Proto.Metrics.V1.ScopeMetrics), `SchemaUrl` |
+| [ScopeLogs](cref:OpenTelemetry.Proto.Logs.V1.ScopeLogs), [ScopeSpans](cref:OpenTelemetry.Proto.Trace.V1.ScopeSpans), [ScopeMetrics](cref:OpenTelemetry.Proto.Metrics.V1.ScopeMetrics) | `Scope`, [LogRecords](cref:OpenTelemetry.Proto.Logs.V1.ScopeLogs.LogRecords) / [Spans](cref:OpenTelemetry.Proto.Trace.V1.ScopeSpans.Spans) / [Metrics](cref:OpenTelemetry.Proto.Metrics.V1.ScopeMetrics.Metrics), `SchemaUrl` |
+| [Resource](cref:OpenTelemetry.Proto.Resource.V1.Resource) | [Attributes](cref:OpenTelemetry.Proto.Resource.V1.Resource.Attributes) |
+| [InstrumentationScope](cref:OpenTelemetry.Proto.Common.V1.InstrumentationScope) | [Name](cref:OpenTelemetry.Proto.Common.V1.InstrumentationScope.Name), [Version](cref:OpenTelemetry.Proto.Common.V1.InstrumentationScope.Version), [Attributes](cref:OpenTelemetry.Proto.Common.V1.InstrumentationScope.Attributes) |
+| [LogRecord](cref:OpenTelemetry.Proto.Logs.V1.LogRecord) | [TimeUnixNano](cref:OpenTelemetry.Proto.Logs.V1.LogRecord.TimeUnixNano), [Body](cref:OpenTelemetry.Proto.Logs.V1.LogRecord.Body), [Attributes](cref:OpenTelemetry.Proto.Logs.V1.LogRecord.Attributes) |
+| [Span](cref:OpenTelemetry.Proto.Trace.V1.Span) | [TraceId](cref:OpenTelemetry.Proto.Trace.V1.Span.TraceId), [SpanId](cref:OpenTelemetry.Proto.Trace.V1.Span.SpanId), [ParentSpanId](cref:OpenTelemetry.Proto.Trace.V1.Span.ParentSpanId), [Name](cref:OpenTelemetry.Proto.Trace.V1.Span.Name) |
+| [Metric](cref:OpenTelemetry.Proto.Metrics.V1.Metric) | [Name](cref:OpenTelemetry.Proto.Metrics.V1.Metric.Name), [Description](cref:OpenTelemetry.Proto.Metrics.V1.Metric.Description), [Unit](cref:OpenTelemetry.Proto.Metrics.V1.Metric.Unit) |
+| [KeyValue](cref:OpenTelemetry.Proto.Common.V1.KeyValue) | [Key](cref:OpenTelemetry.Proto.Common.V1.KeyValue.Key), [Value](cref:OpenTelemetry.Proto.Common.V1.KeyValue.Value) |
+| [AnyValue](cref:OpenTelemetry.Proto.Common.V1.AnyValue) | [StringValue](cref:OpenTelemetry.Proto.Common.V1.AnyValue.StringValue), [BoolValue](cref:OpenTelemetry.Proto.Common.V1.AnyValue.BoolValue), [IntValue](cref:OpenTelemetry.Proto.Common.V1.AnyValue.IntValue), [DoubleValue](cref:OpenTelemetry.Proto.Common.V1.AnyValue.DoubleValue), [BytesValue](cref:OpenTelemetry.Proto.Common.V1.AnyValue.BytesValue) |
 
 The other fields that a client sends, such as the severity of a log record, the times, kind, status and attributes of a
 span, or the data points of a metric, are not available on these messages.

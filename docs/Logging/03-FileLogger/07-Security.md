@@ -6,7 +6,7 @@ description: Restrict who can read the log files, and keep untrusted data from f
 ## Permissions of the log files
 
 On Unix, the log files are created with the default mode of the platform, which usually lets every local user read
-them. Set `UnixCreateMode` when the messages can contain sensitive data:
+them. Set [UnixCreateMode](cref:Meziantou.Extensions.Logging.FileLoggerOptions.UnixCreateMode) when the messages can contain sensitive data:
 
 <!-- ref:../../../tests/Meziantou.Extensions.Logging.FileLogger.Tests/FileLoggerProviderTests.cs;region=FileLogger_UnixCreateMode;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -29,7 +29,7 @@ logger.LogInformation("User said: {Text}", "hello\n[2020-01-01 00:00:00.000] [CR
 ```
 <!-- endref -->
 
-Set `EscapeControlCharacters` to `true` to write the control characters of the messages, the scopes and the exceptions
+Set [EscapeControlCharacters](cref:Meziantou.Extensions.Logging.FileLoggerOptions.EscapeControlCharacters) to `true` to write the control characters of the messages, the scopes and the exceptions
 as escape sequences: `\n`, `\r`, `\t`, `\\` for a backslash, and `\uXXXX` for the others. An entry then always spans a
 single line, including the stack trace of its exception, which is harder to read.
 

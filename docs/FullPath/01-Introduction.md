@@ -3,11 +3,11 @@ title: Introduction
 description: A path type that is always absolute and normalized, compares paths the way the operating system does, and works with every API that takes a string.
 ---
 
-`Meziantou.Framework.FullPath` provides the `FullPath` type: the absolute path of a file or a folder. It replaces the
+`Meziantou.Framework.FullPath` provides the [FullPath](cref:Meziantou.Framework.FullPath) type: the absolute path of a file or a folder. It replaces the
 strings that applications usually pass around to represent paths.
 
 A string can hold a relative path, which silently depends on the current directory, a path with a trailing separator or
-with `..` segments, or a path that two parts of the code compare with a different case sensitivity. A `FullPath` cannot:
+with `..` segments, or a path that two parts of the code compare with a different case sensitivity. A [FullPath](cref:Meziantou.Framework.FullPath) cannot:
 it is resolved and normalized when it is created, and it compares paths the same way everywhere.
 
 ## What you can do with it
@@ -29,20 +29,20 @@ it is resolved and normalized when it is created, and it compares paths the same
 
 ## Principles
 
-- **Always absolute.** `FullPath.FromPath` resolves a relative path against the current directory once, when the path is
+- **Always absolute.** [FullPath.FromPath](cref:Meziantou.Framework.FullPath.FromPath) resolves a relative path against the current directory once, when the path is
   created, so later changes of the current directory do not change it.
 - **Normalized.** `.` and `..` segments are resolved and the trailing separator is removed, so two spellings of the same
   path give equal values.
-- **A string when you need one.** `FullPath` converts implicitly to `string`, so you can pass it to `File`,
+- **A string when you need one.** [FullPath](cref:Meziantou.Framework.FullPath) converts implicitly to `string`, so you can pass it to `File`,
   `Directory`, `FileStream` and any other API that takes a path.
 - **Compared like the operating system does.** Comparisons are ordinal. They ignore case on Windows, macOS, iOS and
   tvOS, and are case-sensitive elsewhere, unless you choose otherwise.
-- **An explicit empty value.** `default(FullPath)` is `FullPath.Empty`, the absence of a path. It is never the current
+- **An explicit empty value.** `default(FullPath)` is [FullPath.Empty](cref:Meziantou.Framework.FullPath.Empty), the absence of a path. It is never the current
   directory.
-- **Immutable.** `FullPath` is a read-only struct: every method that changes a path returns a new value.
+- **Immutable.** [FullPath](cref:Meziantou.Framework.FullPath) is a read-only struct: every method that changes a path returns a new value.
 
-`FullPath` only computes paths: creating, combining or comparing paths never accesses the file system. The methods
-that do access it say so, such as `CreateParentDirectory`, `CreateTempFile` or the symbolic link methods.
+[FullPath](cref:Meziantou.Framework.FullPath) only computes paths: creating, combining or comparing paths never accesses the file system. The methods
+that do access it say so, such as [CreateParentDirectory](cref:Meziantou.Framework.FullPath.CreateParentDirectory), [CreateTempFile](cref:Meziantou.Framework.FullPath.CreateTempFile) or the symbolic link methods.
 
 ## Namespace
 
@@ -50,11 +50,11 @@ All the types are in the [Meziantou.Framework](cref:Meziantou.Framework.FullPath
 
 | Type | Contains |
 | --- | --- |
-| `FullPath` | The path, its operators and its methods |
-| `FullPathComparer` | The case-sensitive, case-insensitive and default comparers |
-| `FullPathJsonConverter` | The `System.Text.Json` converter, applied automatically |
-| `SymbolicLinkResolutionMode` | How far to follow symbolic links |
-| `KnownFolder` | The Windows known folders |
+| [FullPath](cref:Meziantou.Framework.FullPath) | The path, its operators and its methods |
+| [FullPathComparer](cref:Meziantou.Framework.FullPathComparer) | The case-sensitive, case-insensitive and default comparers |
+| [FullPathJsonConverter](cref:Meziantou.Framework.FullPathJsonConverter) | The `System.Text.Json` converter, applied automatically |
+| [SymbolicLinkResolutionMode](cref:Meziantou.Framework.SymbolicLinkResolutionMode) | How far to follow symbolic links |
+| [KnownFolder](cref:Meziantou.Framework.KnownFolder) | The Windows known folders |
 
 ## Next steps
 

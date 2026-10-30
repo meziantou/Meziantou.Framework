@@ -13,7 +13,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// The planes of a grid without alpha plane hold one row of tiles: its rows are converted before the next row is decoded.
 /// The decoder of a coded item is released before the next one is decoded, except that the tiles of a large grid are decoded
 /// by up to <see cref="ImageConfiguration.MaxDegreeOfParallelism"/> workers, each holding a decoder and the picture of its
-/// tile until the tiles of its batch are copied; an image sequence keeps one decoder for the color
+/// tile until the tiles of its batch are copied (the substreams of a picture that is not decoded by such a worker, its
+/// tiles and its rows of the wavefront, are decoded by up to that many workers, <see cref="HevcDecoder.MaxDegreeOfParallelism"/>);
+/// an image sequence keeps one decoder for the color
 /// images and one for the alpha planes, and the pictures that they output before their turn: the samples are in decoding
 /// order and the images are written in presentation order, so the pictures that wait are bounded by the size of the decoded
 /// picture buffer, whatever the number of images.
@@ -296,6 +298,11 @@ internal sealed class HeicDecoder : HeifDecodeObserver
     private HevcPicture DecodeTile(HeifStructureParser structure, HeifCodedImage image, out HeifBitstreamFormat format)
         => DecodePreparedTile(image, PrepareTile(structure, image, 0), _context.Tracker, out format);
 
+    // The workers of the HEVC decoder of a coded item: the configured number, unless the tiles of a grid are decoded by
+    // several workers, which already share the threads
+    private int GetItemWorkerCount(HeifCodedImage image)
+        => HeifGridTiles.GetWorkerCount(_context, image) is 1 ? _context.Configuration.MaxDegreeOfParallelism : 1;
+
     private static InvalidImageContentException CreateMixedTileFormatsException() => HeicBinding.Instance.Invalid("the tiles of a grid do not have the same sample format.");
 
     // Reads what the decoding of a coded item needs from the structure parser, on the calling thread
@@ -329,7 +336,7 @@ internal sealed class HeicDecoder : HeifDecodeObserver
     // template, which it only reads: the tiles of a grid are decoded on several threads.
     private HevcPicture DecodePreparedTile(HeifCodedImage image, in PreparedTile tile, InputResourceTracker tracker, out HeifBitstreamFormat format)
     {
-        var picture = DecodeCodedItem(tile, tracker);
+        var picture = DecodeCodedItem(tile, tracker, GetItemWorkerCount(image));
         try
         {
             format = HeicBinding.ToBitstreamFormat(picture.Sps);
@@ -348,9 +355,9 @@ internal sealed class HeicDecoder : HeifDecodeObserver
     }
 
     // Decodes the picture of a coded item: the decoder is released, the picture is kept by the caller
-    private HevcPicture DecodeCodedItem(in PreparedTile tile, InputResourceTracker tracker)
+    private HevcPicture DecodeCodedItem(in PreparedTile tile, InputResourceTracker tracker, int maxDegreeOfParallelism)
     {
-        using var decoder = new HevcDecoder(_context.Scope, tracker);
+        using var decoder = new HevcDecoder(_context.Scope, tracker) { MaxDegreeOfParallelism = maxDegreeOfParallelism };
         decoder.CopyParameterSetsFrom(tile.Template);
         decoder.SetInput(tile.Data, 0, tile.Length, tile.NalLengthSize);
         var picture = decoder.DecodeNextOutputPicture(_context.CancellationToken);
@@ -408,7 +415,7 @@ internal sealed class HeicDecoder : HeifDecodeObserver
     // A decoder that has the parameter sets and the supplemental information of a configuration record
     private HevcDecoder CreateDecoder(ReadOnlySpan<byte> configuration)
     {
-        var decoder = new HevcDecoder(_context.Scope, _context.Tracker);
+        var decoder = new HevcDecoder(_context.Scope, _context.Tracker) { MaxDegreeOfParallelism = _context.Configuration.MaxDegreeOfParallelism };
         try
         {
             var position = default(HeicConfigurationRecord.Position);

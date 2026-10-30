@@ -26,7 +26,7 @@ Assert.False(glob.IsMatch("docs/file.txt"));
 ```
 <!-- endref -->
 
-- `Glob.Parse` takes the pattern and its dialect. `GlobDialect.Standard` is the syntax described in
+- [Glob.Parse](cref:Meziantou.Framework.Globbing.Glob.Parse) takes the pattern and its dialect. [GlobDialect.Standard](cref:Meziantou.Framework.Globbing.GlobDialect.Standard) is the syntax described in
   [Pattern syntax](03-PatternSyntax.md); the others follow git, MSBuild and `fnmatch`.
 - `src/**/*.txt` matches the `.txt` files of `src` and of all its subdirectories. `**` matches zero or more
   directories, and `*` matches any characters of one file name.
@@ -34,7 +34,7 @@ Assert.False(glob.IsMatch("docs/file.txt"));
 
 ## Ignore the case
 
-Matching is case-sensitive by default. Pass `GlobOptions.IgnoreCase` to ignore the case:
+Matching is case-sensitive by default. Pass [GlobOptions.IgnoreCase](cref:Meziantou.Framework.Globbing.GlobOptions.IgnoreCase) to ignore the case:
 
 <!-- ref:../../tests/Meziantou.Framework.Globbing.Tests/GlobTests.cs;region=Glob_IsMatchIgnoreCase;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -47,7 +47,7 @@ Assert.False(glob.IsMatch("src/abc.png"));
 
 ## Enumerate the files that match
 
-`EnumerateFiles` lists the files of a directory that match the pattern, and returns their full paths. The pattern is
+[EnumerateFiles](cref:Meziantou.Framework.Globbing.GlobExtensions.EnumerateFiles) lists the files of a directory that match the pattern, and returns their full paths. The pattern is
 matched against the path of each file relative to that directory:
 
 <!-- ref:../../tests/Meziantou.Framework.Globbing.Tests/GlobTests.cs;region=Glob_EnumerateFiles;format=md-fenced-code-block;dedent=true -->

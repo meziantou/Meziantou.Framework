@@ -18,11 +18,11 @@ var result = await ProcessWrapper.Create("my-app")
 ```
 <!-- endref -->
 
-| `ProcessLimits` property | Limit |
+| [ProcessLimits](cref:Meziantou.Framework.ProcessLimits) property | Limit |
 | --- | --- |
-| `CpuPercentage` | The maximum CPU usage, between 1 and 100 |
-| `MemoryLimitInBytes` | The maximum memory usage, in bytes |
-| `ProcessCountLimit` | The maximum number of processes in the group: the process and its descendants |
+| [CpuPercentage](cref:Meziantou.Framework.ProcessLimits.CpuPercentage) | The maximum CPU usage, between 1 and 100 |
+| [MemoryLimitInBytes](cref:Meziantou.Framework.ProcessLimits.MemoryLimitInBytes) | The maximum memory usage, in bytes |
+| [ProcessCountLimit](cref:Meziantou.Framework.ProcessLimits.ProcessCountLimit) | The maximum number of processes in the group: the process and its descendants |
 
 `WithLimits(ProcessLimits)` replaces the limits, and `WithLimits(Action<ProcessLimits>)` changes the current ones.
 
@@ -35,8 +35,8 @@ resumed once the limits are applied, so it never runs without them.
 
 ## Windows Job Objects
 
-`WithWindowsJobObject` gives access to the `JobObject` (in the [Meziantou.Framework.Win32](cref:Meziantou.Framework.Win32.Jobs!N:Meziantou.Framework.Win32) namespace) for the settings that
-`ProcessLimits` does not cover:
+[WithWindowsJobObject](cref:Meziantou.Framework.ProcessWrapper.WithWindowsJobObject) gives access to the [JobObject](cref:Meziantou.Framework.Win32.JobObject) (in the [Meziantou.Framework.Win32](cref:Meziantou.Framework.Win32.Jobs!N:Meziantou.Framework.Win32) namespace) for the settings that
+[ProcessLimits](cref:Meziantou.Framework.ProcessLimits) does not cover:
 
 <!-- ref:../../samples/Meziantou.Framework.ProcessWrapper.Samples/ReadmeExamples.cs;region=ProcessWrapper_WindowsJobObject;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -53,12 +53,12 @@ var result = await ProcessWrapper.Create("my-app")
 ```
 <!-- endref -->
 
-The callback runs on Windows only. Using `WithWindowsJobObject` on another operating system throws a
+The callback runs on Windows only. Using [WithWindowsJobObject](cref:Meziantou.Framework.ProcessWrapper.WithWindowsJobObject) on another operating system throws a
 `PlatformNotSupportedException` when the process starts.
 
 ## Linux control groups
 
-`WithLinuxControlGroup` gives access to the `CGroup2` (in the [Meziantou.Framework.Unix.ControlGroups](cref:Meziantou.Framework.Unix.ControlGroups) namespace):
+[WithLinuxControlGroup](cref:Meziantou.Framework.ProcessWrapper.WithLinuxControlGroup) gives access to the [CGroup2](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2) (in the [Meziantou.Framework.Unix.ControlGroups](cref:Meziantou.Framework.Unix.ControlGroups) namespace):
 
 <!-- ref:../../samples/Meziantou.Framework.ProcessWrapper.Samples/ReadmeExamples.cs;region=ProcessWrapper_LinuxControlGroup;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -71,5 +71,5 @@ var result = await ProcessWrapper.Create("my-app")
 ```
 <!-- endref -->
 
-The callback runs on Linux only. Using `WithLinuxControlGroup` on another operating system throws a
+The callback runs on Linux only. Using [WithLinuxControlGroup](cref:Meziantou.Framework.ProcessWrapper.WithLinuxControlGroup) on another operating system throws a
 `PlatformNotSupportedException` when the process starts.

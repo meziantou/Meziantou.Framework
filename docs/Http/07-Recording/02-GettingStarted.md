@@ -13,7 +13,7 @@ The examples omit the `using` directives: they need `using Meziantou.Framework.H
 
 ## Record, then replay
 
-Put `HttpRecordingHandler` between the `HttpClient` and the handler that sends the requests. It needs a store, the
+Put [HttpRecordingHandler](cref:Meziantou.Framework.Http.Recording.HttpRecordingHandler) between the `HttpClient` and the handler that sends the requests. It needs a store, the
 place where the recordings are saved, and options:
 
 <!-- ref:../../../tests/Meziantou.Framework.Http.Recording.Tests/HttpRecordingHandlerTests.cs;region=HttpRecording_RecordThenReplay;format=md-fenced-code-block;dedent=true -->
@@ -35,11 +35,11 @@ Assert.Equal("hello integration", text);
 
 1. On the first run, the file at `recordingPath` does not exist. The request is sent to the service, and the handler
    records the request and its response.
-2. When the handler is disposed, `AutoSave` writes the recordings to the file.
+2. When the handler is disposed, [AutoSave](cref:Meziantou.Framework.Http.Recording.HttpRecordingOptions.AutoSave) writes the recordings to the file.
 3. On the next runs, the handler loads the file, finds the recorded request, and returns the recorded response. The
    service is not called, and the test passes even when it is down.
 
-The default mode, `Auto`, is what makes this work: it replays what was recorded and records what was not. Commit the
+The default mode, [Auto](cref:Meziantou.Framework.Http.Recording.HttpRecordingMode.Auto), is what makes this work: it replays what was recorded and records what was not. Commit the
 recording file with your tests, and delete it to record again. [Recording modes](03-RecordingModes.md) describes the
 other modes.
 
@@ -54,17 +54,17 @@ Nothing is written until the recordings are saved. Either:
 
 ## What a recording holds
 
-A recording, an `HttpRecordingEntry`, holds the method, the URI, the headers and the body of the request, and the
+A recording, an [HttpRecordingEntry](cref:Meziantou.Framework.Http.Recording.HttpRecordingEntry), holds the method, the URI, the headers and the body of the request, and the
 status code, the reason phrase, the HTTP version, the headers and the body of the response. The handler buffers the
 request body before sending it, so a body that can only be read once is still recorded.
 
 A replayed response is a new `HttpResponseMessage` built from the recording: its `RequestMessage` is the request being
 replayed, and its `Content-Length` is computed from the recorded body, not copied from the recorded headers.
 
-The handler loads the store on the first request. Call `InitializeAsync` to load it earlier, for instance to see an
+The handler loads the store on the first request. Call [InitializeAsync](cref:Meziantou.Framework.Http.Recording.HttpRecordingHandler.InitializeAsync) to load it earlier, for instance to see an
 invalid recording file fail in a test fixture rather than in the first test.
 
 ## Next steps
 
-- [Recording modes](03-RecordingModes.md): `Record`, `Replay` and `Auto`, and replaying without an inner handler.
+- [Recording modes](03-RecordingModes.md): [Record](cref:Meziantou.Framework.Http.Recording.HttpRecordingMode.Record), [Replay](cref:Meziantou.Framework.Http.Recording.HttpRecordingMode.Replay) and [Auto](cref:Meziantou.Framework.Http.Recording.HttpRecordingMode.Auto), and replaying without an inner handler.
 - [Sanitizing secrets](06-SanitizingSecrets.md): remove credentials before the recordings reach your repository.

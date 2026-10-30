@@ -3,22 +3,22 @@ title: Testing with the in-memory receiver
 description: Keep the received export requests in memory, read them in tests, limit how many are kept, and control their time.
 ---
 
-`InMemoryOpenTelemetryHandler` keeps the export requests it receives in memory, so a test can check the telemetry that an
-application exported. Register it with `AddInMemoryOpenTelemetryReceiver`, and get it from the service provider of the
+[InMemoryOpenTelemetryHandler](cref:Meziantou.Framework.OpenTelemetryCollector.InMemory.InMemoryOpenTelemetryHandler) keeps the export requests it receives in memory, so a test can check the telemetry that an
+application exported. Register it with [AddInMemoryOpenTelemetryReceiver](cref:Meziantou.Framework.OpenTelemetryCollector.InMemory.OpenTelemetryCollectorInMemoryServiceCollectionExtensions.AddInMemoryOpenTelemetryReceiver), and get it from the service provider of the
 application that hosts the receiver: see [Getting started](02-GettingStarted.md#receive-an-export-request).
 
 ## Read the received items
 
-`Logs`, `Traces` and `Metrics` return the items received so far, in the order they were received, as
-`OpenTelemetryItem`s. Each item is one export request:
+[Logs](cref:Meziantou.Framework.OpenTelemetryCollector.InMemory.InMemoryOpenTelemetryHandler.Logs), [Traces](cref:Meziantou.Framework.OpenTelemetryCollector.InMemory.InMemoryOpenTelemetryHandler.Traces) and [Metrics](cref:Meziantou.Framework.OpenTelemetryCollector.InMemory.InMemoryOpenTelemetryHandler.Metrics) return the items received so far, in the order they were received, as
+[OpenTelemetryItem](cref:Meziantou.Framework.OpenTelemetryCollector.InMemory.OpenTelemetryItem)s. Each item is one export request:
 
 | Item | `Request` |
 | --- | --- |
-| `OpenTelemetryLogsItem` | `ExportLogsServiceRequest` |
-| `OpenTelemetryTracesItem` | `ExportTraceServiceRequest` |
-| `OpenTelemetryMetricsItem` | `ExportMetricsServiceRequest` |
+| [OpenTelemetryLogsItem](cref:Meziantou.Framework.OpenTelemetryCollector.InMemory.OpenTelemetryLogsItem) | [ExportLogsServiceRequest](cref:OpenTelemetry.Proto.Collector.Logs.V1.ExportLogsServiceRequest) |
+| [OpenTelemetryTracesItem](cref:Meziantou.Framework.OpenTelemetryCollector.InMemory.OpenTelemetryTracesItem) | [ExportTraceServiceRequest](cref:OpenTelemetry.Proto.Collector.Trace.V1.ExportTraceServiceRequest) |
+| [OpenTelemetryMetricsItem](cref:Meziantou.Framework.OpenTelemetryCollector.InMemory.OpenTelemetryMetricsItem) | [ExportMetricsServiceRequest](cref:OpenTelemetry.Proto.Collector.Metrics.V1.ExportMetricsServiceRequest) |
 
-Use `OfType<OpenTelemetryLogsItem>()`, or the matching type, to get the `Request`, then walk the resources and scopes
+Use `OfType<OpenTelemetryLogsItem>()`, or the matching type, to get the [Request](cref:Meziantou.Framework.OpenTelemetryCollector.InMemory.OpenTelemetryLogsItem.Request), then walk the resources and scopes
 down to the records:
 
 <!-- ref:../../tests/Meziantou.Framework.OpenTelemetry.Tests/OpenTelemetryReceiverTests.cs;region=OpenTelemetryCollector_OtlpJson;format=md-fenced-code-block;dedent=true -->
@@ -57,10 +57,10 @@ Assert.Equal("5b8efff798038103d269b633813fc60c", Convert.ToHexStringLower(span.T
 
 Every item also has:
 
-- `ItemType`: `Logs`, `Traces` or `Metrics`.
-- `Method`: what carried the request, such as `POST /v1/traces` over HTTP, or
+- [ItemType](cref:Meziantou.Framework.OpenTelemetryCollector.InMemory.OpenTelemetryItem.ItemType): [Logs](cref:Meziantou.Framework.OpenTelemetryCollector.InMemory.InMemoryOpenTelemetryHandler.Logs), [Traces](cref:Meziantou.Framework.OpenTelemetryCollector.InMemory.InMemoryOpenTelemetryHandler.Traces) or [Metrics](cref:Meziantou.Framework.OpenTelemetryCollector.InMemory.InMemoryOpenTelemetryHandler.Metrics).
+- [Method](cref:Meziantou.Framework.OpenTelemetryCollector.InMemory.OpenTelemetryItem.Method): what carried the request, such as `POST /v1/traces` over HTTP, or
   `/opentelemetry.proto.collector.trace.v1.TraceService/Export` over gRPC.
-- `ReceivedAt`: when the request was received.
+- [ReceivedAt](cref:Meziantou.Framework.OpenTelemetryCollector.InMemory.OpenTelemetryItem.ReceivedAt): when the request was received.
 
 The stored request is a copy of the received one. The messages only have some of the OTLP fields: see
 [the available fields](04-CustomHandlers.md#available-fields).
@@ -70,8 +70,8 @@ The collections can be read while requests are received: enumerating them return
 ## Limit the number of items
 
 By default nothing is ever removed: every export request is kept. That suits a test, but a long-running process must set
-limits, otherwise its memory grows with the received telemetry. Set `MaximumLogCount`, `MaximumTraceCount` and
-`MaximumMetricCount` in an `InMemoryOpenTelemetryHandlerOptions`, and pass it to `AddInMemoryOpenTelemetryReceiver`.
+limits, otherwise its memory grows with the received telemetry. Set [MaximumLogCount](cref:Meziantou.Framework.OpenTelemetryCollector.InMemory.InMemoryOpenTelemetryHandlerOptions.MaximumLogCount), [MaximumTraceCount](cref:Meziantou.Framework.OpenTelemetryCollector.InMemory.InMemoryOpenTelemetryHandlerOptions.MaximumTraceCount) and
+[MaximumMetricCount](cref:Meziantou.Framework.OpenTelemetryCollector.InMemory.InMemoryOpenTelemetryHandlerOptions.MaximumMetricCount) in an [InMemoryOpenTelemetryHandlerOptions](cref:Meziantou.Framework.OpenTelemetryCollector.InMemory.InMemoryOpenTelemetryHandlerOptions), and pass it to [AddInMemoryOpenTelemetryReceiver](cref:Meziantou.Framework.OpenTelemetryCollector.InMemory.OpenTelemetryCollectorInMemoryServiceCollectionExtensions.AddInMemoryOpenTelemetryReceiver).
 Once a limit is reached, each new item replaces the oldest one.
 
 The handler can also be created and called directly, without hosting the endpoints, for instance to test code that reads
@@ -108,7 +108,7 @@ Assert.Equal(new DateTimeOffset(2026, 1, 1, 0, 0, 1, TimeSpan.Zero), items[0].Re
 
 ## Control the time
 
-`ReceivedAt` comes from the `TimeProvider` of the handler. `AddInMemoryOpenTelemetryReceiver` uses the `TimeProvider`
+[ReceivedAt](cref:Meziantou.Framework.OpenTelemetryCollector.InMemory.OpenTelemetryItem.ReceivedAt) comes from the `TimeProvider` of the handler. [AddInMemoryOpenTelemetryReceiver](cref:Meziantou.Framework.OpenTelemetryCollector.InMemory.OpenTelemetryCollectorInMemoryServiceCollectionExtensions.AddInMemoryOpenTelemetryReceiver) uses the `TimeProvider`
 registered in the service collection, `TimeProvider.System` when there is none: register a `FakeTimeProvider` (from the
 `Microsoft.Extensions.TimeProvider.Testing` package) to control it, as the example above does with the constructor.
 
@@ -116,12 +116,12 @@ registered in the service collection, `TimeProvider.System` when there is none: 
 
 | Method | Registers |
 | --- | --- |
-| `AddInMemoryOpenTelemetryReceiver()` | The in-memory handler, without limits |
-| `AddInMemoryOpenTelemetryReceiver(options)` | The in-memory handler, with the limits of an `InMemoryOpenTelemetryHandlerOptions` |
-| `AddInMemoryOpenTelemetryReceiver(configure)` | The in-memory handler, and configures the `OpenTelemetryReceiverOptions` |
+| [AddInMemoryOpenTelemetryReceiver()](cref:Meziantou.Framework.OpenTelemetryCollector.InMemory.OpenTelemetryCollectorInMemoryServiceCollectionExtensions.AddInMemoryOpenTelemetryReceiver) | The in-memory handler, without limits |
+| `AddInMemoryOpenTelemetryReceiver(options)` | The in-memory handler, with the limits of an [InMemoryOpenTelemetryHandlerOptions](cref:Meziantou.Framework.OpenTelemetryCollector.InMemory.InMemoryOpenTelemetryHandlerOptions) |
+| `AddInMemoryOpenTelemetryReceiver(configure)` | The in-memory handler, and configures the [OpenTelemetryReceiverOptions](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryReceiverOptions) |
 | `AddInMemoryOpenTelemetryReceiver(options, configure)` | Both |
 
-`OpenTelemetryReceiverOptions` configure the endpoints and the samplers. See [Endpoints](05-Endpoints.md) and
+[OpenTelemetryReceiverOptions](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryReceiverOptions) configure the endpoints and the samplers. See [Endpoints](05-Endpoints.md) and
 [Sampling](06-Sampling.md).
 
 The in-memory handler can be combined with other handlers: every registered handler receives every request. See

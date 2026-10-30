@@ -8,7 +8,7 @@ never change the values, which read back the same way.
 
 ## Indentation and flow collections
 
-`IndentSize` sets the number of spaces per level (`2` by default). Set `WriteIndented` to `false` to write the
+[IndentSize](cref:Meziantou.Framework.Yaml.YamlSerializerOptions.IndentSize) sets the number of spaces per level (`2` by default). Set [WriteIndented](cref:Meziantou.Framework.Yaml.YamlSerializerOptions.WriteIndented) to `false` to write the
 collections in the flow style, on a single line:
 
 <!-- ref:../../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlSerializerApiTests.cs;region=YamlSerializerOptions_WriteIndented;format=md-fenced-code-block;dedent=true -->
@@ -21,7 +21,7 @@ Assert.Equal("{Id: 1, name: Table, Tags: [new, sale]}\n", yaml);
 <!-- endref -->
 
 YAML expresses nesting through indentation, so this is the only way to write YAML without indentation. A scalar that
-contains a flow indicator, such as `,`, `:`, `[` or `{`, is quoted. `IndentSize` and the sequence layout options below
+contains a flow indicator, such as `,`, `:`, `[` or `{`, is quoted. [IndentSize](cref:Meziantou.Framework.Yaml.YamlSerializerOptions.IndentSize) and the sequence layout options below
 do not apply to the flow style.
 
 ## Sequence layout
@@ -67,9 +67,9 @@ Assert.Equal("""
 ```
 <!-- endref -->
 
-`BlockSequenceSequenceStyle` does the same for a sequence inside a sequence; its default is `Expanded`. A sequence
+[BlockSequenceSequenceStyle](cref:Meziantou.Framework.Yaml.YamlSerializerOptions.BlockSequenceSequenceStyle) does the same for a sequence inside a sequence; its default is [Expanded](cref:Meziantou.Framework.Yaml.YamlSequenceItemStyle.Expanded). A sequence
 nested in another sequence is always indented past the dash of its parent, because YAML has no other form for it.
-`[YamlBlockSequenceItemStyle]` sets these styles for one type or one member.
+[\[YamlBlockSequenceItemStyle\]](cref:Meziantou.Framework.Yaml.Serialization.YamlBlockSequenceItemStyleAttribute) sets these styles for one type or one member.
 
 ## Strings that look like other values
 
@@ -91,16 +91,16 @@ Assert.Equal("""
 
 `yes` is not quoted: under the default [schema](11-Schemas.md), it is a string.
 
-`ScalarStylePreferences` controls quoting:
+[ScalarStylePreferences](cref:Meziantou.Framework.Yaml.YamlSerializerOptions.ScalarStylePreferences) controls quoting:
 
-- `PreferQuotedForAmbiguousScalars` (`true` by default) quotes the ambiguous strings. Disable it only when the reader
+- [PreferQuotedForAmbiguousScalars](cref:Meziantou.Framework.Yaml.YamlScalarStylePreferences.PreferQuotedForAmbiguousScalars) (`true` by default) quotes the ambiguous strings. Disable it only when the reader
   of the YAML expects these values unquoted.
-- `PreferPlainStyle = false` double-quotes the strings and keys that would be written plain, unless `StringStyle`
+- `PreferPlainStyle = false` double-quotes the strings and keys that would be written plain, unless [StringStyle](cref:Meziantou.Framework.Yaml.YamlScalarStylePreferences.StringStyle)
   requests another style.
 
 ## Block and quoted strings
 
-`ScalarStylePreferences.StringStyle` selects the style of every string value. `Literal` keeps the line breaks of a
+`ScalarStylePreferences.StringStyle` selects the style of every string value. [Literal](cref:Meziantou.Framework.Yaml.ScalarStyle.Literal) keeps the line breaks of a
 multi-line string, such as a script:
 
 <!-- ref:../../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlSerializerApiTests.cs;region=YamlSerializerOptions_LiteralStrings;format=md-fenced-code-block;dedent=true -->
@@ -124,13 +124,13 @@ The styles are:
 
 | Style | Writes |
 | --- | --- |
-| `Any` (default) | plain or double-quoted, chosen by the writer |
-| `Plain`, `SingleQuoted`, `DoubleQuoted` | that style |
-| `Literal` | a block scalar (`\|`) that keeps the line breaks |
-| `Folded` | a folded block scalar (`>`) |
+| [Any](cref:Meziantou.Framework.Yaml.ScalarStyle.Any) (default) | plain or double-quoted, chosen by the writer |
+| [Plain](cref:Meziantou.Framework.Yaml.ScalarStyle.Plain), [SingleQuoted](cref:Meziantou.Framework.Yaml.ScalarStyle.SingleQuoted), [DoubleQuoted](cref:Meziantou.Framework.Yaml.ScalarStyle.DoubleQuoted) | that style |
+| [Literal](cref:Meziantou.Framework.Yaml.ScalarStyle.Literal) | a block scalar (`\|`) that keeps the line breaks |
+| [Folded](cref:Meziantou.Framework.Yaml.ScalarStyle.Folded) | a folded block scalar (`>`) |
 
 A literal block scalar starts with `|-` when the value has no trailing line break, `|` when it has one, and `|+` when
-it has more. `[YamlStringStyle]` sets the style of one member, and of the strings below it:
+it has more. [\[YamlStringStyle\]](cref:Meziantou.Framework.Yaml.Serialization.YamlStringStyleAttribute) sets the style of one member, and of the strings below it:
 
 <!-- ref:../../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlSerializerApiTests.cs;region=YamlStringStyleAttribute_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -187,11 +187,11 @@ Assert.Equal(8080, YamlSerializer.Deserialize<Server>(yaml)!.Port);
 ```
 <!-- endref -->
 
-`YamlNumberHandling.AllowNamedFloatingPointLiterals` writes and reads the special floating-point values as the quoted
+[YamlNumberHandling.AllowNamedFloatingPointLiterals](cref:Meziantou.Framework.Yaml.YamlNumberHandling.AllowNamedFloatingPointLiterals) writes and reads the special floating-point values as the quoted
 `"NaN"`, `"Infinity"` and `"-Infinity"` instead of the YAML `.nan`, `.inf` and `-.inf`.
 
 ## Key order
 
 Members are written in declaration order, or in the order set by
-[`[YamlPropertyOrder]`](04-MembersAndNames.md#order-the-members). Set `MappingOrder` to `YamlMappingOrderPolicy.Sorted`
+[`[YamlPropertyOrder]`](04-MembersAndNames.md#order-the-members). Set [MappingOrder](cref:Meziantou.Framework.Yaml.YamlSerializerOptions.MappingOrder) to [YamlMappingOrderPolicy.Sorted](cref:Meziantou.Framework.Yaml.YamlMappingOrderPolicy.Sorted)
 to sort them by their YAML key instead.

@@ -23,5 +23,5 @@ Assert.True(dispatcher.CheckAccess());
 - When the dispatcher shuts down before running the continuation, for instance because the application is closing, the
   method still continues instead of waiting forever, but the controls can no longer be used. Check
   `dispatcher.HasShutdownStarted` before using them if the application can close while the work runs.
-- `SwitchToDispatcherThread` is an extension method of `Dispatcher`: use `Application.Current.Dispatcher`, or the
+- [SwitchToDispatcherThread](cref:Meziantou.Framework.WPF.DispatcherExtensions.SwitchToDispatcherThread) is an extension method of `Dispatcher`: use `Application.Current.Dispatcher`, or the
   `Dispatcher` property of a control.

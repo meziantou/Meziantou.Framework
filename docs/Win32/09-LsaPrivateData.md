@@ -4,7 +4,7 @@ description: Store, read and remove machine secrets in the private data of the W
 ---
 
 The Local Security Authority (LSA) of Windows can store private data: secrets encrypted on disk, which only their
-creator and the administrators can read. Services use it to keep a secret for the whole machine. `LsaPrivateData` from
+creator and the administrators can read. Services use it to keep a secret for the whole machine. [LsaPrivateData](cref:Meziantou.Framework.Win32.LsaPrivateData) from
 the `Meziantou.Framework.Win32.Lsa` package reads and writes it.
 
 ```bash
@@ -29,7 +29,7 @@ LsaPrivateData.SetValue("L$MySecretKey", "MySecretValue");
 ```
 <!-- endref -->
 
-Read it back. `GetValue` returns `null` when the key does not exist:
+Read it back. [GetValue](cref:Meziantou.Framework.Win32.LsaPrivateData.GetValue) returns `null` when the key does not exist:
 
 <!-- ref:../../samples/Meziantou.Framework.Win32.Lsa.Samples/Program.cs;region=LsaPrivateData_GetValue;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -45,7 +45,7 @@ else
 ```
 <!-- endref -->
 
-Remove it. Removing a key that does not exist does nothing, and `SetValue` with a `null` value removes the key too:
+Remove it. Removing a key that does not exist does nothing, and [SetValue](cref:Meziantou.Framework.Win32.LsaPrivateData.SetValue) with a `null` value removes the key too:
 
 <!-- ref:../../samples/Meziantou.Framework.Win32.Lsa.Samples/Program.cs;region=LsaPrivateData_RemoveValue;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -54,7 +54,7 @@ LsaPrivateData.RemoveValue("L$MySecretKey");
 ```
 <!-- endref -->
 
-- `SetValue` and `RemoveValue` require administrator rights. `GetValue` requires the rights that the secret grants:
+- [SetValue](cref:Meziantou.Framework.Win32.LsaPrivateData.SetValue) and [RemoveValue](cref:Meziantou.Framework.Win32.LsaPrivateData.RemoveValue) require administrator rights. [GetValue](cref:Meziantou.Framework.Win32.LsaPrivateData.GetValue) requires the rights that the secret grants:
   its creator and the administrators.
 - The methods throw a `Win32Exception` when Windows rejects the operation, for instance with error `5` (access denied)
   when the process is not elevated.
@@ -77,5 +77,5 @@ A key without a prefix can be read remotely. Use the `L$` prefix, as in the exam
 
 - The value is encrypted on disk and protected by an access control list, but LSA secrets are a well-known target for
   anyone who already has administrator or SYSTEM access to the machine. They are not absolutely protected.
-- `GetValue` returns a `string`: it cannot be cleared from memory once you are done with it, and it stays readable in a
+- [GetValue](cref:Meziantou.Framework.Win32.LsaPrivateData.GetValue) returns a `string`: it cannot be cleared from memory once you are done with it, and it stays readable in a
   memory dump until the garbage collector reuses its memory. The library clears the native copy of the secret.

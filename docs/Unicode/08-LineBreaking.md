@@ -5,9 +5,9 @@ description: Find where a text can wrap, wrap a text to a maximum length, and ch
 
 ## Find the break opportunities
 
-`Unicode.EnumerateLineBreaks` gives the positions where a line can break, with the rules of
-[UAX #14](https://www.unicode.org/reports/tr14/). Each `UnicodeLineBreak` has the `Index` of the first character of the
-next line, and `IsMandatory` for the breaks after a line feed and at the end of the text. A text renderer measures the
+[Unicode.EnumerateLineBreaks](cref:Meziantou.Framework.Unicode.EnumerateLineBreaks) gives the positions where a line can break, with the rules of
+[UAX #14](https://www.unicode.org/reports/tr14/). Each [UnicodeLineBreak](cref:Meziantou.Framework.UnicodeLineBreak) has the [Index](cref:Meziantou.Framework.UnicodeLineBreak.Index) of the first character of the
+next line, and [IsMandatory](cref:Meziantou.Framework.UnicodeLineBreak.IsMandatory) for the breaks after a line feed and at the end of the text. A text renderer measures the
 text between break opportunities, and starts a new line at the last opportunity that fits.
 
 This example wraps a text to a maximum number of characters:
@@ -55,12 +55,12 @@ Assert.Equal(["See https://", "www.meziantou.net/", "blog"], Wrap("See https://w
 
 ## Tailor the rules
 
-`EnumerateLineBreaks` takes two optional tailorings, which match the CSS properties `line-break` and `word-break`:
+[EnumerateLineBreaks](cref:Meziantou.Framework.Unicode.EnumerateLineBreaks) takes two optional tailorings, which match the CSS properties `line-break` and `word-break`:
 
 | Tailoring | Values |
 | --- | --- |
-| `UnicodeLineBreakStrictness` (`line-break`) | `Strict`, the default rules; `Normal`, a line can start with a small kana; `Anywhere`, a line can break between any two grapheme clusters |
-| `UnicodeWordBreakBehavior` (`word-break`) | `Normal`; `BreakAll`, a line can break between any two letters; `KeepAll`, no break between letters or ideographs |
+| [UnicodeLineBreakStrictness](cref:Meziantou.Framework.UnicodeLineBreakStrictness) (`line-break`) | [Strict](cref:Meziantou.Framework.UnicodeLineBreakStrictness.Strict), the default rules; [Normal](cref:Meziantou.Framework.UnicodeLineBreakStrictness.Normal), a line can start with a small kana; [Anywhere](cref:Meziantou.Framework.UnicodeLineBreakStrictness.Anywhere), a line can break between any two grapheme clusters |
+| [UnicodeWordBreakBehavior](cref:Meziantou.Framework.UnicodeWordBreakBehavior) (`word-break`) | [Normal](cref:Meziantou.Framework.UnicodeWordBreakBehavior.Normal); [BreakAll](cref:Meziantou.Framework.UnicodeWordBreakBehavior.BreakAll), a line can break between any two letters; [KeepAll](cref:Meziantou.Framework.UnicodeWordBreakBehavior.KeepAll), no break between letters or ideographs |
 
 <!-- ref:../../tests/Meziantou.Framework.Unicode.Tests/UnicodeTests.cs;region=Unicode_LineBreakTailorings;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -92,14 +92,14 @@ Assert.Equal(["\u30C1", "\u30E3"], Split(katakana, UnicodeLineBreakStrictness.No
 ```
 <!-- endref -->
 
-`KeepAll` is common for Korean, whose words are separated by spaces. `BreakAll` and `Anywhere` suit narrow spaces where
+[KeepAll](cref:Meziantou.Framework.UnicodeWordBreakBehavior.KeepAll) is common for Korean, whose words are separated by spaces. [BreakAll](cref:Meziantou.Framework.UnicodeWordBreakBehavior.BreakAll) and [Anywhere](cref:Meziantou.Framework.UnicodeLineBreakStrictness.Anywhere) suit narrow spaces where
 overflowing is worse than an unusual break.
 
 ## Text written without spaces
 
 Thai, Lao, Khmer, Burmese and a few other scripts are written without spaces between words. Their characters have the
 line breaking class `Complex_Context` (SA), which UAX #14 leaves to a dictionary: without one, a sentence only breaks at
-spaces and zero width spaces. `LineBreakDictionary` finds the words of such text in a list of words you provide:
+spaces and zero width spaces. [LineBreakDictionary](cref:Meziantou.Framework.LineBreakDictionary) finds the words of such text in a list of words you provide:
 
 <!-- ref:../../tests/Meziantou.Framework.Unicode.Tests/UnicodeTests.cs;region=Unicode_LineBreakDictionary;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -124,30 +124,30 @@ Assert.Equal<int>([4], positions[..count]);
 <!-- endref -->
 
 The `Meziantou.Framework.Unicode.Dictionaries` package includes the word lists of Thai, Lao, Khmer and Burmese:
-`IcuWordDictionary.CreateLineBreakDictionary()` gives a `LineBreakDictionary` of them. See
+[IcuWordDictionary.CreateLineBreakDictionary()](cref:Meziantou.Framework.IcuWordDictionary.CreateLineBreakDictionary) gives a [LineBreakDictionary](cref:Meziantou.Framework.LineBreakDictionary) of them. See
 [Word dictionaries](09-WordDictionaries.md).
 
 ### Word lists
 
-- The list is plain text, in UTF-8 when it is read from a file or a stream (`Load`, `LoadAsync`): one word per line,
+- The list is plain text, in UTF-8 when it is read from a file or a stream ([Load](cref:Meziantou.Framework.LineBreakDictionary.Load), [LoadAsync](cref:Meziantou.Framework.LineBreakDictionary.LoadAsync)): one word per line,
   `#` starts a comment, blank lines are ignored, and so is what follows the first tab of a line (a frequency, for
   instance).
 - A word is kept as written, without normalization or case mapping: pass the text in the normalization form of the
   list.
-- A dictionary is immutable and thread-safe. `FindBreaks` and the enumeration do not allocate, and their cost is
+- A dictionary is immutable and thread-safe. [FindBreaks](cref:Meziantou.Framework.LineBreakDictionary.FindBreaks) and the enumeration do not allocate, and their cost is
   proportional to the length of the text.
-- A list from an untrusted source cannot exhaust memory: a list that exceeds a limit of `LineBreakDictionaryOptions` is
+- A list from an untrusted source cannot exhaust memory: a list that exceeds a limit of [LineBreakDictionaryOptions](cref:Meziantou.Framework.LineBreakDictionaryOptions) is
   rejected with a `FormatException`.
 
-| `LineBreakDictionaryOptions` | Default |
+| [LineBreakDictionaryOptions](cref:Meziantou.Framework.LineBreakDictionaryOptions) | Default |
 | --- | --- |
-| `MaxWordCount` | 500,000 words |
-| `MaxWordLength` | 128 UTF-16 code units |
-| `MaxInputLength` | 8 MiB |
+| [MaxWordCount](cref:Meziantou.Framework.LineBreakDictionaryOptions.MaxWordCount) | 500,000 words |
+| [MaxWordLength](cref:Meziantou.Framework.LineBreakDictionaryOptions.MaxWordLength) | 128 UTF-16 code units |
+| [MaxInputLength](cref:Meziantou.Framework.LineBreakDictionaryOptions.MaxInputLength) | 8 MiB |
 
 ### How the words are chosen
 
-`FindBreaks` segments the text it is given, and `EnumerateLineBreaks` each run of `Complex_Context` characters of the
+[FindBreaks](cref:Meziantou.Framework.LineBreakDictionary.FindBreaks) segments the text it is given, and [EnumerateLineBreaks](cref:Meziantou.Framework.Unicode.EnumerateLineBreaks) each run of `Complex_Context` characters of the
 text:
 
 - A run starts with a letter: the combining marks before its first letter belong to the character before them. Spaces,
@@ -158,11 +158,11 @@ text:
   with the fewest words; when several remain, the one with the longest word at the first position where they differ.
 - A line can break before each word found, except at the start of the run. The characters that are in no word stay with
   what precedes them: a run without any word of the list has no break.
-- A break of the dictionary is never mandatory. `KeepAll` keeps them, as `word-break: keep-all` does in CSS. With
-  `BreakAll` or `Anywhere`, a line already breaks between any two letters, and the dictionary is not used.
+- A break of the dictionary is never mandatory. [KeepAll](cref:Meziantou.Framework.UnicodeWordBreakBehavior.KeepAll) keeps them, as `word-break: keep-all` does in CSS. With
+  [BreakAll](cref:Meziantou.Framework.UnicodeWordBreakBehavior.BreakAll) or [Anywhere](cref:Meziantou.Framework.UnicodeLineBreakStrictness.Anywhere), a line already breaks between any two letters, and the dictionary is not used.
 - A run longer than 1,024 UTF-16 code units is segmented piece by piece, so that the memory used stays bounded.
 
 ## Draw wrapped text
 
 To draw paragraphs on images, the text layout of [Meziantou.Framework.Imaging](../Imaging/08-Text/04-TextLayout.md#hyphenation-and-scripts-without-spaces)
-uses these rules, and accepts a `LineBreakDictionary` and a `Hyphenator`.
+uses these rules, and accepts a [LineBreakDictionary](cref:Meziantou.Framework.LineBreakDictionary) and a [Hyphenator](cref:Meziantou.Framework.Hyphenator).

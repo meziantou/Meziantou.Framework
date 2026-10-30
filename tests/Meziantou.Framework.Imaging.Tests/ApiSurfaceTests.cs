@@ -179,8 +179,8 @@ public sealed class ApiSurfaceTests
             ],
             settings);
 
-        // The settings of the AVIF encoder, without the container features that only AVIF writes so far
-        string[] avifOnly = [nameof(AvifEncoder.CleanAperture), nameof(AvifEncoder.PremultiplyAlpha)];
+        // The settings of the AVIF encoder, without the container features that only AVIF writes so far and the AV1 tiles
+        string[] avifOnly = [nameof(AvifEncoder.AutoTiling), nameof(AvifEncoder.CleanAperture), nameof(AvifEncoder.PremultiplyAlpha)];
         Assert.Equal(typeof(AvifEncoder).GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly).Select(property => property.Name).Except(avifOnly).Order(StringComparer.Ordinal), settings);
         Assert.Equal(typeof(HeicCompression), GetDeclaredProperty(type, nameof(HeicEncoder.Compression)).PropertyType);
         Assert.Equal(typeof(HeicChromaSubsampling), GetDeclaredProperty(type, nameof(HeicEncoder.ChromaSubsampling)).PropertyType);

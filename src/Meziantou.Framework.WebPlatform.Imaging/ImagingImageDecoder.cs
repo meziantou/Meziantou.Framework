@@ -31,8 +31,9 @@ namespace Meziantou.Framework.WebPlatform.Imaging;
 /// of which no row can be decoded cannot be decoded.
 /// </para>
 /// <para>
-/// The codecs are strict where the browsers are lenient: what the browsers accept in a PNG image and the codec rejects is
-/// rewritten before the image is given to the codec (<see cref="NormalizePng"/>, <see cref="Repair"/>).
+/// The codecs decode in their lenient mode (<see cref="DecodingStrictness.Lenient"/>): they accept the deviations from the
+/// specifications that the browsers accept. What the browsers accept and the codecs still reject is rewritten before the
+/// image is given to the codec (<see cref="NormalizePng"/>, <see cref="Repair"/>).
 /// </para>
 /// </remarks>
 internal sealed class ImagingImageDecoder : RenderingImageDecoder
@@ -47,10 +48,12 @@ internal sealed class ImagingImageDecoder : RenderingImageDecoder
     /// The limits of the codecs: an image of at most <see cref="MaxPixelCount"/> pixels (a larger one is not decoded, whatever
     /// the size of its file), and 16 bytes per pixel for the buffers of a decoder (the canvas of the compositor, the frame, the
     /// coefficients of a progressive JPEG image). The number of frames and the pixels decoded over the life of a reader are not
-    /// limited: an animation is decoded frame by frame as it is played, with the memory of one frame.
+    /// limited: an animation is decoded frame by frame as it is played, with the memory of one frame. The decoding is lenient,
+    /// as in the browsers.
     /// </summary>
     internal static ImageConfiguration Configuration { get; } = new()
     {
+        DecodingStrictness = DecodingStrictness.Lenient,
         Limits = new ImageResourceLimits
         {
             MaxWidth = MaxPixelCount,

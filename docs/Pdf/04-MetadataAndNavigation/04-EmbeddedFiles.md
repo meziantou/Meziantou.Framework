@@ -34,16 +34,16 @@ var notes = ((PdfFileAttachmentAnnotation)read.Pages[0].Annotations[0]).File!;
 
 - `EmbeddedFiles.Add` attaches a file to the document, with its name and its content. The save also associates the
   file with the document, as PDF/A-3 and PDF/A-4f require.
-- `Annotations.AddFileAttachment` attaches a file to a page, as an icon in a rectangle: `PushPin` (the default),
-  `Paperclip`, `Graph` or `Tag`. The overload that takes a `PdfEmbeddedFile` attaches a file already embedded.
-- `PdfEmbeddedFileOptions` describes the file: `Description`, `MimeType`, `CreationDate`, `ModificationDate`, and
-  `Relationship`, its relationship to the document (`Source`, `Data`, `Alternative`, `Supplement`...), which PDF/A-3
+- `Annotations.AddFileAttachment` attaches a file to a page, as an icon in a rectangle: [PushPin](cref:Meziantou.Framework.Pdf.PdfFileAttachmentIcon.PushPin) (the default),
+  [Paperclip](cref:Meziantou.Framework.Pdf.PdfFileAttachmentIcon.Paperclip), [Graph](cref:Meziantou.Framework.Pdf.PdfFileAttachmentIcon.Graph) or [Tag](cref:Meziantou.Framework.Pdf.PdfFileAttachmentIcon.Tag). The overload that takes a [PdfEmbeddedFile](cref:Meziantou.Framework.Pdf.PdfEmbeddedFile) attaches a file already embedded.
+- [PdfEmbeddedFileOptions](cref:Meziantou.Framework.Pdf.PdfEmbeddedFileOptions) describes the file: [Description](cref:Meziantou.Framework.Pdf.PdfEmbeddedFileOptions.Description), [MimeType](cref:Meziantou.Framework.Pdf.PdfEmbeddedFileOptions.MimeType), [CreationDate](cref:Meziantou.Framework.Pdf.PdfEmbeddedFileOptions.CreationDate), [ModificationDate](cref:Meziantou.Framework.Pdf.PdfEmbeddedFileOptions.ModificationDate), and
+  [Relationship](cref:Meziantou.Framework.Pdf.PdfEmbeddedFileOptions.Relationship), its relationship to the document ([Source](cref:Meziantou.Framework.Pdf.PdfAssociatedFileRelationship.Source), [Data](cref:Meziantou.Framework.Pdf.PdfAssociatedFileRelationship.Data), [Alternative](cref:Meziantou.Framework.Pdf.PdfAssociatedFileRelationship.Alternative), [Supplement](cref:Meziantou.Framework.Pdf.PdfAssociatedFileRelationship.Supplement)...), which PDF/A-3
   requires. The dates are written only when they are given.
 
 ## Read the files
 
-`EmbeddedFiles` lists the files of the document, and `PdfFileAttachmentAnnotation.File` the file of an annotation. A
-`PdfEmbeddedFile` gives `FileName`, `Description`, `MimeType`, `Size`, the dates and `Relationship`, and `GetData` reads
+[EmbeddedFiles](cref:Meziantou.Framework.Pdf.PdfDocument.EmbeddedFiles) lists the files of the document, and [PdfFileAttachmentAnnotation.File](cref:Meziantou.Framework.Pdf.PdfFileAttachmentAnnotation.File) the file of an annotation. A
+[PdfEmbeddedFile](cref:Meziantou.Framework.Pdf.PdfEmbeddedFile) gives [FileName](cref:Meziantou.Framework.Pdf.PdfEmbeddedFile.FileName), [Description](cref:Meziantou.Framework.Pdf.PdfEmbeddedFile.Description), [MimeType](cref:Meziantou.Framework.Pdf.PdfEmbeddedFile.MimeType), [Size](cref:Meziantou.Framework.Pdf.PdfEmbeddedFile.Size), the dates and [Relationship](cref:Meziantou.Framework.Pdf.PdfEmbeddedFile.Relationship), and [GetData](cref:Meziantou.Framework.Pdf.PdfEmbeddedFile.GetData) reads
 its content. `EmbeddedFiles.Remove` removes a file from the document.
 
 The content of a file comes from the document: treat it as untrusted input, as the document itself.

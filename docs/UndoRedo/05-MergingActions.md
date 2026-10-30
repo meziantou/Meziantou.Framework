@@ -11,10 +11,10 @@ reverts the whole series.
 
 Two conditions make the manager merge an action into the previous one, instead of recording a new undo step:
 
-1. The new action allows it: its `AllowToMergeWithPrevious` property is `true`.
-2. The previous action accepts it: its `TryToMergeAsync` method returns `true`.
+1. The new action allows it: its [AllowToMergeWithPrevious](cref:Meziantou.Framework.UndoRedo.IUndoRedoAction.AllowToMergeWithPrevious) property is `true`.
+2. The previous action accepts it: its [TryToMergeAsync](cref:Meziantou.Framework.UndoRedo.IUndoRedoAction.TryToMergeAsync) method returns `true`.
 
-`TryToMergeAsync` receives the new action. When it returns `true`, the new action is discarded: the manager never
+[TryToMergeAsync](cref:Meziantou.Framework.UndoRedo.IUndoRedoAction.TryToMergeAsync) receives the new action. When it returns `true`, the new action is discarded: the manager never
 executes or reverts it again, so the previous action becomes responsible for both changes. This action merges the text
 of the following insertions:
 
@@ -70,20 +70,20 @@ Assert.Equal("", document.ToString());
 
 ## The state of the merged action
 
-When `TryToMergeAsync` runs, the new action is in the same state as the previous one:
+When [TryToMergeAsync](cref:Meziantou.Framework.UndoRedo.IUndoRedoAction.TryToMergeAsync) runs, the new action is in the same state as the previous one:
 
-- At the top level and in an `Immediate` transaction, both are already applied.
-- In a `Deferred` transaction, neither is applied yet.
+- At the top level and in an [Immediate](cref:Meziantou.Framework.UndoRedo.TransactionExecutionMode.Immediate) transaction, both are already applied.
+- In a [Deferred](cref:Meziantou.Framework.UndoRedo.TransactionExecutionMode.Deferred) transaction, neither is applied yet.
 
-So `TryToMergeAsync` must take over the effect of the new action without applying it: in the example, the text is added
+So [TryToMergeAsync](cref:Meziantou.Framework.UndoRedo.IUndoRedoAction.TryToMergeAsync) must take over the effect of the new action without applying it: in the example, the text is added
 to `_text`, not to the document.
 
 ## Rules
 
 - Merging works at the top level and inside a [transaction](04-Transactions.md), between actions of that transaction.
 - Merging into the previous step clears the redo history, as recording a new step does.
-- `TryToMergeAsync` must not record, undo or redo anything: those operations throw an `InvalidOperationException` while
+- [TryToMergeAsync](cref:Meziantou.Framework.UndoRedo.IUndoRedoAction.TryToMergeAsync) must not record, undo or redo anything: those operations throw an `InvalidOperationException` while
   it runs.
-- When `TryToMergeAsync` throws, the new action is recorded as a step of its own, then the exception reaches the caller of
-  `RecordActionAsync`.
-- `UndoRedoActionBase.TryToMergeAsync` returns `false`: override it to accept merges.
+- When [TryToMergeAsync](cref:Meziantou.Framework.UndoRedo.IUndoRedoAction.TryToMergeAsync) throws, the new action is recorded as a step of its own, then the exception reaches the caller of
+  [RecordActionAsync](cref:Meziantou.Framework.UndoRedo.UndoRedoManager.RecordActionAsync).
+- [UndoRedoActionBase.TryToMergeAsync](cref:Meziantou.Framework.UndoRedo.UndoRedoActionBase.TryToMergeAsync) returns `false`: override it to accept merges.

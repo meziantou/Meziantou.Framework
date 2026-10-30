@@ -15,7 +15,7 @@ XML formatters, and let you change them:
   `UseHumanReadableSerializer(options => ...)` on the settings. See
   [Serializers](../InlineSnapshotTesting/04-Serializers.md).
 
-The callback receives a `HumanReadableSerializerOptions`: everything on the other pages of this section applies.
+The callback receives a [HumanReadableSerializerOptions](cref:Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions): everything on the other pages of this section applies.
 
 ## Format HTML in every snapshot
 
@@ -74,8 +74,8 @@ internal static class SnapshotConfiguration
 
 - Sort the members and dictionary keys with `StringComparer.Ordinal`
   ([Members](04-Members.md#order-members-and-dictionary-keys)).
-- Skip the members that change on every run, such as ids and timestamps, with `IgnoreMember`, or write them with a
+- Skip the members that change on every run, such as ids and timestamps, with [IgnoreMember](cref:Meziantou.Framework.HumanReadable.HumanReadableSerializerOptionsExtensions.IgnoreMember), or write them with a
   converter ([Members](04-Members.md#configure-types-you-do-not-own), [Converters](05-Converters.md)).
 - Exclude or rewrite the HTTP headers that change ([HTTP messages](07-HttpMessages.md#hide-or-rewrite-headers)).
-- Turn on `ShowInvisibleCharactersInValues` when two snapshots differ only by whitespace
+- Turn on [ShowInvisibleCharactersInValues](cref:Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions.ShowInvisibleCharactersInValues) when two snapshots differ only by whitespace
   ([Output format](03-OutputFormat.md#invisible-characters-and-line-endings)).

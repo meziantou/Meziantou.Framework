@@ -19,23 +19,23 @@ Assert.False(JsonPath.TryParse("$.store.book[", out _));
 ```
 <!-- endref -->
 
-- `Parse` throws a `FormatException` when the query is not valid; `TryParse` returns `false`. Both also accept a
+- [Parse](cref:Meziantou.Framework.Json.JsonPath.Parse) throws a `FormatException` when the query is not valid; [TryParse](cref:Meziantou.Framework.Json.JsonPath.TryParse) returns `false`. Both also accept a
   `ReadOnlySpan<char>`.
-- `JsonPath` implements `IParsable<JsonPath>` and `ISpanParsable<JsonPath>`, so generic parsing code accepts it.
+- [JsonPath](cref:Meziantou.Framework.Json.JsonPath) implements `IParsable<JsonPath>` and `ISpanParsable<JsonPath>`, so generic parsing code accepts it.
 - `ToString` returns the query as it was written.
-- A `JsonPath` is immutable and thread-safe. Parse a query once, keep it in a field, and evaluate it on any number of
+- A [JsonPath](cref:Meziantou.Framework.Json.JsonPath) is immutable and thread-safe. Parse a query once, keep it in a field, and evaluate it on any number of
   documents, from any thread.
 
 ## Choose the JSON type
 
-`Evaluate` and `EvaluateValue` accept the three JSON types of `System.Text.Json`, as methods of `JsonPath` or as
+[Evaluate](cref:Meziantou.Framework.Json.JsonPath.Evaluate) and [EvaluateValue](cref:Meziantou.Framework.Json.JsonPath.EvaluateValue) accept the three JSON types of `System.Text.Json`, as methods of [JsonPath](cref:Meziantou.Framework.Json.JsonPath) or as
 extension methods of the JSON value:
 
-| Input | `Evaluate` returns | `EvaluateValue` returns |
+| Input | [Evaluate](cref:Meziantou.Framework.Json.JsonPath.Evaluate) returns | [EvaluateValue](cref:Meziantou.Framework.Json.JsonPath.EvaluateValue) returns |
 | --- | --- | --- |
-| `JsonNode?` | `JsonPathResult`, a list of `JsonPathMatch` | `JsonNode?` |
-| `JsonDocument?` | `JsonPathResult<JsonElement>` | `JsonElement?` |
-| `JsonElement` | `JsonPathResult<JsonElement>` | `JsonElement?` |
+| `JsonNode?` | [JsonPathResult](cref:Meziantou.Framework.Json.JsonPathResult), a list of [JsonPathMatch](cref:Meziantou.Framework.Json.JsonPathMatch) | `JsonNode?` |
+| `JsonDocument?` | [JsonPathResult\<JsonElement\>](cref:Meziantou.Framework.Json.JsonPathResult{TValue}) | `JsonElement?` |
+| `JsonElement` | [JsonPathResult\<JsonElement\>](cref:Meziantou.Framework.Json.JsonPathResult{TValue}) | `JsonElement?` |
 
 - Use `JsonDocument` or `JsonElement` to read a document: they are read-only views of the parsed JSON. Dispose the
   `JsonDocument` once you are done with the results, because the `JsonElement` values they hold belong to it.
@@ -44,12 +44,12 @@ extension methods of the JSON value:
 
 ## Read the matches
 
-`Evaluate` returns a read-only list of the matches, in the order the query selects them. Each match has:
+[Evaluate](cref:Meziantou.Framework.Json.JsonPath.Evaluate) returns a read-only list of the matches, in the order the query selects them. Each match has:
 
-- `Value`: the matched value. With `JsonNode`, JSON `null` is a `null` value.
-- `Path`: the normalized path of the match (see below).
+- [Value](cref:Meziantou.Framework.Json.JsonPathMatch.Value): the matched value. With `JsonNode`, JSON `null` is a `null` value.
+- [Path](cref:Meziantou.Framework.Json.JsonPathMatch.Path): the normalized path of the match (see below).
 
-When you only need the values, `ToJsonArray` copies them into a new `JsonArray`:
+When you only need the values, [ToJsonArray](cref:Meziantou.Framework.Json.JsonPathResult.ToJsonArray) copies them into a new `JsonArray`:
 
 <!-- ref:../../tests/Meziantou.Framework.JsonPath.Tests/JsonPathEvaluateTests.cs;region=JsonPath_ToJsonArray;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -61,11 +61,11 @@ Assert.Equal("""["a","b","c"]""", tags.ToJsonString());
 ```
 <!-- endref -->
 
-`ToJsonArray` is only available on the result of a `JsonNode` evaluation.
+[ToJsonArray](cref:Meziantou.Framework.Json.JsonPathResult.ToJsonArray) is only available on the result of a `JsonNode` evaluation.
 
 ## Get the first match
 
-`EvaluateValue` returns the value of the first match, or `null` when there is none:
+[EvaluateValue](cref:Meziantou.Framework.Json.JsonPath.EvaluateValue) returns the value of the first match, or `null` when there is none:
 
 <!-- ref:../../tests/Meziantou.Framework.JsonPath.Tests/JsonPathEvaluateTests.cs;region=JsonPath_EvaluateValue;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -81,7 +81,7 @@ Assert.Null(missing);
 <!-- endref -->
 
 With `JsonNode`, `null` is also the value of a member that holds JSON `null`. When the difference matters, use
-`Evaluate` and count the matches, or use `JsonElement`, where JSON `null` is an element of kind `Null`:
+[Evaluate](cref:Meziantou.Framework.Json.JsonPath.Evaluate) and count the matches, or use `JsonElement`, where JSON `null` is an element of kind `Null`:
 
 <!-- ref:../../tests/Meziantou.Framework.JsonPath.Tests/JsonPathEvaluateTests.cs;region=JsonPath_MissingVersusNull;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -104,7 +104,7 @@ Assert.Null(emptyDocument.EvaluateValue(path));
 
 ## Know where each value comes from
 
-`Path` is the *normalized path* of the match, as defined by RFC 9535: the root, then one bracketed name or index per
+[Path](cref:Meziantou.Framework.Json.JsonPathMatch.Path) is the *normalized path* of the match, as defined by RFC 9535: the root, then one bracketed name or index per
 level, such as `$['store']['book'][0]`. It identifies the node whatever query found it:
 
 <!-- ref:../../tests/Meziantou.Framework.JsonPath.Tests/JsonPathEvaluateTests.cs;region=JsonPath_NormalizedPaths;format=md-fenced-code-block;dedent=true -->
@@ -145,5 +145,5 @@ Assert.Equal("""{"items":[{"price":8},{"price":12,"discounted":true}]}""", docum
 ```
 <!-- endref -->
 
-The result is computed before `Evaluate` returns, so changing the document while you enumerate it does not change the
+The result is computed before [Evaluate](cref:Meziantou.Framework.Json.JsonPath.Evaluate) returns, so changing the document while you enumerate it does not change the
 matches. The library itself has no method to set, add or remove values by path.

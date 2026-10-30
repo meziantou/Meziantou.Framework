@@ -28,7 +28,7 @@ and macOS, and in trimmed and NativeAOT applications.
 ## Principles
 
 - **Real files are damaged.** The reader accepts what PDF viewers accept, and rebuilds the structure of a file whose
-  cross-reference information is wrong. `PdfDocument.IsRepaired` tells you when it did.
+  cross-reference information is wrong. [PdfDocument.IsRepaired](cref:Meziantou.Framework.Pdf.PdfDocument.IsRepaired) tells you when it did.
 - **Hostile files are bounded.** Everything a file can make grow (the decoded streams, the nesting of objects, the work
   of a page that is rendered) has a limit. A file takes time and memory in proportion to its size.
 - **Errors are explicit.** A file that is not a PDF document, a feature the library does not support, an exceeded limit
@@ -43,9 +43,9 @@ and macOS, and in trimmed and NativeAOT applications.
 | Namespace | Contains |
 | --- | --- |
 | [Meziantou.Framework.Pdf](cref:Meziantou.Framework.Pdf) | Documents, pages, the content builder, fonts, images, metadata, outline, encryption, conformance |
-| [Meziantou.Framework.Pdf.Objects](cref:Meziantou.Framework.Pdf.Objects) | The object model: `PdfDictionary`, `PdfArray`, `PdfStream`, `PdfName`... |
-| [Meziantou.Framework.Pdf.Rendering](cref:Meziantou.Framework.Pdf.Rendering) | `PdfRenderer` and its options |
-| [Meziantou.Framework.Pdf.Signing](cref:Meziantou.Framework.Pdf.Signing) | `PdfSigner`, `PdfSignatureVerifier` and their options |
+| [Meziantou.Framework.Pdf.Objects](cref:Meziantou.Framework.Pdf.Objects) | The object model: [PdfDictionary](cref:Meziantou.Framework.Pdf.Objects.PdfDictionary), [PdfArray](cref:Meziantou.Framework.Pdf.Objects.PdfArray), [PdfStream](cref:Meziantou.Framework.Pdf.Objects.PdfStream), [PdfName](cref:Meziantou.Framework.Pdf.Objects.PdfName)... |
+| [Meziantou.Framework.Pdf.Rendering](cref:Meziantou.Framework.Pdf.Rendering) | [PdfRenderer](cref:Meziantou.Framework.Pdf.Rendering.PdfRenderer) and its options |
+| [Meziantou.Framework.Pdf.Signing](cref:Meziantou.Framework.Pdf.Signing) | [PdfSigner](cref:Meziantou.Framework.Pdf.Signing.PdfSigner), [PdfSignatureVerifier](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureVerifier) and their options |
 
 The library uses `Meziantou.Framework.Imaging` for the images (decoding, color profiles, the rendered pages) and
 `Meziantou.Framework.Fonts` for the fonts it embeds; both are installed with the package.

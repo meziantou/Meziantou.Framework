@@ -9,7 +9,7 @@ annotations are checked: `Validator.TryValidateObject`, ASP.NET Core model valid
 
 ## Absolute URIs
 
-`[AbsoluteUri]` checks that a string property holds an absolute URI:
+[\[AbsoluteUri\]](cref:Meziantou.Framework.DataAnnotations.AbsoluteUriAttribute) checks that a string property holds an absolute URI:
 
 <!-- ref:../../tests/Meziantou.Framework.Tests/DataAnnotations/AbsoluteUriAttributeTests.cs;region=AbsoluteUriAttribute_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -38,7 +38,7 @@ Assert.Equal("Uri 'images/logo.png' is not an absolute URI", result.ErrorMessage
 <!-- endref -->
 
 - A string is valid when `Uri.TryCreate(value, UriKind.Absolute, out _)` succeeds. The attribute accepts any scheme, not
-  only `http` and `https`: check the scheme in your code, for instance with `IsHttpOrHttps` (see
+  only `http` and `https`: check the scheme in your code, for instance with [IsHttpOrHttps](cref:Meziantou.Framework.UriExtensions.IsHttpOrHttps) (see
   [Other helpers](15-OtherHelpers.md#uris)).
 - `null` and values that are not strings are valid. Add `[Required]` to reject a missing value.
 - The error message is `Uri '<value>' is not an absolute URI`. The message passed to the constructor
@@ -48,7 +48,7 @@ On Linux and macOS, a path that starts with `/`, such as `/images/logo.png`, is 
 
 ## Collection items
 
-Data annotations do not validate the objects referenced by a property. `[ValidateCollectionItems]` validates each item
+Data annotations do not validate the objects referenced by a property. [\[ValidateCollectionItems\]](cref:Meziantou.Framework.DataAnnotations.ValidateCollectionItemsAttribute) validates each item
 of a collection with its own data annotations:
 
 <!-- ref:../../tests/Meziantou.Framework.Tests/DataAnnotations/ValidateCollectionItemsAttributeTests.cs;region=ValidateCollectionItemsAttribute_Usage;format=md-fenced-code-block;dedent=true -->
@@ -91,7 +91,7 @@ Assert.Equal("The Name field is required.", error.ErrorMessage);
 - The validation stops at the first invalid item, and reports its first error, with the message of the attribute that
   failed. It does not tell which item is invalid.
 - A `null` collection is valid. Add `[Required]` to reject it.
-- The items are validated one level deep: a collection inside an item needs its own `[ValidateCollectionItems]`.
+- The items are validated one level deep: a collection inside an item needs its own [\[ValidateCollectionItems\]](cref:Meziantou.Framework.DataAnnotations.ValidateCollectionItemsAttribute).
 
-`ValidateCollectionItemsAttribute` discovers the properties of the items at run time, so it is not compatible with
+[ValidateCollectionItemsAttribute](cref:Meziantou.Framework.DataAnnotations.ValidateCollectionItemsAttribute) discovers the properties of the items at run time, so it is not compatible with
 trimming.

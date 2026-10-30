@@ -4,22 +4,22 @@ description: Choose the dialect of a pattern, and learn what each one supports a
 ---
 
 The same characters mean different things in different engines, so a pattern is always parsed in a dialect. Pass one of
-the `RegexDialect` values to `ParseText`, or in `RegexParseOptions`:
+the [RegexDialect](cref:Meziantou.Framework.Language.Regex.RegexDialect) values to [ParseText](cref:Meziantou.Framework.Language.Regex.RegexSyntaxTree.ParseText), or in [RegexParseOptions](cref:Meziantou.Framework.Language.Regex.RegexParseOptions):
 
-| `RegexDialect` | `Family` | Reads |
+| [RegexDialect](cref:Meziantou.Framework.Language.Regex.RegexDialect) | [Family](cref:Meziantou.Framework.Language.Regex.RegexDialect.Family) | Reads |
 | --- | --- | --- |
-| `Net` | `Dotnet` | The patterns of `System.Text.RegularExpressions`: balancing groups, character class subtraction, conditionals, `(?#…)` comments, extended mode |
-| `JavaScript` | `JavaScript` | ECMAScript patterns: the `u` and `v` flags, `\u{…}`, `[]` and `[^]`, class set operations, `(?ims-ims:…)` modifiers, duplicate group names in different alternatives |
-| `PcrePerl` | `Pcre` | PCRE and Perl patterns: possessive quantifiers, atomic groups, `\Q…\E`, `\K`, POSIX brackets, recursion and subroutine calls, the `\g` family, callouts, verbs and alpha assertions, branch reset groups |
-| `PosixExtended` | `Posix` | POSIX extended regular expressions (ERE), with the GNU `\w`, `\s`, `\b`, `\<` and `\>` |
-| `PosixBasic` | `Posix` | POSIX basic regular expressions (BRE): `\(…\)` groups, `\{n,m\}` bounds, and the GNU `\|`, `\+` and `\?` |
+| [Net](cref:Meziantou.Framework.Language.Regex.RegexDialect.Net) | [Dotnet](cref:Meziantou.Framework.Language.Regex.RegexDialectFamily.Dotnet) | The patterns of `System.Text.RegularExpressions`: balancing groups, character class subtraction, conditionals, `(?#…)` comments, extended mode |
+| [JavaScript](cref:Meziantou.Framework.Language.Regex.RegexDialect.JavaScript) | [JavaScript](cref:Meziantou.Framework.Language.Regex.RegexDialect.JavaScript) | ECMAScript patterns: the `u` and `v` flags, `\u{…}`, `[]` and `[^]`, class set operations, `(?ims-ims:…)` modifiers, duplicate group names in different alternatives |
+| [PcrePerl](cref:Meziantou.Framework.Language.Regex.RegexDialect.PcrePerl) | [Pcre](cref:Meziantou.Framework.Language.Regex.RegexDialectFamily.Pcre) | PCRE and Perl patterns: possessive quantifiers, atomic groups, `\Q…\E`, `\K`, POSIX brackets, recursion and subroutine calls, the `\g` family, callouts, verbs and alpha assertions, branch reset groups |
+| [PosixExtended](cref:Meziantou.Framework.Language.Regex.RegexDialect.PosixExtended) | [Posix](cref:Meziantou.Framework.Language.Regex.RegexDialectFamily.Posix) | POSIX extended regular expressions (ERE), with the GNU `\w`, `\s`, `\b`, `\<` and `\>` |
+| [PosixBasic](cref:Meziantou.Framework.Language.Regex.RegexDialect.PosixBasic) | [Posix](cref:Meziantou.Framework.Language.Regex.RegexDialectFamily.Posix) | POSIX basic regular expressions (BRE): `\(…\)` groups, `\{n,m\}` bounds, and the GNU `\|`, `\+` and `\?` |
 
-Java, Python and Go patterns are not supported. `RegexDialect.TryParse` reads a dialect from its name, and `Name` gives
+Java, Python and Go patterns are not supported. [RegexDialect.TryParse](cref:Meziantou.Framework.Language.Regex.RegexDialect.TryParse) reads a dialect from its name, and [Name](cref:Meziantou.Framework.Language.Regex.RegexDialect.Name) gives
 it.
 
 ## What a dialect supports
 
-`Features` lists what a dialect supports, as `RegexDialectFeatures` flags, and `HasFeature` tests one. Where a dialect
+[Features](cref:Meziantou.Framework.Language.Regex.RegexDialect.Features) lists what a dialect supports, as [RegexDialectFeatures](cref:Meziantou.Framework.Language.Regex.RegexDialectFeatures) flags, and [HasFeature](cref:Meziantou.Framework.Language.Regex.RegexDialect.HasFeature) tests one. Where a dialect
 lacks a construct, the parser does what its engine does:
 
 - When the text has an ordinary meaning in the dialect, that is what it gets: `\A` is the letter `A` in JavaScript, and
@@ -46,7 +46,7 @@ Assert.False(RegexDialect.JavaScript.HasFeature(RegexDialectFeatures.AtomicGroup
 
 ## .NET
 
-The `Net` dialect covers the whole regular-expression language of .NET, balancing groups included (`(?<c-o>…)`,
+The [Net](cref:Meziantou.Framework.Language.Regex.RegexDialect.Net) dialect covers the whole regular-expression language of .NET, balancing groups included (`(?<c-o>…)`,
 `(?'c-o'…)` and `(?<-o>…)`), and numbers the capture groups as the engine does.
 
 It follows the current .NET engine, which changes between releases: .NET 10 rejects `(?(name)(?n))`, which .NET 11
@@ -55,7 +55,7 @@ engine rejects.
 
 ## JavaScript
 
-The `JavaScript` dialect follows the grammar the flags select. Without `u` or `v`, the web-compatible grammar applies: a
+The [JavaScript](cref:Meziantou.Framework.Language.Regex.RegexDialect.JavaScript) dialect follows the grammar the flags select. Without `u` or `v`, the web-compatible grammar applies: a
 malformed escape stands for its own letter, and `\x4` matches `x4`. With them, the grammar is strict and the same text is
 an error. `u` makes the pattern a sequence of code points and enables `\u{…}`; `v` adds nested classes, `&&`, `--`, and
 `\q{…}` string disjunctions. The names of `\p{…}` are checked against the specification.
@@ -67,7 +67,7 @@ There is no `\A`, `\Z`, `\z` or `\G`, no atomic group, and no extended mode in J
 
 ## PCRE
 
-The `PcrePerl` dialect covers recursion and subroutine calls in every spelling (`(?R)`, `(?1)`, `(?-1)`, `(?&name)`,
+The [PcrePerl](cref:Meziantou.Framework.Language.Regex.RegexDialect.PcrePerl) dialect covers recursion and subroutine calls in every spelling (`(?R)`, `(?1)`, `(?-1)`, `(?&name)`,
 `(?P>name)`, `\g<name>`), the `\g` references, `(?P=name)`, callouts, backtracking verbs, start-of-pattern options,
 alpha assertions such as `(*plb:…)`, every PCRE condition (`(?(<name>)…)`, `(?(R1)…)`, `(?(DEFINE)…)`,
 `(?(VERSION>=10.4)…)`, assertions), `\Q…\E` inside and outside a class, the `J`, `U`, `^`, `r` and `aD` options, and loosely
@@ -77,7 +77,7 @@ Where PCRE and Perl differ, it follows PCRE: `{2}` with nothing to repeat, `[a-\
 
 ## POSIX
 
-The `PosixExtended` and `PosixBasic` dialects cover bracket expressions, collating elements and equivalence classes, in
+The [PosixExtended](cref:Meziantou.Framework.Language.Regex.RegexDialect.PosixExtended) and [PosixBasic](cref:Meziantou.Framework.Language.Regex.RegexDialect.PosixBasic) dialects cover bracket expressions, collating elements and equivalence classes, in
 which a backslash is an ordinary character. POSIX has no character escapes: `\x41`, `\cA`, `\n` and `\k` are the letters
 `x41`, `cA`, `n` and `k`. The shorthand classes they accept, `\w`, `\s`, `\b` and their negations, are GNU extensions.
 

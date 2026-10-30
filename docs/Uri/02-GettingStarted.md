@@ -16,7 +16,7 @@ The examples of this documentation omit the `using` directives: they need `using
 
 ## Match a URL against a pattern
 
-`UrlPattern.Create` parses a pattern. `IsMatch` tests a URL, and `Match` returns the values of the groups:
+[UrlPattern.Create](cref:Meziantou.Framework.UrlPattern.Create) parses a pattern. [IsMatch](cref:Meziantou.Framework.UrlPattern.IsMatch) tests a URL, and [Match](cref:Meziantou.Framework.UrlPattern.Match) returns the values of the groups:
 
 <!-- ref:../../tests/Meziantou.Framework.Uri.Tests/UrlPatternTests.cs;region=UrlPattern_Example;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -42,7 +42,7 @@ See [Matching URLs](03-MatchingUrls.md) and [Pattern syntax](04-PatternSyntax.md
 
 ## Read and edit a query string
 
-`QueryStringUtilities` parses a query string and returns a new URL with parameters added, replaced or removed:
+[QueryStringUtilities](cref:Meziantou.Framework.QueryStringUtilities) parses a query string and returns a new URL with parameters added, replaced or removed:
 
 <!-- ref:../../tests/Meziantou.Framework.Uri.Tests/QueryStringUtilitiesTests.cs;region=QueryStringUtilities_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -66,7 +66,7 @@ See [Query strings](06-QueryStrings.md).
 
 ## Compare two sites
 
-`PublicSuffixList.GetRegistrableDomain` returns the part of a host name that a registrant controls, so two hosts with
+[PublicSuffixList.GetRegistrableDomain](cref:Meziantou.Framework.PublicSuffixList.GetRegistrableDomain) returns the part of a host name that a registrant controls, so two hosts with
 the same registrable domain belong to the same site:
 
 <!-- ref:../../tests/Meziantou.Framework.Uri.Tests/PublicSuffixListTests.cs;region=PublicSuffixList_SameSite;format=md-fenced-code-block;dedent=true -->

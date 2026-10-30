@@ -3,36 +3,36 @@ title: Processing
 description: Crop, resize, rotate, blur, adjust the colors, reduce to a palette or to black and white, and compare images.
 ---
 
-The processing operations are extension methods of `Image` and `ImageFrame` (`ImageProcessingExtensions`, in the
-[Meziantou.Framework.Imaging](cref:Meziantou.Framework.Imaging) namespace). They change the image in place: clone it first with `Clone()` to keep the
+The processing operations are extension methods of [Image](cref:Meziantou.Framework.Imaging.Image) and [ImageFrame](cref:Meziantou.Framework.Imaging.ImageFrame) ([ImageProcessingExtensions](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions), in the
+[Meziantou.Framework.Imaging](cref:Meziantou.Framework.Imaging) namespace). They change the image in place: clone it first with [Clone()](cref:Meziantou.Framework.Imaging.Image.Clone) to keep the
 original.
 
 ## The operations
 
 | Operation | Methods | Page |
 | --- | --- | --- |
-| Crop, trim the background, add a border, enlarge the canvas | `Crop`, `AutoCrop`, `AnalyzeAutoCrop`, `Pad`, `ExtendCanvas` | [Crop and auto-crop](02-CropAndAutoCrop.md) |
-| Resize, fit, fill or letterbox | `Resize` | [Resizing](03-Resizing.md) |
-| Rotate, mirror, skew, correct a perspective, apply the EXIF orientation | `Rotate`, `Flip`, `Skew`, `Transform`, `AutoOrient` | [Rotate, flip and transform](04-RotateFlipAndTransform.md) |
-| Blur, sharpen, apply a convolution matrix, detect edges | `GaussianBlur`, `BoxBlur`, `MedianBlur`, `Sharpen`, `Convolve`, `DetectEdges` | [Blur, sharpen and convolution](05-BlurSharpenAndConvolution.md) |
-| Change the colors, apply a photo effect | `Grayscale`, `ApplyColorMatrix`, `ReplaceColor`, `Vignette`, `Glow`, `Pixelate`, `OilPaint`, `Flatten` | [Color adjustments and effects](06-ColorAdjustmentsAndEffects.md) |
-| Count the levels, equalize, stretch the contrast | `ComputeHistogram`, `Equalize`, `AutoLevels` | [Histograms and levels](07-HistogramsAndLevels.md) |
-| Reduce to a palette, dither | `Quantize`, `PaletteBuilder` | [Color reduction](08-ColorReduction.md) |
-| Make black and white | `Threshold` | [Binarization](09-Binarization.md) |
-| Measure how similar two images look | `ImageSimilarity` | [Comparing images](10-ComparingImages.md) |
+| Crop, trim the background, add a border, enlarge the canvas | [Crop](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Crop), [AutoCrop](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoCrop), [AnalyzeAutoCrop](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AnalyzeAutoCrop), [Pad](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Pad), [ExtendCanvas](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ExtendCanvas) | [Crop and auto-crop](02-CropAndAutoCrop.md) |
+| Resize, fit, fill or letterbox | [Resize](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Resize) | [Resizing](03-Resizing.md) |
+| Rotate, mirror, skew, correct a perspective, apply the EXIF orientation | [Rotate](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Rotate), [Flip](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Flip), [Skew](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Skew), [Transform](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Transform), [AutoOrient](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoOrient) | [Rotate, flip and transform](04-RotateFlipAndTransform.md) |
+| Blur, sharpen, apply a convolution matrix, detect edges | [GaussianBlur](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.GaussianBlur), [BoxBlur](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.BoxBlur), [MedianBlur](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.MedianBlur), [Sharpen](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Sharpen), [Convolve](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Convolve), [DetectEdges](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.DetectEdges) | [Blur, sharpen and convolution](05-BlurSharpenAndConvolution.md) |
+| Change the colors, apply a photo effect | [Grayscale](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Grayscale), [ApplyColorMatrix](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ApplyColorMatrix), [ReplaceColor](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ReplaceColor), [Vignette](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Vignette), [Glow](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Glow), [Pixelate](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Pixelate), [OilPaint](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.OilPaint), [Flatten](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Flatten) | [Color adjustments and effects](06-ColorAdjustmentsAndEffects.md) |
+| Count the levels, equalize, stretch the contrast | [ComputeHistogram](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ComputeHistogram), [Equalize](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Equalize), [AutoLevels](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoLevels) | [Histograms and levels](07-HistogramsAndLevels.md) |
+| Reduce to a palette, dither | [Quantize](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Quantize), [PaletteBuilder](cref:Meziantou.Framework.Imaging.PaletteBuilder) | [Color reduction](08-ColorReduction.md) |
+| Make black and white | [Threshold](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Threshold) | [Binarization](09-Binarization.md) |
+| Measure how similar two images look | [ImageSimilarity](cref:Meziantou.Framework.Imaging.ImageSimilarity) | [Comparing images](10-ComparingImages.md) |
 
-Color profile conversions (`ConvertColorProfile`) are described in [Color management](../09-Color/03-ColorManagement.md).
+Color profile conversions ([ConvertColorProfile](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ConvertColorProfile)) are described in [Color management](../09-Color/03-ColorManagement.md).
 
 ## Every frame, and the poster
 
-An operation on an `Image` applies to every frame of an animation and to its poster frame, so that an animation stays
+An operation on an [Image](cref:Meziantou.Framework.Imaging.Image) applies to every frame of an animation and to its poster frame, so that an animation stays
 consistent: a resized GIF has every frame resized, with the same durations. The operations that read pixels to decide
-something, such as `AutoCrop` and `ComputeHistogram`, look at every frame too. See
+something, such as [AutoCrop](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoCrop) and [ComputeHistogram](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ComputeHistogram), look at every frame too. See
 [Images, frames and animations](../04-Concepts/02-ImagesFramesAndAnimations.md).
 
-The pixel operations also exist for one frame: `Flip`, `Grayscale`, `ApplyColorMatrix`, `ReplaceColor`, the effects,
-`Convolve`, the blurs, `Sharpen`, `DetectEdges`, `Equalize`, `AutoLevels`, `ComputeHistogram`, `Quantize` and
-`Threshold`. The other frames are left as they are:
+The pixel operations also exist for one frame: [Flip](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Flip), [Grayscale](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Grayscale), [ApplyColorMatrix](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ApplyColorMatrix), [ReplaceColor](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ReplaceColor), the effects,
+[Convolve](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Convolve), the blurs, [Sharpen](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Sharpen), [DetectEdges](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.DetectEdges), [Equalize](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Equalize), [AutoLevels](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoLevels), [ComputeHistogram](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ComputeHistogram), [Quantize](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Quantize) and
+[Threshold](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Threshold). The other frames are left as they are:
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/ProcessingExamples.cs;region=Imaging_ProcessOneFrame;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -52,23 +52,23 @@ whole image, since every frame of an image has the size of its canvas.
 
 ## Geometry is all or nothing
 
-`Crop`, `AutoCrop`, `Resize`, `Pad`, `ExtendCanvas`, `Rotate`, `Skew`, `Transform` and `AutoOrient` build the new frames
+[Crop](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Crop), [AutoCrop](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoCrop), [Resize](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Resize), [Pad](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Pad), [ExtendCanvas](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ExtendCanvas), [Rotate](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Rotate), [Skew](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Skew), [Transform](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Transform) and [AutoOrient](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoOrient) build the new frames
 before they replace the old ones. When they fail (a resource limit, a cursor hotspot that would be cut, a cancellation),
 the image is left exactly as it was: its size, its pixels, its frames and its metadata.
 
 The pixel operations write in place: a failure or a cancellation can leave some frames or rows changed, but the image
-stays valid. `Convolve`, the blurs, `Sharpen`, `Equalize` and `AutoLevels` rent their working memory first, so a
+stays valid. [Convolve](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Convolve), the blurs, [Sharpen](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Sharpen), [Equalize](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Equalize) and [AutoLevels](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoLevels) rent their working memory first, so a
 resource limit leaves the image unchanged. See
 [Thread safety and atomicity](../04-Concepts/06-ThreadSafetyAndAtomicity.md).
 
 ## What the operations keep
 
 - **Pixel format and precision.** An operation keeps the pixel format of the image: a 16-bit image is processed with
-  16-bit precision, and alpha is kept. `RgbaFloat` and `RgbaHalf` images accept every operation, except
-  `ComputeHistogram`, `Equalize`, `AutoLevels` and `Threshold`, which need discrete levels. See
+  16-bit precision, and alpha is kept. [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat) and [RgbaHalf](cref:Meziantou.Framework.Imaging.RgbaHalf) images accept every operation, except
+  [ComputeHistogram](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ComputeHistogram), [Equalize](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Equalize), [AutoLevels](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoLevels) and [Threshold](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Threshold), which need discrete levels. See
   [Pixel formats](../04-Concepts/05-PixelFormats.md).
 - **Metadata.** The metadata stays. Geometry changes update the EXIF dimensions, and every operation that changes pixels
-  removes the EXIF thumbnail, which no longer matches them. Only `AutoOrient` changes the orientation.
+  removes the EXIF thumbnail, which no longer matches them. Only [AutoOrient](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoOrient) changes the orientation.
 - **Cursor hotspots.** The hotspot of a cursor frame follows the pixel it points at. See
   [Rotate, flip and transform](04-RotateFlipAndTransform.md).
 - **Same input, same pixels.** The results do not depend on the platform, the processor or the number of threads.
@@ -77,7 +77,7 @@ resource limit leaves the image unchanged. See
 
 Every operation takes an optional `CancellationToken`.
 
-Operations run on the calling thread by default. With `ImageConfiguration.MaxDegreeOfParallelism` above 1, large
+Operations run on the calling thread by default. With [ImageConfiguration.MaxDegreeOfParallelism](cref:Meziantou.Framework.Imaging.ImageConfiguration.MaxDegreeOfParallelism) above 1, large
 resizes, transformations, convolutions, blurs, medians, unsharp masks and edge detections split their frames into bands
 processed concurrently, with the same result. See [Performance](../11-Performance.md).
 

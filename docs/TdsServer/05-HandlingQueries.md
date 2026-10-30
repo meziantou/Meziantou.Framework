@@ -3,8 +3,8 @@ title: Handling queries
 description: Read the SQL text, the stored procedure name and the parameters of each request, and handle cancellation.
 ---
 
-The query handler is called once for each request of a connection, with a `TdsQueryContext` that describes the request,
-and returns a `TdsQueryResult`. This page covers what a request contains; [Returning results](06-ReturningResults.md)
+The query handler is called once for each request of a connection, with a [TdsQueryContext](cref:Meziantou.Framework.Tds.Handler.TdsQueryContext) that describes the request,
+and returns a [TdsQueryResult](cref:Meziantou.Framework.Tds.Handler.TdsQueryResult). This page covers what a request contains; [Returning results](06-ReturningResults.md)
 covers the answer.
 
 <!-- ref:../../samples/Meziantou.Framework.TdsServer.Samples/ReadmeExamples.cs;region=TdsServer_AccessRequest;format=md-fenced-code-block;dedent=true -->
@@ -42,15 +42,15 @@ app.MapTdsHandlers(
 
 ## Request types
 
-`RequestType` tells how the client sent the request:
+[RequestType](cref:Meziantou.Framework.Tds.Handler.TdsQueryContext.RequestType) tells how the client sent the request:
 
-| `RequestType` | Sent by the client for | Read |
+| [RequestType](cref:Meziantou.Framework.Tds.Handler.TdsQueryContext.RequestType) | Sent by the client for | Read |
 | --- | --- | --- |
-| `SqlBatch` | A command without parameters (`CommandType.Text`) | `CommandText` |
-| `Rpc` | A stored procedure call (`CommandType.StoredProcedure`) | `ProcedureName` and `Parameters` |
-| `Rpc` | A command with parameters, as a call to `sp_executesql` | `ProcedureName` is `sp_executesql`; the SQL text is in `Parameters` |
+| [SqlBatch](cref:Meziantou.Framework.Tds.Handler.TdsQueryRequestType.SqlBatch) | A command without parameters (`CommandType.Text`) | [CommandText](cref:Meziantou.Framework.Tds.Handler.TdsQueryContext.CommandText) |
+| [Rpc](cref:Meziantou.Framework.Tds.Handler.TdsQueryRequestType.Rpc) | A stored procedure call (`CommandType.StoredProcedure`) | [ProcedureName](cref:Meziantou.Framework.Tds.Handler.TdsQueryContext.ProcedureName) and [Parameters](cref:Meziantou.Framework.Tds.Handler.TdsQueryContext.Parameters) |
+| [Rpc](cref:Meziantou.Framework.Tds.Handler.TdsQueryRequestType.Rpc) | A command with parameters, as a call to `sp_executesql` | [ProcedureName](cref:Meziantou.Framework.Tds.Handler.TdsQueryContext.ProcedureName) is `sp_executesql`; the SQL text is in [Parameters](cref:Meziantou.Framework.Tds.Handler.TdsQueryContext.Parameters) |
 
-`CommandText` is the SQL text as the client wrote it, and is `null` for RPC requests. The server does not parse or run
+[CommandText](cref:Meziantou.Framework.Tds.Handler.TdsQueryContext.CommandText) is the SQL text as the client wrote it, and is `null` for RPC requests. The server does not parse or run
 it: matching it, or parsing it with a SQL parser, is up to the handler, unless you use the
 [query engine](07-QueryEngine.md).
 
@@ -96,7 +96,7 @@ and 42.
 
 ## Answer a stored procedure call
 
-A stored procedure call has the name of the procedure in `ProcedureName` and its parameters in `Parameters`:
+A stored procedure call has the name of the procedure in [ProcedureName](cref:Meziantou.Framework.Tds.Handler.TdsQueryContext.ProcedureName) and its parameters in [Parameters](cref:Meziantou.Framework.Tds.Handler.TdsQueryContext.Parameters):
 
 <!-- ref:../../tests/Meziantou.Framework.TdsServer.Tests/TdsServerProtocolTests.cs;region=TdsServer_StoredProcedureCall;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -128,25 +128,25 @@ The client calls it as it would call a SQL Server procedure. See [Connecting cli
 
 ## Parameters
 
-Each `TdsQueryParameter` has a `Name` (with its `@` prefix, as the client sent it), a `Type` (a `TdsColumnType`) and a
-`Value`. A SQL `NULL` is `DBNull.Value`, and `IsNull` is `true`.
+Each [TdsQueryParameter](cref:Meziantou.Framework.Tds.Handler.TdsQueryParameter) has a [Name](cref:Meziantou.Framework.Tds.Handler.TdsQueryParameter.Name) (with its `@` prefix, as the client sent it), a [Type](cref:Meziantou.Framework.Tds.Handler.TdsQueryParameter.Type) (a [TdsColumnType](cref:Meziantou.Framework.Tds.Handler.TdsColumnType)) and a
+`Value`. A SQL `NULL` is `DBNull.Value`, and [IsNull](cref:Meziantou.Framework.Tds.Handler.TdsQueryParameter.IsNull) is `true`.
 
 The conversion methods return `null` for a SQL `NULL`, and for a value they cannot convert:
 
 | Method | Returns |
 | --- | --- |
-| `AsString()` | The text of the value; binary values are Base64-encoded |
-| `AsInt32()`, `AsInt64()` | An integer, from any integer type or from text, when it is in range |
-| `AsBoolean()` | A Boolean, from `bit`, an integer (non-zero is `true`) or `"true"`/`"false"` |
-| `AsDouble()`, `AsDecimal()` | A number, from any numeric type or from text (invariant culture) |
-| `AsBinary()` | The bytes of a binary value |
-| `AsJson()` | A `JsonObject`; throws when the value is not a JSON object |
-| `AsXml()` | An `XDocument`; throws when the value is not well-formed XML or declares a DTD |
+| [AsString()](cref:Meziantou.Framework.Tds.Handler.TdsQueryParameter.AsString) | The text of the value; binary values are Base64-encoded |
+| [AsInt32()](cref:Meziantou.Framework.Tds.Handler.TdsQueryParameter.AsInt32), [AsInt64()](cref:Meziantou.Framework.Tds.Handler.TdsQueryParameter.AsInt64) | An integer, from any integer type or from text, when it is in range |
+| [AsBoolean()](cref:Meziantou.Framework.Tds.Handler.TdsQueryParameter.AsBoolean) | A Boolean, from `bit`, an integer (non-zero is `true`) or `"true"`/`"false"` |
+| [AsDouble()](cref:Meziantou.Framework.Tds.Handler.TdsQueryParameter.AsDouble), [AsDecimal()](cref:Meziantou.Framework.Tds.Handler.TdsQueryParameter.AsDecimal) | A number, from any numeric type or from text (invariant culture) |
+| [AsBinary()](cref:Meziantou.Framework.Tds.Handler.TdsQueryParameter.AsBinary) | The bytes of a binary value |
+| [AsJson()](cref:Meziantou.Framework.Tds.Handler.TdsQueryParameter.AsJson) | A `JsonObject`; throws when the value is not a JSON object |
+| [AsXml()](cref:Meziantou.Framework.Tds.Handler.TdsQueryParameter.AsXml) | An `XDocument`; throws when the value is not well-formed XML or declares a DTD |
 
 ### Incomplete parameters
 
-When the client sends a parameter whose type the server cannot decode, or a malformed request, `Parameters` stops
-before that parameter, and `HasCompleteParameters` is `false`. Reject such requests, as the first example of
+When the client sends a parameter whose type the server cannot decode, or a malformed request, [Parameters](cref:Meziantou.Framework.Tds.Handler.TdsQueryContext.Parameters) stops
+before that parameter, and [HasCompleteParameters](cref:Meziantou.Framework.Tds.Handler.TdsQueryContext.HasCompleteParameters) is `false`. Reject such requests, as the first example of
 [Read the parameters of a query](#read-the-parameters-of-a-query) does, rather than run them with missing values. The
 query engine rejects them.
 

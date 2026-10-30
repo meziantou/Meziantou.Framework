@@ -4,7 +4,7 @@ description: HstsClientHandler sends the requests to HSTS hosts over HTTPS, usin
 ---
 
 HTTP Strict Transport Security (HSTS, RFC 6797) lets a host declare that it must only be reached over HTTPS. Browsers
-honor it; `HttpClient` does not: a request to `http://github.com` is sent in plaintext. `HstsClientHandler`, in the
+honor it; `HttpClient` does not: a request to `http://github.com` is sent in plaintext. [HstsClientHandler](cref:Meziantou.Framework.Http.HstsClientHandler), in the
 `Meziantou.Framework.Http.Hsts` package, closes that gap. Before a request is sent, it rewrites `http://` to
 `https://` when the host has an HSTS policy.
 
@@ -19,7 +19,7 @@ The policies come from two places:
 - **The `Strict-Transport-Security` header**: when an HTTPS response carries it, the handler remembers the host, and
   the next requests to it are upgraded.
 
-The policies are kept in an `HstsDomainPolicyCollection`, which you can also query and edit yourself.
+The policies are kept in an [HstsDomainPolicyCollection](cref:Meziantou.Framework.Http.HstsDomainPolicyCollection), which you can also query and edit yourself.
 
 ## Pages of this group
 

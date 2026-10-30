@@ -11,7 +11,7 @@ description: What the URL patterns, the query string helpers and the Public Suff
   (`[\d&&[0-1]]`) are not supported.
 - **Regular expressions have no timeout.** A pattern with a regular expression that backtracks a lot can take a long
   time to match some URLs. Do not create patterns from text that users supply, or check that it has no regular
-  expression group (`HasRegExpGroups`).
+  expression group ([HasRegExpGroups](cref:Meziantou.Framework.UrlPattern.HasRegExpGroups)).
 - **No URL type.** The library parses URLs to match them, but returns no parsed URL: use `System.Uri` for that. The
   values in a match result are in the normalized form of the URL standard, which can differ from what `System.Uri`
   returns for the same URL, for instance on percent-encoding.
@@ -28,7 +28,7 @@ description: What the URL patterns, the query string helpers and the Public Suff
 
 - **A snapshot.** The list is the one of the package version you use: a suffix added to the list after that version is
   unknown until you update the package. See [Version of the list](07-PublicSuffixList.md#version-of-the-list).
-- **Domain names only.** IP addresses are not domain names: `TryGetDomainInfo` returns `false` for a `Uri` whose host
+- **Domain names only.** IP addresses are not domain names: [TryGetDomainInfo](cref:Meziantou.Framework.PublicSuffixList.TryGetDomainInfo) returns `false` for a `Uri` whose host
   is one.
 
 ## Internationalized host names and invariant globalization

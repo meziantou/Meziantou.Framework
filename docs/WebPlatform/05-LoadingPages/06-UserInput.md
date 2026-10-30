@@ -3,7 +3,7 @@ title: User input
 description: Move the mouse, click, tap, scroll and type in a page as a user does, with the trusted events and the default actions of a browser.
 ---
 
-There is no window and no user: your application plays the user with `BrowsingContext.Input`. The library fires the
+There is no window and no user: your application plays the user with [BrowsingContext.Input](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContext.Input). The library fires the
 trusted events that a browser fires (pointer, mouse, touch, wheel, keyboard, input) and runs their default actions: the
 focus, the clicks, the text typed in the fields, the form submissions, the scrolling, the drag and drop.
 
@@ -46,10 +46,10 @@ the hit testing of the layout) gets the events, also in the document of an `ifra
 | `Input.Mouse` | The mouse: `Move(x, y)`, `Down(button)`, `Up(button)`. A press and a release make a `click` (`dblclick` for a second click, `contextmenu` for the secondary button) |
 | `Input.CreatePointer("touch")`, `CreatePointer("pen")` | A finger or a pen, with the same methods; a moving touch pans the page |
 | `Input.Wheel(x, y, deltaX, deltaY)` | A turn of the wheel at a position: the `wheel` event, then the scroll |
-| `Input.Modifiers` | The modifier keys (`InputModifiers.Shift`, `Control`...) of the next events |
+| `Input.Modifiers` | The modifier keys ([InputModifiers.Shift](cref:Meziantou.Framework.WebPlatform.Dom.InputModifiers.Shift), [Control](cref:Meziantou.Framework.WebPlatform.Dom.InputModifiers.Control)...) of the next events |
 | `Input.HitTest(x, y)` | The element at a position, without firing anything |
 
-To click an element, click the center of its `GetBoundingClientRect()`. `Input.MapToTopLevel(document, x, y)` converts a
+To click an element, click the center of its [GetBoundingClientRect()](cref:Meziantou.Framework.WebPlatform.Dom.Element.GetBoundingClientRect). `Input.MapToTopLevel(document, x, y)` converts a
 position of the viewport of an `iframe` to the top-level viewport.
 
 ## Keyboard
@@ -61,7 +61,7 @@ a key such as `Enter`, `Tab`, `Backspace`, `ArrowLeft`, `Shift`) and the layout 
 | --- | --- |
 | `Type(text)` | Presses and releases the key of each character |
 | `Press(key)` | Presses and releases a key |
-| `Down(key)`, `Up(key)` | Presses or releases a key: hold `Shift` or `Control` while pressing other keys |
+| `Down(key)`, `Up(key)` | Presses or releases a key: hold `Shift` or [Control](cref:Meziantou.Framework.WebPlatform.Dom.InputModifiers.Control) while pressing other keys |
 | `InsertText(text)` | Inserts a text as an input method does, without keyboard events |
 
 The default actions run: the text is inserted in the text fields and the editable content, Tab moves the focus, Enter
@@ -70,7 +70,7 @@ Escape closes the dialogs and the popovers.
 
 ## Without input
 
-`HtmlElement.Click()`, `Focus()` and `DispatchEvent()` act on an element directly, as the same methods of a script: the
+[HtmlElement.Click()](cref:Meziantou.Framework.WebPlatform.Dom.HtmlElement.Click), [Focus()](cref:Meziantou.Framework.WebPlatform.Dom.HtmlElement.Focus) and [DispatchEvent()](cref:Meziantou.Framework.WebPlatform.Dom.EventTarget.DispatchEvent) act on an element directly, as the same methods of a script: the
 events they fire are not trusted, and no hit testing is done. Use them when you do not need to simulate a user.
 
 To automate pages with a higher-level API (locators, auto-waiting, assertions), drive the engine with Playwright: see

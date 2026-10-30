@@ -3,23 +3,23 @@ title: Cache stores
 description: Keep the cache entries in memory, in a JSON file, in SQLite or in Redis, remove the obsolete ones, or write your own store.
 ---
 
-`HttpCachingDelegateHandler` keeps its entries in the `IHttpCacheStore` you pass to its constructor. Choose the store
+[HttpCachingDelegateHandler](cref:Meziantou.Framework.Http.Caching.HttpCachingDelegateHandler) keeps its entries in the [IHttpCacheStore](cref:Meziantou.Framework.Http.Caching.IHttpCacheStore) you pass to its constructor. Choose the store
 from where the entries must live:
 
 | Store | Package | Use it when |
 | --- | --- | --- |
-| `InMemoryHttpCacheStore` | `Meziantou.Framework.Http.Caching.InMemory` | The cache lives as long as the process, optionally saved to a file between runs |
-| `SqliteHttpCacheStore` | `Meziantou.Framework.Http.Caching.Sqlite` | The cache must survive restarts without an explicit save |
-| `RedisHttpCacheStore` | `Meziantou.Framework.Http.Caching.Redis` | The cache lives in a Redis server |
-| Your own `IHttpCacheStore` | `Meziantou.Framework.Http.Caching` | The entries go elsewhere |
+| [InMemoryHttpCacheStore](cref:Meziantou.Framework.Http.Caching.InMemory.InMemoryHttpCacheStore) | `Meziantou.Framework.Http.Caching.InMemory` | The cache lives as long as the process, optionally saved to a file between runs |
+| [SqliteHttpCacheStore](cref:Meziantou.Framework.Http.Caching.Sqlite.SqliteHttpCacheStore) | `Meziantou.Framework.Http.Caching.Sqlite` | The cache must survive restarts without an explicit save |
+| [RedisHttpCacheStore](cref:Meziantou.Framework.Http.Caching.Redis.RedisHttpCacheStore) | `Meziantou.Framework.Http.Caching.Redis` | The cache lives in a Redis server |
+| Your own [IHttpCacheStore](cref:Meziantou.Framework.Http.Caching.IHttpCacheStore) | `Meziantou.Framework.Http.Caching` | The entries go elsewhere |
 
 No store limits its size or evicts entries on its own: an entry stays until a request replaces or invalidates it, or
 until you prune it. See [Removing obsolete entries](#removing-obsolete-entries).
 
 ## In memory
 
-`InMemoryHttpCacheStore` keeps the entries in memory. `SaveToFileAsync` writes them to a JSON file, and
-`LoadFromFileAsync` replaces the entries of the store with the ones of a file, so the cache can survive a restart:
+[InMemoryHttpCacheStore](cref:Meziantou.Framework.Http.Caching.InMemory.InMemoryHttpCacheStore) keeps the entries in memory. [SaveToFileAsync](cref:Meziantou.Framework.Http.Caching.InMemory.InMemoryHttpCacheStore.SaveToFileAsync) writes them to a JSON file, and
+[LoadFromFileAsync](cref:Meziantou.Framework.Http.Caching.InMemory.InMemoryHttpCacheStore.LoadFromFileAsync) replaces the entries of the store with the ones of a file, so the cache can survive a restart:
 
 <!-- ref:../../../tests/Meziantou.Framework.Http.Caching.Tests/PersistenceProvidersTests.cs;region=HttpCaching_InMemorySaveAndLoad;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -38,14 +38,14 @@ await cacheStore.SaveToFileAsync(cacheFilePath);
 ```
 <!-- endref -->
 
-- `LoadFromFileAsync` empties the store when the file does not exist or is not a valid cache file.
-- `SaveToFileAsync` creates the directory if needed. It writes a temporary file next to the destination, then moves it
+- [LoadFromFileAsync](cref:Meziantou.Framework.Http.Caching.InMemory.InMemoryHttpCacheStore.LoadFromFileAsync) empties the store when the file does not exist or is not a valid cache file.
+- [SaveToFileAsync](cref:Meziantou.Framework.Http.Caching.InMemory.InMemoryHttpCacheStore.SaveToFileAsync) creates the directory if needed. It writes a temporary file next to the destination, then moves it
   into place, so an interrupted save does not destroy the previous file.
-- Nothing is saved automatically: call `SaveToFileAsync` when it suits your application, for instance when it stops.
+- Nothing is saved automatically: call [SaveToFileAsync](cref:Meziantou.Framework.Http.Caching.InMemory.InMemoryHttpCacheStore.SaveToFileAsync) when it suits your application, for instance when it stops.
 
 ## SQLite
 
-`SqliteHttpCacheStore` keeps the entries in a SQLite database. Install `Meziantou.Framework.Http.Caching.Sqlite`; the
+[SqliteHttpCacheStore](cref:Meziantou.Framework.Http.Caching.Sqlite.SqliteHttpCacheStore) keeps the entries in a SQLite database. Install `Meziantou.Framework.Http.Caching.Sqlite`; the
 store is in the [Meziantou.Framework.Http.Caching.Sqlite](cref:Meziantou.Framework.Http.Caching.Sqlite) namespace and `SqliteConnectionStringBuilder` in
 `Microsoft.Data.Sqlite`:
 
@@ -71,14 +71,14 @@ using var response = await httpClient.GetAsync("https://example.com/data");
 
 - The constructor takes a SQLite connection string. The store creates its table, `HttpCacheEntries`, on first use, and
   every operation is written to the database as it happens.
-- The store keeps one connection open for its lifetime, and `Dispose` closes it. With `Pooling = false`, the other
+- The store keeps one connection open for its lifetime, and [Dispose](cref:Meziantou.Framework.Http.Caching.Sqlite.SqliteHttpCacheStore.Dispose) closes it. With `Pooling = false`, the other
   connections are closed after each operation, so the database file is released when the store is disposed.
 - A shared in-memory database (`Mode = SqliteOpenMode.Memory` and `Cache = SqliteCacheMode.Shared`) works too: the
   connection the store keeps open keeps the database alive until the store is disposed.
 
 ## Redis
 
-`RedisHttpCacheStore` keeps the entries in Redis. Install `Meziantou.Framework.Http.Caching.Redis`; the store is in the
+[RedisHttpCacheStore](cref:Meziantou.Framework.Http.Caching.Redis.RedisHttpCacheStore) keeps the entries in Redis. Install `Meziantou.Framework.Http.Caching.Redis`; the store is in the
 [Meziantou.Framework.Http.Caching.Redis](cref:Meziantou.Framework.Http.Caching.Redis) namespace and takes an `IConnectionMultiplexer` from `StackExchange.Redis`:
 
 <!-- ref:../../../samples/Meziantou.Framework.Http.Samples/HttpCachingExamples.cs;region=HttpCaching_RedisStore;format=md-fenced-code-block;dedent=true -->
@@ -100,7 +100,7 @@ await cacheStore.PruneObsoleteEntriesAsync();
 - Every key the store writes starts with `keyPrefix`, `Meziantou:HttpCache` by default. Use a different prefix for each
   cache that shares a Redis database.
 - The store does not set an expiration on the keys it writes: Redis keeps the entries until a request replaces or
-  invalidates them, or until `PruneObsoleteEntriesAsync` removes them.
+  invalidates them, or until [PruneObsoleteEntriesAsync](cref:Meziantou.Framework.Http.Caching.IHttpCacheStore.PruneObsoleteEntriesAsync) removes them.
 
 ## Removing obsolete entries
 
@@ -108,14 +108,14 @@ A stale entry is still useful when the cache can revalidate it (it has an `ETag`
 on errors (`stale-if-error`, see [Serving stale responses on errors](07-StaleIfError.md)). An entry with none of them
 is obsolete once it is stale: the cache can never use it again.
 
-The three stores have a `PruneObsoleteEntriesAsync` method that removes the obsolete entries, and keeps the fresh ones
+The three stores have a [PruneObsoleteEntriesAsync](cref:Meziantou.Framework.Http.Caching.IHttpCacheStore.PruneObsoleteEntriesAsync) method that removes the obsolete entries, and keeps the fresh ones
 and the ones that can still be used. It compares the entries with the current time, `DateTimeOffset.UtcNow`; an
-overload takes the time to use instead, for instance the time of the `TimeProvider` of
+overload takes the time to use instead, for instance the time of the [TimeProvider](cref:Meziantou.Framework.Http.Caching.HttpCachingOptions.TimeProvider) of
 [the options](09-Options.md#control-the-clock). Call it from time to time, or before saving an in-memory store.
 
 ## Write your own store
 
-`IHttpCacheStore` has four methods:
+[IHttpCacheStore](cref:Meziantou.Framework.Http.Caching.IHttpCacheStore) has four methods:
 
 | Method | What it does |
 | --- | --- |
@@ -159,15 +159,15 @@ private sealed class DictionaryHttpCacheStore : IHttpCacheStore
 ```
 <!-- endref -->
 
-`HttpCachePersistenceEntry` holds what the cache needs to use an entry without reading the response: the variant it
+[HttpCachePersistenceEntry](cref:Meziantou.Framework.Http.Caching.HttpCachePersistenceEntry) holds what the cache needs to use an entry without reading the response: the variant it
 answers, its dates, its directives and validators, and the serialized response. It also has helpers for a store:
 
-- `HasSameSecondaryKey(left, right)` tells whether two entries are the same variant, so `SetEntryAsync` knows which
-  entry to replace. `ComputeSecondaryKeyHash()` gives a stable hash of the variant, to use as a storage key.
-- `IsObsolete(now)` tells whether the entry can be removed, and `GetStaleTime()` when it becomes stale, which a store can
-  index to prune without reading every entry. `IsUnusableWhenStale` tells whether it can be removed as soon as it is
+- `HasSameSecondaryKey(left, right)` tells whether two entries are the same variant, so [SetEntryAsync](cref:Meziantou.Framework.Http.Caching.IHttpCacheStore.SetEntryAsync) knows which
+  entry to replace. [ComputeSecondaryKeyHash()](cref:Meziantou.Framework.Http.Caching.HttpCachePersistenceEntry.ComputeSecondaryKeyHash) gives a stable hash of the variant, to use as a storage key.
+- `IsObsolete(now)` tells whether the entry can be removed, and [GetStaleTime()](cref:Meziantou.Framework.Http.Caching.HttpCachePersistenceEntry.GetStaleTime) when it becomes stale, which a store can
+  index to prune without reading every entry. [IsUnusableWhenStale](cref:Meziantou.Framework.Http.Caching.HttpCachePersistenceEntry.IsUnusableWhenStale) tells whether it can be removed as soon as it is
   stale.
-- `Clone()` copies the entry, for a store that keeps the instances it receives and must not share them.
+- [Clone()](cref:Meziantou.Framework.Http.Caching.HttpCachePersistenceEntry.Clone) copies the entry, for a store that keeps the instances it receives and must not share them.
 
 A store can fail: the cache treats a failed lookup as a miss and skips a failed write, so the request still succeeds.
 See [Options](09-Options.md#observe-store-failures).

@@ -4,7 +4,7 @@ description: Add the documents your application opens to the Recent Items of Win
 ---
 
 When an application opens a document, it can tell Windows, which adds the document to the Recent Items of the user and
-to the Jump List of the application on the taskbar. `RecentDocuments` from the
+to the Jump List of the application on the taskbar. [RecentDocuments](cref:Meziantou.Framework.Win32.RecentDocuments) from the
 `Meziantou.Framework.Win32.RecentDocuments` package does it.
 
 ```bash
@@ -41,10 +41,10 @@ Meziantou.Framework.Win32.RecentDocuments.ClearRecentDocuments();
 - When the application is not registered to open the type of the file, Windows may register it for that type, for the
   current user.
 
-`AddToRecentDocuments` throws an `ArgumentException` when the path is empty or contains a null character, and, with an
+[AddToRecentDocuments](cref:Meziantou.Framework.Win32.RecentDocuments.AddToRecentDocuments) throws an `ArgumentException` when the path is empty or contains a null character, and, with an
 AppUserModelID, when the ID is empty, longer than 128 characters, or contains a space.
 
 ## Clear the recent documents
 
-`ClearRecentDocuments` is not limited to your application: it empties the Recent Items of the user and the Recent and
+[ClearRecentDocuments](cref:Meziantou.Framework.Win32.RecentDocuments.ClearRecentDocuments) is not limited to your application: it empties the Recent Items of the user and the Recent and
 Frequent lists of the Jump Lists of every application. It cannot be undone, so only call it when the user asks for it.

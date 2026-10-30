@@ -224,6 +224,46 @@ internal sealed class TiffDirectory
         return result;
     }
 
+    /// <summary>
+    /// Reads the first values of an entry that declares more of them than are used, which the lenient decoding accepts:
+    /// the declared values must still be inside the input, and only the first ones are read.
+    /// </summary>
+    /// <param name="field">The entry.</param>
+    /// <param name="count">The number of values to read, at most the number the entry declares.</param>
+    /// <returns>The first <paramref name="count"/> values.</returns>
+    /// <exception cref="InvalidImageContentException">The type is not an unsigned integer, or the values do not fit in the input.</exception>
+    public ulong[] ReadLeadingUnsignedValues(in TiffField field, int count)
+    {
+        if (!TiffFieldTypes.IsUnsignedInteger(field.Type))
+            throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The TIFF tag {field.Tag} uses {TiffFieldTypes.GetName(field.Type)}; an unsigned integer type is expected."));
+
+        // Values that fit in the value field are stored there; the others are stored at its offset, all of them in the input
+        var length = GetValueLength(field);
+        var size = TiffFieldTypes.GetSize(field.Type);
+        var result = new ulong[count];
+        if (length <= _header.OffsetSize)
+        {
+            Span<byte> raw = stackalloc byte[8];
+            BinaryPrimitives.WriteUInt64LittleEndian(raw, field.RawValue);
+            for (var i = 0; i < count; i++)
+            {
+                result[i] = ReadUnsignedAt(raw, field.Type, i);
+            }
+
+            return result;
+        }
+
+        var offset = GetValueOffset(field);
+        _source.EnsureRange(offset, length);
+        using var buffer = _source.ReadToBuffer(offset, (long)count * size);
+        for (var i = 0; i < count; i++)
+        {
+            result[i] = ReadUnsignedAt(buffer.Span, field.Type, i);
+        }
+
+        return result;
+    }
+
     /// <summary>Reads an array of unsigned integers of a bounded, unknown length.</summary>
     /// <param name="tag">The tag.</param>
     /// <param name="maxCount">The largest accepted number of values.</param>
